@@ -1,0 +1,115 @@
+{
+  "_info": "this file contains a list of api peers",
+  "knownPeers": [
+    {
+      "publicKey": "E30957669D1B2AC833D56B61CD7F4696598934CA9C0F536C558FAD18BF4B69C0",
+      "endpoint": {
+        "host": "vmi835905.contaboserver.net",
+        "port": 7900
+      },
+      "metadata": {
+        "name": "wzone-test2 voting",
+        "roles": "Peer,Api,Voting"
+      }
+    },
+    {
+      "publicKey": "646A541DE23B716B02800681362BFEDA74850D968EF40F757040DB03E866B41F",
+      "endpoint": {
+        "host": "marrons-xym-farm001-test.com",
+        "port": 7900
+      },
+      "metadata": {
+        "name": "Marron's Test Node",
+        "roles": "Peer,Api"
+      }
+    },
+    {
+      "publicKey": "5A1B1E8C11F9460D2866B5472CEF7DEAE310E54B3DF77DAA683F095A326F9EDB",
+      "endpoint": {
+        "host": "121-85-7-220f1.hyg1.eonet.ne.jp",
+        "port": 7900
+      },
+      "metadata": {
+        "name": "HAINETU1",
+        "roles": "Peer,Api"
+      }
+    },
+    {
+      "publicKey": "6D0A6C81E96C86CD4C01666DA402E98B7D0A1B23CD9CEC93150CC75B285EB671",
+      "endpoint": {
+        "host": "test.harvester.earth",
+        "port": 7900
+      },
+      "metadata": {
+        "name": "TEST-HARVESTER",
+        "roles": "Peer,Api"
+      }
+    },
+    {
+      "publicKey": "E5EFD2D21DA445D1AF8524952FC5A98B9477F670E2AC6DC799797844761FD340",
+      "endpoint": {
+        "host": "23.96.28.57",
+        "port": 7900
+      },
+      "metadata": {
+        "name": "dai-dev-tetnet",
+        "roles": "Peer,Api"
+      }
+    },
+    {
+      "publicKey": "4E33A87A7868C6BA2398F1CB75ECFBD63D534143A96E7618E5D6E6646A835973",
+      "endpoint": {
+        "host": "sym-test-03.opening-line.jp",
+        "port": 7900
+      },
+      "metadata": {
+        "name": "sym-test-03.opening-line.jp",
+        "roles": "Peer,Api,Voting"
+      }
+    },
+    {
+      "publicKey": "A958CA07FB6811D738447CFE61AF921DB7CDCB00F3F32E0B22687664B1ADFAC5",
+      "endpoint": {
+        "host": "test03.symbol-node.com",
+        "port": 7973
+      },
+      "metadata": {
+        "name": "symbol-node.com(test03)",
+        "roles": "Peer,Api,Voting"
+      }
+    },
+    {
+      "publicKey": "5A3B780AB412B2EA0D276DD8486FDE6F5A5D3801B9BC2039285BF726E1CD42ED",
+      "endpoint": {
+        "host": "vmi733397.contaboserver.net",
+        "port": 7900
+      },
+      "metadata": {
+        "name": "soyokaze@MackFromNem",
+        "roles": "Peer,Api"
+      }
+    },
+    {
+      "publicKey": "75187407CEFBE7E387814EC3621D544CACE88E86D1DA79272441BE03C47E1176",
+      "endpoint": {
+        "host": "pequod.cola-potatochips.net",
+        "port": 7900
+      },
+      "metadata": {
+        "name": "7518740",
+        "roles": "Peer,Api,Voting"
+      }
+    },
+    {
+      "publicKey": "195575858EA92A9DC74ED2D58A2662798A4409CF31BB0879B5E16AD310C03B62",
+      "endpoint": {
+        "host": "shizuinet.tplinkdns.com",
+        "port": 7900
+      },
+      "metadata": {
+        "name": "ibone78@shizuilab",
+        "roles": "Peer,Api,Voting"
+      }
+    }
+  ]
+}

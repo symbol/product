@@ -1,0 +1,22 @@
+version: '2'
+services:
+  server:
+    image: "{{docker-server-image}}"
+    user: "{{user-settings}}"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "25M"
+        max-file: "10"
+    command: /usr/catapult/bin/catapult.server /userconfig
+    environment:
+      - LD_LIBRARY_PATH=/usr/catapult/lib:/usr/catapult/deps
+    stop_signal: SIGINT
+    ports:
+      - "7900:7900"
+    volumes:
+      - .:/userconfig:ro
+      - ./nemesis/seed:/seed:ro
+      - ./data:/data
+      - ./logs:/logs
+      - ./votingkeys:/votingkeys

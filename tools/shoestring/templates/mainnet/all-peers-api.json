@@ -1,0 +1,49 @@
+{
+    "_info": "this file contains a list of api-node peers",
+    "knownPeers": [
+        {
+            "publicKey": "0E262196111884F1E16CEA5394998ADC8CD43743363D3F47A206498B0D8EB75F",
+            "endpoint": {
+                "host": "75.119.154.178",
+                "port": 7900
+            },
+            "metadata": {
+                "name": "0E26219",
+                "roles": "Api"
+            }
+        },
+        {
+            "publicKey": "3E8846B17079F7A1AB2FC99F7033A70188CEBAEC15704C5EFA107044F1B74FA7",
+            "endpoint": {
+                "host": "176.9.12.87",
+                "port": 7900
+            },
+            "metadata": {
+                "name": "3E8846B",
+                "roles": "Api"
+            }
+        },
+        {
+            "publicKey": "4EAA0CD9CFF5E727ED0286D0FE58D75D24C137411425986F3091172EAA10B14F",
+            "endpoint": {
+                "host": "52.74.196.234",
+                "port": 7900
+            },
+            "metadata": {
+                "name": "4EAA0CD",
+                "roles": "Api"
+            }
+        },
+        {
+            "publicKey": "529BF60BB1011FCAE51C8D798E23224ACBA29D18B5054830F83E4E8E9A3BE526",
+            "endpoint": {
+                "host": "35.78.170.228",
+                "port": 7900
+            },
+            "metadata": {
+                "name": "150C8CE",
+                "roles": "Api"
+            }
+        }
+    ]
+}

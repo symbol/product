@@ -1,0 +1,69 @@
+{
+	"port": 3000,
+	"crossDomain": {
+		"allowedHosts": ["*"],
+		"allowedMethods": ["GET", "POST", "PUT", "OPTIONS"]
+	},
+	"network": {
+		"name": "public",
+		"description": "catapult public network"
+	},
+	"extensions": [
+		"accountLink",
+		"aggregate",
+		"lockHash",
+		"lockSecret",
+		"mosaic",
+		"metadata",
+		"multisig",
+		"namespace",
+		"receipts",
+		"restrictions",
+		"transfer"
+	],
+	"db": {
+		"url": "mongodb://db:27017/",
+		"name": "catapult",
+		"pageSizeMin": 10,
+		"pageSizeMax": 100,
+		"pageSizeDefault": 20,
+		"maxConnectionAttempts": 5,
+		"baseRetryDelay": 500,
+		"connectionPoolSize": 10
+	},
+
+	"apiNode": {
+		"host": "server",
+		"port": 7900,
+		"timeout": 1000,
+		"tlsClientCertificatePath": "/userconfig/certificates/node.crt.pem",
+		"tlsClientKeyPath": "/userconfig/certificates/node.key.pem",
+		"tlsCaCertificatePath": "/userconfig/certificates/ca.crt.pem",
+		"networkPropertyFilePath": "/userconfig/resources/config-network.properties",
+		"nodePropertyFilePath": "/userconfig/resources/config-node.properties"
+	},
+
+	"websocket": {
+		"mq": {
+			"host": "broker",
+			"port": 7902
+		},
+		"allowOptionalAddress": true
+	},
+
+	"logging": {
+		"console": {
+			"formats": ["colorize", "simple"],
+
+			"level": "verbose",
+			"handleExceptions": true
+		},
+		"file": {
+			"formats": ["prettyPrint"],
+
+			"filename": "/data/rest/catapult-rest.log",
+			"maxsize": 20971520,
+			"maxFiles": 100
+		}
+	}
+} 
