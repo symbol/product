@@ -1,0 +1,21 @@
+friendly_name: nem
+ticker_name: nem
+currency_symbol: xem
+premarket_price: 0
+
+accounts: []
+
+nodes:
+  - host: cobalt.elxemental.cloud
+  - host: mercury.elxemental.cloud
+  - host: silicon.elxemental.cloud
+  - host: sulfur.elxemental.cloud
+
+  - { host: 51.38.101.173, roles: 'seed-only' }
+  - { host: 51.77.124.35, roles: 'seed-only' }
+  - { host: 51.77.124.56, roles: 'seed-only' }
+  - { host: 54.38.221.36, roles: 'seed-only' }
+  - { host: 54.38.221.44, roles: 'seed-only' }
+
+  - { host: jusan.nem.ninja, roles: 'seed-only' }
+  - { host: hachi.nem.ninja, roles: 'seed-only' }
