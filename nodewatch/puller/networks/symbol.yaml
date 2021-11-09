@@ -1,0 +1,12 @@
+friendly_name: symbol
+ticker_name: symbol
+currency_symbol: xym
+premarket_price: 0
+
+accounts: []
+
+nodes:
+  - host: wolf.importance.jp
+  - host: 00fabf14.xym.stir-hosyu.com
+  - host: symbol.shizuilab.com
+  - host: symbol.ooo
