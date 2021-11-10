@@ -1,9 +1,13 @@
 import csv
+import json
+from collections import namedtuple
 
 from symbolchain.core.nem.Network import Address
 from zenlog import log
 
 from .VersionSummary import aggregate_descriptors
+
+NodeDescriptor = namedtuple('NodeDescriptor', ['name', 'host', 'version'])
 
 
 class HarvesterDescriptor:
@@ -17,12 +21,23 @@ class HarvesterDescriptor:
 
 
 class NemLoader:
-    def __init__(self, harvesters_data_filepath):
+    def __init__(self, nodes_data_filepath, harvesters_data_filepath):
+        self.nodes_data_filepath = nodes_data_filepath
         self.harvesters_data_filepath = harvesters_data_filepath
 
         self.descriptors = []
+        self.node_descriptors = []
 
     def load(self):
+        self._load_account_descriptors()
+
+        with open(self.nodes_data_filepath, 'rt') as infile:
+            self.node_descriptors = [
+                NodeDescriptor(json_node['identity']['name'], json_node['endpoint']['host'], json_node['metaData']['version'])
+                for json_node in json.load(infile)
+            ]
+
+    def _load_account_descriptors(self):
         log.info('loading input from {}'.format(self.harvesters_data_filepath))
 
         # load rows
@@ -35,8 +50,8 @@ class NemLoader:
         # sort by balance (highest to lowest)
         self.descriptors.sort(key=lambda descriptor: descriptor.balance, reverse=True)
 
-    def aggregate(self, descriptor_filter=None):
-        return aggregate_descriptors(self.descriptors, descriptor_filter, self.version_to_tag)
+    def aggregate(self, descriptor_filter=None, node_filter=None):
+        return aggregate_descriptors(self.descriptors, descriptor_filter, self.node_descriptors, node_filter, self.version_to_tag)
 
     @staticmethod
     def version_to_tag(version):

@@ -1,9 +1,13 @@
 import csv
+import json
+from collections import namedtuple
 
 from symbolchain.core.symbol.Network import Address
 from zenlog import log
 
 from .VersionSummary import aggregate_descriptors
+
+NodeDescriptor = namedtuple('NodeDescriptor', ['name', 'host', 'version'])
 
 
 class AccountDescriptor:
@@ -22,13 +26,24 @@ class AccountDescriptor:
 
 
 class SymbolLoader:
-    def __init__(self, account_data_filepath, category_addresses_filepath_map):
+    def __init__(self, nodes_data_filepath, account_data_filepath, category_addresses_filepath_map):
+        self.nodes_data_filepath = nodes_data_filepath
         self.account_data_filepath = account_data_filepath
         self.category_addresses_filepath_map = category_addresses_filepath_map
 
         self.descriptors = []
+        self.node_descriptors = []
 
     def load(self):
+        self._load_harvester_descriptors()
+
+        with open(self.nodes_data_filepath, 'rt') as infile:
+            self.node_descriptors = [
+                NodeDescriptor(json_node['friendlyName'], json_node['host'], self._format_version(json_node['version']))
+                for json_node in json.load(infile)
+            ]
+
+    def _load_harvester_descriptors(self):
         category_addresses_map = {}
         for category, addresses_filepath in self.category_addresses_filepath_map.items():
             log.info('loading category addresses from {}'.format(addresses_filepath))
@@ -56,9 +71,13 @@ class SymbolLoader:
                 if any(address == descriptor.address for address in addresses):
                     descriptor.categories += [category]
 
-    def aggregate(self, descriptor_filter=None):
-        return aggregate_descriptors(self.descriptors, descriptor_filter, self.version_to_tag)
+    def aggregate(self, descriptor_filter=None, node_filter=None):
+        return aggregate_descriptors(self.descriptors, descriptor_filter, self.node_descriptors, node_filter, self.version_to_tag)
 
     @staticmethod
     def version_to_tag(version):
         return 'for' if '1.0.3.0' == version else 'against'
+
+    @staticmethod
+    def _format_version(version):
+        return '{}.{}.{}.{}'.format((version >> 24) & 0xFF, (version >> 16) & 0xFF, (version >> 8) & 0xFF, version & 0xFF)
