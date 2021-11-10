@@ -38,10 +38,10 @@ class WebApp:
         self.app.title = 'Pirate Fork Progress'
 
     def reload(self):
-        self.nem_loader = NemLoader(self.resources_path / 'nem_harvesters.csv')
+        self.nem_loader = NemLoader(self.resources_path / 'nem_nodes.json', self.resources_path / 'nem_harvesters.csv')
         self.nem_loader.load()
 
-        self.symbol_loader = SymbolLoader(self.resources_path / 'symbol_richlist.csv', {
+        self.symbol_loader = SymbolLoader(self.resources_path / 'symbol_nodes.json', self.resources_path / 'symbol_richlist.csv', {
             'AllNodes': self.resources_path / 'symbol_allnodes_addresses.txt',
             'NGL': self.resources_path / 'symbol_ngl_addresses.txt',
         })
@@ -102,14 +102,18 @@ class WebApp:
             return int(response_json['height'])
 
     def make_symbol_figure(self):
-        version_summaries = self.symbol_loader.aggregate(lambda descriptor: descriptor.is_voting and 'NGL' not in descriptor.categories)
-        return self._make_bar_graph(version_summaries, 'Cyprus Hardfork Progress', 0.67, {
+        version_summaries = self.symbol_loader.aggregate(
+            lambda descriptor: descriptor.is_voting and 'NGL' not in descriptor.categories,
+            lambda descriptor: not descriptor.host.endswith('.symbolblockchain.io'))
+        return self._make_bar_graph(version_summaries, 'Cyprus Hardfork Progress (Excluding NGL)', 0.67, {
             'for': COLORS.success, 'against': COLORS.failure
         })
 
     def make_symbol_allnodes_figure(self):
-        version_summaries = self.symbol_loader.aggregate(lambda descriptor: descriptor.is_voting and 'AllNodes' in descriptor.categories)
-        return self._make_bar_graph(version_summaries, 'Cyprus Hardfork Progress (AllNodes)', 0.67, {
+        version_summaries = self.symbol_loader.aggregate(
+            lambda descriptor: descriptor.is_voting and 'AllNodes' in descriptor.categories,
+            lambda descriptor: descriptor.host.endswith('.allnodes.me'))
+        return self._make_bar_graph(version_summaries, 'Cyprus Hardfork Progress (Only AllNodes)', 0.67, {
             'for': COLORS.success, 'against': COLORS.failure
         })
 
@@ -119,6 +123,14 @@ class WebApp:
             'for': COLORS.success, 'delegating / updating': COLORS.neutral, 'against': COLORS.failure
         })
 
+    def make_nem_allnodes_figure(self):
+        version_summaries = self.nem_loader.aggregate(
+            lambda descriptor: '.allnodes.me:' in descriptor.host,
+            lambda descriptor: descriptor.host.endswith('.allnodes.me'))
+        return self._make_bar_graph(version_summaries, 'Harlock Hardfork Progress (Only AllNodes)', 0.5, {
+            'for': COLORS.success, 'against': COLORS.failure
+        })
+
     @staticmethod
     def _make_bar_graph(version_summaries, title, threshold, key_color_map):
         grouped_version_summaries = group_version_summaries_by_tag(version_summaries.values())
@@ -126,7 +138,7 @@ class WebApp:
 
         data_vectors = {'key': [], 'measure': [], 'percentage': [], 'label': []}
         for key in key_color_map:
-            for measure in ['count', 'power']:
+            for measure in ['count', 'node_count', 'power']:
                 data_vectors['key'].append(key)
                 data_vectors['measure'].append(measure)
 
@@ -193,6 +205,7 @@ class WebApp:
 
             html.H1(id='harlock-title', children=self.make_nem_title()),
             dcc.Graph(id='harlock-graph', figure=self.make_nem_figure()),
+            dcc.Graph(id='harlock-allnodes-graph', figure=self.make_nem_allnodes_figure()),
 
             html.H1(children='Cyprus Hardfork Table'),
             self.make_symbol_table(),
@@ -220,6 +233,7 @@ class WebApp:
                     self.make_symbol_allnodes_figure(),
                     self.make_nem_title(),
                     self.make_nem_figure(),
+                    self.make_nem_allnodes_figure(),
                     self.make_symbol_table().data,  # pylint: disable=no-member
                     self.make_nem_table().data  # pylint: disable=no-member
                 )
@@ -232,6 +246,7 @@ class WebApp:
             Output('cyprus-allnodes-graph', 'figure'),
             Output('harlock-title', 'children'),
             Output('harlock-graph', 'figure'),
+            Output('harlock-allnodes-graph', 'figure'),
             Output('symbol-table', 'data'),
             Output('nem-table', 'data'),
             Input('load-interval', 'n_intervals')])(update_graphs)
