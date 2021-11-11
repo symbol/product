@@ -1,18 +1,23 @@
 import argparse
+import asyncio
 import os
 from collections import namedtuple
 from pathlib import Path
 
+import aiohttp
 import dash
 import pandas as pd
 import plotly.express as px
 from dash import dash_table, dcc, html
 from dash.dependencies import Input, Output
 from dash.exceptions import PreventUpdate
+from zenlog import log
 
 from .NemLoader import NemLoader
 from .SymbolLoader import SymbolLoader
 from .VersionSummary import VersionSummary, group_version_summaries_by_tag
+
+NUM_HEIGHT_SAMPLES = 5
 
 COLORS = namedtuple('Colors', ['success', 'neutral', 'failure'])('lightgreen', 'lightyellow', 'pink')
 
@@ -41,6 +46,60 @@ class WebApp:
             'NGL': self.resources_path / 'symbol_ngl_addresses.txt',
         })
         self.symbol_loader.load()
+
+    def make_symbol_title(self):
+        height_future = self._get_height_estimate('{}/chain/info', [
+            descriptor for descriptor in self.symbol_loader.descriptors if descriptor.host.endswith(':3000')
+        ])
+        height = asyncio.run(height_future)
+
+        blocks_remaining = 689761 - height
+        hours_remaining = blocks_remaining // (2 * 60)
+        return 'Cyprus Hardfork Progress ({} blocks, {} days and {} hours to go!)'.format(
+            blocks_remaining,
+            hours_remaining // 24,
+            hours_remaining % 24)
+
+    def make_nem_title(self):
+        height_future = self._get_height_estimate('{}/chain/height', self.nem_loader.descriptors)
+        height = asyncio.run(height_future)
+
+        blocks_remaining = 3464800 - height
+        hours_remaining = blocks_remaining // 60
+        return 'Harlock Hardfork Progress ({} blocks, {} days and {} hours to go!)'.format(
+            blocks_remaining,
+            hours_remaining // 24,
+            hours_remaining % 24)
+
+    @staticmethod
+    async def _get_height_estimate(url_pattern, descriptors):
+        hosts = []
+        for descriptor in descriptors:
+            if not descriptor.host:
+                continue
+
+            hosts.append(descriptor.host)
+
+            if NUM_HEIGHT_SAMPLES == len(hosts):
+                break
+
+        log.debug('querying height from hosts {{{}}}'.format(', '.join(hosts)))
+
+        async with aiohttp.ClientSession() as session:
+            tasks = [asyncio.ensure_future(WebApp.get_height(session, url_pattern.format(host))) for host in hosts]
+            heights = await asyncio.gather(*tasks)
+
+        # calculate median
+        heights.sort()
+        log.debug('retrieved heights {{{}}}'.format(', '.join(str(height) for height in heights)))
+
+        return heights[len(heights) // 2]
+
+    @staticmethod
+    async def get_height(session, url):
+        async with session.get(url) as resp:
+            response_json = await resp.json()
+            return int(response_json['height'])
 
     def make_symbol_figure(self):
         version_summaries = self.symbol_loader.aggregate(lambda descriptor: descriptor.is_voting and 'NGL' not in descriptor.categories)
@@ -128,11 +187,11 @@ class WebApp:
 
     def layout(self):
         self.app.layout = html.Div(children=[
-            html.H1(children='Cyprus Hardfork Progress'),
+            html.H1(id='cyprus-title', children=self.make_symbol_title()),
             dcc.Graph(id='cyprus-graph', figure=self.make_symbol_figure()),
             dcc.Graph(id='cyprus-allnodes-graph', figure=self.make_symbol_allnodes_figure()),
 
-            html.H1(children='Harlock Hardfork Progress'),
+            html.H1(id='harlock-title', children=self.make_nem_title()),
             dcc.Graph(id='harlock-graph', figure=self.make_nem_figure()),
 
             html.H1(children='Cyprus Hardfork Table'),
@@ -152,19 +211,26 @@ class WebApp:
             mtime = os.path.getmtime(self.resources_path / 'nem_harvesters.csv')
             if mtime > self.mtime:
                 self.mtime = mtime
-                print(f'Updating at check {n_intervals}, modified time: {mtime}')
+                log.debug(f'Updating at check {n_intervals}, modified time: {mtime}')
                 self.reload()
-                symbol_figure = self.make_symbol_figure()
-                symbol_allnodes_figure = self.make_symbol_allnodes_figure()
-                nem_figure = self.make_nem_figure()
-                symbol_table = self.make_symbol_table()
-                nem_table = self.make_nem_table()
-                return symbol_figure, symbol_allnodes_figure, nem_figure, symbol_table.data, nem_table.data  # pylint: disable=no-member
+
+                return (
+                    self.make_symbol_title(),
+                    self.make_symbol_figure(),
+                    self.make_symbol_allnodes_figure(),
+                    self.make_nem_title(),
+                    self.make_nem_figure(),
+                    self.make_symbol_table().data,  # pylint: disable=no-member
+                    self.make_nem_table().data  # pylint: disable=no-member
+                )
+
             raise PreventUpdate()
 
         self.app.callback([
+            Output('cyprus-title', 'children'),
             Output('cyprus-graph', 'figure'),
             Output('cyprus-allnodes-graph', 'figure'),
+            Output('harlock-title', 'children'),
             Output('harlock-graph', 'figure'),
             Output('symbol-table', 'data'),
             Output('nem-table', 'data'),
