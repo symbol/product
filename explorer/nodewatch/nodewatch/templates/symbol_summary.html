@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+
+{% block title %}
+  NEM Summary
+{% endblock %}
+
+
+{% block header %}
+  <h2 class="text-center py-4">Harlock Hardfork Progress</h2>
+{% endblock %}
+
+{% block content %}
+  <h3 class="text-center">Voting Power</h3>
+  <span class="text-left">
+    Any account that has a minimum voting balance and has a voting public key registered at the current epoch is considered to be an active voter.
+    Total voting power is estimated by identifying all of these accounts and summing their importances.
+    A fork is successful if it attracts a 2/3 supermajority of network voting power.
+  </span>
+  <div id='voting-power-chart' class='chart'></div>
+
+  <h3 class="text-center">Harvesting Power</h3>
+  <span class="text-left">
+    Any account that has harvested a block in the last 3.5 days is considered to be an active harvester.
+    Total harvesting power is estimated by identifying all of these accounts and summing their importances.
+
+    Any nodes that are unresponsive at the time of report generation are placed in the yellow 'delegating / updating' bucket.
+    For delegates, an enhancement would be to identify the status of the node(s) to which they're delegating.
+  </span>
+  <div id='harvesting-power-chart' class='chart'></div>
+
+  <h3 class="text-center">Harvester Count (Includes Delegates)</h3>
+  <span class="text-left">
+    Count of active harvesters.
+  </span>
+  <div id='harvesting-count-chart' class='chart'></div>
+
+  <h3 class="text-center">Node Count</h3>
+  <span class="text-left">
+    Count of nodes that are currently reachable in the network.
+  </span>
+  <div id='node-count-chart' class='chart'></div>
+
+  <script src='https://cdn.plot.ly/plotly-latest.min.js'></script>
+  <script type='text/javascript'>
+    Plotly.newPlot('voting-power-chart', {{ voting_power_chart_json | safe }})
+    Plotly.newPlot('harvesting-power-chart', {{ harvesting_power_chart_json | safe }})
+    Plotly.newPlot('harvesting-count-chart', {{ harvesting_count_chart_json | safe }})
+    Plotly.newPlot('node-count-chart', {{ node_count_chart_json | safe }})
+  </script>
+{% endblock %}

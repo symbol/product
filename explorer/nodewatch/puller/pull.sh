@@ -1,33 +1,44 @@
 #!/bin/bash
 
+echo "$0: generating files in \"$1\""
+
 echo "[$(date)] crawling Symbol network"
 
-python -m network.nodes \
+python3 -m network.nodes \
 	--resources ./networks/symbol.yaml \
 	--thread-count 64 \
 	--certs ./cert \
-	--output ../resources/symbol_nodes.json
+	--output "$1/symbol_nodes.json"
 
 echo "[$(date)] downloading Symbol richlist"
 
-python -m network.richlist_symbol \
+python3 -m network.richlist_symbol \
 	--resources ./networks/symbol.yaml \
 	--min-balance 250000 \
-	--nodes ../resources/symbol_nodes.json \
-	--output ../resources/symbol_richlist.csv
+	--nodes "$1/symbol_nodes.json" \
+	--output "$1/symbol_richlist.csv"
+
+echo "[$(date)] downloading Symbol harvesters"
+
+python3 -m network.harvester \
+	--resources ./networks/symbol.yaml \
+	--thread-count 64 \
+	--nodes "$1/symbol_nodes.json" \
+	--days 3.5 \
+	--output "$1/symbol_harvesters.csv"
 
 echo "[$(date)] crawling NEM network"
 
-python -m network.nodes \
+python3 -m network.nodes \
 	--resources ./networks/nem.yaml \
 	--thread-count 64 \
-	--output ../resources/nem_nodes.json
+	--output "$1/nem_nodes.json"
 
 echo "[$(date)] downloading NEM harvesters"
 
-python -m network.harvester_nem \
+python3 -m network.harvester \
 	--resources ./networks/nem.yaml \
 	--thread-count 64 \
-	--nodes ../resources/nem_nodes.json \
+	--nodes "$1/nem_nodes.json" \
 	--days 3.5 \
-	--output ../resources/nem_harvesters.csv
+	--output "$1/nem_harvesters.csv"

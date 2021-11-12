@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+
+{% block title %}
+{{ title }}
+{% endblock %}
+
+{% block header %}
+  <h2 class="text-center py-4">{{ title }}</h2>
+{% endblock %}
+
+{% block content %}
+  <table class="table">
+    <thead>
+      <tr>
+        <th>id</th>
+        <th>address</th>
+        <th>name</th>
+        <th>endpoint</th>
+
+        {% if show_balance %}
+        <th>balance</th>
+        {% endif %}
+
+        <th>version</th>
+
+        {% if show_voting %}
+        <th>voting end epoch</th>
+        {% endif %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for descriptor in descriptors %}
+      <tr class="{{ 'table-' + version_to_css_class(descriptor.version) }}">
+        <th scope="row">{{ loop.index }}</th>
+        <td class='text-monospace'>
+          <a href="https://symbol.fyi/accounts/{{ descriptor.main_address }}" target="_blank">
+            {{ descriptor.main_address }}
+          </a>
+        </td>
+        <td>{{ descriptor.name }}</td>
+        <td>
+          {% if descriptor.endpoint.endswith(":3000") %}
+          <a href="{{ descriptor.endpoint }}/node/info" target="_blank">
+            {{ descriptor.endpoint }}
+          </a>
+          {% else %}
+          {{ descriptor.endpoint }}
+          {% endif %}
+        </td>
+
+        {% if show_balance %}
+        <td class="text-right">{{ descriptor.balance | round | int }}</td>
+        {% endif %}
+
+        <td>{{ descriptor.version }}</td>
+
+        {% if show_voting %}
+        <td>{{ descriptor.voting_end_epoch }}</td>
+        {% endif %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}
