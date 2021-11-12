@@ -1,7 +1,6 @@
 friendly_name: symbol
 ticker_name: symbol
 currency_symbol: xym
-premarket_price: 0
 
 accounts: []
 

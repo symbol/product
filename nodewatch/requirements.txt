@@ -1,5 +1,6 @@
 aiohttp==3.8.0
 aiosignal==1.2.0
+APScheduler==3.8.1
 astroid==2.5.8
 async-timeout==4.0.0
 attrs==21.2.0
