@@ -13,6 +13,4 @@ jobs:
   include:
     - stage: lint
       script:
-        - isort --check-only --line-length 140 webapp
-        - pycodestyle --config=.pycodestyle -- webapp
-        - pylint --load-plugins pylint_quotes -- webapp
+        - sh ./lint.sh
