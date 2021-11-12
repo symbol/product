@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+
+{% block title %}
+{{ title }}
+{% endblock %}
+
+{% block header %}
+  <h2 class="text-center py-4">{{ title }}</h2>
+{% endblock %}
+
+{% block content %}
+  <table class="table">
+    <thead>
+      <tr>
+        <th>id</th>
+        <th>address</th>
+        <th>name</th>
+        <th>endpoint</th>
+
+        {% if show_balance %}
+        <th>balance</th>
+        {% endif %}
+
+        <th>version</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for descriptor in descriptors %}
+      <tr class="{{ 'table-' + version_to_css_class(descriptor.version) }}">
+        <th scope="row">{{ loop.index }}</th>
+        <td class='text-monospace'>
+          <a href="https://explorer.nemtool.com/#/s_account?account={{ descriptor.main_address }}" target="_blank">
+            {{ descriptor.main_address }}
+          </a>
+        </td>
+        <td>{{ descriptor.name }}</td>
+        <td>
+          <a href="{{ descriptor.endpoint }}/node/info" target="_blank">
+            {{ descriptor.endpoint }}
+          </a>
+        </td>
+
+        {% if show_balance %}
+        <td class="text-right">{{ descriptor.balance | round | int }}</td>
+        {% endif %}
+
+        <td>{{ descriptor.version }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}
