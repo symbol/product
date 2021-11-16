@@ -53,8 +53,7 @@ def create_app():
             'nem_nodes.html',
             title='NEM Recent Harvesters',
             descriptors=nem_repository.harvester_descriptors,
-            version_to_css_class=nem_version_to_css_class,
-            show_balance=True)
+            version_to_css_class=nem_version_to_css_class)
 
     @app.route('/nem/nodes')
     def nem_nodes():  # pylint: disable=unused-variable
@@ -99,7 +98,6 @@ def create_app():
             title='Symbol Voters',
             descriptors=[descriptor for descriptor in symbol_repository.voter_descriptors if descriptor.is_voting],
             version_to_css_class=symbol_version_to_css_class,
-            show_balance=True,
             show_voting=True)
 
     @app.route('/symbol/harvesters')
@@ -108,8 +106,7 @@ def create_app():
             'symbol_nodes.html',
             title='Symbol Recent Harvesters',
             descriptors=symbol_repository.harvester_descriptors,
-            version_to_css_class=symbol_version_to_css_class,
-            show_balance=True)
+            version_to_css_class=symbol_version_to_css_class)
 
     @app.route('/symbol/nodes')
     def symbol_nodes():  # pylint: disable=unused-variable
