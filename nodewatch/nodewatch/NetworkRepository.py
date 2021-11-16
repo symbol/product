@@ -9,7 +9,7 @@ from symbolchain.core.symbol.Network import Address as SymbolAddress
 from symbolchain.core.symbol.Network import Network as SymbolNetwork
 from zenlog import log
 
-NodeDescriptor = namedtuple('NodeDescriptor', ['main_address', 'name', 'endpoint', 'version'])
+NodeDescriptor = namedtuple('NodeDescriptor', ['main_address', 'name', 'endpoint', 'version', 'height', 'finalized_height', 'balance'])
 
 
 class HarvesterDescriptor:
@@ -18,8 +18,10 @@ class HarvesterDescriptor:
         self.main_address = address_class(harvester_dict['main_address'])
         self.endpoint = harvester_dict['host']
         self.name = harvester_dict['name']
-        self.balance = float(harvester_dict['balance'])
+        self.height = int(harvester_dict['height'])
+        self.finalized_height = int(harvester_dict['finalized_height'])
         self.version = harvester_dict['version']
+        self.balance = float(harvester_dict['balance'])
 
 
 class SymbolAccountDescriptor:
@@ -61,7 +63,10 @@ class NetworkRepository:
                 NemNetwork.MAINNET.public_key_to_address(PublicKey(json_node['identity']['public-key'])),
                 json_node['identity']['name'],
                 '{}://{}:{}'.format(json_node['endpoint']['protocol'], json_node['endpoint']['host'], json_node['endpoint']['port']),
-                json_node['metaData']['version'])
+                json_node['metaData']['version'],
+                json_node['extraData']['height'],
+                0,
+                json_node['extraData']['balance'])
 
         symbol_endpoint = ''
         if json_node['host']:
@@ -70,7 +75,10 @@ class NetworkRepository:
             SymbolNetwork.MAINNET.public_key_to_address(PublicKey(json_node['publicKey'])),
             json_node['friendlyName'],
             symbol_endpoint,
-            self._format_symbol_version(json_node['version']))
+            self._format_symbol_version(json_node['version']),
+            json_node['extraData']['height'],
+            json_node['extraData']['finalizedHeight'],
+            json_node['extraData']['balance'])
 
     @staticmethod
     def _format_symbol_version(version):
@@ -81,7 +89,9 @@ class NetworkRepository:
 
         address_class = NemAddress if self.is_nem else SymbolAddress
         with open(harvesters_data_filepath, 'rt') as infile:
-            csv_reader = csv.DictReader(infile, ['signer_address', 'main_address', 'host', 'name', 'balance',  'version'])
+            csv_reader = csv.DictReader(infile, [
+                'signer_address', 'main_address', 'host', 'name', 'height', 'finalized_height', 'version', 'balance'
+            ])
             next(csv_reader)  # skip header
 
             self.harvester_descriptors = [HarvesterDescriptor(row, address_class) for row in csv_reader]
@@ -94,7 +104,8 @@ class NetworkRepository:
 
         with open(accounts_data_filepath, 'rt') as infile:
             csv_reader = csv.DictReader(infile, [
-                'address', 'balance', 'is_voting', 'has_ever_voted', 'voting_end_epoch', 'host', 'name', 'version'
+                'address', 'balance', 'is_voting', 'has_ever_voted', 'voting_end_epoch',
+                'host', 'name', 'height', 'finalized_height', 'version'
             ])
             next(csv_reader)  # skip header
 

@@ -16,12 +16,10 @@
         <th>address</th>
         <th>name</th>
         <th>endpoint</th>
-
-        {% if show_balance %}
         <th>balance</th>
-        {% endif %}
-
         <th>version</th>
+        <th>height</th>
+        <th>finalized height</th>
 
         {% if show_voting %}
         <th>voting end epoch</th>
@@ -47,12 +45,10 @@
           {{ descriptor.endpoint }}
           {% endif %}
         </td>
-
-        {% if show_balance %}
         <td class="text-right">{{ descriptor.balance | round | int }}</td>
-        {% endif %}
-
         <td>{{ descriptor.version }}</td>
+        <td>{{ descriptor.height }}</td>
+        <td>{{ descriptor.finalized_height }}</td>
 
         {% if show_voting %}
         <td>{{ descriptor.voting_end_epoch }}</td>
