@@ -24,7 +24,7 @@ def symbol_version_to_css_class(version):
     tag = 'danger'
     if not version:
         tag = 'warning'
-    if '1.0.3.0' == version:
+    if version.startswith('1.0.3.'):
         tag = 'success'
 
     return tag
@@ -70,13 +70,13 @@ def create_app():
         height_builder.add(nem_repository.node_descriptors, 'height', 'height')
 
         version_builder = VersionChartBuilder({
-            '0.6.99': ('#006400', 1),
-            '0.6.98': ('#008000', 2),
-            '0.6.98-BETA': ('#2E8B57', 3),
+            '0.6.99': ('#006400', 7),
+            '0.6.98': ('#008000', 6),
+            '0.6.98-BETA': ('#2E8B57', 5),
             'delegating / updating': ('#FCFFA4', 4),
-            '0.6.97-BETA': ('#DC143C', 5),
-            '0.6.96-BETA': ('#FF4500', 6),
-            '0.6.95-BETA': ('#FF0000', 7)
+            '0.6.97-BETA': ('#DC143C', 3),
+            '0.6.96-BETA': ('#FF4500', 2),
+            '0.6.95-BETA': ('#FF0000', 1)
         })
         version_builder.add(nem_repository.harvester_descriptors, 'harvesting_power', 'harvesting_count')
         version_builder.add(nem_repository.node_descriptors, None, 'node_count')
@@ -128,11 +128,12 @@ def create_app():
         height_builder.add(symbol_repository.node_descriptors, 'finalized_height', 'finalized height')
 
         version_builder = VersionChartBuilder({
-            '1.0.3.0': ('#006400', 1),
-            'delegating / updating': ('#FCFFA4', 2),
+            '1.0.3.1': ('#006400', 6),
+            '1.0.3.0': ('#008000', 5),
+            'delegating / updating': ('#FCFFA4', 4),
             '1.0.2.0': ('#DC143C', 3),
-            '1.0.1.0': ('#FF4500', 4),
-            '0.0.0.0': ('#FF0000', 5)
+            '1.0.1.0': ('#FF4500', 2),
+            '0.0.0.0': ('#FF0000', 1)
         })
         version_builder.add([descriptor for descriptor in symbol_repository.voter_descriptors if descriptor.is_voting], 'voting_power')
         version_builder.add(symbol_repository.harvester_descriptors, 'harvesting_power', 'harvesting_count')
