@@ -16,7 +16,7 @@ class DataPoint:
         self.node_count = 0
 
 
-class BarChartBuilder:
+class VersionChartBuilder:
     def __init__(self, version_customizations):
         self.all = {}
         self.allnodes = {}

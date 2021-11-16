@@ -4,9 +4,10 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from flask import Flask, redirect, render_template, url_for
 from zenlog import log
 
-from .BarChartBuilder import BarChartBuilder
+from .HeightChartBuilder import HeightChartBuilder
 from .NetworkConnector import NetworkConnector
 from .NetworkRepository import NetworkRepository
+from .VersionChartBuilder import VersionChartBuilder
 
 
 def nem_version_to_css_class(version):
@@ -65,7 +66,10 @@ def create_app():
 
     @app.route('/nem/summary')
     def nem_summary():  # pylint: disable=unused-variable
-        builder = BarChartBuilder({
+        height_builder = HeightChartBuilder()
+        height_builder.add(nem_repository.node_descriptors, 'height', 'height')
+
+        version_builder = VersionChartBuilder({
             '0.6.99': ('#006400', 1),
             '0.6.98': ('#008000', 2),
             '0.6.98-BETA': ('#2E8B57', 3),
@@ -74,14 +78,15 @@ def create_app():
             '0.6.96-BETA': ('#FF4500', 6),
             '0.6.95-BETA': ('#FF0000', 7)
         })
-        builder.add(nem_repository.harvester_descriptors, 'harvesting_power', 'harvesting_count')
-        builder.add(nem_repository.node_descriptors, None, 'node_count')
+        version_builder.add(nem_repository.harvester_descriptors, 'harvesting_power', 'harvesting_count')
+        version_builder.add(nem_repository.node_descriptors, None, 'node_count')
 
         return render_template(
             'nem_summary.html',
-            harvesting_power_chart_json=builder.create_chart('harvesting_power', 0.5),
-            harvesting_count_chart_json=builder.create_chart('harvesting_count'),
-            node_count_chart_json=builder.create_chart('node_count'))
+            height_chart_json=height_builder.create_chart(),
+            harvesting_power_chart_json=version_builder.create_chart('harvesting_power', 0.5),
+            harvesting_count_chart_json=version_builder.create_chart('harvesting_count'),
+            node_count_chart_json=version_builder.create_chart('node_count'))
 
     @app.route('/nem/height')
     def nem_height():  # pylint: disable=unused-variable
@@ -118,23 +123,28 @@ def create_app():
 
     @app.route('/symbol/summary')
     def symbol_summary():  # pylint: disable=unused-variable
-        builder = BarChartBuilder({
+        height_builder = HeightChartBuilder()
+        height_builder.add(symbol_repository.node_descriptors, 'height', 'height')
+        height_builder.add(symbol_repository.node_descriptors, 'finalized_height', 'finalized height')
+
+        version_builder = VersionChartBuilder({
             '1.0.3.0': ('#006400', 1),
             'delegating / updating': ('#FCFFA4', 2),
             '1.0.2.0': ('#DC143C', 3),
             '1.0.1.0': ('#FF4500', 4),
             '0.0.0.0': ('#FF0000', 5)
         })
-        builder.add([descriptor for descriptor in symbol_repository.voter_descriptors if descriptor.is_voting], 'voting_power')
-        builder.add(symbol_repository.harvester_descriptors, 'harvesting_power', 'harvesting_count')
-        builder.add(symbol_repository.node_descriptors, None, 'node_count')
+        version_builder.add([descriptor for descriptor in symbol_repository.voter_descriptors if descriptor.is_voting], 'voting_power')
+        version_builder.add(symbol_repository.harvester_descriptors, 'harvesting_power', 'harvesting_count')
+        version_builder.add(symbol_repository.node_descriptors, None, 'node_count')
 
         return render_template(
             'symbol_summary.html',
-            voting_power_chart_json=builder.create_chart('voting_power', 0.67),
-            harvesting_power_chart_json=builder.create_chart('harvesting_power'),
-            harvesting_count_chart_json=builder.create_chart('harvesting_count'),
-            node_count_chart_json=builder.create_chart('node_count'))
+            height_chart_json=height_builder.create_chart(),
+            voting_power_chart_json=version_builder.create_chart('voting_power', 0.67),
+            harvesting_power_chart_json=version_builder.create_chart('harvesting_power'),
+            harvesting_count_chart_json=version_builder.create_chart('harvesting_count'),
+            node_count_chart_json=version_builder.create_chart('node_count'))
 
     @app.route('/symbol/height')
     def symbol_height():  # pylint: disable=unused-variable
