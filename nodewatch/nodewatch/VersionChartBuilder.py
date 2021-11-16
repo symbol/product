@@ -52,7 +52,7 @@ class VersionChartBuilder:
         self._append_bar_sections(sections, self.all, measure, 'All')
         self._append_bar_sections(sections, self.allnodes, measure, 'All Nodes')
         self._append_bar_sections(sections, self.ex_allnodes, measure, 'Ex All Nodes')
-        sections.sort(key=lambda section: self.version_customizations.get(section.version, (None, 1000))[1])
+        sections.sort(key=lambda section: self.version_customizations.get(section.version, (None, 0))[1], reverse=True)
 
         data_vectors = {'version': [], 'group': [], 'percentage': [], 'label': []}
         for section in sections:
