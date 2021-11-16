@@ -10,6 +10,12 @@
 {% endblock %}
 
 {% block content %}
+  <h3 class="text-center">Heights</h3>
+  <span class="text-left">
+    Plot of network-wide heights and finalized heights.
+  </span>
+  <div id='height-chart' class='chart'></div>
+
   <h3 class="text-center">Voting Power</h3>
   <span class="text-left">
     Any account that has a minimum voting balance and has a voting public key registered at the current epoch is considered to be an active voter.
@@ -42,6 +48,7 @@
 
   <script src='https://cdn.plot.ly/plotly-latest.min.js'></script>
   <script type='text/javascript'>
+    Plotly.newPlot('height-chart', {{ height_chart_json | safe }})
     Plotly.newPlot('voting-power-chart', {{ voting_power_chart_json | safe }})
     Plotly.newPlot('harvesting-power-chart', {{ harvesting_power_chart_json | safe }})
     Plotly.newPlot('harvesting-count-chart', {{ harvesting_count_chart_json | safe }})
