@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "$0: generating files in \"$1\""
+echo "$0: generating files in \"$1\" with timeout \"$2\""
 
 echo "[$(date)] crawling Symbol network"
 
@@ -8,7 +8,8 @@ python3 -m network.nodes \
 	--resources ./networks/symbol.yaml \
 	--thread-count 64 \
 	--certs ./cert \
-	--output "$1/symbol_nodes.json"
+	--output "$1/symbol_nodes.json" \
+	--timeout "$2"
 
 echo "[$(date)] downloading Symbol richlist"
 
@@ -32,7 +33,8 @@ echo "[$(date)] crawling NEM network"
 python3 -m network.nodes \
 	--resources ./networks/nem.yaml \
 	--thread-count 64 \
-	--output "$1/nem_nodes.json"
+	--output "$1/nem_nodes.json" \
+	--timeout "$2"
 
 echo "[$(date)] downloading NEM harvesters"
 
