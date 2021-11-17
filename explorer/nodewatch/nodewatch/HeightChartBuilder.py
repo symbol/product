@@ -44,6 +44,9 @@ class HeightChartBuilder:
             power_field = '{}_power'.format(height_field)
 
             for height, data_point in self.all.items():
+                if not height:
+                    continue
+
                 count = getattr(data_point, count_field)
                 power = getattr(data_point, power_field)
                 if not count:
