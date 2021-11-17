@@ -25,6 +25,8 @@ class HarvesterDescriptor:
 
 
 class SymbolAccountDescriptor:
+    # pylint: disable=too-many-instance-attributes
+
     def __init__(self, account_dict):
         self.main_address = SymbolAddress(account_dict['address'])
         self.balance = float(account_dict['balance'])
@@ -33,6 +35,8 @@ class SymbolAccountDescriptor:
         self.voting_end_epoch = int(account_dict['voting_end_epoch'])
         self.endpoint = account_dict['host']
         self.name = account_dict['name']
+        self.height = int(account_dict['height'])
+        self.finalized_height = int(account_dict['finalized_height'])
         self.version = account_dict['version']
 
 
@@ -58,15 +62,19 @@ class NetworkRepository:
         self.node_descriptors.sort(key=lambda descriptor: descriptor.name)
 
     def _create_descriptor_from_json(self, json_node):
+        # network crawler extracts as much extra data as possible, but it might not always be available for all nodes
+        extra_data = (0, 0, 0)
+        if 'extraData' in json_node:
+            json_extra_data = json_node['extraData']
+            extra_data = (json_extra_data.get('height', 0), json_extra_data.get('finalizedHeight', 0), json_extra_data.get('balance', 0))
+
         if self.is_nem:
             return NodeDescriptor(
                 NemNetwork.MAINNET.public_key_to_address(PublicKey(json_node['identity']['public-key'])),
                 json_node['identity']['name'],
                 '{}://{}:{}'.format(json_node['endpoint']['protocol'], json_node['endpoint']['host'], json_node['endpoint']['port']),
                 json_node['metaData']['version'],
-                json_node['extraData']['height'],
-                0,
-                json_node['extraData']['balance'])
+                *extra_data)
 
         symbol_endpoint = ''
         if json_node['host']:
@@ -76,9 +84,7 @@ class NetworkRepository:
             json_node['friendlyName'],
             symbol_endpoint,
             self._format_symbol_version(json_node['version']),
-            json_node['extraData']['height'],
-            json_node['extraData']['finalizedHeight'],
-            json_node['extraData']['balance'])
+            *extra_data)
 
     @staticmethod
     def _format_symbol_version(version):

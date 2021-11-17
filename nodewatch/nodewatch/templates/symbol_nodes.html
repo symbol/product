@@ -47,8 +47,8 @@
         </td>
         <td class="text-right">{{ descriptor.balance | round | int }}</td>
         <td>{{ descriptor.version }}</td>
-        <td>{{ descriptor.height }}</td>
-        <td>{{ descriptor.finalized_height }}</td>
+        <td>{{ '' if not descriptor.height else descriptor.height }}</td>
+        <td>{{ '' if not descriptor.finalized_height else descriptor.finalized_height }}</td>
 
         {% if show_voting %}
         <td>{{ descriptor.voting_end_epoch }}</td>
