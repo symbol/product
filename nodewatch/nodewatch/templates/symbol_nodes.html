@@ -35,7 +35,17 @@
             {{ descriptor.main_address }}
           </a>
         </td>
-        <td>{{ descriptor.name }}</td>
+        <td>
+          {{ descriptor.name }}
+          {% if show_voting %}
+            {% if 'PREVOTE' in descriptor.current_epoch_votes %}
+              <span class="badge badge-pill badge-info">V</span>
+            {% endif %}
+            {% if 'PRECOMMIT' in descriptor.current_epoch_votes %}
+              <span class="badge badge-pill badge-success">C</span>
+            {% endif %}
+          {% endif %}
+        </td>
         <td>
           {% if descriptor.endpoint.endswith(":3000") %}
           <a href="{{ descriptor.endpoint }}/node/info" target="_blank">
