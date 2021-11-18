@@ -33,6 +33,7 @@ class SymbolAccountDescriptor:
         self.is_voting = 'True' == account_dict['is_voting']
         self.has_ever_voted = 'True' == account_dict['has_ever_voted']
         self.voting_end_epoch = int(account_dict['voting_end_epoch'])
+        self.current_epoch_votes = account_dict['current_epoch_votes'].split('|')
         self.endpoint = account_dict['host']
         self.name = account_dict['name']
         self.height = int(account_dict['height'])
@@ -110,7 +111,7 @@ class NetworkRepository:
 
         with open(accounts_data_filepath, 'rt') as infile:
             csv_reader = csv.DictReader(infile, [
-                'address', 'balance', 'is_voting', 'has_ever_voted', 'voting_end_epoch',
+                'address', 'balance', 'is_voting', 'has_ever_voted', 'voting_end_epoch', 'current_epoch_votes',
                 'host', 'name', 'height', 'finalized_height', 'version'
             ])
             next(csv_reader)  # skip header
