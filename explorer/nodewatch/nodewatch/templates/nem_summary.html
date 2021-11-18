@@ -39,11 +39,11 @@
   </span>
   <div id='node-count-chart' class='chart'></div>
 
-  <script src='https://cdn.plot.ly/plotly-latest.min.js'></script>
-  <script type='text/javascript'>
-    Plotly.newPlot('height-chart', {{ height_chart_json | safe }})
-    Plotly.newPlot('harvesting-power-chart', {{ harvesting_power_chart_json | safe }})
-    Plotly.newPlot('harvesting-count-chart', {{ harvesting_count_chart_json | safe }})
-    Plotly.newPlot('node-count-chart', {{ node_count_chart_json | safe }})
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+  <script type="text/javascript">
+    Plotly.newPlot('height-chart', {{ height_chart_json | safe }});
+    Plotly.newPlot('harvesting-power-chart', {{ harvesting_power_chart_json | safe }});
+    Plotly.newPlot('harvesting-count-chart', {{ harvesting_count_chart_json | safe }});
+    Plotly.newPlot('node-count-chart', {{ node_count_chart_json | safe }});
   </script>
 {% endblock %}

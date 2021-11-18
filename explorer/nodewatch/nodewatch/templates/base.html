@@ -55,22 +55,22 @@
 
   <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.6.1/js/bootstrap.min.js"></script>
-  <script type='text/javascript'>
+  <script type="text/javascript">
     function update_nem_height() {
-      fetch("{{ url_for('nem_height') }}", {headers: {'Content-Type': 'application/json'} })
+      fetch('{{ url_for("nem_height") }}', {headers: {'Content-Type': 'application/json'} })
         .then(response => response.json())
         .then(response => {
           const height = response['height'];
-          const blocks_remaining = 3464800 - height
-          let minutes_remaining = blocks_remaining
+          const blocks_remaining = 3464800 - height;
+          let minutes_remaining = blocks_remaining;
 
-          const days_remaining = (minutes_remaining / (60 * 24)) | 0
-          minutes_remaining -= days_remaining * 60 * 24
+          const days_remaining = (minutes_remaining / (60 * 24)) | 0;
+          minutes_remaining -= days_remaining * 60 * 24;
 
-          const hours_remaining = (minutes_remaining / 60) | 0
-          minutes_remaining -= hours_remaining * 60
+          const hours_remaining = (minutes_remaining / 60) | 0;
+          minutes_remaining -= hours_remaining * 60;
 
-          const formatted_time_remaining = `${days_remaining} days, ${hours_remaining} hours and ${minutes_remaining} minutes`
+          const formatted_time_remaining = `${days_remaining} days, ${hours_remaining} hours and ${minutes_remaining} minutes`;
 
           $('#nem-block-height').text(`${height} (${blocks_remaining} blocks, ${formatted_time_remaining} until HARLOCK!`);
           setTimeout(update_nem_height, 30000);
@@ -78,7 +78,7 @@
     };
 
     function update_symbol_height() {
-      fetch("{{ url_for('symbol_height') }}", {headers: {'Content-Type': 'application/json'} })
+      fetch('{{ url_for("symbol_height") }}', {headers: {'Content-Type': 'application/json'} })
         .then(response => response.json())
         .then(response => {
           const height = response['height'];
@@ -90,4 +90,7 @@
     update_nem_height();
     update_symbol_height();
   </script>
+
+  {% block scripts %}{% endblock %}
+
 </body>

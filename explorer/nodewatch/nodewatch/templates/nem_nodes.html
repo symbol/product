@@ -30,7 +30,7 @@
             {{ descriptor.main_address }}
           </a>
         </td>
-        <td>{{ descriptor.name }}</td>
+        <td class="bbcode">{{ descriptor.name }}</td>
         <td>
           <a href="{{ descriptor.endpoint }}/node/info" target="_blank">
             {{ descriptor.endpoint }}
@@ -43,4 +43,15 @@
       {% endfor %}
     </tbody>
   </table>
+{% endblock %}
+
+{% block scripts %}
+  <script src="{{ url_for('static', filename='scripts/xbbcode.js') }}"></script>
+  <script type="text/javascript">
+    $('td.bbcode').each((index, element) => {
+      const raw_text = $(element).text();
+      const formatted_html = XBBCODE.process({text: raw_text, removeMisalignedTags: true, addInLineBreaks: false}).html;
+      $(element).html(formatted_html);
+    });
+  </script>
 {% endblock %}
