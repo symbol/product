@@ -10,9 +10,15 @@
 {% endblock %}
 
 {% block content %}
+  <h3 class="text-center">Cyprus Heights</h3>
+  <span class="text-left">
+    Plot of network-wide heights and finalized heights for nodes that have upgraded to Cyprus.
+  </span>
+  <div id='cyprus-height-chart' class='chart'></div>
+
   <h3 class="text-center">Heights</h3>
   <span class="text-left">
-    Plot of network-wide heights and finalized heights.
+    Plot of network-wide heights and finalized heights for all nodes.
   </span>
   <div id='height-chart' class='chart'></div>
 
@@ -48,6 +54,7 @@
 
   <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
   <script type="text/javascript">
+    Plotly.newPlot('cyprus-height-chart', {{ cyprus_height_chart_json | safe }});
     Plotly.newPlot('height-chart', {{ height_chart_json | safe }});
     Plotly.newPlot('voting-power-chart', {{ voting_power_chart_json | safe }});
     Plotly.newPlot('harvesting-power-chart', {{ harvesting_power_chart_json | safe }});
