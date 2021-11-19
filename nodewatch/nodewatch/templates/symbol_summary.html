@@ -74,7 +74,8 @@
       fetch('{{ url_for("symbol_chart_height") }}', {headers: {'Content-Type': 'application/json'} })
         .then(response => response.json())
         .then(response => {
-          Plotly.newPlot('height-chart', response);
+          Plotly.newPlot('height-chart', $.parseJSON(response.chart_json));
+          $('#last-refresh-time').text(response.last_refresh_time);
           setTimeout(update_height_charts, 30000);
         });
     };
