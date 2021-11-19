@@ -1,9 +1,10 @@
 import json
 from collections import namedtuple
 
-import pandas as pd
 import plotly
 import plotly.express as px
+
+from .chart_utils import VersionAggregator, pods_to_dataframe
 
 BarSection = namedtuple('BarSection', ['version', 'percentage', 'label', 'group'])
 
@@ -18,9 +19,9 @@ class DataPoint:
 
 class VersionChartBuilder:
     def __init__(self, version_customizations):
-        self.all = {}
-        self.allnodes = {}
-        self.ex_allnodes = {}
+        self.all = VersionAggregator(DataPoint)
+        self.allnodes = VersionAggregator(DataPoint)
+        self.ex_allnodes = VersionAggregator(DataPoint)
         self.version_customizations = version_customizations
 
     def add(self, descriptors, balance_field=None, count_field=None):
@@ -30,45 +31,26 @@ class VersionChartBuilder:
         def _is_not_all_nodes(descriptor):
             return not _is_all_nodes(descriptor)
 
-        self._process(self.all, descriptors, balance_field, count_field)
-        self._process(self.allnodes, filter(_is_all_nodes, descriptors), balance_field, count_field)
-        self._process(self.ex_allnodes, filter(_is_not_all_nodes, descriptors), balance_field, count_field)
-
-    @staticmethod
-    def _process(version_data_point_map, descriptors, balance_field, count_field):
-        for descriptor in descriptors:
-            if descriptor.version not in version_data_point_map:
-                version_data_point_map[descriptor.version] = DataPoint()
-
-            data_point = version_data_point_map[descriptor.version]
-            if balance_field:
-                setattr(data_point, balance_field, getattr(data_point, balance_field) + descriptor.balance)
-
-            if count_field:
-                setattr(data_point, count_field, getattr(data_point, count_field) + 1)
+        self.all.add(descriptors, balance_field, count_field)
+        self.allnodes.add(filter(_is_all_nodes, descriptors), balance_field, count_field)
+        self.ex_allnodes.add(filter(_is_not_all_nodes, descriptors), balance_field, count_field)
 
     def create_chart(self, measure, threshold=None):
         sections = []
-        self._append_bar_sections(sections, self.all, measure, 'All')
-        self._append_bar_sections(sections, self.allnodes, measure, 'All Nodes')
-        self._append_bar_sections(sections, self.ex_allnodes, measure, 'Ex All Nodes')
-        sections.sort(key=lambda section: self.version_customizations.get(section.version, (None, 0))[1], reverse=True)
+        self._append_bar_sections(sections, self.all.map, measure, 'All')
+        self._append_bar_sections(sections, self.allnodes.map, measure, 'All Nodes')
+        self._append_bar_sections(sections, self.ex_allnodes.map, measure, 'Ex All Nodes')
 
-        data_vectors = {'version': [], 'group': [], 'percentage': [], 'label': []}
-        for section in sections:
-            data_vectors['version'].append(section.version)
-            data_vectors['group'].append(section.group)
-            data_vectors['percentage'].append(section.percentage)
-            data_vectors['label'].append(section.label)
+        sections.sort(key=lambda section: self.version_customizations.get_weight(section.version), reverse=True)
+        data_frame = pods_to_dataframe(sections)
 
-        data_frame = pd.DataFrame(data_vectors)
         figure = px.bar(
             data_frame,
             y='group',
             x='percentage',
             color='version',
             text='label',
-            color_discrete_map={version: tuple[0] for version, tuple in self.version_customizations.items()},
+            color_discrete_map=self.version_customizations.to_color_map(),
             orientation='h')
 
         figure.update_layout(yaxis={'categoryorder': 'array', 'categoryarray': ['Ex All Nodes', 'All Nodes', 'All']})

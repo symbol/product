@@ -4,11 +4,39 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from flask import Flask, redirect, render_template, url_for
 from zenlog import log
 
+from .chart_utils import VersionCustomizations
 from .HeightChartBuilder import HeightChartBuilder
 from .NetworkConnector import NetworkConnector
 from .NetworkRepository import NetworkRepository
 from .VersionChartBuilder import VersionChartBuilder
 
+# region constants
+
+MIN_HEIGHT_CLUSTER_SIZE = 3
+
+NEM_VERSION_CUSTOMIZATIONS = VersionCustomizations({
+    '0.6.99': ('#006400', 7),
+    '0.6.98': ('#008000', 6),
+    '0.6.98-BETA': ('#2E8B57', 5),
+    'delegating / updating': ('#FCFFA4', 4),
+    '0.6.97-BETA': ('#DC143C', 3),
+    '0.6.96-BETA': ('#FF4500', 2),
+    '0.6.95-BETA': ('#FF0000', 1)
+})
+
+SYMBOL_VERSION_CUSTOMIZATIONS = VersionCustomizations({
+    '1.0.3.1': ('#006400', 6),
+    '1.0.3.0': ('#008000', 5),
+    'delegating / updating': ('#FCFFA4', 4),
+    '1.0.2.0': ('#DC143C', 3),
+    '1.0.1.0': ('#FF4500', 2),
+    '0.0.0.0': ('#FF0000', 1)
+})
+
+
+# endregion
+
+# region css mappings
 
 def nem_version_to_css_class(version):
     tag = 'danger'
@@ -29,6 +57,8 @@ def symbol_version_to_css_class(version):
 
     return tag
 
+
+# endregion
 
 def create_app():
     # pylint: disable=too-many-locals
@@ -66,18 +96,10 @@ def create_app():
 
     @app.route('/nem/summary')
     def nem_summary():  # pylint: disable=unused-variable
-        height_builder = HeightChartBuilder()
-        height_builder.add(nem_repository.node_descriptors, 'height', 'height')
+        height_builder = HeightChartBuilder(NEM_VERSION_CUSTOMIZATIONS, MIN_HEIGHT_CLUSTER_SIZE)
+        height_builder.add_heights(nem_repository.node_descriptors)
 
-        version_builder = VersionChartBuilder({
-            '0.6.99': ('#006400', 7),
-            '0.6.98': ('#008000', 6),
-            '0.6.98-BETA': ('#2E8B57', 5),
-            'delegating / updating': ('#FCFFA4', 4),
-            '0.6.97-BETA': ('#DC143C', 3),
-            '0.6.96-BETA': ('#FF4500', 2),
-            '0.6.95-BETA': ('#FF0000', 1)
-        })
+        version_builder = VersionChartBuilder(NEM_VERSION_CUSTOMIZATIONS)
         version_builder.add(nem_repository.harvester_descriptors, 'harvesting_power', 'harvesting_count')
         version_builder.add(nem_repository.node_descriptors, None, 'node_count')
 
@@ -123,24 +145,25 @@ def create_app():
 
     @app.route('/symbol/summary')
     def symbol_summary():  # pylint: disable=unused-variable
-        height_builder = HeightChartBuilder()
-        height_builder.add(symbol_repository.node_descriptors, 'height', 'height')
-        height_builder.add(symbol_repository.node_descriptors, 'finalized_height', 'finalized height')
+        cyprus_node_descriptors = [
+            descriptor for descriptor in symbol_repository.node_descriptors if 'success' == symbol_version_to_css_class(descriptor.version)
+        ]
+        cyprus_height_builder = HeightChartBuilder(SYMBOL_VERSION_CUSTOMIZATIONS, MIN_HEIGHT_CLUSTER_SIZE)
+        cyprus_height_builder.add_heights(cyprus_node_descriptors)
+        cyprus_height_builder.add_finalized_heights(cyprus_node_descriptors)
 
-        version_builder = VersionChartBuilder({
-            '1.0.3.1': ('#006400', 6),
-            '1.0.3.0': ('#008000', 5),
-            'delegating / updating': ('#FCFFA4', 4),
-            '1.0.2.0': ('#DC143C', 3),
-            '1.0.1.0': ('#FF4500', 2),
-            '0.0.0.0': ('#FF0000', 1)
-        })
+        height_builder = HeightChartBuilder(SYMBOL_VERSION_CUSTOMIZATIONS, MIN_HEIGHT_CLUSTER_SIZE)
+        height_builder.add_heights(symbol_repository.node_descriptors)
+        height_builder.add_finalized_heights(symbol_repository.node_descriptors)
+
+        version_builder = VersionChartBuilder(SYMBOL_VERSION_CUSTOMIZATIONS)
         version_builder.add([descriptor for descriptor in symbol_repository.voter_descriptors if descriptor.is_voting], 'voting_power')
         version_builder.add(symbol_repository.harvester_descriptors, 'harvesting_power', 'harvesting_count')
         version_builder.add(symbol_repository.node_descriptors, None, 'node_count')
 
         return render_template(
             'symbol_summary.html',
+            cyprus_height_chart_json=cyprus_height_builder.create_chart(),
             height_chart_json=height_builder.create_chart(),
             voting_power_chart_json=version_builder.create_chart('voting_power', 0.67),
             harvesting_power_chart_json=version_builder.create_chart('harvesting_power'),
