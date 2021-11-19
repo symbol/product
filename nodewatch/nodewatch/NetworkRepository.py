@@ -1,6 +1,5 @@
 import csv
 import json
-from collections import namedtuple
 
 from symbolchain.core.CryptoTypes import PublicKey
 from symbolchain.core.nem.Network import Address as NemAddress
@@ -9,7 +8,18 @@ from symbolchain.core.symbol.Network import Address as SymbolAddress
 from symbolchain.core.symbol.Network import Network as SymbolNetwork
 from zenlog import log
 
-NodeDescriptor = namedtuple('NodeDescriptor', ['main_address', 'name', 'endpoint', 'version', 'height', 'finalized_height', 'balance'])
+
+class NodeDescriptor:
+    def __init__(self, main_address=None, name=None, endpoint=None, version=None, height=0, finalized_height=0, balance=0):
+        # pylint: disable=too-many-arguments
+
+        self.main_address = main_address
+        self.name = name
+        self.endpoint = endpoint
+        self.version = version
+        self.height = height
+        self.finalized_height = finalized_height
+        self.balance = balance
 
 
 class HarvesterDescriptor:
@@ -52,6 +62,11 @@ class NetworkRepository:
     @property
     def is_nem(self):
         return 'nem' == self.network_name
+
+    def estimate_height(self):
+        heights = [descriptor.height for descriptor in self.node_descriptors]
+        heights.sort()
+        return heights[round(len(heights) / 2)]
 
     def load_node_descriptors(self, nodes_data_filepath):
         log.info('loading nodes from {}'.format(nodes_data_filepath))

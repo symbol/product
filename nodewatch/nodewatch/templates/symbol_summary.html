@@ -62,3 +62,23 @@
     Plotly.newPlot('node-count-chart', {{ node_count_chart_json | safe }});
   </script>
 {% endblock %}
+
+{% block scripts %}
+  <script type="text/javascript">
+    function update_height_charts() {
+      fetch('{{ url_for("symbol_chart_height_cyprus") }}', {headers: {'Content-Type': 'application/json'} })
+        .then(response => response.json())
+        .then(response => {
+          Plotly.newPlot('cyprus-height-chart', response);
+        });
+      fetch('{{ url_for("symbol_chart_height") }}', {headers: {'Content-Type': 'application/json'} })
+        .then(response => response.json())
+        .then(response => {
+          Plotly.newPlot('height-chart', response);
+          setTimeout(update_height_charts, 30000);
+        });
+    };
+
+    setTimeout(update_height_charts, 30000);
+  </script>
+ {% endblock %}
