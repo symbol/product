@@ -4,7 +4,6 @@
   NEM Summary
 {% endblock %}
 
-
 {% block header %}
   <h2 class="text-center py-4">Symbol Network Statistics</h2>
 {% endblock %}
@@ -54,6 +53,7 @@
 
   <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
   <script type="text/javascript">
+    Plotly.setPlotConfig({responsive: true});
     Plotly.newPlot('cyprus-height-chart', {{ cyprus_height_chart_json | safe }});
     Plotly.newPlot('height-chart', {{ height_chart_json | safe }});
     Plotly.newPlot('voting-power-chart', {{ voting_power_chart_json | safe }});
