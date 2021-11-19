@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -10,55 +11,147 @@ from .NetworkConnector import NetworkConnector
 from .NetworkRepository import NetworkRepository
 from .VersionChartBuilder import VersionChartBuilder
 
-# region constants
-
 MIN_HEIGHT_CLUSTER_SIZE = 3
 
-NEM_VERSION_CUSTOMIZATIONS = VersionCustomizations({
-    '0.6.99': ('#006400', 7),
-    '0.6.98': ('#008000', 6),
-    '0.6.98-BETA': ('#2E8B57', 5),
-    'delegating / updating': ('#FCFFA4', 4),
-    '0.6.97-BETA': ('#DC143C', 3),
-    '0.6.96-BETA': ('#FF4500', 2),
-    '0.6.95-BETA': ('#FF0000', 1)
-})
 
-SYMBOL_VERSION_CUSTOMIZATIONS = VersionCustomizations({
-    '1.0.3.1': ('#006400', 6),
-    '1.0.3.0': ('#008000', 5),
-    'delegating / updating': ('#FCFFA4', 4),
-    '1.0.2.0': ('#DC143C', 3),
-    '1.0.1.0': ('#FF4500', 2),
-    '0.0.0.0': ('#FF0000', 1)
-})
+# region routes facades
+
+class BasicRoutesFacade:
+    def __init__(self, network_name, title_network_name, version_to_css_class, version_customizations):
+        self.network_name = network_name
+        self.title_network_name = title_network_name
+        self.version_to_css_class = version_to_css_class
+        self.version_customizations = VersionCustomizations(version_customizations)
+
+        self.repository = NetworkRepository(self.network_name)
+
+    def html_harvesters(self):
+        return render_template(
+            '{}_nodes.html'.format(self.network_name),
+            title='{} Recent Harvesters'.format(self.title_network_name),
+            descriptors=self.repository.harvester_descriptors,
+            version_to_css_class=self.version_to_css_class)
+
+    def html_nodes(self):
+        return render_template(
+            '{}_nodes.html'.format(self.network_name),
+            title='{} Nodes'.format(self.title_network_name),
+            descriptors=self.repository.node_descriptors,
+            version_to_css_class=self.version_to_css_class)
+
+    def json_height_chart(self):
+        height_builder = HeightChartBuilder(self.version_customizations, MIN_HEIGHT_CLUSTER_SIZE)
+        height_builder.add_heights(self.repository.node_descriptors)
+        height_builder.add_finalized_heights(self.repository.node_descriptors)
+        return height_builder.create_chart()
+
+    def json_height(self):
+        return json.dumps({'height': self.repository.estimate_height()})
+
+    def reload_all(self, resources_path):
+        self.repository.load_node_descriptors(resources_path / '{}_nodes.json'.format(self.network_name))
+        self.repository.load_harvester_descriptors(resources_path / '{}_harvesters.csv'.format(self.network_name))
+
+        voters_filepath = resources_path / '{}_richlist.csv'.format(self.network_name)
+        if voters_filepath.exists():
+            self.repository.load_voter_descriptors(voters_filepath)
+
+    def refresh_heights(self):
+        NetworkConnector(self.network_name).update_heights(self.repository.node_descriptors)
+
+
+class NemRoutesFacade(BasicRoutesFacade):
+    def __init__(self):
+        super().__init__('nem', 'NEM', self._version_to_css_class, {
+            '0.6.99': ('#006400', 7),
+            '0.6.98': ('#008000', 6),
+            '0.6.98-BETA': ('#2E8B57', 5),
+            'delegating / updating': ('#FCFFA4', 4),
+            '0.6.97-BETA': ('#DC143C', 3),
+            '0.6.96-BETA': ('#FF4500', 2),
+            '0.6.95-BETA': ('#FF0000', 1)
+        })
+
+    def html_summary(self):
+        version_builder = VersionChartBuilder(self.version_customizations)
+        version_builder.add(self.repository.harvester_descriptors, 'harvesting_power', 'harvesting_count')
+        version_builder.add(self.repository.node_descriptors, None, 'node_count')
+
+        return render_template(
+            '{}_summary.html'.format(self.network_name),
+            height_chart_json=self.json_height_chart(),
+            harvesting_power_chart_json=version_builder.create_chart('harvesting_power', 0.5),
+            harvesting_count_chart_json=version_builder.create_chart('harvesting_count'),
+            node_count_chart_json=version_builder.create_chart('node_count'))
+
+    @staticmethod
+    def _version_to_css_class(version):
+        tag = 'danger'
+        if not version:
+            tag = 'warning'
+        if '0.6.98' in version or '0.6.99' in version:
+            tag = 'success'
+
+        return tag
+
+
+class SymbolRoutesFacade(BasicRoutesFacade):
+    def __init__(self):
+        super().__init__('symbol', 'Symbol', self._version_to_css_class, {
+            '1.0.3.1': ('#006400', 6),
+            '1.0.3.0': ('#008000', 5),
+            'delegating / updating': ('#FCFFA4', 4),
+            '1.0.2.0': ('#DC143C', 3),
+            '1.0.1.0': ('#FF4500', 2),
+            '0.0.0.0': ('#FF0000', 1)
+        })
+
+    def html_voters(self):
+        return render_template(
+            '{}_nodes.html'.format(self.network_name),
+            title='{} Voters'.format(self.title_network_name),
+            descriptors=[descriptor for descriptor in self.repository.voter_descriptors if descriptor.is_voting],
+            version_to_css_class=self.version_to_css_class,
+            show_voting=True)
+
+    def html_summary(self):
+        version_builder = VersionChartBuilder(self.version_customizations)
+        version_builder.add([descriptor for descriptor in self.repository.voter_descriptors if descriptor.is_voting], 'voting_power')
+        version_builder.add(self.repository.harvester_descriptors, 'harvesting_power', 'harvesting_count')
+        version_builder.add(self.repository.node_descriptors, None, 'node_count')
+
+        return render_template(
+            '{}_summary.html'.format(self.network_name),
+            cyprus_height_chart_json=self.json_height_chart_cyprus(),
+            height_chart_json=self.json_height_chart(),
+            voting_power_chart_json=version_builder.create_chart('voting_power', 0.67),
+            harvesting_power_chart_json=version_builder.create_chart('harvesting_power'),
+            harvesting_count_chart_json=version_builder.create_chart('harvesting_count'),
+            node_count_chart_json=version_builder.create_chart('node_count'))
+
+    def json_height_chart_cyprus(self):
+        cyprus_node_descriptors = [
+            descriptor for descriptor in self.repository.node_descriptors if 'success' == self.version_to_css_class(descriptor.version)
+        ]
+        cyprus_height_builder = HeightChartBuilder(self.version_customizations, MIN_HEIGHT_CLUSTER_SIZE)
+        cyprus_height_builder.add_heights(cyprus_node_descriptors)
+        cyprus_height_builder.add_finalized_heights(cyprus_node_descriptors)
+        return cyprus_height_builder.create_chart()
+
+    @staticmethod
+    def _version_to_css_class(version):
+        tag = 'danger'
+        if not version:
+            tag = 'warning'
+        if version.startswith('1.0.3.'):
+            tag = 'success'
+
+        return tag
 
 
 # endregion
 
-# region css mappings
-
-def nem_version_to_css_class(version):
-    tag = 'danger'
-    if not version:
-        tag = 'warning'
-    if '0.6.98' in version or '0.6.99' in version:
-        tag = 'success'
-
-    return tag
-
-
-def symbol_version_to_css_class(version):
-    tag = 'danger'
-    if not version:
-        tag = 'warning'
-    if version.startswith('1.0.3.'):
-        tag = 'success'
-
-    return tag
-
-
-# endregion
+# region app
 
 def create_app():
     # pylint: disable=too-many-locals
@@ -69,127 +162,78 @@ def create_app():
     resources_path = Path(app.config.get('RESOURCES_PATH'))
     log.info('loading resources from {}'.format(resources_path))
 
-    nem_repository = NetworkRepository('nem')
-    symbol_repository = NetworkRepository('symbol')
+    nem_routes_facade = NemRoutesFacade()
+    symbol_routes_facade = SymbolRoutesFacade()
 
     @app.route('/')
     def index():  # pylint: disable=unused-variable
         return redirect(url_for('nem_summary'))
 
-    # region nem routes
-
     @app.route('/nem/harvesters')
     def nem_harvesters():  # pylint: disable=unused-variable
-        return render_template(
-            'nem_nodes.html',
-            title='NEM Recent Harvesters',
-            descriptors=nem_repository.harvester_descriptors,
-            version_to_css_class=nem_version_to_css_class)
+        return nem_routes_facade.html_harvesters()
 
     @app.route('/nem/nodes')
     def nem_nodes():  # pylint: disable=unused-variable
-        return render_template(
-            'nem_nodes.html',
-            title='NEM Nodes',
-            descriptors=nem_repository.node_descriptors,
-            version_to_css_class=nem_version_to_css_class)
+        return nem_routes_facade.html_nodes()
 
     @app.route('/nem/summary')
     def nem_summary():  # pylint: disable=unused-variable
-        height_builder = HeightChartBuilder(NEM_VERSION_CUSTOMIZATIONS, MIN_HEIGHT_CLUSTER_SIZE)
-        height_builder.add_heights(nem_repository.node_descriptors)
+        return nem_routes_facade.html_summary()
 
-        version_builder = VersionChartBuilder(NEM_VERSION_CUSTOMIZATIONS)
-        version_builder.add(nem_repository.harvester_descriptors, 'harvesting_power', 'harvesting_count')
-        version_builder.add(nem_repository.node_descriptors, None, 'node_count')
-
-        return render_template(
-            'nem_summary.html',
-            height_chart_json=height_builder.create_chart(),
-            harvesting_power_chart_json=version_builder.create_chart('harvesting_power', 0.5),
-            harvesting_count_chart_json=version_builder.create_chart('harvesting_count'),
-            node_count_chart_json=version_builder.create_chart('node_count'))
+    @app.route('/nem/chart/height')
+    def nem_chart_height():  # pylint: disable=unused-variable
+        return nem_routes_facade.json_height_chart()
 
     @app.route('/nem/height')
     def nem_height():  # pylint: disable=unused-variable
-        return NetworkConnector('nem').get_height(nem_repository.node_descriptors)
-
-    # endregion
-
-    # region symbol routes
+        return nem_routes_facade.json_height()
 
     @app.route('/symbol/voters')
     def symbol_voters():  # pylint: disable=unused-variable
-        return render_template(
-            'symbol_nodes.html',
-            title='Symbol Voters',
-            descriptors=[descriptor for descriptor in symbol_repository.voter_descriptors if descriptor.is_voting],
-            version_to_css_class=symbol_version_to_css_class,
-            show_voting=True)
+        return symbol_routes_facade.html_voters()
 
     @app.route('/symbol/harvesters')
     def symbol_harvesters():  # pylint: disable=unused-variable
-        return render_template(
-            'symbol_nodes.html',
-            title='Symbol Recent Harvesters',
-            descriptors=symbol_repository.harvester_descriptors,
-            version_to_css_class=symbol_version_to_css_class)
+        return symbol_routes_facade.html_harvesters()
 
     @app.route('/symbol/nodes')
     def symbol_nodes():  # pylint: disable=unused-variable
-        return render_template(
-            'symbol_nodes.html',
-            title='Symbol Nodes',
-            descriptors=symbol_repository.node_descriptors,
-            version_to_css_class=symbol_version_to_css_class)
+        return symbol_routes_facade.html_nodes()
 
     @app.route('/symbol/summary')
     def symbol_summary():  # pylint: disable=unused-variable
-        cyprus_node_descriptors = [
-            descriptor for descriptor in symbol_repository.node_descriptors if 'success' == symbol_version_to_css_class(descriptor.version)
-        ]
-        cyprus_height_builder = HeightChartBuilder(SYMBOL_VERSION_CUSTOMIZATIONS, MIN_HEIGHT_CLUSTER_SIZE)
-        cyprus_height_builder.add_heights(cyprus_node_descriptors)
-        cyprus_height_builder.add_finalized_heights(cyprus_node_descriptors)
+        return symbol_routes_facade.html_summary()
 
-        height_builder = HeightChartBuilder(SYMBOL_VERSION_CUSTOMIZATIONS, MIN_HEIGHT_CLUSTER_SIZE)
-        height_builder.add_heights(symbol_repository.node_descriptors)
-        height_builder.add_finalized_heights(symbol_repository.node_descriptors)
+    @app.route('/symbol/chart/height-cyprus')
+    def symbol_chart_height_cyprus():  # pylint: disable=unused-variable
+        return symbol_routes_facade.json_height_chart_cyprus()
 
-        version_builder = VersionChartBuilder(SYMBOL_VERSION_CUSTOMIZATIONS)
-        version_builder.add([descriptor for descriptor in symbol_repository.voter_descriptors if descriptor.is_voting], 'voting_power')
-        version_builder.add(symbol_repository.harvester_descriptors, 'harvesting_power', 'harvesting_count')
-        version_builder.add(symbol_repository.node_descriptors, None, 'node_count')
-
-        return render_template(
-            'symbol_summary.html',
-            cyprus_height_chart_json=cyprus_height_builder.create_chart(),
-            height_chart_json=height_builder.create_chart(),
-            voting_power_chart_json=version_builder.create_chart('voting_power', 0.67),
-            harvesting_power_chart_json=version_builder.create_chart('harvesting_power'),
-            harvesting_count_chart_json=version_builder.create_chart('harvesting_count'),
-            node_count_chart_json=version_builder.create_chart('node_count'))
+    @app.route('/symbol/chart/height')
+    def symbol_chart_height():  # pylint: disable=unused-variable
+        return symbol_routes_facade.json_height_chart()
 
     @app.route('/symbol/height')
     def symbol_height():  # pylint: disable=unused-variable
-        return NetworkConnector('symbol').get_height(symbol_repository.node_descriptors)
-
-    # endregion
+        return symbol_routes_facade.json_height()
 
     def reload_all():
         log.debug('reloading all data')
+        nem_routes_facade.reload_all(resources_path)
+        symbol_routes_facade.reload_all(resources_path)
 
-        nem_repository.load_node_descriptors(resources_path / 'nem_nodes.json')
-        nem_repository.load_harvester_descriptors(resources_path / 'nem_harvesters.csv')
-
-        symbol_repository.load_node_descriptors(resources_path / 'symbol_nodes.json')
-        symbol_repository.load_harvester_descriptors(resources_path / 'symbol_harvesters.csv')
-        symbol_repository.load_voter_descriptors(resources_path / 'symbol_richlist.csv')
+    def refresh_heights():
+        log.debug('refreshing heights')
+        nem_routes_facade.refresh_heights()
+        symbol_routes_facade.refresh_heights()
 
     reload_all()
 
     scheduler = BackgroundScheduler()
     scheduler.add_job(func=reload_all, trigger='interval', seconds=300)
+    scheduler.add_job(func=refresh_heights, trigger='interval', seconds=30)
     scheduler.start()
 
     return app
+
+# endregion

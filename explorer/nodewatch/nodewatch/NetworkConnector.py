@@ -1,46 +1,45 @@
 import asyncio
-import json
-import random
 
 import aiohttp
 from zenlog import log
-
-NUM_HEIGHT_SAMPLES = 5
 
 
 class NetworkConnector:
     def __init__(self, network_name):
         self.network_name = network_name
+        self.url_pattern = '{}/chain/height' if self.is_nem else '{}/chain/info'
 
-    def get_height(self, descriptors):
-        if 'nem' == self.network_name:
-            url_pattern = '{}/chain/height'
-        else:
-            url_pattern = '{}/chain/info'
+    @property
+    def is_nem(self):
+        return 'nem' == self.network_name
+
+    def update_heights(self, descriptors):
+        if not self.is_nem:
             descriptors = [descriptor for descriptor in descriptors if descriptor.endpoint.endswith(':3000')]
 
-        height_future = self._get_height_estimate(url_pattern, descriptors)
-        height = asyncio.run(height_future)
-        return json.dumps({'height': height})
+        asyncio.run(self._update_heights_async(descriptors))
 
-    @staticmethod
-    async def _get_height_estimate(url_pattern, descriptors):
-        endpoints = [descriptor.endpoint for descriptor in random.choices(descriptors, k=NUM_HEIGHT_SAMPLES)]
+    async def _update_heights_async(self, descriptors):
+        endpoints = [descriptor.endpoint for descriptor in descriptors]
 
-        log.debug('querying height from endpoints {{{}}}'.format(', '.join(endpoints)))
+        log.debug('querying height from {} endpoints for {} network'.format(len(endpoints), self.network_name))
 
         async with aiohttp.ClientSession() as session:
-            tasks = [asyncio.ensure_future(NetworkConnector._get_height(session, url_pattern.format(endpoint))) for endpoint in endpoints]
-            heights = await asyncio.gather(*tasks)
+            tasks = [
+                asyncio.ensure_future(self._update_height(session, descriptor)) for descriptor in descriptors
+            ]
+            await asyncio.gather(*tasks)
 
-        # calculate median
-        heights.sort()
-        log.debug('retrieved heights {{{}}}'.format(', '.join(str(height) for height in heights)))
+    async def _update_height(self, session, descriptor):
+        url = self.url_pattern.format(descriptor.endpoint)
 
-        return heights[len(heights) // 2]
+        try:
+            async with session.get(url, timeout=10) as response:
+                response_json = await response.json()
+                if 'height' in response_json:
+                    descriptor.height = int(response_json['height'])
 
-    @staticmethod
-    async def _get_height(session, url):
-        async with session.get(url) as response:
-            response_json = await response.json()
-            return int(response_json['height'])
+                if 'finalized_height' in response_json:
+                    descriptor.finalized_height = int(response_json['finalized_height'])
+        except (aiohttp.client_exceptions.ClientConnectorError, asyncio.exceptions.TimeoutError) as ex:
+            log.warning('failed retrieving height from endpoint "{}"\n{}'.format(descriptor.endpoint, ex))
