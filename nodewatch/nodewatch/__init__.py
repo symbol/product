@@ -1,8 +1,9 @@
+import datetime
 import json
 from pathlib import Path
 
 from apscheduler.schedulers.background import BackgroundScheduler
-from flask import Flask, redirect, render_template, url_for
+from flask import Flask, redirect, render_template, request, url_for
 from zenlog import log
 
 from .chart_utils import VersionCustomizations
@@ -12,6 +13,7 @@ from .NetworkRepository import NetworkRepository
 from .VersionChartBuilder import VersionChartBuilder
 
 MIN_HEIGHT_CLUSTER_SIZE = 3
+TIMESTAMP_FORMAT = '%H:%M'
 
 
 # region routes facades
@@ -24,6 +26,8 @@ class BasicRoutesFacade:
         self.version_customizations = VersionCustomizations(version_customizations)
 
         self.repository = NetworkRepository(self.network_name)
+        self.last_reload_time = datetime.datetime(2021, 1, 1)
+        self.last_refresh_time = None
 
     def html_harvesters(self):
         return render_template(
@@ -45,19 +49,49 @@ class BasicRoutesFacade:
         height_builder.add_finalized_heights(self.repository.node_descriptors)
         return height_builder.create_chart()
 
+    def json_height_chart_with_metadata(self):
+        return json.dumps({
+            'chart_json': self.json_height_chart(),
+            'last_refresh_time':  self.last_refresh_time.strftime(TIMESTAMP_FORMAT)
+        })
+
     def json_height(self):
         return json.dumps({'height': self.repository.estimate_height()})
 
     def reload_all(self, resources_path):
-        self.repository.load_node_descriptors(resources_path / '{}_nodes.json'.format(self.network_name))
-        self.repository.load_harvester_descriptors(resources_path / '{}_harvesters.csv'.format(self.network_name))
-
+        nodes_filepath = resources_path / '{}_nodes.json'.format(self.network_name)
+        harvesters_filepath = resources_path / '{}_harvesters.csv'.format(self.network_name)
         voters_filepath = resources_path / '{}_richlist.csv'.format(self.network_name)
+        all_filepaths = [nodes_filepath, harvesters_filepath, voters_filepath]
+
+        # nodes.json is produced by the network crawl, all other files are derived from it
+        last_crawl_timestamp = nodes_filepath.stat().st_mtime
+        last_crawl_time = datetime.datetime.utcfromtimestamp(last_crawl_timestamp)
+        if self.last_reload_time >= last_crawl_time:
+            log.debug('skipping update because crawl ({}) is not newer than reload ({})'.format(
+                last_crawl_time,
+                self.last_reload_time))
+            return
+
+        if any(filepath.exists() and filepath.stat().st_mtime < last_crawl_timestamp for filepath in all_filepaths):
+            log.debug('skipping update because some files have not been updated on disk (last crawl {}, last reload {})'.format(
+                last_crawl_time,
+                self.last_reload_time))
+            return
+
+        log.info('reloading files with crawl data from {} (previous reload {})'.format(last_crawl_time, self.last_reload_time))
+
+        self.repository.load_node_descriptors(nodes_filepath)
+        self.repository.load_harvester_descriptors(harvesters_filepath)
         if voters_filepath.exists():
             self.repository.load_voter_descriptors(voters_filepath)
 
+        self.last_reload_time = last_crawl_time
+        self.last_refresh_time = self.last_reload_time
+
     def refresh_heights(self):
         NetworkConnector(self.network_name).update_heights(self.repository.node_descriptors)
+        self.last_refresh_time = datetime.datetime.utcnow()
 
 
 class NemRoutesFacade(BasicRoutesFacade):
@@ -183,7 +217,7 @@ def create_app():
 
     @app.route('/nem/chart/height')
     def nem_chart_height():  # pylint: disable=unused-variable
-        return nem_routes_facade.json_height_chart()
+        return nem_routes_facade.json_height_chart_with_metadata()
 
     @app.route('/nem/height')
     def nem_height():  # pylint: disable=unused-variable
@@ -211,11 +245,18 @@ def create_app():
 
     @app.route('/symbol/chart/height')
     def symbol_chart_height():  # pylint: disable=unused-variable
-        return symbol_routes_facade.json_height_chart()
+        return symbol_routes_facade.json_height_chart_with_metadata()
 
     @app.route('/symbol/height')
     def symbol_height():  # pylint: disable=unused-variable
         return symbol_routes_facade.json_height()
+
+    @app.context_processor
+    def inject_timestamps():  # pylint: disable=unused-variable
+        routes_facade = nem_routes_facade if request.path.startswith('/nem') else symbol_routes_facade
+        return dict(
+            last_reload_time=routes_facade.last_reload_time.strftime(TIMESTAMP_FORMAT),
+            last_refresh_time=routes_facade.last_refresh_time.strftime(TIMESTAMP_FORMAT))
 
     def reload_all():
         log.debug('reloading all data')
