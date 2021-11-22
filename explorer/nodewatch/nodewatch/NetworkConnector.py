@@ -22,7 +22,7 @@ class NetworkConnector:
     async def _update_heights_async(self, descriptors):
         endpoints = [descriptor.endpoint for descriptor in descriptors]
 
-        log.debug('querying height from {} endpoints for {} network'.format(len(endpoints), self.network_name))
+        log.debug(f'querying height from {len(endpoints)} endpoints for {self.network_name} network')
 
         async with aiohttp.ClientSession() as session:
             tasks = [
@@ -41,5 +41,5 @@ class NetworkConnector:
 
                 if 'finalized_height' in response_json:
                     descriptor.finalized_height = int(response_json['finalized_height'])
-        except (aiohttp.client_exceptions.ClientConnectorError, asyncio.exceptions.TimeoutError) as ex:
-            log.warning('failed retrieving height from endpoint "{}"\n{}'.format(descriptor.endpoint, ex))
+        except (aiohttp.client_exceptions.ClientConnectorError, asyncio.TimeoutError) as ex:
+            log.warning(f'failed retrieving height from endpoint "{descriptor.endpoint}"\n{ex}')

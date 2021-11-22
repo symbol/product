@@ -72,5 +72,5 @@ class HeightChartBuilder:
             if count < self.min_cluster_size:
                 continue
 
-            point_label = '{}M'.format(round(power / 1000000))
+            point_label = f'{round(power / 1000000)}M'
             scatter_points.append(ScatterPoint(version, height, count, power, height_descriptor.label, point_label))

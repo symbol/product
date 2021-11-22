@@ -68,6 +68,6 @@ class VersionChartBuilder:
             friendly_version_name = version if version else 'delegating / updating'
 
             value = getattr(version_data_point_map[version], measure)
-            percentage = value / total_value
-            label = '{:.2f}%<br>({:,.0f})'.format(percentage * 100, value)
+            percentage = 100 * value / total_value
+            label = f'{percentage:.2f}%<br>({value:,.0f})'
             sections.append(BarSection(friendly_version_name, percentage, label, group))

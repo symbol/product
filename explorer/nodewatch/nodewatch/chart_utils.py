@@ -46,4 +46,4 @@ class VersionAggregator:
         if not self.secondary_key:
             return descriptor.version
 
-        return '{}@{}'.format(descriptor.version, getattr(descriptor, self.secondary_key))
+        return f'{descriptor.version}@{getattr(descriptor, self.secondary_key)}'
