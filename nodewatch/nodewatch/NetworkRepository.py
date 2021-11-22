@@ -69,9 +69,9 @@ class NetworkRepository:
         return heights[round(len(heights) / 2)]
 
     def load_node_descriptors(self, nodes_data_filepath):
-        log.info('loading nodes from {}'.format(nodes_data_filepath))
+        log.info(f'loading nodes from {nodes_data_filepath}')
 
-        with open(nodes_data_filepath, 'rt') as infile:
+        with open(nodes_data_filepath, 'rt', encoding='utf8') as infile:
             self.node_descriptors = [self._create_descriptor_from_json(json_node) for json_node in json.load(infile)]
 
         # sort by name
@@ -85,16 +85,23 @@ class NetworkRepository:
             extra_data = (json_extra_data.get('height', 0), json_extra_data.get('finalizedHeight', 0), json_extra_data.get('balance', 0))
 
         if self.is_nem:
+            node_protocol = json_node['endpoint']['protocol']
+            node_host = json_node['endpoint']['host']
+            node_port = json_node['endpoint']['port']
+
             return NodeDescriptor(
                 NemNetwork.MAINNET.public_key_to_address(PublicKey(json_node['identity']['public-key'])),
                 json_node['identity']['name'],
-                '{}://{}:{}'.format(json_node['endpoint']['protocol'], json_node['endpoint']['host'], json_node['endpoint']['port']),
+                f'{node_protocol}://{node_host}:{node_port}',
                 json_node['metaData']['version'],
                 *extra_data)
 
         symbol_endpoint = ''
         if json_node['host']:
-            symbol_endpoint = 'http://{}:{}'.format(json_node['host'], 3000 if json_node['roles'] & 2 else json_node['port'])
+            node_host = json_node['host']
+            node_port = 3000 if json_node['roles'] & 2 else json_node['port']
+            symbol_endpoint = f'http://{node_host}:{node_port}'
+
         return NodeDescriptor(
             SymbolNetwork.MAINNET.public_key_to_address(PublicKey(json_node['publicKey'])),
             json_node['friendlyName'],
@@ -104,13 +111,14 @@ class NetworkRepository:
 
     @staticmethod
     def _format_symbol_version(version):
-        return '{}.{}.{}.{}'.format((version >> 24) & 0xFF, (version >> 16) & 0xFF, (version >> 8) & 0xFF, version & 0xFF)
+        version_parts = [(version >> 24) & 0xFF, (version >> 16) & 0xFF, (version >> 8) & 0xFF, version & 0xFF]
+        return '.'.join(str(version_part) for version_part in version_parts)
 
     def load_harvester_descriptors(self, harvesters_data_filepath):
-        log.info('loading harvesters from {}'.format(harvesters_data_filepath))
+        log.info(f'loading harvesters from {harvesters_data_filepath}')
 
         address_class = NemAddress if self.is_nem else SymbolAddress
-        with open(harvesters_data_filepath, 'rt') as infile:
+        with open(harvesters_data_filepath, 'rt', encoding='utf8') as infile:
             csv_reader = csv.DictReader(infile, [
                 'signer_address', 'main_address', 'host', 'name', 'height', 'finalized_height', 'version', 'balance'
             ])
@@ -122,9 +130,9 @@ class NetworkRepository:
         self.harvester_descriptors.sort(key=lambda descriptor: descriptor.balance, reverse=True)
 
     def load_voter_descriptors(self, accounts_data_filepath):
-        log.info('loading voting accounts from {}'.format(accounts_data_filepath))
+        log.info(f'loading voting accounts from {accounts_data_filepath}')
 
-        with open(accounts_data_filepath, 'rt') as infile:
+        with open(accounts_data_filepath, 'rt', encoding='utf8') as infile:
             csv_reader = csv.DictReader(infile, [
                 'address', 'balance', 'is_voting', 'has_ever_voted', 'voting_end_epoch', 'current_epoch_votes',
                 'host', 'name', 'height', 'finalized_height', 'version'
