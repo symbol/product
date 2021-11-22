@@ -31,15 +31,15 @@ class BasicRoutesFacade:
 
     def html_harvesters(self):
         return render_template(
-            '{}_nodes.html'.format(self.network_name),
-            title='{} Recent Harvesters'.format(self.title_network_name),
+            f'{self.network_name}_nodes.html',
+            title=f'{self.title_network_name} Recent Harvesters',
             descriptors=self.repository.harvester_descriptors,
             version_to_css_class=self.version_to_css_class)
 
     def html_nodes(self):
         return render_template(
-            '{}_nodes.html'.format(self.network_name),
-            title='{} Nodes'.format(self.title_network_name),
+            f'{self.network_name}_nodes.html',
+            title=f'{self.title_network_name} Nodes',
             descriptors=self.repository.node_descriptors,
             version_to_css_class=self.version_to_css_class)
 
@@ -59,27 +59,24 @@ class BasicRoutesFacade:
         return json.dumps({'height': self.repository.estimate_height()})
 
     def reload_all(self, resources_path):
-        nodes_filepath = resources_path / '{}_nodes.json'.format(self.network_name)
-        harvesters_filepath = resources_path / '{}_harvesters.csv'.format(self.network_name)
-        voters_filepath = resources_path / '{}_richlist.csv'.format(self.network_name)
+        nodes_filepath = resources_path / f'{self.network_name}_nodes.json'
+        harvesters_filepath = resources_path / f'{self.network_name}_harvesters.csv'
+        voters_filepath = resources_path / f'{self.network_name}_richlist.csv'
         all_filepaths = [nodes_filepath, harvesters_filepath, voters_filepath]
 
         # nodes.json is produced by the network crawl, all other files are derived from it
         last_crawl_timestamp = nodes_filepath.stat().st_mtime
         last_crawl_time = datetime.datetime.utcfromtimestamp(last_crawl_timestamp)
         if self.last_reload_time >= last_crawl_time:
-            log.debug('skipping update because crawl ({}) is not newer than reload ({})'.format(
-                last_crawl_time,
-                self.last_reload_time))
+            log.debug(f'skipping update because crawl ({last_crawl_time}) is not newer than reload ({self.last_reload_time})')
             return
 
         if any(filepath.exists() and filepath.stat().st_mtime < last_crawl_timestamp for filepath in all_filepaths):
-            log.debug('skipping update because some files have not been updated on disk (last crawl {}, last reload {})'.format(
-                last_crawl_time,
-                self.last_reload_time))
+            log.debug(f'skipping update because some files have not been updated on disk (last crawl {last_crawl_time},'
+                      f' last reload {self.last_reload_time})')
             return
 
-        log.info('reloading files with crawl data from {} (previous reload {})'.format(last_crawl_time, self.last_reload_time))
+        log.info(f'reloading files with crawl data from {last_crawl_time} (previous reload {self.last_reload_time})')
 
         self.repository.load_node_descriptors(nodes_filepath)
         self.repository.load_harvester_descriptors(harvesters_filepath)
@@ -112,7 +109,7 @@ class NemRoutesFacade(BasicRoutesFacade):
         version_builder.add(self.repository.node_descriptors, None, 'node_count')
 
         return render_template(
-            '{}_summary.html'.format(self.network_name),
+            f'{self.network_name}_summary.html',
             height_chart_json=self.json_height_chart(),
             harvesting_power_chart_json=version_builder.create_chart('harvesting_power', 0.5),
             harvesting_count_chart_json=version_builder.create_chart('harvesting_count'),
@@ -142,8 +139,8 @@ class SymbolRoutesFacade(BasicRoutesFacade):
 
     def html_voters(self):
         return render_template(
-            '{}_nodes.html'.format(self.network_name),
-            title='{} Voters'.format(self.title_network_name),
+            f'{self.network_name}_nodes.html',
+            title=f'{self.title_network_name} Voters',
             descriptors=[descriptor for descriptor in self.repository.voter_descriptors if descriptor.is_voting],
             version_to_css_class=self.version_to_css_class,
             show_voting=True)
@@ -155,7 +152,7 @@ class SymbolRoutesFacade(BasicRoutesFacade):
         version_builder.add(self.repository.node_descriptors, None, 'node_count')
 
         return render_template(
-            '{}_summary.html'.format(self.network_name),
+            f'{self.network_name}_summary.html',
             cyprus_height_chart_json=self.json_height_chart_cyprus(),
             height_chart_json=self.json_height_chart(),
             voting_power_chart_json=version_builder.create_chart('voting_power', 0.67),
@@ -194,7 +191,7 @@ def create_app():
     app.config.from_envvar('NODEWATCH_SETTINGS')
 
     resources_path = Path(app.config.get('RESOURCES_PATH'))
-    log.info('loading resources from {}'.format(resources_path))
+    log.info(f'loading resources from {resources_path}')
 
     nem_routes_facade = NemRoutesFacade()
     symbol_routes_facade = SymbolRoutesFacade()
