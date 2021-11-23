@@ -94,13 +94,13 @@ class BasicRoutesFacade:
 class NemRoutesFacade(BasicRoutesFacade):
     def __init__(self):
         super().__init__('nem', 'NEM', self._version_to_css_class, {
-            '0.6.99': ('#006400', 7),
-            '0.6.98': ('#008000', 6),
-            '0.6.98-BETA': ('#2E8B57', 5),
-            'delegating / updating': ('#FCFFA4', 4),
-            '0.6.97-BETA': ('#DC143C', 3),
-            '0.6.96-BETA': ('#FF4500', 2),
-            '0.6.95-BETA': ('#FF0000', 1)
+            '0.6.100': ('#008500', 7),
+            'delegating / updating': ('#FFFF6B', 6),
+            '0.6.99': ('#FF6B6B', 5),
+            '0.6.98': ('#FF5252', 4),
+            '0.6.97-BETA': ('#FF3838', 3),
+            '0.6.96-BETA': ('#FF1F1F', 2),
+            '0.6.95-BETA': ('#FF0505', 1)
         })
 
     def html_summary(self):
@@ -111,7 +111,7 @@ class NemRoutesFacade(BasicRoutesFacade):
         return render_template(
             f'{self.network_name}_summary.html',
             height_chart_json=self.json_height_chart(),
-            harvesting_power_chart_json=version_builder.create_chart('harvesting_power', 0.5),
+            harvesting_power_chart_json=version_builder.create_chart('harvesting_power', 50),
             harvesting_count_chart_json=version_builder.create_chart('harvesting_count'),
             node_count_chart_json=version_builder.create_chart('node_count'))
 
@@ -120,7 +120,7 @@ class NemRoutesFacade(BasicRoutesFacade):
         tag = 'danger'
         if not version:
             tag = 'warning'
-        if '0.6.98' in version or '0.6.99' in version:
+        if '0.6.100' in version:
             tag = 'success'
 
         return tag
@@ -129,12 +129,12 @@ class NemRoutesFacade(BasicRoutesFacade):
 class SymbolRoutesFacade(BasicRoutesFacade):
     def __init__(self):
         super().__init__('symbol', 'Symbol', self._version_to_css_class, {
-            '1.0.3.1': ('#006400', 6),
-            '1.0.3.0': ('#008000', 5),
-            'delegating / updating': ('#FCFFA4', 4),
-            '1.0.2.0': ('#DC143C', 3),
-            '1.0.1.0': ('#FF4500', 2),
-            '0.0.0.0': ('#FF0000', 1)
+            '1.0.3.1': ('#008500', 6),
+            '1.0.3.0': ('#009E00', 5),
+            'delegating / updating': ('#FFFF6B', 4),
+            '1.0.2.0': ('#FF1F1F', 3),
+            '1.0.1.0': ('#FF0505', 2),
+            '0.0.0.0': ('#000000', 1)
         })
 
     def html_voters(self):
@@ -155,7 +155,7 @@ class SymbolRoutesFacade(BasicRoutesFacade):
             f'{self.network_name}_summary.html',
             cyprus_height_chart_json=self.json_height_chart_cyprus(),
             height_chart_json=self.json_height_chart(),
-            voting_power_chart_json=version_builder.create_chart('voting_power', 0.67),
+            voting_power_chart_json=version_builder.create_chart('voting_power', 67),
             harvesting_power_chart_json=version_builder.create_chart('harvesting_power'),
             harvesting_count_chart_json=version_builder.create_chart('harvesting_count'),
             node_count_chart_json=version_builder.create_chart('node_count'))
