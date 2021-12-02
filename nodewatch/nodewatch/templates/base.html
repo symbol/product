@@ -31,14 +31,14 @@
           </li>
         </ul>
         <div>
-          <div class="badge badge-pill badge-warning my-0 float-right">
-            NEM Height&nbsp;
-            <span id="nem-block-height">...</span>
-          </div>
-          <br/>
           <div class="badge badge-pill badge-success my-0 float-right">
             Symbol Height&nbsp;
             <span id="symbol-block-height">...</span>
+          </div>
+          <br/>
+          <div class="badge badge-pill badge-warning my-0 float-right">
+            NEM Height&nbsp;
+            <span id="nem-block-height">...</span>
           </div>
         </div>
       </div>
@@ -70,18 +70,7 @@
         .then(response => response.json())
         .then(response => {
           const height = response['height'];
-          const blocks_remaining = 3481580 - height;
-          let minutes_remaining = blocks_remaining;
-
-          const days_remaining = (minutes_remaining / (60 * 24)) | 0;
-          minutes_remaining -= days_remaining * 60 * 24;
-
-          const hours_remaining = (minutes_remaining / 60) | 0;
-          minutes_remaining -= hours_remaining * 60;
-
-          const formatted_time_remaining = `${days_remaining} days, ${hours_remaining} hours and ${minutes_remaining} minutes`;
-
-          $('#nem-block-height').text(`${height} (${blocks_remaining} blocks, ${formatted_time_remaining} until HARLOCK!`);
+          $('#nem-block-height').text(`${height} (Harlock)`);
           setTimeout(update_nem_height, 30000);
         });
     };
