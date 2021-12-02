@@ -44,9 +44,12 @@ class BasicRoutesFacade:
             version_to_css_class=self.version_to_css_class)
 
     def json_height_chart(self):
+        compatible_node_descriptors = [
+            descriptor for descriptor in self.repository.node_descriptors if 'success' == self.version_to_css_class(descriptor.version)
+        ]
         height_builder = HeightChartBuilder(self.version_customizations, MIN_HEIGHT_CLUSTER_SIZE)
-        height_builder.add_heights(self.repository.node_descriptors)
-        height_builder.add_finalized_heights(self.repository.node_descriptors)
+        height_builder.add_heights(compatible_node_descriptors)
+        height_builder.add_finalized_heights(compatible_node_descriptors)
         return height_builder.create_chart()
 
     def json_height_chart_with_metadata(self):
@@ -153,21 +156,11 @@ class SymbolRoutesFacade(BasicRoutesFacade):
 
         return render_template(
             f'{self.network_name}_summary.html',
-            cyprus_height_chart_json=self.json_height_chart_cyprus(),
             height_chart_json=self.json_height_chart(),
             voting_power_chart_json=version_builder.create_chart('voting_power', 67),
             harvesting_power_chart_json=version_builder.create_chart('harvesting_power'),
             harvesting_count_chart_json=version_builder.create_chart('harvesting_count'),
             node_count_chart_json=version_builder.create_chart('node_count'))
-
-    def json_height_chart_cyprus(self):
-        cyprus_node_descriptors = [
-            descriptor for descriptor in self.repository.node_descriptors if 'success' == self.version_to_css_class(descriptor.version)
-        ]
-        cyprus_height_builder = HeightChartBuilder(self.version_customizations, MIN_HEIGHT_CLUSTER_SIZE)
-        cyprus_height_builder.add_heights(cyprus_node_descriptors)
-        cyprus_height_builder.add_finalized_heights(cyprus_node_descriptors)
-        return cyprus_height_builder.create_chart()
 
     @staticmethod
     def _version_to_css_class(version):
@@ -198,7 +191,7 @@ def create_app():
 
     @app.route('/')
     def index():  # pylint: disable=unused-variable
-        return redirect(url_for('nem_summary'))
+        return redirect(url_for('symbol_summary'))
 
     @app.route('/nem/harvesters')
     def nem_harvesters():  # pylint: disable=unused-variable
@@ -235,10 +228,6 @@ def create_app():
     @app.route('/symbol/summary')
     def symbol_summary():  # pylint: disable=unused-variable
         return symbol_routes_facade.html_summary()
-
-    @app.route('/symbol/chart/height-cyprus')
-    def symbol_chart_height_cyprus():  # pylint: disable=unused-variable
-        return symbol_routes_facade.json_height_chart_cyprus()
 
     @app.route('/symbol/chart/height')
     def symbol_chart_height():  # pylint: disable=unused-variable

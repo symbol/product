@@ -5,10 +5,16 @@
 {% endblock %}
 
 {% block header %}
-  <h2 class="text-center py-4">Harlock Hardfork Progress</h2>
+  <h2 class="text-center py-4">NEM Network Statistics</h2>
 {% endblock %}
 
 {% block content %}
+  <h3 class="text-center">Heights</h3>
+  <span class="text-left">
+    Plot of network-wide heights.
+  </span>
+  <div id='height-chart' class='chart'></div>
+
   <h3 class="text-center">Harvesting Power</h3>
   <span class="text-left">
     Any account that has harvested a block in the last 3.5 days is considered to be an active harvester.
@@ -19,12 +25,6 @@
     For delegates, an enhancement would be to identify the status of the node(s) to which they're delegating.
   </span>
   <div id='harvesting-power-chart' class='chart'></div>
-
-  <h3 class="text-center">Heights</h3>
-  <span class="text-left">
-    Plot of network-wide heights.
-  </span>
-  <div id='height-chart' class='chart'></div>
 
   <h3 class="text-center">Harvester Count (Includes Delegates)</h3>
   <span class="text-left">
