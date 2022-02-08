@@ -15,6 +15,8 @@
  */
 
 import axios from 'axios';
+import dotenv from 'dotenv';
+dotenv.config();
 
 const endpoint = process.env.NEM_ENDPOINT;
 
@@ -29,6 +31,8 @@ const NemRequest = {
 	 * @returns {Promise<object>} Account balance.
 	 */
 	getAccountInfo: async _address => {
+		console.log('endpoint :>> ', endpoint);
+
 		try {
 			const response = await client.get(`/account/get?address=${_address}`);
 
@@ -63,7 +67,7 @@ const NemRequest = {
 			const response = await client.get(`/account/unconfirmedTransactions?address=${_address}`);
 			return { response };
 		} catch (error) {
-			console.error(`Can't get address balance ${_address}`);
+			console.error(`Can't get address unconfirmed transactions`);
 			return { error };
 		}
 	},
