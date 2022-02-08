@@ -1,0 +1,31 @@
+{
+  "name": "faucet-backend",
+  "version": "1.0.0",
+  "description": "Backend services use for faucet application (NEM / Symbol)",
+  "main": "server.js",
+  "scripts": {
+    "build": "babel src/ -d dist",
+    "start": "node dist/server.js",
+    "dev": "nodemon --exec babel-node src/server.js",
+    "lint": "eslint src/",
+    "lint:fix": "eslint src/ --fix"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^0.25.0",
+    "dotenv": "^16.0.0",
+    "nem-sdk": "^1.6.8",
+    "restify": "^8.6.0",
+    "restify-errors": "^8.0.2"
+  },
+  "devDependencies": {
+    "@babel/cli": "^7.17.0",
+    "@babel/core": "^7.17.0",
+    "@babel/node": "^7.16.8",
+    "@babel/preset-env": "^7.16.11",
+    "eslint": "^8.8.0",
+    "eslint-config-airbnb": "^19.0.4",
+    "nodemon": "^2.0.15"
+  }
+}
