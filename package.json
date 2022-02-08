@@ -2,7 +2,6 @@
   "name": "faucet-backend",
   "version": "1.0.0",
   "description": "Backend services use for faucet application (NEM / Symbol)",
-  "main": "server.js",
   "scripts": {
     "build": "babel src/ -d dist",
     "start": "node dist/server.js",
