@@ -1,0 +1,24 @@
+# Setting coverage targets per flag
+# Each project represent a package which has one flag
+coverage:
+  status:
+    project:
+      default:
+        target: 95%  # overall project / repo coverage
+
+      optin-puller:
+        target: auto
+        flags:
+          - optin-puller
+
+# New root YAML section = `flags:`
+# This is where you would define every flag from your
+# uploader, and update when new Flags added
+# Each flag is used to represent each package in the
+# monorepo.  This allows code coverage per package.
+
+flags:
+  optin-puller:
+    paths:
+      - optin/puller
+    carryforward: true
