@@ -9,7 +9,8 @@ from symbolchain.nem.Network import Network
 class ProcessError:
 	"""Represents a processing error."""
 
-	def __init__(self, transaction_hash, message):
+	def __init__(self, address, transaction_hash, message):
+		self.address = address
 		self.transaction_hash = transaction_hash
 		self.message = message
 		self.is_error = True
@@ -42,6 +43,9 @@ class Processor:
 	def _process_message(self, message_dict):
 		prefix = 'transaction message'
 
+		if not message_dict:
+			return self._make_error(f'{prefix} is not present')
+
 		if 1 != message_dict['type']:
 			return self._make_error(f'{prefix} has wrong type')
 
@@ -72,7 +76,7 @@ class Processor:
 			return self._make_error(f'{prefix} is malformed')
 
 	def _make_error(self, message):
-		return ProcessError(self.transaction_hash, message)
+		return ProcessError(self.transaction_signer_address, self.transaction_hash, message)
 
 
 def process_nem_optin_request(transaction_and_meta_dict):

@@ -21,3 +21,21 @@ class NemClient:
 	async def incoming_transactions(self, address, start_id=None):
 		"""Gets transactions for the specified account."""
 		return await self._transactions(address, 'incoming', start_id)
+
+
+async def get_incoming_transactions_from(client, address, start_height):
+	"""Uses the specified client to retrieve all transactions sent an account at or after a specified block height."""
+
+	start_id = None
+	while True:
+		transactions = await client.incoming_transactions(address, start_id)
+		if not transactions:
+			return
+
+		for transaction in transactions:
+			if transaction['meta']['height'] < start_height:
+				return
+
+			yield transaction
+
+		start_id = transactions[-1]['meta']['id']

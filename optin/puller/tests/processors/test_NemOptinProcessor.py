@@ -14,9 +14,10 @@ TRANSACTION_SIGNER_PUBLIC_KEY = PublicKey('96EB2A145211B1B7AB5F0D4B14F8ABC8D695C
 
 class PreprocessNemTest(unittest.TestCase):
 	def _assert_error(self, error, expected_message):
-		self.assertEqual(True, error.is_error)
+		self.assertEqual(TRANSACTION_SIGNER_ADDRESS, error.address)
 		self.assertEqual(TRANSACTION_HASH, error.transaction_hash)
 		self.assertEqual(expected_message, error.message)
+		self.assertEqual(True, error.is_error)
 
 	def test_fails_when_transaction_does_not_have_message(self):
 		# Act:
@@ -37,6 +38,9 @@ class PreprocessNemTest(unittest.TestCase):
 
 		# Assert:
 		self._assert_error(error, expected_error_message)
+
+	def test_fails_when_transaction_message_is_empty(self):
+		self._assert_invalid_message({}, 'transaction message is not present')
 
 	def test_fails_when_transaction_message_has_wrong_type(self):
 		self._assert_invalid_message({'type': 2}, 'transaction message has wrong type')
