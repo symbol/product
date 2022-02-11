@@ -14,9 +14,9 @@
  *
  */
 
-import nemSDK from 'nem-sdk';
+const nemSDK = require('nem-sdk');
 
-const Helper = {
+const helper = {
 	/**
    	 * Convert Absolute to Relative amount.
    	 * @param {number} amount Absolute amount.
@@ -53,7 +53,7 @@ const Helper = {
 			error = 'Address Invalid';
 
 		if (transferAmount >= maxTransferAmount)
-			error = `Transfer amount can not more than ${Helper.toRelativeAmount(maxTransferAmount)}`;
+			error = `Transfer amount can not more than ${this.toRelativeAmount(maxTransferAmount)}`;
 
 		if (receiptBalance.balance >= maxAmount)
 			error = 'Your account already has enough balance.';
@@ -68,4 +68,4 @@ const Helper = {
 	}
 };
 
-export default Helper;
+module.exports = helper;

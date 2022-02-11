@@ -1,5 +1,7 @@
-import NemRequest from '../services/nemRequest';
-import nemSDK from 'nem-sdk';
+const {
+	getNetworkTime, announceTransaction, getAccountInfo, getUnconfirmedTransactions
+} = require('../services/nemRequest');
+const nemSDK = require('nem-sdk');
 
 /**
  * Create signed transfer transaction.
@@ -35,7 +37,7 @@ const createTransferTransaction = (address, timestamp, amount) => {
 	};
 };
 
-const Nem = {
+const nem = {
 	/**
 	 * Transfer amount of Xem to specified address
 	 * @param {number} amount XEM amount in absolute value.
@@ -43,7 +45,7 @@ const Nem = {
 	 * @returns {Promise<object>} announce payload
 	 */
 	transferXem: async (amount, address) => {
-		const { response, error } = await NemRequest.getNetworkTime();
+		const { response, error } = await getNetworkTime();
 
 		if (error)
 			throw new Error(error.message);
@@ -54,7 +56,7 @@ const Nem = {
 
 		const payload = createTransferTransaction(address, networkTimestamp, amount);
 
-		const { response: result } = await NemRequest.announceTransaction(payload);
+		const { response: result } = await announceTransaction(payload);
 
 		return result.data;
 	},
@@ -64,7 +66,7 @@ const Nem = {
 	 * @returns {Promise<object>} account balance.
 	 */
 	getAccountBalance: async address => {
-		const { response, error } = await NemRequest.getAccountInfo(address);
+		const { response, error } = await getAccountInfo(address);
 
 		if (error)
 			throw new Error(error.message);
@@ -80,7 +82,7 @@ const Nem = {
 	 * @returns {Promise<array>} unconfirmed transactions.
 	 */
 	getUnconfirmedTransactions: async address => {
-		const { response, error } = await NemRequest.getUnconfirmedTransactions(address);
+		const { response, error } = await getUnconfirmedTransactions(address);
 
 		if (error)
 			throw new Error(error.message);
@@ -89,4 +91,4 @@ const Nem = {
 	}
 };
 
-export default Nem;
+module.exports = nem;

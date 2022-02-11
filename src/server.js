@@ -1,8 +1,8 @@
-import NemController from './controllers/nem';
-import Helper from './utils/helper';
-import dotenv from 'dotenv';
-import restify from 'restify';
-import restifyErrors from 'restify-errors';
+const nemController = require('./controllers/nem');
+const { nemFaucetValidation, toAbsoluteAmount, toRelativeAmount } = require('./utils/helper');
+const dotenv = require('dotenv');
+const restify = require('restify');
+const restifyErrors = require('restify-errors');
 
 dotenv.config();
 
@@ -12,7 +12,7 @@ server.use(restify.plugins.bodyParser());
 
 server.post('/claim/xem', async (req, res, next) => {
 	const receiptAddress = req.body.address;
-	const transferAmount = Helper.toAbsoluteAmount((parseInt(req.body.amount, 10) || 0));
+	const transferAmount = toAbsoluteAmount((parseInt(req.body.amount, 10) || 0));
 	const faucetAddress = process.env.NEM_FAUCET_ADDRESS;
 
 	try {
@@ -21,12 +21,12 @@ server.post('/claim/xem', async (req, res, next) => {
 			{ balance: faucetBalance },
 			unconfirmedTransactions
 		] = await Promise.all([
-			NemController.getAccountBalance(receiptAddress),
-			NemController.getAccountBalance(faucetAddress),
-			NemController.getUnconfirmedTransactions(receiptAddress)
+			nemController.getAccountBalance(receiptAddress),
+			nemController.getAccountBalance(faucetAddress),
+			nemController.getUnconfirmedTransactions(receiptAddress)
 		]);
 
-		const error = Helper.nemFaucetValidation({
+		const error = nemFaucetValidation({
 			receiptAddress,
 			transferAmount,
 			receiptBalance,
@@ -38,13 +38,13 @@ server.post('/claim/xem', async (req, res, next) => {
 			return next(new restifyErrors.BadRequestError(error));
 
 		// Announce Transfer Transaction
-		const result = await NemController.transferXem(transferAmount, receiptAddress);
+		const result = await nemController.transferXem(transferAmount, receiptAddress);
 
 		res.send({
 			code: result.code,
 			type: result.type,
 			transactionHash: result.transactionHash.data,
-			amount: Helper.toRelativeAmount(transferAmount),
+			amount: toRelativeAmount(transferAmount),
 			receiptAddress
 		});
 
