@@ -1,9 +1,13 @@
 import sqlite3
 from functools import reduce
 
+from symbolchain.nem.Network import Address as NemAddress
+from symbolchain.symbol.Network import Address as SymbolAddress
 
-class OptinDatabase:
-	"""Database containing optin information."""
+
+class CompletedOptinDatabase:
+	"""Database containing completed optin information."""
+
 	def __init__(self, connection):
 		"""Creates a database around a database connection."""
 
@@ -17,17 +21,17 @@ class OptinDatabase:
 			id integer PRIMARY KEY
 		)''')
 		cursor.execute('''CREATE TABLE nem_source (
-			address text UNIQUE,
+			address blob UNIQUE,
 			balance integer,
 			optin_id integer,
-			FOREIGN KEY (optin_id) REFERENCES optin_id(id))
-		''')
+			FOREIGN KEY (optin_id) REFERENCES optin_id(id)
+		)''')
 		cursor.execute('''CREATE TABLE symbol_destination (
-			address text,
+			address blob,
 			balance integer,
 			optin_id integer,
-			FOREIGN KEY (optin_id) REFERENCES optin_id(id))
-		''')  # address cannot be unique because merges are supported
+			FOREIGN KEY (optin_id) REFERENCES optin_id(id)
+		)''')  # address cannot be unique because merges are supported
 
 	def insert_mapping(self, nem_address_dict, symbol_address_dict):
 		"""Adds a NEM to Symbol mapping to the database."""
@@ -44,10 +48,10 @@ class OptinDatabase:
 			optin_id = cursor.lastrowid
 			cursor.executemany(
 				'''INSERT INTO nem_source VALUES (?, ?, ?)''',
-				[(address, balance, optin_id) for address, balance in nem_address_dict.items()])
+				[(NemAddress(address).bytes, balance, optin_id) for address, balance in nem_address_dict.items()])
 			cursor.executemany(
 				'''INSERT INTO symbol_destination VALUES (?, ?, ?)''',
-				[(address, balance, optin_id) for address, balance in symbol_address_dict.items()])
+				[(SymbolAddress(address).bytes, balance, optin_id) for address, balance in symbol_address_dict.items()])
 			self.connection.commit()
 		except sqlite3.IntegrityError:
 			self.connection.rollback()
@@ -55,6 +59,7 @@ class OptinDatabase:
 
 	def insert_mappings_from_json(self, mappings_json):
 		"""Adds NEM to Symbol mappings represented as a JSON object to the database."""
+
 		for mapping_json in mappings_json:
 			if 'source' not in mapping_json:
 				continue

@@ -1,43 +1,33 @@
 import sqlite3
 import unittest
 
-from puller.db.OptinDatabase import OptinDatabase
+from symbolchain.nem.Network import Address as NemAddress
+from symbolchain.symbol.Network import Address as SymbolAddress
+
+from puller.db.CompletedOptinDatabase import CompletedOptinDatabase
+
+from ..test.DatabaseTestUtils import get_all_table_names
 
 NEM_ADDRESSES = [
-	'NBMUCRGBBF7LIVQWS2AHYOEAM7NMSDHJX7SQ54GJ',
-	'NBUPC3R7PU23FTDD53KNJAFVAOXJPXEHTSHG7TBX',
-	'ND4RNHKOOWJGRTC6PJWDTYR7MPPKCTKVJWQETKGR'
+	'NBMUCRGBBF7LIVQWS2AHYOEAM7NMSDHJX7SQ54GJ', 'NBUPC3R7PU23FTDD53KNJAFVAOXJPXEHTSHG7TBX', 'ND4RNHKOOWJGRTC6PJWDTYR7MPPKCTKVJWQETKGR'
 ]
 
 
 SYMBOL_ADDRESSES = [
-	'NCU36L7K7B4I5JP5HHROFVFZYSCKKXWQI6PDT6I',
-	'NCLAZCJ36LUDVHNYZPWN67NI4V5E6VZJNZ666XY',
-	'NBLVHBI6VOMCI4QV53ZCKV5IRM7ZKCAYZYBECXQ',
+	'NCU36L7K7B4I5JP5HHROFVFZYSCKKXWQI6PDT6I', 'NCLAZCJ36LUDVHNYZPWN67NI4V5E6VZJNZ666XY', 'NBLVHBI6VOMCI4QV53ZCKV5IRM7ZKCAYZYBECXQ',
 	'NCRCD5QSQYXPOFGJS7KJFUKROMHJZLX3JWUEOLY'
 ]
 
 
-class OptinDatabaseTest(unittest.TestCase):
+class CompletedOptinDatabaseTest(unittest.TestCase):
 	# region create
 
 	def test_can_create_tables(self):
-		# Arrange:
-		with sqlite3.connect(':memory:') as connection:
-			database = OptinDatabase(connection)
+		# Act:
+		table_names = get_all_table_names(CompletedOptinDatabase)
 
-			# Act:
-			database.create_tables()
-
-			cursor = connection.cursor()
-			tables = cursor.execute('''SELECT name FROM sqlite_master
-				WHERE type = 'table'
-				ORDER BY 1;
-			''')
-			table_names = set(tuple[0] for tuple in tables)
-
-			# Assert:
-			self.assertEqual(set(['optin_id', 'nem_source', 'symbol_destination']), table_names)
+		# Assert:
+		self.assertEqual(set(['optin_id', 'nem_source', 'symbol_destination']), table_names)
 
 	# endregion
 
@@ -64,7 +54,7 @@ class OptinDatabaseTest(unittest.TestCase):
 		with sqlite3.connect(':memory:') as connection:
 			mappings = one_or_more_mappings if isinstance(one_or_more_mappings, list) else [one_or_more_mappings]
 
-			database = OptinDatabase(connection)
+			database = CompletedOptinDatabase(connection)
 			database.create_tables()
 
 			# Act:
@@ -79,9 +69,9 @@ class OptinDatabaseTest(unittest.TestCase):
 			{NEM_ADDRESSES[0]: 558668349881393},
 			{SYMBOL_ADDRESSES[0]: 558668349881393}
 		), [
-			(NEM_ADDRESSES[0], 558668349881393, 1)
+			(NemAddress(NEM_ADDRESSES[0]).bytes, 558668349881393, 1)
 		], [
-			(SYMBOL_ADDRESSES[0], 558668349881393, 1)
+			(SymbolAddress(SYMBOL_ADDRESSES[0]).bytes, 558668349881393, 1)
 		])
 
 	def test_can_insert_merge_with_matching_balances(self):
@@ -89,10 +79,10 @@ class OptinDatabaseTest(unittest.TestCase):
 			{NEM_ADDRESSES[0]: 43686866144523, NEM_ADDRESSES[1]: 16108065258303},
 			{SYMBOL_ADDRESSES[0]: 59794931402826}
 		), [
-			(NEM_ADDRESSES[0], 43686866144523, 1),
-			(NEM_ADDRESSES[1], 16108065258303, 1)
+			(NemAddress(NEM_ADDRESSES[0]).bytes, 43686866144523, 1),
+			(NemAddress(NEM_ADDRESSES[1]).bytes, 16108065258303, 1)
 		], [
-			(SYMBOL_ADDRESSES[0], 59794931402826, 1)
+			(SymbolAddress(SYMBOL_ADDRESSES[0]).bytes, 59794931402826, 1)
 		])
 
 	def test_can_insert_multi_with_matching_balances(self):
@@ -100,12 +90,12 @@ class OptinDatabaseTest(unittest.TestCase):
 			{NEM_ADDRESSES[0]: 43686866144523, NEM_ADDRESSES[1]: 16108065258303},
 			{SYMBOL_ADDRESSES[0]: 33686866144523, SYMBOL_ADDRESSES[1]: 26108065200000, SYMBOL_ADDRESSES[2]: 58303},
 		), [
-			(NEM_ADDRESSES[0], 43686866144523, 1),
-			(NEM_ADDRESSES[1], 16108065258303, 1)
+			(NemAddress(NEM_ADDRESSES[0]).bytes, 43686866144523, 1),
+			(NemAddress(NEM_ADDRESSES[1]).bytes, 16108065258303, 1)
 		], [
-			(SYMBOL_ADDRESSES[0], 33686866144523, 1),
-			(SYMBOL_ADDRESSES[1], 26108065200000, 1),
-			(SYMBOL_ADDRESSES[2], 58303, 1)
+			(SymbolAddress(SYMBOL_ADDRESSES[0]).bytes, 33686866144523, 1),
+			(SymbolAddress(SYMBOL_ADDRESSES[1]).bytes, 26108065200000, 1),
+			(SymbolAddress(SYMBOL_ADDRESSES[2]).bytes, 58303, 1)
 		])
 
 	def test_can_insert_multiple_mappings_with_matching_balances(self):
@@ -119,14 +109,14 @@ class OptinDatabaseTest(unittest.TestCase):
 				{SYMBOL_ADDRESSES[1]: 33686866144523, SYMBOL_ADDRESSES[2]: 26108065200000, SYMBOL_ADDRESSES[3]: 58303},
 			)
 		], [
-			(NEM_ADDRESSES[0], 558668349881393, 1),
-			(NEM_ADDRESSES[1], 43686866144523, 2),
-			(NEM_ADDRESSES[2], 16108065258303, 2)
+			(NemAddress(NEM_ADDRESSES[0]).bytes, 558668349881393, 1),
+			(NemAddress(NEM_ADDRESSES[1]).bytes, 43686866144523, 2),
+			(NemAddress(NEM_ADDRESSES[2]).bytes, 16108065258303, 2)
 		], [
-			(SYMBOL_ADDRESSES[0], 558668349881393, 1),
-			(SYMBOL_ADDRESSES[1], 33686866144523, 2),
-			(SYMBOL_ADDRESSES[2], 26108065200000, 2),
-			(SYMBOL_ADDRESSES[3], 58303, 2)
+			(SymbolAddress(SYMBOL_ADDRESSES[0]).bytes, 558668349881393, 1),
+			(SymbolAddress(SYMBOL_ADDRESSES[1]).bytes, 33686866144523, 2),
+			(SymbolAddress(SYMBOL_ADDRESSES[2]).bytes, 26108065200000, 2),
+			(SymbolAddress(SYMBOL_ADDRESSES[3]).bytes, 58303, 2)
 		])
 
 	# endregion
@@ -138,7 +128,7 @@ class OptinDatabaseTest(unittest.TestCase):
 		with sqlite3.connect(':memory:') as connection:
 			mappings = one_or_more_mappings if isinstance(one_or_more_mappings, list) else [one_or_more_mappings]
 
-			database = OptinDatabase(connection)
+			database = CompletedOptinDatabase(connection)
 			database.create_tables()
 
 			for mapping in mappings[:-1]:
@@ -188,11 +178,11 @@ class OptinDatabaseTest(unittest.TestCase):
 				{SYMBOL_ADDRESSES[0]: 16108065258303}
 			)
 		], [
-			(NEM_ADDRESSES[0], 43686866144523, 1),
-			(NEM_ADDRESSES[1], 16108065258303, 2)
+			(NemAddress(NEM_ADDRESSES[0]).bytes, 43686866144523, 1),
+			(NemAddress(NEM_ADDRESSES[1]).bytes, 16108065258303, 2)
 		], [
-			(SYMBOL_ADDRESSES[0], 43686866144523, 1),
-			(SYMBOL_ADDRESSES[0], 16108065258303, 2)
+			(SymbolAddress(SYMBOL_ADDRESSES[0]).bytes, 43686866144523, 1),
+			(SymbolAddress(SYMBOL_ADDRESSES[0]).bytes, 16108065258303, 2)
 		])
 
 	def test_cannot_map_same_source_multiple_times(self):
@@ -214,7 +204,7 @@ class OptinDatabaseTest(unittest.TestCase):
 	def test_can_insert_mappings_from_json(self):
 		# Arrange:
 		with sqlite3.connect(':memory:') as connection:
-			database = OptinDatabase(connection)
+			database = CompletedOptinDatabase(connection)
 			database.create_tables()
 
 			# Act:
@@ -249,14 +239,14 @@ class OptinDatabaseTest(unittest.TestCase):
 
 			# Assert:
 			self._assert_db_contents(connection, 2, [
-				(NEM_ADDRESSES[0], 558668349881393, 1),
-				(NEM_ADDRESSES[1], 43686866144523, 2),
-				(NEM_ADDRESSES[2], 16108065258303, 2)
+				(NemAddress(NEM_ADDRESSES[0]).bytes, 558668349881393, 1),
+				(NemAddress(NEM_ADDRESSES[1]).bytes, 43686866144523, 2),
+				(NemAddress(NEM_ADDRESSES[2]).bytes, 16108065258303, 2)
 			], [
-				(SYMBOL_ADDRESSES[0], 558668349881393, 1),
-				(SYMBOL_ADDRESSES[1], 33686866144523, 2),
-				(SYMBOL_ADDRESSES[2], 26108065200000, 2),
-				(SYMBOL_ADDRESSES[3], 58303, 2)
+				(SymbolAddress(SYMBOL_ADDRESSES[0]).bytes, 558668349881393, 1),
+				(SymbolAddress(SYMBOL_ADDRESSES[1]).bytes, 33686866144523, 2),
+				(SymbolAddress(SYMBOL_ADDRESSES[2]).bytes, 26108065200000, 2),
+				(SymbolAddress(SYMBOL_ADDRESSES[3]).bytes, 58303, 2)
 			])
 
 	# endregion

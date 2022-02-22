@@ -5,26 +5,7 @@ from binascii import unhexlify
 from symbolchain.CryptoTypes import Hash256, PublicKey
 from symbolchain.nem.Network import Network
 
-
-class ProcessError:
-	"""Represents a processing error."""
-
-	def __init__(self, address, transaction_hash, message):
-		self.address = address
-		self.transaction_hash = transaction_hash
-		self.message = message
-		self.is_error = True
-
-
-class OptinRequest:
-	"""Represents a valid optin request."""
-
-	def __init__(self, address, transaction_hash, message_dict):
-		self.address = address
-		self.transaction_hash = transaction_hash
-		self.destination_public_key = PublicKey(message_dict['destination'])
-		self.multisig_public_key = PublicKey(message_dict['origin']) if 101 == message_dict['type'] else None
-		self.is_error = False
+from puller.models.OptinRequest import OptinRequest, OptinRequestError
 
 
 class Processor:
@@ -76,7 +57,7 @@ class Processor:
 			return self._make_error(f'{prefix} is malformed')
 
 	def _make_error(self, message):
-		return ProcessError(self.transaction_signer_address, self.transaction_hash, message)
+		return OptinRequestError(self.transaction_signer_address, self.transaction_hash, message)
 
 
 def process_nem_optin_request(transaction_and_meta_dict):
