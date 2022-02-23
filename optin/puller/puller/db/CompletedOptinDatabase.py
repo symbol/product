@@ -70,6 +70,8 @@ class CompletedOptinDatabase:
 				destination_json['sym-address']: destination_json['sym-balance'] for destination_json in mapping_json['destination']
 			})
 
+			yield mapping_json
+
 	def is_opted_in(self, address):
 		"""Returns True if specified address has already opted-in."""
 

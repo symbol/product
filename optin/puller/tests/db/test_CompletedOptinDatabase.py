@@ -201,43 +201,55 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 	def _create_database_with_json_mappings(connection):
 		database = CompletedOptinDatabase(connection)
 		database.create_tables()
+		entry_1 = {
+			'source': [
+				{'nis-address': NEM_ADDRESSES[0], 'nis-balance': '558668349881393'},
+			],
+			'type': '1-to-1',
+			'destination': [
+				{'sym-address': SYMBOL_ADDRESSES[0], 'sym-balance': 558668349881393}
+			]
+		}
 
-		database.insert_mappings_from_json([
+		entry_2 = {
+			'source': [
+				{'nis-address': NEM_ADDRESSES[1], 'nis-balance': '43686866144523'},
+				{'nis-address': NEM_ADDRESSES[2], 'nis-balance': '16108065258303'}
+			],
+			'source_total': 0,  # in original json but ignored
+			'type': 'multi',  # in original json but ignored
+			'destination': [
+				{'sym-address': SYMBOL_ADDRESSES[1], 'sym-balance': 33686866144523},
+				{'sym-address': SYMBOL_ADDRESSES[2], 'sym-balance': 26108065200000},
+				{'sym-address': SYMBOL_ADDRESSES[3], 'sym-balance': 58303}
+			],
+			'destination_total': 0  # in original json but ignored
+		}
+
+		json_data = [
 			{
 				'info': 'comment that should be ignored'
 			},
-			{
-				'source': [
-					{'nis-address': NEM_ADDRESSES[0], 'nis-balance': '558668349881393'},
-				],
-				'type': '1-to-1',
-				'destination': [
-					{'sym-address': SYMBOL_ADDRESSES[0], 'sym-balance': 558668349881393}
-				]
-			},
-			{
-				'source': [
-					{'nis-address': NEM_ADDRESSES[1], 'nis-balance': '43686866144523'},
-					{'nis-address': NEM_ADDRESSES[2], 'nis-balance': '16108065258303'}
-				],
-				'source_total': 0,  # in original json but ignored
-				'type': 'multi',  # in original json but ignored
-				'destination': [
-					{'sym-address': SYMBOL_ADDRESSES[1], 'sym-balance': 33686866144523},
-					{'sym-address': SYMBOL_ADDRESSES[2], 'sym-balance': 26108065200000},
-					{'sym-address': SYMBOL_ADDRESSES[3], 'sym-balance': 58303}
-				],
-				'destination_total': 0  # in original json but ignored
-			}
-		])
+			entry_1,
+			entry_2
+		]
 
-		return database
+		# Act:
+		collected = []
+		for entry in database.insert_mappings_from_json(json_data):
+			collected.append(entry)
+
+		return {
+			'database': database,
+			'collected': collected,
+			'entries': [entry_1, entry_2]
+		}
 
 	def test_can_insert_mappings_from_json(self):
 		# Arrange:
 		with sqlite3.connect(':memory:') as connection:
 			# Act:
-			self._create_database_with_json_mappings(connection)
+			state = self._create_database_with_json_mappings(connection)
 
 			# Assert:
 			self._assert_db_contents(connection, 2, [
@@ -251,6 +263,8 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 				(SymbolAddress(SYMBOL_ADDRESSES[3]).bytes, 58303, 2)
 			])
 
+			self.assertEqual(state['entries'], state['collected'])
+
 	# endregion
 
 	# region is_opted_in
@@ -258,7 +272,7 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 	def test_is_opted_in_returns_true_for_opted_in_address(self):
 		# Arrange:
 		with sqlite3.connect(':memory:') as connection:
-			database = self._create_database_with_json_mappings(connection)
+			database = self._create_database_with_json_mappings(connection)['database']
 
 			# Act
 			for address in NEM_ADDRESSES[:3]:
@@ -275,7 +289,7 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 			'NCES7OKBYZRCSTSNRX45H6E67J6OXABKNT6IRD2P'
 		]
 		with sqlite3.connect(':memory:') as connection:
-			database = self._create_database_with_json_mappings(connection)
+			database = self._create_database_with_json_mappings(connection)['database']
 
 			# Act
 			for address in other_nem_addresses:
