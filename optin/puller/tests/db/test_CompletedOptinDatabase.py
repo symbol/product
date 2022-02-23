@@ -1,3 +1,4 @@
+import json
 import sqlite3
 import unittest
 
@@ -206,36 +207,43 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 		with sqlite3.connect(':memory:') as connection:
 			database = CompletedOptinDatabase(connection)
 			database.create_tables()
+			entry_1 = {
+				'source': [
+					{'nis-address': NEM_ADDRESSES[0], 'nis-balance': '558668349881393'},
+				],
+				'type': '1-to-1',
+				'destination': [
+					{'sym-address': SYMBOL_ADDRESSES[0], 'sym-balance': 558668349881393}
+				]
+			}
 
-			# Act:
-			database.insert_mappings_from_json([
+			entry_2 = {
+				'source': [
+					{'nis-address': NEM_ADDRESSES[1], 'nis-balance': '43686866144523'},
+					{'nis-address': NEM_ADDRESSES[2], 'nis-balance': '16108065258303'}
+				],
+				'source_total': 0,  # in original json but ignored
+				'type': 'multi',  # in original json but ignored
+				'destination': [
+					{'sym-address': SYMBOL_ADDRESSES[1], 'sym-balance': 33686866144523},
+					{'sym-address': SYMBOL_ADDRESSES[2], 'sym-balance': 26108065200000},
+					{'sym-address': SYMBOL_ADDRESSES[3], 'sym-balance': 58303}
+				],
+				'destination_total': 0  # in original json but ignored
+			}
+
+			json_data = [
 				{
 					'info': 'comment that should be ignored'
 				},
-				{
-					'source': [
-						{'nis-address': NEM_ADDRESSES[0], 'nis-balance': '558668349881393'},
-					],
-					'type': '1-to-1',
-					'destination': [
-						{'sym-address': SYMBOL_ADDRESSES[0], 'sym-balance': 558668349881393}
-					]
-				},
-				{
-					'source': [
-						{'nis-address': NEM_ADDRESSES[1], 'nis-balance': '43686866144523'},
-						{'nis-address': NEM_ADDRESSES[2], 'nis-balance': '16108065258303'}
-					],
-					'source_total': 0,  # in original json but ignored
-					'type': 'multi',  # in original json but ignored
-					'destination': [
-						{'sym-address': SYMBOL_ADDRESSES[1], 'sym-balance': 33686866144523},
-						{'sym-address': SYMBOL_ADDRESSES[2], 'sym-balance': 26108065200000},
-						{'sym-address': SYMBOL_ADDRESSES[3], 'sym-balance': 58303}
-					],
-					'destination_total': 0  # in original json but ignored
-				}
-			])
+				entry_1,
+				entry_2
+			]
+
+			# Act:
+			collected = []
+			for entry in database.insert_mappings_from_json(json_data):
+				collected.append(entry)
 
 			# Assert:
 			self._assert_db_contents(connection, 2, [
@@ -248,5 +256,7 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 				(SymbolAddress(SYMBOL_ADDRESSES[2]).bytes, 26108065200000, 2),
 				(SymbolAddress(SYMBOL_ADDRESSES[3]).bytes, 58303, 2)
 			])
+
+			self.assertEqual([entry_1, entry_2], collected)
 
 	# endregion

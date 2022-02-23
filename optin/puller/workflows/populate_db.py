@@ -18,7 +18,9 @@ def main():
 		with open(args.preoptin, 'rt', encoding='utf8') as infile:
 			data = json.load(infile)
 
-			database.insert_mappings_from_json(data)
+			for _ in database.insert_mappings_from_json(data):
+				print('.', end='', flush=True)
+
 
 
 if '__main__' == __name__:

@@ -75,4 +75,4 @@ class CompletedOptinDatabase:
 				destination_json['sym-address']: destination_json['sym-balance'] for destination_json in mapping_json['destination']
 			})
 
-			print('.', end='', flush=True)
+			yield mapping_json
