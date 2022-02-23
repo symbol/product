@@ -9,6 +9,11 @@ from puller.models.OptinRequest import OptinRequest, OptinRequestError
 
 from ..test.DatabaseTestUtils import get_all_table_names
 
+HEIGHTS = [
+	12345678905, 12345678901, 12345678903
+]
+
+
 HASHES = [  # sorted
 	'FA650B75CC01187E004FCF547796930CC95D9CF55E6E6188FC7D413526A840FA', 'C16CF93C5A1B6620F3D4C7A7EAAE1990D9C2678775FBC18EAE577A78C8D52B25',
 	'7D7EB08675D6F78FAB8E7D703994390DD95C6A9E8ADD18A9CF13CE4C632F8F01'
@@ -25,6 +30,16 @@ PUBLIC_KEYS = [
 NEM_ADDRESSES = [
 	'NBMUCRGBBF7LIVQWS2AHYOEAM7NMSDHJX7SQ54GJ', 'NBUPC3R7PU23FTDD53KNJAFVAOXJPXEHTSHG7TBX', 'ND4RNHKOOWJGRTC6PJWDTYR7MPPKCTKVJWQETKGR'
 ]
+
+
+def expected_request(index, destination=None):
+	return (
+		HEIGHTS[index],
+		Hash256(HASHES[index]).bytes,
+		Address(NEM_ADDRESSES[index]).bytes,
+		PublicKey(PUBLIC_KEYS[index]).bytes,
+		destination
+	)
 
 
 class InProgressOptinDatabaseTest(unittest.TestCase):
@@ -70,24 +85,24 @@ class InProgressOptinDatabaseTest(unittest.TestCase):
 
 	def test_can_add_errors(self):
 		self._assert_can_insert_errors([
-			OptinRequestError(Address(NEM_ADDRESSES[0]), Hash256(HASHES[0]), 'this is an error message'),
-			OptinRequestError(Address(NEM_ADDRESSES[1]), Hash256(HASHES[1]), 'this is another error message'),
-			OptinRequestError(Address(NEM_ADDRESSES[2]), Hash256(HASHES[2]), 'error message')
+			OptinRequestError(Address(NEM_ADDRESSES[0]), HEIGHTS[0], Hash256(HASHES[0]), 'this is an error message'),
+			OptinRequestError(Address(NEM_ADDRESSES[1]), HEIGHTS[1], Hash256(HASHES[1]), 'this is another error message'),
+			OptinRequestError(Address(NEM_ADDRESSES[2]), HEIGHTS[2], Hash256(HASHES[2]), 'error message')
 		], [
-			(Hash256(HASHES[0]).bytes, Address(NEM_ADDRESSES[0]).bytes, 'this is an error message'),
-			(Hash256(HASHES[1]).bytes, Address(NEM_ADDRESSES[1]).bytes, 'this is another error message'),
-			(Hash256(HASHES[2]).bytes, Address(NEM_ADDRESSES[2]).bytes, 'error message')
+			(HEIGHTS[0], Hash256(HASHES[0]).bytes, Address(NEM_ADDRESSES[0]).bytes, 'this is an error message'),
+			(HEIGHTS[1], Hash256(HASHES[1]).bytes, Address(NEM_ADDRESSES[1]).bytes, 'this is another error message'),
+			(HEIGHTS[2], Hash256(HASHES[2]).bytes, Address(NEM_ADDRESSES[2]).bytes, 'error message')
 		])
 
 	def test_can_add_multiple_errors_with_same_address(self):
 		self._assert_can_insert_errors([
-			OptinRequestError(Address(NEM_ADDRESSES[0]), Hash256(HASHES[0]), 'this is an error message'),
-			OptinRequestError(Address(NEM_ADDRESSES[1]), Hash256(HASHES[1]), 'this is another error message'),
-			OptinRequestError(Address(NEM_ADDRESSES[0]), Hash256(HASHES[2]), 'error message')
+			OptinRequestError(Address(NEM_ADDRESSES[0]), HEIGHTS[0], Hash256(HASHES[0]), 'this is an error message'),
+			OptinRequestError(Address(NEM_ADDRESSES[1]), HEIGHTS[1], Hash256(HASHES[1]), 'this is another error message'),
+			OptinRequestError(Address(NEM_ADDRESSES[0]), HEIGHTS[2], Hash256(HASHES[2]), 'error message')
 		], [
-			(Hash256(HASHES[0]).bytes, Address(NEM_ADDRESSES[0]).bytes, 'this is an error message'),
-			(Hash256(HASHES[1]).bytes, Address(NEM_ADDRESSES[1]).bytes, 'this is another error message'),
-			(Hash256(HASHES[2]).bytes, Address(NEM_ADDRESSES[0]).bytes, 'error message')
+			(HEIGHTS[0], Hash256(HASHES[0]).bytes, Address(NEM_ADDRESSES[0]).bytes, 'this is an error message'),
+			(HEIGHTS[1], Hash256(HASHES[1]).bytes, Address(NEM_ADDRESSES[1]).bytes, 'this is another error message'),
+			(HEIGHTS[2], Hash256(HASHES[2]).bytes, Address(NEM_ADDRESSES[0]).bytes, 'error message')
 		])
 
 	def test_cannot_add_multiple_errors_with_same_transaction_hash(self):
@@ -96,12 +111,12 @@ class InProgressOptinDatabaseTest(unittest.TestCase):
 			database = InProgressOptinDatabase(connection)
 			database.create_tables()
 
-			database.add_error(OptinRequestError(Address(NEM_ADDRESSES[0]), Hash256(HASHES[0]), 'this is an error message'))
-			database.add_error(OptinRequestError(Address(NEM_ADDRESSES[1]), Hash256(HASHES[1]), 'this is another error message'))
+			database.add_error(OptinRequestError(Address(NEM_ADDRESSES[0]), HEIGHTS[0], Hash256(HASHES[0]), 'this is an error message'))
+			database.add_error(OptinRequestError(Address(NEM_ADDRESSES[1]), HEIGHTS[1], Hash256(HASHES[1]), 'this is another error message'))
 
 			# Act:
 			with self.assertRaises(sqlite3.IntegrityError):
-				database.add_error(OptinRequestError(Address(NEM_ADDRESSES[2]), Hash256(HASHES[0]), 'error message'))
+				database.add_error(OptinRequestError(Address(NEM_ADDRESSES[2]), HEIGHTS[2], Hash256(HASHES[0]), 'error message'))
 
 	# endregion
 
@@ -112,30 +127,30 @@ class InProgressOptinDatabaseTest(unittest.TestCase):
 
 	def test_can_add_requests_regular(self):
 		self._assert_can_insert_requests([
-			OptinRequest(Address(NEM_ADDRESSES[0]), Hash256(HASHES[0]), {'type': 100, 'destination': PUBLIC_KEYS[0]}),
-			OptinRequest(Address(NEM_ADDRESSES[1]), Hash256(HASHES[1]), {'type': 100, 'destination': PUBLIC_KEYS[1]}),
-			OptinRequest(Address(NEM_ADDRESSES[2]), Hash256(HASHES[2]), {'type': 100, 'destination': PUBLIC_KEYS[2]})
+			OptinRequest(Address(NEM_ADDRESSES[0]), HEIGHTS[0], Hash256(HASHES[0]), {'type': 100, 'destination': PUBLIC_KEYS[0]}),
+			OptinRequest(Address(NEM_ADDRESSES[1]), HEIGHTS[1], Hash256(HASHES[1]), {'type': 100, 'destination': PUBLIC_KEYS[1]}),
+			OptinRequest(Address(NEM_ADDRESSES[2]), HEIGHTS[2], Hash256(HASHES[2]), {'type': 100, 'destination': PUBLIC_KEYS[2]})
 		], [
-			(Hash256(HASHES[0]).bytes, Address(NEM_ADDRESSES[0]).bytes, PublicKey(PUBLIC_KEYS[0]).bytes, None),
-			(Hash256(HASHES[1]).bytes, Address(NEM_ADDRESSES[1]).bytes, PublicKey(PUBLIC_KEYS[1]).bytes, None),
-			(Hash256(HASHES[2]).bytes, Address(NEM_ADDRESSES[2]).bytes, PublicKey(PUBLIC_KEYS[2]).bytes, None)
+			expected_request(0),
+			expected_request(1),
+			expected_request(2)
 		])
 
 	def test_can_add_requests_multisig(self):
 		self._assert_can_insert_requests([
-			OptinRequest(Address(NEM_ADDRESSES[0]), Hash256(HASHES[0]), {
+			OptinRequest(Address(NEM_ADDRESSES[0]), HEIGHTS[0], Hash256(HASHES[0]), {
 				'type': 101, 'destination': PUBLIC_KEYS[0], 'origin': PUBLIC_KEYS[3]
 			}),
-			OptinRequest(Address(NEM_ADDRESSES[1]), Hash256(HASHES[1]), {
+			OptinRequest(Address(NEM_ADDRESSES[1]), HEIGHTS[1], Hash256(HASHES[1]), {
 				'type': 101, 'destination': PUBLIC_KEYS[1], 'origin': PUBLIC_KEYS[4]
 			}),
-			OptinRequest(Address(NEM_ADDRESSES[2]), Hash256(HASHES[2]), {
+			OptinRequest(Address(NEM_ADDRESSES[2]), HEIGHTS[2], Hash256(HASHES[2]), {
 				'type': 101, 'destination': PUBLIC_KEYS[2], 'origin': PUBLIC_KEYS[3]
 			}),
 		], [
-			(Hash256(HASHES[0]).bytes, Address(NEM_ADDRESSES[0]).bytes, PublicKey(PUBLIC_KEYS[0]).bytes, PublicKey(PUBLIC_KEYS[3]).bytes),
-			(Hash256(HASHES[1]).bytes, Address(NEM_ADDRESSES[1]).bytes, PublicKey(PUBLIC_KEYS[1]).bytes, PublicKey(PUBLIC_KEYS[4]).bytes),
-			(Hash256(HASHES[2]).bytes, Address(NEM_ADDRESSES[2]).bytes, PublicKey(PUBLIC_KEYS[2]).bytes, PublicKey(PUBLIC_KEYS[3]).bytes)
+			expected_request(0, PublicKey(PUBLIC_KEYS[3]).bytes),
+			expected_request(1, PublicKey(PUBLIC_KEYS[4]).bytes),
+			expected_request(2, PublicKey(PUBLIC_KEYS[3]).bytes)
 		])
 
 	def test_cannot_add_multiple_requests_with_same_transaction_hash(self):
@@ -144,12 +159,16 @@ class InProgressOptinDatabaseTest(unittest.TestCase):
 			database = InProgressOptinDatabase(connection)
 			database.create_tables()
 
-			database.add_request(OptinRequest(Address(NEM_ADDRESSES[0]), Hash256(HASHES[0]), {'type': 100, 'destination': PUBLIC_KEYS[0]}))
-			database.add_request(OptinRequest(Address(NEM_ADDRESSES[1]), Hash256(HASHES[1]), {'type': 100, 'destination': PUBLIC_KEYS[1]}))
+			database.add_request(OptinRequest(Address(NEM_ADDRESSES[0]), HEIGHTS[0], Hash256(HASHES[0]), {
+				'type': 100, 'destination': PUBLIC_KEYS[0]
+			}))
+			database.add_request(OptinRequest(Address(NEM_ADDRESSES[1]), HEIGHTS[1], Hash256(HASHES[1]), {
+				'type': 100, 'destination': PUBLIC_KEYS[1]
+			}))
 
 			# Act:
 			with self.assertRaises(sqlite3.IntegrityError):
-				database.add_request(OptinRequest(Address(NEM_ADDRESSES[2]), Hash256(HASHES[0]), {
+				database.add_request(OptinRequest(Address(NEM_ADDRESSES[2]), HEIGHTS[2], Hash256(HASHES[0]), {
 					'type': 100, 'destination': PUBLIC_KEYS[2]
 				}))
 

@@ -11,11 +11,13 @@ class InProgressOptinDatabase:
 
 		cursor = self.connection.cursor()
 		cursor.execute('''CREATE TABLE optin_error (
+			transaction_height integer,
 			transaction_hash blob UNIQUE,
 			address blob,
 			message text
 		)''')
 		cursor.execute('''CREATE TABLE optin_request (
+			transaction_height integer,
 			transaction_hash blob UNIQUE,
 			address blob,
 			destination_public_key blob,
@@ -26,13 +28,19 @@ class InProgressOptinDatabase:
 		"""Adds an error to the error table."""
 
 		cursor = self.connection.cursor()
-		cursor.execute('''INSERT INTO optin_error VALUES (?, ?, ?)''', (error.transaction_hash.bytes, error.address.bytes, error.message))
+		cursor.execute('''INSERT INTO optin_error VALUES (?, ?, ?, ?)''', (
+			error.transaction_height,
+			error.transaction_hash.bytes,
+			error.address.bytes,
+			error.message
+		))
 
 	def add_request(self, request):
 		"""Adds a request to the request table."""
 
 		cursor = self.connection.cursor()
-		cursor.execute('''INSERT INTO optin_request VALUES (?, ?, ?, ?)''', (
+		cursor.execute('''INSERT INTO optin_request VALUES (?, ?, ?, ?, ?)''', (
+			request.transaction_height,
 			request.transaction_hash.bytes,
 			request.address.bytes,
 			request.destination_public_key.bytes,

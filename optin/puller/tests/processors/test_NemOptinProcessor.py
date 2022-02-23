@@ -7,6 +7,7 @@ from symbolchain.nem.Network import Address
 
 from puller.processors.NemOptinProcessor import process_nem_optin_request
 
+TRANSACTION_HEIGHT = 1234567890625
 TRANSACTION_HASH = Hash256('087A85B5E716A141437D56FC973B7280919C5D14ACF85AEE9C0F85F83E6D589A')
 TRANSACTION_SIGNER_ADDRESS = Address('NABHFGE5ORQD3LE4O6B7JUFN47ECOFBFASC3SCAC')
 TRANSACTION_SIGNER_PUBLIC_KEY = PublicKey('96EB2A145211B1B7AB5F0D4B14F8ABC8D695C7AEE31A3CFC2D4881313C68EEA3')
@@ -15,6 +16,7 @@ TRANSACTION_SIGNER_PUBLIC_KEY = PublicKey('96EB2A145211B1B7AB5F0D4B14F8ABC8D695C
 class PreprocessNemTest(unittest.TestCase):
 	def _assert_error(self, error, expected_message):
 		self.assertEqual(TRANSACTION_SIGNER_ADDRESS, error.address)
+		self.assertEqual(TRANSACTION_HEIGHT, error.transaction_height)
 		self.assertEqual(TRANSACTION_HASH, error.transaction_hash)
 		self.assertEqual(expected_message, error.message)
 		self.assertEqual(True, error.is_error)
@@ -22,7 +24,7 @@ class PreprocessNemTest(unittest.TestCase):
 	def test_fails_when_transaction_does_not_have_message(self):
 		# Act:
 		error = process_nem_optin_request({
-			'meta': {'hash': {'data': str(TRANSACTION_HASH)}},
+			'meta': {'hash': {'data': str(TRANSACTION_HASH)}, 'height': TRANSACTION_HEIGHT},
 			'transaction': {'type': 123, 'signer': str(TRANSACTION_SIGNER_PUBLIC_KEY)}
 		})
 
@@ -32,7 +34,7 @@ class PreprocessNemTest(unittest.TestCase):
 	def _assert_invalid_message(self, message, expected_error_message):
 		# Act:
 		error = process_nem_optin_request({
-			'meta': {'hash': {'data': str(TRANSACTION_HASH)}},
+			'meta': {'hash': {'data': str(TRANSACTION_HASH)}, 'height': TRANSACTION_HEIGHT},
 			'transaction': {'type': 123, 'signer': str(TRANSACTION_SIGNER_PUBLIC_KEY), 'message': message}
 		})
 
@@ -54,7 +56,7 @@ class PreprocessNemTest(unittest.TestCase):
 	def _assert_invalid_optin_message(self, payload, expected_error_message):
 		# Act:
 		error = process_nem_optin_request({
-			'meta': {'hash': {'data': str(TRANSACTION_HASH)}},
+			'meta': {'hash': {'data': str(TRANSACTION_HASH)}, 'height': TRANSACTION_HEIGHT},
 			'transaction': {
 				'type': 123,
 				'signer': str(TRANSACTION_SIGNER_PUBLIC_KEY),
@@ -69,8 +71,8 @@ class PreprocessNemTest(unittest.TestCase):
 		self._assert_invalid_optin_message([1, 2, 3], 'transaction optin message JSON is not an object')
 
 	def test_fails_when_optin_message_has_unexpected_type(self):
-		self._assert_invalid_optin_message({}, 'transaction optin message has unexpected type')
-		self._assert_invalid_optin_message({'type': 17}, 'transaction optin message has unexpected type')
+		self._assert_invalid_optin_message({}, 'transaction optin message has unexpected type: None')
+		self._assert_invalid_optin_message({'type': 17}, 'transaction optin message has unexpected type: 17')
 
 	def test_fails_when_optin_message_has_invalid_destination(self):
 		self._assert_invalid_optin_message({'type': 100}, 'transaction optin message is malformed')
@@ -88,7 +90,7 @@ class PreprocessNemTest(unittest.TestCase):
 	def _process_valid_payload(self, payload):
 		# Act:
 		request = process_nem_optin_request({
-			'meta': {'hash': {'data': str(TRANSACTION_HASH)}},
+			'meta': {'hash': {'data': str(TRANSACTION_HASH)}, 'height': TRANSACTION_HEIGHT},
 			'transaction': {
 				'type': 123,
 				'signer': str(TRANSACTION_SIGNER_PUBLIC_KEY),
@@ -98,6 +100,7 @@ class PreprocessNemTest(unittest.TestCase):
 
 		# Assert:
 		self.assertEqual(TRANSACTION_SIGNER_ADDRESS, request.address)
+		self.assertEqual(TRANSACTION_HEIGHT, request.transaction_height)
 		self.assertEqual(TRANSACTION_HASH, request.transaction_hash)
 		self.assertEqual(False, request.is_error)
 		return request

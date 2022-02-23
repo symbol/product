@@ -10,6 +10,7 @@ from puller.models.OptinRequest import OptinRequest, OptinRequestError
 
 class Processor:
 	def __init__(self, transaction_and_meta_dict):
+		self.transaction_height = transaction_and_meta_dict['meta']['height']
 		self.transaction_hash = Hash256(transaction_and_meta_dict['meta']['hash']['data'])
 		self.transaction_dict = transaction_and_meta_dict['transaction']
 		self.transaction_signer_address = Network.MAINNET.public_key_to_address(PublicKey(self.transaction_dict['signer']))
@@ -48,16 +49,17 @@ class Processor:
 		if not isinstance(message_dict, dict):
 			return self._make_error(f'{prefix} JSON is not an object')
 
-		if message_dict.get('type') not in (100, 101):
-			return self._make_error(f'{prefix} has unexpected type')
+		optin_message_type = message_dict.get('type')
+		if optin_message_type not in (100, 101):
+			return self._make_error(f'{prefix} has unexpected type: {optin_message_type}')
 
 		try:
-			return OptinRequest(self.transaction_signer_address, self.transaction_hash, message_dict)
+			return OptinRequest(self.transaction_signer_address, self.transaction_height, self.transaction_hash, message_dict)
 		except (KeyError, ValueError):
 			return self._make_error(f'{prefix} is malformed')
 
 	def _make_error(self, message):
-		return OptinRequestError(self.transaction_signer_address, self.transaction_hash, message)
+		return OptinRequestError(self.transaction_signer_address, self.transaction_height, self.transaction_hash, message)
 
 
 def process_nem_optin_request(transaction_and_meta_dict):
