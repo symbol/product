@@ -39,7 +39,12 @@ class CompletedOptinDatabase:
 		nem_balance = reduce(lambda x, y: x + y, nem_address_dict.values())
 		symbol_balance = reduce(lambda x, y: x + y, symbol_address_dict.values())
 
-		if nem_balance != symbol_balance:
+		ngl_source = [
+			'NATRUSTUAB5LAWDSOWDUPQUFYRTGZTJZDGML2JKP',
+			'NANODESTSN7GU76QPLGMJ7BCGCAA2PHVBZZUUI62',
+			'NBKXLNQ2GKTLQBTXNFOHULNJDA7T2Q57CZGQ2TFP'
+		]
+		if nem_balance != symbol_balance and set(ngl_source) != set(nem_address_dict.keys()):
 			raise ValueError(f'NEM source balance {nem_balance} does not match Symbol destination balance {symbol_balance}')
 
 		cursor = self.connection.cursor()
@@ -69,3 +74,5 @@ class CompletedOptinDatabase:
 			}, {
 				destination_json['sym-address']: destination_json['sym-balance'] for destination_json in mapping_json['destination']
 			})
+
+			print('.', end='', flush=True)
