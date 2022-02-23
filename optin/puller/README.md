@@ -1,6 +1,5 @@
 ## optin/puller order of workflows
 
 
-* workflows/popuplate_db
-* workflows/download_postoptin
-
+* `workflows/populate_db`
+* `workflows/download_postoptin`
