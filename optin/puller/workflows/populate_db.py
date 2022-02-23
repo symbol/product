@@ -12,14 +12,14 @@ def main():
 	args = parser.parse_args()
 
 	with sqlite3.connect(args.database) as connection:
-		db = CompletedOptinDatabase(connection)
-		db.create_tables()
+		database = CompletedOptinDatabase(connection)
+		database.create_tables()
 
 		with open(args.preoptin, 'rt', encoding='utf8') as infile:
 			data = json.load(infile)
 
-			db.insert_mappings_from_json(data)
+			database.insert_mappings_from_json(data)
 
 
-if "__main__" == __name__:
+if '__main__' == __name__:
 	main()
