@@ -19,7 +19,7 @@ SNAPSHOT_HEIGHT = 3105500
 async def main():
 	parser = argparse.ArgumentParser(description='download postoptin transactions')
 	parser.add_argument('--node', help='NEM node url', default='http://mercury.elxemental.cloud:7890')
-	parser.add_argument('--database', help='output database connection string', default='inprogress_optin.db')
+	parser.add_argument('--database', help='output database connection string', default='optin.db')
 	args = parser.parse_args()
 
 	client = NemClient(args.node)
