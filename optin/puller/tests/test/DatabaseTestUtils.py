@@ -6,7 +6,8 @@ def get_all_table_names(database_class):
 	with sqlite3.connect(':memory:') as connection:
 		database = database_class(connection)
 
-		# Act:
+		# Act: call create_tables multiple times in order to ensure it is idempotent
+		database.create_tables()
 		database.create_tables()
 
 		cursor = connection.cursor()

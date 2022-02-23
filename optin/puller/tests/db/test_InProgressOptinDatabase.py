@@ -173,3 +173,51 @@ class InProgressOptinDatabaseTest(unittest.TestCase):
 				}))
 
 	# endregion
+
+	# region max_processed_height
+
+	def test_max_processed_height_is_zero_when_empty(self):
+		# Arrange:
+		with sqlite3.connect(':memory:') as connection:
+			database = InProgressOptinDatabase(connection)
+			database.create_tables()
+
+			# Act:
+			max_processed_height = database.max_processed_height()
+
+			# Assert:
+			self.assertEqual(0, max_processed_height)
+
+	def _assert_max_processed_height(self, max_error_height, max_request_height, expected_max_processed_height):
+		# Arrange:
+		with sqlite3.connect(':memory:') as connection:
+			database = InProgressOptinDatabase(connection)
+			database.create_tables()
+
+			if max_error_height:
+				for (index, height) in [(0, 12345678902), (1, max_error_height), (2, 12345678904)]:
+					database.add_error(OptinRequestError(Address(NEM_ADDRESSES[index]), height, Hash256(HASHES[index]), 'error message'))
+
+			if max_request_height:
+				for (index, height) in [(0, 12345678903), (1, max_request_height), (2, 12345678902)]:
+					database.add_request(OptinRequest(Address(NEM_ADDRESSES[index]), height, Hash256(HASHES[index]), {
+						'type': 100, 'destination': PUBLIC_KEYS[index]
+					}))
+
+			# Act:
+			max_processed_height = database.max_processed_height()
+
+			# Assert:
+			self.assertEqual(expected_max_processed_height, max_processed_height)
+
+	def test_max_processed_height_is_max_error_height_when_only_errors_are_present(self):
+		self._assert_max_processed_height(12345678907, None, 12345678907)
+
+	def test_max_processed_height_is_max_request_height_when_only_requests_are_present(self):
+		self._assert_max_processed_height(None, 12345678907, 12345678907)
+
+	def test_max_processed_height_is_max_request_or_error_height_when_both_are_present(self):
+		self._assert_max_processed_height(12345678909, 12345678907, 12345678909)
+		self._assert_max_processed_height(12345678907, 12345678909, 12345678909)
+
+	# endregion

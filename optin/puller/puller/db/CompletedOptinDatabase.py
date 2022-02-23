@@ -17,16 +17,16 @@ class CompletedOptinDatabase:
 		"""Creates optin database tables."""
 
 		cursor = self.connection.cursor()
-		cursor.execute('''CREATE TABLE optin_id (
+		cursor.execute('''CREATE TABLE IF NOT EXISTS optin_id (
 			id integer PRIMARY KEY
 		)''')
-		cursor.execute('''CREATE TABLE nem_source (
+		cursor.execute('''CREATE TABLE IF NOT EXISTS nem_source (
 			address blob UNIQUE,
 			balance integer,
 			optin_id integer,
 			FOREIGN KEY (optin_id) REFERENCES optin_id(id)
 		)''')
-		cursor.execute('''CREATE TABLE symbol_destination (
+		cursor.execute('''CREATE TABLE IF NOT EXISTS symbol_destination (
 			address blob,
 			balance integer,
 			optin_id integer,
