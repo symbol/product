@@ -6,21 +6,38 @@ class NemClient:
 
 	def __init__(self, endpoint):
 		"""Creates a client around an endpoint."""
+
 		self.endpoint = endpoint
+
+	async def height(self):
+		"""Gets current blockchain height."""
+
+		url = f'{self.endpoint}/chain/height'
+		return await self._get(url, 'height')
+
+	async def finalized_height(self):
+		"""Gets current blockchain finalized height."""
+
+		return await self.height() - 360
+
+	async def incoming_transactions(self, address, start_id=None):
+		"""Gets transactions for the specified account."""
+
+		return await self._transactions(address, 'incoming', start_id)
 
 	async def _transactions(self, address, mode, start_id=None):
 		url = f'{self.endpoint}/account/transfers/{mode}?address={address}'
 		if start_id:
 			url += f'&id={start_id}'
 
+		return await self._get(url, 'data')
+
+	@staticmethod
+	async def _get(url, property_name):
 		async with ClientSession() as session:
 			async with session.get(url) as response:
 				response_json = await response.json()
-				return response_json['data']
-
-	async def incoming_transactions(self, address, start_id=None):
-		"""Gets transactions for the specified account."""
-		return await self._transactions(address, 'incoming', start_id)
+				return response_json[property_name]
 
 
 async def get_incoming_transactions_from(client, address, start_height):

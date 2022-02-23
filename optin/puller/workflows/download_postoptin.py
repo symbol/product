@@ -23,6 +23,7 @@ async def main():
 	args = parser.parse_args()
 
 	client = NemClient(args.node)
+	finalized_height = await client.finalized_height()
 
 	with sqlite3.connect(args.database) as connection:
 		database = InProgressOptinDatabase(connection)
@@ -33,10 +34,13 @@ async def main():
 
 		database_height = database.max_processed_height()
 		start_height = max(SNAPSHOT_HEIGHT, database_height + 1)
-		print(F'processing opt-in transactions from {start_height}')
+		print(f'processing opt-in transactions from {start_height} to {finalized_height}')
 
 		async for transaction in get_incoming_transactions_from(client, OPTIN_ADDRESS, SNAPSHOT_HEIGHT):
 			transaction_height = transaction['meta']['height']
+			if transaction_height > finalized_height:
+				continue
+
 			if transaction_height <= database_height:
 				break
 

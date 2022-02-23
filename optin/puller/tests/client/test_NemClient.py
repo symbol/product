@@ -15,19 +15,22 @@ def server(event_loop, aiohttp_client):
 		def __init__(self):
 			self.urls = []
 
+		async def height(self, request):
+			return await self._process_get(request, {'height': 123456})
+
 		async def transfers(self, request):
+			return await self._process_get(request, {'data': [{'transaction': {'name': name}} for name in ['alpha', 'beta', 'zeta']]})
+
+		async def _process_get(self, request, response_body):
 			self.urls.append(str(request.url))
-			return web.Response(
-				body=json.dumps({
-					'data': [{'transaction': {'name': name}} for name in ['alpha', 'beta', 'zeta']]
-				}),
-				headers={'Content-Type': 'application/json'})
+			return web.Response(body=json.dumps(response_body), headers={'Content-Type': 'application/json'})
 
 	# create a mock server
 	mock_server = MockServer()
 
 	# create an app using the server
 	app = web.Application()
+	app.router.add_get('/chain/height', mock_server.height)
 	app.router.add_get('/account/transfers/incoming', mock_server.transfers)
 	server = event_loop.run_until_complete(aiohttp_client(app))  # pylint: disable=redefined-outer-name
 
@@ -38,6 +41,34 @@ def server(event_loop, aiohttp_client):
 # endregion
 
 # pylint: disable=invalid-name
+
+# region NemClient - height / finalized_height
+
+async def test_can_query_height(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	client = NemClient(server.make_url(''))
+
+	# Act:
+	height = await client.height()
+
+	# Assert:
+	assert [f'{server.make_url("")}/chain/height'] == server.mock.urls
+	assert 123456 == height
+
+
+async def test_can_query_finalized_height(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	client = NemClient(server.make_url(''))
+
+	# Act:
+	height = await client.finalized_height()
+
+	# Assert:
+	assert [f'{server.make_url("")}/chain/height'] == server.mock.urls
+	assert 123096 == height
+
+
+# endregion
 
 # region NemClient - incoming_transactions
 
