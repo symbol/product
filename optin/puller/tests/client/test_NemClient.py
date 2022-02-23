@@ -24,6 +24,9 @@ def server(event_loop, aiohttp_client):
 		async def account(self, request):
 			return await self._process_get(request, {'meta': {'cosignatories': NEM_ADDRESSES}})
 
+		async def historical_account(self, request):
+			return await self._process_get(request, {'data': [{'address': NEM_ADDRESSES[0], 'balance':1234567890}]})
+
 		async def transfers(self, request):
 			return await self._process_get(request, {'data': [{'transaction': {'name': name}} for name in ['alpha', 'beta', 'zeta']]})
 
@@ -38,14 +41,15 @@ def server(event_loop, aiohttp_client):
 	app = web.Application()
 	app.router.add_get('/chain/height', mock_server.height)
 	app.router.add_get('/account/get', mock_server.account)
+	app.router.add_get('/account/historical/get', mock_server.historical_account)
 	app.router.add_get('/account/transfers/incoming', mock_server.transfers)
 	server = event_loop.run_until_complete(aiohttp_client(app))  # pylint: disable=redefined-outer-name
 
 	server.mock = mock_server
 	return server
 
-
 # endregion
+
 
 # pylint: disable=invalid-name
 
@@ -74,8 +78,8 @@ async def test_can_query_finalized_height(server):  # pylint: disable=redefined-
 	assert [f'{server.make_url("")}/chain/height'] == server.mock.urls
 	assert 123096 == height
 
-
 # endregion
+
 
 # region cosignatories
 
@@ -90,8 +94,25 @@ async def test_can_query_cosignatories(server):  # pylint: disable=redefined-out
 	assert [f'{server.make_url("")}/account/get?address=NADDRESS123'] == server.mock.urls
 	assert [Address(address) for address in NEM_ADDRESSES] == cosignatories
 
+# endregion
+
+
+# region historical balance
+
+async def test_can_get_historical_balance(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	client = NemClient(server.make_url(''))
+
+	# Act:
+	account_balance = await client.historical_balance('NADDRESS123', 1234)
+
+	# Assert:
+	uri_path = '/account/historical/get?address=NADDRESS123&startHeight=1234&endHeight=1234&increment=1'
+	assert [f'{server.make_url("")}{uri_path}'] == server.mock.urls
+	assert (Address(NEM_ADDRESSES[0]), 1234567890) == account_balance
 
 # endregion
+
 
 # region NemClient - incoming_transactions
 
@@ -118,8 +139,8 @@ async def test_can_query_incoming_transactions_with_custom_start_id(server):  # 
 	assert [f'{server.make_url("")}/account/transfers/incoming?address=NADDRESS123&id=98765'] == server.mock.urls
 	assert [{'transaction': {'name': 'alpha'}}, {'transaction': {'name': 'beta'}}, {'transaction': {'name': 'zeta'}}] == transactions
 
-
 # endregion
+
 
 # region get_incoming_transactions_from
 
@@ -173,6 +194,5 @@ async def test_get_incoming_transactions_from_can_complete_in_multiple_remote_ca
 	assert [
 		{'meta': {'height': 175}}, {'meta': {'height': 125, 'id': 4}}, {'meta': {'height': 101}}, {'meta': {'height': 100, 'id': 9}}
 	] == transactions
-
 
 # endregion

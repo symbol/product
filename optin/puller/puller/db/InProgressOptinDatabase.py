@@ -77,6 +77,22 @@ class InProgressOptinDatabase:
 		max_request_height = cursor.fetchone()[0]
 		return max(max_error_height or 0, max_request_height or 0)
 
+	@staticmethod
+	def _to_request(request_tuple):
+		return OptinRequest(Address(request_tuple[2]), request_tuple[0], Hash256(request_tuple[1]), {
+			'type': 101 if request_tuple[4] else 100,
+			'destination': str(PublicKey(request_tuple[3])),
+			'origin': str(PublicKey(request_tuple[4])) if request_tuple[4] else None
+		})
+
+	@property
+	def requests(self):
+		"""Returns requests."""
+		cursor = self.connection.cursor()
+		cursor.execute('''SELECT * FROM optin_request ORDER BY transaction_height''')
+		for row in cursor:
+			yield self._to_request(row)
+
 	def set_request_status(self, request, new_status, status_hash):
 		"""Sets the status for a request."""
 
@@ -97,13 +113,4 @@ class InProgressOptinDatabase:
 		cursor.execute(
 			'''SELECT * FROM optin_request WHERE status = ? ORDER BY transaction_height ASC''',
 			(status.value,))
-		request_tuples = cursor.fetchall()
-
-		return [
-			OptinRequest(Address(request_tuple[2]), request_tuple[0], Hash256(request_tuple[1]), {
-				'type': 101 if request_tuple[4] else 100,
-				'destination': str(PublicKey(request_tuple[3])),
-				'origin': str(PublicKey(request_tuple[4])) if request_tuple[4] else None
-			})
-			for request_tuple in request_tuples
-		]
+		return list(map(self._to_request, cursor))

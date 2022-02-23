@@ -161,6 +161,33 @@ class InProgressOptinDatabaseTest(unittest.TestCase):
 
 	# endregion
 
+	# region requests
+
+	def test_can_retrieve_requests(self):
+		# Arrange:
+		with sqlite3.connect(':memory:') as connection:
+			database = InProgressOptinDatabase(connection)
+			database.create_tables()
+
+			normal_request = make_request(0, {'type': 100, 'destination': PUBLIC_KEYS[0]})
+			multisig_request = make_request(1, {'type': 101, 'destination': PUBLIC_KEYS[1], 'origin': PUBLIC_KEYS[4]})
+			confirmed_request = make_request(2, {'type': 100, 'destination': PUBLIC_KEYS[2]})
+			database.add_request(normal_request)
+			database.add_request(multisig_request)
+			database.add_request(confirmed_request)
+			database.set_request_status(confirmed_request, OptinRequestStatus.CONFIRMED, Hash256.zero())
+
+			# Act:
+			requests = list(database.requests)
+
+			# Assert: ordered by heigts
+			self.assertEqual(3, len(requests))
+			assert_equal_request(self, multisig_request, requests[0])
+			assert_equal_request(self, confirmed_request, requests[1])
+			assert_equal_request(self, normal_request, requests[2])
+
+	# endregion
+
 	# region max_processed_height
 
 	def test_max_processed_height_is_zero_when_empty(self):

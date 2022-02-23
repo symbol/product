@@ -28,6 +28,12 @@ class NemClient:
 		meta = await self._get(url, 'meta')
 		return [Address(address) for address in meta['cosignatories']]
 
+	async def historical_balance(self, address, height):
+		"""Gets historical account state."""
+		url = f'{self.endpoint}/account/historical/get?address={address}&startHeight={height}&endHeight={height}&increment=1'
+		state = await self._get(url, 'data')
+		return (Address(state[0]['address']), state[0]['balance'])
+
 	async def incoming_transactions(self, address, start_id=None):
 		"""Gets transactions for the specified account."""
 
