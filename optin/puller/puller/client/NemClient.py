@@ -1,4 +1,5 @@
 from aiohttp import ClientSession
+from symbolchain.nem.Network import Address
 
 
 class NemClient:
@@ -19,6 +20,13 @@ class NemClient:
 		"""Gets current blockchain finalized height."""
 
 		return await self.height() - 360
+
+	async def cosignatories(self, address):
+		"""Gets cosignatories for the specified account."""
+
+		url = f'{self.endpoint}/account/get?address={address}'
+		meta = await self._get(url, 'meta')
+		return [Address(address) for address in meta['cosignatories']]
 
 	async def incoming_transactions(self, address, start_id=None):
 		"""Gets transactions for the specified account."""
