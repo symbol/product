@@ -7,13 +7,9 @@ from symbolchain.nem.Network import Address
 
 from puller.client.NemClient import NemClient, get_incoming_transactions_from
 
-# region server fixture
+from ..test.OptinRequestTestUtils import NEM_ADDRESSES
 
-NEM_ADDRESSES = [
-	Address(address) for address in [
-		'NBMUCRGBBF7LIVQWS2AHYOEAM7NMSDHJX7SQ54GJ', 'NBUPC3R7PU23FTDD53KNJAFVAOXJPXEHTSHG7TBX', 'ND4RNHKOOWJGRTC6PJWDTYR7MPPKCTKVJWQETKGR'
-	]
-]
+# region server fixture
 
 
 @pytest.fixture
@@ -26,7 +22,7 @@ def server(event_loop, aiohttp_client):
 			return await self._process_get(request, {'height': 123456})
 
 		async def account(self, request):
-			return await self._process_get(request, {'meta': {'cosignatories': [str(address) for address in NEM_ADDRESSES]}})
+			return await self._process_get(request, {'meta': {'cosignatories': NEM_ADDRESSES}})
 
 		async def transfers(self, request):
 			return await self._process_get(request, {'data': [{'transaction': {'name': name}} for name in ['alpha', 'beta', 'zeta']]})
@@ -92,7 +88,7 @@ async def test_can_query_cosignatories(server):  # pylint: disable=redefined-out
 
 	# Assert:
 	assert [f'{server.make_url("")}/account/get?address=NADDRESS123'] == server.mock.urls
-	assert NEM_ADDRESSES == cosignatories
+	assert [Address(address) for address in NEM_ADDRESSES] == cosignatories
 
 
 # endregion

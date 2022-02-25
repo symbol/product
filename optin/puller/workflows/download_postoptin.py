@@ -1,8 +1,9 @@
 import argparse
 import asyncio
 import sqlite3
+from pathlib import Path
 
-from symbolchain.nem.Network import Address
+from symbolchain.nem.Network import Address, Network
 
 from puller.client.NemClient import NemClient, get_incoming_transactions_from
 from puller.db.InProgressOptinDatabase import InProgressOptinDatabase
@@ -18,14 +19,14 @@ SNAPSHOT_HEIGHT = 3105500
 
 async def main():
 	parser = argparse.ArgumentParser(description='download postoptin transactions')
-	parser.add_argument('--node', help='NEM node url', default='http://mercury.elxemental.cloud:7890')
-	parser.add_argument('--database', help='output database connection string', default='inprogress_optin.db')
+	parser.add_argument('--nem-node', help='NEM node url', default='http://mercury.elxemental.cloud:7890')
+	parser.add_argument('--database-directory', help='output database directory', default='_temp')
 	args = parser.parse_args()
 
-	client = NemClient(args.node)
+	client = NemClient(args.nem_node)
 	finalized_height = await client.finalized_height()
 
-	with sqlite3.connect(args.database) as connection:
+	with sqlite3.connect(Path(args.database_directory) / 'inprogress.db') as connection:
 		database = InProgressOptinDatabase(connection)
 		database.create_tables()
 
@@ -44,7 +45,7 @@ async def main():
 			if transaction_height <= database_height:
 				break
 
-			process_result = process_nem_optin_request(transaction)
+			process_result = process_nem_optin_request(Network.MAINNET, transaction)
 			if process_result.is_error:
 				print(f'{transaction_height} ERROR')
 				database.add_error(process_result)

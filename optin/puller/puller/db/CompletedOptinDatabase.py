@@ -69,3 +69,10 @@ class CompletedOptinDatabase:
 			}, {
 				destination_json['sym-address']: destination_json['sym-balance'] for destination_json in mapping_json['destination']
 			})
+
+	def is_opted_in(self, address):
+		"""Returns True if specified address has already opted-in."""
+
+		cursor = self.connection.cursor()
+		cursor.execute('''SELECT * FROM nem_source WHERE address = ?''', (address.bytes,))
+		return bool(cursor.fetchone())

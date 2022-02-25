@@ -7,11 +7,7 @@ from symbolchain.symbol.Network import Address as SymbolAddress
 from puller.db.CompletedOptinDatabase import CompletedOptinDatabase
 
 from ..test.DatabaseTestUtils import get_all_table_names
-
-NEM_ADDRESSES = [
-	'NBMUCRGBBF7LIVQWS2AHYOEAM7NMSDHJX7SQ54GJ', 'NBUPC3R7PU23FTDD53KNJAFVAOXJPXEHTSHG7TBX', 'ND4RNHKOOWJGRTC6PJWDTYR7MPPKCTKVJWQETKGR'
-]
-
+from ..test.OptinRequestTestUtils import NEM_ADDRESSES
 
 SYMBOL_ADDRESSES = [
 	'NCU36L7K7B4I5JP5HHROFVFZYSCKKXWQI6PDT6I', 'NCLAZCJ36LUDVHNYZPWN67NI4V5E6VZJNZ666XY', 'NBLVHBI6VOMCI4QV53ZCKV5IRM7ZKCAYZYBECXQ',
@@ -201,41 +197,47 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 
 	# region insert_mappings_from_json
 
+	@staticmethod
+	def _create_database_with_json_mappings(connection):
+		database = CompletedOptinDatabase(connection)
+		database.create_tables()
+
+		database.insert_mappings_from_json([
+			{
+				'info': 'comment that should be ignored'
+			},
+			{
+				'source': [
+					{'nis-address': NEM_ADDRESSES[0], 'nis-balance': '558668349881393'},
+				],
+				'type': '1-to-1',
+				'destination': [
+					{'sym-address': SYMBOL_ADDRESSES[0], 'sym-balance': 558668349881393}
+				]
+			},
+			{
+				'source': [
+					{'nis-address': NEM_ADDRESSES[1], 'nis-balance': '43686866144523'},
+					{'nis-address': NEM_ADDRESSES[2], 'nis-balance': '16108065258303'}
+				],
+				'source_total': 0,  # in original json but ignored
+				'type': 'multi',  # in original json but ignored
+				'destination': [
+					{'sym-address': SYMBOL_ADDRESSES[1], 'sym-balance': 33686866144523},
+					{'sym-address': SYMBOL_ADDRESSES[2], 'sym-balance': 26108065200000},
+					{'sym-address': SYMBOL_ADDRESSES[3], 'sym-balance': 58303}
+				],
+				'destination_total': 0  # in original json but ignored
+			}
+		])
+
+		return database
+
 	def test_can_insert_mappings_from_json(self):
 		# Arrange:
 		with sqlite3.connect(':memory:') as connection:
-			database = CompletedOptinDatabase(connection)
-			database.create_tables()
-
 			# Act:
-			database.insert_mappings_from_json([
-				{
-					'info': 'comment that should be ignored'
-				},
-				{
-					'source': [
-						{'nis-address': NEM_ADDRESSES[0], 'nis-balance': '558668349881393'},
-					],
-					'type': '1-to-1',
-					'destination': [
-						{'sym-address': SYMBOL_ADDRESSES[0], 'sym-balance': 558668349881393}
-					]
-				},
-				{
-					'source': [
-						{'nis-address': NEM_ADDRESSES[1], 'nis-balance': '43686866144523'},
-						{'nis-address': NEM_ADDRESSES[2], 'nis-balance': '16108065258303'}
-					],
-					'source_total': 0,  # in original json but ignored
-					'type': 'multi',  # in original json but ignored
-					'destination': [
-						{'sym-address': SYMBOL_ADDRESSES[1], 'sym-balance': 33686866144523},
-						{'sym-address': SYMBOL_ADDRESSES[2], 'sym-balance': 26108065200000},
-						{'sym-address': SYMBOL_ADDRESSES[3], 'sym-balance': 58303}
-					],
-					'destination_total': 0  # in original json but ignored
-				}
-			])
+			self._create_database_with_json_mappings(connection)
 
 			# Assert:
 			self._assert_db_contents(connection, 2, [
@@ -248,5 +250,39 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 				(SymbolAddress(SYMBOL_ADDRESSES[2]).bytes, 26108065200000, 2),
 				(SymbolAddress(SYMBOL_ADDRESSES[3]).bytes, 58303, 2)
 			])
+
+	# endregion
+
+	# region is_opted_in
+
+	def test_is_opted_in_returns_true_for_opted_in_address(self):
+		# Arrange:
+		with sqlite3.connect(':memory:') as connection:
+			database = self._create_database_with_json_mappings(connection)
+
+			# Act
+			for address in NEM_ADDRESSES[:3]:
+				# Act:
+				is_opted_in = database.is_opted_in(NemAddress(address))
+
+				# Assert:
+				self.assertTrue(is_opted_in)
+
+	def test_is_opted_in_returns_false_for_not_opted_in_address(self):
+		# Arrange:
+		other_nem_addresses = NEM_ADDRESSES[3:] + [
+			'NDBRUFE7R5OANEDE43VCTMUVRHTI6XZ7TQFVNTMU', 'NC64UFOWRO6AVMWFV2BFX2NT6W2GURK2EOX6FFMZ',
+			'NCES7OKBYZRCSTSNRX45H6E67J6OXABKNT6IRD2P'
+		]
+		with sqlite3.connect(':memory:') as connection:
+			database = self._create_database_with_json_mappings(connection)
+
+			# Act
+			for address in other_nem_addresses:
+				# Act:
+				is_opted_in = database.is_opted_in(NemAddress(address))
+
+				# Assert:
+				self.assertFalse(is_opted_in)
 
 	# endregion

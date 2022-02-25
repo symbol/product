@@ -3,17 +3,16 @@ from binascii import Error as binasciiError
 from binascii import unhexlify
 
 from symbolchain.CryptoTypes import Hash256, PublicKey
-from symbolchain.nem.Network import Network
 
 from puller.models.OptinRequest import OptinRequest, OptinRequestError
 
 
 class Processor:
-	def __init__(self, transaction_and_meta_dict):
+	def __init__(self, network, transaction_and_meta_dict):
 		self.transaction_height = transaction_and_meta_dict['meta']['height']
 		self.transaction_hash = Hash256(transaction_and_meta_dict['meta']['hash']['data'])
 		self.transaction_dict = transaction_and_meta_dict['transaction']
-		self.transaction_signer_address = Network.MAINNET.public_key_to_address(PublicKey(self.transaction_dict['signer']))
+		self.transaction_signer_address = network.public_key_to_address(PublicKey(self.transaction_dict['signer']))
 
 	def process(self):
 		if 'message' not in self.transaction_dict:
@@ -62,6 +61,6 @@ class Processor:
 		return OptinRequestError(self.transaction_signer_address, self.transaction_height, self.transaction_hash, message)
 
 
-def process_nem_optin_request(transaction_and_meta_dict):
+def process_nem_optin_request(network, transaction_and_meta_dict):
 	"""Processes a NEM transaction and meta dictionary and parses out the optin request or an error."""
-	return Processor(transaction_and_meta_dict).process()
+	return Processor(network, transaction_and_meta_dict).process()

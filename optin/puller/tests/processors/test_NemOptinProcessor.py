@@ -3,13 +3,13 @@ import unittest
 from binascii import hexlify
 
 from symbolchain.CryptoTypes import Hash256, PublicKey
-from symbolchain.nem.Network import Address
+from symbolchain.nem.Network import Address, Network
 
 from puller.processors.NemOptinProcessor import process_nem_optin_request
 
 TRANSACTION_HEIGHT = 1234567890625
 TRANSACTION_HASH = Hash256('087A85B5E716A141437D56FC973B7280919C5D14ACF85AEE9C0F85F83E6D589A')
-TRANSACTION_SIGNER_ADDRESS = Address('NABHFGE5ORQD3LE4O6B7JUFN47ECOFBFASC3SCAC')
+TRANSACTION_SIGNER_ADDRESS = Address('TABHFGE5ORQD3LE4O6B7JUFN47ECOFBFATE53N2I')
 TRANSACTION_SIGNER_PUBLIC_KEY = PublicKey('96EB2A145211B1B7AB5F0D4B14F8ABC8D695C7AEE31A3CFC2D4881313C68EEA3')
 
 
@@ -23,7 +23,7 @@ class PreprocessNemTest(unittest.TestCase):
 
 	def test_fails_when_transaction_does_not_have_message(self):
 		# Act:
-		error = process_nem_optin_request({
+		error = process_nem_optin_request(Network.TESTNET, {
 			'meta': {'hash': {'data': str(TRANSACTION_HASH)}, 'height': TRANSACTION_HEIGHT},
 			'transaction': {'type': 123, 'signer': str(TRANSACTION_SIGNER_PUBLIC_KEY)}
 		})
@@ -33,7 +33,7 @@ class PreprocessNemTest(unittest.TestCase):
 
 	def _assert_invalid_message(self, message, expected_error_message):
 		# Act:
-		error = process_nem_optin_request({
+		error = process_nem_optin_request(Network.TESTNET, {
 			'meta': {'hash': {'data': str(TRANSACTION_HASH)}, 'height': TRANSACTION_HEIGHT},
 			'transaction': {'type': 123, 'signer': str(TRANSACTION_SIGNER_PUBLIC_KEY), 'message': message}
 		})
@@ -55,7 +55,7 @@ class PreprocessNemTest(unittest.TestCase):
 
 	def _assert_invalid_optin_message(self, payload, expected_error_message):
 		# Act:
-		error = process_nem_optin_request({
+		error = process_nem_optin_request(Network.TESTNET, {
 			'meta': {'hash': {'data': str(TRANSACTION_HASH)}, 'height': TRANSACTION_HEIGHT},
 			'transaction': {
 				'type': 123,
@@ -89,7 +89,7 @@ class PreprocessNemTest(unittest.TestCase):
 
 	def _process_valid_payload(self, payload):
 		# Act:
-		request = process_nem_optin_request({
+		request = process_nem_optin_request(Network.TESTNET, {
 			'meta': {'hash': {'data': str(TRANSACTION_HASH)}, 'height': TRANSACTION_HEIGHT},
 			'transaction': {
 				'type': 123,

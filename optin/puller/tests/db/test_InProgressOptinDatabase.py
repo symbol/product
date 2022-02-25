@@ -4,42 +4,36 @@ import unittest
 from symbolchain.CryptoTypes import Hash256, PublicKey
 from symbolchain.nem.Network import Address
 
-from puller.db.InProgressOptinDatabase import InProgressOptinDatabase
-from puller.models.OptinRequest import OptinRequest, OptinRequestError
+from puller.db.InProgressOptinDatabase import InProgressOptinDatabase, OptinRequestStatus
 
 from ..test.DatabaseTestUtils import get_all_table_names
+from ..test.OptinRequestTestUtils import HASHES, HEIGHTS, NEM_ADDRESSES, PUBLIC_KEYS, assert_equal_request, make_request, make_request_error
 
-HEIGHTS = [
-	12345678905, 12345678901, 12345678903
-]
-
-
-HASHES = [  # sorted
-	'FA650B75CC01187E004FCF547796930CC95D9CF55E6E6188FC7D413526A840FA', 'C16CF93C5A1B6620F3D4C7A7EAAE1990D9C2678775FBC18EAE577A78C8D52B25',
-	'7D7EB08675D6F78FAB8E7D703994390DD95C6A9E8ADD18A9CF13CE4C632F8F01'
-]
+# region factories
 
 
-PUBLIC_KEYS = [
-	'138F8ECE0F01DC7CCD196F2C6249CBB78CF2822D23376C96C949DF859D5A0FC5', '1BB7ACCACE4C2527F425B2156C676105DF013404F7FA1F169377CA05393AECBE',
-	'C0EB403A0EF1949D656EA775FCC7BFA6D8288E70AC831847686D56E6BB3D445C', '55C3979A27EBF358496E673BE7C39257894B754BE92ED6456314DE9FAA2D447D',
-	'A52DF1C5AD709689EDF75650CD292B55678ACBCE3F17D300D16B680CEB648D41'
-]
+def make_request_error_tuple(index, message, **kwargs):
+	address = Address(NEM_ADDRESSES[kwargs.get('address_index', index)])
+	return (HEIGHTS[index], Hash256(HASHES[index]).bytes, address.bytes, message)
 
 
-NEM_ADDRESSES = [
-	'NBMUCRGBBF7LIVQWS2AHYOEAM7NMSDHJX7SQ54GJ', 'NBUPC3R7PU23FTDD53KNJAFVAOXJPXEHTSHG7TBX', 'ND4RNHKOOWJGRTC6PJWDTYR7MPPKCTKVJWQETKGR'
-]
+def make_request_tuple(index, **kwargs):
+	address = Address(NEM_ADDRESSES[kwargs.get('address_index', index)])
+	destination_public_key = PublicKey(PUBLIC_KEYS[kwargs.get('destination_public_key_index', index)])
+	multisig_public_key = None
+	if 'multisig_public_key_index' in kwargs:
+		multisig_public_key = PublicKey(PUBLIC_KEYS[kwargs['multisig_public_key_index']])
 
-
-def expected_request(index, destination=None):
 	return (
 		HEIGHTS[index],
 		Hash256(HASHES[index]).bytes,
-		Address(NEM_ADDRESSES[index]).bytes,
-		PublicKey(PUBLIC_KEYS[index]).bytes,
-		destination
-	)
+		address.bytes,
+		destination_public_key.bytes,
+		multisig_public_key.bytes if multisig_public_key else None,
+		kwargs.get('status_id', 0),
+		kwargs['status_hash'].bytes if 'status_hash' in kwargs else None)
+
+# endregion
 
 
 class InProgressOptinDatabaseTest(unittest.TestCase):
@@ -56,7 +50,9 @@ class InProgressOptinDatabaseTest(unittest.TestCase):
 
 	# region add_error
 
-	def _assert_can_insert_rows(self, seed_errors, seed_requests, expected_errors, expected_requests):
+	def _assert_can_insert_rows(self, seed_errors, seed_requests, expected_errors, expected_requests, post_insert_action):
+		# pylint: disable=too-many-arguments
+
 		# Arrange:
 		with sqlite3.connect(':memory:') as connection:
 			database = InProgressOptinDatabase(connection)
@@ -68,6 +64,9 @@ class InProgressOptinDatabaseTest(unittest.TestCase):
 
 			for request in seed_requests:
 				database.add_request(request)
+
+			if post_insert_action:
+				post_insert_action(database)
 
 			# Assert:
 			cursor = connection.cursor()
@@ -81,28 +80,28 @@ class InProgressOptinDatabaseTest(unittest.TestCase):
 			self.assertEqual(expected_requests, actual_requests)
 
 	def _assert_can_insert_errors(self, seed_errors, expected_errors):
-		self._assert_can_insert_rows(seed_errors, [], expected_errors, [])
+		self._assert_can_insert_rows(seed_errors, [], expected_errors, [], None)
 
 	def test_can_add_errors(self):
 		self._assert_can_insert_errors([
-			OptinRequestError(Address(NEM_ADDRESSES[0]), HEIGHTS[0], Hash256(HASHES[0]), 'this is an error message'),
-			OptinRequestError(Address(NEM_ADDRESSES[1]), HEIGHTS[1], Hash256(HASHES[1]), 'this is another error message'),
-			OptinRequestError(Address(NEM_ADDRESSES[2]), HEIGHTS[2], Hash256(HASHES[2]), 'error message')
+			make_request_error(0, 'this is an error message'),
+			make_request_error(1, 'this is another error message'),
+			make_request_error(2, 'error message')
 		], [
-			(HEIGHTS[0], Hash256(HASHES[0]).bytes, Address(NEM_ADDRESSES[0]).bytes, 'this is an error message'),
-			(HEIGHTS[1], Hash256(HASHES[1]).bytes, Address(NEM_ADDRESSES[1]).bytes, 'this is another error message'),
-			(HEIGHTS[2], Hash256(HASHES[2]).bytes, Address(NEM_ADDRESSES[2]).bytes, 'error message')
+			make_request_error_tuple(0, 'this is an error message'),
+			make_request_error_tuple(1, 'this is another error message'),
+			make_request_error_tuple(2, 'error message')
 		])
 
 	def test_can_add_multiple_errors_with_same_address(self):
 		self._assert_can_insert_errors([
-			OptinRequestError(Address(NEM_ADDRESSES[0]), HEIGHTS[0], Hash256(HASHES[0]), 'this is an error message'),
-			OptinRequestError(Address(NEM_ADDRESSES[1]), HEIGHTS[1], Hash256(HASHES[1]), 'this is another error message'),
-			OptinRequestError(Address(NEM_ADDRESSES[0]), HEIGHTS[2], Hash256(HASHES[2]), 'error message')
+			make_request_error(0, 'this is an error message'),
+			make_request_error(1, 'this is another error message'),
+			make_request_error(2, 'error message', address_index=0)
 		], [
-			(HEIGHTS[0], Hash256(HASHES[0]).bytes, Address(NEM_ADDRESSES[0]).bytes, 'this is an error message'),
-			(HEIGHTS[1], Hash256(HASHES[1]).bytes, Address(NEM_ADDRESSES[1]).bytes, 'this is another error message'),
-			(HEIGHTS[2], Hash256(HASHES[2]).bytes, Address(NEM_ADDRESSES[0]).bytes, 'error message')
+			make_request_error_tuple(0, 'this is an error message'),
+			make_request_error_tuple(1, 'this is another error message'),
+			make_request_error_tuple(2, 'error message', address_index=0)
 		])
 
 	def test_cannot_add_multiple_errors_with_same_transaction_hash(self):
@@ -111,46 +110,40 @@ class InProgressOptinDatabaseTest(unittest.TestCase):
 			database = InProgressOptinDatabase(connection)
 			database.create_tables()
 
-			database.add_error(OptinRequestError(Address(NEM_ADDRESSES[0]), HEIGHTS[0], Hash256(HASHES[0]), 'this is an error message'))
-			database.add_error(OptinRequestError(Address(NEM_ADDRESSES[1]), HEIGHTS[1], Hash256(HASHES[1]), 'this is another error message'))
+			database.add_error(make_request_error(0, 'this is an error message'))
+			database.add_error(make_request_error(1, 'this is another error message'))
 
 			# Act:
 			with self.assertRaises(sqlite3.IntegrityError):
-				database.add_error(OptinRequestError(Address(NEM_ADDRESSES[2]), HEIGHTS[2], Hash256(HASHES[0]), 'error message'))
+				database.add_error(make_request_error(2, 'error message', hash_index=0))
 
 	# endregion
 
 	# region add_request
 
-	def _assert_can_insert_requests(self, seed_requests, expected_requests):
-		self._assert_can_insert_rows([], seed_requests, [], expected_requests)
+	def _assert_can_insert_requests(self, seed_requests, expected_requests, post_insert_action=None):
+		self._assert_can_insert_rows([], seed_requests, [], expected_requests, post_insert_action)
 
 	def test_can_add_requests_regular(self):
 		self._assert_can_insert_requests([
-			OptinRequest(Address(NEM_ADDRESSES[0]), HEIGHTS[0], Hash256(HASHES[0]), {'type': 100, 'destination': PUBLIC_KEYS[0]}),
-			OptinRequest(Address(NEM_ADDRESSES[1]), HEIGHTS[1], Hash256(HASHES[1]), {'type': 100, 'destination': PUBLIC_KEYS[1]}),
-			OptinRequest(Address(NEM_ADDRESSES[2]), HEIGHTS[2], Hash256(HASHES[2]), {'type': 100, 'destination': PUBLIC_KEYS[2]})
+			make_request(0, {'type': 100, 'destination': PUBLIC_KEYS[0]}),
+			make_request(1, {'type': 100, 'destination': PUBLIC_KEYS[1]}),
+			make_request(2, {'type': 100, 'destination': PUBLIC_KEYS[2]})
 		], [
-			expected_request(0),
-			expected_request(1),
-			expected_request(2)
+			make_request_tuple(0),
+			make_request_tuple(1),
+			make_request_tuple(2)
 		])
 
 	def test_can_add_requests_multisig(self):
 		self._assert_can_insert_requests([
-			OptinRequest(Address(NEM_ADDRESSES[0]), HEIGHTS[0], Hash256(HASHES[0]), {
-				'type': 101, 'destination': PUBLIC_KEYS[0], 'origin': PUBLIC_KEYS[3]
-			}),
-			OptinRequest(Address(NEM_ADDRESSES[1]), HEIGHTS[1], Hash256(HASHES[1]), {
-				'type': 101, 'destination': PUBLIC_KEYS[1], 'origin': PUBLIC_KEYS[4]
-			}),
-			OptinRequest(Address(NEM_ADDRESSES[2]), HEIGHTS[2], Hash256(HASHES[2]), {
-				'type': 101, 'destination': PUBLIC_KEYS[2], 'origin': PUBLIC_KEYS[3]
-			}),
+			make_request(0, {'type': 101, 'destination': PUBLIC_KEYS[0], 'origin': PUBLIC_KEYS[3]}),
+			make_request(1, {'type': 101, 'destination': PUBLIC_KEYS[1], 'origin': PUBLIC_KEYS[4]}),
+			make_request(2, {'type': 101, 'destination': PUBLIC_KEYS[2], 'origin': PUBLIC_KEYS[3]})
 		], [
-			expected_request(0, PublicKey(PUBLIC_KEYS[3]).bytes),
-			expected_request(1, PublicKey(PUBLIC_KEYS[4]).bytes),
-			expected_request(2, PublicKey(PUBLIC_KEYS[3]).bytes)
+			make_request_tuple(0, multisig_public_key_index=3),
+			make_request_tuple(1, multisig_public_key_index=4),
+			make_request_tuple(2, multisig_public_key_index=3)
 		])
 
 	def test_cannot_add_multiple_requests_with_same_transaction_hash(self):
@@ -159,18 +152,12 @@ class InProgressOptinDatabaseTest(unittest.TestCase):
 			database = InProgressOptinDatabase(connection)
 			database.create_tables()
 
-			database.add_request(OptinRequest(Address(NEM_ADDRESSES[0]), HEIGHTS[0], Hash256(HASHES[0]), {
-				'type': 100, 'destination': PUBLIC_KEYS[0]
-			}))
-			database.add_request(OptinRequest(Address(NEM_ADDRESSES[1]), HEIGHTS[1], Hash256(HASHES[1]), {
-				'type': 100, 'destination': PUBLIC_KEYS[1]
-			}))
+			database.add_request(make_request(0, {'type': 100, 'destination': PUBLIC_KEYS[0]}))
+			database.add_request(make_request(1, {'type': 100, 'destination': PUBLIC_KEYS[1]}))
 
 			# Act:
 			with self.assertRaises(sqlite3.IntegrityError):
-				database.add_request(OptinRequest(Address(NEM_ADDRESSES[2]), HEIGHTS[2], Hash256(HASHES[0]), {
-					'type': 100, 'destination': PUBLIC_KEYS[2]
-				}))
+				database.add_request(make_request(2, {'type': 100, 'destination': PUBLIC_KEYS[2]}, hash_index=0))
 
 	# endregion
 
@@ -196,13 +183,11 @@ class InProgressOptinDatabaseTest(unittest.TestCase):
 
 			if max_error_height:
 				for (index, height) in [(0, 12345678902), (1, max_error_height), (2, 12345678904)]:
-					database.add_error(OptinRequestError(Address(NEM_ADDRESSES[index]), height, Hash256(HASHES[index]), 'error message'))
+					database.add_error(make_request_error(index, 'error message', height=height))
 
 			if max_request_height:
 				for (index, height) in [(0, 12345678903), (1, max_request_height), (2, 12345678902)]:
-					database.add_request(OptinRequest(Address(NEM_ADDRESSES[index]), height, Hash256(HASHES[index]), {
-						'type': 100, 'destination': PUBLIC_KEYS[index]
-					}))
+					database.add_request(make_request(index, {'type': 100, 'destination': PUBLIC_KEYS[index]}, height=height))
 
 			# Act:
 			max_processed_height = database.max_processed_height()
@@ -219,5 +204,78 @@ class InProgressOptinDatabaseTest(unittest.TestCase):
 	def test_max_processed_height_is_max_request_or_error_height_when_both_are_present(self):
 		self._assert_max_processed_height(12345678909, 12345678907, 12345678909)
 		self._assert_max_processed_height(12345678907, 12345678909, 12345678909)
+
+	# endregion
+
+	# region set_request_status
+
+	def test_can_update_single_request_status(self):
+		# Arrange:
+		status_hash = Hash256('ACFF5E24733CD040504448A3A75F1CE32E90557E5FBA02E107624242F4FA251D')
+		seed_requests = [
+			make_request(0, {'type': 100, 'destination': PUBLIC_KEYS[0]}),
+			make_request(1, {'type': 100, 'destination': PUBLIC_KEYS[1]}),
+			make_request(2, {'type': 100, 'destination': PUBLIC_KEYS[2]})
+		]
+
+		def post_insert_action(database):
+			database.set_request_status(seed_requests[1], OptinRequestStatus.SENT, status_hash)
+
+		# Act + Assert:
+		self._assert_can_insert_requests(seed_requests, [
+			make_request_tuple(0),
+			make_request_tuple(1, status_id=1, status_hash=status_hash),
+			make_request_tuple(2)
+		], post_insert_action=post_insert_action)
+
+	def test_can_update_mutiple_request_part_status(self):
+		# Arrange:
+		status_hash = Hash256('ACFF5E24733CD040504448A3A75F1CE32E90557E5FBA02E107624242F4FA251D')
+		seed_requests = [
+			make_request(0, {'type': 101, 'destination': PUBLIC_KEYS[0], 'origin': PUBLIC_KEYS[3]}),
+			make_request(1, {'type': 101, 'destination': PUBLIC_KEYS[1], 'origin': PUBLIC_KEYS[4]}, address_index=0),
+			make_request(2, {'type': 101, 'destination': PUBLIC_KEYS[0], 'origin': PUBLIC_KEYS[3]})
+		]
+
+		def post_insert_action(database):
+			database.set_request_status(seed_requests[0], OptinRequestStatus.SENT, status_hash)
+
+		# Act + Assert: even though there are multiple requests with same address,
+		#               only the one with matching multisig_public_key should change
+		self._assert_can_insert_requests(seed_requests, [
+			make_request_tuple(0, multisig_public_key_index=3, status_id=1, status_hash=status_hash),
+			make_request_tuple(1, multisig_public_key_index=4, address_index=0),
+			make_request_tuple(2, destination_public_key_index=0, multisig_public_key_index=3)
+		], post_insert_action=post_insert_action)
+
+	# endregion
+
+	# region get_requests_by_status
+
+	def test_can_get_all_requests_with_specified_status(self):
+		# Arrange:
+		with sqlite3.connect(':memory:') as connection:
+			database = InProgressOptinDatabase(connection)
+			database.create_tables()
+
+			status_hash = Hash256('ACFF5E24733CD040504448A3A75F1CE32E90557E5FBA02E107624242F4FA251D')
+			seed_requests = [
+				make_request(0, {'type': 100, 'destination': PUBLIC_KEYS[0]}),
+				make_request(1, {'type': 100, 'destination': PUBLIC_KEYS[1]}),
+				make_request(2, {'type': 100, 'destination': PUBLIC_KEYS[2]})
+			]
+
+			for request in seed_requests:
+				database.add_request(request)
+
+			database.set_request_status(seed_requests[1], OptinRequestStatus.SENT, status_hash)
+
+			# Act:
+			requests = database.get_requests_by_status(OptinRequestStatus.UNPROCESSED)
+
+			# Assert: height sorted (ascending)
+			self.assertEqual(2, len(requests))
+			assert_equal_request(self, seed_requests[2], requests[0])
+			assert_equal_request(self, seed_requests[0], requests[1])
 
 	# endregion

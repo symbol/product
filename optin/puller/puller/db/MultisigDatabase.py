@@ -48,3 +48,8 @@ class MultisigDatabase:
 		except sqlite3.IntegrityError:
 			self.connection.rollback()
 			raise
+
+	def check_cosigners(self, address, cosigner_addresses):
+		"""Checks if specified cosigners are sufficient for approving transactions from account."""
+
+		# TODO_: placeholder

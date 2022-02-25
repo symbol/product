@@ -6,10 +6,7 @@ from symbolchain.nem.Network import Address
 from puller.db.MultisigDatabase import MultisigDatabase
 
 from ..test.DatabaseTestUtils import get_all_table_names
-
-NEM_ADDRESSES = [
-	'NBMUCRGBBF7LIVQWS2AHYOEAM7NMSDHJX7SQ54GJ', 'NBUPC3R7PU23FTDD53KNJAFVAOXJPXEHTSHG7TBX', 'ND4RNHKOOWJGRTC6PJWDTYR7MPPKCTKVJWQETKGR'
-]
+from ..test.OptinRequestTestUtils import NEM_ADDRESSES
 
 
 class MultisigDatabaseTest(unittest.TestCase):
@@ -55,7 +52,7 @@ class MultisigDatabaseTest(unittest.TestCase):
 
 	def test_can_insert_multisig_account_information(self):
 		self._assert_can_insert_accounts({
-			'meta': {'cosignatories': NEM_ADDRESSES}, 'account': {'multisigInfo': {'cosignaturesCount': 7, 'minCosignatures': 5}}
+			'meta': {'cosignatories': NEM_ADDRESSES[:3]}, 'account': {'multisigInfo': {'cosignaturesCount': 7, 'minCosignatures': 5}}
 		}, [
 			(1, 7, 5)
 		], [
@@ -69,7 +66,7 @@ class MultisigDatabaseTest(unittest.TestCase):
 
 	def test_can_insert_multiple_multisig_account_informations(self):
 		self._assert_can_insert_accounts([
-			{'meta': {'cosignatories': NEM_ADDRESSES}, 'account': {'multisigInfo': {'cosignaturesCount': 7, 'minCosignatures': 5}}},
+			{'meta': {'cosignatories': NEM_ADDRESSES[:3]}, 'account': {'multisigInfo': {'cosignaturesCount': 7, 'minCosignatures': 5}}},
 			{'meta': {'cosignatories': []}, 'account': {'multisigInfo': {}}},
 			{'meta': {'cosignatories': [NEM_ADDRESSES[0]]}, 'account': {'multisigInfo': {'cosignaturesCount': 6, 'minCosignatures': 4}}},
 			{'meta': {'cosignatories': [NEM_ADDRESSES[2]]}, 'account': {'multisigInfo': {'cosignaturesCount': 8, 'minCosignatures': 6}}},
