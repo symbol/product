@@ -52,9 +52,10 @@ class MultisigDatabaseTest(unittest.TestCase):
 
 	def test_can_insert_multisig_account_information(self):
 		self._assert_can_insert_accounts({
-			'meta': {'cosignatories': NEM_ADDRESSES[:3]}, 'account': {'multisigInfo': {'cosignaturesCount': 7, 'minCosignatures': 5}}
+			'meta': {'cosignatories': NEM_ADDRESSES[:3]},
+			'account': {'address': NEM_ADDRESSES[3], 'multisigInfo': {'cosignaturesCount': 7, 'minCosignatures': 5}}
 		}, [
-			(1, 7, 5)
+			(1, Address(NEM_ADDRESSES[3]).bytes, 7, 5)
 		], [
 			(Address(NEM_ADDRESSES[0]).bytes, 1), (Address(NEM_ADDRESSES[1]).bytes, 1), (Address(NEM_ADDRESSES[2]).bytes, 1)
 		])
@@ -66,20 +67,124 @@ class MultisigDatabaseTest(unittest.TestCase):
 
 	def test_can_insert_multiple_multisig_account_informations(self):
 		self._assert_can_insert_accounts([
-			{'meta': {'cosignatories': NEM_ADDRESSES[:3]}, 'account': {'multisigInfo': {'cosignaturesCount': 7, 'minCosignatures': 5}}},
-			{'meta': {'cosignatories': []}, 'account': {'multisigInfo': {}}},
-			{'meta': {'cosignatories': [NEM_ADDRESSES[0]]}, 'account': {'multisigInfo': {'cosignaturesCount': 6, 'minCosignatures': 4}}},
-			{'meta': {'cosignatories': [NEM_ADDRESSES[2]]}, 'account': {'multisigInfo': {'cosignaturesCount': 8, 'minCosignatures': 6}}},
-			{'meta': {'cosignatories': NEM_ADDRESSES[:2]}, 'account': {'multisigInfo': {'cosignaturesCount': 3, 'minCosignatures': 2}}},
-			{'meta': {'cosignatories': []}, 'account': {'multisigInfo': {}}}
+			{
+				'meta': {'cosignatories': NEM_ADDRESSES[:3]},
+				'account': {'address': NEM_ADDRESSES[3], 'multisigInfo': {'cosignaturesCount': 7, 'minCosignatures': 5}}
+			},
+			{
+				'meta': {'cosignatories': []},
+				'account': {'address': NEM_ADDRESSES[4], 'multisigInfo': {}}
+			},
+			{
+				'meta': {'cosignatories': [NEM_ADDRESSES[0]]},
+				'account': {'address': NEM_ADDRESSES[1], 'multisigInfo': {'cosignaturesCount': 6, 'minCosignatures': 4}}},
+			{
+				'meta': {'cosignatories': [NEM_ADDRESSES[2]]},
+				'account': {'address': NEM_ADDRESSES[0], 'multisigInfo': {'cosignaturesCount': 8, 'minCosignatures': 6}}
+			},
+			{
+				'meta': {'cosignatories': NEM_ADDRESSES[:2]},
+				'account': {'address': NEM_ADDRESSES[2], 'multisigInfo': {'cosignaturesCount': 3, 'minCosignatures': 2}}
+			},
+			{
+				'meta': {'cosignatories': []},
+				'account': {'multisigInfo': {}}
+			}
 		], [
-			(1, 7, 5),
-			(2, 6, 4),
-			(3, 8, 6),
-			(4, 3, 2)
+			(1, Address(NEM_ADDRESSES[3]).bytes, 7, 5),
+			(2, Address(NEM_ADDRESSES[1]).bytes, 6, 4),
+			(3, Address(NEM_ADDRESSES[0]).bytes, 8, 6),
+			(4, Address(NEM_ADDRESSES[2]).bytes, 3, 2)
 		], [
 			(Address(NEM_ADDRESSES[0]).bytes, 1), (Address(NEM_ADDRESSES[1]).bytes, 1), (Address(NEM_ADDRESSES[2]).bytes, 1),
 			(Address(NEM_ADDRESSES[0]).bytes, 2),
 			(Address(NEM_ADDRESSES[2]).bytes, 3),
 			(Address(NEM_ADDRESSES[0]).bytes, 4), (Address(NEM_ADDRESSES[1]).bytes, 4)
 		])
+
+	# endregion
+
+	# region check_cosigners
+
+	@staticmethod
+	def _create_database_for_check_cosigners_tests(connection):
+		# Arrange:
+		database = MultisigDatabase(connection)
+		database.create_tables()
+
+		accounts = [
+			{
+				'meta': {'cosignatories': NEM_ADDRESSES[:3]},
+				'account': {'address': NEM_ADDRESSES[3], 'multisigInfo': {'cosignaturesCount': 3, 'minCosignatures': 2}}
+			},
+			{
+				'meta': {'cosignatories': []},
+				'account': {'address': NEM_ADDRESSES[4], 'multisigInfo': {}}
+			},
+			{
+				'meta': {'cosignatories': [NEM_ADDRESSES[0]]},
+				'account': {'address': NEM_ADDRESSES[1], 'multisigInfo': {'cosignaturesCount': 1, 'minCosignatures': 1}}
+			},
+			{
+				'meta': {'cosignatories': NEM_ADDRESSES[:2]},
+				'account': {'address': NEM_ADDRESSES[2], 'multisigInfo': {'cosignaturesCount': 2, 'minCosignatures': 1}}
+			}
+		]
+
+		# Act:
+		for account in accounts:
+			database.insert_if_multisig(account)
+
+		return database
+
+	def _run_check_cosigners_test(self, address, cosigner_addresses, expected_result):
+		# Arrange:
+		with sqlite3.connect(':memory:') as connection:
+			database = self._create_database_for_check_cosigners_tests(connection)
+
+			# Act:
+			result = database.check_cosigners(address, cosigner_addresses)
+
+			# Assert:
+			self.assertEqual(expected_result, result)
+
+	def test_cosigners_check_passes_when_not_multisig_account(self):
+		self._run_check_cosigners_test(Address(NEM_ADDRESSES[4]), [], True)  # inserted, but skipped
+		self._run_check_cosigners_test(Address(NEM_ADDRESSES[0]), [], True)  # never inserted
+
+	def test_cosigners_check_fails_when_multisig_account_has_insufficient_cosigners(self):
+		self._run_check_cosigners_test(Address(NEM_ADDRESSES[1]), [], False)
+		self._run_check_cosigners_test(Address(NEM_ADDRESSES[2]), [], False)
+		self._run_check_cosigners_test(Address(NEM_ADDRESSES[3]), [Address(NEM_ADDRESSES[0])], False)
+
+	def test_cosigners_check_passes_when_multisig_account_has_sufficient_cosigners(self):
+		self._run_check_cosigners_test(Address(NEM_ADDRESSES[1]), [Address(NEM_ADDRESSES[0])], True)
+		self._run_check_cosigners_test(Address(NEM_ADDRESSES[2]), [Address(NEM_ADDRESSES[1])], True)
+		self._run_check_cosigners_test(Address(NEM_ADDRESSES[3]), [Address(NEM_ADDRESSES[0]), Address(NEM_ADDRESSES[2])], True)
+
+		self._run_check_cosigners_test(Address(NEM_ADDRESSES[2]), [Address(NEM_ADDRESSES[0]), Address(NEM_ADDRESSES[1])], True)
+		self._run_check_cosigners_test(
+			Address(NEM_ADDRESSES[3]),
+			[Address(NEM_ADDRESSES[0]), Address(NEM_ADDRESSES[1]), Address(NEM_ADDRESSES[2])],
+			True)
+
+	def test_cosigners_check_ignores_invalid_cosigners(self):
+		self._run_check_cosigners_test(Address(NEM_ADDRESSES[3]), [Address(NEM_ADDRESSES[0]), Address(NEM_ADDRESSES[4])], False)
+
+		self._run_check_cosigners_test(
+			Address(NEM_ADDRESSES[3]),
+			[Address(NEM_ADDRESSES[0]), Address(NEM_ADDRESSES[4]), Address(NEM_ADDRESSES[2])],
+			True)
+
+	def test_cosigners_check_ignores_duplicate_cosigners(self):
+		self._run_check_cosigners_test(
+			Address(NEM_ADDRESSES[3]),
+			[Address(NEM_ADDRESSES[0]), Address(NEM_ADDRESSES[0]), Address(NEM_ADDRESSES[0])],
+			False)
+
+		self._run_check_cosigners_test(
+			Address(NEM_ADDRESSES[3]),
+			[Address(NEM_ADDRESSES[0]), Address(NEM_ADDRESSES[0]), Address(NEM_ADDRESSES[1]), Address(NEM_ADDRESSES[0])],
+			True)
+
+	# endregion
