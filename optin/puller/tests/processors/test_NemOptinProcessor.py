@@ -25,17 +25,35 @@ class PreprocessNemTest(unittest.TestCase):
 		# Act:
 		error = process_nem_optin_request(Network.TESTNET, {
 			'meta': {'hash': {'data': str(TRANSACTION_HASH)}, 'height': TRANSACTION_HEIGHT},
-			'transaction': {'type': 123, 'signer': str(TRANSACTION_SIGNER_PUBLIC_KEY)}
+			'transaction': {'type': 123, 'signer': str(TRANSACTION_SIGNER_PUBLIC_KEY), 'amount': 0}
 		})
 
 		# Assert:
 		self._assert_error(error, 'transaction does not have a message')
 
+	def test_fails_when_amount_is_nonzero(self):
+		# Act:
+		error = process_nem_optin_request(Network.TESTNET, {
+			'meta': {'hash': {'data': str(TRANSACTION_HASH)}, 'height': TRANSACTION_HEIGHT},
+			'transaction': {
+				'type': 123,
+				'signer': str(TRANSACTION_SIGNER_PUBLIC_KEY),
+				'amount': 999,
+				'message': {'type': 1, 'payload': hexlify(json.dumps({
+					'type': 100,
+					'destination': '1433CE6D1C3F154B007CED915DA527681B5C5FE261B7316EF00B6B03E14305BD'
+				}).encode('utf8'))}
+			}
+		})
+
+		# Assert:
+		self._assert_error(error, 'transaction has nonzero amount')
+
 	def _assert_invalid_message(self, message, expected_error_message):
 		# Act:
 		error = process_nem_optin_request(Network.TESTNET, {
 			'meta': {'hash': {'data': str(TRANSACTION_HASH)}, 'height': TRANSACTION_HEIGHT},
-			'transaction': {'type': 123, 'signer': str(TRANSACTION_SIGNER_PUBLIC_KEY), 'message': message}
+			'transaction': {'type': 123, 'signer': str(TRANSACTION_SIGNER_PUBLIC_KEY), 'amount': 0, 'message': message}
 		})
 
 		# Assert:
@@ -60,6 +78,7 @@ class PreprocessNemTest(unittest.TestCase):
 			'transaction': {
 				'type': 123,
 				'signer': str(TRANSACTION_SIGNER_PUBLIC_KEY),
+				'amount': 0,
 				'message': {'type': 1, 'payload': hexlify(json.dumps(payload).encode('utf8'))}
 			}
 		})
@@ -94,6 +113,7 @@ class PreprocessNemTest(unittest.TestCase):
 			'transaction': {
 				'type': 123,
 				'signer': str(TRANSACTION_SIGNER_PUBLIC_KEY),
+				'amount': 0,
 				'message': {'type': 1, 'payload': hexlify(json.dumps(payload).encode('utf8'))}
 			}
 		})
