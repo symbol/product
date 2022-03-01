@@ -18,6 +18,9 @@ class Processor:
 		if 'message' not in self.transaction_dict:
 			return self._make_error('transaction does not have a message')
 
+		if 0 != self.transaction_dict['amount']:
+			return self._make_error('transaction has nonzero amount')
+
 		message_dict = self.transaction_dict['message']
 		return self._process_message(message_dict)
 
