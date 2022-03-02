@@ -21,7 +21,7 @@ class BalancesDatabaseTest(unittest.TestCase):
 
 	# endregion
 
-	# region add_account_balance - valid
+	# region add_account_balance
 
 	def _assert_db_contents(self, connection, expected_balances):
 		cursor = connection.cursor()
@@ -31,39 +31,58 @@ class BalancesDatabaseTest(unittest.TestCase):
 		# Assert:
 		self.assertEqual(expected_balances, balances)
 
+	@staticmethod
+	def _create_database(connection, account_balances):
+		database = BalancesDatabase(connection)
+		database.create_tables()
+
+		for account_balance in account_balances:
+			database.add_account_balance(*account_balance)
+
+		return database
+
 	def test_can_insert_balances(self):
 		# Arrange:
-		balances = [
-			(NemAddress(NEM_ADDRESSES[0]).bytes, 112233445566),
-			(NemAddress(NEM_ADDRESSES[1]).bytes, 77889900)
-		]
-
 		with sqlite3.connect(':memory:') as connection:
-			database = BalancesDatabase(connection)
-			database.create_tables()
-
 			# Act:
-			for account_balance in balances:
-				database.add_account_balance(*account_balance)
+			self._create_database(connection, [
+				(NemAddress(NEM_ADDRESSES[0]), 112233445566),
+				(NemAddress(NEM_ADDRESSES[1]), 77889900)
+			])
 
-			# Assert: (matches input)
-			self._assert_db_contents(connection, balances)
+			# Assert: matches input
+			self._assert_db_contents(connection, [
+				(NemAddress(NEM_ADDRESSES[0]).bytes, 112233445566),
+				(NemAddress(NEM_ADDRESSES[1]).bytes, 77889900)
+			])
 
 	def test_cannot_insert_same_account_multiple_times(self):
 		# Arrange:
-		balances = [
-			(NemAddress(NEM_ADDRESSES[0]).bytes, 112233445566),
-			(NemAddress(NEM_ADDRESSES[0]).bytes, 77889900)
-		]
-
 		with sqlite3.connect(':memory:') as connection:
-			database = BalancesDatabase(connection)
-			database.create_tables()
-
-			database.add_account_balance(*balances[0])
+			database = self._create_database(connection, [(NemAddress(NEM_ADDRESSES[0]), 112233445566)])
 
 			# Act:
 			with self.assertRaises(sqlite3.IntegrityError):
-				database.add_account_balance(*balances[1])
+				database.add_account_balance(NemAddress(NEM_ADDRESSES[0]), 77889900)
+
+	# endregion
+
+	# region add_account_balance
+
+	def test_can_lookup_balance(self):
+		# Arrange:
+		with sqlite3.connect(':memory:') as connection:
+			database = self._create_database(connection, [
+				(NemAddress(NEM_ADDRESSES[0]), 112233445566),
+				(NemAddress(NEM_ADDRESSES[1]), 77889900)
+			])
+
+			# Act:
+			balance1 = database.lookup_balance(NemAddress(NEM_ADDRESSES[0]))
+			balance2 = database.lookup_balance(NemAddress(NEM_ADDRESSES[1]))
+
+			# Assert:
+			self.assertEqual(112233445566, balance1)
+			self.assertEqual(77889900, balance2)
 
 	# endregion

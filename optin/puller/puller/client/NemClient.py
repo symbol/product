@@ -1,20 +1,15 @@
-from aiohttp import ClientSession
 from symbolchain.nem.Network import Address, Network
 
+from .BasicClient import BasicClient
 
-class NemClient:
+
+class NemClient(BasicClient):
 	"""Async client for connecting to a NEM node."""
-
-	def __init__(self, endpoint):
-		"""Creates a client around an endpoint."""
-
-		self.endpoint = endpoint
 
 	async def height(self):
 		"""Gets current blockchain height."""
 
-		url = f'{self.endpoint}/chain/height'
-		return await self._get(url, 'height')
+		return await self.get('chain/height', 'height')
 
 	async def finalized_height(self):
 		"""Gets current blockchain finalized height."""
@@ -24,21 +19,20 @@ class NemClient:
 	async def node_network(self):
 		"""Gets node network."""
 
-		url = f'{self.endpoint}/node/info'
-		node_metadata = await self._get(url, 'metaData')
+		node_metadata = await self.get('node/info', 'metaData')
 		return Network.TESTNET if -104 == node_metadata['networkId'] else Network.MAINNET
 
 	async def cosignatories(self, address):
 		"""Gets cosignatories for the specified account."""
 
-		url = f'{self.endpoint}/account/get?address={address}'
-		meta = await self._get(url, 'meta')
+		url_path = f'account/get?address={address}'
+		meta = await self.get(url_path, 'meta')
 		return [Address(address) for address in meta['cosignatories']]
 
 	async def historical_balance(self, address, height):
 		"""Gets historical account state."""
-		url = f'{self.endpoint}/account/historical/get?address={address}&startHeight={height}&endHeight={height}&increment=1'
-		state = await self._get(url, 'data')
+		url_path = f'account/historical/get?address={address}&startHeight={height}&endHeight={height}&increment=1'
+		state = await self.get(url_path, 'data')
 		return (Address(state[0]['address']), state[0]['balance'])
 
 	async def incoming_transactions(self, address, start_id=None):
@@ -47,18 +41,11 @@ class NemClient:
 		return await self._transactions(address, 'incoming', start_id)
 
 	async def _transactions(self, address, mode, start_id=None):
-		url = f'{self.endpoint}/account/transfers/{mode}?address={address}'
+		url_path = f'account/transfers/{mode}?address={address}'
 		if start_id:
-			url += f'&id={start_id}'
+			url_path += f'&id={start_id}'
 
-		return await self._get(url, 'data')
-
-	@staticmethod
-	async def _get(url, property_name):
-		async with ClientSession() as session:
-			async with session.get(url) as response:
-				response_json = await response.json()
-				return response_json[property_name]
+		return await self.get(url_path, 'data')
 
 
 async def get_incoming_transactions_from(client, address, start_height):

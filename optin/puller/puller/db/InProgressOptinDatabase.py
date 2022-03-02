@@ -10,7 +10,7 @@ class OptinRequestStatus(Enum):
 	"""Status of an opt-in request."""
 	UNPROCESSED = 0
 	SENT = 1
-	CONFIRMED = 2
+	COMPLETED = 2
 	DUPLICATE = 3
 	ERROR = 4
 

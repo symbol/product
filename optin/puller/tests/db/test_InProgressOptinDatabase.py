@@ -175,7 +175,7 @@ class InProgressOptinDatabaseTest(unittest.TestCase):
 			database.add_request(normal_request)
 			database.add_request(multisig_request)
 			database.add_request(confirmed_request)
-			database.set_request_status(confirmed_request, OptinRequestStatus.CONFIRMED, Hash256.zero())
+			database.set_request_status(confirmed_request, OptinRequestStatus.COMPLETED, Hash256.zero())
 
 			# Act:
 			requests = list(database.requests)

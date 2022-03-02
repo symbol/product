@@ -14,7 +14,7 @@ from ..test.OptinRequestTestUtils import NEM_ADDRESSES
 
 @pytest.fixture
 def server(event_loop, aiohttp_client):
-	class MockServer:
+	class MockNemServer:
 		def __init__(self):
 			self.urls = []
 
@@ -38,7 +38,7 @@ def server(event_loop, aiohttp_client):
 			return web.Response(body=json.dumps(response_body), headers={'Content-Type': 'application/json'})
 
 	# create a mock server
-	mock_server = MockServer()
+	mock_server = MockNemServer()
 
 	# create an app using the server
 	app = web.Application()

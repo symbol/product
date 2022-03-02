@@ -19,4 +19,11 @@ class BalancesDatabase:
 		"""Adds an account to the balances table."""
 
 		cursor = self.connection.cursor()
-		cursor.execute('''INSERT INTO snapshot_balances VALUES (?, ?)''', (address, balance))
+		cursor.execute('''INSERT INTO snapshot_balances VALUES (?, ?)''', (address.bytes, balance))
+
+	def lookup_balance(self, address):
+		"""Gets the balance for the specified address."""
+
+		cursor = self.connection.cursor()
+		cursor.execute('''SELECT balance FROM snapshot_balances WHERE address = ?''', (address.bytes,))
+		return cursor.fetchone()[0]
