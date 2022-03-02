@@ -3,4 +3,7 @@ defaultCiPipeline {
 	ciBuildDockerfile = 'python.Dockerfile'
 
 	packageId = 'optin-puller'
+
+	codeCoverageTool = 'coverage'
+	minimumCodeCoverage = 95
 }
