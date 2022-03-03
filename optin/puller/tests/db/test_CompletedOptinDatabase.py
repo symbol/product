@@ -7,12 +7,7 @@ from symbolchain.symbol.Network import Address as SymbolAddress
 from puller.db.CompletedOptinDatabase import CompletedOptinDatabase
 
 from ..test.DatabaseTestUtils import get_all_table_names
-from ..test.OptinRequestTestUtils import NEM_ADDRESSES
-
-SYMBOL_ADDRESSES = [
-	'NCU36L7K7B4I5JP5HHROFVFZYSCKKXWQI6PDT6I', 'NCLAZCJ36LUDVHNYZPWN67NI4V5E6VZJNZ666XY', 'NBLVHBI6VOMCI4QV53ZCKV5IRM7ZKCAYZYBECXQ',
-	'NCRCD5QSQYXPOFGJS7KJFUKROMHJZLX3JWUEOLY'
-]
+from ..test.OptinRequestTestUtils import NEM_ADDRESSES, SYMBOL_ADDRESSES
 
 
 class CompletedOptinDatabaseTest(unittest.TestCase):

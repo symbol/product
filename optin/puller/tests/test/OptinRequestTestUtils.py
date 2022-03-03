@@ -27,6 +27,12 @@ NEM_ADDRESSES = [
 ]
 
 
+SYMBOL_ADDRESSES = [
+	'NCU36L7K7B4I5JP5HHROFVFZYSCKKXWQI6PDT6I', 'NCLAZCJ36LUDVHNYZPWN67NI4V5E6VZJNZ666XY', 'NBLVHBI6VOMCI4QV53ZCKV5IRM7ZKCAYZYBECXQ',
+	'NCRCD5QSQYXPOFGJS7KJFUKROMHJZLX3JWUEOLY'
+]
+
+
 def make_request_error(index, message, **kwargs):
 	address = Address(NEM_ADDRESSES[kwargs.get('address_index', index)])
 	transaction_hash = Hash256(HASHES[kwargs.get('hash_index', index)])

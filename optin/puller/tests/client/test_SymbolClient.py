@@ -4,10 +4,11 @@ import json
 import pytest
 from aiohttp import web
 from symbolchain.CryptoTypes import Hash256
+from symbolchain.symbol.Network import Address, Network
 
 from puller.client.SymbolClient import SymbolClient, filter_finalized_transactions
 
-from ..test.OptinRequestTestUtils import HASHES
+from ..test.OptinRequestTestUtils import HASHES, SYMBOL_ADDRESSES
 
 # region server fixture
 
@@ -32,8 +33,17 @@ def server(event_loop, aiohttp_client):
 			self.finalized_height = 111001
 			self.status_start_height = 111001
 
+		async def accounts_known(self, request):
+			return await self._process_get(request, {'account': {}})
+
+		async def accounts_unknown(self, request):
+			return await self._process_get(request, {'code': 'ResourceNotFound', 'message': 'no resource exists'})
+
 		async def chain_info(self, request):
 			return await self._process_get(request, {'height': 123456, 'latestFinalizedBlock': {'height': self.finalized_height}})
+
+		async def node_info(self, request):
+			return await self._process_get(request, {'networkIdentifier': 152})
 
 		async def transaction_statuses(self, request):
 			request_json = json.loads(await request.text())
@@ -52,7 +62,10 @@ def server(event_loop, aiohttp_client):
 
 	# create an app using the server
 	app = web.Application()
+	app.router.add_get(f'/accounts/{SYMBOL_ADDRESSES[0]}', mock_server.accounts_known)
+	app.router.add_get(f'/accounts/{SYMBOL_ADDRESSES[1]}', mock_server.accounts_unknown)
 	app.router.add_get('/chain/info', mock_server.chain_info)
+	app.router.add_get('/node/info', mock_server.node_info)
 	app.router.add_post('/transactionStatus', mock_server.transaction_statuses)
 	server = event_loop.run_until_complete(aiohttp_client(app))  # pylint: disable=redefined-outer-name
 
@@ -63,6 +76,34 @@ def server(event_loop, aiohttp_client):
 # endregion
 
 # pylint: disable=invalid-name
+
+# region SymbolClient - is_known_address
+
+async def test_can_query_known_account(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	client = SymbolClient(server.make_url(''))
+
+	# Act:
+	is_known = await client.is_known_address(Address(SYMBOL_ADDRESSES[0]))
+
+	# Assert:
+	assert [f'{server.make_url("")}/accounts/{SYMBOL_ADDRESSES[0]}'] == server.mock.urls
+	assert is_known
+
+
+async def test_can_query_unknown_account(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	client = SymbolClient(server.make_url(''))
+
+	# Act:
+	is_known = await client.is_known_address(Address(SYMBOL_ADDRESSES[1]))
+
+	# Assert:
+	assert [f'{server.make_url("")}/accounts/{SYMBOL_ADDRESSES[1]}'] == server.mock.urls
+	assert not is_known
+
+
+# endregion
 
 # region SymbolClient - height / finalized_height
 
@@ -88,6 +129,22 @@ async def test_can_query_finalized_height(server):  # pylint: disable=redefined-
 	# Assert:
 	assert [f'{server.make_url("")}/chain/info'] == server.mock.urls
 	assert 111001 == height
+
+
+# endregion
+
+# region node_network
+
+async def test_can_query_network(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	client = SymbolClient(server.make_url(''))
+
+	# Act:
+	network = await client.node_network()
+
+	# Assert:
+	assert [f'{server.make_url("")}/node/info'] == server.mock.urls
+	assert Network.TESTNET == network
 
 
 # endregion

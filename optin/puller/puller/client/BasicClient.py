@@ -15,7 +15,7 @@ class BasicClient:
 		async with ClientSession() as session:
 			async with session.get(f'{self.endpoint}/{url_path}') as response:
 				response_json = await response.json()
-				return response_json[property_name]
+				return response_json if property_name is None else response_json[property_name]
 
 	async def post(self, url_path, request):
 		"""Initiates a POST to the specified path and returns the result."""

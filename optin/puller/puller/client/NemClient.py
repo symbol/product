@@ -6,6 +6,14 @@ from .BasicClient import BasicClient
 class NemClient(BasicClient):
 	"""Async client for connecting to a NEM node."""
 
+	async def is_known_address(self, address):
+		"""Determines if specified address is known to the network."""
+
+		# NEM API returns empty account for unknown accounts, so do balance check
+		url_path = f'account/get?address={address}'
+		account = await self.get(url_path, 'account')
+		return bool(account['balance'])
+
 	async def height(self):
 		"""Gets current blockchain height."""
 
