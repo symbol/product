@@ -33,7 +33,7 @@ async def main():
 	network = Network.MAINNET
 
 	with sqlite3.connect(Path(args.database_directory) / 'completed.db') as completed_connection:
-		with sqlite3.connect(Path(args.database_directory) / 'inprogress.db') as inprogress_connection:
+		with sqlite3.connect(Path(args.database_directory) / 'in_progress.db') as inprogress_connection:
 			with sqlite3.connect(Path(args.database_directory) / 'multisig.db') as multisig_connection:
 				completed_database = CompletedOptinDatabase(completed_connection)
 				inprogress_database = InProgressOptinDatabase(inprogress_connection)

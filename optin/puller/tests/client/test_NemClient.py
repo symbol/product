@@ -3,7 +3,7 @@ import json
 
 import pytest
 from aiohttp import web
-from symbolchain.nem.Network import Address
+from symbolchain.nem.Network import Address, Network
 
 from puller.client.NemClient import NemClient, get_incoming_transactions_from
 
@@ -20,6 +20,9 @@ def server(event_loop, aiohttp_client):
 
 		async def height(self, request):
 			return await self._process_get(request, {'height': 123456})
+
+		async def node_info(self, request):
+			return await self._process_get(request, {'metaData': {'networkId': -104}})
 
 		async def account(self, request):
 			return await self._process_get(request, {'meta': {'cosignatories': NEM_ADDRESSES}})
@@ -40,6 +43,7 @@ def server(event_loop, aiohttp_client):
 	# create an app using the server
 	app = web.Application()
 	app.router.add_get('/chain/height', mock_server.height)
+	app.router.add_get('/node/info', mock_server.node_info)
 	app.router.add_get('/account/get', mock_server.account)
 	app.router.add_get('/account/historical/get', mock_server.historical_account)
 	app.router.add_get('/account/transfers/incoming', mock_server.transfers)
@@ -77,6 +81,22 @@ async def test_can_query_finalized_height(server):  # pylint: disable=redefined-
 	# Assert:
 	assert [f'{server.make_url("")}/chain/height'] == server.mock.urls
 	assert 123096 == height
+
+# endregion
+
+
+# region node_network
+
+async def test_can_query_network(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	client = NemClient(server.make_url(''))
+
+	# Act:
+	network = await client.node_network()
+
+	# Assert:
+	assert [f'{server.make_url("")}/node/info'] == server.mock.urls
+	assert Network.TESTNET == network
 
 # endregion
 

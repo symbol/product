@@ -1,5 +1,5 @@
 from aiohttp import ClientSession
-from symbolchain.nem.Network import Address
+from symbolchain.nem.Network import Address, Network
 
 
 class NemClient:
@@ -20,6 +20,13 @@ class NemClient:
 		"""Gets current blockchain finalized height."""
 
 		return await self.height() - 360
+
+	async def node_network(self):
+		"""Gets node network."""
+
+		url = f'{self.endpoint}/node/info'
+		node_metadata = await self._get(url, 'metaData')
+		return Network.TESTNET if -104 == node_metadata['networkId'] else Network.MAINNET
 
 	async def cosignatories(self, address):
 		"""Gets cosignatories for the specified account."""
