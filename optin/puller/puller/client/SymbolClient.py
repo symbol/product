@@ -1,10 +1,12 @@
 import json
-from binascii import unhexlify
+from binascii import hexlify, unhexlify
 from collections import namedtuple
 
 from symbolchain.CryptoTypes import Hash256
 from symbolchain.nem.Network import Address as NemAddress
+from symbolchain.sc import MosaicId
 from symbolchain.symbol.Network import Network
+from symbolchain.symbol.NetworkTimestamp import NetworkTimestamp
 
 from .BasicClient import BasicClient
 
@@ -31,6 +33,18 @@ class SymbolClient(BasicClient):
 
 		return (await self.get('chain/info', 'latestFinalizedBlock'))['height']
 
+	async def announce(self, transaction_buffer):
+		"""Announces serialized transaction."""
+
+		request = {'payload': hexlify(transaction_buffer).decode('utf8').upper()}
+		return await self.put('transactions', request)
+
+	async def node_time(self):
+		"""Gets node time."""
+
+		timestamps = await self.get('node/time', 'communicationTimestamps')
+		return NetworkTimestamp(int(timestamps['receiveTimestamp']))
+
 	async def node_network(self):
 		"""Gets node network."""
 
@@ -39,6 +53,12 @@ class SymbolClient(BasicClient):
 			self.network = Network.TESTNET if 152 == network_identifier else Network.MAINNET
 
 		return self.network
+
+	async def network_currency(self):
+		"""Gets network currency."""
+
+		chain_info = await self.get('network/properties', 'chain')
+		return MosaicId(int(chain_info['currencyMosaicId'].replace('\'', ''), 0))
 
 	async def transaction_statuses(self, transaction_hashes):
 		"""Gets the statuses of the specified transactions."""
