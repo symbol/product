@@ -30,12 +30,11 @@ class NemClient(BasicClient):
 		node_metadata = await self.get('node/info', 'metaData')
 		return Network.TESTNET if -104 == node_metadata['networkId'] else Network.MAINNET
 
-	async def cosignatories(self, address):
-		"""Gets cosignatories for the specified account."""
+	async def account(self, address):
+		"""Gets account information."""
 
 		url_path = f'account/get?address={address}'
-		meta = await self.get(url_path, 'meta')
-		return [Address(address) for address in meta['cosignatories']]
+		return await self.get(url_path, None)
 
 	async def historical_balance(self, address, height):
 		"""Gets historical account state."""

@@ -133,18 +133,18 @@ async def test_can_query_network(server):  # pylint: disable=redefined-outer-nam
 
 # endregion
 
-# region cosignatories
+# region account
 
-async def test_can_query_cosignatories(server):  # pylint: disable=redefined-outer-name
+async def test_can_query_account(server):  # pylint: disable=redefined-outer-name
 	# Arrange:
 	client = NemClient(server.make_url(''))
 
 	# Act:
-	cosignatories = await client.cosignatories(NEM_ADDRESSES[0])
+	account = await client.account(NEM_ADDRESSES[0])
 
 	# Assert:
 	assert [f'{server.make_url("")}/account/get?address={NEM_ADDRESSES[0]}'] == server.mock.urls
-	assert [Address(address) for address in NEM_ADDRESSES] == cosignatories
+	assert {'meta': {'cosignatories': NEM_ADDRESSES}, 'account': {'balance': 1}} == account
 
 
 # endregion
