@@ -131,6 +131,19 @@ async def test_can_query_network(server):  # pylint: disable=redefined-outer-nam
 	assert Network.TESTNET == network
 
 
+async def test_can_query_network_cached(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	client = NemClient(server.make_url(''))
+
+	# Act: query multiple times
+	networks = [await client.node_network() for _ in range(3)]
+
+	# Assert: only a single server call was made
+	assert [f'{server.make_url("")}/node/info'] == server.mock.urls
+	for network in networks:
+		assert Network.TESTNET == network
+
+
 # endregion
 
 # region account

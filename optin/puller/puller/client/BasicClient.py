@@ -8,6 +8,7 @@ class BasicClient:
 		"""Creates a client around an endpoint."""
 
 		self.endpoint = endpoint
+		self.network = None
 
 	async def get(self, url_path, property_name):
 		"""Initiates a GET to the specified path and returns the desired property."""

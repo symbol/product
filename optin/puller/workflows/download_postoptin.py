@@ -3,11 +3,12 @@ import asyncio
 import sqlite3
 from pathlib import Path
 
+from symbolchain.CryptoTypes import PublicKey
 from symbolchain.nem.Network import Address
 
 from puller.client.NemClient import NemClient, get_incoming_transactions_from
 from puller.client.SymbolClient import SymbolClient
-from puller.db.InProgressOptinDatabase import InProgressOptinDatabase
+from puller.db.InProgressOptinDatabase import InProgressOptinDatabase, OptinRequestStatus
 from puller.processors.AccountChecker import check_destination_availability
 from puller.processors.NemOptinProcessor import process_nem_optin_request
 
@@ -16,6 +17,7 @@ from puller.processors.NemOptinProcessor import process_nem_optin_request
 
 
 OPTIN_ADDRESS = 'NAQ7RCYM4PRUAKA7AMBLN4NPBJEJMRCHHJYAVA72'
+OPTIN_SIGNER_PUBLIC_KEY = '7AEC08AA66CB50B0C3D180DE7508D5D82ECEDCDC9E73F61FA7069868BEABA856'
 SNAPSHOT_HEIGHT = 3105500
 
 
@@ -29,6 +31,34 @@ def parse_args():
 	return parser.parse_args()
 
 
+async def process_transaction(transaction, nem_client, symbol_client, database):
+	transaction_height = transaction['meta']['height']
+
+	nem_network = await nem_client.node_network()
+	symbol_network = await symbol_client.node_network()
+
+	process_result = process_nem_optin_request(nem_network, transaction)
+	if not process_result.is_error:
+		process_result = await check_destination_availability(process_result, nem_client, symbol_client)
+
+	if process_result.is_error:
+		print(f'{transaction_height} ERROR: {process_result.message}')
+		database.add_error(process_result)
+	else:
+		destination_address = symbol_network.public_key_to_address(process_result.destination_public_key)
+		optin_transaction_infos = await symbol_client.find_optin_transactions(PublicKey(OPTIN_SIGNER_PUBLIC_KEY), destination_address)
+		optin_transaction_info = next((info for info in optin_transaction_infos if process_result.address == info.address), None)
+		if optin_transaction_info:
+			print(f'{transaction_height} SUCCESS (DUPLICATE)')
+			database.add_request(process_result)
+			database.set_request_status(process_result, OptinRequestStatus.DUPLICATE, optin_transaction_info.transaction_hash)
+		else:
+			print(f'{transaction_height} SUCCESS (NEW)')
+			database.add_request(process_result)
+
+	return process_result
+
+
 async def main():
 	args = parse_args()
 
@@ -36,7 +66,6 @@ async def main():
 	symbol_client = SymbolClient(args.symbol_node)
 
 	finalized_height = await nem_client.finalized_height()
-	network = await nem_client.node_network()
 	snapshot_height = int(args.snapshot_height)
 
 	with sqlite3.connect(Path(args.database_directory) / 'in_progress.db') as connection:
@@ -58,17 +87,9 @@ async def main():
 			if transaction_height <= database_height:
 				break
 
-			process_result = process_nem_optin_request(network, transaction)
-			if not process_result.is_error:
-				process_result = await check_destination_availability(process_result, nem_client, symbol_client)
-
+			process_result = await process_transaction(transaction, nem_client, symbol_client, database)
 			if process_result.is_error:
-				print(f'{transaction_height} ERROR: {process_result.message}')
-				database.add_error(process_result)
 				error_count += 1
-			else:
-				print(f'{transaction_height} SUCCESS')
-				database.add_request(process_result)
 
 			count += 1
 

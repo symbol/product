@@ -3,12 +3,13 @@ import json
 
 import pytest
 from aiohttp import web
-from symbolchain.CryptoTypes import Hash256
+from symbolchain.CryptoTypes import Hash256, PublicKey
+from symbolchain.nem.Network import Address as NemAddress
 from symbolchain.symbol.Network import Address, Network
 
 from puller.client.SymbolClient import SymbolClient, filter_finalized_transactions
 
-from ..test.OptinRequestTestUtils import HASHES, SYMBOL_ADDRESSES
+from ..test.OptinRequestTestUtils import HASHES, PUBLIC_KEYS, SYMBOL_ADDRESSES
 
 # region server fixture
 
@@ -49,6 +50,22 @@ def server(event_loop, aiohttp_client):
 			request_json = json.loads(await request.text())
 			return await self._process_post(request, generate_transaction_statuses(self.status_start_height, request_json['hashes']))
 
+		async def transactions_confirmed(self, request):
+			message_prefix = '007B20226E697341646472657373223A20224E'
+			messages = [
+				f'{message_prefix}4133494D46323253324741485151434C37464A4B4132585744514C4B334658464852355356585622207D',
+				f'{message_prefix}414542525744424448575244504556345947544632594641344453445154574B4E5855435A575822207D',
+				f'{message_prefix}444D4B3743514C4A595258474A4E5158454C4D344F47324E545A4143324334594646475744495322207D'
+			]
+			return await self._process_get(request, {
+				'data': [
+					{
+						'meta': {'aggregateHash': HASHES[i]},
+						'transaction': {'message': message}
+					} for i, message in enumerate(messages)
+				]
+			})
+
 		async def _process_get(self, request, response_body):
 			self.urls.append(str(request.url))
 			return web.Response(body=json.dumps(response_body), headers={'Content-Type': 'application/json'})
@@ -67,6 +84,7 @@ def server(event_loop, aiohttp_client):
 	app.router.add_get('/chain/info', mock_server.chain_info)
 	app.router.add_get('/node/info', mock_server.node_info)
 	app.router.add_post('/transactionStatus', mock_server.transaction_statuses)
+	app.router.add_get('/transactions/confirmed', mock_server.transactions_confirmed)
 	server = event_loop.run_until_complete(aiohttp_client(app))  # pylint: disable=redefined-outer-name
 
 	server.mock = mock_server
@@ -147,6 +165,19 @@ async def test_can_query_network(server):  # pylint: disable=redefined-outer-nam
 	assert Network.TESTNET == network
 
 
+async def test_can_query_network_cached(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	client = SymbolClient(server.make_url(''))
+
+	# Act: query multiple times
+	networks = [await client.node_network() for _ in range(3)]
+
+	# Assert: only a single server call was made
+	assert [f'{server.make_url("")}/node/info'] == server.mock.urls
+	for network in networks:
+		assert Network.TESTNET == network
+
+
 # endregion
 
 # region transaction_statuses
@@ -179,6 +210,33 @@ async def test_can_query_transaction_statuses(server):  # pylint: disable=redefi
 
 
 # endregion
+
+# region find_optin_transactions
+
+async def test_can_find_optin_transactions(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	client = SymbolClient(server.make_url(''))
+
+	# Act:
+	optin_transaction_infos = await client.find_optin_transactions(PublicKey(PUBLIC_KEYS[0]), Address(SYMBOL_ADDRESSES[0]))
+
+	# Assert:
+	assert [
+		f'{server.make_url("")}/transactions/confirmed?signerPublicKey={PublicKey(PUBLIC_KEYS[0])}' + (
+			f'&recipientAddress={Address(SYMBOL_ADDRESSES[0])}&embedded=true'
+		)
+	] == server.mock.urls
+	assert 3 == len(optin_transaction_infos)
+
+	assert NemAddress('NA3IMF22S2GAHQQCL7FJKA2XWDQLK3FXFHR5SVXV') == optin_transaction_infos[0].address
+	assert Hash256(HASHES[0]) == optin_transaction_infos[0].transaction_hash
+
+	assert NemAddress('NAEBRWDBDHWRDPEV4YGTF2YFA4DSDQTWKNXUCZWX') == optin_transaction_infos[1].address
+	assert Hash256(HASHES[1]) == optin_transaction_infos[1].transaction_hash
+
+	assert NemAddress('NDMK7CQLJYRXGJNQXELM4OG2NTZAC2C4YFFGWDIS') == optin_transaction_infos[2].address
+	assert Hash256(HASHES[2]) == optin_transaction_infos[2].transaction_hash
+
 
 # region filter_finalized_transactions
 

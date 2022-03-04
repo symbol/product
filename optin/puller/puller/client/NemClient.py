@@ -27,8 +27,11 @@ class NemClient(BasicClient):
 	async def node_network(self):
 		"""Gets node network."""
 
-		node_metadata = await self.get('node/info', 'metaData')
-		return Network.TESTNET if -104 == node_metadata['networkId'] else Network.MAINNET
+		if not self.network:
+			node_metadata = await self.get('node/info', 'metaData')
+			self.network = Network.TESTNET if -104 == node_metadata['networkId'] else Network.MAINNET
+
+		return self.network
 
 	async def account(self, address):
 		"""Gets account information."""
