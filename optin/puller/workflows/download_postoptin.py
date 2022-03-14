@@ -18,7 +18,6 @@ from puller.processors.NemOptinProcessor import process_nem_optin_request
 
 OPTIN_ADDRESS = 'NAQ7RCYM4PRUAKA7AMBLN4NPBJEJMRCHHJYAVA72'
 OPTIN_SIGNER_PUBLIC_KEY = '7AEC08AA66CB50B0C3D180DE7508D5D82ECEDCDC9E73F61FA7069868BEABA856'
-SNAPSHOT_HEIGHT = 3105500
 
 
 def parse_args():
@@ -27,7 +26,7 @@ def parse_args():
 	parser.add_argument('--symbol-node', help='Symbol node url', default='http://wolf.importance.jp:3000')
 	parser.add_argument('--database-directory', help='output database directory', default='_temp')
 	parser.add_argument('--optin-address', help='optin account address', default=OPTIN_ADDRESS)
-	parser.add_argument('--snapshot-height', help='network', default=SNAPSHOT_HEIGHT)
+	parser.add_argument('--snapshot-height', help='snapshot height', default=3105500)
 	return parser.parse_args()
 
 

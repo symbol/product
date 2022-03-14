@@ -10,8 +10,6 @@ from puller.db.BalancesDatabase import BalancesDatabase
 from puller.db.InProgressOptinDatabase import InProgressOptinDatabase
 from puller.db.MultisigDatabase import MultisigDatabase
 
-SNAPSHOT_HEIGHT = 3105500
-
 
 def get_addresses(filename):
 	with sqlite3.connect(f'file:{filename}?mode=ro', uri=True) as connection:
@@ -20,7 +18,7 @@ def get_addresses(filename):
 		return [optin_request.address for optin_request in in_progress_database.requests]
 
 
-async def populate_balances(connection, client, addresses):
+async def populate_balances(connection, client, addresses, snapshot_height):
 	database = BalancesDatabase(connection)
 	database.create_tables()
 
@@ -28,7 +26,7 @@ async def populate_balances(connection, client, addresses):
 
 	async def get_state(address):
 		async with limiter:
-			account_balance = await client.historical_balance(address, SNAPSHOT_HEIGHT)
+			account_balance = await client.historical_balance(address, snapshot_height)
 			database.add_account_balance(*account_balance)
 
 			print('.', end='', flush=True)
@@ -58,6 +56,7 @@ async def main():
 	parser = argparse.ArgumentParser(description='download post optin account states')
 	parser.add_argument('--node', help='NEM node url', default='http://superalice.nemmain.net:7890')
 	parser.add_argument('--database-directory', help='output database directory', default='_temp')
+	parser.add_argument('--snapshot-height', help='snapshot height', default=3105500)
 	args = parser.parse_args()
 
 	client = NemClient(args.node)
@@ -65,7 +64,7 @@ async def main():
 
 	print('populating balances...')
 	with sqlite3.connect(Path(args.database_directory) / 'balances.db') as connection:
-		await populate_balances(connection, client, addresses)
+		await populate_balances(connection, client, addresses, args.snapshot_height)
 
 	print('populating multisig...')
 	with sqlite3.connect(Path(args.database_directory) / 'multisig.db') as connection:
