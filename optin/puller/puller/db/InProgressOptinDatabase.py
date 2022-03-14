@@ -79,12 +79,16 @@ class InProgressOptinDatabase:
 
 	@staticmethod
 	def _to_request(request_tuple):
-		payout_transaction_hash = Hash256(request_tuple[6]) if request_tuple[6] else None
-		return OptinRequest(Address(request_tuple[2]), request_tuple[0], Hash256(request_tuple[1]), payout_transaction_hash, {
-			'type': 101 if request_tuple[4] else 100,
-			'destination': str(PublicKey(request_tuple[3])),
-			'origin': str(PublicKey(request_tuple[4])) if request_tuple[4] else None
-		})
+		return OptinRequest(
+			Address(request_tuple[2]),
+			request_tuple[0],
+			Hash256(request_tuple[1]),
+			Hash256(request_tuple[6]) if request_tuple[6] else None,
+			{
+				'type': 101 if request_tuple[4] else 100,
+				'destination': str(PublicKey(request_tuple[3])),
+				'origin': str(PublicKey(request_tuple[4])) if request_tuple[4] else None
+			})
 
 	def requests(self):
 		"""Returns requests."""
@@ -106,16 +110,19 @@ class InProgressOptinDatabase:
 		"""Sets the status for a request."""
 
 		cursor = self.connection.cursor()
+		transaction_hash = payout_transaction_hash.bytes if payout_transaction_hash else None
 		if request.multisig_public_key:
 			cursor.execute(
 				'''UPDATE optin_request SET payout_status = ?, payout_transaction_hash = ?
 					WHERE address = ? AND multisig_public_key = ?''',
-				(new_status.value, payout_transaction_hash.bytes, request.address.bytes, request.multisig_public_key.bytes))
+				(new_status.value, transaction_hash, request.address.bytes, request.multisig_public_key.bytes))
 		else:
 			cursor.execute(
 				'''UPDATE optin_request SET payout_status = ?, payout_transaction_hash = ?
 					WHERE address = ? AND multisig_public_key IS NULL''',
-				(new_status.value, payout_transaction_hash.bytes, request.address.bytes))
+				(new_status.value, transaction_hash, request.address.bytes))
+
+		self.connection.commit()
 
 	def get_requests_by_status(self, status):
 		"""Gets all requests with the desired status."""

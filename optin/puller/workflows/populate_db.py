@@ -12,7 +12,7 @@ def main():
 	parser.add_argument('--preoptin', help='pre optin json data', default='./resources/preoptin.json')
 	args = parser.parse_args()
 
-	with sqlite3.connect(Path(args.database_directory) / 'optin.db') as connection:
+	with sqlite3.connect(Path(args.database_directory) / 'completed.db') as connection:
 		database = CompletedOptinDatabase(connection)
 		database.create_tables()
 

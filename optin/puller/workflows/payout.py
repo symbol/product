@@ -24,19 +24,29 @@ def get_key_pair(filepath):
 
 
 async def process_sent_requests(sent_requests, databases, client, symbol_network):
-	finalized_transaction_hashes = set(await filter_finalized_transactions(client, set(
-		request.transaction_hash for request in request_group for request_group in sent_requests.values()
-	)))
+	if not sent_requests:
+		return
+
+	hashes = []
+	for request_group in sent_requests.values():
+		hashes.extend([request.payout_transaction_hash for request in request_group.requests])
+
+	finalized_transaction_hashes = set(await filter_finalized_transactions(client, set(hashes)))
+
+	completed = 0
 	for address, request_group in sent_requests.items():
-		for request in request_group:
-			if request.transaction_hash in finalized_transaction_hashes:
+		for request in request_group.requests:
+			if request.optin_transaction_hash in finalized_transaction_hashes:
 				databases.inprogress.set_request_status(request, OptinRequestStatus.COMPLETED, request.transaction_hash)
+				completed += 1
 
 		balance = databases.balances.lookup_balance(address)
 		symbol_address = symbol_network.public_key_to_address(request_group.requests[0].destination_public_key)
 		databases.completed.insert_mapping(
 			{str(address): balance},
 			{str(symbol_address): balance})
+
+	print(f'transactions completed since last run: {completed}')
 
 
 async def process_unprocessed_requests(unprocessed_requests, sent_requests, databases, symbol_network, send_funds):
@@ -46,12 +56,14 @@ async def process_unprocessed_requests(unprocessed_requests, sent_requests, data
 			continue
 
 		if address in sent_requests or databases.completed.is_opted_in(address):
-			databases.inprogress.set_request_status(address, OptinRequestStatus.DUPLICATE, None)
+			for request in request_group.requests:
+				databases.inprogress.set_request_status(request, OptinRequestStatus.DUPLICATE, None)
 		else:
 			if databases.multisig.check_cosigners(address, [request.address for request in request_group.requests]):
 				balance = databases.balances.lookup_balance(address)
 				symbol_address = symbol_network.public_key_to_address(request_group.requests[0].destination_public_key)
-				sent_transaction_hash = send_funds(symbol_address, balance, address)
+				sent_transaction_hash = await send_funds(symbol_address, balance, address)
+				print(f'hash: {sent_transaction_hash}')
 				for request in request_group.requests:
 					databases.inprogress.set_request_status(request, OptinRequestStatus.SENT, sent_transaction_hash)
 
@@ -74,16 +86,20 @@ async def main():
 
 	currency_mosaic_id = await client.network_currency()
 	key_pair = get_key_pair(Path(args.hot))
+
+	print(f'building preparer around {symbol_network.public_key_to_address(key_pair.public_key)}')
 	preparer = TransactionPreparer(args.network, currency_mosaic_id, key_pair)
 
-	def send_funds(destination_address, amount, nem_address):
-		deadline = client.node_time().add_hours(1).timestamp
+	async def send_funds(destination_address, amount, nem_address):
+		node_time = await client.node_time()
+		deadline = node_time.add_hours(1).timestamp
 		transaction, transaction_hash = preparer.prepare_transaction(destination_address, amount, deadline, nem_address)
-		client.announce(transaction)
+		await client.announce(transaction.serialize())
 		return transaction_hash
 
 	with Databases(args.database_directory) as databases:
 		sent_requests = group_requests(nem_network, databases.inprogress.get_requests_by_status(OptinRequestStatus.SENT))
+		print(f'sent requests count: {len(sent_requests)}')
 		await process_sent_requests(sent_requests, databases, client, symbol_network)
 
 		unprocessed_requests = group_requests(

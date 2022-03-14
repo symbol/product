@@ -24,6 +24,7 @@ def make_request_tuple(index, **kwargs):
 	if 'multisig_public_key_index' in kwargs:
 		multisig_public_key = PublicKey(PUBLIC_KEYS[kwargs['multisig_public_key_index']])
 
+	payout_transaction_hash = kwargs.get('payout_transaction_hash', Hash256(HASHES[(index * 2) % len(HASHES)]))
 	return (
 		HEIGHTS[index],
 		Hash256(HASHES[index]).bytes,
@@ -31,7 +32,7 @@ def make_request_tuple(index, **kwargs):
 		destination_public_key.bytes,
 		multisig_public_key.bytes if multisig_public_key else None,
 		kwargs.get('status_id', 0),
-		kwargs.get('payout_transaction_hash', Hash256(HASHES[(index * 2) % len(HASHES)])).bytes)
+		payout_transaction_hash.bytes if payout_transaction_hash else None)
 
 # endregion
 
@@ -306,6 +307,27 @@ class InProgressOptinDatabaseTest(unittest.TestCase):
 			make_request_tuple(0, multisig_public_key_index=3, status_id=1, payout_transaction_hash=payout_transaction_hash),
 			make_request_tuple(1, multisig_public_key_index=4, address_index=0),
 			make_request_tuple(2, destination_public_key_index=0, multisig_public_key_index=3)
+		], post_insert_action=post_insert_action)
+
+	def test_can_unset_request_payout_transaction_hash(self):
+		# Arrange:
+		seed_requests = [
+			make_request(0, {'type': 100, 'destination': PUBLIC_KEYS[0]}),
+			make_request(1, {'type': 100, 'destination': PUBLIC_KEYS[1]}),
+			make_request(2, {'type': 101, 'destination': PUBLIC_KEYS[2], 'origin': PUBLIC_KEYS[4]}),
+			make_request(3, {'type': 100, 'destination': PUBLIC_KEYS[3]})
+		]
+
+		def post_insert_action(database):
+			database.set_request_status(seed_requests[1], OptinRequestStatus.SENT, None)
+			database.set_request_status(seed_requests[2], OptinRequestStatus.SENT, None)
+
+		# Act + Assert:
+		self._assert_can_insert_requests(seed_requests, [
+			make_request_tuple(0),
+			make_request_tuple(1, status_id=1, payout_transaction_hash=None),
+			make_request_tuple(2, status_id=1, multisig_public_key_index=4, payout_transaction_hash=None),
+			make_request_tuple(3)
 		], post_insert_action=post_insert_action)
 
 	# endregion
