@@ -43,7 +43,7 @@ def server(event_loop, aiohttp_client):
 			return await self._process(request, {'code': 'ResourceNotFound', 'message': 'no resource exists'})
 
 		async def chain_info(self, request):
-			return await self._process(request, {'height': 123456, 'latestFinalizedBlock': {'height': self.finalized_height}})
+			return await self._process(request, {'height': '123456', 'latestFinalizedBlock': {'height': str(self.finalized_height)}})
 
 		async def node_time(self, request):
 			return await self._process(request, {'communicationTimestamps': {'receiveTimestamp': '30469876543'}})

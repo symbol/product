@@ -26,12 +26,12 @@ class SymbolClient(BasicClient):
 	async def height(self):
 		"""Gets current blockchain height."""
 
-		return await self.get('chain/info', 'height')
+		return int(await self.get('chain/info', 'height'))
 
 	async def finalized_height(self):
 		"""Gets current blockchain finalized height."""
 
-		return (await self.get('chain/info', 'latestFinalizedBlock'))['height']
+		return int((await self.get('chain/info', 'latestFinalizedBlock'))['height'])
 
 	async def announce(self, transaction_buffer):
 		"""Announces serialized transaction."""
