@@ -31,7 +31,7 @@ class Databases:
 		"""Connects to databases."""
 
 		self._completed_connection = sqlite3.connect(self.database_directory / 'completed.db')
-		self._inprogress_connection = sqlite3.connect(self.database_directory / 'inprogress.db')
+		self._inprogress_connection = sqlite3.connect(self.database_directory / 'in_progress.db')
 		self._multisig_connection = sqlite3.connect(self.database_directory / 'multisig.db')
 		self._balances_connection = sqlite3.connect(self.database_directory / 'balances.db')
 

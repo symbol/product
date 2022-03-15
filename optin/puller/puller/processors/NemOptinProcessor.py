@@ -56,7 +56,7 @@ class Processor:
 			return self._make_error(f'{prefix} has unexpected type: {optin_message_type}')
 
 		try:
-			return OptinRequest(self.transaction_signer_address, self.transaction_height, self.transaction_hash, message_dict)
+			return OptinRequest(self.transaction_signer_address, self.transaction_height, self.transaction_hash, None, message_dict)
 		except (KeyError, ValueError):
 			return self._make_error(f'{prefix} is malformed')
 

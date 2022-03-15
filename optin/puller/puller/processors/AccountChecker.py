@@ -25,7 +25,7 @@ async def check_destination_availability(request, nem_client, symbol_client):
 
 	for i, result in enumerate(results):
 		if result:
-			return OptinRequestError(request.address, request.transaction_height, request.transaction_hash, [
+			return OptinRequestError(request.address, request.optin_transaction_height, request.optin_transaction_hash, [
 				'destination is a NEM public key',
 				'destination is a NEM private key',
 				'destination is a Symbol private key',

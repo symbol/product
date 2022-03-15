@@ -35,20 +35,24 @@ SYMBOL_ADDRESSES = [
 
 def make_request_error(index, message, **kwargs):
 	address = Address(NEM_ADDRESSES[kwargs.get('address_index', index)])
-	transaction_hash = Hash256(HASHES[kwargs.get('hash_index', index)])
-	return OptinRequestError(address, kwargs.get('height', None) or HEIGHTS[index], transaction_hash, message)
+	height = kwargs.get('height', None) or HEIGHTS[index]
+	optin_transaction_hash = Hash256(HASHES[kwargs.get('hash_index', index)])
+	return OptinRequestError(address, height, optin_transaction_hash, message)
 
 
 def make_request(index, message_dict, **kwargs):
 	address = Address(NEM_ADDRESSES[kwargs.get('address_index', index)])
-	transaction_hash = Hash256(HASHES[kwargs.get('hash_index', index)])
-	return OptinRequest(address, kwargs.get('height', None) or HEIGHTS[index], transaction_hash, message_dict)
+	height = kwargs.get('height', None) or HEIGHTS[index]
+	optin_transaction_hash = Hash256(HASHES[kwargs.get('hash_index', index)])
+	payout_transaction_hash = Hash256(HASHES[(kwargs.get('hash_index', index) * 2) % len(HASHES)])
+	return OptinRequest(address, height, optin_transaction_hash, payout_transaction_hash, message_dict)
 
 
 def assert_equal_request(asserter, expected, actual, is_error=False):
 	asserter.assertEqual(expected.address, actual.address)
-	asserter.assertEqual(expected.transaction_height, actual.transaction_height)
-	asserter.assertEqual(expected.transaction_hash, actual.transaction_hash)
+	asserter.assertEqual(expected.optin_transaction_height, actual.optin_transaction_height)
+	asserter.assertEqual(expected.optin_transaction_hash, actual.optin_transaction_hash)
+	asserter.assertEqual(expected.payout_transaction_hash, actual.payout_transaction_hash)
 	asserter.assertEqual(expected.destination_public_key, actual.destination_public_key)
 	asserter.assertEqual(expected.multisig_public_key, actual.multisig_public_key)
 	asserter.assertEqual(is_error, actual.is_error)

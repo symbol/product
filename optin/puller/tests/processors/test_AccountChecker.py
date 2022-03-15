@@ -58,8 +58,8 @@ async def _run_test(destination_public_key, expected_error_message):
 	else:
 		assert result.is_error
 		assert request.address == result.address
-		assert request.transaction_height == result.transaction_height
-		assert request.transaction_hash == result.transaction_hash
+		assert request.optin_transaction_height == result.optin_transaction_height
+		assert request.optin_transaction_hash == result.optin_transaction_hash
 		assert expected_error_message == result.message
 
 

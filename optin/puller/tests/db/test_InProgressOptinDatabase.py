@@ -31,7 +31,7 @@ def make_request_tuple(index, **kwargs):
 		destination_public_key.bytes,
 		multisig_public_key.bytes if multisig_public_key else None,
 		kwargs.get('status_id', 0),
-		kwargs['status_hash'].bytes if 'status_hash' in kwargs else None)
+		kwargs['payout_transaction_hash'].bytes if 'payout_transaction_hash' in kwargs else Hash256(HASHES[(index * 2) % 3]).bytes)
 
 # endregion
 
@@ -70,10 +70,10 @@ class InProgressOptinDatabaseTest(unittest.TestCase):
 
 			# Assert:
 			cursor = connection.cursor()
-			cursor.execute('''SELECT * FROM optin_error ORDER BY transaction_hash DESC''')
+			cursor.execute('''SELECT * FROM optin_error ORDER BY optin_transaction_hash DESC''')
 			actual_errors = cursor.fetchall()
 
-			cursor.execute('''SELECT * FROM optin_request ORDER BY transaction_hash DESC''')
+			cursor.execute('''SELECT * FROM optin_request ORDER BY optin_transaction_hash DESC''')
 			actual_requests = cursor.fetchall()
 
 			self.assertEqual(expected_errors, actual_errors)
@@ -170,12 +170,17 @@ class InProgressOptinDatabaseTest(unittest.TestCase):
 			database.create_tables()
 
 			normal_request = make_request(0, {'type': 100, 'destination': PUBLIC_KEYS[0]})
+			normal_request.payout_transaction_hash = None
+
 			multisig_request = make_request(1, {'type': 101, 'destination': PUBLIC_KEYS[1], 'origin': PUBLIC_KEYS[4]})
+
 			confirmed_request = make_request(2, {'type': 100, 'destination': PUBLIC_KEYS[2]})
 			database.add_request(normal_request)
 			database.add_request(multisig_request)
 			database.add_request(confirmed_request)
-			database.set_request_status(confirmed_request, OptinRequestStatus.COMPLETED, Hash256.zero())
+
+			confirmed_request.payout_transaction_hash = Hash256.zero()
+			database.set_request_status(confirmed_request, OptinRequestStatus.COMPLETED, confirmed_request.payout_transaction_hash)
 
 			# Act:
 			requests = list(database.requests)
@@ -238,7 +243,7 @@ class InProgressOptinDatabaseTest(unittest.TestCase):
 
 	def test_can_update_single_request_status(self):
 		# Arrange:
-		status_hash = Hash256('ACFF5E24733CD040504448A3A75F1CE32E90557E5FBA02E107624242F4FA251D')
+		payout_transaction_hash = Hash256('ACFF5E24733CD040504448A3A75F1CE32E90557E5FBA02E107624242F4FA251D')
 		seed_requests = [
 			make_request(0, {'type': 100, 'destination': PUBLIC_KEYS[0]}),
 			make_request(1, {'type': 100, 'destination': PUBLIC_KEYS[1]}),
@@ -246,18 +251,18 @@ class InProgressOptinDatabaseTest(unittest.TestCase):
 		]
 
 		def post_insert_action(database):
-			database.set_request_status(seed_requests[1], OptinRequestStatus.SENT, status_hash)
+			database.set_request_status(seed_requests[1], OptinRequestStatus.SENT, payout_transaction_hash)
 
 		# Act + Assert:
 		self._assert_can_insert_requests(seed_requests, [
 			make_request_tuple(0),
-			make_request_tuple(1, status_id=1, status_hash=status_hash),
+			make_request_tuple(1, status_id=1, payout_transaction_hash=payout_transaction_hash),
 			make_request_tuple(2)
 		], post_insert_action=post_insert_action)
 
 	def test_can_update_mutiple_request_part_status(self):
 		# Arrange:
-		status_hash = Hash256('ACFF5E24733CD040504448A3A75F1CE32E90557E5FBA02E107624242F4FA251D')
+		payout_transaction_hash = Hash256('ACFF5E24733CD040504448A3A75F1CE32E90557E5FBA02E107624242F4FA251D')
 		seed_requests = [
 			make_request(0, {'type': 101, 'destination': PUBLIC_KEYS[0], 'origin': PUBLIC_KEYS[3]}),
 			make_request(1, {'type': 101, 'destination': PUBLIC_KEYS[1], 'origin': PUBLIC_KEYS[4]}, address_index=0),
@@ -265,12 +270,12 @@ class InProgressOptinDatabaseTest(unittest.TestCase):
 		]
 
 		def post_insert_action(database):
-			database.set_request_status(seed_requests[0], OptinRequestStatus.SENT, status_hash)
+			database.set_request_status(seed_requests[0], OptinRequestStatus.SENT, payout_transaction_hash)
 
 		# Act + Assert: even though there are multiple requests with same address,
 		#               only the one with matching multisig_public_key should change
 		self._assert_can_insert_requests(seed_requests, [
-			make_request_tuple(0, multisig_public_key_index=3, status_id=1, status_hash=status_hash),
+			make_request_tuple(0, multisig_public_key_index=3, status_id=1, payout_transaction_hash=payout_transaction_hash),
 			make_request_tuple(1, multisig_public_key_index=4, address_index=0),
 			make_request_tuple(2, destination_public_key_index=0, multisig_public_key_index=3)
 		], post_insert_action=post_insert_action)
@@ -285,7 +290,7 @@ class InProgressOptinDatabaseTest(unittest.TestCase):
 			database = InProgressOptinDatabase(connection)
 			database.create_tables()
 
-			status_hash = Hash256('ACFF5E24733CD040504448A3A75F1CE32E90557E5FBA02E107624242F4FA251D')
+			payout_transaction_hash = Hash256('ACFF5E24733CD040504448A3A75F1CE32E90557E5FBA02E107624242F4FA251D')
 			seed_requests = [
 				make_request(0, {'type': 100, 'destination': PUBLIC_KEYS[0]}),
 				make_request(1, {'type': 100, 'destination': PUBLIC_KEYS[1]}),
@@ -295,7 +300,7 @@ class InProgressOptinDatabaseTest(unittest.TestCase):
 			for request in seed_requests:
 				database.add_request(request)
 
-			database.set_request_status(seed_requests[1], OptinRequestStatus.SENT, status_hash)
+			database.set_request_status(seed_requests[1], OptinRequestStatus.SENT, payout_transaction_hash)
 
 			# Act:
 			requests = database.get_requests_by_status(OptinRequestStatus.UNPROCESSED)

@@ -16,8 +16,8 @@ TRANSACTION_SIGNER_PUBLIC_KEY = PublicKey('96EB2A145211B1B7AB5F0D4B14F8ABC8D695C
 class PreprocessNemTest(unittest.TestCase):
 	def _assert_error(self, error, expected_message):
 		self.assertEqual(TRANSACTION_SIGNER_ADDRESS, error.address)
-		self.assertEqual(TRANSACTION_HEIGHT, error.transaction_height)
-		self.assertEqual(TRANSACTION_HASH, error.transaction_hash)
+		self.assertEqual(TRANSACTION_HEIGHT, error.optin_transaction_height)
+		self.assertEqual(TRANSACTION_HASH, error.optin_transaction_hash)
 		self.assertEqual(expected_message, error.message)
 		self.assertEqual(True, error.is_error)
 
@@ -120,8 +120,9 @@ class PreprocessNemTest(unittest.TestCase):
 
 		# Assert:
 		self.assertEqual(TRANSACTION_SIGNER_ADDRESS, request.address)
-		self.assertEqual(TRANSACTION_HEIGHT, request.transaction_height)
-		self.assertEqual(TRANSACTION_HASH, request.transaction_hash)
+		self.assertEqual(TRANSACTION_HEIGHT, request.optin_transaction_height)
+		self.assertEqual(TRANSACTION_HASH, request.optin_transaction_hash)
+		self.assertEqual(None, request.payout_transaction_hash)
 		self.assertEqual(False, request.is_error)
 		return request
 
