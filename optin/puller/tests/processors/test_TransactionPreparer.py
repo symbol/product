@@ -17,8 +17,8 @@ class TransactionPreparerTest(unittest.TestCase):
 		key_pair = KeyPair(PrivateKey('E88283CE35FE74C89FFCB2D8BFA0A2CF6108BDC0D07606DEE34D161C30AC2F1E'))
 		preparer = TransactionPreparer('testnet', MosaicId(0x1234_5678_90AB_CDEF), key_pair)
 		recipient_address = preparer.facade.Address('TDJUZBOUALJJBV4AOR5BS42JWJD4B2MF3HD6GUI')
-		expected_signature = '192D25281ACC464A7D43D996EA46A52DDC81244AA7DE5CDFA08C6E51E324A94E' \
-			'F0E895BD0BCD8CC9E84D22460FA7964395E8084565679406DD73F2C179BBF400'
+		expected_signature = 'A49FD8A4C9FDC48C0C284D9C09EC35900EAAB707DBA2C839A2DA49D12FFB6B37' \
+			'FE42A76F1326C31DBB1B635434A474BCBB1417C8892D8FBE70EB2BF6AC6AC20D'
 
 		# Act:
 		transaction, transaction_hash = preparer.prepare_transaction(recipient_address, 1234, 5678, nem_address)
@@ -42,4 +42,4 @@ class TransactionPreparerTest(unittest.TestCase):
 		# - hash
 		expected_hash = preparer.facade.hash_transaction(transaction)
 		self.assertEqual(expected_hash, transaction_hash)
-		self.assertEqual(Hash256('F37D4B613EBE405A20E6495AD37C6B338C41A9EB45F01D80B4E8E390225A53AF'), transaction_hash)
+		self.assertEqual(Hash256('054A580F6AE737ED57A05F2E8DE94697A2A067048029C5B412C0B1BDC0630C0F'), transaction_hash)
