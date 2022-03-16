@@ -132,8 +132,9 @@ class NemRoutesFacade(BasicRoutesFacade):
 class SymbolRoutesFacade(BasicRoutesFacade):
     def __init__(self):
         super().__init__('symbol', 'Symbol', self._version_to_css_class, {
-            '1.0.3.1': ('#008500', 6),
-            '1.0.3.0': ('#009E00', 5),
+            '1.0.3.3': ('#008A00', 7),
+            '1.0.3.1': ('#00B300', 6),
+            '1.0.3.0': ('#00D600', 5),
             'delegating / updating': ('#FFFF6B', 4),
             '1.0.2.0': ('#FF1F1F', 3),
             '1.0.1.0': ('#FF0505', 2),
