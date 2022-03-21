@@ -11,11 +11,10 @@ from puller.db.InProgressOptinDatabase import InProgressOptinDatabase
 from puller.db.MultisigDatabase import MultisigDatabase
 
 
-def get_addresses(filename):
+def get_addresses(filename, network):
 	with sqlite3.connect(f'file:{filename}?mode=ro', uri=True) as connection:
 		in_progress_database = InProgressOptinDatabase(connection)
-
-		return [optin_request.address for optin_request in in_progress_database.requests]
+		return in_progress_database.nem_source_addresses(network)
 
 
 async def populate_balances(connection, client, addresses, snapshot_height):
@@ -60,7 +59,8 @@ async def main():
 	args = parser.parse_args()
 
 	client = NemClient(args.node)
-	addresses = set(get_addresses(Path(args.database_directory) / 'in_progress.db'))
+	network = await client.node_network()
+	addresses = get_addresses(Path(args.database_directory) / 'in_progress.db', network)
 
 	print('populating balances...')
 	with sqlite3.connect(Path(args.database_directory) / 'balances.db') as connection:

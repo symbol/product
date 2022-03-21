@@ -2,7 +2,7 @@ import sqlite3
 import unittest
 
 from symbolchain.CryptoTypes import Hash256, PublicKey
-from symbolchain.nem.Network import Address
+from symbolchain.nem.Network import Address, Network
 
 from puller.db.InProgressOptinDatabase import InProgressOptinDatabase, OptinRequestStatus
 
@@ -31,7 +31,7 @@ def make_request_tuple(index, **kwargs):
 		destination_public_key.bytes,
 		multisig_public_key.bytes if multisig_public_key else None,
 		kwargs.get('status_id', 0),
-		kwargs['payout_transaction_hash'].bytes if 'payout_transaction_hash' in kwargs else Hash256(HASHES[(index * 2) % 3]).bytes)
+		kwargs.get('payout_transaction_hash', Hash256(HASHES[(index * 2) % len(HASHES)])).bytes)
 
 # endregion
 
@@ -163,33 +163,61 @@ class InProgressOptinDatabaseTest(unittest.TestCase):
 
 	# region requests
 
+	@staticmethod
+	def _prepare_database_for_requests_test(database):
+		database.create_tables()
+
+		normal_request = make_request(0, {'type': 100, 'destination': PUBLIC_KEYS[0]})
+		normal_request.payout_transaction_hash = None
+
+		multisig_request = make_request(1, {'type': 101, 'destination': PUBLIC_KEYS[1], 'origin': PUBLIC_KEYS[4]})
+		confirmed_request = make_request(2, {'type': 100, 'destination': PUBLIC_KEYS[2]})
+		multisig_request2 = make_request(3, {'type': 101, 'destination': PUBLIC_KEYS[1], 'origin': PUBLIC_KEYS[4]})
+
+		database.add_request(normal_request)
+		database.add_request(multisig_request)
+		database.add_request(confirmed_request)
+		database.add_request(multisig_request2)
+
+		confirmed_request.payout_transaction_hash = Hash256.zero()
+		database.set_request_status(confirmed_request, OptinRequestStatus.COMPLETED, confirmed_request.payout_transaction_hash)
+
+		return (normal_request, multisig_request, confirmed_request, multisig_request2)
+
 	def test_can_retrieve_requests(self):
 		# Arrange:
 		with sqlite3.connect(':memory:') as connection:
 			database = InProgressOptinDatabase(connection)
-			database.create_tables()
-
-			normal_request = make_request(0, {'type': 100, 'destination': PUBLIC_KEYS[0]})
-			normal_request.payout_transaction_hash = None
-
-			multisig_request = make_request(1, {'type': 101, 'destination': PUBLIC_KEYS[1], 'origin': PUBLIC_KEYS[4]})
-
-			confirmed_request = make_request(2, {'type': 100, 'destination': PUBLIC_KEYS[2]})
-			database.add_request(normal_request)
-			database.add_request(multisig_request)
-			database.add_request(confirmed_request)
-
-			confirmed_request.payout_transaction_hash = Hash256.zero()
-			database.set_request_status(confirmed_request, OptinRequestStatus.COMPLETED, confirmed_request.payout_transaction_hash)
+			(normal_request, multisig_request, confirmed_request, multisig_request2) = self._prepare_database_for_requests_test(database)
 
 			# Act:
-			requests = list(database.requests)
+			requests = list(database.requests())
 
-			# Assert: ordered by heigts
-			self.assertEqual(3, len(requests))
+			# Assert: ordered by heights
+			self.assertEqual(4, len(requests))
+			assert_equal_request(self, normal_request, requests[3])
 			assert_equal_request(self, multisig_request, requests[0])
-			assert_equal_request(self, confirmed_request, requests[1])
-			assert_equal_request(self, normal_request, requests[2])
+			assert_equal_request(self, confirmed_request, requests[2])
+			assert_equal_request(self, multisig_request2, requests[1])
+
+	# endregion
+
+	# region nem_source_addresses
+
+	def test_can_retrieve_nem_source_addresses(self):
+		# Arrange:
+		with sqlite3.connect(':memory:') as connection:
+			database = InProgressOptinDatabase(connection)
+			self._prepare_database_for_requests_test(database)
+
+			# Act:
+			addresses = database.nem_source_addresses(Network.TESTNET)
+
+			# Assert:
+			self.assertEqual(3, len(addresses))
+			self.assertTrue(Address(NEM_ADDRESSES[0]) in addresses)
+			self.assertTrue(Address(NEM_ADDRESSES[2]) in addresses)
+			self.assertTrue(Network.TESTNET.public_key_to_address(PublicKey(PUBLIC_KEYS[4])) in addresses)
 
 	# endregion
 
