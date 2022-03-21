@@ -86,13 +86,21 @@ class InProgressOptinDatabase:
 			'origin': str(PublicKey(request_tuple[4])) if request_tuple[4] else None
 		})
 
-	@property
 	def requests(self):
 		"""Returns requests."""
 		cursor = self.connection.cursor()
 		cursor.execute('''SELECT * FROM optin_request ORDER BY optin_transaction_height''')
 		for row in cursor:
 			yield self._to_request(row)
+
+	def nem_source_addresses(self, network):
+		"""Returns unique source addresses."""
+		addresses = [
+			network.public_key_to_address(request.multisig_public_key) if request.multisig_public_key else request.address
+			for request in self.requests()
+		]
+
+		return set(addresses)
 
 	def set_request_status(self, request, new_status, payout_transaction_hash):
 		"""Sets the status for a request."""
