@@ -50,9 +50,13 @@ class MultisigDatabaseTest(unittest.TestCase):
 			# Assert:
 			self._assert_db_contents(connection, expected_multisigs, expected_multisig_cosignatories)
 
+	@staticmethod
+	def _addresses_to_accounts(addresses):
+		return list(map(lambda address: {'address': address, 'label': None}, addresses))
+
 	def test_can_insert_multisig_account_information(self):
 		self._assert_can_insert_accounts({
-			'meta': {'cosignatories': NEM_ADDRESSES[:3]},
+			'meta': {'cosignatories': self._addresses_to_accounts(NEM_ADDRESSES[:3])},
 			'account': {'address': NEM_ADDRESSES[3], 'multisigInfo': {'cosignatoriesCount': 7, 'minCosignatories': 5}}
 		}, [
 			(1, Address(NEM_ADDRESSES[3]).bytes, 7, 5)
@@ -68,7 +72,7 @@ class MultisigDatabaseTest(unittest.TestCase):
 	def test_can_insert_multiple_multisig_account_informations(self):
 		self._assert_can_insert_accounts([
 			{
-				'meta': {'cosignatories': NEM_ADDRESSES[:3]},
+				'meta': {'cosignatories': self._addresses_to_accounts(NEM_ADDRESSES[:3])},
 				'account': {'address': NEM_ADDRESSES[3], 'multisigInfo': {'cosignatoriesCount': 7, 'minCosignatories': 5}}
 			},
 			{
@@ -76,14 +80,14 @@ class MultisigDatabaseTest(unittest.TestCase):
 				'account': {'address': NEM_ADDRESSES[4], 'multisigInfo': {}}
 			},
 			{
-				'meta': {'cosignatories': [NEM_ADDRESSES[0]]},
+				'meta': {'cosignatories': self._addresses_to_accounts([NEM_ADDRESSES[0]])},
 				'account': {'address': NEM_ADDRESSES[1], 'multisigInfo': {'cosignatoriesCount': 6, 'minCosignatories': 4}}},
 			{
-				'meta': {'cosignatories': [NEM_ADDRESSES[2]]},
+				'meta': {'cosignatories': self._addresses_to_accounts([NEM_ADDRESSES[2]])},
 				'account': {'address': NEM_ADDRESSES[0], 'multisigInfo': {'cosignatoriesCount': 8, 'minCosignatories': 6}}
 			},
 			{
-				'meta': {'cosignatories': NEM_ADDRESSES[:2]},
+				'meta': {'cosignatories': self._addresses_to_accounts(NEM_ADDRESSES[:2])},
 				'account': {'address': NEM_ADDRESSES[2], 'multisigInfo': {'cosignatoriesCount': 3, 'minCosignatories': 2}}
 			},
 			{
@@ -114,7 +118,7 @@ class MultisigDatabaseTest(unittest.TestCase):
 
 		accounts = [
 			{
-				'meta': {'cosignatories': NEM_ADDRESSES[:3]},
+				'meta': {'cosignatories': MultisigDatabaseTest._addresses_to_accounts(NEM_ADDRESSES[:3])},
 				'account': {'address': NEM_ADDRESSES[3], 'multisigInfo': {'cosignatoriesCount': 3, 'minCosignatories': 2}}
 			},
 			{
@@ -122,11 +126,11 @@ class MultisigDatabaseTest(unittest.TestCase):
 				'account': {'address': NEM_ADDRESSES[4], 'multisigInfo': {}}
 			},
 			{
-				'meta': {'cosignatories': [NEM_ADDRESSES[0]]},
+				'meta': {'cosignatories': MultisigDatabaseTest._addresses_to_accounts([NEM_ADDRESSES[0]])},
 				'account': {'address': NEM_ADDRESSES[1], 'multisigInfo': {'cosignatoriesCount': 1, 'minCosignatories': 1}}
 			},
 			{
-				'meta': {'cosignatories': NEM_ADDRESSES[:2]},
+				'meta': {'cosignatories': MultisigDatabaseTest._addresses_to_accounts(NEM_ADDRESSES[:2])},
 				'account': {'address': NEM_ADDRESSES[2], 'multisigInfo': {'cosignatoriesCount': 2, 'minCosignatories': 1}}
 			}
 		]

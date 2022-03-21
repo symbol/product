@@ -45,7 +45,7 @@ class MultisigDatabase:
 			multisig_id = cursor.lastrowid
 			cursor.executemany(
 				'''INSERT INTO nem_multisig_cosignatory VALUES (?, ?)''',
-				[(Address(cosignatory).bytes, multisig_id) for cosignatory in cosignatories])
+				[(Address(cosignatory['address']).bytes, multisig_id) for cosignatory in cosignatories])
 			self.connection.commit()
 		except sqlite3.IntegrityError:
 			self.connection.rollback()
