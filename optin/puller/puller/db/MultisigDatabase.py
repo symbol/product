@@ -41,7 +41,7 @@ class MultisigDatabase:
 		try:
 			cursor.execute(
 				'''INSERT INTO nem_multisig_id VALUES (NULL, ?, ?, ?)''',
-				(multisig_address.bytes, multisig_info['cosignaturesCount'], multisig_info['minCosignatures']))
+				(multisig_address.bytes, multisig_info['cosignatoriesCount'], multisig_info['minCosignatories']))
 			multisig_id = cursor.lastrowid
 			cursor.executemany(
 				'''INSERT INTO nem_multisig_cosignatory VALUES (?, ?)''',
