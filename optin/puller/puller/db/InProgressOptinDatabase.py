@@ -13,6 +13,7 @@ class OptinRequestStatus(Enum):
 	COMPLETED = 2
 	DUPLICATE = 3
 	ERROR = 4
+	ERROR_ZERO = 5
 
 
 class InProgressOptinDatabase:
