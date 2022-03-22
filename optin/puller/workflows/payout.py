@@ -35,16 +35,18 @@ async def process_sent_requests(sent_requests, databases, client, symbol_network
 
 	completed = 0
 	for address, request_group in sent_requests.items():
+		is_request_group_finalized = True
 		for request in request_group.requests:
 			if request.optin_transaction_hash in finalized_transaction_hashes:
 				databases.inprogress.set_request_status(request, OptinRequestStatus.COMPLETED, request.transaction_hash)
 				completed += 1
+			else:
+				is_request_group_finalized = False
 
-		balance = databases.balances.lookup_balance(address)
-		symbol_address = symbol_network.public_key_to_address(request_group.requests[0].destination_public_key)
-		databases.completed.insert_mapping(
-			{str(address): balance},
-			{str(symbol_address): balance})
+		if is_request_group_finalized:
+			balance = databases.balances.lookup_balance(address)
+			symbol_address = symbol_network.public_key_to_address(request_group.requests[0].destination_public_key)
+			databases.completed.insert_mapping({str(address): balance}, {str(symbol_address): balance})
 
 	print(f'transactions completed since last run: {completed}')
 
