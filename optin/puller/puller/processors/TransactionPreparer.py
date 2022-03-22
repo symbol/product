@@ -1,5 +1,4 @@
 import json
-from binascii import hexlify
 
 from symbolchain.facade.SymbolFacade import SymbolFacade
 from symbolchain.sc import Amount
@@ -7,7 +6,7 @@ from symbolchain.sc import Amount
 
 def convert_to_dumb_format(nem_address):
 	message_obj = {'nisAddress': str(nem_address)}
-	return hexlify(f'\0{json.dumps(message_obj)}'.encode('utf8')).decode('utf8').upper()
+	return f'\0{json.dumps(message_obj)}'.encode('utf8')
 
 
 class TransactionPreparer:
