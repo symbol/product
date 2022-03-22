@@ -66,6 +66,15 @@ class Processor:
 
 		print(f'transactions completed since last run: {completed}')
 
+	def _set_request_status_all(self, requests, new_status, payout_transaction_hash):
+		for request in requests:
+			print(
+				f'marking request with optin transaction hash {request.optin_transaction_hash} '
+				f'and payout transaction hash {payout_transaction_hash} as {new_status}')
+
+			if not self.is_dry_run:
+				self.databases.inprogress.set_request_status(request, new_status, payout_transaction_hash)
+
 	async def process_unprocessed_requests(self, unprocessed_requests, sent_requests):
 		node_time = await self.client.node_time()
 		deadline = node_time.add_hours(1).timestamp
@@ -76,20 +85,18 @@ class Processor:
 				continue
 
 			if address in sent_requests or self.databases.completed.is_opted_in(address):
-				for request in request_group.requests:
-					print(f'marking request with optin transaction hash {request.optin_transaction_hash} DUPLICATE')
-					if not self.is_dry_run:
-						self.databases.inprogress.set_request_status(request, OptinRequestStatus.DUPLICATE, None)
+				self._set_request_status_all(request_group.requests, OptinRequestStatus.DUPLICATE, None)
 			else:
 				if self.databases.multisig.check_cosigners(address, [request.address for request in request_group.requests]):
 					balance = self.databases.balances.lookup_balance(address)
+					if not balance:
+						self._set_request_status_all(request_group.requests, OptinRequestStatus.ERROR_ZERO, None)
+						continue
+
 					symbol_address = self.symbol_network.public_key_to_address(request_group.requests[0].destination_public_key)
 					sent_transaction_hash = await self.send_funds(symbol_address, balance, deadline, address)
 
-					print(f'marking request with transaction hash {sent_transaction_hash} SENT')
-					if not self.is_dry_run:
-						for request in request_group.requests:
-							self.databases.inprogress.set_request_status(request, OptinRequestStatus.SENT, sent_transaction_hash)
+					self._set_request_status_all(request_group.requests, OptinRequestStatus.SENT, sent_transaction_hash)
 
 	async def send_funds(self, destination_address, amount, deadline, nem_address):
 		transaction, transaction_hash = self.transaction_preparer.prepare_transaction(destination_address, amount, deadline, nem_address)
