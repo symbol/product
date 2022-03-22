@@ -1,3 +1,6 @@
+from symbolchain.nem.Network import Address
+
+
 class BalancesDatabase:
 	"""Database containing snapshot account balances."""
 
@@ -20,6 +23,13 @@ class BalancesDatabase:
 
 		cursor = self.connection.cursor()
 		cursor.execute('''INSERT INTO snapshot_balances VALUES (?, ?)''', (address.bytes, balance))
+
+	def addresses(self):
+		"""Gets all addresses with a balance entry."""
+
+		cursor = self.connection.cursor()
+		cursor.execute('''SELECT address FROM snapshot_balances''')
+		return [Address(tuple[0]) for tuple in cursor.fetchall()]
 
 	def lookup_balance(self, address):
 		"""Gets the balance for the specified address."""
