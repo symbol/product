@@ -67,7 +67,27 @@ class BalancesDatabaseTest(unittest.TestCase):
 
 	# endregion
 
-	# region add_account_balance
+	# region addresses
+
+	def test_can_query_addresses(self):
+		# Arrange:
+		with sqlite3.connect(':memory:') as connection:
+			database = self._create_database(connection, [
+				(NemAddress(NEM_ADDRESSES[0]), 112233445566),
+				(NemAddress(NEM_ADDRESSES[1]), 77889900)
+			])
+
+			# Act:
+			addresses = database.addresses()
+
+			# Assert:
+			self.assertEqual(2, len(addresses))
+			self.assertTrue(NemAddress(NEM_ADDRESSES[0]) in addresses)
+			self.assertTrue(NemAddress(NEM_ADDRESSES[1]) in addresses)
+
+	# endregion
+
+	# region lookup_balance
 
 	def test_can_lookup_balance(self):
 		# Arrange:

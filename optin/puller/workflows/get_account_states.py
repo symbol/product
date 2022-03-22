@@ -20,6 +20,7 @@ def get_addresses(filename, network):
 async def populate_balances(connection, client, addresses, snapshot_height):
 	database = BalancesDatabase(connection)
 	database.create_tables()
+	existing_addresses = database.addresses()
 
 	limiter = AsyncLimiter(20, 1.0)
 
@@ -30,7 +31,7 @@ async def populate_balances(connection, client, addresses, snapshot_height):
 
 			print('.', end='', flush=True)
 
-	tasks = list(map(get_state, addresses))
+	tasks = list(map(get_state, filter(lambda address: address not in existing_addresses, addresses)))
 	await asyncio.gather(*tasks)
 
 
