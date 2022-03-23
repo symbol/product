@@ -69,12 +69,12 @@ class SymbolClient(BasicClient):
 	async def find_optin_transactions(self, optin_signer_public_key, address):
 		"""Finds optin transactions sent to the specified address."""
 
-		url_path = f'transactions/confirmed?signerPublicKey={optin_signer_public_key}&recipientAddress={address}&embedded=true'
+		url_path = f'transactions/confirmed?signerPublicKey={optin_signer_public_key}&recipientAddress={address}'
 		transactions = await self.get(url_path, 'data')
 		return [
 			OptInTransactionInfo(
 				NemAddress(json.loads(unhexlify(transaction['transaction']['message'][2:]))['nisAddress']),
-				Hash256(transaction['meta']['aggregateHash']))
+				Hash256(transaction['meta']['hash']))
 			for transaction in transactions
 		]
 

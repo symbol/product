@@ -73,7 +73,7 @@ def server(event_loop, aiohttp_client):
 			return await self._process(request, {
 				'data': [
 					{
-						'meta': {'aggregateHash': HASHES[i]},
+						'meta': {'hash': HASHES[i]},
 						'transaction': {'message': message}
 					} for i, message in enumerate(messages)
 				]
@@ -283,7 +283,7 @@ async def test_can_find_optin_transactions(server):  # pylint: disable=redefined
 	# Assert:
 	assert [
 		f'{server.make_url("")}/transactions/confirmed?signerPublicKey={PublicKey(PUBLIC_KEYS[0])}' + (
-			f'&recipientAddress={Address(SYMBOL_ADDRESSES[0])}&embedded=true'
+			f'&recipientAddress={Address(SYMBOL_ADDRESSES[0])}'
 		)
 	] == server.mock.urls
 	assert 3 == len(optin_transaction_infos)
