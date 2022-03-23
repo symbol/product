@@ -70,7 +70,13 @@ async def main():
 		await populate_balances(connection, client, addresses, args.snapshot_height)
 
 	print('populating multisig...')
-	with sqlite3.connect(Path(args.database_directory) / 'multisig.db') as connection:
+
+	# rebuild multisig db each time to allow for multisig changes
+	multisig_database_path = Path(args.database_directory) / 'multisig.db'
+	if multisig_database_path.exists():
+		multisig_database_path.unlink()
+
+	with sqlite3.connect(multisig_database_path) as connection:
 		await populate_multisig(connection, client, addresses)
 
 	print('*** *** ***')
