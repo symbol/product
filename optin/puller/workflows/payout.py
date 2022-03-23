@@ -64,8 +64,14 @@ class Processor:
 	async def send_funds(self, destination_address, amount, deadline, nem_address):
 		transaction, transaction_hash = self.transaction_preparer.prepare_transaction(destination_address, amount, deadline, nem_address)
 
-		print(f'sending payout transaction with hash {transaction_hash}')
+		print('preparing to send transaction:')
+		print(f'       TRANSACTION HASH: {transaction_hash}')
+		print(f'   NEM ADDRESS (SOURCE): {nem_address}')
+		print(f'  SYMBOL ADDRESS (DEST): {destination_address}')
+		print(f'                 AMOUNT: {transaction.mosaics[0].amount.value / 1000000:,.6f}')
+		print()
 		print(transaction)
+		print()
 
 		if not self.is_dry_run:
 			await self.client.announce(transaction.serialize())
