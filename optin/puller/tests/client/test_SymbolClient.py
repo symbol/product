@@ -1,5 +1,6 @@
 import asyncio
 import json
+from binascii import hexlify
 
 import pytest
 from aiohttp import web
@@ -64,17 +65,16 @@ def server(event_loop, aiohttp_client):
 			return await self._process(request, generate_transaction_statuses(self.status_start_height, request_json['hashes']))
 
 		async def transactions_confirmed(self, request):
-			message_prefix = '007B20226E697341646472657373223A20224E'
 			messages = [
-				f'{message_prefix}4133494D46323253324741485151434C37464A4B4132585744514C4B334658464852355356585622207D',
-				f'{message_prefix}414542525744424448575244504556345947544632594641344453445154574B4E5855435A575822207D',
-				f'{message_prefix}444D4B3743514C4A595258474A4E5158454C4D344F47324E545A4143324334594646475744495322207D'
+				'\0{ "nisAddress": "NA3IMF22S2GAHQQCL7FJKA2XWDQLK3FXFHR5SVXV" }',
+				'\0{ "nisAddress": "NAEBRWDBDHWRDPEV4YGTF2YFA4DSDQTWKNXUCZWX" }',
+				'\0{ "nisAddress": "NDMK7CQLJYRXGJNQXELM4OG2NTZAC2C4YFFGWDIS" }'
 			]
 			return await self._process(request, {
 				'data': [
 					{
 						'meta': {'hash': HASHES[i]},
-						'transaction': {'message': message}
+						'transaction': {'message': hexlify(message.encode('utf8')).decode('utf8')}
 					} for i, message in enumerate(messages)
 				]
 			})
@@ -208,7 +208,7 @@ async def test_can_query_network_cached(server):  # pylint: disable=redefined-ou
 # endregion
 
 
-# region
+# region network currency
 
 async def test_can_query_network_currency(server):  # pylint: disable=redefined-outer-name
 	# Arrange:
@@ -268,8 +268,35 @@ async def test_can_query_transaction_statuses(server):  # pylint: disable=redefi
 	assert str(HASHES[1]) == transaction_statuses[2]['hash']
 	assert '111003' == transaction_statuses[2]['height']
 
+# endregion
+
+
+# region find_payout_transactions
+
+def assert_message(message, transaction):
+	assert message == transaction['transaction']['message']
+
+
+async def test_can_find_payout_transactions(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	client = SymbolClient(server.make_url(''))
+
+	# Act:
+	transactions = await client.find_payout_transactions(PublicKey(PUBLIC_KEYS[0]))
+
+	# Assert:
+	assert [
+		f'{server.make_url("")}/transactions/confirmed?signerPublicKey={PublicKey(PUBLIC_KEYS[0])}&embedded=true&fromHeight=2&pageSize=100'
+	] == server.mock.urls
+	assert 3 == len(transactions)
+
+	prefix = '007b20226e697341646472657373223a20224e'
+	assert_message(f'{prefix}4133494d46323253324741485151434c37464a4b4132585744514c4b334658464852355356585622207d', transactions[0])
+	assert_message(f'{prefix}414542525744424448575244504556345947544632594641344453445154574b4e5855435a575822207d', transactions[1])
+	assert_message(f'{prefix}444d4b3743514c4a595258474a4e5158454c4d344f47324e545a4143324334594646475744495322207d', transactions[2])
 
 # endregion
+
 
 # region find_optin_transactions
 
