@@ -45,21 +45,25 @@ class Processor:
 		if request_group.is_error:
 			# inconsistent error detection - what to do?
 			print('request error detected, skipping')
-			return
+			return True
 
 		if address in sent_requests or self.databases.completed.is_opted_in(address):
 			self._set_request_status_all(request_group.requests, OptinRequestStatus.DUPLICATE, None)
-		else:
-			if self.databases.multisig.check_cosigners(address, [request.address for request in request_group.requests]):
-				balance = self.databases.balances.lookup_balance(address)
-				if not balance:
-					self._set_request_status_all(request_group.requests, OptinRequestStatus.ERROR_ZERO, None)
-					return
+			return False
 
-				symbol_address = self.symbol_network.public_key_to_address(request_group.requests[0].destination_public_key)
-				sent_transaction_hash = await self.send_funds(symbol_address, balance, deadline, address)
+		if self.databases.multisig.check_cosigners(address, [request.address for request in request_group.requests]):
+			balance = self.databases.balances.lookup_balance(address)
+			if not balance:
+				self._set_request_status_all(request_group.requests, OptinRequestStatus.ERROR_ZERO, None)
+				return True
 
-				self._set_request_status_all(request_group.requests, OptinRequestStatus.SENT, sent_transaction_hash)
+			symbol_address = self.symbol_network.public_key_to_address(request_group.requests[0].destination_public_key)
+			sent_transaction_hash = await self.send_funds(symbol_address, balance, deadline, address)
+
+			self._set_request_status_all(request_group.requests, OptinRequestStatus.SENT, sent_transaction_hash)
+			return True
+
+		return False  # no pending modifications
 
 	async def send_funds(self, destination_address, amount, deadline, nem_address):
 		transaction, transaction_hash = self.transaction_preparer.prepare_transaction(destination_address, amount, deadline, nem_address)
@@ -86,15 +90,16 @@ async def process_all(processor, unprocessed_requests, sent_requests, deadline, 
 		print()
 
 		processor.is_dry_run = True
-		await processor.process_unprocessed_request(address, request_group, sent_requests, deadline)
+		require_prompt = await processor.process_unprocessed_request(address, request_group, sent_requests, deadline)
 
 		if is_dry_run:
 			continue
 
-		user_input = input('Press Y to send transaction and update databases: ')
-		if 'y' != user_input.lower():
-			print('goodbye')
-			return
+		if require_prompt:
+			user_input = input('Press Y to send transaction and update databases: ')
+			if 'y' != user_input.lower():
+				print('goodbye')
+				return
 
 		print()
 
