@@ -357,7 +357,7 @@ class InProgressOptinDatabaseTest(unittest.TestCase):
 
 			# Assert: height sorted (ascending)
 			self.assertEqual(2, len(requests))
-			assert_equal_request(self, seed_requests[2], requests[0])
-			assert_equal_request(self, seed_requests[0], requests[1])
+			assert_equal_request(self, seed_requests[2], requests[1])
+			assert_equal_request(self, seed_requests[0], requests[0])
 
 	# endregion

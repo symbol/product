@@ -130,6 +130,6 @@ class InProgressOptinDatabase:
 
 		cursor = self.connection.cursor()
 		cursor.execute(
-			'''SELECT * FROM optin_request WHERE payout_status = ? ORDER BY optin_transaction_height ASC''',
+			'''SELECT * FROM optin_request WHERE payout_status = ? ORDER BY optin_transaction_height DESC''',
 			(status.value,))
 		return list(map(self._to_request, cursor))
