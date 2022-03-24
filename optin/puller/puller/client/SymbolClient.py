@@ -54,6 +54,14 @@ class SymbolClient(BasicClient):
 
 		return self.network
 
+	async def balance(self, address):
+		"""Gets account balance."""
+
+		xym_mosaic_ids = ['6BED913FA20223F8', '3A8416DB2D53B6C8']  # mainnet, testnet
+		json_account = await self.get(f'accounts/{address}', 'account')
+		xym_mosaic = next((mosaic for mosaic in json_account['mosaics'] if mosaic['id'] in xym_mosaic_ids), None)
+		return int(xym_mosaic['amount']) if xym_mosaic else 0
+
 	async def network_currency(self):
 		"""Gets network currency."""
 
