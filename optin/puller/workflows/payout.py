@@ -32,6 +32,10 @@ class Processor:
 		self.transaction_preparer = transaction_preparer
 		self.is_dry_run = True
 
+		self.total_amount = 0
+		self.total_fees = 0
+		self.total_transactions = 0
+
 	def _set_request_status_all(self, requests, new_status, payout_transaction_hash):
 		for request in requests:
 			print(
@@ -73,6 +77,10 @@ class Processor:
 		print(transaction)
 		print()
 
+		self.total_transactions += 1
+		self.total_amount += transaction.mosaics[0].amount.value
+		self.total_fees += transaction.fee.value
+
 		if not self.is_dry_run:
 			await self.client.announce(transaction.serialize())
 
@@ -100,6 +108,12 @@ async def process_all(processor, unprocessed_requests, sent_requests, deadline, 
 
 		processor.is_dry_run = False
 		await processor.process_unprocessed_request(address, request_group, sent_requests, deadline)
+
+	print()
+	print(f'     TOTAL TRANSACTIONS: {processor.total_transactions}')
+	print(f'           TOTAL AMOUNT: {processor.total_amount / 1000000:,.6f}')
+	print(f'             TOTAL FEES: {processor.total_fees / 1000000:,.6f}')
+	print(f'          FEES + AMOUNT: {(processor.total_amount + processor.total_fees) / 1000000:,.6f}')
 
 
 async def main():
