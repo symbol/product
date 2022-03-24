@@ -36,9 +36,16 @@ def server(event_loop, aiohttp_client):
 			self.urls = []
 			self.finalized_height = 111001
 			self.status_start_height = 111001
+			self.middle_mosaic_id = 'AABBCCFF00112244'
 
 		async def accounts_known(self, request):
-			return await self._process(request, {'account': {}})
+			return await self._process(request, {'account': {
+				'mosaics': [
+					{'id': '00BBCCFF00112244', 'amount': '11223344'},
+					{'id': self.middle_mosaic_id, 'amount': '9988776655'},
+					{'id': 'FFBBCCFF00112244', 'amount': '123'}
+				]
+			}})
 
 		async def accounts_unknown(self, request):
 			return await self._process(request, {'code': 'ResourceNotFound', 'message': 'no resource exists'})
@@ -204,6 +211,35 @@ async def test_can_query_network_cached(server):  # pylint: disable=redefined-ou
 	assert [f'{server.make_url("")}/node/info'] == server.mock.urls
 	for network in networks:
 		assert Network.TESTNET == network
+
+# endregion
+
+
+# region balance
+
+async def _assert_can_query_balance(server, mosaic_id, expected_balance):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	client = SymbolClient(server.make_url(''))
+	server.mock.middle_mosaic_id = mosaic_id
+
+	# Act:
+	balance = await client.balance(Address(SYMBOL_ADDRESSES[0]))
+
+	# Assert:
+	assert [f'{server.make_url("")}/accounts/{SYMBOL_ADDRESSES[0]}'] == server.mock.urls
+	assert expected_balance == balance
+
+
+async def test_can_query_balance_mainnet(server):  # pylint: disable=redefined-outer-name
+	await _assert_can_query_balance(server, '6BED913FA20223F8', 9988776655)
+
+
+async def test_can_query_balance_testnet(server):  # pylint: disable=redefined-outer-name
+	await _assert_can_query_balance(server, '3A8416DB2D53B6C8', 9988776655)
+
+
+async def test_can_query_balance_unknown(server):  # pylint: disable=redefined-outer-name
+	await _assert_can_query_balance(server, 'AABBCCFF00112244', 0)
 
 # endregion
 

@@ -81,20 +81,39 @@ class Processor:
 		print(transaction)
 		print()
 
-		self.total_transactions += 1
-		self.total_amount += transaction.mosaics[0].amount.value
-		self.total_fees += transaction.fee.value
-
-		if not self.is_dry_run:
+		if self.is_dry_run:
+			# only count in dry mode to avoid double counting in commit mode, which runs twice sequentially (dry mode, commit mode)
+			self.total_transactions += 1
+			self.total_amount += transaction.mosaics[0].amount.value
+			self.total_fees += transaction.fee.value
+		else:
 			await self.client.announce(transaction.serialize())
 
 		return transaction_hash
 
 
-async def process_all(processor, unprocessed_requests, sent_requests, deadline, is_dry_run):
+async def calculate_deadline(client):
+	node_time = await client.node_time()
+	deadline = node_time.add_hours(1).timestamp
+	print(f'using deadline {deadline}')
+
+
+def request_user_consent(action_message):
+	user_input = input(f'Press Y to {action_message}: ')
+	if 'y' != user_input.lower():
+		print('goodbye')
+		return False
+
+	return True
+
+
+async def process_all(processor, unprocessed_requests, sent_requests, client, funder_balance, is_dry_run):
+	# pylint: disable=too-many-arguments
+
 	print(f'processing {len(sent_requests)} SENT requests and {len(unprocessed_requests)} UNPROCESSED requests')
 
 	for address, request_group in unprocessed_requests.items():
+		deadline = await calculate_deadline(client)
 		print()
 
 		processor.is_dry_run = True
@@ -103,10 +122,12 @@ async def process_all(processor, unprocessed_requests, sent_requests, deadline, 
 		if is_dry_run:
 			continue
 
+		if funder_balance < processor.total_amount + processor.total_fees:
+			print('[!] funding account has insufficient funds, please refill it!')
+			return
+
 		if require_prompt:
-			user_input = input('Press Y to send transaction and update databases: ')
-			if 'y' != user_input.lower():
-				print('goodbye')
+			if not request_user_consent('send transaction and update databases'):
 				return
 
 		print()
@@ -135,14 +156,15 @@ async def main():
 	symbol_network = await client.node_network()
 	nem_network = NemNetwork.TESTNET if 'testnet' == args.network else NemNetwork.MAINNET
 
-	key_pair = get_key_pair(Path(args.hot))
-	print(f'building preparer around {symbol_network.public_key_to_address(key_pair.public_key)}')
+	funder_key_pair = get_key_pair(Path(args.hot))
+	funder_address = symbol_network.public_key_to_address(funder_key_pair.public_key)
+	funder_balance = await client.balance(funder_address)
 
-	transaction_preparer = TransactionPreparer(args.network, currency_mosaic_id, key_pair)
+	print(f'building preparer around {funder_address} with balance {funder_balance}')
+	if not request_user_consent('continue'):
+		return
 
-	node_time = await client.node_time()
-	deadline = node_time.add_hours(1).timestamp
-	print(f'using deadline {deadline}')
+	transaction_preparer = TransactionPreparer(args.network, currency_mosaic_id, funder_key_pair,)
 
 	with Databases(args.database_directory) as databases:
 		processor = Processor(databases, client, symbol_network, transaction_preparer)
@@ -151,7 +173,7 @@ async def main():
 			nem_network,
 			databases.inprogress.get_requests_by_status(OptinRequestStatus.UNPROCESSED))
 
-		await process_all(processor, unprocessed_requests, sent_requests, deadline, args.dry_run)
+		await process_all(processor, unprocessed_requests, sent_requests, client, funder_balance, args.dry_run)
 
 
 if '__main__' == __name__:
