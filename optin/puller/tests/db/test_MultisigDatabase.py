@@ -108,7 +108,7 @@ class MultisigDatabaseTest(unittest.TestCase):
 
 	# endregion
 
-	# region check_cosigners
+	# region is_multisig
 
 	@staticmethod
 	def _create_database_for_check_cosigners_tests(connection):
@@ -140,6 +140,30 @@ class MultisigDatabaseTest(unittest.TestCase):
 			database.insert_if_multisig(account)
 
 		return database
+
+	def _run_is_multisig_account_test(self, address, expected_result):
+		# Arrange:
+		with sqlite3.connect(':memory:') as connection:
+			database = self._create_database_for_check_cosigners_tests(connection)
+
+			# Act:
+			result = database.is_multisig(address)
+
+			# Assert:
+			self.assertEqual(expected_result, result)
+
+	def test_is_multisig_returns_false_if_not_multisig_account(self):
+		self._run_is_multisig_account_test(Address(NEM_ADDRESSES[4]), False)  # inserted, but skipped
+		self._run_is_multisig_account_test(Address(NEM_ADDRESSES[0]), False)  # never inserted
+
+	def test_is_multisig_returns_true_if_multisig_account(self):
+		self._run_is_multisig_account_test(Address(NEM_ADDRESSES[1]), True)
+		self._run_is_multisig_account_test(Address(NEM_ADDRESSES[2]), True)
+		self._run_is_multisig_account_test(Address(NEM_ADDRESSES[3]), True)
+
+	# endregion
+
+	# region check_cosigners
 
 	def _run_check_cosigners_test(self, address, cosigner_addresses, expected_result):
 		# Arrange:

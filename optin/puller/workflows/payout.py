@@ -57,19 +57,32 @@ class Processor:
 			self._set_request_status_all(request_group.requests, OptinRequestStatus.DUPLICATE, None)
 			return False
 
-		if self.databases.multisig.check_cosigners(address, [request.address for request in request_group.requests]):
-			balance = self.databases.balances.lookup_balance(address)
-			if not balance:
-				self._set_request_status_all(request_group.requests, OptinRequestStatus.ERROR_ZERO, None)
-				return True
+		if self.databases.multisig.is_multisig(address):
+			cosigner_addresses = [request.address for request in request_group.requests if request.multisig_public_key]
+			if self.databases.multisig.check_cosigners(address, cosigner_addresses):
+				await self.process_payout(address, request_group, deadline)
+			else:
+				print(f'[!] multisig account {address} detected, but cosigner check failed')
+				return False
+		else:
+			if not next((request.multisig_public_key for request in request_group.requests), None):
+				await self.process_payout(address, request_group, deadline)
+			else:
+				print(f'[!] normal account {address} detected, but no normal optins are present')
+				return False
 
-			symbol_address = self.symbol_network.public_key_to_address(request_group.requests[0].destination_public_key)
-			sent_transaction_hash = await self.send_funds(symbol_address, balance, deadline, address)
+		return True
 
-			self._set_request_status_all(request_group.requests, OptinRequestStatus.SENT, sent_transaction_hash)
-			return True
+	async def process_payout(self, address, request_group, deadline):
+		balance = self.databases.balances.lookup_balance(address)
+		if not balance:
+			self._set_request_status_all(request_group.requests, OptinRequestStatus.ERROR_ZERO, None)
+			return
 
-		return False  # no pending modifications
+		symbol_address = self.symbol_network.public_key_to_address(request_group.requests[0].destination_public_key)
+		sent_transaction_hash = await self.send_funds(symbol_address, balance, deadline, address)
+
+		self._set_request_status_all(request_group.requests, OptinRequestStatus.SENT, sent_transaction_hash)
 
 	async def send_funds(self, destination_address, amount, deadline, nem_address):
 		transaction, transaction_hash = self.transaction_preparer.prepare_transaction(destination_address, amount, deadline, nem_address)

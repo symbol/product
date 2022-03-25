@@ -51,6 +51,14 @@ class MultisigDatabase:
 			self.connection.rollback()
 			raise
 
+	def is_multisig(self, address):
+		"""Checks if specified account is multisig."""
+
+		cursor = self.connection.cursor()
+		cursor.execute('''SELECT id FROM nem_multisig_id WHERE address = ?''', (address.bytes,))
+		multisig_info = cursor.fetchone()
+		return bool(multisig_info)
+
 	def check_cosigners(self, address, cosigner_addresses):
 		"""Checks if specified cosigners are sufficient for approving transactions from account."""
 
