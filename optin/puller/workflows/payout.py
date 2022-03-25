@@ -15,6 +15,8 @@ from puller.processors.TransactionPreparer import TransactionPreparer
 
 # example for processing and paying out post optins
 
+MICROXYM_PER_XYM = 1000000
+
 
 def get_key_pair(filepath):
 	password = getpass.getpass(f'Enter password for {filepath}: ')
@@ -138,9 +140,9 @@ async def process_all(processor, unprocessed_requests, sent_requests, client, fu
 
 	print()
 	print(f'     TOTAL TRANSACTIONS: {processor.total_transactions}')
-	print(f'           TOTAL AMOUNT: {processor.total_amount / 1000000:,.6f}')
-	print(f'             TOTAL FEES: {processor.total_fees / 1000000:,.6f}')
-	print(f'          FEES + AMOUNT: {(processor.total_amount + processor.total_fees) / 1000000:,.6f}')
+	print(f'           TOTAL AMOUNT: {processor.total_amount / MICROXYM_PER_XYM:,.6f}')
+	print(f'             TOTAL FEES: {processor.total_fees / MICROXYM_PER_XYM:,.6f}')
+	print(f'          FEES + AMOUNT: {(processor.total_amount + processor.total_fees) / MICROXYM_PER_XYM:,.6f}')
 
 
 async def main():
@@ -161,7 +163,7 @@ async def main():
 	funder_address = symbol_network.public_key_to_address(funder_key_pair.public_key)
 	funder_balance = await client.balance(funder_address)
 
-	print(f'building preparer around {funder_address} with balance {funder_balance}')
+	print(f'building preparer around {funder_address} with balance {funder_balance / MICROXYM_PER_XYM}')
 	if not request_user_consent('continue'):
 		return
 
