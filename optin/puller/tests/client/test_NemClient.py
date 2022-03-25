@@ -25,17 +25,22 @@ def server(event_loop, aiohttp_client):
 			return await self._process_get(request, {'metaData': {'networkId': -104}})
 
 		async def account(self, request):
-			address = Address(request.rel_url.query['address'])
 			return await self._process_get(request, {
 				'meta': {'cosignatories': NEM_ADDRESSES},
-				'account': {'balance': (1 if Address(NEM_ADDRESSES[0]) == address else 0)}
+				'account': {'balance': 0}
 			})
 
 		async def historical_account(self, request):
 			return await self._process_get(request, {'data': [{'address': NEM_ADDRESSES[0], 'balance':1234567890}]})
 
 		async def transfers(self, request):
-			return await self._process_get(request, {'data': [{'transaction': {'name': name}} for name in ['alpha', 'beta', 'zeta']]})
+			address = Address(request.rel_url.query['address'])
+
+			data = []
+			if Address(NEM_ADDRESSES[0]) == address:
+				data = [{'transaction': {'name': name}} for name in ['alpha', 'beta', 'zeta']]
+
+			return await self._process_get(request, {'data': data})
 
 		async def _process_get(self, request, response_body):
 			self.urls.append(str(request.url))
@@ -71,7 +76,7 @@ async def test_can_query_known_account(server):  # pylint: disable=redefined-out
 	is_known = await client.is_known_address(Address(NEM_ADDRESSES[0]))
 
 	# Assert:
-	assert [f'{server.make_url("")}/account/get?address={NEM_ADDRESSES[0]}'] == server.mock.urls
+	assert [f'{server.make_url("")}/account/transfers/incoming?address={NEM_ADDRESSES[0]}'] == server.mock.urls
 	assert is_known
 
 
@@ -83,7 +88,7 @@ async def test_can_query_unknown_account(server):  # pylint: disable=redefined-o
 	is_known = await client.is_known_address(Address(NEM_ADDRESSES[1]))
 
 	# Assert:
-	assert [f'{server.make_url("")}/account/get?address={NEM_ADDRESSES[1]}'] == server.mock.urls
+	assert [f'{server.make_url("")}/account/transfers/incoming?address={NEM_ADDRESSES[1]}'] == server.mock.urls
 	assert not is_known
 
 
@@ -157,7 +162,7 @@ async def test_can_query_account(server):  # pylint: disable=redefined-outer-nam
 
 	# Assert:
 	assert [f'{server.make_url("")}/account/get?address={NEM_ADDRESSES[0]}'] == server.mock.urls
-	assert {'meta': {'cosignatories': NEM_ADDRESSES}, 'account': {'balance': 1}} == account
+	assert {'meta': {'cosignatories': NEM_ADDRESSES}, 'account': {'balance': 0}} == account
 
 
 # endregion
@@ -186,10 +191,10 @@ async def test_can_query_incoming_transactions_from_beginning(server):  # pylint
 	client = NemClient(server.make_url(''))
 
 	# Act:
-	transactions = await client.incoming_transactions('NADDRESS123')
+	transactions = await client.incoming_transactions(NEM_ADDRESSES[0])
 
 	# Assert:
-	assert [f'{server.make_url("")}/account/transfers/incoming?address=NADDRESS123'] == server.mock.urls
+	assert [f'{server.make_url("")}/account/transfers/incoming?address={NEM_ADDRESSES[0]}'] == server.mock.urls
 	assert [{'transaction': {'name': 'alpha'}}, {'transaction': {'name': 'beta'}}, {'transaction': {'name': 'zeta'}}] == transactions
 
 
@@ -198,10 +203,10 @@ async def test_can_query_incoming_transactions_with_custom_start_id(server):  # 
 	client = NemClient(server.make_url(''))
 
 	# Act:
-	transactions = await client.incoming_transactions('NADDRESS123', 98765)
+	transactions = await client.incoming_transactions(NEM_ADDRESSES[0], 98765)
 
 	# Assert:
-	assert [f'{server.make_url("")}/account/transfers/incoming?address=NADDRESS123&id=98765'] == server.mock.urls
+	assert [f'{server.make_url("")}/account/transfers/incoming?address={NEM_ADDRESSES[0]}&id=98765'] == server.mock.urls
 	assert [{'transaction': {'name': 'alpha'}}, {'transaction': {'name': 'beta'}}, {'transaction': {'name': 'zeta'}}] == transactions
 
 
