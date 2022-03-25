@@ -89,7 +89,7 @@ class BalancesDatabaseTest(unittest.TestCase):
 
 	# region lookup_balance
 
-	def test_can_lookup_balance(self):
+	def test_can_lookup_known_balance(self):
 		# Arrange:
 		with sqlite3.connect(':memory:') as connection:
 			database = self._create_database(connection, [
@@ -104,5 +104,19 @@ class BalancesDatabaseTest(unittest.TestCase):
 			# Assert:
 			self.assertEqual(112233445566, balance1)
 			self.assertEqual(77889900, balance2)
+
+	def test_can_lookup_unknown_balance(self):
+		# Arrange:
+		with sqlite3.connect(':memory:') as connection:
+			database = self._create_database(connection, [
+				(NemAddress(NEM_ADDRESSES[0]), 112233445566),
+				(NemAddress(NEM_ADDRESSES[1]), 77889900)
+			])
+
+			# Act:
+			balance = database.lookup_balance(NemAddress(NEM_ADDRESSES[2]))
+
+			# Assert:
+			self.assertEqual(0, balance)
 
 	# endregion

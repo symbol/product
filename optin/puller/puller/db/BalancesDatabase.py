@@ -36,4 +36,5 @@ class BalancesDatabase:
 
 		cursor = self.connection.cursor()
 		cursor.execute('''SELECT balance FROM snapshot_balances WHERE address = ?''', (address.bytes,))
-		return cursor.fetchone()[0]
+		results = cursor.fetchone()
+		return results[0] if results else 0
