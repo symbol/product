@@ -1,3 +1,13 @@
+from enum import IntFlag
+
+
+class RequestType(IntFlag):
+	"""Types of requests."""
+	NONE = 0
+	NORMAL = 1
+	MULTISIG = 2
+
+
 class RequestGroup:
 	"""Group of requests."""
 
@@ -5,7 +15,7 @@ class RequestGroup:
 		"""Creates an empty request group."""
 
 		self.requests = []
-		self.is_multisig = None
+		self.disposition = RequestType.NONE
 		self.is_error = False
 
 
@@ -28,11 +38,8 @@ class RequestGrouper:
 			self.all[source_address] = RequestGroup()
 
 		request_group = self.all[source_address]
-		if request_group.is_multisig is not None and is_multisig != request_group.is_multisig:
-			request_group.is_error = True  # address was previously seen as multisig but now it's not (or vice versa)
-			return
+		request_group.disposition |= RequestType.MULTISIG if is_multisig else RequestType.NORMAL
 
-		request_group.is_multisig = is_multisig
 		if not is_multisig:
 			if not request_group.requests:
 				request_group.requests.append(request)
