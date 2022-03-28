@@ -1,0 +1,22 @@
+.bgContainer {
+  width: 100vw;
+  height: 100vh;
+  position: fixed;
+  top: 0;
+  right: 0;
+  background-position: center;
+}
+
+.mainContainer {
+  width: 100%;
+  max-width: 600px;
+  padding: 80px 20px;
+  margin: auto;
+  position: relative;
+  text-align: center;
+}
+
+.mainContainerWrapper {
+  overflow-y: auto;
+  position: relative;
+}
