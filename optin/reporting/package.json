@@ -6,6 +6,7 @@
   "type": "commonjs",
   "scripts": {
     "lint": "eslint .",
+    "lint:fix": "eslint --fix .",
     "test": "mocha --full-trace --recursive ./test",
     "start": "node server.js"
   },
