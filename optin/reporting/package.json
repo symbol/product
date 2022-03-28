@@ -5,11 +5,21 @@
   "main": "index.js",
   "type": "commonjs",
   "scripts": {
+    "lint": "eslint .",
+    "test": "mocha --full-trace --recursive ./test",
     "start": "node server.js"
   },
   "keywords": [],
-  "author": "",
+  "author": "Symbol Contributors <contributors@symbol.dev>",
   "license": "ISC",
+  "devDependencies": {
+    "chai": "^4.3.6",
+    "eslint": "^8.11.0",
+    "eslint-config-airbnb": "^19.0.4",
+    "mocha": "^9.2.2",
+    "mocha-jenkins-reporter": "^0.4.7",
+    "nyc": "^15.1.0"
+  },
   "dependencies": {
     "dotenv": "^16.0.0",
     "express": "^4.17.3",
