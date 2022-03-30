@@ -15,7 +15,7 @@ const Home = function () {
     };
 
     getBalances();
-  }, [balances]);
+  }, []);
 
   return (
     <div className="App">
