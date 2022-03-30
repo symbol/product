@@ -12,7 +12,7 @@ echo
 
 PYTHONPATH=. python3 workflows/populate_db.py \
 	--database-directory "${DATABASE_DIRECTORY}" \
-	--preoptin "${PREOPTIN_JSON}"
+	--optin "${PREOPTIN_JSON}"
 
 echo
 echo "[GENERATE_POSTOPTIN] generating post optin json file '${POSTOPTIN_JSON}'"
@@ -29,7 +29,8 @@ echo
 
 PYTHONPATH=. python3 workflows/populate_db.py \
 	--database-directory "${DATABASE_DIRECTORY}" \
-	--preoptin "${POSTOPTIN_JSON}"
+	--optin "${POSTOPTIN_JSON}" \
+	--post
 
 echo
 echo "[DOWNLOAD_POSTOPTIN] downloading post optin data from optin address '${OPTIN_ADDRESS}'"
