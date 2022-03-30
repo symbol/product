@@ -33,25 +33,32 @@ class CompletedOptinDatabase:
 			FOREIGN KEY (optin_id) REFERENCES optin_id(id)
 		)''')  # address cannot be unique because merges are supported
 
-	def insert_mapping(self, nem_address_dict, symbol_address_dict):
-		"""Adds a NEM to Symbol mapping to the database."""
-
+	@staticmethod
+	def _assert_balances(nem_address_dict, symbol_address_dict):
 		nem_balance = reduce(lambda x, y: x + y, nem_address_dict.values())
 		symbol_balance = reduce(lambda x, y: x + y, symbol_address_dict.values())
 
 		if nem_balance != symbol_balance:
 			raise ValueError(f'NEM source balance {nem_balance} does not match Symbol destination balance {symbol_balance}')
 
+	@staticmethod
+	def _insert_mapping(cursor, nem_address_dict, symbol_address_dict):
+		cursor.execute('''INSERT INTO optin_id VALUES (NULL)''')
+		optin_id = cursor.lastrowid
+		cursor.executemany(
+			'''INSERT INTO nem_source VALUES (?, ?, ?)''',
+			[(NemAddress(address).bytes, balance, optin_id) for address, balance in nem_address_dict.items()])
+		cursor.executemany(
+			'''INSERT INTO symbol_destination VALUES (?, ?, ?)''',
+			[(SymbolAddress(address).bytes, balance, optin_id) for address, balance in symbol_address_dict.items()])
+
+	def insert_mapping(self, nem_address_dict, symbol_address_dict):
+		"""Adds a NEM to Symbol mapping to the database."""
+
+		self._assert_balances(nem_address_dict, symbol_address_dict)
 		cursor = self.connection.cursor()
 		try:
-			cursor.execute('''INSERT INTO optin_id VALUES (NULL)''')
-			optin_id = cursor.lastrowid
-			cursor.executemany(
-				'''INSERT INTO nem_source VALUES (?, ?, ?)''',
-				[(NemAddress(address).bytes, balance, optin_id) for address, balance in nem_address_dict.items()])
-			cursor.executemany(
-				'''INSERT INTO symbol_destination VALUES (?, ?, ?)''',
-				[(SymbolAddress(address).bytes, balance, optin_id) for address, balance in symbol_address_dict.items()])
+			self._insert_mapping(cursor, nem_address_dict, symbol_address_dict)
 			self.connection.commit()
 		except sqlite3.IntegrityError:
 			self.connection.rollback()
@@ -60,17 +67,28 @@ class CompletedOptinDatabase:
 	def insert_mappings_from_json(self, mappings_json):
 		"""Adds NEM to Symbol mappings represented as a JSON object to the database."""
 
-		for mapping_json in mappings_json:
-			if 'source' not in mapping_json:
-				continue
+		cursor = self.connection.cursor()
+		try:
+			for mapping_json in mappings_json:
+				if 'source' not in mapping_json:
+					continue
 
-			self.insert_mapping({
-				source_json['nis-address']: int(source_json['nis-balance']) for source_json in mapping_json['source']
-			}, {
-				destination_json['sym-address']: destination_json['sym-balance'] for destination_json in mapping_json['destination']
-			})
+				nem_address_dict = {
+					source_json['nis-address']: int(source_json['nis-balance']) for source_json in mapping_json['source']
+				}
+				symbol_address_dict = {
+					destination_json['sym-address']: destination_json['sym-balance'] for destination_json in mapping_json['destination']
+				}
 
-			yield mapping_json
+				self._assert_balances(nem_address_dict, symbol_address_dict)
+				self._insert_mapping(cursor, nem_address_dict, symbol_address_dict)
+
+				yield mapping_json
+
+			self.connection.commit()
+		except sqlite3.IntegrityError:
+			self.connection.rollback()
+			raise
 
 	def is_opted_in(self, address):
 		"""Returns True if specified address has already opted-in."""

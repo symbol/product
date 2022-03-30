@@ -18,9 +18,8 @@ def main():
 
 		with open(args.preoptin, 'rt', encoding='utf8') as infile:
 			data = json.load(infile)
-
-			for _ in database.insert_mappings_from_json(data):
-				print('.', end='', flush=True)
+			count = sum(1 for _ in database.insert_mappings_from_json(data))
+			print(f'inserted {count} mappings')
 
 
 if '__main__' == __name__:
