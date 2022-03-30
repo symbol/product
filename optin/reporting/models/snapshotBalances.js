@@ -1,16 +1,26 @@
 const { balances } = require('./database');
-const Sequelize = require('sequelize');
+const { QueryTypes } = require('sequelize');
 
-const snapshotBalances = balances.define('snapshotBalances', {
-	address: {
-		type: Sequelize.BLOB,
-		primaryKey: true
+const balancesDB = {
+	getBalancesPagination: async ({ pageNumber, pageSize }) => {
+		const result = await balances.query(
+			`select address as nemAddress, balance as nemBalance
+            from snapshot_balances
+            LIMIT ${pageSize} OFFSET ${(pageNumber - 1) * pageSize}`,
+			{ type: QueryTypes.SELECT }
+		);
+
+		return result;
 	},
-	balance: Sequelize.INTEGER
-}, {
-	timestamps: false,
-	createdAt: false,
-	tableName: 'snapshot_balances'
-});
+	getTotalRecord: async () => {
+		const result = await balances.query(
+			`select count(*) as totalRecord
+            from snapshot_balances`,
+			{ type: QueryTypes.SELECT }
+		);
 
-module.exports = snapshotBalances;
+		return result[0].totalRecord;
+	}
+};
+
+module.exports = balancesDB;
