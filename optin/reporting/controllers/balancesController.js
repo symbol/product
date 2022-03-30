@@ -1,20 +1,32 @@
-const snapshotBalances = require('../models/snapshotBalances');
+const balancesDB = require('../models/snapshotBalances');
 const { NemFacade } = require('symbol-sdk').facade;
 
 const controller = {
-	balances: async (_, res) => {
-		const response = await snapshotBalances.findAll()
-			.then(data => {
-				const result = data.map(item => ({
-					...item.dataValues,
-					address: new NemFacade.Address(item.dataValues.address).toString()
-				}));
+	getBalance: async (req, res) => {
+		const pageSize = parseInt(req.query.pageSize || 25, 10);
+		const pageNumber = parseInt(req.query.pageNumber || 1, 10);
 
-				return { success: true, data: result };
-			})
-			.catch(error => ({ success: false, error }));
+		try {
+			const totalRecord = await balancesDB.getTotalRecord();
 
-		res.json(response);
+			const response = await balancesDB.getBalancesPagination({ pageNumber, pageSize });
+
+			const result = response.map(item => ({
+				...item,
+				nemAddress: new NemFacade.Address(item.nemAddress).toString()
+			}));
+
+			res.json({
+				data: result,
+				pagination: {
+					pageNumber,
+					pageSize,
+					totalRecord
+				}
+			});
+		} catch (error) {
+			res.json({ data: [], error: error.message });
+		}
 	}
 };
 
