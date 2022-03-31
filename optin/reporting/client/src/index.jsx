@@ -2,6 +2,7 @@ import Home from "./pages/Home";
 import reportWebVitals from "./reportWebVitals";
 import React from "react";
 import ReactDOM from "react-dom";
+import './styles/globals.scss';
 
 ReactDOM.render(
   <React.StrictMode>
