@@ -1,6 +1,7 @@
 import Table from "../../components/Table";
 import React, { useState, useEffect } from "react";
-import Pagination from "react-js-pagination";
+import { TablePagination } from '@trendmicro/react-paginations';
+import '@trendmicro/react-paginations/dist/react-paginations.css';
 import config from "../../config";
 
 const Completed = function () {
@@ -17,9 +18,10 @@ const Completed = function () {
         return await fetch(`/api/completed?pageSize=${pageSize}&pageNumber=${pageNumber}`).then((res) => res.json());
     }
 
-    const handlePageChange = async (pageNumber) =>{
+    const handlePageChange = async ({page, pageLength}) =>{
         const result = await fetchCompleted({
-            pageNumber
+            pageNumber: page,
+            pageSize: pageLength
         });
 
         setCompleted(result);
@@ -43,12 +45,15 @@ const Completed = function () {
                 dataList={completed}
                 formatting={config}
             />
-            <Pagination
-                activePage={completed.pagination.pageNumber}
-                itemsCountPerPage={completed.pagination.pageSize}
-                totalItemsCount={completed.pagination.totalRecord}
-                pageRangeDisplayed={5}
-                onChange={handlePageChange}
+            <TablePagination
+              className='pagination'
+              type="full"
+              page={completed.pagination.pageNumber}
+              pageLength={completed.pagination.pageSize}
+              totalRecords={completed.pagination.totalRecord}
+              onPageChange={handlePageChange}
+              prevPageRenderer={() => <i className="arrow left" />}
+              nextPageRenderer={() => <i className="arrow right" />}
             />
         </>
 

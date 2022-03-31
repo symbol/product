@@ -1,6 +1,7 @@
 import Table from "../../components/Table";
 import React, { useState, useEffect } from "react";
-import Pagination from "react-js-pagination";
+import { TablePagination } from '@trendmicro/react-paginations';
+import '@trendmicro/react-paginations/dist/react-paginations.css';
 import config from "../../config";
 
 const Balances = function () {
@@ -17,9 +18,10 @@ const Balances = function () {
         return await fetch(`/api/balances?pageSize=${pageSize}&pageNumber=${pageNumber}`).then((res) => res.json());
     }
 
-    const handlePageChange = async (pageNumber) =>{
+    const handlePageChange = async ({page, pageLength}) =>{
         const result = await fetchBalances({
-            pageNumber
+            pageNumber: page,
+            pageSize: pageLength
         });
 
         setBalances(result);
@@ -43,12 +45,15 @@ const Balances = function () {
                 dataList={balances}
                 formatting={config}
             />
-            <Pagination
-                activePage={balances.pagination.pageNumber}
-                itemsCountPerPage={balances.pagination.pageSize}
-                totalItemsCount={balances.pagination.totalRecord}
-                pageRangeDisplayed={5}
-                onChange={handlePageChange}
+            <TablePagination
+              className='pagination'
+              type='full'
+              page={balances.pagination.pageNumber}
+              pageLength={balances.pagination.pageSize}
+              totalRecords={balances.pagination.totalRecord}
+              onPageChange={handlePageChange}
+              prevPageRenderer={() => <i className='arrow left' />}
+              nextPageRenderer={() => <i className='arrow right' />}
             />
         </>
 
