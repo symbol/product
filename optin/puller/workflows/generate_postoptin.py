@@ -10,13 +10,16 @@ from symbolchain.symbol.Network import Address
 
 from puller.client.SymbolClient import SymbolClient
 
-OPTIN_SIGNER_PUBLIC_KEYS = '7AEC08AA66CB50B0C3D180DE7508D5D82ECEDCDC9E73F61FA7069868BEABA856'
+PAYOUT_SIGNER_PUBLIC_KEYS = '7AEC08AA66CB50B0C3D180DE7508D5D82ECEDCDC9E73F61FA7069868BEABA856'
 
 
 def parse_args():
 	parser = argparse.ArgumentParser(description='generate postoptin json')
 	parser.add_argument('--symbol-node', help='Symbol node url', default='http://wolf.importance.jp:3000')
-	parser.add_argument('--optin-signer-public-keys', help='optin signer public keys (comma separated)', default=OPTIN_SIGNER_PUBLIC_KEYS)
+	parser.add_argument(
+		'--payout-signer-public-keys',
+		help='optin payout signer public keys (comma separated)',
+		default=PAYOUT_SIGNER_PUBLIC_KEYS)
 	parser.add_argument('--output', help='output path', default='./resources/postoptin.mainnet.json')
 	return parser.parse_args()
 
@@ -33,7 +36,7 @@ class PayoutTransactionsProcessor:
 	async def process(self, public_key):
 		start_id = None
 		while True:
-			transaction_and_metadata_pairs = await self.client.find_payout_transactions(public_key, start_id)
+			transaction_and_metadata_pairs = await self.client.outgoing_transactions(public_key, start_id)
 			if not transaction_and_metadata_pairs:
 				break
 
@@ -79,21 +82,17 @@ async def main():
 	args = parse_args()
 
 	symbol_client = SymbolClient(args.symbol_node)
-	optin_signer_public_keys = [PublicKey(public_key) for public_key in args.optin_signer_public_keys.split(',')]
+	payout_signer_public_keys = [PublicKey(public_key) for public_key in args.payout_signer_public_keys.split(',')]
 
 	processor = PayoutTransactionsProcessor(symbol_client)
 
-	print('optin signer public keys')
-
-	all_redemptions = []
-	for public_key in optin_signer_public_keys:
+	print('payout signer public keys')
+	for public_key in payout_signer_public_keys:
 		print(f' * {public_key}')
 		await processor.process(public_key)
 
-		all_redemptions.extend(processor.redemptions)
-
 	with open(Path(args.output), 'wt', encoding='utf8') as out_file:
-		out_file.write(json.dumps(all_redemptions, indent=2))
+		out_file.write(json.dumps(processor.redemptions, indent=2))
 
 
 if '__main__' == __name__:

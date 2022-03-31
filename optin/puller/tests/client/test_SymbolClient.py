@@ -307,18 +307,18 @@ async def test_can_query_transaction_statuses(server):  # pylint: disable=redefi
 # endregion
 
 
-# region find_payout_transactions
+# region outgoing_transactions
 
 def assert_message(message, transaction):
 	assert message == transaction['transaction']['message']
 
 
-async def test_can_find_payout_transactions(server):  # pylint: disable=redefined-outer-name
+async def test_outgoing_transactions(server):  # pylint: disable=redefined-outer-name
 	# Arrange:
 	client = SymbolClient(server.make_url(''))
 
 	# Act:
-	transactions = await client.find_payout_transactions(PublicKey(PUBLIC_KEYS[0]))
+	transactions = await client.outgoing_transactions(PublicKey(PUBLIC_KEYS[0]))
 
 	# Assert:
 	assert [
@@ -334,14 +334,14 @@ async def test_can_find_payout_transactions(server):  # pylint: disable=redefine
 # endregion
 
 
-# region find_optin_transactions
+# region find_payout_transactions
 
-async def test_can_find_optin_transactions(server):  # pylint: disable=redefined-outer-name
+async def test_can_find_payout_transactions(server):  # pylint: disable=redefined-outer-name
 	# Arrange:
 	client = SymbolClient(server.make_url(''))
 
 	# Act:
-	optin_transaction_infos = await client.find_optin_transactions(PublicKey(PUBLIC_KEYS[0]), Address(SYMBOL_ADDRESSES[0]))
+	optin_transaction_infos = await client.find_payout_transactions(PublicKey(PUBLIC_KEYS[0]), Address(SYMBOL_ADDRESSES[0]))
 
 	# Assert:
 	assert [
