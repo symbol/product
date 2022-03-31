@@ -1,8 +1,19 @@
 import "./Table.scss";
 import PropTypes from "prop-types";
 import React from "react";
+import Helper from '../../utils/helper'
 
 const Table = function ({ dataList, formatting }) {
+  const formatValue = (key, value) => {
+    const isBalance = ['nemBalance', 'symbolBalance'];
+
+    if (isBalance.indexOf(key) !== -1) {
+      return Helper.toRelativeAmount(value).toLocaleString('en-US', { minimumFractionDigits: 6 });
+    }
+
+    return value
+  }
+
   const renderTableHeader = () => {
     return Object.keys(dataList.data[0]).map((key, index) => {
       return (<th key={"header_" + index}>{formatting.language[key]}</th>)
@@ -21,8 +32,8 @@ const Table = function ({ dataList, formatting }) {
               return (<td key={"item_" + index}>
                 {
                   (formatting.keyRedirects[key]) ?
-                  <a href={formatting.keyRedirects[key] + item[key]} target="_blank">{item[key]}</a> :
-                  item[key]
+                  <a href={formatting.keyRedirects[key] + item[key]} target="_blank">{formatValue(key, item[key])}</a> :
+                  formatValue(key, item[key])
                 }
               </td>)
             }
