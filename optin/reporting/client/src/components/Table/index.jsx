@@ -5,13 +5,13 @@ import Helper from '../../utils/helper'
 
 const Table = function ({ dataList, formatting }) {
   const formatValue = (key, value) => {
-    const isBalance = ['nemBalance', 'symbolBalance'];
+	if (formatting.keyFormat[key] === 'relative') {
+		return Helper.toRelativeAmount(value).toLocaleString('en-US', { minimumFractionDigits: 6 });
+	} else if (formatting.keyFormat[key] === 'uppercase') {
+		return value.toUpperCase();
+	}
 
-    if (isBalance.indexOf(key) !== -1) {
-      return Helper.toRelativeAmount(value).toLocaleString('en-US', { minimumFractionDigits: 6 });
-    }
-
-    return value
+	return value
   }
 
   const renderTableHeader = () => {
@@ -32,7 +32,7 @@ const Table = function ({ dataList, formatting }) {
               return (<td key={"item_" + index}>
                 {
                   (formatting.keyRedirects[key]) ?
-                  <a href={formatting.keyRedirects[key] + item[key]} target="_blank">{formatValue(key, item[key])}</a> :
+                  <a href={formatting.keyRedirects[key] + item[key]} target="_blank" rel="noreferrer">{formatValue(key, item[key])}</a> :
                   formatValue(key, item[key])
                 }
               </td>)
@@ -44,7 +44,6 @@ const Table = function ({ dataList, formatting }) {
   }
 
   return (
-    <>
     <table className="tableContainer">
       {0 < dataList.data.length ?
       <div>
@@ -57,7 +56,6 @@ const Table = function ({ dataList, formatting }) {
       </div>
       : "No data available"}
     </table>
-      </>
   );
 };
 

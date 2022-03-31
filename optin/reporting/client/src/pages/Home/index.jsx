@@ -1,6 +1,7 @@
 import './Home.scss';
 import Completed from '../Completed';
 import Balances from '../Balances';
+import Requests from '../Requests';
 import React from 'react';
 import { Tab, Tabs, TabList, TabPanel } from 'react-tabs';
 import 'react-tabs/style/react-tabs.css';
@@ -16,7 +17,7 @@ const tabConfig = {
   },
   inProgress : {
     label: 'In Progress',
-    table: 'In Progress'
+    table: <Requests />
   }
 }
 
