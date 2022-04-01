@@ -1,9 +1,9 @@
-FROM node:12 AS builder
+FROM node:lts-alpine AS builder
 WORKDIR /client
 COPY ./client .
 RUN npm install && npm run build
 
-FROM node:12 AS runner
+FROM node:lts-alpine AS runner
 WORKDIR /app
 COPY . .
 COPY --from=builder /client/build /app/client/build
