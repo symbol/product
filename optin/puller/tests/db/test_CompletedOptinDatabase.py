@@ -25,10 +25,13 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 
 	# region insert_mapping - valid
 
-	def _assert_db_contents(self, connection, expected_optin_count, expected_data):
+	def _assert_db_contents(self, connection, expected_optin_count, expected_flags, expected_data):
 		cursor = connection.cursor()
 		cursor.execute('''SELECT COUNT(*) FROM optin_id''')
 		optin_count = cursor.fetchone()[0]
+
+		cursor.execute('''SELECT attribute_flags FROM optin_id ORDER BY id LIMIT 1''')
+		attribute_flags = cursor.fetchone()[0]
 
 		cursor.execute('''SELECT * FROM nem_source ORDER BY balance DESC''')
 		nem_sources = cursor.fetchall()
@@ -41,6 +44,7 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 
 		# Assert:
 		self.assertEqual(expected_optin_count, optin_count)
+		self.assertEqual(expected_flags, attribute_flags)
 		self.assertEqual(expected_data['nem_sources'], nem_sources)
 		self.assertEqual(expected_data['nem_hashes'], nem_hashes)
 		self.assertEqual(expected_data['symbol_destinations'], symbol_destinations)
@@ -58,7 +62,7 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 				database.insert_mapping(*mapping)
 
 			# Assert:
-			self._assert_db_contents(connection, len(mappings), {
+			self._assert_db_contents(connection, len(mappings), 1, {
 				'nem_sources': expected_nem_sources,
 				'nem_hashes': [],
 				'symbol_destinations': expected_symbol_destinations
@@ -259,7 +263,7 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 
 		# Act:
 		collected = []
-		for entry in database.insert_mappings_from_json(json_data):
+		for entry in database.insert_mappings_from_json(json_data, False):
 			collected.append(entry)
 
 		return {
@@ -275,7 +279,7 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 			state = self._create_database_with_json_mappings(connection)
 
 			# Assert:
-			self._assert_db_contents(connection, 2, {
+			self._assert_db_contents(connection, 2, 0, {
 				'nem_sources': [
 					(NemAddress(NEM_ADDRESSES[0]).bytes, 558668349881393, 1),
 					(NemAddress(NEM_ADDRESSES[1]).bytes, 43686866144523, 2),
@@ -298,7 +302,7 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 			state = self._create_database_with_json_mappings(connection, False)
 
 			# Assert:
-			self._assert_db_contents(connection, 2, {
+			self._assert_db_contents(connection, 2, 0, {
 				'nem_sources': [
 					(NemAddress(NEM_ADDRESSES[0]).bytes, 558668349881393, 1),
 					(NemAddress(NEM_ADDRESSES[1]).bytes, 43686866144523, 2),
