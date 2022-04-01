@@ -32,7 +32,7 @@ const completedDB = {
 			nemBalance: JSON.parse(item.nemBalance),
 			symbolAddress: JSON.parse(item.symbolAddress),
 			symbolBalance: JSON.parse(item.symbolBalance)
-		}))
+		}));
 	},
 	getTotalRecord: async () => {
 		const result = await completed.query(
