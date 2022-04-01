@@ -11,11 +11,15 @@ const controller = {
 
 			const response = await completedDB.getCompletedPagination({ pageNumber, pageSize });
 
-			const result = response.map(item => ({
-				...item,
-				nemAddress: new NemFacade.Address(item.nemAddress).toString(),
-				symbolAddress: new SymbolFacade.Address(item.symbolAddress).toString()
-			}));
+			const result = response.map(item => {
+				return {
+					...item,
+					nemAddress: item.nemAddress.map(props => new NemFacade.Address(Uint8Array.from(Buffer.from(props.address, 'hex'))).toString()),
+					nemBalance: item.nemBalance.map(props => props.balance),
+					symbolAddress: item.symbolAddress.map(props => new SymbolFacade.Address(Uint8Array.from(Buffer.from(props.address, 'hex'))).toString()),
+					symbolBalance: item.symbolBalance.map(props => props.balance),
+				}
+			});
 
 			res.json({
 				data: result,
