@@ -4,24 +4,40 @@ const { QueryTypes } = require('sequelize');
 const completedDB = {
 	getCompletedPagination: async ({ pageNumber, pageSize }) => {
 		const result = await completed.query(
-			`select optin_id.id, nem.address as nemAddress, nem.balance as nemBalance,
-            symbol.address as symbolAddress, symbol.balance as symbolBalance
-            from optin_id
-            join nem_source as nem on optin_id.id = nem.optin_id
-            join symbol_destination as symbol on optin_id.id = symbol.optin_id
-            ORDER BY optin_id.id
+			`SELECT opt.id as optin_id,
+			(SELECT json_group_array(json_object('address', hex(address)))
+			 FROM nem_source
+			 WHERE optin_id = opt.id
+			) AS nemAddress,
+			(SELECT json_group_array(json_object('balance', balance))
+			 FROM nem_source
+			 WHERE optin_id = opt.id
+			) AS nemBalance,
+			(SELECT json_group_array(json_object('address', hex(address)))
+			 FROM symbol_destination
+			 WHERE optin_id = opt.id
+			) AS symbolAddress,
+			(SELECT json_group_array(json_object('balance', balance))
+			 FROM symbol_destination
+			 WHERE optin_id = opt.id
+			) AS symbolBalance
+		  	FROM optin_id opt
             LIMIT ${pageSize} OFFSET ${(pageNumber - 1) * pageSize}`,
 			{ type: QueryTypes.SELECT }
 		);
 
-		return result;
+		return result.map(item => ({
+			...item,
+			nemAddress: JSON.parse(item.nemAddress),
+			nemBalance: JSON.parse(item.nemBalance),
+			symbolAddress: JSON.parse(item.symbolAddress),
+			symbolBalance: JSON.parse(item.symbolBalance)
+		}))
 	},
 	getTotalRecord: async () => {
 		const result = await completed.query(
 			`select count(*) as totalRecord
-            from optin_id
-            join nem_source as nem on optin_id.id = nem.optin_id
-            join symbol_destination as symbol on optin_id.id = symbol.optin_id`,
+            from optin_id`,
 			{ type: QueryTypes.SELECT }
 		);
 
