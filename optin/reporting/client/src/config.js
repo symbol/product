@@ -6,7 +6,8 @@ const config = {
     symbolBalance: 'Symbol Balance',
     optinTransactionHash: 'Optin Transaction Hash',
     status: 'Status',
-    message: 'Message'
+    message: 'Message',
+    optin_id: "Opt-in ID"
   },
   keyRedirects: {
     nemAddress: 'https://explorer.nemtool.com/#/s_account?account=',
