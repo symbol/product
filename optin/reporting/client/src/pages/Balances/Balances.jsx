@@ -1,10 +1,12 @@
-import Table from '../../components/Table';
 import config from '../../config';
-import { TablePagination } from '@trendmicro/react-paginations';
+import { addressTemplate, balanceTemplate } from '../../utils/pageUtils';
+import { Column } from 'primereact/column';
+import { DataTable } from 'primereact/datatable';
 import React, { useState, useEffect } from 'react';
-import '@trendmicro/react-paginations/dist/react-paginations.css';
 
 const Balances = function () {
+	const [loading, setLoading] = useState(true);
+	const [first, setFirst] = useState(1);  
 	const [balances, setBalances] = useState({
 		data: [],
 		pagination: {
@@ -18,13 +20,16 @@ const Balances = function () {
 		return await fetch(`/api/balances?pageSize=${pageSize}&pageNumber=${pageNumber}`).then(res => res.json());
 	};
 
-	const handlePageChange = async ({page, pageLength}) =>{
+	const handlePageChange = async ({page, rows, first}) => {
+		setLoading(true);
+		setFirst(first);
 		const result = await fetchBalances({
 			pageNumber: page,
-			pageSize: pageLength
+			pageSize: rows
 		});
 
 		setBalances(result);
+		setLoading(false);
 	};
 
 	useEffect(() => {
@@ -36,28 +41,26 @@ const Balances = function () {
 		};
 
 		getBalances();
+		setLoading(false);
 	}, []);
 
-	return (
-		<>
-			<Table
-				dataList={balances}
-				formatting={config}
-				filterable={false}
-				pageable={false}
-			/>
-			<TablePagination
-				className='pagination'
-				type='full'
-				page={balances.pagination.pageNumber}
-				pageLength={balances.pagination.pageSize}
-				totalRecords={balances.pagination.totalRecord}
-				onPageChange={handlePageChange}
-				prevPageRenderer={() => <i className='arrow left' />}
-				nextPageRenderer={() => <i className='arrow right' />}
-			/>
-		</>
+	const nemAddressTemplate = rowData => {
+		return addressTemplate(rowData, 'nemAddress', config);
+	};
 
+	const nemBalanceTemplate = rowData => {
+		return balanceTemplate(rowData, 'nemBalance');
+	};
+
+	return (
+		<DataTable lazy value={balances.data} stripedRows showGridlines responsiveLayout="stack" breakpoint="960px" paginator
+			paginatorTemplate="CurrentPageReport FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink RowsPerPageDropdown"
+			currentPageReportTemplate="Showing {first}-{last} of {totalRecords}" rows={balances.pagination.pageSize} 
+			rowsPerPageOptions={[10,25,50]}	onPage={handlePageChange} 
+			loading={loading} totalRecords={balances.pagination.totalRecord} first={first}>
+			<Column field="nemAddress" header="NEM Address" body={nemAddressTemplate} align="left"/>
+			<Column field="nemBalance" header="NEM Balance" body={nemBalanceTemplate} align="right"/>
+		</DataTable>
 	);
 };
 

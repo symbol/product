@@ -1,5 +1,5 @@
 import config from '../../config';
-import Helper from '../../utils/helper';
+import { addressTemplate, balanceTemplate } from '../../utils/pageUtils';
 import { Column } from 'primereact/column';
 import { DataTable} from 'primereact/datatable';
 import React, { useState, useEffect } from 'react';
@@ -46,48 +46,15 @@ const Completed = () => {
 		setLoading(false);
 	}, []);
 
-	const addressTemplate = (rowData, key) => {
-		return (
-			<React.Fragment>
-				{
-					rowData[key].map(address => 
-						<div>
-							<a href={config.keyRedirects[key] + address} target="_blank" rel="noreferrer">
-								{address}
-							</a>
-						</div>)
-				}
-				<React.Fragment>
-					{renderTotalText(rowData[key])}
-				</React.Fragment>
-			</React.Fragment>
-		);
-	};
+	
 
 	const nemAddressTemplate = rowData => {
-		return addressTemplate(rowData, 'nemAddress');
+		return addressTemplate(rowData, 'nemAddress', config);
 	};
   
 	const symbolAddressTemplate = rowData => {
-		return addressTemplate(rowData, 'symbolAddress');
+		return addressTemplate(rowData, 'symbolAddress', config);
 	};
-
-	const balanceTemplate = (rowData, key) => {
-		return (
-			<React.Fragment>
-				{
-					rowData[key].map(balance => 
-						<div>
-							{Helper.toRelativeAmount(balance).toLocaleString('en-US', { minimumFractionDigits: 6 })}
-						</div>)
-				}
-				<React.Fragment>
-					{renderTotalValue(rowData[key])}
-				</React.Fragment>
-			</React.Fragment>
-		);
-	};
-
 
 	const nemBalanceTemplate = rowData => {
 		return balanceTemplate(rowData, 'nemBalance');
@@ -97,22 +64,7 @@ const Completed = () => {
 		return balanceTemplate(rowData, 'symbolBalance');
 	};
 	
-	const renderTotalText = values => {
-		if (2 > values.length)
-			return null;
-	
-		return (<div className="sub-total-text">Total:</div>);
-		
-	};
-	const renderTotalValue = balances => {
-		if (2 > balances.length)
-			return null;
-	
-		const total = balances.reduce((balance, currentBalance) => balance + currentBalance, 0);
-		const formattedBalance = Helper.toRelativeAmount(total).toLocaleString('en-US', { minimumFractionDigits: 6 });
-		return (<div className="sub-total-value">{formattedBalance}</div>);
-		
-	};
+
 
 	return (
 		<DataTable lazy value={completed.data} stripedRows showGridlines responsiveLayout="stack" breakpoint="960px" paginator
@@ -120,11 +72,11 @@ const Completed = () => {
 			currentPageReportTemplate="Showing {first}-{last} of {totalRecords}" rows={completed.pagination.pageSize} 
 			rowsPerPageOptions={[10,25,50]}	onPage={handlePageChange} 
 			loading={loading} totalRecords={completed.pagination.totalRecord} first={first}>
-			<Column field="optin_id" header="Opt-in ID" align="left"></Column>
-			<Column field="nemAddress" header="NEM Address" body={nemAddressTemplate} align="left"></Column>
+			<Column field="optin_id" header="Opt-in ID" align="left"/>
+			<Column field="nemAddress" header="NEM Address" body={nemAddressTemplate} align="left"/>
 			<Column field="nemBalance" header="NEM Balance" body={nemBalanceTemplate} align="right"/>
-			<Column field="symbolAddress" header="Symbol Address" body={symbolAddressTemplate} align="left"></Column>
-			<Column field="symbolBalance" header="Symbol Balance" body={symbolBalanceTemplate} align="right"></Column>
+			<Column field="symbolAddress" header="Symbol Address" body={symbolAddressTemplate} align="left"/>
+			<Column field="symbolBalance" header="Symbol Balance" body={symbolBalanceTemplate} align="right"/>
 		</DataTable>
 	);
 };
