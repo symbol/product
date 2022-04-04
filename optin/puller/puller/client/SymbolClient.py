@@ -74,7 +74,7 @@ class SymbolClient(BasicClient):
 		request = {'hashes': [str(transaction_hash) for transaction_hash in transaction_hashes]}
 		return await self.post('transactionStatus', request)
 
-	async def find_payout_transactions(self, optin_signer_public_key, start_id=None):
+	async def outgoing_transactions(self, optin_signer_public_key, start_id=None):
 		"""Finds payout transactions."""
 
 		url_path = f'transactions/confirmed?signerPublicKey={optin_signer_public_key}&embedded=true&fromHeight=2&pageSize=100'
