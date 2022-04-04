@@ -2,8 +2,8 @@ import './Home.scss';
 import Balances from '../Balances';
 import Completed from '../Completed';
 import Requests from '../Requests';
+import { TabView, TabPanel } from 'primereact/tabview';
 import React from 'react';
-import { Tab, Tabs, TabList, TabPanel } from 'react-tabs';
 import 'react-tabs/style/react-tabs.css';
 
 const tabConfig = {
@@ -22,18 +22,10 @@ const tabConfig = {
 };
 
 const Home = function () {
-	const renderTabListItem = () => {
+	const renderTabList = () => {
 		return Object.keys(tabConfig).map(key => {
 			return (
-				<Tab>{tabConfig[key].label}</Tab>
-			);
-		});
-	};
-
-	const renderTabContent = () => {
-		return Object.keys(tabConfig).map(key => {
-			return (
-				<TabPanel key={key}>
+				<TabPanel header={tabConfig[key].label}>
 					{tabConfig[key].table}
 				</TabPanel>
 			);
@@ -47,13 +39,9 @@ const Home = function () {
 				<div className='mainContainer'>
 					<h2>Opt-in Summary</h2>
 				</div>
-				<Tabs>
-					<TabList>
-						{ renderTabListItem() }
-					</TabList>
-
-					{ renderTabContent() }
-				</Tabs>
+				<TabView>
+					{ renderTabList() }
+				</TabView>
 			</div>
 		</div>
 	);

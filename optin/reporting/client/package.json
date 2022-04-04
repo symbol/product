@@ -11,10 +11,13 @@
     "@testing-library/react": "^12.1.4",
     "@testing-library/user-event": "^13.5.0",
     "@trendmicro/react-paginations": "^0.6.1",
+    "primeicons": "^5.0.0",
+    "primereact": "^7.2.1",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
     "react-scripts": "5.0.0",
     "react-tabs": "^4.0.1",
+    "react-transition-group": "^4.4.2",
     "sass": "^1.49.0",
     "web-vitals": "^2.1.4"
   },
