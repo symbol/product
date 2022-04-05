@@ -25,13 +25,13 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 
 	# region insert_mapping - valid
 
-	def _assert_db_contents(self, connection, expected_optin_count, expected_flags, expected_data):
+	def _assert_db_contents(self, connection, expected_optin_count, expected_data):
 		cursor = connection.cursor()
 		cursor.execute('''SELECT COUNT(*) FROM optin_id''')
 		optin_count = cursor.fetchone()[0]
 
-		cursor.execute('''SELECT attribute_flags FROM optin_id ORDER BY id LIMIT 1''')
-		attribute_flags = cursor.fetchone()[0]
+		cursor.execute('''SELECT attribute_flags, label FROM optin_id ORDER BY id''')
+		flags_and_label = cursor.fetchall()
 
 		cursor.execute('''SELECT * FROM nem_source ORDER BY balance DESC''')
 		nem_sources = cursor.fetchall()
@@ -44,12 +44,12 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 
 		# Assert:
 		self.assertEqual(expected_optin_count, optin_count)
-		self.assertEqual(expected_flags, attribute_flags)
+		self.assertEqual(expected_data['flags_labels'], flags_and_label)
 		self.assertEqual(expected_data['nem_sources'], nem_sources)
 		self.assertEqual(expected_data['nem_transactions'], nem_transactions)
 		self.assertEqual(expected_data['symbol_destinations'], symbol_destinations)
 
-	def _assert_can_insert_mappings(self, one_or_more_mappings, expected_nem_sources, expected_symbol_destinations):
+	def _assert_can_insert_mappings(self, one_or_more_mappings, expected_nem_sources, expected_flags_labels, expected_symbol_destinations):
 		# Arrange:
 		with sqlite3.connect(':memory:') as connection:
 			mappings = one_or_more_mappings if isinstance(one_or_more_mappings, list) else [one_or_more_mappings]
@@ -62,7 +62,8 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 				database.insert_mapping(*mapping)
 
 			# Assert:
-			self._assert_db_contents(connection, len(mappings), 1, {
+			self._assert_db_contents(connection, len(mappings), {
+				'flags_labels': expected_flags_labels,
 				'nem_sources': expected_nem_sources,
 				'nem_transactions': [],
 				'symbol_destinations': expected_symbol_destinations
@@ -75,6 +76,8 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 		), [
 			(NemAddress(NEM_ADDRESSES[0]).bytes, 558668349881393, 1)
 		], [
+			(1, None)
+		], [
 			(SymbolAddress(SYMBOL_ADDRESSES[0]).bytes, 558668349881393, 1)
 		])
 
@@ -86,6 +89,8 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 			(NemAddress(NEM_ADDRESSES[0]).bytes, 43686866144523, 1),
 			(NemAddress(NEM_ADDRESSES[1]).bytes, 16108065258303, 1)
 		], [
+			(1, None)
+		], [
 			(SymbolAddress(SYMBOL_ADDRESSES[0]).bytes, 59794931402826, 1)
 		])
 
@@ -96,6 +101,8 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 		), [
 			(NemAddress(NEM_ADDRESSES[0]).bytes, 43686866144523, 1),
 			(NemAddress(NEM_ADDRESSES[1]).bytes, 16108065258303, 1)
+		], [
+			(1, None)
 		], [
 			(SymbolAddress(SYMBOL_ADDRESSES[0]).bytes, 33686866144523, 1),
 			(SymbolAddress(SYMBOL_ADDRESSES[1]).bytes, 26108065200000, 1),
@@ -116,6 +123,9 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 			(NemAddress(NEM_ADDRESSES[0]).bytes, 558668349881393, 1),
 			(NemAddress(NEM_ADDRESSES[1]).bytes, 43686866144523, 2),
 			(NemAddress(NEM_ADDRESSES[2]).bytes, 16108065258303, 2)
+		], [
+			(1, None),
+			(1, None)
 		], [
 			(SymbolAddress(SYMBOL_ADDRESSES[0]).bytes, 558668349881393, 1),
 			(SymbolAddress(SYMBOL_ADDRESSES[1]).bytes, 33686866144523, 2),
@@ -185,6 +195,9 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 			(NemAddress(NEM_ADDRESSES[0]).bytes, 43686866144523, 1),
 			(NemAddress(NEM_ADDRESSES[1]).bytes, 16108065258303, 2)
 		], [
+			(1, None),
+			(1, None)
+		], [
 			(SymbolAddress(SYMBOL_ADDRESSES[0]).bytes, 43686866144523, 1),
 			(SymbolAddress(SYMBOL_ADDRESSES[0]).bytes, 16108065258303, 2)
 		])
@@ -219,6 +232,7 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 					]
 				},
 			],
+			'label': 'test-label',
 			'type': '1-to-1',
 			'destination': [
 				{'sym-address': SYMBOL_ADDRESSES[0], 'sym-balance': 558668349881393}
@@ -283,7 +297,11 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 			state = self._create_database_with_json_mappings(connection)
 
 			# Assert:
-			self._assert_db_contents(connection, 2, 0, {
+			self._assert_db_contents(connection, 2, {
+				'flags_labels': [
+					(0, 'test-label'),
+					(0, None)
+				],
 				'nem_sources': [
 					(NemAddress(NEM_ADDRESSES[0]).bytes, 558668349881393, 1),
 					(NemAddress(NEM_ADDRESSES[1]).bytes, 43686866144523, 2),
@@ -306,7 +324,11 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 			state = self._create_database_with_json_mappings(connection, False)
 
 			# Assert:
-			self._assert_db_contents(connection, 2, 0, {
+			self._assert_db_contents(connection, 2, {
+				'flags_labels': [
+					(0, 'test-label'),
+					(0, None)
+				],
 				'nem_sources': [
 					(NemAddress(NEM_ADDRESSES[0]).bytes, 558668349881393, 1),
 					(NemAddress(NEM_ADDRESSES[1]).bytes, 43686866144523, 2),

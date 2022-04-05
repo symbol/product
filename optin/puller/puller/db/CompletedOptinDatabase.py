@@ -20,7 +20,8 @@ class CompletedOptinDatabase:
 		cursor = self.connection.cursor()
 		cursor.execute('''CREATE TABLE IF NOT EXISTS optin_id (
 			id integer PRIMARY KEY,
-			attribute_flags integer
+			attribute_flags integer,
+			label text
 		)''')
 		cursor.execute('''CREATE TABLE IF NOT EXISTS nem_source (
 			address blob UNIQUE,
@@ -49,8 +50,8 @@ class CompletedOptinDatabase:
 			raise ValueError(f'NEM source balance {nem_balance} does not match Symbol destination balance {symbol_balance}')
 
 	@staticmethod
-	def _insert_mapping(cursor, nem_address_dict, symbol_address_dict, nem_transactions_dict=None, is_postoptin=True):
-		cursor.execute('''INSERT INTO optin_id VALUES (NULL, ?)''', (is_postoptin,))
+	def _insert_mapping(cursor, nem_address_dict, symbol_address_dict, nem_transactions_dict=None, optin_label=None, is_postoptin=True):
+		cursor.execute('''INSERT INTO optin_id VALUES (NULL, ?, ?)''', (is_postoptin, optin_label))
 		optin_id = cursor.lastrowid
 
 		cursor.executemany(
@@ -101,7 +102,8 @@ class CompletedOptinDatabase:
 				}
 
 				self._assert_balances(nem_address_dict, symbol_address_dict)
-				self._insert_mapping(cursor, nem_address_dict, symbol_address_dict, nem_transactions_dict, is_postoptin)
+				self._insert_mapping(
+					cursor, nem_address_dict, symbol_address_dict, nem_transactions_dict, mapping_json.get('label', None), is_postoptin)
 
 				yield mapping_json
 
