@@ -84,14 +84,6 @@ class PayoutTransactionsProcessor:
 			return
 
 		# note: deliberately setting nis balance to same value
-
-
-		deadline_timestamp = SymbolNetworkTimestamp(int(transaction['deadline']))
-		deadline_datetime = deadline_timestamp.to_datetime()
-		if 'testnet' == node_network.name:
-			SYMBOL_TESTNET_EPOCH_TIME = datetime.datetime(2021, 11, 25, 14, 0, 47, tzinfo=datetime.timezone.utc)
-			deadline_datetime = deadline_timestamp.to_datetime(SYMBOL_TESTNET_EPOCH_TIME)
-
 		nis_address = data['nisAddress']
 		self.redemptions[nis_address] = {
 			'type': '1-to-1',
@@ -105,12 +97,18 @@ class PayoutTransactionsProcessor:
 					'sym-address': str(to_symbol_address(transaction['recipientAddress'])),
 					'sym-balance': xym_amount,
 					'deadline': transaction['deadline'],
-					'hashes': [
-						transaction_meta['hash']
-					]
+					'hash': transaction_meta['hash'],
+					'height': transaction_meta['height']
 				}
 			]
 		}
+
+		deadline_timestamp = SymbolNetworkTimestamp(int(transaction['deadline']))
+		deadline_datetime = deadline_timestamp.to_datetime()
+		if 'testnet' == node_network.name:
+			SYMBOL_TESTNET_EPOCH_TIME = datetime.datetime(2021, 11, 25, 14, 0, 47, tzinfo=datetime.timezone.utc)
+			deadline_datetime = deadline_timestamp.to_datetime(SYMBOL_TESTNET_EPOCH_TIME)
+
 		self.deadlines[nis_address] = deadline_datetime
 
 
