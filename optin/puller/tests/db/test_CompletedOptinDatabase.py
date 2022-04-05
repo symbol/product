@@ -19,7 +19,7 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 		table_names = get_all_table_names(CompletedOptinDatabase)
 
 		# Assert:
-		self.assertEqual(set(['optin_id', 'nem_source', 'nem_hashes', 'symbol_destination']), table_names)
+		self.assertEqual(set(['optin_id', 'nem_source', 'nem_transactions', 'symbol_destination']), table_names)
 
 	# endregion
 
@@ -36,8 +36,8 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 		cursor.execute('''SELECT * FROM nem_source ORDER BY balance DESC''')
 		nem_sources = cursor.fetchall()
 
-		cursor.execute('''SELECT * FROM nem_hashes ORDER BY address,nem_tx_hash DESC''')
-		nem_hashes = cursor.fetchall()
+		cursor.execute('''SELECT * FROM nem_transactions ORDER BY address,nem_tx_hash DESC''')
+		nem_transactions = cursor.fetchall()
 
 		cursor.execute('''SELECT * FROM symbol_destination ORDER BY balance DESC''')
 		symbol_destinations = cursor.fetchall()
@@ -46,7 +46,7 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 		self.assertEqual(expected_optin_count, optin_count)
 		self.assertEqual(expected_flags, attribute_flags)
 		self.assertEqual(expected_data['nem_sources'], nem_sources)
-		self.assertEqual(expected_data['nem_hashes'], nem_hashes)
+		self.assertEqual(expected_data['nem_transactions'], nem_transactions)
 		self.assertEqual(expected_data['symbol_destinations'], symbol_destinations)
 
 	def _assert_can_insert_mappings(self, one_or_more_mappings, expected_nem_sources, expected_symbol_destinations):
@@ -64,7 +64,7 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 			# Assert:
 			self._assert_db_contents(connection, len(mappings), 1, {
 				'nem_sources': expected_nem_sources,
-				'nem_hashes': [],
+				'nem_transactions': [],
 				'symbol_destinations': expected_symbol_destinations
 			})
 
@@ -206,16 +206,16 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 	# region insert_mappings_from_json
 
 	@staticmethod
-	def _create_database_with_json_mappings(connection, remove_hashes=True):
+	def _create_database_with_json_mappings(connection, remove_nem_transactions=True):
 		database = CompletedOptinDatabase(connection)
 		database.create_tables()
 		entry_1 = {
 			'source': [
 				{
 					'nis-address': NEM_ADDRESSES[0], 'nis-balance': '558668349881393',
-					'hashes': [
-						HASHES[3],
-						HASHES[2]
+					'transactions': [
+						{'hash': HASHES[3], 'height': 123},
+						{'hash': HASHES[2], 'height': 456}
 					]
 				},
 			],
@@ -229,11 +229,15 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 			'source': [
 				{
 					'nis-address': NEM_ADDRESSES[1], 'nis-balance': '43686866144523',
-					'hashes': [HASHES[1]]
+					'transactions': [
+						{'hash': HASHES[1], 'height': 789}
+					]
 				},
 				{
 					'nis-address': NEM_ADDRESSES[2], 'nis-balance': '16108065258303',
-					'hashes': [HASHES[0]]
+					'transactions': [
+						{'hash': HASHES[0], 'height': 333}
+					]
 				}
 			],
 			'source_total': 0,  # in original json but ignored
@@ -254,12 +258,12 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 			entry_2
 		]
 
-		if remove_hashes:
+		if remove_nem_transactions:
 			for entry in json_data:
 				if 'source' not in entry:
 					continue
 				for source in entry['source']:
-					del source['hashes']
+					del source['transactions']
 
 		# Act:
 		collected = []
@@ -272,7 +276,7 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 			'entries': [entry_1, entry_2]
 		}
 
-	def test_can_insert_mappings_from_json_without_hashes(self):
+	def test_can_insert_mappings_from_json_without_transactinos(self):
 		# Arrange:
 		with sqlite3.connect(':memory:') as connection:
 			# Act:
@@ -285,7 +289,7 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 					(NemAddress(NEM_ADDRESSES[1]).bytes, 43686866144523, 2),
 					(NemAddress(NEM_ADDRESSES[2]).bytes, 16108065258303, 2)
 				],
-				'nem_hashes': [],
+				'nem_transactions': [],
 				'symbol_destinations': [
 					(SymbolAddress(SYMBOL_ADDRESSES[0]).bytes, 558668349881393, 1),
 					(SymbolAddress(SYMBOL_ADDRESSES[1]).bytes, 33686866144523, 2),
@@ -295,7 +299,7 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 
 			self.assertEqual(state['entries'], state['collected'])
 
-	def test_can_insert_mappings_from_json_with_hashes(self):
+	def test_can_insert_mappings_from_json_with_transactions(self):
 		# Arrange:
 		with sqlite3.connect(':memory:') as connection:
 			# Act:
@@ -308,11 +312,11 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 					(NemAddress(NEM_ADDRESSES[1]).bytes, 43686866144523, 2),
 					(NemAddress(NEM_ADDRESSES[2]).bytes, 16108065258303, 2)
 				],
-				'nem_hashes': [
-					(NemAddress(NEM_ADDRESSES[0]).bytes, Hash256(HASHES[2]).bytes),
-					(NemAddress(NEM_ADDRESSES[0]).bytes, Hash256(HASHES[3]).bytes),
-					(NemAddress(NEM_ADDRESSES[1]).bytes, Hash256(HASHES[1]).bytes),
-					(NemAddress(NEM_ADDRESSES[2]).bytes, Hash256(HASHES[0]).bytes),
+				'nem_transactions': [
+					(NemAddress(NEM_ADDRESSES[0]).bytes, Hash256(HASHES[2]).bytes, 456),
+					(NemAddress(NEM_ADDRESSES[0]).bytes, Hash256(HASHES[3]).bytes, 123),
+					(NemAddress(NEM_ADDRESSES[1]).bytes, Hash256(HASHES[1]).bytes, 789),
+					(NemAddress(NEM_ADDRESSES[2]).bytes, Hash256(HASHES[0]).bytes, 333),
 				],
 				'symbol_destinations': [
 					(SymbolAddress(SYMBOL_ADDRESSES[0]).bytes, 558668349881393, 1),

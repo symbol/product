@@ -28,9 +28,10 @@ class CompletedOptinDatabase:
 			optin_id integer,
 			FOREIGN KEY (optin_id) REFERENCES optin_id(id)
 		)''')
-		cursor.execute('''CREATE TABLE IF NOT EXISTS nem_hashes (
+		cursor.execute('''CREATE TABLE IF NOT EXISTS nem_transactions (
 			address blob,
-			nem_tx_hash blob
+			nem_tx_hash blob,
+			nem_tx_height integer
 		)''')
 		cursor.execute('''CREATE TABLE IF NOT EXISTS symbol_destination (
 			address blob,
@@ -48,7 +49,7 @@ class CompletedOptinDatabase:
 			raise ValueError(f'NEM source balance {nem_balance} does not match Symbol destination balance {symbol_balance}')
 
 	@staticmethod
-	def _insert_mapping(cursor, nem_address_dict, symbol_address_dict, nem_hashes_dict=None, is_postoptin=True):
+	def _insert_mapping(cursor, nem_address_dict, symbol_address_dict, nem_transactions_dict=None, is_postoptin=True):
 		cursor.execute('''INSERT INTO optin_id VALUES (NULL, ?)''', (is_postoptin,))
 		optin_id = cursor.lastrowid
 
@@ -56,13 +57,13 @@ class CompletedOptinDatabase:
 			'''INSERT INTO nem_source VALUES (?, ?, ?)''',
 			[(NemAddress(address).bytes, balance, optin_id) for address, balance in nem_address_dict.items()])
 
-		if nem_hashes_dict:
+		if nem_transactions_dict:
 			items = []
-			for address, hashes in nem_hashes_dict.items():
-				for nem_transaction_hash in hashes:
-					items.append((NemAddress(address).bytes, Hash256(nem_transaction_hash).bytes))
+			for address, transactions in nem_transactions_dict.items():
+				for transaction in transactions:
+					items.append((NemAddress(address).bytes, Hash256(transaction['hash']).bytes, transaction['height']))
 
-			cursor.executemany('''INSERT INTO nem_hashes VALUES (?, ?)''', items)
+			cursor.executemany('''INSERT INTO nem_transactions VALUES (?, ?, ?)''', items)
 
 		cursor.executemany(
 			'''INSERT INTO symbol_destination VALUES (?, ?, ?)''',
@@ -95,12 +96,12 @@ class CompletedOptinDatabase:
 				symbol_address_dict = {
 					destination_json['sym-address']: destination_json['sym-balance'] for destination_json in mapping_json['destination']
 				}
-				nem_hashes_dict = {
-					source_json['nis-address']: source_json.get('hashes', []) for source_json in mapping_json['source']
+				nem_transactions_dict = {
+					source_json['nis-address']: source_json.get('transactions', []) for source_json in mapping_json['source']
 				}
 
 				self._assert_balances(nem_address_dict, symbol_address_dict)
-				self._insert_mapping(cursor, nem_address_dict, symbol_address_dict, nem_hashes_dict, is_postoptin)
+				self._insert_mapping(cursor, nem_address_dict, symbol_address_dict, nem_transactions_dict, is_postoptin)
 
 				yield mapping_json
 
