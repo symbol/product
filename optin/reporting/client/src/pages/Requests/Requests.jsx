@@ -1,7 +1,10 @@
 import config from '../../config';
 import { addressTemplate, transactionHashTemplate } from '../../utils/pageUtils';
+import { Button } from 'primereact/button';
 import { Column } from 'primereact/column';
 import { DataTable } from 'primereact/datatable';
+import { InputText } from 'primereact/inputtext';
+import { SelectButton } from 'primereact/selectbutton';
 import React, { useState, useEffect } from 'react';
 
 const Requests = function () {
@@ -15,9 +18,21 @@ const Requests = function () {
 			totalRecord: 0
 		}
 	});
-
+	const [filterSearch, setFilterSearch] = useState('');
+	const [filterStatus, setFilterStatus] = useState('');
+	
 	const fetchOptinRequests = async ({pageSize = 25, pageNumber = 1}) => {
-		return await fetch(`/api/requests?pageSize=${pageSize}&pageNumber=${pageNumber}`).then(res => res.json());
+		const [nemAddress, transactionHash] = parseFilterSearch(filterSearch);
+		return await fetch(`/api/requests?pageSize=${pageSize}&pageNumber=${pageNumber}
+      &nemAddress=${nemAddress}&transactionHash=${transactionHash}&status=${filterStatus ?? ''}`).then(res => res.json());
+	};
+
+	const parseFilterSearch = filterSearch => {
+		if (40 === filterSearch.length) 
+			return [filterSearch, ''];
+		else if (64 === filterSearch.length) 
+			return ['', filterSearch];
+		return ['', ''];
 	};
 
 	const handlePageChange = async ({page, rows, first}) => {
@@ -31,7 +46,6 @@ const Requests = function () {
 		setRequests(result);
 		setLoading(false);
 	};
-
 
 	useEffect(() => {
 		const getOptinRequests = async () => {
@@ -63,12 +77,45 @@ const Requests = function () {
 			</div>
 		</React.Fragment>;
 	};
+
+	const onFilterChange = e => {
+		const {value} = e.target;
+		setFilterSearch(value);
+	};
+
+	const onFilterSubmit = async () => {
+		await handlePageChange({page: 1, rows: 25, first: 1});
+	};
+
+	const statuses = [{label: 'Pending', value: 'Pending'}, {label: 'Sent', value: 'Sent'}, {label: 'Error', value: 'Error'}];
+	const renderHeader = () => {
+		return (
+			<div className="formgroup-inline">
+				<span className="p-input-icon-left field">
+					<i className="pi pi-search" />
+					<span className="p-input-icon-right">
+						<i className="pi pi-times" onClick={() => setFilterSearch('')}/>
+						<InputText value={filterSearch} onChange={onFilterChange} placeholder="Nem Address or Transaction Hash" 
+							className='w-24rem' />
+					</span>
+				</span>
+				<div className='field'>
+					<SelectButton optionLabel="label" optionValue="value" value={filterStatus} options={statuses} 
+						onChange={e => setFilterStatus(e.value)}></SelectButton>
+				</div>
+				<Button type="button" icon="pi pi-search" className="p-button-outlined" onClick={onFilterSubmit} />
+
+			</div>
+		);
+	};
+	const header = renderHeader();
+
 	return (
 		<DataTable lazy value={requests.data} stripedRows showGridlines responsiveLayout="stack" breakpoint="960px" paginator
 			paginatorTemplate="CurrentPageReport FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink RowsPerPageDropdown"
 			currentPageReportTemplate="Showing {first}-{last} of {totalRecords}" rows={requests.pagination.pageSize} 
 			rowsPerPageOptions={[10,25,50]}	onPage={handlePageChange} 
-			loading={loading} totalRecords={requests.pagination.totalRecord} first={first}>
+			loading={loading} totalRecords={requests.pagination.totalRecord} first={first} header={header}>
 			<Column field="nemAddress" header="NEM Address" body={nemAddressTemplate} align="left"/>
 			<Column field="optinTransactionHash" header="Optin Transaction Hash" body={optinTransactionHashTemplate} align="left"/>
 			<Column field="status" header="Status" body={statusTemplate} align="center"/>

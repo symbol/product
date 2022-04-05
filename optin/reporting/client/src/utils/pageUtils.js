@@ -1,25 +1,25 @@
 import Helper from './helper';
 import React from 'react';
 
-export const addressTemplate = (rowData, key, config) => {
-	const single = address => (<div>
-		<a href={config.keyRedirects[key] + address} target="_blank" rel="noreferrer">
-			{address}
-		</a>
-	</div>);
+export const addressTemplate = (rowData, key, config, renderTotal = true) => {
+	const list = Array.isArray(rowData[key]) ? rowData[key] : [rowData[key]];
 	return (
 		<React.Fragment>
 			{
-				Array.isArray(rowData[key]) ? rowData[key].map(address => single(address)) : single(rowData[key])
+				list.map(address => <div>
+					<a href={config.keyRedirects[key] + address} target="_blank" rel="noreferrer">
+						{address}
+					</a>
+				</div>)
 			}
 			<React.Fragment>
-				{renderTotalText(rowData[key])}
+				{renderTotal && renderTotalText(rowData[key])}
 			</React.Fragment>
 		</React.Fragment>
 	);
 };
 
-export const balanceTemplate = (rowData, key) => {
+export const balanceTemplate = (rowData, key, renderTotal = true) => {
 	const list = Array.isArray(rowData[key]) ? rowData[key] : [rowData[key]];
 
 	return (
@@ -31,7 +31,7 @@ export const balanceTemplate = (rowData, key) => {
 					</div>)
 			}
 			<React.Fragment>
-				{renderTotalValue(rowData[key])}
+				{renderTotal && renderTotalValue(rowData[key])}
 			</React.Fragment>
 		</React.Fragment>
 	);
