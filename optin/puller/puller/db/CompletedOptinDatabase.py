@@ -1,6 +1,7 @@
 import sqlite3
 from functools import reduce
 
+from symbolchain.CryptoTypes import Hash256
 from symbolchain.nem.Network import Address as NemAddress
 from symbolchain.symbol.Network import Address as SymbolAddress
 
@@ -26,6 +27,10 @@ class CompletedOptinDatabase:
 			optin_id integer,
 			FOREIGN KEY (optin_id) REFERENCES optin_id(id)
 		)''')
+		cursor.execute('''CREATE TABLE IF NOT EXISTS nem_hashes (
+			address blob,
+			nem_tx_hash blob
+		)''')
 		cursor.execute('''CREATE TABLE IF NOT EXISTS symbol_destination (
 			address blob,
 			balance integer,
@@ -42,12 +47,22 @@ class CompletedOptinDatabase:
 			raise ValueError(f'NEM source balance {nem_balance} does not match Symbol destination balance {symbol_balance}')
 
 	@staticmethod
-	def _insert_mapping(cursor, nem_address_dict, symbol_address_dict):
+	def _insert_mapping(cursor, nem_address_dict, symbol_address_dict, nem_hashes_dict=None):
 		cursor.execute('''INSERT INTO optin_id VALUES (NULL)''')
 		optin_id = cursor.lastrowid
+
 		cursor.executemany(
 			'''INSERT INTO nem_source VALUES (?, ?, ?)''',
 			[(NemAddress(address).bytes, balance, optin_id) for address, balance in nem_address_dict.items()])
+
+		if nem_hashes_dict:
+			items = []
+			for address, hashes in nem_hashes_dict.items():
+				for nem_transaction_hash in hashes:
+					items.append((NemAddress(address).bytes, Hash256(nem_transaction_hash).bytes))
+
+			cursor.executemany('''INSERT INTO nem_hashes VALUES (?, ?)''', items)
+
 		cursor.executemany(
 			'''INSERT INTO symbol_destination VALUES (?, ?, ?)''',
 			[(SymbolAddress(address).bytes, balance, optin_id) for address, balance in symbol_address_dict.items()])
@@ -79,9 +94,12 @@ class CompletedOptinDatabase:
 				symbol_address_dict = {
 					destination_json['sym-address']: destination_json['sym-balance'] for destination_json in mapping_json['destination']
 				}
+				nem_hashes_dict = {
+					source_json['nis-address']: source_json.get('hashes', []) for source_json in mapping_json['source']
+				}
 
 				self._assert_balances(nem_address_dict, symbol_address_dict)
-				self._insert_mapping(cursor, nem_address_dict, symbol_address_dict)
+				self._insert_mapping(cursor, nem_address_dict, symbol_address_dict, nem_hashes_dict)
 
 				yield mapping_json
 

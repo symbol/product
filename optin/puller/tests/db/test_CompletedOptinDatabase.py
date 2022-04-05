@@ -1,13 +1,14 @@
 import sqlite3
 import unittest
 
+from symbolchain.CryptoTypes import Hash256
 from symbolchain.nem.Network import Address as NemAddress
 from symbolchain.symbol.Network import Address as SymbolAddress
 
 from puller.db.CompletedOptinDatabase import CompletedOptinDatabase
 
 from ..test.DatabaseTestUtils import get_all_table_names
-from ..test.OptinRequestTestUtils import NEM_ADDRESSES, SYMBOL_ADDRESSES
+from ..test.OptinRequestTestUtils import HASHES, NEM_ADDRESSES, SYMBOL_ADDRESSES
 
 
 class CompletedOptinDatabaseTest(unittest.TestCase):
@@ -18,13 +19,13 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 		table_names = get_all_table_names(CompletedOptinDatabase)
 
 		# Assert:
-		self.assertEqual(set(['optin_id', 'nem_source', 'symbol_destination']), table_names)
+		self.assertEqual(set(['optin_id', 'nem_source', 'nem_hashes', 'symbol_destination']), table_names)
 
 	# endregion
 
 	# region insert_mapping - valid
 
-	def _assert_db_contents(self, connection, expected_optin_count, expected_nem_sources, expected_symbol_destinations):
+	def _assert_db_contents(self, connection, expected_optin_count, expected_data):
 		cursor = connection.cursor()
 		cursor.execute('''SELECT COUNT(*) FROM optin_id''')
 		optin_count = cursor.fetchone()[0]
@@ -32,13 +33,17 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 		cursor.execute('''SELECT * FROM nem_source ORDER BY balance DESC''')
 		nem_sources = cursor.fetchall()
 
+		cursor.execute('''SELECT * FROM nem_hashes ORDER BY address,nem_tx_hash DESC''')
+		nem_hashes = cursor.fetchall()
+
 		cursor.execute('''SELECT * FROM symbol_destination ORDER BY balance DESC''')
 		symbol_destinations = cursor.fetchall()
 
 		# Assert:
 		self.assertEqual(expected_optin_count, optin_count)
-		self.assertEqual(expected_nem_sources, nem_sources)
-		self.assertEqual(expected_symbol_destinations, symbol_destinations)
+		self.assertEqual(expected_data['nem_sources'], nem_sources)
+		self.assertEqual(expected_data['nem_hashes'], nem_hashes)
+		self.assertEqual(expected_data['symbol_destinations'], symbol_destinations)
 
 	def _assert_can_insert_mappings(self, one_or_more_mappings, expected_nem_sources, expected_symbol_destinations):
 		# Arrange:
@@ -53,7 +58,11 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 				database.insert_mapping(*mapping)
 
 			# Assert:
-			self._assert_db_contents(connection, len(mappings), expected_nem_sources, expected_symbol_destinations)
+			self._assert_db_contents(connection, len(mappings), {
+				'nem_sources': expected_nem_sources,
+				'nem_hashes': [],
+				'symbol_destinations': expected_symbol_destinations
+			})
 
 	def test_can_insert_one_to_one_with_matching_balances(self):
 		self._assert_can_insert_mappings((
@@ -193,12 +202,18 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 	# region insert_mappings_from_json
 
 	@staticmethod
-	def _create_database_with_json_mappings(connection):
+	def _create_database_with_json_mappings(connection, remove_hashes=True):
 		database = CompletedOptinDatabase(connection)
 		database.create_tables()
 		entry_1 = {
 			'source': [
-				{'nis-address': NEM_ADDRESSES[0], 'nis-balance': '558668349881393'},
+				{
+					'nis-address': NEM_ADDRESSES[0], 'nis-balance': '558668349881393',
+					'hashes': [
+						HASHES[3],
+						HASHES[2]
+					]
+				},
 			],
 			'type': '1-to-1',
 			'destination': [
@@ -208,8 +223,14 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 
 		entry_2 = {
 			'source': [
-				{'nis-address': NEM_ADDRESSES[1], 'nis-balance': '43686866144523'},
-				{'nis-address': NEM_ADDRESSES[2], 'nis-balance': '16108065258303'}
+				{
+					'nis-address': NEM_ADDRESSES[1], 'nis-balance': '43686866144523',
+					'hashes': [HASHES[1]]
+				},
+				{
+					'nis-address': NEM_ADDRESSES[2], 'nis-balance': '16108065258303',
+					'hashes': [HASHES[0]]
+				}
 			],
 			'source_total': 0,  # in original json but ignored
 			'type': 'multi',  # in original json but ignored
@@ -229,6 +250,13 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 			entry_2
 		]
 
+		if remove_hashes:
+			for entry in json_data:
+				if 'source' not in entry:
+					continue
+				for source in entry['source']:
+					del source['hashes']
+
 		# Act:
 		collected = []
 		for entry in database.insert_mappings_from_json(json_data):
@@ -240,23 +268,54 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 			'entries': [entry_1, entry_2]
 		}
 
-	def test_can_insert_mappings_from_json(self):
+	def test_can_insert_mappings_from_json_without_hashes(self):
 		# Arrange:
 		with sqlite3.connect(':memory:') as connection:
 			# Act:
 			state = self._create_database_with_json_mappings(connection)
 
 			# Assert:
-			self._assert_db_contents(connection, 2, [
-				(NemAddress(NEM_ADDRESSES[0]).bytes, 558668349881393, 1),
-				(NemAddress(NEM_ADDRESSES[1]).bytes, 43686866144523, 2),
-				(NemAddress(NEM_ADDRESSES[2]).bytes, 16108065258303, 2)
-			], [
-				(SymbolAddress(SYMBOL_ADDRESSES[0]).bytes, 558668349881393, 1),
-				(SymbolAddress(SYMBOL_ADDRESSES[1]).bytes, 33686866144523, 2),
-				(SymbolAddress(SYMBOL_ADDRESSES[2]).bytes, 26108065200000, 2),
-				(SymbolAddress(SYMBOL_ADDRESSES[3]).bytes, 58303, 2)
-			])
+			self._assert_db_contents(connection, 2, {
+				'nem_sources': [
+					(NemAddress(NEM_ADDRESSES[0]).bytes, 558668349881393, 1),
+					(NemAddress(NEM_ADDRESSES[1]).bytes, 43686866144523, 2),
+					(NemAddress(NEM_ADDRESSES[2]).bytes, 16108065258303, 2)
+				],
+				'nem_hashes': [],
+				'symbol_destinations': [
+					(SymbolAddress(SYMBOL_ADDRESSES[0]).bytes, 558668349881393, 1),
+					(SymbolAddress(SYMBOL_ADDRESSES[1]).bytes, 33686866144523, 2),
+					(SymbolAddress(SYMBOL_ADDRESSES[2]).bytes, 26108065200000, 2),
+					(SymbolAddress(SYMBOL_ADDRESSES[3]).bytes, 58303, 2)
+				]})
+
+			self.assertEqual(state['entries'], state['collected'])
+
+	def test_can_insert_mappings_from_json_with_hashes(self):
+		# Arrange:
+		with sqlite3.connect(':memory:') as connection:
+			# Act:
+			state = self._create_database_with_json_mappings(connection, False)
+
+			# Assert:
+			self._assert_db_contents(connection, 2, {
+				'nem_sources': [
+					(NemAddress(NEM_ADDRESSES[0]).bytes, 558668349881393, 1),
+					(NemAddress(NEM_ADDRESSES[1]).bytes, 43686866144523, 2),
+					(NemAddress(NEM_ADDRESSES[2]).bytes, 16108065258303, 2)
+				],
+				'nem_hashes': [
+					(NemAddress(NEM_ADDRESSES[0]).bytes, Hash256(HASHES[2]).bytes),
+					(NemAddress(NEM_ADDRESSES[0]).bytes, Hash256(HASHES[3]).bytes),
+					(NemAddress(NEM_ADDRESSES[1]).bytes, Hash256(HASHES[1]).bytes),
+					(NemAddress(NEM_ADDRESSES[2]).bytes, Hash256(HASHES[0]).bytes),
+				],
+				'symbol_destinations': [
+					(SymbolAddress(SYMBOL_ADDRESSES[0]).bytes, 558668349881393, 1),
+					(SymbolAddress(SYMBOL_ADDRESSES[1]).bytes, 33686866144523, 2),
+					(SymbolAddress(SYMBOL_ADDRESSES[2]).bytes, 26108065200000, 2),
+					(SymbolAddress(SYMBOL_ADDRESSES[3]).bytes, 58303, 2)
+				]})
 
 			self.assertEqual(state['entries'], state['collected'])
 
