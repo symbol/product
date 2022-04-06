@@ -1,12 +1,12 @@
+import Table from '../../components/Table';
+import TableColumn from '../../components/Table/TableColumn';
 import config from '../../config';
 import Helper from '../../utils/helper';
 import { addressTemplate, transactionHashTemplate } from '../../utils/pageUtils';
 import { Button } from 'primereact/button';
-import { Column } from 'primereact/column';
-import { DataTable } from 'primereact/datatable';
 import { InputText } from 'primereact/inputtext';
 import { SelectButton } from 'primereact/selectbutton';
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 
 const Requests = () => {
 	const [loading, setLoading] = useState(true);
@@ -71,14 +71,7 @@ const Requests = () => {
 	};
 
 	const downloadAllAsCSV = async () => {
-		setDownloading(true);
-		await fetch('/api/requests/download', {
-			method: 'get',
-			headers: {
-				'content-type': 'text/csv;charset=UTF-8'
-			}
-		}).then(async res => Helper.downloadFile({ data: await res.text(), fileName: 'optin-requests.csv', fileType: 'text/csv' }));
-		setDownloading(false);
+		await Helper.downloadAllAsCSV({apiUrl: '/api/requests/download', fileName: 'optin-requests.csv', setDownloading});
 	};
 
 	const nemAddressTemplate = rowData => {
@@ -102,45 +95,40 @@ const Requests = () => {
 
 	const statuses = [{label: 'Pending', value: 'Pending'}, {label: 'Sent', value: 'Sent'}, {label: 'Error', value: 'Error'}];
 	
-	const renderHeader = () => {
-		return (
-			<div className='flex justify-content-between'>
-				<div className="formgroup-inline">
-					<span className="p-input-icon-left field">
-						<i className="pi pi-search" />
-						<span className="p-input-icon-right">
-							<i className="pi pi-times" onClick={() => setFilterSearch('')}/>
-							<InputText value={filterSearch} onChange={onFilterChange} placeholder="Nem Address or Transaction Hash" 
-								className='w-24rem' />
-						</span>
+	const header = (
+		<div className='flex justify-content-between'>
+			<div className="formgroup-inline">
+				<span className="p-input-icon-left field">
+					<i className="pi pi-search" />
+					<span className="p-input-icon-right">
+						<i className="pi pi-times" onClick={() => setFilterSearch('')}/>
+						<InputText value={filterSearch} onChange={onFilterChange} placeholder="NEM Address / Transaction Hash" 
+							className='w-28rem' />
 					</span>
-					<div className='field'>
-						<SelectButton optionLabel="label" optionValue="value" value={filterStatus} options={statuses} 
-							onChange={e => setFilterStatus(e.value)}></SelectButton>
-					</div>
-					<Button type="button" icon="pi pi-search" className="p-button-outlined" onClick={onFilterSubmit} />
+				</span>
+				<div className='field'>
+					<SelectButton optionLabel="label" optionValue="value" value={filterStatus} options={statuses} 
+						onChange={e => setFilterStatus(e.value)}></SelectButton>
+				</div>
+				<Button type="button" icon="pi pi-search" className="p-button-outlined" onClick={onFilterSubmit} />
 
-				</div>
-				<div className="formgroup-inline">
-					<Button type="button" icon="pi pi-download" className="p-button-outlined" onClick={downloadAllAsCSV} 
-						loading={downloading} tooltip="Download All Data as CSV File" tooltipOptions={{position: 'top'}}/>
-				</div>
 			</div>
-		);
-	};
-	const header = renderHeader();
-
+			<div className="formgroup-inline">
+				<Button type="button" icon="pi pi-download" className="p-button-outlined" onClick={downloadAllAsCSV} 
+					loading={downloading} tooltip="Download All Data as CSV File" tooltipOptions={{position: 'top'}}/>
+			</div>
+		</div>
+	);
+	
 	return (
-		<DataTable lazy value={requests.data} stripedRows showGridlines responsiveLayout="stack" breakpoint="960px" paginator
-			paginatorTemplate="CurrentPageReport FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink RowsPerPageDropdown"
-			currentPageReportTemplate="Showing {first}-{last} of {totalRecords}" rows={requests.pagination.pageSize} 
-			rowsPerPageOptions={[10,25,50]}	onPage={handlePageChange} 
-			loading={loading} totalRecords={requests.pagination.totalRecord} first={first} header={header}>
-			<Column field="nemAddress" header="NEM Address" body={nemAddressTemplate} align="left"/>
-			<Column field="optinTransactionHash" header="Optin Transaction Hash" body={optinTransactionHashTemplate} align="left"/>
-			<Column field="status" header="Status" body={statusTemplate} align="center"/>
-			<Column field="message" header="Message" align="left"/>
-		</DataTable>
+		<Table value={requests.data} paginator rows={requests.pagination.pageSize} 
+			onPage={handlePageChange} loading={loading} totalRecords={requests.pagination.totalRecord}
+			first={first} header={header}>
+			<TableColumn field="nemAddress" header="NEM Address" body={nemAddressTemplate} align="left"/>
+			<TableColumn field="optinTransactionHash" header="Optin Transaction Hash" body={optinTransactionHashTemplate} align="left"/>
+			<TableColumn field="status" header="Status" body={statusTemplate} align="center"/>
+			<TableColumn field="message" header="Message" align="left"/>
+		</Table>
 	);
 };
 
