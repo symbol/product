@@ -15,7 +15,7 @@ const optinRequestDB = {
 			select	optin_transaction_height, address as nemAddressBytes, hex(optin_transaction_hash) as optinTransactionHashHex,
 					5, message
 				from optin_error
-				where address = $1 or $1 is null and (optin_transaction_hash = $2 or $2 is null) and ($3 = 5 or $3 is null)
+				where (address = $1 or $1 is null) and (optin_transaction_hash = $2 or $2 is null) and ($3 = 5 or $3 is null)
 			order by optin_transaction_height DESC
             limit ${pageSize} offset ${(pageNumber - 1) * pageSize}`,
 			{ bind: [nemAddressBytes, transactionHashBytes, status], type: QueryTypes.SELECT }
