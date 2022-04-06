@@ -1,4 +1,5 @@
 import config from '../../config';
+import Helper from '../../utils/helper';
 import { addressTemplate, transactionHashTemplate } from '../../utils/pageUtils';
 import { Button } from 'primereact/button';
 import { Column } from 'primereact/column';
@@ -7,7 +8,7 @@ import { InputText } from 'primereact/inputtext';
 import { SelectButton } from 'primereact/selectbutton';
 import React, { useState, useEffect } from 'react';
 
-const Requests = function () {
+const Requests = () => {
 	const [loading, setLoading] = useState(true);
 	const [first, setFirst] = useState(1);
 	const [requests, setRequests] = useState({
@@ -20,7 +21,8 @@ const Requests = function () {
 	});
 	const [filterSearch, setFilterSearch] = useState('');
 	const [filterStatus, setFilterStatus] = useState('');
-	
+	const [downloading, setDownloading] = useState(false);
+
 	const fetchOptinRequests = async ({pageSize = 25, pageNumber = 1}) => {
 		const [nemAddress, transactionHash] = parseFilterSearch(filterSearch);
 		return await fetch(`/api/requests?pageSize=${pageSize}&pageNumber=${pageNumber}
@@ -59,6 +61,26 @@ const Requests = function () {
 		setLoading(false);
 	}, []);
 
+	const onFilterChange = e => {
+		const {value} = e.target;
+		setFilterSearch(value);
+	};
+
+	const onFilterSubmit = async () => {
+		await handlePageChange({page: 1, rows: 25, first: 1});
+	};
+
+	const downloadAllAsCSV = async () => {
+		setDownloading(true);
+		await fetch('/api/requests/download', {
+			method: 'get',
+			headers: {
+				'content-type': 'text/csv;charset=UTF-8'
+			}
+		}).then(async res => Helper.downloadFile({ data: await res.text(), fileName: 'optin-requests.csv', fileType: 'text/csv' }));
+		setDownloading(false);
+	};
+
 	const nemAddressTemplate = rowData => {
 		return addressTemplate(rowData, 'nemAddress', config);
 	};
@@ -78,33 +100,31 @@ const Requests = function () {
 		</React.Fragment>;
 	};
 
-	const onFilterChange = e => {
-		const {value} = e.target;
-		setFilterSearch(value);
-	};
-
-	const onFilterSubmit = async () => {
-		await handlePageChange({page: 1, rows: 25, first: 1});
-	};
-
 	const statuses = [{label: 'Pending', value: 'Pending'}, {label: 'Sent', value: 'Sent'}, {label: 'Error', value: 'Error'}];
+	
 	const renderHeader = () => {
 		return (
-			<div className="formgroup-inline">
-				<span className="p-input-icon-left field">
-					<i className="pi pi-search" />
-					<span className="p-input-icon-right">
-						<i className="pi pi-times" onClick={() => setFilterSearch('')}/>
-						<InputText value={filterSearch} onChange={onFilterChange} placeholder="Nem Address or Transaction Hash" 
-							className='w-24rem' />
+			<div className='flex justify-content-between'>
+				<div className="formgroup-inline">
+					<span className="p-input-icon-left field">
+						<i className="pi pi-search" />
+						<span className="p-input-icon-right">
+							<i className="pi pi-times" onClick={() => setFilterSearch('')}/>
+							<InputText value={filterSearch} onChange={onFilterChange} placeholder="Nem Address or Transaction Hash" 
+								className='w-24rem' />
+						</span>
 					</span>
-				</span>
-				<div className='field'>
-					<SelectButton optionLabel="label" optionValue="value" value={filterStatus} options={statuses} 
-						onChange={e => setFilterStatus(e.value)}></SelectButton>
-				</div>
-				<Button type="button" icon="pi pi-search" className="p-button-outlined" onClick={onFilterSubmit} />
+					<div className='field'>
+						<SelectButton optionLabel="label" optionValue="value" value={filterStatus} options={statuses} 
+							onChange={e => setFilterStatus(e.value)}></SelectButton>
+					</div>
+					<Button type="button" icon="pi pi-search" className="p-button-outlined" onClick={onFilterSubmit} />
 
+				</div>
+				<div className="formgroup-inline">
+					<Button type="button" icon="pi pi-download" className="p-button-outlined" onClick={downloadAllAsCSV} 
+						loading={downloading} tooltip="Download All Data as CSV File" tooltipOptions={{position: 'top'}}/>
+				</div>
 			</div>
 		);
 	};
