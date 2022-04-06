@@ -14,6 +14,13 @@ PYTHONPATH=. python3 workflows/populate_db.py \
 	--database-directory "${DATABASE_DIRECTORY}" \
 	--optin "preoptin.${NETWORK_NAME}.json"
 
+echo "[POPULATE_LABELS] populating database with NEM account labels from 'nem_account_labels.${NETWORK_NAME}.csv'"
+echo
+
+PYTHONPATH=. python3 workflows/populate_labels.py \
+	--database-directory "${DATABASE_DIRECTORY}" \
+	--labels "nem_account_labels.${NETWORK_NAME}.csv"
+
 echo
 echo "[GENERATE_POSTOPTIN] generating post optin json file 'postoptin.${NETWORK_NAME}.json'"
 echo

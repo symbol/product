@@ -135,6 +135,16 @@ class CompletedOptinDatabase:
 			self.connection.rollback()
 			raise
 
+	def set_label(self, address, label):
+		"""Sets an account label."""
+
+		cursor = self.connection.cursor()
+		cursor.execute('''
+			INSERT INTO nem_label VALUES (?, ?)
+			ON CONFLICT(address)
+			DO UPDATE SET label=?
+		''', (address.bytes, label, label))
+
 	def is_opted_in(self, address):
 		"""Returns True if specified address has already opted-in."""
 

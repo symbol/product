@@ -444,6 +444,57 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 
 	# endregion
 
+	# region set_label
+
+	@staticmethod
+	def _prepare_database_for_set_label_test(connection):
+		database = CompletedOptinDatabase(connection)
+		database.create_tables()
+
+		database.set_label(NemAddress(NEM_ADDRESSES[0]), 'green')
+		database.set_label(NemAddress(NEM_ADDRESSES[1]), 'red')
+		database.set_label(NemAddress(NEM_ADDRESSES[2]), 'blue')
+		return database
+
+	@staticmethod
+	def _query_all_labels(connection):
+		cursor = connection.cursor()
+		cursor.execute('''SELECT * FROM nem_label ORDER BY label DESC''')
+		return cursor.fetchall()
+
+	def test_can_set_new_account_label(self):
+		# Arrange:
+		with sqlite3.connect(':memory:') as connection:
+			# Act:
+			self._prepare_database_for_set_label_test(connection)
+
+			# Assert:
+			nem_labels = self._query_all_labels(connection)
+			self.assertEqual([
+				(NemAddress(NEM_ADDRESSES[1]).bytes, 'red'),
+				(NemAddress(NEM_ADDRESSES[0]).bytes, 'green'),
+				(NemAddress(NEM_ADDRESSES[2]).bytes, 'blue')
+			], nem_labels)
+
+	def test_can_update_new_account_label(self):
+		# Arrange:
+		with sqlite3.connect(':memory:') as connection:
+			database = self._prepare_database_for_set_label_test(connection)
+
+			# Act:
+			database.set_label(NemAddress(NEM_ADDRESSES[0]), 'yellow')
+			database.set_label(NemAddress(NEM_ADDRESSES[2]), 'orange')
+
+			# Assert:
+			nem_labels = self._query_all_labels(connection)
+			self.assertEqual([
+				(NemAddress(NEM_ADDRESSES[0]).bytes, 'yellow'),
+				(NemAddress(NEM_ADDRESSES[1]).bytes, 'red'),
+				(NemAddress(NEM_ADDRESSES[2]).bytes, 'orange')
+			], nem_labels)
+
+	# endregion
+
 	# region is_opted_in
 
 	def test_is_opted_in_returns_true_for_opted_in_address(self):
