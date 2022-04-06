@@ -165,6 +165,10 @@ class MultisigDatabaseTest(unittest.TestCase):
 
 	# region check_cosigners
 
+	@staticmethod
+	def _pick_nem_addresses(indexes):
+		return [Address(NEM_ADDRESSES[index]) for index in indexes]
+
 	def _run_check_cosigners_test(self, address, cosigner_addresses, expected_result):
 		# Arrange:
 		with sqlite3.connect(':memory:') as connection:
@@ -176,43 +180,51 @@ class MultisigDatabaseTest(unittest.TestCase):
 			# Assert:
 			self.assertEqual(expected_result, result)
 
-	def test_cosigners_check_passes_when_not_multisig_account(self):
-		self._run_check_cosigners_test(Address(NEM_ADDRESSES[4]), [], True)  # inserted, but skipped
-		self._run_check_cosigners_test(Address(NEM_ADDRESSES[0]), [], True)  # never inserted
+	def test_cosigners_check_aborts_when_not_multisig_account(self):
+		# Arrange:
+		with sqlite3.connect(':memory:') as connection:
+			database = self._create_database_for_check_cosigners_tests(connection)
+
+			# Act:
+			with self.assertRaises(RuntimeError):
+				database.check_cosigners(Address(NEM_ADDRESSES[4]), [])
 
 	def test_cosigners_check_fails_when_multisig_account_has_insufficient_cosigners(self):
-		self._run_check_cosigners_test(Address(NEM_ADDRESSES[1]), [], False)
-		self._run_check_cosigners_test(Address(NEM_ADDRESSES[2]), [], False)
-		self._run_check_cosigners_test(Address(NEM_ADDRESSES[3]), [Address(NEM_ADDRESSES[0])], False)
+		self._run_check_cosigners_test(Address(NEM_ADDRESSES[1]), [], (False, []))
+		self._run_check_cosigners_test(Address(NEM_ADDRESSES[2]), [], (False, []))
+		self._run_check_cosigners_test(Address(NEM_ADDRESSES[3]), [Address(NEM_ADDRESSES[0])], (False, [Address(NEM_ADDRESSES[0])]))
 
 	def test_cosigners_check_passes_when_multisig_account_has_sufficient_cosigners(self):
-		self._run_check_cosigners_test(Address(NEM_ADDRESSES[1]), [Address(NEM_ADDRESSES[0])], True)
-		self._run_check_cosigners_test(Address(NEM_ADDRESSES[2]), [Address(NEM_ADDRESSES[1])], True)
-		self._run_check_cosigners_test(Address(NEM_ADDRESSES[3]), [Address(NEM_ADDRESSES[0]), Address(NEM_ADDRESSES[2])], True)
-
-		self._run_check_cosigners_test(Address(NEM_ADDRESSES[2]), [Address(NEM_ADDRESSES[0]), Address(NEM_ADDRESSES[1])], True)
+		self._run_check_cosigners_test(Address(NEM_ADDRESSES[1]), [Address(NEM_ADDRESSES[0])], (True, [Address(NEM_ADDRESSES[0])]))
+		self._run_check_cosigners_test(Address(NEM_ADDRESSES[2]), [Address(NEM_ADDRESSES[1])], (True, [Address(NEM_ADDRESSES[1])]))
 		self._run_check_cosigners_test(
 			Address(NEM_ADDRESSES[3]),
-			[Address(NEM_ADDRESSES[0]), Address(NEM_ADDRESSES[1]), Address(NEM_ADDRESSES[2])],
-			True)
+			self._pick_nem_addresses([0, 2]),
+			(True, self._pick_nem_addresses([0, 2])))
+
+		self._run_check_cosigners_test(
+			Address(NEM_ADDRESSES[2]),
+			self._pick_nem_addresses([0, 1]),
+			(True, self._pick_nem_addresses([0, 1])))
+		self._run_check_cosigners_test(
+			Address(NEM_ADDRESSES[3]),
+			self._pick_nem_addresses([0, 1, 2]),
+			(True, self._pick_nem_addresses([0, 1, 2])))
 
 	def test_cosigners_check_ignores_invalid_cosigners(self):
-		self._run_check_cosigners_test(Address(NEM_ADDRESSES[3]), [Address(NEM_ADDRESSES[0]), Address(NEM_ADDRESSES[4])], False)
+		self._run_check_cosigners_test(Address(NEM_ADDRESSES[3]), self._pick_nem_addresses([0, 4]), (False, [Address(NEM_ADDRESSES[0])]))
 
 		self._run_check_cosigners_test(
 			Address(NEM_ADDRESSES[3]),
-			[Address(NEM_ADDRESSES[0]), Address(NEM_ADDRESSES[4]), Address(NEM_ADDRESSES[2])],
-			True)
+			self._pick_nem_addresses([0, 4, 2]),
+			(True, self._pick_nem_addresses([0, 2])))
 
 	def test_cosigners_check_ignores_duplicate_cosigners(self):
-		self._run_check_cosigners_test(
-			Address(NEM_ADDRESSES[3]),
-			[Address(NEM_ADDRESSES[0]), Address(NEM_ADDRESSES[0]), Address(NEM_ADDRESSES[0])],
-			False)
+		self._run_check_cosigners_test(Address(NEM_ADDRESSES[3]), self._pick_nem_addresses([0, 0, 0]), (False, [Address(NEM_ADDRESSES[0])]))
 
 		self._run_check_cosigners_test(
 			Address(NEM_ADDRESSES[3]),
-			[Address(NEM_ADDRESSES[0]), Address(NEM_ADDRESSES[0]), Address(NEM_ADDRESSES[1]), Address(NEM_ADDRESSES[0])],
-			True)
+			self._pick_nem_addresses([0, 0, 1, 0]),
+			(True, self._pick_nem_addresses([0, 1])))
 
 	# endregion

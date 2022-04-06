@@ -67,14 +67,15 @@ class MultisigDatabase:
 		multisig_info = cursor.fetchone()
 
 		if not multisig_info:
-			return True
+			raise RuntimeError(f'address {address} is not multisig')
 
 		cursor.execute('SELECT address FROM nem_multisig_cosignatory WHERE multisig_id = ?', (multisig_info[0],))
 		actual_cosigner_addresses = cursor.fetchall()
 
-		valid_count = 0
-		for actual_cosigner_address in actual_cosigner_addresses:
-			if Address(actual_cosigner_address[0]) in cosigner_addresses:
-				valid_count += 1
+		valid_cosigners = []
+		for actual_cosigner_address_tuple in actual_cosigner_addresses:
+			actual_cosigner_address = Address(actual_cosigner_address_tuple[0])
+			if actual_cosigner_address in cosigner_addresses:
+				valid_cosigners.append(actual_cosigner_address)
 
-		return valid_count >= multisig_info[1]
+		return (len(valid_cosigners) >= multisig_info[1], valid_cosigners)
