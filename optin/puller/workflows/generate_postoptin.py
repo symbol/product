@@ -175,7 +175,7 @@ async def main():
 			if optin_nem_address in processor.redemptions.keys():
 				if details['nem-time-stamp'] < processor.payout_datetimes[optin_nem_address]:
 					# note, this does not check multisigs, so incorrect tx hashes might get included as well :|
-					processor.redemptions[optin_nem_address]['source'][0]['transactons'].append({
+					processor.redemptions[optin_nem_address]['source'][0]['transactions'].append({
 						'hash': transaction['meta']['hash']['data'],
 						'height': transaction['meta']['height'],
 					})
