@@ -20,7 +20,7 @@ class CompletedOptinDatabase:
 		cursor = self.connection.cursor()
 		cursor.execute('''CREATE TABLE IF NOT EXISTS optin_id (
 			id integer PRIMARY KEY,
-			attribute_flags integer,
+			is_postoptin boolean,
 			label text
 		)''')
 		cursor.execute('''CREATE TABLE IF NOT EXISTS nem_source (
