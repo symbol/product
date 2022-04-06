@@ -8,15 +8,16 @@ from pathlib import Path
 from symbolchain.CryptoTypes import PublicKey
 from symbolchain.nem.Network import Address as NemAddress
 from symbolchain.nem.NetworkTimestamp import NetworkTimestamp as NemNetworkTimestamp
-from symbolchain.symbol.NetworkTimestamp import NetworkTimestamp as SymbolNetworkTimestamp
 from symbolchain.sc import TransactionType
 from symbolchain.symbol.Network import Address
+from symbolchain.symbol.NetworkTimestamp import NetworkTimestamp as SymbolNetworkTimestamp
 
 from puller.client.NemClient import NemClient, get_incoming_transactions_from
 from puller.client.SymbolClient import SymbolClient
 from puller.processors.AccountChecker import check_destination_availability
 from puller.processors.NemOptinProcessor import process_nem_optin_request
 
+SYMBOL_TESTNET_EPOCH_TIME = datetime.datetime(2021, 11, 25, 14, 0, 47, tzinfo=datetime.timezone.utc)
 OPTIN_ADDRESS = 'NAQ7RCYM4PRUAKA7AMBLN4NPBJEJMRCHHJYAVA72'
 PAYOUT_SIGNER_PUBLIC_KEYS = '7AEC08AA66CB50B0C3D180DE7508D5D82ECEDCDC9E73F61FA7069868BEABA856'
 
@@ -26,7 +27,10 @@ def parse_args():
 	parser.add_argument('--nem-node', help='NEM node url', default='http://mercury.elxemental.cloud:7890')
 	parser.add_argument('--symbol-node', help='Symbol node url', default='http://wolf.importance.jp:3000')
 	parser.add_argument('--optin-address', help='nem optin account address', default=OPTIN_ADDRESS)
-	parser.add_argument('--payout-signer-public-keys', help='optin payout signer public keys (comma separated)', default=PAYOUT_SIGNER_PUBLIC_KEYS)
+	parser.add_argument(
+		'--payout-signer-public-keys',
+		help='optin payout signer public keys (comma separated)',
+		default=PAYOUT_SIGNER_PUBLIC_KEYS)
 
 	parser.add_argument('--snapshot-height', help='snapshot height', default=3105500)
 
@@ -90,7 +94,7 @@ class PayoutTransactionsProcessor:
 			'source': [{
 				'nis-address': nis_address,
 				'nis-balance': str(xym_amount),
-				'transactions':[]
+				'transactions': []
 			}],
 			'destination': [
 				{
@@ -106,7 +110,6 @@ class PayoutTransactionsProcessor:
 		payout_timestamp = SymbolNetworkTimestamp(int(transaction_meta['timestamp']))
 		payout_datetime = payout_timestamp.to_datetime()
 		if 'testnet' == node_network.name:
-			SYMBOL_TESTNET_EPOCH_TIME = datetime.datetime(2021, 11, 25, 14, 0, 47, tzinfo=datetime.timezone.utc)
 			payout_datetime = payout_timestamp.to_datetime(SYMBOL_TESTNET_EPOCH_TIME)
 
 		self.payout_datetimes[nis_address] = payout_datetime
@@ -128,7 +131,6 @@ async def process_transaction(transaction, nem_client, symbol_client):
 
 	nem_source_address = nem_network.public_key_to_address(process_result.multisig_public_key) \
 		if process_result.multisig_public_key else process_result.address
-
 
 	# right now both NEM networks (mainnet and testnet) have same epoch
 	time_stamp = transaction['transaction']['timeStamp']
@@ -172,7 +174,7 @@ async def main():
 		process_result, details = await process_transaction(transaction, nem_client, symbol_client)
 		if not process_result.is_error:
 			optin_nem_address = str(details['nem-source-address'])
-			if optin_nem_address in processor.redemptions.keys():
+			if optin_nem_address in processor.redemptions:
 				if details['nem-time-stamp'] < processor.payout_datetimes[optin_nem_address]:
 					# note, this does not check multisigs, so incorrect tx hashes might get included as well :|
 					processor.redemptions[optin_nem_address]['source'][0]['transactions'].append({
@@ -183,7 +185,6 @@ async def main():
 					print('ignoring NEM transaction, sym tx payout timestamp is before optin tx, nem hash:', transaction['meta']['hash']['data'])
 		print('.', end='', flush=True)
 	print()
-
 
 	with open(Path(args.output), 'wt', encoding='utf8') as out_file:
 		out_file.write(json.dumps(list(processor.redemptions.values()), indent=2))
