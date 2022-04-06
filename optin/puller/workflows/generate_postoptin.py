@@ -43,7 +43,7 @@ class PayoutTransactionsProcessor:
 		self.client = client
 		self.nem_client = nem_client
 		self.redemptions = {}
-		self.deadlines = {}
+		self.payout_datetimes = {}
 
 	async def process(self, public_key):
 		start_id = None
@@ -90,26 +90,26 @@ class PayoutTransactionsProcessor:
 			'source': [{
 				'nis-address': nis_address,
 				'nis-balance': str(xym_amount),
-				'hashes':[]
+				'transactions':[]
 			}],
 			'destination': [
 				{
 					'sym-address': str(to_symbol_address(transaction['recipientAddress'])),
 					'sym-balance': xym_amount,
-					'deadline': transaction['deadline'],
-					'hash': transaction_meta['hash'],
+					'timestamp': transaction_meta['timestamp'],
+					'hash': transaction_meta.get('hash', None) or transaction_meta['aggregateHash'],
 					'height': transaction_meta['height']
 				}
 			]
 		}
 
-		deadline_timestamp = SymbolNetworkTimestamp(int(transaction['deadline']))
-		deadline_datetime = deadline_timestamp.to_datetime()
+		payout_timestamp = SymbolNetworkTimestamp(int(transaction_meta['timestamp']))
+		payout_datetime = payout_timestamp.to_datetime()
 		if 'testnet' == node_network.name:
 			SYMBOL_TESTNET_EPOCH_TIME = datetime.datetime(2021, 11, 25, 14, 0, 47, tzinfo=datetime.timezone.utc)
-			deadline_datetime = deadline_timestamp.to_datetime(SYMBOL_TESTNET_EPOCH_TIME)
+			payout_datetime = payout_timestamp.to_datetime(SYMBOL_TESTNET_EPOCH_TIME)
 
-		self.deadlines[nis_address] = deadline_datetime
+		self.payout_datetimes[nis_address] = payout_datetime
 
 
 async def process_transaction(transaction, nem_client, symbol_client):
@@ -124,7 +124,7 @@ async def process_transaction(transaction, nem_client, symbol_client):
 
 	if process_result.is_error:
 		print(f'{transaction_height} ERROR: {process_result.message}')
-		return process_result
+		return process_result, None
 
 	nem_source_address = nem_network.public_key_to_address(process_result.multisig_public_key) \
 		if process_result.multisig_public_key else process_result.address
@@ -161,6 +161,8 @@ async def main():
 		print(f' * {public_key}')
 		await processor.process(public_key)
 
+	print('collected payouts, searching for optin requests (this will take a bit)')
+
 	# find optin requests
 	async for transaction in get_incoming_transactions_from(nem_client, NemAddress(args.optin_address), snapshot_height):
 		transaction_height = transaction['meta']['height']
@@ -171,11 +173,17 @@ async def main():
 		if not process_result.is_error:
 			optin_nem_address = str(details['nem-source-address'])
 			if optin_nem_address in processor.redemptions.keys():
-				if details['nem-time-stamp'] < processor.deadlines[optin_nem_address]:
+				if details['nem-time-stamp'] < processor.payout_datetimes[optin_nem_address]:
 					# note, this does not check multisigs, so incorrect tx hashes might get included as well :|
-					processor.redemptions[optin_nem_address]['source'][0]['hashes'].append(transaction['meta']['hash']['data'])
+					processor.redemptions[optin_nem_address]['source'][0]['transactons'].append({
+						'hash': transaction['meta']['hash']['data'],
+						'height': transaction['meta']['height'],
+					})
 				else:
-					print('sym tx deadline is before optin tx')
+					print('ignoring NEM transaction, sym tx payout timestamp is before optin tx, nem hash:', transaction['meta']['hash']['data'])
+		print('.', end='', flush=True)
+	print()
+
 
 	with open(Path(args.output), 'wt', encoding='utf8') as out_file:
 		out_file.write(json.dumps(list(processor.redemptions.values()), indent=2))
