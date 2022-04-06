@@ -7,29 +7,29 @@ set -ex
 
 mkdir -p "${DATABASE_DIRECTORY}"
 
-echo "[POPULATE_DB] populating database with preoptin data from '${PREOPTIN_JSON}'"
+echo "[POPULATE_DB] populating database with preoptin data from 'preoptin.${NETWORK_NAME}.json'"
 echo
 
 PYTHONPATH=. python3 workflows/populate_db.py \
 	--database-directory "${DATABASE_DIRECTORY}" \
-	--optin "${PREOPTIN_JSON}"
+	--optin "preoptin.${NETWORK_NAME}.json"
 
 echo
-echo "[GENERATE_POSTOPTIN] generating post optin json file '${POSTOPTIN_JSON}'"
+echo "[GENERATE_POSTOPTIN] generating post optin json file 'postoptin.${NETWORK_NAME}.json'"
 echo
 
 PYTHONPATH=. python3 workflows/generate_postoptin.py \
 	--symbol-node "${SYMBOL_NODE}" \
-	--output "${POSTOPTIN_JSON}" \
+	--output "postoptin.${NETWORK_NAME}.json" \
 	--optin-signer-public-keys "${OPTIN_SIGNER_PUBLIC_KEYS}"
 
 echo
-echo "[POPULATE_DB] populating database with postoptin data from '${POSTOPTIN_JSON}'"
+echo "[POPULATE_DB] populating database with postoptin data from 'postoptin.${NETWORK_NAME}.json'"
 echo
 
 PYTHONPATH=. python3 workflows/populate_db.py \
 	--database-directory "${DATABASE_DIRECTORY}" \
-	--optin "${POSTOPTIN_JSON}" \
+	--optin "postoptin.${NETWORK_NAME}.json" \
 	--post
 
 echo

@@ -9,7 +9,7 @@ from puller.db.CompletedOptinDatabase import CompletedOptinDatabase
 def main():
 	parser = argparse.ArgumentParser(description='populate db with pre optin data')
 	parser.add_argument('--database-directory', help='output database directory', default='_temp')
-	parser.add_argument('--optin', help='optin json data', default='./resources/preoptin.json')
+	parser.add_argument('--optin', help='optin json data', default='./resources/preoptin.mainnet.json')
 	parser.add_argument('--post', help='specify if file contains post optin data', action='store_true')
 	args = parser.parse_args()
 

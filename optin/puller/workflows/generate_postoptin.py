@@ -17,7 +17,7 @@ def parse_args():
 	parser = argparse.ArgumentParser(description='generate postoptin json')
 	parser.add_argument('--symbol-node', help='Symbol node url', default='http://wolf.importance.jp:3000')
 	parser.add_argument('--optin-signer-public-keys', help='optin signer public keys (comma separated)', default=OPTIN_SIGNER_PUBLIC_KEYS)
-	parser.add_argument('--output', help='output path', default='post-optin.json')
+	parser.add_argument('--output', help='output path', default='./resources/postoptin.mainnet.json')
 	return parser.parse_args()
 
 
