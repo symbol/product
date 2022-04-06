@@ -1,5 +1,4 @@
 import './Home.scss';
-import Balances from '../Balances';
 import Completed from '../Completed';
 import Requests from '../Requests';
 import { TabView, TabPanel } from 'primereact/tabview';
@@ -7,10 +6,6 @@ import React from 'react';
 import 'react-tabs/style/react-tabs.css';
 
 const tabConfig = {
-	balance: {
-		label: 'Balances',
-		table: <Balances />
-	},
 	completed: {
 		label: 'Completed',
 		table: <Completed />
