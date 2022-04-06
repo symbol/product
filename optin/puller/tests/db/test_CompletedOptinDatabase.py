@@ -19,7 +19,10 @@ SYMBOL_HASHES = [
 ]
 
 
-ExpectedData = namedtuple('ExpectedData', ['postoptin_labels', 'nem_sources', 'nem_transactions', 'symbol_destinations'])
+ExpectedData = namedtuple(
+	'ExpectedData',
+	['flags', 'nem_sources', 'nem_labels', 'nem_transactions', 'symbol_destinations'],
+	defaults=(None,) * 5)
 
 
 class CompletedOptinDatabaseTest(unittest.TestCase):
@@ -30,7 +33,7 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 		table_names = get_all_table_names(CompletedOptinDatabase)
 
 		# Assert:
-		self.assertEqual(set(['optin_id', 'nem_source', 'nem_transaction', 'symbol_destination']), table_names)
+		self.assertEqual(set(['optin_id', 'nem_source', 'nem_label', 'nem_transaction', 'symbol_destination']), table_names)
 
 	# endregion
 
@@ -41,11 +44,14 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 		cursor.execute('''SELECT COUNT(*) FROM optin_id''')
 		optin_count = cursor.fetchone()[0]
 
-		cursor.execute('''SELECT is_postoptin, label FROM optin_id ORDER BY id''')
-		postoptin_and_label = cursor.fetchall()
+		cursor.execute('''SELECT is_postoptin FROM optin_id ORDER BY id''')
+		flags = cursor.fetchall()
 
 		cursor.execute('''SELECT * FROM nem_source ORDER BY balance DESC''')
 		nem_sources = cursor.fetchall()
+
+		cursor.execute('''SELECT * FROM nem_label ORDER BY label DESC''')
+		nem_labels = cursor.fetchall()
 
 		cursor.execute('''SELECT * FROM nem_transaction ORDER BY address,hash DESC''')
 		nem_transactions = cursor.fetchall()
@@ -55,9 +61,10 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 
 		# Assert:
 		self.assertEqual(expected_optin_count, optin_count)
-		self.assertEqual(expected_data.postoptin_labels, postoptin_and_label)
+		self.assertEqual(expected_data.flags or [], flags)
 		self.assertEqual(expected_data.nem_sources, nem_sources)
-		self.assertEqual(expected_data.nem_transactions, nem_transactions)
+		self.assertEqual(expected_data.nem_labels or [], nem_labels)
+		self.assertEqual(expected_data.nem_transactions or [], nem_transactions)
 		self.assertEqual(expected_data.symbol_destinations, symbol_destinations)
 
 	def _assert_can_insert_mappings(self, one_or_more_mappings, expected_data):
@@ -82,9 +89,8 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 				{SYMBOL_ADDRESSES[0]: {'sym-balance': 558668349881393}}
 			),
 			ExpectedData(
-				postoptin_labels=[(True, None)],
+				flags=[(True,)],
 				nem_sources=[(NemAddress(NEM_ADDRESSES[0]).bytes, 558668349881393, 1)],
-				nem_transactions=[],
 				symbol_destinations=[(SymbolAddress(SYMBOL_ADDRESSES[0]).bytes, 558668349881393, None, 1, 1)]))
 
 	def test_can_insert_merge_with_matching_balances(self):
@@ -97,12 +103,11 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 				{SYMBOL_ADDRESSES[0]: {'sym-balance': 59794931402826}}
 			),
 			ExpectedData(
-				postoptin_labels=[(True, None)],
+				flags=[(True,)],
 				nem_sources=[
 					(NemAddress(NEM_ADDRESSES[0]).bytes, 43686866144523, 1),
 					(NemAddress(NEM_ADDRESSES[1]).bytes, 16108065258303, 1)
 				],
-				nem_transactions=[],
 				symbol_destinations=[(SymbolAddress(SYMBOL_ADDRESSES[0]).bytes, 59794931402826, None, 1, 1)]))
 
 	def test_can_insert_multi_with_matching_balances(self):
@@ -119,12 +124,11 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 				},
 			),
 			ExpectedData(
-				postoptin_labels=[(True, None)],
+				flags=[(True,)],
 				nem_sources=[
 					(NemAddress(NEM_ADDRESSES[0]).bytes, 43686866144523, 1),
 					(NemAddress(NEM_ADDRESSES[1]).bytes, 16108065258303, 1)
 				],
-				nem_transactions=[],
 				symbol_destinations=[
 					(SymbolAddress(SYMBOL_ADDRESSES[0]).bytes, 33686866144523, None, 1, 1),
 					(SymbolAddress(SYMBOL_ADDRESSES[1]).bytes, 26108065200000, None, 1, 1),
@@ -148,16 +152,15 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 				)
 			],
 			ExpectedData(
-				postoptin_labels=[
-					(True, None),
-					(True, None)
+				flags=[
+					(True,),
+					(True,)
 				],
 				nem_sources=[
 					(NemAddress(NEM_ADDRESSES[0]).bytes, 558668349881393, 1),
 					(NemAddress(NEM_ADDRESSES[1]).bytes, 43686866144523, 2),
 					(NemAddress(NEM_ADDRESSES[2]).bytes, 16108065258303, 2)
 				],
-				nem_transactions=[],
 				symbol_destinations=[
 					(SymbolAddress(SYMBOL_ADDRESSES[0]).bytes, 558668349881393, None, 1, 1),
 					(SymbolAddress(SYMBOL_ADDRESSES[1]).bytes, 33686866144523, None, 1, 2),
@@ -230,15 +233,14 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 				)
 			],
 			ExpectedData(
-				postoptin_labels=[
-					(True, None),
-					(True, None)
+				flags=[
+					(True,),
+					(True,)
 				],
 				nem_sources=[
 					(NemAddress(NEM_ADDRESSES[0]).bytes, 43686866144523, 1),
 					(NemAddress(NEM_ADDRESSES[1]).bytes, 16108065258303, 2)
 				],
-				nem_transactions=[],
 				symbol_destinations=[
 					(SymbolAddress(SYMBOL_ADDRESSES[0]).bytes, 43686866144523, None, 1, 1),
 					(SymbolAddress(SYMBOL_ADDRESSES[0]).bytes, 16108065258303, None, 1, 2)
@@ -263,10 +265,8 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 	# region insert_mappings_from_json
 
 	@staticmethod
-	def _create_database_with_json_mappings(connection, remove_nem_transactions=True):
-		database = CompletedOptinDatabase(connection)
-		database.create_tables()
-		entry_1 = {
+	def _create_entry_one():
+		return {
 			'source': [
 				{
 					'nis-address': NEM_ADDRESSES[0], 'nis-balance': '558668349881393',
@@ -288,7 +288,9 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 			]
 		}
 
-		entry_2 = {
+	@staticmethod
+	def _create_entry_two():
+		return {
 			'source': [
 				{
 					'nis-address': NEM_ADDRESSES[1], 'nis-balance': '43686866144523',
@@ -329,13 +331,16 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 			'destination_total': 0  # in original json but ignored
 		}
 
-		json_data = [
-			{
-				'info': 'comment that should be ignored'
-			},
-			entry_1,
-			entry_2
+	@staticmethod
+	def _create_database_with_json_mappings(connection, remove_nem_transactions=True):
+		database = CompletedOptinDatabase(connection)
+		database.create_tables()
+
+		entries = [
+			CompletedOptinDatabaseTest._create_entry_one(),
+			CompletedOptinDatabaseTest._create_entry_two()
 		]
+		json_data = [{'info': 'comment that should be ignored'}, *entries]
 
 		if remove_nem_transactions:
 			for entry in json_data:
@@ -350,7 +355,7 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 		return {
 			'database': database,
 			'collected': collected,
-			'entries': [entry_1, entry_2]
+			'entries': entries
 		}
 
 	def test_can_insert_mappings_from_json_without_transactions(self):
@@ -361,16 +366,18 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 
 			# Assert:
 			self._assert_db_contents(connection, 2, ExpectedData(
-				postoptin_labels=[
-					(False, 'test-label'),
-					(False, None)
+				flags=[
+					(False,),
+					(False,)
 				],
 				nem_sources=[
 					(NemAddress(NEM_ADDRESSES[0]).bytes, 558668349881393, 1),
 					(NemAddress(NEM_ADDRESSES[1]).bytes, 43686866144523, 2),
 					(NemAddress(NEM_ADDRESSES[2]).bytes, 16108065258303, 2)
 				],
-				nem_transactions=[],
+				nem_labels=[
+					(NemAddress(NEM_ADDRESSES[0]).bytes, 'test-label')
+				],
 				symbol_destinations=[
 					(SymbolAddress(SYMBOL_ADDRESSES[0]).bytes, 558668349881393, SYMBOL_HASHES[0], 234, 1),
 					(SymbolAddress(SYMBOL_ADDRESSES[1]).bytes, 33686866144523, SYMBOL_HASHES[1], 345, 2),
@@ -388,14 +395,17 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 
 			# Assert:
 			self._assert_db_contents(connection, 2, ExpectedData(
-				postoptin_labels=[
-					(False, 'test-label'),
-					(False, None)
+				flags=[
+					(False,),
+					(False,)
 				],
 				nem_sources=[
 					(NemAddress(NEM_ADDRESSES[0]).bytes, 558668349881393, 1),
 					(NemAddress(NEM_ADDRESSES[1]).bytes, 43686866144523, 2),
 					(NemAddress(NEM_ADDRESSES[2]).bytes, 16108065258303, 2)
+				],
+				nem_labels=[
+					(NemAddress(NEM_ADDRESSES[0]).bytes, 'test-label')
 				],
 				nem_transactions=[
 					(NemAddress(NEM_ADDRESSES[0]).bytes, Hash256(HASHES[2]).bytes, 456),
@@ -411,6 +421,26 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 				]))
 
 			self.assertEqual(state['entries'], state['collected'])
+
+	def test_cannot_insert_conflicting_mappings(self):
+		# Arrange:
+		with sqlite3.connect(':memory:') as connection:
+			database = CompletedOptinDatabase(connection)
+			database.create_tables()
+
+			json_data = [{'info': 'comment that should be ignored'}, self._create_entry_two(), self._create_entry_two()]
+
+		# Act:
+		with self.assertRaises(sqlite3.IntegrityError):
+			for _ in database.insert_mappings_from_json(json_data, False):
+				pass
+
+		cursor = connection.cursor()
+		cursor.execute('''SELECT COUNT(*) FROM optin_id''')
+		optin_count = cursor.fetchone()[0]
+
+		# Assert: nothing was inserted
+		self.assertEqual(0, optin_count)
 
 	# endregion
 

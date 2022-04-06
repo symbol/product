@@ -20,14 +20,17 @@ class CompletedOptinDatabase:
 		cursor = self.connection.cursor()
 		cursor.execute('''CREATE TABLE IF NOT EXISTS optin_id (
 			id integer PRIMARY KEY,
-			is_postoptin boolean,
-			label text
+			is_postoptin boolean
 		)''')
 		cursor.execute('''CREATE TABLE IF NOT EXISTS nem_source (
 			address blob UNIQUE,
 			balance integer,
 			optin_id integer,
 			FOREIGN KEY (optin_id) REFERENCES optin_id(id)
+		)''')
+		cursor.execute('''CREATE TABLE IF NOT EXISTS nem_label (
+			address blob UNIQUE,
+			label text
 		)''')
 		cursor.execute('''CREATE TABLE IF NOT EXISTS nem_transaction (
 			address blob,
@@ -64,18 +67,28 @@ class CompletedOptinDatabase:
 		cursor.executemany('''INSERT INTO nem_transaction VALUES (?, ?, ?)''', items)
 
 	@staticmethod
-	def _insert_mapping(cursor, nem_address_dict, symbol_address_dict, optin_label=None, is_postoptin=True):
-		cursor.execute('''INSERT INTO optin_id VALUES (NULL, ?, ?)''', (is_postoptin, optin_label))
+	def _insert_labels(cursor, mapping_json):
+		if 'label' not in mapping_json:
+			return
+
+		cursor.executemany('''INSERT INTO nem_label VALUES (?, ?)''', [
+			(NemAddress(source_json['nis-address']).bytes, mapping_json['label']) for source_json in mapping_json['source']
+		])
+
+	@staticmethod
+	def _insert_mapping(cursor, nem_address_dict, symbol_address_dict, is_postoptin=True):
+		cursor.execute('''INSERT INTO optin_id VALUES (NULL, ?)''', (is_postoptin,))
 		optin_id = cursor.lastrowid
 
-		cursor.executemany(
-			'''INSERT INTO nem_source VALUES (?, ?, ?)''',
-			[(NemAddress(address).bytes, balance, optin_id) for address, balance in nem_address_dict.items()])
+		cursor.executemany('''INSERT INTO nem_source VALUES (?, ?, ?)''', [
+			(NemAddress(address).bytes, balance, optin_id) for address, balance in nem_address_dict.items()
+		])
 
-		cursor.executemany(
-			'''INSERT INTO symbol_destination VALUES (?, ?, ?, ?, ?)''',
-			[(SymbolAddress(address).bytes, entry['sym-balance'], entry.get('hash', None), entry.get('height', 1), optin_id)
-				for address, entry in symbol_address_dict.items()])
+		cursor.executemany('''INSERT INTO symbol_destination VALUES (?, ?, ?, ?, ?)''', [
+			(
+				SymbolAddress(address).bytes, entry['sym-balance'], entry.get('hash', None), entry.get('height', 1), optin_id
+			) for address, entry in symbol_address_dict.items()
+		])
 
 	def insert_mapping(self, nem_address_dict, symbol_address_dict):
 		"""Adds a NEM to Symbol mapping to the database."""
@@ -106,17 +119,14 @@ class CompletedOptinDatabase:
 				}
 
 				self._assert_balances(nem_address_dict, symbol_address_dict)
-				self._insert_mapping(
-					cursor,
-					nem_address_dict,
-					symbol_address_dict,
-					mapping_json.get('label', None),
-					is_postoptin)
+				self._insert_mapping(cursor, nem_address_dict, symbol_address_dict, is_postoptin)
 
 				nem_transaction_dict = {
 					source_json['nis-address']: source_json.get('transactions', []) for source_json in mapping_json['source']
 				}
 				self._insert_transactions(cursor, nem_transaction_dict)
+
+				self._insert_labels(cursor, mapping_json)
 
 				yield mapping_json
 
