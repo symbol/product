@@ -83,7 +83,10 @@ def server(event_loop, aiohttp_client):
 						'meta': {'hash': HASHES[i]},
 						'transaction': {'message': hexlify(message.encode('utf8')).decode('utf8')}
 					} for i, message in enumerate(messages)
-				]
+				] + [{
+					'meta': {'aggregateHash': HASHES[3]},
+					'transaction': {'message': hexlify(messages[0].encode('utf8')).decode('utf8')}
+				}]
 			})
 
 		async def _process(self, request, response_body):
@@ -324,17 +327,23 @@ async def test_outgoing_transactions(server):  # pylint: disable=redefined-outer
 	assert [
 		f'{server.make_url("")}/transactions/confirmed?signerPublicKey={PublicKey(PUBLIC_KEYS[0])}&embedded=true&fromHeight=2&pageSize=100'
 	] == server.mock.urls
-	assert 3 == len(transactions)
+	assert 4 == len(transactions)
 
 	prefix = '007b20226e697341646472657373223a20224e'
 	assert_message(f'{prefix}4133494d46323253324741485151434c37464a4b4132585744514c4b334658464852355356585622207d', transactions[0])
 	assert_message(f'{prefix}414542525744424448575244504556345947544632594641344453445154574b4e5855435a575822207d', transactions[1])
 	assert_message(f'{prefix}444d4b3743514c4a595258474a4e5158454c4d344f47324e545a4143324334594646475744495322207d', transactions[2])
+	assert_message(f'{prefix}4133494d46323253324741485151434c37464a4b4132585744514c4b334658464852355356585622207d', transactions[0])
 
 # endregion
 
 
 # region find_payout_transactions
+
+def assert_address_and_hash(address, transaction_hash, transaction_info):
+	assert NemAddress(address) == transaction_info.address
+	assert Hash256(transaction_hash) == transaction_info.transaction_hash
+
 
 async def test_can_find_payout_transactions(server):  # pylint: disable=redefined-outer-name
 	# Arrange:
@@ -346,19 +355,17 @@ async def test_can_find_payout_transactions(server):  # pylint: disable=redefine
 	# Assert:
 	assert [
 		f'{server.make_url("")}/transactions/confirmed?signerPublicKey={PublicKey(PUBLIC_KEYS[0])}' + (
-			f'&recipientAddress={Address(SYMBOL_ADDRESSES[0])}'
+			f'&recipientAddress={Address(SYMBOL_ADDRESSES[0])}&embedded=true'
 		)
 	] == server.mock.urls
-	assert 3 == len(optin_transaction_infos)
+	assert 4 == len(optin_transaction_infos)
 
-	assert NemAddress('NA3IMF22S2GAHQQCL7FJKA2XWDQLK3FXFHR5SVXV') == optin_transaction_infos[0].address
-	assert Hash256(HASHES[0]) == optin_transaction_infos[0].transaction_hash
+	assert_address_and_hash('NA3IMF22S2GAHQQCL7FJKA2XWDQLK3FXFHR5SVXV', HASHES[0], optin_transaction_infos[0])
+	assert_address_and_hash('NAEBRWDBDHWRDPEV4YGTF2YFA4DSDQTWKNXUCZWX', HASHES[1], optin_transaction_infos[1])
+	assert_address_and_hash('NDMK7CQLJYRXGJNQXELM4OG2NTZAC2C4YFFGWDIS', HASHES[2], optin_transaction_infos[2])
+	assert_address_and_hash('NA3IMF22S2GAHQQCL7FJKA2XWDQLK3FXFHR5SVXV', HASHES[3], optin_transaction_infos[3])
 
-	assert NemAddress('NAEBRWDBDHWRDPEV4YGTF2YFA4DSDQTWKNXUCZWX') == optin_transaction_infos[1].address
-	assert Hash256(HASHES[1]) == optin_transaction_infos[1].transaction_hash
-
-	assert NemAddress('NDMK7CQLJYRXGJNQXELM4OG2NTZAC2C4YFFGWDIS') == optin_transaction_infos[2].address
-	assert Hash256(HASHES[2]) == optin_transaction_infos[2].transaction_hash
+# endregion
 
 
 # region filter_finalized_transactions

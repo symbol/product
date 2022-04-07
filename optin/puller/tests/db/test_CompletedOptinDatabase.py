@@ -11,7 +11,7 @@ from puller.db.CompletedOptinDatabase import CompletedOptinDatabase
 from ..test.DatabaseTestUtils import get_all_table_names
 from ..test.OptinRequestTestUtils import HASHES, NEM_ADDRESSES, SYMBOL_ADDRESSES
 
-SYMBOL_HASHES = [
+MARKER_HASHES = [
 	'11223344556677889900AABBCCDDEEFF11223344556677889900AABBCCDDEEFF',
 	'1111222233334444555566667777888899990000AAAABBBBCCCCDDDDEEEEFFFF',
 	'1111111122222222333333334444444455555555666666667777777788888888',
@@ -37,7 +37,7 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 
 	# endregion
 
-	# region insert_mapping - valid
+	# region assert db contents
 
 	def _assert_db_contents(self, connection, expected_optin_count, expected_data):
 		cursor = connection.cursor()
@@ -62,10 +62,55 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 		# Assert:
 		self.assertEqual(expected_optin_count, optin_count)
 		self.assertEqual(expected_data.flags or [], flags)
-		self.assertEqual(expected_data.nem_sources, nem_sources)
+		self.assertEqual(expected_data.nem_sources or [], nem_sources)
 		self.assertEqual(expected_data.nem_labels or [], nem_labels)
 		self.assertEqual(expected_data.nem_transactions or [], nem_transactions)
-		self.assertEqual(expected_data.symbol_destinations, symbol_destinations)
+		self.assertEqual(expected_data.symbol_destinations or [], symbol_destinations)
+
+	# endregion
+
+	# region insert_transaction - valid
+
+	def _assert_can_insert_transactions(self, address_transaction_tuples, expected_data):
+		# Arrange:
+		with sqlite3.connect(':memory:') as connection:
+			database = CompletedOptinDatabase(connection)
+			database.create_tables()
+
+			# Act:
+			for address, transaction in address_transaction_tuples:
+				database.insert_transaction(address, transaction)
+
+			# Assert
+			self._assert_db_contents(connection, 0, expected_data)
+
+	def test_can_insert_single_transaction(self):
+		self._assert_can_insert_transactions(
+			[
+				(NEM_ADDRESSES[0], {'hash': MARKER_HASHES[0], 'height': 123})
+			], ExpectedData(
+				nem_transactions=[
+					(NemAddress(NEM_ADDRESSES[0]).bytes, Hash256(MARKER_HASHES[0]).bytes, 123),
+				]
+			))
+
+	def test_can_insert_multiple_transactions_with_same_source(self):
+		self._assert_can_insert_transactions(
+			[
+				(NEM_ADDRESSES[0], {'hash': MARKER_HASHES[0], 'height': 123}),
+				(NEM_ADDRESSES[0], {'hash': MARKER_HASHES[1], 'height': 456}),
+				(NEM_ADDRESSES[0], {'hash': MARKER_HASHES[2], 'height': 789})
+			], ExpectedData(
+				nem_transactions=[
+					(NemAddress(NEM_ADDRESSES[0]).bytes, Hash256(MARKER_HASHES[0]).bytes, 123),
+					(NemAddress(NEM_ADDRESSES[0]).bytes, Hash256(MARKER_HASHES[1]).bytes, 456),
+					(NemAddress(NEM_ADDRESSES[0]).bytes, Hash256(MARKER_HASHES[2]).bytes, 789),
+				]
+			))
+
+	# endregion
+
+	# region insert_mapping - valid
 
 	def _assert_can_insert_mappings(self, one_or_more_mappings, expected_data):
 		# Arrange:
@@ -166,6 +211,57 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 					(SymbolAddress(SYMBOL_ADDRESSES[1]).bytes, 33686866144523, None, 1, 2),
 					(SymbolAddress(SYMBOL_ADDRESSES[2]).bytes, 26108065200000, None, 1, 2),
 					(SymbolAddress(SYMBOL_ADDRESSES[3]).bytes, 58303, None, 1, 2)
+				]))
+
+	def test_can_insert_multiple_mappings_with_matching_balances_and_nem_transactions(self):
+		self._assert_can_insert_mappings(
+			[
+				(
+					{NEM_ADDRESSES[0]: 558668349881393},
+					{SYMBOL_ADDRESSES[0]: {'sym-balance': 558668349881393}},
+					{NEM_ADDRESSES[0]: [{'hash': MARKER_HASHES[0], 'height': 123}]}
+				),
+				(
+					{
+						NEM_ADDRESSES[1]: 43686866144523,
+						NEM_ADDRESSES[2]: 16108065258303
+					},
+					{
+						SYMBOL_ADDRESSES[1]: {'sym-balance': 33686866144523},
+						SYMBOL_ADDRESSES[2]: {'sym-balance': 26108065200000},
+						SYMBOL_ADDRESSES[3]: {'sym-balance': 58303}
+					},
+					{
+						NEM_ADDRESSES[1]: [{'hash': MARKER_HASHES[1], 'height': 456}],
+						NEM_ADDRESSES[2]: [
+							{'hash': MARKER_HASHES[2], 'height': 789},
+							{'hash': MARKER_HASHES[3], 'height': 778899}
+						]
+					}
+				)
+			],
+			ExpectedData(
+				flags=[
+					(True,),
+					(True,)
+				],
+				nem_sources=[
+					(NemAddress(NEM_ADDRESSES[0]).bytes, 558668349881393, 1),
+					(NemAddress(NEM_ADDRESSES[1]).bytes, 43686866144523, 2),
+					(NemAddress(NEM_ADDRESSES[2]).bytes, 16108065258303, 2)
+				],
+				symbol_destinations=[
+					(SymbolAddress(SYMBOL_ADDRESSES[0]).bytes, 558668349881393, None, 1, 1),
+					(SymbolAddress(SYMBOL_ADDRESSES[1]).bytes, 33686866144523, None, 1, 2),
+					(SymbolAddress(SYMBOL_ADDRESSES[2]).bytes, 26108065200000, None, 1, 2),
+					(SymbolAddress(SYMBOL_ADDRESSES[3]).bytes, 58303, None, 1, 2)
+				],
+				# note: transactions are sorted (address,hash) tuple so hash[3] will be returned before hash[2]
+				nem_transactions=[
+					(NemAddress(NEM_ADDRESSES[0]).bytes, Hash256(MARKER_HASHES[0]).bytes, 123),
+					(NemAddress(NEM_ADDRESSES[1]).bytes, Hash256(MARKER_HASHES[1]).bytes, 456),
+					(NemAddress(NEM_ADDRESSES[2]).bytes, Hash256(MARKER_HASHES[3]).bytes, 778899),
+					(NemAddress(NEM_ADDRESSES[2]).bytes, Hash256(MARKER_HASHES[2]).bytes, 789),
 				]))
 
 	# endregion
@@ -282,7 +378,7 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 				{
 					'sym-address': SYMBOL_ADDRESSES[0],
 					'sym-balance': 558668349881393,
-					'hash': SYMBOL_HASHES[0],
+					'hash': MARKER_HASHES[0],
 					'height': 234
 				}
 			]
@@ -311,20 +407,20 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 				{
 					'sym-address': SYMBOL_ADDRESSES[1],
 					'sym-balance': 33686866144523,
-					'hash': SYMBOL_HASHES[1],
+					'hash': MARKER_HASHES[1],
 					'height': 345
 				},
 				{
 					'sym-address': SYMBOL_ADDRESSES[2],
 					'sym-balance': 26108065200000,
-					'hash': SYMBOL_HASHES[2],
+					'hash': MARKER_HASHES[2],
 					'height': 456
 
 				},
 				{
 					'sym-address': SYMBOL_ADDRESSES[3],
 					'sym-balance': 58303,
-					'hash': SYMBOL_HASHES[3],
+					'hash': MARKER_HASHES[3],
 					'height': 567
 				}
 			],
@@ -379,10 +475,10 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 					(NemAddress(NEM_ADDRESSES[0]).bytes, 'test-label')
 				],
 				symbol_destinations=[
-					(SymbolAddress(SYMBOL_ADDRESSES[0]).bytes, 558668349881393, SYMBOL_HASHES[0], 234, 1),
-					(SymbolAddress(SYMBOL_ADDRESSES[1]).bytes, 33686866144523, SYMBOL_HASHES[1], 345, 2),
-					(SymbolAddress(SYMBOL_ADDRESSES[2]).bytes, 26108065200000, SYMBOL_HASHES[2], 456, 2),
-					(SymbolAddress(SYMBOL_ADDRESSES[3]).bytes, 58303, SYMBOL_HASHES[3], 567, 2)
+					(SymbolAddress(SYMBOL_ADDRESSES[0]).bytes, 558668349881393, MARKER_HASHES[0], 234, 1),
+					(SymbolAddress(SYMBOL_ADDRESSES[1]).bytes, 33686866144523, MARKER_HASHES[1], 345, 2),
+					(SymbolAddress(SYMBOL_ADDRESSES[2]).bytes, 26108065200000, MARKER_HASHES[2], 456, 2),
+					(SymbolAddress(SYMBOL_ADDRESSES[3]).bytes, 58303, MARKER_HASHES[3], 567, 2)
 				]))
 
 			self.assertEqual(state['entries'], state['collected'])
@@ -414,10 +510,10 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 					(NemAddress(NEM_ADDRESSES[2]).bytes, Hash256(HASHES[0]).bytes, 333),
 				],
 				symbol_destinations=[
-					(SymbolAddress(SYMBOL_ADDRESSES[0]).bytes, 558668349881393, SYMBOL_HASHES[0], 234, 1),
-					(SymbolAddress(SYMBOL_ADDRESSES[1]).bytes, 33686866144523, SYMBOL_HASHES[1], 345, 2),
-					(SymbolAddress(SYMBOL_ADDRESSES[2]).bytes, 26108065200000, SYMBOL_HASHES[2], 456, 2),
-					(SymbolAddress(SYMBOL_ADDRESSES[3]).bytes, 58303, SYMBOL_HASHES[3], 567, 2)
+					(SymbolAddress(SYMBOL_ADDRESSES[0]).bytes, 558668349881393, MARKER_HASHES[0], 234, 1),
+					(SymbolAddress(SYMBOL_ADDRESSES[1]).bytes, 33686866144523, MARKER_HASHES[1], 345, 2),
+					(SymbolAddress(SYMBOL_ADDRESSES[2]).bytes, 26108065200000, MARKER_HASHES[2], 456, 2),
+					(SymbolAddress(SYMBOL_ADDRESSES[3]).bytes, 58303, MARKER_HASHES[3], 567, 2)
 				]))
 
 			self.assertEqual(state['entries'], state['collected'])

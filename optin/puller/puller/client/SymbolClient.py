@@ -10,7 +10,7 @@ from symbolchain.symbol.NetworkTimestamp import NetworkTimestamp
 
 from .BasicClient import BasicClient
 
-OptInTransactionInfo = namedtuple('OptInTransactionInfo', ['address', 'transaction_hash'])
+OptInTransactionInfo = namedtuple('OptInTransactionInfo', ['address', 'transaction_hash', 'transaction'])
 
 
 class SymbolClient(BasicClient):
@@ -87,12 +87,13 @@ class SymbolClient(BasicClient):
 	async def find_payout_transactions(self, optin_signer_public_key, address):
 		"""Finds payout transactions sent to the specified address."""
 
-		url_path = f'transactions/confirmed?signerPublicKey={optin_signer_public_key}&recipientAddress={address}'
+		url_path = f'transactions/confirmed?signerPublicKey={optin_signer_public_key}&recipientAddress={address}&embedded=true'
 		transactions = await self.get(url_path, 'data')
 		return [
 			OptInTransactionInfo(
 				NemAddress(json.loads(unhexlify(transaction['transaction']['message'][2:]))['nisAddress']),
-				Hash256(transaction['meta']['hash']))
+				Hash256(transaction['meta'].get('hash', None) or transaction['meta']['aggregateHash']),
+				transaction)
 			for transaction in transactions
 		]
 

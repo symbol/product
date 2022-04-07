@@ -66,6 +66,17 @@ class CompletedOptinDatabase:
 
 		cursor.executemany('''INSERT INTO nem_transaction VALUES (?, ?, ?)''', items)
 
+	def insert_transaction(self, address, nem_transaction):
+		"""Adds nem transaction to the database."""
+
+		cursor = self.connection.cursor()
+		try:
+			self._insert_transactions(cursor, {address: [nem_transaction]})
+			self.connection.commit()
+		except sqlite3.IntegrityError:
+			self.connection.rollback()
+			raise
+
 	@staticmethod
 	def _insert_labels(cursor, mapping_json):
 		if 'label' not in mapping_json:
@@ -90,13 +101,15 @@ class CompletedOptinDatabase:
 			) for address, entry in symbol_address_dict.items()
 		])
 
-	def insert_mapping(self, nem_address_dict, symbol_address_dict):
+	def insert_mapping(self, nem_address_dict, symbol_address_dict, nem_transactions_dict=None):
 		"""Adds a NEM to Symbol mapping to the database."""
 
 		self._assert_balances(nem_address_dict, symbol_address_dict)
 		cursor = self.connection.cursor()
 		try:
 			self._insert_mapping(cursor, nem_address_dict, symbol_address_dict)
+			if nem_transactions_dict:
+				self._insert_transactions(cursor, nem_transactions_dict)
 			self.connection.commit()
 		except sqlite3.IntegrityError:
 			self.connection.rollback()
