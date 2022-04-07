@@ -120,7 +120,7 @@ class DownloadTransactionProcessor:
 				if await self._handle_already_paid(transaction, destination_address, payout_transaction_info, process_result):
 					return process_result
 
-				print(f'{transaction_height} SUCCESS (DUPLICATE) (from {payout_signer_public_key})')
+				print(f'{transaction_height} SUCCESS (DUPLICATE) for {process_result.address} (from {payout_signer_public_key})')
 				self.databases.inprogress.add_request(process_result)
 				self.databases.inprogress.set_request_status(process_result, OptinRequestStatus.DUPLICATE, payout_transaction_info.transaction_hash)
 				return process_result
@@ -131,8 +131,8 @@ class DownloadTransactionProcessor:
 		if process_result.is_error:
 			return self._handle_error(transaction_height, process_result)
 
-		print(f'{transaction_height} SUCCESS (NEW)')
-		self.databases.inprogress.add_request(process_result)
+		request_status = self.databases.inprogress.add_request(process_result)
+		print(f'{transaction_height} SUCCESS ({request_status}) for {process_result.address}')
 		return process_result
 
 
