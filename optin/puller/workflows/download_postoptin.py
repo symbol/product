@@ -50,13 +50,13 @@ async def process_transaction(transaction, nem_client, symbol_client, database, 
 			optin_transaction_infos = await symbol_client.find_payout_transactions(PublicKey(payout_signer_public_key), destination_address)
 			optin_transaction_info = next((info for info in optin_transaction_infos if process_result.address == info.address), None)
 			if optin_transaction_info:
-				print(f'{transaction_height} SUCCESS (DUPLICATE) (from {payout_signer_public_key})')
+				print(f'{transaction_height} SUCCESS (DUPLICATE) for {process_result.address} (from {payout_signer_public_key})')
 				database.add_request(process_result)
 				database.set_request_status(process_result, OptinRequestStatus.DUPLICATE, optin_transaction_info.transaction_hash)
 				return process_result
 
-		print(f'{transaction_height} SUCCESS (NEW)')
-		database.add_request(process_result)
+		request_status = database.add_request(process_result)
+		print(f'{transaction_height} SUCCESS ({request_status}) for {process_result.address}')
 
 	return process_result
 

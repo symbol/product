@@ -57,15 +57,35 @@ class InProgressOptinDatabase:
 	def add_request(self, request):
 		"""Adds a request to the request table."""
 
+		# this assumes that requests are inserted from newest to oldest
+
 		cursor = self.connection.cursor()
+
+		# find similar optin requests for same address and multisig
+		multisig_public_key = request.multisig_public_key.bytes if request.multisig_public_key else None
+		cursor.execute(
+			'''SELECT payout_status FROM optin_request WHERE address = ? AND multisig_public_key IS ?
+				ORDER BY optin_transaction_height''',
+			(request.address.bytes, multisig_public_key))
+
+		# if pending or successfully completed requests are present, this new request is a duplicate
+		is_duplicate = any(
+			row[0] in (OptinRequestStatus.UNPROCESSED.value, OptinRequestStatus.SENT.value, OptinRequestStatus.COMPLETED.value)
+			for row in cursor
+		)
+
+		# insert the new request
+		new_status = OptinRequestStatus.DUPLICATE if is_duplicate else OptinRequestStatus.UNPROCESSED
 		cursor.execute('''INSERT INTO optin_request VALUES (?, ?, ?, ?, ?, ?, ?)''', (
 			request.optin_transaction_height,
 			request.optin_transaction_hash.bytes,
 			request.address.bytes,
 			request.destination_public_key.bytes,
 			request.multisig_public_key.bytes if request.multisig_public_key else None,
-			OptinRequestStatus.UNPROCESSED.value,
+			new_status.value,
 			request.payout_transaction_hash.bytes if request.payout_transaction_hash else None))
+
+		return new_status
 
 	def max_processed_height(self):
 		"""Gets maximum record height."""
@@ -112,17 +132,11 @@ class InProgressOptinDatabase:
 
 		cursor = self.connection.cursor()
 		transaction_hash = payout_transaction_hash.bytes if payout_transaction_hash else None
-		if request.multisig_public_key:
-			cursor.execute(
-				'''UPDATE optin_request SET payout_status = ?, payout_transaction_hash = ?
-					WHERE address = ? AND multisig_public_key = ?''',
-				(new_status.value, transaction_hash, request.address.bytes, request.multisig_public_key.bytes))
-		else:
-			cursor.execute(
-				'''UPDATE optin_request SET payout_status = ?, payout_transaction_hash = ?
-					WHERE address = ? AND multisig_public_key IS NULL''',
-				(new_status.value, transaction_hash, request.address.bytes))
-
+		multisig_public_key = request.multisig_public_key.bytes if request.multisig_public_key else None
+		cursor.execute(
+			'''UPDATE optin_request SET payout_status = ?, payout_transaction_hash = ?
+				WHERE address = ? AND multisig_public_key IS ?''',
+			(new_status.value, transaction_hash, request.address.bytes, multisig_public_key))
 		self.connection.commit()
 
 	def get_requests_by_status(self, status):

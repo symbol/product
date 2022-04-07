@@ -24,10 +24,11 @@ def make_request_tuple(index, **kwargs):
 	if 'multisig_public_key_index' in kwargs:
 		multisig_public_key = PublicKey(PUBLIC_KEYS[kwargs['multisig_public_key_index']])
 
-	payout_transaction_hash = kwargs.get('payout_transaction_hash', Hash256(HASHES[(index * 2) % len(HASHES)]))
+	hash_index = kwargs.get('hash_index', index)
+	payout_transaction_hash = kwargs.get('payout_transaction_hash', Hash256(HASHES[(hash_index * 2) % len(HASHES)]))
 	return (
 		HEIGHTS[index],
-		Hash256(HASHES[index]).bytes,
+		Hash256(HASHES[hash_index]).bytes,
 		address.bytes,
 		destination_public_key.bytes,
 		multisig_public_key.bytes if multisig_public_key else None,
@@ -38,6 +39,8 @@ def make_request_tuple(index, **kwargs):
 
 
 class InProgressOptinDatabaseTest(unittest.TestCase):
+	# pylint: disable=too-many-public-methods
+
 	# region create
 
 	def test_can_create_tables(self):
@@ -50,6 +53,11 @@ class InProgressOptinDatabaseTest(unittest.TestCase):
 	# endregion
 
 	# region add_error
+
+	@staticmethod
+	def _query_all_requests(cursor):
+		cursor.execute('''SELECT * FROM optin_request ORDER BY optin_transaction_hash DESC''')
+		return cursor.fetchall()
 
 	def _assert_can_insert_rows(self, seed_errors, seed_requests, expected_errors, expected_requests, post_insert_action):
 		# pylint: disable=too-many-arguments
@@ -64,7 +72,10 @@ class InProgressOptinDatabaseTest(unittest.TestCase):
 				database.add_error(error)
 
 			for request in seed_requests:
-				database.add_request(request)
+				add_result = database.add_request(request)
+
+				# Sanity:
+				self.assertEqual(OptinRequestStatus.UNPROCESSED, add_result)
 
 			if post_insert_action:
 				post_insert_action(database)
@@ -74,8 +85,7 @@ class InProgressOptinDatabaseTest(unittest.TestCase):
 			cursor.execute('''SELECT * FROM optin_error ORDER BY optin_transaction_hash DESC''')
 			actual_errors = cursor.fetchall()
 
-			cursor.execute('''SELECT * FROM optin_request ORDER BY optin_transaction_hash DESC''')
-			actual_requests = cursor.fetchall()
+			actual_requests = self._query_all_requests(cursor)
 
 			self.assertEqual(expected_errors, actual_errors)
 			self.assertEqual(expected_requests, actual_requests)
@@ -159,6 +169,71 @@ class InProgressOptinDatabaseTest(unittest.TestCase):
 			# Act:
 			with self.assertRaises(sqlite3.IntegrityError):
 				database.add_request(make_request(2, {'type': 100, 'destination': PUBLIC_KEYS[2]}, hash_index=0))
+
+	@staticmethod
+	def _prepare_database_for_add_request_duplicate_test(connection, existing_status):
+		database = InProgressOptinDatabase(connection)
+		database.create_tables()
+
+		processed_request = make_request(0, {'type': 101, 'destination': PUBLIC_KEYS[0], 'origin': PUBLIC_KEYS[3]})
+		database.add_request(processed_request)
+		database.set_request_status(processed_request, existing_status, Hash256(HASHES[0]))
+		database.add_request(make_request(0, {'type': 101, 'destination': PUBLIC_KEYS[1], 'origin': PUBLIC_KEYS[4]}, hash_index=1))
+		return database
+
+	def test_add_request_allows_new_request_when_existing_matching_request_is_error(self):
+		# Arrange:
+		with sqlite3.connect(':memory:') as connection:
+			database = self._prepare_database_for_add_request_duplicate_test(connection, OptinRequestStatus.ERROR)
+
+			# Act:
+			add_result = database.add_request(
+				make_request(0, {'type': 101, 'destination': PUBLIC_KEYS[2], 'origin': PUBLIC_KEYS[3]}, hash_index=2)
+			)
+
+			# Assert:
+			actual_requests = self._query_all_requests(connection.cursor())
+
+			self.assertEqual(OptinRequestStatus.UNPROCESSED, add_result)
+			self.assertEqual([
+				make_request_tuple(0, multisig_public_key_index=3, status_id=OptinRequestStatus.ERROR.value),
+				make_request_tuple(0, multisig_public_key_index=4, destination_public_key_index=1, hash_index=1),
+				make_request_tuple(0, multisig_public_key_index=3, destination_public_key_index=2, hash_index=2)
+			], actual_requests)
+
+	def _test_add_request_marks_new_request_as_duplicate_when_existing_matching_request_is_processed(self, existing_status):
+		# Arrange:
+		with sqlite3.connect(':memory:') as connection:
+			database = self._prepare_database_for_add_request_duplicate_test(connection, existing_status)
+
+			# Act:
+			add_result = database.add_request(
+				make_request(0, {'type': 101, 'destination': PUBLIC_KEYS[2], 'origin': PUBLIC_KEYS[3]}, hash_index=2)
+			)
+
+			# Assert:
+			actual_requests = self._query_all_requests(connection.cursor())
+
+			self.assertEqual(OptinRequestStatus.DUPLICATE, add_result)
+			self.assertEqual([
+				make_request_tuple(0, multisig_public_key_index=3, status_id=existing_status.value),
+				make_request_tuple(0, multisig_public_key_index=4, destination_public_key_index=1, hash_index=1),
+				make_request_tuple(
+					0,
+					multisig_public_key_index=3,
+					destination_public_key_index=2,
+					hash_index=2,
+					status_id=OptinRequestStatus.DUPLICATE.value)
+			], actual_requests)
+
+	def test_add_request_marks_new_request_as_duplicate_when_existing_matching_request_is_unprocessed(self):
+		self._test_add_request_marks_new_request_as_duplicate_when_existing_matching_request_is_processed(OptinRequestStatus.UNPROCESSED)
+
+	def test_add_request_marks_new_request_as_duplicate_when_existing_matching_request_is_sent(self):
+		self._test_add_request_marks_new_request_as_duplicate_when_existing_matching_request_is_processed(OptinRequestStatus.SENT)
+
+	def test_add_request_marks_new_request_as_duplicate_when_existing_matching_request_is_completed(self):
+		self._test_add_request_marks_new_request_as_duplicate_when_existing_matching_request_is_processed(OptinRequestStatus.COMPLETED)
 
 	# endregion
 
