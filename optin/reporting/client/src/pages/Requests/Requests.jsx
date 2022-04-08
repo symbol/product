@@ -4,13 +4,16 @@ import config from '../../config';
 import Helper from '../../utils/helper';
 import { addressTemplate, transactionHashTemplate } from '../../utils/pageUtils';
 import { Button } from 'primereact/button';
+import { InputSwitch } from 'primereact/inputswitch';
 import { InputText } from 'primereact/inputtext';
 import { SelectButton } from 'primereact/selectbutton';
 import React, { useEffect, useState } from 'react';
 
-const Requests = () => {
+const Requests = ({defaultPaginationType}) => {
 	const [loading, setLoading] = useState(true);
 	const [first, setFirst] = useState(1);
+	const [paginationType, setPaginationType] = useState(defaultPaginationType);
+
 	const [requests, setRequests] = useState({
 		data: [],
 		pagination: {
@@ -38,14 +41,18 @@ const Requests = () => {
 	};
 
 	const handlePageChange = async ({page, rows, first}) => {
+		const nextPage = 	page ?? (requests.pagination.pageNumber || 0) + 1;
 		setLoading(true);
 		setFirst(first);
 		const result = await fetchOptinRequests({
-			pageNumber: page,
+			pageNumber: nextPage,
 			pageSize: rows
 		});
 
-		setRequests(result);
+		if ('scroll' === paginationType && 1 !== nextPage) 
+			setRequests({data: [...requests.data, ...result.data], pagination: result.pagination});  
+		else
+		  setRequests(result);
 		setLoading(false);
 	};
 
@@ -67,11 +74,16 @@ const Requests = () => {
 	};
 
 	const onFilterSubmit = async () => {
-		await handlePageChange({page: 1, rows: 25, first: 1});
+		await handlePageChange({page: 1, rows: 25});
 	};
 
 	const downloadAllAsCSV = async () => {
 		await Helper.downloadAllAsCSV({apiUrl: '/api/requests/download', fileName: 'optin-requests.csv', setDownloading});
+	};
+
+	const onPaginationTypeChange = async e => {
+		setPaginationType(e.value ? 'scroll' : 'paginator');
+		await onFilterSubmit();
 	};
 
 	const nemAddressTemplate = rowData => {
@@ -114,15 +126,20 @@ const Requests = () => {
 
 			</div>
 			<div className="formgroup-inline">
+				<div className="card" style={{marginRight: '20px'}}>
+					<h5 style={{margin: 0, marginLeft: '-15px', color: '#b4b2b2'}}>Infinite Scroll</h5>
+					<InputSwitch checked={'scroll' === paginationType} 
+						onChange={onPaginationTypeChange}/>
+				</div>
 				<Button type="button" icon="pi pi-download" className="p-button-outlined" onClick={downloadAllAsCSV} 
 					loading={downloading} tooltip="Download All Data as CSV File" tooltipOptions={{position: 'top'}}/>
 			</div>
 		</div>
 	);
-	
+
 	return (
-		<Table value={requests.data} paginator rows={requests.pagination.pageSize} 
-			onPage={handlePageChange} loading={loading} totalRecords={requests.pagination.totalRecord}
+		<Table value={requests.data} rows={requests.pagination.pageSize} onPage={handlePageChange}
+			loading={loading} totalRecords={requests.pagination.totalRecord} paginator={'paginator' === paginationType}
 			first={first} header={header}>
 			<TableColumn field="nemAddress" header="NEM Address" body={nemAddressTemplate} align="left"/>
 			<TableColumn field="optinTransactionHash" header="Optin Transaction Hash" body={optinTransactionHashTemplate} align="left"/>
@@ -130,6 +147,10 @@ const Requests = () => {
 			<TableColumn field="message" header="Message" align="left"/>
 		</Table>
 	);
+};
+
+Requests.defaultProps = {
+	defaultPaginationType: 'scroll'
 };
 
 export default Requests;

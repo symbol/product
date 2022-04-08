@@ -4,13 +4,15 @@ import config from '../../config';
 import Helper from '../../utils/helper';
 import { addressTemplate, balanceTemplate } from '../../utils/pageUtils';
 import { Button } from 'primereact/button';
+import { InputSwitch } from 'primereact/inputswitch';
 import { InputText } from 'primereact/inputtext';
 import { SelectButton } from 'primereact/selectbutton';
 import React, { useState, useEffect } from 'react';
 
-const Completed = () => {
+const Completed = ({defaultPaginationType}) => {
 	const [loading, setLoading] = useState(true);
 	const [first, setFirst] = useState(1);
+	const [paginationType, setPaginationType] = useState(defaultPaginationType);
 
 	const [completed, setCompleted] = useState({
 		data: [],
@@ -40,14 +42,18 @@ const Completed = () => {
 	};
 
 	const handlePageChange = async ({page, rows, first}) =>{
+		const nextPage = 	page ?? (completed.pagination.pageNumber || 0) + 1;
 		setLoading(true);
 		setFirst(first);
 		const result = await fetchCompleted({
-			pageNumber: page + 1,
+			pageNumber: nextPage,
 			pageSize: rows
 		});
 
-		setCompleted(result);
+		if ('scroll' === paginationType && 1 !== nextPage) 
+			setCompleted({data: [...completed.data, ...result.data], pagination: result.pagination});  
+		else
+		  setCompleted(result);
 		setLoading(false);
 	};
 
@@ -69,13 +75,18 @@ const Completed = () => {
 	};
 
 	const onFilterSubmit = async () => {
-		await handlePageChange({page: 1, rows: 25, first: 1});
+		await handlePageChange({page: 1, rows: 25});
 	};
 
 	const downloadAllAsCSV = async () => {
 		await Helper.downloadAllAsCSV({apiUrl: '/api/completed/download', fileName: 'optin-completed.csv', setDownloading});
 	};
 
+	const onPaginationTypeChange = async e => {
+		setPaginationType(e.value ? 'scroll' : 'paginator');
+		await onFilterSubmit();
+	};
+	
 	const nemAddressTemplate = rowData => {
 		return addressTemplate(rowData, 'nemAddress', config);
 	};
@@ -113,6 +124,11 @@ const Completed = () => {
 
 			</div>
 			<div className="formgroup-inline">
+				<div className="card" style={{marginRight: '20px'}}>
+					<h5 style={{margin: 0, marginLeft: '-15px', color: '#b4b2b2'}}>Infinite Scroll</h5>
+					<InputSwitch checked={'scroll' === paginationType} 
+						onChange={onPaginationTypeChange}/>
+				</div>
 				<Button type="button" icon="pi pi-download" className="p-button-outlined" onClick={downloadAllAsCSV} 
 					loading={downloading} tooltip="Download All Data as CSV File" tooltipOptions={{position: 'top'}}/>
 			</div>
@@ -120,9 +136,9 @@ const Completed = () => {
 	);
 
 	return (
-		<Table value={completed.data} paginator rows={completed.pagination.pageSize} 
+		<Table value={completed.data} rows={completed.pagination.pageSize} 
 			onPage={handlePageChange} loading={loading} totalRecords={completed.pagination.totalRecord}
-			first={first} header={header}>
+			first={first} header={header} paginator={'paginator' === paginationType}>
 			<TableColumn field="optin_id" header="Opt-in ID" align="left"/>
 			<TableColumn field="nemAddress" header="NEM Address" body={nemAddressTemplate} align="left"/>
 			<TableColumn field="nemBalance" header="NEM Balance" body={nemBalanceTemplate} align="right"/>
@@ -132,4 +148,7 @@ const Completed = () => {
 	);
 };
 
+Completed.defaultProps = {
+	defaultPaginationType: 'scroll'
+};
 export default Completed;
