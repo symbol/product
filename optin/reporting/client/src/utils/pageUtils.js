@@ -1,7 +1,7 @@
 import Helper from './helper';
 import React from 'react';
 
-export const addressTemplate = (rowData, key, config, renderTotal = true) => {
+export const addressTemplate = (rowData, key, config) => {
 	const list = Array.isArray(rowData[key]) ? rowData[key] : [rowData[key]];
 	return (
 		<React.Fragment>
@@ -12,9 +12,6 @@ export const addressTemplate = (rowData, key, config, renderTotal = true) => {
 					</a>
 				</div>)
 			}
-			<React.Fragment>
-				{renderTotal && renderTotalText(rowData[key])}
-			</React.Fragment>
 		</React.Fragment>
 	);
 };
@@ -25,9 +22,9 @@ export const balanceTemplate = (rowData, key, renderTotal = true) => {
 	return (
 		<React.Fragment>
 			{
-				list.map(balance => 
+				list.map(balance =>
 					<div>
-						{Helper.toRelativeAmount(balance).toLocaleString('en-US', { minimumFractionDigits: 6 })}
+						{Helper.toRelativeAmount(balance).toLocaleString('en-US', { minimumFractionDigits: 2 })}
 					</div>)
 			}
 			<React.Fragment>
@@ -37,23 +34,14 @@ export const balanceTemplate = (rowData, key, renderTotal = true) => {
 	);
 };
 
-
-export const renderTotalText = values => {
-	if (!Array.isArray(values) || 2 > values.length)
-		return null;
-
-	return (<div className="sub-total-text">Total:</div>);
-    
-};
-
 export const renderTotalValue = values => {
 	if (!Array.isArray(values) || 2 > values.length)
 		return null;
 
 	const total = values.reduce((value, currentValue) => value + currentValue, 0);
-	const formattedValue = Helper.toRelativeAmount(total).toLocaleString('en-US', { minimumFractionDigits: 6 });
+	const formattedValue = Helper.toRelativeAmount(total).toLocaleString('en-US', { minimumFractionDigits: 2 });
 	return (<div className="sub-total-value">{formattedValue}</div>);
-    
+
 };
 
 export const transactionHashTemplate = (rowData, key, config) => {
