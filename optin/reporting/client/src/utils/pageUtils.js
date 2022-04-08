@@ -2,15 +2,19 @@ import Helper from './helper';
 import PopUpDialog from '../components/PopUpDialog';
 import React from 'react';
 
+const copyButton = value => {
+	return <i className="pi pi-copy copy-button" onClick={() =>   navigator.clipboard.writeText(value)}></i>;
+};
 export const addressTemplate = (rowData, key, config) => {
 	const list = Array.isArray(rowData[key]) ? rowData[key] : [rowData[key]];
 	return (
 		<React.Fragment>
 			{
-				list.map(address => <div>
+				list.map(address => <div className='flex flex-row list-item'>
 					<a href={config.keyRedirects[key] + address} target="_blank" rel="noreferrer">
 						{address}
 					</a>
+					{copyButton(address)}
 				</div>)
 			}
 		</React.Fragment>
@@ -24,7 +28,7 @@ export const balanceTemplate = (rowData, key, renderTotal = true) => {
 		<React.Fragment>
 			{
 				list.map(balance =>
-					<div>
+					<div className='list-item'>
 						{Helper.toRelativeAmount(balance).toLocaleString('en-US', { minimumFractionDigits: 2 })}
 					</div>)
 			}
@@ -50,11 +54,14 @@ export const transactionHashTemplate = (rowData, key, config) => {
 
 	const buildTransactionHashLink = (key, item) => {
 		return (
-			<a href={config.keyRedirects[key] + item.toLowerCase()}
-				target="_blank"
-				rel="noreferrer">
-				{Helper.truncString(item.toLowerCase())}
-			</a>
+			<div className='flex flex-row list-item'>
+				<a href={config.keyRedirects[key] + item.toLowerCase()}
+					target="_blank"
+					rel="noreferrer">
+					{Helper.truncString(item.toLowerCase())}
+				</a>
+				{copyButton(item.toLowerCase())}
+			</div>
 		);
 	};
 

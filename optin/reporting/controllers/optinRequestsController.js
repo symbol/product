@@ -19,8 +19,10 @@ const processData = items => {
 	};
 
 	return items.map(item => ({
+		optinTransactionHeight: item.optinTransactionHeight,
 		nemAddress: new NemFacade.Address(item.nemAddressBytes).toString(),
 		optinTransactionHash: item.optinTransactionHashHex?.toLowerCase(),
+		payoutTransactionHash: item.payoutTransactionHash?.toLowerCase(),
 		status: statusIntToString(item.payoutStatus),
 		message: item.message
 	}));
