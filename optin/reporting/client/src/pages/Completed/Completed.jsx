@@ -124,11 +124,11 @@ const Completed = ({defaultPaginationType}) => {
 
 			</div>
 			<div className="formgroup-inline">
-				<div className="card" style={{marginRight: '20px'}}>
+				{/* <div className="card" style={{marginRight: '20px'}}>
 					<h5 style={{margin: 0, marginLeft: '-15px', color: '#b4b2b2'}}>Infinite Scroll</h5>
 					<InputSwitch checked={'scroll' === paginationType} 
 						onChange={onPaginationTypeChange}/>
-				</div>
+				</div> */}
 				<Button type="button" icon="pi pi-download" className="p-button-outlined" onClick={downloadAllAsCSV} 
 					loading={downloading} tooltip="Download All Data as CSV File" tooltipOptions={{position: 'top'}}/>
 			</div>
