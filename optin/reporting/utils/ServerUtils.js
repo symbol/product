@@ -22,6 +22,16 @@ const ServerUtils = {
 			a.push(parseInt(str.substr(i, 2), 16));
 
 		return new Uint8Array(a);
+	},
+	formatStringSplit: (string, separator = ';') => {
+		if ('string' === typeof string) {
+			const values = string.split(separator);
+			if (1 < values.length)
+				return values;
+
+			return string;
+		}
+		return string;
 	}
 };
 
