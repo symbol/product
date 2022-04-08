@@ -1,9 +1,10 @@
 const completedDB = require('../models/completed');
+const { hexStringToByte, formatStringSplit } = require('../utils/ServerUtils');
 const { NemFacade, SymbolFacade } = require('symbol-sdk').facade;
 
 const controller = {
 	getCompleted: async (req, res) => {
-		const pageSize = parseInt(req.query.pageSize || 25, 10);
+		const pageSize = parseInt(req.query.pageSize || 1000, 10);
 		const pageNumber = parseInt(req.query.pageNumber || 1, 10);
 
 		try {
@@ -13,13 +14,17 @@ const controller = {
 
 			// TODO enchance the way create an Address object from hex string, check Gimre's solution
 			const result = response.map(item => ({
-				...item,
-				nemAddress: item.nemAddress.map(props => new NemFacade.Address(Uint8Array.from(Buffer.from(props.address, 'hex')))
+				optin_id: item.id,
+				isPostoptin: item.is_postoptin,
+				label: item.nem_source.map(props => props.label),
+				nemAddress: item.nem_source.map(props => new NemFacade.Address(hexStringToByte(props.address))
 					.toString()),
-				nemBalance: item.nemBalance.map(props => props.balance),
-				symbolAddress: item.symbolAddress.map(props => new SymbolFacade.Address(Uint8Array.from(Buffer.from(props.address, 'hex')))
+				nemBalance: item.nem_source.map(props => props.balance),
+				nemHashes: item.nem_source.map(props => formatStringSplit(props.hashes)),
+				symbolAddress: item.symbol_destination.map(props => new SymbolFacade.Address(hexStringToByte(props.address))
 					.toString()),
-				symbolBalance: item.symbolBalance.map(props => props.balance)
+				symbolHashes: item.symbol_destination.map(props => formatStringSplit(props.hashes)),
+				symbolBalance: item.symbol_destination.map(props => props.balance)
 			}));
 
 			res.json({
