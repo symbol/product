@@ -1,4 +1,5 @@
 import Helper from './helper';
+import PopUpDialog from '../components/PopUpDialog';
 import React from 'react';
 
 export const addressTemplate = (rowData, key, config) => {
@@ -46,16 +47,54 @@ export const renderTotalValue = values => {
 
 export const transactionHashTemplate = (rowData, key, config) => {
 	const list = Array.isArray(rowData[key]) ? rowData[key] : [rowData[key]];
+
+	const buildTransactionHashLink = (key, item) => {
+		return (
+			<a href={config.keyRedirects[key] + item.toLowerCase()}
+				target="_blank"
+				rel="noreferrer">
+				{Helper.truncString(item.toLowerCase())}
+			</a>
+		);
+	};
+
 	return (
 		<React.Fragment>
 			{
-				list.map(address => 
+				list.map(hash =>
 					<div>
-						<a href={config.keyRedirects[key] + address.toLowerCase()} target="_blank" rel="noreferrer">
-							{address.toLowerCase()}
-						</a>
+						{
+							null !== hash ?
+								Array.isArray(hash) ?
+									( <PopUpDialog title="Multiple Transactions"
+										content={
+											hash.map(item =>
+												<div>
+													{ buildTransactionHashLink(key, item) }
+												</div>)
+										} />)
+									: buildTransactionHashLink(key, hash)
+
+								: '(off chain)'
+						}
 					</div>)
 			}
 		</React.Fragment>
+	);
+};
+
+export const optinTypeTemplate = (rowData, key) => {
+	const isPostoptin = rowData[key] ? 'Post-launch' : 'Pre-launch';
+	return (<div> { isPostoptin } </div>);
+};
+
+export const infoTemplate = (rowData, key) => {
+	const labels = Array.isArray(rowData[key]) ? [...new Set(rowData[key])] : [rowData[key]];
+
+	return (
+		labels.map(info =>
+			<div>
+				{ info }
+			</div>)
 	);
 };
