@@ -94,6 +94,10 @@ const Requests = ({defaultPaginationType}) => {
 		return transactionHashTemplate(rowData, 'optinTransactionHash', config);
 	};
 
+	const payoutTransactionHashTemplate = rowData => {
+		return transactionHashTemplate(rowData, 'payoutTransactionHash', config);
+	};
+
 	const statusTemplate = rowData => {
 		const {status} = rowData;
 		const badgeType = 'Pending' === status ? 'warning' : 'Sent' === status ? 'success' : 'danger';
@@ -143,6 +147,7 @@ const Requests = ({defaultPaginationType}) => {
 			first={first} header={header}>
 			<TableColumn field="nemAddress" header="NEM Address" body={nemAddressTemplate} align="left"/>
 			<TableColumn field="optinTransactionHash" header="Optin Transaction Hash" body={optinTransactionHashTemplate} align="left"/>
+			<TableColumn field="payoutTransactionHash" header="Payout Transaction Hash" body={payoutTransactionHashTemplate} align="left"/>
 			<TableColumn field="status" header="Status" body={statusTemplate} align="center"/>
 			<TableColumn field="message" header="Message" align="left"/>
 		</Table>

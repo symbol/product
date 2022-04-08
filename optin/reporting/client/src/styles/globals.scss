@@ -26,3 +26,15 @@
   border: 1px solid !important;
   padding: 5px;
 }
+
+.copy-button {
+  margin-left: 10px;
+  color: rgb(218, 218, 218);
+  &:hover {
+    color: rgb(0, 0, 0);
+  }
+}
+
+.list-item {
+  font-family: monospace;
+}

@@ -13,6 +13,7 @@ const config = {
 		nemAddress: 'https://explorer.nemtool.com/#/s_account?account=',
 		symbolAddress: 'https://symbol.fyi/accounts/',
 		optinTransactionHash: 'https://explorer.nemtool.com/#/s_tx?hash=',
+		payoutTransactionHash: 'https://symbol.fyi/transactions/',
 		nemHashes: 'https://explorer.nemtool.com/#/s_tx?hash=',
 		symbolHashes: 'https://symbol.fyi/transactions/'
 	},
