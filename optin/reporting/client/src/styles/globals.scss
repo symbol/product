@@ -20,7 +20,9 @@
   }
 }
 
-.sub-total-text, .sub-total-value {
+ .sub-total-value {
   font-weight: bold;
   text-decoration: underline;
+  border: 1px solid !important;
+  padding: 5px;
 }
