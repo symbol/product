@@ -12,7 +12,9 @@ const config = {
 	keyRedirects: {
 		nemAddress: 'https://explorer.nemtool.com/#/s_account?account=',
 		symbolAddress: 'https://symbol.fyi/accounts/',
-		optinTransactionHash: 'https://explorer.nemtool.com/#/s_tx?hash='
+		optinTransactionHash: 'https://explorer.nemtool.com/#/s_tx?hash=',
+		nemHashes: 'https://explorer.nemtool.com/#/s_tx?hash=',
+		symbolHashes: 'https://symbol.fyi/transactions/'
 	},
 	keyFormat: {
 		nemBalance: 'relative',
