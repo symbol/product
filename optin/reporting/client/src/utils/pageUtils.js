@@ -1,5 +1,4 @@
 import Helper from './helper';
-import PopUpDialog from '../components/PopUpDialog';
 import React from 'react';
 
 const copyButton = value => {
@@ -68,20 +67,11 @@ export const transactionHashTemplate = (rowData, key, config) => {
 	return (
 		<React.Fragment>
 			{
-				list.map(hash =>
+				list.flat(Infinity).map(hash =>
 					<div>
 						{
-							null !== hash ?
-								Array.isArray(hash) ?
-									( <PopUpDialog title="Multiple Transactions"
-										content={
-											hash.map(item =>
-												<div>
-													{ buildTransactionHashLink(key, item) }
-												</div>)
-										} />)
-									: buildTransactionHashLink(key, hash)
-
+							null !== hash
+								? buildTransactionHashLink(key, hash)
 								: '(off chain)'
 						}
 					</div>)
