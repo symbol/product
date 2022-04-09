@@ -4,7 +4,6 @@ import config from '../../config';
 import Helper from '../../utils/helper';
 import { addressTemplate, balanceTemplate, transactionHashTemplate, optinTypeTemplate, infoTemplate } from '../../utils/pageUtils';
 import { Button } from 'primereact/button';
-import { InputSwitch } from 'primereact/inputswitch';
 import { InputText } from 'primereact/inputtext';
 import { SelectButton } from 'primereact/selectbutton';
 import React, { useState, useEffect } from 'react';
@@ -27,10 +26,12 @@ const Completed = ({defaultPaginationType}) => {
 	const [downloading, setDownloading] = useState(false);
 
 	const fetchCompleted = async ({pageSize = 25, pageNumber = 1}) => {
-		return await fetch(`/api/completed?pageSize=${pageSize}&pageNumber=${pageNumber}`).then(res => res.json());
+		const [nemAddress, symbolAddress, transactionHash] = parseFilterSearch(filterSearch);
+		return await fetch(`/api/completed?pageSize=${pageSize}&pageNumber=${pageNumber}
+		&nemAddress=${nemAddress}&symbolAddress=${symbolAddress}&transactionHash=${transactionHash}&optinType=${filterOptinType}`)
+		.then(res => res.json());
 	};
 
-	// TODO use this in the API call
 	const parseFilterSearch = filterSearch => {
 		if (40 === filterSearch.length) // NEM Address
 			return [filterSearch, '', ''];
@@ -38,7 +39,7 @@ const Completed = ({defaultPaginationType}) => {
 			return ['', filterSearch, ''];
 		else if (64 === filterSearch.length) // Transaction Hash
 			return ['', '', filterSearch];
-		return ['', ''];
+		return ['', '', ''];
 	};
 
 	const handlePageChange = async ({page, rows, first}) =>{
@@ -82,10 +83,10 @@ const Completed = ({defaultPaginationType}) => {
 		await Helper.downloadAllAsCSV({apiUrl: '/api/completed/download', fileName: 'optin-completed.csv', setDownloading});
 	};
 
-	const onPaginationTypeChange = async e => {
-		setPaginationType(e.value ? 'scroll' : 'paginator');
-		await onFilterSubmit();
-	};
+	// const onPaginationTypeChange = async e => {
+	// 	setPaginationType(e.value ? 'scroll' : 'paginator');
+	// 	await onFilterSubmit();
+	// };
 
 	const nemAddressTemplate = rowData => {
 		return addressTemplate(rowData, 'nemAddress', config);
@@ -119,7 +120,7 @@ const Completed = ({defaultPaginationType}) => {
 		return infoTemplate(rowData, 'label');
 	};
 
-	const optinTypes = [{label: 'Pre-launch', value: 'pre-launch'}, {label: 'Post-launch', value: 'post-launch'}];
+	const optinTypes = [{label: 'Pre-launch', value: 'pre'}, {label: 'Post-launch', value: 'post'}];
 
 	const header = (
 		<div className='flex justify-content-between'>
