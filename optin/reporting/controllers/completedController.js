@@ -1,16 +1,40 @@
 const completedDB = require('../models/completed');
-const { hexStringToByte, formatStringSplit } = require('../utils/ServerUtils');
+const { hexStringToByte, formatStringSplit, byteToHexString } = require('../utils/ServerUtils');
 const { NemFacade, SymbolFacade } = require('symbol-sdk').facade;
+
+const isPostOptin = optinTypeFilter => {
+	switch (optinTypeFilter) {
+	case 'pre':
+		return false;
+	case 'post':
+		return true;
+	default:
+		return null;
+	}
+};
 
 const controller = {
 	getCompleted: async (req, res) => {
 		const pageSize = parseInt(req.query.pageSize || 1000, 10);
 		const pageNumber = parseInt(req.query.pageNumber || 1, 10);
+		const optinType = isPostOptin(req.query.optinType);
+		const { nemAddress, symbolAddress, transactionHash } = req.query;
 
 		try {
+			const nemAddressHex = nemAddress ? byteToHexString(new NemFacade.Address(nemAddress).bytes) : undefined;
+			const symbolAddressHex = symbolAddress ? byteToHexString(new SymbolFacade.Address(symbolAddress).bytes) : undefined;
+			const txHash = transactionHash ?? undefined;
+
 			const totalRecord = await completedDB.getTotalRecord();
 
-			const response = await completedDB.getCompletedPagination({ pageNumber, pageSize });
+			const response = await completedDB.getCompletedPagination({
+				pageNumber,
+				pageSize,
+				nemAddressHex,
+				symbolAddressHex,
+				txHash,
+				optinType
+			});
 
 			// TODO enchance the way create an Address object from hex string, check Gimre's solution
 			const result = response.map(item => ({
