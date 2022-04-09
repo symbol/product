@@ -160,10 +160,10 @@ const Completed = ({defaultPaginationType}) => {
 			<TableColumn field="nemAddress" header="NEM Address" body={nemAddressTemplate} align="left"/>
 			<TableColumn field="label" header="Info" body={labelTemplate} align="left"/>
 			<TableColumn field="nemHashes" header="Hash" body={nemHashesTemplate} align="left"/>
-			<TableColumn field="nemBalance" header="NEM Balance" body={nemBalanceTemplate} align="right"/>
+			<TableColumn field="nemBalance" header="Balance" body={nemBalanceTemplate} align="right"/>
 			<TableColumn field="symbolAddress" header="Symbol Address" body={symbolAddressTemplate} align="left"/>
 			<TableColumn field="symbolHashes" header="Hash" body={symbolHashesTemplate} align="left"/>
-			<TableColumn field="symbolBalance" header="Symbol Balance" body={symbolBalanceTemplate} align="right"/>
+			<TableColumn field="symbolBalance" header="Balance" body={symbolBalanceTemplate} align="right"/>
 			<TableColumn field="isPostoptin" header="Opt-in Type" body={isPostoptinTemplate} align="right"/>
 		</Table>
 	);
