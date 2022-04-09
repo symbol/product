@@ -2,7 +2,20 @@ const { completed } = require('./database');
 const { QueryTypes } = require('sequelize');
 
 const completedDB = {
-	getCompletedPagination: async ({ pageNumber, pageSize }) => {
+	getCompletedPagination: async ({
+		pageNumber, pageSize, nemAddressHex, symbolAddressHex, txHash, optinType
+	}) => {
+		let condition = '';
+
+		if (nemAddressHex)
+			condition += `AND (nem_source LIKE '%${nemAddressHex}%')`;
+
+		if (symbolAddressHex)
+			condition += `AND (symbol_destination LIKE '%${symbolAddressHex}%')`;
+
+		if (txHash)
+			condition += `AND (nem_source LIKE '%${txHash}%' OR symbol_destination LIKE '%${txHash}%')`;
+
 		const result = await completed.query(
 			`SELECT
 				opt.id,
@@ -28,8 +41,12 @@ const completedDB = {
 				WHERE optin_id = opt.id
 				) AS symbol_destination
 			FROM optin_id opt
+			WHERE (is_postoptin = $1 OR $1 is null) ${condition}
             LIMIT ${pageSize} OFFSET ${(pageNumber - 1) * pageSize}`,
-			{ type: QueryTypes.SELECT }
+			{
+				bind: [optinType],
+				type: QueryTypes.SELECT
+			}
 		);
 
 		return result.map(item => ({
