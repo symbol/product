@@ -43,7 +43,7 @@ class MockSymbolClient:
 # pylint: disable=invalid-name, unused-argument
 
 
-async def _run_test(destination_public_key, expected_error_message):
+async def _run_test(destination_public_key, is_error=False):
 	# Arrange:
 	nem_client = MockNemClient()
 	symbol_client = MockSymbolClient()
@@ -53,27 +53,27 @@ async def _run_test(destination_public_key, expected_error_message):
 	result = await check_destination_availability(request, nem_client, symbol_client)
 
 	# Assert:
-	if not expected_error_message:
+	if not is_error:
 		assert request == result
 	else:
 		assert result.is_error
 		assert request.address == result.address
 		assert request.optin_transaction_height == result.optin_transaction_height
 		assert request.optin_transaction_hash == result.optin_transaction_hash
-		assert expected_error_message == result.message
+		assert 'destination is an invalid Symbol public key' == result.message
 
 
 async def test_nem_public_key_destination_not_available(event_loop):
-	await _run_test(PublicKey(PUBLIC_KEYS[0]), 'destination is a NEM public key')
+	await _run_test(PublicKey(PUBLIC_KEYS[0]), True)
 
 
 async def test_nem_private_key_destination_not_available(event_loop):
-	await _run_test(PublicKey(PUBLIC_KEYS[1]), 'destination is a NEM private key')
+	await _run_test(PublicKey(PUBLIC_KEYS[1]), True)
 
 
 async def test_symbol_private_key_destination_not_available(event_loop):
-	await _run_test(PublicKey(PUBLIC_KEYS[2]), 'destination is a Symbol private key')
+	await _run_test(PublicKey(PUBLIC_KEYS[2]), True)
 
 
 async def test_other_destination_available(event_loop):
-	await _run_test(PublicKey(PUBLIC_KEYS[3]), None)
+	await _run_test(PublicKey(PUBLIC_KEYS[3]))

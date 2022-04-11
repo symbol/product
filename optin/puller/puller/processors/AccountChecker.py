@@ -23,12 +23,12 @@ async def check_destination_availability(request, nem_client, symbol_client):
 		nem_client.is_known_address(nem_address_from_private),
 		symbol_client.is_known_address(symbol_address_from_private))
 
-	for i, result in enumerate(results):
+	for result in results:
 		if result:
-			return OptinRequestError(request.address, request.optin_transaction_height, request.optin_transaction_hash, [
-				'destination is a NEM public key',
-				'destination is a NEM private key',
-				'destination is a Symbol private key',
-			][i])
+			return OptinRequestError(
+				request.address,
+				request.optin_transaction_height,
+				request.optin_transaction_hash,
+				'destination is an invalid Symbol public key')
 
 	return request
