@@ -364,6 +364,48 @@ class InProgressOptinDatabaseTest(unittest.TestCase):
 			make_request_tuple(2)
 		], post_insert_action=post_insert_action)
 
+	def test_can_update_single_request_status_matching_optin_transaction_hash(self):
+		# Arrange:
+		payout_transaction_hash = Hash256('ACFF5E24733CD040504448A3A75F1CE32E90557E5FBA02E107624242F4FA251D')
+		seed_requests = [
+			make_request(0, {'type': 100, 'destination': PUBLIC_KEYS[0]}),
+			make_request(1, {'type': 100, 'destination': PUBLIC_KEYS[1]}),
+			make_request(2, {'type': 100, 'destination': PUBLIC_KEYS[2]})
+		]
+
+		def post_insert_action(database):
+			database.set_request_status(seed_requests[1], OptinRequestStatus.SENT, Hash256(HASHES[0]))
+			database.set_request_status(seed_requests[1], OptinRequestStatus.COMPLETED, payout_transaction_hash)
+
+		# Act + Assert:
+		self._assert_can_insert_requests(seed_requests, [
+			make_request_tuple(0),
+			make_request_tuple(1, status_id=2, payout_transaction_hash=payout_transaction_hash),
+			make_request_tuple(2)
+		], post_insert_action=post_insert_action)
+
+	def test_cannot_update_single_request_status_without_matching_optin_transaction_hash(self):
+		# Arrange:
+		payout_transaction_hash = Hash256('ACFF5E24733CD040504448A3A75F1CE32E90557E5FBA02E107624242F4FA251D')
+		seed_requests = [
+			make_request(0, {'type': 100, 'destination': PUBLIC_KEYS[0]}),
+			make_request(1, {'type': 100, 'destination': PUBLIC_KEYS[1]}),
+			make_request(2, {'type': 100, 'destination': PUBLIC_KEYS[2]})
+		]
+
+		def post_insert_action(database):
+			database.set_request_status(seed_requests[1], OptinRequestStatus.SENT, Hash256(HASHES[0]))
+			seed_requests[1].optin_transaction_hash = Hash256.zero()
+
+			database.set_request_status(seed_requests[1], OptinRequestStatus.COMPLETED, payout_transaction_hash)
+
+		# Act + Assert:
+		self._assert_can_insert_requests(seed_requests, [
+			make_request_tuple(0),
+			make_request_tuple(1, status_id=1, payout_transaction_hash=Hash256(HASHES[0])),
+			make_request_tuple(2)
+		], post_insert_action=post_insert_action)
+
 	def test_can_update_mutiple_request_part_status(self):
 		# Arrange:
 		payout_transaction_hash = Hash256('ACFF5E24733CD040504448A3A75F1CE32E90557E5FBA02E107624242F4FA251D')

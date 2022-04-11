@@ -135,8 +135,8 @@ class InProgressOptinDatabase:
 		multisig_public_key = request.multisig_public_key.bytes if request.multisig_public_key else None
 		cursor.execute(
 			'''UPDATE optin_request SET payout_status = ?, payout_transaction_hash = ?
-				WHERE address = ? AND multisig_public_key IS ?''',
-			(new_status.value, transaction_hash, request.address.bytes, multisig_public_key))
+				WHERE address = ? AND multisig_public_key IS ? AND optin_transaction_hash IS ?''',
+			(new_status.value, transaction_hash, request.address.bytes, multisig_public_key, request.optin_transaction_hash.bytes))
 		self.connection.commit()
 
 	def get_requests_by_status(self, status):
