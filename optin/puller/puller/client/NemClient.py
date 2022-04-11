@@ -49,6 +49,17 @@ class NemClient(BasicClient):
 
 		return await self._transactions(address, 'incoming', start_id)
 
+	async def block_headers(self, height):
+		"""Gets block headers."""
+
+		url_path = 'block/at/public'
+		block = await self.post(url_path, {'height': height})
+		if 'transactions' not in block:
+			raise RuntimeError(f'node returned invalid data: {block}')
+
+		del block['transactions']
+		return block
+
 	async def _transactions(self, address, mode, start_id=None):
 		url_path = f'account/transfers/{mode}?address={address}'
 		if start_id:

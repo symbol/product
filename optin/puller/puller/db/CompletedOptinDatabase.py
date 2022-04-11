@@ -45,6 +45,10 @@ class CompletedOptinDatabase:
 			optin_id integer,
 			FOREIGN KEY (optin_id) REFERENCES optin_id(id)
 		)''')  # address cannot be unique because merges are supported
+		cursor.execute('''CREATE TABLE IF NOT EXISTS nem_block_timestamps (
+			height integer PRIMARY KEY,
+			timestamp integer
+		)''')
 
 	@staticmethod
 	def _assert_balances(nem_address_dict, symbol_address_dict):
@@ -168,3 +172,30 @@ class CompletedOptinDatabase:
 		cursor = self.connection.cursor()
 		cursor.execute('''SELECT * FROM nem_source WHERE address = ?''', (address.bytes,))
 		return bool(cursor.fetchone())
+
+	def transaction_heights(self):
+		"""Gets list of transaction heights."""
+
+		cursor = self.connection.cursor()
+		heights = [row[0] for row in cursor.execute('''SELECT height FROM nem_transaction''')]
+		return set(heights)
+
+	def insert_block_timestamps(self, height_timestamp_dict):
+		"""Adds NEM height to timestamp mapping to the database."""
+
+		cursor = self.connection.cursor()
+		try:
+			cursor.executemany(
+				'''INSERT INTO nem_block_timestamps VALUES (?, ?)''',
+				list(height_timestamp_dict.items()))
+			self.connection.commit()
+		except sqlite3.IntegrityError:
+			self.connection.rollback()
+			raise
+
+	def block_timestamps(self):
+		"""Gets block timestamps."""
+
+		cursor = self.connection.cursor()
+		cursor.execute('''SELECT * FROM nem_block_timestamps ORDER BY height DESC''')
+		return cursor.fetchall()
