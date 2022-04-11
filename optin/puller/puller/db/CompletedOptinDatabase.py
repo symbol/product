@@ -97,7 +97,11 @@ class CompletedOptinDatabase:
 
 		cursor.executemany('''INSERT INTO symbol_destination VALUES (?, ?, ?, ?, ?)''', [
 			(
-				SymbolAddress(address).bytes, entry['sym-balance'], entry.get('hash', None), entry.get('height', 1), optin_id
+				SymbolAddress(address).bytes,
+				entry['sym-balance'],
+				Hash256(entry['hash']).bytes if 'hash' in entry else None,
+				entry.get('height', 1),
+				optin_id
 			) for address, entry in symbol_address_dict.items()
 		])
 

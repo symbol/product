@@ -85,6 +85,7 @@ class InProgressOptinDatabase:
 			new_status.value,
 			request.payout_transaction_hash.bytes if request.payout_transaction_hash else None))
 
+		self.connection.commit()
 		return new_status
 
 	def max_processed_height(self):

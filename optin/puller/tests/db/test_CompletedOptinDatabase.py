@@ -475,10 +475,10 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 					(NemAddress(NEM_ADDRESSES[0]).bytes, 'test-label')
 				],
 				symbol_destinations=[
-					(SymbolAddress(SYMBOL_ADDRESSES[0]).bytes, 558668349881393, MARKER_HASHES[0], 234, 1),
-					(SymbolAddress(SYMBOL_ADDRESSES[1]).bytes, 33686866144523, MARKER_HASHES[1], 345, 2),
-					(SymbolAddress(SYMBOL_ADDRESSES[2]).bytes, 26108065200000, MARKER_HASHES[2], 456, 2),
-					(SymbolAddress(SYMBOL_ADDRESSES[3]).bytes, 58303, MARKER_HASHES[3], 567, 2)
+					(SymbolAddress(SYMBOL_ADDRESSES[0]).bytes, 558668349881393, Hash256(MARKER_HASHES[0]).bytes, 234, 1),
+					(SymbolAddress(SYMBOL_ADDRESSES[1]).bytes, 33686866144523, Hash256(MARKER_HASHES[1]).bytes, 345, 2),
+					(SymbolAddress(SYMBOL_ADDRESSES[2]).bytes, 26108065200000, Hash256(MARKER_HASHES[2]).bytes, 456, 2),
+					(SymbolAddress(SYMBOL_ADDRESSES[3]).bytes, 58303, Hash256(MARKER_HASHES[3]).bytes, 567, 2)
 				]))
 
 			self.assertEqual(state['entries'], state['collected'])
@@ -510,10 +510,10 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 					(NemAddress(NEM_ADDRESSES[2]).bytes, Hash256(HASHES[0]).bytes, 333),
 				],
 				symbol_destinations=[
-					(SymbolAddress(SYMBOL_ADDRESSES[0]).bytes, 558668349881393, MARKER_HASHES[0], 234, 1),
-					(SymbolAddress(SYMBOL_ADDRESSES[1]).bytes, 33686866144523, MARKER_HASHES[1], 345, 2),
-					(SymbolAddress(SYMBOL_ADDRESSES[2]).bytes, 26108065200000, MARKER_HASHES[2], 456, 2),
-					(SymbolAddress(SYMBOL_ADDRESSES[3]).bytes, 58303, MARKER_HASHES[3], 567, 2)
+					(SymbolAddress(SYMBOL_ADDRESSES[0]).bytes, 558668349881393, Hash256(MARKER_HASHES[0]).bytes, 234, 1),
+					(SymbolAddress(SYMBOL_ADDRESSES[1]).bytes, 33686866144523, Hash256(MARKER_HASHES[1]).bytes, 345, 2),
+					(SymbolAddress(SYMBOL_ADDRESSES[2]).bytes, 26108065200000, Hash256(MARKER_HASHES[2]).bytes, 456, 2),
+					(SymbolAddress(SYMBOL_ADDRESSES[3]).bytes, 58303, Hash256(MARKER_HASHES[3]).bytes, 567, 2)
 				]))
 
 			self.assertEqual(state['entries'], state['collected'])

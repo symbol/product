@@ -7,36 +7,36 @@ set -ex
 
 mkdir -p "${DATABASE_DIRECTORY}"
 
-echo "[POPULATE_DB] populating database with preoptin data from 'preoptin.${NETWORK_NAME}.json'"
+echo "[POPULATE_DB] populating database with preoptin data from 'resources/preoptin.${NETWORK_NAME}.json'"
 echo
 
 PYTHONPATH=. python3 workflows/populate_db.py \
 	--database-directory "${DATABASE_DIRECTORY}" \
-	--optin "preoptin.${NETWORK_NAME}.json"
+	--optin "resources/preoptin.${NETWORK_NAME}.json"
 
-echo "[POPULATE_LABELS] populating database with NEM account labels from 'nem_account_labels.${NETWORK_NAME}.csv'"
+echo "[POPULATE_LABELS] populating database with NEM account labels from 'resources/nem_account_labels.${NETWORK_NAME}.csv'"
 echo
 
 PYTHONPATH=. python3 workflows/populate_labels.py \
 	--database-directory "${DATABASE_DIRECTORY}" \
-	--labels "nem_account_labels.${NETWORK_NAME}.csv"
+	--labels "resources/nem_account_labels.${NETWORK_NAME}.csv"
 
 echo
-echo "[GENERATE_POSTOPTIN] generating post optin json file 'postoptin.${NETWORK_NAME}.json'"
+echo "[GENERATE_POSTOPTIN] generating post optin json file 'resources/postoptin.${NETWORK_NAME}.json'"
 echo
 
 PYTHONPATH=. python3 workflows/generate_postoptin.py \
 	--symbol-node "${SYMBOL_NODE}" \
-	--output "postoptin.${NETWORK_NAME}.json" \
-	--optin-signer-public-keys "${OPTIN_SIGNER_PUBLIC_KEYS}"
+	--output "resources/postoptin.${NETWORK_NAME}.json" \
+	--payout-signer-public-keys "${OPTIN_SIGNER_PUBLIC_KEYS}"
 
 echo
-echo "[POPULATE_DB] populating database with postoptin data from 'postoptin.${NETWORK_NAME}.json'"
+echo "[POPULATE_DB] populating database with postoptin data from 'resources/postoptin.${NETWORK_NAME}.json'"
 echo
 
 PYTHONPATH=. python3 workflows/populate_db.py \
 	--database-directory "${DATABASE_DIRECTORY}" \
-	--optin "postoptin.${NETWORK_NAME}.json" \
+	--optin "resources/postoptin.${NETWORK_NAME}.json" \
 	--post
 
 echo
@@ -48,5 +48,5 @@ PYTHONPATH=. python3 workflows/download_postoptin.py \
 	--symbol-node "${SYMBOL_NODE}" \
 	--database-directory "${DATABASE_DIRECTORY}" \
 	--optin-address "${OPTIN_ADDRESS}" \
-	--optin-signer-public-keys "${OPTIN_SIGNER_PUBLIC_KEYS}" \
+	--payout-signer-public-keys "${OPTIN_SIGNER_PUBLIC_KEYS}" \
 	--snapshot-height "${SNAPSHOT_HEIGHT}"

@@ -39,12 +39,16 @@ class Processor:
 					is_request_group_finalized = False
 
 			if is_request_group_finalized:
+				request = request_group.requests[0]
+
 				balance = self.databases.balances.lookup_balance(address)
-				symbol_address = self.symbol_network.public_key_to_address(request_group.requests[0].destination_public_key)
+				symbol_address = self.symbol_network.public_key_to_address(request.destination_public_key)
 
 				print(f'updating completed database with mapping from {address} to {symbol_address} with amount {balance}')
 				if not self.is_dry_run:
-					self.databases.completed.insert_mapping({str(address): balance}, {str(symbol_address): balance})
+					self.databases.completed.insert_mapping(
+						{str(address): balance},
+						{str(symbol_address): {'sym-balance': balance, 'hash': str(request.payout_transaction_hash)}})
 
 		print(f'transactions completed since last run: {completed}')
 
