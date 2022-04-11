@@ -7,7 +7,7 @@ from symbolchain.nem.Network import Address, Network
 
 from puller.client.NemClient import NemClient, get_incoming_transactions_from
 
-from ..test.OptinRequestTestUtils import NEM_ADDRESSES
+from ..test.OptinRequestTestUtils import NEM_ADDRESSES, PUBLIC_KEYS
 
 # region server fixture
 
@@ -19,19 +19,19 @@ def server(event_loop, aiohttp_client):
 			self.urls = []
 
 		async def height(self, request):
-			return await self._process_get(request, {'height': 123456})
+			return await self._process(request, {'height': 123456})
 
 		async def node_info(self, request):
-			return await self._process_get(request, {'metaData': {'networkId': -104}})
+			return await self._process(request, {'metaData': {'networkId': -104}})
 
 		async def account(self, request):
-			return await self._process_get(request, {
+			return await self._process(request, {
 				'meta': {'cosignatories': NEM_ADDRESSES},
 				'account': {'balance': 0}
 			})
 
 		async def historical_account(self, request):
-			return await self._process_get(request, {'data': [{'address': NEM_ADDRESSES[0], 'balance':1234567890}]})
+			return await self._process(request, {'data': [{'address': NEM_ADDRESSES[0], 'balance':1234567890}]})
 
 		async def transfers(self, request):
 			address = Address(request.rel_url.query['address'])
@@ -40,9 +40,24 @@ def server(event_loop, aiohttp_client):
 			if Address(NEM_ADDRESSES[0]) == address:
 				data = [{'transaction': {'name': name}} for name in ['alpha', 'beta', 'zeta']]
 
-			return await self._process_get(request, {'data': data})
+			return await self._process(request, {'data': data})
 
-		async def _process_get(self, request, response_body):
+		async def block_at(self, request):
+			request_json = json.loads(await request.text())
+			block = {
+				'type': 1,
+				'signer': PUBLIC_KEYS[0],
+				'timeStamp': 200000 + request_json['height'],
+				'transactions': []
+			}
+
+			# make returned data invalid
+			if 0xDEAD == request_json['height']:
+				del block['transactions']
+
+			return await self._process(request, block)
+
+		async def _process(self, request, response_body):
 			self.urls.append(str(request.url))
 			return web.Response(body=json.dumps(response_body), headers={'Content-Type': 'application/json'})
 
@@ -56,6 +71,7 @@ def server(event_loop, aiohttp_client):
 	app.router.add_get('/account/get', mock_server.account)
 	app.router.add_get('/account/historical/get', mock_server.historical_account)
 	app.router.add_get('/account/transfers/incoming', mock_server.transfers)
+	app.router.add_post('/block/at/public', mock_server.block_at)
 	server = event_loop.run_until_complete(aiohttp_client(app))  # pylint: disable=redefined-outer-name
 
 	server.mock = mock_server
@@ -209,8 +225,32 @@ async def test_can_query_incoming_transactions_with_custom_start_id(server):  # 
 	assert [f'{server.make_url("")}/account/transfers/incoming?address={NEM_ADDRESSES[0]}&id=98765'] == server.mock.urls
 	assert [{'transaction': {'name': 'alpha'}}, {'transaction': {'name': 'beta'}}, {'transaction': {'name': 'zeta'}}] == transactions
 
+# endregion
+
+
+# region block headers
+
+async def test_can_get_block_headers(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	client = NemClient(server.make_url(''))
+
+	# Act:
+	headers = await client.block_headers(1000)
+
+	# Assert:
+	assert {'type': 1, 'signer': PUBLIC_KEYS[0], 'timeStamp': 201000} == headers
+	assert [f'{server.make_url("")}/block/at/public'] == server.mock.urls
+
+async def test_cannot_get_block_headers_when_server_returns_invalid_data(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	client = NemClient(server.make_url(''))
+
+	# Act + Assert:
+	with pytest.raises(RuntimeError):
+		await client.block_headers(0xDEAD)
 
 # endregion
+
 
 # region get_incoming_transactions_from
 

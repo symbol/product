@@ -26,6 +26,8 @@ ExpectedData = namedtuple(
 
 
 class CompletedOptinDatabaseTest(unittest.TestCase):
+	# pylint: disable=too-many-public-methods
+
 	# region create
 
 	def test_can_create_tables(self):
@@ -33,7 +35,8 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 		table_names = get_all_table_names(CompletedOptinDatabase)
 
 		# Assert:
-		self.assertEqual(set(['optin_id', 'nem_source', 'nem_label', 'nem_transaction', 'symbol_destination']), table_names)
+		self.assertEqual(
+			set(['optin_id', 'nem_source', 'nem_label', 'nem_transaction', 'nem_block_timestamps', 'symbol_destination']), table_names)
 
 	# endregion
 
@@ -81,8 +84,13 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 			for address, transaction in address_transaction_tuples:
 				database.insert_transaction(address, transaction)
 
+			heights = database.transaction_heights()
+
 			# Assert
 			self._assert_db_contents(connection, 0, expected_data)
+
+			expected_heights = set(map(lambda transaction: transaction[2], expected_data.nem_transactions))
+			self.assertEqual(expected_heights, heights)
 
 	def test_can_insert_single_transaction(self):
 		self._assert_can_insert_transactions(
@@ -622,5 +630,46 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 
 				# Assert:
 				self.assertFalse(is_opted_in)
+
+	# endregion
+
+	# region insert_timestamps
+
+	def _assert_timestamps(self, connection, expected_timestamps):
+		cursor = connection.cursor()
+		cursor.execute('''SELECT * FROM nem_block_timestamps ORDER BY height DESC''')
+		block_timestamps = cursor.fetchall()
+
+		# Assert:
+		self.assertEqual(expected_timestamps, block_timestamps)
+
+	def test_can_insert_timestamps(self):
+		# Arrange:
+		with sqlite3.connect(':memory:') as connection:
+			database = CompletedOptinDatabase(connection)
+			database.create_tables()
+
+			# Act:
+			database.insert_block_timestamps({5: 8, 6: 13, 7: 21})
+
+			# Assert:
+			self._assert_timestamps(connection, [(7, 21), (6, 13), (5, 8)])
+
+	# endregion
+
+	# region block_timestamps
+
+	def test_can_query_block_timestamps(self):
+		# Arrange:
+		with sqlite3.connect(':memory:') as connection:
+			database = CompletedOptinDatabase(connection)
+			database.create_tables()
+			database.insert_block_timestamps({5: 8, 6: 13, 7: 21})
+
+			# Act:
+			block_timestamps = database.block_timestamps()
+
+			# Assert:
+			self.assertEqual([(7, 21), (6, 13), (5, 8)], block_timestamps)
 
 	# endregion
