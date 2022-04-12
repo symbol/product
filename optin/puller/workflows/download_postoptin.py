@@ -45,6 +45,10 @@ class DownloadTransactionProcessor:
 
 		self.nem_network = await nem_client.node_network()
 		self.symbol_network = await symbol_client.node_network()
+
+		self.finalized_nem_height = await nem_client.finalized_height()
+		self.finalized_symbol_height = await symbol_client.finalized_height()
+
 		return self
 
 	async def _handle_already_paid(self, nem_transaction, destination_address, payout_transaction_info, process_result):
@@ -117,6 +121,12 @@ class DownloadTransactionProcessor:
 
 			payout_transaction_info = next((info for info in payout_transaction_infos if request_address == info.address), None)
 			if payout_transaction_info:
+				if int(payout_transaction_info.transaction['meta']['height']) > self.finalized_symbol_height:
+					print(f'{transaction_height} SUCCESS (SENT) for {process_result.address} (from {payout_signer_public_key})')
+					self.databases.inprogress.add_request(process_result)
+					self.databases.inprogress.set_request_status(process_result, OptinRequestStatus.SENT, payout_transaction_info.transaction_hash)
+					return process_result
+
 				if await self._handle_already_paid(transaction, destination_address, payout_transaction_info, process_result):
 					return process_result
 
@@ -146,9 +156,7 @@ async def main():
 	nem_client = NemClient(args.nem_node)
 	symbol_client = SymbolClient(args.symbol_node)
 
-	finalized_height = await nem_client.finalized_height()
 	snapshot_height = int(args.snapshot_height)
-
 	payout_signer_public_keys = [PublicKey(public_key) for public_key in args.payout_signer_public_keys.split(',')]
 
 	print('payout signer public keys')
@@ -164,13 +172,13 @@ async def main():
 
 		database_height = databases.inprogress.max_processed_height()
 		start_height = max(snapshot_height, database_height + 1)
-		print(f'processing opt-in transactions from {start_height} to {finalized_height}, sent to {Address(args.optin_address)}')
 
 		processor = await DownloadTransactionProcessor.create(nem_client, symbol_client, databases)
+		print(f'processing opt-in transactions from {start_height} to {processor.finalized_nem_height}, sent to {Address(args.optin_address)}')
 
 		async for transaction in get_incoming_transactions_from(nem_client, Address(args.optin_address), snapshot_height):
 			transaction_height = transaction['meta']['height']
-			if transaction_height > finalized_height:
+			if transaction_height > processor.finalized_nem_height:
 				continue
 
 			if transaction_height <= database_height:
