@@ -7,7 +7,7 @@ import VisibilitySensor from 'react-visibility-sensor';
 const Table = props => {
 
 	const checkVisible = async visible => {
-		if (visible) 
+		if (visible)
 			await props.onPage({});
 	};
 
@@ -23,12 +23,12 @@ const Table = props => {
 	);
 
 	return  (
-		<DataTable lazy={props.lazy} value={props.value} stripedRows showGridlines responsiveLayout="stack" 
+		<DataTable lazy={props.lazy} value={props.value} stripedRows showGridlines responsiveLayout="scroll"
 			breakpoint={props.breakpoint} paginator={props.paginator}
 			paginatorTemplate="CurrentPageReport FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink RowsPerPageDropdown"
-			currentPageReportTemplate="Showing {first}-{last} of {totalRecords}" rows={props.rows} 
-			rowsPerPageOptions={props.rowsPerPageOptions}	onPage={props.onPage} 
-			loading={props.loading} totalRecords={props.totalRecords} first={props.first} header={props.header} 
+			currentPageReportTemplate="Showing {first}-{last} of {totalRecords}" rows={props.rows}
+			rowsPerPageOptions={props.rowsPerPageOptions}	onPage={props.onPage}
+			loading={props.loading} totalRecords={props.totalRecords} first={props.first} header={props.header}
 			emptyMessage={props.emptyMessage} footer={footer}>
 			{props.children}
 		</DataTable>
