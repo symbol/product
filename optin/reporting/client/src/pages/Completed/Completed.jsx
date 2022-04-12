@@ -17,7 +17,7 @@ const Completed = ({defaultPaginationType}) => {
 		data: [],
 		pagination: {
 			pageNumber: 1,
-			pageSize: 25,
+			pageSize: config.defaultPageSize,
 			totalRecord: 0
 		}
 	});
@@ -25,7 +25,7 @@ const Completed = ({defaultPaginationType}) => {
 	const [filterOptinType, setFilterOptinType] = useState('');
 	const [downloading, setDownloading] = useState(false);
 
-	const fetchCompleted = async ({pageSize = 25, pageNumber = 1}) => {
+	const fetchCompleted = async ({pageSize = config.defaultPageSize, pageNumber = 1}) => {
 		const [nemAddress, symbolAddress, transactionHash] = parseFilterSearch(filterSearch);
 		return await fetch(`/api/completed?pageSize=${pageSize}&pageNumber=${pageNumber}
 		&nemAddress=${nemAddress}&symbolAddress=${symbolAddress}&transactionHash=${transactionHash}&optinType=${filterOptinType}`)
@@ -76,7 +76,7 @@ const Completed = ({defaultPaginationType}) => {
 	};
 
 	const onFilterSubmit = async () => {
-		await handlePageChange({page: 1, rows: 25});
+		await handlePageChange({page: 1, rows: config.defaultPageSize});
 	};
 
 	const downloadAllAsCSV = async () => {

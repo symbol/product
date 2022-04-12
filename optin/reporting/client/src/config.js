@@ -1,5 +1,5 @@
 const config = {
-	language : {
+	language: {
 		nemAddress: 'NEM Address',
 		nemBalance: 'NEM Balance',
 		symbolAddress: 'Symbol Address',
@@ -21,7 +21,8 @@ const config = {
 		nemBalance: 'relative',
 		symbolBalance: 'relative',
 		optinTransactionHash: 'uppercase'
-	}
+	},
+	defaultPageSize: 1000
 };
 
 export default config;
