@@ -5,6 +5,26 @@
 
 set -ex
 
+echo
+echo "[DOWNLOAD_POSTOPTIN] downloading post optin data from optin address '${OPTIN_ADDRESS}'"
+echo
+
+PYTHONPATH=. python3 workflows/download_postoptin.py \
+	--nem-node "${NEM_NODE}" \
+	--symbol-node "${SYMBOL_NODE}" \
+	--database-directory "${DATABASE_DIRECTORY}" \
+	--optin-address "${OPTIN_ADDRESS}" \
+	--payout-signer-public-keys "${OPTIN_SIGNER_PUBLIC_KEYS}" \
+	--snapshot-height "${SNAPSHOT_HEIGHT}"
+
+echo
+echo "[DOWNLOAD_NEM_TIMESTAMPS] downloading nem block timestamps"
+echo
+
+PYTHONPATH=. python3 workflows/download_nem_timestamps.py \
+	--nem-node "${NEM_NODE}" \
+	--database-directory "${DATABASE_DIRECTORY}"
+
 echo "[GET_ACCOUNT_STATES] populating database with account states from '${NEM_NODE}' at snapshot height ${SNAPSHOT_HEIGHT}"
 echo
 
