@@ -72,7 +72,7 @@ const Completed = ({defaultPaginationType}) => {
 
 	const onFilterChange = e => {
 		const {value} = e.target;
-		setFilterSearch(value);
+		setFilterSearch(value.trim());
 	};
 
 	const onFilterSubmit = async () => {
@@ -82,6 +82,12 @@ const Completed = ({defaultPaginationType}) => {
 	const downloadAllAsCSV = async () => {
 		await Helper.downloadAllAsCSV({apiUrl: '/api/completed/download', fileName: 'optin-completed.csv', setDownloading});
 	};
+
+	const keyPress = e => {
+		if (e.key === "Enter") {
+			onFilterSubmit()
+		}
+	}
 
 	// const onPaginationTypeChange = async e => {
 	// 	setPaginationType(e.value ? 'scroll' : 'paginator');
@@ -129,7 +135,7 @@ const Completed = ({defaultPaginationType}) => {
 					<i className="pi pi-search" />
 					<span className="p-input-icon-right">
 						<i className="pi pi-times" onClick={() => setFilterSearch('')}/>
-						<InputText value={filterSearch} onChange={onFilterChange}
+						<InputText value={filterSearch} onChange={onFilterChange} onKeyPress={keyPress}
 							placeholder="NEM Address / Symbol Address / Transaction Hash" className='w-28rem' />
 					</span>
 				</span>
@@ -165,7 +171,7 @@ const Completed = ({defaultPaginationType}) => {
 			<TableColumn field="symbolAddress" header="Symbol Address" body={symbolAddressTemplate} align="left"/>
 			<TableColumn field="symbolHashes" header="Hash" body={symbolHashesTemplate} align="left"/>
 			<TableColumn field="symbolBalance" header="Balance" body={symbolBalanceTemplate} align="right"/>
-			<TableColumn field="isPostoptin" header="Opt-in Type" body={isPostoptinTemplate} align="right"/>
+			<TableColumn field="isPostoptin" header="Opt-in Type" body={isPostoptinTemplate} align="center"/>
 		</Table>
 	);
 };
