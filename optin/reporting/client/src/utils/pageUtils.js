@@ -82,7 +82,11 @@ export const transactionHashTemplate = (rowData, key, config) => {
 
 export const optinTypeTemplate = (rowData, key) => {
 	const isPostoptin = rowData[key] ? 'Post-launch' : 'Pre-launch';
-	return (<div> { isPostoptin } </div>);
+
+	const badgeType = 'Post-launch' === isPostoptin ? 'info' : '';
+	const badgeClass = `p-badge p-badge-${badgeType}`;
+
+	return (<div> <span className={badgeClass}>{isPostoptin}</span> </div>);
 };
 
 export const infoTemplate = (rowData, key) => {
