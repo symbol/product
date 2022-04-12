@@ -82,7 +82,8 @@ class DownloadTransactionProcessor:
 					str(destination_address): {
 						'sym-balance': payout_amount,
 						'hash': str(payout_transaction_hash),
-						'height': payout_transaction_info.transaction['meta']['height']
+						'height': payout_transaction_info.transaction['meta']['height'],
+						'timestamp': payout_transaction_info.transaction['meta']['timestamp']
 					}
 				},
 				{str(source_address): [nem_transaction]}
@@ -121,8 +122,11 @@ class DownloadTransactionProcessor:
 
 			payout_transaction_info = next((info for info in payout_transaction_infos if request_address == info.address), None)
 			if payout_transaction_info:
-				if payout_transaction_info['meta']['height'] > self.finalized_symbol_height:
-					continue
+				if int(payout_transaction_info.transaction['meta']['height']) > self.finalized_symbol_height:
+					print(f'{transaction_height} SUCCESS (SENT) for {process_result.address} (from {payout_signer_public_key})')
+					self.databases.inprogress.add_request(process_result)
+					self.databases.inprogress.set_request_status(process_result, OptinRequestStatus.SENT, payout_transaction_info.transaction_hash)
+					return process_result
 
 				if await self._handle_already_paid(transaction, destination_address, payout_transaction_info, process_result):
 					return process_result

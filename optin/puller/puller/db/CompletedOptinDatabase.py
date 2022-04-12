@@ -42,6 +42,7 @@ class CompletedOptinDatabase:
 			balance integer,
 			hash blob,
 			height integer,
+			timestamp integer,
 			optin_id integer,
 			FOREIGN KEY (optin_id) REFERENCES optin_id(id)
 		)''')  # address cannot be unique because merges are supported
@@ -99,12 +100,13 @@ class CompletedOptinDatabase:
 			(NemAddress(address).bytes, balance, optin_id) for address, balance in nem_address_dict.items()
 		])
 
-		cursor.executemany('''INSERT INTO symbol_destination VALUES (?, ?, ?, ?, ?)''', [
+		cursor.executemany('''INSERT INTO symbol_destination VALUES (?, ?, ?, ?, ?, ?)''', [
 			(
 				SymbolAddress(address).bytes,
 				entry['sym-balance'],
 				Hash256(entry['hash']).bytes if 'hash' in entry else None,
 				entry.get('height', 1),
+				entry.get('timestamp', 0),
 				optin_id
 			) for address, entry in symbol_address_dict.items()
 		])

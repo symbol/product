@@ -44,11 +44,20 @@ class Processor:
 				balance = self.databases.balances.lookup_balance(address)
 				symbol_address = self.symbol_network.public_key_to_address(request.destination_public_key)
 
+				metadata = await self.client.transaction_confirmed_metadata(request.payout_transaction_hash)
+
 				print(f'updating completed database with mapping from {address} to {symbol_address} with amount {balance}')
 				if not self.is_dry_run:
 					self.databases.completed.insert_mapping(
 						{str(address): balance},
-						{str(symbol_address): {'sym-balance': balance, 'hash': str(request.payout_transaction_hash)}})
+						{
+							str(symbol_address): {
+								'sym-balance': balance,
+								'hash': str(request.payout_transaction_hash),
+								'height': metadata['height'],
+								'timestamp': metadata['timestamp']
+							}
+						})
 
 		print(f'transactions completed since last run: {completed}')
 
