@@ -40,9 +40,13 @@ const controller = {
 		const { nemAddress, symbolAddress, transactionHash } = req.query;
 
 		try {
-			const nemAddressHex = nemAddress ? byteToHexString(new NemFacade.Address(nemAddress).bytes) : null;
-			const symbolAddressHex = symbolAddress ? byteToHexString(new SymbolFacade.Address(symbolAddress).bytes) : null;
-			const txHash = transactionHash ?? null;
+			const nemAddressHex = nemAddress
+				? byteToHexString(new NemFacade.Address(nemAddress.toUpperCase().trim()).bytes)
+				: null;
+			const symbolAddressHex = symbolAddress
+				? byteToHexString(new SymbolFacade.Address(symbolAddress.toUpperCase().trim()).bytes)
+				: null;
+			const txHash = transactionHash.toUpperCase().trim() ?? null;
 
 			const totalRecord = await completedDB.getTotalRecord();
 
