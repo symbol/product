@@ -66,4 +66,5 @@ PYTHONPATH=. python3 -m workflows.payout \
 	--symbol-node "${SYMBOL_NODE}" \
 	--database-directory "${DATABASE_DIRECTORY}" \
 	--network "${NETWORK_NAME}" \
+	--csv-output "resources/payout.${NETWORK_NAME}.csv" \
 	--hot "${HOT_WALLET_PATH}"

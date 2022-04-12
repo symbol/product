@@ -25,13 +25,16 @@ def get_key_pair(filepath):
 
 
 class Processor:
-	def __init__(self, databases, client, symbol_network, transaction_preparer):
+	# pylint: disable=too-many-instance-attributes
+
+	def __init__(self, databases, client, symbol_network, transaction_preparer, csv_output):
 		# pylint: disable=too-many-arguments
 
 		self.databases = databases
 		self.client = client
 		self.symbol_network = symbol_network
 		self.transaction_preparer = transaction_preparer
+		self.csv_output = csv_output
 		self.is_dry_run = True
 
 		self.total_amount = 0
@@ -113,6 +116,10 @@ class Processor:
 		else:
 			await self.client.announce(transaction.serialize())
 
+		if self.csv_output:
+			with open(self.csv_output, 'at', encoding='utf8') as csv_outfile:
+				csv_outfile.write(f'{nem_address};{destination_address};{transaction.mosaics[0].amount.value / 1000000:,.6f}\n')
+
 		return transaction_hash
 
 
@@ -173,6 +180,7 @@ async def main():
 	parser.add_argument('--database-directory', help='output database directory', default='_temp')
 	parser.add_argument('--network', help='NEM and Symbol network', choices=['testnet', 'mainnet'], default='mainnet')
 	parser.add_argument('--hot', help='path to password-protected hot wallet PEM file', default='hotwallet.pem')
+	parser.add_argument('--csv-output', help='csv file output (optional)')
 	parser.add_argument('--dry-run', help='print transactions without sending', action='store_true')
 	args = parser.parse_args()
 
@@ -189,10 +197,10 @@ async def main():
 	if not request_user_consent('continue'):
 		return
 
-	transaction_preparer = TransactionPreparer(args.network, currency_mosaic_id, funder_key_pair,)
+	transaction_preparer = TransactionPreparer(args.network, currency_mosaic_id, funder_key_pair)
 
 	with Databases(args.database_directory) as databases:
-		processor = Processor(databases, client, symbol_network, transaction_preparer)
+		processor = Processor(databases, client, symbol_network, transaction_preparer, args.csv_output)
 		sent_requests = group_requests(nem_network, databases.inprogress.get_requests_by_status(OptinRequestStatus.SENT))
 		unprocessed_requests = group_requests(
 			nem_network,
