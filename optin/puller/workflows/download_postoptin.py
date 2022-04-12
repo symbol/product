@@ -82,7 +82,8 @@ class DownloadTransactionProcessor:
 					str(destination_address): {
 						'sym-balance': payout_amount,
 						'hash': str(payout_transaction_hash),
-						'height': payout_transaction_info.transaction['meta']['height']
+						'height': payout_transaction_info.transaction['meta']['height'],
+						'timestamp': payout_transaction_info.transaction['meta']['timestamp']
 					}
 				},
 				{str(source_address): [nem_transaction]}

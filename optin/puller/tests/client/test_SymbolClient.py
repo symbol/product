@@ -89,6 +89,9 @@ def server(event_loop, aiohttp_client):
 				}]
 			})
 
+		async def transaction_confirmed(self, request):
+			return await self._process(request, {'meta': {'height': 1234}, 'transaction': {'message': 'foo'}})
+
 		async def _process(self, request, response_body):
 			self.urls.append(str(request.url))
 			return web.Response(body=json.dumps(response_body), headers={'Content-Type': 'application/json'})
@@ -107,6 +110,7 @@ def server(event_loop, aiohttp_client):
 	app.router.add_put('/transactions', mock_server.transactions)
 	app.router.add_post('/transactionStatus', mock_server.transaction_statuses)
 	app.router.add_get('/transactions/confirmed', mock_server.transactions_confirmed)
+	app.router.add_get(f'/transactions/confirmed/{HASHES[0]}', mock_server.transaction_confirmed)
 	server = event_loop.run_until_complete(aiohttp_client(app))  # pylint: disable=redefined-outer-name
 
 	server.mock = mock_server
@@ -306,6 +310,21 @@ async def test_can_query_transaction_statuses(server):  # pylint: disable=redefi
 	assert 'Success' == transaction_statuses[2]['code']
 	assert str(HASHES[1]) == transaction_statuses[2]['hash']
 	assert '111003' == transaction_statuses[2]['height']
+
+# endregion
+
+
+# region transaction_confirmed_metadata
+
+async def test_transaction_confirmed_metadata(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	client = SymbolClient(server.make_url(''))
+
+	# Act:
+	metadata = await client.transaction_confirmed_metadata(Hash256(HASHES[0]))
+
+	# Assert:
+	assert {'height': 1234} == metadata
 
 # endregion
 
