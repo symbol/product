@@ -57,6 +57,14 @@ class Processor:
 								'height': metadata['height'],
 								'timestamp': metadata['timestamp']
 							}
+						},
+						{
+							str(address): [
+								{
+									'hash': str(request.optin_transaction_hash),
+									'height': request.optin_transaction_height
+								}
+							] for request in request_group.requests
 						})
 
 		print(f'transactions completed since last run: {completed}')
