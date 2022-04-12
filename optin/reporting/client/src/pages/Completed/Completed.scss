@@ -1,0 +1,17 @@
+@import '../../styles/variables';
+
+.SearchBox {
+  width: 28rem !important;
+}
+
+@media #{$screen-mobile} {
+  .SearchBox {
+    max-width: 13rem !important;
+  }
+}
+
+@media #{$screen-tablet-sm} {
+  .SearchBox {
+    max-width: 20rem !important;
+  }
+}
