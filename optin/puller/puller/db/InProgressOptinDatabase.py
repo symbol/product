@@ -53,6 +53,7 @@ class InProgressOptinDatabase:
 			error.optin_transaction_hash.bytes,
 			error.address.bytes,
 			error.message))
+		self.connection.commit()
 
 	def add_request(self, request):
 		"""Adds a request to the request table."""

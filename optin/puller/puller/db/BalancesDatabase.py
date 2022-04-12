@@ -23,6 +23,7 @@ class BalancesDatabase:
 
 		cursor = self.connection.cursor()
 		cursor.execute('''INSERT INTO snapshot_balances VALUES (?, ?)''', (address.bytes, balance))
+		self.connection.commit()
 
 	def addresses(self):
 		"""Gets all addresses with a balance entry."""

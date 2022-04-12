@@ -124,9 +124,23 @@ class InProgressOptinDatabaseTest(unittest.TestCase):
 			database.add_error(make_request_error(0, 'this is an error message'))
 			database.add_error(make_request_error(1, 'this is another error message'))
 
-			# Act:
+			# Act + Assert:
 			with self.assertRaises(sqlite3.IntegrityError):
 				database.add_error(make_request_error(2, 'error message', hash_index=0))
+
+	def test_cannot_add_multiple_errors_with_same_transaction_hash_simulate_file_access(self):
+		# Arrange:
+		with sqlite3.connect('file:mem1?mode=memory&cache=shared', uri=True) as connection:
+			database = InProgressOptinDatabase(connection)
+			database.create_tables()
+
+			database.add_error(make_request_error(0, 'this is an error message'))
+
+			# Act + Assert:
+			with sqlite3.connect('file:mem1?mode=memory&cache=shared', uri=True) as connection2:
+				with self.assertRaises(sqlite3.IntegrityError):
+					database2 = InProgressOptinDatabase(connection2)
+					database2.add_error(make_request_error(0, 'this is different error message'))
 
 	# endregion
 
@@ -166,7 +180,7 @@ class InProgressOptinDatabaseTest(unittest.TestCase):
 			database.add_request(make_request(0, {'type': 100, 'destination': PUBLIC_KEYS[0]}))
 			database.add_request(make_request(1, {'type': 100, 'destination': PUBLIC_KEYS[1]}))
 
-			# Act:
+			# Act + Assert:
 			with self.assertRaises(sqlite3.IntegrityError):
 				database.add_request(make_request(2, {'type': 100, 'destination': PUBLIC_KEYS[2]}, hash_index=0))
 

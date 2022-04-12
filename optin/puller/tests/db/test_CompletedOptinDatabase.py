@@ -599,6 +599,25 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 				(NemAddress(NEM_ADDRESSES[2]).bytes, 'orange')
 			], nem_labels)
 
+	def test_can_update_new_account_simulate_file_access(self):
+		# Arrange:
+		with sqlite3.connect('file:mem1?mode=memory&cache=shared', uri=True) as connection:
+			database = self._prepare_database_for_set_label_test(connection)
+			database.set_label(NemAddress(NEM_ADDRESSES[0]), 'orange')
+
+			# Act:
+			with sqlite3.connect('file:mem1?mode=memory&cache=shared', uri=True) as connection2:
+				database2 = CompletedOptinDatabase(connection2)
+				database2.set_label(NemAddress(NEM_ADDRESSES[0]), 'yellow')
+
+				# Assert:
+				nem_labels = self._query_all_labels(connection)
+				self.assertEqual([
+					(NemAddress(NEM_ADDRESSES[0]).bytes, 'yellow'),
+					(NemAddress(NEM_ADDRESSES[1]).bytes, 'red'),
+					(NemAddress(NEM_ADDRESSES[2]).bytes, 'blue')
+				], nem_labels)
+
 	# endregion
 
 	# region is_opted_in

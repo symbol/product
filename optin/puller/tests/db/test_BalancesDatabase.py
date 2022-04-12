@@ -61,9 +61,20 @@ class BalancesDatabaseTest(unittest.TestCase):
 		with sqlite3.connect(':memory:') as connection:
 			database = self._create_database(connection, [(NemAddress(NEM_ADDRESSES[0]), 112233445566)])
 
-			# Act:
+			# Act + Assert:
 			with self.assertRaises(sqlite3.IntegrityError):
 				database.add_account_balance(NemAddress(NEM_ADDRESSES[0]), 77889900)
+
+	def test_cannot_insert_same_account_multiple_times_simulate_file_access(self):
+		# Arrange:
+		with sqlite3.connect('file:mem1?mode=memory&cache=shared', uri=True) as connection:
+			self._create_database(connection, [(NemAddress(NEM_ADDRESSES[0]), 112233445566)])
+
+			# Act + Assert:
+			with sqlite3.connect('file:mem1?mode=memory&cache=shared', uri=True) as connection2:
+				with self.assertRaises(sqlite3.IntegrityError):
+					database2 = BalancesDatabase(connection2)
+					database2.add_account_balance(NemAddress(NEM_ADDRESSES[0]), 77889900)
 
 	# endregion
 

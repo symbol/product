@@ -167,6 +167,7 @@ class CompletedOptinDatabase:
 			ON CONFLICT(address)
 			DO UPDATE SET label=?
 		''', (address.bytes, label, label))
+		self.connection.commit()
 
 	def is_opted_in(self, address):
 		"""Returns True if specified address has already opted-in."""
