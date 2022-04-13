@@ -1,4 +1,3 @@
-import './Completed.scss';
 import Table from '../../components/Table';
 import TableColumn from '../../components/Table/TableColumn';
 import config from '../../config';
@@ -137,7 +136,7 @@ const Completed = ({defaultPaginationType}) => {
 					<span className="p-input-icon-right">
 						<i className="pi pi-times" onClick={() => setFilterSearch('')}/>
 						<InputText value={filterSearch} onChange={onFilterChange} onKeyPress={keyPress}
-							placeholder="NEM Address / Symbol Address / Transaction Hash" className='SearchBox' />
+							placeholder="NEM Address / Symbol Address / Transaction Hash" className='w-28rem' />
 					</span>
 				</span>
 				<div className='field'>
