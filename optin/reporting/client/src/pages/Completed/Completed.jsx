@@ -11,7 +11,7 @@ import React, { useState, useEffect } from 'react';
 const Completed = ({defaultPaginationType}) => {
 	const [loading, setLoading] = useState(true);
 	const [first, setFirst] = useState(1);
-	const [paginationType, setPaginationType] = useState(defaultPaginationType);
+	const [paginationType] = useState(defaultPaginationType);
 
 	const [completed, setCompleted] = useState({
 		data: [],
@@ -29,7 +29,7 @@ const Completed = ({defaultPaginationType}) => {
 		const [nemAddress, symbolAddress, transactionHash] = parseFilterSearch(filterSearch);
 		return await fetch(`/api/completed?pageSize=${pageSize}&pageNumber=${pageNumber}
 		&nemAddress=${nemAddress}&symbolAddress=${symbolAddress}&transactionHash=${transactionHash}&optinType=${filterOptinType}`)
-		.then(res => res.json());
+			.then(res => res.json());
 	};
 
 	const parseFilterSearch = filterSearch => {
@@ -82,11 +82,6 @@ const Completed = ({defaultPaginationType}) => {
 	const downloadAllAsCSV = async () => {
 		await Helper.downloadAllAsCSV({apiUrl: '/api/completed/download', fileName: 'optin-completed.csv', setDownloading});
 	};
-
-	// const onPaginationTypeChange = async e => {
-	// 	setPaginationType(e.value ? 'scroll' : 'paginator');
-	// 	await onFilterSubmit();
-	// };
 
 	const nemAddressTemplate = rowData => {
 		return addressTemplate(rowData, 'nemAddress', config);
@@ -142,11 +137,6 @@ const Completed = ({defaultPaginationType}) => {
 
 			</div>
 			<div className="formgroup-inline">
-				{/* <div className="card" style={{marginRight: '20px'}}>
-					<h5 style={{margin: 0, marginLeft: '-15px', color: '#b4b2b2'}}>Infinite Scroll</h5>
-					<InputSwitch checked={'scroll' === paginationType}
-						onChange={onPaginationTypeChange}/>
-				</div> */}
 				<Button type="button" icon="pi pi-download" className="p-button-outlined" onClick={downloadAllAsCSV}
 					loading={downloading} tooltip="Download All Data as CSV File" tooltipOptions={{position: 'top'}}/>
 			</div>

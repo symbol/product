@@ -1,8 +1,19 @@
 import Helper from './helper';
+import {Button} from 'primereact/button';
 import React from 'react';
 
 const copyButton = value => {
-	return <i className="pi pi-copy copy-button" onClick={() =>   navigator.clipboard.writeText(value)}></i>;
+	const onCopyHandler = () => {
+		Helper.copyToClipboard(value);
+	};
+	if (!value) 
+		return undefined;
+	return (
+		<React.Fragment>
+			<Button icon="pi pi-copy" className="p-button-text copy-button" 
+				tooltip='Copy' onClick={onCopyHandler} />
+		</React.Fragment>
+	);
 };
 export const addressTemplate = (rowData, key, config) => {
 	const list = Array.isArray(rowData[key]) ? rowData[key] : [rowData[key]];
@@ -10,7 +21,7 @@ export const addressTemplate = (rowData, key, config) => {
 		<React.Fragment>
 			{
 				list.map(address => <div className='flex flex-row list-item'>
-					<a href={config.keyRedirects[key] + address} target="_blank" rel="noreferrer">
+					<a href={config.keyRedirects[key] + address} target="_blank" rel="noreferrer" className='address'>
 						{address}
 					</a>
 					{copyButton(address)}
