@@ -22,7 +22,7 @@ const config = {
 		symbolBalance: 'relative',
 		optinTransactionHash: 'uppercase'
 	},
-	defaultPageSize: 1000
+	defaultPageSize: 200
 };
 
 export default config;
