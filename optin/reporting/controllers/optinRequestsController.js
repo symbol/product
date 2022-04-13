@@ -95,6 +95,9 @@ const controller = {
 			label: 'Hash',
 			value: 'optinTransactionHash'
 		}, {
+			label: 'Payout Hash',
+			value: 'payoutTransactionHash'
+		}, {
 			label: 'Message',
 			value: 'message'
 		}];

@@ -4,7 +4,6 @@ import config from '../../config';
 import Helper from '../../utils/helper';
 import { addressTemplate, transactionHashTemplate } from '../../utils/pageUtils';
 import { Button } from 'primereact/button';
-import { InputSwitch } from 'primereact/inputswitch';
 import { InputText } from 'primereact/inputtext';
 import { SelectButton } from 'primereact/selectbutton';
 import React, { useEffect, useState } from 'react';
@@ -12,7 +11,8 @@ import React, { useEffect, useState } from 'react';
 const Requests = ({defaultPaginationType}) => {
 	const [loading, setLoading] = useState(true);
 	const [first, setFirst] = useState(1);
-	const [paginationType, setPaginationType] = useState(defaultPaginationType);
+	const [paginationType] = useState(defaultPaginationType);
+	const [allPagesLoaded, setAllPagesLoaded] = useState(false);
 
 	const [requests, setRequests] = useState({
 		data: [],
@@ -25,9 +25,10 @@ const Requests = ({defaultPaginationType}) => {
 	const [filterSearch, setFilterSearch] = useState('');
 	const [filterStatus, setFilterStatus] = useState('');
 	const [downloading, setDownloading] = useState(false);
+	const [invalidFilterSearch, setInvalidFilterSearch] = useState(false);
 
 	const fetchOptinRequests = async ({pageSize = 25, pageNumber = 1}) => {
-		const [nemAddress, transactionHash] = parseFilterSearch(filterSearch);
+		const [nemAddress, transactionHash] = parseFilterSearch(filterSearch?.trim());
 		return await fetch(`/api/requests?pageSize=${pageSize}&pageNumber=${pageNumber}
       &nemAddress=${nemAddress}&transactionHash=${transactionHash}&status=${filterStatus ?? ''}`).then(res => res.json());
 	};
@@ -41,18 +42,18 @@ const Requests = ({defaultPaginationType}) => {
 	};
 
 	const handlePageChange = async ({page, rows, first}) => {
-		const nextPage = 	page ?? (requests.pagination.pageNumber || 0) + 1;
+		const nextPage = page ?? (requests.pagination.pageNumber || 0) + 1;
 		setLoading(true);
 		setFirst(first);
 		const result = await fetchOptinRequests({
 			pageNumber: nextPage,
 			pageSize: rows
 		});
-
+		setAllPagesLoaded(!result.data || 0 === result.data.length);
 		if ('scroll' === paginationType && 1 !== nextPage) 
 			setRequests({data: [...requests.data, ...result.data], pagination: result.pagination});  
 		else
-		  setRequests(result);
+			setRequests(result);
 		setLoading(false);
 	};
 
@@ -68,22 +69,39 @@ const Requests = ({defaultPaginationType}) => {
 		setLoading(false);
 	}, []);
 
-	const onFilterChange = e => {
+	const validateFilterSearch = value => {
+		return !parseFilterSearch(value).every(v => '' === v);
+	};
+	
+	const onFilterSearchChange = e => {
 		const {value} = e.target;
-		setFilterSearch(value);
+		
+		setInvalidFilterSearch(value ? !validateFilterSearch(value) : false);
+		setFilterSearch(value ?? '');
+		setFilterStatus(''); // reset filter status
 	};
 
-	const onFilterSubmit = async () => {
+	const clearFilterSearch = () => {
+		onFilterSearchChange({target: ''});
+	};
+	
+	const onFilterStatusChange = e => {
+		clearFilterSearch();
+		setFilterStatus(e.value);
+	};
+	
+	const onFilterSubmit = async e => {
+		if (e)
+			e.preventDefault();
 		await handlePageChange({page: 1, rows: 25});
 	};
+	
+	useEffect(() => {
+		onFilterSubmit();
+	}, [filterStatus]);
 
 	const downloadAllAsCSV = async () => {
 		await Helper.downloadAllAsCSV({apiUrl: '/api/requests/download', fileName: 'optin-requests.csv', setDownloading});
-	};
-
-	const onPaginationTypeChange = async e => {
-		setPaginationType(e.value ? 'scroll' : 'paginator');
-		await onFilterSubmit();
 	};
 
 	const nemAddressTemplate = rowData => {
@@ -112,42 +130,43 @@ const Requests = ({defaultPaginationType}) => {
 	const statuses = [{label: 'Pending', value: 'Pending'}, {label: 'Sent', value: 'Sent'}, {label: 'Error', value: 'Error'}];
 	
 	const header = (
-		<div className='flex justify-content-between'>
-			<div className="formgroup-inline">
-				<span className="p-input-icon-left field">
-					<i className="pi pi-search" />
-					<span className="p-input-icon-right">
-						<i className="pi pi-times" onClick={() => setFilterSearch('')}/>
-						<InputText value={filterSearch} onChange={onFilterChange} placeholder="NEM Address / Transaction Hash" 
-							className='w-28rem' />
+		<form onSubmit={onFilterSubmit}>
+			<div className='flex flex-wrap md:justify-content-between'>
+				<div className="flex-row w-full lg:w-8 xl:w-6">
+					<span className="p-input-icon-right w-10">
+						<i className="pi pi-times" onClick={clearFilterSearch}/>
+						<InputText id="filterSearch" value={filterSearch} onChange={onFilterSearchChange} className="w-full"
+							placeholder="NEM Address / Transaction Hash" aria-describedby="filterSearch-help"/>
 					</span>
-				</span>
-				<div className='field'>
-					<SelectButton optionLabel="label" optionValue="value" value={filterStatus} options={statuses} 
-						onChange={e => setFilterStatus(e.value)}></SelectButton>
+					<span className="ml-1 w-2">
+						<Button type="submit" icon="pi pi-search" className="p-button-outlined" disabled={invalidFilterSearch}/>
+					</span>
+					{
+						invalidFilterSearch && 
+							<small id="filterSearch-help" className="p-error block">Invalid NEM Address or Transaction Hash.</small>
+					}
 				</div>
-				<Button type="button" icon="pi pi-search" className="p-button-outlined" onClick={onFilterSubmit} />
-
+				<div>
+					<div className="flex flex-wrap justify-content-between">
+						<SelectButton optionLabel="label" optionValue="value" value={filterStatus} options={statuses} 
+							onChange={onFilterStatusChange}></SelectButton>
+						<Button type="button" icon="pi pi-download" className="ml-6 p-button-outlined download-button"
+							onClick={downloadAllAsCSV} loading={downloading} tooltip="Download All Data as CSV File" 
+							tooltipOptions={{position: 'top'}} />
+					</div>
+				</div>
 			</div>
-			<div className="formgroup-inline">
-				{/* <div className="card" style={{marginRight: '20px'}}>
-					<h5 style={{margin: 0, marginLeft: '-15px', color: '#b4b2b2'}}>Infinite Scroll</h5>
-					<InputSwitch checked={'scroll' === paginationType} 
-						onChange={onPaginationTypeChange}/>
-				</div> */}
-				<Button type="button" icon="pi pi-download" className="p-button-outlined" onClick={downloadAllAsCSV} 
-					loading={downloading} tooltip="Download All Data as CSV File" tooltipOptions={{position: 'top'}}/>
-			</div>
-		</div>
+		</form>
 	);
 
 	return (
 		<Table value={requests.data} rows={requests.pagination.pageSize} onPage={handlePageChange}
-			loading={loading} totalRecords={requests.pagination.totalRecord} paginator={'paginator' === paginationType}
+			loading={loading} allPagesLoaded={allPagesLoaded} loadingMessage="Loading more items..." 
+			totalRecords={requests.pagination.totalRecord} paginator={'paginator' === paginationType}
 			first={first} header={header}>
 			<TableColumn field="nemAddress" header="NEM Address" body={nemAddressTemplate} align="left"/>
-			<TableColumn field="optinTransactionHash" header="Optin Transaction Hash" body={optinTransactionHashTemplate} align="left"/>
-			<TableColumn field="payoutTransactionHash" header="Payout Transaction Hash" body={payoutTransactionHashTemplate} align="left"/>
+			<TableColumn field="optinTransactionHash" header="Optin Hash" body={optinTransactionHashTemplate} align="left"/>
+			<TableColumn field="payoutTransactionHash" header="Payout Hash" body={payoutTransactionHashTemplate} align="left"/>
 			<TableColumn field="status" header="Status" body={statusTemplate} align="center"/>
 			<TableColumn field="message" header="Message" align="left"/>
 		</Table>
