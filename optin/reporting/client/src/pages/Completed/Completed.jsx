@@ -12,6 +12,7 @@ const Completed = ({defaultPaginationType}) => {
 	const [loading, setLoading] = useState(true);
 	const [first, setFirst] = useState(1);
 	const [paginationType] = useState(defaultPaginationType);
+	const [allPagesLoaded, setAllPagesLoaded] = useState(false);
 
 	const [completed, setCompleted] = useState({
 		data: [],
@@ -24,9 +25,10 @@ const Completed = ({defaultPaginationType}) => {
 	const [filterSearch, setFilterSearch] = useState('');
 	const [filterOptinType, setFilterOptinType] = useState('');
 	const [downloading, setDownloading] = useState(false);
+	const [invalidFilterSearch, setInvalidFilterSearch] = useState(false);
 
 	const fetchCompleted = async ({pageSize = config.defaultPageSize, pageNumber = 1}) => {
-		const [nemAddress, symbolAddress, transactionHash] = parseFilterSearch(filterSearch);
+		const [nemAddress, symbolAddress, transactionHash] = parseFilterSearch(filterSearch?.trim());
 		return await fetch(`/api/completed?pageSize=${pageSize}&pageNumber=${pageNumber}
 		&nemAddress=${nemAddress}&symbolAddress=${symbolAddress}&transactionHash=${transactionHash}&optinType=${filterOptinType}`)
 			.then(res => res.json());
@@ -43,13 +45,15 @@ const Completed = ({defaultPaginationType}) => {
 	};
 
 	const handlePageChange = async ({page, rows, first}) =>{
-		const nextPage = 	page ?? (completed.pagination.pageNumber || 0) + 1;
+		const nextPage = page ?? (completed.pagination.pageNumber || 0) + 1;
 		setLoading(true);
 		setFirst(first);
 		const result = await fetchCompleted({
 			pageNumber: nextPage,
 			pageSize: rows
 		});
+
+		setAllPagesLoaded(!result.data || 0 === result.data.length);
 
 		if ('scroll' === paginationType && 1 !== nextPage)
 			setCompleted({data: [...completed.data, ...result.data], pagination: result.pagination});
@@ -70,14 +74,37 @@ const Completed = ({defaultPaginationType}) => {
 		setLoading(false);
 	}, []);
 
-	const onFilterChange = e => {
-		const {value} = e.target;
-		setFilterSearch(value);
+	const validateFilterSearch = value => {
+		return !parseFilterSearch(value).every(v => '' === v);
 	};
 
-	const onFilterSubmit = async () => {
+	const onFilterSearchChange = e => {
+		const {value} = e.target;
+
+		setInvalidFilterSearch(value ? !validateFilterSearch(value) : false);
+		setFilterSearch(value ?? '');
+		setFilterOptinType('');
+	};
+
+	const clearFilterSearch = () => {
+		onFilterSearchChange({target: ''});
+	};
+
+	const onFilterOptinChange = e => {
+		clearFilterSearch();
+		setFilterOptinType(e.value);
+	};
+
+	const onFilterSubmit = async e => {
+		if (e)
+			e.preventDefault();
+
 		await handlePageChange({page: 1, rows: config.defaultPageSize});
 	};
+
+	useEffect(() => {
+		onFilterSubmit();
+	}, [filterOptinType]);
 
 	const downloadAllAsCSV = async () => {
 		await Helper.downloadAllAsCSV({apiUrl: '/api/completed/download', fileName: 'optin-completed.csv', setDownloading});
@@ -118,34 +145,41 @@ const Completed = ({defaultPaginationType}) => {
 	const optinTypes = [{label: 'Pre-launch', value: 'pre'}, {label: 'Post-launch', value: 'post'}];
 
 	const header = (
-		<div className='flex justify-content-between'>
-			<div className="formgroup-inline">
-				<span className="p-input-icon-left field">
-					<i className="pi pi-search" />
-					<span className="p-input-icon-right">
-						<i className="pi pi-times" onClick={() => setFilterSearch('')}/>
-						<InputText value={filterSearch} onChange={onFilterChange}
-							placeholder="NEM Address / Symbol Address / Transaction Hash" className='w-28rem' />
+		<form onSubmit={onFilterSubmit}>
+			<div className='flex flex-wrap md:justify-content-between'>
+				<div className="flex-row w-full lg:w-8 xl:w-6">
+					<span className="p-input-icon-right w-10">
+						<i className="pi pi-times" onClick={clearFilterSearch}/>
+						<InputText id="filterSearch" value={filterSearch} onChange={onFilterSearchChange} className="w-full"
+							placeholder="NEM Address / Symbol Address / Transaction Hash" aria-describedby="filterSearch-help" />
 					</span>
-				</span>
-				<div className='field'>
-					<SelectButton optionLabel="label" optionValue="value" value={filterOptinType} options={optinTypes}
-						onChange={e => setFilterOptinType(e.value)}>
-					</SelectButton>
+					<span className="ml-1 w-2">
+						<Button type="submit" icon="pi pi-search" className="p-button-outlined" disabled={invalidFilterSearch}/>
+					</span>
+					{
+						invalidFilterSearch &&
+							<small id="filterSearch-help" className="p-error block">
+								Invalid NEM / Symbol Address or Transaction Hash.
+							</small>
+					}
 				</div>
-				<Button type="button" icon="pi pi-search" className="p-button-outlined" onClick={onFilterSubmit} />
-
+				<div>
+					<div className="flex flex-wrap justify-content-between">
+						<SelectButton optionLabel="label" optionValue="value" value={filterOptinType} options={optinTypes}
+							onChange={onFilterOptinChange}></SelectButton>
+						<Button type="button" icon="pi pi-download" className="ml-6 p-button-outlined download-button"
+							onClick={downloadAllAsCSV} loading={downloading} tooltip="Download All Data as CSV File"
+							tooltipOptions={{position: 'top'}} />
+					</div>
+				</div>
 			</div>
-			<div className="formgroup-inline">
-				<Button type="button" icon="pi pi-download" className="p-button-outlined" onClick={downloadAllAsCSV}
-					loading={downloading} tooltip="Download All Data as CSV File" tooltipOptions={{position: 'top'}}/>
-			</div>
-		</div>
+		</form>
 	);
 
 	return (
 		<Table value={completed.data} rows={completed.pagination.pageSize}
 			onPage={handlePageChange} loading={loading} totalRecords={completed.pagination.totalRecord}
+			allPagesLoaded={allPagesLoaded} loadingMessage="Loading more items..."
 			first={first} header={header} paginator={'paginator' === paginationType}>
 			<TableColumn field="optin_id" header="#" align="left"/>
 			<TableColumn field="nemAddress" header="NEM Address" body={nemAddressTemplate} align="left"/>
