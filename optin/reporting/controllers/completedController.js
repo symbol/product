@@ -1,6 +1,6 @@
 const completedDB = require('../models/completed');
 const {
-	hexStringToByte, formatStringSplit, byteToHexString, toRelativeAmount
+	hexStringToByte, formatStringSplit, byteToHexString, toRelativeAmount, convertTimestampToDate
 } = require('../utils/ServerUtils');
 const { Parser } = require('json2csv');
 const { NemFacade, SymbolFacade } = require('symbol-sdk').facade;
@@ -26,11 +26,15 @@ const processData = items =>
 			.toString()),
 		nemBalance: item.nem_source.map(props => props.balance),
 		nemHashes: item.nem_source.map(props => formatStringSplit(props.hashes)),
+		nemTimestamps: item.nem_source.map(props => formatStringSplit(props.timestamps)),
 		symbolAddress: item.symbol_destination.map(props => new SymbolFacade.Address(hexStringToByte(props.address))
 			.toString()),
 		symbolHashes: item.symbol_destination.map(props => formatStringSplit(props.hashes)),
+		symbolTimestamps: item.symbol_destination.map(props => formatStringSplit(props.timestamps)),
 		symbolBalance: item.symbol_destination.map(props => props.balance)
 	}));
+
+const getLatestTimestamps = timestamps => (Array.isArray(timestamps) ? timestamps.sort((a, b) => b - a)[0] : timestamps);
 
 const controller = {
 	getCompleted: async (req, res) => {
@@ -95,6 +99,10 @@ const controller = {
 			value: 'nemBalance'
 		},
 		{
+			label: 'Timestamp',
+			value: 'nemTimestamps'
+		},
+		{
 			label: 'Symbol Address',
 			value: 'symbolAddress'
 		},
@@ -104,6 +112,10 @@ const controller = {
 		}, {
 			label: 'Balance',
 			value: 'symbolBalance'
+		},
+		{
+			label: 'Timestamp',
+			value: 'symbolTimestamps'
 		},
 		{
 			label: 'Opt-in Type',
@@ -139,10 +151,12 @@ const controller = {
 					label: info[j] ?? '',
 					nemHashes: (Array.isArray(row.nemHashes[j]) ? row.nemHashes[j].join(';') : row.nemHashes[j])
 						?? '(off-chain)',
+					nemTimestamps: convertTimestampToDate('Nem', getLatestTimestamps(row.nemTimestamps[j]) ?? null),
 					nemBalance: toRelativeAmount(row.nemBalance[j]) || '',
 					symbolAddress: row.symbolAddress[j] ?? '',
 					symbolHashes: (Array.isArray(row.symbolHashes[j]) ? row.symbolHashes[j].join(';') : row.symbolHashes[j])
 						?? '(off-chain)',
+					symbolTimestamps: convertTimestampToDate('Symbol', getLatestTimestamps(row.symbolTimestamps[j]) ?? null),
 					symbolBalance: toRelativeAmount(row.symbolBalance[j]) || '',
 					optinType: row.isPostoptin ? 'Post-launch' : 'Pre-launch'
 				});
