@@ -99,7 +99,7 @@ const controller = {
 			value: 'nemBalance'
 		},
 		{
-			label: 'Timestamp',
+			label: 'Timestamp [UTC]',
 			value: 'nemTimestamps'
 		},
 		{
@@ -114,7 +114,7 @@ const controller = {
 			value: 'symbolBalance'
 		},
 		{
-			label: 'Timestamp',
+			label: 'Timestamp [UTC]',
 			value: 'symbolTimestamps'
 		},
 		{
@@ -155,7 +155,7 @@ const controller = {
 					nemBalance: toRelativeAmount(row.nemBalance[j]) || '',
 					symbolAddress: row.symbolAddress[j] ?? '',
 					symbolHashes: (Array.isArray(row.symbolHashes[j]) ? row.symbolHashes[j].join(';') : row.symbolHashes[j])
-						?? '(off-chain)',
+						?? '',
 					symbolTimestamps: convertTimestampToDate('Symbol', getLatestTimestamps(row.symbolTimestamps[j]) ?? null),
 					symbolBalance: toRelativeAmount(row.symbolBalance[j]) || '',
 					optinType: row.isPostoptin ? 'Post-launch' : 'Pre-launch'
