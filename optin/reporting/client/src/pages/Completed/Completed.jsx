@@ -6,7 +6,9 @@ import { addressTemplate, balanceTemplate, transactionHashTemplate, optinTypeTem
 import { Button } from 'primereact/button';
 import { InputText } from 'primereact/inputtext';
 import { SelectButton } from 'primereact/selectbutton';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef} from 'react';
+const { NemFacade, SymbolFacade } = require('symbol-sdk').facade;
+const { Hash256 } = require('symbol-sdk').nem;
 
 const Completed = ({defaultPaginationType}) => {
 	const [loading, setLoading] = useState(true);
@@ -17,30 +19,42 @@ const Completed = ({defaultPaginationType}) => {
 	const [completed, setCompleted] = useState({
 		data: [],
 		pagination: {
-			pageNumber: 1,
+			pageNumber: 0,
 			pageSize: config.defaultPageSize,
 			totalRecord: 0
 		}
 	});
 	const [filterSearch, setFilterSearch] = useState('');
 	const [filterOptinType, setFilterOptinType] = useState('');
+	const [filterOptinTypeSubmit, setFilterOptinTypeSubmit] = useState(false);
 	const [downloading, setDownloading] = useState(false);
 	const [invalidFilterSearch, setInvalidFilterSearch] = useState(false);
+	const initialRender = useRef(true);
 
 	const fetchCompleted = async ({pageSize = config.defaultPageSize, pageNumber = 1}) => {
 		const [nemAddress, symbolAddress, transactionHash] = parseFilterSearch(filterSearch?.trim());
-		return await fetch(`/api/completed?pageSize=${pageSize}&pageNumber=${pageNumber}
-		&nemAddress=${nemAddress}&symbolAddress=${symbolAddress}&transactionHash=${transactionHash}&optinType=${filterOptinType}`)
+		return await fetch(`/api/completed?pageSize=${pageSize}&pageNumber=${pageNumber}` +
+		`&nemAddress=${nemAddress}&symbolAddress=${symbolAddress}&transactionHash=${transactionHash}&optinType=${filterOptinType}`)
 			.then(res => res.json());
 	};
 
 	const parseFilterSearch = filterSearch => {
-		if (40 === filterSearch.length) // NEM Address
-			return [filterSearch, '', ''];
-		else if (39 === filterSearch.length) // Symbol Address
-			return ['', filterSearch, ''];
-		else if (64 === filterSearch.length) // Transaction Hash
-			return ['', '', filterSearch];
+		const searchVal = filterSearch?.trim();
+		try {
+			const address = new NemFacade.Address(searchVal);
+			return [address.toString(), '', ''];
+		} catch (e) {
+		}
+		try {
+			const address = new SymbolFacade.Address(searchVal);
+			return ['', address.toString(), ''];
+		} catch (e) {
+		}
+		try {
+			const hash = new Hash256(searchVal);
+			return ['', '', hash.toString()];
+		} catch (e) {
+		}
 		return ['', '', ''];
 	};
 
@@ -62,17 +76,20 @@ const Completed = ({defaultPaginationType}) => {
 		setLoading(false);
 	};
 
+	const shouldDoInitalFetch = initialRender.current;
 	useEffect(() => {
-		const getCompleted = async () => {
-			const result = await fetchCompleted({
-				pageNumber: 1
-			});
-			setCompleted(result);
-		};
+		if (shouldDoInitalFetch) {
+			const getCompleted = async () => {
+				const result = await fetchCompleted({
+					pageNumber: 1
+				});
+				setCompleted(result);
+			};
 
-		getCompleted();
-		setLoading(false);
-	}, []);
+			getCompleted();
+			setLoading(false);
+		}
+	}, [shouldDoInitalFetch]);
 
 	const validateFilterSearch = value => {
 		return !parseFilterSearch(value).every(v => '' === v);
@@ -93,18 +110,21 @@ const Completed = ({defaultPaginationType}) => {
 	const onFilterOptinChange = e => {
 		clearFilterSearch();
 		setFilterOptinType(e.value);
+		setFilterOptinTypeSubmit(true);
 	};
 
 	const onFilterSubmit = async e => {
 		if (e)
 			e.preventDefault();
-
 		await handlePageChange({page: 1, rows: config.defaultPageSize});
+		setFilterOptinTypeSubmit(false);
 	};
 
 	useEffect(() => {
-		onFilterSubmit();
-	}, [filterOptinType]);
+		if (!initialRender.current && filterOptinTypeSubmit) 
+			onFilterSubmit();
+		initialRender.current = false;
+	}, [filterOptinTypeSubmit]);
 
 	const downloadAllAsCSV = async () => {
 		await Helper.downloadAllAsCSV({apiUrl: '/api/completed/download', fileName: 'optin-completed.csv', setDownloading});
