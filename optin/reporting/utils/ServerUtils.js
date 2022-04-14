@@ -1,7 +1,7 @@
 const moment = require('moment-timezone');
 
-const symbolEpoch = moment(Date.UTC(2021, 3, 16, 0, 6, 25)).valueOf();
-const nemEpoch = moment(Date.UTC(2015, 3, 29, 0, 6, 25)).valueOf();
+const symbolEpoch = moment(Date.UTC(2021, 2, 16, 0, 6, 25)).valueOf();
+const nemEpoch = moment(Date.UTC(2015, 2, 29, 0, 6, 25)).valueOf();
 
 const ServerUtils = {
 	toRelativeAmount: amount => amount / (10 ** 6),
