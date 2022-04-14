@@ -77,8 +77,7 @@ const Requests = ({defaultPaginationType}) => {
 				setRequests(result);
 			};
 	
-			getOptinRequests();
-			setLoading(false);
+			getOptinRequests().then(() => {setLoading(false);});			
 		}
 	}, [shouldDoInitalFetch]);
 

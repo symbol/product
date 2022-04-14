@@ -1,4 +1,5 @@
 import Helper from './helper';
+import ResponsiveText from '../components/ResponsiveText';
 import {Button} from 'primereact/button';
 import React from 'react';
 
@@ -19,14 +20,16 @@ export const addressTemplate = (rowData, key, config) => {
 	const list = Array.isArray(rowData[key]) ? rowData[key] : [rowData[key]];
 	return (
 		<React.Fragment>
-			{
-				list.map(address => <div className='flex flex-row list-item'>
-					<a href={config.keyRedirects[key] + address} target="_blank" rel="noreferrer" className='address'>
-						{address}
-					</a>
-					{copyButton(address)}
-				</div>)
-			}
+			<div>
+				{
+					list.map(address => <div className='flex flex-row list-item'>
+						<a href={config.keyRedirects[key] + address} target="_blank" rel="noreferrer">
+							<ResponsiveText value={address} />
+						</a>
+						{copyButton(address)}
+					</div>)
+				}
+			</div>
 		</React.Fragment>
 	);
 };
@@ -68,7 +71,7 @@ export const transactionHashTemplate = (rowData, key, config) => {
 				<a href={config.keyRedirects[key] + item.toLowerCase()}
 					target="_blank"
 					rel="noreferrer">
-					{Helper.truncString(item.toLowerCase())}
+					<ResponsiveText value={item.toLowerCase()} />
 				</a>
 				{copyButton(item.toLowerCase())}
 			</div>
