@@ -86,8 +86,7 @@ const Completed = ({defaultPaginationType}) => {
 				setCompleted(result);
 			};
 
-			getCompleted();
-			setLoading(false);
+			getCompleted().then(() => {setLoading(false);});
 		}
 	}, [shouldDoInitalFetch]);
 
