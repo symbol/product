@@ -7,11 +7,11 @@ const copyButton = value => {
 	const onCopyHandler = () => {
 		Helper.copyToClipboard(value);
 	};
-	if (!value) 
+	if (!value)
 		return undefined;
 	return (
 		<React.Fragment>
-			<Button icon="pi pi-copy" className="p-button-text copy-button" 
+			<Button icon="pi pi-copy" className="p-button-text copy-button"
 				tooltip='Copy' onClick={onCopyHandler} />
 		</React.Fragment>
 	);
@@ -90,6 +90,9 @@ export const transactionHashTemplate = (rowData, key, config) => {
 						}
 					</div>)
 			}
+			<React.Fragment>
+				{ 1 < list.flat(Infinity).length && <div className='list-item' />}
+			</React.Fragment>
 		</React.Fragment>
 	);
 };
