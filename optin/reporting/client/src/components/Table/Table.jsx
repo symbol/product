@@ -8,7 +8,7 @@ import VisibilitySensor from 'react-visibility-sensor';
 const Table = props => {
 
 	const checkVisible = async visible => {
-		if (visible && !props.allPagesLoaded) 
+		if (visible && !props.allPagesLoaded && props.rows <= props.value.length) 
 			await props.onPage({});
 	};
 
@@ -16,7 +16,7 @@ const Table = props => {
 		<React.Fragment>
 			{props.footer}
 			{
-				!props.paginator && !props.allPagesLoaded && 
+				!props.paginator && !props.allPagesLoaded && props.rows <= props.value.length && 
 				<VisibilitySensor onChange={checkVisible}>
 					<div class="grid flex align-items-center">
 						<div class="col-2"><ProgressSpinner className="w-6"/></div>
