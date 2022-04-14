@@ -33,7 +33,7 @@ const Table = props => {
 			paginatorTemplate="CurrentPageReport FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink RowsPerPageDropdown"
 			currentPageReportTemplate="Showing {first}-{last} of {totalRecords}" rows={props.rows} 
 			rowsPerPageOptions={props.rowsPerPageOptions}	onPage={props.onPage} 
-			loading={props.loading && props.paginator} totalRecords={props.totalRecords} first={props.first} header={props.header} 
+			loading={props.loading} totalRecords={props.totalRecords} first={props.first} header={props.header} 
 			emptyMessage={props.emptyMessage} footer={footer}>
 			{props.children}
 		</DataTable>

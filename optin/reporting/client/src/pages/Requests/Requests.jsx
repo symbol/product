@@ -114,7 +114,6 @@ const Requests = ({defaultPaginationType}) => {
 	useEffect(() => {
 		if (!initialRender.current && filterStatusSubmit) 
 			onFilterSubmit();
-		
 		initialRender.current = false;
 	}, [filterStatusSubmit]);
 
