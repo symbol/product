@@ -1,3 +1,8 @@
+const moment = require('moment-timezone');
+
+const symbolEpoch = moment(Date.UTC(2021, 3, 16, 0, 6, 25)).valueOf();
+const nemEpoch = moment(Date.UTC(2015, 3, 29, 0, 6, 25)).valueOf();
+
 const ServerUtils = {
 	toRelativeAmount: amount => amount / (10 ** 6),
 	byteToHexString: uint8arr => {
@@ -32,6 +37,23 @@ const ServerUtils = {
 			return string;
 		}
 		return string;
+	},
+	convertTimestampToDate: (network, timestamp) => {
+		if (null === timestamp)
+			return timestamp;
+
+		let networkTimestamp = 0;
+
+		switch (network) {
+		case 'Symbol':
+			networkTimestamp = symbolEpoch + parseInt(timestamp, 10);
+			break;
+		case 'Nem':
+			networkTimestamp = nemEpoch + (parseInt(timestamp, 10) * 1000);
+			break;
+		}
+
+		return moment.utc(networkTimestamp).format('YYYY-MM-DD HH:mm:ss');
 	}
 };
 
