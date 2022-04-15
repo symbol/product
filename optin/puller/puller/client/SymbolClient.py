@@ -84,11 +84,11 @@ class SymbolClient(BasicClient):
 		transactions = await self.get(url_path, 'data')
 		return transactions
 
-	async def transaction_confirmed_metadata(self, transaction_hash):
-		"""Gets metadata for a confirmed transaction."""
+	async def transaction_confirmed(self, transaction_hash):
+		"""Gets a confirmed transaction."""
 
 		url_path = f'transactions/confirmed/{transaction_hash}'
-		return await self.get(url_path, 'meta')
+		return await self.get(url_path, None)
 
 	async def find_payout_transactions(self, optin_signer_public_key, address):
 		"""Finds payout transactions sent to the specified address."""

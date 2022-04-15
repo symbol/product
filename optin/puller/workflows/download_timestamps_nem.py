@@ -7,13 +7,6 @@ from puller.client.NemClient import NemClient
 from puller.db.Databases import Databases
 
 
-def parse_args():
-	parser = argparse.ArgumentParser(description='download postoptin transactions')
-	parser.add_argument('--nem-node', help='NEM node url', default='http://mercury.elxemental.cloud:7890')
-	parser.add_argument('--database-directory', help='output database directory', default='_temp')
-	return parser.parse_args()
-
-
 async def download_nem_timestamps_into(database_directory, database_name, nem_client):
 	with Databases(database_directory) as databases:
 		database = getattr(databases, database_name)
@@ -44,7 +37,11 @@ async def download_nem_timestamps_into(database_directory, database_name, nem_cl
 
 
 async def main():
-	args = parse_args()
+	parser = argparse.ArgumentParser(description='download NEM timestamps')
+	parser.add_argument('--nem-node', help='NEM node url', default='http://mercury.elxemental.cloud:7890')
+	parser.add_argument('--database-directory', help='output database directory', default='_temp')
+	args = parser.parse_args()
+
 	nem_client = NemClient(args.nem_node)
 
 	for name in ('completed', 'inprogress'):

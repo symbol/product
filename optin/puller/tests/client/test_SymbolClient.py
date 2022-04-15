@@ -314,17 +314,17 @@ async def test_can_query_transaction_statuses(server):  # pylint: disable=redefi
 # endregion
 
 
-# region transaction_confirmed_metadata
+# region transaction_confirmed
 
-async def test_transaction_confirmed_metadata(server):  # pylint: disable=redefined-outer-name
+async def test_transaction_confirmed(server):  # pylint: disable=redefined-outer-name
 	# Arrange:
 	client = SymbolClient(server.make_url(''))
 
 	# Act:
-	metadata = await client.transaction_confirmed_metadata(Hash256(HASHES[0]))
+	transaction = await client.transaction_confirmed(Hash256(HASHES[0]))
 
 	# Assert:
-	assert {'height': 1234} == metadata
+	assert {'meta': {'height': 1234}, 'transaction': {'message': 'foo'}} == transaction
 
 # endregion
 
