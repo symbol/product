@@ -30,7 +30,7 @@ const processData = items => {
 
 const controller = {
 	getOptinRequests: async (req, res) => {
-		const pageSize = parseInt(req.query.pageSize || 25, 10);
+		const pageSize = parseInt(req.query.pageSize || 100, 10);
 		const pageNumber = parseInt(req.query.pageNumber || 1, 10);
 		const nemAddressBase32 = req.query.nemAddress;
 		const statusFilter = req.query.status;
@@ -38,22 +38,22 @@ const controller = {
 
 		const statusStringToInt = statusString => {
 			switch (statusString) {
-			case 'Pending':
+			case 'pending':
 				return 0;
-			case 'Sent':
+			case 'sent':
 				return 1;
-			case 'Error':
+			case 'error':
 				return 5;
 			default:
 				return null;
 			}
 		};
 
-		const status = statusStringToInt(statusFilter);
+		const status = statusStringToInt(statusFilter.toLowerCase());
 
 		try {
-			const nemAddressBytes = nemAddressBase32 ? new NemFacade.Address(nemAddressBase32).bytes : null;
-			const transactionHashBytes = transactionHashHex ? ServerUtils.hexStringToByte(transactionHashHex) : null;
+			const nemAddressBytes = nemAddressBase32 ? new NemFacade.Address(nemAddressBase32.toUpperCase().trim()).bytes : null;
+			const transactionHashBytes = transactionHashHex ? ServerUtils.hexStringToByte(transactionHashHex.toUpperCase().trim()) : null;
 			const totalRecord = await optinRequestDB.getTotalRecord({ nemAddressBytes, transactionHashBytes, status });
 
 			const response = await optinRequestDB.getOptinRequestPagination({
