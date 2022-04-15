@@ -1,8 +1,9 @@
+import './Completed.scss';
 import Table from '../../components/Table';
 import TableColumn from '../../components/Table/TableColumn';
 import config from '../../config';
 import Helper from '../../utils/helper';
-import { addressTemplate, balanceTemplate, transactionHashTemplate, optinTypeTemplate, infoTemplate } from '../../utils/pageUtils';
+import { addressTemplate, balanceTemplate, optinTypeTemplate, infoTemplate, dateTransactionHashTemplate } from '../../utils/pageUtils';
 import { Button } from 'primereact/button';
 import { InputText } from 'primereact/inputtext';
 import { SelectButton } from 'primereact/selectbutton';
@@ -120,7 +121,7 @@ const Completed = ({defaultPaginationType}) => {
 	};
 
 	useEffect(() => {
-		if (!initialRender.current && filterOptinTypeSubmit) 
+		if (!initialRender.current && filterOptinTypeSubmit)
 			onFilterSubmit();
 		initialRender.current = false;
 	}, [filterOptinTypeSubmit]);
@@ -145,12 +146,12 @@ const Completed = ({defaultPaginationType}) => {
 		return balanceTemplate(rowData, 'symbolBalance');
 	};
 
-	const nemHashesTemplate = rowData => {
-		return transactionHashTemplate(rowData, 'nemHashes', config);
+	const nemDateHashesTemplate = rowData => {
+		return dateTransactionHashTemplate(rowData, 'nemHashes', 'nemTimestamps', config);
 	};
 
-	const symbolHashesTemplate = rowData => {
-		return transactionHashTemplate(rowData, 'symbolHashes', config);
+	const symbolDateHashesTemplate = rowData => {
+		return dateTransactionHashTemplate(rowData, 'symbolHashes', 'symbolTimestamps' , config);
 	};
 
 	const isPostoptinTemplate = rowData => {
@@ -200,16 +201,14 @@ const Completed = ({defaultPaginationType}) => {
 			onPage={handlePageChange} loading={loading} totalRecords={completed.pagination.totalRecord}
 			allPagesLoaded={allPagesLoaded} loadingMessage="Loading more items..."
 			first={first} header={header} paginator={'paginator' === paginationType}>
-			<TableColumn field="optin_id" header="#" align="left"/>
-			<TableColumn field="isPostoptin" header="Opt-in Type" body={isPostoptinTemplate} align="center"/>
+			<TableColumn field="isPostoptin" header="Type" body={isPostoptinTemplate} align="center"/>
+			<TableColumn field="label" header="Label" body={labelTemplate} align="left" className="labelCol"/>
 			<TableColumn field="nemAddress" header="NEM Address" body={nemAddressTemplate} align="left"/>
-			<TableColumn field="label" header="Info" body={labelTemplate} align="left"/>
-			<TableColumn field="nemHashes" header="Hash" body={nemHashesTemplate} align="left"/>
+			<TableColumn field="nemHashes" header="Hash" body={nemDateHashesTemplate} align="left"/>
 			<TableColumn field="nemBalance" header="Balance" body={nemBalanceTemplate} align="right"/>
 			<TableColumn field="symbolAddress" header="Symbol Address" body={symbolAddressTemplate} align="left"/>
-			<TableColumn field="symbolHashes" header="Hash" body={symbolHashesTemplate} align="left"/>
+			<TableColumn field="symbolHashes" header="Hash" body={symbolDateHashesTemplate} align="left"/>
 			<TableColumn field="symbolBalance" header="Balance" body={symbolBalanceTemplate} align="right"/>
-			<TableColumn field="isPostoptin" header="Opt-in Type" body={isPostoptinTemplate} align="right"/>
 		</Table>
 	);
 };

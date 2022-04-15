@@ -1,7 +1,10 @@
 import Helper from './helper';
 import ResponsiveList from '../components/ResponsiveList';
 import ResponsiveText from '../components/ResponsiveText';
+import TruncateText from '../components/TruncateText';
 import {Button} from 'primereact/button';
+import { nem, symbol } from 'symbol-sdk';
+import moment from 'moment-timezone';
 import React from 'react';
 
 const copyButton = value => {
@@ -26,7 +29,7 @@ export const addressTemplate = (rowData, key, config) => {
 			{
 				list.map(address => <div className='flex flex-row list-item'>
 					<a href={config.keyRedirects[key] + address} target="_blank" rel="noreferrer">
-						<ResponsiveText value={address} />
+						<TruncateText value={address} />
 					</a>
 					{copyButton(address)}
 				</div>)
@@ -47,10 +50,10 @@ export const balanceTemplate = (rowData, key, renderTotal = true) => {
 		if (total)
 			resultList.push(total);
 	}
-	
+
 	return (
 		<ResponsiveList visible={resultList[resultList.length - 1]} title="Balance List">
-			{ resultList}
+			{ resultList }
 		</ResponsiveList>
 	);
 };
@@ -98,10 +101,64 @@ export const transactionHashTemplate = (rowData, key, config) => {
 	);
 };
 
-export const optinTypeTemplate = (rowData, key) => {
-	const isPostoptin = rowData[key] ? 'Post-launch' : 'Pre-launch';
+export const dateTransactionHashTemplate = (rowData, key, timestampKey, config) => {
+	const list = Array.isArray(rowData[key]) ? rowData[key] : [rowData[key]];
 
-	const badgeType = 'Post-launch' === isPostoptin ? 'info' : '';
+	const formatDateTime = (key, timestamp) => {
+		if (null === timestamp) {
+			return timestamp;
+		}
+
+		let networkTimestamp = 0;
+
+		// Todo: Remove later to use Unixtimestamp
+		if (key === 'symbolTimestamps') {
+			networkTimestamp = new symbol.NetworkTimestamp(timestamp).toDatetime(new Date(Date.UTC(2021, 2, 16, 0, 6, 25))).getTime();
+		} else {
+			networkTimestamp = new nem.NetworkTimestamp(timestamp).toDatetime(new Date(Date.UTC(2015, 2, 16, 0, 6, 25))).getTime();
+		}
+
+		return moment.utc(networkTimestamp).format('YY-MM-DD HH:mm:ss');
+	}
+
+	const buildTransactionHashLink = (key, item, date) => {
+		return (
+			<div className='flex flex-row list-item'>
+				<span> {date} |</span>
+
+				<a href={config.keyRedirects[key] + item.toLowerCase()}
+					target="_blank"
+					rel="noreferrer">
+					<TruncateText value={item.toLowerCase()} />
+				</a>
+				{copyButton(item.toLowerCase())}
+			</div>
+		);
+	};
+
+	const timestamps = rowData[timestampKey].flat(Infinity);
+	const resultList = list.flat(Infinity).map((hash, index) =>
+		<div>
+			{
+				null !== hash
+					? buildTransactionHashLink(key, hash, formatDateTime(timestampKey, timestamps[index]))
+					: '(off chain)'
+			}
+		</div>);
+	if (1 < resultList.length)
+		resultList.push(<div className='list-item' />);
+
+	return (
+		<ResponsiveList title="Hash List">
+			{resultList}
+		</ResponsiveList>
+	);
+};
+
+export const optinTypeTemplate = (rowData, key) => {
+	const isPostoptin = rowData[key] ? 'POST' : 'PRE';
+
+	const badgeType = 'POST' === isPostoptin ? 'warning' : '';
 	const badgeClass = `p-badge p-badge-${badgeType}`;
 
 	return (<div> <span className={badgeClass}>{isPostoptin}</span> </div>);
