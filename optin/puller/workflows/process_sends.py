@@ -86,7 +86,7 @@ async def main():
 		print('checking previously sent requests')
 
 		processor = Processor(databases, client, symbol_network, args.dry_run)
-		sent_requests = group_requests(nem_network, databases.inprogress.get_requests_by_status(OptinRequestStatus.SENT))
+		sent_requests = group_requests(nem_network, databases.inprogress.requests_by_status(OptinRequestStatus.SENT))
 
 		if sent_requests:
 			print(f' * checking {len(sent_requests)} with SENT status')

@@ -42,6 +42,11 @@ class InProgressOptinDatabase(NemBlockTimestampsMixin):
 			payout_status integer,
 			payout_transaction_hash blob
 		)''')
+		cursor.execute('''CREATE TABLE IF NOT EXISTS payout_transaction (
+			transaction_hash blob UNIQUE PRIMARY KEY,
+			height integer,
+			timestamp integer
+		)''')
 
 	def add_error(self, error):
 		"""Adds an error to the error table."""
@@ -132,15 +137,27 @@ class InProgressOptinDatabase(NemBlockTimestampsMixin):
 		"""Sets the status for a request."""
 
 		cursor = self.connection.cursor()
-		transaction_hash = payout_transaction_hash.bytes if payout_transaction_hash else None
+		payout_transaction_hash_bytes = payout_transaction_hash.bytes if payout_transaction_hash else None
 		multisig_public_key = request.multisig_public_key.bytes if request.multisig_public_key else None
 		cursor.execute(
 			'''UPDATE optin_request SET payout_status = ?, payout_transaction_hash = ?
 				WHERE address = ? AND multisig_public_key IS ? AND optin_transaction_hash IS ?''',
-			(new_status.value, transaction_hash, request.address.bytes, multisig_public_key, request.optin_transaction_hash.bytes))
+			(
+				new_status.value,
+				payout_transaction_hash_bytes,
+				request.address.bytes,
+				multisig_public_key,
+				request.optin_transaction_hash.bytes
+			))
+
+		if payout_transaction_hash_bytes:
+			cursor.execute(
+				'''INSERT OR IGNORE INTO payout_transaction VALUES (?, ?, ?)''',
+				(payout_transaction_hash_bytes, 0, 0))
+
 		self.connection.commit()
 
-	def get_requests_by_status(self, status):
+	def requests_by_status(self, status):
 		"""Gets all requests with the desired status."""
 
 		cursor = self.connection.cursor()
@@ -148,6 +165,21 @@ class InProgressOptinDatabase(NemBlockTimestampsMixin):
 			'''SELECT * FROM optin_request WHERE payout_status = ? ORDER BY optin_transaction_height DESC''',
 			(status.value,))
 		return list(map(self._to_request, cursor))
+
+	def unconfirmed_payout_transaction_hashes(self):  # pylint: disable=invalid-name
+		"""Gets hashes of all unconfirmed payout transactions."""
+
+		cursor = self.connection.cursor()
+		rows = cursor.execute('''SELECT transaction_hash FROM payout_transaction WHERE height = ? ORDER BY transaction_hash''', (0,))
+		return [Hash256(row[0]) for row in rows]
+
+	def set_payout_transaction_metadata(self, payout_transaction_hash, height, timestamp):
+		cursor = self.connection.cursor()
+		cursor.execute(
+			'''UPDATE payout_transaction SET height = ?, timestamp = ?
+				WHERE transaction_hash = ?''',
+			(height, timestamp, payout_transaction_hash.bytes))
+		self.connection.commit()
 
 	def optin_transaction_heights(self):
 		"""Gets list of optin transaction heights."""

@@ -41,37 +41,34 @@ def make_request_tuple(index, **kwargs):
 class InProgressOptinDatabaseTest(unittest.TestCase):
 	# pylint: disable=too-many-public-methods
 
-	# region create
+	# region shared test utils
 
-	def test_can_create_tables(self):
-		# Act:
-		table_names = get_all_table_names(InProgressOptinDatabase)
-
-		# Assert:
-		self.assertEqual(set(['nem_block_timestamps', 'optin_error', 'optin_request']), table_names)
-
-	# endregion
-
-	# region add_error
+	@staticmethod
+	def _query_all_errors(cursor):
+		cursor.execute('''SELECT * FROM optin_error ORDER BY optin_transaction_hash DESC''')
+		return cursor.fetchall()
 
 	@staticmethod
 	def _query_all_requests(cursor):
 		cursor.execute('''SELECT * FROM optin_request ORDER BY optin_transaction_hash DESC''')
 		return cursor.fetchall()
 
-	def _assert_can_insert_rows(self, seed_errors, seed_requests, expected_errors, expected_requests, post_insert_action):
-		# pylint: disable=too-many-arguments
+	@staticmethod
+	def _query_all_payout_transactions(cursor):
+		cursor.execute('''SELECT * FROM payout_transaction ORDER BY transaction_hash DESC''')
+		return cursor.fetchall()
 
+	def _assert_can_insert_rows(self, seed, expected, post_insert_action):
 		# Arrange:
 		with sqlite3.connect(':memory:') as connection:
 			database = InProgressOptinDatabase(connection)
 			database.create_tables()
 
 			# Act:
-			for error in seed_errors:
+			for error in seed['errors']:
 				database.add_error(error)
 
-			for request in seed_requests:
+			for request in seed['requests']:
 				add_result = database.add_request(request)
 
 				# Sanity:
@@ -82,16 +79,39 @@ class InProgressOptinDatabaseTest(unittest.TestCase):
 
 			# Assert:
 			cursor = connection.cursor()
-			cursor.execute('''SELECT * FROM optin_error ORDER BY optin_transaction_hash DESC''')
-			actual_errors = cursor.fetchall()
-
+			actual_errors = self._query_all_errors(cursor)
 			actual_requests = self._query_all_requests(cursor)
 
-			self.assertEqual(expected_errors, actual_errors)
-			self.assertEqual(expected_requests, actual_requests)
+			self.assertEqual(expected['errors'], actual_errors)
+			self.assertEqual(expected['requests'], actual_requests)
+
+			if expected.get('payout_transactions', None) is not None:
+				actual_payout_transactions = self._query_all_payout_transactions(cursor)
+				self.assertEqual(expected['payout_transactions'], actual_payout_transactions)
 
 	def _assert_can_insert_errors(self, seed_errors, expected_errors):
-		self._assert_can_insert_rows(seed_errors, [], expected_errors, [], None)
+		self._assert_can_insert_rows({'errors': seed_errors, 'requests': []}, {'errors': expected_errors, 'requests': []}, None)
+
+	def _assert_can_insert_requests(self, seed_requests, expected_requests, expected_payout_transactions=None, post_insert_action=None):
+		self._assert_can_insert_rows(
+			{'errors': [], 'requests': seed_requests},
+			{'errors': [], 'requests': expected_requests, 'payout_transactions': expected_payout_transactions},
+			post_insert_action)
+
+	# endregion
+
+	# region create
+
+	def test_can_create_tables(self):
+		# Act:
+		table_names = get_all_table_names(InProgressOptinDatabase)
+
+		# Assert:
+		self.assertEqual(set(['nem_block_timestamps', 'optin_error', 'optin_request', 'payout_transaction']), table_names)
+
+	# endregion
+
+	# region add_error
 
 	def test_can_add_errors(self):
 		self._assert_can_insert_errors([
@@ -145,9 +165,6 @@ class InProgressOptinDatabaseTest(unittest.TestCase):
 	# endregion
 
 	# region add_request
-
-	def _assert_can_insert_requests(self, seed_requests, expected_requests, post_insert_action=None):
-		self._assert_can_insert_rows([], seed_requests, [], expected_requests, post_insert_action)
 
 	def test_can_add_requests_regular(self):
 		self._assert_can_insert_requests([
@@ -376,6 +393,8 @@ class InProgressOptinDatabaseTest(unittest.TestCase):
 			make_request_tuple(0),
 			make_request_tuple(1, status_id=1, payout_transaction_hash=payout_transaction_hash),
 			make_request_tuple(2)
+		], expected_payout_transactions=[
+			(payout_transaction_hash.bytes, 0, 0)
 		], post_insert_action=post_insert_action)
 
 	def test_can_update_single_request_status_matching_optin_transaction_hash(self):
@@ -388,7 +407,7 @@ class InProgressOptinDatabaseTest(unittest.TestCase):
 		]
 
 		def post_insert_action(database):
-			database.set_request_status(seed_requests[1], OptinRequestStatus.SENT, Hash256(HASHES[0]))
+			database.set_request_status(seed_requests[1], OptinRequestStatus.SENT, payout_transaction_hash)
 			database.set_request_status(seed_requests[1], OptinRequestStatus.COMPLETED, payout_transaction_hash)
 
 		# Act + Assert:
@@ -396,6 +415,31 @@ class InProgressOptinDatabaseTest(unittest.TestCase):
 			make_request_tuple(0),
 			make_request_tuple(1, status_id=2, payout_transaction_hash=payout_transaction_hash),
 			make_request_tuple(2)
+		], expected_payout_transactions=[
+			(payout_transaction_hash.bytes, 0, 0),
+		], post_insert_action=post_insert_action)
+
+	def test_can_update_single_request_status_matching_optin_transaction_hash_preserves_metadata(self):
+		# Arrange:
+		payout_transaction_hash = Hash256('ACFF5E24733CD040504448A3A75F1CE32E90557E5FBA02E107624242F4FA251D')
+		seed_requests = [
+			make_request(0, {'type': 100, 'destination': PUBLIC_KEYS[0]}),
+			make_request(1, {'type': 100, 'destination': PUBLIC_KEYS[1]}),
+			make_request(2, {'type': 100, 'destination': PUBLIC_KEYS[2]})
+		]
+
+		def post_insert_action(database):
+			database.set_request_status(seed_requests[1], OptinRequestStatus.SENT, payout_transaction_hash)
+			database.set_payout_transaction_metadata(payout_transaction_hash, 123, 987)
+			database.set_request_status(seed_requests[1], OptinRequestStatus.COMPLETED, payout_transaction_hash)
+
+		# Act + Assert:
+		self._assert_can_insert_requests(seed_requests, [
+			make_request_tuple(0),
+			make_request_tuple(1, status_id=2, payout_transaction_hash=payout_transaction_hash),
+			make_request_tuple(2)
+		], expected_payout_transactions=[
+			(payout_transaction_hash.bytes, 123, 987),
 		], post_insert_action=post_insert_action)
 
 	def test_cannot_update_single_request_status_without_matching_optin_transaction_hash(self):
@@ -408,7 +452,7 @@ class InProgressOptinDatabaseTest(unittest.TestCase):
 		]
 
 		def post_insert_action(database):
-			database.set_request_status(seed_requests[1], OptinRequestStatus.SENT, Hash256(HASHES[0]))
+			database.set_request_status(seed_requests[1], OptinRequestStatus.SENT, payout_transaction_hash)
 			seed_requests[1].optin_transaction_hash = Hash256.zero()
 
 			database.set_request_status(seed_requests[1], OptinRequestStatus.COMPLETED, payout_transaction_hash)
@@ -416,8 +460,10 @@ class InProgressOptinDatabaseTest(unittest.TestCase):
 		# Act + Assert:
 		self._assert_can_insert_requests(seed_requests, [
 			make_request_tuple(0),
-			make_request_tuple(1, status_id=1, payout_transaction_hash=Hash256(HASHES[0])),
+			make_request_tuple(1, status_id=1, payout_transaction_hash=payout_transaction_hash),
 			make_request_tuple(2)
+		], expected_payout_transactions=[
+			(payout_transaction_hash.bytes, 0, 0)
 		], post_insert_action=post_insert_action)
 
 	def test_can_update_mutiple_request_part_status(self):
@@ -438,58 +484,101 @@ class InProgressOptinDatabaseTest(unittest.TestCase):
 			make_request_tuple(0, multisig_public_key_index=3, status_id=1, payout_transaction_hash=payout_transaction_hash),
 			make_request_tuple(1, multisig_public_key_index=4, address_index=0),
 			make_request_tuple(2, destination_public_key_index=0, multisig_public_key_index=3)
-		], post_insert_action=post_insert_action)
-
-	def test_can_unset_request_payout_transaction_hash(self):
-		# Arrange:
-		seed_requests = [
-			make_request(0, {'type': 100, 'destination': PUBLIC_KEYS[0]}),
-			make_request(1, {'type': 100, 'destination': PUBLIC_KEYS[1]}),
-			make_request(2, {'type': 101, 'destination': PUBLIC_KEYS[2], 'origin': PUBLIC_KEYS[4]}),
-			make_request(3, {'type': 100, 'destination': PUBLIC_KEYS[3]})
-		]
-
-		def post_insert_action(database):
-			database.set_request_status(seed_requests[1], OptinRequestStatus.SENT, None)
-			database.set_request_status(seed_requests[2], OptinRequestStatus.SENT, None)
-
-		# Act + Assert:
-		self._assert_can_insert_requests(seed_requests, [
-			make_request_tuple(0),
-			make_request_tuple(1, status_id=1, payout_transaction_hash=None),
-			make_request_tuple(2, status_id=1, multisig_public_key_index=4, payout_transaction_hash=None),
-			make_request_tuple(3)
+		], expected_payout_transactions=[
+			(payout_transaction_hash.bytes, 0, 0)
 		], post_insert_action=post_insert_action)
 
 	# endregion
 
-	# region get_requests_by_status
+	# region requests_by_status
+
+	@staticmethod
+	def _prepare_database_for_symbol_timestamp_tests(connection):
+		database = InProgressOptinDatabase(connection)
+		database.create_tables()
+
+		seed_requests = [
+			make_request(0, {'type': 100, 'destination': PUBLIC_KEYS[0]}),
+			make_request(1, {'type': 100, 'destination': PUBLIC_KEYS[1]}),
+			make_request(2, {'type': 100, 'destination': PUBLIC_KEYS[2]}),
+			make_request(3, {'type': 100, 'destination': PUBLIC_KEYS[3]})
+		]
+
+		for request in seed_requests:
+			database.add_request(request)
+
+		payout_transaction_hash_1 = Hash256('ACFF5E24733CD040504448A3A75F1CE32E90557E5FBA02E107624242F4FA251D')
+		payout_transaction_hash_2 = Hash256('7B055CD0A0A6C0F8BA9677076288A15F2BC6BEF42CEB5A6789EF9E4A8146E79F')
+		payout_transaction_hash_3 = Hash256('DFB984176817C3C2F001F6DEF3E46096EC52C33A1A63759A8FB9E1B46859C098')
+		database.set_request_status(seed_requests[0], OptinRequestStatus.SENT, payout_transaction_hash_1)
+		database.set_request_status(seed_requests[1], OptinRequestStatus.COMPLETED, payout_transaction_hash_2)
+		database.set_request_status(seed_requests[3], OptinRequestStatus.SENT, payout_transaction_hash_3)
+
+		return (database, seed_requests, [payout_transaction_hash_1, payout_transaction_hash_2, payout_transaction_hash_3])
 
 	def test_can_get_all_requests_with_specified_status(self):
 		# Arrange:
 		with sqlite3.connect(':memory:') as connection:
-			database = InProgressOptinDatabase(connection)
-			database.create_tables()
-
-			payout_transaction_hash = Hash256('ACFF5E24733CD040504448A3A75F1CE32E90557E5FBA02E107624242F4FA251D')
-			seed_requests = [
-				make_request(0, {'type': 100, 'destination': PUBLIC_KEYS[0]}),
-				make_request(1, {'type': 100, 'destination': PUBLIC_KEYS[1]}),
-				make_request(2, {'type': 100, 'destination': PUBLIC_KEYS[2]})
-			]
-
-			for request in seed_requests:
-				database.add_request(request)
-
-			database.set_request_status(seed_requests[1], OptinRequestStatus.SENT, payout_transaction_hash)
+			(database, seed_requests, payout_transaction_hashes) = self._prepare_database_for_symbol_timestamp_tests(connection)
+			seed_requests[0].payout_transaction_hash = payout_transaction_hashes[0]
+			seed_requests[3].payout_transaction_hash = payout_transaction_hashes[2]
 
 			# Act:
-			requests = database.get_requests_by_status(OptinRequestStatus.UNPROCESSED)
+			requests = database.requests_by_status(OptinRequestStatus.SENT)
 
 			# Assert: height sorted (ascending)
 			self.assertEqual(2, len(requests))
-			assert_equal_request(self, seed_requests[2], requests[1])
 			assert_equal_request(self, seed_requests[0], requests[0])
+			assert_equal_request(self, seed_requests[3], requests[1])
+
+	# endregion
+
+	# region unconfirmed_payout_transaction_hashes
+
+	def test_can_get_unconfirmed_payout_transaction_hashes(self):
+		# Arrange:
+		with sqlite3.connect(':memory:') as connection:
+			(database, _, payout_transaction_hashes) = self._prepare_database_for_symbol_timestamp_tests(connection)
+
+			# Act:
+			hashes = database.unconfirmed_payout_transaction_hashes()
+
+			# Assert:
+			self.assertEqual([payout_transaction_hashes[i] for i in (1, 0, 2)], hashes)
+
+	def test_can_get_unconfirmed_payout_transaction_hashes_excluding_confirmed_transactions(self):
+		# Arrange:
+		with sqlite3.connect(':memory:') as connection:
+			(database, _, payout_transaction_hashes) = self._prepare_database_for_symbol_timestamp_tests(connection)
+			database.set_payout_transaction_metadata(payout_transaction_hashes[0], 123, 0)
+
+			# Act:
+			hashes = database.unconfirmed_payout_transaction_hashes()
+
+			# Assert:
+			self.assertEqual([payout_transaction_hashes[i] for i in (1, 2)], hashes)
+
+	# endregion
+
+	# region set_payout_transaction_metadata
+
+	def test_can_set_payout_transaction_metadata(self):
+		# Arrange:
+		with sqlite3.connect(':memory:') as connection:
+			(database, _, payout_transaction_hashes) = self._prepare_database_for_symbol_timestamp_tests(connection)
+
+			# Act:
+			database.set_payout_transaction_metadata(payout_transaction_hashes[0], 123, 987)
+			database.set_payout_transaction_metadata(payout_transaction_hashes[2], 888, 333)
+
+			# Assert:
+			actual_payout_transactions = self._query_all_payout_transactions(connection.cursor())
+
+			self.assertEqual([
+				(payout_transaction_hashes[2].bytes, 888, 333),
+				(payout_transaction_hashes[0].bytes, 123, 987),
+				(payout_transaction_hashes[1].bytes, 0, 0)
+			], actual_payout_transactions)
 
 	# endregion
 

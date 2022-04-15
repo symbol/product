@@ -201,10 +201,10 @@ async def main():
 
 	with Databases(args.database_directory) as databases:
 		processor = Processor(databases, client, symbol_network, transaction_preparer, args.csv_output)
-		sent_requests = group_requests(nem_network, databases.inprogress.get_requests_by_status(OptinRequestStatus.SENT))
+		sent_requests = group_requests(nem_network, databases.inprogress.requests_by_status(OptinRequestStatus.SENT))
 		unprocessed_requests = group_requests(
 			nem_network,
-			databases.inprogress.get_requests_by_status(OptinRequestStatus.UNPROCESSED))
+			databases.inprogress.requests_by_status(OptinRequestStatus.UNPROCESSED))
 
 		await process_all(processor, unprocessed_requests, sent_requests, client, funder_balance, args.dry_run)
 
