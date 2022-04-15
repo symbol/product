@@ -9,6 +9,7 @@ from symbolchain.symbol.Network import Address as SymbolAddress
 from puller.db.CompletedOptinDatabase import CompletedOptinDatabase
 
 from ..test.DatabaseTestUtils import get_all_table_names
+from ..test.MockNetworkTimeConverter import MockNetworkTimeConverter
 from ..test.OptinRequestTestUtils import HASHES, NEM_ADDRESSES, SYMBOL_ADDRESSES
 
 MARKER_HASHES = [
@@ -32,7 +33,7 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 
 	def test_can_create_tables(self):
 		# Act:
-		table_names = get_all_table_names(CompletedOptinDatabase)
+		table_names = get_all_table_names(CompletedOptinDatabase, MockNetworkTimeConverter())
 
 		# Assert:
 		self.assertEqual(
@@ -77,7 +78,7 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 	def _assert_can_insert_transactions(self, address_transaction_tuples, expected_data):
 		# Arrange:
 		with sqlite3.connect(':memory:') as connection:
-			database = CompletedOptinDatabase(connection)
+			database = CompletedOptinDatabase(connection, MockNetworkTimeConverter())
 			database.create_tables()
 
 			# Act:
@@ -125,7 +126,7 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 		with sqlite3.connect(':memory:') as connection:
 			mappings = one_or_more_mappings if isinstance(one_or_more_mappings, list) else [one_or_more_mappings]
 
-			database = CompletedOptinDatabase(connection)
+			database = CompletedOptinDatabase(connection, MockNetworkTimeConverter())
 			database.create_tables()
 
 			# Act:
@@ -144,7 +145,10 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 			ExpectedData(
 				flags=[(True,)],
 				nem_sources=[(NemAddress(NEM_ADDRESSES[0]).bytes, 558668349881393, 1)],
-				symbol_destinations=[(SymbolAddress(SYMBOL_ADDRESSES[0]).bytes, 558668349881393, None, 345, 1234, 1)]))
+				symbol_destinations=[
+					# time converter is used
+					(SymbolAddress(SYMBOL_ADDRESSES[0]).bytes, 558668349881393, None, 345, 1234 * 3, 1)
+				]))
 
 	def test_can_insert_merge_with_matching_balances(self):
 		self._assert_can_insert_mappings(
@@ -161,7 +165,10 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 					(NemAddress(NEM_ADDRESSES[0]).bytes, 43686866144523, 1),
 					(NemAddress(NEM_ADDRESSES[1]).bytes, 16108065258303, 1)
 				],
-				symbol_destinations=[(SymbolAddress(SYMBOL_ADDRESSES[0]).bytes, 59794931402826, None, 345, 1234, 1)]))
+				symbol_destinations=[
+					# time converter is used
+					(SymbolAddress(SYMBOL_ADDRESSES[0]).bytes, 59794931402826, None, 345, 1234 * 3, 1)
+				]))
 
 	def test_can_insert_multi_with_matching_balances(self):
 		self._assert_can_insert_mappings(
@@ -281,7 +288,7 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 		with sqlite3.connect(':memory:') as connection:
 			mappings = one_or_more_mappings if isinstance(one_or_more_mappings, list) else [one_or_more_mappings]
 
-			database = CompletedOptinDatabase(connection)
+			database = CompletedOptinDatabase(connection, MockNetworkTimeConverter())
 			database.create_tables()
 
 			for mapping in mappings[:-1]:
@@ -439,7 +446,7 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 
 	@staticmethod
 	def _create_database_with_json_mappings(connection, remove_nem_transactions=True):
-		database = CompletedOptinDatabase(connection)
+		database = CompletedOptinDatabase(connection, MockNetworkTimeConverter())
 		database.create_tables()
 
 		entries = [
@@ -485,10 +492,11 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 					(NemAddress(NEM_ADDRESSES[0]).bytes, 'test-label')
 				],
 				symbol_destinations=[
+					# time converter is used
 					(SymbolAddress(SYMBOL_ADDRESSES[0]).bytes, 558668349881393, Hash256(MARKER_HASHES[0]).bytes, 234, 0, 1),
-					(SymbolAddress(SYMBOL_ADDRESSES[1]).bytes, 33686866144523, Hash256(MARKER_HASHES[1]).bytes, 345, 1234, 2),
+					(SymbolAddress(SYMBOL_ADDRESSES[1]).bytes, 33686866144523, Hash256(MARKER_HASHES[1]).bytes, 345, 1234 * 3, 2),
 					(SymbolAddress(SYMBOL_ADDRESSES[2]).bytes, 26108065200000, Hash256(MARKER_HASHES[2]).bytes, 456, 0, 2),
-					(SymbolAddress(SYMBOL_ADDRESSES[3]).bytes, 58303, Hash256(MARKER_HASHES[3]).bytes, 567, 9876, 2)
+					(SymbolAddress(SYMBOL_ADDRESSES[3]).bytes, 58303, Hash256(MARKER_HASHES[3]).bytes, 567, 9876 * 3, 2)
 				]))
 
 			self.assertEqual(state['entries'], state['collected'])
@@ -520,10 +528,11 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 					(NemAddress(NEM_ADDRESSES[2]).bytes, Hash256(HASHES[0]).bytes, 333),
 				],
 				symbol_destinations=[
+					# time converter is used
 					(SymbolAddress(SYMBOL_ADDRESSES[0]).bytes, 558668349881393, Hash256(MARKER_HASHES[0]).bytes, 234, 0, 1),
-					(SymbolAddress(SYMBOL_ADDRESSES[1]).bytes, 33686866144523, Hash256(MARKER_HASHES[1]).bytes, 345, 1234, 2),
+					(SymbolAddress(SYMBOL_ADDRESSES[1]).bytes, 33686866144523, Hash256(MARKER_HASHES[1]).bytes, 345, 1234 * 3, 2),
 					(SymbolAddress(SYMBOL_ADDRESSES[2]).bytes, 26108065200000, Hash256(MARKER_HASHES[2]).bytes, 456, 0, 2),
-					(SymbolAddress(SYMBOL_ADDRESSES[3]).bytes, 58303, Hash256(MARKER_HASHES[3]).bytes, 567, 9876, 2)
+					(SymbolAddress(SYMBOL_ADDRESSES[3]).bytes, 58303, Hash256(MARKER_HASHES[3]).bytes, 567, 9876 * 3, 2)
 				]))
 
 			self.assertEqual(state['entries'], state['collected'])
@@ -531,7 +540,7 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 	def test_cannot_insert_conflicting_mappings(self):
 		# Arrange:
 		with sqlite3.connect(':memory:') as connection:
-			database = CompletedOptinDatabase(connection)
+			database = CompletedOptinDatabase(connection, MockNetworkTimeConverter())
 			database.create_tables()
 
 			json_data = [{'info': 'comment that should be ignored'}, self._create_entry_two(), self._create_entry_two()]
@@ -554,7 +563,7 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 
 	@staticmethod
 	def _prepare_database_for_set_label_test(connection):
-		database = CompletedOptinDatabase(connection)
+		database = CompletedOptinDatabase(connection, MockNetworkTimeConverter())
 		database.create_tables()
 
 		database.set_label(NemAddress(NEM_ADDRESSES[0]), 'green')
@@ -607,7 +616,7 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 
 			# Act:
 			with sqlite3.connect('file:mem1?mode=memory&cache=shared', uri=True) as connection2:
-				database2 = CompletedOptinDatabase(connection2)
+				database2 = CompletedOptinDatabase(connection2, MockNetworkTimeConverter())
 				database2.set_label(NemAddress(NEM_ADDRESSES[0]), 'yellow')
 
 				# Assert:

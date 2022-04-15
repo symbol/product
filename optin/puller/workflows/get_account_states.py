@@ -13,7 +13,7 @@ from puller.db.MultisigDatabase import MultisigDatabase
 
 def get_addresses(filename, network):
 	with sqlite3.connect(f'file:{filename}?mode=ro', uri=True) as connection:
-		in_progress_database = InProgressOptinDatabase(connection)
+		in_progress_database = InProgressOptinDatabase(connection, None)  # this workflow does not insert any timestamps
 		return in_progress_database.nem_source_addresses(network)
 
 

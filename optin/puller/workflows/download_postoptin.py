@@ -5,13 +5,12 @@ import logging
 
 from symbolchain.CryptoTypes import PublicKey
 from symbolchain.nem.Network import Address
-from symbolchain.nem.NetworkTimestamp import NetworkTimestamp as NemNetworkTimestamp
-from symbolchain.symbol.NetworkTimestamp import NetworkTimestamp as SymbolNetworkTimestamp
 
 from puller.client.NemClient import NemClient, get_incoming_transactions_from
 from puller.client.SymbolClient import SymbolClient
 from puller.db.Databases import Databases
 from puller.db.InProgressOptinDatabase import OptinRequestStatus
+from puller.models.NetworkTimeConverter import NetworkTimeConverter
 from puller.processors.AccountChecker import check_destination_availability
 from puller.processors.NemOptinProcessor import process_nem_optin_request
 
@@ -53,15 +52,13 @@ class DownloadTransactionProcessor:
 
 	async def _handle_already_paid(self, nem_transaction, destination_address, payout_transaction_info, process_result):
 		logging.debug('handling already paid sym: %s', destination_address)
-		nem_transation_datetime = NemNetworkTimestamp(nem_transaction['transaction']['timeStamp']).to_datetime()
 
-		payout_timestamp = SymbolNetworkTimestamp(int(payout_transaction_info.transaction['meta']['timestamp']))
-		payout_datetime = payout_timestamp.to_datetime()
-		if 'testnet' == self.symbol_network.name:
-			payout_datetime = payout_timestamp.to_datetime(SYMBOL_TESTNET_EPOCH_TIME)
+		time_converter = NetworkTimeConverter(self.nem_network.name)
+		optin_unix_timestamp = time_converter.nem_to_unix(nem_transaction['transaction']['timeStamp'])
+		payout_unix_timestamp = time_converter.symbol_to_unix(int(payout_transaction_info.transaction['meta']['timestamp']))
 
 		payout_transaction_hash = payout_transaction_info.transaction_hash
-		if nem_transation_datetime > payout_datetime:
+		if optin_unix_timestamp > payout_unix_timestamp:
 			# mark optin transactions made AFTER payout transaction as duplicates, this will not add anything to completed table
 			# so _next_ transaction that is made before payout transaction will be added correctly
 			logging.debug('nem transaction time is newer than payout timestamp, payout hash: %s', payout_transaction_hash)
@@ -164,7 +161,8 @@ async def main():
 	for public_key in payout_signer_public_keys:
 		print(f' * {public_key}')
 
-	with Databases(args.database_directory) as databases:
+	network_name = (await nem_client.node_network()).name
+	with Databases(args.database_directory, network_name) as databases:
 		databases.inprogress.create_tables()
 		databases.completed.create_tables()
 

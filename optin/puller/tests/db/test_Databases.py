@@ -9,7 +9,7 @@ class DatabasesTest(unittest.TestCase):
 		# Arrange:
 		with tempfile.TemporaryDirectory() as temp_directory:
 			# Act:
-			databases = Databases(temp_directory)
+			databases = Databases(temp_directory, 'testnet')
 
 			# Assert:
 			self.assertIsNone(databases.completed)
@@ -21,7 +21,7 @@ class DatabasesTest(unittest.TestCase):
 		# Arrange:
 		with tempfile.TemporaryDirectory() as temp_directory:
 			# Act:
-			with Databases(temp_directory) as databases:
+			with Databases(temp_directory, 'testnet') as databases:
 				# Assert:
 				self.assertIsNotNone(databases.completed)
 				self.assertIsNotNone(databases.inprogress)

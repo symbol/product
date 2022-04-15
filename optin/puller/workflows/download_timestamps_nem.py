@@ -8,7 +8,9 @@ from puller.db.Databases import Databases
 
 
 async def download_nem_timestamps_into(database_directory, database_name, nem_client):
-	with Databases(database_directory) as databases:
+	network = await nem_client.node_network()
+
+	with Databases(database_directory, network.name) as databases:
 		database = getattr(databases, database_name)
 		database.create_tables()
 
@@ -31,7 +33,7 @@ async def download_nem_timestamps_into(database_directory, database_name, nem_cl
 		return
 
 	print('inserting timestamps')
-	with Databases(database_directory) as databases:
+	with Databases(database_directory, network.name) as databases:
 		database = getattr(databases, database_name)
 		database.insert_nem_block_timestamps(height_timestamp_map)
 

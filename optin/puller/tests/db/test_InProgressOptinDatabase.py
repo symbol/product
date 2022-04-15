@@ -7,6 +7,7 @@ from symbolchain.nem.Network import Address, Network
 from puller.db.InProgressOptinDatabase import InProgressOptinDatabase, OptinRequestStatus
 
 from ..test.DatabaseTestUtils import get_all_table_names
+from ..test.MockNetworkTimeConverter import MockNetworkTimeConverter
 from ..test.OptinRequestTestUtils import HASHES, HEIGHTS, NEM_ADDRESSES, PUBLIC_KEYS, assert_equal_request, make_request, make_request_error
 
 # region factories
@@ -61,7 +62,7 @@ class InProgressOptinDatabaseTest(unittest.TestCase):
 	def _assert_can_insert_rows(self, seed, expected, post_insert_action):
 		# Arrange:
 		with sqlite3.connect(':memory:') as connection:
-			database = InProgressOptinDatabase(connection)
+			database = InProgressOptinDatabase(connection, MockNetworkTimeConverter())
 			database.create_tables()
 
 			# Act:
@@ -104,7 +105,7 @@ class InProgressOptinDatabaseTest(unittest.TestCase):
 
 	def test_can_create_tables(self):
 		# Act:
-		table_names = get_all_table_names(InProgressOptinDatabase)
+		table_names = get_all_table_names(InProgressOptinDatabase, MockNetworkTimeConverter())
 
 		# Assert:
 		self.assertEqual(set(['nem_block_timestamps', 'optin_error', 'optin_request', 'payout_transaction']), table_names)
@@ -138,7 +139,7 @@ class InProgressOptinDatabaseTest(unittest.TestCase):
 	def test_cannot_add_multiple_errors_with_same_transaction_hash(self):
 		# Arrange:
 		with sqlite3.connect(':memory:') as connection:
-			database = InProgressOptinDatabase(connection)
+			database = InProgressOptinDatabase(connection, MockNetworkTimeConverter())
 			database.create_tables()
 
 			database.add_error(make_request_error(0, 'this is an error message'))
@@ -151,7 +152,7 @@ class InProgressOptinDatabaseTest(unittest.TestCase):
 	def test_cannot_add_multiple_errors_with_same_transaction_hash_simulate_file_access(self):
 		# Arrange:
 		with sqlite3.connect('file:mem1?mode=memory&cache=shared', uri=True) as connection:
-			database = InProgressOptinDatabase(connection)
+			database = InProgressOptinDatabase(connection, MockNetworkTimeConverter())
 			database.create_tables()
 
 			database.add_error(make_request_error(0, 'this is an error message'))
@@ -159,7 +160,7 @@ class InProgressOptinDatabaseTest(unittest.TestCase):
 			# Act + Assert:
 			with sqlite3.connect('file:mem1?mode=memory&cache=shared', uri=True) as connection2:
 				with self.assertRaises(sqlite3.IntegrityError):
-					database2 = InProgressOptinDatabase(connection2)
+					database2 = InProgressOptinDatabase(connection2, MockNetworkTimeConverter())
 					database2.add_error(make_request_error(0, 'this is different error message'))
 
 	# endregion
@@ -191,7 +192,7 @@ class InProgressOptinDatabaseTest(unittest.TestCase):
 	def test_cannot_add_multiple_requests_with_same_transaction_hash(self):
 		# Arrange:
 		with sqlite3.connect(':memory:') as connection:
-			database = InProgressOptinDatabase(connection)
+			database = InProgressOptinDatabase(connection, MockNetworkTimeConverter())
 			database.create_tables()
 
 			database.add_request(make_request(0, {'type': 100, 'destination': PUBLIC_KEYS[0]}))
@@ -203,7 +204,7 @@ class InProgressOptinDatabaseTest(unittest.TestCase):
 
 	@staticmethod
 	def _prepare_database_for_add_request_duplicate_test(connection, existing_status):
-		database = InProgressOptinDatabase(connection)
+		database = InProgressOptinDatabase(connection, MockNetworkTimeConverter())
 		database.create_tables()
 
 		processed_request = make_request(0, {'type': 101, 'destination': PUBLIC_KEYS[0], 'origin': PUBLIC_KEYS[3]})
@@ -294,7 +295,7 @@ class InProgressOptinDatabaseTest(unittest.TestCase):
 	def test_can_retrieve_requests(self):
 		# Arrange:
 		with sqlite3.connect(':memory:') as connection:
-			database = InProgressOptinDatabase(connection)
+			database = InProgressOptinDatabase(connection, MockNetworkTimeConverter())
 			(normal_request, multisig_request, confirmed_request, multisig_request2) = self._prepare_database_for_requests_test(database)
 
 			# Act:
@@ -314,7 +315,7 @@ class InProgressOptinDatabaseTest(unittest.TestCase):
 	def test_can_retrieve_nem_source_addresses(self):
 		# Arrange:
 		with sqlite3.connect(':memory:') as connection:
-			database = InProgressOptinDatabase(connection)
+			database = InProgressOptinDatabase(connection, MockNetworkTimeConverter())
 			self._prepare_database_for_requests_test(database)
 
 			# Act:
@@ -333,7 +334,7 @@ class InProgressOptinDatabaseTest(unittest.TestCase):
 	def test_max_processed_height_is_zero_when_empty(self):
 		# Arrange:
 		with sqlite3.connect(':memory:') as connection:
-			database = InProgressOptinDatabase(connection)
+			database = InProgressOptinDatabase(connection, MockNetworkTimeConverter())
 			database.create_tables()
 
 			# Act:
@@ -345,7 +346,7 @@ class InProgressOptinDatabaseTest(unittest.TestCase):
 	def _assert_max_processed_height(self, max_error_height, max_request_height, expected_max_processed_height):
 		# Arrange:
 		with sqlite3.connect(':memory:') as connection:
-			database = InProgressOptinDatabase(connection)
+			database = InProgressOptinDatabase(connection, MockNetworkTimeConverter())
 			database.create_tables()
 
 			if max_error_height:
@@ -439,7 +440,7 @@ class InProgressOptinDatabaseTest(unittest.TestCase):
 			make_request_tuple(1, status_id=2, payout_transaction_hash=payout_transaction_hash),
 			make_request_tuple(2)
 		], expected_payout_transactions=[
-			(payout_transaction_hash.bytes, 123, 987),
+			(payout_transaction_hash.bytes, 123, 987 * 3),  # time converter is used
 		], post_insert_action=post_insert_action)
 
 	def test_cannot_update_single_request_status_without_matching_optin_transaction_hash(self):
@@ -494,7 +495,7 @@ class InProgressOptinDatabaseTest(unittest.TestCase):
 
 	@staticmethod
 	def _prepare_database_for_symbol_timestamp_tests(connection):
-		database = InProgressOptinDatabase(connection)
+		database = InProgressOptinDatabase(connection, MockNetworkTimeConverter())
 		database.create_tables()
 
 		seed_requests = [
@@ -575,8 +576,8 @@ class InProgressOptinDatabaseTest(unittest.TestCase):
 			actual_payout_transactions = self._query_all_payout_transactions(connection.cursor())
 
 			self.assertEqual([
-				(payout_transaction_hashes[2].bytes, 888, 333),
-				(payout_transaction_hashes[0].bytes, 123, 987),
+				(payout_transaction_hashes[2].bytes, 888, 333 * 3),  # time converter is used
+				(payout_transaction_hashes[0].bytes, 123, 987 * 3),
 				(payout_transaction_hashes[1].bytes, 0, 0)
 			], actual_payout_transactions)
 
@@ -587,7 +588,7 @@ class InProgressOptinDatabaseTest(unittest.TestCase):
 	def test_can_retrieve_optin_transaction_heights(self):
 		# Arrange:
 		with sqlite3.connect(':memory:') as connection:
-			database = InProgressOptinDatabase(connection)
+			database = InProgressOptinDatabase(connection, MockNetworkTimeConverter())
 			database.create_tables()
 
 			database.add_error(make_request_error(3, 'this is an error message'))

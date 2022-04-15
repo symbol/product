@@ -8,7 +8,9 @@ from puller.db.Databases import Databases
 
 
 async def download_symbol_timestamps_into(database_directory, database_name, symbol_client):
-	with Databases(database_directory) as databases:
+	network = await symbol_client.node_network()
+
+	with Databases(database_directory, network.name) as databases:
 		database = getattr(databases, database_name)
 		database.create_tables()
 
@@ -34,7 +36,7 @@ async def download_symbol_timestamps_into(database_directory, database_name, sym
 	await asyncio.gather(*tasks)
 
 	print('inserting timestamps')
-	with Databases(database_directory) as databases:
+	with Databases(database_directory, network.name) as databases:
 		database = getattr(databases, database_name)
 
 		for transction_hash, transaction_metadata in transaction_metadata_map.items():

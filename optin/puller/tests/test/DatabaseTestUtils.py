@@ -1,10 +1,10 @@
 import sqlite3
 
 
-def get_all_table_names(database_class):
+def get_all_table_names(database_class, *args):
 	# Arrange:
 	with sqlite3.connect(':memory:') as connection:
-		database = database_class(connection)
+		database = database_class(connection, *args)
 
 		# Act: call create_tables multiple times in order to ensure it is idempotent
 		database.create_tables()

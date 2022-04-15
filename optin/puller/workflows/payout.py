@@ -199,7 +199,7 @@ async def main():
 
 	transaction_preparer = TransactionPreparer(args.network, currency_mosaic_id, funder_key_pair)
 
-	with Databases(args.database_directory) as databases:
+	with Databases(args.database_directory, symbol_network.name) as databases:
 		processor = Processor(databases, client, symbol_network, transaction_preparer, args.csv_output)
 		sent_requests = group_requests(nem_network, databases.inprogress.requests_by_status(OptinRequestStatus.SENT))
 		unprocessed_requests = group_requests(

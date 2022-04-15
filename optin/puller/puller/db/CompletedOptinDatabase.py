@@ -86,8 +86,7 @@ class CompletedOptinDatabase(NemBlockTimestampsMixin):
 			(NemAddress(source_json['nis-address']).bytes, mapping_json['label']) for source_json in mapping_json['source']
 		])
 
-	@staticmethod
-	def _insert_mapping(cursor, nem_address_dict, symbol_address_dict, is_postoptin=True):
+	def _insert_mapping(self, cursor, nem_address_dict, symbol_address_dict, is_postoptin=True):
 		cursor.execute('''INSERT INTO optin_id VALUES (NULL, ?)''', (is_postoptin,))
 		optin_id = cursor.lastrowid
 
@@ -101,7 +100,7 @@ class CompletedOptinDatabase(NemBlockTimestampsMixin):
 				entry['sym-balance'],
 				Hash256(entry['hash']).bytes if 'hash' in entry else None,
 				entry.get('height', 1),
-				entry.get('timestamp', 0),
+				0 if 'timestamp' not in entry else self.time_converter.symbol_to_unix(int(entry['timestamp'])),
 				optin_id
 			) for address, entry in symbol_address_dict.items()
 		])

@@ -1,6 +1,7 @@
 import sqlite3
 from pathlib import Path
 
+from ..models.NetworkTimeConverter import NetworkTimeConverter
 from .BalancesDatabase import BalancesDatabase
 from .CompletedOptinDatabase import CompletedOptinDatabase
 from .InProgressOptinDatabase import InProgressOptinDatabase
@@ -12,10 +13,11 @@ class Databases:
 
 	# pylint: disable=too-many-instance-attributes
 
-	def __init__(self, database_directory):
+	def __init__(self, database_directory, network_name):
 		"""Creates a databases object."""
 
 		self.database_directory = Path(database_directory)
+		self.time_converter = NetworkTimeConverter(network_name)
 
 		self._completed_connection = None
 		self._inprogress_connection = None
@@ -35,8 +37,8 @@ class Databases:
 		self._multisig_connection = sqlite3.connect(self.database_directory / 'multisig.db')
 		self._balances_connection = sqlite3.connect(self.database_directory / 'balances.db')
 
-		self.completed = CompletedOptinDatabase(self._completed_connection)
-		self.inprogress = InProgressOptinDatabase(self._inprogress_connection)
+		self.completed = CompletedOptinDatabase(self._completed_connection, self.time_converter)
+		self.inprogress = InProgressOptinDatabase(self._inprogress_connection, self.time_converter)
 		self.multisig = MultisigDatabase(self._multisig_connection)
 		self.balances = BalancesDatabase(self._balances_connection)
 		return self

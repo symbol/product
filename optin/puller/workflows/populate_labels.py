@@ -15,7 +15,7 @@ def main():
 	args = parser.parse_args()
 
 	with sqlite3.connect(Path(args.database_directory) / 'completed.db') as connection:
-		database = CompletedOptinDatabase(connection)
+		database = CompletedOptinDatabase(connection, None)  # this workflow does not insert any timestamps
 		database.create_tables()
 
 		print(f'processing labels from {args.labels}')

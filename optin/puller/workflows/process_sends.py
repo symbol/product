@@ -82,7 +82,7 @@ async def main():
 	symbol_network = await client.node_network()
 	nem_network = NemNetwork.TESTNET if 'testnet' == args.network else NemNetwork.MAINNET
 
-	with Databases(args.database_directory) as databases:
+	with Databases(args.database_directory, args.network) as databases:
 		print('checking previously sent requests')
 
 		processor = Processor(databases, client, symbol_network, args.dry_run)

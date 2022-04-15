@@ -178,7 +178,7 @@ class InProgressOptinDatabase(NemBlockTimestampsMixin):
 		cursor.execute(
 			'''UPDATE payout_transaction SET height = ?, timestamp = ?
 				WHERE transaction_hash = ?''',
-			(height, timestamp, payout_transaction_hash.bytes))
+			(height, self.time_converter.symbol_to_unix(timestamp), payout_transaction_hash.bytes))
 		self.connection.commit()
 
 	def optin_transaction_heights(self):

@@ -4,10 +4,11 @@ import sqlite3
 class NemBlockTimestampsMixin:
 	"""Database mixin for storing NEM block timestamps."""
 
-	def __init__(self, connection):
+	def __init__(self, connection, time_converter):
 		"""Creates a mixin around a database connection."""
 
 		self.connection = connection
+		self.time_converter = time_converter
 
 	def create_tables(self):
 		"""Creates NEM block timestamps table."""
@@ -23,7 +24,9 @@ class NemBlockTimestampsMixin:
 
 		cursor = self.connection.cursor()
 		try:
-			cursor.executemany('''INSERT INTO nem_block_timestamps VALUES (?, ?)''', list(height_timestamp_dict.items()))
+			cursor.executemany(
+				'''INSERT INTO nem_block_timestamps VALUES (?, ?)''',
+				list((height, self.time_converter.nem_to_unix(timestamp)) for height, timestamp in height_timestamp_dict.items()))
 			self.connection.commit()
 		except sqlite3.IntegrityError:
 			self.connection.rollback()

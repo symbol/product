@@ -12,7 +12,8 @@ echo
 
 PYTHONPATH=. python3 workflows/populate_db.py \
 	--database-directory "${DATABASE_DIRECTORY}" \
-	--optin "resources/preoptin.${NETWORK_NAME}.json"
+	--optin "resources/preoptin.${NETWORK_NAME}.json" \
+	--network "${NETWORK_NAME}"
 
 echo "[POPULATE_LABELS] populating database with NEM account labels from 'resources/nem_account_labels.${NETWORK_NAME}.csv'"
 echo
