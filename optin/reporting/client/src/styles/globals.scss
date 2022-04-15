@@ -24,7 +24,6 @@
   @extend .list-item;
   font-weight: bold;
   text-decoration: underline;
-  border: 1px solid !important;
 }
 
 .copy-button {
@@ -52,4 +51,8 @@
   html {
     font-size: 11px !important;
   }
+}
+
+a {
+  text-decoration: none;
 }
