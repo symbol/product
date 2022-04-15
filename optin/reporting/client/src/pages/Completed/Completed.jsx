@@ -201,6 +201,7 @@ const Completed = ({defaultPaginationType}) => {
 			allPagesLoaded={allPagesLoaded} loadingMessage="Loading more items..."
 			first={first} header={header} paginator={'paginator' === paginationType}>
 			<TableColumn field="optin_id" header="#" align="left"/>
+			<TableColumn field="isPostoptin" header="Opt-in Type" body={isPostoptinTemplate} align="center"/>
 			<TableColumn field="nemAddress" header="NEM Address" body={nemAddressTemplate} align="left"/>
 			<TableColumn field="label" header="Info" body={labelTemplate} align="left"/>
 			<TableColumn field="nemHashes" header="Hash" body={nemHashesTemplate} align="left"/>
