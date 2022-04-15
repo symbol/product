@@ -36,7 +36,7 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 
 		# Assert:
 		self.assertEqual(
-			set(['optin_id', 'nem_source', 'nem_label', 'nem_transaction', 'nem_block_timestamps', 'symbol_destination']), table_names)
+			set(['nem_block_timestamps', 'optin_id', 'nem_source', 'nem_label', 'nem_transaction', 'symbol_destination']), table_names)
 
 	# endregion
 
@@ -84,7 +84,7 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 			for address, transaction in address_transaction_tuples:
 				database.insert_transaction(address, transaction)
 
-			heights = database.transaction_heights()
+			heights = database.optin_transaction_heights()
 
 			# Assert
 			self._assert_db_contents(connection, 0, expected_data)
@@ -654,43 +654,17 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 
 	# endregion
 
-	# region insert_timestamps
+	# region optin_transaction_heights
 
-	def _assert_timestamps(self, connection, expected_timestamps):
-		cursor = connection.cursor()
-		cursor.execute('''SELECT * FROM nem_block_timestamps ORDER BY height DESC''')
-		block_timestamps = cursor.fetchall()
-
-		# Assert:
-		self.assertEqual(expected_timestamps, block_timestamps)
-
-	def test_can_insert_timestamps(self):
+	def test_can_retrieve_optin_transaction_heights(self):
 		# Arrange:
 		with sqlite3.connect(':memory:') as connection:
-			database = CompletedOptinDatabase(connection)
-			database.create_tables()
+			database = self._create_database_with_json_mappings(connection, False)['database']
 
 			# Act:
-			database.insert_block_timestamps({5: 8, 6: 13, 7: 21})
+			heights = database.optin_transaction_heights()
 
-			# Assert:
-			self._assert_timestamps(connection, [(7, 21), (6, 13), (5, 8)])
-
-	# endregion
-
-	# region block_timestamps
-
-	def test_can_query_block_timestamps(self):
-		# Arrange:
-		with sqlite3.connect(':memory:') as connection:
-			database = CompletedOptinDatabase(connection)
-			database.create_tables()
-			database.insert_block_timestamps({5: 8, 6: 13, 7: 21})
-
-			# Act:
-			block_timestamps = database.block_timestamps()
-
-			# Assert:
-			self.assertEqual([(7, 21), (6, 13), (5, 8)], block_timestamps)
+			# Assert
+			self.assertEqual(set([123, 456, 789, 333]), heights)
 
 	# endregion

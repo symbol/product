@@ -5,6 +5,8 @@ from symbolchain.nem.Network import Address
 
 from puller.models.OptinRequest import OptinRequest
 
+from .NemBlockTimestampsMixin import NemBlockTimestampsMixin
+
 
 class OptinRequestStatus(Enum):
 	"""Status of an opt-in request."""
@@ -16,16 +18,13 @@ class OptinRequestStatus(Enum):
 	ERROR_ZERO = 5
 
 
-class InProgressOptinDatabase:
+class InProgressOptinDatabase(NemBlockTimestampsMixin):
 	"""Database containing in progress optin information and errors."""
-
-	def __init__(self, connection):
-		"""Creates a database around a database connection."""
-
-		self.connection = connection
 
 	def create_tables(self):
 		"""Creates optin database tables."""
+
+		super().create_tables()
 
 		cursor = self.connection.cursor()
 		cursor.execute('''CREATE TABLE IF NOT EXISTS optin_error (
@@ -149,3 +148,11 @@ class InProgressOptinDatabase:
 			'''SELECT * FROM optin_request WHERE payout_status = ? ORDER BY optin_transaction_height DESC''',
 			(status.value,))
 		return list(map(self._to_request, cursor))
+
+	def optin_transaction_heights(self):
+		"""Gets list of optin transaction heights."""
+
+		cursor = self.connection.cursor()
+		error_heights = [row[0] for row in cursor.execute('''SELECT optin_transaction_height FROM optin_error''')]
+		request_heights = [row[0] for row in cursor.execute('''SELECT optin_transaction_height FROM optin_request''')]
+		return set(error_heights + request_heights)

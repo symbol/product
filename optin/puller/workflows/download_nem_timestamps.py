@@ -14,15 +14,13 @@ def parse_args():
 	return parser.parse_args()
 
 
-async def main():
-	args = parse_args()
-	nem_client = NemClient(args.nem_node)
+async def download_nem_timestamps_into(database_directory, database_name, nem_client):
+	with Databases(database_directory) as databases:
+		database = getattr(databases, database_name)
+		database.create_tables()
 
-	with Databases(args.database_directory) as databases:
-		databases.completed.create_tables()
-
-		heights = databases.completed.transaction_heights()
-		existing_block_heights = set(map(lambda tuple: tuple[0], databases.completed.block_timestamps()))
+		heights = database.optin_transaction_heights()
+		existing_block_heights = set(map(lambda tuple: tuple[0], database.nem_block_timestamps()))
 
 	height_timestamp_map = {}
 	limiter = AsyncLimiter(20, 1.0)
@@ -40,8 +38,19 @@ async def main():
 		return
 
 	print('inserting timestamps')
-	with Databases(args.database_directory) as databases:
-		databases.completed.insert_block_timestamps(height_timestamp_map)
+	with Databases(database_directory) as databases:
+		database = getattr(databases, database_name)
+		database.insert_nem_block_timestamps(height_timestamp_map)
+
+
+async def main():
+	args = parse_args()
+	nem_client = NemClient(args.nem_node)
+
+	for name in ('completed', 'inprogress'):
+		print(f'processing {name}')
+		await download_nem_timestamps_into(args.database_directory, name, nem_client)
+		print()
 
 
 if '__main__' == __name__:

@@ -48,7 +48,7 @@ class InProgressOptinDatabaseTest(unittest.TestCase):
 		table_names = get_all_table_names(InProgressOptinDatabase)
 
 		# Assert:
-		self.assertEqual(set(['optin_error', 'optin_request']), table_names)
+		self.assertEqual(set(['nem_block_timestamps', 'optin_error', 'optin_request']), table_names)
 
 	# endregion
 
@@ -490,5 +490,26 @@ class InProgressOptinDatabaseTest(unittest.TestCase):
 			self.assertEqual(2, len(requests))
 			assert_equal_request(self, seed_requests[2], requests[1])
 			assert_equal_request(self, seed_requests[0], requests[0])
+
+	# endregion
+
+	# region optin_transaction_heights
+
+	def test_can_retrieve_optin_transaction_heights(self):
+		# Arrange:
+		with sqlite3.connect(':memory:') as connection:
+			database = InProgressOptinDatabase(connection)
+			database.create_tables()
+
+			database.add_error(make_request_error(3, 'this is an error message'))
+			database.add_request(make_request(1, {'type': 100, 'destination': PUBLIC_KEYS[1]}))
+			database.add_error(make_request_error(1, 'error message'))
+			database.add_request(make_request(0, {'type': 100, 'destination': PUBLIC_KEYS[0]}))
+
+			# Act:
+			heights = database.optin_transaction_heights()
+
+			# Assert: heights from both errors and requests are included
+			self.assertEqual(set([HEIGHTS[0], HEIGHTS[1], HEIGHTS[3]]), heights)
 
 	# endregion
