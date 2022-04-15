@@ -2,7 +2,7 @@ import { Button } from 'primereact/button';
 import { Dialog } from 'primereact/dialog';
 import React, { useState } from 'react';
 
-const PopUpDialog = ({title, content}) => {
+const PopUpDialog = ({title, content, buttonText}) => {
 	const [visible, setVisible] = useState(false);
 
 	const onHide = () => {
@@ -15,7 +15,7 @@ const PopUpDialog = ({title, content}) => {
 
 	return  (
 		<>
-			<Button id="button" onClick={onShow} label={title}  className="p-button-secondary p-button-text" />
+			<Button id="button" onClick={onShow} label={buttonText ?? title}  className="p-button-secondary p-button-text" />
 			<Dialog header={title} visible={visible} onHide={onHide} dismissableMask={true} >
 				{ content }
 			</Dialog>

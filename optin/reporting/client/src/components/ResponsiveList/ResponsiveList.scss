@@ -1,0 +1,17 @@
+.container-full-list {
+    display: block;
+}
+
+.container-responsive-list {
+    display: none;
+}
+
+@media (max-width: 960px) {
+    .container-full-list {
+        display: none;
+    }
+    
+    .container-responsive-list {
+        display: block;
+    }
+}

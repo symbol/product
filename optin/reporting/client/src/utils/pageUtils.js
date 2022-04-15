@@ -1,4 +1,5 @@
 import Helper from './helper';
+import ResponsiveList from '../components/ResponsiveList';
 import ResponsiveText from '../components/ResponsiveText';
 import {Button} from 'primereact/button';
 import React from 'react';
@@ -17,38 +18,40 @@ const copyButton = value => {
 	);
 };
 export const addressTemplate = (rowData, key, config) => {
-	const list = Array.isArray(rowData[key]) ? rowData[key] : [rowData[key]];
+	const list = Array.isArray(rowData[key]) ? [...rowData[key]] : [rowData[key]];
+	if (1 < list.length)
+		list.push('');
 	return (
-		<React.Fragment>
-			<div>
-				{
-					list.map(address => <div className='flex flex-row list-item'>
-						<a href={config.keyRedirects[key] + address} target="_blank" rel="noreferrer">
-							<ResponsiveText value={address} />
-						</a>
-						{copyButton(address)}
-					</div>)
-				}
-			</div>
-		</React.Fragment>
+		<ResponsiveList title="Address List">
+			{
+				list.map(address => <div className='flex flex-row list-item'>
+					<a href={config.keyRedirects[key] + address} target="_blank" rel="noreferrer">
+						<ResponsiveText value={address} />
+					</a>
+					{copyButton(address)}
+				</div>)
+			}
+		</ResponsiveList>
 	);
 };
 
 export const balanceTemplate = (rowData, key, renderTotal = true) => {
 	const list = Array.isArray(rowData[key]) ? rowData[key] : [rowData[key]];
 
+	const resultList = list.map(balance =>
+		<div className='list-item'>
+			{Helper.toRelativeAmount(balance).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+		</div>);
+	if (renderTotal) {
+		const total = renderTotalValue(rowData[key]);
+		if (total)
+			resultList.push(total);
+	}
+	
 	return (
-		<React.Fragment>
-			{
-				list.map(balance =>
-					<div className='list-item'>
-						{Helper.toRelativeAmount(balance).toLocaleString('en-US', { minimumFractionDigits: 2 })}
-					</div>)
-			}
-			<React.Fragment>
-				{renderTotal && renderTotalValue(rowData[key])}
-			</React.Fragment>
-		</React.Fragment>
+		<ResponsiveList visible={resultList[resultList.length - 1]} title="Balance List">
+			{ resultList}
+		</ResponsiveList>
 	);
 };
 
@@ -77,23 +80,21 @@ export const transactionHashTemplate = (rowData, key, config) => {
 			</div>
 		);
 	};
+	const resultList = list.flat(Infinity).map(hash =>
+		<div>
+			{
+				null !== hash
+					? buildTransactionHashLink(key, hash)
+					: '(off chain)'
+			}
+		</div>);
+	if (1 < resultList.length)
+		resultList.push(<div className='list-item' />);
 
 	return (
-		<React.Fragment>
-			{
-				list.flat(Infinity).map(hash =>
-					<div>
-						{
-							null !== hash
-								? buildTransactionHashLink(key, hash)
-								: '(off chain)'
-						}
-					</div>)
-			}
-			<React.Fragment>
-				{ 1 < list.flat(Infinity).length && <div className='list-item' />}
-			</React.Fragment>
-		</React.Fragment>
+		<ResponsiveList title="Hash List">
+			{resultList}
+		</ResponsiveList>
 	);
 };
 
@@ -107,10 +108,10 @@ export const optinTypeTemplate = (rowData, key) => {
 };
 
 export const infoTemplate = (rowData, key) => {
-	const labels = Array.isArray(rowData[key]) ? [...new Set(rowData[key])] : [rowData[key]];
+	const labels = [...new Set(rowData[key])];
 
 	return (
-		labels.map(info =>
+		labels.filter(label => label).map(info =>
 			<div>
 				{ info }
 			</div>)
