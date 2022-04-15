@@ -25,6 +25,8 @@ async def download_nem_timestamps_into(database_directory, database_name, nem_cl
 			headers = await nem_client.block_headers(height)
 			height_timestamp_map[headers['height']] = headers['timeStamp']
 
+			print('.', end='', flush=True)
+
 	tasks = list(map(get_block_headers, filter(lambda height: height not in existing_block_heights, heights)))
 	print(f'collecting {len(tasks)} blocks, this will take a bit')
 	await asyncio.gather(*tasks)

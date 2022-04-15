@@ -31,6 +31,8 @@ async def download_symbol_timestamps_into(database_directory, database_name, sym
 				'timestamp': int(transaction_metadata['timestamp'])
 			}
 
+			print('.', end='', flush=True)
+
 	tasks = list(map(get_transaction_metadata, transaction_hashes))
 	print(f'collecting {len(tasks)} transactions, this will take a bit')
 	await asyncio.gather(*tasks)
