@@ -39,7 +39,7 @@ const Completed = ({defaultPaginationType}) => {
 	};
 
 	const parseFilterSearch = filterSearch => {
-		const searchVal = filterSearch?.trim();
+		const searchVal = filterSearch?.trim().toUpperCase();
 		try {
 			const address = new NemFacade.Address(searchVal);
 			return [address.toString(), '', ''];
