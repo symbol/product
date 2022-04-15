@@ -21,6 +21,7 @@
 }
 
  .sub-total-value {
+  @extend .list-item;
   font-weight: bold;
   text-decoration: underline;
   border: 1px solid !important;
@@ -39,7 +40,7 @@
 
 .list-item {
   font-family: monospace;
-  height: 20px;
+  height: 1.2rem;
 }
 
 .download-button {
