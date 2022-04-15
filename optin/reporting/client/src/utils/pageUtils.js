@@ -124,7 +124,7 @@ export const dateTransactionHashTemplate = (rowData, key, timestampKey, config) 
 	const buildTransactionHashLink = (key, item, date) => {
 		return (
 			<div className='flex flex-row list-item'>
-				<span> {date} |</span>
+				<span className='timestamp'> {date} |</span>
 
 				<a href={config.keyRedirects[key] + item.toLowerCase()}
 					target="_blank"
