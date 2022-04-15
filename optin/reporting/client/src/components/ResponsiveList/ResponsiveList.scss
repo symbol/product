@@ -10,8 +10,12 @@
     .container-full-list {
         display: none;
     }
-    
+
     .container-responsive-list {
-        display: block;
+        display: flex;
+    }
+
+    .container-responsive-list-visible {
+        padding-top: 1rem;
     }
 }
