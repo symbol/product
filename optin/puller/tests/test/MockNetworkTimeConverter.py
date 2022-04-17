@@ -3,8 +3,8 @@ class MockNetworkTimeConverter:
 
 	@staticmethod
 	def symbol_to_unix(timestamp):
-		return timestamp * 3
+		return 303 if 0 == timestamp else timestamp * 3
 
 	@staticmethod
 	def nem_to_unix(timestamp):
-		return timestamp * 2
+		return 202 if 0 == timestamp else timestamp * 2

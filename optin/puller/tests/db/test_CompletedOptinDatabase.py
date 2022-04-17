@@ -12,6 +12,7 @@ from ..test.DatabaseTestUtils import get_all_table_names
 from ..test.MockNetworkTimeConverter import MockNetworkTimeConverter
 from ..test.OptinRequestTestUtils import HASHES, NEM_ADDRESSES, SYMBOL_ADDRESSES
 
+ZERO_TIMESTAMP = 303  # MockNetworkTimeConverter maps 0 Symbol network time to this value
 MARKER_HASHES = [
 	'11223344556677889900AABBCCDDEEFF11223344556677889900AABBCCDDEEFF',
 	'1111222233334444555566667777888899990000AAAABBBBCCCCDDDDEEEEFFFF',
@@ -190,9 +191,9 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 					(NemAddress(NEM_ADDRESSES[1]).bytes, 16108065258303, 1)
 				],
 				symbol_destinations=[
-					(SymbolAddress(SYMBOL_ADDRESSES[0]).bytes, 33686866144523, None, 1, 0, 1),
-					(SymbolAddress(SYMBOL_ADDRESSES[1]).bytes, 26108065200000, None, 1, 0, 1),
-					(SymbolAddress(SYMBOL_ADDRESSES[2]).bytes, 58303, None, 1, 0, 1)
+					(SymbolAddress(SYMBOL_ADDRESSES[0]).bytes, 33686866144523, None, 1, ZERO_TIMESTAMP, 1),
+					(SymbolAddress(SYMBOL_ADDRESSES[1]).bytes, 26108065200000, None, 1, ZERO_TIMESTAMP, 1),
+					(SymbolAddress(SYMBOL_ADDRESSES[2]).bytes, 58303, None, 1, ZERO_TIMESTAMP, 1)
 				]))
 
 	def test_can_insert_multiple_mappings_with_matching_balances(self):
@@ -222,10 +223,10 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 					(NemAddress(NEM_ADDRESSES[2]).bytes, 16108065258303, 2)
 				],
 				symbol_destinations=[
-					(SymbolAddress(SYMBOL_ADDRESSES[0]).bytes, 558668349881393, None, 1, 0, 1),
-					(SymbolAddress(SYMBOL_ADDRESSES[1]).bytes, 33686866144523, None, 1, 0, 2),
-					(SymbolAddress(SYMBOL_ADDRESSES[2]).bytes, 26108065200000, None, 1, 0, 2),
-					(SymbolAddress(SYMBOL_ADDRESSES[3]).bytes, 58303, None, 1, 0, 2)
+					(SymbolAddress(SYMBOL_ADDRESSES[0]).bytes, 558668349881393, None, 1, ZERO_TIMESTAMP, 1),
+					(SymbolAddress(SYMBOL_ADDRESSES[1]).bytes, 33686866144523, None, 1, ZERO_TIMESTAMP, 2),
+					(SymbolAddress(SYMBOL_ADDRESSES[2]).bytes, 26108065200000, None, 1, ZERO_TIMESTAMP, 2),
+					(SymbolAddress(SYMBOL_ADDRESSES[3]).bytes, 58303, None, 1, ZERO_TIMESTAMP, 2)
 				]))
 
 	def test_can_insert_multiple_mappings_with_matching_balances_and_nem_transactions(self):
@@ -266,10 +267,10 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 					(NemAddress(NEM_ADDRESSES[2]).bytes, 16108065258303, 2)
 				],
 				symbol_destinations=[
-					(SymbolAddress(SYMBOL_ADDRESSES[0]).bytes, 558668349881393, None, 1, 0, 1),
-					(SymbolAddress(SYMBOL_ADDRESSES[1]).bytes, 33686866144523, None, 1, 0, 2),
-					(SymbolAddress(SYMBOL_ADDRESSES[2]).bytes, 26108065200000, None, 1, 0, 2),
-					(SymbolAddress(SYMBOL_ADDRESSES[3]).bytes, 58303, None, 1, 0, 2)
+					(SymbolAddress(SYMBOL_ADDRESSES[0]).bytes, 558668349881393, None, 1, ZERO_TIMESTAMP, 1),
+					(SymbolAddress(SYMBOL_ADDRESSES[1]).bytes, 33686866144523, None, 1, ZERO_TIMESTAMP, 2),
+					(SymbolAddress(SYMBOL_ADDRESSES[2]).bytes, 26108065200000, None, 1, ZERO_TIMESTAMP, 2),
+					(SymbolAddress(SYMBOL_ADDRESSES[3]).bytes, 58303, None, 1, ZERO_TIMESTAMP, 2)
 				],
 				# note: transactions are sorted (address,hash) tuple so hash[3] will be returned before hash[2]
 				nem_transactions=[
@@ -353,8 +354,8 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 					(NemAddress(NEM_ADDRESSES[1]).bytes, 16108065258303, 2)
 				],
 				symbol_destinations=[
-					(SymbolAddress(SYMBOL_ADDRESSES[0]).bytes, 43686866144523, None, 1, 0, 1),
-					(SymbolAddress(SYMBOL_ADDRESSES[0]).bytes, 16108065258303, None, 1, 0, 2)
+					(SymbolAddress(SYMBOL_ADDRESSES[0]).bytes, 43686866144523, None, 1, ZERO_TIMESTAMP, 1),
+					(SymbolAddress(SYMBOL_ADDRESSES[0]).bytes, 16108065258303, None, 1, ZERO_TIMESTAMP, 2)
 				]))
 
 	def test_cannot_map_same_source_multiple_times(self):
@@ -493,9 +494,9 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 				],
 				symbol_destinations=[
 					# time converter is used
-					(SymbolAddress(SYMBOL_ADDRESSES[0]).bytes, 558668349881393, Hash256(MARKER_HASHES[0]).bytes, 234, 0, 1),
+					(SymbolAddress(SYMBOL_ADDRESSES[0]).bytes, 558668349881393, Hash256(MARKER_HASHES[0]).bytes, 234, ZERO_TIMESTAMP, 1),
 					(SymbolAddress(SYMBOL_ADDRESSES[1]).bytes, 33686866144523, Hash256(MARKER_HASHES[1]).bytes, 345, 1234 * 3, 2),
-					(SymbolAddress(SYMBOL_ADDRESSES[2]).bytes, 26108065200000, Hash256(MARKER_HASHES[2]).bytes, 456, 0, 2),
+					(SymbolAddress(SYMBOL_ADDRESSES[2]).bytes, 26108065200000, Hash256(MARKER_HASHES[2]).bytes, 456, ZERO_TIMESTAMP, 2),
 					(SymbolAddress(SYMBOL_ADDRESSES[3]).bytes, 58303, Hash256(MARKER_HASHES[3]).bytes, 567, 9876 * 3, 2)
 				]))
 
@@ -529,9 +530,9 @@ class CompletedOptinDatabaseTest(unittest.TestCase):
 				],
 				symbol_destinations=[
 					# time converter is used
-					(SymbolAddress(SYMBOL_ADDRESSES[0]).bytes, 558668349881393, Hash256(MARKER_HASHES[0]).bytes, 234, 0, 1),
+					(SymbolAddress(SYMBOL_ADDRESSES[0]).bytes, 558668349881393, Hash256(MARKER_HASHES[0]).bytes, 234, ZERO_TIMESTAMP, 1),
 					(SymbolAddress(SYMBOL_ADDRESSES[1]).bytes, 33686866144523, Hash256(MARKER_HASHES[1]).bytes, 345, 1234 * 3, 2),
-					(SymbolAddress(SYMBOL_ADDRESSES[2]).bytes, 26108065200000, Hash256(MARKER_HASHES[2]).bytes, 456, 0, 2),
+					(SymbolAddress(SYMBOL_ADDRESSES[2]).bytes, 26108065200000, Hash256(MARKER_HASHES[2]).bytes, 456, ZERO_TIMESTAMP, 2),
 					(SymbolAddress(SYMBOL_ADDRESSES[3]).bytes, 58303, Hash256(MARKER_HASHES[3]).bytes, 567, 9876 * 3, 2)
 				]))
 

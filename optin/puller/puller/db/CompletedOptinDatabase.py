@@ -100,7 +100,7 @@ class CompletedOptinDatabase(NemBlockTimestampsMixin):
 				entry['sym-balance'],
 				Hash256(entry['hash']).bytes if 'hash' in entry else None,
 				entry.get('height', 1),
-				0 if 'timestamp' not in entry else self.time_converter.symbol_to_unix(int(entry['timestamp'])),
+				self.time_converter.symbol_to_unix(int(entry.get('timestamp', 0))),
 				optin_id
 			) for address, entry in symbol_address_dict.items()
 		])
