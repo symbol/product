@@ -83,24 +83,32 @@ const controller = {
 			value: 'optin_id'
 		},
 		{
-			label: 'NEM Address',
-			value: 'nemAddress'
+			label: 'Type',
+			value: 'optinType'
 		},
 		{
-			label: 'Info',
+			label: 'Label',
 			value: 'label'
+		},
+		{
+			label: 'NEM Address',
+			value: 'nemAddress'
 		},
 		{
 			label: 'Hash',
 			value: 'nemHashes'
 		},
 		{
-			label: 'Balance',
-			value: 'nemBalance'
+			label: 'Timestamp',
+			value: 'nemTimestampsLocal'
 		},
 		{
 			label: 'Timestamp [UTC]',
-			value: 'nemTimestamps'
+			value: 'nemTimestampsUTC'
+		},
+		{
+			label: 'Balance',
+			value: 'nemBalance'
 		},
 		{
 			label: 'Symbol Address',
@@ -109,18 +117,19 @@ const controller = {
 		{
 			label: 'Hash',
 			value: 'symbolHashes'
-		}, {
-			label: 'Balance',
-			value: 'symbolBalance'
+		},
+		{
+			label: 'Timestamp',
+			value: 'symbolTimestampsLocal'
 		},
 		{
 			label: 'Timestamp [UTC]',
-			value: 'symbolTimestamps'
+			value: 'symbolTimestampsUTC'
 		},
 		{
-			label: 'Opt-in Type',
-			value: 'optinType'
-		}];
+			label: 'Balance',
+			value: 'symbolBalance'
+		},];
 
 		const response = await completedDB.getCompletedPagination({
 			pageNumber: 1,
@@ -151,12 +160,14 @@ const controller = {
 					label: info[j] ?? '',
 					nemHashes: (Array.isArray(row.nemHashes[j]) ? row.nemHashes[j].join(';') : row.nemHashes[j])
 						?? '(off-chain)',
-					nemTimestamps: convertTimestampToDate('Nem', getLatestTimestamps(row.nemTimestamps[j]) ?? null),
+					nemTimestampsUTC: convertTimestampToDate(getLatestTimestamps(row.nemTimestamps[j]) ?? null),
+					nemTimestampsLocal: convertTimestampToDate(getLatestTimestamps(row.nemTimestamps[j]) ?? null, true),
 					nemBalance: toRelativeAmount(row.nemBalance[j]) || '',
 					symbolAddress: row.symbolAddress[j] ?? '',
 					symbolHashes: (Array.isArray(row.symbolHashes[j]) ? row.symbolHashes[j].join(';') : row.symbolHashes[j])
 						?? '',
-					symbolTimestamps: convertTimestampToDate('Symbol', getLatestTimestamps(row.symbolTimestamps[j]) ?? null),
+					symbolTimestampsUTC: convertTimestampToDate(getLatestTimestamps(row.symbolTimestamps[j]) ?? null),
+					symbolTimestampsLocal: convertTimestampToDate(getLatestTimestamps(row.symbolTimestamps[j]) ?? null, true),
 					symbolBalance: toRelativeAmount(row.symbolBalance[j]) || '',
 					optinType: row.isPostoptin ? 'Post-launch' : 'Pre-launch'
 				});
