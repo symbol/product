@@ -68,9 +68,9 @@ const Helper = {
 
 		const utcDate = moment.utc(unixTimestamp * 1000);
 
-		if (toLocal) {
+		if (toLocal) 
 			utcDate.local();
-		}
+		
 
 		return utcDate.format('YY-MM-DD HH:mm:ss');
 	}
