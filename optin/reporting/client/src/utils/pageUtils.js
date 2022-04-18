@@ -1,7 +1,6 @@
 import Helper from './helper';
 import ResponsiveList from '../components/ResponsiveList';
 import ResponsiveText from '../components/ResponsiveText';
-import TruncateText from '../components/TruncateText';
 import {Button} from 'primereact/button';
 import React from 'react';
 
@@ -18,7 +17,7 @@ const copyButton = value => {
 		</React.Fragment>
 	);
 };
-export const addressTemplate = (rowData, key, config) => {
+export const addressTemplate = (rowData, key, config, fixResponsiveText=false) => {
 	const list = Array.isArray(rowData[key]) ? [...rowData[key]] : [rowData[key]];
 	if (1 < list.length)
 		list.push('');
@@ -27,7 +26,7 @@ export const addressTemplate = (rowData, key, config) => {
 			{
 				list.map(address => <div className='flex flex-row list-item'>
 					<a href={config.keyRedirects[key] + address} target="_blank" rel="noreferrer">
-						<TruncateText value={address} />
+						<ResponsiveText value={address} isFixLength={fixResponsiveText} />
 					</a>
 					{copyButton(address)}
 				</div>)
@@ -99,26 +98,31 @@ export const transactionHashTemplate = (rowData, key, config) => {
 	);
 };
 
-export const dateTransactionHashTemplate = (rowData, key, timestampKey, config) => {
-	const list = Array.isArray(rowData[key]) ? rowData[key] : [rowData[key]];
+export const dateTransactionHashTemplate = (rowData, key, timestampKey, config, fixResponsiveText=false) => {
+	const list = Array.isArray(rowData[key]) ? rowData[key].flat(Infinity) : [rowData[key]];
+	const timestamps = Array.isArray(rowData[timestampKey]) ? rowData[timestampKey].flat(Infinity) : [rowData[timestampKey]];
 
 	const buildTransactionHashLink = (key, item, date) => {
 		return (
 			<div className='flex flex-row list-item'>
-				<span className='timestamp'> {date} |</span>
-
-				<a href={config.keyRedirects[key] + item.toLowerCase()}
-					target="_blank"
-					rel="noreferrer">
-					<TruncateText value={item.toLowerCase()} />
-				</a>
-				{copyButton(item.toLowerCase())}
+				{
+					(item) ? (
+						<>
+						<span className='timestamp'> {date} |</span>
+						<a href={config.keyRedirects[key] + item.toLowerCase()}
+							target="_blank"
+							rel="noreferrer">
+							<ResponsiveText value={item.toLowerCase()} isFixLength={fixResponsiveText} />
+						</a>
+						{copyButton(item.toLowerCase())}
+						</>
+					) : null
+				}
 			</div>
 		);
 	};
 
-	const timestamps = rowData[timestampKey].flat(Infinity);
-	const resultList = list.flat(Infinity).map((hash, index) =>
+	const resultList = list.map((hash, index) =>
 		<div>
 			{
 				null !== hash

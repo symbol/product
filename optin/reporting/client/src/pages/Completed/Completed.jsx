@@ -131,11 +131,11 @@ const Completed = ({defaultPaginationType}) => {
 	};
 
 	const nemAddressTemplate = rowData => {
-		return addressTemplate(rowData, 'nemAddress', config);
+		return addressTemplate(rowData, 'nemAddress', config, true);
 	};
 
 	const symbolAddressTemplate = rowData => {
-		return addressTemplate(rowData, 'symbolAddress', config);
+		return addressTemplate(rowData, 'symbolAddress', config, true);
 	};
 
 	const nemBalanceTemplate = rowData => {
@@ -147,11 +147,11 @@ const Completed = ({defaultPaginationType}) => {
 	};
 
 	const nemDateHashesTemplate = rowData => {
-		return dateTransactionHashTemplate(rowData, 'nemHashes', 'nemTimestamps', config);
+		return dateTransactionHashTemplate(rowData, 'nemHashes', 'nemTimestamps', config, true);
 	};
 
 	const symbolDateHashesTemplate = rowData => {
-		return dateTransactionHashTemplate(rowData, 'symbolHashes', 'symbolTimestamps' , config);
+		return dateTransactionHashTemplate(rowData, 'symbolHashes', 'symbolTimestamps' , config, true);
 	};
 
 	const isPostoptinTemplate = rowData => {
