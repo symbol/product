@@ -129,7 +129,7 @@ const controller = {
 		{
 			label: 'Balance',
 			value: 'symbolBalance'
-		},];
+		}];
 
 		const response = await completedDB.getCompletedPagination({
 			pageNumber: 1,
