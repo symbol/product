@@ -24,7 +24,9 @@ const processData = items => {
 		optinTransactionHash: item.optinTransactionHashHex?.toLowerCase(),
 		payoutTransactionHash: item.payoutTransactionHash?.toLowerCase(),
 		status: statusIntToString(item.payoutStatus),
-		message: item.message
+		message: item.message,
+		optinTimestamp: item.optinTimestamp,
+		payoutTimestamp: item.payoutTimestamp
 	}));
 };
 
@@ -85,25 +87,51 @@ const controller = {
 
 		const result = processData(response);
 
+		const csvFormat = result.map(item => ({
+			optinTransactionHeight: item.optinTransactionHeight,
+			nemAddress: item.nemAddress,
+			optinTransactionHash: item.optinTransactionHash,
+			payoutTransactionHash: item.payoutTransactionHash,
+			status: item.status,
+			message: item.message,
+			optinTimestampLocal: ServerUtils.convertTimestampToDate(item.optinTimestamp, true),
+			optinTimestampUTC: ServerUtils.convertTimestampToDate(item.optinTimestamp),
+			payoutTimestampLocal: ServerUtils.convertTimestampToDate(item.payoutTimestamp, true),
+			payoutTimestampUTC: ServerUtils.convertTimestampToDate(item.payoutTimestamp)
+		}));
+
 		const fields = [{
 			label: 'Nem Address',
 			value: 'nemAddress'
 		}, {
-			label: 'Status',
-			value: 'status'
-		}, {
-			label: 'Hash',
+			label: 'Opt-in Hash',
 			value: 'optinTransactionHash'
+		},
+		{
+			label: 'Timestamp',
+			value: 'optinTimestampLocal'
+		}, {
+			label: 'Timestamp [UTC]',
+			value: 'optinTimestampUTC'
 		}, {
 			label: 'Payout Hash',
 			value: 'payoutTransactionHash'
+		}, {
+			label: 'Timestamp',
+			value: 'payoutTimestampLocal'
+		}, {
+			label: 'Timestamp [UTC]',
+			value: 'payoutTimestampUTC'
+		}, {
+			label: 'Status',
+			value: 'status'
 		}, {
 			label: 'Message',
 			value: 'message'
 		}];
 
 		const json2csv = new Parser({ fields });
-		const csv = json2csv.parse(result);
+		const csv = json2csv.parse(csvFormat);
 
 		res.header('Content-Type', 'text/csv');
 		res.attachment('request.csv');
