@@ -11,6 +11,11 @@ coverage:
         flags:
           - optin-puller
 
+      tools-vanity:
+        target: auto
+        flags:
+          - tools-vanity
+
 # New root YAML section = `flags:`
 # This is where you would define every flag from your
 # uploader, and update when new Flags added
@@ -21,4 +26,9 @@ flags:
   optin-puller:
     paths:
       - optin/puller
+    carryforward: true
+
+  tools-vanity:
+    paths:
+      - tools/vanity
     carryforward: true
