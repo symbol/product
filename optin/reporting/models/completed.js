@@ -53,6 +53,7 @@ const completedDB = {
 				) AS symbol_destination
 			FROM optin_id opt
 			WHERE (is_postoptin = $1 OR $1 is null) ${condition}
+			Order by id DESC
             LIMIT ${pageSize} OFFSET ${(pageNumber - 1) * pageSize}`,
 			{
 				bind: [optinType],
