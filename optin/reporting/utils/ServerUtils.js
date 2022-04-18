@@ -1,8 +1,5 @@
 const moment = require('moment-timezone');
 
-const symbolEpoch = moment(Date.UTC(2021, 2, 16, 0, 6, 25)).valueOf();
-const nemEpoch = moment(Date.UTC(2015, 2, 29, 0, 6, 25)).valueOf();
-
 const ServerUtils = {
 	toRelativeAmount: amount => amount / (10 ** 6),
 	byteToHexString: uint8arr => {
@@ -45,14 +42,13 @@ const ServerUtils = {
 	 * @returns {string} Date with format YY-MM-DD HH:mm:ss.
 	 */
 	convertTimestampToDate: (unixTimestamp, toLocal) => {
-		if (null === unixTimestamp)
+		if ('number' !== typeof unixTimestamp)
 			return unixTimestamp;
 
 		const utcDate = moment.utc(unixTimestamp * 1000);
 
-		if (toLocal) {
+		if (toLocal)
 			utcDate.local();
-		}
 
 		return utcDate.format('YY-MM-DD HH:mm:ss');
 	}
