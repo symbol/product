@@ -2,7 +2,7 @@ import Table from '../../components/Table';
 import TableColumn from '../../components/Table/TableColumn';
 import config from '../../config';
 import Helper from '../../utils/helper';
-import { addressTemplate, transactionHashTemplate } from '../../utils/pageUtils';
+import { addressTemplate, dateTransactionHashTemplate } from '../../utils/pageUtils';
 import { Button } from 'primereact/button';
 import { InputText } from 'primereact/inputtext';
 import { SelectButton } from 'primereact/selectbutton';
@@ -32,7 +32,7 @@ const Requests = ({defaultPaginationType}) => {
 	const initialRender = useRef(true);
 	const fetchOptinRequests = async ({pageSize = 25, pageNumber = 1}) => {
 		const [nemAddress, transactionHash] = parseFilterSearch(filterSearch?.trim());
-		return await fetch(`/api/requests?pageSize=${pageSize}&pageNumber=${pageNumber}` + 
+		return await fetch(`/api/requests?pageSize=${pageSize}&pageNumber=${pageNumber}` +
 		`&nemAddress=${nemAddress}&transactionHash=${transactionHash}&status=${filterStatus ?? ''}`).then(res => res.json());
 	};
 
@@ -60,8 +60,8 @@ const Requests = ({defaultPaginationType}) => {
 			pageSize: rows
 		});
 		setAllPagesLoaded(!result.data || 0 === result.data.length);
-		if ('scroll' === paginationType && 1 !== nextPage) 
-			setRequests({data: [...requests.data, ...result.data], pagination: result.pagination});  
+		if ('scroll' === paginationType && 1 !== nextPage)
+			setRequests({data: [...requests.data, ...result.data], pagination: result.pagination});
 		else
 			setRequests(result);
 		setLoading(false);
@@ -76,18 +76,18 @@ const Requests = ({defaultPaginationType}) => {
 				});
 				setRequests(result);
 			};
-	
-			getOptinRequests().then(() => {setLoading(false);});			
+
+			getOptinRequests().then(() => {setLoading(false);});
 		}
 	}, [shouldDoInitalFetch]);
 
 	const validateFilterSearch = value => {
 		return !parseFilterSearch(value).every(v => '' === v);
 	};
-	
+
 	const onFilterSearchChange = e => {
 		const {value} = e.target;
-		
+
 		setInvalidFilterSearch(value ? !validateFilterSearch(value) : false);
 		setFilterSearch(value ?? '');
 		setFilterStatus(''); // reset filter status
@@ -96,22 +96,22 @@ const Requests = ({defaultPaginationType}) => {
 	const clearFilterSearch = () => {
 		onFilterSearchChange({target: ''});
 	};
-	
+
 	const onFilterStatusChange = e => {
 		clearFilterSearch();
 		setFilterStatus(e.value);
 		setFilterStatusSubmit(true);
 	};
-	
+
 	const onFilterSubmit = async e => {
 		if (e)
 			e.preventDefault();
 		await handlePageChange({page: 1, rows: 25});
 		setFilterStatusSubmit(false);
 	};
-	
+
 	useEffect(() => {
-		if (!initialRender.current && filterStatusSubmit) 
+		if (!initialRender.current && filterStatusSubmit)
 			onFilterSubmit();
 		initialRender.current = false;
 	}, [filterStatusSubmit]);
@@ -125,11 +125,11 @@ const Requests = ({defaultPaginationType}) => {
 	};
 
 	const optinTransactionHashTemplate = rowData => {
-		return transactionHashTemplate(rowData, 'optinTransactionHash', config);
+		return dateTransactionHashTemplate(rowData, 'optinTransactionHash', 'optinTimestamp', config);
 	};
 
 	const payoutTransactionHashTemplate = rowData => {
-		return transactionHashTemplate(rowData, 'payoutTransactionHash', config);
+		return dateTransactionHashTemplate(rowData, 'payoutTransactionHash', 'payoutTimestamp', config);
 	};
 
 	const statusTemplate = rowData => {
@@ -144,7 +144,7 @@ const Requests = ({defaultPaginationType}) => {
 	};
 
 	const statuses = [{label: 'Pending', value: 'Pending'}, {label: 'Sent', value: 'Sent'}, {label: 'Error', value: 'Error'}];
-	
+
 	const header = (
 		<form onSubmit={onFilterSubmit}>
 			<div className='flex flex-wrap md:justify-content-between'>
@@ -158,16 +158,16 @@ const Requests = ({defaultPaginationType}) => {
 						<Button type="submit" icon="pi pi-search" className="p-button-outlined" disabled={invalidFilterSearch}/>
 					</span>
 					{
-						invalidFilterSearch && 
+						invalidFilterSearch &&
 							<small id="filterSearch-help" className="p-error block">Invalid NEM Address or Transaction Hash.</small>
 					}
 				</div>
 				<div>
 					<div className="flex flex-wrap justify-content-between">
-						<SelectButton optionLabel="label" optionValue="value" value={filterStatus} options={statuses} 
+						<SelectButton optionLabel="label" optionValue="value" value={filterStatus} options={statuses}
 							onChange={onFilterStatusChange}></SelectButton>
 						<Button type="button" icon="pi pi-download" className="ml-6 p-button-outlined download-button"
-							onClick={downloadAllAsCSV} loading={downloading} tooltip="Download All Data as CSV File" 
+							onClick={downloadAllAsCSV} loading={downloading} tooltip="Download All Data as CSV File"
 							tooltipOptions={{position: 'top'}} />
 					</div>
 				</div>
@@ -177,7 +177,7 @@ const Requests = ({defaultPaginationType}) => {
 
 	return (
 		<Table value={requests.data} rows={requests.pagination.pageSize} onPage={handlePageChange}
-			loading={loading} allPagesLoaded={allPagesLoaded} loadingMessage="Loading more items..." 
+			loading={loading} allPagesLoaded={allPagesLoaded} loadingMessage="Loading more items..."
 			totalRecords={requests.pagination.totalRecord} paginator={'paginator' === paginationType}
 			first={first} header={header}>
 			<TableColumn field="nemAddress" header="NEM Address" body={nemAddressTemplate} align="left"/>
