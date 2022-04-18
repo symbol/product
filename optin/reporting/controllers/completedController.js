@@ -34,7 +34,17 @@ const processData = items =>
 		symbolBalance: item.symbol_destination.map(props => props.balance)
 	}));
 
-const getLatestTimestamps = timestamps => (Array.isArray(timestamps) ? timestamps.sort((a, b) => b - a)[0] : timestamps);
+const getLatestTimestamps = timestamps => {
+	let timestamp = timestamps;
+
+	if (Array.isArray(timestamps))
+		timestamp = timestamps.sort((a, b) => b - a)[0];
+
+	if (timestamp)
+		return parseInt(timestamp, 10);
+
+	return null;
+};
 
 const controller = {
 	getCompleted: async (req, res) => {
@@ -160,14 +170,14 @@ const controller = {
 					label: info[j] ?? '',
 					nemHashes: (Array.isArray(row.nemHashes[j]) ? row.nemHashes[j].join(';') : row.nemHashes[j])
 						?? '(off-chain)',
-					nemTimestampsUTC: convertTimestampToDate(getLatestTimestamps(row.nemTimestamps[j]) ?? null),
-					nemTimestampsLocal: convertTimestampToDate(getLatestTimestamps(row.nemTimestamps[j]) ?? null, true),
+					nemTimestampsUTC: convertTimestampToDate(getLatestTimestamps(row.nemTimestamps[j])),
+					nemTimestampsLocal: convertTimestampToDate(getLatestTimestamps(row.nemTimestamps[j]), true),
 					nemBalance: toRelativeAmount(row.nemBalance[j]) || '',
 					symbolAddress: row.symbolAddress[j] ?? '',
 					symbolHashes: (Array.isArray(row.symbolHashes[j]) ? row.symbolHashes[j].join(';') : row.symbolHashes[j])
 						?? '',
-					symbolTimestampsUTC: convertTimestampToDate(getLatestTimestamps(row.symbolTimestamps[j]) ?? null),
-					symbolTimestampsLocal: convertTimestampToDate(getLatestTimestamps(row.symbolTimestamps[j]) ?? null, true),
+					symbolTimestampsUTC: convertTimestampToDate(getLatestTimestamps(row.symbolTimestamps[j])),
+					symbolTimestampsLocal: convertTimestampToDate(getLatestTimestamps(row.symbolTimestamps[j]), true),
 					symbolBalance: toRelativeAmount(row.symbolBalance[j]) || '',
 					optinType: row.isPostoptin ? 'Post-launch' : 'Pre-launch'
 				});
