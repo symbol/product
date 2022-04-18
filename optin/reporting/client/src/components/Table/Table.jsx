@@ -3,28 +3,32 @@ import { DataTable } from 'primereact/datatable';
 import {ProgressSpinner} from 'primereact/progressspinner';
 import React from 'react';
 
-const Table = props => {
-	const ref = React.useRef();
+const Table = React.forwardRef((props, ref) => {
+	const defaultRef = React.useRef(null);
+	const tableRef = ref ?? defaultRef;
 
 	const allowLoadNextPage = !props.allPagesLoaded && props.rows <= props.value.length && !props.loading;
 
 	const infiniteLoaderHandler = React.useCallback(event => {
 		const bottom = Math.trunc(event.target.scrollHeight - event.target.scrollTop) <= event.target.clientHeight;
-				
+
 		if (bottom && allowLoadNextPage) 
 			props.onPage({});
 	}, [allowLoadNextPage, props.onPage]);
 
 	React.useEffect(() => {
-		if (ref) {
-			const scrollableElement = ref.current.el.lastChild;
+		if (tableRef) {
+			const scrollableElement = tableRef.current.el.lastChild;
 			scrollableElement.addEventListener('scroll', infiniteLoaderHandler);
 
 			return () => {
 				scrollableElement.removeEventListener('scroll', infiniteLoaderHandler);
 			};
 		}
-	}, [ref, infiniteLoaderHandler]);
+	}, [tableRef, infiniteLoaderHandler]);
+
+	if (props.resetScroll) 
+		tableRef.current.resetScroll();	
 
 	const footer = (
 		<React.Fragment>
@@ -42,7 +46,7 @@ const Table = props => {
 	);
 
 	return  (
-		<DataTable 
+		<DataTable
 			lazy={props.lazy} 
 			value={props.value} 
 			stripedRows 
@@ -63,12 +67,12 @@ const Table = props => {
 			header={props.header} 
 			emptyMessage={props.emptyMessage} 
 			rowGroupFooterTemplate={footer} 
-			ref={ref}
+			ref={tableRef}
 		>
 			{props.children}
 		</DataTable>
 	);
-};
+});
 
 Table.propTypes = {
 	// TODO fill the propTypes?

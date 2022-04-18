@@ -10,12 +10,12 @@ const ResponsiveList = props => {
 				{props.children}
 			</div>
 			<div className="container-responsive-list">
-				<div class="container-responsive-list-visible">
+				<div className="container-responsive-list-visible">
 					{props.visible ?? props.children[0]}
 				</div>
 				{
 					1 < props.children.length &&
-					<div class="container-responsive-list-more">
+					<div className="container-responsive-list-more">
 						<PopUpDialog content={props.children} buttonText={props.showMoreText ?? '..more'} title={props.title ?? '..more'}/>
 					</div>
 				}
