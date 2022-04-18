@@ -6,14 +6,14 @@ import React from 'react';
 const Table = props => {
 	const ref = React.useRef();
 
-	const allowLoadNextPage = !props.allPagesLoaded && props.rows <= props.value.length;
+	const allowLoadNextPage = !props.allPagesLoaded && props.rows <= props.value.length && !props.loading;
 
 	const infiniteLoaderHandler = React.useCallback(event => {
 		const bottom = Math.trunc(event.target.scrollHeight - event.target.scrollTop) <= event.target.clientHeight;
 				
 		if (bottom && allowLoadNextPage) 
 			props.onPage({});
-	}, [allowLoadNextPage]);
+	}, [allowLoadNextPage, props.onPage]);
 
 	React.useEffect(() => {
 		if (ref) {
