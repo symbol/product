@@ -115,6 +115,7 @@ const Requests = ({defaultPaginationType}) => {
 			e.preventDefault();
 		await handlePageChange({page: 1, rows: config.defaultPageSize});
 		setFilterStatusSubmit(false);
+		setFilterSearchCleared(false);
 	};
 
 	useEffect(() => {
