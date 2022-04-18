@@ -38,17 +38,17 @@ const ServerUtils = {
 	/**
 	 * Convert unix timestamp to utc date time.
 	 * @param {number} unixTimestamp unix timestamp in second.
-	 * @param {boolean} toLocal set to local timezone.
+	 * @param {string} timezone set to timezone.
 	 * @returns {string} Date with format YY-MM-DD HH:mm:ss.
 	 */
-	convertTimestampToDate: (unixTimestamp, toLocal) => {
+	convertTimestampToDate: (unixTimestamp, timezone) => {
 		if ('number' !== typeof unixTimestamp)
 			return unixTimestamp;
 
 		const utcDate = moment.utc(unixTimestamp * 1000);
 
-		if (toLocal)
-			utcDate.local();
+		if (timezone)
+			utcDate.tz(timezone);
 
 		return utcDate.format('YY-MM-DD HH:mm:ss');
 	}

@@ -76,7 +76,9 @@ const controller = {
 			res.json({ data: [], error: error.message });
 		}
 	},
-	exportCsv: async (_, res) => {
+	exportCsv: async (req, res) => {
+		const timezone = req.query.tz;
+
 		const response = await optinRequestDB.getOptinRequestPagination({
 			pageNumber: 1,
 			pageSize: -1,
@@ -94,9 +96,9 @@ const controller = {
 			payoutTransactionHash: item.payoutTransactionHash,
 			status: item.status,
 			message: item.message,
-			optinTimestampLocal: ServerUtils.convertTimestampToDate(item.optinTimestamp, true),
+			optinTimestampLocal: ServerUtils.convertTimestampToDate(item.optinTimestamp, timezone),
 			optinTimestampUTC: ServerUtils.convertTimestampToDate(item.optinTimestamp),
-			payoutTimestampLocal: ServerUtils.convertTimestampToDate(item.payoutTimestamp, true),
+			payoutTimestampLocal: ServerUtils.convertTimestampToDate(item.payoutTimestamp, timezone),
 			payoutTimestampUTC: ServerUtils.convertTimestampToDate(item.payoutTimestamp)
 		}));
 

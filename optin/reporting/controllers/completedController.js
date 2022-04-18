@@ -87,7 +87,9 @@ const controller = {
 			res.json({ data: [], error: error.message });
 		}
 	},
-	exportCsv: async (_, res) => {
+	exportCsv: async (req, res) => {
+		const timezone = req.query.tz;
+
 		const fields = [{
 			label: '#',
 			value: 'optin_id'
@@ -171,13 +173,13 @@ const controller = {
 					nemHashes: (Array.isArray(row.nemHashes[j]) ? row.nemHashes[j].join(';') : row.nemHashes[j])
 						?? '(off-chain)',
 					nemTimestampsUTC: convertTimestampToDate(getLatestTimestamps(row.nemTimestamps[j])),
-					nemTimestampsLocal: convertTimestampToDate(getLatestTimestamps(row.nemTimestamps[j]), true),
+					nemTimestampsLocal: convertTimestampToDate(getLatestTimestamps(row.nemTimestamps[j]), timezone),
 					nemBalance: toRelativeAmount(row.nemBalance[j]) || '',
 					symbolAddress: row.symbolAddress[j] ?? '',
 					symbolHashes: (Array.isArray(row.symbolHashes[j]) ? row.symbolHashes[j].join(';') : row.symbolHashes[j])
 						?? '',
 					symbolTimestampsUTC: convertTimestampToDate(getLatestTimestamps(row.symbolTimestamps[j])),
-					symbolTimestampsLocal: convertTimestampToDate(getLatestTimestamps(row.symbolTimestamps[j]), true),
+					symbolTimestampsLocal: convertTimestampToDate(getLatestTimestamps(row.symbolTimestamps[j]), timezone),
 					symbolBalance: toRelativeAmount(row.symbolBalance[j]) || '',
 					optinType: row.isPostoptin ? 'Post-launch' : 'Pre-launch'
 				});
