@@ -27,6 +27,8 @@ const Requests = ({defaultPaginationType}) => {
 	const [filterStatusSubmit, setFilterStatusSubmit] = useState(false);
 	const [invalidFilterSearch, setInvalidFilterSearch] = useState(false);
 	const initialRender = useRef(true);
+	const tableRef = useRef();
+
 	const fetchOptinRequests = async ({pageSize = config.defaultPageSize, pageNumber = 1}) => {
 		const [nemAddress, transactionHash] = parseFilterSearch(filterSearch?.trim());
 		return await fetch(`/api/requests?pageSize=${pageSize}&pageNumber=${pageNumber}` +
@@ -98,6 +100,7 @@ const Requests = ({defaultPaginationType}) => {
 		clearFilterSearch();
 		setFilterStatus(e.value);
 		setFilterStatusSubmit(true);
+		tableRef.current.resetScroll();
 	};
 
 	const onFilterSubmit = async e => {
@@ -161,7 +164,7 @@ const Requests = ({defaultPaginationType}) => {
 	);
 
 	return (
-		<Table value={requests.data} rows={requests.pagination.pageSize} onPage={handlePageChange}
+		<Table ref={tableRef} value={requests.data} rows={requests.pagination.pageSize} onPage={handlePageChange}
 			loading={loading} allPagesLoaded={allPagesLoaded} loadingMessage="Loading more items..."
 			totalRecords={requests.pagination.totalRecord} paginator={'paginator' === paginationType}
 			first={first} header={header}>

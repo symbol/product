@@ -28,6 +28,7 @@ const Completed = ({defaultPaginationType}) => {
 	const [filterOptinTypeSubmit, setFilterOptinTypeSubmit] = useState(false);
 	const [invalidFilterSearch, setInvalidFilterSearch] = useState(false);
 	const initialRender = useRef(true);
+	const tableRef = useRef();
 
 	const fetchCompleted = async ({pageSize = config.defaultPageSize, pageNumber = 1}) => {
 		const [nemAddress, symbolAddress, transactionHash] = parseFilterSearch(filterSearch?.trim());
@@ -108,6 +109,7 @@ const Completed = ({defaultPaginationType}) => {
 		clearFilterSearch();
 		setFilterOptinType(e.value);
 		setFilterOptinTypeSubmit(true);
+		tableRef.current.resetScroll();
 	};
 
 	const onFilterSubmit = async e => {
@@ -180,7 +182,7 @@ const Completed = ({defaultPaginationType}) => {
 	);
 
 	return (
-		<Table value={completed.data} rows={completed.pagination.pageSize}
+		<Table ref={tableRef} value={completed.data} rows={completed.pagination.pageSize}
 			onPage={handlePageChange} loading={loading} totalRecords={completed.pagination.totalRecord}
 			allPagesLoaded={allPagesLoaded} loadingMessage="Loading more items..."
 			first={first} header={header} paginator={'paginator' === paginationType}>
