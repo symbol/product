@@ -1,3 +1,5 @@
+import moment from 'moment-timezone';
+
 const Helper = {
 	toRelativeAmount: amount => amount / (10 ** 6),
 	downloadFile: ({ data, fileName, fileType }) => {
@@ -53,6 +55,24 @@ const Helper = {
 				textArea.remove();
 			});
 		}
+	},
+	/**
+	 * Convert unix timestamp to utc date time.
+	 * @param {number} unixTimestamp unix timestamp in second.
+	 * @param {boolean} toLocal set to local timezone.
+	 * @returns {string} Date with format YY-MM-DD HH:mm:ss.
+	 */
+	convertTimestampToDate: (unixTimestamp, toLocal = false) => {
+		if (null === unixTimestamp)
+			return unixTimestamp;
+
+		const utcDate = moment.utc(unixTimestamp * 1000);
+
+		if (toLocal) {
+			utcDate.local();
+		}
+
+		return utcDate.format('YY-MM-DD HH:mm:ss');
 	}
 };
 
