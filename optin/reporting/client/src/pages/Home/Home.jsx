@@ -20,7 +20,7 @@ const Home = function () {
 	const renderTabList = () => {
 		return Object.keys(tabConfig).map(key => {
 			return (
-				<TabPanel header={tabConfig[key].label}>
+				<TabPanel header={tabConfig[key].label} key={key}>
 					{tabConfig[key].table}
 				</TabPanel>
 			);
@@ -34,9 +34,11 @@ const Home = function () {
 				<div className='mainContainer'>
 					<h2>Opt-in Summary</h2>
 				</div>
-				<TabView>
-					{ renderTabList() }
-				</TabView>
+				<div className='tableContainer'>
+					<TabView>
+						{ renderTabList() }
+					</TabView>
+				</div>
 			</div>
 		</div>
 	);
