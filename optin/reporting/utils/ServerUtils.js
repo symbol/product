@@ -38,22 +38,23 @@ const ServerUtils = {
 		}
 		return string;
 	},
-	convertTimestampToDate: (network, timestamp) => {
-		if (null === timestamp)
-			return timestamp;
+	/**
+	 * Convert unix timestamp to utc date time.
+	 * @param {number} unixTimestamp unix timestamp in second.
+	 * @param {boolean} toLocal set to local timezone.
+	 * @returns {string} Date with format YY-MM-DD HH:mm:ss.
+	 */
+	convertTimestampToDate: (unixTimestamp, toLocal) => {
+		if (null === unixTimestamp)
+			return unixTimestamp;
 
-		let networkTimestamp = 0;
+		const utcDate = moment.utc(unixTimestamp * 1000);
 
-		switch (network) {
-		case 'Symbol':
-			networkTimestamp = symbolEpoch + parseInt(timestamp, 10);
-			break;
-		case 'Nem':
-			networkTimestamp = nemEpoch + (parseInt(timestamp, 10) * 1000);
-			break;
+		if (toLocal) {
+			utcDate.local();
 		}
 
-		return moment.utc(networkTimestamp).format('YYYY-MM-DD HH:mm:ss');
+		return utcDate.format('YY-MM-DD HH:mm:ss');
 	}
 };
 
