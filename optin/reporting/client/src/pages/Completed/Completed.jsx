@@ -27,6 +27,8 @@ const Completed = ({defaultPaginationType}) => {
 	const [filterOptinType, setFilterOptinType] = useState('');
 	const [filterOptinTypeSubmit, setFilterOptinTypeSubmit] = useState(false);
 	const [invalidFilterSearch, setInvalidFilterSearch] = useState(false);
+	const [filterSearchCleared, setFilterSearchCleared] = useState(false);
+
 	const initialRender = useRef(true);
 	const tableRef = useRef();
 
@@ -101,7 +103,12 @@ const Completed = ({defaultPaginationType}) => {
 		setFilterOptinType('');
 	};
 
-	const clearFilterSearch = () => {
+	const clearFilterSearchAndSubmit = () => {
+		clearFilterSearch();
+		setFilterSearchCleared(true);
+	};
+
+	const clearFilterSearch = async () => {
 		onFilterSearchChange({target: ''});
 	};
 
@@ -117,13 +124,14 @@ const Completed = ({defaultPaginationType}) => {
 			e.preventDefault();
 		await handlePageChange({page: 1, rows: config.defaultPageSize});
 		setFilterOptinTypeSubmit(false);
+		setFilterSearchCleared(false);
 	};
 
 	useEffect(() => {
-		if (!initialRender.current && filterOptinTypeSubmit)
+		if (!initialRender.current && (filterOptinTypeSubmit || filterSearchCleared))
 			onFilterSubmit();
 		initialRender.current = false;
-	}, [filterOptinTypeSubmit]);
+	}, [filterOptinTypeSubmit, filterSearchCleared]);
 
 	const nemAddressTemplate = rowData => {
 		return addressTemplate(rowData, 'nemAddress', config, true);
@@ -163,7 +171,7 @@ const Completed = ({defaultPaginationType}) => {
 		<form onSubmit={onFilterSubmit}>
 			<div className="flex flex-row w-full">
 				<span className="p-input-icon-right w-9">
-					<i className="pi pi-times" onClick={clearFilterSearch}/>
+					<i className="pi pi-times" onClick={clearFilterSearchAndSubmit}/>
 					<InputText id="filterSearch" value={filterSearch} onChange={onFilterSearchChange} className="w-full"
 						placeholder="NEM Address / Symbol Address / Tx Hash" aria-describedby="filterSearch-help" />
 				</span>

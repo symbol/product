@@ -26,6 +26,8 @@ const Requests = ({defaultPaginationType}) => {
 	const [filterStatus, setFilterStatus] = useState('');
 	const [filterStatusSubmit, setFilterStatusSubmit] = useState(false);
 	const [invalidFilterSearch, setInvalidFilterSearch] = useState(false);
+	const [filterSearchCleared, setFilterSearchCleared] = useState(false);
+	
 	const initialRender = useRef(true);
 	const tableRef = useRef();
 
@@ -92,6 +94,11 @@ const Requests = ({defaultPaginationType}) => {
 		setFilterStatus(''); // reset filter status
 	};
 
+	const clearFilterSearchAndSubmit = () => {
+		clearFilterSearch();
+		setFilterSearchCleared(true);
+	};
+
 	const clearFilterSearch = () => {
 		onFilterSearchChange({target: ''});
 	};
@@ -111,10 +118,10 @@ const Requests = ({defaultPaginationType}) => {
 	};
 
 	useEffect(() => {
-		if (!initialRender.current && filterStatusSubmit)
+		if (!initialRender.current && (filterStatusSubmit || filterSearchCleared))
 			onFilterSubmit();
 		initialRender.current = false;
-	}, [filterStatusSubmit]);
+	}, [filterStatusSubmit, filterSearchCleared]);
 
 	const nemAddressTemplate = rowData => {
 		return addressTemplate(rowData, 'nemAddress', config);
@@ -146,7 +153,7 @@ const Requests = ({defaultPaginationType}) => {
 			<div className='flex flex-wrap md:justify-content-between'>
 				<div className="flex flex-row w-full">
 					<span className="p-input-icon-right w-7">
-						<i className="pi pi-times" onClick={clearFilterSearch}/>
+						<i className="pi pi-times" onClick={clearFilterSearchAndSubmit}/>
 						<InputText id="filterSearch" value={filterSearch} onChange={onFilterSearchChange} className="w-full"
 							placeholder="NEM Address / Tx Hash" aria-describedby="filterSearch-help" />
 					</span>
