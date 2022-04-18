@@ -46,6 +46,18 @@ class CompletedOptinDatabase(NemBlockTimestampsMixin):
 			FOREIGN KEY (optin_id) REFERENCES optin_id(id)
 		)''')  # address cannot be unique because merges are supported
 
+		cursor.execute('CREATE INDEX IF NOT EXISTS optin_id_is_postoptin_idx on optin_id(is_postoptin)')
+
+		cursor.execute('CREATE INDEX IF NOT EXISTS nem_source_optin_id_idx on nem_source(optin_id)')
+
+		cursor.execute('CREATE INDEX IF NOT EXISTS nem_transaction_address_idx ON nem_transaction(address)')
+		cursor.execute('CREATE INDEX IF NOT EXISTS nem_transaction_height_idx ON nem_transaction(height)')
+		cursor.execute('CREATE INDEX IF NOT EXISTS nem_transaction_hash_idx ON nem_transaction(hash)')
+
+		cursor.execute('CREATE INDEX IF NOT EXISTS symbol_destination_optin_id_idx on symbol_destination(optin_id)')
+		cursor.execute('CREATE INDEX IF NOT EXISTS symbol_destination_address_idx on symbol_destination(address)')
+		cursor.execute('CREATE INDEX IF NOT EXISTS symbol_destination_hash_idx on symbol_destination(hash)')
+
 	@staticmethod
 	def _assert_balances(nem_address_dict, symbol_address_dict):
 		nem_balance = reduce(lambda x, y: x + y, nem_address_dict.values())

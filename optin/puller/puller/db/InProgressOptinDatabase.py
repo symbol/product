@@ -48,6 +48,14 @@ class InProgressOptinDatabase(NemBlockTimestampsMixin):
 			timestamp integer
 		)''')
 
+		cursor.execute('CREATE INDEX IF NOT EXISTS optin_error_address_idx on optin_error(address)')
+		cursor.execute('CREATE INDEX IF NOT EXISTS optin_error_optin_transaction_height_idx on optin_error(optin_transaction_height)')
+
+		cursor.execute('CREATE INDEX IF NOT EXISTS optin_request_optin_transaction_height_idx on optin_request(optin_transaction_height)')
+		cursor.execute('CREATE INDEX IF NOT EXISTS optin_request_payout_transaction_hash_idx on optin_request(payout_transaction_hash)')
+		cursor.execute('CREATE INDEX IF NOT EXISTS optin_request_payout_status_idx on optin_request(payout_status)')
+		cursor.execute('CREATE INDEX IF NOT EXISTS optin_request_address_idx on optin_request(address)')
+
 	def add_error(self, error):
 		"""Adds an error to the error table."""
 
