@@ -3,8 +3,6 @@ import ResponsiveList from '../components/ResponsiveList';
 import ResponsiveText from '../components/ResponsiveText';
 import TruncateText from '../components/TruncateText';
 import {Button} from 'primereact/button';
-import { nem, symbol } from 'symbol-sdk';
-import moment from 'moment-timezone';
 import React from 'react';
 
 const copyButton = value => {
@@ -104,23 +102,6 @@ export const transactionHashTemplate = (rowData, key, config) => {
 export const dateTransactionHashTemplate = (rowData, key, timestampKey, config) => {
 	const list = Array.isArray(rowData[key]) ? rowData[key] : [rowData[key]];
 
-	const formatDateTime = (key, timestamp) => {
-		if (null === timestamp) {
-			return timestamp;
-		}
-
-		let networkTimestamp = 0;
-
-		// Todo: Remove later to use Unixtimestamp
-		if (key === 'symbolTimestamps') {
-			networkTimestamp = new symbol.NetworkTimestamp(timestamp).toDatetime(new Date(Date.UTC(2021, 2, 16, 0, 6, 25))).getTime();
-		} else {
-			networkTimestamp = new nem.NetworkTimestamp(timestamp).toDatetime(new Date(Date.UTC(2015, 2, 16, 0, 6, 25))).getTime();
-		}
-
-		return moment.utc(networkTimestamp).format('YY-MM-DD HH:mm:ss');
-	}
-
 	const buildTransactionHashLink = (key, item, date) => {
 		return (
 			<div className='flex flex-row list-item'>
@@ -141,7 +122,7 @@ export const dateTransactionHashTemplate = (rowData, key, timestampKey, config) 
 		<div>
 			{
 				null !== hash
-					? buildTransactionHashLink(key, hash, formatDateTime(timestampKey, timestamps[index]))
+					? buildTransactionHashLink(key, hash, Helper.convertTimestampToDate(timestamps[index], true))
 					: '(off chain)'
 			}
 		</div>);
