@@ -108,13 +108,13 @@ export const dateTransactionHashTemplate = (rowData, key, timestampKey, config, 
 				{
 					(item) ? (
 						<>
-						<span className='timestamp'> {date} |</span>
-						<a href={config.keyRedirects[key] + item.toLowerCase()}
-							target="_blank"
-							rel="noreferrer">
-							<ResponsiveText value={item.toLowerCase()} isFixLength={fixResponsiveText} />
-						</a>
-						{copyButton(item.toLowerCase())}
+							<span className='timestamp'> {date} |</span>
+							<a href={config.keyRedirects[key] + item.toLowerCase()}
+								target="_blank"
+								rel="noreferrer">
+								<ResponsiveText value={item.toLowerCase()} isFixLength={fixResponsiveText} />
+							</a>
+							{copyButton(item.toLowerCase())}
 						</>
 					) : null
 				}

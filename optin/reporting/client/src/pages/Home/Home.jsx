@@ -1,9 +1,10 @@
-import './Home.scss';
+import DownloadCSVButton from './DownloadCSVButton.jsx';
 import Completed from '../Completed';
 import Requests from '../Requests';
-import { TabView, TabPanel } from 'primereact/tabview';
+import { TabPanel, TabView } from 'primereact/tabview';
 import React from 'react';
 import 'react-tabs/style/react-tabs.css';
+import './Home.scss';
 
 const tabConfig = {
 	completed: {
@@ -17,14 +18,28 @@ const tabConfig = {
 };
 
 const Home = function () {
+	const [activeIndex, setActiveIndex] = React.useState(0);
+	const [activePage, setActivePage] = React.useState('completed');
+	const tabChangeHandler = e => {
+		setActiveIndex(e.index);
+		if (1 === e.index) 
+			setActivePage('inProgress');
+		else
+			setActivePage('completed');
+		
+	};
+	const downloadButton = <DownloadCSVButton activePage={activePage}/>;
 	const renderTabList = () => {
-		return Object.keys(tabConfig).map(key => {
+		const tabList = Object.keys(tabConfig).map(key => {
 			return (
 				<TabPanel header={tabConfig[key].label} key={key}>
 					{tabConfig[key].table}
 				</TabPanel>
 			);
 		});
+
+		tabList.push(<TabPanel headerTemplate={downloadButton} headerClassName="downloadButton"/>);
+		return tabList;
 	};
 
 	return (
@@ -35,7 +50,7 @@ const Home = function () {
 					<h2>Opt-in Summary</h2>
 				</div>
 				<div className='tableContainer'>
-					<TabView>
+					<TabView activeIndex={activeIndex} onTabChange={tabChangeHandler}>
 						{ renderTabList() }
 					</TabView>
 				</div>

@@ -2,9 +2,7 @@ import './Completed.scss';
 import Table from '../../components/Table';
 import TableColumn from '../../components/Table/TableColumn';
 import config from '../../config';
-import Helper from '../../utils/helper';
 import { addressTemplate, balanceTemplate, optinTypeTemplate, infoTemplate, dateTransactionHashTemplate } from '../../utils/pageUtils';
-import { Button } from 'primereact/button';
 import { InputText } from 'primereact/inputtext';
 import { SelectButton } from 'primereact/selectbutton';
 import React, { useState, useEffect, useRef} from 'react';
@@ -28,7 +26,6 @@ const Completed = ({defaultPaginationType}) => {
 	const [filterSearch, setFilterSearch] = useState('');
 	const [filterOptinType, setFilterOptinType] = useState('');
 	const [filterOptinTypeSubmit, setFilterOptinTypeSubmit] = useState(false);
-	const [downloading, setDownloading] = useState(false);
 	const [invalidFilterSearch, setInvalidFilterSearch] = useState(false);
 	const initialRender = useRef(true);
 
@@ -126,10 +123,6 @@ const Completed = ({defaultPaginationType}) => {
 		initialRender.current = false;
 	}, [filterOptinTypeSubmit]);
 
-	const downloadAllAsCSV = async () => {
-		await Helper.downloadAllAsCSV({apiUrl: '/api/completed/download', fileName: 'optin-completed.csv', setDownloading});
-	};
-
 	const nemAddressTemplate = rowData => {
 		return addressTemplate(rowData, 'nemAddress', config, true);
 	};
@@ -162,37 +155,27 @@ const Completed = ({defaultPaginationType}) => {
 		return infoTemplate(rowData, 'label');
 	};
 
-	const optinTypes = [{label: 'Pre-launch', value: 'pre'}, {label: 'Post-launch', value: 'post'}];
+	const optinTypes = [{label: 'PRE', value: 'pre'}, {label: 'POST', value: 'post'}];
 
 	const header = (
 		<form onSubmit={onFilterSubmit}>
-			<div className='flex flex-wrap md:justify-content-between'>
-				<div className="flex-row w-full lg:w-8 xl:w-6">
-					<span className="p-input-icon-right w-10">
-						<i className="pi pi-times" onClick={clearFilterSearch}/>
-						<InputText id="filterSearch" value={filterSearch} onChange={onFilterSearchChange} className="w-full"
-							placeholder="NEM Address / Symbol Address / Transaction Hash" aria-describedby="filterSearch-help" />
-					</span>
-					<span className="ml-1 w-2">
-						<Button type="submit" icon="pi pi-search" className="p-button-outlined" disabled={invalidFilterSearch}/>
-					</span>
-					{
-						invalidFilterSearch &&
-							<small id="filterSearch-help" className="p-error block">
-								Invalid NEM / Symbol Address or Transaction Hash.
-							</small>
-					}
-				</div>
-				<div>
-					<div className="flex flex-wrap justify-content-between">
-						<SelectButton optionLabel="label" optionValue="value" value={filterOptinType} options={optinTypes}
-							onChange={onFilterOptinChange}></SelectButton>
-						<Button type="button" icon="pi pi-download" className="ml-6 p-button-outlined download-button"
-							onClick={downloadAllAsCSV} loading={downloading} tooltip="Download All Data as CSV File"
-							tooltipOptions={{position: 'top'}} />
-					</div>
-				</div>
+			<div className="flex flex-row w-full">
+				<span className="p-input-icon-right w-9">
+					<i className="pi pi-times" onClick={clearFilterSearch}/>
+					<InputText id="filterSearch" value={filterSearch} onChange={onFilterSearchChange} className="w-full"
+						placeholder="NEM Address / Symbol Address / Tx Hash" aria-describedby="filterSearch-help" />
+				</span>
+				<span className="w-3 ml-5">
+					<SelectButton optionLabel="label" optionValue="value" value={filterOptinType} options={optinTypes}
+						onChange={onFilterOptinChange}></SelectButton>
+				</span>
 			</div>
+			{
+				invalidFilterSearch &&
+					<small id="filterSearch-help" className="p-error block">
+						Invalid NEM / Symbol Address or Transaction Hash.
+					</small>
+			}
 		</form>
 	);
 

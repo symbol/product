@@ -1,9 +1,7 @@
 import Table from '../../components/Table';
 import TableColumn from '../../components/Table/TableColumn';
 import config from '../../config';
-import Helper from '../../utils/helper';
 import { addressTemplate, dateTransactionHashTemplate } from '../../utils/pageUtils';
-import { Button } from 'primereact/button';
 import { InputText } from 'primereact/inputtext';
 import { SelectButton } from 'primereact/selectbutton';
 import React, { useEffect, useState, useRef } from 'react';
@@ -20,17 +18,16 @@ const Requests = ({defaultPaginationType}) => {
 		data: [],
 		pagination: {
 			pageNumber: 0,
-			pageSize: 25,
+			pageSize: config.defaultPageSize,
 			totalRecord: 0
 		}
 	});
 	const [filterSearch, setFilterSearch] = useState('');
 	const [filterStatus, setFilterStatus] = useState('');
 	const [filterStatusSubmit, setFilterStatusSubmit] = useState(false);
-	const [downloading, setDownloading] = useState(false);
 	const [invalidFilterSearch, setInvalidFilterSearch] = useState(false);
 	const initialRender = useRef(true);
-	const fetchOptinRequests = async ({pageSize = 25, pageNumber = 1}) => {
+	const fetchOptinRequests = async ({pageSize = config.defaultPageSize, pageNumber = 1}) => {
 		const [nemAddress, transactionHash] = parseFilterSearch(filterSearch?.trim());
 		return await fetch(`/api/requests?pageSize=${pageSize}&pageNumber=${pageNumber}` +
 		`&nemAddress=${nemAddress}&transactionHash=${transactionHash}&status=${filterStatus ?? ''}`).then(res => res.json());
@@ -106,7 +103,7 @@ const Requests = ({defaultPaginationType}) => {
 	const onFilterSubmit = async e => {
 		if (e)
 			e.preventDefault();
-		await handlePageChange({page: 1, rows: 25});
+		await handlePageChange({page: 1, rows: config.defaultPageSize});
 		setFilterStatusSubmit(false);
 	};
 
@@ -115,10 +112,6 @@ const Requests = ({defaultPaginationType}) => {
 			onFilterSubmit();
 		initialRender.current = false;
 	}, [filterStatusSubmit]);
-
-	const downloadAllAsCSV = async () => {
-		await Helper.downloadAllAsCSV({apiUrl: '/api/requests/download', fileName: 'optin-requests.csv', setDownloading});
-	};
 
 	const nemAddressTemplate = rowData => {
 		return addressTemplate(rowData, 'nemAddress', config);
@@ -148,29 +141,21 @@ const Requests = ({defaultPaginationType}) => {
 	const header = (
 		<form onSubmit={onFilterSubmit}>
 			<div className='flex flex-wrap md:justify-content-between'>
-				<div className="flex-row w-full lg:w-8 xl:w-6">
-					<span className="p-input-icon-right w-10">
+				<div className="flex flex-row w-full">
+					<span className="p-input-icon-right w-7">
 						<i className="pi pi-times" onClick={clearFilterSearch}/>
 						<InputText id="filterSearch" value={filterSearch} onChange={onFilterSearchChange} className="w-full"
-							placeholder="NEM Address / Transaction Hash" aria-describedby="filterSearch-help"/>
+							placeholder="NEM Address / Tx Hash" aria-describedby="filterSearch-help" />
 					</span>
-					<span className="ml-1 w-2">
-						<Button type="submit" icon="pi pi-search" className="p-button-outlined" disabled={invalidFilterSearch}/>
-					</span>
-					{
-						invalidFilterSearch &&
-							<small id="filterSearch-help" className="p-error block">Invalid NEM Address or Transaction Hash.</small>
-					}
-				</div>
-				<div>
-					<div className="flex flex-wrap justify-content-between">
+					<span className="w-5 ml-5">
 						<SelectButton optionLabel="label" optionValue="value" value={filterStatus} options={statuses}
 							onChange={onFilterStatusChange}></SelectButton>
-						<Button type="button" icon="pi pi-download" className="ml-6 p-button-outlined download-button"
-							onClick={downloadAllAsCSV} loading={downloading} tooltip="Download All Data as CSV File"
-							tooltipOptions={{position: 'top'}} />
-					</div>
+					</span>
 				</div>
+				{
+					invalidFilterSearch &&
+							<small id="filterSearch-help" className="p-error block">Invalid NEM Address or Transaction Hash.</small>
+				}
 			</div>
 		</form>
 	);
