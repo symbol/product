@@ -181,7 +181,7 @@ const controller = {
 					symbolTimestampsUTC: convertTimestampToDate(getLatestTimestamps(row.symbolTimestamps[j])),
 					symbolTimestampsLocal: convertTimestampToDate(getLatestTimestamps(row.symbolTimestamps[j]), timezone),
 					symbolBalance: toRelativeAmount(row.symbolBalance[j]) || '',
-					optinType: row.isPostoptin ? 'Post-launch' : 'Pre-launch'
+					optinType: row.isPostoptin ? 'POST' : 'PRE'
 				});
 			}
 		}
