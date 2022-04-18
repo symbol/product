@@ -12,8 +12,7 @@ const copyButton = value => {
 		return undefined;
 	return (
 		<React.Fragment>
-			<Button icon="pi pi-copy" className="p-button-text copy-button"
-				tooltip='Copy' onClick={onCopyHandler} />
+			<Button icon="pi pi-copy" className="p-button-text copy-button" onClick={onCopyHandler} />
 		</React.Fragment>
 	);
 };
