@@ -46,6 +46,10 @@ p-tabview,
   z-index: 10 !important;
 }
 
+tr {
+  height: 0;
+}
+
 .pagination {
   display: flex;
   justify-content: center;
