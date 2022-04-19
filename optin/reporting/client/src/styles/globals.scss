@@ -222,10 +222,15 @@ p-tabview,
 ::-webkit-scrollbar {
   background-color: var(--color-darkmode-bg-gray);
   width: 15px;
+  height: 15px;
 }
  
 ::-webkit-scrollbar-thumb {
   background: var(--color-darkmode-form-accent-light);
+}
+
+::-webkit-scrollbar-corner  {
+  background: var(--color-darkmode-bg-gray);
 }
 
 @media only screen and (max-width: 600px) {
