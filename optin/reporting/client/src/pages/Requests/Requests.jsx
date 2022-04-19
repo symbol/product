@@ -177,7 +177,7 @@ const Requests = ({defaultPaginationType}) => {
 			totalRecords={requests.pagination.totalRecord} paginator={'paginator' === paginationType}
 			first={first} header={header}>
 			<TableColumn field="nemAddress" header="NEM Address" body={nemAddressTemplate} align="left"/>
-			<TableColumn field="optinTransactionHash" header="Optin Hash" body={optinTransactionHashTemplate} align="left"/>
+			<TableColumn field="optinTransactionHash" header="Opt-in Hash" body={optinTransactionHashTemplate} align="left"/>
 			<TableColumn field="payoutTransactionHash" header="Payout Hash" body={payoutTransactionHashTemplate} align="left"/>
 			<TableColumn field="status" header="Status" body={statusTemplate} align="center"/>
 			<TableColumn field="message" header="Message" align="left"/>

@@ -3,6 +3,8 @@ import { DataTable } from 'primereact/datatable';
 import {ProgressSpinner} from 'primereact/progressspinner';
 import React from 'react';
 
+const NEXT_PAGE_LOAD_BOTTOM_MARGIN = 300; // the height from the bottom to trigger the next page load
+
 const Table = React.forwardRef((props, ref) => {
 	const defaultRef = React.useRef(null);
 	const tableRef = ref ?? defaultRef;
@@ -10,9 +12,9 @@ const Table = React.forwardRef((props, ref) => {
 	const allowLoadNextPage = !props.allPagesLoaded && props.rows <= props.value.length && !props.loading;
 
 	const infiniteLoaderHandler = React.useCallback(event => {
-		const bottom = Math.trunc(event.target.scrollHeight - event.target.scrollTop) <= event.target.clientHeight;
+		const wayToBottom = Math.trunc(event.target.scrollHeight - event.target.scrollTop) - event.target.clientHeight;
 
-		if (bottom && allowLoadNextPage) 
+		if (NEXT_PAGE_LOAD_BOTTOM_MARGIN >= wayToBottom && allowLoadNextPage) 
 			props.onPage({});
 	}, [allowLoadNextPage, props.onPage]);
 
