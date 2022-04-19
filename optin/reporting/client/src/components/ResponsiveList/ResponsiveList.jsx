@@ -16,7 +16,7 @@ const ResponsiveList = props => {
 				{
 					1 < props.children.length &&
 					<div className="container-responsive-list-more">
-						<PopUpDialog content={props.children} buttonText={props.showMoreText ?? '..more'} title={props.title ?? '..more'}/>
+						<PopUpDialog content={props.children} buttonText={props.showMoreText ?? 'more'} title={props.title ?? 'more'}/>
 					</div>
 				}
 			</div>

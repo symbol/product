@@ -107,7 +107,7 @@ export const dateTransactionHashTemplate = (rowData, key, timestampKey, config, 
 				{
 					(item) ? (
 						<>
-							<span className='timestamp'> {date} |</span>
+							<span className='timestamp'> {date}&nbsp;|&nbsp;</span>
 							<a href={config.keyRedirects[key] + item.toLowerCase()}
 								target="_blank"
 								rel="noreferrer">
