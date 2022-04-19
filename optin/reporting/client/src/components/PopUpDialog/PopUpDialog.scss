@@ -1,3 +1,16 @@
+.p-dialog-header {
+    font-family: var(--typography-web-desktop-h3-font-family) !important;
+    text-transform: uppercase;
+    background: var(--color-darkmode-bg-gray) !important;
+    color: var(--color-darkmode-text-title) !important;
+}
+
+.p-dialog-content {
+    font-family: monospace;
+    background: var(--color-darkmode-bg-gray) !important;
+    color: var(--color-darkmode-text-body) !important;
+}
+
 .dialog-balance-list > .p-dialog-content {
     text-align: right;
 }

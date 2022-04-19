@@ -32,21 +32,6 @@ const Table = React.forwardRef((props, ref) => {
 	if (props.resetScroll) 
 		tableRef.current.resetScroll();	
 
-	const footer = (
-		<React.Fragment>
-			{props.footer}
-			{
-				props.loading && !props.paginator && 
-					<td colSpan={12}>
-						<div className="grid flex align-items-center w-100">
-							<div className="col-2"><ProgressSpinner className="w-6"/></div>
-							<div className="col-10">{props.loadingMessage}</div>
-						</div>
-					</td>
-			}
-		</React.Fragment>
-	);
-
 	return  (
 		<DataTable
 			lazy={props.lazy} 
@@ -54,8 +39,6 @@ const Table = React.forwardRef((props, ref) => {
 			stripedRows 
 			showGridlines 
 			responsiveLayout="stack" 
-			rowGroupMode="subheader" 
-			groupRowsBy="___all"
 			breakpoint={props.breakpoint} 
 			paginator={props.paginator}
 			paginatorTemplate="CurrentPageReport FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink RowsPerPageDropdown"
@@ -68,7 +51,6 @@ const Table = React.forwardRef((props, ref) => {
 			first={props.first} 
 			header={props.header} 
 			emptyMessage={props.emptyMessage} 
-			rowGroupFooterTemplate={footer} 
 			ref={tableRef}
 		>
 			{props.children}
