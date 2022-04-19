@@ -19,7 +19,6 @@ h2 {
   -webkit-text-fill-color: transparent;
 }
 
-
 // Theming
 
 .p-component {
@@ -27,7 +26,7 @@ h2 {
   font-family: var(--typography-web-desktop-body-hero-font-family) !important;
 }
 
-.p-tabview, .p-tabview-nav {
+.p-tabview, .p-tabview-nav, .p-tabview-panels {
   background: var(--color-darkmode-bg-gray) !important;
   color: var(--color-darkmode-text-body) !important;
   font-family: var(--typography-web-desktop-body-hero-font-family) !important;
@@ -72,8 +71,13 @@ td {
   color: var(--color-darkmode-text-body) !important;
 }
 
+.p-datatable-tbody {
+  font-family: monospace;
+}
+
 a {
   color: var(--color-darkmode-text-learn-more) !important;
+  text-decoration: none;
 }
 
 .p-button {
@@ -208,7 +212,6 @@ p-tabview,
 .timestamp {
   font-size: 0.8rem;
   white-space: nowrap;
-  margin-right: 0.1rem;
 }
 
 .download-button {
@@ -216,14 +219,28 @@ p-tabview,
   margin: 0 auto !important;
 }
 
+::-webkit-scrollbar {
+  background-color: var(--color-darkmode-bg-gray);
+  width: 15px;
+}
+ 
+::-webkit-scrollbar-thumb {
+  background: var(--color-darkmode-form-accent-light);
+}
+
 @media only screen and (max-width: 600px) {
   html {
     font-size: 10px !important;
   }
-}
 
-a {
-  text-decoration: none;
+  h2 {
+    font: var(--font-web-mobile-h2) !important;
+    margin-bottom: 1rem;
+  }
+
+  ::-webkit-scrollbar {
+    width: 2px;
+  }
 }
 
 .p-selectbutton .p-button {
