@@ -11,7 +11,9 @@ const processData = items => {
 			return 'Pending';
 		case 1:
 			return 'Sent';
-		case 5:
+		case 3:
+			return 'Duplicate';
+		case 4:
 			return 'Error';
 		default:
 			return 'Unknown';
@@ -45,8 +47,10 @@ const controller = {
 				return 0;
 			case 'sent':
 				return 1;
+			case 'duplicate':
+				return 3;
 			case 'error':
-				return 5;
+				return 4;
 			default:
 				return null;
 			}

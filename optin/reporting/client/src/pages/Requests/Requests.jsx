@@ -138,7 +138,7 @@ const Requests = ({defaultPaginationType}) => {
 
 	const statusTemplate = rowData => {
 		const {status} = rowData;
-		const badgeType = 'Pending' === status ? 'warning' : 'Sent' === status ? 'success' : 'danger';
+		const badgeType = 'Pending' === status ? 'warning' : 'Sent' === status ? 'success' : 'Duplicate' === status? 'info' : 'danger';
 		const badgeClass = `p-badge p-badge-${badgeType}`;
 		return <React.Fragment>
 			<div>
@@ -147,18 +147,19 @@ const Requests = ({defaultPaginationType}) => {
 		</React.Fragment>;
 	};
 
-	const statuses = [{label: 'Pending', value: 'Pending'}, {label: 'Sent', value: 'Sent'}, {label: 'Error', value: 'Error'}];
+	const statuses = [{label: 'Pend', value: 'Pending'}, {label: 'Sent', value: 'Sent'}, 
+		{label: 'Dupl', value: 'Duplicate'}, {label: 'Err', value: 'Error'}];
 
 	const header = (
 		<form onSubmit={onFilterSubmit}>
 			<div className='flex flex-wrap md:justify-content-between'>
 				<div className="flex flex-row w-full">
-					<span className="p-input-icon-right w-7">
+					<span className="p-input-icon-right w-6">
 						<i className="pi pi-times" onClick={clearFilterSearchAndSubmit}/>
 						<InputText id="filterSearch" value={filterSearch} onChange={onFilterSearchChange} className="w-full"
 							placeholder="NEM Address / Tx Hash" aria-describedby="filterSearch-help" />
 					</span>
-					<span className="w-5 ml-5">
+					<span className="w-6 ml-5">
 						<SelectButton optionLabel="label" optionValue="value" value={filterStatus} options={statuses}
 							onChange={onFilterStatusChange}></SelectButton>
 					</span>
