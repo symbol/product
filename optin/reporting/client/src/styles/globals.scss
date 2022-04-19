@@ -37,6 +37,10 @@ h2 {
   background: var(--color-darkmode-bg-gray) !important;
   color: var(--color-darkmode-text-body) !important;
   border-radius: 0 !important;
+
+  &:focus {
+    box-shadow: unset !important;
+  }
 }
 
 .p-tabview-selected > a {
