@@ -44,7 +44,6 @@ const Home = function () {
 
 	return (
 		<div className='App'>
-			<div className='bgContainer' />
 			<div className='mainContainerWrapper'>
 				<div className='mainContainer'>
 					<h2>Opt-in Summary</h2>
