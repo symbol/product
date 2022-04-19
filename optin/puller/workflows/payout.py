@@ -41,14 +41,15 @@ class Processor:
 		self.total_fees = 0
 		self.total_transactions = 0
 
-	def _set_request_status_all(self, requests, new_status, payout_transaction_hash):
+	def _set_request_status_all(self, requests, new_status, payout_transaction_hash=None, message=None):
 		for request in requests:
 			print(
 				f'marking request with optin transaction hash {request.optin_transaction_hash} '
-				f'and payout transaction hash {payout_transaction_hash} as {new_status}')
+				f'and payout transaction hash {payout_transaction_hash} as {new_status}'
+				'' if not message else f' ({message})')
 
 			if not self.is_dry_run:
-				self.databases.inprogress.set_request_status(request, new_status, payout_transaction_hash)
+				self.databases.inprogress.set_request_status(request, new_status, payout_transaction_hash, message)
 
 	async def process_unprocessed_request(self, address, request_group, sent_requests, deadline):
 		if request_group.is_error:
@@ -57,7 +58,8 @@ class Processor:
 			return True
 
 		if address in sent_requests or self.databases.completed.is_opted_in(address):
-			self._set_request_status_all(request_group.requests, OptinRequestStatus.DUPLICATE, None)
+			message = 'send in progress' if address in sent_requests else 'optin completed'
+			self._set_request_status_all(request_group.requests, OptinRequestStatus.DUPLICATE, message=message)
 			return False
 
 		if self.databases.multisig.is_multisig(address):
@@ -70,7 +72,7 @@ class Processor:
 					(valid_requests if request.address in valid_cosigner_addresses else invalid_requests).append(request)
 
 				if invalid_requests:
-					self._set_request_status_all(invalid_requests, OptinRequestStatus.ERROR, None)
+					self._set_request_status_all(invalid_requests, OptinRequestStatus.ERROR, message='invalid cosigner')
 
 				await self.process_payout(address, valid_requests, deadline)
 			else:
@@ -88,13 +90,13 @@ class Processor:
 	async def process_payout(self, address, requests, deadline):
 		balance = self.databases.balances.lookup_balance(address)
 		if not balance:
-			self._set_request_status_all(requests, OptinRequestStatus.ERROR_ZERO, None)
+			self._set_request_status_all(requests, OptinRequestStatus.ERROR, message='account had zero balance at snapshot height')
 			return
 
 		symbol_address = self.symbol_network.public_key_to_address(requests[0].destination_public_key)
 		sent_transaction_hash = await self.send_funds(symbol_address, balance, deadline, address)
 
-		self._set_request_status_all(requests, OptinRequestStatus.SENT, sent_transaction_hash)
+		self._set_request_status_all(requests, OptinRequestStatus.SENT, payout_transaction_hash=sent_transaction_hash)
 
 	async def send_funds(self, destination_address, amount, deadline, nem_address):
 		transaction, transaction_hash = self.transaction_preparer.prepare_transaction(destination_address, amount, deadline, nem_address)

@@ -34,7 +34,8 @@ def make_request_tuple(index, **kwargs):
 		destination_public_key.bytes,
 		multisig_public_key.bytes if multisig_public_key else None,
 		kwargs.get('status_id', 0),
-		payout_transaction_hash.bytes if payout_transaction_hash else None)
+		payout_transaction_hash.bytes if payout_transaction_hash else None,
+		kwargs.get('message', None))
 
 # endregion
 
@@ -396,6 +397,24 @@ class InProgressOptinDatabaseTest(unittest.TestCase):
 			make_request_tuple(2)
 		], expected_payout_transactions=[
 			(payout_transaction_hash.bytes, 0, 0)
+		], post_insert_action=post_insert_action)
+
+	def test_can_update_single_request_status_with_error_message(self):
+		# Arrange:
+		seed_requests = [
+			make_request(0, {'type': 100, 'destination': PUBLIC_KEYS[0]}),
+			make_request(1, {'type': 100, 'destination': PUBLIC_KEYS[1]}),
+			make_request(2, {'type': 100, 'destination': PUBLIC_KEYS[2]})
+		]
+
+		def post_insert_action(database):
+			database.set_request_status(seed_requests[1], OptinRequestStatus.ERROR, None, 'custom error message')
+
+		# Act + Assert:
+		self._assert_can_insert_requests(seed_requests, [
+			make_request_tuple(0),
+			make_request_tuple(1, status_id=4, payout_transaction_hash=None, message='custom error message'),
+			make_request_tuple(2)
 		], post_insert_action=post_insert_action)
 
 	def test_can_update_single_request_status_matching_optin_transaction_hash(self):

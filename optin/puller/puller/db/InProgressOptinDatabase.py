@@ -15,7 +15,6 @@ class OptinRequestStatus(Enum):
 	COMPLETED = 2
 	DUPLICATE = 3
 	ERROR = 4
-	ERROR_ZERO = 5
 
 
 class InProgressOptinDatabase(NemBlockTimestampsMixin):
@@ -40,7 +39,8 @@ class InProgressOptinDatabase(NemBlockTimestampsMixin):
 			destination_public_key blob,
 			multisig_public_key blob,
 			payout_status integer,
-			payout_transaction_hash blob
+			payout_transaction_hash blob,
+			message text
 		)''')
 		cursor.execute('''CREATE TABLE IF NOT EXISTS payout_transaction (
 			transaction_hash blob UNIQUE PRIMARY KEY,
@@ -89,14 +89,15 @@ class InProgressOptinDatabase(NemBlockTimestampsMixin):
 
 		# insert the new request
 		new_status = OptinRequestStatus.DUPLICATE if is_duplicate else OptinRequestStatus.UNPROCESSED
-		cursor.execute('''INSERT INTO optin_request VALUES (?, ?, ?, ?, ?, ?, ?)''', (
+		cursor.execute('''INSERT INTO optin_request VALUES (?, ?, ?, ?, ?, ?, ?, ?)''', (
 			request.optin_transaction_height,
 			request.optin_transaction_hash.bytes,
 			request.address.bytes,
 			request.destination_public_key.bytes,
 			request.multisig_public_key.bytes if request.multisig_public_key else None,
 			new_status.value,
-			request.payout_transaction_hash.bytes if request.payout_transaction_hash else None))
+			request.payout_transaction_hash.bytes if request.payout_transaction_hash else None,
+			None))
 
 		self.connection.commit()
 		return new_status
@@ -141,18 +142,19 @@ class InProgressOptinDatabase(NemBlockTimestampsMixin):
 
 		return set(addresses)
 
-	def set_request_status(self, request, new_status, payout_transaction_hash):
+	def set_request_status(self, request, new_status, payout_transaction_hash, message=None):
 		"""Sets the status for a request."""
 
 		cursor = self.connection.cursor()
 		payout_transaction_hash_bytes = payout_transaction_hash.bytes if payout_transaction_hash else None
 		multisig_public_key = request.multisig_public_key.bytes if request.multisig_public_key else None
 		cursor.execute(
-			'''UPDATE optin_request SET payout_status = ?, payout_transaction_hash = ?
+			'''UPDATE optin_request SET payout_status = ?, payout_transaction_hash = ?, message = ?
 				WHERE address = ? AND multisig_public_key IS ? AND optin_transaction_hash IS ?''',
 			(
 				new_status.value,
 				payout_transaction_hash_bytes,
+				message,
 				request.address.bytes,
 				multisig_public_key,
 				request.optin_transaction_hash.bytes
