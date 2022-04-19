@@ -1,3 +1,11 @@
 .labelCol {
     width: 5rem;
 }
+@media (max-width: 2600px) {
+    .container-full-text {
+        display: none !important;
+    }
+    .container-responsive-text {
+        display: block !important;
+    }
+}

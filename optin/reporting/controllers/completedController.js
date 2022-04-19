@@ -17,7 +17,6 @@ const isPostOptin = optinTypeFilter => {
 };
 
 const processData = items =>
-	// TODO enchance the way create an Address object from hex string, check Gimre's solution
 	items.map(item => ({
 		optin_id: item.id,
 		isPostoptin: item.is_postoptin,
@@ -25,25 +24,29 @@ const processData = items =>
 		nemAddress: item.nem_source.map(props => new NemFacade.Address(hexStringToByte(props.address))
 			.toString()),
 		nemBalance: item.nem_source.map(props => props.balance),
+		nemHeights: item.nem_source.map(props => formatStringSplit(props.height)),
 		nemHashes: item.nem_source.map(props => formatStringSplit(props.hashes)),
 		nemTimestamps: item.nem_source.map(props => formatStringSplit(props.timestamps)),
 		symbolAddress: item.symbol_destination.map(props => new SymbolFacade.Address(hexStringToByte(props.address))
 			.toString()),
+		symbolHeights: item.symbol_destination.map(props => formatStringSplit(props.height)),
 		symbolHashes: item.symbol_destination.map(props => formatStringSplit(props.hashes)),
 		symbolTimestamps: item.symbol_destination.map(props => formatStringSplit(props.timestamps)),
 		symbolBalance: item.symbol_destination.map(props => props.balance)
 	}));
 
+const findMaxInArray = arr => arr.reduce((m, e) => (e > m ? e : m));
+
 const getLatestTimestamps = timestamps => {
-	let timestamp = timestamps;
-
 	if (Array.isArray(timestamps))
-		timestamp = timestamps.sort((a, b) => b - a)[0];
+		return findMaxInArray(timestamps.map(timestamp => Number(timestamp)));
+	return timestamps ? parseInt(timestamps, 10) : null;
+};
 
-	if (timestamp)
-		return parseInt(timestamp, 10);
-
-	return null;
+const getLatestHeight = heights => {
+	if (Array.isArray(heights))
+		return findMaxInArray(heights.map(height => BigInt(height))).toString();
+	return heights ? BigInt(heights).toString() : null;
 };
 
 const controller = {
@@ -111,6 +114,10 @@ const controller = {
 			value: 'nemHashes'
 		},
 		{
+			label: 'Height',
+			value: 'nemHeights'
+		},
+		{
 			label: 'Timestamp',
 			value: 'nemTimestampsLocal'
 		},
@@ -129,6 +136,10 @@ const controller = {
 		{
 			label: 'Hash',
 			value: 'symbolHashes'
+		},
+		{
+			label: 'Height',
+			value: 'symbolHeights'
 		},
 		{
 			label: 'Timestamp',
@@ -170,12 +181,14 @@ const controller = {
 					optin_id: row.optin_id,
 					nemAddress: row.nemAddress[j] ?? '',
 					label: info[j] ?? '',
+					nemHeights: getLatestHeight(row.nemHeights[j]),
 					nemHashes: (Array.isArray(row.nemHashes[j]) ? row.nemHashes[j].join(';') : row.nemHashes[j])
 						?? '(off-chain)',
 					nemTimestampsUTC: convertTimestampToDate(getLatestTimestamps(row.nemTimestamps[j])),
 					nemTimestampsLocal: convertTimestampToDate(getLatestTimestamps(row.nemTimestamps[j]), timezone),
 					nemBalance: toRelativeAmount(row.nemBalance[j]) || '',
 					symbolAddress: row.symbolAddress[j] ?? '',
+					symbolHeights: getLatestHeight(row.symbolHeights[j]),
 					symbolHashes: (Array.isArray(row.symbolHashes[j]) ? row.symbolHashes[j].join(';') : row.symbolHashes[j])
 						?? '',
 					symbolTimestampsUTC: convertTimestampToDate(getLatestTimestamps(row.symbolTimestamps[j])),

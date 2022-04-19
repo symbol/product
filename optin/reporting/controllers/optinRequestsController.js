@@ -22,6 +22,7 @@ const processData = items => {
 		optinTransactionHeight: item.optinTransactionHeight,
 		nemAddress: new NemFacade.Address(item.nemAddressBytes).toString(),
 		optinTransactionHash: item.optinTransactionHashHex?.toLowerCase(),
+		payoutTransactionHeight: item.payoutTransactionHeight,
 		payoutTransactionHash: item.payoutTransactionHash?.toLowerCase(),
 		status: statusIntToString(item.payoutStatus),
 		message: item.message,
@@ -93,6 +94,7 @@ const controller = {
 			optinTransactionHeight: item.optinTransactionHeight,
 			nemAddress: item.nemAddress,
 			optinTransactionHash: item.optinTransactionHash,
+			payoutTransactionHeight: item.payoutTransactionHeight,
 			payoutTransactionHash: item.payoutTransactionHash,
 			status: item.status,
 			message: item.message,
@@ -108,6 +110,9 @@ const controller = {
 		}, {
 			label: 'Opt-in Hash',
 			value: 'optinTransactionHash'
+		}, {
+			label: 'Opt-in Height',
+			value: 'optinTransactionHeight'
 		},
 		{
 			label: 'Timestamp',
@@ -118,6 +123,9 @@ const controller = {
 		}, {
 			label: 'Payout Hash',
 			value: 'payoutTransactionHash'
+		}, {
+			label: 'Payout Height',
+			value: 'payoutTransactionHeight'
 		}, {
 			label: 'Timestamp',
 			value: 'payoutTimestampLocal'
