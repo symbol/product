@@ -1,4 +1,4 @@
-const { completed } = require('./database');
+const getDatabase = require('./database');
 const { QueryTypes } = require('sequelize');
 
 const completedDB = {
@@ -16,6 +16,7 @@ const completedDB = {
 		if (txHash)
 			condition += `AND (nem_source LIKE '%${txHash}%' OR symbol_destination LIKE '%${txHash}%')`;
 
+		const { completed } = getDatabase();
 		const result = await completed.query(
 			`SELECT
 				opt.id,
@@ -68,6 +69,7 @@ const completedDB = {
 		}));
 	},
 	getTotalRecord: async () => {
+		const { completed } = getDatabase();
 		const result = await completed.query(
 			`select count(*) as totalRecord
             from optin_id`,

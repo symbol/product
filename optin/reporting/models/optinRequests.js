@@ -1,10 +1,11 @@
-const { in_progress } = require('./database');
+const getDatabase = require('./database');
 const { QueryTypes } = require('sequelize');
 
 const optinRequestDB = {
 	async getOptinRequestPagination({
 		pageNumber, pageSize, nemAddressBytes, transactionHashBytes, status
 	}) {
+		const { in_progress } = getDatabase();
 		const result = await in_progress.query(
 			`select optin_transaction_height as optinTransactionHeight, address as nemAddressBytes,
 					hex(optin_transaction_hash) as optinTransactionHashHex, 
