@@ -1,6 +1,11 @@
 const moment = require('moment-timezone');
 
 const ServerUtils = {
+	/**
+	 * Convert amount to relative amount (6 divisibility).
+	 * @param {string|number} amount amount.
+	 * @returns {number|undefined} relative amount.
+	 */
 	toRelativeAmount: amount => {
 		const number = parseInt(amount, 10);
 
@@ -9,6 +14,11 @@ const ServerUtils = {
 
 		return amount / (10 ** 6);
 	},
+	/**
+	 * Convert byte to hex string.
+	 * @param {string|Uint8Array} uint8arr Uint8Array or string.
+	 * @returns {string} hex string.
+	 */
 	byteToHexString: uint8arr => {
 		if (!uint8arr)
 			return '';
@@ -22,6 +32,11 @@ const ServerUtils = {
 
 		return hexStr.toUpperCase();
 	},
+	/**
+	 * Convert hex string to byte.
+	 * @param {string} str hex string.
+	 * @returns {Uint8Array} Uint8Array.
+	 */
 	hexStringToByte: str => {
 		if (!str)
 			return new Uint8Array();
@@ -32,6 +47,12 @@ const ServerUtils = {
 
 		return new Uint8Array(a);
 	},
+	/**
+	 * Format string to with separator else it return back the value.
+	 * @param {string} string a string contain with separator.
+	 * @param {string} separator default separator is ';'.
+	 * @returns {string|array} string or array.
+	 */
 	formatStringSplit: (string, separator = ';') => {
 		if ('string' === typeof string) {
 			const values = string.split(separator);
