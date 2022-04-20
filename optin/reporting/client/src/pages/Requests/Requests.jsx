@@ -148,7 +148,7 @@ const Requests = ({defaultPaginationType}) => {
 	};
 
 	const statuses = [{label: 'Pend', value: 'Pending'}, {label: 'Sent', value: 'Sent'}, 
-		{label: 'Dupl', value: 'Duplicate'}, {label: 'Err', value: 'Error'}];
+		{label: 'Dup', value: 'Duplicate'}, {label: 'Err', value: 'Error'}];
 
 	const header = (
 		<form onSubmit={onFilterSubmit}>
