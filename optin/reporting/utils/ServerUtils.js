@@ -1,7 +1,14 @@
 const moment = require('moment-timezone');
 
 const ServerUtils = {
-	toRelativeAmount: amount => amount / (10 ** 6),
+	toRelativeAmount: amount => {
+		const number = parseInt(amount, 10);
+
+		if (Number.isNaN(number))
+			return undefined;
+
+		return amount / (10 ** 6);
+	},
 	byteToHexString: uint8arr => {
 		if (!uint8arr)
 			return '';

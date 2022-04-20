@@ -186,14 +186,14 @@ const controller = {
 						?? '(off-chain)',
 					nemTimestampsUTC: convertTimestampToDate(getLatestTimestamps(row.nemTimestamps[j])),
 					nemTimestampsLocal: convertTimestampToDate(getLatestTimestamps(row.nemTimestamps[j]), timezone),
-					nemBalance: toRelativeAmount(row.nemBalance[j]) || '',
+					nemBalance: toRelativeAmount(row.nemBalance[j]) ?? '',
 					symbolAddress: row.symbolAddress[j] ?? '',
 					symbolHeights: getLatestHeight(row.symbolHeights[j]),
 					symbolHashes: (Array.isArray(row.symbolHashes[j]) ? row.symbolHashes[j].join(';') : row.symbolHashes[j])
 						?? '',
 					symbolTimestampsUTC: convertTimestampToDate(getLatestTimestamps(row.symbolTimestamps[j])),
 					symbolTimestampsLocal: convertTimestampToDate(getLatestTimestamps(row.symbolTimestamps[j]), timezone),
-					symbolBalance: toRelativeAmount(row.symbolBalance[j]) || '',
+					symbolBalance: toRelativeAmount(row.symbolBalance[j]) ?? '',
 					optinType: row.isPostoptin ? 'POST' : 'PRE'
 				});
 			}
