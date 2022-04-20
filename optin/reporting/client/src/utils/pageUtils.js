@@ -1,21 +1,10 @@
 import Helper from './helper';
+import CopyButton from '../components/CopyButton';
 import ResponsiveList from '../components/ResponsiveList';
 import ResponsiveText from '../components/ResponsiveText';
-import {Button} from 'primereact/button';
 import React from 'react';
 
-const copyButton = value => {
-	const onCopyHandler = () => {
-		Helper.copyToClipboard(value);
-	};
-	if (!value)
-		return undefined;
-	return (
-		<React.Fragment>
-			<Button icon="pi pi-copy" className="p-button-text copy-button" onClick={onCopyHandler} />
-		</React.Fragment>
-	);
-};
+
 export const addressTemplate = (rowData, key, config, fixResponsiveText=false) => {
 	const list = Array.isArray(rowData[key]) ? [...rowData[key]] : [rowData[key]];
 	if (1 < list.length)
@@ -27,7 +16,7 @@ export const addressTemplate = (rowData, key, config, fixResponsiveText=false) =
 					<a href={config.keyRedirects[key] + address} target="_blank" rel="noreferrer">
 						<ResponsiveText value={address} isFixLength={fixResponsiveText} />
 					</a>
-					{copyButton(address)}
+					<CopyButton value={address} />
 				</div>)
 			}
 		</ResponsiveList>
@@ -64,39 +53,6 @@ export const renderTotalValue = values => {
 
 };
 
-export const transactionHashTemplate = (rowData, key, config) => {
-	const list = Array.isArray(rowData[key]) ? rowData[key] : [rowData[key]];
-
-	const buildTransactionHashLink = (key, item) => {
-		return (
-			<div className='flex flex-row list-item'>
-				<a href={config.keyRedirects[key] + item.toLowerCase()}
-					target="_blank"
-					rel="noreferrer">
-					<ResponsiveText value={item.toLowerCase()} />
-				</a>
-				{copyButton(item.toLowerCase())}
-			</div>
-		);
-	};
-	const resultList = list.flat(Infinity).map(hash =>
-		<div>
-			{
-				null !== hash
-					? buildTransactionHashLink(key, hash)
-					: '(off chain)'
-			}
-		</div>);
-	if (1 < resultList.length)
-		resultList.push(<div className='list-item' />);
-
-	return (
-		<ResponsiveList title="Hash List">
-			{resultList}
-		</ResponsiveList>
-	);
-};
-
 export const dateTransactionHashTemplate = (rowData, key, timestampKey, config, fixResponsiveText=false) => {
 	const list = Array.isArray(rowData[key]) ? rowData[key].flat(Infinity) : [rowData[key]];
 	const timestamps = Array.isArray(rowData[timestampKey]) ? rowData[timestampKey].flat(Infinity) : [rowData[timestampKey]];
@@ -113,7 +69,7 @@ export const dateTransactionHashTemplate = (rowData, key, timestampKey, config, 
 								rel="noreferrer">
 								<ResponsiveText value={item.toLowerCase()} isFixLength={fixResponsiveText} />
 							</a>
-							{copyButton(item.toLowerCase())}
+							<CopyButton value={item.toLowerCase()} />
 						</>
 					) : null
 				}
