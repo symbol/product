@@ -8,11 +8,10 @@ const onCopyHandler = value => {
 };
 
 const CopyButton = ({ value, onCopy = onCopyHandler }) => {
-	if (!value)
-		return undefined;
+	const button = value ? <Button icon="pi pi-copy" className="p-button-text copy-button" onClick={() => onCopy(value)} /> : null;
 	return (
 		<React.Fragment>
-			<Button icon="pi pi-copy" className="p-button-text copy-button" onClick={() => onCopy(value)} />
+			{button}
 		</React.Fragment>
 	);
 };

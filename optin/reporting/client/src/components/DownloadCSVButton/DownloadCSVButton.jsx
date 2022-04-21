@@ -1,6 +1,7 @@
 import Helper from '../../utils/helper';
 import {Button} from 'primereact/button';
 import { useState } from 'react';
+import './DownloadCSVButton.scss';
 const moment = require('moment-timezone');
 
 const DownloadCSVButton = ({activePage}) => {

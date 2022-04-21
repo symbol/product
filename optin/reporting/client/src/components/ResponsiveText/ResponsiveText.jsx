@@ -1,13 +1,13 @@
 import React from 'react';
 import './ResponsiveText.scss';
 
-const ResponsiveText = ({value, lastPartLength = 8, isFixLength = false}) => {
+const ResponsiveText = ({value, lastPartLength = 8, fixedLength = false}) => {
 
 	return (
 		<React.Fragment>
 			<div className="container-responsive-text">
 				{
-					isFixLength ?
+					fixedLength ?
 						<span className="firstPart">{`${'' === value ? '' : value.substring(0, lastPartLength) + '...'}`}</span>
 						:
 						(

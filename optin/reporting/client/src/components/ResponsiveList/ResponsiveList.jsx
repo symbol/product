@@ -11,7 +11,7 @@ const ResponsiveList = props => {
 			</div>
 			<div className="container-responsive-list">
 				<div className="container-responsive-list-visible">
-					{(props.visible && props.children) ?? props.children[0]}
+					{props.visible ?? (props.children[0] || '')}
 				</div>
 				{
 					1 < props.children.length &&

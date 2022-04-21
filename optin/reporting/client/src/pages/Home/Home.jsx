@@ -1,4 +1,4 @@
-import DownloadCSVButton from './DownloadCSVButton.jsx';
+import DownloadCSVButton from './../../components/DownloadCSVButton';
 import Completed from '../Completed';
 import Requests from '../Requests';
 import { TabPanel, TabView } from 'primereact/tabview';
