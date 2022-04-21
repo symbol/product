@@ -2,7 +2,7 @@ import './Completed.scss';
 import Table from '../../components/Table';
 import TableColumn from '../../components/Table/TableColumn';
 import config from '../../config';
-import { addressTemplate, balanceTemplate, optinTypeTemplate, infoTemplate, dateTransactionHashTemplate } from '../../utils/pageUtils';
+import { addressTemplate, balanceTemplate, dateTransactionHashTemplate } from '../../utils/pageUtils';
 import { InputText } from 'primereact/inputtext';
 import { SelectButton } from 'primereact/selectbutton';
 import React, { useState, useEffect, useRef} from 'react';
@@ -134,11 +134,11 @@ const Completed = ({defaultPaginationType}) => {
 	}, [filterOptinTypeSubmit, filterSearchCleared]);
 
 	const nemAddressTemplate = rowData => {
-		return addressTemplate(rowData, 'nemAddress', config, true);
+		return addressTemplate(rowData, 'nemAddress', config, false);
 	};
 
 	const symbolAddressTemplate = rowData => {
-		return addressTemplate(rowData, 'symbolAddress', config, true);
+		return addressTemplate(rowData, 'symbolAddress', config, false);
 	};
 
 	const nemBalanceTemplate = rowData => {
@@ -150,19 +150,31 @@ const Completed = ({defaultPaginationType}) => {
 	};
 
 	const nemDateHashesTemplate = rowData => {
-		return dateTransactionHashTemplate(rowData, 'nemHashes', 'nemTimestamps', config, true);
+		return dateTransactionHashTemplate(rowData, 'nemHashes', 'nemTimestamps', config, false);
 	};
 
 	const symbolDateHashesTemplate = rowData => {
-		return dateTransactionHashTemplate(rowData, 'symbolHashes', 'symbolTimestamps' , config, true);
+		return dateTransactionHashTemplate(rowData, 'symbolHashes', 'symbolTimestamps' , config, false);
 	};
 
 	const isPostoptinTemplate = rowData => {
-		return optinTypeTemplate(rowData, 'isPostoptin');
+		const isPostoptin = rowData['isPostoptin'] ? 'POST' : 'PRE';
+
+		const badgeType = 'POST' === isPostoptin ? 'warning' : '';
+		const badgeClass = `p-badge p-badge-${badgeType}`;
+
+		return (<div> <span className={badgeClass}>{isPostoptin}</span> </div>);
 	};
 
 	const labelTemplate = rowData => {
-		return infoTemplate(rowData, 'label');
+		const labels = [...new Set(rowData['label'])];
+
+		return (
+			labels.filter(label => label).map(info =>
+				<div>
+					{ info }
+				</div>)
+		);
 	};
 
 	const optinTypes = [{label: 'PRE', value: 'pre'}, {label: 'POST', value: 'post'}];

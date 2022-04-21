@@ -183,37 +183,10 @@ p-tabview,
   }
 }
 
-.sub-total-value {
-  @extend .list-item;
-  font-weight: bold;
-  text-decoration: underline;
-}
-
-.copy-button {
-  margin-left: 1rem !important;
-  color: rgb(218, 218, 218) !important;
-  width: 1rem !important;
-  padding: 0 0 0 !important;
-  &:hover {
-    background-color: transparent !important;
-    color: var(--primary-color) !important;
-  }
-}
-
 .list-item {
   height: 1.2rem;
   opacity: 0.9;
   align-items: center;
-}
-
-.timestamp {
-  font-size: 0.8rem;
-  white-space: nowrap;
-}
-
-.download-button {
-  float: right;
-  margin: 0 auto !important;
 }
 
 ::-webkit-scrollbar {
