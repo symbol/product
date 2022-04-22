@@ -65,7 +65,12 @@ const controller = {
 				: null;
 			const txHash = transactionHash.toUpperCase().trim() ?? null;
 
-			const totalRecord = await completedDB.getTotalRecord();
+			const totalRecord = await completedDB.getTotalRecord({
+				nemAddressHex,
+				symbolAddressHex,
+				txHash,
+				optinType
+			});
 
 			const response = await completedDB.getCompletedPagination({
 				pageNumber,

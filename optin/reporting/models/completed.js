@@ -2,9 +2,9 @@ const getDatabase = require('./database');
 const { QueryTypes } = require('sequelize');
 
 const completedDB = {
-	getCompletedPagination: async ({
+	async getCompletedPagination({
 		pageNumber, pageSize, nemAddressHex, symbolAddressHex, txHash, optinType
-	}) => {
+	}) {
 		let condition = '';
 
 		if (nemAddressHex)
@@ -68,15 +68,14 @@ const completedDB = {
 			symbol_destination: JSON.parse(item.symbol_destination)
 		}));
 	},
-	getTotalRecord: async () => {
-		const { completed } = getDatabase();
-		const result = await completed.query(
-			`select count(*) as totalRecord
-            from optin_id`,
-			{ type: QueryTypes.SELECT }
-		);
+	async getTotalRecord({
+		nemAddressHex, symbolAddressHex, txHash, optinType
+	}) {
+		const result = await this.getCompletedPagination({
+			pageNumber: 1, pageSize: -1, nemAddressHex, symbolAddressHex, txHash, optinType
+		});
 
-		return result[0].totalRecord;
+		return result.length;
 	}
 };
 
