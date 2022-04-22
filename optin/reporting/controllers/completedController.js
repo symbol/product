@@ -29,9 +29,9 @@ const processData = items =>
 		nemTimestamps: item.nem_source.map(props => formatStringSplit(props.timestamps)),
 		symbolAddress: item.symbol_destination.map(props => new SymbolFacade.Address(hexStringToByte(props.address))
 			.toString()),
-		symbolHeights: item.symbol_destination.map(props => formatStringSplit(props.height)),
-		symbolHashes: item.symbol_destination.map(props => formatStringSplit(props.hashes)),
-		symbolTimestamps: item.symbol_destination.map(props => formatStringSplit(props.timestamps)),
+		symbolHeights: item.symbol_destination.map(props => props.height),
+		symbolHashes: item.symbol_destination.map(props => props.hashes),
+		symbolTimestamps: item.symbol_destination.map(props => props.timestamps),
 		symbolBalance: item.symbol_destination.map(props => props.balance)
 	}));
 
