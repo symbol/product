@@ -20,3 +20,5 @@ app.use('/api', require('./routers/api'));
 app.get('*', (request, response) => {
 	response.sendFile(path.join(__dirname, './client/build/index.html'));
 });
+
+module.exports = app;
