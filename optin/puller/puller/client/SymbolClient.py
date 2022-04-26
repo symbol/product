@@ -93,7 +93,7 @@ class SymbolClient(BasicClient):
 	async def find_payout_transactions(self, optin_signer_public_key, address):
 		"""Finds payout transactions sent to the specified address."""
 
-		url_path = f'transactions/confirmed?signerPublicKey={optin_signer_public_key}&recipientAddress={address}&embedded=true'
+		url_path = f'transactions/confirmed?signerPublicKey={optin_signer_public_key}&recipientAddress={address}&embedded=true&pageSize=100'
 		transactions = await self.get(url_path, 'data')
 		return [
 			OptInTransactionInfo(

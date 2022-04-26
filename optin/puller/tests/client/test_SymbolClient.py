@@ -374,7 +374,7 @@ async def test_can_find_payout_transactions(server):  # pylint: disable=redefine
 	# Assert:
 	assert [
 		f'{server.make_url("")}/transactions/confirmed?signerPublicKey={PublicKey(PUBLIC_KEYS[0])}' + (
-			f'&recipientAddress={Address(SYMBOL_ADDRESSES[0])}&embedded=true'
+			f'&recipientAddress={Address(SYMBOL_ADDRESSES[0])}&embedded=true&pageSize=100'
 		)
 	] == server.mock.urls
 	assert 4 == len(optin_transaction_infos)
