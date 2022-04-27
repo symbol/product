@@ -1,6 +1,7 @@
 import './Completed.scss';
 import Table from '../../components/Table';
 import TableColumn from '../../components/Table/TableColumn';
+import ColumnHeader from '../../components/Table/TableColumn/ColumnHeader';
 import config from '../../config';
 import { addressTemplate, balanceTemplate, dateTransactionHashTemplate } from '../../utils/pageUtils';
 import { InputText } from 'primereact/inputtext';
@@ -29,13 +30,17 @@ const Completed = ({defaultPaginationType}) => {
 	const [invalidFilterSearch, setInvalidFilterSearch] = useState(false);
 	const [filterSearchCleared, setFilterSearchCleared] = useState(false);
 
+	const [sortBy, setSortBy] = useState('');
+	const [sortDirection, setSortDirection] = useState('');
+	const [sortBySubmit, setSortBySubmit] = useState(false);
 	const initialRender = useRef(true);
 	const tableRef = useRef();
 
 	const fetchCompleted = async ({pageSize = config.defaultPageSize, pageNumber = 1}) => {
 		const [nemAddress, symbolAddress, transactionHash] = parseFilterSearch(filterSearch?.trim());
 		return await fetch(`/api/completed?pageSize=${pageSize}&pageNumber=${pageNumber}` +
-		`&nemAddress=${nemAddress}&symbolAddress=${symbolAddress}&transactionHash=${transactionHash}&optinType=${filterOptinType}`)
+		`&nemAddress=${nemAddress}&symbolAddress=${symbolAddress}&transactionHash=${transactionHash}` +
+		`&optinType=${filterOptinType}&sortBy=${sortBy}&sortDirection=${sortDirection}`)
 			.then(res => res.json());
 	};
 
@@ -125,6 +130,7 @@ const Completed = ({defaultPaginationType}) => {
 		await handlePageChange({page: 1, rows: config.defaultPageSize});
 		setFilterOptinTypeSubmit(false);
 		setFilterSearchCleared(false);
+		setSortBySubmit(false);
 	};
 
 	useEffect(() => {
@@ -201,6 +207,37 @@ const Completed = ({defaultPaginationType}) => {
 		</form>
 	);
 
+	const nemHashesField = 'nemHashes';
+	const symbolHashesField = 'symbolHashes';
+	const [nemHashesHeaderSortDirection, setNemHashesHeaderSortDirection] = useState('none');
+	const [symbolHashesHeaderSortDirection, setSymbolHashesHeaderSortDirection] = useState('none');
+	const headerSortHandler = (_sortField, _sortDirection) => {
+		tableRef.current.resetScroll();
+		if(_sortField === nemHashesField) {
+			setNemHashesHeaderSortDirection(_sortDirection);
+			setSymbolHashesHeaderSortDirection('none');
+			setSortBy('nemHashes');
+			setSortDirection(_sortDirection);
+			setSortBySubmit(true);
+		} else if(_sortField === symbolHashesField) {
+			setSymbolHashesHeaderSortDirection(_sortDirection);
+			setNemHashesHeaderSortDirection('none');
+			setSortBy('symbolHashes');
+			setSortDirection(_sortDirection);
+			setSortBySubmit(true);
+		}
+	};
+
+	useEffect(() => {
+		if (!initialRender.current && (sortBySubmit))
+			onFilterSubmit();
+	}, [sortBySubmit]);
+
+	const nemHashesHeader = <ColumnHeader field={nemHashesField}  title="Hash" 
+		sortDirection={nemHashesHeaderSortDirection} onSort={headerSortHandler}/>;
+	const symbolHashesHeader = <ColumnHeader field={symbolHashesField} title="Hash" 
+		sortDirection={symbolHashesHeaderSortDirection} onSort={headerSortHandler}/>;
+
 	return (
 		<Table ref={tableRef} value={completed.data} rows={completed.pagination.pageSize}
 			onPage={handlePageChange} loading={loading} totalRecords={completed.pagination.totalRecord}
@@ -209,10 +246,10 @@ const Completed = ({defaultPaginationType}) => {
 			<TableColumn field="isPostoptin" header="Type" body={isPostoptinTemplate} align="center"/>
 			<TableColumn field="label" header="Label" body={labelTemplate} align="left" className="labelCol"/>
 			<TableColumn field="nemAddress" header="NEM Address" body={nemAddressTemplate} align="left"/>
-			<TableColumn field="nemHashes" header="Hash" body={nemDateHashesTemplate} align="left"/>
+			<TableColumn field="nemHashes" header={nemHashesHeader} body={nemDateHashesTemplate} align="left"/>
 			<TableColumn field="nemBalance" header="Balance" body={nemBalanceTemplate} align="right"/>
 			<TableColumn field="symbolAddress" header="Symbol Address" body={symbolAddressTemplate} align="left"/>
-			<TableColumn field="symbolHashes" header="Hash" body={symbolDateHashesTemplate} align="left"/>
+			<TableColumn field="symbolHashes" header={symbolHashesHeader} body={symbolDateHashesTemplate} align="left"/>
 			<TableColumn field="symbolBalance" header="Balance" body={symbolBalanceTemplate} align="right"/>
 		</Table>
 	);
