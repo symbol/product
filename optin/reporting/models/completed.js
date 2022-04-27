@@ -3,9 +3,11 @@ const { QueryTypes } = require('sequelize');
 
 const completedDB = {
 	async getCompletedPagination({
-		pageNumber, pageSize, nemAddressHex, symbolAddressHex, txHash, optinType
+		pageNumber, pageSize, nemAddressHex, symbolAddressHex, txHash, optinType, sortBy, sortDirection
 	}) {
 		let condition = '';
+		// set default sort
+		let fieldSort = 'Order by id DESC';
 
 		if (nemAddressHex)
 			condition += `AND (nem_source LIKE '%${nemAddressHex}%')`;
@@ -15,6 +17,13 @@ const completedDB = {
 
 		if (txHash)
 			condition += `AND (nem_source LIKE '%${txHash}%' OR symbol_destination LIKE '%${txHash}%')`;
+
+		if (sortBy && sortDirection && 'none' !== sortDirection) {
+			if ('nemHashes' === sortBy)
+				fieldSort = `order by nem_timestamp ${sortDirection}`;
+			else if ('symbolHashes' === sortBy)
+				fieldSort = `order by symbol_timestamp ${sortDirection}`;
+		}
 
 		const { completed } = getDatabase();
 		const result = await completed.query(
@@ -51,10 +60,22 @@ const completedDB = {
 					)
 					FROM symbol_destination
 					WHERE optin_id = opt.id
-				) AS symbol_destination
+				) AS symbol_destination,
+				(
+					SELECT max(timestamp)
+					FROM nem_source
+					LEFT JOIN nem_transaction ON nem_transaction.address = nem_source.address
+					LEFT JOIN nem_block_timestamps ON nem_block_timestamps.height = nem_transaction.height
+					where optin_id = opt.id
+				) as nem_timestamp,
+				(
+					SELECT max(timestamp)
+					FROM symbol_destination
+					where optin_id = opt.id
+				) as symbol_timestamp
 			FROM optin_id opt
 			WHERE (is_postoptin = $1 OR $1 is null) ${condition}
-			Order by id DESC
+			${fieldSort}
             LIMIT ${pageSize} OFFSET ${(pageNumber - 1) * pageSize}`,
 			{
 				bind: [optinType],
