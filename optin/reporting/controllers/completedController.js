@@ -54,7 +54,9 @@ const controller = {
 		const pageSize = parseInt(req.query.pageSize || 1000, 10);
 		const pageNumber = parseInt(req.query.pageNumber || 1, 10);
 		const optinType = isPostOptin(req.query.optinType);
-		const { nemAddress, symbolAddress, transactionHash } = req.query;
+		const {
+			nemAddress, symbolAddress, transactionHash, sortBy, sortDirection
+		} = req.query;
 
 		try {
 			const nemAddressHex = nemAddress
@@ -78,7 +80,9 @@ const controller = {
 				nemAddressHex,
 				symbolAddressHex,
 				txHash,
-				optinType
+				optinType,
+				sortBy,
+				sortDirection
 			});
 
 			const result = processData(response);
