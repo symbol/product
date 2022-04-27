@@ -1,5 +1,6 @@
 import Table from '../../components/Table';
 import TableColumn from '../../components/Table/TableColumn';
+import ColumnHeader from '../../components/Table/TableColumn/ColumnHeader';
 import config from '../../config';
 import { addressTemplate, dateTransactionHashTemplate } from '../../utils/pageUtils';
 import { InputText } from 'primereact/inputtext';
@@ -28,13 +29,18 @@ const Requests = ({defaultPaginationType}) => {
 	const [invalidFilterSearch, setInvalidFilterSearch] = useState(false);
 	const [filterSearchCleared, setFilterSearchCleared] = useState(false);
 	
+	const [sortBy, setSortBy] = useState('');
+	const [sortDirection, setSortDirection] = useState('');
+	const [sortBySubmit, setSortBySubmit] = useState(false);
+
 	const initialRender = useRef(true);
 	const tableRef = useRef();
 
 	const fetchOptinRequests = async ({pageSize = config.defaultPageSize, pageNumber = 1}) => {
 		const [nemAddress, transactionHash] = parseFilterSearch(filterSearch?.trim());
 		return await fetch(`/api/requests?pageSize=${pageSize}&pageNumber=${pageNumber}` +
-		`&nemAddress=${nemAddress}&transactionHash=${transactionHash}&status=${filterStatus ?? ''}`).then(res => res.json());
+		`&nemAddress=${nemAddress}&transactionHash=${transactionHash}` +
+		`&status=${filterStatus ?? ''}&sortBy=${sortBy}&sortDirection=${sortDirection}`).then(res => res.json());
 	};
 
 	const parseFilterSearch = filterSearch => {
@@ -116,6 +122,7 @@ const Requests = ({defaultPaginationType}) => {
 		await handlePageChange({page: 1, rows: config.defaultPageSize});
 		setFilterStatusSubmit(false);
 		setFilterSearchCleared(false);
+		setSortBySubmit(false);
 	};
 
 	useEffect(() => {
@@ -172,14 +179,46 @@ const Requests = ({defaultPaginationType}) => {
 		</form>
 	);
 
+	const optinTransactionHashField = 'optinTransactionHash';
+	const payoutTransactionHashField = 'payoutTransactionHash';
+	const [optinHashHeaderSortDirection, setOptinHashHeaderSortDirection] = useState('none');
+	const [payoutHashHeaderSortDirection, setPayoutHashHeaderSortDirection] = useState('none');
+	const headerSortHandler = (_sortField, _sortDirection) => {
+		tableRef.current.resetScroll();
+		if(_sortField === optinTransactionHashField) {
+			setOptinHashHeaderSortDirection(_sortDirection);
+			setPayoutHashHeaderSortDirection('none');
+			setSortBy('optinTransactionHash');
+			setSortDirection(_sortDirection);
+			setSortBySubmit(true);
+		} else if(_sortField === payoutTransactionHashField) {
+			setPayoutHashHeaderSortDirection(_sortDirection);
+			setOptinHashHeaderSortDirection('none');
+			setSortBy('optinTransactionHash');
+			setSortDirection(_sortDirection);
+			setSortBySubmit(true);
+		}
+	};
+
+	useEffect(() => {
+		if (!initialRender.current && (sortBySubmit))
+			onFilterSubmit();
+	}, [sortBySubmit]);
+
+
+	const optinHashHeader = <ColumnHeader field={optinTransactionHashField}  title="Opt-in Hash" 
+		sortDirection={optinHashHeaderSortDirection} onSort={headerSortHandler}/>;
+	const payoutHashHeader = <ColumnHeader field={payoutTransactionHashField} title="Payout Hash" 
+		sortDirection={payoutHashHeaderSortDirection} onSort={headerSortHandler}/>;
+
 	return (
 		<Table ref={tableRef} value={requests.data} rows={requests.pagination.pageSize} onPage={handlePageChange}
 			loading={loading} allPagesLoaded={allPagesLoaded} loadingMessage="Loading more items..."
 			totalRecords={requests.pagination.totalRecord} paginator={'paginator' === paginationType}
 			first={first} header={header}>
 			<TableColumn field="nemAddress" header="NEM Address" body={nemAddressTemplate} align="left"/>
-			<TableColumn field="optinTransactionHash" header="Opt-in Hash" body={optinTransactionHashTemplate} align="left"/>
-			<TableColumn field="payoutTransactionHash" header="Payout Hash" body={payoutTransactionHashTemplate} align="left"/>
+			<TableColumn field={optinTransactionHashField} header={optinHashHeader} body={optinTransactionHashTemplate} align="left"/>
+			<TableColumn field={payoutTransactionHashField} header={payoutHashHeader} body={payoutTransactionHashTemplate} align="left"/>
 			<TableColumn field="status" header="Status" body={statusTemplate} align="center"/>
 			<TableColumn field="message" header="Message" align="left"/>
 		</Table>

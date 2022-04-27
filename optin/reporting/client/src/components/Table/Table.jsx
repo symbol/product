@@ -1,6 +1,5 @@
 import './Table.scss';
 import { DataTable } from 'primereact/datatable';
-import {ProgressSpinner} from 'primereact/progressspinner';
 import React from 'react';
 
 const NEXT_PAGE_LOAD_BOTTOM_MARGIN = 300; // the height from the bottom to trigger the next page load
