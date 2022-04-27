@@ -5,7 +5,7 @@
   overflow: hidden;
 }
 .firstPart {
-  max-width: 100%;
+  max-width: 7rem;
   min-width: 2rem;
   text-overflow: ellipsis;
 }
@@ -17,26 +17,14 @@
   white-space: nowrap;
   overflow: hidden;
   width: 100% !important;
-  display: none;
+  display: block;
 }
 
 .container-full-text {
-    display: block;
+    display: none;
 }
 
-@media (max-width: 2400px) {
-    .firstPart {
-        max-width: 7rem;
-    }
-    .container-full-text {
-        display: none;
-    }
-    .container-responsive-text {
-        display: block;
-    }
-}
-
-@media (max-width: 480px) {
+@media (max-width: 960px) {
     .firstPart {
         max-width: 4rem;
     }
