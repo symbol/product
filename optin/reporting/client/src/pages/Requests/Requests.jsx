@@ -194,7 +194,7 @@ const Requests = ({defaultPaginationType}) => {
 		} else if(_sortField === payoutTransactionHashField) {
 			setPayoutHashHeaderSortDirection(_sortDirection);
 			setOptinHashHeaderSortDirection('none');
-			setSortBy('optinTransactionHash');
+			setSortBy('payoutTransactionHash');
 			setSortDirection(_sortDirection);
 			setSortBySubmit(true);
 		}
