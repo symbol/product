@@ -1,4 +1,4 @@
-# Optin Reporting Backend
+# Optin Reporting tools
 
 - [Overview](#overview)
 - [Repository layout](#repository-layout)
@@ -10,7 +10,7 @@
 
 ## Overview
 
-Optin reporting backend is a simple endpoint backend service build on nodejs it allow frontend to request optin record from database.
+Optin reporting tools allow the user to view, export csv or search for specific optin records.
 
 ## Repository layout
 
@@ -21,6 +21,7 @@ Optin reporting backend is a simple endpoint backend service build on nodejs it 
 | /src/data | Storage for sqlite database file, it consume from controller. |
 | /src/models | It handle Data models for database. |
 | /src/routers | It handle routing endpoint. |
+| /src/utils | utils function. |
 
 ## Requirement
 
@@ -44,8 +45,7 @@ npm install
 3. Start server.
 
 ```shell
-npm run dev // Development
-npm run start // Production
+npm run start
 ```
 
 # docker
