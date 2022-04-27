@@ -40,6 +40,7 @@ const controller = {
 		const nemAddressBase32 = req.query.nemAddress;
 		const statusFilter = req.query.status;
 		const transactionHashHex = req.query.transactionHash;
+		const { sortBy, sortDirection } = req.query;
 
 		const statusStringToInt = statusString => {
 			switch (statusString) {
@@ -64,7 +65,7 @@ const controller = {
 			const totalRecord = await optinRequestDB.getTotalRecord({ nemAddressBytes, transactionHashBytes, status });
 
 			const response = await optinRequestDB.getOptinRequestPagination({
-				pageNumber, pageSize, nemAddressBytes, transactionHashBytes, status
+				pageNumber, pageSize, nemAddressBytes, transactionHashBytes, status, sortBy, sortDirection
 			});
 
 			const result = processData(response);
