@@ -21,7 +21,13 @@ node_modules/
 npm-*.log*
 
 # python
+*~
+*.pch
+*.pyc
 __pycache__/
 *.egg-info/
 build/
 dist/
+.python-version
+_generated/
+working/
