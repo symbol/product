@@ -24,6 +24,14 @@
   text-align: center;
 }
 
+.generatedAt {
+  position: absolute;
+  font-size: 0.8rem;
+  color: #999;
+  top: 0.2rem;
+  right: 0.5rem;
+}
+
 .tableContainer {
   min-height: 0;
   overflow-x: hidden;
