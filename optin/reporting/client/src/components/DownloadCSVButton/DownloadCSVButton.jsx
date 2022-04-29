@@ -9,10 +9,10 @@ const DownloadCSVButton = ({activePage}) => {
 
 	const downloadAllAsCSV = async () => {
 		if ('completed' === activePage)
-		{await Helper.downloadAllAsCSV({apiUrl: `/api/completed/download?tz=${moment.tz.guess().toString()}`, 
+		{await Helper.downloadAllAsCSV({apiUrl: `/api/completed/download?timezone=${moment.tz.guess().toString()}`,
 			fileName: 'optin-completed.csv', setDownloading});}
 		else if ('inProgress' === activePage)
-		{await Helper.downloadAllAsCSV({apiUrl: `/api/requests/download?tz=${moment.tz.guess().toString()}`, 
+		{await Helper.downloadAllAsCSV({apiUrl: `/api/requests/download?timezone=${moment.tz.guess().toString()}`,
 			fileName: 'optin-requests.csv', setDownloading});}
 	};
 

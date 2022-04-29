@@ -100,7 +100,7 @@ const controller = {
 		}
 	},
 	exportCsv: async (req, res) => {
-		const timezone = req.query.tz;
+		const { timezone } = req.query;
 
 		const fields = [{
 			label: '#',
