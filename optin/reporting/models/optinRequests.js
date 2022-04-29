@@ -15,6 +15,8 @@ const optinRequestDB = {
 				fieldSort = `order by optinTimestamp ${sortDirection}`;
 		}
 
+		const offset = (pageNumber - 1) * pageSize;
+
 		const { in_progress } = getDatabase();
 		const result = await in_progress.query(
 			`select optin_transaction_height as optinTransactionHeight, address as nemAddressBytes,
@@ -35,8 +37,8 @@ const optinRequestDB = {
 				LEFT JOIN nem_block_timestamps ON nem_block_timestamps.height = optin_error.optin_transaction_height
 				where (address = $1 or $1 is null) and (optin_transaction_hash = $2 or $2 is null) and ($3 = 4 or $3 is null)
 			${fieldSort}
-            limit ${pageSize} offset ${(pageNumber - 1) * pageSize}`,
-			{ bind: [nemAddressBytes, transactionHashBytes, status], type: QueryTypes.SELECT }
+            limit $4 offset $5`,
+			{ bind: [nemAddressBytes, transactionHashBytes, status, pageSize, offset], type: QueryTypes.SELECT }
 		);
 
 		return result;

@@ -5,18 +5,8 @@ const completedDB = {
 	async getCompletedPagination({
 		pageNumber, pageSize, nemAddressHex, symbolAddressHex, txHash, optinType, sortBy, sortDirection
 	}) {
-		let condition = '';
 		// set default sort
 		let fieldSort = 'Order by id DESC';
-
-		if (nemAddressHex)
-			condition += `AND (nem_source LIKE '%${nemAddressHex}%')`;
-
-		if (symbolAddressHex)
-			condition += `AND (symbol_destination LIKE '%${symbolAddressHex}%')`;
-
-		if (txHash)
-			condition += `AND (nem_source LIKE '%${txHash}%' OR symbol_destination LIKE '%${txHash}%')`;
 
 		if (sortBy && sortDirection && 'none' !== sortDirection) {
 			if ('nemHashes' === sortBy)
@@ -24,6 +14,10 @@ const completedDB = {
 			else if ('symbolHashes' === sortBy)
 				fieldSort = `order by symbol_timestamp ${sortDirection}`;
 		}
+
+		const bindLike = value => (value ? `%${value}%` : null);
+
+		const offset = (pageNumber - 1) * pageSize;
 
 		const { completed } = getDatabase();
 		const result = await completed.query(
@@ -74,11 +68,21 @@ const completedDB = {
 					where optin_id = opt.id
 				) as symbol_timestamp
 			FROM optin_id opt
-			WHERE (is_postoptin = $1 OR $1 is null) ${condition}
+			WHERE (is_postoptin = $1 OR $1 is null)
+				AND (nem_source Like $2 or $2 is null)
+				AND (symbol_destination Like $3 or $3 is null)
+				AND ((nem_source Like $4 OR symbol_destination Like $4) or $4 is null)
 			${fieldSort}
-            LIMIT ${pageSize} OFFSET ${(pageNumber - 1) * pageSize}`,
+			LIMIT $5 OFFSET $6`,
 			{
-				bind: [optinType],
+				bind: [
+					optinType,
+					bindLike(nemAddressHex),
+					bindLike(symbolAddressHex),
+					bindLike(txHash),
+					pageSize,
+					offset
+				],
 				type: QueryTypes.SELECT
 			}
 		);
