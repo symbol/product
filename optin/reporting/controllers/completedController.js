@@ -51,11 +51,8 @@ const getLatestHeight = heights => {
 
 const controller = {
 	getCompleted: async (req, res) => {
-		const pageSize = parseInt(req.query.pageSize || 1000, 10);
-		const pageNumber = parseInt(req.query.pageNumber || 1, 10);
-		const optinType = isPostOptin(req.query.optinType);
 		const {
-			nemAddress, symbolAddress, transactionHash, sortBy, sortDirection
+			pageSize, pageNumber, optinType, nemAddress, symbolAddress, transactionHash, sortBy, sortDirection
 		} = req.query;
 
 		try {
@@ -71,7 +68,7 @@ const controller = {
 				nemAddressHex,
 				symbolAddressHex,
 				txHash,
-				optinType
+				optinType: isPostOptin(optinType)
 			});
 
 			const response = await completedDB.getCompletedPagination({
@@ -80,7 +77,7 @@ const controller = {
 				nemAddressHex,
 				symbolAddressHex,
 				txHash,
-				optinType,
+				optinType: isPostOptin(optinType),
 				sortBy,
 				sortDirection
 			});
