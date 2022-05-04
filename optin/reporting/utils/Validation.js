@@ -9,10 +9,8 @@ const Validation = {
 		];
 
 		const sortValidation = [
-			query('sortBy', 'field name must be string')
-				.optional().isString(),
 			query('sortDirection', 'sort direction is not supported')
-				.optional({ checkFalsy: true }).isIn(['asc', 'desc'])
+				.optional({ checkFalsy: true }).isIn(['asc', 'desc', 'none'])
 		];
 
 		const addressTransactionHashValidation = [
@@ -28,11 +26,12 @@ const Validation = {
 				...paginationValidation,
 				...sortValidation,
 				...addressTransactionHashValidation,
+				query('sortBy', 'field name is not valid')
+					.optional({ checkFalsy: true }).isIn(['nemHashes', 'symbolHashes']),
 				query('optinType', 'optin type must be pre or post')
 					.optional({ checkFalsy: true }).isIn(['pre', 'post']),
 				query('symbolAddress', 'Symbol address must be 39 character long')
 					.optional({ checkFalsy: true }).isString().isLength({ max: 39, min: 39 })
-
 			];
 		}
 
@@ -47,6 +46,8 @@ const Validation = {
 				...paginationValidation,
 				...sortValidation,
 				...addressTransactionHashValidation,
+				query('sortBy', 'field name is not valid')
+					.optional({ checkFalsy: true }).isIn(['optinTransactionHash', 'payoutTransactionHash']),
 				query('status', 'status is not supported')
 					.optional({ checkFalsy: true }).toLowerCase().isIn(['pending', 'sent', 'duplicate', 'error'])
 			];
