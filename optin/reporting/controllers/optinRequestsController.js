@@ -36,8 +36,9 @@ const processData = items => {
 const controller = {
 	getOptinRequests: async (req, res) => {
 		const {
-			pageSize, pageNumber, status, nemAddress, transactionHash, sortBy, sortDirection
+			pageSize, pageNumber, nemAddress, transactionHash, sortBy, sortDirection
 		} = req.query;
+		const statusFilter = req.query.status;
 
 		const statusStringToInt = statusString => {
 			switch (statusString) {
@@ -54,7 +55,7 @@ const controller = {
 			}
 		};
 
-		const statusFilter = statusStringToInt(status.toLowerCase());
+		const status = statusStringToInt(statusFilter.toLowerCase());
 
 		try {
 			const nemAddressBytes = nemAddress ? new NemFacade.Address(nemAddress.toUpperCase().trim()).bytes : null;
@@ -62,7 +63,7 @@ const controller = {
 			const totalRecord = await optinRequestDB.getTotalRecord({ nemAddressBytes, transactionHashBytes, status });
 
 			const response = await optinRequestDB.getOptinRequestPagination({
-				pageNumber, pageSize, nemAddressBytes, transactionHashBytes, status: statusFilter, sortBy, sortDirection
+				pageNumber, pageSize, nemAddressBytes, transactionHashBytes, status, sortBy, sortDirection
 			});
 
 			const result = processData(response);
