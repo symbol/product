@@ -10,9 +10,9 @@ const completedDB = {
 
 		if (sortBy && sortDirection && 'none' !== sortDirection) {
 			if ('nemHashes' === sortBy)
-				fieldSort = `order by nem_timestamp ${sortDirection}`;
+				fieldSort = `order by nemTimestamp ${sortDirection}`;
 			else if ('symbolHashes' === sortBy)
-				fieldSort = `order by symbol_timestamp ${sortDirection}`;
+				fieldSort = `order by symbolTimestamp ${sortDirection}`;
 		}
 
 		const bindLike = value => (value ? `%${value}%` : null);
@@ -42,7 +42,7 @@ const completedDB = {
 					where optin_id = opt.id
 					GROUP BY nem_source.address, nem_source.balance
 					) temp
-				) AS nem_source,
+				) AS nemSource,
 				(
 					SELECT json_group_array(
 						json_object(
@@ -54,24 +54,24 @@ const completedDB = {
 					)
 					FROM symbol_destination
 					WHERE optin_id = opt.id
-				) AS symbol_destination,
+				) AS symbolDestination,
 				(
 					SELECT max(timestamp)
 					FROM nem_source
 					LEFT JOIN nem_transaction ON nem_transaction.address = nem_source.address
 					LEFT JOIN nem_block_timestamps ON nem_block_timestamps.height = nem_transaction.height
 					where optin_id = opt.id
-				) as nem_timestamp,
+				) as nemTimestamp,
 				(
 					SELECT max(timestamp)
 					FROM symbol_destination
 					where optin_id = opt.id
-				) as symbol_timestamp
+				) as symbolTimestamp
 			FROM optin_id opt
 			WHERE (is_postoptin = $1 OR $1 is null)
-				AND (nem_source Like $2 or $2 is null)
-				AND (symbol_destination Like $3 or $3 is null)
-				AND ((nem_source Like $4 OR symbol_destination Like $4) or $4 is null)
+				AND (nemSource Like $2 or $2 is null)
+				AND (symbolDestination Like $3 or $3 is null)
+				AND ((nemSource Like $4 OR symbolDestination Like $4) or $4 is null)
 			${fieldSort}
 			LIMIT $5 OFFSET $6`,
 			{
@@ -89,8 +89,8 @@ const completedDB = {
 
 		return result.map(item => ({
 			...item,
-			nem_source: JSON.parse(item.nem_source),
-			symbol_destination: JSON.parse(item.symbol_destination)
+			nemSource: JSON.parse(item.nemSource),
+			symbolDestination: JSON.parse(item.symbolDestination)
 		}));
 	},
 	async getTotalRecord({
