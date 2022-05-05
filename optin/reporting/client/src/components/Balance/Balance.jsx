@@ -1,5 +1,6 @@
 import Helper from '../../utils/helper';
 import ResponsiveList from '../ResponsiveList';
+import React from 'react';
 import './Balance.scss';
 
 export const renderTotalValue = (values, minimumFractionDigits) => {
@@ -25,7 +26,7 @@ const Balance = ({values, renderTotal, minimumFractionDigits = 2, listTitle = 'B
 
 	return (
 		<ResponsiveList visible={resultList[resultList.length - 1]} title={listTitle}>
-			{ resultList }
+			{ React.Children.toArray(resultList) }
 		</ResponsiveList>
 	);
 };

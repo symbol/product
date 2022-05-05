@@ -7,7 +7,7 @@ const ResponsiveList = props => {
 	return (
 		<React.Fragment>
 			<div className="container-full-list">
-				{props.children}
+				{React.Children.toArray(props.children)}
 			</div>
 			<div className="container-responsive-list">
 				<div className="container-responsive-list-visible">

@@ -57,10 +57,6 @@ const Table = React.forwardRef((props, ref) => {
 	);
 });
 
-Table.propTypes = {
-	// TODO fill the propTypes?
-};
-
 Table.defaultProps = {
 	breakpoint: '960px',
 	rowsPerPageOptions: [10,25,50],

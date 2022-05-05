@@ -20,7 +20,7 @@ const PopUpDialog = ({title, content, buttonText}) => {
 				className="p-button-secondary p-button-text" />
 			<Dialog header={title} className={'dialog-'+ title.toLowerCase().replace(/\s/g, '-')} visible={visible} 
 				onHide={onHide} dismissableMask={true} >
-				{ content }
+				{ React.Children.toArray(content) }
 			</Dialog>
 		</>
 	);
