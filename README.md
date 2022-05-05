@@ -6,6 +6,7 @@ It includes our optin manager.
 | component | lint | build | test | coverage | package |
 |-----------|------|-------|------|----------| ------- |
 | [@optin/puller](optin/puller) | [![lint][optin-puller-lint]][optin-puller-job] || [![test][optin-puller-test]][optin-puller-job]| [![][optin-puller-cov]][optin-puller-cov-link] |
+| [@nodewatch](nodewatch) | [![lint][nodewatch-lint]][nodewatch-job] ||||
 
 ## Full Coverage Report
 
@@ -21,3 +22,6 @@ Detailed version can be seen on [codecov.io][product-cov-link].
 [optin-puller-test]: https://jenkins.symboldev.com/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Fpuller%2Fdev%2F&config=optin-puller-test
 [optin-puller-cov]: https://codecov.io/gh/symbol/product/branch/dev/graph/badge.svg?token=SSYYBMK0M7&flag=optin-puller
 [optin-puller-cov-link]: https://codecov.io/gh/symbol/product/tree/dev/optin/puller
+
+[nodewatch-job]: https://jenkins.symboldev.com/blue/organizations/jenkins/Symbol%2Fgenerated%2Fproduct%2Fnodewatch/activity?branch=dev
+[nodewatch-lint]: https://jenkins.symboldev.com/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Fpuller%2Fdev%2F&config=nodewatch-lint
