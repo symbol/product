@@ -2,4 +2,4 @@
 
 set -ex
 
-cd ./client && npm run build
+cd ./client && CI=false && npm run build
