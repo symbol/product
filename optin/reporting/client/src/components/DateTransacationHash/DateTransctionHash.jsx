@@ -2,6 +2,7 @@ import Helper from '../../utils/helper';
 import CopyButton from '../CopyButton';
 import ResponsiveList from '../ResponsiveList';
 import ResponsiveText from '../ResponsiveText';
+import React from 'react';
 import './DateTransctionHash.scss';
 
 const buildTransactionHashLink = (linkBaseUrl, item, date, fixResponsiveText) => {
@@ -10,7 +11,7 @@ const buildTransactionHashLink = (linkBaseUrl, item, date, fixResponsiveText) =>
 			{
 				(item) ? (
 					<>
-						<span className='timestamp'> {date}&nbsp;|&nbsp;</span>
+						<span className='timestamp'>{date}&nbsp;|&nbsp;</span>
 						<a href={linkBaseUrl + item.toLowerCase()}
 							target="_blank"
 							rel="noreferrer">
@@ -38,7 +39,7 @@ const DateTransactionHash = ({values, linkBaseUrl, timestamps, fixedLength = fal
 
 	return (
 		<ResponsiveList title={listTitle}>
-			{resultList}
+			{ React.Children.toArray(resultList) }
 		</ResponsiveList>
 	);
 };

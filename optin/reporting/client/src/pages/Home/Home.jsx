@@ -39,7 +39,7 @@ const Home = function () {
 			);
 		});
 
-		tabList.push(<TabPanel headerTemplate={downloadButton} headerClassName="downloadButton"/>);
+		tabList.push(<TabPanel headerTemplate={downloadButton} headerClassName="downloadButton" key='downloadButton'/>);
 		return tabList;
 	};
 
