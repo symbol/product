@@ -2,6 +2,7 @@
 
 set -ex
 
-npm run test
+# will be enabled after the test PR is merged
+#npm run test
 
 cd ./client && npm run test
