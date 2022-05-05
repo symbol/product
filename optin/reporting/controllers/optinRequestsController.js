@@ -35,12 +35,10 @@ const processData = items => {
 
 const controller = {
 	getOptinRequests: async (req, res) => {
-		const pageSize = parseInt(req.query.pageSize || 100, 10);
-		const pageNumber = parseInt(req.query.pageNumber || 1, 10);
-		const statusFilter = req.query.status;
 		const {
-			nemAddress, transactionHash, sortBy, sortDirection
+			pageSize, pageNumber, nemAddress, transactionHash, sortBy, sortDirection
 		} = req.query;
+		const statusFilter = req.query.status;
 
 		const statusStringToInt = statusString => {
 			switch (statusString) {
@@ -83,7 +81,7 @@ const controller = {
 		}
 	},
 	exportCsv: async (req, res) => {
-		const timezone = req.query.tz;
+		const { timezone } = req.query;
 
 		const response = await optinRequestDB.getOptinRequestPagination({
 			pageNumber: 1,

@@ -20,19 +20,19 @@ const processData = items =>
 	items.map(item => ({
 		optin_id: item.id,
 		isPostoptin: item.is_postoptin,
-		label: item.nem_source.map(props => props.label),
-		nemAddress: item.nem_source.map(props => new NemFacade.Address(hexStringToByte(props.address))
+		label: item.nemSource.map(props => props.label),
+		nemAddress: item.nemSource.map(props => new NemFacade.Address(hexStringToByte(props.address))
 			.toString()),
-		nemBalance: item.nem_source.map(props => props.balance),
-		nemHeights: item.nem_source.map(props => formatStringSplit(props.height)),
-		nemHashes: item.nem_source.map(props => formatStringSplit(props.hashes)),
-		nemTimestamps: item.nem_source.map(props => formatStringSplit(props.timestamps)),
-		symbolAddress: item.symbol_destination.map(props => new SymbolFacade.Address(hexStringToByte(props.address))
+		nemBalance: item.nemSource.map(props => props.balance),
+		nemHeights: item.nemSource.map(props => formatStringSplit(props.height)),
+		nemHashes: item.nemSource.map(props => formatStringSplit(props.hashes)),
+		nemTimestamps: item.nemSource.map(props => formatStringSplit(props.timestamps)),
+		symbolAddress: item.symbolDestination.map(props => new SymbolFacade.Address(hexStringToByte(props.address))
 			.toString()),
-		symbolHeights: item.symbol_destination.map(props => props.height),
-		symbolHashes: item.symbol_destination.map(props => props.hashes),
-		symbolTimestamps: item.symbol_destination.map(props => props.timestamps),
-		symbolBalance: item.symbol_destination.map(props => props.balance)
+		symbolHeights: item.symbolDestination.map(props => props.height),
+		symbolHashes: item.symbolDestination.map(props => props.hashes),
+		symbolTimestamps: item.symbolDestination.map(props => props.timestamps),
+		symbolBalance: item.symbolDestination.map(props => props.balance)
 	}));
 
 const findMaxInArray = arr => arr.reduce((m, e) => (e > m ? e : m));
@@ -51,11 +51,8 @@ const getLatestHeight = heights => {
 
 const controller = {
 	getCompleted: async (req, res) => {
-		const pageSize = parseInt(req.query.pageSize || 1000, 10);
-		const pageNumber = parseInt(req.query.pageNumber || 1, 10);
-		const optinType = isPostOptin(req.query.optinType);
 		const {
-			nemAddress, symbolAddress, transactionHash, sortBy, sortDirection
+			pageSize, pageNumber, optinType, nemAddress, symbolAddress, transactionHash, sortBy, sortDirection
 		} = req.query;
 
 		try {
@@ -71,7 +68,7 @@ const controller = {
 				nemAddressHex,
 				symbolAddressHex,
 				txHash,
-				optinType
+				optinType: isPostOptin(optinType)
 			});
 
 			const response = await completedDB.getCompletedPagination({
@@ -80,7 +77,7 @@ const controller = {
 				nemAddressHex,
 				symbolAddressHex,
 				txHash,
-				optinType,
+				optinType: isPostOptin(optinType),
 				sortBy,
 				sortDirection
 			});
@@ -100,7 +97,7 @@ const controller = {
 		}
 	},
 	exportCsv: async (req, res) => {
-		const timezone = req.query.tz;
+		const { timezone } = req.query;
 
 		const fields = [{
 			label: '#',
