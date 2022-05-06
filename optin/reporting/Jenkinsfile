@@ -1,0 +1,7 @@
+defaultCiPipeline {
+	platform = ['ubuntu']
+	ciBuildDockerfile = 'javascript.Dockerfile'
+
+	publisher = 'docker'
+	packageId = 'optin-reporting'
+}
