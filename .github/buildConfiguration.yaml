@@ -4,3 +4,6 @@ builds:
 
   - name: Vanity Address Generator
     path: tools/vanity
+
+  - name: Nodewatch
+    path: nodewatch

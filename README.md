@@ -7,6 +7,7 @@ It includes our optin manager.
 |-----------|------|-------|------|----------| ------- |
 | [@optin/puller](optin/puller) | [![lint][optin-puller-lint]][optin-puller-job] || [![test][optin-puller-test]][optin-puller-job]| [![][optin-puller-cov]][optin-puller-cov-link] |
 | [@tools/vanity](tools/vanity) | [![lint][tools-vanity-lint]][tools-vanity-job] || [![test][tools-vanity-test]][tools-vanity-job]| [![][tools-vanity-cov]][tools-vanity-cov-link] |
+| [@nodewatch](nodewatch) | [![lint][nodewatch-lint]][nodewatch-job] ||||
 
 ## Full Coverage Report
 
@@ -28,3 +29,6 @@ Detailed version can be seen on [codecov.io][product-cov-link].
 [tools-vanity-test]: https://jenkins.symboldev.com/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Fpuller%2Fdev%2F&config=tools-vanity-test
 [tools-vanity-cov]: https://codecov.io/gh/symbol/product/branch/dev/graph/badge.svg?token=SSYYBMK0M7&flag=tools-vanity
 [tools-vanity-cov-link]: https://codecov.io/gh/symbol/product/tree/dev/tools/vanity
+
+[nodewatch-job]: https://jenkins.symboldev.com/blue/organizations/jenkins/Symbol%2Fgenerated%2Fproduct%2Fnodewatch/activity?branch=dev
+[nodewatch-lint]: https://jenkins.symboldev.com/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Fpuller%2Fdev%2F&config=nodewatch-lint
