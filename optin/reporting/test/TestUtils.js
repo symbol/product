@@ -15,8 +15,8 @@ const TestUtils = {
 	mockCompletedDBRecord: (numberOfRecords, nemSource, symbolSource) => [...Array(numberOfRecords).keys()].map(index => ({
 		id: index + 1,
 		is_postoptin: 1,
-		nem_source: nemSource,
-		symbol_destination: symbolSource
+		nemSource,
+		symbolDestination: symbolSource
 	})),
 	mockInProgressDBRecord: numberOfRecords => [...Array(numberOfRecords).keys()].map(index => ({
 		optinTransactionHeight: 1 + index,
