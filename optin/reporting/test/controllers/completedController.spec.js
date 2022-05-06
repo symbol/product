@@ -46,8 +46,8 @@ describe('completed controller', () => {
 			expect(pagination).to.be.eql({ pageSize: recordSize, pageNumber: 1, totalRecord: recordSize });
 			expect(data.length).to.be.equal(10);
 
-			expect(result).to.have.property('optin_id').and.to.be.a('number');
-			expect(result).to.have.property('isPostoptin').and.to.be.a('number');
+			expect(result.optin_id).to.be.equal(1);
+			expect(result.isPostoptin).to.be.equal(1);
 			expect(result.label).to.be.eql(mockNemSources.map(nemInfo => nemInfo.label));
 			expect(result.nemAddress).to.be.eql(mockNemSources.map(nemInfo =>
 				new NemFacade.Address(hexStringToByte(nemInfo.address)).toString()));
@@ -167,8 +167,13 @@ describe('completed controller', () => {
 			const result = res.send.getCall(0).firstArg;
 			const csv = result.split('\n');
 
-			expect(csv[0]).to.be.equal('"#","Type","Label","NEM Address","Hash","Height","Timestamp","Timestamp [UTC]","Balance","Symbol Address","Hash","Height","Timestamp","Timestamp [UTC]","Balance"'); // eslint-disable-line
-			expect(csv[1]).to.be.equal('1,"POST","Bithumb","NAX27ORAIVEGT4BHQ5EP3F4QZ76OGXUHEJSHWQBZ","CDB0AF349823F1638E032DCAB15FD33049C383FEEE642CBC67E11020DC30F190","3004351","20-12-31 08:33:16","20-12-31 08:33:16",79268194.338335,"NCFNYXJR6SPZDCWHDXHBRZYILFCK5KYK6YHYVVY","E49B240D76DAE7277089C2BDA66B297A05AE700361ED253ED48435E9AF9B0FE1","1","21-03-16 00:06:25","21-03-16 00:06:25",79268194.338335'); // eslint-disable-line
+			expect(csv[0]).to.be.equal('"#","Type","Label","NEM Address","Hash","Height","Timestamp","Timestamp [UTC]","Balance",'
+				+ '"Symbol Address","Hash","Height","Timestamp","Timestamp [UTC]","Balance"');
+			expect(csv[1]).to.be.equal('1,"POST","Bithumb","NAX27ORAIVEGT4BHQ5EP3F4QZ76OGXUHEJSHWQBZ",'
+				+ '"CDB0AF349823F1638E032DCAB15FD33049C383FEEE642CBC67E11020DC30F190","3004351","20-12-31 08:33:16",'
+				+ '"20-12-31 08:33:16",79268194.338335,"NCFNYXJR6SPZDCWHDXHBRZYILFCK5KYK6YHYVVY",'
+				+ '"E49B240D76DAE7277089C2BDA66B297A05AE700361ED253ED48435E9AF9B0FE1","1",'
+				+ '"21-03-16 00:06:25","21-03-16 00:06:25",79268194.338335');
 		});
 
 		it('should return test/csv in response header content type', async () => {
