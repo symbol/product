@@ -71,8 +71,8 @@ const controller = {
 			res.json({
 				data: result,
 				pagination: {
-					pageNumber,
-					pageSize,
+					pageNumber: parseInt(pageNumber, 10),
+					pageSize: parseInt(pageSize, 10),
 					totalRecord
 				}
 			});
