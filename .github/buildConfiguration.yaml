@@ -1,4 +1,7 @@
 builds:
+  - name: Nodewatch
+    path: explorer/nodewatch
+
   - name: Optin Puller
     path: optin/puller
 
