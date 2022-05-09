@@ -25,10 +25,10 @@ Detailed version can be seen on [codecov.io][product-cov-link].
 [optin-puller-cov-link]: https://codecov.io/gh/symbol/product/tree/dev/optin/puller
 
 [tools-vanity-job]: https://jenkins.symboldev.com/blue/organizations/jenkins/Symbol%2Fgenerated%2Fproduct%2Fvanity/activity?branch=dev
-[tools-vanity-lint]: https://jenkins.symboldev.com/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Fpuller%2Fdev%2F&config=tools-vanity-lint
-[tools-vanity-test]: https://jenkins.symboldev.com/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Fpuller%2Fdev%2F&config=tools-vanity-test
+[tools-vanity-lint]: https://jenkins.symboldev.com/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Fvanity%2Fdev%2F&config=tools-vanity-lint
+[tools-vanity-test]: https://jenkins.symboldev.com/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Fvanity%2Fdev%2F&config=tools-vanity-test
 [tools-vanity-cov]: https://codecov.io/gh/symbol/product/branch/dev/graph/badge.svg?token=SSYYBMK0M7&flag=tools-vanity
 [tools-vanity-cov-link]: https://codecov.io/gh/symbol/product/tree/dev/tools/vanity
 
 [nodewatch-job]: https://jenkins.symboldev.com/blue/organizations/jenkins/Symbol%2Fgenerated%2Fproduct%2Fnodewatch/activity?branch=dev
-[nodewatch-lint]: https://jenkins.symboldev.com/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Fnodewatch%2Fdev%2F&config=nodewatch-lint
+[nodewatch-lint]: https://jenkins.symboldev.com/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Fnodewatch%2Fdev%2F&config=explorer-nodewatch-lint
