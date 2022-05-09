@@ -23,7 +23,7 @@ class NetworkConnector:
 
 		start_index = 0
 		while start_index < len(descriptors):
-			asyncio.run(self._update_heights_async(descriptors[start_index:start_index+MAX_BATCH_SIZE]))
+			asyncio.run(self._update_heights_async(descriptors[start_index:start_index + MAX_BATCH_SIZE]))
 			start_index += MAX_BATCH_SIZE
 
 		log.info(f'done updating heights from {len(descriptors)} nodes for {self.network_name} network')

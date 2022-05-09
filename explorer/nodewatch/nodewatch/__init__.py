@@ -55,7 +55,7 @@ class BasicRoutesFacade:
 	def json_height_chart_with_metadata(self):
 		return json.dumps({
 			'chart_json': self.json_height_chart(),
-			'last_refresh_time':  self.last_refresh_time.strftime(TIMESTAMP_FORMAT)
+			'last_refresh_time': self.last_refresh_time.strftime(TIMESTAMP_FORMAT)
 		})
 
 	def json_height(self):
@@ -75,8 +75,9 @@ class BasicRoutesFacade:
 			return
 
 		if any(filepath.exists() and filepath.stat().st_mtime < last_crawl_timestamp for filepath in all_filepaths):
-			log.debug(f'skipping update because some files have not been updated on disk (last crawl {last_crawl_time},'
-					  f' last reload {self.last_reload_time})')
+			log.debug(
+				f'skipping update because some files have not been updated on disk (last crawl {last_crawl_time},'
+				f' last reload {self.last_reload_time})')
 			return
 
 		log.info(f'reloading files with crawl data from {last_crawl_time} (previous reload {self.last_reload_time})')
