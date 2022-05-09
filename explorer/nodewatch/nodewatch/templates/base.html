@@ -1,0 +1,94 @@
+<!doctype html>
+
+<head>
+  <title>Seven Seas Explorer - {% block title %}{% endblock %}</title>
+  <link rel="stylesheet" href=https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.6.1/css/bootstrap.min.css>
+</head>
+<body>
+  <section class="header">
+    <nav class="navbar navbar-expand-sm navbar-dark bg-dark">
+      <a class="navbar-brand" href="{{ url_for('index') }}">Seven Seas Explorer</a>
+
+      <div class="collapse navbar-collapse">
+        <ul class="navbar-nav mr-auto mt-2 mt-lg-0">
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#">NEM</a>
+            <div class="dropdown-menu">
+                <a class="dropdown-item" href="{{ url_for('nem_summary') }}">Summary</a>
+                <a class="dropdown-item" href="{{ url_for('nem_harvesters') }}">Recent Harvesters</a>
+                <a class="dropdown-item" href="{{ url_for('nem_nodes') }}">Nodes</a>
+            </div>
+          </li>
+
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#">Symbol</a>
+            <div class="dropdown-menu">
+                <a class="dropdown-item" href="{{ url_for('symbol_summary') }}">Summary</a>
+                <a class="dropdown-item" href="{{ url_for('symbol_voters') }}">Voters</a>
+                <a class="dropdown-item" href="{{ url_for('symbol_harvesters') }}">Recent Harvesters</a>
+                <a class="dropdown-item" href="{{ url_for('symbol_nodes') }}">Nodes</a>
+            </div>
+          </li>
+        </ul>
+        <div>
+          <div class="badge badge-pill badge-success my-0 float-right">
+            Symbol Height&nbsp;
+            <span id="symbol-block-height">...</span>
+          </div>
+          <br/>
+          <div class="badge badge-pill badge-warning my-0 float-right">
+            NEM Height&nbsp;
+            <span id="nem-block-height">...</span>
+          </div>
+        </div>
+      </div>
+    </nav>
+    <div class="container-fluid small text-muted text-right">
+      <p class="mb-0 float-left">
+        UTC last update:
+        <span id="last-reload-time">{{ last_reload_time }}</span> (full)
+        <span id="last-refresh-time">{{ last_refresh_time }}</span> (partial)
+      </p>
+    </div>
+  </section>
+
+  <section class="content">
+    <header>
+      {% block header %}{% endblock %}
+    </header>
+
+    <div class="container-fluid">
+      {% block content %}{% endblock %}
+    </div>
+  </section>
+
+  <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.6.1/js/bootstrap.min.js"></script>
+  <script type="text/javascript">
+    function update_nem_height() {
+      fetch('{{ url_for("nem_height") }}', {headers: {'Content-Type': 'application/json'} })
+        .then(response => response.json())
+        .then(response => {
+          const height = response['height'];
+          $('#nem-block-height').text(`${height} (Harlock)`);
+          setTimeout(update_nem_height, 30000);
+        });
+    };
+
+    function update_symbol_height() {
+      fetch('{{ url_for("symbol_height") }}', {headers: {'Content-Type': 'application/json'} })
+        .then(response => response.json())
+        .then(response => {
+          const height = response['height'];
+          $('#symbol-block-height').text(`${height} (Cyprus)`);
+          setTimeout(update_symbol_height, 15000);
+        });
+    };
+
+    update_nem_height();
+    update_symbol_height();
+  </script>
+
+  {% block scripts %}{% endblock %}
+
+</body>
