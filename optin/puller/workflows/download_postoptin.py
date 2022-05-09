@@ -30,6 +30,7 @@ def parse_args():
 	parser.add_argument('--optin-address', help='optin account address', default=OPTIN_ADDRESS)
 	parser.add_argument('--payout-signer-public-keys', help='payout signer public keys (comma separated)', default=PAYOUT_SIGNER_PUBLIC_KEYS)
 	parser.add_argument('--snapshot-height', help='snapshot height', default=3105500)
+	parser.add_argument('--max-optin-height', help='maximum optin height to allow', type=int, default=0)
 	return parser.parse_args()
 
 
@@ -177,6 +178,10 @@ async def main():
 
 		async for transaction in get_incoming_transactions_from(nem_client, Address(args.optin_address), snapshot_height):
 			transaction_height = transaction['meta']['height']
+			if args.max_optin_height and transaction_height > args.max_optin_height:
+				print(f'skipping transaction at height {transaction_height}, which is after close of post optin period')
+				continue
+
 			if transaction_height > processor.finalized_nem_height:
 				continue
 
