@@ -14,9 +14,9 @@ const Validation = {
 		];
 
 		const addressTransactionHashValidation = [
-			query('nemAddress', 'Nem address must be 40 character long')
+			query('nemAddress', 'nem address must be 40 character long')
 				.optional({ checkFalsy: true }).isString().isLength({ max: 40, min: 40 }),
-			query('transactionHash', 'Transaction hash must be 64 character long')
+			query('transactionHash', 'transaction hash must be 64 character long')
 				.optional({ checkFalsy: true }).isString().isLength({ max: 64, min: 64 })
 		];
 
@@ -30,7 +30,7 @@ const Validation = {
 					.optional({ checkFalsy: true }).isIn(['nemHashes', 'symbolHashes']),
 				query('optinType', 'optin type must be pre or post')
 					.optional({ checkFalsy: true }).isIn(['pre', 'post']),
-				query('symbolAddress', 'Symbol address must be 39 character long')
+				query('symbolAddress', 'symbol address must be 39 character long')
 					.optional({ checkFalsy: true }).isString().isLength({ max: 39, min: 39 })
 			];
 		}
