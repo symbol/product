@@ -1,1 +1,1 @@
-export {default} from './DateTransctionHash.jsx';
+export {default} from './DateTransactionHash.jsx';

@@ -35,8 +35,8 @@ const Helper = {
 	},
 	copyToClipboard: textToCopy => {
 		// navigator clipboard api needs a secure context (https)
-		if (!navigator.clipboard && window.isSecureContext) {
-			// navigator clipboard api method'
+		if (navigator.clipboard && window.isSecureContext) {
+			// navigator clipboard api method
 			return navigator.clipboard.writeText(textToCopy);
 		} else {
 			// text area method
@@ -68,9 +68,9 @@ const Helper = {
 
 		const utcDate = moment.utc(unixTimestamp * 1000);
 
-		if (toLocal) 
+		if (toLocal)
 			utcDate.local();
-		
+
 
 		return utcDate.format('YY-MM-DD HH:mm:ss');
 	}

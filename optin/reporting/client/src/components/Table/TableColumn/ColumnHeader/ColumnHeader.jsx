@@ -9,8 +9,8 @@ const ColumnHeader = props => {
 	}, [props]);
 
 	if (props.sortDirection) {
-		const directionCls = 'asc' === props.sortDirection ? 'pi-sort-amount-down-alt' : 
-			'desc' === props.sortDirection ?  'pi-sort-amount-up' : 'pi-sort-alt';
+		const directionCls = 'asc' === props.sortDirection ? 'pi-sort-amount-down-alt' :
+			'desc' === props.sortDirection ? 'pi-sort-amount-up' : 'pi-sort-alt';
 		const headerCls = `p-sortable-column-icon pi pi-fw ${directionCls}`;
 		return <div onClick={() => toggleSort()} className="column-header-title">{props.title}
 			<span className={headerCls}></span></div>;

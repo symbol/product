@@ -8,12 +8,11 @@ const DownloadCSVButton = ({activePage}) => {
 	const [downloading, setDownloading] = useState(false);
 
 	const downloadAllAsCSV = async () => {
-		if ('completed' === activePage)
-		{await Helper.downloadAllAsCSV({apiUrl: `/api/completed/download?timezone=${moment.tz.guess().toString()}`,
-			fileName: 'optin-completed.csv', setDownloading});}
-		else if ('inProgress' === activePage)
-		{await Helper.downloadAllAsCSV({apiUrl: `/api/requests/download?timezone=${moment.tz.guess().toString()}`,
-			fileName: 'optin-requests.csv', setDownloading});}
+		const type = 'completed' === activePage ? 'completed' : 'inProgress' === activePage ? 'requests' : null;
+		if (type) {
+			Helper.downloadAllAsCSV({apiUrl: `/api/${type}/download?timezone=${moment.tz.guess().toString()}`,
+				fileName: `optin-${type}.csv`, setDownloading});
+		}
 	};
 
 	return (

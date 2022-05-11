@@ -140,11 +140,11 @@ const Completed = ({defaultPaginationType}) => {
 	}, [filterOptinTypeSubmit, filterSearchCleared]);
 
 	const nemAddressTemplate = rowData => {
-		return addressTemplate(rowData, 'nemAddress', config, false);
+		return addressTemplate(rowData, 'nemAddress', config);
 	};
 
 	const symbolAddressTemplate = rowData => {
-		return addressTemplate(rowData, 'symbolAddress', config, false);
+		return addressTemplate(rowData, 'symbolAddress', config);
 	};
 
 	const nemBalanceTemplate = rowData => {
@@ -156,11 +156,11 @@ const Completed = ({defaultPaginationType}) => {
 	};
 
 	const nemDateHashesTemplate = rowData => {
-		return dateTransactionHashTemplate(rowData, 'nemHashes', 'nemTimestamps', config, false);
+		return dateTransactionHashTemplate(rowData, 'nemHashes', 'nemTimestamps', config);
 	};
 
 	const symbolDateHashesTemplate = rowData => {
-		return dateTransactionHashTemplate(rowData, 'symbolHashes', 'symbolTimestamps' , config, false);
+		return dateTransactionHashTemplate(rowData, 'symbolHashes', 'symbolTimestamps' , config);
 	};
 
 	const isPostoptinTemplate = rowData => {
@@ -233,9 +233,9 @@ const Completed = ({defaultPaginationType}) => {
 			onFilterSubmit();
 	}, [sortBySubmit]);
 
-	const nemHashesHeader = <ColumnHeader field={nemHashesField}  title="Hash" 
+	const nemHashesHeader = <ColumnHeader field={nemHashesField}  title="Hash"
 		sortDirection={nemHashesHeaderSortDirection} onSort={headerSortHandler}/>;
-	const symbolHashesHeader = <ColumnHeader field={symbolHashesField} title="Hash" 
+	const symbolHashesHeader = <ColumnHeader field={symbolHashesField} title="Hash"
 		sortDirection={symbolHashesHeaderSortDirection} onSort={headerSortHandler}/>;
 
 	return (

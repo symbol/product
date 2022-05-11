@@ -4,14 +4,25 @@ import {render, screen} from '@testing-library/react';
 test('render copy button component', () => {
 	// Arrange:
 	const textToCopy = 'TDHLRYXKIT4QOEEL3PRBP4PWLJ6NWU3LSGB56BY';
+
+	// Act:
+	render(<CopyButton value={textToCopy}/>);
+
+	// Assert:
+	expect(screen.getByRole('button')).toBeInTheDocument();
+});
+
+
+test('copy button onCopy handler', () => {
+	// Arrange:
+	const textToCopy = 'TDHLRYXKIT4QOEEL3PRBP4PWLJ6NWU3LSGB56BY';
 	const onCopyHandler = jest.fn();
-    
+
 	// Act:
 	render(<CopyButton value={textToCopy} onCopy={onCopyHandler}/>);
 
 	// Assert:
 	const element = screen.getByRole('button');
-	expect(element).toBeInTheDocument();
 	element.click();
-	expect(onCopyHandler).toHaveBeenCalled();
+	expect(onCopyHandler).toHaveBeenCalledWith(textToCopy);
 });

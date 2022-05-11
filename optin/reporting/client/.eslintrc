@@ -2,4 +2,4 @@
 extends:
 - react-app
 - react-app/jest
-- ../../../linters/javascript/default.eslintrc 
+- ../../../linters/javascript/default.eslintrc

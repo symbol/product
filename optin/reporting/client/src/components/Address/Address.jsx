@@ -10,7 +10,7 @@ const Address = ({values, linkBaseUrl, fixedLength=false, listTitle='Address Lis
 				React.Children.toArray(values.map(address => (
 					<div className='flex flex-row list-item'>
 						<a href={linkBaseUrl + address} target="_blank" rel="noreferrer">
-							<ResponsiveText value={address} fixedLength={fixedLength} />
+							<ResponsiveText value={address} />
 						</a>
 						<CopyButton value={address} />
 					</div>

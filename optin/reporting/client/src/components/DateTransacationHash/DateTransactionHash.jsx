@@ -3,7 +3,7 @@ import CopyButton from '../CopyButton';
 import ResponsiveList from '../ResponsiveList';
 import ResponsiveText from '../ResponsiveText';
 import React from 'react';
-import './DateTransctionHash.scss';
+import './DateTransactionHash.scss';
 
 const buildTransactionHashLink = (linkBaseUrl, item, date, fixResponsiveText) => {
 	return (
@@ -15,7 +15,7 @@ const buildTransactionHashLink = (linkBaseUrl, item, date, fixResponsiveText) =>
 						<a href={linkBaseUrl + item.toLowerCase()}
 							target="_blank"
 							rel="noreferrer">
-							<ResponsiveText value={item.toLowerCase()} fixedLength={fixResponsiveText} />
+							<ResponsiveText value={item.toLowerCase()} />
 						</a>
 						<CopyButton value={item.toLowerCase()} />
 					</>

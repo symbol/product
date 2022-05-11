@@ -1,9 +1,10 @@
 # Optin Reporting tools
 
-- [Overview](#overview)
-- [Repository layout](#repository-layout)
-- Instructions
-    - [Requirement](#requirement)
+- [Optin Reporting tools](#optin-reporting-tools)
+  - [Overview](#overview)
+  - [Repository layout](#repository-layout)
+  - Instructions
+    - [Requirements](#requirements)
     - [Installation](#installation)
     - [Docker](#docker)
     - [Test](#test)
@@ -17,47 +18,52 @@ Optin reporting tools allow the user to view, export csv or search for specific 
 | Folder Name | Description |
 | -------------|--------------|
 | /src/client| Frontend web application. |
-| /src/controllers| It handle logic and query data from database. |
-| /src/data | Storage for sqlite database file, it consume from controller. |
-| /src/models | It handle Data models for database. |
-| /src/routers | It handle routing endpoint. |
-| /src/utils | utils function. |
+| /src/controllers| Controllers for handling application logic and querying databases. |
+| /src/data | Data storage for sqlite database files, consumed by the backend services. |
+| /src/models | Database models where data access logic resides. |
+| /src/routers | Routers for REST API endpoints. |
+| /src/utils | Utility functions such as validations and conversions. |
 
-## Requirement
+## Requirements
 
-Node.js 12.22.0 or later.
+Node.js 16.x or later.
 
 ## Installation
 
 1. Clone the project.
 
-```
-git clone https://github.com/symbol/product.git
-```
+    ```
+    git clone https://github.com/symbol/product.git
+    cd ./product
+    ```
+2. Initialize the git submodules (skip this part if already done)
+    ```
+    bash ./init.sh
+    ```
+3.  Navigate to `optin/reporting` folder.
+    ```
+    cd optin/reporting
+    ```
+4. Install the required dependencies.
+    ```
+    npm install
+    ```
+5. Start server.
 
-2. Install the required dependencies.
+    ```
+    npm run start
+    ```
 
-```
-cd optin/reporting
-npm install
-```
-
-3. Start server.
-
-```shell
-npm run start
-```
-
-# docker
+## Docker
 
 Build docker image
 
 ```
-cd optin/reporting
+# inside the optin/reporting folder
 docker build --platform x86_64 -t <imageName> .
 ```
 
-# test
+## Test
 
 ```
 npm run test

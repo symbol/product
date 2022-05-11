@@ -1,10 +1,11 @@
 # Optin Reporting Frontend
 
+- [Optin Reporting Frontend](#optin-reporting-frontend)
 - [Overview](#overview)
-- [Repository layout](#repository-layout)
+  - [Repository layout](#repository-layout)
 - Instructions
-    - [Installation](#installation)
-    - [Test](#test)
+  - [Installation](#installation)
+  - [Test](#test)
 
 # Overview
 
@@ -14,8 +15,8 @@ Optin Reporting frontend is a simple web application build on react, it allow us
 
 | Folder Name | Description |
 | -------------|--------------|
-| /src/components | It's react component such as table. |
-| /src/pages | It contains web page. |
+| /src/components | React components used by web app. |
+| /src/pages | Web pages served by web app. |
 
 ## Installation
 
@@ -40,7 +41,7 @@ npm start
 
 5. Visit http://localhost:3000/#/ in your browser.
 
-# test
+## Test
 
 ```
 npm run test

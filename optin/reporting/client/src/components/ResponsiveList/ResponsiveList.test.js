@@ -9,10 +9,10 @@ test('render responsive list component', () => {
 	const childrenTexts = ['item 1', 'item 2', 'item 3'];
 	const children = React.Children.toArray(childrenTexts.map(text => <div>{text}</div>));
 	const showMoreText = 'MORE';
-    
+
 	// Act:
 	const {container} = render(<ResponsiveList showMoreText={showMoreText}>{children}</ResponsiveList>);
-    
+
 	// Assert:
 	const containerFullListElement = container.querySelector('.container-full-list');
 	childrenTexts.forEach((text, index) => {
@@ -21,8 +21,7 @@ test('render responsive list component', () => {
 
 	const containerResponsiveVisibleElement = container.querySelector('.container-responsive-list-visible');
 	expect(containerResponsiveVisibleElement.firstChild.textContent).toBe(childrenTexts[0]);
-	
+
 	const containerResponsiveMoreElement = container.querySelector('.container-responsive-list-more');
 	expect(containerResponsiveMoreElement.firstChild.textContent).toBe(showMoreText);
-
 });
