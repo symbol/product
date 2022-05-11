@@ -3,7 +3,7 @@ const { expect } = require('chai');
 
 describe('server utils', () => {
 	describe('toRelativeAmount', () => {
-		it('return relative amount given string integer', () => {
+		it('returns relative amount given string integer', () => {
 			// Arrange:
 			const amount = '1';
 
@@ -14,7 +14,7 @@ describe('server utils', () => {
 			expect(relativeAmount).to.be.equal(0.000001);
 		});
 
-		it('return relative amount given integer', () => {
+		it('returns relative amount given integer', () => {
 			// Arrange:
 			const amount = 1;
 
@@ -25,7 +25,7 @@ describe('server utils', () => {
 			expect(relativeAmount).to.be.equal(0.000001);
 		});
 
-		it('return undefined given alphabet string', () => {
+		it('returns undefined given alphabet string', () => {
 			// Arrange:
 			const amount = 'xym';
 
@@ -38,7 +38,7 @@ describe('server utils', () => {
 	});
 
 	describe('byteToHexString', () => {
-		it('return hex given uint 8 array', () => {
+		it('returns hex given uint 8 array', () => {
 			// Arrange:
 			const byte = new Uint8Array([
 				104, 4, 35, 192, 130, 28, 131,
@@ -54,7 +54,7 @@ describe('server utils', () => {
 			expect(result).to.be.equal('680423C0821C83F2F717A8F8F27B19CC174ED4D3A1DC3B0430');
 		});
 
-		it('return hex given string', () => {
+		it('returns hex given string', () => {
 			// Arrange:
 			const byte = '1234';
 
@@ -65,7 +65,7 @@ describe('server utils', () => {
 			expect(result).to.be.equal('01020304');
 		});
 
-		it('return empty string without parameter', () => {
+		it('returns empty string without parameter', () => {
 			// Arrange + Act:
 			const result = Utils.byteToHexString();
 
@@ -75,7 +75,7 @@ describe('server utils', () => {
 	});
 
 	describe('hexStringToByte', () => {
-		it('return uint 8 array given hex', () => {
+		it('returns uint 8 array given hex', () => {
 			// Arrange:
 			const hexString = '680423C0821C83F2F717A8F8F27B19CC174ED4D3A1DC3B0430';
 
@@ -91,7 +91,7 @@ describe('server utils', () => {
 			]));
 		});
 
-		it('return empty string without parameter', () => {
+		it('returns empty string without parameter', () => {
 			// Arrange + Act:
 			const addressHex = Utils.hexStringToByte();
 
@@ -101,7 +101,7 @@ describe('server utils', () => {
 	});
 
 	describe('formatStringSplit', () => {
-		it('return array from string contain separator', () => {
+		it('returns array from string contain separator', () => {
 			// Arrange:
 			const value = 'abc;123';
 
@@ -112,7 +112,7 @@ describe('server utils', () => {
 			expect(result).to.be.eql(['abc', '123']);
 		});
 
-		it('return array from string contain custom separator', () => {
+		it('returns array from string contain custom separator', () => {
 			// Arrange:
 			const value = 'abc|123';
 			const separator = '|';
@@ -124,7 +124,7 @@ describe('server utils', () => {
 			expect(result).to.be.eql(['abc', '123']);
 		});
 
-		it('return itself given string not contain separator', () => {
+		it('returns itself given string not contain separator', () => {
 			// Arrange:
 			const value = 'abc';
 
@@ -135,7 +135,7 @@ describe('server utils', () => {
 			expect(result).to.be.eql(value);
 		});
 
-		it('return itself given non string', () => {
+		it('returns itself given non string', () => {
 			// Arrange:
 			const value = 1;
 
@@ -151,7 +151,7 @@ describe('server utils', () => {
 		// Arrange:
 		const unixTimestamp = 1615853185;
 
-		it('return default utc date given unix timestamp', () => {
+		it('returns default utc date given unix timestamp', () => {
 			// Act:
 			const date = Utils.convertTimestampToDate(unixTimestamp);
 
@@ -159,7 +159,7 @@ describe('server utils', () => {
 			expect(date).to.be.equal('21-03-16 00:06:25');
 		});
 
-		it('return custom date given timezone', () => {
+		it('returns custom date given timezone', () => {
 			// Act:
 			const date = Utils.convertTimestampToDate(unixTimestamp, 'America/Los_Angeles');
 

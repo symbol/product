@@ -26,7 +26,7 @@ describe('optin requests controller', () => {
 	});
 
 	describe('getOptinRequestPagination', () => {
-		it('should return basic data', async () => {
+		it('returns basic data', async () => {
 			// Arrange:
 			const recordSize = 10;
 			const mockDb = TestUtils.mockInProgressDBRecord(10);
@@ -67,7 +67,7 @@ describe('optin requests controller', () => {
 			await OptinRequestsController.exportCsv(req, res);
 		});
 
-		it('should return csv data', async () => {
+		it('returns csv data', async () => {
 			// Assert:
 			const result = res.send.getCall(0).firstArg;
 			const csv = result.split('\n');
@@ -76,13 +76,13 @@ describe('optin requests controller', () => {
 			expect(csv[1]).to.be.equal('"NAOF6GII33DLOK6CBR6SHL6IU6GKVDZHBHVVYRFG","f5d493494dcacf5fae2f1aea02165c8892699bb9879075f9d0ad63ac4b00491f",1,"22-04-15 15:46:54","22-04-15 15:46:54","4ac160a12835aa3f313676173386ed4f1ac6f840bdf1ea039725fc1b31b47b8b",1,"22-04-19 20:18:35","22-04-19 20:18:35","Sent",'); // eslint-disable-line
 		});
 
-		it('should return test/csv in response header content type', async () => {
+		it('returns test/csv in response header content type', async () => {
 			// Assert:
 			const result = res.header.getCall(0).lastArg;
 			expect(result).to.be.equal('text/csv');
 		});
 
-		it('should return name in response attachment', async () => {
+		it('returns name in response attachment', async () => {
 			// Assert:
 			const result = res.attachment.getCall(0).firstArg;
 			expect(result).to.be.eql('request.csv');

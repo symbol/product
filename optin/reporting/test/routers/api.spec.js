@@ -7,7 +7,7 @@ const { stub, restore } = require('sinon');
 const request = require('supertest');
 
 const runBasicRouteDataResponseTests = ({ path, queryParams }) => {
-	it('should return records with pagination', async () => {
+	it('returns records with pagination', async () => {
 		// Act:
 		const response = await request(app).get(path).query(queryParams);
 
@@ -17,7 +17,7 @@ const runBasicRouteDataResponseTests = ({ path, queryParams }) => {
 		expect(response.body.pagination).to.be.eql({ pageSize: 10, pageNumber: 1, totalRecord: 10 });
 	});
 
-	it('should return error required params not given', async () => {
+	it('returns error required params not given', async () => {
 		// Act:
 		const response = await request(app).get(path);
 
@@ -27,7 +27,7 @@ const runBasicRouteDataResponseTests = ({ path, queryParams }) => {
 };
 
 const runBasicRouteDownloadCsvTests = ({ queryParams, path }) => {
-	it('should return content-type in text/csv', async () => {
+	it('returns content-type in text/csv', async () => {
 		// Act:
 		const response = await request(app).get(path).query(queryParams);
 
@@ -36,7 +36,7 @@ const runBasicRouteDownloadCsvTests = ({ queryParams, path }) => {
 		expect(response.header['content-type']).to.equal('text/csv; charset=utf-8');
 	});
 
-	it('should return error timezone not given', async () => {
+	it('returns error timezone not given', async () => {
 		// Act:
 		const response = await request(app).get(path);
 
@@ -91,7 +91,7 @@ describe('API Route', () => {
 				pageSize: 10, pageNumber: 1, optinType: '', nemAddress: '', symbolAddress: '', transactionHash: ''
 			};
 
-			it('should return empty records with pagination', async () => {
+			it('returns empty records with pagination', async () => {
 				// Arrange:
 				const mockDbEmpty = [];
 
@@ -147,7 +147,7 @@ describe('API Route', () => {
 				pageSize: 10, pageNumber: 1, nemAddressBytes: '', transactionHashBytes: '', status: ''
 			};
 
-			it('should return empty records with pagination', async () => {
+			it('returns empty records with pagination', async () => {
 				// Arrange:
 				const mockDbEmpty = [];
 

@@ -53,23 +53,7 @@ const runInvalidAsserts = async ({
 };
 
 const runBasicPaginationValidationTests = validator => {
-	it('should return 0 error given required params', async () => {
-		// Arrange:
-		const req = TestUtils.mockRequest({
-			pageSize: 10,
-			pageNumber: 1
-		});
-		const res = TestUtils.mockResponse();
-
-		// Act:
-		await mockExpressValidatorMiddleware(req, res, validator);
-		const { errors } = validationResult(req);
-
-		// Assert:
-		expect(errors.length).to.equal(0);
-	});
-
-	it('should return error missing required params', async () => {
+	it('fails when any parameter is omitted', async () => {
 		// Arrange:
 		const req = TestUtils.mockRequest({});
 		const res = TestUtils.mockResponse();
@@ -85,13 +69,29 @@ const runBasicPaginationValidationTests = validator => {
 		expect(paramPageSize.msg).to.equal('pageSize required');
 		expect(paramPageNumber.msg).to.equal('pageNumber required');
 	});
+
+	it('succeeds when pageSize and pageNumber parameters are provided', async () => {
+		// Arrange:
+		const req = TestUtils.mockRequest({
+			pageSize: 10,
+			pageNumber: 1
+		});
+		const res = TestUtils.mockResponse();
+
+		// Act:
+		await mockExpressValidatorMiddleware(req, res, validator);
+		const { errors } = validationResult(req);
+
+		// Assert:
+		expect(errors.length).to.equal(0);
+	});
 };
 
 const runBasicSortDirectionValidationTests = (invalidParams, validParams, validator) => {
 	// Arrange:
 	const queryField = 'sortDirection';
 
-	it('should return error given incorrect sortDirection', async () => {
+	it('fails when sortDirection parameter is omitted', async () => {
 		await runInvalidAsserts({
 			validator,
 			invalidParams,
@@ -100,7 +100,7 @@ const runBasicSortDirectionValidationTests = (invalidParams, validParams, valida
 		});
 	});
 
-	it('should return 0 error given correct sortDirection ', async () => {
+	it('succeeds when sortDirection parameters are provided', async () => {
 		await runValidAsserts({
 			validator,
 			validParams,
@@ -113,7 +113,7 @@ const runBasicNemAddressValidationTests = (invalidParams, validParams, validator
 	// Arrange:
 	const queryField = 'nemAddress';
 
-	it('should return error given incorrect nemAddress', async () => {
+	it('fails when nemAddress parameter is omitted', async () => {
 		await runInvalidAsserts({
 			validator,
 			invalidParams,
@@ -122,7 +122,7 @@ const runBasicNemAddressValidationTests = (invalidParams, validParams, validator
 		});
 	});
 
-	it('should return 0 error given correct nemAddress', async () => {
+	it('succeeds when nemAddress parameters are provided', async () => {
 		await runValidAsserts({
 			validator,
 			validParams,
@@ -135,7 +135,7 @@ const runBasicTransactionHashValidationTests = (invalidParams, validParams, vali
 	// Arrange:
 	const queryField = 'transactionHash';
 
-	it('should return error given incorrect transactionHash', async () => {
+	it('fails when transactionHash parameter is omitted', async () => {
 		await runInvalidAsserts({
 			validator,
 			invalidParams,
@@ -144,7 +144,7 @@ const runBasicTransactionHashValidationTests = (invalidParams, validParams, vali
 		});
 	});
 
-	it('should return 0 error given correct transactionHash', async () => {
+	it('succeeds when transactionHash parameters are provided', async () => {
 		await runValidAsserts({
 			validator,
 			validParams,
@@ -157,7 +157,7 @@ const runBasicSortByValidationTests = (invalidParams, validParams, validator) =>
 	// Arrange:
 	const queryField = 'sortBy';
 
-	it('should return error given incorrect sortBy', async () => {
+	it('fails when sortBy parameter is omitted', async () => {
 		await runInvalidAsserts({
 			validator,
 			invalidParams,
@@ -166,7 +166,7 @@ const runBasicSortByValidationTests = (invalidParams, validParams, validator) =>
 		});
 	});
 
-	it('should return 0 error given correct sortBy', async () => {
+	it('succeeds when sortBy parameters are provided', async () => {
 		await runValidAsserts({
 			validator,
 			validParams,
@@ -175,9 +175,9 @@ const runBasicSortByValidationTests = (invalidParams, validParams, validator) =>
 	});
 };
 
-describe('request validation', () => {
+describe('validation', () => {
 	describe('unsupported validator type', () => {
-		it('should return error given validator type not supported', () => {
+		it('return error given validator type not supported', () => {
 			// Arrange:
 			const method = 'notSupported';
 
@@ -186,15 +186,15 @@ describe('request validation', () => {
 		});
 	});
 
-	describe('getCompleted query', () => {
+	describe('getCompleted', () => {
 		// Arrange:
 		const validator = Validation.validate('getCompleted');
 
-		describe('paginationValidation', () => {
+		describe('pagination validator', () => {
 			runBasicPaginationValidationTests(validator);
 		});
 
-		describe('sortValidation', () => {
+		describe('sort direction validator', () => {
 			// Arrange:
 			const invalidParams = [123, 'invalid'];
 			const validParams = ['asc', 'desc', 'none', ''];
@@ -202,7 +202,7 @@ describe('request validation', () => {
 			runBasicSortDirectionValidationTests(invalidParams, validParams, validator);
 		});
 
-		describe('addressTransactionHashValidation', () => {
+		describe('address and transaction hash validator', () => {
 			// Arrange:
 			const invalidParams = [123, 'invalid'];
 			const validNemAddress = ['NA5UJVHGHUXUFA2VFQOJAUEXZIHPU3FUK7GRDUBM', ''];
@@ -212,7 +212,7 @@ describe('request validation', () => {
 			runBasicTransactionHashValidationTests(invalidParams, validTxHash, validator);
 		});
 
-		describe('sortBy', () => {
+		describe('sortBy validator', () => {
 			// Arrange:
 			const invalidParams = ['invalid', 123];
 			const validSortBy = ['nemHashes', 'symbolHashes'];
@@ -220,11 +220,11 @@ describe('request validation', () => {
 			runBasicSortByValidationTests(invalidParams, validSortBy, validator);
 		});
 
-		describe('optinType', () => {
+		describe('optinType validator', () => {
 			// Arrange:
 			const queryField = 'optinType';
 
-			it('should return error given incorrect optinType', async () => {
+			it('fails when optinType parameter is omitted', async () => {
 				// Arrange:
 				const invalidParams = ['invalid'];
 
@@ -236,7 +236,7 @@ describe('request validation', () => {
 				});
 			});
 
-			it('should return 0 error given correct sortBy', async () => {
+			it('succeeds when optinType parameters are provided', async () => {
 				// Arrange:
 				const validParams = ['pre', 'post'];
 
@@ -248,11 +248,11 @@ describe('request validation', () => {
 			});
 		});
 
-		describe('symbolAddress', () => {
+		describe('symbol address validator', () => {
 			// Arrange:
 			const queryField = 'symbolAddress';
 
-			it('should return error given incorrect symbolAddress', async () => {
+			it('fails when symbolAddress parameter is omitted', async () => {
 				// Arrange:
 				const invalidParams = ['NDCWGCUSOWJBD3JKOQOIWACPWMCVA6LVAWYPC3PI'];
 
@@ -264,7 +264,7 @@ describe('request validation', () => {
 				});
 			});
 
-			it('should return 0 error given correct symbolAddress', async () => {
+			it('succeeds when symbolAddress parameters are provided', async () => {
 				// Arrange:
 				const validParams = ['NAIVQSJ6IU2NCDWWZSUYKKXK7JTGROW6FDRQTJY', 'NC6PLXOJLS43WIH23CV7OZGXTWQI3QNXNLBA7MY'];
 
@@ -277,14 +277,14 @@ describe('request validation', () => {
 		});
 	});
 
-	describe('getOptinRequests query', () => {
+	describe('getOptinRequests', () => {
 		const validator = Validation.validate('getOptinRequests');
 
-		describe('paginationValidation', () => {
+		describe('pagination validator', () => {
 			runBasicPaginationValidationTests(validator);
 		});
 
-		describe('sortValidation', () => {
+		describe('sort direction validator', () => {
 			// Arrange:
 			const invalidParams = [123, 'invalid'];
 			const validParams = ['asc', 'desc', 'none'];
@@ -292,7 +292,7 @@ describe('request validation', () => {
 			runBasicSortDirectionValidationTests(invalidParams, validParams, validator);
 		});
 
-		describe('addressTransactionHashValidation', () => {
+		describe('address and transaction hash validator', () => {
 			// Arrange:
 			const invalidParams = [123, 'invalid'];
 			const validNemAddress = ['NA5UJVHGHUXUFA2VFQOJAUEXZIHPU3FUK7GRDUBM'];
@@ -302,7 +302,7 @@ describe('request validation', () => {
 			runBasicTransactionHashValidationTests(invalidParams, validTxHash, validator);
 		});
 
-		describe('sortBy', () => {
+		describe('sortBy validator', () => {
 			// Arrange:
 			const invalidParams = ['invalid'];
 			const validSortBy = ['optinTransactionHash', 'payoutTransactionHash'];
@@ -310,11 +310,11 @@ describe('request validation', () => {
 			runBasicSortByValidationTests(invalidParams, validSortBy, validator);
 		});
 
-		describe('status', () => {
+		describe('status validator', () => {
 			// Arrange:
 			const queryField = 'status';
 
-			it('should return error given incorrect status', async () => {
+			it('fails when status parameter is omitted', async () => {
 				// Arrange:
 				const invalidParams = ['invalid'];
 
@@ -326,7 +326,7 @@ describe('request validation', () => {
 				});
 			});
 
-			it('should return 0 error given correct status', async () => {
+			it('succeeds when status parameters are provided', async () => {
 				// Arrange:
 				const validParams = ['pending', 'sent', 'duplicate', 'error'];
 
@@ -339,14 +339,14 @@ describe('request validation', () => {
 		});
 	});
 
-	describe('exportCsv query', () => {
+	describe('exportCsv', () => {
 		const validator = Validation.validate('exportCsv');
 
-		describe('timezone', () => {
+		describe('timezone validator', () => {
 			// Arrange:
 			const queryField = 'timezone';
 
-			it('should return error given incorrect timezone', async () => {
+			it('fails when timezone parameter is omitted', async () => {
 				// Arrange:
 				const invalidParams = ['invalid', 'America'];
 
@@ -358,7 +358,7 @@ describe('request validation', () => {
 				});
 			});
 
-			it('should return 0 error given incorrect timezone', async () => {
+			it('succeeds when timezone parameters are provided', async () => {
 				// Arrange:
 				const validParams = ['America/Los_Angeles', 'America/New_York'];
 

@@ -63,7 +63,7 @@ describe('completed controller', () => {
 			expect(result.symbolBalance).to.be.eql(mockSymbolSources.map(symbolInfo => symbolInfo.balance));
 		};
 
-		it('should return basic data', async () => {
+		it('returns basic data', async () => {
 			const mockNemSources = [{
 				address: '682FAFBA20454869F0278748FD9790CFFCE35E8722647B4039',
 				balance: 79268194338335,
@@ -84,7 +84,7 @@ describe('completed controller', () => {
 			await runBasicCompletedDataTests(mockNemSources, mockSymbolSources);
 		});
 
-		it('should return data with optin type merge', async () => {
+		it('returns data with optin type merge', async () => {
 			const mockNemSources = [{
 				address: '6832AC59C5F6B1856B20A31DE1C365833CA594053F492BD940',
 				balance: 749450900000,
@@ -105,7 +105,7 @@ describe('completed controller', () => {
 			await runBasicCompletedDataTests(mockNemSources, mockSymbolSources);
 		});
 
-		it('should return data with optin type multi', async () => {
+		it('returns data with optin type multi', async () => {
 			const mockNemSources = [{
 				address: '68BDCA15D68BBC0AB2C5AE825BE9B3F5B46A455A23AFE29599',
 				balance: 258831052617,
@@ -162,7 +162,7 @@ describe('completed controller', () => {
 			await CompletedController.exportCsv(req, res);
 		});
 
-		it('should return csv data', async () => {
+		it('returns csv data', async () => {
 			// Assert:
 			const result = res.send.getCall(0).firstArg;
 			const csv = result.split('\n');
@@ -176,13 +176,13 @@ describe('completed controller', () => {
 				+ '"21-03-16 00:06:25","21-03-16 00:06:25",79268194.338335');
 		});
 
-		it('should return test/csv in response header content type', async () => {
+		it('returns test/csv in response header content type', async () => {
 			// Assert:
 			const result = res.header.getCall(0).lastArg;
 			expect(result).to.be.equal('text/csv');
 		});
 
-		it('should return name in response attachment', async () => {
+		it('returns name in response attachment', async () => {
 			// Assert:
 			const result = res.attachment.getCall(0).firstArg;
 			expect(result).to.be.eql('completed.csv');
