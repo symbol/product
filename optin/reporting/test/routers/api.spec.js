@@ -6,8 +6,42 @@ const { expect } = require('chai');
 const { stub, restore } = require('sinon');
 const request = require('supertest');
 
-const runBasicRouteDataResponseTests = ({ path, queryParams }) => {
+const runBasicRouteDataResponseTests = ({
+	path, queryParams, model, mockPaginationMethod, mockDb
+}) => {
+	let paginationStub = {};
+	let totalRecordStub = {};
+
+	beforeEach(() => {
+		paginationStub = stub(model, mockPaginationMethod);
+		totalRecordStub = stub(model, 'getTotalRecord');
+	});
+
+	afterEach(() => {
+		restore();
+	});
+
+	it('returns empty records with pagination', async () => {
+		// Arrange:
+		const mockDbEmpty = [];
+
+		paginationStub.returns(Promise.resolve(mockDbEmpty));
+		totalRecordStub.returns(Promise.resolve(mockDbEmpty.length));
+
+		// Act:
+		const response = await request(app).get(path).query(queryParams);
+
+		// Assert:
+		expect(response.status).to.equal(200);
+		expect(response.body.data.length).to.be.equal(0);
+		expect(response.body.pagination).to.be.eql({ pageSize: 10, pageNumber: 1, totalRecord: 0 });
+	});
+
 	it('returns records with pagination', async () => {
+		// Arrange:
+		paginationStub.returns(Promise.resolve(mockDb));
+		totalRecordStub.returns(Promise.resolve(mockDb.length));
+
 		// Act:
 		const response = await request(app).get(path).query(queryParams);
 
@@ -26,8 +60,14 @@ const runBasicRouteDataResponseTests = ({ path, queryParams }) => {
 	});
 };
 
-const runBasicRouteDownloadCsvTests = ({ queryParams, path }) => {
+const runBasicRouteDownloadCsvTests = ({
+	queryParams, path, model, mockPaginationMethod
+}) => {
 	it('returns content-type in text/csv', async () => {
+		// Arrange:
+		const paginationStub = stub(model, mockPaginationMethod);
+		paginationStub.returns(Promise.resolve([]));
+
 		// Act:
 		const response = await request(app).get(path).query(queryParams);
 
@@ -46,15 +86,18 @@ const runBasicRouteDownloadCsvTests = ({ queryParams, path }) => {
 };
 
 describe('API Route', () => {
-	let getPaginationStub = {};
-	let getTotalRecordStub = {};
-	const numberOfRecords = 10;
-
 	describe('completed', () => {
-		beforeEach(() => {
+		// Arrange:
+		const completedStub = {
+			model: CompletedDB,
+			mockPaginationMethod: 'getCompletedPagination'
+		};
+
+		describe('GET api/completed', () => {
 			// Arrange:
-			getPaginationStub = stub(CompletedDB, 'getCompletedPagination');
-			getTotalRecordStub = stub(CompletedDB, 'getTotalRecord');
+			const queryParams = {
+				pageSize: 10, pageNumber: 1, optinType: '', nemAddress: '', symbolAddress: '', transactionHash: ''
+			};
 
 			const mockNemSources = [{
 				address: '682FAFBA20454869F0278748FD9790CFFCE35E8722647B4039',
@@ -73,43 +116,13 @@ describe('API Route', () => {
 				timestamps: 1615853185
 			}];
 
-			const mockDb = TestUtils.mockCompletedDBRecord(numberOfRecords, mockNemSources, mockSymbolSources);
-
-			getPaginationStub.returns(Promise.resolve(mockDb));
-			getTotalRecordStub.returns(Promise.resolve(numberOfRecords));
-		});
-
-		afterEach(() => {
-			getPaginationStub = {};
-			getTotalRecordStub = {};
-			restore();
-		});
-
-		describe('GET api/completed', () => {
-			// Arrange:
-			const queryParams = {
-				pageSize: 10, pageNumber: 1, optinType: '', nemAddress: '', symbolAddress: '', transactionHash: ''
-			};
-
-			it('returns empty records with pagination', async () => {
-				// Arrange:
-				const mockDbEmpty = [];
-
-				getPaginationStub.returns(Promise.resolve(mockDbEmpty));
-				getTotalRecordStub.returns(Promise.resolve(mockDbEmpty.length));
-
-				// Act:
-				const response = await request(app).get('/api/completed').query(queryParams);
-
-				// Assert:
-				expect(response.status).to.equal(200);
-				expect(response.body.data.length).to.be.equal(0);
-				expect(response.body.pagination).to.be.eql({ pageSize: 10, pageNumber: 1, totalRecord: 0 });
-			});
+			const mockDb = TestUtils.mockCompletedDBRecord(10, mockNemSources, mockSymbolSources);
 
 			runBasicRouteDataResponseTests({
 				path: '/api/completed',
-				queryParams
+				queryParams,
+				mockDb,
+				...completedStub
 			});
 		});
 
@@ -118,28 +131,18 @@ describe('API Route', () => {
 				path: '/api/completed/download',
 				queryParams: {
 					timezone: 'America/Los_Angeles'
-				}
+				},
+				...completedStub
 			});
 		});
 	});
 
 	describe('requests', () => {
-		beforeEach(() => {
-			// Arrange:
-			getPaginationStub = stub(OptinRequestsDB, 'getOptinRequestPagination');
-			getTotalRecordStub = stub(OptinRequestsDB, 'getTotalRecord');
-
-			const mockDb = TestUtils.mockInProgressDBRecord(10);
-
-			getPaginationStub.returns(Promise.resolve(mockDb));
-			getTotalRecordStub.returns(Promise.resolve(mockDb.length));
-		});
-
-		afterEach(() => {
-			getPaginationStub = {};
-			getTotalRecordStub = {};
-			restore();
-		});
+		// Arrange:
+		const optinRequestStub = {
+			model: OptinRequestsDB,
+			mockPaginationMethod: 'getOptinRequestPagination'
+		};
 
 		describe('GET api/requests', () => {
 			// Arrange:
@@ -147,25 +150,13 @@ describe('API Route', () => {
 				pageSize: 10, pageNumber: 1, nemAddressBytes: '', transactionHashBytes: '', status: ''
 			};
 
-			it('returns empty records with pagination', async () => {
-				// Arrange:
-				const mockDbEmpty = [];
-
-				getPaginationStub.returns(Promise.resolve(mockDbEmpty));
-				getTotalRecordStub.returns(Promise.resolve(mockDbEmpty.length));
-
-				// Act:
-				const response = await request(app).get('/api/requests').query(queryParams);
-
-				// Assert:
-				expect(response.status).to.equal(200);
-				expect(response.body.data.length).to.be.equal(0);
-				expect(response.body.pagination).to.be.eql({ pageSize: 10, pageNumber: 1, totalRecord: 0 });
-			});
+			const mockDb = TestUtils.mockInProgressDBRecord(10);
 
 			runBasicRouteDataResponseTests({
 				path: '/api/requests',
-				queryParams
+				queryParams,
+				mockDb,
+				...optinRequestStub
 			});
 		});
 
@@ -174,7 +165,8 @@ describe('API Route', () => {
 				path: '/api/requests/download',
 				queryParams: {
 					timezone: 'America/Los_Angeles'
-				}
+				},
+				...optinRequestStub
 			});
 		});
 	});
