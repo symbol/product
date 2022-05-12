@@ -149,7 +149,7 @@ describe('server utils', () => {
 
 	describe('convertTimestampToDate', () => {
 		// Arrange:
-		const unixTimestamp = 1615853185;
+		const unixTimestamp = BigInt(1615853185).toString();
 
 		it('returns default utc date given unix timestamp', () => {
 			// Act:
@@ -165,6 +165,14 @@ describe('server utils', () => {
 
 			// Assert:
 			expect(date).to.be.equal('21-03-15 17:06:25');
+		});
+
+		it.only('returns null date given null', () => {
+			// Act:
+			const date = Utils.convertTimestampToDate(null);
+
+			// Assert:
+			expect(date).to.be.equal(null);
 		});
 	});
 });

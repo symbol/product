@@ -65,12 +65,12 @@ const ServerUtils = {
 	},
 	/**
 	 * Convert unix timestamp to utc date time.
-	 * @param {number} unixTimestamp unix timestamp in second.
+	 * @param {string} unixTimestamp unix timestamp in second.
 	 * @param {string} timezone set to timezone.
 	 * @returns {string} Date with format YY-MM-DD HH:mm:ss.
 	 */
 	convertTimestampToDate: (unixTimestamp, timezone) => {
-		if ('number' !== typeof unixTimestamp)
+		if (!unixTimestamp)
 			return unixTimestamp;
 
 		const utcDate = moment.utc(unixTimestamp * 1000);
