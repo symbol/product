@@ -37,16 +37,10 @@ const processData = items =>
 
 const findMaxInArray = arr => arr.reduce((m, e) => (e > m ? e : m));
 
-const getLatestTimestamps = timestamps => {
-	if (Array.isArray(timestamps))
-		return findMaxInArray(timestamps.map(timestamp => Number(timestamp)));
-	return timestamps ? parseInt(timestamps, 10) : null;
-};
-
-const getLatestHeight = heights => {
-	if (Array.isArray(heights))
-		return findMaxInArray(heights.map(height => BigInt(height))).toString();
-	return heights ? BigInt(heights).toString() : null;
+const getLatestValue = items => {
+	if (Array.isArray(items))
+		return findMaxInArray(items.map(item => BigInt(Math.trunc(item)))).toString();
+	return items ? BigInt(Math.trunc(items)).toString() : null;
 };
 
 const controller = {
@@ -187,18 +181,18 @@ const controller = {
 					optin_id: row.optin_id,
 					nemAddress: row.nemAddress[j] ?? '',
 					label: info[j] ?? '',
-					nemHeights: getLatestHeight(row.nemHeights[j]),
+					nemHeights: getLatestValue(row.nemHeights[j]),
 					nemHashes: (Array.isArray(row.nemHashes[j]) ? row.nemHashes[j].join(';') : row.nemHashes[j])
 						?? '(off-chain)',
-					nemTimestampsUTC: convertTimestampToDate(getLatestTimestamps(row.nemTimestamps[j])),
-					nemTimestampsLocal: convertTimestampToDate(getLatestTimestamps(row.nemTimestamps[j]), timezone),
+					nemTimestampsUTC: convertTimestampToDate(getLatestValue(row.nemTimestamps[j])),
+					nemTimestampsLocal: convertTimestampToDate(getLatestValue(row.nemTimestamps[j]), timezone),
 					nemBalance: toRelativeAmount(row.nemBalance[j]) ?? '',
 					symbolAddress: row.symbolAddress[j] ?? '',
-					symbolHeights: getLatestHeight(row.symbolHeights[j]),
+					symbolHeights: getLatestValue(row.symbolHeights[j]),
 					symbolHashes: (Array.isArray(row.symbolHashes[j]) ? row.symbolHashes[j].join(';') : row.symbolHashes[j])
 						?? '',
-					symbolTimestampsUTC: convertTimestampToDate(getLatestTimestamps(row.symbolTimestamps[j])),
-					symbolTimestampsLocal: convertTimestampToDate(getLatestTimestamps(row.symbolTimestamps[j]), timezone),
+					symbolTimestampsUTC: convertTimestampToDate(getLatestValue(row.symbolTimestamps[j])),
+					symbolTimestampsLocal: convertTimestampToDate(getLatestValue(row.symbolTimestamps[j]), timezone),
 					symbolBalance: toRelativeAmount(row.symbolBalance[j]) ?? '',
 					optinType: row.isPostoptin ? 'POST' : 'PRE'
 				});
