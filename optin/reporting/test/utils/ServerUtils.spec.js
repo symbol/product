@@ -167,7 +167,7 @@ describe('server utils', () => {
 			expect(date).to.be.equal('21-03-15 17:06:25');
 		});
 
-		it.only('returns null date given null', () => {
+		it('returns null date given null', () => {
 			// Act:
 			const date = Utils.convertTimestampToDate(null);
 

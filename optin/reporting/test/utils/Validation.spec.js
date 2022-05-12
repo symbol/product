@@ -76,7 +76,7 @@ const runBasicSortDirectionValidationTests = (invalidParams, validParams, valida
 	// Arrange:
 	const queryField = 'sortDirection';
 
-	it('fails when sortDirection parameter is omitted', async () => {
+	it('fails when sortDirection parameter is invalid', async () => {
 		await runAsserts({
 			validator,
 			values: invalidParams,
@@ -85,7 +85,7 @@ const runBasicSortDirectionValidationTests = (invalidParams, validParams, valida
 		});
 	});
 
-	it('succeeds when sortDirection parameters are provided', async () => {
+	it('succeeds when sortDirection parameters are present and valid', async () => {
 		await runAsserts({
 			validator,
 			values: validParams,
@@ -98,7 +98,7 @@ const runBasicNemAddressValidationTests = (invalidParams, validParams, validator
 	// Arrange:
 	const queryField = 'nemAddress';
 
-	it('fails when nemAddress parameter is omitted', async () => {
+	it('fails when nemAddress parameter is invalid', async () => {
 		await runAsserts({
 			validator,
 			values: invalidParams,
@@ -107,7 +107,7 @@ const runBasicNemAddressValidationTests = (invalidParams, validParams, validator
 		});
 	});
 
-	it('succeeds when nemAddress parameters are provided', async () => {
+	it('succeeds when nemAddress parameters are present and valid', async () => {
 		await runAsserts({
 			validator,
 			values: validParams,
@@ -120,7 +120,7 @@ const runBasicTransactionHashValidationTests = (invalidParams, validParams, vali
 	// Arrange:
 	const queryField = 'transactionHash';
 
-	it('fails when transactionHash parameter is omitted', async () => {
+	it('fails when transactionHash parameter is invalid', async () => {
 		await runAsserts({
 			validator,
 			values: invalidParams,
@@ -129,7 +129,7 @@ const runBasicTransactionHashValidationTests = (invalidParams, validParams, vali
 		});
 	});
 
-	it('succeeds when transactionHash parameters are provided', async () => {
+	it('succeeds when transactionHash parameters are present and valid', async () => {
 		await runAsserts({
 			validator,
 			values: validParams,
@@ -142,7 +142,7 @@ const runBasicSortByValidationTests = (invalidParams, validParams, validator) =>
 	// Arrange:
 	const queryField = 'sortBy';
 
-	it('fails when sortBy parameter is omitted', async () => {
+	it('fails when sortBy parameter is invalid', async () => {
 		await runAsserts({
 			validator,
 			values: invalidParams,
@@ -151,7 +151,7 @@ const runBasicSortByValidationTests = (invalidParams, validParams, validator) =>
 		});
 	});
 
-	it('succeeds when sortBy parameters are provided', async () => {
+	it('succeeds when sortBy parameters are present and valid', async () => {
 		await runAsserts({
 			validator,
 			values: validParams,
@@ -209,7 +209,7 @@ describe('validation', () => {
 			// Arrange:
 			const queryField = 'optinType';
 
-			it('fails when optinType parameter is omitted', async () => {
+			it('fails when optinType parameter is invalid', async () => {
 				// Arrange:
 				const invalidParams = ['invalid'];
 
@@ -221,7 +221,7 @@ describe('validation', () => {
 				});
 			});
 
-			it('succeeds when optinType parameters are provided', async () => {
+			it('succeeds when optinType parameters are present and valid', async () => {
 				// Arrange:
 				const validParams = ['pre', 'post'];
 
@@ -237,7 +237,7 @@ describe('validation', () => {
 			// Arrange:
 			const queryField = 'symbolAddress';
 
-			it('fails when symbolAddress parameter is omitted', async () => {
+			it('fails when symbolAddress parameter is invalid', async () => {
 				// Arrange:
 				const invalidParams = ['NDCWGCUSOWJBD3JKOQOIWACPWMCVA6LVAWYPC3PI'];
 
@@ -249,7 +249,7 @@ describe('validation', () => {
 				});
 			});
 
-			it('succeeds when symbolAddress parameters are provided', async () => {
+			it('succeeds when symbolAddress parameters are present and valid', async () => {
 				// Arrange:
 				const validParams = ['NAIVQSJ6IU2NCDWWZSUYKKXK7JTGROW6FDRQTJY', 'NC6PLXOJLS43WIH23CV7OZGXTWQI3QNXNLBA7MY'];
 
@@ -299,7 +299,7 @@ describe('validation', () => {
 			// Arrange:
 			const queryField = 'status';
 
-			it('fails when status parameter is omitted', async () => {
+			it('fails when status parameter is invalid', async () => {
 				// Arrange:
 				const invalidParams = ['invalid'];
 
@@ -311,7 +311,7 @@ describe('validation', () => {
 				});
 			});
 
-			it('succeeds when status parameters are provided', async () => {
+			it('succeeds when status parameters are present and valid', async () => {
 				// Arrange:
 				const validParams = ['pending', 'sent', 'duplicate', 'error'];
 
@@ -331,7 +331,7 @@ describe('validation', () => {
 			// Arrange:
 			const queryField = 'timezone';
 
-			it('fails when timezone parameter is omitted', async () => {
+			it('fails when timezone parameter is invalid', async () => {
 				// Arrange:
 				const invalidParams = ['invalid', 'America'];
 
@@ -343,7 +343,7 @@ describe('validation', () => {
 				});
 			});
 
-			it('succeeds when timezone parameters are provided', async () => {
+			it('succeeds when timezone parameters are present and valid', async () => {
 				// Arrange:
 				const validParams = ['America/Los_Angeles', 'America/New_York'];
 
