@@ -6,38 +6,38 @@ const optinRequestDB = {
 		pageNumber, pageSize, nemAddressBytes, transactionHashBytes, status, sortBy, sortDirection
 	}) {
 		// set default sort
-		let fieldSort = 'order by optin_transaction_height DESC';
+		let fieldSort = 'ORDER BY optin_transaction_height DESC';
 
 		if (sortBy && sortDirection && 'none' !== sortDirection) {
 			if ('payoutTransactionHash' === sortBy)
-				fieldSort = `order by payoutTimestamp ${sortDirection}`;
+				fieldSort = `ORDER BY payoutTimestamp ${sortDirection}`;
 			else if ('optinTransactionHash' === sortBy)
-				fieldSort = `order by optinTimestamp ${sortDirection}`;
+				fieldSort = `ORDER BY optinTimestamp ${sortDirection}`;
 		}
 
 		const offset = (pageNumber - 1) * pageSize;
 
 		const { in_progress } = getDatabase();
 		const result = await in_progress.query(
-			`select optin_transaction_height as optinTransactionHeight, address as nemAddressBytes,
-					hex(optin_transaction_hash) as optinTransactionHashHex,
-					payout_transaction.height as payoutTransactionHeight,
-					hex(payout_transaction_hash) as payoutTransactionHash, payout_status as payoutStatus, message,
-					nem_block_timestamps.timestamp as optinTimestamp, payout_transaction.timestamp as payoutTimestamp
-				from optin_request
+			`SELECT optin_transaction_height AS optinTransactionHeight, address AS nemAddressBytes,
+				HEX(optin_transaction_hash) AS optinTransactionHashHex,
+				payout_transaction.height AS payoutTransactionHeight,
+				HEX(payout_transaction_hash) AS payoutTransactionHash, payout_status AS payoutStatus, message,
+				nem_block_timestamps.timestamp AS optinTimestamp, payout_transaction.timestamp AS payoutTimestamp
+			FROM optin_request
 				LEFT JOIN nem_block_timestamps ON nem_block_timestamps.height = optin_request.optin_transaction_height
 				LEFT JOIN payout_transaction ON payout_transaction.transaction_hash = optin_request.payout_transaction_hash
-				where payout_status in (0, 1, 3, 4) and (address = $1 or $1 is null) and (optin_transaction_hash = $2 or $2 is null)
-					and (payout_status = $3 or $3 is null)
-			union all
-			select	optin_transaction_height as optinTransactionHeight, address as nemAddressBytes,
-					hex(optin_transaction_hash) as optinTransactionHashHex,	'' as payoutTransactionHeight, '' as payoutTransactionHash, 4,
-					message, nem_block_timestamps.timestamp as optinTimestamp, null as payoutTimestamp
-				from optin_error
+				WHERE payout_status IN (0, 1, 3, 4) AND (address = $1 OR $1 IS NULL) AND (optin_transaction_hash = $2 OR $2 IS NULL)
+					AND (payout_status = $3 OR $3 IS NULL)
+			UNION ALL
+			SELECT optin_transaction_height AS optinTransactionHeight, address AS nemAddressBytes,
+				HEX(optin_transaction_hash) AS optinTransactionHashHex,	'' AS payoutTransactionHeight, '' AS payoutTransactionHash, 4,
+				message, nem_block_timestamps.timestamp AS optinTimestamp, NULL AS payoutTimestamp
+				FROM optin_error
 				LEFT JOIN nem_block_timestamps ON nem_block_timestamps.height = optin_error.optin_transaction_height
-				where (address = $1 or $1 is null) and (optin_transaction_hash = $2 or $2 is null) and ($3 = 4 or $3 is null)
+				WHERE (address = $1 OR $1 IS NULL) AND (optin_transaction_hash = $2 OR $2 IS NULL) AND ($3 = 4 OR $3 IS NULL)
 			${fieldSort}
-            limit $4 offset $5`,
+			LIMIT $4 OFFSET $5`,
 			{ bind: [nemAddressBytes, transactionHashBytes, status, pageSize, offset], type: QueryTypes.SELECT }
 		);
 

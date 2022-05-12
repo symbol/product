@@ -6,13 +6,13 @@ const completedDB = {
 		pageNumber, pageSize, nemAddressHex, symbolAddressHex, txHash, optinType, sortBy, sortDirection
 	}) {
 		// set default sort
-		let fieldSort = 'Order by id DESC';
+		let fieldSort = 'ORDER BY id DESC';
 
 		if (sortBy && sortDirection && 'none' !== sortDirection) {
 			if ('nemHashes' === sortBy)
-				fieldSort = `order by nemTimestamp ${sortDirection}`;
+				fieldSort = `ORDER BY nemTimestamp ${sortDirection}`;
 			else if ('symbolHashes' === sortBy)
-				fieldSort = `order by symbolTimestamp ${sortDirection}`;
+				fieldSort = `ORDER BY symbolTimestamp ${sortDirection}`;
 		}
 
 		const bindLike = value => (value ? `%${value}%` : null);
@@ -24,31 +24,30 @@ const completedDB = {
 			`SELECT
 				opt.id,
 				opt.is_postoptin,
-				(SELECT json_group_array(nem_address_object)
+				(SELECT JSON_GROUP_ARRAY(nem_address_object)
 					FROM (
-						SELECT json_object(
-						'address', hex(nem_source.address),
+						SELECT JSON_OBJECT(
+						'address', HEX(nem_source.address),
 						'balance', nem_source.balance,
-						'hashes', GROUP_CONCAT(CASE WHEN nem_transaction.hash IS NULL THEN NULL ELSE hex(nem_transaction.hash) END, ';'),
+						'hashes', GROUP_CONCAT(CASE WHEN nem_transaction.hash IS NULL THEN NULL ELSE HEX(nem_transaction.hash) END, ';'),
 						'height', GROUP_CONCAT(CASE WHEN nem_transaction.height IS NULL THEN NULL ELSE nem_transaction.height END, ';'),
 						'label', nem_label.label,
 						'timestamps', GROUP_CONCAT(
 							CASE WHEN nem_block_timestamps.timestamp IS NULL THEN NULL ELSE nem_block_timestamps.timestamp END, ';')
-					) as nem_address_object
+					) AS nem_address_object
 					FROM nem_source
 					LEFT JOIN nem_transaction ON nem_transaction.address = nem_source.address
 					LEFT JOIN nem_label ON nem_label.address = nem_source.address
 					LEFT JOIN nem_block_timestamps ON nem_block_timestamps.height = nem_transaction.height
-					where optin_id = opt.id
-					GROUP BY nem_source.address, nem_source.balance
-					) temp
+					WHERE optin_id = opt.id
+					GROUP BY nem_source.address, nem_source.balance) temp
 				) AS nemSource,
 				(
-					SELECT json_group_array(
-						json_object(
-							'address', hex(address),
+					SELECT JSON_GROUP_ARRAY(
+						JSON_OBJECT(
+							'address', HEX(address),
 							'balance', balance,
-							'hashes', hex(hash),
+							'hashes', HEX(hash),
 							'height', height,
 							'timestamps',timestamp)
 					)
@@ -56,22 +55,22 @@ const completedDB = {
 					WHERE optin_id = opt.id
 				) AS symbolDestination,
 				(
-					SELECT max(timestamp)
+					SELECT MAX(timestamp)
 					FROM nem_source
 					LEFT JOIN nem_transaction ON nem_transaction.address = nem_source.address
 					LEFT JOIN nem_block_timestamps ON nem_block_timestamps.height = nem_transaction.height
-					where optin_id = opt.id
-				) as nemTimestamp,
+					WHERE optin_id = opt.id
+				) AS nemTimestamp,
 				(
-					SELECT max(timestamp)
+					SELECT MAX(timestamp)
 					FROM symbol_destination
-					where optin_id = opt.id
-				) as symbolTimestamp
+					WHERE optin_id = opt.id
+				) AS symbolTimestamp
 			FROM optin_id opt
-			WHERE (is_postoptin = $1 OR $1 is null)
-				AND (nemSource Like $2 or $2 is null)
-				AND (symbolDestination Like $3 or $3 is null)
-				AND ((nemSource Like $4 OR symbolDestination Like $4) or $4 is null)
+			WHERE (is_postoptin = $1 OR $1 IS NULL)
+				AND (nemSource LIKE $2 OR $2 IS NULL)
+				AND (symbolDestination LIKE $3 OR $3 IS NULL)
+				AND ((nemSource LIKE $4 OR symbolDestination LIKE $4) OR $4 IS NULL)
 			${fieldSort}
 			LIMIT $5 OFFSET $6`,
 			{
