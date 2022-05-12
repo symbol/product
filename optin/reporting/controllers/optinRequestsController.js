@@ -3,35 +3,25 @@ const ServerUtils = require('../utils/ServerUtils');
 const { Parser } = require('json2csv');
 const { NemFacade } = require('symbol-sdk').facade;
 
-const processData = items => {
-	// TODO convert these to mappings?
-	const statusIntToString = statusInt => {
-		switch (statusInt) {
-		case 0:
-			return 'Pending';
-		case 1:
-			return 'Sent';
-		case 3:
-			return 'Duplicate';
-		case 4:
-			return 'Error';
-		default:
-			return 'Unknown';
-		}
-	};
-
-	return items.map(item => ({
-		optinTransactionHeight: item.optinTransactionHeight,
-		nemAddress: new NemFacade.Address(item.nemAddressBytes).toString(),
-		optinTransactionHash: item.optinTransactionHashHex?.toLowerCase(),
-		payoutTransactionHeight: item.payoutTransactionHeight,
-		payoutTransactionHash: item.payoutTransactionHash?.toLowerCase(),
-		status: statusIntToString(item.payoutStatus),
-		message: item.message,
-		optinTimestamp: item.optinTimestamp,
-		payoutTimestamp: item.payoutTimestamp
-	}));
+const statusMap = {
+	0: 'Pending',
+	1: 'Sent',
+	3: 'Duplicate',
+	4: 'Error',
+	default: 'Unknown'
 };
+
+const processData = items => items.map(item => ({
+	optinTransactionHeight: item.optinTransactionHeight,
+	nemAddress: new NemFacade.Address(item.nemAddressBytes).toString(),
+	optinTransactionHash: item.optinTransactionHashHex?.toLowerCase(),
+	payoutTransactionHeight: item.payoutTransactionHeight,
+	payoutTransactionHash: item.payoutTransactionHash?.toLowerCase(),
+	status: statusMap[item.payoutStatus] || statusMap.default,
+	message: item.message,
+	optinTimestamp: item.optinTimestamp,
+	payoutTimestamp: item.payoutTimestamp
+}));
 
 const controller = {
 	getOptinRequests: async (req, res) => {
