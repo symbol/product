@@ -46,7 +46,7 @@ describe('completed controller', () => {
 			expect(pagination).to.be.eql({ pageSize: recordSize, pageNumber: 1, totalRecord: recordSize });
 			expect(data.length).to.be.equal(10);
 
-			expect(result.optin_id).to.be.equal(1);
+			expect(result.optinId).to.be.equal(1);
 			expect(result.isPostoptin).to.be.equal(1);
 			expect(result.label).to.be.eql(mockNemSources.map(nemInfo => nemInfo.label));
 			expect(result.nemAddress).to.be.eql(mockNemSources.map(nemInfo =>

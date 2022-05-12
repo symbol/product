@@ -7,7 +7,7 @@ const config = {
 		optinTransactionHash: 'Optin Transaction Hash',
 		status: 'Status',
 		message: 'Message',
-		optin_id: 'Opt-in ID'
+		optinId: 'Opt-in ID'
 	},
 	keyRedirects: {
 		nemAddress: 'https://explorer.nemtool.com/#/s_account?account=',

@@ -18,7 +18,7 @@ const isPostOptin = optinTypeFilter => {
 
 const processData = items =>
 	items.map(item => ({
-		optin_id: item.id,
+		optinId: item.id,
 		isPostoptin: item.is_postoptin,
 		label: item.nemSource.map(props => props.label),
 		nemAddress: item.nemSource.map(props => new NemFacade.Address(hexStringToByte(props.address))
@@ -95,7 +95,7 @@ const controller = {
 
 		const fields = [{
 			label: '#',
-			value: 'optin_id'
+			value: 'optinId'
 		},
 		{
 			label: 'Type',
@@ -178,7 +178,7 @@ const controller = {
 				const info = [...new Set(row.label)];
 
 				csvFormat.push({
-					optin_id: row.optin_id,
+					optinId: row.optinId,
 					nemAddress: row.nemAddress[j] ?? '',
 					label: info[j] ?? '',
 					nemHeights: getLatestValue(row.nemHeights[j]),
