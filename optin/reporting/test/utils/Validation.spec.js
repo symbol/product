@@ -9,36 +9,16 @@ const mockExpressValidatorMiddleware = async (req, res, middlewares) => {
 	}));
 };
 
-const runValidAsserts = async ({ validator, validParams, queryField }) => {
-	/* eslint-disable no-await-in-loop */
-	for (let i = 0; i <= validParams.length - 1; ++i) {
-		// Arrange:
-		const req = TestUtils.mockRequest({
-			pageSize: 10,
-			pageNumber: 1,
-			[queryField]: validParams[i]
-		});
-		const res = TestUtils.mockResponse();
-
-		// Act:
-		await mockExpressValidatorMiddleware(req, res, validator);
-		const { errors } = validationResult(req);
-
-		// Assert:
-		expect(errors.length).to.equal(0);
-	}
-};
-
-const runInvalidAsserts = async ({
-	validator, invalidParams, queryField, errorMessage
+const runAsserts = async ({
+	validator, values, queryField, errorMessage
 }) => {
 	/* eslint-disable no-await-in-loop */
-	for (let i = 0; i <= invalidParams.length - 1; ++i) {
+	for (let i = 0; i <= values.length - 1; ++i) {
 		// Arrange:
 		const req = TestUtils.mockRequest({
 			pageSize: 10,
 			pageNumber: 1,
-			[queryField]: invalidParams[i]
+			[queryField]: values[i]
 		});
 
 		const res = TestUtils.mockResponse();
@@ -47,8 +27,13 @@ const runInvalidAsserts = async ({
 		await mockExpressValidatorMiddleware(req, res, validator);
 		const { errors } = validationResult(req);
 
-		// Assert:
-		expect(errors[0].msg).to.equal(errorMessage);
+		if (errorMessage) {
+			// Assert:
+			expect(errors[0].msg).to.equal(errorMessage);
+		} else {
+			// Assert:
+			expect(errors.length).to.equal(0);
+		}
 	}
 };
 
@@ -92,18 +77,18 @@ const runBasicSortDirectionValidationTests = (invalidParams, validParams, valida
 	const queryField = 'sortDirection';
 
 	it('fails when sortDirection parameter is omitted', async () => {
-		await runInvalidAsserts({
+		await runAsserts({
 			validator,
-			invalidParams,
+			values: invalidParams,
 			queryField,
 			errorMessage: 'sort direction is not supported'
 		});
 	});
 
 	it('succeeds when sortDirection parameters are provided', async () => {
-		await runValidAsserts({
+		await runAsserts({
 			validator,
-			validParams,
+			values: validParams,
 			queryField
 		});
 	});
@@ -114,18 +99,18 @@ const runBasicNemAddressValidationTests = (invalidParams, validParams, validator
 	const queryField = 'nemAddress';
 
 	it('fails when nemAddress parameter is omitted', async () => {
-		await runInvalidAsserts({
+		await runAsserts({
 			validator,
-			invalidParams,
+			values: invalidParams,
 			queryField,
 			errorMessage: 'nem address must be 40 character long'
 		});
 	});
 
 	it('succeeds when nemAddress parameters are provided', async () => {
-		await runValidAsserts({
+		await runAsserts({
 			validator,
-			validParams,
+			values: validParams,
 			queryField
 		});
 	});
@@ -136,18 +121,18 @@ const runBasicTransactionHashValidationTests = (invalidParams, validParams, vali
 	const queryField = 'transactionHash';
 
 	it('fails when transactionHash parameter is omitted', async () => {
-		await runInvalidAsserts({
+		await runAsserts({
 			validator,
-			invalidParams,
+			values: invalidParams,
 			queryField,
 			errorMessage: 'transaction hash must be 64 character long'
 		});
 	});
 
 	it('succeeds when transactionHash parameters are provided', async () => {
-		await runValidAsserts({
+		await runAsserts({
 			validator,
-			validParams,
+			values: validParams,
 			queryField
 		});
 	});
@@ -158,18 +143,18 @@ const runBasicSortByValidationTests = (invalidParams, validParams, validator) =>
 	const queryField = 'sortBy';
 
 	it('fails when sortBy parameter is omitted', async () => {
-		await runInvalidAsserts({
+		await runAsserts({
 			validator,
-			invalidParams,
+			values: invalidParams,
 			queryField,
 			errorMessage: 'field name is not valid'
 		});
 	});
 
 	it('succeeds when sortBy parameters are provided', async () => {
-		await runValidAsserts({
+		await runAsserts({
 			validator,
-			validParams,
+			values: validParams,
 			queryField
 		});
 	});
@@ -228,9 +213,9 @@ describe('validation', () => {
 				// Arrange:
 				const invalidParams = ['invalid'];
 
-				await runInvalidAsserts({
+				await runAsserts({
 					validator,
-					invalidParams,
+					values: invalidParams,
 					queryField,
 					errorMessage: 'optin type must be pre or post'
 				});
@@ -240,9 +225,9 @@ describe('validation', () => {
 				// Arrange:
 				const validParams = ['pre', 'post'];
 
-				await runValidAsserts({
+				await runAsserts({
 					validator,
-					validParams,
+					values: validParams,
 					queryField
 				});
 			});
@@ -256,9 +241,9 @@ describe('validation', () => {
 				// Arrange:
 				const invalidParams = ['NDCWGCUSOWJBD3JKOQOIWACPWMCVA6LVAWYPC3PI'];
 
-				await runInvalidAsserts({
+				await runAsserts({
 					validator,
-					invalidParams,
+					values: invalidParams,
 					queryField,
 					errorMessage: 'symbol address must be 39 character long'
 				});
@@ -268,9 +253,9 @@ describe('validation', () => {
 				// Arrange:
 				const validParams = ['NAIVQSJ6IU2NCDWWZSUYKKXK7JTGROW6FDRQTJY', 'NC6PLXOJLS43WIH23CV7OZGXTWQI3QNXNLBA7MY'];
 
-				await runValidAsserts({
+				await runAsserts({
 					validator,
-					validParams,
+					values: validParams,
 					queryField
 				});
 			});
@@ -318,9 +303,9 @@ describe('validation', () => {
 				// Arrange:
 				const invalidParams = ['invalid'];
 
-				await runInvalidAsserts({
+				await runAsserts({
 					validator,
-					invalidParams,
+					values: invalidParams,
 					queryField,
 					errorMessage: 'status is not supported'
 				});
@@ -330,9 +315,9 @@ describe('validation', () => {
 				// Arrange:
 				const validParams = ['pending', 'sent', 'duplicate', 'error'];
 
-				await runValidAsserts({
+				await runAsserts({
 					validator,
-					validParams,
+					values: validParams,
 					queryField
 				});
 			});
@@ -350,9 +335,9 @@ describe('validation', () => {
 				// Arrange:
 				const invalidParams = ['invalid', 'America'];
 
-				await runInvalidAsserts({
+				await runAsserts({
 					validator,
-					invalidParams,
+					values: invalidParams,
 					queryField,
 					errorMessage: 'timezone must be string example America/Los_Angeles'
 				});
@@ -362,9 +347,9 @@ describe('validation', () => {
 				// Arrange:
 				const validParams = ['America/Los_Angeles', 'America/New_York'];
 
-				await runValidAsserts({
+				await runAsserts({
 					validator,
-					validParams,
+					values: validParams,
 					queryField
 				});
 			});
