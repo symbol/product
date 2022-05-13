@@ -1,0 +1,44 @@
+.bgContainer {
+  width: 100vw;
+  height: 100vh;
+  position: fixed;
+  top: 0;
+  right: 0;
+  background-position: center;
+}
+
+.mainContainerWrapper {
+  height: 100%;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: stretch;
+}
+
+.mainContainer {
+  width: 100%;
+  max-width: 600px;
+  padding: 20px 0 0;
+  margin: auto;
+  position: relative;
+  text-align: center;
+}
+
+.generatedAt {
+  position: absolute;
+  font-size: 0.8rem;
+  color: #999;
+  top: 0.2rem;
+  right: 0.5rem;
+}
+
+.tableContainer {
+  min-height: 0;
+  overflow-x: hidden;
+  flex: 1;
+}
+
+.downloadButton {
+  margin-left: auto !important;
+  margin-right: 2rem !important;
+}

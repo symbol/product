@@ -1,0 +1,223 @@
+@import './athena-design-system.css';
+@import './fonts.scss';
+
+html, body, #root, .App {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--color-darkmode-bg-gray) !important;
+  color: var(--color-darkmode-text-body) !important;
+  font-family: var(--typography-web-desktop-body-hero-font-family) !important;
+}
+
+h2 {
+  margin: 0;
+  font: var(--font-web-desktop-h2) !important;
+  text-transform: uppercase;
+  background: var(--gradient-darkmode-gradient-purple-title);
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+// Theming
+
+.p-component {
+  color: var(--color-darkmode-text-body) !important;
+  font-family: var(--typography-web-desktop-body-hero-font-family) !important;
+}
+
+.p-tabview, .p-tabview-nav, .p-tabview-panels {
+  background: var(--color-darkmode-bg-gray) !important;
+  color: var(--color-darkmode-text-body) !important;
+  font-family: var(--typography-web-desktop-body-hero-font-family) !important;
+  border-style: none !important;
+}
+
+.p-tabview-nav-link {
+  background: var(--color-darkmode-bg-gray) !important;
+  color: var(--color-darkmode-text-body) !important;
+  border-radius: 0 !important;
+
+  &:focus {
+    box-shadow: unset !important;
+  }
+}
+
+.p-tabview-selected > a {
+  border-color: var(--color-darkmode-text-learn-more) !important;
+}
+
+.p-tabview-ink-bar {
+  background-color: var(--color-darkmode-text-learn-more) !important;
+}
+
+.p-datatable-header {
+  background: var(--color-darkmode-bg-gray) !important;
+  border-style: none !important;
+}
+
+tr {
+  background: var(--color-darkmode-bg-main) !important;
+  color: var(--color-darkmode-text-body) !important;
+}
+
+.p-row-odd {
+  background: var(--color-darkmode-bg-dark) !important;
+}
+
+td {
+  border-color: var(--color-darkmode-bg-dark) !important;
+}
+
+.p-datatable-thead > tr > th {
+  border-style: none !important;
+  background: var(--color-darkmode-bg-gray) !important;
+  color: var(--color-darkmode-text-body) !important;
+}
+
+.p-datatable-tbody {
+  font-family: monospace;
+}
+
+a {
+  color: var(--color-darkmode-text-learn-more) !important;
+  text-decoration: none;
+}
+
+.p-button {
+  &:focus {
+    box-shadow: unset !important;
+  }
+}
+
+.p-button {
+  border-color: var(--color-darkmode-text-learn-more) !important;
+  border-width: 2px !important;
+  background: transparent !important;
+  color: var(--color-darkmode-text-learn-more) !important;
+  text-transform: uppercase;
+}
+
+.p-button:hover, .p-highlight {
+  background: var(--color-darkmode-button-hover-bg) !important;
+  color: #fff !important;
+}
+
+.p-buttonset > div {
+  min-width: 4rem !important;
+}
+
+.p-inputtext {
+  background: var(--color-darkmode-bg-dark) !important;
+  border-color: var(--color-darkmode-form-accent) !important;
+  border-width: 2px !important;
+
+  &:hover {
+    border-color: var(--color-darkmode-form-accent-light) !important;
+  }
+
+  &:focus {
+    border-color: var(--color-darkmode-form-accent-light) !important;
+    box-shadow: 0 0 0.5rem 0.1rem var(--color-darkmode-form-accent-light) !important;
+  }
+}
+
+// Component customization
+
+.p-tabview, 
+.p-tabview-panel, 
+.p-datatable, 
+.p-datatable-wrapper {
+  height: 100%;
+  flex: 1;
+}
+
+.p-tabview-panels {
+  padding: 0 !important;
+  height: calc(100% - 58px);
+}
+
+p-tabview, 
+.p-datatable {
+  display: flex;
+  flex-direction: column;
+}
+
+.p-datatable-wrapper {
+  overflow: auto;
+}
+
+.p-datatable-thead {
+  position: sticky;
+  top: -1px;
+  z-index: 2;
+}
+
+.p-rowgroup-header {
+  display: none;
+}
+
+.p-datatable-loading-overlay {
+  z-index: 10 !important;
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+
+  .arrow {
+    border: solid black;
+    border-width: 0 3px 3px 0;
+    display: inline-block;
+    padding: 3px;
+  }
+
+  .right {
+    transform: rotate(-45deg);
+    -webkit-transform: rotate(-45deg);
+  }
+
+  .left {
+    transform: rotate(135deg);
+    -webkit-transform: rotate(135deg);
+  }
+}
+
+.list-item {
+  height: 1.2rem;
+  opacity: 0.9;
+  align-items: center;
+}
+
+::-webkit-scrollbar {
+  background-color: var(--color-darkmode-bg-gray);
+  width: 15px;
+  height: 15px;
+}
+ 
+::-webkit-scrollbar-thumb {
+  background: var(--color-darkmode-form-accent-light);
+}
+
+::-webkit-scrollbar-corner  {
+  background: var(--color-darkmode-bg-gray);
+}
+
+@media only screen and (max-width: 600px) {
+  html {
+    font-size: 10px !important;
+  }
+
+  h2 {
+    font: var(--font-web-mobile-h2) !important;
+    margin-bottom: 1rem;
+  }
+
+  ::-webkit-scrollbar {
+    width: 2px;
+  }
+}
+
+.p-selectbutton .p-button {
+  padding: 0.75rem 0.5rem !important;
+}

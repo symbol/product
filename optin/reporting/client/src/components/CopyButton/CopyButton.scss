@@ -1,0 +1,13 @@
+.copy-button {
+    background: transparent !important;
+    border-style: none !important;
+    color: var(--color-darkmode-text-learn-more) !important;
+    margin-left: 1rem !important;
+    color: rgb(218, 218, 218) !important;
+    width: 1rem !important;
+    padding: 0 0 0 !important;
+    &:hover {
+      background-color: transparent !important;
+      color: var(--primary-color) !important;
+    }
+}
