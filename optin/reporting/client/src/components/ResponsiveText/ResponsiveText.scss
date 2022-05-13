@@ -1,0 +1,37 @@
+.firstPart, .lastPart {
+  display: inline-block;
+  vertical-align: bottom;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.firstPart {
+  max-width: 7rem;
+  min-width: 2rem;
+  text-overflow: ellipsis;
+}
+.lastPart {
+    margin-left: -0.3rem !important;
+}
+
+.container-responsive-text {
+  white-space: nowrap;
+  overflow: hidden;
+  width: 100% !important;
+  display: block;
+}
+
+.container-full-text {
+    display: none;
+}
+
+@media (max-width: 960px) {
+    .firstPart {
+        max-width: 4rem;
+    }
+    .container-full-text {
+        display: none;
+    }
+    .container-responsive-text {
+        display: block;
+    }
+}

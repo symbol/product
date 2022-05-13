@@ -5,5 +5,8 @@ builds:
   - name: Optin Puller
     path: optin/puller
 
+  - name: Optin Reporting
+    path: optin/reporting
+
   - name: Vanity Address Generator
     path: tools/vanity
