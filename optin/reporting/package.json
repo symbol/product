@@ -32,7 +32,7 @@
     "json2csv": "^5.0.7",
     "moment-timezone": "^0.5.34",
     "sequelize": "^6.17.0",
-    "sqlite3": "^5.0.2",
+    "sqlite3": "^5.0.3",
     "symbol-sdk": "^3.0.0"
   }
 }
