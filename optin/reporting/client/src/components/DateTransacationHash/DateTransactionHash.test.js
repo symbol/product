@@ -8,11 +8,7 @@ jest.mock('./../ResponsiveList', () => ({children}) => <div>{children}</div>);
 
 const expectedOffChainText = '(off chain)';
 const getNextUnvisitedElement = (elements, visitedElements) => {
-	for(const element of elements) {
-		if (!visitedElements.some(e => e === element))
-			return element;
-	}
-	return null;
+	return elements.filter(element => !visitedElements.includes(element))[0] || null;
 };
 const renderAndTestDateTransactionHashComponent = (transactionHashes, timestamps, expectedTransactionHashes) => {
 	const linkBaseUrl = 'http://localhost/';

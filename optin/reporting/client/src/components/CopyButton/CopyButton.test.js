@@ -18,11 +18,12 @@ test('copy button onCopy handler', () => {
 	const textToCopy = 'TDHLRYXKIT4QOEEL3PRBP4PWLJ6NWU3LSGB56BY';
 	const onCopyHandler = jest.fn();
 
-	// Act:
 	render(<CopyButton value={textToCopy} onCopy={onCopyHandler}/>);
+	const element = screen.getByRole('button');
+
+	// Act:
+	element.click();
 
 	// Assert:
-	const element = screen.getByRole('button');
-	element.click();
 	expect(onCopyHandler).toHaveBeenCalledWith(textToCopy);
 });

@@ -2,6 +2,7 @@
 
 set -ex
 
-npm run test
+TEST_MODE=$([ "$1" = "code-coverage" ] && echo "test:jenkins" || echo "test")
+npm run "${TEST_MODE}"
 
-cd ./client && npm run test
+cd ./client && npm run "${TEST_MODE}"

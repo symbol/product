@@ -8,6 +8,7 @@
     "lint": "eslint .",
     "lint:fix": "eslint --fix .",
     "test": "mocha --full-trace --recursive ./test --exit",
+    "test:jenkins": "nyc --require mocha --no-clean --reporter=lcov npm run test",
     "start": "node server.js",
     "debug": "node --inspect-brk server.js"
   },

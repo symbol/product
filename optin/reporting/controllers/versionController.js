@@ -1,8 +1,9 @@
+const Config = require('../config');
 const fs = require('fs');
 
 const controller = {
 	getVersion: async (_, res) => {
-		const filePath = './data/current.version';
+		const filePath = `${Config.getDataStoragePath()}/current.version`;
 		let versionId = '';
 		let	lastUpdated = '';
 		if (fs.existsSync(filePath)) {

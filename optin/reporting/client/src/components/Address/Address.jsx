@@ -3,7 +3,7 @@ import ResponsiveList from './../ResponsiveList';
 import ResponsiveText from './../ResponsiveText';
 import React from 'react';
 
-const Address = ({values, linkBaseUrl, fixedLength=false, listTitle='Address List'}) => {
+const Address = ({values, linkBaseUrl, listTitle='Address List'}) => {
 	return (
 		<ResponsiveList title={listTitle}>
 			{

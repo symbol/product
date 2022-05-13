@@ -1,3 +1,4 @@
+const Config = require('../config');
 const { Sequelize } = require('sequelize');
 const sqlite3 = require('sqlite3');
 
@@ -9,7 +10,7 @@ const refreshDBs = () => {
 	dbList.forEach(db => {
 		database[db] = new Sequelize(db, null, null, {
 			dialect: 'sqlite',
-			storage: `./data/${db}.db`,
+			storage: `${Config.getDataStoragePath()}/${db}.db`,
 			dialectOptions: {
 				mode: sqlite3.OPEN_READONLY
 			}

@@ -5,7 +5,7 @@ import ResponsiveText from '../ResponsiveText';
 import React from 'react';
 import './DateTransactionHash.scss';
 
-const buildTransactionHashLink = (linkBaseUrl, item, date, fixResponsiveText) => {
+const buildTransactionHashLink = (linkBaseUrl, item, date) => {
 	return (
 		<div className='flex flex-row list-item'>
 			{
@@ -25,12 +25,12 @@ const buildTransactionHashLink = (linkBaseUrl, item, date, fixResponsiveText) =>
 	);
 };
 
-const DateTransactionHash = ({values, linkBaseUrl, timestamps, fixedLength = false, listTitle = 'Hash List'}) => {
+const DateTransactionHash = ({values, linkBaseUrl, timestamps, listTitle = 'Hash List'}) => {
 	const resultList = values.map((hash, index) =>
 		<div>
 			{
 				null !== hash
-					? buildTransactionHashLink(linkBaseUrl, hash, Helper.convertTimestampToDate(timestamps[index], true), fixedLength)
+					? buildTransactionHashLink(linkBaseUrl, hash, Helper.convertTimestampToDate(timestamps[index], true))
 					: '(off chain)'
 			}
 		</div>);

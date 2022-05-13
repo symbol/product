@@ -4,4 +4,7 @@ defaultCiPipeline {
 
 	publisher = 'docker'
 	packageId = 'optin-reporting'
+
+	codeCoverageTool = 'nyc'
+	minimumCodeCoverage = 75
 }
