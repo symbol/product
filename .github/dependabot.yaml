@@ -9,7 +9,7 @@ updates:
     target-branch: dev
     labels: [Explorer]
     commit-message:
-      prefix: '[monorepo] fix'
+      prefix: '[dependency]'
 
   - package-ecosystem: pip
     directory: /optin/puller
@@ -19,7 +19,7 @@ updates:
     target-branch: dev
     labels: [Opt-In]
     commit-message:
-      prefix: '[monorepo] fix'
+      prefix: '[dependency]'
 
   - package-ecosystem: npm
     directory: /optin/reporting
@@ -30,7 +30,18 @@ updates:
     labels: [Opt-In]
     versioning-strategy: increase
     commit-message:
-      prefix: '[monorepo] fix'
+      prefix: '[dependency]'
+
+  - package-ecosystem: npm
+    directory: /optin/reporting/client
+    schedule:
+      interval: weekly
+      day: sunday
+    target-branch: dev
+    labels: [Opt-In]
+    versioning-strategy: increase
+    commit-message:
+      prefix: '[dependency]'
 
   - package-ecosystem: pip
     directory: /tools/vanity
@@ -40,4 +51,4 @@ updates:
     target-branch: dev
     labels: ['Change: Tools']
     commit-message:
-      prefix: '[monorepo] fix'
+      prefix: '[dependency]'
