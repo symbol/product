@@ -1,0 +1,54 @@
+version: 2
+updates:
+
+  - package-ecosystem: pip
+    directory: /explorer/nodewatch
+    schedule:
+      interval: weekly
+      day: sunday
+    target-branch: dev
+    labels: [Explorer]
+    commit-message:
+      prefix: '[dependency]'
+
+  - package-ecosystem: pip
+    directory: /optin/puller
+    schedule:
+      interval: weekly
+      day: sunday
+    target-branch: dev
+    labels: [Opt-In]
+    commit-message:
+      prefix: '[dependency]'
+
+  - package-ecosystem: npm
+    directory: /optin/reporting
+    schedule:
+      interval: weekly
+      day: sunday
+    target-branch: dev
+    labels: [Opt-In]
+    versioning-strategy: increase
+    commit-message:
+      prefix: '[dependency]'
+
+  - package-ecosystem: npm
+    directory: /optin/reporting/client
+    schedule:
+      interval: weekly
+      day: sunday
+    target-branch: dev
+    labels: [Opt-In]
+    versioning-strategy: increase
+    commit-message:
+      prefix: '[dependency]'
+
+  - package-ecosystem: pip
+    directory: /tools/vanity
+    schedule:
+      interval: weekly
+      day: sunday
+    target-branch: dev
+    labels: ['Change: Tools']
+    commit-message:
+      prefix: '[dependency]'
