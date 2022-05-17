@@ -26,7 +26,7 @@
     "supertest": "^6.2.2"
   },
   "dependencies": {
-    "dotenv": "^16.0.0",
+    "dotenv": "^16.0.1",
     "express": "^4.17.3",
     "express-validator": "^6.14.0",
     "json2csv": "^5.0.7",
