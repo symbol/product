@@ -19,7 +19,7 @@ const isPostOptin = optinTypeFilter => {
 const processData = items =>
 	items.map(item => ({
 		optinId: item.id,
-		isPostoptin: item.is_postoptin,
+		isPostoptin: item.isPostoptin,
 		label: item.nemSource.map(props => props.label),
 		nemAddress: item.nemSource.map(props => new NemFacade.Address(hexStringToByte(props.address))
 			.toString()),

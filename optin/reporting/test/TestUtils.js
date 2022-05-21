@@ -14,7 +14,7 @@ const TestUtils = {
 	},
 	mockCompletedDBRecord: (numberOfRecords, nemSource, symbolSource) => [...Array(numberOfRecords).keys()].map(index => ({
 		id: index + 1,
-		is_postoptin: 1,
+		isPostoptin: 1,
 		nemSource,
 		symbolDestination: symbolSource
 	})),
