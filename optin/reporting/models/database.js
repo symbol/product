@@ -24,4 +24,4 @@ setInterval(refreshDBs, 60 * 1000);
 
 const getDatabase = () => database;
 
-module.exports = getDatabase;
+module.exports = { getDatabase, refreshDBs };
