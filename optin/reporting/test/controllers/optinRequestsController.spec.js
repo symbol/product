@@ -54,6 +54,20 @@ describe('optin requests controller', () => {
 			expect(result.optinTimestamp).to.have.equal(mockDb[0].optinTimestamp);
 			expect(result.payoutTimestamp).to.have.equal(mockDb[0].payoutTimestamp);
 		});
+
+		it('throw error', async () => {
+			// Arrange:
+			getOptinRequestPaginationStub.throws(new Error('database error'));
+
+			// Act:
+			await OptinRequestsController.getOptinRequests(req, res);
+
+			// Assert:
+			const { data, error } = res.json.getCall(0).firstArg;
+
+			expect(data).to.be.eql([]);
+			expect(error).to.be.equal('database error');
+		});
 	});
 
 	describe('exportCsv', async () => {
