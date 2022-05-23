@@ -28,7 +28,7 @@
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
     "react-scripts": "5.0.1",
-    "react-tabs": "^4.0.1",
+    "react-tabs": "^4.2.1",
     "react-transition-group": "^4.4.2",
     "sass": "^1.52.1",
     "symbol-sdk": "^3.0.0",
