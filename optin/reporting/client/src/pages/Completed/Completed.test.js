@@ -20,10 +20,10 @@ describe('Completed', () => {
 	const expectedTransactionHash2 = '1C09091146550A873040219CABDEB0F732A3FC5F256E3B0930646E66F6CE3A28';
 	const expectedOptinType = 'PRE';
 	const expectedOptinType2 = 'POST';
-	const expectedSymbolTimestamp = {value: 1615853185, formatted: '21-03-16 03:06:25'};
-	const expectedSymbolTimestamp2 = {value: 1622028233.132, formatted: '21-05-26 14:23:53'};
-	const expectedNemTimestamp = {value: '1635273519', formatted: '21-10-26 21:38:39'};
-	const expectedNemTimestamp2 = {value: '1635289962', formatted: '21-10-27 02:12:42'};
+	const expectedSymbolTimestamp = 1615853185;
+	const expectedSymbolTimestamp2 = 1622028233.132;
+	const expectedNemTimestamp = '1635273519';
+	const expectedNemTimestamp2 = '1635289962';
 	const generateCompletedResponse = (data, pageNumber, pageSize, totalRecord) => {
 		return {
 			data,
@@ -35,8 +35,8 @@ describe('Completed', () => {
 		};
 	};
 	const generateRowData = ({nemAddress = expectedNemAddress, symbolAddress = expectedSymbolAddress,
-		transactionHash = expectedTransactionHash, isPostoptin = 0, nemTimestamp = expectedNemTimestamp.value,
-		symbolTimestamp = expectedSymbolTimestamp.value}) => {
+		transactionHash = expectedTransactionHash, isPostoptin = 0, nemTimestamp = expectedNemTimestamp,
+		symbolTimestamp = expectedSymbolTimestamp}) => {
 		return {
 			optinId: 26007,
 			isPostoptin,
@@ -246,7 +246,7 @@ describe('Completed', () => {
 		const testFilterByOptinType = async (firstRowData, secondRowData, expectedTextForFirstRow, expectedTextForSecondRow) => {
 			const filterActionAndAssertions = async () => {
 				// Arrange:
-				const filterOptinType = screen.getByRole('button', {name: expectedTextForFirstRow});
+				const filterOptinType = await screen.findByRole('button', {name: expectedTextForFirstRow});
 				const completedAPIResponseFiltered = generateCompletedResponse([firstRowData]);
 				mockCompletedAPIFetch(completedAPIResponseFiltered);
 
@@ -282,7 +282,7 @@ describe('Completed', () => {
 		) => {
 			const filterActionAndAssertions = async () => {
 				// Arrange:
-				const sortableColumnHeader = screen.getAllByRole('button', {name: headerTitle })[headerInx];
+				const sortableColumnHeader = (await screen.findAllByRole('button', {name: headerTitle }))[headerInx];
 				const completedAPIResponseSorted = generateCompletedResponse([secondRowData, firstRowData]);
 				mockCompletedAPIFetch(completedAPIResponseSorted);
 
@@ -298,17 +298,19 @@ describe('Completed', () => {
 		it('should sort by nem transaction date and hash', async () => {
 			await testSortByHeader(
 				'Hash', 0,
-				generateRowData({nemTimestamp: expectedNemTimestamp.value}), generateRowData({nemTimestamp: expectedNemTimestamp2.value}),
-				expectedNemTimestamp.formatted, expectedNemTimestamp.formatted
+				generateRowData({nemTimestamp: expectedNemTimestamp}), generateRowData({nemTimestamp: expectedNemTimestamp2}),
+				Helper.convertTimestampToDate(expectedNemTimestamp, Helper.getLocalTimezone()),
+				Helper.convertTimestampToDate(expectedNemTimestamp2, Helper.getLocalTimezone())
 			);
 		});
 
 		it('should sort by symbol transaction date and hash', async () => {
 			await testSortByHeader(
 				'Hash', 1,
-				generateRowData({symbolTimestamp: expectedSymbolTimestamp.value}),
-				generateRowData({symbolTimestamp: expectedSymbolTimestamp2.value}),
-				expectedSymbolTimestamp.formatted, expectedSymbolTimestamp2.formatted
+				generateRowData({symbolTimestamp: expectedSymbolTimestamp}),
+				generateRowData({symbolTimestamp: expectedSymbolTimestamp2}),
+				Helper.convertTimestampToDate(expectedSymbolTimestamp, Helper.getLocalTimezone()),
+				Helper.convertTimestampToDate(expectedSymbolTimestamp2, Helper.getLocalTimezone())
 			);
 		});
 	});

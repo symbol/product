@@ -16,10 +16,10 @@ describe('Requests', () => {
 	const expectedNemAddress2 = 'NBMGTHTMS56FK7YZC3IQDXWO54AYGALHFTFMXS6K';
 	const expectedTransactionHash = 'E056DC9C5343B12078210B059D84999906A29982B35E313CB16924549A4D6E07';
 	const expectedTransactionHash2 = '1C09091146550A873040219CABDEB0F732A3FC5F256E3B0930646E66F6CE3A28';
-	const expectedNemTimestamp = {value: '1635273519', formatted: '21-10-26 21:38:39'};
-	const expectedNemTimestamp2 = {value: '1635289962', formatted: '21-10-27 02:12:42'};
-	const expectedSymbolTimestamp = {value: 1615853185, formatted: '21-03-16 03:06:25'};
-	const expectedSymbolTimestamp2 = {value: 1622028233.132, formatted: '21-05-26 14:23:53'};
+	const expectedNemTimestamp = '1635273519';
+	const expectedNemTimestamp2 = '1635289962';
+	const expectedSymbolTimestamp = 1615853185;
+	const expectedSymbolTimestamp2 = 1622028233.132;
 	const expectedStatus = 'Sent';
 	const expectedStatus2 = 'Error';
 	const expectedStatus3 = 'Duplicate';
@@ -35,7 +35,7 @@ describe('Requests', () => {
 		};
 	};
 	const generateRowData = ({nemAddress = expectedNemAddress, transactionHash = expectedTransactionHash,
-		status = expectedStatus, nemTimestamp = expectedNemTimestamp.value, symbolTimestamp = expectedSymbolTimestamp.value}) => {
+		status = expectedStatus, nemTimestamp = expectedNemTimestamp, symbolTimestamp = expectedSymbolTimestamp}) => {
 		return {
 			optinTransactionHeight: 3702180,
 			nemAddress: nemAddress,
@@ -209,7 +209,7 @@ describe('Requests', () => {
 		) => {
 			const filterActionAndAssertions = async () => {
 			// Arrange:
-				const filterStatus = screen.getByRole('button', {name: statusButtonText});
+				const filterStatus = await screen.findByRole('button', {name: statusButtonText});
 				const requestsAPIResponseFiltered = generateRequestsResponse([firstRowData]);
 				mockRequestsAPIFetch(requestsAPIResponseFiltered);
 
@@ -258,7 +258,7 @@ describe('Requests', () => {
 		) => {
 			const filterActionAndAssertions = async () => {
 			// Arrange:
-				const sortableColumnHeader = screen.getAllByRole('button', {name: headerTitle })[headerInx];
+				const sortableColumnHeader = (await screen.findAllByRole('button', {name: headerTitle }))[headerInx];
 				const requestsAPIResponseSorted = generateRequestsResponse([secondRowData, firstRowData]);
 				mockRequestsAPIFetch(requestsAPIResponseSorted);
 
@@ -274,17 +274,19 @@ describe('Requests', () => {
 		it('should sort by nem transaction date and hash', async () => {
 			await testSortByHeader(
 				'Opt-in Hash', 0,
-				generateRowData({nemTimestamp: expectedNemTimestamp.value}), generateRowData({nemTimestamp: expectedNemTimestamp2.value}),
-				expectedNemTimestamp.formatted, expectedNemTimestamp.formatted
+				generateRowData({nemTimestamp: expectedNemTimestamp}), generateRowData({nemTimestamp: expectedNemTimestamp2}),
+				Helper.convertTimestampToDate(expectedNemTimestamp, Helper.getLocalTimezone()),
+				Helper.convertTimestampToDate(expectedNemTimestamp2, Helper.getLocalTimezone())
 			);
 		});
 
 		it('should sort by symbol transaction date and hash', async () => {
 			await testSortByHeader(
 				'Payout Hash', 1,
-				generateRowData({symbolTimestamp: expectedSymbolTimestamp.value}),
-				generateRowData({symbolTimestamp: expectedSymbolTimestamp2.value}),
-				expectedSymbolTimestamp.formatted, expectedSymbolTimestamp2.formatted
+				generateRowData({symbolTimestamp: expectedSymbolTimestamp}),
+				generateRowData({symbolTimestamp: expectedSymbolTimestamp2}),
+				Helper.convertTimestampToDate(expectedSymbolTimestamp, Helper.getLocalTimezone()),
+				Helper.convertTimestampToDate(expectedSymbolTimestamp2, Helper.getLocalTimezone())
 			);
 		});
 	});
