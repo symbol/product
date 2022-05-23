@@ -158,8 +158,15 @@ describe('optin requests controller', () => {
 			const result = res.send.getCall(0).firstArg;
 			const csv = result.split('\n');
 
-			expect(csv[0]).to.be.equal('"Nem Address","Opt-in Hash","Opt-in Height","Timestamp","Timestamp [UTC]","Payout Hash","Payout Height","Timestamp","Timestamp [UTC]","Status","Message"'); // eslint-disable-line
-			expect(csv[1]).to.be.equal('"NAOF6GII33DLOK6CBR6SHL6IU6GKVDZHBHVVYRFG","f5d493494dcacf5fae2f1aea02165c8892699bb9879075f9d0ad63ac4b00491f",1,"22-04-15 15:46:54","22-04-15 15:46:54","4ac160a12835aa3f313676173386ed4f1ac6f840bdf1ea039725fc1b31b47b8b",1,"22-04-19 20:18:35","22-04-19 20:18:35","Pending",'); // eslint-disable-line
+			expect(csv[0]).to.be.equal('"Nem Address","Opt-in Hash","Opt-in Height","Timestamp",'
+				+ '"Timestamp [UTC]","Payout Hash","Payout Height","Timestamp",'
+				+ '"Timestamp [UTC]","Status","Message"');
+
+			expect(csv[1]).to.be.equal('"NAOF6GII33DLOK6CBR6SHL6IU6GKVDZHBHVVYRFG",'
+				+ '"f5d493494dcacf5fae2f1aea02165c8892699bb9879075f9d0ad63ac4b00491f",1,'
+				+ '"22-04-15 15:46:54","22-04-15 15:46:54",'
+				+ '"4ac160a12835aa3f313676173386ed4f1ac6f840bdf1ea039725fc1b31b47b8b",1,"22-04-19 20:18:35",'
+				+ '"22-04-19 20:18:35","Pending",');
 		});
 
 		it('returns test/csv in response header content type', async () => {
