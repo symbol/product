@@ -56,7 +56,7 @@ const controller = {
 			const symbolAddressHex = symbolAddress
 				? byteToHexString(new SymbolFacade.Address(symbolAddress.toUpperCase().trim()).bytes)
 				: null;
-			const txHash = transactionHash.toUpperCase().trim() ?? null;
+			const txHash = transactionHash.toUpperCase().trim();
 
 			const totalRecord = await completedDB.getTotalRecord({
 				nemAddressHex,
@@ -189,8 +189,7 @@ const controller = {
 					nemBalance: toRelativeAmount(row.nemBalance[j]) ?? '',
 					symbolAddress: row.symbolAddress[j] ?? '',
 					symbolHeights: getLatestValue(row.symbolHeights[j]),
-					symbolHashes: (Array.isArray(row.symbolHashes[j]) ? row.symbolHashes[j].join(';') : row.symbolHashes[j])
-						?? '',
+					symbolHashes: row.symbolHashes[j] ?? '',
 					symbolTimestampsUTC: convertTimestampToDate(getLatestValue(row.symbolTimestamps[j])),
 					symbolTimestampsLocal: convertTimestampToDate(getLatestValue(row.symbolTimestamps[j]), timezone),
 					symbolBalance: toRelativeAmount(row.symbolBalance[j]) ?? '',
