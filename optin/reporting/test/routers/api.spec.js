@@ -170,4 +170,21 @@ describe('API Route', () => {
 			});
 		});
 	});
+
+	describe('wildcard route', () => {
+		// Arrange:
+		const randomPath = ['/test', '/api/completed/random', '/api/requests/random'];
+
+		it('returns html index page', async () => {
+			/* eslint-disable no-await-in-loop */
+			for (let i = 0; i <= randomPath.length - 1; ++i) {
+				// Act:
+				const response = await request(app).get(randomPath[i]);
+
+				// Assert:
+				expect(response.status).to.equal(200);
+				expect(response.type).to.equal('text/html');
+			}
+		});
+	});
 });
