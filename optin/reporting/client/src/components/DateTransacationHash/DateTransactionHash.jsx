@@ -9,17 +9,16 @@ const buildTransactionHashLink = (linkBaseUrl, item, date) => {
 	return (
 		<div className='flex flex-row list-item'>
 			{
-				(item) ? (
-					<>
-						<span className='timestamp'>{date}&nbsp;|&nbsp;</span>
-						<a href={linkBaseUrl + item.toLowerCase()}
-							target="_blank"
-							rel="noreferrer">
-							<ResponsiveText value={item.toLowerCase()} />
-						</a>
-						<CopyButton value={item.toLowerCase()} />
-					</>
-				) : null
+				date && item &&
+				<React.Fragment>
+					<span className='timestamp'>{date}&nbsp;|&nbsp;</span>
+					<a href={linkBaseUrl + item.toLowerCase()}
+						target="_blank"
+						rel="noreferrer">
+						<ResponsiveText value={item.toLowerCase()} />
+					</a>
+					<CopyButton value={item.toLowerCase()} />
+				</React.Fragment>
 			}
 		</div>
 	);
@@ -30,7 +29,10 @@ const DateTransactionHash = ({values, linkBaseUrl, timestamps, listTitle = 'Hash
 		<div>
 			{
 				null !== hash
-					? buildTransactionHashLink(linkBaseUrl, hash, Helper.convertTimestampToDate(timestamps[index], true))
+					? buildTransactionHashLink(
+						linkBaseUrl, hash,
+						Helper.convertTimestampToDate(timestamps[index], Helper.getLocalTimezone())
+					)
 					: '(off chain)'
 			}
 		</div>);

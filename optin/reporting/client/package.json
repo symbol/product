@@ -9,6 +9,7 @@
     "eslint": "^8.16.0",
     "eslint-config-airbnb": "^19.0.4",
     "https-browserify": "^1.0.0",
+    "jest-fetch-mock": "^3.0.3",
     "os-browserify": "^0.3.0",
     "process": "^0.11.10",
     "react-app-rewired": "^2.2.1",
@@ -19,7 +20,7 @@
   "dependencies": {
     "@testing-library/jest-dom": "^5.16.4",
     "@testing-library/react": "^12.1.5",
-    "@testing-library/user-event": "^14.2.0",
+    "@testing-library/user-event": "^13.0.5",
     "@trendmicro/react-paginations": "^0.6.1",
     "moment-timezone": "^0.5.34",
     "primeflex": "^3.2.0",
@@ -55,5 +56,9 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "jest": {
+    "resetMocks": true,
+    "restoreMocks": true
   }
 }

@@ -16,9 +16,9 @@ const PopUpDialog = ({title, content, buttonText}) => {
 
 	return  (
 		<>
-			<Button id="button" onClick={onShow} label={buttonText ?? title}
+			<Button id="button" onClick={onShow} label={buttonText}
 				className="p-button-secondary p-button-text" />
-			<Dialog header={title} className={'dialog-'+ title.toLowerCase().replace(/\s/g, '-')} visible={visible} 
+			<Dialog header={title} className={'dialog-'+ title.toLowerCase().replace(/\s/g, '-')} visible={visible}
 				onHide={onHide} dismissableMask={true} >
 				{ React.Children.toArray(content) }
 			</Dialog>

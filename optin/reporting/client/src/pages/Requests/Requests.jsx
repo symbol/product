@@ -1,8 +1,8 @@
 import Table from '../../components/Table';
-import TableColumn from '../../components/Table/TableColumn';
-import ColumnHeader from '../../components/Table/TableColumn/ColumnHeader';
+import ColumnHeader from '../../components/Table/ColumnHeader';
 import config from '../../config';
 import { addressTemplate, dateTransactionHashTemplate } from '../../utils/pageUtils';
+import { Column } from 'primereact/column';
 import { InputText } from 'primereact/inputtext';
 import { SelectButton } from 'primereact/selectbutton';
 import React, { useEffect, useState, useRef } from 'react';
@@ -28,7 +28,7 @@ const Requests = ({defaultPaginationType}) => {
 	const [filterStatusSubmit, setFilterStatusSubmit] = useState(false);
 	const [invalidFilterSearch, setInvalidFilterSearch] = useState(false);
 	const [filterSearchCleared, setFilterSearchCleared] = useState(false);
-	
+
 	const [sortBy, setSortBy] = useState('');
 	const [sortDirection, setSortDirection] = useState('');
 	const [sortBySubmit, setSortBySubmit] = useState(false);
@@ -36,15 +36,15 @@ const Requests = ({defaultPaginationType}) => {
 	const initialRender = useRef(true);
 	const tableRef = useRef();
 
-	const fetchOptinRequests = async ({pageSize = config.defaultPageSize, pageNumber = 1}) => {
+	const fetchOptinRequests = async ({pageSize = config.defaultPageSize, pageNumber}) => {
 		const [nemAddress, transactionHash] = parseFilterSearch(filterSearch?.trim());
 		return await fetch(`/api/requests?pageSize=${pageSize}&pageNumber=${pageNumber}` +
 		`&nemAddress=${nemAddress}&transactionHash=${transactionHash}` +
-		`&status=${filterStatus ?? ''}&sortBy=${sortBy}&sortDirection=${sortDirection}`).then(res => res.json());
+		`&status=${filterStatus}&sortBy=${sortBy}&sortDirection=${sortDirection}`).then(res => res.json());
 	};
 
 	const parseFilterSearch = filterSearch => {
-		const searchVal = filterSearch?.trim().toUpperCase();
+		const searchVal = filterSearch.trim().toUpperCase();
 		try {
 			const address = new NemFacade.Address(searchVal);
 			return [address.toString(), ''];
@@ -59,7 +59,7 @@ const Requests = ({defaultPaginationType}) => {
 	};
 
 	const handlePageChange = async ({page, rows, first}) => {
-		const nextPage = page ?? (requests.pagination.pageNumber || 0) + 1;
+		const nextPage = page ?? requests.pagination.pageNumber + 1;
 		setLoading(true);
 		setFirst(first);
 		const result = await fetchOptinRequests({
@@ -109,11 +109,15 @@ const Requests = ({defaultPaginationType}) => {
 		onFilterSearchChange({target: ''});
 	};
 
+	const resetTableScroll = () => {
+		document.querySelector('.p-datatable-wrapper').scrollTop = 0;
+	};
+
 	const onFilterStatusChange = e => {
 		clearFilterSearch();
 		setFilterStatus(e.value);
 		setFilterStatusSubmit(true);
-		tableRef.current.resetScroll();
+		resetTableScroll();
 	};
 
 	const onFilterSubmit = async e => {
@@ -154,15 +158,15 @@ const Requests = ({defaultPaginationType}) => {
 		</React.Fragment>;
 	};
 
-	const statuses = [{label: 'Pend', value: 'Pending'}, {label: 'Sent', value: 'Sent'}, 
+	const statuses = [{label: 'Pend', value: 'Pending'}, {label: 'Sent', value: 'Sent'},
 		{label: 'Dup', value: 'Duplicate'}, {label: 'Err', value: 'Error'}];
 
 	const header = (
 		<form onSubmit={onFilterSubmit}>
-			<div className='flex flex-wrap md:justify-content-between'>
+			<div className='flex flex-wrap'>
 				<div className="flex flex-row w-full">
 					<span className="p-input-icon-right w-6">
-						<i className="pi pi-times" onClick={clearFilterSearchAndSubmit}/>
+						<i className="pi pi-times" role="button" aria-label="Clear" onClick={clearFilterSearchAndSubmit}/>
 						<InputText id="filterSearch" value={filterSearch} onChange={onFilterSearchChange} className="w-full"
 							placeholder="NEM Address / Tx Hash" aria-describedby="filterSearch-help" />
 					</span>
@@ -173,25 +177,26 @@ const Requests = ({defaultPaginationType}) => {
 				</div>
 				{
 					invalidFilterSearch &&
-							<small id="filterSearch-help" className="p-error block">Invalid NEM Address or Transaction Hash.</small>
+						<small id="filterSearch-help" className="p-error block">
+							Invalid NEM Address or Transaction Hash.
+						</small>
 				}
 			</div>
 		</form>
 	);
-
 	const optinTransactionHashField = 'optinTransactionHash';
 	const payoutTransactionHashField = 'payoutTransactionHash';
 	const [optinHashHeaderSortDirection, setOptinHashHeaderSortDirection] = useState('none');
 	const [payoutHashHeaderSortDirection, setPayoutHashHeaderSortDirection] = useState('none');
 	const headerSortHandler = (_sortField, _sortDirection) => {
-		tableRef.current.resetScroll();
+		resetTableScroll();
 		if(_sortField === optinTransactionHashField) {
 			setOptinHashHeaderSortDirection(_sortDirection);
 			setPayoutHashHeaderSortDirection('none');
 			setSortBy('optinTransactionHash');
 			setSortDirection(_sortDirection);
 			setSortBySubmit(true);
-		} else if(_sortField === payoutTransactionHashField) {
+		} else {
 			setPayoutHashHeaderSortDirection(_sortDirection);
 			setOptinHashHeaderSortDirection('none');
 			setSortBy('payoutTransactionHash');
@@ -205,10 +210,9 @@ const Requests = ({defaultPaginationType}) => {
 			onFilterSubmit();
 	}, [sortBySubmit]);
 
-
-	const optinHashHeader = <ColumnHeader field={optinTransactionHashField}  title="Opt-in Hash" 
+	const optinHashHeader = <ColumnHeader field={optinTransactionHashField}  title="Opt-in Hash"
 		sortDirection={optinHashHeaderSortDirection} onSort={headerSortHandler}/>;
-	const payoutHashHeader = <ColumnHeader field={payoutTransactionHashField} title="Payout Hash" 
+	const payoutHashHeader = <ColumnHeader field={payoutTransactionHashField} title="Payout Hash"
 		sortDirection={payoutHashHeaderSortDirection} onSort={headerSortHandler}/>;
 
 	return (
@@ -216,11 +220,11 @@ const Requests = ({defaultPaginationType}) => {
 			loading={loading} allPagesLoaded={allPagesLoaded} loadingMessage="Loading more items..."
 			totalRecords={requests.pagination.totalRecord} paginator={'paginator' === paginationType}
 			first={first} header={header}>
-			<TableColumn field="nemAddress" header="NEM Address" body={nemAddressTemplate} align="left"/>
-			<TableColumn field={optinTransactionHashField} header={optinHashHeader} body={optinTransactionHashTemplate} align="left"/>
-			<TableColumn field={payoutTransactionHashField} header={payoutHashHeader} body={payoutTransactionHashTemplate} align="left"/>
-			<TableColumn field="status" header="Status" body={statusTemplate} align="center"/>
-			<TableColumn field="message" header="Message" align="left"/>
+			<Column field="nemAddress" header="NEM Address" body={nemAddressTemplate} align="left"/>
+			<Column field={optinTransactionHashField} header={optinHashHeader} body={optinTransactionHashTemplate} align="left"/>
+			<Column field={payoutTransactionHashField} header={payoutHashHeader} body={payoutTransactionHashTemplate} align="left"/>
+			<Column field="status" header="Status" body={statusTemplate} align="center"/>
+			<Column field="message" header="Message" align="left"/>
 		</Table>
 	);
 };

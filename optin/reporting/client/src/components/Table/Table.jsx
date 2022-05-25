@@ -12,44 +12,38 @@ const Table = React.forwardRef((props, ref) => {
 
 	const infiniteLoaderHandler = React.useCallback(event => {
 		const wayToBottom = Math.trunc(event.target.scrollHeight - event.target.scrollTop) - event.target.clientHeight;
-
-		if (NEXT_PAGE_LOAD_BOTTOM_MARGIN >= wayToBottom && allowLoadNextPage) 
+		if (NEXT_PAGE_LOAD_BOTTOM_MARGIN >= wayToBottom && allowLoadNextPage)
 			props.onPage({});
 	}, [allowLoadNextPage, props.onPage]);
 
 	React.useEffect(() => {
-		if (tableRef) {
-			const scrollableElement = tableRef.current.el.lastChild;
-			scrollableElement.addEventListener('scroll', infiniteLoaderHandler);
+		const scrollableElement = tableRef.current.el.lastChild;
+		scrollableElement.addEventListener('scroll', infiniteLoaderHandler);
 
-			return () => {
-				scrollableElement.removeEventListener('scroll', infiniteLoaderHandler);
-			};
-		}
+		return () => {
+			scrollableElement.removeEventListener('scroll', infiniteLoaderHandler);
+		};
 	}, [tableRef, infiniteLoaderHandler]);
-
-	if (props.resetScroll) 
-		tableRef.current.resetScroll();	
 
 	return  (
 		<DataTable
-			lazy={props.lazy} 
-			value={props.value} 
-			stripedRows 
-			showGridlines 
-			responsiveLayout="stack" 
-			breakpoint={props.breakpoint} 
+			lazy={props.lazy}
+			value={props.value}
+			stripedRows
+			showGridlines
+			responsiveLayout="stack"
+			breakpoint={props.breakpoint}
 			paginator={props.paginator}
 			paginatorTemplate="CurrentPageReport FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink RowsPerPageDropdown"
-			currentPageReportTemplate="Showing {first}-{last} of {totalRecords}" 
-			rows={props.rows} 
+			currentPageReportTemplate="Showing {first}-{last} of {totalRecords}"
+			rows={props.rows}
 			rowsPerPageOptions={props.rowsPerPageOptions}
-			onPage={props.onPage} 
-			loading={props.loading} 
-			totalRecords={props.totalRecords} 
-			first={props.first} 
-			header={props.header} 
-			emptyMessage={props.emptyMessage} 
+			onPage={props.onPage}
+			loading={props.loading}
+			totalRecords={props.totalRecords}
+			first={props.first}
+			header={props.header}
+			emptyMessage={props.emptyMessage}
 			ref={tableRef}
 		>
 			{props.children}
