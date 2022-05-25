@@ -9,14 +9,10 @@ To produce certificates follow the instructions for generating keys and certs in
 git clone https://github.com/symbol/miscellaneous.git
 
 git clone https://github.com/symbol/symbol.git
-cd explorer/nodewatch/puller
+cd symbol/explorer/nodewatch/puller
 
 PYTHONPATH=../../../../miscellaneous ./pull.sh <resource folder> <timeout>
 cd ..
-```
 
-Create an app.config with the RESOURCES_PATH="<resource folder>"
-
-```sh
-NODEWATCH_SETTINGS=<path>/app.config FLASK_APP=nodewatch flask run
+python -m webapp.app --resources ./resources
 ```
