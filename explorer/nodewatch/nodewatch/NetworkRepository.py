@@ -1,11 +1,11 @@
 import csv
 import json
 
-from symbolchain.core.CryptoTypes import PublicKey
-from symbolchain.core.nem.Network import Address as NemAddress
-from symbolchain.core.nem.Network import Network as NemNetwork
-from symbolchain.core.symbol.Network import Address as SymbolAddress
-from symbolchain.core.symbol.Network import Network as SymbolNetwork
+from symbolchain.CryptoTypes import PublicKey
+from symbolchain.nem.Network import Address as NemAddress
+from symbolchain.nem.Network import Network as NemNetwork
+from symbolchain.symbol.Network import Address as SymbolAddress
+from symbolchain.symbol.Network import Network as SymbolNetwork
 from zenlog import log
 
 

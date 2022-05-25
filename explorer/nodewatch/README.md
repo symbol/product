@@ -8,8 +8,10 @@ To produce certificates follow the instructions for generating keys and certs in
 ```sh
 git clone https://github.com/symbol/miscellaneous.git
 
-cd puller
-PYTHONPATH=../miscellaneous ./pull.sh
+git clone https://github.com/symbol/symbol.git
+cd symbol/explorer/nodewatch/puller
+
+PYTHONPATH=../../../../miscellaneous ./pull.sh <resource folder> <timeout>
 cd ..
 
 python -m webapp.app --resources ./resources
