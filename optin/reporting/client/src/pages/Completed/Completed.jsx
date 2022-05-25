@@ -1,9 +1,9 @@
 import './Completed.scss';
 import Table from '../../components/Table';
-import TableColumn from '../../components/Table/TableColumn';
-import ColumnHeader from '../../components/Table/TableColumn/ColumnHeader';
+import ColumnHeader from '../../components/Table/ColumnHeader';
 import config from '../../config';
 import { addressTemplate, balanceTemplate, dateTransactionHashTemplate } from '../../utils/pageUtils';
+import { Column } from 'primereact/column';
 import { InputText } from 'primereact/inputtext';
 import { SelectButton } from 'primereact/selectbutton';
 import React, { useState, useEffect, useRef} from 'react';
@@ -36,7 +36,7 @@ const Completed = ({defaultPaginationType}) => {
 	const initialRender = useRef(true);
 	const tableRef = useRef();
 
-	const fetchCompleted = async ({pageSize = config.defaultPageSize, pageNumber = 1}) => {
+	const fetchCompleted = async ({pageSize = config.defaultPageSize, pageNumber}) => {
 		const [nemAddress, symbolAddress, transactionHash] = parseFilterSearch(filterSearch?.trim());
 		return await fetch(`/api/completed?pageSize=${pageSize}&pageNumber=${pageNumber}` +
 		`&nemAddress=${nemAddress}&symbolAddress=${symbolAddress}&transactionHash=${transactionHash}` +
@@ -45,7 +45,7 @@ const Completed = ({defaultPaginationType}) => {
 	};
 
 	const parseFilterSearch = filterSearch => {
-		const searchVal = filterSearch?.trim().toUpperCase();
+		const searchVal = filterSearch.trim().toUpperCase();
 		try {
 			const address = new NemFacade.Address(searchVal);
 			return [address.toString(), '', ''];
@@ -64,8 +64,8 @@ const Completed = ({defaultPaginationType}) => {
 		return ['', '', ''];
 	};
 
-	const handlePageChange = async ({page, rows, first}) =>{
-		const nextPage = page ?? (completed.pagination.pageNumber || 0) + 1;
+	const handlePageChange = async ({page, rows, first}) => {
+		const nextPage = page ?? completed.pagination.pageNumber + 1;
 		setLoading(true);
 		setFirst(first);
 		const result = await fetchCompleted({
@@ -117,11 +117,15 @@ const Completed = ({defaultPaginationType}) => {
 		onFilterSearchChange({target: ''});
 	};
 
+	const resetTableScroll = () => {
+		document.querySelector('.p-datatable-wrapper').scrollTop = 0;
+	};
+
 	const onFilterOptinChange = e => {
 		clearFilterSearch();
 		setFilterOptinType(e.value);
 		setFilterOptinTypeSubmit(true);
-		tableRef.current.resetScroll();
+		resetTableScroll();
 	};
 
 	const onFilterSubmit = async e => {
@@ -189,7 +193,7 @@ const Completed = ({defaultPaginationType}) => {
 		<form onSubmit={onFilterSubmit}>
 			<div className="flex flex-row w-full">
 				<span className="p-input-icon-right w-9">
-					<i className="pi pi-times" onClick={clearFilterSearchAndSubmit}/>
+					<i className="pi pi-times" role="button" aria-label="Clear" onClick={clearFilterSearchAndSubmit}/>
 					<InputText id="filterSearch" value={filterSearch} onChange={onFilterSearchChange} className="w-full"
 						placeholder="NEM Address / Symbol Address / Tx Hash" aria-describedby="filterSearch-help" />
 				</span>
@@ -206,20 +210,19 @@ const Completed = ({defaultPaginationType}) => {
 			}
 		</form>
 	);
-
 	const nemHashesField = 'nemHashes';
 	const symbolHashesField = 'symbolHashes';
 	const [nemHashesHeaderSortDirection, setNemHashesHeaderSortDirection] = useState('none');
 	const [symbolHashesHeaderSortDirection, setSymbolHashesHeaderSortDirection] = useState('none');
 	const headerSortHandler = (_sortField, _sortDirection) => {
-		tableRef.current.resetScroll();
+		resetTableScroll();
 		if(_sortField === nemHashesField) {
 			setNemHashesHeaderSortDirection(_sortDirection);
 			setSymbolHashesHeaderSortDirection('none');
 			setSortBy('nemHashes');
 			setSortDirection(_sortDirection);
 			setSortBySubmit(true);
-		} else if(_sortField === symbolHashesField) {
+		} else {
 			setSymbolHashesHeaderSortDirection(_sortDirection);
 			setNemHashesHeaderSortDirection('none');
 			setSortBy('symbolHashes');
@@ -243,14 +246,14 @@ const Completed = ({defaultPaginationType}) => {
 			onPage={handlePageChange} loading={loading} totalRecords={completed.pagination.totalRecord}
 			allPagesLoaded={allPagesLoaded} loadingMessage="Loading more items..."
 			first={first} header={header} paginator={'paginator' === paginationType}>
-			<TableColumn field="isPostoptin" header="Type" body={isPostoptinTemplate} align="center"/>
-			<TableColumn field="label" header="Label" body={labelTemplate} align="left" className="labelCol"/>
-			<TableColumn field="nemAddress" header="NEM Address" body={nemAddressTemplate} align="left"/>
-			<TableColumn field="nemHashes" header={nemHashesHeader} body={nemDateHashesTemplate} align="left"/>
-			<TableColumn field="nemBalance" header="Balance" body={nemBalanceTemplate} align="right"/>
-			<TableColumn field="symbolAddress" header="Symbol Address" body={symbolAddressTemplate} align="left"/>
-			<TableColumn field="symbolHashes" header={symbolHashesHeader} body={symbolDateHashesTemplate} align="left"/>
-			<TableColumn field="symbolBalance" header="Balance" body={symbolBalanceTemplate} align="right"/>
+			<Column field="isPostoptin" header="Type" body={isPostoptinTemplate} align="center"/>
+			<Column field="label" header="Label" body={labelTemplate} align="left" className="labelCol"/>
+			<Column field="nemAddress" header="NEM Address" body={nemAddressTemplate} align="left"/>
+			<Column field="nemHashes" header={nemHashesHeader} body={nemDateHashesTemplate} align="left"/>
+			<Column field="nemBalance" header="Balance" body={nemBalanceTemplate} align="right"/>
+			<Column field="symbolAddress" header="Symbol Address" body={symbolAddressTemplate} align="left"/>
+			<Column field="symbolHashes" header={symbolHashesHeader} body={symbolDateHashesTemplate} align="left"/>
+			<Column field="symbolBalance" header="Balance" body={symbolBalanceTemplate} align="right"/>
 		</Table>
 	);
 };

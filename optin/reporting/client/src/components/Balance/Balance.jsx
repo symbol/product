@@ -9,8 +9,7 @@ export const renderTotalValue = (values, minimumFractionDigits) => {
 
 	const total = values.reduce((value, currentValue) => value + currentValue, 0);
 	const formattedValue = Helper.toRelativeAmount(total).toLocaleString('en-US', { minimumFractionDigits });
-	return (<div className="list-item sub-total-value">{formattedValue}</div>);
-
+	return (<div className="list-item sub-total-value" data-testid="sub-total-value">{formattedValue}</div>);
 };
 
 const Balance = ({values, renderTotal, minimumFractionDigits = 2, listTitle = 'Balance List'}) => {

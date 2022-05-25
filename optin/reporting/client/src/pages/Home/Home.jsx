@@ -3,7 +3,6 @@ import Completed from '../Completed';
 import Requests from '../Requests';
 import { TabPanel, TabView } from 'primereact/tabview';
 import React, { useEffect } from 'react';
-import 'react-tabs/style/react-tabs.css';
 import './Home.scss';
 
 const tabConfig = {
@@ -23,11 +22,10 @@ const Home = function () {
 	const [generatedAt, setGeneratedAt] = React.useState('');
 	const tabChangeHandler = e => {
 		setActiveIndex(e.index);
-		if (1 === e.index) 
+		if (1 === e.index)
 			setActivePage('inProgress');
 		else
 			setActivePage('completed');
-		
 	};
 	const downloadButton = <DownloadCSVButton activePage={activePage}/>;
 	const renderTabList = () => {
