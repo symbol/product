@@ -1,22 +1,24 @@
 const Config = require('../../config');
 const { refreshDBs } = require('../../models/database');
-const { expect } = require('chai');
+const chai = require('chai');
+const chaiAsPromised = require('chai-as-promised');
+// const { expect } = require('chai');
 const { stub, restore } = require('sinon');
 const path = require('path');
 
+const { expect } = chai;
+
+chai.use(chaiAsPromised);
+
 const runDBNotFoundTests = ({ paginationFunc, parameters }) => {
 	beforeEach(restore);
-	it('throw error if db not found', async () => {
-		try {
-			// Arrange:
-			stub(Config, 'getDataStoragePath').returns(path.join(__dirname, '../path/notFound'));
-			refreshDBs();
+	it('renders error when db not found', async () => {
+		// Arrange:
+		stub(Config, 'getDataStoragePath').returns(path.join(__dirname, '../path/notFound'));
+		refreshDBs();
 
-			await paginationFunc(parameters);
-		} catch (error) {
-			// Assert:
-			expect(error.message).to.be.equal('Database error :SQLITE_CANTOPEN: unable to open database file');
-		}
+		// Assert:
+		await expect(paginationFunc(parameters)).rejectedWith('Database error :SQLITE_CANTOPEN: unable to open database file');
 	});
 };
 
