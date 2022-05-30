@@ -89,6 +89,7 @@ describe('optin requests controller', () => {
 			const recordSize = 10;
 			const mockDb = TestUtils.mockInProgressDBRecord(10);
 
+			// Act + Assert:
 			await runBasicDataResponseTests(recordSize, mockDb);
 		});
 
@@ -102,6 +103,7 @@ describe('optin requests controller', () => {
 				nemAddress: 'naof6gii33dlok6cbr6shl6iu6gkvdzhbhvvyrfg'
 			});
 
+			// Act + Assert:
 			await runBasicDataResponseTests(recordSize, mockDb);
 		});
 
@@ -115,6 +117,7 @@ describe('optin requests controller', () => {
 				transactionHash: 'f5d493494dcacf5fae2f1aea02165c8892699bb9879075f9d0ad63ac4b00491f'
 			});
 
+			// Act + Assert:
 			await runBasicDataResponseTests(recordSize, mockDb);
 		});
 
@@ -127,7 +130,7 @@ describe('optin requests controller', () => {
 				runBasicOptinRequestStatusTests(status[i], statusCode[i]);
 		});
 
-		it('throw error', async () => {
+		it('renders error when database query fails', async () => {
 			// Arrange:
 			getOptinRequestPaginationStub.throws(new Error('database error'));
 

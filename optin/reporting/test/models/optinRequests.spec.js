@@ -1,8 +1,8 @@
-const runDBNotFoundTests = require('../test/runDBNotFoundTests');
-const runTotalRecordTests = require('../test/runTotalRecordTests');
 const Config = require('../../config');
 const { refreshDBs } = require('../../models/database');
 const optinRequestDB = require('../../models/optinRequests');
+const runDBNotFoundTests = require('../test/runDBNotFoundTests');
+const runTotalRecordTests = require('../test/runTotalRecordTests');
 const { expect } = require('chai');
 const { stub, restore } = require('sinon');
 const path = require('path');
