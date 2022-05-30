@@ -17,7 +17,7 @@ describe('optinRequest models', () => {
 	};
 
 	beforeEach(() => {
-		stub(Config, 'getDataStoragePath').returns(path.join(__dirname, '../mock'));
+		stub(Config, 'getDataStoragePath').returns(path.join(__dirname, '../resources'));
 		refreshDBs();
 	});
 

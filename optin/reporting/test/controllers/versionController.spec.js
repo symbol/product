@@ -27,7 +27,7 @@ describe('version controller', () => {
 	describe('getVersion', () => {
 		it('return version id and last update date time', async () => {
 			await runBasicVersionTests({
-				configPath: '../mock',
+				configPath: '../resources',
 				expectedResult: {
 					versionId: '_ykRdiKlyoCZJAi4FPnptUcNL5FeNW9G',
 					lastUpdated: 'Tue, 10 May 2022 13:59:22 GMT'
@@ -37,7 +37,7 @@ describe('version controller', () => {
 
 		it('return version id and last update with empty value if file not found', async () => {
 			await runBasicVersionTests({
-				configPath: '../mock/not/found',
+				configPath: '../resources/not/found',
 				expectedResult: {
 					versionId: '',
 					lastUpdated: ''
