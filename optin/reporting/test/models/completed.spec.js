@@ -1,5 +1,3 @@
-const runDBNotFoundTests = require('../test/runDBNotFoundTests');
-const runTotalRecordTests = require('../test/runTotalRecordTests');
 const Config = require('../../config');
 const completedDB = require('../../models/completed');
 const { refreshDBs } = require('../../models/database');
@@ -164,6 +162,7 @@ describe('completed models', () => {
 			});
 
 			// Assert:
+			expect(result[0].nemSource.length).to.be.equal(1);
 			expect(result[0].nemSource[0].address).to.be.equal(nemAddressHex);
 		});
 
@@ -178,6 +177,7 @@ describe('completed models', () => {
 			});
 
 			// Assert:
+			expect(result[0].symbolDestination.length).to.be.equal(1);
 			expect(result[0].symbolDestination[0].address).to.be.equal(symbolAddressHex);
 		});
 
@@ -192,6 +192,7 @@ describe('completed models', () => {
 			});
 
 			// Assert:
+			expect(result[0].symbolDestination.length).to.be.equal(1);
 			expect(result[0].symbolDestination[0].hashes).to.be.equal(txHash);
 		});
 	});
