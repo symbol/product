@@ -91,21 +91,24 @@ describe('completed models', () => {
 		});
 
 		it('returns sorted id in descending given invalid sortBy', async () => {
-			// Act:
+			// Arrange:
 			const sort = {
 				sortBy: 'invalid',
 				sortDirection: 'DESC'
 			};
+
+			// Act:
 			const result = await completedDB.getCompletedPagination({
 				...parameters,
 				...sort
 			});
 
 			// Assert:
-			const firstTimestamps = result[0].id;
-			const lastTimestamps = result[result.length - 1].id;
+			const sortedResult = [...result].sort((a, b) => b.id - a.id);
 
-			expect(firstTimestamps > lastTimestamps).to.be.equal(true);
+			result.forEach((item, index) => {
+				expect(item.id).to.be.equal(sortedResult[index].id);
+			});
 		});
 
 		it('returns sorted nem timestamp records in descending', async () => {
@@ -122,10 +125,11 @@ describe('completed models', () => {
 			});
 
 			// Assert:
-			const firstTimestamps = result[0].nemSource[0].timestamps;
-			const lastTimestamps = result[result.length - 1].nemSource[0].timestamps;
+			const sortedResult = [...result].sort((a, b) => b.nemSource[0].timestamps - a.nemSource[0].timestamps);
 
-			expect(firstTimestamps > lastTimestamps).to.be.equal(true);
+			result.forEach((item, index) => {
+				expect(item.nemSource[0].timestamps).to.be.equal(sortedResult[index].nemSource[0].timestamps);
+			});
 		});
 
 		it('returns sorted symbol timestamp records in descending', async () => {
@@ -142,10 +146,11 @@ describe('completed models', () => {
 			});
 
 			// Assert:
-			const firstTimestamps = result[0].symbolDestination[0].timestamps;
-			const lastTimestamps = result[result.length - 1].symbolDestination[0].timestamps;
+			const sortedResult = [...result].sort((a, b) => b.symbolDestination[0].timestamps - a.symbolDestination[0].timestamps);
 
-			expect(firstTimestamps > lastTimestamps).to.be.equal(true);
+			result.forEach((item, index) => {
+				expect(item.symbolDestination[0].timestamps).to.be.equal(sortedResult[index].symbolDestination[0].timestamps);
+			});
 		});
 
 		it('returns search result provided nem address', async () => {

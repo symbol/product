@@ -65,11 +65,11 @@ describe('optinRequest models', () => {
 			});
 
 			// Assert:
-			const firstTimestamps = result[0].optinTransactionHeight;
-			const lastTimestamps = result[result.length - 1].optinTransactionHeight;
+			const sortedResult = [...result].sort((a, b) => b.optinTransactionHeight - a.optinTransactionHeight);
 
-			expect(firstTimestamps > lastTimestamps).to.be.equal(true);
-			expect(firstTimestamps < lastTimestamps).to.be.equal(false);
+			result.forEach((item, index) => {
+				expect(item.optinTransactionHeight).to.be.equal(sortedResult[index].optinTransactionHeight);
+			});
 		});
 
 		it('returns sorted payout transaction hash records in descending', async () => {
@@ -86,11 +86,11 @@ describe('optinRequest models', () => {
 			});
 
 			// Assert:
-			const firstTimestamps = result[0].payoutTimestamp;
-			const lastTimestamps = result[result.length - 1].payoutTimestamp;
+			const sortedResult = [...result].sort((a, b) => b.payoutTimestamp - a.payoutTimestamp);
 
-			expect(firstTimestamps > lastTimestamps).to.be.equal(true);
-			expect(firstTimestamps < lastTimestamps).to.be.equal(false);
+			result.forEach((item, index) => {
+				expect(item.payoutTimestamp).to.be.equal(sortedResult[index].payoutTimestamp);
+			});
 		});
 
 		it('returns sorted optin transaction hash records in descending', async () => {
@@ -107,10 +107,11 @@ describe('optinRequest models', () => {
 			});
 
 			// Assert:
-			const firstTimestamps = result[0].optinTimestamp;
-			const lastTimestamps = result[result.length - 1].optinTimestamp;
+			const sortedResult = [...result].sort((a, b) => b.optinTimestamp - a.optinTimestamp);
 
-			expect(firstTimestamps > lastTimestamps).to.be.equal(true);
+			result.forEach((item, index) => {
+				expect(item.optinTimestamp).to.be.equal(sortedResult[index].optinTimestamp);
+			});
 		});
 	});
 
