@@ -1,5 +1,5 @@
-const runDBNotFoundTests = require('./runDBNotFoundTests');
-const runTotalRecordTests = require('./runTotalRecordTests');
+const runDBNotFoundTests = require('../test/runDBNotFoundTests');
+const runTotalRecordTests = require('../test/runTotalRecordTests');
 const Config = require('../../config');
 const { refreshDBs } = require('../../models/database');
 const optinRequestDB = require('../../models/optinRequests');
