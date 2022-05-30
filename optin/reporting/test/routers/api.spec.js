@@ -34,7 +34,7 @@ const runBasicRouteDataResponseTests = ({
 		// Assert:
 		expect(response.status).to.equal(200);
 		expect(response.body.data.length).to.be.equal(0);
-		expect(response.body.pagination).to.be.eql({ pageSize: 10, pageNumber: 1, totalRecord: 0 });
+		expect(response.body.pagination).to.be.deep.equal({ pageSize: 10, pageNumber: 1, totalRecord: 0 });
 	});
 
 	it('returns records with pagination', async () => {
@@ -48,7 +48,7 @@ const runBasicRouteDataResponseTests = ({
 		// Assert:
 		expect(response.status).to.equal(200);
 		expect(response.body.data.length).to.be.equal(10);
-		expect(response.body.pagination).to.be.eql({ pageSize: 10, pageNumber: 1, totalRecord: 10 });
+		expect(response.body.pagination).to.be.deep.equal({ pageSize: 10, pageNumber: 1, totalRecord: 10 });
 	});
 
 	it('returns error required params not given', async () => {

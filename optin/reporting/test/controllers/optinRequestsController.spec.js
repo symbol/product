@@ -71,7 +71,7 @@ describe('optin requests controller', () => {
 			const { pagination, data } = res.json.getCall(0).firstArg;
 			const result = data[0];
 
-			expect(pagination).to.be.eql({ pageSize: 10, pageNumber: 1, totalRecord: recordSize });
+			expect(pagination).to.be.deep.equal({ pageSize: 10, pageNumber: 1, totalRecord: recordSize });
 
 			expect(result.optinTransactionHeight).to.have.equal(expectResult[0].optinTransactionHeight);
 			expect(result.nemAddress).to.have.equal('NAOF6GII33DLOK6CBR6SHL6IU6GKVDZHBHVVYRFG');
@@ -140,7 +140,7 @@ describe('optin requests controller', () => {
 			// Assert:
 			const { data, error } = res.json.getCall(0).firstArg;
 
-			expect(data).to.be.eql([]);
+			expect(data).to.be.deep.equal([]);
 			expect(error).to.be.equal('database error');
 		});
 	});
@@ -185,7 +185,7 @@ describe('optin requests controller', () => {
 			const result = res.attachment.getCall(0).firstArg;
 
 			// Assert:
-			expect(result).to.be.eql('request.csv');
+			expect(result).to.be.deep.equal('request.csv');
 		});
 	});
 });

@@ -21,7 +21,7 @@ describe('version controller', () => {
 		// Assert:
 		const result = res.json.getCall(0).firstArg;
 
-		expect(result).to.be.eql(expectedResult);
+		expect(result).to.be.deep.equal(expectedResult);
 	};
 
 	describe('getVersion', () => {

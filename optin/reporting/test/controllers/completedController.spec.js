@@ -154,24 +154,24 @@ describe('completed controller', () => {
 			const { pagination, data } = res.json.getCall(0).firstArg;
 			const result = data[0];
 
-			expect(pagination).to.be.eql({ pageSize: recordSize, pageNumber: 1, totalRecord: recordSize });
+			expect(pagination).to.be.deep.equal({ pageSize: recordSize, pageNumber: 1, totalRecord: recordSize });
 			expect(data.length).to.be.equal(10);
 
 			expect(result.optinId).to.be.equal(1);
 			expect(result.isPostoptin).to.be.equal(1);
-			expect(result.label).to.be.eql(mockNemSources.map(nemInfo => nemInfo.label));
-			expect(result.nemAddress).to.be.eql(mockNemSources.map(nemInfo =>
+			expect(result.label).to.be.deep.equal(mockNemSources.map(nemInfo => nemInfo.label));
+			expect(result.nemAddress).to.be.deep.equal(mockNemSources.map(nemInfo =>
 				new NemFacade.Address(hexStringToByte(nemInfo.address)).toString()));
-			expect(result.nemHeights).to.be.eql(mockNemSources.map(nemInfo => formatStringSplit(nemInfo.height)));
-			expect(result.nemHashes).to.be.eql(mockNemSources.map(nemInfo => formatStringSplit(nemInfo.hashes)));
-			expect(result.nemTimestamps).to.be.eql(mockNemSources.map(nemInfo => formatStringSplit(nemInfo.timestamps)));
-			expect(result.nemBalance).to.be.eql(mockNemSources.map(nemInfo => nemInfo.balance));
-			expect(result.symbolAddress).to.be.eql(mockSymbolSources.map(symbolInfo =>
+			expect(result.nemHeights).to.be.deep.equal(mockNemSources.map(nemInfo => formatStringSplit(nemInfo.height)));
+			expect(result.nemHashes).to.be.deep.equal(mockNemSources.map(nemInfo => formatStringSplit(nemInfo.hashes)));
+			expect(result.nemTimestamps).to.be.deep.equal(mockNemSources.map(nemInfo => formatStringSplit(nemInfo.timestamps)));
+			expect(result.nemBalance).to.be.deep.equal(mockNemSources.map(nemInfo => nemInfo.balance));
+			expect(result.symbolAddress).to.be.deep.equal(mockSymbolSources.map(symbolInfo =>
 				new SymbolFacade.Address(hexStringToByte(symbolInfo.address)).toString()));
-			expect(result.symbolHeights).to.be.eql(mockSymbolSources.map(symbolInfo => symbolInfo.height));
-			expect(result.symbolHashes).to.be.eql(mockSymbolSources.map(symbolInfo => symbolInfo.hashes));
-			expect(result.symbolTimestamps).to.be.eql(mockSymbolSources.map(symbolInfo => symbolInfo.timestamps));
-			expect(result.symbolBalance).to.be.eql(mockSymbolSources.map(symbolInfo => symbolInfo.balance));
+			expect(result.symbolHeights).to.be.deep.equal(mockSymbolSources.map(symbolInfo => symbolInfo.height));
+			expect(result.symbolHashes).to.be.deep.equal(mockSymbolSources.map(symbolInfo => symbolInfo.hashes));
+			expect(result.symbolTimestamps).to.be.deep.equal(mockSymbolSources.map(symbolInfo => symbolInfo.timestamps));
+			expect(result.symbolBalance).to.be.deep.equal(mockSymbolSources.map(symbolInfo => symbolInfo.balance));
 		};
 
 		const runBasicQueryTests = async overwriteParams => {
@@ -252,7 +252,7 @@ describe('completed controller', () => {
 			// Assert:
 			const { data, error } = res.json.getCall(0).firstArg;
 
-			expect(data).to.be.eql([]);
+			expect(data).to.be.deep.equal([]);
 			expect(error).to.be.equal('database error');
 		});
 	});
@@ -332,7 +332,7 @@ describe('completed controller', () => {
 			const result = res.attachment.getCall(0).firstArg;
 
 			// Assert:
-			expect(result).to.be.eql('completed.csv');
+			expect(result).to.be.deep.equal('completed.csv');
 		});
 	});
 });
