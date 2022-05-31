@@ -1,4 +1,5 @@
 require('dotenv').config();
+const wildcardRouteController = require('./controllers/wildcardRouteController');
 const express = require('express');
 const path = require('path');
 
@@ -17,8 +18,6 @@ app.use(express.static(path.join(__dirname, './client/build')));
 app.use('/api', require('./routers/api'));
 
 // Serve any other file as the distribution index.html
-app.get('*', (request, response) => {
-	response.sendFile(path.join(__dirname, './client/build/index.html'));
-});
+app.get('*', wildcardRouteController.routeHandler);
 
 module.exports = app;

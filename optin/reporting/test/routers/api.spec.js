@@ -5,6 +5,7 @@ const TestUtils = require('../TestUtils');
 const { expect } = require('chai');
 const { stub, restore } = require('sinon');
 const request = require('supertest');
+const fs = require('fs');
 
 const runBasicRouteDataResponseTests = ({
 	path, queryParams, model, mockPaginationMethod, mockDb
@@ -34,7 +35,7 @@ const runBasicRouteDataResponseTests = ({
 		// Assert:
 		expect(response.status).to.equal(200);
 		expect(response.body.data.length).to.be.equal(0);
-		expect(response.body.pagination).to.be.eql({ pageSize: 10, pageNumber: 1, totalRecord: 0 });
+		expect(response.body.pagination).to.be.deep.equal({ pageSize: 10, pageNumber: 1, totalRecord: 0 });
 	});
 
 	it('returns records with pagination', async () => {
@@ -48,7 +49,7 @@ const runBasicRouteDataResponseTests = ({
 		// Assert:
 		expect(response.status).to.equal(200);
 		expect(response.body.data.length).to.be.equal(10);
-		expect(response.body.pagination).to.be.eql({ pageSize: 10, pageNumber: 1, totalRecord: 10 });
+		expect(response.body.pagination).to.be.deep.equal({ pageSize: 10, pageNumber: 1, totalRecord: 10 });
 	});
 
 	it('returns error required params not given', async () => {
@@ -168,6 +169,35 @@ describe('API Route', () => {
 				},
 				...optinRequestStub
 			});
+		});
+	});
+
+	describe('wildcard route', () => {
+		// Arrange:
+		const randomPath = ['/test', '/api/completed/random', '/api/requests/random'];
+
+		it('returns html index page', async () => {
+			/* eslint-disable no-await-in-loop */
+			for (let i = 0; i <= randomPath.length - 1; ++i) {
+				// Act:
+				const response = await request(app).get(randomPath[i]);
+
+				// Assert:
+				expect(response.status).to.equal(200);
+				expect(response.type).to.equal('text/html');
+			}
+		});
+
+		it('renders errors when index not found', async () => {
+			// Arrange:
+			stub(fs, 'existsSync').returns(false);
+
+			// Act:
+			const response = await request(app).get('/non-existent-path');
+
+			// Assert:
+			expect(response.status).to.equal(404);
+			expect(response.text).to.equal('Page not found');
 		});
 	});
 });

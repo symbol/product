@@ -83,7 +83,7 @@ describe('server utils', () => {
 			const addressByte = Utils.hexStringToByte(hexString);
 
 			// Assert:
-			expect(addressByte).to.be.eql(new Uint8Array([
+			expect(addressByte).to.be.deep.equal(new Uint8Array([
 				104, 4, 35, 192, 130, 28, 131,
 				242, 247, 23, 168, 248, 242, 123,
 				25, 204, 23, 78, 212, 211, 161,
@@ -96,7 +96,7 @@ describe('server utils', () => {
 			const addressHex = Utils.hexStringToByte();
 
 			// Assert:
-			expect(addressHex).to.be.eql(new Uint8Array());
+			expect(addressHex).to.be.deep.equal(new Uint8Array());
 		});
 	});
 
@@ -109,7 +109,7 @@ describe('server utils', () => {
 			const result = Utils.formatStringSplit(value);
 
 			// Assert:
-			expect(result).to.be.eql(['abc', '123']);
+			expect(result).to.be.deep.equal(['abc', '123']);
 		});
 
 		it('returns array from string contain custom separator', () => {
@@ -121,7 +121,7 @@ describe('server utils', () => {
 			const result = Utils.formatStringSplit(value, separator);
 
 			// Assert:
-			expect(result).to.be.eql(['abc', '123']);
+			expect(result).to.be.deep.equal(['abc', '123']);
 		});
 
 		it('returns itself given string not contain separator', () => {
@@ -132,7 +132,7 @@ describe('server utils', () => {
 			const result = Utils.formatStringSplit(value);
 
 			// Assert:
-			expect(result).to.be.eql(value);
+			expect(result).to.be.deep.equal(value);
 		});
 
 		it('returns itself given non string', () => {

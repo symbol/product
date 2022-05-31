@@ -1,4 +1,4 @@
-const getDatabase = require('./database');
+const { getDatabase } = require('./database');
 const { QueryTypes } = require('sequelize');
 
 const completedDB = {
@@ -20,16 +20,18 @@ const completedDB = {
 		const offset = (pageNumber - 1) * pageSize;
 
 		const { completed } = getDatabase();
+
 		const result = await completed.query(
 			`SELECT
 				opt.id,
-				opt.is_postoptin,
+				opt.is_postoptin AS isPostoptin,
 				(SELECT JSON_GROUP_ARRAY(nem_address_object)
 					FROM (
 						SELECT JSON_OBJECT(
 						'address', HEX(nem_source.address),
 						'balance', nem_source.balance,
-						'hashes', GROUP_CONCAT(CASE WHEN nem_transaction.hash IS NULL THEN NULL ELSE HEX(nem_transaction.hash) END, ';'),
+						'hashes', GROUP_CONCAT(
+							CASE WHEN nem_transaction.hash IS NULL THEN NULL ELSE HEX(nem_transaction.hash) END, ';'),
 						'height', GROUP_CONCAT(CASE WHEN nem_transaction.height IS NULL THEN NULL ELSE nem_transaction.height END, ';'),
 						'label', nem_label.label,
 						'timestamps', GROUP_CONCAT(

@@ -1,4 +1,4 @@
-const getDatabase = require('./database');
+const { getDatabase } = require('./database');
 const { QueryTypes } = require('sequelize');
 
 const optinRequestDB = {
@@ -18,6 +18,7 @@ const optinRequestDB = {
 		const offset = (pageNumber - 1) * pageSize;
 
 		const { in_progress } = getDatabase();
+
 		const result = await in_progress.query(
 			`SELECT optin_transaction_height AS optinTransactionHeight, address AS nemAddressBytes,
 				HEX(optin_transaction_hash) AS optinTransactionHashHex,
