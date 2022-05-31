@@ -2,7 +2,6 @@ const Config = require('../../config');
 const { refreshDBs } = require('../../models/database');
 const chai = require('chai');
 const chaiAsPromised = require('chai-as-promised');
-// const { expect } = require('chai');
 const { stub, restore } = require('sinon');
 const path = require('path');
 
@@ -18,7 +17,7 @@ const runDBNotFoundTests = ({ paginationFunc, parameters }) => {
 		refreshDBs();
 
 		// Assert:
-		await expect(paginationFunc(parameters)).rejectedWith('Database error :SQLITE_CANTOPEN: unable to open database file');
+		await expect(paginationFunc(parameters)).rejectedWith('SQLITE_CANTOPEN: unable to open database file');
 	});
 };
 
