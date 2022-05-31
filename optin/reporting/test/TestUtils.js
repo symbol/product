@@ -10,6 +10,8 @@ const TestUtils = {
 		res.header = stub().returns(res);
 		res.attachment = stub().returns(res);
 		res.send = stub().returns(res);
+		res.sendFile = stub().returns(res);
+		res.status = stub().returns(res);
 		return res;
 	},
 	mockCompletedDBRecord: (numberOfRecords, nemSource, symbolSource, isPostoptin = 1) => [...Array(numberOfRecords).keys()].map(index => ({

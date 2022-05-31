@@ -5,6 +5,7 @@ const TestUtils = require('../TestUtils');
 const { expect } = require('chai');
 const { stub, restore } = require('sinon');
 const request = require('supertest');
+const fs = require('fs');
 
 const runBasicRouteDataResponseTests = ({
 	path, queryParams, model, mockPaginationMethod, mockDb
@@ -185,6 +186,18 @@ describe('API Route', () => {
 				expect(response.status).to.equal(200);
 				expect(response.type).to.equal('text/html');
 			}
+		});
+
+		it('renders errors when index not found', async () => {
+			// Arrange:
+			stub(fs, 'existsSync').returns(false);
+
+			// Act:
+			const response = await request(app).get('/non-existent-path');
+
+			// Assert:
+			expect(response.status).to.equal(404);
+			expect(response.text).to.equal('Page not found');
 		});
 	});
 });
