@@ -146,7 +146,7 @@ describe('Completed', () => {
 
 			// Assert:
 			expect((await screen.findAllByText(expectedNemAddress2))[0]).toBeInTheDocument();
-		}, 20000);
+		}, 60000);
 	});
 
 	describe('Filtering', () => {
