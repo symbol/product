@@ -40,6 +40,7 @@ class AddressGenerator:
 			bip32_root_node = bip32.from_mnemonic(mnemonic, '')  # no password
 
 			for account_index in range(0, self.max_wallet_accounts):
+				# pylint:disable=duplicate-value
 				private_key = bip32_root_node.derive_path({44, coin_id, account_index, 0, 0}).private_key
 				key_pair = self.facade.KeyPair(private_key)
 

@@ -62,7 +62,7 @@ class VersionChartBuilder:
 
 	@staticmethod
 	def _append_bar_sections(sections, version_data_point_map, measure, group):
-		total_value = sum([getattr(data_point, measure) for _, data_point in version_data_point_map.items()])
+		total_value = sum(getattr(data_point, measure) for _, data_point in version_data_point_map.items())
 
 		for version in version_data_point_map:
 			friendly_version_name = version if version else 'delegating / updating'
