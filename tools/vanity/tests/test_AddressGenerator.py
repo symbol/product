@@ -13,7 +13,7 @@ class AddressGeneratorTest(unittest.TestCase):
 	def _derive_public_key_at(facade, mnemonic, account_index):
 		coin_id = 1 if 'testnet' == facade.network.name else facade.BIP32_COIN_ID
 		bip32_root_node = Bip32(facade.BIP32_CURVE_NAME).from_mnemonic(mnemonic, '')
-		return facade.KeyPair(bip32_root_node.derive_path({44, coin_id, account_index, 0, 0}).private_key).public_key
+		return facade.KeyPair(bip32_root_node.derive_path([44, coin_id, account_index, 0, 0]).private_key).public_key
 
 	def assert_derivable(self, facade, mnemonic, key_pair, max_wallet_accounts):
 		self.assertTrue(any(
