@@ -20,7 +20,7 @@
   "dependencies": {
     "@testing-library/jest-dom": "^5.16.4",
     "@testing-library/react": "^12.1.5",
-    "@testing-library/user-event": "^13.0.5",
+    "@testing-library/user-event": "^14.2.1",
     "@trendmicro/react-paginations": "^0.6.1",
     "moment-timezone": "^0.5.34",
     "primeflex": "^3.2.1",
