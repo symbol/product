@@ -10,7 +10,11 @@ BarSection = namedtuple('BarSection', ['version', 'percentage', 'label', 'group'
 
 
 class DataPoint:
+	"""Data point used in a version chart."""
+
 	def __init__(self):
+		"""Creates a data point."""
+
 		self.voting_power = 0
 		self.harvesting_power = 0
 		self.harvesting_count = 0
@@ -18,13 +22,19 @@ class DataPoint:
 
 
 class VersionChartBuilder:
+	"""Builds a version chart."""
+
 	def __init__(self, version_customizations):
+		"""Creates a version chart builder."""
+
 		self.all = VersionAggregator(DataPoint)
 		self.allnodes = VersionAggregator(DataPoint)
 		self.ex_allnodes = VersionAggregator(DataPoint)
 		self.version_customizations = version_customizations
 
 	def add(self, descriptors, balance_field=None, count_field=None):
+		"""Adds descriptors to the version chart."""
+
 		def _is_all_nodes(descriptor):
 			return '.allnodes.me:' in descriptor.endpoint
 
@@ -36,6 +46,8 @@ class VersionChartBuilder:
 		self.ex_allnodes.add(filter(_is_not_all_nodes, descriptors), balance_field, count_field)
 
 	def create_chart(self, measure, threshold=None):
+		"""Creates the version chart as json."""
+
 		sections = []
 		self._append_bar_sections(sections, self.all.map, measure, 'All')
 		self._append_bar_sections(sections, self.allnodes.map, measure, 'All Nodes')
@@ -63,6 +75,8 @@ class VersionChartBuilder:
 	@staticmethod
 	def _append_bar_sections(sections, version_data_point_map, measure, group):
 		total_value = sum(getattr(data_point, measure) for _, data_point in version_data_point_map.items())
+		if not total_value:
+			return
 
 		for version in version_data_point_map:
 			friendly_version_name = version if version else 'delegating / updating'

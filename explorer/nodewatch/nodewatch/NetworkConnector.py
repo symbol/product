@@ -3,28 +3,36 @@ import asyncio
 import aiohttp
 from zenlog import log
 
-MAX_BATCH_SIZE = 100
-
 
 class NetworkConnector:
-	def __init__(self, network_name):
+	"""Connects to NEM or Symbol networks."""
+
+	def __init__(self, network_name, max_batch_size=100):
+		"""Creates a connector."""
+
 		self.network_name = network_name
+		self.max_batch_size = max_batch_size
 		self.url_pattern = '{}/chain/height' if self.is_nem else '{}/chain/info'
 
 	@property
 	def is_nem(self):
+		"""True if the connector is initialized for NEM, False otherwise."""
+
 		return 'nem' == self.network_name
 
-	def update_heights(self, descriptors):
+	async def update_heights(self, descriptors):
+		"""Updates heights in all specified descriptors."""
+
 		if not self.is_nem:
-			descriptors = [descriptor for descriptor in descriptors if descriptor.endpoint.endswith(':3000')]
+			# connector only supports connecting to nodes using the API but not the P2P interface
+			descriptors = [descriptor for descriptor in descriptors if descriptor.has_api]
 
 		log.info(f'updating heights from {len(descriptors)} nodes for {self.network_name} network')
 
 		start_index = 0
 		while start_index < len(descriptors):
-			asyncio.run(self._update_heights_async(descriptors[start_index:start_index + MAX_BATCH_SIZE]))
-			start_index += MAX_BATCH_SIZE
+			await self._update_heights_async(descriptors[start_index:start_index + self.max_batch_size])
+			start_index += self.max_batch_size
 
 		log.info(f'done updating heights from {len(descriptors)} nodes for {self.network_name} network')
 

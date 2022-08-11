@@ -1,0 +1,90 @@
+[
+  {
+    "endpoint": {
+      "host": "45.76.22.139",
+      "port": 7890,
+      "protocol": "http"
+    },
+    "identity": {
+      "name": "cobalt",
+      "node-public-key": "5a907614c7b81d64917b274b047c881be5e1fcbd96b4f1d55fdfb5f370ddbdd4",
+      "public-key": "83F2791B70E06EA36520D044C6FD85B84CA9A31744C1173C640C36A2F3161846"
+    },
+    "metaData": {
+      "application": null,
+      "features": 1,
+      "networkId": 104,
+      "platform": "Oracle Corporation (1.8.0_151) on Linux",
+      "version": "0.6.99"
+    }
+  },
+  {
+    "endpoint": {
+      "host": "51.79.73.50",
+      "port": 7890,
+      "protocol": "http"
+    },
+    "extraData": {
+      "balance": 3355922.652725,
+      "finalizedHeight": 0,
+      "height": 3850057
+    },
+    "identity": {
+      "name": "August",
+      "node-public-key": "48695251c48cb8ada29eafcb30af1b31cea87a9f1438f04a9a767ea322233bcf",
+      "public-key": "EA786CE93FC760A4FD8E5E1F1336C0A2A915DE70EE28089331EC6658CE330282"
+    },
+    "metaData": {
+      "application": null,
+      "features": 1,
+      "networkId": 104,
+      "platform": "Oracle Corporation (1.8.0_202) on Linux",
+      "version": "0.6.100"
+    }
+  },
+  {
+    "endpoint": {
+      "host": "45.32.131.118",
+      "port": 7890,
+      "protocol": "http"
+    },
+    "extraData": {
+    },
+    "identity": {
+      "name": "silicon",
+      "node-public-key": "793ae97b0f9bc7b98a6dc4c397b1d104ea573d16b6b789df8b46b13f2b5f076c",
+      "public-key": "4AA8692447AC5ED16403C2C50BF7254D240D48A490D1D77B28B309680A36B431"
+    },
+    "metaData": {
+      "application": null,
+      "features": 1,
+      "networkId": 104,
+      "platform": "Oracle Corporation (1.8.0_151) on Linux",
+      "version": "0.6.100"
+    }
+  },
+  {
+    "endpoint": {
+      "host": "jusan.nem.ninja",
+      "port": 7890,
+      "protocol": "http"
+    },
+    "extraData": {
+      "balance": 20612359.516967,
+      "finalizedHeight": 0,
+      "height": 3850058
+    },
+    "identity": {
+      "name": "[c=#e9c086]jusan[/c]",
+      "node-public-key": "733b57bfa43d66af6f0caebfee97284a768afa880a4ad2cef66f2ca5442ed206",
+      "public-key": "107051C28A2C009A83AE0861CDBFF7C1CBAB387C964CC433F7D191D9C3115ED7"
+    },
+    "metaData": {
+      "application": null,
+      "features": 1,
+      "networkId": 104,
+      "platform": "Oracle Corporation (1.8.0_281) on Linux",
+      "version": "0.6.100"
+    }
+  }
+]

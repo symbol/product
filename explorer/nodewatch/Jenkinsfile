@@ -3,4 +3,7 @@ defaultCiPipeline {
 	ciBuildDockerfile = 'python.Dockerfile'
 
 	packageId = 'explorer-nodewatch'
+
+	codeCoverageTool = 'coverage'
+	minimumCodeCoverage = 95
 }

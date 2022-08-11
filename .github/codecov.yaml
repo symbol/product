@@ -6,6 +6,12 @@ coverage:
       default:
         target: 95%  # overall project / repo coverage
 
+      explorer-nodewatch:
+        target: auto
+        threshold: 1%
+        flags:
+          - explorer-nodewatch
+
       optin-puller:
         target: auto
         threshold: 1%
@@ -31,6 +37,11 @@ coverage:
 # monorepo.  This allows code coverage per package.
 
 flags:
+  explorer-nodewatch:
+    paths:
+      - explorer/nodewatch
+    carryforward: true
+
   optin-puller:
     paths:
       - optin/puller

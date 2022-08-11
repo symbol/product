@@ -14,7 +14,11 @@ FINALIZED_HEIGHT_DESCRIPTOR = HeightDescriptor('finalized_height', 'finalized he
 
 
 class DataPoint:
+	"""Data point used in a height chart."""
+
 	def __init__(self):
+		"""Creates a data point."""
+
 		self.height_count = 0
 		self.height_power = 0
 		self.finalized_height_count = 0
@@ -22,7 +26,11 @@ class DataPoint:
 
 
 class HeightChartBuilder:
+	"""Builds a height chart."""
+
 	def __init__(self, version_customizations, min_cluster_size=1):
+		"""Creates a height chart builder."""
+
 		self.version_customizations = version_customizations
 		self.min_cluster_size = min_cluster_size
 
@@ -30,12 +38,18 @@ class HeightChartBuilder:
 		self.finalized_heights = VersionAggregator(DataPoint, FINALIZED_HEIGHT_DESCRIPTOR.field_name)
 
 	def add_heights(self, descriptors):
+		"""Adds heights to the height chart."""
+
 		self.heights.add(descriptors, HEIGHT_DESCRIPTOR.power_field, HEIGHT_DESCRIPTOR.count_field)
 
 	def add_finalized_heights(self, descriptors):
+		"""Adds finalized heights to the height chart."""
+
 		self.finalized_heights.add(descriptors, FINALIZED_HEIGHT_DESCRIPTOR.power_field, FINALIZED_HEIGHT_DESCRIPTOR.count_field)
 
 	def create_chart(self):
+		"""Creates the height chart as json."""
+
 		scatter_points = []
 		self._append_scatter_points(scatter_points, self.heights.map, HEIGHT_DESCRIPTOR)
 		self._append_scatter_points(scatter_points, self.finalized_heights.map, FINALIZED_HEIGHT_DESCRIPTOR)

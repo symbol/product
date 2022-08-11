@@ -10,20 +10,29 @@ from zenlog import log
 
 
 class NodeDescriptor:
-	def __init__(self, main_address=None, name=None, endpoint=None, version=None, height=0, finalized_height=0, balance=0):
+	"""Node descriptor."""
+
+	def __init__(self, main_address=None, endpoint=None, name=None, version=None, height=0, finalized_height=0, balance=0, has_api=True):
+		"""Creates a descriptor."""
+
 		# pylint: disable=too-many-arguments
 
 		self.main_address = main_address
-		self.name = name
 		self.endpoint = endpoint
+		self.name = name
 		self.version = version
 		self.height = height
 		self.finalized_height = finalized_height
 		self.balance = balance
+		self.has_api = has_api
 
 
 class HarvesterDescriptor:
+	"""Harvester descriptor."""
+
 	def __init__(self, harvester_dict, address_class):
+		"""Creates a descriptor."""
+
 		self.signer_address = address_class(harvester_dict['signer_address'])
 		self.main_address = address_class(harvester_dict['main_address'])
 		self.endpoint = harvester_dict['host']
@@ -35,9 +44,13 @@ class HarvesterDescriptor:
 
 
 class SymbolAccountDescriptor:
+	"""Symbol account descriptor."""
+
 	# pylint: disable=too-many-instance-attributes
 
 	def __init__(self, account_dict):
+		"""Creates a descriptor."""
+
 		self.main_address = SymbolAddress(account_dict['address'])
 		self.balance = float(account_dict['balance'])
 		self.is_voting = 'True' == account_dict['is_voting']
@@ -52,7 +65,11 @@ class SymbolAccountDescriptor:
 
 
 class NetworkRepository:
+	"""Network respository managing access to NEM or Symbol node information."""
+
 	def __init__(self, network_name):
+		"""Creates a network repository."""
+
 		self.network_name = network_name
 
 		self.node_descriptors = None
@@ -61,14 +78,20 @@ class NetworkRepository:
 
 	@property
 	def is_nem(self):
+		"""True if the repository is initialized for NEM, False otherwise."""
+
 		return 'nem' == self.network_name
 
 	def estimate_height(self):
+		"""Estimates the network height by returning the median height of all nodes."""
+
 		heights = [descriptor.height for descriptor in self.node_descriptors]
 		heights.sort()
 		return heights[round(len(heights) / 2)]
 
 	def load_node_descriptors(self, nodes_data_filepath):
+		"""Loads node descriptors."""
+
 		log.info(f'loading nodes from {nodes_data_filepath}')
 
 		with open(nodes_data_filepath, 'rt', encoding='utf8') as infile:
@@ -91,23 +114,25 @@ class NetworkRepository:
 
 			return NodeDescriptor(
 				NemNetwork.MAINNET.public_key_to_address(PublicKey(json_node['identity']['public-key'])),
-				json_node['identity']['name'],
 				f'{node_protocol}://{node_host}:{node_port}',
+				json_node['identity']['name'],
 				json_node['metaData']['version'],
 				*extra_data)
 
 		symbol_endpoint = ''
+		has_api = bool(json_node['roles'] & 2)
 		if json_node['host']:
 			node_host = json_node['host']
-			node_port = 3000 if json_node['roles'] & 2 else json_node['port']
+			node_port = 3000 if has_api else json_node['port']
 			symbol_endpoint = f'http://{node_host}:{node_port}'
 
 		return NodeDescriptor(
 			SymbolNetwork.MAINNET.public_key_to_address(PublicKey(json_node['publicKey'])),
-			json_node['friendlyName'],
 			symbol_endpoint,
+			json_node['friendlyName'],
 			self._format_symbol_version(json_node['version']),
-			*extra_data)
+			*extra_data,
+			has_api)
 
 	@staticmethod
 	def _format_symbol_version(version):
@@ -115,6 +140,8 @@ class NetworkRepository:
 		return '.'.join(str(version_part) for version_part in version_parts)
 
 	def load_harvester_descriptors(self, harvesters_data_filepath):
+		"""Loads harvester descriptors."""
+
 		log.info(f'loading harvesters from {harvesters_data_filepath}')
 
 		address_class = NemAddress if self.is_nem else SymbolAddress
@@ -130,6 +157,8 @@ class NetworkRepository:
 		self.harvester_descriptors.sort(key=lambda descriptor: descriptor.balance, reverse=True)
 
 	def load_voter_descriptors(self, accounts_data_filepath):
+		"""Loads voter descriptors."""
+
 		log.info(f'loading voting accounts from {accounts_data_filepath}')
 
 		with open(accounts_data_filepath, 'rt', encoding='utf8') as infile:
