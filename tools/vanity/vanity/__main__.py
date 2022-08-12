@@ -23,7 +23,7 @@ def create_printer(args, network):
 	return printer
 
 
-def main():
+def main(args):
 	parser = argparse.ArgumentParser(
 		prog=None if globals().get('__spec__') is None else f'python -m {__spec__.name.partition(".")[0]}',
 		description='Symbol Vanity Address Generator'
@@ -35,7 +35,7 @@ def main():
 	parser.add_argument('--format', help='output format', choices=('pretty', 'csv'), default='pretty')
 	parser.add_argument('--suppress-console', help='suppress printing matches to console', action='store_true')
 	parser.add_argument('--out', help='output file')
-	args = parser.parse_args()
+	args = parser.parse_args(args)
 
 	facade = (SymbolFacade if 'symbol' == args.blockchain else NemFacade)(args.network)
 
@@ -53,8 +53,9 @@ def main():
 		generator.match_all(matcher)
 	finally:
 		for outfile in printer.outfiles:
-			outfile.close()
+			if '<stdout>' != outfile.name:
+				outfile.close()
 
 
 if '__main__' == __name__:
-	main()
+	main(sys.argv[1:])
