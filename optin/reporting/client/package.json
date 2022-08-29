@@ -22,7 +22,7 @@
     "@testing-library/react": "^12.1.5",
     "@testing-library/user-event": "^13.0.5",
     "@trendmicro/react-paginations": "^0.6.1",
-    "moment-timezone": "^0.5.34",
+    "moment-timezone": "^0.5.37",
     "primeflex": "^3.2.1",
     "primeicons": "^5.0.0",
     "primereact": "^7.2.1",
