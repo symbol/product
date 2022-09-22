@@ -24,7 +24,7 @@ describe('PopUpDialog Component', () => {
 		expect(screen.queryByText(title)).not.toBeInTheDocument();
 	});
 
-	it('should opened when button is clicked', () => {
+	it('should opened when button is clicked', async() => {
 		// Arrange more:
 		render(<PopUpDialog title={title} content={content} buttonText={buttonText}/>);
 
@@ -33,8 +33,8 @@ describe('PopUpDialog Component', () => {
 		button.click();
 
 		// Assert:
-		expect(screen.getByText(content)).toBeInTheDocument();
-		expect(screen.getByText(title)).toBeInTheDocument();
+		expect((await screen.findByText(content))).toBeInTheDocument();
+		expect((await screen.findByText(title))).toBeInTheDocument();
 	});
 
 	it('should be closed when close button is clicked', async () => {
