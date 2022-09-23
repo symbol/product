@@ -345,7 +345,7 @@ describe('completed models', () => {
 
 			// Assert:
 			expect(result[0].nemSource.length).to.be.equal(1);
-			const nemSource = JSON.parse(result[0].nemSource[0])
+			const nemSource = JSON.parse(result[0].nemSource[0]);
 			expect(nemSource.address).to.be.equal(nemAddressHex);
 		});
 
