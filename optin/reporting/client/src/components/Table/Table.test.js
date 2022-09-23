@@ -34,7 +34,7 @@ describe('Table Component', () => {
 		// Act:
 		// scroll and test if handlePageChange is called
 		// eslint-disable-next-line testing-library/no-node-access
-		const scrollContainer = tableRef.current.el.lastChild;
+		const scrollContainer = tableRef.current.getElement().lastChild;
 
 		fireEvent.scroll(scrollContainer, { target: { scrollY: 1000} });
 

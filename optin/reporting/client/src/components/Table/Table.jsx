@@ -17,7 +17,7 @@ const Table = React.forwardRef((props, ref) => {
 	}, [allowLoadNextPage, props.onPage]);
 
 	React.useEffect(() => {
-		const scrollableElement = tableRef.current.el.lastChild;
+		const scrollableElement = tableRef.current.getElement().lastChild;
 		scrollableElement.addEventListener('scroll', infiniteLoaderHandler);
 
 		return () => {
