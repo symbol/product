@@ -20,6 +20,9 @@ updates:
     labels: [Opt-In]
     commit-message:
       prefix: '[dependency]'
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: npm
     directory: /optin/reporting
@@ -31,6 +34,9 @@ updates:
     versioning-strategy: increase
     commit-message:
       prefix: '[dependency]'
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: npm
     directory: /optin/reporting/client
@@ -42,6 +48,9 @@ updates:
     versioning-strategy: increase
     commit-message:
       prefix: '[dependency]'
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: pip
     directory: /tools/vanity
