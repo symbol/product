@@ -158,7 +158,7 @@ describe('Completed', () => {
 				mockCompletedAPIFetch(completedAPIResponseFiltered);
 
 				// Act:
-				userEvent.type(filterSearchInput, `${expectedTextForFirstRow}{enter}`);
+				await userEvent.type(filterSearchInput, `${expectedTextForFirstRow}{enter}`);
 
 				// Assert:
 				expect(filterSearchInput).toHaveDisplayValue(expectedTextForFirstRow);
@@ -200,7 +200,7 @@ describe('Completed', () => {
 			const filterSearchInput = screen.getByPlaceholderText('NEM Address / Symbol Address / Tx Hash');
 
 			// Act:
-			userEvent.type(filterSearchInput, `${invalidFilterText}`);
+			await userEvent.type(filterSearchInput, `${invalidFilterText}`);
 
 			// Assert:
 			expect((await screen.findAllByText('Invalid NEM / Symbol Address or Transaction Hash.'))[0]).toBeInTheDocument();
@@ -251,7 +251,7 @@ describe('Completed', () => {
 				mockCompletedAPIFetch(completedAPIResponseFiltered);
 
 				// Act:
-				userEvent.click(filterOptinType);
+				await userEvent.click(filterOptinType);
 			};
 			await testFilterSort(
 				firstRowData, secondRowData, expectedTextForFirstRow, expectedTextForSecondRow,
@@ -287,7 +287,7 @@ describe('Completed', () => {
 				mockCompletedAPIFetch(completedAPIResponseSorted);
 
 				// Act:
-				userEvent.click(sortableColumnHeader);
+				await userEvent.click(sortableColumnHeader);
 			};
 			await testFilterSort(
 				firstRowData, secondRowData, expectedTextForFirstRow, expectedTextForSecondRow,
