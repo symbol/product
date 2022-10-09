@@ -24,7 +24,7 @@
     "mocha-jenkins-reporter": "^0.4.8",
     "nyc": "^15.1.0",
     "sinon": "^14.0.1",
-    "supertest": "^6.2.4"
+    "supertest": "^6.3.0"
   },
   "dependencies": {
     "dotenv": "^16.0.3",
