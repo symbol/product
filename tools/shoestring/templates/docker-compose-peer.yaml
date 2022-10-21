@@ -1,0 +1,24 @@
+'version': '2'
+'services':
+  'client':
+    'image': '{{ catapult_client_image }}'
+    'user': '{{ user }}'
+    'logging':
+      'driver': 'json-file'
+      'options':
+        'max-size': '25M'
+        'max-file': '10'
+    'command': '/usr/catapult/bin/catapult.server /userconfig'
+    'environment':
+    - 'LD_LIBRARY_PATH=/usr/catapult/lib:/usr/catapult/deps'
+    'stop_signal': 'SIGINT'
+    'stop_grace_period': '300s'
+    'ports':
+    - '7900:7900'
+    'volumes':
+    - '.:/userconfig:ro'
+    - './seed:/seed:ro'
+    - './data:/data'
+    - './logs:/logs'
+    - './keys/voting:/votingkeys'
+    - './keys/cert:/certificates'

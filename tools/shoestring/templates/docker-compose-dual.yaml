@@ -1,0 +1,81 @@
+'version': '2'
+'services':
+  'db':
+    'image': 'mongo:5.0.15'
+    'user': '{{ user }}'
+    'command': 'mongod --dbpath=/dbdata'
+    'stop_signal': 'SIGINT'
+    'ports':
+    - '127.0.0.1:27017:27017'
+    'volumes':
+    - './dbdata:/dbdata:rw'
+    - './dbdata:/data:rw'
+
+  'initiate':
+    'image': 'mongo:5.0.15'
+    'user': '{{ user }}'
+    'command': '/bin/bash /userconfig/startup/mongors.sh /real_data/startup/mongo-initialized'
+    'volumes':
+    - '.:/userconfig:ro'
+    - './dbdata:/dbdata:rw'
+    - './dbdata:/data:rw'
+    - './data:/real_data'
+    'depends_on':
+    - 'db'
+
+  'client':
+    'image': '{{ catapult_client_image }}'
+    'user': '{{ user }}'
+    'logging':
+      'driver': 'json-file'
+      'options':
+        'max-size': '25M'
+        'max-file': '10'
+    'command': '/bin/bash /userconfig/startup/wait.sh /data/startup/mongo-initialized
+      /userconfig/startup/startServer.sh'
+    'environment':
+    - 'LD_LIBRARY_PATH=/usr/catapult/lib:/usr/catapult/deps'
+    'stop_signal': 'SIGINT'
+    'stop_grace_period': '300s'
+    'ports':
+    - '7900:7900'
+    'volumes':
+      - '.:/userconfig:ro'
+      - './seed:/seed:ro'
+      - './keys/cert:/certificates:ro'
+      - './data:/data'
+      - './logs:/logs'
+      - './keys/voting:/votingkeys'
+
+  'broker':
+    'image': '{{ catapult_client_image }}'
+    'user': '{{ user }}'
+    'cap_add':
+    - SYS_PTRACE
+    'command': '/bin/bash /userconfig/startup/wait.sh /data/startup/datadir-initialized
+      /userconfig/startup/startBroker.sh'
+    'environment':
+    - 'LD_LIBRARY_PATH=/usr/catapult/lib:/usr/catapult/deps'
+    'stop_signal': 'SIGINT'
+    'stop_grace_period': '20s'
+    'volumes':
+    - '.:/userconfig:ro'
+    - './keys/cert:/certificates:ro'
+    - './data:/data'
+    - './logs:/logs'
+
+  'rest-api':
+    'image': '{{ catapult_rest_image }}'
+    'user': '{{ user }}'
+    'command': '/bin/bash /userconfig/startup/delayrestapi.sh'
+    'environment':
+    - 'HOME=/symbol-workdir'
+    - 'NODE_ENV=production'
+    'working_dir': '/symbol-workdir'
+    'ports':
+    - '3000:3000'
+    'volumes':
+    - '.:/userconfig:ro'
+    - './keys/cert:/certificates:ro'
+    - './data:/data'
+    - './rest-cache:/symbol-workdir'

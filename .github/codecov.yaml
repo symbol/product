@@ -30,6 +30,12 @@ coverage:
         flags:
           - optin-reporting
 
+      tools-shoestring:
+        target: auto
+        threshold: 1%
+        flags:
+          - tools-shoestring
+
       tools-vanity:
         target: auto
         threshold: 1%
@@ -61,6 +67,11 @@ flags:
   optin-reporting:
     paths:
       - optin/reporting
+    carryforward: true
+
+  tools-shoestring:
+    paths:
+      - tools/shoestring
     carryforward: true
 
   tools-vanity:

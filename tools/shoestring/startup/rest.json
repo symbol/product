@@ -1,13 +1,22 @@
 {
+	"network": {
+		"name": "mainnet",
+		"description": "catapult mainnet network"
+	},
 	"port": 3000,
+	"protocol": "HTTP",
+	"sslKeyPath": "",
+	"sslCertificatePath": "",
 	"crossDomain": {
 		"allowedHosts": ["*"],
 		"allowedMethods": ["GET", "POST", "PUT", "OPTIONS"]
 	},
-	"network": {
-		"name": "public",
-		"description": "catapult public network"
-	},
+	"uncirculatingAccountPublicKeys": [
+		"A4739036FD7EFED2750A51EE9D1D3113BA3F9849E0889213CED7F221B2AA1A20",
+		"2BF1E1F3072E3BE0CD851E4741E101E33DB19C163895F69AA890E7CF177C878C",
+		"E85D10BF47FFBCE2230F70CB43ED2DDE04FCF342524B383972F86EA1FF773C79",
+		"FE454406EFC15EBBCF4C27491519B7EBE696AD2D734A53E02019FC5D02D1419C"
+	],
 	"extensions": [
 		"accountLink",
 		"aggregate",
@@ -29,16 +38,19 @@
 		"pageSizeDefault": 20,
 		"maxConnectionAttempts": 5,
 		"baseRetryDelay": 500,
-		"connectionPoolSize": 10
+		"connectionPoolSize": 10,
+		"connectionTimeout": 500
 	},
 
 	"apiNode": {
-		"host": "server",
+		"host": "client",
 		"port": 7900,
 		"timeout": 1000,
-		"tlsClientCertificatePath": "/userconfig/certificates/node.crt.pem",
-		"tlsClientKeyPath": "/userconfig/certificates/node.key.pem",
-		"tlsCaCertificatePath": "/userconfig/certificates/ca.crt.pem",
+		"tlsClientCertificatePath": "/certificates/node.crt.pem",
+		"tlsClientKeyPath": "/certificates/node.key.pem",
+		"tlsCaCertificatePath": "/certificates/ca.crt.pem",
+
+		"inflationPropertyFilePath": "/userconfig/resources/config-inflation.properties",
 		"networkPropertyFilePath": "/userconfig/resources/config-network.properties",
 		"nodePropertyFilePath": "/userconfig/resources/config-node.properties"
 	},
@@ -46,11 +58,19 @@
 	"websocket": {
 		"mq": {
 			"host": "broker",
-			"port": 7902
+			"port": 7902,
+			"monitorInterval": 500,
+			"connectTimeout": 10000,
+			"monitorLoggingThrottle": 60000,
+			"maxSubscriptions": 500
 		},
 		"allowOptionalAddress": true
 	},
 
+	"throttling": {
+		"burst": 20,
+		"rate": 5
+	},
 	"logging": {
 		"console": {
 			"formats": ["colorize", "simple"],
@@ -61,9 +81,24 @@
 		"file": {
 			"formats": ["prettyPrint"],
 
+			"level": "verbose",
+			"handleExceptions": true,
+
 			"filename": "/data/rest/catapult-rest.log",
 			"maxsize": 20971520,
 			"maxFiles": 100
 		}
+	},
+
+	"numBlocksTransactionFeeStats": 300,
+
+	"deployment": {
+		"deploymentTool": "",
+		"deploymentToolVersion": "",
+		"lastUpdatedDate": ""
+	},
+
+	"nodeMetadata": {
+		"_info": "replace the body of this object with custom fields and objects to personalize your node"
 	}
-} 
+}

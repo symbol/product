@@ -63,12 +63,22 @@ updates:
         update-types: ["version-update:semver-major"]
 
   - package-ecosystem: pip
+    directory: /tools/shoestring
+    schedule:
+      interval: weekly
+      day: sunday
+    target-branch: dev
+    labels: ['Shoestring']
+    commit-message:
+      prefix: '[dependency]'
+
+  - package-ecosystem: pip
     directory: /tools/vanity
     schedule:
       interval: weekly
       day: sunday
     target-branch: dev
-    labels: ['Change: Tools']
+    labels: ['Vanity']
     commit-message:
       prefix: '[dependency]'
 

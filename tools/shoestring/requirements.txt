@@ -1,5 +1,9 @@
-aiohttp==3.8.3
+--extra-index-url https://test.pypi.org/simple/
+
+aiohttp==3.8.4
+Jinja2==3.1.2
 PyYAML==6.0
 requests==2.28.1
-symbol-sdk-python==3.0.2
+symbol-lightapi==0.0.2
+symbol-sdk-python==3.0.7
 zenlog==1.1

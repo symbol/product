@@ -11,6 +11,9 @@ builds:
   - name: Optin Reporting
     path: optin/reporting
 
+  - name: Shoestring
+    path: tools/shoestring
+
   - name: Vanity Address Generator
     path: tools/vanity
 
