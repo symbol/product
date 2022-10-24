@@ -13,7 +13,7 @@
     "port": 7900,
     "publicKey": "7DFB0D690BFFA4A4979C7466C7B669AE8FBAFD419DAA10DE948604CD9BE65F0B",
     "roles": 3,
-    "version": 16777987
+    "version": 16777989
   },
   {
     "friendlyName": "symbol.ooo maxUnlockedAccounts:100",
@@ -24,7 +24,7 @@
     "port": 7900,
     "publicKey": "71F953D3C3D0B7E70E29EC2DE761DD7339BA815C094B3BEE0917AEBD924B37EB",
     "roles": 3,
-    "version": 16777985
+    "version": 16777988
   },
   {
     "extraData": {
@@ -39,7 +39,7 @@
     "port": 7900,
     "publicKey": "B26D01FC006EAC09B740A3C8F12C1055AE24AFD3268F0364C92D51800FC07361",
     "roles": 5,
-    "version": 16777987
+    "version": 16777989
   },
   {
     "extraData": {
@@ -52,7 +52,7 @@
     "port": 7900,
     "publicKey": "2784FBE82D8A46C4082519012970CBB42EC3EC83D5DB93963B71FD6C5DA3B072",
     "roles": 3,
-    "version": 16777987
+    "version": 16777989
   },
   {
     "extraData": {
@@ -68,6 +68,6 @@
     "port": 7900,
     "publicKey": "A0AA48B6417BDB1845EB55FB0B1E13255EA8BD0D8FA29AD2D8A906E220571F21",
     "roles": 3,
-    "version": 16777985
+    "version": 16777988
   }
 ]

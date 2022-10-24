@@ -276,11 +276,11 @@ class SymbolRoutesFacadeTest(unittest.TestCase):
 		# Assert:
 		self.assertEqual('symbol_summary.html', template_name)
 		self.assertEqual(5, len(context))
-		self.assertEqual(4, len(json.loads(context['height_chart_json'])['data']))  # { height, finalized_height } x { 1.0.3.1, 1.0.3.3 }
-		self.assertEqual(3, len(json.loads(context['voting_power_chart_json'])['data']))  # 1.0.3.3, 1.0.3.1, ''
-		self.assertEqual(3, len(json.loads(context['harvesting_power_chart_json'])['data']))  # 1.0.3.3, 1.0.3.1, ''
-		self.assertEqual(3, len(json.loads(context['harvesting_count_chart_json'])['data']))  # 1.0.3.3, 1.0.3.1, ''
-		self.assertEqual(3, len(json.loads(context['node_count_chart_json'])['data']))  # 1.0.3.3, 1.0.3.1, ''
+		self.assertEqual(4, len(json.loads(context['height_chart_json'])['data']))  # { height, finalized_height } x { 1.0.3.5, 1.0.3.4 }
+		self.assertEqual(3, len(json.loads(context['voting_power_chart_json'])['data']))  # 1.0.3.5, 1.0.3.4, ''
+		self.assertEqual(3, len(json.loads(context['harvesting_power_chart_json'])['data']))  # 1.0.3.5, 1.0.3.4, ''
+		self.assertEqual(3, len(json.loads(context['harvesting_count_chart_json'])['data']))  # 1.0.3.5, 1.0.3.4, ''
+		self.assertEqual(3, len(json.loads(context['node_count_chart_json'])['data']))  # 1.0.3.5, 1.0.3.4, ''
 
 	# endregion
 
@@ -294,7 +294,7 @@ class SymbolRoutesFacadeTest(unittest.TestCase):
 		# Act:
 		chart_json = json.loads(facade.json_height_chart())
 
-		# Assert: { height, finalized_height } x { 1.0.3.1, 1.0.3.3 }
+		# Assert: { height, finalized_height } x { 1.0.3.4, 1.0.3.5 }
 		self.assertEqual(4, len(chart_json['data']))
 
 	def test_can_generate_height_chart_with_metadata_json(self):
@@ -306,7 +306,7 @@ class SymbolRoutesFacadeTest(unittest.TestCase):
 		chart_with_metadata_json = json.loads(facade.json_height_chart_with_metadata())
 		chart_json = json.loads(chart_with_metadata_json['chart_json'])
 
-		# Assert: { height, finalized_height } x { 1.0.3.1, 1.0.3.3 }
+		# Assert: { height, finalized_height } x { 1.0.3.4, 1.0.3.5 }
 		self.assertEqual(2, len(chart_with_metadata_json))
 		self.assertEqual(4, len(chart_json['data']))
 		self.assertTrue(re.match(r'\d\d:\d\d', chart_with_metadata_json['last_refresh_time']))
@@ -328,12 +328,12 @@ class SymbolRoutesFacadeTest(unittest.TestCase):
 	# region utils
 
 	def test_can_map_version_to_css_class(self):
-		for version in ['1.0.3.3', '1.0.3.1', '1.0.3.0']:
+		for version in ['1.0.3.6', '1.0.3.5', '1.0.3.4']:
 			self.assertEqual('success', _map_version_to_css_class(SymbolRoutesFacade, version))
 
 		self.assertEqual('warning', _map_version_to_css_class(SymbolRoutesFacade, ''))
 
-		for version in ['1.0.2.0', '1.0.1.0', '0.0.0.0']:
+		for version in ['1.0.3.3', '1.0.3.1', '1.0.3.0', '1.0.2.0', '1.0.1.0', '0.0.0.0']:
 			self.assertEqual('danger', _map_version_to_css_class(SymbolRoutesFacade, version))
 
 	# endregion

@@ -166,12 +166,14 @@ class SymbolRoutesFacade(BasicRoutesFacade):
 		"""Creates a facade."""
 
 		super().__init__('symbol', 'Symbol', self._version_to_css_class, {
-			'1.0.3.3': ('#008A00', 7),
-			'1.0.3.1': ('#00B300', 6),
-			'1.0.3.0': ('#00D600', 5),
-			'delegating / updating': ('#FFFF6B', 4),
-			'1.0.2.0': ('#FF1F1F', 3),
-			'1.0.1.0': ('#FF0505', 2),
+			'1.0.3.5': ('#008A00', 10),
+			'1.0.3.4': ('#00B300', 9),
+			'delegating / updating': ('#FFFF6B', 8),
+			'1.0.3.3': ('#FF0505', 7),
+			'1.0.3.1': ('#EB0000', 6),
+			'1.0.3.0': ('#EB0000', 5),
+			'1.0.2.0': ('#D10000', 3),
+			'1.0.1.0': ('#B80000', 2),
 			'0.0.0.0': ('#000000', 1)
 		}, min_cluster_size)
 
@@ -206,7 +208,7 @@ class SymbolRoutesFacade(BasicRoutesFacade):
 		tag = 'danger'
 		if not version:
 			tag = 'warning'
-		if version.startswith('1.0.3.'):
+		if version.startswith('1.0.3.') and not any(version.endswith(f'.{build}') for build in (0, 1, 2, 3)):
 			tag = 'success'
 
 		return tag

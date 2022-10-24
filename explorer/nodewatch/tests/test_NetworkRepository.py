@@ -84,7 +84,7 @@ class NetworkRepositoryTest(unittest.TestCase):
 			name='Allnodes250',
 			height=1486762,
 			finalized_height=1486740,
-			version='1.0.3.1',
+			version='1.0.3.4',
 			balance=3155632.471994,
 			has_api=True)  # simulates missing host
 		self._assert_node_descriptor(
@@ -94,7 +94,7 @@ class NetworkRepositoryTest(unittest.TestCase):
 			name='Shin-Kuma-Node',
 			height=0,
 			finalized_height=0,
-			version='1.0.3.3',
+			version='1.0.3.5',
 			balance=0,
 			has_api=True)  # simulates incomplete extraData
 		self._assert_node_descriptor(
@@ -104,7 +104,7 @@ class NetworkRepositoryTest(unittest.TestCase):
 			name='ibone74',
 			height=1486760,
 			finalized_height=1486740,
-			version='1.0.3.3',
+			version='1.0.3.5',
 			balance=82375.554976,
 			has_api=True)
 		self._assert_node_descriptor(
@@ -114,7 +114,7 @@ class NetworkRepositoryTest(unittest.TestCase):
 			name='jaguar',
 			height=1486761,
 			finalized_height=1486740,
-			version='1.0.3.3',
+			version='1.0.3.5',
 			balance=28083310.571743,
 			has_api=False)
 		self._assert_node_descriptor(
@@ -124,7 +124,7 @@ class NetworkRepositoryTest(unittest.TestCase):
 			name='symbol.ooo maxUnlockedAccounts:100',
 			height=0,
 			finalized_height=0,
-			version='1.0.3.1',
+			version='1.0.3.4',
 			balance=0,
 			has_api=True)  # simulates missing extraData
 
@@ -206,7 +206,7 @@ class NetworkRepositoryTest(unittest.TestCase):
 			name='jaguar',
 			height=1486639,
 			finalized_height=1486616,
-			version='1.0.3.3',
+			version='1.0.3.4',
 			balance=28083310.571743)
 		self._assert_harvestor_descriptor(
 			repository.harvester_descriptors[1],
@@ -216,7 +216,7 @@ class NetworkRepositoryTest(unittest.TestCase):
 			name='(Max50)SN1.MSUS',
 			height=1486639,
 			finalized_height=1486616,
-			version='1.0.3.3',
+			version='1.0.3.4',
 			balance=5964230.349221)
 		self._assert_harvestor_descriptor(
 			repository.harvester_descriptors[2],
@@ -236,7 +236,7 @@ class NetworkRepositoryTest(unittest.TestCase):
 			name='Allnodes900',
 			height=1486640,
 			finalized_height=1486616,
-			version='1.0.3.3',
+			version='1.0.3.4',
 			balance=2381906.785304)
 
 	# endregion
@@ -273,7 +273,7 @@ class NetworkRepositoryTest(unittest.TestCase):
 			name='59026DB',
 			height=1486130,
 			finalized_height=1486112,
-			version='1.0.3.3')
+			version='1.0.3.4')
 		self._assert_voter_descriptor(
 			repository.voter_descriptors[1],
 			main_address=SymbolAddress('NAIVRZYE72JWBGGTJOHV4JKZ5QJNAXJEJPROPAA'),
@@ -286,7 +286,7 @@ class NetworkRepositoryTest(unittest.TestCase):
 			name='Allnodes130',
 			height=1486130,
 			finalized_height=1486112,
-			version='1.0.3.3')
+			version='1.0.3.4')
 		self._assert_voter_descriptor(
 			repository.voter_descriptors[2],
 			main_address=SymbolAddress('NDU6BEMIOUF2OX7UMSCG6NUJUM2ZAY6JEGIPDOA'),
@@ -312,6 +312,6 @@ class NetworkRepositoryTest(unittest.TestCase):
 			name='Allnodes34',
 			height=1486131,
 			finalized_height=1486112,
-			version='1.0.3.3')
+			version='1.0.3.4')
 
 	# endregion
