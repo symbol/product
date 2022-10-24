@@ -31,9 +31,9 @@ class ChartUtilsTest(unittest.TestCase):
 	@staticmethod
 	def _create_version_customizations():
 		return VersionCustomizations({
-			'1.0.3.3': ('#008A00', 7),
-			'1.0.3.1': ('#00B300', 6),
-			'1.0.3.0': ('#00D600', 5)
+			'0.0.3.3': ('#008A00', 7),
+			'0.0.3.1': ('#00B300', 6),
+			'0.0.3.0': ('#00D600', 5)
 		})
 
 	def test_version_customizations_can_create_version_to_color_map(self):
@@ -45,9 +45,9 @@ class ChartUtilsTest(unittest.TestCase):
 
 		# Assert:
 		self.assertEqual({
-			'1.0.3.3': '#008A00',
-			'1.0.3.1': '#00B300',
-			'1.0.3.0': '#00D600'
+			'0.0.3.3': '#008A00',
+			'0.0.3.1': '#00B300',
+			'0.0.3.0': '#00D600'
 		}, version_to_color_map)
 
 	def test_version_customizations_can_get_weight_for_known_version(self):
@@ -55,7 +55,7 @@ class ChartUtilsTest(unittest.TestCase):
 		version_customizations = self._create_version_customizations()
 
 		# Act:
-		weight = version_customizations.get_weight('1.0.3.1')
+		weight = version_customizations.get_weight('0.0.3.1')
 
 		# Assert:
 		self.assertEqual(6, weight)
@@ -65,7 +65,7 @@ class ChartUtilsTest(unittest.TestCase):
 		version_customizations = self._create_version_customizations()
 
 		# Act:
-		weight = version_customizations.get_weight('1.0.4.1')
+		weight = version_customizations.get_weight('0.0.4.1')
 
 		# Assert:
 		self.assertEqual(0, weight)
@@ -90,8 +90,8 @@ class ChartUtilsTest(unittest.TestCase):
 		# Act:
 		aggregator = VersionAggregator(DataPoint, secondary_key)
 		aggregator.add([
-			Descriptor('1.0.0', 'A', 111),
-			Descriptor('1.0.0', 'B', 222),
+			Descriptor('0.0.0', 'A', 111),
+			Descriptor('0.0.0', 'B', 222),
 			Descriptor('2.0.0', 'A', 333),
 			Descriptor('2.0.0', 'B', 444),
 			Descriptor('2.0.0', 'A', 555),
@@ -105,7 +105,7 @@ class ChartUtilsTest(unittest.TestCase):
 
 		# Assert:
 		self.assertEqual(3, len(aggregate_map))
-		self.assertEqual((333, 2), aggregate_map['1.0.0'].as_tuple())
+		self.assertEqual((333, 2), aggregate_map['0.0.0'].as_tuple())
 		self.assertEqual((1332, 3), aggregate_map['2.0.0'].as_tuple())
 		self.assertEqual((777, 1), aggregate_map['3.0.0'].as_tuple())
 
@@ -115,8 +115,8 @@ class ChartUtilsTest(unittest.TestCase):
 
 		# Assert:
 		self.assertEqual(5, len(aggregate_map))
-		self.assertEqual((111, 1), aggregate_map['1.0.0@A'].as_tuple())
-		self.assertEqual((222, 1), aggregate_map['1.0.0@B'].as_tuple())
+		self.assertEqual((111, 1), aggregate_map['0.0.0@A'].as_tuple())
+		self.assertEqual((222, 1), aggregate_map['0.0.0@B'].as_tuple())
 		self.assertEqual((888, 2), aggregate_map['2.0.0@A'].as_tuple())
 		self.assertEqual((444, 1), aggregate_map['2.0.0@B'].as_tuple())
 		self.assertEqual((777, 1), aggregate_map['3.0.0@B'].as_tuple())
@@ -127,7 +127,7 @@ class ChartUtilsTest(unittest.TestCase):
 
 		# Assert:
 		self.assertEqual(3, len(aggregate_map))
-		self.assertEqual((333, 0), aggregate_map['1.0.0'].as_tuple())
+		self.assertEqual((333, 0), aggregate_map['0.0.0'].as_tuple())
 		self.assertEqual((1332, 0), aggregate_map['2.0.0'].as_tuple())
 		self.assertEqual((777, 0), aggregate_map['3.0.0'].as_tuple())
 
@@ -137,7 +137,7 @@ class ChartUtilsTest(unittest.TestCase):
 
 		# Assert:
 		self.assertEqual(3, len(aggregate_map))
-		self.assertEqual((0, 2), aggregate_map['1.0.0'].as_tuple())
+		self.assertEqual((0, 2), aggregate_map['0.0.0'].as_tuple())
 		self.assertEqual((0, 3), aggregate_map['2.0.0'].as_tuple())
 		self.assertEqual((0, 1), aggregate_map['3.0.0'].as_tuple())
 

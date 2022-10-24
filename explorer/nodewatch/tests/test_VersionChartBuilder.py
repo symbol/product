@@ -10,33 +10,33 @@ class VersionChartBuilderTest(unittest.TestCase):
 	@staticmethod
 	def _create_chart(measure, threshold=None, allnodes_host='allnodes.me'):
 		version_builder = VersionChartBuilder(VersionCustomizations({
-			'1.0.3.3': ('#008A00', 7),
-			'1.0.3.1': ('#00B300', 6),
-			'1.0.3.0': ('#00D600', 5)
+			'0.0.3.3': ('#008A00', 7),
+			'0.0.3.1': ('#00B300', 6),
+			'0.0.3.0': ('#00D600', 5)
 		}))
 
 		Descriptor = namedtuple('Descriptor', ['version', 'endpoint', 'balance'])
 		voting_descriptors = [
-			Descriptor('1.0.3.0', 'http://bob.nem.ninja:7890', 100),
-			Descriptor('1.0.3.1', f'http://3.{allnodes_host}:7890', 100),
-			Descriptor('1.0.3.3', 'http://alice.nem.ninja:7890', 200),
-			Descriptor('1.0.3.0', f'http://5.{allnodes_host}:7890', 300)
+			Descriptor('0.0.3.0', 'http://bob.nem.ninja:7890', 100),
+			Descriptor('0.0.3.1', f'http://3.{allnodes_host}:7890', 100),
+			Descriptor('0.0.3.3', 'http://alice.nem.ninja:7890', 200),
+			Descriptor('0.0.3.0', f'http://5.{allnodes_host}:7890', 300)
 		]
 		harvesting_descriptors = [
-			Descriptor('1.0.3.1', f'http://3.{allnodes_host}:7890', 200),
-			Descriptor('1.0.3.3', 'http://alice.nem.ninja:7890', 300),
-			Descriptor('1.0.3.0', f'http://5.{allnodes_host}:7890', 500),
-			Descriptor('1.0.3.1', 'http://san.nem.ninja:7890', 800),
-			Descriptor('1.0.3.3', f'http://7.{allnodes_host}:7890', 1300)
+			Descriptor('0.0.3.1', f'http://3.{allnodes_host}:7890', 200),
+			Descriptor('0.0.3.3', 'http://alice.nem.ninja:7890', 300),
+			Descriptor('0.0.3.0', f'http://5.{allnodes_host}:7890', 500),
+			Descriptor('0.0.3.1', 'http://san.nem.ninja:7890', 800),
+			Descriptor('0.0.3.3', f'http://7.{allnodes_host}:7890', 1300)
 		]
 		descriptors = [
-			Descriptor('1.0.3.3', f'http://1.{allnodes_host}:7890', None),
-			Descriptor('1.0.3.0', 'http://bob.nem.ninja:7890', None),
-			Descriptor('1.0.3.1', f'http://3.{allnodes_host}:7890', None),
-			Descriptor('1.0.3.3', 'http://alice.nem.ninja:7890', None),
-			Descriptor('1.0.3.0', f'http://5.{allnodes_host}:7890', None),
-			Descriptor('1.0.3.1', 'http://san.nem.ninja:7890', None),
-			Descriptor('1.0.3.3', f'http://7.{allnodes_host}:7890', None)
+			Descriptor('0.0.3.3', f'http://1.{allnodes_host}:7890', None),
+			Descriptor('0.0.3.0', 'http://bob.nem.ninja:7890', None),
+			Descriptor('0.0.3.1', f'http://3.{allnodes_host}:7890', None),
+			Descriptor('0.0.3.3', 'http://alice.nem.ninja:7890', None),
+			Descriptor('0.0.3.0', f'http://5.{allnodes_host}:7890', None),
+			Descriptor('0.0.3.1', 'http://san.nem.ninja:7890', None),
+			Descriptor('0.0.3.3', f'http://7.{allnodes_host}:7890', None)
 		]
 
 		version_builder.add(voting_descriptors, 'voting_power')
@@ -46,7 +46,7 @@ class VersionChartBuilderTest(unittest.TestCase):
 
 	def _assert_bar_segment(self, chart_data, segment_name, expected):
 		chart_bar_segment = next(chart_bar_segment for chart_bar_segment in chart_data if segment_name == chart_bar_segment['name'])
-		expected_color = {'1.0.3.3': '#008A00', '1.0.3.1': '#00B300', '1.0.3.0': '#00D600'}[segment_name]
+		expected_color = {'0.0.3.3': '#008A00', '0.0.3.1': '#00B300', '0.0.3.0': '#00D600'}[segment_name]
 
 		self.assertEqual({
 			'color': expected_color,
@@ -72,15 +72,15 @@ class VersionChartBuilderTest(unittest.TestCase):
 		# Assert:
 		chart_data = chart_json['data']
 		self.assertEqual(3, len(chart_data))
-		self._assert_bar_segment(chart_data, '1.0.3.3', {
+		self._assert_bar_segment(chart_data, '0.0.3.3', {
 			'x': [200 * 100 / 700, 0, 200 * 100 / 300],
 			'text': ['28.57%<br>(200)', '0.00%<br>(0)', '66.67%<br>(200)']
 		})
-		self._assert_bar_segment(chart_data, '1.0.3.1', {
+		self._assert_bar_segment(chart_data, '0.0.3.1', {
 			'x': [100 * 100 / 700, 100 * 100 / 400, 0],
 			'text': ['14.29%<br>(100)', '25.00%<br>(100)', '0.00%<br>(0)']
 		})
-		self._assert_bar_segment(chart_data, '1.0.3.0', {
+		self._assert_bar_segment(chart_data, '0.0.3.0', {
 			'x': [400 * 100 / 700, 300 * 100 / 400, 100 * 100 / 300],
 			'text': ['57.14%<br>(400)', '75.00%<br>(300)', '33.33%<br>(100)']
 		})
@@ -96,15 +96,15 @@ class VersionChartBuilderTest(unittest.TestCase):
 		# Assert:
 		chart_data = chart_json['data']
 		self.assertEqual(3, len(chart_data))
-		self._assert_bar_segment(chart_data, '1.0.3.3', {
+		self._assert_bar_segment(chart_data, '0.0.3.3', {
 			'x': [1600 * 100 / 3100, 1300 * 100 / 2000, 300 * 100 / 1100],
 			'text': ['51.61%<br>(1,600)', '65.00%<br>(1,300)', '27.27%<br>(300)']
 		})
-		self._assert_bar_segment(chart_data, '1.0.3.1', {
+		self._assert_bar_segment(chart_data, '0.0.3.1', {
 			'x': [1000 * 100 / 3100, 200 * 100 / 2000, 800 * 100 / 1100],
 			'text': ['32.26%<br>(1,000)', '10.00%<br>(200)', '72.73%<br>(800)']
 		})
-		self._assert_bar_segment(chart_data, '1.0.3.0', {
+		self._assert_bar_segment(chart_data, '0.0.3.0', {
 			'x': [500 * 100 / 3100, 500 * 100 / 2000, 0],
 			'text': ['16.13%<br>(500)', '25.00%<br>(500)', '0.00%<br>(0)']
 		})
@@ -118,17 +118,17 @@ class VersionChartBuilderTest(unittest.TestCase):
 		# Assert:
 		chart_data = chart_json['data']
 		self.assertEqual(3, len(chart_data))
-		self._assert_bar_segment(chart_data, '1.0.3.3', {
+		self._assert_bar_segment(chart_data, '0.0.3.3', {
 			'y': ['All', 'Ex All Nodes'],
 			'x': [1600 * 100 / 3100, 1600 * 100 / 3100],
 			'text': ['51.61%<br>(1,600)', '51.61%<br>(1,600)']
 		})
-		self._assert_bar_segment(chart_data, '1.0.3.1', {
+		self._assert_bar_segment(chart_data, '0.0.3.1', {
 			'y': ['All', 'Ex All Nodes'],
 			'x': [1000 * 100 / 3100, 1000 * 100 / 3100],
 			'text': ['32.26%<br>(1,000)', '32.26%<br>(1,000)']
 		})
-		self._assert_bar_segment(chart_data, '1.0.3.0', {
+		self._assert_bar_segment(chart_data, '0.0.3.0', {
 			'y': ['All', 'Ex All Nodes'],
 			'x': [500 * 100 / 3100, 500 * 100 / 3100],
 			'text': ['16.13%<br>(500)', '16.13%<br>(500)']
@@ -143,15 +143,15 @@ class VersionChartBuilderTest(unittest.TestCase):
 		# Assert:
 		chart_data = chart_json['data']
 		self.assertEqual(3, len(chart_data))
-		self._assert_bar_segment(chart_data, '1.0.3.3', {
+		self._assert_bar_segment(chart_data, '0.0.3.3', {
 			'x': [2 * 100 / 5, 1 * 100 / 3, 1 * 100 / 2],
 			'text': ['40.00%<br>(2)', '33.33%<br>(1)', '50.00%<br>(1)']
 		})
-		self._assert_bar_segment(chart_data, '1.0.3.1', {
+		self._assert_bar_segment(chart_data, '0.0.3.1', {
 			'x': [2 * 100 / 5, 1 * 100 / 3, 1 * 100 / 2],
 			'text': ['40.00%<br>(2)', '33.33%<br>(1)', '50.00%<br>(1)']
 		})
-		self._assert_bar_segment(chart_data, '1.0.3.0', {
+		self._assert_bar_segment(chart_data, '0.0.3.0', {
 			'x': [1 * 100 / 5, 1 * 100 / 3, 0],
 			'text': ['20.00%<br>(1)', '33.33%<br>(1)', '0.00%<br>(0)']
 		})
@@ -165,15 +165,15 @@ class VersionChartBuilderTest(unittest.TestCase):
 		# Assert:
 		chart_data = chart_json['data']
 		self.assertEqual(3, len(chart_data))
-		self._assert_bar_segment(chart_data, '1.0.3.3', {
+		self._assert_bar_segment(chart_data, '0.0.3.3', {
 			'x': [3 * 100 / 7, 2 * 100 / 4, 1 * 100 / 3],
 			'text': ['42.86%<br>(3)', '50.00%<br>(2)', '33.33%<br>(1)']
 		})
-		self._assert_bar_segment(chart_data, '1.0.3.1', {
+		self._assert_bar_segment(chart_data, '0.0.3.1', {
 			'x': [2 * 100 / 7, 1 * 100 / 4, 1 * 100 / 3],
 			'text': ['28.57%<br>(2)', '25.00%<br>(1)', '33.33%<br>(1)']
 		})
-		self._assert_bar_segment(chart_data, '1.0.3.0', {
+		self._assert_bar_segment(chart_data, '0.0.3.0', {
 			'x': [2 * 100 / 7, 1 * 100 / 4, 1 * 100 / 3],
 			'text': ['28.57%<br>(2)', '25.00%<br>(1)', '33.33%<br>(1)']
 		})
