@@ -1,7 +1,7 @@
 import csv
 import json
 
-from symbolchain.CryptoTypes import PublicKey
+from symbolchain.CryptoTypes import Hash256, PublicKey
 from symbolchain.nem.Network import Address as NemAddress
 from symbolchain.nem.Network import Network as NemNetwork
 from symbolchain.symbol.Network import Address as SymbolAddress
@@ -95,7 +95,9 @@ class NetworkRepository:
 		log.info(f'loading nodes from {nodes_data_filepath}')
 
 		with open(nodes_data_filepath, 'rt', encoding='utf8') as infile:
-			self.node_descriptors = [self._create_descriptor_from_json(json_node) for json_node in json.load(infile)]
+			self.node_descriptors = list(filter(None.__ne__, [
+				self._create_descriptor_from_json(json_node) for json_node in json.load(infile)
+			]))
 
 		# sort by name
 		self.node_descriptors.sort(key=lambda descriptor: descriptor.name)
@@ -125,6 +127,9 @@ class NetworkRepository:
 			node_host = json_node['host']
 			node_port = 3000 if has_api else json_node['port']
 			symbol_endpoint = f'http://{node_host}:{node_port}'
+
+		if SymbolNetwork.MAINNET.generation_hash_seed != Hash256(json_node['networkGenerationHashSeed']):
+			return None
 
 		return NodeDescriptor(
 			SymbolNetwork.MAINNET.public_key_to_address(PublicKey(json_node['publicKey'])),

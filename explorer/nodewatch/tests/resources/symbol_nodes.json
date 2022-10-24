@@ -69,5 +69,16 @@
     "publicKey": "A0AA48B6417BDB1845EB55FB0B1E13255EA8BD0D8FA29AD2D8A906E220571F21",
     "roles": 3,
     "version": 16777988
+  },
+  {
+    "version":16777216,
+    "publicKey":"CDA2B0F8D03FA1A0537F9CAE01D26B371EDF9196C7B49DD5ECE5C29DF5597514",
+    "networkGenerationHashSeed":"ED5761EA890A096C50D3F50B7C2F0CCB4B84AFC9EA870F381E84DDE36D04EF16",
+    "roles":7,
+    "port":7900,
+    "networkIdentifier":104,
+    "host":"01-super-harvest.dhealth-symbol.com",
+    "friendlyName":"ignored because network generation hash seed does not match",
+    "nodePublicKey":"8DD4F8F0003C127C98D7F0DB821BE320BE494F3E81DE703CC3320352DB0A7221"
   }
 ]
