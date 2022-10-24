@@ -134,12 +134,12 @@ class NemRoutesFacadeTest(unittest.TestCase):
 
 		# Act:
 		chart_with_metadata_json = json.loads(facade.json_height_chart_with_metadata())
-		chart_json = json.loads(chart_with_metadata_json['chart_json'])
+		chart_json = json.loads(chart_with_metadata_json['chartJson'])
 
 		# Assert: { height } x { 0.6.100 }
 		self.assertEqual(2, len(chart_with_metadata_json))
 		self.assertEqual(1, len(chart_json['data']))
-		self.assertTrue(re.match(r'\d\d:\d\d', chart_with_metadata_json['last_refresh_time']))
+		self.assertTrue(re.match(r'\d\d:\d\d', chart_with_metadata_json['lastRefreshTime']))
 
 	def test_can_retrieve_estimated_network_height_json(self):
 		# Arrange:
@@ -304,12 +304,12 @@ class SymbolRoutesFacadeTest(unittest.TestCase):
 
 		# Act:
 		chart_with_metadata_json = json.loads(facade.json_height_chart_with_metadata())
-		chart_json = json.loads(chart_with_metadata_json['chart_json'])
+		chart_json = json.loads(chart_with_metadata_json['chartJson'])
 
 		# Assert: { height, finalized_height } x { 1.0.3.4, 1.0.3.5 }
 		self.assertEqual(2, len(chart_with_metadata_json))
 		self.assertEqual(4, len(chart_json['data']))
-		self.assertTrue(re.match(r'\d\d:\d\d', chart_with_metadata_json['last_refresh_time']))
+		self.assertTrue(re.match(r'\d\d:\d\d', chart_with_metadata_json['lastRefreshTime']))
 
 	def test_can_retrieve_estimated_network_height_json(self):
 		# Arrange:

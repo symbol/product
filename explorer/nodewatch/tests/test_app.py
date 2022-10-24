@@ -133,13 +133,13 @@ def test_get_nem_network_height_chart(client):  # pylint: disable=redefined-oute
 	# Act:
 	response = client.get('/nem/chart/height')
 	response_json = json.loads(response.data)
-	chart_json = json.loads(response_json['chart_json'])
+	chart_json = json.loads(response_json['chartJson'])
 
 	# Assert:
 	assert 200 == response.status_code
 	assert 2 == len(response_json)
 	assert 1 == len(chart_json['data'])
-	assert re.match(r'\d\d:\d\d', response_json['last_refresh_time'])
+	assert re.match(r'\d\d:\d\d', response_json['lastRefreshTime'])
 
 
 def test_get_symbol_network_height(client):  # pylint: disable=redefined-outer-name
@@ -156,12 +156,12 @@ def test_get_symbol_network_height_chart(client):  # pylint: disable=redefined-o
 	# Act:
 	response = client.get('/symbol/chart/height')
 	response_json = json.loads(response.data)
-	chart_json = json.loads(response_json['chart_json'])
+	chart_json = json.loads(response_json['chartJson'])
 
 	# Assert:
 	assert 200 == response.status_code
 	assert 2 == len(response_json)
 	assert 4 == len(chart_json['data'])
-	assert re.match(r'\d\d:\d\d', response_json['last_refresh_time'])
+	assert re.match(r'\d\d:\d\d', response_json['lastRefreshTime'])
 
 # endregion

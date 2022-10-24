@@ -65,8 +65,8 @@ class BasicRoutesFacade:
 		"""Builds a JSON height chart with metadata."""
 
 		return json.dumps({
-			'chart_json': self.json_height_chart(),
-			'last_refresh_time': self.last_refresh_time.strftime(TIMESTAMP_FORMAT)
+			'chartJson': self.json_height_chart(),
+			'lastRefreshTime': self.last_refresh_time.strftime(TIMESTAMP_FORMAT)
 		})
 
 	def json_height(self):
