@@ -1,5 +1,6 @@
 import unittest
 
+from symbolchain.CryptoTypes import PublicKey
 from symbolchain.nem.Network import Address as NemAddress
 from symbolchain.symbol.Network import Address as SymbolAddress
 
@@ -10,7 +11,9 @@ class NetworkRepositoryTest(unittest.TestCase):
 	# region load node descriptors
 
 	def _assert_node_descriptor(self, descriptor, **kwargs):
-		property_names = ['main_address', 'endpoint', 'name', 'height', 'finalized_height', 'version', 'balance', 'has_api']
+		property_names = [
+			'main_address', 'main_public_key', 'endpoint', 'name', 'height', 'finalized_height', 'version', 'balance', 'roles', 'has_api'
+		]
 		for name in property_names:
 			self.assertEqual(kwargs[name], getattr(descriptor, name))
 
@@ -28,42 +31,50 @@ class NetworkRepositoryTest(unittest.TestCase):
 		self._assert_node_descriptor(
 			repository.node_descriptors[0],
 			main_address=NemAddress('NA32LQUMJBADX2XMKJ5QEIQBCF2ZIW5SZDXVGPOL'),
+			main_public_key=PublicKey('EA786CE93FC760A4FD8E5E1F1336C0A2A915DE70EE28089331EC6658CE330282'),
 			endpoint='http://51.79.73.50:7890',
 			name='August',
 			height=3850057,
 			finalized_height=0,
 			version='0.6.100',
 			balance=3355922.652725,
+			roles=0xFF,
 			has_api=True)
 		self._assert_node_descriptor(
 			repository.node_descriptors[1],
 			main_address=NemAddress('NCXIQA4FF5JB6AMQ53NQ3ZMRD3X3PJEWDJJJIGHT'),
+			main_public_key=PublicKey('107051C28A2C009A83AE0861CDBFF7C1CBAB387C964CC433F7D191D9C3115ED7'),
 			endpoint='http://jusan.nem.ninja:7890',
 			name='[c=#e9c086]jusan[/c]',
 			height=3850058,
 			finalized_height=0,
 			version='0.6.100',
 			balance=20612359.516967,
+			roles=0xFF,
 			has_api=True)
 		self._assert_node_descriptor(
 			repository.node_descriptors[2],
 			main_address=NemAddress('NDARKIXXPHDG5SEXSXVFIXXSNMOYJE4ZRI2CVWTL'),
+			main_public_key=PublicKey('83F2791B70E06EA36520D044C6FD85B84CA9A31744C1173C640C36A2F3161846'),
 			endpoint='http://45.76.22.139:7890',
 			name='cobalt',
 			height=0,
 			finalized_height=0,
 			version='0.6.99',
 			balance=0,
+			roles=0xFF,
 			has_api=True)  # simulates missing extraData
 		self._assert_node_descriptor(
 			repository.node_descriptors[3],
 			main_address=NemAddress('NDARKZ5F4YRWHPJN54NPT5YHEGQSKBT5SN2YZMIZ'),
+			main_public_key=PublicKey('4AA8692447AC5ED16403C2C50BF7254D240D48A490D1D77B28B309680A36B431'),
 			endpoint='http://45.32.131.118:7890',
 			name='silicon',
 			height=0,
 			finalized_height=0,
 			version='0.6.100',
 			balance=0,
+			roles=0xFF,
 			has_api=True)  # simulates incomplete extraData
 
 	def test_can_load_symbol_node_descriptors(self):
@@ -80,53 +91,83 @@ class NetworkRepositoryTest(unittest.TestCase):
 		self._assert_node_descriptor(
 			repository.node_descriptors[0],
 			main_address=SymbolAddress('NDZOZPTDVCFFLDCNJL7NZGDQDNBB7TY3V6SZNGI'),
+			main_public_key=PublicKey('A0AA48B6417BDB1845EB55FB0B1E13255EA8BD0D8FA29AD2D8A906E220571F21'),
 			endpoint='',
 			name='Allnodes250',
 			height=1486762,
 			finalized_height=1486740,
 			version='1.0.3.4',
 			balance=3155632.471994,
+			roles=2,
 			has_api=True)  # simulates missing host
 		self._assert_node_descriptor(
 			repository.node_descriptors[1],
 			main_address=SymbolAddress('NBPQMC4M2MMX2XOCOC3BCZ7N3ALUTRGLYPPQ56Q'),
+			main_public_key=PublicKey('2784FBE82D8A46C4082519012970CBB42EC3EC83D5DB93963B71FD6C5DA3B072'),
 			endpoint='http://00fabf14.xym.stir-hosyu.com:3000',
 			name='Shin-Kuma-Node',
 			height=0,
 			finalized_height=0,
 			version='1.0.3.5',
 			balance=0,
+			roles=3,
 			has_api=True)  # simulates incomplete extraData
 		self._assert_node_descriptor(
 			repository.node_descriptors[2],
 			main_address=SymbolAddress('NCPPDLXGYBHNPQAXQ6RTNS3T46A7FNTXDFBD43Y'),
+			main_public_key=PublicKey('7DFB0D690BFFA4A4979C7466C7B669AE8FBAFD419DAA10DE948604CD9BE65F0B'),
 			endpoint='http://symbol.shizuilab.com:3000',
 			name='ibone74',
 			height=1486760,
 			finalized_height=1486740,
 			version='1.0.3.5',
 			balance=82375.554976,
+			roles=3,
 			has_api=True)
 		self._assert_node_descriptor(
 			repository.node_descriptors[3],
 			main_address=SymbolAddress('NAEONICSHRZATW7XGIVIDPTNHUMQA7N7XQ4EUPQ'),
+			main_public_key=PublicKey('B26D01FC006EAC09B740A3C8F12C1055AE24AFD3268F0364C92D51800FC07361'),
 			endpoint='http://jaguar.catapult.ninja:7900',
 			name='jaguar',
 			height=1486761,
 			finalized_height=1486740,
 			version='1.0.3.5',
 			balance=28083310.571743,
+			roles=5,
 			has_api=False)
 		self._assert_node_descriptor(
 			repository.node_descriptors[4],
 			main_address=SymbolAddress('NDLLVJIUHAAV6F5PG5KYSSQXCZDCPXCY4WFA6TQ'),
+			main_public_key=PublicKey('71F953D3C3D0B7E70E29EC2DE761DD7339BA815C094B3BEE0917AEBD924B37EB'),
 			endpoint='http://symbol.ooo:3000',
 			name='symbol.ooo maxUnlockedAccounts:100',
 			height=0,
 			finalized_height=0,
 			version='1.0.3.4',
 			balance=0,
+			roles=3,
 			has_api=True)  # simulates missing extraData
+
+	def test_can_format_node_descriptor_as_json(self):
+		# Arrange:
+		repository = NetworkRepository('symbol')
+		repository.load_node_descriptors('tests/resources/symbol_nodes.json')
+
+		# Act:
+		json_object = repository.node_descriptors[3].to_json()
+
+		# Assert:
+		self.assertEqual({
+			'mainPublicKey': 'B26D01FC006EAC09B740A3C8F12C1055AE24AFD3268F0364C92D51800FC07361',
+			'endpoint': 'http://jaguar.catapult.ninja:7900',
+			'name': 'jaguar',
+			'height': 1486761,
+			'finalizedHeight': 1486740,
+			'version': '1.0.3.5',
+			'balance': 28083310.571743,
+			'roles': 5,
+		}, json_object)
 
 	# endregion
 

@@ -39,12 +39,16 @@ def create_app():
 		template_name, context = nem_routes_facade.html_summary()
 		return render_template(template_name, **context)
 
-	@app.route('/nem/chart/height')
-	def nem_chart_height():  # pylint: disable=unused-variable
+	@app.route('/api/nem/nodes')
+	def api_nem_nodes():  # pylint: disable=unused-variable
+		return nem_routes_facade.json_nodes(1)
+
+	@app.route('/api/nem/chart/height')
+	def api_nem_chart_height():  # pylint: disable=unused-variable
 		return nem_routes_facade.json_height_chart_with_metadata()
 
-	@app.route('/nem/height')
-	def nem_height():  # pylint: disable=unused-variable
+	@app.route('/api/nem/height')
+	def api_nem_height():  # pylint: disable=unused-variable
 		return nem_routes_facade.json_height()
 
 	@app.route('/symbol/voters')
@@ -67,12 +71,20 @@ def create_app():
 		template_name, context = symbol_routes_facade.html_summary()
 		return render_template(template_name, **context)
 
-	@app.route('/symbol/chart/height')
-	def symbol_chart_height():  # pylint: disable=unused-variable
+	@app.route('/api/symbol/nodes/api')
+	def api_symbol_nodes_api():  # pylint: disable=unused-variable
+		return symbol_routes_facade.json_nodes(2, exact_match=True)
+
+	@app.route('/api/symbol/nodes/peer')
+	def api_symbol_nodes_peer():  # pylint: disable=unused-variable
+		return symbol_routes_facade.json_nodes(1)
+
+	@app.route('/api/symbol/chart/height')
+	def api_symbol_chart_height():  # pylint: disable=unused-variable
 		return symbol_routes_facade.json_height_chart_with_metadata()
 
-	@app.route('/symbol/height')
-	def symbol_height():  # pylint: disable=unused-variable
+	@app.route('/api/symbol/height')
+	def api_symbol_height():  # pylint: disable=unused-variable
 		return symbol_routes_facade.json_height()
 
 	@app.context_processor

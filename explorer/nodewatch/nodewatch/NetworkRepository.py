@@ -12,19 +12,52 @@ from zenlog import log
 class NodeDescriptor:
 	"""Node descriptor."""
 
-	def __init__(self, main_address=None, endpoint=None, name=None, version=None, height=0, finalized_height=0, balance=0, has_api=True):
+	# pylint: disable=too-many-instance-attributes
+
+	def __init__(
+		self,
+		main_address=None,
+		main_public_key=None,
+		endpoint=None,
+		name=None,
+		version=None,
+		height=0,
+		finalized_height=0,
+		balance=0,
+		roles=0xFF):
 		"""Creates a descriptor."""
 
 		# pylint: disable=too-many-arguments
 
 		self.main_address = main_address
+		self.main_public_key = main_public_key
 		self.endpoint = endpoint
 		self.name = name
 		self.version = version
 		self.height = height
 		self.finalized_height = finalized_height
 		self.balance = balance
-		self.has_api = has_api
+		self.roles = roles
+
+	@property
+	def has_api(self):
+		"""Returns true if this node supports a REST API."""
+
+		return bool(self.roles & 2)
+
+	def to_json(self):
+		"""Formats the node descriptor as json."""
+
+		return {
+			'mainPublicKey': str(self.main_public_key),
+			'endpoint': self.endpoint,
+			'name': self.name,
+			'version': self.version,
+			'height': self.height,
+			'finalizedHeight': self.finalized_height,
+			'balance': self.balance,
+			'roles': self.roles
+		}
 
 
 class HarvesterDescriptor:
@@ -114,15 +147,18 @@ class NetworkRepository:
 			node_host = json_node['endpoint']['host']
 			node_port = json_node['endpoint']['port']
 
+			main_public_key = PublicKey(json_node['identity']['public-key'])
 			return NodeDescriptor(
-				NemNetwork.MAINNET.public_key_to_address(PublicKey(json_node['identity']['public-key'])),
+				NemNetwork.MAINNET.public_key_to_address(main_public_key),
+				main_public_key,
 				f'{node_protocol}://{node_host}:{node_port}',
 				json_node['identity']['name'],
 				json_node['metaData']['version'],
 				*extra_data)
 
 		symbol_endpoint = ''
-		has_api = bool(json_node['roles'] & 2)
+		roles = json_node['roles']
+		has_api = bool(roles & 2)
 		if json_node['host']:
 			node_host = json_node['host']
 			node_port = 3000 if has_api else json_node['port']
@@ -131,13 +167,15 @@ class NetworkRepository:
 		if SymbolNetwork.MAINNET.generation_hash_seed != Hash256(json_node['networkGenerationHashSeed']):
 			return None
 
+		main_public_key = PublicKey(json_node['publicKey'])
 		return NodeDescriptor(
-			SymbolNetwork.MAINNET.public_key_to_address(PublicKey(json_node['publicKey'])),
+			SymbolNetwork.MAINNET.public_key_to_address(main_public_key),
+			main_public_key,
 			symbol_endpoint,
 			json_node['friendlyName'],
 			self._format_symbol_version(json_node['version']),
 			*extra_data,
-			has_api)
+			roles)
 
 	@staticmethod
 	def _format_symbol_version(version):

@@ -26,3 +26,6 @@ __pycache__/
 *.egg-info/
 build/
 dist/
+
+# other build artifacts
+_generated/

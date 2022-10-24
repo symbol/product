@@ -116,6 +116,23 @@ class NemRoutesFacadeTest(unittest.TestCase):
 
 	# region json
 
+	def test_can_generate_nodes_json(self):
+		# Arrange:
+		facade = NemRoutesFacade()
+		facade.reload_all(Path('tests/resources'), True)
+
+		# Act:
+		node_descriptors = json.loads(facade.json_nodes(1))
+
+		# Assert: spot check names and roles
+		self.assertEqual(4, len(node_descriptors))
+		self.assertEqual(
+			['August', '[c=#e9c086]jusan[/c]', 'cobalt', 'silicon'],
+			list(map(lambda descriptor: descriptor['name'], node_descriptors)))
+		self.assertEqual(
+			[0xFF, 0xFF, 0xFF, 0xFF],
+			list(map(lambda descriptor: descriptor['roles'], node_descriptors)))
+
 	def test_can_generate_height_chart_json(self):
 		# Arrange:
 		facade = NemRoutesFacade(1)
@@ -285,6 +302,57 @@ class SymbolRoutesFacadeTest(unittest.TestCase):
 	# endregion
 
 	# region json
+
+	def test_can_generate_nodes_json(self):
+		# Arrange:
+		facade = SymbolRoutesFacade()
+		facade.reload_all(Path('tests/resources'), True)
+
+		# Act:
+		node_descriptors = json.loads(facade.json_nodes(1))
+
+		# Assert: spot check names and roles
+		self.assertEqual(4, len(node_descriptors))
+		self.assertEqual(
+			['Shin-Kuma-Node', 'ibone74', 'jaguar', 'symbol.ooo maxUnlockedAccounts:100'],
+			list(map(lambda descriptor: descriptor['name'], node_descriptors)))
+		self.assertEqual(
+			[3, 3, 5, 3],
+			list(map(lambda descriptor: descriptor['roles'], node_descriptors)))
+
+	def test_can_generate_nodes_json_filtered(self):
+		# Arrange:
+		facade = SymbolRoutesFacade()
+		facade.reload_all(Path('tests/resources'), True)
+
+		# Act: select nodes with api role (role 2)
+		node_descriptors = json.loads(facade.json_nodes(2))
+
+		# Assert: spot check names and roles
+		self.assertEqual(4, len(node_descriptors))
+		self.assertEqual(
+			['Allnodes250', 'Shin-Kuma-Node', 'ibone74', 'symbol.ooo maxUnlockedAccounts:100'],
+			list(map(lambda descriptor: descriptor['name'], node_descriptors)))
+		self.assertEqual(
+			[2, 3, 3, 3],
+			list(map(lambda descriptor: descriptor['roles'], node_descriptors)))
+
+	def test_can_generate_nodes_json_filtered_exact_match(self):
+		# Arrange:
+		facade = SymbolRoutesFacade()
+		facade.reload_all(Path('tests/resources'), True)
+
+		# Act: select nodes with only api role (role 2)
+		node_descriptors = json.loads(facade.json_nodes(2, True))
+
+		# Assert: spot check names and roles
+		self.assertEqual(1, len(node_descriptors))
+		self.assertEqual(
+			['Allnodes250'],
+			list(map(lambda descriptor: descriptor['name'], node_descriptors)))
+		self.assertEqual(
+			[2],
+			list(map(lambda descriptor: descriptor['roles'], node_descriptors)))
 
 	def test_can_generate_height_chart_json(self):
 		# Arrange:

@@ -50,6 +50,16 @@ class BasicRoutesFacade:
 			'version_to_css_class': self.version_to_css_class
 		})
 
+	def json_nodes(self, role, exact_match=False):
+		"""Returns all nodes with matching role."""
+
+		def role_filter(descriptor):
+			return role == descriptor.roles if exact_match else role == (role & descriptor.roles)
+
+		return json.dumps(list(map(
+			lambda descriptor: descriptor.to_json(),
+			filter(role_filter, self.repository.node_descriptors))))
+
 	def json_height_chart(self):
 		"""Builds a JSON height chart."""
 

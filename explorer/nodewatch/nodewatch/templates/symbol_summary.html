@@ -59,7 +59,7 @@ Symbol Summary
 {% block scripts %}
   <script type="text/javascript">
     function update_height_charts() {
-      fetch('{{ url_for("symbol_chart_height") }}', {headers: {'Content-Type': 'application/json'} })
+      fetch('{{ url_for("api_symbol_chart_height") }}', {headers: {'Content-Type': 'application/json'} })
         .then(response => response.json())
         .then(response => {
           Plotly.newPlot('height-chart', $.parseJSON(response.chartJson));
