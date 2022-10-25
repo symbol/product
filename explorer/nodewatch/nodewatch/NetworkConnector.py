@@ -65,7 +65,7 @@ class NetworkConnector:
 
 				if 'finalized_height' in response_json:
 					descriptor.finalized_height = int(response_json['finalized_height'])
-		except (aiohttp.client_exceptions.ClientConnectorError, asyncio.TimeoutError) as ex:
+		except (aiohttp.client_exceptions.ClientConnectorError, aiohttp.client_exceptions.ContentTypeError, asyncio.TimeoutError) as ex:
 			log.warning(f'failed retrieving height from endpoint "{descriptor.endpoint}"\n{ex}')
 			return False
 

@@ -44,6 +44,11 @@ def server(event_loop, aiohttp_client):
 
 		async def _process(self, request, response_body):
 			self.urls.append(str(request.url))
+
+			if not int(response_body['height']):
+				# simulate content parse error when 0 == height
+				return web.Response(body='error', headers={'Content-Type': 'text/plain'})
+
 			return web.Response(body=json.dumps(response_body), headers={'Content-Type': 'application/json'})
 
 	# create a mock server
@@ -95,6 +100,7 @@ async def test_can_update_nem_heights_with_some_errors(server):  # pylint: disab
 		NodeDescriptor(f'{server.make_url("")}/1234'),
 		NodeDescriptor('http://127.0.0.1:1234/1237'),  # failed connection
 		NodeDescriptor(''),  # unknown endpoint
+		NodeDescriptor(f'{server.make_url("")}/0'),  # simulate wrong content type
 		NodeDescriptor(f'{server.make_url("")}/1236')
 	]
 
@@ -102,14 +108,15 @@ async def test_can_update_nem_heights_with_some_errors(server):  # pylint: disab
 	await connector.update_heights(node_descriptors)
 
 	# Assert:
-	assert 2 == len(server.mock.urls)
-	for height in [1234, 1236]:
+	assert 3 == len(server.mock.urls)
+	for height in [0, 1234, 1236]:
 		assert f'{server.make_url("")}/{height}/chain/height' in server.mock.urls
 
 	_assert_node_descriptor(node_descriptors[0], 1234)
 	_assert_node_descriptor(node_descriptors[1], 0)  # not updated on failure
 	_assert_node_descriptor(node_descriptors[2], 0)  # not updated on failure
-	_assert_node_descriptor(node_descriptors[3], 1236)
+	_assert_node_descriptor(node_descriptors[3], 0)  # not updated on failure
+	_assert_node_descriptor(node_descriptors[4], 1236)
 
 # endregion
 
@@ -171,6 +178,7 @@ async def test_can_update_symbol_heights_with_some_errors(server):  # pylint: di
 		NodeDescriptor(f'{server.make_url("")}/1234/1000'),
 		NodeDescriptor('http://127.0.0.1:1234/1237/1010'),  # failed connection
 		NodeDescriptor(''),  # unknown endpoint
+		NodeDescriptor(f'{server.make_url("")}/0/0'),  # simulate wrong content type
 		NodeDescriptor(f'{server.make_url("")}/1236/1005')
 	]
 
@@ -178,13 +186,14 @@ async def test_can_update_symbol_heights_with_some_errors(server):  # pylint: di
 	await connector.update_heights(node_descriptors)
 
 	# Assert:
-	assert 2 == len(server.mock.urls)
-	for height, finalized_height in [(1234, 1000), (1236, 1005)]:
+	assert 3 == len(server.mock.urls)
+	for height, finalized_height in [(0, 0), (1234, 1000), (1236, 1005)]:
 		assert f'{server.make_url("")}/{height}/{finalized_height}/chain/info' in server.mock.urls
 
 	_assert_node_descriptor(node_descriptors[0], 1234, 1000)
 	_assert_node_descriptor(node_descriptors[1], 0)  # not updated on failure
 	_assert_node_descriptor(node_descriptors[2], 0)  # not updated on failure
-	_assert_node_descriptor(node_descriptors[3], 1236, 1005)
+	_assert_node_descriptor(node_descriptors[3], 0)  # not updated on failure
+	_assert_node_descriptor(node_descriptors[4], 1236, 1005)
 
 # endregion
