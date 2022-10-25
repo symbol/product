@@ -80,5 +80,16 @@
     "host":"01-super-harvest.dhealth-symbol.com",
     "friendlyName":"ignored because network generation hash seed does not match",
     "nodePublicKey":"8DD4F8F0003C127C98D7F0DB821BE320BE494F3E81DE703CC3320352DB0A7221"
+  },
+  {
+    "version": 16777987,
+    "publicKey": "A05329E4E5F068B323653F393CE0E3E6A1EB5056E122457354BA65158FFD33F4",
+    "networkGenerationHashSeed": "57F7DA205008026C776CB6AED843393F04CD458E0AA2D9F1D5F31A402072B2D6",
+    "roles": 7,
+    "port": 7900,
+    "networkIdentifier": 104,
+    "host": "02.symbol-node.net",
+    "friendlyName": "Apple",
+    "nodePublicKey": "FBEAFCB15D2674ECB8DC1CD2C028C4AC0D463489069FDD415F30BB71EAE69864"
   }
 ]

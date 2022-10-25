@@ -63,9 +63,7 @@ class BasicRoutesFacade:
 	def json_height_chart(self):
 		"""Builds a JSON height chart."""
 
-		compatible_node_descriptors = [
-			descriptor for descriptor in self.repository.node_descriptors if 'success' == self.version_to_css_class(descriptor.version)
-		]
+		compatible_node_descriptors = self.repository.node_descriptors
 		height_builder = HeightChartBuilder(self.version_customizations, self.min_cluster_size)
 		height_builder.add_heights(compatible_node_descriptors)
 		height_builder.add_finalized_heights(compatible_node_descriptors)

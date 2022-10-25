@@ -86,7 +86,7 @@ class NetworkRepositoryTest(unittest.TestCase):
 
 		# Assert: descriptors are sorted by name (desc)
 		self.assertFalse(repository.is_nem)
-		self.assertEqual(5, len(repository.node_descriptors))
+		self.assertEqual(6, len(repository.node_descriptors))
 		self.assertEqual(1486760, repository.estimate_height())  # median
 		self._assert_node_descriptor(
 			repository.node_descriptors[0],
@@ -102,6 +102,18 @@ class NetworkRepositoryTest(unittest.TestCase):
 			has_api=True)  # simulates missing host
 		self._assert_node_descriptor(
 			repository.node_descriptors[1],
+			main_address=SymbolAddress('NCFJP3DM65U22JI5XZ2P2TBK5BV5MLKAR7334LQ'),
+			main_public_key=PublicKey('A05329E4E5F068B323653F393CE0E3E6A1EB5056E122457354BA65158FFD33F4'),
+			endpoint='http://02.symbol-node.net:3000',
+			name='Apple',
+			height=0,
+			finalized_height=0,
+			version='1.0.3.3',
+			balance=0,
+			roles=7,
+			has_api=True)  # old version mapped to 'failure'
+		self._assert_node_descriptor(
+			repository.node_descriptors[2],
 			main_address=SymbolAddress('NBPQMC4M2MMX2XOCOC3BCZ7N3ALUTRGLYPPQ56Q'),
 			main_public_key=PublicKey('2784FBE82D8A46C4082519012970CBB42EC3EC83D5DB93963B71FD6C5DA3B072'),
 			endpoint='http://00fabf14.xym.stir-hosyu.com:3000',
@@ -113,7 +125,7 @@ class NetworkRepositoryTest(unittest.TestCase):
 			roles=3,
 			has_api=True)  # simulates incomplete extraData
 		self._assert_node_descriptor(
-			repository.node_descriptors[2],
+			repository.node_descriptors[3],
 			main_address=SymbolAddress('NCPPDLXGYBHNPQAXQ6RTNS3T46A7FNTXDFBD43Y'),
 			main_public_key=PublicKey('7DFB0D690BFFA4A4979C7466C7B669AE8FBAFD419DAA10DE948604CD9BE65F0B'),
 			endpoint='http://symbol.shizuilab.com:3000',
@@ -125,7 +137,7 @@ class NetworkRepositoryTest(unittest.TestCase):
 			roles=3,
 			has_api=True)
 		self._assert_node_descriptor(
-			repository.node_descriptors[3],
+			repository.node_descriptors[4],
 			main_address=SymbolAddress('NAEONICSHRZATW7XGIVIDPTNHUMQA7N7XQ4EUPQ'),
 			main_public_key=PublicKey('B26D01FC006EAC09B740A3C8F12C1055AE24AFD3268F0364C92D51800FC07361'),
 			endpoint='http://jaguar.catapult.ninja:7900',
@@ -137,7 +149,7 @@ class NetworkRepositoryTest(unittest.TestCase):
 			roles=5,
 			has_api=False)
 		self._assert_node_descriptor(
-			repository.node_descriptors[4],
+			repository.node_descriptors[5],
 			main_address=SymbolAddress('NDLLVJIUHAAV6F5PG5KYSSQXCZDCPXCY4WFA6TQ'),
 			main_public_key=PublicKey('71F953D3C3D0B7E70E29EC2DE761DD7339BA815C094B3BEE0917AEBD924B37EB'),
 			endpoint='http://symbol.ooo:3000',
@@ -155,7 +167,7 @@ class NetworkRepositoryTest(unittest.TestCase):
 		repository.load_node_descriptors('tests/resources/symbol_nodes.json')
 
 		# Act:
-		json_object = repository.node_descriptors[3].to_json()
+		json_object = repository.node_descriptors[4].to_json()
 
 		# Assert:
 		self.assertEqual({

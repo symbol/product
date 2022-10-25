@@ -173,9 +173,9 @@ def test_get_api_symbol_nodes_peer(client):  # pylint: disable=redefined-outer-n
 
 	# Assert: spot check names
 	assert 200 == response.status_code
-	assert 4 == len(response_json)
+	assert 5 == len(response_json)
 	assert [
-		'Shin-Kuma-Node', 'ibone74', 'jaguar', 'symbol.ooo maxUnlockedAccounts:100'
+		'Apple', 'Shin-Kuma-Node', 'ibone74', 'jaguar', 'symbol.ooo maxUnlockedAccounts:100'
 	] == list(map(lambda descriptor: descriptor['name'], response_json))
 
 

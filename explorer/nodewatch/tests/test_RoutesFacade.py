@@ -197,7 +197,7 @@ class SymbolRoutesFacadeTest(unittest.TestCase):
 		self.assertEqual(True, result)
 		self.assertEqual(facade.last_reload_time, facade.last_refresh_time)
 
-		self.assertEqual(5, len(facade.repository.node_descriptors))
+		self.assertEqual(6, len(facade.repository.node_descriptors))
 		self.assertEqual(4, len(facade.repository.harvester_descriptors))
 		self.assertEqual(4, len(facade.repository.voter_descriptors))
 
@@ -214,7 +214,7 @@ class SymbolRoutesFacadeTest(unittest.TestCase):
 		self.assertEqual([True, False, False], [result1, result2, result3])
 		self.assertEqual(facade.last_reload_time, facade.last_refresh_time)
 
-		self.assertEqual(5, len(facade.repository.node_descriptors))
+		self.assertEqual(6, len(facade.repository.node_descriptors))
 		self.assertEqual(4, len(facade.repository.harvester_descriptors))
 		self.assertEqual(4, len(facade.repository.voter_descriptors))
 
@@ -262,7 +262,7 @@ class SymbolRoutesFacadeTest(unittest.TestCase):
 		self.assertEqual(3, len(context))
 		self.assertEqual('Symbol Nodes', context['title'])
 		self.assertEqual(
-			['Allnodes250', 'Shin-Kuma-Node', 'ibone74', 'jaguar', 'symbol.ooo maxUnlockedAccounts:100'],
+			['Allnodes250', 'Apple', 'Shin-Kuma-Node', 'ibone74', 'jaguar', 'symbol.ooo maxUnlockedAccounts:100'],
 			_get_names(context['descriptors']))
 		self.assertIsNotNone(context['version_to_css_class'])
 
@@ -294,10 +294,10 @@ class SymbolRoutesFacadeTest(unittest.TestCase):
 		self.assertEqual('symbol_summary.html', template_name)
 		self.assertEqual(5, len(context))
 		self.assertEqual(4, len(json.loads(context['height_chart_json'])['data']))  # { height, finalized_height } x { 1.0.3.5, 1.0.3.4 }
-		self.assertEqual(3, len(json.loads(context['voting_power_chart_json'])['data']))  # 1.0.3.5, 1.0.3.4, ''
-		self.assertEqual(3, len(json.loads(context['harvesting_power_chart_json'])['data']))  # 1.0.3.5, 1.0.3.4, ''
-		self.assertEqual(3, len(json.loads(context['harvesting_count_chart_json'])['data']))  # 1.0.3.5, 1.0.3.4, ''
-		self.assertEqual(3, len(json.loads(context['node_count_chart_json'])['data']))  # 1.0.3.5, 1.0.3.4, ''
+		self.assertEqual(4, len(json.loads(context['voting_power_chart_json'])['data']))  # 1.0.3.5, 1.0.3.4, 1.0.3.3, ''
+		self.assertEqual(4, len(json.loads(context['harvesting_power_chart_json'])['data']))  # 1.0.3.5, 1.0.3.4, 1.0.3.3, ''
+		self.assertEqual(4, len(json.loads(context['harvesting_count_chart_json'])['data']))  # 1.0.3.5, 1.0.3.4, 1.0.3.3, ''
+		self.assertEqual(4, len(json.loads(context['node_count_chart_json'])['data']))  # 1.0.3.5, 1.0.3.4, 1.0.3.3, ''
 
 	# endregion
 
@@ -312,12 +312,12 @@ class SymbolRoutesFacadeTest(unittest.TestCase):
 		node_descriptors = json.loads(facade.json_nodes(1))
 
 		# Assert: spot check names and roles
-		self.assertEqual(4, len(node_descriptors))
+		self.assertEqual(5, len(node_descriptors))
 		self.assertEqual(
-			['Shin-Kuma-Node', 'ibone74', 'jaguar', 'symbol.ooo maxUnlockedAccounts:100'],
+			['Apple', 'Shin-Kuma-Node', 'ibone74', 'jaguar', 'symbol.ooo maxUnlockedAccounts:100'],
 			list(map(lambda descriptor: descriptor['name'], node_descriptors)))
 		self.assertEqual(
-			[3, 3, 5, 3],
+			[7, 3, 3, 5, 3],
 			list(map(lambda descriptor: descriptor['roles'], node_descriptors)))
 
 	def test_can_generate_nodes_json_filtered(self):
@@ -329,12 +329,12 @@ class SymbolRoutesFacadeTest(unittest.TestCase):
 		node_descriptors = json.loads(facade.json_nodes(2))
 
 		# Assert: spot check names and roles
-		self.assertEqual(4, len(node_descriptors))
+		self.assertEqual(5, len(node_descriptors))
 		self.assertEqual(
-			['Allnodes250', 'Shin-Kuma-Node', 'ibone74', 'symbol.ooo maxUnlockedAccounts:100'],
+			['Allnodes250', 'Apple', 'Shin-Kuma-Node', 'ibone74', 'symbol.ooo maxUnlockedAccounts:100'],
 			list(map(lambda descriptor: descriptor['name'], node_descriptors)))
 		self.assertEqual(
-			[2, 3, 3, 3],
+			[2, 7, 3, 3, 3],
 			list(map(lambda descriptor: descriptor['roles'], node_descriptors)))
 
 	def test_can_generate_nodes_json_filtered_exact_match(self):
