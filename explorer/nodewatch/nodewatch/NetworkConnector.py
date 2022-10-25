@@ -23,9 +23,8 @@ class NetworkConnector:
 	async def update_heights(self, descriptors):
 		"""Updates heights in all specified descriptors."""
 
-		if not self.is_nem:
-			# connector only supports connecting to nodes using the API but not the P2P interface
-			descriptors = [descriptor for descriptor in descriptors if descriptor.has_api]
+		# connector only supports connecting to nodes using the API but not the P2P interface
+		descriptors = [descriptor for descriptor in descriptors if descriptor.has_api]
 
 		log.info(f'updating heights from {len(descriptors)} nodes for {self.network_name} network')
 
@@ -52,6 +51,10 @@ class NetworkConnector:
 				log.warning(f'{num_failures}/{len(endpoints)} height queries failed for {self.network_name} network')
 
 	async def _update_height(self, session, descriptor):
+		if not descriptor.endpoint:
+			print(f'skipping node "{descriptor.name}" with unknown endpoint')
+			return False
+
 		url = self.url_pattern.format(descriptor.endpoint)
 
 		try:

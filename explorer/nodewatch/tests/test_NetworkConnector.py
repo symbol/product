@@ -9,6 +9,7 @@ from nodewatch.NetworkConnector import NetworkConnector
 class NodeDescriptor:
 	def __init__(self, endpoint, has_api=True):
 		self.endpoint = endpoint
+		self.name = endpoint
 		self.has_api = has_api
 		self.height = 0
 		self.finalized_height = 0
@@ -93,6 +94,7 @@ async def test_can_update_nem_heights_with_some_errors(server):  # pylint: disab
 	node_descriptors = [
 		NodeDescriptor(f'{server.make_url("")}/1234'),
 		NodeDescriptor('http://127.0.0.1:1234/1237'),  # failed connection
+		NodeDescriptor(''),  # unknown endpoint
 		NodeDescriptor(f'{server.make_url("")}/1236')
 	]
 
@@ -106,7 +108,8 @@ async def test_can_update_nem_heights_with_some_errors(server):  # pylint: disab
 
 	_assert_node_descriptor(node_descriptors[0], 1234)
 	_assert_node_descriptor(node_descriptors[1], 0)  # not updated on failure
-	_assert_node_descriptor(node_descriptors[2], 1236)
+	_assert_node_descriptor(node_descriptors[2], 0)  # not updated on failure
+	_assert_node_descriptor(node_descriptors[3], 1236)
 
 # endregion
 
@@ -167,6 +170,7 @@ async def test_can_update_symbol_heights_with_some_errors(server):  # pylint: di
 	node_descriptors = [
 		NodeDescriptor(f'{server.make_url("")}/1234/1000'),
 		NodeDescriptor('http://127.0.0.1:1234/1237/1010'),  # failed connection
+		NodeDescriptor(''),  # unknown endpoint
 		NodeDescriptor(f'{server.make_url("")}/1236/1005')
 	]
 
@@ -180,6 +184,7 @@ async def test_can_update_symbol_heights_with_some_errors(server):  # pylint: di
 
 	_assert_node_descriptor(node_descriptors[0], 1234, 1000)
 	_assert_node_descriptor(node_descriptors[1], 0)  # not updated on failure
-	_assert_node_descriptor(node_descriptors[2], 1236, 1005)
+	_assert_node_descriptor(node_descriptors[2], 0)  # not updated on failure
+	_assert_node_descriptor(node_descriptors[3], 1236, 1005)
 
 # endregion
