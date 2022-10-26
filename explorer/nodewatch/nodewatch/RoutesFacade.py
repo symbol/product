@@ -17,26 +17,36 @@ TIMESTAMP_FORMAT = '%H:%M'
 class BasicRoutesFacade:
 	"""Routes facade common to NEM and Symbol."""
 
-	def __init__(self, network_name, title_network_name, version_to_css_class, version_customizations, min_cluster_size):
+	def __init__(
+		self,
+		blockchain_name,
+		network_name,
+		title_blockchain_name,
+		version_to_css_class,
+		version_customizations,
+		min_cluster_size):
 		"""Creates a facade."""
 
 		# pylint: disable=too-many-arguments
 
-		self.network_name = network_name
-		self.title_network_name = title_network_name
+		self.blockchain_name = blockchain_name
+		self.title_name = title_blockchain_name
+		if 'mainnet' != network_name:
+			self.title_name += f' ({network_name.upper()})'
+
 		self.version_to_css_class = version_to_css_class
 		self.version_customizations = VersionCustomizations(version_customizations)
 		self.min_cluster_size = min_cluster_size
 
-		self.repository = NetworkRepository(self.network_name)
+		self.repository = NetworkRepository(self.blockchain_name, network_name)
 		self.last_reload_time = datetime.datetime(2021, 1, 1)
 		self.last_refresh_time = None
 
 	def html_harvesters(self):
 		"""Gets information for generating a harvesters HTML page."""
 
-		return (f'{self.network_name}_nodes.html', {
-			'title': f'{self.title_network_name} Recent Harvesters',
+		return (f'{self.blockchain_name}_nodes.html', {
+			'title': f'{self.title_name} Recent Harvesters',
 			'descriptors': self.repository.harvester_descriptors,
 			'version_to_css_class': self.version_to_css_class
 		})
@@ -44,8 +54,8 @@ class BasicRoutesFacade:
 	def html_nodes(self):
 		"""Gets information for generating a nodes HTML page."""
 
-		return (f'{self.network_name}_nodes.html', {
-			'title': f'{self.title_network_name} Nodes',
+		return (f'{self.blockchain_name}_nodes.html', {
+			'title': f'{self.title_name} Nodes',
 			'descriptors': self.repository.node_descriptors,
 			'version_to_css_class': self.version_to_css_class
 		})
@@ -85,9 +95,9 @@ class BasicRoutesFacade:
 	def reload_all(self, resources_path, force=False):
 		"""Reloads all descriptor files."""
 
-		nodes_filepath = resources_path / f'{self.network_name}_nodes.json'
-		harvesters_filepath = resources_path / f'{self.network_name}_harvesters.csv'
-		voters_filepath = resources_path / f'{self.network_name}_richlist.csv'
+		nodes_filepath = resources_path / f'{self.blockchain_name}_nodes.json'
+		harvesters_filepath = resources_path / f'{self.blockchain_name}_harvesters.csv'
+		voters_filepath = resources_path / f'{self.blockchain_name}_richlist.csv'
 		all_filepaths = [nodes_filepath, harvesters_filepath, voters_filepath]
 
 		# nodes.json is produced first by the network crawl, all other files are derived from it
@@ -117,7 +127,7 @@ class BasicRoutesFacade:
 	def refresh_heights(self):
 		"""Refreshes node heights from the network."""
 
-		asyncio.run(NetworkConnector(self.network_name).update_heights(self.repository.node_descriptors))
+		asyncio.run(NetworkConnector(self.blockchain_name).update_heights(self.repository.node_descriptors))
 		self.reset_refresh_time()
 
 	def reset_refresh_time(self):
@@ -129,10 +139,10 @@ class BasicRoutesFacade:
 class NemRoutesFacade(BasicRoutesFacade):
 	"""NEM routes facade."""
 
-	def __init__(self, min_cluster_size=MIN_HEIGHT_CLUSTER_SIZE):
+	def __init__(self, min_cluster_size=MIN_HEIGHT_CLUSTER_SIZE, network_name='mainnet'):
 		"""Creates a facade."""
 
-		super().__init__('nem', 'NEM', self._version_to_css_class, {
+		super().__init__('nem', network_name, 'NEM', self._version_to_css_class, {
 			'0.6.100': ('#008500', 7),
 			'delegating / updating': ('#FFFF6B', 6),
 			'0.6.99': ('#FF6B6B', 5),
@@ -149,7 +159,7 @@ class NemRoutesFacade(BasicRoutesFacade):
 		version_builder.add(self.repository.harvester_descriptors, 'harvesting_power', 'harvesting_count')
 		version_builder.add(self.repository.node_descriptors, None, 'node_count')
 
-		return (f'{self.network_name}_summary.html', {
+		return (f'{self.blockchain_name}_summary.html', {
 			'height_chart_json': self.json_height_chart(),
 			'harvesting_power_chart_json': version_builder.create_chart('harvesting_power', 50),
 			'harvesting_count_chart_json': version_builder.create_chart('harvesting_count'),
@@ -170,10 +180,10 @@ class NemRoutesFacade(BasicRoutesFacade):
 class SymbolRoutesFacade(BasicRoutesFacade):
 	"""Symbol routes facade."""
 
-	def __init__(self, min_cluster_size=MIN_HEIGHT_CLUSTER_SIZE):
+	def __init__(self, min_cluster_size=MIN_HEIGHT_CLUSTER_SIZE, network_name='mainnet'):
 		"""Creates a facade."""
 
-		super().__init__('symbol', 'Symbol', self._version_to_css_class, {
+		super().__init__('symbol', network_name, 'Symbol', self._version_to_css_class, {
 			'1.0.3.5': ('#008A00', 10),
 			'1.0.3.4': ('#00B300', 9),
 			'delegating / updating': ('#FFFF6B', 8),
@@ -188,8 +198,8 @@ class SymbolRoutesFacade(BasicRoutesFacade):
 	def html_voters(self):
 		"""Gets information for generating a voters HTML page."""
 
-		return (f'{self.network_name}_nodes.html', {
-			'title': f'{self.title_network_name} Voters',
+		return (f'{self.blockchain_name}_nodes.html', {
+			'title': f'{self.title_name} Voters',
 			'descriptors': [descriptor for descriptor in self.repository.voter_descriptors if descriptor.is_voting],
 			'version_to_css_class': self.version_to_css_class,
 			'show_voting': True
@@ -203,7 +213,7 @@ class SymbolRoutesFacade(BasicRoutesFacade):
 		version_builder.add(self.repository.harvester_descriptors, 'harvesting_power', 'harvesting_count')
 		version_builder.add(self.repository.node_descriptors, None, 'node_count')
 
-		return (f'{self.network_name}_summary.html', {
+		return (f'{self.blockchain_name}_summary.html', {
 			'voting_power_chart_json': version_builder.create_chart('voting_power', 67),
 			'height_chart_json': self.json_height_chart(),
 			'harvesting_power_chart_json': version_builder.create_chart('harvesting_power', 50),

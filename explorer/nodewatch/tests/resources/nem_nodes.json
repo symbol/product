@@ -86,5 +86,24 @@
       "platform": "Oracle Corporation (1.8.0_281) on Linux",
       "version": "0.6.100"
     }
+  },
+  {
+    "metaData": {
+        "features": 1,
+        "application": null,
+        "networkId": -104,
+        "version": "0.6.96-BETA",
+        "platform": "Oracle Corporation (1.8.0_212) on Linux"
+    },
+    "endpoint": {
+        "protocol": "http",
+        "port": 7890,
+        "host": "18.179.168.59"
+    },
+    "identity": {
+        "name": "ol-test",
+        "node-public-key": "65bc8af40a2810c553d144c48714a5ea4f9f7d217af2e86024115e74b6173d8f",
+        "public-key": "775e2f0bd79ad47ad6f365d3216663a1f7178244faf9c37ca912303906bd80f6"
+    }
   }
 ]

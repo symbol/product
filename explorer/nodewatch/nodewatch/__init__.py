@@ -15,10 +15,13 @@ def create_app():
 
 	resources_path = Path(app.config.get('RESOURCES_PATH'))
 	min_cluster_size = app.config.get('MIN_HEIGHT_CLUSTER_SIZE', MIN_HEIGHT_CLUSTER_SIZE)
+	network_name = app.config.get('NETWORK_NAME', 'mainnet')
 	log.info(f'loading resources from {resources_path}')
+	log.info(f' configured with MIN_HEIGHT_CLUSTER_SIZE {min_cluster_size}')
+	log.info(f' configured with NETWORK_NAME {network_name}')
 
-	nem_routes_facade = NemRoutesFacade(min_cluster_size)
-	symbol_routes_facade = SymbolRoutesFacade(min_cluster_size)
+	nem_routes_facade = NemRoutesFacade(min_cluster_size, network_name)
+	symbol_routes_facade = SymbolRoutesFacade(min_cluster_size, network_name)
 
 	@app.route('/')
 	def index():  # pylint: disable=unused-variable

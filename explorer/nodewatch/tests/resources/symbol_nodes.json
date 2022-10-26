@@ -73,12 +73,12 @@
   {
     "version":16777216,
     "publicKey":"CDA2B0F8D03FA1A0537F9CAE01D26B371EDF9196C7B49DD5ECE5C29DF5597514",
-    "networkGenerationHashSeed":"ED5761EA890A096C50D3F50B7C2F0CCB4B84AFC9EA870F381E84DDE36D04EF16",
+    "networkGenerationHashSeed":"7FCCD304802016BEBBCD342A332F91FF1F3BB5E902988B352697BE245F48E836",
     "roles":7,
     "port":7900,
-    "networkIdentifier":104,
-    "host":"01-super-harvest.dhealth-symbol.com",
-    "friendlyName":"ignored because network generation hash seed does not match",
+    "networkIdentifier":152,
+    "host":"01-super-harvest.testnet-symbol.com",
+    "friendlyName":"ignored because testnet node",
     "nodePublicKey":"8DD4F8F0003C127C98D7F0DB821BE320BE494F3E81DE703CC3320352DB0A7221"
   },
   {

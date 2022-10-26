@@ -4,6 +4,7 @@ import json
 from symbolchain.CryptoTypes import Hash256, PublicKey
 from symbolchain.nem.Network import Address as NemAddress
 from symbolchain.nem.Network import Network as NemNetwork
+from symbolchain.Network import NetworkLocator
 from symbolchain.symbol.Network import Address as SymbolAddress
 from symbolchain.symbol.Network import Network as SymbolNetwork
 from zenlog import log
@@ -103,9 +104,10 @@ class SymbolAccountDescriptor:
 class NetworkRepository:
 	"""Network respository managing access to NEM or Symbol node information."""
 
-	def __init__(self, network_name):
+	def __init__(self, blockchain_name, network_name='mainnet'):
 		"""Creates a network repository."""
 
+		self.blockchain_name = blockchain_name
 		self.network_name = network_name
 
 		self.node_descriptors = None
@@ -116,7 +118,11 @@ class NetworkRepository:
 	def is_nem(self):
 		"""True if the repository is initialized for NEM, False otherwise."""
 
-		return 'nem' == self.network_name
+		return 'nem' == self.blockchain_name
+
+	@property
+	def _network(self):
+		return NetworkLocator.find_by_name((NemNetwork if self.is_nem else SymbolNetwork).NETWORKS, self.network_name)
 
 	def estimate_height(self):
 		"""Estimates the network height by returning the median height of all nodes."""
@@ -146,6 +152,13 @@ class NetworkRepository:
 			extra_data = (json_extra_data.get('height', 0), json_extra_data.get('finalizedHeight', 0), json_extra_data.get('balance', 0))
 
 		if self.is_nem:
+			network_identifier = json_node['metaData']['networkId']
+			if network_identifier < 0:
+				network_identifier += 0x100
+
+			if self._network.identifier != network_identifier:
+				return None
+
 			node_protocol = json_node['endpoint']['protocol']
 			node_host = json_node['endpoint']['host']
 			node_port = json_node['endpoint']['port']
@@ -153,7 +166,7 @@ class NetworkRepository:
 			main_public_key = PublicKey(json_node['identity']['public-key'])
 			node_public_key = PublicKey(json_node['identity']['node-public-key'])
 			return NodeDescriptor(
-				NemNetwork.MAINNET.public_key_to_address(main_public_key),
+				self._network.public_key_to_address(main_public_key),
 				main_public_key,
 				node_public_key,
 				f'{node_protocol}://{node_host}:{node_port}',
@@ -169,13 +182,13 @@ class NetworkRepository:
 			node_port = 3000 if has_api else json_node['port']
 			symbol_endpoint = f'http://{node_host}:{node_port}'
 
-		if SymbolNetwork.MAINNET.generation_hash_seed != Hash256(json_node['networkGenerationHashSeed']):
+		if self._network.generation_hash_seed != Hash256(json_node['networkGenerationHashSeed']):
 			return None
 
 		main_public_key = PublicKey(json_node['publicKey'])
 		node_public_key = PublicKey(json_node['nodePublicKey']) if 'nodePublicKey' in json_node else None
 		return NodeDescriptor(
-			SymbolNetwork.MAINNET.public_key_to_address(main_public_key),
+			self._network.public_key_to_address(main_public_key),
 			main_public_key,
 			node_public_key,
 			symbol_endpoint,

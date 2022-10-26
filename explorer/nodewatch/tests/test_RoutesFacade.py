@@ -11,6 +11,10 @@ def _get_names(descriptors):
 	return [descriptor.name for descriptor in descriptors]
 
 
+def _get_network_bytes(descriptors):
+	return [descriptor.main_address.bytes[0] for descriptor in descriptors]
+
+
 def _map_version_to_css_class(facade_class, version):
 	return facade_class._version_to_css_class(version)  # pylint: disable=protected-access
 
@@ -79,6 +83,7 @@ class NemRoutesFacadeTest(unittest.TestCase):
 		self.assertEqual(3, len(context))
 		self.assertEqual('NEM Recent Harvesters', context['title'])
 		self.assertEqual(['Allnodes21', 'TIME', '', 'Hi, I am Alice7'], _get_names(context['descriptors']))
+		self.assertEqual([104] * 4, _get_network_bytes(context['descriptors']))
 		self.assertIsNotNone(context['version_to_css_class'])
 
 	def test_can_render_nodes_html(self):
@@ -94,6 +99,7 @@ class NemRoutesFacadeTest(unittest.TestCase):
 		self.assertEqual(3, len(context))
 		self.assertEqual('NEM Nodes', context['title'])
 		self.assertEqual(['August', '[c=#e9c086]jusan[/c]', 'cobalt', 'silicon'], _get_names(context['descriptors']))
+		self.assertEqual([104] * 4, _get_network_bytes(context['descriptors']))
 		self.assertIsNotNone(context['version_to_css_class'])
 
 	def test_can_render_summary_html(self):
@@ -111,6 +117,22 @@ class NemRoutesFacadeTest(unittest.TestCase):
 		self.assertEqual(3, len(json.loads(context['harvesting_power_chart_json'])['data']))  # 0.6.100, '', 0.6.99
 		self.assertEqual(3, len(json.loads(context['harvesting_count_chart_json'])['data']))  # 0.6.100, '', 0.6.99
 		self.assertEqual(3, len(json.loads(context['node_count_chart_json'])['data']))  # 0.6.100, '', 0.6.99
+
+	def test_can_render_nodes_html_testnet(self):
+		# Arrange:
+		facade = NemRoutesFacade(network_name='testnet')
+		facade.reload_all(Path('tests/resources'), True)
+
+		# Act:
+		template_name, context = facade.html_nodes()
+
+		# Assert:
+		self.assertEqual('nem_nodes.html', template_name)
+		self.assertEqual(3, len(context))
+		self.assertEqual('NEM (TESTNET) Nodes', context['title'])
+		self.assertEqual(['ol-test'], _get_names(context['descriptors']))
+		self.assertEqual([152], _get_network_bytes(context['descriptors']))
+		self.assertIsNotNone(context['version_to_css_class'])
 
 	# endregion
 
@@ -247,6 +269,7 @@ class SymbolRoutesFacadeTest(unittest.TestCase):
 		self.assertEqual(3, len(context))
 		self.assertEqual('Symbol Recent Harvesters', context['title'])
 		self.assertEqual(['jaguar', '(Max50)SN1.MSUS', '', 'Allnodes900'], _get_names(context['descriptors']))
+		self.assertEqual([104] * 4, _get_network_bytes(context['descriptors']))
 		self.assertIsNotNone(context['version_to_css_class'])
 
 	def test_can_render_nodes_html(self):
@@ -264,6 +287,7 @@ class SymbolRoutesFacadeTest(unittest.TestCase):
 		self.assertEqual(
 			['Allnodes250', 'Apple', 'Shin-Kuma-Node', 'ibone74', 'jaguar', 'symbol.ooo maxUnlockedAccounts:100'],
 			_get_names(context['descriptors']))
+		self.assertEqual([104] * 6, _get_network_bytes(context['descriptors']))
 		self.assertIsNotNone(context['version_to_css_class'])
 
 	def test_can_render_voters_html(self):
@@ -279,6 +303,7 @@ class SymbolRoutesFacadeTest(unittest.TestCase):
 		self.assertEqual(4, len(context))
 		self.assertEqual('Symbol Voters', context['title'])
 		self.assertEqual(['59026DB', 'Allnodes34'], _get_names(context['descriptors']))
+		self.assertEqual([104] * 2, _get_network_bytes(context['descriptors']))
 		self.assertIsNotNone(context['version_to_css_class'])
 		self.assertTrue(context['show_voting'])
 
@@ -298,6 +323,22 @@ class SymbolRoutesFacadeTest(unittest.TestCase):
 		self.assertEqual(4, len(json.loads(context['harvesting_power_chart_json'])['data']))  # 1.0.3.5, 1.0.3.4, 1.0.3.3, ''
 		self.assertEqual(4, len(json.loads(context['harvesting_count_chart_json'])['data']))  # 1.0.3.5, 1.0.3.4, 1.0.3.3, ''
 		self.assertEqual(4, len(json.loads(context['node_count_chart_json'])['data']))  # 1.0.3.5, 1.0.3.4, 1.0.3.3, ''
+
+	def test_can_render_nodes_html_testnet(self):
+		# Arrange:
+		facade = SymbolRoutesFacade(network_name='testnet')
+		facade.reload_all(Path('tests/resources'), True)
+
+		# Act:
+		template_name, context = facade.html_nodes()
+
+		# Assert:
+		self.assertEqual('symbol_nodes.html', template_name)
+		self.assertEqual(3, len(context))
+		self.assertEqual('Symbol (TESTNET) Nodes', context['title'])
+		self.assertEqual(['ignored because testnet node'], _get_names(context['descriptors']))
+		self.assertEqual([152], _get_network_bytes(context['descriptors']))
+		self.assertIsNotNone(context['version_to_css_class'])
 
 	# endregion
 
