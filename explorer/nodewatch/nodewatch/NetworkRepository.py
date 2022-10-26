@@ -18,6 +18,7 @@ class NodeDescriptor:
 		self,
 		main_address=None,
 		main_public_key=None,
+		node_public_key=None,
 		endpoint=None,
 		name=None,
 		version=None,
@@ -31,6 +32,7 @@ class NodeDescriptor:
 
 		self.main_address = main_address
 		self.main_public_key = main_public_key
+		self.node_public_key = node_public_key
 		self.endpoint = endpoint
 		self.name = name
 		self.version = version
@@ -50,6 +52,7 @@ class NodeDescriptor:
 
 		return {
 			'mainPublicKey': str(self.main_public_key),
+			'nodePublicKey': str(self.node_public_key) if self.node_public_key else None,
 			'endpoint': self.endpoint,
 			'name': self.name,
 			'version': self.version,
@@ -148,9 +151,11 @@ class NetworkRepository:
 			node_port = json_node['endpoint']['port']
 
 			main_public_key = PublicKey(json_node['identity']['public-key'])
+			node_public_key = PublicKey(json_node['identity']['node-public-key'])
 			return NodeDescriptor(
 				NemNetwork.MAINNET.public_key_to_address(main_public_key),
 				main_public_key,
+				node_public_key,
 				f'{node_protocol}://{node_host}:{node_port}',
 				json_node['identity']['name'],
 				json_node['metaData']['version'],
@@ -168,9 +173,11 @@ class NetworkRepository:
 			return None
 
 		main_public_key = PublicKey(json_node['publicKey'])
+		node_public_key = PublicKey(json_node['nodePublicKey']) if 'nodePublicKey' in json_node else None
 		return NodeDescriptor(
 			SymbolNetwork.MAINNET.public_key_to_address(main_public_key),
 			main_public_key,
+			node_public_key,
 			symbol_endpoint,
 			json_node['friendlyName'],
 			self._format_symbol_version(json_node['version']),
