@@ -6,7 +6,8 @@ accounts: []
 
 nodes:
   - host: wolf.importance.jp
-  - host: 00fabf14.xym.stir-hosyu.com
-  - host: symbol.shizuilab.com
   - host: xymharvesting.net
   - host: xym773.allnodes.me
+  - host: xym445.allnodes.me
+  - host: 95.110.135.55
+  - host: symbol-main-1.nemtus.com
