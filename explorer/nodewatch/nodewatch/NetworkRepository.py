@@ -29,7 +29,7 @@ class NodeDescriptor:
 		# pylint: disable=too-many-arguments
 
 		self.main_address = main_address
-		self.main_public_key = main_public_key
+		self.main_public_key = main_public_key  # pylint: disable=duplicate-code
 		self.node_public_key = node_public_key
 		self.endpoint = endpoint
 		self.name = name
@@ -48,7 +48,7 @@ class NodeDescriptor:
 	def to_json(self):
 		"""Formats the node descriptor as json."""
 
-		return {
+		return {  # pylint: disable=duplicate-code
 			'mainPublicKey': str(self.main_public_key),
 			'nodePublicKey': str(self.node_public_key) if self.node_public_key else None,
 			'endpoint': self.endpoint,
