@@ -13,9 +13,9 @@ const theme = {
 
 export const RouterView = () => (
     <NavigationContainer theme={theme}>
-        <Stack.Navigator initialRouteName="Home">
-            <Stack.Screen name="Home" component={screens.CreateWallet} />
-            <Stack.Screen name="Transfer" component={screens.Home} />
+        <Stack.Navigator initialRouteName="CreateWallet">
+            <Stack.Screen name="CreateWallet" component={screens.CreateWallet} />
+            <Stack.Screen name="Home" component={screens.Home} />
         </Stack.Navigator>
     </NavigationContainer>
 );

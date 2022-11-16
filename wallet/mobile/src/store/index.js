@@ -1,16 +1,11 @@
 import { applyMiddleware, createStore } from 'redux';
 import thunk from 'redux-thunk';
+import account from 'src/store/account';
 import wallet from 'src/store/wallet';
 
 const modules = {
-    settings,
-    network,
-    wallet,
-    mosaic,
     account,
-    harvesting,
-    addressBook,
-    transaction,
+    wallet,
 };
 
 const createModuleReducer = (module, state = {}, action) => {
@@ -88,4 +83,5 @@ store.dispatchAction = ({ type, payload }) => {
     );
 };
 
+export { connect } from 'react-redux';
 export default store;

@@ -1,19 +1,38 @@
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { Button, Screen, Steps, StyledText, FormItem, MnemonicView, TextBox } from 'src/components';
+import { Button, LoadingIndicator, Screen, Steps, StyledText, FormItem, MnemonicView, TextBox } from 'src/components';
+import store from 'src/store';
 import { generateMnemonic } from 'src/utils/wallet';
 
-export const CreateWallet = () => {
+export const CreateWallet = (props) => {
+    const { navigation } = props;
     const stepsCount = 5;
     const [step, setStep] = useState(1);
-    const [accountName, setAccountName] = useState('First Account');
+    const [name, setName] = useState('First Account');
     const [mnemonic, setMnemonic] = useState('');
     const [isMnemonicShown, setIsMnemonicShown] = useState(false);
-    const next = () => setStep(step > stepsCount ? 1 : step + 1);
+    const next = () => {
+        if (step === stepsCount) {
+            complete();
+        }
+
+        setStep(step + 1);
+    }
+    const complete = async () => {
+        await store.dispatchAction({ type: 'wallet/saveMnemonic', payload: mnemonic });
+        await store.dispatchAction({ type: 'wallet/createSeedAccount', payload: {
+            index: 0,
+            name,
+            networkIdentifier: 'mainnet'
+        }});
+
+        navigation.navigate('Home');
+    }
 
     useEffect(() => {
         const mnemonic = generateMnemonic();
         setMnemonic(mnemonic);
+        setStep(1);
     }, []);
 
     return (
@@ -33,7 +52,7 @@ export const CreateWallet = () => {
                     </StyledText>
                 </FormItem>
                 <FormItem>
-                    <TextBox title="Account Name" value={accountName} onChange={setAccountName} />
+                    <TextBox title="Account Name" value={name} onChange={setName} />
                 </FormItem>
             </>)}
             {step === 2 && (<>
@@ -89,9 +108,10 @@ export const CreateWallet = () => {
                     </StyledText>
                 </FormItem>
             </>)}
-            <FormItem>
+            {step <= stepsCount && <FormItem>
                 <Button title="Next" onPress={next} />
-            </FormItem>
+            </FormItem>}
+            {step > stepsCount && <LoadingIndicator />}
         </Screen>
     );
 };
