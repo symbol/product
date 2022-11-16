@@ -11,21 +11,21 @@ export const Steps = props => {
         <View style={styles.root}>
             {[...Array(stepsCount)].map((e, i) => (<>
                 {i !== 0 && i <= currentIndex && (
-                    <View style={styles.lineActive} key={'steps-l'+i} />
+                    <View style={styles.lineActive} key={'steps-l' + i} />
                 )}
                 {i < currentIndex && (
-                    <View style={styles.circlePrevious} key={'steps-p'+i} />
+                    <View style={styles.circlePrevious} key={'steps-p' + i} />
                 )}
                 {i === currentIndex && (
-                    <View style={styles.circleCurrent} key={'steps-c'+i}>
+                    <View style={styles.circleCurrent} key={'steps-c' + i}>
                         <View style={styles.circleCurrentInner} />
                     </View>
                 )}
                 {i > currentIndex && (
-                    <View style={styles.circleNext} key={'steps-n'+i} />
+                    <View style={styles.circleNext} key={'steps-n' + i} />
                 )}
                 {i !== lastIndex && i >= currentIndex && (
-                    <View style={styles.lineInactive} key={'steps-r'+i} />
+                    <View style={styles.lineInactive} key={'steps-r' + i} />
                 )}
             </>))}
         </View>

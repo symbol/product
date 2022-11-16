@@ -2,6 +2,8 @@
 import React from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaView, StatusBar } from 'react-native';
+import { Provider } from 'react-redux'
+import store from 'src/store';
 import { RouterView } from './Router';
 import { colors } from './styles';
 
@@ -13,7 +15,9 @@ const App = () => {
         <GestureHandlerRootView style={[fillHeight, appBackgroundColor]}>
             <SafeAreaView style={fillHeight} >
                 <StatusBar />
-                <RouterView />
+                <Provider store={store}>
+                    <RouterView />
+                </Provider>
             </SafeAreaView >
         </GestureHandlerRootView>
     );

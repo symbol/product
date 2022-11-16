@@ -4,7 +4,7 @@ export const generateMnemonic = () => {
     return MnemonicPassPhrase.createRandom().plain;
 }
 
-export const createPrivateKeyFromMnemonic = (index, mnemonic, networkType) => {
+export const createPrivateKeyFromMnemonic = (index, mnemonic, networkIdentifier) => {
     const pathTestnet = `m/44'/1'/${index}'/0'/0'`;
     const pathMainnet = `m/44'/4343'/${index}'/0'/0'`;
     
@@ -13,7 +13,7 @@ export const createPrivateKeyFromMnemonic = (index, mnemonic, networkType) => {
     const curve = Network.SYMBOL;
     const extendedKey = ExtendedKey.createFromSeed(seed, curve);
     const wallet = new Wallet(extendedKey);
-    const path = networkType === 'mainnet' ? pathMainnet : pathTestnet;
+    const path = networkIdentifier === 'mainnet' ? pathMainnet : pathTestnet;
     
     return wallet.getChildAccountPrivateKey(path);
 }

@@ -1,39 +1,41 @@
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { AccountCard, Button, Screen, TextBox, FormItem } from 'src/components';
+import store, { connect } from 'src/store';
 
-export const Home = () => {
-    const [text1, setText1] = useState('Recomended');
-    const [text2, setText2] = useState('');
+export const Home = connect(state => ({
+    accountName: state.account.current.name,
+    accountAddress: state.account.current.address,
+    accountBalance: 123456.7899,
+    ticker: 'XYM'
+}))(function Home(props) {
+    const { accountName, accountAddress, accountBalance, ticker } = props;
+
+    useEffect(() => {
+        const loadState = async () => {
+            await store.dispatchAction({ type: 'wallet/loadState' });
+            await store.dispatchAction({ type: 'account/loadState' });
+        }
+
+        loadState();
+    }, []);
 
     return (
         <Screen>
             <FormItem>
                 <AccountCard 
-                    name="Account 1" 
-                    address="NAPTCRRHCQI3FJ52Q7RU5RCLUQNNXUARSSRDDNY" 
-                    balance={12001.34}
-                    ticker="XYM"
+                    name={accountName}
+                    address={accountAddress}
+                    balance={accountBalance}
+                    ticker={ticker}
                     onReceivePress={() => console.log('receive')}
                     onSendPress={() => console.log('Send')}
                     onScanPress={() => console.log('Scan')}
                 />
             </FormItem>
-            <FormItem>
-                <TextBox title="Fee" value={text1} onChange={setText1}/>
-            </FormItem>
-            <FormItem>
-                <TextBox title="Test and others" value={text2} onChange={setText2} />
-            </FormItem>
-            <FormItem>
-                <Button title="Test" onPress={() => {}} />
-            </FormItem>
-            <FormItem>
-                <Button isDisabled title="Disabled" onPress={() => {}}/>
-            </FormItem>
         </Screen>
     );
-};
+});
 
 const styles = StyleSheet.create({
     but: {

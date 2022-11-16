@@ -14,4 +14,12 @@ module.exports = {
             },
         }),
     },
+    resolver: {
+        extraNodeModules: {
+            crypto: require.resolve('react-native-crypto'),
+            randombytes: require.resolve('react-native-randombytes'),
+            stream: require.resolve('stream-browserify'),
+            process: require.resolve('process/browser'),
+        }
+    }
 };
