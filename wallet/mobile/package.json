@@ -1,0 +1,53 @@
+{
+  "name": "SymbolMobileWallet",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "connect": "adb reverse tcp:8081 tcp:8081",
+    "android": "react-native run-android",
+    "ios": "react-native run-ios",
+    "dev": "react-native start",
+    "build:android:dev": "react-native run-android",
+    "build:android:prod": "cd ./android && gradlew assembleProdRelease",
+    "test": "jest",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix --color"
+  },
+  "dependencies": {
+    "@react-native-async-storage/async-storage": "^1.17.10",
+    "@react-navigation/native": "^6.0.13",
+    "@react-navigation/native-stack": "^6.9.1",
+    "lodash": "^4.17.21",
+    "react": "18.1.0",
+    "react-native": "0.70.5",
+    "react-native-camera": "react-native-camera/react-native-camera#3443/head",
+    "react-native-encrypted-storage": "^4.0.3",
+    "react-native-gesture-handler": "^2.8.0",
+    "react-native-permissions": "^3.6.1",
+    "react-native-qrcode-scanner": "^1.5.5",
+    "react-native-reanimated": "^2.12.0",
+    "react-native-safe-area-context": "^4.4.1",
+    "react-native-screens": "^3.18.2",
+    "react-redux": "^8.0.5",
+    "redux-thunk": "^2.4.2",
+    "rn-fetch-blob": "^0.12.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.12.9",
+    "@babel/eslint-parser": "^7.19.1",
+    "@babel/plugin-proposal-export-default-from": "^7.18.10",
+    "@babel/runtime": "^7.12.5",
+    "@react-native-community/eslint-config": "^2.0.0",
+    "babel-jest": "^26.6.3",
+    "babel-plugin-module-resolver": "^4.1.0",
+    "deprecated-react-native-prop-types": "^2.3.0",
+    "eslint": "^7.32.0",
+    "eslint-plugin-react": "^7.31.10",
+    "jest": "^26.6.3",
+    "metro-react-native-babel-preset": "0.72.3",
+    "react-test-renderer": "18.1.0"
+  },
+  "jest": {
+    "preset": "react-native"
+  }
+}

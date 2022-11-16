@@ -1,0 +1,30 @@
+{
+    "nodeProbeTimeout": 5000,
+    "defaultNodes": {
+        "testnet": [
+            "https://sym-test-02.opening-line.jp:3001"
+        ],
+        "mainnet": [
+            "https://xym.allnodes.me:3001"
+        ]
+    },
+    "statisticsServiceURL": {
+        "testnet": "https://testnet.symbol.services/",
+        "mainnet": "https://symbol.services/"
+    },
+    "explorerURL": {
+        "testnet": "https://testnet.symbol.fyi/",
+        "mainnet": "https://symbol.fyi/"
+    },
+    "faucetURL": "https://testnet.symbol.tools/",
+    "aboutURL": "https://nem.io",
+    "defaultNetworkType": "mainnet",
+    "optInPayoutSigner": {
+        "testnet": [
+            "E5F5638C626F58E1937C181E668EC383C94C5BC72AAE400C19AD28BDD3A4D37E"
+        ],
+        "mainnet": [
+            "46038372D2A63D5207BDD9B33E9DA3C5B0B8EFAC399BB4103378E7994746CA14"
+        ]
+    }
+}

@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>en</string>
+	<key>CFBundleDisplayName</key>
+	<string>SymbolMobileWallet</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>$(PRODUCT_NAME)</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>1.0</string>
+	<key>CFBundleSignature</key>
+	<string>????</string>
+	<key>CFBundleVersion</key>
+	<string>1</string>
+	<key>LSRequiresIPhoneOS</key>
+	<true/>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSExceptionDomains</key>
+		<dict>
+			<key>localhost</key>
+			<dict>
+				<key>NSExceptionAllowsInsecureHTTPLoads</key>
+				<true/>
+			</dict>
+		</dict>
+	</dict>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string/>
+	<key>UILaunchStoryboardName</key>
+	<string>LaunchScreen</string>
+	<key>UIRequiredDeviceCapabilities</key>
+	<array>
+		<string>armv7</string>
+	</array>
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+	<key>UIViewControllerBasedStatusBarAppearance</key>
+	<false/>
+	<key>NSCameraUsageDescription</key>
+	<string>$(PRODUCT_NAME) use camera for QR code scanning.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>Enabling Face ID allows you quick and secure access to your account.</string>
+	<key>UIAppFonts</key>
+	<array>
+		<string>Carbon-Bold-Italic.otf</string>
+		<string>Carbon-Bold.otf</string>
+		<string>Carbon-Regular-Italic.otf</string>
+		<string>Carbon-Regular.otf</string>
+		<string>Carbon-Thin-Italic.otf</string>
+		<string>Carbon-Thin.otf</string>
+		<string>Protipo-Bold-Italic.otf</string>
+		<string>Protipo-Bold.otf</string>
+		<string>Protipo-Extrabold-Italic.otf</string>
+		<string>Protipo-Extrabold.otf</string>
+		<string>Protipo-Light-Italic.otf</string>
+		<string>Protipo-Light.otf</string>
+		<string>Protipo-Medium-Italic.otf</string>
+		<string>Protipo-Medium.otf</string>
+		<string>Protipo-Regular-Italic.otf</string>
+		<string>Protipo-Regular.otf</string>
+		<string>Protipo-Semibold-Italic.otf</string>
+		<string>Protipo-Semibold.otf</string>
+		<string>Rajdhani-Bold.ttf</string>
+		<string>Rajdhani-Light.ttf</string>
+		<string>Rajdhani-Medium.ttf</string>
+		<string>Rajdhani-Regular.ttf</string>
+		<string>Rajdhani-SemiBold.ttf</string>
+	</array>
+</dict>
+</plist>

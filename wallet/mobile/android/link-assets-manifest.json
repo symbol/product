@@ -1,0 +1,97 @@
+{
+  "migIndex": 1,
+  "data": [
+    {
+      "path": "src/assets/fonts/Carbon-Bold-Italic.otf",
+      "sha1": "1efb574e788b907cfdde11c79701e5b78256c55f"
+    },
+    {
+      "path": "src/assets/fonts/Carbon-Bold.otf",
+      "sha1": "0edc6cc83857602d6efcedd36ff614eb2d68534b"
+    },
+    {
+      "path": "src/assets/fonts/Carbon-Regular-Italic.otf",
+      "sha1": "253650d85f301ab4a586d6ecf754e2e162642bdd"
+    },
+    {
+      "path": "src/assets/fonts/Carbon-Regular.otf",
+      "sha1": "896836a8a25b2020333198a7f819243accbd195e"
+    },
+    {
+      "path": "src/assets/fonts/Carbon-Thin-Italic.otf",
+      "sha1": "fe6beb98884cf2fda0ee065a0b8312b900d080b6"
+    },
+    {
+      "path": "src/assets/fonts/Carbon-Thin.otf",
+      "sha1": "187957196c861f04fb46f95dd28a7efbc0b900ce"
+    },
+    {
+      "path": "src/assets/fonts/Protipo-Bold-Italic.otf",
+      "sha1": "1f3f8c997a1a3dff37cef2517f985a3b6cb4a9b3"
+    },
+    {
+      "path": "src/assets/fonts/Protipo-Bold.otf",
+      "sha1": "8d96abca3607074b85a06ed217d14f03e56efaf7"
+    },
+    {
+      "path": "src/assets/fonts/Protipo-Extrabold-Italic.otf",
+      "sha1": "dc5fee5cfac4d083afd38707fbc1d235d043a958"
+    },
+    {
+      "path": "src/assets/fonts/Protipo-Extrabold.otf",
+      "sha1": "22a45740128ff4571e6164ad60f13d7fbd1299d0"
+    },
+    {
+      "path": "src/assets/fonts/Protipo-Light-Italic.otf",
+      "sha1": "ed110e4525ef7df4361c29250035f2f4d26b5dbd"
+    },
+    {
+      "path": "src/assets/fonts/Protipo-Light.otf",
+      "sha1": "be6e3cac5056dcfe7e785ea554f4171fc47bb62a"
+    },
+    {
+      "path": "src/assets/fonts/Protipo-Medium-Italic.otf",
+      "sha1": "68d23fa5b4029e2486474eea18fa8d3bab5ad962"
+    },
+    {
+      "path": "src/assets/fonts/Protipo-Medium.otf",
+      "sha1": "cde4bec9c33f347116044a0a8636c85b159a6b99"
+    },
+    {
+      "path": "src/assets/fonts/Protipo-Regular-Italic.otf",
+      "sha1": "285b547b344cac26274468545757117171df14b4"
+    },
+    {
+      "path": "src/assets/fonts/Protipo-Regular.otf",
+      "sha1": "28006e2cfd01bdc54ffe46643701403901846004"
+    },
+    {
+      "path": "src/assets/fonts/Protipo-Semibold-Italic.otf",
+      "sha1": "857c48fb48a50ecc555d4e9458dfa18bfd5527c7"
+    },
+    {
+      "path": "src/assets/fonts/Protipo-Semibold.otf",
+      "sha1": "332ef11a2c104b2207346eabd6cf96b7d55a8f9f"
+    },
+    {
+      "path": "src/assets/fonts/Rajdhani-Bold.ttf",
+      "sha1": "ff6b0b4b666e92f8ca60b05cf35d8a5683679096"
+    },
+    {
+      "path": "src/assets/fonts/Rajdhani-Light.ttf",
+      "sha1": "bf23bbc7e16123ce135640587c0aa046547b9acc"
+    },
+    {
+      "path": "src/assets/fonts/Rajdhani-Medium.ttf",
+      "sha1": "b186823e4e49dda24bd0eae9308d5124f3429632"
+    },
+    {
+      "path": "src/assets/fonts/Rajdhani-Regular.ttf",
+      "sha1": "f14dc850e0b1ec627dadb6a21182fed8265c5182"
+    },
+    {
+      "path": "src/assets/fonts/Rajdhani-SemiBold.ttf",
+      "sha1": "4a960e6ec0385495631e04c320e239432741f650"
+    }
+  ]
+}
