@@ -17,3 +17,7 @@ export const createWalletAccount = (privateKey, networkIdentifier, name, account
         index: (index === null || index === undefined) ? null : index
     }
 };
+
+export const isPublicOrPrivateKey = stringToTest => {
+    return typeof stringToTest === 'string' && stringToTest.length === 64;
+}

@@ -1,13 +1,23 @@
+import { hasUserSetPinCode } from '@haskkor/react-native-pincode';
 import { FailedToSaveMnemonicError } from 'src/errors';
 import { PersistentStorage, SecureStorage } from 'src/storage';
-import { createWalletAccount } from 'src/utils/account';
-import { createPrivateKeyFromMnemonic } from 'src/utils/wallet';
+import { addressFromPrivateKey, createPrivateKeyFromMnemonic, createWalletAccount } from 'src/utils';
+
+const MAX_SEED_ACCOUNTS = 15;
 
 export default {
     namespace: 'wallet',
     state: {
         mnemonic: null,
-        accounts: [],
+        accounts: {
+            mainnet: [],
+            testnet: []
+        },
+        seedAddresses: {
+            mainnet: [],
+            testnet: []
+        },
+        selectedAccountId: null,
         isPasscodeEnabled: true,
     },
     mutations: {
@@ -19,6 +29,14 @@ export default {
             state.wallet.accounts = payload;
             return state;
         },
+        setSeedAddresses(state, payload) {
+            state.wallet.seedAddresses = payload;
+            return state;
+        },
+        setSelectedAccountId(state, payload) {
+            state.wallet.selectedAccountId = payload;
+            return state;
+        },
         setIsPasscodeEnabled(state, payload) {
             state.wallet.isPasscodeEnabled = payload;
             return state;
@@ -28,14 +46,18 @@ export default {
         loadState: async ({ commit }) => {
             const mnemonic = await SecureStorage.getMnemonic();
             const accounts = await SecureStorage.getAccounts();
-            const isPasscodeEnabled = await PersistentStorage.getIsPasscodeEnabled();
+            const seedAddresses = await PersistentStorage.getSeedAddresses();
+            const selectedAccountId = await SecureStorage.getSelectedAccountId();
+            const isPasscodeEnabled = await hasUserSetPinCode();
 
             commit({ type: 'wallet/setMnemonic', payload: mnemonic });
             commit({ type: 'wallet/setAccounts', payload: accounts });
-            commit({ type: 'wallet/setIsPasscodeEnabled', payload: isPasscodeEnabled });
+            commit({ type: 'wallet/setSeedAddresses', payload: seedAddresses });
+            commit({ type: 'wallet/setSelectedAccountId', payload: selectedAccountId || 0});
+            commit({ type: 'wallet/setIsPasscodeEnabled', payload: isPasscodeEnabled || false});
         },
 
-        saveMnemonic: async ({}, mnemonic) => {
+        saveMnemonic: async ({ commit }, mnemonic) => {
             let savedMnemonic;
 
             try {
@@ -49,18 +71,58 @@ export default {
             if (mnemonic !== savedMnemonic) {
                 throw FailedToSaveMnemonicError('Mnemonic does not match');
             }
+
+            commit({ type: 'wallet/setMnemonic', payload: mnemonic });
         },
 
-        createSeedAccount: async ({ commit }, { index, name, networkIdentifier }) => {
-            const accountType = 'seed';
+        loadSeedAddresses: async ({ state, commit }) => {
+            const { networkIdentifier } = state.network;
+            const { seedAddresses } = state.wallet;
             const mnemonic = await SecureStorage.getMnemonic();
+
+            const addresses = [];
+            
+            for (index = 0; index < MAX_SEED_ACCOUNTS; ++i) {
+                const privateKey = createPrivateKeyFromMnemonic(index, mnemonic, networkIdentifier);
+                const address = addressFromPrivateKey(privateKey);
+                const balance = 0;
+                addresses[index] = ({ address, balance });
+            }
+
+            const updatedSeedAddresses = {
+                ...seedAddresses,
+                [networkIdentifier]: addresses
+            };
+
+            commit({ type: 'wallet/setSeedAddresses', payload: updatedSeedAddresses });
+            await PersistentStorage.setSeedAddresses(updatedSeedAddresses);
+        },
+
+        selectAccount: async ({ commit }, privateKey) => {
+            await SecureStorage.setSelectedAccountId(privateKey);
+            commit({ type: 'wallet/setSelectedAccountId', payload: privateKey });
+        },
+
+        addSeedAccount: async ({ commit, dispatchAction, state }, { index, name }) => {
+            const { networkIdentifier } = state.network;
+            const { mnemonic } = state.wallet;
+            const accountType = 'seed';
             const privateKey = createPrivateKeyFromMnemonic(index, mnemonic, networkIdentifier);
             const walletAccount = createWalletAccount(privateKey, networkIdentifier, name, accountType, index);
-            const accounts = [] //await SecureStorage.getAccounts() || [];
-            accounts.push(walletAccount);
+            const accounts = await SecureStorage.getAccounts();
+            const networkAccounts = accounts[networkIdentifier];
+            const isAccountAlreadyExists = networkAccounts.find(account => account.index === index);
+            
+            if (isAccountAlreadyExists) {
+                throw Error('failed_add_account_already_exists');
+            }
+            
+            networkAccounts.push(walletAccount);
+            
             await SecureStorage.setAccounts(accounts);
-
             commit({ type: 'wallet/setAccounts', payload: accounts });
+            
+            await dispatchAction({ type: 'wallet/selectAccount', payload: privateKey });
         },
 
         removeAccount: async ({ commit }, privateKey) => {

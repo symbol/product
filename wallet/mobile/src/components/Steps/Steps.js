@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Fragment } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { colors, spacings } from 'src/styles';
 
@@ -9,25 +9,27 @@ export const Steps = props => {
 
     return (
         <View style={styles.root}>
-            {[...Array(stepsCount)].map((e, i) => (<>
-                {i !== 0 && i <= currentIndex && (
-                    <View style={styles.lineActive} key={'steps-l' + i} />
-                )}
-                {i < currentIndex && (
-                    <View style={styles.circlePrevious} key={'steps-p' + i} />
-                )}
-                {i === currentIndex && (
-                    <View style={styles.circleCurrent} key={'steps-c' + i}>
-                        <View style={styles.circleCurrentInner} />
-                    </View>
-                )}
-                {i > currentIndex && (
-                    <View style={styles.circleNext} key={'steps-n' + i} />
-                )}
-                {i !== lastIndex && i >= currentIndex && (
-                    <View style={styles.lineInactive} key={'steps-r' + i} />
-                )}
-            </>))}
+            {[...Array(stepsCount)].map((e, i) => (
+                <Fragment key={'steps-f' + i}>
+                    {i !== 0 && i <= currentIndex && (
+                        <View style={styles.lineActive} key={'steps-l' + i} />
+                    )}
+                    {i < currentIndex && (
+                        <View style={styles.circlePrevious} key={'steps-p' + i} />
+                    )}
+                    {i === currentIndex && (
+                        <View style={styles.circleCurrent} key={'steps-c' + i}>
+                            <View style={styles.circleCurrentInner} />
+                        </View>
+                    )}
+                    {i > currentIndex && (
+                        <View style={styles.circleNext} key={'steps-n' + i} />
+                    )}
+                    {i !== lastIndex && i >= currentIndex && (
+                        <View style={styles.lineInactive} key={'steps-r' + i} />
+                    )}
+                </Fragment>
+            ))}
         </View>
     );
 };

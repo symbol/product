@@ -1,6 +1,6 @@
-import { defaultNodes, nodeProbeTimeout, statisticsServiceURL } from '@config/config.json';
-import { networkTypeToIdentifier } from '@src/utils';
-import { timeout } from 'rxjs/operators';
+//import { defaultNodes, nodeProbeTimeout, statisticsServiceURL } from '@config/config.json';
+import { networkTypeToIdentifier } from 'src/utils';
+//import { timeout } from 'rxjs/operators';
 import { ChainHttp, NetworkHttp, NetworkType, NodeHttp, RepositoryFactoryHttp, TransactionFees } from 'symbol-sdk';
 
 export class NetworkService {
@@ -23,19 +23,19 @@ export class NetworkService {
         const [networkType, networkProps, transactionFees, chainInfo] = await Promise.all([
             networkHttp
                 .getNetworkType()
-                .pipe(timeout(nodeProbeTimeout))
+                //.pipe(timeout(nodeProbeTimeout))
                 .toPromise(),
             networkHttp
                 .getNetworkProperties()
-                .pipe(timeout(nodeProbeTimeout))
+                //.pipe(timeout(nodeProbeTimeout))
                 .toPromise(),
             networkHttp
                 .getTransactionFees()
-                .pipe(timeout(nodeProbeTimeout))
+                //.pipe(timeout(nodeProbeTimeout))
                 .toPromise(),
             chainHttp
                 .getChainInfo()
-                .pipe(timeout(nodeProbeTimeout))
+                //.pipe(timeout(nodeProbeTimeout))
                 .toPromise(),
         ]);
 
