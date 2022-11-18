@@ -1,33 +1,38 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Image, StyleSheet, View } from 'react-native';
 import { Button, LoadingIndicator, Screen, Steps, StyledText, FormItem, MnemonicView, TextBox } from 'src/components';
 import store from 'src/store';
-import { generateMnemonic } from 'src/utils/wallet';
+import { generateMnemonic, usePasscode } from 'src/utils';
 
 export const CreateWallet = (props) => {
     const { navigation } = props;
-    const stepsCount = 5;
+    const stepsCount = 2;
     const [step, setStep] = useState(1);
     const [name, setName] = useState('First Account');
     const [mnemonic, setMnemonic] = useState('');
     const [isMnemonicShown, setIsMnemonicShown] = useState(false);
+    
     const next = () => {
         if (step === stepsCount) {
-            complete();
+            createPasscode();
         }
 
         setStep(step + 1);
     }
     const complete = async () => {
         await store.dispatchAction({ type: 'wallet/saveMnemonic', payload: mnemonic });
-        await store.dispatchAction({ type: 'wallet/createSeedAccount', payload: {
+        await store.dispatchAction({ type: 'wallet/addSeedAccount', payload: {
             index: 0,
-            name,
-            networkIdentifier: 'mainnet'
+            name
         }});
 
-        navigation.navigate('Home');
+        navigation.reset({
+            index: 0,
+            routes: [{ name: 'Home' }],
+        });
     }
+
+    const createPasscode = usePasscode('create', complete);
 
     useEffect(() => {
         const mnemonic = generateMnemonic();
@@ -36,7 +41,14 @@ export const CreateWallet = (props) => {
     }, []);
 
     return (
-        <Screen>
+        <Screen bottomComponent={
+            <FormItem bottom>
+                <Button title="Next" onPress={next} />
+            </FormItem>
+        }>
+            <FormItem>
+                <Image source={require('src/assets/images/logo-symbol-full.png')} style={styles.logo}/>
+            </FormItem>
             <FormItem>
                 <Steps stepsCount={stepsCount} currentStep={step} />
             </FormItem>
@@ -108,10 +120,16 @@ export const CreateWallet = (props) => {
                     </StyledText>
                 </FormItem>
             </>)}
-            {step <= stepsCount && <FormItem>
-                <Button title="Next" onPress={next} />
-            </FormItem>}
             {step > stepsCount && <LoadingIndicator />}
         </Screen>
     );
 };
+
+const styles = StyleSheet.create({
+    logo: {
+        width: '100%',
+        height: 48,
+        margin: 'auto',
+        resizeMode: 'contain',
+    }
+});

@@ -1,4 +1,4 @@
-import { isAggregateTransaction } from '@src/utils';
+import { isAggregateTransaction } from 'src/utils';
 import _ from 'lodash';
 import { Address, Order, RepositoryFactoryHttp, TransactionGroup, TransactionService as SymbolTransactionService, TransactionType } from 'symbol-sdk';
 
@@ -7,7 +7,7 @@ export class TransactionService {
         pageNumber = 1, 
         pageSize = 15, 
         group = 'confirmed', 
-        filter = '', 
+        filter = {}, 
     }) {
         const transactionHttp = new TransactionHttp(networkProperties.nodeUrl);
         const address = Address.createFromRawAddress(account.address);
@@ -20,9 +20,9 @@ export class TransactionService {
             order: Order.Desc 
         };
 
-        if (filter === 'sent') {
+        if (filter.direction === 'sent') {
             baseSearchCriteria.signerPublicKey = publicKey;
-        } else if (filter === 'received') {
+        } else if (filter.direction === 'received') {
             baseSearchCriteria.recipientAddress = address;
         } else {
             baseSearchCriteria.address = address;
@@ -31,34 +31,36 @@ export class TransactionService {
         const searchPromises = [];
         searchPromises.push(transactionHttp.search(baseSearchCriteria).toPromise());
 
-        if (group === 'partial') {
-            account.cosignatoryOf.forEach(multisigAccount => {
-                const multisigSearchCriteria = {
-                    ...baseSearchCriteria,
-                    address: Address.createFromRawAddress(multisigAccount.address)
-                };
+        // if (group === 'partial') {
+        //     account.cosignatoryOf.forEach(multisigAccount => {
+        //         const multisigSearchCriteria = {
+        //             ...baseSearchCriteria,
+        //             address: Address.createFromRawAddress(multisigAccount.address)
+        //         };
                 
-                searchPromises.push(transactionHttp.search(multisigSearchCriteria).toPromise());
-            });
-        }
+        //         searchPromises.push(transactionHttp.search(multisigSearchCriteria).toPromise());
+        //     });
+        // }
 
         const transactionPages = await Promise.all(searchPromises);
         const transactionsUnfiltered = transactionPages.map(page => page.data).flat();
         const transactions = _.uniqBy(transactionsUnfiltered, tx => tx.transactionInfo.hash);
             
-
         return Promise.all(transactions.map(async transaction => {
-                if (!isAggregateTransaction(transaction)) {
-                    //return FormatTransaction.format(transaction, network, preLoadedMosaics);
-                    return transaction;
-                }
-                const aggregateTransaction = await this.fetchTransactionDetails(transaction.transactionInfo.id, group);
+            if (!isAggregateTransaction(transaction)) {
+                //return FormatTransaction.format(transaction, network, preLoadedMosaics);
+                return {
+                    transaction
+                };
+            }
+            const aggregateTransaction = await this.fetchTransactionDetails(transaction.transactionInfo.id, group);
 
-                //return FormatTransaction.format(aggregateTransactionDetails, network, preLoadedMosaics);
+            //return FormatTransaction.format(aggregateTransactionDetails, network, preLoadedMosaics);
 
-                return aggregateTransaction;
-            })
-        );
+            return {
+                transactions: aggregateTransaction
+            }
+        }));
     }
 
     static async fetchTransactionDetails(networkProperties, id, group, preLoadedMosaics) {

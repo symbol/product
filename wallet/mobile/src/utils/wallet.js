@@ -1,3 +1,5 @@
+import { deleteUserPinCode } from '@haskkor/react-native-pincode';
+import { PersistentStorage, SecureStorage } from 'src/storage';
 import { ExtendedKey, MnemonicPassPhrase, Network, Wallet } from 'symbol-hd-wallets';
 
 export const generateMnemonic = () => {
@@ -16,4 +18,10 @@ export const createPrivateKeyFromMnemonic = (index, mnemonic, networkIdentifier)
     const path = networkIdentifier === 'mainnet' ? pathMainnet : pathTestnet;
     
     return wallet.getChildAccountPrivateKey(path);
+}
+
+export const clearCache = () => {
+    SecureStorage.removeAll();
+    PersistentStorage.removeAll();
+    deleteUserPinCode();
 }

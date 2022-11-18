@@ -4,6 +4,7 @@ export class SecureStorage {
     // Keys
     static MNEMONIC_KEY = 'MNEMONIC';
     static ACCOUNTS_KEY = 'ACCOUNTS';
+    static SELECTED_ACCOUNT_ID = 'SELECTED_ACCOUNT_ID';
 
     // Mnemonic
     static getMnemonic() {
@@ -16,17 +17,30 @@ export class SecureStorage {
 
     // Accounts
     static async getAccounts() {
+        const defaultAccounts = {
+            mainnet: [],
+            testnet: []
+        };
         const accounts = await this.get(this.ACCOUNTS_KEY);
         
         try {
-            return JSON.parse(accounts);
+            return JSON.parse(accounts) || defaultAccounts;
         } catch {
-            return null;
+            return defaultAccounts;
         }
     }
 
     static async setAccounts(payload) {
         return this.set(this.ACCOUNTS_KEY, JSON.stringify(payload));
+    }
+
+    // Selected Private Key
+    static async getSelectedAccountId() {
+        return this.get(this.SELECTED_ACCOUNT_ID);
+    }
+
+    static async setSelectedAccountId(payload) {
+        return this.set(this.SELECTED_ACCOUNT_ID, payload);
     }
 
     // API
@@ -45,5 +59,6 @@ export class SecureStorage {
     static removeAll = async () => {
         await EncryptedStorage.removeItem(this.MNEMONIC_KEY);
         await EncryptedStorage.removeItem(this.ACCOUNTS_KEY);
+        await EncryptedStorage.removeItem(this.SELECTED_ACCOUNT_ID);
     };
 }

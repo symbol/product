@@ -1,8 +1,8 @@
-import { Constants } from '@src/config/constants';
+import { Constants } from 'src/config/constants';
 import { Address, RepositoryFactoryHttp, TransactionType } from 'symbol-sdk';
-import NamespaceService from '@src/services/NamespaceService';
-import MosaicService from '@src/services/MosaicService';
-import { formatTransactionLocalDateTime } from '@src/utils/format';
+import NamespaceService from 'src/services/NamespaceService';
+import MosaicService from 'src/services/MosaicService';
+import { formatTransactionLocalDateTime } from 'src/utils';
 
 export class FormatTransaction {
     static format = async (transaction, network, preLoadedMosaics) => {

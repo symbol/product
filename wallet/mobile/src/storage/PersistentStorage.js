@@ -3,10 +3,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 export class PersistentStorage {
     // Keys
     static DATA_SCHEMA_VERSION = 'dataSchemaVersion';
-    static NETWORK_CONFIG_KEY = 'networkConfig';
+    static NETWORK_IDENTIFIER_KEY = 'networkIdentifier';
     static SELECTED_NODE_KEY = 'selectedNode';
     static SELECTED_LANGUAGE_KEY = 'selectedLanguage';
     static PASSCODE_ENABLED_KEY = 'isPasscodeEnabled';
+    static SEED_ADDRESSES_KEY = 'seedAddresses';
     static LATEST_TRANSACTIONS_KEY = 'latestTransactions';
     static MOSAIC_INFOS_KEY = 'mosaicInfos';
     static OWNED_MOSAICS_KEY = 'ownedMosaics';
@@ -26,20 +27,20 @@ export class PersistentStorage {
         return this.set(this.DATA_SCHEMA_VERSION, payload.toString());
     };
 
-    // Netwok Config
-    static getNetworkConfig = async () => {
-        const networkConfig = await this.get(this.NETWORK_CONFIG_KEY);
+    // Network Identifier
+    static getNetworkIdentifier = async () => {
+        const networkIdentifier = await this.get(this.NETWORK_IDENTIFIER_KEY);
 
         try {
-            return JSON.parse(networkConfig);
+            return JSON.parse(networkIdentifier);
         }
         catch {
             return null;
         }
     };
 
-    static setNetworkConfig = payload => {
-        return this.set(this.NETWORK_CONFIG_KEY, JSON.stringify(payload));
+    static setNetworkIdentifier = payload => {
+        return this.set(this.NETWORK_IDENTIFIER_KEY, JSON.stringify(payload));
     };
 
     // Selected Node
@@ -75,6 +76,21 @@ export class PersistentStorage {
         return this.set(this.PASSCODE_ENABLED_KEY, payload.toString());
     };
 
+    // Seed Addresses
+    static async getSeedAddresses() {
+        const addresses = await this.get(this.SEED_ADDRESSES_KEY);
+        
+        try {
+            return JSON.parse(addresses);
+        } catch {
+            return null;
+        }
+    }
+
+    static async setSeedAddresses(payload) {
+        return this.set(this.SEED_ADDRESSES_KEY, JSON.stringify(payload));
+    }
+
     // API
     static set = (key, value) => {
         return AsyncStorage.setItem(key, value);
@@ -91,7 +107,7 @@ export class PersistentStorage {
     static removeAll = async () => {
         await Promise.all([
             this.remove(this.DATA_SCHEMA_VERSION),
-            this.remove(this.NETWORK_CONFIG_KEY),
+            this.remove(this.NETWORK_IDENTIFIER_KEY),
             this.remove(this.SELECTED_NODE_KEY),
             this.remove(this.SELECTED_LANGUAGE_KEY),
             this.remove(this.PASSCODE_ENABLED_KEY),
