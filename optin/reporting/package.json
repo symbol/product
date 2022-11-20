@@ -31,7 +31,7 @@
     "express": "^4.18.2",
     "express-validator": "^6.14.2",
     "json2csv": "^5.0.7",
-    "moment-timezone": "^0.5.38",
+    "moment-timezone": "^0.5.39",
     "sequelize": "^6.25.7",
     "sqlite3": "^5.1.2",
     "symbol-sdk": "^3.0.0"
