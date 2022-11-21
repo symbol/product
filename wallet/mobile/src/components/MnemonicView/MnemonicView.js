@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, StyleSheet, Text, TouchableOpacity } from 'react-native';
 import { borders, colors, fonts, spacings } from 'src/styles';
+import { ButtonCopy } from 'src/components';
 
 export const MnemonicView = props => {
     const { isShown, mnemonic, onShowPress} = props;
@@ -13,6 +14,7 @@ export const MnemonicView = props => {
             <Text style={styleMnemonicText}>
                 {mnemonicText}
             </Text>
+            {isShown && <ButtonCopy content={mnemonicText} style={styles.copy} />}
             {!isShown && <TouchableOpacity onPress={onShowPress} style={styles.button}>
                 <Text style={styles.textButton}>
                     {/* notranslate  */}
@@ -30,9 +32,14 @@ const styles = StyleSheet.create({
         backgroundColor: colors.bgForm,
         borderRadius: borders.borderRadiusForm,
     },
+    copy: {
+        position: 'absolute',
+        top: spacings.padding / 2,
+        right: spacings.padding / 2
+    },
     textMnemonic: {
         ...fonts.label,
-        marginTop: spacings.margin,
+        marginVertical: spacings.margin,
         color: colors.textForm,
         textAlign: 'center',
         padding: spacings.padding
