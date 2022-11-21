@@ -33,6 +33,7 @@ export const Checkbox = props => {
             [1, 0]
         ), }]
     }));
+    const stylesCheck = [styles.icon, animatedCheck, !value ? styles.hidden : null];
 
     const handlePressIn = () => {
         isPressed.value = withTiming(true, timings.press);
@@ -47,7 +48,7 @@ export const Checkbox = props => {
     return (
         <Pressable style={[styles.root, style]} onPress={handlePress} onPressIn={handlePressIn} onPressOut={handlePressOut}>
             <Animated.View style={[styles.container, animatedContainer]}>
-                {!!value && <Animated.Image source={require('src/assets/images/icon-check.png')} style={[styles.icon, animatedCheck]} />}
+                <Animated.Image source={require('src/assets/images/icon-check.png')} style={stylesCheck} />
             </Animated.View>
             <Animated.Text style={[fonts.label, animatedText]} testID={testID}>
                 {title}
@@ -75,5 +76,8 @@ const styles = StyleSheet.create({
     icon: {
         width: 18,
         height: 18
+    },
+    hidden: {
+        opacity: 0
     }
 });

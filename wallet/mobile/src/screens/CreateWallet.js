@@ -1,36 +1,50 @@
 import React, { useEffect, useState } from 'react';
 import { Image, StyleSheet, View } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
-import { Button, LoadingIndicator, Screen, Steps, StyledText, FormItem, MnemonicView, TextBox, ButtonClose, MnemonicConfirm } from 'src/components';
+import { Button, LoadingIndicator, Screen, Steps, StyledText, FormItem, MnemonicView, TextBox, ButtonClose, Checkbox } from 'src/components';
 import store from 'src/store';
-import { generateMnemonic, usePasscode, useValidation, validateAccountName, validateRequired } from 'src/utils';
+import { downloadPaperWallet, generateMnemonic, usePasscode, useValidation, validateAccountName, validateRequired } from 'src/utils';
+import { config } from 'src/config';
+import { showMessage } from 'react-native-flash-message';
 
 export const CreateWallet = (props) => {
     const { navigation } = props;
-    const stepsCount = 3;
+    const stepsCount = 2;
     const [step, setStep] = useState(1);
     // notranslate
     const [name, setName] = useState('My Account');
     const [mnemonic, setMnemonic] = useState('');
     const [isMnemonicShown, setIsMnemonicShown] = useState(false);
+    const [isMnemonicDownloading, setIsMnemonicDownloading] = useState(false);
+    const [isRiskAccepted, setIsRiskAccepted] = useState(false);
     // notranslate
     const nameErrorMessage = useValidation(name, [validateRequired(), validateAccountName()]);
-    const isLoading = step > stepsCount;
+    const isLoading = step > stepsCount || isMnemonicDownloading;
     const isButtonDisabled = [nameErrorMessage].some(el => !!el);
     
+    const showMnemonic = () => setIsMnemonicShown(true);
+    const downloadMnemonic = async () => {
+        setIsMnemonicDownloading(true);
+        setTimeout(async () => {
+            try {
+                await downloadPaperWallet(mnemonic, config.defaultNetworkIdentifier);
+                // notranslate
+                showMessage({message: 'Downloaded', type: 'success'});
+            }
+            catch(error) {
+                showMessage({message: error.message, type: 'danger'});
+            }
+            setIsMnemonicDownloading(false);
+        });
+    }
+    const toggleAcceptRisk = () => setIsRiskAccepted(!isRiskAccepted);
     const close = () => {
         navigation.reset({
             index: 0,
             routes: [{ name: 'Welcome' }],
         });
     };
-    const next = () => {
-        if (step === stepsCount) {
-            createPasscode();
-        }
-
-        setStep(step + 1);
-    }
+    const next = () => step === stepsCount ? createPasscode() : setStep(step + 1);
     const complete = async () => {
         await store.dispatchAction({ type: 'wallet/saveMnemonic', payload: { 
             mnemonic,
@@ -53,13 +67,14 @@ export const CreateWallet = (props) => {
 
     return (
         <Screen bottomComponent={
-            <FormItem bottom>
+            step === 1 && <FormItem bottom>
                 {/* notranslate */}
                 <Button title="Next" isDisabled={isButtonDisabled} onPress={next} />
             </FormItem>
         }>
+            {isLoading && <LoadingIndicator />}
             <FormItem>
-                <ButtonClose type="cancel" onPress={close} />
+                <ButtonClose type="cancel" style={styles.buttonCancel} onPress={close} />
             </FormItem>
             <FormItem>
                 <Image source={require('src/assets/images/logo-symbol-full.png')} style={styles.logo}/>
@@ -107,16 +122,16 @@ export const CreateWallet = (props) => {
                         </StyledText>
                     </FormItem>
                     <FormItem>
-                        <MnemonicView 
-                            mnemonic={mnemonic}
-                            isShown={isMnemonicShown}
-                            onShowPress={() => setIsMnemonicShown(true)}
-                        />
+                        <MnemonicView mnemonic={mnemonic} isShown={isMnemonicShown} onShowPress={showMnemonic} />
+                    </FormItem>
+                    <FormItem>
+                        {/* notranslate  */}
+                        <Button title="Download mnemonic to file" onPress={downloadMnemonic} />
                     </FormItem>
                     <FormItem>
                         <StyledText type="title">
                             {/* notranslate  */}
-                            Tips:
+                            Tips
                         </StyledText>
                         <StyledText type="body">
                             {/* notranslate  */}
@@ -130,36 +145,27 @@ export const CreateWallet = (props) => {
                         </StyledText>
                     </FormItem>
                     <FormItem>
-                        <StyledText type="body">
-                            {/* notranslate  */}
-                            Memorize this phrase.
-                        </StyledText>
-                    </FormItem>
-                </>)}
-                {step === 3 && (<>
-                    <FormItem>
                         <StyledText type="title">
                             {/* notranslate  */}
-                            Confirm Mnemonic
+                            Confirm
                         </StyledText>
-                        <StyledText type="body">
-                            {/* notranslate  */}
-                            Repeat a mnemonic passphrase or download a backup file.
-                        </StyledText>
+                        {/* notranslate  */}
+                        <Checkbox title="I accept the risk that if I lose the phrase my funds may be lost " value={isRiskAccepted} onChange={toggleAcceptRisk} />
                     </FormItem>
                     <FormItem>
-                        <MnemonicConfirm 
-                            mnemonic={mnemonic}
-                        />
+                        {/* notranslate  */}
+                        <Button title="Next" isDisabled={!isRiskAccepted} onPress={next} />
                     </FormItem>
                 </>)}
-                {isLoading && <LoadingIndicator />}
             </ScrollView>
         </Screen>
     );
 };
 
 const styles = StyleSheet.create({
+    buttonCancel: {
+        alignSelf: 'flex-end'
+    },
     logo: {
         width: '100%',
         height: 48,

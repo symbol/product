@@ -18,7 +18,7 @@ export const MnemonicView = props => {
             {!isShown && <TouchableOpacity onPress={onShowPress} style={styles.button}>
                 <Text style={styles.textButton}>
                     {/* notranslate  */}
-                    Show Mnemonic
+                    Show Mnemonic Phrase
                 </Text>
             </TouchableOpacity>}
         </View>
