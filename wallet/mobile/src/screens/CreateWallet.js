@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Image, StyleSheet, View } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
-import { Button, LoadingIndicator, Screen, Steps, StyledText, FormItem, MnemonicView, TextBox, ButtonClose } from 'src/components';
+import { Button, LoadingIndicator, Screen, Steps, StyledText, FormItem, MnemonicView, TextBox, ButtonClose, MnemonicConfirm } from 'src/components';
 import store from 'src/store';
 import { generateMnemonic, usePasscode, useValidation, validateAccountName, validateRequired } from 'src/utils';
 
@@ -140,53 +140,17 @@ export const CreateWallet = (props) => {
                     <FormItem>
                         <StyledText type="title">
                             {/* notranslate  */}
-                            Secure your wallet
+                            Confirm Mnemonic
                         </StyledText>
                         <StyledText type="body">
                             {/* notranslate  */}
-                            Your secret backup phrase (mnemonic) makes it easy to back up and restore your wallet.
+                            Repeat a mnemonic passphrase or download a backup file.
                         </StyledText>
                     </FormItem>
                     <FormItem>
-                        <StyledText type="body">
-                            {/* notranslate  */}
-                            WARNING: Never disclose your backup phrase. Anyone with this phrase can take your assets forever.
-                        </StyledText>
-                    </FormItem>
-                    <FormItem>
-                        <StyledText type="body">
-                            {/* notranslate  */}
-                            If you lose your wallet backup information, no one (including Symbol Wallet) can recover it, and you will lose any funds that are managed by the wallet.
-                        </StyledText>
-                    </FormItem>
-                    <FormItem>
-                        <MnemonicView 
+                        <MnemonicConfirm 
                             mnemonic={mnemonic}
-                            isShown={isMnemonicShown}
-                            onShowPress={() => setIsMnemonicShown(true)}
                         />
-                    </FormItem>
-                    <FormItem>
-                        <StyledText type="title">
-                            {/* notranslate  */}
-                            Tips:
-                        </StyledText>
-                        <StyledText type="body">
-                            {/* notranslate  */}
-                            Store this phrase in a password manager like 1Password.
-                        </StyledText>
-                    </FormItem>
-                    <FormItem>
-                        <StyledText type="body">
-                            {/* notranslate  */}
-                            Write this phrase on a piece of paper and store in a secure location. For additional security, write it down on multiple pieces of paper and store each in 2 - 3 different locations.
-                        </StyledText>
-                    </FormItem>
-                    <FormItem>
-                        <StyledText type="body">
-                            {/* notranslate  */}
-                            Memorize this phrase.
-                        </StyledText>
                     </FormItem>
                 </>)}
                 {isLoading && <LoadingIndicator />}

@@ -8,6 +8,7 @@ export * from './Dropdown/Dropdown';
 export * from './FormItem/FormItem';
 export * from './LoadingIndicator/LoadingIndicator';
 export * from './MnemonicView/MnemonicView';
+export * from './MnemonicConfirm/MnemonicConfirm'
 export * from './Screen/Screen';
 export * from './Steps/Steps';
 export * from './StyledText/StyledText';
