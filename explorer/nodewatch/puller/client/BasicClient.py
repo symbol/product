@@ -3,9 +3,7 @@ import json
 
 from aiohttp import ClientSession, ClientTimeout, client_exceptions
 
-
-class NodeException(Exception):
-	"""Exception raised when there is an error communicating with a node."""
+from ..model.Exceptions import NodeException
 
 
 class BasicClient:
