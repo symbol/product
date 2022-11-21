@@ -29,13 +29,13 @@ export class PersistentStorage {
 
     // Network Identifier
     static getNetworkIdentifier = async () => {
-        const networkIdentifier = await this.get(this.NETWORK_IDENTIFIER_KEY);
+        const networkIdentifier = (await this.get(this.NETWORK_IDENTIFIER_KEY)) || 'mainnet';
 
         try {
             return JSON.parse(networkIdentifier);
         }
         catch {
-            return null;
+            return 'mainnet';
         }
     };
 
@@ -44,12 +44,14 @@ export class PersistentStorage {
     };
 
     // Selected Node
-    static getSelectedNode = () => {
-        return this.get(this.SELECTED_NODE_KEY);
+    static getSelectedNode = async () => {
+        const nodeUrl = await this.get(this.SELECTED_NODE_KEY);
+        return nodeUrl === 'null' ? null : nodeUrl;
     };
 
     static setSelectedNode = payload => {
-        return this.set(this.SELECTED_NODE_KEY, payload.toString());
+        const nodeUrl = payload === null ? 'null' : payload;
+        return this.set(this.SELECTED_NODE_KEY, nodeUrl);
     };
 
     // Selected Language

@@ -4,10 +4,11 @@ import { spacings } from 'src/styles';
 
 
 export const FormItem = props => {
-    const { children, style } = props;
+    const { children, style, type } = props;
+    const isListItem = type === 'list';
 
     return (
-        <View style={[styles.root, style]}>
+        <View style={[styles.root, isListItem ? styles.listItem : null, style]}>
             {children}
         </View>
     );
@@ -16,5 +17,9 @@ export const FormItem = props => {
 const styles = StyleSheet.create({
     root: {
         marginVertical: spacings.margin,
+    },
+    listItem: {
+        marginVertical: null,
+        marginBottom: spacings.margin,
     }
 });

@@ -20,9 +20,8 @@ export const CreateWallet = (props) => {
         setStep(step + 1);
     }
     const complete = async () => {
-        await store.dispatchAction({ type: 'wallet/saveMnemonic', payload: mnemonic });
-        await store.dispatchAction({ type: 'wallet/addSeedAccount', payload: {
-            index: 0,
+        await store.dispatchAction({ type: 'wallet/saveMnemonic', payload: { 
+            mnemonic,
             name
         }});
 

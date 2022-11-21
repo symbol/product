@@ -1,9 +1,7 @@
-import { createPrivateKeyFromMnemonic, createWalletAccount, isPublicOrPrivateKey } from "src/utils";
-
 export default {
     namespace: 'account',
     state: {
-        current: {},
+        current: null,
     },
     mutations: {
         setCurrent(state, payload) {
@@ -16,7 +14,8 @@ export default {
             const { networkIdentifier } = state.network;
             const { selectedAccountId, accounts } = state.wallet;
             const networkAccounts = accounts[networkIdentifier];
-            const currentAccount = networkAccounts.find(account => account.privateKey === selectedAccountId);
+            console.log('Load accounts', {networkIdentifier, accounts})
+            const currentAccount = networkAccounts.find(account => account.privateKey === selectedAccountId) || networkAccounts[0];
 
             commit({ type: 'account/setCurrent', payload: currentAccount });
         },

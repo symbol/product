@@ -1,5 +1,7 @@
 export * from './AccountCard/AccountCard'
 export * from './Button/Button';
+export * from './ButtonClose/ButtonClose';
+export * from './Dropdown/Dropdown';
 export * from './FormItem/FormItem';
 export * from './LoadingIndicator/LoadingIndicator';
 export * from './MnemonicView/MnemonicView';
@@ -7,3 +9,4 @@ export * from './Screen/Screen';
 export * from './Steps/Steps';
 export * from './StyledText/StyledText';
 export * from './TextBox/TextBox';
+export * from './TitleBar/TitleBar';

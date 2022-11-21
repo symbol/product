@@ -10,8 +10,14 @@ export const StyledText = props => {
         case 'title':
             customStyle = styles.title;
             break;
+        case 'subtitle':
+            customStyle = styles.subtitle;
+            break;
         case 'body':
             customStyle = styles.body;
+            break;
+        case 'label':
+            customStyle = styles.label;
             break;
         case 'body-bold':
             customStyle = styles.bodyBold;
@@ -35,11 +41,17 @@ const styles = StyleSheet.create({
     title: {
         ...fonts.title
     },
+    subtitle: {
+        ...fonts.subtitle
+    },
     body: {
         ...fonts.body
     },
     bodyBold: {
         ...fonts.bodyBold
+    },
+    label: {
+        ...fonts.label
     },
     link: {
         ...fonts.body,
