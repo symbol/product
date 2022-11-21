@@ -19,5 +19,10 @@ export default {
 
             commit({ type: 'account/setCurrent', payload: currentAccount });
         },
+        fetchData: async ({ dispatchAction, state }) => {
+            const { address } = state.account.current;
+           
+            await dispatchAction({ type: 'wallet/fetchBalance', payload: address });
+        },
     },
 };

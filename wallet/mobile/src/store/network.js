@@ -4,6 +4,7 @@ export default {
     namespace: 'network',
     state: {
         networkIdentifier: 'mainnet',
+        ticker: 'XYM',
         selectedNodeUrl: null,
         nodeUrls: {
             mainnet: [

@@ -28,7 +28,7 @@ const styles = StyleSheet.create({
     },
     content: {
         flex: 1,
-        margin: spacings.margin,
+        marginHorizontal: spacings.margin,
         marginBottom: 0
     },
     bottom: {

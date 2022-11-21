@@ -20,6 +20,6 @@ const styles = StyleSheet.create({
     },
     listItem: {
         marginVertical: null,
-        marginBottom: spacings.margin,
+        marginTop: spacings.margin,
     }
 });
