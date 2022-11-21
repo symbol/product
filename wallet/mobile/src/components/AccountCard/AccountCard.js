@@ -1,15 +1,16 @@
 import React from 'react';
-import { Image, View, Pressable, StyleSheet, Text, TouchableOpacity } from 'react-native';
+import { Image, View, Pressable, StyleSheet, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { borders, colors, fonts, layout, spacings, timings } from 'src/styles';
 import imageArtPassport from 'src/assets/images/art-passport.png';
 
 export const AccountCard = props => {
-    const { address, balance, name, ticker, onReceivePress, onSendPress, onScanPress } = props;
+    const { address, balance, name, ticker, isLoading,  onReceivePress, onSendPress, onScanPress } = props;
     
 
     return (
         <View style={styles.root}>
             <Image source={imageArtPassport} style={styles.art} />
+            {isLoading && <ActivityIndicator color={colors.primary} style={styles.loadingIndicator} />}
             <View style={styles.content}>
                 <Text style={styles.textTitle}>
                     {/* notranslate  */}
@@ -84,6 +85,14 @@ const styles = StyleSheet.create({
         right: 0,
         top: -58,
         resizeMode: 'stretch'
+    },
+    loadingIndicator: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: '100%',
+        backgroundColor: '#0001'
     },
     content: {
         width: '100%',

@@ -7,17 +7,12 @@ import { Provider } from 'react-redux'
 import store from 'src/store';
 import { RouterView, navigationRef } from './Router';
 import { colors } from './styles';
-import { clearCache, usePasscode } from './utils';
 import { hasUserSetPinCode } from '@haskkor/react-native-pincode';
 import { SecureStorage } from './storage';
-import { createNavigationContainerRef, StackActions } from '@react-navigation/native';
 import { Passcode } from './screens';
-import { EntryExitTransition } from 'react-native-reanimated';
 
 const fillHeight = {flex: 1};
 const appBackgroundColor = { backgroundColor: colors.bgGray };
-
-// clearCache();
 
 const App = () => {
     const [isPasscodeEnabled, setIsPasscodeEnabled] = useState(false);
@@ -39,7 +34,7 @@ const App = () => {
     }
 
     const handleStateChange = () => {
-        setIsUnlocked(false);
+        // setIsUnlocked(false);
     };
 
     useEffect(() => {
@@ -75,7 +70,7 @@ const App = () => {
     return (<>
         <GestureHandlerRootView style={[fillHeight, appBackgroundColor]}>
             <SafeAreaView style={fillHeight} >
-                <StatusBar backgroundColor={colors.bgGray} />
+                <StatusBar backgroundColor={colors.bgStatusbar} />
                 <Provider store={store}>
                     <FlashMessage animationDuration={200} floating={true} />
                     <RouterView isActive={isMainContainerShown} />

@@ -43,6 +43,11 @@ export default {
         },
     },
     actions: {
+        loadAll: async ({ dispatchAction }) => {
+            await dispatchAction({type: 'wallet/loadState' });
+            await dispatchAction({type: 'network/loadState' });
+            await dispatchAction({type: 'account/loadState' });
+        },
         loadState: async ({ commit }) => {
             const mnemonic = await SecureStorage.getMnemonic();
             const accounts = await SecureStorage.getAccounts();
@@ -57,7 +62,7 @@ export default {
             commit({ type: 'wallet/setIsPasscodeEnabled', payload: isPasscodeEnabled || false});
         },
 
-        saveMnemonic: async ({ commit }, mnemonic) => {
+        saveMnemonic: async ({ commit, dispatchAction }, { mnemonic, name }) => {
             let savedMnemonic;
 
             try {
@@ -72,6 +77,8 @@ export default {
                 throw FailedToSaveMnemonicError('Mnemonic does not match');
             }
 
+            await dispatchAction({ type: 'wallet/addSeedAccount', payload: { name, index: 0, forceNetworkIdentifier: 'testnet' } });
+            await dispatchAction({ type: 'wallet/addSeedAccount', payload: { name, index: 0, forceNetworkIdentifier: 'mainnet' } });
             commit({ type: 'wallet/setMnemonic', payload: mnemonic });
         },
 
@@ -103,9 +110,10 @@ export default {
             commit({ type: 'wallet/setSelectedAccountId', payload: privateKey });
         },
 
-        addSeedAccount: async ({ commit, dispatchAction, state }, { index, name }) => {
-            const { networkIdentifier } = state.network;
+        addSeedAccount: async ({ commit, dispatchAction, state }, { index, name, forceNetworkIdentifier }) => {
+            const { walletNetworkIdentifier = networkIdentifier } = state.network;
             const { mnemonic } = state.wallet;
+            const networkIdentifier = forceNetworkIdentifier || walletNetworkIdentifier;
             const accountType = 'seed';
             const privateKey = createPrivateKeyFromMnemonic(index, mnemonic, networkIdentifier);
             const walletAccount = createWalletAccount(privateKey, networkIdentifier, name, accountType, index);

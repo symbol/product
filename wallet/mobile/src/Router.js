@@ -28,8 +28,12 @@ export const RouterView = ({ isActive }) => (
                 <Stack.Group screenOptions={{ headerShown: false }}>
                     <Stack.Screen name="CreateWallet" component={screens.CreateWallet} />
                 </Stack.Group>
-                <Stack.Group>
+                <Stack.Group screenOptions={{ headerShown: false }}>
                     <Stack.Screen name="Home" component={screens.Home} />
+                </Stack.Group>
+                <Stack.Group>
+                    <Stack.Screen name="Settings" component={screens.Settings} />
+                    <Stack.Screen name="Network" component={screens.SettingsNetwork} />
                 </Stack.Group>
                 <Stack.Group screenOptions={{ headerShown: false }}>
                     <Stack.Screen name="Passcode" component={screens.Passcode} />

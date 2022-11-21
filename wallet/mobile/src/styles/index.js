@@ -7,12 +7,14 @@ export const colors = {
     primary: DesignSystem.ColorDarkmodeTextLearnMore,
     secondary: '#605C6B',
 
-    bgNavbar: DesignSystem.ColorDarkmodeBgNavbar,
+    bgStatusbar: '#000000',
+    bgNavbar: '#1A1A1A',
     bgFooter: DesignSystem.ColorDarkmodeBgFooter,
     bgBody: DesignSystem.ColorDarkmodeBgDark,
     bgMain: DesignSystem.ColorDarkmodeBgMain,
     bgGray: DesignSystem.ColorDarkmodeBgGray,
     
+    bgCard: 'rgba(241, 243, 244, 0.15)',
     bgForm: DesignSystem.ColorDarkmodeFormBg,
     accentForm: DesignSystem.ColorDarkmodeFormAccent,
     accentLightForm: DesignSystem.ColorDarkmodeFormAccentLight,
@@ -80,7 +82,6 @@ export const fonts = {
         fontSize: 17,
         lineHeight: 17,
         textTransform: 'uppercase',
-        //backgroundColor: '#f005'
     },
     body: {
         fontFamily: 'Protipo-Regular',
@@ -90,18 +91,23 @@ export const fonts = {
         fontFamily: 'Protipo-Bold',
         fontSize: 13
     },
+    subtitle: {
+        fontFamily: 'Protipo-Bold',
+        fontSize: 17
+    },
     title: {
         fontFamily: 'Rajdhani-Bold',
         fontSize: 24,
         lineHeight: 26,
         textTransform: 'uppercase',
-        //backgroundColor: '#0f05'
     }
 };
 
 export const borders = {
     borderRadius: 4,
     borderRadiusForm: 12,
+    borderRadiusControl: 4,
+    borderRadiusAccountSelector: 8,
     borderWidth: 2
 }
 
