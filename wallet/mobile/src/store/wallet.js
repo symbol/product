@@ -2,6 +2,7 @@ import { hasUserSetPinCode } from '@haskkor/react-native-pincode';
 import { FailedToSaveMnemonicError } from 'src/errors';
 import { PersistentStorage, SecureStorage } from 'src/storage';
 import { addressFromPrivateKey, createPrivateKeyFromMnemonic, createWalletAccount } from 'src/utils';
+import { config } from 'src/config';
 
 const MAX_SEED_ACCOUNTS = 15;
 
@@ -17,6 +18,7 @@ export default {
             mainnet: [],
             testnet: []
         },
+        balances: {},
         selectedAccountId: null,
         isPasscodeEnabled: true,
     },
@@ -31,6 +33,10 @@ export default {
         },
         setSeedAddresses(state, payload) {
             state.wallet.seedAddresses = payload;
+            return state;
+        },
+        setBalances(state, payload) {
+            state.wallet.balances = payload;
             return state;
         },
         setSelectedAccountId(state, payload) {
@@ -52,12 +58,14 @@ export default {
             const mnemonic = await SecureStorage.getMnemonic();
             const accounts = await SecureStorage.getAccounts();
             const seedAddresses = await PersistentStorage.getSeedAddresses();
+            const balances = await PersistentStorage.getBalances();
             const selectedAccountId = await SecureStorage.getSelectedAccountId();
             const isPasscodeEnabled = await hasUserSetPinCode();
 
             commit({ type: 'wallet/setMnemonic', payload: mnemonic });
             commit({ type: 'wallet/setAccounts', payload: accounts });
             commit({ type: 'wallet/setSeedAddresses', payload: seedAddresses });
+            commit({ type: 'wallet/setBalances', payload: balances });
             commit({ type: 'wallet/setSelectedAccountId', payload: selectedAccountId || 0});
             commit({ type: 'wallet/setIsPasscodeEnabled', payload: isPasscodeEnabled || false});
         },
@@ -82,27 +90,22 @@ export default {
             commit({ type: 'wallet/setMnemonic', payload: mnemonic });
         },
 
-        loadSeedAddresses: async ({ state, commit }) => {
-            const { networkIdentifier } = state.network;
-            const { seedAddresses } = state.wallet;
+        generateSeedAddresses: async ({ state, commit }) => {
+            const { networkIdentifiers } = config;
             const mnemonic = await SecureStorage.getMnemonic();
-
-            const addresses = [];
+            const seedAddresses = {};
+            networkIdentifiers.forEach(networkIdentifier => seedAddresses[networkIdentifier] = []);
             
-            for (index = 0; index < MAX_SEED_ACCOUNTS; ++i) {
-                const privateKey = createPrivateKeyFromMnemonic(index, mnemonic, networkIdentifier);
-                const address = addressFromPrivateKey(privateKey);
-                const balance = 0;
-                addresses[index] = ({ address, balance });
+            for (const networkIdentifier of networkIdentifiers) {
+                for (index = 0; index < MAX_SEED_ACCOUNTS; ++index) {
+                    const privateKey = createPrivateKeyFromMnemonic(index, mnemonic, networkIdentifier);
+                    const address = addressFromPrivateKey(privateKey, networkIdentifier);
+                    seedAddresses[networkIdentifier][index] = address;
+                }
             }
 
-            const updatedSeedAddresses = {
-                ...seedAddresses,
-                [networkIdentifier]: addresses
-            };
-
-            commit({ type: 'wallet/setSeedAddresses', payload: updatedSeedAddresses });
-            await PersistentStorage.setSeedAddresses(updatedSeedAddresses);
+            commit({ type: 'wallet/setSeedAddresses', payload: seedAddresses });
+            await PersistentStorage.setSeedAddresses(seedAddresses);
         },
 
         selectAccount: async ({ commit }, privateKey) => {
@@ -139,6 +142,20 @@ export default {
             await SecureStorage.setAccounts(updatedAccounts);
 
             commit({ type: 'wallet/setAccounts', payload: updatedAccounts });
+        },
+
+        fetchBalance: async ({ commit }, address) => {
+            const balances = await PersistentStorage.getBalances();
+            // TODO: replace with fetch data
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            const balance = Math.round(Math.random() * 10000000) / 10;
+            const addressBalance = {
+                [address]: balance
+            };
+            const updatedBalances = {...balances, ...addressBalance}
+            await PersistentStorage.setBalances(updatedBalances);
+
+            commit({ type: 'wallet/setBalances', payload: updatedBalances });
         },
     },
 };

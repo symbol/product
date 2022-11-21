@@ -1,17 +1,19 @@
 import React from 'react';
-import { Image, View, Pressable, StyleSheet, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { Image, View, StyleSheet, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { borders, colors, fonts, layout, spacings, timings } from 'src/styles';
 import imageArtPassport from 'src/assets/images/art-passport.png';
 
 export const AccountCard = props => {
-    const { address, balance, name, ticker, isLoading,  onReceivePress, onSendPress, onScanPress } = props;
+    const { address, balance, name, ticker, isLoading, isSimplified, isActive, onReceivePress, onSendPress, onScanPress } = props;
+    const stylesRootActive = isActive ? [styles.root, styles.rootActive] : [styles.root];
+    const stylesRoot = isSimplified ? [stylesRootActive, styles.clearMarginTop] : [stylesRootActive];
+    const stylesContent = isSimplified ? [styles.content, styles.clearMarginTop] : [styles.content];
     
-
     return (
-        <View style={styles.root}>
-            <Image source={imageArtPassport} style={styles.art} />
+        <View style={stylesRoot}>
+            {!isSimplified && <Image source={imageArtPassport} style={styles.art} />}
             {isLoading && <ActivityIndicator color={colors.primary} style={styles.loadingIndicator} />}
-            <View style={styles.content}>
+            <View style={stylesContent}>
                 <Text style={styles.textTitle}>
                     {/* notranslate  */}
                     Account
@@ -39,32 +41,34 @@ export const AccountCard = props => {
                     {address}
                 </Text>
             </View>
-            <View style={styles.controls}>
-                <View style={styles.button}>
-                    <TouchableOpacity onPress={onReceivePress} style={styles.buttonPressable}>
-                        <Text style={styles.textButton}>
-                            {/* notranslate  */}
-                            Receive
-                        </Text>
-                    </TouchableOpacity>
+            {!isSimplified && (
+                <View style={styles.controls}>
+                    <View style={styles.button}>
+                        <TouchableOpacity onPress={onReceivePress} style={styles.buttonPressable}>
+                            <Text style={styles.textButton}>
+                                {/* notranslate  */}
+                                Receive
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
+                    <View style={styles.button}>
+                        <TouchableOpacity onPress={onSendPress} style={styles.buttonPressable}>
+                            <Text style={styles.textButton}>
+                                {/* notranslate  */}
+                                Send
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
+                    <View style={[styles.button, styles.clearBorderRight]}>
+                        <TouchableOpacity onPress={onScanPress} style={styles.buttonPressable}>
+                            <Text style={styles.textButton}>
+                                {/* notranslate  */}
+                                Scan
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
                 </View>
-                <View style={styles.button}>
-                    <TouchableOpacity onPress={onSendPress} style={styles.buttonPressable}>
-                        <Text style={styles.textButton}>
-                            {/* notranslate  */}
-                            Send
-                        </Text>
-                    </TouchableOpacity>
-                </View>
-                <View style={[styles.button, styles.clearBorderRight]}>
-                    <TouchableOpacity onPress={onScanPress} style={styles.buttonPressable}>
-                        <Text style={styles.textButton}>
-                            {/* notranslate  */}
-                            Scan
-                        </Text>
-                    </TouchableOpacity>
-                </View>
-            </View>
+            )}
         </View>
     );
 };
@@ -73,10 +77,13 @@ const styles = StyleSheet.create({
     root: {
         position: 'relative',
         width: '100%',
-        backgroundColor: colors.accentLightForm,
+        backgroundColor: colors.bgForm,
         borderRadius: borders.borderRadiusForm,
         borderStyle: 'solid',
         marginTop: 58,
+    },
+    rootActive: {
+        backgroundColor: colors.accentLightForm,
     },
     art: {
         position: 'absolute',
@@ -151,5 +158,8 @@ const styles = StyleSheet.create({
     },
     clearBorderRight: {
         borderRightWidth: null
+    },
+    clearMarginTop: {
+        marginTop: 0
     }
 });

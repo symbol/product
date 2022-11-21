@@ -5,13 +5,14 @@ import { AccountCard, Button, Screen, TitleBar, FormItem } from 'src/components'
 import store, { connect } from 'src/store';
 
 export const Home = connect(state => ({
-    accountBalance: 123456.7899,
+    balances: state.wallet.balances,
     currentAccount: state.account.current,
-    ticker: 'XYM'
+    ticker: state.network.ticker
 }))(function Home(props) {
-    const { accountBalance, currentAccount, ticker } = props;
+    const { balances, currentAccount, ticker } = props;
     const [isLoading, setIsLoading] = useState(false);
 
+    const accountBalance = currentAccount ? balances[currentAccount.address] : '-';
     const accountName = currentAccount?.name || '-';
     const accountAddress = currentAccount?.address || '-';
 
@@ -39,6 +40,7 @@ export const Home = connect(state => ({
                     balance={accountBalance}
                     ticker={ticker}
                     isLoading={isLoading}
+                    isActive
                     onReceivePress={() => console.log('receive')}
                     onSendPress={() => console.log('Send')}
                     onScanPress={() => console.log('Scan')}

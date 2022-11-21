@@ -8,6 +8,7 @@ export class PersistentStorage {
     static SELECTED_LANGUAGE_KEY = 'selectedLanguage';
     static PASSCODE_ENABLED_KEY = 'isPasscodeEnabled';
     static SEED_ADDRESSES_KEY = 'seedAddresses';
+    static BALANCES_KEY = 'balances';
     static LATEST_TRANSACTIONS_KEY = 'latestTransactions';
     static MOSAIC_INFOS_KEY = 'mosaicInfos';
     static OWNED_MOSAICS_KEY = 'ownedMosaics';
@@ -81,16 +82,36 @@ export class PersistentStorage {
     // Seed Addresses
     static async getSeedAddresses() {
         const addresses = await this.get(this.SEED_ADDRESSES_KEY);
+        const defaultAccounts = {
+            mainnet: [],
+            testnet: []
+        };
         
         try {
-            return JSON.parse(addresses);
+            return JSON.parse(addresses) || defaultAccounts;
         } catch {
-            return null;
+            return defaultAccounts;
         }
     }
 
     static async setSeedAddresses(payload) {
         return this.set(this.SEED_ADDRESSES_KEY, JSON.stringify(payload));
+    }
+
+    // Balances
+    static async getBalances() {
+        const balances = await this.get(this.BALANCES_KEY);
+        const defaultBalances = {};
+        
+        try {
+            return JSON.parse(balances) || defaultBalances;
+        } catch {
+            return defaultBalances;
+        }
+    }
+
+    static async setBalances(payload) {
+        return this.set(this.BALANCES_KEY, JSON.stringify(payload));
     }
 
     // API
@@ -108,11 +129,16 @@ export class PersistentStorage {
 
     static removeAll = async () => {
         await Promise.all([
-            this.remove(this.DATA_SCHEMA_VERSION),
-            this.remove(this.NETWORK_IDENTIFIER_KEY),
-            this.remove(this.SELECTED_NODE_KEY),
-            this.remove(this.SELECTED_LANGUAGE_KEY),
-            this.remove(this.PASSCODE_ENABLED_KEY),
+            this.remove(DATA_SCHEMA_VERSION),
+            this.remove(NETWORK_IDENTIFIER_KEY),
+            this.remove(SELECTED_NODE_KEY),
+            this.remove(SELECTED_LANGUAGE_KEY),
+            this.remove(PASSCODE_ENABLED_KEY),
+            this.remove(SEED_ADDRESSES_KEY),
+            this.remove(BALANCES_KEY),
+            this.remove(LATEST_TRANSACTIONS_KEY),
+            this.remove(MOSAIC_INFOS_KEY),
+            this.remove(OWNED_MOSAICS_KEY),
         ]);
     };
 }
