@@ -5,13 +5,15 @@ import { borders, colors, fonts, spacings, timings } from 'src/styles';
 
 
 export const TextBox = props => {
-    const { testID, buttons, title, value, onChange } = props;
+    const { testID, buttons, title, value, errorMessage, onChange } = props;
     const isFocused = useSharedValue(false);
+    const colorStrokeNormal = errorMessage ? colors.danger : colors.controlBaseStroke;
+    const colorStrokeFocussed = errorMessage ? colors.danger : colors.controlBaseFocussedStroke;
     const animatedContainer = useAnimatedStyle(() => ({
         borderColor: interpolateColor(
             isFocused.value,
             [0, 1],
-            [colors.controlBaseStroke, colors.controlBaseFocussedStroke]
+            [colorStrokeNormal, colorStrokeFocussed]
         ),
     }));
 
@@ -36,6 +38,7 @@ export const TextBox = props => {
                 />
                 {buttons}
             </View>
+            <Text style={styles.errorMessage}>{errorMessage}</Text>
         </Animated.View>
     );
 };
@@ -69,5 +72,11 @@ const styles = StyleSheet.create({
         flex: 1,
         paddingLeft: 0,
         color: colors.controlBaseTextAlt,
+    },
+    errorMessage: {
+        ...fonts.body,
+        position: 'absolute',
+        bottom: -fonts.body.fontSize - fonts.body.fontSize * 0.25,
+        color: colors.danger
     }
 });

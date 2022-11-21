@@ -21,3 +21,19 @@ export const createWalletAccount = (privateKey, networkIdentifier, name, account
 export const isPublicOrPrivateKey = stringToTest => {
     return typeof stringToTest === 'string' && stringToTest.length === 64;
 }
+
+export const isSymbolAddress = address => {
+    if (typeof address !== 'string') {
+        return false;
+    } 
+    if (address.length !== 39) {
+        return false;
+    }
+    const addressTrimAndUpperCase = address.trim().toUpperCase().replace(/-/g, '');
+    
+    if (addressTrimAndUpperCase.charAt(0) !== 'T' && addressTrimAndUpperCase.charAt(0) !== 'N') {
+        return false;
+    }
+
+    return true;
+}

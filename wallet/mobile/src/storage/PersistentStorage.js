@@ -129,16 +129,16 @@ export class PersistentStorage {
 
     static removeAll = async () => {
         await Promise.all([
-            this.remove(DATA_SCHEMA_VERSION),
-            this.remove(NETWORK_IDENTIFIER_KEY),
-            this.remove(SELECTED_NODE_KEY),
-            this.remove(SELECTED_LANGUAGE_KEY),
-            this.remove(PASSCODE_ENABLED_KEY),
-            this.remove(SEED_ADDRESSES_KEY),
-            this.remove(BALANCES_KEY),
-            this.remove(LATEST_TRANSACTIONS_KEY),
-            this.remove(MOSAIC_INFOS_KEY),
-            this.remove(OWNED_MOSAICS_KEY),
+            this.remove(this.DATA_SCHEMA_VERSION),
+            this.remove(this.NETWORK_IDENTIFIER_KEY),
+            this.remove(this.SELECTED_NODE_KEY),
+            this.remove(this.SELECTED_LANGUAGE_KEY),
+            this.remove(this.PASSCODE_ENABLED_KEY),
+            this.remove(this.SEED_ADDRESSES_KEY),
+            this.remove(this.BALANCES_KEY),
+            this.remove(this.LATEST_TRANSACTIONS_KEY),
+            this.remove(this.MOSAIC_INFOS_KEY),
+            this.remove(this.OWNED_MOSAICS_KEY),
         ]);
     };
 }
