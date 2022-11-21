@@ -1,6 +1,7 @@
 export * from './AccountCard/AccountCard'
 export * from './Button/Button';
 export * from './ButtonClose/ButtonClose';
+export * from './Checkbox/Checkbox';
 export * from './Dropdown/Dropdown';
 export * from './FormItem/FormItem';
 export * from './LoadingIndicator/LoadingIndicator';
