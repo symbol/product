@@ -6,7 +6,8 @@ from ..model.Endpoint import Endpoint
 from ..model.NodeInfo import NodeInfo
 from .BasicClient import BasicClient
 
-FinalizationInfo = namedtuple('FinalizationInfo', ['epoch', 'point', 'height'])
+ChainStatistics = namedtuple('ChainStatistics', ['height', 'score_high', 'score_low'])
+FinalizationStatistics = namedtuple('FinalizationStatistics', ['epoch', 'point', 'height', 'hash'])
 
 
 class SymbolClient(BasicClient):
@@ -30,14 +31,22 @@ class SymbolClient(BasicClient):
 	async def chain_height(self):
 		"""Gets chain height."""
 
-		chain_height = await self.get('chain/info', 'height')
-		return int(chain_height)
+		chain_statistics = await self.chain_statistics()
+		return chain_statistics.height
 
-	async def finalization_info(self):
-		"""Gets finalization information."""
+	async def chain_statistics(self):
+		"""Gets chain statistics."""
 
-		finalization_info = await self.get('chain/info', 'latestFinalizedBlock')
-		return FinalizationInfo(*(int(finalization_info[key]) for key in ('finalizationEpoch', 'finalizationPoint', 'height')))
+		chain_statistics = await self.get('chain/info')
+		return ChainStatistics(*(int(chain_statistics[key]) for key in ('height', 'scoreHigh', 'scoreLow')))
+
+	async def finalization_statistics(self):
+		"""Gets finalization statistics."""
+
+		finalization_statistics = await self.get('chain/info', 'latestFinalizedBlock')
+		return FinalizationStatistics(
+			*(int(finalization_statistics[key]) for key in ('finalizationEpoch', 'finalizationPoint', 'height')),
+			Hash256(finalization_statistics['hash']))
 
 	async def node_info(self):
 		"""Gets node information."""

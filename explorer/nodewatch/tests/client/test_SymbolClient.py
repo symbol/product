@@ -65,10 +65,13 @@ def server(event_loop, aiohttp_client):
 		async def chain_info(self, request):
 			return await self._process(request, {
 				'height': 1234,
+				'scoreHigh': 888999,
+				'scoreLow': 222111,
 				'latestFinalizedBlock': {
 					'finalizationEpoch': 222,
 					'finalizationPoint': 10,
-					'height': 1198
+					'height': 1198,
+					'hash': 'C49C566E4CF60856BC127C9E4748C89E3D38566DE0DAFE1A491012CC27A1C043'
 				}
 			})
 
@@ -131,7 +134,7 @@ async def test_can_cache_currency_mosaic_id(server):  # pylint: disable=redefine
 # endregion
 
 
-# region GET (chain_height)
+# region GET (chain_height, chain_statistics, finalization_statistics)
 
 async def test_can_query_chain_height(server):  # pylint: disable=redefined-outer-name
 	# Arrange:
@@ -144,23 +147,34 @@ async def test_can_query_chain_height(server):  # pylint: disable=redefined-oute
 	assert [f'{server.make_url("")}/chain/info'] == server.mock.urls
 	assert 1234 == height
 
-# endregion
 
-
-# region GET (finalization_info)
-
-async def test_can_query_finalization_info(server):  # pylint: disable=redefined-outer-name
+async def test_can_query_chain_statistics(server):  # pylint: disable=redefined-outer-name
 	# Arrange:
 	client = SymbolClient(server.make_url(''))
 
 	# Act:
-	finalization_info = await client.finalization_info()
+	chain_statistics = await client.chain_statistics()
 
 	# Assert:
 	assert [f'{server.make_url("")}/chain/info'] == server.mock.urls
-	assert 222 == finalization_info.epoch
-	assert 10 == finalization_info.point
-	assert 1198 == finalization_info.height
+	assert 1234 == chain_statistics.height
+	assert 888999 == chain_statistics.score_high
+	assert 222111 == chain_statistics.score_low
+
+
+async def test_can_query_finalization_statistics(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	client = SymbolClient(server.make_url(''))
+
+	# Act:
+	finalization_statistics = await client.finalization_statistics()
+
+	# Assert:
+	assert [f'{server.make_url("")}/chain/info'] == server.mock.urls
+	assert 222 == finalization_statistics.epoch
+	assert 10 == finalization_statistics.point
+	assert 1198 == finalization_statistics.height
+	assert Hash256('C49C566E4CF60856BC127C9E4748C89E3D38566DE0DAFE1A491012CC27A1C043') == finalization_statistics.hash
 
 # endregion
 
@@ -212,7 +226,7 @@ async def test_can_query_peers(server):  # pylint: disable=redefined-outer-name
 		3) == peers[0]
 	assert NodeInfo(
 		104,
-		Hash256('57F7DA205008026C776CB6AED843393F04CD458E0AA2D9F1D5F31A402072B2D6'),
+		Hash256('57F7DA205008026C776CB6AED843393F04CD458E0AA2D9F1D5F31A402072B2D6'),  # pylint: disable=duplicate-code
 		PublicKey('C807BE28855D0C87A8A2C032E51790CCB9158C15CBACB8B222E27DFFFEB3697D'),
 		None,
 		Endpoint('http', 'tiger.catapult.ninja', 7900),
