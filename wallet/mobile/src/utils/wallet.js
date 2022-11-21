@@ -1,3 +1,5 @@
+// import Clipboard from '@react-native-community/clipboard';
+import { Clipboard } from 'react-native'; // Remove after fix https://github.com/react-native-clipboard/clipboard/issues/71
 import { deleteUserPinCode } from '@haskkor/react-native-pincode';
 import { PersistentStorage, SecureStorage } from 'src/storage';
 import { ExtendedKey, MnemonicPassPhrase, Network, Wallet } from 'symbol-hd-wallets';
@@ -25,3 +27,7 @@ export const clearCache = () => {
     PersistentStorage.removeAll();
     deleteUserPinCode();
 }
+
+export const copyToClipboard = str => {
+    Clipboard.setString(str);
+};
