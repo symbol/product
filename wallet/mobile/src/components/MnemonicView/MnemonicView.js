@@ -4,7 +4,7 @@ import { borders, colors, fonts, spacings } from 'src/styles';
 import { ButtonCopy } from 'src/components';
 
 export const MnemonicView = props => {
-    const { isShown, mnemonic, onShowPress} = props;
+    const { isShown, isCopyDisabled, mnemonic, onShowPress} = props;
     const placeholder = Array(mnemonic.length).join('*');
     const styleMnemonicText = isShown ? [styles.textMnemonic] : [styles.textMnemonic, styles.hidden];
     const mnemonicText = isShown ? mnemonic : placeholder;
@@ -14,7 +14,7 @@ export const MnemonicView = props => {
             <Text style={styleMnemonicText}>
                 {mnemonicText}
             </Text>
-            {isShown && <ButtonCopy content={mnemonicText} style={styles.copy} />}
+            {isShown && !isCopyDisabled && <ButtonCopy content={mnemonicText} style={styles.copy} />}
             {!isShown && <TouchableOpacity onPress={onShowPress} style={styles.button}>
                 <Text style={styles.textButton}>
                     {/* notranslate  */}
