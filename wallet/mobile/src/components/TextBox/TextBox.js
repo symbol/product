@@ -5,8 +5,10 @@ import { borders, colors, fonts, spacings, timings } from 'src/styles';
 
 
 export const TextBox = props => {
-    const { testID, buttons, title, value, errorMessage, onChange } = props;
+    const { testID, buttons, multiline, title, value, errorMessage, onChange } = props;
     const isFocused = useSharedValue(false);
+    const styleInput = multiline ? [styles.input, styles.inputMultiline] : [styles.input];
+    const numberOfLines = multiline ? 5 : 1;
     const colorStrokeNormal = errorMessage ? colors.danger : colors.controlBaseStroke;
     const colorStrokeFocussed = errorMessage ? colors.danger : colors.controlBaseFocussedStroke;
     const animatedContainer = useAnimatedStyle(() => ({
@@ -30,7 +32,9 @@ export const TextBox = props => {
             <View style={styles.inputContainer}>
                 <TextInput 
                     testID={testID}
-                    style={styles.input} 
+                    multiline={multiline}
+                    numberOfLines={numberOfLines}
+                    style={styleInput} 
                     value={value}
                     onFocus={handleFocusIn}
                     onBlur={handleFocusOut}
@@ -47,7 +51,7 @@ const styles = StyleSheet.create({
     root: {
         position: 'relative',
         width: '100%',
-        height: spacings.controlHeight,
+        minHeight: spacings.controlHeight,
         justifyContent: 'center',
         borderRadius: borders.borderRadius,
         borderWidth: borders.borderWidth,
@@ -72,6 +76,10 @@ const styles = StyleSheet.create({
         flex: 1,
         paddingLeft: 0,
         color: colors.controlBaseTextAlt,
+    },
+    inputMultiline: {
+        textAlignVertical: 'top',
+        marginVertical: 0,
     },
     errorMessage: {
         ...fonts.body,
