@@ -85,9 +85,9 @@ export default {
                 throw FailedToSaveMnemonicError('Mnemonic does not match');
             }
 
+            commit({ type: 'wallet/setMnemonic', payload: mnemonic });
             await dispatchAction({ type: 'wallet/addSeedAccount', payload: { name, index: 0, forceNetworkIdentifier: 'testnet' } });
             await dispatchAction({ type: 'wallet/addSeedAccount', payload: { name, index: 0, forceNetworkIdentifier: 'mainnet' } });
-            commit({ type: 'wallet/setMnemonic', payload: mnemonic });
         },
 
         generateSeedAddresses: async ({ state, commit }) => {
