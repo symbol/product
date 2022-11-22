@@ -8,7 +8,7 @@
     "ios": "react-native run-ios",
     "dev": "react-native start",
     "build:android:dev": "react-native run-android",
-    "build:android:prod": "cd ./android && gradlew assembleProdRelease",
+    "build:android:prod": "cd ./android && gradlew assembleRelease",
     "test": "jest",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix --color",

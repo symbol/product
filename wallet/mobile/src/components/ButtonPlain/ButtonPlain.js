@@ -5,10 +5,16 @@ import { StyledText } from 'src/components';
 import { colors } from 'src/styles';
 
 export const ButtonPlain = props => {
-    const { title, style, onPress } = props;
+    const { isDisabled, title, style, onPress } = props;
+
+    const rootStyle = [isDisabled ? styles.disabled : null, style];
+
+    const handlePress = () => {
+        !isDisabled && onPress();
+    };
 
     return (
-        <TouchableOpacity style={style} onPress={onPress}>
+        <TouchableOpacity disabled={isDisabled} style={rootStyle} onPress={handlePress}>
             <StyledText type="label" style={styles.text}>
                 {title}
             </StyledText>
@@ -17,6 +23,9 @@ export const ButtonPlain = props => {
 };
 
 const styles = StyleSheet.create({
+    disabled: {
+        opacity: 0.3
+    },
     text: {
         color: colors.primary
     },

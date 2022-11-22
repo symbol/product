@@ -26,6 +26,7 @@ export const RouterView = ({ isActive }) => (
         {isActive && (<Stack.Navigator screenOptions={screenOptions}>
             <>
                 <Stack.Group screenOptions={{ headerShown: false }}>
+                    <Stack.Screen name="Welcome" component={screens.Welcome} />
                     <Stack.Screen name="CreateWallet" component={screens.CreateWallet} />
                 </Stack.Group>
                 <Stack.Group screenOptions={{ headerShown: false }}>
