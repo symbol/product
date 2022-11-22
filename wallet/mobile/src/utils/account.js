@@ -7,6 +7,16 @@ export const addressFromPrivateKey = (privateKey, networkIdentifier) => {
     return Account.createFromPrivateKey(privateKey, networkType).address.plain();
 };
 
+export const publicAccountFromPrivateKey = (privateKey, networkIdentifier) => {
+    const networkType = networkIdentifierToNetworkType(networkIdentifier);
+    const publicAccount = Account.createFromPrivateKey(privateKey, networkType);
+    
+    return {
+        address: publicAccount.address.plain(),
+        publicKey: publicAccount.publicKey
+    };
+};
+
 export const createWalletAccount = (privateKey, networkIdentifier, name, accountType, index) => {
     return {
         address: addressFromPrivateKey(privateKey, networkIdentifier),
