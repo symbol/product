@@ -66,4 +66,7 @@ const styles = StyleSheet.create({
         borderWidth: borders.borderWidth,
         borderStyle: 'solid',
     },
+    disabled: {
+        opacity: 0.3
+    },
 });

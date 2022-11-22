@@ -47,9 +47,9 @@ export const colors = {
     controlButtonPressedBg: DesignSystem.ColorDarkmodeButtonPressedBg,
     controlButtonPressedText: DesignSystem.ColorDarkmodeButtonPressedText,
 
-    controlButtonDisabledStroke: '#858585',
+    controlButtonDisabledStroke: '#26c3f244',
     controlButtonDisabledBg: DesignSystem.ColorDarkmodeButtonPressedBg,
-    controlButtonDisabledText: '#858585',
+    controlButtonDisabledText: '#26c3f255',
 
 
     controlBaseStroke: DesignSystem.ColorDarkmodeFormAccentLight,
@@ -99,6 +99,12 @@ export const fonts = {
         fontFamily: 'Rajdhani-Bold',
         fontSize: 24,
         lineHeight: 26,
+        textTransform: 'uppercase',
+    },
+    titleLarge: {
+        fontFamily: 'Rajdhani-Bold',
+        fontSize: 40,
+        lineHeight: 48,
         textTransform: 'uppercase',
     }
 };
