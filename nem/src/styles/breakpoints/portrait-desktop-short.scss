@@ -1,0 +1,44 @@
+.portrait-desktop-short {
+    --size-main-content-width: 410px;
+    --size-bg-spacer-width: 146px;
+    --size-logo-width: 187px;
+    --size-logo-height: 112.71px;
+    --size-footer-link-icon-width: 48px;
+    --size-footer-link-icon-height: 48px;
+   
+    --font-faucet-address: var(--font-web-desktop-body);
+    --font-body: var(--font-web-desktop-body);
+    --font-body-hero: var(--font-web-desktop-body);
+    --font-input: var(--font-web-desktop-body);
+    --font-button: var(--font-web-desktop-button-medium);
+    --font-footer-link: var(--font-web-desktop-label-icon);
+
+    --typography-body-letter-spacing: var(--typography-web-desktop-body-letter-spacing);
+    --typography-button-letter-spacing: var(--typography-web-desktop-button-medium-letter-spacing);
+    --typography-button-text-transform: var(--typography-web-desktop-button-medium-text-case);
+
+    --text-crop-body-top: -6px;
+    --text-crop-body-bottom: -6px;
+
+    --text-crop-body-hero-top: -6px;
+    --text-crop-body-hero-bottom: -6px;
+
+    --border-input-width: 2px;
+    --border-button-width: 2px;
+
+    --padding-base: 32px;
+    --padding-form: 32px;
+    --padding-input: 11px 11px 12px;
+    --padding-button: 12px 32px 10px;
+
+    --margin-logo: 16px;
+    --margin-footer: 24px;
+    --margin-control: 24px;
+    --margin-base: 24px;
+    --margin-paragraph-inner: 15px;
+
+    --display-mobile-bg: none;
+    --display-desktop-bg: block;
+    --display-portrait-form: block;
+    --display-landscape-form: none;
+}

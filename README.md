@@ -1,75 +1,60 @@
-## :potable_water: Faucet Backend
+# Faucet Repo
 
-Faucet backend is a simple endpoint backend service build on nodejs it allow user to request testnet [XEM](https://testnet-explorer.nemtool.com) and [XYM](https://testnet.symbol.fyi)(WIP) for development, it build on [Restify](http://restify.com/).
+- [Overview](#overview)
+- [Repository Layout](#repository-layout)
+- [Getting Help](#getting-help)
+- [License](#license)
 
-## Requirement
+## Overview
 
-Node.js 12.22.0 or later
+Faucet is a simple application that allows the user to request testnet network currency to do development. it supports NEM and SYMBOL. In order to request a tokens, the user is required to sign on with a Twitter account with a minimum **10 followers** and registered **at least 31 days**.
 
-## Structure
-
-- `services/nemRequest`: It's service layers, mainly doing API request from the nem nodes.
-- `controllers/nem`: it consume data from service layers, and process the data use for backend.
-
-## Usage
-
-Request XEM faucet
-
-``` bash
-curl -X POST -H "Content-Type: application/json" \
-    -d '{"address": "TCKH5L543TQKUPHIUAWMNYL7GNQYEY2UGMECB4D3", "amount": 10}' \
-    http://localhost:8080/claim/xem
+```text
+                              +---------------------+
+           2.OAuth callback   |                     |
+       +----------------------+  Twitter OAuth/API  |
+       |                      |                     |
+       |                      +------^---+----------+
+       |                             |   |
+       v                             |   |
++-----------+  1./twitter/auth    +--+---v---+
+|           +-------------------->|          |
+|           |                     |          |
+|           |  3./twitter/verify  |          |
+|           +-------------------->|          |
+|           |                     |          |
+|  Webpage  |  4.Token Response   |          |
+|           |<--------------------+          | 7.Sign and    +-----------+
+|           |                     |          |  Announce TX  |           |
+|           |  5./claim/{token}   |   REST   +-------------->|  Testnet  |
+|           +-------------------->|          |               |           |
+|           |                     |          |               +-----------+
+|           |  6.Status Response  |          |
+|           |<--------------------|          |
++-----------+                     +----------+
 ```
 
-Response
+## Repository layout
 
-```json
-{
-    "code":1,
-    "type":1,
-    "transactionHash":"9e7aefca8ad81ff37a2e8549539d922ccd821719a97e824a58814c3032f4dd85",
-    "amount":10,
-    "receiptAddress":"TCKH5L543TQKUPHIUAWMNYL7GNQYEY2UGMECB4D3"
-}
-```
+| Folder name | Description |
+| -------------|--------------|
+| [`/backend`](backend/) | Rest API service that uses Twitter OAuth login, requests tokens and sends it out. |
+| [`/nem`](nem/) | Frontend application for NEM. |
+| [`/symbol`](symbol/) | Fronted application for SYMBOL. |
+| [`/tests`](tests/) | Collection of tests. |
 
-## Installation
+## Getting Help
 
-1. Clone the project.
+- [Symbol Developer Documentation][developer documentation]
+- [Symbol Technical Reference][technical reference]
+- Join the community [discord][discord]
+- If you found a bug, [open a new issue][issues]
 
-```
-git clone https://github.com/NemProject/backend-faucet.git
-```
+## License
 
-2. Install the required dependencies.
+Copyright (c) 2022 NEM & Symbol Contributors, licensed under the [MIT license](LICENSE).
 
-```
-cd backend-faucet
-npm install
-```
-
-## Development
-
-1. Create `.env` in root directory.
-```env
-NEM_FAUCET_ADDRESS=<Address>
-NEM_FAUCET_PRIVATE_KEY=<private key>
-NEM_ENDPOINT=http://hugetestalice.nem.ninja:7890
-RECEIPT_MAX_BALANCE=200000000 // 200
-SEND_OUT_MAX_AMOUNT=500000000 // 500
-MOSAIC_DIVISIBILITY=6
-PORT=8080
-```
-
-2. running in development
-```
-npm run dev
-```
-
-3. Open [http://localhost:8080](http://localhost:8080) with your browser to see the result.
-
-## Building instructions
-
-```
-npm run build
-```
+[developer documentation]: https://docs.symbolplatform.com/
+[discord]: https://discord.gg/fjkWXyf
+[issues]: https://github.com/symbol/faucet/issues
+[technical reference]: https://symbol.github.io/symbol-technicalref/main.pdf

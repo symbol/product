@@ -2,12 +2,15 @@
 
 # dependencies
 /node_modules
+/backend/node_modules
+/nem/node_modules
 
 # testing
-/coverage
+/backend/coverage
+/nem/coverage
 
 # production
-/dist
+/nem/build
 
 # misc
 .DS_Store
