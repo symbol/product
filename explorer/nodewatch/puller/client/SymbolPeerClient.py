@@ -1,13 +1,16 @@
 import asyncio
+import ctypes
 import ssl
 
 from symbolchain.BufferReader import BufferReader
 from symbolchain.CryptoTypes import Hash256, PublicKey
 
+from ..bindings.openssl import ffi, lib
 from ..model.Endpoint import Endpoint
 from ..model.NodeInfo import NodeInfo
 from ..model.PacketHeader import PacketHeader, PacketType
 from .BasicClient import NodeException
+from .CatapultCertificateProcessor import CatapultCertificateProcessor
 from .SymbolClient import ChainStatistics, FinalizationStatistics
 
 
@@ -19,13 +22,25 @@ class SymbolPeerClient:
 
 		(self.node_host, self.node_port) = (host, port)
 		self.timeout_seconds = None
+		self.certificate_processor = None
+		self.node_public_key = None
 
 		self.ssl_context = ssl.create_default_context()
 		self.ssl_context.check_hostname = False
-		self.ssl_context.verify_mode = ssl.CERT_NONE
 		self.ssl_context.load_cert_chain(
 			certificate_directory / 'node.full.crt.pem',
 			keyfile=certificate_directory / 'node.key.pem')
+
+		# get python wrapper object address (SSL_CTX* is offset 16 bytes)
+		ssl_context_object_address = id(self.ssl_context)
+		ssl_context_raw_address = ctypes.cast(ssl_context_object_address, ctypes.POINTER(ctypes.c_uint64))[2]
+		ssl_context_pointer = ffi.cast('SSL_CTX *', ssl_context_raw_address)
+
+		self._verify_callback_wrapper = ffi.callback('int (*)(int, X509_STORE_CTX *)', self._verify_callback)
+		lib.SSL_CTX_set_verify(
+			ssl_context_pointer,
+			lib.SSL_VERIFY_PEER | lib.SSL_VERIFY_FAIL_IF_NO_PEER_CERT,
+			self._verify_callback_wrapper)
 
 	async def chain_height(self):
 		"""Gets chain height."""
@@ -45,15 +60,27 @@ class SymbolPeerClient:
 	async def node_info(self):
 		"""Gets node information."""
 
-		return await self._send_socket_request(PacketType.NODE_INFORMATION, self._parse_node_info_response)
+		node_info = await self._send_socket_request(PacketType.NODE_INFORMATION, self._parse_node_info_response)
+		node_info.node_public_key = self.node_public_key
+		return node_info
 
 	async def peers(self):
 		"""Gets peer nodes information."""
 
 		return await self._send_socket_request(PacketType.PEERS, self._parse_peers_response)
 
+	def _verify_callback(self, preverified, certificate_store_context):
+		if not self.certificate_processor.verify(preverified, certificate_store_context):
+			return False
+
+		if self.certificate_processor.size > 0:
+			self.node_public_key = self.certificate_processor.certificate(self.certificate_processor.size - 1).public_key
+
+		return True
+
 	async def _send_socket_request(self, packet_type, parser):
 		writer = None
+		self.certificate_processor = CatapultCertificateProcessor()  # due to structure of this client, handshake is done each request
 		try:
 			reader, writer = await asyncio.open_connection(
 				self.node_host,
@@ -66,6 +93,8 @@ class SymbolPeerClient:
 		finally:
 			if writer:
 				writer.close()
+
+			self.certificate_processor = None
 
 	@staticmethod
 	async def _process_write_read(reader, writer, packet_type, parser):

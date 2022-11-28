@@ -20,7 +20,7 @@ NODE_INFO_1 = NodeInfo(
 	104,
 	Hash256('57F7DA205008026C776CB6AED843393F04CD458E0AA2D9F1D5F31A402072B2D6'),
 	PublicKey('D8F4FE47F1F5B1046748067E52725AEBAA1ED9F3CE45D02054011A39671DD9AA'),
-	None,
+	PublicKey('8B10092796FE6ED2BC8CB65A81DA002C61CC087595CF8A03241FD47933324070'),
 	Endpoint('http', 'wolf.importance.jp', 7900),
 	'The Wolf Farm owned by Tresto(@TrendStream)',
 	16777988,
@@ -57,10 +57,10 @@ def locate_certificate_directory(cert_id):
 	return Path(f'tests/resources/cert{cert_id}').absolute()
 
 
-def load_ssl_context(cert_id):
+def load_server_ssl_context(cert_id):
 	certificate_directory = locate_certificate_directory(cert_id)
 
-	ssl_context = ssl.create_default_context()
+	ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
 	ssl_context.check_hostname = False
 	ssl_context.verify_mode = ssl.CERT_NONE
 	ssl_context.load_cert_chain(
@@ -132,7 +132,8 @@ async def server():  # pylint: disable=too-many-statements
 		finally:
 			writer.close()
 
-	server = await asyncio.start_server(handle_packet, '127.0.0.1', 8888, ssl=load_ssl_context(1))  # pylint: disable=redefined-outer-name
+	server_ssl_context = load_server_ssl_context(1)
+	server = await asyncio.start_server(handle_packet, '127.0.0.1', 8888, ssl=server_ssl_context)  # pylint: disable=redefined-outer-name
 	server.simulate_long_operation = False
 	server.simulate_corrupt_packet = False
 	server.simulate_corrupt_packet_type = False
