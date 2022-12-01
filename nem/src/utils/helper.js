@@ -4,7 +4,7 @@
  * @param {number} divisibility divisibility.
  * @returns {number} relative amount.
  */
-export const absoluteToRelativeAmount = (value, divisibility) => value / 10 ** divisibility;
+export const absoluteToRelativeAmount = (value, divisibility) => value / (10 ** divisibility);
 
 /**
  * Converts relative amount to absolute.
@@ -12,7 +12,7 @@ export const absoluteToRelativeAmount = (value, divisibility) => value / 10 ** d
  * @param {number} divisibility divisibility.
  * @returns {number} absolute amount.
  */
-export const relativeToAbsoluteAmount = (value, divisibility) => value * 10 ** divisibility;
+export const relativeToAbsoluteAmount = (value, divisibility) => value * (10 ** divisibility);
 
 /**
  * Validates NEM address

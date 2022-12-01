@@ -1,10 +1,4 @@
 ---
 extends:
-  - airbnb
-  - ../default.eslintrc
-rules:
-  no-console:
-  - error
-  - allow:
-    - error
-    - info
+- airbnb
+- ../_symbol/linters/javascript/default.eslintrc

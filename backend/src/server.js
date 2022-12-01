@@ -55,6 +55,7 @@ server.post('/claim/xem', async (req, res, next) => {
 // server.post('/claim/xym', (req, res, next) => {});
 
 server.listen(process.env.PORT, () => {
+	// eslint-disable-next-line no-console
 	console.info('%s listening at %s', server.name, server.url);
 });
 

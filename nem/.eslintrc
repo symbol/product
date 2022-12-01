@@ -1,23 +1,5 @@
 ---
 extends:
-  - react-app
-  - react-app/jest
-  - airbnb
-  - ../default.eslintrc
-rules:
-  react/jsx-filename-extension:
-  - 1
-  - extensions:
-    - ".js"
-  react/jsx-props-no-spreading:
-  - off
-  react/jsx-indent:
-  - error
-  - tab
-  react/jsx-indent-props:
-  - error
-  - tab
-  no-console:
-  - error
-  - allow:
-    - error
+- react-app
+- react-app/jest
+- ../_symbol/linters/javascript/default.eslintrc

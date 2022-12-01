@@ -1,4 +1,4 @@
-import en from './locales/en.json';
+import en from './locales/en';
 
 export class i18n {
 	// Supported languages
@@ -37,6 +37,7 @@ export class i18n {
 		const supportedLanguages = i18n.getLanguages();
 
 		if (!supportedLanguages.includes(currentLanguage)) {
+			// eslint-disable-next-line no-console
 			console.error(`Current language "${currentLanguage}" is not supported. Switching to default.`);
 
 			return i18n.defaultLanguage;
@@ -51,10 +52,13 @@ export class i18n {
 	static setCurrentLanguage(lang) {
 		const supportedLanguages = i18n.getLanguages();
 
-		if (supportedLanguages.includes(lang))
+		if (supportedLanguages.includes(lang)){
 			localStorage.setItem('currentLanguage', lang);
-		else
+		}
+		else {
+			// eslint-disable-next-line no-console
 			console.error(`Failed to set current language. Language "${lang}"" is not supported`);
+		}
 	}
 
 	/**

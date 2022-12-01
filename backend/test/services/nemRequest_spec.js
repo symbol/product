@@ -79,7 +79,7 @@ describe('nem request', () => {
 			expect(response.data).to.be.deep.equal(accountInfo);
 		});
 
-		runBasicErrorHandlerTests('onGet',`/account/get?address=${address}`, 'getAccountInfo', address);
+		runBasicErrorHandlerTests('onGet', `/account/get?address=${address}`, 'getAccountInfo', address);
 	});
 
 	describe('getNetworkTime', () => {
@@ -164,7 +164,7 @@ describe('nem request', () => {
 			expect(response.data).to.be.deep.equal(announceTransaction);
 		});
 
-		runBasicErrorHandlerTests('onPost','/transaction/announce', 'announceTransaction', {
+		runBasicErrorHandlerTests('onPost', '/transaction/announce', 'announceTransaction', {
 			payload: 'payload'
 		});
 	});

@@ -1,4 +1,4 @@
-export default {
+const config = {
 	URL_GITHUB: 'https://github.com/symbol',
 	URL_TWITTER: 'https://twitter.com/NEMofficial',
 	URL_DISCORD: 'https://discord.gg/xymcity',
@@ -12,3 +12,5 @@ export default {
 	CURRENCY: 'XEM',
 	DIVISIBILITY: 6
 };
+
+export default config;

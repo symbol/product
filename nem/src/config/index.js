@@ -1,5 +1,5 @@
-import breakpoints from './breakpoints.json';
-import defaultConfig from './default.json';
+import breakpoints from './breakpoints';
+import defaultConfig from './default';
 
 const config = {
 	BREAKPOINTS: breakpoints,

@@ -49,7 +49,8 @@ const Home = function () {
 	}, []);
 
 	const handleSubmit = (recipientAddress, amount) => {
-		// Validate form data. Show error message if address or amount is not valid, otherwise show success message and call Faucet claim API.
+		// Validate form data.
+		// Show error message if address or amount is not valid, otherwise show success message and call Faucet claim API.
 		const numericAmount = Number(amount);
 		const isAddressValid = validateNEMAddress(recipientAddress);
 		const isAmountValid = !isNaN(numericAmount) && 0 <= numericAmount && numericAmount <= maxAmount;

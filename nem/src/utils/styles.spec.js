@@ -1,7 +1,7 @@
 import {
 	getBreakpoint
 } from './styles';
-import breakpoints from '../config/breakpoints.json';
+import breakpoints from '../config/breakpoints';
 
 describe('utils/styles', () => {
 	describe('getBreakpoint', () => {
@@ -13,7 +13,7 @@ describe('utils/styles', () => {
 				// Assert:
 				expect(result).toEqual(expectedResult);
 			});
-		}
+		};
 
 		// Arrange:
 		const screenSize = [
@@ -160,11 +160,11 @@ describe('utils/styles', () => {
 			{
 				width: 6060,
 				height: 3300
-			},
-		]
+			}
+		];
 
 		screenSize.forEach(({width, height}, index) => {
-			runBasicBreakpointTests(width, height, breakpoints[index])
+			runBasicBreakpointTests(width, height, breakpoints[index]);
 		});
 	});
 });
