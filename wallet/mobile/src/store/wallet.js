@@ -1,8 +1,7 @@
 import { hasUserSetPinCode } from '@haskkor/react-native-pincode';
 import { FailedToSaveMnemonicError } from 'src/errors';
 import { PersistentStorage, SecureStorage } from 'src/storage';
-import { addressFromPrivateKey, createPrivateKeyFromMnemonic, createWalletAccount } from 'src/utils';
-import { config } from 'src/config';
+import { addressFromPrivateKey, createPrivateKeysFromMnemonic, createWalletAccount } from 'src/utils';
 
 const MAX_SEED_ACCOUNTS = 15;
 
@@ -86,26 +85,21 @@ export default {
             }
 
             commit({ type: 'wallet/setMnemonic', payload: mnemonic });
-            await dispatchAction({ type: 'wallet/addSeedAccount', payload: { name, index: 0, forceNetworkIdentifier: 'testnet' } });
-            await dispatchAction({ type: 'wallet/addSeedAccount', payload: { name, index: 0, forceNetworkIdentifier: 'mainnet' } });
+            await dispatchAction({ type: 'wallet/addSeedAccount', payload: { name, index: 0, networkIdentifier: 'testnet' } });
+            await dispatchAction({ type: 'wallet/addSeedAccount', payload: { name, index: 0, networkIdentifier: 'mainnet' } });
         },
 
         generateSeedAddresses: async ({ state, commit }) => {
-            const { networkIdentifiers } = config;
-            const mnemonic = await SecureStorage.getMnemonic();
-            const seedAddresses = {};
-            networkIdentifiers.forEach(networkIdentifier => seedAddresses[networkIdentifier] = []);
-            
-            for (const networkIdentifier of networkIdentifiers) {
-                for (index = 0; index < MAX_SEED_ACCOUNTS; ++index) {
-                    const privateKey = createPrivateKeyFromMnemonic(index, mnemonic, networkIdentifier);
-                    const address = addressFromPrivateKey(privateKey, networkIdentifier);
-                    seedAddresses[networkIdentifier][index] = address;
-                }
-            }
+            const { networkIdentifier } = state.network;
+            const { seedAddresses, mnemonic } = state.wallet;
+            const indexes = [...Array(MAX_SEED_ACCOUNTS).keys()];
+            const privateKeys = createPrivateKeysFromMnemonic(mnemonic, indexes, networkIdentifier);
+            const updatedSeedAddresses = {...seedAddresses};
 
-            commit({ type: 'wallet/setSeedAddresses', payload: seedAddresses });
-            await PersistentStorage.setSeedAddresses(seedAddresses);
+            updatedSeedAddresses[networkIdentifier] = privateKeys.map(privateKey => addressFromPrivateKey(privateKey, networkIdentifier));
+
+            commit({ type: 'wallet/setSeedAddresses', payload: updatedSeedAddresses });
+            await PersistentStorage.setSeedAddresses(updatedSeedAddresses);
         },
 
         selectAccount: async ({ commit }, privateKey) => {
@@ -113,17 +107,16 @@ export default {
             commit({ type: 'wallet/setSelectedAccountId', payload: privateKey });
         },
 
-        addSeedAccount: async ({ commit, dispatchAction, state }, { index, name, forceNetworkIdentifier }) => {
-            const { walletNetworkIdentifier = networkIdentifier } = state.network;
+        addSeedAccount: async ({ commit, dispatchAction, state }, { index, name, networkIdentifier }) => {
             const { mnemonic } = state.wallet;
-            const networkIdentifier = forceNetworkIdentifier || walletNetworkIdentifier;
             const accountType = 'seed';
-            const privateKey = createPrivateKeyFromMnemonic(index, mnemonic, networkIdentifier);
+            const privateKeys = createPrivateKeysFromMnemonic(mnemonic, [index], networkIdentifier);
+            const privateKey = privateKeys[0];
             const walletAccount = createWalletAccount(privateKey, networkIdentifier, name, accountType, index);
             const accounts = await SecureStorage.getAccounts();
             const networkAccounts = accounts[networkIdentifier];
             const isAccountAlreadyExists = networkAccounts.find(account => account.index === index);
-            
+
             if (isAccountAlreadyExists) {
                 throw Error('failed_add_account_already_exists');
             }

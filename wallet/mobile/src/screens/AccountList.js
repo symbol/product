@@ -3,26 +3,27 @@ import React, { useEffect, useState } from 'react';
 import { StyleSheet } from 'react-native';
 import { showMessage } from 'react-native-flash-message';
 import { FlatList, TouchableOpacity } from 'react-native-gesture-handler';
-import { AccountCard, Screen, FormItem, LoadingIndicator } from 'src/components';
+import { AccountCard, Screen, FormItem, LoadingIndicator, Button } from 'src/components';
 import store, { connect } from 'src/store';
-import { borders, colors, spacings } from 'src/styles';
+import { usePromises } from 'src/utils';
 
 export const AccountList = connect(state => ({
     currentAccount: state.account.current,
     accounts: state.wallet.accounts,
-    seedAddresses: state.wallet.seedAddresses,
     balances: state.wallet.balances,
     networkIdentifier: state.network.networkIdentifier,
     ticker: state.network.ticker,
 }))(function AccountList(props) {
-    const { currentAccount, accounts, seedAddresses, balances, networkIdentifier, ticker } = props;
+    const { currentAccount, accounts, balances, networkIdentifier, ticker } = props;
     const [isLoading, setIsLoading] = useState(false);
-    const [accountBalanceStateMap, setAccountBalanceStateMap] = useState({});
+    const [accountBalanceStateMap, setAccountBalanceStateMap] = usePromises({});
     const selectedPrivateKey = currentAccount?.privateKey || null;
     const networkAccounts = accounts[networkIdentifier];
     const navigation = useNavigation();
     
     const isAccountSelected = account => account.privateKey === selectedPrivateKey;
+
+    const goToAddSeedAccount = () => navigation.navigate('AddSeedAccount');
 
     const selectAccount = async account => {
         setIsLoading(true);
@@ -39,34 +40,18 @@ export const AccountList = connect(state => ({
 
     useEffect(() => {
         const fetchBalances = async () => {
+            const updatedAccountBalanceStateMap = {};
             for (const account of networkAccounts) {
-                await store.dispatchAction({type: 'wallet/fetchBalance', payload: account.address});
-                const updatedAccountBalanceStateMap = {
-                    ...accountBalanceStateMap,
-                    [account.address]: true
-                };
-                setAccountBalanceStateMap(updatedAccountBalanceStateMap);
+                updatedAccountBalanceStateMap[account.address] = () => store.dispatchAction({type: 'wallet/fetchBalance', payload: account.address});
             }
+            setAccountBalanceStateMap(updatedAccountBalanceStateMap);
         }
         fetchBalances();
-
-        // const loadState = async () => {
-        //     setIsLoading(true);
-        //     try {
-        //         await store.dispatchAction({type: 'wallet/loadState'});
-        //     }
-        //     catch(error) {
-        //         showMessage({message: error.message, type: 'danger'});
-        //     }
-        //     setIsLoading(false);
-            
-        // }
-
-        // loadState();
     }, []);
 
     return (
-        <Screen>
+        // notranslate
+        <Screen bottomComponent={!isLoading && <Button title="Add Account" onPress={goToAddSeedAccount} />}>
             {isLoading && <LoadingIndicator />}
             <FlatList 
                 style={styles.fill}
@@ -80,8 +65,8 @@ export const AccountList = connect(state => ({
                             address={item.address}
                             balance={balances[item.address]}
                             ticker={ticker}
-                            isLoading={!accountBalanceStateMap[item.address]}
-                            isActive={() => isAccountSelected(item)}
+                            isLoading={accountBalanceStateMap[item.address]}
+                            isActive={isAccountSelected(item)}
                             isSimplified
                         />
                     </TouchableOpacity>
@@ -94,13 +79,5 @@ export const AccountList = connect(state => ({
 const styles = StyleSheet.create({
     fill: {
         flex: 1
-    },
-    item: {
-        borderRadius: borders.borderRadius,
-        backgroundColor: colors.bgCard,
-        padding: spacings.padding,
-    },
-    itemSelected: {
-        backgroundColor: colors.accentLightForm
     }
 });

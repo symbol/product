@@ -3,7 +3,7 @@ import { Image, StyleSheet } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import { Button, LoadingIndicator, Screen, Steps, StyledText, FormItem, MnemonicView, TextBox, ButtonClose, Checkbox } from 'src/components';
 import store from 'src/store';
-import { createPrivateKeyFromMnemonic, downloadPaperWallet, generateMnemonic, publicAccountFromPrivateKey, usePasscode, useValidation, validateAccountName, validateRequired } from 'src/utils';
+import { createPrivateKeysFromMnemonic, downloadPaperWallet, generateMnemonic, publicAccountFromPrivateKey, usePasscode, useValidation, validateAccountName, validateRequired } from 'src/utils';
 import { config } from 'src/config';
 import { showMessage } from 'react-native-flash-message';
 
@@ -28,7 +28,7 @@ export const CreateWallet = (props) => {
         setTimeout(async () => {
             try {
                 const networkIdentifier = config.defaultNetworkIdentifier;
-                const privateKey = createPrivateKeyFromMnemonic(0, mnemonic, networkIdentifier);
+                const privateKey = createPrivateKeysFromMnemonic(mnemonic, [0], networkIdentifier);
                 const account = publicAccountFromPrivateKey(privateKey, networkIdentifier);
                 await downloadPaperWallet(mnemonic, account, networkIdentifier);
                 // notranslate

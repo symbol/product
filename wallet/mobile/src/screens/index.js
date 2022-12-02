@@ -1,5 +1,6 @@
 export { Home } from './Home';
 export { AccountList } from './AccountList';
+export { AddSeedAccount } from './AddSeedAccount';
 export { CreateWallet } from './CreateWallet';
 export { ImportWallet } from './ImportWallet';
 export { Passcode } from './Passcode';
