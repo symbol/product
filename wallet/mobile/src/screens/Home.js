@@ -21,6 +21,7 @@ export const Home = connect(state => ({
             setIsLoading(true);
             try {
                 await store.dispatchAction({type: 'wallet/loadAll'});
+                await store.dispatchAction({type: 'account/fetchData'});
             }
             catch(error) {
                 showMessage({message: error.message, type: 'danger'});

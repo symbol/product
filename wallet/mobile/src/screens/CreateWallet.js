@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { Image, StyleSheet, View } from 'react-native';
+import { Image, StyleSheet } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import { Button, LoadingIndicator, Screen, Steps, StyledText, FormItem, MnemonicView, TextBox, ButtonClose, Checkbox } from 'src/components';
 import store from 'src/store';
-import { addressFromPrivateKey, createPrivateKeyFromMnemonic, downloadPaperWallet, generateMnemonic, publicAccountFromPrivateKey, publicKeyFromPrivateKey, usePasscode, useValidation, validateAccountName, validateRequired } from 'src/utils';
+import { createPrivateKeyFromMnemonic, downloadPaperWallet, generateMnemonic, publicAccountFromPrivateKey, usePasscode, useValidation, validateAccountName, validateRequired } from 'src/utils';
 import { config } from 'src/config';
 import { showMessage } from 'react-native-flash-message';
 
