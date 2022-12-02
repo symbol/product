@@ -34,7 +34,8 @@ export const RouterView = ({ isActive }) => (
                     <Stack.Screen name="Home" component={screens.Home} />
                 </Stack.Group>
                 <Stack.Group>
-                <Stack.Screen name="AccountList" component={screens.AccountList} />
+                    <Stack.Screen name="AccountList" component={screens.AccountList} />
+                    <Stack.Screen name="AddSeedAccount" component={screens.AddSeedAccount} />
                     <Stack.Screen name="Settings" component={screens.Settings} />
                     <Stack.Screen name="Network" component={screens.SettingsNetwork} />
                 </Stack.Group>

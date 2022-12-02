@@ -12,18 +12,22 @@ export const generateMnemonic = () => {
     return MnemonicPassPhrase.createRandom().plain;
 }
 
-export const createPrivateKeyFromMnemonic = (index, mnemonic, networkIdentifier) => {
-    const pathTestnet = `m/44'/1'/${index}'/0'/0'`;
-    const pathMainnet = `m/44'/4343'/${index}'/0'/0'`;
-    
+export const createPrivateKeysFromMnemonic = (mnemonic, indexes, networkIdentifier) => {
     const mnemonicPassPhrase = new MnemonicPassPhrase(mnemonic);
     const seed = mnemonicPassPhrase.toSeed().toString('hex');
     const curve = Network.SYMBOL;
     const extendedKey = ExtendedKey.createFromSeed(seed, curve);
     const wallet = new Wallet(extendedKey);
-    const path = networkIdentifier === 'mainnet' ? pathMainnet : pathTestnet;
     
-    return wallet.getChildAccountPrivateKey(path);
+    const privateKeys = indexes.map((index) => {
+        const pathTestnet = `m/44'/1'/${index}'/0'/0'`;
+        const pathMainnet = `m/44'/4343'/${index}'/0'/0'`;
+        const path = networkIdentifier === 'mainnet' ? pathMainnet : pathTestnet;
+
+        return wallet.getChildAccountPrivateKey(path);
+    });
+
+    return privateKeys;
 }
 
 export const clearCache = () => {
