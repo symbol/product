@@ -38,6 +38,8 @@ export const SettingsNetwork = connect(state => ({
         try {
             await store.dispatchAction({type: 'network/changeNetwork', payload: {networkIdentifier, nodeUrl}});
             await store.dispatchAction({type: 'wallet/loadAll'});
+            await store.dispatchAction({type: 'network/fetchData'});
+            await store.dispatchAction({type: 'account/fetchData'});
         }
         catch(error) {
             showMessage({message: error.message, type: 'danger'});

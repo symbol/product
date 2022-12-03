@@ -9,14 +9,14 @@
         ]
     },
     "statisticsServiceURL": {
-        "testnet": "https://testnet.symbol.services/",
-        "mainnet": "https://symbol.services/"
+        "testnet": "https://testnet.symbol.services",
+        "mainnet": "https://symbol.services"
     },
     "explorerURL": {
-        "testnet": "https://testnet.symbol.fyi/",
-        "mainnet": "https://symbol.fyi/"
+        "testnet": "https://testnet.symbol.fyi",
+        "mainnet": "https://symbol.fyi"
     },
-    "faucetURL": "https://testnet.symbol.tools/",
+    "faucetURL": "https://testnet.symbol.tools",
     "aboutURL": "https://nem.io",
     "optInPayoutSigner": {
         "testnet": [
@@ -27,5 +27,6 @@
         ]
     },
     "networkIdentifiers": ["mainnet", "testnet"],
-    "defaultNetworkIdentifier": "mainnet"
+    "defaultNetworkIdentifier": "mainnet",
+    "maxSeedAccounts": 10
 }

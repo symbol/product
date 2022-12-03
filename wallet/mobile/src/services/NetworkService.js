@@ -1,25 +1,27 @@
-//import { defaultNodes, nodeProbeTimeout, statisticsServiceURL } from '@config/config.json';
-import { networkTypeToIdentifier } from 'src/utils';
-//import { timeout } from 'rxjs/operators';
-import { ChainHttp, NetworkHttp, NetworkType, NodeHttp, RepositoryFactoryHttp, TransactionFees } from 'symbol-sdk';
+import { config } from 'src/config';
+import { makeRequest, networkTypeToIdentifier } from 'src/utils';
+import { ChainHttp, DtoMapping, NetworkHttp, NetworkType, NodeHttp, RepositoryFactoryHttp, TransactionFees } from 'symbol-sdk';
+import { MosaicService } from './MosaicService';
 
 export class NetworkService {
     static async getDefaultNodeList(networkIdentifier) {
-        return defaultNodes[networkIdentifier];
+        return config.defaultNodes[networkIdentifier];
     }
 
     static async fetchNodeList(networkIdentifier) {
-        const baseUrl = statisticsServiceURL[networkIdentifier];
+        const baseUrl = config.statisticsServiceURL[networkIdentifier];
         const filter = 'suggested';
         const limit = 30;
         const endpoint = `${baseUrl}/nodes?filter=${filter}&limit=${limit}`;
 
-        return fetch(endpoint);
+        const nodes = await makeRequest(endpoint);
+        
+        return nodes.map(node => node.apiStatus.restGatewayUrl);
     }
 
     static async fetchNetworkProperties(nodeUrl) {
         const networkHttp = new NetworkHttp(nodeUrl);
-        const chainHttp = new ChainHttp(node);
+        const chainHttp = new ChainHttp(nodeUrl);
         const [networkType, networkProps, transactionFees, chainInfo] = await Promise.all([
             networkHttp
                 .getNetworkType()
@@ -39,6 +41,9 @@ export class NetworkService {
                 .toPromise(),
         ]);
 
+        const networkCurrencyMosaicId = DtoMapping.toSimpleHex(networkProps.chain.currencyMosaicId);
+        const mosaicInfo = await MosaicService.fetchMosaicInfo({nodeUrl}, networkCurrencyMosaicId);
+
         return {
             nodeUrl,
             networkIdentifier: networkTypeToIdentifier(networkType),
@@ -47,10 +52,10 @@ export class NetworkService {
             epochAdjustment: parseInt(networkProps.network.epochAdjustment),
             transactionFees,
             networkCurrency: {
-                namespaceName: networkCurrency.currency.namespaceId.fullName,
-                namespaceId: networkCurrency.currency.namespaceId.id.toHex(),
-                mosaicId: networkCurrency.currency.mosaicId.toHex(),
-                divisibility: networkCurrency.currency.divisibility,
+                // namespaceName: networkCurrency.currency.namespaceId.fullName,
+                // namespaceId: networkCurrency.currency.namespaceId.id.toHex(),
+                mosaicId: networkCurrencyMosaicId,
+                divisibility: mosaicInfo.divisibility,
             },
         };
     }

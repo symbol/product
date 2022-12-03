@@ -9,5 +9,6 @@ export const config = {
     aboutURL: configFile.aboutURL,
     optInPayoutSigner: configFile.optInPayoutSigner,
     networkIdentifiers: configFile.networkIdentifiers,
-    defaultNetworkIdentifier: configFile.defaultNetworkIdentifier
+    defaultNetworkIdentifier: configFile.defaultNetworkIdentifier,
+    maxSeedAccounts: configFile.maxSeedAccounts
 };

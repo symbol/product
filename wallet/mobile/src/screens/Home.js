@@ -16,19 +16,20 @@ export const Home = connect(state => ({
     const accountName = currentAccount?.name || '-';
     const accountAddress = currentAccount?.address || '-';
 
-    useEffect(() => {
-        const loadState = async () => {
-            setIsLoading(true);
-            try {
-                await store.dispatchAction({type: 'wallet/loadAll'});
-                await store.dispatchAction({type: 'account/fetchData'});
-            }
-            catch(error) {
-                showMessage({message: error.message, type: 'danger'});
-            }
-            setIsLoading(false);
+    const loadState = async () => {
+        setIsLoading(true);
+        try {
+            await store.dispatchAction({type: 'wallet/loadAll'});
+            await store.dispatchAction({type: 'network/fetchData'});
+            await store.dispatchAction({type: 'account/fetchData'});
         }
+        catch(error) {
+            showMessage({message: error.message, type: 'danger'});
+        }
+        setIsLoading(false);
+    }
 
+    useEffect(() => {
         loadState();
     }, []);
 
@@ -42,7 +43,7 @@ export const Home = connect(state => ({
                     ticker={ticker}
                     isLoading={isLoading}
                     isActive
-                    onReceivePress={() => console.log('receive')}
+                    onReceivePress={loadState}
                     onSendPress={() => console.log('Send')}
                     onScanPress={() => console.log('Scan')}
                 />
