@@ -1,9 +1,9 @@
 import { hasUserSetPinCode } from '@haskkor/react-native-pincode';
 import { FailedToSaveMnemonicError } from 'src/errors';
+import { AccountService } from 'src/services';
 import { PersistentStorage, SecureStorage } from 'src/storage';
-import { addressFromPrivateKey, createPrivateKeysFromMnemonic, createWalletAccount } from 'src/utils';
-
-const MAX_SEED_ACCOUNTS = 15;
+import { addressFromPrivateKey, createPrivateKeysFromMnemonic, createWalletAccount, getMosaicRelativeAmount, getNativeMosaicAmount } from 'src/utils';
+import { config } from 'src/config';
 
 export default {
     namespace: 'wallet',
@@ -92,7 +92,7 @@ export default {
         generateSeedAddresses: async ({ state, commit }) => {
             const { networkIdentifier } = state.network;
             const { seedAddresses, mnemonic } = state.wallet;
-            const indexes = [...Array(MAX_SEED_ACCOUNTS).keys()];
+            const indexes = [...Array(config.maxSeedAccounts).keys()];
             const privateKeys = createPrivateKeysFromMnemonic(mnemonic, indexes, networkIdentifier);
             const updatedSeedAddresses = {...seedAddresses};
 
@@ -137,11 +137,25 @@ export default {
             commit({ type: 'wallet/setAccounts', payload: updatedAccounts });
         },
 
-        fetchBalance: async ({ commit }, address) => {
+        fetchBalance: async ({ commit, state }, address) => {
+            const { networkProperties } = state.network;
             const balances = await PersistentStorage.getBalances();
-            // TODO: replace with fetch data
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            const balance = Math.round(Math.random() * 10000000) / 10;
+            let balance;
+            try {
+                const accountInfo = await AccountService.fetchAccountInfo(networkProperties, address);
+                const accountMosaics = accountInfo.mosaics;
+                absoluteAmount = getNativeMosaicAmount(accountMosaics, networkProperties.networkCurrency.mosaicId);
+                balance = getMosaicRelativeAmount(absoluteAmount, networkProperties.networkCurrency.divisibility);
+            }
+            catch(error) {
+                // noerror
+                if (error.message === 'error_fetch_not_found') {
+                    balance = 0;
+                }
+                else {
+                    throw Error('error_fetch_balance');
+                }
+            }
             const addressBalance = {
                 [address]: balance
             };

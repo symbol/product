@@ -44,10 +44,10 @@ export const AccountCard = props => {
             {!isSimplified && (
                 <View style={styles.controls}>
                     <View style={styles.button}>
-                        <TouchableOpacity onPress={onReceivePress} style={styles.buttonPressable}>
+                        <TouchableOpacity onPress={onScanPress} style={styles.buttonPressable}>
                             <Text style={styles.textButton}>
                                 {/* notranslate  */}
-                                Receive
+                                Details
                             </Text>
                         </TouchableOpacity>
                     </View>
@@ -60,10 +60,10 @@ export const AccountCard = props => {
                         </TouchableOpacity>
                     </View>
                     <View style={[styles.button, styles.clearBorderRight]}>
-                        <TouchableOpacity onPress={onScanPress} style={styles.buttonPressable}>
+                        <TouchableOpacity onPress={onReceivePress} style={styles.buttonPressable}>
                             <Text style={styles.textButton}>
                                 {/* notranslate  */}
-                                Scan
+                                Receive
                             </Text>
                         </TouchableOpacity>
                     </View>
