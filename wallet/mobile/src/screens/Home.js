@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { showMessage } from 'react-native-flash-message';
-import { AccountCard, Button, Screen, TitleBar, FormItem } from 'src/components';
+import { AccountCard, Button, Screen, TitleBar, FormItem, TabNavigator } from 'src/components';
 import store, { connect } from 'src/store';
 
 export const Home = connect(state => ({
     balances: state.wallet.balances,
     currentAccount: state.account.current,
-    ticker: state.network.ticker
+    ticker: state.network.ticker,
 }))(function Home(props) {
     const { balances, currentAccount, ticker } = props;
     const [isLoading, setIsLoading] = useState(false);
@@ -34,7 +34,10 @@ export const Home = connect(state => ({
     }, []);
 
     return (
-        <Screen titleBar={<TitleBar accountSelector settings currentAccount={currentAccount} />}>
+        <Screen 
+            titleBar={<TitleBar accountSelector settings currentAccount={currentAccount} />}
+            navigator={<TabNavigator />}
+        >
             <FormItem>
                 <AccountCard 
                     name={accountName}

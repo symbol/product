@@ -116,7 +116,7 @@ const styles = StyleSheet.create({
         borderColor: colors.secondary
     },
     rootSimplifiedActive: {
-        backgroundColor: colors.bgAccountCard,
+        backgroundColor: colors.bgAccountCardSelected,
         borderWidth: borders.borderWidth,
         borderColor: colors.accentLightForm
     },

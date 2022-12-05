@@ -14,5 +14,6 @@ export * from './QRScanner'
 export * from './Screen';
 export * from './Steps';
 export * from './StyledText';
+export * from './TabNavigator';
 export * from './TextBox';
 export * from './TitleBar';

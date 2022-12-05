@@ -99,7 +99,7 @@ export class Router {
             routes: [{ name: keys.Home }],
         });
     }
-    static goToFeatures() {
+    static goToActions() {
         navigationRef.reset({
             index: 0,
             routes: [{ name: keys.Home }],
