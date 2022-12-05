@@ -1,9 +1,9 @@
-export { Home } from './Home';
-export { AccountList } from './AccountList';
-export { AddSeedAccount } from './AddSeedAccount';
-export { CreateWallet } from './CreateWallet';
-export { ImportWallet } from './ImportWallet';
-export { Passcode } from './Passcode';
-export { Settings } from './Settings';
-export { SettingsNetwork } from './SettingsNetwork';
-export { Welcome } from './Welcome';
+export * from './Home';
+export * from './AccountList';
+export * from './AddSeedAccount';
+export * from './CreateWallet';
+export * from './ImportWallet';
+export * from './Passcode';
+export * from './Settings';
+export * from './SettingsNetwork';
+export * from './Welcome';
