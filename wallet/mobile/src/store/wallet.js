@@ -137,6 +137,18 @@ export default {
             commit({ type: 'wallet/setAccounts', payload: updatedAccounts });
         },
 
+        saveAccounts: async ({ commit, state }, {accounts, networkIdentifier}) => {
+            const updatedAccounts = await SecureStorage.getAccounts();
+            updatedAccounts[networkIdentifier] = [...accounts];
+            if (!(updatedAccounts && updatedAccounts.testnet && updatedAccounts.mainnet)) {
+                // noerror
+                throw Error('failed_save_accounts_incomplete')
+            }
+
+            await SecureStorage.setAccounts(updatedAccounts);
+            commit({type: 'wallet/setAccounts', payload: updatedAccounts});
+        },
+
         fetchBalance: async ({ commit, state }, address) => {
             const { networkProperties } = state.network;
             const balances = await PersistentStorage.getBalances();

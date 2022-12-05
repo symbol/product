@@ -1,3 +1,5 @@
+import { showMessage } from 'react-native-flash-message';
+
 export const trunc = (str, type, length = 5) => {
     const trunc = (text, cut, lengthFirst, lengthSecond) => {
         if (cut === 'start' && lengthFirst < text.length) {
@@ -37,3 +39,51 @@ export const trunc = (str, type, length = 5) => {
             return trunc(str, 'end', length);
     }
 }
+
+export const handleError = (error) => {
+    showMessage({message: error.message, type: 'danger'});
+};
+
+export const getCharPercentage = char => {
+    const charset = [
+        '0',
+        '1',
+        '2',
+        '3',
+        '4',
+        '5',
+        '6',
+        '7',
+        '8',
+        '9',
+        'a',
+        'b',
+        'c',
+        'd',
+        'e',
+        'f',
+        'g',
+        'h',
+        'i',
+        'j',
+        'k',
+        'l',
+        'm',
+        'n',
+        'o',
+        'p',
+        'q',
+        'r',
+        's',
+        't',
+        'u',
+        'v',
+        'w',
+        'x',
+        'y',
+        'z',
+    ];
+    const index = charset.indexOf(char.toLowerCase());
+    
+    return index / (charset.length - 1);
+};

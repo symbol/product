@@ -1,11 +1,14 @@
 import { useNavigation } from '@react-navigation/native';
 import React, { useEffect, useState } from 'react';
-import { StyleSheet } from 'react-native';
+import { StyleSheet, Vibration } from 'react-native';
 import { showMessage } from 'react-native-flash-message';
 import { FlatList, TouchableOpacity } from 'react-native-gesture-handler';
+import DraggableFlatList from 'react-native-draggable-flatlist'
 import { AccountCard, Screen, FormItem, LoadingIndicator, Button } from 'src/components';
 import store, { connect } from 'src/store';
-import { usePromises } from 'src/utils';
+import { handleError, useDataManager, usePromises, useProp } from 'src/utils';
+import Animated, { interpolate, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import { timings } from 'src/styles';
 
 export const AccountList = connect(state => ({
     currentAccount: state.account.current,
@@ -15,37 +18,64 @@ export const AccountList = connect(state => ({
     ticker: state.network.ticker,
 }))(function AccountList(props) {
     const { currentAccount, accounts, balances, networkIdentifier, ticker } = props;
-    const [isLoading, setIsLoading] = useState(false);
+    const isPressed = useSharedValue(0);
     const [accountBalanceStateMap, setAccountBalanceStateMap] = usePromises({});
     const selectedPrivateKey = currentAccount?.privateKey || null;
     const networkAccounts = accounts[networkIdentifier];
+    const [updatedNetworkAccounts, setUpdatedNetworkAccounts] = useProp(networkAccounts);
     const navigation = useNavigation();
-    
+
+    const animatedItem = useAnimatedStyle(() => ({
+        transform: [{
+            scale: interpolate(
+                isPressed.value,
+                [0, 1],
+                [1, 0.9]
+            ),
+        }]
+    }));
+
+    const [selectAccount, isSelectAccountLoading] = useDataManager(async account => {
+        await store.dispatchAction({type: 'wallet/selectAccount', payload: account.privateKey});
+        await store.dispatchAction({type: 'wallet/loadAll'});
+        navigation.goBack();
+    }, null, handleError);
+    const [saveAccounts, isSaveAccountsLoading] = useDataManager(async data => {
+        await store.dispatchAction({type: 'wallet/saveAccounts', payload: { 
+            accounts: data,
+            networkIdentifier
+        }});
+    }, null, handleError);
+
+    const isLoading = isSelectAccountLoading || isSaveAccountsLoading;
+
     const isAccountSelected = account => account.privateKey === selectedPrivateKey;
-
     const goToAddSeedAccount = () => navigation.navigate('AddSeedAccount');
+    const handleLongPress = drag => {
+        drag();
+        handlePressIn();
+    }
+    const onDragEnd = ({data}) => {
+        setUpdatedNetworkAccounts(data);
+        isPressed.value = 0;
+        saveAccounts(data);
+    }
+    const handlePressIn = () => {
+        isPressed.value = withTiming(1, timings.press);
+    };
+    const handlePressOut = () => {
+        isPressed.value = withTiming(0, timings.press);
+    };
 
-    const selectAccount = async account => {
-        setIsLoading(true);
-        try {
-            await store.dispatchAction({type: 'wallet/selectAccount', payload: account.privateKey});
-            await store.dispatchAction({type: 'wallet/loadAll'});
-            navigation.goBack();
+    const fetchBalances = async () => {
+        const updatedAccountBalanceStateMap = {};
+        for (const account of networkAccounts) {
+            updatedAccountBalanceStateMap[account.address] = () => store.dispatchAction({type: 'wallet/fetchBalance', payload: account.address});
         }
-        catch(error) {
-            showMessage({message: error.message, type: 'danger'});
-        }
-        setIsLoading(false);
+        setAccountBalanceStateMap(updatedAccountBalanceStateMap);
     }
 
     useEffect(() => {
-        const fetchBalances = async () => {
-            const updatedAccountBalanceStateMap = {};
-            for (const account of networkAccounts) {
-                updatedAccountBalanceStateMap[account.address] = () => store.dispatchAction({type: 'wallet/fetchBalance', payload: account.address});
-            }
-            setAccountBalanceStateMap(updatedAccountBalanceStateMap);
-        }
         fetchBalances();
     }, []);
 
@@ -53,22 +83,30 @@ export const AccountList = connect(state => ({
         // notranslate
         <Screen bottomComponent={!isLoading && <Button title="Add Account" onPress={goToAddSeedAccount} />}>
             {isLoading && <LoadingIndicator />}
-            <FlatList 
-                style={styles.fill}
-                data={networkAccounts} 
+            <DraggableFlatList 
+                onDragEnd={onDragEnd}
+                containerStyle={styles.fill}
+                data={updatedNetworkAccounts} 
                 keyExtractor={(item, index) => 'al' + item.name + index} 
-                renderItem={({item, index}) => (
+                renderItem={({item, drag, isActive}) => (
                 <FormItem type="list">
-                    <TouchableOpacity onPress={() => selectAccount(item)}>
-                        <AccountCard
-                            name={item.name}
-                            address={item.address}
-                            balance={balances[item.address]}
-                            ticker={ticker}
-                            isLoading={accountBalanceStateMap[item.address]}
-                            isActive={isAccountSelected(item)}
-                            isSimplified
-                        />
+                    <TouchableOpacity 
+                        onPress={() => selectAccount(item)} 
+                        onLongPress={() => handleLongPress(drag)} 
+                        onPressOut={handlePressOut}
+                        delayLongPress={250}
+                    >
+                        <Animated.View style={isActive && animatedItem}>
+                            <AccountCard
+                                name={item.name}
+                                address={item.address}
+                                balance={balances[item.address]}
+                                ticker={ticker}
+                                isLoading={accountBalanceStateMap[item.address]}
+                                isActive={isAccountSelected(item)}
+                                isSimplified
+                            />
+                        </Animated.View>
                     </TouchableOpacity>
                 </FormItem>
             )} />

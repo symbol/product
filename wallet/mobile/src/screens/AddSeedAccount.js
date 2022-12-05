@@ -1,11 +1,10 @@
 import { useNavigation } from '@react-navigation/native';
 import React, { useEffect, useState } from 'react';
 import { StyleSheet } from 'react-native';
-import { showMessage } from 'react-native-flash-message';
 import { FlatList, TouchableOpacity } from 'react-native-gesture-handler';
 import { AccountCard, Screen, FormItem, LoadingIndicator, StyledText, TextBox } from 'src/components';
 import store, { connect } from 'src/store';
-import { usePromises, useValidation, validateAccountName } from 'src/utils';
+import { handleError, useDataManager, usePromises, useValidation, validateAccountName } from 'src/utils';
 
 export const AddSeedAccount = connect(state => ({
     accounts: state.wallet.accounts,
@@ -15,7 +14,6 @@ export const AddSeedAccount = connect(state => ({
     ticker: state.network.ticker,
 }))(function AddSeedAccount(props) {
     const { accounts, seedAddresses, balances, networkIdentifier, ticker } = props;
-    const [isLoading, setIsLoading] = useState(false);
     const [accountName, setAccountName] = useState(false);
     const nameErrorMessage = useValidation(accountName, [validateAccountName()]);
     const [accountBalanceStateMap, setAccountBalanceStateMap] = usePromises({});
@@ -28,44 +26,31 @@ export const AddSeedAccount = connect(state => ({
     // notranslate
     const getDefaultAccountName = index => 'Seed ' + index;
 
-    const addAccount = index => {
-        setIsLoading(true);
+    const [addAccount, isAddAccountLoading] = useDataManager(async index => {
         const name = (!nameErrorMessage && accountName) || getDefaultAccountName(index);
-        setTimeout(async () => {
-            try {
-                await store.dispatchAction({type: 'wallet/addSeedAccount', payload: { index, name, networkIdentifier }});
-                await store.dispatchAction({type: 'wallet/loadAll'});
-                await store.dispatchAction({type: 'account/fetchData'});
-                navigation.goBack();
-            }
-            catch(error) {
-                showMessage({message: error.message, type: 'danger'});
-            }
-        });
+        await store.dispatchAction({type: 'wallet/addSeedAccount', payload: { index, name, networkIdentifier }});
+        await store.dispatchAction({type: 'wallet/loadAll'});
+        await store.dispatchAction({type: 'account/fetchData'});
+        navigation.goBack();
+    }, null, handleError);
+    const [loadSeedAddresses, isSeedAddressesLoading] = useDataManager(async () => {
+        await store.dispatchAction({type: 'wallet/generateSeedAddresses'});
+    }, null, handleError);
+
+    const isLoading = isAddAccountLoading || isSeedAddressesLoading;
+
+    const fetchBalances = async () => {
+        const updatedAccountBalanceStateMap = {};
+        for (const account of remainedSeedAccounts) {
+            updatedAccountBalanceStateMap[account.address] = () => store.dispatchAction({type: 'wallet/fetchBalance', payload: account.address});
+        }
+        setAccountBalanceStateMap(updatedAccountBalanceStateMap);
     }
 
     useEffect(() => {
-        const fetchBalances = async () => {
-            const updatedAccountBalanceStateMap = {};
-            for (const account of remainedSeedAccounts) {
-                updatedAccountBalanceStateMap[account.address] = () => store.dispatchAction({type: 'wallet/fetchBalance', payload: account.address});
-            }
-            setAccountBalanceStateMap(updatedAccountBalanceStateMap);
+        if (!networkSeedAccounts.length) {
+            loadSeedAddresses();
         }
-        const loadSeedAddresses = () => setTimeout(async () => {
-            if (!networkSeedAccounts.length) {
-                try {
-                    await store.dispatchAction({type: 'wallet/generateSeedAddresses'});
-                }
-                catch(error) {
-                    showMessage({message: error.message, type: 'danger'});
-                }
-            }
-            setIsLoading(false);
-        });
-
-        setIsLoading(true);
-        loadSeedAddresses();
         fetchBalances();
     }, [networkSeedAddressed]);
 
@@ -78,29 +63,28 @@ export const AddSeedAccount = connect(state => ({
                 {/* notranslate */}
                 <TextBox title="Name" errorMessage={nameErrorMessage} value={accountName} onChange={setAccountName} />
             </FormItem>
-            <FormItem>
+            <FormItem style={styles.fill}>
                 {/* notranslate */}
                 <StyledText type="title">Select Your Seed Account</StyledText>
+                <FlatList 
+                    data={remainedSeedAccounts} 
+                    keyExtractor={(item, index) => 'seed' + index} 
+                    renderItem={({item}) => (
+                    <FormItem type="list">
+                        <TouchableOpacity onPress={() => addAccount(item.index)}>
+                            <AccountCard
+                                name={getDefaultAccountName(item.index)}
+                                address={item.address}
+                                balance={balances[item.address]}
+                                ticker={ticker}
+                                isLoading={accountBalanceStateMap[item.address]}
+                                isActive={false}
+                                isSimplified
+                            />
+                        </TouchableOpacity>
+                    </FormItem>
+                )} />
             </FormItem>
-            <FlatList 
-                style={styles.fill}
-                data={remainedSeedAccounts} 
-                keyExtractor={(item, index) => 'seed' + index} 
-                renderItem={({item}) => (
-                <FormItem type="list">
-                    <TouchableOpacity onPress={() => addAccount(item.index)}>
-                        <AccountCard
-                            name={getDefaultAccountName(item.index)}
-                            address={item.address}
-                            balance={balances[item.address]}
-                            ticker={ticker}
-                            isLoading={accountBalanceStateMap[item.address]}
-                            isActive={false}
-                            isSimplified
-                        />
-                    </TouchableOpacity>
-                </FormItem>
-            )} />
         </Screen>
     );
 });
