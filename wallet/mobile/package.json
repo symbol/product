@@ -26,6 +26,7 @@
     "react-native": "0.70.5",
     "react-native-camera": "react-native-camera/react-native-camera#3443/head",
     "react-native-crypto": "^2.2.0",
+    "react-native-draggable-flatlist": "^4.0.0",
     "react-native-encrypted-storage": "^4.0.3",
     "react-native-flash-message": "^0.3.1",
     "react-native-gesture-handler": "^2.8.0",

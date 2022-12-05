@@ -13,6 +13,7 @@ export const colors = {
     bgBody: DesignSystem.ColorDarkmodeBgDark,
     bgMain: DesignSystem.ColorDarkmodeBgMain,
     bgGray: DesignSystem.ColorDarkmodeBgGray,
+    bgAccountCard: DesignSystem.ColorDarkmodeBgGray,
     
     bgCard: 'rgba(241, 243, 244, 0.15)',
     bgForm: DesignSystem.ColorDarkmodeFormBg,
