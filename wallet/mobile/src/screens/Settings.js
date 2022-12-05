@@ -4,6 +4,7 @@ import { BackHandler, Image, StyleSheet, View } from 'react-native';
 import { showMessage } from 'react-native-flash-message';
 import { FlatList, TouchableOpacity } from 'react-native-gesture-handler';
 import { AccountCard, Button, Screen, TitleBar, FormItem, StyledText } from 'src/components';
+import { Router } from 'src/Router';
 import store, { connect } from 'src/store';
 import { borders, colors, fonts, spacings } from 'src/styles';
 import { clearCache, usePasscode } from 'src/utils';
@@ -29,7 +30,7 @@ export const Settings = connect(state => ({
         title: 'Network',
         description: 'Select network type and node you would like to connect to.',
         icon: require('src/assets/images/icon-settings-network.png'),
-        handler: () => navigation.navigate('Network')
+        handler: Router.goToSettingsNetwork
     },
     {
         title: 'Security',

@@ -9,6 +9,7 @@ import store, { connect } from 'src/store';
 import { handleError, useDataManager, usePromises, useProp } from 'src/utils';
 import Animated, { interpolate, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { timings } from 'src/styles';
+import { Router } from 'src/Router';
 
 export const AccountList = connect(state => ({
     currentAccount: state.account.current,
@@ -50,7 +51,7 @@ export const AccountList = connect(state => ({
     const isLoading = isSelectAccountLoading || isSaveAccountsLoading;
 
     const isAccountSelected = account => account.privateKey === selectedPrivateKey;
-    const goToAddSeedAccount = () => navigation.navigate('AddSeedAccount');
+    const goToAddSeedAccount = Router.goToAddSeedAccount;
     const handleLongPress = drag => {
         drag();
         handlePressIn();

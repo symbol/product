@@ -6,6 +6,7 @@ import store from 'src/store';
 import { downloadPaperWallet, generateMnemonic, usePasscode, useValidation, validateAccountName, validateRequired } from 'src/utils';
 import { config } from 'src/config';
 import { showMessage } from 'react-native-flash-message';
+import { Router } from 'src/Router';
 
 export const ImportWallet = (props) => {
     const { navigation } = props;
@@ -19,10 +20,7 @@ export const ImportWallet = (props) => {
 
     const toggleQRScanner = () => setIsQRScannerVisible(!isQRScannerVisible);
     const close = () => {
-        navigation.reset({
-            index: 0,
-            routes: [{ name: 'Welcome' }],
-        });
+        Router.goToWelcome();
     };
     const next = () => createPasscode();
     const complete = async () => {
@@ -30,11 +28,7 @@ export const ImportWallet = (props) => {
             mnemonic: mnemonic.trim(),
             name
         }});
-
-        navigation.reset({
-            index: 0,
-            routes: [{ name: 'Home' }],
-        });
+        Router.goToHome();
     }
 
     const createPasscode = usePasscode('choose', complete, close);

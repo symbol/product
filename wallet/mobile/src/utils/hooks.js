@@ -1,9 +1,8 @@
-import {useNavigation} from '@react-navigation/native';
 import { useEffect, useState } from 'react';
 import { DeviceEventEmitter } from 'react-native';
+import { Router } from 'src/Router';
 
 export const usePasscode = (type, onSuccess, onCancel) => {
-    const navigation = useNavigation();
     const successState = '.s';
     const cancelState = '.c';
     
@@ -13,11 +12,11 @@ export const usePasscode = (type, onSuccess, onCancel) => {
         DeviceEventEmitter.addListener(eventId + successState, onSuccess);
         DeviceEventEmitter.addListener(eventId + cancelState, onCancel);
 
-        navigation.navigate('Passcode', {
+        Router.goToPasscode({
             type,
             successEvent: eventId + successState,
             cancelEvent: eventId + cancelState
-        })
+        });
     };
 }
 

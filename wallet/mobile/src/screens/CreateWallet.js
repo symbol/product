@@ -6,6 +6,7 @@ import store from 'src/store';
 import { createPrivateKeysFromMnemonic, downloadPaperWallet, generateMnemonic, publicAccountFromPrivateKey, usePasscode, useValidation, validateAccountName, validateRequired } from 'src/utils';
 import { config } from 'src/config';
 import { showMessage } from 'react-native-flash-message';
+import { Router } from 'src/Router';
 
 export const CreateWallet = (props) => {
     const { navigation } = props;
@@ -42,10 +43,7 @@ export const CreateWallet = (props) => {
     }
     const toggleAcceptRisk = () => setIsRiskAccepted(!isRiskAccepted);
     const close = () => {
-        navigation.reset({
-            index: 0,
-            routes: [{ name: 'Welcome' }],
-        });
+        Router.goToWelcome();
     };
     const next = () => step === stepsCount ? createPasscode() : setStep(step + 1);
     const complete = async () => {
@@ -53,11 +51,7 @@ export const CreateWallet = (props) => {
             mnemonic,
             name
         }});
-
-        navigation.reset({
-            index: 0,
-            routes: [{ name: 'Home' }],
-        });
+        Router.goToHome();
     }
 
     const createPasscode = usePasscode('choose', complete, close);
