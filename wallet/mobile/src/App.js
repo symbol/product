@@ -5,7 +5,7 @@ import FlashMessage from 'react-native-flash-message';
 import { AppState, BackHandler, DeviceEventEmitter, SafeAreaView, StatusBar } from 'react-native';
 import { Provider } from 'react-redux'
 import store from 'src/store';
-import { RouterView, navigationRef } from './Router';
+import { RouterView, Router } from './Router';
 import { colors } from './styles';
 import { hasUserSetPinCode } from '@haskkor/react-native-pincode';
 import { SecureStorage } from './storage';
@@ -60,10 +60,7 @@ const App = () => {
         }
 
         if (isWalletExist) {
-            navigationRef.reset({
-                index: 0,
-                routes: [{ name: 'Home' }],
-            });
+            Router.goToHome();
         }
     }, [isMainContainerShown]);
 

@@ -56,7 +56,6 @@ export const SettingsNetwork = connect(state => ({
         saveChanges(networkIdentifier, nodeUrl);
     };
 
-
     useEffect(() => {
         setSelectedNetworkIdentifier(networkIdentifier);
         setSelectedNodeUrl(nodeUrl);

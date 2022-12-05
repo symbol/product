@@ -1,27 +1,16 @@
-import { useNavigation } from '@react-navigation/native';
 import React from 'react';
-import { ActivityIndicator, Image, Pressable, StyleSheet, Text, Touchable, TouchableOpacity, View } from 'react-native';
-import Animated, { interpolateColor, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
-import { borders, colors, fonts, spacings, timings } from 'src/styles';
+import { ActivityIndicator, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Router } from 'src/Router';
+import { borders, colors, fonts, spacings } from 'src/styles';
 import { trunc } from 'src/utils';
 
-
 export const TitleBar = props => {
-    const { back, settings, accountSelector, currentAccount, style } = props;
-    const navigation = useNavigation();
+    const { currentAccount } = props;
 
     const getAddress = () => trunc(currentAccount.address, 'address');
-    const handleBackPress = () => {
-        navigation.goBack();
-    }
-    const handleAccountPress = () => {
-        navigation.navigate('AccountList');
-    }
-    const handleSettingsPress = () => {
-        navigation.navigate('Settings');
-    }
+    const handleAccountPress = Router.goToAccountList;
+    const handleSettingsPress = Router.goToSettings;
     
-
     return (
         <View style={styles.root}>
             <TouchableOpacity style={styles.accountSelector} onPress={handleAccountPress}>

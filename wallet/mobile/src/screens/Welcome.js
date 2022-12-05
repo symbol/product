@@ -1,15 +1,15 @@
 import React, { useState } from 'react';
 import { Image, StyleSheet } from 'react-native';
 import { Button, ButtonPlain, Screen, StyledText, FormItem, Checkbox } from 'src/components';
+import { Router } from 'src/Router';
 import { colors, fonts, spacings } from 'src/styles';
 
-export const Welcome = (props) => {
-    const { navigation } = props;
+export const Welcome = () => {
     const [isTermsAccepted, setSsTermsAccepted] = useState(false);
     
     const toggleAcceptTerms = () => setSsTermsAccepted(!isTermsAccepted);
-    const createWallet = () => navigation.navigate('CreateWallet');
-    const importWallet = () => navigation.navigate('ImportWallet');
+    const createWallet = Router.goToCreateWallet;
+    const importWallet = Router.goToImportWallet;
 
     return (
         <Screen 
