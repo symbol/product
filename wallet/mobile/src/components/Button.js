@@ -3,7 +3,6 @@ import {  Pressable, StyleSheet } from 'react-native';
 import Animated, { interpolateColor, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { borders, colors, fonts, spacings, timings } from 'src/styles';
 
-
 export const Button = props => {
     const { isDisabled, style, testID, title, onPress } = props;
     const isPressed = useSharedValue(false);

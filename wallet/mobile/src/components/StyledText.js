@@ -16,6 +16,9 @@ export const StyledText = props => {
         case 'body':
             customStyle = styles.body;
             break;
+        case 'tab':
+            customStyle = styles.tab;
+            break;
         case 'label':
             customStyle = styles.label;
             break;
@@ -52,6 +55,9 @@ const styles = StyleSheet.create({
     },
     label: {
         ...fonts.label
+    },
+    tab: {
+        ...fonts.tab
     },
     link: {
         ...fonts.body,

@@ -4,7 +4,7 @@ import { spacings } from 'src/styles';
 
 
 export const Screen = props => {
-    const { children, style, titleBar, bottomComponent } = props;
+    const { children, style, titleBar, bottomComponent, navigator } = props;
 
     return (
         <View style={[styles.root, style]}>
@@ -15,6 +15,7 @@ export const Screen = props => {
             {!!bottomComponent && <View style={styles.bottom}>
                 {bottomComponent}
             </View>}
+            {navigator}
         </View>
     );
 };

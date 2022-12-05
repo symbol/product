@@ -9,11 +9,14 @@ export const colors = {
 
     bgStatusbar: '#000000',
     bgNavbar: '#1A1A1A',
+    bgTabsNavigator: '#1b0a29',
+    bgTabsNavigatorActive: '#1e2f52',
     bgFooter: DesignSystem.ColorDarkmodeBgFooter,
     bgBody: DesignSystem.ColorDarkmodeBgDark,
     bgMain: DesignSystem.ColorDarkmodeBgMain,
     bgGray: DesignSystem.ColorDarkmodeBgGray,
-    bgAccountCard: DesignSystem.ColorDarkmodeBgGray,
+    bgAccountCard: DesignSystem.ColorDarkmodeBgMain,
+    bgAccountCardSelected: '#2f0b40',
     
     bgCard: 'rgba(241, 243, 244, 0.15)',
     bgForm: DesignSystem.ColorDarkmodeFormBg,
@@ -45,8 +48,8 @@ export const colors = {
     controlButtonText: DesignSystem.ColorDarkmodeButtonDefaultText,
 
     controlButtonPressedStroke: DesignSystem.ColorDarkmodeButtonPressedStroke,
-    controlButtonPressedBg: DesignSystem.ColorDarkmodeButtonPressedBg,
-    controlButtonPressedText: DesignSystem.ColorDarkmodeButtonPressedText,
+    controlButtonPressedBg: '#112844',//DesignSystem.ColorDarkmodeButtonPressedBg,
+    controlButtonPressedText: DesignSystem.ColorDarkmodeButtonDefaultText,//DesignSystem.ColorDarkmodeButtonPressedText,
 
     controlButtonDisabledStroke: '#26c3f244',
     controlButtonDisabledBg: DesignSystem.ColorDarkmodeButtonPressedBg,
@@ -82,6 +85,12 @@ export const fonts = {
         fontFamily: 'Carbon-Bold',
         fontSize: 17,
         lineHeight: 17,
+        textTransform: 'uppercase',
+    },
+    tab: {
+        fontFamily: 'Carbon-Bold',
+        fontSize: 13,
+        lineHeight: 15.6,
         textTransform: 'uppercase',
     },
     body: {

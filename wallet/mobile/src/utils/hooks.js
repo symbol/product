@@ -36,26 +36,28 @@ export const useValidation = (value, validators, formatResult) => {
 export const usePromises = (initialPromiseMap, errorHandler) => {
     const [promiseMap, setPromiseMap] = useState(initialPromiseMap);
 
-    const runPromise = async () => {
-        for (const promiseKey in promiseMap) {
-            const promise = promiseMap[promiseKey];
-            
-            if (promise) {
-                try {
-                    await promise();
-                }
-                catch(error) {
-                    if (errorHandler) {
-                        errorHandler(error);
+    const runPromise = () => {
+        setTimeout(async () => {
+            for (const promiseKey in promiseMap) {
+                const promise = promiseMap[promiseKey];
+                
+                if (promise) {
+                    try {
+                        await promise();
                     }
-                }
+                    catch(error) {
+                        if (errorHandler) {
+                            errorHandler(error);
+                        }
+                    }
 
-                const updatedPromiseMap = {...promiseMap};
-                updatedPromiseMap[promiseKey] = null;
-                setPromiseMap(updatedPromiseMap);
-                break;
+                    const updatedPromiseMap = {...promiseMap};
+                    updatedPromiseMap[promiseKey] = null;
+                    setPromiseMap(updatedPromiseMap);
+                    break;
+                }
             }
-        }
+        });
     };
     
     useEffect(() => {
