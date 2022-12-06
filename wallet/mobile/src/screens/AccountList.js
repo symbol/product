@@ -6,7 +6,7 @@ import { FlatList, TouchableOpacity } from 'react-native-gesture-handler';
 import DraggableFlatList from 'react-native-draggable-flatlist'
 import { AccountCard, Screen, FormItem, LoadingIndicator, Button } from 'src/components';
 import store, { connect } from 'src/store';
-import { handleError, useDataManager, usePromises, useProp } from 'src/utils';
+import { handleError, useDataManager, usePromises, useProp, vibrate } from 'src/utils';
 import Animated, { interpolate, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { timings } from 'src/styles';
 import { Router } from 'src/Router';
@@ -48,7 +48,7 @@ export const AccountList = connect(state => ({
         }});
     }, null, handleError);
 
-    const isLoading = isSelectAccountLoading || isSaveAccountsLoading;
+    const isLoading = isSelectAccountLoading;// || isSaveAccountsLoading;
 
     const isAccountSelected = account => account.privateKey === selectedPrivateKey;
     const goToAddSeedAccount = Router.goToAddSeedAccount;
@@ -59,10 +59,12 @@ export const AccountList = connect(state => ({
     const onDragEnd = ({data}) => {
         setUpdatedNetworkAccounts(data);
         isPressed.value = 0;
+        vibrate().short();
         saveAccounts(data);
     }
     const handlePressIn = () => {
         isPressed.value = withTiming(1, timings.press);
+        vibrate().short();
     };
     const handlePressOut = () => {
         isPressed.value = withTiming(0, timings.press);

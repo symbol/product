@@ -3,6 +3,7 @@ import { Image, View, StyleSheet, Text, TouchableOpacity, ActivityIndicator } fr
 import { borders, colors, fonts, layout, spacings } from 'src/styles';
 import imageArtPassport from 'src/assets/images/art-passport.png';
 import { getCharPercentage } from 'src/utils';
+import { TouchableHighlight, TouchableNativeFeedback } from 'react-native-gesture-handler';
 
 const imagesPattern = [
     require('src/assets/images/Geometric-02.png'),
@@ -22,6 +23,14 @@ export const AccountCard = props => {
     const stylesRoot = isSimplified ? [stylesRootActive, styles.clearMarginTop] : [styles.root];
     const stylesContent = isSimplified ? [styles.content, styles.clearMarginTop] : [styles.content];
     const stylesPattern = [styles.pattern];
+
+    const Touchable = Platform.OS === 'android'
+        ? TouchableNativeFeedback
+        : TouchableHighlight;
+    const touchableBackground = Platform.OS === 'android'
+        ? TouchableNativeFeedback.Ripple(colors.accentLightForm)
+        : colors.accentLightForm;
+
     let imagePattern;
 
     if (address?.length < 4) {
@@ -43,58 +52,44 @@ export const AccountCard = props => {
             {!isSimplified && <Image source={imageArtPassport} style={styles.art} />}
             {isLoading && <ActivityIndicator color={colors.primary} style={styles.loadingIndicator} />}
             <View style={stylesContent}>
-                <Text style={styles.textTitle}>
-                    {/* notranslate  */}
-                    Account
-                </Text>
-                <Text style={styles.textName}>
-                    {name}
-                </Text>
-                <Text style={styles.textTitle}>
-                    {/* notranslate  */}
-                    Balance
-                </Text>
+                <Text style={styles.textTitle}>{/* notranslate  */}Account</Text>
+                <Text style={styles.textName}>{name}</Text>
+                <Text style={styles.textTitle}>{/* notranslate  */}Balance</Text>
                 <View style={{...layout.row, ...layout.alignEnd}}>
-                    <Text style={styles.textBalance}>
-                        {balance}
-                    </Text>
-                    <Text style={styles.textTicker}>
-                        {' ' + ticker}
-                    </Text>
+                    <Text style={styles.textBalance}>{balance}</Text>
+                    <Text style={styles.textTicker}>{' ' + ticker}</Text>
                 </View>
-                <Text style={styles.textTitle}>
-                    {/* notranslate  */}
-                    Address
-                </Text>
-                <Text style={styles.textAddress}>
-                    {address}
-                </Text>
+                <Text style={styles.textTitle}>{/* notranslate  */}Address</Text>
+                <Text style={styles.textAddress}>{address}</Text>
             </View>
             {!isSimplified && (
                 <View style={styles.controls}>
                     <View style={styles.button}>
-                        <TouchableOpacity onPress={onScanPress} style={styles.buttonPressable}>
+                        <Touchable background={touchableBackground} onPress={onScanPress} style={styles.buttonPressable}>
+                            <Image source={require('src/assets/images/icon-wallet.png')} style={styles.icon}/>
                             <Text style={styles.textButton}>
                                 {/* notranslate  */}
                                 Details
                             </Text>
-                        </TouchableOpacity>
+                        </Touchable>
                     </View>
                     <View style={styles.button}>
-                        <TouchableOpacity onPress={onSendPress} style={styles.buttonPressable}>
+                        <Touchable background={touchableBackground} onPress={onSendPress} style={styles.buttonPressable}>
+                            <Image source={require('src/assets/images/icon-send.png')} style={styles.icon}/>
                             <Text style={styles.textButton}>
                                 {/* notranslate  */}
                                 Send
                             </Text>
-                        </TouchableOpacity>
+                        </Touchable>
                     </View>
                     <View style={[styles.button, styles.clearBorderRight]}>
-                        <TouchableOpacity onPress={onReceivePress} style={styles.buttonPressable}>
+                        <Touchable background={touchableBackground} onPress={onReceivePress} style={styles.buttonPressable}>
+                            <Image source={require('src/assets/images/icon-receive.png')} style={styles.icon}/>
                             <Text style={styles.textButton}>
                                 {/* notranslate  */}
                                 Receive
                             </Text>
-                        </TouchableOpacity>
+                        </Touchable>
                     </View>
                 </View>
             )}
@@ -186,6 +181,7 @@ const styles = StyleSheet.create({
         backgroundColor: colors.accentForm,
         borderBottomLeftRadius: borders.borderRadiusForm,
         borderBottomRightRadius: borders.borderRadiusForm,
+        overflow: 'hidden'
     },
     button: {
         height: 48,
@@ -198,6 +194,12 @@ const styles = StyleSheet.create({
         height: '100%',
         justifyContent: 'center',
         alignItems: 'center',
+        flexDirection: 'row'
+    },
+    icon: {
+        width: 18,
+        height: 18,
+        marginRight: spacings.paddingSm / 2
     },
     textButton: {
         ...fonts.button,
