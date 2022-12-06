@@ -4,13 +4,13 @@
   "description": "Backend services use for faucet application (NEM / Symbol)",
   "type": "commonjs",
   "scripts": {
-    "start": "node src/server.js -r dotenv/config",
-    "dev": "nodemon src/server.js -r dotenv/config",
+    "start": "node -r dotenv/config src/server.js",
+    "dev": "nodemon -r dotenv/config src/server.js",
     "lint": "eslint src/ test/",
     "lint:fix": "eslint src/ test/ --fix",
     "test": "mocha --full-trace --recursive test --exit -r dotenv/config dotenv_config_path=./.env.test"
   },
-  "author": "",
+  "author": "Symbol Contributors <contributors@symbol.dev>",
   "license": "ISC",
   "dependencies": {
     "axios": "^0.25.0",
