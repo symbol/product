@@ -8,6 +8,7 @@ import { config } from 'src/config';
 export default {
     namespace: 'wallet',
     state: {
+        isReady: false,
         mnemonic: null,
         accounts: {
             mainnet: [],
@@ -22,6 +23,10 @@ export default {
         isPasscodeEnabled: true,
     },
     mutations: {
+        setReady(state, payload) {
+            state.wallet.isReady = payload;
+            return state;
+        },
         setMnemonic(state, payload) {
             state.wallet.mnemonic = payload;
             return state;
@@ -48,10 +53,14 @@ export default {
         },
     },
     actions: {
-        loadAll: async ({ dispatchAction }) => {
+        loadAll: async ({ dispatchAction, commit }) => {
+            commit({type: 'wallet/setReady', payload: false});
             await dispatchAction({type: 'wallet/loadState' });
             await dispatchAction({type: 'network/loadState' });
             await dispatchAction({type: 'account/loadState' });
+            await dispatchAction({type: 'network/fetchData'});
+            await dispatchAction({type: 'account/fetchData'});
+            commit({type: 'wallet/setReady', payload: true});
         },
         loadState: async ({ commit }) => {
             const mnemonic = await SecureStorage.getMnemonic();

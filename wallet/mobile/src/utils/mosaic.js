@@ -1,7 +1,7 @@
 export const getNativeMosaicAmount = (mosaicList, nativeMosaicId) => {
     const nativeMosaic = mosaicList.find(mosaic => mosaic.id === nativeMosaicId);
 
-    return nativeMosaic.amount;
+    return nativeMosaic ? nativeMosaic.amount : 0;
 };
 
 export const getMosaicRelativeAmount = (absoluteAmount, divisibility) => {

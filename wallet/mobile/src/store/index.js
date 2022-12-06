@@ -2,13 +2,13 @@ import { applyMiddleware, createStore } from 'redux';
 import thunk from 'redux-thunk';
 import account from 'src/store/account';
 import network from 'src/store/network';
-//import transaction from 'src/store/transaction';
+import transaction from 'src/store/transaction';
 import wallet from 'src/store/wallet';
 
 const modules = {
     account,
     network,
-    //transaction,
+    transaction,
     wallet,
 };
 

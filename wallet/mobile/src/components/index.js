@@ -6,6 +6,7 @@ export * from './ButtonPlain';
 export * from './Checkbox';
 export * from './Dropdown';
 export * from './FormItem';
+export * from './ItemTransaction';
 export * from './LoadingIndicator';
 export * from './MnemonicView';
 export * from './MnemonicConfirm'

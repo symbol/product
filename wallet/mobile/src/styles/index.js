@@ -130,6 +130,7 @@ export const borders = {
 export const spacings = {
     controlHeight: 48,
     margin: 12,
+    paddingSm: 8,
     padding: 16,
     padding2: 24
 }
@@ -140,6 +141,9 @@ export const layout = {
     },
     alignEnd: {
         alignItems: 'flex-end'
+    },
+    fill: {
+        flex: 1
     }
 }
 
