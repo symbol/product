@@ -54,13 +54,13 @@ export default {
     },
     actions: {
         loadAll: async ({ dispatchAction, commit }) => {
-            commit({type: 'wallet/setReady', payload: false});
-            await dispatchAction({type: 'wallet/loadState' });
-            await dispatchAction({type: 'network/loadState' });
-            await dispatchAction({type: 'account/loadState' });
+            await dispatchAction({type: 'wallet/loadState'});
+            await dispatchAction({type: 'network/loadState'});
+            await dispatchAction({type: 'account/loadState'});
+        },
+        fetchAll: async ({ dispatchAction }) => {
             await dispatchAction({type: 'network/fetchData'});
             await dispatchAction({type: 'account/fetchData'});
-            commit({type: 'wallet/setReady', payload: true});
         },
         loadState: async ({ commit }) => {
             const mnemonic = await SecureStorage.getMnemonic();

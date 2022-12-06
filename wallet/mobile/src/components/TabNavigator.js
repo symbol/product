@@ -6,7 +6,7 @@ import { StyledText } from 'src/components';
 import { Router } from 'src/Router';
 import { borders, colors } from 'src/styles';
 
-export const TabNavigator = props => {
+export const TabNavigator = () => {
     const routeName = useRoute().name;
     const Touchable = Platform.OS === 'android'
         ? TouchableNativeFeedback

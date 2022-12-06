@@ -1,8 +1,8 @@
 import React from 'react';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
-import Animated, { FadeInDown, FadeInUp, interpolateColor, SlideInLeft, SlideInUp, useAnimatedStyle, useSharedValue, withTiming, ZoomInLeft, ZoomInUp, ZoomOutDown } from 'react-native-reanimated';
-import store, { connect } from 'src/store';
-import { borders, colors, fonts, spacings, timings } from 'src/styles';
+import { Image, StyleSheet, Text, View } from 'react-native';
+import Animated, { FadeInUp } from 'react-native-reanimated';
+import { connect } from 'src/store';
+import { borders, colors, fonts, spacings } from 'src/styles';
 import { trunc } from 'src/utils';
 import { TransactionType } from 'symbol-sdk';
 import { FormItem } from './FormItem';
@@ -45,7 +45,8 @@ export const ItemTransaction = connect(state => ({
 
     return (
         <FormItem type="list">
-            <Animated.View entering={FadeInUp.duration(500)}>
+            {/* TODO: uncomment when issue is fixed https://github.com/react-navigation/react-navigation/issues/10531 */}
+            {/* <Animated.View entering={FadeInUp.duration(500)}> */}
                 <View style={styleRoot}>
                     <View style={styles.sectionIcon}>
                         <Image source={iconSrc} style={styles.icon} />
@@ -59,7 +60,7 @@ export const ItemTransaction = connect(state => ({
                         </View>
                     </View>
                 </View>
-            </Animated.View>
+            {/* </Animated.View> */}
         </FormItem>
     );
 });

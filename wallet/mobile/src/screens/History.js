@@ -1,7 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { StyleSheet } from 'react-native';
-import { FlatList, RefreshControl, ScrollView } from 'react-native-gesture-handler';
-import Animated, { Layout } from 'react-native-reanimated';
+import { RefreshControl, ScrollView } from 'react-native-gesture-handler';
 import { Screen, TitleBar, FormItem, TabNavigator, StyledText, ItemTransaction } from 'src/components';
 import store, { connect } from 'src/store';
 import { colors } from 'src/styles';
