@@ -24,6 +24,7 @@ const keys = {
     CreateWallet: 'CreateWallet',
     ImportWallet: 'ImportWallet',
     Home: 'Home',
+    History: 'History',
     AccountList: 'AccountList',
     AddSeedAccount: 'AddSeedAccount',
     Settings: 'Settings',
@@ -44,6 +45,7 @@ export const RouterView = ({ isActive }) => (
                 </Stack.Group>
                 <Stack.Group screenOptions={{ headerShown: false }}>
                     <Stack.Screen name={keys.Home} component={screens.Home} />
+                    <Stack.Screen name={keys.History} component={screens.History} />
                 </Stack.Group>
                 <Stack.Group>
                     <Stack.Screen name={keys.AccountList} component={screens.AccountList} />
@@ -84,7 +86,7 @@ export class Router {
     static goToHistory() {
         navigationRef.reset({
             index: 0,
-            routes: [{ name: keys.Home }],
+            routes: [{ name: keys.History }],
         });
     }
     static goToScan() {

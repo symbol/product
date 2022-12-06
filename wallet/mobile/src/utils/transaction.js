@@ -12,3 +12,5 @@ export const getGroupFromtransaction = transaction => {
         return 'unconfirmed';
     return 'partial';
 };
+
+export const formatDeadline = (date) => `${date.dayOfMonth()}/${date.monthValue()}/${date.year()}`;

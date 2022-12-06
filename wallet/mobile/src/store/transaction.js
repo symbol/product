@@ -1,4 +1,4 @@
-// import { TransactionService } from 'src/services';
+import { TransactionService } from 'src/services';
 
 export default {
     namespace: 'transaction',
@@ -9,38 +9,35 @@ export default {
     },
     mutations: {
         setPartial(state, payload) {
-            state.account.partial = payload;
+            state.transaction.partial = payload;
             return state;
         },
         setUnconfirmed(state, payload) {
-            state.account.unconfirmed = payload;
+            state.transaction.unconfirmed = payload;
             return state;
         },
         setConfirmed(state, payload) {
-            state.account.confirmed = payload;
+            state.transaction.confirmed = payload;
             return state;
         },
     },
     actions: {
         loadState: async ({ commit, state }) => {
-            
-            
-
-            commit({ type: 'account/setCurrent', payload: currentAccount });
+            //commit({ type: 'account/setCurrent', payload: currentAccount });
         },
-        fetchPartial: async ({ commit, state }) => {
-            const { networkIdentifier, networkProperties } = state.network;
+        fetchData: async ({ commit, state }) => {
+            const { networkProperties } = state.network;
             const { current } = state.account;
 
-            const options = {
-                group: 'partial',
-            };
-            // const transactions = await TransactionService.fetchAccountTransactions(current, networkProperties, [], options);
+            const [partial, unconfirmed, confirmed] = await Promise.all([
+                TransactionService.fetchAccountTransactions(current, networkProperties, {group: 'partial'}),
+                TransactionService.fetchAccountTransactions(current, networkProperties, {group: 'unconfirmed'}),
+                TransactionService.fetchAccountTransactions(current, networkProperties, {group: 'confirmed'}),
+            ]);
 
-            // commit({ type: 'transaction/partial', payload: transactions });
+            commit({type: 'transaction/setPartial', payload: confirmed});
+            commit({type: 'transaction/setUnconfirmed', payload: confirmed});
+            commit({type: 'transaction/setConfirmed', payload: confirmed});
         },
-        clearCache: async () => {
-
-        }
     },
 };

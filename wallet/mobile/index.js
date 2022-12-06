@@ -9,4 +9,8 @@ if (!process.nextTick) {
     process = require('process');
 }
 
+if (!global.Buffer) {
+    global.Buffer = require('buffer/').Buffer;
+}
+
 AppRegistry.registerComponent(appName, () => App);

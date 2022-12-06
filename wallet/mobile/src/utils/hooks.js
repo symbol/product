@@ -99,3 +99,11 @@ export const useProp = (prop) => {
 
     return [value, setValue];
 }
+
+export const useInit = (callback, isReady, deps = []) => {
+    useEffect(() => {
+        if (isReady) {
+            callback();
+        }
+    }, [isReady, ...deps]);
+};
