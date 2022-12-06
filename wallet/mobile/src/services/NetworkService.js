@@ -1,8 +1,10 @@
 import { config } from 'src/config';
 import { makeRequest, networkTypeToIdentifier } from 'src/utils';
 import { ChainHttp, DtoMapping, NetworkHttp, NetworkType, NodeHttp, RepositoryFactoryHttp, TransactionFees } from 'symbol-sdk';
+import { timeout } from 'rxjs/operators';
 import { MosaicService } from './MosaicService';
 
+const nodeProbeTimeout = 5000;
 export class NetworkService {
     static async getDefaultNodeList(networkIdentifier) {
         return config.defaultNodes[networkIdentifier];
@@ -25,19 +27,19 @@ export class NetworkService {
         const [networkType, networkProps, transactionFees, chainInfo] = await Promise.all([
             networkHttp
                 .getNetworkType()
-                //.pipe(timeout(nodeProbeTimeout))
+                .pipe(timeout(nodeProbeTimeout))
                 .toPromise(),
             networkHttp
                 .getNetworkProperties()
-                //.pipe(timeout(nodeProbeTimeout))
+                .pipe(timeout(nodeProbeTimeout))
                 .toPromise(),
             networkHttp
                 .getTransactionFees()
-                //.pipe(timeout(nodeProbeTimeout))
+                .pipe(timeout(nodeProbeTimeout))
                 .toPromise(),
             chainHttp
                 .getChainInfo()
-                //.pipe(timeout(nodeProbeTimeout))
+                .pipe(timeout(nodeProbeTimeout))
                 .toPromise(),
         ]);
 

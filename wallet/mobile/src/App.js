@@ -10,6 +10,7 @@ import { colors } from './styles';
 import { hasUserSetPinCode } from '@haskkor/react-native-pincode';
 import { SecureStorage } from './storage';
 import { Passcode } from './screens';
+import { ConnectionStatus } from './components';
 
 const fillHeight = {flex: 1};
 const appBackgroundColor = { backgroundColor: colors.bgGray };
@@ -41,6 +42,8 @@ const App = () => {
         const load = async () => {
             const isPasscodeEnabled = await hasUserSetPinCode();
             const isWalletExist = !!(await SecureStorage.getMnemonic());
+            await store.dispatchAction({type: 'wallet/loadAll'});
+            store.dispatchAction({type: 'network/runConnectionJob'});
 
             setIsPasscodeEnabled(isPasscodeEnabled);
             setIsWalletExist(isWalletExist);
@@ -69,6 +72,7 @@ const App = () => {
             <SafeAreaView style={fillHeight} >
                 <StatusBar backgroundColor={colors.bgStatusbar} />
                 <Provider store={store}>
+                    <ConnectionStatus />
                     <FlashMessage animationDuration={200} floating={true} />
                     <RouterView isActive={isMainContainerShown} />
                     {isPasscodeShown && (
