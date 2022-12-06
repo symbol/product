@@ -1,3 +1,4 @@
+import { Platform, Vibration } from 'react-native';
 import { showMessage } from 'react-native-flash-message';
 
 export const trunc = (str, type, length = 5) => {
@@ -87,3 +88,13 @@ export const getCharPercentage = char => {
     
     return index / (charset.length - 1);
 };
+
+export const vibrate = () => {
+    return {
+        short() {
+            if (Platform.OS === 'android') {
+                Vibration.vibrate(2);
+            }
+        }
+    }
+}
