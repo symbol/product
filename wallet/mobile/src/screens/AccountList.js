@@ -41,14 +41,14 @@ export const AccountList = connect(state => ({
         await store.dispatchAction({type: 'wallet/loadAll'});
         navigation.goBack();
     }, null, handleError);
-    const [saveAccounts, isSaveAccountsLoading] = useDataManager(async data => {
+    const [saveAccounts] = useDataManager(async data => {
         await store.dispatchAction({type: 'wallet/saveAccounts', payload: { 
             accounts: data,
             networkIdentifier
         }});
     }, null, handleError);
 
-    const isLoading = isSelectAccountLoading;// || isSaveAccountsLoading;
+    const isLoading = isSelectAccountLoading;
 
     const isAccountSelected = account => account.privateKey === selectedPrivateKey;
     const goToAddSeedAccount = Router.goToAddSeedAccount;

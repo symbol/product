@@ -35,8 +35,8 @@ export default {
                 TransactionService.fetchAccountTransactions(current, networkProperties, {group: 'confirmed'}),
             ]);
 
-            commit({type: 'transaction/setPartial', payload: confirmed});
-            commit({type: 'transaction/setUnconfirmed', payload: confirmed});
+            commit({type: 'transaction/setPartial', payload: partial});
+            commit({type: 'transaction/setUnconfirmed', payload: unconfirmed});
             commit({type: 'transaction/setConfirmed', payload: confirmed});
         },
     },

@@ -5,7 +5,8 @@ import { showMessage } from 'react-native-flash-message';
 import { copyToClipboard } from 'src/utils';
 
 export const ButtonCopy = props => {
-    const { content, style } = props;
+    const { content, style, size } = props;
+    const styleIcon = size === 'sm' ? styles.icon : styles.iconSm;
 
     handlePress = () => {
         try {
@@ -20,7 +21,7 @@ export const ButtonCopy = props => {
 
     return (
         <TouchableOpacity style={style} onPress={handlePress}>
-            <Image source={require('src/assets/images/icon-copy.png')} style={styles.icon} />
+            <Image source={require('src/assets/images/icon-copy.png')} style={styleIcon} />
         </TouchableOpacity>
     );
 };
@@ -29,5 +30,9 @@ const styles = StyleSheet.create({
     icon: {
         width: 24,
         height: 24,
+    },
+    iconSm: {
+        width: 16,
+        height: 16,
     }
 });

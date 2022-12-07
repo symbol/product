@@ -25,8 +25,10 @@ const keys = {
     ImportWallet: 'ImportWallet',
     Home: 'Home',
     History: 'History',
+    AccountDetails: 'AccountDetails',
     AccountList: 'AccountList',
     AddSeedAccount: 'AddSeedAccount',
+    Send: 'Send',
     Settings: 'Settings',
     SettingsNetwork: 'SettingsNetwork',
     Passcode: 'Passcode',
@@ -48,8 +50,10 @@ export const RouterView = ({ isActive }) => (
                     <Stack.Screen name={keys.History} component={screens.History} />
                 </Stack.Group>
                 <Stack.Group>
+                    <Stack.Screen name={keys.AccountDetails} component={screens.AccountDetails} />
                     <Stack.Screen name={keys.AccountList} component={screens.AccountList} />
                     <Stack.Screen name={keys.AddSeedAccount} component={screens.AddSeedAccount} />
+                    <Stack.Screen name={keys.Send} component={screens.Send} />
                     <Stack.Screen name={keys.Settings} component={screens.Settings} />
                     <Stack.Screen name={keys.SettingsNetwork} component={screens.SettingsNetwork} />
                 </Stack.Group>
@@ -107,11 +111,17 @@ export class Router {
             routes: [{ name: keys.Home }],
         });
     }
+    static goToAccountDetails() {
+        navigationRef.navigate(keys.AccountDetails);
+    }
     static goToAccountList() {
         navigationRef.navigate(keys.AccountList);
     }
     static goToAddSeedAccount() {
         navigationRef.navigate(keys.AddSeedAccount);
+    }
+    static goToSend() {
+        navigationRef.navigate(keys.Send);
     }
     static goToSettings() {
         navigationRef.navigate(keys.Settings);
