@@ -1,6 +1,7 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { RefreshControl, ScrollView } from 'react-native-gesture-handler';
-import { AccountCard, Screen, TitleBar, FormItem, TabNavigator, StyledText } from 'src/components';
+import { AccountCard, Screen, TitleBar, FormItem, TabNavigator } from 'src/components';
+import { Router } from 'src/Router';
 import store, { connect } from 'src/store';
 import { handleError, useDataManager, useInit } from 'src/utils';
 
@@ -35,9 +36,9 @@ export const Home = connect(state => ({
                         balance={accountBalance}
                         ticker={ticker}
                         isActive
-                        onReceivePress={loadState}
-                        onSendPress={() => console.log('Send')}
-                        onScanPress={() => console.log('Scan')}
+                        onReceivePress={Router.goToAccountDetails}
+                        onSendPress={Router.goToSend}
+                        onDetailsPress={Router.goToAccountDetails}
                     />
                 </FormItem>
             </ScrollView>

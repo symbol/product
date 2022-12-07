@@ -18,7 +18,7 @@ const imagesPattern = [
 ];
 
 export const AccountCard = props => {
-    const { address, balance, name, ticker, isLoading, isSimplified, isActive, onReceivePress, onSendPress, onScanPress } = props;
+    const { address, balance, name, ticker, isLoading, isSimplified, isActive, onReceivePress, onSendPress, onDetailsPress } = props;
     const stylesRootActive = isActive ? [styles.root, styles.rootSimplifiedActive] : [styles.root, styles.rootSimplifiedInactive];
     const stylesRoot = isSimplified ? [stylesRootActive, styles.clearMarginTop] : [styles.root];
     const stylesContent = isSimplified ? [styles.content, styles.clearMarginTop] : [styles.content];
@@ -65,7 +65,7 @@ export const AccountCard = props => {
             {!isSimplified && (
                 <View style={styles.controls}>
                     <View style={styles.button}>
-                        <Touchable background={touchableBackground} onPress={onScanPress} style={styles.buttonPressable}>
+                        <Touchable background={touchableBackground} onPress={onDetailsPress} style={styles.buttonPressable}>
                             <Image source={require('src/assets/images/icon-wallet.png')} style={styles.icon}/>
                             <Text style={styles.textButton}>
                                 {/* notranslate  */}
