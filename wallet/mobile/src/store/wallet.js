@@ -1,6 +1,6 @@
 import { hasUserSetPinCode } from '@haskkor/react-native-pincode';
 import { FailedToSaveMnemonicError } from 'src/errors';
-import { AccountService } from 'src/services';
+import { AccountService, MosaicService } from 'src/services';
 import { PersistentStorage, SecureStorage } from 'src/storage';
 import { addressFromPrivateKey, createPrivateKeysFromMnemonic, createWalletAccount, getMosaicRelativeAmount, getNativeMosaicAmount } from 'src/utils';
 import { config } from 'src/config';
@@ -19,6 +19,10 @@ export default {
             testnet: []
         },
         balances: {},
+        mosaicInfos: {
+            mainnet: {},
+            testnet: {}
+        },
         selectedAccountId: null,
         isPasscodeEnabled: true,
     },
@@ -43,6 +47,10 @@ export default {
             state.wallet.balances = payload;
             return state;
         },
+        setMosaicInfos(state, payload) {
+            state.wallet.mosaicInfos = payload;
+            return state;
+        },
         setSelectedAccountId(state, payload) {
             state.wallet.selectedAccountId = payload;
             return state;
@@ -57,6 +65,7 @@ export default {
             await dispatchAction({type: 'wallet/loadState'});
             await dispatchAction({type: 'network/loadState'});
             await dispatchAction({type: 'account/loadState'});
+            await dispatchAction({type: 'transaction/loadState'});
         },
         fetchAll: async ({ dispatchAction }) => {
             await dispatchAction({type: 'network/fetchData'});
@@ -67,6 +76,7 @@ export default {
             const accounts = await SecureStorage.getAccounts();
             const seedAddresses = await PersistentStorage.getSeedAddresses();
             const balances = await PersistentStorage.getBalances();
+            const mosaicInfos = await PersistentStorage.getMosaicInfos();
             const selectedAccountId = await SecureStorage.getSelectedAccountId();
             const isPasscodeEnabled = await hasUserSetPinCode();
 
@@ -74,6 +84,7 @@ export default {
             commit({ type: 'wallet/setAccounts', payload: accounts });
             commit({ type: 'wallet/setSeedAddresses', payload: seedAddresses });
             commit({ type: 'wallet/setBalances', payload: balances });
+            commit({ type: 'wallet/setMosaicInfos', payload: mosaicInfos });
             commit({ type: 'wallet/setSelectedAccountId', payload: selectedAccountId || 0});
             commit({ type: 'wallet/setIsPasscodeEnabled', payload: isPasscodeEnabled || false});
         },
@@ -184,6 +195,26 @@ export default {
             await PersistentStorage.setBalances(updatedBalances);
 
             commit({ type: 'wallet/setBalances', payload: updatedBalances });
+        },
+
+        fetchMosaicInfos: async ({ commit, state }, mosaicIds) => {
+            const { networkProperties, networkIdentifier } = state.network;
+            const mosaicInfos = await PersistentStorage.getMosaicInfos();
+
+            try {
+                const fetchedMosaicInfos = await MosaicService.fetchMosaicInfos(networkProperties, mosaicIds);
+                mosaicInfos[networkIdentifier] = {
+                    ...mosaicInfos[networkIdentifier],
+                    ...fetchedMosaicInfos
+                };
+            }
+            catch(error) {
+                // noerror
+                throw Error('error_fetch_mosaic_infos');
+            }
+
+            await PersistentStorage.setMosaicInfos(mosaicInfos);
+            commit({ type: 'wallet/setMosaicInfos', payload: mosaicInfos });
         },
     },
 };
