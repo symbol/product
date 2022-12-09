@@ -5,7 +5,7 @@ import { borders, colors, fonts, spacings, timings } from 'src/styles';
 
 
 export const TextBox = props => {
-    const { testID, buttons, multiline, title, value, errorMessage, onChange } = props;
+    const { testID, contentRight, multiline, keyboardType, nativePlaceholder, title, value, errorMessage, onChange } = props;
     const isFocused = useSharedValue(false);
     const styleInput = multiline ? [styles.input, styles.inputMultiline] : [styles.input];
     const numberOfLines = multiline ? 5 : 1;
@@ -28,20 +28,22 @@ export const TextBox = props => {
 
     return (
         <Animated.View style={[styles.root, animatedContainer]}>
-            <Text style={styles.title}>{title}</Text>
             <View style={styles.inputContainer}>
+                <Text style={styles.title}>{title}</Text>
                 <TextInput 
                     testID={testID}
                     multiline={multiline}
                     numberOfLines={numberOfLines}
+                    keyboardType={keyboardType}
+                    nativePlaceholder={nativePlaceholder}
                     style={styleInput} 
-                    value={value}
+                    value={'' + value}
                     onFocus={handleFocusIn}
                     onBlur={handleFocusOut}
                     onChangeText={onChange} 
                 />
-                {buttons}
             </View>
+            {contentRight}
             <Text style={styles.errorMessage}>{errorMessage}</Text>
         </Animated.View>
     );
@@ -52,7 +54,10 @@ const styles = StyleSheet.create({
         position: 'relative',
         width: '100%',
         minHeight: spacings.controlHeight,
-        justifyContent: 'center',
+        paddingRight: spacings.margin,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
         borderRadius: borders.borderRadius,
         borderWidth: borders.borderWidth,
         borderStyle: 'solid',
@@ -60,22 +65,17 @@ const styles = StyleSheet.create({
     },
     title: {
         ...fonts.placeholder,
-        paddingHorizontal: spacings.margin,
         color: colors.controlBasePlaceholder,
     },
     inputContainer: {
-        width: '100%',
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
+        flex: 1,
         paddingHorizontal: spacings.margin,
     },
     input: {
         ...fonts.textBox, 
         marginVertical: -fonts.textBox.fontSize,
-        flex: 1,
         paddingLeft: 0,
-        color: colors.controlBaseTextAlt,
+        color: colors.controlBaseText,
     },
     inputMultiline: {
         textAlignVertical: 'top',

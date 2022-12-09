@@ -1,38 +1,92 @@
 import React from 'react';
+import { useState } from 'react';
 import { ScrollView } from 'react-native-gesture-handler';
-import { TableView, Screen, FormItem, TextBox, Checkbox, Dropdown, Button, StyledText } from 'src/components';
+import { TableView, Screen, FormItem, TextBox, Checkbox, Dropdown, Button, StyledText, InputAmount } from 'src/components';
 import { connect } from 'src/store';
+import { getMosaicsWithRelativeAmounts, useToggle, useValidation, validateAmount, validateRequired, validateUnresolvedAddress } from 'src/utils';
 
 export const Send = connect(state => ({
     currentAccount: state.account.current,
+    mosaics: state.account.mosaics,
+    mosaicInfos: state.wallet.mosaicInfos,
+    networkIdentifier: state.network.networkIdentifier,
 }))(function Send(props) {
-    const { currentAccount } = props;
+    const { currentAccount, mosaics, mosaicInfos, networkIdentifier } = props;
+    const [recipient, setRecipient] = useState('');
+    const [mosaicId, setMosaicId] = useState(mosaics[0]?.id);
+    const [amount, setAmount] = useState('0');
+    const [message, setMessage] = useState('');
+    const [isEncrypted, toggleEncrypted] = useToggle(false);
+    const [maxFee, setMaxFee] = useState('0');
 
+    const formattedMosaics = getMosaicsWithRelativeAmounts(mosaics, mosaicInfos[networkIdentifier]);
+    const mosaicList = formattedMosaics.map(mosaic => ({label: mosaic.name, value: mosaic.id}));
+    const selectedMosaicBalance = formattedMosaics.find(mosaic => mosaic.id === mosaicId)?.amount || 0;
+    const availableBalance = selectedMosaicBalance - parseFloat(maxFee);
+    
+    const recipientErrorMessage = useValidation(recipient, [validateRequired(), validateUnresolvedAddress()]);
+    const [isAmountValid, setAmountValid] = useState(true);
+    const isButtonDisabled = !!recipientErrorMessage || !isAmountValid;
+    
     return (
         <Screen
-            bottomComponent={<Button title="Send" onPress={() => {}} />}
+            bottomComponent={<Button title="Send" isDisabled={isButtonDisabled} onPress={() => {}} />}
         >
             <ScrollView>
                 <FormItem>
                     <StyledText type="title">Transfer</StyledText>
                 </FormItem>
                 <FormItem>
-                    <TextBox title="Recipient" value={''} onChange={() => {}} />
+                    <TextBox
+                        // notranslate
+                        title="Recipient" 
+                        errorMessage={recipientErrorMessage} 
+                        value={recipient} 
+                        onChange={setRecipient} 
+                />
                 </FormItem>
                 <FormItem>
-                    <Dropdown title="Mosaic" value={''} list={[]} onChange={() => {}} />
+                    <Dropdown
+                        // notranslate
+                        title="Mosaic" 
+                        value={mosaicId} 
+                        list={mosaicList} 
+                        onChange={setMosaicId} 
+                    />
                 </FormItem>
                 <FormItem>
-                    <TextBox title="Amount" value={''} onChange={() => {}} />
+                    <InputAmount 
+                        // notranslate
+                        title="Amount"
+                        availableBalance={availableBalance}
+                        value={amount} 
+                        onChange={setAmount}
+                        onValidityChange={setAmountValid}
+                    />
                 </FormItem>
                 <FormItem>
-                    <TextBox title="Message/Memo" value={''} onChange={() => {}} />
+                    <TextBox
+                        // notranslate
+                        title="Message/Memo" 
+                        value={message} 
+                        onChange={setMessage} 
+                    />
                 </FormItem>
                 <FormItem>
-                    <Checkbox title="Encrypted" value={''} onChange={() => {}} />
+                    <Checkbox
+                        // notranslate 
+                        title="Encrypted" 
+                        value={isEncrypted} 
+                        onChange={toggleEncrypted} 
+                    />
                 </FormItem>
                 <FormItem>
-                    <TextBox title="Fee" value={''} onChange={() => {}} />
+                    <TextBox 
+                        // notranslate
+                        title="Fee" 
+                        value={maxFee} 
+                        onChange={setMaxFee} 
+                    />
                 </FormItem>
             </ScrollView>
         </Screen>

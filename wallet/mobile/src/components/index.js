@@ -7,6 +7,7 @@ export * from './Checkbox';
 export * from './ConnectionStatus';
 export * from './Dropdown';
 export * from './FormItem';
+export * from './InputAmount';
 export * from './ItemTransaction';
 export * from './LoadingIndicator';
 export * from './MnemonicView';

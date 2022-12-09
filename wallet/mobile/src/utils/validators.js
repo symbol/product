@@ -26,3 +26,15 @@ export const validateMnemonicWord = () => str => {
         return 'validation_error_contact_name_long';
     }
 }
+
+export const validateUnresolvedAddress = () => str => {
+    if (str.length < 3) {
+        return 'validation_error_address_short';
+    }
+}
+
+export const validateAmount = (availableBalance) => str => {
+    if (parseFloat(str) > parseFloat(availableBalance)) {
+        return 'validation_error_balance_not_enough';
+    }
+}
