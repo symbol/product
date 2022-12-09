@@ -1,4 +1,5 @@
 import { TransactionService } from 'src/services';
+import { PersistentStorage } from 'src/storage';
 
 export default {
     namespace: 'transaction',
@@ -23,7 +24,11 @@ export default {
     },
     actions: {
         loadState: async ({ commit, state }) => {
-            //commit({ type: 'account/setCurrent', payload: currentAccount });
+            const { current } = state.account;
+            const latestTransactions = await PersistentStorage.getLatestTransactions();
+            const accountTransactions = latestTransactions[current?.address] || [];
+            
+            commit({type: 'transaction/setConfirmed', payload: accountTransactions});
         },
         fetchData: async ({ commit, state }) => {
             const { networkProperties } = state.network;
@@ -38,6 +43,10 @@ export default {
             commit({type: 'transaction/setPartial', payload: partial});
             commit({type: 'transaction/setUnconfirmed', payload: unconfirmed});
             commit({type: 'transaction/setConfirmed', payload: confirmed});
+
+            const latestTransactions = await PersistentStorage.getLatestTransactions();
+            latestTransactions[current.address] = confirmed;
+            await PersistentStorage.setLatestTransactions(latestTransactions);
         },
     },
 };

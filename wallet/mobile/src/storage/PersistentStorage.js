@@ -114,6 +114,41 @@ export class PersistentStorage {
         return this.set(this.BALANCES_KEY, JSON.stringify(payload));
     }
 
+    // Transactions
+    static async getLatestTransactions() {
+        const latestTransactions = await this.get(this.LATEST_TRANSACTIONS_KEY);
+        const defaultLatestTransactions = {};
+        
+        try {
+            return JSON.parse(latestTransactions) || defaultLatestTransactions;
+        } catch {
+            return defaultLatestTransactions;
+        }
+    }
+
+    static async setMosaicInfos(payload) {
+        return this.set(this.LATEST_TRANSACTIONS_KEY, JSON.stringify(payload));
+    }
+
+    // Mosaic Infos
+    static async getMosaicInfos() {
+        const mosaicInfos = await this.get(this.MOSAIC_INFOS_KEY);
+        const defaultMosaicInfos = {
+            mainnet: {},
+            testnet: {}
+        };
+        
+        try {
+            return JSON.parse(mosaicInfos) || defaultMosaicInfos;
+        } catch {
+            return defaultMosaicInfos;
+        }
+    }
+
+    static async setLatestTransactions(payload) {
+        return this.set(this.MOSAIC_INFOS_KEY, JSON.stringify(payload));
+    }
+
     // API
     static set = (key, value) => {
         return AsyncStorage.setItem(key, value);
