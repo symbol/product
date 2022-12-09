@@ -15,7 +15,9 @@ const config = {
 	FAUCET_ADDRESS: process.env.REACT_APP_FAUCET_ADDRESS ?? defaultConfig.FAUCET_ADDRESS,
 	MAX_AMOUNT: process.env.REACT_APP_MAX_SEND_AMOUNT ?? defaultConfig.MAX_AMOUNT,
 	CURRENCY: process.env.REACT_APP_CURRENCY ?? defaultConfig.CURRENCY,
-	DIVISIBILITY: process.env.REACT_APP_DIVISIBILITY ?? defaultConfig.DIVISIBILITY
+	DIVISIBILITY: process.env.REACT_APP_DIVISIBILITY ?? defaultConfig.DIVISIBILITY,
+	MIN_FOLLOWERS_COUNT: process.env.REACT_APP_MIN_FOLLOWERS_COUNT ?? defaultConfig.MIN_FOLLOWERS_COUNT,
+	MIN_ACCOUNT_AGE: process.env.REACT_APP_MIN_ACCOUNT_AGE ?? defaultConfig.MIN_ACCOUNT_AGE
 };
 
 export default config;

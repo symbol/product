@@ -26,7 +26,22 @@ const mockResizeObserverAndGetBreakpoint = (isPortrait, breakpointClassName) => 
 };
 
 describe('page/Home', () => {
+	// Arrange:
 	const recipientAddress = 'TBHGLHFK4FQUDQS3XBYKTQ3CMZLA227W5WPVAKPI';
+
+	const createLocalStorageTwitterInfo = (info = {}) => {
+		localStorage.setItem('twitterInfo', JSON.stringify({
+			isSignIn: true,
+			screenName: 'twitterAccount',
+			followersCount: 10,
+			createdAt: '2011-06-07T14:17:46.000Z',
+			...info
+		}));
+	};
+
+	beforeEach(() => createLocalStorageTwitterInfo());
+
+	afterEach(() => localStorage.clear());
 
 	it('renders claim form when authorize with Twitter', () => {
 		// Arrange:
@@ -35,10 +50,9 @@ describe('page/Home', () => {
 		// Act:
 		render(<Home />);
 		const elementButtonAuth = screen.queryByText(buttonAuthText);
-		fireEvent.click(elementButtonAuth);
 
 		// Assert:
-		expect(screen.queryByText(buttonAuthText)).not.toBeInTheDocument();
+		expect(elementButtonAuth).not.toBeInTheDocument();
 	});
 
 	describe('toast', () => {
@@ -69,21 +83,22 @@ describe('page/Home', () => {
 			});
 		}
 
-		runBasicErrorToastTests(
-			'address',
-			{
-				address: 'ABHGLHFK4FQUDQS3XBYKTQ3CMZLA227W5WPVAKPZ',
-				amount: '100'
-			},
-			'notification_error_invalid_address')
+		const assertTwitterAccountQualification = (info = {}) => {
+			// Arrange:
+			createLocalStorageTwitterInfo(info);
 
-		runBasicErrorToastTests(
-			'amount',
-			{
-				address: recipientAddress,
-				amount: '-100'
-			},
-			'notification_error_invalid_amount')
+			// Act:
+			render(<Home />);
+			const elementRecipient = screen.getByPlaceholderText(formInputRecipient);
+			const elementAmount = screen.getByPlaceholderText(formInputAmount);
+			const elementButton = screen.getByText(formButton);
+			userEvent.type(elementRecipient, recipientAddress);
+			userEvent.type(elementAmount, '100');
+			fireEvent.click(elementButton);
+
+			// Assert:
+			expect(toast.error).toHaveBeenCalledWith(i18n.$t('notification_error_unqualified_twitter_account'));
+		};
 
 		it('renders info toast when enter valid data', () => {
 			// Arrange:
@@ -106,6 +121,30 @@ describe('page/Home', () => {
 				address: recipientAddress
 			}));
 		});
+
+		runBasicErrorToastTests(
+			'address',
+			{
+				address: 'ABHGLHFK4FQUDQS3XBYKTQ3CMZLA227W5WPVAKPZ',
+				amount: '100'
+			},
+			'notification_error_invalid_address')
+
+		runBasicErrorToastTests(
+			'amount',
+			{
+				address: recipientAddress,
+				amount: '-100'
+			},
+			'notification_error_invalid_amount')
+
+		it('renders error toast when twitter account followersCount less than 10', () => assertTwitterAccountQualification({
+			followersCount: 5
+		}));
+
+		it('renders error toast when twitter account registered less than 31 days', () => assertTwitterAccountQualification({
+			createdAt: '2022-11-07T14:17:46.000Z'
+		}));
 	})
 
 	describe('screen breakpoint', () => {

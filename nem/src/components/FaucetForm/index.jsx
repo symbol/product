@@ -1,15 +1,16 @@
 import { $t } from '../../i18n';
 import Button from '../Button';
 import TextBox from '../TextBox';
+import TwitterSignIn from '../TwitterSignIn';
 import PropTypes from 'prop-types';
 import React, { useState } from 'react';
 import './FaucetForm.scss';
 
 const FaucetForm = function (props) {
 	const {
-		showAuth, addressFirstChar, currency, maxAmount, onAuthRequest, onSubmit
+		addressFirstChar, currency, maxAmount, onSubmit, onAuthStatus, setAuthStatus
 	} = props;
-	const [recipientAddress, setRecipientAddress] = useState(props.recipientAddress);
+	const [recipientAddress, setRecipientAddress] = useState('');
 	const [amount, setAmount] = useState('');
 
 	const recipientPlaceholder = $t('home_form_input_recipient_placeholder', {
@@ -20,43 +21,51 @@ const FaucetForm = function (props) {
 		maxAmount: Number(maxAmount).toLocaleString('en')
 	});
 
-	const claimFormClassName = showAuth ? 'form-hide' : '';
-
 	const formSubmitHandler = () => {
 		onSubmit(recipientAddress, amount);
 	};
 
 	return (
 		<div className="form">
-			<div className={claimFormClassName}>
-				<TextBox value={recipientAddress} placeholder={recipientPlaceholder} required onChange={setRecipientAddress} />
-				<TextBox value={amount} type="number" min={0} max={maxAmount} placeholder={amountPlaceholder} onChange={setAmount} />
-				<Button onClick={formSubmitHandler}>{$t('home_form_button_claim_text')}</Button>
+			{
+				onAuthStatus.isSignIn
+					? (
+						<div>
+							<TextBox value={recipientAddress} placeholder={recipientPlaceholder} required onChange={setRecipientAddress} />
+							<TextBox
+								value={amount}
+								type="number"
+								min={0}
+								max={maxAmount}
+								placeholder={amountPlaceholder}
+								onChange={setAmount}
+							/>
+							<Button onClick={formSubmitHandler}>{$t('home_form_button_claim_text')}</Button>
+						</div>
+					)
+					: <p>{$t('home_form_auth_description')}</p>
+			}
+
+			<div className="form form-auth">
+				<TwitterSignIn
+					twitterAccountStatus={onAuthStatus}
+					setTwitterAccountStatus={setAuthStatus}
+				/>
 			</div>
-			{showAuth && (
-				<div className="form form-auth">
-					<p>{$t('home_form_auth_description')}</p>
-					<Button onClick={onAuthRequest}>{$t('home_form_button_auth_twitter')}</Button>
-				</div>
-			)}
 		</div>
 	);
 };
 
 FaucetForm.propTypes = {
-	recipientAddress: PropTypes.string,
-	showAuth: PropTypes.bool,
 	addressFirstChar: PropTypes.string.isRequired,
 	currency: PropTypes.string.isRequired,
 	maxAmount: PropTypes.number.isRequired,
 	onSubmit: PropTypes.func.isRequired,
-	onAuthRequest: PropTypes.func
-};
-
-FaucetForm.defaultProps = {
-	recipientAddress: '',
-	showAuth: false,
-	onAuthRequest: () => {}
+	onAuthStatus: PropTypes.exact({
+		isSignIn: PropTypes.bool.isRequired,
+		screenName: PropTypes.string.isRequired
+	}).isRequired,
+	setAuthStatus: PropTypes.func.isRequired
 };
 
 export default FaucetForm;
