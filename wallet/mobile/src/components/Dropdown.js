@@ -95,7 +95,7 @@ const styles = StyleSheet.create({
     },
     value: {
         ...fonts.textBox, 
-        color: colors.controlBaseTextAlt,
+        color: colors.controlBaseText,
     },
     modal: {
         position: 'relative',
@@ -113,7 +113,6 @@ const styles = StyleSheet.create({
     item: {
         backgroundColor: colors.bgForm,
         padding: spacings.padding,
-        //borderWidth: borders.borderWidth,
         borderRadius: borders.borderRadius,
         borderColor: colors.accentLightForm,
     },
