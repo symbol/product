@@ -1,5 +1,7 @@
 import configFile from './config.json';
 
+export * from './constants';
+
 export const config = {
     nodeProbeTimeout: configFile.nodeProbeTimeout,
     defaultNodes: configFile.defaultNodes,

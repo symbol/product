@@ -13,7 +13,6 @@ export const getMosaicAbsoluteAmount = (relativeAmount, divisibility) => {
 };
 
 export const getMosaicsWithRelativeAmounts = (mosaics, mosaicInfos) => {
-    console.log(mosaics, mosaicInfos)
     return mosaics.map(mosaic => getMosaicWithRelativeAmount(mosaic, mosaicInfos[mosaic.id]));
 };
 

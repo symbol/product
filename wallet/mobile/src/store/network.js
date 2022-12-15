@@ -70,7 +70,7 @@ export default {
             const { connectionTimer, selectedNodeUrl, nodeUrls, networkIdentifier, networkProperties } = state.network;
             let updatedNetworkProperties;
             const runAgain = () => {
-                const newConnectionTimer = setTimeout(() => dispatchAction({type: 'network/runConnectionJob'}), 5000);
+                const newConnectionTimer = setTimeout(() => dispatchAction({type: 'network/runConnectionJob'}), 15000);
                 commit({type: 'network/setConnectionTimer', payload: newConnectionTimer});
             };
 

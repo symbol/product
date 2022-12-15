@@ -43,6 +43,7 @@ export const trunc = (str, type, length = 5) => {
 
 export const handleError = (error) => {
     showMessage({message: error.message, type: 'danger'});
+    console.error(error);
 };
 
 export const getCharPercentage = char => {

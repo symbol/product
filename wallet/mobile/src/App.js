@@ -17,7 +17,7 @@ const appBackgroundColor = { backgroundColor: colors.bgGray };
 
 const App = () => {
     const [isPasscodeEnabled, setIsPasscodeEnabled] = useState(false);
-    const [isUnlocked, setIsUnlocked] = useState(false);
+    const [isUnlocked, setIsUnlocked] = useState(true);
     const [hasBeenUnlocked, setHasBeenUnlocked] = useState(false);
     const [isWalletExist, setIsWalletExist] = useState(false);
     const [isLoading, setIsLoading] = useState(true);

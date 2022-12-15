@@ -30,6 +30,15 @@ export class TransactionService {
         const transactionPage = await transactionHttp.search(baseSearchCriteria).toPromise();
         const transactions = transactionPage.data;
 
-        return transactions.map(transaction => transactionFromDTO(transaction, networkProperties));
+        const aggregateTransactionIds = transactions.filter(isAggregateTransaction).map(transaction => transaction.transactionInfo.id);
+        const shouldFetchAggregateDetails = aggregateTransactionIds.length > 0;
+        const aggregateDetails = shouldFetchAggregateDetails ? await transactionHttp.getTransactionsById(aggregateTransactionIds, group).toPromise() : [];
+        //return transactions// .map(transaction => transactionFromDTO(transaction, networkProperties));
+
+        return transactions.map(transaction => 
+            isAggregateTransaction(transaction) 
+                ? aggregateDetails.find(details => details.transactionInfo.id === transaction.transactionInfo.id)
+                : transaction
+        );
     }
 };
