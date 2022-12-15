@@ -5,6 +5,7 @@ export * from './ButtonCopy';
 export * from './ButtonPlain';
 export * from './Checkbox';
 export * from './ConnectionStatus';
+export * from './DialogBox';
 export * from './Dropdown';
 export * from './FormItem';
 export * from './InputAmount';
