@@ -1,16 +1,17 @@
 
 import React, { useEffect, useState } from 'react';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import FlashMessage from 'react-native-flash-message';
 import { AppState, BackHandler, DeviceEventEmitter, SafeAreaView, StatusBar } from 'react-native';
 import { Provider } from 'react-redux'
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { hasUserSetPinCode } from '@haskkor/react-native-pincode';
+import FlashMessage from 'react-native-flash-message';
+import { ConnectionStatus } from './components';
+import { Passcode } from './screens';
+import { SecureStorage } from './storage';
 import store from 'src/store';
+import { initLocalization } from './localization';
 import { RouterView, Router } from './Router';
 import { colors } from './styles';
-import { hasUserSetPinCode } from '@haskkor/react-native-pincode';
-import { SecureStorage } from './storage';
-import { Passcode } from './screens';
-import { ConnectionStatus } from './components';
 
 const fillHeight = {flex: 1};
 const appBackgroundColor = { backgroundColor: colors.bgGray };
@@ -42,6 +43,7 @@ const App = () => {
         const load = async () => {
             const isPasscodeEnabled = await hasUserSetPinCode();
             const isWalletExist = !!(await SecureStorage.getMnemonic());
+            await initLocalization();
             await store.dispatchAction({type: 'wallet/loadAll'});
             store.dispatchAction({type: 'network/runConnectionJob'});
 
