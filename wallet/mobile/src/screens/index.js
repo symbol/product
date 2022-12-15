@@ -1,5 +1,6 @@
 export * from './AccountDetails';
 export * from './AccountList';
+export * from './AddExternalAccount';
 export * from './AddSeedAccount';
 export * from './CreateWallet';
 export * from './ImportWallet';

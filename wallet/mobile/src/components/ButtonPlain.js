@@ -5,9 +5,13 @@ import { StyledText } from 'src/components';
 import { colors } from 'src/styles';
 
 export const ButtonPlain = props => {
-    const { isDisabled, title, style, onPress } = props;
+    const { isDisabled, title, style, isCentered, onPress } = props;
 
-    const rootStyle = [isDisabled ? styles.disabled : null, style];
+    const rootStyle = [
+        isDisabled ? styles.disabled : null,
+        isCentered ? styles.centered : null,
+        style
+    ];
 
     const handlePress = () => {
         !isDisabled && onPress();
@@ -25,6 +29,10 @@ export const ButtonPlain = props => {
 const styles = StyleSheet.create({
     disabled: {
         opacity: 0.3
+    },
+    centered: {
+        flexDirection: 'row',
+        justifyContent: 'center'
     },
     text: {
         color: colors.primary
