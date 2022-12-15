@@ -107,6 +107,7 @@ export default {
             commit({ type: 'wallet/setMnemonic', payload: mnemonic });
             await dispatchAction({ type: 'wallet/addSeedAccount', payload: { name, index: 0, networkIdentifier: 'testnet' } });
             await dispatchAction({ type: 'wallet/addSeedAccount', payload: { name, index: 0, networkIdentifier: 'mainnet' } });
+            await dispatchAction({type: 'wallet/loadAll'});
         },
 
         generateSeedAddresses: async ({ state, commit }) => {
