@@ -12,6 +12,12 @@ export const validateAccountName = () => str => {
     }
 }
 
+export const validateKey = () => str => {
+    if (str.length !== 64) {
+        return 'validation_error_key_length';
+    }
+}
+
 export const validateMnemonic = () => str => {
     const mnemonicPassPhrase = new MnemonicPassPhrase(str.trim());
     const isValidMnemonic = mnemonicPassPhrase.isValid();

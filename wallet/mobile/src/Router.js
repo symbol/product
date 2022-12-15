@@ -27,6 +27,7 @@ const keys = {
     History: 'History',
     AccountDetails: 'AccountDetails',
     AccountList: 'AccountList',
+    AddExternalAccount: 'AddExternalAccount',
     AddSeedAccount: 'AddSeedAccount',
     Send: 'Send',
     Settings: 'Settings',
@@ -52,6 +53,7 @@ export const RouterView = ({ isActive }) => (
                 <Stack.Group>
                     <Stack.Screen name={keys.AccountDetails} component={screens.AccountDetails} />
                     <Stack.Screen name={keys.AccountList} component={screens.AccountList} />
+                    <Stack.Screen name={keys.AddExternalAccount} component={screens.AddExternalAccount} />
                     <Stack.Screen name={keys.AddSeedAccount} component={screens.AddSeedAccount} />
                     <Stack.Screen name={keys.Send} component={screens.Send} />
                     <Stack.Screen name={keys.Settings} component={screens.Settings} />
@@ -116,6 +118,9 @@ export class Router {
     }
     static goToAccountList() {
         navigationRef.navigate(keys.AccountList);
+    }
+    static goToAddExternalAccount() {
+        navigationRef.navigate(keys.AddExternalAccount);
     }
     static goToAddSeedAccount() {
         navigationRef.navigate(keys.AddSeedAccount);

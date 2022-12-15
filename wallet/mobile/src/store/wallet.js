@@ -150,6 +150,25 @@ export default {
             await dispatchAction({ type: 'wallet/selectAccount', payload: privateKey });
         },
 
+        addExternalAccount: async ({ commit, dispatchAction }, { privateKey, name, networkIdentifier }) => {
+            const accountType = 'external';
+            const walletAccount = createWalletAccount(privateKey, networkIdentifier, name, accountType, null);
+            const accounts = await SecureStorage.getAccounts();
+            const networkAccounts = accounts[networkIdentifier];
+            const isAccountAlreadyExists = networkAccounts.find(account => account.privateKey === privateKey);
+
+            if (isAccountAlreadyExists) {
+                throw Error('failed_add_account_already_exists');
+            }
+            
+            networkAccounts.push(walletAccount);
+            
+            await SecureStorage.setAccounts(accounts);
+            commit({ type: 'wallet/setAccounts', payload: accounts });
+            
+            await dispatchAction({ type: 'wallet/selectAccount', payload: privateKey });
+        },
+
         removeAccount: async ({ commit }, privateKey) => {
             const accounts = await SecureStorage.getAccounts();
             const updatedAccounts = accounts.filter(account => account.privateKey !== privateKey);

@@ -4,7 +4,7 @@ import { StyleSheet, Vibration } from 'react-native';
 import { showMessage } from 'react-native-flash-message';
 import { FlatList, TouchableOpacity } from 'react-native-gesture-handler';
 import DraggableFlatList from 'react-native-draggable-flatlist'
-import { AccountCard, Screen, FormItem, LoadingIndicator, Button } from 'src/components';
+import { AccountCard, Screen, FormItem, LoadingIndicator, Button, ButtonPlain } from 'src/components';
 import store, { connect } from 'src/store';
 import { handleError, useDataManager, usePromises, useProp, vibrate } from 'src/utils';
 import Animated, { interpolate, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
@@ -51,7 +51,6 @@ export const AccountList = connect(state => ({
     const isLoading = isSelectAccountLoading;
 
     const isAccountSelected = account => account.privateKey === selectedPrivateKey;
-    const goToAddSeedAccount = Router.goToAddSeedAccount;
     const handleLongPress = drag => {
         drag();
         handlePressIn();
@@ -84,7 +83,14 @@ export const AccountList = connect(state => ({
 
     return (
         // notranslate
-        <Screen bottomComponent={!isLoading && <Button title="Add Account" onPress={goToAddSeedAccount} />}>
+        <Screen bottomComponent={!isLoading && <>
+            <FormItem>
+                <Button title="Add Seed Account" onPress={Router.goToAddSeedAccount} />
+            </FormItem>
+            <FormItem>
+                <ButtonPlain title="Add External Account" isCentered onPress={Router.goToAddExternalAccount} />
+            </FormItem>
+        </>}>
             {isLoading && <LoadingIndicator />}
             <DraggableFlatList 
                 onDragEnd={onDragEnd}
