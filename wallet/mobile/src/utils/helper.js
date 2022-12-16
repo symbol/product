@@ -32,6 +32,8 @@ export const trunc = (str, type, length = 5) => {
             return trunc(str, 'end', 18);
         case 'contact-short':
             return trunc(str, 'end', 12);
+        case 'hash':
+            return trunc(str, 'middle', 12, 12);
         case 'mosaicId':
             return trunc(str, 'middle', 6, 6);
         case 'namespaceName':

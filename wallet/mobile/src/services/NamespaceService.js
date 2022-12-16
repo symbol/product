@@ -42,12 +42,19 @@ export class NamespaceService {
     }
 
     static async fetchNamespaceInfos(networkProperties, namespaceIds) {
-        const namespaceInfos = await Promise.all(namespaceIds.map(async namespaceId => ({
-            namespaceId, 
-            value: await NamespaceService.fetchNamespaceInfo(networkProperties, namespaceId)
-        })));
+        const namespaceInfos = await Promise.all(namespaceIds.map(async namespaceId => {
+            try {
+                return {
+                    namespaceId, 
+                    value: await NamespaceService.fetchNamespaceInfo(networkProperties, namespaceId)
+                }
+            }
+            catch {
+                return;
+            }
+        }));
 
-        return _.chain(namespaceInfos)
+        return _.chain(_.compact(namespaceInfos))
             .keyBy('namespaceId')
             .mapValues('value')
             .value();
@@ -61,12 +68,19 @@ export class NamespaceService {
     }
 
     static async resolveAddresses(networkProperties, namespaceIds) {
-        const namespaceInfos = await Promise.all(namespaceIds.map(async namespaceId => ({
-            namespaceId, 
-            value: await NamespaceService.resolveAddress(networkProperties, namespaceId)
-        })));
+        const namespaceInfos = await Promise.all(namespaceIds.map(async namespaceId => {
+            try {
+                return {
+                    namespaceId, 
+                    value: await NamespaceService.resolveAddress(networkProperties, namespaceId)
+                }
+            }
+            catch {
+                return;
+            }
+        }));
 
-        return _.chain(namespaceInfos)
+        return _.chain(_.compact(namespaceInfos))
             .keyBy('namespaceId')
             .mapValues('value')
             .value();

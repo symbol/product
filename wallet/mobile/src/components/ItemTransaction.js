@@ -1,6 +1,7 @@
 import React from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
-import Animated, { FadeInUp } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
+import { $t } from 'src/localization';
 import { connect } from 'src/store';
 import { borders, colors, fonts, spacings } from 'src/styles';
 import { isAggregateTransaction, isIncomingTransaction, isOutgoingTransaction, trunc } from 'src/utils';
@@ -14,7 +15,7 @@ export const ItemTransaction = connect(state => ({
     const { currentAccount, group, transaction, ticker } = props;
     const { type, date, amount, signerAddress, recipientAddress } = transaction;
     let iconSrc;
-    let action = 'Unknown';
+    let action = $t(`transactionDescriptor_${type}`);
     let description = '';
     let amountText = '';
     const styleAmount = [styles.textAmount];
@@ -30,30 +31,84 @@ export const ItemTransaction = connect(state => ({
     }
 
     if (type === TransactionType.TRANSFER && isOutgoingTransaction(transaction, currentAccount)) {
-        action = 'Sent';
-        description = `To * ${trunc(recipientAddress, 'address')}`;
+        action = $t(`transactionDescriptor_${type}_outgoing`);
+        description = `To ${trunc(recipientAddress, 'address')}`;
         iconSrc = require('src/assets/images/icon-tx-transfer.png');
     }
     else if (type === TransactionType.TRANSFER && isIncomingTransaction(transaction, currentAccount)) {
-        action = 'Received';
-        description = `From * ${trunc(signerAddress, 'address')}`;
+        action = $t(`transactionDescriptor_${type}_incoming`);
+        description = `From ${trunc(signerAddress, 'address')}`;
         iconSrc = require('src/assets/images/icon-tx-transfer.png');
     }
     else if (isAggregateTransaction(transaction)) {
-        action = 'Aggregate';
-        description = `Contains ${transaction.innerTransactions.length} embedded transactions`;
+        const firstTransactionType = transaction.innerTransactions[0]?.type;
+        const type = firstTransactionType ? $t(`transactionDescriptor_${firstTransactionType}`) : '';
+        const count = transaction.innerTransactions.length - 1;
+        description = count 
+            ? $t('transactionDescriptionShort_aggregateMultiple', {type, count})
+            : type;
         iconSrc = require('src/assets/images/icon-tx-aggregate.png');
     }
     else if (type === TransactionType.NAMESPACE_REGISTRATION) {
-        action = 'Namespace';
-        description = `Registered * ${transaction.namespaceName}`;
+        const name = transaction.namespaceName;
+        description = $t('transactionDescriptionShort_namespaceRegistration', {name});
         iconSrc = require('src/assets/images/icon-tx-namespace.png');
     }
     else if (type === TransactionType.MOSAIC_ALIAS || type === TransactionType.ADDRESS_ALIAS) {
-        action = 'Namespace';
-        const target = transaction.mosaicId || transaction.address;
-        description = `Link ${transaction.namespaceName} * to ${trunc(target, 'address')}`;
+        const target = trunc(transaction.mosaicId || transaction.address, 'address');
+        const name = transaction.namespaceName;
+        description = $t('transactionDescriptionShort_alias', {target, name});
         iconSrc = require('src/assets/images/icon-tx-namespace.png');
+    }
+    else if (
+        type === TransactionType.MOSAIC_DEFINITION 
+        || type === TransactionType.MOSAIC_SUPPLY_CHANGE
+        || type === TransactionType.MOSAIC_SUPPLY_REVOCATION
+    ) {
+        const id = transaction.mosaicId;
+        description = $t('transactionDescriptionShort_mosaic', {id});
+        iconSrc = require('src/assets/images/icon-tx-mosaic.png');
+    }
+    else if (
+        type === TransactionType.ACCOUNT_MOSAIC_RESTRICTION
+        || type === TransactionType.ACCOUNT_ADDRESS_RESTRICTION
+        || type === TransactionType.ACCOUNT_OPERATION_RESTRICTION
+    ) {
+        const restrictionType = transaction.restrictionType;
+        description = $t(`data_${restrictionType}`);
+        iconSrc = require('src/assets/images/icon-tx-restriction.png');
+    }
+    else if (
+        type === TransactionType.MOSAIC_GLOBAL_RESTRICTION 
+        || type === TransactionType.MOSAIC_ADDRESS_RESTRICTION
+    ) {
+        const id = transaction.mosaicId || transaction.referenceMosaicId;
+        description = $t('transactionDescriptionShort_mosaicRestriction', {id});
+        iconSrc = require('src/assets/images/icon-tx-restriction.png');
+    }
+    else if (
+        type === TransactionType.VRF_KEY_LINK 
+        || type === TransactionType.NODE_KEY_LINK
+        || type === TransactionType.VOTING_KEY_LINK
+        || type === TransactionType.ACCOUNT_KEY_LINK
+    ) {
+        const linkAction = transaction.linkAction;
+        description = $t(`data_${linkAction}`);
+        iconSrc = require('src/assets/images/icon-tx-key.png');
+    }
+    else if (
+        type === TransactionType.HASH_LOCK 
+    ) {
+        const duration = transaction.duration;
+        description = $t('transactionDescriptionShort_hashLock', {duration});
+        iconSrc = require('src/assets/images/icon-tx-lock.png');
+    }
+    else if (
+        type === TransactionType.SECRET_LOCK
+        || type === TransactionType.SECRET_PROOF
+    ) {
+        description = trunc(transaction.secret, 'hash');
+        iconSrc = require('src/assets/images/icon-tx-lock.png');
     }
 
     if (group === 'unconfirmed') {
@@ -64,10 +119,12 @@ export const ItemTransaction = connect(state => ({
         styleRoot.push(styles.rootPartial)
     }
 
+
     return (
         <FormItem type="list">
             {/* TODO: uncomment when issue is fixed https://github.com/react-navigation/react-navigation/issues/10531 */}
             {/* <Animated.View entering={FadeInUp.duration(500)}> */}
+            <Animated.View entering={FadeIn.duration(1000)}>
                 <View style={styleRoot}>
                     <View style={styles.sectionIcon}>
                         <Image source={iconSrc} style={styles.icon} />
@@ -81,16 +138,23 @@ export const ItemTransaction = connect(state => ({
                         </View>
                     </View>
                 </View>
+            </Animated.View>
             {/* </Animated.View> */}
         </FormItem>
     );
 });
 
+export const ItemTransactionPlaceholder = () => (
+    <FormItem type="list">
+        <View style={[styles.root, styles.rootLoadingPlaceholder]} />
+    </FormItem>
+);
+
 const styles = StyleSheet.create({
     root: {
         flexDirection: 'row',
         width: '100%',
-        minHeight: 62,
+        minHeight: 75,
         backgroundColor: colors.bgCard,
         borderColor: colors.bgCard,
         borderWidth: borders.borderWidth,
@@ -102,6 +166,9 @@ const styles = StyleSheet.create({
     },
     rootUnconfirmed: {
         borderColor: colors.warning
+    },
+    rootLoadingPlaceholder: {
+        opacity: 0.2
     },
     icon: {
         height: 24,

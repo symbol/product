@@ -31,6 +31,10 @@ export const getUnresolvedIdsFromTransactionDTOs = transactions => {
         [TransactionType.MOSAIC_ALIAS]: {
             namespace: ['namespaceId'],
         },
+        [TransactionType.MOSAIC_SUPPLY_REVOCATION]: {
+            address: ['sourceAddress'],
+            mosaic: ['mosaic'],
+        },
         [TransactionType.MULTISIG_ACCOUNT_MODIFICATION]: {
             addressArray: ['addressAdditions', 'addressDeletions'],
         },
