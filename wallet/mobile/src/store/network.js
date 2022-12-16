@@ -65,6 +65,7 @@ export default {
             const updatedNetworkProperties = await NetworkService.fetchNetworkProperties(nodeUrl);
 
             commit({type: 'network/setNetworkProperties', payload: updatedNetworkProperties});
+            commit({type: 'wallet/setReady', payload: true});
         },
         runConnectionJob: async ({ state, commit, dispatchAction }) => {
             const { connectionTimer, selectedNodeUrl, nodeUrls, networkIdentifier, networkProperties } = state.network;
@@ -80,13 +81,12 @@ export default {
             // Try to connect to current node
             try {
                 const nodeUrl = selectedNodeUrl || networkProperties.nodeUrl;
-                updatedNetworkProperties = await NetworkService.fetchNetworkProperties(nodeUrl);
+                await NetworkService.ping(nodeUrl);
+                await dispatchAction({type: 'network/fetchNetworkProperties', payload: nodeUrl});
                 // Node is good.
                 console.log('connected')
                 const newStatus = 'connected'; 
-                commit({type: 'network/setNetworkProperties', payload: updatedNetworkProperties});
                 commit({type: 'network/setStatus', payload: newStatus});
-                commit({type: 'wallet/setReady', payload: true});
                 runAgain();
                 return;
             }
@@ -118,20 +118,15 @@ export default {
             for (const nodeUrl of nodeUrls[networkIdentifier]) {
                 try {
                     console.log('nodeUrl', nodeUrl)
-                    updatedNetworkProperties = await NetworkService.fetchNetworkProperties(nodeUrl);
-                    break;
+                    await NetworkService.ping(nodeUrl);
+                    await dispatchAction({type: 'network/fetchNetworkProperties', payload: nodeUrl});
+                    console.log('connected')
+                    const newStatus = 'connected'; 
+                    commit({type: 'network/setStatus', payload: newStatus});
+                    runAgain();
+                    return;
                 }
                 catch {}
-            }
-
-            if (updatedNetworkProperties) {
-                console.log('connected')
-                const newStatus = 'connected'; 
-                commit({type: 'network/setStatus', payload: newStatus});
-                commit({type: 'network/setNetworkProperties', payload: updatedNetworkProperties});
-                commit({type: 'wallet/setReady', payload: true});
-                runAgain();
-                return;
             }
 
             console.log('failed-auto')

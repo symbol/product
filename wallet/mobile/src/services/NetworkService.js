@@ -61,4 +61,9 @@ export class NetworkService {
             },
         };
     }
+
+    static async ping(nodeUrl) {
+        const endpoint = `${nodeUrl}/node/info`;
+        return makeRequest(endpoint);
+    }
 }
