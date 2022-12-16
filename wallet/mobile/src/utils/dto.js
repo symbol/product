@@ -1,6 +1,6 @@
 import { Constants } from 'src/config';
 import { Address, TransactionType } from 'symbol-sdk';
-import { formatDeadline, getNativeMosaicAmount, getMosaicRelativeAmount, getMosaicsWithRelativeAmounts, isIncomingTransaction, isOutgoingTransaction, getMosaicWithRelativeAmount } from './';
+import { formatDeadline, getNativeMosaicAmount, getMosaicRelativeAmount, getMosaicsWithRelativeAmounts, isIncomingTransaction, isOutgoingTransaction, getMosaicWithRelativeAmount, publicAccountFromPrivateKey } from './';
 
 export const mosaicFromDTO = mosaic => ({
     id: mosaic.id.toHex(),
@@ -30,6 +30,8 @@ export const transactionFromDTO = (transaction, config) => {
             return mosaicDefinitionTransactionFromDTO(transaction, config);
         case TransactionType.MOSAIC_SUPPLY_CHANGE:
             return mosaicSupplyChangeTransactionFromDTO(transaction, config);
+        case TransactionType.MOSAIC_SUPPLY_REVOCATION:
+            return mosaicSupplyRevocationTransactionFromDTO(transaction, config);
         case TransactionType.SECRET_LOCK:
             return secretLockTransactionFromDTO(transaction, config);
         case TransactionType.HASH_LOCK:
@@ -43,25 +45,25 @@ export const transactionFromDTO = (transaction, config) => {
         case TransactionType.NODE_KEY_LINK:
             return nodeKeyLinkTransactionFromDTO(transaction, config);
         case TransactionType.VOTING_KEY_LINK:
-        //     return votingKeyLinkTransactionFromDTO(transaction, config);
-        // case TransactionType.MOSAIC_GLOBAL_RESTRICTION:
-        //     return mosaicGlobalRestrictionTransactionFromDTO(transaction, config);
-        // case TransactionType.MOSAIC_ADDRESS_RESTRICTION:
-        //     return mosaicAddressRestrictionTransactionFromDTO(transaction, config);
-        // case TransactionType.ACCOUNT_OPERATION_RESTRICTION:
-        //     return accountOperationRestrictionTransactionFromDTO(transaction, config);
+            return votingKeyLinkTransactionFromDTO(transaction, config);
+        case TransactionType.MOSAIC_GLOBAL_RESTRICTION:
+            return mosaicGlobalRestrictionTransactionFromDTO(transaction, config);
+        case TransactionType.MOSAIC_ADDRESS_RESTRICTION:
+            return mosaicAddressRestrictionTransactionFromDTO(transaction, config);
+        case TransactionType.ACCOUNT_OPERATION_RESTRICTION:
+            return accountOperationRestrictionTransactionFromDTO(transaction, config);
         case TransactionType.ACCOUNT_ADDRESS_RESTRICTION:
             return accountAddressRestrictionTransactionFromDTO(transaction, config);
         case TransactionType.ACCOUNT_MOSAIC_RESTRICTION:
             return accountMosaicRestrictionTransactionFromDTO(transaction, config);
         case TransactionType.MULTISIG_ACCOUNT_MODIFICATION:
             return multisigAccountModificationTransactionFromDTO(transaction, config);
-        // case TransactionType.ACCOUNT_METADATA:
-        //     return accountMetadataTransactionFromDTO(transaction, config);
-        // case TransactionType.NAMESPACE_METADATA:
-        //     return namespaceMetadataTransactionFromDTO(transaction, config);
-        // case TransactionType.MOSAIC_METADATA:
-        //     return mosaicMetadataTransactionFromDTO(transaction, config);
+        case TransactionType.ACCOUNT_METADATA:
+            return accountMetadataTransactionFromDTO(transaction, config);
+        case TransactionType.NAMESPACE_METADATA:
+            return namespaceMetadataTransactionFromDTO(transaction, config);
+        case TransactionType.MOSAIC_METADATA:
+            return mosaicMetadataTransactionFromDTO(transaction, config);
     }
 
     return baseTransaction;
@@ -73,6 +75,7 @@ export const baseTransactionFromDTO = (transaction, {networkProperties}) => {
         date: formatDeadline(transaction.deadline.toLocalDateTime(networkProperties.epochAdjustment)),
         signerAddress: transaction.signer.address.plain(),
         hash: transaction.hash || transaction.transactionInfo?.hash,
+        id: transaction.transactionInfo?.id,
         fee: transaction.maxFee.toString(),
     };
 };
@@ -196,6 +199,20 @@ export const mosaicSupplyChangeTransactionFromDTO = (transaction, config) => {
     };
 };
 
+export const mosaicSupplyRevocationTransactionFromDTO = (transaction, config) => {
+    const baseTransaction = baseTransactionFromDTO(transaction, config);
+    const mosaic = mosaicFromDTO(transaction.mosaic);
+    const formattedMosaics = getMosaicsWithRelativeAmounts([mosaic], config.mosaicInfos);
+    const sourceAddress = addressFromDTO(transaction.sourceAddress, config.resolvedAddresses);
+
+    return {
+        ...baseTransaction,
+        mosaicId: transaction.mosaic.id.toHex(),
+        mosaics: formattedMosaics,
+        sourceAddress
+    };
+};
+
 export const multisigAccountModificationTransactionFromDTO = (transaction, config) => {
     const baseTransaction = baseTransactionFromDTO(transaction, config);
     const addressAdditions = transaction.addressAdditions.map(address => addressFromDTO(address, config.resolvedAddresses));
@@ -213,20 +230,22 @@ export const multisigAccountModificationTransactionFromDTO = (transaction, confi
 export const hashLockTransactionFromDTO = (transaction, config) => {
     const baseTransaction = baseTransactionFromDTO(transaction, config);
     const mosaic = mosaicFromDTO(transaction.mosaic);
-    const formattedMosaics = getMosaicsWithRelativeAmounts([mosaic], mosaicInfos);
+    const formattedMosaics = getMosaicsWithRelativeAmounts([mosaic], config.mosaicInfos);
+    const amount = -formattedMosaics[0].amount;
 
     return {
         ...baseTransaction,
         duration: transaction.duration.compact(),
         mosaics: formattedMosaics,
         hash: transaction.hash,
+        amount,
     };
 };
 
 export const secretLockTransactionFromDTO = (transaction, config) => {
     const baseTransaction = baseTransactionFromDTO(transaction, config);
     const mosaic = mosaicFromDTO(transaction.mosaic);
-    const formattedMosaics = getMosaicsWithRelativeAmounts([mosaic], mosaicInfos);
+    const formattedMosaics = getMosaicsWithRelativeAmounts([mosaic], config.mosaicInfos);
     const resolvedAddress = addressFromDTO(transaction.recipientAddress, config.resolvedAddresses);
 
     return {
@@ -289,8 +308,8 @@ export const accountOperationRestrictionTransactionFromDTO = (transaction, confi
 
 export const mosaicAddressRestrictionTransactionFromDTO = (transaction, config) => {
     const baseTransaction = baseTransactionFromDTO(transaction, config);
-    const mosaic = mosaicFromDTO(transaction.mosaicId);
-    const resolvedMosaic = getMosaicWithRelativeAmount(mosaic, mosaicInfos);
+    const mosaicId = transaction.mosaicId.toHex();
+    const mosaicName = config.mosaicInfos[mosaicId]?.name;
     const targetAddress = addressFromDTO(transaction.targetAddress, config.resolvedAddresses);
 
     return {
@@ -298,9 +317,9 @@ export const mosaicAddressRestrictionTransactionFromDTO = (transaction, config) 
         restrictionKey: transaction.restrictionKey.toHex(),
         newRestrictionValue: transaction.newRestrictionValue.toString(),
         previousRestrictionValue: transaction.previousRestrictionValue.toString(),
-        mosaicId: resolvedMosaic.id,
-        mosaicName: resolvedMosaic.name,
-        targetAddress: targetAddress,
+        mosaicId,
+        mosaicName,
+        targetAddress,
     };
 };
 
@@ -308,7 +327,7 @@ export const mosaicGlobalRestrictionTransactionFromDTO = (transaction, config) =
     const baseTransaction = baseTransactionFromDTO(transaction, config);
     const referenceMosaicId =
         transaction.referenceMosaicId.toHex() === '0000000000000000' ? transaction.mosaicId : transaction.referenceMosaicId;
-    //const mosaicNames = await NamespaceService.getMosaicAliasNames(referenceMosaicId, network);
+    const mosaicName = config.mosaicInfos[referenceMosaicId]?.name;
 
     return {
         ...baseTransaction,
@@ -318,18 +337,18 @@ export const mosaicGlobalRestrictionTransactionFromDTO = (transaction, config) =
         previousRestrictionType: Constants.MosaicRestrictionType[transaction.previousRestrictionType],
         previousRestrictionValue: transaction.previousRestrictionValue.compact(),
         referenceMosaicId: referenceMosaicId.toHex(),
-        mosaicAliasNames,
+        mosaicName,
     };
 };
 
 export const accountMetadataTransactionFromDTO = (transaction, config) => {
     const baseTransaction = baseTransactionFromDTO(transaction, config);
-    //const resolvedAddress = await NamespaceService.resolveAddress(transaction.targetAddress, network);
+    const targetAddress = addressFromDTO(transaction.targetAddress, config.resolvedAddresses);
 
     return {
         ...baseTransaction,
         scopedMetadataKey: transaction.scopedMetadataKey.toHex(),
-        targetAddress: resolvedAddress,
+        targetAddress,
         metadataValue: transaction.value,
         valueSizeDelta: transaction.valueSizeDelta,
     };
@@ -337,19 +356,16 @@ export const accountMetadataTransactionFromDTO = (transaction, config) => {
 
 export const mosaicMetadataTransactionFromDTO = (transaction, config) => {
     const baseTransaction = baseTransactionFromDTO(transaction, config);
-    // const [resolvedMosaic, resolvedAddress] = await Promise.all([
-    //     NamespaceService.resolveMosaicId(transaction.targetMosaicId, network),
-    //     NamespaceService.resolveAddress(transaction.targetAddress, network),
-    // ]);
-
-    // const mosaicAliasNames = await NamespaceService.getMosaicAliasNames(resolvedMosaic, network);
+    const mosaicId = transaction.targetMosaicId.toHex();
+    const mosaicName = config.mosaicInfos[mosaicId]?.name
+    const targetAddress = addressFromDTO(transaction.targetAddress, config.resolvedAddresses);
 
     return {
         ...baseTransaction,
         scopedMetadataKey: transaction.scopedMetadataKey.toHex(),
-        targetMosaicId: resolvedMosaic.toHex(),
-        targetMosaicAliasNames: mosaicAliasNames,
-        targetAddress: resolvedAddress,
+        targetMosaicId: mosaicId,
+        targetMosaicName: mosaicName,
+        targetAddress,
         metadataValue: transaction.value,
         valueSizeDelta: transaction.valueSizeDelta,
     };
@@ -357,13 +373,8 @@ export const mosaicMetadataTransactionFromDTO = (transaction, config) => {
 
 export const namespaceMetadataTransactionFromDTO = (transaction, config) => {
     const baseTransaction = baseTransactionFromDTO(transaction, config);
-    const repositoryFactory = new RepositoryFactoryHttp(network.node);
-    const namespaceHttp = repositoryFactory.createNamespaceRepository();
-    // const [namespaces, resolvedAddress] = await Promise.all([
-    //     namespaceHttp.getNamespacesNames([transaction.targetNamespaceId]).toPromise(),
-    //     NamespaceService.resolveAddress(transaction.targetAddress),
-    // ]);
-    const namespaceNames = namespaces.map(namespace => namespace.name);
+    const targetAddress = addressFromDTO(transaction.targetAddress, config.resolvedAddresses);
+    const namespaceName = config.namespaceNames[transaction.targetNamespaceId];
 
     return {
         ...baseTransaction,
@@ -371,19 +382,20 @@ export const namespaceMetadataTransactionFromDTO = (transaction, config) => {
         metadataValue: transaction.value,
         valueSizeDelta: transaction.valueSizeDelta,
         targetNamespaceId: transaction.targetNamespaceId.toHex(),
-        namespaceName: namespaceNames,
-        targetAddress: resolvedAddress,
+        namespaceName,
+        targetAddress,
     };
 };
 
 export const votingKeyLinkTransactionFromDTO = (transaction, config) => {
     const baseTransaction = baseTransactionFromDTO(transaction, config);
+    const linkedAccountAddress = publicAccountFromPrivateKey(transaction.linkedPublicKey, config.networkProperties.networkIdentifier).address;
 
     return {
         ...baseTransaction,
         linkAction: Constants.LinkAction[transaction.linkAction],
         linkedPublicKey: transaction.linkedPublicKey,
-        linkedAccountAddress: Address.createFromPublicKey(transaction.linkedPublicKey, network.networkType).plain(),
+        linkedAccountAddress,
         startEpoch: transaction.startEpoch,
         endEpoch: transaction.endEpoch,
     };
@@ -391,33 +403,36 @@ export const votingKeyLinkTransactionFromDTO = (transaction, config) => {
 
 export const vrfKeyLinkTransactionFromDTO = (transaction, config) => {
     const baseTransaction = baseTransactionFromDTO(transaction, config);
+    const linkedAccountAddress = publicAccountFromPrivateKey(transaction.linkedPublicKey, config.networkProperties.networkIdentifier).address
 
     return {
         ...baseTransaction,
         linkAction: Constants.LinkAction[transaction.linkAction],
         linkedPublicKey: transaction.linkedPublicKey,
-        linkedAccountAddress: Address.createFromPublicKey(transaction.linkedPublicKey, network.networkType).plain(),
+        linkedAccountAddress,
     };
 };
 
 export const nodeKeyLinkTransactionFromDTO = (transaction, config) => {
     const baseTransaction = baseTransactionFromDTO(transaction, config);
+    const linkedAccountAddress = publicAccountFromPrivateKey(transaction.linkedPublicKey, config.networkProperties.networkIdentifier).address
 
     return {
         ...baseTransaction,
         linkAction: Constants.LinkAction[transaction.linkAction],
         linkedPublicKey: transaction.linkedPublicKey,
-        linkedAccountAddress: Address.createFromPublicKey(transaction.linkedPublicKey, network.networkType).plain(),
+        linkedAccountAddress,
     };
 };
 
 export const accountKeyLinkTransactionFromDTO = (transaction, config) => {
     const baseTransaction = baseTransactionFromDTO(transaction, config);
+    const linkedAccountAddress = publicAccountFromPrivateKey(transaction.linkedPublicKey, config.networkProperties.networkIdentifier).address
 
     return {
         ...baseTransaction,
         linkAction: Constants.LinkAction[transaction.linkAction],
         linkedPublicKey: transaction.linkedPublicKey,
-        linkedAccountAddress: Address.createFromPublicKey(transaction.linkedPublicKey, network.networkType).plain(),
+        linkedAccountAddress,
     };
 };

@@ -48,8 +48,10 @@ export class MosaicService {
         }
 
         for (const namespaceId of namespaceIds) {
-            const mosaicId = namespaceInfos[namespaceId].alias.mosaicId;
-            mosaicInfos[namespaceId] = remainedMosaicInfos[mosaicId];
+            if (namespaceInfos[namespaceId]) {
+                const mosaicId = namespaceInfos[namespaceId].alias.mosaicId;
+                mosaicInfos[namespaceId] = remainedMosaicInfos[mosaicId];
+            }
         }
 
         return {...mosaicInfos, ...remainedMosaicInfos};
