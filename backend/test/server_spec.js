@@ -1,30 +1,29 @@
 const nemController = require('../src/controllers/nem');
-const twitterController = require('../src/controllers/twitter');
 const server = require('../src/server');
 const { expect } = require('chai');
 const { stub, restore } = require('sinon');
 const supertest = require('supertest');
 
 describe('Server', () => {
-	const assertGetErrorCode500 = async (functionStub, endpoint) => {
-		// Arrange:
-		functionStub.throws();
-
-		// Act:
-		const response = await supertest(server)
-			.get(endpoint)
-			.set('Accept', 'application/json');
-
-		// Assert:
-		expect(response.status).to.be.equal(500);
-	};
-
 	describe('POST /claim/xem', () => {
 		let getAccountBalanceStub = {};
 		let getUnconfirmedTransactionsStub = [];
 		let transferXemStub = {};
 		let mockFaucetAccountBalance = {};
 		let mockRequestAccountBalance = {};
+
+		// decoded jwt payload
+		// {
+		// 	"accessToken": "token1234",
+		// 	"accessSecret": "secret1234",
+		// 	"screenName": "twitterAccount",
+		// 	"followersCount": 15,
+		// 	"createdAt": "2022-10-15T00:00:00.000Z",
+		// }
+		const validJwtToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.'
+			+ 'eyJhY2Nlc3NUb2tlbiI6InRva2VuMTIzNCIsImFjY2Vzc1NlY3JldCI6InNlY3JldDEyMzQiLCJzY3JlZW5OYW1lIjoidHdpdHRlckFjY29'
+			+ '1bnQiLCJmb2xsb3dlcnNDb3VudCI6MTUsImNyZWF0ZWRBdCI6IjIwMjItMTAtMTVUMDA6MDA6MDAuMDAwWiIsImlhdCI6MTY3MTEwMTI0MH0.'
+			+ 'tffb1g17SetxmC5cPuQ8nZrrUzRf_nBlcA_ydKUUv6U';
 
 		beforeEach(() => {
 			getAccountBalanceStub = stub(nemController, 'getAccountBalance');
@@ -52,6 +51,18 @@ describe('Server', () => {
 
 		afterEach(restore);
 
+		const createRequest = (body, authToken) => {
+			const request = supertest(server)
+				.post('/claim/xem')
+				.set('Accept', 'application/json')
+				.send(body);
+
+			if (authToken)
+				request.set('authToken', authToken);
+
+			return request;
+		};
+
 		it('responds 200', async () => {
 			// Arrange:
 			const mockTransferXemResult = {
@@ -65,13 +76,10 @@ describe('Server', () => {
 			transferXemStub.returns(Promise.resolve(mockTransferXemResult));
 
 			// Act:
-			const response = await supertest(server)
-				.post('/claim/xem')
-				.send({
-					address: mockRequestAccountBalance.address,
-					amount: 10
-				})
-				.set('Accept', 'application/json');
+			const response = await createRequest({
+				address: mockRequestAccountBalance.address,
+				amount: 10
+			}, validJwtToken);
 
 			// Assert:
 			expect(response.status).to.be.equal(200);
@@ -89,10 +97,10 @@ describe('Server', () => {
 			const requestOverPayoutAmount = 100000;
 
 			// Act:
-			const response = await supertest(server)
-				.post('/claim/xem')
-				.send({ address: mockRequestAccountBalance.address, amount: requestOverPayoutAmount })
-				.set('Accept', 'application/json');
+			const response = await createRequest({
+				address: mockRequestAccountBalance.address,
+				amount: requestOverPayoutAmount
+			}, validJwtToken);
 
 			// Assert:
 			expect(response.status).to.be.equal(400);
@@ -102,89 +110,60 @@ describe('Server', () => {
 			});
 		});
 
+		it('responds 403 verify auth token fail', async () => {
+			// Act:
+			const response = await createRequest({
+				address: mockRequestAccountBalance.address,
+				amount: 100
+			}, 'invalidToken');
+
+			// Assert:
+			expect(response.status).to.be.equal(403);
+			expect(response.body).to.be.deep.equal({
+				code: 'Forbidden',
+				message: 'Authentication fail'
+			});
+		});
+
+		it('responds 403 twitter requirement fail', async () => {
+			// Arrange:
+
+			// decoded jwt payload
+			// {
+			// 	"accessToken": "token1234",
+			// 	"accessSecret": "secret1234",
+			// 	"screenName": "twitterAccount",
+			// 	"followersCount": 3,  <--- min followers count must 10 or above
+			// 	"createdAt": "2022-10-15T00:00:00.000Z",
+			// }
+			const twitterRequirementFailJwtToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.'
+			+ 'eyJhY2Nlc3NUb2tlbiI6InRva2VuMTIzNCIsImFjY2Vzc1NlY3JldCI6InNlY3JldDEyMzQiLCJzY3JlZW5OYW1lIjoidHdpdHRlckFjY29'
+			+ '1bnQiLCJmb2xsb3dlcnNDb3VudCI6MywiY3JlYXRlZEF0IjoiMjAyMi0xMC0xNVQwMDowMDowMC4wMDBaIiwiaWF0IjoxNjcwOTcyMjQyfQ.'
+			+ '8r2MZNX7QEyG3t4lhqPFedOrzweJyY78mK9mYYd5O1g';
+
+			// Act:
+			const response = await createRequest({
+				address: mockRequestAccountBalance.address,
+				amount: 100
+			}, twitterRequirementFailJwtToken);
+
+			// Assert:
+			expect(response.status).to.be.equal(403);
+			expect(response.body).to.be.deep.equal({
+				code: 'Forbidden',
+				message: 'Twitter requirement fail'
+			});
+		});
+
 		it('responds 500 given invalid address', async () => {
 			// Arrange + Act:
-			const response = await supertest(server)
-				.post('/claim/xem')
-				.send({ address: 'abc', amount: 100 })
-				.set('Accept', 'application/json');
+			const response = await createRequest({
+				address: 'abc',
+				amount: 100
+			}, validJwtToken);
 
 			// Assert:
 			expect(response.status).to.be.equal(500);
 		});
-	});
-
-	describe('GET /twitter/auth', () => {
-		let requestTokenStub = {};
-
-		beforeEach(() => {
-			requestTokenStub = stub(twitterController, 'requestToken');
-		});
-
-		afterEach(restore);
-
-		it('responds 200', async () => {
-			// Arrange:
-			requestTokenStub.returns(Promise.resolve({
-				oauthTokenSecret: 'token secret',
-				url: 'http://localhost'
-			}));
-
-			// Act:
-			const response = await supertest(server)
-				.get('/twitter/auth')
-				.set('Accept', 'application/json');
-
-			// Assert:
-			expect(response.status).to.be.equal(200);
-			expect(response.body).to.be.deep.equal({
-				oauthTokenSecret: 'token secret',
-				url: 'http://localhost'
-			});
-		});
-
-		it('responds 500 when request token failure', () => assertGetErrorCode500(requestTokenStub, '/twitter/auth'));
-	});
-
-	describe('GET /twitter/verify', () => {
-		let userAccessStub = {};
-
-		beforeEach(() => {
-			userAccessStub = stub(twitterController, 'userAccess');
-		});
-
-		afterEach(restore);
-
-		it('responds 200', async () => {
-			// Arrange:
-			const userInfo = {
-				accessSecret: 'secret1234',
-				accessToken: 'token1234',
-				screenName: 'twitterAccount',
-				followersCount: 3,
-				createdAt: '12345'
-			};
-
-			userAccessStub.returns(Promise.resolve(userInfo));
-
-			// Act:
-			const response = await supertest(server)
-				.get('/twitter/verify?oauthToken=token&oauthTokenSecret=secret&oauthVerifier=verifier')
-				.set('Accept', 'application/json');
-
-			// Assert:
-			expect(userAccessStub).to.have.been.calledWith({
-				oauthToken: 'token',
-				oauthTokenSecret: 'secret',
-				oauthVerifier: 'verifier'
-			});
-			expect(response.status).to.be.equal(200);
-			expect(response.body).to.be.deep.equal(userInfo);
-		});
-
-		it('responds 500 request user access failure', () => assertGetErrorCode500(
-			userAccessStub,
-			'/twitter/verify?oauthToken=token&oauthTokenSecret=secret&oauthVerifier=verifier'
-		));
 	});
 });

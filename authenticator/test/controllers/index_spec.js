@@ -1,6 +1,7 @@
-const twitter = require('../../src/controllers/twitter');
+const twitter = require('../../src/controllers');
 const chai = require('chai');
 const chaiAsPromised = require('chai-as-promised');
+const { decode } = require('jsonwebtoken');
 const {
 	stub, restore
 } = require('sinon');
@@ -78,7 +79,7 @@ describe('twitter controller', () => {
 								public_metrics: {
 									followers_count: 3
 								},
-								created_at: '12345'
+								created_at: new Date('2022-10-15T00:00:00.00Z')
 							}
 						})
 					}
@@ -95,13 +96,14 @@ describe('twitter controller', () => {
 			});
 
 			// Assert:
+			const { iat, ...payload } = decode(result);
 			expect(loginStub).to.have.been.calledWith('verifier');
-			expect(result).to.be.deep.equal({
+			expect(payload).to.be.deep.equal({
 				accessSecret: 'secret1234',
 				accessToken: 'token1234',
 				screenName: 'twitterAccount',
 				followersCount: 3,
-				createdAt: '12345'
+				createdAt: '2022-10-15T00:00:00.000Z'
 			});
 		});
 

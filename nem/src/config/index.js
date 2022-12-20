@@ -17,7 +17,9 @@ const config = {
 	CURRENCY: process.env.REACT_APP_CURRENCY ?? defaultConfig.CURRENCY,
 	DIVISIBILITY: process.env.REACT_APP_DIVISIBILITY ?? defaultConfig.DIVISIBILITY,
 	MIN_FOLLOWERS_COUNT: process.env.REACT_APP_MIN_FOLLOWERS_COUNT ?? defaultConfig.MIN_FOLLOWERS_COUNT,
-	MIN_ACCOUNT_AGE: process.env.REACT_APP_MIN_ACCOUNT_AGE ?? defaultConfig.MIN_ACCOUNT_AGE
+	MIN_ACCOUNT_AGE: process.env.REACT_APP_MIN_ACCOUNT_AGE ?? defaultConfig.MIN_ACCOUNT_AGE,
+	BACKEND_URL: process.env.REACT_APP_BACKEND_URL ?? defaultConfig.BACKEND_URL,
+	AUTH_URL: process.env.REACT_APP_AUTH_URL ?? defaultConfig.AUTH_URL
 };
 
 export default config;

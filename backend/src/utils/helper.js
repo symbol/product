@@ -44,6 +44,19 @@ const helper = {
 			error = 'You have pending transactions, please wait for it to be confirmed';
 
 		return error;
+	},
+
+	/**
+	 * Check on twitter requirements.
+	 * @param {string} createdAt twitter's account created date.
+	 * @param {number} followersCount twitter's account followers
+	 * @returns {boolean} boolean
+	 */
+	checkTwitterAccount: (createdAt, followersCount) => {
+		const diff = new Date() - new Date(createdAt);
+		const accountAge = Math.floor(diff / (1000 * 60 * 60 * 24));
+
+		return process.env.MIN_FOLLOWERS_COUNT <= followersCount && process.env.MIN_ACCOUNT_AGE < accountAge;
 	}
 };
 

@@ -1,8 +1,6 @@
-const createTwitterClient = require('../utils/createTwitterClient');
-const dotenv = require('dotenv');
-
-dotenv.config();
-const twitterCallback = process.env.TWITTER_CALLBACK_URL;
+const { config } = require('../config');
+const createTwitterClient = require('../utils');
+const jwt = require('jsonwebtoken');
 
 const twitter = {
 	/**
@@ -15,7 +13,7 @@ const twitter = {
 		try {
 			const {
 				oauth_token, oauth_token_secret, url
-			} = await twitterClient.generateAuthLink(twitterCallback);
+			} = await twitterClient.generateAuthLink(config.twitterCallbackUrl);
 			return {
 				oauthToken: oauth_token,
 				oauthTokenSecret: oauth_token_secret,
@@ -27,15 +25,13 @@ const twitter = {
 			throw Error('fail to request twitter token');
 		}
 	},
-	/* eslint-disable */
 	/**
 	 * Get user's twitter information
 	 * @param {string} oauthToken user's twitter oauth token
 	 * @param {string} oauthTokenSecret user's twitter oauth token secret
 	 * @param {string} oauthVerifier user's twitter oauth verifier
-	 * @returns {Promise<{accessToken: string, accessSecret:string, screenName: string, followersCount: number, createdAt: Date}>} user's twitter account information
+	 * @returns {Promise<string>} signed jwt token
 	 */
-	/* eslint-enable */
 	userAccess: async ({ oauthToken, oauthTokenSecret, oauthVerifier }) => {
 		const twitterClient = createTwitterClient({
 			accessToken: oauthToken,
@@ -49,13 +45,15 @@ const twitter = {
 
 			const { data } = await client.v2.me({ 'user.fields': ['created_at', 'public_metrics'] });
 
-			return {
+			const jwtToken = jwt.sign({
 				accessToken,
 				accessSecret,
 				screenName,
 				followersCount: data.public_metrics.followers_count,
 				createdAt: new Date(data.created_at)
-			};
+			}, config.jwtSecret);
+
+			return jwtToken;
 		} catch (error) {
 			// eslint-disable-next-line no-console
 			console.error(error);

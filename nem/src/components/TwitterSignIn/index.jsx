@@ -3,8 +3,9 @@ import Button from '../Button';
 import axios from 'axios';
 import PropTypes from 'prop-types';
 import React, { useState, useEffect } from 'react';
+import { decode } from 'jsonwebtoken';
 
-const endpoint = process.env.REACT_APP_BACKEND_URL;
+const endpoint = process.env.REACT_APP_AUTH_URL;
 
 const backendRequest = axios.create({
 	baseURL: endpoint
@@ -35,7 +36,7 @@ const TwitterSignIn = function ({
 	};
 
 	useEffect(() => {
-		const twitterInfo = JSON.parse(localStorage.getItem('twitterInfo'));
+		const twitterInfo = decode(localStorage.getItem('authToken'));
 
 		const query = new URLSearchParams(window.location.search);
 		const oauthToken = query.get('oauth_token');
@@ -53,7 +54,7 @@ const TwitterSignIn = function ({
 			});
 
 			if (data) {
-				localStorage.setItem('twitterInfo', JSON.stringify(data));
+				localStorage.setItem('authToken', data);
 				window.location.assign('/');
 			}
 		};

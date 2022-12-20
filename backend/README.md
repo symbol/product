@@ -23,7 +23,7 @@ Faucet backend service built with NodeJS and Restify. It allows users to request
 
 ## Requirement
 
-Node.js 16.15.0 (LTS Gallium)
+Node.js LTS
 
 ## Usage
 

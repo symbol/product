@@ -101,4 +101,34 @@ describe('helper', () => {
 			expect(errorMessage).to.equal(expectedError);
 		});
 	});
+
+	describe('checkTwitterAccount', () => {
+		const assertCheckTwitterAccountTests = ({ createdAt, followersCount }, expectResult) => {
+			// Arrange + Act:
+			const result = helper.checkTwitterAccount(createdAt, followersCount);
+
+			// Assert:
+			expect(result).to.be.equal(expectResult);
+		};
+
+		it('returns false when followers count is 10 and account age is less than 30 days', () => assertCheckTwitterAccountTests({
+			createdAt: new Date(),
+			followersCount: 10
+		}, false));
+
+		it('returns false when followers count less than 10 and account age at least 30 days', () => assertCheckTwitterAccountTests({
+			createdAt: '2022-10-15T00:00:00.000Z',
+			followersCount: 9
+		}, false));
+
+		it('returns true when followers count is 10 and account age more than 30 days', () => assertCheckTwitterAccountTests({
+			createdAt: '2022-10-15T00:00:00.000Z',
+			followersCount: 10
+		}, true));
+
+		it('returns true when followers count is 11 and account age more than 30 days', () => assertCheckTwitterAccountTests({
+			createdAt: '2022-10-15T00:00:00.000Z',
+			followersCount: 11
+		}, true));
+	});
 });

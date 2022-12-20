@@ -1,0 +1,4 @@
+---
+extends:
+- airbnb
+- ../_symbol/linters/javascript/default.eslintrc

@@ -9,6 +9,7 @@ import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import './Home.scss';
+import { decode } from 'jsonwebtoken';
 
 // Setup toast
 toast.configure();
@@ -56,7 +57,7 @@ const Home = function () {
 		const numericAmount = Number(amount);
 		const isAddressValid = validateNEMAddress(recipientAddress);
 		const isAmountValid = !Number.isNaN(numericAmount) && 0 <= numericAmount && numericAmount <= maxAmount;
-		const twitterInfo = JSON.parse(localStorage.getItem('twitterInfo'));
+		const twitterInfo = decode(localStorage.getItem('authToken'));
 
 		let isTwitterVerify = false;
 

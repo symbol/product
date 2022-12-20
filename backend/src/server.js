@@ -1,6 +1,8 @@
 const nemController = require('./controllers/nem');
-const twitterController = require('./controllers/twitter');
-const { nemFaucetValidation, toAbsoluteAmount, toRelativeAmount } = require('./utils/helper');
+const {
+	nemFaucetValidation, toAbsoluteAmount, toRelativeAmount, checkTwitterAccount
+} = require('./utils/helper');
+const { verify } = require('jsonwebtoken');
 const restify = require('restify');
 const restifyErrors = require('restify-errors');
 
@@ -23,6 +25,24 @@ const handleRoute = async (res, next, handler) => {
 		return next(error);
 	}
 };
+
+const authentication = (req, res, next) => {
+	const authToken = req.header('authToken');
+
+	try {
+		const { createdAt, followersCount } = verify(authToken, process.env.JWT_SECRET);
+
+		if (checkTwitterAccount(createdAt, followersCount))
+			next();
+		else
+			next(new restifyErrors.ForbiddenError('Twitter requirement fail'));
+	} catch (error) {
+		next(new restifyErrors.ForbiddenError('Authentication fail'));
+	}
+};
+
+// Middleware
+server.use(authentication);
 
 // Setup cross domain access
 server.use((req, res, next) => {
@@ -76,25 +96,6 @@ server.post('/claim/xem', async (req, res, next) => {
 
 // Todo
 // server.post('/claim/xym', (req, res, next) => {});
-
-server.get('/twitter/auth', async (req, res, next) => {
-	const handler = async () => {
-		const { oauthTokenSecret, url } = await twitterController.requestToken();
-
-		return {
-			oauthTokenSecret,
-			url
-		};
-	};
-
-	handleRoute(res, next, handler);
-});
-
-server.get('/twitter/verify', async (req, res, next) => {
-	const handler = async () => twitterController.userAccess(req.params);
-
-	handleRoute(res, next, handler);
-});
 
 server.listen(process.env.PORT, () => {
 	// eslint-disable-next-line no-console

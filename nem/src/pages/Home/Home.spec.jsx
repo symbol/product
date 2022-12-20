@@ -29,14 +29,22 @@ describe('page/Home', () => {
 	// Arrange:
 	const recipientAddress = 'TBHGLHFK4FQUDQS3XBYKTQ3CMZLA227W5WPVAKPI';
 
-	const createLocalStorageTwitterInfo = (info = {}) => {
-		localStorage.setItem('twitterInfo', JSON.stringify({
-			isSignIn: true,
-			screenName: 'twitterAccount',
-			followersCount: 10,
-			createdAt: '2011-06-07T14:17:46.000Z',
-			...info
-		}));
+	// decoded jwt payload
+	// {
+	// 	"accessToken": "accessToken1234",
+	// 	"accessSecret": "accessSecret1234",
+	// 	"screenName": "twitterAccount",
+	// 	"followersCount": 100,
+	// 	"createdAt": "2011-06-07T14:17:46.000Z",
+	// 	"iat": 1670704886
+	// }
+	const jwtToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.'
+	+ 'eyJhY2Nlc3NUb2tlbiI6ImFjY2Vzc1Rva2VuMTIzNCIsImFjY2Vzc1NlY3JldCI6ImFjY2Vzc1NlY3JldDEyMzQiLCJzY3JlZW5OYW1lIjo'
+	+ 'idHdpdHRlckFjY291bnQiLCJmb2xsb3dlcnNDb3VudCI6MTAwLCJjcmVhdGVkQXQiOiIyMDExLTA2LTA3VDE0OjE3OjQ2LjAwMFoiLCJpYX'
+	+ 'QiOjE2NzA3MDQ4ODZ9.PDZOY7EXRr_qknErLfqXqymJ8Ivg4nNiSFvJBSG56f0';
+
+	const createLocalStorageTwitterInfo = (jwtAuthToken = jwtToken) => {
+		localStorage.setItem('authToken', jwtAuthToken);
 	};
 
 	beforeEach(() => createLocalStorageTwitterInfo());
@@ -83,7 +91,7 @@ describe('page/Home', () => {
 			});
 		}
 
-		const assertTwitterAccountQualification = (info = {}) => {
+		const assertTwitterAccountToastError = (info = {}) => {
 			// Arrange:
 			createLocalStorageTwitterInfo(info);
 
@@ -138,13 +146,9 @@ describe('page/Home', () => {
 			},
 			'notification_error_invalid_amount')
 
-		it('renders error toast when twitter account followersCount less than 10', () => assertTwitterAccountQualification({
-			followersCount: 5
-		}));
+		it('renders error toast when twitter account followersCount less than 10', () => assertTwitterAccountToastError('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY2Nlc3NUb2tlbiI6ImFjY2Vzc1Rva2VuMTIzNCIsImFjY2Vzc1NlY3JldCI6ImFjY2Vzc1NlY3JldDEyMzQiLCJzY3JlZW5OYW1lIjoidHdpdHRlckFjY291bnQiLCJmb2xsb3dlcnNDb3VudCI6NSwiY3JlYXRlZEF0IjoiMjAxMS0wNi0wN1QxNDoxNzo0Ni4wMDBaIiwiaWF0IjoxNjcwNzA0ODg2fQ.Y-MenesuV6tQ8arh8_3lvNG2w3lVvstc7iDYqDRwikM'));
 
-		it('renders error toast when twitter account registered less than 31 days', () => assertTwitterAccountQualification({
-			createdAt: '2022-11-07T14:17:46.000Z'
-		}));
+		it('renders error toast when twitter account registered less than 31 days', () => assertTwitterAccountToastError('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY2Nlc3NUb2tlbiI6ImFjY2Vzc1Rva2VuMTIzNCIsImFjY2Vzc1NlY3JldCI6ImFjY2Vzc1NlY3JldDEyMzQiLCJzY3JlZW5OYW1lIjoidHdpdHRlckFjY291bnQiLCJmb2xsb3dlcnNDb3VudCI6NSwiY3JlYXRlZEF0IjoiMjAyMi0xMS0wN1QxNDoxNzo0Ni4wMDBaIiwiaWF0IjoxNjcwNzA0ODg2fQ.IJ-VgWo8KWj7FjikXH0XDnhazTRcqAkjy-jM1OEud5w'));
 	})
 
 	describe('screen breakpoint', () => {

@@ -107,13 +107,20 @@ describe('components/TwitterSignIn', () => {
 
 	describe('useEffect', () => {
 		// Arrange:
-		const twitterVerifyResponse = {
-			accessToken: 'accessToken1234',
-			accessSecret: 'accessSecret1234',
-			screenName: 'twitterAccount',
-			followersCount: 100,
-			createdAt: '2011-06-07T14:17:46.000Z'
-		};
+
+		// decoded jwt payload
+		// {
+		// 	"accessToken": "accessToken1234",
+		// 	"accessSecret": "accessSecret1234",
+		// 	"screenName": "twitterAccount",
+		// 	"followersCount": 100,
+		// 	"createdAt": "2011-06-07T14:17:46.000Z",
+		// 	"iat": 1670704886
+		// }
+		const jwtAuthToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.'
+		+ 'eyJhY2Nlc3NUb2tlbiI6ImFjY2Vzc1Rva2VuMTIzNCIsImFjY2Vzc1NlY3JldCI6ImFjY2Vzc1NlY3JldDEyMzQiLCJzY3JlZW5OYW1lIjo'
+		+ 'idHdpdHRlckFjY291bnQiLCJmb2xsb3dlcnNDb3VudCI6MTAwLCJjcmVhdGVkQXQiOiIyMDExLTA2LTA3VDE0OjE3OjQ2LjAwMFoiLCJpYX'
+		+ 'QiOjE2NzA3MDQ4ODZ9.PDZOY7EXRr_qknErLfqXqymJ8Ivg4nNiSFvJBSG56f0';
 
 		it('verify twitter when called back url contains oauth_token and oauth_verifier params', async () => {
 			// Arrange:
@@ -137,7 +144,7 @@ describe('components/TwitterSignIn', () => {
 
 			// twitter verify called back
 			mockAxios.get.mockReturnValueOnce({
-				data: twitterVerifyResponse
+				data: jwtAuthToken
 			});
 
 			// Act:
@@ -154,7 +161,7 @@ describe('components/TwitterSignIn', () => {
 					oauthVerifier: twitterOauthVerifier
 				}
 			});
-			await waitFor(() => expect(localStorage.setItem).toHaveBeenCalledWith('twitterInfo', JSON.stringify(twitterVerifyResponse)));
+			await waitFor(() => expect(localStorage.setItem).toHaveBeenCalledWith('authToken', jwtAuthToken));
 			expect(window.location.assign).toHaveBeenCalledWith('/');
 		});
 
@@ -177,7 +184,7 @@ describe('components/TwitterSignIn', () => {
 
 		it('set twitter account status after twitter verify successfully', () => {
 			// Arrange:
-			jest.spyOn(Storage.prototype, 'getItem').mockImplementation(() => JSON.stringify(twitterVerifyResponse));
+			jest.spyOn(Storage.prototype, 'getItem').mockImplementation(() => jwtAuthToken);
 
 			// Act:
 			render(<TwitterSignIn

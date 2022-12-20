@@ -13,5 +13,7 @@
     "CURRENCY": "XEM",
     "DIVISIBILITY": 6,
     "MIN_FOLLOWERS_COUNT": 10,
-    "MIN_ACCOUNT_AGE": 30
+    "MIN_ACCOUNT_AGE": 30,
+    "BACKEND_URL": "http://localhost:5001",
+    "AUTH_URL": "http://localhost:5002"
 }
