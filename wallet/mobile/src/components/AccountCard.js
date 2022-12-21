@@ -1,9 +1,10 @@
 import React from 'react';
-import { Image, View, StyleSheet, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { Image, View, StyleSheet, Text, ActivityIndicator } from 'react-native';
 import { borders, colors, fonts, layout, spacings } from 'src/styles';
 import imageArtPassport from 'src/assets/images/art-passport.png';
 import { getCharPercentage } from 'src/utils';
 import { TouchableHighlight, TouchableNativeFeedback } from 'react-native-gesture-handler';
+import { ButtonCopy } from './ButtonCopy';
 
 const imagesPattern = [
     require('src/assets/images/Geometric-02.png'),
@@ -59,8 +60,12 @@ export const AccountCard = props => {
                     <Text style={styles.textBalance}>{balance}</Text>
                     <Text style={styles.textTicker}>{' ' + ticker}</Text>
                 </View>
+                
                 <Text style={styles.textTitle}>{/* notranslate  */}Address</Text>
-                <Text style={styles.textAddress}>{address}</Text>
+                <View style={styles.row}>
+                    <Text style={styles.textAddress}>{address}</Text>
+                    {!isSimplified && <ButtonCopy content={address} />}
+                </View>
             </View>
             {!isSimplified && (
                 <View style={styles.controls}>
@@ -175,6 +180,7 @@ const styles = StyleSheet.create({
     textAddress: {
         ...fonts.body,
         color: colors.textForm,
+        marginRight: spacings.margin / 2
     },
     controls: {
         flexDirection: 'row',
@@ -211,5 +217,8 @@ const styles = StyleSheet.create({
     },
     clearMarginTop: {
         marginTop: 0
+    },
+    row: {
+        flexDirection: 'row'
     }
 });
