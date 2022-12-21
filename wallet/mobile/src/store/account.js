@@ -1,4 +1,5 @@
-import { AccountService } from "src/services";
+import { AccountService, MosaicService } from "src/services";
+import { getMosaicsWithRelativeAmounts } from "src/utils";
 
 export default {
     namespace: 'account',
@@ -52,9 +53,10 @@ export default {
             }
 
             const mosaicIds = mosaics.map(mosaic => mosaic.id);
-            await dispatchAction({type: 'wallet/fetchMosaicInfos', payload: mosaicIds});
+            const mosaicInfos = await MosaicService.fetchMosaicInfos(networkProperties, mosaicIds);
+            const formattedMosaics = getMosaicsWithRelativeAmounts(mosaics, mosaicInfos);
             
-            commit({type: 'account/setMosaics', payload: mosaics});
+            commit({type: 'account/setMosaics', payload: formattedMosaics});
         },
     },
 };
