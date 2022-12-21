@@ -1,4 +1,7 @@
-import { TransactionType } from 'symbol-sdk';
+import { Address, Deadline, Mosaic, MosaicId, PlainMessage, TransactionType, TransferTransaction, UInt64 } from 'symbol-sdk';
+import { toFixedNumber } from './helper';
+import { getMosaicRelativeAmount } from './mosaic';
+import { networkIdentifierToNetworkType } from './network';
 
 export const isAggregateTransaction = transaction => {
     return transaction.type === TransactionType.AGGREGATE_BONDED
@@ -14,6 +17,39 @@ export const getGroupFromtransactionDTO = transaction => {
 };
 
 export const formatDeadline = (date) => `${date.dayOfMonth()}/${date.monthValue()}/${date.year()}`;
+
+export const getTransactionFees = (transaction, networkProperties) => {
+    const { transactionFees, networkCurrency: { divisibility } } = networkProperties;
+    const stubTransaction = {
+        ...transaction,
+        recipientAddress: 'TB3KUBHATFCPV7UZQLWAQ2EUR6SIHBSBEOEDDDF' 
+    };
+    const size = transferTransactionToDTO(stubTransaction, networkProperties).size;
+
+    const fast = (transactionFees.minFeeMultiplier + transactionFees.averageFeeMultiplier)* size;
+    const medium = (transactionFees.minFeeMultiplier + transactionFees.averageFeeMultiplier * 0.65) * size;
+    const slow = (transactionFees.minFeeMultiplier + transactionFees.averageFeeMultiplier * 0.35) * size;
+
+    return {
+        fast: toFixedNumber(getMosaicRelativeAmount(fast, divisibility), divisibility),
+        medium: toFixedNumber(getMosaicRelativeAmount(medium, divisibility), divisibility),
+        slow: toFixedNumber(getMosaicRelativeAmount(slow, divisibility), divisibility),
+    }
+}
+
+export const transferTransactionToDTO = (transaction, networkProperties) => {
+    console.log(transaction.mosaics)
+    return TransferTransaction.create(
+        Deadline.create(networkProperties.epochAdjustment),
+        Address.createFromRawAddress(transaction.recipientAddress),
+        transaction.mosaics.map(mosaic => new Mosaic(
+            new MosaicId(mosaic.id),
+            UInt64.fromUint(mosaic.amount * Math.pow(10, mosaic.divisibility))
+        )),
+        PlainMessage.create(transaction.messageText),
+        networkIdentifierToNetworkType(transaction.networkIdentifier)
+    );
+};
 
 export const getUnresolvedIdsFromTransactionDTOs = transactions => {
     const mosaicIds = [];

@@ -101,3 +101,9 @@ export const vibrate = () => {
         }
     }
 }
+
+export const toFixedNumber = (num, digits) => {
+    const power = Math.pow(10, digits);
+
+    return Math.round(num * power) / power;
+}
