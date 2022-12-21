@@ -1,11 +1,10 @@
 import React from 'react';
-import { Image, StyleSheet, Text, View } from 'react-native';
-import Animated, { FadeInUp } from 'react-native-reanimated';
+import { StyleSheet, View } from 'react-native';
+
 import { connect } from 'src/store';
-import { borders, colors, fonts, spacings } from 'src/styles';
-import { trunc } from 'src/utils';
-import { TransactionType } from 'symbol-sdk';
+import { spacings } from 'src/styles';
 import { ButtonCopy, FormItem, StyledText } from 'src/components';
+import { $t } from 'src/localization';
 
 const TRANSLATION_ROOT_KEY = 'table';
 const renderTypeMap = {
@@ -65,6 +64,16 @@ export const TableView = connect(state => ({
             .map(([key, value]) => ({key, value}));
     }
 
+    const renderKey = (item) => {
+        const translatedKey = $t(`data_${item.key}`);
+
+        return (
+            <StyledText type="label" style={styles.key}>
+                {translatedKey}
+            </StyledText>
+        )
+    };
+
     const renderValue = (item) => {
         let ItemTemplate = (
             <StyledText type="body">
@@ -88,6 +97,34 @@ export const TableView = connect(state => ({
                         </View>
                     );
                     break;
+                case 'encryption':
+                    ItemTemplate = (
+                        <View style={styles.row}>
+                            <StyledText type="body">
+                                {item.value === true 
+                                    ? $t('data_encrypted')
+                                    : $t('data_unencrypted')
+                                }
+                            </StyledText>
+                        </View>
+                    );
+                    break;
+                case 'mosaics':
+                    ItemTemplate = (
+                        <View style={styles.row}>
+                            {item.value.map(mosaic => (
+                                <View style={styles.mosaic}>
+                                    <StyledText type="body">
+                                        {mosaic.name || mosaic.id}
+                                    </StyledText>
+                                    <StyledText type="body">
+                                        {mosaic.amount}
+                                    </StyledText>
+                                </View>
+                            ))}
+                        </View>
+                    );
+                    break;
             }
 
             return true;
@@ -96,13 +133,14 @@ export const TableView = connect(state => ({
         return ItemTemplate;
     }
 
+    const isEmptyField = item => item.value === '' || item.value === null;
+
     return (
         <View>
-            {tableData.map((item, index) => (
-                <FormItem type="list" key={'table' + item.key + index}>
-                    <StyledText type="subtitle">
-                        {item.key}
-                    </StyledText>
+            {tableData.map((item, index) => (isEmptyField(item) 
+                ? null
+                : <FormItem key={'table' + item.key + index}>
+                    {renderKey(item)}
                     {renderValue(item)}
                 </FormItem>
             ))}
@@ -115,9 +153,18 @@ const styles = StyleSheet.create({
         width: '100%',
     },
     row: {
+        width: '100%',
         flexDirection: 'row',
+    },
+    key: {
+        opacity: 0.8,
     },
     button: {
         paddingLeft: spacings.paddingSm
+    },
+    mosaic: {
+        width: '100%',
+        flexDirection: 'row',
+        justifyContent: 'space-between',
     }
 });
