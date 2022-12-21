@@ -14,7 +14,19 @@ export default {
             testnet: []
         },
         networkProperties: {
-            nodeUrl: ''
+            nodeUrl: null,
+            networkIdentifier: null,
+            generationHash: null,
+            chainHeight: null,
+            epochAdjustment: null,
+            transactionFees: {
+                minFeeMultiplier: null,
+                averageFeeMultiplier: null,
+            },
+            networkCurrency: {
+                mosaicId: null,
+                divisibility: null,
+            },
         }
     },
     mutations: {
@@ -68,7 +80,7 @@ export default {
             commit({type: 'wallet/setReady', payload: true});
         },
         runConnectionJob: async ({ state, commit, dispatchAction }) => {
-            const { connectionTimer, selectedNodeUrl, nodeUrls, networkIdentifier, networkProperties } = state.network;
+            const { connectionTimer, selectedNodeUrl, nodeUrls, networkIdentifier, networkProperties, status } = state.network;
             let updatedNetworkProperties;
             const runAgain = () => {
                 const newConnectionTimer = setTimeout(() => dispatchAction({type: 'network/runConnectionJob'}), 15000);
@@ -82,11 +94,15 @@ export default {
             try {
                 const nodeUrl = selectedNodeUrl || networkProperties.nodeUrl;
                 await NetworkService.ping(nodeUrl);
-                await dispatchAction({type: 'network/fetchNetworkProperties', payload: nodeUrl});
+                if (!networkProperties.nodeUrl) {
+                    await dispatchAction({type: 'network/fetchNetworkProperties', payload: nodeUrl});
+                }
                 // Node is good.
                 console.log('connected')
                 const newStatus = 'connected'; 
-                commit({type: 'network/setStatus', payload: newStatus});
+                if (newStatus !== status) {
+                    commit({type: 'network/setStatus', payload: newStatus});
+                }
                 runAgain();
                 return;
             }
