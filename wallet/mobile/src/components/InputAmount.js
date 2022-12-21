@@ -2,12 +2,13 @@ import React, { useEffect } from 'react';
 import { StyleSheet, Text } from 'react-native';
 import { TouchableOpacity } from 'react-native-gesture-handler';
 import { TextBox } from 'src/components';
+import { $t } from 'src/localization';
 import { colors, fonts } from 'src/styles';
 import { useValidation, validateAmount } from 'src/utils';
 
 export const InputAmount = props => {
     const { title, value, availableBalance, onChange, onValidityChange } = props;
-    const errorMessage = useValidation(value, [validateAmount(availableBalance)]);
+    const errorMessage = useValidation(value, [validateAmount(availableBalance)], $t);
 
     const handleChange = str => {
         const formattedStr = str

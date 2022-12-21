@@ -1,4 +1,5 @@
 {
+    "button_ok": "OK",
     "button_next": "Next",
     "button_back": "Back",
     "button_cancel": "Cancel",
@@ -31,6 +32,15 @@
     "date_short_friday": "Fri",
     "date_short_saturday": "Sat",
     "date_short_sunday": "Sun",
+
+    "form_transfer_title": "Transfer",
+    "form_transfer_input_recipient": "Recipient",
+    "form_transfer_input_mosaic": "Mosaic",
+    "form_transfer_input_amount": "Amount",
+    "form_transfer_input_message": "Message/Memo",
+    "form_transfer_input_encrypted": "Encrypted",
+    "form_transfer_input_fee": "Fee",
+    "form_transfer_confirm_title": "Confirm Transfer",
 
     "navigation_home": "Home",
     "navigation_history": "History",
@@ -154,6 +164,8 @@
     "data_endEpoch": "End Epoch",
     "data_receivedCosignatures": "Co-signatures Received",
     "data_transactionsAllowed": "Incoming transactions from this contact",
+    "data_networkIdentifier": "Network",
+    "data_accountType": "Account Type",
 
     "data_v_unlimited": "UNLIMITED",
     "data_v_na": "N/A",
@@ -247,5 +259,13 @@
     "s_send_input_feeAverage": "Average",
     "s_send_input_feeFast": "Fast",
     "s_send_input_feeMedium": "Medium",
-    "s_send_input_feeSlow": "Slow"
+    "s_send_input_feeSlow": "Slow",
+    
+    "validation_error_field_required": "Field required",
+    "validation_error_contact_name_long": "Too long",
+    "validation_error_account_name_long": "Too long",
+    "validation_error_key_length": "Key should be 64 char long",
+    "validation_error_mnemonic_invalid": "Invalid mnemonic pharase",
+    "validation_error_address_short": "Too short",
+    "validation_error_balance_not_enough": "Not enough balance"
 }
