@@ -257,9 +257,9 @@
     "s_send_checkbox_encrypted": "Encrypted",
     "s_send_input_fee": "Fee",
     "s_send_input_feeAverage": "Average",
-    "s_send_input_feeFast": "Fast",
-    "s_send_input_feeMedium": "Medium",
-    "s_send_input_feeSlow": "Slow",
+    "selector_fee_fast": "Fast",
+    "selector_fee_medium": "Medium",
+    "selector_fee_slow": "Slow",
     
     "validation_error_field_required": "Field required",
     "validation_error_contact_name_long": "Too long",
