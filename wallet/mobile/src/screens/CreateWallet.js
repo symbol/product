@@ -7,9 +7,9 @@ import { createPrivateKeysFromMnemonic, downloadPaperWallet, generateMnemonic, p
 import { config } from 'src/config';
 import { showMessage } from 'react-native-flash-message';
 import { Router } from 'src/Router';
+import { $t } from 'src/localization';
 
 export const CreateWallet = (props) => {
-    const { navigation } = props;
     const stepsCount = 2;
     const [step, setStep] = useState(1);
     // notranslate
@@ -19,7 +19,7 @@ export const CreateWallet = (props) => {
     const [isMnemonicDownloading, setIsMnemonicDownloading] = useState(false);
     const [isRiskAccepted, setIsRiskAccepted] = useState(false);
     // notranslate
-    const nameErrorMessage = useValidation(name, [validateRequired(), validateAccountName()]);
+    const nameErrorMessage = useValidation(name, [validateRequired(), validateAccountName()], $t);
     const isLoading = step > stepsCount || isMnemonicDownloading;
     const isButtonDisabled = [nameErrorMessage].some(el => !!el);
     

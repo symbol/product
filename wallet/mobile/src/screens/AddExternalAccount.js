@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Screen, FormItem, LoadingIndicator, StyledText, TextBox, Button } from 'src/components';
+import { $t } from 'src/localization';
 import { Router } from 'src/Router';
 import store, { connect } from 'src/store';
 import { handleError, useDataManager, useValidation, validateAccountName, validateKey, validateRequired } from 'src/utils';
@@ -10,8 +11,8 @@ export const AddExternalAccount = connect(state => ({
     const { networkIdentifier } = props;
     const [accountName, setAccountName] = useState('');
     const [privateKey, setPrivateKey] = useState('');
-    const nameErrorMessage = useValidation(accountName, [validateAccountName()]);
-    const privateKeyErrorMessage = useValidation(privateKey, [validateRequired(), validateKey()]);
+    const nameErrorMessage = useValidation(accountName, [validateAccountName()], $t);
+    const privateKeyErrorMessage = useValidation(privateKey, [validateRequired(), validateKey()], $t);
    
     // notranslate
     const defaultAccountName = 'External Account';
