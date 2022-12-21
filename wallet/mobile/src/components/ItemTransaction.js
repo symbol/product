@@ -124,7 +124,7 @@ export const ItemTransaction = connect(state => ({
         <FormItem type="list">
             {/* TODO: uncomment when issue is fixed https://github.com/react-navigation/react-navigation/issues/10531 */}
             {/* <Animated.View entering={FadeInUp.duration(500)}> */}
-            <Animated.View entering={FadeIn.duration(1000)}>
+            {/* <Animated.View entering={FadeIn.duration(1000)}> */}
                 <View style={styleRoot}>
                     <View style={styles.sectionIcon}>
                         <Image source={iconSrc} style={styles.icon} />
@@ -138,7 +138,7 @@ export const ItemTransaction = connect(state => ({
                         </View>
                     </View>
                 </View>
-            </Animated.View>
+            {/* </Animated.View> */}
             {/* </Animated.View> */}
         </FormItem>
     );

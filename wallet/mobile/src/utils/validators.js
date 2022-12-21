@@ -27,12 +27,6 @@ export const validateMnemonic = () => str => {
     }
 }
 
-export const validateMnemonicWord = () => str => {
-    if (str.length > 15) {
-        return 'validation_error_contact_name_long';
-    }
-}
-
 export const validateUnresolvedAddress = () => str => {
     if (str.length < 3) {
         return 'validation_error_address_short';

@@ -6,11 +6,14 @@ export const AccountDetails = connect(state => ({
     currentAccount: state.account.current,
 }))(function AccountDetails(props) {
     const { currentAccount } = props;
+    const tableData = {};
+    
+    delete Object.assign(tableData, currentAccount, {['seedIndex']: currentAccount['index'] })['index'];
 
     return (
         <Screen>
             <FormItem>
-                <TableView data={currentAccount} />
+                <TableView data={tableData} />
             </FormItem>
         </Screen>
     );
