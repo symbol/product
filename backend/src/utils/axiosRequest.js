@@ -1,7 +1,8 @@
+const { config } = require('../config');
 const axios = require('axios');
 
 const client = axios.create({
-	baseURL: process.env.NEM_ENDPOINT
+	baseURL: config.nemEndpoint
 });
 
 module.exports = client;

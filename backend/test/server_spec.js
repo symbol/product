@@ -31,7 +31,7 @@ describe('Server', () => {
 			transferXemStub = stub(nemController, 'transferXem');
 
 			mockFaucetAccountBalance = {
-				address: process.env.NEM_FAUCET_ADDRESS,
+				address: 'TBHGLHFK4FQUDQS3XBYKTQ3CMZLA227W5WPVAKPI',
 				balance: 10000000000
 			};
 

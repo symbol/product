@@ -1,8 +1,9 @@
+const { config } = require('../config');
 const nemRequest = require('../services/nemRequest');
 const { CryptoTypes } = require('symbol-sdk');
 const { NemFacade } = require('symbol-sdk').facade;
 
-const facade = new NemFacade('testnet');
+const facade = new NemFacade(config.network);
 
 /**
  * Create signed transfer transaction.
@@ -12,7 +13,7 @@ const facade = new NemFacade('testnet');
  * @returns {object} Signed transaction payload.
  */
 const createTransferTransactionV1 = (address, timestamp, amount) => {
-	const privateKey = new CryptoTypes.PrivateKey(process.env.NEM_FAUCET_PRIVATE_KEY);
+	const privateKey = new CryptoTypes.PrivateKey(config.nemFaucetPrivateKey);
 	const keyPair = new NemFacade.KeyPair(privateKey);
 
 	const message = 'Good Luck!';

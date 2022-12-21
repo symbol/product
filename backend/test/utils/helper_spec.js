@@ -1,13 +1,6 @@
 const helper = require('../../src/utils/helper');
 const { expect } = require('chai');
 
-// setup process env
-before(() => {
-	process.env.MOSAIC_DIVISIBILITY = 6;
-	process.env.RECEIPT_MAX_BALANCE = 200000000;
-	process.env.SEND_OUT_MAX_AMOUNT = 500000000;
-});
-
 describe('helper', () => {
 	it('can convert absolute amount to relative amount.', () => {
 		// Arrange:

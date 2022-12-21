@@ -1,17 +1,19 @@
+const { config } = require('../config');
+
 const helper = {
 	/**
 	 * Convert Absolute to Relative amount.
 	 * @param {number} amount Absolute amount.
 	 * @returns {number} Relative amount.
 	 */
-	toRelativeAmount: amount => amount / (10 ** process.env.MOSAIC_DIVISIBILITY),
+	toRelativeAmount: amount => amount / (10 ** config.mosaicDivisibility),
 
 	/**
 	 * Convert Relative to Absolute amount.
 	 * @param {number} amount Relative amount.
 	 * @returns {number} Absolute amount.
 	 */
-	toAbsoluteAmount: amount => amount * (10 ** process.env.MOSAIC_DIVISIBILITY),
+	toAbsoluteAmount: amount => amount * (10 ** config.mosaicDivisibility),
 
 	/**
 	 * Validation of claim nem faucet.
@@ -25,8 +27,8 @@ const helper = {
 	nemFaucetValidation: ({
 		receiptAddress, transferAmount, receiptBalance, faucetBalance, unconfirmedTransactions
 	}) => {
-		const maxAmount = parseInt(process.env.RECEIPT_MAX_BALANCE, 10);
-		const maxTransferAmount = parseInt(process.env.SEND_OUT_MAX_AMOUNT, 10);
+		const maxAmount = config.receiptMaxBalance;
+		const maxTransferAmount = config.sendOutMaxAmount;
 		const pendingTx = unconfirmedTransactions.filter(item => item.transaction.recipient === receiptAddress);
 
 		let error = '';
@@ -56,7 +58,7 @@ const helper = {
 		const diff = new Date() - new Date(createdAt);
 		const accountAge = Math.floor(diff / (1000 * 60 * 60 * 24));
 
-		return process.env.MIN_FOLLOWERS_COUNT <= followersCount && process.env.MIN_ACCOUNT_AGE < accountAge;
+		return config.minFollowers <= followersCount && config.minAccountAge < accountAge;
 	}
 };
 
