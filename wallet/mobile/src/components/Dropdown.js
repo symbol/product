@@ -91,6 +91,7 @@ const styles = StyleSheet.create({
     },
     title: {
         ...fonts.placeholder,
+        marginTop: -fonts.placeholder.fontSize / 2,
         color: colors.controlBasePlaceholder,
     },
     value: {

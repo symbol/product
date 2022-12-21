@@ -20,7 +20,7 @@ export const ButtonCopy = props => {
     }
 
     return (
-        <TouchableOpacity style={style} onPress={handlePress}>
+        <TouchableOpacity style={style} onPress={handlePress} hitSlop={10}>
             <Image source={require('src/assets/images/icon-copy.png')} style={styleIcon} />
         </TouchableOpacity>
     );

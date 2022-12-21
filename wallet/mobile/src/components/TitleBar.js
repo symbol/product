@@ -25,7 +25,7 @@ export const TitleBar = props => {
                 )}
                 <Image source={require('src/assets/images/icon-down.png')} style={styles.icon} />
             </TouchableOpacity>
-            <TouchableOpacity onPress={handleSettingsPress}>
+            <TouchableOpacity hitSlop={10} onPress={handleSettingsPress}>
                 <Image source={require('src/assets/images/icon-settings.png')} style={styles.icon} />
             </TouchableOpacity>
         </View>
