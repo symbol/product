@@ -1,5 +1,5 @@
 import React from 'react';
-import { Modal, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { StyledText } from 'src/components';
 import { $t } from 'src/localization';
 import { borders, colors, fonts, spacings } from 'src/styles';
@@ -19,7 +19,8 @@ export const DialogBox = props => {
     };
     const buttonCancel = {
         text: $t('button_cancel'),
-        handler: onCancel
+        handler: onCancel,
+        style: styles.buttonSecondary
     };
     const buttons = [];
 
@@ -80,7 +81,6 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         backgroundColor: colors.bgMain,
         borderColor: colors.accentLightForm,
-        borderWidth: borders.borderWidth,
         borderRadius: borders.borderRadiusForm,
         overflow: 'hidden'
     },
@@ -91,15 +91,11 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         overflow: 'hidden',
         borderColor: colors.accentLightForm,
-        borderTopWidth: borders.borderWidth,
     },
     button: {
         height: 48,
         flex: 1,
         borderColor: colors.accentLightForm,
-        // borderRightWidth: 1,
-        // borderLeftWidth: 1,
-        // borderBottomWidth: 1,
     },
     buttonPressable: {
         width: '100%',
@@ -110,6 +106,9 @@ const styles = StyleSheet.create({
     },
     buttonPrimary: {
         backgroundColor: colors.accentForm,
+    },
+    buttonSecondary: {
+        backgroundColor: colors.formNeutral,
     },
     textButton: {
         ...fonts.button,
