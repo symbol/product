@@ -4,6 +4,7 @@ import DesignSystem from './designSystem.json';
 export { default as DesignSystem } from './designSystem.json';
 
 export const colors = {
+    transparent: 'transparent',
     primary: DesignSystem.ColorDarkmodeTextLearnMore,
     secondary: '#605C6B',
 

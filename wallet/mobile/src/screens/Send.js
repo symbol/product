@@ -1,31 +1,37 @@
 import React from 'react';
+import { useEffect } from 'react';
 import { useState } from 'react';
 import { ScrollView } from 'react-native-gesture-handler';
-import { TableView, Screen, FormItem, TextBox, Checkbox, Dropdown, Button, StyledText, InputAmount, DialogBox } from 'src/components';
+import { TableView, Screen, FeeSelector, FormItem, TextBox, Checkbox, Dropdown, Button, StyledText, InputAmount, DialogBox } from 'src/components';
 import { $t } from 'src/localization';
 import { Router } from 'src/Router';
 import { connect } from 'src/store';
-import { getMosaicsWithRelativeAmounts, getTransactionFees, usePasscode, useToggle, useValidation, validateAmount, validateRequired, validateUnresolvedAddress } from 'src/utils';
+import { getTransactionFees, toFixedNumber, usePasscode, useToggle, useValidation, validateRequired, validateUnresolvedAddress } from 'src/utils';
 
 export const Send = connect(state => ({
     currentAccount: state.account.current,
     mosaics: state.account.mosaics,
     mosaicInfos: state.wallet.mosaicInfos,
     networkProperties: state.network.networkProperties,
+    ticker: state.network.ticker
 }))(function Send(props) {
-    const { currentAccount, mosaics, networkProperties } = props;
+    const { currentAccount, mosaics, networkProperties, ticker } = props;
     const [recipient, setRecipient] = useState('');
     const [mosaicId, setMosaicId] = useState(mosaics[0]?.id);
     const [amount, setAmount] = useState('0');
     const [message, setMessage] = useState('');
     const [isEncrypted, toggleEncrypted] = useToggle(false);
-    const [maxFee, setMaxFee] = useState('0');
+    const [maxFee, setMaxFee] = useState(0);
     const [isConfirmVisible, toggleConfirm] = useToggle(false);
 
-    const mosaicList = mosaics.map(mosaic => ({label: mosaic.name, value: mosaic.id}));
+    const mosaicOptions = mosaics.map(mosaic => ({label: mosaic.name, value: mosaic.id}));
     const selectedMosaic = mosaics.find(mosaic => mosaic.id === mosaicId);
     const selectedMosaicBalance = selectedMosaic?.amount || 0;
-    const availableBalance = Math.max(0, selectedMosaicBalance - parseFloat(maxFee));
+    const selectedMosaicDivisibility = selectedMosaic?.divisibility || 0;
+    const availableBalance = Math.max(
+        0, 
+        toFixedNumber(selectedMosaicBalance - parseFloat(maxFee), selectedMosaicDivisibility)
+    );
 
     const transaction = {
         signerAddress: currentAccount.address,
@@ -38,7 +44,6 @@ export const Send = connect(state => ({
         messageEncrypted: isEncrypted,
         fee: maxFee
     };
-    console.log('transaction', transaction)
 
     const transactionFees = getTransactionFees(transaction, networkProperties);
     
@@ -48,10 +53,16 @@ export const Send = connect(state => ({
 
     const send = () => {};
     const confirmSend = usePasscode('enter', send, Router.goBack);
+    
+    useEffect(() => {
+        if (transactionFees.medium && !maxFee) {
+            setMaxFee(transactionFees.medium);
+        }
+    }, [transactionFees, maxFee]);
 
     return (
         <Screen
-            bottomComponent={<Button title="Send" isDisabled={isButtonDisabled} onPress={toggleConfirm} />}
+            bottomComponent={<Button title={$t('button_send')} isDisabled={isButtonDisabled} onPress={toggleConfirm} />}
         >
             <ScrollView>
                 <FormItem>
@@ -69,7 +80,7 @@ export const Send = connect(state => ({
                     <Dropdown
                         title={$t('form_transfer_input_mosaic')} 
                         value={mosaicId} 
-                        list={mosaicList} 
+                        list={mosaicOptions} 
                         onChange={setMosaicId} 
                     />
                 </FormItem>
@@ -97,9 +108,11 @@ export const Send = connect(state => ({
                     />
                 </FormItem>
                 <FormItem>
-                    <TextBox 
-                        title={$t('form_transfer_input_fee') + ` F: ${transactionFees.fast}, M: ${transactionFees.medium}`} 
+                    <FeeSelector 
+                        title={$t('form_transfer_input_fee')} 
                         value={maxFee} 
+                        fees={transactionFees}
+                        ticker={ticker}
                         onChange={setMaxFee} 
                     />
                 </FormItem>
