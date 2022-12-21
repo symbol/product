@@ -46,7 +46,7 @@ export const Checkbox = props => {
     };
 
     return (
-        <Pressable style={[styles.root, style]} onPress={handlePress} onPressIn={handlePressIn} onPressOut={handlePressOut}>
+        <Pressable style={[styles.root, style]} hitSlop={5} onPress={handlePress} onPressIn={handlePressIn} onPressOut={handlePressOut}>
             <Animated.View style={[styles.container, animatedContainer]}>
                 <Animated.Image source={require('src/assets/images/icon-check.png')} style={stylesCheck} />
             </Animated.View>

@@ -18,7 +18,7 @@ export const ButtonClose = props => {
     }
 
     return (
-        <TouchableOpacity style={[styles.root, style]} onPress={onPress}>
+        <TouchableOpacity style={[styles.root, style]} hitSlop={5} onPress={onPress}>
             {text && <StyledText type="label" style={styles.text}>
                 {text}
             </StyledText>}

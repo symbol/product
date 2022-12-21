@@ -18,7 +18,7 @@ export const ButtonPlain = props => {
     };
 
     return (
-        <TouchableOpacity disabled={isDisabled} style={rootStyle} onPress={handlePress}>
+        <TouchableOpacity disabled={isDisabled} hitSlop={5} style={rootStyle} onPress={handlePress}>
             <StyledText type="label" style={styles.text}>
                 {title}
             </StyledText>
