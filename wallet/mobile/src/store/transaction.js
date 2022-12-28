@@ -34,13 +34,16 @@ export default {
             const { current } = state.account;
             const latestTransactions = await PersistentStorage.getLatestTransactions();
             const accountTransactions = latestTransactions[current?.address] || [];
+            console.log(`[Transaction] load transactions from cache for ${current?.address}`, accountTransactions.length)
             
             commit({type: 'transaction/setConfirmed', payload: accountTransactions});
             commit({type: 'transaction/setIsLastPage', payload: false});
         },
-        fetchData: async ({ commit, state }) => {
+        fetchData: async ({ commit, state }, keepPages) => {
+            console.log(`>>>>>>>>>>>>>>>>>>[Transaction] fetchData ${current?.address}`, keepPages ? 'keepPages' : '')
             const { networkProperties } = state.network;
             const { current } = state.account;
+            const { confirmed } = state.transaction;
 
             // Fetch transactions from DTO
             const [partialDTO, unconfirmedDTO, confirmedDTO] = await Promise.all([
@@ -63,19 +66,26 @@ export default {
                 namespaceNames,
                 resolvedAddresses,
             };
-            const partial = partialDTO.map(transactionDTO => transactionFromDTO(transactionDTO, transactionOptions));
-            const unconfirmed = unconfirmedDTO.map(transactionDTO => transactionFromDTO(transactionDTO, transactionOptions));
-            const confirmed = confirmedDTO.map(transactionDTO => transactionFromDTO(transactionDTO, transactionOptions));
+            const partialPage = partialDTO.map(transactionDTO => transactionFromDTO(transactionDTO, transactionOptions));
+            const unconfirmedPage = unconfirmedDTO.map(transactionDTO => transactionFromDTO(transactionDTO, transactionOptions));
+            const confirmedPage = confirmedDTO.map(transactionDTO => transactionFromDTO(transactionDTO, transactionOptions));
  
             // Update store
-            commit({type: 'transaction/setPartial', payload: partial});
-            commit({type: 'transaction/setUnconfirmed', payload: unconfirmed});
-            commit({type: 'transaction/setConfirmed', payload: confirmed});
-            commit({type: 'transaction/setIsLastPage', payload: false});
+            commit({type: 'transaction/setPartial', payload: partialPage});
+            commit({type: 'transaction/setUnconfirmed', payload: unconfirmedPage});
+            
+            if (keepPages) {
+                const updatedConfirmed = _.uniqBy([...confirmedPage, ...confirmed], 'id');
+                commit({type: 'transaction/setConfirmed', payload: updatedConfirmed});
+            }
+            else {
+                commit({type: 'transaction/setConfirmed', payload: confirmedPage});
+                commit({type: 'transaction/setIsLastPage', payload: false});
+            }
 
             // Cache transactions for current account
             const latestTransactions = await PersistentStorage.getLatestTransactions();
-            latestTransactions[current.address] = confirmed;
+            latestTransactions[current.address] = confirmedPage;
             await PersistentStorage.setLatestTransactions(latestTransactions);
         },
         fetchPage: async ({ commit, state }, { pageNumber, filters }) => {
@@ -91,7 +101,7 @@ export default {
             const mosaicInfos = await MosaicService.fetchMosaicInfos(networkProperties, mosaicIds);
             const namespaceNames = await NamespaceService.fetchNamespaceNames(networkProperties, namespaceIds);
             const resolvedAddresses = await NamespaceService.resolveAddresses(networkProperties, addresses);
-            console.log({namespaceNames, resolvedAddresses})
+
             // Format transactions
             const transactionOptions = {
                 networkProperties,
@@ -107,6 +117,6 @@ export default {
             // Update store
             commit({type: 'transaction/setConfirmed', payload: updatedConfirmed});
             commit({type: 'transaction/setIsLastPage', payload: isLastPage});
-        }
+        },
     },
 };

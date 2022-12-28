@@ -73,11 +73,19 @@ export default {
 
             commit({type: 'network/setNodeUrls', payload: updatedNodeUrls});
         },
-        fetchNetworkProperties: async ({  commit }, nodeUrl) => {
+        fetchNetworkProperties: async ({ commit }, nodeUrl) => {
             const updatedNetworkProperties = await NetworkService.fetchNetworkProperties(nodeUrl);
 
             commit({type: 'network/setNetworkProperties', payload: updatedNetworkProperties});
             commit({type: 'wallet/setReady', payload: true});
+        },
+        connect: async ({ dispatchAction }) => {
+            try {
+                await dispatchAction({type: 'network/fetchNodeList'});
+            }
+            finally {
+                await dispatchAction({type: 'network/runConnectionJob'});
+            }
         },
         runConnectionJob: async ({ state, commit, dispatchAction }) => {
             const { connectionTimer, selectedNodeUrl, nodeUrls, networkIdentifier, networkProperties, status } = state.network;
@@ -102,6 +110,7 @@ export default {
                 const newStatus = 'connected'; 
                 if (newStatus !== status) {
                     commit({type: 'network/setStatus', payload: newStatus});
+                    dispatchAction({type: 'listener/connect'});
                 }
                 runAgain();
                 return;
@@ -136,6 +145,7 @@ export default {
                     console.log('nodeUrl', nodeUrl)
                     await NetworkService.ping(nodeUrl);
                     await dispatchAction({type: 'network/fetchNetworkProperties', payload: nodeUrl});
+                    dispatchAction({type: 'listener/connect'});
                     console.log('connected')
                     const newStatus = 'connected'; 
                     commit({type: 'network/setStatus', payload: newStatus});

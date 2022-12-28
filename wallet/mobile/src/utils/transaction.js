@@ -151,12 +151,6 @@ export const getUnresolvedIdsFromTransactionDTOs = transactions => {
             });
         });
     });
-
-    console.log({
-        mosaicIds: [...new Set(mosaicIds.flat())],
-        namespaceIds: [...new Set(namespaceIds.flat())],
-        addresses: [...new Set(addresses.flat())],
-    })
     
     return {
         mosaicIds: [...new Set(mosaicIds.flat())],

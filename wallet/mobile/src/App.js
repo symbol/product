@@ -45,7 +45,7 @@ const App = () => {
             const isWalletExist = !!(await SecureStorage.getMnemonic());
             await initLocalization();
             await store.dispatchAction({type: 'wallet/loadAll'});
-            store.dispatchAction({type: 'network/runConnectionJob'});
+            store.dispatchAction({type: 'network/connect'});
 
             setIsPasscodeEnabled(isPasscodeEnabled);
             setIsWalletExist(isWalletExist);
