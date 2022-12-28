@@ -1,6 +1,6 @@
-import { isAggregateTransaction, transactionFromDTO } from 'src/utils';
+import { isAggregateTransaction, networkIdentifierToNetworkType, transferTransactionToDTO } from 'src/utils';
 import _ from 'lodash';
-import { Address, Order, TransactionHttp, } from 'symbol-sdk';
+import { Account, Address, Order, TransactionHttp } from 'symbol-sdk';
 export class TransactionService {
     static async fetchAccountTransactions(account, networkProperties, { 
         pageNumber = 1, 
@@ -33,12 +33,22 @@ export class TransactionService {
         const aggregateTransactionIds = transactions.filter(isAggregateTransaction).map(transaction => transaction.transactionInfo.id);
         const shouldFetchAggregateDetails = aggregateTransactionIds.length > 0;
         const aggregateDetails = shouldFetchAggregateDetails ? await transactionHttp.getTransactionsById(aggregateTransactionIds, group).toPromise() : [];
-        //return transactions// .map(transaction => transactionFromDTO(transaction, networkProperties));
 
         return transactions.map(transaction => 
             isAggregateTransaction(transaction) 
                 ? aggregateDetails.find(details => details.transactionInfo.id === transaction.transactionInfo.id)
                 : transaction
         );
+    }
+
+    static async sendTransferTransaction(transaction, account, networkProperties) {
+        const networkType = networkIdentifierToNetworkType(networkProperties.networkIdentifier);
+        const transactionDTO = transferTransactionToDTO(transaction, networkProperties);
+        const signedTransaction = Account
+            .createFromPrivateKey(account.privateKey, networkType)
+            .sign(transactionDTO, networkProperties.generationHash);
+        const transactionHttp = new TransactionHttp(networkProperties.nodeUrl);
+
+        return transactionHttp.announce(signedTransaction).toPromise();
     }
 };
