@@ -39,8 +39,10 @@
     "form_transfer_input_amount": "Amount",
     "form_transfer_input_message": "Message/Memo",
     "form_transfer_input_encrypted": "Encrypted",
-    "form_transfer_input_fee": "Fee",
+    "form_transfer_input_fee": "Speed/Fee",
     "form_transfer_confirm_title": "Confirm Transfer",
+    "form_transfer_success_title": "Transaction announced",
+    "form_transfer_success_text": "Transaction is processing and awaiting confirmation by the network.",
 
     "navigation_home": "Home",
     "navigation_history": "History",
