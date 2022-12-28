@@ -1,12 +1,14 @@
 import { applyMiddleware, createStore } from 'redux';
 import thunk from 'redux-thunk';
 import account from 'src/store/account';
+import listener from 'src/store/listener';
 import network from 'src/store/network';
 import transaction from 'src/store/transaction';
 import wallet from 'src/store/wallet';
 
 const modules = {
     account,
+    listener,
     network,
     transaction,
     wallet,

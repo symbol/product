@@ -126,7 +126,7 @@ export class PersistentStorage {
         }
     }
 
-    static async setMosaicInfos(payload) {
+    static async setLatestTransactions(payload) {
         return this.set(this.LATEST_TRANSACTIONS_KEY, JSON.stringify(payload));
     }
 
@@ -145,7 +145,7 @@ export class PersistentStorage {
         }
     }
 
-    static async setLatestTransactions(payload) {
+    static async setMosaicInfos(payload) {
         return this.set(this.MOSAIC_INFOS_KEY, JSON.stringify(payload));
     }
 

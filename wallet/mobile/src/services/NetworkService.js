@@ -45,9 +45,11 @@ export class NetworkService {
 
         const networkCurrencyMosaicId = DtoMapping.toSimpleHex(networkProps.chain.currencyMosaicId);
         const mosaicInfo = await MosaicService.fetchMosaicInfo({nodeUrl}, networkCurrencyMosaicId);
+        const wsUrl = nodeUrl.replace('http', 'ws') + '/ws';
 
         return {
             nodeUrl,
+            wsUrl,
             networkIdentifier: networkTypeToIdentifier(networkType),
             generationHash: networkProps.network.generationHashSeed,
             chainHeight: chainInfo.height.compact(),
