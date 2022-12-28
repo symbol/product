@@ -20,26 +20,25 @@ export const FeeSelector = props => {
     const imageTranslation = useSharedValue(0);
     const minimumSliderValue = 0;
     const maximumSliderValue = 2;
-    const sliderValue = value < fees.medium 
-        ? 0
-        : value < fees.fast
-        ? 1
-        : 2;
-    const imageSrc = images[sliderValue];
-
     const options = [{
         label: $t('selector_fee_slow'),
+        speed: 'slow',
         value: fees.slow
     },{
         label: $t('selector_fee_medium'),
+        speed: 'medium',
         value: fees.medium
     },{
         label: $t('selector_fee_fast'),
+        speed: 'fast',
         value: fees.fast
     }]
+    const sliderValue = options.map(option => option.speed).indexOf(value);
+    const imageSrc = images[sliderValue];
 
-    const selectedFeeLabel = `${options[sliderValue].label} ${value} ${ticker}`;
-    const modalTitle = options[sliderValue].label;
+    const selectedFeeValue = options[sliderValue].value;
+    const selectedFeeLabel = options[sliderValue].label;
+    const valueField = `${selectedFeeLabel} | ${selectedFeeValue} ${ticker}`;
 
     const animatedImageStyle = useAnimatedStyle(() => ({
         transform: [{
@@ -49,7 +48,7 @@ export const FeeSelector = props => {
 
     const handleChange = newValue => {
         const newSliderValue = Math.round(newValue);
-        onChange(options[newSliderValue]?.value || 0)
+        onChange(options[newSliderValue]?.speed || 'medium')
         if (newSliderValue !== sliderValue) {
             imageTranslation.value = -500;
             imageTranslation.value = withTiming(0);
@@ -66,7 +65,7 @@ export const FeeSelector = props => {
         <View style={[styles.root, style]}>
             <View style={styles.textContainer}>
                 <Text style={styles.title}>{title}</Text>
-                <Text style={styles.value}>{selectedFeeLabel}</Text>
+                <Text style={styles.value}>{valueField}</Text>
             </View>
             <Slider
                 value={sliderValue}
@@ -91,8 +90,8 @@ export const FeeSelector = props => {
                             <Animated.Image source={imageSrc} style={[animatedImageStyle, styles.modalImage]} />
                         </FormItem>
                         <FormItem>
-                            <Text style={styles.modalTitle}>{modalTitle}</Text>
-                            <Text style={styles.modalValue}>{value} {ticker}</Text>
+                            <Text style={styles.modalTitle}>{selectedFeeLabel}</Text>
+                            <Text style={styles.modalValue}>{selectedFeeValue} {ticker}</Text>
                         </FormItem>
                     </View>
                 )}

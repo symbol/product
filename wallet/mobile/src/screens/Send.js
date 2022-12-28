@@ -5,8 +5,9 @@ import { ScrollView } from 'react-native-gesture-handler';
 import { TableView, Screen, FeeSelector, FormItem, TextBox, Checkbox, Dropdown, Button, StyledText, InputAmount, DialogBox } from 'src/components';
 import { $t } from 'src/localization';
 import { Router } from 'src/Router';
+import { TransactionService } from 'src/services';
 import { connect } from 'src/store';
-import { getTransactionFees, toFixedNumber, usePasscode, useToggle, useValidation, validateRequired, validateUnresolvedAddress } from 'src/utils';
+import { getTransactionFees, handleError, toFixedNumber, useDataManager, usePasscode, useToggle, useValidation, validateRequired, validateUnresolvedAddress } from 'src/utils';
 
 export const Send = connect(state => ({
     currentAccount: state.account.current,
@@ -22,7 +23,9 @@ export const Send = connect(state => ({
     const [message, setMessage] = useState('');
     const [isEncrypted, toggleEncrypted] = useToggle(false);
     const [maxFee, setMaxFee] = useState(0);
+    const [speed, setSpeed] = useState('medium');
     const [isConfirmVisible, toggleConfirm] = useToggle(false);
+    const [isSuccessAlertVisible, toggleSuccessAlert] = useToggle(false);
 
     const mosaicOptions = mosaics.map(mosaic => ({label: mosaic.name, value: mosaic.id}));
     const selectedMosaic = mosaics.find(mosaic => mosaic.id === mosaicId);
@@ -51,14 +54,17 @@ export const Send = connect(state => ({
     const [isAmountValid, setAmountValid] = useState(true);
     const isButtonDisabled = !!recipientErrorMessage || !isAmountValid || !selectedMosaic;
 
-    const send = () => {};
+    const [send] = useDataManager(async () => {
+        TransactionService.sendTransferTransaction(transaction, currentAccount, networkProperties);
+        toggleSuccessAlert();
+    }, null, handleError);
     const confirmSend = usePasscode('enter', send, Router.goBack);
     
     useEffect(() => {
-        if (transactionFees.medium && !maxFee) {
-            setMaxFee(transactionFees.medium);
+        if (transactionFees.medium) {
+            setMaxFee(transactionFees[speed]);
         }
-    }, [transactionFees, maxFee]);
+    }, [transactionFees, speed]);
 
     return (
         <Screen
@@ -110,10 +116,10 @@ export const Send = connect(state => ({
                 <FormItem>
                     <FeeSelector 
                         title={$t('form_transfer_input_fee')} 
-                        value={maxFee} 
+                        value={speed}
                         fees={transactionFees}
                         ticker={ticker}
-                        onChange={setMaxFee} 
+                        onChange={setSpeed} 
                     />
                 </FormItem>
             </ScrollView>
@@ -124,6 +130,13 @@ export const Send = connect(state => ({
                 isVisible={isConfirmVisible} 
                 onSuccess={confirmSend} 
                 onCancel={toggleConfirm} 
+            />
+            <DialogBox 
+                type="alert" 
+                title={$t('form_transfer_success_title')}
+                text={$t('form_transfer_success_text')}
+                isVisible={isSuccessAlertVisible} 
+                onSuccess={Router.goToHome} 
             />
         </Screen>
     );
