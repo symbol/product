@@ -38,7 +38,6 @@ export const getTransactionFees = (transaction, networkProperties) => {
 }
 
 export const transferTransactionToDTO = (transaction, networkProperties) => {
-    console.log(transaction.mosaics)
     return TransferTransaction.create(
         Deadline.create(networkProperties.epochAdjustment),
         Address.createFromRawAddress(transaction.recipientAddress),
@@ -47,7 +46,8 @@ export const transferTransactionToDTO = (transaction, networkProperties) => {
             UInt64.fromUint(mosaic.amount * Math.pow(10, mosaic.divisibility))
         )),
         PlainMessage.create(transaction.messageText),
-        networkIdentifierToNetworkType(transaction.networkIdentifier)
+        networkIdentifierToNetworkType(networkProperties.networkIdentifier),
+        UInt64.fromUint(transaction.fee * Math.pow(10, networkProperties.networkCurrency.divisibility))
     );
 };
 
