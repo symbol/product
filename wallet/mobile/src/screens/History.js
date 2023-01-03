@@ -99,6 +99,7 @@ export const History = connect(state => ({
         </Screen>
     );
 });
+
 const styles = StyleSheet.create({
     titlePartial: {
         color: colors.info
