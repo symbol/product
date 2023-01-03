@@ -10,6 +10,7 @@ export * from './Dropdown';
 export * from './FeeSelector';
 export * from './FormItem';
 export * from './InputAmount';
+export * from './ItemAsset';
 export * from './ItemTransaction';
 export * from './LoadingIndicator';
 export * from './MnemonicView';

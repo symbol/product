@@ -25,13 +25,16 @@ const keys = {
     ImportWallet: 'ImportWallet',
     Home: 'Home',
     History: 'History',
+    Assets: 'Assets',
     AccountDetails: 'AccountDetails',
     AccountList: 'AccountList',
     AddExternalAccount: 'AddExternalAccount',
     AddSeedAccount: 'AddSeedAccount',
     Send: 'Send',
     Settings: 'Settings',
+    SettingsAbout: 'SettingsAbout',
     SettingsNetwork: 'SettingsNetwork',
+    SettingsSecurity: 'SettingsSecurity',
     Passcode: 'Passcode',
 };
 
@@ -49,6 +52,7 @@ export const RouterView = ({ isActive }) => (
                 <Stack.Group screenOptions={{ headerShown: false }}>
                     <Stack.Screen name={keys.Home} component={screens.Home} />
                     <Stack.Screen name={keys.History} component={screens.History} />
+                    <Stack.Screen name={keys.Assets} component={screens.Assets} />
                 </Stack.Group>
                 <Stack.Group>
                     <Stack.Screen name={keys.AccountDetails} component={screens.AccountDetails} />
@@ -57,7 +61,9 @@ export const RouterView = ({ isActive }) => (
                     <Stack.Screen name={keys.AddSeedAccount} component={screens.AddSeedAccount} />
                     <Stack.Screen name={keys.Send} component={screens.Send} />
                     <Stack.Screen name={keys.Settings} component={screens.Settings} />
+                    <Stack.Screen name={keys.SettingsAbout} component={screens.SettingsAbout} />
                     <Stack.Screen name={keys.SettingsNetwork} component={screens.SettingsNetwork} />
+                    <Stack.Screen name={keys.SettingsSecurity} component={screens.SettingsSecurity} />
                 </Stack.Group>
                 <Stack.Group screenOptions={{ headerShown: false }}>
                     <Stack.Screen name={keys.Passcode} component={screens.Passcode} />
@@ -104,7 +110,7 @@ export class Router {
     static goToAssets() {
         navigationRef.reset({
             index: 0,
-            routes: [{ name: keys.Home }],
+            routes: [{ name: keys.Assets }],
         });
     }
     static goToActions() {
@@ -131,8 +137,14 @@ export class Router {
     static goToSettings() {
         navigationRef.navigate(keys.Settings);
     }
+    static goToSettingsAbout() {
+        navigationRef.navigate(keys.SettingsAbout);
+    }
     static goToSettingsNetwork() {
         navigationRef.navigate(keys.SettingsNetwork);
+    }
+    static goToSettingsSecurity() {
+        navigationRef.navigate(keys.SettingsSecurity);
     }
     static goToPasscode(params) {
         navigationRef.navigate(keys.Passcode, params);
