@@ -1,6 +1,7 @@
 import React from 'react';
+import { useEffect } from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
-import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
+import Animated, {useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { $t } from 'src/localization';
 import { connect } from 'src/store';
 import { borders, colors, fonts, spacings } from 'src/styles';
@@ -119,13 +120,21 @@ export const ItemTransaction = connect(state => ({
         styleRoot.push(styles.rootPartial)
     }
 
+    const expanded = useSharedValue(0);
+    const animatedContainer = useAnimatedStyle(() => ({
+        opacity: expanded.value
+    }));
+
+    useEffect(() => {
+        setTimeout(() => expanded.value = withTiming(1), 150);
+    }, [])
 
     return (
         <FormItem type="list">
             {/* TODO: uncomment when issue is fixed https://github.com/react-navigation/react-navigation/issues/10531 */}
             {/* <Animated.View entering={FadeInUp.duration(500)}> */}
             {/* <Animated.View entering={FadeIn.duration(1000)}> */}
-                <View style={styleRoot}>
+                <Animated.View style={[animatedContainer, styleRoot]}>
                     <View style={styles.sectionIcon}>
                         <Image source={iconSrc} style={styles.icon} />
                     </View>
@@ -137,7 +146,7 @@ export const ItemTransaction = connect(state => ({
                             <Text style={styleAmount}>{amountText}</Text>
                         </View>
                     </View>
-                </View>
+                </Animated.View>
             {/* </Animated.View> */}
             {/* </Animated.View> */}
         </FormItem>
