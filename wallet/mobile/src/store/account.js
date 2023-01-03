@@ -1,11 +1,12 @@
-import { AccountService, MosaicService } from "src/services";
+import { AccountService, MosaicService, NamespaceService } from "src/services";
 import { getMosaicsWithRelativeAmounts } from "src/utils";
 
 export default {
     namespace: 'account',
     state: {
         current: null,
-        mosaics: []
+        mosaics: [],
+        namespaces: []
     },
     mutations: {
         setCurrent(state, payload) {
@@ -14,6 +15,10 @@ export default {
         },
         setMosaics(state, payload) {
             state.account.mosaics = payload;
+            return state;
+        },
+        setNamespaces(state, payload) {
+            state.account.namespaces = payload;
             return state;
         },
     },
@@ -55,8 +60,11 @@ export default {
             const mosaicIds = mosaics.map(mosaic => mosaic.id);
             const mosaicInfos = await MosaicService.fetchMosaicInfos(networkProperties, mosaicIds);
             const formattedMosaics = getMosaicsWithRelativeAmounts(mosaics, mosaicInfos);
+
+            const namespaces = await NamespaceService.fetchAccountNamespaces(address, networkProperties);
             
             commit({type: 'account/setMosaics', payload: formattedMosaics});
+            commit({type: 'account/setNamespaces', payload: namespaces});
         },
     },
 };

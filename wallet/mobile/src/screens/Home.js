@@ -36,7 +36,7 @@ export const Home = connect(state => ({
                         balance={accountBalance}
                         ticker={ticker}
                         isActive
-                        onReceivePress={Router.goToAccountDetails}
+                        onReceivePress={() => {}}
                         onSendPress={Router.goToSend}
                         onDetailsPress={Router.goToAccountDetails}
                     />
