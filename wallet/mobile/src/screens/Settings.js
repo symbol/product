@@ -1,29 +1,24 @@
-import { useNavigation } from '@react-navigation/native';
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { BackHandler, Image, StyleSheet, View } from 'react-native';
-import { showMessage } from 'react-native-flash-message';
 import { FlatList, TouchableOpacity } from 'react-native-gesture-handler';
-import { AccountCard, Button, Screen, TitleBar, FormItem, StyledText } from 'src/components';
+import { Screen, FormItem, StyledText, DialogBox } from 'src/components';
+import { $t } from 'src/localization';
 import { Router } from 'src/Router';
-import store, { connect } from 'src/store';
+import { connect } from 'src/store';
 import { borders, colors, fonts, spacings } from 'src/styles';
-import { clearCache, usePasscode } from 'src/utils';
+import { clearCache, usePasscode, useToggle } from 'src/utils';
 
 export const Settings = connect(state => ({
     currentAccount: state.account.current,
-}))(function Settings(props) {
-    const { } = props;
-    const navigation = useNavigation();
+}))(function Settings() {
+    const [isLogoutConfirmVisible, toggleLogoutConfirm] = useToggle(false);
 
-    const logout = () => {
-        showPasscode();
-    }
     const logoutConfirm = () => {
         clearCache();
         BackHandler.exitApp();
     }
     
-    const showPasscode = usePasscode('enter', logoutConfirm, navigation.goBack);
+    const showLogoutPasscode = usePasscode('enter', logoutConfirm, Router.goBack);
 
     // notranslate
     const settingsList = [{
@@ -34,19 +29,21 @@ export const Settings = connect(state => ({
     },
     {
         title: 'Security',
-        description: 'Backup your passphrase and manage PIN code',
+        description: 'Backup your passphrase and manage PIN code.',
         icon: require('src/assets/images/icon-settings-security.png'),
+        handler: Router.goToSettingsSecurity
     },
     {
         title: 'About',
         description: 'Learn morn about Symbol. Application version information.',
         icon: require('src/assets/images/icon-settings-about.png'),
+        handler: Router.goToSettingsAbout
     },
     {
         title: 'Logout',
-        description: 'Remove all accounts from device storage. You can restore your account later by entering mnemonic backup passphrase.',
+        description: 'Remove all accounts from device storage.',
         icon: require('src/assets/images/icon-settings-logout.png'),
-        handler: logout
+        handler: toggleLogoutConfirm
     }];
 
     return (
@@ -66,6 +63,14 @@ export const Settings = connect(state => ({
                     </TouchableOpacity>
                 </FormItem>
             )} />
+            <DialogBox 
+                type="confirm" 
+                title={$t('settings_logout_confirm_title')}
+                text={$t('settings_logout_confirm_text')}
+                isVisible={isLogoutConfirmVisible} 
+                onSuccess={showLogoutPasscode} 
+                onCancel={toggleLogoutConfirm} 
+            />
         </Screen>
     );
 });

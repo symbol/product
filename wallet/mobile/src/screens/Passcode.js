@@ -1,21 +1,15 @@
-import React, { Component, useEffect, useState } from 'react';
-import { BackHandler, DeviceEventEmitter, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { DeviceEventEmitter, Image, StyleSheet, View } from 'react-native';
 import PINCode, { hasUserSetPinCode } from '@haskkor/react-native-pincode';
 import { colors, fonts } from 'src/styles';
 import { LoadingIndicator } from 'src/components';
-import { useRoute } from '@react-navigation/native';
 
 const translate = _ => _;
 
 export const Passcode = (props) => {
     const { showCancel, route, keepListener } = props;
-    const { successEvent, cancelEvent } = route.params;
-    const [isPasscodeEnabled, setIsPasscodeEnabled] = useState(false);
+    const { successEvent, cancelEvent, type } = route.params;
     const [isLoading, setIsLoading] = useState(true);
-    const type = isPasscodeEnabled ? 'enter' : 'choose';
-    const titleText = isPasscodeEnabled
-        ? translate('Unlock the Wallet')
-        : translate('Create a PIN');
     const maxAttempts = 20;
     const onFinish = () => {
         setIsLoading(true)
@@ -27,9 +21,13 @@ export const Passcode = (props) => {
 
     useEffect(() => {
         const loadStatus = async () => {
-            const status = await hasUserSetPinCode();
-            setIsPasscodeEnabled(status);
-            setIsLoading(false);
+            const isPasscodeEnabled = await hasUserSetPinCode();
+            if (!isPasscodeEnabled && type === 'enter') {
+                onFinish(); 
+            }
+            else {
+                setIsLoading(false);
+            }
         };
         loadStatus();
 
@@ -45,11 +43,11 @@ export const Passcode = (props) => {
         <View style={styles.root}>
             {!isLoading && <PINCode
                 status={type}
-                titleEnter={titleText}
+                titleEnter={translate('Unlock the Wallet')}
                 titleChoose={translate('Create a PIN')}
-                subtitleChoose={translate('Use dialpad below')}
-                titleConfirm={translate('Create a PIN')}
-                subtitleConfirm={translate('Please confirm')}     
+                subtitleChoose={translate('Enter new PIN-code')}
+                titleConfirm={translate('Confirm')}
+                subtitleConfirm={translate('Enter PIN-code again')}     
                 titleAttemptFailed={translate('Attempt Failed')}
                 subtitleError={translate('Incorrect')}
                 maxAttempts={maxAttempts}
@@ -76,7 +74,7 @@ export const Passcode = (props) => {
                 )}
                 // bottomLeftComponent={(!isPasscodeEnabled || showCancel) && this.renderCustomCancel()}
                 finishProcess={onFinish}
-                touchIDDisabled={!isPasscodeEnabled}
+                touchIDDisabled={type === 'choose'}
             />}
             {isLoading && <LoadingIndicator />}
         </View>
