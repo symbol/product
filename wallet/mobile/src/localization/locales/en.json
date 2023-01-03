@@ -66,6 +66,18 @@
     "screen_SettingsNetwork": "Settings Network",
     "screen_Passcode": "Passcode",
 
+    "settings_about_symbol_title": "About Symbol",
+    "settings_about_symbol_body": "Learn more about Symbol in the socials.",
+    "settings_about_version_title": "About App",
+    "settings_security_pin_toggle": "Enable PIN-code",
+    "settings_security_pin_title": "PIN-code",
+    "settings_security_pin_body": "Request PIN-code or Touch-ID to protect the wallet (only on this device).",
+    "settings_security_mnemonic_title": "Backup",
+    "settings_security_mnemonic_body": "Review backup mnemonic phrase. Mnemonic is a list of words which store all the information needed to recover the accounts under this profile. Anybody else who discovers the phrase can access your funds, so it must be kept safe. Note that you won't be able to access again your wallet unless you have a backup mnemonic phrase.",
+    "settings_logout_confirm_title": "Are you sure you want to logout?",
+    "settings_logout_confirm_text": "By logging out the data on the device will be removed. You won't be able to access again your wallet unless you have a backup mnemonic phrase. Please make sure you have a backup mnemonic phrase before proceeding.",
+
+
     "data_accountAliasNames": "Alias Names",
     "data_innerTransactionNo": "Inner Transaction #",
     "data_signature": "Signature",
@@ -168,6 +180,9 @@
     "data_transactionsAllowed": "Incoming transactions from this contact",
     "data_networkIdentifier": "Network",
     "data_accountType": "Account Type",
+    "data_appVersion": "Application Version",
+    "data_symbolSdkVersion": "Symbol SDK Version",
+    "data_reactNativeVersion": "React Native Version",
 
     "data_v_unlimited": "UNLIMITED",
     "data_v_na": "N/A",
@@ -262,6 +277,9 @@
     "selector_fee_fast": "Fast",
     "selector_fee_medium": "Medium",
     "selector_fee_slow": "Slow",
+
+    "s_assets_mosaics": "Mosaics",
+    "s_assets_namespaces": "Namespaces",
     
     "validation_error_field_required": "Field required",
     "validation_error_contact_name_long": "Too long",
