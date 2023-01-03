@@ -3,6 +3,30 @@ import _ from 'lodash';
 import { Convert, RawAddress } from 'symbol-sdk';
 
 export class NamespaceService {
+    static async fetchAccountNamespaces(address, networkProperties) {
+        const endpoint = `${networkProperties.nodeUrl}/namespaces?ownerAddress=${address}&pageSize=100`;
+        const { data } = await makeRequest(endpoint);
+        const namespaces = data.map(el => el.namespace);
+        const namespaceIds = namespaces.map(namespace => [namespace.level0, namespace.level1, namespace.level2]).flat().filter(namespaceId => !!namespaceId);
+        const namespaceNames = await NamespaceService.fetchNamespaceNames(networkProperties, namespaceIds);
+
+        return namespaces.map(namespace => {
+            const ownerAddress = RawAddress.addressToString(Convert.hexToUint8(namespace.ownerAddress));
+            const aliasAddress = namespace.alias.address ? RawAddress.addressToString(Convert.hexToUint8(namespace.alias.address)) : null;
+
+            return {
+                id: namespace.level2 || namespace.level1 || namespace.level0,
+                name: namespaceNames[namespace.level0] + (namespace.level1 ? `.${namespaceNames[namespace.level1]}` : '') + (namespace.level2 ? `.${namespaceNames[namespace.level2]}` : ''),
+                alias: {
+                    type: namespace.alias.type === 1 ? 'mosaic' : 'address',
+                    id: namespace.alias.mosaicId || aliasAddress || ''
+                },
+                endHeight: namespace.endHeight,
+                isCreatedByCurrentAccount: address === ownerAddress
+            }
+        });
+    }
+    
     static async fetchMosaicNames(networkProperties, mosaicIds) {
         const endpoint = `${networkProperties.nodeUrl}/namespaces/mosaic/names`;
         const payload = {
