@@ -4,6 +4,7 @@ import { AppState, BackHandler, DeviceEventEmitter, SafeAreaView, StatusBar } fr
 import { Provider } from 'react-redux'
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { hasUserSetPinCode } from '@haskkor/react-native-pincode';
+import SplashScreen from 'react-native-splash-screen'
 import FlashMessage from 'react-native-flash-message';
 import { ConnectionStatus } from './components';
 import { Passcode } from './screens';
@@ -50,6 +51,7 @@ const App = () => {
             setIsPasscodeEnabled(isPasscodeEnabled);
             setIsWalletExist(isWalletExist);
             setIsLoading(false);
+            SplashScreen.hide();
         };
 
         load();
