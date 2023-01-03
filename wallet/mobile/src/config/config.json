@@ -17,7 +17,9 @@
         "mainnet": "https://symbol.fyi"
     },
     "faucetURL": "https://testnet.symbol.tools",
-    "aboutURL": "https://nem.io",
+    "discordURL": "https://discord.gg/xymcity",
+    "githubURL": "https://github.com/symbol",
+    "twitterURL": "https://twitter.com/thesymbolchain",
     "optInPayoutSigner": {
         "testnet": [
             "E5F5638C626F58E1937C181E668EC383C94C5BC72AAE400C19AD28BDD3A4D37E"

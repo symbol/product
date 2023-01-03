@@ -11,7 +11,7 @@ export const AddExternalAccount = connect(state => ({
     const { networkIdentifier } = props;
     const [accountName, setAccountName] = useState('');
     const [privateKey, setPrivateKey] = useState('');
-    const nameErrorMessage = useValidation(accountName, [validateAccountName()], $t);
+    const nameErrorMessage = useValidation(accountName, [validateRequired(), validateAccountName()], $t);
     const privateKeyErrorMessage = useValidation(privateKey, [validateRequired(), validateKey()], $t);
    
     // notranslate
