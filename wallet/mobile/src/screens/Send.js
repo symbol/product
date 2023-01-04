@@ -2,7 +2,7 @@ import React from 'react';
 import { useEffect } from 'react';
 import { useState } from 'react';
 import { ScrollView } from 'react-native-gesture-handler';
-import { TableView, Screen, FeeSelector, FormItem, TextBox, Checkbox, Dropdown, Button, StyledText, InputAmount, DialogBox } from 'src/components';
+import { TableView, Screen, SelectMosaic, FeeSelector, FormItem, TextBox, Checkbox, Dropdown, Button, StyledText, InputAmount, DialogBox } from 'src/components';
 import { $t } from 'src/localization';
 import { Router } from 'src/Router';
 import { TransactionService } from 'src/services';
@@ -14,9 +14,10 @@ export const Send = connect(state => ({
     mosaics: state.account.mosaics,
     mosaicInfos: state.wallet.mosaicInfos,
     networkProperties: state.network.networkProperties,
-    ticker: state.network.ticker
+    ticker: state.network.ticker,
+    chainHeight: state.network.chainHeight
 }))(function Send(props) {
-    const { currentAccount, mosaics, networkProperties, ticker } = props;
+    const { currentAccount, mosaics, networkProperties, ticker, chainHeight } = props;
     const [recipient, setRecipient] = useState('');
     const [mosaicId, setMosaicId] = useState(mosaics[0]?.id);
     const [amount, setAmount] = useState('0');
@@ -27,7 +28,11 @@ export const Send = connect(state => ({
     const [isConfirmVisible, toggleConfirm] = useToggle(false);
     const [isSuccessAlertVisible, toggleSuccessAlert] = useToggle(false);
 
-    const mosaicOptions = mosaics.map(mosaic => ({label: mosaic.name, value: mosaic.id}));
+    const mosaicOptions = mosaics.map(mosaic => ({
+        label: mosaic.name, 
+        value: mosaic.id, 
+        mosaicInfo: mosaic
+    }));
     const selectedMosaic = mosaics.find(mosaic => mosaic.id === mosaicId);
     const selectedMosaicBalance = selectedMosaic?.amount || 0;
     const selectedMosaicDivisibility = selectedMosaic?.divisibility || 0;
@@ -85,10 +90,11 @@ export const Send = connect(state => ({
                 />
                 </FormItem>
                 <FormItem>
-                    <Dropdown
+                    <SelectMosaic
                         title={$t('form_transfer_input_mosaic')} 
                         value={mosaicId} 
                         list={mosaicOptions} 
+                        chainHeight={chainHeight}
                         onChange={setMosaicId} 
                     />
                 </FormItem>

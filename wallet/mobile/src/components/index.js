@@ -19,6 +19,7 @@ export * from './MnemonicConfirm'
 export * from './MnemonicInput'
 export * from './QRScanner'
 export * from './Screen';
+export * from './SelectMosaic';
 export * from './Steps';
 export * from './StyledText';
 export * from './TableView';
