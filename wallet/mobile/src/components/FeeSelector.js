@@ -1,8 +1,7 @@
-import React, { useState } from 'react';
-import { Modal, StyleSheet, Text, View } from 'react-native';
+import React from 'react';
+import { StyleSheet, Text, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import Slider from 'react-native-smooth-slider';
-import { FormItem } from 'src/components';
 import { $t } from 'src/localization';
 import { borders, colors, fonts, spacings } from 'src/styles';
 import { useToggle } from 'src/utils';
@@ -15,7 +14,6 @@ const images = [
 
 export const FeeSelector = props => {
     const { style, title, fees, ticker, value, onChange } = props;
-    const [isModalVisible, setIsModalVisible] = useState(false);
     const [sliderKey, refreshSlider] = useToggle(true);
     const imageTranslation = useSharedValue(0);
     const minimumSliderValue = 0;
@@ -54,18 +52,16 @@ export const FeeSelector = props => {
             imageTranslation.value = withTiming(0);
         }
     };
-    const showModal = () => setIsModalVisible(true);
-    const hideModal = () => setIsModalVisible(false);
     const handleSlidingComplete = () => {
-        hideModal();
         refreshSlider();
     }
 
     return (
         <View style={[styles.root, style]}>
             <View style={styles.textContainer}>
+                <Animated.Image source={imageSrc} style={[animatedImageStyle, styles.modalImage]} />
                 <Text style={styles.title}>{title}</Text>
-                <Text style={styles.value}>{valueField}</Text>
+                <Text style={styles.value}>{valueField}</Text> 
             </View>
             <Slider
                 value={sliderValue}
@@ -80,22 +76,8 @@ export const FeeSelector = props => {
                 useNativeDriver={true}
                 key={sliderKey}
                 onValueChange={handleChange}
-                onSlidingStart={showModal}
                 onSlidingComplete={handleSlidingComplete}
             />
-            <Modal animationType="fade" transparent visible={isModalVisible} style={styles.modal}>
-                {isModalVisible && (
-                    <View style={styles.modal}>
-                        <FormItem>
-                            <Animated.Image source={imageSrc} style={[animatedImageStyle, styles.modalImage]} />
-                        </FormItem>
-                        <FormItem>
-                            <Text style={styles.modalTitle}>{selectedFeeLabel}</Text>
-                            <Text style={styles.modalValue}>{selectedFeeValue} {ticker}</Text>
-                        </FormItem>
-                    </View>
-                )}
-            </Modal>
         </View>
     );
 };
@@ -137,30 +119,12 @@ const styles = StyleSheet.create({
         borderWidth: borders.borderWidth,
         borderColor: colors.controlBaseStroke
     },
-    modal: {
-        position: 'absolute',
-        left: 0,
-        right: 0,
-        bottom: 0,
-        top: 0,
-        backgroundColor: '#000c',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: spacings.padding,
-    },
     modalImage: {
-        width: 272,
-        height: 85
-    },
-    modalTitle: {
-        ...fonts.title, 
-        color: colors.controlBaseText,
-        textAlign: 'center'
-    },
-    modalValue: {
-        ...fonts.label, 
-        color: colors.controlBaseText,
-        textAlign: 'center'
+        width: 68,
+        height: '100%',
+        top: 0,
+        right: 0,
+        position: 'absolute',
+        resizeMode: 'contain',    
     },
 });
