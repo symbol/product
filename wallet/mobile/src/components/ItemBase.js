@@ -21,7 +21,7 @@ export function ItemBase(props) {
     }, [isLayoutAnimationEnabled])
 
     return (
-        <FormItem type="list">
+        <FormItem type="list" style={styles.formItem}>
             {/* TODO: uncomment when issue is fixed https://github.com/react-navigation/react-navigation/issues/10531 */}
             {/* <Animated.View entering={FadeInUp.duration(500)}> */}
             {/* <Animated.View entering={FadeIn.duration(1000)}> */}
@@ -41,6 +41,9 @@ export const ItemPlaceholder = () => (
 );
 
 const styles = StyleSheet.create({
+    formItem: {
+        marginHorizontal: spacings.margin
+    },
     root: {
         width: '100%',
         minHeight: 75,

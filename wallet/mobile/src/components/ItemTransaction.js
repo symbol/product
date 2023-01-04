@@ -174,7 +174,8 @@ const styles = StyleSheet.create({
         ...fonts.body,
         color: colors.textBody,
         fontSize: 10,
-        opacity: 0.7
+        opacity: 0.7,
+        textAlignVertical: 'center'
     },
     textAmount: {
         ...fonts.bodyBold,
@@ -194,6 +195,7 @@ const styles = StyleSheet.create({
     sectionMiddle: {
         flex: 1,
         flexDirection: 'column',
+        justifyContent: 'space-between'
     },
     rowAmount: {
         alignSelf: 'stretch',

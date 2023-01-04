@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Screen, FormItem, LoadingIndicator, StyledText, TextBox, Button } from 'src/components';
+import { Screen, FormItem, StyledText, TextBox, Button } from 'src/components';
 import { $t } from 'src/localization';
 import { Router } from 'src/Router';
 import store, { connect } from 'src/store';
@@ -30,8 +30,11 @@ export const AddExternalAccount = connect(state => ({
 
     {/* notranslate */}
     return (
-        <Screen bottomComponent={<Button title="Add Account" isDisabled={isButtonDisabled} onPress={addAccount} />}>
-            {isLoading && <LoadingIndicator />}
+        <Screen isLoading={isLoading} bottomComponent={
+            <FormItem>
+                <Button title="Add Account" isDisabled={isButtonDisabled} onPress={addAccount} />
+            </FormItem>
+        }>
             <FormItem>
                 {/* notranslate */}
                 <StyledText type="title">Give a Name for New Account</StyledText>

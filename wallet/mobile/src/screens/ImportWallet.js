@@ -1,22 +1,18 @@
-import React, { useEffect, useState } from 'react';
-import { Image, StyleSheet, View } from 'react-native';
+import React, { useState } from 'react';
+import { Image, StyleSheet, } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
-import { Button, LoadingIndicator, Screen, Steps, StyledText, FormItem, MnemonicView, TextBox, ButtonClose, Checkbox, ButtonPlain, MnemonicInput, QRScanner } from 'src/components';
+import { Button, Screen, StyledText, FormItem, ButtonClose, ButtonPlain, MnemonicInput, QRScanner } from 'src/components';
 import store from 'src/store';
-import { downloadPaperWallet, generateMnemonic, usePasscode, useValidation, validateAccountName, validateRequired } from 'src/utils';
-import { config } from 'src/config';
-import { showMessage } from 'react-native-flash-message';
+import {usePasscode } from 'src/utils';
 import { Router } from 'src/Router';
 
-export const ImportWallet = (props) => {
-    const { navigation } = props;
-    const [isLoading, setIsLoading] = useState(false);
+export const ImportWallet = () => {
     // notranslate
-    const [name, setName] = useState('First Account');
+    const [name] = useState('First Account');
     const [mnemonic, setMnemonic] = useState('');
     const [isMnemonicValid, setIsMnemonicValid] = useState(false);
     const [isQRScannerVisible, setIsQRScannerVisible] = useState(false);
-    const isButtonDisabled = isLoading || !mnemonic.length ||  !isMnemonicValid;
+    const isButtonDisabled = !mnemonic.length ||  !isMnemonicValid;
 
     const toggleQRScanner = () => setIsQRScannerVisible(!isQRScannerVisible);
     const close = () => {
@@ -40,7 +36,6 @@ export const ImportWallet = (props) => {
                 <Button title="Next" isDisabled={isButtonDisabled} onPress={next} />
             </FormItem>
         }>
-            {isLoading && <LoadingIndicator />}
             <FormItem>
                 <ButtonClose type="cancel" style={styles.buttonCancel} onPress={close} />
             </FormItem>

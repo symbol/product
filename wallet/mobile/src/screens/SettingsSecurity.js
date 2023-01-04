@@ -1,8 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet } from 'react-native';
 import { hasUserSetPinCode, deleteUserPinCode } from '@haskkor/react-native-pincode';
-import { Screen, FormItem, StyledText, LoadingIndicator, Checkbox, MnemonicView } from 'src/components';
-import { borders, colors, spacings } from 'src/styles';
+import { Screen, FormItem, StyledText, Checkbox, MnemonicView } from 'src/components';
 import {  handleError, useDataManager, usePasscode } from 'src/utils';
 import { SecureStorage } from 'src/storage';
 import { $t } from 'src/localization';
@@ -43,8 +41,7 @@ export function SettingsSecurity() {
     const isLoading = isDataLoading || isSetPasscodeLoading;
 
     return (
-        <Screen>
-            {isLoading && <LoadingIndicator />}
+        <Screen isLoading={isLoading}>
             <FormItem>
                 <StyledText type="title">
                     {$t('settings_security_pin_title')}
@@ -74,17 +71,3 @@ export function SettingsSecurity() {
         </Screen>
     );
 };
-
-const styles = StyleSheet.create({
-    fill: {
-        flex: 1
-    },
-    item: {
-        borderRadius: borders.borderRadius,
-        backgroundColor: colors.bgCard,
-        padding: spacings.padding,
-    },
-    itemSelected: {
-        backgroundColor: colors.accentLightForm
-    }
-});

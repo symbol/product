@@ -5,7 +5,7 @@ import { Screen, FormItem, StyledText, DialogBox } from 'src/components';
 import { $t } from 'src/localization';
 import { Router } from 'src/Router';
 import { connect } from 'src/store';
-import { borders, colors, fonts, spacings } from 'src/styles';
+import { borders, colors, fonts, layout, spacings } from 'src/styles';
 import { clearCache, usePasscode, useToggle } from 'src/utils';
 
 export const Settings = connect(state => ({
@@ -48,21 +48,27 @@ export const Settings = connect(state => ({
 
     return (
         <Screen>
-            <FlatList data={settingsList} keyExtractor={(item, index) => 'settings' + index} renderItem={({item, index}) => (
-                <FormItem type="list">
-                    <TouchableOpacity style={styles.item} onPress={item.handler}>
-                        <Image source={item.icon} style={styles.itemIcon} />
-                        <View style={styles.itemContent}>
-                            <StyledText type="subtitle">
-                                {item.title}
-                            </StyledText>
-                            <StyledText type="body">
-                                {item.description}
-                            </StyledText> 
-                        </View>
-                    </TouchableOpacity>
-                </FormItem>
-            )} />
+            <FormItem clear="vertical">
+                <FlatList
+                    contentContainerStyle={layout.listContainer}
+                    data={settingsList} 
+                    keyExtractor={(item, index) => 'settings' + index} 
+                    renderItem={({item, index}) => (
+                    <FormItem type="list">
+                        <TouchableOpacity style={styles.item} onPress={item.handler}>
+                            <Image source={item.icon} style={styles.itemIcon} />
+                            <View style={styles.itemContent}>
+                                <StyledText type="subtitle">
+                                    {item.title}
+                                </StyledText>
+                                <StyledText type="body">
+                                    {item.description}
+                                </StyledText> 
+                            </View>
+                        </TouchableOpacity>
+                    </FormItem>
+                )} />
+            </FormItem>
             <DialogBox 
                 type="confirm" 
                 title={$t('settings_logout_confirm_title')}
