@@ -1,11 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { BackHandler, Image, StyleSheet, View } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { showMessage } from 'react-native-flash-message';
 import { FlatList, TouchableOpacity } from 'react-native-gesture-handler';
-import { Dropdown, Screen, FormItem, StyledText, LoadingIndicator } from 'src/components';
+import { Dropdown, Screen, FormItem, StyledText } from 'src/components';
 import store, { connect } from 'src/store';
-import { borders, colors, fonts, spacings } from 'src/styles';
-import { clearCache, usePasscode } from 'src/utils';
+import { borders, colors, spacings } from 'src/styles';
 
 export const SettingsNetwork = connect(state => ({
     currentAccount: state.account.current,
@@ -62,8 +61,7 @@ export const SettingsNetwork = connect(state => ({
     }, [networkIdentifier, nodeUrl]);
 
     return (
-        <Screen>
-            {isLoading && <LoadingIndicator />}
+        <Screen isLoading={isLoading}>
             <FormItem>
                 <StyledText type="title">
                     {/* notranslate */}
@@ -72,13 +70,12 @@ export const SettingsNetwork = connect(state => ({
                 {/* notranslate */}
                 <Dropdown value={selectedNetworkIdentifier} list={networkIdentifiers} title="Network Type" onChange={selectNetwork} />
             </FormItem>
-            <FormItem style={styles.fill}>
+            <FormItem clear="bottom" fill>
                 <StyledText type="title">
                     {/* notranslate */}
                     Select Node:
                 </StyledText>
                 <FlatList 
-                    style={styles.fill}
                     data={networkNodes} 
                     keyExtractor={(item, index) => 'nl' + item + index} 
                     renderItem={({item, index}) => (
@@ -96,9 +93,6 @@ export const SettingsNetwork = connect(state => ({
 });
 
 const styles = StyleSheet.create({
-    fill: {
-        flex: 1
-    },
     item: {
         borderRadius: borders.borderRadius,
         backgroundColor: colors.bgCard,

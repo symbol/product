@@ -147,6 +147,9 @@ export const layout = {
     },
     fill: {
         flex: 1
+    },
+    listContainer: {
+        paddingTop: spacings.margin
     }
 }
 

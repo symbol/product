@@ -1,14 +1,13 @@
 import { useNavigation } from '@react-navigation/native';
-import React, { useEffect, useState } from 'react';
-import { StyleSheet, Vibration } from 'react-native';
-import { showMessage } from 'react-native-flash-message';
-import { FlatList, TouchableOpacity } from 'react-native-gesture-handler';
+import React, { useEffect } from 'react';
+import { StyleSheet } from 'react-native';
+import { TouchableOpacity } from 'react-native-gesture-handler';
 import DraggableFlatList from 'react-native-draggable-flatlist'
-import { AccountCard, Screen, FormItem, LoadingIndicator, Button, ButtonPlain } from 'src/components';
+import { AccountCard, Screen, FormItem, Button, ButtonPlain } from 'src/components';
 import store, { connect } from 'src/store';
 import { handleError, useDataManager, usePromises, useProp, vibrate } from 'src/utils';
 import Animated, { interpolate, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
-import { timings } from 'src/styles';
+import { layout, timings } from 'src/styles';
 import { Router } from 'src/Router';
 
 export const AccountList = connect(state => ({
@@ -83,7 +82,7 @@ export const AccountList = connect(state => ({
 
     return (
         // notranslate
-        <Screen bottomComponent={!isLoading && <>
+        <Screen isLoading={isLoading} bottomComponent={<>
             <FormItem>
                 <Button title="Add Seed Account" onPress={Router.goToAddSeedAccount} />
             </FormItem>
@@ -91,34 +90,36 @@ export const AccountList = connect(state => ({
                 <ButtonPlain title="Add External Account" isCentered onPress={Router.goToAddExternalAccount} />
             </FormItem>
         </>}>
-            {isLoading && <LoadingIndicator />}
-            <DraggableFlatList 
-                onDragEnd={onDragEnd}
-                containerStyle={styles.fill}
-                data={updatedNetworkAccounts} 
-                keyExtractor={(item, index) => 'al' + item.name + index} 
-                renderItem={({item, drag, isActive}) => (
-                <FormItem type="list">
-                    <TouchableOpacity 
-                        onPress={() => selectAccount(item)} 
-                        onLongPress={() => handleLongPress(drag)} 
-                        onPressOut={handlePressOut}
-                        delayLongPress={250}
-                    >
-                        <Animated.View style={isActive && animatedItem}>
-                            <AccountCard
-                                name={item.name}
-                                address={item.address}
-                                balance={balances[item.address]}
-                                ticker={ticker}
-                                isLoading={accountBalanceStateMap[item.address]}
-                                isActive={isAccountSelected(item)}
-                                isSimplified
-                            />
-                        </Animated.View>
-                    </TouchableOpacity>
-                </FormItem>
-            )} />
+            <FormItem clear="vertical" fill>
+                <DraggableFlatList 
+                    contentContainerStyle={layout.listContainer}
+                    onDragEnd={onDragEnd}
+                    containerStyle={styles.fill}
+                    data={updatedNetworkAccounts} 
+                    keyExtractor={(item, index) => 'al' + item.name + index} 
+                    renderItem={({item, drag, isActive}) => (
+                    <FormItem type="list">
+                        <TouchableOpacity 
+                            onPress={() => selectAccount(item)} 
+                            onLongPress={() => handleLongPress(drag)} 
+                            onPressOut={handlePressOut}
+                            delayLongPress={250}
+                        >
+                            <Animated.View style={isActive && animatedItem}>
+                                <AccountCard
+                                    name={item.name}
+                                    address={item.address}
+                                    balance={balances[item.address]}
+                                    ticker={ticker}
+                                    isLoading={accountBalanceStateMap[item.address]}
+                                    isActive={isAccountSelected(item)}
+                                    isSimplified
+                                />
+                            </Animated.View>
+                        </TouchableOpacity>
+                    </FormItem>
+                )} />
+            </FormItem>
         </Screen>
     );
 });

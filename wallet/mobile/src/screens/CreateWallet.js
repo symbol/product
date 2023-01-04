@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Image, StyleSheet } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
-import { Button, LoadingIndicator, Screen, Steps, StyledText, FormItem, MnemonicView, TextBox, ButtonClose, Checkbox } from 'src/components';
+import { Button, Screen, Steps, StyledText, FormItem, MnemonicView, TextBox, ButtonClose, Checkbox } from 'src/components';
 import store from 'src/store';
 import { createPrivateKeysFromMnemonic, downloadPaperWallet, generateMnemonic, publicAccountFromPrivateKey, usePasscode, useValidation, validateAccountName, validateRequired } from 'src/utils';
 import { config } from 'src/config';
@@ -63,13 +63,12 @@ export const CreateWallet = (props) => {
     }, []);
 
     return (
-        <Screen bottomComponent={
+        <Screen isLoading={isLoading} bottomComponent={
             step === 1 && <FormItem bottom>
                 {/* notranslate */}
                 <Button title="Next" isDisabled={isButtonDisabled} onPress={next} />
             </FormItem>
         }>
-            {isLoading && <LoadingIndicator />}
             <FormItem>
                 <ButtonClose type="cancel" style={styles.buttonCancel} onPress={close} />
             </FormItem>

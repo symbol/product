@@ -67,9 +67,11 @@ export const Send = connect(state => ({
     }, [transactionFees, speed]);
 
     return (
-        <Screen
-            bottomComponent={<Button title={$t('button_send')} isDisabled={isButtonDisabled} onPress={toggleConfirm} />}
-        >
+        <Screen bottomComponent={
+            <FormItem>
+                <Button title={$t('button_send')} isDisabled={isButtonDisabled} onPress={toggleConfirm} />
+            </FormItem>
+        }>
             <ScrollView>
                 <FormItem>
                     <StyledText type="title">{$t('form_transfer_title')}</StyledText>

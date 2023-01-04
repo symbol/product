@@ -64,11 +64,11 @@ export const AddSeedAccount = connect(state => ({
                 {/* notranslate */}
                 <TextBox title="Name" errorMessage={nameErrorMessage} value={accountName} onChange={setAccountName} />
             </FormItem>
-            <FormItem style={styles.fill}>
+            <FormItem fill clear="bottom">
                 {/* notranslate */}
                 <StyledText type="title">Select Your Seed Account</StyledText>
                 <FlatList 
-                    data={remainedSeedAccounts} 
+                    data={remainedSeedAccounts}
                     keyExtractor={(item, index) => 'seed' + index} 
                     renderItem={({item}) => (
                     <FormItem type="list">
@@ -86,6 +86,7 @@ export const AddSeedAccount = connect(state => ({
                     </FormItem>
                 )} />
             </FormItem>
+            
         </Screen>
     );
 });
