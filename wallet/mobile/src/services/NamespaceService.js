@@ -21,8 +21,9 @@ export class NamespaceService {
                     type: namespace.alias.type === 1 ? 'mosaic' : 'address',
                     id: namespace.alias.mosaicId || aliasAddress || ''
                 },
-                endHeight: namespace.endHeight,
-                isCreatedByCurrentAccount: address === ownerAddress
+                startHeight: parseInt(namespace.startHeight),
+                endHeight: parseInt(namespace.endHeight),
+                ownerAddress
             }
         });
     }

@@ -1,49 +1,81 @@
 import React from 'react';
-import { useEffect } from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
-import Animated, {useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { $t } from 'src/localization';
 import { borders, colors, fonts, spacings } from 'src/styles';
 import { trunc } from 'src/utils';
-import { FormItem } from './FormItem';
+import { ItemBase } from 'src/components';
+import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import { useEffect } from 'react';
 
 export function ItemAsset(props) {
-    const { group, asset } = props;
-    const { status, amount, name, id } = asset;
+    const { group, asset, chainHeight } = props;
+    const { amount, name, id, startHeight, isUnlimitedDuration } = asset;
     const amountText = amount ? amount : '';
-    const statusText = status === 'active' ? 'active' : 'expired';
-    const description = group === 'mosaic'
-        ? `Mosaic ID: ${id}`
-        : `Linked to: ${trunc(asset.alias.id, 'address')}`
-    const iconSrc = group === 'mosaic'
-        ? require('src/assets/images/icon-mosaic-native.png')
-        : require('src/assets/images/icon-namespace.png')
+    let description;
+    let iconSrc;
+    let endHeight;
 
-    const expanded = useSharedValue(0);
-    const animatedContainer = useAnimatedStyle(() => ({
-        opacity: expanded.value
+    if (group === 'mosaic') {
+        description = `ID: ${id}`;
+        iconSrc = require('src/assets/images/icon-mosaic-native.png');
+        endHeight = asset.startHeight + asset.duration;
+    }
+    else if (group === 'namespace') {
+        description = `Linked to: ${trunc(asset.alias.id, 'address')}`
+        iconSrc = require('src/assets/images/icon-namespace.png');
+        endHeight = asset.endHeight;
+    }
+
+    const agePercent = chainHeight >= endHeight 
+        ? 100
+        : Math.trunc(((chainHeight - startHeight) * 100) / (endHeight - startHeight));
+    const remainedBlocks = endHeight - chainHeight;
+    const statusText = isUnlimitedDuration
+        ? ''
+        : agePercent === 100 
+        ? 'Expired' 
+        : `Expire in ${remainedBlocks} blocks`;
+
+    const progressBarColorStyle = remainedBlocks > 2880 
+        ? styles.progressNormal 
+        : remainedBlocks > 0 
+        ? styles.progressWarning
+        : styles.progressExpired
+    
+    const displayedPercentage = useSharedValue(0);
+    const animatedProgressBarStyle = useAnimatedStyle(() => ({
+        width: `${displayedPercentage.value}%`
     }));
 
-    useEffect(() => {
-        setTimeout(() => expanded.value = withTiming(1), 150);
-    }, [])
+    const progressBarStyle = [styles.progressBar, progressBarColorStyle, animatedProgressBarStyle];
 
+    useEffect(() => {
+        if (!isUnlimitedDuration) {
+            setTimeout(() => displayedPercentage.value = withSpring(agePercent), 500);
+        }
+    }, [displayedPercentage, agePercent])
+    
     return (
-        <FormItem type="list">
-                <Animated.View style={[animatedContainer, styles.root]}>
-                    <View style={styles.sectionIcon}>
-                        <Image source={iconSrc} style={styles.icon} />
-                    </View>
-                    <View style={styles.sectionMiddle}>
-                        <Text style={styles.textName}>{name}</Text>
-                        <Text style={styles.textDescription}>{description}</Text>
-                        <View style={styles.rowAmount}>
+        <ItemBase style={styles.root} isLayoutAnimationEnabled>
+            <View style={styles.sectionIcon}>
+                <Image source={iconSrc} style={styles.icon} />
+            </View>
+            <View style={styles.sectionMiddle}>
+                <Text style={styles.textName}>{name}</Text>
+                <Text style={styles.textDescription}>{description}</Text>
+                <View style={styles.rowAmount}>
+                    <View style={styles.status}>
+                        {!!statusText && (<>
                             <Text style={styles.textStatus}>{statusText}</Text>
-                            <Text style={styles.textAmount}>{amountText}</Text>
-                        </View>
+                            <View style={styles.progressBarWrapper}>
+                                <Animated.View style={progressBarStyle} />
+                            </View> 
+                        </>)}
                     </View>
-                </Animated.View>
-        </FormItem>
+                    <Text style={styles.textAmount}>{amountText}</Text>
+                </View>
+            </View>
+        </ItemBase>
     );
 };
 
@@ -52,11 +84,6 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         width: '100%',
         minHeight: 75,
-        backgroundColor: colors.bgCard,
-        borderColor: colors.bgCard,
-        borderWidth: borders.borderWidth,
-        borderRadius: borders.borderRadius,
-        padding: spacings.paddingSm
     },
     icon: {
         height: 36,
@@ -68,11 +95,14 @@ const styles = StyleSheet.create({
     },
     textDescription: {
         ...fonts.body,
-        color: colors.textBody
+        color: colors.textBody,
+        opacity: 0.7,
     },
     textStatus: {
-        ...fonts.body,
-        color: colors.textBody
+        ...fonts.label,
+        color: colors.textBody,
+        fontSize: 10,
+        opacity: 0.7,
     },
     textAmount: {
         ...fonts.bodyBold,
@@ -91,5 +121,33 @@ const styles = StyleSheet.create({
         alignSelf: 'stretch',
         flexDirection: 'row',
         justifyContent: 'space-between'
+    },
+    status: {
+        maxWidth: '50%',
+        flex: 1,
+        flexDirection: 'column',
+    },
+    progressBarWrapper: {
+        position: 'relative',
+        width: '100%',
+        height: borders.borderWidth,
+        backgroundColor: colors.bgMain,
+        overflow: 'hidden'
+    },
+    progressBar: {
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        width: '100%',
+        height: '100%',
+    },
+    progressNormal: {
+        backgroundColor: colors.primary
+    },
+    progressWarning: {
+        backgroundColor: colors.warning
+    },
+    progressExpired: {
+        backgroundColor: colors.danger
     }
 });

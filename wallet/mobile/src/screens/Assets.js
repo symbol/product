@@ -9,11 +9,12 @@ import { handleError, useDataManager, useInit } from 'src/utils';
 
 export const Assets = connect(state => ({
     isWalletReady: state.wallet.isReady,
+    chainHeight: state.network.chainHeight,
     currentAccount: state.account.current,
     mosaics: state.account.mosaics,
     namespaces: state.account.namespaces,
 }))(function Assets(props) {
-    const { isWalletReady, currentAccount, mosaics, namespaces } = props;
+    const { isWalletReady, chainHeight, currentAccount, mosaics, namespaces } = props;
     const [fetchData, isLoading] = useDataManager(async () => {
         await store.dispatchAction({type: 'account/fetchData'});
     }, null, handleError);
@@ -44,7 +45,7 @@ export const Assets = connect(state => ({
                 refreshControl={<RefreshControl refreshing={isLoading} onRefresh={fetchData} />}
                 sections={sections}
                 keyExtractor={(item, section) => section.group + item.id}
-                renderItem={({item, section}) => <ItemAsset asset={item} group={section.group} />}
+                renderItem={({item, section}) => <ItemAsset asset={item} chainHeight={chainHeight} group={section.group} />}
                 renderSectionHeader={({ section: { title, style } }) => (
                     <View style={styles.sectionHeader}>
                         <StyledText type="label" style={style}>{title}</StyledText>

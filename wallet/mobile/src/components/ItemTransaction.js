@@ -1,13 +1,13 @@
 import React from 'react';
 import { useEffect } from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
+import { FormItem, ItemBase } from 'src/components';
 import Animated, {useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { $t } from 'src/localization';
 import { connect } from 'src/store';
 import { borders, colors, fonts, spacings } from 'src/styles';
 import { isAggregateTransaction, isIncomingTransaction, isOutgoingTransaction, trunc } from 'src/utils';
 import { TransactionType } from 'symbol-sdk';
-import { FormItem } from './FormItem';
 
 export const ItemTransaction = connect(state => ({
     currentAccount: state.account.current,
@@ -120,36 +120,20 @@ export const ItemTransaction = connect(state => ({
         styleRoot.push(styles.rootPartial)
     }
 
-    const expanded = useSharedValue(0);
-    const animatedContainer = useAnimatedStyle(() => ({
-        opacity: expanded.value
-    }));
-
-    useEffect(() => {
-        setTimeout(() => expanded.value = withTiming(1), 150);
-    }, [])
-
     return (
-        <FormItem type="list">
-            {/* TODO: uncomment when issue is fixed https://github.com/react-navigation/react-navigation/issues/10531 */}
-            {/* <Animated.View entering={FadeInUp.duration(500)}> */}
-            {/* <Animated.View entering={FadeIn.duration(1000)}> */}
-                <Animated.View style={[animatedContainer, styleRoot]}>
-                    <View style={styles.sectionIcon}>
-                        <Image source={iconSrc} style={styles.icon} />
-                    </View>
-                    <View style={styles.sectionMiddle}>
-                        <Text style={styles.textAction}>{action}</Text>
-                        <Text style={styles.textDescription}>{description}</Text>
-                        <View style={styles.rowAmount}>
-                            <Text style={styles.textDate}>{date}</Text>
-                            <Text style={styleAmount}>{amountText}</Text>
-                        </View>
-                    </View>
-                </Animated.View>
-            {/* </Animated.View> */}
-            {/* </Animated.View> */}
-        </FormItem>
+        <ItemBase style={styleRoot} isLayoutAnimationEnabled>
+            <View style={styles.sectionIcon}>
+                <Image source={iconSrc} style={styles.icon} />
+            </View>
+            <View style={styles.sectionMiddle}>
+                <Text style={styles.textAction}>{action}</Text>
+                <Text style={styles.textDescription}>{description}</Text>
+                <View style={styles.rowAmount}>
+                    <Text style={styles.textDate}>{date}</Text>
+                    <Text style={styleAmount}>{amountText}</Text>
+                </View>
+            </View>
+        </ItemBase>
     );
 });
 
@@ -164,11 +148,6 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         width: '100%',
         minHeight: 75,
-        backgroundColor: colors.bgCard,
-        borderColor: colors.bgCard,
-        borderWidth: borders.borderWidth,
-        borderRadius: borders.borderRadius,
-        padding: spacings.paddingSm
     },
     rootPartial: {
         borderColor: colors.neutral
@@ -193,7 +172,9 @@ const styles = StyleSheet.create({
     },
     textDate: {
         ...fonts.body,
-        color: colors.textBody
+        color: colors.textBody,
+        fontSize: 10,
+        opacity: 0.7
     },
     textAmount: {
         ...fonts.bodyBold,
