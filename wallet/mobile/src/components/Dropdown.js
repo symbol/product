@@ -6,7 +6,7 @@ import Animated, { interpolateColor, useAnimatedStyle, useSharedValue, withTimin
 import { borders, colors, fonts, spacings, timings } from 'src/styles';
 
 export const Dropdown = props => {
-    const { testID, title, value, list, onChange } = props;
+    const { testID, title, value, list, renderItem, onChange } = props;
     const [isOpen, setIsOpen] = useState(false);
     const isPressed = useSharedValue(false);
     const animatedContainer = useAnimatedStyle(() => ({
@@ -54,24 +54,23 @@ export const Dropdown = props => {
             visible={isOpen}
             onRequestClose={handleClose}
         >
-            <View style={styles.modal}>
-                <View style={styles.modalContainer}>
+            <Pressable style={styles.modal} onPress={handleClose}>
+                <Pressable style={styles.modalContainer}>
                     <StyledText type="title">{title}:</StyledText>
                     {isOpen && <FlatList
                         data={list} 
                         keyExtractor={(item, index) => 'dropdown' + index} 
                         renderItem={({item, index}) => (
-                        <FormItem type="list">
-                            {/* <Animated.View entering={ZoomInUp}> */}
-                                <TouchableOpacity style={getItemStyle(item.value)} onPress={() => handleChange(item.value)}>
-                                    <StyledText type="body">{item.label}</StyledText>
-                                </TouchableOpacity>
-                            {/* </Animated.View> */}
-                        </FormItem>
+                            <TouchableOpacity style={getItemStyle(item.value)} onPress={() => handleChange(item.value)}>
+                                {renderItem
+                                    ? renderItem({item, index})
+                                    : <StyledText type="body">{item.label}</StyledText>
+                                }
+                            </TouchableOpacity>
                     )} />}
-                </View>
+                </Pressable>
                 <ButtonClose type="cancel" style={styles.buttonClose} onPress={handleClose}/>
-            </View>
+            </Pressable>
         </Modal>
     </View>);
 };
@@ -104,16 +103,20 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         width: '100%',
         height: '100%',
-        backgroundColor: colors.bgForm,
+        backgroundColor: '#000c',
         paddingHorizontal: spacings.padding,
     },
     modalContainer: {
         width: '100%',
-        height: '70%',
+        minHeight: '30%',
+        maxHeight: '70%',
+        backgroundColor: colors.bgMain,
+        borderColor: colors.accentLightForm,
+        borderRadius: borders.borderRadiusForm,
+        padding: spacings.padding,
     },
     item: {
-        backgroundColor: colors.bgForm,
-        padding: spacings.padding,
+        padding: spacings.paddingSm,
         borderRadius: borders.borderRadius,
         borderColor: colors.accentLightForm,
     },
@@ -127,6 +130,7 @@ const styles = StyleSheet.create({
     },
     buttonClose: {
         top: spacings.margin,
-        right: spacings.margin
+        padding: spacings.padding,
+        alignSelf: 'center'
     }
 });
