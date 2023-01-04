@@ -17,7 +17,6 @@ export default {
             nodeUrl: null,
             networkIdentifier: null,
             generationHash: null,
-            chainHeight: null,
             epochAdjustment: null,
             transactionFees: {
                 minFeeMultiplier: null,
@@ -27,7 +26,8 @@ export default {
                 mosaicId: null,
                 divisibility: null,
             },
-        }
+        },
+        chainHeight: null
     },
     mutations: {
         setConnectionTimer(state, payload) {
@@ -52,6 +52,10 @@ export default {
         },
         setNetworkProperties(state, payload) {
             state.network.networkProperties = payload;
+            return state;
+        },
+        setChainHeight(state, payload) {
+            state.network.chainHeight = payload;
             return state;
         },
     },
@@ -89,7 +93,7 @@ export default {
         },
         runConnectionJob: async ({ state, commit, dispatchAction }) => {
             const { connectionTimer, selectedNodeUrl, nodeUrls, networkIdentifier, networkProperties, status } = state.network;
-            let updatedNetworkProperties;
+            let { chainHeight } = state.network;
             const runAgain = () => {
                 const newConnectionTimer = setTimeout(() => dispatchAction({type: 'network/runConnectionJob'}), 15000);
                 commit({type: 'network/setConnectionTimer', payload: newConnectionTimer});
@@ -101,7 +105,7 @@ export default {
             // Try to connect to current node
             try {
                 const nodeUrl = selectedNodeUrl || networkProperties.nodeUrl;
-                await NetworkService.ping(nodeUrl);
+                chainHeight = await NetworkService.ping(nodeUrl);
                 if (!networkProperties.nodeUrl) {
                     await dispatchAction({type: 'network/fetchNetworkProperties', payload: nodeUrl});
                 }
@@ -111,6 +115,9 @@ export default {
                 if (newStatus !== status) {
                     commit({type: 'network/setStatus', payload: newStatus});
                     dispatchAction({type: 'listener/connect'});
+                }
+                if (state.network.chainHeight !== chainHeight) {
+                    commit({type: 'network/setChainHeight', payload: chainHeight});
                 }
                 runAgain();
                 return;
@@ -143,7 +150,7 @@ export default {
             for (const nodeUrl of nodeUrls[networkIdentifier]) {
                 try {
                     console.log('nodeUrl', nodeUrl)
-                    await NetworkService.ping(nodeUrl);
+                    chainHeight = await NetworkService.ping(nodeUrl);
                     await dispatchAction({type: 'network/fetchNetworkProperties', payload: nodeUrl});
                     dispatchAction({type: 'listener/connect'});
                     console.log('connected')
@@ -153,6 +160,10 @@ export default {
                     return;
                 }
                 catch {}
+            }
+
+            if (state.network.chainHeight !== chainHeight) {
+                commit({type: 'network/setChainHeight', payload: chainHeight});
             }
 
             console.log('failed-auto')

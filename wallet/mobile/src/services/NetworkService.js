@@ -65,7 +65,9 @@ export class NetworkService {
     }
 
     static async ping(nodeUrl) {
-        const endpoint = `${nodeUrl}/node/info`;
-        return makeRequest(endpoint);
+        const endpoint = `${nodeUrl}/chain/info`;
+        const chainInfo = await makeRequest(endpoint);
+
+        return parseInt(chainInfo.height);
     }
 }

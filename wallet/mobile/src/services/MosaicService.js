@@ -24,7 +24,20 @@ export class MosaicService {
         });
 
         // Create map <id, info> from response
-        const mosaicInfosEntires = data.map(mosaicInfos => [mosaicInfos.mosaic.id, mosaicInfos.mosaic]);
+        const mosaicInfosEntires = data.map(mosaicInfos => {
+            const duration = parseInt(mosaicInfos.mosaic.duration);
+            const startHeight = parseInt(mosaicInfos.mosaic.startHeight);
+            const endHeight = startHeight + duration;
+            const isUnlimitedDuration = duration === 0;
+
+            return [mosaicInfos.mosaic.id, {
+                ...mosaicInfos.mosaic,
+                duration,
+                startHeight,
+                endHeight,
+                isUnlimitedDuration,
+            }]
+        });
         const mosaicInfos = Object.fromEntries(mosaicInfosEntires);
         
         // Find namespace ids if there are some in the mosaic list. Mosaic infos are not available for namespace ids
@@ -54,6 +67,6 @@ export class MosaicService {
             }
         }
 
-        return {...mosaicInfos, ...remainedMosaicInfos};
+        return {...mosaicInfos, ...remainedMosaicInfos}
     }
 }
