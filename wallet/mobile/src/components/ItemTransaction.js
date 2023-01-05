@@ -13,8 +13,8 @@ export const ItemTransaction = connect(state => ({
     currentAccount: state.account.current,
     ticker: state.network.ticker,
 }))(function ItemTransaction(props) {
-    const { currentAccount, group, transaction, ticker } = props;
-    const { type, date, amount, signerAddress, recipientAddress } = transaction;
+    const { currentAccount, group, transaction, ticker, onPress } = props;
+    const { type, deadline, amount, signerAddress, recipientAddress } = transaction;
     let iconSrc;
     let action = $t(`transactionDescriptor_${type}`);
     let description = '';
@@ -121,7 +121,7 @@ export const ItemTransaction = connect(state => ({
     }
 
     return (
-        <ItemBase style={styleRoot} isLayoutAnimationEnabled>
+        <ItemBase style={styleRoot} isLayoutAnimationEnabled onPress={onPress}>
             <View style={styles.sectionIcon}>
                 <Image source={iconSrc} style={styles.icon} />
             </View>
@@ -129,7 +129,7 @@ export const ItemTransaction = connect(state => ({
                 <Text style={styles.textAction}>{action}</Text>
                 <Text style={styles.textDescription}>{description}</Text>
                 <View style={styles.rowAmount}>
-                    <Text style={styles.textDate}>{date}</Text>
+                    <Text style={styles.textDate}>{deadline}</Text>
                     <Text style={styleAmount}>{amountText}</Text>
                 </View>
             </View>

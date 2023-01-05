@@ -7,6 +7,9 @@ export const StyledText = props => {
     let customStyle;
 
     switch (type) {
+        case 'title-large':
+            customStyle = styles.titleLarge;
+            break;
         case 'title':
             customStyle = styles.title;
             break;
@@ -40,6 +43,9 @@ export const StyledText = props => {
 const styles = StyleSheet.create({
     root: {
         color: colors.textBody
+    },
+    titleLarge: {
+        ...fonts.titleLarge
     },
     title: {
         ...fonts.title

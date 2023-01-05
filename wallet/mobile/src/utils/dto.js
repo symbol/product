@@ -72,11 +72,12 @@ export const transactionFromDTO = (transaction, config) => {
 export const baseTransactionFromDTO = (transaction, {networkProperties}) => {
     return baseTransaction = {
         type: transaction.type,
-        date: formatDeadline(transaction.deadline.toLocalDateTime(networkProperties.epochAdjustment)),
-        signerAddress: transaction.signer.address.plain(),
+        deadline: formatDeadline(transaction.deadline.toLocalDateTime(networkProperties.epochAdjustment)),
+        
         hash: transaction.hash || transaction.transactionInfo?.hash,
         id: transaction.transactionInfo?.id,
-        fee: transaction.maxFee.toString(),
+        fee: getMosaicRelativeAmount(transaction.maxFee.toString(), networkProperties.networkCurrency.divisibility),
+        signerAddress: transaction.signer.address.plain(),
     };
 };
 
