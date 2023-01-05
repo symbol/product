@@ -3,6 +3,7 @@ import { ActivityIndicator, SectionList, StyleSheet, View } from 'react-native';
 import { RefreshControl } from 'react-native-gesture-handler';
 import { Screen, TitleBar, TabNavigator, StyledText, ItemTransaction, ItemTransactionPlaceholder, FormItem } from 'src/components';
 import { $t } from 'src/localization';
+import { Router } from 'src/Router';
 import store, { connect } from 'src/store';
 import { colors, spacings } from 'src/styles';
 import { handleError, useDataManager, useInit } from 'src/utils';
@@ -81,7 +82,9 @@ export const History = connect(state => ({
                 onEndReachedThreshold={1}
                 sections={sections}
                 keyExtractor={(item, section) => section.group + item.id}
-                renderItem={({item, section}) => <ItemTransaction group={section.group} transaction={item} />}
+                renderItem={({item, section}) => (
+                    <ItemTransaction group={section.group} transaction={item} onPress={() => Router.goToTransactionDetails({transaction: item})}/>
+                )}
                 renderSectionHeader={({ section: { title, style } }) => (
                     <FormItem>
                         <StyledText type="label" style={style}>{title}</StyledText>

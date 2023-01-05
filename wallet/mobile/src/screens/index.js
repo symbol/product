@@ -13,4 +13,5 @@ export * from './Settings';
 export * from './SettingsAbout';
 export * from './SettingsNetwork';
 export * from './SettingsSecurity';
+export * from './TransactionDetails';
 export * from './Welcome';

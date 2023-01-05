@@ -1,12 +1,12 @@
 import React from 'react';
 import { useEffect } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View, Pressable } from 'react-native';
 import Animated, {useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { borders, colors, spacings } from 'src/styles';
 import { FormItem } from './FormItem';
 
 export function ItemBase(props) {
-    const { children, isLayoutAnimationEnabled, style } = props;
+    const { children, isLayoutAnimationEnabled, style, onPress } = props;
 
     const opacity = useSharedValue(0);
     const animatedContainer = useAnimatedStyle(() => ({
@@ -25,9 +25,11 @@ export function ItemBase(props) {
             {/* TODO: uncomment when issue is fixed https://github.com/react-navigation/react-navigation/issues/10531 */}
             {/* <Animated.View entering={FadeInUp.duration(500)}> */}
             {/* <Animated.View entering={FadeIn.duration(1000)}> */}
+            <Pressable onPress={() => onPress && onPress()}>
                 <Animated.View style={styleRoot}>
                     {children}
                 </Animated.View>
+            </Pressable>
             {/* </Animated.View> */}
             {/* </Animated.View> */}
         </FormItem>
