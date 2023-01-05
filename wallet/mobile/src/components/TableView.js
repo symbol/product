@@ -1,8 +1,8 @@
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Image, StyleSheet, View } from 'react-native';
 
 import { connect } from 'src/store';
-import { spacings } from 'src/styles';
+import { colors, spacings } from 'src/styles';
 import { ButtonCopy, FormItem, StyledText } from 'src/components';
 import { $t } from 'src/localization';
 
@@ -29,6 +29,7 @@ const renderTypeMap = {
         '_addressDeletions',
     ],
     boolean: ['supplyMutable', 'transferable', 'restrictable'],
+    fee: ['fee', 'maxFee'],
     amount: ['amount', 'resolvedFee'],
     secret: ['privateKey', 'remotePrivateKey', 'vrfPrivateKey'],
     mosaics: ['mosaics'],
@@ -50,19 +51,20 @@ export const TableView = connect(state => ({
     currentAccount: state.account.current,
     ticker: state.network.ticker,
 }))(function TableView(props) {
-    const { data } = props;
+    const { data, ticker } = props;
 
-    if (!data) {
+    if (!data || typeof data !== 'object') {
         return null;
     }
 
     let tableData = data;
-
+    
     if (!Array.isArray(data)) {
         tableData = Object.entries(data)
             .filter(([key, value]) => value !== null && value !== undefined)
             .map(([key, value]) => ({key, value}));
     }
+
 
     const renderKey = (item) => {
         const translatedKey = $t(`data_${item.key}`);
@@ -75,11 +77,7 @@ export const TableView = connect(state => ({
     };
 
     const renderValue = (item) => {
-        let ItemTemplate = (
-            <StyledText type="body">
-                {item.value}
-            </StyledText>
-        );
+        let ItemTemplate;
         
         Object.keys(renderTypeMap).forEach(renderType => renderTypeMap[renderType].find(acceptedKey => {
             if (item.key !== acceptedKey) {
@@ -109,14 +107,30 @@ export const TableView = connect(state => ({
                         </View>
                     );
                     break;
-                case 'mosaics':
+                case 'fee':
                     ItemTemplate = (
-                        <View style={styles.row}>
+                        <View style={styles.mosaicName}>
+                            <Image source={require('src/assets/images/icon-select-mosaic-native.png')} style={styles.mosaicIcon} />
+                            <StyledText type="body" style={styles.fee}>
+                                {item.value} {ticker}
+                            </StyledText>
+                        </View>
+                    );
+                    break;
+                case 'mosaics':
+                    const getMosaicIconSrc = mosaic => mosaic.name === 'symbol.xym' 
+                        ? require('src/assets/images/icon-select-mosaic-native.png')
+                        : require('src/assets/images/icon-select-mosaic-custom.png');
+                    ItemTemplate = (
+                        <View style={styles.col}>
                             {item.value.map(mosaic => (
                                 <View style={styles.mosaic}>
-                                    <StyledText type="body">
-                                        {mosaic.name || mosaic.id}
-                                    </StyledText>
+                                    <View style={styles.mosaicName}>
+                                        <Image source={getMosaicIconSrc(mosaic)} style={styles.mosaicIcon} />
+                                        <StyledText type="body">
+                                            {mosaic.name}
+                                        </StyledText>
+                                    </View>
                                     <StyledText type="body">
                                         {mosaic.amount}
                                     </StyledText>
@@ -129,6 +143,22 @@ export const TableView = connect(state => ({
 
             return true;
         }));
+
+        if (!ItemTemplate && Array.isArray(item.value) && item.value.length) {
+            return item.value.map(value => renderValue({key: `_${item.key}`, value: value}));
+        }
+
+        if (!ItemTemplate && typeof item.value === 'object') {
+            return null;
+        }
+
+        if (!ItemTemplate) {
+            ItemTemplate = (
+                <StyledText type="body">
+                    {item.value}
+                </StyledText>
+            )
+        }
 
         return ItemTemplate;
     }
@@ -156,6 +186,10 @@ const styles = StyleSheet.create({
         width: '100%',
         flexDirection: 'row',
     },
+    col: {
+        width: '100%',
+        flexDirection: 'column',
+    },
     key: {
         opacity: 0.8,
     },
@@ -166,5 +200,17 @@ const styles = StyleSheet.create({
         width: '100%',
         flexDirection: 'row',
         justifyContent: 'space-between',
+    },
+    mosaicName: {
+        flexDirection: 'row',
+        alignItems: 'center'
+    },
+    mosaicIcon: {
+        height: 24,
+        width: 24,
+        marginRight: spacings.paddingSm
+    },
+    fee: {
+        color: colors.danger
     }
 });
