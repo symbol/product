@@ -4,7 +4,7 @@ import { borders, colors, fonts, layout, spacings } from 'src/styles';
 import imageArtPassport from 'src/assets/images/art-passport.png';
 import { getCharPercentage } from 'src/utils';
 import { TouchableHighlight, TouchableNativeFeedback } from 'react-native-gesture-handler';
-import { ButtonCopy } from './ButtonCopy';
+import { AccountAvatar, ButtonCopy } from 'src/components';
 
 const imagesPattern = [
     require('src/assets/images/Geometric-02.png'),
@@ -51,6 +51,7 @@ export const AccountCard = props => {
                 {isSimplified && <Image source={imagePattern} style={stylesPattern} />}
             </View>
             {!isSimplified && <Image source={imageArtPassport} style={styles.art} />}
+            {isSimplified && <AccountAvatar size="sm" address={address} style={styles.avatar} />}
             {isLoading && <ActivityIndicator color={colors.primary} style={styles.loadingIndicator} />}
             <View style={stylesContent}>
                 <Text style={styles.textTitle}>{/* notranslate  */}Account</Text>
@@ -140,6 +141,11 @@ const styles = StyleSheet.create({
         right: 0,
         top: -58,
         resizeMode: 'stretch'
+    },
+    avatar: {
+        position: 'absolute',
+        top: spacings.margin,
+        right: spacings.margin
     },
     loadingIndicator: {
         position: 'absolute',

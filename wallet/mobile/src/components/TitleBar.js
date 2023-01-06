@@ -3,6 +3,7 @@ import { ActivityIndicator, Image, StyleSheet, Text, TouchableOpacity, View } fr
 import { Router } from 'src/Router';
 import { borders, colors, fonts, spacings } from 'src/styles';
 import { trunc } from 'src/utils';
+import { AccountAvatar } from 'src/components';
 
 export const TitleBar = props => {
     const { currentAccount } = props;
@@ -15,9 +16,12 @@ export const TitleBar = props => {
         <View style={styles.root}>
             <TouchableOpacity style={styles.accountSelector} onPress={handleAccountPress}>
                 {!!currentAccount && (
-                    <View>
-                        <Text style={styles.textAccount}>{currentAccount.name}</Text>
-                        <Text style={styles.textAddress}>{getAddress()}</Text>
+                    <View style={styles.row}>
+                        <AccountAvatar size="sm" address={currentAccount.address} style={styles.avatar} />
+                        <View>
+                            <Text style={styles.textAccount}>{currentAccount.name}</Text>
+                            <Text style={styles.textAddress}>{getAddress()}</Text>
+                        </View>
                     </View>
                 )}
                 {!currentAccount && (
@@ -42,6 +46,10 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingHorizontal: spacings.margin
     },
+    row: {
+        flexDirection: 'row',
+        alignItems: 'center'
+    },
     accountSelector: {
         width: '60%',
         height: 41,
@@ -51,7 +59,10 @@ const styles = StyleSheet.create({
         borderRadius: borders.borderRadiusAccountSelector,
         borderWidth: 1,
         borderColor: colors.controlBaseStroke,
-        paddingHorizontal: spacings.padding
+        paddingHorizontal: spacings.margin
+    },
+    avatar: {
+        marginRight: spacings.margin / 2
     },
     textAccount: {
         ...fonts.label,
