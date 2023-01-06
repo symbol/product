@@ -2,7 +2,7 @@ import React from 'react';
 import { Image, StyleSheet, View } from 'react-native';
 
 import { connect } from 'src/store';
-import { colors, spacings } from 'src/styles';
+import { borders, colors, spacings } from 'src/styles';
 import { ButtonCopy, FormItem, StyledText } from 'src/components';
 import { $t } from 'src/localization';
 
@@ -35,7 +35,7 @@ const renderTypeMap = {
     mosaics: ['mosaics'],
     namespaces: ['accountAliasNames'],
     encryption: ['messageEncrypted'],
-    transactionType: ['transactionType', '_restrictionOperationAdditions', '_restrictionOperationDeletions'],
+    transactionType: ['type', 'transactionType', '_restrictionOperationAdditions', '_restrictionOperationDeletions'],
     translate: [
         'registrationType',
         'aliasAction',
@@ -85,6 +85,13 @@ export const TableView = connect(state => ({
             }
 
             switch (renderType) {
+                case 'transactionType':
+                    ItemTemplate = (
+                        <StyledText type="body">
+                            {$t(`transactionDescriptor_${item.value}`)}
+                        </StyledText>
+                    );
+                    break;
                 case 'copyButton':
                     ItemTemplate = (
                         <View style={styles.row}>
@@ -109,9 +116,9 @@ export const TableView = connect(state => ({
                     break;
                 case 'fee':
                     ItemTemplate = (
-                        <View style={styles.mosaicName}>
+                        <View style={styles.fee}>
                             <Image source={require('src/assets/images/icon-select-mosaic-native.png')} style={styles.mosaicIcon} />
-                            <StyledText type="body" style={styles.fee}>
+                            <StyledText type="body">
                                 {item.value} {ticker}
                             </StyledText>
                         </View>
@@ -125,15 +132,15 @@ export const TableView = connect(state => ({
                         <View style={styles.col}>
                             {item.value.map(mosaic => (
                                 <View style={styles.mosaic}>
-                                    <View style={styles.mosaicName}>
-                                        <Image source={getMosaicIconSrc(mosaic)} style={styles.mosaicIcon} />
+                                    <Image source={getMosaicIconSrc(mosaic)} style={styles.mosaicIcon} />
+                                    <View style={styles.mosaicBody}>
                                         <StyledText type="body">
                                             {mosaic.name}
                                         </StyledText>
+                                        <StyledText type="body" style={styles.mosaicAmount}>
+                                            {mosaic.amount}
+                                        </StyledText>
                                     </View>
-                                    <StyledText type="body">
-                                        {mosaic.amount}
-                                    </StyledText>
                                 </View>
                             ))}
                         </View>
@@ -169,7 +176,7 @@ export const TableView = connect(state => ({
         <View>
             {tableData.map((item, index) => (isEmptyField(item) 
                 ? null
-                : <FormItem key={'table' + item.key + index}>
+                : <FormItem key={'table' + item.key + index} clear="horizontal">
                     {renderKey(item)}
                     {renderValue(item)}
                 </FormItem>
@@ -197,13 +204,15 @@ const styles = StyleSheet.create({
         paddingLeft: spacings.paddingSm
     },
     mosaic: {
-        width: '100%',
+        marginTop: spacings.margin / 2,
         flexDirection: 'row',
-        justifyContent: 'space-between',
+        alignItems: 'center',
     },
-    mosaicName: {
-        flexDirection: 'row',
-        alignItems: 'center'
+    mosaicBody: {
+        flexDirection: 'column',
+    },
+    mosaicAmount: {
+        opacity: 0.7
     },
     mosaicIcon: {
         height: 24,
@@ -211,6 +220,7 @@ const styles = StyleSheet.create({
         marginRight: spacings.paddingSm
     },
     fee: {
-        color: colors.danger
-    }
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
 });
