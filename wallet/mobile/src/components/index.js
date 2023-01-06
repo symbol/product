@@ -1,3 +1,4 @@
+export * from './AccountAvatar';
 export * from './AccountCard'
 export * from './Button';
 export * from './ButtonClose';
