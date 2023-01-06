@@ -8,6 +8,7 @@ export const FormItem = props => {
         top: styles.clearTop,
         bottom: styles.clearBottom,
         vertical: styles.clearVertical,
+        horizontal: styles.clearHorizontal,
     }
     const clearStyle = clearMap[clear];
     const typeMap = {
@@ -41,6 +42,9 @@ const styles = StyleSheet.create({
     },
     clearVertical: {
         marginVertical: 0,
+    },
+    clearHorizontal: {
+        marginHorizontal: 0,
     },
     fill: {
         flex: 1

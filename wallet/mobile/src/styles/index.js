@@ -90,6 +90,12 @@ export const fonts = {
         lineHeight: 17,
         textTransform: 'uppercase',
     },
+    transactionSignerName: {
+        fontFamily: 'Carbon-Bold',
+        fontSize: 14,
+        lineHeight: 14,
+        textTransform: 'uppercase',
+    },
     tab: {
         fontFamily: 'Carbon-Bold',
         fontSize: 13,
@@ -119,6 +125,11 @@ export const fonts = {
         fontSize: 40,
         lineHeight: 48,
         textTransform: 'uppercase',
+    },
+    amount: {
+        fontFamily: 'Protipo-Regular',
+        fontSize: 24,
+        lineHeight: 29
     }
 };
 
