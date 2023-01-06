@@ -48,8 +48,8 @@ export const Send = connect(state => ({
             ...selectedMosaic,
            amount: parseFloat(amount)
         }] : [],
-        messageText: message,
-        messageEncrypted: isEncrypted,
+        messageText: message ? message : null,
+        messageEncrypted: message ? isEncrypted : null,
         fee: maxFee
     };
 
