@@ -1,13 +1,12 @@
-const { config } = require('../config');
-const nemController = require('../controllers/nem');
-const {
-	nemFaucetValidation, toAbsoluteAmount, toRelativeAmount
-} = require('../utils/helper');
-const restifyErrors = require('restify-errors');
-const { CryptoTypes } = require('symbol-sdk');
-const { NemFacade } = require('symbol-sdk').facade;
+import { config } from '../config/index.js';
+import nemController from '../controllers/nem.js';
+import helper from '../utils/helper.js';
+import restifyErrors from 'restify-errors';
+import symbolSDK from 'symbol-sdk';
 
-const facade = new NemFacade(config.network);
+const { CryptoTypes, facade } = symbolSDK;
+
+const nemFacade = new facade.NemFacade(config.network);
 
 const handleRoute = async (res, next, handler) => {
 	try {
@@ -26,11 +25,11 @@ const handleRoute = async (res, next, handler) => {
 const faucetRoute = server => {
 	server.post('/claim/xem', (req, res, next) => {
 		const receiptAddress = req.body.address;
-		const transferAmount = toAbsoluteAmount((parseInt(req.body.amount, 10) || 0));
+		const transferAmount = helper.toAbsoluteAmount((parseInt(req.body.amount, 10) || 0));
 
 		const privateKey = new CryptoTypes.PrivateKey(config.nemFaucetPrivateKey);
-		const keyPair = new NemFacade.KeyPair(privateKey);
-		const faucetAddress = facade.network.publicKeyToAddress(keyPair.publicKey).toString();
+		const keyPair = new facade.NemFacade.KeyPair(privateKey);
+		const faucetAddress = nemFacade.network.publicKeyToAddress(keyPair.publicKey).toString();
 
 		const handler = async () => {
 			const [
@@ -43,7 +42,7 @@ const faucetRoute = server => {
 				nemController.getUnconfirmedTransactions(receiptAddress)
 			]);
 
-			const error = nemFaucetValidation({
+			const error = helper.nemFaucetValidation({
 				receiptAddress,
 				transferAmount,
 				receiptBalance,
@@ -61,7 +60,7 @@ const faucetRoute = server => {
 				code,
 				type,
 				transactionHash: transactionHash.data,
-				amount: toRelativeAmount(transferAmount),
+				amount: helper.toRelativeAmount(transferAmount),
 				receiptAddress
 			};
 		};
@@ -73,4 +72,4 @@ const faucetRoute = server => {
 	// server.post('/claim/xym', (req, res, next) => {});
 };
 
-module.exports = faucetRoute;
+export default faucetRoute;

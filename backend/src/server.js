@@ -1,14 +1,13 @@
-const { config, validateConfiguration } = require('./config');
-const faucetRoute = require('./routers');
-const { checkTwitterAccount } = require('./utils/helper');
-const { version } = require('../package');
-const { verify } = require('jsonwebtoken');
-const restify = require('restify');
-const restifyErrors = require('restify-errors');
+import { config, validateConfiguration } from './config/index.js';
+import faucetRoute from './routers/index.js';
+import helper from './utils/helper.js';
+import jwt from 'jsonwebtoken';
+import restify from 'restify';
+import restifyErrors from 'restify-errors';
 
 const server = restify.createServer({
 	name: 'Faucet Backend Service',
-	version
+	version: '1.0.0'
 });
 
 server.use(restify.plugins.acceptParser('application/json'));
@@ -19,9 +18,9 @@ const authentication = (req, res, next) => {
 	const authToken = req.header('authToken');
 
 	try {
-		const { createdAt, followersCount } = verify(authToken, config.jwtSecret);
+		const { createdAt, followersCount } = jwt.verify(authToken, config.jwtSecret);
 
-		if (checkTwitterAccount(createdAt, followersCount))
+		if (helper.checkTwitterAccount(createdAt, followersCount))
 			next();
 		else
 			next(new restifyErrors.ForbiddenError('Twitter requirement fail'));
@@ -51,4 +50,4 @@ server.listen(config.port, () => {
 	console.info('%s listening at %s', server.name, server.url);
 });
 
-module.exports = server;
+export default server;

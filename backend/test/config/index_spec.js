@@ -1,5 +1,5 @@
-const { config, validateConfiguration } = require('../../src/config');
-const { expect } = require('chai');
+import { config, validateConfiguration } from '../../src/config/index.js';
+import { expect } from 'chai';
 
 describe('config', () => {
 	const expectedConfig = {

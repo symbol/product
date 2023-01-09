@@ -1,8 +1,8 @@
-const nemRequest = require('../../src/services/nemRequest');
-const axiosRequest = require('../../src/utils/axiosRequest');
-const MockAdapter = require('axios-mock-adapter');
-const chai = require('chai');
-const chaiAsPromised = require('chai-as-promised');
+import nemRequest from '../../src/services/nemRequest.js';
+import axiosRequest from '../../src/utils/axiosRequest.js';
+import MockAdapter from 'axios-mock-adapter';
+import chai from 'chai';
+import chaiAsPromised from 'chai-as-promised';
 
 chai.use(chaiAsPromised);
 const { expect } = chai;

@@ -1,7 +1,7 @@
-const nemController = require('../../src/controllers/nem');
-const nemRequest = require('../../src/services/nemRequest');
-const { expect } = require('chai');
-const { stub } = require('sinon');
+import nemController from '../../src/controllers/nem.js';
+import nemRequest from '../../src/services/nemRequest.js';
+import { expect } from 'chai';
+import { stub } from 'sinon';
 
 /**
  * Mock axios response.

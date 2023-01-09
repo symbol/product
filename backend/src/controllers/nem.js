@@ -1,9 +1,10 @@
-const { config } = require('../config');
-const nemRequest = require('../services/nemRequest');
-const { CryptoTypes } = require('symbol-sdk');
-const { NemFacade } = require('symbol-sdk').facade;
+import { config } from '../config/index.js';
+import nemRequest from '../services/nemRequest.js';
+import symbolSDK from 'symbol-sdk';
 
-const facade = new NemFacade(config.network);
+const { CryptoTypes, facade } = symbolSDK;
+
+const nemFacade = new facade.NemFacade(config.network);
 
 /**
  * Create signed transfer transaction.
@@ -14,11 +15,11 @@ const facade = new NemFacade(config.network);
  */
 const createTransferTransactionV1 = (address, timestamp, amount) => {
 	const privateKey = new CryptoTypes.PrivateKey(config.nemFaucetPrivateKey);
-	const keyPair = new NemFacade.KeyPair(privateKey);
+	const keyPair = new facade.NemFacade.KeyPair(privateKey);
 
 	const message = 'Good Luck!';
 
-	const transferTransaction = facade.transactionFactory.create({
+	const transferTransaction = nemFacade.transactionFactory.create({
 		type: 'transfer_transaction_v1',
 		signerPublicKey: keyPair.publicKey.toString(),
 		fee: BigInt(100000),
@@ -33,9 +34,9 @@ const createTransferTransactionV1 = (address, timestamp, amount) => {
 		}
 	});
 
-	const signature = facade.signTransaction(keyPair, transferTransaction);
+	const signature = nemFacade.signTransaction(keyPair, transferTransaction);
 
-	const jsonPayload = facade.transactionFactory.constructor.attachSignature(transferTransaction, signature);
+	const jsonPayload = nemFacade.transactionFactory.constructor.attachSignature(transferTransaction, signature);
 
 	return JSON.parse(jsonPayload);
 };
@@ -85,4 +86,4 @@ const nem = {
 	}
 };
 
-module.exports = nem;
+export default nem;

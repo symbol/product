@@ -1,8 +1,8 @@
-const nemController = require('../src/controllers/nem');
-const server = require('../src/server');
-const { expect } = require('chai');
-const { stub, restore } = require('sinon');
-const supertest = require('supertest');
+import nemController from '../src/controllers/nem.js';
+import server from '../src/server.js';
+import { expect } from 'chai';
+import { stub, restore } from 'sinon';
+import supertest from 'supertest';
 
 describe('Server', () => {
 	describe('POST /claim/xem', () => {

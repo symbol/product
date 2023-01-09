@@ -2,7 +2,7 @@
   "name": "faucet-backend",
   "version": "1.0.0",
   "description": "Backend services use for faucet application (NEM / Symbol)",
-  "type": "commonjs",
+  "type": "module",
   "scripts": {
     "start": "node -r dotenv/config src/server.js",
     "dev": "nodemon -r dotenv/config src/server.js",

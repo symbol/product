@@ -1,5 +1,5 @@
-const helper = require('../../src/utils/helper');
-const { expect } = require('chai');
+import helper from '../../src/utils/helper.js';
+import { expect } from 'chai';
 
 describe('helper', () => {
 	it('can convert absolute amount to relative amount.', () => {

@@ -1,4 +1,4 @@
-const config = {
+export const config = {
 	port: parseInt(process.env.PORT, 10) || 5001,
 	mosaicDivisibility: parseInt(process.env.MOSAIC_DIVISIBILITY, 10) || 6,
 	minFollowers: parseInt(process.env.MIN_FOLLOWERS_COUNT, 10) || 10,
@@ -11,12 +11,10 @@ const config = {
 	jwtSecret: process.env.JWT_SECRET
 };
 
-const validateConfiguration = configParams => {
+export const validateConfiguration = configParams => {
 	if (!(configParams.nemFaucetPrivateKey && configParams.nemEndpoint))
 		throw Error('provided nem faucet private key or endpoint configuration is incomplete');
 
 	if (!configParams.jwtSecret)
 		throw Error('provided jwt configuration is incomplete');
 };
-
-module.exports = { config, validateConfiguration };

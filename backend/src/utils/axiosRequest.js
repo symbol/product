@@ -1,8 +1,8 @@
-const { config } = require('../config');
-const axios = require('axios');
+import { config } from '../config/index.js';
+import axios from 'axios';
 
 const client = axios.create({
 	baseURL: config.nemEndpoint
 });
 
-module.exports = client;
+export default client;

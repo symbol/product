@@ -1,4 +1,4 @@
-const { config } = require('../config');
+import { config } from '../config/index.js';
 
 const helper = {
 	/**
@@ -62,4 +62,4 @@ const helper = {
 	}
 };
 
-module.exports = helper;
+export default helper;

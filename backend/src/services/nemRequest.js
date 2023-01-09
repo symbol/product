@@ -1,4 +1,4 @@
-const axiosRequest = require('../utils/axiosRequest');
+import axiosRequest from '../utils/axiosRequest.js';
 
 /**
  * Handle Axios error response.
@@ -76,4 +76,4 @@ const nemRequest = {
 	}
 };
 
-module.exports = nemRequest;
+export default nemRequest;
