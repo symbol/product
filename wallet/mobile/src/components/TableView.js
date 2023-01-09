@@ -3,8 +3,9 @@ import { Image, StyleSheet, View } from 'react-native';
 
 import { connect } from 'src/store';
 import { borders, colors, spacings } from 'src/styles';
-import { ButtonCopy, FormItem, StyledText } from 'src/components';
+import { ButtonCopy, ButtonPlain, FormItem, StyledText } from 'src/components';
 import { $t } from 'src/localization';
+import { canDecryptMessage } from 'src/utils';
 
 const TRANSLATION_ROOT_KEY = 'table';
 const renderTypeMap = {
@@ -32,6 +33,7 @@ const renderTypeMap = {
     fee: ['fee', 'maxFee'],
     amount: ['amount', 'resolvedFee'],
     secret: ['privateKey', 'remotePrivateKey', 'vrfPrivateKey'],
+    message: ['message'],
     mosaics: ['mosaics'],
     namespaces: ['accountAliasNames'],
     encryption: ['messageEncrypted'],
@@ -51,7 +53,7 @@ export const TableView = connect(state => ({
     currentAccount: state.account.current,
     ticker: state.network.ticker,
 }))(function TableView(props) {
-    const { data, ticker } = props;
+    const { data, ticker, style } = props;
 
     if (!data || typeof data !== 'object') {
         return null;
@@ -124,6 +126,23 @@ export const TableView = connect(state => ({
                         </View>
                     );
                     break;
+                case 'message':
+                    ItemTemplate = (
+                        <View style={styles.message}>
+                            <StyledText type="body">
+                                {item.value.isEncrypted ? '[*]' : ''}
+                            </StyledText>
+                            {(!item.value.isEncrypted || !canDecryptMessage(item.value, currentAccount)) &&(
+                                <StyledText type="body">
+                                    {item.value.text}
+                                </StyledText>
+                            )}
+                            {item.value.isEncrypted && canDecryptMessage(item.value, currentAccount) && (
+                                <ButtonPlain>Decrypt</ButtonPlain>
+                            )}
+                        </View>
+                    );
+                    break;
                 case 'mosaics':
                     const getMosaicIconSrc = mosaic => mosaic.name === 'symbol.xym' 
                         ? require('src/assets/images/icon-select-mosaic-native.png')
@@ -173,7 +192,7 @@ export const TableView = connect(state => ({
     const isEmptyField = item => item.value === '' || item.value === null;
 
     return (
-        <View>
+        <View style={style}>
             {tableData.map((item, index) => (isEmptyField(item) 
                 ? null
                 : <FormItem key={'table' + item.key + index} clear="horizontal">
@@ -220,6 +239,10 @@ const styles = StyleSheet.create({
         marginRight: spacings.paddingSm
     },
     fee: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    message: {
         flexDirection: 'row',
         alignItems: 'center',
     },
