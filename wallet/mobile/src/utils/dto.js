@@ -73,7 +73,7 @@ export const baseTransactionFromDTO = (transaction, {networkProperties}) => {
     return baseTransaction = {
         type: transaction.type,
         deadline: formatDeadline(transaction.deadline.toLocalDateTime(networkProperties.epochAdjustment)),
-        
+        height: transaction.transactionInfo.height.toString(),
         hash: transaction.hash || transaction.transactionInfo?.hash,
         id: transaction.transactionInfo?.id,
         fee: getMosaicRelativeAmount(transaction.maxFee.toString(), networkProperties.networkCurrency.divisibility),
@@ -126,8 +126,12 @@ export const transferTransactionFromDTO = (transaction, {networkProperties, mosa
 
     return {
         ...transactionBody,
-        messageText: transaction.message.payload,
-        messageEncrypted: transaction.message.type === 0x01,
+        message: {
+            signerAddress: transactionBody.signerAddress,
+            recipientAddress: transactionBody.recipientAddress,
+            text: transaction.message.payload,
+            isEncrypted: transaction.message.type === 0x01,
+        },
         mosaics: formattedMosaics,
         amount: resultAmount
     };
