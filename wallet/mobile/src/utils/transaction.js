@@ -164,3 +164,7 @@ export const isOutgoingTransaction = (transaction, currentAccount) =>
 
 export const isIncomingTransaction = (transaction, currentAccount) => 
     transaction.recipientAddress === currentAccount.address;
+
+export const canDecryptMessage = (message, currentAccount) => {
+    return message.signerAddress === currentAccount.address || message.recipientAddress === currentAccount.address
+}
