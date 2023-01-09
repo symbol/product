@@ -39,7 +39,7 @@ export const TitleBar = props => {
 const styles = StyleSheet.create({
     root: {
         width: '100%',
-        height: 48,
+        height: 56,
         backgroundColor: colors.bgNavbar,
         flexDirection: 'row',
         justifyContent: 'space-between',

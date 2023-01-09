@@ -1,18 +1,45 @@
-import React from 'react';
+import { useIsFocused } from '@react-navigation/native';
+import React, { useState } from 'react';
 import { useEffect } from 'react';
 import { StyleSheet, View, Pressable } from 'react-native';
-import Animated, {useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { borders, colors, spacings } from 'src/styles';
-import { FormItem } from './FormItem';
+import { FormItem, TouchableNative } from 'src/components';
+
+const MIN_SCALE = 1;
+const MAX_SCALE = 1.2;
+const ANIMATION_DURATION = 250;
 
 export function ItemBase(props) {
     const { children, isLayoutAnimationEnabled, style, onPress } = props;
-
+    const [isExpanded, setIsExpanded] = useState(false);
     const opacity = useSharedValue(0);
+    const scale = useSharedValue(1);
     const animatedContainer = useAnimatedStyle(() => ({
-        opacity: opacity.value
+        transform: [{
+            scale: scale.value
+        }],
+        opacity: opacity.value,
     }));
-    const styleRoot = [styles.root, style, isLayoutAnimationEnabled ? animatedContainer : null];
+    const styleCard = [styles.card, style, isLayoutAnimationEnabled ? animatedContainer : null];
+    const styleRoot = [styles.root];
+
+    const handlePress = () => {
+        if (onPress) {
+            onPress();
+            setIsExpanded(true);
+        }
+    }
+
+    const isFocused = useIsFocused();
+
+    useEffect(() => {
+        if (isFocused && isExpanded) {
+            scale.value = MAX_SCALE;
+            scale.value = withTiming(MIN_SCALE, { duration: ANIMATION_DURATION });
+            setIsExpanded(false);
+        }
+    }, [isFocused, isExpanded]);
 
     useEffect(() => {
         if (isLayoutAnimationEnabled) {
@@ -21,32 +48,28 @@ export function ItemBase(props) {
     }, [isLayoutAnimationEnabled])
 
     return (
-        <FormItem type="list" style={styles.formItem}>
-            {/* TODO: uncomment when issue is fixed https://github.com/react-navigation/react-navigation/issues/10531 */}
-            {/* <Animated.View entering={FadeInUp.duration(500)}> */}
-            {/* <Animated.View entering={FadeIn.duration(1000)}> */}
-            <Pressable onPress={() => onPress && onPress()}>
-                <Animated.View style={styleRoot}>
+        <FormItem type="list" style={styleRoot}>
+            <TouchableNative onPress={handlePress}>
+                <Animated.View style={styleCard}>
                     {children}
                 </Animated.View>
-            </Pressable>
-            {/* </Animated.View> */}
-            {/* </Animated.View> */}
+            </TouchableNative>
         </FormItem>
     );
 };
 
 export const ItemPlaceholder = () => (
     <FormItem type="list">
-        <View style={[styles.root, styles.rootPlaceholder]} />
+        <View style={[styles.card, styles.cardPlaceholder]} />
     </FormItem>
 );
 
 const styles = StyleSheet.create({
-    formItem: {
-        marginHorizontal: spacings.margin
-    },
     root: {
+        marginHorizontal: spacings.margin,
+        position: 'relative',
+    },
+    card: {
         width: '100%',
         minHeight: 75,
         backgroundColor: colors.bgCard,
@@ -55,7 +78,7 @@ const styles = StyleSheet.create({
         borderRadius: borders.borderRadius,
         padding: spacings.paddingSm
     },
-    rootPlaceholder: {
+    cardPlaceholder: {
         opacity: 0.2
     },
 });

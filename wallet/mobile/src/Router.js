@@ -12,6 +12,7 @@ const theme = {
     },
 };
 const screenOptions = {
+    animation: 'fade',
     headerStyle: {
         backgroundColor: colors.bgNavbar,
     },

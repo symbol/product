@@ -81,7 +81,7 @@ export const History = connect(state => ({
                 onEndReached={onEndReached}
                 onEndReachedThreshold={1}
                 sections={sections}
-                keyExtractor={(item, section) => section.group + item.id}
+                keyExtractor={(item, section) => section.group + (item.id || item.hash)}
                 renderItem={({item, section}) => (
                     <ItemTransaction group={section.group} transaction={item} onPress={() => Router.goToTransactionDetails({transaction: item})}/>
                 )}
