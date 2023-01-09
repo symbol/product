@@ -3,12 +3,11 @@ import Button from '../Button';
 import axios from 'axios';
 import PropTypes from 'prop-types';
 import React, { useState, useEffect } from 'react';
-import { decode } from 'jsonwebtoken';
+import { decode } from 'jsonwebtoken'
+import Config from '../../config'
 
-const endpoint = process.env.REACT_APP_AUTH_URL;
-
-const backendRequest = axios.create({
-	baseURL: endpoint
+const authRequest = axios.create({
+	baseURL: Config.AUTH_URL
 });
 
 const TwitterSignIn = function ({
@@ -20,7 +19,7 @@ const TwitterSignIn = function ({
 	const twitterAuth = async () => {
 		setIsLoading(true);
 
-		const { data } = await backendRequest.get('/twitter/auth');
+		const { data } = await authRequest.get('/twitter/auth');
 
 		localStorage.setItem('twitterOauthTokenSecret', data.oauthTokenSecret);
 
@@ -45,7 +44,7 @@ const TwitterSignIn = function ({
 		const twitterVerify = async () => {
 			const oauthTokenSecret = localStorage.getItem('twitterOauthTokenSecret');
 
-			const { data } = await backendRequest.get('/twitter/verify', {
+			const { data } = await authRequest.get('/twitter/verify', {
 				params: {
 					oauthToken,
 					oauthTokenSecret,

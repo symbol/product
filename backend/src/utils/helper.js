@@ -34,16 +34,16 @@ const helper = {
 		let error = '';
 
 		if (transferAmount >= maxTransferAmount)
-			error = `Transfer amount cannot more than ${helper.toRelativeAmount(maxTransferAmount)}`;
+			error = 'error_amount_max_request';
 
 		if (receiptBalance >= maxAmount)
-			error = 'Your account balance is too high';
+			error = 'error_account_high_balance';
 
 		if (faucetBalance < transferAmount)
-			error = 'Faucet balance not enough to pay out';
+			error = 'error_fund_drains';
 
 		if (0 < pendingTx.length)
-			error = 'You have pending transactions, please wait for it to be confirmed';
+			error = 'error_transaction_pending';
 
 		return error;
 	},

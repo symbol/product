@@ -7,6 +7,7 @@ import {
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { toast } from 'react-toastify';
+import mockAxios from 'axios';
 
 const mockResizeObserverAndGetBreakpoint = (isPortrait, breakpointClassName) => {
 	jest.spyOn(styles, 'getBreakpoint').mockImplementation(() => ({
@@ -108,28 +109,6 @@ describe('page/Home', () => {
 			expect(toast.error).toHaveBeenCalledWith(i18n.$t('notification_error_unqualified_twitter_account'));
 		};
 
-		it('renders info toast when enter valid data', () => {
-			// Arrange:
-			jest.spyOn(toast, 'info').mockImplementation(jest.fn());
-			const amount = '100';
-
-			// Act:
-			render(<Home />);
-			const elementRecipient = screen.getByPlaceholderText(formInputRecipient);
-			const elementAmount = screen.getByPlaceholderText(formInputAmount);
-			const elementButton = screen.getByText(formButton);
-			userEvent.type(elementRecipient, recipientAddress);
-			userEvent.type(elementAmount, amount);
-			fireEvent.click(elementButton);
-
-			// Assert:
-			expect(toast.info).toHaveBeenCalledWith(i18n.$t('notification_info_requested', {
-				amount,
-				currency: 'XEM',
-				address: recipientAddress
-			}));
-		});
-
 		runBasicErrorToastTests(
 			'address',
 			{
@@ -149,6 +128,127 @@ describe('page/Home', () => {
 		it('renders error toast when twitter account followersCount less than 10', () => assertTwitterAccountToastError('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY2Nlc3NUb2tlbiI6ImFjY2Vzc1Rva2VuMTIzNCIsImFjY2Vzc1NlY3JldCI6ImFjY2Vzc1NlY3JldDEyMzQiLCJzY3JlZW5OYW1lIjoidHdpdHRlckFjY291bnQiLCJmb2xsb3dlcnNDb3VudCI6NSwiY3JlYXRlZEF0IjoiMjAxMS0wNi0wN1QxNDoxNzo0Ni4wMDBaIiwiaWF0IjoxNjcwNzA0ODg2fQ.Y-MenesuV6tQ8arh8_3lvNG2w3lVvstc7iDYqDRwikM'));
 
 		it('renders error toast when twitter account registered less than 31 days', () => assertTwitterAccountToastError('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY2Nlc3NUb2tlbiI6ImFjY2Vzc1Rva2VuMTIzNCIsImFjY2Vzc1NlY3JldCI6ImFjY2Vzc1NlY3JldDEyMzQiLCJzY3JlZW5OYW1lIjoidHdpdHRlckFjY291bnQiLCJmb2xsb3dlcnNDb3VudCI6NSwiY3JlYXRlZEF0IjoiMjAyMi0xMS0wN1QxNDoxNzo0Ni4wMDBaIiwiaWF0IjoxNjcwNzA0ODg2fQ.IJ-VgWo8KWj7FjikXH0XDnhazTRcqAkjy-jM1OEud5w'));
+
+		describe('claimToken', () => {
+			const createAxiosError = (code, errorMessage) => {
+				return {
+					response: {
+						data: {
+							code,
+							message: errorMessage
+						}
+					}
+				}
+			};
+
+			const assertServiceResponseErrorTests = async (serverResponse, expectResult) => {
+				// Arrange:
+				jest.spyOn(toast, 'error').mockImplementation(jest.fn());
+
+				mockAxios.post.mockRejectedValueOnce(serverResponse);
+
+				// Act:
+				render(<Home />);
+				const elementRecipient = screen.getByPlaceholderText(formInputRecipient);
+				const elementAmount = screen.getByPlaceholderText(formInputAmount);
+				const elementButton = screen.getByText(formButton);
+				userEvent.type(elementRecipient, recipientAddress);
+				userEvent.type(elementAmount, '100');
+				fireEvent.click(elementButton);
+
+				// Assert:
+				expect(mockAxios.post).toHaveBeenCalledWith('/claim/xem', {
+					address: recipientAddress,
+					amount: 100
+				}, {
+					headers: {
+						'Content-Type': 'application/json',
+						'authToken': jwtToken
+					}
+				});
+
+				await waitFor(() => expect(toast.error).toHaveBeenCalledWith(i18n.$t(expectResult)));
+			}
+
+			it('renders error toast when service response notification_error_amount_max_request', async () => {
+				await assertServiceResponseErrorTests(
+					createAxiosError('BadRequest', 'error_amount_max_request'),
+					'notification_error_amount_max_request'
+				);
+			});
+
+			it('renders error toast when service response error_account_high_balance', async () => {
+				await assertServiceResponseErrorTests(
+					createAxiosError('BadRequest', 'error_account_high_balance'),
+					'notification_error_account_high_balance'
+				);
+			});
+
+			it('renders error toast when service response error_fund_drains', async () => {
+				await assertServiceResponseErrorTests(
+					createAxiosError('BadRequest', 'error_fund_drains'),
+					'notification_error_fund_drains'
+				);
+			});
+
+			it('renders error toast when service response error_transaction_pending', async () => {
+				await assertServiceResponseErrorTests(createAxiosError('BadRequest', 'error_transaction_pending'), 'notification_error_transaction_pending');
+			});
+
+			it('renders error toast when service response notification_error_nem_node', async () => {
+				await assertServiceResponseErrorTests(createAxiosError('Internal', 'random error'), 'notification_error_nem_node');
+			});
+
+			it('renders error toast when service not response', async () => {
+				await assertServiceResponseErrorTests({
+					request: {}
+				}, 'notification_error_backend_not_responding');
+			});
+
+			it('renders error toast when frontend request fail', async () => {
+				await assertServiceResponseErrorTests({}, 'notification_error_frontend_request_fail');
+			});
+
+			it('renders info toast when service response valid data', async () => {
+				// Arrange:
+				jest.spyOn(toast, 'info').mockImplementation(jest.fn());
+
+				mockAxios.post.mockReturnValue({
+					data: {
+						transactionHash: 'transaction_hash',
+					}
+				});
+
+				const amount = '100';
+
+				// Act:
+				render(<Home />);
+				const elementRecipient = screen.getByPlaceholderText(formInputRecipient);
+				const elementAmount = screen.getByPlaceholderText(formInputAmount);
+				const elementButton = screen.getByText(formButton);
+				userEvent.type(elementRecipient, recipientAddress);
+				userEvent.type(elementAmount, amount);
+				fireEvent.click(elementButton);
+
+				// Assert:
+				expect(mockAxios.post).toHaveBeenCalledWith('/claim/xem', {
+					address: recipientAddress,
+					amount: 100
+				}, {
+					headers: {
+						'Content-Type': 'application/json',
+						'authToken': jwtToken
+					}
+				});
+
+				await waitFor(() => expect(toast.info).toHaveBeenCalledWith(i18n.$t('notification_info_requested', {
+					amount,
+					currency: 'XEM',
+					address: recipientAddress
+				})));
+				expect(toast.info).toHaveBeenCalledWith(<a href="https://testnet-explorer.nemtool.com//#/s_tx?hash=transaction_hash" target="_blank">View in Explorer</a>)
+			});
+		})
 	})
 
 	describe('screen breakpoint', () => {

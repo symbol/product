@@ -26,6 +26,15 @@
     "notification_error_invalid_address": "Incorrect address format.",
     "notification_error_invalid_amount": "Incorrect amount.",
     "notification_error_unqualified_twitter_account": "Twitter account is unqualified.",
+    "notification_error_amount_max_request": "Transfer amount excess limit.",
+    "notification_error_account_high_balance": "Your account balance is too high.",
+    "notification_error_fund_drains": "Faucet balance not enough to pay out.",
+    "notification_error_transaction_pending": "You have pending transactions, please wait for it to be confirmed.",
+    "notification_error_twitter_requirement_fail": "Twitter requirement fail.",
+    "notification_error_authentication_fail": "Authentication fail.",
+    "notification_error_backend_not_responding": "Faucet Backend Service not responding.",
+    "notification_error_frontend_request_fail": "Something wrong in frontend request.",
+    "notification_error_nem_node": "Something wrong with NEM node.",
 
     "copyright": "© The Symbol Syndicate"
 }

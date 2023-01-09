@@ -10,9 +10,14 @@ import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import './Home.scss';
 import { decode } from 'jsonwebtoken';
+import axios from 'axios';
 
 // Setup toast
 toast.configure();
+
+const backendRequest = axios.create({
+	baseURL: Config.BACKEND_URL
+});
 
 const Home = function () {
 	const [isFormPortrait, setIsFormPortrait] = useState(false);
@@ -24,7 +29,7 @@ const Home = function () {
 	const discordChHelpdeskURL = Config.URL_DISCORD_CH_HELPDESK;
 	const discordChHelpdesk = Config.DISCORD_CH_HELPDESK;
 	const addressFirstChar = faucetAddress[0];
-	const faucetAccountExplorerUrl = `${Config.URL_EXPLORER}/accounts/${faucetAddress}`;
+	const faucetAccountExplorerUrl = `${Config.URL_EXPLORER}/#/s_account?account=${faucetAddress}`;
 	const maxAmount = absoluteToRelativeAmount(Config.MAX_AMOUNT, divisibility);
 	const pageClassName = isFormPortrait ? 'page-container-portrait' : 'page-container-landscape';
 
@@ -68,6 +73,49 @@ const Home = function () {
 			isTwitterVerify = Config.MIN_FOLLOWERS_COUNT <= twitterInfo.followersCount && Config.MIN_ACCOUNT_AGE < accountAge;
 		}
 
+		const claimToken = async () => {
+			try {
+				const { data } = await backendRequest.post('/claim/xem',
+				{
+					address: recipientAddress,
+					amount: numericAmount
+				},
+				{
+					headers: {
+						'Content-Type': 'application/json',
+						'authToken': localStorage.getItem('authToken')
+					}
+				});
+
+				toast.info($t('notification_info_requested', {
+					amount: numericAmount,
+					address: recipientAddress,
+					currency
+				}));
+
+				toast.info(
+					<a href={`${Config.URL_EXPLORER}/#/s_tx?hash=${data.transactionHash}`} target={'_blank'}>
+						View in Explorer
+					</a>
+				);
+			} catch (error) {
+				if (error.response) {
+					const { data } = error.response;
+
+					if (data.code === 'BadRequest') {
+						toast.error($t('notification_' + data.message));
+					} else {
+						toast.error($t('notification_error_nem_node'));
+					}
+
+				} else if (error.request) {
+					toast.error($t('notification_error_backend_not_responding'));
+				} else {
+					toast.error($t('notification_error_frontend_request_fail'));
+				}
+			}
+		};
+
 		if (!isAddressValid) {
 			toast.error($t('notification_error_invalid_address'));
 		} else if (!isAmountValid) {
@@ -75,14 +123,8 @@ const Home = function () {
 		} else if (!isTwitterVerify) {
 			toast.error($t('notification_error_unqualified_twitter_account'));
 		} else {
-			toast.info($t('notification_info_requested', {
-				amount: numericAmount,
-				address: recipientAddress,
-				currency
-			}));
+			claimToken();
 		}
-
-		// TODO: call Faucet API. FaucetService.claim(recipientAddress, numericAmount).then(toast.info).catch(toast.error);
 	};
 
 	return (

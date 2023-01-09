@@ -41,7 +41,7 @@ describe('helper', () => {
 				receiptBalance: 10,
 				faucetBalance: 1000000000,
 				unconfirmedTransactions: [],
-				expectedError: 'Transfer amount cannot more than 500'
+				expectedError: 'error_amount_max_request'
 			},
 			{
 				receiptAddress: 'TCKH5L543TQKUPHIUAWMNYL7GNQYEY2UGMECB4D3',
@@ -49,7 +49,7 @@ describe('helper', () => {
 				receiptBalance: 0,
 				faucetBalance: 0,
 				unconfirmedTransactions: [],
-				expectedError: 'Faucet balance not enough to pay out'
+				expectedError: 'error_fund_drains'
 			},
 			{
 				receiptAddress: 'TCKH5L543TQKUPHIUAWMNYL7GNQYEY2UGMECB4D3',
@@ -57,7 +57,7 @@ describe('helper', () => {
 				receiptBalance: 200000001,
 				faucetBalance: 1000000000,
 				unconfirmedTransactions: [],
-				expectedError: 'Your account balance is too high'
+				expectedError: 'error_account_high_balance'
 			},
 			{
 				receiptAddress: 'TCKH5L543TQKUPHIUAWMNYL7GNQYEY2UGMECB4D3',
@@ -69,7 +69,7 @@ describe('helper', () => {
 						recipient: 'TCKH5L543TQKUPHIUAWMNYL7GNQYEY2UGMECB4D3'
 					}
 				}],
-				expectedError: 'You have pending transactions, please wait for it to be confirmed'
+				expectedError: 'error_transaction_pending'
 			}
 		];
 

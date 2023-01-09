@@ -10,6 +10,24 @@ const server = restify.createServer({
 	version: '1.0.0'
 });
 
+// Setup cross domain access
+server.pre((req, res, next) => {
+	if ('OPTIONS' !== req.method)
+		return next();
+
+	res.header('access-control-allow-origin', '*');
+	res.header('access-control-allow-methods', 'POST, OPTIONS');
+	res.header('access-control-allow-headers', 'Content-Type, authToken');
+
+	return res.send(204);
+});
+
+server.use((req, res, next) => {
+	res.header('access-control-allow-origin', '*');
+	res.header('vary', 'origin');
+	return next();
+});
+
 server.use(restify.plugins.acceptParser('application/json'));
 server.use(restify.plugins.bodyParser());
 server.use(restify.plugins.queryParser({ mapParams: true }));
@@ -23,22 +41,14 @@ const authentication = (req, res, next) => {
 		if (helper.checkTwitterAccount(createdAt, followersCount))
 			next();
 		else
-			next(new restifyErrors.ForbiddenError('Twitter requirement fail'));
+			next(new restifyErrors.ForbiddenError('error_twitter_requirement_fail'));
 	} catch (error) {
-		next(new restifyErrors.ForbiddenError('Authentication fail'));
+		next(new restifyErrors.ForbiddenError('error_authentication_fail'));
 	}
 };
 
 // Middleware
 server.use(authentication);
-
-// Setup cross domain access
-server.use((req, res, next) => {
-	res.header('Access-Control-Allow-Origin', '*');
-	res.header('Access-Control-Allow-Headers', 'Content-Type');
-	res.header('Access-Control-Allow-Methods', 'POST, GET');
-	next();
-});
 
 validateConfiguration(config);
 

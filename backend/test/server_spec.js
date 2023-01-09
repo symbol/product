@@ -106,7 +106,7 @@ describe('Server', () => {
 			expect(response.status).to.be.equal(400);
 			expect(response.body).to.be.deep.equal({
 				code: 'BadRequest',
-				message: 'Faucet balance not enough to pay out'
+				message: 'error_fund_drains'
 			});
 		});
 
@@ -121,7 +121,7 @@ describe('Server', () => {
 			expect(response.status).to.be.equal(403);
 			expect(response.body).to.be.deep.equal({
 				code: 'Forbidden',
-				message: 'Authentication fail'
+				message: 'error_authentication_fail'
 			});
 		});
 
@@ -151,7 +151,7 @@ describe('Server', () => {
 			expect(response.status).to.be.equal(403);
 			expect(response.body).to.be.deep.equal({
 				code: 'Forbidden',
-				message: 'Twitter requirement fail'
+				message: 'error_twitter_requirement_fail'
 			});
 		});
 
@@ -164,6 +164,20 @@ describe('Server', () => {
 
 			// Assert:
 			expect(response.status).to.be.equal(500);
+		});
+	});
+
+	describe('OPTIONS /claim/xem', () => {
+		it('responds 204 when preflight request', async () => {
+			// Act:
+			const response = await supertest(server)
+				.options('/claim/xem');
+
+			// Assert:
+			expect(response.status).to.be.equal(204);
+			expect(response.headers['access-control-allow-origin']).to.be.equal('*');
+			expect(response.headers['access-control-allow-methods']).to.be.equal('POST, OPTIONS');
+			expect(response.headers['access-control-allow-headers']).to.be.equal('Content-Type, authToken');
 		});
 	});
 });
