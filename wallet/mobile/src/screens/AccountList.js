@@ -1,13 +1,12 @@
 import { useNavigation } from '@react-navigation/native';
 import React, { useEffect } from 'react';
 import { StyleSheet } from 'react-native';
-import { TouchableOpacity } from 'react-native-gesture-handler';
 import DraggableFlatList from 'react-native-draggable-flatlist'
-import { AccountCard, Screen, FormItem, Button, ButtonPlain } from 'src/components';
+import { AccountCard, Screen, FormItem, Button, ButtonPlain, TouchableNative } from 'src/components';
 import store, { connect } from 'src/store';
 import { handleError, useDataManager, usePromises, useProp, vibrate } from 'src/utils';
 import Animated, { interpolate, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
-import { layout, timings } from 'src/styles';
+import { colors, layout, timings } from 'src/styles';
 import { Router } from 'src/Router';
 
 export const AccountList = connect(state => ({
@@ -99,11 +98,12 @@ export const AccountList = connect(state => ({
                     keyExtractor={(item, index) => 'al' + item.name + index} 
                     renderItem={({item, drag, isActive}) => (
                     <FormItem type="list">
-                        <TouchableOpacity 
+                        <TouchableNative 
                             onPress={() => selectAccount(item)} 
                             onLongPress={() => handleLongPress(drag)} 
                             onPressOut={handlePressOut}
                             delayLongPress={250}
+                            color={colors.bgGray}
                         >
                             <Animated.View style={isActive && animatedItem}>
                                 <AccountCard
@@ -116,7 +116,7 @@ export const AccountList = connect(state => ({
                                     isSimplified
                                 />
                             </Animated.View>
-                        </TouchableOpacity>
+                        </TouchableNative>
                     </FormItem>
                 )} />
             </FormItem>

@@ -1,10 +1,11 @@
 import { useNavigation } from '@react-navigation/native';
 import React, { useEffect, useState } from 'react';
 import { StyleSheet } from 'react-native';
-import { FlatList, TouchableOpacity } from 'react-native-gesture-handler';
-import { AccountCard, Screen, FormItem, LoadingIndicator, StyledText, TextBox } from 'src/components';
+import { FlatList } from 'react-native-gesture-handler';
+import { AccountCard, Screen, FormItem, LoadingIndicator, StyledText, TextBox, TouchableNative } from 'src/components';
 import { $t } from 'src/localization';
 import store, { connect } from 'src/store';
+import { colors } from 'src/styles';
 import { handleError, useDataManager, usePromises, useValidation, validateAccountName } from 'src/utils';
 
 export const AddSeedAccount = connect(state => ({
@@ -72,7 +73,7 @@ export const AddSeedAccount = connect(state => ({
                     keyExtractor={(item, index) => 'seed' + index} 
                     renderItem={({item}) => (
                     <FormItem type="list">
-                        <TouchableOpacity onPress={() => addAccount(item.index)}>
+                        <TouchableNative onPress={() => addAccount(item.index)} color={colors.bgGray}>
                             <AccountCard
                                 name={getDefaultAccountName(item.index)}
                                 address={item.address}
@@ -82,7 +83,7 @@ export const AddSeedAccount = connect(state => ({
                                 isActive={false}
                                 isSimplified
                             />
-                        </TouchableOpacity>
+                        </TouchableNative>
                     </FormItem>
                 )} />
             </FormItem>
