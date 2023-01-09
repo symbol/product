@@ -1,7 +1,7 @@
 import React from 'react';
 import { BackHandler, Image, StyleSheet, View } from 'react-native';
-import { FlatList, TouchableOpacity } from 'react-native-gesture-handler';
-import { Screen, FormItem, StyledText, DialogBox } from 'src/components';
+import { FlatList } from 'react-native-gesture-handler';
+import { Screen, FormItem, StyledText, DialogBox, TouchableNative } from 'src/components';
 import { $t } from 'src/localization';
 import { Router } from 'src/Router';
 import { connect } from 'src/store';
@@ -55,7 +55,7 @@ export const Settings = connect(state => ({
                     keyExtractor={(item, index) => 'settings' + index} 
                     renderItem={({item, index}) => (
                     <FormItem type="list">
-                        <TouchableOpacity style={styles.item} onPress={item.handler}>
+                        <TouchableNative style={styles.item} onPress={item.handler}>
                             <Image source={item.icon} style={styles.itemIcon} />
                             <View style={styles.itemContent}>
                                 <StyledText type="subtitle">
@@ -65,7 +65,7 @@ export const Settings = connect(state => ({
                                     {item.description}
                                 </StyledText> 
                             </View>
-                        </TouchableOpacity>
+                        </TouchableNative>
                     </FormItem>
                 )} />
             </FormItem>

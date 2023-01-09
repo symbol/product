@@ -3,8 +3,7 @@ import { Image, View, StyleSheet, Text, ActivityIndicator } from 'react-native';
 import { borders, colors, fonts, layout, spacings } from 'src/styles';
 import imageArtPassport from 'src/assets/images/art-passport.png';
 import { getCharPercentage } from 'src/utils';
-import { TouchableHighlight, TouchableNativeFeedback } from 'react-native-gesture-handler';
-import { AccountAvatar, ButtonCopy } from 'src/components';
+import { AccountAvatar, ButtonCopy, TouchableNative } from 'src/components';
 
 const imagesPattern = [
     require('src/assets/images/Geometric-02.png'),
@@ -25,12 +24,7 @@ export const AccountCard = props => {
     const stylesContent = isSimplified ? [styles.content, styles.clearMarginTop] : [styles.content];
     const stylesPattern = [styles.pattern];
 
-    const Touchable = Platform.OS === 'android'
-        ? TouchableNativeFeedback
-        : TouchableHighlight;
-    const touchableBackground = Platform.OS === 'android'
-        ? TouchableNativeFeedback.Ripple(colors.accentLightForm)
-        : colors.accentLightForm;
+    const touchableBackground = colors.accentLightForm;
 
     let imagePattern;
 
@@ -71,31 +65,31 @@ export const AccountCard = props => {
             {!isSimplified && (
                 <View style={styles.controls}>
                     <View style={styles.button}>
-                        <Touchable background={touchableBackground} onPress={onDetailsPress} style={styles.buttonPressable}>
+                        <TouchableNative color={touchableBackground} onPress={onDetailsPress} style={styles.buttonPressable}>
                             <Image source={require('src/assets/images/icon-wallet.png')} style={styles.icon}/>
                             <Text style={styles.textButton}>
                                 {/* notranslate  */}
                                 Details
                             </Text>
-                        </Touchable>
+                        </TouchableNative>
                     </View>
                     <View style={styles.button}>
-                        <Touchable background={touchableBackground} onPress={onSendPress} style={styles.buttonPressable}>
+                        <TouchableNative color={touchableBackground} onPress={onSendPress} style={styles.buttonPressable}>
                             <Image source={require('src/assets/images/icon-send.png')} style={styles.icon}/>
                             <Text style={styles.textButton}>
                                 {/* notranslate  */}
                                 Send
                             </Text>
-                        </Touchable>
+                        </TouchableNative>
                     </View>
                     <View style={[styles.button, styles.clearBorderRight]}>
-                        <Touchable background={touchableBackground} onPress={onReceivePress} style={styles.buttonPressable}>
+                        <TouchableNative color={touchableBackground} onPress={onReceivePress} style={styles.buttonPressable}>
                             <Image source={require('src/assets/images/icon-receive.png')} style={styles.icon}/>
                             <Text style={styles.textButton}>
                                 {/* notranslate  */}
                                 Receive
                             </Text>
-                        </Touchable>
+                        </TouchableNative>
                     </View>
                 </View>
             )}
