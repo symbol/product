@@ -169,12 +169,12 @@ export default {
             await dispatchAction({ type: 'wallet/selectAccount', payload: privateKey });
         },
 
-        removeAccount: async ({ commit }, privateKey) => {
+        removeAccount: async ({ commit }, {privateKey, networkIdentifier}) => {
             const accounts = await SecureStorage.getAccounts();
-            const updatedAccounts = accounts.filter(account => account.privateKey !== privateKey);
-            await SecureStorage.setAccounts(updatedAccounts);
-
-            commit({ type: 'wallet/setAccounts', payload: updatedAccounts });
+            accounts[networkIdentifier] = accounts[networkIdentifier].filter(account => account.privateKey !== privateKey);
+            
+            await SecureStorage.setAccounts(accounts);
+            commit({ type: 'wallet/setAccounts', payload: accounts });
         },
 
         saveAccounts: async ({ commit, state }, {accounts, networkIdentifier}) => {

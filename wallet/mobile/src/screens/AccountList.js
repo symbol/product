@@ -2,12 +2,14 @@ import { useNavigation } from '@react-navigation/native';
 import React, { useEffect } from 'react';
 import { StyleSheet } from 'react-native';
 import DraggableFlatList from 'react-native-draggable-flatlist'
-import { AccountCard, Screen, FormItem, Button, ButtonPlain, TouchableNative } from 'src/components';
+import { AccountCard, Screen, FormItem, Button, ButtonPlain, TouchableNative, DialogBox } from 'src/components';
 import store, { connect } from 'src/store';
-import { handleError, useDataManager, usePromises, useProp, vibrate } from 'src/utils';
+import { handleError, useDataManager, usePromises, useProp, useToggle, vibrate } from 'src/utils';
 import Animated, { interpolate, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { colors, layout, timings } from 'src/styles';
 import { Router } from 'src/Router';
+import { $t } from 'src/localization';
+import { useState } from 'react';
 
 export const AccountList = connect(state => ({
     currentAccount: state.account.current,
@@ -17,6 +19,8 @@ export const AccountList = connect(state => ({
     ticker: state.network.ticker,
 }))(function AccountList(props) {
     const { currentAccount, accounts, balances, networkIdentifier, ticker } = props;
+    const [isRemoveConfirmVisible, toggleRemoveConfirm] = useToggle(false);
+    const [accountToBeRemoved, setAccountToBeRemoved] = useState(null);
     const isPressed = useSharedValue(0);
     const [accountBalanceStateMap, setAccountBalanceStateMap] = usePromises({});
     const selectedPrivateKey = currentAccount?.privateKey || null;
@@ -45,6 +49,16 @@ export const AccountList = connect(state => ({
             networkIdentifier
         }});
     }, null, handleError);
+    const [removeAccount] = useDataManager(async (account) => {
+        const accountPrivateKey = account ? account.privateKey : accountToBeRemoved.privateKey;
+        await store.dispatchAction({type: 'wallet/removeAccount', payload: {
+            privateKey: accountPrivateKey,
+            networkIdentifier
+        }});
+        if (selectedPrivateKey === accountPrivateKey) {
+            await selectAccount(networkAccounts[0])
+        };
+    }, null, handleError);
 
     const isLoading = isSelectAccountLoading;
 
@@ -65,6 +79,16 @@ export const AccountList = connect(state => ({
     };
     const handlePressOut = () => {
         isPressed.value = withTiming(0, timings.press);
+    };
+    const handleRemovePress = (account) => {
+        if (account.accountType === 'external') {
+            setAccountToBeRemoved(account)
+            toggleRemoveConfirm();
+        }
+        else {
+            removeAccount(account);
+        }
+        
     };
 
     const fetchBalances = async () => {
@@ -111,8 +135,10 @@ export const AccountList = connect(state => ({
                                     address={item.address}
                                     balance={balances[item.address]}
                                     ticker={ticker}
+                                    type={item.accountType}
                                     isLoading={accountBalanceStateMap[item.address]}
                                     isActive={isAccountSelected(item)}
+                                    onRemove={item.index === 0 ? null : () => handleRemovePress(item)}
                                     isSimplified
                                 />
                             </Animated.View>
@@ -120,6 +146,14 @@ export const AccountList = connect(state => ({
                     </FormItem>
                 )} />
             </FormItem>
+            <DialogBox
+                type="confirm" 
+                title={$t('s_accountList_confirm_removeExternal_title')}
+                text={$t('s_accountList_confirm_removeExternal_body', accountToBeRemoved)}
+                isVisible={isRemoveConfirmVisible} 
+                onSuccess={removeAccount} 
+                onCancel={toggleRemoveConfirm} 
+            />
         </Screen>
     );
 });

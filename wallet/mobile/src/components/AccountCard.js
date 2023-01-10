@@ -4,6 +4,7 @@ import { borders, colors, fonts, layout, spacings } from 'src/styles';
 import imageArtPassport from 'src/assets/images/art-passport.png';
 import { getCharPercentage } from 'src/utils';
 import { AccountAvatar, ButtonCopy, TouchableNative } from 'src/components';
+import { TouchableOpacity } from 'react-native-gesture-handler';
 
 const imagesPattern = [
     require('src/assets/images/Geometric-02.png'),
@@ -18,13 +19,15 @@ const imagesPattern = [
 ];
 
 export const AccountCard = props => {
-    const { address, balance, name, ticker, isLoading, isSimplified, isActive, onReceivePress, onSendPress, onDetailsPress } = props;
+    const { address, balance, name, ticker, isLoading, isSimplified, isActive, onReceivePress, onSendPress, onDetailsPress, type, onRemove } = props;
     const stylesRootActive = isActive ? [styles.root, styles.rootSimplifiedActive] : [styles.root, styles.rootSimplifiedInactive];
     const stylesRoot = isSimplified ? [stylesRootActive, styles.clearMarginTop] : [styles.root];
     const stylesContent = isSimplified ? [styles.content, styles.clearMarginTop] : [styles.content];
     const stylesPattern = [styles.pattern];
-
     const touchableBackground = colors.accentLightForm;
+    const removeIconSrc = type === 'seed'
+        ? require('src/assets/images/icon-hide.png')
+        : require('src/assets/images/icon-delete.png');
 
     let imagePattern;
 
@@ -45,8 +48,17 @@ export const AccountCard = props => {
                 {isSimplified && <Image source={imagePattern} style={stylesPattern} />}
             </View>
             {!isSimplified && <Image source={imageArtPassport} style={styles.art} />}
-            {isSimplified && <AccountAvatar size="sm" address={address} style={styles.avatar} />}
             {isLoading && <ActivityIndicator color={colors.primary} style={styles.loadingIndicator} />}
+            {isSimplified && (
+                <View style={styles.manageSection} onTouchEnd={(e) => e.stopPropagation()}>
+                    {!!onRemove && (
+                        <TouchableOpacity hitSlop={15} onPress={onRemove}>
+                            <Image source={removeIconSrc} style={styles.removeIcon}/>
+                        </TouchableOpacity>
+                    )}
+                    <AccountAvatar size="sm" address={address}/>
+                </View>
+            )}
             <View style={stylesContent}>
                 <Text style={styles.textTitle}>{/* notranslate  */}Account</Text>
                 <Text style={styles.textName}>{name}</Text>
@@ -55,7 +67,6 @@ export const AccountCard = props => {
                     <Text style={styles.textBalance}>{balance}</Text>
                     <Text style={styles.textTicker}>{' ' + ticker}</Text>
                 </View>
-                
                 <Text style={styles.textTitle}>{/* notranslate  */}Address</Text>
                 <View style={styles.row}>
                     <Text style={styles.textAddress}>{address}</Text>
@@ -136,10 +147,18 @@ const styles = StyleSheet.create({
         top: -58,
         resizeMode: 'stretch'
     },
-    avatar: {
+    manageSection: {
         position: 'absolute',
         top: spacings.margin,
-        right: spacings.margin
+        right: spacings.margin,
+        flexDirection: 'row',
+        alignItems: 'center',
+        zIndex: 2
+    },
+    removeIcon: {
+        width: 18,
+        height: 18,
+        marginRight: spacings.margin / 2
     },
     loadingIndicator: {
         position: 'absolute',
