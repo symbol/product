@@ -4,7 +4,7 @@ import { colors } from 'src/styles';
 
 
 export const LoadingIndicator = (props) => {
-    const { size } = props;
+    const { size, fill } = props;
     const indicatorSize = size === 'sm' ? 'small' : 'large';
     
     return (
@@ -14,7 +14,7 @@ export const LoadingIndicator = (props) => {
                     <ActivityIndicator size={indicatorSize} color={colors.primary} />
                 </View>
             </View>
-            <View style={styles.fillHeight} />
+            {fill && <View style={styles.fillHeight} />}
         </>
     );
 };

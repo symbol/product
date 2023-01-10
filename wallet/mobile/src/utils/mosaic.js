@@ -25,3 +25,7 @@ export const getMosaicWithRelativeAmount = (mosaic, mosaicInfo) => {
         id: mosaic.id,
     }
 };
+
+export const filterCustomMosaics = (mosaicList, nativeMosaicId) => {
+    return mosaicList.filter(mosaic => mosaic.id !== nativeMosaicId);
+};

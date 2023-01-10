@@ -2,7 +2,7 @@ import { useNavigation } from '@react-navigation/native';
 import React, { useEffect, useState } from 'react';
 import { StyleSheet } from 'react-native';
 import { FlatList } from 'react-native-gesture-handler';
-import { AccountCard, Screen, FormItem, LoadingIndicator, StyledText, TextBox, TouchableNative } from 'src/components';
+import { AccountCard, Screen, FormItem, StyledText, TextBox, TouchableNative } from 'src/components';
 import { $t } from 'src/localization';
 import store, { connect } from 'src/store';
 import { colors } from 'src/styles';
@@ -57,8 +57,7 @@ export const AddSeedAccount = connect(state => ({
     }, [networkSeedAddressed]);
 
     return (
-        <Screen>
-            {isLoading && <LoadingIndicator />}
+        <Screen isLoading={isLoading}>
             <FormItem>
                 {/* notranslate */}
                 <StyledText type="title">Give a Name for New Account</StyledText>

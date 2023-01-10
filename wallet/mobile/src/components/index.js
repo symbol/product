@@ -28,3 +28,4 @@ export * from './TabNavigator';
 export * from './TextBox';
 export * from './TitleBar';
 export * from './TouchableNative';
+export * from './TransactionGraphic';

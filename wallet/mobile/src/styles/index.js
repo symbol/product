@@ -153,6 +153,12 @@ export const layout = {
     row: {
         flexDirection: 'row'
     },
+    justifyCenter: {
+        justifyContent: 'center'
+    },
+    alignCenter: {
+        alignItems: 'center'
+    },
     alignEnd: {
         alignItems: 'flex-end'
     },
