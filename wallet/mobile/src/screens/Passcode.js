@@ -76,7 +76,7 @@ export const Passcode = (props) => {
                 finishProcess={onFinish}
                 touchIDDisabled={type === 'choose'}
             />}
-            {isLoading && <LoadingIndicator />}
+            {isLoading && <LoadingIndicator fill />}
         </View>
     );
 }

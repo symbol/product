@@ -6,7 +6,7 @@ export const Screen = props => {
     const { children, style, titleBar, bottomComponent, navigator, isLoading } = props;
 
     return (isLoading 
-        ? <LoadingIndicator />
+        ? <LoadingIndicator fill/>
         : <View style={[styles.root, style]}>
             {titleBar}
             <View style={styles.content}>

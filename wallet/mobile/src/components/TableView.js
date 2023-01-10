@@ -15,6 +15,7 @@ const renderTypeMap = {
         'signerAddress',
         'linkedAccountAddress',
         'targetAddress',
+        'sourceAddress',
         'metadataValue',
         'publicKey',
         'vrfPublicKey',
@@ -53,7 +54,7 @@ export const TableView = connect(state => ({
     currentAccount: state.account.current,
     ticker: state.network.ticker,
 }))(function TableView(props) {
-    const { data, ticker, style } = props;
+    const { currentAccount, data, ticker, style, showEmptyArrays } = props;
 
     if (!data || typeof data !== 'object') {
         return null;
@@ -97,7 +98,7 @@ export const TableView = connect(state => ({
                 case 'copyButton':
                     ItemTemplate = (
                         <View style={styles.row}>
-                            <StyledText type="body">
+                            <StyledText type="body" style={styles.copyText}>
                                 {item.value}
                             </StyledText>
                             <ButtonCopy data={item.value} style={styles.button}/>
@@ -130,7 +131,7 @@ export const TableView = connect(state => ({
                     ItemTemplate = (
                         <View style={styles.message}>
                             <StyledText type="body">
-                                {item.value.isEncrypted ? '[*]' : ''}
+                                {item.value.isEncrypted ? '*****' : ''}
                             </StyledText>
                             {(!item.value.isEncrypted || !canDecryptMessage(item.value, currentAccount)) &&(
                                 <StyledText type="body">
@@ -165,6 +166,13 @@ export const TableView = connect(state => ({
                         </View>
                     );
                     break;
+                case 'translate':
+                    ItemTemplate = (
+                        <StyledText type="body">
+                            {$t(`data_${item.value}`)}
+                        </StyledText>
+                    );
+                    break;
             }
 
             return true;
@@ -189,7 +197,13 @@ export const TableView = connect(state => ({
         return ItemTemplate;
     }
 
-    const isEmptyField = item => item.value === '' || item.value === null;
+    const isEmptyField = item => {
+        if (Array.isArray(item.value)) {
+            return !(item.value.length || showEmptyArrays);
+        }
+
+        return item.value === '' || item.value === null;
+    };
 
     return (
         <View style={style}>
@@ -219,11 +233,15 @@ const styles = StyleSheet.create({
     key: {
         opacity: 0.8,
     },
+    copyText: {
+        flex: 1,
+        flexWrap: 'wrap',
+    },
     button: {
         paddingLeft: spacings.paddingSm
     },
     mosaic: {
-        marginTop: spacings.margin / 2,
+        marginBottom: spacings.margin / 2,
         flexDirection: 'row',
         alignItems: 'center',
     },
@@ -236,6 +254,7 @@ const styles = StyleSheet.create({
     mosaicIcon: {
         height: 24,
         width: 24,
+        maxHeight: '100%',
         marginRight: spacings.paddingSm
     },
     fee: {

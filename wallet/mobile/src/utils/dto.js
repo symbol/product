@@ -124,14 +124,18 @@ export const transferTransactionFromDTO = (transaction, {networkProperties, mosa
         resultAmount = -nativeMosaicAmount;
     }
 
-    return {
-        ...transactionBody,
-        message: {
+    const message = transaction.message.payload 
+        ? {
             signerAddress: transactionBody.signerAddress,
             recipientAddress: transactionBody.recipientAddress,
             text: transaction.message.payload,
             isEncrypted: transaction.message.type === 0x01,
-        },
+        }
+        : null;
+
+    return {
+        ...transactionBody,
+        message,
         mosaics: formattedMosaics,
         amount: resultAmount
     };
