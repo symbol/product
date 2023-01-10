@@ -17,7 +17,9 @@ Faucet backend service built with NodeJS and Restify. It allows users to request
 
 | Folder Name | Description |
 | -------------|--------------|
-| /src/controllers| It consumes data from service layers, and processes the data used by the backend. |
+| /src/config | Collection of settings. |
+| /src/controllers| Consumes data from service layers, and processes the data used by the backend. |
+| /src/routers | Defines all the endpoint routes. |
 | /src/services | Service layer that mainly manages interactions with the NEM nodes. |
 | /src/utils | Collection of utility functions. |
 
@@ -30,7 +32,9 @@ Node.js LTS
 Request tokens
 
 ``` bash
-curl -X POST -H "Content-Type: application/json" \
+curl -X POST
+    -H "Content-Type: application/json" \
+    -H "authToken: <obtain token from auth service>" \
     -d '{"address": "TCKH5L543TQKUPHIUAWMNYL7GNQYEY2UGMECB4D3", "amount": 10}' \
     http://localhost:8080/claim/xem
 ```
@@ -52,7 +56,7 @@ Response
 1. Clone the project.
 
 ```
-git clone https://github.com/symbol/faucet-repo.git
+git clone https://github.com/symbol/faucet.git
 ```
 
 2. Install the required dependencies.

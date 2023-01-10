@@ -1,4 +1,4 @@
-# Faucet Repo
+# Faucet
 
 - [Overview](#overview)
 - [Repository Layout](#repository-layout)
@@ -9,30 +9,7 @@
 
 Faucet is a simple application that allows the user to request testnet network currency to do development. it supports NEM and SYMBOL. In order to request a tokens, the user is required to sign on with a Twitter account with a minimum **10 followers** and registered **at least 31 days**.
 
-```text
-                              +---------------------+
-           2.OAuth callback   |                     |
-       +----------------------+  Twitter OAuth/API  |
-       |                      |                     |
-       |                      +------^---+----------+
-       |                             |   |
-       v                             |   |
-+-----------+  1./twitter/auth    +--+---v---+
-|           +-------------------->|          |
-|           |                     |          |
-|           |  3./twitter/verify  |          |
-|           +-------------------->|          |
-|           |                     |          |
-|  Webpage  |  4.Token Response   |          |
-|           |<--------------------+          | 7.Sign and    +-----------+
-|           |                     |          |  Announce TX  |           |
-|           |  5./claim/{token}   |   REST   +-------------->|  Testnet  |
-|           +-------------------->|          |               |           |
-|           |                     |          |               +-----------+
-|           |  6.Status Response  |          |
-|           |<--------------------|          |
-+-----------+                     +----------+
-```
+![SYSTEM ARCHITECTURE DESIGN](https://symbolblog.com/wp-content/uploads/2022/12/Picture-1.png)
 
 ## Repository layout
 

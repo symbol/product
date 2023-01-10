@@ -18,7 +18,7 @@ Twitter authenticator is independent microservices built with NodeJS and Restify
 | -------------|--------------|
 | /src/config | Collection of settings. |
 | /src/controllers| Handle authentication logic. |
-| /src/routers | Defined all the endpoint routes. |
+| /src/routers | Defines all the endpoint routes. |
 | /src/utils | Collection of utility functions. |
 
 ## Requirement
@@ -30,7 +30,7 @@ Node.js LTS
 1. Clone the project.
 
 ```
-git clone https://github.com/symbol/faucet-repo.git
+git clone https://github.com/symbol/faucet.git
 ```
 
 2. Install the required dependencies.
