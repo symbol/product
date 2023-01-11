@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { AddressBook } from 'symbol-address-book';
 
 export class PersistentStorage {
     // Keys
@@ -12,6 +13,7 @@ export class PersistentStorage {
     static LATEST_TRANSACTIONS_KEY = 'latestTransactions';
     static MOSAIC_INFOS_KEY = 'mosaicInfos';
     static OWNED_MOSAICS_KEY = 'ownedMosaics';
+    static ADDRESS_BOOK_KEY = 'addressBook';
 
     // Data Schema Version
     static getDataSchemaVersion = async () => {
@@ -149,6 +151,23 @@ export class PersistentStorage {
         return this.set(this.MOSAIC_INFOS_KEY, JSON.stringify(payload));
     }
 
+    // Address Book
+    static async getAddressBook() {
+        const rawAddressBook = await this.get(this.ADDRESS_BOOK_KEY);
+        const defaultAddressBook = new AddressBook([]);
+
+        try {
+            return AddressBook.fromJSON(rawAddressBook);
+        }
+        catch {
+            return defaultAddressBook;
+        }
+    }
+
+    static async setAddressBook(payload) {
+        return this.set(this.ADDRESS_BOOK_KEY, payload.toJSON());
+    }
+
     // API
     static set = (key, value) => {
         return AsyncStorage.setItem(key, value);
@@ -174,6 +193,7 @@ export class PersistentStorage {
             this.remove(this.LATEST_TRANSACTIONS_KEY),
             this.remove(this.MOSAIC_INFOS_KEY),
             this.remove(this.OWNED_MOSAICS_KEY),
+            this.remove(this.ADDRESS_BOOK_KEY)
         ]);
     };
 }
