@@ -1,10 +1,16 @@
 import { networkIdentifierToNetworkType } from './network';
-import { Account } from 'symbol-sdk';
+import { Account, Address } from 'symbol-sdk';
 
 export const addressFromPrivateKey = (privateKey, networkIdentifier) => {
     const networkType = networkIdentifierToNetworkType(networkIdentifier);
 
     return Account.createFromPrivateKey(privateKey, networkType).address.plain();
+};
+
+export const addressFromPublicKey = (publicKey, networkIdentifier) => {
+    const networkType = networkIdentifierToNetworkType(networkIdentifier);
+
+    return Address.createFromPublicKey(publicKey, networkType).plain();
 };
 
 export const publicAccountFromPrivateKey = (privateKey, networkIdentifier) => {

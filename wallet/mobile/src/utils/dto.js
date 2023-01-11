@@ -1,6 +1,6 @@
 import { Constants } from 'src/config';
 import { Address, TransactionType } from 'symbol-sdk';
-import { formatDeadline, getNativeMosaicAmount, getMosaicRelativeAmount, getMosaicsWithRelativeAmounts, isIncomingTransaction, isOutgoingTransaction, getMosaicWithRelativeAmount, publicAccountFromPrivateKey } from './';
+import { formatDeadline, getNativeMosaicAmount, getMosaicRelativeAmount, getMosaicsWithRelativeAmounts, isIncomingTransaction, isOutgoingTransaction, addressFromPublicKey } from './';
 
 export const mosaicFromDTO = mosaic => ({
     id: mosaic.id.toHex(),
@@ -398,7 +398,7 @@ export const namespaceMetadataTransactionFromDTO = (transaction, config) => {
 
 export const votingKeyLinkTransactionFromDTO = (transaction, config) => {
     const baseTransaction = baseTransactionFromDTO(transaction, config);
-    const linkedAccountAddress = publicAccountFromPrivateKey(transaction.linkedPublicKey, config.networkProperties.networkIdentifier).address;
+    const linkedAccountAddress = addressFromPublicKey(transaction.linkedPublicKey, config.networkProperties.networkIdentifier);
 
     return {
         ...baseTransaction,
@@ -412,7 +412,7 @@ export const votingKeyLinkTransactionFromDTO = (transaction, config) => {
 
 export const vrfKeyLinkTransactionFromDTO = (transaction, config) => {
     const baseTransaction = baseTransactionFromDTO(transaction, config);
-    const linkedAccountAddress = publicAccountFromPrivateKey(transaction.linkedPublicKey, config.networkProperties.networkIdentifier).address
+    const linkedAccountAddress = addressFromPublicKey(transaction.linkedPublicKey, config.networkProperties.networkIdentifier);
 
     return {
         ...baseTransaction,
@@ -424,7 +424,7 @@ export const vrfKeyLinkTransactionFromDTO = (transaction, config) => {
 
 export const nodeKeyLinkTransactionFromDTO = (transaction, config) => {
     const baseTransaction = baseTransactionFromDTO(transaction, config);
-    const linkedAccountAddress = publicAccountFromPrivateKey(transaction.linkedPublicKey, config.networkProperties.networkIdentifier).address
+    const linkedAccountAddress = addressFromPublicKey(transaction.linkedPublicKey, config.networkProperties.networkIdentifier);
 
     return {
         ...baseTransaction,
@@ -436,7 +436,7 @@ export const nodeKeyLinkTransactionFromDTO = (transaction, config) => {
 
 export const accountKeyLinkTransactionFromDTO = (transaction, config) => {
     const baseTransaction = baseTransactionFromDTO(transaction, config);
-    const linkedAccountAddress = publicAccountFromPrivateKey(transaction.linkedPublicKey, config.networkProperties.networkIdentifier).address
+    const linkedAccountAddress = addressFromPublicKey(transaction.linkedPublicKey, config.networkProperties.networkIdentifier);
 
     return {
         ...baseTransaction,
