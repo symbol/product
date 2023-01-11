@@ -65,6 +65,7 @@ export default {
             await dispatchAction({type: 'wallet/loadState'});
             await dispatchAction({type: 'network/loadState'});
             await dispatchAction({type: 'account/loadState'});
+            await dispatchAction({type: 'addressBook/loadState'});
             await dispatchAction({type: 'transaction/loadState'});
         },
         fetchAll: async ({ dispatchAction }) => {

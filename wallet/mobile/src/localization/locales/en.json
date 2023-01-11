@@ -311,5 +311,7 @@
     "validation_error_key_length": "Key should be 64 char long",
     "validation_error_mnemonic_invalid": "Invalid mnemonic pharase",
     "validation_error_address_short": "Too short",
-    "validation_error_balance_not_enough": "Not enough balance"
+    "validation_error_address_invalid": "Invalid address",
+    "validation_error_balance_not_enough": "Not enough balance",
+    "validation_error_already_exists": "Already exists"
 }

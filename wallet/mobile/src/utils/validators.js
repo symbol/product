@@ -1,4 +1,5 @@
 import { MnemonicPassPhrase } from 'symbol-hd-wallets';
+import { isSymbolAddress } from './account';
 
 export const validateRequired = () => str => {
     if (str.length === 0) {
@@ -33,8 +34,20 @@ export const validateUnresolvedAddress = () => str => {
     }
 }
 
+export const validateAddress = () => str => {
+    if (!isSymbolAddress(str)) {
+        return 'validation_error_address_invalid';
+    }
+}
+
 export const validateAmount = (availableBalance) => str => {
     if (parseFloat(str) > parseFloat(availableBalance)) {
         return 'validation_error_balance_not_enough';
+    }
+}
+
+export const validateExisted = (existedValues) => str => {
+    if (existedValues.some(value => value === str)) {
+        return 'validation_error_already_exists';
     }
 }

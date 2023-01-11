@@ -90,11 +90,13 @@ export const useDataManager = (callback, defaultData, onError) => {
     return [call, isLoading, data];
 }
 
-export const useProp = (prop) => {
-    const [value, setValue] = useState(prop);
+export const useProp = (prop, initValue) => {
+    const [value, setValue] = useState(prop === undefined ? initValue : prop);
 
     useEffect(() => {
-        setValue(prop);
+        if (prop !== undefined) {
+            setValue(prop);
+        }
     }, [prop]);
 
     return [value, setValue];
