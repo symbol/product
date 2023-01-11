@@ -12,7 +12,8 @@ export const FormItem = props => {
     }
     const clearStyle = clearMap[clear];
     const typeMap = {
-        list: styles.listItem
+        list: styles.listItem,
+        group: styles.group
     }
     const typeStyle = typeMap[type];
     const fillStyle = fill ? styles.fill : null;
@@ -33,6 +34,10 @@ const styles = StyleSheet.create({
         marginHorizontal: 0,
         marginVertical: 0,
         marginBottom: spacings.margin,
+    },
+    group: {
+        marginVertical: spacings.marginLg,
+        marginHorizontal: spacings.margin,
     },
     clearTop: {
         marginTop: 0
