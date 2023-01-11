@@ -31,6 +31,8 @@ const keys = {
     AccountList: 'AccountList',
     AddExternalAccount: 'AddExternalAccount',
     AddSeedAccount: 'AddSeedAccount',
+    AddressBookAddContact: 'AddressBookAddContact',
+    AddressBookList: 'AddressBookList',
     Send: 'Send',
     Settings: 'Settings',
     SettingsAbout: 'SettingsAbout',
@@ -61,6 +63,8 @@ export const RouterView = ({ isActive }) => (
                     <Stack.Screen name={keys.AccountList} component={screens.AccountList} />
                     <Stack.Screen name={keys.AddExternalAccount} component={screens.AddExternalAccount} />
                     <Stack.Screen name={keys.AddSeedAccount} component={screens.AddSeedAccount} />
+                    <Stack.Screen name={keys.AddressBookAddContact} component={screens.AddressBookAddContact} />
+                    <Stack.Screen name={keys.AddressBookList} component={screens.AddressBookList} />
                     <Stack.Screen name={keys.Send} component={screens.Send} />
                     <Stack.Screen name={keys.Settings} component={screens.Settings} />
                     <Stack.Screen name={keys.SettingsAbout} component={screens.SettingsAbout} />
@@ -133,6 +137,12 @@ export class Router {
     }
     static goToAddSeedAccount() {
         navigationRef.navigate(keys.AddSeedAccount);
+    }
+    static goToAddressBookAddContact() {
+        navigationRef.navigate(keys.AddressBookAddContact);
+    }
+    static goToAddressBookList() {
+        navigationRef.navigate(keys.AddressBookList);
     }
     static goToSend() {
         navigationRef.navigate(keys.Send);
