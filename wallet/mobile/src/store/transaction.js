@@ -40,7 +40,6 @@ export default {
             commit({type: 'transaction/setIsLastPage', payload: false});
         },
         fetchData: async ({ commit, state }, keepPages) => {
-            console.log(`>>>>>>>>>>>>>>>>>>[Transaction] fetchData ${current?.address}`, keepPages ? 'keepPages' : '')
             const { networkProperties } = state.network;
             const { current } = state.account;
             const { confirmed } = state.transaction;
