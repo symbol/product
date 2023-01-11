@@ -44,6 +44,11 @@ export const TransactionGraphic = connect(state => ({
             <Image source={require('src/assets/images/icon-tx-namespace.png')} style={styles.targetIcon} />
         </View>
     );
+    const TargetLock = () => (
+        <View style={styles.targetIconWrapper}>
+            <Image source={require('src/assets/images/icon-tx-lock.png')} style={styles.targetIcon} />
+        </View>
+    );
 
     switch(transaction.type) {
         case TransactionType.TRANSFER:
@@ -144,6 +149,41 @@ export const TransactionGraphic = connect(state => ({
             });
             const actionText = truncText(`${$t(`data_${transaction.linkAction}`)}`)
             ActionBody = () => <Text style={styles.actionText}>{actionText}</Text>;
+            break;
+        }
+        case TransactionType.HASH_LOCK: {
+            Target = () => <TargetLock />
+            targetName = $t('transactionDescriptionShort_hashLock', {duration: transaction.duration});
+            const transferredAmount = getNativeMosaicAmount(transaction.mosaics, networkProperties.networkCurrency.mosaicId);
+            ActionBody = () => <Text style={styles.actionText}>{Math.abs(transferredAmount)} {ticker}</Text>;
+            break;
+        }
+        case TransactionType.SECRET_LOCK:
+        case TransactionType.SECRET_PROOF: {
+            Target = () => <TargetLock />
+            targetName = '';
+            ActionBody = () => <Text style={styles.actionText}>{truncText(transaction.secret)}</Text>;
+            break;
+        }
+        case TransactionType.ACCOUNT_METADATA: {
+            Target = () => <AccountAvatar address={transaction.targetAddress} size="md" />
+            targetName = getAddressName(transaction.targetAddress, currentAccount, networkWalletAccounts);
+            targetNameStyle.push({
+                color: getColorFromHash(transaction.targetAddress)
+            });
+            ActionBody = () => <Text style={styles.actionText}>{truncText(transaction.scopedMetadataKey)}</Text>;
+            break;
+        }
+        case TransactionType.NAMESPACE_METADATA: {
+            Target = () => <TargetNamespace />
+            targetName = transaction.targetNamespaceId;
+            ActionBody = () => <Text style={styles.actionText}>{truncText(transaction.scopedMetadataKey)}</Text>;
+            break;
+        }
+        case TransactionType.MOSAIC_METADATA: {
+            Target = () => <TargetMosaic />
+            targetName = transaction.targetMosaicId;
+            ActionBody = () => <Text style={styles.actionText}>{truncText(transaction.scopedMetadataKey)}</Text>;
             break;
         }
     }
