@@ -101,7 +101,7 @@ export const TableView = connect(state => ({
                             <StyledText type="body" style={styles.copyText}>
                                 {item.value}
                             </StyledText>
-                            <ButtonCopy data={item.value} style={styles.button}/>
+                            <ButtonCopy content={item.value} style={styles.button}/>
                         </View>
                     );
                     break;
