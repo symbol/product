@@ -20,6 +20,7 @@ export const colors = {
     bgAccountCardSelected: '#2f0b40',
     
     bgCard: '#413c4f',
+    bgCardTransparent: 'rgba(241, 243, 244, 0.15)',
     bgForm: DesignSystem.ColorDarkmodeFormBg,
     formNeutral: '#6C6C6C',
     accentFormOpacity: '#38094f',
@@ -144,6 +145,7 @@ export const borders = {
 export const spacings = {
     controlHeight: 48,
     margin: 12,
+    marginLg: 30,
     paddingSm: 8,
     padding: 16,
     padding2: 24
