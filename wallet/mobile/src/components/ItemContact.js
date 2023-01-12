@@ -5,11 +5,11 @@ import { trunc } from 'src/utils';
 import { AccountAvatar, ItemBase } from 'src/components';
 
 export function ItemContact(props) {
-    const { contact } = props;
+    const { contact, onPress } = props;
     const { name, address, isBlackListed } = contact;
     
     return (
-        <ItemBase style={styles.root}>
+        <ItemBase style={styles.root} onPress={onPress}>
             <View style={styles.sectionIcon}>
                 <AccountAvatar size="md" address={address} />
             </View>

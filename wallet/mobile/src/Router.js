@@ -32,6 +32,7 @@ const keys = {
     AddExternalAccount: 'AddExternalAccount',
     AddSeedAccount: 'AddSeedAccount',
     AddressBookAddContact: 'AddressBookAddContact',
+    AddressBookContact: 'AddressBookContact',
     AddressBookList: 'AddressBookList',
     Send: 'Send',
     Settings: 'Settings',
@@ -64,6 +65,7 @@ export const RouterView = ({ isActive }) => (
                     <Stack.Screen name={keys.AddExternalAccount} component={screens.AddExternalAccount} />
                     <Stack.Screen name={keys.AddSeedAccount} component={screens.AddSeedAccount} />
                     <Stack.Screen name={keys.AddressBookAddContact} component={screens.AddressBookAddContact} />
+                    <Stack.Screen name={keys.AddressBookContact} component={screens.AddressBookContact} />
                     <Stack.Screen name={keys.AddressBookList} component={screens.AddressBookList} />
                     <Stack.Screen name={keys.Send} component={screens.Send} />
                     <Stack.Screen name={keys.Settings} component={screens.Settings} />
@@ -126,38 +128,41 @@ export class Router {
             routes: [{ name: keys.Home }],
         });
     }
-    static goToAccountDetails() {
-        navigationRef.navigate(keys.AccountDetails);
+    static goToAccountDetails(params) {
+        navigationRef.navigate(keys.AccountDetails, params);
     }
-    static goToAccountList() {
-        navigationRef.navigate(keys.AccountList);
+    static goToAccountList(params) {
+        navigationRef.navigate(keys.AccountList, params);
     }
-    static goToAddExternalAccount() {
-        navigationRef.navigate(keys.AddExternalAccount);
+    static goToAddExternalAccount(params) {
+        navigationRef.navigate(keys.AddExternalAccount, params);
     }
-    static goToAddSeedAccount() {
-        navigationRef.navigate(keys.AddSeedAccount);
+    static goToAddSeedAccount(params) {
+        navigationRef.navigate(keys.AddSeedAccount, params);
     }
-    static goToAddressBookAddContact() {
-        navigationRef.navigate(keys.AddressBookAddContact);
+    static goToAddressBookAddContact(params) {
+        navigationRef.navigate(keys.AddressBookAddContact, params);
     }
-    static goToAddressBookList() {
-        navigationRef.navigate(keys.AddressBookList);
+    static goToAddressBookContact(params) {
+        navigationRef.navigate(keys.AddressBookContact, params);
     }
-    static goToSend() {
-        navigationRef.navigate(keys.Send);
+    static goToAddressBookList(params) {
+        navigationRef.navigate(keys.AddressBookList, params);
     }
-    static goToSettings() {
-        navigationRef.navigate(keys.Settings);
+    static goToSend(params) {
+        navigationRef.navigate(keys.Send, params);
     }
-    static goToSettingsAbout() {
-        navigationRef.navigate(keys.SettingsAbout);
+    static goToSettings(params) {
+        navigationRef.navigate(keys.Settings, params);
     }
-    static goToSettingsNetwork() {
-        navigationRef.navigate(keys.SettingsNetwork);
+    static goToSettingsAbout(params) {
+        navigationRef.navigate(keys.SettingsAbout, params);
     }
-    static goToSettingsSecurity() {
-        navigationRef.navigate(keys.SettingsSecurity);
+    static goToSettingsNetwork(params) {
+        navigationRef.navigate(keys.SettingsNetwork, params);
+    }
+    static goToSettingsSecurity(params) {
+        navigationRef.navigate(keys.SettingsSecurity, params);
     }
     static goToTransactionDetails(params) {
         navigationRef.navigate(keys.TransactionDetails, params);

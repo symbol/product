@@ -7,18 +7,18 @@ import { handleError, useDataManager, useProp, useValidation, validateAccountNam
 
 export const AddressBookAddContact = connect(state => ({
     accounts: state.wallet.accounts,
-    addressBook: state.addressBook.addressBook,
+    addressBookWhiteList: state.addressBook.whiteList,
+    addressBookBlackList: state.addressBook.blackList,
     networkIdentifier: state.network.networkIdentifier
 }))(function AddressBookAddContact(props) {
-    const { accounts, addressBook, networkIdentifier } = props;
-    const existedNames = [
-        ...addressBook.getAllContacts().map(contact => contact.name),
-        ...accounts[networkIdentifier].map(account => account.name),
+    const { accounts, addressBookWhiteList, addressBookBlackList, networkIdentifier } = props;
+    const allContacts = [
+        ...addressBookWhiteList,
+        ...addressBookBlackList,
+        ...accounts[networkIdentifier]
     ];
-    const existedAddresses = [
-        ...addressBook.getAllContacts().map(contact => contact.address),
-        ...accounts[networkIdentifier].map(account => account.address),
-    ];
+    const existedNames = allContacts.map(contact => contact.name);
+    const existedAddresses = allContacts.map(contact => contact.address);
     const [list, setList] = useProp(props.route.params?.list, 'whitelist');
     const [name, setName] = useProp(props.route.params?.name, '');
     const [address, setAddress] = useProp(props.route.params?.address, '');
