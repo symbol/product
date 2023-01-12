@@ -236,3 +236,5 @@ export const formatDate = (dateStr, translate, showTime = false, showSeconds = f
 
 	return formattedDate;
 };
+
+export const interleave = (arr, callback) => arr.flatMap((el, index) => [el, callback(el, index)]).slice(0, -1);

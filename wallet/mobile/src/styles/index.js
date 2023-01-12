@@ -22,6 +22,7 @@ export const colors = {
     bgCard: '#413c4f',
     bgCardTransparent: 'rgba(241, 243, 244, 0.15)',
     bgForm: DesignSystem.ColorDarkmodeFormBg,
+    bgActive: '#112844',
     formNeutral: '#6C6C6C',
     accentFormOpacity: '#38094f',
     accentForm: DesignSystem.ColorDarkmodeFormAccent,
