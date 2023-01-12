@@ -2,6 +2,7 @@ export * from './AccountDetails';
 export * from './AccountList';
 export * from './AddExternalAccount';
 export * from './AddressBookAddContact';
+export * from './AddressBookContact';
 export * from './AddressBookList';
 export * from './AddSeedAccount';
 export * from './Assets';

@@ -1,40 +1,46 @@
 import React from 'react';
-import { Screen, FormItem, Button, StyledText, ItemContact } from 'src/components';
+import { Screen, FormItem, Button, ItemContact, TabView } from 'src/components';
 import { connect } from 'src/store';
 import { Router } from 'src/Router';
 import { useState } from 'react';
-import { useMemo } from 'react';
 import { FlatList } from 'react-native-gesture-handler';
 import _ from 'lodash';
 
 export const AddressBookList = connect(state => ({
-    addressBook: state.addressBook.addressBook,
+    addressBookWhiteList: state.addressBook.whiteList,
+    addressBookBlackList: state.addressBook.blackList,
 }))(function AddressBookList(props) {
-    const { addressBook } = props;
+    const { addressBookWhiteList, addressBookBlackList } = props;
     const [list, setList] = useState('whitelist');
-    const contacts = useMemo(() => list === 'whitelist' 
-        ? _.orderBy(addressBook.getWhiteListedContacts(), ['name'], ['asc'])
-        : _.orderBy(addressBook.getBlackListedContacts(), ['name'], ['asc'])
-    [list])
+    const tabs = [{
+        label: 'Whitelist',
+        value: 'whitelist',
+        content: <FlatList
+            data={addressBookWhiteList}
+            keyExtractor={(item) => 'contact' + item.id} 
+            renderItem={({item}) => <ItemContact contact={item} onPress={() => Router.goToAddressBookContact(item)} />} 
+        />
+    }, {
+        label: 'Blacklist',
+        value: 'blacklist',
+        content: <FlatList
+            data={addressBookBlackList}
+            keyExtractor={(item) => 'contact' + item.id} 
+            renderItem={({item}) => <ItemContact contact={item} onPress={() => Router.goToAddressBookContact(item)} />} 
+        />
+    }];
 
     return (
         // notranslate
         <Screen bottomComponent={<>
             <FormItem>
-                <Button title="Add Contact" onPress={() => Router.goToAddressBookAddContact({list})} />
+                <Button 
+                    title="Add Contact" 
+                    onPress={() => Router.goToAddressBookAddContact({list})} 
+                />
             </FormItem>
         </>}>
-            <FormItem>
-                {/* notranslate */}
-                <StyledText type="title">Whitelist | Blacklist</StyledText>
-            </FormItem>
-            
-            <FlatList
-                data={contacts}
-                keyExtractor={(item, index) => 'contact' + index} 
-                renderItem={({item}) => (
-                    <ItemContact contact={item} />
-            )} />
+            <TabView tabs={tabs} onChange={setList} />
         </Screen>
     );
 });
