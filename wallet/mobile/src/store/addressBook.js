@@ -1,14 +1,19 @@
+import _ from 'lodash';
 import { PersistentStorage } from 'src/storage';
-import { AddressBook } from 'symbol-address-book';
 
 export default {
     namespace: 'addressBook',
     state: {
-        addressBook: new AddressBook([])
+        whiteList: [],
+        blackList: []
     },
     mutations: {
         setAddressBook(state, payload) {
-            state.addressBook.addressBook = payload;
+            const whiteList = _.orderBy(payload.getWhiteListedContacts(), ['name'], ['asc']);
+            const blackList = _.orderBy(payload.getBlackListedContacts(), ['name'], ['asc']);
+
+            state.addressBook.whiteList = whiteList;
+            state.addressBook.blackList = blackList;
             return state;
         },
     },
@@ -34,7 +39,8 @@ export default {
         },
         removeContact: async ({ commit }, contact) => {
             const addressBook = await PersistentStorage.getAddressBook();
-            addressBook.removeContact(contact.id);
+            const contacts = addressBook.removeContact(contact.id);
+            console.log(contact, contacts)
             
             await PersistentStorage.setAddressBook(addressBook)
             commit({type: 'addressBook/setAddressBook', payload: addressBook});

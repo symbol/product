@@ -9,13 +9,13 @@ import { borders, colors, spacings } from 'src/styles';
 import { handleError, trunc, useDataManager, useInit } from 'src/utils';
 
 export const Home = connect(state => ({
-    addressBook: state.addressBook.addressBook,
+    addressBookWhiteList: state.addressBook.whiteList,
     balances: state.wallet.balances,
     currentAccount: state.account.current,
     ticker: state.network.ticker,
     isWalletReady: state.wallet.isReady,
 }))(function Home(props) {
-    const { addressBook, balances, currentAccount, ticker, isWalletReady } = props;
+    const { addressBookWhiteList, balances, currentAccount, ticker, isWalletReady } = props;
     const [loadState, isLoading] = useDataManager(async () => {
         await store.dispatchAction({type: 'wallet/fetchAll'});
     }, null, handleError);
@@ -24,10 +24,6 @@ export const Home = connect(state => ({
     const accountBalance = currentAccount ? balances[currentAccount.address] : '-';
     const accountName = currentAccount?.name || '-';
     const accountAddress = currentAccount?.address || '-';
-
-    ///////////
-    const contacts = useMemo(() => _.orderBy(addressBook.getWhiteListedContacts(), ['name'], ['asc']), [addressBook]);
-    ////////////
 
     return (
         <Screen 
@@ -57,7 +53,7 @@ export const Home = connect(state => ({
                         <FlatList
                             horizontal
                             contentContainerStyle={styles.addressBookList}
-                            data={contacts}
+                            data={addressBookWhiteList}
                             keyExtractor={(item, index) => 'contact' + index} 
                             renderItem={({item}) => (
                                 <View style={styles.addressBookItem}>
