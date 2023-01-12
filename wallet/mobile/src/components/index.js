@@ -26,6 +26,7 @@ export * from './Steps';
 export * from './StyledText';
 export * from './TableView';
 export * from './TabNavigator';
+export * from './TabView';
 export * from './TextBox';
 export * from './TitleBar';
 export * from './TouchableNative';
