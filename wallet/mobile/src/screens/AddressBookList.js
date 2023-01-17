@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Screen, FormItem, Button, ItemContact, TabView } from 'src/components';
 import { connect } from 'src/store';
 import { Router } from 'src/Router';
-import { useState } from 'react';
+import { layout } from 'src/styles';
 import { FlatList } from 'react-native-gesture-handler';
 import _ from 'lodash';
 
@@ -16,6 +16,7 @@ export const AddressBookList = connect(state => ({
         label: 'Whitelist',
         value: 'whitelist',
         content: <FlatList
+            contentContainerStyle={layout.listContainer}
             data={addressBookWhiteList}
             keyExtractor={(item) => 'contact' + item.id} 
             renderItem={({item}) => <ItemContact contact={item} onPress={() => Router.goToAddressBookContact(item)} />} 
@@ -24,6 +25,7 @@ export const AddressBookList = connect(state => ({
         label: 'Blacklist',
         value: 'blacklist',
         content: <FlatList
+            contentContainerStyle={layout.listContainer}
             data={addressBookBlackList}
             keyExtractor={(item) => 'contact' + item.id} 
             renderItem={({item}) => <ItemContact contact={item} onPress={() => Router.goToAddressBookContact(item)} />} 

@@ -42,6 +42,7 @@ export const TabView = props => {
     const flatListRef = useRef(null);
     const tabsWithRef = useMemo(() => tabs.map(tab => ({...tab, ref: React.createRef()})), [tabs]);
     const isBottomLineShown = tabsMeasures.length > 1;
+    const rootStyle = [styles.root, style];
 
     const handleScroll = useAnimatedScrollHandler((event) => {
         scrollX.value = event.contentOffset.x;
@@ -74,12 +75,12 @@ export const TabView = props => {
     }, [tabsContainerRef])
 
     return (
-        <View style={style}>
+        <View style={rootStyle}>
             <View style={styles.tabsContainer} ref={tabsContainerRef}>
                 {tabsWithRef.map((tab, index) => (
-                    <TouchableNative key={'tab' + index} onPress={() => handleTabPress(index)}>
+                    <TouchableNative key={'tab' + index} color={colors.bgActive} onPress={() => handleTabPress(index)}>
                         <View style={styles.tab} ref={tab.ref} >
-                            <StyledText type="label">{tab.label}</StyledText>
+                            <StyledText type="label" style={{color: colors.primary}}>{tab.label}</StyledText>
                         </View>
                     </TouchableNative>
                 ))}
@@ -105,17 +106,22 @@ export const TabView = props => {
 };
 
 const styles = StyleSheet.create({
+    root: {
+        flex: 1,
+    },
+    list: {
+        paddingTop: spacings.margin
+    },
     item: {
         width: SCREEN_WIDTH,
-        height: 900
+        flex: 1
     },
     tabsContainer: {
         width: '100%',
         flexDirection: 'row',
         justifyContent: 'space-evenly',
         position: 'relative',
-        backgroundColor: colors.bgActive,
-        marginBottom: spacings.margin
+        backgroundColor: colors.bgNavbar,
     },
     tab: {
         height: spacings.controlHeight,
