@@ -78,11 +78,11 @@ export const TabView = props => {
         <View style={rootStyle}>
             <View style={styles.tabsContainer} ref={tabsContainerRef}>
                 {tabsWithRef.map((tab, index) => (
-                    <TouchableNative key={'tab' + index} color={colors.bgActive} onPress={() => handleTabPress(index)}>
-                        <View style={styles.tab} ref={tab.ref} >
+                    <View style={styles.tab} ref={tab.ref} key={'tab' + index}>
+                        <TouchableNative style={styles.tabInner} color={colors.bgActive} onPress={() => handleTabPress(index)}>
                             <StyledText type="label" style={{color: colors.primary}}>{tab.label}</StyledText>
-                        </View>
-                    </TouchableNative>
+                        </TouchableNative>
+                    </View>
                 ))}
                 {isBottomLineShown && <BottomLine measures={tabsMeasures} scrollX={scrollX} />}
             </View>
@@ -122,11 +122,17 @@ const styles = StyleSheet.create({
         justifyContent: 'space-evenly',
         position: 'relative',
         backgroundColor: colors.bgNavbar,
+        overflow: 'hidden'
     },
     tab: {
         height: spacings.controlHeight,
+        borderRadius: spacings.controlHeight / 2,
+        overflow: 'hidden'
+    },
+    tabInner: {
+        height: '100%',
         paddingHorizontal: spacings.padding,
-        justifyContent: 'center'
+        justifyContent: 'center',
     },
     bottomLine: {
         position: 'absolute',
