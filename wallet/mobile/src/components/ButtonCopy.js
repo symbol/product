@@ -1,5 +1,5 @@
 import React from 'react';
-import { Image, StyleSheet } from 'react-native';
+import { Image, StyleSheet, View } from 'react-native';
 import { TouchableOpacity } from 'react-native';
 import { showMessage } from 'react-native-flash-message';
 import { copyToClipboard } from 'src/utils';
@@ -8,7 +8,7 @@ export const ButtonCopy = props => {
     const { content, style, size } = props;
     const styleIcon = size === 'sm' ? styles.icon : styles.iconSm;
 
-    handlePress = () => {
+    const handlePress = () => {
         try {
             copyToClipboard(content);
             // notranslate
@@ -18,11 +18,16 @@ export const ButtonCopy = props => {
             showMessage({message: error.message, type: 'danger'});
         }
     }
+    const stopPropagation = e => {
+        e.stopPropagation();
+    }
 
     return (
-        <TouchableOpacity style={style} onPress={handlePress} hitSlop={10}>
-            <Image source={require('src/assets/images/icon-copy.png')} style={styleIcon} />
-        </TouchableOpacity>
+        <View style={style} onTouchEnd={stopPropagation}>
+            <TouchableOpacity onPress={handlePress} hitSlop={10}>
+                <Image source={require('src/assets/images/icon-copy.png')} style={styleIcon} />
+            </TouchableOpacity>
+        </View>
     );
 };
 
