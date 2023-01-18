@@ -7,7 +7,7 @@ import { $t } from 'src/localization';
 import { Router } from 'src/Router';
 import { TransactionService } from 'src/services';
 import { connect } from 'src/store';
-import { getTransactionFees, handleError, toFixedNumber, useDataManager, usePasscode, useToggle, useValidation, validateRequired, validateUnresolvedAddress } from 'src/utils';
+import { getTransactionFees, handleError, toFixedNumber, useDataManager, usePasscode, useProp, useToggle, useValidation, validateRequired, validateUnresolvedAddress } from 'src/utils';
 
 export const Send = connect(state => ({
     currentAccount: state.account.current,
@@ -17,8 +17,8 @@ export const Send = connect(state => ({
     ticker: state.network.ticker,
     chainHeight: state.network.chainHeight
 }))(function Send(props) {
-    const { currentAccount, mosaics, networkProperties, ticker, chainHeight } = props;
-    const [recipient, setRecipient] = useState('');
+    const { currentAccount, mosaics, networkProperties, ticker, chainHeight, route } = props;
+    const [recipient, setRecipient] = useProp(route.params?.recipientAddress || '');
     const [mosaicId, setMosaicId] = useState(mosaics[0]?.id);
     const [amount, setAmount] = useState('0');
     const [message, setMessage] = useState('');
