@@ -107,10 +107,10 @@ export const AccountList = connect(state => ({
         // notranslate
         <Screen isLoading={isLoading} bottomComponent={<>
             <FormItem>
-                <Button title="Add Seed Account" onPress={Router.goToAddSeedAccount} />
+                <Button title="Add Seed Account" onPress={() => Router.goToAddSeedAccount()} />
             </FormItem>
             <FormItem>
-                <ButtonPlain title="Add External Account" isCentered onPress={Router.goToAddExternalAccount} />
+                <ButtonPlain title="Add External Account" isCentered onPress={() => Router.goToAddExternalAccount()} />
             </FormItem>
         </>}>
             <FormItem clear="vertical" fill>

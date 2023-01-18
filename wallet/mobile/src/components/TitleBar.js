@@ -9,8 +9,8 @@ export const TitleBar = props => {
     const { currentAccount } = props;
 
     const getAddress = () => trunc(currentAccount.address, 'address');
-    const handleAccountPress = Router.goToAccountList;
-    const handleSettingsPress = Router.goToSettings;
+    const handleAccountPress = () => Router.goToAccountList();
+    const handleSettingsPress = () => Router.goToSettings();
     
     return (
         <View style={styles.root}>
