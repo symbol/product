@@ -71,6 +71,7 @@ export default {
         fetchAll: async ({ dispatchAction }) => {
             await dispatchAction({type: 'network/fetchData'});
             await dispatchAction({type: 'account/fetchData'});
+            await dispatchAction({type: 'transaction/fetchData'});
         },
         loadState: async ({ commit }) => {
             const mnemonic = await SecureStorage.getMnemonic();

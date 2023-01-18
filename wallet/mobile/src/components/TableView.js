@@ -2,10 +2,9 @@ import React from 'react';
 import { Image, StyleSheet, View } from 'react-native';
 
 import { connect } from 'src/store';
-import { borders, colors, spacings } from 'src/styles';
-import { ButtonCopy, ButtonPlain, FormItem, StyledText } from 'src/components';
+import { spacings } from 'src/styles';
+import { ButtonCopy, FormItem, StyledText } from 'src/components';
 import { $t } from 'src/localization';
-import { canDecryptMessage } from 'src/utils';
 
 const TRANSLATION_ROOT_KEY = 'table';
 const renderTypeMap = {
@@ -30,7 +29,7 @@ const renderTypeMap = {
         '_receivedCosignatures',
         '_addressDeletions',
     ],
-    boolean: ['supplyMutable', 'transferable', 'restrictable'],
+    boolean: ['supplyMutable', 'transferable', 'restrictable', 'revocable'],
     fee: ['fee', 'maxFee'],
     amount: ['amount', 'resolvedFee'],
     secret: ['privateKey', 'remotePrivateKey', 'vrfPrivateKey'],
@@ -88,6 +87,14 @@ export const TableView = connect(state => ({
             }
 
             switch (renderType) {
+                case 'boolean':
+                    ItemTemplate = (
+                        <View style={styles.bool}>
+                            {item.value === true && <Image source={require('src/assets/images/icon-bool-true.png')} style={styles.boolIcon} />}
+                            {item.value === false && <Image source={require('src/assets/images/icon-bool-false.png')} style={styles.boolIcon} />}
+                        </View>
+                    );
+                    break;
                 case 'transactionType':
                     ItemTemplate = (
                         <StyledText type="body">
@@ -130,17 +137,10 @@ export const TableView = connect(state => ({
                 case 'message':
                     ItemTemplate = (
                         <View style={styles.message}>
+                            {item.value.isEncrypted && <Image source={require('src/assets/images/icon-tx-lock.png')} style={styles.messageLockIcon} />}
                             <StyledText type="body">
-                                {item.value.isEncrypted ? '*****' : ''}
+                                {item.value.text}
                             </StyledText>
-                            {(!item.value.isEncrypted || !canDecryptMessage(item.value, currentAccount)) &&(
-                                <StyledText type="body">
-                                    {item.value.text}
-                                </StyledText>
-                            )}
-                            {item.value.isEncrypted && canDecryptMessage(item.value, currentAccount) && (
-                                <ButtonPlain>Decrypt</ButtonPlain>
-                            )}
                         </View>
                     );
                     break;
@@ -257,6 +257,14 @@ const styles = StyleSheet.create({
         maxHeight: '100%',
         marginRight: spacings.paddingSm
     },
+    bool: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    boolIcon: {
+        width: 12,
+        height: 12
+    },
     fee: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -265,4 +273,10 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
     },
+    messageLockIcon: {
+        width: 12,
+        height: 12,
+        maxHeight: '100%',
+        marginRight: spacings.paddingSm
+    }
 });

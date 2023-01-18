@@ -1,4 +1,4 @@
-import { Address, Deadline, Mosaic, MosaicId, PlainMessage, TransactionType, TransferTransaction, UInt64 } from 'symbol-sdk';
+import { Address, Crypto, Deadline, Mosaic, MosaicId, PlainMessage, TransactionType, TransferTransaction, UInt64 } from 'symbol-sdk';
 import { toFixedNumber } from './helper';
 import { getMosaicRelativeAmount } from './mosaic';
 import { networkIdentifierToNetworkType } from './network';
@@ -129,7 +129,6 @@ export const getUnresolvedIdsFromTransactionDTOs = transactions => {
                 
                 if (mode === 'address' && value.isNamespaceId()) {
                     addresses.push(value.toHex());
-                    console.log(value)
                 }
                 else if (mode === 'addressArray' && Array.isArray(value)) {
                     value
@@ -165,6 +164,8 @@ export const isOutgoingTransaction = (transaction, currentAccount) =>
 export const isIncomingTransaction = (transaction, currentAccount) => 
     transaction.recipientAddress === currentAccount.address;
 
-export const canDecryptMessage = (message, currentAccount) => {
-    return message.signerAddress === currentAccount.address || message.recipientAddress === currentAccount.address
+export const decryptMessage = (encryptedMessage, recipientPrivateKey, senderPublicKey) => {
+    const hex = Crypto.decode(recipientPrivateKey, senderPublicKey, encryptedMessage);
+
+    return Buffer.from(hex, 'hex').toString();
 }
