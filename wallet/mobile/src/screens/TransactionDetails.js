@@ -1,5 +1,6 @@
 import _ from 'lodash';
 import React from 'react';
+import { useMemo } from 'react';
 import { Image, Linking, StyleSheet, Text, View } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import { Screen, StyledText, FormItem, TableView, TransactionGraphic, LoadingIndicator, ButtonPlain } from 'src/components';
@@ -32,9 +33,17 @@ export const TransactionDetails = connect(state => ({
     const [fetchStatus, isStatusLoading, status] = useDataManager(() => {
         return TransactionService.fetchStatus(transaction.hash || transaction.id, networkProperties);
     }, null);
+    const [decryptMessage, isMessageLoading, decryptedMessageText] = useDataManager(() => {
+        if (!transaction.message) {
+            return null;
+        }
+        return TransactionService.decryptMessage(transaction, currentAccount, networkProperties);
+    }, null, handleError);
     useInit(fetchDate, isWalletReady);
     useInit(fetchPartialInfo, isWalletReady);
     useInit(fetchStatus, isWalletReady);
+    useInit(decryptMessage, isWalletReady);
+    const isLoading = isPartialInfoLoading || isDateLoading || isStatusLoading || isMessageLoading;
 
     const isAggregate = isAggregateTransaction(transaction);
     let action = $t(`transactionDescriptor_${transaction.type}`);
@@ -72,9 +81,18 @@ export const TransactionDetails = connect(state => ({
         styleAmount.push(styles.incoming);
     }
 
+    const updatedTransactionData = useMemo(() => {
+        if (!decryptedMessageText) {
+            return transaction;
+        }
+        const transactionCopy = {...transaction};
+        transactionCopy.message.text = decryptedMessageText;
+        
+        return transactionCopy;
+    }, [transaction, decryptedMessageText]);
     const details = _.pick(transaction, ['height', 'hash', 'fee', 'signerAddress', 'receivedCosignatures']);
 
-    const openBlockExplorer = () => Linking.openURL(config.explorerURL[networkIdentifier] + '/transactions/' + transaction.hash)
+    const openBlockExplorer = () => Linking.openURL(config.explorerURL[networkIdentifier] + '/transactions/' + transaction.hash);
 
     return (
         <Screen>
@@ -83,6 +101,7 @@ export const TransactionDetails = connect(state => ({
                     <StyledText type="title-large" style={styles.textAction}>{action}</StyledText>
                     <View>
                         <FormItem clear="horizontal" style={styles.formItem}>
+                            {/* notranslate */}
                             <StyledText type="label">Amount</StyledText>
                             <StyledText style={styleAmount}>{transaction.amount || 0} {ticker}</StyledText>
                         </FormItem>
@@ -96,15 +115,16 @@ export const TransactionDetails = connect(state => ({
                             </View>
                         </FormItem>
                         <FormItem clear="horizontal" style={styles.date}>
+                            {/* notranslate */}
                             {!!date && <StyledText type="label">Date</StyledText>}
                             {!!date && <StyledText type="body">{date}</StyledText>}
                         </FormItem>
-                        {isStatusLoading && <LoadingIndicator size="sm" />}
+                        {isLoading && <LoadingIndicator size="sm" />}
                     </View>
                 </FormItem>
                 {!isAggregate && (
                     <FormItem>
-                        <TransactionGraphic transaction={transaction} isExpanded />
+                        <TransactionGraphic transaction={updatedTransactionData} isExpanded />
                     </FormItem>
                 )}   
                 {isAggregate && (

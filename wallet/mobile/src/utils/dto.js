@@ -113,7 +113,8 @@ export const transferTransactionFromDTO = (transaction, {networkProperties, mosa
     const nativeMosaicAmount = getNativeMosaicAmount(formattedMosaics, networkProperties.networkCurrency.mosaicId);
     const transactionBody = {
         ...baseTransaction,
-        recipientAddress: addressFromDTO(transaction.recipientAddress, resolvedAddresses)
+        signerPublicKey: transaction.signer.publicKey,
+        recipientAddress: addressFromDTO(transaction.recipientAddress, resolvedAddresses),
     };
     let resultAmount = 0;
 
@@ -124,14 +125,22 @@ export const transferTransactionFromDTO = (transaction, {networkProperties, mosa
         resultAmount = -nativeMosaicAmount;
     }
 
-    const message = transaction.message.payload 
-        ? {
-            signerAddress: transactionBody.signerAddress,
-            recipientAddress: transactionBody.recipientAddress,
-            text: transaction.message.payload,
-            isEncrypted: transaction.message.type === 0x01,
+    const isMessageEncrypted = transaction.message.type === 0x01;
+    const messagePayload = transaction.message.payload;
+    let message = null;
+
+    if (messagePayload && !isMessageEncrypted) {
+        message = {
+            text: messagePayload,
+            isEncrypted: isMessageEncrypted,
         }
-        : null;
+    }
+    else if (messagePayload && isMessageEncrypted) {
+        message = {
+            encryptedText: messagePayload,
+            isEncrypted: isMessageEncrypted,
+        }
+    }
 
     return {
         ...transactionBody,

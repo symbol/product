@@ -1,6 +1,7 @@
-import { isAggregateTransaction, makeRequest, networkIdentifierToNetworkType, transferTransactionToDTO } from 'src/utils';
+import { decryptMessage, isAggregateTransaction, isIncomingTransaction, isOutgoingTransaction, makeRequest, networkIdentifierToNetworkType, transferTransactionToDTO } from 'src/utils';
+import { AccountService } from 'src/services';
 import _ from 'lodash';
-import { Account, Address, Order, TransactionHttp } from 'symbol-sdk';
+import { Account, Address, Order, TransactionHttp, TransactionType } from 'symbol-sdk';
 import { Duration, Instant, LocalDateTime, ZoneId } from '@js-joda/core';
 export class TransactionService {
     static async fetchAccountTransactions(account, networkProperties, { 
@@ -71,5 +72,35 @@ export class TransactionService {
         return {
             group
         };
+    }
+
+    static async decryptMessage(transaction, currentAccount, networkProperties) {
+        if (transaction.type !== TransactionType.TRANSFER) {
+            throw Error('error_failed_decrypt_message_invalid_transaction_type');
+        }
+
+        if (!transaction.message.isEncrypted) {
+            return transaction.message.text;
+        }
+        
+        if (isIncomingTransaction(transaction, currentAccount)) {
+            return decryptMessage(
+                transaction.message.encryptedText, 
+                currentAccount.privateKey, 
+                transaction.signerPublicKey
+            );
+        }
+
+        if (isOutgoingTransaction(transaction, currentAccount)) {
+            const recipientAccount = await AccountService.fetchAccountInfo(networkProperties, transaction.recipientAddress);
+
+            return decryptMessage(
+                transaction.message.encryptedText, 
+                currentAccount.privateKey,
+                recipientAccount.publicKey,
+            );
+        }
+
+        throw Error('error_failed_decrypt_message_not_related'); 
     }
 };
