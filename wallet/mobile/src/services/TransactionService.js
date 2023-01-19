@@ -45,7 +45,11 @@ export class TransactionService {
 
     static async sendTransferTransaction(transaction, account, networkProperties) {
         const networkType = networkIdentifierToNetworkType(networkProperties.networkIdentifier);
-        const transactionDTO = transferTransactionToDTO(transaction, networkProperties);
+        if (transaction.messageEncrypted) {
+            const recipientAccount = await AccountService.fetchAccountInfo(networkProperties, transaction.recipientAddress);
+            transaction.recipientPublicKey = recipientAccount.publicKey;
+        }
+        const transactionDTO = transferTransactionToDTO(transaction, networkProperties, account);
         const signedTransaction = Account
             .createFromPrivateKey(account.privateKey, networkType)
             .sign(transactionDTO, networkProperties.generationHash);

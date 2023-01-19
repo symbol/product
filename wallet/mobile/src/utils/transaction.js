@@ -1,4 +1,4 @@
-import { Address, Crypto, Deadline, Mosaic, MosaicId, PlainMessage, TransactionType, TransferTransaction, UInt64 } from 'symbol-sdk';
+import { Address, Crypto, Deadline, EncryptedMessage, Mosaic, MosaicId, PlainMessage, TransactionType, TransferTransaction, UInt64 } from 'symbol-sdk';
 import { toFixedNumber } from './helper';
 import { getMosaicRelativeAmount } from './mosaic';
 import { networkIdentifierToNetworkType } from './network';
@@ -22,9 +22,13 @@ export const getTransactionFees = (transaction, networkProperties) => {
     const { transactionFees, networkCurrency: { divisibility } } = networkProperties;
     const stubTransaction = {
         ...transaction,
+        recipientPublicKey: '1111111111111111111111111111111111111111111111111111111111111111',
         recipientAddress: 'TB3KUBHATFCPV7UZQLWAQ2EUR6SIHBSBEOEDDDF' 
     };
-    const size = transferTransactionToDTO(stubTransaction, networkProperties).size;
+    const stubCurrentAccount = {
+        privateKey: '0000000000000000000000000000000000000000000000000000000000000000'
+    };
+    const size = transferTransactionToDTO(stubTransaction, networkProperties, stubCurrentAccount).size;
 
     const fast = (transactionFees.minFeeMultiplier + transactionFees.averageFeeMultiplier)* size;
     const medium = (transactionFees.minFeeMultiplier + transactionFees.averageFeeMultiplier * 0.65) * size;
@@ -37,7 +41,19 @@ export const getTransactionFees = (transaction, networkProperties) => {
     }
 }
 
-export const transferTransactionToDTO = (transaction, networkProperties) => {
+export const transferTransactionToDTO = (transaction, networkProperties, currentAccount) => {
+    let message;
+
+    if (transaction.messageEncrypted) {
+        message = EncryptedMessage.create(
+            transaction.messageText,
+            {publicKey: transaction.recipientPublicKey}, 
+            currentAccount.privateKey
+        );
+    }
+    else {
+        message = PlainMessage.create(transaction.messageText)
+    }
     return TransferTransaction.create(
         Deadline.create(networkProperties.epochAdjustment),
         Address.createFromRawAddress(transaction.recipientAddress),
@@ -45,7 +61,7 @@ export const transferTransactionToDTO = (transaction, networkProperties) => {
             new MosaicId(mosaic.id),
             UInt64.fromUint(mosaic.amount * Math.pow(10, mosaic.divisibility))
         )),
-        PlainMessage.create(transaction.messageText),
+        message,
         networkIdentifierToNetworkType(networkProperties.networkIdentifier),
         UInt64.fromUint(transaction.fee * Math.pow(10, networkProperties.networkCurrency.divisibility))
     );
