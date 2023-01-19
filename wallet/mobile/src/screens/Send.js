@@ -3,12 +3,12 @@ import { useMemo } from 'react';
 import { useEffect } from 'react';
 import { useState } from 'react';
 import { ScrollView } from 'react-native-gesture-handler';
-import { TableView, Screen, SelectMosaic, FeeSelector, FormItem, TextBox, Checkbox, Dropdown, Button, StyledText, InputAmount, DialogBox, InputAddress } from 'src/components';
+import { TableView, Screen, SelectMosaic, FeeSelector, FormItem, TextBox, Checkbox, Button, StyledText, InputAmount, DialogBox, InputAddress } from 'src/components';
 import { $t } from 'src/localization';
 import { Router } from 'src/Router';
 import { TransactionService } from 'src/services';
 import { connect } from 'src/store';
-import { getTransactionFees, handleError, toFixedNumber, useDataManager, usePasscode, useProp, useToggle, useValidation, validateRequired, validateUnresolvedAddress } from 'src/utils';
+import { getTransactionFees, handleError, toFixedNumber, useDataManager, usePasscode, useProp, useToggle } from 'src/utils';
 
 export const Send = connect(state => ({
     accounts: state.wallet.accounts,
