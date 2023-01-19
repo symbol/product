@@ -42,6 +42,7 @@ export const AccountList = connect(state => ({
         await store.dispatchAction({type: 'wallet/selectAccount', payload: account.privateKey});
         await store.dispatchAction({type: 'wallet/loadAll'});
         navigation.goBack();
+        store.dispatchAction({type: 'wallet/fetchAll'});
     }, null, handleError);
     const [saveAccounts] = useDataManager(async data => {
         await store.dispatchAction({type: 'wallet/saveAccounts', payload: { 
