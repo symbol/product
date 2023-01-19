@@ -11,6 +11,7 @@ export * from './DialogBox';
 export * from './Dropdown';
 export * from './FeeSelector';
 export * from './FormItem';
+export * from './InputAddress';
 export * from './InputAmount';
 export * from './ItemAsset';
 export * from './ItemBase';

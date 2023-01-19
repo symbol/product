@@ -1,8 +1,9 @@
 import React from 'react';
+import { useMemo } from 'react';
 import { useEffect } from 'react';
 import { useState } from 'react';
 import { ScrollView } from 'react-native-gesture-handler';
-import { TableView, Screen, SelectMosaic, FeeSelector, FormItem, TextBox, Checkbox, Dropdown, Button, StyledText, InputAmount, DialogBox } from 'src/components';
+import { TableView, Screen, SelectMosaic, FeeSelector, FormItem, TextBox, Checkbox, Dropdown, Button, StyledText, InputAmount, DialogBox, InputAddress } from 'src/components';
 import { $t } from 'src/localization';
 import { Router } from 'src/Router';
 import { TransactionService } from 'src/services';
@@ -10,14 +11,17 @@ import { connect } from 'src/store';
 import { getTransactionFees, handleError, toFixedNumber, useDataManager, usePasscode, useProp, useToggle, useValidation, validateRequired, validateUnresolvedAddress } from 'src/utils';
 
 export const Send = connect(state => ({
+    accounts: state.wallet.accounts,
+    addressBookWhiteList: state.addressBook.whiteList,
     currentAccount: state.account.current,
     mosaics: state.account.mosaics,
     mosaicInfos: state.wallet.mosaicInfos,
+    networkIdentifier: state.network.networkIdentifier,
     networkProperties: state.network.networkProperties,
     ticker: state.network.ticker,
     chainHeight: state.network.chainHeight
 }))(function Send(props) {
-    const { currentAccount, mosaics, networkProperties, ticker, chainHeight, route } = props;
+    const { accounts, addressBookWhiteList, currentAccount, mosaics, networkIdentifier, networkProperties, ticker, chainHeight, route } = props;
     const [recipient, setRecipient] = useProp(route.params?.recipientAddress || '');
     const [mosaicId, setMosaicId] = useState(mosaics[0]?.id);
     const [amount, setAmount] = useState('0');
@@ -28,6 +32,8 @@ export const Send = connect(state => ({
     const [isConfirmVisible, toggleConfirm] = useToggle(false);
     const [isSuccessAlertVisible, toggleSuccessAlert] = useToggle(false);
 
+    const networkAccounts = accounts[networkIdentifier];
+    const contacts = [...networkAccounts, ...addressBookWhiteList];
     const mosaicOptions = mosaics.map(mosaic => ({
         label: mosaic.name, 
         value: mosaic.id, 
@@ -53,11 +59,11 @@ export const Send = connect(state => ({
         fee: maxFee
     };
 
-    const transactionFees = getTransactionFees(transaction, networkProperties);
+    const transactionFees = useMemo(() => getTransactionFees(transaction, networkProperties), [message, isEncrypted]);
     
-    const recipientErrorMessage = useValidation(recipient, [validateRequired(), validateUnresolvedAddress()], $t);
     const [isAmountValid, setAmountValid] = useState(true);
-    const isButtonDisabled = !!recipientErrorMessage || !isAmountValid || !selectedMosaic;
+    const [isRecipientValid, setRecipientValid] = useState(true);
+    const isButtonDisabled = !isRecipientValid || !isAmountValid || !selectedMosaic;
 
     const [send] = useDataManager(async () => {
         TransactionService.sendTransferTransaction(transaction, currentAccount, networkProperties);
@@ -80,14 +86,13 @@ export const Send = connect(state => ({
             <ScrollView>
                 <FormItem>
                     <StyledText type="title">{$t('form_transfer_title')}</StyledText>
-                </FormItem>
-                <FormItem>
-                    <TextBox
+                    <InputAddress 
                         title={$t('form_transfer_input_recipient')} 
-                        errorMessage={recipientErrorMessage} 
+                        contacts={contacts}
                         value={recipient} 
-                        onChange={setRecipient} 
-                />
+                        onChange={setRecipient}
+                        onValidityChange={setRecipientValid}
+                    />
                 </FormItem>
                 <FormItem>
                     <SelectMosaic

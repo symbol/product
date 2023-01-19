@@ -12,22 +12,24 @@ export const SelectMosaic = props => {
         ? require('src/assets/images/icon-select-mosaic-native.png')
         : require('src/assets/images/icon-select-mosaic-custom.png');
 
-    return (<Dropdown
-        testID={testID}
-        title={title}
-        value={value}
-        list={availableMosaicList}
-        onChange={onChange}
-        renderItem={({item, index}) => (
-            <View style={styles.item}>
-                <View style={styles.label}>
-                    <Image source={getImageSrc(item)} style={styles.icon} />
-                    <Text style={styles.name}>{item.label}</Text>
+    return (
+        <Dropdown
+            testID={testID}
+            title={title}
+            value={value}
+            list={availableMosaicList}
+            onChange={onChange}
+            renderItem={({item, index}) => (
+                <View style={styles.item}>
+                    <View style={styles.label}>
+                        <Image source={getImageSrc(item)} style={styles.icon} />
+                        <Text style={styles.name}>{item.label}</Text>
+                    </View>
+                    <Text style={styles.amount}>{availableMosaicList[index].mosaicInfo.amount}</Text>
                 </View>
-                <Text style={styles.amount}>{availableMosaicList[index].mosaicInfo.amount}</Text>
-            </View>
-        )}
-    />);
+            )}
+        />
+    );
 };
 
 const styles = StyleSheet.create({
