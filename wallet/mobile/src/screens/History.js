@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, SectionList, StyleSheet, View } from 'react-native';
 import { RefreshControl } from 'react-native-gesture-handler';
-import { Screen, TitleBar, TabNavigator, StyledText, ItemTransaction, ItemTransactionPlaceholder, FormItem } from 'src/components';
+import { Screen, TitleBar, TabNavigator, StyledText, ItemTransaction, ItemTransactionPlaceholder, FormItem, Widget } from 'src/components';
 import { $t } from 'src/localization';
 import { Router } from 'src/Router';
 import store, { connect } from 'src/store';
@@ -101,6 +101,35 @@ export const History = connect(state => ({
             />
         </Screen>
     );
+});
+
+export const HistoryWidget = connect(state => ({
+    partial: state.transaction.partial,
+    unconfirmed: state.transaction.unconfirmed,
+}))(function HistoryWidget(props) {
+    const { partial, unconfirmed } = props;
+    const transactions = [
+        ...partial.map(tx => ({...tx, group: 'partial'})), 
+        ...unconfirmed.map(tx => ({...tx, group: 'unconfirmed'})),
+    ];
+    const isWidgetShown = transactions.length > 0;
+
+    return (
+        isWidgetShown &&
+        <FormItem>
+            {/* notranslate */}
+            <Widget title="New Transactions" onHeaderPress={() => Router.goToHistory()}>
+                {transactions.map(item => (
+                    <ItemTransaction 
+                        group={item.group} 
+                        transaction={item} 
+                        key={'tx' + item.hash || item.id}
+                        onPress={() => Router.goToTransactionDetails({transaction: item})}
+                    />
+                ))}
+            </Widget>
+        </FormItem>
+    )
 });
 
 const styles = StyleSheet.create({
