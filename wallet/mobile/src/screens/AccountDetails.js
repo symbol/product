@@ -1,7 +1,7 @@
 import React from 'react';
 import { Linking } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
-import { TableView, Screen, FormItem, AccountAvatar, ButtonPlain } from 'src/components';
+import { TableView, Screen, FormItem, AccountAvatar, ButtonPlain, Widget } from 'src/components';
 import { config } from 'src/config';
 import { $t } from 'src/localization';
 import { connect } from 'src/store';
@@ -19,16 +19,21 @@ export const AccountDetails = connect(state => ({
     const openBlockExplorer = () => Linking.openURL(config.explorerURL[networkIdentifier] + '/accounts/' + currentAccount.address)
 
     return (
-        <Screen>
+        <Screen bottomComponent={<>
+            <FormItem>
+                <ButtonPlain icon={require('src/assets/images/icon-primary-explorer.png')} title={$t('button_openTransactionInExplorer')} onPress={openBlockExplorer} />
+            </FormItem>
+        </>}>
             <ScrollView>
-                <FormItem style={layout.alignCenter}>
-                    <AccountAvatar address={currentAccount.address} size="lg" />
-                </FormItem>
                 <FormItem>
-                    <TableView data={tableData} />
-                </FormItem>
-                <FormItem>
-                    <ButtonPlain title={$t('button_openTransactionInExplorer')} onPress={openBlockExplorer} />
+                    <Widget>
+                        <FormItem style={layout.alignCenter}>
+                            <AccountAvatar address={currentAccount.address} size="lg" />
+                        </FormItem>
+                        <FormItem>
+                            <TableView data={tableData} />
+                        </FormItem>
+                    </Widget>
                 </FormItem>
             </ScrollView>
         </Screen>
