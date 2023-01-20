@@ -1,7 +1,7 @@
 import React from 'react';
 import { Linking } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
-import { TableView, Screen, FormItem, AccountAvatar, ButtonPlain, DialogBox } from 'src/components';
+import { TableView, Screen, FormItem, AccountAvatar, ButtonPlain, DialogBox, Widget } from 'src/components';
 import { config } from 'src/config';
 import { $t } from 'src/localization';
 import { Router } from 'src/Router';
@@ -29,10 +29,10 @@ export const AddressBookContact = connect(state => ({
     const tableData = {
         name, 
         address,
-        transactionsAllowed: isBlackListed
-            ? $t('addressBook.transactionsBlocked')
-            : $t('addressBook.transactionsAllowed'),
         notes,
+        list: isBlackListed
+            ? $t('s_addressBook_contact_blacklist_explain')
+            : $t('s_addressBook_contact_whitelist_explain'),
     };
 
     const handleSendPress = () => Router.goToSend({ recipientAddress: address });
@@ -49,24 +49,28 @@ export const AddressBookContact = connect(state => ({
     return (
         <Screen bottomComponent={<>
             <FormItem>
-                <ButtonPlain title={$t('button_sendTransferTransaction')} onPress={handleSendPress} />
+                <ButtonPlain icon={require('src/assets/images/icon-primary-send-2.png')} title={$t('button_sendTransferTransaction')} onPress={handleSendPress} />
             </FormItem>
             <FormItem>
-                <ButtonPlain title={$t('button_openAccountInExplorer')} onPress={handleOpenBlockExplorer} />
+                <ButtonPlain icon={require('src/assets/images/icon-primary-explorer.png')} title={$t('button_openAccountInExplorer')} onPress={handleOpenBlockExplorer} />
             </FormItem>
             <FormItem>
-                <ButtonPlain title={$t('button_edit')} onPress={handleEditPress} />
+                <ButtonPlain icon={require('src/assets/images/icon-primary-edit.png')} title={$t('button_edit')} onPress={handleEditPress} />
             </FormItem>
             <FormItem>
-                <ButtonPlain title={$t('button_remove')} onPress={toggleRemoveConfirm} />
+                <ButtonPlain icon={require('src/assets/images/icon-primary-remove.png')} title={$t('button_remove')} onPress={toggleRemoveConfirm} />
             </FormItem>
         </>}>
             <ScrollView>
-                <FormItem style={layout.alignCenter}>
-                    <AccountAvatar address={address} size="lg" />
-                </FormItem>
                 <FormItem>
-                    <TableView data={tableData} />
+                    <Widget>
+                    <FormItem style={layout.alignCenter}>
+                        <AccountAvatar address={address} size="lg" />
+                    </FormItem>
+                    <FormItem>
+                        <TableView data={tableData} />
+                    </FormItem>
+                    </Widget>
                 </FormItem>
             </ScrollView>
             <DialogBox

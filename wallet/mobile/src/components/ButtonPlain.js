@@ -1,13 +1,14 @@
 import React from 'react';
-import {  StyleSheet } from 'react-native';
+import { Image, StyleSheet } from 'react-native';
 import { TouchableOpacity } from 'react-native';
 import { StyledText } from 'src/components';
-import { colors } from 'src/styles';
+import { colors, spacings } from 'src/styles';
 
 export const ButtonPlain = props => {
-    const { isDisabled, title, style, isCentered, onPress } = props;
+    const { isDisabled, title, style, icon, isCentered, onPress } = props;
 
     const rootStyle = [
+        styles.root,
         isDisabled ? styles.disabled : null,
         isCentered ? styles.centered : null,
         style
@@ -19,6 +20,7 @@ export const ButtonPlain = props => {
 
     return (
         <TouchableOpacity disabled={isDisabled} hitSlop={5} style={rootStyle} onPress={handlePress}>
+            {icon && <Image style={styles.icon} source={icon} />}
             <StyledText type="label" style={styles.text}>
                 {title}
             </StyledText>
@@ -27,6 +29,15 @@ export const ButtonPlain = props => {
 };
 
 const styles = StyleSheet.create({
+    root: {
+        flexDirection: 'row',
+        alignItems: 'center'
+    },
+    icon: {
+        width: 18,
+        height: 18,
+        marginRight: spacings.paddingSm
+    },
     disabled: {
         opacity: 0.3
     },
