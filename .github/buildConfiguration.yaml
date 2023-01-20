@@ -10,3 +10,11 @@ builds:
 
   - name: Vanity Address Generator
     path: tools/vanity
+
+customBuilds:
+  - name: Nightly Job
+    jobName: nightlyJob
+    scriptPath: .github/jenkinsfile/nightlyBuild.groovy
+    triggers:
+      - type: cron
+        schedule: '@midnight'
