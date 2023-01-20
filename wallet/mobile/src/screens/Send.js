@@ -7,7 +7,7 @@ import { TableView, Screen, SelectMosaic, FeeSelector, FormItem, TextBox, Checkb
 import { $t } from 'src/localization';
 import { Router } from 'src/Router';
 import { TransactionService } from 'src/services';
-import { connect } from 'src/store';
+import store, { connect } from 'src/store';
 import { getTransactionFees, handleError, toFixedNumber, useDataManager, usePasscode, useProp, useToggle } from 'src/utils';
 
 export const Send = connect(state => ({
@@ -66,7 +66,7 @@ export const Send = connect(state => ({
     const isButtonDisabled = !isRecipientValid || !isAmountValid || !selectedMosaic;
 
     const [send] = useDataManager(async () => {
-        TransactionService.sendTransferTransaction(transaction, currentAccount, networkProperties);
+        await TransactionService.sendTransferTransaction(transaction, currentAccount, networkProperties);
         toggleSuccessAlert();
     }, null, handleError);
     const confirmSend = usePasscode('enter', send, Router.goBack);

@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { LoadingIndicator } from 'src/components';
+import { spacings } from 'src/styles';
 
 export const Screen = props => {
     const { children, style, titleBar, bottomComponent, navigator, isLoading } = props;
@@ -31,4 +32,7 @@ const styles = StyleSheet.create({
         flex: 1,
         marginBottom: 0
     },
+    bottom: {
+        marginBottom: spacings.margin
+    }
 });
