@@ -20,7 +20,7 @@ export const AddressBookEdit = connect(state => ({
     const [list, setList] = useProp(route.params?.list, 'whitelist');
     const [name, setName] = useProp(route.params?.name, '');
     const [address, setAddress] = useProp(route.params?.address, '');
-    const [notes, setNotes] = useState('');
+    const [notes, setNotes] = useProp(route.params?.notes, '');
     const existedNames = allContacts
         .map(contact => contact.name)
         .filter(el => el !== name);
