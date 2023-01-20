@@ -9,7 +9,7 @@ export function ItemContact(props) {
     const { name, address, isBlackListed } = contact;
     
     return (
-        <ItemBase style={styles.root} onPress={onPress}>
+        <ItemBase contentContainerStyle={styles.root} onPress={onPress}>
             <View style={styles.sectionIcon}>
                 <AccountAvatar size="md" address={address} />
             </View>

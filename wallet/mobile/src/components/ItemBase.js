@@ -11,7 +11,7 @@ const MAX_SCALE = 1.2;
 const ANIMATION_DURATION = 250;
 
 export function ItemBase(props) {
-    const { children, isLayoutAnimationEnabled, style, onPress } = props;
+    const { children, isLayoutAnimationEnabled, contentContainerStyle, style, borderColor, onPress } = props;
     const [isExpanded, setIsExpanded] = useState(false);
     const opacity = useSharedValue(0);
     const scale = useSharedValue(1);
@@ -21,8 +21,17 @@ export function ItemBase(props) {
         }],
         opacity: opacity.value,
     }));
-    const styleCard = [styles.card, style, isLayoutAnimationEnabled ? animatedContainer : null];
-    const styleRoot = [styles.root];
+    const stylesCardWithBorder = {
+        ...styles.cardWithBorder,
+        borderColor: borderColor
+    };
+    const styleCard = [
+        styles.card,
+        borderColor ? stylesCardWithBorder : null,
+        isLayoutAnimationEnabled ? animatedContainer : null,
+        contentContainerStyle
+    ];
+    const styleRoot = [styles.root, style];
 
     const handlePress = () => {
         if (onPress) {
@@ -74,8 +83,11 @@ const styles = StyleSheet.create({
         minHeight: 75,
         backgroundColor: colors.bgCard,
         borderColor: colors.bgCard,
-        borderWidth: borders.borderWidth,
         borderRadius: borders.borderRadius,
+        padding: spacings.paddingSm + borders.borderWidth
+    },
+    cardWithBorder: {
+        borderWidth: borders.borderWidth,
         padding: spacings.paddingSm
     },
     cardPlaceholder: {

@@ -56,7 +56,7 @@ export function ItemAsset(props) {
     }, [displayedPercentage, agePercent])
     
     return (
-        <ItemBase style={styles.root} isLayoutAnimationEnabled>
+        <ItemBase contentContainerStyle={styles.root} isLayoutAnimationEnabled>
             <View style={styles.sectionIcon}>
                 <Image source={iconSrc} style={styles.icon} />
             </View>

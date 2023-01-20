@@ -1,5 +1,6 @@
 export * from './AccountDetails';
 export * from './AccountList';
+export * from './Actions';
 export * from './AddExternalAccount';
 export * from './AddressBookEdit';
 export * from './AddressBookContact';
