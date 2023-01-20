@@ -9,7 +9,7 @@ export const ButtonCircle = props => {
     const { source, style, onPress } = props;
     return (
         <View style={[styles.root, style]}>
-            <TouchableNative style={styles.inner} color={'#fff'} onPress={onPress}>
+            <TouchableNative style={styles.inner} color={colors.bgGray} onPress={onPress}>
                 <Image source={source} style={styles.icon} />
             </TouchableNative> 
         </View>
