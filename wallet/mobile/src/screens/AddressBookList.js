@@ -35,23 +35,17 @@ export const AddressBookList = connect(state => ({
     }];
 
     return (
-        // notranslate
-        <Screen bottomComponent={<>
-            {/* <FormItem>
-                <Button 
-                    title="Add Contact" 
-                    onPress={() => Router.goToAddressBookEdit({list})} 
-                />
-            </FormItem> */}
-        </>}>
+        <Screen>
             <TabView tabs={tabs} onChange={setList} />
-            <ButtonCircle source={require('src/assets/images/icon-account-add.png')} onPress={() => Router.goToAddressBookEdit({list})}/>
+            <ButtonCircle source={require('src/assets/images/icon-dark-account-add.png')} onPress={() => Router.goToAddressBookEdit({list})}/>
         </Screen>
     );
 });
 
-export const AddressBookListWidget = props => {
-    const { data } = props;
+export const AddressBookListWidget = connect(state => ({
+    addressBookWhiteList: state.addressBook.whiteList,
+}))(function AddressBookListWidget(props) {
+    const { addressBookWhiteList } = props;
 
     const getFormattedName = contact => trunc(contact.name, null, 12);
     const handleHeaderPress = () => {
@@ -65,33 +59,36 @@ export const AddressBookListWidget = props => {
     };
 
     return (
-        <Widget title="Address Book" onHeaderPress={handleHeaderPress}>
-            <FlatList
-                horizontal
-                contentContainerStyle={styles.addressBookList}
-                data={data}
-                keyExtractor={(item, index) => 'contact' + index} 
-                renderItem={({item}) => (
-                    <TouchableWithoutFeedback style={styles.addressBookItem} onPress={() => handleContactPress(item)}>
-                        <View style={styles.addressBookItem}>
-                            <AccountAvatar size="md" address={item.address}/>
-                            <StyledText type="body">{getFormattedName(item)}</StyledText>
-                        </View>
-                    </TouchableWithoutFeedback>
-                )}
-                ListFooterComponent={
-                    <TouchableWithoutFeedback style={styles.addressBookItem} onPress={handleAddPress}>
-                        <View style={styles.addressBookCircle}>
-                            <Image source={require('src/assets/images/icon-account-add.png')} style={styles.addressBookAddIcon} />
-                        </View>
-                        {/* notranslate */}
-                        <StyledText type="body">Add Contact</StyledText>
-                    </TouchableWithoutFeedback>
-                } 
-            />
-        </Widget>
+        <FormItem>
+            {/* notranslate */}
+            <Widget title="Address Book" onHeaderPress={handleHeaderPress}>
+                <FlatList
+                    horizontal
+                    contentContainerStyle={styles.addressBookList}
+                    data={addressBookWhiteList}
+                    keyExtractor={(item, index) => 'contact' + index} 
+                    renderItem={({item}) => (
+                        <TouchableWithoutFeedback style={styles.addressBookItem} onPress={() => handleContactPress(item)}>
+                            <View style={styles.addressBookItem}>
+                                <AccountAvatar size="md" address={item.address}/>
+                                <StyledText type="body">{getFormattedName(item)}</StyledText>
+                            </View>
+                        </TouchableWithoutFeedback>
+                    )}
+                    ListFooterComponent={
+                        <TouchableWithoutFeedback style={styles.addressBookItem} onPress={handleAddPress}>
+                            <View style={styles.addressBookCircle}>
+                                <Image source={require('src/assets/images/icon-account-add.png')} style={styles.addressBookAddIcon} />
+                            </View>
+                            {/* notranslate */}
+                            <StyledText type="body">Add Contact</StyledText>
+                        </TouchableWithoutFeedback>
+                    } 
+                />
+            </Widget>
+        </FormItem>
     )
-}
+});
 
 const styles = StyleSheet.create({
     addressBookList: {

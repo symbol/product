@@ -1,52 +1,18 @@
 import React from 'react';
-import { Image, StyleSheet } from 'react-native';
-import Animated, { interpolate, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import { Image, StyleSheet, View } from 'react-native';
 import { colors, spacings } from 'src/styles';
 import { TouchableNative } from 'src/components';
 
-const ANIMATION_DURATION = 250;
-const SIZE = 64;
+const SIZE = 56;
 
 export const ButtonCircle = props => {
     const { source, style, onPress } = props;
-    const isPressed = useSharedValue(0);
-
-    const animatedContainer = useAnimatedStyle(() => {
-        const interpolatedSize = interpolate(
-            isPressed.value,
-            [0, 1],
-            [1, 0]
-        );
-
-        return {
-            opacity: interpolate(
-                isPressed.value,
-                [0, 1],
-                [1, 0]
-            ),
-            transform: [{
-                scale: interpolatedSize
-            }],
-        }
-    });
-
-    const resetAnimation = () => {
-        setTimeout(() => {
-            isPressed.value = 0;
-        }, ANIMATION_DURATION * 2);
-    }
-    const handlePress = () => {
-        isPressed.value = withTiming(1, ANIMATION_DURATION);
-        onPress();
-        resetAnimation();
-    };
-
     return (
-        <Animated.View style={[styles.root, animatedContainer, style]}>
-            <TouchableNative style={styles.inner} onPress={handlePress}>
+        <View style={[styles.root, style]}>
+            <TouchableNative style={styles.inner} color={'#fff'} onPress={onPress}>
                 <Image source={source} style={styles.icon} />
             </TouchableNative> 
-        </Animated.View>
+        </View>
     );
 };
 
@@ -59,7 +25,8 @@ const styles = StyleSheet.create({
         height: SIZE,
         borderRadius: SIZE / 2,
         overflow: 'hidden',
-        backgroundColor: colors.primary
+        backgroundColor: colors.primary,
+        elevation: 2
     },
     inner: {
         width: '100%',
@@ -68,7 +35,7 @@ const styles = StyleSheet.create({
         alignItems: 'center'
     },
     icon: {
-        width: 24,
-        height: 24
+        width: 18,
+        height: 18
     }
 });
