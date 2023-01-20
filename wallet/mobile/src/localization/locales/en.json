@@ -197,7 +197,7 @@
     "data_startEpoch": "Start Epoch",
     "data_endEpoch": "End Epoch",
     "data_receivedCosignatures": "Co-signatures Received",
-    "data_transactionsAllowed": "Incoming transactions from this contact",
+    "data_list": "List",
     "data_networkIdentifier": "Network",
     "data_accountType": "Account Type",
     "data_appVersion": "Application Version",
@@ -311,6 +311,8 @@
     "s_accountList_confirm_removeExternal_body": "You are about to remove account \"%{name}\" %{address} from your wallet. Please make sure that the private key is securely backed up and you will be able to access it. Note that this account cannot be restored from you mnemonic backup phrase. You won't be able to access again this account unless you have its private key.",
     "s_addressBook_confirm_removeContact_title": "Remove contact",
     "s_addressBook_confirm_removeContact_body": "Are you sure you want to remove contact \"%{name}\"?",
+    "s_addressBook_contact_whitelist_explain": "Whitelist",
+    "s_addressBook_contact_blacklist_explain": "Blacklist (Incoming transactions from this account are hidden)",
     
     "validation_error_field_required": "Field required",
     "validation_error_contact_name_long": "Too long",

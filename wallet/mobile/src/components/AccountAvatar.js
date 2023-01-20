@@ -50,9 +50,9 @@ const styles = StyleSheet.create({
         borderRadius: 24,
     },
     rootLg: {
-        width: 256,
-        height: 256,
-        borderRadius: 128,
+        width: 128,
+        height: 128,
+        borderRadius: 64,
     },
     image: {
         width: '100%',

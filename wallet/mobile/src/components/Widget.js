@@ -8,9 +8,11 @@ export const Widget = props => {
 
     return (
         <View style={styles.widget}>
-            <TouchableNative style={styles.widgetHeader} onPress={onHeaderPress}>
-                <StyledText type="label">{title}</StyledText>
-            </TouchableNative>
+            {!!title && (
+                <TouchableNative style={styles.widgetHeader} onPress={onHeaderPress}>
+                    <StyledText type="label">{title}</StyledText>
+                </TouchableNative>
+            )}
             {children}
         </View>
     );
