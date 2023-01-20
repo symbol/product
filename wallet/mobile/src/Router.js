@@ -27,6 +27,7 @@ const keys = {
     Home: 'Home',
     History: 'History',
     Assets: 'Assets',
+    Actions: 'Actions',
     AccountDetails: 'AccountDetails',
     AccountList: 'AccountList',
     AddExternalAccount: 'AddExternalAccount',
@@ -58,6 +59,7 @@ export const RouterView = ({ isActive }) => (
                     <Stack.Screen name={keys.Home} component={screens.Home} />
                     <Stack.Screen name={keys.History} component={screens.History} />
                     <Stack.Screen name={keys.Assets} component={screens.Assets} />
+                    <Stack.Screen name={keys.Actions} component={screens.Actions} />
                 </Stack.Group>
                 <Stack.Group>
                     <Stack.Screen name={keys.AccountDetails} component={screens.AccountDetails} />
@@ -125,7 +127,7 @@ export class Router {
     static goToActions() {
         navigationRef.reset({
             index: 0,
-            routes: [{ name: keys.Home }],
+            routes: [{ name: keys.Actions }],
         });
     }
     static goToAccountDetails(params) {

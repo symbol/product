@@ -121,7 +121,7 @@ export const ItemTransaction = connect(state => ({
     }
 
     return (
-        <ItemBase style={styleRoot} isLayoutAnimationEnabled onPress={onPress}>
+        <ItemBase contentContainerStyle={styleRoot} isLayoutAnimationEnabled onPress={onPress}>
             <View style={styles.sectionIcon}>
                 <Image source={iconSrc} style={styles.icon} />
             </View>
