@@ -1,9 +1,9 @@
 import { useNavigation } from '@react-navigation/native';
 import React, { useEffect, useState } from 'react';
-import { StyleSheet } from 'react-native';
 import { FlatList } from 'react-native-gesture-handler';
-import { AccountCard, Screen, FormItem, StyledText, TextBox, TouchableNative } from 'src/components';
+import { AccountCard, Screen, FormItem, StyledText, TextBox, TouchableNative, ButtonPlain } from 'src/components';
 import { $t } from 'src/localization';
+import { Router } from 'src/Router';
 import store, { connect } from 'src/store';
 import { colors } from 'src/styles';
 import { handleError, useDataManager, usePromises, useValidation, validateAccountName } from 'src/utils';
@@ -16,7 +16,7 @@ export const AddSeedAccount = connect(state => ({
     ticker: state.network.ticker,
 }))(function AddSeedAccount(props) {
     const { accounts, seedAddresses, balances, networkIdentifier, ticker } = props;
-    const [accountName, setAccountName] = useState(false);
+    const [accountName, setAccountName] = useState('');
     const nameErrorMessage = useValidation(accountName, [validateAccountName()], $t);
     const [accountBalanceStateMap, setAccountBalanceStateMap] = usePromises({});
     const networkAccounts = accounts[networkIdentifier];
@@ -26,7 +26,7 @@ export const AddSeedAccount = connect(state => ({
     const navigation = useNavigation();
     
     // notranslate
-    const getDefaultAccountName = index => 'Seed ' + index;
+    const getDefaultAccountName = index => 'Seed Account ' + index;
 
     const [addAccount, isAddAccountLoading] = useDataManager(async index => {
         const name = (!nameErrorMessage && accountName) || getDefaultAccountName(index);
@@ -60,13 +60,18 @@ export const AddSeedAccount = connect(state => ({
         <Screen isLoading={isLoading}>
             <FormItem>
                 {/* notranslate */}
-                <StyledText type="title">Give a Name for New Account</StyledText>
+                <StyledText type="title">Think of a Name</StyledText>
                 {/* notranslate */}
                 <TextBox title="Name" errorMessage={nameErrorMessage} value={accountName} onChange={setAccountName} />
             </FormItem>
+            <FormItem>
+                {/* notranslate */}
+                <StyledText type="body">You can select any of account that have been generated from your mnemonic backup phrase (seed account). If you need to add external account using private key, press button below.</StyledText>
+                <ButtonPlain icon={require('src/assets/images/icon-primary-key.png')} title="Add external account" onPress={() => Router.goToAddExternalAccount()} />
+            </FormItem>
             <FormItem fill clear="bottom">
                 {/* notranslate */}
-                <StyledText type="title">Select Your Seed Account</StyledText>
+                <StyledText type="title">Select Account</StyledText>
                 <FlatList 
                     data={remainedSeedAccounts}
                     keyExtractor={(item, index) => 'seed' + index} 
@@ -89,10 +94,4 @@ export const AddSeedAccount = connect(state => ({
             
         </Screen>
     );
-});
-
-const styles = StyleSheet.create({
-    fill: {
-        flex: 1
-    },
 });
