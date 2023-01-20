@@ -6,15 +6,15 @@ import { Router } from 'src/Router';
 import store, { connect } from 'src/store';
 import { handleError, useDataManager, useInit } from 'src/utils';
 import { AddressBookListWidget } from './AddressBookList';
+import { HistoryWidget } from './History';
 
 export const Home = connect(state => ({
-    addressBookWhiteList: state.addressBook.whiteList,
     balances: state.wallet.balances,
     currentAccount: state.account.current,
     ticker: state.network.ticker,
     isWalletReady: state.wallet.isReady,
 }))(function Home(props) {
-    const { addressBookWhiteList, balances, currentAccount, ticker, isWalletReady } = props;
+    const { balances, currentAccount, ticker, isWalletReady } = props;
     const [loadState, isLoading] = useDataManager(async () => {
         await store.dispatchAction({type: 'wallet/fetchAll'});
     }, null, handleError);
@@ -44,12 +44,12 @@ export const Home = connect(state => ({
                         onDetailsPress={Router.goToAccountDetails}
                     />
                 </FormItem>
-                <FormItem type="group">
+                <FormItem type="group" clear="bottom">
                     {/* notranslate */}
                     <StyledText type="title">Widgets</StyledText>
-                    {/* notranslate */}
-                    <AddressBookListWidget data={addressBookWhiteList} />
                 </FormItem>
+                <HistoryWidget />
+                <AddressBookListWidget />
             </ScrollView>
         </Screen>
     );
