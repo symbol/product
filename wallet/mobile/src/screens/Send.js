@@ -86,6 +86,9 @@ export const Send = connect(state => ({
             <ScrollView>
                 <FormItem>
                     <StyledText type="title">{$t('form_transfer_title')}</StyledText>
+                    <StyledText type="body">{$t('s_send_description')}</StyledText>
+                </FormItem>
+                <FormItem>
                     <InputAddress 
                         title={$t('form_transfer_input_recipient')} 
                         contacts={contacts}

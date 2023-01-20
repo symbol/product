@@ -30,6 +30,12 @@ export const AddressBookEdit = connect(state => ({
     const nameErrorMessage = useValidation(name, [validateRequired(), validateAccountName(), validateExisted(existedNames)], $t);
     const addressErrorMessage = useValidation(address, [validateRequired(), validateAddress(), validateExisted(existedAddresses)], $t);
     const isButtonDisabled = !!nameErrorMessage || !!addressErrorMessage;
+    const titleText = route.params?.type === 'edit'
+        ? $t('s_addressBook_manage_title_edit')
+        : $t('s_addressBook_manage_title_add');
+    const descriptionText = route.params?.type === 'edit'
+        ? ''
+        : $t('s_addressBook_manage_description_add');
     const listOptions = [{
         label: 'Whitelist',
         value: 'whitelist'
@@ -39,9 +45,6 @@ export const AddressBookEdit = connect(state => ({
     }]
 
     const [saveContact] = useDataManager(async () => {
-        console.log(route.params?.type === 'edit'
-        ? 'addressBook/updateContact'
-        : 'addressBook/addContact', route.params)
         const action = route.params?.type === 'edit'
             ? 'addressBook/updateContact'
             : 'addressBook/addContact';
@@ -63,6 +66,11 @@ export const AddressBookEdit = connect(state => ({
                 <Button title="Save" isDisabled={isButtonDisabled} onPress={saveContact} />
             </FormItem>
         }>
+            <FormItem>
+                {/* notranslate */}
+                <StyledText type="title">{titleText}</StyledText>
+                <StyledText type="body">{descriptionText}</StyledText>
+            </FormItem>
             <FormItem>
                 {/* notranslate */}
                 <Dropdown title="List" list={listOptions} value={list} onChange={setList} />

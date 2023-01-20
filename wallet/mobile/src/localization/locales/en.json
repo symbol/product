@@ -293,6 +293,7 @@
     "transaction_from": "From",
     "transaction_to": "To",
 
+    "s_send_description": "Send transfer transaction to an account. Type recipient address or select one from the address book. Select mosaic you would like to transfer and specify amount. Note, that some exchanges require code to be send in the message to make deposit.",
     "s_send_input_recipient": "Recipient",
     "s_send_input_mosaic": "Mosaic",
     "s_send_input_amount": "Amount",
@@ -313,6 +314,9 @@
     "s_addressBook_confirm_removeContact_body": "Are you sure you want to remove contact \"%{name}\"?",
     "s_addressBook_contact_whitelist_explain": "Whitelist",
     "s_addressBook_contact_blacklist_explain": "Blacklist (Incoming transactions from this account are hidden)",
+    "s_addressBook_manage_title_edit": "Edit Contact",
+    "s_addressBook_manage_title_add": "Add Contact",
+    "s_addressBook_manage_description_add": "Description about how address book is useful. Explain about white and black lists... (todo)",
     
     "validation_error_field_required": "Field required",
     "validation_error_contact_name_long": "Too long",
