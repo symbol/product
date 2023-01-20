@@ -22,7 +22,7 @@ export const AddExternalAccount = connect(state => ({
         await store.dispatchAction({type: 'wallet/addExternalAccount', payload: { privateKey, name, networkIdentifier }});
         await store.dispatchAction({type: 'wallet/loadAll'});
         await store.dispatchAction({type: 'account/fetchData'});
-        Router.goBack();
+        Router.goToHome();
     }, null, handleError);
    
     const isLoading = isAddAccountLoading;
@@ -37,7 +37,7 @@ export const AddExternalAccount = connect(state => ({
         }>
             <FormItem>
                 {/* notranslate */}
-                <StyledText type="title">Give a Name for New Account</StyledText>
+                <StyledText type="title">Think of a Name</StyledText>
                 {/* notranslate */}
                 <TextBox title="Name" errorMessage={nameErrorMessage} value={accountName} onChange={setAccountName} />
             </FormItem>

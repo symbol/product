@@ -1,8 +1,7 @@
 import { useNavigation } from '@react-navigation/native';
 import React, { useEffect } from 'react';
-import { StyleSheet } from 'react-native';
 import DraggableFlatList from 'react-native-draggable-flatlist'
-import { AccountCard, Screen, FormItem, Button, ButtonPlain, TouchableNative, DialogBox } from 'src/components';
+import { AccountCard, Screen, FormItem, TouchableNative, DialogBox, ButtonCircle } from 'src/components';
 import store, { connect } from 'src/store';
 import { handleError, useDataManager, usePromises, useProp, useToggle, vibrate } from 'src/utils';
 import Animated, { interpolate, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
@@ -42,7 +41,6 @@ export const AccountList = connect(state => ({
         await store.dispatchAction({type: 'wallet/selectAccount', payload: account.privateKey});
         await store.dispatchAction({type: 'wallet/loadAll'});
         navigation.goBack();
-        store.dispatchAction({type: 'wallet/fetchAll'});
     }, null, handleError);
     const [saveAccounts] = useDataManager(async data => {
         await store.dispatchAction({type: 'wallet/saveAccounts', payload: { 
@@ -106,19 +104,12 @@ export const AccountList = connect(state => ({
 
     return (
         // notranslate
-        <Screen isLoading={isLoading} bottomComponent={<>
-            <FormItem>
-                <Button title="Add Seed Account" onPress={() => Router.goToAddSeedAccount()} />
-            </FormItem>
-            <FormItem>
-                <ButtonPlain title="Add External Account" isCentered onPress={() => Router.goToAddExternalAccount()} />
-            </FormItem>
-        </>}>
+        <Screen isLoading={isLoading}>
             <FormItem clear="vertical" fill>
                 <DraggableFlatList 
                     contentContainerStyle={layout.listContainer}
                     onDragEnd={onDragEnd}
-                    containerStyle={styles.fill}
+                    containerStyle={layout.fill}
                     data={updatedNetworkAccounts} 
                     keyExtractor={(item, index) => 'al' + item.name + index} 
                     renderItem={({item, drag, isActive}) => (
@@ -147,6 +138,7 @@ export const AccountList = connect(state => ({
                     </FormItem>
                 )} />
             </FormItem>
+            <ButtonCircle source={require('src/assets/images/icon-dark-account-add.png')} onPress={() => Router.goToAddSeedAccount()}/>
             <DialogBox
                 type="confirm" 
                 title={$t('s_accountList_confirm_removeExternal_title')}
@@ -157,10 +149,4 @@ export const AccountList = connect(state => ({
             />
         </Screen>
     );
-});
-
-const styles = StyleSheet.create({
-    fill: {
-        flex: 1
-    }
 });
