@@ -1,7 +1,7 @@
-import { decryptMessage, isAggregateTransaction, isIncomingTransaction, isOutgoingTransaction, makeRequest, networkIdentifierToNetworkType, transferTransactionToDTO } from 'src/utils';
+import { decryptMessage, isAggregateTransaction, isIncomingTransaction, isOutgoingTransaction, makeRequest, networkIdentifierToNetworkType, transactionFromDTO, transferTransactionToDTO } from 'src/utils';
 import { AccountService } from 'src/services';
 import _ from 'lodash';
-import { Account, Address, Order, TransactionHttp, TransactionType } from 'symbol-sdk';
+import { Account, Address, CosignatureTransaction, Order, TransactionHttp, TransactionType } from 'symbol-sdk';
 import { Duration, Instant, LocalDateTime, ZoneId } from '@js-joda/core';
 export class TransactionService {
     static async fetchAccountTransactions(account, networkProperties, { 
@@ -58,6 +58,17 @@ export class TransactionService {
         return transactionHttp.announce(signedTransaction).toPromise();
     }
 
+    static async cosignTransaction(transaction, account, networkProperties) {
+        const networkType = networkIdentifierToNetworkType(networkProperties.networkIdentifier);
+        const cosignatureTransaction = CosignatureTransaction.create(transaction.signTransactionObject);
+        const signedTransaction = Account
+            .createFromPrivateKey(account.privateKey, networkType)
+            .signCosignatureTransaction(cosignatureTransaction);
+        const transactionHttp = new TransactionHttp(networkProperties.nodeUrl);
+
+        return transactionHttp.announceAggregateBondedCosignature(signedTransaction).toPromise();
+    }
+
     static async fetchDate(height, networkProperties) {
         const endpoint = `${networkProperties.nodeUrl}/blocks/${height}`;
         const { block } = await makeRequest(endpoint);
@@ -76,6 +87,18 @@ export class TransactionService {
         return {
             group
         };
+    }
+
+    static async fetchPartialInfo(hash, currentAccount, networkProperties) {
+        const transactionHttp = new TransactionHttp(networkProperties.nodeUrl);
+        const transactionDTO = await transactionHttp.getTransaction(hash, 'partial').toPromise();
+
+        try {
+        return transactionFromDTO(transactionDTO, {networkProperties, currentAccount});
+        }
+        catch(e) {
+            console.error(e)
+        }
     }
 
     static async decryptMessage(transaction, currentAccount, networkProperties) {

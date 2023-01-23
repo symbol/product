@@ -4,7 +4,7 @@ import { LoadingIndicator } from 'src/components';
 import { spacings } from 'src/styles';
 
 export const Screen = props => {
-    const { children, style, titleBar, bottomComponent, navigator, isLoading } = props;
+    const { children, style, titleBar, bottomComponent, bottomComponent2, navigator, isLoading } = props;
 
     return (isLoading 
         ? <LoadingIndicator fill/>
@@ -13,6 +13,7 @@ export const Screen = props => {
             <View style={styles.content}>
                 {children}
             </View>
+            {bottomComponent2}
             {!!bottomComponent && <View style={styles.bottom}>
                 {bottomComponent}
             </View>}

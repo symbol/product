@@ -1,9 +1,9 @@
 import _ from 'lodash';
 import React from 'react';
 import { useMemo } from 'react';
-import { Image, Linking, StyleSheet, Text, View } from 'react-native';
+import { Dimensions, Image, Linking, StyleSheet, Text, View } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
-import { Screen, StyledText, FormItem, TableView, TransactionGraphic, LoadingIndicator, ButtonPlain } from 'src/components';
+import { Screen, StyledText, FormItem, TableView, TransactionGraphic, LoadingIndicator, ButtonPlain, Button, TransactionCosignatureForm } from 'src/components';
 import { config } from 'src/config';
 import { $t } from 'src/localization';
 import { TransactionService } from 'src/services';
@@ -12,6 +12,8 @@ import { borders, colors, fonts, spacings } from 'src/styles';
 import { formatDate, handleError, isAggregateTransaction, isIncomingTransaction, isOutgoingTransaction, useDataManager, useInit } from 'src/utils';
 import { TransactionType } from 'symbol-sdk';
 
+const SCREEN_HEIGHT = Dimensions.get('screen').height;
+const COSIGNATURE_FORM_HEIGHT = SCREEN_HEIGHT / 4;
 
 export const TransactionDetails = connect(state => ({
     isWalletReady: state.wallet.isReady,
@@ -23,7 +25,9 @@ export const TransactionDetails = connect(state => ({
     const { isWalletReady, currentAccount, ticker, networkIdentifier, networkProperties } = props;
     const { transaction } = props.route.params;
     const [fetchPartialInfo, isPartialInfoLoading, partialInfo] = useDataManager(() => {
-        //return TransactionService.fetchPartialInfo(transaction.id);
+        if (transaction.type === TransactionType.AGGREGATE_BONDED) {
+            return TransactionService.fetchPartialInfo(transaction.hash, currentAccount, networkProperties);
+        }
     }, null, handleError);
     const [fetchDate, isDateLoading, date] = useDataManager(async () => {
         const timestamp = await TransactionService.fetchDate(transaction.height, networkProperties);
@@ -59,7 +63,7 @@ export const TransactionDetails = connect(state => ({
             break;
         case 'partial': 
             statusTextStyle.push(styles.statusTextPartial);
-            statusIconSrc = require('src/assets/images/icon-status-partial-2.png');
+            statusIconSrc = require('src/assets/images/icon-status-partial-1.png');
             break;
         case 'confirmed': 
             statusTextStyle.push(styles.statusTextConfirmed); 
@@ -90,12 +94,18 @@ export const TransactionDetails = connect(state => ({
         
         return transactionCopy;
     }, [transaction, decryptedMessageText]);
-    const details = _.pick(transaction, ['height', 'hash', 'fee', 'signerAddress', 'receivedCosignatures']);
+    const details = _.pick(transaction, ['height', 'hash', 'fee', 'signerAddress', 'receivedCosignatures', 'group']);
 
     const openBlockExplorer = () => Linking.openURL(config.explorerURL[networkIdentifier] + '/transactions/' + transaction.hash);
 
     return (
-        <Screen>
+        <Screen bottomComponent2={(partialInfo &&
+            <TransactionCosignatureForm 
+                style={styles.cosignForm}
+                height={COSIGNATURE_FORM_HEIGHT} 
+                transaction={partialInfo} 
+            />
+        )}>
             <ScrollView>
                 <FormItem>
                     <StyledText type="title-large" style={styles.textAction}>{action}</StyledText>
@@ -142,6 +152,7 @@ export const TransactionDetails = connect(state => ({
                 <FormItem>
                     <ButtonPlain title={$t('button_openTransactionInExplorer')} onPress={openBlockExplorer} />
                 </FormItem>
+                <View style={styles.cosignFormOffset} />
             </ScrollView>
         </Screen>
     );
@@ -178,10 +189,6 @@ const styles = StyleSheet.create({
     statusBadge: {
         flexDirection: 'row',
         alignItems: 'center',
-        // height: 40,
-        // borderRadius: borders.borderRadius,
-        // paddingHorizontal: spacings.margin,
-        // backgroundColor: colors.bgCard
     },
     statusText: {
         ...fonts.body,
@@ -201,15 +208,16 @@ const styles = StyleSheet.create({
         height: 18,
         marginRight: spacings.margin / 2
     },
-
     formItem: {
         flexDirection: 'column',
         flex: 1
     },
-    formCard: {
-        backgroundColor: colors.bgForm,
-        borderRadius: borders.borderRadius,
-        padding: spacings.padding,
-        flex: 1
+    cosignFormOffset: {
+        height: COSIGNATURE_FORM_HEIGHT,
+    },
+    cosignForm: {
+        position: 'absolute',
+        bottom: 0,
+        width: '100%',
     }
 });

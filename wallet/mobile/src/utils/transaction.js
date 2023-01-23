@@ -1,4 +1,5 @@
 import { Address, Crypto, Deadline, EncryptedMessage, Mosaic, MosaicId, PlainMessage, TransactionType, TransferTransaction, UInt64 } from 'symbol-sdk';
+import { Constants } from 'src/config';
 import { toFixedNumber } from './helper';
 import { getMosaicRelativeAmount } from './mosaic';
 import { networkIdentifierToNetworkType } from './network';
@@ -185,3 +186,24 @@ export const decryptMessage = (encryptedMessage, recipientPrivateKey, senderPubl
 
     return Buffer.from(hex, 'hex').toString();
 }
+
+/**
+ * Checks whether transaction is awaiting a signature by account.
+ */
+export const transactionAwaitingSignatureByAccount = (transaction, account, multisigAddresses) => {
+    if (transaction.type === TransactionType.AGGREGATE_BONDED) {
+        const transactionSignerAddresses = transaction.innerTransactions.map(innerTransaction => innerTransaction.signerAddress);
+        const cosignRequired = transactionSignerAddresses.some(
+            transactionSignerAddress => transactionSignerAddress && multisigAddresses?.some(address => address === transactionSignerAddress)
+        );
+        const transactionHasMissingSignatures = !!transaction.transactionInfo?.merkleComponentHash.startsWith('000000000000');
+        const signedByCurrentAccount = transaction.cosignaturePublicKeys.some(publicKey => publicKey === account.publicKey);
+
+        return (
+            (!signedByCurrentAccount && transaction.status !== Constants.Message.CONFIRMED) ||
+            (transactionHasMissingSignatures && cosignRequired)
+        );
+    }
+
+    return false;
+};
