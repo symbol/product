@@ -19,12 +19,12 @@ export const AddressBookContact = connect(state => ({
         || addressBookBlackList.find(el => el.id === route.params.id);
     const { name, address, isBlackListed, notes, id } = contact;
     const [isRemoveConfirmVisible, toggleRemoveConfirm] = useToggle(false);
-    const [removeContact] = useDataManager(async () => {
-        await store.dispatchAction({type: 'addressBook/removeContact', payload: { 
+    const [removeContact] = useDataManager(() => {
+        Router.goBack();
+        store.dispatchAction({type: 'addressBook/removeContact', payload: { 
             id
         }});
-        Router.goBack();
-    }, null, handleError);
+    });
 
     const tableData = {
         name, 

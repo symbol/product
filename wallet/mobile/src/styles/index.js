@@ -47,6 +47,12 @@ export const colors = {
     neutral: DesignSystem.ColorDarkmodeSemanticNeutral,
     info: DesignSystem.ColorDarkmodeSemanticInfo,
 
+    bgDanger: DesignSystem.ColorLightmodeSemanticBad,
+    bgWarning: DesignSystem.ColorLightmodeSemanticCaution,
+    bgSuccess: DesignSystem.ColorLightmodeSemanticGood,
+    bgNeutral: DesignSystem.ColorLightmodeSemanticNeutral,
+    bgInfo: DesignSystem.ColorLightmodeSemanticInfo,
+
 
     controlButtonStroke: DesignSystem.ColorDarkmodeButtonDefaultStroke,
     controlButtonBg: DesignSystem.ColorDarkmodeButtonDefaultBg,

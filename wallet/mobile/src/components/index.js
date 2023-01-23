@@ -32,5 +32,6 @@ export * from './TabView';
 export * from './TextBox';
 export * from './TitleBar';
 export * from './TouchableNative';
+export * from './TransactionCosignatureForm';
 export * from './TransactionGraphic';
 export * from './Widget';
