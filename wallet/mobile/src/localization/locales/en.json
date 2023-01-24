@@ -204,6 +204,7 @@
     "data_symbolSdkVersion": "Symbol SDK Version",
     "data_reactNativeVersion": "React Native Version",
     "data_height": "Height",
+    "data_cosignatories": "Cosignatories",
 
     "data_v_unlimited": "UNLIMITED",
     "data_v_na": "N/A",
@@ -326,5 +327,8 @@
     "validation_error_address_short": "Too short",
     "validation_error_address_invalid": "Invalid address",
     "validation_error_balance_not_enough": "Not enough balance",
-    "validation_error_already_exists": "Already exists"
+    "validation_error_already_exists": "Already exists",
+
+    "warning_multisig_title": "Multisig Account",
+    "warning_multisig_body": "To send transactions from this account, please announce it from cosignature account!"
 }

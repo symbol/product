@@ -3,7 +3,7 @@ import { useMemo } from 'react';
 import { useEffect } from 'react';
 import { useState } from 'react';
 import { ScrollView } from 'react-native-gesture-handler';
-import { TableView, Screen, SelectMosaic, FeeSelector, FormItem, TextBox, Checkbox, Button, StyledText, InputAmount, DialogBox, InputAddress } from 'src/components';
+import { TableView, Screen, SelectMosaic, FeeSelector, FormItem, TextBox, Checkbox, Button, StyledText, InputAmount, DialogBox, InputAddress, Alert } from 'src/components';
 import { $t } from 'src/localization';
 import { Router } from 'src/Router';
 import { TransactionService } from 'src/services';
@@ -14,6 +14,9 @@ export const Send = connect(state => ({
     accounts: state.wallet.accounts,
     addressBookWhiteList: state.addressBook.whiteList,
     currentAccount: state.account.current,
+    cosignatories: state.account.cosignatories,
+    isMultisigAccount: state.account.isMultisig,
+    isAccountReady: state.account.isReady,
     mosaics: state.account.mosaics,
     mosaicInfos: state.wallet.mosaicInfos,
     networkIdentifier: state.network.networkIdentifier,
@@ -21,7 +24,7 @@ export const Send = connect(state => ({
     ticker: state.network.ticker,
     chainHeight: state.network.chainHeight
 }))(function Send(props) {
-    const { accounts, addressBookWhiteList, currentAccount, mosaics, networkIdentifier, networkProperties, ticker, chainHeight, route } = props;
+    const { accounts, addressBookWhiteList, currentAccount, cosignatories, isMultisigAccount, isAccountReady, mosaics, networkIdentifier, networkProperties, ticker, chainHeight, route } = props;
     const [recipient, setRecipient] = useProp(route.params?.recipientAddress || '');
     const [mosaicId, setMosaicId] = useState(mosaics[0]?.id);
     const [amount, setAmount] = useState('0');
@@ -31,6 +34,8 @@ export const Send = connect(state => ({
     const [speed, setSpeed] = useState('medium');
     const [isConfirmVisible, toggleConfirm] = useToggle(false);
     const [isSuccessAlertVisible, toggleSuccessAlert] = useToggle(false);
+    const [isAmountValid, setAmountValid] = useState(false);
+    const [isRecipientValid, setRecipientValid] = useState(false);
 
     const networkAccounts = accounts[networkIdentifier];
     const contacts = [...networkAccounts, ...addressBookWhiteList];
@@ -47,6 +52,8 @@ export const Send = connect(state => ({
         toFixedNumber(selectedMosaicBalance - parseFloat(maxFee), selectedMosaicDivisibility)
     );
 
+    const isButtonDisabled = !isRecipientValid || !isAmountValid || !selectedMosaic;
+
     const transaction = {
         signerAddress: currentAccount.address,
         recipientAddress: recipient,
@@ -59,12 +66,10 @@ export const Send = connect(state => ({
         fee: maxFee
     };
 
+    const cosignatoryList = { cosignatories };
+
     const transactionFees = useMemo(() => getTransactionFees(transaction, networkProperties), [message, isEncrypted]);
     
-    const [isAmountValid, setAmountValid] = useState(true);
-    const [isRecipientValid, setRecipientValid] = useState(true);
-    const isButtonDisabled = !isRecipientValid || !isAmountValid || !selectedMosaic;
-
     const [send] = useDataManager(async () => {
         await TransactionService.sendTransferTransaction(transaction, currentAccount, networkProperties);
         toggleSuccessAlert();
@@ -77,67 +82,87 @@ export const Send = connect(state => ({
         }
     }, [transactionFees, speed]);
 
+    useEffect(() => {
+        if(!mosaicId) {
+            setMosaicId(mosaics[0]?.id)
+        }
+    }, [isAccountReady, mosaicId]);
+
     return (
-        <Screen bottomComponent={
+        <Screen isLoading={!isAccountReady} bottomComponent={
             <FormItem>
                 <Button title={$t('button_send')} isDisabled={isButtonDisabled} onPress={toggleConfirm} />
             </FormItem>
         }>
             <ScrollView>
-                <FormItem>
-                    <StyledText type="title">{$t('form_transfer_title')}</StyledText>
-                    <StyledText type="body">{$t('s_send_description')}</StyledText>
-                </FormItem>
-                <FormItem>
-                    <InputAddress 
-                        title={$t('form_transfer_input_recipient')} 
-                        contacts={contacts}
-                        value={recipient} 
-                        onChange={setRecipient}
-                        onValidityChange={setRecipientValid}
-                    />
-                </FormItem>
-                <FormItem>
-                    <SelectMosaic
-                        title={$t('form_transfer_input_mosaic')} 
-                        value={mosaicId} 
-                        list={mosaicOptions} 
-                        chainHeight={chainHeight}
-                        onChange={setMosaicId} 
-                    />
-                </FormItem>
-                <FormItem>
-                    <InputAmount 
-                        title={$t('form_transfer_input_amount')} 
-                        availableBalance={availableBalance}
-                        value={amount} 
-                        onChange={setAmount}
-                        onValidityChange={setAmountValid}
-                    />
-                </FormItem>
-                <FormItem>
-                    <TextBox
-                        title={$t('form_transfer_input_message')} 
-                        value={message} 
-                        onChange={setMessage} 
-                    />
-                </FormItem>
-                <FormItem>
-                    <Checkbox
-                        title={$t('form_transfer_input_encrypted')} 
-                        value={isEncrypted} 
-                        onChange={toggleEncrypted} 
-                    />
-                </FormItem>
-                <FormItem>
-                    <FeeSelector 
-                        title={$t('form_transfer_input_fee')} 
-                        value={speed}
-                        fees={transactionFees}
-                        ticker={ticker}
-                        onChange={setSpeed} 
-                    />
-                </FormItem>
+                {isMultisigAccount && <>
+                    <FormItem>
+                        <Alert 
+                            type="warning" 
+                            title={$t('warning_multisig_title')} 
+                            body={$t('warning_multisig_body')}
+                        />
+                    </FormItem>
+                    <FormItem>
+                        <TableView data={cosignatoryList} />
+                    </FormItem>
+                </>}
+                {!isMultisigAccount && <>
+                    <FormItem>
+                        <StyledText type="title">{$t('form_transfer_title')}</StyledText>
+                        <StyledText type="body">{$t('s_send_description')}</StyledText>
+                    </FormItem>
+                    <FormItem>
+                        <InputAddress 
+                            title={$t('form_transfer_input_recipient')} 
+                            contacts={contacts}
+                            value={recipient} 
+                            onChange={setRecipient}
+                            onValidityChange={setRecipientValid}
+                        />
+                    </FormItem>
+                    <FormItem>
+                        <SelectMosaic
+                            title={$t('form_transfer_input_mosaic')} 
+                            value={mosaicId} 
+                            list={mosaicOptions} 
+                            chainHeight={chainHeight}
+                            onChange={setMosaicId} 
+                        />
+                    </FormItem>
+                    <FormItem>
+                        <InputAmount 
+                            title={$t('form_transfer_input_amount')} 
+                            availableBalance={availableBalance}
+                            value={amount} 
+                            onChange={setAmount}
+                            onValidityChange={setAmountValid}
+                        />
+                    </FormItem>
+                    <FormItem>
+                        <TextBox
+                            title={$t('form_transfer_input_message')} 
+                            value={message} 
+                            onChange={setMessage} 
+                        />
+                    </FormItem>
+                    <FormItem>
+                        <Checkbox
+                            title={$t('form_transfer_input_encrypted')} 
+                            value={isEncrypted} 
+                            onChange={toggleEncrypted} 
+                        />
+                    </FormItem>
+                    <FormItem>
+                        <FeeSelector 
+                            title={$t('form_transfer_input_fee')} 
+                            value={speed}
+                            fees={transactionFees}
+                            ticker={ticker}
+                            onChange={setSpeed} 
+                        />
+                    </FormItem>
+                </>}
             </ScrollView>
             <DialogBox 
                 type="confirm" 
