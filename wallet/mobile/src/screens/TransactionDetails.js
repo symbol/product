@@ -28,7 +28,7 @@ export const TransactionDetails = connect(state => ({
         if (transaction.type === TransactionType.AGGREGATE_BONDED) {
             return TransactionService.fetchPartialInfo(transaction.hash, currentAccount, networkProperties);
         }
-    }, null, handleError);
+    });
     const [fetchDate, isDateLoading, date] = useDataManager(async () => {
         const timestamp = await TransactionService.fetchDate(transaction.height, networkProperties);
 
@@ -94,17 +94,13 @@ export const TransactionDetails = connect(state => ({
         
         return transactionCopy;
     }, [transaction, decryptedMessageText]);
-    const details = _.pick(transaction, ['height', 'hash', 'fee', 'signerAddress', 'receivedCosignatures', 'group']);
+    const details = _.pick(transaction, ['height', 'hash', 'fee', 'signerAddress', 'receivedCosignatures']);
 
     const openBlockExplorer = () => Linking.openURL(config.explorerURL[networkIdentifier] + '/transactions/' + transaction.hash);
 
     return (
         <Screen bottomComponent2={(partialInfo &&
-            <TransactionCosignatureForm 
-                style={styles.cosignForm}
-                height={COSIGNATURE_FORM_HEIGHT} 
-                transaction={partialInfo} 
-            />
+            <TransactionCosignatureForm height={COSIGNATURE_FORM_HEIGHT} transaction={partialInfo} />
         )}>
             <ScrollView>
                 <FormItem>
@@ -150,9 +146,8 @@ export const TransactionDetails = connect(state => ({
                     <TableView data={details} currentAccount={currentAccount}/>
                 </FormItem>
                 <FormItem>
-                    <ButtonPlain title={$t('button_openTransactionInExplorer')} onPress={openBlockExplorer} />
+                    <ButtonPlain icon={require('src/assets/images/icon-primary-explorer.png')} title={$t('button_openTransactionInExplorer')} onPress={openBlockExplorer} />
                 </FormItem>
-                <View style={styles.cosignFormOffset} />
             </ScrollView>
         </Screen>
     );
@@ -212,12 +207,4 @@ const styles = StyleSheet.create({
         flexDirection: 'column',
         flex: 1
     },
-    cosignFormOffset: {
-        height: COSIGNATURE_FORM_HEIGHT,
-    },
-    cosignForm: {
-        position: 'absolute',
-        bottom: 0,
-        width: '100%',
-    }
 });
