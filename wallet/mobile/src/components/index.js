@@ -1,5 +1,6 @@
 export * from './AccountAvatar';
 export * from './AccountCard'
+export * from './Alert';
 export * from './Button';
 export * from './ButtonCircle';
 export * from './ButtonClose';

@@ -1,7 +1,8 @@
 import _ from 'lodash';
 import React from 'react';
 import { RefreshControl, ScrollView } from 'react-native-gesture-handler';
-import { AccountCard, Screen, TitleBar, FormItem, TabNavigator, StyledText } from 'src/components';
+import { AccountCard, Alert, Screen, TitleBar, FormItem, TabNavigator, StyledText } from 'src/components';
+import { $t } from 'src/localization';
 import { Router } from 'src/Router';
 import store, { connect } from 'src/store';
 import { handleError, useDataManager, useInit } from 'src/utils';
@@ -10,15 +11,16 @@ import { HistoryWidget } from './History';
 
 export const Home = connect(state => ({
     balances: state.wallet.balances,
+    isMultisigAccount: state.account.isMultisig,
     currentAccount: state.account.current,
     ticker: state.network.ticker,
     isWalletReady: state.wallet.isReady,
 }))(function Home(props) {
-    const { balances, currentAccount, ticker, isWalletReady } = props;
+    const { balances, currentAccount, isMultisigAccount, ticker, isWalletReady } = props;
     const [loadState, isLoading] = useDataManager(async () => {
         await store.dispatchAction({type: 'wallet/fetchAll'});
     }, null, handleError);
-    useInit(loadState, isWalletReady);
+    useInit(loadState, isWalletReady, [currentAccount]);
 
     const accountBalance = currentAccount ? balances[currentAccount.address] : '-';
     const accountName = currentAccount?.name || '-';
@@ -44,6 +46,15 @@ export const Home = connect(state => ({
                         onDetailsPress={Router.goToAccountDetails}
                     />
                 </FormItem>
+                {isMultisigAccount && (
+                    <FormItem>
+                        <Alert 
+                            type="warning" 
+                            title={$t('warning_multisig_title')} 
+                            body={$t('warning_multisig_body')}
+                        />
+                    </FormItem>
+                )}
                 <FormItem type="group" clear="bottom">
                     {/* notranslate */}
                     <StyledText type="title">Widgets</StyledText>
