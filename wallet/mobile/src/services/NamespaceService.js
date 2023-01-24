@@ -1,6 +1,5 @@
-import { makeRequest } from 'src/utils';
+import { addressFromRaw, makeRequest } from 'src/utils';
 import _ from 'lodash';
-import { Convert, RawAddress } from 'symbol-sdk';
 
 export class NamespaceService {
     static async fetchAccountNamespaces(address, networkProperties) {
@@ -11,8 +10,8 @@ export class NamespaceService {
         const namespaceNames = await NamespaceService.fetchNamespaceNames(networkProperties, namespaceIds);
 
         return namespaces.map(namespace => {
-            const ownerAddress = RawAddress.addressToString(Convert.hexToUint8(namespace.ownerAddress));
-            const aliasAddress = namespace.alias.address ? RawAddress.addressToString(Convert.hexToUint8(namespace.alias.address)) : null;
+            const ownerAddress = addressFromRaw(namespace.ownerAddress);
+            const aliasAddress = namespace.alias.address ? addressFromRaw(namespace.alias.address) : null;
 
             return {
                 id: namespace.level2 || namespace.level1 || namespace.level0,
@@ -114,7 +113,7 @@ export class NamespaceService {
     static async resolveAddress(networkProperties, namespaceId) {
         const namespace = await NamespaceService.fetchNamespaceInfo(networkProperties, namespaceId);
         const { address } = namespace.alias;
-        const plainAddress = RawAddress.addressToString(Convert.hexToUint8(address));
+        const plainAddress = addressFromRaw(address);
         
         return plainAddress;
     }

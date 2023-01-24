@@ -1,5 +1,5 @@
 import { networkIdentifierToNetworkType } from './network';
-import { Account, Address } from 'symbol-sdk';
+import { Account, Address, Convert, RawAddress } from 'symbol-sdk';
 
 export const addressFromPrivateKey = (privateKey, networkIdentifier) => {
     const networkType = networkIdentifierToNetworkType(networkIdentifier);
@@ -53,3 +53,7 @@ export const isSymbolAddress = address => {
 
     return true;
 }
+
+export const addressFromRaw = rawAddress => {
+    return RawAddress.addressToString(Convert.hexToUint8(rawAddress));
+};
