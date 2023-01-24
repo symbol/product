@@ -11,6 +11,7 @@ import { filterCustomMosaics, getAddressName, getColorFromHash, getNativeMosaicA
 import { TransactionType } from 'symbol-sdk';
 
 export const TransactionGraphic = connect(state => ({
+    addressBook: state.addressBook.addressBook,
     walletAccounts: state.wallet.accounts,
     currentAccount: state.account.current,
     networkIdentifier: state.network.networkIdentifier,
@@ -20,8 +21,8 @@ export const TransactionGraphic = connect(state => ({
     const { transaction, ticker, addressBook, currentAccount, networkIdentifier, networkProperties, walletAccounts } = props;
     const [isExpanded, toggle] = useToggle(false);
     const [hasBeenExpanded, setHasBeenExpanded] = useState(false);
-    const networkWalletAccounts = walletAccounts[networkIdentifier];
-    const signerName = getAddressName(transaction.signerAddress, currentAccount, networkWalletAccounts);
+    const accounts = walletAccounts[networkIdentifier];
+    const signerName = getAddressName(transaction.signerAddress, currentAccount, accounts, addressBook);
     const signerNameColorStyle = {
         color: getColorFromHash(transaction.signerAddress)
     }
@@ -53,7 +54,7 @@ export const TransactionGraphic = connect(state => ({
     switch(transaction.type) {
         case TransactionType.TRANSFER:
             Target = () => <AccountAvatar address={transaction.recipientAddress} size="md" />
-            targetName = getAddressName(transaction.recipientAddress, currentAccount, networkWalletAccounts);
+            targetName = getAddressName(transaction.recipientAddress, currentAccount, accounts, addressBook);
             targetNameStyle.push({
                 color: getColorFromHash(transaction.recipientAddress)
             });
@@ -78,7 +79,7 @@ export const TransactionGraphic = connect(state => ({
             break;
         case TransactionType.ADDRESS_ALIAS:
             Target = () => <AccountAvatar address={transaction.address} size="md" />
-            targetName = getAddressName(transaction.address, currentAccount, networkWalletAccounts);
+            targetName = getAddressName(transaction.address, currentAccount, accounts, addressBook);
             targetNameStyle.push({
                 color: getColorFromHash(transaction.address)
             });
@@ -95,7 +96,7 @@ export const TransactionGraphic = connect(state => ({
             break;
         case TransactionType.MOSAIC_SUPPLY_REVOCATION:
             Target = () => <AccountAvatar address={transaction.sourceAddress} size="md" />
-            targetName = getAddressName(transaction.sourceAddress, currentAccount, networkWalletAccounts);
+            targetName = getAddressName(transaction.sourceAddress, currentAccount, accounts, addressBook);
             targetNameStyle.push({
                 color: getColorFromHash(transaction.sourceAddress)
             });
@@ -108,7 +109,7 @@ export const TransactionGraphic = connect(state => ({
         case TransactionType.ACCOUNT_ADDRESS_RESTRICTION:
         case TransactionType.ACCOUNT_OPERATION_RESTRICTION:
             Target = () => <AccountAvatar address={transaction.signerAddress} size="md" />
-            targetName = getAddressName(transaction.signerAddress, currentAccount, networkWalletAccounts);
+            targetName = getAddressName(transaction.signerAddress, currentAccount, accounts, addressBook);
             targetNameStyle.push({
                 color: getColorFromHash(transaction.signerAddress)
             });
@@ -123,7 +124,7 @@ export const TransactionGraphic = connect(state => ({
         }
         case TransactionType.MOSAIC_ADDRESS_RESTRICTION: {
             Target = () => <AccountAvatar address={transaction.targetAddress} size="md" />
-            targetName = getAddressName(transaction.targetAddress, currentAccount, networkWalletAccounts);
+            targetName = getAddressName(transaction.targetAddress, currentAccount, accounts, addressBook);
             targetNameStyle.push({
                 color: getColorFromHash(transaction.targetAddress)
             });
@@ -133,7 +134,7 @@ export const TransactionGraphic = connect(state => ({
         }
         case TransactionType.MULTISIG_ACCOUNT_MODIFICATION:
             Target = () => <AccountAvatar address={transaction.signerAddress} size="md" />
-            targetName = getAddressName(transaction.signerAddress, currentAccount, networkWalletAccounts);
+            targetName = getAddressName(transaction.signerAddress, currentAccount, accounts, addressBook);
             targetNameStyle.push({
                 color: getColorFromHash(transaction.signerAddress)
             });
@@ -143,7 +144,7 @@ export const TransactionGraphic = connect(state => ({
         case TransactionType.VOTING_KEY_LINK:
         case TransactionType.ACCOUNT_KEY_LINK: {
             Target = () => <AccountAvatar address={transaction.linkedAccountAddress} size="md" />
-            targetName = getAddressName(transaction.linkedAccountAddress, currentAccount, networkWalletAccounts);
+            targetName = getAddressName(transaction.linkedAccountAddress, currentAccount, addressBook);
             targetNameStyle.push({
                 color: getColorFromHash(transaction.linkedAccountAddress)
             });
@@ -167,7 +168,7 @@ export const TransactionGraphic = connect(state => ({
         }
         case TransactionType.ACCOUNT_METADATA: {
             Target = () => <AccountAvatar address={transaction.targetAddress} size="md" />
-            targetName = getAddressName(transaction.targetAddress, currentAccount, networkWalletAccounts);
+            targetName = getAddressName(transaction.targetAddress, currentAccount, accounts, addressBook);
             targetNameStyle.push({
                 color: getColorFromHash(transaction.targetAddress)
             });

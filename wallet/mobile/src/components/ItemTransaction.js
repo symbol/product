@@ -1,19 +1,21 @@
 import React from 'react';
-import { useEffect } from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
 import { FormItem, ItemBase } from 'src/components';
-import Animated, {useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { $t } from 'src/localization';
 import { connect } from 'src/store';
-import { borders, colors, fonts, spacings } from 'src/styles';
-import { isAggregateTransaction, isIncomingTransaction, isOutgoingTransaction, trunc } from 'src/utils';
+import { colors, fonts, spacings } from 'src/styles';
+import { getAddressName, isAggregateTransaction, isIncomingTransaction, isOutgoingTransaction, trunc } from 'src/utils';
 import { TransactionType } from 'symbol-sdk';
 
 export const ItemTransaction = connect(state => ({
     currentAccount: state.account.current,
+    walletAccounts: state.wallet.accounts,
+    networkIdentifier: state.network.networkIdentifier,
+    addressBook: state.addressBook.addressBook,
     ticker: state.network.ticker,
 }))(function ItemTransaction(props) {
-    const { currentAccount, group, transaction, ticker, onPress } = props;
+    const { currentAccount, walletAccounts, networkIdentifier, addressBook, group, transaction, ticker, onPress } = props;
+    const accounts = walletAccounts[networkIdentifier];
     const { type, deadline, amount, signerAddress, recipientAddress } = transaction;
     let iconSrc;
     let action = $t(`transactionDescriptor_${type}`);
@@ -32,13 +34,19 @@ export const ItemTransaction = connect(state => ({
     }
 
     if (type === TransactionType.TRANSFER && isOutgoingTransaction(transaction, currentAccount)) {
+        const address = getAddressName(recipientAddress, currentAccount, accounts, addressBook);
+        const isAddressName = address !== recipientAddress;
+        const addressText = isAddressName ? address : trunc(address, 'address');
         action = $t(`transactionDescriptor_${type}_outgoing`);
-        description = `To ${trunc(recipientAddress, 'address')}`;
+        description = `To ${addressText}`;
         iconSrc = require('src/assets/images/icon-tx-transfer.png');
     }
     else if (type === TransactionType.TRANSFER && isIncomingTransaction(transaction, currentAccount)) {
+        const address = getAddressName(signerAddress, currentAccount, accounts, addressBook);
+        const isAddressName = address !== signerAddress;
+        const addressText = isAddressName ? address : trunc(address, 'address');
         action = $t(`transactionDescriptor_${type}_incoming`);
-        description = `From ${trunc(signerAddress, 'address')}`;
+        description = `From ${addressText}`;
         iconSrc = require('src/assets/images/icon-tx-transfer.png');
     }
     else if (isAggregateTransaction(transaction)) {
@@ -55,8 +63,17 @@ export const ItemTransaction = connect(state => ({
         description = $t('transactionDescriptionShort_namespaceRegistration', {name});
         iconSrc = require('src/assets/images/icon-tx-namespace.png');
     }
-    else if (type === TransactionType.MOSAIC_ALIAS || type === TransactionType.ADDRESS_ALIAS) {
-        const target = trunc(transaction.mosaicId || transaction.address, 'address');
+    else if (type === TransactionType.ADDRESS_ALIAS) {
+        const address = getAddressName(transaction.address, currentAccount, accounts, addressBook);
+        const isAddressName = address !== transaction.address;
+        const addressText = isAddressName ? address : trunc(address, 'address');
+        const target = addressText;
+        const name = transaction.namespaceName;
+        description = $t('transactionDescriptionShort_alias', {target, name});
+        iconSrc = require('src/assets/images/icon-tx-namespace.png');
+    }
+    else if (type === TransactionType.MOSAIC_ALIAS) {
+        const target = trunc(transaction.mosaicId, 'address');
         const name = transaction.namespaceName;
         description = $t('transactionDescriptionShort_alias', {target, name});
         iconSrc = require('src/assets/images/icon-tx-namespace.png');
