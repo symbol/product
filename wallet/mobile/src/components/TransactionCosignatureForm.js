@@ -9,7 +9,7 @@ import { Router } from 'src/Router';
 import { TransactionService } from 'src/services';
 import { connect } from 'src/store';
 import { borders, colors, spacings } from 'src/styles';
-import { handleError, transactionAwaitingSignatureByAccount, useDataManager } from 'src/utils';
+import { handleError, transactionAwaitingSignatureByAccount, useDataManager, usePasscode } from 'src/utils';
 import { Button } from './Button';
 import { ButtonPlain } from './ButtonPlain';
 import { LoadingIndicator } from './LoadingIndicator';
@@ -36,7 +36,7 @@ export const TransactionCosignatureForm = connect(state => ({
         style,
     ]
 
-    const isAwaitingSignature = transactionAwaitingSignatureByAccount(transaction, currentAccount, []);
+    const isAwaitingSignature = transactionAwaitingSignatureByAccount(transaction, currentAccount);
     const signerContact = addressBook.getContactByAddress(signerAddress);
     const isBlackListedSigner = signerContact && signerContact.isBlackListed;
     const isWhiteListedSigner = signerContact && !isBlackListedSigner;
@@ -56,13 +56,15 @@ export const TransactionCosignatureForm = connect(state => ({
 
     const [sign, isLoading] = useDataManager(async () => {
         await TransactionService.cosignTransaction(transaction, currentAccount, networkProperties);
-        Router.goBack();
+        Router.goToHistory();
     }, null, handleError);
+    const confirmSend = usePasscode('enter', sign, Router.goBack);
 
     useEffect(() => {
         animatedHeight.value = withTiming(height);
     }, [isFocused]);
 
+    /* notranslate */
     const views = {
         'blocked_signer_initial': <>
             <View style={styles.content}>
@@ -78,7 +80,7 @@ export const TransactionCosignatureForm = connect(state => ({
                 <StyledText type="subtitle">Transaction Awaiting Signature</StyledText>
                 <StyledText type="body">Please carefully review all amounts and recipient addresses, as transactions are not reversible. Malicious transactions can result in a total loss of funds.</StyledText>
             </View>
-            <Button title="Sign" onPress={sign} />
+            <Button title="Sign" onPress={confirmSend} />
         </>,
         'unknown_signer_initial': <>
             <View style={styles.content}>

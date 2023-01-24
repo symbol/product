@@ -190,20 +190,13 @@ export const decryptMessage = (encryptedMessage, recipientPrivateKey, senderPubl
 /**
  * Checks whether transaction is awaiting a signature by account.
  */
-export const transactionAwaitingSignatureByAccount = (transaction, account, multisigAddresses) => {
-    if (transaction.type === TransactionType.AGGREGATE_BONDED) {
-        const transactionSignerAddresses = transaction.innerTransactions.map(innerTransaction => innerTransaction.signerAddress);
-        const cosignRequired = transactionSignerAddresses.some(
-            transactionSignerAddress => transactionSignerAddress && multisigAddresses?.some(address => address === transactionSignerAddress)
-        );
-        const transactionHasMissingSignatures = !!transaction.transactionInfo?.merkleComponentHash.startsWith('000000000000');
-        const signedByCurrentAccount = transaction.cosignaturePublicKeys.some(publicKey => publicKey === account.publicKey);
-
-        return (
-            (!signedByCurrentAccount && transaction.status !== Constants.Message.CONFIRMED) ||
-            (transactionHasMissingSignatures && cosignRequired)
-        );
+export const transactionAwaitingSignatureByAccount = (transaction, account) => {
+    if (transaction.type !== TransactionType.AGGREGATE_BONDED) {
+        return false;
     }
 
-    return false;
+    const isSignedByAccount = transaction.signerAddress === account.address;
+    const hasAccountCosignature = transaction.receivedCosignatures.some(address => address === account.address);
+
+    return !isSignedByAccount && !hasAccountCosignature;
 };
