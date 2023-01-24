@@ -196,6 +196,11 @@ export const getAddressName = (address, currentAccount, accounts, addressBook) =
         return walletAccount.name;
     }
 
+    const contact = addressBook.getContactByAddress(address);
+    if (contact) {
+        return contact.name;
+    }
+
     return address;
 }
 

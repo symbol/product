@@ -5,7 +5,7 @@ import { connect } from 'src/store';
 import { spacings } from 'src/styles';
 import { AccountAvatar, ButtonCopy, FormItem, StyledText } from 'src/components';
 import { $t } from 'src/localization';
-import { getAddressName, trunc } from 'src/utils';
+import { getAddressName } from 'src/utils';
 
 const TRANSLATION_ROOT_KEY = 'table';
 const renderTypeMap = {
@@ -313,5 +313,4 @@ const styles = StyleSheet.create({
         maxHeight: '100%',
         marginRight: spacings.paddingSm
     }
-
 });
