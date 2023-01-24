@@ -24,6 +24,14 @@ export const getMosaicsWithRelativeAmounts = (mosaics, mosaicInfos) => {
 };
 
 export const getMosaicWithRelativeAmount = (mosaic, mosaicInfo) => {
+    if (!mosaicInfo) {
+        return {
+            ...mosaicInfo,
+            amount: null,
+            name: mosaic.id,
+            id: mosaic.id,
+        }
+    }
     return {
         ...mosaicInfo,
         amount: mosaic.amount / Math.pow(10, mosaicInfo.divisibility),

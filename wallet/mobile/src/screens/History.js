@@ -28,7 +28,7 @@ export const History = connect(state => ({
         await store.dispatchAction({type: 'transaction/fetchPage', payload: {pageNumber: nextPageNumber}});
         setPageNumber(nextPageNumber);
     }, null, handleError);
-    useInit(fetchTransactions, isWalletReady);
+    useInit(fetchTransactions, isWalletReady, [currentAccount]);
 
     const onEndReached = () => !isLastPage && setIsNextPageRequested(true);
     const isPlaceholderShown = (group) => group === 'confirmed' && !isLastPage;
@@ -81,7 +81,7 @@ export const History = connect(state => ({
                 onEndReached={onEndReached}
                 onEndReachedThreshold={1}
                 sections={sections}
-                keyExtractor={(item, section) => section.group + (item.hash || item.id)}
+                keyExtractor={(item, index) => index + (item.hash || item.id)}
                 renderItem={({item, section}) => (
                     <ItemTransaction group={section.group} transaction={item} onPress={() => Router.goToTransactionDetails({transaction: item})}/>
                 )}
