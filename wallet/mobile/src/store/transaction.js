@@ -37,6 +37,8 @@ export default {
             console.log(`[Transaction] load transactions from cache for ${current?.address}`, accountTransactions.length)
             
             commit({type: 'transaction/setConfirmed', payload: accountTransactions});
+            commit({type: 'transaction/setPartial', payload: []});
+            commit({type: 'transaction/setUnconfirmed', payload: []});
             commit({type: 'transaction/setIsLastPage', payload: false});
         },
         fetchData: async ({ commit, state }, keepPages) => {
@@ -68,7 +70,7 @@ export default {
             const partialPage = partialDTO.map(transactionDTO => transactionFromDTO(transactionDTO, transactionOptions));
             const unconfirmedPage = unconfirmedDTO.map(transactionDTO => transactionFromDTO(transactionDTO, transactionOptions));
             const confirmedPage = confirmedDTO.map(transactionDTO => transactionFromDTO(transactionDTO, transactionOptions));
- 
+
             // Update store
             commit({type: 'transaction/setPartial', payload: partialPage});
             commit({type: 'transaction/setUnconfirmed', payload: unconfirmedPage});
@@ -112,7 +114,7 @@ export default {
             const confirmedPage = confirmedDTO.map(transactionDTO => transactionFromDTO(transactionDTO, transactionOptions));
             const isLastPage = confirmedPage.length === 0;
 
-            const updatedConfirmed = _.uniqBy([...confirmed, ...confirmedPage], 'id');
+            const updatedConfirmed = _.uniqBy([...confirmed, ...confirmedPage], 'hash');
             // Update store
             commit({type: 'transaction/setConfirmed', payload: updatedConfirmed});
             commit({type: 'transaction/setIsLastPage', payload: isLastPage});

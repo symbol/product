@@ -74,7 +74,7 @@ export const baseTransactionFromDTO = (transaction, {networkProperties}) => {
         type: transaction.type,
         deadline: formatDeadline(transaction.deadline.toLocalDateTime(networkProperties.epochAdjustment)),
         height: transaction.transactionInfo.height.toString(),
-        hash: transaction.hash || transaction.transactionInfo?.hash,
+        hash: transaction.transactionInfo?.hash,
         id: transaction.transactionInfo?.id,
         fee: getMosaicRelativeAmount(transaction.maxFee.toString(), networkProperties.networkCurrency.divisibility),
         signerAddress: transaction.signer.address.plain(),
@@ -255,7 +255,6 @@ export const hashLockTransactionFromDTO = (transaction, config) => {
         ...baseTransaction,
         duration: transaction.duration.compact(),
         mosaics: formattedMosaics,
-        hash: transaction.hash,
         amount,
     };
 };
