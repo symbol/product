@@ -3,18 +3,27 @@ import { Image, StyleSheet, View } from 'react-native';
 
 import { connect } from 'src/store';
 import { spacings } from 'src/styles';
-import { ButtonCopy, FormItem, StyledText } from 'src/components';
+import { AccountAvatar, ButtonCopy, FormItem, StyledText } from 'src/components';
 import { $t } from 'src/localization';
+import { getAddressName, trunc } from 'src/utils';
 
 const TRANSLATION_ROOT_KEY = 'table';
 const renderTypeMap = {
-    copyButton: [
+    address: [
         'address',
         'recipientAddress',
         'signerAddress',
         'linkedAccountAddress',
         'targetAddress',
         'sourceAddress',
+        '_cosignatories',
+        '_restrictionAddressAdditions',
+        '_restrictionAddressDeletions',
+        '_addressAdditions',
+        '_receivedCosignatures',
+        '_addressDeletions',
+    ],
+    copyButton: [
         'metadataValue',
         'publicKey',
         'vrfPublicKey',
@@ -23,11 +32,6 @@ const renderTypeMap = {
         'nodePublicKey',
         'secret',
         'proof',
-        '_restrictionAddressAdditions',
-        '_restrictionAddressDeletions',
-        '_addressAdditions',
-        '_receivedCosignatures',
-        '_addressDeletions',
     ],
     boolean: ['supplyMutable', 'transferable', 'restrictable', 'revocable'],
     fee: ['fee', 'maxFee'],
@@ -51,9 +55,13 @@ const renderTypeMap = {
 
 export const TableView = connect(state => ({
     currentAccount: state.account.current,
+    walletAccounts: state.wallet.accounts,
+    networkIdentifier: state.network.networkIdentifier,
+    addressBook: state.addressBook.addressBook,
     ticker: state.network.ticker,
 }))(function TableView(props) {
-    const { currentAccount, data, ticker, style, showEmptyArrays } = props;
+    const { currentAccount, walletAccounts, networkIdentifier, addressBook, data, ticker, style, showEmptyArrays, rawAddresses } = props;
+    const accounts = walletAccounts[networkIdentifier];
 
     if (!data || typeof data !== 'object') {
         return null;
@@ -80,7 +88,7 @@ export const TableView = connect(state => ({
 
     const renderValue = (item) => {
         let ItemTemplate;
-        
+    
         Object.keys(renderTypeMap).forEach(renderType => renderTypeMap[renderType].find(acceptedKey => {
             if (item.key !== acceptedKey) {
                 return false;
@@ -100,6 +108,24 @@ export const TableView = connect(state => ({
                         <StyledText type="body">
                             {$t(`transactionDescriptor_${item.value}`)}
                         </StyledText>
+                    );
+                    break;
+                case 'address':
+                    ItemTemplate = (
+                        <View style={styles.account}>
+                            {!rawAddresses && <>
+                                <AccountAvatar address={item.value} style={styles.avatar} size="sm" />
+                                <StyledText type="body" style={styles.copyText}>
+                                    {getAddressName(item.value, currentAccount, accounts, addressBook)}
+                                </StyledText>
+                            </>}
+                            {rawAddresses && (
+                                <StyledText type="body" style={styles.copyText}>
+                                    {item.value}
+                                </StyledText>
+                            )}
+                            <ButtonCopy content={item.value} style={styles.button}/>
+                        </View>
                     );
                     break;
                 case 'copyButton':
@@ -158,7 +184,7 @@ export const TableView = connect(state => ({
                                             {mosaic.name}
                                         </StyledText>
                                         <StyledText type="body" style={styles.mosaicAmount}>
-                                            {mosaic.amount}
+                                            {mosaic.amount === null ? '?' : mosaic.amount}
                                         </StyledText>
                                     </View>
                                 </View>
@@ -257,6 +283,14 @@ const styles = StyleSheet.create({
         maxHeight: '100%',
         marginRight: spacings.paddingSm
     },
+    account: {
+        width: '100%',
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    avatar: {
+        marginRight: spacings.paddingSm
+    },
     bool: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -279,4 +313,5 @@ const styles = StyleSheet.create({
         maxHeight: '100%',
         marginRight: spacings.paddingSm
     }
+
 });

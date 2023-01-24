@@ -31,7 +31,7 @@ export const AccountDetails = connect(state => ({
                             <AccountAvatar address={currentAccount.address} size="lg" />
                         </FormItem>
                         <FormItem>
-                            <TableView data={tableData} />
+                            <TableView data={tableData} rawAddresses />
                         </FormItem>
                     </Widget>
                 </FormItem>
