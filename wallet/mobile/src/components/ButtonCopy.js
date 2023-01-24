@@ -12,7 +12,7 @@ export const ButtonCopy = props => {
         try {
             copyToClipboard(content);
             // notranslate
-            showMessage({message: 'Copied.', type: 'success'});
+            showMessage({message: content, type: 'info'});
         }
         catch(error) {
             showMessage({message: error.message, type: 'danger'});

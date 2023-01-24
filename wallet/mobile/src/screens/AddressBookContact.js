@@ -68,7 +68,7 @@ export const AddressBookContact = connect(state => ({
                         <AccountAvatar address={address} size="lg" />
                     </FormItem>
                     <FormItem>
-                        <TableView data={tableData} />
+                        <TableView data={tableData} rawAddresses />
                     </FormItem>
                     </Widget>
                 </FormItem>
