@@ -35,6 +35,7 @@ const keys = {
     AddressBookEdit: 'AddressBookEdit',
     AddressBookContact: 'AddressBookContact',
     AddressBookList: 'AddressBookList',
+    Scan: 'Scan',
     Send: 'Send',
     Settings: 'Settings',
     SettingsAbout: 'SettingsAbout',
@@ -58,6 +59,7 @@ export const RouterView = ({ isActive }) => (
                 <Stack.Group screenOptions={{ headerShown: false }}>
                     <Stack.Screen name={keys.Home} component={screens.Home} />
                     <Stack.Screen name={keys.History} component={screens.History} />
+                    <Stack.Screen name={keys.Scan} component={screens.Scan} />
                     <Stack.Screen name={keys.Assets} component={screens.Assets} />
                     <Stack.Screen name={keys.Actions} component={screens.Actions} />
                 </Stack.Group>
@@ -115,7 +117,7 @@ export class Router {
     static goToScan() {
         navigationRef.reset({
             index: 0,
-            routes: [{ name: keys.Home }],
+            routes: [{ name: keys.Scan }],
         });
     }
     static goToAssets() {

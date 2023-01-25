@@ -12,6 +12,7 @@ export * from './ImportWallet';
 export * from './History';
 export * from './Home';
 export * from './Passcode';
+export * from './Scan';
 export * from './Send';
 export * from './Settings';
 export * from './SettingsAbout';

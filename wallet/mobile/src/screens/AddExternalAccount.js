@@ -3,14 +3,14 @@ import { Screen, FormItem, StyledText, TextBox, Button } from 'src/components';
 import { $t } from 'src/localization';
 import { Router } from 'src/Router';
 import store, { connect } from 'src/store';
-import { handleError, useDataManager, useValidation, validateAccountName, validateKey, validateRequired } from 'src/utils';
+import { handleError, useDataManager, useProp, useValidation, validateAccountName, validateKey, validateRequired } from 'src/utils';
 
 export const AddExternalAccount = connect(state => ({
     networkIdentifier: state.network.networkIdentifier,
 }))(function AddExternalAccount(props) {
-    const { networkIdentifier } = props;
+    const { networkIdentifier, route } = props;
     const [accountName, setAccountName] = useState('');
-    const [privateKey, setPrivateKey] = useState('');
+    const [privateKey, setPrivateKey] = useProp(route.params?.privateKey, '');
     const nameErrorMessage = useValidation(accountName, [validateRequired(), validateAccountName()], $t);
     const privateKeyErrorMessage = useValidation(privateKey, [validateRequired(), validateKey()], $t);
    
