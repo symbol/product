@@ -294,6 +294,15 @@
     "transaction_from": "From",
     "transaction_to": "To",
 
+    "c_accountCard_prompt_title": "Rename Account",
+    "c_accountCard_prompt_text": "New Account Name",
+    "c_accountCard_title_account": "Account",
+    "c_accountCard_title_balance": "Balance",
+    "c_accountCard_title_address": "Address",
+    "c_accountCard_button_accountDetails": "Details",
+    "c_accountCard_button_send": "Send",
+    "c_accountCard_button_receive": "Receive",
+
     "s_send_description": "Send transfer transaction to an account. Type recipient address or select one from the address book. Select mosaic you would like to transfer and specify amount. Note, that some exchanges require code to be send in the message to make deposit.",
     "s_send_input_recipient": "Recipient",
     "s_send_input_mosaic": "Mosaic",

@@ -1,7 +1,7 @@
 import _ from 'lodash';
 import React from 'react';
 import { RefreshControl, ScrollView } from 'react-native-gesture-handler';
-import { AccountCard, Alert, Screen, TitleBar, FormItem, TabNavigator, StyledText } from 'src/components';
+import { AccountCardWidget, Alert, Screen, TitleBar, FormItem, TabNavigator, StyledText } from 'src/components';
 import { $t } from 'src/localization';
 import { Router } from 'src/Router';
 import store, { connect } from 'src/store';
@@ -13,12 +13,21 @@ export const Home = connect(state => ({
     balances: state.wallet.balances,
     isMultisigAccount: state.account.isMultisig,
     currentAccount: state.account.current,
+    networkIdentifier: state.network.networkIdentifier,
     ticker: state.network.ticker,
     isWalletReady: state.wallet.isReady,
 }))(function Home(props) {
-    const { balances, currentAccount, isMultisigAccount, ticker, isWalletReady } = props;
+    const { balances, currentAccount, isMultisigAccount, networkIdentifier, ticker, isWalletReady } = props;
     const [loadState, isLoading] = useDataManager(async () => {
         await store.dispatchAction({type: 'wallet/fetchAll'});
+    }, null, handleError);
+    const [renameAccount] = useDataManager(async (name) => {
+        await store.dispatchAction({type: 'wallet/renameAccount', payload: {
+            privateKey: currentAccount.privateKey,
+            networkIdentifier,
+            name,
+        }});
+        store.dispatchAction({type: 'account/loadState'});
     }, null, handleError);
     useInit(loadState, isWalletReady, [currentAccount]);
 
@@ -35,15 +44,15 @@ export const Home = connect(state => ({
                 refreshControl={<RefreshControl refreshing={isLoading} onRefresh={loadState} />}
             >
                 <FormItem>
-                    <AccountCard 
+                    <AccountCardWidget 
                         name={accountName}
                         address={accountAddress}
                         balance={accountBalance}
                         ticker={ticker}
-                        isActive
                         onReceivePress={() => {}}
                         onSendPress={Router.goToSend}
                         onDetailsPress={Router.goToAccountDetails}
+                        onNameChange={renameAccount}
                     />
                 </FormItem>
                 {isMultisigAccount && (

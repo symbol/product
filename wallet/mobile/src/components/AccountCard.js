@@ -1,10 +1,10 @@
 import React from 'react';
 import { Image, View, StyleSheet, Text, ActivityIndicator } from 'react-native';
 import { borders, colors, fonts, layout, spacings } from 'src/styles';
-import imageArtPassport from 'src/assets/images/art-passport.png';
 import { getCharPercentage } from 'src/utils';
-import { AccountAvatar, ButtonCopy, TouchableNative } from 'src/components';
+import { AccountAvatar } from 'src/components';
 import { TouchableOpacity } from 'react-native-gesture-handler';
+import { $t } from 'src/localization';
 
 const imagesPattern = [
     require('src/assets/images/Geometric-02.png'),
@@ -19,12 +19,11 @@ const imagesPattern = [
 ];
 
 export const AccountCard = props => {
-    const { address, balance, name, ticker, isLoading, isSimplified, isActive, onReceivePress, onSendPress, onDetailsPress, type, onRemove } = props;
+    const { address, balance, name, ticker, isLoading, isActive, type, onRemove } = props;
     const stylesRootActive = isActive ? [styles.root, styles.rootSimplifiedActive] : [styles.root, styles.rootSimplifiedInactive];
-    const stylesRoot = isSimplified ? [stylesRootActive, styles.clearMarginTop] : [styles.root];
-    const stylesContent = isSimplified ? [styles.content, styles.clearMarginTop] : [styles.content];
+    const stylesRoot = [stylesRootActive, styles.clearMarginTop];
+    const stylesContent = [styles.content, styles.clearMarginTop];
     const stylesPattern = [styles.pattern];
-    const touchableBackground = colors.accentLightForm;
     const removeIconSrc = type === 'seed'
         ? require('src/assets/images/icon-hide.png')
         : require('src/assets/images/icon-delete.png');
@@ -35,75 +34,43 @@ export const AccountCard = props => {
         imagePattern = null;
     }
     else {
-        const patternIndex = Math.round(getCharPercentage(address[3]) * 8);
+        const char1 = address[3];
+        const char2 = address[address.length - 1];
+        const char3 = address[address.length - 2];
+        const patternIndex = Math.round(getCharPercentage(char1) * 8);
         imagePattern = imagesPattern[patternIndex];
-        const left = `-${Math.trunc(getCharPercentage(address[address.length - 1]) * 100)}%`;
-        const top = `-${Math.trunc(getCharPercentage(address[address.length - 2]) * 100)}%`;
-        stylesPattern.push({left, top})
+        const left = `-${Math.trunc(getCharPercentage(char2) * 100)}%`;
+        const top = `-${Math.trunc(getCharPercentage(char3) * 100)}%`;
+        stylesPattern.push({left, top});
     }
 
     return (
         <View style={stylesRoot}>
             <View style={styles.patternWrapper}>
-                {isSimplified && <Image source={imagePattern} style={stylesPattern} />}
+                <Image source={imagePattern} style={stylesPattern} />
             </View>
-            {!isSimplified && <Image source={imageArtPassport} style={styles.art} />}
             {isLoading && <ActivityIndicator color={colors.primary} style={styles.loadingIndicator} />}
-            {isSimplified && (
-                <View style={styles.manageSection} onTouchEnd={(e) => e.stopPropagation()}>
-                    {!!onRemove && (
-                        <TouchableOpacity hitSlop={15} onPress={onRemove}>
-                            <Image source={removeIconSrc} style={styles.removeIcon}/>
-                        </TouchableOpacity>
-                    )}
-                    <AccountAvatar size="sm" address={address}/>
-                </View>
-            )}
+            <View style={styles.manageSection} onTouchEnd={(e) => e.stopPropagation()}>
+                {!!onRemove && (
+                    <TouchableOpacity hitSlop={15} onPress={onRemove}>
+                        <Image source={removeIconSrc} style={styles.removeIcon}/>
+                    </TouchableOpacity>
+                )}
+                <AccountAvatar size="sm" address={address}/>
+            </View>
             <View style={stylesContent}>
-                <Text style={styles.textTitle}>{/* notranslate  */}Account</Text>
+                <Text style={styles.textTitle}>{$t('c_accountCard_title_account')}</Text>
                 <Text style={styles.textName}>{name}</Text>
-                <Text style={styles.textTitle}>{/* notranslate  */}Balance</Text>
-                <View style={{...layout.row, ...layout.alignEnd}}>
+                <Text style={styles.textTitle}>{$t('c_accountCard_title_balance')}</Text>
+                <View style={[layout.row, layout.alignEnd]}>
                     <Text style={styles.textBalance}>{balance}</Text>
                     <Text style={styles.textTicker}>{' ' + ticker}</Text>
                 </View>
-                <Text style={styles.textTitle}>{/* notranslate  */}Address</Text>
-                <View style={styles.row}>
+                <Text style={styles.textTitle}>{$t('c_accountCard_title_address')}</Text>
+                <View style={layout.row}>
                     <Text style={styles.textAddress}>{address}</Text>
-                    {!isSimplified && <ButtonCopy content={address} />}
                 </View>
             </View>
-            {!isSimplified && (
-                <View style={styles.controls}>
-                    <View style={styles.button}>
-                        <TouchableNative color={touchableBackground} onPress={onDetailsPress} style={styles.buttonPressable}>
-                            <Image source={require('src/assets/images/icon-wallet.png')} style={styles.icon}/>
-                            <Text style={styles.textButton}>
-                                {/* notranslate  */}
-                                Details
-                            </Text>
-                        </TouchableNative>
-                    </View>
-                    <View style={styles.button}>
-                        <TouchableNative color={touchableBackground} onPress={onSendPress} style={styles.buttonPressable}>
-                            <Image source={require('src/assets/images/icon-send.png')} style={styles.icon}/>
-                            <Text style={styles.textButton}>
-                                {/* notranslate  */}
-                                Send
-                            </Text>
-                        </TouchableNative>
-                    </View>
-                    <View style={[styles.button, styles.clearBorderRight]}>
-                        <TouchableNative color={touchableBackground} onPress={onReceivePress} style={styles.buttonPressable}>
-                            <Image source={require('src/assets/images/icon-receive.png')} style={styles.icon}/>
-                            <Text style={styles.textButton}>
-                                {/* notranslate  */}
-                                Receive
-                            </Text>
-                        </TouchableNative>
-                    </View>
-                </View>
-            )}
         </View>
     );
 };
@@ -112,18 +79,15 @@ const styles = StyleSheet.create({
     root: {
         position: 'relative',
         width: '100%',
-        backgroundColor: colors.accentLightForm,
         borderRadius: borders.borderRadiusForm,
-        marginTop: 58,
+        borderWidth: borders.borderWidth,
     },
     rootSimplifiedInactive: {
         backgroundColor: colors.bgAccountCard,
-        borderWidth: borders.borderWidth,
         borderColor: colors.secondary
     },
     rootSimplifiedActive: {
         backgroundColor: colors.bgAccountCardSelected,
-        borderWidth: borders.borderWidth,
         borderColor: colors.accentLightForm
     },
     patternWrapper: {
@@ -138,14 +102,6 @@ const styles = StyleSheet.create({
         top: 0,
         left: 0,
         opacity: 0.05
-    },
-    art: {
-        position: 'absolute',
-        height: 201,
-        width: 260,
-        right: 0,
-        top: -58,
-        resizeMode: 'stretch'
     },
     manageSection: {
         position: 'absolute',
@@ -170,7 +126,6 @@ const styles = StyleSheet.create({
     },
     content: {
         width: '100%',
-        marginTop: 81,
         paddingHorizontal: spacings.padding,
         paddingBottom: spacings.padding2,
     },
@@ -201,43 +156,4 @@ const styles = StyleSheet.create({
         color: colors.textForm,
         marginRight: spacings.margin / 2
     },
-    controls: {
-        flexDirection: 'row',
-        backgroundColor: colors.accentForm,
-        borderBottomLeftRadius: borders.borderRadiusForm,
-        borderBottomRightRadius: borders.borderRadiusForm,
-        overflow: 'hidden'
-    },
-    button: {
-        height: 48,
-        flex: 1,
-        borderRightColor: colors.accentLightForm,
-        borderRightWidth: 1,
-    },
-    buttonPressable: {
-        width: '100%',
-        height: '100%',
-        justifyContent: 'center',
-        alignItems: 'center',
-        flexDirection: 'row'
-    },
-    icon: {
-        width: 18,
-        height: 18,
-        marginRight: spacings.paddingSm / 2
-    },
-    textButton: {
-        ...fonts.button,
-        fontSize: 15,
-        color: colors.textForm,
-    },
-    clearBorderRight: {
-        borderRightWidth: null
-    },
-    clearMarginTop: {
-        marginTop: 0
-    },
-    row: {
-        flexDirection: 'row'
-    }
 });

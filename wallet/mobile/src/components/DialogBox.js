@@ -1,15 +1,24 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { StyledText } from 'src/components';
+import { StyledText, TextBox } from 'src/components';
 import { $t } from 'src/localization';
 import { borders, colors, fonts, spacings } from 'src/styles';
+import { useValidation } from 'src/utils';
 
 export const DialogBox = props => {
-    const { isVisible, type, title, text, body, onSuccess, onCancel } = props;
+    const { isVisible, type, title, text, body, promptValidators, onSuccess, onCancel } = props;
+    const [promptValue, setPromptValue] = useState('');
+    const promptErrorMessage = useValidation(promptValue, promptValidators || [], $t);
+    const isPromptValueValid = !promptErrorMessage;
 
     const buttonOk = {
         text: $t('button_ok'),
         handler: onSuccess,
+        style: styles.buttonPrimary
+    };
+    const buttonPromptOk = {
+        text: $t('button_ok'),
+        handler: () => isPromptValueValid && onSuccess(promptValue),
         style: styles.buttonPrimary
     };
     const buttonConfirm = {
@@ -23,8 +32,12 @@ export const DialogBox = props => {
         style: styles.buttonSecondary
     };
     const buttons = [];
+    const isPrompt = type === 'prompt';
 
     switch(type) {
+        case 'prompt':
+            buttons.push(buttonPromptOk, buttonCancel);
+            break;
         case 'confirm':
             buttons.push(buttonConfirm, buttonCancel);
             break;
@@ -34,6 +47,8 @@ export const DialogBox = props => {
             break;
     }
 
+    useEffect(() => setPromptValue(''), [isVisible]);
+
     return (
         <Modal animationType="fade" transparent visible={isVisible} onRequestClose={onCancel} style={styles.root}>
             {isVisible && (
@@ -41,8 +56,9 @@ export const DialogBox = props => {
                     <View style={styles.modal}>
                         <View style={styles.content}>
                             <StyledText type="title">{title}</StyledText>
-                            {text && <StyledText type="body">{text}</StyledText>}
+                            {text && !isPrompt && <StyledText type="body">{text}</StyledText>}
                             {body}
+                            {isPrompt && <TextBox title={text} errorMessage={promptErrorMessage} value={promptValue} onChange={setPromptValue} />}
                         </View>
                         <View style={styles.controls}>
                             {buttons.map((button, index) => (
