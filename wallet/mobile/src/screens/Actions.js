@@ -1,6 +1,7 @@
 import _ from 'lodash';
 import React from 'react';
 import { Dimensions, Image, StyleSheet } from 'react-native';
+import { showMessage } from 'react-native-flash-message';
 import { Screen, TitleBar, FormItem, TabNavigator, StyledText, ItemBase } from 'src/components';
 import { Router } from 'src/Router';
 import { connect } from 'src/store';
@@ -22,7 +23,7 @@ export const Actions = connect(state => ({
     }, {
         title: 'Harvesting',
         icon: require('src/assets/images/icon-harvesting.png'),
-        handler: () => {}
+        handler: () => showMessage({type: 'info', message: 'Not implemented yet'})
     }, {
         title: 'Send Transfer',
         icon: require('src/assets/images/icon-send.png'),
@@ -30,15 +31,15 @@ export const Actions = connect(state => ({
     }, {
         title: 'Create Mosaic',
         icon: require('src/assets/images/icon-tx-mosaic.png'),
-        handler: () => {}
+        handler: () => showMessage({type: 'info', message: 'Not implemented yet'})
     }, {
         title: 'Create Namespace',
         icon: require('src/assets/images/icon-tx-namespace.png'),
-        handler: () => {}
+        handler: () => showMessage({type: 'info', message: 'Not implemented yet'})
     }, {
         title: 'Multisig Account',
         icon: require('src/assets/images/icon-tx-multisig.png'),
-        handler: () => {}
+        handler: () => showMessage({type: 'info', message: 'Not implemented yet'})
     }]
     
     return (
