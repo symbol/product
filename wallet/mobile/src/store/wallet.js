@@ -179,6 +179,15 @@ export default {
             commit({ type: 'wallet/setAccounts', payload: accounts });
         },
 
+        renameAccount: async ({ commit }, {privateKey, networkIdentifier, name}) => {
+            const accounts = await SecureStorage.getAccounts();
+            const account = accounts[networkIdentifier].find(account => account.privateKey == privateKey);
+            account.name = name;
+            
+            await SecureStorage.setAccounts(accounts);
+            commit({ type: 'wallet/setAccounts', payload: accounts });
+        },
+
         saveAccounts: async ({ commit, state }, {accounts, networkIdentifier}) => {
             const updatedAccounts = await SecureStorage.getAccounts();
             updatedAccounts[networkIdentifier] = [...accounts];
