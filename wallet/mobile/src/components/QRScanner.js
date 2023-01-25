@@ -1,8 +1,8 @@
 import React from 'react';
-import { Modal, StyleSheet } from 'react-native';
+import { Modal, StyleSheet, View } from 'react-native';
 import { showMessage } from 'react-native-flash-message';
 import QRCodeScanner from 'react-native-qrcode-scanner';
-import { MnemonicQR, QRCodeType } from 'symbol-qr-library';
+import { AccountQR, AddressQR, ContactQR, MnemonicQR, QRCodeType } from 'symbol-qr-library';
 import { StyledText } from 'src/components';
 import { colors } from 'src/styles';
 
@@ -36,6 +36,18 @@ export const QRScanner = props => {
                     onSuccess(MnemonicQR.fromJSON(data).mnemonicPlainText, 'mnemonic');
                     onClose();
                     return;
+                case QRCodeType.ExportAddress:
+                    onSuccess(AddressQR.fromJSON(data), 'address');
+                    onClose();
+                    return;
+                case QRCodeType.ExportAccount:
+                    onSuccess(AccountQR.fromJSON(data), 'account');
+                    onClose();
+                    return;
+                case QRCodeType.AddContact:
+                    onSuccess(ContactQR.fromJSON(data), 'contact');
+                    onClose();
+                    return;
 
                 default:
                     // notranslate
@@ -51,30 +63,33 @@ export const QRScanner = props => {
     };
 
     return (
-        <Modal animationType="fade" visible={isVisible} onRequestClose={onClose} style={styles.root}>
-            {isVisible && <QRCodeScanner
-                checkAndroid6Permissions
-                showMarker
-                onRead={handleScan}
-                topContent={
-                    <StyledText type="title">
-                        {/* notranslate */}
-                        Scan Symbol QR-code
-                    </StyledText>
-                }
-                bottomContent={
-                    <StyledText type="body">
-                        {/* notranslate */}
-                        {title}
-                    </StyledText>
-                }
-            />}
+        <Modal animationType="fade" visible={isVisible} onRequestClose={onClose}>
+            {isVisible && <View style={styles.root}>
+                <QRCodeScanner
+                    checkAndroid6Permissions
+                    showMarker
+                    onRead={handleScan}
+                    topContent={
+                        <StyledText type="title">
+                            {/* notranslate */}
+                            Scan Symbol QR-code
+                        </StyledText>
+                    }
+                    bottomContent={
+                        <StyledText type="body">
+                            {/* notranslate */}
+                            {title}
+                        </StyledText>
+                    }
+                />
+            </View>}
         </Modal>
     );
 };
 
 const styles = StyleSheet.create({
     root: {
-        backgroundColor: colors.bgForm
+        backgroundColor: colors.bgForm,
+        height: '100%'
     },
 });

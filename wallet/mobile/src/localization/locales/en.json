@@ -7,6 +7,7 @@
     "button_confirm": "Confirm",
     "button_send": "Send",
     "button_sendTransferTransaction": "Send Transfer Transaction",
+    "button_sendTransactionToThisAccount": "Send Transaction To This Account",
     "button_receive": "Receive",
     "button_showDetails": "Details",
     "button_show": "Show",
@@ -25,6 +26,10 @@
     "button_openAccountInExplorer": "Open In Block Explorer",
     "button_faucet": "Claim test XYM",
     "button_revealPrivateKey": "Reveal Private Key",
+    "button_scan": "Scan",
+    "button_addToWallet": "Add to Wallet",
+    "button_addToAddressBook": "Add to Address Book",
+    
 
     "date_monday": "Monday",
     "date_tuesday": "Tuesday",
@@ -316,6 +321,15 @@
     "selector_fee_fast": "Fast",
     "selector_fee_medium": "Medium",
     "selector_fee_slow": "Slow",
+
+    "s_scan_mnemonic_description": "This QR-code contains mnemonic backup phrase. If you wish to import it, you should first logout from current wallet (Settings -> Logout).",
+    "s_scan_account_description": "This QR-code contains account. Please select an action below.",
+    "s_scan_account_wrongNetwork_description": "This QR-code contains account from different network. Please switch a network type in the Settings and try again.",
+
+    "s_scan_address_description": "This QR-code contains address. Please select an action below.",
+    "s_scan_address_wrongNetwork_description": "This QR-code contains address from different network. Please switch a network type in the Settings and try again.",
+
+
 
     "s_assets_mosaics": "Mosaics",
     "s_assets_namespaces": "Namespaces",
