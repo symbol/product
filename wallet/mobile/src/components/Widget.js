@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Image, StyleSheet, View } from 'react-native';
 import { borders, colors, spacings } from 'src/styles';
 import { StyledText, TouchableNative } from 'src/components';
 
@@ -11,6 +11,7 @@ export const Widget = props => {
             {!!title && (
                 <TouchableNative style={styles.widgetHeader} onPress={onHeaderPress}>
                     <StyledText type="label">{title}</StyledText>
+                    <Image source={require('src/assets/images/icon-expand.png')} style={styles.icon} />
                 </TouchableNative>
             )}
             {children}
@@ -31,5 +32,12 @@ const styles = StyleSheet.create({
         paddingHorizontal: spacings.padding,
         paddingVertical: spacings.paddingSm,
         backgroundColor: colors.bgCardTransparent,
+        flexDirection: 'row',
+        alignItems: 'center'
     },
+    icon: {
+        marginLeft: spacings.paddingSm,
+        width: 14,
+        height: 14
+    }
 });

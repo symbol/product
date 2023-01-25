@@ -1,28 +1,46 @@
 import React from 'react';
 import { Linking } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
-import { TableView, Screen, FormItem, AccountAvatar, ButtonPlain, Widget } from 'src/components';
+import { TableView, Screen, FormItem, AccountAvatar, ButtonPlain, Widget, DialogBox } from 'src/components';
 import { config } from 'src/config';
 import { $t } from 'src/localization';
+import { Router } from 'src/Router';
 import { connect } from 'src/store';
 import { layout } from 'src/styles';
+import { publicAccountFromPrivateKey, usePasscode, useToggle } from 'src/utils';
 
 export const AccountDetails = connect(state => ({
     currentAccount: state.account.current,
     networkIdentifier: state.network.networkIdentifier
 }))(function AccountDetails(props) {
     const { currentAccount, networkIdentifier } = props;
-    const tableData = {};
-    
-    delete Object.assign(tableData, currentAccount, {['seedIndex']: currentAccount['index'] })['index'];
+    const { privateKey, index, ...restAccountInfo } = currentAccount;
+    const [isPrivateKeyDialogShown, togglePrivateKeyDialog] = useToggle(false);
+    const tableData = {
+        ...restAccountInfo,
+        publicKey: publicAccountFromPrivateKey(privateKey, networkIdentifier).publicKey,
+        seedIndex: index
+    };
+    const isTestnet = networkIdentifier === 'testnet';
 
-    const openBlockExplorer = () => Linking.openURL(config.explorerURL[networkIdentifier] + '/accounts/' + currentAccount.address)
+    const openBlockExplorer = () => Linking.openURL(config.explorerURL[networkIdentifier] + '/accounts/' + currentAccount.address);
+    const openFaucet = () => Linking.openURL(config.faucetURL + '/?recipient=' + currentAccount.address);
+    const revealPrivateKey = usePasscode('enter', () => {
+        togglePrivateKeyDialog();
+        Router.goBack();
+    });
 
     return (
         <Screen bottomComponent={<>
+            {isTestnet && <FormItem>
+                <ButtonPlain icon={require('src/assets/images/icon-primary-faucet.png')} title={$t('button_faucet')} onPress={openFaucet} />
+            </FormItem>}
             <FormItem>
                 <ButtonPlain icon={require('src/assets/images/icon-primary-explorer.png')} title={$t('button_openTransactionInExplorer')} onPress={openBlockExplorer} />
-            </FormItem>
+            </FormItem>   
+            <FormItem>
+                <ButtonPlain icon={require('src/assets/images/icon-primary-key.png')} title={$t('button_revealPrivateKey')} onPress={revealPrivateKey} />
+            </FormItem>        
         </>}>
             <ScrollView>
                 <FormItem>
@@ -36,6 +54,13 @@ export const AccountDetails = connect(state => ({
                     </Widget>
                 </FormItem>
             </ScrollView>
+            <DialogBox 
+                type="alert" 
+                title={$t('data_privateKey')}
+                text={privateKey}
+                isVisible={isPrivateKeyDialogShown} 
+                onSuccess={togglePrivateKeyDialog} 
+            />
         </Screen>
     );
 });

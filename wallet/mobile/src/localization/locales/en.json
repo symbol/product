@@ -23,6 +23,8 @@
     "button_walletRemove": "Remove Wallet",
     "button_openTransactionInExplorer": "Open In Block Explorer",
     "button_openAccountInExplorer": "Open In Block Explorer",
+    "button_faucet": "Claim test XYM",
+    "button_revealPrivateKey": "Reveal Private Key",
 
     "date_monday": "Monday",
     "date_tuesday": "Tuesday",
