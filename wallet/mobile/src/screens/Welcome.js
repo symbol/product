@@ -1,13 +1,15 @@
-import React, { useState } from 'react';
-import { Image, StyleSheet } from 'react-native';
-import { Button, ButtonPlain, Screen, StyledText, FormItem, Checkbox } from 'src/components';
+import React from 'react';
+import { Image, StyleSheet, ScrollView } from 'react-native';
+import { Button, ButtonPlain, Screen, StyledText, FormItem, DialogBox } from 'src/components';
+import { termsAndPrivacy } from 'src/config';
+import { $t } from 'src/localization';
 import { Router } from 'src/Router';
-import { colors, fonts, spacings } from 'src/styles';
+import { colors, fonts, layout, spacings } from 'src/styles';
+import { useToggle } from 'src/utils';
 
 export const Welcome = () => {
-    const [isTermsAccepted, setSsTermsAccepted] = useState(false);
+    const [isTermsAndPrivacyShown, toggleTermsAndPrivacy] = useToggle(true);
     
-    const toggleAcceptTerms = () => setSsTermsAccepted(!isTermsAccepted);
     const createWallet = Router.goToCreateWallet;
     const importWallet = Router.goToImportWallet;
 
@@ -16,27 +18,37 @@ export const Welcome = () => {
             titleBar={<Image source={require('src/assets/images/art-welcome-bg-5.png')} style={styles.backgroundArt} />}
             bottomComponent={<>
             <FormItem>
-                {/* notranslate  */}
-                <Checkbox title="I accept terms and privacy policy" value={isTermsAccepted} onChange={toggleAcceptTerms} />
+                <Button title={$t('button_walletCreate')} onPress={createWallet} />
             </FormItem>
             <FormItem>
-                {/* notranslate  */}
-                <Button title="Create Wallet" isDisabled={!isTermsAccepted} onPress={createWallet} />
-            </FormItem>
-            <FormItem>
-                {/* notranslate  */}
-                <ButtonPlain title="Import Wallet" isDisabled={!isTermsAccepted} style={styles.buttonImport} onPress={importWallet} />
+                <ButtonPlain title={$t('button_walletImport')} style={styles.buttonImport} onPress={importWallet} />
             </FormItem>
         </>}>
-            <FormItem>
-                <Image source={require('src/assets/images/logo-symbol-full.png')} style={styles.logo}/>
-            </FormItem>
-            <FormItem>
-                <StyledText type="title" style={styles.title}>
-                    {/* notranslate */}
-                    {'Welcome to\nSymbol Wallet!'}
-                </StyledText>
-            </FormItem>
+            <ScrollView>
+                <FormItem>
+                    <Image source={require('src/assets/images/logo-symbol-full.png')} style={styles.logo}/>
+                </FormItem>
+                <FormItem>
+                    <StyledText type="title" style={styles.title}>{$t('s_welcome_wallet_title')}</StyledText>
+                </FormItem>
+            </ScrollView>
+            <DialogBox
+                type="accept" 
+                isVisible={isTermsAndPrivacyShown} 
+                onSuccess={toggleTermsAndPrivacy}
+                style={layout.fill}
+                contentContainerStyle={layout.fill}
+                title={$t('s_welcome_modal_title')}
+                body={
+                    <ScrollView>
+                        <StyledText type="title">{$t('s_welcome_modal_tnc')}</StyledText>
+                        <StyledText type="body">{termsAndPrivacy.terms}</StyledText>
+                        <StyledText type="title" />
+                        <StyledText type="title">{$t('s_welcome_modal_privacy')}</StyledText>
+                        <StyledText type="body">{termsAndPrivacy.privacy}</StyledText>
+                    </ScrollView>
+                }
+            />
         </Screen>
     );
 };

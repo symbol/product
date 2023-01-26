@@ -6,7 +6,7 @@ import { borders, colors, fonts, spacings } from 'src/styles';
 import { useValidation } from 'src/utils';
 
 export const DialogBox = props => {
-    const { isVisible, type, title, text, body, promptValidators, onSuccess, onCancel } = props;
+    const { isVisible, type, title, text, body, promptValidators, onSuccess, onCancel, style, contentContainerStyle } = props;
     const [promptValue, setPromptValue] = useState('');
     const promptErrorMessage = useValidation(promptValue, promptValidators || [], $t);
     const isPromptValueValid = !promptErrorMessage;
@@ -26,6 +26,11 @@ export const DialogBox = props => {
         handler: onSuccess,
         style: styles.buttonPrimary
     };
+    const buttonAccept = {
+        text: $t('button_accept'),
+        handler: onSuccess,
+        style: styles.buttonPrimary
+    };
     const buttonCancel = {
         text: $t('button_cancel'),
         handler: onCancel,
@@ -37,6 +42,9 @@ export const DialogBox = props => {
     switch(type) {
         case 'prompt':
             buttons.push(buttonPromptOk, buttonCancel);
+            break;
+        case 'accept':
+            buttons.push(buttonAccept);
             break;
         case 'confirm':
             buttons.push(buttonConfirm, buttonCancel);
@@ -53,8 +61,8 @@ export const DialogBox = props => {
         <Modal animationType="fade" transparent visible={isVisible} onRequestClose={onCancel} style={styles.root}>
             {isVisible && (
                 <View style={styles.root}>
-                    <View style={styles.modal}>
-                        <View style={styles.content}>
+                    <View style={[styles.modal, style]}>
+                        <View style={[styles.content, contentContainerStyle]}>
                             <StyledText type="title">{title}</StyledText>
                             {text && !isPrompt && <StyledText type="body">{text}</StyledText>}
                             {body}

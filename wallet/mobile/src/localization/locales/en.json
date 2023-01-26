@@ -4,6 +4,7 @@
     "button_back": "Back",
     "button_cancel": "Cancel",
     "button_close": "Close",
+    "button_accept": "Accept",
     "button_confirm": "Confirm",
     "button_send": "Send",
     "button_sendTransferTransaction": "Send Transfer Transaction",
@@ -27,8 +28,10 @@
     "button_faucet": "Claim test XYM",
     "button_revealPrivateKey": "Reveal Private Key",
     "button_scan": "Scan",
+    "button_scanQR": "Scan QR-code",
     "button_addToWallet": "Add to Wallet",
     "button_addToAddressBook": "Add to Address Book",
+    "button_downloadBackup": "Download mnemonic to file",
     
 
     "date_monday": "Monday",
@@ -343,6 +346,29 @@
     "s_addressBook_manage_title_edit": "Edit Contact",
     "s_addressBook_manage_title_add": "Add Contact",
     "s_addressBook_manage_description_add": "Description about how address book is useful. Explain about white and black lists... (todo)",
+
+    "s_welcome_wallet_title": "Welcome to\nSymbol Wallet!",
+    "s_welcome_modal_title": "Symbol Wallet",
+    "s_welcome_modal_tnc": "Terms and Conditions",
+    "s_welcome_modal_privacy": "Privacy Policy",
+
+    "s_importWallet_defaultAccountName": "My Account",
+    "s_importWallet_title": "Import Mnemonic Backup Phrase",
+    "s_importWallet_text": "Your secret backup phrase (mnemonic) makes it easy to back up and restore your wallet.",
+
+    "s_createWallet_defaultAccountName": "My Account",
+    "s_createWallet_accountName_title": "Name Your First Account",
+    "s_createWallet_accountName_text": "Enter a name that allows you to easily identify your account or use the default below. You can also change the name later.",
+    "s_createWallet_accountName_input": "Account Name",
+    "s_createWallet_mnemonic_title": "Secure your wallet",
+    "s_createWallet_mnemonic_text_p1": "Your secret backup phrase (mnemonic) makes it easy to back up and restore your wallet.",
+    "s_createWallet_mnemonic_text_p2": "WARNING: Never disclose your backup phrase. Anyone with this phrase can take your assets forever.",
+    "s_createWallet_mnemonic_text_p3": "If you lose your wallet backup information, no one (including Symbol Wallet) can recover it, and you will lose any funds that are managed by the wallet.",
+    "s_createWallet_tips_title": "Tips",
+    "s_createWallet_tips_text_p1": "Store this phrase in a password manager like 1Password.",
+    "s_createWallet_tips_text_p2": "Write this phrase on a piece of paper and store in a secure location. For additional security, write it down on multiple pieces of paper and store each in 2 - 3 different locations.",
+    "s_createWallet_confirm_title": "Confirm",
+    "s_createWallet_confirm_checkbox": "I accept the risk that if I lose the phrase my funds may be lost",
     
     "validation_error_field_required": "Field required",
     "validation_error_contact_name_long": "Too long",
@@ -355,5 +381,7 @@
     "validation_error_already_exists": "Already exists",
 
     "warning_multisig_title": "Multisig Account",
-    "warning_multisig_body": "To send transactions from this account, please announce it from cosignature account!"
+    "warning_multisig_body": "To send transactions from this account, please announce it from cosignature account!",
+
+    "message_downloaded": "Downloaded"
 }
