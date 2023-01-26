@@ -10,6 +10,7 @@ export const MnemonicInput = props => {
     const handleChange = str => onChange(str
         .replace(/(\r\n|\n|\r)/gm,' ')
         .replace(/\s+/g,' ')
+        .toLowerCase()
     );
 
     useEffect(() => {
