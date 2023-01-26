@@ -28,7 +28,7 @@ export const CreateWallet = () => {
     }, null, handleError);
     const next = () => step === stepsCount ? createPasscode() : setStep(step + 1);
     const complete = async () => {
-        await store.dispatchAction({ type: 'wallet/saveMnemonic', payload: { 
+        await store.dispatchAction({type: 'wallet/saveMnemonic', payload: { 
             mnemonic,
             name
         }});
