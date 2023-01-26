@@ -163,6 +163,10 @@ export const hslToRgb = (h, s, l) => {
  * @returns {object} { R: Number, G: Number, B: Number }
  */
 export const getColorFromHash = (hash) => {
+    if (!hash) {
+        return '#fff'
+    }
+
     const spread = 100;
     const saturation = 0.9;
     const lightness = 0.8;
@@ -187,6 +191,10 @@ export const getColorFromHash = (hash) => {
 }
 
 export const getAddressName = (address, currentAccount, accounts, addressBook) => {
+    if (!address) {
+        return '?';
+    }
+
     if (address === currentAccount.address) {
         return currentAccount.name
     }

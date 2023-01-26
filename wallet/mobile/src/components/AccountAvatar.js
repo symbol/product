@@ -47,10 +47,9 @@ const KNOWN_ACCOUNT_IMAGES = {
 
 export const AccountAvatar = (props) => {
     const { address, size, style } = props;
-    const addressSecondChar = address[1].toUpperCase();
     const rootStyle = [styles.root, style];
     const imageStyle = [styles.image];
-    let imageSrc;
+    const unknownImageSrc = require('src/assets/images/icon-question.png');
     
     switch(size) {
         default:
@@ -59,21 +58,29 @@ export const AccountAvatar = (props) => {
         case 'lg': rootStyle.push(styles.rootLg); break;
     }
 
-    switch(addressSecondChar) {
-        default:
-        case 'A': imageSrc = require('src/assets/images/avatars/avatar-1.png'); break;
-        case 'B': imageSrc = require('src/assets/images/avatars/avatar-2.png'); break;
-        case 'C': imageSrc = require('src/assets/images/avatars/avatar-3.png'); break;
-        case 'D': imageSrc = require('src/assets/images/avatars/avatar-4.png'); break;
+    const getAddressImageSrc = () => {
+        let imageSrc;
+        const addressSecondChar = address[1].toUpperCase();
+        switch(addressSecondChar) {
+            default:
+            case 'A': imageSrc = require('src/assets/images/avatars/avatar-1.png'); break;
+            case 'B': imageSrc = require('src/assets/images/avatars/avatar-2.png'); break;
+            case 'C': imageSrc = require('src/assets/images/avatars/avatar-3.png'); break;
+            case 'D': imageSrc = require('src/assets/images/avatars/avatar-4.png'); break;
+        }
+
+        imageStyle.push({
+            backgroundColor: getColorFromHash(address)
+        });
+        
+        if (knownAccounts.hasOwnProperty(address) && KNOWN_ACCOUNT_IMAGES[knownAccounts[address]]) {
+            imageSrc = KNOWN_ACCOUNT_IMAGES[knownAccounts[address]];
+        }
+
+        return imageSrc;
     }
 
-    imageStyle.push({
-        backgroundColor: getColorFromHash(address)
-    });
-    
-    if (knownAccounts.hasOwnProperty(address) && KNOWN_ACCOUNT_IMAGES[knownAccounts[address]]) {
-        imageSrc = KNOWN_ACCOUNT_IMAGES[knownAccounts[address]];
-    }
+    const imageSrc = address ? getAddressImageSrc() : unknownImageSrc;
 
     return (
         <View style={rootStyle}>

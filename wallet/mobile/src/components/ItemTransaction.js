@@ -49,6 +49,9 @@ export const ItemTransaction = connect(state => ({
         description = `From ${addressText}`;
         iconSrc = require('src/assets/images/icon-tx-transfer.png');
     }
+    else if (type === TransactionType.TRANSFER) {
+        iconSrc = require('src/assets/images/icon-tx-transfer.png');
+    }
     else if (isAggregateTransaction(transaction)) {
         const firstTransactionType = transaction.innerTransactions[0]?.type;
         const type = firstTransactionType ? $t(`transactionDescriptor_${firstTransactionType}`) : '';
