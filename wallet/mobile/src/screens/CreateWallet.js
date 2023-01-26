@@ -1,50 +1,31 @@
 import React, { useEffect, useState } from 'react';
 import { Image, StyleSheet } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
+import { showMessage } from 'react-native-flash-message';
 import { Button, Screen, Steps, StyledText, FormItem, MnemonicView, TextBox, ButtonClose, Checkbox } from 'src/components';
 import store from 'src/store';
-import { createPrivateKeysFromMnemonic, downloadPaperWallet, generateMnemonic, publicAccountFromPrivateKey, usePasscode, useValidation, validateAccountName, validateRequired } from 'src/utils';
+import { createPrivateKeysFromMnemonic, downloadPaperWallet, generateMnemonic, handleError, publicAccountFromPrivateKey, useDataManager, usePasscode, useToggle, useValidation, validateAccountName, validateRequired } from 'src/utils';
 import { config } from 'src/config';
-import { showMessage } from 'react-native-flash-message';
 import { Router } from 'src/Router';
 import { $t } from 'src/localization';
 
-export const CreateWallet = (props) => {
+export const CreateWallet = () => {
     const stepsCount = 2;
     const [step, setStep] = useState(1);
-    // notranslate
-    const [name, setName] = useState('My Account');
+    const [name, setName] = useState($t('s_createWallet_defaultAccountName'));
     const [mnemonic, setMnemonic] = useState('');
     const [isMnemonicShown, setIsMnemonicShown] = useState(false);
-    const [isMnemonicDownloading, setIsMnemonicDownloading] = useState(false);
-    const [isRiskAccepted, setIsRiskAccepted] = useState(false);
-    // notranslate
+    const [isRiskAccepted, toggleAcceptRisk] = useToggle(false);
     const nameErrorMessage = useValidation(name, [validateRequired(), validateAccountName()], $t);
-    const isLoading = step > stepsCount || isMnemonicDownloading;
-    const isButtonDisabled = [nameErrorMessage].some(el => !!el);
     
     const showMnemonic = () => setIsMnemonicShown(true);
-    const downloadMnemonic = async () => {
-        setIsMnemonicDownloading(true);
-        setTimeout(async () => {
-            try {
-                const networkIdentifier = config.defaultNetworkIdentifier;
-                const privateKey = createPrivateKeysFromMnemonic(mnemonic, [0], networkIdentifier);
-                const account = publicAccountFromPrivateKey(privateKey, networkIdentifier);
-                await downloadPaperWallet(mnemonic, account, networkIdentifier);
-                // notranslate
-                showMessage({message: 'Downloaded', type: 'success'});
-            }
-            catch(error) {
-                showMessage({message: error.message, type: 'danger'});
-            }
-            setIsMnemonicDownloading(false);
-        });
-    }
-    const toggleAcceptRisk = () => setIsRiskAccepted(!isRiskAccepted);
-    const close = () => {
-        Router.goToWelcome();
-    };
+    const [downloadMnemonic, isMnemonicDownloading] = useDataManager(async () => {
+        const networkIdentifier = config.defaultNetworkIdentifier;
+        const [privateKey] = createPrivateKeysFromMnemonic(mnemonic, [0], networkIdentifier);
+        const account = publicAccountFromPrivateKey(privateKey, networkIdentifier);
+        await downloadPaperWallet(mnemonic, account, networkIdentifier);
+        showMessage({message: $t('message_downloaded'), type: 'success'});
+    }, null, handleError);
     const next = () => step === stepsCount ? createPasscode() : setStep(step + 1);
     const complete = async () => {
         await store.dispatchAction({ type: 'wallet/saveMnemonic', payload: { 
@@ -53,8 +34,9 @@ export const CreateWallet = (props) => {
         }});
         Router.goToHome();
     }
-
-    const createPasscode = usePasscode('choose', complete, close);
+    const createPasscode = usePasscode('choose', complete, Router.goBack);
+    
+    const isLoading = step > stepsCount || isMnemonicDownloading;
 
     useEffect(() => {
         const mnemonic = generateMnemonic();
@@ -65,12 +47,11 @@ export const CreateWallet = (props) => {
     return (
         <Screen isLoading={isLoading} bottomComponent={
             step === 1 && <FormItem bottom>
-                {/* notranslate */}
-                <Button title="Next" isDisabled={isButtonDisabled} onPress={next} />
+                <Button title={$t('button_next')} isDisabled={!!nameErrorMessage} onPress={next} />
             </FormItem>
         }>
             <FormItem>
-                <ButtonClose type="cancel" style={styles.buttonCancel} onPress={close} />
+                <ButtonClose type="cancel" style={styles.buttonCancel} onPress={Router.goBack} />
             </FormItem>
             <FormItem>
                 <Image source={require('src/assets/images/logo-symbol-full.png')} style={styles.logo}/>
@@ -79,80 +60,47 @@ export const CreateWallet = (props) => {
                 <Steps stepsCount={stepsCount} currentStep={step} />
             </FormItem>
             <ScrollView>
-                {step === 1 && (<>
+                {step === 1 && <>
                     <FormItem>
-                        <StyledText type="title">
-                            {/* notranslate  */}
-                            Name Your First Account
-                        </StyledText>
-                        <StyledText type="body">
-                            {/* notranslate  */}
-                            Enter a name that allows you to easily identify your account or use the default below. You can also change the name later.
-                        </StyledText>
+                        <StyledText type="title">{$t('s_createWallet_accountName_title')}</StyledText>
+                        <StyledText type="body">{$t('s_createWallet_accountName_text')}</StyledText>
                     </FormItem>
                     <FormItem>
-                        <TextBox title="Account Name" value={name} errorMessage={nameErrorMessage} onChange={setName} />
+                        <TextBox title={$t('s_createWallet_accountName_input')} value={name} errorMessage={nameErrorMessage} onChange={setName} />
                     </FormItem>
-                </>)}
-                {step === 2 && (<>
+                </>}
+                {step === 2 && <>
                     <FormItem>
-                        <StyledText type="title">
-                            {/* notranslate  */}
-                            Secure your wallet
-                        </StyledText>
-                        <StyledText type="body">
-                            {/* notranslate  */}
-                            Your secret backup phrase (mnemonic) makes it easy to back up and restore your wallet.
-                        </StyledText>
+                        <StyledText type="title">{$t('s_createWallet_mnemonic_title')}</StyledText>
+                        <StyledText type="body">{$t('s_createWallet_mnemonic_text_p1')}</StyledText>
                     </FormItem>
                     <FormItem>
-                        <StyledText type="body">
-                            {/* notranslate  */}
-                            WARNING: Never disclose your backup phrase. Anyone with this phrase can take your assets forever.
-                        </StyledText>
+                        <StyledText type="body">{$t('s_createWallet_mnemonic_text_p2')}</StyledText>
                     </FormItem>
                     <FormItem>
-                        <StyledText type="body">
-                            {/* notranslate  */}
-                            If you lose your wallet backup information, no one (including Symbol Wallet) can recover it, and you will lose any funds that are managed by the wallet.
-                        </StyledText>
+                        <StyledText type="body">{$t('s_createWallet_mnemonic_text_p3')}</StyledText>
                     </FormItem>
                     <FormItem>
                         <MnemonicView mnemonic={mnemonic} isShown={isMnemonicShown} onShowPress={showMnemonic} />
                     </FormItem>
                     <FormItem>
-                        {/* notranslate  */}
-                        <Button title="Download mnemonic to file" onPress={downloadMnemonic} />
+                        <Button title={$t('button_downloadBackup')} onPress={downloadMnemonic} />
                     </FormItem>
                     <FormItem>
-                        <StyledText type="title">
-                            {/* notranslate  */}
-                            Tips
-                        </StyledText>
-                        <StyledText type="body">
-                            {/* notranslate  */}
-                            Store this phrase in a password manager like 1Password.
-                        </StyledText>
+                        <StyledText type="title">{$t('s_createWallet_tips_title')}</StyledText>
+                        <StyledText type="body">{$t('s_createWallet_tips_text_p1')}</StyledText>
                     </FormItem>
                     <FormItem>
-                        <StyledText type="body">
-                            {/* notranslate  */}
-                            Write this phrase on a piece of paper and store in a secure location. For additional security, write it down on multiple pieces of paper and store each in 2 - 3 different locations.
-                        </StyledText>
+                        <StyledText type="body">{$t('s_createWallet_tips_text_p2')}</StyledText>
                     </FormItem>
                     <FormItem>
-                        <StyledText type="title">
-                            {/* notranslate  */}
-                            Confirm
-                        </StyledText>
-                        {/* notranslate  */}
-                        <Checkbox title="I accept the risk that if I lose the phrase my funds may be lost " value={isRiskAccepted} onChange={toggleAcceptRisk} />
+                        <StyledText type="title">{$t('s_createWallet_confirm_title')}</StyledText>
+                        <Checkbox title={$t('s_createWallet_confirm_checkbox')} value={isRiskAccepted} onChange={toggleAcceptRisk} />
                     </FormItem>
                     <FormItem>
-                        {/* notranslate  */}
-                        <Button title="Next" isDisabled={!isRiskAccepted} onPress={next} />
+                        <Button title={$t('button_next')} isDisabled={!isRiskAccepted} onPress={next} />
                     </FormItem>
-                </>)}
+                </>}
             </ScrollView>
         </Screen>
     );

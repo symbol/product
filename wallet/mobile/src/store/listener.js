@@ -52,6 +52,7 @@ export default {
                 );
                 commit({type: 'listener/setListener', payload: newListener});
             }
+            catch {}
             finally {
                 setTimeout(() => dispatchAction({type: 'listener/connect'}), 15000);
             }

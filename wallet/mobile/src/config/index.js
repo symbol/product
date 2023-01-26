@@ -1,8 +1,10 @@
 import configFile from './config.json';
 import knownAccountsFile from './knownAccounts.json';
+import termsAndPrivacyFile from './termsAndPrivacy.json';
 
 export * from './constants';
 export const knownAccounts = knownAccountsFile;
+export const termsAndPrivacy = termsAndPrivacyFile;
 export const config = {
     nodeProbeTimeout: configFile.nodeProbeTimeout,
     defaultNodes: configFile.defaultNodes,
