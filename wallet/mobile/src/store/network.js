@@ -172,10 +172,11 @@ export default {
             runAgain();
             return;
         },
-        changeNetwork: async ({ commit }, {networkIdentifier, nodeUrl}) => {
+        changeNetwork: async ({ commit, dispatchAction }, {networkIdentifier, nodeUrl}) => {
             await PersistentStorage.setNetworkIdentifier(networkIdentifier);
             await PersistentStorage.setSelectedNode(nodeUrl);
 
+            await dispatchAction ({type: 'network/fetchNetworkProperties', payload: nodeUrl})
             commit({type: 'network/setNetworkIdentifier', payload: networkIdentifier});
             commit({type: 'network/setSelectedNodeUrl', payload: nodeUrl});
         },
