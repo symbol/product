@@ -47,7 +47,12 @@ export const ImportWallet = () => {
                 </FormItem>
                 <FormItem>
                     <ButtonPlain title={$t('button_scanQR')} onPress={toggleQRScanner} />
-                    <QRScanner isVisible={isQRScannerVisible} onClose={toggleQRScanner} onSuccess={setMnemonic} />
+                    <QRScanner 
+                        type={QRScanner.QRTypes.mnemonic}
+                        isVisible={isQRScannerVisible} 
+                        onClose={toggleQRScanner} 
+                        onSuccess={setMnemonic} 
+                    />
                 </FormItem>
             </ScrollView>
         </Screen>

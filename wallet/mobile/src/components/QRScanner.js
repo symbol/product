@@ -87,6 +87,13 @@ export const QRScanner = props => {
     );
 };
 
+QRScanner.QRTypes = {
+    contact: 1,
+    account: 2,
+    mnemonic: 5,
+    address: 7,
+}
+
 const styles = StyleSheet.create({
     root: {
         backgroundColor: colors.bgForm,
