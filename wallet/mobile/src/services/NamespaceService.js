@@ -1,4 +1,4 @@
-import { addressFromRaw, makeRequest } from 'src/utils';
+import { addressFromRaw, makeRequest, namespaceIdFromRaw } from 'src/utils';
 import _ from 'lodash';
 
 export class NamespaceService {
@@ -10,19 +10,23 @@ export class NamespaceService {
         const namespaceNames = await NamespaceService.fetchNamespaceNames(networkProperties, namespaceIds);
 
         return namespaces.map(namespace => {
-            const ownerAddress = addressFromRaw(namespace.ownerAddress);
+            const creator = addressFromRaw(namespace.ownerAddress);
             const aliasAddress = namespace.alias.address ? addressFromRaw(namespace.alias.address) : null;
+            const aliasType = namespace.alias.type === 1 
+                ? 'mosaic' 
+                : namespace.alias.type === 2  
+                ? 'address'
+                : 'none';
 
             return {
                 id: namespace.level2 || namespace.level1 || namespace.level0,
                 name: namespaceNames[namespace.level0] + (namespace.level1 ? `.${namespaceNames[namespace.level1]}` : '') + (namespace.level2 ? `.${namespaceNames[namespace.level2]}` : ''),
-                alias: {
-                    type: namespace.alias.type === 1 ? 'mosaic' : 'address',
-                    id: namespace.alias.mosaicId || aliasAddress || ''
-                },
+                aliasType,
+                linkedMosaicId: aliasType === 'mosaic' ? namespace.alias.mosaicId : null,
+                linkedAddress: aliasType === 'address' ? aliasAddress : null,
                 startHeight: parseInt(namespace.startHeight),
                 endHeight: parseInt(namespace.endHeight),
-                ownerAddress
+                creator
             }
         });
     }
@@ -91,15 +95,15 @@ export class NamespaceService {
         return namespace;
     }
 
-    static async resolveAddresses(networkProperties, namespaceIds) {
-        const namespaceInfos = await Promise.all(namespaceIds.map(async namespaceId => {
+    static async resolveAddresses(networkProperties, namespaceIdsWithHeight) {
+        const namespaceInfos = await Promise.all(namespaceIdsWithHeight.map(async namespaceIdWithHeight => {
             try {
                 return {
-                    namespaceId, 
-                    value: await NamespaceService.resolveAddress(networkProperties, namespaceId)
+                    namespaceId: namespaceIdWithHeight.namespaceId, 
+                    value: await NamespaceService.resolveAddress(networkProperties, namespaceIdWithHeight)
                 }
             }
-            catch {
+            catch(error) {
                 return;
             }
         }));
@@ -110,11 +114,21 @@ export class NamespaceService {
             .value();
     }
 
-    static async resolveAddress(networkProperties, namespaceId) {
-        const namespace = await NamespaceService.fetchNamespaceInfo(networkProperties, namespaceId);
-        const { address } = namespace.alias;
-        const plainAddress = addressFromRaw(address);
+    static async resolveAddress(networkProperties, namespaceIdWithHeight) {
+        const { namespaceId, height } = namespaceIdWithHeight;
+        const endpoint = `${networkProperties.nodeUrl}/statements/resolutions/address?height=${height}&pageSize=100`;
+        const { data } = await makeRequest(endpoint);
+        const statement = data.find(statement => 
+            namespaceIdFromRaw(statement.statement.unresolved) === namespaceId
+        );
+        const { resolved } = statement.statement.resolutionEntries[0];
         
-        return plainAddress;
+        return addressFromRaw(resolved);
+    }
+
+    static async namespaceIdToAddress(networkProperties, namespaceId) {
+        const namespace = await NamespaceService.fetchNamespaceInfo(networkProperties, namespaceId);
+        
+        return addressFromRaw(namespace.alias.address);
     }
 }

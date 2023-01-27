@@ -57,3 +57,10 @@ export const isSymbolAddress = address => {
 export const addressFromRaw = rawAddress => {
     return RawAddress.addressToString(Convert.hexToUint8(rawAddress));
 };
+
+export const namespaceIdFromRaw = rawNamespaceId => {
+    const relevantPart = rawNamespaceId.substr(2, 16);
+    const encodedNamespaceId = Convert.uint8ToHex(Convert.hexToUint8Reverse(relevantPart));
+
+    return encodedNamespaceId;
+};
