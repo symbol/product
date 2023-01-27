@@ -202,6 +202,7 @@ export const mosaicDefinitionTransactionFromDTO = (transaction, config) => {
         supplyMutable: transaction.flags.supplyMutable,
         transferable: transaction.flags.transferable,
         restrictable: transaction.flags.restrictable,
+        revokable: transaction.flags.revokable,
     };
 };
 

@@ -200,7 +200,7 @@ export const TransactionGraphic = connect(state => ({
     const iconExpandStyle = [styles.iconExpand, animatedIconExpand]
 
 
-    const getTableData = () => _.omit(transaction, 'amount', 'id', 'innerTransactions', 'cosignaturePublicKeys', 'deadline', 'type', 'fee', 'status', 'height', 'hash', 'signerPublicKey', 'signerAddress', 'recipientAddress');
+    const getTableData = () => _.omit(transaction, 'amount', 'id', 'innerTransactions', 'cosignaturePublicKeys', 'deadline', 'type', 'fee', 'status', 'height', 'hash', 'signerPublicKey', 'signerAddress', 'recipientAddress', 'sourceAddress');
     const handlePress = () => {
         if (!hasBeenExpanded) {
             setHasBeenExpanded(true);
