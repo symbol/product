@@ -53,6 +53,7 @@ export class NetworkService {
             networkIdentifier: networkTypeToIdentifier(networkType),
             generationHash: networkProps.network.generationHashSeed,
             chainHeight: chainInfo.height.compact(),
+            blockGenerationTargetTime: networkProps.chain.blockGenerationTargetTime.replace(/s/g, ''),
             epochAdjustment: parseInt(networkProps.network.epochAdjustment),
             transactionFees,
             networkCurrency: {

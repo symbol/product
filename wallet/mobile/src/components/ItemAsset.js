@@ -2,13 +2,13 @@ import React from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
 import { $t } from 'src/localization';
 import { borders, colors, fonts, spacings } from 'src/styles';
-import { trunc } from 'src/utils';
+import { blockDurationToDaysLeft, trunc } from 'src/utils';
 import { ItemBase } from 'src/components';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { useEffect } from 'react';
 
 export function ItemAsset(props) {
-    const { group, asset, chainHeight } = props;
+    const { group, asset, chainHeight, blockGenerationTargetTime, onPress } = props;
     const { amount, name, id, startHeight, isUnlimitedDuration } = asset;
     const amountText = amount ? amount : '';
     let description;
@@ -16,12 +16,15 @@ export function ItemAsset(props) {
     let endHeight;
 
     if (group === 'mosaic') {
-        description = `ID: ${id}`;
+        description = $t('s_assets_item_id', {id});
         iconSrc = require('src/assets/images/icon-mosaic-native.png');
         endHeight = asset.startHeight + asset.duration;
     }
     else if (group === 'namespace') {
-        description = `Linked to: ${trunc(asset.alias.id, 'address')}`
+        const linkedId = asset.linkedMosaicId || asset.linkedAddress;
+        description = linkedId 
+            ? $t('s_assets_item_linkedTo', {id: trunc(linkedId, 'address')})
+            : $t('s_assets_item_notLinked');
         iconSrc = require('src/assets/images/icon-namespace.png');
         endHeight = asset.endHeight;
     }
@@ -33,8 +36,8 @@ export function ItemAsset(props) {
     const statusText = isUnlimitedDuration
         ? ''
         : agePercent === 100 
-        ? 'Expired' 
-        : `Expire in ${remainedBlocks} blocks`;
+        ? $t('s_assets_item_expired')
+        : $t('s_assets_item_expireIn', {inTime: blockDurationToDaysLeft(remainedBlocks, blockGenerationTargetTime)});
 
     const progressBarColorStyle = remainedBlocks > 2880 
         ? styles.progressNormal 
@@ -56,7 +59,7 @@ export function ItemAsset(props) {
     }, [displayedPercentage, agePercent])
     
     return (
-        <ItemBase contentContainerStyle={styles.root} isLayoutAnimationEnabled>
+        <ItemBase contentContainerStyle={styles.root} isLayoutAnimationEnabled onPress={onPress}>
             <View style={styles.sectionIcon}>
                 <Image source={iconSrc} style={styles.icon} />
             </View>

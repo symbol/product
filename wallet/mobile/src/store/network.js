@@ -78,9 +78,10 @@ export default {
             commit({type: 'network/setNodeUrls', payload: updatedNodeUrls});
         },
         fetchNetworkProperties: async ({ commit }, nodeUrl) => {
-            const updatedNetworkProperties = await NetworkService.fetchNetworkProperties(nodeUrl);
+            const networkProperties = await NetworkService.fetchNetworkProperties(nodeUrl);
 
-            commit({type: 'network/setNetworkProperties', payload: updatedNetworkProperties});
+            commit({type: 'network/setNetworkProperties', payload: networkProperties});
+            commit({type: 'network/setChainHeight', payload: networkProperties.chainHeight});
             commit({type: 'wallet/setReady', payload: true});
         },
         connect: async ({ dispatchAction }) => {

@@ -1,5 +1,5 @@
 import _ from 'lodash';
-import { makeRequest } from 'src/utils';
+import { addressFromRaw, getMosaicRelativeAmountString, makeRequest } from 'src/utils';
 import { NamespaceService } from './';
 
 export class MosaicService {
@@ -29,6 +29,8 @@ export class MosaicService {
             const startHeight = parseInt(mosaicInfos.mosaic.startHeight);
             const endHeight = startHeight + duration;
             const isUnlimitedDuration = duration === 0;
+            const creator = addressFromRaw(mosaicInfos.mosaic.ownerAddress);
+            const supply = getMosaicRelativeAmountString(mosaicInfos.mosaic.supply, parseInt(mosaicInfos.mosaic.divisibility));
 
             return [mosaicInfos.mosaic.id, {
                 ...mosaicInfos.mosaic,
@@ -36,6 +38,8 @@ export class MosaicService {
                 startHeight,
                 endHeight,
                 isUnlimitedDuration,
+                creator,
+                supply
             }]
         });
         const mosaicInfos = Object.fromEntries(mosaicInfosEntires);
