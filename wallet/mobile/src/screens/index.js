@@ -7,6 +7,7 @@ export * from './AddressBookContact';
 export * from './AddressBookList';
 export * from './AddSeedAccount';
 export * from './Assets';
+export * from './AssetDetails';
 export * from './CreateWallet';
 export * from './ImportWallet';
 export * from './History';

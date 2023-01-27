@@ -1,3 +1,4 @@
+import moment from 'moment';
 import { Platform, Vibration } from 'react-native';
 import { showMessage } from 'react-native-flash-message';
 
@@ -251,3 +252,8 @@ export const formatDate = (dateStr, translate, showTime = false, showSeconds = f
 };
 
 export const interleave = (arr, callback) => arr.flatMap((el, index) => [el, callback(el, index)]).slice(0, -1);
+
+export const blockDurationToDaysLeft = (duration, blockGenerationTargetTime) => {
+    const seconds = duration * blockGenerationTargetTime;
+    return  moment.utc().add(seconds, 's').fromNow();
+}

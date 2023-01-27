@@ -42,6 +42,7 @@ const keys = {
     SettingsNetwork: 'SettingsNetwork',
     SettingsSecurity: 'SettingsSecurity',
     TransactionDetails: 'TransactionDetails',
+    AssetDetails: 'AssetDetails',
     Passcode: 'Passcode',
 };
 
@@ -77,6 +78,7 @@ export const RouterView = ({ isActive }) => (
                     <Stack.Screen name={keys.SettingsNetwork} component={screens.SettingsNetwork} />
                     <Stack.Screen name={keys.SettingsSecurity} component={screens.SettingsSecurity} />
                     <Stack.Screen name={keys.TransactionDetails} component={screens.TransactionDetails} />
+                    <Stack.Screen name={keys.AssetDetails} component={screens.AssetDetails} />
                 </Stack.Group>
                 <Stack.Group screenOptions={{ headerShown: false }}>
                     <Stack.Screen name={keys.Passcode} component={screens.Passcode} />
@@ -170,6 +172,9 @@ export class Router {
     }
     static goToTransactionDetails(params) {
         navigationRef.navigate(keys.TransactionDetails, params);
+    }
+    static goToAssetDetails(params) {
+        navigationRef.navigate(keys.AssetDetails, params);
     }
     static goToPasscode(params) {
         navigationRef.navigate(keys.Passcode, params);

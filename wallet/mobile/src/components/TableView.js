@@ -16,6 +16,8 @@ const renderTypeMap = {
         'linkedAccountAddress',
         'targetAddress',
         'sourceAddress',
+        'creator',
+        'linkedAddress',
         '_cosignatories',
         '_restrictionAddressAdditions',
         '_restrictionAddressDeletions',

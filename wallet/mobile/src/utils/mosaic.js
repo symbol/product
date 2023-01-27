@@ -7,6 +7,17 @@ export const getNativeMosaicAmount = (mosaicList, nativeMosaicId) => {
     return nativeMosaic ? nativeMosaic.amount : 0;
 };
 
+export const getMosaicRelativeAmountString = (absoluteAmount, divisibility) => {
+    if (divisibility === 0) {
+        return absoluteAmount;
+    }
+    
+    const array = absoluteAmount.split('');
+    array.splice(absoluteAmount.length - divisibility, 0, '.');
+
+    return array.join('');
+};
+
 export const getMosaicRelativeAmount = (absoluteAmount, divisibility) => {
     return absoluteAmount / Math.pow(10, divisibility);
 };
