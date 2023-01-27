@@ -145,12 +145,18 @@ export const getUnresolvedIdsFromTransactionDTOs = transactions => {
                 const value = transaction[field];
                 
                 if (mode === 'address' && value.isNamespaceId()) {
-                    addresses.push(value.toHex());
+                    addresses.push({
+                        namespaceId: value.toHex(),
+                        height: transaction.transactionInfo?.height
+                    });
                 }
                 else if (mode === 'addressArray' && Array.isArray(value)) {
                     value
                         .filter(address => address.isNamespaceId())
-                        .forEach(address => addresses.push(address.toHex()));
+                        .forEach(address => addresses.push({
+                            namespaceId: address.toHex(),
+                            height: transaction.transactionInfo?.height
+                        }));
                 }
                 else if (mode === 'mosaic') {
                     mosaicIds.push(value.id.toHex());
