@@ -35,7 +35,7 @@ const renderTypeMap = {
         'secret',
         'proof',
     ],
-    boolean: ['supplyMutable', 'transferable', 'restrictable', 'revocable'],
+    boolean: ['supplyMutable', 'transferable', 'restrictable', 'revokable'],
     fee: ['fee', 'maxFee'],
     amount: ['amount', 'resolvedFee'],
     secret: ['privateKey', 'remotePrivateKey', 'vrfPrivateKey'],
