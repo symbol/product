@@ -57,8 +57,7 @@ export class NetworkService {
             epochAdjustment: parseInt(networkProps.network.epochAdjustment),
             transactionFees,
             networkCurrency: {
-                // namespaceName: networkCurrency.currency.namespaceId.fullName,
-                // namespaceId: networkCurrency.currency.namespaceId.id.toHex(),
+                name: mosaicInfo.names[0],
                 mosaicId: networkCurrencyMosaicId,
                 divisibility: mosaicInfo.divisibility,
             },

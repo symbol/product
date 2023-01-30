@@ -234,7 +234,7 @@ export const TableView = connect(state => ({
     };
 
     return (
-        <View style={style}>
+        <View style={[styles.root, style]}>
             {tableData.map((item, index) => (isEmptyField(item) 
                 ? null
                 : <FormItem key={'table' + item.key + index} clear="horizontal">

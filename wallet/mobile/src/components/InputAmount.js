@@ -9,6 +9,7 @@ import { useValidation, validateAmount } from 'src/utils';
 export const InputAmount = props => {
     const { title, value, availableBalance, onChange, onValidityChange } = props;
     const errorMessage = useValidation(value, [validateAmount(availableBalance)], $t);
+    const isAvailableBalanceShown = availableBalance !== undefined;
 
     const handleChange = str => {
         const formattedStr = str
@@ -22,7 +23,7 @@ export const InputAmount = props => {
     };
 
     useEffect(() => {
-        onValidityChange(!errorMessage)
+        onValidityChange && onValidityChange(!errorMessage)
     }, [value, errorMessage])
 
     return (
@@ -33,7 +34,7 @@ export const InputAmount = props => {
             errorMessage={errorMessage} 
             value={value} 
             onChange={handleChange}
-            contentRight={(
+            contentRight={(isAvailableBalanceShown &&
                 <TouchableOpacity onPress={setMax}>
                     <Text style={styles.availableBalanceText}>Available: {availableBalance}</Text>
                 </TouchableOpacity>

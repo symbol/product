@@ -2,14 +2,17 @@ import React from 'react';
 import { Modal, StyleSheet, View } from 'react-native';
 import { showMessage } from 'react-native-flash-message';
 import QRCodeScanner from 'react-native-qrcode-scanner';
-import { AccountQR, AddressQR, ContactQR, MnemonicQR, QRCodeType } from 'symbol-qr-library';
-import { StyledText } from 'src/components';
+import { AccountQR, AddressQR, ContactQR, MnemonicQR } from 'symbol-qr-library';
+import { QRCode, StyledText } from 'src/components';
 import { colors } from 'src/styles';
+import { getUnresolvedIdsFromTransactionDTOs, transferTransactionFromDTO, transferTransactionFromPayload } from 'src/utils';
+import { MosaicService } from 'src/services';
 
 export const QRScanner = props => {
-    const { isVisible, type, title, onSuccess, onClose } = props;
+    const { isVisible, type, title, networkProperties, onSuccess, onClose } = props;
+    const { QRTypes } = QRCode;
 
-    const handleScan = response => {
+    const handleScan = async response => {
         let parsedType
         let data;
 
@@ -32,20 +35,34 @@ export const QRScanner = props => {
 
         try {
             switch (parsedType) {
-                case QRCodeType.ExportMnemonic:
+                case QRTypes.mnemonic:
                     onSuccess(MnemonicQR.fromJSON(data).mnemonicPlainText, 'mnemonic');
                     onClose();
                     return;
-                case QRCodeType.ExportAddress:
+                case QRTypes.address:
                     onSuccess(AddressQR.fromJSON(data), 'address');
                     onClose();
                     return;
-                case QRCodeType.ExportAccount:
+                case QRTypes.account:
                     onSuccess(AccountQR.fromJSON(data), 'account');
                     onClose();
                     return;
-                case QRCodeType.AddContact:
+                case QRTypes.contact:
                     onSuccess(ContactQR.fromJSON(data), 'contact');
+                    onClose();
+                    return;
+                case QRTypes.transaction:
+                    const parsedData = JSON.parse(data);
+                    const networkType = parsedData.network_id;
+                    const transactionDTO = transferTransactionFromPayload(parsedData.data.payload);
+                    const { mosaicIds } = getUnresolvedIdsFromTransactionDTOs([transactionDTO]);
+                    const mosaicInfos = await MosaicService.fetchMosaicInfos(networkProperties, mosaicIds);
+                    const transaction = transferTransactionFromDTO(transactionDTO, {
+                        networkProperties, 
+                        mosaicInfos, 
+                        currentAccount: {}
+                    });
+                    onSuccess({transaction, networkType}, 'transaction');
                     onClose();
                     return;
 
@@ -86,13 +103,6 @@ export const QRScanner = props => {
         </Modal>
     );
 };
-
-QRScanner.QRTypes = {
-    contact: 1,
-    account: 2,
-    mnemonic: 5,
-    address: 7,
-}
 
 const styles = StyleSheet.create({
     root: {

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Image, StyleSheet, } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
-import { Button, Screen, StyledText, FormItem, ButtonClose, ButtonPlain, MnemonicInput, QRScanner } from 'src/components';
+import { Button, Screen, StyledText, FormItem, ButtonClose, ButtonPlain, MnemonicInput, QRScanner, QRCode } from 'src/components';
 import store from 'src/store';
 import { usePasscode } from 'src/utils';
 import { Router } from 'src/Router';
@@ -48,7 +48,7 @@ export const ImportWallet = () => {
                 <FormItem>
                     <ButtonPlain title={$t('button_scanQR')} onPress={toggleQRScanner} />
                     <QRScanner 
-                        type={QRScanner.QRTypes.mnemonic}
+                        type={QRCode.QRTypes.mnemonic}
                         isVisible={isQRScannerVisible} 
                         onClose={toggleQRScanner} 
                         onSuccess={setMnemonic} 

@@ -1,5 +1,4 @@
 import { Address, Crypto, Deadline, EncryptedMessage, Mosaic, MosaicId, PlainMessage, TransactionType, TransferTransaction, UInt64 } from 'symbol-sdk';
-import { Constants } from 'src/config';
 import { toFixedNumber } from './helper';
 import { getMosaicRelativeAmount } from './mosaic';
 import { networkIdentifierToNetworkType } from './network';
@@ -67,6 +66,10 @@ export const transferTransactionToDTO = (transaction, networkProperties, current
         UInt64.fromUint(transaction.fee * Math.pow(10, networkProperties.networkCurrency.divisibility))
     );
 };
+
+export const transferTransactionFromPayload = (payload) => {
+    return TransferTransaction.createFromPayload(payload);
+}
 
 export const getUnresolvedIdsFromTransactionDTOs = transactions => {
     const mosaicIds = [];

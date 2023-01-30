@@ -49,7 +49,7 @@ export const Home = connect(state => ({
                         address={accountAddress}
                         balance={accountBalance}
                         ticker={ticker}
-                        onReceivePress={() => {}}
+                        onReceivePress={Router.goToReceive}
                         onSendPress={Router.goToSend}
                         onDetailsPress={Router.goToAccountDetails}
                         onNameChange={renameAccount}
