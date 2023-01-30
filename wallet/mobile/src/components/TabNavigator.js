@@ -5,6 +5,7 @@ import { useRoute } from '@react-navigation/native';
 import { StyledText } from 'src/components';
 import { Router } from 'src/Router';
 import { borders, colors } from 'src/styles';
+import { $t } from 'src/localization';
 
 export const TabNavigator = () => {
     const routeName = useRoute().name;
@@ -15,33 +16,32 @@ export const TabNavigator = () => {
         ? TouchableNativeFeedback.Ripple(colors.bgTabsNavigatorActive)
         : colors.bgTabsNavigatorActive;
 
-    // notranslate
     const tabs = [{
-        title: 'Home',
+        title: $t('navigation_home'),
         name: 'Home',
         icon: require('src/assets/images/icon-tabs-home.png'),
         iconActive: require('src/assets/images/icon-tabs-home-active.png'),
         handler: () => routeName !== 'Home' && Router.goToHome()
     }, {
-        title: 'History',
+        title: $t('navigation_history'),
         name: 'History',
         icon: require('src/assets/images/icon-tabs-history.png'),
         iconActive: require('src/assets/images/icon-tabs-history-active.png'),
         handler: () => routeName !== 'History' && Router.goToHistory()
     }, {
-        title: 'Scan',
+        title: $t('navigation_scan'),
         name: 'Scan',
         icon: require('src/assets/images/icon-tabs-scan.png'),
         iconActive: require('src/assets/images/icon-tabs-scan-active.png'),
         handler: () => routeName !== 'Scan' && Router.goToScan()
     }, {
-        title: 'Assets',
+        title: $t('navigation_assets'),
         name: 'Assets',
         icon: require('src/assets/images/icon-tabs-assets.png'),
         iconActive: require('src/assets/images/icon-tabs-assets-active.png'),
         handler: () => routeName !== 'Assets' && Router.goToAssets()
     }, {
-        title: 'Actions',
+        title: $t('navigation_actions'),
         name: 'Actions',
         icon: require('src/assets/images/icon-tabs-actions.png'),
         iconActive: require('src/assets/images/icon-tabs-actions-active.png'),

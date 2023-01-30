@@ -1,6 +1,7 @@
 import { createNavigationContainerRef, DefaultTheme, NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import * as screens from 'src/screens';
+import { $t } from './localization';
 import { colors, fonts } from './styles';
 
 const Stack = createNativeStackNavigator();
@@ -11,14 +12,15 @@ const theme = {
         background: 'transparent',
     },
 };
-const screenOptions = {
+const screenOptions = ({route}) => ({
     animation: 'fade',
     headerStyle: {
         backgroundColor: colors.bgNavbar,
     },
     headerTintColor: colors.textBody,
     headerTitleStyle: fonts.title,
-};
+    title: $t(`screen_${route.name}`)
+});
 
 const keys = {
     Welcome: 'Welcome',

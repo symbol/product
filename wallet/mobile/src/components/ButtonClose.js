@@ -2,6 +2,7 @@ import React from 'react';
 import { Image, StyleSheet } from 'react-native';
 import { TouchableOpacity } from 'react-native';
 import { StyledText } from 'src/components';
+import { $t } from 'src/localization';
 import { colors, fonts } from 'src/styles';
 
 export const ButtonClose = props => {
@@ -9,12 +10,10 @@ export const ButtonClose = props => {
     let text = null;
 
     if (type === 'cancel') {
-        // notranslate
-        text = 'Cancel';
+        text = $t('button_cancel');
     }
     else if (type === 'close') {
-        // notranslate
-        text = 'Close';
+        text = $t('button_close');
     }
 
     return (
