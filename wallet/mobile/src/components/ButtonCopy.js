@@ -11,7 +11,6 @@ export const ButtonCopy = props => {
     const handlePress = () => {
         try {
             copyToClipboard(content);
-            // notranslate
             showMessage({message: content, type: 'info'});
         }
         catch(error) {

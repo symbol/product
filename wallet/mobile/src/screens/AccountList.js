@@ -103,7 +103,6 @@ export const AccountList = connect(state => ({
     }, []);
 
     return (
-        // notranslate
         <Screen isLoading={isLoading}>
             <FormItem clear="vertical" fill>
                 <DraggableFlatList 

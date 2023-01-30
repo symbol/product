@@ -107,22 +107,20 @@ export const TransactionDetails = connect(state => ({
                     <StyledText type="title-large" style={styles.textAction}>{action}</StyledText>
                     <View>
                         <FormItem clear="horizontal" style={styles.formItem}>
-                            {/* notranslate */}
-                            <StyledText type="label">Amount</StyledText>
+                            <StyledText type="label">{$t('s_transactionDetails_amount')}</StyledText>
                             <StyledText style={styleAmount}>{transaction.amount || 0} {ticker}</StyledText>
                         </FormItem>
                     </View>
                     <View style={styles.statusDateRow}>    
                         <FormItem clear="horizontal" style={styles.formItem}>
-                            <StyledText type="label">Status</StyledText>
+                            <StyledText type="label">{$t('s_transactionDetails_status')}</StyledText>
                             <View style={styles.statusBadge}>
                                 <Image source={statusIconSrc} style={styles.statusIcon} />
                                 <Text style={statusTextStyle}>{statusText}</Text>
                             </View>
                         </FormItem>
                         <FormItem clear="horizontal" style={styles.date}>
-                            {/* notranslate */}
-                            {!!date && <StyledText type="label">Date</StyledText>}
+                            {!!date && <StyledText type="label">{$t('s_transactionDetails_date')}</StyledText>}
                             {!!date && <StyledText type="body">{date}</StyledText>}
                         </FormItem>
                         {isLoading && <LoadingIndicator size="sm" />}

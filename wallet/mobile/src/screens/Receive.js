@@ -33,10 +33,6 @@ export const Receive = connect(state => ({
         <Screen>
             <ScrollView>
                 <FormItem>
-                    <StyledText type="title">{$t('s_receive_title')}</StyledText>
-                    <StyledText type="body">{$t('s_receive_description')}</StyledText>
-                </FormItem>
-                <FormItem>
                     <Widget>
                         <FormItem style={layout.alignCenter}>
                             <QRCode 
