@@ -73,11 +73,11 @@ export const baseTransactionFromDTO = (transaction, {networkProperties}) => {
     return baseTransaction = {
         type: transaction.type,
         deadline: formatDeadline(transaction.deadline.toLocalDateTime(networkProperties.epochAdjustment)),
-        height: transaction.transactionInfo.height.toString(),
+        height: transaction.transactionInfo?.height.toString(),
         hash: transaction.transactionInfo?.hash,
         id: transaction.transactionInfo?.id,
         fee: getMosaicRelativeAmount(transaction.maxFee.toString(), networkProperties.networkCurrency.divisibility),
-        signerAddress: transaction.signer.address.plain(),
+        signerAddress: transaction.signer?.address.plain(),
     };
 };
 
@@ -113,7 +113,7 @@ export const transferTransactionFromDTO = (transaction, {networkProperties, mosa
     const nativeMosaicAmount = getNativeMosaicAmount(formattedMosaics, networkProperties.networkCurrency.mosaicId);
     const transactionBody = {
         ...baseTransaction,
-        signerPublicKey: transaction.signer.publicKey,
+        signerPublicKey: transaction.signer?.publicKey,
         recipientAddress: addressFromDTO(transaction.recipientAddress, resolvedAddresses),
     };
     let resultAmount = 0;

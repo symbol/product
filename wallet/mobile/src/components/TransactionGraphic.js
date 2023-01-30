@@ -144,7 +144,7 @@ export const TransactionGraphic = connect(state => ({
         case TransactionType.VOTING_KEY_LINK:
         case TransactionType.ACCOUNT_KEY_LINK: {
             Target = () => <AccountAvatar address={transaction.linkedAccountAddress} size="md" />
-            targetName = getAddressName(transaction.linkedAccountAddress, currentAccount, addressBook);
+            targetName = getAddressName(transaction.linkedAccountAddress, currentAccount, accounts, addressBook);
             targetNameStyle.push({
                 color: getColorFromHash(transaction.linkedAccountAddress)
             });

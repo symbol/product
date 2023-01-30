@@ -37,6 +37,7 @@ const keys = {
     AddressBookList: 'AddressBookList',
     Scan: 'Scan',
     Send: 'Send',
+    Receive: 'Receive',
     Settings: 'Settings',
     SettingsAbout: 'SettingsAbout',
     SettingsNetwork: 'SettingsNetwork',
@@ -73,6 +74,7 @@ export const RouterView = ({ isActive }) => (
                     <Stack.Screen name={keys.AddressBookContact} component={screens.AddressBookContact} />
                     <Stack.Screen name={keys.AddressBookList} component={screens.AddressBookList} />
                     <Stack.Screen name={keys.Send} component={screens.Send} />
+                    <Stack.Screen name={keys.Receive} component={screens.Receive} />
                     <Stack.Screen name={keys.Settings} component={screens.Settings} />
                     <Stack.Screen name={keys.SettingsAbout} component={screens.SettingsAbout} />
                     <Stack.Screen name={keys.SettingsNetwork} component={screens.SettingsNetwork} />
@@ -157,6 +159,9 @@ export class Router {
     }
     static goToSend(params) {
         navigationRef.navigate(keys.Send, params);
+    }
+    static goToReceive(params) {
+        navigationRef.navigate(keys.Receive, params);
     }
     static goToSettings(params) {
         navigationRef.navigate(keys.Settings, params);

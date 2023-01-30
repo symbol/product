@@ -7,17 +7,18 @@ import { Screen, TitleBar, FormItem, TabNavigator, StyledText, QRScanner, Button
 import { $t } from 'src/localization';
 import { Router } from 'src/Router';
 import { connect } from 'src/store';
-import { addressFromPrivateKey, addressFromPublicKey, networkTypeToIdentifier, useToggle } from 'src/utils';
+import { addressFromPrivateKey, addressFromPublicKey, getNativeMosaicAmount, networkTypeToIdentifier, useToggle } from 'src/utils';
 
 export const Scan = connect(state => ({
     balances: state.wallet.balances,
     isMultisigAccount: state.account.isMultisig,
     currentAccount: state.account.current,
     networkIdentifier: state.network.networkIdentifier,
+    networkProperties: state.network.networkProperties,
     ticker: state.network.ticker,
     isWalletReady: state.wallet.isReady,
 }))(function Scan(props) {
-    const { currentAccount, networkIdentifier} = props;
+    const { currentAccount, networkIdentifier, networkProperties } = props;
     const [isScannerVisible, toggleScanner] = useToggle(true);
     const [response, setResponse] = useState(null);
     const [description, setDescription] = useState(null);
@@ -74,6 +75,26 @@ export const Scan = connect(state => ({
                 }
             }]
         },
+        transaction: {
+            description: $t('s_scan_transaction_description'),
+            invalidDescription: $t('s_scan_transaction_wrongTransaction_description'),
+            validate: (data) => (
+                networkTypeToIdentifier(data.networkType) === networkIdentifier
+                && data.transaction.mosaics?.length === 1
+                && data.transaction.mosaics[0].id === networkProperties.networkCurrency.mosaicId
+            ),
+            actions: [{
+                title: $t('button_sendTransferTransaction'),
+                handler: (data) => {
+                    const amount = getNativeMosaicAmount(data.transaction.mosaics, networkProperties.networkCurrency.mosaicId);
+                    Router.goToSend({
+                        recipientAddress: data.transaction.recipientAddress,
+                        amount: amount,
+                        message:  data.transaction.message
+                    });
+                }
+            }]
+        },
     };
 
     const clear = () => {
@@ -85,6 +106,11 @@ export const Scan = connect(state => ({
 
     const processResponse = () => {
         const responseOption = options[response.type];
+
+        if (!responseOption) {
+            clear();
+        }
+
         const isValid = responseOption.validate(response.data);
         if (isValid) {
             setDescription(responseOption.description);
@@ -134,7 +160,12 @@ export const Scan = connect(state => ({
                     </FormItem>
                 ))}
             </FormItem>
-            <QRScanner isVisible={isScannerVisible} onSuccess={(data, type) => setResponse({data, type})} onClose={toggleScanner} />
+            <QRScanner 
+                isVisible={isScannerVisible} 
+                networkProperties={networkProperties} 
+                onSuccess={(data, type) => setResponse({data, type})} 
+                onClose={toggleScanner} 
+            />
         </Screen>
     );
 });

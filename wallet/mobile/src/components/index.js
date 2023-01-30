@@ -23,6 +23,7 @@ export * from './LoadingIndicator';
 export * from './MnemonicView';
 export * from './MnemonicConfirm'
 export * from './MnemonicInput'
+export * from './QRCode';
 export * from './QRScanner'
 export * from './Screen';
 export * from './SelectMosaic';

@@ -27,8 +27,8 @@ export const Send = connect(state => ({
     const { accounts, addressBookWhiteList, currentAccount, cosignatories, isMultisigAccount, isAccountReady, mosaics, networkIdentifier, networkProperties, ticker, chainHeight, route } = props;
     const [recipient, setRecipient] = useProp(route.params?.recipientAddress || '');
     const [mosaicId, setMosaicId] = useProp(route.params?.mosaicId, mosaics[0]?.id);
-    const [amount, setAmount] = useState('0');
-    const [message, setMessage] = useState('');
+    const [amount, setAmount] = useProp(route.params?.amount, '0');
+    const [message, setMessage] = useProp(route.params?.message?.text, '');
     const [isEncrypted, toggleEncrypted] = useToggle(false);
     const [maxFee, setMaxFee] = useState(0);
     const [speed, setSpeed] = useState('medium');
