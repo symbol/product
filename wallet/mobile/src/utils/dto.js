@@ -1,6 +1,6 @@
 import { Constants } from 'src/config';
-import { Address, TransactionType } from 'symbol-sdk';
-import { formatDeadline, getNativeMosaicAmount, getMosaicRelativeAmount, getMosaicsWithRelativeAmounts, isIncomingTransaction, isOutgoingTransaction, addressFromPublicKey } from './';
+import { TransactionType } from 'symbol-sdk';
+import { getNativeMosaicAmount, getMosaicRelativeAmount, getMosaicsWithRelativeAmounts, isIncomingTransaction, isOutgoingTransaction, addressFromPublicKey } from './';
 
 export const mosaicFromDTO = mosaic => ({
     id: mosaic.id.toHex(),
@@ -72,7 +72,7 @@ export const transactionFromDTO = (transaction, config) => {
 export const baseTransactionFromDTO = (transaction, {networkProperties}) => {
     return baseTransaction = {
         type: transaction.type,
-        deadline: formatDeadline(transaction.deadline.toLocalDateTime(networkProperties.epochAdjustment)),
+        deadline: transaction.deadline.toLocalDateTime(networkProperties.epochAdjustment),
         height: transaction.transactionInfo?.height.toString(),
         hash: transaction.transactionInfo?.hash,
         id: transaction.transactionInfo?.id,

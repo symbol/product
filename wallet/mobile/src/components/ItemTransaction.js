@@ -4,7 +4,7 @@ import { FormItem, ItemBase } from 'src/components';
 import { $t } from 'src/localization';
 import { connect } from 'src/store';
 import { colors, fonts, spacings } from 'src/styles';
-import { getAddressName, isAggregateTransaction, isIncomingTransaction, isOutgoingTransaction, trunc } from 'src/utils';
+import { formatDate, getAddressName, isAggregateTransaction, isIncomingTransaction, isOutgoingTransaction, trunc } from 'src/utils';
 import { TransactionType } from 'symbol-sdk';
 
 export const ItemTransaction = connect(state => ({
@@ -17,6 +17,7 @@ export const ItemTransaction = connect(state => ({
     const { currentAccount, walletAccounts, networkIdentifier, addressBook, group, transaction, ticker, onPress } = props;
     const accounts = walletAccounts[networkIdentifier];
     const { type, deadline, amount, signerAddress, recipientAddress } = transaction;
+    const dateText = formatDate(deadline, $t);
     let iconSrc;
     let action = $t(`transactionDescriptor_${type}`);
     let description = '';
@@ -149,7 +150,7 @@ export const ItemTransaction = connect(state => ({
                 <Text style={styles.textAction}>{action}</Text>
                 <Text style={styles.textDescription}>{description}</Text>
                 <View style={styles.rowAmount}>
-                    <Text style={styles.textDate}>{deadline}</Text>
+                    <Text style={styles.textDate}>{dateText}</Text>
                     <Text style={styleAmount}>{amountText}</Text>
                 </View>
             </View>
