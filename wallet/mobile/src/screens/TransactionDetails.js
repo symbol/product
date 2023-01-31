@@ -69,6 +69,10 @@ export const TransactionDetails = connect(state => ({
             statusTextStyle.push(styles.statusTextConfirmed); 
             statusIconSrc = require('src/assets/images/icon-status-confirmed.png');
             break;
+        case 'failed': 
+            statusTextStyle.push(styles.statusTextFailed); 
+            statusIconSrc = require('src/assets/images/icon-status-failed.png');
+            break;
     }
 
     if (transaction.type === TransactionType.TRANSFER && isOutgoingTransaction(transaction, currentAccount)) {
@@ -195,6 +199,9 @@ const styles = StyleSheet.create({
     },
     statusTextConfirmed: {
         color: colors.success
+    },
+    statusTextFailed: {
+        color: colors.danger
     },
     statusIcon: {
         width: 18,

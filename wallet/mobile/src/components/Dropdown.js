@@ -26,7 +26,7 @@ export const DropdownModal = props => {
                     <StyledText type="title">{title}</StyledText>
                     {isOpen && <FlatList
                         data={list} 
-                        keyExtractor={(item, index) => 'dropdown' + index} 
+                        keyExtractor={(_, index) => 'dropdown' + index} 
                         renderItem={({item, index}) => (
                             <TouchableOpacity style={getItemStyle(item.value)} onPress={() => handleChange(item.value)}>
                                 {renderItem

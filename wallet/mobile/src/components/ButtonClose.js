@@ -1,20 +1,16 @@
 import React from 'react';
-import { Image, StyleSheet } from 'react-native';
-import { TouchableOpacity } from 'react-native';
+import { Image, StyleSheet, TouchableOpacity } from 'react-native';
 import { StyledText } from 'src/components';
 import { $t } from 'src/localization';
 import { colors, fonts } from 'src/styles';
 
 export const ButtonClose = props => {
     const { type, style, onPress } = props;
-    let text = null;
-
-    if (type === 'cancel') {
-        text = $t('button_cancel');
+    const textMap = {
+        cancel: $t('button_cancel'),
+        close: $t('button_close')
     }
-    else if (type === 'close') {
-        text = $t('button_close');
-    }
+    const text = textMap[type];
 
     return (
         <TouchableOpacity style={[styles.root, style]} hitSlop={5} onPress={onPress}>
