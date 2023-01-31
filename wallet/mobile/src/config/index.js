@@ -17,5 +17,6 @@ export const config = {
     optInPayoutSigner: configFile.optInPayoutSigner,
     networkIdentifiers: configFile.networkIdentifiers,
     defaultNetworkIdentifier: configFile.defaultNetworkIdentifier,
-    maxSeedAccounts: configFile.maxSeedAccounts
+    maxSeedAccounts: configFile.maxSeedAccounts,
+    connectionInterval: configFile.connectionInterval
 };

@@ -30,5 +30,6 @@
     },
     "networkIdentifiers": ["mainnet", "testnet"],
     "defaultNetworkIdentifier": "mainnet",
-    "maxSeedAccounts": 10
+    "maxSeedAccounts": 10,
+    "connectionInterval": 5000
 }
