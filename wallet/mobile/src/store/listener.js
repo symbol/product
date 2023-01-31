@@ -5,7 +5,7 @@ import { handleError } from 'src/utils';
 export default {
     namespace: 'listener',
     state: {
-        listener: null
+        listener: null,
     },
     mutations: {
         setListener(state, payload) {
@@ -32,6 +32,7 @@ export default {
                         onConfirmedAdd: () => {
                             dispatchAction({type: 'account/fetchData'});
                             dispatchAction({type: 'transaction/fetchData', payload: true});
+                            // notranslate
                             showMessage({message: 'Transaction Confirmed', type: 'success'})
                         },
                         onUnconfirmedAdd: () => {
@@ -42,6 +43,7 @@ export default {
                         },
                         onAggregateBondedAdd: () => {
                             dispatchAction({type: 'transaction/fetchData', payload: true});
+                            // notranslate
                             showMessage({message: 'Aggregate Bonded Transaction', type: 'warning'})
                         },
                         onAggregateBondedRemove: () => {
@@ -53,9 +55,6 @@ export default {
                 commit({type: 'listener/setListener', payload: newListener});
             }
             catch {}
-            finally {
-                setTimeout(() => dispatchAction({type: 'listener/connect'}), 15000);
-            }
         },
     }
 };
