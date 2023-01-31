@@ -18,19 +18,23 @@ export const ConnectionStatus = connect(state => ({
             : 1;
         return withTiming(value);
     });
+    // notranslate
     let statusText = 'Connecting...';
     
 
     switch(status) {
         case 'offline':
+            // notranslate
             statusText = 'No Internet connection.';
             isShown.value = withTiming(true, timings.press);
             break;
         case 'failed-custom':
+            // notranslate
             statusText = 'Node is down. Please select different in the network settings.';
             isShown.value = withTiming(true, timings.press);
             break;
         case 'connected':
+            // notranslate
             statusText = 'Connected.';
             isShown.value = withTiming(false, timings.press);
             break;
