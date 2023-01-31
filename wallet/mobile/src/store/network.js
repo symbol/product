@@ -1,3 +1,4 @@
+import { config } from 'src/config';
 import { NetworkService } from 'src/services';
 import { PersistentStorage } from 'src/storage';
 
@@ -98,7 +99,7 @@ export default {
             const { connectionTimer, selectedNodeUrl, nodeUrls, networkIdentifier, networkProperties, status } = state.network;
             let { chainHeight } = state.network;
             const runAgain = () => {
-                const newConnectionTimer = setTimeout(() => dispatchAction({type: 'network/runConnectionJob'}), 5000);
+                const newConnectionTimer = setTimeout(() => dispatchAction({type: 'network/runConnectionJob'}), config.connectionInterval);
                 commit({type: 'network/setConnectionTimer', payload: newConnectionTimer});
             };
 
