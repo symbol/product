@@ -5,6 +5,7 @@ import { FlatList, TouchableOpacity } from 'react-native-gesture-handler';
 import { Dropdown, Screen, FormItem, StyledText } from 'src/components';
 import store, { connect } from 'src/store';
 import { borders, colors, spacings } from 'src/styles';
+import { handleError, useDataManager, useProp } from 'src/utils';
 
 export const SettingsNetwork = connect(state => ({
     currentAccount: state.account.current,
@@ -13,9 +14,8 @@ export const SettingsNetwork = connect(state => ({
     nodeUrls: state.network.nodeUrls,
 }))(function SettingsNetwork(props) {
     const { nodeUrl, networkIdentifier, nodeUrls } = props;
-    const [isLoading, setIsLoading] = useState(false);
-    const [selectedNetworkIdentifier, setSelectedNetworkIdentifier] = useState(networkIdentifier);
-    const [selectedNodeUrl, setSelectedNodeUrl] = useState(nodeUrl);
+    const [selectedNetworkIdentifier, setSelectedNetworkIdentifier] = useProp(networkIdentifier, networkIdentifier);
+    const [selectedNodeUrl, setSelectedNodeUrl] = useProp(nodeUrl, nodeUrl);
 
     const networkIdentifiers = [{
         // notranslate
@@ -32,19 +32,13 @@ export const SettingsNetwork = connect(state => ({
     // notranslate
     const getNodeTitle = (nodeUrl) => nodeUrl === null ? 'Select Automatically' : nodeUrl;
     const getNodeStyle = (nodeUrl) => nodeUrl === selectedNodeUrl ? [styles.item, styles.itemSelected] : styles.item;
-    const saveChanges = async (networkIdentifier, nodeUrl) => {
-        setIsLoading(true);
-        try {
-            await store.dispatchAction({type: 'network/changeNetwork', payload: {networkIdentifier, nodeUrl}});
-            await store.dispatchAction({type: 'wallet/loadAll'});
-            await store.dispatchAction({type: 'network/fetchData'});
-            await store.dispatchAction({type: 'account/fetchData'});
-        }
-        catch(error) {
-            showMessage({message: error.message, type: 'danger'});
-        }
-        setIsLoading(false);
-    };
+
+    const [saveChanges, isLoading] = useDataManager(async (networkIdentifier, nodeUrl) => {
+        await store.dispatchAction({type: 'network/changeNetwork', payload: {networkIdentifier, nodeUrl}});
+        await store.dispatchAction({type: 'wallet/loadAll'});
+        await store.dispatchAction({type: 'network/fetchData'});
+        await store.dispatchAction({type: 'account/fetchData'});
+    }, null, handleError);
     const selectNetwork = async (networkIdentifier) => {
         setSelectedNetworkIdentifier(networkIdentifier);
         setSelectedNodeUrl(null);
@@ -54,11 +48,6 @@ export const SettingsNetwork = connect(state => ({
         setSelectedNodeUrl(nodeUrl);
         saveChanges(networkIdentifier, nodeUrl);
     };
-
-    useEffect(() => {
-        setSelectedNetworkIdentifier(networkIdentifier);
-        setSelectedNodeUrl(nodeUrl);
-    }, [networkIdentifier, nodeUrl]);
 
     return (
         <Screen isLoading={isLoading}>

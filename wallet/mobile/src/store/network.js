@@ -1,6 +1,21 @@
 import { NetworkService } from 'src/services';
 import { PersistentStorage } from 'src/storage';
 
+const defaultNetworkProperties = {
+    nodeUrl: null,
+    networkIdentifier: null,
+    generationHash: null,
+    epochAdjustment: null,
+    transactionFees: {
+        minFeeMultiplier: null,
+        averageFeeMultiplier: null,
+    },
+    networkCurrency: {
+        mosaicId: null,
+        divisibility: null,
+    },
+};
+
 export default {
     namespace: 'network',
     state: {
@@ -13,20 +28,7 @@ export default {
             mainnet: [],
             testnet: []
         },
-        networkProperties: {
-            nodeUrl: null,
-            networkIdentifier: null,
-            generationHash: null,
-            epochAdjustment: null,
-            transactionFees: {
-                minFeeMultiplier: null,
-                averageFeeMultiplier: null,
-            },
-            networkCurrency: {
-                mosaicId: null,
-                divisibility: null,
-            },
-        },
+        networkProperties: defaultNetworkProperties,
         chainHeight: null
     },
     mutations: {
@@ -96,13 +98,13 @@ export default {
             const { connectionTimer, selectedNodeUrl, nodeUrls, networkIdentifier, networkProperties, status } = state.network;
             let { chainHeight } = state.network;
             const runAgain = () => {
-                const newConnectionTimer = setTimeout(() => dispatchAction({type: 'network/runConnectionJob'}), 15000);
+                const newConnectionTimer = setTimeout(() => dispatchAction({type: 'network/runConnectionJob'}), 5000);
                 commit({type: 'network/setConnectionTimer', payload: newConnectionTimer});
             };
 
             clearTimeout(connectionTimer);
 
-            console.log('Try to connect to current node')
+            console.log('[Network] connecting...')
             // Try to connect to current node
             try {
                 const nodeUrl = selectedNodeUrl || networkProperties.nodeUrl;
@@ -111,26 +113,25 @@ export default {
                     await dispatchAction({type: 'network/fetchNetworkProperties', payload: nodeUrl});
                 }
                 // Node is good.
-                console.log('connected')
+                console.log('[Network] connected')
                 const newStatus = 'connected'; 
                 if (newStatus !== status) {
                     commit({type: 'network/setStatus', payload: newStatus});
-                    dispatchAction({type: 'listener/connect'});
                 }
                 if (state.network.chainHeight !== chainHeight) {
                     commit({type: 'network/setChainHeight', payload: chainHeight});
                 }
+                dispatchAction({type: 'listener/connect'});
                 runAgain();
                 return;
             }
             catch {}
 
-            console.log('Try to fetch node list to verify it is not the internet connection issue')
             // Try to fetch node list to verify it is not the internet connection issue
             try {
                 await dispatchAction({type: 'network/fetchNodeList'});
                 if (selectedNodeUrl) {
-                    console.log('failed-custom')
+                    console.log('[Network] failed custom')
                     // Seems like there is an issue with the custom selected node.
                     const newStatus = 'failed-custom';
                     commit({type: 'network/setStatus', payload: newStatus});
@@ -139,7 +140,7 @@ export default {
                 }
             }
             catch {
-                console.log('offline')
+                console.log('[Network] offline')
                 // Seems like there is an internet connection issue.
                 const newStatus = 'offline'; 
                 commit({type: 'network/setStatus', payload: newStatus});
@@ -147,14 +148,12 @@ export default {
                 return;
             }
 
-            console.log('Try auto')
             for (const nodeUrl of nodeUrls[networkIdentifier]) {
                 try {
-                    console.log('nodeUrl', nodeUrl)
                     chainHeight = await NetworkService.ping(nodeUrl);
                     await dispatchAction({type: 'network/fetchNetworkProperties', payload: nodeUrl});
                     dispatchAction({type: 'listener/connect'});
-                    console.log('connected')
+                    console.log('[Network] connected auto')
                     const newStatus = 'connected'; 
                     commit({type: 'network/setStatus', payload: newStatus});
                     runAgain();
@@ -167,7 +166,7 @@ export default {
                 commit({type: 'network/setChainHeight', payload: chainHeight});
             }
 
-            console.log('failed-auto')
+            console.log('[Network] failed auto')
             const newStatus = 'failed-auto'; 
             commit({type: 'network/setStatus', payload: newStatus});
             runAgain();
@@ -177,9 +176,12 @@ export default {
             await PersistentStorage.setNetworkIdentifier(networkIdentifier);
             await PersistentStorage.setSelectedNode(nodeUrl);
 
-            await dispatchAction ({type: 'network/fetchNetworkProperties', payload: nodeUrl})
+            commit({type: 'network/setStatus', payload: 'initial'});
+            commit({type: 'network/setNetworkProperties', payload: defaultNetworkProperties});
             commit({type: 'network/setNetworkIdentifier', payload: networkIdentifier});
             commit({type: 'network/setSelectedNodeUrl', payload: nodeUrl});
+
+            await dispatchAction({type: 'network/connect'});
         },
     },
 };

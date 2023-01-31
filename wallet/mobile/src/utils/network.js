@@ -18,7 +18,6 @@ export const networkIdentifierToNetworkType = (networkIdentifier) => {
 
 export const makeRequest = async (url, options) => {
     const response = await fetch(url, options);
-    console.log('FETCH', url)
 
     if (response.status === 404) {
         // noerror
