@@ -8,16 +8,6 @@ export const isAggregateTransaction = transaction => {
         || transaction.type === TransactionType.AGGREGATE_COMPLETE;
 }
 
-export const getGroupFromtransactionDTO = transaction => {
-    if (transaction.isConfirmed())
-        return 'confirmed';
-    if (transaction.isUnconfirmed())
-        return 'unconfirmed';
-    return 'partial';
-};
-
-export const formatDeadline = (date) => `${date.dayOfMonth()}/${date.monthValue()}/${date.year()}`;
-
 export const getTransactionFees = (transaction, networkProperties) => {
     const { transactionFees, networkCurrency: { divisibility } } = networkProperties;
     const stubTransaction = {
@@ -199,7 +189,7 @@ export const decryptMessage = (encryptedMessage, recipientPrivateKey, senderPubl
 /**
  * Checks whether transaction is awaiting a signature by account.
  */
-export const transactionAwaitingSignatureByAccount = (transaction, account) => {
+export const isTransactionAwaitingSignatureByAccount = (transaction, account) => {
     if (transaction.type !== TransactionType.AGGREGATE_BONDED) {
         return false;
     }

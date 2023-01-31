@@ -9,7 +9,7 @@ import { Router } from 'src/Router';
 import { TransactionService } from 'src/services';
 import { connect } from 'src/store';
 import { borders, colors, layout, spacings } from 'src/styles';
-import { handleError, transactionAwaitingSignatureByAccount, useDataManager, usePasscode } from 'src/utils';
+import { handleError, isTransactionAwaitingSignatureByAccount, useDataManager, usePasscode } from 'src/utils';
 import { Button } from './Button';
 import { ButtonPlain } from './ButtonPlain';
 import { LoadingIndicator } from './LoadingIndicator';
@@ -36,7 +36,7 @@ export const TransactionCosignatureForm = connect(state => ({
         style,
     ]
 
-    const isAwaitingSignature = transactionAwaitingSignatureByAccount(transaction, currentAccount);
+    const isAwaitingSignature = isTransactionAwaitingSignatureByAccount(transaction, currentAccount);
     const signerContact = addressBook.getContactByAddress(signerAddress);
     const isBlackListedSigner = signerContact && signerContact.isBlackListed;
     const isWhiteListedSigner = signerContact && !isBlackListedSigner;
