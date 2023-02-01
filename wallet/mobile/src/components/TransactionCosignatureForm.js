@@ -59,6 +59,10 @@ export const TransactionCosignatureForm = connect(state => ({
         Router.goToHistory();
     }, null, handleError);
     const confirmSend = usePasscode('enter', sign, Router.goBack);
+    const addContact = (list) => {
+        Router.goBack();
+        Router.goToAddressBookEdit({address: signerAddress, list });
+    }
 
     useEffect(() => {
         animatedHeight.value = withTiming(height);
@@ -88,8 +92,8 @@ export const TransactionCosignatureForm = connect(state => ({
                 <StyledText type="body">{$t('s_transactionDetails_cosignatureForm_unknown_description')}</StyledText>
             </View>
             <View style={[layout.row, layout.justifyBetween]}>
-                <ButtonPlain title={$t('button_addToWhitelist')} onPress={() => Router.goToAddressBookEdit({address: signerAddress})}/>
-                <ButtonPlain title={$t('button_addToBlacklist')} onPress={() => Router.goToAddressBookEdit({address: signerAddress, list: 'blacklist'})}/>
+                <ButtonPlain title={$t('button_addToWhitelist')} onPress={() => addContact('whitelist')}/>
+                <ButtonPlain title={$t('button_addToBlacklist')} onPress={() => addContact('blacklist')}/>
             </View>
         </>
     };
