@@ -4,34 +4,17 @@ import { colors, fonts } from 'src/styles';
 
 export const StyledText = props => {
     const { children, style, type } = props;
-    let customStyle;
-
-    switch (type) {
-        case 'title-large':
-            customStyle = styles.titleLarge;
-            break;
-        case 'title':
-            customStyle = styles.title;
-            break;
-        case 'subtitle':
-            customStyle = styles.subtitle;
-            break;
-        case 'body':
-            customStyle = styles.body;
-            break;
-        case 'tab':
-            customStyle = styles.tab;
-            break;
-        case 'label':
-            customStyle = styles.label;
-            break;
-        case 'body-bold':
-            customStyle = styles.bodyBold;
-            break;
-        case 'link':
-            customStyle = styles.link;
-            break;
+    const typeStyleMap = {
+        'title-large': styles.titleLarge,
+        'title': styles.title,
+        'subtitle': styles.subtitle,
+        'body': styles.body,
+        'tab': styles.tab,
+        'label': styles.label,
+        'body-bold': styles.bodyBold,
+        'link': styles.link,
     }
+    const customStyle = typeStyleMap[type];
 
     return (
         <Text style={[styles.root, customStyle, style]}>

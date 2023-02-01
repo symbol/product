@@ -6,10 +6,11 @@ import { ScrollView } from 'react-native-gesture-handler';
 import { Screen, StyledText, FormItem, TableView, TransactionGraphic, LoadingIndicator, ButtonPlain, Button, TransactionCosignatureForm } from 'src/components';
 import { config } from 'src/config';
 import { $t } from 'src/localization';
+import { Router } from 'src/Router';
 import { TransactionService } from 'src/services';
 import { connect } from 'src/store';
 import { borders, colors, fonts, spacings } from 'src/styles';
-import { formatDate, handleError, isAggregateTransaction, isIncomingTransaction, isOutgoingTransaction, useDataManager, useInit } from 'src/utils';
+import { formatDate, handleError, isAddressKnown, isAggregateTransaction, isIncomingTransaction, isOutgoingTransaction, useDataManager, useInit } from 'src/utils';
 import { TransactionType } from 'symbol-sdk';
 
 const SCREEN_HEIGHT = Dimensions.get('screen').height;
@@ -17,13 +18,16 @@ const COSIGNATURE_FORM_HEIGHT = SCREEN_HEIGHT / 4;
 
 export const TransactionDetails = connect(state => ({
     isWalletReady: state.wallet.isReady,
+    addressBook: state.addressBook.addressBook,
+    walletAccounts: state.wallet.accounts,
     currentAccount: state.account.current,
     ticker: state.network.ticker,
     networkIdentifier: state.network.networkIdentifier,
     networkProperties: state.network.networkProperties,
 }))(function TransactionDetails(props) {
-    const { isWalletReady, currentAccount, ticker, networkIdentifier, networkProperties } = props;
+    const { isWalletReady, addressBook, walletAccounts, currentAccount, ticker, networkIdentifier, networkProperties } = props;
     const { transaction } = props.route.params;
+    const accounts = walletAccounts[networkIdentifier];
     const [fetchPartialInfo, isPartialInfoLoading, partialInfo] = useDataManager(() => {
         if (transaction.type === TransactionType.AGGREGATE_BONDED) {
             return TransactionService.fetchPartialInfo(transaction.hash, currentAccount, networkProperties);
@@ -31,7 +35,6 @@ export const TransactionDetails = connect(state => ({
     });
     const [fetchDate, isDateLoading, date] = useDataManager(async () => {
         const timestamp = await TransactionService.fetchDate(transaction.height, networkProperties);
-
         return formatDate(timestamp, $t, true);
     }, null);
     const [fetchStatus, isStatusLoading, status] = useDataManager(() => {
@@ -50,11 +53,13 @@ export const TransactionDetails = connect(state => ({
     const isLoading = isPartialInfoLoading || isDateLoading || isStatusLoading || isMessageLoading;
 
     const isAggregate = isAggregateTransaction(transaction);
-    let action = $t(`transactionDescriptor_${transaction.type}`);
     const styleAmount = [styles.textAmount];
     const statusTextStyle = [styles.statusText];
     const statusText = status?.group ? $t(`transactionStatus_${status.group}`) : '';
+    let action = $t(`transactionDescriptor_${transaction.type}`);
     let statusIconSrc;
+    let isAddSignerContactButtonShown = false;
+    let isAddRecipientContactButtonShown = false;
 
     switch(status?.group) {
         case 'unconfirmed': 
@@ -77,9 +82,11 @@ export const TransactionDetails = connect(state => ({
 
     if (transaction.type === TransactionType.TRANSFER && isOutgoingTransaction(transaction, currentAccount)) {
         action = $t(`transactionDescriptor_${transaction.type}_outgoing`);
+        isAddRecipientContactButtonShown = !isAddressKnown(transaction.recipientAddress, accounts, addressBook);
     }
     else if (transaction.type === TransactionType.TRANSFER && isIncomingTransaction(transaction, currentAccount)) {
         action = $t(`transactionDescriptor_${transaction.type}_incoming`);
+        isAddSignerContactButtonShown = !isAddressKnown(transaction.signerAddress, accounts, addressBook);
     }
 
     if (transaction.amount < 0) {
@@ -100,6 +107,8 @@ export const TransactionDetails = connect(state => ({
     }, [transaction, decryptedMessageText]);
     const details = _.pick(transaction, ['height', 'hash', 'fee', 'signerAddress', 'receivedCosignatures']);
 
+    const addSignerContact = () => Router.goToAddressBookEdit({address: transaction.signerAddress});
+    const addRecipientContact = () => Router.goToAddressBookEdit({address: transaction.recipientAddress});
     const openBlockExplorer = () => Linking.openURL(config.explorerURL[networkIdentifier] + '/transactions/' + transaction.hash);
 
     return (
@@ -147,6 +156,12 @@ export const TransactionDetails = connect(state => ({
                 <FormItem>
                     <TableView data={details} currentAccount={currentAccount}/>
                 </FormItem>
+                {isAddSignerContactButtonShown && <FormItem>
+                    <ButtonPlain icon={require('src/assets/images/icon-primary-address-book.png')} title={$t('button_addSignerToAddressBook')} onPress={addSignerContact} />
+                </FormItem>}
+                {isAddRecipientContactButtonShown && <FormItem>
+                    <ButtonPlain icon={require('src/assets/images/icon-primary-address-book.png')} title={$t('button_addRecipientToAddressBook')} onPress={addRecipientContact} />
+                </FormItem>}
                 <FormItem>
                     <ButtonPlain icon={require('src/assets/images/icon-primary-explorer.png')} title={$t('button_openTransactionInExplorer')} onPress={openBlockExplorer} />
                 </FormItem>

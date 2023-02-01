@@ -33,6 +33,8 @@
     "button_addToAddressBook": "Add to Address Book",
     "button_addToWhitelist": "Add to Whitelist",
     "button_addToBlacklist": "Block",
+    "button_addSignerToAddressBook": "Add signer to address book",
+    "button_addRecipientToAddressBook": "Add recipient to address book",
     "button_downloadBackup": "Download mnemonic to file",
     "button_showMnemonic": "Show Mnemonic Phrase",
     
