@@ -1,4 +1,5 @@
 import { showMessage } from 'react-native-flash-message';
+import { $t } from 'src/localization';
 import { ListenerService } from 'src/services';
 import { handleError } from 'src/utils';
 
@@ -15,7 +16,6 @@ export default {
     },
     actions: {
         connect: async ({ state, commit, dispatchAction }) => {
-            console.log('[Listener] connecting...')
             const { listener } = state.listener;
             const { networkProperties } = state.network;
             const { current } = state.account;
@@ -32,8 +32,7 @@ export default {
                         onConfirmedAdd: () => {
                             dispatchAction({type: 'account/fetchData'});
                             dispatchAction({type: 'transaction/fetchData', payload: true});
-                            // notranslate
-                            showMessage({message: 'Transaction Confirmed', type: 'success'})
+                            showMessage({message: $t('message_transactionConfirmed'), type: 'success'})
                         },
                         onUnconfirmedAdd: () => {
                             dispatchAction({type: 'transaction/fetchData', payload: true});
@@ -43,13 +42,12 @@ export default {
                         },
                         onAggregateBondedAdd: () => {
                             dispatchAction({type: 'transaction/fetchData', payload: true});
-                            // notranslate
-                            showMessage({message: 'Aggregate Bonded Transaction', type: 'warning'})
+                            showMessage({message: $t('message_newAggregateBondedTransaction'), type: 'warning'})
                         },
                         onAggregateBondedRemove: () => {
                             dispatchAction({type: 'transaction/fetchData', payload: true});
                         },
-                        onTransactionError: (e) => handleError(Error(e.code))
+                        onTransactionError: (e) => handleError(Error(`error_${e.code}`))
                     }
                 );
                 commit({type: 'listener/setListener', payload: newListener});

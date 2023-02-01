@@ -1,4 +1,3 @@
-import { useNavigation } from '@react-navigation/native';
 import React, { useEffect, useState } from 'react';
 import { FlatList } from 'react-native-gesture-handler';
 import { AccountCard, Screen, FormItem, StyledText, TextBox, TouchableNative, ButtonPlain } from 'src/components';
@@ -23,24 +22,18 @@ export const AddSeedAccount = connect(state => ({
     const networkSeedAddressed = seedAddresses[networkIdentifier];
     const networkSeedAccounts = networkSeedAddressed.map((address, index) => ({address, index}))
     const remainedSeedAccounts = networkSeedAccounts.filter(seedAccount => !networkAccounts.some(account => account.address === seedAccount.address));
-    const navigation = useNavigation();
     
-    // notranslate
-    const getDefaultAccountName = index => 'Seed Account ' + index;
-
+    const getDefaultAccountName = index => $t('s_addAccount_seed_name_default', {index});
     const [addAccount, isAddAccountLoading] = useDataManager(async index => {
         const name = (!nameErrorMessage && accountName) || getDefaultAccountName(index);
         await store.dispatchAction({type: 'wallet/addSeedAccount', payload: { index, name, networkIdentifier }});
         await store.dispatchAction({type: 'wallet/loadAll'});
         await store.dispatchAction({type: 'account/fetchData'});
-        navigation.goBack();
+        Router.goBack();
     }, null, handleError);
     const [loadSeedAddresses, isSeedAddressesLoading] = useDataManager(async () => {
         await store.dispatchAction({type: 'wallet/generateSeedAddresses'});
     }, null, handleError);
-
-    const isLoading = isAddAccountLoading || isSeedAddressesLoading;
-
     const fetchBalances = async () => {
         const updatedAccountBalanceStateMap = {};
         for (const account of remainedSeedAccounts) {
@@ -56,25 +49,23 @@ export const AddSeedAccount = connect(state => ({
         fetchBalances();
     }, [networkSeedAddressed]);
 
+    const isLoading = isAddAccountLoading || isSeedAddressesLoading;
+
     return (
         <Screen isLoading={isLoading}>
             <FormItem>
-                {/* notranslate */}
-                <StyledText type="title">Think of a Name</StyledText>
-                {/* notranslate */}
-                <TextBox title="Name" errorMessage={nameErrorMessage} value={accountName} onChange={setAccountName} />
+                <StyledText type="title">{$t('s_addAccount_name_title')}</StyledText>
+                <TextBox title={$t('s_addAccount_name_input')} errorMessage={nameErrorMessage} value={accountName} onChange={setAccountName} />
             </FormItem>
             <FormItem>
-                {/* notranslate */}
-                <StyledText type="body">You can select any of account that have been generated from your mnemonic backup phrase (seed account). If you need to add external account using private key, press button below.</StyledText>
-                <ButtonPlain icon={require('src/assets/images/icon-primary-key.png')} title="Add external account" onPress={() => Router.goToAddExternalAccount()} />
+                <StyledText type="body">{$t('s_addAccount_seed_description')}</StyledText>
+                <ButtonPlain icon={require('src/assets/images/icon-primary-key.png')} title={$t('button_addExternalAccount')} onPress={() => Router.goToAddExternalAccount()} />
             </FormItem>
             <FormItem fill clear="bottom">
-                {/* notranslate */}
-                <StyledText type="title">Select Account</StyledText>
+                <StyledText type="title">{$t('s_addAccount_select_title')}</StyledText>
                 <FlatList 
                     data={remainedSeedAccounts}
-                    keyExtractor={(item, index) => 'seed' + index} 
+                    keyExtractor={(_, index) => 'seed' + index} 
                     renderItem={({item}) => (
                     <FormItem type="list">
                         <TouchableNative onPress={() => addAccount(item.index)} color={colors.bgGray}>
@@ -91,7 +82,6 @@ export const AddSeedAccount = connect(state => ({
                     </FormItem>
                 )} />
             </FormItem>
-            
         </Screen>
     );
 });

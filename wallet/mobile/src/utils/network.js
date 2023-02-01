@@ -20,22 +20,18 @@ export const makeRequest = async (url, options) => {
     const response = await fetch(url, options);
 
     if (response.status === 404) {
-        // noerror
         throw Error('error_fetch_not_found');
     }
 
     if (response.status === 429) {
-        // noerror
         throw Error('error_fetch_rate_limit');
     }
 
     if (response.status === 500) {
-        // noerror
         throw Error('error_fetch_server_error');
     }
 
     if (response.status === 502) {
-        // noerror
         throw Error('error_fetch_server_error');
     }
 

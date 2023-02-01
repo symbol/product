@@ -68,7 +68,6 @@ export default {
                 mosaics = accountInfo.mosaics;
             }
             catch(error) {
-                // noerror
                 if (error.message === 'error_fetch_not_found') {
                     balance = 0;
                 }

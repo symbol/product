@@ -188,12 +188,11 @@ export default {
             commit({ type: 'wallet/setAccounts', payload: accounts });
         },
 
-        saveAccounts: async ({ commit, state }, {accounts, networkIdentifier}) => {
+        saveAccounts: async ({ commit }, {accounts, networkIdentifier}) => {
             const updatedAccounts = await SecureStorage.getAccounts();
             updatedAccounts[networkIdentifier] = [...accounts];
             if (!(updatedAccounts && updatedAccounts.testnet && updatedAccounts.mainnet)) {
-                // noerror
-                throw Error('failed_save_accounts_incomplete')
+                throw Error('error_failed_save_accounts_incomplete')
             }
 
             await SecureStorage.setAccounts(updatedAccounts);
@@ -211,7 +210,6 @@ export default {
                 balance = getMosaicRelativeAmount(absoluteAmount, networkProperties.networkCurrency.divisibility);
             }
             catch(error) {
-                // noerror
                 if (error.message === 'error_fetch_not_found') {
                     balance = 0;
                 }
@@ -240,7 +238,6 @@ export default {
                 };
             }
             catch(error) {
-                // noerror
                 throw Error('error_fetch_mosaic_infos');
             }
 

@@ -48,8 +48,8 @@ export const getCurrentLanguage = async () => {
 };
 
 export const setCurrentLanguage = async (languageCode) => {
-	await PersistentStorage.setSelectedLanguage(languageCode);
 	updateConfig(languageCode);
+	await PersistentStorage.setSelectedLanguage(languageCode);
 };
 
 export const getLanguages = () => {

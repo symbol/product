@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { Image, StyleSheet, View } from 'react-native';
-import { FlatList, TouchableOpacity, TouchableWithoutFeedback } from 'react-native-gesture-handler';
-import { Screen, FormItem, Button, ItemContact, TabView, AccountAvatar, Widget, StyledText, ButtonCircle } from 'src/components';
+import { FlatList, TouchableWithoutFeedback } from 'react-native-gesture-handler';
+import { Screen, FormItem, ItemContact, TabView, AccountAvatar, Widget, StyledText, ButtonCircle } from 'src/components';
 import { connect } from 'src/store';
 import { Router } from 'src/Router';
 import { colors, layout, spacings } from 'src/styles';
 import { trunc } from 'src/utils';
-import _ from 'lodash';
+import { $t } from 'src/localization';
 
 export const AddressBookList = connect(state => ({
     addressBookWhiteList: state.addressBook.whiteList,
@@ -15,7 +15,7 @@ export const AddressBookList = connect(state => ({
     const { addressBookWhiteList, addressBookBlackList } = props;
     const [list, setList] = useState('whitelist');
     const tabs = [{
-        label: 'Whitelist',
+        label: $t('s_addressBook_whitelist'),
         value: 'whitelist',
         content: <FlatList
             contentContainerStyle={layout.listContainer}
@@ -24,7 +24,7 @@ export const AddressBookList = connect(state => ({
             renderItem={({item}) => <ItemContact contact={item} onPress={() => Router.goToAddressBookContact(item)} />} 
         />
     }, {
-        label: 'Blacklist',
+        label: $t('s_addressBook_blacklist'),
         value: 'blacklist',
         content: <FlatList
             contentContainerStyle={layout.listContainer}
@@ -60,13 +60,12 @@ export const AddressBookListWidget = connect(state => ({
 
     return (
         <FormItem>
-            {/* notranslate */}
-            <Widget title="Address Book" onHeaderPress={handleHeaderPress}>
+            <Widget title={$t('s_addressBook_widget_name')} onHeaderPress={handleHeaderPress}>
                 <FlatList
                     horizontal
                     contentContainerStyle={styles.addressBookList}
                     data={addressBookWhiteList}
-                    keyExtractor={(item, index) => 'contact' + index} 
+                    keyExtractor={(_, index) => 'contact' + index} 
                     renderItem={({item}) => (
                         <TouchableWithoutFeedback style={styles.addressBookItem} onPress={() => handleContactPress(item)}>
                             <View style={styles.addressBookItem}>
@@ -80,8 +79,7 @@ export const AddressBookListWidget = connect(state => ({
                             <View style={styles.addressBookCircle}>
                                 <Image source={require('src/assets/images/icon-account-add.png')} style={styles.addressBookAddIcon} />
                             </View>
-                            {/* notranslate */}
-                            <StyledText type="body">Add Contact</StyledText>
+                            <StyledText type="body">{$t('button_addContact')}</StyledText>
                         </TouchableWithoutFeedback>
                     } 
                 />

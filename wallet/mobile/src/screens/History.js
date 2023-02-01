@@ -118,8 +118,7 @@ export const HistoryWidget = connect(state => ({
     return (
         isWidgetShown &&
         <FormItem>
-            {/* notranslate */}
-            <Widget title="New Transactions" onHeaderPress={() => Router.goToHistory()}>
+            <Widget title={$t('s_history_widget_name')} onHeaderPress={() => Router.goToHistory()}>
                 {transactions.map(item => (
                     <ItemTransaction 
                         group={item.group} 

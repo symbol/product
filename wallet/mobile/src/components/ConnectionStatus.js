@@ -3,6 +3,7 @@ import { StyleSheet, Text } from 'react-native';
 import { connect } from 'src/store';
 import { colors, fonts, timings } from 'src/styles';
 import Animated, { interpolate, interpolateColor, useAnimatedStyle, useDerivedValue, useSharedValue, withTiming } from 'react-native-reanimated';
+import { $t } from 'src/localization';
 
 export const ConnectionStatus = connect(state => ({
     status: state.network.status,
@@ -18,24 +19,19 @@ export const ConnectionStatus = connect(state => ({
             : 1;
         return withTiming(value);
     });
-    // notranslate
-    let statusText = 'Connecting...';
+    let statusText = $t('c_connectionStatus_connecting');
     
-
     switch(status) {
         case 'offline':
-            // notranslate
-            statusText = 'No Internet connection.';
+            statusText = $t('c_connectionStatus_offline');
             isShown.value = withTiming(true, timings.press);
             break;
         case 'failed-custom':
-            // notranslate
-            statusText = 'Node is down. Please select different in the network settings.';
+            statusText = $t('c_connectionStatus_nodeDown');
             isShown.value = withTiming(true, timings.press);
             break;
         case 'connected':
-            // notranslate
-            statusText = 'Connected.';
+            statusText = $t('c_connectionStatus_connected');
             isShown.value = withTiming(false, timings.press);
             break;
         default: 
