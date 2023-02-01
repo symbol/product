@@ -1,6 +1,7 @@
 import _ from 'lodash';
 import React from 'react';
-import { RefreshControl, ScrollView } from 'react-native-gesture-handler';
+import { ScrollView } from 'react-native';
+import { RefreshControl } from 'react-native-gesture-handler';
 import { AccountCardWidget, Alert, Screen, TitleBar, FormItem, TabNavigator, StyledText } from 'src/components';
 import { $t } from 'src/localization';
 import { Router } from 'src/Router';
