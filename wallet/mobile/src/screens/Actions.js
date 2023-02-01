@@ -3,6 +3,7 @@ import React from 'react';
 import { Dimensions, Image, StyleSheet } from 'react-native';
 import { showMessage } from 'react-native-flash-message';
 import { Screen, TitleBar, FormItem, TabNavigator, StyledText, ItemBase } from 'src/components';
+import { $t } from 'src/localization';
 import { Router } from 'src/Router';
 import { connect } from 'src/store';
 import { fonts, spacings } from 'src/styles';
@@ -28,18 +29,6 @@ export const Actions = connect(state => ({
         title: 'Send Transfer',
         icon: require('src/assets/images/icon-send.png'),
         handler: Router.goToSend
-    }, {
-        title: 'Create Mosaic',
-        icon: require('src/assets/images/icon-tx-mosaic.png'),
-        handler: () => showMessage({type: 'info', message: 'Not implemented yet'})
-    }, {
-        title: 'Create Namespace',
-        icon: require('src/assets/images/icon-tx-namespace.png'),
-        handler: () => showMessage({type: 'info', message: 'Not implemented yet'})
-    }, {
-        title: 'Multisig Account',
-        icon: require('src/assets/images/icon-tx-multisig.png'),
-        handler: () => showMessage({type: 'info', message: 'Not implemented yet'})
     }]
     
     return (
@@ -49,8 +38,7 @@ export const Actions = connect(state => ({
             isLoading={!isWalletReady}
         >
             <FormItem type="group" clear="bottom">
-                {/* notranslate */}
-                <StyledText type="title">Wallet features</StyledText>
+                <StyledText type="title">{$t('s_actions_title')}</StyledText>
             </FormItem>
             <FormItem style={styles.container}>
                 {list.map((item => (
@@ -60,17 +48,6 @@ export const Actions = connect(state => ({
                     </ItemBase>
                 )))}
             </FormItem>
-            {/* <FlatList
-                data={list}
-                renderItem={({ item }) => (
-                    <ItemBase style={styles.item} contentContainerStyle={styles.itemContent} onPress={item.handler}>
-                        <Image source={item.icon} style={styles.itemIcon} />
-                        <StyledText type="label">{item.title}</StyledText>
-                    </ItemBase>
-                )}
-                numColumns={3}
-                keyExtractor={(item, index) => 'feat' + index}
-            /> */}
         </Screen>
     );
 });

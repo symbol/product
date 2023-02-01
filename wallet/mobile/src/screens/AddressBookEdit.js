@@ -39,17 +39,16 @@ export const AddressBookEdit = connect(state => ({
         ? ''
         : $t('s_addressBook_manage_description_add');
     const listOptions = [{
-        label: 'Whitelist',
+        label: $t('s_addressBook_whitelist'),
         value: 'whitelist'
     }, {
-        label: 'Blacklist',
+        label: $t('s_addressBook_blacklist'),
         value: 'blacklist'
     }]
 
     const [saveContact] = useDataManager(async () => {
         const action = route.params?.type === 'edit' ? 'addressBook/updateContact' : 'addressBook/addContact';
-        // notranslate
-        const updatedName = name ? name : 'Blocked';
+        const updatedName = name ? name : $t('s_addressBook_account_blacklist_defaultName');
         await store.dispatchAction({type: action, payload: {
             id: route.params?.id,
             name: updatedName,
@@ -60,12 +59,10 @@ export const AddressBookEdit = connect(state => ({
         Router.goBack();
     }, null, handleError);
    
-
-    {/* notranslate */}
     return (
         <Screen bottomComponent={
             <FormItem>
-                <Button title="Save" isDisabled={isButtonDisabled} onPress={saveContact} />
+                <Button title={$t('button_save')} isDisabled={isButtonDisabled} onPress={saveContact} />
             </FormItem>
         }>
             <ScrollView>
@@ -74,20 +71,16 @@ export const AddressBookEdit = connect(state => ({
                     <StyledText type="body">{descriptionText}</StyledText>
                 </FormItem>
                 <FormItem>
-                    {/* notranslate */}
-                    <Dropdown title="List" list={listOptions} value={list} onChange={setList} />
+                    <Dropdown title={$t('s_addressBook_list')} list={listOptions} value={list} onChange={setList} />
                 </FormItem>
                 <FormItem>
-                    {/* notranslate */}
-                    <TextBox title="Name" errorMessage={nameErrorMessage} value={name} onChange={setName} />
+                    <TextBox title={$t('input_name')} errorMessage={nameErrorMessage} value={name} onChange={setName} />
                 </FormItem>
                 <FormItem>
-                    {/* notranslate */}
-                    <TextBox title="Address" errorMessage={addressErrorMessage} value={address} onChange={setAddress} />
+                    <TextBox title={$t('input_address')} errorMessage={addressErrorMessage} value={address} onChange={setAddress} />
                 </FormItem>
                 <FormItem>
-                    {/* notranslate */}
-                    <TextBox title="Notes" value={notes} onChange={setNotes} />
+                    <TextBox title={$t('input_notes')} value={notes} onChange={setNotes} />
                 </FormItem>
             </ScrollView>
         </Screen>

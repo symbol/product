@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { StyleSheet } from 'react-native';
-import { showMessage } from 'react-native-flash-message';
 import { FlatList, TouchableOpacity } from 'react-native-gesture-handler';
 import { Dropdown, Screen, FormItem, StyledText } from 'src/components';
+import { $t } from 'src/localization';
 import store, { connect } from 'src/store';
 import { borders, colors, spacings } from 'src/styles';
 import { handleError, useDataManager, useProp } from 'src/utils';
@@ -16,23 +16,17 @@ export const SettingsNetwork = connect(state => ({
     const { nodeUrl, networkIdentifier, nodeUrls } = props;
     const [selectedNetworkIdentifier, setSelectedNetworkIdentifier] = useProp(networkIdentifier, networkIdentifier);
     const [selectedNodeUrl, setSelectedNodeUrl] = useProp(nodeUrl, nodeUrl);
-
     const networkIdentifiers = [{
-        // notranslate
-        label: 'Mainnet',
+        label: $t('s_settings_networkType_mainnet'),
         value: 'mainnet'
     }, {
-        // notranslate
-        label: 'Testnet',
+        label: $t('s_settings_networkType_testnet'),
         value: 'testnet'
     }];
-
     const networkNodes = [null, ...nodeUrls[selectedNetworkIdentifier]];
-
-    // notranslate
-    const getNodeTitle = (nodeUrl) => nodeUrl === null ? 'Select Automatically' : nodeUrl;
+    
+    const getNodeTitle = (nodeUrl) => nodeUrl === null ? $t('s_settings_node_automatically') : nodeUrl;
     const getNodeStyle = (nodeUrl) => nodeUrl === selectedNodeUrl ? [styles.item, styles.itemSelected] : styles.item;
-
     const [saveChanges, isLoading] = useDataManager(async (networkIdentifier, nodeUrl) => {
         await store.dispatchAction({type: 'network/changeNetwork', payload: {networkIdentifier, nodeUrl}});
         await store.dispatchAction({type: 'wallet/loadAll'});
@@ -52,27 +46,23 @@ export const SettingsNetwork = connect(state => ({
     return (
         <Screen isLoading={isLoading}>
             <FormItem>
-                <StyledText type="title">
-                    {/* notranslate */}
-                    Select Network:
-                </StyledText>
-                {/* notranslate */}
-                <Dropdown value={selectedNetworkIdentifier} list={networkIdentifiers} title="Network Type" onChange={selectNetwork} />
+                <StyledText type="title">{$t('s_settings_network_select_title')}</StyledText>
+                <Dropdown 
+                    value={selectedNetworkIdentifier} 
+                    list={networkIdentifiers} 
+                    title={$t('s_settings_networkType_modal_title')} 
+                    onChange={selectNetwork} 
+                />
             </FormItem>
             <FormItem clear="bottom" fill>
-                <StyledText type="title">
-                    {/* notranslate */}
-                    Select Node:
-                </StyledText>
+                <StyledText type="title">{$t('s_settings_node_select_title')}</StyledText>
                 <FlatList 
                     data={networkNodes} 
                     keyExtractor={(item, index) => 'nl' + item + index} 
-                    renderItem={({item, index}) => (
+                    renderItem={({item}) => (
                     <FormItem type="list">
                         <TouchableOpacity style={getNodeStyle(item)} onPress={() => selectNode(item)}>
-                            <StyledText type="body">
-                                {getNodeTitle(item)}
-                            </StyledText>
+                            <StyledText type="body">{getNodeTitle(item)}</StyledText>
                         </TouchableOpacity>
                     </FormItem>
                 )} />

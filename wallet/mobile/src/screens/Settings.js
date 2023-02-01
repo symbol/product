@@ -1,50 +1,52 @@
 import React from 'react';
 import { BackHandler, Image, StyleSheet, View } from 'react-native';
 import { FlatList } from 'react-native-gesture-handler';
-import { Screen, FormItem, StyledText, DialogBox, TouchableNative } from 'src/components';
-import { $t } from 'src/localization';
+import { Screen, FormItem, StyledText, DialogBox, TouchableNative, DropdownModal } from 'src/components';
+import { $t, getLanguages, setCurrentLanguage } from 'src/localization';
 import { Router } from 'src/Router';
-import { connect } from 'src/store';
 import { borders, colors, fonts, layout, spacings } from 'src/styles';
 import { clearCache, usePasscode, useToggle } from 'src/utils';
 
-export const Settings = connect(state => ({
-    currentAccount: state.account.current,
-}))(function Settings() {
+export const Settings = () => {
     const [isLogoutConfirmVisible, toggleLogoutConfirm] = useToggle(false);
+    const [isLanguageSelectorVisible, toggleLanguageSelector] = useToggle(false);
+    const languageList = Object.entries(getLanguages()).map(([value, label]) => ({value, label}));
+    const settingsList = [{
+        title: $t('s_settings_item_network_title'),
+        description: $t('s_settings_item_network_description'),
+        icon: require('src/assets/images/icon-settings-network.png'),
+        handler: Router.goToSettingsNetwork
+    },{
+        title: $t('s_settings_item_language_title'),
+        description: $t('s_settings_item_language_description'),
+        icon: require('src/assets/images/icon-settings-language.png'),
+        handler: toggleLanguageSelector
+    }, {
+        title: $t('s_settings_item_security_title'),
+        description: $t('s_settings_item_security_description'),
+        icon: require('src/assets/images/icon-settings-security.png'),
+        handler: Router.goToSettingsSecurity
+    }, {
+        title: $t('s_settings_item_about_title'),
+        description: $t('s_settings_item_about_description'),
+        icon: require('src/assets/images/icon-settings-about.png'),
+        handler: Router.goToSettingsAbout
+    }, {
+        title: $t('s_settings_item_logout_title'),
+        description: $t('s_settings_item_logout_description'),
+        icon: require('src/assets/images/icon-settings-logout.png'),
+        handler: toggleLogoutConfirm
+    }];
 
+    const changeLanguage = (language) => {
+        setCurrentLanguage(language);
+        Router.goToHome();
+    }
     const logoutConfirm = () => {
         clearCache();
         BackHandler.exitApp();
     }
-    
     const showLogoutPasscode = usePasscode('enter', logoutConfirm, Router.goBack);
-
-    // notranslate
-    const settingsList = [{
-        title: 'Network',
-        description: 'Select network type and node you would like to connect to.',
-        icon: require('src/assets/images/icon-settings-network.png'),
-        handler: Router.goToSettingsNetwork
-    },
-    {
-        title: 'Security',
-        description: 'Backup your passphrase and manage PIN code.',
-        icon: require('src/assets/images/icon-settings-security.png'),
-        handler: Router.goToSettingsSecurity
-    },
-    {
-        title: 'About',
-        description: 'Learn morn about Symbol. Application version information.',
-        icon: require('src/assets/images/icon-settings-about.png'),
-        handler: Router.goToSettingsAbout
-    },
-    {
-        title: 'Logout',
-        description: 'Remove all accounts from device storage.',
-        icon: require('src/assets/images/icon-settings-logout.png'),
-        handler: toggleLogoutConfirm
-    }];
 
     return (
         <Screen>
@@ -52,23 +54,26 @@ export const Settings = connect(state => ({
                 <FlatList
                     contentContainerStyle={layout.listContainer}
                     data={settingsList} 
-                    keyExtractor={(item, index) => 'settings' + index} 
-                    renderItem={({item, index}) => (
+                    keyExtractor={(_, index) => 'settings' + index} 
+                    renderItem={({item}) => (
                     <FormItem type="list">
                         <TouchableNative style={styles.item} onPress={item.handler}>
                             <Image source={item.icon} style={styles.itemIcon} />
                             <View style={styles.itemContent}>
-                                <StyledText type="subtitle">
-                                    {item.title}
-                                </StyledText>
-                                <StyledText type="body">
-                                    {item.description}
-                                </StyledText> 
+                                <StyledText type="subtitle">{item.title}</StyledText>
+                                <StyledText type="body">{item.description}</StyledText> 
                             </View>
                         </TouchableNative>
                     </FormItem>
                 )} />
             </FormItem>
+            <DropdownModal
+                title={$t('s_settings_item_language_title')}
+                list={languageList}
+                isOpen={isLanguageSelectorVisible}
+                onChange={changeLanguage}
+                onClose={toggleLanguageSelector}
+            />
             <DialogBox 
                 type="confirm" 
                 title={$t('settings_logout_confirm_title')}
@@ -79,7 +84,7 @@ export const Settings = connect(state => ({
             />
         </Screen>
     );
-});
+};
 
 const styles = StyleSheet.create({
     item: {

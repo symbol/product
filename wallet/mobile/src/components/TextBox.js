@@ -1,8 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, TextInput, View } from 'react-native';
-import Animated, { interpolate, interpolateColor, useAnimatedStyle, useDerivedValue, useSharedValue, withTiming } from 'react-native-reanimated';
+import Animated, { interpolateColor, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { borders, colors, fonts, spacings, timings } from 'src/styles';
-
 
 export const TextBox = props => {
     const { testID, contentRight, multiline, keyboardType, nativePlaceholder, title, value, errorMessage, onChange } = props;

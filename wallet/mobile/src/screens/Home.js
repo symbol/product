@@ -41,9 +41,7 @@ export const Home = connect(state => ({
             titleBar={<TitleBar accountSelector settings currentAccount={currentAccount} />}
             navigator={<TabNavigator />}
         >
-            <ScrollView
-                refreshControl={<RefreshControl refreshing={isLoading} onRefresh={loadState} />}
-            >
+            <ScrollView refreshControl={<RefreshControl refreshing={isLoading} onRefresh={loadState} />}>
                 <FormItem>
                     <AccountCardWidget 
                         name={accountName}
@@ -66,8 +64,7 @@ export const Home = connect(state => ({
                     </FormItem>
                 )}
                 <FormItem type="group" clear="bottom">
-                    {/* notranslate */}
-                    <StyledText type="title">Widgets</StyledText>
+                    <StyledText type="title">{$t('s_home_widgets')}</StyledText>
                 </FormItem>
                 <HistoryWidget />
                 <AddressBookListWidget />

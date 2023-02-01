@@ -7,9 +7,10 @@ import { QRCode, StyledText } from 'src/components';
 import { colors } from 'src/styles';
 import { getUnresolvedIdsFromTransactionDTOs, transferTransactionFromDTO, transferTransactionFromPayload } from 'src/utils';
 import { MosaicService } from 'src/services';
+import { $t } from 'src/localization';
 
 export const QRScanner = props => {
-    const { isVisible, type, title, networkProperties, onSuccess, onClose } = props;
+    const { isVisible, type, networkProperties, onSuccess, onClose } = props;
     const { QRTypes } = QRCode;
 
     const handleScan = async response => {
@@ -21,14 +22,13 @@ export const QRScanner = props => {
             data = response.data;
         }
         catch {
-            showMessage({message: 'error_qr_failed_parse', type: 'danger'});
+            showMessage({message: $t('error_qr_failed_parse'), type: 'danger'});
             onClose();
             return;
         }
 
         if (type && parsedType !== type) {
-            // notranslate
-            showMessage({message: 'error_qr_expected_type_' + type, type: 'danger'});
+            showMessage({message: $t('error_qr_expected_type'), type: 'danger'});
             onClose();
             return;
         }
@@ -67,15 +67,12 @@ export const QRScanner = props => {
                     return;
 
                 default:
-                    // notranslate
-                showMessage({message: 'error_qr_unsupported', type: 'danger'});
+                showMessage({message: $t('error_qr_unsupported'), type: 'danger'});
             }
         }
         catch(e) {
-            // notranslate
-            showMessage({message: 'error_qr_failed_parse ' + e.message, type: 'danger'});
+            showMessage({message: $t('error_qr_failed_parse'), type: 'danger'});
         }
-
         onClose();
     };
 
@@ -86,18 +83,7 @@ export const QRScanner = props => {
                     checkAndroid6Permissions
                     showMarker
                     onRead={handleScan}
-                    topContent={
-                        <StyledText type="title">
-                            {/* notranslate */}
-                            Scan Symbol QR-code
-                        </StyledText>
-                    }
-                    bottomContent={
-                        <StyledText type="body">
-                            {/* notranslate */}
-                            {title}
-                        </StyledText>
-                    }
+                    topContent={<StyledText type="title">{$t('c_scanner_title')}</StyledText>}
                 />
             </View>}
         </Modal>

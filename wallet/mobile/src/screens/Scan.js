@@ -24,8 +24,7 @@ export const Scan = connect(state => ({
     const [description, setDescription] = useState(null);
     const [actions, setActions] = useState([]);
     const [data, setData] = useState(null);
-    const close = Router.goToHome;
-
+    const isFocused = useIsFocused();
     const options = {
         mnemonic: {
             description: $t('s_scan_mnemonic_description'),
@@ -97,13 +96,13 @@ export const Scan = connect(state => ({
         },
     };
 
+    const close = Router.goToHome;
     const clear = () => {
         setResponse(null);
         setDescription(null);
         setData(null);
         setActions([]);
     };
-
     const processResponse = () => {
         const responseOption = options[response.type];
 
@@ -134,8 +133,6 @@ export const Scan = connect(state => ({
             processResponse();
         }
     }, [isScannerVisible, response]);
-
-    const isFocused = useIsFocused();
     useEffect(() => {isFocused && clear()}, [isFocused]);
 
     return (
@@ -149,14 +146,13 @@ export const Scan = connect(state => ({
             }
         >
             <FormItem>
-                {/* notranslate */}
-                <StyledText type="title">QR Scanner</StyledText>
+                <StyledText type="title">{$t('s_scan_title')}</StyledText>
                 <StyledText type="body">{description}</StyledText>
             </FormItem>
             <FormItem>
                 {actions.map((action, index) => (
-                    <FormItem type="list">
-                        <Button title={action.title} onPress={() => action.handler(data)} key={'act' + index} />
+                    <FormItem type="list" key={'act' + index}>
+                        <Button title={action.title} onPress={() => action.handler(data)} />
                     </FormItem>
                 ))}
             </FormItem>

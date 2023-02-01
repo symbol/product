@@ -79,7 +79,6 @@ export const requestAndroidWritePermission = async () => {
     }
 
     if (!isPermissionGranted) {
-        // noerror
         throw Error('error_permission_denied_write_storage');
     }
 
@@ -103,8 +102,7 @@ export const writeFile = async (data, filename, encoding) => {
         }
     }
     catch(e) {
-        // noerror
-        throw Error('error_failed_write_file' + e.message);
+        throw Error('error_failed_write_file');
     }
             
     return true;
