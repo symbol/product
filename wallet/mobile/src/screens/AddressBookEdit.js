@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { ScrollView } from 'react-native-gesture-handler';
 import { Screen, FormItem, StyledText, TextBox, Button, Dropdown } from 'src/components';
 import { $t } from 'src/localization';
 import { Router } from 'src/Router';
@@ -27,7 +28,8 @@ export const AddressBookEdit = connect(state => ({
     const existedAddresses = allContacts
         .map(contact => contact.address)
         .filter(el => el !== address);
-    const nameErrorMessage = useValidation(name, [validateRequired(), validateAccountName(), validateExisted(existedNames)], $t);
+    const isNameRequired = list === 'whitelist';
+    const nameErrorMessage = useValidation(name, [validateRequired(isNameRequired), validateAccountName(), validateExisted(existedNames)], $t);
     const addressErrorMessage = useValidation(address, [validateRequired(), validateAddress(), validateExisted(existedAddresses)], $t);
     const isButtonDisabled = !!nameErrorMessage || !!addressErrorMessage;
     const titleText = route.params?.type === 'edit'
@@ -45,12 +47,12 @@ export const AddressBookEdit = connect(state => ({
     }]
 
     const [saveContact] = useDataManager(async () => {
-        const action = route.params?.type === 'edit'
-            ? 'addressBook/updateContact'
-            : 'addressBook/addContact';
+        const action = route.params?.type === 'edit' ? 'addressBook/updateContact' : 'addressBook/addContact';
+        // notranslate
+        const updatedName = name ? name : 'Blocked';
         await store.dispatchAction({type: action, payload: {
             id: route.params?.id,
-            name,
+            name: updatedName,
             address,
             notes,
             isBlackListed: list === 'blacklist'
@@ -66,27 +68,28 @@ export const AddressBookEdit = connect(state => ({
                 <Button title="Save" isDisabled={isButtonDisabled} onPress={saveContact} />
             </FormItem>
         }>
-            <FormItem>
-                {/* notranslate */}
-                <StyledText type="title">{titleText}</StyledText>
-                <StyledText type="body">{descriptionText}</StyledText>
-            </FormItem>
-            <FormItem>
-                {/* notranslate */}
-                <Dropdown title="List" list={listOptions} value={list} onChange={setList} />
-            </FormItem>
-            <FormItem>
-                {/* notranslate */}
-                <TextBox title="Name" errorMessage={nameErrorMessage} value={name} onChange={setName} />
-            </FormItem>
-            <FormItem>
-                {/* notranslate */}
-                <TextBox title="Address" errorMessage={addressErrorMessage} value={address} onChange={setAddress} />
-            </FormItem>
-            <FormItem>
-                {/* notranslate */}
-                <TextBox title="Notes" value={notes} onChange={setNotes} />
-            </FormItem>
+            <ScrollView>
+                <FormItem>
+                    <StyledText type="title">{titleText}</StyledText>
+                    <StyledText type="body">{descriptionText}</StyledText>
+                </FormItem>
+                <FormItem>
+                    {/* notranslate */}
+                    <Dropdown title="List" list={listOptions} value={list} onChange={setList} />
+                </FormItem>
+                <FormItem>
+                    {/* notranslate */}
+                    <TextBox title="Name" errorMessage={nameErrorMessage} value={name} onChange={setName} />
+                </FormItem>
+                <FormItem>
+                    {/* notranslate */}
+                    <TextBox title="Address" errorMessage={addressErrorMessage} value={address} onChange={setAddress} />
+                </FormItem>
+                <FormItem>
+                    {/* notranslate */}
+                    <TextBox title="Notes" value={notes} onChange={setNotes} />
+                </FormItem>
+            </ScrollView>
         </Screen>
     );
 });

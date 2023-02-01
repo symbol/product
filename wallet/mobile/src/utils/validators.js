@@ -1,8 +1,8 @@
 import { MnemonicPassPhrase } from 'symbol-hd-wallets';
 import { isSymbolAddress } from './account';
 
-export const validateRequired = () => str => {
-    if (str.length === 0) {
+export const validateRequired = (isRequired = true) => str => {
+    if (isRequired && str.length === 0) {
         return 'validation_error_field_required';
     }
 }

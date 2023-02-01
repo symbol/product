@@ -1,7 +1,7 @@
 import _ from 'lodash';
 import { MosaicService, NamespaceService, TransactionService } from 'src/services';
 import { PersistentStorage } from 'src/storage';
-import { getUnresolvedIdsFromTransactionDTOs, transactionFromDTO } from 'src/utils';
+import { filterBlacklistedTransactions, getUnresolvedIdsFromTransactionDTOs, transactionFromDTO } from 'src/utils';
 
 export default {
     namespace: 'transaction',
@@ -34,7 +34,6 @@ export default {
             const { current } = state.account;
             const latestTransactions = await PersistentStorage.getLatestTransactions();
             const accountTransactions = latestTransactions[current?.address] || [];
-            console.log(`[Transaction] load transactions from cache for ${current?.address}`, accountTransactions.length)
             
             commit({type: 'transaction/setConfirmed', payload: accountTransactions});
             commit({type: 'transaction/setPartial', payload: []});
@@ -45,6 +44,7 @@ export default {
             const { networkProperties } = state.network;
             const { current } = state.account;
             const { confirmed } = state.transaction;
+            const { blackList } = state.addressBook;
 
             // Fetch transactions from DTO
             const [partialDTO, unconfirmedDTO, confirmedDTO] = await Promise.all([
@@ -71,16 +71,21 @@ export default {
             const unconfirmedPage = unconfirmedDTO.map(transactionDTO => transactionFromDTO(transactionDTO, transactionOptions));
             const confirmedPage = confirmedDTO.map(transactionDTO => transactionFromDTO(transactionDTO, transactionOptions));
 
+            //Filter blacklisted
+            const filteredPartialPage = filterBlacklistedTransactions(partialPage, blackList);
+            const filteredUnconfirmedPage = filterBlacklistedTransactions(unconfirmedPage, blackList);
+            const filteredConfirmedPage = filterBlacklistedTransactions(confirmedPage, blackList);
+
             // Update store
-            commit({type: 'transaction/setPartial', payload: partialPage});
-            commit({type: 'transaction/setUnconfirmed', payload: unconfirmedPage});
+            commit({type: 'transaction/setPartial', payload: filteredPartialPage});
+            commit({type: 'transaction/setUnconfirmed', payload: filteredUnconfirmedPage});
             
             if (keepPages) {
-                const updatedConfirmed = _.uniqBy([...confirmedPage, ...confirmed], 'id');
+                const updatedConfirmed = _.uniqBy([...filteredConfirmedPage, ...confirmed], 'id');
                 commit({type: 'transaction/setConfirmed', payload: updatedConfirmed});
             }
             else {
-                commit({type: 'transaction/setConfirmed', payload: confirmedPage});
+                commit({type: 'transaction/setConfirmed', payload: filteredConfirmedPage});
                 commit({type: 'transaction/setIsLastPage', payload: false});
             }
 
@@ -93,6 +98,7 @@ export default {
             const { networkProperties } = state.network;
             const { confirmed } = state.transaction;
             const { current } = state.account;
+            const { blackList } = state.addressBook;
 
             // Fetch transactions from DTO
             const confirmedDTO = await TransactionService.fetchAccountTransactions(current, networkProperties, {group: 'confirmed', pageNumber});
@@ -114,7 +120,10 @@ export default {
             const confirmedPage = confirmedDTO.map(transactionDTO => transactionFromDTO(transactionDTO, transactionOptions));
             const isLastPage = confirmedPage.length === 0;
 
-            const updatedConfirmed = _.uniqBy([...confirmed, ...confirmedPage], 'hash');
+            //Filter blacklisted
+            const filteredConfirmedPage = filterBlacklistedTransactions(confirmedPage, blackList);
+            const updatedConfirmed = _.uniqBy([...confirmed, ...filteredConfirmedPage], 'hash');
+
             // Update store
             commit({type: 'transaction/setConfirmed', payload: updatedConfirmed});
             commit({type: 'transaction/setIsLastPage', payload: isLastPage});

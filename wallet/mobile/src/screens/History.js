@@ -14,9 +14,10 @@ export const History = connect(state => ({
     partial: state.transaction.partial,
     unconfirmed: state.transaction.unconfirmed,
     confirmed: state.transaction.confirmed,
-    isLastPage: state.transaction.isLastPage
+    isLastPage: state.transaction.isLastPage,
+    blackList: state.addressBook.blackList
 }))(function History(props) {
-    const { isWalletReady, isLastPage, currentAccount, partial, unconfirmed, confirmed } = props;
+    const { isWalletReady, isLastPage, currentAccount, partial, unconfirmed, confirmed, blackList } = props;
     const [pageNumber, setPageNumber] = useState(1);
     const [isNextPageRequested, setIsNextPageRequested] = useState(false);
     const [fetchTransactions, isLoading] = useDataManager(async () => {
@@ -28,7 +29,7 @@ export const History = connect(state => ({
         await store.dispatchAction({type: 'transaction/fetchPage', payload: {pageNumber: nextPageNumber}});
         setPageNumber(nextPageNumber);
     }, null, handleError);
-    useInit(fetchTransactions, isWalletReady, [currentAccount]);
+    useInit(fetchTransactions, isWalletReady, [currentAccount, blackList]);
 
     const onEndReached = () => !isLastPage && setIsNextPageRequested(true);
     const isPlaceholderShown = (group) => group === 'confirmed' && !isLastPage;
