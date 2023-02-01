@@ -18,7 +18,6 @@ export const trunc = (str, type, length = 5) => {
     };
 
     if (typeof str !== 'string') {
-        console.error(`Failed to trunc text. ${typeof str} is not a "string"`);
         return '';
     }
 
@@ -51,42 +50,9 @@ export const handleError = (error) => {
 
 export const getCharPercentage = char => {
     const charset = [
-        '0',
-        '1',
-        '2',
-        '3',
-        '4',
-        '5',
-        '6',
-        '7',
-        '8',
-        '9',
-        'a',
-        'b',
-        'c',
-        'd',
-        'e',
-        'f',
-        'g',
-        'h',
-        'i',
-        'j',
-        'k',
-        'l',
-        'm',
-        'n',
-        'o',
-        'p',
-        'q',
-        'r',
-        's',
-        't',
-        'u',
-        'v',
-        'w',
-        'x',
-        'y',
-        'z',
+        '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+        'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
+        'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'
     ];
     const index = charset.indexOf(char.toLowerCase());
     
@@ -123,26 +89,25 @@ export const toFixedNumber = (num, digits) => {
 export const hslToRgb = (h, s, l) => {
     let r, g, b;
 
-    if (0 === s) { r = g = b = l; } // achromatic
-     else {
-        /* eslint-disable no-param-reassign */
-        const hue2rgb = (_p, _q, _t) => {
-            if (0 > _t)
-                _t += 1;
-            if (1 < _t)
-                _t -= 1;
-            if (_t < 1 / 6)
-                return _p + ((_q - _p) * (6 * _t));
-            if (_t < 1 / 2)
-                return _q;
-            if (_t < 2 / 3)
-                return _p + ((_q - _p) * (((2 / 3) - _t) * 6));
-            return _p;
-        };
-        /* eslint-disable no-param-reassign */
+    const hue2rgb = (_p, _q, _t) => {
+        if (0 > _t)
+            _t += 1;
+        if (1 < _t)
+            _t -= 1;
+        if (_t < 1 / 6)
+            return _p + ((_q - _p) * (6 * _t));
+        if (_t < 1 / 2)
+            return _q;
+        if (_t < 2 / 3)
+            return _p + ((_q - _p) * (((2 / 3) - _t) * 6));
+        return _p;
+    };
 
+    if (0 === s) { 
+        r = g = b = l; // achromatic
+    } 
+    else {
         const q = 0.5 > l ? (l * (1 + s)) : l + s - (l * s);
-
         const p = (2 * l) - q;
 
         r = hue2rgb(p, q, h + (1 / 3));
@@ -189,6 +154,24 @@ export const getColorFromHash = (hash) => {
     const color = hslToRgb(hue, saturation, lightness);
 
     return `rgb(${color.R}, ${color.G}, ${color.B})`
+}
+
+export const isAddressKnown = (address, accounts, addressBook) => {
+    if (!address) {
+        return false;
+    }
+
+    const walletAccount = accounts.find(account => address === account.address);
+    if (walletAccount) {
+        return true;
+    }
+
+    const contact = addressBook.getContactByAddress(address);
+    if (contact) {
+        return true;
+    }
+
+    return false;
 }
 
 export const getAddressName = (address, currentAccount, accounts, addressBook) => {

@@ -1,13 +1,11 @@
 import React from 'react';
 import { Image, StyleSheet, View } from 'react-native';
-
 import { connect } from 'src/store';
 import { spacings } from 'src/styles';
 import { AccountAvatar, ButtonCopy, FormItem, StyledText } from 'src/components';
 import { $t } from 'src/localization';
 import { getAddressName } from 'src/utils';
 
-const TRANSLATION_ROOT_KEY = 'table';
 const renderTypeMap = {
     address: [
         'address',
@@ -37,11 +35,8 @@ const renderTypeMap = {
     ],
     boolean: ['supplyMutable', 'transferable', 'restrictable', 'revokable'],
     fee: ['fee', 'maxFee'],
-    amount: ['amount', 'resolvedFee'],
-    secret: ['privateKey', 'remotePrivateKey', 'vrfPrivateKey'],
     message: ['message'],
     mosaics: ['mosaics'],
-    namespaces: ['accountAliasNames'],
     encryption: ['messageEncrypted'],
     transactionType: ['type', 'transactionType', '_restrictionOperationAdditions', '_restrictionOperationDeletions'],
     translate: [
@@ -76,7 +71,6 @@ export const TableView = connect(state => ({
             .filter(([key, value]) => value !== null && value !== undefined)
             .map(([key, value]) => ({key, value}));
     }
-
 
     const renderKey = (item) => {
         const translatedKey = $t(`data_${item.key}`);
