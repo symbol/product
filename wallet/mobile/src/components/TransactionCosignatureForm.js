@@ -19,10 +19,11 @@ export const TransactionCosignatureForm = connect(state => ({
     addressBook: state.addressBook.addressBook,
     walletAccounts: state.wallet.accounts,
     currentAccount: state.account.current,
+    isMultisig: state.account.isMultisig,
     networkIdentifier: state.network.networkIdentifier,
     networkProperties: state.network.networkProperties,
 }))(function TransactionCosignatureForm(props) {
-    const { style, height, transaction, addressBook, currentAccount, networkIdentifier, networkProperties, walletAccounts } = props;
+    const { style, height, transaction, addressBook, currentAccount, isMultisig, networkIdentifier, networkProperties, walletAccounts } = props;
     const { signerAddress } = transaction;
     const networkWalletAccounts = walletAccounts[networkIdentifier];
     const animatedHeight = useSharedValue(0);
@@ -36,7 +37,7 @@ export const TransactionCosignatureForm = connect(state => ({
         style,
     ]
 
-    const isAwaitingSignature = isTransactionAwaitingSignatureByAccount(transaction, currentAccount);
+    const isAwaitingSignature = isTransactionAwaitingSignatureByAccount(transaction, currentAccount) && !isMultisig;
     const signerContact = addressBook.getContactByAddress(signerAddress);
     const isBlackListedSigner = signerContact && signerContact.isBlackListed;
     const isWhiteListedSigner = signerContact && !isBlackListedSigner;
