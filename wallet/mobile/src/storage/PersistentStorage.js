@@ -12,7 +12,7 @@ export class PersistentStorage {
     static BALANCES_KEY = 'balances';
     static LATEST_TRANSACTIONS_KEY = 'latestTransactions';
     static MOSAIC_INFOS_KEY = 'mosaicInfos';
-    static OWNED_MOSAICS_KEY = 'ownedMosaics';
+    static ACCOUNT_INFOS_KEY = 'accountInfos';
     static ADDRESS_BOOK_KEY = 'addressBook';
 
     // Data Schema Version
@@ -151,6 +151,22 @@ export class PersistentStorage {
         return this.set(this.MOSAIC_INFOS_KEY, JSON.stringify(payload));
     }
 
+    // Account Infos
+    static async getAccountInfos() {
+        const accountInfos = await this.get(this.ACCOUNT_INFOS_KEY);
+        const defaultAccountInfos = {};
+        
+        try {
+            return JSON.parse(accountInfos) || defaultAccountInfos;
+        } catch {
+            return defaultAccountInfos;
+        }
+    }
+
+    static async setAccountInfos(payload) {
+        return this.set(this.ACCOUNT_INFOS_KEY, JSON.stringify(payload));
+    }
+
     // Address Book
     static async getAddressBook() {
         const rawAddressBook = await this.get(this.ADDRESS_BOOK_KEY);
@@ -192,7 +208,7 @@ export class PersistentStorage {
             this.remove(this.BALANCES_KEY),
             this.remove(this.LATEST_TRANSACTIONS_KEY),
             this.remove(this.MOSAIC_INFOS_KEY),
-            this.remove(this.OWNED_MOSAICS_KEY),
+            this.remove(this.ACCOUNT_INFOS_KEY),
             this.remove(this.ADDRESS_BOOK_KEY)
         ]);
     };
