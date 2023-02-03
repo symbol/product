@@ -65,7 +65,7 @@ export const TransactionGraphic = connect(state => ({
             ActionBody = () => <>
                 {hasMessage && <Image style={styles.actionIcon} source={require('src/assets/images/icon-tx-message.png')} />}
                 {hasCustomMosaic && <Image style={styles.actionIcon} source={require('src/assets/images/icon-select-mosaic-custom.png')} />}
-                <Text style={styles.actionText}>{Math.abs(transferredAmount)} {ticker}</Text>
+                {!!transferredAmount && <Text style={styles.actionText}>{Math.abs(transferredAmount)} {ticker}</Text>}
             </>
             break;
         case TransactionType.NAMESPACE_REGISTRATION:
