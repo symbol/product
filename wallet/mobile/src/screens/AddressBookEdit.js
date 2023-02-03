@@ -18,24 +18,27 @@ export const AddressBookEdit = connect(state => ({
         ...addressBookBlackList,
         ...accounts[networkIdentifier]
     ];
+    const isEdit = route.params?.type === 'edit';
     const [list, setList] = useProp(route.params?.list, 'whitelist');
     const [name, setName] = useProp(route.params?.name, '');
     const [address, setAddress] = useProp(route.params?.address, '');
     const [notes, setNotes] = useProp(route.params?.notes, '');
+    const nameToExclude = isEdit ? route.params?.name : '';
+    const addressToExclude = isEdit ? route.params?.address : '';
     const existedNames = allContacts
         .map(contact => contact.name)
-        .filter(el => el !== name);
+        .filter(el => el !== nameToExclude);
     const existedAddresses = allContacts
         .map(contact => contact.address)
-        .filter(el => el !== address);
+        .filter(el => el !== addressToExclude);
     const isNameRequired = list === 'whitelist';
     const nameErrorMessage = useValidation(name, [validateRequired(isNameRequired), validateAccountName(), validateExisted(existedNames)], $t);
     const addressErrorMessage = useValidation(address, [validateRequired(), validateAddress(), validateExisted(existedAddresses)], $t);
     const isButtonDisabled = !!nameErrorMessage || !!addressErrorMessage;
-    const titleText = route.params?.type === 'edit'
+    const titleText = isEdit
         ? $t('s_addressBook_manage_title_edit')
         : $t('s_addressBook_manage_title_add');
-    const descriptionText = route.params?.type === 'edit'
+    const descriptionText = isEdit
         ? ''
         : $t('s_addressBook_manage_description_add');
     const listOptions = [{
@@ -46,8 +49,8 @@ export const AddressBookEdit = connect(state => ({
         value: 'blacklist'
     }]
 
-    const [saveContact] = useDataManager(async () => {
-        const action = route.params?.type === 'edit' ? 'addressBook/updateContact' : 'addressBook/addContact';
+    const [saveContact, isLoading] = useDataManager(async () => {
+        const action = isEdit ? 'addressBook/updateContact' : 'addressBook/addContact';
         const updatedName = name ? name : $t('s_addressBook_account_blacklist_defaultName');
         await store.dispatchAction({type: action, payload: {
             id: route.params?.id,
@@ -60,7 +63,7 @@ export const AddressBookEdit = connect(state => ({
     }, null, handleError);
    
     return (
-        <Screen bottomComponent={
+        <Screen isLoading={isLoading} bottomComponent={
             <FormItem>
                 <Button title={$t('button_save')} isDisabled={isButtonDisabled} onPress={saveContact} />
             </FormItem>
