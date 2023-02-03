@@ -1,4 +1,5 @@
 import { AccountService, MosaicService, NamespaceService } from "src/services";
+import { PersistentStorage } from "src/storage";
 import { getMosaicsWithRelativeAmounts } from "src/utils";
 
 export default {
@@ -42,15 +43,25 @@ export default {
             const { networkIdentifier } = state.network;
             const { selectedAccountId, accounts } = state.wallet;
             const networkAccounts = accounts[networkIdentifier];
-            console.log('Load accounts', {networkIdentifier, accounts})
             const currentAccount = networkAccounts.find(account => account.privateKey === selectedAccountId) || networkAccounts[0];
+            const accountInfos = await PersistentStorage.getAccountInfos();
+            const accountInfo = accountInfos[currentAccount?.address];
+
+            if (accountInfo) {
+                commit({type: 'account/setIsMultisig', payload: accountInfo.isMultisig});
+                commit({type: 'account/setCosignatories', payload: accountInfo.cosignatories});
+                commit({type: 'account/setMosaics', payload: accountInfo.mosaics});
+                commit({type: 'account/setNamespaces', payload: accountInfo.namespaces});
+            }
+            else {
+                commit({type: 'account/setIsMultisig', payload: false});
+                commit({type: 'account/setCosignatories', payload: []});
+                commit({type: 'account/setMosaics', payload: []});
+                commit({type: 'account/setNamespaces', payload: []});
+            }
 
             commit({type: 'account/setCurrent', payload: currentAccount});
             commit({type: 'account/setIsReady', payload: false});
-            commit({type: 'account/setIsMultisig', payload: false});
-            commit({type: 'account/setCosignatories', payload: []});
-            commit({type: 'account/setMosaics', payload: []});
-            commit({type: 'account/setNamespaces', payload: []});
         },
         fetchData: async ({ dispatchAction, state }) => {
             const { address } = state.account.current;
@@ -98,6 +109,16 @@ export default {
             commit({type: 'account/setMosaics', payload: formattedMosaics});
             commit({type: 'account/setNamespaces', payload: namespaces});
             commit({type: 'account/setIsReady', payload: true});
+
+            const accountInfo = {
+                mosaics: formattedMosaics,
+                namespaces,
+                isMultisig,
+                cosignatories
+            };
+            const accountInfos = await PersistentStorage.getAccountInfos();
+            accountInfos[address] = accountInfo;
+            PersistentStorage.setAccountInfos(accountInfos);
         },
     },
 };
