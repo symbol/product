@@ -107,8 +107,14 @@ export const TransactionDetails = connect(state => ({
     }, [transaction, decryptedMessageText]);
     const details = _.pick(transaction, ['height', 'hash', 'fee', 'signerAddress', 'receivedCosignatures']);
 
-    const addSignerContact = () => Router.goToAddressBookEdit({address: transaction.signerAddress});
-    const addRecipientContact = () => Router.goToAddressBookEdit({address: transaction.recipientAddress});
+    const addSignerContact = () => {
+        Router.goBack();
+        Router.goToAddressBookEdit({address: transaction.signerAddress})
+    };
+    const addRecipientContact = () => {
+        Router.goBack();
+        Router.goToAddressBookEdit({address: transaction.recipientAddress});
+    };
     const openBlockExplorer = () => Linking.openURL(config.explorerURL[networkIdentifier] + '/transactions/' + transaction.hash);
 
     return (
