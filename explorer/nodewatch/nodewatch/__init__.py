@@ -93,9 +93,10 @@ def create_app():
 	@app.context_processor
 	def inject_timestamps():  # pylint: disable=unused-variable
 		routes_facade = nem_routes_facade if request.path.startswith('/nem') else symbol_routes_facade
-		return dict(
-			last_reload_time=routes_facade.last_reload_time.strftime(TIMESTAMP_FORMAT),
-			last_refresh_time=routes_facade.last_refresh_time.strftime(TIMESTAMP_FORMAT))
+		return {
+			'last_reload_time': routes_facade.last_reload_time.strftime(TIMESTAMP_FORMAT),
+			'last_refresh_time': routes_facade.last_refresh_time.strftime(TIMESTAMP_FORMAT)
+		}
 
 	def reload_all(force=False):
 		log.debug('reloading all data')
