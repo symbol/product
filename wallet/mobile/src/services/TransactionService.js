@@ -93,12 +93,7 @@ export class TransactionService {
         const transactionHttp = new TransactionHttp(networkProperties.nodeUrl);
         const transactionDTO = await transactionHttp.getTransaction(hash, 'partial').toPromise();
 
-        try {
         return transactionFromDTO(transactionDTO, {networkProperties, currentAccount});
-        }
-        catch(e) {
-            console.error(e)
-        }
     }
 
     static async decryptMessage(transaction, currentAccount, networkProperties) {
