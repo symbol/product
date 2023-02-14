@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { AppState, BackHandler, DeviceEventEmitter, SafeAreaView, StatusBar } from 'react-native';
+import { BackHandler, DeviceEventEmitter, SafeAreaView, StatusBar } from 'react-native';
 import { Provider } from 'react-redux'
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { hasUserSetPinCode } from '@haskkor/react-native-pincode';
@@ -12,15 +12,13 @@ import { SecureStorage } from './storage';
 import store from 'src/store';
 import { initLocalization } from './localization';
 import { RouterView, Router } from './Router';
-import { colors } from './styles';
+import { colors, layout } from './styles';
 
-const fillHeight = {flex: 1};
 const appBackgroundColor = { backgroundColor: colors.bgGray };
 
 const App = () => {
     const [isPasscodeEnabled, setIsPasscodeEnabled] = useState(false);
     const [isUnlocked, setIsUnlocked] = useState(false);
-    const [hasBeenUnlocked, setHasBeenUnlocked] = useState(false);
     const [isWalletExist, setIsWalletExist] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const isPasscodeShown = isPasscodeEnabled && !isUnlocked;
@@ -33,50 +31,44 @@ const App = () => {
 
     const unlock = () => {
         setIsUnlocked(true);
-        setHasBeenUnlocked(true);
     }
+    const load = async () => {
+        await initLocalization();
+        const isPasscodeEnabled = await hasUserSetPinCode();
+        const isWalletExist = !!(await SecureStorage.getMnemonic());
+        await store.dispatchAction({type: 'wallet/loadAll'});
+        store.dispatchAction({type: 'network/connect'});
 
-    const handleStateChange = () => {
-        // setIsUnlocked(false);
+        setIsPasscodeEnabled(isPasscodeEnabled);
+        setIsWalletExist(isWalletExist);
+        setIsLoading(false);
+        SplashScreen.hide();
     };
 
     useEffect(() => {
-        const load = async () => {
-            const isPasscodeEnabled = await hasUserSetPinCode();
-            const isWalletExist = !!(await SecureStorage.getMnemonic());
-            await initLocalization();
-            await store.dispatchAction({type: 'wallet/loadAll'});
-            store.dispatchAction({type: 'network/connect'});
-
-            setIsPasscodeEnabled(isPasscodeEnabled);
-            setIsWalletExist(isWalletExist);
-            setIsLoading(false);
-            SplashScreen.hide();
-        };
-
+        // Initialize wallet and load data from cache
         load();
 
-        AppState.addEventListener('change', handleStateChange);
+        // Listen for an event from the Passscode screen
         DeviceEventEmitter.addListener(passcodeParams.successEvent, unlock);
         DeviceEventEmitter.addListener(passcodeParams.cancel, BackHandler.exitApp);
     }, []);
 
+    // If the main component shown (PIN-code is disabled or user unlocked the wallet) 
+    // and the wallet exists (mnemonic stored in the cache), navigate to Home screen.
+    // Otherwise stay on the Welcome screen (default)
     useEffect(() => {
-        if (!isMainContainerShown || hasBeenUnlocked) {
-            return;
-        }
-
-        if (isWalletExist) {
+        if (isMainContainerShown && isWalletExist) {
             Router.goToHome();
         }
     }, [isMainContainerShown]);
 
     return (<>
-        <GestureHandlerRootView style={[fillHeight, appBackgroundColor]}>
-            <SafeAreaView style={fillHeight} >
+        <GestureHandlerRootView style={[layout.fill, appBackgroundColor]}>
+            <SafeAreaView style={layout.fill} >
                 <StatusBar backgroundColor={colors.bgStatusbar} />
                 <Provider store={store}>
-                    <ConnectionStatus />
+                    {isMainContainerShown && <ConnectionStatus />}
                     <FlashMessage animationDuration={200} floating={true} />
                     <RouterView isActive={isMainContainerShown} />
                     {isPasscodeShown && (

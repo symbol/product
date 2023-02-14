@@ -191,7 +191,6 @@ export const mosaicAliasTransactionFromDTO = (transaction, config) => {
 
 export const mosaicDefinitionTransactionFromDTO = (transaction, config) => {
     const baseTransaction = baseTransactionFromDTO(transaction, config);
-    //const resolvedMosaic = await NamespaceService.resolveMosaicId(transaction.mosaicId, network);
 
     return {
         ...baseTransaction,
@@ -208,7 +207,6 @@ export const mosaicDefinitionTransactionFromDTO = (transaction, config) => {
 
 export const mosaicSupplyChangeTransactionFromDTO = (transaction, config) => {
     const baseTransaction = baseTransactionFromDTO(transaction, config);
-    //const resolvedMosaic = await NamespaceService.resolveMosaicId(transaction.mosaicId, network);
 
     return {
         ...baseTransaction,

@@ -51,7 +51,6 @@ export const downloadPaperWallet = async (mnemonic, rootAccount, networkIdentifi
         hdRootAccount,
         [],
         networkIdentifierToNetworkType(networkIdentifier),
-        // TODO: add generation hash seed
     );
 
     const paperWalletPdf = await paperWallet.toPdf();
