@@ -4,22 +4,21 @@ import { TouchableOpacity } from 'react-native';
 import { showMessage } from 'react-native-flash-message';
 import { copyToClipboard } from 'src/utils';
 
-export const ButtonCopy = props => {
+export const ButtonCopy = (props) => {
     const { content, style, size } = props;
     const styleIcon = size === 'sm' ? styles.icon : styles.iconSm;
 
     const handlePress = () => {
         try {
             copyToClipboard(content);
-            showMessage({message: content, type: 'info'});
+            showMessage({ message: content, type: 'info' });
+        } catch (error) {
+            showMessage({ message: error.message, type: 'danger' });
         }
-        catch(error) {
-            showMessage({message: error.message, type: 'danger'});
-        }
-    }
-    const stopPropagation = e => {
+    };
+    const stopPropagation = (e) => {
         e.stopPropagation();
-    }
+    };
 
     return (
         <View style={style} onTouchEnd={stopPropagation}>
@@ -38,5 +37,5 @@ const styles = StyleSheet.create({
     iconSm: {
         width: 16,
         height: 16,
-    }
+    },
 });

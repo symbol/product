@@ -3,10 +3,10 @@ const fs = require('fs');
 
 const MAIN_FILE_PATH = __dirname + '/../node_modules/symbol-qr-library/dist/src/QRCode.js';
 
-fs.readFile(MAIN_FILE_PATH, 'utf8', function(err, data) {
+fs.readFile(MAIN_FILE_PATH, 'utf8', function (err, data) {
     const formatted = data.replace(/require\("qrcode"\)/g, 'require("qrcode/lib/server")');
 
-    fs.writeFile(MAIN_FILE_PATH, formatted, 'utf8', function(err) {
+    fs.writeFile(MAIN_FILE_PATH, formatted, 'utf8', function (err) {
         if (err) return console.log(err);
         else console.log('[+] Fixed QR Code...');
     });
@@ -15,10 +15,10 @@ fs.readFile(MAIN_FILE_PATH, 'utf8', function(err, data) {
 const MODULE_FILE_PATH = __dirname + '/../node_modules/symbol-wallets-lib/node_modules/symbol-qr-library/dist/src/QRCode.js';
 
 if (fs.existsSync(MODULE_FILE_PATH)) {
-    fs.readFile(MODULE_FILE_PATH, 'utf8', function(err, data) {
+    fs.readFile(MODULE_FILE_PATH, 'utf8', function (err, data) {
         const formatted = data.replace(/require\("qrcode"\)/g, 'require("qrcode/lib/server")');
 
-        fs.writeFile(MODULE_FILE_PATH, formatted, 'utf8', function(err) {
+        fs.writeFile(MODULE_FILE_PATH, formatted, 'utf8', function (err) {
             if (err) return console.log(err);
             else console.log('[+] Fixed QR Code under symbol-wallets-lib module...');
         });

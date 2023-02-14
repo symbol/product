@@ -1,26 +1,26 @@
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, Text, TouchableOpacity } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { borders, colors, fonts, spacings } from 'src/styles';
 import { ButtonPlain, MnemonicView } from 'src/components';
 
-export const MnemonicConfirm = props => {
-    const { mnemonic, onChange} = props;
+export const MnemonicConfirm = (props) => {
+    const { mnemonic, onChange } = props;
     const [enteredWords, setEnteredWords] = useState([]);
     const [remainedWords, setRemainedWords] = useState([]);
     const enteredMnemonic = enteredWords.join(' ');
     const isBackspaceButtonShown = enteredWords.length > 0;
 
-    const addWord = word => {
-        setRemainedWords(remainedWords.filter(el => el !== word));
+    const addWord = (word) => {
+        setRemainedWords(remainedWords.filter((el) => el !== word));
         setEnteredWords([...enteredWords, word]);
-    }
+    };
     const removeWord = () => {
         const updatedEnteredWords = [...enteredWords];
         const removedWord = updatedEnteredWords.pop();
         const updatedRemainedWords = [...remainedWords, removedWord].sort((a, b) => a > b);
         setRemainedWords(updatedRemainedWords);
         setEnteredWords(updatedEnteredWords);
-    }
+    };
 
     useEffect(() => {
         if (enteredMnemonic.length > mnemonic) {
@@ -59,7 +59,7 @@ const styles = StyleSheet.create({
     },
     backspace: {
         alignSelf: 'flex-end',
-        margin: spacings.margin
+        margin: spacings.margin,
     },
     buttonContainer: {
         flexDirection: 'row',
@@ -74,6 +74,6 @@ const styles = StyleSheet.create({
         margin: spacings.margin / 2,
         padding: spacings.padding / 2,
         backgroundColor: colors.accentLightForm,
-        color: colors.textBody
-    }
+        color: colors.textBody,
+    },
 });

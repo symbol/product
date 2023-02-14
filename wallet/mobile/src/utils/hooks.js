@@ -5,7 +5,7 @@ import { Router } from 'src/Router';
 export const usePasscode = (type, onSuccess, onCancel) => {
     const successState = '.s';
     const cancelState = '.c';
-    
+
     return () => {
         const uniqueNumber = Math.floor(Date.now() / 1000);
         const eventId = `event.passcode.${uniqueNumber}`;
@@ -15,10 +15,10 @@ export const usePasscode = (type, onSuccess, onCancel) => {
         Router.goToPasscode({
             type,
             successEvent: eventId + successState,
-            cancelEvent: eventId + cancelState
+            cancelEvent: eventId + cancelState,
         });
     };
-}
+};
 
 export const useValidation = (value, validators, formatResult) => {
     for (const validator of validators) {
@@ -40,18 +40,17 @@ export const usePromises = (initialPromiseMap, errorHandler) => {
         setTimeout(async () => {
             for (const promiseKey in promiseMap) {
                 const promise = promiseMap[promiseKey];
-                
+
                 if (promise) {
                     try {
                         await promise();
-                    }
-                    catch(error) {
+                    } catch (error) {
                         if (errorHandler) {
                             errorHandler(error);
                         }
                     }
 
-                    const updatedPromiseMap = {...promiseMap};
+                    const updatedPromiseMap = { ...promiseMap };
                     updatedPromiseMap[promiseKey] = null;
                     setPromiseMap(updatedPromiseMap);
                     break;
@@ -59,13 +58,13 @@ export const usePromises = (initialPromiseMap, errorHandler) => {
             }
         });
     };
-    
+
     useEffect(() => {
         runPromise();
     }, [promiseMap]);
 
     return [promiseMap, setPromiseMap];
-}
+};
 
 export const useDataManager = (callback, defaultData, onError) => {
     const [isLoading, setIsLoading] = useState(false);
@@ -77,8 +76,7 @@ export const useDataManager = (callback, defaultData, onError) => {
             try {
                 const data = await callback(...args);
                 setData(data);
-            }
-            catch(error) {
+            } catch (error) {
                 if (onError) {
                     onError(error);
                 }
@@ -88,7 +86,7 @@ export const useDataManager = (callback, defaultData, onError) => {
     };
 
     return [call, isLoading, data];
-}
+};
 
 export const useProp = (prop, initValue) => {
     const [value, setValue] = useState(prop === undefined ? initValue : prop);
@@ -100,7 +98,7 @@ export const useProp = (prop, initValue) => {
     }, [prop]);
 
     return [value, setValue];
-}
+};
 
 export const useInit = (callback, isReady, deps = []) => {
     useEffect(() => {
@@ -113,7 +111,7 @@ export const useInit = (callback, isReady, deps = []) => {
 export const useToggle = (initialValue) => {
     const [value, setValue] = useState(initialValue);
 
-    const toggle = () => setValue(value => !value);
+    const toggle = () => setValue((value) => !value);
 
     return [value, toggle];
 };

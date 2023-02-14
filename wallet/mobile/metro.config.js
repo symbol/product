@@ -24,6 +24,6 @@ module.exports = {
             process: require.resolve('process/browser.js'),
             util: require.resolve('util'),
             zlib: require.resolve('browserify-zlib'),
-        }
-    }
+        },
+    },
 };

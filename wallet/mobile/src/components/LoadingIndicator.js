@@ -2,11 +2,10 @@ import React from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { colors } from 'src/styles';
 
-
 export const LoadingIndicator = (props) => {
     const { size, fill } = props;
     const indicatorSize = size === 'sm' ? 'small' : 'large';
-    
+
     return (
         <>
             <View style={styles.root}>
@@ -35,5 +34,5 @@ const styles = StyleSheet.create({
     fillHeight: {
         height: '100%',
         width: '100%',
-    }
+    },
 });

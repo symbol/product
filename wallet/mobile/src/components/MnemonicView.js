@@ -1,26 +1,24 @@
 import React from 'react';
-import { View, StyleSheet, Text, TouchableOpacity } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { borders, colors, fonts, spacings } from 'src/styles';
 import { ButtonCopy } from 'src/components';
 import { $t } from 'src/localization';
 
-export const MnemonicView = props => {
-    const { isShown, isCopyDisabled, mnemonic, onShowPress} = props;
+export const MnemonicView = (props) => {
+    const { isShown, isCopyDisabled, mnemonic, onShowPress } = props;
     const placeholder = Array(mnemonic.length).join('*');
     const styleMnemonicText = isShown ? [styles.textMnemonic] : [styles.textMnemonic, styles.hidden];
     const mnemonicText = isShown ? mnemonic : placeholder;
-    
+
     return (
         <View style={styles.root}>
-            <Text style={styleMnemonicText}>
-                {mnemonicText}
-            </Text>
+            <Text style={styleMnemonicText}>{mnemonicText}</Text>
             {isShown && !isCopyDisabled && <ButtonCopy content={mnemonicText} style={styles.copy} />}
-            {!isShown && <TouchableOpacity onPress={onShowPress} style={styles.button}>
-                <Text style={styles.textButton}>
-                    {$t('button_showMnemonic')}
-                </Text>
-            </TouchableOpacity>}
+            {!isShown && (
+                <TouchableOpacity onPress={onShowPress} style={styles.button}>
+                    <Text style={styles.textButton}>{$t('button_showMnemonic')}</Text>
+                </TouchableOpacity>
+            )}
         </View>
     );
 };
@@ -35,19 +33,19 @@ const styles = StyleSheet.create({
     copy: {
         position: 'absolute',
         top: spacings.padding / 2,
-        right: spacings.padding / 2
+        right: spacings.padding / 2,
     },
     textMnemonic: {
         ...fonts.label,
         marginVertical: spacings.margin,
         color: colors.textForm,
         textAlign: 'center',
-        padding: spacings.padding
+        padding: spacings.padding,
     },
     textButton: {
         ...fonts.button,
         color: colors.controlButtonText,
-        textAlign: 'center'
+        textAlign: 'center',
     },
     button: {
         position: 'absolute',
@@ -57,6 +55,6 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     hidden: {
-        opacity: 0.1
+        opacity: 0.1,
     },
 });

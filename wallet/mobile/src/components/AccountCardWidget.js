@@ -1,13 +1,13 @@
 import React from 'react';
-import { Image, View, StyleSheet, Text, ActivityIndicator } from 'react-native';
+import { ActivityIndicator, Image, StyleSheet, Text, View } from 'react-native';
 import { borders, colors, fonts, layout, spacings } from 'src/styles';
 import { ButtonCopy, DialogBox, TouchableNative } from 'src/components';
 import { TouchableOpacity } from 'react-native-gesture-handler';
 import { useToggle, validateAccountName, validateRequired } from 'src/utils';
 import { $t } from 'src/localization';
 
-export const AccountCardWidget = props => {
-    const { address, balance, name, ticker, isLoading, onNameChange, onReceivePress, onSendPress, onDetailsPress} = props;
+export const AccountCardWidget = (props) => {
+    const { address, balance, name, ticker, isLoading, onNameChange, onReceivePress, onSendPress, onDetailsPress } = props;
     const [isNameEditShown, toggleNameEdit] = useToggle(false);
     const nameValidators = [validateRequired(), validateAccountName()];
     const touchableBackground = colors.accentLightForm;
@@ -26,7 +26,7 @@ export const AccountCardWidget = props => {
                 <View style={layout.row}>
                     <Text style={styles.textName}>{name}</Text>
                     <TouchableOpacity hitSlop={5} onPress={toggleNameEdit}>
-                        <Image source={require('src/assets/images/icon-edit.png')} style={styles.editIcon}/>
+                        <Image source={require('src/assets/images/icon-edit.png')} style={styles.editIcon} />
                     </TouchableOpacity>
                 </View>
                 <Text style={styles.textTitle}>{$t('c_accountCard_title_balance')}</Text>
@@ -43,31 +43,31 @@ export const AccountCardWidget = props => {
             <View style={styles.controls}>
                 <View style={styles.button}>
                     <TouchableNative color={touchableBackground} onPress={onDetailsPress} style={styles.buttonPressable}>
-                        <Image source={require('src/assets/images/icon-wallet.png')} style={styles.icon}/>
+                        <Image source={require('src/assets/images/icon-wallet.png')} style={styles.icon} />
                         <Text style={styles.textButton}>{$t('c_accountCard_button_accountDetails')}</Text>
                     </TouchableNative>
                 </View>
                 <View style={styles.button}>
                     <TouchableNative color={touchableBackground} onPress={onSendPress} style={styles.buttonPressable}>
-                        <Image source={require('src/assets/images/icon-send.png')} style={styles.icon}/>
+                        <Image source={require('src/assets/images/icon-send.png')} style={styles.icon} />
                         <Text style={styles.textButton}>{$t('c_accountCard_button_send')}</Text>
                     </TouchableNative>
                 </View>
                 <View style={[styles.button, styles.clearBorderRight]}>
                     <TouchableNative color={touchableBackground} onPress={onReceivePress} style={styles.buttonPressable}>
-                        <Image source={require('src/assets/images/icon-receive.png')} style={styles.icon}/>
+                        <Image source={require('src/assets/images/icon-receive.png')} style={styles.icon} />
                         <Text style={styles.textButton}>{$t('c_accountCard_button_receive')}</Text>
                     </TouchableNative>
                 </View>
             </View>
             <DialogBox
-                type="prompt" 
+                type="prompt"
                 title={$t('c_accountCard_prompt_title')}
                 text={$t('c_accountCard_prompt_text')}
                 promptValidators={nameValidators}
-                isVisible={isNameEditShown} 
-                onSuccess={handleNameChange} 
-                onCancel={toggleNameEdit} 
+                isVisible={isNameEditShown}
+                onSuccess={handleNameChange}
+                onCancel={toggleNameEdit}
             />
         </View>
     );
@@ -87,7 +87,7 @@ const styles = StyleSheet.create({
         width: 260,
         right: 0,
         top: -58,
-        resizeMode: 'stretch'
+        resizeMode: 'stretch',
     },
     loadingIndicator: {
         position: 'absolute',
@@ -95,7 +95,7 @@ const styles = StyleSheet.create({
         left: 0,
         width: '100%',
         height: '100%',
-        backgroundColor: '#0001'
+        backgroundColor: '#0001',
     },
     content: {
         width: '100%',
@@ -116,7 +116,7 @@ const styles = StyleSheet.create({
     editIcon: {
         width: 18,
         height: 18,
-        marginLeft: spacings.margin / 2
+        marginLeft: spacings.margin / 2,
     },
     textBalance: {
         ...fonts.body,
@@ -133,14 +133,14 @@ const styles = StyleSheet.create({
     textAddress: {
         ...fonts.body,
         color: colors.textForm,
-        marginRight: spacings.margin / 2
+        marginRight: spacings.margin / 2,
     },
     controls: {
         flexDirection: 'row',
         backgroundColor: colors.accentForm,
         borderBottomLeftRadius: borders.borderRadiusForm,
         borderBottomRightRadius: borders.borderRadiusForm,
-        overflow: 'hidden'
+        overflow: 'hidden',
     },
     button: {
         height: 48,
@@ -153,12 +153,12 @@ const styles = StyleSheet.create({
         height: '100%',
         justifyContent: 'center',
         alignItems: 'center',
-        flexDirection: 'row'
+        flexDirection: 'row',
     },
     icon: {
         width: 18,
         height: 18,
-        marginRight: spacings.paddingSm / 2
+        marginRight: spacings.paddingSm / 2,
     },
     textButton: {
         ...fonts.button,
@@ -166,6 +166,6 @@ const styles = StyleSheet.create({
         color: colors.textForm,
     },
     clearBorderRight: {
-        borderRightWidth: null
+        borderRightWidth: null,
     },
 });

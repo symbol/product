@@ -9,26 +9,25 @@ import { getUnresolvedIdsFromTransactionDTOs, transferTransactionFromDTO, transf
 import { MosaicService } from 'src/services';
 import { $t } from 'src/localization';
 
-export const QRScanner = props => {
+export const QRScanner = (props) => {
     const { isVisible, type, networkProperties, onSuccess, onClose } = props;
     const { QRTypes } = QRCode;
 
-    const handleScan = async response => {
-        let parsedType
+    const handleScan = async (response) => {
+        let parsedType;
         let data;
 
         try {
             parsedType = JSON.parse(response.data).type;
             data = response.data;
-        }
-        catch {
-            showMessage({message: $t('error_qr_failed_parse'), type: 'danger'});
+        } catch {
+            showMessage({ message: $t('error_qr_failed_parse'), type: 'danger' });
             onClose();
             return;
         }
 
         if (type && parsedType !== type) {
-            showMessage({message: $t('error_qr_expected_type'), type: 'danger'});
+            showMessage({ message: $t('error_qr_expected_type'), type: 'danger' });
             onClose();
             return;
         }
@@ -58,34 +57,35 @@ export const QRScanner = props => {
                     const { mosaicIds } = getUnresolvedIdsFromTransactionDTOs([transactionDTO]);
                     const mosaicInfos = await MosaicService.fetchMosaicInfos(networkProperties, mosaicIds);
                     const transaction = transferTransactionFromDTO(transactionDTO, {
-                        networkProperties, 
-                        mosaicInfos, 
-                        currentAccount: {}
+                        networkProperties,
+                        mosaicInfos,
+                        currentAccount: {},
                     });
-                    onSuccess({transaction, networkType}, 'transaction');
+                    onSuccess({ transaction, networkType }, 'transaction');
                     onClose();
                     return;
 
                 default:
-                showMessage({message: $t('error_qr_unsupported'), type: 'danger'});
+                    showMessage({ message: $t('error_qr_unsupported'), type: 'danger' });
             }
-        }
-        catch(e) {
-            showMessage({message: $t('error_qr_failed_parse'), type: 'danger'});
+        } catch (e) {
+            showMessage({ message: $t('error_qr_failed_parse'), type: 'danger' });
         }
         onClose();
     };
 
     return (
         <Modal animationType="fade" visible={isVisible} onRequestClose={onClose}>
-            {isVisible && <View style={styles.root}>
-                <QRCodeScanner
-                    checkAndroid6Permissions
-                    showMarker
-                    onRead={handleScan}
-                    topContent={<StyledText type="title">{$t('c_scanner_title')}</StyledText>}
-                />
-            </View>}
+            {isVisible && (
+                <View style={styles.root}>
+                    <QRCodeScanner
+                        checkAndroid6Permissions
+                        showMarker
+                        onRead={handleScan}
+                        topContent={<StyledText type="title">{$t('c_scanner_title')}</StyledText>}
+                    />
+                </View>
+            )}
         </Modal>
     );
 };
@@ -93,6 +93,6 @@ export const QRScanner = props => {
 const styles = StyleSheet.create({
     root: {
         backgroundColor: colors.bgForm,
-        height: '100%'
+        height: '100%',
     },
 });

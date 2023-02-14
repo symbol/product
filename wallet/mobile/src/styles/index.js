@@ -17,7 +17,7 @@ export const colors = {
     bgGray: DesignSystem.ColorDarkmodeBgGray,
     bgAccountCard: DesignSystem.ColorDarkmodeBgMain,
     bgAccountCardSelected: '#2f0b40',
-    
+
     bgCard: '#413c4f',
     bgCardTransparent: 'rgba(241, 243, 244, 0.15)',
     bgForm: DesignSystem.ColorDarkmodeFormBg,
@@ -52,7 +52,6 @@ export const colors = {
     bgNeutral: DesignSystem.ColorLightmodeSemanticNeutral,
     bgInfo: DesignSystem.ColorLightmodeSemanticInfo,
 
-
     controlButtonStroke: DesignSystem.ColorDarkmodeButtonDefaultStroke,
     controlButtonBg: DesignSystem.ColorDarkmodeButtonDefaultBg,
     controlButtonText: DesignSystem.ColorDarkmodeButtonDefaultText,
@@ -64,7 +63,6 @@ export const colors = {
     controlButtonDisabledStroke: '#26c3f244',
     controlButtonDisabledBg: DesignSystem.ColorDarkmodeButtonPressedBg,
     controlButtonDisabledText: '#26c3f255',
-
 
     controlBaseStroke: DesignSystem.ColorDarkmodeFormAccentLight,
     controlBaseBg: DesignSystem.ColorDarkmodeFormBg,
@@ -84,7 +82,7 @@ export const fonts = {
     },
     textBox: {
         fontFamily: 'Protipo-Regular',
-        fontSize: 13
+        fontSize: 13,
     },
     placeholder: {
         fontFamily: 'Carbon-Bold',
@@ -111,15 +109,15 @@ export const fonts = {
     },
     body: {
         fontFamily: 'Protipo-Regular',
-        fontSize: 13
+        fontSize: 13,
     },
     bodyBold: {
         fontFamily: 'Protipo-Bold',
-        fontSize: 13
+        fontSize: 13,
     },
     subtitle: {
         fontFamily: 'Protipo-Bold',
-        fontSize: 17
+        fontSize: 17,
     },
     title: {
         fontFamily: 'Rajdhani-Bold',
@@ -136,8 +134,8 @@ export const fonts = {
     amount: {
         fontFamily: 'Protipo-Regular',
         fontSize: 24,
-        lineHeight: 29
-    }
+        lineHeight: 29,
+    },
 };
 
 export const borders = {
@@ -145,8 +143,8 @@ export const borders = {
     borderRadiusForm: 12,
     borderRadiusControl: 4,
     borderRadiusAccountSelector: 8,
-    borderWidth: 2
-}
+    borderWidth: 2,
+};
 
 export const spacings = {
     controlHeight: 48,
@@ -154,36 +152,36 @@ export const spacings = {
     marginLg: 30,
     paddingSm: 8,
     padding: 16,
-    padding2: 24
-}
+    padding2: 24,
+};
 
 export const layout = {
     row: {
-        flexDirection: 'row'
+        flexDirection: 'row',
     },
     justifyCenter: {
-        justifyContent: 'center'
+        justifyContent: 'center',
     },
     justifyBetween: {
-        justifyContent: 'space-between'
+        justifyContent: 'space-between',
     },
     alignCenter: {
-        alignItems: 'center'
+        alignItems: 'center',
     },
     alignEnd: {
-        alignItems: 'flex-end'
+        alignItems: 'flex-end',
     },
     fill: {
-        flex: 1
+        flex: 1,
     },
     listContainer: {
-        paddingTop: spacings.margin
-    }
-}
+        paddingTop: spacings.margin,
+    },
+};
 
 export const timings = {
     press: {
         duration: 100,
-        easing: Easing.linear
-    }
+        easing: Easing.linear,
+    },
 };

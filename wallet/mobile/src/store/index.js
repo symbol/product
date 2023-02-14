@@ -48,7 +48,7 @@ const createRootReducer = (state, action) => {
         return rootState;
     }
 
-    Object.values(modules).forEach(module => {
+    Object.values(modules).forEach((module) => {
         rootState = {
             ...rootState,
             ...createModuleReducer(module, state, action),
@@ -79,7 +79,7 @@ store.dispatchAction = ({ type, payload }) => {
     }
 
     const state = store.getState();
-    return store.dispatch(dispatch =>
+    return store.dispatch((dispatch) =>
         modules[namespace].actions[action](
             {
                 commit: dispatch,

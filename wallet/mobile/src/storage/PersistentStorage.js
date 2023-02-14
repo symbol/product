@@ -26,7 +26,7 @@ export class PersistentStorage {
         return parseInt(version);
     };
 
-    static setDataSchemaVersion = payload => {
+    static setDataSchemaVersion = (payload) => {
         return this.set(this.DATA_SCHEMA_VERSION, payload.toString());
     };
 
@@ -36,13 +36,12 @@ export class PersistentStorage {
 
         try {
             return JSON.parse(networkIdentifier);
-        }
-        catch {
+        } catch {
             return 'mainnet';
         }
     };
 
-    static setNetworkIdentifier = payload => {
+    static setNetworkIdentifier = (payload) => {
         return this.set(this.NETWORK_IDENTIFIER_KEY, JSON.stringify(payload));
     };
 
@@ -52,7 +51,7 @@ export class PersistentStorage {
         return nodeUrl === 'null' ? null : nodeUrl;
     };
 
-    static setSelectedNode = payload => {
+    static setSelectedNode = (payload) => {
         const nodeUrl = payload === null ? 'null' : payload;
         return this.set(this.SELECTED_NODE_KEY, nodeUrl);
     };
@@ -61,8 +60,8 @@ export class PersistentStorage {
     static getSelectedLanguage = () => {
         return this.get(this.SELECTED_LANGUAGE_KEY);
     };
-    
-    static setSelectedLanguage = payload => {
+
+    static setSelectedLanguage = (payload) => {
         return this.set(this.SELECTED_LANGUAGE_KEY, payload);
     };
 
@@ -77,7 +76,7 @@ export class PersistentStorage {
         return isPasscodeSelected === 'true';
     };
 
-    static setIsPasscodeEnabled = payload => {
+    static setIsPasscodeEnabled = (payload) => {
         return this.set(this.PASSCODE_ENABLED_KEY, payload.toString());
     };
 
@@ -86,9 +85,9 @@ export class PersistentStorage {
         const addresses = await this.get(this.SEED_ADDRESSES_KEY);
         const defaultAccounts = {
             mainnet: [],
-            testnet: []
+            testnet: [],
         };
-        
+
         try {
             return JSON.parse(addresses) || defaultAccounts;
         } catch {
@@ -104,7 +103,7 @@ export class PersistentStorage {
     static async getBalances() {
         const balances = await this.get(this.BALANCES_KEY);
         const defaultBalances = {};
-        
+
         try {
             return JSON.parse(balances) || defaultBalances;
         } catch {
@@ -120,7 +119,7 @@ export class PersistentStorage {
     static async getLatestTransactions() {
         const latestTransactions = await this.get(this.LATEST_TRANSACTIONS_KEY);
         const defaultLatestTransactions = {};
-        
+
         try {
             return JSON.parse(latestTransactions) || defaultLatestTransactions;
         } catch {
@@ -137,9 +136,9 @@ export class PersistentStorage {
         const mosaicInfos = await this.get(this.MOSAIC_INFOS_KEY);
         const defaultMosaicInfos = {
             mainnet: {},
-            testnet: {}
+            testnet: {},
         };
-        
+
         try {
             return JSON.parse(mosaicInfos) || defaultMosaicInfos;
         } catch {
@@ -155,7 +154,7 @@ export class PersistentStorage {
     static async getAccountInfos() {
         const accountInfos = await this.get(this.ACCOUNT_INFOS_KEY);
         const defaultAccountInfos = {};
-        
+
         try {
             return JSON.parse(accountInfos) || defaultAccountInfos;
         } catch {
@@ -174,8 +173,7 @@ export class PersistentStorage {
 
         try {
             return AddressBook.fromJSON(rawAddressBook);
-        }
-        catch {
+        } catch {
             return defaultAddressBook;
         }
     }
@@ -189,11 +187,11 @@ export class PersistentStorage {
         return AsyncStorage.setItem(key, value);
     };
 
-    static get = key => {
+    static get = (key) => {
         return AsyncStorage.getItem(key);
     };
 
-    static remove = key => {
+    static remove = (key) => {
         return AsyncStorage.removeItem(key);
     };
 
@@ -209,7 +207,7 @@ export class PersistentStorage {
             this.remove(this.LATEST_TRANSACTIONS_KEY),
             this.remove(this.MOSAIC_INFOS_KEY),
             this.remove(this.ACCOUNT_INFOS_KEY),
-            this.remove(this.ADDRESS_BOOK_KEY)
+            this.remove(this.ADDRESS_BOOK_KEY),
         ]);
     };
 }

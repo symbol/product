@@ -1,6 +1,6 @@
-import { AccountService, MosaicService, NamespaceService } from "src/services";
-import { PersistentStorage } from "src/storage";
-import { getMosaicsWithRelativeAmounts } from "src/utils";
+import { AccountService, MosaicService, NamespaceService } from 'src/services';
+import { PersistentStorage } from 'src/storage';
+import { getMosaicsWithRelativeAmounts } from 'src/utils';
 
 export default {
     namespace: 'account',
@@ -44,32 +44,31 @@ export default {
             const { networkIdentifier } = state.network;
             const { selectedAccountId, accounts } = state.wallet;
             const networkAccounts = accounts[networkIdentifier];
-            const currentAccount = networkAccounts.find(account => account.privateKey === selectedAccountId) || networkAccounts[0];
+            const currentAccount = networkAccounts.find((account) => account.privateKey === selectedAccountId) || networkAccounts[0];
             const accountInfos = await PersistentStorage.getAccountInfos();
             const accountInfo = accountInfos[currentAccount?.address];
 
             if (accountInfo) {
-                commit({type: 'account/setIsMultisig', payload: accountInfo.isMultisig});
-                commit({type: 'account/setCosignatories', payload: accountInfo.cosignatories});
-                commit({type: 'account/setMosaics', payload: accountInfo.mosaics});
-                commit({type: 'account/setNamespaces', payload: accountInfo.namespaces});
-            }
-            else {
-                commit({type: 'account/setIsMultisig', payload: false});
-                commit({type: 'account/setCosignatories', payload: []});
-                commit({type: 'account/setMosaics', payload: []});
-                commit({type: 'account/setNamespaces', payload: []});
+                commit({ type: 'account/setIsMultisig', payload: accountInfo.isMultisig });
+                commit({ type: 'account/setCosignatories', payload: accountInfo.cosignatories });
+                commit({ type: 'account/setMosaics', payload: accountInfo.mosaics });
+                commit({ type: 'account/setNamespaces', payload: accountInfo.namespaces });
+            } else {
+                commit({ type: 'account/setIsMultisig', payload: false });
+                commit({ type: 'account/setCosignatories', payload: [] });
+                commit({ type: 'account/setMosaics', payload: [] });
+                commit({ type: 'account/setNamespaces', payload: [] });
             }
 
-            commit({type: 'account/setCurrent', payload: currentAccount});
-            commit({type: 'account/setIsReady', payload: false});
+            commit({ type: 'account/setCurrent', payload: currentAccount });
+            commit({ type: 'account/setIsReady', payload: false });
         },
         // Fetch latest data from API
         fetchData: async ({ dispatchAction, state }) => {
             const { address } = state.account.current;
-           
-            await dispatchAction({type: 'wallet/fetchBalance', payload: address});
-            await dispatchAction({type: 'account/fetchInfo'});
+
+            await dispatchAction({ type: 'wallet/fetchBalance', payload: address });
+            await dispatchAction({ type: 'account/fetchInfo' });
         },
         // Fetch account and multisig info, owned mosaics and namespaces. Store to cache
         fetchInfo: async ({ commit, state }) => {
@@ -80,8 +79,7 @@ export default {
             try {
                 const accountInfo = await AccountService.fetchAccountInfo(networkProperties, address);
                 mosaics = accountInfo.mosaics;
-            }
-            catch(error) {
+            } catch (error) {
                 if (error.message !== 'error_fetch_not_found') {
                     throw Error('error_fetch_account_info');
                 }
@@ -93,28 +91,27 @@ export default {
                 const multisigInfo = await AccountService.fetchMultisigInfo(networkProperties, address);
                 cosignatories = multisigInfo.cosignatories;
                 isMultisig = cosignatories.length > 0;
-            }
-            catch {
+            } catch {
                 isMultisig = false;
             }
 
-            const mosaicIds = mosaics.map(mosaic => mosaic.id);
+            const mosaicIds = mosaics.map((mosaic) => mosaic.id);
             const mosaicInfos = await MosaicService.fetchMosaicInfos(networkProperties, mosaicIds);
             const formattedMosaics = getMosaicsWithRelativeAmounts(mosaics, mosaicInfos);
 
             const namespaces = await NamespaceService.fetchAccountNamespaces(address, networkProperties);
-            
-            commit({type: 'account/setIsMultisig', payload: isMultisig});
-            commit({type: 'account/setCosignatories', payload: cosignatories});
-            commit({type: 'account/setMosaics', payload: formattedMosaics});
-            commit({type: 'account/setNamespaces', payload: namespaces});
-            commit({type: 'account/setIsReady', payload: true});
+
+            commit({ type: 'account/setIsMultisig', payload: isMultisig });
+            commit({ type: 'account/setCosignatories', payload: cosignatories });
+            commit({ type: 'account/setMosaics', payload: formattedMosaics });
+            commit({ type: 'account/setNamespaces', payload: namespaces });
+            commit({ type: 'account/setIsReady', payload: true });
 
             const accountInfo = {
                 mosaics: formattedMosaics,
                 namespaces,
                 isMultisig,
-                cosignatories
+                cosignatories,
             };
             const accountInfos = await PersistentStorage.getAccountInfos();
             accountInfos[address] = accountInfo;

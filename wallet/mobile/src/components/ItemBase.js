@@ -1,7 +1,7 @@
 import { useIsFocused } from '@react-navigation/native';
 import React, { useState } from 'react';
 import { useEffect } from 'react';
-import { StyleSheet, View, Pressable } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { borders, colors, spacings } from 'src/styles';
 import { FormItem, TouchableNative } from 'src/components';
@@ -16,20 +16,22 @@ export function ItemBase(props) {
     const opacity = useSharedValue(0);
     const scale = useSharedValue(1);
     const animatedContainer = useAnimatedStyle(() => ({
-        transform: [{
-            scale: scale.value
-        }],
+        transform: [
+            {
+                scale: scale.value,
+            },
+        ],
         opacity: opacity.value,
     }));
     const stylesCardWithBorder = {
         ...styles.cardWithBorder,
-        borderColor: borderColor
+        borderColor: borderColor,
     };
     const styleCard = [
         styles.card,
         borderColor ? stylesCardWithBorder : null,
         isLayoutAnimationEnabled ? animatedContainer : null,
-        contentContainerStyle
+        contentContainerStyle,
     ];
     const styleRoot = [styles.root, style];
 
@@ -38,7 +40,7 @@ export function ItemBase(props) {
             onPress();
             setIsExpanded(true);
         }
-    }
+    };
 
     const isFocused = useIsFocused();
 
@@ -52,20 +54,18 @@ export function ItemBase(props) {
 
     useEffect(() => {
         if (isLayoutAnimationEnabled) {
-            setTimeout(() => opacity.value = withTiming(1), 150);
+            setTimeout(() => (opacity.value = withTiming(1)), 150);
         }
-    }, [isLayoutAnimationEnabled])
+    }, [isLayoutAnimationEnabled]);
 
     return (
         <FormItem type="list" style={styleRoot}>
             <TouchableNative onPress={handlePress}>
-                <Animated.View style={styleCard}>
-                    {children}
-                </Animated.View>
+                <Animated.View style={styleCard}>{children}</Animated.View>
             </TouchableNative>
         </FormItem>
     );
-};
+}
 
 export const ItemPlaceholder = () => (
     <FormItem type="list">
@@ -84,13 +84,13 @@ const styles = StyleSheet.create({
         backgroundColor: colors.bgCard,
         borderColor: colors.bgCard,
         borderRadius: borders.borderRadius,
-        padding: spacings.paddingSm + borders.borderWidth
+        padding: spacings.paddingSm + borders.borderWidth,
     },
     cardWithBorder: {
         borderWidth: borders.borderWidth,
-        padding: spacings.paddingSm
+        padding: spacings.paddingSm,
     },
     cardPlaceholder: {
-        opacity: 0.2
+        opacity: 0.2,
     },
 });

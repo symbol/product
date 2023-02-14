@@ -41,21 +41,54 @@ export const trunc = (str, type, length = 5) => {
         default:
             return trunc(str, 'end', length);
     }
-}
+};
 
 export const handleError = (error) => {
-    showMessage({message: error.message, type: 'danger'});
+    showMessage({ message: error.message, type: 'danger' });
     console.error(error);
 };
 
-export const getCharPercentage = char => {
+export const getCharPercentage = (char) => {
     const charset = [
-        '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
-        'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
-        'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'
+        '0',
+        '1',
+        '2',
+        '3',
+        '4',
+        '5',
+        '6',
+        '7',
+        '8',
+        '9',
+        'a',
+        'b',
+        'c',
+        'd',
+        'e',
+        'f',
+        'g',
+        'h',
+        'i',
+        'j',
+        'k',
+        'l',
+        'm',
+        'n',
+        'o',
+        'p',
+        'q',
+        'r',
+        's',
+        't',
+        'u',
+        'v',
+        'w',
+        'x',
+        'y',
+        'z',
     ];
     const index = charset.indexOf(char.toLowerCase());
-    
+
     return index / (charset.length - 1);
 };
 
@@ -65,62 +98,56 @@ export const vibrate = () => {
             if (Platform.OS === 'android') {
                 Vibration.vibrate(2);
             }
-        }
-    }
-}
+        },
+    };
+};
 
 export const toFixedNumber = (num, digits) => {
     const power = Math.pow(10, digits);
 
     return Math.round(num * power) / power;
-}
+};
 
 /**
-	 * Converts an HSL color value to RGB. Conversion formula
-	 * adapted from http://en.wikipedia.org/wiki/HSL_color_space.
-	 * Assumes h, s, and l are contained in the set [0, 1] and
-	 * returns r, g, and b in the set [0, 255].
-	 *
-	 * @param   {number}  h       The hue
-	 * @param   {number}  s       The saturation
-	 * @param   {number}  l       The lightness
-	 * @returns {object} {R: Number, G: Number, B: Number}
-	 */
+ * Converts an HSL color value to RGB. Conversion formula
+ * adapted from http://en.wikipedia.org/wiki/HSL_color_space.
+ * Assumes h, s, and l are contained in the set [0, 1] and
+ * returns r, g, and b in the set [0, 255].
+ *
+ * @param   {number}  h       The hue
+ * @param   {number}  s       The saturation
+ * @param   {number}  l       The lightness
+ * @returns {object} {R: Number, G: Number, B: Number}
+ */
 export const hslToRgb = (h, s, l) => {
     let r, g, b;
 
     const hue2rgb = (_p, _q, _t) => {
-        if (0 > _t)
-            _t += 1;
-        if (1 < _t)
-            _t -= 1;
-        if (_t < 1 / 6)
-            return _p + ((_q - _p) * (6 * _t));
-        if (_t < 1 / 2)
-            return _q;
-        if (_t < 2 / 3)
-            return _p + ((_q - _p) * (((2 / 3) - _t) * 6));
+        if (0 > _t) _t += 1;
+        if (1 < _t) _t -= 1;
+        if (_t < 1 / 6) return _p + (_q - _p) * (6 * _t);
+        if (_t < 1 / 2) return _q;
+        if (_t < 2 / 3) return _p + (_q - _p) * ((2 / 3 - _t) * 6);
         return _p;
     };
 
-    if (0 === s) { 
+    if (0 === s) {
         r = g = b = l; // achromatic
-    } 
-    else {
-        const q = 0.5 > l ? (l * (1 + s)) : l + s - (l * s);
-        const p = (2 * l) - q;
+    } else {
+        const q = 0.5 > l ? l * (1 + s) : l + s - l * s;
+        const p = 2 * l - q;
 
-        r = hue2rgb(p, q, h + (1 / 3));
+        r = hue2rgb(p, q, h + 1 / 3);
         g = hue2rgb(p, q, h);
-        b = hue2rgb(p, q, h - (1 / 3));
+        b = hue2rgb(p, q, h - 1 / 3);
     }
 
     return {
         R: Math.round(r * 255),
         G: Math.round(g * 255),
-        B: Math.round(b * 255)
+        B: Math.round(b * 255),
     };
-}
+};
 
 /**
  * Get RGB color from hash.
@@ -130,38 +157,70 @@ export const hslToRgb = (h, s, l) => {
  */
 export const getColorFromHash = (hash) => {
     if (!hash) {
-        return '#fff'
+        return '#fff';
     }
 
     const spread = 100;
     const saturation = 0.9;
     const lightness = 0.8;
     const charset = [
-        '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
-        'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
-        'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'
+        '0',
+        '1',
+        '2',
+        '3',
+        '4',
+        '5',
+        '6',
+        '7',
+        '8',
+        '9',
+        'a',
+        'b',
+        'c',
+        'd',
+        'e',
+        'f',
+        'g',
+        'h',
+        'i',
+        'j',
+        'k',
+        'l',
+        'm',
+        'n',
+        'o',
+        'p',
+        'q',
+        'r',
+        's',
+        't',
+        'u',
+        'v',
+        'w',
+        'x',
+        'y',
+        'z',
     ];
 
     let totalValue = 0;
 
-    for (const char of hash)
-        totalValue += charset.indexOf(char.toLowerCase());
+    for (const char of hash) totalValue += charset.indexOf(char.toLowerCase());
 
     const k = Math.trunc(totalValue / spread);
-    const offsetValue = totalValue - (spread * k);
+    const offsetValue = totalValue - spread * k;
     const hue = offsetValue / 100;
 
     const color = hslToRgb(hue, saturation, lightness);
 
-    return `rgb(${color.R}, ${color.G}, ${color.B})`
-}
+    return `rgb(${color.R}, ${color.G}, ${color.B})`;
+};
 
 export const isAddressKnown = (address, accounts, addressBook) => {
     if (!address) {
         return false;
     }
 
-    const walletAccount = accounts.find(account => address === account.address);
+    const walletAccount = accounts.find((account) => address === account.address);
     if (walletAccount) {
         return true;
     }
@@ -172,7 +231,7 @@ export const isAddressKnown = (address, accounts, addressBook) => {
     }
 
     return false;
-}
+};
 
 export const getAddressName = (address, currentAccount, accounts, addressBook) => {
     if (!address) {
@@ -180,9 +239,9 @@ export const getAddressName = (address, currentAccount, accounts, addressBook) =
     }
 
     if (address === currentAccount.address) {
-        return currentAccount.name
+        return currentAccount.name;
     }
-    const walletAccount = accounts.find(account => address === account.address);
+    const walletAccount = accounts.find((account) => address === account.address);
 
     if (walletAccount) {
         return walletAccount.name;
@@ -194,49 +253,34 @@ export const getAddressName = (address, currentAccount, accounts, addressBook) =
     }
 
     return address;
-}
+};
 
 export const formatDate = (dateStr, translate, showTime = false, showSeconds = false) => {
-	const months = [
-		'jan',
-		'feb',
-		'mar',
-		'apr',
-		'may',
-		'jun',
-		'jul',
-		'aug',
-		'sep',
-		'oct',
-		'nov',
-		'dec'
-	];
+    const months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
 
-	const addZero = num => {
-		return (0 <= num && 10 > num) ? '0' + num : num + '';
-	};
+    const addZero = (num) => {
+        return 0 <= num && 10 > num ? '0' + num : num + '';
+    };
 
-	const dateObj = new Date(dateStr);
-	const seconds = addZero(dateObj.getSeconds());
-	const minutes = addZero(dateObj.getMinutes());
-	const hour = addZero(dateObj.getHours());
-	const month = 'function' === typeof translate
-		? translate('month_' + months[dateObj.getMonth()])
-		: months[dateObj.getMonth()];
-	const day = dateObj.getDate();
-	const year = dateObj.getFullYear();
+    const dateObj = new Date(dateStr);
+    const seconds = addZero(dateObj.getSeconds());
+    const minutes = addZero(dateObj.getMinutes());
+    const hour = addZero(dateObj.getHours());
+    const month = 'function' === typeof translate ? translate('month_' + months[dateObj.getMonth()]) : months[dateObj.getMonth()];
+    const day = dateObj.getDate();
+    const year = dateObj.getFullYear();
 
-	let formattedDate = `${month} ${day}, ${year}`;
+    let formattedDate = `${month} ${day}, ${year}`;
 
-	formattedDate += showTime ? ` ${hour}:${minutes}` : '';
-	formattedDate += showTime && showSeconds ? `:${seconds}` : '';
+    formattedDate += showTime ? ` ${hour}:${minutes}` : '';
+    formattedDate += showTime && showSeconds ? `:${seconds}` : '';
 
-	return formattedDate;
+    return formattedDate;
 };
 
 export const interleave = (arr, callback) => arr.flatMap((el, index) => [el, callback(el, index)]).slice(0, -1);
 
 export const blockDurationToDaysLeft = (duration, blockGenerationTargetTime) => {
     const seconds = duration * blockGenerationTargetTime;
-    return  moment.utc().add(seconds, 's').fromNow();
-}
+    return moment.utc().add(seconds, 's').fromNow();
+};

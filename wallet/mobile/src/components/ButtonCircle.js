@@ -5,13 +5,13 @@ import { TouchableNative } from 'src/components';
 
 const SIZE = 56;
 
-export const ButtonCircle = props => {
+export const ButtonCircle = (props) => {
     const { source, style, onPress } = props;
     return (
         <View style={[styles.root, style]}>
             <TouchableNative style={styles.inner} color={colors.bgGray} onPress={onPress}>
                 <Image source={source} style={styles.icon} />
-            </TouchableNative> 
+            </TouchableNative>
         </View>
     );
 };
@@ -26,16 +26,16 @@ const styles = StyleSheet.create({
         borderRadius: SIZE / 2,
         overflow: 'hidden',
         backgroundColor: colors.primary,
-        elevation: 2
+        elevation: 2,
     },
     inner: {
         width: '100%',
         height: '100%',
         justifyContent: 'center',
-        alignItems: 'center'
+        alignItems: 'center',
     },
     icon: {
         width: 18,
-        height: 18
-    }
+        height: 18,
+    },
 });

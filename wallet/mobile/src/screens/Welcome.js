@@ -1,6 +1,6 @@
 import React from 'react';
-import { Image, StyleSheet, ScrollView } from 'react-native';
-import { Button, ButtonPlain, Screen, StyledText, FormItem, DialogBox } from 'src/components';
+import { Image, ScrollView, StyleSheet } from 'react-native';
+import { Button, ButtonPlain, DialogBox, FormItem, Screen, StyledText } from 'src/components';
 import { termsAndPrivacy } from 'src/config';
 import { $t } from 'src/localization';
 import { Router } from 'src/Router';
@@ -9,32 +9,37 @@ import { useToggle } from 'src/utils';
 
 export const Welcome = () => {
     const [isTermsAndPrivacyShown, toggleTermsAndPrivacy] = useToggle(true);
-    
+
     const createWallet = Router.goToCreateWallet;
     const importWallet = Router.goToImportWallet;
 
     return (
-        <Screen 
+        <Screen
             titleBar={<Image source={require('src/assets/images/art-welcome-bg-5.png')} style={styles.backgroundArt} />}
-            bottomComponent={<>
-            <FormItem>
-                <Button title={$t('button_walletCreate')} onPress={createWallet} />
-            </FormItem>
-            <FormItem>
-                <ButtonPlain title={$t('button_walletImport')} style={styles.buttonImport} onPress={importWallet} />
-            </FormItem>
-        </>}>
+            bottomComponent={
+                <>
+                    <FormItem>
+                        <Button title={$t('button_walletCreate')} onPress={createWallet} />
+                    </FormItem>
+                    <FormItem>
+                        <ButtonPlain title={$t('button_walletImport')} style={styles.buttonImport} onPress={importWallet} />
+                    </FormItem>
+                </>
+            }
+        >
             <ScrollView>
                 <FormItem>
-                    <Image source={require('src/assets/images/logo-symbol-full.png')} style={styles.logo}/>
+                    <Image source={require('src/assets/images/logo-symbol-full.png')} style={styles.logo} />
                 </FormItem>
                 <FormItem>
-                    <StyledText type="title" style={styles.title}>{$t('s_welcome_wallet_title')}</StyledText>
+                    <StyledText type="title" style={styles.title}>
+                        {$t('s_welcome_wallet_title')}
+                    </StyledText>
                 </FormItem>
             </ScrollView>
             <DialogBox
-                type="accept" 
-                isVisible={isTermsAndPrivacyShown} 
+                type="accept"
+                isVisible={isTermsAndPrivacyShown}
                 onSuccess={toggleTermsAndPrivacy}
                 style={layout.fill}
                 contentContainerStyle={layout.fill}
@@ -63,7 +68,7 @@ const styles = StyleSheet.create({
         resizeMode: 'cover',
     },
     buttonImport: {
-        alignSelf: 'center'
+        alignSelf: 'center',
     },
     logo: {
         width: 156,
@@ -74,5 +79,5 @@ const styles = StyleSheet.create({
     title: {
         ...fonts.titleLarge,
         color: colors.accentLightForm,
-    }
+    },
 });

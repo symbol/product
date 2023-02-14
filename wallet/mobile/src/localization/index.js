@@ -13,7 +13,7 @@ const translationGetters = {
 
 const languageNames = {
     en: 'English',
-	// Add names for new languages here
+    // Add names for new languages here
 };
 
 const translate = memoize(
@@ -22,40 +22,40 @@ const translate = memoize(
 );
 
 const updateConfig = (languageCode) => {
-	let updatedLanguageCode = DEFAULT_LANGUAGE_CODE;
-	
-	if (languageCode && translationGetters.hasOwnProperty(languageCode)) {
-		updatedLanguageCode = languageCode;
-	}
+    let updatedLanguageCode = DEFAULT_LANGUAGE_CODE;
 
-	translate.cache.clear();
-	i18n.translations = {
-		[updatedLanguageCode]: translationGetters[updatedLanguageCode](),
-		[DEFAULT_LANGUAGE_CODE]: translationGetters[DEFAULT_LANGUAGE_CODE](),
-	};
-	i18n.defaultLocale = DEFAULT_LANGUAGE_CODE;
-	i18n.locale = updatedLanguageCode;
-	i18n.fallbacks = true;
+    if (languageCode && translationGetters.hasOwnProperty(languageCode)) {
+        updatedLanguageCode = languageCode;
+    }
+
+    translate.cache.clear();
+    i18n.translations = {
+        [updatedLanguageCode]: translationGetters[updatedLanguageCode](),
+        [DEFAULT_LANGUAGE_CODE]: translationGetters[DEFAULT_LANGUAGE_CODE](),
+    };
+    i18n.defaultLocale = DEFAULT_LANGUAGE_CODE;
+    i18n.locale = updatedLanguageCode;
+    i18n.fallbacks = true;
 };
 
 export const initLocalization = async () => {
-	const languageCode = await getCurrentLanguage();
-	updateConfig(languageCode);
+    const languageCode = await getCurrentLanguage();
+    updateConfig(languageCode);
 };
 
 export const getCurrentLanguage = async () => {
-	return PersistentStorage.getSelectedLanguage();
+    return PersistentStorage.getSelectedLanguage();
 };
 
 export const setCurrentLanguage = async (languageCode) => {
-	updateConfig(languageCode);
-	await PersistentStorage.setSelectedLanguage(languageCode);
+    updateConfig(languageCode);
+    await PersistentStorage.setSelectedLanguage(languageCode);
 };
 
 export const getLanguages = () => {
     return {
-		...languageNames
-	};
+        ...languageNames,
+    };
 };
 
 export const $t = translate;

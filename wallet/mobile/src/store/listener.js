@@ -26,40 +26,35 @@ export default {
             }
 
             try {
-                const newListener = await ListenerService.listen(
-                    networkProperties, 
-                    current.address,
-                    {
-                        // handle confirmed transactions
-                        onConfirmedAdd: () => {
-                            dispatchAction({type: 'account/fetchData'});
-                            dispatchAction({type: 'transaction/fetchData', payload: true});
-                            showMessage({message: $t('message_transactionConfirmed'), type: 'success'})
-                        },
-                        // handle unconfirmed transactions
-                        onUnconfirmedAdd: () => {
-                            dispatchAction({type: 'transaction/fetchData', payload: true});
-                        },
-                        // handle unconfirmed transactions
-                        onUnconfirmedRemove: () => {
-                            dispatchAction({type: 'transaction/fetchData', payload: true});
-                        },
-                        // handle aggregate bonded transactions
-                        onAggregateBondedAdd: () => {
-                            dispatchAction({type: 'transaction/fetchData', payload: true});
-                            showMessage({message: $t('message_newAggregateBondedTransaction'), type: 'warning'})
-                        },
-                        // handle aggregate bonded transactions
-                        onAggregateBondedRemove: () => {
-                            dispatchAction({type: 'transaction/fetchData', payload: true});
-                        },
-                        // handle transaction error
-                        onTransactionError: (e) => handleError(Error(`error_${e.code}`))
-                    }
-                );
-                commit({type: 'listener/setListener', payload: newListener});
-            }
-            catch {}
+                const newListener = await ListenerService.listen(networkProperties, current.address, {
+                    // handle confirmed transactions
+                    onConfirmedAdd: () => {
+                        dispatchAction({ type: 'account/fetchData' });
+                        dispatchAction({ type: 'transaction/fetchData', payload: true });
+                        showMessage({ message: $t('message_transactionConfirmed'), type: 'success' });
+                    },
+                    // handle unconfirmed transactions
+                    onUnconfirmedAdd: () => {
+                        dispatchAction({ type: 'transaction/fetchData', payload: true });
+                    },
+                    // handle unconfirmed transactions
+                    onUnconfirmedRemove: () => {
+                        dispatchAction({ type: 'transaction/fetchData', payload: true });
+                    },
+                    // handle aggregate bonded transactions
+                    onAggregateBondedAdd: () => {
+                        dispatchAction({ type: 'transaction/fetchData', payload: true });
+                        showMessage({ message: $t('message_newAggregateBondedTransaction'), type: 'warning' });
+                    },
+                    // handle aggregate bonded transactions
+                    onAggregateBondedRemove: () => {
+                        dispatchAction({ type: 'transaction/fetchData', payload: true });
+                    },
+                    // handle transaction error
+                    onTransactionError: (e) => handleError(Error(`error_${e.code}`)),
+                });
+                commit({ type: 'listener/setListener', payload: newListener });
+            } catch {}
         },
-    }
+    },
 };

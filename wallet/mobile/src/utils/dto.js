@@ -1,15 +1,21 @@
 import { Constants } from 'src/config';
 import { TransactionType } from 'symbol-sdk';
-import { getNativeMosaicAmount, getMosaicRelativeAmount, getMosaicsWithRelativeAmounts, isIncomingTransaction, isOutgoingTransaction, addressFromPublicKey } from './';
+import {
+    addressFromPublicKey,
+    getMosaicRelativeAmount,
+    getMosaicsWithRelativeAmounts,
+    getNativeMosaicAmount,
+    isIncomingTransaction,
+    isOutgoingTransaction,
+} from './';
 
-export const mosaicFromDTO = mosaic => ({
+export const mosaicFromDTO = (mosaic) => ({
     id: mosaic.id.toHex(),
-    amount: parseInt(mosaic.amount.toString())
+    amount: parseInt(mosaic.amount.toString()),
 });
 
-export const addressFromDTO = (address, resolvedAddresses) => address.isNamespaceId()
-    ? resolvedAddresses[address.toHex()]
-    : address.plain();
+export const addressFromDTO = (address, resolvedAddresses) =>
+    address.isNamespaceId() ? resolvedAddresses[address.toHex()] : address.plain();
 
 export const transactionFromDTO = (transaction, config) => {
     const baseTransaction = baseTransactionFromDTO(transaction, config);
@@ -67,10 +73,10 @@ export const transactionFromDTO = (transaction, config) => {
     }
 
     return baseTransaction;
-}
+};
 
-export const baseTransactionFromDTO = (transaction, {networkProperties}) => {
-    return baseTransaction = {
+export const baseTransactionFromDTO = (transaction, { networkProperties }) => {
+    return (baseTransaction = {
         type: transaction.type,
         deadline: transaction.deadline.toLocalDateTime(networkProperties.epochAdjustment),
         height: transaction.transactionInfo?.height.toString(),
@@ -78,13 +84,13 @@ export const baseTransactionFromDTO = (transaction, {networkProperties}) => {
         id: transaction.transactionInfo?.id,
         fee: getMosaicRelativeAmount(transaction.maxFee.toString(), networkProperties.networkCurrency.divisibility),
         signerAddress: transaction.signer?.address.plain(),
-    };
+    });
 };
 
 export const aggregateTransactionFromDTO = (transaction, config) => {
     const baseTransaction = baseTransactionFromDTO(transaction, config);
-    const innerTransactions = transaction.innerTransactions.map(innerTransaction => transactionFromDTO(innerTransaction, config));
-    const cosignaturePublicKeys = transaction.cosignatures.map(cosignature => cosignature.signer.publicKey);
+    const innerTransactions = transaction.innerTransactions.map((innerTransaction) => transactionFromDTO(innerTransaction, config));
+    const cosignaturePublicKeys = transaction.cosignatures.map((cosignature) => cosignature.signer.publicKey);
     const resultAmount = innerTransactions.reduce((accumulator, transaction) => accumulator + (transaction.amount || 0), 0);
 
     if (transaction.signer) {
@@ -95,19 +101,19 @@ export const aggregateTransactionFromDTO = (transaction, config) => {
         ...baseTransaction,
         cosignaturePublicKeys: cosignaturePublicKeys,
         amount: resultAmount,
-        innerTransactions
+        innerTransactions,
     };
 
     if (transaction.type === TransactionType.AGGREGATE_BONDED) {
-        info.receivedCosignatures = transaction.cosignatures.map(signature => signature.signer.address.plain());
+        info.receivedCosignatures = transaction.cosignatures.map((signature) => signature.signer.address.plain());
         info.signTransactionObject = transaction;
     }
 
     return info;
 };
 
-export const transferTransactionFromDTO = (transaction, {networkProperties, mosaicInfos, currentAccount, resolvedAddresses}) => {
-    const baseTransaction = baseTransactionFromDTO(transaction, {networkProperties});
+export const transferTransactionFromDTO = (transaction, { networkProperties, mosaicInfos, currentAccount, resolvedAddresses }) => {
+    const baseTransaction = baseTransactionFromDTO(transaction, { networkProperties });
     const mosaics = transaction.mosaics.map(mosaicFromDTO);
     const formattedMosaics = getMosaicsWithRelativeAmounts(mosaics, mosaicInfos);
     const nativeMosaicAmount = getNativeMosaicAmount(formattedMosaics, networkProperties.networkCurrency.mosaicId);
@@ -120,8 +126,7 @@ export const transferTransactionFromDTO = (transaction, {networkProperties, mosa
 
     if (isIncomingTransaction(transactionBody, currentAccount) && !isOutgoingTransaction(transactionBody, currentAccount)) {
         resultAmount = nativeMosaicAmount;
-    }
-    else if (!isIncomingTransaction(transactionBody, currentAccount) && isOutgoingTransaction(transactionBody, currentAccount)) {
+    } else if (!isIncomingTransaction(transactionBody, currentAccount) && isOutgoingTransaction(transactionBody, currentAccount)) {
         resultAmount = -nativeMosaicAmount;
     }
 
@@ -133,25 +138,24 @@ export const transferTransactionFromDTO = (transaction, {networkProperties, mosa
         message = {
             text: messagePayload,
             isEncrypted: isMessageEncrypted,
-        }
-    }
-    else if (messagePayload && isMessageEncrypted) {
+        };
+    } else if (messagePayload && isMessageEncrypted) {
         message = {
             encryptedText: messagePayload,
             isEncrypted: isMessageEncrypted,
-        }
+        };
     }
 
     return {
         ...transactionBody,
         message,
         mosaics: formattedMosaics,
-        amount: resultAmount
+        amount: resultAmount,
     };
 };
 
-export const namespaceRegistrationTransactionFromDTO = (transaction, {networkProperties}) => {
-    const baseTransaction = baseTransactionFromDTO(transaction, {networkProperties});
+export const namespaceRegistrationTransactionFromDTO = (transaction, { networkProperties }) => {
+    const baseTransaction = baseTransactionFromDTO(transaction, { networkProperties });
 
     return {
         ...baseTransaction,
@@ -226,14 +230,14 @@ export const mosaicSupplyRevocationTransactionFromDTO = (transaction, config) =>
         ...baseTransaction,
         mosaicId: transaction.mosaic.id.toHex(),
         mosaics: formattedMosaics,
-        sourceAddress
+        sourceAddress,
     };
 };
 
 export const multisigAccountModificationTransactionFromDTO = (transaction, config) => {
     const baseTransaction = baseTransactionFromDTO(transaction, config);
-    const addressAdditions = transaction.addressAdditions.map(address => addressFromDTO(address, config.resolvedAddresses));
-    const addressDeletions = transaction.addressDeletions.map(address => addressFromDTO(address, config.resolvedAddresses));
+    const addressAdditions = transaction.addressAdditions.map((address) => addressFromDTO(address, config.resolvedAddresses));
+    const addressDeletions = transaction.addressDeletions.map((address) => addressFromDTO(address, config.resolvedAddresses));
 
     return {
         ...baseTransaction,
@@ -289,8 +293,8 @@ export const secretProofTransactionFromDTO = (transaction, config) => {
 
 export const accountAddressRestrictionTransactionFromDTO = (transaction, config) => {
     const baseTransaction = baseTransactionFromDTO(transaction, config);
-    const addressAdditions = transaction.restrictionAdditions.map(address => addressFromDTO(address, config.resolvedAddresses));
-    const addressDeletions = transaction.restrictionDeletions.map(address => addressFromDTO(address, config.resolvedAddresses));
+    const addressAdditions = transaction.restrictionAdditions.map((address) => addressFromDTO(address, config.resolvedAddresses));
+    const addressDeletions = transaction.restrictionDeletions.map((address) => addressFromDTO(address, config.resolvedAddresses));
 
     return {
         ...baseTransaction,
@@ -306,8 +310,8 @@ export const accountMosaicRestrictionTransactionFromDTO = (transaction, config) 
     return {
         ...baseTransaction,
         restrictionType: Constants.MosaicRestrictionFlag[transaction.restrictionFlags],
-        restrictionMosaicAdditions: transaction.restrictionAdditions.map(restriction => restriction.id.toHex()),
-        restrictionMosaicDeletions: transaction.restrictionDeletions.map(restriction => restriction.id.toHex()),
+        restrictionMosaicAdditions: transaction.restrictionAdditions.map((restriction) => restriction.id.toHex()),
+        restrictionMosaicDeletions: transaction.restrictionDeletions.map((restriction) => restriction.id.toHex()),
     };
 };
 
@@ -317,8 +321,8 @@ export const accountOperationRestrictionTransactionFromDTO = (transaction, confi
     return {
         ...baseTransaction,
         restrictionType: Constants.OperationRestrictionFlag[transaction.restrictionFlags],
-        restrictionOperationAdditions: transaction.restrictionAdditions.map(operation => operation),
-        restrictionOperationDeletions: transaction.restrictionDeletions.map(operation => operation),
+        restrictionOperationAdditions: transaction.restrictionAdditions.map((operation) => operation),
+        restrictionOperationDeletions: transaction.restrictionDeletions.map((operation) => operation),
     };
 };
 
@@ -373,7 +377,7 @@ export const accountMetadataTransactionFromDTO = (transaction, config) => {
 export const mosaicMetadataTransactionFromDTO = (transaction, config) => {
     const baseTransaction = baseTransactionFromDTO(transaction, config);
     const mosaicId = transaction.targetMosaicId.toHex();
-    const mosaicName = config.mosaicInfos[mosaicId]?.name
+    const mosaicName = config.mosaicInfos[mosaicId]?.name;
     const targetAddress = addressFromDTO(transaction.targetAddress, config.resolvedAddresses);
 
     return {

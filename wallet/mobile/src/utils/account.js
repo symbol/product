@@ -16,10 +16,10 @@ export const addressFromPublicKey = (publicKey, networkIdentifier) => {
 export const publicAccountFromPrivateKey = (privateKey, networkIdentifier) => {
     const networkType = networkIdentifierToNetworkType(networkIdentifier);
     const publicAccount = Account.createFromPrivateKey(privateKey, networkType);
-    
+
     return {
         address: publicAccount.address.plain(),
-        publicKey: publicAccount.publicKey
+        publicKey: publicAccount.publicKey,
     };
 };
 
@@ -30,35 +30,35 @@ export const createWalletAccount = (privateKey, networkIdentifier, name, account
         privateKey,
         networkIdentifier,
         accountType,
-        index: (index === null || index === undefined) ? null : index
-    }
+        index: index === null || index === undefined ? null : index,
+    };
 };
 
-export const isPublicOrPrivateKey = stringToTest => {
+export const isPublicOrPrivateKey = (stringToTest) => {
     return typeof stringToTest === 'string' && stringToTest.length === 64;
-}
+};
 
-export const isSymbolAddress = address => {
+export const isSymbolAddress = (address) => {
     if (typeof address !== 'string') {
         return false;
-    } 
+    }
     if (address.length !== 39) {
         return false;
     }
     const addressTrimAndUpperCase = address.trim().toUpperCase().replace(/-/g, '');
-    
+
     if (addressTrimAndUpperCase.charAt(0) !== 'T' && addressTrimAndUpperCase.charAt(0) !== 'N') {
         return false;
     }
 
     return true;
-}
+};
 
-export const addressFromRaw = rawAddress => {
+export const addressFromRaw = (rawAddress) => {
     return RawAddress.addressToString(Convert.hexToUint8(rawAddress));
 };
 
-export const namespaceIdFromRaw = rawNamespaceId => {
+export const namespaceIdFromRaw = (rawNamespaceId) => {
     const relevantPart = rawNamespaceId.substr(2, 16);
     const encodedNamespaceId = Convert.uint8ToHex(Convert.hexToUint8Reverse(relevantPart));
 

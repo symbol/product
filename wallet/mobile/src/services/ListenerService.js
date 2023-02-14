@@ -1,25 +1,17 @@
-
-import { Address, RepositoryFactoryHttp} from 'symbol-sdk';
+import { Address, RepositoryFactoryHttp } from 'symbol-sdk';
 
 export class ListenerService {
     static async listen(
-        networkProperties, 
+        networkProperties,
         address,
-        {
-            onConfirmedAdd,
-            onUnconfirmedAdd, 
-            onUnconfirmedRemove, 
-            onAggregateBondedAdd, 
-            onAggregateBondedRemove,
-            onTransactionError,
-        }
+        { onConfirmedAdd, onUnconfirmedAdd, onUnconfirmedRemove, onAggregateBondedAdd, onAggregateBondedRemove, onTransactionError }
     ) {
         const repositoryFactory = new RepositoryFactoryHttp(networkProperties.nodeUrl, {
             websocketInjected: WebSocket,
         });
         const listener = repositoryFactory.createListener();
         await listener.open();
-          
+
         const sdkAddress = Address.createFromRawAddress(address);
 
         listener.confirmed(sdkAddress).subscribe(onConfirmedAdd);
@@ -31,4 +23,4 @@ export class ListenerService {
 
         return listener;
     }
-};
+}

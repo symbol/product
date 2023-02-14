@@ -1,8 +1,8 @@
 import React, { Fragment } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { colors, spacings } from 'src/styles';
 
-export const Steps = props => {
+export const Steps = (props) => {
     const { stepsCount, currentStep } = props;
     const currentIndex = currentStep - 1;
     const lastIndex = stepsCount - 1;
@@ -11,23 +11,15 @@ export const Steps = props => {
         <View style={styles.root}>
             {[...Array(stepsCount)].map((e, i) => (
                 <Fragment key={'steps-f' + i}>
-                    {i !== 0 && i <= currentIndex && (
-                        <View style={styles.lineActive} key={'steps-l' + i} />
-                    )}
-                    {i < currentIndex && (
-                        <View style={styles.circlePrevious} key={'steps-p' + i} />
-                    )}
+                    {i !== 0 && i <= currentIndex && <View style={styles.lineActive} key={'steps-l' + i} />}
+                    {i < currentIndex && <View style={styles.circlePrevious} key={'steps-p' + i} />}
                     {i === currentIndex && (
                         <View style={styles.circleCurrent} key={'steps-c' + i}>
                             <View style={styles.circleCurrentInner} />
                         </View>
                     )}
-                    {i > currentIndex && (
-                        <View style={styles.circleNext} key={'steps-n' + i} />
-                    )}
-                    {i !== lastIndex && i >= currentIndex && (
-                        <View style={styles.lineInactive} key={'steps-r' + i} />
-                    )}
+                    {i > currentIndex && <View style={styles.circleNext} key={'steps-n' + i} />}
+                    {i !== lastIndex && i >= currentIndex && <View style={styles.lineInactive} key={'steps-r' + i} />}
                 </Fragment>
             ))}
         </View>
@@ -40,23 +32,23 @@ const styles = StyleSheet.create({
         width: '100%',
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: spacings.padding2
+        paddingHorizontal: spacings.padding2,
     },
     lineActive: {
         flex: 1,
         height: 2,
-        backgroundColor: colors.primary
+        backgroundColor: colors.primary,
     },
     lineInactive: {
         flex: 1,
         height: 4,
-        backgroundColor: colors.secondary
+        backgroundColor: colors.secondary,
     },
     circlePrevious: {
         width: 18,
         height: 18,
         borderRadius: 9,
-        backgroundColor: colors.primary
+        backgroundColor: colors.primary,
     },
     circleCurrent: {
         width: 20,
@@ -66,7 +58,7 @@ const styles = StyleSheet.create({
         borderColor: colors.primary,
         justifyContent: 'center',
         alignItems: 'center',
-        padding: 2
+        padding: 2,
     },
     circleCurrentInner: {
         width: 14,
@@ -78,6 +70,6 @@ const styles = StyleSheet.create({
         width: 18,
         height: 18,
         borderRadius: 9,
-        backgroundColor: colors.secondary
+        backgroundColor: colors.secondary,
     },
 });
