@@ -1,5 +1,4 @@
 import { hasUserSetPinCode } from '@haskkor/react-native-pincode';
-import { FailedToSaveMnemonicError } from 'src/errors';
 import { AccountService, MosaicService } from 'src/services';
 import { PersistentStorage, SecureStorage } from 'src/storage';
 import { addressFromPrivateKey, createPrivateKeysFromMnemonic, createWalletAccount, getMosaicRelativeAmount, getNativeMosaicAmount } from 'src/utils';
@@ -8,24 +7,23 @@ import { config } from 'src/config';
 export default {
     namespace: 'wallet',
     state: {
-        isReady: false,
-        mnemonic: null,
-        accountInfos: {},
-        accounts: {
+        isReady: false, // wether the wallet is ready to fetch any data (network props and cache is loaded) 
+        mnemonic: null, // current wallet mnemonic backup phrase
+        accounts: { // all accounts added to the wallet
             mainnet: [],
             testnet: []
         },
-        seedAddresses: {
+        seedAddresses: { // all (count specified in config) wallet seed addresses
             mainnet: [],
             testnet: []
         },
-        balances: {},
-        mosaicInfos: {
+        balances: {}, // account balances by address
+        mosaicInfos: { // mosaic infos (name, divisibility, etc.)
             mainnet: {},
             testnet: {}
         },
-        selectedAccountId: null,
-        isPasscodeEnabled: true,
+        selectedAccountId: null, // selected wallet account by user
+        isPasscodeEnabled: true, // wether the user enabled the PIN-code security
     },
     mutations: {
         setReady(state, payload) {
@@ -38,10 +36,6 @@ export default {
         },
         setAccounts(state, payload) {
             state.wallet.accounts = payload;
-            return state;
-        },
-        setAccountInfos(state, payload) {
-            state.wallet.accountInfos = payload;
             return state;
         },
         setSeedAddresses(state, payload) {
@@ -66,6 +60,7 @@ export default {
         },
     },
     actions: {
+        // Load data from cache in all modules
         loadAll: async ({ dispatchAction }) => {
             await dispatchAction({type: 'wallet/loadState'});
             await dispatchAction({type: 'network/loadState'});
@@ -73,11 +68,13 @@ export default {
             await dispatchAction({type: 'addressBook/loadState'});
             await dispatchAction({type: 'transaction/loadState'});
         },
+        // Fetch latest data from API in all modules
         fetchAll: async ({ dispatchAction }) => {
             await dispatchAction({type: 'network/fetchData'});
             await dispatchAction({type: 'account/fetchData'});
             await dispatchAction({type: 'transaction/fetchData'});
         },
+        // Load data from cache or set an empty values
         loadState: async ({ commit }) => {
             const mnemonic = await SecureStorage.getMnemonic();
             const accounts = await SecureStorage.getAccounts();
@@ -95,19 +92,15 @@ export default {
             commit({ type: 'wallet/setSelectedAccountId', payload: selectedAccountId || 0});
             commit({ type: 'wallet/setIsPasscodeEnabled', payload: isPasscodeEnabled || false});
         },
+        // Save mnemonic to wallet. Generate root accounts for all networks
         saveMnemonic: async ({ commit, dispatchAction }, { mnemonic, name }) => {
             let savedMnemonic;
 
-            try {
-                await SecureStorage.setMnemonic(mnemonic);
-                savedMnemonic = await SecureStorage.getMnemonic();
-            }
-            catch(e) {
-                throw FailedToSaveMnemonicError(e.message)
-            }
+            await SecureStorage.setMnemonic(mnemonic);
+            savedMnemonic = await SecureStorage.getMnemonic();
 
             if (mnemonic !== savedMnemonic) {
-                throw FailedToSaveMnemonicError('Mnemonic does not match');
+                throw Error('error_mnemonic_does_not_match');
             }
 
             commit({ type: 'wallet/setMnemonic', payload: mnemonic });
@@ -115,6 +108,7 @@ export default {
             await dispatchAction({ type: 'wallet/addSeedAccount', payload: { name, index: 0, networkIdentifier: 'mainnet' } });
             await dispatchAction({type: 'wallet/loadAll'});
         },
+        // Generate all (count specified in config) seed addresses
         generateSeedAddresses: async ({ state, commit }) => {
             const { networkIdentifier } = state.network;
             const { seedAddresses, mnemonic } = state.wallet;
@@ -127,10 +121,12 @@ export default {
             commit({ type: 'wallet/setSeedAddresses', payload: updatedSeedAddresses });
             await PersistentStorage.setSeedAddresses(updatedSeedAddresses);
         },
+        // Set selected account private key
         selectAccount: async ({ commit }, privateKey) => {
             await SecureStorage.setSelectedAccountId(privateKey);
             commit({ type: 'wallet/setSelectedAccountId', payload: privateKey });
         },
+        // Add seed account to wallet
         addSeedAccount: async ({ commit, dispatchAction, state }, { index, name, networkIdentifier }) => {
             const { mnemonic } = state.wallet;
             const accountType = 'seed';
@@ -152,6 +148,7 @@ export default {
             
             await dispatchAction({ type: 'wallet/selectAccount', payload: privateKey });
         },
+        // Add external (private key) account to wallet
         addExternalAccount: async ({ commit, dispatchAction }, { privateKey, name, networkIdentifier }) => {
             const accountType = 'external';
             const walletAccount = createWalletAccount(privateKey, networkIdentifier, name, accountType, null);
@@ -170,6 +167,7 @@ export default {
             
             await dispatchAction({ type: 'wallet/selectAccount', payload: privateKey });
         },
+        // Remove account to wallet
         removeAccount: async ({ commit }, {privateKey, networkIdentifier}) => {
             const accounts = await SecureStorage.getAccounts();
             accounts[networkIdentifier] = accounts[networkIdentifier].filter(account => account.privateKey !== privateKey);
@@ -177,6 +175,7 @@ export default {
             await SecureStorage.setAccounts(accounts);
             commit({ type: 'wallet/setAccounts', payload: accounts });
         },
+        // Rename wallet account
         renameAccount: async ({ commit }, {privateKey, networkIdentifier, name}) => {
             const accounts = await SecureStorage.getAccounts();
             const account = accounts[networkIdentifier].find(account => account.privateKey == privateKey);
@@ -185,6 +184,7 @@ export default {
             await SecureStorage.setAccounts(accounts);
             commit({ type: 'wallet/setAccounts', payload: accounts });
         },
+        // Save account list (replace current list with the new one)
         saveAccounts: async ({ commit }, {accounts, networkIdentifier}) => {
             const updatedAccounts = await SecureStorage.getAccounts();
             updatedAccounts[networkIdentifier] = [...accounts];
@@ -195,6 +195,7 @@ export default {
             await SecureStorage.setAccounts(updatedAccounts);
             commit({type: 'wallet/setAccounts', payload: updatedAccounts});
         },
+        // Fetch and cache account balance by address
         fetchBalance: async ({ commit, state }, address) => {
             const { networkProperties } = state.network;
             const balances = await PersistentStorage.getBalances();
@@ -221,6 +222,7 @@ export default {
 
             commit({ type: 'wallet/setBalances', payload: updatedBalances });
         },
+        // Fetch and cache mosaic infos
         fetchMosaicInfos: async ({ commit, state }, mosaicIds) => {
             const { networkProperties, networkIdentifier } = state.network;
             const mosaicInfos = await PersistentStorage.getMosaicInfos();

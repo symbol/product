@@ -6,7 +6,7 @@ import { handleError } from 'src/utils';
 export default {
     namespace: 'listener',
     state: {
-        listener: null,
+        listener: null, // listener object
     },
     mutations: {
         setListener(state, payload) {
@@ -15,6 +15,7 @@ export default {
         },
     },
     actions: {
+        // subscribe to all
         connect: async ({ state, commit, dispatchAction }) => {
             const { listener } = state.listener;
             const { networkProperties } = state.network;
@@ -29,24 +30,30 @@ export default {
                     networkProperties, 
                     current.address,
                     {
+                        // handle confirmed transactions
                         onConfirmedAdd: () => {
                             dispatchAction({type: 'account/fetchData'});
                             dispatchAction({type: 'transaction/fetchData', payload: true});
                             showMessage({message: $t('message_transactionConfirmed'), type: 'success'})
                         },
+                        // handle unconfirmed transactions
                         onUnconfirmedAdd: () => {
                             dispatchAction({type: 'transaction/fetchData', payload: true});
                         },
+                        // handle unconfirmed transactions
                         onUnconfirmedRemove: () => {
                             dispatchAction({type: 'transaction/fetchData', payload: true});
                         },
+                        // handle aggregate bonded transactions
                         onAggregateBondedAdd: () => {
                             dispatchAction({type: 'transaction/fetchData', payload: true});
                             showMessage({message: $t('message_newAggregateBondedTransaction'), type: 'warning'})
                         },
+                        // handle aggregate bonded transactions
                         onAggregateBondedRemove: () => {
                             dispatchAction({type: 'transaction/fetchData', payload: true});
                         },
+                        // handle transaction error
                         onTransactionError: (e) => handleError(Error(`error_${e.code}`))
                     }
                 );

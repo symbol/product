@@ -1,4 +1,3 @@
-import { StyleSheet } from 'react-native';
 import { Easing } from 'react-native-reanimated';
 import DesignSystem from './designSystem.json';
 export { default as DesignSystem } from './designSystem.json';
@@ -59,8 +58,8 @@ export const colors = {
     controlButtonText: DesignSystem.ColorDarkmodeButtonDefaultText,
 
     controlButtonPressedStroke: DesignSystem.ColorDarkmodeButtonPressedStroke,
-    controlButtonPressedBg: '#112844',//DesignSystem.ColorDarkmodeButtonPressedBg,
-    controlButtonPressedText: DesignSystem.ColorDarkmodeButtonDefaultText,//DesignSystem.ColorDarkmodeButtonPressedText,
+    controlButtonPressedBg: '#112844',
+    controlButtonPressedText: DesignSystem.ColorDarkmodeButtonDefaultText,
 
     controlButtonDisabledStroke: '#26c3f244',
     controlButtonDisabledBg: DesignSystem.ColorDarkmodeButtonPressedBg,
@@ -188,7 +187,3 @@ export const timings = {
         easing: Easing.linear
     }
 };
-
-export default StyleSheet.create({
-
-});

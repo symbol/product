@@ -6,10 +6,10 @@ import { filterBlacklistedTransactions, getUnresolvedIdsFromTransactionDTOs, tra
 export default {
     namespace: 'transaction',
     state: {
-        partial: [],
-        unconfirmed: [],
-        confirmed: [],
-        isLastPage: false
+        partial: [], // List of the Aggregate Bonded transactions, which are awaiting signature
+        unconfirmed: [], // List of transactions awaiting confirmation by the network
+        confirmed: [], // List of confirmed transactions
+        isLastPage: false // Wether the end of the account transaction list is reached
     },
     mutations: {
         setPartial(state, payload) {
@@ -30,6 +30,7 @@ export default {
         },
     },
     actions: {
+        // Load data from cache or set an empty values
         loadState: async ({ commit, state }) => {
             const { current } = state.account;
             const latestTransactions = await PersistentStorage.getLatestTransactions();
@@ -40,6 +41,7 @@ export default {
             commit({type: 'transaction/setUnconfirmed', payload: []});
             commit({type: 'transaction/setIsLastPage', payload: false});
         },
+        // Fetch the latest partial, unconfirmed and confirmed transaction lists from API
         fetchData: async ({ commit, state }, keepPages) => {
             const { networkProperties } = state.network;
             const { current } = state.account;
@@ -94,7 +96,8 @@ export default {
             latestTransactions[current.address] = confirmedPage;
             await PersistentStorage.setLatestTransactions(latestTransactions);
         },
-        fetchPage: async ({ commit, state }, { pageNumber, filters }) => {
+        // Fetch specific page of the confirmed transactions from API
+        fetchPage: async ({ commit, state }, { pageNumber }) => {
             const { networkProperties } = state.network;
             const { confirmed } = state.transaction;
             const { current } = state.account;

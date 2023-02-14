@@ -5,12 +5,12 @@ import { getMosaicsWithRelativeAmounts } from "src/utils";
 export default {
     namespace: 'account',
     state: {
-        current: null,
-        isReady: false,
-        isMultisig: false,
-        cosignatories: [],
-        mosaics: [],
-        namespaces: [],
+        current: null, // current account info (address, private key, name, etc.)
+        isReady: false, // wether account data is loaded
+        isMultisig: false, // wether account data is multisig
+        cosignatories: [], // if an account is multisig, contains the list of its cosigners
+        mosaics: [], // account owned mosaics
+        namespaces: [], // account owned namespaces
     },
     mutations: {
         setCurrent(state, payload) {
@@ -39,6 +39,7 @@ export default {
         },
     },
     actions: {
+        // Load data from cache or set an empty values
         loadState: async ({ commit, state }) => {
             const { networkIdentifier } = state.network;
             const { selectedAccountId, accounts } = state.wallet;
@@ -63,12 +64,14 @@ export default {
             commit({type: 'account/setCurrent', payload: currentAccount});
             commit({type: 'account/setIsReady', payload: false});
         },
+        // Fetch latest data from API
         fetchData: async ({ dispatchAction, state }) => {
             const { address } = state.account.current;
            
             await dispatchAction({type: 'wallet/fetchBalance', payload: address});
             await dispatchAction({type: 'account/fetchInfo'});
         },
+        // Fetch account and multisig info, owned mosaics and namespaces. Store to cache
         fetchInfo: async ({ commit, state }) => {
             const { address } = state.account.current;
             const { networkProperties } = state.network;
@@ -79,10 +82,7 @@ export default {
                 mosaics = accountInfo.mosaics;
             }
             catch(error) {
-                if (error.message === 'error_fetch_not_found') {
-                    balance = 0;
-                }
-                else {
+                if (error.message !== 'error_fetch_not_found') {
                     throw Error('error_fetch_account_info');
                 }
             }
