@@ -13,7 +13,7 @@ export class AccountService {
         const accountInfo = await makeRequest(url);
 
         return {
-            cosignatories: accountInfo.multisig.cosignatoryAddresses.map(address => addressFromRaw(address)),
+            cosignatories: accountInfo.multisig.cosignatoryAddresses.map((address) => addressFromRaw(address)),
             minApproval: accountInfo.multisig.minApproval,
             minRemoval: accountInfo.multisig.minRemoval,
         };

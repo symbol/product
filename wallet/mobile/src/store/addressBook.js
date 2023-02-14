@@ -25,32 +25,32 @@ export default {
         // Load data from cache
         loadState: async ({ commit }) => {
             const addressBook = await PersistentStorage.getAddressBook();
-            
-            commit({type: 'addressBook/setAddressBook', payload: addressBook});
+
+            commit({ type: 'addressBook/setAddressBook', payload: addressBook });
         },
         // Add contact to address book. Cache updated object and update store
         addContact: async ({ commit, state }, contact) => {
             const { addressBook } = state.addressBook;
             addressBook.addContact(contact);
-            
-            await PersistentStorage.setAddressBook(addressBook)
-            commit({type: 'addressBook/setAddressBook', payload: addressBook});
+
+            await PersistentStorage.setAddressBook(addressBook);
+            commit({ type: 'addressBook/setAddressBook', payload: addressBook });
         },
         // Update contact in address book. Cache updated object and update store
         updateContact: async ({ commit, state }, contact) => {
             const { addressBook } = state.addressBook;
             addressBook.updateContact(contact.id, contact);
-            
-            await PersistentStorage.setAddressBook(addressBook)
-            commit({type: 'addressBook/setAddressBook', payload: addressBook});
+
+            await PersistentStorage.setAddressBook(addressBook);
+            commit({ type: 'addressBook/setAddressBook', payload: addressBook });
         },
         // Remove contact from address book. Cache updated object and update store
         removeContact: async ({ commit, state }, contact) => {
             const { addressBook } = state.addressBook;
             addressBook.removeContact(contact.id);
-            
-            await PersistentStorage.setAddressBook(addressBook)
-            commit({type: 'addressBook/setAddressBook', payload: addressBook});
+
+            await PersistentStorage.setAddressBook(addressBook);
+            commit({ type: 'addressBook/setAddressBook', payload: addressBook });
         },
     },
 };

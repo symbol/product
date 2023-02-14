@@ -5,7 +5,7 @@ import { $t } from 'src/localization';
 import { borders, colors, fonts, spacings } from 'src/styles';
 import { useValidation } from 'src/utils';
 
-export const DialogBox = props => {
+export const DialogBox = (props) => {
     const { isVisible, type, title, text, body, promptValidators, onSuccess, onCancel, style, contentContainerStyle } = props;
     const [promptValue, setPromptValue] = useState('');
     const promptErrorMessage = useValidation(promptValue, promptValidators || [], $t);
@@ -14,32 +14,32 @@ export const DialogBox = props => {
     const buttonOk = {
         text: $t('button_ok'),
         handler: onSuccess,
-        style: styles.buttonPrimary
+        style: styles.buttonPrimary,
     };
     const buttonPromptOk = {
         text: $t('button_ok'),
         handler: () => isPromptValueValid && onSuccess(promptValue),
-        style: styles.buttonPrimary
+        style: styles.buttonPrimary,
     };
     const buttonConfirm = {
         text: $t('button_confirm'),
         handler: onSuccess,
-        style: styles.buttonPrimary
+        style: styles.buttonPrimary,
     };
     const buttonAccept = {
         text: $t('button_accept'),
         handler: onSuccess,
-        style: styles.buttonPrimary
+        style: styles.buttonPrimary,
     };
     const buttonCancel = {
         text: $t('button_cancel'),
         handler: onCancel,
-        style: styles.buttonSecondary
+        style: styles.buttonSecondary,
     };
     const buttons = [];
     const isPrompt = type === 'prompt';
 
-    switch(type) {
+    switch (type) {
         case 'prompt':
             buttons.push(buttonPromptOk, buttonCancel);
             break;
@@ -66,15 +66,15 @@ export const DialogBox = props => {
                             <StyledText type="title">{title}</StyledText>
                             {text && !isPrompt && <StyledText type="body">{text}</StyledText>}
                             {body}
-                            {isPrompt && <TextBox title={text} errorMessage={promptErrorMessage} value={promptValue} onChange={setPromptValue} />}
+                            {isPrompt && (
+                                <TextBox title={text} errorMessage={promptErrorMessage} value={promptValue} onChange={setPromptValue} />
+                            )}
                         </View>
                         <View style={styles.controls}>
                             {buttons.map((button, index) => (
                                 <View style={styles.button} key={'modalbtn' + index}>
                                     <TouchableOpacity onPress={button.handler} style={[styles.buttonPressable, button.style]}>
-                                        <Text style={styles.textButton}>
-                                            {button.text}
-                                        </Text>
+                                        <Text style={styles.textButton}>{button.text}</Text>
                                     </TouchableOpacity>
                                 </View>
                             ))}
@@ -106,7 +106,7 @@ const styles = StyleSheet.create({
         backgroundColor: colors.bgMain,
         borderColor: colors.accentLightForm,
         borderRadius: borders.borderRadiusForm,
-        overflow: 'hidden'
+        overflow: 'hidden',
     },
     content: {
         padding: spacings.padding,
@@ -126,7 +126,7 @@ const styles = StyleSheet.create({
         height: '100%',
         justifyContent: 'center',
         alignItems: 'center',
-        flexDirection: 'row'
+        flexDirection: 'row',
     },
     buttonPrimary: {
         backgroundColor: colors.accentForm,

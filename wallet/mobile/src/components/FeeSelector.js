@@ -12,26 +12,30 @@ const images = [
     require('src/assets/images/fees-fast-3.png'),
 ];
 
-export const FeeSelector = props => {
+export const FeeSelector = (props) => {
     const { style, title, fees, ticker, value, onChange } = props;
     const [sliderKey, refreshSlider] = useToggle(true);
     const imageTranslation = useSharedValue(0);
     const minimumSliderValue = 0;
     const maximumSliderValue = 2;
-    const options = [{
-        label: $t('selector_fee_slow'),
-        speed: 'slow',
-        value: fees.slow
-    },{
-        label: $t('selector_fee_medium'),
-        speed: 'medium',
-        value: fees.medium
-    },{
-        label: $t('selector_fee_fast'),
-        speed: 'fast',
-        value: fees.fast
-    }]
-    const sliderValue = options.map(option => option.speed).indexOf(value);
+    const options = [
+        {
+            label: $t('selector_fee_slow'),
+            speed: 'slow',
+            value: fees.slow,
+        },
+        {
+            label: $t('selector_fee_medium'),
+            speed: 'medium',
+            value: fees.medium,
+        },
+        {
+            label: $t('selector_fee_fast'),
+            speed: 'fast',
+            value: fees.fast,
+        },
+    ];
+    const sliderValue = options.map((option) => option.speed).indexOf(value);
     const imageSrc = images[sliderValue];
 
     const selectedFeeValue = options[sliderValue].value;
@@ -39,14 +43,16 @@ export const FeeSelector = props => {
     const valueField = `${selectedFeeLabel} | ${selectedFeeValue} ${ticker}`;
 
     const animatedImageStyle = useAnimatedStyle(() => ({
-        transform: [{
-            translateX: imageTranslation.value
-        }]
+        transform: [
+            {
+                translateX: imageTranslation.value,
+            },
+        ],
     }));
 
-    const handleChange = newValue => {
+    const handleChange = (newValue) => {
         const newSliderValue = Math.round(newValue);
-        onChange(options[newSliderValue]?.speed || 'medium')
+        onChange(options[newSliderValue]?.speed || 'medium');
         if (newSliderValue !== sliderValue) {
             imageTranslation.value = -500;
             imageTranslation.value = withTiming(0);
@@ -54,14 +60,14 @@ export const FeeSelector = props => {
     };
     const handleSlidingComplete = () => {
         refreshSlider();
-    }
+    };
 
     return (
         <View style={[styles.root, style]}>
             <View style={styles.textContainer}>
                 <Animated.Image source={imageSrc} style={[animatedImageStyle, styles.modalImage]} />
                 <Text style={styles.title}>{title}</Text>
-                <Text style={styles.value}>{valueField}</Text> 
+                <Text style={styles.value}>{valueField}</Text>
             </View>
             <Slider
                 value={sliderValue}
@@ -72,7 +78,7 @@ export const FeeSelector = props => {
                 style={styles.slider}
                 trackStyle={styles.track}
                 thumbStyle={styles.thumb}
-                thumbTouchSize={{width: 60, height: 60}}
+                thumbTouchSize={{ width: 60, height: 60 }}
                 useNativeDriver={true}
                 key={sliderKey}
                 onValueChange={handleChange}
@@ -104,20 +110,20 @@ const styles = StyleSheet.create({
         marginTop: -fonts.placeholder.fontSize / 2,
     },
     value: {
-        ...fonts.textBox, 
+        ...fonts.textBox,
         color: colors.controlBaseText,
     },
     slider: {
         marginTop: -18,
-        marginHorizontal: spacings.padding
+        marginHorizontal: spacings.padding,
     },
     track: {
-        height: borders.borderWidth
+        height: borders.borderWidth,
     },
     thumb: {
         backgroundColor: colors.textBody,
         borderWidth: borders.borderWidth,
-        borderColor: colors.controlBaseStroke
+        borderColor: colors.controlBaseStroke,
     },
     modalImage: {
         width: 68,
@@ -125,6 +131,6 @@ const styles = StyleSheet.create({
         top: 0,
         right: 0,
         position: 'absolute',
-        resizeMode: 'contain',    
+        resizeMode: 'contain',
     },
 });

@@ -23,16 +23,7 @@ const renderTypeMap = {
         '_receivedCosignatures',
         '_addressDeletions',
     ],
-    copyButton: [
-        'metadataValue',
-        'publicKey',
-        'vrfPublicKey',
-        'remotePublicKey',
-        'linkedPublicKey',
-        'nodePublicKey',
-        'secret',
-        'proof',
-    ],
+    copyButton: ['metadataValue', 'publicKey', 'vrfPublicKey', 'remotePublicKey', 'linkedPublicKey', 'nodePublicKey', 'secret', 'proof'],
     boolean: ['supplyMutable', 'transferable', 'restrictable', 'revokable'],
     fee: ['fee', 'maxFee'],
     message: ['message'],
@@ -50,7 +41,7 @@ const renderTypeMap = {
     ],
 };
 
-export const TableView = connect(state => ({
+export const TableView = connect((state) => ({
     currentAccount: state.account.current,
     walletAccounts: state.wallet.accounts,
     networkIdentifier: state.network.networkIdentifier,
@@ -65,11 +56,11 @@ export const TableView = connect(state => ({
     }
 
     let tableData = data;
-    
+
     if (!Array.isArray(data)) {
         tableData = Object.entries(data)
-            .filter(([key, value]) => value !== null && value !== undefined)
-            .map(([key, value]) => ({key, value}));
+            .filter(([_, value]) => value !== null && value !== undefined)
+            .map(([key, value]) => ({ key, value }));
     }
 
     const renderKey = (item) => {
@@ -79,129 +70,123 @@ export const TableView = connect(state => ({
             <StyledText type="label" style={styles.key}>
                 {translatedKey}
             </StyledText>
-        )
+        );
     };
 
     const renderValue = (item) => {
         let ItemTemplate;
-    
-        Object.keys(renderTypeMap).forEach(renderType => renderTypeMap[renderType].find(acceptedKey => {
-            if (item.key !== acceptedKey) {
-                return false;
-            }
 
-            switch (renderType) {
-                case 'boolean':
-                    ItemTemplate = (
-                        <View style={styles.bool}>
-                            {item.value === true && <Image source={require('src/assets/images/icon-bool-true.png')} style={styles.boolIcon} />}
-                            {item.value === false && <Image source={require('src/assets/images/icon-bool-false.png')} style={styles.boolIcon} />}
-                        </View>
-                    );
-                    break;
-                case 'transactionType':
-                    ItemTemplate = (
-                        <StyledText type="body">
-                            {$t(`transactionDescriptor_${item.value}`)}
-                        </StyledText>
-                    );
-                    break;
-                case 'address':
-                    ItemTemplate = (
-                        <View style={styles.account}>
-                            {!rawAddresses && <>
-                                <AccountAvatar address={item.value} style={styles.avatar} size="sm" />
-                                <StyledText type="body" style={styles.copyText}>
-                                    {getAddressName(item.value, currentAccount, accounts, addressBook)}
-                                </StyledText>
-                            </>}
-                            {rawAddresses && (
+        Object.keys(renderTypeMap).forEach((renderType) =>
+            renderTypeMap[renderType].find((acceptedKey) => {
+                if (item.key !== acceptedKey) {
+                    return false;
+                }
+
+                switch (renderType) {
+                    case 'boolean':
+                        ItemTemplate = (
+                            <View style={styles.bool}>
+                                {item.value === true && (
+                                    <Image source={require('src/assets/images/icon-bool-true.png')} style={styles.boolIcon} />
+                                )}
+                                {item.value === false && (
+                                    <Image source={require('src/assets/images/icon-bool-false.png')} style={styles.boolIcon} />
+                                )}
+                            </View>
+                        );
+                        break;
+                    case 'transactionType':
+                        ItemTemplate = <StyledText type="body">{$t(`transactionDescriptor_${item.value}`)}</StyledText>;
+                        break;
+                    case 'address':
+                        ItemTemplate = (
+                            <View style={styles.account}>
+                                {!rawAddresses && (
+                                    <>
+                                        <AccountAvatar address={item.value} style={styles.avatar} size="sm" />
+                                        <StyledText type="body" style={styles.copyText}>
+                                            {getAddressName(item.value, currentAccount, accounts, addressBook)}
+                                        </StyledText>
+                                    </>
+                                )}
+                                {rawAddresses && (
+                                    <StyledText type="body" style={styles.copyText}>
+                                        {item.value}
+                                    </StyledText>
+                                )}
+                                <ButtonCopy content={item.value} style={styles.button} />
+                            </View>
+                        );
+                        break;
+                    case 'copyButton':
+                        ItemTemplate = (
+                            <View style={styles.row}>
                                 <StyledText type="body" style={styles.copyText}>
                                     {item.value}
                                 </StyledText>
-                            )}
-                            <ButtonCopy content={item.value} style={styles.button}/>
-                        </View>
-                    );
-                    break;
-                case 'copyButton':
-                    ItemTemplate = (
-                        <View style={styles.row}>
-                            <StyledText type="body" style={styles.copyText}>
-                                {item.value}
-                            </StyledText>
-                            <ButtonCopy content={item.value} style={styles.button}/>
-                        </View>
-                    );
-                    break;
-                case 'encryption':
-                    ItemTemplate = (
-                        <View style={styles.row}>
-                            <StyledText type="body">
-                                {item.value === true 
-                                    ? $t('data_encrypted')
-                                    : $t('data_unencrypted')
-                                }
-                            </StyledText>
-                        </View>
-                    );
-                    break;
-                case 'fee':
-                    ItemTemplate = (
-                        <View style={styles.fee}>
-                            <Image source={require('src/assets/images/icon-select-mosaic-native.png')} style={styles.mosaicIcon} />
-                            <StyledText type="body">
-                                {item.value} {ticker}
-                            </StyledText>
-                        </View>
-                    );
-                    break;
-                case 'message':
-                    ItemTemplate = (
-                        <View style={styles.message}>
-                            {item.value.isEncrypted && <Image source={require('src/assets/images/icon-tx-lock.png')} style={styles.messageLockIcon} />}
-                            <StyledText type="body">
-                                {item.value.text}
-                            </StyledText>
-                        </View>
-                    );
-                    break;
-                case 'mosaics':
-                    const getMosaicIconSrc = mosaic => mosaic.name === 'symbol.xym' 
-                        ? require('src/assets/images/icon-select-mosaic-native.png')
-                        : require('src/assets/images/icon-select-mosaic-custom.png');
-                    ItemTemplate = (
-                        <View style={styles.col}>
-                            {item.value.map(mosaic => (
-                                <View style={styles.mosaic}>
-                                    <Image source={getMosaicIconSrc(mosaic)} style={styles.mosaicIcon} />
-                                    <View style={styles.mosaicBody}>
-                                        <StyledText type="body">
-                                            {mosaic.name}
-                                        </StyledText>
-                                        <StyledText type="body" style={styles.mosaicAmount}>
-                                            {mosaic.amount === null ? '?' : mosaic.amount}
-                                        </StyledText>
+                                <ButtonCopy content={item.value} style={styles.button} />
+                            </View>
+                        );
+                        break;
+                    case 'encryption':
+                        ItemTemplate = (
+                            <View style={styles.row}>
+                                <StyledText type="body">{item.value === true ? $t('data_encrypted') : $t('data_unencrypted')}</StyledText>
+                            </View>
+                        );
+                        break;
+                    case 'fee':
+                        ItemTemplate = (
+                            <View style={styles.fee}>
+                                <Image source={require('src/assets/images/icon-select-mosaic-native.png')} style={styles.mosaicIcon} />
+                                <StyledText type="body">
+                                    {item.value} {ticker}
+                                </StyledText>
+                            </View>
+                        );
+                        break;
+                    case 'message':
+                        ItemTemplate = (
+                            <View style={styles.message}>
+                                {item.value.isEncrypted && (
+                                    <Image source={require('src/assets/images/icon-tx-lock.png')} style={styles.messageLockIcon} />
+                                )}
+                                <StyledText type="body">{item.value.text}</StyledText>
+                            </View>
+                        );
+                        break;
+                    case 'mosaics':
+                        const getMosaicIconSrc = (mosaic) =>
+                            mosaic.name === 'symbol.xym'
+                                ? require('src/assets/images/icon-select-mosaic-native.png')
+                                : require('src/assets/images/icon-select-mosaic-custom.png');
+                        ItemTemplate = (
+                            <View style={styles.col}>
+                                {item.value.map((mosaic, index) => (
+                                    <View style={styles.mosaic} key={'t_mos' + index}>
+                                        <Image source={getMosaicIconSrc(mosaic)} style={styles.mosaicIcon} />
+                                        <View style={styles.mosaicBody}>
+                                            <StyledText type="body">{mosaic.name}</StyledText>
+                                            <StyledText type="body" style={styles.mosaicAmount}>
+                                                {mosaic.amount === null ? '?' : mosaic.amount}
+                                            </StyledText>
+                                        </View>
                                     </View>
-                                </View>
-                            ))}
-                        </View>
-                    );
-                    break;
-                case 'translate':
-                    ItemTemplate = (
-                        <StyledText type="body">
-                            {$t(`data_${item.value}`)}
-                        </StyledText>
-                    );
-                    break;
-            }
+                                ))}
+                            </View>
+                        );
+                        break;
+                    case 'translate':
+                        ItemTemplate = <StyledText type="body">{$t(`data_${item.value}`)}</StyledText>;
+                        break;
+                }
 
-            return true;
-        }));
+                return true;
+            })
+        );
 
         if (!ItemTemplate && Array.isArray(item.value) && item.value.length) {
-            return item.value.map(value => renderValue({key: `_${item.key}`, value: value}));
+            return item.value.map((value) => renderValue({ key: `_${item.key}`, value: value }));
         }
 
         if (!ItemTemplate && typeof item.value === 'object') {
@@ -209,17 +194,13 @@ export const TableView = connect(state => ({
         }
 
         if (!ItemTemplate) {
-            ItemTemplate = (
-                <StyledText type="body">
-                    {item.value}
-                </StyledText>
-            )
+            ItemTemplate = <StyledText type="body">{item.value}</StyledText>;
         }
 
         return ItemTemplate;
-    }
+    };
 
-    const isEmptyField = item => {
+    const isEmptyField = (item) => {
         if (Array.isArray(item.value)) {
             return !(item.value.length || showEmptyArrays);
         }
@@ -229,13 +210,14 @@ export const TableView = connect(state => ({
 
     return (
         <View style={[styles.root, style]}>
-            {tableData.map((item, index) => (isEmptyField(item) 
-                ? null
-                : <FormItem key={'table' + item.key + index} clear="horizontal">
-                    {renderKey(item)}
-                    {renderValue(item)}
-                </FormItem>
-            ))}
+            {tableData.map((item, index) =>
+                isEmptyField(item) ? null : (
+                    <FormItem key={'table' + item.key + index} clear="horizontal">
+                        {renderKey(item)}
+                        {renderValue(item)}
+                    </FormItem>
+                )
+            )}
         </View>
     );
 });
@@ -260,7 +242,7 @@ const styles = StyleSheet.create({
         flexWrap: 'wrap',
     },
     button: {
-        paddingLeft: spacings.paddingSm
+        paddingLeft: spacings.paddingSm,
     },
     mosaic: {
         marginBottom: spacings.margin / 2,
@@ -271,13 +253,13 @@ const styles = StyleSheet.create({
         flexDirection: 'column',
     },
     mosaicAmount: {
-        opacity: 0.7
+        opacity: 0.7,
     },
     mosaicIcon: {
         height: 24,
         width: 24,
         maxHeight: '100%',
-        marginRight: spacings.paddingSm
+        marginRight: spacings.paddingSm,
     },
     account: {
         width: '100%',
@@ -285,7 +267,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     avatar: {
-        marginRight: spacings.paddingSm
+        marginRight: spacings.paddingSm,
     },
     bool: {
         flexDirection: 'row',
@@ -293,7 +275,7 @@ const styles = StyleSheet.create({
     },
     boolIcon: {
         width: 12,
-        height: 12
+        height: 12,
     },
     fee: {
         flexDirection: 'row',
@@ -307,6 +289,6 @@ const styles = StyleSheet.create({
         width: 12,
         height: 12,
         maxHeight: '100%',
-        marginRight: spacings.paddingSm
-    }
+        marginRight: spacings.paddingSm,
+    },
 });

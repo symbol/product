@@ -13,18 +13,18 @@ export class MosaicService {
         // Fetch mosaic infos from API
         const endpoint = `${networkProperties.nodeUrl}/mosaics`;
         const payload = {
-            mosaicIds
+            mosaicIds,
         };
         const data = await makeRequest(endpoint, {
             method: 'POST',
             body: JSON.stringify(payload),
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
             },
         });
 
         // Create map <id, info> from response
-        const mosaicInfosEntires = data.map(mosaicInfos => {
+        const mosaicInfosEntires = data.map((mosaicInfos) => {
             const duration = parseInt(mosaicInfos.mosaic.duration);
             const startHeight = parseInt(mosaicInfos.mosaic.startHeight);
             const endHeight = startHeight + duration;
@@ -32,30 +32,35 @@ export class MosaicService {
             const creator = addressFromRaw(mosaicInfos.mosaic.ownerAddress);
             const supply = getMosaicRelativeAmountString(mosaicInfos.mosaic.supply, parseInt(mosaicInfos.mosaic.divisibility));
 
-            return [mosaicInfos.mosaic.id, {
-                ...mosaicInfos.mosaic,
-                duration,
-                startHeight,
-                endHeight,
-                isUnlimitedDuration,
-                creator,
-                supply
-            }]
+            return [
+                mosaicInfos.mosaic.id,
+                {
+                    ...mosaicInfos.mosaic,
+                    duration,
+                    startHeight,
+                    endHeight,
+                    isUnlimitedDuration,
+                    creator,
+                    supply,
+                },
+            ];
         });
         const mosaicInfos = Object.fromEntries(mosaicInfosEntires);
-        
+
         // Find namespace ids if there are some in the mosaic list. Mosaic infos are not available for namespace ids
         const fetchedMosaicIds = Object.keys(mosaicInfos);
         const namespaceIds = _.difference(mosaicIds, fetchedMosaicIds);
 
         // Fetch namespace infos to extract mosaic ids from there
         const namespaceInfos = await NamespaceService.fetchNamespaceInfos(networkProperties, namespaceIds);
-        const remainedMosaicIds = Object.values(namespaceInfos).map(namespaceInfo => namespaceInfo.alias.mosaicId);
+        const remainedMosaicIds = Object.values(namespaceInfos).map((namespaceInfo) => namespaceInfo.alias.mosaicId);
         const shouldFetchRemainedMosaicInfos = remainedMosaicIds.length > 0;
 
         // Fetch remained mosaic infos for extracted mosaics from namespace infos
-        const remainedMosaicInfos = shouldFetchRemainedMosaicInfos ? await MosaicService.fetchMosaicInfos(networkProperties, remainedMosaicIds) : {};
-        
+        const remainedMosaicInfos = shouldFetchRemainedMosaicInfos
+            ? await MosaicService.fetchMosaicInfos(networkProperties, remainedMosaicIds)
+            : {};
+
         // Fetch mosaic names
         const mosaicIdsToFetchNames = _.difference(mosaicIds, namespaceIds);
         const mosaicNames = await NamespaceService.fetchMosaicNames(networkProperties, mosaicIdsToFetchNames);
@@ -71,6 +76,6 @@ export class MosaicService {
             }
         }
 
-        return {...mosaicInfos, ...remainedMosaicInfos}
+        return { ...mosaicInfos, ...remainedMosaicInfos };
     }
 }

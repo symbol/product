@@ -5,13 +5,13 @@ import { borders, colors, fonts, spacings } from 'src/styles';
 import { trunc } from 'src/utils';
 import { AccountAvatar } from 'src/components';
 
-export const TitleBar = props => {
+export const TitleBar = (props) => {
     const { currentAccount } = props;
 
     const getAddress = () => trunc(currentAccount.address, 'address');
     const handleAccountPress = () => Router.goToAccountList();
     const handleSettingsPress = () => Router.goToSettings();
-    
+
     return (
         <View style={styles.root}>
             <TouchableOpacity style={styles.accountSelector} onPress={handleAccountPress}>
@@ -24,9 +24,7 @@ export const TitleBar = props => {
                         </View>
                     </View>
                 )}
-                {!currentAccount && (
-                    <ActivityIndicator color={colors.primary} />
-                )}
+                {!currentAccount && <ActivityIndicator color={colors.primary} />}
                 <Image source={require('src/assets/images/icon-down.png')} style={styles.icon} />
             </TouchableOpacity>
             <TouchableOpacity hitSlop={10} onPress={handleSettingsPress}>
@@ -44,11 +42,11 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        paddingHorizontal: spacings.margin
+        paddingHorizontal: spacings.margin,
     },
     row: {
         flexDirection: 'row',
-        alignItems: 'center'
+        alignItems: 'center',
     },
     accountSelector: {
         width: '60%',
@@ -59,21 +57,21 @@ const styles = StyleSheet.create({
         borderRadius: borders.borderRadiusAccountSelector,
         borderWidth: 1,
         borderColor: colors.controlBaseStroke,
-        paddingHorizontal: spacings.margin
+        paddingHorizontal: spacings.margin,
     },
     avatar: {
-        marginRight: spacings.margin / 2
+        marginRight: spacings.margin / 2,
     },
     textAccount: {
         ...fonts.label,
-        color: colors.accentLightForm
+        color: colors.accentLightForm,
     },
     textAddress: {
         ...fonts.body,
-        color: colors.controlBaseTextAlt
+        color: colors.controlBaseTextAlt,
     },
     icon: {
         width: 24,
         height: 24,
-    }
+    },
 });

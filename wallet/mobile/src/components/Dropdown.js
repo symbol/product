@@ -1,60 +1,50 @@
 import React, { useState } from 'react';
-import { Image, Modal, Pressable, StyleSheet, Text, View, FlatList, TouchableOpacity } from 'react-native';
-import { StyledText, ButtonClose } from 'src/components';
+import { FlatList, Image, Modal, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ButtonClose, StyledText } from 'src/components';
 import Animated, { interpolateColor, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { borders, colors, fonts, spacings, timings } from 'src/styles';
 
-
-export const DropdownModal = props => {
+export const DropdownModal = (props) => {
     const { value, list, title, isOpen, renderItem, onClose, onChange } = props;
 
-    const getItemStyle = (itemValue) => itemValue == value ? [styles.item, styles.itemSelected] : styles.item;
+    const getItemStyle = (itemValue) => (itemValue == value ? [styles.item, styles.itemSelected] : styles.item);
     const handleChange = (value) => {
         onChange(value);
         onClose();
-    }
+    };
 
     return (
-        <Modal
-            animationType="fade"
-            transparent={true}
-            visible={isOpen}
-            onRequestClose={onClose}
-        >
+        <Modal animationType="fade" transparent={true} visible={isOpen} onRequestClose={onClose}>
             <Pressable style={styles.modal} onPress={onClose}>
                 <Pressable style={styles.modalContainer}>
                     <StyledText type="title">{title}</StyledText>
-                    {isOpen && <FlatList
-                        data={list} 
-                        keyExtractor={(_, index) => 'dropdown' + index} 
-                        renderItem={({item, index}) => (
-                            <TouchableOpacity style={getItemStyle(item.value)} onPress={() => handleChange(item.value)}>
-                                {renderItem
-                                    ? renderItem({item, index})
-                                    : <StyledText type="body">{item.label}</StyledText>
-                                }
-                            </TouchableOpacity>
-                    )} />}
+                    {isOpen && (
+                        <FlatList
+                            data={list}
+                            keyExtractor={(_, index) => 'dropdown' + index}
+                            renderItem={({ item, index }) => (
+                                <TouchableOpacity style={getItemStyle(item.value)} onPress={() => handleChange(item.value)}>
+                                    {renderItem ? renderItem({ item, index }) : <StyledText type="body">{item.label}</StyledText>}
+                                </TouchableOpacity>
+                            )}
+                        />
+                    )}
                 </Pressable>
-                <ButtonClose type="cancel" style={styles.buttonClose} onPress={onClose}/>
+                <ButtonClose type="cancel" style={styles.buttonClose} onPress={onClose} />
             </Pressable>
         </Modal>
     );
-}
+};
 
-export const Dropdown = props => {
+export const Dropdown = (props) => {
     const { testID, title, value, list, renderItem, onChange } = props;
     const [isOpen, setIsOpen] = useState(false);
     const isPressed = useSharedValue(false);
     const animatedContainer = useAnimatedStyle(() => ({
-        borderColor: interpolateColor(
-            isPressed.value,
-            [0, 1],
-            [colors.controlBaseStroke, colors.controlBaseFocussedStroke]
-        ),
+        borderColor: interpolateColor(isPressed.value, [0, 1], [colors.controlBaseStroke, colors.controlBaseFocussedStroke]),
     }));
 
-    const valueText = list.find(item => item.value === value)?.label || value;
+    const valueText = list.find((item) => item.value === value)?.label || value;
 
     const handlePressIn = () => {
         isPressed.value = withTiming(true, timings.press);
@@ -67,29 +57,33 @@ export const Dropdown = props => {
     };
     const handleClose = () => {
         setIsOpen(false);
-    }
+    };
 
-    return (<View>
-        <Pressable onPress={handlePress} onPressIn={handlePressIn} onPressOut={handlePressOut}>
-            <Animated.View style={[styles.root, animatedContainer]}>
-                <View>
-                    <Text style={styles.title}>{title}</Text>
-                    <Text style={styles.value} testID={testID}>{valueText}</Text>
-                </View>
-                
-                <Image source={require('src/assets/images/icon-down.png')} style={styles.icon} />
-            </Animated.View>
-        </Pressable>
-        <DropdownModal
-            value={value}
-            list={list}
-            title={title}
-            isOpen={isOpen}
-            renderItem={renderItem}
-            onClose={handleClose}
-            onChange={onChange}
-        />
-    </View>);
+    return (
+        <View>
+            <Pressable onPress={handlePress} onPressIn={handlePressIn} onPressOut={handlePressOut}>
+                <Animated.View style={[styles.root, animatedContainer]}>
+                    <View>
+                        <Text style={styles.title}>{title}</Text>
+                        <Text style={styles.value} testID={testID}>
+                            {valueText}
+                        </Text>
+                    </View>
+
+                    <Image source={require('src/assets/images/icon-down.png')} style={styles.icon} />
+                </Animated.View>
+            </Pressable>
+            <DropdownModal
+                value={value}
+                list={list}
+                title={title}
+                isOpen={isOpen}
+                renderItem={renderItem}
+                onClose={handleClose}
+                onChange={onChange}
+            />
+        </View>
+    );
 };
 
 const styles = StyleSheet.create({
@@ -111,7 +105,7 @@ const styles = StyleSheet.create({
         color: colors.controlBasePlaceholder,
     },
     value: {
-        ...fonts.textBox, 
+        ...fonts.textBox,
         color: colors.controlBaseText,
     },
     modal: {
@@ -151,6 +145,6 @@ const styles = StyleSheet.create({
     buttonClose: {
         top: spacings.margin,
         padding: spacings.padding,
-        alignSelf: 'center'
-    }
+        alignSelf: 'center',
+    },
 });

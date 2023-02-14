@@ -10,7 +10,7 @@ import { networkIdentifierToNetworkType } from './network';
 
 export const generateMnemonic = () => {
     return MnemonicPassPhrase.createRandom().plain;
-}
+};
 
 export const createPrivateKeysFromMnemonic = (mnemonic, indexes, networkIdentifier) => {
     const mnemonicPassPhrase = new MnemonicPassPhrase(mnemonic);
@@ -18,7 +18,7 @@ export const createPrivateKeysFromMnemonic = (mnemonic, indexes, networkIdentifi
     const curve = Network.SYMBOL;
     const extendedKey = ExtendedKey.createFromSeed(seed, curve);
     const wallet = new Wallet(extendedKey);
-    
+
     const privateKeys = indexes.map((index) => {
         const pathTestnet = `m/44'/1'/${index}'/0'/0'`;
         const pathMainnet = `m/44'/4343'/${index}'/0'/0'`;
@@ -28,15 +28,15 @@ export const createPrivateKeysFromMnemonic = (mnemonic, indexes, networkIdentifi
     });
 
     return privateKeys;
-}
+};
 
 export const clearCache = () => {
     SecureStorage.removeAll();
     PersistentStorage.removeAll();
     deleteUserPinCode();
-}
+};
 
-export const copyToClipboard = str => {
+export const copyToClipboard = (str) => {
     Clipboard.setString(str);
 };
 
@@ -47,18 +47,14 @@ export const downloadPaperWallet = async (mnemonic, rootAccount, networkIdentifi
         rootAccountAddress: rootAccount.address,
     };
 
-    const paperWallet = new SymbolPaperWallet(
-        hdRootAccount,
-        [],
-        networkIdentifierToNetworkType(networkIdentifier),
-    );
+    const paperWallet = new SymbolPaperWallet(hdRootAccount, [], networkIdentifierToNetworkType(networkIdentifier));
 
     const paperWalletPdf = await paperWallet.toPdf();
     const paperWalletBase64 = Buffer.from(paperWalletPdf).toString('base64');
     const uniqueValue = new Date().getTime().toString().slice(9);
     const filename = `symbol-wallet-${uniqueValue}.pdf`;
-    await writeFile(paperWalletBase64, filename, 'base64')
-}
+    await writeFile(paperWalletBase64, filename, 'base64');
+};
 
 export const requestAndroidWritePermission = async () => {
     const permission = PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE;
@@ -92,17 +88,16 @@ export const writeFile = async (data, filename, encoding) => {
     if (Platform.OS === 'android') {
         await requestAndroidWritePermission();
     }
-    
+
     try {
         await RNFetchBlob.fs.writeFile(path, data, encoding);
 
         if (Platform.OS === 'ios') {
             RNFetchBlob.ios.previewDocument(path);
         }
-    }
-    catch(e) {
+    } catch (e) {
         throw Error('error_failed_write_file');
     }
-            
+
     return true;
 };

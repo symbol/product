@@ -2,7 +2,7 @@ export const getNativeMosaicAmount = (mosaicList, nativeMosaicId) => {
     if (!mosaicList || !nativeMosaicId) {
         return null;
     }
-    const nativeMosaic = mosaicList.find(mosaic => mosaic.id === nativeMosaicId);
+    const nativeMosaic = mosaicList.find((mosaic) => mosaic.id === nativeMosaicId);
 
     return nativeMosaic ? nativeMosaic.amount : 0;
 };
@@ -11,7 +11,7 @@ export const getMosaicRelativeAmountString = (absoluteAmount, divisibility) => {
     if (divisibility === 0) {
         return absoluteAmount;
     }
-    
+
     const array = absoluteAmount.split('');
     array.splice(absoluteAmount.length - divisibility, 0, '.');
 
@@ -30,8 +30,8 @@ export const getMosaicsWithRelativeAmounts = (mosaics, mosaicInfos) => {
     if (!mosaics || !mosaicInfos) {
         return null;
     }
-    
-    return mosaics.map(mosaic => getMosaicWithRelativeAmount(mosaic, mosaicInfos[mosaic.id]));
+
+    return mosaics.map((mosaic) => getMosaicWithRelativeAmount(mosaic, mosaicInfos[mosaic.id]));
 };
 
 export const getMosaicWithRelativeAmount = (mosaic, mosaicInfo) => {
@@ -41,7 +41,7 @@ export const getMosaicWithRelativeAmount = (mosaic, mosaicInfo) => {
             amount: null,
             name: mosaic.id,
             id: mosaic.id,
-        }
+        };
     }
     return {
         ...mosaicInfo,
@@ -49,9 +49,9 @@ export const getMosaicWithRelativeAmount = (mosaic, mosaicInfo) => {
         name: mosaicInfo.names?.[0] || mosaic.id,
         divisibility: mosaicInfo.divisibility,
         id: mosaic.id,
-    }
+    };
 };
 
 export const filterCustomMosaics = (mosaicList, nativeMosaicId) => {
-    return mosaicList.filter(mosaic => mosaic.id !== nativeMosaicId);
+    return mosaicList.filter((mosaic) => mosaic.id !== nativeMosaicId);
 };

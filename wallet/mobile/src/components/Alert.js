@@ -3,7 +3,7 @@ import { Image, StyleSheet, View } from 'react-native';
 import { borders, colors, spacings } from 'src/styles';
 import { StyledText } from 'src/components';
 
-export const Alert = props => {
+export const Alert = (props) => {
     const { type, title, body } = props;
 
     const typeAlertMap = {
@@ -24,8 +24,12 @@ export const Alert = props => {
     return (
         <View style={styles.widget}>
             <Image style={styles.icon} source={alert.icon} />
-            <StyledText type="subtitle" style={alert.titleStyle}>{title}</StyledText>
-            <StyledText type="body" style={alert.bodyStyle}>{body}</StyledText>
+            <StyledText type="subtitle" style={alert.titleStyle}>
+                {title}
+            </StyledText>
+            <StyledText type="body" style={alert.bodyStyle}>
+                {body}
+            </StyledText>
         </View>
     );
 };
@@ -41,14 +45,14 @@ const styles = StyleSheet.create({
         backgroundColor: colors.bgMain,
         borderRadius: borders.borderRadiusForm,
         minHeight: 100,
-        alignItems: 'center'
+        alignItems: 'center',
     },
     warningText: {
         color: colors.warning,
-        textAlign: 'center'
+        textAlign: 'center',
     },
     dangerText: {
         color: colors.danger,
-        textAlign: 'center'
-    }
+        textAlign: 'center',
+    },
 });

@@ -7,7 +7,7 @@ import { colors, fonts, spacings } from 'src/styles';
 import { formatDate, getAddressName, isAggregateTransaction, isIncomingTransaction, isOutgoingTransaction, trunc } from 'src/utils';
 import { TransactionType } from 'symbol-sdk';
 
-export const ItemTransaction = connect(state => ({
+export const ItemTransaction = connect((state) => ({
     currentAccount: state.account.current,
     walletAccounts: state.wallet.accounts,
     networkIdentifier: state.network.networkIdentifier,
@@ -28,8 +28,7 @@ export const ItemTransaction = connect(state => ({
     if (amount < 0) {
         amountText = `${amount} ${ticker}`;
         styleAmount.push(styles.outgoing);
-    }
-    else if (amount > 0) {
+    } else if (amount > 0) {
         amountText = `${amount} ${ticker}`;
         styleAmount.push(styles.incoming);
     }
@@ -41,104 +40,81 @@ export const ItemTransaction = connect(state => ({
         action = $t(`transactionDescriptor_${type}_outgoing`);
         description = `To ${addressText}`;
         iconSrc = require('src/assets/images/icon-tx-transfer.png');
-    }
-    else if (type === TransactionType.TRANSFER && isIncomingTransaction(transaction, currentAccount)) {
+    } else if (type === TransactionType.TRANSFER && isIncomingTransaction(transaction, currentAccount)) {
         const address = getAddressName(signerAddress, currentAccount, accounts, addressBook);
         const isAddressName = address !== signerAddress;
         const addressText = isAddressName ? address : trunc(address, 'address');
         action = $t(`transactionDescriptor_${type}_incoming`);
         description = `From ${addressText}`;
         iconSrc = require('src/assets/images/icon-tx-transfer.png');
-    }
-    else if (type === TransactionType.TRANSFER) {
+    } else if (type === TransactionType.TRANSFER) {
         iconSrc = require('src/assets/images/icon-tx-transfer.png');
-    }
-    else if (isAggregateTransaction(transaction)) {
+    } else if (isAggregateTransaction(transaction)) {
         const firstTransactionType = transaction.innerTransactions[0]?.type;
         const type = firstTransactionType ? $t(`transactionDescriptor_${firstTransactionType}`) : '';
         const count = transaction.innerTransactions.length - 1;
-        description = count 
-            ? $t('transactionDescriptionShort_aggregateMultiple', {type, count})
-            : type;
+        description = count ? $t('transactionDescriptionShort_aggregateMultiple', { type, count }) : type;
         iconSrc = require('src/assets/images/icon-tx-aggregate.png');
-    }
-    else if (type === TransactionType.NAMESPACE_REGISTRATION) {
+    } else if (type === TransactionType.NAMESPACE_REGISTRATION) {
         const name = transaction.namespaceName;
-        description = $t('transactionDescriptionShort_namespaceRegistration', {name});
+        description = $t('transactionDescriptionShort_namespaceRegistration', { name });
         iconSrc = require('src/assets/images/icon-tx-namespace.png');
-    }
-    else if (type === TransactionType.ADDRESS_ALIAS) {
+    } else if (type === TransactionType.ADDRESS_ALIAS) {
         const address = getAddressName(transaction.address, currentAccount, accounts, addressBook);
         const isAddressName = address !== transaction.address;
         const addressText = isAddressName ? address : trunc(address, 'address');
         const target = addressText;
         const name = transaction.namespaceName;
-        description = $t('transactionDescriptionShort_alias', {target, name});
+        description = $t('transactionDescriptionShort_alias', { target, name });
         iconSrc = require('src/assets/images/icon-tx-namespace.png');
-    }
-    else if (type === TransactionType.MOSAIC_ALIAS) {
+    } else if (type === TransactionType.MOSAIC_ALIAS) {
         const target = trunc(transaction.mosaicId, 'address');
         const name = transaction.namespaceName;
-        description = $t('transactionDescriptionShort_alias', {target, name});
+        description = $t('transactionDescriptionShort_alias', { target, name });
         iconSrc = require('src/assets/images/icon-tx-namespace.png');
-    }
-    else if (
-        type === TransactionType.MOSAIC_DEFINITION 
-        || type === TransactionType.MOSAIC_SUPPLY_CHANGE
-        || type === TransactionType.MOSAIC_SUPPLY_REVOCATION
+    } else if (
+        type === TransactionType.MOSAIC_DEFINITION ||
+        type === TransactionType.MOSAIC_SUPPLY_CHANGE ||
+        type === TransactionType.MOSAIC_SUPPLY_REVOCATION
     ) {
         const id = transaction.mosaicId;
-        description = $t('transactionDescriptionShort_mosaic', {id});
+        description = $t('transactionDescriptionShort_mosaic', { id });
         iconSrc = require('src/assets/images/icon-tx-mosaic.png');
-    }
-    else if (
-        type === TransactionType.ACCOUNT_MOSAIC_RESTRICTION
-        || type === TransactionType.ACCOUNT_ADDRESS_RESTRICTION
-        || type === TransactionType.ACCOUNT_OPERATION_RESTRICTION
+    } else if (
+        type === TransactionType.ACCOUNT_MOSAIC_RESTRICTION ||
+        type === TransactionType.ACCOUNT_ADDRESS_RESTRICTION ||
+        type === TransactionType.ACCOUNT_OPERATION_RESTRICTION
     ) {
         const restrictionType = transaction.restrictionType;
         description = $t(`data_${restrictionType}`);
         iconSrc = require('src/assets/images/icon-tx-restriction.png');
-    }
-    else if (
-        type === TransactionType.MOSAIC_GLOBAL_RESTRICTION 
-        || type === TransactionType.MOSAIC_ADDRESS_RESTRICTION
-    ) {
+    } else if (type === TransactionType.MOSAIC_GLOBAL_RESTRICTION || type === TransactionType.MOSAIC_ADDRESS_RESTRICTION) {
         const id = transaction.mosaicId || transaction.referenceMosaicId;
-        description = $t('transactionDescriptionShort_mosaicRestriction', {id});
+        description = $t('transactionDescriptionShort_mosaicRestriction', { id });
         iconSrc = require('src/assets/images/icon-tx-restriction.png');
-    }
-    else if (
-        type === TransactionType.VRF_KEY_LINK 
-        || type === TransactionType.NODE_KEY_LINK
-        || type === TransactionType.VOTING_KEY_LINK
-        || type === TransactionType.ACCOUNT_KEY_LINK
+    } else if (
+        type === TransactionType.VRF_KEY_LINK ||
+        type === TransactionType.NODE_KEY_LINK ||
+        type === TransactionType.VOTING_KEY_LINK ||
+        type === TransactionType.ACCOUNT_KEY_LINK
     ) {
         const linkAction = transaction.linkAction;
         description = $t(`data_${linkAction}`);
         iconSrc = require('src/assets/images/icon-tx-key.png');
-    }
-    else if (
-        type === TransactionType.HASH_LOCK 
-    ) {
+    } else if (type === TransactionType.HASH_LOCK) {
         const duration = transaction.duration;
-        description = $t('transactionDescriptionShort_hashLock', {duration});
+        description = $t('transactionDescriptionShort_hashLock', { duration });
         iconSrc = require('src/assets/images/icon-tx-lock.png');
-    }
-    else if (
-        type === TransactionType.SECRET_LOCK
-        || type === TransactionType.SECRET_PROOF
-    ) {
+    } else if (type === TransactionType.SECRET_LOCK || type === TransactionType.SECRET_PROOF) {
         description = trunc(transaction.secret, 'hash');
         iconSrc = require('src/assets/images/icon-tx-lock.png');
     }
 
     if (group === 'unconfirmed') {
         iconSrc = require('src/assets/images/icon-tx-unconfirmed.png');
-        styleRoot.push(styles.rootUnconfirmed)
-    }
-    else if (group === 'partial') {
-        styleRoot.push(styles.rootPartial)
+        styleRoot.push(styles.rootUnconfirmed);
+    } else if (group === 'partial') {
+        styleRoot.push(styles.rootPartial);
     }
 
     return (
@@ -171,56 +147,56 @@ const styles = StyleSheet.create({
         minHeight: 75,
     },
     rootPartial: {
-        borderColor: colors.neutral
+        borderColor: colors.neutral,
     },
     rootUnconfirmed: {
-        borderColor: colors.warning
+        borderColor: colors.warning,
     },
     rootLoadingPlaceholder: {
-        opacity: 0.2
+        opacity: 0.2,
     },
     icon: {
         height: 24,
-        width: 24
+        width: 24,
     },
     textAction: {
         ...fonts.subtitle,
-        color: colors.textBody
+        color: colors.textBody,
     },
     textDescription: {
         ...fonts.body,
-        color: colors.textBody
+        color: colors.textBody,
     },
     textDate: {
         ...fonts.body,
         color: colors.textBody,
         fontSize: 10,
         opacity: 0.7,
-        textAlignVertical: 'center'
+        textAlignVertical: 'center',
     },
     textAmount: {
         ...fonts.bodyBold,
-        color: colors.textBody
+        color: colors.textBody,
     },
     outgoing: {
-        color: colors.danger
+        color: colors.danger,
     },
     incoming: {
-        color: colors.success
+        color: colors.success,
     },
     sectionIcon: {
         flexDirection: 'column',
         justifyContent: 'center',
-        paddingRight: spacings.padding
+        paddingRight: spacings.padding,
     },
     sectionMiddle: {
         flex: 1,
         flexDirection: 'column',
-        justifyContent: 'space-between'
+        justifyContent: 'space-between',
     },
     rowAmount: {
         alignSelf: 'stretch',
         flexDirection: 'row',
-        justifyContent: 'space-between'
-    }
+        justifyContent: 'space-between',
+    },
 });

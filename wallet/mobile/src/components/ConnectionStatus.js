@@ -2,26 +2,29 @@ import React from 'react';
 import { StyleSheet, Text } from 'react-native';
 import { connect } from 'src/store';
 import { colors, fonts, timings } from 'src/styles';
-import Animated, { interpolate, interpolateColor, useAnimatedStyle, useDerivedValue, useSharedValue, withTiming } from 'react-native-reanimated';
+import Animated, {
+    interpolate,
+    interpolateColor,
+    useAnimatedStyle,
+    useDerivedValue,
+    useSharedValue,
+    withTiming,
+} from 'react-native-reanimated';
 import { $t } from 'src/localization';
 
-export const ConnectionStatus = connect(state => ({
+export const ConnectionStatus = connect((state) => ({
     status: state.network.status,
 }))(function ConnectionStatus(props) {
     const { status } = props;
     const statusColors = [colors.info, colors.warning, colors.danger];
     const isShown = useSharedValue(true);
     const color = useDerivedValue(() => {
-        const value = status === 'failed-custom' 
-            ? 2
-            : status === 'connected'
-            ? 0
-            : 1;
+        const value = status === 'failed-custom' ? 2 : status === 'connected' ? 0 : 1;
         return withTiming(value);
     });
     let statusText = $t('c_connectionStatus_connecting');
-    
-    switch(status) {
+
+    switch (status) {
         case 'offline':
             statusText = $t('c_connectionStatus_offline');
             isShown.value = withTiming(true, timings.press);
@@ -34,21 +37,13 @@ export const ConnectionStatus = connect(state => ({
             statusText = $t('c_connectionStatus_connected');
             isShown.value = withTiming(false, timings.press);
             break;
-        default: 
+        default:
             isShown.value = withTiming(true, timings.press);
     }
 
     const animatedContainer = useAnimatedStyle(() => ({
-        backgroundColor: interpolateColor(
-            color.value,
-            [0, 1, 2],
-            [statusColors[0], statusColors[1], statusColors[2]]
-        ),
-        height: interpolate(
-            isShown.value,
-            [true, false],
-            [12, 0]
-        )
+        backgroundColor: interpolateColor(color.value, [0, 1, 2], [statusColors[0], statusColors[1], statusColors[2]]),
+        height: interpolate(isShown.value, [true, false], [12, 0]),
     }));
 
     return (
@@ -62,11 +57,11 @@ const styles = StyleSheet.create({
     root: {
         width: '100%',
         justifyContent: 'center',
-        alignItems: 'center'
+        alignItems: 'center',
     },
     text: {
         ...fonts.bodyBold,
         fontSize: 10,
-        color: colors.bgNavbar
+        color: colors.bgNavbar,
     },
 });

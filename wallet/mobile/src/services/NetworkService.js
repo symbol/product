@@ -1,6 +1,6 @@
 import { config } from 'src/config';
 import { makeRequest, networkTypeToIdentifier } from 'src/utils';
-import { ChainHttp, DtoMapping, NetworkHttp, NetworkType, NodeHttp, RepositoryFactoryHttp, TransactionFees } from 'symbol-sdk';
+import { ChainHttp, DtoMapping, NetworkHttp } from 'symbol-sdk';
 import { timeout } from 'rxjs/operators';
 import { MosaicService } from './MosaicService';
 
@@ -17,34 +17,22 @@ export class NetworkService {
         const endpoint = `${baseUrl}/nodes?filter=${filter}&limit=${limit}`;
 
         const nodes = await makeRequest(endpoint);
-        
-        return nodes.map(node => node.apiStatus.restGatewayUrl);
+
+        return nodes.map((node) => node.apiStatus.restGatewayUrl);
     }
 
     static async fetchNetworkProperties(nodeUrl) {
         const networkHttp = new NetworkHttp(nodeUrl);
         const chainHttp = new ChainHttp(nodeUrl);
         const [networkType, networkProps, transactionFees, chainInfo] = await Promise.all([
-            networkHttp
-                .getNetworkType()
-                .pipe(timeout(nodeProbeTimeout))
-                .toPromise(),
-            networkHttp
-                .getNetworkProperties()
-                .pipe(timeout(nodeProbeTimeout))
-                .toPromise(),
-            networkHttp
-                .getTransactionFees()
-                .pipe(timeout(nodeProbeTimeout))
-                .toPromise(),
-            chainHttp
-                .getChainInfo()
-                .pipe(timeout(nodeProbeTimeout))
-                .toPromise(),
+            networkHttp.getNetworkType().pipe(timeout(nodeProbeTimeout)).toPromise(),
+            networkHttp.getNetworkProperties().pipe(timeout(nodeProbeTimeout)).toPromise(),
+            networkHttp.getTransactionFees().pipe(timeout(nodeProbeTimeout)).toPromise(),
+            chainHttp.getChainInfo().pipe(timeout(nodeProbeTimeout)).toPromise(),
         ]);
 
         const networkCurrencyMosaicId = DtoMapping.toSimpleHex(networkProps.chain.currencyMosaicId);
-        const mosaicInfo = await MosaicService.fetchMosaicInfo({nodeUrl}, networkCurrencyMosaicId);
+        const mosaicInfo = await MosaicService.fetchMosaicInfo({ nodeUrl }, networkCurrencyMosaicId);
         const wsUrl = nodeUrl.replace('http', 'ws') + '/ws';
 
         return {

@@ -18,5 +18,5 @@ export const config = {
     networkIdentifiers: configFile.networkIdentifiers,
     defaultNetworkIdentifier: configFile.defaultNetworkIdentifier,
     maxSeedAccounts: configFile.maxSeedAccounts,
-    connectionInterval: configFile.connectionInterval
+    connectionInterval: configFile.connectionInterval,
 };

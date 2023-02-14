@@ -9,7 +9,7 @@ export default {
         partial: [], // List of the Aggregate Bonded transactions, which are awaiting signature
         unconfirmed: [], // List of transactions awaiting confirmation by the network
         confirmed: [], // List of confirmed transactions
-        isLastPage: false // Wether the end of the account transaction list is reached
+        isLastPage: false, // Wether the end of the account transaction list is reached
     },
     mutations: {
         setPartial(state, payload) {
@@ -35,11 +35,11 @@ export default {
             const { current } = state.account;
             const latestTransactions = await PersistentStorage.getLatestTransactions();
             const accountTransactions = latestTransactions[current?.address] || [];
-            
-            commit({type: 'transaction/setConfirmed', payload: accountTransactions});
-            commit({type: 'transaction/setPartial', payload: []});
-            commit({type: 'transaction/setUnconfirmed', payload: []});
-            commit({type: 'transaction/setIsLastPage', payload: false});
+
+            commit({ type: 'transaction/setConfirmed', payload: accountTransactions });
+            commit({ type: 'transaction/setPartial', payload: [] });
+            commit({ type: 'transaction/setUnconfirmed', payload: [] });
+            commit({ type: 'transaction/setIsLastPage', payload: false });
         },
         // Fetch the latest partial, unconfirmed and confirmed transaction lists from API
         fetchData: async ({ commit, state }, keepPages) => {
@@ -50,13 +50,17 @@ export default {
 
             // Fetch transactions from DTO
             const [partialDTO, unconfirmedDTO, confirmedDTO] = await Promise.all([
-                TransactionService.fetchAccountTransactions(current, networkProperties, {group: 'partial'}),
-                TransactionService.fetchAccountTransactions(current, networkProperties, {group: 'unconfirmed'}),
-                TransactionService.fetchAccountTransactions(current, networkProperties, {group: 'confirmed'}),
+                TransactionService.fetchAccountTransactions(current, networkProperties, { group: 'partial' }),
+                TransactionService.fetchAccountTransactions(current, networkProperties, { group: 'unconfirmed' }),
+                TransactionService.fetchAccountTransactions(current, networkProperties, { group: 'confirmed' }),
             ]);
 
             // Fetch mosaic infos for transactions
-            const { addresses, mosaicIds, namespaceIds } = getUnresolvedIdsFromTransactionDTOs([...partialDTO, ...unconfirmedDTO, ...confirmedDTO]);
+            const { addresses, mosaicIds, namespaceIds } = getUnresolvedIdsFromTransactionDTOs([
+                ...partialDTO,
+                ...unconfirmedDTO,
+                ...confirmedDTO,
+            ]);
             const mosaicInfos = await MosaicService.fetchMosaicInfos(networkProperties, mosaicIds);
             const namespaceNames = await NamespaceService.fetchNamespaceNames(networkProperties, namespaceIds);
             const resolvedAddresses = await NamespaceService.resolveAddresses(networkProperties, addresses);
@@ -69,9 +73,9 @@ export default {
                 namespaceNames,
                 resolvedAddresses,
             };
-            const partialPage = partialDTO.map(transactionDTO => transactionFromDTO(transactionDTO, transactionOptions));
-            const unconfirmedPage = unconfirmedDTO.map(transactionDTO => transactionFromDTO(transactionDTO, transactionOptions));
-            const confirmedPage = confirmedDTO.map(transactionDTO => transactionFromDTO(transactionDTO, transactionOptions));
+            const partialPage = partialDTO.map((transactionDTO) => transactionFromDTO(transactionDTO, transactionOptions));
+            const unconfirmedPage = unconfirmedDTO.map((transactionDTO) => transactionFromDTO(transactionDTO, transactionOptions));
+            const confirmedPage = confirmedDTO.map((transactionDTO) => transactionFromDTO(transactionDTO, transactionOptions));
 
             //Filter blacklisted
             const filteredPartialPage = filterBlacklistedTransactions(partialPage, blackList);
@@ -79,16 +83,15 @@ export default {
             const filteredConfirmedPage = filterBlacklistedTransactions(confirmedPage, blackList);
 
             // Update store
-            commit({type: 'transaction/setPartial', payload: filteredPartialPage});
-            commit({type: 'transaction/setUnconfirmed', payload: filteredUnconfirmedPage});
-            
+            commit({ type: 'transaction/setPartial', payload: filteredPartialPage });
+            commit({ type: 'transaction/setUnconfirmed', payload: filteredUnconfirmedPage });
+
             if (keepPages) {
                 const updatedConfirmed = _.uniqBy([...filteredConfirmedPage, ...confirmed], 'id');
-                commit({type: 'transaction/setConfirmed', payload: updatedConfirmed});
-            }
-            else {
-                commit({type: 'transaction/setConfirmed', payload: filteredConfirmedPage});
-                commit({type: 'transaction/setIsLastPage', payload: false});
+                commit({ type: 'transaction/setConfirmed', payload: updatedConfirmed });
+            } else {
+                commit({ type: 'transaction/setConfirmed', payload: filteredConfirmedPage });
+                commit({ type: 'transaction/setIsLastPage', payload: false });
             }
 
             // Cache transactions for current account
@@ -104,7 +107,10 @@ export default {
             const { blackList } = state.addressBook;
 
             // Fetch transactions from DTO
-            const confirmedDTO = await TransactionService.fetchAccountTransactions(current, networkProperties, {group: 'confirmed', pageNumber});
+            const confirmedDTO = await TransactionService.fetchAccountTransactions(current, networkProperties, {
+                group: 'confirmed',
+                pageNumber,
+            });
 
             // Fetch mosaic infos for transactions
             const { addresses, mosaicIds, namespaceIds } = getUnresolvedIdsFromTransactionDTOs([...confirmedDTO]);
@@ -120,7 +126,7 @@ export default {
                 namespaceNames,
                 resolvedAddresses,
             };
-            const confirmedPage = confirmedDTO.map(transactionDTO => transactionFromDTO(transactionDTO, transactionOptions));
+            const confirmedPage = confirmedDTO.map((transactionDTO) => transactionFromDTO(transactionDTO, transactionOptions));
             const isLastPage = confirmedPage.length === 0;
 
             //Filter blacklisted
@@ -128,8 +134,8 @@ export default {
             const updatedConfirmed = _.uniqBy([...confirmed, ...filteredConfirmedPage], 'hash');
 
             // Update store
-            commit({type: 'transaction/setConfirmed', payload: updatedConfirmed});
-            commit({type: 'transaction/setIsLastPage', payload: isLastPage});
+            commit({ type: 'transaction/setConfirmed', payload: updatedConfirmed });
+            commit({ type: 'transaction/setIsLastPage', payload: isLastPage });
         },
     },
 };

@@ -19,10 +19,10 @@ export class SecureStorage {
     static async getAccounts() {
         const defaultAccounts = {
             mainnet: [],
-            testnet: []
+            testnet: [],
         };
         const accounts = await this.get(this.ACCOUNTS_KEY);
-        
+
         try {
             return JSON.parse(accounts) || defaultAccounts;
         } catch {
@@ -44,7 +44,7 @@ export class SecureStorage {
     }
 
     // API
-    static get = key => {
+    static get = (key) => {
         try {
             return EncryptedStorage.getItem(key);
         } catch {

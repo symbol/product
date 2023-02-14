@@ -1,17 +1,16 @@
-
 import React, { useEffect, useState } from 'react';
 import { BackHandler, DeviceEventEmitter, SafeAreaView, StatusBar } from 'react-native';
-import { Provider } from 'react-redux'
+import { Provider } from 'react-redux';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { hasUserSetPinCode } from '@haskkor/react-native-pincode';
-import SplashScreen from 'react-native-splash-screen'
+import SplashScreen from 'react-native-splash-screen';
 import FlashMessage from 'react-native-flash-message';
 import { ConnectionStatus } from './components';
 import { Passcode } from './screens';
 import { SecureStorage } from './storage';
 import store from 'src/store';
 import { initLocalization } from './localization';
-import { RouterView, Router } from './Router';
+import { Router, RouterView } from './Router';
 import { colors, layout } from './styles';
 
 const appBackgroundColor = { backgroundColor: colors.bgGray };
@@ -31,13 +30,13 @@ const App = () => {
 
     const unlock = () => {
         setIsUnlocked(true);
-    }
+    };
     const load = async () => {
         await initLocalization();
         const isPasscodeEnabled = await hasUserSetPinCode();
         const isWalletExist = !!(await SecureStorage.getMnemonic());
-        await store.dispatchAction({type: 'wallet/loadAll'});
-        store.dispatchAction({type: 'network/connect'});
+        await store.dispatchAction({ type: 'wallet/loadAll' });
+        store.dispatchAction({ type: 'network/connect' });
 
         setIsPasscodeEnabled(isPasscodeEnabled);
         setIsWalletExist(isWalletExist);
@@ -54,7 +53,7 @@ const App = () => {
         DeviceEventEmitter.addListener(passcodeParams.cancel, BackHandler.exitApp);
     }, []);
 
-    // If the main component shown (PIN-code is disabled or user unlocked the wallet) 
+    // If the main component shown (PIN-code is disabled or user unlocked the wallet)
     // and the wallet exists (mnemonic stored in the cache), navigate to Home screen.
     // Otherwise stay on the Welcome screen (default)
     useEffect(() => {
@@ -63,21 +62,21 @@ const App = () => {
         }
     }, [isMainContainerShown]);
 
-    return (<>
-        <GestureHandlerRootView style={[layout.fill, appBackgroundColor]}>
-            <SafeAreaView style={layout.fill} >
-                <StatusBar backgroundColor={colors.bgStatusbar} />
-                <Provider store={store}>
-                    {isMainContainerShown && <ConnectionStatus />}
-                    <FlashMessage animationDuration={200} floating={true} />
-                    <RouterView isActive={isMainContainerShown} />
-                    {isPasscodeShown && (
-                        <Passcode keepListener route={{params: passcodeParams}} />
-                    )}
-                </Provider>
-            </SafeAreaView >
-        </GestureHandlerRootView>
-    </>);
+    return (
+        <>
+            <GestureHandlerRootView style={[layout.fill, appBackgroundColor]}>
+                <SafeAreaView style={layout.fill}>
+                    <StatusBar backgroundColor={colors.bgStatusbar} />
+                    <Provider store={store}>
+                        {isMainContainerShown && <ConnectionStatus />}
+                        <FlashMessage animationDuration={200} floating={true} />
+                        <RouterView isActive={isMainContainerShown} />
+                        {isPasscodeShown && <Passcode keepListener route={{ params: passcodeParams }} />}
+                    </Provider>
+                </SafeAreaView>
+            </GestureHandlerRootView>
+        </>
+    );
 };
 
 export default App;

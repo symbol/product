@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Image, StyleSheet, } from 'react-native';
+import { Image, StyleSheet } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
-import { Button, Screen, StyledText, FormItem, ButtonClose, ButtonPlain, MnemonicInput, QRScanner, QRCode } from 'src/components';
+import { Button, ButtonClose, ButtonPlain, FormItem, MnemonicInput, QRCode, QRScanner, Screen, StyledText } from 'src/components';
 import store from 'src/store';
 import { usePasscode } from 'src/utils';
 import { Router } from 'src/Router';
@@ -17,25 +17,30 @@ export const ImportWallet = () => {
     const toggleQRScanner = () => setIsQRScannerVisible(!isQRScannerVisible);
     const next = () => createPasscode();
     const complete = async () => {
-        await store.dispatchAction({ type: 'wallet/saveMnemonic', payload: { 
-            mnemonic: mnemonic.trim(),
-            name
-        }});
+        await store.dispatchAction({
+            type: 'wallet/saveMnemonic',
+            payload: {
+                mnemonic: mnemonic.trim(),
+                name,
+            },
+        });
         Router.goToHome();
-    }
+    };
     const createPasscode = usePasscode('choose', complete, Router.goBack);
 
     return (
-        <Screen bottomComponent={
-            <FormItem>
-                <Button title={$t('button_next')} isDisabled={isButtonDisabled} onPress={next} />
-            </FormItem>
-        }>
+        <Screen
+            bottomComponent={
+                <FormItem>
+                    <Button title={$t('button_next')} isDisabled={isButtonDisabled} onPress={next} />
+                </FormItem>
+            }
+        >
             <FormItem>
                 <ButtonClose type="cancel" style={styles.buttonCancel} onPress={Router.goBack} />
             </FormItem>
             <FormItem>
-                <Image source={require('src/assets/images/logo-symbol-full.png')} style={styles.logo}/>
+                <Image source={require('src/assets/images/logo-symbol-full.png')} style={styles.logo} />
             </FormItem>
             <ScrollView>
                 <FormItem>
@@ -47,11 +52,11 @@ export const ImportWallet = () => {
                 </FormItem>
                 <FormItem>
                     <ButtonPlain title={$t('button_scanQR')} onPress={toggleQRScanner} />
-                    <QRScanner 
+                    <QRScanner
                         type={QRCode.QRTypes.mnemonic}
-                        isVisible={isQRScannerVisible} 
-                        onClose={toggleQRScanner} 
-                        onSuccess={setMnemonic} 
+                        isVisible={isQRScannerVisible}
+                        onClose={toggleQRScanner}
+                        onSuccess={setMnemonic}
                     />
                 </FormItem>
             </ScrollView>
@@ -61,12 +66,12 @@ export const ImportWallet = () => {
 
 const styles = StyleSheet.create({
     buttonCancel: {
-        alignSelf: 'flex-end'
+        alignSelf: 'flex-end',
     },
     logo: {
         width: '100%',
         height: 48,
         margin: 'auto',
         resizeMode: 'contain',
-    }
+    },
 });

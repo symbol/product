@@ -6,8 +6,8 @@ import { AccountAvatar, ItemBase } from 'src/components';
 
 export function ItemContact(props) {
     const { contact, onPress } = props;
-    const { name, address, isBlackListed } = contact;
-    
+    const { name, address } = contact;
+
     return (
         <ItemBase contentContainerStyle={styles.root} onPress={onPress}>
             <View style={styles.sectionIcon}>
@@ -19,7 +19,7 @@ export function ItemContact(props) {
             </View>
         </ItemBase>
     );
-};
+}
 
 const styles = StyleSheet.create({
     root: {
@@ -29,7 +29,7 @@ const styles = StyleSheet.create({
     },
     textName: {
         ...fonts.subtitle,
-        color: colors.textBody
+        color: colors.textBody,
     },
     textDescription: {
         ...fonts.body,
@@ -39,7 +39,7 @@ const styles = StyleSheet.create({
     sectionIcon: {
         flexDirection: 'column',
         justifyContent: 'center',
-        paddingRight: spacings.padding
+        paddingRight: spacings.padding,
     },
     sectionMiddle: {
         flex: 1,

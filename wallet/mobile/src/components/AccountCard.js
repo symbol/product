@@ -1,5 +1,5 @@
 import React from 'react';
-import { Image, View, StyleSheet, Text, ActivityIndicator } from 'react-native';
+import { ActivityIndicator, Image, StyleSheet, Text, View } from 'react-native';
 import { borders, colors, fonts, layout, spacings } from 'src/styles';
 import { getCharPercentage } from 'src/utils';
 import { AccountAvatar } from 'src/components';
@@ -18,22 +18,19 @@ const imagesPattern = [
     require('src/assets/images/Geometric-05.png'),
 ];
 
-export const AccountCard = props => {
+export const AccountCard = (props) => {
     const { address, balance, name, ticker, isLoading, isActive, type, onRemove } = props;
     const stylesRootActive = isActive ? [styles.root, styles.rootSimplifiedActive] : [styles.root, styles.rootSimplifiedInactive];
     const stylesRoot = [stylesRootActive, styles.clearMarginTop];
     const stylesContent = [styles.content, styles.clearMarginTop];
     const stylesPattern = [styles.pattern];
-    const removeIconSrc = type === 'seed'
-        ? require('src/assets/images/icon-hide.png')
-        : require('src/assets/images/icon-delete.png');
+    const removeIconSrc = type === 'seed' ? require('src/assets/images/icon-hide.png') : require('src/assets/images/icon-delete.png');
 
     let imagePattern;
 
     if (address?.length < 4) {
         imagePattern = null;
-    }
-    else {
+    } else {
         const char1 = address[3];
         const char2 = address[address.length - 1];
         const char3 = address[address.length - 2];
@@ -41,7 +38,7 @@ export const AccountCard = props => {
         imagePattern = imagesPattern[patternIndex];
         const left = `-${Math.trunc(getCharPercentage(char2) * 100)}%`;
         const top = `-${Math.trunc(getCharPercentage(char3) * 100)}%`;
-        stylesPattern.push({left, top});
+        stylesPattern.push({ left, top });
     }
 
     return (
@@ -53,10 +50,10 @@ export const AccountCard = props => {
             <View style={styles.manageSection} onTouchEnd={(e) => e.stopPropagation()}>
                 {!!onRemove && (
                     <TouchableOpacity hitSlop={15} onPress={onRemove}>
-                        <Image source={removeIconSrc} style={styles.removeIcon}/>
+                        <Image source={removeIconSrc} style={styles.removeIcon} />
                     </TouchableOpacity>
                 )}
-                <AccountAvatar size="sm" address={address}/>
+                <AccountAvatar size="sm" address={address} />
             </View>
             <View style={stylesContent}>
                 <Text style={styles.textTitle}>{$t('c_accountCard_title_account')}</Text>
@@ -84,11 +81,11 @@ const styles = StyleSheet.create({
     },
     rootSimplifiedInactive: {
         backgroundColor: colors.bgAccountCard,
-        borderColor: colors.secondary
+        borderColor: colors.secondary,
     },
     rootSimplifiedActive: {
         backgroundColor: colors.bgAccountCardSelected,
-        borderColor: colors.accentLightForm
+        borderColor: colors.accentLightForm,
     },
     patternWrapper: {
         overflow: 'hidden',
@@ -101,7 +98,7 @@ const styles = StyleSheet.create({
         height: '200%',
         top: 0,
         left: 0,
-        opacity: 0.05
+        opacity: 0.05,
     },
     manageSection: {
         position: 'absolute',
@@ -109,12 +106,12 @@ const styles = StyleSheet.create({
         right: spacings.margin,
         flexDirection: 'row',
         alignItems: 'center',
-        zIndex: 2
+        zIndex: 2,
     },
     removeIcon: {
         width: 18,
         height: 18,
-        marginRight: spacings.margin / 2
+        marginRight: spacings.margin / 2,
     },
     loadingIndicator: {
         position: 'absolute',
@@ -122,7 +119,7 @@ const styles = StyleSheet.create({
         left: 0,
         width: '100%',
         height: '100%',
-        backgroundColor: '#0001'
+        backgroundColor: '#0001',
     },
     content: {
         width: '100%',
@@ -154,6 +151,6 @@ const styles = StyleSheet.create({
     textAddress: {
         ...fonts.body,
         color: colors.textForm,
-        marginRight: spacings.margin / 2
+        marginRight: spacings.margin / 2,
     },
 });

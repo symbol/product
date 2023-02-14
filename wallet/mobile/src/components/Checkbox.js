@@ -1,37 +1,25 @@
 import React from 'react';
-import {  Pressable, StyleSheet } from 'react-native';
+import { Pressable, StyleSheet } from 'react-native';
 import Animated, { interpolate, interpolateColor, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
-import { borders, colors, fonts, spacings, timings } from 'src/styles';
+import { borders, colors, fonts, timings } from 'src/styles';
 
-export const Checkbox = props => {
+export const Checkbox = (props) => {
     const { style, testID, title, value, onChange } = props;
     const isPressed = useSharedValue(false);
-    
+
     const colorBorderNormal = colors.controlBaseStroke;
     const colorBorderPressed = colors.controlBaseFocussedStroke;
     const colorTextNormal = colors.textBody;
     const colorTextPressed = colors.secondary;
 
     const animatedContainer = useAnimatedStyle(() => ({
-        borderColor: interpolateColor(
-            isPressed.value,
-            [0, 1],
-            [colorBorderNormal, colorBorderPressed]
-        ),
+        borderColor: interpolateColor(isPressed.value, [0, 1], [colorBorderNormal, colorBorderPressed]),
     }));
     const animatedText = useAnimatedStyle(() => ({
-        color: interpolateColor(
-            isPressed.value,
-            [0, 1],
-            [colorTextNormal, colorTextPressed]
-        ),
+        color: interpolateColor(isPressed.value, [0, 1], [colorTextNormal, colorTextPressed]),
     }));
     const animatedCheck = useAnimatedStyle(() => ({
-        transform: [{ scale: interpolate(
-            isPressed.value,
-            [0, 1],
-            [1, 0]
-        ), }]
+        transform: [{ scale: interpolate(isPressed.value, [0, 1], [1, 0]) }],
     }));
     const stylesCheck = [styles.icon, animatedCheck, !value ? styles.hidden : null];
 
@@ -61,7 +49,7 @@ const styles = StyleSheet.create({
     root: {
         width: '100%',
         flexDirection: 'row',
-        alignItems: 'center', 
+        alignItems: 'center',
     },
     container: {
         width: 22,
@@ -75,9 +63,9 @@ const styles = StyleSheet.create({
     },
     icon: {
         width: 18,
-        height: 18
+        height: 18,
     },
     hidden: {
-        opacity: 0
-    }
+        opacity: 0,
+    },
 });
