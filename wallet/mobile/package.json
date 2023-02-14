@@ -10,6 +10,7 @@
     "build:android:dev": "react-native run-android",
     "build:android:prod": "cd ./android && gradlew assembleRelease",
     "test": "jest",
+    "test:cov": "jest --coverage --watchAll",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix --color",
     "postinstall": "./scripts/post-install.sh"
