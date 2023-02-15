@@ -163,14 +163,15 @@ class NetworkRepository:
 			node_host = json_node['endpoint']['host']
 			node_port = json_node['endpoint']['port']
 
-			main_public_key = PublicKey(json_node['identity']['public-key'])
-			node_public_key = PublicKey(json_node['identity']['node-public-key'])
+			json_identity = json_node['identity']
+			main_public_key = PublicKey(json_identity['public-key'])
+			node_public_key = PublicKey(json_identity['node-public-key']) if 'node-public-key' in json_identity else None
 			return NodeDescriptor(
 				self._network.public_key_to_address(main_public_key),
 				main_public_key,
 				node_public_key,
 				f'{node_protocol}://{node_host}:{node_port}',
-				json_node['identity']['name'],
+				json_identity['name'],
 				json_node['metaData']['version'],
 				*extra_data)
 

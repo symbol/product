@@ -59,7 +59,7 @@ class NetworkRepositoryTest(unittest.TestCase):
 			repository.node_descriptors[2],
 			main_address=NemAddress('NDARKIXXPHDG5SEXSXVFIXXSNMOYJE4ZRI2CVWTL'),
 			main_public_key=PublicKey('83F2791B70E06EA36520D044C6FD85B84CA9A31744C1173C640C36A2F3161846'),
-			node_public_key=PublicKey('5A907614C7B81D64917B274B047C881BE5E1FCBD96B4F1D55FDFB5F370DDBDD4'),
+			node_public_key=None,
 			endpoint='http://45.76.22.139:7890',
 			name='cobalt',
 			height=0,
