@@ -4,6 +4,9 @@ import re
 import unittest
 from pathlib import Path
 
+from symbolchain.nem.Network import Network as NemNetwork
+from symbolchain.symbol.Network import Network as SymbolNetwork
+
 from nodewatch.RoutesFacade import NemRoutesFacade, SymbolRoutesFacade
 
 
@@ -24,7 +27,7 @@ class NemRoutesFacadeTest(unittest.TestCase):
 
 	def test_can_reload_all(self):
 		# Arrange:
-		facade = NemRoutesFacade()
+		facade = NemRoutesFacade(NemNetwork.MAINNET, '<nem_explorer>')
 
 		# Act:
 		result = facade.reload_all(Path('tests/resources'), True)
@@ -39,7 +42,7 @@ class NemRoutesFacadeTest(unittest.TestCase):
 
 	def test_can_skip_reload_when_noop(self):
 		# Arrange:
-		facade = NemRoutesFacade()
+		facade = NemRoutesFacade(NemNetwork.MAINNET, '<nem_explorer>')
 
 		# Act:
 		result1 = facade.reload_all(Path('tests/resources'), True)
@@ -56,7 +59,7 @@ class NemRoutesFacadeTest(unittest.TestCase):
 
 	def test_can_reset_refresh_time(self):
 		# Arrange:
-		facade = NemRoutesFacade()
+		facade = NemRoutesFacade(NemNetwork.MAINNET, '<nem_explorer>')
 		facade.last_refresh_time = None
 
 		# Act:
@@ -72,7 +75,7 @@ class NemRoutesFacadeTest(unittest.TestCase):
 
 	def test_can_render_harvesters_html(self):
 		# Arrange:
-		facade = NemRoutesFacade()
+		facade = NemRoutesFacade(NemNetwork.MAINNET, '<nem_explorer>')
 		facade.reload_all(Path('tests/resources'), True)
 
 		# Act:
@@ -80,15 +83,16 @@ class NemRoutesFacadeTest(unittest.TestCase):
 
 		# Assert:
 		self.assertEqual('nem_nodes.html', template_name)
-		self.assertEqual(3, len(context))
+		self.assertEqual(4, len(context))
 		self.assertEqual('NEM Recent Harvesters', context['title'])
 		self.assertEqual(['Allnodes21', 'TIME', '', 'Hi, I am Alice7'], _get_names(context['descriptors']))
 		self.assertEqual([104] * 4, _get_network_bytes(context['descriptors']))
 		self.assertIsNotNone(context['version_to_css_class'])
+		self.assertEqual('<nem_explorer>', context['explorer_endpoint'])
 
 	def test_can_render_nodes_html(self):
 		# Arrange:
-		facade = NemRoutesFacade()
+		facade = NemRoutesFacade(NemNetwork.MAINNET, '<nem_explorer>')
 		facade.reload_all(Path('tests/resources'), True)
 
 		# Act:
@@ -96,15 +100,16 @@ class NemRoutesFacadeTest(unittest.TestCase):
 
 		# Assert:
 		self.assertEqual('nem_nodes.html', template_name)
-		self.assertEqual(3, len(context))
+		self.assertEqual(4, len(context))
 		self.assertEqual('NEM Nodes', context['title'])
 		self.assertEqual(['August', '[c=#e9c086]jusan[/c]', 'cobalt', 'silicon'], _get_names(context['descriptors']))
 		self.assertEqual([104] * 4, _get_network_bytes(context['descriptors']))
 		self.assertIsNotNone(context['version_to_css_class'])
+		self.assertEqual('<nem_explorer>', context['explorer_endpoint'])
 
 	def test_can_render_summary_html(self):
 		# Arrange:
-		facade = NemRoutesFacade(1)
+		facade = NemRoutesFacade(NemNetwork.MAINNET, '<nem_explorer>', 1)
 		facade.reload_all(Path('tests/resources'), True)
 
 		# Act:
@@ -120,7 +125,7 @@ class NemRoutesFacadeTest(unittest.TestCase):
 
 	def test_can_render_nodes_html_testnet(self):
 		# Arrange:
-		facade = NemRoutesFacade(network_name='testnet')
+		facade = NemRoutesFacade(NemNetwork.TESTNET, '<nem_explorer>')
 		facade.reload_all(Path('tests/resources'), True)
 
 		# Act:
@@ -128,11 +133,12 @@ class NemRoutesFacadeTest(unittest.TestCase):
 
 		# Assert:
 		self.assertEqual('nem_nodes.html', template_name)
-		self.assertEqual(3, len(context))
+		self.assertEqual(4, len(context))
 		self.assertEqual('NEM (TESTNET) Nodes', context['title'])
 		self.assertEqual(['ol-test'], _get_names(context['descriptors']))
 		self.assertEqual([152], _get_network_bytes(context['descriptors']))
 		self.assertIsNotNone(context['version_to_css_class'])
+		self.assertEqual('<nem_explorer>', context['explorer_endpoint'])
 
 	# endregion
 
@@ -140,7 +146,7 @@ class NemRoutesFacadeTest(unittest.TestCase):
 
 	def test_can_generate_nodes_json(self):
 		# Arrange:
-		facade = NemRoutesFacade()
+		facade = NemRoutesFacade(NemNetwork.MAINNET, '<nem_explorer>')
 		facade.reload_all(Path('tests/resources'), True)
 
 		# Act:
@@ -157,7 +163,7 @@ class NemRoutesFacadeTest(unittest.TestCase):
 
 	def test_can_generate_height_chart_json(self):
 		# Arrange:
-		facade = NemRoutesFacade(1)
+		facade = NemRoutesFacade(NemNetwork.MAINNET, '<nem_explorer>', 1)
 		facade.reload_all(Path('tests/resources'), True)
 
 		# Act:
@@ -168,7 +174,7 @@ class NemRoutesFacadeTest(unittest.TestCase):
 
 	def test_can_generate_height_chart_with_metadata_json(self):
 		# Arrange:
-		facade = NemRoutesFacade(1)
+		facade = NemRoutesFacade(NemNetwork.MAINNET, '<nem_explorer>', 1)
 		facade.reload_all(Path('tests/resources'), True)
 
 		# Act:
@@ -182,7 +188,7 @@ class NemRoutesFacadeTest(unittest.TestCase):
 
 	def test_can_retrieve_estimated_network_height_json(self):
 		# Arrange:
-		facade = NemRoutesFacade()
+		facade = NemRoutesFacade(NemNetwork.MAINNET, '<nem_explorer>')
 		facade.reload_all(Path('tests/resources'), True)
 
 		# Act:
@@ -210,7 +216,7 @@ class SymbolRoutesFacadeTest(unittest.TestCase):
 
 	def test_can_reload_all(self):
 		# Arrange:
-		facade = SymbolRoutesFacade()
+		facade = SymbolRoutesFacade(SymbolNetwork.MAINNET, '<symbol_explorer>')
 
 		# Act:
 		result = facade.reload_all(Path('tests/resources'), True)
@@ -225,7 +231,7 @@ class SymbolRoutesFacadeTest(unittest.TestCase):
 
 	def test_can_skip_reload_when_noop(self):
 		# Arrange:
-		facade = SymbolRoutesFacade()
+		facade = SymbolRoutesFacade(SymbolNetwork.MAINNET, '<symbol_explorer>')
 
 		# Act:
 		result1 = facade.reload_all(Path('tests/resources'), True)
@@ -242,7 +248,7 @@ class SymbolRoutesFacadeTest(unittest.TestCase):
 
 	def test_can_reset_refresh_time(self):
 		# Arrange:
-		facade = SymbolRoutesFacade()
+		facade = SymbolRoutesFacade(SymbolNetwork.MAINNET, '<symbol_explorer>')
 		facade.last_refresh_time = None
 
 		# Act:
@@ -258,7 +264,7 @@ class SymbolRoutesFacadeTest(unittest.TestCase):
 
 	def test_can_render_harvesters_html(self):
 		# Arrange:
-		facade = SymbolRoutesFacade()
+		facade = SymbolRoutesFacade(SymbolNetwork.MAINNET, '<symbol_explorer>')
 		facade.reload_all(Path('tests/resources'), True)
 
 		# Act:
@@ -266,15 +272,16 @@ class SymbolRoutesFacadeTest(unittest.TestCase):
 
 		# Assert:
 		self.assertEqual('symbol_nodes.html', template_name)
-		self.assertEqual(3, len(context))
+		self.assertEqual(4, len(context))
 		self.assertEqual('Symbol Recent Harvesters', context['title'])
 		self.assertEqual(['jaguar', '(Max50)SN1.MSUS', '', 'Allnodes900'], _get_names(context['descriptors']))
 		self.assertEqual([104] * 4, _get_network_bytes(context['descriptors']))
 		self.assertIsNotNone(context['version_to_css_class'])
+		self.assertEqual('<symbol_explorer>', context['explorer_endpoint'])
 
 	def test_can_render_nodes_html(self):
 		# Arrange:
-		facade = SymbolRoutesFacade()
+		facade = SymbolRoutesFacade(SymbolNetwork.MAINNET, '<symbol_explorer>')
 		facade.reload_all(Path('tests/resources'), True)
 
 		# Act:
@@ -282,17 +289,18 @@ class SymbolRoutesFacadeTest(unittest.TestCase):
 
 		# Assert:
 		self.assertEqual('symbol_nodes.html', template_name)
-		self.assertEqual(3, len(context))
+		self.assertEqual(4, len(context))
 		self.assertEqual('Symbol Nodes', context['title'])
 		self.assertEqual(
 			['Allnodes250', 'Apple', 'Shin-Kuma-Node', 'ibone74', 'jaguar', 'symbol.ooo maxUnlockedAccounts:100'],
 			_get_names(context['descriptors']))
 		self.assertEqual([104] * 6, _get_network_bytes(context['descriptors']))
 		self.assertIsNotNone(context['version_to_css_class'])
+		self.assertEqual('<symbol_explorer>', context['explorer_endpoint'])
 
 	def test_can_render_voters_html(self):
 		# Arrange:
-		facade = SymbolRoutesFacade()
+		facade = SymbolRoutesFacade(SymbolNetwork.MAINNET, '<symbol_explorer>')
 		facade.reload_all(Path('tests/resources'), True)
 
 		# Act:
@@ -300,16 +308,17 @@ class SymbolRoutesFacadeTest(unittest.TestCase):
 
 		# Assert:
 		self.assertEqual('symbol_nodes.html', template_name)
-		self.assertEqual(4, len(context))
+		self.assertEqual(5, len(context))
 		self.assertEqual('Symbol Voters', context['title'])
 		self.assertEqual(['59026DB', 'Allnodes34'], _get_names(context['descriptors']))
 		self.assertEqual([104] * 2, _get_network_bytes(context['descriptors']))
 		self.assertIsNotNone(context['version_to_css_class'])
 		self.assertTrue(context['show_voting'])
+		self.assertEqual('<symbol_explorer>', context['explorer_endpoint'])
 
 	def test_can_render_summary_html(self):
 		# Arrange:
-		facade = SymbolRoutesFacade(1)
+		facade = SymbolRoutesFacade(SymbolNetwork.MAINNET, '<symbol_explorer>', 1)
 		facade.reload_all(Path('tests/resources'), True)
 
 		# Act:
@@ -326,7 +335,7 @@ class SymbolRoutesFacadeTest(unittest.TestCase):
 
 	def test_can_render_nodes_html_testnet(self):
 		# Arrange:
-		facade = SymbolRoutesFacade(network_name='testnet')
+		facade = SymbolRoutesFacade(SymbolNetwork.TESTNET, '<symbol_explorer>')
 		facade.reload_all(Path('tests/resources'), True)
 
 		# Act:
@@ -334,11 +343,12 @@ class SymbolRoutesFacadeTest(unittest.TestCase):
 
 		# Assert:
 		self.assertEqual('symbol_nodes.html', template_name)
-		self.assertEqual(3, len(context))
+		self.assertEqual(4, len(context))
 		self.assertEqual('Symbol (TESTNET) Nodes', context['title'])
 		self.assertEqual(['ignored because testnet node'], _get_names(context['descriptors']))
 		self.assertEqual([152], _get_network_bytes(context['descriptors']))
 		self.assertIsNotNone(context['version_to_css_class'])
+		self.assertEqual('<symbol_explorer>', context['explorer_endpoint'])
 
 	# endregion
 
@@ -346,7 +356,7 @@ class SymbolRoutesFacadeTest(unittest.TestCase):
 
 	def test_can_generate_nodes_json(self):
 		# Arrange:
-		facade = SymbolRoutesFacade()
+		facade = SymbolRoutesFacade(SymbolNetwork.MAINNET, '<symbol_explorer>')
 		facade.reload_all(Path('tests/resources'), True)
 
 		# Act:
@@ -363,7 +373,7 @@ class SymbolRoutesFacadeTest(unittest.TestCase):
 
 	def test_can_generate_nodes_json_filtered(self):
 		# Arrange:
-		facade = SymbolRoutesFacade()
+		facade = SymbolRoutesFacade(SymbolNetwork.MAINNET, '<symbol_explorer>')
 		facade.reload_all(Path('tests/resources'), True)
 
 		# Act: select nodes with api role (role 2)
@@ -380,7 +390,7 @@ class SymbolRoutesFacadeTest(unittest.TestCase):
 
 	def test_can_generate_nodes_json_filtered_exact_match(self):
 		# Arrange:
-		facade = SymbolRoutesFacade()
+		facade = SymbolRoutesFacade(SymbolNetwork.MAINNET, '<symbol_explorer>')
 		facade.reload_all(Path('tests/resources'), True)
 
 		# Act: select nodes with only api role (role 2)
@@ -397,7 +407,7 @@ class SymbolRoutesFacadeTest(unittest.TestCase):
 
 	def test_can_generate_height_chart_json(self):
 		# Arrange:
-		facade = SymbolRoutesFacade(1)
+		facade = SymbolRoutesFacade(SymbolNetwork.MAINNET, '<symbol_explorer>', 1)
 		facade.reload_all(Path('tests/resources'), True)
 
 		# Act:
@@ -408,7 +418,7 @@ class SymbolRoutesFacadeTest(unittest.TestCase):
 
 	def test_can_generate_height_chart_with_metadata_json(self):
 		# Arrange:
-		facade = SymbolRoutesFacade(1)
+		facade = SymbolRoutesFacade(SymbolNetwork.MAINNET, '<symbol_explorer>', 1)
 		facade.reload_all(Path('tests/resources'), True)
 
 		# Act:
@@ -422,7 +432,7 @@ class SymbolRoutesFacadeTest(unittest.TestCase):
 
 	def test_can_retrieve_estimated_network_height_json(self):
 		# Arrange:
-		facade = SymbolRoutesFacade()
+		facade = SymbolRoutesFacade(SymbolNetwork.MAINNET, '<symbol_explorer>')
 		facade.reload_all(Path('tests/resources'), True)
 
 		# Act:

@@ -19,6 +19,8 @@ def app():
 			print(f'creating config file {config_filename}...')
 			config_file.write('RESOURCES_PATH="tests/resources"\n')
 			config_file.write('MIN_HEIGHT_CLUSTER_SIZE=1\n')  # needed due to small test data
+			config_file.write('SYMBOL_EXPLORER_ENDPOINT="<symbol_explorer>"\n')
+			config_file.write('NEM_EXPLORER_ENDPOINT="<nem_explorer>"\n')
 			config_file.flush()
 
 			temp_file_path = config_filename.resolve()

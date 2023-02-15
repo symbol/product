@@ -16,10 +16,13 @@ TIMESTAMP_FORMAT = '%H:%M'
 class BasicRoutesFacade:
 	"""Routes facade common to NEM and Symbol."""
 
+	# pylint: disable=too-many-instance-attributes
+
 	def __init__(
 		self,
+		network,
+		explorer_endpoint,
 		blockchain_name,
-		network_name,
 		title_blockchain_name,
 		version_to_css_class,
 		version_customizations,
@@ -28,16 +31,17 @@ class BasicRoutesFacade:
 
 		# pylint: disable=too-many-arguments
 
+		self.explorer_endpoint = explorer_endpoint
 		self.blockchain_name = blockchain_name
 		self.title_name = title_blockchain_name
-		if 'mainnet' != network_name:
-			self.title_name += f' ({network_name.upper()})'
+		if 'mainnet' != network.name:
+			self.title_name += f' ({network.name.upper()})'
 
 		self.version_to_css_class = version_to_css_class
 		self.version_customizations = VersionCustomizations(version_customizations)
 		self.min_cluster_size = min_cluster_size
 
-		self.repository = NetworkRepository(self.blockchain_name, network_name)
+		self.repository = NetworkRepository(network, self.blockchain_name)
 		self.last_reload_time = datetime.datetime(2021, 1, 1)
 		self.last_refresh_time = None
 
@@ -47,7 +51,8 @@ class BasicRoutesFacade:
 		return (f'{self.blockchain_name}_nodes.html', {
 			'title': f'{self.title_name} Recent Harvesters',
 			'descriptors': self.repository.harvester_descriptors,
-			'version_to_css_class': self.version_to_css_class
+			'version_to_css_class': self.version_to_css_class,
+			'explorer_endpoint': self.explorer_endpoint
 		})
 
 	def html_nodes(self):
@@ -56,7 +61,8 @@ class BasicRoutesFacade:
 		return (f'{self.blockchain_name}_nodes.html', {
 			'title': f'{self.title_name} Nodes',
 			'descriptors': self.repository.node_descriptors,
-			'version_to_css_class': self.version_to_css_class
+			'version_to_css_class': self.version_to_css_class,
+			'explorer_endpoint': self.explorer_endpoint
 		})
 
 	def json_nodes(self, role, exact_match=False):
@@ -138,10 +144,10 @@ class BasicRoutesFacade:
 class NemRoutesFacade(BasicRoutesFacade):
 	"""NEM routes facade."""
 
-	def __init__(self, min_cluster_size=MIN_HEIGHT_CLUSTER_SIZE, network_name='mainnet'):
+	def __init__(self, network, explorer_endpoint, min_cluster_size=MIN_HEIGHT_CLUSTER_SIZE):
 		"""Creates a facade."""
 
-		super().__init__('nem', network_name, 'NEM', self._version_to_css_class, {
+		super().__init__(network, explorer_endpoint, 'nem', 'NEM', self._version_to_css_class, {
 			'0.6.100': ('#008500', 7),
 			'delegating / updating': ('#FFFF6B', 6),
 			'0.6.99': ('#FF6B6B', 5),
@@ -179,10 +185,10 @@ class NemRoutesFacade(BasicRoutesFacade):
 class SymbolRoutesFacade(BasicRoutesFacade):
 	"""Symbol routes facade."""
 
-	def __init__(self, min_cluster_size=MIN_HEIGHT_CLUSTER_SIZE, network_name='mainnet'):
+	def __init__(self, network, explorer_endpoint, min_cluster_size=MIN_HEIGHT_CLUSTER_SIZE):
 		"""Creates a facade."""
 
-		super().__init__('symbol', network_name, 'Symbol', self._version_to_css_class, {
+		super().__init__(network, explorer_endpoint, 'symbol', 'Symbol', self._version_to_css_class, {
 			'1.0.3.5': ('#008A00', 10),
 			'1.0.3.4': ('#00B300', 9),
 			'delegating / updating': ('#FFFF6B', 8),
@@ -201,7 +207,8 @@ class SymbolRoutesFacade(BasicRoutesFacade):
 			'title': f'{self.title_name} Voters',
 			'descriptors': [descriptor for descriptor in self.repository.voter_descriptors if descriptor.is_voting],
 			'version_to_css_class': self.version_to_css_class,
-			'show_voting': True
+			'show_voting': True,
+			'explorer_endpoint': self.explorer_endpoint
 		})
 
 	def html_summary(self):

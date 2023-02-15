@@ -26,7 +26,7 @@
       <tr class="{{ 'table-' + version_to_css_class(descriptor.version) }}">
         <th scope="row">{{ loop.index }}</th>
         <td class='text-monospace'>
-          <a href="https://explorer.nemtool.com/#/s_account?account={{ descriptor.main_address }}" target="_blank">
+          <a href="{{ explorer_endpoint }}/#/s_account?account={{ descriptor.main_address }}" target="_blank">
             {{ descriptor.main_address }}
           </a>
         </td>

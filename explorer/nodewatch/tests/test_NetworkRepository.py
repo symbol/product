@@ -2,7 +2,9 @@ import unittest
 
 from symbolchain.CryptoTypes import PublicKey
 from symbolchain.nem.Network import Address as NemAddress
+from symbolchain.nem.Network import Network as NemNetwork
 from symbolchain.symbol.Network import Address as SymbolAddress
+from symbolchain.symbol.Network import Network as SymbolNetwork
 
 from nodewatch.NetworkRepository import NetworkRepository
 
@@ -20,7 +22,7 @@ class NetworkRepositoryTest(unittest.TestCase):
 
 	def test_can_load_nem_node_descriptors(self):
 		# Arrange:
-		repository = NetworkRepository('nem')
+		repository = NetworkRepository(NemNetwork.MAINNET, 'nem')
 
 		# Act:
 		repository.load_node_descriptors('tests/resources/nem_nodes.json')
@@ -84,7 +86,7 @@ class NetworkRepositoryTest(unittest.TestCase):
 
 	def test_can_load_symbol_node_descriptors(self):
 		# Arrange:
-		repository = NetworkRepository('symbol')
+		repository = NetworkRepository(SymbolNetwork.MAINNET, 'symbol')
 
 		# Act:
 		repository.load_node_descriptors('tests/resources/symbol_nodes.json')
@@ -174,7 +176,7 @@ class NetworkRepositoryTest(unittest.TestCase):
 
 	def test_can_format_node_descriptor_as_json(self):
 		# Arrange:
-		repository = NetworkRepository('symbol')
+		repository = NetworkRepository(SymbolNetwork.MAINNET, 'symbol')
 		repository.load_node_descriptors('tests/resources/symbol_nodes.json')
 
 		# Act:
@@ -195,7 +197,7 @@ class NetworkRepositoryTest(unittest.TestCase):
 
 	def test_can_format_node_descriptor_with_node_public_key_as_json(self):
 		# Arrange:
-		repository = NetworkRepository('symbol')
+		repository = NetworkRepository(SymbolNetwork.MAINNET, 'symbol')
 		repository.load_node_descriptors('tests/resources/symbol_nodes.json')
 
 		# Act:
@@ -225,7 +227,7 @@ class NetworkRepositoryTest(unittest.TestCase):
 
 	def test_can_load_nem_harvester_descriptors(self):
 		# Arrange:
-		repository = NetworkRepository('nem')
+		repository = NetworkRepository(NemNetwork.MAINNET, 'nem')
 
 		# Act:
 		repository.load_harvester_descriptors('tests/resources/nem_harvesters.csv')
@@ -276,7 +278,7 @@ class NetworkRepositoryTest(unittest.TestCase):
 
 	def test_can_load_symbol_harvester_descriptors(self):
 		# Arrange:
-		repository = NetworkRepository('symbol')
+		repository = NetworkRepository(SymbolNetwork.MAINNET, 'symbol')
 
 		# Act:
 		repository.load_harvester_descriptors('tests/resources/symbol_harvesters.csv')
@@ -339,7 +341,7 @@ class NetworkRepositoryTest(unittest.TestCase):
 
 	def test_can_load_symbol_voter_descriptors(self):
 		# Arrange:
-		repository = NetworkRepository('symbol')
+		repository = NetworkRepository(SymbolNetwork.MAINNET, 'symbol')
 
 		# Act:
 		repository.load_voter_descriptors('tests/resources/symbol_richlist.csv')

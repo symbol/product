@@ -2,6 +2,10 @@ from pathlib import Path
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from flask import Flask, jsonify, redirect, render_template, request, url_for
+from symbolchain.CryptoTypes import Hash256
+from symbolchain.nem.Network import Network as NemNetwork
+from symbolchain.Network import NetworkLocator
+from symbolchain.symbol.Network import Network as SymbolNetwork
 from zenlog import log
 
 from .RoutesFacade import MIN_HEIGHT_CLUSTER_SIZE, TIMESTAMP_FORMAT, NemRoutesFacade, SymbolRoutesFacade
@@ -14,14 +18,27 @@ def create_app():
 	app.config.from_envvar('NODEWATCH_SETTINGS')
 
 	resources_path = Path(app.config.get('RESOURCES_PATH'))
-	min_cluster_size = app.config.get('MIN_HEIGHT_CLUSTER_SIZE', MIN_HEIGHT_CLUSTER_SIZE)
 	network_name = app.config.get('NETWORK_NAME', 'mainnet')
-	log.info(f'loading resources from {resources_path}')
-	log.info(f' configured with MIN_HEIGHT_CLUSTER_SIZE {min_cluster_size}')
-	log.info(f' configured with NETWORK_NAME {network_name}')
+	min_cluster_size = app.config.get('MIN_HEIGHT_CLUSTER_SIZE', MIN_HEIGHT_CLUSTER_SIZE)
 
-	nem_routes_facade = NemRoutesFacade(min_cluster_size, network_name)
-	symbol_routes_facade = SymbolRoutesFacade(min_cluster_size, network_name)
+	symbol_explorer_endpoint = app.config.get('SYMBOL_EXPLORER_ENDPOINT')
+	symbol_generation_hash_seed = app.config.get('SYMBOL_GENERATION_HASH_SEED', None)
+	nem_explorer_endpoint = app.config.get('NEM_EXPLORER_ENDPOINT')
+
+	log.info(f'loading resources from {resources_path}')
+	log.info(f' configured with NETWORK_NAME {network_name}')
+	log.info(f' configured with MIN_HEIGHT_CLUSTER_SIZE {min_cluster_size}')
+	log.info(f' configured with SYMBOL_EXPLORER_ENDPOINT {symbol_explorer_endpoint}')
+	log.info(f' configured with SYMBOL_GENERATION_HASH_SEED {symbol_generation_hash_seed}')
+	log.info(f' configured with NEM_EXPLORER_ENDPOINT {nem_explorer_endpoint}')
+
+	nem_network = NetworkLocator.find_by_name(NemNetwork.NETWORKS, network_name)
+	symbol_network = NetworkLocator.find_by_name(SymbolNetwork.NETWORKS, network_name)
+	if symbol_generation_hash_seed:
+		symbol_network.generation_hash_seed = Hash256(symbol_generation_hash_seed)
+
+	nem_routes_facade = NemRoutesFacade(nem_network, nem_explorer_endpoint, min_cluster_size)
+	symbol_routes_facade = SymbolRoutesFacade(symbol_network, symbol_explorer_endpoint, min_cluster_size)
 
 	@app.route('/')
 	def index():  # pylint: disable=unused-variable

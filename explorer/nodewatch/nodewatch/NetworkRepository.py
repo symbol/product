@@ -3,10 +3,7 @@ import json
 
 from symbolchain.CryptoTypes import Hash256, PublicKey
 from symbolchain.nem.Network import Address as NemAddress
-from symbolchain.nem.Network import Network as NemNetwork
-from symbolchain.Network import NetworkLocator
 from symbolchain.symbol.Network import Address as SymbolAddress
-from symbolchain.symbol.Network import Network as SymbolNetwork
 from zenlog import log
 
 
@@ -104,11 +101,11 @@ class SymbolAccountDescriptor:
 class NetworkRepository:
 	"""Network respository managing access to NEM or Symbol node information."""
 
-	def __init__(self, blockchain_name, network_name='mainnet'):
+	def __init__(self, network, blockchain_name):
 		"""Creates a network repository."""
 
+		self._network = network
 		self.blockchain_name = blockchain_name
-		self.network_name = network_name
 
 		self.node_descriptors = None
 		self.harvester_descriptors = None
@@ -119,10 +116,6 @@ class NetworkRepository:
 		"""True if the repository is initialized for NEM, False otherwise."""
 
 		return 'nem' == self.blockchain_name
-
-	@property
-	def _network(self):
-		return NetworkLocator.find_by_name((NemNetwork if self.is_nem else SymbolNetwork).NETWORKS, self.network_name)
 
 	def estimate_height(self):
 		"""Estimates the network height by returning the median height of all nodes."""
