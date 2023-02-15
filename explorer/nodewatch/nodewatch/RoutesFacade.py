@@ -1,6 +1,5 @@
 import asyncio
 import datetime
-import json
 
 from zenlog import log
 
@@ -66,9 +65,9 @@ class BasicRoutesFacade:
 		def role_filter(descriptor):
 			return role == descriptor.roles if exact_match else role == (role & descriptor.roles)
 
-		return json.dumps(list(map(
+		return list(map(
 			lambda descriptor: descriptor.to_json(),
-			filter(role_filter, self.repository.node_descriptors))))
+			filter(role_filter, self.repository.node_descriptors)))
 
 	def json_height_chart(self):
 		"""Builds a JSON height chart."""
@@ -82,15 +81,15 @@ class BasicRoutesFacade:
 	def json_height_chart_with_metadata(self):
 		"""Builds a JSON height chart with metadata."""
 
-		return json.dumps({
+		return {
 			'chartJson': self.json_height_chart(),
 			'lastRefreshTime': self.last_refresh_time.strftime(TIMESTAMP_FORMAT)
-		})
+		}
 
 	def json_height(self):
 		"""Gets the estimated network height."""
 
-		return json.dumps({'height': self.repository.estimate_height()})
+		return {'height': self.repository.estimate_height()}
 
 	def reload_all(self, resources_path, force=False):
 		"""Reloads all descriptor files."""

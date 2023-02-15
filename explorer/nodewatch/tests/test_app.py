@@ -45,6 +45,7 @@ def test_redirect_root_to_symbol_summary(client):  # pylint: disable=redefined-o
 
 	# Assert:
 	assert 302 == response.status_code
+	assert 'text/html; charset=utf-8' == response.headers['Content-Type']
 	assert 'target URL: <a href="/symbol/summary">/symbol/summary</a>.' in response_html
 
 # endregion
@@ -56,6 +57,7 @@ def _assert_nodes_table(response, expected_title, expected_node_names):
 	response_html = str(response.data)
 
 	assert 200 == response.status_code
+	assert 'text/html; charset=utf-8' == response.headers['Content-Type']
 	assert f'<title>Seven Seas Explorer - \\n{expected_title}\\n</title>' in response_html
 
 	for name in expected_node_names:
@@ -95,6 +97,7 @@ def test_get_nem_summary(client):  # pylint: disable=redefined-outer-name
 
 	# Assert:
 	assert 200 == response.status_code
+	assert 'text/html; charset=utf-8' == response.headers['Content-Type']
 	assert '<title>Seven Seas Explorer - \\nNEM Summary\\n</title>' in response_html
 
 	assert '<div id=\\\'voting-power-chart\\\'' not in response_html
@@ -109,6 +112,7 @@ def test_get_symbol_summary(client):  # pylint: disable=redefined-outer-name
 
 	# Assert:
 	assert 200 == response.status_code
+	assert 'text/html; charset=utf-8' == response.headers['Content-Type']
 	assert '<title>Seven Seas Explorer - \\nSymbol Summary\\n</title>' in response_html
 
 	for chart_id in ['voting-power-chart', 'height-chart', 'harvesting-power-chart', 'harvesting-count-chart', 'node-count-chart']:
@@ -126,6 +130,7 @@ def test_get_api_nem_nodes(client):  # pylint: disable=redefined-outer-name
 
 	# Assert: spot check names
 	assert 200 == response.status_code
+	assert 'application/json' == response.headers['Content-Type']
 	assert 4 == len(response_json)
 	assert ['August', '[c=#e9c086]jusan[/c]', 'cobalt', 'silicon'] == list(map(lambda descriptor: descriptor['name'], response_json))
 
@@ -137,6 +142,7 @@ def test_get_api_nem_network_height(client):  # pylint: disable=redefined-outer-
 
 	# Assert:
 	assert 200 == response.status_code
+	assert 'application/json' == response.headers['Content-Type']
 	assert {'height': 3850057} == response_json
 
 
@@ -148,6 +154,7 @@ def test_get_api_nem_network_height_chart(client):  # pylint: disable=redefined-
 
 	# Assert:
 	assert 200 == response.status_code
+	assert 'application/json' == response.headers['Content-Type']
 	assert 2 == len(response_json)
 	assert 1 == len(chart_json['data'])
 	assert re.match(r'\d\d:\d\d', response_json['lastRefreshTime'])
@@ -160,6 +167,7 @@ def test_get_api_symbol_nodes_api(client):  # pylint: disable=redefined-outer-na
 
 	# Assert: spot check names
 	assert 200 == response.status_code
+	assert 'application/json' == response.headers['Content-Type']
 	assert 1 == len(response_json)
 	assert [
 		'Allnodes250'
@@ -173,6 +181,7 @@ def test_get_api_symbol_nodes_peer(client):  # pylint: disable=redefined-outer-n
 
 	# Assert: spot check names
 	assert 200 == response.status_code
+	assert 'application/json' == response.headers['Content-Type']
 	assert 5 == len(response_json)
 	assert [
 		'Apple', 'Shin-Kuma-Node', 'ibone74', 'jaguar', 'symbol.ooo maxUnlockedAccounts:100'
@@ -186,6 +195,7 @@ def test_get_api_symbol_network_height(client):  # pylint: disable=redefined-out
 
 	# Assert:
 	assert 200 == response.status_code
+	assert 'application/json' == response.headers['Content-Type']
 	assert {'height': 1486760} == response_json
 
 
@@ -197,6 +207,7 @@ def test_get_api_symbol_network_height_chart(client):  # pylint: disable=redefin
 
 	# Assert:
 	assert 200 == response.status_code
+	assert 'application/json' == response.headers['Content-Type']
 	assert 2 == len(response_json)
 	assert 4 == len(chart_json['data'])
 	assert re.match(r'\d\d:\d\d', response_json['lastRefreshTime'])

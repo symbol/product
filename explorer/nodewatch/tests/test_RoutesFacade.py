@@ -144,7 +144,7 @@ class NemRoutesFacadeTest(unittest.TestCase):
 		facade.reload_all(Path('tests/resources'), True)
 
 		# Act:
-		node_descriptors = json.loads(facade.json_nodes(1))
+		node_descriptors = facade.json_nodes(1)
 
 		# Assert: spot check names and roles
 		self.assertEqual(4, len(node_descriptors))
@@ -172,7 +172,7 @@ class NemRoutesFacadeTest(unittest.TestCase):
 		facade.reload_all(Path('tests/resources'), True)
 
 		# Act:
-		chart_with_metadata_json = json.loads(facade.json_height_chart_with_metadata())
+		chart_with_metadata_json = facade.json_height_chart_with_metadata()
 		chart_json = json.loads(chart_with_metadata_json['chartJson'])
 
 		# Assert: { height } x { 0.6.100 }
@@ -186,7 +186,7 @@ class NemRoutesFacadeTest(unittest.TestCase):
 		facade.reload_all(Path('tests/resources'), True)
 
 		# Act:
-		height_json = json.loads(facade.json_height())
+		height_json = facade.json_height()
 
 		# Assert:
 		self.assertEqual(1, len(height_json))
@@ -350,7 +350,7 @@ class SymbolRoutesFacadeTest(unittest.TestCase):
 		facade.reload_all(Path('tests/resources'), True)
 
 		# Act:
-		node_descriptors = json.loads(facade.json_nodes(1))
+		node_descriptors = facade.json_nodes(1)
 
 		# Assert: spot check names and roles
 		self.assertEqual(5, len(node_descriptors))
@@ -367,7 +367,7 @@ class SymbolRoutesFacadeTest(unittest.TestCase):
 		facade.reload_all(Path('tests/resources'), True)
 
 		# Act: select nodes with api role (role 2)
-		node_descriptors = json.loads(facade.json_nodes(2))
+		node_descriptors = facade.json_nodes(2)
 
 		# Assert: spot check names and roles
 		self.assertEqual(5, len(node_descriptors))
@@ -384,7 +384,7 @@ class SymbolRoutesFacadeTest(unittest.TestCase):
 		facade.reload_all(Path('tests/resources'), True)
 
 		# Act: select nodes with only api role (role 2)
-		node_descriptors = json.loads(facade.json_nodes(2, True))
+		node_descriptors = facade.json_nodes(2, True)
 
 		# Assert: spot check names and roles
 		self.assertEqual(1, len(node_descriptors))
@@ -412,7 +412,7 @@ class SymbolRoutesFacadeTest(unittest.TestCase):
 		facade.reload_all(Path('tests/resources'), True)
 
 		# Act:
-		chart_with_metadata_json = json.loads(facade.json_height_chart_with_metadata())
+		chart_with_metadata_json = facade.json_height_chart_with_metadata()
 		chart_json = json.loads(chart_with_metadata_json['chartJson'])
 
 		# Assert: { height, finalized_height } x { 1.0.3.4, 1.0.3.5 }
@@ -426,7 +426,7 @@ class SymbolRoutesFacadeTest(unittest.TestCase):
 		facade.reload_all(Path('tests/resources'), True)
 
 		# Act:
-		height_json = json.loads(facade.json_height())
+		height_json = facade.json_height()
 
 		# Assert:
 		self.assertEqual(1, len(height_json))

@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from apscheduler.schedulers.background import BackgroundScheduler
-from flask import Flask, redirect, render_template, request, url_for
+from flask import Flask, jsonify, redirect, render_template, request, url_for
 from zenlog import log
 
 from .RoutesFacade import MIN_HEIGHT_CLUSTER_SIZE, TIMESTAMP_FORMAT, NemRoutesFacade, SymbolRoutesFacade
@@ -44,15 +44,15 @@ def create_app():
 
 	@app.route('/api/nem/nodes')
 	def api_nem_nodes():  # pylint: disable=unused-variable
-		return nem_routes_facade.json_nodes(1)
+		return jsonify(nem_routes_facade.json_nodes(1))
 
 	@app.route('/api/nem/chart/height')
 	def api_nem_chart_height():  # pylint: disable=unused-variable
-		return nem_routes_facade.json_height_chart_with_metadata()
+		return jsonify(nem_routes_facade.json_height_chart_with_metadata())
 
 	@app.route('/api/nem/height')
 	def api_nem_height():  # pylint: disable=unused-variable
-		return nem_routes_facade.json_height()
+		return jsonify(nem_routes_facade.json_height())
 
 	@app.route('/symbol/voters')
 	def symbol_voters():  # pylint: disable=unused-variable
@@ -76,19 +76,19 @@ def create_app():
 
 	@app.route('/api/symbol/nodes/api')
 	def api_symbol_nodes_api():  # pylint: disable=unused-variable
-		return symbol_routes_facade.json_nodes(2, exact_match=True)
+		return jsonify(symbol_routes_facade.json_nodes(2, exact_match=True))
 
 	@app.route('/api/symbol/nodes/peer')
 	def api_symbol_nodes_peer():  # pylint: disable=unused-variable
-		return symbol_routes_facade.json_nodes(1)
+		return jsonify(symbol_routes_facade.json_nodes(1))
 
 	@app.route('/api/symbol/chart/height')
 	def api_symbol_chart_height():  # pylint: disable=unused-variable
-		return symbol_routes_facade.json_height_chart_with_metadata()
+		return jsonify(symbol_routes_facade.json_height_chart_with_metadata())
 
 	@app.route('/api/symbol/height')
 	def api_symbol_height():  # pylint: disable=unused-variable
-		return symbol_routes_facade.json_height()
+		return jsonify(symbol_routes_facade.json_height())
 
 	@app.context_processor
 	def inject_timestamps():  # pylint: disable=unused-variable
