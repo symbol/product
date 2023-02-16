@@ -38,7 +38,7 @@ class NemRoutesFacadeTest(unittest.TestCase):
 
 		self.assertEqual(4, len(facade.repository.node_descriptors))
 		self.assertEqual(4, len(facade.repository.harvester_descriptors))
-		self.assertEqual(None, facade.repository.voter_descriptors)
+		self.assertEqual(0, len(facade.repository.voter_descriptors))
 
 	def test_can_skip_reload_when_noop(self):
 		# Arrange:
@@ -55,7 +55,7 @@ class NemRoutesFacadeTest(unittest.TestCase):
 
 		self.assertEqual(4, len(facade.repository.node_descriptors))
 		self.assertEqual(4, len(facade.repository.harvester_descriptors))
-		self.assertEqual(None, facade.repository.voter_descriptors)
+		self.assertEqual(0, len(facade.repository.voter_descriptors))
 
 	def test_can_reset_refresh_time(self):
 		# Arrange:
@@ -195,8 +195,9 @@ class NemRoutesFacadeTest(unittest.TestCase):
 		height_json = facade.json_height()
 
 		# Assert:
-		self.assertEqual(1, len(height_json))
+		self.assertEqual(2, len(height_json))
 		self.assertEqual(3850057, height_json['height'])
+		self.assertEqual(3850057 - 360, height_json['finalizedHeight'])
 
 	# endregion
 
@@ -439,8 +440,9 @@ class SymbolRoutesFacadeTest(unittest.TestCase):
 		height_json = facade.json_height()
 
 		# Assert:
-		self.assertEqual(1, len(height_json))
+		self.assertEqual(2, len(height_json))
 		self.assertEqual(1486760, height_json['height'])
+		self.assertEqual(1486740, height_json['finalizedHeight'])
 
 	# endregion
 

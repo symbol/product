@@ -95,7 +95,10 @@ class BasicRoutesFacade:
 	def json_height(self):
 		"""Gets the estimated network height."""
 
-		return {'height': self.repository.estimate_height()}
+		return {
+			'height': self.repository.estimate_height(),
+			'finalizedHeight': self.repository.estimate_finalized_height()
+		}
 
 	def reload_all(self, resources_path, force=False):
 		"""Reloads all descriptor files."""

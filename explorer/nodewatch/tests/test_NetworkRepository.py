@@ -20,6 +20,16 @@ class NetworkRepositoryTest(unittest.TestCase):
 		for name in property_names:
 			self.assertEqual(kwargs[name], getattr(descriptor, name))
 
+	def test_can_load_zero_nem_node_descriptors(self):
+		# Act:
+		repository = NetworkRepository(NemNetwork.MAINNET, 'nem')
+
+		# Assert:
+		self.assertTrue(repository.is_nem)
+		self.assertEqual(0, len(repository.node_descriptors))
+		self.assertEqual(1, repository.estimate_height())
+		self.assertEqual(1, repository.estimate_finalized_height())
+
 	def test_can_load_nem_node_descriptors(self):
 		# Arrange:
 		repository = NetworkRepository(NemNetwork.MAINNET, 'nem')
@@ -31,6 +41,7 @@ class NetworkRepositoryTest(unittest.TestCase):
 		self.assertTrue(repository.is_nem)
 		self.assertEqual(4, len(repository.node_descriptors))
 		self.assertEqual(3850057, repository.estimate_height())  # median
+		self.assertEqual(3850057 - 360, repository.estimate_finalized_height())
 		self._assert_node_descriptor(
 			repository.node_descriptors[0],
 			main_address=NemAddress('NA32LQUMJBADX2XMKJ5QEIQBCF2ZIW5SZDXVGPOL'),
@@ -84,6 +95,16 @@ class NetworkRepositoryTest(unittest.TestCase):
 			roles=0xFF,
 			has_api=True)  # simulates incomplete extraData
 
+	def test_can_load_zero_symbol_node_descriptors(self):
+		# Act:
+		repository = NetworkRepository(SymbolNetwork.MAINNET, 'symbol')
+
+		# Assert:
+		self.assertFalse(repository.is_nem)
+		self.assertEqual(0, len(repository.node_descriptors))
+		self.assertEqual(1, repository.estimate_height())
+		self.assertEqual(1, repository.estimate_finalized_height())
+
 	def test_can_load_symbol_node_descriptors(self):
 		# Arrange:
 		repository = NetworkRepository(SymbolNetwork.MAINNET, 'symbol')
@@ -95,6 +116,7 @@ class NetworkRepositoryTest(unittest.TestCase):
 		self.assertFalse(repository.is_nem)
 		self.assertEqual(6, len(repository.node_descriptors))
 		self.assertEqual(1486760, repository.estimate_height())  # median
+		self.assertEqual(1486740, repository.estimate_finalized_height())  # median (nonzero)
 		self._assert_node_descriptor(
 			repository.node_descriptors[0],
 			main_address=SymbolAddress('NDZOZPTDVCFFLDCNJL7NZGDQDNBB7TY3V6SZNGI'),
@@ -155,7 +177,7 @@ class NetworkRepositoryTest(unittest.TestCase):
 			endpoint='http://jaguar.catapult.ninja:7900',
 			name='jaguar',
 			height=1486761,
-			finalized_height=1486740,
+			finalized_height=1486742,
 			version='1.0.3.5',
 			balance=28083310.571743,
 			roles=5,
@@ -189,7 +211,7 @@ class NetworkRepositoryTest(unittest.TestCase):
 			'endpoint': 'http://jaguar.catapult.ninja:7900',
 			'name': 'jaguar',
 			'height': 1486761,
-			'finalizedHeight': 1486740,
+			'finalizedHeight': 1486742,
 			'version': '1.0.3.5',
 			'balance': 28083310.571743,
 			'roles': 5,

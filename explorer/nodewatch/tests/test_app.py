@@ -145,7 +145,7 @@ def test_get_api_nem_network_height(client):  # pylint: disable=redefined-outer-
 	# Assert:
 	assert 200 == response.status_code
 	assert 'application/json' == response.headers['Content-Type']
-	assert {'height': 3850057} == response_json
+	assert {'height': 3850057, 'finalizedHeight': 3850057 - 360} == response_json
 
 
 def test_get_api_nem_network_height_chart(client):  # pylint: disable=redefined-outer-name
@@ -198,7 +198,7 @@ def test_get_api_symbol_network_height(client):  # pylint: disable=redefined-out
 	# Assert:
 	assert 200 == response.status_code
 	assert 'application/json' == response.headers['Content-Type']
-	assert {'height': 1486760} == response_json
+	assert {'height': 1486760, 'finalizedHeight': 1486740} == response_json
 
 
 def test_get_api_symbol_network_height_chart(client):  # pylint: disable=redefined-outer-name

@@ -107,9 +107,9 @@ class NetworkRepository:
 		self._network = network
 		self.blockchain_name = blockchain_name
 
-		self.node_descriptors = None
-		self.harvester_descriptors = None
-		self.voter_descriptors = None
+		self.node_descriptors = []
+		self.harvester_descriptors = []
+		self.voter_descriptors = []
 
 	@property
 	def is_nem(self):
@@ -120,9 +120,22 @@ class NetworkRepository:
 	def estimate_height(self):
 		"""Estimates the network height by returning the median height of all nodes."""
 
+		if not self.node_descriptors:
+			return 1
+
 		heights = [descriptor.height for descriptor in self.node_descriptors]
 		heights.sort()
-		return heights[round(len(heights) / 2)]
+		return heights[len(heights) // 2]
+
+	def estimate_finalized_height(self):
+		"""Estimates the network finalized height by returning the median finalized height of all nodes."""
+
+		if self.is_nem:
+			return max(1, self.estimate_height() - 360)
+
+		heights = [descriptor.finalized_height for descriptor in self.node_descriptors if descriptor.finalized_height]
+		heights.sort()
+		return 1 if not heights else heights[len(heights) // 2]
 
 	def load_node_descriptors(self, nodes_data_filepath):
 		"""Loads node descriptors."""
