@@ -1,0 +1,12 @@
+defaultCiPipeline {
+	platform = ['ubuntu']
+	ciBuildDockerfile = 'javascript.Dockerfile'
+
+	packageId = 'authenticator'
+
+	publisher = 'docker'
+	dockerImageName = 'symbolplatform/authenticator'
+
+	codeCoverageTool = 'c8'
+	minimumCodeCoverage = 95
+}
