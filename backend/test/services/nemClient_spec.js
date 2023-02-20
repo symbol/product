@@ -1,5 +1,5 @@
-import nemRequest from '../../src/services/nemRequest.js';
-import axiosRequest from '../../src/utils/axiosRequest.js';
+import { config } from '../../src/config/index.js';
+import createNemClient from '../../src/services/nemClient.js';
 import MockAdapter from 'axios-mock-adapter';
 import chai from 'chai';
 import chaiAsPromised from 'chai-as-promised';
@@ -9,17 +9,17 @@ const { expect } = chai;
 
 describe('nem request', () => {
 	let mock;
+	const address = 'TAZJ3KEPYAQ4G4Y6Q2IRZTQPU7RAKGYZULZURKTO';
+	const baseUrl = 'http://localhost:7890';
+	const nemClient = createNemClient(config.nem);
 
 	beforeEach(() => {
-		mock = new MockAdapter(axiosRequest);
+		mock = new MockAdapter(nemClient.axios);
 	});
 
 	afterEach(() => {
 		mock.reset();
 	});
-
-	const address = 'TAZJ3KEPYAQ4G4Y6Q2IRZTQPU7RAKGYZULZURKTO';
-	const baseUrl = 'http://localhost:7890';
 
 	const runBasicErrorHandlerTests = (requestMethod, endpoint, method, params) => {
 		it('server response code 500', async () => {
@@ -29,7 +29,7 @@ describe('nem request', () => {
 			}]);
 
 			// Act:
-			const promise = params ? nemRequest[method](params) : nemRequest[method]();
+			const promise = params ? nemClient[method](params) : nemClient[method]();
 
 			// Assert:
 			await expect(promise).to.be.rejectedWith('internal server error');
@@ -40,7 +40,7 @@ describe('nem request', () => {
 			mock[requestMethod](`${baseUrl}${endpoint}`).networkError();
 
 			// Act:
-			const promise = params ? nemRequest[method](params) : nemRequest[method]();
+			const promise = params ? nemClient[method](params) : nemClient[method]();
 
 			// Assert:
 			await expect(promise).to.be.rejectedWith('unable to process request');
@@ -72,7 +72,7 @@ describe('nem request', () => {
 			mock.onGet(`${baseUrl}/account/get?address=${address}`).reply(200, accountInfo);
 
 			// Act:
-			const { response } = await nemRequest.getAccountInfo(address);
+			const { response } = await nemClient.getAccountInfo(address);
 
 			// Assert:
 			expect(mock.history.get[0].url).to.equal(`/account/get?address=${address}`);
@@ -93,7 +93,7 @@ describe('nem request', () => {
 			mock.onGet(`${baseUrl}/time-sync/network-time`).reply(200, networkTime);
 
 			// Act:
-			const { response } = await nemRequest.getNetworkTime();
+			const { response } = await nemClient.getNetworkTime();
 
 			// Assert:
 			expect(mock.history.get[0].url).to.equal('/time-sync/network-time');
@@ -129,7 +129,7 @@ describe('nem request', () => {
 			mock.onGet(`${baseUrl}/account/unconfirmedTransactions?address=${address}`).reply(200, unconfirmedTransactions);
 
 			// Act:
-			const { response } = await nemRequest.getUnconfirmedTransactions(address);
+			const { response } = await nemClient.getUnconfirmedTransactions(address);
 
 			// Assert:
 			expect(mock.history.get[0].url).to.equal(`/account/unconfirmedTransactions?address=${address}`);
@@ -155,7 +155,7 @@ describe('nem request', () => {
 			mock.onPost(`${baseUrl}/transaction/announce`).reply(200, announceTransaction);
 
 			// Act:
-			const { response } = await nemRequest.announceTransaction({
+			const { response } = await nemClient.announceTransaction({
 				payload: 'payload'
 			});
 

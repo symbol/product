@@ -16,20 +16,18 @@ const helper = {
 	toAbsoluteAmount: amount => amount * (10 ** config.mosaicDivisibility),
 
 	/**
-	 * Validation of claim nem faucet.
-	 * @param {string} receiptAddress Receipt address.
+	 * Validation of claim faucet.
 	 * @param {number} transferAmount Amount for transfer.
 	 * @param {number} receiptBalance Receipt balance.
 	 * @param {number} faucetBalance Faucet balance.
-	 * @param {array} unconfirmedTransactions list of unconfirmed transactions.
+	 * @param {number} unconfirmedTransactionsCount no of unconfirmed transactions.
 	 * @returns {string} Error message.
 	 */
-	nemFaucetValidation: ({
-		receiptAddress, transferAmount, receiptBalance, faucetBalance, unconfirmedTransactions
+	faucetValidation: ({
+		transferAmount, receiptBalance, faucetBalance, unconfirmedTransactionsCount
 	}) => {
 		const maxAmount = config.receiptMaxBalance;
 		const maxTransferAmount = config.sendOutMaxAmount;
-		const pendingTx = unconfirmedTransactions.filter(item => item.transaction.recipient === receiptAddress);
 
 		let error = '';
 
@@ -42,7 +40,7 @@ const helper = {
 		if (faucetBalance < transferAmount)
 			error = 'error_fund_drains';
 
-		if (0 < pendingTx.length)
+		if (0 < unconfirmedTransactionsCount)
 			error = 'error_transaction_pending';
 
 		return error;
@@ -59,6 +57,23 @@ const helper = {
 		const accountAge = Math.floor(diff / (1000 * 60 * 60 * 24));
 
 		return config.minFollowers <= followersCount && config.minAccountAge < accountAge;
+	},
+
+	/**
+	 * Sign transaction with key pair.
+	 * @param {NemFacade | SymbolFacade} protocolFacade facade protocol.
+	 * @param {KeyPair} keyPair account key pair.
+	 * @param {object} transferTransaction transaction object.
+	 * @returns {{ transactionHash: string, payload:string }} signed transaction payload and hash.
+	 */
+	signTransaction: (protocolFacade, keyPair, transferTransaction) => {
+		const signature = protocolFacade.signTransaction(keyPair, transferTransaction);
+		const jsonPayload = protocolFacade.transactionFactory.constructor.attachSignature(transferTransaction, signature);
+
+		return {
+			transactionHash: protocolFacade.hashTransaction(transferTransaction).toString(),
+			payload: JSON.parse(jsonPayload)
+		};
 	}
 };
 

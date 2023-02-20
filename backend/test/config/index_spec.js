@@ -10,22 +10,47 @@ describe('config', () => {
 		receiptMaxBalance: 200000000,
 		sendOutMaxAmount: 500000000,
 		network: 'testnet',
-		nemFaucetPrivateKey: '1b5061d58cc82ab272b597a660304f974dc6ffc2698c103f4cba1fab1215c632',
-		nemEndpoint: 'http://localhost:7890',
-		jwtSecret: 'hello'
+		jwtSecret: 'hello',
+		nem: {
+			faucetPrivateKey: '1b5061d58cc82ab272b597a660304f974dc6ffc2698c103f4cba1fab1215c632',
+			endpoint: 'http://localhost:7890'
+		},
+		symbol: {
+			faucetPrivateKey: '97B1D110B687908FD020885B14F42BB17E3E1107B723F23A4AD1E0E0C9CBBD78',
+			endpoint: 'http://localhost:3001'
+		}
 	};
 
-	const faucetConfigurationError = 'provided nem faucet private key or endpoint configuration is incomplete';
+	const nemFaucetConfigurationError = 'provided nem faucet private key or endpoint configuration is incomplete';
+	const symbolFaucetConfigurationError = 'provided symbol faucet private key or endpoint configuration is incomplete';
 	const jwtConfigurationError = 'provided jwt configuration is incomplete';
 
-	const assertFaucetInvalidConfig = (missingConfig, expectedError) => {
-		// Arrange:
-		const invalidConfig = { ...expectedConfig };
+	const runPrivateKeyAndEndpointCheckTests = (protocol, expectedError) => {
+		it(`throws error when ${protocol} faucet private key missing in config`, () => {
+			// Arrange:
+			const invalidConfig = {
+				...expectedConfig,
+				[protocol]: {
+					endpoint: 'value'
+				}
+			};
 
-		delete invalidConfig[missingConfig];
+			// Act + Assert:
+			expect(() => validateConfiguration(invalidConfig)).throw(expectedError);
+		});
 
-		// Act + Assert:
-		expect(() => validateConfiguration(invalidConfig)).throw(expectedError);
+		it(`throws error when ${protocol} endpoint missing in config`, () => {
+			// Arrange:
+			const invalidConfig = {
+				...expectedConfig,
+				[protocol]: {
+					faucetPrivateKey: 'value'
+				}
+			};
+
+			// Act + Assert:
+			expect(() => validateConfiguration(invalidConfig)).throw(expectedError);
+		});
 	};
 
 	it('returns config variable', () => {
@@ -34,15 +59,17 @@ describe('config', () => {
 		expect(config).to.be.deep.equal(expectedConfig);
 	});
 
-	it('throws error when nem faucet private key missing in config', () => {
-		assertFaucetInvalidConfig('nemFaucetPrivateKey', faucetConfigurationError);
-	});
+	runPrivateKeyAndEndpointCheckTests('nem', nemFaucetConfigurationError);
 
-	it('throws error when nem endpoint missing in config', () => {
-		assertFaucetInvalidConfig('nemEndpoint', faucetConfigurationError);
-	});
+	runPrivateKeyAndEndpointCheckTests('symbol', symbolFaucetConfigurationError);
 
 	it('throws error when jwtSecret missing in config', () => {
-		assertFaucetInvalidConfig('jwtSecret', jwtConfigurationError);
+		// Arrange:
+		const invalidConfig = { ...expectedConfig };
+
+		delete invalidConfig.jwtSecret;
+
+		// Act + Assert:
+		expect(() => validateConfiguration(invalidConfig)).throw(jwtConfigurationError);
 	});
 });

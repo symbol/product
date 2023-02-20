@@ -1,5 +1,5 @@
 import { config, validateConfiguration } from './config/index.js';
-import faucetRoute from './routers/index.js';
+import registerFaucet from './routers/index.js';
 import helper from './utils/helper.js';
 import jwt from 'jsonwebtoken';
 import restify from 'restify';
@@ -53,7 +53,7 @@ server.use(authentication);
 validateConfiguration(config);
 
 // Setup Route
-faucetRoute(server);
+registerFaucet.register(server);
 
 server.listen(config.port, () => {
 	// eslint-disable-next-line no-console
