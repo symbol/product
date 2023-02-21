@@ -1,0 +1,14 @@
+friendly_name: symbol
+ticker_name: symbol
+currency_symbol: xym
+
+accounts:
+  - { address: NAMYQXVBMLQ5HLYK3GQLMKFDLHGIXPPAU5VGFOI, name: Continuity, roles: [trust] }
+  - { address: NBMDALVKGYK562LXSESZT6FFNI65FDXFY5VOXSQ, name: Core1, roles: [core] }
+  - { address: NABH3A5VDLYAVA73OV246JTVMAIPD2WEMAQL27I, name: Core2, roles: [core] }
+  - { address: NAL4XHZU6MANNNFQI4Z2WNMU3KRI2YW2MRRMHLI, name: Core3, roles: [core] }
+
+nodes:
+  - host: xym118.allnodes.me
+  - host: wolf.importance.jp
+  - host: xym99.allnodes.me
