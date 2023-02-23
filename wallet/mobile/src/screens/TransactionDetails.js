@@ -3,6 +3,7 @@ import React from 'react';
 import { useMemo } from 'react';
 import { Dimensions, Image, Linking, StyleSheet, Text, View } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
+import Animated, { FadeIn } from 'react-native-reanimated';
 import {
     ButtonPlain,
     FormItem,
@@ -160,10 +161,14 @@ export const TransactionDetails = connect((state) => ({
                                 <Text style={statusTextStyle}>{statusText}</Text>
                             </View>
                         </FormItem>
-                        <FormItem clear="horizontal" style={styles.date}>
-                            {!!date && <StyledText type="label">{$t('s_transactionDetails_date')}</StyledText>}
-                            {!!date && <StyledText type="body">{date}</StyledText>}
-                        </FormItem>
+                        {!!date && !isLoading && (
+                            <FormItem clear="horizontal" style={styles.date}>
+                                <Animated.View entering={FadeIn}>
+                                    <StyledText type="label">{$t('s_transactionDetails_date')}</StyledText>
+                                    <StyledText type="body">{date}</StyledText>
+                                </Animated.View>
+                            </FormItem>
+                        )}
                         {isLoading && <LoadingIndicator size="sm" />}
                     </View>
                 </FormItem>
