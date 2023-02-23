@@ -1,6 +1,7 @@
 import React from 'react';
 import { BackHandler, Image, StyleSheet, View } from 'react-native';
 import { FlatList } from 'react-native-gesture-handler';
+import Animated, { FadeInRight } from 'react-native-reanimated';
 import { DialogBox, DropdownModal, FormItem, Screen, StyledText, TouchableNative } from 'src/components';
 import { $t, getLanguages, setCurrentLanguage } from 'src/localization';
 import { Router } from 'src/Router';
@@ -61,16 +62,18 @@ export const Settings = () => {
                     contentContainerStyle={layout.listContainer}
                     data={settingsList}
                     keyExtractor={(_, index) => 'settings' + index}
-                    renderItem={({ item }) => (
-                        <FormItem type="list">
-                            <TouchableNative style={styles.item} onPress={item.handler}>
-                                <Image source={item.icon} style={styles.itemIcon} />
-                                <View style={styles.itemContent}>
-                                    <StyledText type="subtitle">{item.title}</StyledText>
-                                    <StyledText type="body">{item.description}</StyledText>
-                                </View>
-                            </TouchableNative>
-                        </FormItem>
+                    renderItem={({ item, index }) => (
+                        <Animated.View entering={FadeInRight.delay(index * 50)}>
+                            <FormItem type="list">
+                                <TouchableNative style={styles.item} onPress={item.handler}>
+                                    <Image source={item.icon} style={styles.itemIcon} />
+                                    <View style={styles.itemContent}>
+                                        <StyledText type="subtitle">{item.title}</StyledText>
+                                        <StyledText type="body">{item.description}</StyledText>
+                                    </View>
+                                </TouchableNative>
+                            </FormItem>
+                        </Animated.View>
                     )}
                 />
             </FormItem>
