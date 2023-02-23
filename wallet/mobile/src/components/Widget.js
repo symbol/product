@@ -4,10 +4,14 @@ import { borders, colors, spacings } from 'src/styles';
 import { StyledText, TouchableNative } from 'src/components';
 
 export const Widget = (props) => {
-    const { children, title, onHeaderPress } = props;
+    const { children, title, color, onHeaderPress } = props;
+    const style = [
+        styles.widget, 
+        color ? { backgroundColor: color } : null
+    ];
 
     return (
-        <View style={styles.widget}>
+        <View style={style}>
             {!!title && (
                 <TouchableNative style={styles.widgetHeader} onPress={onHeaderPress}>
                     <StyledText type="label">{title}</StyledText>

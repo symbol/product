@@ -18,6 +18,7 @@ export * from './InputAmount';
 export * from './ItemAsset';
 export * from './ItemBase';
 export * from './ItemContact';
+export * from './ItemReceipt';
 export * from './ItemTransaction';
 export * from './LoadingIndicator';
 export * from './MnemonicView';

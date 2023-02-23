@@ -47,6 +47,7 @@ const keys = {
     SettingsSecurity: 'SettingsSecurity',
     TransactionDetails: 'TransactionDetails',
     AssetDetails: 'AssetDetails',
+    Harvesting: 'Harvesting',
     Passcode: 'Passcode',
 };
 
@@ -85,6 +86,7 @@ export const RouterView = ({ isActive }) => (
                         <Stack.Screen name={keys.SettingsSecurity} component={screens.SettingsSecurity} />
                         <Stack.Screen name={keys.TransactionDetails} component={screens.TransactionDetails} />
                         <Stack.Screen name={keys.AssetDetails} component={screens.AssetDetails} />
+                        <Stack.Screen name={keys.Harvesting} component={screens.Harvesting} />
                     </Stack.Group>
                     <Stack.Group screenOptions={{ headerShown: false }}>
                         <Stack.Screen name={keys.Passcode} component={screens.Passcode} />
@@ -185,6 +187,9 @@ export class Router {
     }
     static goToAssetDetails(params) {
         navigationRef.navigate(keys.AssetDetails, params);
+    }
+    static goToHarvesting(params) {
+        navigationRef.navigate(keys.Harvesting, params);
     }
     static goToPasscode(params) {
         navigationRef.navigate(keys.Passcode, params);

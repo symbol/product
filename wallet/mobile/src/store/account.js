@@ -10,7 +10,13 @@ export default {
         isMultisig: false, // wether account data is multisig
         cosignatories: [], // if an account is multisig, contains the list of its cosigners
         mosaics: [], // account owned mosaics
-        namespaces: [], // account owned namespaces
+        namespaces: [], // account owned namespaces,
+        importance: 0,
+        linkedKeys: {
+            linkedPublicKey: null,
+            nodePublicKey: null,
+            vrfPublicKey: null
+        }
     },
     mutations: {
         setCurrent(state, payload) {
@@ -37,6 +43,14 @@ export default {
             state.account.namespaces = payload;
             return state;
         },
+        setImportance(state, payload) {
+            state.account.importance = payload;
+            return state;
+        },
+        setLinkedKeys(state, payload) {
+            state.account.linkedKeys = payload;
+            return state;
+        },
     },
     actions: {
         // Load data from cache or set an empty values
@@ -53,11 +67,15 @@ export default {
                 commit({ type: 'account/setCosignatories', payload: accountInfo.cosignatories });
                 commit({ type: 'account/setMosaics', payload: accountInfo.mosaics });
                 commit({ type: 'account/setNamespaces', payload: accountInfo.namespaces });
+                commit({ type: 'account/setImportance', payload: accountInfo.importance });
+                commit({ type: 'account/setLinkedKeys', payload: accountInfo.linkedKeys });
             } else {
                 commit({ type: 'account/setIsMultisig', payload: false });
                 commit({ type: 'account/setCosignatories', payload: [] });
                 commit({ type: 'account/setMosaics', payload: [] });
                 commit({ type: 'account/setNamespaces', payload: [] });
+                commit({ type: 'account/setImportance', payload: 0 });
+                commit({ type: 'account/setLinkedKeys', payload: {}});
             }
 
             commit({ type: 'account/setCurrent', payload: currentAccount });
@@ -76,9 +94,10 @@ export default {
             const { networkProperties } = state.network;
 
             let mosaics = [];
+            let fetchedAccountInfo = {};
             try {
-                const accountInfo = await AccountService.fetchAccountInfo(networkProperties, address);
-                mosaics = accountInfo.mosaics;
+                fetchedAccountInfo = await AccountService.fetchAccountInfo(networkProperties, address);
+                mosaics = fetchedAccountInfo.mosaics;
             } catch (error) {
                 if (error.message !== 'error_fetch_not_found') {
                     throw Error('error_fetch_account_info');
@@ -105,9 +124,12 @@ export default {
             commit({ type: 'account/setCosignatories', payload: cosignatories });
             commit({ type: 'account/setMosaics', payload: formattedMosaics });
             commit({ type: 'account/setNamespaces', payload: namespaces });
+            commit({ type: 'account/setImportance', payload: fetchedAccountInfo.importance });
+            commit({ type: 'account/setLinkedKeys', payload: fetchedAccountInfo.linkedKeys });
             commit({ type: 'account/setIsReady', payload: true });
 
             const accountInfo = {
+                ...fetchedAccountInfo,
                 mosaics: formattedMosaics,
                 namespaces,
                 isMultisig,

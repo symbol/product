@@ -11,7 +11,7 @@ const MAX_SCALE = 1.2;
 const ANIMATION_DURATION = 250;
 
 export function ItemBase(props) {
-    const { children, isLayoutAnimationEnabled, contentContainerStyle, style, borderColor, onPress } = props;
+    const { children, contentContainerStyle, style, borderColor, onPress } = props;
     const [isExpanded, setIsExpanded] = useState(false);
     const opacity = useSharedValue(0);
     const scale = useSharedValue(1);
@@ -30,10 +30,11 @@ export function ItemBase(props) {
     const styleCard = [
         styles.card,
         borderColor ? stylesCardWithBorder : null,
-        isLayoutAnimationEnabled ? animatedContainer : null,
+        animatedContainer,
         contentContainerStyle,
     ];
     const styleRoot = [styles.root, style];
+    const layoutAnimationDelay = index < 15 ? index * 50 : 50;
 
     const handlePress = () => {
         if (onPress) {
@@ -53,17 +54,17 @@ export function ItemBase(props) {
     }, [isFocused, isExpanded]);
 
     useEffect(() => {
-        if (isLayoutAnimationEnabled) {
-            setTimeout(() => (opacity.value = withTiming(1)), 150);
-        }
-    }, [isLayoutAnimationEnabled]);
+        setTimeout(() => (opacity.value = withTiming(1)), 150);
+    }, []);
 
     return (
+        // <Animated.View entering={FadeIn.delay(layoutAnimationDelay)}>
         <FormItem type="list" style={styleRoot}>
             <TouchableNative onPress={handlePress}>
                 <Animated.View style={styleCard}>{children}</Animated.View>
             </TouchableNative>
         </FormItem>
+        // </Animated.View>
     );
 }
 
