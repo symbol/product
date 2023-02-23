@@ -1,4 +1,6 @@
+import { DeviceEventEmitter } from 'react-native';
 import { showMessage } from 'react-native-flash-message';
+import { Constants } from 'src/config';
 import { $t } from 'src/localization';
 import { ListenerService } from 'src/services';
 import { handleError } from 'src/utils';
@@ -31,6 +33,7 @@ export default {
                     onConfirmedAdd: () => {
                         dispatchAction({ type: 'account/fetchData' });
                         dispatchAction({ type: 'transaction/fetchData', payload: true });
+                        DeviceEventEmitter.emit(Constants.Events.CONFIRMED_TRANSACTION);
                         showMessage({ message: $t('message_transactionConfirmed'), type: 'success' });
                     },
                     // handle unconfirmed transactions

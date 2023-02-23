@@ -5,12 +5,12 @@ import {
     isOutgoingTransaction,
     makeRequest,
     networkIdentifierToNetworkType,
+    timestampToLocalDate,
     transactionFromDTO,
     transferTransactionToDTO,
 } from 'src/utils';
 import { AccountService } from 'src/services';
 import { Account, Address, CosignatureTransaction, Order, TransactionHttp, TransactionType } from 'symbol-sdk';
-import { Duration, Instant, LocalDateTime, ZoneId } from '@js-joda/core';
 export class TransactionService {
     static async fetchAccountTransactions(account, networkProperties, { pageNumber = 1, pageSize = 15, group = 'confirmed', filter = {} }) {
         const transactionHttp = new TransactionHttp(networkProperties.nodeUrl);
@@ -80,10 +80,7 @@ export class TransactionService {
         const { block } = await makeRequest(endpoint);
         const timestamp = parseInt(block.timestamp);
 
-        return LocalDateTime.ofInstant(
-            Instant.ofEpochMilli(timestamp).plusMillis(Duration.ofSeconds(networkProperties.epochAdjustment).toMillis()),
-            ZoneId.SYSTEM
-        );
+        return timestampToLocalDate(timestamp, networkProperties.epochAdjustment);
     }
 
     static async fetchStatus(hash, networkProperties) {

@@ -1,6 +1,7 @@
 import React from 'react';
 import { ScrollView } from 'react-native';
 import { RefreshControl } from 'react-native-gesture-handler';
+import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { AccountCardWidget, Alert, FormItem, Screen, StyledText, TabNavigator, TitleBar } from 'src/components';
 import { $t } from 'src/localization';
 import { Router } from 'src/Router';
@@ -49,28 +50,34 @@ export const Home = connect((state) => ({
     return (
         <Screen titleBar={<TitleBar accountSelector settings currentAccount={currentAccount} />} navigator={<TabNavigator />}>
             <ScrollView refreshControl={<RefreshControl refreshing={isLoading} onRefresh={loadState} />}>
-                <FormItem>
-                    <AccountCardWidget
-                        name={accountName}
-                        address={accountAddress}
-                        balance={accountBalance}
-                        ticker={ticker}
-                        onReceivePress={Router.goToReceive}
-                        onSendPress={Router.goToSend}
-                        onDetailsPress={Router.goToAccountDetails}
-                        onNameChange={renameAccount}
-                    />
-                </FormItem>
-                {isMultisigAccount && (
+                <Animated.View entering={FadeInUp}>
                     <FormItem>
-                        <Alert type="warning" title={$t('warning_multisig_title')} body={$t('warning_multisig_body')} />
+                        <AccountCardWidget
+                            name={accountName}
+                            address={accountAddress}
+                            balance={accountBalance}
+                            ticker={ticker}
+                            onReceivePress={Router.goToReceive}
+                            onSendPress={Router.goToSend}
+                            onDetailsPress={Router.goToAccountDetails}
+                            onNameChange={renameAccount}
+                        />
                     </FormItem>
+                </Animated.View>
+                {isMultisigAccount && (
+                    <Animated.View entering={FadeInUp}>
+                        <FormItem>
+                            <Alert type="warning" title={$t('warning_multisig_title')} body={$t('warning_multisig_body')} />
+                        </FormItem>
+                    </Animated.View>
                 )}
                 <FormItem type="group" clear="bottom">
                     <StyledText type="title">{$t('s_home_widgets')}</StyledText>
                 </FormItem>
                 <HistoryWidget />
-                <AddressBookListWidget />
+                <Animated.View entering={FadeInDown.delay(125)}>
+                    <AddressBookListWidget />
+                </Animated.View>
             </ScrollView>
         </Screen>
     );

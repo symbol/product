@@ -25,7 +25,7 @@ export const Actions = connect((state) => ({
         {
             title: 'Harvesting',
             icon: require('src/assets/images/icon-harvesting.png'),
-            handler: () => showMessage({ type: 'info', message: 'Not implemented yet' }),
+            handler: Router.goToHarvesting,
         },
         {
             title: 'Send Transfer',

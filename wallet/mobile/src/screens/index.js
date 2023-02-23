@@ -10,6 +10,7 @@ export * from './Assets';
 export * from './AssetDetails';
 export * from './CreateWallet';
 export * from './ImportWallet';
+export * from './Harvesting';
 export * from './History';
 export * from './Home';
 export * from './Passcode';

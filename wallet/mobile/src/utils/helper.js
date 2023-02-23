@@ -1,4 +1,5 @@
 import moment from 'moment';
+import { Duration, Instant, LocalDateTime, ZoneId } from '@js-joda/core';
 import { Platform, Vibration } from 'react-native';
 import { showMessage } from 'react-native-flash-message';
 
@@ -254,6 +255,13 @@ export const getAddressName = (address, currentAccount, accounts, addressBook) =
 
     return address;
 };
+
+export const timestampToLocalDate = (timestamp, epochAdjustment) => 
+    LocalDateTime.ofInstant(
+        Instant.ofEpochMilli(timestamp).plusMillis(Duration.ofSeconds(epochAdjustment).toMillis()),
+        ZoneId.SYSTEM
+    );
+
 
 export const formatDate = (dateStr, translate, showTime = false, showSeconds = false) => {
     const months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];

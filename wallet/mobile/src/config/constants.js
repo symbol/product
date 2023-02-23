@@ -91,4 +91,8 @@ export class Constants {
         [MosaicRestrictionType.NE]: 'v_mosaicRestrictionTypeNE',
         [MosaicRestrictionType.NONE]: 'v_mosaicRestrictionTypeNONE',
     };
+
+    static Events = {
+        CONFIRMED_TRANSACTION: 'event.listener.confirmed'
+    }
 }

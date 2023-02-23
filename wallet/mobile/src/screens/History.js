@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, SectionList, StyleSheet } from 'react-native';
 import { RefreshControl } from 'react-native-gesture-handler';
+import Animated, { FadeInDown, FadeOutUp } from 'react-native-reanimated';
 import { FormItem, ItemTransaction, ItemTransactionPlaceholder, Screen, StyledText, TabNavigator, TitleBar, Widget } from 'src/components';
 import { $t } from 'src/localization';
 import { Router } from 'src/Router';
@@ -130,18 +131,20 @@ export const HistoryWidget = connect((state) => ({
 
     return (
         isWidgetShown && (
-            <FormItem>
-                <Widget title={$t('s_history_widget_name')} onHeaderPress={() => Router.goToHistory()}>
-                    {transactions.map((item) => (
-                        <ItemTransaction
-                            group={item.group}
-                            transaction={item}
-                            key={'tx' + item.hash || item.id}
-                            onPress={() => Router.goToTransactionDetails({ transaction: item })}
-                        />
-                    ))}
-                </Widget>
-            </FormItem>
+            <Animated.View entering={FadeInDown.delay(125)} exiting={FadeOutUp}>
+                <FormItem>
+                    <Widget title={$t('s_history_widget_name')} onHeaderPress={() => Router.goToHistory()}>
+                        {transactions.map((item) => (
+                            <ItemTransaction
+                                group={item.group}
+                                transaction={item}
+                                key={'tx' + item.hash || item.id}
+                                onPress={() => Router.goToTransactionDetails({ transaction: item })}
+                            />
+                        ))}
+                    </Widget>
+                </FormItem>
+            </Animated.View>
         )
     );
 });

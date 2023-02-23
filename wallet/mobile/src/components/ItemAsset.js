@@ -4,7 +4,7 @@ import { $t } from 'src/localization';
 import { borders, colors, fonts, spacings } from 'src/styles';
 import { blockDurationToDaysLeft, trunc } from 'src/utils';
 import { ItemBase } from 'src/components';
-import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useEffect } from 'react';
 
 export function ItemAsset(props) {
@@ -46,12 +46,12 @@ export function ItemAsset(props) {
 
     useEffect(() => {
         if (!isUnlimitedDuration) {
-            setTimeout(() => (displayedPercentage.value = withSpring(agePercent)), 500);
+            setTimeout(() => (displayedPercentage.value = withTiming(agePercent, {duration: 500})), 1000);
         }
-    }, [displayedPercentage, agePercent]);
+    }, [agePercent]);
 
     return (
-        <ItemBase contentContainerStyle={styles.root} isLayoutAnimationEnabled onPress={onPress}>
+        <ItemBase contentContainerStyle={styles.root} onPress={onPress}>
             <View style={styles.sectionIcon}>
                 <Image source={iconSrc} style={styles.icon} />
             </View>
