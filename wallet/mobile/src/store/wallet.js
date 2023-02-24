@@ -147,7 +147,7 @@ export default {
             const isAccountAlreadyExists = networkAccounts.find((account) => account.index === index);
 
             if (isAccountAlreadyExists) {
-                throw Error('failed_add_account_already_exists');
+                throw Error('error_failed_add_account_already_exists');
             }
 
             networkAccounts.push(walletAccount);
@@ -166,7 +166,7 @@ export default {
             const isAccountAlreadyExists = networkAccounts.find((account) => account.privateKey === privateKey);
 
             if (isAccountAlreadyExists) {
-                throw Error('failed_add_account_already_exists');
+                throw Error('error_failed_add_account_already_exists');
             }
 
             networkAccounts.push(walletAccount);
