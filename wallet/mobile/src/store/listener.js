@@ -34,7 +34,7 @@ export default {
                         dispatchAction({ type: 'account/fetchData' });
                         dispatchAction({ type: 'transaction/fetchData', payload: {keepPages: true} });
                         DeviceEventEmitter.emit(Constants.Events.CONFIRMED_TRANSACTION);
-                        showMessage({ message: $t('message_transactionConfirmed'), type: 'success' });
+                        showMessage({ message: $t('message_transactionConfirmed'), type: 'info' });
                     },
                     // handle unconfirmed transactions
                     onUnconfirmedAdd: () => {
@@ -47,7 +47,7 @@ export default {
                     // handle aggregate bonded transactions
                     onAggregateBondedAdd: () => {
                         dispatchAction({ type: 'transaction/fetchData', payload: {keepPages: true} });
-                        showMessage({ message: $t('message_newAggregateBondedTransaction'), type: 'warning' });
+                        showMessage({ message: $t('message_newAggregateBondedTransaction'), type: 'info' });
                     },
                     // handle aggregate bonded transactions
                     onAggregateBondedRemove: () => {

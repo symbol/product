@@ -11,9 +11,11 @@ import { SecureStorage } from './storage';
 import store from 'src/store';
 import { initLocalization } from './localization';
 import { Router, RouterView } from './Router';
-import { colors, layout } from './styles';
+import { colors, fonts, layout } from './styles';
 
 const appBackgroundColor = { backgroundColor: colors.bgGray };
+const flashMessageStyle = { backgroundColor: colors.bgForm, borderBottomColor: colors.primary, borderBottomWidth: 2 };
+const flashMessageTextStyle = { ...fonts.notification };
 
 const App = () => {
     const [isPasscodeEnabled, setIsPasscodeEnabled] = useState(false);
@@ -69,7 +71,8 @@ const App = () => {
                     <StatusBar backgroundColor={colors.bgStatusbar} />
                     <Provider store={store}>
                         {isMainContainerShown && <ConnectionStatus />}
-                        <FlashMessage animationDuration={200} floating={true} />
+                        <FlashMessage 
+                            animationDuration={200} titleStyle={flashMessageTextStyle} style={flashMessageStyle} />
                         <RouterView isActive={isMainContainerShown} />
                         {isPasscodeShown && <Passcode keepListener route={{ params: passcodeParams }} />}
                     </Provider>
