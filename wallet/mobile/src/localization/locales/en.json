@@ -49,6 +49,7 @@
     "input_notes": "Notes",
     "input_privateKey": "Private Key",
     "input_nodeUrl": "Node URL",
+    "input_transactionFee": "Transaction Fee",
     "dialog_sensitive": "Sensitive information",
 
     
