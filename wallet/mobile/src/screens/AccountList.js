@@ -59,15 +59,15 @@ export const AccountList = connect((state) => ({
     );
     const [removeAccount] = useDataManager(
         async (account) => {
-            const accountPrivateKey = account ? account.privateKey : accountToBeRemoved.privateKey;
+            const { privateKey } = account;
             await store.dispatchAction({
                 type: 'wallet/removeAccount',
                 payload: {
-                    privateKey: accountPrivateKey,
+                    privateKey,
                     networkIdentifier,
                 },
             });
-            if (selectedPrivateKey === accountPrivateKey) {
+            if (selectedPrivateKey === privateKey) {
                 await selectAccount(networkAccounts[0]);
             }
         },
@@ -103,6 +103,10 @@ export const AccountList = connect((state) => ({
             removeAccount(account);
         }
     };
+    const handleConfirmRemove = () => {
+        removeAccount(accountToBeRemoved);
+        toggleRemoveConfirm();
+    }
 
     const fetchBalances = async () => {
         const updatedAccountBalanceStateMap = {};
@@ -159,7 +163,7 @@ export const AccountList = connect((state) => ({
                 title={$t('s_accountList_confirm_removeExternal_title')}
                 text={$t('s_accountList_confirm_removeExternal_body', accountToBeRemoved)}
                 isVisible={isRemoveConfirmVisible}
-                onSuccess={removeAccount}
+                onSuccess={handleConfirmRemove}
                 onCancel={toggleRemoveConfirm}
             />
         </Screen>
