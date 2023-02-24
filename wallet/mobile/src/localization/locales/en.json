@@ -499,6 +499,7 @@
     "message_transactionConfirmed": "Transaction Confirmed",
     "message_newAggregateBondedTransaction": "Aggregate Bonded Transaction",
 
+    "error_failed_add_account_already_exists": "Account is already in the wallet",
     "error_qr_failed_parse": "Failed to parse",
     "error_qr_expected_type": "Wrong QR-code type",
     "error_qr_unsupported": "Unsupported QR-code type",

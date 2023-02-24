@@ -2,6 +2,7 @@ import moment from 'moment';
 import { Duration, Instant, LocalDateTime, ZoneId } from '@js-joda/core';
 import { Platform, Vibration } from 'react-native';
 import { showMessage } from 'react-native-flash-message';
+import { $t } from 'src/localization';
 
 export const trunc = (str, type, length = 5) => {
     const trunc = (text, cut, lengthFirst, lengthSecond) => {
@@ -45,7 +46,8 @@ export const trunc = (str, type, length = 5) => {
 };
 
 export const handleError = (error) => {
-    showMessage({ message: error.message, type: 'danger' });
+    const message = $t(error.message, { defaultValue: error.message });
+    showMessage({ message, type: 'danger' });
     console.error(error);
 };
 
