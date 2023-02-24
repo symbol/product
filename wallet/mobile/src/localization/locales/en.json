@@ -49,6 +49,7 @@
     "input_notes": "Notes",
     "input_privateKey": "Private Key",
     "input_nodeUrl": "Node URL",
+    "dialog_sensitive": "Sensitive information",
 
     
     "month_jan" : "Jan",

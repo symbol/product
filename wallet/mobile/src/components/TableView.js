@@ -23,7 +23,7 @@ const renderTypeMap = {
         '_receivedCosignatures',
         '_addressDeletions',
     ],
-    copyButton: ['metadataValue', 'publicKey', 'vrfPublicKey', 'remotePublicKey', 'linkedPublicKey', 'nodePublicKey', 'secret', 'proof', 'hash'],
+    copyButton: ['metadataValue', 'privateKey', 'publicKey', 'vrfPublicKey', 'remotePublicKey', 'linkedPublicKey', 'nodePublicKey', 'secret', 'proof', 'hash'],
     boolean: ['supplyMutable', 'transferable', 'restrictable', 'revokable'],
     fee: ['fee', 'maxFee'],
     message: ['message'],
