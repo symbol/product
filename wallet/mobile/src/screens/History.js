@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, SectionList, StyleSheet } from 'react-native';
+import { ActivityIndicator, SectionList, StyleSheet, View } from 'react-native';
 import { RefreshControl } from 'react-native-gesture-handler';
 import Animated, { FadeInDown, FadeOutUp } from 'react-native-reanimated';
 import { Filter, FormItem, ItemReceipt, ItemTransaction, ItemTransactionPlaceholder, Screen, StyledText, TabNavigator, TitleBar, Widget } from 'src/components';
@@ -7,7 +7,7 @@ import { $t } from 'src/localization';
 import { Router } from 'src/Router';
 import { HarvestingService } from 'src/services';
 import store, { connect } from 'src/store';
-import { colors } from 'src/styles';
+import { colors, layout } from 'src/styles';
 import { handleError, useDataManager, useInit } from 'src/utils';
 import { TransactionType } from 'symbol-sdk';
 
@@ -148,7 +148,13 @@ export const History = connect((state) => ({
                 refreshControl={<RefreshControl refreshing={isLoading} onRefresh={fetchTransactions} />}
                 onEndReached={onEndReached}
                 onEndReachedThreshold={1}
+                contentContainerStyle={styles.listContainer}
                 sections={sections}
+                ListEmptyComponent={!isLoading && (
+                    <View style={styles.emptyList}> 
+                        <StyledText type="label" style={styles.emptyListText}>{$t('message_emptyList')}</StyledText>
+                    </View>
+                )}
                 ListHeaderComponent={<Filter data={filterConfig} isDisabled={isLoading} value={filter} onChange={setFilter} />}
                 keyExtractor={(item, index) => index + (item.hash || item.id || item.height)}
                 renderItem={({ item, section }) => (section.group === 'receipt' 
@@ -214,6 +220,9 @@ export const HistoryWidget = connect((state) => ({
 });
 
 const styles = StyleSheet.create({
+    listContainer: {
+        flexGrow: 1
+    },
     titlePartial: {
         color: colors.info,
     },
@@ -228,4 +237,14 @@ const styles = StyleSheet.create({
     sectionFooter: {
         position: 'relative',
     },
+    emptyList: {
+        width: '100%',
+        height: '100%',
+        justifyContent: 'center',
+        alignItems: 'center'
+    },
+    emptyListText: {
+        textAlign: 'center',
+        color: colors.bgMain,
+    }
 });

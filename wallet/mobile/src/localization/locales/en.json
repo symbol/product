@@ -495,6 +495,7 @@
     "warning_multisig_title": "Multisig Account",
     "warning_multisig_body": "To send transactions from this account, please announce it from cosignature account!",
 
+    "message_emptyList": "Nothing to show",
     "message_downloaded": "Downloaded",
     "message_transactionConfirmed": "Transaction Confirmed",
     "message_newAggregateBondedTransaction": "Aggregate Bonded Transaction",
