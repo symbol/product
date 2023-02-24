@@ -255,6 +255,7 @@
     "transactionDescriptor_16724": "Transfer",
     "transactionDescriptor_16724_incoming": "Received",
     "transactionDescriptor_16724_outgoing": "Sent",
+    "transactionDescriptor_16724_harvesting": "Harvesting Request",
     "transactionDescriptor_16718": "Namespace registration",
     "transactionDescriptor_16974": "Address alias",
     "transactionDescriptor_17230": "Mosaic alias",
@@ -287,7 +288,10 @@
     "transactionDescriptor_16972_unlink": "Node Key unlink",
     "transactionDescriptor_postLaunchOptIn": "Opt-in",
 
+    "transactionDescriptionShort_transferFrom": "From %{address}",
+    "transactionDescriptionShort_transferTo": "To %{address}",
     "transactionDescriptionShort_aggregateMultiple": "%{type} and %{count} more",
+    "transactionDescriptionShort_aggregateHarvesting": "Harvesting configuration",
     "transactionDescriptionShort_namespaceRegistration": "Register %{name}",
     "transactionDescriptionShort_alias": "Link %{name} | to %{target}",
     "transactionDescriptionShort_mosaic": "Mosaic %{id}",
