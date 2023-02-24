@@ -4,7 +4,7 @@ import { FormItem, ItemBase } from 'src/components';
 import { $t } from 'src/localization';
 import { connect } from 'src/store';
 import { colors, fonts, spacings } from 'src/styles';
-import { formatDate, getAddressName, isAggregateTransaction, isIncomingTransaction, isOutgoingTransaction, trunc } from 'src/utils';
+import { formatDate, getAddressName, isAggregateTransaction, isHarvestingServiceTransaction, isIncomingTransaction, isOutgoingTransaction, trunc } from 'src/utils';
 import { TransactionType } from 'symbol-sdk';
 
 export const ItemTransaction = connect((state) => ({
@@ -38,26 +38,30 @@ export const ItemTransaction = connect((state) => ({
         const isAddressName = address !== recipientAddress;
         const addressText = isAddressName ? address : trunc(address, 'address');
         action = $t(`transactionDescriptor_${type}_outgoing`);
-        description = `To ${addressText}`;
+        description = $t('transactionDescriptionShort_transferTo', { address: addressText });
         iconSrc = require('src/assets/images/icon-tx-transfer.png');
     } else if (type === TransactionType.TRANSFER && isIncomingTransaction(transaction, currentAccount)) {
         const address = getAddressName(signerAddress, currentAccount, accounts, addressBook);
         const isAddressName = address !== signerAddress;
         const addressText = isAddressName ? address : trunc(address, 'address');
         action = $t(`transactionDescriptor_${type}_incoming`);
-        description = `From ${addressText}`;
+        description = $t('transactionDescriptionShort_transferFrom', { address: addressText });
         iconSrc = require('src/assets/images/icon-tx-transfer.png');
     } else if (type === TransactionType.TRANSFER) {
         const address = getAddressName(signerAddress, currentAccount, accounts, addressBook);
         const isAddressName = address !== signerAddress;
         const addressText = isAddressName ? address : trunc(address, 'address');
-        description = `From ${addressText}`;
+        description = $t('transactionDescriptionShort_transferFrom', { address: addressText });
         iconSrc = require('src/assets/images/icon-tx-transfer.png');
     } else if (isAggregateTransaction(transaction)) {
         const firstTransactionType = transaction.innerTransactions[0]?.type;
         const type = firstTransactionType ? $t(`transactionDescriptor_${firstTransactionType}`) : '';
         const count = transaction.innerTransactions.length - 1;
-        description = count ? $t('transactionDescriptionShort_aggregateMultiple', { type, count }) : type;
+        description = isHarvestingServiceTransaction(transaction)
+            ? $t('transactionDescriptionShort_aggregateHarvesting')
+            : count 
+            ? $t('transactionDescriptionShort_aggregateMultiple', { type, count }) 
+            : type;
         iconSrc = require('src/assets/images/icon-tx-aggregate.png');
     } else if (type === TransactionType.NAMESPACE_REGISTRATION) {
         const name = transaction.namespaceName;

@@ -31,7 +31,7 @@ export const TransactionGraphic = connect((state) => ({
     const targetNameStyle = [styles.targetName];
 
     const truncText = (str) => trunc(str, '', 24);
-    const actionTypeText = truncText($t(`transactionDescriptor_${transaction.type}`));
+    let actionTypeText = truncText($t(`transactionDescriptor_${transaction.type}`));
     let Target = () => <View />;
     let targetName = '';
     let ActionBody = () => null;
@@ -62,6 +62,10 @@ export const TransactionGraphic = connect((state) => ({
             const transferredAmount = getNativeMosaicAmount(transaction.mosaics, networkProperties.networkCurrency.mosaicId);
             const hasMessage = !!transaction.message;
             const hasCustomMosaic = !!filterCustomMosaics(transaction.mosaics, networkProperties.networkCurrency.mosaicId).length;
+
+            if (hasMessage && transaction.message.isDelegatedHarvestingMessage) {
+                actionTypeText = truncText($t(`transactionDescriptor_${transaction.type}_harvesting`));
+            }
 
             ActionBody = () => (
                 <>

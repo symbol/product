@@ -130,7 +130,8 @@ export const transferTransactionFromDTO = (transaction, { networkProperties, mos
         resultAmount = -nativeMosaicAmount;
     }
 
-    const isMessageEncrypted = transaction.message.type === 0x01;
+    const isMessageEncrypted = transaction.message.type === 1;
+    const isDelegatedHarvestingMessage = transaction.message.type === 254;
     const messagePayload = transaction.message.payload;
     let message = null;
 
@@ -138,6 +139,7 @@ export const transferTransactionFromDTO = (transaction, { networkProperties, mos
         message = {
             text: messagePayload,
             isEncrypted: isMessageEncrypted,
+            isDelegatedHarvestingMessage
         };
     } else if (messagePayload && isMessageEncrypted) {
         message = {
