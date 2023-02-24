@@ -74,8 +74,8 @@ export const AccountDetails = connect((state) => ({
             </ScrollView>
             <DialogBox
                 type="alert"
-                title={$t('data_privateKey')}
-                text={privateKey}
+                title={$t('dialog_sensitive')}
+                body={<TableView data={{privateKey}} />}
                 isVisible={isPrivateKeyDialogShown}
                 onSuccess={togglePrivateKeyDialog}
             />
