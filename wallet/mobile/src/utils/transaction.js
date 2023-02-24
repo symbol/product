@@ -58,7 +58,7 @@ export const isHarvestingServiceTransaction = (transaction) => {
     return true;
 }
 
-export const getTransactionFees = (transaction, networkProperties) => {
+export const getTransactionFees = (transaction, networkProperties, transactionSize) => {
     const {
         transactionFees,
         networkCurrency: { divisibility },
@@ -71,7 +71,7 @@ export const getTransactionFees = (transaction, networkProperties) => {
     const stubCurrentAccount = {
         privateKey: '0000000000000000000000000000000000000000000000000000000000000000',
     };
-    const size = transferTransactionToDTO(stubTransaction, networkProperties, stubCurrentAccount).size;
+    const size = transactionSize || transferTransactionToDTO(stubTransaction, networkProperties, stubCurrentAccount).size;
 
     const fast = (transactionFees.minFeeMultiplier + transactionFees.averageFeeMultiplier) * size;
     const medium = (transactionFees.minFeeMultiplier + transactionFees.averageFeeMultiplier * 0.65) * size;

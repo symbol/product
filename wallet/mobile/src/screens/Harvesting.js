@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { DeviceEventEmitter, Image, StyleSheet, View } from 'react-native';
 import { RefreshControl, ScrollView } from 'react-native-gesture-handler';
 import Animated, { FadeIn, FadeInDown, FadeOut } from 'react-native-reanimated';
@@ -6,6 +6,7 @@ import {
     Button,
     DialogBox,
     Dropdown,
+    FeeSelector,
     FormItem,
     Screen,
     StyledText,
@@ -18,7 +19,7 @@ import { Router } from 'src/Router';
 import { AccountService, HarvestingService } from 'src/services';
 import { connect } from 'src/store';
 import { colors, fonts, layout, spacings } from 'src/styles';
-import { formatDate, handleError, useDataManager, usePasscode, useToggle } from 'src/utils';
+import { formatDate, getTransactionFees, handleError, useDataManager, usePasscode, useToggle } from 'src/utils';
 
 export const Harvesting = connect((state) => ({
     balances: state.wallet.balances,
@@ -48,7 +49,10 @@ export const Harvesting = connect((state) => ({
     const [nodeUrl, setNodeUrl] = useState(nodeList[0].value);
     const [isStartConfirmVisible, toggleStartConfirm] = useToggle(false);
     const [isStopConfirmVisible, toggleStopConfirm] = useToggle(false);
-    const fee = 1;
+    const [fee, setFee] = useState(0);
+    const [speed, setSpeed] = useState('medium');
+    const transactionSize = 912;
+    const transactionFees = useMemo(() => getTransactionFees({}, networkProperties, transactionSize), [])
     const confirmTableData = { nodeUrl, fee };
 
     const [fetchStatus, isStatusLoading, status] = useDataManager(
@@ -194,6 +198,12 @@ export const Harvesting = connect((state) => ({
         }
     }, [isAccountReady, isWalletReady]);
 
+    useEffect(() => {
+        if (transactionFees.medium) {
+            setFee(transactionFees[speed]);
+        }
+    }, [transactionFees, speed]);
+
     return (
         <Screen isLoading={isBlockedLoading}>
             <ScrollView refreshControl={<RefreshControl refreshing={isLoading} onRefresh={loadData} />}>
@@ -256,11 +266,20 @@ export const Harvesting = connect((state) => ({
                                 <Dropdown title={$t('input_nodeUrl')} value={nodeUrl} list={nodeList} onChange={setNodeUrl} />
                             )}
                         </FormItem>
-                        {isButtonVisible && (
+                        {isButtonVisible && (<>
+                            <FormItem clear="bottom">
+                                <FeeSelector
+                                    title={$t('input_transactionFee')}
+                                    value={speed}
+                                    fees={transactionFees}
+                                    ticker={ticker}
+                                    onChange={setSpeed}
+                                />
+                            </FormItem>
                             <FormItem>
                                 <Button title={buttonText} onPress={buttonHandle} />
                             </FormItem>
-                        )}
+                        </>)}
                     </Animated.View>
                 )}
             </ScrollView>
