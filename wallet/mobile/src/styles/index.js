@@ -136,6 +136,11 @@ export const fonts = {
         fontSize: 24,
         lineHeight: 29,
     },
+    notification: {
+        fontFamily: 'Protipo-Regular',
+        fontSize: 12,
+        lineHeight: 14,
+    },
 };
 
 export const borders = {
