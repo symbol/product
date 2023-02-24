@@ -25,28 +25,22 @@ import { connect } from 'src/store';
 import { getTransactionFees, handleError, toFixedNumber, useDataManager, usePasscode, useProp, useToggle } from 'src/utils';
 
 export const Send = connect((state) => ({
-    accounts: state.wallet.accounts,
-    addressBookWhiteList: state.addressBook.whiteList,
     currentAccount: state.account.current,
     cosignatories: state.account.cosignatories,
     isMultisigAccount: state.account.isMultisig,
     isAccountReady: state.account.isReady,
     mosaics: state.account.mosaics,
     mosaicInfos: state.wallet.mosaicInfos,
-    networkIdentifier: state.network.networkIdentifier,
     networkProperties: state.network.networkProperties,
     ticker: state.network.ticker,
     chainHeight: state.network.chainHeight,
 }))(function Send(props) {
     const {
-        accounts,
-        addressBookWhiteList,
         currentAccount,
         cosignatories,
         isMultisigAccount,
         isAccountReady,
         mosaics,
-        networkIdentifier,
         networkProperties,
         ticker,
         chainHeight,
@@ -64,8 +58,6 @@ export const Send = connect((state) => ({
     const [isAmountValid, setAmountValid] = useState(false);
     const [isRecipientValid, setRecipientValid] = useState(false);
 
-    const networkAccounts = accounts[networkIdentifier];
-    const contacts = [...networkAccounts, ...addressBookWhiteList];
     const mosaicOptions = mosaics.map((mosaic) => ({
         label: mosaic.name,
         value: mosaic.id,
@@ -149,7 +141,6 @@ export const Send = connect((state) => ({
                         <FormItem>
                             <InputAddress
                                 title={$t('form_transfer_input_recipient')}
-                                contacts={contacts}
                                 value={recipient}
                                 onChange={setRecipient}
                                 onValidityChange={setRecipientValid}

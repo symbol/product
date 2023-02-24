@@ -5,6 +5,7 @@ import {
     isOutgoingTransaction,
     makeRequest,
     networkIdentifierToNetworkType,
+    publicAccountFromPrivateKey,
     timestampToLocalDate,
     transactionFromDTO,
     transferTransactionToDTO,
@@ -15,7 +16,6 @@ export class TransactionService {
     static async fetchAccountTransactions(account, networkProperties, { pageNumber = 1, pageSize = 15, group = 'confirmed', filter = {} }) {
         const transactionHttp = new TransactionHttp(networkProperties.nodeUrl);
         const address = Address.createFromRawAddress(account.address);
-        const { publicKey } = account;
 
         const baseSearchCriteria = {
             pageNumber,
@@ -24,12 +24,20 @@ export class TransactionService {
             order: Order.Desc,
         };
 
-        if (filter.direction === 'sent') {
-            baseSearchCriteria.signerPublicKey = publicKey;
-        } else if (filter.direction === 'received') {
+        if (filter.from) {
+            const fromAccount = await AccountService.fetchAccountInfo(networkProperties, filter.from);
+            baseSearchCriteria.signerPublicKey = fromAccount.publicKey;
             baseSearchCriteria.recipientAddress = address;
+        } else if (filter.to) {
+            const currentAccount = publicAccountFromPrivateKey(account.privateKey, networkProperties.networkIdentifier);
+            baseSearchCriteria.signerPublicKey = currentAccount.publicKey;
+            baseSearchCriteria.recipientAddress = Address.createFromRawAddress(filter.to);
         } else {
             baseSearchCriteria.address = address;
+        }
+
+        if (filter.type) {
+            baseSearchCriteria.type = filter.type;
         }
 
         const transactionPage = await transactionHttp.search(baseSearchCriteria).toPromise();
