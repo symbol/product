@@ -206,6 +206,10 @@ export const isTransactionAwaitingSignatureByAccount = (transaction, account) =>
     return !isSignedByAccount && !hasAccountCosignature;
 };
 
-export const filterBlacklistedTransactions = (transactions, blackList) => {
+export const filterAllowedTransactions = (transactions, blackList) => {
     return transactions.filter((transaction) => blackList.every((contact) => contact.address !== transaction.signerAddress));
+};
+
+export const filterBlacklistedTransactions = (transactions, blackList) => {
+    return transactions.filter((transaction) => blackList.some((contact) => contact.address === transaction.signerAddress));
 };

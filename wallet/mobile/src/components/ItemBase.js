@@ -34,7 +34,7 @@ export function ItemBase(props) {
         contentContainerStyle,
     ];
     const styleRoot = [styles.root, style];
-    const layoutAnimationDelay = index < 15 ? index * 50 : 50;
+    // const layoutAnimationDelay = index < 15 ? index * 50 : 50;
 
     const handlePress = () => {
         if (onPress) {

@@ -2,12 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, SectionList, StyleSheet } from 'react-native';
 import { RefreshControl } from 'react-native-gesture-handler';
 import Animated, { FadeInDown, FadeOutUp } from 'react-native-reanimated';
-import { FormItem, ItemTransaction, ItemTransactionPlaceholder, Screen, StyledText, TabNavigator, TitleBar, Widget } from 'src/components';
+import { Filter, FormItem, ItemReceipt, ItemTransaction, ItemTransactionPlaceholder, Screen, StyledText, TabNavigator, TitleBar, Widget } from 'src/components';
 import { $t } from 'src/localization';
 import { Router } from 'src/Router';
+import { HarvestingService } from 'src/services';
 import store, { connect } from 'src/store';
 import { colors } from 'src/styles';
 import { handleError, useDataManager, useInit } from 'src/utils';
+import { TransactionType } from 'symbol-sdk';
 
 export const History = connect((state) => ({
     isWalletReady: state.wallet.isReady,
@@ -17,14 +19,23 @@ export const History = connect((state) => ({
     confirmed: state.transaction.confirmed,
     isLastPage: state.transaction.isLastPage,
     blackList: state.addressBook.blackList,
+    networkProperties: state.network.networkProperties
 }))(function History(props) {
-    const { isWalletReady, isLastPage, currentAccount, partial, unconfirmed, confirmed, blackList } = props;
+    const { isWalletReady, isLastPage, currentAccount, partial, unconfirmed, confirmed, blackList, networkProperties } = props;
+    const [harvested, setHarvested] = useState([]);
     const [pageNumber, setPageNumber] = useState(1);
     const [isNextPageRequested, setIsNextPageRequested] = useState(false);
+    const [filter, setFilter] = useState({});
     const [fetchTransactions, isLoading] = useDataManager(
         async () => {
             setPageNumber(1);
-            await store.dispatchAction({ type: 'transaction/fetchData' });
+            if (filter.harvested) {
+                const harvestedPage = await HarvestingService.fetchHarvestedBlocks(networkProperties, currentAccount.address, { pageNumber: 1 });
+                setHarvested(harvestedPage);
+            }
+            else {
+                await store.dispatchAction({ type: 'transaction/fetchData', payload: {filter} });
+            }
         },
         null,
         handleError
@@ -32,20 +43,27 @@ export const History = connect((state) => ({
     const [fetchNextPage, isPageLoading] = useDataManager(
         async () => {
             const nextPageNumber = pageNumber + 1;
-            await store.dispatchAction({ type: 'transaction/fetchPage', payload: { pageNumber: nextPageNumber } });
+            if (filter.harvested) {
+                const harvestedPage = await HarvestingService.fetchHarvestedBlocks(networkProperties, currentAccount.address, { pageNumber: nextPageNumber });
+                setHarvested(harvested => [...harvested, ...harvestedPage]);
+            }
+            else {
+                await store.dispatchAction({ type: 'transaction/fetchPage', payload: { pageNumber: nextPageNumber, filter } });
+            }
             setPageNumber(nextPageNumber);
         },
         null,
         handleError
     );
-    useInit(fetchTransactions, isWalletReady, [currentAccount, blackList]);
+    useInit(fetchTransactions, isWalletReady, [currentAccount, blackList, filter]);
 
     const onEndReached = () => !isLastPage && setIsNextPageRequested(true);
     const isPlaceholderShown = (group) => group === 'confirmed' && !isLastPage;
 
-    const isPartialShown = !!partial?.length;
-    const isUnconfirmedShown = !!unconfirmed?.length;
-    const isConfirmedShown = !!confirmed?.length;
+    const isHarvestedShown = !!harvested.length && filter.harvested;
+    const isPartialShown = !!partial?.length && !filter.harvested;
+    const isUnconfirmedShown = !!unconfirmed?.length && !filter.harvested;
+    const isConfirmedShown = !!confirmed?.length && !filter.harvested;
     const sections = [];
 
     if (isPartialShown) {
@@ -72,6 +90,50 @@ export const History = connect((state) => ({
             data: confirmed,
         });
     }
+    if (isHarvestedShown) {
+        sections.push({
+            title: $t('transactionGroup_harvested'),
+            style: null,
+            group: 'receipt',
+            data: harvested,
+        });
+    }
+
+    const filterConfig = [{
+        name: 'type',
+        title: $t('s_history_filter_type'),
+        type: 'select',
+        options: [
+            {
+                label: $t('transactionDescriptor_16724'),
+                value: [TransactionType.TRANSFER]
+            },
+            {
+                label: $t('transactionDescriptor_16961'),
+                value: [TransactionType.AGGREGATE_BONDED]
+            },
+            {
+                label: $t('transactionDescriptor_16705'),
+                value: [TransactionType.AGGREGATE_COMPLETE]
+            },
+        ],
+    }, {
+        name: 'from',
+        title: $t('s_history_filter_from'),
+        type: 'address',
+    }, {
+        name: 'to',
+        title: $t('s_history_filter_to'),
+        type: 'address',
+    }, {
+        name: 'harvested',
+        title: $t('s_history_filter_harvested'),
+        type: 'boolean',
+    }, {
+        name: 'blocked',
+        title: $t('s_history_filter_blocked'),
+        type: 'boolean',
+    },];
 
     useEffect(() => {
         if (!isLoading && !isPageLoading && isNextPageRequested) {
@@ -87,9 +149,11 @@ export const History = connect((state) => ({
                 onEndReached={onEndReached}
                 onEndReachedThreshold={1}
                 sections={sections}
-                keyExtractor={(item, index) => index + (item.hash || item.id)}
-                renderItem={({ item, section }) => (
-                    <ItemTransaction
+                ListHeaderComponent={<Filter data={filterConfig} isDisabled={isLoading} value={filter} onChange={setFilter} />}
+                keyExtractor={(item, index) => index + (item.hash || item.id || item.height)}
+                renderItem={({ item, section }) => (section.group === 'receipt' 
+                    ? <ItemReceipt receipt={item} />
+                    : <ItemTransaction
                         group={section.group}
                         transaction={item}
                         onPress={() => Router.goToTransactionDetails({ transaction: item })}

@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { SectionList } from 'react-native';
 import { RefreshControl } from 'react-native-gesture-handler';
-import { FormItem, ItemAsset, Screen, StyledText, TabNavigator, TitleBar } from 'src/components';
+import { Filter, FormItem, ItemAsset, Screen, StyledText, TabNavigator, TitleBar } from 'src/components';
 import { $t } from 'src/localization';
 import { Router } from 'src/Router';
 import store, { connect } from 'src/store';
@@ -16,6 +16,7 @@ export const Assets = connect((state) => ({
     networkProperties: state.network.networkProperties,
 }))(function Assets(props) {
     const { isWalletReady, chainHeight, currentAccount, mosaics, namespaces, networkProperties } = props;
+    const [filter, setFilter] = useState({});
     const [fetchData, isLoading] = useDataManager(
         async () => {
             await store.dispatchAction({ type: 'account/fetchData' });
@@ -26,11 +27,18 @@ export const Assets = connect((state) => ({
     useInit(fetchData, isWalletReady, [currentAccount]);
 
     const sections = [];
+    const filteredMosaics = useMemo(() => {
+        if (filter.expired) {
+            return mosaics;
+        }
+
+        return mosaics.filter(mosaic => mosaic.isUnlimitedDuration || mosaic.endHeight > chainHeight);
+    }, [filter, mosaics])
 
     sections.push({
         title: $t('s_assets_mosaics'),
         group: 'mosaic',
-        data: mosaics,
+        data: filteredMosaics,
     });
 
     if (namespaces.length) {
@@ -41,10 +49,17 @@ export const Assets = connect((state) => ({
         });
     }
 
+    const filterConfig = [{
+        name: 'expired',
+        title: $t('s_assets_filter_expired'),
+        type: 'boolean',
+    },];
+
     return (
         <Screen titleBar={<TitleBar accountSelector settings currentAccount={currentAccount} />} navigator={<TabNavigator />}>
             <SectionList
                 refreshControl={<RefreshControl refreshing={isLoading} onRefresh={fetchData} />}
+                ListHeaderComponent={<Filter data={filterConfig} value={filter} onChange={setFilter} />}
                 sections={sections}
                 keyExtractor={(item, section) => section.group + item.id}
                 renderItem={({ item, section }) => (

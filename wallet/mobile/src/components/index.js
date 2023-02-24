@@ -12,6 +12,7 @@ export * from './ConnectionStatus';
 export * from './DialogBox';
 export * from './Dropdown';
 export * from './FeeSelector';
+export * from './Filter';
 export * from './FormItem';
 export * from './InputAddress';
 export * from './InputAmount';

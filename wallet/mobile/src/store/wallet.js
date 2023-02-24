@@ -81,7 +81,7 @@ export default {
         fetchAll: async ({ dispatchAction }) => {
             await dispatchAction({ type: 'network/fetchData' });
             await dispatchAction({ type: 'account/fetchData' });
-            await dispatchAction({ type: 'transaction/fetchData' });
+            await dispatchAction({ type: 'transaction/fetchData', payload: {}});
         },
         // Load data from cache or set an empty values
         loadState: async ({ commit }) => {

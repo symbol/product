@@ -1,7 +1,7 @@
 import _ from 'lodash';
 import { MosaicService, NamespaceService, TransactionService } from 'src/services';
 import { PersistentStorage } from 'src/storage';
-import { filterBlacklistedTransactions, getUnresolvedIdsFromTransactionDTOs, transactionFromDTO } from 'src/utils';
+import { filterAllowedTransactions, filterBlacklistedTransactions, getUnresolvedIdsFromTransactionDTOs, transactionFromDTO } from 'src/utils';
 
 export default {
     namespace: 'transaction',
@@ -42,7 +42,8 @@ export default {
             commit({ type: 'transaction/setIsLastPage', payload: false });
         },
         // Fetch the latest partial, unconfirmed and confirmed transaction lists from API
-        fetchData: async ({ commit, state }, keepPages) => {
+        fetchData: async ({ commit, state }, payload = {}) => {
+            const { keepPages, filter } = payload;
             const { networkProperties } = state.network;
             const { current } = state.account;
             const { confirmed } = state.transaction;
@@ -50,9 +51,9 @@ export default {
 
             // Fetch transactions from DTO
             const [partialDTO, unconfirmedDTO, confirmedDTO] = await Promise.all([
-                TransactionService.fetchAccountTransactions(current, networkProperties, { group: 'partial' }),
-                TransactionService.fetchAccountTransactions(current, networkProperties, { group: 'unconfirmed' }),
-                TransactionService.fetchAccountTransactions(current, networkProperties, { group: 'confirmed' }),
+                TransactionService.fetchAccountTransactions(current, networkProperties, { group: 'partial', filter }),
+                TransactionService.fetchAccountTransactions(current, networkProperties, { group: 'unconfirmed', filter }),
+                TransactionService.fetchAccountTransactions(current, networkProperties, { group: 'confirmed', filter }),
             ]);
 
             // Fetch mosaic infos for transactions
@@ -77,10 +78,21 @@ export default {
             const unconfirmedPage = unconfirmedDTO.map((transactionDTO) => transactionFromDTO(transactionDTO, transactionOptions));
             const confirmedPage = confirmedDTO.map((transactionDTO) => transactionFromDTO(transactionDTO, transactionOptions));
 
-            //Filter blacklisted
-            const filteredPartialPage = filterBlacklistedTransactions(partialPage, blackList);
-            const filteredUnconfirmedPage = filterBlacklistedTransactions(unconfirmedPage, blackList);
-            const filteredConfirmedPage = filterBlacklistedTransactions(confirmedPage, blackList);
+            //Filter allowed
+            let  filteredPartialPage;
+            let  filteredUnconfirmedPage;
+            let  filteredConfirmedPage;
+
+            if (filter?.blocked) {
+                filteredPartialPage = filterBlacklistedTransactions(partialPage, blackList);
+                filteredUnconfirmedPage = filterBlacklistedTransactions(unconfirmedPage, blackList);
+                filteredConfirmedPage = filterBlacklistedTransactions(confirmedPage, blackList);
+            }
+            else {
+                filteredPartialPage = filterAllowedTransactions(partialPage, blackList);
+                filteredUnconfirmedPage = filterAllowedTransactions(unconfirmedPage, blackList);
+                filteredConfirmedPage = filterAllowedTransactions(confirmedPage, blackList);
+            }
 
             // Update store
             commit({ type: 'transaction/setPartial', payload: filteredPartialPage });
@@ -95,12 +107,15 @@ export default {
             }
 
             // Cache transactions for current account
-            const latestTransactions = await PersistentStorage.getLatestTransactions();
-            latestTransactions[current.address] = confirmedPage;
-            await PersistentStorage.setLatestTransactions(latestTransactions);
+            const isFilterActivated = filter && Object.keys(filter).length > 0;
+            if (!isFilterActivated) {
+                const latestTransactions = await PersistentStorage.getLatestTransactions();
+                latestTransactions[current.address] = confirmedPage;
+                await PersistentStorage.setLatestTransactions(latestTransactions);
+            }
         },
         // Fetch specific page of the confirmed transactions from API
-        fetchPage: async ({ commit, state }, { pageNumber }) => {
+        fetchPage: async ({ commit, state }, { pageNumber, filter }) => {
             const { networkProperties } = state.network;
             const { confirmed } = state.transaction;
             const { current } = state.account;
@@ -109,6 +124,7 @@ export default {
             // Fetch transactions from DTO
             const confirmedDTO = await TransactionService.fetchAccountTransactions(current, networkProperties, {
                 group: 'confirmed',
+                filter,
                 pageNumber,
             });
 
@@ -129,8 +145,14 @@ export default {
             const confirmedPage = confirmedDTO.map((transactionDTO) => transactionFromDTO(transactionDTO, transactionOptions));
             const isLastPage = confirmedPage.length === 0;
 
-            //Filter blacklisted
-            const filteredConfirmedPage = filterBlacklistedTransactions(confirmedPage, blackList);
+            //Filter allowed
+            let filteredConfirmedPage;
+            if (filter?.blocked) {
+                filteredConfirmedPage = filterBlacklistedTransactions(confirmedPage, blackList);
+            }
+            else {
+                filteredConfirmedPage = filterAllowedTransactions(confirmedPage, blackList);
+            }
             const updatedConfirmed = _.uniqBy([...confirmed, ...filteredConfirmedPage], 'hash');
 
             // Update store
