@@ -102,7 +102,7 @@ export default {
             commit({ type: 'wallet/setIsPasscodeEnabled', payload: isPasscodeEnabled || false });
         },
         // Save mnemonic to wallet. Generate root accounts for all networks
-        saveMnemonic: async ({ commit, dispatchAction }, { mnemonic, name }) => {
+        saveMnemonic: async ({ commit, dispatchAction }, { mnemonic, name, optInPrivateKey }) => {
             let savedMnemonic;
 
             await SecureStorage.setMnemonic(mnemonic);
@@ -115,6 +115,13 @@ export default {
             commit({ type: 'wallet/setMnemonic', payload: mnemonic });
             await dispatchAction({ type: 'wallet/addSeedAccount', payload: { name, index: 0, networkIdentifier: 'testnet' } });
             await dispatchAction({ type: 'wallet/addSeedAccount', payload: { name, index: 0, networkIdentifier: 'mainnet' } });
+            if (optInPrivateKey) {
+                await dispatchAction({ type: 'wallet/addExternalAccount', payload: { 
+                    name: 'Opt-In', 
+                    privateKey: optInPrivateKey, 
+                    networkIdentifier: 'mainnet' 
+                }});
+            }
             await dispatchAction({ type: 'wallet/loadAll' });
         },
         // Generate all (count specified in config) seed addresses

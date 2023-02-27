@@ -51,7 +51,7 @@ export const Harvesting = connect((state) => ({
     const [isStopConfirmVisible, toggleStopConfirm] = useToggle(false);
     const [fee, setFee] = useState(0);
     const [speed, setSpeed] = useState('medium');
-    const transactionSize = 912;
+    const transactionSize = 700;
     const transactionFees = useMemo(() => getTransactionFees({}, networkProperties, transactionSize), [])
     const confirmTableData = { nodeUrl, fee };
 
