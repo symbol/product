@@ -1,43 +1,82 @@
 import React, { useState } from 'react';
 import { Image, StyleSheet } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
-import { Button, ButtonClose, ButtonPlain, FormItem, MnemonicInput, QRCode, QRScanner, Screen, StyledText } from 'src/components';
+import { Button, ButtonClose, ButtonPlain, FormItem, MnemonicInput, QRCode, QRScanner, Screen, StyledText, WalletCreationAnimation } from 'src/components';
 import store from 'src/store';
-import { usePasscode } from 'src/utils';
+import { createPrivateKeysFromMnemonic, handleError, publicAccountFromPrivateKey, useDataManager, usePasscode } from 'src/utils';
 import { Router } from 'src/Router';
 import { $t } from 'src/localization';
+import { optInWhiteList } from 'src/config';
 
 export const ImportWallet = () => {
     const [name] = useState($t('s_importWallet_defaultAccountName'));
     const [mnemonic, setMnemonic] = useState('');
     const [isMnemonicValid, setIsMnemonicValid] = useState(false);
     const [isQRScannerVisible, setIsQRScannerVisible] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+    const [loadingStep, setLoadingStep] = useState(1);
     const isButtonDisabled = !mnemonic.length || !isMnemonicValid;
+    const steps = [
+        $t('s_importWallet_loading_step1'),
+        $t('s_importWallet_loading_step2'),
+        $t('s_importWallet_loading_step3'),
+        $t('s_importWallet_loading_step4'),
+        $t('s_importWallet_loading_step5'),
+    ]
 
     const toggleQRScanner = () => setIsQRScannerVisible(!isQRScannerVisible);
     const next = () => createPasscode();
-    const complete = async () => {
-        await store.dispatchAction({
-            type: 'wallet/saveMnemonic',
-            payload: {
-                mnemonic: mnemonic.trim(),
-                name,
-            },
-        });
+    const [checkOptInAccounts] = useDataManager(
+        async () => {
+            const [optInPrivateKey] = createPrivateKeysFromMnemonic(mnemonic.trim(), [0], 'mainnet', 'optin');
+            const optInAccount = publicAccountFromPrivateKey(optInPrivateKey, 'mainnet');
+            const isKeyWhitelisted = optInWhiteList.some(publicKey => publicKey === optInAccount.publicKey);
+            setLoadingStep(4)
+            setTimeout(() => saveMnemonic(isKeyWhitelisted ? optInPrivateKey : null), 500);
+        },
+        null,
+        handleError
+    );
+    const [saveMnemonic] = useDataManager(
+        async (optInPrivateKey) => {
+            await store.dispatchAction({
+                type: 'wallet/saveMnemonic',
+                payload: {
+                    mnemonic: mnemonic.trim(),
+                    name,
+                    optInPrivateKey,
+                },
+            });
+            setLoadingStep(5);
+            setTimeout(completeLoading, 500);
+        },
+        null,
+        handleError
+    );
+    const startLoading = () => {
+        Router.goBack();
+        setIsLoading(true);
+        setTimeout(() => setLoadingStep(2), 500);
+        setTimeout(() => setLoadingStep(3), 1000);
+        setTimeout(checkOptInAccounts, 1500);
+    }
+    const completeLoading = async () => {
         Router.goToHome();
     };
-    const createPasscode = usePasscode('choose', complete, Router.goBack);
+    const createPasscode = usePasscode('choose', startLoading, Router.goBack);
+    const handleGoBackPress = () => !isLoading && Router.goBack();
 
     return (
         <Screen
             bottomComponent={
-                <FormItem>
+                !isLoading && <FormItem>
                     <Button title={$t('button_next')} isDisabled={isButtonDisabled} onPress={next} />
                 </FormItem>
             }
         >
+            {isLoading && <WalletCreationAnimation steps={steps} currentStep={loadingStep} />}
             <FormItem>
-                <ButtonClose type="cancel" style={styles.buttonCancel} onPress={Router.goBack} />
+                <ButtonClose type="cancel" style={styles.buttonCancel} onPress={handleGoBackPress} />
             </FormItem>
             <FormItem>
                 <Image source={require('src/assets/images/logo-symbol-full.png')} style={styles.logo} />
@@ -65,6 +104,14 @@ export const ImportWallet = () => {
 };
 
 const styles = StyleSheet.create({
+    backgroundArt: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: '100%',
+        resizeMode: 'cover',
+    },
     buttonCancel: {
         alignSelf: 'flex-end',
     },

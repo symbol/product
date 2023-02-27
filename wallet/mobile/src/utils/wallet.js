@@ -12,10 +12,10 @@ export const generateMnemonic = () => {
     return MnemonicPassPhrase.createRandom().plain;
 };
 
-export const createPrivateKeysFromMnemonic = (mnemonic, indexes, networkIdentifier) => {
+export const createPrivateKeysFromMnemonic = (mnemonic, indexes, networkIdentifier, curveType) => {
     const mnemonicPassPhrase = new MnemonicPassPhrase(mnemonic);
     const seed = mnemonicPassPhrase.toSeed().toString('hex');
-    const curve = Network.SYMBOL;
+    const curve = curveType === 'optin' ? Network.BITCOIN : Network.SYMBOL;
     const extendedKey = ExtendedKey.createFromSeed(seed, curve);
     const wallet = new Wallet(extendedKey);
 

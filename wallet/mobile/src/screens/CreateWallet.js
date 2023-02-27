@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Image, StyleSheet } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import { showMessage } from 'react-native-flash-message';
-import { Button, ButtonClose, Checkbox, FormItem, MnemonicView, Screen, Steps, StyledText, TextBox } from 'src/components';
+import { Button, ButtonClose, Checkbox, FormItem, MnemonicView, Screen, Steps, StyledText, TextBox, WalletCreationAnimation } from 'src/components';
 import store from 'src/store';
 import {
     createPrivateKeysFromMnemonic,
@@ -29,6 +29,14 @@ export const CreateWallet = () => {
     const [isMnemonicShown, setIsMnemonicShown] = useState(false);
     const [isRiskAccepted, toggleAcceptRisk] = useToggle(false);
     const nameErrorMessage = useValidation(name, [validateRequired(), validateAccountName()], $t);
+    const [isLoading, setIsLoading] = useState(false);
+    const [loadingStep, setLoadingStep] = useState(1);
+    const loadingSteps = [
+        $t('s_createWallet_loading_step1'),
+        $t('s_createWallet_loading_step2'),
+        $t('s_createWallet_loading_step3'),
+        $t('s_createWallet_loading_step4'),
+    ]
 
     const showMnemonic = () => setIsMnemonicShown(true);
     const [downloadMnemonic, isMnemonicDownloading] = useDataManager(
@@ -43,19 +51,32 @@ export const CreateWallet = () => {
         handleError
     );
     const next = () => (step === stepsCount ? createPasscode() : setStep(step + 1));
-    const complete = async () => {
-        await store.dispatchAction({
-            type: 'wallet/saveMnemonic',
-            payload: {
-                mnemonic,
-                name,
-            },
-        });
+    const startLoading = () => {
+        Router.goBack();
+        setIsLoading(true);
+        setTimeout(() => setLoadingStep(2), 500);
+        setTimeout(() => setLoadingStep(3), 1000);
+        setTimeout(saveMnemonic, 1500);
+    }
+    const completeLoading = async () => {
         Router.goToHome();
     };
-    const createPasscode = usePasscode('choose', complete, Router.goBack);
-
-    const isLoading = step > stepsCount || isMnemonicDownloading;
+    const [saveMnemonic] = useDataManager(
+        async () => {
+            await store.dispatchAction({
+                type: 'wallet/saveMnemonic',
+                payload: {
+                    mnemonic,
+                    name,
+                },
+            });
+            setLoadingStep(4);
+            setTimeout(completeLoading, 500);
+        },
+        null,
+        handleError
+    );
+    const createPasscode = usePasscode('choose', startLoading, Router.goBack);
 
     useEffect(() => {
         const mnemonic = generateMnemonic();
@@ -65,7 +86,7 @@ export const CreateWallet = () => {
 
     return (
         <Screen
-            isLoading={isLoading}
+            isLoading={isMnemonicDownloading}
             bottomComponent={
                 step === 1 && (
                     <FormItem bottom>
@@ -74,6 +95,7 @@ export const CreateWallet = () => {
                 )
             }
         >
+            {isLoading && <WalletCreationAnimation steps={loadingSteps} currentStep={loadingStep} />}
             <FormItem>
                 <ButtonClose type="cancel" style={styles.buttonCancel} onPress={Router.goBack} />
             </FormItem>
