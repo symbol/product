@@ -151,7 +151,8 @@ class NemRoutesFacade(BasicRoutesFacade):
 		"""Creates a facade."""
 
 		super().__init__(network, explorer_endpoint, 'nem', 'NEM', self._version_to_css_class, {
-			'0.6.100': ('#008500', 7),
+			'0.6.101': ('#008500', 8),
+			'0.6.100': ('#FF8484', 7),
 			'delegating / updating': ('#FFFF6B', 6),
 			'0.6.99': ('#FF6B6B', 5),
 			'0.6.98': ('#FF5252', 4),
@@ -179,7 +180,7 @@ class NemRoutesFacade(BasicRoutesFacade):
 		tag = 'danger'
 		if not version:
 			tag = 'warning'
-		if '0.6.100' in version:
+		if '0.6.101' in version:
 			tag = 'success'
 
 		return tag
