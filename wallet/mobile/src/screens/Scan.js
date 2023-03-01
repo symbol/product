@@ -145,11 +145,6 @@ export const Scan = connect((state) => ({
         <Screen
             titleBar={<TitleBar accountSelector settings currentAccount={currentAccount} />}
             navigator={<TabNavigator />}
-            bottomComponent={
-                <FormItem>
-                    <Button title={$t('button_scan')} onPress={toggleScanner} />
-                </FormItem>
-            }
         >
             <FormItem>
                 <StyledText type="title">{$t('s_scan_title')}</StyledText>
@@ -161,6 +156,9 @@ export const Scan = connect((state) => ({
                         <Button title={action.title} onPress={() => action.handler(data)} />
                     </FormItem>
                 ))}
+                <FormItem type="list">
+                    <Button title={$t('button_scan')} onPress={toggleScanner} />
+                </FormItem>
             </FormItem>
             <QRScanner
                 isVisible={isScannerVisible}
