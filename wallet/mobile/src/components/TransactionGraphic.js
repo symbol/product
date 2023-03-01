@@ -8,7 +8,7 @@ import { AccountAvatar, TableView, TouchableNative } from 'src/components';
 import { $t } from 'src/localization';
 import { connect } from 'src/store';
 import { borders, colors, fonts, spacings } from 'src/styles';
-import { filterCustomMosaics, getAddressName, getColorFromHash, getNativeMosaicAmount, trunc, useToggle } from 'src/utils';
+import { filterCustomMosaics, getAddressName, getColorFromHash, trunc, useToggle } from 'src/utils';
 import { TransactionType } from 'symbol-sdk';
 
 export const TransactionGraphic = connect((state) => ({
@@ -59,7 +59,7 @@ export const TransactionGraphic = connect((state) => ({
             targetNameStyle.push({
                 color: getColorFromHash(transaction.recipientAddress),
             });
-            const transferredAmount = getNativeMosaicAmount(transaction.mosaics, networkProperties.networkCurrency.mosaicId);
+            const transferredAmount = transaction.amount;
             const hasMessage = !!transaction.message;
             const hasCustomMosaic = !!filterCustomMosaics(transaction.mosaics, networkProperties.networkCurrency.mosaicId).length;
 
@@ -172,10 +172,10 @@ export const TransactionGraphic = connect((state) => ({
         case TransactionType.HASH_LOCK: {
             Target = () => <TargetLock />;
             targetName = $t('transactionDescriptionShort_hashLock', { duration: transaction.duration });
-            const transferredAmount = getNativeMosaicAmount(transaction.mosaics, networkProperties.networkCurrency.mosaicId);
+            const lockedAmount = Math.abs(transaction.lockedAmount);
             ActionBody = () => (
                 <Text style={styles.actionText}>
-                    {Math.abs(transferredAmount)} {ticker}
+                    {lockedAmount} {ticker}
                 </Text>
             );
             break;
@@ -224,6 +224,7 @@ export const TransactionGraphic = connect((state) => ({
         _.omit(
             transaction,
             'amount',
+            'lockedAmount',
             'id',
             'innerTransactions',
             'cosignaturePublicKeys',
@@ -231,6 +232,7 @@ export const TransactionGraphic = connect((state) => ({
             'type',
             'fee',
             'status',
+            'group',
             'height',
             'hash',
             'signerPublicKey',
