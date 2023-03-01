@@ -1,14 +1,10 @@
 import React from 'react';
-import { Dimensions, Image, StyleSheet } from 'react-native';
-import { showMessage } from 'react-native-flash-message';
+import { Image, StyleSheet, View } from 'react-native';
 import { FormItem, ItemBase, Screen, StyledText, TabNavigator, TitleBar } from 'src/components';
 import { $t } from 'src/localization';
 import { Router } from 'src/Router';
 import { connect } from 'src/store';
-import { fonts, spacings } from 'src/styles';
-
-const SCREEN_WIDTH = Dimensions.get('screen').width;
-const COLS = 3;
+import { spacings } from 'src/styles';
 
 export const Actions = connect((state) => ({
     currentAccount: state.account.current,
@@ -18,18 +14,21 @@ export const Actions = connect((state) => ({
 
     const list = [
         {
-            title: 'Address Book',
-            icon: require('src/assets/images/icon-address-book.png'),
+            title: $t('s_actions_addressBook_title'),
+            description: $t('s_actions_addressBook_description'),
+            icon: require('src/assets/images/art-address-book.png'),
             handler: Router.goToAddressBookList,
         },
         {
-            title: 'Harvesting',
-            icon: require('src/assets/images/icon-harvesting.png'),
+            title: $t('s_actions_harvesting_title'),
+            description: $t('s_actions_harvesting_description'),
+            icon: require('src/assets/images/art-harvesting.png'),
             handler: Router.goToHarvesting,
         },
         {
-            title: 'Send Transfer',
-            icon: require('src/assets/images/icon-send.png'),
+            title: $t('s_actions_send_title'),
+            description: $t('s_actions_send_description'),
+            icon: require('src/assets/images/art-ship.png'),
             handler: Router.goToSend,
         },
     ];
@@ -43,11 +42,14 @@ export const Actions = connect((state) => ({
             <FormItem type="group" clear="bottom">
                 <StyledText type="title">{$t('s_actions_title')}</StyledText>
             </FormItem>
-            <FormItem style={styles.container}>
+            <FormItem clear="horizontal">
                 {list.map((item, index) => (
-                    <ItemBase style={styles.item} contentContainerStyle={styles.itemContent} key={'act' + index} onPress={item.handler}>
+                    <ItemBase contentContainerStyle={styles.item} key={'act' + index} onPress={item.handler}>
                         <Image source={item.icon} style={styles.itemIcon} />
-                        <StyledText style={styles.itemTitle}>{item.title}</StyledText>
+                        <View style={styles.itemTextContainer}>
+                            <StyledText type="subtitle" style={styles.itemTitle}>{item.title}</StyledText>
+                            <StyledText type="body">{item.description}</StyledText>
+                        </View>
                     </ItemBase>
                 ))}
             </FormItem>
@@ -57,30 +59,25 @@ export const Actions = connect((state) => ({
 
 const styles = StyleSheet.create({
     container: {
-        gap: spacings.margin,
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        flexWrap: 'wrap',
     },
     item: {
-        width: SCREEN_WIDTH / COLS - (spacings.margin / 2) * COLS,
-        height: SCREEN_WIDTH / COLS - (spacings.margin / 2) * COLS,
-        marginHorizontal: 0,
-    },
-    itemContent: {
-        height: '100%',
-        flexDirection: 'column',
-        justifyContent: 'space-evenly',
-        alignItems: 'center',
+        padding: 0,
+        minHeight: 100,
+        position: 'relative',
     },
     itemIcon: {
-        width: 24,
-        height: 24,
-        marginBottom: spacings.paddingSm,
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        width: 100,
+        height: 100,
+        resizeMode: 'contain',
+    },
+    itemTextContainer: {
+        marginLeft: 100,
+        padding: spacings.margin
     },
     itemTitle: {
-        ...fonts.label,
-        fontSize: 14,
-        textAlign: 'center',
-    },
+        marginBottom: spacings.margin / 2
+    }
 });
