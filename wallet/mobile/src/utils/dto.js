@@ -254,13 +254,13 @@ export const hashLockTransactionFromDTO = (transaction, config) => {
     const baseTransaction = baseTransactionFromDTO(transaction, config);
     const mosaic = mosaicFromDTO(transaction.mosaic);
     const formattedMosaics = getMosaicsWithRelativeAmounts([mosaic], config.mosaicInfos);
-    const amount = -formattedMosaics[0].amount;
+    const lockedAmount = -formattedMosaics[0].amount;
 
     return {
         ...baseTransaction,
         duration: transaction.duration.compact(),
         mosaics: formattedMosaics,
-        amount,
+        lockedAmount,
     };
 };
 
