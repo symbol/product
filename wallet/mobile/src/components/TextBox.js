@@ -4,10 +4,10 @@ import Animated, { interpolateColor, useAnimatedStyle, useSharedValue, withTimin
 import { borders, colors, fonts, spacings, timings } from 'src/styles';
 
 export const TextBox = (props) => {
-    const { testID, contentRight, multiline, keyboardType, nativePlaceholder, title, value, errorMessage, onChange } = props;
+    const { testID, contentRight, multiline, keyboardType, nativePlaceholder, title, value, errorMessage, innerRef, onChange } = props;
     const isFocused = useSharedValue(false);
     const styleInput = multiline ? [styles.input, styles.inputMultiline] : [styles.input];
-    const numberOfLines = multiline ? 5 : 1;
+    const numberOfLines = multiline ? 7 : 1;
     const colorStrokeNormal = errorMessage ? colors.danger : colors.controlBaseStroke;
     const colorStrokeFocussed = errorMessage ? colors.danger : colors.controlBaseFocussedStroke;
     const animatedContainer = useAnimatedStyle(() => ({
@@ -33,6 +33,7 @@ export const TextBox = (props) => {
                     nativePlaceholder={nativePlaceholder}
                     style={styleInput}
                     value={'' + value}
+                    ref={innerRef}
                     onFocus={handleFocusIn}
                     onBlur={handleFocusOut}
                     onChangeText={onChange}
