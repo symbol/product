@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { StyleSheet, Text } from 'react-native';
 import { connect } from 'src/store';
 import { colors, fonts, timings } from 'src/styles';
@@ -24,27 +24,33 @@ export const ConnectionStatus = connect((state) => ({
     });
     let statusText = $t('c_connectionStatus_connecting');
 
-    switch (status) {
-        case 'offline':
-            statusText = $t('c_connectionStatus_offline');
-            isShown.value = withTiming(true, timings.press);
-            break;
-        case 'failed-custom':
-            statusText = $t('c_connectionStatus_nodeDown');
-            isShown.value = withTiming(true, timings.press);
-            break;
-        case 'connected':
-            statusText = $t('c_connectionStatus_connected');
-            isShown.value = withTiming(false, timings.press);
-            break;
-        default:
-            isShown.value = withTiming(true, timings.press);
+    const updateValue = () => {
+        switch (status) {
+            case 'offline':
+                statusText = $t('c_connectionStatus_offline');
+                isShown.value = withTiming(true, timings.press);
+                break;
+            case 'failed-custom':
+                statusText = $t('c_connectionStatus_nodeDown');
+                isShown.value = withTiming(true, timings.press);
+                break;
+            case 'connected':
+                statusText = $t('c_connectionStatus_connected');
+                isShown.value = withTiming(false, timings.press);
+                break;
+            default:
+                isShown.value = withTiming(true, timings.press);
+        }
     }
 
     const animatedContainer = useAnimatedStyle(() => ({
         backgroundColor: interpolateColor(color.value, [0, 1, 2], [statusColors[0], statusColors[1], statusColors[2]]),
         height: interpolate(isShown.value, [true, false], [12, 0]),
     }));
+
+    useEffect(() => {
+        updateValue();
+    }, [status]);
 
     return (
         <Animated.View style={[styles.root, animatedContainer]}>
