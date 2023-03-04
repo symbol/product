@@ -1,28 +1,32 @@
 import argparse
-from client.NemClient import NemClient
 from asyncio import run
-from db.Databases import Databases
+from facade.NemPullerFacade import NemPullerFacade
 
 def parse_args():
-	parser = argparse.ArgumentParser(description='sync blocks from netowrk')
+	parser = argparse.ArgumentParser(description='sync blocks from network')
 	parser.add_argument('--nem-node', help='NEM node(local) url', default='http://localhost:7890')
+	parser.add_argument('--db-config', help='database config file *.ini', default='config.ini')
 	return parser.parse_args()
 
 async def main():
     args = parse_args()
 
-    nem_client = NemClient(args.nem_node)
+    facade = NemPullerFacade(args.nem_node, args.db_config)
 
-    with Databases() as databases:
-        databases.nem.create_tables()
+    nem_client = facade.client()
+    nem_databases = facade.db
 
-        dbHeight = databases.nem.get_current_height()
+    with nem_databases() as databases:
+        databases.create_tables()
+
+        dbHeight = databases.get_current_height()
+        print(f"current database height: {nem_client}")
         chainHeight = await nem_client.height()
 
         # save Nemenesis Block
         if dbHeight == 0:
             block = await nem_client.get_block(1)
-            databases.nem.add_block(block['height'], block['timeStamp'])
+            databases.add_block(block['height'], block['timeStamp'])
             dbHeight = block['height']
 
         # sync network blocks in database
@@ -31,7 +35,7 @@ async def main():
             blocks = await nem_client.get_blocks_after(dbHeight)
 
             for block in blocks['data']:
-                databases.nem.add_block(block['block']['height'], block['block']['timeStamp'])
+                databases.add_block(block['block']['height'], block['block']['timeStamp'])
 
             dbHeight = blocks['data'][-1]['block']['height']
 
