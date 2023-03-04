@@ -1,10 +1,7 @@
-class NemDatabase:
+from .DatabaseConnection import DatabaseConnection
+
+class NemDatabase(DatabaseConnection):
     """Database containing Nem blockchain data."""
-
-    def __init__(self, connection):
-        """Creates a database around a database connection."""
-
-        self.connection = connection
 
     def create_tables(self):
         """Creates blocks database tables."""
