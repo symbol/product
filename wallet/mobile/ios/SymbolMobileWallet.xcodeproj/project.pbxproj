@@ -8,35 +8,35 @@
 
 /* Begin PBXBuildFile section */
 		00E356F31AD99517003FC87E /* SymbolMobileWalletTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 00E356F21AD99517003FC87E /* SymbolMobileWalletTests.m */; };
+		045F823C221143A88A49824E /* Rajdhani-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 3DDC4D41C0BD495D92453579 /* Rajdhani-SemiBold.ttf */; };
+		063C202DFC3845C39C96BB1B /* Protipo-Bold.otf in Resources */ = {isa = PBXBuildFile; fileRef = 160BE945B20944199A2345DC /* Protipo-Bold.otf */; };
+		06630B1406594908A1E39A4B /* Carbon-Bold-Italic.otf in Resources */ = {isa = PBXBuildFile; fileRef = 8E694F4D64904F7A885B5D63 /* Carbon-Bold-Italic.otf */; };
 		0C80B921A6F3F58F76C31292 /* libPods-SymbolMobileWallet.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5DCACB8F33CDC322A6C60F78 /* libPods-SymbolMobileWallet.a */; };
+		0CD3395118AA411498B832DE /* Rajdhani-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 93B83A6C06484BB89BD0AA11 /* Rajdhani-Medium.ttf */; };
 		13B07FBC1A68108700A75B9A /* AppDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = 13B07FB01A68108700A75B9A /* AppDelegate.mm */; };
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
 		13B07FC11A68108700A75B9A /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 13B07FB71A68108700A75B9A /* main.m */; };
+		25292F71A6344A2F941B14EA /* Protipo-Extrabold.otf in Resources */ = {isa = PBXBuildFile; fileRef = 59B8345A66D2454CBD2A4A63 /* Protipo-Extrabold.otf */; };
+		44154C3A40334F24B1F3B7B7 /* Rajdhani-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B165072A012647C4AE9FF824 /* Rajdhani-Regular.ttf */; };
+		45352C1C5DDE4DCF92A25D1A /* Protipo-Semibold.otf in Resources */ = {isa = PBXBuildFile; fileRef = 1CA1BEF6966D491B9C7B6F09 /* Protipo-Semibold.otf */; };
+		486B51E463CD4F9DA2BBD7D6 /* Carbon-Thin-Italic.otf in Resources */ = {isa = PBXBuildFile; fileRef = 5AEFCE8FE6DF4FACBB831801 /* Carbon-Thin-Italic.otf */; };
+		4AD868FDC9F742CABB721810 /* Protipo-Medium-Italic.otf in Resources */ = {isa = PBXBuildFile; fileRef = D4A7263495AC479486EACE20 /* Protipo-Medium-Italic.otf */; };
+		5128715DC2EC4A23B4C6687A /* Protipo-Light.otf in Resources */ = {isa = PBXBuildFile; fileRef = 72757842BA794A2E866D1DC9 /* Protipo-Light.otf */; };
+		58D123FB11C74B88B1427275 /* Carbon-Regular-Italic.otf in Resources */ = {isa = PBXBuildFile; fileRef = C531C38BC5D244818AA09A21 /* Carbon-Regular-Italic.otf */; };
+		6BC12DBBF2274E84A4F28ADA /* Protipo-Bold-Italic.otf in Resources */ = {isa = PBXBuildFile; fileRef = 957110B6A98B4513A3FA23EC /* Protipo-Bold-Italic.otf */; };
 		7699B88040F8A987B510C191 /* libPods-SymbolMobileWallet-SymbolMobileWalletTests.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 19F6CBCC0A4E27FBF8BF4A61 /* libPods-SymbolMobileWallet-SymbolMobileWalletTests.a */; };
 		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
-		06630B1406594908A1E39A4B /* Carbon-Bold-Italic.otf in Resources */ = {isa = PBXBuildFile; fileRef = 8E694F4D64904F7A885B5D63 /* Carbon-Bold-Italic.otf */; };
 		8D52D20F63C745A58751AEA9 /* Carbon-Bold.otf in Resources */ = {isa = PBXBuildFile; fileRef = E2D34C28F460410DA752653E /* Carbon-Bold.otf */; };
-		58D123FB11C74B88B1427275 /* Carbon-Regular-Italic.otf in Resources */ = {isa = PBXBuildFile; fileRef = C531C38BC5D244818AA09A21 /* Carbon-Regular-Italic.otf */; };
-		FDC404BB27F347F89CE6F670 /* Carbon-Regular.otf in Resources */ = {isa = PBXBuildFile; fileRef = F3D2F271F96E497483AE76E2 /* Carbon-Regular.otf */; };
-		486B51E463CD4F9DA2BBD7D6 /* Carbon-Thin-Italic.otf in Resources */ = {isa = PBXBuildFile; fileRef = 5AEFCE8FE6DF4FACBB831801 /* Carbon-Thin-Italic.otf */; };
-		E0E12766B5BC4BE0A1C4443F /* Carbon-Thin.otf in Resources */ = {isa = PBXBuildFile; fileRef = 60801E6A6180448798E0229B /* Carbon-Thin.otf */; };
-		6BC12DBBF2274E84A4F28ADA /* Protipo-Bold-Italic.otf in Resources */ = {isa = PBXBuildFile; fileRef = 957110B6A98B4513A3FA23EC /* Protipo-Bold-Italic.otf */; };
-		063C202DFC3845C39C96BB1B /* Protipo-Bold.otf in Resources */ = {isa = PBXBuildFile; fileRef = 160BE945B20944199A2345DC /* Protipo-Bold.otf */; };
-		AA6E2DAF336146BEA6966AF3 /* Protipo-Extrabold-Italic.otf in Resources */ = {isa = PBXBuildFile; fileRef = A708FDF4397C410997474DAA /* Protipo-Extrabold-Italic.otf */; };
-		25292F71A6344A2F941B14EA /* Protipo-Extrabold.otf in Resources */ = {isa = PBXBuildFile; fileRef = 59B8345A66D2454CBD2A4A63 /* Protipo-Extrabold.otf */; };
-		CBD19BF835944F359A8344F7 /* Protipo-Light-Italic.otf in Resources */ = {isa = PBXBuildFile; fileRef = 6B1F36E085634AD6AD39BE4F /* Protipo-Light-Italic.otf */; };
-		5128715DC2EC4A23B4C6687A /* Protipo-Light.otf in Resources */ = {isa = PBXBuildFile; fileRef = 72757842BA794A2E866D1DC9 /* Protipo-Light.otf */; };
-		4AD868FDC9F742CABB721810 /* Protipo-Medium-Italic.otf in Resources */ = {isa = PBXBuildFile; fileRef = D4A7263495AC479486EACE20 /* Protipo-Medium-Italic.otf */; };
 		9AC94850DAEE4B9E943B707B /* Protipo-Medium.otf in Resources */ = {isa = PBXBuildFile; fileRef = 4170550CB97044DF9DC71DF9 /* Protipo-Medium.otf */; };
-		A64A152FF5A84D21AABFD1AD /* Protipo-Regular-Italic.otf in Resources */ = {isa = PBXBuildFile; fileRef = B2B66F2159FD4BD29997BFAF /* Protipo-Regular-Italic.otf */; };
-		F2B63AF531824BDD96276884 /* Protipo-Regular.otf in Resources */ = {isa = PBXBuildFile; fileRef = 91DE3FA62B3D4492A63B84CA /* Protipo-Regular.otf */; };
 		A154303EC74F46F2A4D6E71F /* Protipo-Semibold-Italic.otf in Resources */ = {isa = PBXBuildFile; fileRef = A403BC1566FE4E37B2DAA735 /* Protipo-Semibold-Italic.otf */; };
-		45352C1C5DDE4DCF92A25D1A /* Protipo-Semibold.otf in Resources */ = {isa = PBXBuildFile; fileRef = 1CA1BEF6966D491B9C7B6F09 /* Protipo-Semibold.otf */; };
 		A32224BBBA9F49ABB4D73A67 /* Rajdhani-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 4F5C9DCF0E72423A874CCC1B /* Rajdhani-Bold.ttf */; };
+		A64A152FF5A84D21AABFD1AD /* Protipo-Regular-Italic.otf in Resources */ = {isa = PBXBuildFile; fileRef = B2B66F2159FD4BD29997BFAF /* Protipo-Regular-Italic.otf */; };
+		AA6E2DAF336146BEA6966AF3 /* Protipo-Extrabold-Italic.otf in Resources */ = {isa = PBXBuildFile; fileRef = A708FDF4397C410997474DAA /* Protipo-Extrabold-Italic.otf */; };
 		AB20566DC84F4A1BADD865D2 /* Rajdhani-Light.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 9C849DCD4D5F441783D4FE68 /* Rajdhani-Light.ttf */; };
-		0CD3395118AA411498B832DE /* Rajdhani-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 93B83A6C06484BB89BD0AA11 /* Rajdhani-Medium.ttf */; };
-		44154C3A40334F24B1F3B7B7 /* Rajdhani-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B165072A012647C4AE9FF824 /* Rajdhani-Regular.ttf */; };
-		045F823C221143A88A49824E /* Rajdhani-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 3DDC4D41C0BD495D92453579 /* Rajdhani-SemiBold.ttf */; };
+		CBD19BF835944F359A8344F7 /* Protipo-Light-Italic.otf in Resources */ = {isa = PBXBuildFile; fileRef = 6B1F36E085634AD6AD39BE4F /* Protipo-Light-Italic.otf */; };
+		E0E12766B5BC4BE0A1C4443F /* Carbon-Thin.otf in Resources */ = {isa = PBXBuildFile; fileRef = 60801E6A6180448798E0229B /* Carbon-Thin.otf */; };
+		F2B63AF531824BDD96276884 /* Protipo-Regular.otf in Resources */ = {isa = PBXBuildFile; fileRef = 91DE3FA62B3D4492A63B84CA /* Protipo-Regular.otf */; };
+		FDC404BB27F347F89CE6F670 /* Carbon-Regular.otf in Resources */ = {isa = PBXBuildFile; fileRef = F3D2F271F96E497483AE76E2 /* Carbon-Regular.otf */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -59,37 +59,37 @@
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = SymbolMobileWallet/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = SymbolMobileWallet/Info.plist; sourceTree = "<group>"; };
 		13B07FB71A68108700A75B9A /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = main.m; path = SymbolMobileWallet/main.m; sourceTree = "<group>"; };
+		160BE945B20944199A2345DC /* Protipo-Bold.otf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "Protipo-Bold.otf"; path = "../src/assets/fonts/Protipo-Bold.otf"; sourceTree = "<group>"; };
 		19F6CBCC0A4E27FBF8BF4A61 /* libPods-SymbolMobileWallet-SymbolMobileWalletTests.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-SymbolMobileWallet-SymbolMobileWalletTests.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		1CA1BEF6966D491B9C7B6F09 /* Protipo-Semibold.otf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "Protipo-Semibold.otf"; path = "../src/assets/fonts/Protipo-Semibold.otf"; sourceTree = "<group>"; };
 		3B4392A12AC88292D35C810B /* Pods-SymbolMobileWallet.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-SymbolMobileWallet.debug.xcconfig"; path = "Target Support Files/Pods-SymbolMobileWallet/Pods-SymbolMobileWallet.debug.xcconfig"; sourceTree = "<group>"; };
+		3DDC4D41C0BD495D92453579 /* Rajdhani-SemiBold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "Rajdhani-SemiBold.ttf"; path = "../src/assets/fonts/Rajdhani-SemiBold.ttf"; sourceTree = "<group>"; };
+		4170550CB97044DF9DC71DF9 /* Protipo-Medium.otf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "Protipo-Medium.otf"; path = "../src/assets/fonts/Protipo-Medium.otf"; sourceTree = "<group>"; };
+		4F5C9DCF0E72423A874CCC1B /* Rajdhani-Bold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "Rajdhani-Bold.ttf"; path = "../src/assets/fonts/Rajdhani-Bold.ttf"; sourceTree = "<group>"; };
 		5709B34CF0A7D63546082F79 /* Pods-SymbolMobileWallet.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-SymbolMobileWallet.release.xcconfig"; path = "Target Support Files/Pods-SymbolMobileWallet/Pods-SymbolMobileWallet.release.xcconfig"; sourceTree = "<group>"; };
+		59B8345A66D2454CBD2A4A63 /* Protipo-Extrabold.otf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "Protipo-Extrabold.otf"; path = "../src/assets/fonts/Protipo-Extrabold.otf"; sourceTree = "<group>"; };
+		5AEFCE8FE6DF4FACBB831801 /* Carbon-Thin-Italic.otf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "Carbon-Thin-Italic.otf"; path = "../src/assets/fonts/Carbon-Thin-Italic.otf"; sourceTree = "<group>"; };
 		5B7EB9410499542E8C5724F5 /* Pods-SymbolMobileWallet-SymbolMobileWalletTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-SymbolMobileWallet-SymbolMobileWalletTests.debug.xcconfig"; path = "Target Support Files/Pods-SymbolMobileWallet-SymbolMobileWalletTests/Pods-SymbolMobileWallet-SymbolMobileWalletTests.debug.xcconfig"; sourceTree = "<group>"; };
 		5DCACB8F33CDC322A6C60F78 /* libPods-SymbolMobileWallet.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-SymbolMobileWallet.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		60801E6A6180448798E0229B /* Carbon-Thin.otf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "Carbon-Thin.otf"; path = "../src/assets/fonts/Carbon-Thin.otf"; sourceTree = "<group>"; };
+		6B1F36E085634AD6AD39BE4F /* Protipo-Light-Italic.otf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "Protipo-Light-Italic.otf"; path = "../src/assets/fonts/Protipo-Light-Italic.otf"; sourceTree = "<group>"; };
+		72757842BA794A2E866D1DC9 /* Protipo-Light.otf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "Protipo-Light.otf"; path = "../src/assets/fonts/Protipo-Light.otf"; sourceTree = "<group>"; };
 		81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = LaunchScreen.storyboard; path = SymbolMobileWallet/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		89C6BE57DB24E9ADA2F236DE /* Pods-SymbolMobileWallet-SymbolMobileWalletTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-SymbolMobileWallet-SymbolMobileWalletTests.release.xcconfig"; path = "Target Support Files/Pods-SymbolMobileWallet-SymbolMobileWalletTests/Pods-SymbolMobileWallet-SymbolMobileWalletTests.release.xcconfig"; sourceTree = "<group>"; };
+		8E694F4D64904F7A885B5D63 /* Carbon-Bold-Italic.otf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "Carbon-Bold-Italic.otf"; path = "../src/assets/fonts/Carbon-Bold-Italic.otf"; sourceTree = "<group>"; };
+		91DE3FA62B3D4492A63B84CA /* Protipo-Regular.otf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "Protipo-Regular.otf"; path = "../src/assets/fonts/Protipo-Regular.otf"; sourceTree = "<group>"; };
+		93B83A6C06484BB89BD0AA11 /* Rajdhani-Medium.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "Rajdhani-Medium.ttf"; path = "../src/assets/fonts/Rajdhani-Medium.ttf"; sourceTree = "<group>"; };
+		957110B6A98B4513A3FA23EC /* Protipo-Bold-Italic.otf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "Protipo-Bold-Italic.otf"; path = "../src/assets/fonts/Protipo-Bold-Italic.otf"; sourceTree = "<group>"; };
+		9C849DCD4D5F441783D4FE68 /* Rajdhani-Light.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "Rajdhani-Light.ttf"; path = "../src/assets/fonts/Rajdhani-Light.ttf"; sourceTree = "<group>"; };
+		A403BC1566FE4E37B2DAA735 /* Protipo-Semibold-Italic.otf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "Protipo-Semibold-Italic.otf"; path = "../src/assets/fonts/Protipo-Semibold-Italic.otf"; sourceTree = "<group>"; };
+		A708FDF4397C410997474DAA /* Protipo-Extrabold-Italic.otf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "Protipo-Extrabold-Italic.otf"; path = "../src/assets/fonts/Protipo-Extrabold-Italic.otf"; sourceTree = "<group>"; };
+		B165072A012647C4AE9FF824 /* Rajdhani-Regular.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "Rajdhani-Regular.ttf"; path = "../src/assets/fonts/Rajdhani-Regular.ttf"; sourceTree = "<group>"; };
+		B2B66F2159FD4BD29997BFAF /* Protipo-Regular-Italic.otf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "Protipo-Regular-Italic.otf"; path = "../src/assets/fonts/Protipo-Regular-Italic.otf"; sourceTree = "<group>"; };
+		C531C38BC5D244818AA09A21 /* Carbon-Regular-Italic.otf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "Carbon-Regular-Italic.otf"; path = "../src/assets/fonts/Carbon-Regular-Italic.otf"; sourceTree = "<group>"; };
+		D4A7263495AC479486EACE20 /* Protipo-Medium-Italic.otf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "Protipo-Medium-Italic.otf"; path = "../src/assets/fonts/Protipo-Medium-Italic.otf"; sourceTree = "<group>"; };
+		E2D34C28F460410DA752653E /* Carbon-Bold.otf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "Carbon-Bold.otf"; path = "../src/assets/fonts/Carbon-Bold.otf"; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
-		8E694F4D64904F7A885B5D63 /* Carbon-Bold-Italic.otf */ = {isa = PBXFileReference; name = "Carbon-Bold-Italic.otf"; path = "../src/assets/fonts/Carbon-Bold-Italic.otf"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
-		E2D34C28F460410DA752653E /* Carbon-Bold.otf */ = {isa = PBXFileReference; name = "Carbon-Bold.otf"; path = "../src/assets/fonts/Carbon-Bold.otf"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
-		C531C38BC5D244818AA09A21 /* Carbon-Regular-Italic.otf */ = {isa = PBXFileReference; name = "Carbon-Regular-Italic.otf"; path = "../src/assets/fonts/Carbon-Regular-Italic.otf"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
-		F3D2F271F96E497483AE76E2 /* Carbon-Regular.otf */ = {isa = PBXFileReference; name = "Carbon-Regular.otf"; path = "../src/assets/fonts/Carbon-Regular.otf"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
-		5AEFCE8FE6DF4FACBB831801 /* Carbon-Thin-Italic.otf */ = {isa = PBXFileReference; name = "Carbon-Thin-Italic.otf"; path = "../src/assets/fonts/Carbon-Thin-Italic.otf"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
-		60801E6A6180448798E0229B /* Carbon-Thin.otf */ = {isa = PBXFileReference; name = "Carbon-Thin.otf"; path = "../src/assets/fonts/Carbon-Thin.otf"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
-		957110B6A98B4513A3FA23EC /* Protipo-Bold-Italic.otf */ = {isa = PBXFileReference; name = "Protipo-Bold-Italic.otf"; path = "../src/assets/fonts/Protipo-Bold-Italic.otf"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
-		160BE945B20944199A2345DC /* Protipo-Bold.otf */ = {isa = PBXFileReference; name = "Protipo-Bold.otf"; path = "../src/assets/fonts/Protipo-Bold.otf"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
-		A708FDF4397C410997474DAA /* Protipo-Extrabold-Italic.otf */ = {isa = PBXFileReference; name = "Protipo-Extrabold-Italic.otf"; path = "../src/assets/fonts/Protipo-Extrabold-Italic.otf"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
-		59B8345A66D2454CBD2A4A63 /* Protipo-Extrabold.otf */ = {isa = PBXFileReference; name = "Protipo-Extrabold.otf"; path = "../src/assets/fonts/Protipo-Extrabold.otf"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
-		6B1F36E085634AD6AD39BE4F /* Protipo-Light-Italic.otf */ = {isa = PBXFileReference; name = "Protipo-Light-Italic.otf"; path = "../src/assets/fonts/Protipo-Light-Italic.otf"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
-		72757842BA794A2E866D1DC9 /* Protipo-Light.otf */ = {isa = PBXFileReference; name = "Protipo-Light.otf"; path = "../src/assets/fonts/Protipo-Light.otf"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
-		D4A7263495AC479486EACE20 /* Protipo-Medium-Italic.otf */ = {isa = PBXFileReference; name = "Protipo-Medium-Italic.otf"; path = "../src/assets/fonts/Protipo-Medium-Italic.otf"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
-		4170550CB97044DF9DC71DF9 /* Protipo-Medium.otf */ = {isa = PBXFileReference; name = "Protipo-Medium.otf"; path = "../src/assets/fonts/Protipo-Medium.otf"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
-		B2B66F2159FD4BD29997BFAF /* Protipo-Regular-Italic.otf */ = {isa = PBXFileReference; name = "Protipo-Regular-Italic.otf"; path = "../src/assets/fonts/Protipo-Regular-Italic.otf"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
-		91DE3FA62B3D4492A63B84CA /* Protipo-Regular.otf */ = {isa = PBXFileReference; name = "Protipo-Regular.otf"; path = "../src/assets/fonts/Protipo-Regular.otf"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
-		A403BC1566FE4E37B2DAA735 /* Protipo-Semibold-Italic.otf */ = {isa = PBXFileReference; name = "Protipo-Semibold-Italic.otf"; path = "../src/assets/fonts/Protipo-Semibold-Italic.otf"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
-		1CA1BEF6966D491B9C7B6F09 /* Protipo-Semibold.otf */ = {isa = PBXFileReference; name = "Protipo-Semibold.otf"; path = "../src/assets/fonts/Protipo-Semibold.otf"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
-		4F5C9DCF0E72423A874CCC1B /* Rajdhani-Bold.ttf */ = {isa = PBXFileReference; name = "Rajdhani-Bold.ttf"; path = "../src/assets/fonts/Rajdhani-Bold.ttf"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
-		9C849DCD4D5F441783D4FE68 /* Rajdhani-Light.ttf */ = {isa = PBXFileReference; name = "Rajdhani-Light.ttf"; path = "../src/assets/fonts/Rajdhani-Light.ttf"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
-		93B83A6C06484BB89BD0AA11 /* Rajdhani-Medium.ttf */ = {isa = PBXFileReference; name = "Rajdhani-Medium.ttf"; path = "../src/assets/fonts/Rajdhani-Medium.ttf"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
-		B165072A012647C4AE9FF824 /* Rajdhani-Regular.ttf */ = {isa = PBXFileReference; name = "Rajdhani-Regular.ttf"; path = "../src/assets/fonts/Rajdhani-Regular.ttf"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
-		3DDC4D41C0BD495D92453579 /* Rajdhani-SemiBold.ttf */ = {isa = PBXFileReference; name = "Rajdhani-SemiBold.ttf"; path = "../src/assets/fonts/Rajdhani-SemiBold.ttf"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
+		F3D2F271F96E497483AE76E2 /* Carbon-Regular.otf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "Carbon-Regular.otf"; path = "../src/assets/fonts/Carbon-Regular.otf"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -152,6 +152,37 @@
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
+		2FA0B80D1BA243578F3F9AAF /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				8E694F4D64904F7A885B5D63 /* Carbon-Bold-Italic.otf */,
+				E2D34C28F460410DA752653E /* Carbon-Bold.otf */,
+				C531C38BC5D244818AA09A21 /* Carbon-Regular-Italic.otf */,
+				F3D2F271F96E497483AE76E2 /* Carbon-Regular.otf */,
+				5AEFCE8FE6DF4FACBB831801 /* Carbon-Thin-Italic.otf */,
+				60801E6A6180448798E0229B /* Carbon-Thin.otf */,
+				957110B6A98B4513A3FA23EC /* Protipo-Bold-Italic.otf */,
+				160BE945B20944199A2345DC /* Protipo-Bold.otf */,
+				A708FDF4397C410997474DAA /* Protipo-Extrabold-Italic.otf */,
+				59B8345A66D2454CBD2A4A63 /* Protipo-Extrabold.otf */,
+				6B1F36E085634AD6AD39BE4F /* Protipo-Light-Italic.otf */,
+				72757842BA794A2E866D1DC9 /* Protipo-Light.otf */,
+				D4A7263495AC479486EACE20 /* Protipo-Medium-Italic.otf */,
+				4170550CB97044DF9DC71DF9 /* Protipo-Medium.otf */,
+				B2B66F2159FD4BD29997BFAF /* Protipo-Regular-Italic.otf */,
+				91DE3FA62B3D4492A63B84CA /* Protipo-Regular.otf */,
+				A403BC1566FE4E37B2DAA735 /* Protipo-Semibold-Italic.otf */,
+				1CA1BEF6966D491B9C7B6F09 /* Protipo-Semibold.otf */,
+				4F5C9DCF0E72423A874CCC1B /* Rajdhani-Bold.ttf */,
+				9C849DCD4D5F441783D4FE68 /* Rajdhani-Light.ttf */,
+				93B83A6C06484BB89BD0AA11 /* Rajdhani-Medium.ttf */,
+				B165072A012647C4AE9FF824 /* Rajdhani-Regular.ttf */,
+				3DDC4D41C0BD495D92453579 /* Rajdhani-SemiBold.ttf */,
+			);
+			name = Resources;
+			path = "";
+			sourceTree = "<group>";
+		};
 		832341AE1AAA6A7D00B99B32 /* Libraries */ = {
 			isa = PBXGroup;
 			children = (
@@ -194,37 +225,6 @@
 			);
 			path = Pods;
 			sourceTree = "<group>";
-		};
-		2FA0B80D1BA243578F3F9AAF /* Resources */ = {
-			isa = "PBXGroup";
-			children = (
-				8E694F4D64904F7A885B5D63 /* Carbon-Bold-Italic.otf */,
-				E2D34C28F460410DA752653E /* Carbon-Bold.otf */,
-				C531C38BC5D244818AA09A21 /* Carbon-Regular-Italic.otf */,
-				F3D2F271F96E497483AE76E2 /* Carbon-Regular.otf */,
-				5AEFCE8FE6DF4FACBB831801 /* Carbon-Thin-Italic.otf */,
-				60801E6A6180448798E0229B /* Carbon-Thin.otf */,
-				957110B6A98B4513A3FA23EC /* Protipo-Bold-Italic.otf */,
-				160BE945B20944199A2345DC /* Protipo-Bold.otf */,
-				A708FDF4397C410997474DAA /* Protipo-Extrabold-Italic.otf */,
-				59B8345A66D2454CBD2A4A63 /* Protipo-Extrabold.otf */,
-				6B1F36E085634AD6AD39BE4F /* Protipo-Light-Italic.otf */,
-				72757842BA794A2E866D1DC9 /* Protipo-Light.otf */,
-				D4A7263495AC479486EACE20 /* Protipo-Medium-Italic.otf */,
-				4170550CB97044DF9DC71DF9 /* Protipo-Medium.otf */,
-				B2B66F2159FD4BD29997BFAF /* Protipo-Regular-Italic.otf */,
-				91DE3FA62B3D4492A63B84CA /* Protipo-Regular.otf */,
-				A403BC1566FE4E37B2DAA735 /* Protipo-Semibold-Italic.otf */,
-				1CA1BEF6966D491B9C7B6F09 /* Protipo-Semibold.otf */,
-				4F5C9DCF0E72423A874CCC1B /* Rajdhani-Bold.ttf */,
-				9C849DCD4D5F441783D4FE68 /* Rajdhani-Light.ttf */,
-				93B83A6C06484BB89BD0AA11 /* Rajdhani-Medium.ttf */,
-				B165072A012647C4AE9FF824 /* Rajdhani-Regular.ttf */,
-				3DDC4D41C0BD495D92453579 /* Rajdhani-SemiBold.ttf */,
-			);
-			name = Resources;
-			sourceTree = "<group>";
-			path = "";
 		};
 /* End PBXGroup section */
 
@@ -663,7 +663,7 @@
 				COPY_PHASE_STRIP = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
-				"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = "";
+				"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = i386;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
@@ -697,6 +697,7 @@
 					"-DFOLLY_MOBILE=1",
 					"-DFOLLY_USE_LIBCPP=1",
 				);
+				REACT_NATIVE_PATH = "${PODS_ROOT}/../../node_modules/react-native";
 				SDKROOT = iphoneos;
 			};
 			name = Debug;
@@ -734,7 +735,7 @@
 				COPY_PHASE_STRIP = YES;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
-				"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = "";
+				"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = i386;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
@@ -760,6 +761,7 @@
 					"-DFOLLY_MOBILE=1",
 					"-DFOLLY_USE_LIBCPP=1",
 				);
+				REACT_NATIVE_PATH = "${PODS_ROOT}/../../node_modules/react-native";
 				SDKROOT = iphoneos;
 				VALIDATE_PRODUCT = YES;
 			};
