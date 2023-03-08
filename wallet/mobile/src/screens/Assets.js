@@ -60,6 +60,7 @@ export const Assets = connect((state) => ({
             <SectionList
                 refreshControl={<RefreshControl refreshing={isLoading} onRefresh={fetchData} />}
                 ListHeaderComponent={<Filter data={filterConfig} value={filter} onChange={setFilter} />}
+                stickySectionHeadersEnabled={false}
                 sections={sections}
                 keyExtractor={(item, section) => section.group + item.id}
                 renderItem={({ item, section }) => (
