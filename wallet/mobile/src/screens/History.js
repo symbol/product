@@ -148,6 +148,7 @@ export const History = connect((state) => ({
                 refreshControl={<RefreshControl refreshing={isLoading} onRefresh={fetchTransactions} />}
                 onEndReached={onEndReached}
                 onEndReachedThreshold={1}
+                stickySectionHeadersEnabled={false}
                 contentContainerStyle={styles.listContainer}
                 sections={sections}
                 ListEmptyComponent={!isLoading && (
