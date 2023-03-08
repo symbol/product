@@ -1,17 +1,14 @@
 import React from 'react';
 import { Image, StyleSheet, View } from 'react-native';
-import { TouchableHighlight, TouchableNativeFeedback } from 'react-native-gesture-handler';
 import { useRoute } from '@react-navigation/native';
-import { StyledText } from 'src/components';
+import { StyledText, TouchableNative } from 'src/components';
 import { Router } from 'src/Router';
 import { borders, colors } from 'src/styles';
 import { $t } from 'src/localization';
 
 export const TabNavigator = () => {
     const routeName = useRoute().name;
-    const Touchable = Platform.OS === 'android' ? TouchableNativeFeedback : TouchableHighlight;
-    const touchableBackground =
-        Platform.OS === 'android' ? TouchableNativeFeedback.Ripple(colors.bgTabsNavigatorActive) : colors.bgTabsNavigatorActive;
+    const touchableBackground = colors.bgTabsNavigatorActive;
 
     const tabs = [
         {
@@ -59,12 +56,12 @@ export const TabNavigator = () => {
         <View style={styles.root}>
             {tabs.map((tab, index) => (
                 <View style={getItemStyle(tab)} key={'tab' + index}>
-                    <Touchable background={touchableBackground} style={styles.touchable} onPress={tab.handler}>
+                    <TouchableNative color={touchableBackground} style={styles.touchable} onPress={tab.handler}>
                         <Image source={getIconSrc(tab)} style={styles.icon} />
                         <StyledText type="tab" style={getTitleStyle(tab)}>
                             {tab.title}
                         </StyledText>
-                    </Touchable>
+                    </TouchableNative>
                 </View>
             ))}
         </View>
