@@ -284,6 +284,7 @@ const styles = StyleSheet.create({
         backgroundColor: colors.bgCard,
         borderRadius: borders.borderRadius,
         padding: spacings.padding,
+        overflow: 'hidden'
     },
     signerName: {
         ...fonts.transactionSignerName,
