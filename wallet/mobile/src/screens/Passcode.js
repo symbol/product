@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { DeviceEventEmitter, Image, StyleSheet, View } from 'react-native';
 import PINCode, { hasUserSetPinCode } from '@haskkor/react-native-pincode';
 import { colors, fonts } from 'src/styles';
-import { LoadingIndicator } from 'src/components';
+import { ButtonPlain, LoadingIndicator } from 'src/components';
+import { $t } from 'src/localization';
 
 const translate = (_) => _;
 
@@ -16,9 +17,9 @@ export const Passcode = (props) => {
         DeviceEventEmitter.emit(successEvent);
     };
     // TODO: implement cancel button
-    // const onCancel = () => {
-    //     DeviceEventEmitter.emit(cancelEvent);
-    // };
+    const onCancel = () => {
+        DeviceEventEmitter.emit(cancelEvent);
+    };
 
     useEffect(() => {
         const loadStatus = async () => {
@@ -71,7 +72,9 @@ export const Passcode = (props) => {
                     customBackSpaceIcon={() => (
                         <Image source={require('src/assets/images/icon-backspace.png')} style={styles.buttonDelete} />
                     )}
-                    // bottomLeftComponent={null}
+                    bottomLeftComponent={() => (
+                        <ButtonPlain title={$t('button_cancel')} onPress={onCancel} style={{flex: 1}}/>
+                    )}
                     finishProcess={onFinish}
                     touchIDDisabled={type === 'choose'}
                 />

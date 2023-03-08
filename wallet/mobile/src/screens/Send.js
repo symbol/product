@@ -93,12 +93,17 @@ export const Send = connect((state) => ({
     const [send] = useDataManager(
         async () => {
             await TransactionService.sendTransferTransaction(transaction, currentAccount, networkProperties);
+            Router.goBack();
             toggleSuccessAlert();
         },
         null,
         handleError
     );
     const confirmSend = usePasscode('enter', send, Router.goBack);
+    const handleConfirmPress = () => {
+        toggleConfirm();
+        confirmSend();
+    }
 
     useEffect(() => {
         if (transactionFees.medium) {
@@ -187,7 +192,7 @@ export const Send = connect((state) => ({
                 title={$t('form_transfer_confirm_title')}
                 body={<TableView data={transaction} />}
                 isVisible={isConfirmVisible}
-                onSuccess={confirmSend}
+                onSuccess={handleConfirmPress}
                 onCancel={toggleConfirm}
             />
             <DialogBox
