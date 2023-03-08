@@ -3,11 +3,13 @@ import { StyleSheet, Text, TextInput, View } from 'react-native';
 import Animated, { interpolateColor, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { borders, colors, fonts, spacings, timings } from 'src/styles';
 
+const MULTILINE_NUMBER_OF_LINES = 7;
+
 export const TextBox = (props) => {
     const { testID, contentRight, multiline, keyboardType, nativePlaceholder, title, value, errorMessage, innerRef, onChange } = props;
     const isFocused = useSharedValue(false);
     const styleInput = multiline ? [styles.input, styles.inputMultiline] : [styles.input];
-    const numberOfLines = multiline ? 7 : 1;
+    const numberOfLines = multiline ? MULTILINE_NUMBER_OF_LINES : 1;
     const colorStrokeNormal = errorMessage ? colors.danger : colors.controlBaseStroke;
     const colorStrokeFocussed = errorMessage ? colors.danger : colors.controlBaseFocussedStroke;
     const animatedContainer = useAnimatedStyle(() => ({
@@ -62,20 +64,22 @@ const styles = StyleSheet.create({
     title: {
         ...fonts.placeholder,
         color: colors.controlBasePlaceholder,
+        marginTop: -fonts.placeholder.fontSize / 2,
     },
     inputContainer: {
         flex: 1,
+        flexDirection: 'column',
+        justifyContent: 'center',
         paddingHorizontal: spacings.margin,
     },
     input: {
         ...fonts.textBox,
-        marginVertical: -fonts.textBox.fontSize,
-        paddingLeft: 0,
         color: colors.controlBaseText,
     },
     inputMultiline: {
         textAlignVertical: 'top',
         marginVertical: 0,
+        minHeight: fonts.textBox.fontSize * (MULTILINE_NUMBER_OF_LINES + 1),
     },
     errorMessage: {
         ...fonts.body,
