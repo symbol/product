@@ -6,6 +6,7 @@ import { AccountCardWidget, Alert, FormItem, Screen, StyledText, TabNavigator, T
 import { $t } from 'src/localization';
 import { Router } from 'src/Router';
 import store, { connect } from 'src/store';
+import { colors } from 'src/styles';
 import { handleError, useDataManager, useInit } from 'src/utils';
 import { AddressBookListWidget } from './AddressBookList';
 import { HistoryWidget } from './History';
@@ -49,7 +50,7 @@ export const Home = connect((state) => ({
 
     return (
         <Screen titleBar={<TitleBar accountSelector settings currentAccount={currentAccount} />} navigator={<TabNavigator />}>
-            <ScrollView refreshControl={<RefreshControl refreshing={isLoading} onRefresh={loadState} />}>
+            <ScrollView refreshControl={<RefreshControl tintColor={colors.primary} refreshing={isLoading} onRefresh={loadState} />}>
                 <Animated.View entering={FadeInUp}>
                     <FormItem>
                         <AccountCardWidget
