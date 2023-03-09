@@ -1,10 +1,11 @@
 import React from 'react';
-import { BackHandler, Image, StyleSheet, View } from 'react-native';
+import { Image, StyleSheet, View } from 'react-native';
 import { FlatList } from 'react-native-gesture-handler';
 import Animated, { FadeInRight } from 'react-native-reanimated';
 import { DialogBox, DropdownModal, FormItem, Screen, StyledText, TouchableNative } from 'src/components';
-import { $t, getLanguages, setCurrentLanguage } from 'src/localization';
+import { $t, getLanguages, initLocalization, setCurrentLanguage } from 'src/localization';
 import { Router } from 'src/Router';
+import store from 'src/store';
 import { borders, colors, fonts, layout, spacings } from 'src/styles';
 import { clearCache, usePasscode, useToggle } from 'src/utils';
 
@@ -49,11 +50,18 @@ export const Settings = () => {
         setCurrentLanguage(language);
         Router.goToHome();
     };
-    const logoutConfirm = () => {
+    const logoutConfirm = async () => {
         clearCache();
-        BackHandler.exitApp();
+        initLocalization();
+        await store.dispatchAction({ type: 'wallet/loadAll' });
+        store.dispatchAction({ type: 'network/connect' });
+        Router.goToWelcome();
     };
-    const showLogoutPasscode = usePasscode('enter', logoutConfirm, Router.goBack);
+    const showLogoutPasscode = usePasscode('enter', logoutConfirm);
+    const handleLogoutPress = () => {
+        toggleLogoutConfirm();
+        showLogoutPasscode();
+    };
 
     return (
         <Screen>
@@ -89,7 +97,7 @@ export const Settings = () => {
                 title={$t('settings_logout_confirm_title')}
                 text={$t('settings_logout_confirm_text')}
                 isVisible={isLogoutConfirmVisible}
-                onSuccess={showLogoutPasscode}
+                onSuccess={handleLogoutPress}
                 onCancel={toggleLogoutConfirm}
             />
         </Screen>
