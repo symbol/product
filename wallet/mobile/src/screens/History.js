@@ -145,7 +145,7 @@ export const History = connect((state) => ({
     return (
         <Screen titleBar={<TitleBar accountSelector settings currentAccount={currentAccount} />} navigator={<TabNavigator />}>
             <SectionList
-                refreshControl={<RefreshControl refreshing={isLoading} onRefresh={fetchTransactions} />}
+                refreshControl={<RefreshControl tintColor={colors.primary} refreshing={isLoading} onRefresh={fetchTransactions} />}
                 onEndReached={onEndReached}
                 onEndReachedThreshold={1}
                 stickySectionHeadersEnabled={false}
