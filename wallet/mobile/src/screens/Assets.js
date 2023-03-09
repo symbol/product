@@ -5,6 +5,7 @@ import { Filter, FormItem, ItemAsset, Screen, StyledText, TabNavigator, TitleBar
 import { $t } from 'src/localization';
 import { Router } from 'src/Router';
 import store, { connect } from 'src/store';
+import { colors } from 'src/styles';
 import { handleError, useDataManager, useInit } from 'src/utils';
 
 export const Assets = connect((state) => ({
@@ -58,7 +59,7 @@ export const Assets = connect((state) => ({
     return (
         <Screen titleBar={<TitleBar accountSelector settings currentAccount={currentAccount} />} navigator={<TabNavigator />}>
             <SectionList
-                refreshControl={<RefreshControl refreshing={isLoading} onRefresh={fetchData} />}
+                refreshControl={<RefreshControl tintColor={colors.primary} refreshing={isLoading} onRefresh={fetchData} />}
                 ListHeaderComponent={<Filter data={filterConfig} value={filter} onChange={setFilter} />}
                 stickySectionHeadersEnabled={false}
                 sections={sections}
