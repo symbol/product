@@ -7,6 +7,7 @@ import { SymbolPaperWallet } from 'symbol-wallets-lib';
 import RNFetchBlob from 'rn-fetch-blob';
 import { Buffer } from 'buffer';
 import { networkIdentifierToNetworkType } from './network';
+import store from 'src/store';
 
 export const generateMnemonic = () => {
     return MnemonicPassPhrase.createRandom().plain;
@@ -33,6 +34,7 @@ export const createPrivateKeysFromMnemonic = (mnemonic, indexes, networkIdentifi
 export const clearCache = () => {
     SecureStorage.removeAll();
     PersistentStorage.removeAll();
+    store.reset();
     deleteUserPinCode();
 };
 
