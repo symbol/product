@@ -9,7 +9,7 @@ export const TextBox = (props) => {
     const { testID, contentRight, multiline, keyboardType, nativePlaceholder, title, value, errorMessage, innerRef, onChange } = props;
     const isFocused = useSharedValue(false);
     const styleInput = multiline ? [styles.input, styles.inputMultiline] : [styles.input];
-    const numberOfLines = multiline ? MULTILINE_NUMBER_OF_LINES : 1;
+    const numberOfLines = multiline ? MULTILINE_NUMBER_OF_LINES : null;
     const colorStrokeNormal = errorMessage ? colors.danger : colors.controlBaseStroke;
     const colorStrokeFocussed = errorMessage ? colors.danger : colors.controlBaseFocussedStroke;
     const animatedContainer = useAnimatedStyle(() => ({
@@ -75,10 +75,13 @@ const styles = StyleSheet.create({
     input: {
         ...fonts.textBox,
         color: colors.controlBaseText,
+        height: fonts.textBox.fontSize * 1.25,
+        padding: 0,
     },
     inputMultiline: {
         textAlignVertical: 'top',
         marginVertical: 0,
+        height: null,
         minHeight: fonts.textBox.fontSize * (MULTILINE_NUMBER_OF_LINES + 1),
     },
     errorMessage: {
