@@ -1,3 +1,4 @@
+import _ from 'lodash';
 import { applyMiddleware, createStore } from 'redux';
 import thunk from 'redux-thunk';
 import account from 'src/store/account';
@@ -16,8 +17,17 @@ const modules = {
     wallet,
 };
 
+const defaultRootState = {
+    account: account.state,
+    addressBook: addressBook.state,
+    listener: listener.state,
+    network: network.state,
+    transaction: transaction.state,
+    wallet: wallet.state,
+}
+
 const createModuleReducer = (module, state = {}, action) => {
-    if (!state[module.namespace]) state[module.namespace] = module.state;
+    if (!state[module.namespace]) state[module.namespace] = _.cloneDeep(module.state);
 
     const namespace = action.type.split('/')[0];
     const mutation = action.type.split('/')[1];
@@ -34,6 +44,10 @@ const createModuleReducer = (module, state = {}, action) => {
 };
 
 const createRootReducer = (state, action) => {
+    if (action.type === 'reset') {
+        return _.cloneDeep(defaultRootState);
+    }
+
     let rootState = { ...state };
 
     if (typeof action.type !== 'string') {
@@ -89,6 +103,14 @@ store.dispatchAction = ({ type, payload }) => {
             payload
         )
     );
+};
+
+store.reset = () => {
+    const state = store.getState();
+    console.log('state', state)
+    store.dispatch((dispatch) => dispatch({ type: 'reset' }));
+    const newstate = store.getState();
+    console.log('NEW', newstate)
 };
 
 export { connect } from 'react-redux';
