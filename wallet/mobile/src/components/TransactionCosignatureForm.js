@@ -57,7 +57,7 @@ export const TransactionCosignatureForm = connect((state) => ({
         null,
         handleError
     );
-    const confirmSend = usePasscode('enter', sign, Router.goBack);
+    const confirmSend = usePasscode('enter', sign);
     const addContact = (list) => {
         Router.goBack();
         Router.goToAddressBookEdit({ address: signerAddress, list });

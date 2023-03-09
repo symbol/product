@@ -52,7 +52,6 @@ export const CreateWallet = () => {
     );
     const next = () => (step === stepsCount ? createPasscode() : setStep(step + 1));
     const startLoading = () => {
-        Router.goBack();
         setIsLoading(true);
         setTimeout(() => setLoadingStep(2), 500);
         setTimeout(() => setLoadingStep(3), 1000);
@@ -76,7 +75,7 @@ export const CreateWallet = () => {
         null,
         handleError
     );
-    const createPasscode = usePasscode('choose', startLoading, Router.goBack);
+    const createPasscode = usePasscode('choose', startLoading);
 
     useEffect(() => {
         const mnemonic = generateMnemonic();

@@ -4,21 +4,31 @@ import PINCode, { hasUserSetPinCode } from '@haskkor/react-native-pincode';
 import { colors, fonts } from 'src/styles';
 import { ButtonPlain, LoadingIndicator } from 'src/components';
 import { $t } from 'src/localization';
+import { TouchableOpacity } from 'react-native-gesture-handler';
+import { Router } from 'src/Router';
 
 const translate = (_) => _;
 
 export const Passcode = (props) => {
-    const { route, keepListener } = props;
+    const { route, hideCancelButton, keepListener, keepNavigation } = props;
     const { successEvent, cancelEvent, type } = route.params;
     const [isLoading, setIsLoading] = useState(true);
     const maxAttempts = 20;
     const onFinish = () => {
         setIsLoading(true);
         DeviceEventEmitter.emit(successEvent);
+
+        if(!keepNavigation) {
+            Router.goBack();
+        }
     };
-    // TODO: implement cancel button
+
     const onCancel = () => {
         DeviceEventEmitter.emit(cancelEvent);
+        
+        if(!keepNavigation) {
+            Router.goBack();
+        }
     };
 
     useEffect(() => {
@@ -70,10 +80,12 @@ export const Passcode = (props) => {
                     stylePinCodeColumnDeleteButton={styles.buttonDelete}
                     styleLockScreenColorIcon={styles.buttonDelete}
                     customBackSpaceIcon={() => (
-                        <Image source={require('src/assets/images/icon-backspace.png')} style={styles.buttonDelete} />
+                        <Image source={require('src/assets/images/icon-backspace.png')} style={styles.button} />
                     )}
-                    bottomLeftComponent={() => (
-                        <ButtonPlain title={$t('button_cancel')} onPress={onCancel} style={{flex: 1}}/>
+                    bottomLeftComponent={() => !hideCancelButton && (
+                        <TouchableOpacity onPress={onCancel} style={styles.buttonCloseContainer} >
+                            <Image source={require('src/assets/images/icon-primary-close.png')} style={styles.button} />
+                        </TouchableOpacity>
                     )}
                     finishProcess={onFinish}
                     touchIDDisabled={type === 'choose'}
@@ -92,7 +104,11 @@ const styles = StyleSheet.create({
     styleMainContainer: {
         backgroundColor: colors.bgMain,
     },
-    buttonDelete: {
+    buttonCloseContainer: {
+        justifyContent:'center',
+        alignItems: 'center'
+    },
+    button: {
         height: '100%',
         width: 30,
         margin: 'auto',

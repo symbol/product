@@ -80,8 +80,6 @@ export const Harvesting = connect((state) => ({
     );
     const [start, isStarting] = useDataManager(
         async () => {
-            Router.goBack();
-            toggleStartConfirm();
             await HarvestingService.start(networkProperties, currentAccount, nodeUrl, linkedKeys, fee);
             setIsActionMade(true);
         },
@@ -90,8 +88,6 @@ export const Harvesting = connect((state) => ({
     );
     const [stop, isStopping] = useDataManager(
         async () => {
-            Router.goBack();
-            toggleStopConfirm();
             await HarvestingService.stop(networkProperties, currentAccount, linkedKeys, fee);
             setIsActionMade(true);
         },
@@ -104,8 +100,16 @@ export const Harvesting = connect((state) => ({
             fetchHarvestedBlocks();
         }
     }
-    const confirmStart = usePasscode('enter', start, Router.goBack);
-    const confirmStop = usePasscode('enter', stop, Router.goBack);
+    const confirmStart = usePasscode('enter', start);
+    const confirmStop = usePasscode('enter', stop);
+    const handleStartPress = () => {
+        toggleStartConfirm();
+        confirmStart();
+    };
+    const handleStopPress = () => {
+        toggleStopConfirm();
+        confirmStop();
+    };
 
     const latestAmountText = summary.latestAmount ? `+ ${summary.latestAmount} ${ticker}` : `0 ${ticker}`;
     const latestHeightText = summary.latestHeight ? `#${summary.latestHeight}` : $t('s_harvesting_harvested_nothing_to_show');
@@ -206,7 +210,7 @@ export const Harvesting = connect((state) => ({
 
     return (
         <Screen isLoading={isBlockedLoading}>
-            <ScrollView refreshControl={<RefreshControl refreshing={isLoading} onRefresh={loadData} />}>
+            <ScrollView refreshControl={<RefreshControl tintColor={colors.primary} refreshing={isLoading} onRefresh={loadData} />}>
                 <FormItem>
                     <StyledText type="title">{$t('s_harvesting_title')}</StyledText>
                     <StyledText type="body">{$t('s_harvesting_description')}</StyledText>
@@ -289,7 +293,7 @@ export const Harvesting = connect((state) => ({
                 text={$t('s_harvesting_confirm_start_description')}
                 body={<TableView style={{marginTop: spacings.margin}} data={confirmTableData}/>} 
                 isVisible={isStartConfirmVisible}
-                onSuccess={confirmStart}
+                onSuccess={handleStartPress}
                 onCancel={toggleStartConfirm}
             />
             <DialogBox
@@ -297,7 +301,7 @@ export const Harvesting = connect((state) => ({
                 title={$t('s_harvesting_confirm_stop_title')}
                 body={<TableView style={{marginTop: spacings.margin}} data={confirmTableData}/>} 
                 isVisible={isStopConfirmVisible}
-                onSuccess={confirmStop}
+                onSuccess={handleStopPress}
                 onCancel={toggleStopConfirm}
             />
         </Screen>
