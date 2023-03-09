@@ -54,7 +54,6 @@ export const ImportWallet = () => {
         handleError
     );
     const startLoading = () => {
-        Router.goBack();
         setIsLoading(true);
         setTimeout(() => setLoadingStep(2), 500);
         setTimeout(() => setLoadingStep(3), 1000);
@@ -63,8 +62,7 @@ export const ImportWallet = () => {
     const completeLoading = async () => {
         Router.goToHome();
     };
-    const createPasscode = usePasscode('choose', startLoading, Router.goBack);
-    const handleGoBackPress = () => !isLoading && Router.goBack();
+    const createPasscode = usePasscode('choose', startLoading);
 
     return (
         <Screen
@@ -76,7 +74,7 @@ export const ImportWallet = () => {
         >
             {isLoading && <WalletCreationAnimation steps={steps} currentStep={loadingStep} />}
             <FormItem>
-                <ButtonClose type="cancel" style={styles.buttonCancel} onPress={handleGoBackPress} />
+                <ButtonClose type="cancel" style={styles.buttonCancel} onPress={Router.goBack} />
             </FormItem>
             <FormItem>
                 <Image source={require('src/assets/images/logo-symbol-full.png')} style={styles.logo} />

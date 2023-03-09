@@ -9,8 +9,12 @@ export const usePasscode = (type, onSuccess, onCancel) => {
     return () => {
         const uniqueNumber = Math.floor(Date.now() / 1000);
         const eventId = `event.passcode.${uniqueNumber}`;
-        DeviceEventEmitter.addListener(eventId + successState, onSuccess);
-        DeviceEventEmitter.addListener(eventId + cancelState, onCancel);
+        if (onSuccess) {
+            DeviceEventEmitter.addListener(eventId + successState, onSuccess);
+        }
+        if (onCancel) {
+            DeviceEventEmitter.addListener(eventId + cancelState, onCancel);
+        }
 
         Router.goToPasscode({
             type,

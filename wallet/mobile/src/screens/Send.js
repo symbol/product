@@ -93,13 +93,12 @@ export const Send = connect((state) => ({
     const [send] = useDataManager(
         async () => {
             await TransactionService.sendTransferTransaction(transaction, currentAccount, networkProperties);
-            Router.goBack();
             toggleSuccessAlert();
         },
         null,
         handleError
     );
-    const confirmSend = usePasscode('enter', send, Router.goBack);
+    const confirmSend = usePasscode('enter', send);
     const handleConfirmPress = () => {
         toggleConfirm();
         confirmSend();

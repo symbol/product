@@ -74,7 +74,7 @@ const App = () => {
                         <FlashMessage 
                             animationDuration={200} titleStyle={flashMessageTextStyle} style={flashMessageStyle} />
                         <RouterView isActive={isMainContainerShown} />
-                        {isPasscodeShown && <Passcode keepListener route={{ params: passcodeParams }} />}
+                        {isPasscodeShown && <Passcode hideCancelButton keepListener keepNavigation route={{ params: passcodeParams }} />}
                     </Provider>
                 </SafeAreaView>
             </GestureHandlerRootView>

@@ -25,10 +25,7 @@ export const AccountDetails = connect((state) => ({
 
     const openBlockExplorer = () => Linking.openURL(config.explorerURL[networkIdentifier] + '/accounts/' + currentAccount.address);
     const openFaucet = () => Linking.openURL(config.faucetURL + '/?recipient=' + currentAccount.address);
-    const revealPrivateKey = usePasscode('enter', () => {
-        togglePrivateKeyDialog();
-        Router.goBack();
-    });
+    const revealPrivateKey = usePasscode('enter', togglePrivateKeyDialog);
 
     return (
         <Screen
