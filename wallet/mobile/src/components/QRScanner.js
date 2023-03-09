@@ -3,8 +3,8 @@ import { Modal, StyleSheet, View } from 'react-native';
 import { showMessage } from 'react-native-flash-message';
 import QRCodeScanner from 'react-native-qrcode-scanner';
 import { AccountQR, AddressQR, ContactQR, MnemonicQR } from 'symbol-qr-library';
-import { QRCode, StyledText } from 'src/components';
-import { colors } from 'src/styles';
+import { ButtonClose, QRCode, StyledText } from 'src/components';
+import { colors, spacings } from 'src/styles';
 import { getUnresolvedIdsFromTransactionDTOs, transferTransactionFromDTO, transferTransactionFromPayload } from 'src/utils';
 import { MosaicService } from 'src/services';
 import { $t } from 'src/localization';
@@ -84,6 +84,7 @@ export const QRScanner = (props) => {
                         onRead={handleScan}
                         topContent={<StyledText type="title">{$t('c_scanner_title')}</StyledText>}
                     />
+                    <ButtonClose type="cancel" style={styles.buttonCancel} onPress={onClose} />
                 </View>
             )}
         </Modal>
@@ -92,7 +93,13 @@ export const QRScanner = (props) => {
 
 const styles = StyleSheet.create({
     root: {
+        position: 'relative',
         backgroundColor: colors.bgForm,
         height: '100%',
+    },
+    buttonCancel: {
+        position: 'absolute',
+        right: spacings.margin,
+        top: spacings.margin
     },
 });
