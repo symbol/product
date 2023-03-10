@@ -77,6 +77,7 @@ export const colors = {
 export const fonts = {
     button: {
         fontFamily: 'Rajdhani-Bold',
+        fontWeight: '700',
         fontSize: 17,
         textTransform: 'uppercase',
     },
@@ -121,6 +122,7 @@ export const fonts = {
     },
     title: {
         fontFamily: 'Rajdhani-Bold',
+        fontWeight: '700',
         fontSize: 24,
         lineHeight: 26,
         textTransform: 'uppercase',
