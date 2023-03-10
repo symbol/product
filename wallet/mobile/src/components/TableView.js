@@ -160,10 +160,13 @@ export const TableView = connect((state) => ({
                             mosaic.name === 'symbol.xym'
                                 ? require('src/assets/images/icon-select-mosaic-native.png')
                                 : require('src/assets/images/icon-select-mosaic-custom.png');
+                        const getMosaicStyle = (index) => index === 0
+                            ? [styles.mosaic, { marginTop: 0 }]
+                            : styles.mosaic;
                         ItemTemplate = (
                             <View style={styles.col}>
                                 {item.value.map((mosaic, index) => (
-                                    <View style={styles.mosaic} key={'t_mos' + index}>
+                                    <View style={getMosaicStyle(index)} key={'t_mos' + index}>
                                         <Image source={getMosaicIconSrc(mosaic)} style={styles.mosaicIcon} />
                                         <View style={styles.mosaicBody}>
                                             <StyledText type="body">{mosaic.name}</StyledText>
@@ -245,7 +248,7 @@ const styles = StyleSheet.create({
         paddingLeft: spacings.paddingSm,
     },
     mosaic: {
-        marginBottom: spacings.margin / 2,
+        marginTop: spacings.margin / 2,
         flexDirection: 'row',
         alignItems: 'center',
     },
