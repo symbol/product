@@ -8,8 +8,10 @@ import { AccountAvatar, TableView, TouchableNative } from 'src/components';
 import { $t } from 'src/localization';
 import { connect } from 'src/store';
 import { borders, colors, fonts, spacings } from 'src/styles';
-import { filterCustomMosaics, getAddressName, getColorFromHash, trunc, useToggle } from 'src/utils';
+import { filterCustomMosaics, getAddressName, getColorFromHash, trunc } from 'src/utils';
 import { TransactionType } from 'symbol-sdk';
+
+const TABLE_MAX_HEIGHT = 500;
 
 export const TransactionGraphic = connect((state) => ({
     addressBook: state.addressBook.addressBook,
@@ -20,7 +22,7 @@ export const TransactionGraphic = connect((state) => ({
     ticker: state.network.ticker,
 }))(function TransactionGraphic(props) {
     const { transaction, ticker, addressBook, currentAccount, networkIdentifier, networkProperties, walletAccounts } = props;
-    const [isExpanded, toggle] = useToggle(false);
+    const [isExpanded, setIsExpanded] = useState(false);
     const [hasBeenExpanded, setHasBeenExpanded] = useState(false);
     const accounts = walletAccounts[networkIdentifier];
     const signerName = getAddressName(transaction.signerAddress, currentAccount, accounts, addressBook);
@@ -244,13 +246,18 @@ export const TransactionGraphic = connect((state) => ({
         if (!hasBeenExpanded) {
             setHasBeenExpanded(true);
         }
-        toggle();
-        tableMaxHeight.value = withTiming(isExpanded ? 0 : 500);
+        setIsExpanded(!isExpanded);
+        tableMaxHeight.value = withTiming(isExpanded ? 0 : TABLE_MAX_HEIGHT);
+    };
+    const expand = () => {
+        setHasBeenExpanded(true);
+        setIsExpanded(true);
+        tableMaxHeight.value = TABLE_MAX_HEIGHT;
     };
 
     useEffect(() => {
         if (props.isExpanded) {
-            handlePress();
+            setTimeout(expand);
         }
     }, [props.isExpanded]);
 
