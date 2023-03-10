@@ -8,10 +8,10 @@ import { layout } from 'src/styles';
 
 export const Receive = connect((state) => ({
     currentAccount: state.account.current,
+    isAccountReady: state.account.isReady,
     networkProperties: state.network.networkProperties,
-    ticker: state.network.ticker,
 }))(function Receive(props) {
-    const { currentAccount, networkProperties } = props;
+    const { currentAccount, isAccountReady, networkProperties } = props;
     const [amount, setAmount] = useState('0');
     const [message, setMessage] = useState('');
 
@@ -30,7 +30,7 @@ export const Receive = connect((state) => ({
     const tableData = _.pick(transaction, 'recipientAddress');
 
     return (
-        <Screen>
+        <Screen isLoading={!isAccountReady}>
             <ScrollView>
                 <FormItem>
                     <Widget>
