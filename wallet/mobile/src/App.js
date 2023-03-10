@@ -13,7 +13,7 @@ import { initLocalization } from './localization';
 import { Router, RouterView } from './Router';
 import { colors, fonts, layout } from './styles';
 
-const appBackgroundColor = { backgroundColor: colors.bgGray };
+const appBackgroundColor = { backgroundColor: colors.bgStatusbar };
 const flashMessageStyle = { backgroundColor: colors.bgForm, borderBottomColor: colors.primary, borderBottomWidth: 2 };
 const flashMessageTextStyle = { ...fonts.notification };
 
@@ -68,7 +68,7 @@ const App = () => {
         <>
             <GestureHandlerRootView style={[layout.fill, appBackgroundColor]}>
                 <SafeAreaView style={layout.fill}>
-                    <StatusBar backgroundColor={colors.bgStatusbar} />
+                    <StatusBar backgroundColor={colors.bgStatusbar} barStyle="light-content" />
                     <Provider store={store}>
                         {isMainContainerShown && <ConnectionStatus />}
                         <FlashMessage 
