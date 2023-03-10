@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { BackHandler, DeviceEventEmitter, SafeAreaView, StatusBar } from 'react-native';
+import { BackHandler, DeviceEventEmitter, SafeAreaView, StatusBar, View } from 'react-native';
 import { Provider } from 'react-redux';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { hasUserSetPinCode } from '@haskkor/react-native-pincode';
@@ -67,16 +67,18 @@ const App = () => {
 
     return (
         <>
-            <GestureHandlerRootView style={unsafeAreaStyle}>
-                <SafeAreaView style={safeAreaStyle}>
-                    <StatusBar backgroundColor={colors.bgStatusbar} barStyle="light-content" />
-                    <Provider store={store}>
-                        {isMainContainerShown && <ConnectionStatus />}
-                        <FlashMessage 
-                            animationDuration={200} titleStyle={flashMessageTextStyle} style={flashMessageStyle} />
-                        <RouterView isActive={isMainContainerShown} />
-                        {isPasscodeShown && <Passcode hideCancelButton keepListener keepNavigation route={{ params: passcodeParams }} />}
-                    </Provider>
+            <GestureHandlerRootView style={layout.fill}>
+                <SafeAreaView style={unsafeAreaStyle}>
+                    <View style={safeAreaStyle}>
+                        <StatusBar backgroundColor={colors.bgStatusbar} barStyle="light-content" />
+                        <Provider store={store}>
+                            {isMainContainerShown && <ConnectionStatus />}
+                            <FlashMessage 
+                                animationDuration={200} titleStyle={flashMessageTextStyle} style={flashMessageStyle} />
+                            <RouterView isActive={isMainContainerShown} />
+                            {isPasscodeShown && <Passcode hideCancelButton keepListener keepNavigation route={{ params: passcodeParams }} />}
+                        </Provider>
+                    </View>
                 </SafeAreaView>
             </GestureHandlerRootView>
         </>
