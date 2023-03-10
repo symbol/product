@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Modal, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { StyledText, TextBox } from 'src/components';
 import { $t } from 'src/localization';
 import { borders, colors, fonts, spacings } from 'src/styles';
@@ -58,9 +58,10 @@ export const DialogBox = (props) => {
     useEffect(() => setPromptValue(''), [isVisible]);
 
     return (
-        <Modal animationType="fade" transparent visible={isVisible} onRequestClose={onCancel} style={styles.root}>
-            {isVisible && (
+        <Modal animationType="fade" transparent visible={isVisible} onRequestClose={onCancel}>
+            {isVisible && (    
                 <View style={styles.root}>
+                    <SafeAreaView style={styles.modalContainer}>
                     <View style={[styles.modal, style]}>
                         <View style={[styles.content, contentContainerStyle]}>
                             <StyledText type="title">{title}</StyledText>
@@ -80,7 +81,8 @@ export const DialogBox = (props) => {
                             ))}
                         </View>
                     </View>
-                </View>
+                    </SafeAreaView>
+                </View> 
             )}
         </Modal>
     );
@@ -94,9 +96,12 @@ const styles = StyleSheet.create({
         bottom: 0,
         top: 0,
         backgroundColor: '#000c',
-        justifyContent: 'center',
-        alignItems: 'center',
         padding: spacings.padding,
+    },
+    modalContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',  
     },
     modal: {
         width: '100%',
