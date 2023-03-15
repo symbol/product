@@ -1,5 +1,5 @@
 import React from 'react';
-import { Modal, StyleSheet, View } from 'react-native';
+import { Modal, SafeAreaView, StyleSheet, View } from 'react-native';
 import { showMessage } from 'react-native-flash-message';
 import QRCodeScanner from 'react-native-qrcode-scanner';
 import { AccountQR, AddressQR, ContactQR, MnemonicQR } from 'symbol-qr-library';
@@ -77,22 +77,24 @@ export const QRScanner = (props) => {
     return (
         <Modal animationType="fade" visible={isVisible} onRequestClose={onClose}>
             {isVisible && (
-                <View style={styles.root}>
-                    <QRCodeScanner
-                        checkAndroid6Permissions
-                        showMarker
-                        onRead={handleScan}
-                        topContent={<StyledText type="title">{$t('c_scanner_title')}</StyledText>}
-                    />
-                    <ButtonClose type="cancel" style={styles.buttonCancel} onPress={onClose} />
-                </View>
+                <SafeAreaView style={styles.container}>
+                    <View style={styles.container}>
+                        <QRCodeScanner
+                            checkAndroid6Permissions
+                            showMarker
+                            onRead={handleScan}
+                            topContent={<StyledText type="title">{$t('c_scanner_title')}</StyledText>}
+                        />
+                        <ButtonClose type="cancel" style={styles.buttonCancel} onPress={onClose} />
+                    </View>
+                </SafeAreaView>
             )}
         </Modal>
     );
 };
 
 const styles = StyleSheet.create({
-    root: {
+    container: {
         position: 'relative',
         backgroundColor: colors.bgForm,
         height: '100%',
