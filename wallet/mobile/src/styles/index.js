@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import { Easing } from 'react-native-reanimated';
 import DesignSystem from './designSystem.json';
 export { default as DesignSystem } from './designSystem.json';
@@ -77,7 +78,7 @@ export const colors = {
 export const fonts = {
     button: {
         fontFamily: 'Rajdhani-Bold',
-        fontWeight: '700',
+        fontWeight: Platform.select({ ios: '700', android: undefined }),
         fontSize: 17,
         textTransform: 'uppercase',
     },
@@ -122,7 +123,7 @@ export const fonts = {
     },
     title: {
         fontFamily: 'Rajdhani-Bold',
-        fontWeight: '700',
+        fontWeight: Platform.select({ ios: '700', android: undefined }),
         fontSize: 24,
         lineHeight: 26,
         textTransform: 'uppercase',
