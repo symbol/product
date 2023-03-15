@@ -16,7 +16,7 @@ import { colors, fonts, layout } from './styles';
 const unsafeAreaStyle = { ...layout.fill, backgroundColor: colors.bgStatusbar };
 const safeAreaStyle = { ...layout.fill, backgroundColor: colors.bgGray };
 const flashMessageStyle = { backgroundColor: colors.bgForm, borderBottomColor: colors.primary, borderBottomWidth: 2 };
-const flashMessageTextStyle = { ...fonts.notification };
+const flashMessageTextStyle = { ...fonts.notification, color: colors.primary };
 
 const App = () => {
     const [isPasscodeEnabled, setIsPasscodeEnabled] = useState(false);

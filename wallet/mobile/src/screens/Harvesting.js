@@ -116,7 +116,7 @@ export const Harvesting = connect((state) => ({
     const latestDateText = summary.latestDate ? formatDate(summary.latestDate, $t, true) : ' ';
     const amountPer30DaysText = summary.amountPer30Days ? `+ ${summary.amountPer30Days} ${ticker}` : `0 ${ticker}`;
     const blocksHarvestedPer30DaysText = $t('s_harvesting_harvested_blocks', {count: summary.blocksHarvestedPer30Days});
-    const isEnoughBalance = accountBalance > 10_000;
+    const isEnoughBalance = accountBalance > 10000;
     const isEnoughImportance = importance > 0;
     const isAccountEligibleForHarvesting = isEnoughBalance && isEnoughImportance;
     let warningText;
