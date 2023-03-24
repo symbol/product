@@ -1,3 +1,6 @@
+# pylint: disable=invalid-name
+
+
 import unittest
 
 from symbolchain.CryptoTypes import PublicKey
