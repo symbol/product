@@ -184,9 +184,9 @@ def test_get_api_symbol_nodes_peer(client):  # pylint: disable=redefined-outer-n
 	# Assert: spot check names
 	assert 200 == response.status_code
 	assert 'application/json' == response.headers['Content-Type']
-	assert 5 == len(response_json)
+	assert 6 == len(response_json)
 	assert [
-		'Apple', 'Shin-Kuma-Node', 'ibone74', 'jaguar', 'symbol.ooo maxUnlockedAccounts:100'
+		'Apple', 'Shin-Kuma-Node', 'ibone74', 'jaguar', 'symbol.ooo maxUnlockedAccounts:100', 'xym pool'
 	] == list(map(lambda descriptor: descriptor['name'], response_json))
 
 
@@ -211,7 +211,7 @@ def test_get_api_symbol_network_height_chart(client):  # pylint: disable=redefin
 	assert 200 == response.status_code
 	assert 'application/json' == response.headers['Content-Type']
 	assert 2 == len(response_json)
-	assert 4 == len(chart_json['data'])
+	assert 6 == len(chart_json['data'])
 	assert re.match(r'\d\d:\d\d', response_json['lastRefreshTime'])
 
 # endregion
