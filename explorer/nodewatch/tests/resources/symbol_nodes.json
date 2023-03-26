@@ -91,5 +91,27 @@
     "host": "02.symbol-node.net",
     "friendlyName": "Apple",
     "nodePublicKey": "FBEAFCB15D2674ECB8DC1CD2C028C4AC0D463489069FDD415F30BB71EAE69864"
+  },
+  {
+    "apiNodeInfo": {
+      "isHealth": true,
+      "isHttpsEnable": true,
+      "isWssEnable": true,
+      "restVersion": "2.4.2"
+    },
+    "extraData": {
+      "balance": 101027.849383,
+      "finalizedHeight": 1486740,
+      "height": 1486762
+    },
+    "friendlyName": "xym pool",
+    "host": "xym.pool.me",
+    "networkGenerationHashSeed": "57F7DA205008026C776CB6AED843393F04CD458E0AA2D9F1D5F31A402072B2D6",
+    "networkIdentifier": 104,
+    "nodePublicKey": "FE7D3DBE8DDD219E1B20247DEBF150D9411EA5A312989103B037EFBD9D237DE0",
+    "port": 7900,
+    "publicKey": "A54CC798373F42B569AF21845CD0EBE755AB42EA04B3B8E2BE897166F89A971C",
+    "roles": 3,
+    "version": 16777987
   }
 ]

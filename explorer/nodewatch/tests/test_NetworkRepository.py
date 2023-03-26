@@ -15,7 +15,9 @@ class NetworkRepositoryTest(unittest.TestCase):
 	def _assert_node_descriptor(self, descriptor, **kwargs):
 		property_names = [
 			'main_address', 'main_public_key', 'node_public_key',
-			'endpoint', 'name', 'height', 'finalized_height', 'version', 'balance', 'roles', 'has_api'
+			'endpoint', 'name', 'height', 'finalized_height', 'version', 'balance',
+			'is_healthy', 'is_https_enable', 'is_wss_enable', 'rest_version',
+			'roles', 'has_api'
 		]
 		for name in property_names:
 			self.assertEqual(kwargs[name], getattr(descriptor, name))
@@ -54,6 +56,10 @@ class NetworkRepositoryTest(unittest.TestCase):
 			version='0.6.100',
 			balance=3355922.652725,
 			roles=0xFF,
+			is_healthy=None,
+			is_https_enable=None,
+			is_wss_enable=None,
+			rest_version=None,
 			has_api=True)
 		self._assert_node_descriptor(
 			repository.node_descriptors[1],
@@ -67,6 +73,10 @@ class NetworkRepositoryTest(unittest.TestCase):
 			version='0.6.100',
 			balance=20612359.516967,
 			roles=0xFF,
+			is_healthy=None,
+			is_https_enable=None,
+			is_wss_enable=None,
+			rest_version=None,
 			has_api=True)
 		self._assert_node_descriptor(
 			repository.node_descriptors[2],
@@ -80,6 +90,10 @@ class NetworkRepositoryTest(unittest.TestCase):
 			version='0.6.99',
 			balance=0,
 			roles=0xFF,
+			is_healthy=None,
+			is_https_enable=None,
+			is_wss_enable=None,
+			rest_version=None,
 			has_api=True)  # simulates missing extraData
 		self._assert_node_descriptor(
 			repository.node_descriptors[3],
@@ -93,6 +107,10 @@ class NetworkRepositoryTest(unittest.TestCase):
 			version='0.6.100',
 			balance=0,
 			roles=0xFF,
+			is_healthy=None,
+			is_https_enable=None,
+			is_wss_enable=None,
+			rest_version=None,
 			has_api=True)  # simulates incomplete extraData
 
 	def test_can_load_zero_symbol_node_descriptors(self):
@@ -114,9 +132,9 @@ class NetworkRepositoryTest(unittest.TestCase):
 
 		# Assert: descriptors are sorted by name (desc)
 		self.assertFalse(repository.is_nem)
-		self.assertEqual(6, len(repository.node_descriptors))
+		self.assertEqual(7, len(repository.node_descriptors))
 		self.assertEqual(1486760, repository.estimate_height())  # median
-		self.assertEqual(1486740, repository.estimate_finalized_height())  # median (nonzero)
+		self.assertEqual(1486742, repository.estimate_finalized_height())  # median (nonzero)
 		self._assert_node_descriptor(
 			repository.node_descriptors[0],
 			main_address=SymbolAddress('NDZOZPTDVCFFLDCNJL7NZGDQDNBB7TY3V6SZNGI'),
@@ -129,6 +147,10 @@ class NetworkRepositoryTest(unittest.TestCase):
 			version='1.0.3.4',
 			balance=3155632.471994,
 			roles=2,
+			is_healthy=None,
+			is_https_enable=None,
+			is_wss_enable=None,
+			rest_version=None,
 			has_api=True)  # simulates missing host
 		self._assert_node_descriptor(
 			repository.node_descriptors[1],
@@ -142,6 +164,10 @@ class NetworkRepositoryTest(unittest.TestCase):
 			version='1.0.3.3',
 			balance=0,
 			roles=7,
+			is_healthy=None,
+			is_https_enable=None,
+			is_wss_enable=None,
+			rest_version=None,
 			has_api=True)  # old version mapped to 'failure'
 		self._assert_node_descriptor(
 			repository.node_descriptors[2],
@@ -155,6 +181,10 @@ class NetworkRepositoryTest(unittest.TestCase):
 			version='1.0.3.5',
 			balance=0,
 			roles=3,
+			is_healthy=None,
+			is_https_enable=None,
+			is_wss_enable=None,
+			rest_version=None,
 			has_api=True)  # simulates incomplete extraData
 		self._assert_node_descriptor(
 			repository.node_descriptors[3],
@@ -168,6 +198,10 @@ class NetworkRepositoryTest(unittest.TestCase):
 			version='1.0.3.5',
 			balance=82375.554976,
 			roles=3,
+			is_healthy=None,
+			is_https_enable=None,
+			is_wss_enable=None,
+			rest_version=None,
 			has_api=True)
 		self._assert_node_descriptor(
 			repository.node_descriptors[4],
@@ -181,6 +215,10 @@ class NetworkRepositoryTest(unittest.TestCase):
 			version='1.0.3.5',
 			balance=28083310.571743,
 			roles=5,
+			is_healthy=None,
+			is_https_enable=None,
+			is_wss_enable=None,
+			rest_version=None,
 			has_api=False)
 		self._assert_node_descriptor(
 			repository.node_descriptors[5],
@@ -194,7 +232,28 @@ class NetworkRepositoryTest(unittest.TestCase):
 			version='1.0.3.4',
 			balance=0,
 			roles=3,
+			is_healthy=None,
+			is_https_enable=None,
+			is_wss_enable=None,
+			rest_version=None,
 			has_api=True)  # simulates missing extraData
+		self._assert_node_descriptor(
+			repository.node_descriptors[6],
+			main_address=SymbolAddress('NAU6BZUX5GHI7EDE6DMS6GVHXS4XZFCNVRPT2OQ'),
+			main_public_key=PublicKey('A54CC798373F42B569AF21845CD0EBE755AB42EA04B3B8E2BE897166F89A971C'),
+			node_public_key=PublicKey('FE7D3DBE8DDD219E1B20247DEBF150D9411EA5A312989103B037EFBD9D237DE0'),
+			endpoint='http://xym.pool.me:3000',
+			name='xym pool',
+			height=2094498,
+			finalized_height=2094464,
+			version='1.0.3.3',
+			balance=101027.849383,
+			roles=3,
+			is_healthy=True,
+			is_https_enable=True,
+			is_wss_enable=True,
+			rest_version='2.4.2',
+			has_api=True)
 
 	def test_can_format_node_descriptor_as_json(self):
 		# Arrange:
@@ -214,6 +273,10 @@ class NetworkRepositoryTest(unittest.TestCase):
 			'finalizedHeight': 1486742,
 			'version': '1.0.3.5',
 			'balance': 28083310.571743,
+			'isHealthy': None,
+			'isHttpsEnable': None,
+			'isWssEnable': None,
+			'restVersion': None,
 			'roles': 5,
 		}, json_object)
 
@@ -235,6 +298,35 @@ class NetworkRepositoryTest(unittest.TestCase):
 			'finalizedHeight': 1486740,
 			'version': '1.0.3.5',
 			'balance': 82375.554976,
+			'isHealthy': None,
+			'isHttpsEnable': None,
+			'isWssEnable': None,
+			'restVersion': None,
+			'roles': 3,
+		}, json_object)
+
+	def test_can_format_node_descriptor_with_api_node_info_as_json(self):
+		# Arrange:
+		repository = NetworkRepository(SymbolNetwork.MAINNET, 'symbol')
+		repository.load_node_descriptors('tests/resources/symbol_nodes.json')
+
+		# Act:
+		json_object = repository.node_descriptors[6].to_json()
+
+		# Assert:
+		self.assertEqual({
+			'mainPublicKey': 'A54CC798373F42B569AF21845CD0EBE755AB42EA04B3B8E2BE897166F89A971C',
+			'nodePublicKey': 'FE7D3DBE8DDD219E1B20247DEBF150D9411EA5A312989103B037EFBD9D237DE0',
+			'endpoint': 'http://xym.pool.me:3000',
+			'name': 'xym pool',
+			'height': 2094498,
+			'finalizedHeight': 2094464,
+			'version': '1.0.3.3',
+			'balance': 101027.849383,
+			'isHealthy': True,
+			'isHttpsEnable': True,
+			'isWssEnable': True,
+			'restVersion': '2.4.2',
 			'roles': 3,
 		}, json_object)
 
