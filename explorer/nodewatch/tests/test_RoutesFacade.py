@@ -150,7 +150,7 @@ class NemRoutesFacadeTest(unittest.TestCase):
 		facade.reload_all(Path('tests/resources'), True)
 
 		# Act:
-		node_descriptors = facade.json_nodes(1)
+		node_descriptors = facade.json_nodes(role=1)
 
 		# Assert: spot check names and roles
 		self.assertEqual(4, len(node_descriptors))
@@ -361,7 +361,7 @@ class SymbolRoutesFacadeTest(unittest.TestCase):
 		facade.reload_all(Path('tests/resources'), True)
 
 		# Act:
-		node_descriptors = facade.json_nodes(1)
+		node_descriptors = facade.json_nodes(role=1)
 
 		# Assert: spot check names and roles
 		self.assertEqual(5, len(node_descriptors))
@@ -378,7 +378,7 @@ class SymbolRoutesFacadeTest(unittest.TestCase):
 		facade.reload_all(Path('tests/resources'), True)
 
 		# Act: select nodes with api role (role 2)
-		node_descriptors = facade.json_nodes(2)
+		node_descriptors = facade.json_nodes(role=2)
 
 		# Assert: spot check names and roles
 		self.assertEqual(5, len(node_descriptors))
@@ -395,7 +395,7 @@ class SymbolRoutesFacadeTest(unittest.TestCase):
 		facade.reload_all(Path('tests/resources'), True)
 
 		# Act: select nodes with only api role (role 2)
-		node_descriptors = facade.json_nodes(2, True)
+		node_descriptors = facade.json_nodes(role=2, exact_match=True)
 
 		# Assert: spot check names and roles
 		self.assertEqual(1, len(node_descriptors))

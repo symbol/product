@@ -13,16 +13,17 @@ from .RoutesFacade import MIN_HEIGHT_CLUSTER_SIZE, TIMESTAMP_FORMAT, NemRoutesFa
 
 
 class Field(Enum):
-	MAIN_PUBLIC_KEY = "mainPublicKey"
-	NODE_PUBLIC_KEY = "nodePublicKey"
+	MAIN_PUBLIC_KEY = 'mainPublicKey'
+	NODE_PUBLIC_KEY = 'nodePublicKey'
+
 
 def str_to_bool(value):
 	if value.lower() == 'true':
 		return True
-	elif value.lower() == 'false':
+	if value.lower() == 'false':
 		return False
-	else:
-		return None
+	return None
+
 
 def create_app():
 	# pylint: disable=too-many-locals
@@ -74,7 +75,7 @@ def create_app():
 
 	@app.route('/api/nem/nodes')
 	def api_nem_nodes():  # pylint: disable=unused-variable
-		return jsonify(nem_routes_facade.json_nodes(1))
+		return jsonify(nem_routes_facade.json_nodes(role=1))
 
 	@app.route('/api/nem/chart/height')
 	def api_nem_chart_height():  # pylint: disable=unused-variable

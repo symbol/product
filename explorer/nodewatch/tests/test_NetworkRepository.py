@@ -270,7 +270,7 @@ class NetworkRepositoryTest(unittest.TestCase):
 			is_https_enable=False,
 			is_wss_enable=False,
 			rest_version='2.4.2',
-			has_api=True) # simulates ssl disabled
+			has_api=True)  # simulates ssl disabled
 
 	def test_can_format_node_descriptor_as_json(self):
 		# Arrange:

@@ -1,7 +1,6 @@
 import asyncio
 import datetime
 import random
-from enum import Enum
 
 from zenlog import log
 
@@ -67,8 +66,14 @@ class BasicRoutesFacade:
 			'explorer_endpoint': self.explorer_endpoint
 		})
 
-	def json_nodes(self, role=None, exact_match=False, limit=None, ssl=None, order=None):
+	def json_nodes(self, **kwargs):
 		"""Returns all nodes with condition."""
+
+		role = kwargs.get('role', None)
+		exact_match = kwargs.get('exact_match', False)
+		limit = kwargs.get('limit', None)
+		ssl = kwargs.get('ssl', None)
+		order = kwargs.get('order', None)
 
 		def filter_custom(descriptor):
 			role_condition = True
