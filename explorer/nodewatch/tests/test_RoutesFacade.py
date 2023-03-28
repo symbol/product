@@ -226,7 +226,7 @@ class SymbolRoutesFacadeTest(unittest.TestCase):
 		self.assertEqual(True, result)
 		self.assertEqual(facade.last_reload_time, facade.last_refresh_time)
 
-		self.assertEqual(6, len(facade.repository.node_descriptors))
+		self.assertEqual(8, len(facade.repository.node_descriptors))
 		self.assertEqual(4, len(facade.repository.harvester_descriptors))
 		self.assertEqual(4, len(facade.repository.voter_descriptors))
 
@@ -243,7 +243,7 @@ class SymbolRoutesFacadeTest(unittest.TestCase):
 		self.assertEqual([True, False, False], [result1, result2, result3])
 		self.assertEqual(facade.last_reload_time, facade.last_refresh_time)
 
-		self.assertEqual(6, len(facade.repository.node_descriptors))
+		self.assertEqual(8, len(facade.repository.node_descriptors))
 		self.assertEqual(4, len(facade.repository.harvester_descriptors))
 		self.assertEqual(4, len(facade.repository.voter_descriptors))
 
@@ -293,9 +293,9 @@ class SymbolRoutesFacadeTest(unittest.TestCase):
 		self.assertEqual(4, len(context))
 		self.assertEqual('Symbol Nodes', context['title'])
 		self.assertEqual(
-			['Allnodes250', 'Apple', 'Shin-Kuma-Node', 'ibone74', 'jaguar', 'symbol.ooo maxUnlockedAccounts:100'],
+			['Allnodes250', 'Apple', 'Shin-Kuma-Node', 'ibone74', 'jaguar', 'symbol.ooo maxUnlockedAccounts:100', 'xym pool', 'yasmine farm'],
 			_get_names(context['descriptors']))
-		self.assertEqual([104] * 6, _get_network_bytes(context['descriptors']))
+		self.assertEqual([104] * 8, _get_network_bytes(context['descriptors']))
 		self.assertIsNotNone(context['version_to_css_class'])
 		self.assertEqual('<symbol_explorer>', context['explorer_endpoint'])
 
@@ -328,7 +328,7 @@ class SymbolRoutesFacadeTest(unittest.TestCase):
 		# Assert:
 		self.assertEqual('symbol_summary.html', template_name)
 		self.assertEqual(5, len(context))
-		self.assertEqual(4, len(json.loads(context['height_chart_json'])['data']))  # { height, finalized_height } x { 1.0.3.5, 1.0.3.4 }
+		self.assertEqual(6, len(json.loads(context['height_chart_json'])['data']))  # { height, finalized_height } x { 1.0.3.5, 1.0.3.4 }
 		self.assertEqual(4, len(json.loads(context['voting_power_chart_json'])['data']))  # 1.0.3.5, 1.0.3.4, 1.0.3.3, ''
 		self.assertEqual(4, len(json.loads(context['harvesting_power_chart_json'])['data']))  # 1.0.3.5, 1.0.3.4, 1.0.3.3, ''
 		self.assertEqual(4, len(json.loads(context['harvesting_count_chart_json'])['data']))  # 1.0.3.5, 1.0.3.4, 1.0.3.3, ''
@@ -364,12 +364,12 @@ class SymbolRoutesFacadeTest(unittest.TestCase):
 		node_descriptors = facade.json_nodes(role=1)
 
 		# Assert: spot check names and roles
-		self.assertEqual(5, len(node_descriptors))
+		self.assertEqual(7, len(node_descriptors))
 		self.assertEqual(
-			['Apple', 'Shin-Kuma-Node', 'ibone74', 'jaguar', 'symbol.ooo maxUnlockedAccounts:100'],
+			['Apple', 'Shin-Kuma-Node', 'ibone74', 'jaguar', 'symbol.ooo maxUnlockedAccounts:100', 'xym pool', 'yasmine farm'],
 			list(map(lambda descriptor: descriptor['name'], node_descriptors)))
 		self.assertEqual(
-			[7, 3, 3, 5, 3],
+			[7, 3, 3, 5, 3, 3, 3],
 			list(map(lambda descriptor: descriptor['roles'], node_descriptors)))
 
 	def test_can_generate_nodes_json_filtered(self):
@@ -381,12 +381,12 @@ class SymbolRoutesFacadeTest(unittest.TestCase):
 		node_descriptors = facade.json_nodes(role=2)
 
 		# Assert: spot check names and roles
-		self.assertEqual(5, len(node_descriptors))
+		self.assertEqual(7, len(node_descriptors))
 		self.assertEqual(
-			['Allnodes250', 'Apple', 'Shin-Kuma-Node', 'ibone74', 'symbol.ooo maxUnlockedAccounts:100'],
+			['Allnodes250', 'Apple', 'Shin-Kuma-Node', 'ibone74', 'symbol.ooo maxUnlockedAccounts:100', 'xym pool', 'yasmine farm'],
 			list(map(lambda descriptor: descriptor['name'], node_descriptors)))
 		self.assertEqual(
-			[2, 7, 3, 3, 3],
+			[2, 7, 3, 3, 3, 3, 3],
 			list(map(lambda descriptor: descriptor['roles'], node_descriptors)))
 
 	def test_can_generate_nodes_json_filtered_exact_match(self):
@@ -415,7 +415,7 @@ class SymbolRoutesFacadeTest(unittest.TestCase):
 		chart_json = json.loads(facade.json_height_chart())
 
 		# Assert: { height, finalized_height } x { 1.0.3.4, 1.0.3.5 }
-		self.assertEqual(4, len(chart_json['data']))
+		self.assertEqual(6, len(chart_json['data']))
 
 	def test_can_generate_height_chart_with_metadata_json(self):
 		# Arrange:
@@ -428,7 +428,7 @@ class SymbolRoutesFacadeTest(unittest.TestCase):
 
 		# Assert: { height, finalized_height } x { 1.0.3.4, 1.0.3.5 }
 		self.assertEqual(2, len(chart_with_metadata_json))
-		self.assertEqual(4, len(chart_json['data']))
+		self.assertEqual(6, len(chart_json['data']))
 		self.assertTrue(re.match(r'\d\d:\d\d', chart_with_metadata_json['lastRefreshTime']))
 
 	def test_can_retrieve_estimated_network_height_json(self):
