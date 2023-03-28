@@ -113,5 +113,27 @@
     "publicKey": "A54CC798373F42B569AF21845CD0EBE755AB42EA04B3B8E2BE897166F89A971C",
     "roles": 3,
     "version": 16777987
+  },
+  {
+    "apiNodeInfo": {
+      "isHealth": true,
+      "isHttpsEnable": false,
+      "isWssEnable": false,
+      "restVersion": "2.4.2"
+    },
+    "extraData": {
+      "balance": 99.98108,
+      "finalizedHeight": 1486740,
+      "height": 1486760
+    },
+    "friendlyName": "yasmine farm",
+    "host": "yasmine.farm.tokyo",
+    "networkGenerationHashSeed": "57F7DA205008026C776CB6AED843393F04CD458E0AA2D9F1D5F31A402072B2D6",
+    "networkIdentifier": 104,
+    "nodePublicKey": "D05BE3101F2916AA34839DDC1199BE45092103A9B66172FA3D05911DC041AADA",
+    "port": 7900,
+    "publicKey": "5B20F8F228FF0E064DB0DE7951155F6F41EF449D0EC10960067C2BF2DCD61874",
+    "roles": 3,
+    "version": 16777988
   }
 ]

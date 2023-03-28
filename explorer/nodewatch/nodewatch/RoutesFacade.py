@@ -1,5 +1,7 @@
 import asyncio
 import datetime
+import random
+from enum import Enum
 
 from zenlog import log
 
@@ -65,15 +67,40 @@ class BasicRoutesFacade:
 			'explorer_endpoint': self.explorer_endpoint
 		})
 
-	def json_nodes(self, role, exact_match=False):
-		"""Returns all nodes with matching role."""
+	def json_nodes(self, role=None, exact_match=False, limit=None, ssl=None, order=None):
+		"""Returns all nodes with condition."""
 
-		def role_filter(descriptor):
-			return role == descriptor.roles if exact_match else role == (role & descriptor.roles)
+		def filter_custom(descriptor):
+			role_condition = True
 
-		return list(map(
+			if role is not None:
+				role_condition = role == descriptor.roles if exact_match else role == (role & descriptor.roles)
+
+			if ssl is not None:
+				ssl_condition = (descriptor.is_https_enable == ssl and descriptor.is_wss_enable == ssl)
+				return role_condition and ssl_condition
+
+			return role_condition
+
+		nodes = list(map(
 			lambda descriptor: descriptor.to_json(),
-			filter(role_filter, self.repository.node_descriptors)))
+			filter(filter_custom, self.repository.node_descriptors)))
+
+		if order is not None:
+			if order == 'random':
+				random.shuffle(nodes)
+
+		if limit is not None:
+			nodes = nodes[:limit]
+
+		return nodes
+
+	def json_node(self, filter_field, public_key):
+		"""Returns a node with matching public key."""
+
+		matching_items = [item.to_json() for item in self.repository.node_descriptors if item.to_json()[filter_field] == public_key]
+
+		return next(iter(matching_items), None)
 
 	def json_height_chart(self):
 		"""Builds a JSON height chart."""

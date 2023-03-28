@@ -132,9 +132,9 @@ class NetworkRepositoryTest(unittest.TestCase):
 
 		# Assert: descriptors are sorted by name (desc)
 		self.assertFalse(repository.is_nem)
-		self.assertEqual(7, len(repository.node_descriptors))
+		self.assertEqual(8, len(repository.node_descriptors))
 		self.assertEqual(1486760, repository.estimate_height())  # median
-		self.assertEqual(1486742, repository.estimate_finalized_height())  # median (nonzero)
+		self.assertEqual(1486740, repository.estimate_finalized_height())  # median (nonzero)
 		self._assert_node_descriptor(
 			repository.node_descriptors[0],
 			main_address=SymbolAddress('NDZOZPTDVCFFLDCNJL7NZGDQDNBB7TY3V6SZNGI'),
@@ -244,8 +244,8 @@ class NetworkRepositoryTest(unittest.TestCase):
 			node_public_key=PublicKey('FE7D3DBE8DDD219E1B20247DEBF150D9411EA5A312989103B037EFBD9D237DE0'),
 			endpoint='http://xym.pool.me:3000',
 			name='xym pool',
-			height=2094498,
-			finalized_height=2094464,
+			height=1486762,
+			finalized_height=1486740,
 			version='1.0.3.3',
 			balance=101027.849383,
 			roles=3,
@@ -254,6 +254,23 @@ class NetworkRepositoryTest(unittest.TestCase):
 			is_wss_enable=True,
 			rest_version='2.4.2',
 			has_api=True)
+		self._assert_node_descriptor(
+			repository.node_descriptors[7],
+			main_address=SymbolAddress('NAOOI6NZA6TZMIKOGAQCQG7SXBPXVSDOTPLLDZY'),
+			main_public_key=PublicKey('5B20F8F228FF0E064DB0DE7951155F6F41EF449D0EC10960067C2BF2DCD61874'),
+			node_public_key=PublicKey('D05BE3101F2916AA34839DDC1199BE45092103A9B66172FA3D05911DC041AADA'),
+			endpoint='http://yasmine.farm.tokyo:3000',
+			name='yasmine farm',
+			height=1486760,
+			finalized_height=1486740,
+			version='1.0.3.4',
+			balance=99.98108,
+			roles=3,
+			is_healthy=True,
+			is_https_enable=False,
+			is_wss_enable=False,
+			rest_version='2.4.2',
+			has_api=True) # simulates ssl disabled
 
 	def test_can_format_node_descriptor_as_json(self):
 		# Arrange:
@@ -319,8 +336,8 @@ class NetworkRepositoryTest(unittest.TestCase):
 			'nodePublicKey': 'FE7D3DBE8DDD219E1B20247DEBF150D9411EA5A312989103B037EFBD9D237DE0',
 			'endpoint': 'http://xym.pool.me:3000',
 			'name': 'xym pool',
-			'height': 2094498,
-			'finalizedHeight': 2094464,
+			'height': 1486762,
+			'finalizedHeight': 1486740,
 			'version': '1.0.3.3',
 			'balance': 101027.849383,
 			'isHealthy': True,

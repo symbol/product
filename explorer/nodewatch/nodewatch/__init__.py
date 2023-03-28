@@ -1,3 +1,4 @@
+from enum import Enum
 from pathlib import Path
 
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -10,6 +11,18 @@ from zenlog import log
 
 from .RoutesFacade import MIN_HEIGHT_CLUSTER_SIZE, TIMESTAMP_FORMAT, NemRoutesFacade, SymbolRoutesFacade
 
+
+class Field(Enum):
+	MAIN_PUBLIC_KEY = "mainPublicKey"
+	NODE_PUBLIC_KEY = "nodePublicKey"
+
+def str_to_bool(value):
+	if value.lower() == 'true':
+		return True
+	elif value.lower() == 'false':
+		return False
+	else:
+		return None
 
 def create_app():
 	# pylint: disable=too-many-locals
@@ -93,11 +106,33 @@ def create_app():
 
 	@app.route('/api/symbol/nodes/api')
 	def api_symbol_nodes_api():  # pylint: disable=unused-variable
-		return jsonify(symbol_routes_facade.json_nodes(2, exact_match=True))
+		return jsonify(symbol_routes_facade.json_nodes(role=2, exact_match=True))
 
 	@app.route('/api/symbol/nodes/peer')
 	def api_symbol_nodes_peer():  # pylint: disable=unused-variable
-		return jsonify(symbol_routes_facade.json_nodes(1))
+		return jsonify(symbol_routes_facade.json_nodes(role=1))
+
+	@app.route('/api/symbol/nodes')
+	def api_symbol_nodes():  # pylint: disable=unused-variable
+		ssl = request.args.get('ssl', None)
+		limit = request.args.get('limit', None)
+		order = request.args.get('order', None)
+
+		if ssl is not None:
+			ssl = str_to_bool(ssl)
+
+		if limit is not None:
+			limit = int(limit)
+
+		return jsonify(symbol_routes_facade.json_nodes(ssl=ssl, limit=limit, order=order))
+
+	@app.route('/api/symbol/nodes/mainPublicKey/<main_public_key>')
+	def api_symbol_nodes_get_main_public_key(main_public_key):  # pylint: disable=unused-variable
+		return jsonify(symbol_routes_facade.json_node(filter_field=Field.MAIN_PUBLIC_KEY.value, public_key=main_public_key))
+
+	@app.route('/api/symbol/nodes/nodePublicKey/<node_public_key>')
+	def api_symbol_nodes_get_node_public_key(node_public_key):  # pylint: disable=unused-variable
+		return jsonify(symbol_routes_facade.json_node(filter_field=Field.NODE_PUBLIC_KEY.value, public_key=node_public_key))
 
 	@app.route('/api/symbol/chart/height')
 	def api_symbol_chart_height():  # pylint: disable=unused-variable
