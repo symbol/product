@@ -16,7 +16,7 @@ class NetworkRepositoryTest(unittest.TestCase):
 		property_names = [
 			'main_address', 'main_public_key', 'node_public_key',
 			'endpoint', 'name', 'height', 'finalized_height', 'version', 'balance',
-			'is_healthy', 'is_https_enable', 'is_wss_enable', 'rest_version',
+			'is_healthy', 'is_https_enabled', 'is_wss_enabled', 'rest_version',
 			'roles', 'has_api'
 		]
 		for name in property_names:
@@ -57,8 +57,8 @@ class NetworkRepositoryTest(unittest.TestCase):
 			balance=3355922.652725,
 			roles=0xFF,
 			is_healthy=None,
-			is_https_enable=None,
-			is_wss_enable=None,
+			is_https_enabled=None,
+			is_wss_enabled=None,
 			rest_version=None,
 			has_api=True)
 		self._assert_node_descriptor(
@@ -74,8 +74,8 @@ class NetworkRepositoryTest(unittest.TestCase):
 			balance=20612359.516967,
 			roles=0xFF,
 			is_healthy=None,
-			is_https_enable=None,
-			is_wss_enable=None,
+			is_https_enabled=None,
+			is_wss_enabled=None,
 			rest_version=None,
 			has_api=True)
 		self._assert_node_descriptor(
@@ -91,8 +91,8 @@ class NetworkRepositoryTest(unittest.TestCase):
 			balance=0,
 			roles=0xFF,
 			is_healthy=None,
-			is_https_enable=None,
-			is_wss_enable=None,
+			is_https_enabled=None,
+			is_wss_enabled=None,
 			rest_version=None,
 			has_api=True)  # simulates missing extraData
 		self._assert_node_descriptor(
@@ -108,8 +108,8 @@ class NetworkRepositoryTest(unittest.TestCase):
 			balance=0,
 			roles=0xFF,
 			is_healthy=None,
-			is_https_enable=None,
-			is_wss_enable=None,
+			is_https_enabled=None,
+			is_wss_enabled=None,
 			rest_version=None,
 			has_api=True)  # simulates incomplete extraData
 
@@ -148,8 +148,8 @@ class NetworkRepositoryTest(unittest.TestCase):
 			balance=3155632.471994,
 			roles=2,
 			is_healthy=None,
-			is_https_enable=None,
-			is_wss_enable=None,
+			is_https_enabled=None,
+			is_wss_enabled=None,
 			rest_version=None,
 			has_api=True)  # simulates missing host
 		self._assert_node_descriptor(
@@ -165,8 +165,8 @@ class NetworkRepositoryTest(unittest.TestCase):
 			balance=0,
 			roles=7,
 			is_healthy=None,
-			is_https_enable=None,
-			is_wss_enable=None,
+			is_https_enabled=None,
+			is_wss_enabled=None,
 			rest_version=None,
 			has_api=True)  # old version mapped to 'failure'
 		self._assert_node_descriptor(
@@ -182,8 +182,8 @@ class NetworkRepositoryTest(unittest.TestCase):
 			balance=0,
 			roles=3,
 			is_healthy=None,
-			is_https_enable=None,
-			is_wss_enable=None,
+			is_https_enabled=None,
+			is_wss_enabled=None,
 			rest_version=None,
 			has_api=True)  # simulates incomplete extraData
 		self._assert_node_descriptor(
@@ -199,8 +199,8 @@ class NetworkRepositoryTest(unittest.TestCase):
 			balance=82375.554976,
 			roles=3,
 			is_healthy=None,
-			is_https_enable=None,
-			is_wss_enable=None,
+			is_https_enabled=None,
+			is_wss_enabled=None,
 			rest_version=None,
 			has_api=True)
 		self._assert_node_descriptor(
@@ -216,8 +216,8 @@ class NetworkRepositoryTest(unittest.TestCase):
 			balance=28083310.571743,
 			roles=5,
 			is_healthy=None,
-			is_https_enable=None,
-			is_wss_enable=None,
+			is_https_enabled=None,
+			is_wss_enabled=None,
 			rest_version=None,
 			has_api=False)
 		self._assert_node_descriptor(
@@ -233,8 +233,8 @@ class NetworkRepositoryTest(unittest.TestCase):
 			balance=0,
 			roles=3,
 			is_healthy=None,
-			is_https_enable=None,
-			is_wss_enable=None,
+			is_https_enabled=None,
+			is_wss_enabled=None,
 			rest_version=None,
 			has_api=True)  # simulates missing extraData
 		self._assert_node_descriptor(
@@ -250,8 +250,8 @@ class NetworkRepositoryTest(unittest.TestCase):
 			balance=101027.849383,
 			roles=3,
 			is_healthy=True,
-			is_https_enable=True,
-			is_wss_enable=True,
+			is_https_enabled=True,
+			is_wss_enabled=True,
 			rest_version='2.4.2',
 			has_api=True)
 		self._assert_node_descriptor(
@@ -267,8 +267,8 @@ class NetworkRepositoryTest(unittest.TestCase):
 			balance=99.98108,
 			roles=3,
 			is_healthy=True,
-			is_https_enable=False,
-			is_wss_enable=False,
+			is_https_enabled=False,
+			is_wss_enabled=False,
 			rest_version='2.4.2',
 			has_api=True)  # simulates ssl disabled
 
@@ -291,8 +291,8 @@ class NetworkRepositoryTest(unittest.TestCase):
 			'version': '1.0.3.5',
 			'balance': 28083310.571743,
 			'isHealthy': None,
-			'isHttpsEnable': None,
-			'isWssEnable': None,
+			'isHttpsEnabled': None,
+			'isWssEnabled': None,
 			'restVersion': None,
 			'roles': 5,
 		}, json_object)
@@ -316,8 +316,8 @@ class NetworkRepositoryTest(unittest.TestCase):
 			'version': '1.0.3.5',
 			'balance': 82375.554976,
 			'isHealthy': None,
-			'isHttpsEnable': None,
-			'isWssEnable': None,
+			'isHttpsEnabled': None,
+			'isWssEnabled': None,
 			'restVersion': None,
 			'roles': 3,
 		}, json_object)
@@ -341,8 +341,8 @@ class NetworkRepositoryTest(unittest.TestCase):
 			'version': '1.0.3.3',
 			'balance': 101027.849383,
 			'isHealthy': True,
-			'isHttpsEnable': True,
-			'isWssEnable': True,
+			'isHttpsEnabled': True,
+			'isWssEnabled': True,
 			'restVersion': '2.4.2',
 			'roles': 3,
 		}, json_object)

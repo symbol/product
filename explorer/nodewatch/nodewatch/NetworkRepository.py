@@ -24,8 +24,8 @@ class NodeDescriptor:
 		finalized_height=0,
 		balance=0,
 		is_healthy=None,
-		is_https_enable=None,
-		is_wss_enable=None,
+		is_https_enabled=None,
+		is_wss_enabled=None,
 		rest_version=None,
 		roles=0xFF):
 		"""Creates a descriptor."""
@@ -42,8 +42,8 @@ class NodeDescriptor:
 		self.finalized_height = finalized_height
 		self.balance = balance
 		self.is_healthy = is_healthy
-		self.is_https_enable = is_https_enable
-		self.is_wss_enable = is_wss_enable
+		self.is_https_enabled = is_https_enabled
+		self.is_wss_enabled = is_wss_enabled
 		self.rest_version = rest_version
 		self.roles = roles
 
@@ -66,8 +66,8 @@ class NodeDescriptor:
 			'finalizedHeight': self.finalized_height,
 			'balance': self.balance,
 			'isHealthy': self.is_healthy,
-			'isHttpsEnable': self.is_https_enable,
-			'isWssEnable': self.is_wss_enable,
+			'isHttpsEnabled': self.is_https_enabled,
+			'isWssEnabled': self.is_wss_enabled,
 			'restVersion': self.rest_version,
 			'roles': self.roles
 		}
@@ -203,8 +203,8 @@ class NetworkRepository:
 			json_api_node_info_data = json_node['apiNodeInfo']
 			api_node_info_data = (
 				json_api_node_info_data.get('isHealth', None),
-				json_api_node_info_data.get('isHttpsEnable', None),
-				json_api_node_info_data.get('isWssEnable', None),
+				json_api_node_info_data.get('isHttpsEnabled', None),
+				json_api_node_info_data.get('isWssEnabled', None),
 				json_api_node_info_data.get('restVersion', None))
 
 		main_public_key = PublicKey(json_node['publicKey'])

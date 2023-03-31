@@ -95,8 +95,8 @@
   {
     "apiNodeInfo": {
       "isHealth": true,
-      "isHttpsEnable": true,
-      "isWssEnable": true,
+      "isHttpsEnabled": true,
+      "isWssEnabled": true,
       "restVersion": "2.4.2"
     },
     "extraData": {
@@ -117,8 +117,8 @@
   {
     "apiNodeInfo": {
       "isHealth": true,
-      "isHttpsEnable": false,
-      "isWssEnable": false,
+      "isHttpsEnabled": false,
+      "isWssEnabled": false,
       "restVersion": "2.4.2"
     },
     "extraData": {
