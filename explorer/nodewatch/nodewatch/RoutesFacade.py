@@ -75,7 +75,7 @@ class BasicRoutesFacade:
 		ssl = kwargs.get('ssl', None)
 		order = kwargs.get('order', None)
 
-		def filter_custom(descriptor):
+		def custom_filter(descriptor):
 			role_condition = True
 
 			if role is not None:
@@ -89,11 +89,10 @@ class BasicRoutesFacade:
 
 		nodes = list(map(
 			lambda descriptor: descriptor.to_json(),
-			filter(filter_custom, self.repository.node_descriptors)))
+			filter(custom_filter, self.repository.node_descriptors)))
 
-		if order is not None:
-			if order == 'random':
-				random.shuffle(nodes)
+		if order == 'random':
+			random.shuffle(nodes)
 
 		if limit is not None:
 			nodes = nodes[:limit]
