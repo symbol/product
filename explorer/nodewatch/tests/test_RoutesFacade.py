@@ -328,7 +328,7 @@ class SymbolRoutesFacadeTest(unittest.TestCase):
 		# Assert:
 		self.assertEqual('symbol_summary.html', template_name)
 		self.assertEqual(5, len(context))
-		self.assertEqual(6, len(json.loads(context['height_chart_json'])['data']))  # { height, finalized_height } x { 1.0.3.5, 1.0.3.4 }
+		self.assertEqual(6, len(json.loads(context['height_chart_json'])['data']))  # { height, finalized_height } x { 1.0.3.5, 1.0.3.4, 1.0.3.3 }
 		self.assertEqual(4, len(json.loads(context['voting_power_chart_json'])['data']))  # 1.0.3.5, 1.0.3.4, 1.0.3.3, ''
 		self.assertEqual(4, len(json.loads(context['harvesting_power_chart_json'])['data']))  # 1.0.3.5, 1.0.3.4, 1.0.3.3, ''
 		self.assertEqual(4, len(json.loads(context['harvesting_count_chart_json'])['data']))  # 1.0.3.5, 1.0.3.4, 1.0.3.3, ''
@@ -406,6 +406,114 @@ class SymbolRoutesFacadeTest(unittest.TestCase):
 			[2],
 			list(map(lambda descriptor: descriptor['roles'], node_descriptors)))
 
+	def test_can_generate_nodes_json_filtered_ssl(self):
+		# Arrange:
+		facade = SymbolRoutesFacade(SymbolNetwork.MAINNET, '<symbol_explorer>')
+		facade.reload_all(Path('tests/resources'), True)
+
+		# Act: select nodes with only ssl enabled
+		node_descriptors = facade.json_nodes(ssl=True)
+
+		# Assert: spot check names and roles
+		self.assertEqual(1, len(node_descriptors))
+		self.assertEqual(
+			['xym pool'],
+			list(map(lambda descriptor: descriptor['name'], node_descriptors)))
+		self.assertEqual(
+			[3],
+			list(map(lambda descriptor: descriptor['roles'], node_descriptors)))
+
+	def test_can_generate_nodes_json_filtered_order_random_limit_2(self):
+		# Arrange:
+		facade = SymbolRoutesFacade(SymbolNetwork.MAINNET, '<symbol_explorer>')
+		facade.reload_all(Path('tests/resources'), True)
+
+		# Act: select 2 nodes with order random
+		node_descriptors = facade.json_nodes(limit=2, order='random')
+
+		# returns all nodes
+		all_node_descriptors = facade.json_nodes(role=1)
+
+		full_node_names = list(map(lambda descriptor: descriptor['name'], all_node_descriptors))
+		random_node_names = list(map(lambda descriptor: descriptor['name'], node_descriptors))
+
+		# Assert: spot check names
+		self.assertEqual(2, len(node_descriptors))
+		for name in random_node_names:
+			self.assertIn(name, full_node_names)
+
+	def test_can_generate_node_json_given_main_public_key(self):
+		# Arrange:
+		facade = SymbolRoutesFacade(SymbolNetwork.MAINNET, '<symbol_explorer>')
+		facade.reload_all(Path('tests/resources'), True)
+
+		# Act: select a node match with main public key
+		node_descriptors = facade.json_node(
+			filter_field='mainPublicKey',
+			public_key="A0AA48B6417BDB1845EB55FB0B1E13255EA8BD0D8FA29AD2D8A906E220571F21"
+		)
+		expected_node = {
+			'mainPublicKey': 'A0AA48B6417BDB1845EB55FB0B1E13255EA8BD0D8FA29AD2D8A906E220571F21',
+			'nodePublicKey': '403D890915B68E290B3F519A602A13B17C58499A077D77DB7CCC6327761C84DC',
+			'endpoint': '',
+			'name':
+			'Allnodes250',
+			'version': '1.0.3.4',
+			'height': 1486762,
+			'finalizedHeight': 1486740,
+			'balance': 3155632.471994,
+			'isHealthy': None,
+			'isHttpsEnabled': None,
+			'isWssEnabled': None,
+			'restVersion': None,
+			'roles': 2
+		}
+
+		# Assert:
+		self.assertEqual(node_descriptors, expected_node)
+
+	def test_can_generate_node_json_given_node_public_key(self):
+		# Arrange:
+		facade = SymbolRoutesFacade(SymbolNetwork.MAINNET, '<symbol_explorer>')
+		facade.reload_all(Path('tests/resources'), True)
+
+		# Act: select a node match with node public key
+		node_descriptors = facade.json_node(
+			filter_field='nodePublicKey',
+			public_key="D05BE3101F2916AA34839DDC1199BE45092103A9B66172FA3D05911DC041AADA"
+		)
+		expected_node = {
+			'mainPublicKey': '5B20F8F228FF0E064DB0DE7951155F6F41EF449D0EC10960067C2BF2DCD61874',
+			'nodePublicKey': 'D05BE3101F2916AA34839DDC1199BE45092103A9B66172FA3D05911DC041AADA',
+			'endpoint': 'http://yasmine.farm.tokyo:3000',
+			'name': 'yasmine farm',
+			'version': '1.0.3.4',
+			'height': 1486760,
+			'finalizedHeight': 1486740,
+			'balance': 99.98108,
+			'isHealthy': True,
+			'isHttpsEnabled': False,
+			'isWssEnabled': False,
+			'restVersion': '2.4.2',
+			'roles': 3
+		}
+
+		# Assert:
+		self.assertEqual(node_descriptors, expected_node)
+
+	def test_can_generate_node_json_given_public_key_not_found(self):
+		# Arrange:
+		facade = SymbolRoutesFacade(SymbolNetwork.MAINNET, '<symbol_explorer>')
+		facade.reload_all(Path('tests/resources'), True)
+
+		# Act:
+		main_public_key_descriptors = facade.json_node(filter_field='mainPublicKey', public_key="invalidKey")
+		node_public_key_descriptors = facade.json_node(filter_field='nodePublicKey', public_key="invalidKey")
+
+		# Assert:
+		self.assertIsNone(main_public_key_descriptors)
+		self.assertIsNone(node_public_key_descriptors)
+
 	def test_can_generate_height_chart_json(self):
 		# Arrange:
 		facade = SymbolRoutesFacade(SymbolNetwork.MAINNET, '<symbol_explorer>', 1)
@@ -414,7 +522,7 @@ class SymbolRoutesFacadeTest(unittest.TestCase):
 		# Act:
 		chart_json = json.loads(facade.json_height_chart())
 
-		# Assert: { height, finalized_height } x { 1.0.3.4, 1.0.3.5 }
+		# Assert: { height, finalized_height } x { 1.0.3.3, 1.0.3.4, 1.0.3.5 }
 		self.assertEqual(6, len(chart_json['data']))
 
 	def test_can_generate_height_chart_with_metadata_json(self):
@@ -426,7 +534,7 @@ class SymbolRoutesFacadeTest(unittest.TestCase):
 		chart_with_metadata_json = facade.json_height_chart_with_metadata()
 		chart_json = json.loads(chart_with_metadata_json['chartJson'])
 
-		# Assert: { height, finalized_height } x { 1.0.3.4, 1.0.3.5 }
+		# Assert: { height, finalized_height } x { 1.0.3.3, 1.0.3.4, 1.0.3.5 }
 		self.assertEqual(2, len(chart_with_metadata_json))
 		self.assertEqual(6, len(chart_json['data']))
 		self.assertTrue(re.match(r'\d\d:\d\d', chart_with_metadata_json['lastRefreshTime']))
