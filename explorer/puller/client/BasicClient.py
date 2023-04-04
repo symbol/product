@@ -1,5 +1,7 @@
-from aiohttp import ClientSession, ClientError
+from aiohttp import ClientError, ClientSession
+
 from model.Exceptions import NodeRequestFailException
+
 
 class BasicClient:
 	"""Async client for connecting to a node."""
