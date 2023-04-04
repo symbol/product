@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # export $(cat ./scripts/mainnet.env) && ./scripts/run.sh
 
 set -ex

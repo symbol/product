@@ -1,0 +1,4 @@
+aiohttp==3.8.4
+psycopg2-binary==2.9.6
+symbol-sdk-python==3.0.3
+zenlog==1.1
