@@ -1,6 +1,3 @@
-# pylint: disable=invalid-name
-
-
 import json
 import os
 import re
@@ -36,6 +33,9 @@ def client(app):  # pylint: disable=redefined-outer-name
 	return app.test_client()
 
 # endregion
+
+
+# pylint: disable=invalid-name
 
 
 # region redirect

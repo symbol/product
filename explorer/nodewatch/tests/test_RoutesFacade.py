@@ -1,6 +1,3 @@
-# pylint: disable=invalid-name
-
-
 import datetime
 import json
 import re
