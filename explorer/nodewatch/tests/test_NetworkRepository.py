@@ -132,7 +132,7 @@ class NetworkRepositoryTest(unittest.TestCase):
 
 		# Assert: descriptors are sorted by name (desc)
 		self.assertFalse(repository.is_nem)
-		self.assertEqual(8, len(repository.node_descriptors))
+		self.assertEqual(9, len(repository.node_descriptors))
 		self.assertEqual(1486760, repository.estimate_height())  # median
 		self.assertEqual(1486740, repository.estimate_finalized_height())  # median (nonzero)
 		self._assert_node_descriptor(
@@ -154,6 +154,23 @@ class NetworkRepositoryTest(unittest.TestCase):
 			has_api=True)  # simulates missing host
 		self._assert_node_descriptor(
 			repository.node_descriptors[1],
+			main_address=SymbolAddress('ND44QLRJQWF756VVP7XLTPDUBGXHT6ZFR7PSDQI'),
+			main_public_key=PublicKey('C69B5BDE17EEF7449C6D92856C1D295FE02AA3472651F042FB3FC2F771DAAF7B'),
+			node_public_key=PublicKey('F25FDB3CD1A97DDC71A993D124E9BDD6518699F9F4016C29D341F53208D150D8'),
+			endpoint='',
+			name='Allnodes251',
+			height=1486762,
+			finalized_height=1486740,
+			version='1.0.3.4',
+			balance=3155632.471994,
+			roles=2,
+			is_healthy=True,
+			is_https_enabled=True,
+			is_wss_enabled=True,
+			rest_version='2.4.2',
+			has_api=True)
+		self._assert_node_descriptor(
+			repository.node_descriptors[2],
 			main_address=SymbolAddress('NCFJP3DM65U22JI5XZ2P2TBK5BV5MLKAR7334LQ'),
 			main_public_key=PublicKey('A05329E4E5F068B323653F393CE0E3E6A1EB5056E122457354BA65158FFD33F4'),
 			node_public_key=PublicKey('FBEAFCB15D2674ECB8DC1CD2C028C4AC0D463489069FDD415F30BB71EAE69864'),
@@ -170,7 +187,7 @@ class NetworkRepositoryTest(unittest.TestCase):
 			rest_version=None,
 			has_api=True)  # old version mapped to 'failure'
 		self._assert_node_descriptor(
-			repository.node_descriptors[2],
+			repository.node_descriptors[3],
 			main_address=SymbolAddress('NBPQMC4M2MMX2XOCOC3BCZ7N3ALUTRGLYPPQ56Q'),
 			main_public_key=PublicKey('2784FBE82D8A46C4082519012970CBB42EC3EC83D5DB93963B71FD6C5DA3B072'),
 			node_public_key=PublicKey('9CBE17EDFC8B333FE6BD3FF9B4D02914D55A9368F318D4CEF0AB4737BA5BB160'),
@@ -187,7 +204,7 @@ class NetworkRepositoryTest(unittest.TestCase):
 			rest_version=None,
 			has_api=True)  # simulates incomplete extraData
 		self._assert_node_descriptor(
-			repository.node_descriptors[3],
+			repository.node_descriptors[4],
 			main_address=SymbolAddress('NCPPDLXGYBHNPQAXQ6RTNS3T46A7FNTXDFBD43Y'),
 			main_public_key=PublicKey('7DFB0D690BFFA4A4979C7466C7B669AE8FBAFD419DAA10DE948604CD9BE65F0B'),
 			node_public_key=PublicKey('D561824BD4E3053C39A8D5A4AB00583A4D99302C541F046D3A1E6FF023006D7C'),
@@ -204,7 +221,7 @@ class NetworkRepositoryTest(unittest.TestCase):
 			rest_version=None,
 			has_api=True)
 		self._assert_node_descriptor(
-			repository.node_descriptors[4],
+			repository.node_descriptors[5],
 			main_address=SymbolAddress('NAEONICSHRZATW7XGIVIDPTNHUMQA7N7XQ4EUPQ'),
 			main_public_key=PublicKey('B26D01FC006EAC09B740A3C8F12C1055AE24AFD3268F0364C92D51800FC07361'),
 			node_public_key=None,
@@ -221,7 +238,7 @@ class NetworkRepositoryTest(unittest.TestCase):
 			rest_version=None,
 			has_api=False)
 		self._assert_node_descriptor(
-			repository.node_descriptors[5],
+			repository.node_descriptors[6],
 			main_address=SymbolAddress('NDLLVJIUHAAV6F5PG5KYSSQXCZDCPXCY4WFA6TQ'),
 			main_public_key=PublicKey('71F953D3C3D0B7E70E29EC2DE761DD7339BA815C094B3BEE0917AEBD924B37EB'),
 			node_public_key=PublicKey('C71C7D5E6981DE5ED27908C6749207E49001A0B0F0DD404D07451636A64BEBEB'),
@@ -238,7 +255,7 @@ class NetworkRepositoryTest(unittest.TestCase):
 			rest_version=None,
 			has_api=True)  # simulates missing extraData
 		self._assert_node_descriptor(
-			repository.node_descriptors[6],
+			repository.node_descriptors[7],
 			main_address=SymbolAddress('NAU6BZUX5GHI7EDE6DMS6GVHXS4XZFCNVRPT2OQ'),
 			main_public_key=PublicKey('A54CC798373F42B569AF21845CD0EBE755AB42EA04B3B8E2BE897166F89A971C'),
 			node_public_key=PublicKey('FE7D3DBE8DDD219E1B20247DEBF150D9411EA5A312989103B037EFBD9D237DE0'),
@@ -255,7 +272,7 @@ class NetworkRepositoryTest(unittest.TestCase):
 			rest_version='2.4.2',
 			has_api=True)
 		self._assert_node_descriptor(
-			repository.node_descriptors[7],
+			repository.node_descriptors[8],
 			main_address=SymbolAddress('NAOOI6NZA6TZMIKOGAQCQG7SXBPXVSDOTPLLDZY'),
 			main_public_key=PublicKey('5B20F8F228FF0E064DB0DE7951155F6F41EF449D0EC10960067C2BF2DCD61874'),
 			node_public_key=PublicKey('D05BE3101F2916AA34839DDC1199BE45092103A9B66172FA3D05911DC041AADA'),
@@ -278,7 +295,7 @@ class NetworkRepositoryTest(unittest.TestCase):
 		repository.load_node_descriptors('tests/resources/symbol_nodes.json')
 
 		# Act:
-		json_object = repository.node_descriptors[4].to_json()
+		json_object = repository.node_descriptors[5].to_json()
 
 		# Assert:
 		self.assertEqual({
@@ -303,7 +320,7 @@ class NetworkRepositoryTest(unittest.TestCase):
 		repository.load_node_descriptors('tests/resources/symbol_nodes.json')
 
 		# Act:
-		json_object = repository.node_descriptors[3].to_json()
+		json_object = repository.node_descriptors[4].to_json()
 
 		# Assert:
 		self.assertEqual({
@@ -328,7 +345,7 @@ class NetworkRepositoryTest(unittest.TestCase):
 		repository.load_node_descriptors('tests/resources/symbol_nodes.json')
 
 		# Act:
-		json_object = repository.node_descriptors[6].to_json()
+		json_object = repository.node_descriptors[7].to_json()
 
 		# Assert:
 		self.assertEqual({

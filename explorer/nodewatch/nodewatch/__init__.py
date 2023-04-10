@@ -20,8 +20,6 @@ class Field(Enum):
 def str_to_bool(value):
 	if value.lower() == 'true':
 		return True
-	if value.lower() == 'false':
-		return False
 	return None
 
 
@@ -105,27 +103,30 @@ def create_app():
 		template_name, context = symbol_routes_facade.html_summary()
 		return render_template(template_name, **context)
 
-	@app.route('/api/symbol/nodes/api')
-	def api_symbol_nodes_api():  # pylint: disable=unused-variable
-		return jsonify(symbol_routes_facade.json_nodes(role=2, exact_match=True))
-
-	@app.route('/api/symbol/nodes/peer')
-	def api_symbol_nodes_peer():  # pylint: disable=unused-variable
-		return jsonify(symbol_routes_facade.json_nodes(role=1))
-
-	@app.route('/api/symbol/nodes')
-	def api_symbol_nodes():  # pylint: disable=unused-variable
-		ssl = request.args.get('ssl', None)
-		limit = request.args.get('limit', None)
-		order = request.args.get('order', None)
-
+	def _get_json_nodes(role, exact_match, ssl, limit, order):
 		if ssl is not None:
 			ssl = str_to_bool(ssl)
 
 		if limit is not None:
 			limit = int(limit)
 
-		return jsonify(symbol_routes_facade.json_nodes(ssl=ssl, limit=limit, order=order))
+		return jsonify(symbol_routes_facade.json_nodes(role=role, exact_match=exact_match, ssl=ssl, limit=limit, order=order))
+
+	@app.route('/api/symbol/nodes/api')
+	def api_symbol_nodes_api():  # pylint: disable=unused-variable
+		ssl = request.args.get('ssl', None)
+		limit = request.args.get('limit', None)
+		order = request.args.get('order', None)
+
+		return _get_json_nodes(2, True, ssl, limit, order)
+
+	@app.route('/api/symbol/nodes/peer')
+	def api_symbol_nodes_peer():  # pylint: disable=unused-variable
+		ssl = request.args.get('ssl', None)
+		limit = request.args.get('limit', None)
+		order = request.args.get('order', None)
+
+		return _get_json_nodes(1, False, ssl, limit, order)
 
 	@app.route('/api/symbol/nodes/mainPublicKey/<main_public_key>')
 	def api_symbol_nodes_get_main_public_key(main_public_key):  # pylint: disable=unused-variable

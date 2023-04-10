@@ -162,106 +162,82 @@ def test_get_api_nem_network_height_chart(client):  # pylint: disable=redefined-
 	assert re.match(r'\d\d:\d\d', response_json['lastRefreshTime'])
 
 
-def test_get_api_symbol_nodes_api(client):  # pylint: disable=redefined-outer-name
-	# Act:
-	response = client.get('/api/symbol/nodes/api')
+def _assert_symbol_node_response(response, expected_names):
+	# Arrange:
 	response_json = json.loads(response.data)
 
 	# Assert: spot check names
 	assert 200 == response.status_code
 	assert 'application/json' == response.headers['Content-Type']
-	assert 1 == len(response_json)
-	assert [
-		'Allnodes250'
-	] == list(map(lambda descriptor: descriptor['name'], response_json))
+	assert len(expected_names) == len(response_json)
+	assert expected_names == list(map(lambda descriptor: descriptor['name'], response_json))
+
+
+def test_get_api_symbol_nodes_api(client):  # pylint: disable=redefined-outer-name
+	# Act:
+	response = client.get('/api/symbol/nodes/api')
+
+	# Assert:
+	_assert_symbol_node_response(response, ['Allnodes250', 'Allnodes251'])
+
+
+def test_get_api_symbol_nodes_api_order_random_limit_2(client):  # pylint: disable=redefined-outer-name
+	# Act:
+	response = client.get('/api/symbol/nodes/api?order=random&limit=2')
+	response_json = json.loads(response.data)
+
+	# Assert: spot check names
+	full_api_node_names = [
+		'Allnodes250', 'Allnodes251'
+	]
+	actual_names = list(map(lambda descriptor: descriptor['name'], response_json))
+
+	_assert_symbol_node_response(response, actual_names)
+	for name in actual_names:
+		assert name in full_api_node_names
+
+
+def test_get_api_symbol_nodes_api_ssl_true(client):  # pylint: disable=redefined-outer-name
+	# Act:
+	response = client.get('/api/symbol/nodes/api?ssl=true')
+
+	# Assert:
+	_assert_symbol_node_response(response, ['Allnodes251'])
 
 
 def test_get_api_symbol_nodes_peer(client):  # pylint: disable=redefined-outer-name
 	# Act:
 	response = client.get('/api/symbol/nodes/peer')
-	response_json = json.loads(response.data)
 
-	# Assert: spot check names
-	assert 200 == response.status_code
-	assert 'application/json' == response.headers['Content-Type']
-	assert 7 == len(response_json)
-	assert [
-		'Apple', 'Shin-Kuma-Node', 'ibone74', 'jaguar', 'symbol.ooo maxUnlockedAccounts:100', 'xym pool', 'yasmine farm'
-	] == list(map(lambda descriptor: descriptor['name'], response_json))
+	# Assert:
+	_assert_symbol_node_response(
+		response,
+		['Apple', 'Shin-Kuma-Node', 'ibone74', 'jaguar', 'symbol.ooo maxUnlockedAccounts:100', 'xym pool', 'yasmine farm']
+	)
 
 
-def test_get_api_symbol_nodes(client):  # pylint: disable=redefined-outer-name
+def test_get_api_symbol_nodes_peer_order_random_limit_2(client):  # pylint: disable=redefined-outer-name
 	# Act:
-	response = client.get('/api/symbol/nodes')
+	response = client.get('/api/symbol/nodes/peer?order=random&limit=2')
 	response_json = json.loads(response.data)
 
-	# Assert: spot check names
-	assert 200 == response.status_code
-	assert 'application/json' == response.headers['Content-Type']
-	assert 8 == len(response_json)
-	assert [
-		'Allnodes250', 'Apple', 'Shin-Kuma-Node', 'ibone74', 'jaguar', 'symbol.ooo maxUnlockedAccounts:100', 'xym pool', 'yasmine farm'
-	] == list(map(lambda descriptor: descriptor['name'], response_json))
-
-
-def test_get_api_symbol_nodes_order_random_limit_2(client):  # pylint: disable=redefined-outer-name
-	# Act:
-	response = client.get('/api/symbol/nodes?order=random&limit=2')
-	response_json = json.loads(response.data)
-
-	# Assert: spot check names
-	assert 200 == response.status_code
-	assert 'application/json' == response.headers['Content-Type']
-	assert 2 == len(response_json)
 	full_node_names = [
 		'Allnodes250', 'Apple', 'Shin-Kuma-Node', 'ibone74', 'jaguar', 'symbol.ooo maxUnlockedAccounts:100', 'xym pool', 'yasmine farm'
 	]
 	actual_names = list(map(lambda descriptor: descriptor['name'], response_json))
 
+	# Assert:
+	_assert_symbol_node_response(response, actual_names)
 	for name in actual_names:
 		assert name in full_node_names
 
 
-def test_get_api_symbol_nodes_limit_2(client):  # pylint: disable=redefined-outer-name
+def test_get_api_symbol_nodes_peer_ssl_true(client):  # pylint: disable=redefined-outer-name
 	# Act:
-	response = client.get('/api/symbol/nodes?limit=2')
-	response_json = json.loads(response.data)
+	response = client.get('/api/symbol/nodes/peer?ssl=true')
 
-	# Assert: spot check names
-	assert 200 == response.status_code
-	assert 'application/json' == response.headers['Content-Type']
-	assert 2 == len(response_json)
-	assert [
-		'Allnodes250', 'Apple'
-	] == list(map(lambda descriptor: descriptor['name'], response_json))
-
-
-def test_get_api_symbol_nodes_ssl_true(client):  # pylint: disable=redefined-outer-name
-	# Act:
-	response = client.get('/api/symbol/nodes?ssl=true')
-	response_json = json.loads(response.data)
-
-	# Assert: spot check names
-	assert 200 == response.status_code
-	assert 'application/json' == response.headers['Content-Type']
-	assert 1 == len(response_json)
-	assert [
-		'xym pool'
-	] == list(map(lambda descriptor: descriptor['name'], response_json))
-
-
-def test_get_api_symbol_nodes_ssl_false(client):  # pylint: disable=redefined-outer-name
-	# Act:
-	response = client.get('/api/symbol/nodes?ssl=false')
-	response_json = json.loads(response.data)
-
-	# Assert: spot check names
-	assert 200 == response.status_code
-	assert 'application/json' == response.headers['Content-Type']
-	assert 1 == len(response_json)
-	assert [
-		'yasmine farm'
-	] == list(map(lambda descriptor: descriptor['name'], response_json))
+	# Assert:
+	_assert_symbol_node_response(response, ['xym pool'])
 
 
 def _assert_api_symbol_node_with_public_key_not_found(response):

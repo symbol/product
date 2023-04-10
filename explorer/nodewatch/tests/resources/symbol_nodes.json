@@ -135,5 +135,27 @@
     "publicKey": "5B20F8F228FF0E064DB0DE7951155F6F41EF449D0EC10960067C2BF2DCD61874",
     "roles": 3,
     "version": 16777988
+  },
+  {
+    "apiNodeInfo": {
+      "isHealth": true,
+      "isHttpsEnabled": true,
+      "isWssEnabled": true,
+      "restVersion": "2.4.2"
+    },
+    "extraData": {
+      "balance": 3155632.471994,
+      "finalizedHeight": 1486740,
+      "height": 1486762
+    },
+    "friendlyName": "Allnodes251",
+    "host": "",
+    "networkGenerationHashSeed": "57F7DA205008026C776CB6AED843393F04CD458E0AA2D9F1D5F31A402072B2D6",
+    "networkIdentifier": 104,
+    "nodePublicKey": "F25FDB3CD1A97DDC71A993D124E9BDD6518699F9F4016C29D341F53208D150D8",
+    "port": 7900,
+    "publicKey": "C69B5BDE17EEF7449C6D92856C1D295FE02AA3472651F042FB3FC2F771DAAF7B",
+    "roles": 2,
+    "version": 16777988
   }
 ]

@@ -226,7 +226,7 @@ class SymbolRoutesFacadeTest(unittest.TestCase):
 		self.assertEqual(True, result)
 		self.assertEqual(facade.last_reload_time, facade.last_refresh_time)
 
-		self.assertEqual(8, len(facade.repository.node_descriptors))
+		self.assertEqual(9, len(facade.repository.node_descriptors))
 		self.assertEqual(4, len(facade.repository.harvester_descriptors))
 		self.assertEqual(4, len(facade.repository.voter_descriptors))
 
@@ -243,7 +243,7 @@ class SymbolRoutesFacadeTest(unittest.TestCase):
 		self.assertEqual([True, False, False], [result1, result2, result3])
 		self.assertEqual(facade.last_reload_time, facade.last_refresh_time)
 
-		self.assertEqual(8, len(facade.repository.node_descriptors))
+		self.assertEqual(9, len(facade.repository.node_descriptors))
 		self.assertEqual(4, len(facade.repository.harvester_descriptors))
 		self.assertEqual(4, len(facade.repository.voter_descriptors))
 
@@ -293,9 +293,19 @@ class SymbolRoutesFacadeTest(unittest.TestCase):
 		self.assertEqual(4, len(context))
 		self.assertEqual('Symbol Nodes', context['title'])
 		self.assertEqual(
-			['Allnodes250', 'Apple', 'Shin-Kuma-Node', 'ibone74', 'jaguar', 'symbol.ooo maxUnlockedAccounts:100', 'xym pool', 'yasmine farm'],
+			[
+				'Allnodes250',
+				'Allnodes251',
+				'Apple',
+				'Shin-Kuma-Node',
+				'ibone74',
+				'jaguar',
+				'symbol.ooo maxUnlockedAccounts:100',
+				'xym pool',
+				'yasmine farm'
+			],
 			_get_names(context['descriptors']))
-		self.assertEqual([104] * 8, _get_network_bytes(context['descriptors']))
+		self.assertEqual([104] * 9, _get_network_bytes(context['descriptors']))
 		self.assertIsNotNone(context['version_to_css_class'])
 		self.assertEqual('<symbol_explorer>', context['explorer_endpoint'])
 
@@ -381,12 +391,12 @@ class SymbolRoutesFacadeTest(unittest.TestCase):
 		node_descriptors = facade.json_nodes(role=2)
 
 		# Assert: spot check names and roles
-		self.assertEqual(7, len(node_descriptors))
+		self.assertEqual(8, len(node_descriptors))
 		self.assertEqual(
-			['Allnodes250', 'Apple', 'Shin-Kuma-Node', 'ibone74', 'symbol.ooo maxUnlockedAccounts:100', 'xym pool', 'yasmine farm'],
+			['Allnodes250', 'Allnodes251', 'Apple', 'Shin-Kuma-Node', 'ibone74', 'symbol.ooo maxUnlockedAccounts:100', 'xym pool', 'yasmine farm'],
 			list(map(lambda descriptor: descriptor['name'], node_descriptors)))
 		self.assertEqual(
-			[2, 7, 3, 3, 3, 3, 3],
+			[2, 2, 7, 3, 3, 3, 3, 3],
 			list(map(lambda descriptor: descriptor['roles'], node_descriptors)))
 
 	def test_can_generate_nodes_json_filtered_exact_match(self):
@@ -398,12 +408,12 @@ class SymbolRoutesFacadeTest(unittest.TestCase):
 		node_descriptors = facade.json_nodes(role=2, exact_match=True)
 
 		# Assert: spot check names and roles
-		self.assertEqual(1, len(node_descriptors))
+		self.assertEqual(2, len(node_descriptors))
 		self.assertEqual(
-			['Allnodes250'],
+			['Allnodes250', 'Allnodes251'],
 			list(map(lambda descriptor: descriptor['name'], node_descriptors)))
 		self.assertEqual(
-			[2],
+			[2, 2],
 			list(map(lambda descriptor: descriptor['roles'], node_descriptors)))
 
 	def test_can_generate_nodes_json_filtered_ssl(self):
@@ -415,12 +425,12 @@ class SymbolRoutesFacadeTest(unittest.TestCase):
 		node_descriptors = facade.json_nodes(ssl=True)
 
 		# Assert: spot check names and roles
-		self.assertEqual(1, len(node_descriptors))
+		self.assertEqual(2, len(node_descriptors))
 		self.assertEqual(
-			['xym pool'],
+			['Allnodes251', 'xym pool'],
 			list(map(lambda descriptor: descriptor['name'], node_descriptors)))
 		self.assertEqual(
-			[3],
+			[2, 3],
 			list(map(lambda descriptor: descriptor['roles'], node_descriptors)))
 
 	def test_can_generate_nodes_json_filtered_order_random_limit_2(self):
@@ -432,7 +442,7 @@ class SymbolRoutesFacadeTest(unittest.TestCase):
 		node_descriptors = facade.json_nodes(limit=2, order='random')
 
 		# returns all nodes
-		all_node_descriptors = facade.json_nodes(role=1)
+		all_node_descriptors = facade.json_nodes()
 
 		full_node_names = list(map(lambda descriptor: descriptor['name'], all_node_descriptors))
 		random_node_names = list(map(lambda descriptor: descriptor['name'], node_descriptors))
@@ -450,7 +460,7 @@ class SymbolRoutesFacadeTest(unittest.TestCase):
 		# Act: select a node match with main public key
 		node_descriptors = facade.json_node(
 			filter_field='mainPublicKey',
-			public_key="A0AA48B6417BDB1845EB55FB0B1E13255EA8BD0D8FA29AD2D8A906E220571F21"
+			public_key='A0AA48B6417BDB1845EB55FB0B1E13255EA8BD0D8FA29AD2D8A906E220571F21'
 		)
 		expected_node = {
 			'mainPublicKey': 'A0AA48B6417BDB1845EB55FB0B1E13255EA8BD0D8FA29AD2D8A906E220571F21',
@@ -480,7 +490,7 @@ class SymbolRoutesFacadeTest(unittest.TestCase):
 		# Act: select a node match with node public key
 		node_descriptors = facade.json_node(
 			filter_field='nodePublicKey',
-			public_key="D05BE3101F2916AA34839DDC1199BE45092103A9B66172FA3D05911DC041AADA"
+			public_key='D05BE3101F2916AA34839DDC1199BE45092103A9B66172FA3D05911DC041AADA'
 		)
 		expected_node = {
 			'mainPublicKey': '5B20F8F228FF0E064DB0DE7951155F6F41EF449D0EC10960067C2BF2DCD61874',
@@ -507,8 +517,8 @@ class SymbolRoutesFacadeTest(unittest.TestCase):
 		facade.reload_all(Path('tests/resources'), True)
 
 		# Act:
-		main_public_key_descriptors = facade.json_node(filter_field='mainPublicKey', public_key="invalidKey")
-		node_public_key_descriptors = facade.json_node(filter_field='nodePublicKey', public_key="invalidKey")
+		main_public_key_descriptors = facade.json_node(filter_field='mainPublicKey', public_key='invalidKey')
+		node_public_key_descriptors = facade.json_node(filter_field='nodePublicKey', public_key='invalidKey')
 
 		# Assert:
 		self.assertIsNone(main_public_key_descriptors)
