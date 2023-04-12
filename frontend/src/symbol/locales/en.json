@@ -1,0 +1,31 @@
+{
+    "lang": "English",
+    "app_name": "Symbol Faucet",
+
+    "home_description": "Thirsty? Take a drink. \n This faucet is running on the Symbol testnet and dispenses up to 10,000 XYM per account.",
+    "home_form_input_recipient_placeholder": "Your Testnet Address (Starts with %char)",
+    "home_form_input_amount_placeholder": "%currency Amount (Max %maxAmount)",
+    "home_form_button_claim_text": "Claim",
+    "home_form_auth_description": "To prevent faucet botting, you must sign in with Twitter. We request read-only access.",
+    "home_form_button_auth_twitter": "Sign in with Twitter",
+    "home_form_sign_out_twitter": "Sign out",
+    "home_body_text_p1": "Done with your XYM? Send it back to the faucet. Remember, sharing is caring!",
+    "home_body_text_p2_1": "If you’re looking to set up a voting node on Symbol (minimum 3,000,000 XYM), please send a request to",
+    "home_body_text_p2_2": "on Telegram, or",
+    "home_body_text_p2_3": "on Discord.",
+
+    "error_title": "Error",
+    "error_message_unknown": "Application Error",
+
+    "footer_link_explorer": "Explorer",
+    "footer_link_discord": "Discord",
+    "footer_link_github": "Github",
+    "footer_link_twitter": "Twitter",
+
+    "notification_info_requested": "Requested %amount %currency for %address.",
+    "notification_error_invalid_address": "Incorrect address format.",
+    "notification_error_invalid_amount": "Incorrect amount.",
+    "notification_error_unqualified_twitter_account": "Twitter account is unqualified.",
+
+    "copyright": "© The Symbol Syndicate"
+}

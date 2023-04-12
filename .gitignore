@@ -7,7 +7,8 @@ node_modules/
 coverage/
 
 # production
-/nem/build
+build/
+public/
 
 # misc
 .DS_Store

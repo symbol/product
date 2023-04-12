@@ -1,0 +1,14 @@
+---
+extends:
+- react-app
+- react-app/jest
+- plugin:import/react
+- ../_symbol/linters/javascript/default.eslintrc
+settings:
+  import/resolver:
+    node:
+      extensions:
+      - ".js"
+      - ".jsx"
+globals:
+  $t: false
