@@ -2,7 +2,7 @@ from enum import Enum
 from pathlib import Path
 
 from apscheduler.schedulers.background import BackgroundScheduler
-from flask import Flask, jsonify, redirect, render_template, request, url_for
+from flask import Flask, abort, jsonify, redirect, render_template, request, url_for
 from symbolchain.CryptoTypes import Hash256
 from symbolchain.nem.Network import Network as NemNetwork
 from symbolchain.Network import NetworkLocator
@@ -13,14 +13,8 @@ from .RoutesFacade import MIN_HEIGHT_CLUSTER_SIZE, TIMESTAMP_FORMAT, NemRoutesFa
 
 
 class Field(Enum):
-	MAIN_PUBLIC_KEY = 'mainPublicKey'
-	NODE_PUBLIC_KEY = 'nodePublicKey'
-
-
-def str_to_bool(value):
-	if value.lower() == 'true':
-		return True
-	return None
+	MAIN_PUBLIC_KEY = 'main_public_key'
+	NODE_PUBLIC_KEY = 'node_public_key'
 
 
 def create_app():
@@ -103,38 +97,42 @@ def create_app():
 		template_name, context = symbol_routes_facade.html_summary()
 		return render_template(template_name, **context)
 
-	def _get_json_nodes(role, exact_match, ssl, limit, order):
-		if ssl is not None:
-			ssl = str_to_bool(ssl)
+	def _get_json_nodes(role, exact_match, request_args):
+		only_ssl = None
+		if 'only_ssl' in request_args:
+			only_ssl = True
 
-		if limit is not None:
-			limit = int(limit)
+		order = request_args.get('order', None)
 
-		return jsonify(symbol_routes_facade.json_nodes(role=role, exact_match=exact_match, ssl=ssl, limit=limit, order=order))
+		limit = int(request_args.get('limit', 0))
+
+		return jsonify(symbol_routes_facade.json_nodes(role=role, exact_match=exact_match, only_ssl=only_ssl, limit=limit, order=order))
+
+	def _get_json_node(result):
+		if not result:
+			abort(404)
+
+		return jsonify(result)
 
 	@app.route('/api/symbol/nodes/api')
 	def api_symbol_nodes_api():  # pylint: disable=unused-variable
-		ssl = request.args.get('ssl', None)
-		limit = request.args.get('limit', None)
-		order = request.args.get('order', None)
-
-		return _get_json_nodes(2, True, ssl, limit, order)
+		return _get_json_nodes(2, True, request.args)
 
 	@app.route('/api/symbol/nodes/peer')
 	def api_symbol_nodes_peer():  # pylint: disable=unused-variable
-		ssl = request.args.get('ssl', None)
-		limit = request.args.get('limit', None)
-		order = request.args.get('order', None)
-
-		return _get_json_nodes(1, False, ssl, limit, order)
+		return _get_json_nodes(1, False, request.args)
 
 	@app.route('/api/symbol/nodes/mainPublicKey/<main_public_key>')
 	def api_symbol_nodes_get_main_public_key(main_public_key):  # pylint: disable=unused-variable
-		return jsonify(symbol_routes_facade.json_node(filter_field=Field.MAIN_PUBLIC_KEY.value, public_key=main_public_key))
+		result = symbol_routes_facade.json_node(filter_field=Field.MAIN_PUBLIC_KEY.value, public_key=main_public_key)
+
+		return _get_json_node(result)
 
 	@app.route('/api/symbol/nodes/nodePublicKey/<node_public_key>')
 	def api_symbol_nodes_get_node_public_key(node_public_key):  # pylint: disable=unused-variable
-		return jsonify(symbol_routes_facade.json_node(filter_field=Field.NODE_PUBLIC_KEY.value, public_key=node_public_key))
+		result = symbol_routes_facade.json_node(filter_field=Field.NODE_PUBLIC_KEY.value, public_key=node_public_key)
+
+		return _get_json_node(result)
 
 	@app.route('/api/symbol/chart/height')
 	def api_symbol_chart_height():  # pylint: disable=unused-variable
@@ -151,6 +149,14 @@ def create_app():
 			'last_reload_time': routes_facade.last_reload_time.strftime(TIMESTAMP_FORMAT),
 			'last_refresh_time': routes_facade.last_refresh_time.strftime(TIMESTAMP_FORMAT)
 		}
+
+	@app.errorhandler(404)
+	def not_found(_):
+		response = {
+			'status': 404,
+			'message': 'Resource not found'
+		}
+		return jsonify(response), 404
 
 	def reload_all(force=False):
 		log.debug('reloading all data')

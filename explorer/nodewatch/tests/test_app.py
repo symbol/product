@@ -170,6 +170,7 @@ def _assert_symbol_node_response(response, expected_names):
 	assert 200 == response.status_code
 	assert 'application/json' == response.headers['Content-Type']
 	assert len(expected_names) == len(response_json)
+	assert len(expected_names) == len(set(expected_names))
 	assert expected_names == list(map(lambda descriptor: descriptor['name'], response_json))
 
 
@@ -181,25 +182,25 @@ def test_get_api_symbol_nodes_api(client):  # pylint: disable=redefined-outer-na
 	_assert_symbol_node_response(response, ['Allnodes250', 'Allnodes251'])
 
 
-def test_get_api_symbol_nodes_api_order_random_limit_2(client):  # pylint: disable=redefined-outer-name
+def test_get_api_symbol_nodes_api_order_random_subset(client):  # pylint: disable=redefined-outer-name
 	# Act:
-	response = client.get('/api/symbol/nodes/api?order=random&limit=2')
+	response = client.get('/api/symbol/nodes/api?order=random&limit=1')
 	response_json = json.loads(response.data)
 
-	# Assert: spot check names
 	full_api_node_names = [
 		'Allnodes250', 'Allnodes251'
 	]
 	actual_names = list(map(lambda descriptor: descriptor['name'], response_json))
 
+	# Assert:
 	_assert_symbol_node_response(response, actual_names)
 	for name in actual_names:
 		assert name in full_api_node_names
 
 
-def test_get_api_symbol_nodes_api_ssl_true(client):  # pylint: disable=redefined-outer-name
+def test_get_api_symbol_nodes_api_only_ssl(client):  # pylint: disable=redefined-outer-name
 	# Act:
-	response = client.get('/api/symbol/nodes/api?ssl=true')
+	response = client.get('/api/symbol/nodes/api?only_ssl')
 
 	# Assert:
 	_assert_symbol_node_response(response, ['Allnodes251'])
@@ -216,7 +217,7 @@ def test_get_api_symbol_nodes_peer(client):  # pylint: disable=redefined-outer-n
 	)
 
 
-def test_get_api_symbol_nodes_peer_order_random_limit_2(client):  # pylint: disable=redefined-outer-name
+def test_get_api_symbol_nodes_peer_order_random_subset(client):  # pylint: disable=redefined-outer-name
 	# Act:
 	response = client.get('/api/symbol/nodes/peer?order=random&limit=2')
 	response_json = json.loads(response.data)
@@ -232,9 +233,9 @@ def test_get_api_symbol_nodes_peer_order_random_limit_2(client):  # pylint: disa
 		assert name in full_node_names
 
 
-def test_get_api_symbol_nodes_peer_ssl_true(client):  # pylint: disable=redefined-outer-name
+def test_get_api_symbol_nodes_peer_only_ssl(client):  # pylint: disable=redefined-outer-name
 	# Act:
-	response = client.get('/api/symbol/nodes/peer?ssl=true')
+	response = client.get('/api/symbol/nodes/peer?only_ssl')
 
 	# Assert:
 	_assert_symbol_node_response(response, ['xym pool'])
@@ -244,10 +245,10 @@ def _assert_api_symbol_node_with_public_key_not_found(response):
 	# Act:
 	response_json = json.loads(response.data)
 
-	# Assert: spot check names
-	assert 200 == response.status_code
+	# Assert:
+	assert 404 == response.status_code
 	assert 'application/json' == response.headers['Content-Type']
-	assert response_json is None
+	assert response_json == {'message': 'Resource not found', 'status': 404}
 
 
 def _assert_api_symbol_node_with_public_key_found(response, expected_name):

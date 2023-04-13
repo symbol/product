@@ -212,7 +212,7 @@ class NemRoutesFacadeTest(unittest.TestCase):
 	# endregion
 
 
-class SymbolRoutesFacadeTest(unittest.TestCase):
+class SymbolRoutesFacadeTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
 	# region reload / refresh
 
 	def test_can_reload_all(self):
@@ -371,18 +371,28 @@ class SymbolRoutesFacadeTest(unittest.TestCase):
 		facade.reload_all(Path('tests/resources'), True)
 
 		# Act:
-		node_descriptors = facade.json_nodes(role=1)
+		node_descriptors = facade.json_nodes()
 
 		# Assert: spot check names and roles
-		self.assertEqual(7, len(node_descriptors))
+		self.assertEqual(9, len(node_descriptors))
 		self.assertEqual(
-			['Apple', 'Shin-Kuma-Node', 'ibone74', 'jaguar', 'symbol.ooo maxUnlockedAccounts:100', 'xym pool', 'yasmine farm'],
+			[
+				'Allnodes250',
+				'Allnodes251',
+				'Apple',
+				'Shin-Kuma-Node',
+				'ibone74',
+				'jaguar',
+				'symbol.ooo maxUnlockedAccounts:100',
+				'xym pool',
+				'yasmine farm'
+			],
 			list(map(lambda descriptor: descriptor['name'], node_descriptors)))
 		self.assertEqual(
-			[7, 3, 3, 5, 3, 3, 3],
+			[2, 2, 7, 3, 3, 5, 3, 3, 3],
 			list(map(lambda descriptor: descriptor['roles'], node_descriptors)))
 
-	def test_can_generate_nodes_json_filtered(self):
+	def test_can_generate_nodes_json_filtered_by_role(self):
 		# Arrange:
 		facade = SymbolRoutesFacade(SymbolNetwork.MAINNET, '<symbol_explorer>')
 		facade.reload_all(Path('tests/resources'), True)
@@ -416,13 +426,13 @@ class SymbolRoutesFacadeTest(unittest.TestCase):
 			[2, 2],
 			list(map(lambda descriptor: descriptor['roles'], node_descriptors)))
 
-	def test_can_generate_nodes_json_filtered_ssl(self):
+	def test_can_generate_nodes_json_filtered_only_ssl(self):
 		# Arrange:
 		facade = SymbolRoutesFacade(SymbolNetwork.MAINNET, '<symbol_explorer>')
 		facade.reload_all(Path('tests/resources'), True)
 
 		# Act: select nodes with only ssl enabled
-		node_descriptors = facade.json_nodes(ssl=True)
+		node_descriptors = facade.json_nodes(only_ssl=True)
 
 		# Assert: spot check names and roles
 		self.assertEqual(2, len(node_descriptors))
@@ -433,7 +443,7 @@ class SymbolRoutesFacadeTest(unittest.TestCase):
 			[2, 3],
 			list(map(lambda descriptor: descriptor['roles'], node_descriptors)))
 
-	def test_can_generate_nodes_json_filtered_order_random_limit_2(self):
+	def test_can_generate_nodes_json_filtered_order_random_subset(self):
 		# Arrange:
 		facade = SymbolRoutesFacade(SymbolNetwork.MAINNET, '<symbol_explorer>')
 		facade.reload_all(Path('tests/resources'), True)
@@ -441,18 +451,35 @@ class SymbolRoutesFacadeTest(unittest.TestCase):
 		# Act: select 2 nodes with order random
 		node_descriptors = facade.json_nodes(limit=2, order='random')
 
-		# returns all nodes
+		# Assert:
 		all_node_descriptors = facade.json_nodes()
 
 		full_node_names = list(map(lambda descriptor: descriptor['name'], all_node_descriptors))
 		random_node_names = list(map(lambda descriptor: descriptor['name'], node_descriptors))
 
-		# Assert: spot check names
 		self.assertEqual(2, len(node_descriptors))
+		self.assertEqual(2, len(set(random_node_names)))
 		for name in random_node_names:
 			self.assertIn(name, full_node_names)
 
-	def test_can_generate_node_json_given_main_public_key(self):
+	def test_can_generate_nodes_json_filtered_limit_5(self):
+		# Arrange:
+		facade = SymbolRoutesFacade(SymbolNetwork.MAINNET, '<symbol_explorer>')
+		facade.reload_all(Path('tests/resources'), True)
+
+		# Act:
+		node_descriptors = facade.json_nodes(limit=5)
+
+		# Assert: spot check names
+		self.assertEqual(5, len(node_descriptors))
+		self.assertEqual(
+			['Allnodes250', 'Allnodes251', 'Apple', 'Shin-Kuma-Node', 'ibone74'],
+			list(map(lambda descriptor: descriptor['name'], node_descriptors)))
+		self.assertEqual(
+			[2, 2, 7, 3, 3],
+			list(map(lambda descriptor: descriptor['roles'], node_descriptors)))
+
+	def can_find_known_node_by_main_public_key(self):  # pylint: disable=invalid-name
 		# Arrange:
 		facade = SymbolRoutesFacade(SymbolNetwork.MAINNET, '<symbol_explorer>')
 		facade.reload_all(Path('tests/resources'), True)
@@ -482,7 +509,7 @@ class SymbolRoutesFacadeTest(unittest.TestCase):
 		# Assert:
 		self.assertEqual(node_descriptors, expected_node)
 
-	def test_can_generate_node_json_given_node_public_key(self):
+	def can_find_known_node_by_node_public_key(self):  # pylint: disable=invalid-name
 		# Arrange:
 		facade = SymbolRoutesFacade(SymbolNetwork.MAINNET, '<symbol_explorer>')
 		facade.reload_all(Path('tests/resources'), True)
@@ -511,18 +538,22 @@ class SymbolRoutesFacadeTest(unittest.TestCase):
 		# Assert:
 		self.assertEqual(node_descriptors, expected_node)
 
-	def test_can_generate_node_json_given_public_key_not_found(self):
+	def _assert_unknown_node_not_found(self, public_key):
 		# Arrange:
 		facade = SymbolRoutesFacade(SymbolNetwork.MAINNET, '<symbol_explorer>')
 		facade.reload_all(Path('tests/resources'), True)
 
 		# Act:
-		main_public_key_descriptors = facade.json_node(filter_field='mainPublicKey', public_key='invalidKey')
-		node_public_key_descriptors = facade.json_node(filter_field='nodePublicKey', public_key='invalidKey')
+		node_descriptors = facade.json_node(filter_field=public_key, public_key='invalidKey')
 
 		# Assert:
-		self.assertIsNone(main_public_key_descriptors)
-		self.assertIsNone(node_public_key_descriptors)
+		self.assertIsNone(node_descriptors)
+
+	def cannot_find_unknown_node_by_main_public_key(self):  # pylint: disable=invalid-name
+		self._assert_unknown_node_not_found('mainPublicKey')
+
+	def cannot_find_unknown_node_by_node_public_key(self):  # pylint: disable=invalid-name
+		self._assert_unknown_node_not_found('nodePublicKey')
 
 	def test_can_generate_height_chart_json(self):
 		# Arrange:

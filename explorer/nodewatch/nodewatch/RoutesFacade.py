@@ -69,11 +69,11 @@ class BasicRoutesFacade:
 	def json_nodes(self, **kwargs):
 		"""Returns all nodes with condition."""
 
-		role = kwargs.get('role', None)
-		exact_match = kwargs.get('exact_match', False)
-		limit = kwargs.get('limit', None)
-		ssl = kwargs.get('ssl', None)
-		order = kwargs.get('order', None)
+		role = kwargs.get('role')
+		exact_match = kwargs.get('exact_match')
+		limit = kwargs.get('limit')
+		only_ssl = kwargs.get('only_ssl')
+		order = kwargs.get('order')
 
 		def custom_filter(descriptor):
 			role_condition = True
@@ -81,7 +81,7 @@ class BasicRoutesFacade:
 			if role is not None:
 				role_condition = role == descriptor.roles if exact_match else role == (role & descriptor.roles)
 
-			if ssl is not None:
+			if only_ssl is True:
 				ssl_condition = (descriptor.is_https_enabled and descriptor.is_wss_enabled)
 				return role_condition and ssl_condition
 
@@ -94,17 +94,14 @@ class BasicRoutesFacade:
 		if order == 'random':
 			random.shuffle(nodes)
 
-		if limit is not None:
-			nodes = nodes[:limit]
-
-		return nodes
+		return nodes if limit == 0 else nodes[:limit]
 
 	def json_node(self, filter_field, public_key):
 		"""Returns a node with matching public key."""
 
-		matching_items = [item.to_json() for item in self.repository.node_descriptors if item.to_json()[filter_field] == public_key]
+		matching_items = [item for item in self.repository.node_descriptors if str(getattr(item, filter_field)) == public_key]
 
-		return next(iter(matching_items), None)
+		return next((item.to_json() for item in matching_items), None)
 
 	def json_height_chart(self):
 		"""Builds a JSON height chart."""
