@@ -6,7 +6,7 @@ import { addressTemplate, balanceTemplate, dateTransactionHashTemplate } from '.
 import { Column } from 'primereact/column';
 import { InputText } from 'primereact/inputtext';
 import { SelectButton } from 'primereact/selectbutton';
-import React, { useState, useEffect, useRef} from 'react';
+import React, { useEffect, useRef, useState} from 'react';
 const { NemFacade, SymbolFacade } = require('symbol-sdk').facade;
 const { Hash256 } = require('symbol-sdk').nem;
 

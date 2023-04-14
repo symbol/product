@@ -5,7 +5,7 @@ import { addressTemplate, dateTransactionHashTemplate } from '../../utils/pageUt
 import { Column } from 'primereact/column';
 import { InputText } from 'primereact/inputtext';
 import { SelectButton } from 'primereact/selectbutton';
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 const { NemFacade } = require('symbol-sdk').facade;
 const { Hash256 } = require('symbol-sdk').nem;
 
