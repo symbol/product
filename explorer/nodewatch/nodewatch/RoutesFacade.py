@@ -11,6 +11,9 @@ from .VersionChartBuilder import VersionChartBuilder
 
 MIN_HEIGHT_CLUSTER_SIZE = 3
 TIMESTAMP_FORMAT = '%H:%M'
+COMPATIBLE_VERSION_COLORS = ['#00FF00', '#00EB00', '#00D800', '#00C400', '#00B100']  # https://www.colorhexa.com/00ff00
+AMBIGUOUS_COLORS = ['#FFFF00']  # https://www.colorhexa.com/ffff00
+INCOMPATIBLE_VERSION_COLORS = ['#FF0000', '#EB0000', '#D80000', '#C40000', '#B10000']  # https://www.colorhexa.com/ff0000
 
 
 class BasicRoutesFacade:
@@ -151,14 +154,14 @@ class NemRoutesFacade(BasicRoutesFacade):
 		"""Creates a facade."""
 
 		super().__init__(network, explorer_endpoint, 'nem', 'NEM', self._version_to_css_class, {
-			'0.6.101': ('#008500', 8),
-			'0.6.100': ('#FF8484', 7),
-			'delegating / updating': ('#FFFF6B', 6),
-			'0.6.99': ('#FF6B6B', 5),
-			'0.6.98': ('#FF5252', 4),
-			'0.6.97-BETA': ('#FF3838', 3),
-			'0.6.96-BETA': ('#FF1F1F', 2),
-			'0.6.95-BETA': ('#FF0505', 1)
+			'0.6.101': (COMPATIBLE_VERSION_COLORS[0], 8),
+			'0.6.100': (COMPATIBLE_VERSION_COLORS[1], 7),
+			'delegating / updating': (AMBIGUOUS_COLORS[0], 6),
+			'0.6.99': (INCOMPATIBLE_VERSION_COLORS[-1], 5),
+			'0.6.98': (INCOMPATIBLE_VERSION_COLORS[-2], 4),
+			'0.6.97-BETA': (INCOMPATIBLE_VERSION_COLORS[-3], 3),
+			'0.6.96-BETA': (INCOMPATIBLE_VERSION_COLORS[-4], 2),
+			'0.6.95-BETA': (INCOMPATIBLE_VERSION_COLORS[-5], 1)
 		}, min_cluster_size)
 
 	def html_summary(self):
@@ -193,15 +196,14 @@ class SymbolRoutesFacade(BasicRoutesFacade):
 		"""Creates a facade."""
 
 		super().__init__(network, explorer_endpoint, 'symbol', 'Symbol', self._version_to_css_class, {
-			'1.0.3.5': ('#008A00', 10),
-			'1.0.3.4': ('#00B300', 9),
-			'delegating / updating': ('#FFFF6B', 8),
-			'1.0.3.3': ('#FF0505', 7),
-			'1.0.3.1': ('#EB0000', 6),
-			'1.0.3.0': ('#EB0000', 5),
-			'1.0.2.0': ('#D10000', 3),
-			'1.0.1.0': ('#B80000', 2),
-			'0.0.0.0': ('#000000', 1)
+			'1.0.3.6': (COMPATIBLE_VERSION_COLORS[0], 11),
+			'1.0.3.5': (COMPATIBLE_VERSION_COLORS[1], 10),
+			'1.0.3.4': (COMPATIBLE_VERSION_COLORS[2], 9),
+			'delegating / updating': (AMBIGUOUS_COLORS[0], 8),
+			'1.0.3.3': (INCOMPATIBLE_VERSION_COLORS[-1], 7),
+			'1.0.3.1': (INCOMPATIBLE_VERSION_COLORS[-2], 6),
+			'1.0.3.0': (INCOMPATIBLE_VERSION_COLORS[-3], 5),
+			'0.0.0.0': (INCOMPATIBLE_VERSION_COLORS[-5], 1)
 		}, min_cluster_size)
 
 	def html_voters(self):
