@@ -34,6 +34,6 @@
     "moment-timezone": "^0.5.43",
     "sequelize": "^6.30.0",
     "sqlite3": "^5.1.6",
-    "symbol-sdk": "^3.0.0"
+    "symbol-sdk": "^3.0.6"
   }
 }
