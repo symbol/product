@@ -32,7 +32,7 @@
     "react-tabs": "^4.3.0",
     "react-transition-group": "^4.4.5",
     "sass": "^1.61.0",
-    "symbol-sdk": "^3.0.0",
+    "symbol-sdk": "^3.0.6",
     "web-vitals": "^3.3.1"
   },
   "scripts": {
