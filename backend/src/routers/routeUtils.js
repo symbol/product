@@ -1,3 +1,4 @@
+import { config } from '../config/index.js';
 import helper from '../utils/helper.js';
 import restifyErrors from 'restify-errors';
 
@@ -39,7 +40,7 @@ const routeUtils = {
 	claimRoute: async (req, res, next, protocolFacade) => {
 		try {
 			const recipientAddress = req.body.address;
-			const transferAmount = helper.toAbsoluteAmount((parseInt(req.body.amount, 10) || 0));
+			const transferAmount = helper.toAbsoluteAmount((parseFloat(req.body.amount).toFixed(config.mosaicDivisibility) || 0));
 
 			if (!protocolFacade.isValidAddress(recipientAddress)) {
 				res.send(new restifyErrors.BadRequestError('error_address_invalid'));

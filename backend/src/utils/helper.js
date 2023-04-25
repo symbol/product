@@ -31,7 +31,7 @@ const helper = {
 
 		let error = '';
 
-		if (transferAmount >= maxTransferAmount)
+		if (transferAmount > maxTransferAmount)
 			error = 'error_amount_max_request';
 
 		if (receiptBalance >= maxAmount)

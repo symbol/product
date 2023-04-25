@@ -37,7 +37,14 @@ describe('helper', () => {
 				expectedError: ''
 			},
 			{
-				transferAmount: 700000000,
+				transferAmount: 500000000,
+				receiptBalance: 0,
+				faucetBalance: 1000000000,
+				unconfirmedTransactionsCount: 0,
+				expectedError: ''
+			},
+			{
+				transferAmount: 500000001,
 				receiptBalance: 10,
 				faucetBalance: 1000000000,
 				unconfirmedTransactionsCount: 0,

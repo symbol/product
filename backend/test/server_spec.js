@@ -50,23 +50,35 @@ describe('Server', () => {
 
 		afterEach(restore);
 
-		it('responds 200', async () => {
+		const assertInputAmount = async (amount, expectedResult) => {
 			// Arrange:
 			transferStub.returns(Promise.resolve(transactionHash));
 
 			// Act:
 			const response = await createRequest(url, {
 				address: recipientAddress,
-				amount: 10
+				amount
 			}, validJwtToken);
 
 			// Assert:
 			expect(response.status).to.be.equal(200);
 			expect(response.body).to.be.deep.equal({
 				transactionHash,
-				amount: 10,
+				amount: expectedResult,
 				recipientAddress
 			});
+		};
+
+		it('responds 200 given integer amount', async () => {
+			await assertInputAmount(10, 10);
+		});
+
+		it('responds 200 given amount decimal', async () => {
+			await assertInputAmount(10.123456, 10.123456);
+		});
+
+		it('responds 200 given amount 7 decimal places and returns max 6 decimal places', async () => {
+			await assertInputAmount(10.1234567, 10.123457);
 		});
 
 		it('responds 400 given validation failure', async () => {
