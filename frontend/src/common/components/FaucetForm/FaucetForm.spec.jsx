@@ -1,93 +1,415 @@
 /* eslint-disable testing-library/no-node-access */
 import FaucetForm from '.';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import mockAxios from 'axios';
+import { toast } from 'react-toastify';
 
 describe('components/FaucetForm', () => {
-	const addressFirstChar = 'T';
-	const currency = 'XEM';
-	const maxAmount = 10_000;
-	const setAuthStatusCallback = jest.fn();
+	// Arrange:
+	const config = {
+		claimUrl: '/claim/url',
+		authUrl: 'http://auth.url',
+		backendUrl: 'http://backend.url',
+		transactionHashExplorerUrl: 'http://explorer.url/transaction/',
+		maxAmount: 1000,
+		currency: 'TOKEN',
+		addressFirstChar: 'X',
+		minFollowers: 10,
+		minAccountAge: 30,
+		theme: 'dark'
+	};
 
-	const createSignInStatus = isSignIn => ({
-		isSignIn,
-		screenName: 'twitterAccount'
+	const recipientAddress = 'TBHGLHFK4FQUDQS3XBYKTQ3CMZLA227W5WPVAKPI';
+
+	const formInputRecipient = $t('home_form_input_recipient_placeholder', { char: config.addressFirstChar });
+	const formInputAmount = $t('home_form_input_amount_placeholder', {
+		currency: config.currency,
+		maxAmount: config.maxAmount,
+		defaultAmount: config.maxAmount * 0.2
+	});
+	const formButtonClaim = $t('home_form_button_claim_text');
+	const formAuthDescription = $t('home_form_auth_description');
+	const formButtonAuthTwitter = $t('home_form_button_auth_twitter');
+
+	describe('when user is not signed in', () => {
+		it('renders form auth description and twitter auth button', () => {
+			// Act:
+			render(<FaucetForm
+				config={config}
+				addressValidation={jest.fn(() => true)}
+			/>);
+
+			const elementText = screen.getByText(formAuthDescription);
+			const elementTwitterAuthButton = screen.queryByText(formButtonAuthTwitter);
+			const elementClaimButton = screen.queryByText(formButtonClaim);
+
+			// Assert:
+			expect(elementText).toBeInTheDocument();
+			expect(elementTwitterAuthButton).toBeInTheDocument();
+			expect(elementClaimButton).not.toBeInTheDocument();
+		});
+
+		it('store recipient address in local storage when params recipient is exist', () => {
+			// Arrange:
+			const queryParams = '?recipient=recipient-address';
+			delete window.location;
+			window.location = new URL(`http://example.com${queryParams}`);
+
+			// Act:
+			render(<FaucetForm
+				config={config}
+				addressValidation={jest.fn()}
+			/>);
+
+			// Assert:
+			expect(localStorage.getItem('recipientAddress')).toBe('recipient-address');
+		});
 	});
 
-	it('should fire onSubmit event', () => {
-		// Arrange:
-		const callback = jest.fn();
-		const accountSignIn = createSignInStatus(true);
+	describe('when user signed in', () => {
+		// decoded jwt payload
+		// {
+		// 	"accessToken": "accessToken1234",
+		// 	"accessSecret": "accessSecret1234",
+		// 	"screenName": "twitterAccount",
+		// 	"followersCount": 100,
+		// 	"createdAt": "2011-06-07T14:17:46.000Z",
+		// 	"iat": 1670704886
+		// }
+		const jwtToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.'
+				+ 'eyJhY2Nlc3NUb2tlbiI6ImFjY2Vzc1Rva2VuMTIzNCIsImFjY2Vzc1NlY3JldCI6ImFjY2Vzc1NlY3JldDEyMzQiLCJzY3JlZW5OYW1lIjo'
+				+ 'idHdpdHRlckFjY291bnQiLCJmb2xsb3dlcnNDb3VudCI6MTAwLCJjcmVhdGVkQXQiOiIyMDExLTA2LTA3VDE0OjE3OjQ2LjAwMFoiLCJpYX'
+				+ 'QiOjE2NzA3MDQ4ODZ9.PDZOY7EXRr_qknErLfqXqymJ8Ivg4nNiSFvJBSG56f0';
 
-		// Act:
-		render(<FaucetForm
-			addressFirstChar={addressFirstChar}
-			currency={currency}
-			maxAmount={maxAmount}
-			onSubmit={callback}
-			onAuthStatus={accountSignIn}
-			setAuthStatus={setAuthStatusCallback}
-		/>);
-		const element = screen.getByText('translated_home_form_button_claim_text');
-		const elementTwitterAuthButton = screen.queryByText('translated_home_form_button_auth_twitter');
-		fireEvent.click(element);
+		const createLocalStorageTwitterInfo = (jwtAuthToken = jwtToken) => {
+			localStorage.setItem('authToken', jwtAuthToken);
+		};
 
-		// Assert:
-		expect(callback).toHaveBeenCalledWith('', '');
-		expect(elementTwitterAuthButton).not.toBeInTheDocument();
+		beforeEach(() => createLocalStorageTwitterInfo());
 
-	});
+		afterEach(() => localStorage.clear());
 
-	it('should fire onSubmit event with entered values', () => {
-		// Arrange:
-		const callback = jest.fn();
-		const recipientAddress = 'TAZJ3KEPYAQ4G4Y6Q2IRZTQPU7RAKGYZULZURKTO';
-		const amount = '500';
-		const accountSignIn = createSignInStatus(true);
+		it('renders input form', () => {
+			// Act:
+			render(<FaucetForm
+				config={config}
+				addressValidation={jest.fn(() => true)}
+			/>);
+			const elementRecipient = screen.getByPlaceholderText(formInputRecipient);
+			const elementAmount = screen.getByPlaceholderText(formInputAmount);
+			const elementButton = screen.getByText(formButtonClaim);
+			const elementAuthDescription = screen.queryByText(formAuthDescription);
 
-		// Act:
-		render(<FaucetForm
-			addressFirstChar={addressFirstChar}
-			currency={currency}
-			maxAmount={maxAmount}
-			onSubmit={callback}
-			onAuthStatus={accountSignIn}
-			setAuthStatus={setAuthStatusCallback}
-		/>);
-		const elementRecipient = screen.getByPlaceholderText('translated_home_form_input_recipient_placeholder');
-		const elementAmount = screen.getByPlaceholderText('translated_home_form_input_amount_placeholder');
-		const elementButton = screen.getByText('translated_home_form_button_claim_text');
-		const elementTwitterAuthButton = screen.queryByText('translated_home_form_button_auth_twitter');
-		userEvent.type(elementRecipient, recipientAddress);
-		userEvent.type(elementAmount, amount);
-		fireEvent.click(elementButton);
+			// Assert:
+			expect(elementRecipient).toBeInTheDocument();
+			expect(elementAmount).toBeInTheDocument();
+			expect(elementButton).toBeInTheDocument();
+			expect(elementAuthDescription).not.toBeInTheDocument();
+		});
 
-		// Assert:
-		expect(callback).toHaveBeenCalledWith(recipientAddress, amount);
-		expect(elementTwitterAuthButton).not.toBeInTheDocument();
-	});
+		it('sets the recipient address when query params present', async () => {
+			// Arrange:
+			const queryParams = '?recipient=recipient-address';
+			delete window.location;
+			window.location = new URL(`http://example.com${queryParams}`);
 
-	it('should render twitter auth form', () => {
-		// Arrange:
-		const onSubmitCallback = jest.fn();
-		const accountSignIn = createSignInStatus(false);
+			// Act:
+			render(<FaucetForm
+				config={config}
+				addressValidation={jest.fn(() => true)}
+			/>);
 
-		// Act:
-		render(<FaucetForm
-			addressFirstChar={addressFirstChar}
-			currency={currency}
-			maxAmount={maxAmount}
-			onSubmit={onSubmitCallback}
-			onAuthStatus={accountSignIn}
-			setAuthStatus={setAuthStatusCallback}
-		/>);
-		const elementText = screen.getByText('translated_home_form_auth_description');
-		const elementTwitterAuthButton = screen.getByText('translated_home_form_button_auth_twitter');
-		const elementClaimButton = screen.queryByText('translated_home_form_button_claim_text');
+			const elementRecipient = screen.getByPlaceholderText(formInputRecipient);
 
-		// Assert:
-		expect(elementText).toBeInTheDocument();
-		expect(elementTwitterAuthButton).toBeInTheDocument();
-		expect(elementClaimButton).not.toBeInTheDocument();
+			// Assert:
+			expect(elementRecipient.value).toBe('recipient-address');
+		});
+
+		it('sets the recipient address from localStorage when not available in query params', async () => {
+			// Arrange:
+			delete window.location;
+			window.location = new URL('http://example.com');
+
+			localStorage.setItem('recipientAddress', 'local-storage-recipient-address');
+
+			// Act:
+			render(<FaucetForm
+				config={config}
+				addressValidation={jest.fn(() => true)}
+			/>);
+
+			const elementRecipient = screen.getByPlaceholderText(formInputRecipient);
+
+			// Assert:
+			expect(elementRecipient.value).toBe('local-storage-recipient-address');
+		});
+
+		describe('formSubmitHandler', () => {
+			const assertSubmitFormAmount = async (amount, expectedAmount) => {
+				// Arrange:
+				mockAxios.post.mockReturnValue({
+					data: {
+						transactionHash: 'transaction_hash'
+					}
+				});
+
+				// Act:
+				render(<FaucetForm
+					config={config}
+					addressValidation={jest.fn(() => true)}
+				/>);
+				const elementRecipient = screen.getByPlaceholderText(formInputRecipient);
+				const elementAmount = screen.getByPlaceholderText(formInputAmount);
+				const elementButton = screen.getByText(formButtonClaim);
+				userEvent.type(elementRecipient, recipientAddress);
+				userEvent.type(elementAmount, amount);
+				fireEvent.click(elementButton);
+
+				//Assert:
+				expect(elementButton).toBeDisabled();
+				await waitFor(() => {
+					expect(mockAxios.post).toHaveBeenCalledWith('/claim/url', {
+						address: recipientAddress,
+						amount: expectedAmount
+					}, {
+						headers: {
+							'Content-Type': 'application/json',
+							'authToken': jwtToken
+						}
+					});
+				});
+				expect(elementButton).toBeEnabled();
+			};
+
+			it('returns default amount when amount is empty', async () => {
+				await assertSubmitFormAmount(' ', config.maxAmount * 0.2);
+			});
+
+			it('returns input amount when amount not empty', async () => {
+				await assertSubmitFormAmount('100', 100);
+			});
+
+			it('returns 3 decimal amount when amount not empty', async () => {
+				await assertSubmitFormAmount('100.123', 100.123);
+			});
+
+			it('returns max 6 decimal amount when amount not empty', async () => {
+				await assertSubmitFormAmount('100.1234567', 100.123456);
+			});
+		});
+
+		describe('toast', () => {
+			const toastStyle = {
+				bodyClassName: 'toast-body',
+				progressClassName: 'toast-progress',
+				theme: config.theme
+			};
+
+			const runBasicErrorToastTests = (inputFiled, formInput, expectedErrorMessage) => {
+				it(`renders error toast when enter invalid ${inputFiled}`, () => {
+					// Arrange:
+					jest.spyOn(toast, 'error').mockImplementation(jest.fn());
+
+					// Act:
+					render(<FaucetForm
+						config={config}
+						addressValidation={address => !('T' !== address[0])}
+					/>);
+					const elementRecipient = screen.getByPlaceholderText(formInputRecipient);
+					const elementAmount = screen.getByPlaceholderText(formInputAmount);
+					const elementButton = screen.getByText(formButtonClaim);
+					userEvent.type(elementRecipient, formInput.address);
+					userEvent.type(elementAmount, formInput.amount);
+					fireEvent.click(elementButton);
+
+					// Assert:
+					expect(toast.error).toHaveBeenCalledWith($t(expectedErrorMessage), toastStyle);
+				});
+			};
+
+			const assertTwitterAccountToastError = (info = {}) => {
+				// Arrange:
+				createLocalStorageTwitterInfo(info);
+
+				// Act:
+				render(<FaucetForm
+					config={config}
+					addressValidation={jest.fn(() => true)}
+				/>);
+				const elementRecipient = screen.getByPlaceholderText(formInputRecipient);
+				const elementAmount = screen.getByPlaceholderText(formInputAmount);
+				const elementButton = screen.getByText(formButtonClaim);
+				userEvent.type(elementRecipient, recipientAddress);
+				userEvent.type(elementAmount, '100');
+				fireEvent.click(elementButton);
+
+				// Assert:
+				expect(toast.error).toHaveBeenCalledWith($t('notification_error_unqualified_twitter_account'), toastStyle);
+			};
+
+			runBasicErrorToastTests(
+				'address',
+				{
+					address: 'ABHGLHFK4FQUDQS3XBYKTQ3CMZLA227W5WPVAKPZ',
+					amount: '100'
+				},
+				'notification_error_address_invalid'
+			);
+
+			runBasicErrorToastTests(
+				'amount',
+				{
+					address: recipientAddress,
+					amount: '100000'
+				},
+				'notification_error_amount_invalid'
+			);
+
+			it('renders error toast when twitter account followersCount less than 10', () => {
+				const unqualifiedJwtToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.'
+					+ 'eyJhY2Nlc3NUb2tlbiI6ImFjY2Vzc1Rva2VuMTIzNCIsImFjY2Vzc1NlY3JldCI6ImFjY2Vzc1NlY3JldDEyMzQiLCJzY3JlZW5OYW1lIjo'
+					+ 'idHdpdHRlckFjY291bnQiLCJmb2xsb3dlcnNDb3VudCI6NSwiY3JlYXRlZEF0IjoiMjAxMS0wNi0wN1QxNDoxNzo0Ni4wMDBaIiwiaWF0Ij'
+					+ 'oxNjcwNzA0ODg2fQ.Y-MenesuV6tQ8arh8_3lvNG2w3lVvstc7iDYqDRwikM';
+
+				assertTwitterAccountToastError(unqualifiedJwtToken);
+			});
+
+			it('renders error toast when twitter account registered less than 31 days', () => {
+				const unqualifiedJwtToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.'
+					+ 'eyJhY2Nlc3NUb2tlbiI6ImFjY2Vzc1Rva2VuMTIzNCIsImFjY2Vzc1NlY3JldCI6ImFjY2Vzc1NlY3JldDEyMzQiLCJzY3JlZW5OYW1lIjo'
+					+ 'idHdpdHRlckFjY291bnQiLCJmb2xsb3dlcnNDb3VudCI6NSwiY3JlYXRlZEF0IjoiMjAyMi0xMS0wN1QxNDoxNzo0Ni4wMDBaIiwiaWF0Ij'
+					+ 'oxNjcwNzA0ODg2fQ.IJ-VgWo8KWj7FjikXH0XDnhazTRcqAkjy-jM1OEud5w';
+
+				assertTwitterAccountToastError(unqualifiedJwtToken);
+			});
+
+			describe('claimToken', () => {
+				const createAxiosError = (code, errorMessage) => {
+					return {
+						response: {
+							data: {
+								code,
+								message: errorMessage
+							}
+						}
+					};
+				};
+
+				const assertServiceResponseErrorTests = async (serverResponse, expectResult) => {
+					// Arrange:
+					jest.spyOn(toast, 'error').mockImplementation(jest.fn());
+
+					mockAxios.post.mockRejectedValueOnce(serverResponse);
+
+					// Act:
+					render(<FaucetForm
+						config={config}
+						addressValidation={jest.fn(() => true)}
+					/>);
+					const elementRecipient = screen.getByPlaceholderText(formInputRecipient);
+					const elementAmount = screen.getByPlaceholderText(formInputAmount);
+					const elementButton = screen.getByText(formButtonClaim);
+					userEvent.type(elementRecipient, recipientAddress);
+					userEvent.type(elementAmount, '100');
+					fireEvent.click(elementButton);
+
+					// Assert:
+					expect(mockAxios.post).toHaveBeenCalledWith('/claim/url', {
+						address: recipientAddress,
+						amount: 100
+					}, {
+						headers: {
+							'Content-Type': 'application/json',
+							'authToken': jwtToken
+						}
+					});
+
+					await waitFor(() => expect(toast.error).toHaveBeenCalledWith($t(expectResult), toastStyle));
+				};
+
+				it('renders error toast when service response notification_error_amount_max_request', async () => {
+					await assertServiceResponseErrorTests(
+						createAxiosError('BadRequest', 'error_amount_max_request'),
+						'notification_error_amount_max_request'
+					);
+				});
+
+				it('renders error toast when service response error_account_high_balance', async () => {
+					await assertServiceResponseErrorTests(
+						createAxiosError('BadRequest', 'error_account_high_balance'),
+						'notification_error_account_high_balance'
+					);
+				});
+
+				it('renders error toast when service response error_fund_drains', async () => {
+					await assertServiceResponseErrorTests(
+						createAxiosError('BadRequest', 'error_fund_drains'),
+						'notification_error_fund_drains'
+					);
+				});
+
+				it('renders error toast when service response error_transaction_pending', async () => {
+					await assertServiceResponseErrorTests(
+						createAxiosError('BadRequest', 'error_transaction_pending'),
+						'notification_error_transaction_pending'
+					);
+				});
+
+				it('renders error toast when service response notification_error_node', async () => {
+					await assertServiceResponseErrorTests(createAxiosError('Internal', 'random error'), 'notification_error_node');
+				});
+
+				it('renders error toast when service not response', async () => {
+					await assertServiceResponseErrorTests({
+						request: {}
+					}, 'notification_error_backend_not_responding');
+				});
+
+				it('renders error toast when frontend request fail', async () => {
+					await assertServiceResponseErrorTests({}, 'notification_error_frontend_request_fail');
+				});
+
+				it('renders info toast when service response valid data', async () => {
+					// Arrange:
+					jest.spyOn(toast, 'info').mockImplementation(jest.fn());
+
+					mockAxios.post.mockReturnValue({
+						data: {
+							transactionHash: 'transaction_hash'
+						}
+					});
+
+					const amount = '100';
+
+					// Act:
+					render(<FaucetForm
+						config={config}
+						addressValidation={jest.fn(() => true)}
+					/>);
+					const elementRecipient = screen.getByPlaceholderText(formInputRecipient);
+					const elementAmount = screen.getByPlaceholderText(formInputAmount);
+					const elementButton = screen.getByText(formButtonClaim);
+					userEvent.type(elementRecipient, recipientAddress);
+					userEvent.type(elementAmount, amount);
+					fireEvent.click(elementButton);
+
+					// Assert:
+					await waitFor(() => expect(toast.info).toHaveBeenCalledWith($t('notification_info_requested', {
+						amount,
+						currency: 'XEM',
+						address: recipientAddress
+					}), toastStyle));
+
+					expect(toast.info).toHaveBeenCalledWith(<a
+						href="http://explorer.url/transaction/transaction_hash"
+						target="_blank"
+						rel="noreferrer"
+					>
+							View in Explorer
+					</a>, toastStyle);
+				});
+			});
+		});
 	});
 });

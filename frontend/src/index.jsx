@@ -1,26 +1,13 @@
+import { loadHome } from './loadHome';
+import { registerRoot } from './registerRoot';
 import reportWebVitals from './reportWebVitals';
-import React from 'react';
-import ReactDOM from 'react-dom';
 
-const registerRootComponent = Component => {
-	ReactDOM.render(
-		<React.StrictMode>
-			<Component />
-		</React.StrictMode>,
-		document.getElementById('root')
-	);
+const main = async () => {
+	const HomeComponent = await loadHome(process.env.REACT_APP_BUILD_TARGET);
+	registerRoot(HomeComponent);
 };
 
-switch (process.env.REACT_APP_BUILD_TARGET) {
-case 'nem':
-	import('./nem/pages/Home').then(NEMHome => registerRootComponent(NEMHome.default));
-	break;
-case 'symbol':
-	import('./symbol/pages/Home').then(SymbolHome => registerRootComponent(SymbolHome.default));
-	break;
-default:
-	throw Error('The build target is not specified');
-}
+main();
 
 // If you want to start measuring performance in your app, pass a function
 // to log results (for example: reportWebVitals(console.log))

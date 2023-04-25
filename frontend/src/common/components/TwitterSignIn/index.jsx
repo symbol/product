@@ -23,7 +23,7 @@ const TwitterSignIn = function ({
 	const twitterLogout = () => {
 		localStorage.clear();
 		setTwitterAccountStatus({
-			isSignIn: false,
+			isSignedIn: false,
 			screenName: ''
 		});
 	};
@@ -59,7 +59,7 @@ const TwitterSignIn = function ({
 		// set sign in after verify successful
 		if (null !== twitterInfo) {
 			setTwitterAccountStatus({
-				isSignIn: true,
+				isSignedIn: true,
 				screenName: twitterInfo.screenName
 			});
 		}
@@ -69,7 +69,7 @@ const TwitterSignIn = function ({
 	return (
 		<div>
 			{
-				twitterAccountStatus.isSignIn
+				twitterAccountStatus.isSignedIn
 					? (
 						<Button type="button" onClick={twitterLogout}>
 							{`${$t('home_form_sign_out_twitter')} @${twitterAccountStatus.screenName}`}
@@ -83,7 +83,7 @@ const TwitterSignIn = function ({
 
 TwitterSignIn.propTypes = {
 	twitterAccountStatus: PropTypes.exact({
-		isSignIn: PropTypes.bool.isRequired,
+		isSignedIn: PropTypes.bool.isRequired,
 		screenName: PropTypes.string.isRequired
 	}).isRequired,
 	setTwitterAccountStatus: PropTypes.func.isRequired

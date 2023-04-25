@@ -14,13 +14,13 @@ describe('components/TwitterSignIn', () => {
 
 	// Arrange:
 	const signInStatus = {
-		isSignIn: false,
+		isSignedIn: false,
 		screenName: ''
 	};
 
 	const setStatus = jest.fn();
 
-	it('renders sign in button when isSignIn is false', () => {
+	it('renders sign in button when isSignedIn is false', () => {
 		// Arrange + Act:
 		render(<TwitterSignIn
 			twitterAccountStatus={signInStatus}
@@ -35,11 +35,11 @@ describe('components/TwitterSignIn', () => {
 		expect(elementSignOutButton).not.toBeInTheDocument();
 	});
 
-	it('renders sign out button when isSignIn is true', () => {
+	it('renders sign out button when isSignedIn is true', () => {
 		// Arrange + Act:
 		render(<TwitterSignIn
 			twitterAccountStatus={{
-				isSignIn: true,
+				isSignedIn: true,
 				screenName: 'accountName'
 			}}
 			setTwitterAccountStatus={setStatus}
@@ -59,7 +59,7 @@ describe('components/TwitterSignIn', () => {
 
 		render(<TwitterSignIn
 			twitterAccountStatus={{
-				isSignIn: true,
+				isSignedIn: true,
 				screenName: 'accountName'
 			}}
 			setTwitterAccountStatus={setStatus}
@@ -71,7 +71,7 @@ describe('components/TwitterSignIn', () => {
 
 		// Assert:
 		expect(setStatus).toHaveBeenCalledWith({
-			isSignIn: false,
+			isSignedIn: false,
 			screenName: ''
 		});
 		await waitFor(() => expect(localStorage.clear).toHaveBeenCalled());
@@ -191,7 +191,7 @@ describe('components/TwitterSignIn', () => {
 
 			// Assert:
 			expect(setStatus).toHaveBeenCalledWith({
-				isSignIn: true,
+				isSignedIn: true,
 				screenName: 'twitterAccount'
 			});
 		});

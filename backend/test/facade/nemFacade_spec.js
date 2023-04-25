@@ -1,6 +1,6 @@
 import nemFacade from '../../src/facade/nemFacade.js';
 import { expect } from 'chai';
-import { stub, restore } from 'sinon';
+import { restore, stub } from 'sinon';
 
 /**
  * Mock axios response.

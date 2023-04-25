@@ -2,9 +2,9 @@
     "lang": "English",
     "app_name": "NEM Faucet",
 
-    "home_description": "Thirsty? Take a drink. \n This faucet is running on the NEM testnet and dispenses up to 10,000 XEM per account.",
+    "home_description": "Thirsty? Take a drink. \n This faucet is running on the NEM testnet and dispenses up to %maxAmount XEM per account.",
     "home_form_input_recipient_placeholder": "Your Testnet Address (Starts with %char)",
-    "home_form_input_amount_placeholder": "%currency Amount (Max %maxAmount)",
+    "home_form_input_amount_placeholder": "%currency Amount (Max %maxAmount / Default %defaultAmount)",
     "home_form_button_claim_text": "Claim",
     "home_form_auth_description": "To prevent faucet botting, you must sign in with Twitter. We request read-only access.",
     "home_form_button_auth_twitter": "Sign in with Twitter",
@@ -23,8 +23,8 @@
     "footer_link_twitter": "Twitter",
 
     "notification_info_requested": "Requested %amount %currency for %address.",
-    "notification_error_invalid_address": "Incorrect address format.",
-    "notification_error_invalid_amount": "Incorrect amount.",
+    "notification_error_address_invalid": "Incorrect address format.",
+    "notification_error_amount_invalid": "Incorrect amount.",
     "notification_error_unqualified_twitter_account": "Twitter account is unqualified.",
     "notification_error_amount_max_request": "Transfer amount excess limit.",
     "notification_error_account_high_balance": "Your account balance is too high.",
@@ -34,7 +34,7 @@
     "notification_error_authentication_fail": "Authentication fail.",
     "notification_error_backend_not_responding": "Faucet Backend Service not responding.",
     "notification_error_frontend_request_fail": "Something wrong in frontend request.",
-    "notification_error_nem_node": "Something wrong with NEM node.",
+    "notification_error_node": "Something wrong with node.",
 
     "copyright": "© The Symbol Syndicate"
 }

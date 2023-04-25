@@ -1,7 +1,7 @@
 import symbolFacade from '../../src/facade/symbolFacade.js';
 import testConfigurationFactory from '../testConfigurationFactory.js';
 import chai from 'chai';
-import { stub, restore } from 'sinon';
+import { restore, stub } from 'sinon';
 import sinonChai from 'sinon-chai';
 
 chai.use(sinonChai);

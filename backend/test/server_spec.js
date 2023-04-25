@@ -2,7 +2,7 @@ import nemFacade from '../src/facade/nemFacade.js';
 import symbolFacade from '../src/facade/symbolFacade.js';
 import server from '../src/server.js';
 import { expect } from 'chai';
-import { stub, restore } from 'sinon';
+import { restore, stub } from 'sinon';
 import supertest from 'supertest';
 
 describe('Server', () => {
