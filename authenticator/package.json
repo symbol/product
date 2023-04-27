@@ -17,7 +17,7 @@
   "keywords": [],
   "dependencies": {
     "dotenv": "^16.0.0",
-    "jsonwebtoken": "^8.5.1",
+    "jsonwebtoken": "^9.0.0",
     "restify": "10.0.0",
     "restify-errors": "^8.0.2",
     "twitter-api-v2": "^1.11.0"
