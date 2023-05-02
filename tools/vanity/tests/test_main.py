@@ -31,7 +31,6 @@ class MainTest(unittest.TestCase):
 
 	def _test_can_generate_addresses(self, blockchain, facade_class):
 		# Act:
-		bip32_coin_id = 43
 		address_descriptors = self._execute(blockchain, 'AXE,CAT,BOT')
 
 		# Assert:
@@ -40,7 +39,7 @@ class MainTest(unittest.TestCase):
 		for descriptor in address_descriptors:
 			bip32_root_node = Bip32(facade.BIP32_CURVE_NAME).from_mnemonic(descriptor['mnemonic'], '')
 			for i in range(10):
-				bip32_path = [44, bip32_coin_id, i, 0, 0]
+				bip32_path = [44, facade.bip32_path(0)[1], i, 0, 0]
 				key_pair = facade.bip32_node_to_key_pair(bip32_root_node.derive_path(bip32_path))
 
 				if PublicKey(descriptor['public key']) != key_pair.public_key:
