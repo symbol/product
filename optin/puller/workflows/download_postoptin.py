@@ -1,6 +1,5 @@
 import argparse
 import asyncio
-import datetime
 import logging
 
 from symbolchain.CryptoTypes import PublicKey
