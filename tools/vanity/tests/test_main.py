@@ -39,7 +39,7 @@ class MainTest(unittest.TestCase):
 		for descriptor in address_descriptors:
 			bip32_root_node = Bip32(facade.BIP32_CURVE_NAME).from_mnemonic(descriptor['mnemonic'], '')
 			for i in range(10):
-				bip32_path = [44, facade.bip32_path(0)[1], i, 0, 0]
+				bip32_path = facade.bip32_path(i)
 				key_pair = facade.bip32_node_to_key_pair(bip32_root_node.derive_path(bip32_path))
 
 				if PublicKey(descriptor['public key']) != key_pair.public_key:

@@ -11,9 +11,8 @@ from vanity.MultiAddressMatcher import MultiAddressMatcher
 class AddressGeneratorTest(unittest.TestCase):
 	@staticmethod
 	def _derive_public_key_at(facade, mnemonic, account_index):
-		coin_id = 1 if 'testnet' == facade.network.name else facade.bip32_path(0)[1]
 		bip32_root_node = Bip32(facade.BIP32_CURVE_NAME).from_mnemonic(mnemonic, '')
-		return facade.bip32_node_to_key_pair(bip32_root_node.derive_path([44, coin_id, account_index, 0, 0])).public_key
+		return facade.bip32_node_to_key_pair(bip32_root_node.derive_path(facade.bip32_path(account_index))).public_key
 
 	def assert_derivable(self, facade, mnemonic, key_pair, max_wallet_accounts):
 		self.assertTrue(any(
