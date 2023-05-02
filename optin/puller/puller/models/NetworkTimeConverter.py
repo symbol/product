@@ -1,11 +1,5 @@
-import datetime
-
-from symbolchain.symbol.Network import Network as SymbolNetwork
 from symbolchain.nem.Network import Network as NemNetwork
-
-SYMBOL_TESTNET_EPOCH_TIME = datetime.datetime(2022, 10, 31, 21, 7, 47, tzinfo=datetime.timezone.utc)
-SYMBOL_MAINNET_EPOCH_TIME = datetime.datetime(2021, 3, 16, 0, 6, 25, tzinfo=datetime.timezone.utc)
-NEM_EPOCH_TIME = datetime.datetime(2015, 3, 29, 0, 6, 25, tzinfo=datetime.timezone.utc)
+from symbolchain.symbol.Network import Network as SymbolNetwork
 
 
 class NetworkTimeConverter:
