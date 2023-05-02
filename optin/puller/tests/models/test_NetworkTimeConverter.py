@@ -23,7 +23,7 @@ class NetworkTimeConverterTest(unittest.TestCase):
 		unix_timestamp = converter.symbol_to_unix(15000)
 
 		# Assert:
-		self.assertEqual(datetime.datetime(2021, 11, 25, 14, 1, 2, tzinfo=datetime.timezone.utc).timestamp(), unix_timestamp)
+		self.assertEqual(datetime.datetime(2022, 10, 31, 21, 8, 2, tzinfo=datetime.timezone.utc).timestamp(), unix_timestamp)
 
 	def test_can_convert_nem_to_unix_time_mainnet(self):
 		# Arrange:

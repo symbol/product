@@ -30,7 +30,8 @@ class AddressGenerator:
 			thread.join()
 
 	def _match_all_thread(self, matcher):
-		coin_id = 1 if 'testnet' == self.facade.network.name else self.facade.BIP32_COIN_ID
+		bip32_coin_id = 43
+		coin_id = 1 if 'testnet' == self.facade.network.name else bip32_coin_id
 		bip32 = Bip32(self.facade.BIP32_CURVE_NAME)
 
 		while True:

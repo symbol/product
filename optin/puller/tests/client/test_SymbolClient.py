@@ -7,8 +7,7 @@ from aiohttp import web
 from symbolchain.CryptoTypes import Hash256, PublicKey
 from symbolchain.nem.Network import Address as NemAddress
 from symbolchain.sc import MosaicId
-from symbolchain.symbol.Network import Address, Network
-from symbolchain.symbol.NetworkTimestamp import NetworkTimestamp
+from symbolchain.symbol.Network import Address, Network, NetworkTimestamp
 
 from puller.client.SymbolClient import SymbolClient, filter_finalized_transactions
 
