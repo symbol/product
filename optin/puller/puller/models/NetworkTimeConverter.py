@@ -1,9 +1,5 @@
-import datetime
-
-from symbolchain.nem.NetworkTimestamp import NetworkTimestamp as NemNetworkTimestamp
-from symbolchain.symbol.NetworkTimestamp import NetworkTimestamp as SymbolNetworkTimestamp
-
-SYMBOL_TESTNET_EPOCH_TIME = datetime.datetime(2021, 11, 25, 14, 0, 47, tzinfo=datetime.timezone.utc)
+from symbolchain.nem.Network import Network as NemNetwork
+from symbolchain.symbol.Network import Network as SymbolNetwork
 
 
 class NetworkTimeConverter:
@@ -18,12 +14,12 @@ class NetworkTimeConverter:
 		"""Converts a Symbol timestamp to a UNIX timestamp."""
 
 		if self.is_testnet:
-			return SymbolNetworkTimestamp(timestamp).to_datetime(SYMBOL_TESTNET_EPOCH_TIME).timestamp()
+			return SymbolNetwork.TESTNET.datetime_converter.to_datetime(timestamp).timestamp()
 
-		return SymbolNetworkTimestamp(timestamp).to_datetime().timestamp()
+		return SymbolNetwork.MAINNET.datetime_converter.to_datetime(timestamp).timestamp()
 
 	@staticmethod
 	def nem_to_unix(timestamp):
 		"""Converts a NEM timestamp to a UNIX timestamp."""
 
-		return NemNetworkTimestamp(timestamp).to_datetime().timestamp()
+		return NemNetwork.MAINNET.datetime_converter.to_datetime(timestamp).timestamp()

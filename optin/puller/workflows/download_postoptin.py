@@ -1,6 +1,5 @@
 import argparse
 import asyncio
-import datetime
 import logging
 
 from symbolchain.CryptoTypes import PublicKey
@@ -17,7 +16,6 @@ from puller.processors.NemOptinProcessor import process_nem_optin_request
 # example for downloading post optins.
 # this is placeholder as successes will need to undergo more processing and be inserted into database.
 
-SYMBOL_TESTNET_EPOCH_TIME = datetime.datetime(2021, 11, 25, 14, 0, 47, tzinfo=datetime.timezone.utc)
 OPTIN_ADDRESS = 'NAQ7RCYM4PRUAKA7AMBLN4NPBJEJMRCHHJYAVA72'
 PAYOUT_SIGNER_PUBLIC_KEYS = '7AEC08AA66CB50B0C3D180DE7508D5D82ECEDCDC9E73F61FA7069868BEABA856'
 

@@ -5,8 +5,7 @@ from collections import namedtuple
 from symbolchain.CryptoTypes import Hash256
 from symbolchain.nem.Network import Address as NemAddress
 from symbolchain.sc import MosaicId
-from symbolchain.symbol.Network import Network
-from symbolchain.symbol.NetworkTimestamp import NetworkTimestamp
+from symbolchain.symbol.Network import Network, NetworkTimestamp
 
 from .BasicClient import BasicClient
 

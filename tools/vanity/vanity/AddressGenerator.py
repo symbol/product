@@ -30,7 +30,6 @@ class AddressGenerator:
 			thread.join()
 
 	def _match_all_thread(self, matcher):
-		coin_id = 1 if 'testnet' == self.facade.network.name else self.facade.BIP32_COIN_ID
 		bip32 = Bip32(self.facade.BIP32_CURVE_NAME)
 
 		while True:
@@ -39,7 +38,7 @@ class AddressGenerator:
 
 			bip32_root_node = bip32.from_mnemonic(mnemonic, '')  # no password
 			for account_index in range(0, self.max_wallet_accounts):
-				key_pair = self.facade.bip32_node_to_key_pair(bip32_root_node.derive_path([44, coin_id, account_index, 0, 0]))
+				key_pair = self.facade.bip32_node_to_key_pair(bip32_root_node.derive_path(self.facade.bip32_path(account_index)))
 
 				with self.lock:
 					match_result = matcher.accept(key_pair)

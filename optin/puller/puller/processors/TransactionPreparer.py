@@ -24,7 +24,7 @@ class TransactionPreparer:
 
 		message = convert_to_dumb_format(nem_address)
 		transaction = self.facade.transaction_factory.create({
-			'type': 'transfer_transaction',
+			'type': 'transfer_transaction_v1',
 			'signer_public_key': self.key_pair.public_key,
 			'fee': 0,
 			'deadline': deadline,
