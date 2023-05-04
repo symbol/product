@@ -2,14 +2,14 @@ import nemRoute from './nemRoute.js';
 import symbolRoute from './symbolRoute.js';
 
 const registerFaucet = {
-	register: server => {
+	register: (server, claimDatabase) => {
 		const allRoutes = [
 			nemRoute,
 			symbolRoute
 		];
 
 		allRoutes.forEach(routes => {
-			routes.register(server);
+			routes.register(server, claimDatabase);
 		});
 	}
 };

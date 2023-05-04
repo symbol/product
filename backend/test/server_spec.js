@@ -1,12 +1,26 @@
+import testHelper from './testHelper.js';
+import ClaimDatabase from '../src/database/ClaimDatabase.js';
+import DatabaseConnection from '../src/database/DatabaseConnection.js';
 import nemFacade from '../src/facade/nemFacade.js';
 import symbolFacade from '../src/facade/symbolFacade.js';
-import server from '../src/server.js';
+import createRestifyServer from '../src/server.js';
 import { expect } from 'chai';
 import { restore, stub } from 'sinon';
 import supertest from 'supertest';
 
 describe('Server', () => {
 	let transferStub = {};
+	let claimDatabase = {};
+	let server = {};
+
+	beforeEach(() => {
+		const { connection } = new DatabaseConnection(':memory:');
+		claimDatabase = new ClaimDatabase(connection);
+
+		claimDatabase.createTable();
+
+		server = createRestifyServer(claimDatabase);
+	});
 
 	// decoded jwt payload
 	// {
@@ -33,7 +47,7 @@ describe('Server', () => {
 		return request;
 	};
 
-	const runBasicRouteTests = (protocolFacade, url, recipientAddress, invalidAddress, transactionHash) => {
+	const runBasicRouteTests = (protocolFacade, protocolName, url, recipientAddress, invalidAddress, transactionHash) => {
 		beforeEach(() => {
 			const getAccountBalanceStub = stub(protocolFacade, 'getAccountBalance');
 
@@ -57,7 +71,8 @@ describe('Server', () => {
 			// Act:
 			const response = await createRequest(url, {
 				address: recipientAddress,
-				amount
+				amount,
+				twitterHandle: '@username'
 			}, validJwtToken);
 
 			// Assert:
@@ -69,16 +84,43 @@ describe('Server', () => {
 			});
 		};
 
+		const assertRecordInserted = async amount => {
+			// Assert:
+			const result = await testHelper.readDB(claimDatabase.connection, 'all', 'SELECT * FROM claimed');
+
+			expect(result.length).to.be.equal(1);
+			expect(result[0]).to.deep.include({
+				id: 1,
+				twitter_handle: '@username',
+				protocol: protocolName,
+				address: recipientAddress,
+				amount
+			});
+
+			// The timestamp is not exactly the same, so we check if it is close to the current time
+			expect(new Date(result[0].claimed_at).getTime()).to.be.closeTo(new Date().getTime(), 2000);
+		};
+
+		const assertRecordNotInserted = async () => {
+			// Assert:
+			const result = await testHelper.readDB(claimDatabase.connection, 'all', 'SELECT * FROM claimed');
+
+			expect(result.length).to.be.equal(0);
+		};
+
 		it('responds 200 given integer amount', async () => {
 			await assertInputAmount(10, 10);
+			await assertRecordInserted(10000000, protocolName);
 		});
 
 		it('responds 200 given amount decimal', async () => {
 			await assertInputAmount(10.123456, 10.123456);
+			await assertRecordInserted(10123456, protocolName);
 		});
 
 		it('responds 200 given amount 7 decimal places and returns max 6 decimal places', async () => {
 			await assertInputAmount(10.1234567, 10.123457);
+			await assertRecordInserted(10123457, protocolName);
 		});
 
 		it('responds 400 given validation failure', async () => {
@@ -97,6 +139,8 @@ describe('Server', () => {
 				code: 'BadRequest',
 				message: 'error_fund_drains'
 			});
+
+			await assertRecordNotInserted();
 		});
 
 		it('responds 400 given invalid address', async () => {
@@ -112,6 +156,8 @@ describe('Server', () => {
 				code: 'BadRequest',
 				message: 'error_address_invalid'
 			});
+
+			await assertRecordNotInserted();
 		});
 
 		it('responds 403 verify auth token fail', async () => {
@@ -127,6 +173,8 @@ describe('Server', () => {
 				code: 'Forbidden',
 				message: 'error_authentication_fail'
 			});
+
+			await assertRecordNotInserted();
 		});
 
 		it('responds 403 twitter requirement fail', async () => {
@@ -157,12 +205,15 @@ describe('Server', () => {
 				code: 'Forbidden',
 				message: 'error_twitter_requirement_fail'
 			});
+
+			await assertRecordNotInserted();
 		});
 	};
 
 	describe('POST /claim/xem', () =>
 		runBasicRouteTests(
 			nemFacade,
+			'NEM',
 			'/claim/xem',
 			'TALICE5VF6J5FYMTCB7A3QG6OIRDRUXDWJGFVXNW',
 			'TBL6O45I3HL2J3X3LPRVCEAES3S6KTWLNZ76NDQ',
@@ -172,6 +223,7 @@ describe('Server', () => {
 	describe('POST /claim/xym', () =>
 		runBasicRouteTests(
 			symbolFacade,
+			'Symbol',
 			'/claim/xym',
 			'TBL6O45I3HL2J3X3LPRVCEAES3S6KTWLNZ76NDQ',
 			'TALICE5VF6J5FYMTCB7A3QG6OIRDRUXDWJGFVXNW',

@@ -18,7 +18,8 @@ describe('config', () => {
 		symbol: {
 			faucetPrivateKey: '97B1D110B687908FD020885B14F42BB17E3E1107B723F23A4AD1E0E0C9CBBD78',
 			endpoint: 'http://localhost:3001'
-		}
+		},
+		dbPath: ':memory:'
 	};
 
 	const nemFaucetConfigurationError = 'provided nem faucet private key or endpoint configuration is incomplete';

@@ -24,7 +24,8 @@ export const config = {
 	symbol: {
 		faucetPrivateKey: process.env.SYMBOL_FAUCET_PRIVATE_KEY,
 		endpoint: process.env.SYMBOL_ENDPOINT
-	}
+	},
+	dbPath: process.env.DB_PATH || ':memory:'
 };
 
 export const validateConfiguration = configParams => {

@@ -10,11 +10,12 @@ describe('routers', () => {
 		it('registers all routes ', () => {
 			// Arrange:
 			const routes = [];
+			const claimDatabase = {};
 
 			const server = createMockServer(routes);
 
 			// Act:
-			registerFaucet.register(server);
+			registerFaucet.register(server, claimDatabase);
 
 			// Assert:
 			expect(routes).to.be.deep.equal([

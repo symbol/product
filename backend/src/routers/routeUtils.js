@@ -39,6 +39,7 @@ const claim = async (protocolFacade, {
 const routeUtils = {
 	claimRoute: async (req, res, next, protocolFacade) => {
 		try {
+			const twitterUsername = req.body.twitterHandle;
 			const recipientAddress = req.body.address;
 			const transferAmount = helper.toAbsoluteAmount((parseFloat(req.body.amount).toFixed(config.mosaicDivisibility) || 0));
 
@@ -56,7 +57,13 @@ const routeUtils = {
 				return next(result);
 
 			res.send(result);
-			return next(false);
+
+			// Return result for database insertion
+			return {
+				address: recipientAddress,
+				amount: transferAmount,
+				twitterHandle: twitterUsername
+			};
 		} catch (error) {
 			return next(error);
 		}

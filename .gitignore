@@ -10,6 +10,9 @@ coverage/
 build/
 public/
 
+# sqlite3 database
+data/
+
 # misc
 .DS_Store
 .env

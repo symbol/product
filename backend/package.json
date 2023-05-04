@@ -8,7 +8,7 @@
     "dev": "nodemon -r dotenv/config src/server.js",
     "lint": "eslint src/ test/",
     "lint:fix": "eslint src/ test/ --fix",
-    "test": "mocha --full-trace --recursive test --exit -r dotenv/config dotenv_config_path=./.env.test",
+    "test": "TZ=utc mocha --full-trace --recursive test --exit -r dotenv/config dotenv_config_path=./.env.test",
     "test:jenkins": "c8 --require mocha --no-clean --reporter=lcov npm run test"
   },
   "author": "Symbol Contributors <contributors@symbol.dev>",
@@ -19,7 +19,9 @@
     "jsonwebtoken": "^9.0.0",
     "restify": "^10.0.0",
     "restify-errors": "^8.0.2",
-    "symbol-sdk": "^3.0.7"
+    "sqlite3": "^5.1.6",
+    "symbol-sdk": "^3.0.7",
+    "winston": "^3.8.2"
   },
   "devDependencies": {
     "assert-plus": "^1.0.0",
