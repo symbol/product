@@ -32,7 +32,7 @@
     "express-validator": "^6.15.0",
     "json2csv": "^5.0.7",
     "moment-timezone": "^0.5.43",
-    "sequelize": "^6.31.0",
+    "sequelize": "^6.31.1",
     "sqlite3": "^5.1.6",
     "symbol-sdk": "^3.0.0"
   }
