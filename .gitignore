@@ -8,7 +8,7 @@ coverage/
 
 # production
 build/
-public/
+.next/
 
 # sqlite3 database
 data/

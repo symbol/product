@@ -1,14 +1,14 @@
 ---
 extends:
-- react-app
-- react-app/jest
+- eslint-config-next
 - plugin:import/react
 - ../_symbol/linters/javascript/default.eslintrc
-settings:
-  import/resolver:
-    node:
-      extensions:
-      - ".js"
-      - ".jsx"
+rules:
+  import/extensions:
+    - error
+    - always
+    - json: always
+      js: never
+      jsx: never
 globals:
   $t: false
