@@ -170,4 +170,21 @@ describe('nem facade', () => {
 			expect(timestamp).to.be.equal(219086039);
 		});
 	});
+
+	describe('config', () => {
+		it('returns faucet config', () => {
+			// Act:
+			const config = nemFacade.config();
+
+			// Assert:
+			expect(config).to.deep.equal({
+				faucetAddress: 'TBHGLHFK4FQUDQS3XBYKTQ3CMZLA227W5WPVAKPI',
+				currency: 'XEM',
+				sendOutMaxAmount: 500000000,
+				mosaicDivisibility: 6,
+				minFollowers: 10,
+				minAccountAge: 30
+			});
+		});
+	});
 });

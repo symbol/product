@@ -28,6 +28,21 @@ const nemFacade = {
 	},
 
 	/**
+	 * Get config information.
+	 * @returns {object} config object.
+	 */
+	config() {
+		return {
+			faucetAddress: this.faucetAddress(),
+			currency: 'XEM',
+			sendOutMaxAmount: config.sendOutMaxAmount,
+			mosaicDivisibility: config.mosaicDivisibility,
+			minFollowers: config.minFollowers,
+			minAccountAge: config.minAccountAge
+		};
+	},
+
+	/**
 	 * Transfer amount of XEM to specified address
 	 * @param {number} amount XEM amount in absolute value.
 	 * @param {string} recipientAddress Account address.

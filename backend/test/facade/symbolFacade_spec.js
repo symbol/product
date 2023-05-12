@@ -161,4 +161,21 @@ describe('symbol facade', () => {
 			expect(timestamp).to.be.equal(8000n);
 		});
 	});
+
+	describe('config', () => {
+		it('returns faucet config', () => {
+			// Act:
+			const config = symbolFacade.config();
+
+			// Assert:
+			expect(config).to.deep.equal({
+				faucetAddress: 'TDABFEGKRADYE3ETIMDPKLMNVZ22OU7XADOOHSY',
+				currency: 'XYM',
+				sendOutMaxAmount: 500000000,
+				mosaicDivisibility: 6,
+				minFollowers: 10,
+				minAccountAge: 30
+			});
+		});
+	});
 });

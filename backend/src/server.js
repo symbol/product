@@ -36,6 +36,8 @@ const createRestifyServer = db => {
 	server.use(restify.plugins.bodyParser());
 	server.use(restify.plugins.queryParser({ mapParams: true }));
 
+	validateConfiguration(config);
+
 	const authentication = (req, res, next) => {
 		const authToken = req.header('authToken');
 
@@ -51,13 +53,8 @@ const createRestifyServer = db => {
 		}
 	};
 
-	// Middleware
-	server.use(authentication);
-
-	validateConfiguration(config);
-
-	// Setup Route
-	registerFaucet.register(server, db);
+	// Setup Route + Middleware
+	registerFaucet.register(server, db, authentication);
 
 	return server;
 };

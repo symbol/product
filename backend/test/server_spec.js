@@ -47,7 +47,7 @@ describe('Server', () => {
 		return request;
 	};
 
-	const runBasicRouteTests = (protocolFacade, protocolName, url, recipientAddress, invalidAddress, transactionHash) => {
+	const runBasicClaimRouteTests = (protocolFacade, protocolName, url, recipientAddress, invalidAddress, transactionHash) => {
 		beforeEach(() => {
 			const getAccountBalanceStub = stub(protocolFacade, 'getAccountBalance');
 
@@ -211,7 +211,7 @@ describe('Server', () => {
 	};
 
 	describe('POST /claim/xem', () =>
-		runBasicRouteTests(
+		runBasicClaimRouteTests(
 			nemFacade,
 			'NEM',
 			'/claim/xem',
@@ -221,7 +221,7 @@ describe('Server', () => {
 		));
 
 	describe('POST /claim/xym', () =>
-		runBasicRouteTests(
+		runBasicClaimRouteTests(
 			symbolFacade,
 			'Symbol',
 			'/claim/xym',
@@ -243,4 +243,43 @@ describe('Server', () => {
 			expect(response.headers['access-control-allow-headers']).to.be.equal('Content-Type, authToken');
 		});
 	});
+
+	const runBasicConfigRouteTests = (protocolFacade, url, expectedResult) => {
+		beforeEach(() => {
+			const getAccountBalanceStub = stub(protocolFacade, 'getAccountBalance');
+			getAccountBalanceStub
+				.withArgs(protocolFacade.faucetAddress())
+				.returns(Promise.resolve(10000000000));
+
+			getAccountBalanceStub.returns(Promise.resolve(1000000));
+		});
+
+		afterEach(restore);
+
+		it('responds 200 with config and faucet balance', async () => {
+			// Act:
+			const response = await supertest(server).get(url);
+
+			// Assert:
+			expect(response.status).to.be.equal(200);
+			expect(response.body).to.deep.equal({
+				sendOutMaxAmount: 500000000,
+				mosaicDivisibility: 6,
+				minFollowers: 10,
+				minAccountAge: 30,
+				faucetBalance: 10000000000,
+				...expectedResult
+			});
+		});
+	};
+
+	describe('GET /config/xem', () => runBasicConfigRouteTests(nemFacade, '/config/xem', {
+		faucetAddress: 'TBHGLHFK4FQUDQS3XBYKTQ3CMZLA227W5WPVAKPI',
+		currency: 'XEM'
+	}));
+
+	describe('GET /config/xym', () => runBasicConfigRouteTests(symbolFacade, '/config/xym', {
+		faucetAddress: 'TDABFEGKRADYE3ETIMDPKLMNVZ22OU7XADOOHSY',
+		currency: 'XYM'
+	}));
 });

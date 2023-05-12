@@ -28,6 +28,21 @@ const symbolFacade = {
 	},
 
 	/**
+	 * Get config information.
+	 * @returns {object} config object.
+	 */
+	config() {
+		return {
+			faucetAddress: this.faucetAddress(),
+			currency: 'XYM',
+			sendOutMaxAmount: config.sendOutMaxAmount,
+			mosaicDivisibility: config.mosaicDivisibility,
+			minFollowers: config.minFollowers,
+			minAccountAge: config.minAccountAge
+		};
+	},
+
+	/**
 	 * Transfer amount of XYM to specified address
 	 * @param {number} amount XYM amount in absolute value.
 	 * @param {string} recipientAddress Account address.

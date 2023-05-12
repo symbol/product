@@ -3,25 +3,41 @@ import { expect } from 'chai';
 
 describe('routers', () => {
 	describe('registerFaucet', () => {
-		const createMockServer = routes => ({
-			post: route => routes.push(route)
-		});
+		const createCapturingMockServer = (captureMethod, routes) => {
+			const server = {};
+			['get', 'post'].forEach(method => {
+				server[method] = () => {};
+			});
 
-		it('registers all routes ', () => {
-			// Arrange:
-			const routes = [];
-			const claimDatabase = {};
+			server[captureMethod] = route => routes.push(route);
+			return server;
+		};
 
-			const server = createMockServer(routes);
+		const runBasicRouteTests = (method, expectedResult) => {
+			it(`registers all ${method} routes`, () => {
+				// Arrange:
+				const routes = [];
+				const claimDatabase = {};
+				const authentication = {};
 
-			// Act:
-			registerFaucet.register(server, claimDatabase);
+				const server = createCapturingMockServer(method, routes);
 
-			// Assert:
-			expect(routes).to.be.deep.equal([
-				'/claim/xem',
-				'/claim/xym'
-			]);
-		});
+				// Act:
+				registerFaucet.register(server, claimDatabase, authentication);
+
+				// Assert:
+				expect(routes).to.deep.equal(expectedResult);
+			});
+		};
+
+		runBasicRouteTests('get', [
+			'/config/xem',
+			'/config/xym'
+		]);
+
+		runBasicRouteTests('post', [
+			'/claim/xem',
+			'/claim/xym'
+		]);
 	});
 });
