@@ -15,10 +15,9 @@ Faucet is a simple application that allows the user to request testnet network c
 
 | Folder name | Description |
 | -------------|--------------|
-| [`/backend`](backend/) | Rest API service that uses Twitter OAuth login, requests tokens and sends it out. |
-| [`/nem`](nem/) | Frontend application for NEM. |
-| [`/symbol`](symbol/) | Fronted application for SYMBOL. |
-| [`/tests`](tests/) | Collection of tests. |
+| [`/authenticator`](authenticator/) | Manages the process of Twitter OAuth authentication. |
+| [`/backend`](backend/) | Rest API service that requests tokens and sends it out. |
+| [`/frontend`](frontend/) | Frontend application for NEM or Symbol. |
 
 ## Getting Help
 

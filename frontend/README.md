@@ -9,54 +9,49 @@
 
 # Overview
 
-NEM and Symbol faucet frontend is a simple web application build on react. It allows a user to enter an address and an amount in order to request XEM or XYM tokens from the faucet.
+NEM and Symbol faucet frontend is a simple web application build on NextJS framework. It allows a user to enter an address and an amount in order to request XEM or XYM tokens from the faucet.
 
 ## Repository layout
 
 | Folder Name | Description |
 | -------------|--------------|
-| /src/common | Shared components and utils. |
-| /src/nem | NEM Faucet __project__. |
-| /src/symbol | Symbol Faucet __project__. |
-| /src/`<project>`/\_\_mocks__ | Unit test config setup. |
-| /src/`<project>`/assets | Static artifacts including fonts, images and icons. |
-| /src/`<project>`/config | Collection of settings. |
-| /src/`<project>`/locales | Language files. |
-| /src/`<project>`/pages | Faucet web page. |
-| /src/`<project>`/styles | Stylesheets. |
+| /app | Contains the primary layout and pages for the application. |
+| /components/common | Contains shared components utilized across both the NEM and Symbol faucet of the application. |
+| /components/nem | Contains the components specifically designed for the NEM faucet web page. |
+| /components/symbol | Contains the components specifically designed for the Symbol faucet web page. |
+| /scripts | Jenkins ci scripts |
+| /utils | Collection of utility functions. |
 
 ## Installation
 
 1. Clone the project.
 
 ```
-git clone https://github.com/symbol/faucet.git
+git clone https://github.com/symbol/product.git
 ```
 
 2. Install the required dependencies.
 
 ```
-cd frontend
+cd faucet/frontend
 npm install
 ```
 
 3. Create `.env` in [frontend/](/frontend/) root directory, all balance and amount in absolute units.
 
 ```env
-REACT_APP_FAUCET_ADDRESS=<Address>
-REACT_APP_MAX_SEND_AMOUNT=500000000 // 500 xem
-REACT_APP_BACKEND_URL=http://127.0.0.1:5001
-REACT_APP_AUTH_URL=http://127.0.0.1:5002
+NEXT_PUBLIC_BACKEND_URL=http://127.0.0.1:5001
+NEXT_PUBLIC_AUTH_URL=http://127.0.0.1:5002
 ```
 
 For NEM Faucet set:
 ```env
-REACT_APP_BUILD_TARGET=nem
+NEXT_PUBLIC_BUILD_TARGET=nem
 ```
 
 For Symbol Faucet set:
 ```env
-REACT_APP_BUILD_TARGET=symbol
+NEXT_PUBLIC_BUILD_TARGET=symbol
 ```
 
 4. Start application.

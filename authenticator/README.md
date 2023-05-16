@@ -30,13 +30,13 @@ Node.js LTS
 1. Clone the project.
 
 ```
-git clone https://github.com/symbol/faucet.git
+git clone https://github.com/symbol/product.git
 ```
 
 2. Install the required dependencies.
 
 ```
-cd authenticator
+cd faucet/authenticator
 npm install
 ```
 

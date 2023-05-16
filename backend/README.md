@@ -18,9 +18,10 @@ Faucet backend service built with NodeJS and Restify. It allows users to request
 | Folder Name | Description |
 | -------------|--------------|
 | /src/config | Collection of settings. |
-| /src/controllers| Consumes data from service layers, and processes the data used by the backend. |
+| /src/database | Collection of database. |
+| /src/facade | NEM / Symbol facade. |
 | /src/routers | Defines all the endpoint routes. |
-| /src/services | Service layer that mainly manages interactions with the NEM nodes. |
+| /src/services | Service layer that mainly manages interactions with the NEM / Symbol nodes. |
 | /src/utils | Collection of utility functions. |
 
 ## Requirement
@@ -43,11 +44,29 @@ Response
 
 ```json
 {
-    "code":1,
-    "type":1,
     "transactionHash":"9e7aefca8ad81ff37a2e8549539d922ccd821719a97e824a58814c3032f4dd85",
     "amount":10,
     "receiptAddress":"TCKH5L543TQKUPHIUAWMNYL7GNQYEY2UGMECB4D3"
+}
+```
+
+Request faucet configuration
+
+``` bash
+curl -X GET http://localhost:8080/config/xem
+```
+
+Response
+
+```json
+{
+    "faucetAddress": "TCKH5L543TQKUPHIUAWMNYL7GNQYEY2UGMECB4D3",
+    "currency": "XEM",
+    "sendOutMaxAmount": 10000000000,
+    "mosaicDivisibility": 6,
+    "minFollowers": 10,
+    "minAccountAge": 30,
+    "faucetBalance": 1000000000000,
 }
 ```
 
@@ -56,13 +75,13 @@ Response
 1. Clone the project.
 
 ```
-git clone https://github.com/symbol/faucet.git
+git clone https://github.com/symbol/product.git
 ```
 
 2. Install the required dependencies.
 
 ```
-cd backend
+cd faucet/backend
 npm install
 ```
 
