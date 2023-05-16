@@ -4,6 +4,8 @@ defaultCiPipeline {
 
 	packageId = 'connectors-python'
 
+	publisher = 'pypi'
+
 	codeCoverageTool = 'coverage'
 	minimumCodeCoverage = 95
 }

@@ -1,0 +1,20 @@
+[tool.poetry]
+name = 'symbol-connectors'
+version = '0.0.1'
+description = 'Symbol Connectors'
+authors = ['Symbol Contributors <contributors@symbol.dev>']
+maintainers = ['Symbol Contributors <contributors@symbol.dev>']
+license = 'MIT'
+
+readme = 'README.md'
+
+packages = [{ include = 'symbolconnectors' }]
+
+repository = 'https://github.com/symbol/product/tree/main/python/connectors'
+
+keywords = ['symbol', 'connectors', 'Symbol Connectors']
+
+classifiers = ['Programming Language :: Python :: 3.7']
+
+[tool.poetry.dependencies]
+python = "^3.7"
