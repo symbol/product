@@ -64,14 +64,22 @@ def server(event_loop, aiohttp_client):
 
 		async def chain_info(self, request):
 			return await self._process(request, {
-				'height': 1234,
-				'scoreHigh': 888999,
-				'scoreLow': 222111,
+				'height': '1234',
+				'scoreHigh': '888999',
+				'scoreLow': '222111',
 				'latestFinalizedBlock': {
 					'finalizationEpoch': 222,
 					'finalizationPoint': 10,
-					'height': 1198,
+					'height': '1198',
 					'hash': 'C49C566E4CF60856BC127C9E4748C89E3D38566DE0DAFE1A491012CC27A1C043'
+				}
+			})
+
+		async def node_time(self, request):
+			return await self._process(request, {
+				'communicationTimestamps': {
+					'sendTimestamp': '68414660756',
+					'receiveTimestamp': '68414660780'
 				}
 			})
 
@@ -80,6 +88,40 @@ def server(event_loop, aiohttp_client):
 
 		async def node_peers(self, request):
 			return await self._process(request, [NODE_INFO_2, NODE_INFO_3])
+
+		async def accounts_by_id(self, request):
+			account_id = request.match_info['account_id']
+			if 'error' == account_id:
+				return await self._process(request, {'code': 'InvalidArgument', 'message': 'accountId has an invalid format'})
+
+			json_supplemental_public_keys = {}
+			if account_id in ('linked', 'all'):
+				json_supplemental_public_keys['linked'] = {'publicKey': 'BCC8F27E4CF085FB4668EE787E76308DED7C4B811C8B8188CE4452A916F8378F'}
+
+			if account_id in ('vrf', 'all'):
+				json_supplemental_public_keys['vrf'] = {'publicKey': '5BD25262153603172A79677DC2703984D1249F43186BB970D2B70C88C78C0724'}
+
+			if account_id in ('voting', 'all'):
+				json_supplemental_public_keys['voting'] = {
+					'publicKeys': [
+						{
+							'publicKey': '833D02CBB3502F11D80AA77CF3C9CC7056DBBD0C52EFD3CB8387004CBF41A273',
+							'startEpoch': 1133,
+							'endEpoch': 1492
+						},
+						{
+							'publicKey': 'B339999D60A38E43605C26CC868C4631FF6ACB6FB275A320CA9793A98FA00441',
+							'startEpoch': 1493,
+							'endEpoch': 1852
+						}
+					]
+				}
+
+			return await self._process(request, {
+				'account': {
+					'supplementalPublicKeys': json_supplemental_public_keys
+				}
+			})
 
 		async def _process(self, request, response_body):
 			self.urls.append(str(request.url))
@@ -92,8 +134,10 @@ def server(event_loop, aiohttp_client):
 	app = web.Application()
 	app.router.add_get('/network/properties', mock_server.network_properties)
 	app.router.add_get('/chain/info', mock_server.chain_info)
+	app.router.add_get('/node/time', mock_server.node_time)
 	app.router.add_get('/node/info', mock_server.node_info)
 	app.router.add_get('/node/peers', mock_server.node_peers)
+	app.router.add_get(r'/accounts/{account_id}', mock_server.accounts_by_id)
 	server = event_loop.run_until_complete(aiohttp_client(app))  # pylint: disable=redefined-outer-name
 
 	server.mock = mock_server
@@ -134,7 +178,7 @@ async def test_can_cache_currency_mosaic_id(server):  # pylint: disable=redefine
 # endregion
 
 
-# region GET (chain_height, chain_statistics, finalization_statistics)
+# region GET (chain_height, chain_statistics, finalization_statistics, network_time)
 
 async def test_can_query_chain_height(server):  # pylint: disable=redefined-outer-name
 	# Arrange:
@@ -175,6 +219,18 @@ async def test_can_query_finalization_statistics(server):  # pylint: disable=red
 	assert 10 == finalization_statistics.point
 	assert 1198 == finalization_statistics.height
 	assert Hash256('C49C566E4CF60856BC127C9E4748C89E3D38566DE0DAFE1A491012CC27A1C043') == finalization_statistics.hash
+
+
+async def test_can_query_network_time(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	connector = SymbolConnector(server.make_url(''))
+
+	# Act:
+	timestamp = await connector.network_time()
+
+	# Assert:
+	assert [f'{server.make_url("")}/node/time'] == server.mock.urls
+	assert 68414660756 == timestamp.timestamp
 
 # endregion
 
@@ -233,5 +289,105 @@ async def test_can_query_peers(server):  # pylint: disable=redefined-outer-name
 		'tiger',
 		'1.0.3.5',
 		5) == peers[1]
+
+# endregion
+
+
+# region GET (account_links)
+
+def _assert_no_links(links):
+	assert None is links.linked_public_key
+	assert None is links.vrf_public_key
+	assert 0 == len(links.voting_public_keys)
+
+
+def _assert_voting_public_keys(links):
+	assert 2 == len(links.voting_public_keys)
+	assert PublicKey('833D02CBB3502F11D80AA77CF3C9CC7056DBBD0C52EFD3CB8387004CBF41A273') == links.voting_public_keys[0].public_key
+	assert 1133 == links.voting_public_keys[0].start_epoch
+	assert 1492 == links.voting_public_keys[0].end_epoch
+	assert PublicKey('B339999D60A38E43605C26CC868C4631FF6ACB6FB275A320CA9793A98FA00441') == links.voting_public_keys[1].public_key
+	assert 1493 == links.voting_public_keys[1].start_epoch
+	assert 1852 == links.voting_public_keys[1].end_epoch
+
+
+async def test_can_query_account_links_for_unknown_account(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	connector = SymbolConnector(server.make_url(''))
+
+	# Act:
+	links = await connector.account_links('error')
+
+	# Assert:
+	assert [f'{server.make_url("")}/accounts/error'] == server.mock.urls
+	_assert_no_links(links)
+
+
+async def test_can_query_account_links_for_account_with_no_links(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	connector = SymbolConnector(server.make_url(''))
+
+	# Act:
+	links = await connector.account_links('none')
+
+	# Assert:
+	assert [f'{server.make_url("")}/accounts/none'] == server.mock.urls
+	_assert_no_links(links)
+
+
+async def test_can_query_account_links_for_account_with_only_linked_public_key(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	connector = SymbolConnector(server.make_url(''))
+
+	# Act:
+	links = await connector.account_links('linked')
+
+	# Assert:
+	assert [f'{server.make_url("")}/accounts/linked'] == server.mock.urls
+	assert PublicKey('BCC8F27E4CF085FB4668EE787E76308DED7C4B811C8B8188CE4452A916F8378F') == links.linked_public_key
+	assert None is links.vrf_public_key
+	assert 0 == len(links.voting_public_keys)
+
+
+async def test_can_query_account_links_for_account_with_only_vrf_public_key(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	connector = SymbolConnector(server.make_url(''))
+
+	# Act:
+	links = await connector.account_links('vrf')
+
+	# Assert:
+	assert [f'{server.make_url("")}/accounts/vrf'] == server.mock.urls
+	assert None is links.linked_public_key
+	assert PublicKey('5BD25262153603172A79677DC2703984D1249F43186BB970D2B70C88C78C0724') == links.vrf_public_key
+	assert 0 == len(links.voting_public_keys)
+
+
+async def test_can_query_account_links_for_account_with_only_voting_public_keys(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	connector = SymbolConnector(server.make_url(''))
+
+	# Act:
+	links = await connector.account_links('voting')
+
+	# Assert:
+	assert [f'{server.make_url("")}/accounts/voting'] == server.mock.urls
+	assert None is links.linked_public_key
+	assert None is links.vrf_public_key
+	_assert_voting_public_keys(links)
+
+
+async def test_can_query_account_links_for_account_with_all_links(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	connector = SymbolConnector(server.make_url(''))
+
+	# Act:
+	links = await connector.account_links('all')
+
+	# Assert:
+	assert [f'{server.make_url("")}/accounts/all'] == server.mock.urls
+	assert PublicKey('BCC8F27E4CF085FB4668EE787E76308DED7C4B811C8B8188CE4452A916F8378F') == links.linked_public_key
+	assert PublicKey('5BD25262153603172A79677DC2703984D1249F43186BB970D2B70C88C78C0724') == links.vrf_public_key
+	_assert_voting_public_keys(links)
 
 # endregion

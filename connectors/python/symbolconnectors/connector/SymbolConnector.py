@@ -1,6 +1,7 @@
 from collections import namedtuple
 
 from symbolchain.CryptoTypes import Hash256, PublicKey
+from symbolchain.symbol.Network import NetworkTimestamp
 
 from ..model.Endpoint import Endpoint
 from ..model.NodeInfo import NodeInfo
@@ -8,6 +9,16 @@ from .BasicConnector import BasicConnector
 
 ChainStatistics = namedtuple('ChainStatistics', ['height', 'score_high', 'score_low'])
 FinalizationStatistics = namedtuple('FinalizationStatistics', ['epoch', 'point', 'height', 'hash'])
+VotingPublicKey = namedtuple('VotingPublicKey', ['start_epoch', 'end_epoch', 'public_key'])
+
+
+class LinkedPublicKeys:
+	"""Collection of public keys linked to an account."""
+
+	def __init__(self):
+		self.linked_public_key = None
+		self.vrf_public_key = None
+		self.voting_public_keys = []
 
 
 class SymbolConnector(BasicConnector):
@@ -48,6 +59,12 @@ class SymbolConnector(BasicConnector):
 			*(int(finalization_statistics[key]) for key in ('finalizationEpoch', 'finalizationPoint', 'height')),
 			Hash256(finalization_statistics['hash']))
 
+	async def network_time(self):
+		"""Gets network time."""
+
+		timestamps = await self.get('node/time')
+		return NetworkTimestamp(int(timestamps['communicationTimestamps']['sendTimestamp']))
+
 	async def node_info(self):
 		"""Gets node information."""
 
@@ -79,3 +96,32 @@ class SymbolConnector(BasicConnector):
 	def _format_symbol_version(version):
 		version_parts = [(version >> 24) & 0xFF, (version >> 16) & 0xFF, (version >> 8) & 0xFF, version & 0xFF]
 		return '.'.join(str(version_part) for version_part in version_parts)
+
+	async def account_links(self, account_id):
+		"""Gets account links for a specified account."""
+
+		json_response = await self.get(f'accounts/{account_id}')
+		if 'code' in json_response:
+			return LinkedPublicKeys()
+
+		return self._parse_links(json_response['account']['supplementalPublicKeys'])
+
+	@staticmethod
+	def _parse_links(json_supplemental_public_keys):
+		links = LinkedPublicKeys()
+		if 'linked' in json_supplemental_public_keys:
+			links.linked_public_key = PublicKey(json_supplemental_public_keys['linked']['publicKey'])
+
+		if 'vrf' in json_supplemental_public_keys:
+			links.vrf_public_key = PublicKey(json_supplemental_public_keys['vrf']['publicKey'])
+
+		if 'voting' in json_supplemental_public_keys:
+			links.voting_public_keys = [
+				VotingPublicKey(
+					json_voting_public_key['startEpoch'],
+					json_voting_public_key['endEpoch'],
+					PublicKey(json_voting_public_key['publicKey']))
+				for json_voting_public_key in json_supplemental_public_keys['voting']['publicKeys']
+			]
+
+		return links
