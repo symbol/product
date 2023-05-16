@@ -1,4 +1,7 @@
 builds:
+  - name: Connectors Python
+    path: connectors/python
+
   - name: Nodewatch
     path: explorer/nodewatch
 

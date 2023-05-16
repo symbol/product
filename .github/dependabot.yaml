@@ -2,6 +2,16 @@ version: 2
 updates:
 
   - package-ecosystem: pip
+    directory: /connectors/python
+    schedule:
+      interval: weekly
+      day: sunday
+    target-branch: dev
+    labels: [Connectors]
+    commit-message:
+      prefix: '[dependency]'
+
+  - package-ecosystem: pip
     directory: /explorer/nodewatch
     schedule:
       interval: weekly

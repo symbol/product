@@ -1,0 +1,9 @@
+defaultCiPipeline {
+	platform = ['ubuntu']
+	ciBuildDockerfile = 'python.Dockerfile'
+
+	packageId = 'connectors-python'
+
+	codeCoverageTool = 'coverage'
+	minimumCodeCoverage = 95
+}

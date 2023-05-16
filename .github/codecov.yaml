@@ -6,6 +6,12 @@ coverage:
       default:
         target: 95%  # overall project / repo coverage
 
+      connectors-python:
+        target: auto
+        threshold: 1%
+        flags:
+          - connectors-python
+
       explorer-nodewatch:
         target: auto
         threshold: 1%
@@ -37,6 +43,11 @@ coverage:
 # monorepo.  This allows code coverage per package.
 
 flags:
+  connectors-python:
+    paths:
+      - connectors/python
+    carryforward: true
+
   explorer-nodewatch:
     paths:
       - explorer/nodewatch
