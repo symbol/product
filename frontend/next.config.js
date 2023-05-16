@@ -1,6 +1,8 @@
 import webpack from 'webpack';
 
 const nextConfig = {
+	output: 'export',
+	distDir: 'build',
 	reactStrictMode: true,
 	experimental: {
 		appDir: true
