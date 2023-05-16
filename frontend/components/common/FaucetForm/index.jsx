@@ -84,7 +84,8 @@ const FaucetForm = function ({ config, addressValidation }) {
 					config.claimUrl,
 					{
 						address: formattedAddress,
-						amount: numericAmount
+						amount: numericAmount,
+						twitterHandle: onAuthStatus.screenName
 					},
 					{
 						headers: {

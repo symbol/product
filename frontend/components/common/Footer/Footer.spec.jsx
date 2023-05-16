@@ -21,31 +21,51 @@ describe('components/Footer', () => {
 		const githubLinkUrl = Config.URL_GITHUB;
 		const twitterLinkUrl = Config.URL_TWITTER;
 
-		const footerLinks = [{
-			href: explorerLinkUrl,
-			text: explorerLinkText
-		}, {
-			href: discordLinkUrl,
-			text: discordLinkText
-		}, {
-			href: githubLinkUrl,
-			text: githubLinkText
-		}, {
-			href: twitterLinkUrl,
-			text: twitterLinkText
-		}];
+		const footerLinks = [
+			{
+				href: explorerLinkUrl,
+				text: explorerLinkText,
+				icon: {
+					src: 'image/explorer.png'
+				}
+			},
+			{
+				href: discordLinkUrl,
+				text: discordLinkText,
+				icon: {
+					src: 'image/discord.png'
+				}
+			},
+			{
+				href: githubLinkUrl,
+				text: githubLinkText,
+				icon: {
+					src: 'image/github.png'
+				}
+			},
+			{
+				href: twitterLinkUrl,
+				text: twitterLinkText,
+				icon: {
+					src: 'image/twitter.png'
+				}
+			}
+		];
 
 		// Act:
 		render(<Footer links={footerLinks} />);
-		const explorerLinkElement = screen.getByText(explorerLinkText).parentElement;
-		const discordLinkElement = screen.getByText(discordLinkText).parentElement;
-		const githubLinkElement = screen.getByText(githubLinkText).parentElement;
-		const twitterLinkElement = screen.getByText(twitterLinkText).parentElement;
 
 		// Assert:
-		expect(explorerLinkElement).toHaveAttribute('href', explorerLinkUrl);
-		expect(discordLinkElement).toHaveAttribute('href', discordLinkUrl);
-		expect(githubLinkElement).toHaveAttribute('href', githubLinkUrl);
-		expect(twitterLinkElement).toHaveAttribute('href', twitterLinkUrl);
+		footerLinks.forEach(link => {
+			const linkElement = screen.getByText(link.text);
+			expect(linkElement).toBeInTheDocument();
+			expect(linkElement.closest('a')).toHaveAttribute('href', link.href);
+		});
+
+		const icons = screen.getAllByRole('img');
+		icons.forEach((icon, i) => {
+			expect(icon).toHaveAttribute('src', footerLinks[i].icon.src);
+			expect(icon).toHaveAttribute('alt', footerLinks[i].text);
+		});
 	});
 });

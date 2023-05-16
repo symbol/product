@@ -14,7 +14,7 @@ const Footer = function (props) {
 					href={item.href}
 					key={`link${index}`}
 				>
-					<img className="link-icon" src={item.icon} alt={item.text} />
+					<img className="link-icon" src={item.icon.src} alt={item.text} />
 					<div className="link-text">{item.text}</div>
 				</a>
 			))}

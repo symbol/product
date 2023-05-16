@@ -1,6 +1,6 @@
 {
     "lang": "English",
-    "app_name": "NEM Faucet",
+    "app_name": "The XEM Faucet",
 
     "home_description": "Thirsty? Take a drink. \n This faucet is running on the NEM testnet and dispenses up to %maxAmount XEM per account.",
     "home_form_input_recipient_placeholder": "Your Testnet Address (Starts with %char)",

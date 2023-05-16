@@ -14,7 +14,7 @@ import ExplorerIconSrc from '../../assets/images/icon-explorer.svg';
 import GithubIconSrc from '../../assets/images/icon-github.svg';
 import TwitterIconSrc from '../../assets/images/icon-twitter.svg';
 import LogoWordmarkSrc from '../../assets/images/logo-wordmark.svg';
-import LogoImageSrc from '../../assets/images/nem-logo-2.png';
+import LogoImageSrc from '../../assets/images/nem-faucet-icon.svg';
 import Config from '../../config';
 import breakpoints from '../../config/breakpoints.json';
 import React, { useState, useEffect } from 'react';
@@ -42,6 +42,7 @@ const Home = function () {
 
 	const homeConfig = {
 		claimUrl: '/claim/xem',
+		configUrl: '/config/xem',
 		transactionHashExplorerPath: '/#/s_tx?hash=',
 		accountExplorerPath: '/#/s_account?account=',
 		theme: 'light',

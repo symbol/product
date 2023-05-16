@@ -1,36 +1,44 @@
 import HomeContainer from '.';
-import { render, screen } from '@testing-library/react';
+import { jest } from '@jest/globals';
+import { render, screen, waitFor } from '@testing-library/react';
+import axios from 'axios';
 
 describe('components/HomeContainer', () => {
 	const homeConfig = {
 		claimUrl: '/claim/token',
+		configUrl: '/config/token',
 		transactionHashExplorerPath: '/#/s_tx?hash=',
 		accountExplorerPath: '/account/path=',
-		logoWord: 'image/word.png',
-		logoImage: 'image/logo-image.png',
+		logoWord: {
+			src: 'image/word.png'
+		},
+		logoImage: {
+			src: 'image/logo-image.png'
+		},
 		footerLinks: [
 			{
 				href: 'footer-1/url',
 				text: 'footer-1',
-				icon: 'image/icon-footer-1.png'
+				icon: {
+					src: 'image/icon-footer-1.png'
+				}
 			},
 			{
 				href: 'footer-2/url',
 				text: 'footer-2',
-				icon: 'image/icon-footer-2.png'
+				icon: {
+					src: 'image/icon-footer-2.png'
+				}
 			}
 		]
 	};
 
 	const config = {
-		FAUCET_ADDRESS: 'faucet_address',
 		URL_TELEGRAM_CH_HELP_DESK: 'telegram/channel/url',
 		TELEGRAM_CH_HELP_DESK: '@telegram',
 		URL_DISCORD_CH_HELP_DESK: 'discord/channel/url',
 		DISCORD_CH_HELP_DESK: '@discord',
-		URL_EXPLORER: 'explorer/url',
-		MAX_AMOUNT: 100,
-		DIVISIBILITY: 2
+		URL_EXPLORER: 'explorer/url'
 	};
 
 	it('renders logo image in home container', () => {
@@ -49,17 +57,38 @@ describe('components/HomeContainer', () => {
 		expect(faucetElement).toHaveAttribute('src', 'image/word.png');
 	});
 
-	it('renders faucet address element in home container', () => {
+	it('renders faucet balance in home container', async () => {
 		// Arrange:
+		jest.spyOn(axios, 'create').mockReturnValue({
+			get: (url, ...params) => axios.get(url, ...params),
+			defaults: {}
+		});
+
+		jest.spyOn(axios, 'get').mockReturnValue({
+			data: {
+				faucetAddress: 'Faucet_address',
+				currency: 'TOKEN',
+				sendOutMaxAmount: 0,
+				mosaicDivisibility: 6,
+				minFollowers: 10,
+				minAccountAge: 30,
+				faucetBalance: 100000000
+			}
+		});
+
 		render(<HomeContainer
 			homeConfig={homeConfig}
 			Config={config}
 		/>);
 
-		// Act:
-		const elementText = screen.getByText('faucet_address');
+		await waitFor(() => {
+			// Act:
+			const faucetBalanceElement = screen.getByText('100 TOKEN');
 
-		expect(elementText).toHaveAttribute('href', `${config.URL_EXPLORER}${homeConfig.accountExplorerPath}${config.FAUCET_ADDRESS}`);
+			// Assert:
+			expect(axios.get).toHaveBeenCalledWith('/config/token');
+			expect(faucetBalanceElement).toBeInTheDocument();
+		});
 	});
 
 	it('renders help desk in home container', () => {

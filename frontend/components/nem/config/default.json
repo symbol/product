@@ -1,18 +1,12 @@
 {
-    "URL_GITHUB": "https://github.com/symbol",
+    "URL_GITHUB": "https://github.com/nemproject",
     "URL_TWITTER": "https://twitter.com/NEMofficial",
     "URL_DISCORD": "https://discord.gg/xymcity",
     "URL_EXPLORER": "https://testnet-explorer.nemtool.com",
     "URL_TELEGRAM_CH_HELP_DESK": "https://t.me/nemhelpdesk",
     "TELEGRAM_CH_HELP_DESK": "@nemhelpdesk",
     "URL_DISCORD_CH_HELP_DESK": "https://discord.gg/gKDHkNBRhn",
-    "FAUCET_ADDRESS": "",
     "DISCORD_CH_HELP_DESK": "#helpdesk",
-    "MAX_AMOUNT": 1000000000,
-    "CURRENCY": "XEM",
-    "DIVISIBILITY": 6,
-    "MIN_FOLLOWERS_COUNT": 10,
-    "MIN_ACCOUNT_AGE": 30,
     "BACKEND_URL": "http://localhost:5001",
     "AUTH_URL": "http://localhost:5002"
 }

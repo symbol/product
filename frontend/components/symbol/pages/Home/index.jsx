@@ -13,8 +13,8 @@ import DiscordIconSrc from '../../assets/images/icon-discord.svg';
 import ExplorerIconSrc from '../../assets/images/icon-explorer.svg';
 import GithubIconSrc from '../../assets/images/icon-github.svg';
 import TwitterIconSrc from '../../assets/images/icon-twitter.svg';
-import LogoImageSrc from '../../assets/images/logo-symbol.svg';
 import LogoWordmarkSrc from '../../assets/images/logo-wordmark.svg';
+import LogoImageSrc from '../../assets/images/symbol-faucet-icon.svg';
 import Config from '../../config';
 import breakpoints from '../../config/breakpoints.json';
 import React, { useState, useEffect, useRef } from 'react';
@@ -45,6 +45,7 @@ const Home = function () {
 
 	const homeConfig = {
 		claimUrl: '/claim/xym',
+		configUrl: '/config/xym',
 		transactionHashExplorerPath: '/transactions/',
 		accountExplorerPath: '/accounts/',
 		theme: 'dark',

@@ -183,7 +183,9 @@ describe('components/FaucetForm', () => {
 				await waitFor(() => {
 					expect(axios.post).toHaveBeenCalledWith('/claim/url', {
 						address: recipientAddress,
-						amount: expectedAmount
+						amount: expectedAmount,
+						twitterHandle: 'twitterAccount'
+
 					}, {
 						headers: {
 							'Content-Type': 'application/json',
@@ -329,7 +331,8 @@ describe('components/FaucetForm', () => {
 					// Assert:
 					expect(axios.post).toHaveBeenCalledWith('/claim/url', {
 						address: recipientAddress,
-						amount: 100
+						amount: 100,
+						twitterHandle: 'twitterAccount'
 					}, {
 						headers: {
 							'Content-Type': 'application/json',

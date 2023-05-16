@@ -3,6 +3,7 @@ import { jest } from '@jest/globals';
 import {
 	render, screen, waitFor, act
 } from '@testing-library/react';
+import axios from 'axios';
 
 describe('page/Home', () => {
 	const mockResizeObserverAndGetBreakpoint = ({width, height}) => {
@@ -20,6 +21,29 @@ describe('page/Home', () => {
 			};
 		});
 	};
+
+	beforeEach(() => {
+		jest.spyOn(axios, 'create').mockReturnValue({
+			get: (url, ...params) => axios.get(url, ...params),
+			defaults: {}
+		});
+
+		jest.spyOn(axios, 'get').mockReturnValue({
+			data: {
+				faucetAddress: 'Faucet_address',
+				currency: 'TOKEN',
+				sendOutMaxAmount: 0,
+				mosaicDivisibility: 6,
+				minFollowers: 10,
+				minAccountAge: 30,
+				faucetBalance: 100000000
+			}
+		});
+	});
+
+	afterEach(() => {
+		jest.clearAllMocks();
+	});
 
 	describe('screen breakpoint', () => {
 		const runBasicResizeBreakpointTests = (screenSize, expectedResult) => {
@@ -132,6 +156,16 @@ describe('page/Home', () => {
 				expect(divBgImageMobileLeft).not.toBeInTheDocument();
 				expect(divBgImageMobileRight).not.toBeInTheDocument();
 			});
+		});
+	});
+
+	describe('configuration', () => {
+		it('requests config endpoint when init component', async () => {
+			// Act:
+			render(<Home />);
+
+			// Assert:
+			await waitFor(() => expect(axios.get).toHaveBeenCalledWith('/config/xym'));
 		});
 	});
 });

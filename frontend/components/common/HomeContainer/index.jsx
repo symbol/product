@@ -2,13 +2,27 @@ import FaucetForm from '../../../components/common/FaucetForm';
 import Footer from '../../../components/common/Footer';
 import Header from '../../../components/common/Header';
 import { absoluteToRelativeAmount } from '../../../utils/helper';
-import React from 'react';
+import axios from 'axios';
+import React, { useState, useEffect } from 'react';
 import 'react-toastify/dist/ReactToastify.css';
 
 const HomeContainer = function (props) {
 	const { homeConfig, Config } = props;
 
-	const faucetAddress = Config.FAUCET_ADDRESS;
+	const backendRequest = axios.create();
+	backendRequest.defaults.baseURL = Config.BACKEND_URL;
+
+	const [backendConfig, setBackendConfig] = useState({
+		faucetAddress: '',
+		currency: '',
+		sendOutMaxAmount: 0,
+		mosaicDivisibility: 6,
+		minFollowers: 10,
+		minAccountAge: 30,
+		faucetBalance: 0
+	});
+
+	const {faucetAddress} = backendConfig;
 	const telegramChHelpDeskURL = Config.URL_TELEGRAM_CH_HELP_DESK;
 	const telegramChHelpDesk = Config.TELEGRAM_CH_HELP_DESK;
 	const discordChHelpDeskURL = Config.URL_DISCORD_CH_HELP_DESK;
@@ -21,24 +35,40 @@ const HomeContainer = function (props) {
 		authUrl: Config.AUTH_URL,
 		backendUrl: Config.BACKEND_URL,
 		transactionHashExplorerUrl: `${Config.URL_EXPLORER}${homeConfig.transactionHashExplorerPath}`,
-		maxAmount: absoluteToRelativeAmount(Config.MAX_AMOUNT, Config.DIVISIBILITY),
-		currency: Config.CURRENCY,
+		maxAmount: absoluteToRelativeAmount(backendConfig.sendOutMaxAmount, backendConfig.mosaicDivisibility),
+		currency: backendConfig.currency,
 		addressFirstChar: faucetAddress[0],
-		minFollowers: Config.MIN_FOLLOWERS_COUNT,
-		minAccountAge: Config.MIN_ACCOUNT_AGE,
+		minFollowers: backendConfig.minFollowers,
+		minAccountAge: backendConfig.minAccountAge,
 		theme: 'light'
 	};
+
+	useEffect(() => {
+		// Get config information from backend
+		const getConfigInformation = async () => {
+			const { data } = await backendRequest.get(homeConfig.configUrl);
+
+			if (data)
+				setBackendConfig({...data});
+		};
+
+		getConfigInformation();
+	}, []);
 
 	return (
 		<div className="main-container-wrapper">
 			<div className="main-container">
-				<Header logoImageSrc={homeConfig.logoImage} logoWordmarkSrc={homeConfig.logoWord} />
+				<Header
+					logoImageSrc={homeConfig.logoImage}
+					logoWordmarkSrc={homeConfig.logoWord}
+					faucetAddressLink={faucetAccountExplorerUrl}
+				/>
 				<div data-testid="home-page-content" className={pageClassName}>
 					<div className="mb-base text-center">
 						<p>
-							<a className="faucet-address-link" target="_blank" href={faucetAccountExplorerUrl} rel="noreferrer">
-								{faucetAddress}
-							</a>
+							{
+								absoluteToRelativeAmount(backendConfig.faucetBalance, backendConfig.mosaicDivisibility)
+							} { backendConfig.currency }
 						</p>
 					</div>
 					<div className="content-container">

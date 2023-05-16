@@ -1,6 +1,6 @@
 {
     "lang": "English",
-    "app_name": "Symbol Faucet",
+    "app_name": "The XYM Faucet",
 
     "home_description": "Thirsty? Take a drink. \n This faucet is running on the Symbol testnet and dispenses up to %maxAmount XYM per account.",
     "home_form_input_recipient_placeholder": "Your Testnet Address (Starts with %char)",
