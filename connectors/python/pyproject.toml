@@ -1,6 +1,6 @@
 [tool.poetry]
 name = 'symbol-connectors'
-version = '0.0.1'
+version = '0.0.2'
 description = 'Symbol Connectors'
 authors = ['Symbol Contributors <contributors@symbol.dev>']
 maintainers = ['Symbol Contributors <contributors@symbol.dev>']
