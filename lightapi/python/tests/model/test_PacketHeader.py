@@ -1,7 +1,7 @@
 import unittest
 
-from symbolconnectors.model.Exceptions import CorruptDataException
-from symbolconnectors.model.PacketHeader import PacketHeader, PacketType
+from symbollightapi.model.Exceptions import CorruptDataException
+from symbollightapi.model.PacketHeader import PacketHeader, PacketType
 
 
 class PacketHeaderTest(unittest.TestCase):

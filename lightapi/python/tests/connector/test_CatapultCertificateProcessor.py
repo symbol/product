@@ -1,7 +1,7 @@
 import unittest
 
-from symbolconnectors.bindings.openssl import lib
-from symbolconnectors.connector.CatapultCertificateProcessor import CatapultCertificateProcessor
+from symbollightapi.bindings.openssl import lib
+from symbollightapi.connector.CatapultCertificateProcessor import CatapultCertificateProcessor
 
 from ..test.CertificateTestUtils import (
 	CertificateBuilder,

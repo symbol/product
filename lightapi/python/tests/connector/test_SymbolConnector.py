@@ -4,9 +4,9 @@ import pytest
 from aiohttp import web
 from symbolchain.CryptoTypes import Hash256, PublicKey
 
-from symbolconnectors.connector.SymbolConnector import SymbolConnector
-from symbolconnectors.model.Endpoint import Endpoint
-from symbolconnectors.model.NodeInfo import NodeInfo
+from symbollightapi.connector.SymbolConnector import SymbolConnector
+from symbollightapi.model.Endpoint import Endpoint
+from symbollightapi.model.NodeInfo import NodeInfo
 
 # region test data
 

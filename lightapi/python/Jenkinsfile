@@ -2,7 +2,7 @@ defaultCiPipeline {
 	platform = ['ubuntu']
 	ciBuildDockerfile = 'python.Dockerfile'
 
-	packageId = 'connectors-python'
+	packageId = 'lightapi-python'
 
 	publisher = 'pypi'
 

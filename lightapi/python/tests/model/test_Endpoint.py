@@ -1,6 +1,6 @@
 import unittest
 
-from symbolconnectors.model.Endpoint import Endpoint
+from symbollightapi.model.Endpoint import Endpoint
 
 
 class EndpointTest(unittest.TestCase):

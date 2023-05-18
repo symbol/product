@@ -1,4 +1,4 @@
-# Python Connectors
+# Python Light API
 
 Provides partial Python wrappers for calling NEM and Symbol API functions.
 

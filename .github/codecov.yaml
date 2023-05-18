@@ -6,11 +6,11 @@ coverage:
       default:
         target: 95%  # overall project / repo coverage
 
-      connectors-python:
+      lightapi-python:
         target: auto
         threshold: 1%
         flags:
-          - connectors-python
+          - lightapi-python
 
       explorer-nodewatch:
         target: auto
@@ -43,9 +43,9 @@ coverage:
 # monorepo.  This allows code coverage per package.
 
 flags:
-  connectors-python:
+  lightapi-python:
     paths:
-      - connectors/python
+      - lightapi/python
     carryforward: true
 
   explorer-nodewatch:

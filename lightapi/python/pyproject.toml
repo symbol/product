@@ -1,18 +1,18 @@
 [tool.poetry]
-name = 'symbol-connectors'
+name = 'symbol-lightapi'
 version = '0.0.2'
-description = 'Symbol Connectors'
+description = 'Symbol Light API'
 authors = ['Symbol Contributors <contributors@symbol.dev>']
 maintainers = ['Symbol Contributors <contributors@symbol.dev>']
 license = 'MIT'
 
 readme = 'README.md'
 
-packages = [{ include = 'symbolconnectors' }]
+packages = [{ include = 'symbollightapi' }]
 
-repository = 'https://github.com/symbol/product/tree/main/python/connectors'
+repository = 'https://github.com/symbol/product/tree/main/python/lightapi'
 
-keywords = ['symbol', 'connectors', 'Symbol Connectors']
+keywords = ['symbol', 'symbollightapi', 'lightapi', 'Symbol Light API']
 
 classifiers = ['Programming Language :: Python :: 3.7']
 

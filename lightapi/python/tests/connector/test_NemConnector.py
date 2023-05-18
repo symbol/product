@@ -5,9 +5,9 @@ from aiohttp import web
 from symbolchain.CryptoTypes import PublicKey
 from symbolchain.nem.Network import Address, Network
 
-from symbolconnectors.connector.NemConnector import NemConnector
-from symbolconnectors.model.Endpoint import Endpoint
-from symbolconnectors.model.NodeInfo import NodeInfo
+from symbollightapi.connector.NemConnector import NemConnector
+from symbollightapi.model.Endpoint import Endpoint
+from symbollightapi.model.NodeInfo import NodeInfo
 
 # region test data
 

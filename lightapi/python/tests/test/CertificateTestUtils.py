@@ -1,6 +1,6 @@
 from symbolchain.CryptoTypes import PrivateKey
 
-from symbolconnectors.bindings.openssl import ffi, lib
+from symbollightapi.bindings.openssl import ffi, lib
 
 
 class CertificateException(Exception):

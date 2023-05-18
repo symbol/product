@@ -2,7 +2,7 @@ from collections import namedtuple
 
 from symbolchain.CryptoTypes import PublicKey
 
-from symbolconnectors.bindings.openssl import ffi, lib
+from symbollightapi.bindings.openssl import ffi, lib
 
 CertificateInfo = namedtuple('CertificateInfo', ['subject', 'public_key'])
 

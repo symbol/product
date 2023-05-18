@@ -8,4 +8,4 @@ python3 -m pip install -r dev_requirements.txt
 
 # build bindings as part of lint setup to avoid import-error
 python3 -m cffi_src.openssl_build
-mv _openssl* symbolconnectors/bindings
+mv _openssl* symbollightapi/bindings

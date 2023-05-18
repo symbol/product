@@ -2,12 +2,12 @@ version: 2
 updates:
 
   - package-ecosystem: pip
-    directory: /connectors/python
+    directory: /lightapi/python
     schedule:
       interval: weekly
       day: sunday
     target-branch: dev
-    labels: [Connectors]
+    labels: [LightAPI]
     commit-message:
       prefix: '[dependency]'
 

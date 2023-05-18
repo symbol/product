@@ -1,9 +1,9 @@
 builds:
-  - name: Connectors Python
-    path: connectors/python
-
   - name: Nodewatch
     path: explorer/nodewatch
+
+  - name: Light API Python
+    path: lightapi/python
 
   - name: Optin Puller
     path: optin/puller

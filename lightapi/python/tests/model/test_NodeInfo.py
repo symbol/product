@@ -2,8 +2,8 @@ import unittest
 
 from symbolchain.CryptoTypes import Hash256, PublicKey
 
-from symbolconnectors.model.Endpoint import Endpoint
-from symbolconnectors.model.NodeInfo import NodeInfo
+from symbollightapi.model.Endpoint import Endpoint
+from symbollightapi.model.NodeInfo import NodeInfo
 
 
 class NodeInfoTest(unittest.TestCase):

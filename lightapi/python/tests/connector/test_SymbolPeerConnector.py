@@ -7,11 +7,11 @@ import pytest
 from symbolchain.BufferWriter import BufferWriter
 from symbolchain.CryptoTypes import Hash256, PublicKey
 
-from symbolconnectors.connector.SymbolPeerConnector import SymbolPeerConnector
-from symbolconnectors.model.Endpoint import Endpoint
-from symbolconnectors.model.Exceptions import NodeException
-from symbolconnectors.model.NodeInfo import NodeInfo
-from symbolconnectors.model.PacketHeader import PacketHeader, PacketType
+from symbollightapi.connector.SymbolPeerConnector import SymbolPeerConnector
+from symbollightapi.model.Endpoint import Endpoint
+from symbollightapi.model.Exceptions import NodeException
+from symbollightapi.model.NodeInfo import NodeInfo
+from symbollightapi.model.PacketHeader import PacketHeader, PacketType
 
 # region test data
 

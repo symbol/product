@@ -4,7 +4,7 @@ import json
 import pytest
 from aiohttp import web
 
-from symbolconnectors.connector.BasicConnector import BasicConnector, NodeException
+from symbollightapi.connector.BasicConnector import BasicConnector, NodeException
 
 # region server fixture
 

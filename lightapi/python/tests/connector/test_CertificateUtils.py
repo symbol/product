@@ -3,8 +3,8 @@ import unittest
 from symbolchain.CryptoTypes import PrivateKey
 from symbolchain.symbol.KeyPair import KeyPair
 
-from symbolconnectors.bindings.openssl import ffi, lib
-from symbolconnectors.connector.CertificateUtils import try_parse_certificate, verify_self_signed
+from symbollightapi.bindings.openssl import ffi, lib
+from symbollightapi.connector.CertificateUtils import try_parse_certificate, verify_self_signed
 
 from ..test.CertificateTestUtils import CertificateBuilder, generate_certificate_private_key, generate_random_certificate_private_key
 
