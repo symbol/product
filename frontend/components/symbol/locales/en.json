@@ -6,7 +6,7 @@
     "home_form_input_recipient_placeholder": "Your Testnet Address (Starts with %char)",
     "home_form_input_amount_placeholder": "%currency Amount (Max %maxAmount / Default %defaultAmount)",
     "home_form_button_claim_text": "Claim",
-    "home_form_auth_description": "To prevent faucet botting, you must sign in with Twitter. We request read-only access.",
+    "home_form_auth_description": "To prevent faucet sniping, you must sign in with Twitter. We request read-only access.",
     "home_form_button_auth_twitter": "Sign in with Twitter",
     "home_form_sign_out_twitter": "Sign out",
     "home_body_text_p1": "Done with your XYM? Send it back to the faucet. Remember, sharing is caring!",
