@@ -38,8 +38,8 @@
     "start": "next start",
     "build": "next build",
     "test": "NODE_OPTIONS=--experimental-vm-modules npx jest",
-    "test:jenkins": "NODE_OPTIONS=--experimental-vm-modules npx jest --watchAll=false",
-    "test:jenkins:cov": "NODE_OPTIONS=--experimental-vm-modules npx jest --watchAll --coverage",
+    "test:jenkins": "NODE_OPTIONS=--experimental-vm-modules npx jest",
+    "test:jenkins:cov": "NODE_OPTIONS=--experimental-vm-modules npx jest --coverage",
     "eject": "react-scripts eject",
     "lint": "eslint --ext js,jsx .",
     "lint:fix": "eslint --ext js,jsx --fix ."

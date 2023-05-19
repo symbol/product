@@ -10,7 +10,8 @@ const customJestConfig = {
 	setupFilesAfterEnv: ['<rootDir>/setupTests.js'],
 	testEnvironment: 'jest-environment-jsdom',
 	transform: {},
-	extensionsToTreatAsEsm: ['.jsx']
+	extensionsToTreatAsEsm: ['.jsx'],
+	coverageProvider: 'v8'
 };
 
 // createJestConfig is exported this way to ensure that next/jest can load the Next.js config which is async
