@@ -14,9 +14,6 @@ const FaucetForm = function ({ config, addressValidation }) {
 		progressClassName: 'toast-progress'
 	};
 
-	// Setup toast
-	toast.configure();
-
 	const backendRequest = axios.create();
 
 	backendRequest.defaults.baseURL = config.backendUrl;
@@ -160,13 +157,13 @@ const FaucetForm = function ({ config, addressValidation }) {
 					? (
 						<div>
 							<TextBox
-								value={recipientAddress}
+								value={recipientAddress || ''}
 								placeholder={recipientPlaceholder}
 								required
 								onChange={handleAddressOnChange}
 							/>
 							<TextBox
-								value={amount}
+								value={amount || ''}
 								type="number"
 								min={0}
 								max={config.maxAmount}
@@ -191,18 +188,18 @@ const FaucetForm = function ({ config, addressValidation }) {
 };
 
 FaucetForm.propTypes = {
-	addressValidation: PropTypes.func.isRequired,
+	addressValidation: PropTypes.func,
 	config: PropTypes.shape({
-		claimUrl: PropTypes.string.isRequired,
-		authUrl: PropTypes.string.isRequired,
-		backendUrl: PropTypes.string.isRequired,
-		transactionHashExplorerUrl: PropTypes.string.isRequired,
-		maxAmount: PropTypes.number.isRequired,
-		currency: PropTypes.string.isRequired,
-		addressFirstChar: PropTypes.string.isRequired,
-		minFollowers: PropTypes.number.isRequired,
-		minAccountAge: PropTypes.number.isRequired,
-		theme: PropTypes.string.isRequired
+		claimUrl: PropTypes.string,
+		authUrl: PropTypes.string,
+		backendUrl: PropTypes.string,
+		transactionHashExplorerUrl: PropTypes.string,
+		maxAmount: PropTypes.number,
+		currency: PropTypes.string,
+		addressFirstChar: PropTypes.string,
+		minFollowers: PropTypes.number,
+		minAccountAge: PropTypes.number,
+		theme: PropTypes.string
 	}).isRequired
 };
 

@@ -82,14 +82,16 @@ describe('page/Home', () => {
 		});
 
 		describe('background art', () => {
-			const renderBgContainerWithResize = (height, width) => {
+			const renderBgContainerWithResize = async (height, width) => {
 				// Arrange:
 				window.ResizeObserver = jest.fn(callback => ({
 					observe: jest.fn(),
 					disconnect: jest.fn()
 				}));
 
-				render(<Home />);
+				await waitFor(() => {
+					render(<Home />);
+				});
 
 				const artContainerRef = screen.getByTestId('art-container');
 
@@ -108,7 +110,7 @@ describe('page/Home', () => {
 
 			it('renders art when aspect ratio is less than 5', async () => {
 				// Arrange + Act:
-				renderBgContainerWithResize(100, 25);
+				await renderBgContainerWithResize(100, 25);
 
 				// Assert:
 				const divBgImageLeft = screen.getByTestId('bg-image-left');
@@ -125,7 +127,7 @@ describe('page/Home', () => {
 
 			it('renders art in mobile when aspect ratio is between 5 and 15', async () => {
 				// Arrange + Act:
-				renderBgContainerWithResize(100, 10);
+				await renderBgContainerWithResize(100, 10);
 
 				// Assert:
 				const divBgImageLeft = screen.queryByTestId('bg-image-left');
@@ -142,7 +144,7 @@ describe('page/Home', () => {
 
 			it('renders nothing when aspect ratio is more than 15', async () => {
 				// Arrange + Act:
-				renderBgContainerWithResize(100, 6);
+				await renderBgContainerWithResize(100, 6);
 
 				// Assert:
 				const divBgImageLeft = screen.queryByTestId('bg-image-left');
@@ -162,10 +164,12 @@ describe('page/Home', () => {
 	describe('configuration', () => {
 		it('requests config endpoint when init component', async () => {
 			// Act:
-			render(<Home />);
+			await waitFor(() => {
+				render(<Home />);
+			});
 
 			// Assert:
-			await waitFor(() => expect(axios.get).toHaveBeenCalledWith('/config/xym'));
+			expect(axios.get).toHaveBeenCalledWith('/config/xym');
 		});
 	});
 });

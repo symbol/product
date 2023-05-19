@@ -41,24 +41,7 @@ describe('components/HomeContainer', () => {
 		URL_EXPLORER: 'explorer/url'
 	};
 
-	it('renders logo image in home container', () => {
-		// Arrange:
-		render(<HomeContainer
-			homeConfig={homeConfig}
-			Config={config}
-		/>);
-
-		// Act:
-		const logoElement = screen.getByAltText('Logo');
-		const faucetElement = screen.getByAltText('Faucet');
-
-		// Assert:
-		expect(logoElement).toHaveAttribute('src', 'image/logo-image.png');
-		expect(faucetElement).toHaveAttribute('src', 'image/word.png');
-	});
-
-	it('renders faucet balance in home container', async () => {
-		// Arrange:
+	beforeEach(() => {
 		jest.spyOn(axios, 'create').mockReturnValue({
 			get: (url, ...params) => axios.get(url, ...params),
 			defaults: {}
@@ -75,28 +58,55 @@ describe('components/HomeContainer', () => {
 				faucetBalance: 100000000
 			}
 		});
-
-		render(<HomeContainer
-			homeConfig={homeConfig}
-			Config={config}
-		/>);
-
-		await waitFor(() => {
-			// Act:
-			const faucetBalanceElement = screen.getByText('100 TOKEN');
-
-			// Assert:
-			expect(axios.get).toHaveBeenCalledWith('/config/token');
-			expect(faucetBalanceElement).toBeInTheDocument();
-		});
 	});
 
-	it('renders help desk in home container', () => {
+	afterEach(() => {
+		jest.clearAllMocks();
+	});
+
+	it('renders logo image in home container', async () => {
 		// Arrange:
-		render(<HomeContainer
-			homeConfig={homeConfig}
-			Config={config}
-		/>);
+		await waitFor(() => {
+			render(<HomeContainer
+				homeConfig={homeConfig}
+				Config={config}
+			/>);
+		});
+
+		// Act:
+		const logoElement = screen.getByAltText('Logo');
+		const faucetElement = screen.getByAltText('Faucet');
+
+		// Assert:
+		expect(logoElement).toHaveAttribute('src', 'image/logo-image.png');
+		expect(faucetElement).toHaveAttribute('src', 'image/word.png');
+	});
+
+	it('renders faucet balance in home container', async () => {
+		// Arrange:
+		await waitFor(() => {
+			render(<HomeContainer
+				homeConfig={homeConfig}
+				Config={config}
+			/>);
+		});
+
+		// Act:
+		const faucetBalanceElement = screen.getByText('100 TOKEN');
+
+		// Assert:
+		expect(axios.get).toHaveBeenCalledWith('/config/token');
+		expect(faucetBalanceElement).toBeInTheDocument();
+	});
+
+	it('renders help desk in home container', async () => {
+		// Arrange:
+		await waitFor(() => {
+			render(<HomeContainer
+				homeConfig={homeConfig}
+				Config={config}
+			/>);
+		});
 
 		// Act:
 		const telegramElement = screen.getByText('@telegram');
@@ -107,12 +117,14 @@ describe('components/HomeContainer', () => {
 		expect(discordElement).toHaveAttribute('href', 'discord/channel/url');
 	});
 
-	it('renders footer links in home container', () => {
+	it('renders footer links in home container', async () => {
 		// Arrange:
-		render(<HomeContainer
-			homeConfig={homeConfig}
-			Config={config}
-		/>);
+		await waitFor(() => {
+			render(<HomeContainer
+				homeConfig={homeConfig}
+				Config={config}
+			/>);
+		});
 
 		// Act:
 		const footer = screen.getAllByTestId('footer');
@@ -127,12 +139,14 @@ describe('components/HomeContainer', () => {
 		});
 	});
 
-	it('renders faucet form in home container', () => {
+	it('renders faucet form in home container', async () => {
 		// Arrange:
-		render(<HomeContainer
-			homeConfig={homeConfig}
-			Config={config}
-		/>);
+		await waitFor(() => {
+			render(<HomeContainer
+				homeConfig={homeConfig}
+				Config={config}
+			/>);
+		});
 
 		// Act:
 		const faucetFormElement = screen.getByTestId('faucet-form');
@@ -141,12 +155,14 @@ describe('components/HomeContainer', () => {
 		expect(faucetFormElement).toBeInTheDocument();
 	});
 
-	it('renders home description in home container', () => {
+	it('renders home description in home container', async () => {
 		// Arrange:
-		render(<HomeContainer
-			homeConfig={homeConfig}
-			Config={config}
-		/>);
+		await waitFor(() => {
+			render(<HomeContainer
+				homeConfig={homeConfig}
+				Config={config}
+			/>);
+		});
 
 		// Act:
 		const homeDescriptionElement = screen.getByText($t('home_description'));
