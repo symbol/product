@@ -17,7 +17,7 @@ import LogoWordmarkSrc from '../../assets/images/logo-wordmark.svg';
 import LogoImageSrc from '../../assets/images/nem-faucet-icon.svg';
 import Config from '../../config';
 import breakpoints from '../../config/breakpoints.json';
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 
 const footerLinks = [{
 	href: Config.URL_EXPLORER,

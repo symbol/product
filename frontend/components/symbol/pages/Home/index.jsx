@@ -17,7 +17,7 @@ import LogoWordmarkSrc from '../../assets/images/logo-wordmark.svg';
 import LogoImageSrc from '../../assets/images/symbol-faucet-icon.svg';
 import Config from '../../config';
 import breakpoints from '../../config/breakpoints.json';
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 const footerLinks = [{
 	href: Config.URL_EXPLORER,

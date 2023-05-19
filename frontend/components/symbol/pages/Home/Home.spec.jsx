@@ -1,7 +1,7 @@
 import Home from '.';
 import { jest } from '@jest/globals';
 import {
-	render, screen, waitFor, act
+	act, render, screen, waitFor
 } from '@testing-library/react';
 import axios from 'axios';
 

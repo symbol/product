@@ -4,7 +4,7 @@ import TwitterSignIn from '../TwitterSignIn';
 import axios from 'axios';
 import { decode } from 'jsonwebtoken';
 import PropTypes from 'prop-types';
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
 
 const FaucetForm = function ({ config, addressValidation }) {
