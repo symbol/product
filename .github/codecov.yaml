@@ -36,6 +36,24 @@ coverage:
         flags:
           - tools-vanity
 
+      faucet-authenticator:
+        target: auto
+        threshold: 1%
+        flags:
+          - faucet-authenticator
+
+      faucet-backend:
+        target: auto
+        threshold: 1%
+        flags:
+          - faucet-backend
+
+      faucet-frontend:
+        target: auto
+        threshold: 1%
+        flags:
+          - faucet-frontend
+
 # New root YAML section = `flags:`
 # This is where you would define every flag from your
 # uploader, and update when new Flags added
@@ -66,4 +84,19 @@ flags:
   tools-vanity:
     paths:
       - tools/vanity
+    carryforward: true
+
+  faucet-authenticator:
+    paths:
+      - faucet/authenticator
+    carryforward: true
+
+  faucet-backend:
+    paths:
+      - faucet/backend
+    carryforward: true
+
+  faucet-frontend:
+    paths:
+      - faucet/frontend
     carryforward: true

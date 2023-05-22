@@ -80,3 +80,34 @@ updates:
     target-branch: dev
     commit-message:
       prefix: '[dependency]'
+
+  - package-ecosystem: npm
+    directory: /faucet/authenticator
+    schedule:
+      interval: weekly
+      day: sunday
+    target-branch: dev
+    labels: [Faucet Authenticator]
+    commit-message:
+      prefix: '[dependency]'
+
+  - package-ecosystem: npm
+    directory: /faucet/backend
+    schedule:
+      interval: weekly
+      day: sunday
+    target-branch: dev
+    labels: [Faucet Backend]
+    commit-message:
+      prefix: '[dependency]'
+
+  - package-ecosystem: npm
+    directory: /faucet/frontend
+    schedule:
+      interval: weekly
+      day: sunday
+    target-branch: dev
+    labels: [Faucet Frontend]
+    versioning-strategy: increase
+    commit-message:
+      prefix: '[dependency]'

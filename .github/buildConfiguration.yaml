@@ -14,6 +14,15 @@ builds:
   - name: Vanity Address Generator
     path: tools/vanity
 
+  - name: Faucet Authenticator
+    path: faucet/authenticator
+
+  - name: Faucet Backend
+    path: faucet/backend
+
+  - name: Faucet Frontend
+    path: faucet/frontend
+
 customBuilds:
   - name: Nightly Job
     jobName: nightlyJob
