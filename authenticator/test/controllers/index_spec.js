@@ -1,4 +1,5 @@
 const twitter = require('../../src/controllers');
+const { decrypt } = require('../../src/utils');
 const chai = require('chai');
 const chaiAsPromised = require('chai-as-promised');
 const { decode } = require('jsonwebtoken');
@@ -34,15 +35,15 @@ describe('twitter controller', () => {
 			generateAuthLinkStub.returns(Promise.resolve(twitterAuthResponse));
 
 			// Act:
-			const result = await twitter.requestToken();
+			const { oauthTokenSecret, ...info } = await twitter.requestToken();
 
 			// Assert:
 			expect(generateAuthLinkStub).to.have.been.calledWith('http://127.0.0.1:3000');
-			expect(result).to.be.deep.equal({
+			expect(info).to.be.deep.equal({
 				oauthToken: twitterAuthResponse.oauth_token,
-				oauthTokenSecret: twitterAuthResponse.oauth_token_secret,
 				url: twitterAuthResponse.url
 			});
+			expect(decrypt(oauthTokenSecret)).to.be.equal(twitterAuthResponse.oauth_token_secret);
 		});
 
 		it('throws error when request token fail', async () => {
@@ -59,6 +60,11 @@ describe('twitter controller', () => {
 
 	describe('userAccess', () => {
 		let loginStub = {};
+
+		// decrypt value: oauth-token-secret
+		const validOauthTokenSecret = 'ccd36d217a5a498545a5e24be0455f3d:'
+		+ '70b6a18de851f0e530d562d544bf60f0:'
+		+ '17798b8c1e14e7e1fff849f217c0bac3293d';
 
 		beforeEach(() => {
 			loginStub = stub(TwitterApi.prototype, 'login');
@@ -91,7 +97,7 @@ describe('twitter controller', () => {
 			// Act:
 			const result = await twitter.userAccess({
 				oauthToken: 'token',
-				oauthTokenSecret: 'secret',
+				oauthTokenSecret: validOauthTokenSecret,
 				oauthVerifier: 'verifier'
 			});
 
@@ -114,7 +120,19 @@ describe('twitter controller', () => {
 			// Act:
 			const promise = twitter.userAccess({
 				oauthToken: 'token',
-				oauthTokenSecret: 'secret',
+				oauthTokenSecret: validOauthTokenSecret,
+				oauthVerifier: 'verifier'
+			});
+
+			// Assert:
+			await expect(promise).to.be.rejectedWith('fail to request user access token');
+		});
+
+		it('throws error when encryptedOauthTokenSecret invalid', async () => {
+			// Arrange + Act:
+			const promise = twitter.userAccess({
+				oauthToken: 'token',
+				oauthTokenSecret: 'invalid hex',
 				oauthVerifier: 'verifier'
 			});
 

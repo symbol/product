@@ -1,5 +1,5 @@
 const { config } = require('../config');
-const createTwitterClient = require('../utils');
+const { createTwitterClient, encrypt, decrypt } = require('../utils');
 const jwt = require('jsonwebtoken');
 
 const twitter = {
@@ -16,7 +16,7 @@ const twitter = {
 			} = await twitterClient.generateAuthLink(config.twitterCallbackUrl);
 			return {
 				oauthToken: oauth_token,
-				oauthTokenSecret: oauth_token_secret,
+				oauthTokenSecret: encrypt(oauth_token_secret),
 				url
 			};
 		} catch (error) {
@@ -28,17 +28,17 @@ const twitter = {
 	/**
 	 * Get user's twitter information
 	 * @param {string} oauthToken user's twitter oauth token
-	 * @param {string} oauthTokenSecret user's twitter oauth token secret
+	 * @param {string} oauthTokenSecret encrypted oauth token secret
 	 * @param {string} oauthVerifier user's twitter oauth verifier
 	 * @returns {Promise<string>} signed jwt token
 	 */
 	userAccess: async ({ oauthToken, oauthTokenSecret, oauthVerifier }) => {
-		const twitterClient = createTwitterClient({
-			accessToken: oauthToken,
-			accessSecret: oauthTokenSecret
-		});
-
 		try {
+			const twitterClient = createTwitterClient({
+				accessToken: oauthToken,
+				accessSecret: decrypt(oauthTokenSecret)
+			});
+
 			const {
 				client, screenName, accessToken, accessSecret
 			} = await twitterClient.login(oauthVerifier);
