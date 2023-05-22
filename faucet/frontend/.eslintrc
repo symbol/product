@@ -2,7 +2,7 @@
 extends:
 - eslint-config-next
 - plugin:import/react
-- ../_symbol/linters/javascript/default.eslintrc
+- ../../linters/javascript/default.eslintrc
 rules:
   import/extensions:
     - error
