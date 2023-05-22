@@ -10,6 +10,9 @@ It includes our optin manager.
 | [@optin/puller](optin/puller) | [![lint][optin-puller-lint]][optin-puller-job] | | [![test][optin-puller-test]][optin-puller-job]| [![][optin-puller-cov]][optin-puller-cov-link] |
 | [@optin/reporting](optin/reporting) | [![lint][optin-reporting-lint]][optin-reporting-job] | [![build][optin-reporting-build]][optin-reporting-job] | [![test][optin-reporting-test]][optin-reporting-job]| [![][optin-reporting-cov]][optin-reporting-cov-link] |
 | [@tools/vanity](tools/vanity) | [![lint][tools-vanity-lint]][tools-vanity-job] | | [![test][tools-vanity-test]][tools-vanity-job]| [![][tools-vanity-cov]][tools-vanity-cov-link] |
+| [@faucet/authenticator](faucet/authenticator) | [![lint][faucet-authenticator-lint]][faucet-authenticator-job] | | [![test][faucet-authenticator-test]][faucet-authenticator-job]| [![][faucet-authenticator-cov]][faucet-authenticator-cov-link] |
+| [@faucet/backend](faucet/backend) | [![lint][faucet-backend-lint]][faucet-backend-job] | | [![test][faucet-backend-test]][faucet-backend-job]| [![][faucet-backend-cov]][faucet-backend-cov-link] |
+| [@faucet/frontend](faucet/frontend) | [![lint][faucet-frontend-lint]][faucet-frontend-job] | | [![test][faucet-frontend-test]][faucet-frontend-job]| [![][faucet-frontend-cov]][faucet-frontend-cov-link] |
 
 ## Full Coverage Report
 
@@ -50,3 +53,21 @@ Detailed version can be seen on [codecov.io][product-cov-link].
 [tools-vanity-test]: https://jenkins.symboldev.com/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Ftools-vanity%2Fdev%2F&config=tools-vanity-test
 [tools-vanity-cov]: https://codecov.io/gh/symbol/product/branch/dev/graph/badge.svg?token=SSYYBMK0M7&flag=tools-vanity
 [tools-vanity-cov-link]: https://codecov.io/gh/symbol/product/tree/dev/tools/vanity
+
+[faucet-authenticator-job]: https://jenkins.symboldev.com/blue/organizations/jenkins/Symbol%2Fgenerated%2Fproduct%2Ffaucet-authenticator/activity?branch=dev
+[faucet-authenticator-lint]: https://jenkins.symboldev.com/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Ffaucet-authenticator%2Fdev%2F&config=faucet-authenticator-lint
+[faucet-authenticator-test]: https://jenkins.symboldev.com/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Ffaucet-authenticator%2Fdev%2F&config=faucet-authenticator-test
+[faucet-authenticator-cov]: https://codecov.io/gh/symbol/product/branch/dev/graph/badge.svg?token=SSYYBMK0M7&flag=faucet-authenticator
+[faucet-authenticator-cov-link]: https://codecov.io/gh/symbol/product/tree/dev/faucet/authenticator
+
+[faucet-backend-job]: https://jenkins.symboldev.com/blue/organizations/jenkins/Symbol%2Fgenerated%2Fproduct%2Ffaucet-backend/activity?branch=dev
+[faucet-backend-lint]: https://jenkins.symboldev.com/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Ffaucet-backend%2Fdev%2F&config=faucet-backend-lint
+[faucet-backend-test]: https://jenkins.symboldev.com/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Ffaucet-backend%2Fdev%2F&config=faucet-backend-test
+[faucet-backend-cov]: https://codecov.io/gh/symbol/product/branch/dev/graph/badge.svg?token=SSYYBMK0M7&flag=faucet-backend
+[faucet-backend-cov-link]: https://codecov.io/gh/symbol/product/tree/dev/faucet/backend
+
+[faucet-frontend-job]: https://jenkins.symboldev.com/blue/organizations/jenkins/Symbol%2Fgenerated%2Fproduct%2Ffaucet-frontend/activity?branch=dev
+[faucet-frontend-lint]: https://jenkins.symboldev.com/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Ffaucet-frontend%2Fdev%2F&config=faucet-frontend-lint
+[faucet-frontend-test]: https://jenkins.symboldev.com/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Ffaucet-frontend%2Fdev%2F&config=faucet-frontend-test
+[faucet-frontend-cov]: https://codecov.io/gh/symbol/product/branch/dev/graph/badge.svg?token=SSYYBMK0M7&flag=faucet-frontend
+[faucet-frontend-cov-link]: https://codecov.io/gh/symbol/product/tree/dev/faucet/frontend
