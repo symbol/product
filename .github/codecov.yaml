@@ -1,0 +1,102 @@
+# Setting coverage targets per flag
+# Each project represent a package which has one flag
+coverage:
+  status:
+    project:
+      default:
+        target: 95%  # overall project / repo coverage
+
+      explorer-nodewatch:
+        target: auto
+        threshold: 1%
+        flags:
+          - explorer-nodewatch
+
+      faucet-authenticator:
+        target: auto
+        threshold: 1%
+        flags:
+          - faucet-authenticator
+
+      faucet-backend:
+        target: auto
+        threshold: 1%
+        flags:
+          - faucet-backend
+
+      faucet-frontend:
+        target: auto
+        threshold: 1%
+        flags:
+          - faucet-frontend
+
+      lightapi-python:
+        target: auto
+        threshold: 1%
+        flags:
+          - lightapi-python
+
+      optin-puller:
+        target: auto
+        threshold: 1%
+        flags:
+          - optin-puller
+
+      optin-reporting:
+        target: auto
+        threshold: 1%
+        flags:
+          - optin-reporting
+
+      tools-vanity:
+        target: auto
+        threshold: 1%
+        flags:
+          - tools-vanity
+
+# New root YAML section = `flags:`
+# This is where you would define every flag from your
+# uploader, and update when new Flags added
+# Each flag is used to represent each package in the
+# monorepo.  This allows code coverage per package.
+
+flags:
+  explorer-nodewatch:
+    paths:
+      - explorer/nodewatch
+    carryforward: true
+
+  faucet-authenticator:
+    paths:
+      - faucet/authenticator
+    carryforward: true
+
+  faucet-backend:
+    paths:
+      - faucet/backend
+    carryforward: true
+
+  faucet-frontend:
+    paths:
+      - faucet/frontend
+    carryforward: true
+
+  lightapi-python:
+    paths:
+      - lightapi/python
+    carryforward: true
+
+  optin-puller:
+    paths:
+      - optin/puller
+    carryforward: true
+
+  optin-reporting:
+    paths:
+      - optin/reporting
+    carryforward: true
+
+  tools-vanity:
+    paths:
+      - tools/vanity
+    carryforward: true

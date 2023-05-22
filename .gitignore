@@ -1,24 +1,32 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+# github
+!.github
 
-# dependencies
+# editors
+*~
+*.sln
+*.vcxproj
+*.vcxproj.filters
+.vscode/
+.idea/
+
+# MacOS
+.DS_Store
+
+# cpp
+_build/
+_temp/
+
+# js
 node_modules/
-
-# testing
-coverage/
-
-# production
-build/
+npm-*.log*
+_data/
 .next/
 
-# sqlite3 database
-data/
+# python
+__pycache__/
+*.egg-info/
+build/
+dist/
 
-# misc
-.DS_Store
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-
-npm-debug.log*
+# other build artifacts
+_generated/

@@ -1,9 +1,32 @@
 builds:
-  - name: Authenticator
-    path: authenticator
+  - name: Explorer Nodewatch
+    path: explorer/nodewatch
 
-  - name: Backend
-    path: backend
+  - name: Faucet Authenticator
+    path: faucet/authenticator
 
-  - name: Frontend
-    path: nem
+  - name: Faucet Backend
+    path: faucet/backend
+
+  - name: Faucet Frontend
+    path: faucet/frontend
+
+  - name: Light API Python
+    path: lightapi/python
+
+  - name: Optin Puller
+    path: optin/puller
+
+  - name: Optin Reporting
+    path: optin/reporting
+
+  - name: Vanity Address Generator
+    path: tools/vanity
+
+customBuilds:
+  - name: Nightly Job
+    jobName: nightlyJob
+    scriptPath: .github/jenkinsfile/nightlyBuild.groovy
+    triggers:
+      - type: cron
+        schedule: '@midnight'

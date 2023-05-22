@@ -1,6 +1,6 @@
 ---
 extends:
 - airbnb
-- ../_symbol/linters/javascript/default.eslintrc
+- ../../linters/javascript/default.eslintrc
 env:
     mocha: true
