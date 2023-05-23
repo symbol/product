@@ -233,7 +233,7 @@ class Preparer:
 				last_finalized_height,
 				grace_period_epochs)
 
-	def generate_certificates(self, ca_key_path, ca_cn, node_cn, require_ca=True):
+	def generate_certificates(self, ca_key_path, ca_cn, node_cn, require_ca=True, ca_password=None):  # pylint: disable=too-many-arguments
 		"""Generates and packages all certificates."""
 
 		ca_key_path = Path(ca_key_path).absolute()
@@ -241,7 +241,7 @@ class Preparer:
 			raise RuntimeError(f'CA key is required but does not exist at path {ca_key_path}')
 
 		openssl_executor = OpensslExecutor(os.environ.get('OPENSSL_EXECUTABLE', 'openssl'))
-		with CertificateFactory(openssl_executor, ca_key_path) as factory:
+		with CertificateFactory(openssl_executor, ca_key_path, ca_password) as factory:
 			if not ca_key_path.exists():
 				factory.generate_random_ca_private_key()
 				factory.export_ca()

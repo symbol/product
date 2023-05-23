@@ -7,11 +7,12 @@ from pathlib import Path
 class CertificateFactory:
 	"""Uses openssl to generate SSL certificates and related files."""
 
-	def __init__(self, openssl_executor, ca_key_path):
+	def __init__(self, openssl_executor, ca_key_path, ca_password=None):
 		"""Creates a factory."""
 
 		self.openssl_executor = openssl_executor
 		self.ca_key_path = Path(ca_key_path)
+		self.ca_password = ca_password
 
 		self.temp_directory = None
 		self.original_working_directory = None
@@ -26,15 +27,21 @@ class CertificateFactory:
 		self.temp_directory.__exit__(*args)
 		os.chdir(self.original_working_directory)
 
+	def _add_ca_password(self, args):
+		if self.ca_password:
+			return args + ['-passin', self.ca_password]
+
+		return args
+
 	def extract_ca_public_key(self):
 		"""Extracts a CA public key from a CA private key."""
 
-		self.openssl_executor.dispatch([
+		self.openssl_executor.dispatch(self._add_ca_password([
 			'pkey',
 			'-in', self.ca_key_path,
 			'-out', 'ca.pubkey.pem',
 			'-pubout'
-		])
+		]))
 
 	def generate_random_node_private_key(self):
 		"""Generates a random NODE private key."""
@@ -91,7 +98,7 @@ class CertificateFactory:
 			outfile.write('')
 
 		# actually generate CA certificate
-		self.openssl_executor.dispatch([
+		self.openssl_executor.dispatch(self._add_ca_password([
 			'req',
 			'-config', 'ca.cnf',
 			'-keyform', 'PEM',
@@ -99,7 +106,7 @@ class CertificateFactory:
 			'-new', '-x509',
 			'-days', '7300',
 			'-out', 'ca.crt.pem'
-		])
+		]))
 
 	def generate_node_certificate(self, node_cn):
 		"""Generates a node certificate."""
@@ -131,7 +138,7 @@ class CertificateFactory:
 		])
 
 		# actually generate node certificate
-		self.openssl_executor.dispatch([
+		self.openssl_executor.dispatch(self._add_ca_password([
 			'ca',
 			'-config', 'ca.cnf',
 			'-days', '375',
@@ -139,7 +146,7 @@ class CertificateFactory:
 			'-batch',
 			'-in', 'node.csr.pem',
 			'-out', 'node.crt.pem'
-		])
+		]))
 
 	@staticmethod
 	def create_node_certificate_chain():

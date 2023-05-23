@@ -17,14 +17,14 @@ class CertificateFactoryTest(unittest.TestCase):
 		return OpensslExecutor(os.environ.get('OPENSSL_EXECUTABLE', 'openssl'))
 
 	@staticmethod
-	def _create_ca_private_key(certificate_directory):
+	def _create_ca_private_key(certificate_directory, ca_password=None):
 		ca_private_key_path = Path(certificate_directory) / 'xyz.key.pem'
 		CertificateFactoryTest._create_executor().dispatch([
 			'genpkey',
 			'-out', ca_private_key_path,
 			'-outform', 'PEM',
 			'-algorithm', 'ed25519'
-		])
+		] + ([] if not ca_password else ['-pass', ca_password]))
 		return ca_private_key_path
 
 	# endregion
@@ -235,14 +235,14 @@ class CertificateFactoryTest(unittest.TestCase):
 		for path in Path(directory).iterdir():
 			self.assertEqual(0o400, path.stat().st_mode & 0o777)
 
-	def _assert_can_create_package_containing_all_files(self, package_args, expected_package_files):
+	def _assert_can_create_package_containing_all_files(self, package_args, expected_package_files, ca_password=None):
 		# Arrange:
 		with tempfile.TemporaryDirectory() as package_directory:
 			# - create a CA private key
 			with tempfile.TemporaryDirectory() as certificate_directory:
-				ca_private_key_path = self._create_ca_private_key(certificate_directory)
+				ca_private_key_path = self._create_ca_private_key(certificate_directory, ca_password)
 
-				with CertificateFactory(self._create_executor(), ca_private_key_path) as factory:
+				with CertificateFactory(self._create_executor(), ca_private_key_path, ca_password) as factory:
 					# - generate all package files
 					factory.extract_ca_public_key()
 					factory.generate_random_node_private_key()
@@ -269,6 +269,17 @@ class CertificateFactoryTest(unittest.TestCase):
 
 	def test_can_package_node_files(self):
 		self._assert_can_create_package_containing_all_files(['node'], ['node.crt.pem', 'node.full.crt.pem', 'node.key.pem'])
+
+	def test_can_package_all_files_with_password(self):
+		self._assert_can_create_package_containing_all_files([], [
+			'ca.crt.pem', 'ca.pubkey.pem', 'node.crt.pem', 'node.full.crt.pem', 'node.key.pem'
+		], 'pass:abc123')
+
+	def test_can_package_ca_files_with_password(self):
+		self._assert_can_create_package_containing_all_files(['ca'], ['ca.crt.pem', 'ca.pubkey.pem'], 'pass:abc123')
+
+	def test_can_package_node_files_with_password(self):
+		self._assert_can_create_package_containing_all_files(['node'], ['node.crt.pem', 'node.full.crt.pem', 'node.key.pem'], 'pass:abc123')
 
 	def test_can_export_ca(self):
 		# Arrange:

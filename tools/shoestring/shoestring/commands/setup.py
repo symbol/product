@@ -68,7 +68,8 @@ async def run_main(args):
 			args.ca_key_path,
 			'CA CN: flag or generate 1',
 			'NODE CN: flag or generate 2',
-			require_ca=False)
+			require_ca=False,
+			ca_password=config.node.ca_password)
 
 		client = SymbolConnector('http://401-sai-dual.symboltest.net:3000')
 
