@@ -88,6 +88,7 @@ updates:
       day: sunday
     target-branch: dev
     labels: [Faucet Authenticator]
+    versioning-strategy: increase
     commit-message:
       prefix: '[dependency]'
 
@@ -98,6 +99,7 @@ updates:
       day: sunday
     target-branch: dev
     labels: [Faucet Backend]
+    versioning-strategy: increase
     commit-message:
       prefix: '[dependency]'
 
