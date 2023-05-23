@@ -4,6 +4,8 @@ from symbolchain.sc import TransactionFactory, TransactionType
 from symbolchain.symbol.KeyPair import KeyPair
 from zenlog import log
 
+from ..internal.ShoestringConfiguration import parse_shoestring_configuration
+
 
 def run_main(args):
 	with open(args.filename, 'rb') as infile:
@@ -23,10 +25,10 @@ def run_main(args):
 	else:
 		log.info(f'Transaction: {transaction}')
 
-	# Query if it's ok to sign
+	# todo: query if it's ok to sign
 
-	# TODO: figure out network... (via nodewatch client?)
-	facade = SymbolFacade('testnet')
+	config = parse_shoestring_configuration(args.config)
+	facade = SymbolFacade(config.network)
 
 	key_storage = PrivateKeyStorage('.')
 	key_pair = KeyPair(key_storage.load(args.ca_key_path.removesuffix('.pem')))
@@ -45,7 +47,8 @@ def run_main(args):
 
 
 def add_arguments(parser):
+	parser.add_argument('--config', help='path to shoestring configuration file', required=True)
 	parser.add_argument('--ca-key-path', help='path to main private key PEM file', required=True)
-	parser.add_argument('filename', help='transaction binary payload')
 	parser.add_argument('--save', action='store_true', help='save signed payload into same file as input')
+	parser.add_argument('filename', help='transaction binary payload')
 	parser.set_defaults(func=run_main)

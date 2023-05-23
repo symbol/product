@@ -31,6 +31,7 @@ async def _assert_can_sign_transaction(transaction_descriptor_factory):
 		# Act:
 		await main([
 			'signer',
+			'--config', str(Path('tests/resources/testnet.properties').absolute()),
 			'--ca-key-path', str(Path(output_directory) / 'main.pem'),
 			'--save',
 			str(transaction_filepath)

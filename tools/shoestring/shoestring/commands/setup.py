@@ -10,23 +10,25 @@ from shoestring.internal.PackageResolver import download_and_extract_package
 from shoestring.internal.PeerDownloader import download_peers
 from shoestring.internal.PemUtils import read_public_key_from_public_key_pem_file
 from shoestring.internal.Preparer import Preparer
+from shoestring.internal.ShoestringConfiguration import parse_shoestring_configuration
 
 SECURITY_MODES = ('default', 'paranoid', 'insecure')
 
 
 async def run_main(args):
+	config = parse_shoestring_configuration(args.config)
+
 	# detect the current finalized height
-	nodewatch_client = NodewatchClient(args.nodewatch)
+	nodewatch_client = NodewatchClient(config.services.nodewatch)
 	last_finalized_height = await nodewatch_client.symbol_finalized_height()
 	log.info(f'detected last finalized height as {last_finalized_height}')
 
-	node_features = NodeFeatures(int(args.features))
-	with Preparer(Path(args.directory), node_features, log) as preparer:
+	with Preparer(Path(args.directory), config.node.features, log) as preparer:
 		# setup basic directories
 		preparer.create_subdirectories()
 
 		# download resource package(s) and peers file(s)
-		await download_peers(args.nodewatch, preparer.directories.resources, NodeFeatures.API in node_features)
+		await download_peers(config.services.nodewatch, preparer.directories.resources, NodeFeatures.API in config.node.features)
 
 		await download_and_extract_package(args.package, preparer.directories.temp)
 
@@ -87,19 +89,12 @@ async def run_main(args):
 
 
 def add_arguments(parser):
+	parser.add_argument('--config', help='path to shoestring configuration file', required=True)
 	parser.add_argument('--security', help='security mode (default: default)', choices=SECURITY_MODES, default='default')
 	parser.add_argument(
 		'--package',
 		help='Network configuration package. Possible values: (name | file:///filename | http(s)://uri) (default: mainnet)',
 		default='mainnet')
-	parser.add_argument(
-		'--nodewatch',
-		help='either nodewatch URI or location of file with peer files (file:///filename)',
-		default='http://forkwatch.symbol.tools')
-	parser.add_argument(
-		'--features',
-		help='desired node features',
-		default=(NodeFeatures.API | NodeFeatures.HARVESTER | NodeFeatures.VOTER))
 	parser.add_argument('--directory', help=f'destination directory (default: {Path.home()})', default=str(Path.home()))
 	parser.add_argument('--ca-key-path', help='path to main private key PEM file', required=True)
 	parser.add_argument('--overrides', help='path to custom user settings')

@@ -1,3 +1,4 @@
+import configparser
 import tempfile
 from pathlib import Path
 
@@ -19,22 +20,35 @@ def server(event_loop, aiohttp_client):
 # endregion
 
 
+def _prepare_configuration(directory, services_nodewatch, node_features):
+	parser = configparser.ConfigParser()
+	parser.read(Path('tests/resources/testnet.properties').absolute())
+
+	parser['services']['nodewatch'] = str(services_nodewatch)
+
+	node_features_str = str(node_features)
+	parser['node']['features'] = node_features_str[node_features_str.index('.') + 1:]
+
+	with open(Path(directory) / 'testnet.properties', 'wt', encoding='utf8') as outfile:
+		parser.write(outfile)
+
+
 async def _assert_can_prepare_node(server, node_features, expected_output_files):  # pylint: disable=redefined-outer-name
 	# Arrange:
 	with tempfile.TemporaryDirectory() as output_directory:
 		with tempfile.TemporaryDirectory() as package_directory:
+			_prepare_configuration(package_directory, server.make_url(''), node_features)
 			prepare_mainnet_package(package_directory, 'resources.zip')
 
 			with tempfile.TemporaryDirectory() as ca_directory:
 				# Act:
 				await main([
 					'setup',
+					'--config', str(Path(package_directory) / 'testnet.properties'),
 					'--security', 'insecure',
 					'--package', f'file://{Path(package_directory) / "resources.zip"}',
-					'--nodewatch', str(server.make_url('')),
 					'--directory', output_directory,
 					'--ca-key-path', str(Path(ca_directory) / 'xyz.key.pem'),
-					'--features', str(node_features.value)  # TODO: move to configuration
 				])
 
 				# Assert: spot check all expected files were created
