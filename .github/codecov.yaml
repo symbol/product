@@ -6,35 +6,11 @@ coverage:
       default:
         target: 95%  # overall project / repo coverage
 
-      lightapi-python:
-        target: auto
-        threshold: 1%
-        flags:
-          - lightapi-python
-
       explorer-nodewatch:
         target: auto
         threshold: 1%
         flags:
           - explorer-nodewatch
-
-      optin-puller:
-        target: auto
-        threshold: 1%
-        flags:
-          - optin-puller
-
-      optin-reporting:
-        target: auto
-        threshold: 1%
-        flags:
-          - optin-reporting
-
-      tools-vanity:
-        target: auto
-        threshold: 1%
-        flags:
-          - tools-vanity
 
       faucet-authenticator:
         target: auto
@@ -54,6 +30,30 @@ coverage:
         flags:
           - faucet-frontend
 
+      lightapi-python:
+        target: auto
+        threshold: 1%
+        flags:
+          - lightapi-python
+
+      optin-puller:
+        target: auto
+        threshold: 1%
+        flags:
+          - optin-puller
+
+      optin-reporting:
+        target: auto
+        threshold: 1%
+        flags:
+          - optin-reporting
+
+      tools-vanity:
+        target: auto
+        threshold: 1%
+        flags:
+          - tools-vanity
+
 # New root YAML section = `flags:`
 # This is where you would define every flag from your
 # uploader, and update when new Flags added
@@ -61,29 +61,9 @@ coverage:
 # monorepo.  This allows code coverage per package.
 
 flags:
-  lightapi-python:
-    paths:
-      - lightapi/python
-    carryforward: true
-
   explorer-nodewatch:
     paths:
       - explorer/nodewatch
-    carryforward: true
-
-  optin-puller:
-    paths:
-      - optin/puller
-    carryforward: true
-
-  optin-reporting:
-    paths:
-      - optin/reporting
-    carryforward: true
-
-  tools-vanity:
-    paths:
-      - tools/vanity
     carryforward: true
 
   faucet-authenticator:
@@ -99,4 +79,24 @@ flags:
   faucet-frontend:
     paths:
       - faucet/frontend
+    carryforward: true
+
+  lightapi-python:
+    paths:
+      - lightapi/python
+    carryforward: true
+
+  optin-puller:
+    paths:
+      - optin/puller
+    carryforward: true
+
+  optin-reporting:
+    paths:
+      - optin/reporting
+    carryforward: true
+
+  tools-vanity:
+    paths:
+      - tools/vanity
     carryforward: true
