@@ -26,8 +26,8 @@ class PreparerTest(unittest.TestCase):
 	# region utils
 
 	@staticmethod
-	def _create_configuration(node_features):
-		return ShoestringConfiguration('testnet', None, None, NodeConfiguration(node_features, None, None, None))
+	def _create_configuration(node_features, api_https=True):
+		return ShoestringConfiguration('testnet', None, None, NodeConfiguration(node_features, None, None, None, api_https))
 
 	# endregion
 
@@ -57,6 +57,8 @@ class PreparerTest(unittest.TestCase):
 			self.assertEqual(Path(output_directory) / 'startup', preparer.directories.startup)
 			self.assertEqual(Path(output_directory) / 'mongo', preparer.directories.mongo)
 			self.assertEqual(Path(output_directory) / 'dbdata', preparer.directories.dbdata)
+			self.assertEqual(Path(output_directory) / 'rest-cache', preparer.directories.rest_cache)
+			self.assertEqual(Path(output_directory) / 'https-proxy', preparer.directories.https_proxy)
 			self.assertEqual(Path(output_directory) / 'resources', preparer.directories.resources)
 			self.assertEqual(Path(output_directory) / 'keys', preparer.directories.keys)
 			self.assertEqual(Path(output_directory) / 'keys' / 'cert', preparer.directories.certificates)
@@ -74,6 +76,8 @@ class PreparerTest(unittest.TestCase):
 				self.assertEqual(Path(output_directory) / 'startup', preparer.directories.startup)
 				self.assertEqual(Path(output_directory) / 'mongo', preparer.directories.mongo)
 				self.assertEqual(Path(output_directory) / 'dbdata', preparer.directories.dbdata)
+				self.assertEqual(Path(output_directory) / 'rest-cache', preparer.directories.rest_cache)
+				self.assertEqual(Path(output_directory) / 'https-proxy', preparer.directories.https_proxy)
 				self.assertEqual(Path(output_directory) / 'resources', preparer.directories.resources)
 				self.assertEqual(Path(output_directory) / 'keys', preparer.directories.keys)
 				self.assertEqual(Path(output_directory) / 'keys' / 'cert', preparer.directories.certificates)
@@ -83,10 +87,10 @@ class PreparerTest(unittest.TestCase):
 
 	# region create_subdirectories
 
-	def _assert_can_create_subdirectories(self, node_features, expected_directories):
+	def _assert_can_create_subdirectories_configuration(self, configuration, expected_directories):
 		# Arrange:
 		with tempfile.TemporaryDirectory() as output_directory:
-			with Preparer(output_directory, self._create_configuration(node_features)) as preparer:
+			with Preparer(output_directory, configuration) as preparer:
 				# Act:
 				preparer.create_subdirectories()
 
@@ -94,11 +98,23 @@ class PreparerTest(unittest.TestCase):
 				created_directories = sorted(str(path)[len(output_directory):] for path in Path(output_directory).glob('**/*'))
 				self.assertEqual(expected_directories, created_directories)
 
+	def _assert_can_create_subdirectories(self, node_features, expected_directories):
+		configuration = self._create_configuration(node_features)
+		self._assert_can_create_subdirectories_configuration(configuration, expected_directories)
+
 	def test_can_create_subdirectories_peer_node(self):
 		self._assert_can_create_subdirectories(NodeFeatures.PEER, ['/data', '/keys', '/keys/cert', '/logs', '/resources'])
 
 	def test_can_create_subdirectories_api_node(self):
-		self._assert_can_create_subdirectories(NodeFeatures.API, ['/data', '/dbdata', '/keys', '/keys/cert', '/logs', '/resources'])
+		self._assert_can_create_subdirectories(
+			NodeFeatures.API,
+			['/data', '/dbdata', '/https-proxy', '/keys', '/keys/cert', '/logs', '/resources', '/rest-cache'])
+
+	def test_can_create_subdirectories_api_node_without_https(self):
+		configuration = self._create_configuration(NodeFeatures.API, api_https=False)
+		self._assert_can_create_subdirectories_configuration(
+			configuration,
+			['/data', '/dbdata', '/keys', '/keys/cert', '/logs', '/resources', '/rest-cache'])
 
 	def test_can_create_subdirectories_harvester_node(self):
 		self._assert_can_create_subdirectories(NodeFeatures.HARVESTER, ['/data', '/keys', '/keys/cert', '/logs', '/resources'])
@@ -109,7 +125,7 @@ class PreparerTest(unittest.TestCase):
 	def test_can_create_subdirectories_full_node(self):
 		self._assert_can_create_subdirectories(
 			NodeFeatures.API | NodeFeatures.HARVESTER | NodeFeatures.VOTER,
-			['/data', '/dbdata', '/keys', '/keys/cert', '/keys/voting', '/logs', '/resources'])
+			['/data', '/dbdata', '/https-proxy', '/keys', '/keys/cert', '/keys/voting', '/logs', '/resources', '/rest-cache'])
 
 	# endregion
 
@@ -450,7 +466,11 @@ class PreparerTest(unittest.TestCase):
 		with tempfile.TemporaryDirectory() as output_directory:
 			with Preparer(output_directory, self._create_configuration(node_features)) as preparer:
 				# Act:
-				preparer.configure_docker('2222:3333')
+				preparer.configure_docker({
+					'catapult_client_image': 'symbolplatform/symbol-server:gcc-a.b.c.d',
+					'catapult_rest_image': 'symbolplatform/symbol-rest:a.b.c',
+					'user': '2222:3333'
+				})
 
 				# Assert: check startup files
 				startup_files = sorted(str(path)[len(output_directory) + 8:] for path in Path(output_directory).glob('startup/*'))
@@ -460,9 +480,9 @@ class PreparerTest(unittest.TestCase):
 				expected_image_map = {
 					'db': 'mongo:5.0.15',
 					'initiate': 'mongo:5.0.15',
-					'client': 'symbolplatform/symbol-server:gcc-1.0.3.6',
-					'broker': 'symbolplatform/symbol-server:gcc-1.0.3.6',
-					'rest-api': 'symbolplatform/symbol-rest:2.4.3'
+					'client': 'symbolplatform/symbol-server:gcc-a.b.c.d',
+					'broker': 'symbolplatform/symbol-server:gcc-a.b.c.d',
+					'rest-api': 'symbolplatform/symbol-rest:a.b.c'
 				}
 
 				service_names = []

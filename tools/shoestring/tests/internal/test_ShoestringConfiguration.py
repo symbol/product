@@ -40,7 +40,8 @@ class ShoestringConfigurationTest(unittest.TestCase):
 		'features': 'API | PEER | VOTER',
 		'userId': '1234',
 		'groupId': '9876',
-		'caPassword': 'pass:abc123'
+		'caPassword': 'pass:abc123',
+		'apiHttps': 'false'
 	}
 
 	# endregion
@@ -143,6 +144,7 @@ class ShoestringConfigurationTest(unittest.TestCase):
 		self.assertEqual(1234, node.user_id)
 		self.assertEqual(9876, node.group_id)
 		self.assertEqual('pass:abc123', node.ca_password)
+		self.assertEqual(False, node.api_https)
 
 	def test_can_parse_valid_node_configuration_multiple_values(self):
 		# Act:
@@ -153,6 +155,7 @@ class ShoestringConfigurationTest(unittest.TestCase):
 		self.assertEqual(1234, node.user_id)
 		self.assertEqual(9876, node.group_id)
 		self.assertEqual('pass:abc123', node.ca_password)
+		self.assertEqual(False, node.api_https)
 
 	def test_cannot_parse_node_configuration_incomplete(self):
 		# Arrange:
@@ -219,6 +222,7 @@ class ShoestringConfigurationTest(unittest.TestCase):
 			self.assertEqual(1234, config.node.user_id)
 			self.assertEqual(9876, config.node.group_id)
 			self.assertEqual('pass:abc123', config.node.ca_password)
+			self.assertEqual(False, config.node.api_https)
 
 	def test_cannot_parse_shoestring_configuration_incomplete(self):
 		# Arrange:

@@ -79,6 +79,18 @@ class Preparer:
 			return self.output_directory / 'dbdata'
 
 		@property
+		def rest_cache(self):
+			"""REST cache directory."""
+
+			return self.output_directory / 'rest-cache'
+
+		@property
+		def https_proxy(self):
+			"""Https proxy directory."""
+
+			return self.output_directory / 'https-proxy'
+
+		@property
 		def resources(self):
 			"""Resources directory."""
 
@@ -134,6 +146,9 @@ class Preparer:
 		directories = [self.directory / 'data', self.directory / 'logs', self.directories.certificates, self.directories.resources]
 		if NodeFeatures.API in self.config.node.features:
 			directories.append(self.directories.dbdata)
+			directories.append(self.directories.rest_cache)
+			if self.config.node.api_https:
+				directories.append(self.directories.https_proxy)
 
 		if NodeFeatures.VOTER in self.config.node.features:
 			directories.append(self.directories.voting_keys)
@@ -223,6 +238,9 @@ class Preparer:
 
 		self._copy_tree(self.directories.temp / 'mongo', self.directories.mongo)
 
+	def configure_https(self):
+		"""Configures https proxy."""
+
 	def configure_keys(self, last_finalized_height=1, grace_period_epochs=1):
 		"""Configures key pairs based on enabled features."""
 
@@ -256,7 +274,7 @@ class Preparer:
 
 			factory.package(self.directories.certificates)
 
-	def configure_docker(self, user_entry):
+	def configure_docker(self, template_mapping):
 		"""Prepares docker-compose file."""
 
 		if NodeFeatures.API in self.config.node.features:
@@ -271,11 +289,7 @@ class Preparer:
 
 		compose_template_filename_postfix = 'dual' if NodeFeatures.API in self.config.node.features else 'peer'
 		compose_template_filename = f'templates/docker-compose-{compose_template_filename_postfix}.yaml'
-		apply_template(compose_template_filename, {
-			'catapult_client_image': 'symbolplatform/symbol-server:gcc-1.0.3.6',
-			'catapult_rest_image': 'symbolplatform/symbol-rest:2.4.3',
-			'user': user_entry
-		}, self.directory / 'docker-compose.yaml')
+		apply_template(compose_template_filename, template_mapping, self.directory / 'docker-compose.yaml')
 
 	def prepare_linking_transaction(self, account_public_key, existing_links, timestamp):
 		"""Creates an aggregate transaction containing account key link and unlink transactions """

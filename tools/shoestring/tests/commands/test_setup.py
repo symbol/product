@@ -58,6 +58,7 @@ PEER_OUTPUT_FILES = [
 
 API_OUTPUT_FILES = [
 	'/dbdata',
+	'/https-proxy',
 	'/mongo',
 	'/mongo/mongoDbPrepare.js',
 	'/resources/config-database.properties',
@@ -66,6 +67,7 @@ API_OUTPUT_FILES = [
 	'/resources/config-messaging.properties',
 	'/resources/config-pt.properties',
 	'/resources/peers-api.json',
+	'/rest-cache',
 	'/startup/delayrestapi.sh',
 	'/startup/mongors.sh',
 	'/startup/rest.json',

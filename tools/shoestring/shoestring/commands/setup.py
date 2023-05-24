@@ -45,13 +45,17 @@ async def run_main(args):
 		if args.overrides:
 			user_patches = load_patches_from_file(args.overrides)
 
+		# TODO: if https check if host looks like a hostname and maybe try to resolve
+
 		preparer.configure_resources(user_patches)
 		preparer.configure_mongo()  # TODO: should this be merged with configure_docker
 
-		# os.getuid() could be used, but that might not be the best idea,
-		# would be best to have it in user settings alnog with the ones above
-		user_entry = '1000:1000'
-		preparer.configure_docker(user_entry)
+		# os.getuid() could be used, but that might not be the best idea
+		preparer.configure_docker({
+			'catapult_client_image': config.images.client,
+			'catapult_rest_image': config.images.rest,
+			'user': f'{config.node.user_id}:{config.node.group_id}'
+		})
 
 		# TODO: WIP - currently:
 		#  * ca priv key is passed via --ca-key-path
