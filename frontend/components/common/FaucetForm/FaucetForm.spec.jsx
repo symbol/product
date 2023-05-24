@@ -74,7 +74,7 @@ describe('components/FaucetForm', () => {
 			/>);
 
 			// Assert:
-			expect(localStorage.getItem('recipientAddress')).toBe('recipient-address');
+			expect(sessionStorage.getItem('recipientAddress')).toBe('recipient-address');
 		});
 	});
 
@@ -93,13 +93,13 @@ describe('components/FaucetForm', () => {
 				+ 'idHdpdHRlckFjY291bnQiLCJmb2xsb3dlcnNDb3VudCI6MTAwLCJjcmVhdGVkQXQiOiIyMDExLTA2LTA3VDE0OjE3OjQ2LjAwMFoiLCJpYX'
 				+ 'QiOjE2NzA3MDQ4ODZ9.PDZOY7EXRr_qknErLfqXqymJ8Ivg4nNiSFvJBSG56f0';
 
-		const createLocalStorageTwitterInfo = (jwtAuthToken = jwtToken) => {
-			localStorage.setItem('authToken', jwtAuthToken);
+		const createSessionStorageTwitterInfo = (jwtAuthToken = jwtToken) => {
+			sessionStorage.setItem('authToken', jwtAuthToken);
 		};
 
-		beforeEach(() => createLocalStorageTwitterInfo());
+		beforeEach(() => createSessionStorageTwitterInfo());
 
-		afterEach(() => localStorage.clear());
+		afterEach(() => sessionStorage.clear());
 
 		it('renders input form', () => {
 			// Act:
@@ -137,12 +137,12 @@ describe('components/FaucetForm', () => {
 			expect(elementRecipient.value).toBe('recipient-address');
 		});
 
-		it('sets the recipient address from localStorage when not available in query params', async () => {
+		it('sets the recipient address from sessionStorage when not available in query params', async () => {
 			// Arrange:
 			delete window.location;
 			window.location = new URL('http://example.com');
 
-			localStorage.setItem('recipientAddress', 'local-storage-recipient-address');
+			sessionStorage.setItem('recipientAddress', 'local-storage-recipient-address');
 
 			// Act:
 			render(<FaucetForm
@@ -244,7 +244,7 @@ describe('components/FaucetForm', () => {
 
 			const assertTwitterAccountToastError = (info = {}) => {
 				// Arrange:
-				createLocalStorageTwitterInfo(info);
+				createSessionStorageTwitterInfo(info);
 
 				// Act:
 				render(<FaucetForm

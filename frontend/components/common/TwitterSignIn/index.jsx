@@ -17,12 +17,12 @@ const TwitterSignIn = function ({
 	const twitterAuth = async () => {
 		setIsLoading(true);
 		const { data } = await authRequest.get('/twitter/auth');
-		localStorage.setItem('twitterOauthTokenSecret', data.oauthTokenSecret);
+		sessionStorage.setItem('twitterOauthTokenSecret', data.oauthTokenSecret);
 		window.location.assign(data.url);
 	};
 
 	const twitterLogout = () => {
-		localStorage.clear();
+		sessionStorage.clear();
 		setTwitterAccountStatus({
 			isSignedIn: false,
 			screenName: ''
@@ -30,14 +30,14 @@ const TwitterSignIn = function ({
 	};
 
 	useEffect(() => {
-		const twitterInfo = decode(localStorage.getItem('authToken'));
+		const twitterInfo = decode(sessionStorage.getItem('authToken'));
 
 		const query = new URLSearchParams(window.location.search);
 		const oauthToken = query.get('oauth_token');
 		const oauthVerifier = query.get('oauth_verifier');
 
 		const twitterVerify = async () => {
-			const oauthTokenSecret = localStorage.getItem('twitterOauthTokenSecret');
+			const oauthTokenSecret = sessionStorage.getItem('twitterOauthTokenSecret');
 
 			const { data } = await authRequest.get('/twitter/verify', {
 				params: {
@@ -48,7 +48,7 @@ const TwitterSignIn = function ({
 			});
 
 			if (data) {
-				localStorage.setItem('authToken', data);
+				sessionStorage.setItem('authToken', data);
 				window.location.assign('/');
 			}
 		};

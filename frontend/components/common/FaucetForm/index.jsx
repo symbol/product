@@ -69,7 +69,7 @@ const FaucetForm = function ({ config, addressValidation }) {
 		const numericAmount = 0 === Number(amount) ? defaultAmount : Number(amount);
 		const isAddressValid = addressValidation(formattedAddress);
 		const isAmountValid = !Number.isNaN(numericAmount) && 0 <= numericAmount && numericAmount <= config.maxAmount;
-		const twitterInfo = decode(localStorage.getItem('authToken'));
+		const twitterInfo = decode(sessionStorage.getItem('authToken'));
 
 		const isTwitterVerify = getTwitterVerifyStatus(twitterInfo);
 
@@ -87,7 +87,7 @@ const FaucetForm = function ({ config, addressValidation }) {
 					{
 						headers: {
 							'Content-Type': 'application/json',
-							'authToken': localStorage.getItem('authToken')
+							'authToken': sessionStorage.getItem('authToken')
 						}
 					}
 				);
@@ -141,11 +141,11 @@ const FaucetForm = function ({ config, addressValidation }) {
 		const recipientAddress = queryParams.get('recipient');
 
 		if (onAuthStatus.isSignedIn) {
-			setRecipientAddress(recipientAddress || localStorage.getItem('recipientAddress'));
-			localStorage.removeItem('recipientAddress');
+			setRecipientAddress(recipientAddress || sessionStorage.getItem('recipientAddress'));
+			sessionStorage.removeItem('recipientAddress');
 		} else {
 			if (recipientAddress)
-				localStorage.setItem('recipientAddress', recipientAddress);
+				sessionStorage.setItem('recipientAddress', recipientAddress);
 
 		}
 	}, [onAuthStatus]);

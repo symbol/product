@@ -88,7 +88,7 @@ describe('components/TwitterSignIn', () => {
 			isSignedIn: false,
 			screenName: ''
 		});
-		await waitFor(() => expect(localStorage.clear).toHaveBeenCalled());
+		await waitFor(() => expect(sessionStorage.clear).toHaveBeenCalled());
 	});
 
 	it('clicks on twitter sign in', async () => {
@@ -113,7 +113,7 @@ describe('components/TwitterSignIn', () => {
 		// Assert:
 		expect(axios.get).toHaveBeenCalledWith('/twitter/auth');
 		expect(elementSignInButton).toBeDisabled();
-		await waitFor(() => expect(localStorage.setItem).toHaveBeenCalledWith('twitterOauthTokenSecret', 'secret'));
+		await waitFor(() => expect(sessionStorage.setItem).toHaveBeenCalledWith('twitterOauthTokenSecret', 'secret'));
 		expect(window.location.assign).toHaveBeenCalledWith('called/back/url');
 	});
 
@@ -174,7 +174,7 @@ describe('components/TwitterSignIn', () => {
 					oauthVerifier: twitterOauthVerifier
 				}
 			});
-			await waitFor(() => expect(localStorage.setItem).toHaveBeenCalledWith('authToken', jwtAuthToken));
+			await waitFor(() => expect(sessionStorage.setItem).toHaveBeenCalledWith('authToken', jwtAuthToken));
 			expect(window.location.assign).toHaveBeenCalledWith('/');
 		});
 
@@ -191,7 +191,7 @@ describe('components/TwitterSignIn', () => {
 
 			// Assert:
 			expect(axios.get).not.toHaveBeenCalledWith('/twitter/verify');
-			await waitFor(() => expect(localStorage.setItem).not.toHaveBeenCalled());
+			await waitFor(() => expect(sessionStorage.setItem).not.toHaveBeenCalled());
 			expect(window.location.assign).not.toHaveBeenCalled();
 			expect(setStatus).not.toHaveBeenCalled();
 		});
