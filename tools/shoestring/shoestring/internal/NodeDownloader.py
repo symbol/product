@@ -37,8 +37,14 @@ class NodeDownloader:
 
 		return self._select_nodes(0x02)
 
-	def _select_nodes(self, required_role):
-		matching_nodes = [self._map_node_to_peers_format(node) for node in self.nodes if self._is_node_eligible(node, required_role)]
+	def select_api_endpoints(self):
+		"""Selects api node endpoints."""
+
+		return self._select_nodes(0x02, lambda node: node['endpoint'])
+
+	def _select_nodes(self, required_role, formatter=None):
+		formatter = formatter or self._map_node_to_peers_format
+		matching_nodes = [formatter(node) for node in self.nodes if self._is_node_eligible(node, required_role)]
 		random.shuffle(matching_nodes)
 		return matching_nodes[:self.max_output_nodes]
 

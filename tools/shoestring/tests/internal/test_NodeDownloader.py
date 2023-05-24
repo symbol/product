@@ -50,7 +50,7 @@ async def test_can_download_api_nodes(server):  # pylint: disable=redefined-oute
 # endregion
 
 
-# region select_nodes
+# region select_[peer|api]_nodes
 
 async def _create_downloader_with_nodes(server):  # pylint: disable=redefined-outer-name
 	# Arrange:
@@ -173,6 +173,11 @@ async def test_can_filter_selected_api_nodes_by_min_balance(server):  # pylint: 
 	# Assert:
 	assert [
 		{
+			'publicKey': '529BF60BB1011FCAE51C8D798E23224ACBA29D18B5054830F83E4E8E9A3BE526',
+			'endpoint': {'host': 'symbol.harvest-monitor.com', 'port': 7900},
+			'metadata': {'name': '150C8CE', 'roles': 'Api'}
+		},
+		{
 			'publicKey': '776B597C1C80782224A3DA9A19FD5D23A3281CF866B9F4720A4414568447A92A',
 			'endpoint': {'host': 'ik1-432-48199.vs.sakura.ne.jp', 'port': 7900},
 			'metadata': {'name': '', 'roles': 'Peer,Api'}
@@ -202,11 +207,11 @@ async def test_can_limit_selected_peer_nodes(server):  # pylint: disable=redefin
 		'776B597C1C80782224A3DA9A19FD5D23A3281CF866B9F4720A4414568447A92A',
 		'D8F4FE47F1F5B1046748067E52725AEBAA1ED9F3CE45D02054011A39671DD9AA'
 	]
-	matching_public_keys_count = reduce(
+	matching_public_key_count = reduce(
 		lambda total, public_key: total + (1 if public_key in node_public_keys else 0),
 		expected_public_keys,
 		0)
-	assert 2 == (matching_public_keys_count)
+	assert 2 == matching_public_key_count
 
 
 async def test_can_limit_selected_api_nodes(server):  # pylint: disable=redefined-outer-name
@@ -226,10 +231,71 @@ async def test_can_limit_selected_api_nodes(server):  # pylint: disable=redefine
 		'776B597C1C80782224A3DA9A19FD5D23A3281CF866B9F4720A4414568447A92A',
 		'D8F4FE47F1F5B1046748067E52725AEBAA1ED9F3CE45D02054011A39671DD9AA'
 	]
-	matching_public_keys_count = reduce(
+	matching_public_key_count = reduce(
 		lambda total, public_key: total + (1 if public_key in node_public_keys else 0),
 		expected_public_keys,
 		0)
-	assert 2 == (matching_public_keys_count)
+	assert 2 == matching_public_key_count
+
+# endregion
+
+
+# region select_api_endpoints
+
+async def test_can_select_api_endpoints(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	downloader = await _create_downloader_with_nodes(server)
+
+	# Act:
+	endpoints = downloader.select_api_endpoints()
+	endpoints.sort()
+
+	# Assert:
+	assert [
+		'http://0-0-5symbol.open-nodes.com:3000',
+		'http://ik1-432-48199.vs.sakura.ne.jp:3000',
+		'http://symbol.harvest-monitor.com:3000',
+		'http://wolf.importance.jp:3000'
+	] == endpoints
+
+
+async def test_can_filter_selected_api_endpoints_by_min_balance(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	downloader = await _create_downloader_with_nodes(server)
+	downloader.min_balance = 98.995728
+
+	# Act:
+	endpoints = downloader.select_api_endpoints()
+	endpoints.sort()
+
+	# Assert:
+	assert [
+		'http://ik1-432-48199.vs.sakura.ne.jp:3000',
+		'http://symbol.harvest-monitor.com:3000',
+		'http://wolf.importance.jp:3000'
+	] == endpoints
+
+
+async def test_can_limit_selected_api_endpoints(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	downloader = await _create_downloader_with_nodes(server)
+	downloader.max_output_nodes = 2
+
+	# Act:
+	endpoints = downloader.select_api_endpoints()
+
+	# Assert:
+	assert 2 == len(endpoints)
+	expected_endpoints = [
+		'http://0-0-5symbol.open-nodes.com:3000',
+		'http://ik1-432-48199.vs.sakura.ne.jp:3000',
+		'http://symbol.harvest-monitor.com:3000',
+		'http://wolf.importance.jp:3000'
+	]
+	matching_endpoint_count = reduce(
+		lambda total, endpoint: total + (1 if endpoint in endpoints else 0),
+		expected_endpoints,
+		0)
+	assert 2 == matching_endpoint_count
 
 # endregion

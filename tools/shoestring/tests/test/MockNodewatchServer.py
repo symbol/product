@@ -63,7 +63,7 @@ NODEWATCH_API_NODES = [
 		'version': '1.0.3.4',
 		'height': 2001807,
 		'finalizedHeight': 2001776,
-		'balance': 0,
+		'balance': 100,
 		'roles': 2
 	},
 	{

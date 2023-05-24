@@ -37,7 +37,7 @@ async def test_can_download_peers_for_peer_node(nodewatch_server):  # pylint: di
 		output_directory = Path(output_directory_name)
 
 		# Act:
-		await download_peers(nodewatch_server.make_url(''), output_directory, False, min_balance=98.995728)
+		endpoints = await download_peers(nodewatch_server.make_url(''), output_directory, False, min_balance=98.995728)
 
 		# Assert: only peer nodes were downloaded
 		assert [
@@ -57,6 +57,12 @@ async def test_can_download_peers_for_peer_node(nodewatch_server):  # pylint: di
 				'D8F4FE47F1F5B1046748067E52725AEBAA1ED9F3CE45D02054011A39671DD9AA'
 			])
 
+		# - check returned api endpoints
+		assert [
+			'http://ik1-432-48199.vs.sakura.ne.jp:3000',
+			'http://wolf.importance.jp:3000'
+		] == sorted(endpoints)
+
 
 async def test_can_download_peers_for_api_node(nodewatch_server):  # pylint: disable=redefined-outer-name
 	# Arrange:
@@ -64,7 +70,7 @@ async def test_can_download_peers_for_api_node(nodewatch_server):  # pylint: dis
 		output_directory = Path(output_directory_name)
 
 		# Act:
-		await download_peers(nodewatch_server.make_url(''), output_directory, True, min_balance=98.995728)
+		endpoints = await download_peers(nodewatch_server.make_url(''), output_directory, True, min_balance=98.995728)
 
 		# Assert: peer and api nodes were downloaded
 		assert [
@@ -89,6 +95,13 @@ async def test_can_download_peers_for_api_node(nodewatch_server):  # pylint: dis
 			output_directory / 'peers-api.json',
 			'this file contains a list of api peers and can be shared',
 			[
+				'529BF60BB1011FCAE51C8D798E23224ACBA29D18B5054830F83E4E8E9A3BE526',
 				'776B597C1C80782224A3DA9A19FD5D23A3281CF866B9F4720A4414568447A92A',
 				'D8F4FE47F1F5B1046748067E52725AEBAA1ED9F3CE45D02054011A39671DD9AA'
 			])
+
+		assert [
+			'http://ik1-432-48199.vs.sakura.ne.jp:3000',
+			'http://symbol.harvest-monitor.com:3000',
+			'http://wolf.importance.jp:3000'
+		] == sorted(endpoints)

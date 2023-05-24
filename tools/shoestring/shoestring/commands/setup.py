@@ -28,7 +28,10 @@ async def run_main(args):
 		preparer.create_subdirectories()
 
 		# download resource package(s) and peers file(s)
-		await download_peers(config.services.nodewatch, preparer.directories.resources, NodeFeatures.API in config.node.features)
+		api_endpoints = await download_peers(
+			config.services.nodewatch,
+			preparer.directories.resources,
+			NodeFeatures.API in config.node.features)
 
 		await download_and_extract_package(args.package, preparer.directories.temp)
 
@@ -74,7 +77,8 @@ async def run_main(args):
 			'NODE CN: flag or generate 2',
 			require_ca=False)
 
-		client = SymbolConnector('http://401-sai-dual.symboltest.net:3000')
+		log.info(f'connecting to {api_endpoints[0]}')
+		client = SymbolConnector(api_endpoints[0])
 
 		account_public_key = read_public_key_from_public_key_pem_file(preparer.directories.certificates / 'ca.pubkey.pem')
 		existing_links = await client.account_links(account_public_key)
