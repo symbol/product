@@ -1,13 +1,12 @@
 version: 2
 updates:
 
-  - package-ecosystem: pip
-    directory: /lightapi/python
+  - package-ecosystem: github-actions
+    directory: /
     schedule:
       interval: weekly
       day: sunday
     target-branch: dev
-    labels: [LightAPI]
     commit-message:
       prefix: '[dependency]'
 
@@ -18,6 +17,49 @@ updates:
       day: sunday
     target-branch: dev
     labels: [Explorer]
+    commit-message:
+      prefix: '[dependency]'
+
+  - package-ecosystem: npm
+    directory: /faucet/authenticator
+    schedule:
+      interval: weekly
+      day: sunday
+    target-branch: dev
+    labels: [Faucet Authenticator]
+    versioning-strategy: increase
+    commit-message:
+      prefix: '[dependency]'
+
+  - package-ecosystem: npm
+    directory: /faucet/backend
+    schedule:
+      interval: weekly
+      day: sunday
+    target-branch: dev
+    labels: [Faucet Backend]
+    versioning-strategy: increase
+    commit-message:
+      prefix: '[dependency]'
+
+  - package-ecosystem: npm
+    directory: /faucet/frontend
+    schedule:
+      interval: weekly
+      day: sunday
+    target-branch: dev
+    labels: [Faucet Frontend]
+    versioning-strategy: increase
+    commit-message:
+      prefix: '[dependency]'
+
+  - package-ecosystem: pip
+    directory: /lightapi/python
+    schedule:
+      interval: weekly
+      day: sunday
+    target-branch: dev
+    labels: [LightAPI]
     commit-message:
       prefix: '[dependency]'
 
@@ -69,47 +111,5 @@ updates:
       day: sunday
     target-branch: dev
     labels: ['Change: Tools']
-    commit-message:
-      prefix: '[dependency]'
-
-  - package-ecosystem: github-actions
-    directory: /
-    schedule:
-      interval: weekly
-      day: sunday
-    target-branch: dev
-    commit-message:
-      prefix: '[dependency]'
-
-  - package-ecosystem: npm
-    directory: /faucet/authenticator
-    schedule:
-      interval: weekly
-      day: sunday
-    target-branch: dev
-    labels: [Faucet Authenticator]
-    versioning-strategy: increase
-    commit-message:
-      prefix: '[dependency]'
-
-  - package-ecosystem: npm
-    directory: /faucet/backend
-    schedule:
-      interval: weekly
-      day: sunday
-    target-branch: dev
-    labels: [Faucet Backend]
-    versioning-strategy: increase
-    commit-message:
-      prefix: '[dependency]'
-
-  - package-ecosystem: npm
-    directory: /faucet/frontend
-    schedule:
-      interval: weekly
-      day: sunday
-    target-branch: dev
-    labels: [Faucet Frontend]
-    versioning-strategy: increase
     commit-message:
       prefix: '[dependency]'
