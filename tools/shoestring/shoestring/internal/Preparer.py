@@ -108,7 +108,6 @@ class Preparer:
 		self.config = config
 		self.log = logger
 
-		self.node_features = self.config.node.features
 		self.temp_directory = None
 		self.new_voting_key_file_epoch_range = None
 
@@ -133,10 +132,10 @@ class Preparer:
 		"""Creates all subdirectories."""
 
 		directories = [self.directory / 'data', self.directory / 'logs', self.directories.certificates, self.directories.resources]
-		if NodeFeatures.API in self.node_features:
+		if NodeFeatures.API in self.config.node.features:
 			directories.append(self.directories.dbdata)
 
-		if NodeFeatures.VOTER in self.node_features:
+		if NodeFeatures.VOTER in self.config.node.features:
 			directories.append(self.directories.voting_keys)
 
 		for directory in directories:
@@ -166,10 +165,10 @@ class Preparer:
 
 		self._copy_properties_files(PEER_EXTENSIONS)
 
-		if NodeFeatures.API in self.node_features:
+		if NodeFeatures.API in self.config.node.features:
 			self._copy_properties_files(API_EXTENSIONS)
 
-		if NodeFeatures.HARVESTER in self.node_features:
+		if NodeFeatures.HARVESTER in self.config.node.features:
 			self._copy_properties_files(HARVESTER_EXTENSIONS)
 
 	def prepare_seed(self):
@@ -180,7 +179,7 @@ class Preparer:
 	def configure_resources(self, user_patches=None):
 		"""Configures resources based on enabled features."""
 
-		if NodeFeatures.API in self.node_features:
+		if NodeFeatures.API in self.config.node.features:
 			patches = {
 				'extensions-server': [
 					('extensions', 'extension.filespooling', 'true'),
@@ -202,10 +201,10 @@ class Preparer:
 			for extension, replacements in patches.items():
 				self.config_manager.patch(f'config-{extension}.properties', replacements)
 
-		if NodeFeatures.HARVESTER in self.node_features:
+		if NodeFeatures.HARVESTER in self.config.node.features:
 			self.harvester_configurator.patch_configuration()
 
-		if NodeFeatures.VOTER in self.node_features:
+		if NodeFeatures.VOTER in self.config.node.features:
 			self.voter_configurator.patch_configuration()
 
 		if user_patches:
@@ -219,7 +218,7 @@ class Preparer:
 	def configure_mongo(self):
 		"""Copies mongo directory."""
 
-		if NodeFeatures.API not in self.node_features:
+		if NodeFeatures.API not in self.config.node.features:
 			return
 
 		self._copy_tree(self.directories.temp / 'mongo', self.directories.mongo)
@@ -227,10 +226,10 @@ class Preparer:
 	def configure_keys(self, last_finalized_height=1, grace_period_epochs=1):
 		"""Configures key pairs based on enabled features."""
 
-		if NodeFeatures.HARVESTER in self.node_features:
+		if NodeFeatures.HARVESTER in self.config.node.features:
 			self.harvester_configurator.generate_harvester_key_files(self.directories.keys)
 
-		if NodeFeatures.VOTER in self.node_features:
+		if NodeFeatures.VOTER in self.config.node.features:
 			self.new_voting_key_file_epoch_range = self.voter_configurator.generate_voting_key_file(
 				self.directories.voting_keys,
 				last_finalized_height,
@@ -260,7 +259,7 @@ class Preparer:
 	def configure_docker(self, user_entry):
 		"""Prepares docker-compose file."""
 
-		if NodeFeatures.API in self.node_features:
+		if NodeFeatures.API in self.config.node.features:
 			#
 			# TODO: where should those (startup + docker templates) be copied from?
 			# we can copy from within repo, but will shoestring be a separate installable (pypi) package?
@@ -270,7 +269,7 @@ class Preparer:
 			self.directories.startup.mkdir(exist_ok=True)
 			self._copy_file('startup/startServer.sh', self.directories.startup)
 
-		compose_template_filename_postfix = 'dual' if NodeFeatures.API in self.node_features else 'peer'
+		compose_template_filename_postfix = 'dual' if NodeFeatures.API in self.config.node.features else 'peer'
 		compose_template_filename = f'templates/docker-compose-{compose_template_filename_postfix}.yaml'
 		apply_template(compose_template_filename, {
 			'catapult_client_image': 'symbolplatform/symbol-server:gcc-1.0.3.6',
@@ -295,11 +294,11 @@ class Preparer:
 				existing_links.voting_public_keys[0].start_epoch,
 				existing_links.voting_public_keys[0].end_epoch)
 
-		if NodeFeatures.HARVESTER in self.node_features:
+		if NodeFeatures.HARVESTER in self.config.node.features:
 			transaction_builder.link_account_public_key(self.harvester_configurator.remote_key_pair.public_key)
 			transaction_builder.link_vrf_public_key(self.harvester_configurator.vrf_key_pair.public_key)
 
-		if NodeFeatures.VOTER in self.node_features and self.new_voting_key_file_epoch_range:
+		if NodeFeatures.VOTER in self.config.node.features and self.new_voting_key_file_epoch_range:
 			transaction_builder.link_voting_public_key(
 				self.voter_configurator.voting_key_pair.public_key,
 				*self.new_voting_key_file_epoch_range)
