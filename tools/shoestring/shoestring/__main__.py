@@ -2,6 +2,7 @@ import argparse
 import asyncio
 import sys
 
+from .commands.pemtool import add_arguments as add_pemtool_arguments
 from .commands.setup import add_arguments as add_setup_arguments
 from .commands.signer import add_arguments as add_signer_arguments
 
@@ -9,6 +10,9 @@ from .commands.signer import add_arguments as add_signer_arguments
 def parse_args(args):
 	parser = argparse.ArgumentParser(description='Shoestring Tool')
 	subparsers = parser.add_subparsers(title='subcommands', help='valid subcommands')
+
+	parser_pemtool = subparsers.add_parser('pemtool', help='generates PEM files')
+	add_pemtool_arguments(parser_pemtool)
 
 	parser_setup = subparsers.add_parser('setup', help='sets up a node')
 	add_setup_arguments(parser_setup)
