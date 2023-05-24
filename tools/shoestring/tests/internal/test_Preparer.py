@@ -122,7 +122,7 @@ class PreparerTest(unittest.TestCase):
 			'data', 'keys', 'keys/cert', 'logs', 'userconfig', 'userconfig/resources'
 		])
 
-	def test_can_create_subdirectories_api_node(self):
+	def test_can_create_subdirectories_api_node_with_https(self):
 		self._assert_can_create_subdirectories(NodeFeatures.API, [
 			'data', 'dbdata', 'https-proxy', 'keys', 'keys/cert', 'logs', 'rest-cache', 'userconfig', 'userconfig/resources'
 		])
@@ -407,6 +407,29 @@ class PreparerTest(unittest.TestCase):
 
 	# endregion
 
+	# region configure_https
+
+	def _assert_can_configure_https(self, configuration, expected_files):
+		# Arrange:
+		with tempfile.TemporaryDirectory() as output_directory:
+			with Preparer(output_directory, configuration) as preparer:
+				(Path(output_directory) / 'https-proxy').mkdir()
+
+				# Act:
+				preparer.configure_https()
+
+				# Assert: check https proxy files
+				https_proxy_files = sorted(path.name for path in Path(output_directory).glob('https-proxy/*'))
+				self.assertEqual(expected_files, https_proxy_files)
+
+	def test_can_skip_configure_https_when_disabled(self):
+		self._assert_can_configure_https(self._create_configuration(NodeFeatures.PEER, False), [])
+
+	def test_can_configure_https_when_enabled(self):
+		self._assert_can_configure_https(self._create_configuration(NodeFeatures.PEER, True), ['nginx.conf.erb'])
+
+	# endregion
+
 	# region configure_keys
 
 	@staticmethod
@@ -550,15 +573,16 @@ class PreparerTest(unittest.TestCase):
 
 	# region configure_docker
 
-	def _assert_can_configure_docker(self, node_features, expected_startup_files, expected_service_names):
+	def _assert_can_configure_docker(self, configuration, expected_startup_files, expected_service_names):
 		# Arrange:
 		with tempfile.TemporaryDirectory() as output_directory:
-			with Preparer(output_directory, self._create_configuration(node_features)) as preparer:
+			with Preparer(output_directory, configuration) as preparer:
 				# Act:
 				preparer.configure_docker({
 					'catapult_client_image': 'symbolplatform/symbol-server:gcc-a.b.c.d',
 					'catapult_rest_image': 'symbolplatform/symbol-rest:a.b.c',
-					'user': '2222:3333'
+					'user': '2222:3333',
+					'api_https': configuration.node.api_https
 				})
 
 				# Assert: check startup files
@@ -579,7 +603,8 @@ class PreparerTest(unittest.TestCase):
 					'initiate': 'mongo:5.0.15',
 					'client': 'symbolplatform/symbol-server:gcc-a.b.c.d',
 					'broker': 'symbolplatform/symbol-server:gcc-a.b.c.d',
-					'rest-api': 'symbolplatform/symbol-rest:a.b.c'
+					'rest-api': 'symbolplatform/symbol-rest:a.b.c',
+					'rest-api-https-proxy': 'steveltn/https-portal:1'
 				}
 
 				service_names = []
@@ -587,7 +612,9 @@ class PreparerTest(unittest.TestCase):
 					configuration = yaml.safe_load(infile)
 					for service_name in configuration['services']:
 						service = configuration['services'][service_name]
-						self.assertEqual('2222:3333', service['user'])
+						if 'rest-api-https-proxy' != service_name:
+							self.assertEqual('2222:3333', service['user'])
+
 						self.assertEqual(expected_image_map[service_name], service['image'])
 
 						service_names.append(service_name)
@@ -595,10 +622,20 @@ class PreparerTest(unittest.TestCase):
 				self.assertEqual(expected_service_names, service_names)
 
 	def test_can_configure_docker_peer_node(self):
-		self._assert_can_configure_docker(NodeFeatures.PEER, None, ['client'])
+		configuration = self._create_configuration(NodeFeatures.PEER)
+		self._assert_can_configure_docker(configuration, None, ['client'])
 
-	def test_can_configure_docker_api_node(self):
-		self._assert_can_configure_docker(NodeFeatures.API, [
+	def test_can_configure_docker_api_node_with_https(self):
+		configuration = self._create_configuration(NodeFeatures.API)
+		self._assert_can_configure_docker(configuration, [
+			'delayrestapi.sh', 'mongors.sh', 'startBroker.sh', 'startServer.sh', 'wait.sh'
+		], [
+			'db', 'initiate', 'client', 'broker', 'rest-api', 'rest-api-https-proxy'
+		])
+
+	def test_can_configure_docker_api_node_without_https(self):
+		configuration = self._create_configuration(NodeFeatures.API, api_https=False)
+		self._assert_can_configure_docker(configuration, [
 			'delayrestapi.sh', 'mongors.sh', 'startBroker.sh', 'startServer.sh', 'wait.sh'
 		], [
 			'db', 'initiate', 'client', 'broker', 'rest-api'

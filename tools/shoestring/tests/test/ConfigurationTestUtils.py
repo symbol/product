@@ -2,7 +2,7 @@ import configparser
 from pathlib import Path
 
 
-def prepare_shoestring_configuration(directory, node_features, services_nodewatch='', ca_password=''):
+def prepare_shoestring_configuration(directory, node_features, services_nodewatch='', ca_password='', api_https=None):
 	"""Prepares a shoestring configuration file in the specified directory."""
 
 	parser = configparser.ConfigParser()
@@ -13,6 +13,9 @@ def prepare_shoestring_configuration(directory, node_features, services_nodewatc
 	node_features_str = str(node_features)
 	parser['node']['features'] = node_features_str[node_features_str.index('.') + 1:]
 	parser['node']['caPassword'] = f'pass:{ca_password}' if ca_password else ''
+
+	if api_https is not None:
+		parser['node']['apiHttps'] = 'true' if api_https else 'as-false-as-can-get'
 
 	output_filepath = Path(directory) / 'sai.shoestring.ini'
 	with open(output_filepath, 'wt', encoding='utf8') as outfile:

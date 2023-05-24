@@ -274,6 +274,11 @@ class Preparer:
 	def configure_https(self):
 		"""Configures https proxy."""
 
+		if not self.config.node.api_https:
+			return
+
+		self._copy_file('templates/nginx.conf.erb', self.directories.https_proxy)
+
 	def configure_keys(self, last_finalized_height=1, grace_period_epochs=1):
 		"""Configures key pairs based on enabled features."""
 

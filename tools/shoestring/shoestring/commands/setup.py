@@ -1,9 +1,11 @@
+import ipaddress
+import socket
 from pathlib import Path
 
 from symbollightapi.connector.SymbolConnector import SymbolConnector
 from zenlog import log
 
-from shoestring.internal.ConfigurationManager import load_patches_from_file
+from shoestring.internal.ConfigurationManager import ConfigurationManager, load_patches_from_file
 from shoestring.internal.NodeFeatures import NodeFeatures
 from shoestring.internal.NodewatchClient import NodewatchClient
 from shoestring.internal.PackageResolver import download_and_extract_package
@@ -15,7 +17,22 @@ from shoestring.internal.ShoestringConfiguration import parse_shoestring_configu
 SECURITY_MODES = ('default', 'paranoid', 'insecure')
 
 
-async def run_main(args):
+def is_ip_address(hostname):
+	try:
+		ipaddress.ip_address(hostname)
+		return True
+	except ValueError:
+		return False
+
+
+def require_hostname(hostname):
+	try:
+		socket.getaddrinfo(hostname, 7890)
+	except socket.gaierror as source_exception:
+		raise RuntimeError(f'could not resolve address for host: {hostname}') from source_exception
+
+
+async def run_main(args):  # pylint: disable=too-many-locals
 	config = parse_shoestring_configuration(args.config)
 
 	# detect the current finalized height
@@ -48,16 +65,30 @@ async def run_main(args):
 		if args.overrides:
 			user_patches = load_patches_from_file(args.overrides)
 
-		# TODO: if https check if host looks like a hostname and maybe try to resolve
-
 		preparer.configure_resources(user_patches)
 		preparer.configure_rest()
+
+		if config.node.api_https and NodeFeatures.API not in config.node.features:
+			raise RuntimeError('HTTPS selected but required feature (API) is not selected')
+
+		enable_https = NodeFeatures.API in config.node.features and config.node.api_https
+		hostname = ConfigurationManager(preparer.directories.resources).lookup('config-node.properties', [('localnode', 'host')])[0]
+
+		if is_ip_address(hostname):
+			if enable_https:
+				raise RuntimeError(f'hostname {hostname} looks like IP address and not a hostname and `apiHttps` is set to true')
+		else:
+			require_hostname(hostname)
+
+		preparer.configure_https()
 
 		# os.getuid() could be used, but that might not be the best idea
 		preparer.configure_docker({
 			'catapult_client_image': config.images.client,
 			'catapult_rest_image': config.images.rest,
-			'user': f'{config.node.user_id}:{config.node.group_id}'
+			'user': f'{config.node.user_id}:{config.node.group_id}',
+			'api_https': config.node.api_https,
+			'domainname': hostname
 		})
 
 		# TODO: WIP - currently:
@@ -66,8 +97,6 @@ async def run_main(args):
 		#    so should we just pick node from there?
 		# * when testing, it seems produced transaction hash is not valid? (wrong network?)
 		#   although signer, using 'testnet' produces valid one
-		#
-		# * we're missing https in docker
 
 		# prepare keys
 		preparer.configure_keys(last_finalized_height)

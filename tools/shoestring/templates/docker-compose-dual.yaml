@@ -74,8 +74,10 @@ services:
       - HOME=/symbol-workdir
       - NODE_ENV=production
     working_dir: /symbol-workdir
+{%- if not api_https %}
     ports:
       - 3000:3000
+{%- endif %}
     volumes:
       - ./startup:/startup:ro
       - ./userconfig:/userconfig:ro
@@ -86,7 +88,24 @@ services:
     networks:
       default:
         ipv4_address: 172.20.0.25
-
+{% if api_https %}
+  rest-api-https-proxy:
+    image: steveltn/https-portal:1
+    ports:
+      - 80:80
+      - 3000:80
+      - 3001:443
+    links:
+      - rest-api
+    environment:
+      - DOMAINS={{ domainname }} -> http://rest-api:3000
+      - WEBSOCKET=true
+      - STAGE=production
+      - FORCE_RENEW=false
+    volumes:
+      - ./https-proxy:/var/lib/https-portal
+      - ./https-proxy/nginx.conf.erb:/var/lib/nginx-conf/{{ domainname }}.conf.erb:ro
+{% endif %}
 networks:
   default:
     name: catapult-node-network
