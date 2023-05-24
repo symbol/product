@@ -10,7 +10,7 @@ class ConfigurationManagerTest(unittest.TestCase):
 
 	CONFIG_LINES_WITH_DISTINCT_KEYS = [
 		'[operating_systems]',
-		'ubuntu = 22.04',
+		'ubuntuCore = 22.04',
 		'fedora = 36',
 		'debian = 11.4',
 		'',
@@ -22,12 +22,12 @@ class ConfigurationManagerTest(unittest.TestCase):
 
 	CONFIG_LINES_WITH_SAME_KEY_IN_MULTIPLE_GROUPS = [  # pylint: disable=invalid-name
 		'[group1]',
-		'ubuntu = 22.04',
+		'ubuntuCore = 22.04',
 		'fedora = 36',
 		'debian = 11.4',
 		'',
 		'[group2]',
-		'ubuntu = 20.04',
+		'ubuntuCore = 20.04',
 		'fedora = 30',
 		'debian = 10.4',
 	]
@@ -124,7 +124,7 @@ class ConfigurationManagerTest(unittest.TestCase):
 		]
 		expected_lines = [
 			'[operating_systems]',
-			'ubuntu = 22.04',
+			'ubuntuCore = 22.04',
 			'fedora = 37',
 			'debian = 11.4',
 			'',
@@ -142,17 +142,17 @@ class ConfigurationManagerTest(unittest.TestCase):
 		# Arrange:
 		replacements = [
 			('group1', 'fedora', '37'),
-			('group2', 'ubuntu', '18.04'),
+			('group2', 'ubuntuCore', '18.04'),
 			('group2', 'debian', 'XYZ')
 		]
 		expected_lines = [
 			'[group1]',
-			'ubuntu = 22.04',
+			'ubuntuCore = 22.04',
 			'fedora = 37',
 			'debian = 11.4',
 			'',
 			'[group2]',
-			'ubuntu = 18.04',
+			'ubuntuCore = 18.04',
 			'fedora = 30',
 			'debian = XYZ',
 			''
@@ -172,7 +172,7 @@ class ConfigurationManagerTest(unittest.TestCase):
 			with open(properties_filepath, 'wt', encoding='utf8') as outfile:
 				outfile.write('\n'.join([
 					'[machine.operating_systems]',
-					'ubuntu = 22.04',
+					'ubuntuCore = 22.04',
 					'fedora = 36',
 					'debian = 11.4',
 					'',
@@ -190,7 +190,7 @@ class ConfigurationManagerTest(unittest.TestCase):
 			# Assert:
 			self.assertEqual({
 				'machine': [
-					('operating_systems', 'ubuntu', '22.04'),
+					('operating_systems', 'ubuntuCore', '22.04'),
 					('operating_systems', 'fedora', '36'),
 					('operating_systems', 'debian', '11.4')
 				],
@@ -214,7 +214,7 @@ class ConfigurationManagerTest(unittest.TestCase):
 
 	def test_cannot_load_patches_from_file_malformed_ini(self):
 		self._assert_cannot_load_patches_from_file([
-			'ubuntu = 22.04',
+			'ubuntuCore = 22.04',
 			'fedora = 36',
 			'debian = 11.4',
 			'',
@@ -225,7 +225,7 @@ class ConfigurationManagerTest(unittest.TestCase):
 	def test_cannot_load_patches_from_file_malformed_section_header(self):
 		self._assert_cannot_load_patches_from_file([
 			'[machineoperating_systems]',
-			'ubuntu = 22.04',
+			'ubuntuCore = 22.04',
 			'fedora = 36',
 			'debian = 11.4',
 			'',

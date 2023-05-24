@@ -71,6 +71,7 @@ def load_patches_from_file(filename):
 	"""Loads patch information from a file."""
 
 	parser = configparser.ConfigParser()
+	parser.optionxform = str  # configure case-sensitive keys
 	parser.read(filename)
 
 	patches = {}

@@ -137,7 +137,7 @@ async def _assert_can_prepare_node(
 					'--security', 'insecure',
 					'--package', f'file://{Path(package_directory) / "resources.zip"}',
 					'--directory', output_directory,
-					'--ca-key-path', str(Path(ca_directory) / 'xyz.key.pem'),
+					'--ca-key-path', str(Path(ca_directory) / 'xyz.key.pem')
 				])
 
 				# Assert: spot check all expected files were created
@@ -191,5 +191,46 @@ async def test_can_prepare_peer_node_with_existing_ca_without_password(server): 
 
 async def test_can_prepare_peer_node_with_existing_ca_with_password(server):  # pylint: disable=redefined-outer-name,invalid-name
 	await _assert_can_prepare_node(server, NodeFeatures.PEER, PEER_OUTPUT_FILES, CaMode.WITH_PASSWORD)
+
+# endregion
+
+
+# region overrides
+
+async def test_can_apply_user_overrides(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	with tempfile.TemporaryDirectory() as output_directory:
+		with tempfile.TemporaryDirectory() as package_directory:
+			_prepare_configuration(package_directory, server.make_url(''), NodeFeatures.PEER)
+			prepare_mainnet_package(package_directory, 'resources.zip')
+
+			user_overrides_filepath = Path(package_directory) / 'overrides.properties'
+			with open(user_overrides_filepath, 'wt', encoding='utf8') as outfile:
+				outfile.write('\n'.join([
+					'[node.localnode]',
+					'',
+					'host = foo.symbol.ninja',
+					'friendlyName = Foo Ninja'
+				]))
+
+			with tempfile.TemporaryDirectory() as ca_directory:
+				# Act:
+				await main([
+					'setup',
+					'--config', str(Path(package_directory) / 'testnet.properties'),
+					'--security', 'insecure',
+					'--package', f'file://{Path(package_directory) / "resources.zip"}',
+					'--directory', output_directory,
+					'--ca-key-path', str(Path(ca_directory) / 'xyz.key.pem'),
+					'--overrides', str(user_overrides_filepath)
+				])
+
+				# Assert: check user properties were applied
+				node_parser = configparser.ConfigParser()
+				node_parser.optionxform = str
+				node_parser.read(Path(output_directory) / 'resources' / 'config-node.properties')
+
+				assert 'foo.symbol.ninja' == node_parser['localnode']['host']
+				assert 'Foo Ninja' == node_parser['localnode']['friendlyName']
 
 # endregion
