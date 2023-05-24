@@ -14,6 +14,7 @@ from symbollightapi.connector.SymbolConnector import LinkedPublicKeys, VotingPub
 from shoestring.internal.NodeFeatures import NodeFeatures
 from shoestring.internal.OpensslExecutor import OpensslExecutor
 from shoestring.internal.Preparer import API_EXTENSIONS, HARVESTER_EXTENSIONS, PEER_EXTENSIONS, Preparer
+from shoestring.internal.ShoestringConfiguration import NodeConfiguration, ShoestringConfiguration
 
 from ..test.TestPackager import prepare_mainnet_package
 from ..test.TransactionTestUtils import AggregateDescriptor, LinkDescriptor, assert_aggregate_complete_transaction, assert_link_transaction
@@ -22,13 +23,21 @@ from ..test.TransactionTestUtils import AggregateDescriptor, LinkDescriptor, ass
 class PreparerTest(unittest.TestCase):
 	# pylint: disable=too-many-public-methods
 
+	# region utils
+
+	@staticmethod
+	def _create_configuration(node_features):
+		return ShoestringConfiguration('testnet', None, None, NodeConfiguration(node_features, None, None, None))
+
+	# endregion
+
 	# region basic
 
 	def test_working_directory_is_automatically_created_and_destroyed(self):
 		# Arrange:
 		with tempfile.TemporaryDirectory() as output_directory:
 			# Act:
-			with Preparer(output_directory, NodeFeatures.PEER) as preparer:
+			with Preparer(output_directory, self._create_configuration(NodeFeatures.PEER)) as preparer:
 				# Assert: temp directory was created
 				self.assertIsNotNone(preparer)
 				self.assertTrue(preparer.directories.temp.exists())
@@ -40,7 +49,7 @@ class PreparerTest(unittest.TestCase):
 		# Arrange:
 		with tempfile.TemporaryDirectory() as output_directory:
 			# Act:
-			preparer = Preparer(output_directory, NodeFeatures.PEER)
+			preparer = Preparer(output_directory, self._create_configuration(NodeFeatures.PEER))
 
 			# Assert:
 			self.assertEqual(None, preparer.directories.temp)
@@ -57,7 +66,7 @@ class PreparerTest(unittest.TestCase):
 		# Arrange:
 		with tempfile.TemporaryDirectory() as output_directory:
 			# Act:
-			with Preparer(output_directory, NodeFeatures.PEER) as preparer:
+			with Preparer(output_directory, self._create_configuration(NodeFeatures.PEER)) as preparer:
 
 				# Assert:
 				self.assertEqual(Path(preparer.temp_directory.name), preparer.directories.temp)
@@ -77,7 +86,7 @@ class PreparerTest(unittest.TestCase):
 	def _assert_can_create_subdirectories(self, node_features, expected_directories):
 		# Arrange:
 		with tempfile.TemporaryDirectory() as output_directory:
-			with Preparer(output_directory, node_features) as preparer:
+			with Preparer(output_directory, self._create_configuration(node_features)) as preparer:
 				# Act:
 				preparer.create_subdirectories()
 
@@ -117,7 +126,7 @@ class PreparerTest(unittest.TestCase):
 		# Arrange:
 		with tempfile.TemporaryDirectory() as output_directory_name:
 			output_directory = Path(output_directory_name)
-			with Preparer(output_directory, node_features) as preparer:
+			with Preparer(output_directory, self._create_configuration(node_features)) as preparer:
 				self._initialize_temp_directory_with_package_files(preparer)
 
 				# Act:
@@ -155,7 +164,7 @@ class PreparerTest(unittest.TestCase):
 	def _assert_can_configure_resources(self, node_features, expected_values, patch_custom=True):
 		# Arrange:
 		with tempfile.TemporaryDirectory() as output_directory:
-			with Preparer(output_directory, node_features) as preparer:
+			with Preparer(output_directory, self._create_configuration(node_features)) as preparer:
 				self._initialize_temp_directory_with_package_files(preparer)
 				preparer.prepare_resources()
 
@@ -276,7 +285,7 @@ class PreparerTest(unittest.TestCase):
 	def _assert_can_configure_mongo(self, node_features, expected_mongo_files):
 		# Arrange:
 		with tempfile.TemporaryDirectory() as output_directory:
-			with Preparer(output_directory, node_features) as preparer:
+			with Preparer(output_directory, self._create_configuration(node_features)) as preparer:
 				source_directory = preparer.directories.temp / 'mongo'
 				source_directory.mkdir()
 				with open(source_directory / 'foo.txt', 'wt', encoding='utf8') as outfile:
@@ -315,7 +324,7 @@ class PreparerTest(unittest.TestCase):
 	def _can_configure_keys(self, node_features, expected_keys_files, expected_voting_keys_file=None):
 		# Arrange:
 		with tempfile.TemporaryDirectory() as output_directory:
-			with Preparer(output_directory, node_features) as preparer:
+			with Preparer(output_directory, self._create_configuration(node_features)) as preparer:
 				self._initialize_temp_directory_with_package_files(preparer)
 				preparer.prepare_resources()
 
@@ -384,7 +393,7 @@ class PreparerTest(unittest.TestCase):
 	def test_cannot_generate_certificates_when_required_ca_key_is_not_present(self):
 		# Arrange:
 		with tempfile.TemporaryDirectory() as output_directory:
-			with Preparer(output_directory, NodeFeatures.PEER) as preparer:
+			with Preparer(output_directory, self._create_configuration(NodeFeatures.PEER)) as preparer:
 				with tempfile.TemporaryDirectory() as ca_directory:
 					Path(ca_directory).mkdir(exist_ok=True)
 
@@ -397,7 +406,7 @@ class PreparerTest(unittest.TestCase):
 	def test_can_generate_certificates_when_required_ca_key_is_present(self):
 		# Arrange:
 		with tempfile.TemporaryDirectory() as output_directory:
-			with Preparer(output_directory, NodeFeatures.PEER) as preparer:
+			with Preparer(output_directory, self._create_configuration(NodeFeatures.PEER)) as preparer:
 				with tempfile.TemporaryDirectory() as ca_directory:
 					Path(ca_directory).mkdir(exist_ok=True)
 					self._create_ca_private_key(ca_directory)
@@ -415,7 +424,7 @@ class PreparerTest(unittest.TestCase):
 	def test_can_generate_certificates_when_optional_ca_key_is_not_present(self):
 		# Arrange:
 		with tempfile.TemporaryDirectory() as output_directory:
-			with Preparer(output_directory, NodeFeatures.PEER) as preparer:
+			with Preparer(output_directory, self._create_configuration(NodeFeatures.PEER)) as preparer:
 				with tempfile.TemporaryDirectory() as ca_directory:
 					Path(ca_directory).mkdir(exist_ok=True)
 
@@ -439,7 +448,7 @@ class PreparerTest(unittest.TestCase):
 	def _assert_can_configure_docker(self, node_features, expected_startup_files, expected_service_names):
 		# Arrange:
 		with tempfile.TemporaryDirectory() as output_directory:
-			with Preparer(output_directory, node_features) as preparer:
+			with Preparer(output_directory, self._create_configuration(node_features)) as preparer:
 				# Act:
 				preparer.configure_docker('2222:3333')
 
@@ -491,7 +500,7 @@ class PreparerTest(unittest.TestCase):
 		account_public_key = self._random_public_key()
 
 		with tempfile.TemporaryDirectory() as output_directory:
-			with Preparer(output_directory, NodeFeatures.PEER) as preparer:
+			with Preparer(output_directory, self._create_configuration(NodeFeatures.PEER)) as preparer:
 				# Act:
 				transaction = preparer.prepare_linking_transaction(account_public_key, existing_links, 2222)
 
@@ -541,7 +550,7 @@ class PreparerTest(unittest.TestCase):
 		account_public_key = self._random_public_key()
 
 		with tempfile.TemporaryDirectory() as output_directory:
-			with Preparer(output_directory, NodeFeatures.HARVESTER) as preparer:
+			with Preparer(output_directory, self._create_configuration(NodeFeatures.HARVESTER)) as preparer:
 				preparer.create_subdirectories()
 				preparer.configure_keys(1500, 4)
 
@@ -570,7 +579,7 @@ class PreparerTest(unittest.TestCase):
 		account_public_key = self._random_public_key()
 
 		with tempfile.TemporaryDirectory() as output_directory:
-			with Preparer(output_directory, NodeFeatures.VOTER) as preparer:
+			with Preparer(output_directory, self._create_configuration(NodeFeatures.VOTER)) as preparer:
 				self._initialize_temp_directory_with_package_files(preparer)
 				preparer.prepare_resources()
 				preparer.configure_keys(1500, 4)
@@ -603,7 +612,7 @@ class PreparerTest(unittest.TestCase):
 		]
 
 		with tempfile.TemporaryDirectory() as output_directory:
-			with Preparer(output_directory, NodeFeatures.HARVESTER | NodeFeatures.VOTER) as preparer:
+			with Preparer(output_directory, self._create_configuration(NodeFeatures.HARVESTER | NodeFeatures.VOTER)) as preparer:
 				self._initialize_temp_directory_with_package_files(preparer)
 				preparer.prepare_resources()
 				preparer.configure_keys(1500, 4)

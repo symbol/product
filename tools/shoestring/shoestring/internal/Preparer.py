@@ -37,6 +37,8 @@ HARVESTER_EXTENSIONS = ['harvesting']
 class Preparer:
 	"""Prepares a Symbol directory for execution."""
 
+	# pylint: disable=too-many-instance-attributes
+
 	class DirectoryLocator:
 		"""Provides easy access to output locations."""
 
@@ -99,13 +101,14 @@ class Preparer:
 
 			return self.output_directory / 'keys' / 'voting'
 
-	def __init__(self, directory, node_features, logger=None):
+	def __init__(self, directory, config, logger=None):
 		"""Creates a preparer for preparing a Symbol node with the specified features ."""
 
 		self.directory = Path(directory)
-		self.node_features = node_features
+		self.config = config
 		self.log = logger
 
+		self.node_features = self.config.node.features
 		self.temp_directory = None
 		self.new_voting_key_file_epoch_range = None
 
@@ -233,7 +236,7 @@ class Preparer:
 				last_finalized_height,
 				grace_period_epochs)
 
-	def generate_certificates(self, ca_key_path, ca_cn, node_cn, require_ca=True, ca_password=None):  # pylint: disable=too-many-arguments
+	def generate_certificates(self, ca_key_path, ca_cn, node_cn, require_ca=True):
 		"""Generates and packages all certificates."""
 
 		ca_key_path = Path(ca_key_path).absolute()
@@ -241,7 +244,7 @@ class Preparer:
 			raise RuntimeError(f'CA key is required but does not exist at path {ca_key_path}')
 
 		openssl_executor = OpensslExecutor(os.environ.get('OPENSSL_EXECUTABLE', 'openssl'))
-		with CertificateFactory(openssl_executor, ca_key_path, ca_password) as factory:
+		with CertificateFactory(openssl_executor, ca_key_path, self.config.node.ca_password) as factory:
 			if not ca_key_path.exists():
 				factory.generate_random_ca_private_key()
 				factory.export_ca()
@@ -278,8 +281,7 @@ class Preparer:
 	def prepare_linking_transaction(self, account_public_key, existing_links, timestamp):
 		"""Creates an aggregate transaction containing account key link and unlink transactions """
 
-		# TODO: need to read network from somewhere
-		transaction_builder = LinkTransactionBuilder(account_public_key, 'testnet')
+		transaction_builder = LinkTransactionBuilder(account_public_key, self.config.network)
 
 		if existing_links.linked_public_key:
 			transaction_builder.unlink_account_public_key(existing_links.linked_public_key)

@@ -7,9 +7,9 @@ from symbolchain.symbol.Network import Network
 
 from .NodeFeatures import NodeFeatures
 
-Images = namedtuple('Images', ['client', 'rest'])
-Services = namedtuple('Services', ['nodewatch'])
-Node = namedtuple('Node', ['features', 'user_id', 'group_id', 'ca_password'])
+ImagesConfiguration = namedtuple('Images', ['client', 'rest'])
+ServicesConfiguration = namedtuple('Services', ['nodewatch'])
+NodeConfiguration = namedtuple('Node', ['features', 'user_id', 'group_id', 'ca_password'])
 ShoestringConfiguration = namedtuple('ShoestringConfiguration', ['network', 'images', 'services', 'node'])
 
 
@@ -26,13 +26,13 @@ def parse_network(config):
 def parse_images(config):
 	"""Parses images configuration."""
 
-	return Images(config['client'], config['rest'])
+	return ImagesConfiguration(config['client'], config['rest'])
 
 
 def parse_services(config):
 	"""Parses services configuration."""
 
-	return Services(config['nodewatch'])
+	return ServicesConfiguration(config['nodewatch'])
 
 
 def parse_node(config):
@@ -50,7 +50,7 @@ def parse_node(config):
 	group_id = int(config['groupId'])
 	ca_password = config['caPassword']
 
-	return Node(features, user_id, group_id, ca_password)
+	return NodeConfiguration(features, user_id, group_id, ca_password)
 
 
 def parse_shoestring_configuration(filename):

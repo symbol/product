@@ -23,7 +23,7 @@ async def run_main(args):
 	last_finalized_height = await nodewatch_client.symbol_finalized_height()
 	log.info(f'detected last finalized height as {last_finalized_height}')
 
-	with Preparer(Path(args.directory), config.node.features, log) as preparer:
+	with Preparer(Path(args.directory), config, log) as preparer:
 		# setup basic directories
 		preparer.create_subdirectories()
 
@@ -68,8 +68,7 @@ async def run_main(args):
 			args.ca_key_path,
 			'CA CN: flag or generate 1',
 			'NODE CN: flag or generate 2',
-			require_ca=False,
-			ca_password=config.node.ca_password)
+			require_ca=False)
 
 		client = SymbolConnector('http://401-sai-dual.symboltest.net:3000')
 
