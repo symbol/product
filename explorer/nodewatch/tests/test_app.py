@@ -253,6 +253,16 @@ def _assert_api_symbol_node_with_public_key_not_found(response):
 	assert response_json == {'message': 'Resource not found', 'status': 404}
 
 
+def _assert_api_symbol_node_with_invalid_public_key(response):
+	# Act:
+	response_json = json.loads(response.data)
+
+	# Assert:
+	assert 400 == response.status_code
+	assert 'application/json' == response.headers['Content-Type']
+	assert response_json == {'message': 'Bad request', 'status': 400}
+
+
 def _assert_api_symbol_node_with_public_key_found(response, expected_name):
 	# Act:
 	response_json = json.loads(response.data)
@@ -264,11 +274,23 @@ def _assert_api_symbol_node_with_public_key_found(response, expected_name):
 
 
 def test_get_api_symbol_node_with_invalid_main_public_key(client):  # pylint: disable=redefined-outer-name
-	_assert_api_symbol_node_with_public_key_not_found(client.get('/api/symbol/nodes/mainPublicKey/invalid'))
+	_assert_api_symbol_node_with_invalid_public_key(client.get('/api/symbol/nodes/mainPublicKey/invalid'))
 
 
 def test_get_api_symbol_node_with_invalid_node_public_key(client):  # pylint: disable=redefined-outer-name
-	_assert_api_symbol_node_with_public_key_not_found(client.get('/api/symbol/nodes/nodePublicKey/invalid'))
+	_assert_api_symbol_node_with_invalid_public_key(client.get('/api/symbol/nodes/nodePublicKey/invalid'))
+
+
+def test_get_api_symbol_node_with_main_public_key_not_found(client):  # pylint: disable=redefined-outer-name
+	_assert_api_symbol_node_with_public_key_not_found(
+		client.get('/api/symbol/nodes/mainPublicKey/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')
+	)
+
+
+def test_get_api_symbol_node_with_node_public_key_not_found(client):  # pylint: disable=redefined-outer-name
+	_assert_api_symbol_node_with_public_key_not_found(
+		client.get('/api/symbol/nodes/nodePublicKey/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')
+	)
 
 
 def test_get_api_symbol_node_with_main_public_key(client):  # pylint: disable=redefined-outer-name

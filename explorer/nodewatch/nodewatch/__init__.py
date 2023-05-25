@@ -3,7 +3,7 @@ from pathlib import Path
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from flask import Flask, abort, jsonify, redirect, render_template, request, url_for
-from symbolchain.CryptoTypes import Hash256
+from symbolchain.CryptoTypes import Hash256, PublicKey
 from symbolchain.nem.Network import Network as NemNetwork
 from symbolchain.Network import NetworkLocator
 from symbolchain.symbol.Network import Network as SymbolNetwork
@@ -114,6 +114,12 @@ def create_app():
 
 		return jsonify(result)
 
+	def _validate_public_key(public_key):
+		try:
+			PublicKey(public_key)
+		except ValueError:
+			abort(400)
+
 	@app.route('/api/symbol/nodes/api')
 	def api_symbol_nodes_api():  # pylint: disable=unused-variable
 		return _get_json_nodes(2, True, request.args)
@@ -124,12 +130,16 @@ def create_app():
 
 	@app.route('/api/symbol/nodes/mainPublicKey/<main_public_key>')
 	def api_symbol_nodes_get_main_public_key(main_public_key):  # pylint: disable=unused-variable
+		_validate_public_key(main_public_key)
+
 		result = symbol_routes_facade.json_node(filter_field=Field.MAIN_PUBLIC_KEY.value, public_key=main_public_key)
 
 		return _get_json_node(result)
 
 	@app.route('/api/symbol/nodes/nodePublicKey/<node_public_key>')
 	def api_symbol_nodes_get_node_public_key(node_public_key):  # pylint: disable=unused-variable
+		_validate_public_key(node_public_key)
+
 		result = symbol_routes_facade.json_node(filter_field=Field.NODE_PUBLIC_KEY.value, public_key=node_public_key)
 
 		return _get_json_node(result)
@@ -149,6 +159,14 @@ def create_app():
 			'last_reload_time': routes_facade.last_reload_time.strftime(TIMESTAMP_FORMAT),
 			'last_refresh_time': routes_facade.last_refresh_time.strftime(TIMESTAMP_FORMAT)
 		}
+
+	@app.errorhandler(400)
+	def bad_request(_):
+		response = {
+			'status': 400,
+			'message': 'Bad request'
+		}
+		return jsonify(response), 400
 
 	@app.errorhandler(404)
 	def not_found(_):
