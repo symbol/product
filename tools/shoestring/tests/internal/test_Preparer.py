@@ -95,7 +95,7 @@ class PreparerTest(unittest.TestCase):
 				preparer.create_subdirectories()
 
 				# Assert:
-				created_directories = sorted(str(path)[len(output_directory):] for path in Path(output_directory).glob('**/*'))
+				created_directories = sorted(str(path.relative_to(output_directory)) for path in Path(output_directory).glob('**/*'))
 				self.assertEqual(expected_directories, created_directories)
 
 	def _assert_can_create_subdirectories(self, node_features, expected_directories):
@@ -103,29 +103,29 @@ class PreparerTest(unittest.TestCase):
 		self._assert_can_create_subdirectories_configuration(configuration, expected_directories)
 
 	def test_can_create_subdirectories_peer_node(self):
-		self._assert_can_create_subdirectories(NodeFeatures.PEER, ['/data', '/keys', '/keys/cert', '/logs', '/resources'])
+		self._assert_can_create_subdirectories(NodeFeatures.PEER, ['data', 'keys', 'keys/cert', 'logs', 'resources'])
 
 	def test_can_create_subdirectories_api_node(self):
 		self._assert_can_create_subdirectories(
 			NodeFeatures.API,
-			['/data', '/dbdata', '/https-proxy', '/keys', '/keys/cert', '/logs', '/resources', '/rest-cache'])
+			['data', 'dbdata', 'https-proxy', 'keys', 'keys/cert', 'logs', 'resources', 'rest-cache'])
 
 	def test_can_create_subdirectories_api_node_without_https(self):
 		configuration = self._create_configuration(NodeFeatures.API, api_https=False)
 		self._assert_can_create_subdirectories_configuration(
 			configuration,
-			['/data', '/dbdata', '/keys', '/keys/cert', '/logs', '/resources', '/rest-cache'])
+			['data', 'dbdata', 'keys', 'keys/cert', 'logs', 'resources', 'rest-cache'])
 
 	def test_can_create_subdirectories_harvester_node(self):
-		self._assert_can_create_subdirectories(NodeFeatures.HARVESTER, ['/data', '/keys', '/keys/cert', '/logs', '/resources'])
+		self._assert_can_create_subdirectories(NodeFeatures.HARVESTER, ['data', 'keys', 'keys/cert', 'logs', 'resources'])
 
 	def test_can_create_subdirectories_voter_node(self):
-		self._assert_can_create_subdirectories(NodeFeatures.VOTER, ['/data', '/keys', '/keys/cert', '/keys/voting', '/logs', '/resources'])
+		self._assert_can_create_subdirectories(NodeFeatures.VOTER, ['data', 'keys', 'keys/cert', 'keys/voting', 'logs', 'resources'])
 
 	def test_can_create_subdirectories_full_node(self):
 		self._assert_can_create_subdirectories(
 			NodeFeatures.API | NodeFeatures.HARVESTER | NodeFeatures.VOTER,
-			['/data', '/dbdata', '/https-proxy', '/keys', '/keys/cert', '/keys/voting', '/logs', '/resources', '/rest-cache'])
+			['data', 'dbdata', 'https-proxy', 'keys', 'keys/cert', 'keys/voting', 'logs', 'resources', 'rest-cache'])
 
 	# endregion
 
@@ -314,7 +314,7 @@ class PreparerTest(unittest.TestCase):
 				if expected_mongo_files:
 					self.assertTrue(preparer.directories.mongo.exists())
 
-					mongo_files = sorted(str(path)[len(output_directory) + 6:] for path in Path(output_directory).glob('mongo/*'))
+					mongo_files = sorted(path.name for path in Path(output_directory).glob('mongo/*'))
 					self.assertEqual(expected_mongo_files, mongo_files)
 				else:
 					self.assertFalse(preparer.directories.mongo.exists())
@@ -323,7 +323,7 @@ class PreparerTest(unittest.TestCase):
 		self._assert_can_configure_mongo(NodeFeatures.PEER, None)
 
 	def test_can_configure_mongo_api_node(self):
-		self._assert_can_configure_mongo(NodeFeatures.API, ['/foo.txt'])
+		self._assert_can_configure_mongo(NodeFeatures.API, ['foo.txt'])
 
 	# endregion
 
@@ -473,7 +473,7 @@ class PreparerTest(unittest.TestCase):
 				})
 
 				# Assert: check startup files
-				startup_files = sorted(str(path)[len(output_directory) + 8:] for path in Path(output_directory).glob('startup/*'))
+				startup_files = sorted(path.name for path in Path(output_directory).glob('startup/*'))
 				self.assertEqual(expected_startup_files, startup_files)
 
 				# - check compose file
@@ -498,11 +498,11 @@ class PreparerTest(unittest.TestCase):
 				self.assertEqual(expected_service_names, service_names)
 
 	def test_can_configure_docker_peer_node(self):
-		self._assert_can_configure_docker(NodeFeatures.PEER, ['/startServer.sh'], ['client'])
+		self._assert_can_configure_docker(NodeFeatures.PEER, ['startServer.sh'], ['client'])
 
 	def test_can_configure_docker_api_node(self):
 		self._assert_can_configure_docker(NodeFeatures.API, [
-			'/delayrestapi.sh', '/mongors.sh', '/rest.json', '/startBroker.sh', '/startServer.sh', '/wait.sh'
+			'delayrestapi.sh', 'mongors.sh', 'rest.json', 'startBroker.sh', 'startServer.sh', 'wait.sh'
 		], [
 			'db', 'initiate', 'client', 'broker', 'rest-api'
 		])

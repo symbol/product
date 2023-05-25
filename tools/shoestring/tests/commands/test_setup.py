@@ -26,64 +26,64 @@ def server(event_loop, aiohttp_client):
 # region output files
 
 PEER_OUTPUT_FILES = [
-	'/data',
-	'/docker-compose.yaml',
-	'/keys',
-	'/keys/cert',
-	'/keys/cert/ca.crt.pem',
-	'/keys/cert/ca.pubkey.pem',
-	'/keys/cert/node.crt.pem',
-	'/keys/cert/node.full.crt.pem',
-	'/keys/cert/node.key.pem',
-	'/linking_transaction.dat',
-	'/logs',
-	'/resources',
-	'/resources/config-extensions-recovery.properties',
-	'/resources/config-extensions-server.properties',
-	'/resources/config-finalization.properties',
-	'/resources/config-inflation.properties',
-	'/resources/config-logging-recovery.properties',
-	'/resources/config-logging-server.properties',
-	'/resources/config-network.properties',
-	'/resources/config-node.properties',
-	'/resources/config-task.properties',
-	'/resources/config-timesync.properties',
-	'/resources/config-user.properties',
-	'/resources/peers-p2p.json',
-	'/seed',
-	'/seed/index.dat',
-	'/startup',
-	'/startup/startServer.sh'
+	'data',
+	'docker-compose.yaml',
+	'keys',
+	'keys/cert',
+	'keys/cert/ca.crt.pem',
+	'keys/cert/ca.pubkey.pem',
+	'keys/cert/node.crt.pem',
+	'keys/cert/node.full.crt.pem',
+	'keys/cert/node.key.pem',
+	'linking_transaction.dat',
+	'logs',
+	'resources',
+	'resources/config-extensions-recovery.properties',
+	'resources/config-extensions-server.properties',
+	'resources/config-finalization.properties',
+	'resources/config-inflation.properties',
+	'resources/config-logging-recovery.properties',
+	'resources/config-logging-server.properties',
+	'resources/config-network.properties',
+	'resources/config-node.properties',
+	'resources/config-task.properties',
+	'resources/config-timesync.properties',
+	'resources/config-user.properties',
+	'resources/peers-p2p.json',
+	'seed',
+	'seed/index.dat',
+	'startup',
+	'startup/startServer.sh'
 ]
 
 API_OUTPUT_FILES = [
-	'/dbdata',
-	'/https-proxy',
-	'/mongo',
-	'/mongo/mongoDbPrepare.js',
-	'/resources/config-database.properties',
-	'/resources/config-extensions-broker.properties',
-	'/resources/config-logging-broker.properties',
-	'/resources/config-messaging.properties',
-	'/resources/config-pt.properties',
-	'/resources/peers-api.json',
-	'/rest-cache',
-	'/startup/delayrestapi.sh',
-	'/startup/mongors.sh',
-	'/startup/rest.json',
-	'/startup/startBroker.sh',
-	'/startup/wait.sh'
+	'dbdata',
+	'https-proxy',
+	'mongo',
+	'mongo/mongoDbPrepare.js',
+	'resources/config-database.properties',
+	'resources/config-extensions-broker.properties',
+	'resources/config-logging-broker.properties',
+	'resources/config-messaging.properties',
+	'resources/config-pt.properties',
+	'resources/peers-api.json',
+	'rest-cache',
+	'startup/delayrestapi.sh',
+	'startup/mongors.sh',
+	'startup/rest.json',
+	'startup/startBroker.sh',
+	'startup/wait.sh'
 ]
 
 HARVESTER_OUTPUT_FILES = [
-	'/keys/remote.pem',
-	'/keys/vrf.pem',
-	'/resources/config-harvesting.properties',
+	'keys/remote.pem',
+	'keys/vrf.pem',
+	'resources/config-harvesting.properties',
 ]
 
 VOTER_OUTPUT_FILES = [
-	'/keys/voting',
-	'/keys/voting/private_key_tree1.dat',
+	'keys/voting',
+	'keys/voting/private_key_tree1.dat',
 ]
 
 # endregion
@@ -141,11 +141,11 @@ async def _assert_can_prepare_node(
 				])
 
 				# Assert: spot check all expected files were created
-				output_files = sorted(str(path)[len(output_directory):] for path in Path(output_directory).glob('**/*'))
+				output_files = sorted(str(path.relative_to(output_directory)) for path in Path(output_directory).glob('**/*'))
 				assert expected_output_files == output_files
 
-				ca_files = sorted(str(path)[len(ca_directory):] for path in Path(ca_directory).glob('**/*'))
-				assert ['/xyz.key.pem'] == ca_files
+				ca_files = sorted(str(path.relative_to(ca_directory)) for path in Path(ca_directory).glob('**/*'))
+				assert ['xyz.key.pem'] == ca_files
 
 				if CaMode.NONE != ca_mode:
 					# - original CA private key is preserved
