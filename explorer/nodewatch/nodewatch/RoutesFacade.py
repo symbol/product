@@ -81,7 +81,7 @@ class BasicRoutesFacade:
 			if role is not None:
 				role_condition = role == descriptor.roles if exact_match else role == (role & descriptor.roles)
 
-			if only_ssl is True:
+			if only_ssl:
 				ssl_condition = (descriptor.is_https_enabled and descriptor.is_wss_enabled)
 				return role_condition and ssl_condition
 

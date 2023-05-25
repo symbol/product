@@ -194,6 +194,7 @@ def test_get_api_symbol_nodes_api_order_random_subset(client):  # pylint: disabl
 
 	# Assert:
 	_assert_symbol_node_response(response, actual_names)
+	assert len(actual_names) == 1
 	for name in actual_names:
 		assert name in full_api_node_names
 
@@ -229,6 +230,7 @@ def test_get_api_symbol_nodes_peer_order_random_subset(client):  # pylint: disab
 
 	# Assert:
 	_assert_symbol_node_response(response, actual_names)
+	assert len(actual_names) == 2
 	for name in actual_names:
 		assert name in full_node_names
 

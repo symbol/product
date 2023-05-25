@@ -226,6 +226,7 @@ class SymbolRoutesFacadeTest(unittest.TestCase):  # pylint: disable=too-many-pub
 		self.assertEqual(True, result)
 		self.assertEqual(facade.last_reload_time, facade.last_refresh_time)
 
+		# loaded all mainnet (104) nodes, skipping testnet (152) nodes
 		self.assertEqual(9, len(facade.repository.node_descriptors))
 		self.assertEqual(4, len(facade.repository.harvester_descriptors))
 		self.assertEqual(4, len(facade.repository.voter_descriptors))
