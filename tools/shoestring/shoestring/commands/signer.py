@@ -1,10 +1,40 @@
+import os
+
+from symbolchain.CryptoTypes import PrivateKey
 from symbolchain.facade.SymbolFacade import SymbolFacade
-from symbolchain.PrivateKeyStorage import PrivateKeyStorage
 from symbolchain.sc import TransactionFactory, TransactionType
 from symbolchain.symbol.KeyPair import KeyPair
 from zenlog import log
 
+from ..internal.OpensslExecutor import OpensslExecutor
+from ..internal.PemUtils import read_private_key_from_private_key_pem_file
 from ..internal.ShoestringConfiguration import parse_shoestring_configuration
+
+
+def _load_private_key(key_path, password):
+	if not password:
+		return read_private_key_from_private_key_pem_file(key_path)
+
+	# use OpensslExecutor instead of cryptography API to support all openssl password input formats automatically
+	openssl_executor = OpensslExecutor(os.environ.get('OPENSSL_EXECUTABLE', 'openssl'))
+	lines = openssl_executor.dispatch([
+		'pkey',
+		'-in', key_path,
+		'-noout',
+		'-text'
+	] + ([] if not password else ['-passin', password]), show_output=False)
+
+	is_private_key_line = False
+	raw_private_key_str = ''
+	for line in lines:
+		if line.startswith('priv:'):
+			is_private_key_line = True
+		elif line.startswith('pub:'):
+			break
+		elif is_private_key_line:
+			raw_private_key_str += line
+
+	return PrivateKey(''.join([ch.upper() for ch in raw_private_key_str if '0' <= ch <= '9' or 'a' <= ch <= 'f']))
 
 
 def run_main(args):
@@ -30,8 +60,7 @@ def run_main(args):
 	config = parse_shoestring_configuration(args.config)
 	facade = SymbolFacade(config.network)
 
-	key_storage = PrivateKeyStorage('.')
-	key_pair = KeyPair(key_storage.load(args.ca_key_path.removesuffix('.pem')))
+	key_pair = KeyPair(_load_private_key(args.ca_key_path, config.node.ca_password))
 
 	signature = facade.sign_transaction(key_pair, transaction)
 	facade.transaction_factory.attach_signature(transaction, signature)

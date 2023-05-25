@@ -1,4 +1,5 @@
 import os
+import shutil
 import tempfile
 import unittest
 from pathlib import Path
@@ -16,7 +17,7 @@ from shoestring.internal.OpensslExecutor import OpensslExecutor
 from shoestring.internal.Preparer import API_EXTENSIONS, HARVESTER_EXTENSIONS, PEER_EXTENSIONS, Preparer
 from shoestring.internal.ShoestringConfiguration import NodeConfiguration, ShoestringConfiguration
 
-from ..test.TestPackager import prepare_mainnet_package
+from ..test.TestPackager import prepare_testnet_package
 from ..test.TransactionTestUtils import AggregateDescriptor, LinkDescriptor, assert_aggregate_complete_transaction, assert_link_transaction
 
 
@@ -28,6 +29,14 @@ class PreparerTest(unittest.TestCase):
 	@staticmethod
 	def _create_configuration(node_features, api_https=True):
 		return ShoestringConfiguration('testnet', None, None, NodeConfiguration(node_features, None, None, None, api_https))
+
+	def _assert_readonly(self, directory, filenames):
+		self.assertEqual(0o700, directory.stat().st_mode & 0o777)
+
+		for filename in filenames:
+			filepath = directory / filename
+			expected_mode = 0o700 if filepath.is_dir() else 0o400  # directories should have executable bit set for listing
+			self.assertEqual(expected_mode, filepath.stat().st_mode & 0o777)
 
 	# endregion
 
@@ -59,7 +68,8 @@ class PreparerTest(unittest.TestCase):
 			self.assertEqual(Path(output_directory) / 'dbdata', preparer.directories.dbdata)
 			self.assertEqual(Path(output_directory) / 'rest-cache', preparer.directories.rest_cache)
 			self.assertEqual(Path(output_directory) / 'https-proxy', preparer.directories.https_proxy)
-			self.assertEqual(Path(output_directory) / 'resources', preparer.directories.resources)
+			self.assertEqual(Path(output_directory) / 'userconfig', preparer.directories.userconfig)
+			self.assertEqual(Path(output_directory) / 'userconfig' / 'resources', preparer.directories.resources)
 			self.assertEqual(Path(output_directory) / 'keys', preparer.directories.keys)
 			self.assertEqual(Path(output_directory) / 'keys' / 'cert', preparer.directories.certificates)
 			self.assertEqual(Path(output_directory) / 'keys' / 'voting', preparer.directories.voting_keys)
@@ -78,7 +88,8 @@ class PreparerTest(unittest.TestCase):
 				self.assertEqual(Path(output_directory) / 'dbdata', preparer.directories.dbdata)
 				self.assertEqual(Path(output_directory) / 'rest-cache', preparer.directories.rest_cache)
 				self.assertEqual(Path(output_directory) / 'https-proxy', preparer.directories.https_proxy)
-				self.assertEqual(Path(output_directory) / 'resources', preparer.directories.resources)
+				self.assertEqual(Path(output_directory) / 'userconfig', preparer.directories.userconfig)
+				self.assertEqual(Path(output_directory) / 'userconfig' / 'resources', preparer.directories.resources)
 				self.assertEqual(Path(output_directory) / 'keys', preparer.directories.keys)
 				self.assertEqual(Path(output_directory) / 'keys' / 'cert', preparer.directories.certificates)
 				self.assertEqual(Path(output_directory) / 'keys' / 'voting', preparer.directories.voting_keys)
@@ -98,34 +109,73 @@ class PreparerTest(unittest.TestCase):
 				created_directories = sorted(str(path.relative_to(output_directory)) for path in Path(output_directory).glob('**/*'))
 				self.assertEqual(expected_directories, created_directories)
 
+				# - created directories should have correct permissions
+				for name in expected_directories:
+					assert 0o700 == (Path(output_directory) / name).stat().st_mode & 0o777
+
 	def _assert_can_create_subdirectories(self, node_features, expected_directories):
 		configuration = self._create_configuration(node_features)
 		self._assert_can_create_subdirectories_configuration(configuration, expected_directories)
 
 	def test_can_create_subdirectories_peer_node(self):
-		self._assert_can_create_subdirectories(NodeFeatures.PEER, ['data', 'keys', 'keys/cert', 'logs', 'resources'])
+		self._assert_can_create_subdirectories(NodeFeatures.PEER, [
+			'data', 'keys', 'keys/cert', 'logs', 'userconfig', 'userconfig/resources'
+		])
 
 	def test_can_create_subdirectories_api_node(self):
-		self._assert_can_create_subdirectories(
-			NodeFeatures.API,
-			['data', 'dbdata', 'https-proxy', 'keys', 'keys/cert', 'logs', 'resources', 'rest-cache'])
+		self._assert_can_create_subdirectories(NodeFeatures.API, [
+			'data', 'dbdata', 'https-proxy', 'keys', 'keys/cert', 'logs', 'rest-cache', 'userconfig', 'userconfig/resources'
+		])
 
 	def test_can_create_subdirectories_api_node_without_https(self):
 		configuration = self._create_configuration(NodeFeatures.API, api_https=False)
-		self._assert_can_create_subdirectories_configuration(
-			configuration,
-			['data', 'dbdata', 'keys', 'keys/cert', 'logs', 'resources', 'rest-cache'])
+		self._assert_can_create_subdirectories_configuration(configuration, [
+			'data', 'dbdata', 'keys', 'keys/cert', 'logs', 'rest-cache', 'userconfig', 'userconfig/resources'
+		])
 
 	def test_can_create_subdirectories_harvester_node(self):
-		self._assert_can_create_subdirectories(NodeFeatures.HARVESTER, ['data', 'keys', 'keys/cert', 'logs', 'resources'])
+		self._assert_can_create_subdirectories(NodeFeatures.HARVESTER, [
+			'data', 'keys', 'keys/cert', 'logs', 'userconfig', 'userconfig/resources'
+		])
 
 	def test_can_create_subdirectories_voter_node(self):
-		self._assert_can_create_subdirectories(NodeFeatures.VOTER, ['data', 'keys', 'keys/cert', 'keys/voting', 'logs', 'resources'])
+		self._assert_can_create_subdirectories(NodeFeatures.VOTER, [
+			'data', 'keys', 'keys/cert', 'keys/voting', 'logs', 'userconfig', 'userconfig/resources'
+		])
 
 	def test_can_create_subdirectories_full_node(self):
-		self._assert_can_create_subdirectories(
-			NodeFeatures.API | NodeFeatures.HARVESTER | NodeFeatures.VOTER,
-			['data', 'dbdata', 'https-proxy', 'keys', 'keys/cert', 'keys/voting', 'logs', 'resources', 'rest-cache'])
+		self._assert_can_create_subdirectories(NodeFeatures.API | NodeFeatures.HARVESTER | NodeFeatures.VOTER, [
+			'data', 'dbdata', 'https-proxy', 'keys', 'keys/cert', 'keys/voting', 'logs', 'rest-cache', 'userconfig', 'userconfig/resources'
+		])
+
+	# endregion
+
+	# region prepare_seed
+
+	def test_can_prepare_seed(self):
+		# Arrange:
+		with tempfile.TemporaryDirectory() as output_directory:
+			with Preparer(output_directory, self._create_configuration(NodeFeatures.PEER)) as preparer:
+				self._initialize_temp_directory_with_package_files(preparer)
+
+				# Act:
+				preparer.prepare_seed()
+
+				# Assert:
+				seed_files = sorted(str(path.relative_to(preparer.directories.seed)) for path in Path(output_directory).glob('seed/**/*'))
+				self.assertEqual([
+					'00000',
+					'00000/00001.dat',
+					'00000/00001.proof',
+					'00000/00001.stmt',
+					'00000/hashes.dat',
+					'00000/proof.heights.dat',
+					'index.dat',
+					'proof.index.dat',
+				], seed_files)
+
+				# - check seed files permissions
+				self._assert_readonly(preparer.directories.seed, seed_files)
 
 	# endregion
 
@@ -133,10 +183,21 @@ class PreparerTest(unittest.TestCase):
 
 	@staticmethod
 	def _initialize_temp_directory_with_package_files(preparer):
-		zip_name = prepare_mainnet_package(preparer.directories.temp)
+		zip_name = prepare_testnet_package(preparer.directories.temp)
 		preparer.create_subdirectories()
 		with ZipFile(zip_name) as package:
 			package.extractall(preparer.directories.temp)
+
+		# move everything up one level and remove 'network-xyz' folder
+		for subdir in preparer.directories.temp.glob('**/*'):
+			if not subdir.is_dir():
+				continue
+
+			for file in subdir.glob('**/*'):
+				shutil.move(file, preparer.directories.temp)
+
+			subdir.rmdir()
+			break
 
 	def _assert_can_prepare_resources(self, node_features, expected_extensions):
 		# Arrange:
@@ -154,7 +215,7 @@ class PreparerTest(unittest.TestCase):
 
 			# - all files have correct permissions:
 			for path in preparer.directories.resources.iterdir():
-				self.assertEqual(0o600, path.stat().st_mode & 0o700)
+				self.assertEqual(0o600, path.stat().st_mode & 0o777)
 
 	def test_can_extract_resources_peer_node(self):
 		self._assert_can_prepare_resources(NodeFeatures.PEER, PEER_EXTENSIONS)
@@ -196,6 +257,7 @@ class PreparerTest(unittest.TestCase):
 				extensions_server_values = preparer.config_manager.lookup('config-extensions-server.properties', [
 					('extensions', 'extension.filespooling'),
 					('extensions', 'extension.partialtransaction'),
+					('extensions', 'extension.harvesting')
 				])
 				self.assertEqual(expected_values['extensions-server'], extensions_server_values)
 
@@ -213,7 +275,7 @@ class PreparerTest(unittest.TestCase):
 					('localnode', 'roles'),
 					# user patched properties
 					('localnode', 'host'),
-					('localnode', 'friendlyName'),
+					('localnode', 'friendlyName')
 				])
 				self.assertEqual(expected_values['node'], node_values)
 
@@ -244,7 +306,7 @@ class PreparerTest(unittest.TestCase):
 
 	def test_can_configure_resources_without_custom_patches(self):
 		self._assert_can_configure_resources(NodeFeatures.PEER, {
-			'extensions-server': ['false', 'false'],
+			'extensions-server': ['false', 'false', 'false'],
 			'extensions-recovery': ['false', 'false', 'false'],
 			'node': ['true', '127.0.0.1', '127.0.0.1', 'Peer', 'myServerHostnameOrPublicIp', 'myServerFriendlyName'],
 			'finalization': ['false', '10m']
@@ -252,7 +314,7 @@ class PreparerTest(unittest.TestCase):
 
 	def test_can_configure_resources_peer_node(self):
 		self._assert_can_configure_resources(NodeFeatures.PEER, {
-			'extensions-server': ['false', 'false'],
+			'extensions-server': ['false', 'false', 'false'],
 			'extensions-recovery': ['false', 'false', 'false'],
 			'node': ['true', '127.0.0.1', '127.0.0.1', 'Peer', 'friendly-node.symbol.cloud', 'hello friends'],
 			'finalization': ['false', '10m']
@@ -260,15 +322,15 @@ class PreparerTest(unittest.TestCase):
 
 	def test_can_configure_resources_api_node(self):
 		self._assert_can_configure_resources(NodeFeatures.API, {
-			'extensions-server': ['true', 'true'],
+			'extensions-server': ['true', 'true', 'false'],
 			'extensions-recovery': ['true', 'true', 'true'],
-			'node': ['false', '127.0.0.1', '127.0.0.1,172.2', 'Peer,Api', 'friendly-node.symbol.cloud', 'hello friends'],
+			'node': ['false', '127.0.0.1', '127.0.0.1,172.20', 'Peer,Api', 'friendly-node.symbol.cloud', 'hello friends'],
 			'finalization': ['false', '10m']
 		})
 
 	def test_can_configure_resources_harvester_node(self):
 		self._assert_can_configure_resources(NodeFeatures.HARVESTER, {
-			'extensions-server': ['false', 'false'],
+			'extensions-server': ['false', 'false', 'true'],
 			'extensions-recovery': ['false', 'false', 'false'],
 			'node': ['true', '127.0.0.1', '127.0.0.1', 'Peer', 'friendly-node.symbol.cloud', 'hello friends'],
 			'finalization': ['false', '10m'],
@@ -277,7 +339,7 @@ class PreparerTest(unittest.TestCase):
 
 	def test_can_configure_resources_voter_node(self):
 		self._assert_can_configure_resources(NodeFeatures.VOTER, {
-			'extensions-server': ['false', 'false'],
+			'extensions-server': ['false', 'false', 'false'],
 			'extensions-recovery': ['false', 'false', 'false'],
 			'node': ['true', '127.0.0.1', '127.0.0.1', 'Peer,Voting', 'friendly-node.symbol.cloud', 'hello friends'],
 			'finalization': ['true', '0m']
@@ -285,10 +347,10 @@ class PreparerTest(unittest.TestCase):
 
 	def test_can_configure_resources_full_node(self):
 		self._assert_can_configure_resources(NodeFeatures.API | NodeFeatures.HARVESTER | NodeFeatures.VOTER, {
-			'extensions-server': ['true', 'true'],
+			'extensions-server': ['true', 'true', 'true'],
 			'extensions-recovery': ['true', 'true', 'true'],
 			'node': [
-				'false', '127.0.0.1', '127.0.0.1,172.2', 'Peer,Api,Voting', 'friendly-node.symbol.cloud', 'hello friends'
+				'false', '127.0.0.1', '127.0.0.1,172.20', 'Peer,Api,Voting', 'friendly-node.symbol.cloud', 'hello friends'
 			],
 			'finalization': ['true', '0m'],
 			'harvesting': True
@@ -296,34 +358,52 @@ class PreparerTest(unittest.TestCase):
 
 	# endregion
 
-	# region configure_mongo
+	# region configure_rest
 
-	def _assert_can_configure_mongo(self, node_features, expected_mongo_files):
+	def _assert_can_configure_rest(self, node_features, expected_userconfig_files, expected_mongo_files):
 		# Arrange:
 		with tempfile.TemporaryDirectory() as output_directory:
 			with Preparer(output_directory, self._create_configuration(node_features)) as preparer:
-				source_directory = preparer.directories.temp / 'mongo'
-				source_directory.mkdir()
-				with open(source_directory / 'foo.txt', 'wt', encoding='utf8') as outfile:
-					outfile.write('abc')
+				self._initialize_temp_directory_with_package_files(preparer)
 
 				# Act:
-				preparer.configure_mongo()
+				preparer.configure_rest()
 
-				# Assert:
+				# Assert: check userconfig files
+				userconfig_files = sorted(path.name for path in Path(output_directory).glob('userconfig/**/*') if path.is_file())
+				self.assertEqual(expected_userconfig_files, userconfig_files)
+
+				# - check userconfig files permissions
+				self._assert_readonly(preparer.directories.userconfig, userconfig_files)
+
+				# - check mongo files
 				if expected_mongo_files:
 					self.assertTrue(preparer.directories.mongo.exists())
 
-					mongo_files = sorted(path.name for path in Path(output_directory).glob('mongo/*'))
+					mongo_files = sorted(path.name for path in Path(output_directory).glob('mongo/**/*'))
 					self.assertEqual(expected_mongo_files, mongo_files)
+
+					# - check mongo files permissions
+					self._assert_readonly(preparer.directories.mongo, mongo_files)
 				else:
 					self.assertFalse(preparer.directories.mongo.exists())
 
-	def test_can_configure_mongo_peer_node(self):
-		self._assert_can_configure_mongo(NodeFeatures.PEER, None)
+	def test_can_skip_configure_rest_peer_node(self):
+		self._assert_can_configure_rest(NodeFeatures.PEER, [], None)
 
-	def test_can_configure_mongo_api_node(self):
-		self._assert_can_configure_mongo(NodeFeatures.API, ['foo.txt'])
+	def test_can_configure_rest_api_node(self):
+		self._assert_can_configure_rest(NodeFeatures.API, ['rest.json'], [
+			'mongoDbDrop.js',
+			'mongoDbPrepare.js',
+			'mongoLockHashDbPrepare.js',
+			'mongoLockSecretDbPrepare.js',
+			'mongoMetadataDbPrepare.js',
+			'mongoMosaicDbPrepare.js',
+			'mongoMultisigDbPrepare.js',
+			'mongoNamespaceDbPrepare.js',
+			'mongoRestrictionAccountDbPrepare.js',
+			'mongoRestrictionMosaicDbPrepare.js',
+		])
 
 	# endregion
 
@@ -353,7 +433,7 @@ class PreparerTest(unittest.TestCase):
 
 				# - keys are readonly
 				for key_file in keys_files:
-					self.assertEqual(0o400, (preparer.directories.keys / key_file).stat().st_mode & 0o700)
+					self.assertEqual(0o400, (preparer.directories.keys / key_file).stat().st_mode & 0o777)
 
 				# - if present, voting key file is correct
 				self.assertEqual(bool(expected_voting_keys_file), preparer.directories.voting_keys.exists())
@@ -364,7 +444,7 @@ class PreparerTest(unittest.TestCase):
 					self.assertEqual(expected_voting_keys_file[2], end_epoch)
 
 					# - file is read write
-					self.assertEqual(0o600, voting_keys_file_path.stat().st_mode & 0o700)
+					self.assertEqual(0o600, voting_keys_file_path.stat().st_mode & 0o777)
 
 	def test_can_configure_keys_peer_node(self):
 		self._can_configure_keys(NodeFeatures.PEER, [])
@@ -376,13 +456,22 @@ class PreparerTest(unittest.TestCase):
 		self._can_configure_keys(NodeFeatures.HARVESTER, ['remote.pem', 'vrf.pem'])
 
 	def test_can_configure_keys_voter_node(self):
-		self._can_configure_keys(NodeFeatures.VOTER, [], ('private_key_tree1.dat', 3 + 1 + 4, 3 + 1 + 4 + 359))
+		# current epoch = 1 + ceil(1500 / 720) =   4
+		# one epoch padding                    =   1
+		# grace period padding                 =   4
+		# ------------------------------------------
+		# start epoch                          =   9
+		# max voting key lifetime              = 720
+		# start epoch inclusion adjustment     =  -1
+		# ------------------------------------------
+		# end epoch                            = 728
+		self._can_configure_keys(NodeFeatures.VOTER, [], ('private_key_tree1.dat', 9, 728))
 
 	def test_can_configure_keys_full_node(self):
 		self._can_configure_keys(
 			NodeFeatures.API | NodeFeatures.HARVESTER | NodeFeatures.VOTER,
 			['remote.pem', 'vrf.pem'],
-			('private_key_tree1.dat', 3 + 1 + 4, 3 + 1 + 4 + 359))
+			('private_key_tree1.dat', 9, 728))
 
 	# endregion
 
@@ -473,8 +562,16 @@ class PreparerTest(unittest.TestCase):
 				})
 
 				# Assert: check startup files
-				startup_files = sorted(path.name for path in Path(output_directory).glob('startup/*'))
-				self.assertEqual(expected_startup_files, startup_files)
+				if expected_startup_files:
+					self.assertTrue(preparer.directories.startup.exists())
+
+					startup_files = sorted(path.name for path in Path(output_directory).glob('startup/**/*'))
+					self.assertEqual(expected_startup_files, startup_files)
+
+					# - check startup files permissions
+					self._assert_readonly(preparer.directories.startup, startup_files)
+				else:
+					self.assertFalse(preparer.directories.startup.exists())
 
 				# - check compose file
 				expected_image_map = {
@@ -498,11 +595,11 @@ class PreparerTest(unittest.TestCase):
 				self.assertEqual(expected_service_names, service_names)
 
 	def test_can_configure_docker_peer_node(self):
-		self._assert_can_configure_docker(NodeFeatures.PEER, ['startServer.sh'], ['client'])
+		self._assert_can_configure_docker(NodeFeatures.PEER, None, ['client'])
 
 	def test_can_configure_docker_api_node(self):
 		self._assert_can_configure_docker(NodeFeatures.API, [
-			'delayrestapi.sh', 'mongors.sh', 'rest.json', 'startBroker.sh', 'startServer.sh', 'wait.sh'
+			'delayrestapi.sh', 'mongors.sh', 'startBroker.sh', 'startServer.sh', 'wait.sh'
 		], [
 			'db', 'initiate', 'client', 'broker', 'rest-api'
 		])
@@ -617,7 +714,7 @@ class PreparerTest(unittest.TestCase):
 				assert_link_transaction(
 					self,
 					transaction.transactions[0],
-					LinkDescriptor(TransactionType.VOTING_KEY_LINK, new_voting_public_key, LinkAction.LINK, (8, 8 + 359)))
+					LinkDescriptor(TransactionType.VOTING_KEY_LINK, new_voting_public_key, LinkAction.LINK, (9, 728)))
 
 	def test_prepare_linking_transaction_can_create_aggregate_with_all_links_and_unlinks(self):
 		# Arrange:
@@ -677,6 +774,6 @@ class PreparerTest(unittest.TestCase):
 				assert_link_transaction(
 					self,
 					transaction.transactions[5],
-					LinkDescriptor(TransactionType.VOTING_KEY_LINK, new_voting_public_key, LinkAction.LINK, (8, 8 + 359)))
+					LinkDescriptor(TransactionType.VOTING_KEY_LINK, new_voting_public_key, LinkAction.LINK, (9, 728)))
 
 	# endregion

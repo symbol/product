@@ -91,10 +91,16 @@ class Preparer:
 			return self.output_directory / 'https-proxy'
 
 		@property
+		def userconfig(self):
+			"""User configuration directory."""
+
+			return self.output_directory / 'userconfig'
+
+		@property
 		def resources(self):
 			"""Resources directory."""
 
-			return self.output_directory / 'resources'
+			return self.output_directory / 'userconfig' / 'resources'
 
 		@property
 		def keys(self):
@@ -143,7 +149,14 @@ class Preparer:
 	def create_subdirectories(self):
 		"""Creates all subdirectories."""
 
-		directories = [self.directory / 'data', self.directory / 'logs', self.directories.certificates, self.directories.resources]
+		directories = [
+			self.directory / 'data',
+			self.directory / 'logs',
+			self.directories.keys,
+			self.directories.certificates,
+			self.directories.userconfig,
+			self.directories.resources
+		]
 		if NodeFeatures.API in self.config.node.features:
 			directories.append(self.directories.dbdata)
 			directories.append(self.directories.rest_cache)
@@ -154,7 +167,16 @@ class Preparer:
 			directories.append(self.directories.voting_keys)
 
 		for directory in directories:
-			directory.mkdir(mode=0o700, parents=True, exist_ok=False)
+			directory.mkdir(mode=0o700, exist_ok=False)
+
+	@staticmethod
+	def _make_files_readonly(directory):
+		for filepath in directory.iterdir():
+			if filepath.is_dir():
+				filepath.chmod(0o700)
+				Preparer._make_files_readonly(filepath)
+			elif filepath.is_file():
+				filepath.chmod(0o400)
 
 	def _copy_file(self, source_path, destination_path):
 		if self.log:
@@ -162,11 +184,18 @@ class Preparer:
 
 		shutil.copy(source_path, destination_path)
 
-	def _copy_tree(self, source_path, destination_path):
+	def _copy_tree_readonly(self, source_path, destination_path):
 		if self.log:
 			self.log.info(f'copying TREE {source_path} to {destination_path}')
 
 		shutil.copytree(source_path, destination_path)
+		self._make_files_readonly(destination_path)
+		destination_path.chmod(0o700)
+
+	def prepare_seed(self):
+		"""Copies seed directory."""
+
+		self._copy_tree_readonly(self.directories.temp / 'seed', self.directories.seed)
 
 	def _copy_properties_files(self, extensions):
 		for extension in extensions:
@@ -186,16 +215,15 @@ class Preparer:
 		if NodeFeatures.HARVESTER in self.config.node.features:
 			self._copy_properties_files(HARVESTER_EXTENSIONS)
 
-	def prepare_seed(self):
-		"""Copies seed directory."""
-
-		self._copy_tree(self.directories.temp / 'seed', self.directories.seed)
+	def _patch_resources(self, patches):
+		for extension, replacements in patches.items():
+			self.config_manager.patch(f'config-{extension}.properties', replacements)
 
 	def configure_resources(self, user_patches=None):
 		"""Configures resources based on enabled features."""
 
 		if NodeFeatures.API in self.config.node.features:
-			patches = {
+			self._patch_resources({
 				'extensions-server': [
 					('extensions', 'extension.filespooling', 'true'),
 					('extensions', 'extension.partialtransaction', 'true'),
@@ -208,35 +236,40 @@ class Preparer:
 				'node': [
 					('node', 'enableAutoSyncCleanup', 'false'),
 					('node', 'trustedHosts', '127.0.0.1'),
-					('node', 'localNetworks', '127.0.0.1,172.2'),
+					('node', 'localNetworks', '127.0.0.1,172.20'),
 					('localnode', 'roles', 'Peer,Api'),
 				]
-			}
-
-			for extension, replacements in patches.items():
-				self.config_manager.patch(f'config-{extension}.properties', replacements)
+			})
 
 		if NodeFeatures.HARVESTER in self.config.node.features:
 			self.harvester_configurator.patch_configuration()
+		else:
+			self._patch_resources({
+				'extensions-server': [
+					('extensions', 'extension.harvesting', 'false')
+				]
+			})
 
 		if NodeFeatures.VOTER in self.config.node.features:
 			self.voter_configurator.patch_configuration()
 
 		if user_patches:
-			for extension, replacements in user_patches.items():
-				self.config_manager.patch(f'config-{extension}.properties', replacements)
+			self._patch_resources(user_patches)
 
 		# make all resources read only
-		for file in self.directories.resources.iterdir():
-			file.chmod(0o400)
+		self._make_files_readonly(self.directories.resources)
 
-	def configure_mongo(self):
-		"""Copies mongo directory."""
+	def configure_rest(self):
+		"""Copies mongo and rest files."""
 
 		if NodeFeatures.API not in self.config.node.features:
 			return
 
-		self._copy_tree(self.directories.temp / 'mongo', self.directories.mongo)
+		self._copy_tree_readonly(self.directories.temp / 'mongo', self.directories.mongo)
+		self._make_files_readonly(self.directories.mongo)
+
+		self._copy_file(self.directories.temp / 'rest' / 'rest.json', self.directories.userconfig)
+		self._make_files_readonly(self.directories.userconfig)
 
 	def configure_https(self):
 		"""Configures https proxy."""
@@ -282,10 +315,7 @@ class Preparer:
 			# TODO: where should those (startup + docker templates) be copied from?
 			# we can copy from within repo, but will shoestring be a separate installable (pypi) package?
 			#
-			self._copy_tree('startup', self.directories.startup)
-		else:
-			self.directories.startup.mkdir(exist_ok=True)
-			self._copy_file('startup/startServer.sh', self.directories.startup)
+			self._copy_tree_readonly('startup', self.directories.startup)
 
 		compose_template_filename_postfix = 'dual' if NodeFeatures.API in self.config.node.features else 'peer'
 		compose_template_filename = f'templates/docker-compose-{compose_template_filename_postfix}.yaml'

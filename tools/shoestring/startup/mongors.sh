@@ -9,15 +9,15 @@ pwd
 
 while true;
 do
-        if mongo --eval "db.runCommand( { serverStatus: 1 } )" db/local > /dev/null 2>&1; then
-                break;
-        fi
-        echo "waiting for mongod start..."
-        sleep 1
+	if mongo --eval "db.runCommand( { serverStatus: 1 } )" db/local > /dev/null 2>&1; then
+		break;
+	fi
+	echo "waiting for mongod start..."
+	sleep 1
 done
 
 echo " [+] Preparing db5"
-cd /userconfig/mongo
+cd /mongo
 mongo db/catapult < mongoDbPrepare.js
 echo " [.] (exit code: $?)"
 cd -
@@ -29,4 +29,4 @@ trap 'echo "exiting"; exit 0' SIGTERM
 mkdir -p "$(dirname "${state_filename}")"
 touch "${state_filename}"
 
-sleep infinity & wait 
+sleep infinity & wait

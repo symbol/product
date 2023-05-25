@@ -8,14 +8,17 @@ from symbolchain.sc import TransactionFactory
 from symbolchain.symbol.KeyPair import KeyPair
 
 from shoestring.__main__ import main
+from shoestring.internal.NodeFeatures import NodeFeatures
+
+from ..test.ConfigurationTestUtils import prepare_shoestring_configuration
 
 
-async def _assert_can_sign_transaction(transaction_descriptor_factory):
+async def _assert_can_sign_transaction(transaction_descriptor_factory, ca_password=None):
 	# Arrange:
 	with tempfile.TemporaryDirectory() as output_directory:
 		# - generate and save signing private key
 		signer_key_pair = KeyPair(PrivateKey.random())
-		private_key_storage = PrivateKeyStorage(output_directory)
+		private_key_storage = PrivateKeyStorage(output_directory, ca_password)
 		private_key_storage.save('main', signer_key_pair.private_key)
 
 		# - generate and write out (unsigned) transaction
@@ -28,10 +31,13 @@ async def _assert_can_sign_transaction(transaction_descriptor_factory):
 			# Sanity:
 			assert not facade.verify_transaction(transaction, transaction.signature)
 
+		# - prepare shoestring configuration
+		config_filepath = prepare_shoestring_configuration(output_directory, NodeFeatures.PEER, ca_password=ca_password)
+
 		# Act:
 		await main([
 			'signer',
-			'--config', str(Path('tests/resources/testnet.properties').absolute()),
+			'--config', str(config_filepath),
 			'--ca-key-path', str(Path(output_directory) / 'main.pem'),
 			'--save',
 			str(transaction_filepath)
@@ -45,13 +51,16 @@ async def _assert_can_sign_transaction(transaction_descriptor_factory):
 			assert facade.verify_transaction(transaction, transaction.signature)
 
 
+# pylint: disable=invalid-name
+
+
 async def test_can_sign_regular_transaction():
 	await _assert_can_sign_transaction(lambda signer_public_key: {
 		'type': 'account_key_link_transaction_v1',
 		'signer_public_key': signer_public_key,
 
 		'linked_public_key': KeyPair(PrivateKey.random()).public_key,
-		'link_action': 'link',
+		'link_action': 'link'
 	})
 
 
@@ -65,7 +74,7 @@ async def test_can_sign_aggregate_transaction():
 				'signer_public_key': signer_public_key,
 
 				'linked_public_key': KeyPair(PrivateKey.random()).public_key,
-				'link_action': 'link',
+				'link_action': 'link'
 			})
 		]
 
@@ -80,3 +89,13 @@ async def test_can_sign_aggregate_transaction():
 
 	# Act + Assert:
 	await _assert_can_sign_transaction(create_transaction_descriptor)
+
+
+async def test_can_sign_transaction_with_password_protected_key():
+	await _assert_can_sign_transaction(lambda signer_public_key: {
+		'type': 'account_key_link_transaction_v1',
+		'signer_public_key': signer_public_key,
+
+		'linked_public_key': KeyPair(PrivateKey.random()).public_key,
+		'link_action': 'link'
+	}, 'abc123')

@@ -67,8 +67,7 @@ NODEWATCH_API_NODES = [
 		'roles': 2
 	},
 	{
-		'mainPublicKey':
-		'3E8846B17079F7A1AB2FC99F7033A70188CEBAEC15704C5EFA107044F1B74FA7',
+		'mainPublicKey': '3E8846B17079F7A1AB2FC99F7033A70188CEBAEC15704C5EFA107044F1B74FA7',
 		'endpoint': '',
 		'name': '3E8846B',
 		'version': '1.0.3.5',
@@ -80,10 +79,11 @@ NODEWATCH_API_NODES = [
 ]
 
 
-def setup_mock_nodewatch_server(event_loop, aiohttp_client):
+def setup_mock_nodewatch_server(event_loop, aiohttp_client, redirect_network_requests=False):
 	class MockNodewatchServer:
 		def __init__(self):
 			self.urls = []
+			self.endpoint = ''
 
 		async def api_symbol_height(self, request):
 			return await self._process(request, {
@@ -92,12 +92,38 @@ def setup_mock_nodewatch_server(event_loop, aiohttp_client):
 			})
 
 		async def peer_nodes(self, request):
-			return await self._process(request, NODEWATCH_PEER_NODES)
+			print(self.endpoint)
+			return await self._process(request, NODEWATCH_PEER_NODES if not redirect_network_requests else [
+				{
+					'mainPublicKey': '6CEB918020E9701C664F46FEDD73A969EE4927FEF1DF6B6CBAEAC817CA7CBF34',
+					'endpoint': str(self.endpoint),
+					'name': '3E8846B',
+					'version': '1.0.3.7',
+					'height': 2000200,
+					'finalizedHeight': 2000000,
+					'balance': 1000000,
+					'roles': 7
+				}
+			])
 
 		async def api_nodes(self, request):
-			return await self._process(request, NODEWATCH_API_NODES)
+			return await self._process(request, NODEWATCH_API_NODES if not redirect_network_requests else [])
+
+		async def accounts_by_id(self, request):
+			return await self._process(request, {
+				'code': 'ResourceNotFound',
+				'message': 'no resource exists with id \'NC5RFPFQGYFGNDOHRL7TXVKJWUBNMJCB4P3TA5X\''
+			})
+
+		async def node_time(self, request):
+			return await self._process(request, {
+				'communicationTimestamps': {
+					'sendTimestamp': 123456789
+				}
+			})
 
 		async def _process(self, request, response_body):
+			print(response_body)
 			self.urls.append(str(request.url))
 			return web.Response(body=json.dumps(response_body), headers={'Content-Type': 'application/json'})
 
@@ -109,7 +135,13 @@ def setup_mock_nodewatch_server(event_loop, aiohttp_client):
 	app.router.add_get('/api/symbol/height', mock_server.api_symbol_height)
 	app.router.add_get('/api/symbol/nodes/peer', mock_server.peer_nodes)
 	app.router.add_get('/api/symbol/nodes/api', mock_server.api_nodes)
+
+	if redirect_network_requests:
+		app.router.add_get(r'/accounts/{account_id}', mock_server.accounts_by_id)
+		app.router.add_get('/node/time', mock_server.node_time)
+
 	server = event_loop.run_until_complete(aiohttp_client(app))  # pylint: disable=redefined-outer-name
 
+	mock_server.endpoint = server.make_url('')
 	server.mock = mock_server
 	return server

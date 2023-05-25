@@ -36,8 +36,8 @@ async def run_main(args):
 		await download_and_extract_package(args.package, preparer.directories.temp)
 
 		# prepare resources
-		preparer.prepare_resources()
 		preparer.prepare_seed()
+		preparer.prepare_resources()
 
 		user_patches = {
 			'node': [
@@ -51,7 +51,7 @@ async def run_main(args):
 		# TODO: if https check if host looks like a hostname and maybe try to resolve
 
 		preparer.configure_resources(user_patches)
-		preparer.configure_mongo()  # TODO: should this be merged with configure_docker
+		preparer.configure_rest()
 
 		# os.getuid() could be used, but that might not be the best idea
 		preparer.configure_docker({
@@ -103,7 +103,7 @@ def add_arguments(parser):
 		'--package',
 		help='Network configuration package. Possible values: (name | file:///filename | http(s)://uri) (default: mainnet)',
 		default='mainnet')
-	parser.add_argument('--directory', help=f'destination directory (default: {Path.home()})', default=str(Path.home()))
+	parser.add_argument('--directory', help=f'installation directory (default: {Path.home()})', default=str(Path.home()))
 	parser.add_argument('--ca-key-path', help='path to main private key PEM file', required=True)
 	parser.add_argument('--overrides', help='path to custom user settings')
 	parser.set_defaults(func=run_main)

@@ -76,4 +76,4 @@ class HarvesterConfiguratorTest(unittest.TestCase):
 
 			# - check file permissions
 			for generated_file in generated_files:
-				self.assertEqual(0o400, (Path(keys_directory) / generated_file).stat().st_mode & 0o700)
+				self.assertEqual(0o400, (Path(keys_directory) / generated_file).stat().st_mode & 0o777)

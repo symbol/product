@@ -8,7 +8,7 @@ from aiohttp import web
 
 from shoestring.internal.PackageResolver import download_and_extract_package, resolve_package
 
-from ..test.TestPackager import prepare_mainnet_package
+from ..test.TestPackager import prepare_testnet_package
 
 # region server fixture
 
@@ -166,7 +166,7 @@ def package_server(event_loop, aiohttp_client):
 			self.package_path = None
 
 		def initialize_package(self, directory):
-			self.package_path = prepare_mainnet_package(directory, 'foobar.zip')
+			self.package_path = prepare_testnet_package(directory, 'foobar.zip')
 
 		async def package(self, request):
 			self.urls.append(str(request.url))
@@ -197,7 +197,7 @@ async def test_can_download_and_extract(package_server):  # pylint: disable=rede
 
 			# Assert:
 			top_level_names = sorted([path.name for path in output_directory.iterdir()])
-			assert ['configuration-package.zip', 'mongo', 'resources', 'seed'] == top_level_names
+			assert ['README.md', 'configuration-package.zip', 'mongo', 'resources', 'rest', 'seed'] == top_level_names
 
 
 async def _assert_can_download_and_extract_local_package_using_file_protocol(add_files_to_archive):

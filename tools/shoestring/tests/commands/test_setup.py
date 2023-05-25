@@ -10,15 +10,16 @@ from symbolchain.PrivateKeyStorage import PrivateKeyStorage
 from shoestring.__main__ import main
 from shoestring.internal.NodeFeatures import NodeFeatures
 
+from ..test.ConfigurationTestUtils import prepare_shoestring_configuration
 from ..test.MockNodewatchServer import setup_mock_nodewatch_server
-from ..test.TestPackager import prepare_mainnet_package
+from ..test.TestPackager import prepare_testnet_package
 
 # region server fixture
 
 
 @pytest.fixture
 def server(event_loop, aiohttp_client):
-	return setup_mock_nodewatch_server(event_loop, aiohttp_client)
+	return setup_mock_nodewatch_server(event_loop, aiohttp_client, True)
 
 # endregion
 
@@ -37,53 +38,70 @@ PEER_OUTPUT_FILES = [
 	'keys/cert/node.key.pem',
 	'linking_transaction.dat',
 	'logs',
-	'resources',
-	'resources/config-extensions-recovery.properties',
-	'resources/config-extensions-server.properties',
-	'resources/config-finalization.properties',
-	'resources/config-inflation.properties',
-	'resources/config-logging-recovery.properties',
-	'resources/config-logging-server.properties',
-	'resources/config-network.properties',
-	'resources/config-node.properties',
-	'resources/config-task.properties',
-	'resources/config-timesync.properties',
-	'resources/config-user.properties',
-	'resources/peers-p2p.json',
 	'seed',
+	'seed/00000',
+	'seed/00000/00001.dat',
+	'seed/00000/00001.proof',
+	'seed/00000/00001.stmt',
+	'seed/00000/hashes.dat',
+	'seed/00000/proof.heights.dat',
 	'seed/index.dat',
-	'startup',
-	'startup/startServer.sh'
+	'seed/proof.index.dat',
+	'userconfig',
+	'userconfig/resources',
+	'userconfig/resources/config-extensions-recovery.properties',
+	'userconfig/resources/config-extensions-server.properties',
+	'userconfig/resources/config-finalization.properties',
+	'userconfig/resources/config-inflation.properties',
+	'userconfig/resources/config-logging-recovery.properties',
+	'userconfig/resources/config-logging-server.properties',
+	'userconfig/resources/config-network.properties',
+	'userconfig/resources/config-node.properties',
+	'userconfig/resources/config-task.properties',
+	'userconfig/resources/config-timesync.properties',
+	'userconfig/resources/config-user.properties',
+	'userconfig/resources/peers-p2p.json'
 ]
 
 API_OUTPUT_FILES = [
 	'dbdata',
 	'https-proxy',
 	'mongo',
+	'mongo/mongoDbDrop.js',
 	'mongo/mongoDbPrepare.js',
-	'resources/config-database.properties',
-	'resources/config-extensions-broker.properties',
-	'resources/config-logging-broker.properties',
-	'resources/config-messaging.properties',
-	'resources/config-pt.properties',
-	'resources/peers-api.json',
+	'mongo/mongoLockHashDbPrepare.js',
+	'mongo/mongoLockSecretDbPrepare.js',
+	'mongo/mongoMetadataDbPrepare.js',
+	'mongo/mongoMosaicDbPrepare.js',
+	'mongo/mongoMultisigDbPrepare.js',
+	'mongo/mongoNamespaceDbPrepare.js',
+	'mongo/mongoRestrictionAccountDbPrepare.js',
+	'mongo/mongoRestrictionMosaicDbPrepare.js',
 	'rest-cache',
+	'startup',
 	'startup/delayrestapi.sh',
 	'startup/mongors.sh',
-	'startup/rest.json',
 	'startup/startBroker.sh',
-	'startup/wait.sh'
+	'startup/startServer.sh',
+	'startup/wait.sh',
+	'userconfig/resources/config-database.properties',
+	'userconfig/resources/config-extensions-broker.properties',
+	'userconfig/resources/config-logging-broker.properties',
+	'userconfig/resources/config-messaging.properties',
+	'userconfig/resources/config-pt.properties',
+	'userconfig/resources/peers-api.json',
+	'userconfig/rest.json'
 ]
 
 HARVESTER_OUTPUT_FILES = [
 	'keys/remote.pem',
 	'keys/vrf.pem',
-	'resources/config-harvesting.properties',
+	'userconfig/resources/config-harvesting.properties'
 ]
 
 VOTER_OUTPUT_FILES = [
 	'keys/voting',
-	'keys/voting/private_key_tree1.dat',
+	'keys/voting/private_key_tree1.dat'
 ]
 
 # endregion
@@ -97,20 +115,6 @@ class CaMode(Enum):
 	WITH_PASSWORD = 2
 
 
-def _prepare_configuration(directory, services_nodewatch, node_features, ca_password=''):
-	parser = configparser.ConfigParser()
-	parser.read(Path('tests/resources/testnet.properties').absolute())
-
-	parser['services']['nodewatch'] = str(services_nodewatch)
-
-	node_features_str = str(node_features)
-	parser['node']['features'] = node_features_str[node_features_str.index('.') + 1:]
-	parser['node']['caPassword'] = f'pass:{ca_password}' if ca_password else ''
-
-	with open(Path(directory) / 'testnet.properties', 'wt', encoding='utf8') as outfile:
-		parser.write(outfile)
-
-
 async def _assert_can_prepare_node(
 	server,  # pylint: disable=redefined-outer-name
 	node_features,
@@ -120,8 +124,8 @@ async def _assert_can_prepare_node(
 	with tempfile.TemporaryDirectory() as output_directory:
 		with tempfile.TemporaryDirectory() as package_directory:
 			ca_password = 'abc' if CaMode.WITH_PASSWORD == ca_mode else ''
-			_prepare_configuration(package_directory, server.make_url(''), node_features, ca_password)
-			prepare_mainnet_package(package_directory, 'resources.zip')
+			prepare_shoestring_configuration(package_directory, node_features, server.make_url(''), ca_password)
+			prepare_testnet_package(package_directory, 'resources.zip')
 
 			ca_private_key = None
 			with tempfile.TemporaryDirectory() as ca_directory:
@@ -133,7 +137,7 @@ async def _assert_can_prepare_node(
 				# Act:
 				await main([
 					'setup',
-					'--config', str(Path(package_directory) / 'testnet.properties'),
+					'--config', str(Path(package_directory) / 'sai.shoestring.ini'),
 					'--security', 'insecure',
 					'--package', f'file://{Path(package_directory) / "resources.zip"}',
 					'--directory', output_directory,
@@ -201,8 +205,8 @@ async def test_can_apply_user_overrides(server):  # pylint: disable=redefined-ou
 	# Arrange:
 	with tempfile.TemporaryDirectory() as output_directory:
 		with tempfile.TemporaryDirectory() as package_directory:
-			_prepare_configuration(package_directory, server.make_url(''), NodeFeatures.PEER)
-			prepare_mainnet_package(package_directory, 'resources.zip')
+			prepare_shoestring_configuration(package_directory, NodeFeatures.PEER, server.make_url(''))
+			prepare_testnet_package(package_directory, 'resources.zip')
 
 			user_overrides_filepath = Path(package_directory) / 'overrides.properties'
 			with open(user_overrides_filepath, 'wt', encoding='utf8') as outfile:
@@ -217,7 +221,7 @@ async def test_can_apply_user_overrides(server):  # pylint: disable=redefined-ou
 				# Act:
 				await main([
 					'setup',
-					'--config', str(Path(package_directory) / 'testnet.properties'),
+					'--config', str(Path(package_directory) / 'sai.shoestring.ini'),
 					'--security', 'insecure',
 					'--package', f'file://{Path(package_directory) / "resources.zip"}',
 					'--directory', output_directory,
@@ -228,7 +232,7 @@ async def test_can_apply_user_overrides(server):  # pylint: disable=redefined-ou
 				# Assert: check user properties were applied
 				node_parser = configparser.ConfigParser()
 				node_parser.optionxform = str
-				node_parser.read(Path(output_directory) / 'resources' / 'config-node.properties')
+				node_parser.read(Path(output_directory) / 'userconfig' / 'resources' / 'config-node.properties')
 
 				assert 'foo.symbol.ninja' == node_parser['localnode']['host']
 				assert 'Foo Ninja' == node_parser['localnode']['friendlyName']
