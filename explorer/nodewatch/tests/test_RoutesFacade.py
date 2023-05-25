@@ -480,14 +480,14 @@ class SymbolRoutesFacadeTest(unittest.TestCase):  # pylint: disable=too-many-pub
 			[2, 2, 7, 3, 3],
 			list(map(lambda descriptor: descriptor['roles'], node_descriptors)))
 
-	def can_find_known_node_by_main_public_key(self):  # pylint: disable=invalid-name
+	def test_can_find_known_node_by_main_public_key(self):  # pylint: disable=invalid-name
 		# Arrange:
 		facade = SymbolRoutesFacade(SymbolNetwork.MAINNET, '<symbol_explorer>')
 		facade.reload_all(Path('tests/resources'), True)
 
 		# Act: select a node match with main public key
 		node_descriptors = facade.json_node(
-			filter_field='mainPublicKey',
+			filter_field='main_public_key',
 			public_key='A0AA48B6417BDB1845EB55FB0B1E13255EA8BD0D8FA29AD2D8A906E220571F21'
 		)
 		expected_node = {
@@ -510,14 +510,14 @@ class SymbolRoutesFacadeTest(unittest.TestCase):  # pylint: disable=too-many-pub
 		# Assert:
 		self.assertEqual(node_descriptors, expected_node)
 
-	def can_find_known_node_by_node_public_key(self):  # pylint: disable=invalid-name
+	def test_can_find_known_node_by_node_public_key(self):  # pylint: disable=invalid-name
 		# Arrange:
 		facade = SymbolRoutesFacade(SymbolNetwork.MAINNET, '<symbol_explorer>')
 		facade.reload_all(Path('tests/resources'), True)
 
 		# Act: select a node match with node public key
 		node_descriptors = facade.json_node(
-			filter_field='nodePublicKey',
+			filter_field='node_public_key',
 			public_key='D05BE3101F2916AA34839DDC1199BE45092103A9B66172FA3D05911DC041AADA'
 		)
 		expected_node = {
@@ -550,11 +550,11 @@ class SymbolRoutesFacadeTest(unittest.TestCase):  # pylint: disable=too-many-pub
 		# Assert:
 		self.assertIsNone(node_descriptors)
 
-	def cannot_find_unknown_node_by_main_public_key(self):  # pylint: disable=invalid-name
-		self._assert_unknown_node_not_found('mainPublicKey')
+	def test_cannot_find_unknown_node_by_main_public_key(self):  # pylint: disable=invalid-name
+		self._assert_unknown_node_not_found('main_public_key')
 
-	def cannot_find_unknown_node_by_node_public_key(self):  # pylint: disable=invalid-name
-		self._assert_unknown_node_not_found('nodePublicKey')
+	def test_cannot_find_unknown_node_by_node_public_key(self):  # pylint: disable=invalid-name
+		self._assert_unknown_node_not_found('node_public_key')
 
 	def test_can_generate_height_chart_json(self):
 		# Arrange:
