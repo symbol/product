@@ -13,7 +13,7 @@ class NemDatabase(DatabaseConnection):
 			timestamp timestamp NOT NULL,
 			totalFees integer DEFAULT 0,
 			totalTransactions integer DEFAULT 0,
-			difficulty VARCHAR(7) NOT NULL,
+			difficulty bigInt NOT NULL,
 			hash VARCHAR(64) NOT NULL,
 			harvester VARCHAR(40) NOT NULL
 		)''')
