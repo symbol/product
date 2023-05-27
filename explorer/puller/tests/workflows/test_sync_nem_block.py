@@ -53,7 +53,7 @@ class SyncNemBlockTest(unittest.IsolatedAsyncioTestCase):
 			Block.convert_timestamp_to_datetime(73976),
 			0,
 			0,
-			'100.00%',
+			100000000000000,
 			'1dd9d4d7b6af603d29c082f9aa4e123f07d18154ddbcd7ddc6702491b854c5e4',
 			'NALICEPFLZQRZGPRIJTMJOCPWDNECXTNNG7QLSG3'  # Expected address from the signer public key
 		)
@@ -63,7 +63,7 @@ class SyncNemBlockTest(unittest.IsolatedAsyncioTestCase):
 			Block.convert_timestamp_to_datetime(73976),
 			0,
 			0,
-			'90.25%',
+			90250000000000,
 			'9708256e8a8dfb76eed41dcfa2e47f4af520b7b3286afb7f60dca02851f8a53e',
 			'NALICE6XEEEOBFJVY3ZCENZ7WBG6LB4KB6CQNYKR'  # Expected address from the signer public key
 		)

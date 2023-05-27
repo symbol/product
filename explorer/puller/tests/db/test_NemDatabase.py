@@ -9,13 +9,13 @@ from model.Block import Block
 # region test data
 
 BLOCKS = [
-	Block(1, '2015-03-29 00:06:25', 0, 5, '100.00%', '#', 'NANEMOABLAGR72AZ2RV3V4ZHDCXW25XQ73O7OBT5'),
+	Block(1, '2015-03-29 00:06:25', 0, 5, 100000000000000, '#', 'NANEMOABLAGR72AZ2RV3V4ZHDCXW25XQ73O7OBT5'),
 	Block(
 		2,
 		'2015-03-29 20:34:19',
 		0,
 		5,
-		'80.00%',
+		80000000000000,
 		'1dd9d4d7b6af603d29c082f9aa4e123f07d18154ddbcd7ddc6702491b854c5e4',
 		'NALICEPFLZQRZGPRIJTMJOCPWDNECXTNNG7QLSG3')
 ]
@@ -71,7 +71,7 @@ class NemDatabaseTest(unittest.TestCase):
 			datetime.datetime(2015, 3, 29, 0, 6, 25),
 			0,
 			5,
-			'100.00%',
+			100000000000000,
 			'#',
 			'NANEMOABLAGR72AZ2RV3V4ZHDCXW25XQ73O7OBT5'))
 

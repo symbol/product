@@ -30,7 +30,6 @@ class Block:
 
 		timestamp = cls.convert_timestamp_to_datetime(block['timeStamp'])
 		total_fees = sum(tx['tx']['fee'] for tx in transactions)
-		difficulty = f'{round(block_data["difficulty"] / (10 ** 14) * 100, 2):.2f}%'
 		harvester = nem_facade.network.public_key_to_address(PublicKey(block['signer']))
 
 		return cls(
@@ -38,7 +37,7 @@ class Block:
 			timestamp,
 			total_fees,
 			len(transactions),
-			difficulty,
+			block_data["difficulty"],
 			block_data['hash'],
 			str(harvester)
 		)
