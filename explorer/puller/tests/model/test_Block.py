@@ -1,5 +1,6 @@
 import unittest
 
+from symbolchain.facade.NemFacade import NemFacade
 from model.Block import Block
 
 
@@ -48,8 +49,11 @@ class BlockTest(unittest.TestCase):
 		}, block_dict)
 
 	def test_convert_timestamp_to_datetime(self):
+		# Arrange:
+		nem_facade = NemFacade('mainnet')
+
 		# Act:
-		timestamp = Block.convert_timestamp_to_datetime(0)
+		timestamp = Block.convert_timestamp_to_datetime(nem_facade, 0)
 
 		# Assert:
 		self.assertEqual('2015-03-29 00:06:25', timestamp)
