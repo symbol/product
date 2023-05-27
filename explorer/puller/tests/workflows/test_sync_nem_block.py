@@ -1,8 +1,8 @@
 import unittest
-from test_data import BLOCK_AT_PUBLIC, CHAIN_BLOCK_1, CHAIN_BLOCK_2
 from unittest.mock import AsyncMock, MagicMock
 
 from symbolchain.facade.NemFacade import NemFacade
+from test_data import BLOCK_AT_PUBLIC, CHAIN_BLOCK_1, CHAIN_BLOCK_2
 
 from model.Block import Block
 from workflows.sync_nem_block import save_nemesis_block, sync_blocks
