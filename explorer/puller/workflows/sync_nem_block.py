@@ -25,7 +25,7 @@ async def save_nemesis_block(nem_client, databases, nem_facade):
 
 	save_block = Block(
 		block['height'],
-		Block.convert_timestamp_to_datetime(block['timeStamp']),
+		Block.convert_timestamp_to_datetime(nem_facade, block['timeStamp']),
 		0,
 		len(block['transactions']),
 		0,

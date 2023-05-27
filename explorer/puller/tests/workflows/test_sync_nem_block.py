@@ -20,7 +20,7 @@ class SyncNemBlockTest(unittest.IsolatedAsyncioTestCase):
 
 		expected_block = Block(
 			1,
-			Block.convert_timestamp_to_datetime(0),
+			Block.convert_timestamp_to_datetime(nem_facade, 0),
 			0,
 			0,
 			0,
@@ -50,7 +50,7 @@ class SyncNemBlockTest(unittest.IsolatedAsyncioTestCase):
 
 		expected_block_1 = Block(
 			2,
-			Block.convert_timestamp_to_datetime(73976),
+			Block.convert_timestamp_to_datetime(nem_facade, 73976),
 			0,
 			0,
 			100000000000000,
@@ -60,7 +60,7 @@ class SyncNemBlockTest(unittest.IsolatedAsyncioTestCase):
 
 		expected_block_2 = Block(
 			3,
-			Block.convert_timestamp_to_datetime(73976),
+			Block.convert_timestamp_to_datetime(nem_facade, 73976),
 			0,
 			0,
 			90250000000000,
