@@ -1,9 +1,9 @@
 import json
-from test_data import BLOCK_AT_PUBLIC, CHAIN_BLOCK_1, CHAIN_BLOCK_2
 
 import pytest
 from aiohttp import web
 from symbolchain.nem.Network import Network
+from test_data import BLOCK_AT_PUBLIC, CHAIN_BLOCK_1, CHAIN_BLOCK_2
 
 from client.NemClient import NemClient
 

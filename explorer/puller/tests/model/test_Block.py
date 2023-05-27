@@ -1,6 +1,7 @@
 import unittest
 
 from symbolchain.facade.NemFacade import NemFacade
+
 from model.Block import Block
 
 
