@@ -61,8 +61,11 @@ class CertificateFactory:
 			'-algorithm', 'ed25519'
 		])
 
-	def generate_ca_certificate(self, ca_cn):
+	def generate_ca_certificate(self, ca_cn, days=7300):
 		"""Generates a CA certificate."""
+
+		if not ca_cn:
+			raise RuntimeError('CA common name cannot be empty')
 
 		# prepare CA config
 		with open('ca.cnf', 'wt', encoding='utf8') as outfile:
@@ -104,12 +107,15 @@ class CertificateFactory:
 			'-keyform', 'PEM',
 			'-key', self.ca_key_path,
 			'-new', '-x509',
-			'-days', '7300',
+			'-days', str(days),
 			'-out', 'ca.crt.pem'
 		]))
 
-	def generate_node_certificate(self, node_cn):
+	def generate_node_certificate(self, node_cn, days=375, start_date=None):
 		"""Generates a node certificate."""
+
+		if not node_cn:
+			raise RuntimeError('Node common name cannot be empty')
 
 		# prepare node config
 		with open('node.cnf', 'wt', encoding='utf8') as outfile:
@@ -141,12 +147,12 @@ class CertificateFactory:
 		self.openssl_executor.dispatch(self._add_ca_password([
 			'ca',
 			'-config', 'ca.cnf',
-			'-days', '375',
+			'-days', str(days),
 			'-notext',
 			'-batch',
 			'-in', 'node.csr.pem',
 			'-out', 'node.crt.pem'
-		]))
+		] + ([] if not start_date else ['-startdate', start_date.strftime('%y%m%d%H%M%SZ')])))
 
 	@staticmethod
 	def create_node_certificate_chain():

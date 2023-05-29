@@ -2,7 +2,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from shoestring.internal.ConfigurationManager import ConfigurationManager, load_patches_from_file
+from shoestring.internal.ConfigurationManager import ConfigurationManager, load_patches_from_file, parse_time_span
 
 
 class ConfigurationManagerTest(unittest.TestCase):
@@ -232,5 +232,20 @@ class ConfigurationManagerTest(unittest.TestCase):
 			'[build.build_tools.cpp]',
 			'boost = 80'
 		])
+
+	# endregion
+
+	# region parse_time_span
+
+	def test_can_parse_valid_time_span(self):
+		self.assertEqual(1234, parse_time_span('1234ms'))
+		self.assertEqual(1234 * 1000, parse_time_span('1234s'))
+		self.assertEqual(1234 * 1000 * 60, parse_time_span('1234m'))
+		self.assertEqual(1234 * 1000 * 60 * 60, parse_time_span('1234h'))
+
+	def test_cannot_parse_invalid_time_span(self):
+		for invalid_str in ('12H4s', '', 's', '1234g'):
+			with self.assertRaises(ValueError):
+				parse_time_span(invalid_str)
 
 	# endregion

@@ -58,11 +58,11 @@ class CertificateFactoryTest(unittest.TestCase):
 		])
 
 	def _assert_pem_contains_only_public_key(self, filepath):
-		# does not contain private key
+		# Assert: does not contain private key
 		with self.assertRaises(RuntimeError):
 			self._assert_pem_contains_private_key(filepath)
 
-		# contains public key
+		# - contains public key
 		self._create_executor().dispatch([
 			'pkey',
 			'-in', filepath,
@@ -128,18 +128,21 @@ class CertificateFactoryTest(unittest.TestCase):
 		self.assertEqual(expected_issuer, re.search(r'Issuer: CN = (.*)\n', x509_output).group(1))
 		self.assertEqual(expected_subject, re.search(r'Subject: CN = (.*)\n', x509_output).group(1))
 
-	def _assert_certificate_duration(self, x509_output, test_start_time, expected_days):
+	def _assert_certificate_duration(self, x509_output, test_start_time, expected_days, has_explicit_start_date=False):
 		time_format = '%b %d %H:%M:%S %Y %Z'
 		cert_start_time = datetime.datetime.strptime(re.search(r'Not Before: (.*)\n', x509_output).group(1), time_format)
 		cert_end_time = datetime.datetime.strptime(re.search(r'Not After : (.*)\n', x509_output).group(1), time_format)
 
-		self.assertLessEqual(test_start_time, cert_start_time)
-		self.assertLessEqual(cert_start_time, datetime.datetime.utcnow())
+		if has_explicit_start_date:
+			self.assertEqual(test_start_time, cert_start_time)
+		else:
+			self.assertLessEqual(test_start_time, cert_start_time)
+			self.assertLessEqual(cert_start_time, datetime.datetime.utcnow())
+
 		self.assertEqual(expected_days, (cert_end_time - cert_start_time).days)
 
-	def test_can_generate_ca_certificate(self):
-		# Arrange:
-		# - certificate has second resolution, so clear microseconds for assert below to work
+	def _assert_can_generate_ca_certificate(self, additional_args, expected_duration_days):
+		# Arrange: certificate has second resolution, so clear microseconds for assert below to work
 		test_start_time = datetime.datetime.utcnow().replace(microsecond=0)
 		with tempfile.TemporaryDirectory() as package_directory:
 			ca_certificate_path = Path(package_directory) / 'ca.crt.pem'
@@ -150,7 +153,7 @@ class CertificateFactoryTest(unittest.TestCase):
 
 				with CertificateFactory(self._create_executor(), ca_private_key_path) as factory:
 					# Act:
-					factory.generate_ca_certificate('my CA common name')
+					factory.generate_ca_certificate('my CA common name', **additional_args)
 					factory.package(package_directory)
 
 					# Assert:
@@ -165,15 +168,25 @@ class CertificateFactoryTest(unittest.TestCase):
 					self._assert_certificate_issuer_and_subject(x509_output, 'my CA common name', 'my CA common name')
 
 					# - check start and expiry times
-					self._assert_certificate_duration(x509_output, test_start_time, 20 * 365)
+					self._assert_certificate_duration(x509_output, test_start_time, expected_duration_days)
 
 					# - verify certificate is properly self signed
 					self._create_executor().dispatch(['verify', '-CAfile', ca_certificate_path, ca_certificate_path])
 
-	def _assert_can_generate_node_certificate(self, should_generate_certificate_chain):
-		# Arrange:
-		# - certificate has second resolution, so clear microseconds for assert below to work
-		test_start_time = datetime.datetime.utcnow().replace(microsecond=0)
+	def test_can_generate_ca_certificate(self):
+		self._assert_can_generate_ca_certificate({}, 20 * 365)
+
+	def test_can_generate_ca_certificate_with_custom_duration(self):
+		self._assert_can_generate_ca_certificate({'days': 1000}, 1000)
+
+	def _assert_can_generate_node_certificate(self, should_generate_certificate_chain, additional_args, expected_values):
+		# Arrange: certificate has second resolution, so clear microseconds for assert below to work
+		future_start_delay_days = expected_values.get('delay_days', 0)
+		test_start_time = datetime.datetime.utcnow().replace(microsecond=0) + datetime.timedelta(future_start_delay_days)
+
+		if future_start_delay_days:
+			additional_args['start_date'] = test_start_time
+
 		with tempfile.TemporaryDirectory() as package_directory:
 			ca_certificate_path = Path(package_directory) / 'ca.crt.pem'
 			node_certificate_path = Path(package_directory) / ('node.full.crt.pem' if should_generate_certificate_chain else 'node.crt.pem')
@@ -188,7 +201,7 @@ class CertificateFactoryTest(unittest.TestCase):
 					factory.generate_ca_certificate('my CA common name')
 
 					# Act:
-					factory.generate_node_certificate('my NODE common name')
+					factory.generate_node_certificate('my NODE common name', **additional_args)
 					if should_generate_certificate_chain:
 						factory.create_node_certificate_chain()
 
@@ -211,16 +224,50 @@ class CertificateFactoryTest(unittest.TestCase):
 					self._assert_certificate_issuer_and_subject(x509_output, 'my CA common name', 'my NODE common name')
 
 					# - check start and expiry times
-					self._assert_certificate_duration(x509_output, test_start_time, 375)
+					self._assert_certificate_duration(
+						x509_output,
+						test_start_time,
+						expected_values.get('duration', 375),
+						future_start_delay_days)
 
-					# - verify certificate is properly signed by CA
-					self._create_executor().dispatch(['verify', '-CAfile', ca_certificate_path, node_certificate_path])
+					# - verify certificate is properly signed by CA (only if node start date is not in future)
+					if not future_start_delay_days:
+						self._create_executor().dispatch(['verify', '-CAfile', ca_certificate_path, node_certificate_path])
 
 	def test_can_generate_node_certificate(self):
-		self._assert_can_generate_node_certificate(False)
+		self._assert_can_generate_node_certificate(False, {}, {})
+
+	def test_can_generate_node_certificate_with_custom_duration(self):
+		self._assert_can_generate_node_certificate(False, {'days': 1000}, {'duration': 1000})
+
+	def test_can_generate_node_certificate_with_start_date(self):
+		self._assert_can_generate_node_certificate(False, {'start_date': True}, {'duration': 372, 'delay_days': 3})
 
 	def test_can_generate_node_certificate_chain(self):
-		self._assert_can_generate_node_certificate(True)
+		self._assert_can_generate_node_certificate(True, {}, {})
+
+	def test_cannot_generate_ca_certificate_without_common_name(self):
+		# Arrange:
+		with tempfile.TemporaryDirectory() as certificate_directory:
+			ca_private_key_path = self._create_ca_private_key(certificate_directory)
+
+			with CertificateFactory(self._create_executor(), ca_private_key_path) as factory:
+				# Act + Assert:
+				with self.assertRaisesRegex(RuntimeError, 'CA common name cannot be empty'):
+					factory.generate_ca_certificate('')
+
+	def test_cannot_generate_node_certificate_without_common_name(self):
+		# Arrange:
+		with tempfile.TemporaryDirectory() as certificate_directory:
+			ca_private_key_path = self._create_ca_private_key(certificate_directory)
+
+			with CertificateFactory(self._create_executor(), ca_private_key_path) as factory:
+				factory.generate_ca_certificate('my CA common name')
+				factory.generate_random_node_private_key()
+
+				# Act + Assert:
+				with self.assertRaisesRegex(RuntimeError, 'Node common name cannot be empty'):
+					factory.generate_node_certificate('')
 
 	# endregion
 

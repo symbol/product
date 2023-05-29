@@ -19,6 +19,7 @@ from shoestring.internal.PemUtils import read_public_key_from_public_key_pem_fil
 from shoestring.internal.VoterConfigurator import inspect_voting_key_files
 
 from ..test.ConfigurationTestUtils import prepare_shoestring_configuration
+from ..test.LogTestUtils import assert_message_is_logged
 from ..test.MockNodewatchServer import setup_mock_nodewatch_server
 from ..test.TestPackager import prepare_testnet_package
 from ..test.TransactionTestUtils import AggregateDescriptor, LinkDescriptor, assert_aggregate_complete_transaction, assert_link_transaction
@@ -101,10 +102,6 @@ def _read_transaction(directory):
 		transaction_bytes = infile.read()
 		return TransactionFactory.deserialize(transaction_bytes)
 
-
-def _assert_is_logged(message, caplog):
-	assert message in [record.message for record in caplog.records]
-
 # endregion
 
 
@@ -127,7 +124,7 @@ async def test_renew_voting_keys_fails_when_node_is_not_voter(server, caplog):  
 			])
 
 			# Assert: error is raised
-			_assert_is_logged('node is not configured for voting, aborting', caplog)
+			assert_message_is_logged('node is not configured for voting, aborting', caplog)
 
 			# - voting keys directory does not exist
 			assert not (Path(output_directory) / 'keys' / 'voting').exists()
@@ -151,7 +148,7 @@ async def test_can_renew_voting_keys_when_none_are_present(server, caplog):  # p
 			])
 
 			# Assert: warning is raised
-			_assert_is_logged('voting is enabled, but no existing voting key files were found', caplog)
+			assert_message_is_logged('voting is enabled, but no existing voting key files were found', caplog)
 
 			# - new voting keys file is created
 			voting_key_descriptors = inspect_voting_key_files(Path(output_directory) / 'keys' / 'voting')
@@ -292,7 +289,7 @@ async def test_cannot_renew_voting_keys_when_max_keys_are_active(server, caplog)
 			])
 
 			# Assert: error is raised
-			_assert_is_logged('maximum number of voting keys are already registered for this account', caplog)
+			assert_message_is_logged('maximum number of voting keys are already registered for this account', caplog)
 
 			# - no voting keys files are created or changed
 			voting_key_descriptors = inspect_voting_key_files(voting_keys_directory)

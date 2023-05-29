@@ -2,6 +2,8 @@ import configparser
 import re
 from pathlib import Path
 
+from symbolchain.symbol.Network import NetworkTimestamp
+
 
 class ConfigurationManager:
 	"""Manages configuration properties files in a resources directory."""
@@ -86,3 +88,26 @@ def load_patches_from_file(filename):
 		patches[group_name].extend([(local_section_name, key, parser[section][key]) for key in parser[section]])
 
 	return patches
+
+
+def parse_time_span(str_value):
+	"""Parses a time span configuration value."""
+
+	if not str_value:
+		raise ValueError('cannot parse empty string')
+
+	unit_indicator = str_value[-1]
+	value = NetworkTimestamp(0)
+	if 's' == unit_indicator:
+		if len(str_value) > 2 and 'm' == str_value[-2]:
+			value = value.add_milliseconds(int(str_value[:-2]))
+		else:
+			value = value.add_seconds(int(str_value[:-1]))
+	elif 'm' == unit_indicator:
+		value = value.add_minutes(int(str_value[:-1]))
+	elif 'h' == unit_indicator:
+		value = value.add_hours(int(str_value[:-1]))
+	else:
+		raise ValueError(f'time span specified in unknown units \'{unit_indicator}\'')
+
+	return value.timestamp
