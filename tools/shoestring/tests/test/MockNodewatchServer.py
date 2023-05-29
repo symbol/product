@@ -5,7 +5,7 @@ from aiohttp import web
 NODEWATCH_PEER_NODES = [
 	{
 		'mainPublicKey': '776B597C1C80782224A3DA9A19FD5D23A3281CF866B9F4720A4414568447A92A',
-		'endpoint': 'http://ik1-432-48199.vs.sakura.ne.jp:3000',
+		'endpoint': 'http://ik1-432-48199.vs.sakura.ne.jp:3333',
 		'name': '',
 		'version': '1.0.3.5',
 		'height': 2001840,

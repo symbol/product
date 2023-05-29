@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from shoestring.internal.PeerDownloader import download_peers
+from shoestring.internal.PeerDownloader import download_peers, load_api_endpoints
 
 from ..test.MockNodewatchServer import setup_mock_nodewatch_server
 
@@ -19,6 +19,9 @@ def nodewatch_server(event_loop, aiohttp_client):
 
 
 # pylint: disable=invalid-name
+
+
+# region download_peers
 
 def _assert_peers_file_contents(filepath, expected_description, expected_public_keys):
 	with open(filepath, 'rt', encoding='utf8') as infile:
@@ -59,7 +62,7 @@ async def test_can_download_peers_for_peer_node(nodewatch_server):  # pylint: di
 
 		# - check returned api endpoints
 		assert [
-			'http://ik1-432-48199.vs.sakura.ne.jp:3000',
+			'http://ik1-432-48199.vs.sakura.ne.jp:3333',
 			'http://wolf.importance.jp:3000'
 		] == sorted(endpoints)
 
@@ -101,7 +104,78 @@ async def test_can_download_peers_for_api_node(nodewatch_server):  # pylint: dis
 			])
 
 		assert [
-			'http://ik1-432-48199.vs.sakura.ne.jp:3000',
+			'http://ik1-432-48199.vs.sakura.ne.jp:3333',
 			'http://symbol.harvest-monitor.com:3000',
 			'http://wolf.importance.jp:3000'
 		] == sorted(endpoints)
+
+# endregion
+
+
+# region load_api_endpoints
+
+async def test_can_load_api_endpoints_from_peer_file(nodewatch_server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	with tempfile.TemporaryDirectory() as output_directory_name:
+		output_directory = Path(output_directory_name)
+		await download_peers(nodewatch_server.make_url(''), output_directory, False, min_balance=98.995728)
+
+		# Act:
+		api_endpoints = load_api_endpoints(output_directory)
+
+		# Assert:
+		assert [
+			'http://ik1-432-48199.vs.sakura.ne.jp:3333',
+			'http://wolf.importance.jp:3000'
+		] == sorted(api_endpoints)
+
+
+async def test_can_load_api_endpoints_from_peer_and_api_files(nodewatch_server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	with tempfile.TemporaryDirectory() as output_directory_name:
+		output_directory = Path(output_directory_name)
+		await download_peers(nodewatch_server.make_url(''), output_directory, True, min_balance=98.995728)
+
+		# Act:
+		api_endpoints = load_api_endpoints(output_directory)
+
+		# Assert:
+		assert [
+			'http://ik1-432-48199.vs.sakura.ne.jp:3333',
+			'http://symbol.harvest-monitor.com:3000',
+			'http://wolf.importance.jp:3000'
+		] == sorted(api_endpoints)
+
+
+def _strip_api_port_property(peers_filepath):
+	with open(peers_filepath, 'rt', encoding='utf8') as infile:
+		peers_json = json.loads(infile.read())
+		for node_json in peers_json['knownPeers']:
+			if 'api_port' in node_json['endpoint']:
+				del node_json['endpoint']['api_port']
+
+		with open(peers_filepath, 'wt', encoding='utf8') as outfile:
+			json.dump(peers_json, outfile, indent=2)
+
+
+async def test_can_load_api_endpoints_when_api_port_is_implicit(nodewatch_server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	with tempfile.TemporaryDirectory() as output_directory_name:
+		output_directory = Path(output_directory_name)
+		await download_peers(nodewatch_server.make_url(''), output_directory, True, min_balance=98.995728)
+
+		# - drop optional api_port property to emulate original format, which assumes 3000 port
+		for name in ('p2p', 'api'):
+			_strip_api_port_property(output_directory / f'peers-{name}.json')
+
+		# Act:
+		api_endpoints = load_api_endpoints(output_directory)
+
+		# Assert:
+		assert [
+			'http://ik1-432-48199.vs.sakura.ne.jp:3000',
+			'http://symbol.harvest-monitor.com:3000',
+			'http://wolf.importance.jp:3000'
+		] == sorted(api_endpoints)
+
+# endregion

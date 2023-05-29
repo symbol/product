@@ -11,7 +11,7 @@ class NodeDownloader:
 		"""Creates a node downloader around an endpoint."""
 
 		self.endpoint = endpoint
-		self.host_regex = re.compile(r'^https?://(.*):\d+$')
+		self.host_regex = re.compile(r'^https?://(.*):(\d+)$')
 
 		self.nodes = []
 		self.min_balance = 0
@@ -52,10 +52,12 @@ class NodeDownloader:
 		return node['endpoint'] and node['balance'] >= self.min_balance and 0 != node['roles'] & required_role
 
 	def _map_node_to_peers_format(self, node):
-		return {
+		host_match = self.host_regex.match(node['endpoint'])
+
+		node_json = {
 			'publicKey': node['mainPublicKey'],
 			'endpoint': {
-				'host': self.host_regex.match(node['endpoint']).group(1),
+				'host': host_match.group(1),
 				'port': 7900
 			},
 			'metadata': {
@@ -63,6 +65,11 @@ class NodeDownloader:
 				'roles': self._stringify_roles(node['roles'])
 			}
 		}
+
+		if 0 != node['roles'] & 0x02:
+			node_json['endpoint']['api_port'] = int(host_match.group(2))
+
+		return node_json
 
 	@staticmethod
 	def _stringify_roles(roles):
