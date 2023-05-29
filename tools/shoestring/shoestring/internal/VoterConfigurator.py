@@ -3,13 +3,13 @@ from collections import namedtuple
 from pathlib import Path
 
 from symbolchain.BufferReader import BufferReader
-from symbolchain.CryptoTypes import PrivateKey
+from symbolchain.CryptoTypes import PrivateKey, PublicKey
 from symbolchain.symbol.KeyPair import KeyPair
 from symbolchain.symbol.VotingKeysGenerator import VotingKeysGenerator
 
 from .HeightGrouping import calculate_finalization_epoch_for_height
 
-VotingFileDescriptor = namedtuple('VotingFileDescriptor', ['ordinal', 'end_epoch'])
+VotingFileDescriptor = namedtuple('VotingFileDescriptor', ['ordinal', 'public_key', 'start_epoch', 'end_epoch'])
 EpochRange = namedtuple('EpochRange', ['start_epoch', 'end_epoch'])
 
 
@@ -78,11 +78,14 @@ def inspect_voting_key_files(directory):
 			continue
 
 		with open(filepath, 'rb') as infile:
-			reader = BufferReader(infile.read(16))
-			reader.read_int(8)
+			reader = BufferReader(infile.read(64))
+			start_epoch = reader.read_int(8)
 			end_epoch = reader.read_int(8)
+			reader.read_int(8)  # skip
+			reader.read_int(8)  # skip
+			public_key = PublicKey(reader.read_bytes(32))
 
-			descriptors.append(VotingFileDescriptor(int(match.group(1)), end_epoch))
+			descriptors.append(VotingFileDescriptor(int(match.group(1)), public_key, start_epoch, end_epoch))
 
 	descriptors.sort(key=lambda descriptor: descriptor.ordinal)
 	return descriptors

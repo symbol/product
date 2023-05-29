@@ -4,7 +4,7 @@ from pathlib import Path
 
 from symbolchain.BufferReader import BufferReader
 from symbolchain.BufferWriter import BufferWriter
-from symbolchain.CryptoTypes import PublicKey
+from symbolchain.CryptoTypes import PrivateKey, PublicKey
 
 from shoestring.internal.ConfigurationManager import ConfigurationManager
 from shoestring.internal.VoterConfigurator import VoterConfigurator, inspect_voting_key_files
@@ -18,9 +18,16 @@ class VoterConfiguratorTest(unittest.TestCase):
 		writer = BufferWriter()
 		writer.write_int(start_epoch, 8)
 		writer.write_int(end_epoch, 8)
+		writer.write_int(0, 8)
+		writer.write_int(0, 8)
+
+		public_key = PublicKey(PrivateKey.random().bytes)
+		writer.write_bytes(public_key.bytes)
 
 		with open(Path(directory) / filename, 'wb') as outfile:
 			outfile.write(writer.buffer)
+
+		return public_key
 
 	# endregion
 
@@ -183,9 +190,9 @@ class VoterConfiguratorTest(unittest.TestCase):
 	def test_inspect_voting_key_files_processes_all_voting_key_files(self):
 		# Arrange:
 		with tempfile.TemporaryDirectory() as temp_directory:
-			self._write_voting_key_file_header(temp_directory, 'private_key_tree3.dat', 100, 199)
-			self._write_voting_key_file_header(temp_directory, 'private_key_tree5.dat', 200, 299)
-			self._write_voting_key_file_header(temp_directory, 'private_key_tree7.dat', 300, 399)
+			public_key_1 = self._write_voting_key_file_header(temp_directory, 'private_key_tree3.dat', 100, 199)
+			public_key_2 = self._write_voting_key_file_header(temp_directory, 'private_key_tree5.dat', 200, 299)
+			public_key_3 = self._write_voting_key_file_header(temp_directory, 'private_key_tree7.dat', 300, 399)
 
 			# - add file not matching name pattern that should be ignored
 			self._write_voting_key_file_header(temp_directory, 'private_key_treex4.dat', 900, 1000)
@@ -195,6 +202,8 @@ class VoterConfiguratorTest(unittest.TestCase):
 
 			# Assert:
 			self.assertEqual([3, 5, 7], [descriptor.ordinal for descriptor in descriptors])
+			self.assertEqual([public_key_1, public_key_2, public_key_3], [descriptor.public_key for descriptor in descriptors])
+			self.assertEqual([100, 200, 300], [descriptor.start_epoch for descriptor in descriptors])
 			self.assertEqual([199, 299, 399], [descriptor.end_epoch for descriptor in descriptors])
 
 	# endregion

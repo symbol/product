@@ -3,6 +3,7 @@ import asyncio
 import sys
 
 from .commands.pemtool import add_arguments as add_pemtool_arguments
+from .commands.renew_voting_keys import add_arguments as add_renew_voting_keys_arguments
 from .commands.reset_data import add_arguments as add_reset_data_arguments
 from .commands.setup import add_arguments as add_setup_arguments
 from .commands.signer import add_arguments as add_signer_arguments
@@ -14,6 +15,9 @@ def parse_args(args):
 
 	parser_pemtool = subparsers.add_parser('pemtool', help='generates PEM files')
 	add_pemtool_arguments(parser_pemtool)
+
+	parser_renew_voting_keys = subparsers.add_parser('renew-voting-keys', help='renews voting keys')
+	add_renew_voting_keys_arguments(parser_renew_voting_keys)
 
 	parser_reset_data = subparsers.add_parser('reset-data', help='resets data to allow a resync from scratch')
 	add_reset_data_arguments(parser_reset_data)

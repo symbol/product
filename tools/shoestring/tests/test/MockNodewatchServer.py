@@ -92,7 +92,6 @@ def setup_mock_nodewatch_server(event_loop, aiohttp_client, redirect_network_req
 			})
 
 		async def peer_nodes(self, request):
-			print(self.endpoint)
 			return await self._process(request, NODEWATCH_PEER_NODES if not redirect_network_requests else [
 				{
 					'mainPublicKey': '6CEB918020E9701C664F46FEDD73A969EE4927FEF1DF6B6CBAEAC817CA7CBF34',
@@ -123,7 +122,6 @@ def setup_mock_nodewatch_server(event_loop, aiohttp_client, redirect_network_req
 			})
 
 		async def _process(self, request, response_body):
-			print(response_body)
 			self.urls.append(str(request.url))
 			return web.Response(body=json.dumps(response_body), headers={'Content-Type': 'application/json'})
 

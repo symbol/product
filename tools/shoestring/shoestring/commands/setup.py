@@ -107,12 +107,12 @@ async def run_main(args):  # pylint: disable=too-many-locals
 			require_ca=False)
 
 		log.info(f'connecting to {api_endpoints[0]}')
-		client = SymbolConnector(api_endpoints[0])
+		connector = SymbolConnector(api_endpoints[0])
 
 		account_public_key = read_public_key_from_public_key_pem_file(preparer.directories.certificates / 'ca.pubkey.pem')
-		existing_links = await client.account_links(account_public_key)
+		existing_links = await connector.account_links(account_public_key)
 
-		network_time = await client.network_time()
+		network_time = await connector.network_time()
 		transaction = preparer.prepare_linking_transaction(account_public_key, existing_links, network_time.timestamp)
 
 		log.info(transaction)
