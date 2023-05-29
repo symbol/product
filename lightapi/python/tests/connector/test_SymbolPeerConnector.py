@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 from symbolchain.BufferWriter import BufferWriter
 from symbolchain.CryptoTypes import Hash256, PublicKey
+from symbolchain.symbol.Network import NetworkTimestamp
 
 from symbollightapi.connector.SymbolPeerConnector import SymbolPeerConnector
 from symbollightapi.model.Endpoint import Endpoint
@@ -112,6 +113,11 @@ async def server():  # pylint: disable=too-many-statements
 				response_buffer_writer.write_int(10, 4)
 				response_buffer_writer.write_int(1198, 8)
 				response_buffer_writer.write_bytes(unhexlify('C49C566E4CF60856BC127C9E4748C89E3D38566DE0DAFE1A491012CC27A1C043'))
+			elif PacketType.NETWORK_TIME == packet_header.packet_type:
+				response_header = PacketHeader(24, PacketType.NETWORK_TIME)
+
+				response_buffer_writer.write_int(123456789, 8)
+				response_buffer_writer.write_int(123457890, 8)
 			elif PacketType.NODE_INFORMATION == packet_header.packet_type:
 				serialize_node_info(response_buffer_writer, NODE_INFO_1)
 				response_header = PacketHeader(8 + len(response_buffer_writer.buffer), PacketType.NODE_INFORMATION)
@@ -196,7 +202,7 @@ async def test_can_handle_stopped_node():
 # endregion
 
 
-# region chain_height, chain_statistics, finalization_statistics
+# region chain_height, chain_statistics, finalization_statistics, network_time
 
 async def test_can_query_chain_height(server):  # pylint: disable=redefined-outer-name
 	# Arrange:
@@ -234,6 +240,17 @@ async def test_can_query_finalization_statistics(server):  # pylint: disable=red
 	assert 10 == finalization_statistics.point
 	assert 1198 == finalization_statistics.height
 	assert Hash256('C49C566E4CF60856BC127C9E4748C89E3D38566DE0DAFE1A491012CC27A1C043') == finalization_statistics.hash
+
+
+async def test_can_query_network_time(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	connector = SymbolPeerConnector(server.host, server.port, locate_certificate_directory(2))
+
+	# Act:
+	network_time = await connector.network_time()
+
+	# Assert:
+	assert NetworkTimestamp(123456789) == network_time  # send timestamp
 
 # endregion
 

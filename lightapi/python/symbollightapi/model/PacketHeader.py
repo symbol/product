@@ -18,6 +18,10 @@ class PacketType(Enum):
 	# Finalization statistics packet.
 	FINALIZATION_STATISTICS = 0x132
 
+	# Network time packet.
+	# Alternative name: TIME_SYNC_NETWORK_TIME
+	NETWORK_TIME = 0x120
+
 	# Node information packet.
 	# Alternative name: NODE_DISCOVERY_PULL_PING.
 	NODE_INFORMATION = 0x111

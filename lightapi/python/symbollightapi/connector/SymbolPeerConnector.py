@@ -4,6 +4,7 @@ import ssl
 
 from symbolchain.BufferReader import BufferReader
 from symbolchain.CryptoTypes import Hash256, PublicKey
+from symbolchain.symbol.Network import NetworkTimestamp
 
 from ..bindings.openssl import ffi, lib
 from ..model.Endpoint import Endpoint
@@ -56,6 +57,11 @@ class SymbolPeerConnector:
 		"""Gets finalization statistics."""
 
 		return await self._send_socket_request(PacketType.FINALIZATION_STATISTICS, self._parse_finalization_statistics_response)
+
+	async def network_time(self):
+		"""Gets network time."""
+
+		return await self._send_socket_request(PacketType.NETWORK_TIME, self._parse_network_time)
 
 	async def node_info(self):
 		"""Gets node information."""
@@ -122,6 +128,12 @@ class SymbolPeerConnector:
 		height = reader.read_int(8)
 		finalization_hash = Hash256(reader.read_bytes(32))
 		return FinalizationStatistics(epoch, point, height, finalization_hash)
+
+	@staticmethod
+	def _parse_network_time(reader):
+		send_timestamp = reader.read_int(8)
+		reader.read_int(8)  # receive_timestamp
+		return NetworkTimestamp(send_timestamp)
 
 	@staticmethod
 	def _parse_node_info_response(reader):
