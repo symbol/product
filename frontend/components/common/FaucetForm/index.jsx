@@ -5,7 +5,7 @@ import axios from 'axios';
 import { decode } from 'jsonwebtoken';
 import PropTypes from 'prop-types';
 import React, { useEffect, useState } from 'react';
-import { toast } from 'react-toastify';
+import { ToastContainer, toast } from 'react-toastify';
 
 const FaucetForm = function ({ config, addressValidation }) {
 	const toastConfig = {
@@ -183,6 +183,8 @@ const FaucetForm = function ({ config, addressValidation }) {
 					authUrl={config.authUrl}
 				/>
 			</div>
+
+			<ToastContainer />
 		</div>
 	);
 };

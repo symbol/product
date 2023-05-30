@@ -3,7 +3,6 @@ import { jest } from '@jest/globals';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import axios from 'axios';
-import { toast } from 'react-toastify';
 
 describe('components/FaucetForm', () => {
 	// Arrange:
@@ -214,17 +213,24 @@ describe('components/FaucetForm', () => {
 		});
 
 		describe('toast', () => {
-			const toastStyle = {
-				bodyClassName: 'toast-body',
-				progressClassName: 'toast-progress',
-				theme: config.theme
+			const assertToast = (toastElement, toastProgressbar, message, toastType) => {
+				const toastifyClassName = 'Toastify__toast';
+				const toastDiv = toastElement.closest(`.${toastifyClassName}`);
+
+				// verify toast message
+				expect(toastElement).toHaveTextContent(message);
+
+				// verify toast type
+				expect(toastDiv).toHaveClass(`${toastifyClassName}--${toastType}`);
+
+				// verify toast style
+				expect(toastDiv).toHaveClass(`${toastifyClassName}-theme--${config.theme}`);
+				expect(toastProgressbar).toHaveClass('toast-progress');
+				expect(toastElement).toHaveClass('toast-body');
 			};
 
 			const runBasicErrorToastTests = (inputFiled, formInput, expectedErrorMessage) => {
-				it(`renders error toast when enter invalid ${inputFiled}`, () => {
-					// Arrange:
-					jest.spyOn(toast, 'error').mockImplementation(jest.fn());
-
+				it(`renders error toast when enter invalid ${inputFiled}`, async () => {
 					// Act:
 					render(<FaucetForm
 						config={config}
@@ -238,28 +244,11 @@ describe('components/FaucetForm', () => {
 					fireEvent.click(elementButton);
 
 					// Assert:
-					expect(toast.error).toHaveBeenCalledWith($t(expectedErrorMessage), toastStyle);
+					const toastElement = await screen.findByRole('alert');
+					const toastProgressbar = await screen.findByRole('progressbar');
+
+					assertToast(toastElement, toastProgressbar, $t(expectedErrorMessage), 'error');
 				});
-			};
-
-			const assertTwitterAccountToastError = (info = {}) => {
-				// Arrange:
-				createSessionStorageTwitterInfo(info);
-
-				// Act:
-				render(<FaucetForm
-					config={config}
-					addressValidation={jest.fn(() => true)}
-				/>);
-				const elementRecipient = screen.getByPlaceholderText(formInputRecipient);
-				const elementAmount = screen.getByPlaceholderText(formInputAmount);
-				const elementButton = screen.getByText(formButtonClaim);
-				userEvent.default.type(elementRecipient, recipientAddress);
-				userEvent.default.type(elementAmount, '100');
-				fireEvent.click(elementButton);
-
-				// Assert:
-				expect(toast.error).toHaveBeenCalledWith($t('notification_error_unqualified_twitter_account'), toastStyle);
 			};
 
 			runBasicErrorToastTests(
@@ -280,22 +269,45 @@ describe('components/FaucetForm', () => {
 				'notification_error_amount_invalid'
 			);
 
-			it('renders error toast when twitter account followersCount less than 10', () => {
+			const assertTwitterAccountToastError = async (info = {}) => {
+				// Arrange:
+				createSessionStorageTwitterInfo(info);
+
+				// Act:
+				render(<FaucetForm
+					config={config}
+					addressValidation={jest.fn(() => true)}
+				/>);
+				const elementRecipient = screen.getByPlaceholderText(formInputRecipient);
+				const elementAmount = screen.getByPlaceholderText(formInputAmount);
+				const elementButton = screen.getByText(formButtonClaim);
+				userEvent.default.type(elementRecipient, recipientAddress);
+				userEvent.default.type(elementAmount, '100');
+				fireEvent.click(elementButton);
+
+				// Assert:
+				const toastElement = await screen.findByRole('alert');
+				const toastProgressbar = await screen.findByRole('progressbar');
+
+				assertToast(toastElement, toastProgressbar, $t('notification_error_unqualified_twitter_account'), 'error');
+			};
+
+			it('renders error toast when twitter account followersCount less than 10', async () => {
 				const unqualifiedJwtToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.'
 					+ 'eyJhY2Nlc3NUb2tlbiI6ImFjY2Vzc1Rva2VuMTIzNCIsImFjY2Vzc1NlY3JldCI6ImFjY2Vzc1NlY3JldDEyMzQiLCJzY3JlZW5OYW1lIjo'
 					+ 'idHdpdHRlckFjY291bnQiLCJmb2xsb3dlcnNDb3VudCI6NSwiY3JlYXRlZEF0IjoiMjAxMS0wNi0wN1QxNDoxNzo0Ni4wMDBaIiwiaWF0Ij'
 					+ 'oxNjcwNzA0ODg2fQ.Y-MenesuV6tQ8arh8_3lvNG2w3lVvstc7iDYqDRwikM';
 
-				assertTwitterAccountToastError(unqualifiedJwtToken);
+				await assertTwitterAccountToastError(unqualifiedJwtToken);
 			});
 
-			it('renders error toast when twitter account registered less than 31 days', () => {
+			it('renders error toast when twitter account registered less than 31 days', async () => {
 				const unqualifiedJwtToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.'
 					+ 'eyJhY2Nlc3NUb2tlbiI6ImFjY2Vzc1Rva2VuMTIzNCIsImFjY2Vzc1NlY3JldCI6ImFjY2Vzc1NlY3JldDEyMzQiLCJzY3JlZW5OYW1lIjo'
 					+ 'idHdpdHRlckFjY291bnQiLCJmb2xsb3dlcnNDb3VudCI6NSwiY3JlYXRlZEF0IjoiMjAyMi0xMS0wN1QxNDoxNzo0Ni4wMDBaIiwiaWF0Ij'
 					+ 'oxNjcwNzA0ODg2fQ.IJ-VgWo8KWj7FjikXH0XDnhazTRcqAkjy-jM1OEud5w';
 
-				assertTwitterAccountToastError(unqualifiedJwtToken);
+				await assertTwitterAccountToastError(unqualifiedJwtToken);
 			});
 
 			describe('claimToken', () => {
@@ -312,8 +324,6 @@ describe('components/FaucetForm', () => {
 
 				const assertServiceResponseErrorTests = async (serverResponse, expectResult) => {
 					// Arrange:
-					jest.spyOn(toast, 'error').mockImplementation(jest.fn());
-
 					jest.spyOn(axios, 'post').mockRejectedValueOnce(serverResponse);
 
 					// Act:
@@ -340,7 +350,10 @@ describe('components/FaucetForm', () => {
 						}
 					});
 
-					await waitFor(() => expect(toast.error).toHaveBeenCalledWith($t(expectResult), toastStyle));
+					const toastElement = await screen.findByRole('alert');
+					const toastProgressbar = await screen.findByRole('progressbar');
+
+					assertToast(toastElement, toastProgressbar, expectResult, 'error');
 				};
 
 				it('renders error toast when service response notification_error_amount_max_request', async () => {
@@ -387,9 +400,7 @@ describe('components/FaucetForm', () => {
 
 				it('renders info toast when service response valid data', async () => {
 					// Arrange:
-					jest.spyOn(toast, 'info').mockImplementation(jest.fn());
-
-					axios.post.mockReturnValue({
+					jest.spyOn(axios, 'post').mockReturnValue({
 						data: {
 							transactionHash: 'transaction_hash'
 						}
@@ -410,19 +421,30 @@ describe('components/FaucetForm', () => {
 					fireEvent.click(elementButton);
 
 					// Assert:
-					await waitFor(() => expect(toast.info).toHaveBeenCalledWith($t('notification_info_requested', {
-						amount,
-						currency: 'XEM',
-						address: recipientAddress
-					}), toastStyle));
+					expect(axios.post).toHaveBeenCalledWith('/claim/url', {
+						address: recipientAddress,
+						amount: 100,
+						twitterHandle: 'twitterAccount'
+					}, {
+						headers: {
+							'Content-Type': 'application/json',
+							'authToken': jwtToken
+						}
+					});
 
-					expect(toast.info).toHaveBeenCalledWith(<a
-						href="http://explorer.url/transaction/transaction_hash"
-						target="_blank"
-						rel="noreferrer"
-					>
-							View in Explorer
-					</a>, toastStyle);
+					const toastElements = await screen.findAllByRole('alert');
+					const toastProgressbars = await screen.findAllByRole('progressbar');
+
+					const firstToast = toastElements[0];
+					const firstToastProgressbar = toastProgressbars[0];
+
+					assertToast(firstToast, firstToastProgressbar, $t('notification_info_requested'), 'info');
+
+					const secondToast = toastElements[1];
+					const secondToastProgressbar = toastProgressbars[1];
+
+					assertToast(secondToast, secondToastProgressbar, 'View in Explorer', 'info');
+					expect(secondToast.querySelector('a')).toHaveAttribute('href', 'http://explorer.url/transaction/transaction_hash');
 				});
 			});
 		});
