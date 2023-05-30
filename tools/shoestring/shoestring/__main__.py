@@ -20,6 +20,7 @@ def parse_args(args):
 	register_subcommand(subparsers, 'reset-data', 'resets data to allow a resync from scratch')
 	register_subcommand(subparsers, 'setup', 'sets up a node')
 	register_subcommand(subparsers, 'signer', 'signs a transaction')
+	register_subcommand(subparsers, 'upgrade', 'upgrades a node to the latest client version')
 
 	return parser.parse_args(args)
 

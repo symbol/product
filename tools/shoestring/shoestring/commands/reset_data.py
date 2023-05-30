@@ -11,8 +11,7 @@ def _purge_and_recreate(directory):
 	log.info(f'purging and recreating DIRECTORY {directory}')
 
 	shutil.rmtree(directory)
-	directory.mkdir()
-	directory.chmod(0o700)
+	directory.mkdir(mode=0o700, exist_ok=False)
 
 
 class VoterStateProcessor:

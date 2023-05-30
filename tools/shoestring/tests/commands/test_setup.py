@@ -12,6 +12,7 @@ from shoestring.internal.NodeFeatures import NodeFeatures
 
 from ..test.CertificateTestUtils import assert_certificate_properties
 from ..test.ConfigurationTestUtils import prepare_shoestring_configuration
+from ..test.FileSystemTestUtils import assert_expected_files_and_permissions
 from ..test.MockNodewatchServer import setup_mock_nodewatch_server
 from ..test.TestPackager import prepare_testnet_package
 
@@ -134,16 +135,6 @@ def _prepare_overrides(directory):
 	_set_hostname_in_overrides(Path(directory) / 'user_overrides.ini', 'localhost')
 
 
-def _assert_expected_files_and_permissions(output_directory, expected_output_files):
-	# check all expected output files are created
-	output_files = sorted(str(path.relative_to(output_directory)) for path in Path(output_directory).glob('**/*'))
-	assert sorted(expected_output_files.keys()) == output_files
-
-	# check permissions
-	for name, expected_permissions in expected_output_files.items():
-		assert expected_permissions == (Path(output_directory) / name).stat().st_mode & 0o777, f'checking permissions of {name}'
-
-
 async def _assert_can_prepare_node(
 	server,  # pylint: disable=redefined-outer-name
 	node_features,
@@ -184,7 +175,7 @@ async def _assert_can_prepare_node(
 				])
 
 				# Assert: spot check all expected output files and permissions
-				_assert_expected_files_and_permissions(output_directory, expected_output_files)
+				assert_expected_files_and_permissions(output_directory, expected_output_files)
 
 				# - spot check all expected CA files are present
 				ca_files = sorted(str(path.relative_to(ca_directory)) for path in Path(ca_directory).glob('**/*'))

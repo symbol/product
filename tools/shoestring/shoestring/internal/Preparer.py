@@ -188,8 +188,9 @@ class Preparer:
 		if self.log:
 			self.log.info(f'copying TREE {source_path} to {destination_path}')
 
-		shutil.copytree(source_path, destination_path)
+		shutil.copytree(source_path, destination_path, copy_function=shutil.copy)
 		self._make_files_readonly(destination_path)
+		destination_path.touch()
 		destination_path.chmod(0o700)
 
 	def prepare_seed(self):
