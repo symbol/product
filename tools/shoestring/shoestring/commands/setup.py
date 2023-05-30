@@ -82,7 +82,6 @@ async def run_main(args):  # pylint: disable=too-many-locals
 
 		preparer.configure_https()
 
-		# os.getuid() could be used, but that might not be the best idea
 		preparer.configure_docker({
 			'catapult_client_image': config.images.client,
 			'catapult_rest_image': config.images.rest,
@@ -91,21 +90,11 @@ async def run_main(args):  # pylint: disable=too-many-locals
 			'domainname': hostname
 		})
 
-		# TODO: WIP - currently:
-		#  * ca priv key is passed via --ca-key-path
-		#  * client is hardcoded and sai network is used - preparer downloaded peers for proper network,
-		#    so should we just pick node from there?
-		# * when testing, it seems produced transaction hash is not valid? (wrong network?)
-		#   although signer, using 'testnet' produces valid one
-
-		# prepare keys
+		# prepare keys and certificates
 		preparer.configure_keys(last_finalized_height)
-		preparer.generate_certificates(
-			args.ca_key_path,
-			'CA CN: flag or generate 1',
-			'NODE CN: flag or generate 2',
-			require_ca=False)
+		preparer.generate_certificates(args.ca_key_path, config.node.ca_common_name, config.node.node_common_name, require_ca=False)
 
+		# prepare transaction
 		log.info(f'connecting to {api_endpoints[0]}')
 		connector = SymbolConnector(api_endpoints[0])
 
@@ -117,7 +106,6 @@ async def run_main(args):  # pylint: disable=too-many-locals
 
 		log.info(transaction)
 
-		# TODO: should this be moved?
 		transaction_filepath = preparer.directories.output_directory / 'linking_transaction.dat'
 		with open(transaction_filepath, 'wb') as outfile:
 			outfile.write(transaction.serialize())

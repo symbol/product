@@ -41,7 +41,9 @@ class ShoestringConfigurationTest(unittest.TestCase):
 		'userId': '1234',
 		'groupId': '9876',
 		'caPassword': 'pass:abc123',
-		'apiHttps': 'false'
+		'apiHttps': 'false',
+		'caCommonName': 'my CA name',
+		'nodeCommonName': 'my Node name'
 	}
 
 	# endregion
@@ -145,6 +147,8 @@ class ShoestringConfigurationTest(unittest.TestCase):
 		self.assertEqual(9876, node.group_id)
 		self.assertEqual('pass:abc123', node.ca_password)
 		self.assertEqual(False, node.api_https)
+		self.assertEqual('my CA name', node.ca_common_name)
+		self.assertEqual('my Node name', node.node_common_name)
 
 	def test_can_parse_valid_node_configuration_multiple_values(self):
 		# Act:
@@ -156,6 +160,8 @@ class ShoestringConfigurationTest(unittest.TestCase):
 		self.assertEqual(9876, node.group_id)
 		self.assertEqual('pass:abc123', node.ca_password)
 		self.assertEqual(False, node.api_https)
+		self.assertEqual('my CA name', node.ca_common_name)
+		self.assertEqual('my Node name', node.node_common_name)
 
 	def test_cannot_parse_node_configuration_incomplete(self):
 		# Arrange:
@@ -223,6 +229,8 @@ class ShoestringConfigurationTest(unittest.TestCase):
 			self.assertEqual(9876, config.node.group_id)
 			self.assertEqual('pass:abc123', config.node.ca_password)
 			self.assertEqual(False, config.node.api_https)
+			self.assertEqual('my CA name', config.node.ca_common_name)
+			self.assertEqual('my Node name', config.node.node_common_name)
 
 	def test_cannot_parse_shoestring_configuration_incomplete(self):
 		# Arrange:

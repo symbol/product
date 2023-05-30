@@ -9,7 +9,9 @@ from .NodeFeatures import NodeFeatures
 
 ImagesConfiguration = namedtuple('Images', ['client', 'rest'])
 ServicesConfiguration = namedtuple('Services', ['nodewatch'])
-NodeConfiguration = namedtuple('Node', ['features', 'user_id', 'group_id', 'ca_password', 'api_https'])
+NodeConfiguration = namedtuple('Node', [
+	'features', 'user_id', 'group_id', 'ca_password', 'api_https', 'ca_common_name', 'node_common_name'
+])
 ShoestringConfiguration = namedtuple('ShoestringConfiguration', ['network', 'images', 'services', 'node'])
 
 
@@ -50,8 +52,10 @@ def parse_node(config):
 	group_id = int(config['groupId'])
 	ca_password = config['caPassword']
 	api_https = config['apiHttps'].lower() == 'true'
+	ca_common_name = config['caCommonName']
+	node_common_name = config['nodeCommonName']
 
-	return NodeConfiguration(features, user_id, group_id, ca_password, api_https)
+	return NodeConfiguration(features, user_id, group_id, ca_password, api_https, ca_common_name, node_common_name)
 
 
 def parse_shoestring_configuration(filename):

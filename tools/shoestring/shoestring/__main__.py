@@ -15,6 +15,7 @@ def parse_args(args):
 	subparsers = parser.add_subparsers(title='subcommands', help='valid subcommands')
 
 	register_subcommand(subparsers, 'pemtool', 'generates PEM files')
+	register_subcommand(subparsers, 'renew-certificates', 'renews certificates')
 	register_subcommand(subparsers, 'renew-voting-keys', 'renews voting keys')
 	register_subcommand(subparsers, 'reset-data', 'resets data to allow a resync from scratch')
 	register_subcommand(subparsers, 'setup', 'sets up a node')

@@ -10,6 +10,7 @@ from symbolchain.PrivateKeyStorage import PrivateKeyStorage
 from shoestring.__main__ import main
 from shoestring.internal.NodeFeatures import NodeFeatures
 
+from ..test.CertificateTestUtils import assert_certificate_properties
 from ..test.ConfigurationTestUtils import prepare_shoestring_configuration
 from ..test.MockNodewatchServer import setup_mock_nodewatch_server
 from ..test.TestPackager import prepare_testnet_package
@@ -143,7 +144,14 @@ async def _assert_can_prepare_node(
 	with tempfile.TemporaryDirectory() as output_directory:
 		with tempfile.TemporaryDirectory() as package_directory:
 			ca_password = 'abc' if CaMode.WITH_PASSWORD == ca_mode else ''
-			prepare_shoestring_configuration(package_directory, node_features, server.make_url(''), ca_password, api_https)
+			prepare_shoestring_configuration(
+				package_directory,
+				node_features,
+				server.make_url(''),
+				ca_password=ca_password,
+				api_https=api_https,
+				ca_common_name='my CA CN',
+				node_common_name='my Node CN')
 			_prepare_overrides(package_directory)
 			prepare_testnet_package(package_directory, 'resources.zip')
 
@@ -177,6 +185,11 @@ async def _assert_can_prepare_node(
 					private_key_storage = PrivateKeyStorage(ca_directory, ca_password)
 					reloaded_ca_private_key = private_key_storage.load('xyz.key')
 					assert ca_private_key == reloaded_ca_private_key
+
+				# - check certificates
+				certificates_directory = Path(output_directory) / 'keys' / 'cert'
+				assert_certificate_properties(certificates_directory / 'node.crt.pem', 'my CA CN', 'my Node CN', 375)
+				assert_certificate_properties(certificates_directory / 'ca.crt.pem', 'my CA CN', 'my CA CN', 20 * 365)
 
 # endregion
 

@@ -28,7 +28,11 @@ class PreparerTest(unittest.TestCase):
 
 	@staticmethod
 	def _create_configuration(node_features, api_https=True):
-		return ShoestringConfiguration('testnet', None, None, NodeConfiguration(node_features, None, None, None, api_https))
+		return ShoestringConfiguration(
+			'testnet',
+			None,
+			None,
+			NodeConfiguration(node_features, None, None, None, api_https, None, None))
 
 	def _assert_readonly(self, directory, filenames):
 		self.assertEqual(0o700, directory.stat().st_mode & 0o777)
