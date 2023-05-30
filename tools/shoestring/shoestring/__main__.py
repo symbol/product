@@ -1,32 +1,24 @@
 import argparse
 import asyncio
+import importlib
 import sys
 
-from .commands.pemtool import add_arguments as add_pemtool_arguments
-from .commands.renew_voting_keys import add_arguments as add_renew_voting_keys_arguments
-from .commands.reset_data import add_arguments as add_reset_data_arguments
-from .commands.setup import add_arguments as add_setup_arguments
-from .commands.signer import add_arguments as add_signer_arguments
+
+def register_subcommand(subparsers, name, help_text):
+	parser = subparsers.add_parser(name, help=help_text)
+	module = importlib.import_module(f'shoestring.commands.{name.replace("-", "_")}')
+	module.add_arguments(parser)
 
 
 def parse_args(args):
 	parser = argparse.ArgumentParser(description='Shoestring Tool')
 	subparsers = parser.add_subparsers(title='subcommands', help='valid subcommands')
 
-	parser_pemtool = subparsers.add_parser('pemtool', help='generates PEM files')
-	add_pemtool_arguments(parser_pemtool)
-
-	parser_renew_voting_keys = subparsers.add_parser('renew-voting-keys', help='renews voting keys')
-	add_renew_voting_keys_arguments(parser_renew_voting_keys)
-
-	parser_reset_data = subparsers.add_parser('reset-data', help='resets data to allow a resync from scratch')
-	add_reset_data_arguments(parser_reset_data)
-
-	parser_setup = subparsers.add_parser('setup', help='sets up a node')
-	add_setup_arguments(parser_setup)
-
-	parser_signer = subparsers.add_parser('signer', help='signs a transaction')
-	add_signer_arguments(parser_signer)
+	register_subcommand(subparsers, 'pemtool', 'generates PEM files')
+	register_subcommand(subparsers, 'renew-voting-keys', 'renews voting keys')
+	register_subcommand(subparsers, 'reset-data', 'resets data to allow a resync from scratch')
+	register_subcommand(subparsers, 'setup', 'sets up a node')
+	register_subcommand(subparsers, 'signer', 'signs a transaction')
 
 	return parser.parse_args(args)
 
