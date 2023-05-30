@@ -110,6 +110,7 @@ async def run_main(args):  # pylint: disable=too-many-locals
 		with open(transaction_filepath, 'wb') as outfile:
 			outfile.write(transaction.serialize())
 
+		transaction_filepath.chmod(0o400)
 		log.info(f'transaction file written to {transaction_filepath}')
 
 

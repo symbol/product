@@ -278,6 +278,7 @@ class Preparer:
 			return
 
 		self._copy_file('templates/nginx.conf.erb', self.directories.https_proxy)
+		(self.directories.https_proxy / 'nginx.conf.erb').chmod(0o400)
 
 	def configure_keys(self, last_finalized_height=1, grace_period_epochs=1):
 		"""Configures key pairs based on enabled features."""
@@ -324,7 +325,9 @@ class Preparer:
 
 		compose_template_filename_postfix = 'dual' if NodeFeatures.API in self.config.node.features else 'peer'
 		compose_template_filename = f'templates/docker-compose-{compose_template_filename_postfix}.yaml'
-		apply_template(compose_template_filename, template_mapping, self.directory / 'docker-compose.yaml')
+		compose_output_filepath = self.directory / 'docker-compose.yaml'
+		apply_template(compose_template_filename, template_mapping, compose_output_filepath)
+		compose_output_filepath.chmod(0o400)
 
 	def prepare_linking_transaction(self, account_public_key, existing_links, timestamp):
 		"""Creates an aggregate transaction containing account key link and unlink transactions """

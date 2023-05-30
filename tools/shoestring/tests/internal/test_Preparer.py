@@ -426,6 +426,10 @@ class PreparerTest(unittest.TestCase):
 				https_proxy_files = sorted(path.name for path in Path(output_directory).glob('https-proxy/*'))
 				self.assertEqual(expected_files, https_proxy_files)
 
+				# - check permissions
+				for filename in expected_files:
+					assert 0o400 == (Path(output_directory) / 'https-proxy' / filename).stat().st_mode & 0o777
+
 	def test_can_skip_configure_https_when_disabled(self):
 		self._assert_can_configure_https(self._create_configuration(NodeFeatures.PEER, False), [])
 
@@ -611,8 +615,11 @@ class PreparerTest(unittest.TestCase):
 					'rest-api-https-proxy': 'steveltn/https-portal:1'
 				}
 
+				compose_filepath = Path(output_directory) / 'docker-compose.yaml'
+				assert 0o400 == compose_filepath.stat().st_mode & 0o777
+
 				service_names = []
-				with open(Path(output_directory) / 'docker-compose.yaml', 'rt', encoding='utf8') as infile:
+				with open(compose_filepath, 'rt', encoding='utf8') as infile:
 					configuration = yaml.safe_load(infile)
 					for service_name in configuration['services']:
 						service = configuration['services'][service_name]

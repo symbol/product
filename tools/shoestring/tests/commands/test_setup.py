@@ -27,87 +27,87 @@ def server(event_loop, aiohttp_client):
 
 # region output files
 
-PEER_OUTPUT_FILES = [
-	'data',
-	'docker-compose.yaml',
-	'keys',
-	'keys/cert',
-	'keys/cert/ca.crt.pem',
-	'keys/cert/ca.pubkey.pem',
-	'keys/cert/node.crt.pem',
-	'keys/cert/node.full.crt.pem',
-	'keys/cert/node.key.pem',
-	'linking_transaction.dat',
-	'logs',
-	'seed',
-	'seed/00000',
-	'seed/00000/00001.dat',
-	'seed/00000/00001.proof',
-	'seed/00000/00001.stmt',
-	'seed/00000/hashes.dat',
-	'seed/00000/proof.heights.dat',
-	'seed/index.dat',
-	'seed/proof.index.dat',
-	'userconfig',
-	'userconfig/resources',
-	'userconfig/resources/config-extensions-recovery.properties',
-	'userconfig/resources/config-extensions-server.properties',
-	'userconfig/resources/config-finalization.properties',
-	'userconfig/resources/config-inflation.properties',
-	'userconfig/resources/config-logging-recovery.properties',
-	'userconfig/resources/config-logging-server.properties',
-	'userconfig/resources/config-network.properties',
-	'userconfig/resources/config-node.properties',
-	'userconfig/resources/config-task.properties',
-	'userconfig/resources/config-timesync.properties',
-	'userconfig/resources/config-user.properties',
-	'userconfig/resources/peers-p2p.json'
-]
+PEER_OUTPUT_FILES = {
+	'data': 0o700,
+	'docker-compose.yaml': 0o400,
+	'keys': 0o700,
+	'keys/cert': 0o700,
+	'keys/cert/ca.crt.pem': 0o400,
+	'keys/cert/ca.pubkey.pem': 0o400,
+	'keys/cert/node.crt.pem': 0o400,
+	'keys/cert/node.full.crt.pem': 0o400,
+	'keys/cert/node.key.pem': 0o400,
+	'linking_transaction.dat': 0o400,
+	'logs': 0o700,
+	'seed': 0o700,
+	'seed/00000': 0o700,
+	'seed/00000/00001.dat': 0o400,
+	'seed/00000/00001.proof': 0o400,
+	'seed/00000/00001.stmt': 0o400,
+	'seed/00000/hashes.dat': 0o400,
+	'seed/00000/proof.heights.dat': 0o400,
+	'seed/index.dat': 0o400,
+	'seed/proof.index.dat': 0o400,
+	'userconfig': 0o700,
+	'userconfig/resources': 0o700,
+	'userconfig/resources/config-extensions-recovery.properties': 0o400,
+	'userconfig/resources/config-extensions-server.properties': 0o400,
+	'userconfig/resources/config-finalization.properties': 0o400,
+	'userconfig/resources/config-inflation.properties': 0o400,
+	'userconfig/resources/config-logging-recovery.properties': 0o400,
+	'userconfig/resources/config-logging-server.properties': 0o400,
+	'userconfig/resources/config-network.properties': 0o400,
+	'userconfig/resources/config-node.properties': 0o400,
+	'userconfig/resources/config-task.properties': 0o400,
+	'userconfig/resources/config-timesync.properties': 0o400,
+	'userconfig/resources/config-user.properties': 0o400,
+	'userconfig/resources/peers-p2p.json': 0o400
+}
 
-HTTPS_OUTPUT_FILES = [
-	'https-proxy',
-	'https-proxy/nginx.conf.erb'
-]
+HTTPS_OUTPUT_FILES = {
+	'https-proxy': 0o700,
+	'https-proxy/nginx.conf.erb': 0o400
+}
 
-API_OUTPUT_FILES = [
-	'dbdata',
-	'mongo',
-	'mongo/mongoDbDrop.js',
-	'mongo/mongoDbPrepare.js',
-	'mongo/mongoLockHashDbPrepare.js',
-	'mongo/mongoLockSecretDbPrepare.js',
-	'mongo/mongoMetadataDbPrepare.js',
-	'mongo/mongoMosaicDbPrepare.js',
-	'mongo/mongoMultisigDbPrepare.js',
-	'mongo/mongoNamespaceDbPrepare.js',
-	'mongo/mongoRestrictionAccountDbPrepare.js',
-	'mongo/mongoRestrictionMosaicDbPrepare.js',
-	'rest-cache',
-	'startup',
-	'startup/delayrestapi.sh',
-	'startup/mongors.sh',
-	'startup/startBroker.sh',
-	'startup/startServer.sh',
-	'startup/wait.sh',
-	'userconfig/resources/config-database.properties',
-	'userconfig/resources/config-extensions-broker.properties',
-	'userconfig/resources/config-logging-broker.properties',
-	'userconfig/resources/config-messaging.properties',
-	'userconfig/resources/config-pt.properties',
-	'userconfig/resources/peers-api.json',
-	'userconfig/rest.json'
-]
+API_OUTPUT_FILES = {
+	'dbdata': 0o700,
+	'mongo': 0o700,
+	'mongo/mongoDbDrop.js': 0o400,
+	'mongo/mongoDbPrepare.js': 0o400,
+	'mongo/mongoLockHashDbPrepare.js': 0o400,
+	'mongo/mongoLockSecretDbPrepare.js': 0o400,
+	'mongo/mongoMetadataDbPrepare.js': 0o400,
+	'mongo/mongoMosaicDbPrepare.js': 0o400,
+	'mongo/mongoMultisigDbPrepare.js': 0o400,
+	'mongo/mongoNamespaceDbPrepare.js': 0o400,
+	'mongo/mongoRestrictionAccountDbPrepare.js': 0o400,
+	'mongo/mongoRestrictionMosaicDbPrepare.js': 0o400,
+	'rest-cache': 0o700,
+	'startup': 0o700,
+	'startup/delayrestapi.sh': 0o400,
+	'startup/mongors.sh': 0o400,
+	'startup/startBroker.sh': 0o400,
+	'startup/startServer.sh': 0o400,
+	'startup/wait.sh': 0o400,
+	'userconfig/resources/config-database.properties': 0o400,
+	'userconfig/resources/config-extensions-broker.properties': 0o400,
+	'userconfig/resources/config-logging-broker.properties': 0o400,
+	'userconfig/resources/config-messaging.properties': 0o400,
+	'userconfig/resources/config-pt.properties': 0o400,
+	'userconfig/resources/peers-api.json': 0o400,
+	'userconfig/rest.json': 0o400
+}
 
-HARVESTER_OUTPUT_FILES = [
-	'keys/remote.pem',
-	'keys/vrf.pem',
-	'userconfig/resources/config-harvesting.properties'
-]
+HARVESTER_OUTPUT_FILES = {
+	'keys/remote.pem': 0o400,
+	'keys/vrf.pem': 0o400,
+	'userconfig/resources/config-harvesting.properties': 0o400
+}
 
-VOTER_OUTPUT_FILES = [
-	'keys/voting',
-	'keys/voting/private_key_tree1.dat'
-]
+VOTER_OUTPUT_FILES = {
+	'keys/voting': 0o700,
+	'keys/voting/private_key_tree1.dat': 0o600
+}
 
 # endregion
 
@@ -132,6 +132,16 @@ def _set_hostname_in_overrides(user_overrides_filepath, hostname):
 
 def _prepare_overrides(directory):
 	_set_hostname_in_overrides(Path(directory) / 'user_overrides.ini', 'localhost')
+
+
+def _assert_expected_files_and_permissions(output_directory, expected_output_files):
+	# check all expected output files are created
+	output_files = sorted(str(path.relative_to(output_directory)) for path in Path(output_directory).glob('**/*'))
+	assert sorted(expected_output_files.keys()) == output_files
+
+	# check permissions
+	for name, expected_permissions in expected_output_files.items():
+		assert expected_permissions == (Path(output_directory) / name).stat().st_mode & 0o777, f'checking permissions of {name}'
 
 
 async def _assert_can_prepare_node(
@@ -173,10 +183,10 @@ async def _assert_can_prepare_node(
 					'--overrides', str(Path(package_directory) / 'user_overrides.ini')
 				])
 
-				# Assert: spot check all expected files were created
-				output_files = sorted(str(path.relative_to(output_directory)) for path in Path(output_directory).glob('**/*'))
-				assert expected_output_files == output_files
+				# Assert: spot check all expected output files and permissions
+				_assert_expected_files_and_permissions(output_directory, expected_output_files)
 
+				# - spot check all expected CA files are present
 				ca_files = sorted(str(path.relative_to(ca_directory)) for path in Path(ca_directory).glob('**/*'))
 				assert ['xyz.key.pem'] == ca_files
 
@@ -204,27 +214,25 @@ async def test_can_prepare_peer_node(server):  # pylint: disable=redefined-outer
 
 
 async def test_can_prepare_api_node(server):  # pylint: disable=redefined-outer-name
-	await _assert_can_prepare_node(server, NodeFeatures.API, sorted(PEER_OUTPUT_FILES + API_OUTPUT_FILES))
+	await _assert_can_prepare_node(server, NodeFeatures.API, {**PEER_OUTPUT_FILES, **API_OUTPUT_FILES})
 
 
 async def test_can_prepare_api_node_with_https(server):  # pylint: disable=redefined-outer-name
-	expected_output_files = sorted(PEER_OUTPUT_FILES + API_OUTPUT_FILES + HTTPS_OUTPUT_FILES)
+	expected_output_files = {**PEER_OUTPUT_FILES, **API_OUTPUT_FILES, **HTTPS_OUTPUT_FILES}
 	await _assert_can_prepare_node(server, NodeFeatures.API, expected_output_files, api_https=True)
 
 
 async def test_can_prepare_harvester_node(server):  # pylint: disable=redefined-outer-name
-	await _assert_can_prepare_node(server, NodeFeatures.HARVESTER, sorted(PEER_OUTPUT_FILES + HARVESTER_OUTPUT_FILES))
+	await _assert_can_prepare_node(server, NodeFeatures.HARVESTER, {**PEER_OUTPUT_FILES, **HARVESTER_OUTPUT_FILES})
 
 
 async def test_can_prepare_voter_node(server):  # pylint: disable=redefined-outer-name
-	await _assert_can_prepare_node(server, NodeFeatures.VOTER, sorted(PEER_OUTPUT_FILES + VOTER_OUTPUT_FILES))
+	await _assert_can_prepare_node(server, NodeFeatures.VOTER, {**PEER_OUTPUT_FILES, **VOTER_OUTPUT_FILES})
 
 
 async def test_can_prepare_full_node(server):  # pylint: disable=redefined-outer-name
-	await _assert_can_prepare_node(
-		server,
-		NodeFeatures.API | NodeFeatures.HARVESTER | NodeFeatures.VOTER,
-		sorted(PEER_OUTPUT_FILES + API_OUTPUT_FILES + HARVESTER_OUTPUT_FILES + VOTER_OUTPUT_FILES))
+	expected_output_files = {**PEER_OUTPUT_FILES, **API_OUTPUT_FILES, **HARVESTER_OUTPUT_FILES, **VOTER_OUTPUT_FILES}
+	await _assert_can_prepare_node(server, NodeFeatures.API | NodeFeatures.HARVESTER | NodeFeatures.VOTER, expected_output_files)
 
 # endregion
 
