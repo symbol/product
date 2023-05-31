@@ -109,7 +109,7 @@ class VoterConfiguratorTest(unittest.TestCase):
 			# Act:
 			config_manager = ConfigurationManager(temp_directory)
 			configurator = VoterConfigurator(config_manager)
-			epoch_range = configurator.generate_voting_key_file(voting_key_file_directory, 400)
+			epoch_range = configurator.generate_voting_key_file(voting_key_file_directory, 5)
 
 			# Assert: check voting files
 			voting_files = list(path.name for path in voting_key_file_directory.iterdir())
@@ -135,7 +135,7 @@ class VoterConfiguratorTest(unittest.TestCase):
 			# Act:
 			config_manager = ConfigurationManager(temp_directory)
 			configurator = VoterConfigurator(config_manager)
-			epoch_range = configurator.generate_voting_key_file(voting_key_file_directory, 400, 7)
+			epoch_range = configurator.generate_voting_key_file(voting_key_file_directory, 5, 7)
 
 			# Assert: check voting files
 			voting_files = list(path.name for path in voting_key_file_directory.iterdir())

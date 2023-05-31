@@ -456,7 +456,7 @@ class PreparerTest(unittest.TestCase):
 				preparer.prepare_resources()
 
 				# Act:
-				preparer.configure_keys(1500, 4)
+				preparer.configure_keys(5, 4)
 
 				# Assert: expected keys files are generated
 				keys_files = sorted([path.name for path in preparer.directories.keys.iterdir() if path.name.endswith('.pem')])
@@ -487,22 +487,22 @@ class PreparerTest(unittest.TestCase):
 		self._can_configure_keys(NodeFeatures.HARVESTER, ['remote.pem', 'vrf.pem'])
 
 	def test_can_configure_keys_voter_node(self):
-		# current epoch = 1 + ceil(1500 / 720) =   4
+		# current epoch                        =   5
 		# one epoch padding                    =   1
 		# grace period padding                 =   4
 		# ------------------------------------------
-		# start epoch                          =   9
+		# start epoch                          =  10
 		# max voting key lifetime              = 720
 		# start epoch inclusion adjustment     =  -1
 		# ------------------------------------------
-		# end epoch                            = 728
-		self._can_configure_keys(NodeFeatures.VOTER, [], ('private_key_tree1.dat', 9, 728))
+		# end epoch                            = 729
+		self._can_configure_keys(NodeFeatures.VOTER, [], ('private_key_tree1.dat', 10, 729))
 
 	def test_can_configure_keys_full_node(self):
 		self._can_configure_keys(
 			NodeFeatures.API | NodeFeatures.HARVESTER | NodeFeatures.VOTER,
 			['remote.pem', 'vrf.pem'],
-			('private_key_tree1.dat', 9, 728))
+			('private_key_tree1.dat', 10, 729))
 
 	# endregion
 
@@ -747,7 +747,7 @@ class PreparerTest(unittest.TestCase):
 			with Preparer(output_directory, self._create_configuration(NodeFeatures.VOTER)) as preparer:
 				self._initialize_temp_directory_with_package_files(preparer)
 				preparer.prepare_resources()
-				preparer.configure_keys(1500, 4)
+				preparer.configure_keys(5, 4)
 
 				# Act:
 				transaction = preparer.prepare_linking_transaction(account_public_key, LinkedPublicKeys(), 2222)
@@ -762,7 +762,7 @@ class PreparerTest(unittest.TestCase):
 				assert_link_transaction(
 					self,
 					transaction.transactions[0],
-					LinkDescriptor(TransactionType.VOTING_KEY_LINK, new_voting_public_key, LinkAction.LINK, (9, 728)))
+					LinkDescriptor(TransactionType.VOTING_KEY_LINK, new_voting_public_key, LinkAction.LINK, (10, 729)))
 
 	def test_prepare_linking_transaction_can_create_aggregate_with_all_links_and_unlinks(self):
 		# Arrange:
@@ -780,7 +780,7 @@ class PreparerTest(unittest.TestCase):
 			with Preparer(output_directory, self._create_configuration(NodeFeatures.HARVESTER | NodeFeatures.VOTER)) as preparer:
 				self._initialize_temp_directory_with_package_files(preparer)
 				preparer.prepare_resources()
-				preparer.configure_keys(1500, 4)
+				preparer.configure_keys(5, 4)
 
 				# Act:
 				transaction = preparer.prepare_linking_transaction(account_public_key, existing_links, 2222)
@@ -822,6 +822,6 @@ class PreparerTest(unittest.TestCase):
 				assert_link_transaction(
 					self,
 					transaction.transactions[5],
-					LinkDescriptor(TransactionType.VOTING_KEY_LINK, new_voting_public_key, LinkAction.LINK, (9, 728)))
+					LinkDescriptor(TransactionType.VOTING_KEY_LINK, new_voting_public_key, LinkAction.LINK, (10, 729)))
 
 	# endregion

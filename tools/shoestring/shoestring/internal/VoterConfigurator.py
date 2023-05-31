@@ -7,8 +7,6 @@ from symbolchain.CryptoTypes import PrivateKey, PublicKey
 from symbolchain.symbol.KeyPair import KeyPair
 from symbolchain.symbol.VotingKeysGenerator import VotingKeysGenerator
 
-from .HeightGrouping import calculate_finalization_epoch_for_height
-
 VotingFileDescriptor = namedtuple('VotingFileDescriptor', ['ordinal', 'public_key', 'start_epoch', 'end_epoch'])
 EpochRange = namedtuple('EpochRange', ['start_epoch', 'end_epoch'])
 
@@ -37,12 +35,10 @@ class VoterConfigurator:
 			('localnode', 'roles', f'{current_roles},Voting')
 		])
 
-	def generate_voting_key_file(self, directory, last_finalized_height, grace_period_epochs=1):
+	def generate_voting_key_file(self, directory, current_finalization_epoch, grace_period_epochs=1):
 		"""Generates a voting key file."""
 
-		(voting_set_grouping, max_voting_key_lifetime) = (int(value) for value in self.config_manager.lookup('config-network.properties', [
-			('chain', 'votingSetGrouping'), ('chain', 'maxVotingKeyLifetime')
-		]))
+		max_voting_key_lifetime = int(self.config_manager.lookup('config-network.properties', [('chain', 'maxVotingKeyLifetime')])[0])
 
 		descriptors = inspect_voting_key_files(directory)
 		if descriptors:
@@ -51,7 +47,7 @@ class VoterConfigurator:
 		else:
 			# voting has not been previously configured, so give at least one full epoch to set up
 			ordinal = 1
-			start_epoch = calculate_finalization_epoch_for_height(last_finalized_height, voting_set_grouping) + 1 + grace_period_epochs
+			start_epoch = current_finalization_epoch + 1 + grace_period_epochs
 
 		end_epoch = start_epoch + max_voting_key_lifetime - 1
 

@@ -5,27 +5,14 @@ from symbollightapi.connector.SymbolConnector import SymbolConnector
 from zenlog import log
 
 from shoestring.internal.ConfigurationManager import ConfigurationManager
-from shoestring.internal.HeightGrouping import calculate_finalization_epoch_for_height
 from shoestring.internal.LinkTransactionBuilder import LinkTransactionBuilder
 from shoestring.internal.NodeFeatures import NodeFeatures
-from shoestring.internal.NodewatchClient import NodewatchClient
+from shoestring.internal.NodewatchClient import get_current_finalization_epoch
 from shoestring.internal.PeerDownloader import load_api_endpoints
 from shoestring.internal.PemUtils import read_public_key_from_public_key_pem_file
 from shoestring.internal.Preparer import Preparer
 from shoestring.internal.ShoestringConfiguration import parse_shoestring_configuration
 from shoestring.internal.VoterConfigurator import VoterConfigurator, inspect_voting_key_files
-
-
-async def _get_finalized_height(config):
-	nodewatch_client = NodewatchClient(config.services.nodewatch)
-	last_finalized_height = await nodewatch_client.symbol_finalized_height()
-	log.info(f'detected last finalized height as {last_finalized_height}')
-	return last_finalized_height
-
-
-def _calculate_current_epoch(configuration_manager, last_finalized_height):
-	voting_set_grouping = int(configuration_manager.lookup('config-network.properties', [('chain', 'votingSetGrouping')])[0])
-	return calculate_finalization_epoch_for_height(last_finalized_height, voting_set_grouping)
 
 
 def _load_voting_key_descriptors(directory, current_epoch):
@@ -88,10 +75,10 @@ async def run_main(args):
 	config_manager = ConfigurationManager(directories.resources)
 
 	# detect the current finalized height and load the voting key files
-	last_finalized_height = await _get_finalized_height(config)
+	current_finalization_epoch = await get_current_finalization_epoch(config.services.nodewatch, config_manager)
 	(active_voting_key_descriptors, inactive_voting_key_descriptors) = _load_voting_key_descriptors(
 		directories.voting_keys,
-		_calculate_current_epoch(config_manager, last_finalized_height))
+		current_finalization_epoch)
 
 	if not active_voting_key_descriptors:
 		log.warning('voting is enabled, but no existing voting key files were found')
@@ -110,7 +97,7 @@ async def run_main(args):
 
 	# add new root voting key
 	voter_configurator = VoterConfigurator(config_manager)
-	new_voting_key_file_epoch_range = voter_configurator.generate_voting_key_file(directories.voting_keys, last_finalized_height)
+	new_voting_key_file_epoch_range = voter_configurator.generate_voting_key_file(directories.voting_keys, current_finalization_epoch)
 	transaction_builder.link_voting_public_key(voter_configurator.voting_key_pair.public_key, *new_voting_key_file_epoch_range)
 
 	# generate transaction

@@ -7,7 +7,7 @@ from zenlog import log
 
 from shoestring.internal.ConfigurationManager import ConfigurationManager, load_patches_from_file
 from shoestring.internal.NodeFeatures import NodeFeatures
-from shoestring.internal.NodewatchClient import NodewatchClient
+from shoestring.internal.NodewatchClient import get_current_finalization_epoch
 from shoestring.internal.PackageResolver import download_and_extract_package
 from shoestring.internal.PeerDownloader import download_peers
 from shoestring.internal.PemUtils import read_public_key_from_public_key_pem_file
@@ -48,13 +48,11 @@ def _resolve_hostname_and_configure_https(config, preparer):
 
 
 async def _prepare_keys_and_certificates(config, preparer, ca_key_path):
-	# detect the current finalized height
-	nodewatch_client = NodewatchClient(config.services.nodewatch)
-	last_finalized_height = await nodewatch_client.symbol_finalized_height()
-	log.info(f'detected last finalized height as {last_finalized_height}')
+	# detect the current finalization epoch
+	current_finalization_epoch = await get_current_finalization_epoch(config.services.nodewatch, preparer.config_manager)
 
 	# prepare keys and certificates
-	preparer.configure_keys(last_finalized_height)
+	preparer.configure_keys(current_finalization_epoch)
 	preparer.generate_certificates(ca_key_path, config.node.ca_common_name, config.node.node_common_name, require_ca=False)
 
 

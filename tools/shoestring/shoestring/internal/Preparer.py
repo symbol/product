@@ -281,7 +281,7 @@ class Preparer:
 		self._copy_file('templates/nginx.conf.erb', self.directories.https_proxy)
 		(self.directories.https_proxy / 'nginx.conf.erb').chmod(0o400)
 
-	def configure_keys(self, last_finalized_height=1, grace_period_epochs=1):
+	def configure_keys(self, current_finalization_epoch=1, grace_period_epochs=1):
 		"""Configures key pairs based on enabled features."""
 
 		if NodeFeatures.HARVESTER in self.config.node.features:
@@ -290,7 +290,7 @@ class Preparer:
 		if NodeFeatures.VOTER in self.config.node.features:
 			self.new_voting_key_file_epoch_range = self.voter_configurator.generate_voting_key_file(
 				self.directories.voting_keys,
-				last_finalized_height,
+				current_finalization_epoch,
 				grace_period_epochs)
 
 	def generate_certificates(self, ca_key_path, ca_cn, node_cn, require_ca=True):
