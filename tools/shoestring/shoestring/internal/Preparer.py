@@ -293,7 +293,7 @@ class Preparer:
 				current_finalization_epoch,
 				grace_period_epochs)
 
-	def generate_certificates(self, ca_key_path, ca_cn, node_cn, require_ca=True):
+	def generate_certificates(self, ca_key_path, require_ca=True):
 		"""Generates and packages all certificates."""
 
 		ca_key_path = Path(ca_key_path).absolute()
@@ -307,9 +307,9 @@ class Preparer:
 				factory.export_ca()
 
 			factory.extract_ca_public_key()
-			factory.generate_ca_certificate(ca_cn)
+			factory.generate_ca_certificate(self.config.node.ca_common_name)
 			factory.generate_random_node_private_key()
-			factory.generate_node_certificate(node_cn)
+			factory.generate_node_certificate(self.config.node.node_common_name)
 			factory.create_node_certificate_chain()
 
 			factory.package(self.directories.certificates)

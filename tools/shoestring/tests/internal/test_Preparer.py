@@ -33,7 +33,7 @@ class PreparerTest(unittest.TestCase):
 			None,
 			None,
 			TransactionConfiguration(234, 3),
-			NodeConfiguration(node_features, None, None, None, api_https, None, None))
+			NodeConfiguration(node_features, None, None, None, api_https, 'CA CN', 'NODE CN'))
 
 	def _assert_readonly(self, directory, filenames):
 		self.assertEqual(0o700, directory.stat().st_mode & 0o777)
@@ -538,7 +538,7 @@ class PreparerTest(unittest.TestCase):
 
 					# Act + Assert:
 					with self.assertRaises(RuntimeError):
-						preparer.generate_certificates(Path(ca_directory) / 'ca.key.pem', 'CA CN', 'NODE CN')
+						preparer.generate_certificates(Path(ca_directory) / 'ca.key.pem')
 
 	def test_can_generate_certificates_when_required_ca_key_is_present(self):
 		# Arrange:
@@ -551,7 +551,7 @@ class PreparerTest(unittest.TestCase):
 					preparer.create_subdirectories()
 
 					# Act:
-					preparer.generate_certificates(Path(ca_directory) / 'ca.key.pem', 'CA CN', 'NODE CN')
+					preparer.generate_certificates(Path(ca_directory) / 'ca.key.pem')
 
 					# Assert: check package files
 					self._assert_all_files_read_only(preparer.directories.certificates, [
@@ -568,7 +568,7 @@ class PreparerTest(unittest.TestCase):
 					preparer.create_subdirectories()
 
 					# Act:
-					preparer.generate_certificates(Path(ca_directory) / 'ca.key.pem', 'CA CN', 'NODE CN', False)
+					preparer.generate_certificates(Path(ca_directory) / 'ca.key.pem', require_ca=False)
 
 					# Assert: check package files
 					self._assert_all_files_read_only(preparer.directories.certificates, [

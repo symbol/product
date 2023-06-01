@@ -17,16 +17,22 @@ from ..test.ConfigurationTestUtils import prepare_shoestring_configuration
 
 # region node certificate renewal only
 
+def _create_configuration(output_directory, ca_password, ca_common_name, node_common_name, filename):
+	return prepare_shoestring_configuration(
+		output_directory,
+		NodeFeatures.PEER,
+		ca_password=ca_password,
+		ca_common_name=ca_common_name,
+		node_common_name=node_common_name,
+		filename=filename)
+
+
 async def _assert_can_renew_node_certificate(ca_password=None):
 	# Arrange:
 	with tempfile.TemporaryDirectory() as output_directory:
-		config_filepath = prepare_shoestring_configuration(
-			output_directory,
-			NodeFeatures.PEER,
-			ca_password=ca_password,
-			ca_common_name='ORIGINAL CA CN',
-			node_common_name='NEW NODE CN')
-		preparer = Preparer(output_directory, parse_shoestring_configuration(config_filepath))
+		config_filepath_1 = _create_configuration(output_directory, ca_password, 'ORIGINAL CA CN', 'ORIGINAL NODE CN', '1.shoestring.ini')
+		config_filepath_2 = _create_configuration(output_directory, ca_password, 'ORIGINAL CA CN', 'NEW NODE CN', '2.shoestring.ini')
+		preparer = Preparer(output_directory, parse_shoestring_configuration(config_filepath_1))
 
 		# - generate CA private key pem file
 		ca_private_key = PrivateKey.random()
@@ -37,7 +43,7 @@ async def _assert_can_renew_node_certificate(ca_password=None):
 		#   in order for node certificate to be verifiable, CA must have same issuer and subject
 		ca_key_path = Path(output_directory) / 'ca.key.pem'
 		preparer.directories.certificates.mkdir(parents=True)
-		preparer.generate_certificates(ca_key_path, 'ORIGINAL CA CN', 'ORIGINAL NODE CN', require_ca=True)
+		preparer.generate_certificates(ca_key_path, require_ca=True)
 
 		# - save last modified times
 		ca_certificate_path = preparer.directories.certificates / 'ca.crt.pem'
@@ -53,7 +59,7 @@ async def _assert_can_renew_node_certificate(ca_password=None):
 		# Act:
 		await main([
 			'renew-certificates',
-			'--config', str(config_filepath),
+			'--config', str(config_filepath_2),
 			'--directory', output_directory,
 			'--ca-key-path', str(ca_key_path)
 		])
@@ -84,13 +90,9 @@ async def test_can_renew_node_certificate_with_ca_password():
 async def _assert_can_renew_ca_and_node_certificates(ca_password=None):
 	# Arrange:
 	with tempfile.TemporaryDirectory() as output_directory:
-		config_filepath = prepare_shoestring_configuration(
-			output_directory,
-			NodeFeatures.PEER,
-			ca_password=ca_password,
-			ca_common_name='NEW CA CN',
-			node_common_name='NEW NODE CN')
-		preparer = Preparer(output_directory, parse_shoestring_configuration(config_filepath))
+		config_filepath_1 = _create_configuration(output_directory, ca_password, 'ORIGINAL CA CN', 'ORIGINAL NODE CN', '1.shoestring.ini')
+		config_filepath_2 = _create_configuration(output_directory, ca_password, 'NEW CA CN', 'NEW NODE CN', '2.shoestring.ini')
+		preparer = Preparer(output_directory, parse_shoestring_configuration(config_filepath_1))
 
 		# - generate CA private key pem file
 		ca_private_key = PrivateKey.random()
@@ -100,7 +102,7 @@ async def _assert_can_renew_ca_and_node_certificates(ca_password=None):
 		# - generate initial set of certificates
 		ca_key_path = Path(output_directory) / 'ca.key.pem'
 		preparer.directories.certificates.mkdir(parents=True)
-		preparer.generate_certificates(ca_key_path, 'ORIGINAL CA CN', 'ORIGINAL NODE CN', require_ca=True)
+		preparer.generate_certificates(ca_key_path, require_ca=True)
 
 		# - save last modified times
 		ca_certificate_path = preparer.directories.certificates / 'ca.crt.pem'
@@ -116,7 +118,7 @@ async def _assert_can_renew_ca_and_node_certificates(ca_password=None):
 		# Act:
 		await main([
 			'renew-certificates',
-			'--config', str(config_filepath),
+			'--config', str(config_filepath_2),
 			'--directory', output_directory,
 			'--ca-key-path', str(ca_key_path),
 			'--renew-ca'

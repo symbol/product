@@ -53,7 +53,7 @@ async def _prepare_keys_and_certificates(config, preparer, ca_key_path):
 
 	# prepare keys and certificates
 	preparer.configure_keys(current_finalization_epoch)
-	preparer.generate_certificates(ca_key_path, config.node.ca_common_name, config.node.node_common_name, require_ca=False)
+	preparer.generate_certificates(ca_key_path, require_ca=False)
 
 
 async def _prepare_linking_transaction(preparer, api_endpoint):
