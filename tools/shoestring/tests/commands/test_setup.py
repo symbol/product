@@ -38,7 +38,7 @@ PEER_OUTPUT_FILES = {
 	'keys/cert/node.crt.pem': 0o400,
 	'keys/cert/node.full.crt.pem': 0o400,
 	'keys/cert/node.key.pem': 0o400,
-	'linking_transaction.dat': 0o400,
+	'linking_transaction.dat': 0o600,
 	'logs': 0o700,
 	'seed': 0o700,
 	'seed/00000': 0o700,

@@ -72,7 +72,7 @@ async def _prepare_linking_transaction(preparer, api_endpoint):
 	with open(transaction_filepath, 'wb') as outfile:
 		outfile.write(transaction.serialize())
 
-	transaction_filepath.chmod(0o400)
+	transaction_filepath.chmod(0o600)
 	log.info(f'transaction file written to {transaction_filepath}')
 
 
