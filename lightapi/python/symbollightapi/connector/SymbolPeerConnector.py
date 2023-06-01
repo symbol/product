@@ -94,7 +94,7 @@ class SymbolPeerConnector:
 				ssl=self.ssl_context,
 				ssl_handshake_timeout=self.timeout_seconds)
 			return await asyncio.wait_for(self._process_write_read(reader, writer, packet_type, parser), timeout=self.timeout_seconds)
-		except (ConnectionRefusedError, asyncio.exceptions.IncompleteReadError, asyncio.exceptions.TimeoutError) as ex:
+		except (ConnectionRefusedError, OSError, asyncio.exceptions.IncompleteReadError, asyncio.exceptions.TimeoutError) as ex:
 			raise NodeException from ex
 		finally:
 			if writer:

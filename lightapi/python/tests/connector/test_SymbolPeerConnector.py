@@ -190,14 +190,22 @@ async def test_can_handle_corrupt_packet_type(server):  # pylint: disable=redefi
 		await connector.chain_height()
 
 
-async def test_can_handle_stopped_node():
+async def _assert_can_handle_stopped_node(host):
 	# Arrange:
-	connector = SymbolPeerConnector('127.0.0.1', 8888, locate_certificate_directory(2))
-	connector.timeout_seconds = 0.1
+	connector = SymbolPeerConnector(host, 8888, locate_certificate_directory(2))
 
 	# Act + Assert:
 	with pytest.raises(NodeException):
 		await connector.chain_height()
+
+
+async def test_can_handle_stopped_node():
+	await _assert_can_handle_stopped_node('127.0.0.1')
+
+
+async def test_can_handle_multiple_exceptions():
+	# Act + Assert: 'localhost' will raise a wrapped exception composed of two exceptions (failure to reach 127.0.0.1 and ::1)
+	await _assert_can_handle_stopped_node('localhost')
 
 # endregion
 
