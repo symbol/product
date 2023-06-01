@@ -7,15 +7,16 @@ from symbolchain.symbol.Network import Network
 
 from .NodeFeatures import NodeFeatures
 
-ImagesConfiguration = namedtuple('Images', ['client', 'rest'])
-ServicesConfiguration = namedtuple('Services', ['nodewatch'])
-NodeConfiguration = namedtuple('Node', [
+ImagesConfiguration = namedtuple('ImagesConfiguration', ['client', 'rest'])
+ServicesConfiguration = namedtuple('ServicesConfiguration', ['nodewatch'])
+TransactionConfiguration = namedtuple('TransactionConfiguration', ['fee_multiplier', 'timeout_hours'])
+NodeConfiguration = namedtuple('NodeConfiguration', [
 	'features', 'user_id', 'group_id', 'ca_password', 'api_https', 'ca_common_name', 'node_common_name'
 ])
-ShoestringConfiguration = namedtuple('ShoestringConfiguration', ['network', 'images', 'services', 'node'])
+ShoestringConfiguration = namedtuple('ShoestringConfiguration', ['network', 'images', 'services', 'transaction', 'node'])
 
 
-def parse_network(config):
+def parse_network_configuration(config):
 	"""Parses network configuration."""
 
 	name = config['name']
@@ -25,19 +26,28 @@ def parse_network(config):
 	return Network(name, identifier, epoch_adjustment, generation_hash_seed)
 
 
-def parse_images(config):
+def parse_images_configuration(config):
 	"""Parses images configuration."""
 
 	return ImagesConfiguration(config['client'], config['rest'])
 
 
-def parse_services(config):
+def parse_services_configuration(config):
 	"""Parses services configuration."""
 
 	return ServicesConfiguration(config['nodewatch'])
 
 
-def parse_node(config):
+def parse_transaction_configuration(config):
+	"""Parses transaction configuration."""
+
+	fee_multiplier = int(config['feeMultiplier'])
+	timeout_hours = int(config['timeoutHours'])
+
+	return TransactionConfiguration(fee_multiplier, timeout_hours)
+
+
+def parse_node_configuration(config):
 	"""Parses node configuration."""
 
 	features = NodeFeatures(0)
@@ -65,7 +75,8 @@ def parse_shoestring_configuration(filename):
 	parser.read(filename)
 
 	return ShoestringConfiguration(
-		parse_network(parser['network']),
-		parse_images(parser['images']),
-		parse_services(parser['services']),
-		parse_node(parser['node']))
+		parse_network_configuration(parser['network']),
+		parse_images_configuration(parser['images']),
+		parse_services_configuration(parser['services']),
+		parse_transaction_configuration(parser['transaction']),
+		parse_node_configuration(parser['node']))

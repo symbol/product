@@ -15,7 +15,7 @@ from symbollightapi.connector.SymbolConnector import LinkedPublicKeys, VotingPub
 from shoestring.internal.NodeFeatures import NodeFeatures
 from shoestring.internal.OpensslExecutor import OpensslExecutor
 from shoestring.internal.Preparer import API_EXTENSIONS, HARVESTER_EXTENSIONS, PEER_EXTENSIONS, Preparer
-from shoestring.internal.ShoestringConfiguration import NodeConfiguration, ShoestringConfiguration
+from shoestring.internal.ShoestringConfiguration import NodeConfiguration, ShoestringConfiguration, TransactionConfiguration
 
 from ..test.TestPackager import prepare_testnet_package
 from ..test.TransactionTestUtils import AggregateDescriptor, LinkDescriptor, assert_aggregate_complete_transaction, assert_link_transaction
@@ -32,6 +32,7 @@ class PreparerTest(unittest.TestCase):
 			'testnet',
 			None,
 			None,
+			TransactionConfiguration(234, 3),
 			NodeConfiguration(node_features, None, None, None, api_https, None, None))
 
 	def _assert_readonly(self, directory, filenames):
@@ -671,7 +672,7 @@ class PreparerTest(unittest.TestCase):
 
 				# Assert:
 				expected_size = 168 + 88 + (8 if expected_link_descriptor.epoch_range else 0)
-				expected_aggregate_descriptor = AggregateDescriptor(expected_size, 150, 2222 + 2 * 60 * 60 * 1000, account_public_key)
+				expected_aggregate_descriptor = AggregateDescriptor(expected_size, 234, 2222 + 3 * 60 * 60 * 1000, account_public_key)
 				assert_aggregate_complete_transaction(self, transaction, expected_aggregate_descriptor)
 				self.assertEqual(1, len(transaction.transactions))
 				assert_link_transaction(self, transaction.transactions[0], expected_link_descriptor)
@@ -724,7 +725,7 @@ class PreparerTest(unittest.TestCase):
 
 				# Assert:
 				expected_size = 168 + 2 * 88
-				expected_aggregate_descriptor = AggregateDescriptor(expected_size, 150, 2222 + 2 * 60 * 60 * 1000, account_public_key)
+				expected_aggregate_descriptor = AggregateDescriptor(expected_size, 234, 2222 + 3 * 60 * 60 * 1000, account_public_key)
 				assert_aggregate_complete_transaction(self, transaction, expected_aggregate_descriptor)
 				self.assertEqual(2, len(transaction.transactions))
 
@@ -754,7 +755,7 @@ class PreparerTest(unittest.TestCase):
 
 				# Assert:
 				expected_size = 168 + 88 + 8
-				expected_aggregate_descriptor = AggregateDescriptor(expected_size, 150, 2222 + 2 * 60 * 60 * 1000, account_public_key)
+				expected_aggregate_descriptor = AggregateDescriptor(expected_size, 234, 2222 + 3 * 60 * 60 * 1000, account_public_key)
 				assert_aggregate_complete_transaction(self, transaction, expected_aggregate_descriptor)
 				self.assertEqual(1, len(transaction.transactions))
 
@@ -787,7 +788,7 @@ class PreparerTest(unittest.TestCase):
 
 				# Assert:
 				expected_size = 168 + 6 * 88 + 2 * 8
-				expected_aggregate_descriptor = AggregateDescriptor(expected_size, 150, 2222 + 2 * 60 * 60 * 1000, account_public_key)
+				expected_aggregate_descriptor = AggregateDescriptor(expected_size, 234, 2222 + 3 * 60 * 60 * 1000, account_public_key)
 				assert_aggregate_complete_transaction(self, transaction, expected_aggregate_descriptor)
 				self.assertEqual(6, len(transaction.transactions))
 

@@ -7,11 +7,12 @@ from symbolchain.CryptoTypes import Hash256
 
 from shoestring.internal.NodeFeatures import NodeFeatures
 from shoestring.internal.ShoestringConfiguration import (
-	parse_images,
-	parse_network,
-	parse_node,
-	parse_services,
-	parse_shoestring_configuration
+	parse_images_configuration,
+	parse_network_configuration,
+	parse_node_configuration,
+	parse_services_configuration,
+	parse_shoestring_configuration,
+	parse_transaction_configuration
 )
 
 
@@ -36,6 +37,11 @@ class ShoestringConfigurationTest(unittest.TestCase):
 		'nodewatch': 'https://nodewatch.symbol.tools/foo'
 	}
 
+	VALID_TRANSACTION_CONFIGURATION = {
+		'feeMultiplier': '234',
+		'timeoutHours': '3',
+	}
+
 	VALID_NODE_CONFIGURATION = {
 		'features': 'API | PEER | VOTER',
 		'userId': '1234',
@@ -52,13 +58,13 @@ class ShoestringConfigurationTest(unittest.TestCase):
 
 	def test_can_parse_valid_network_configuration(self):
 		# Act:
-		network = parse_network(self.VALID_NETWORK_CONFIGURATION)
+		network_config = parse_network_configuration(self.VALID_NETWORK_CONFIGURATION)
 
 		# Assert:
-		self.assertEqual('foo', network.name)
-		self.assertEqual(123, network.identifier)
-		self.assertEqual(datetime.datetime(2023, 5, 23, 14, 58, 41), network.datetime_converter.to_datetime(0))
-		self.assertEqual(self.GENERATION_HASH_SEED, network.generation_hash_seed)
+		self.assertEqual('foo', network_config.name)
+		self.assertEqual(123, network_config.identifier)
+		self.assertEqual(datetime.datetime(2023, 5, 23, 14, 58, 41), network_config.datetime_converter.to_datetime(0))
+		self.assertEqual(self.GENERATION_HASH_SEED, network_config.generation_hash_seed)
 
 	def test_cannot_parse_network_configuration_incomplete(self):
 		# Arrange:
@@ -68,7 +74,7 @@ class ShoestringConfigurationTest(unittest.TestCase):
 
 			# Act + Assert:
 			with self.assertRaises(KeyError):
-				parse_network(incomplete_config)
+				parse_network_configuration(incomplete_config)
 
 	def test_cannot_parse_network_configuration_corrupt(self):
 		# Arrange:
@@ -84,7 +90,7 @@ class ShoestringConfigurationTest(unittest.TestCase):
 
 			# Act + Assert:
 			with self.assertRaises(ValueError):
-				parse_network(corrupt_config)
+				parse_network_configuration(corrupt_config)
 
 	# endregion
 
@@ -92,11 +98,11 @@ class ShoestringConfigurationTest(unittest.TestCase):
 
 	def test_can_parse_valid_images_configuration(self):
 		# Act:
-		images = parse_images(self.VALID_IMAGES_CONFIGURATION)
+		images_config = parse_images_configuration(self.VALID_IMAGES_CONFIGURATION)
 
 		# Assert:
-		self.assertEqual('symbolplatform/symbol-server:gcc-0.0.0.0', images.client)
-		self.assertEqual('symbolplatform/symbol-rest:1.1.1', images.rest)
+		self.assertEqual('symbolplatform/symbol-server:gcc-0.0.0.0', images_config.client)
+		self.assertEqual('symbolplatform/symbol-rest:1.1.1', images_config.rest)
 
 	def test_cannot_parse_images_configuration_incomplete(self):
 		# Arrange:
@@ -106,7 +112,7 @@ class ShoestringConfigurationTest(unittest.TestCase):
 
 			# Act + Assert:
 			with self.assertRaises(KeyError):
-				parse_images(incomplete_config)
+				parse_images_configuration(incomplete_config)
 
 	# endregion
 
@@ -114,10 +120,10 @@ class ShoestringConfigurationTest(unittest.TestCase):
 
 	def test_can_parse_valid_services_configuration(self):
 		# Act:
-		services = parse_services(self.VALID_SERVICES_CONFIGURATION)
+		services_config = parse_services_configuration(self.VALID_SERVICES_CONFIGURATION)
 
 		# Assert:
-		self.assertEqual('https://nodewatch.symbol.tools/foo', services.nodewatch)
+		self.assertEqual('https://nodewatch.symbol.tools/foo', services_config.nodewatch)
 
 	def test_cannot_parse_services_configuration_incomplete(self):
 		# Arrange:
@@ -127,7 +133,44 @@ class ShoestringConfigurationTest(unittest.TestCase):
 
 			# Act + Assert:
 			with self.assertRaises(KeyError):
-				parse_services(incomplete_config)
+				parse_services_configuration(incomplete_config)
+
+	# endregion
+
+	# region transaction configuration
+
+	def test_can_parse_valid_transaction_configuration(self):
+		# Act:
+		transaction_config = parse_transaction_configuration(self.VALID_TRANSACTION_CONFIGURATION)
+
+		# Assert:
+		self.assertEqual(234, transaction_config.fee_multiplier)
+		self.assertEqual(3, transaction_config.timeout_hours)
+
+	def test_cannot_parse_transaction_configuration_incomplete(self):
+		# Arrange:
+		for key in self.VALID_TRANSACTION_CONFIGURATION:
+			incomplete_config = {**self.VALID_TRANSACTION_CONFIGURATION}
+			del incomplete_config[key]
+
+			# Act + Assert:
+			with self.assertRaises(KeyError):
+				parse_transaction_configuration(incomplete_config)
+
+	def test_cannot_parse_transaction_configuration_corrupt(self):
+		# Arrange:
+		corrupt_overrides = {
+			'feeMultiplier': 'not an int',
+			'timeoutHours': 'not an int'
+		}
+
+		for key, value in corrupt_overrides.items():
+			corrupt_config = {**self.VALID_TRANSACTION_CONFIGURATION}
+			corrupt_config[key] = value
+
+			# Act + Assert:
+			with self.assertRaises(ValueError):
+				parse_transaction_configuration(corrupt_config)
 
 	# endregion
 
@@ -139,29 +182,29 @@ class ShoestringConfigurationTest(unittest.TestCase):
 		config['features'] = 'PEER'
 
 		# Act:
-		node = parse_node(config)
+		node_config = parse_node_configuration(config)
 
 		# Assert:
-		self.assertEqual(NodeFeatures.PEER, node.features)
-		self.assertEqual(1234, node.user_id)
-		self.assertEqual(9876, node.group_id)
-		self.assertEqual('pass:abc123', node.ca_password)
-		self.assertEqual(False, node.api_https)
-		self.assertEqual('my CA name', node.ca_common_name)
-		self.assertEqual('my Node name', node.node_common_name)
+		self.assertEqual(NodeFeatures.PEER, node_config.features)
+		self.assertEqual(1234, node_config.user_id)
+		self.assertEqual(9876, node_config.group_id)
+		self.assertEqual('pass:abc123', node_config.ca_password)
+		self.assertEqual(False, node_config.api_https)
+		self.assertEqual('my CA name', node_config.ca_common_name)
+		self.assertEqual('my Node name', node_config.node_common_name)
 
 	def test_can_parse_valid_node_configuration_multiple_values(self):
 		# Act:
-		node = parse_node(self.VALID_NODE_CONFIGURATION)
+		node_config = parse_node_configuration(self.VALID_NODE_CONFIGURATION)
 
 		# Assert:
-		self.assertEqual(NodeFeatures.API | NodeFeatures.PEER | NodeFeatures.VOTER, node.features)
-		self.assertEqual(1234, node.user_id)
-		self.assertEqual(9876, node.group_id)
-		self.assertEqual('pass:abc123', node.ca_password)
-		self.assertEqual(False, node.api_https)
-		self.assertEqual('my CA name', node.ca_common_name)
-		self.assertEqual('my Node name', node.node_common_name)
+		self.assertEqual(NodeFeatures.API | NodeFeatures.PEER | NodeFeatures.VOTER, node_config.features)
+		self.assertEqual(1234, node_config.user_id)
+		self.assertEqual(9876, node_config.group_id)
+		self.assertEqual('pass:abc123', node_config.ca_password)
+		self.assertEqual(False, node_config.api_https)
+		self.assertEqual('my CA name', node_config.ca_common_name)
+		self.assertEqual('my Node name', node_config.node_common_name)
 
 	def test_cannot_parse_node_configuration_incomplete(self):
 		# Arrange:
@@ -171,7 +214,7 @@ class ShoestringConfigurationTest(unittest.TestCase):
 
 			# Act + Assert:
 			with self.assertRaises(KeyError):
-				parse_node(incomplete_config)
+				parse_node_configuration(incomplete_config)
 
 	def test_cannot_parse_node_configuration_corrupt(self):
 		# Arrange:
@@ -187,7 +230,7 @@ class ShoestringConfigurationTest(unittest.TestCase):
 
 			# Act + Assert:
 			with self.assertRaises(ValueError):
-				parse_node(corrupt_config)
+				parse_node_configuration(corrupt_config)
 
 	# endregion
 
@@ -208,6 +251,7 @@ class ShoestringConfigurationTest(unittest.TestCase):
 				self._write_section(outfile, '[network]', self.VALID_NETWORK_CONFIGURATION)
 				self._write_section(outfile, '\n[images]', self.VALID_IMAGES_CONFIGURATION)
 				self._write_section(outfile, '\n[services]', self.VALID_SERVICES_CONFIGURATION)
+				self._write_section(outfile, '\n[transaction]', self.VALID_TRANSACTION_CONFIGURATION)
 				self._write_section(outfile, '\n[node]', self.VALID_NODE_CONFIGURATION)
 
 			# Act:
@@ -223,6 +267,9 @@ class ShoestringConfigurationTest(unittest.TestCase):
 			self.assertEqual('symbolplatform/symbol-rest:1.1.1', config.images.rest)
 
 			self.assertEqual('https://nodewatch.symbol.tools/foo', config.services.nodewatch)
+
+			self.assertEqual(234, config.transaction.fee_multiplier)
+			self.assertEqual(3, config.transaction.timeout_hours)
 
 			self.assertEqual(NodeFeatures.API | NodeFeatures.PEER | NodeFeatures.VOTER, config.node.features)
 			self.assertEqual(1234, config.node.user_id)

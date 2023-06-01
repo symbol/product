@@ -162,8 +162,8 @@ async def test_can_renew_voting_keys_when_none_are_present(server, caplog):  # p
 			ca_public_key = read_public_key_from_public_key_pem_file(Path(output_directory) / 'keys' / 'cert' / 'ca.pubkey.pem')
 			assert_aggregate_complete_transaction(PytestAsserter(), transaction, AggregateDescriptor(
 				168 + 96,
-				150,
-				123456789 + 2 * 60 * 60 * 1000,
+				200,
+				123456789 + 1 * 60 * 60 * 1000,
 				ca_public_key))
 			assert 1 == len(transaction.transactions)
 
@@ -205,8 +205,8 @@ async def test_can_renew_voting_keys_when_some_are_present_and_active(server):  
 			ca_public_key = read_public_key_from_public_key_pem_file(Path(output_directory) / 'keys' / 'cert' / 'ca.pubkey.pem')
 			assert_aggregate_complete_transaction(PytestAsserter(), transaction, AggregateDescriptor(
 				168 + 96,
-				150,
-				123456789 + 2 * 60 * 60 * 1000,
+				200,
+				123456789 + 1 * 60 * 60 * 1000,
 				ca_public_key))
 			assert 1 == len(transaction.transactions)
 
@@ -250,8 +250,8 @@ async def test_can_renew_voting_keys_when_some_are_present_and_inactive(server):
 			ca_public_key = read_public_key_from_public_key_pem_file(Path(output_directory) / 'keys' / 'cert' / 'ca.pubkey.pem')
 			assert_aggregate_complete_transaction(PytestAsserter(), transaction, AggregateDescriptor(
 				168 + 3 * 96,
-				150,
-				123456789 + 2 * 60 * 60 * 1000,
+				200,
+				123456789 + 1 * 60 * 60 * 1000,
 				ca_public_key))
 			assert 3 == len(transaction.transactions)
 

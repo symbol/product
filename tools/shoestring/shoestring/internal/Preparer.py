@@ -356,7 +356,9 @@ class Preparer:
 				self.voter_configurator.voting_key_pair.public_key,
 				*self.new_voting_key_file_epoch_range)
 
-		aggregate_transaction, transaction_hash = transaction_builder.build(NetworkTimestamp(timestamp).add_hours(2), 150)
+		aggregate_transaction, transaction_hash = transaction_builder.build(
+			NetworkTimestamp(timestamp).add_hours(self.config.transaction.timeout_hours),
+			self.config.transaction.fee_multiplier)
 		if self.log:
 			self.log.info(f'created aggregate transaction with hash {transaction_hash}')
 

@@ -35,9 +35,11 @@ async def _get_network_time(resources_directory):
 	return network_time
 
 
-async def _save_transaction(directories, transaction_builder):
+async def _save_transaction(transaction_config, directories, transaction_builder):
 	network_time = await _get_network_time(directories.resources)
-	aggregate_transaction, transaction_hash = transaction_builder.build(network_time.add_hours(2), 150)
+	aggregate_transaction, transaction_hash = transaction_builder.build(
+		network_time.add_hours(transaction_config.timeout_hours),
+		transaction_config.fee_multiplier)
 	log.info(f'created aggregate transaction with hash {transaction_hash}')
 
 	transaction_filepath = directories.output_directory / 'renew_voting_keys_transaction.dat'
@@ -101,7 +103,7 @@ async def run_main(args):
 	transaction_builder.link_voting_public_key(voter_configurator.voting_key_pair.public_key, *new_voting_key_file_epoch_range)
 
 	# generate transaction
-	await _save_transaction(directories, transaction_builder)
+	await _save_transaction(config.transaction, directories, transaction_builder)
 
 	# clean up voting keys files
 	_clean_up_voting_keys_files(directories.voting_keys, inactive_voting_key_descriptors)
