@@ -18,8 +18,8 @@ def parse_args():
 	return parser.parse_args()
 
 
-async def save_nemesis_block(nem_client, databases, nem_facade):
-	"""Save the Nemesis block."""
+async def sync_nemesis_block(nem_client, databases, nem_facade):
+	"""Sync the Nemesis block."""
 
 	block = await nem_client.get_block(1)
 
@@ -76,7 +76,7 @@ async def main():
 
 		# save Nemenesis Block
 		if db_height == 0:
-			await save_nemesis_block(nem_client, databases, nem_facade)
+			await sync_nemesis_block(nem_client, databases, nem_facade)
 			db_height = 1
 
 		# sync network blocks in database
