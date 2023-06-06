@@ -5,7 +5,7 @@ from symbolchain.facade.NemFacade import NemFacade
 from test_data import BLOCK_AT_PUBLIC, CHAIN_BLOCK_1, CHAIN_BLOCK_2
 
 from model.Block import Block
-from workflows.sync_nem_block import save_nemesis_block, sync_blocks
+from workflows.sync_nem_block import sync_blocks, sync_nemesis_block
 
 
 class SyncNemBlockTest(unittest.IsolatedAsyncioTestCase):
@@ -29,7 +29,7 @@ class SyncNemBlockTest(unittest.IsolatedAsyncioTestCase):
 		)
 
 		# Act:
-		await save_nemesis_block(nem_client_mock, databases_mock, nem_facade)
+		await sync_nemesis_block(nem_client_mock, databases_mock, nem_facade)
 
 		# Assert:
 		self.assertEqual(databases_mock.insert_block.call_count, 1)
