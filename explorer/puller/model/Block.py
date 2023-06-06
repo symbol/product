@@ -38,13 +38,13 @@ class Block:
 			str(harvester)
 		)
 
-	def to_dict(self):
-		return {
-			'height': self.height,
-			'timestamp': self.timestamp,
-			'totalFees': self.total_fees,
-			'totalTransactions': self.total_transactions,
-			'difficulty': self.difficulty,
-			'hash': self.block_hash,
-			'signer': self.signer
-		}
+	def __eq__(self, other):
+		return isinstance(other, Block) and all([
+			self.height == other.height,
+			self.timestamp == other.timestamp,
+			self.total_fees == other.total_fees,
+			self.total_transactions == other.total_transactions,
+			self.difficulty == other.difficulty,
+			self.block_hash == other.block_hash,
+			self.signer == other.signer
+		])
