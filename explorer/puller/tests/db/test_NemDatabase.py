@@ -58,7 +58,7 @@ class NemDatabaseTest(unittest.TestCase):
 		with NemDatabase(self.db_config) as nem_database:
 			nem_database.create_tables()
 			# Act:
-			nem_database.insert_block(BLOCKS[0].to_dict())
+			nem_database.insert_block(BLOCKS[0])
 
 			cursor = nem_database.connection.cursor()
 			cursor.execute('SELECT * FROM blocks')
@@ -81,7 +81,7 @@ class NemDatabaseTest(unittest.TestCase):
 			nem_database.create_tables()
 
 			for block in BLOCKS:
-				nem_database.insert_block(block.to_dict())
+				nem_database.insert_block(block)
 
 			# Act:
 			result = nem_database.get_current_height()

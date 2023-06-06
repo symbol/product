@@ -25,13 +25,13 @@ class NemDatabase(DatabaseConnection):
 
 		cursor = self.connection.cursor()
 		cursor.execute('''INSERT INTO blocks VALUES (%s, %s, %s, %s, %s, %s, %s)''', (
-			block['height'],
-			block['timestamp'],
-			block['totalFees'],
-			block['totalTransactions'],
-			block['difficulty'],
-			block['hash'],
-			block['signer']
+			block.height,
+			block.timestamp,
+			block.total_fees,
+			block.total_transactions,
+			block.difficulty,
+			block.block_hash,
+			block.signer
 		))
 		self.connection.commit()
 

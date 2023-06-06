@@ -31,24 +31,6 @@ class BlockTest(unittest.TestCase):
 		self.assertEqual('1dd9d4d7b6af603d29c082f9aa4e123f07d18154ddbcd7ddc6702491b854c5e4', block.block_hash)
 		self.assertEqual('NALICEPFLZQRZGPRIJTMJOCPWDNECXTNNG7QLSG3', block.signer)
 
-	def test_can_convert_to_simple_dict(self):
-		# Arrange:
-		block = self._create_default_block()
-
-		# Act:
-		block_dict = block.to_dict()
-
-		# Assert:
-		self.assertEqual({
-			'height': 5,
-			'timestamp': '2015-03-29 00:06:25',
-			'totalFees': 0,
-			'totalTransactions': 10,
-			'difficulty': '100%',
-			'hash': '1dd9d4d7b6af603d29c082f9aa4e123f07d18154ddbcd7ddc6702491b854c5e4',
-			'signer': 'NALICEPFLZQRZGPRIJTMJOCPWDNECXTNNG7QLSG3'
-		}, block_dict)
-
 	def test_convert_timestamp_to_datetime(self):
 		# Arrange:
 		nem_facade = NemFacade('mainnet')

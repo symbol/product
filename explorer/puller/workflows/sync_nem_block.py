@@ -33,7 +33,7 @@ async def save_nemesis_block(nem_client, databases, nem_facade):
 		str(nem_facade.network.public_key_to_address(PublicKey(block['signer'])))
 	)
 
-	databases.insert_block(save_block.to_dict())
+	databases.insert_block(save_block)
 
 
 async def sync_blocks(nem_client, databases, db_height, chain_height, nem_facade):
@@ -46,7 +46,7 @@ async def sync_blocks(nem_client, databases, db_height, chain_height, nem_facade
 
 		for block in blocks['data']:
 			save_block = Block.from_nem_block_data(block, nem_facade)
-			databases.insert_block(save_block.to_dict())
+			databases.insert_block(save_block)
 
 		db_height = blocks['data'][-1]['block']['height']
 

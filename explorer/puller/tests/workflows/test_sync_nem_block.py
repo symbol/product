@@ -33,7 +33,7 @@ class SyncNemBlockTest(unittest.IsolatedAsyncioTestCase):
 
 		# Assert:
 		self.assertEqual(databases_mock.insert_block.call_count, 1)
-		self.assertEqual(databases_mock.insert_block.call_args[0][0], expected_block.to_dict())
+		self.assertEqual(databases_mock.insert_block.call_args[0][0], expected_block)
 
 	async def test_sync_blocks(self):
 		# Arrange:
@@ -74,5 +74,5 @@ class SyncNemBlockTest(unittest.IsolatedAsyncioTestCase):
 		# Assert:
 		self.assertEqual(nem_client_mock.get_blocks_after.call_count, 1)
 		self.assertEqual(databases_mock.insert_block.call_count, 2)
-		self.assertEqual(databases_mock.insert_block.call_args_list[0][0][0], expected_block_1.to_dict())
-		self.assertEqual(databases_mock.insert_block.call_args_list[1][0][0], expected_block_2.to_dict())
+		self.assertEqual(databases_mock.insert_block.call_args_list[0][0][0], expected_block_1)
+		self.assertEqual(databases_mock.insert_block.call_args_list[1][0][0], expected_block_2)
