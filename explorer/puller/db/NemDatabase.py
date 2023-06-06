@@ -9,13 +9,13 @@ class NemDatabase(DatabaseConnection):
 
 		cursor = self.connection.cursor()
 		cursor.execute('''CREATE TABLE IF NOT EXISTS blocks (
-			height integer NOT NULL,
+			height bigint NOT NULL,
 			timestamp timestamp NOT NULL,
-			totalFees integer DEFAULT 0,
-			totalTransactions integer DEFAULT 0,
+			totalFees bigint DEFAULT 0,
+			totalTransactions bigint DEFAULT 0,
 			difficulty bigInt NOT NULL,
-			hash VARCHAR(64) NOT NULL,
-			harvester VARCHAR(40) NOT NULL
+			hash varchar(64) NOT NULL,
+			harvester varchar(40) NOT NULL
 		)''')
 
 		self.connection.commit()
