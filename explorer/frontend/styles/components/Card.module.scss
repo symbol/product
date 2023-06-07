@@ -1,0 +1,8 @@
+@import "../variables";
+
+.card {
+    width: 100%;
+    padding: $spacing-padding;
+    background-color: $color-background-card;
+    border-radius: $border-radius-card;
+}
