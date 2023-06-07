@@ -13,6 +13,7 @@ from shoestring.internal.PeerDownloader import download_peers
 from shoestring.internal.PemUtils import read_public_key_from_public_key_pem_file
 from shoestring.internal.Preparer import Preparer
 from shoestring.internal.ShoestringConfiguration import parse_shoestring_configuration
+from shoestring.internal.TransactionSerializer import write_transaction_to_file
 
 SECURITY_MODES = ('default', 'paranoid', 'insecure')
 
@@ -66,14 +67,7 @@ async def _prepare_linking_transaction(preparer, api_endpoint):
 	network_time = await connector.network_time()
 	transaction = preparer.prepare_linking_transaction(account_public_key, existing_links, network_time.timestamp)
 
-	log.info(transaction)
-
-	transaction_filepath = preparer.directories.output_directory / 'linking_transaction.dat'
-	with open(transaction_filepath, 'wb') as outfile:
-		outfile.write(transaction.serialize())
-
-	transaction_filepath.chmod(0o600)
-	log.info(f'transaction file written to {transaction_filepath}')
+	write_transaction_to_file(transaction, preparer.directories.output_directory / 'linking_transaction.dat')
 
 
 async def run_main(args):

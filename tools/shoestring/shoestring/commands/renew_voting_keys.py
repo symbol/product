@@ -12,6 +12,7 @@ from shoestring.internal.PeerDownloader import load_api_endpoints
 from shoestring.internal.PemUtils import read_public_key_from_public_key_pem_file
 from shoestring.internal.Preparer import Preparer
 from shoestring.internal.ShoestringConfiguration import parse_shoestring_configuration
+from shoestring.internal.TransactionSerializer import write_transaction_to_file
 from shoestring.internal.VoterConfigurator import VoterConfigurator, inspect_voting_key_files
 
 
@@ -42,11 +43,7 @@ async def _save_transaction(transaction_config, directories, transaction_builder
 		transaction_config.fee_multiplier)
 	log.info(f'created aggregate transaction with hash {transaction_hash}')
 
-	transaction_filepath = directories.output_directory / 'renew_voting_keys_transaction.dat'
-	with open(transaction_filepath, 'wb') as outfile:
-		outfile.write(aggregate_transaction.serialize())
-
-	log.info(f'transaction file written to {transaction_filepath}')
+	write_transaction_to_file(aggregate_transaction, directories.output_directory / 'renew_voting_keys_transaction.dat')
 
 
 def _clean_up_voting_keys_files(voting_keys_directory, inactive_voting_key_descriptors):
