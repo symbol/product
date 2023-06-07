@@ -1,0 +1,15 @@
+@import "../variables";
+
+.fieldPrice {
+    display: flex;
+    flex-direction: row;
+    gap: $spacing-base / 2;
+
+    .changeIncrease {
+        color: $color-success;
+    }
+
+    .changeDecrease {
+        color: $color-danger;
+    }
+}
