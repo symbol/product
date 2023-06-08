@@ -20,10 +20,9 @@ class NemDatabase(DatabaseConnection):
 
 		self.connection.commit()
 
-	def insert_block(self, block):
+	def insert_block(self, cursor, block):  # pylint: disable=no-self-use
 		"""Adds block height into table."""
 
-		cursor = self.connection.cursor()
 		cursor.execute('''INSERT INTO blocks VALUES (%s, %s, %s, %s, %s, %s, %s)''', (
 			block.height,
 			block.timestamp,
@@ -33,7 +32,6 @@ class NemDatabase(DatabaseConnection):
 			block.block_hash,
 			block.signer
 		))
-		self.connection.commit()
 
 	def get_current_height(self):
 		"""Gets current height from database"""

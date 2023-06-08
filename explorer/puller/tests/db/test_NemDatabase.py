@@ -57,10 +57,13 @@ class NemDatabaseTest(unittest.TestCase):
 		# Arrange:
 		with NemDatabase(self.db_config) as nem_database:
 			nem_database.create_tables()
-			# Act:
-			nem_database.insert_block(BLOCKS[0])
 
 			cursor = nem_database.connection.cursor()
+
+			# Act:
+			nem_database.insert_block(cursor, BLOCKS[0])
+
+			nem_database.connection.commit()
 			cursor.execute('SELECT * FROM blocks')
 			result = cursor.fetchone()
 
@@ -80,8 +83,12 @@ class NemDatabaseTest(unittest.TestCase):
 		with NemDatabase(self.db_config) as nem_database:
 			nem_database.create_tables()
 
+			cursor = nem_database.connection.cursor()
+
 			for block in BLOCKS:
-				nem_database.insert_block(block)
+				nem_database.insert_block(cursor, block)
+
+			nem_database.connection.commit()
 
 			# Act:
 			result = nem_database.get_current_height()
