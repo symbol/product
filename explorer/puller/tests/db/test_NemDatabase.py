@@ -9,7 +9,15 @@ from model.Block import Block
 # region test data
 
 BLOCKS = [
-	Block(1, '2015-03-29 00:06:25', 0, 5, 100000000000000, '#', 'NANEMOABLAGR72AZ2RV3V4ZHDCXW25XQ73O7OBT5'),
+	Block(
+		1,
+		'2015-03-29 00:06:25',
+		0,
+		5,
+		100000000000000,
+		'438cf6375dab5a0d32f9b7bf151d4539e00a590f7c022d5572c7d41815a24be4',
+		'8d07f90fb4bbe7715fa327c926770166a11be2e494a970605f2e12557f66c9b9',
+		'2abdd19ad3efab0413b42772a586faa19dedb16d35f665f90d598046a2132c4ad1e71001545ceaa44e63c04345591e7aadbfd330af82a0d8a1da5643e791ff0f'),
 	Block(
 		2,
 		'2015-03-29 20:34:19',
@@ -17,7 +25,8 @@ BLOCKS = [
 		5,
 		80000000000000,
 		'1dd9d4d7b6af603d29c082f9aa4e123f07d18154ddbcd7ddc6702491b854c5e4',
-		'NALICEPFLZQRZGPRIJTMJOCPWDNECXTNNG7QLSG3')
+		'f9bd190dd0c364261f5c8a74870cc7f7374e631352293c62ecc437657e5de2cd',
+		'1b81379847241e45da86b27911e5c9a9192ec04f644d98019657d32838b49c143eaa4815a3028b80f9affdbf0b94cd620f7a925e02783dda67b8627b69ddf70e')
 ]
 
 # endregion
@@ -64,19 +73,25 @@ class NemDatabaseTest(unittest.TestCase):
 			nem_database.insert_block(cursor, BLOCKS[0])
 
 			nem_database.connection.commit()
-			cursor.execute('SELECT * FROM blocks')
+			cursor.execute('SELECT * FROM blocks WHERE height = %s', (BLOCKS[0].height, ))
 			result = cursor.fetchone()
+
+			# Convert memoryview objects to bytes
+			result = tuple(bytes(item) if isinstance(item, memoryview) else item for item in result)
 
 		# Assert:
 		self.assertIsNotNone(result)
-		self.assertEqual(result, (
+		expected_result = (
 			1,
 			datetime.datetime(2015, 3, 29, 0, 6, 25),
 			0,
 			5,
 			100000000000000,
-			'#',
-			'NANEMOABLAGR72AZ2RV3V4ZHDCXW25XQ73O7OBT5'))
+			bytes.fromhex(BLOCKS[0].block_hash),
+			bytes.fromhex(BLOCKS[0].signer),
+			bytes.fromhex(BLOCKS[0].signature)
+		)
+		self.assertEqual(result, expected_result)
 
 	def test_get_current_height(self):
 		# Arrange:

@@ -14,8 +14,9 @@ class NemDatabase(DatabaseConnection):
 			totalFees bigint DEFAULT 0,
 			totalTransactions bigint DEFAULT 0,
 			difficulty bigInt NOT NULL,
-			hash varchar(64) NOT NULL,
-			harvester varchar(40) NOT NULL
+			hash bytea NOT NULL,
+			harvester bytea NOT NULL,
+			signature bytea NOT NULL
 		)''')
 
 		self.connection.commit()
@@ -23,14 +24,15 @@ class NemDatabase(DatabaseConnection):
 	def insert_block(self, cursor, block):  # pylint: disable=no-self-use
 		"""Adds block height into table."""
 
-		cursor.execute('''INSERT INTO blocks VALUES (%s, %s, %s, %s, %s, %s, %s)''', (
+		cursor.execute('''INSERT INTO blocks VALUES (%s, %s, %s, %s, %s, %s, %s, %s)''', (
 			block.height,
 			block.timestamp,
 			block.total_fees,
 			block.total_transactions,
 			block.difficulty,
-			block.block_hash,
-			block.signer
+			bytes.fromhex(block.block_hash),
+			bytes.fromhex(block.signer),
+			bytes.fromhex(block.signature)
 		))
 
 	def get_current_height(self):
