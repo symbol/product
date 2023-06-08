@@ -30,7 +30,7 @@ class NemClient(BasicClient):
 	async def get_block(self, height):
 		""""Gets Block data"""
 
-		url_path = 'block/at/public'
+		url_path = 'local/block/at'
 		block = await self.post(url_path, {'height': height})
 
 		return block

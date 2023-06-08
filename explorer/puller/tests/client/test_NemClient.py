@@ -3,7 +3,7 @@ import json
 import pytest
 from aiohttp import web
 from symbolchain.nem.Network import Network
-from test_data import BLOCK_AT_PUBLIC, CHAIN_BLOCK_1, CHAIN_BLOCK_2
+from test_data import CHAIN_BLOCK_1, CHAIN_BLOCK_2
 
 from client.NemClient import NemClient
 
@@ -25,8 +25,8 @@ def server(event_loop, aiohttp_client):
 		async def local_chain_blocks_after(self, request):
 			return await self._process(request, {'data': [CHAIN_BLOCK_1, CHAIN_BLOCK_2]})
 
-		async def block_at_public(self, request):
-			return await self._process(request, BLOCK_AT_PUBLIC)
+		async def local_block_at(self, request):
+			return await self._process(request, CHAIN_BLOCK_1)
 
 		async def _process(self, request, response_body):
 			self.urls.append(str(request.url))
@@ -40,7 +40,7 @@ def server(event_loop, aiohttp_client):
 	app.router.add_get('/chain/height', mock_server.chain_height)
 	app.router.add_get('/node/info', mock_server.node_info)
 	app.router.add_post('/local/chain/blocks-after', mock_server.local_chain_blocks_after)
-	app.router.add_post('/block/at/public', mock_server.block_at_public)
+	app.router.add_post('/local/block/at', mock_server.local_block_at)
 
 	server = event_loop.run_until_complete(aiohttp_client(app))  # pylint: disable=redefined-outer-name
 
@@ -104,7 +104,7 @@ async def test_can_query_blocks_after(server):  # pylint: disable=redefined-oute
 
 # region block at public
 
-async def test_can_query_block_at_public(server):  # pylint: disable=redefined-outer-name
+async def test_can_query_block_at(server):  # pylint: disable=redefined-outer-name
 	# Arrange:
 	client = NemClient(server.make_url(''))
 
@@ -112,7 +112,7 @@ async def test_can_query_block_at_public(server):  # pylint: disable=redefined-o
 	block = await client.get_block(1)
 
 	# Assert:
-	assert [f'{server.make_url("")}/block/at/public'] == server.mock.urls
-	assert block == BLOCK_AT_PUBLIC
+	assert [f'{server.make_url("")}/local/block/at'] == server.mock.urls
+	assert block == CHAIN_BLOCK_1
 
 # endregion

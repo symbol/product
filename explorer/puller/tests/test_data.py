@@ -1,18 +1,3 @@
-BLOCK_AT_PUBLIC = {
-	'timeStamp': 0,
-	'signature': (
-		'2abdd19ad3efab0413b42772a586faa19dedb16d35f665f90d598046a2132c4a'
-		'd1e71001545ceaa44e63c04345591e7aadbfd330af82a0d8a1da5643e791ff0f'),
-	'prevBlockHash': {
-		'data': '0000000000000000000000000000000000000000000000000000000000000000'
-	},
-	'type': -1,
-	'transactions': [],
-	'version': 1744830465,
-	'signer': '8d07f90fb4bbe7715fa327c926770166a11be2e494a970605f2e12557f66c9b9',
-	'height': 1
-}
-
 CHAIN_BLOCK_1 = {
 	'difficulty': 100000000000000,
 	'txes': [],
