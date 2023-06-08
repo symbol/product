@@ -1,8 +1,10 @@
 import json
+from binascii import unhexlify
 
 import pytest
 from aiohttp import web
 from symbolchain.CryptoTypes import Hash256, PublicKey
+from symbolchain.symbol.Network import Address
 
 from symbollightapi.connector.SymbolConnector import SymbolConnector
 from symbollightapi.model.Endpoint import Endpoint
@@ -44,6 +46,24 @@ NODE_INFO_3 = {
 	'publicKey': 'C807BE28855D0C87A8A2C032E51790CCB9158C15CBACB8B222E27DFFFEB3697D',
 	'roles': 5,
 	'version': 16777989
+}
+
+MULTISIG_INFO_1 = {
+	'multisig': {
+		'version': 1,
+		'accountAddress': '987BC1722F417C93BA80C4212AA0E4621FB5B18550CC4103',
+		'minApproval': 2,
+		'minRemoval': 3,
+		'cosignatoryAddresses': [
+			'98AAB8782D4452F0DE6C82A778BB6937C509B9A1AFDF2320',
+			'98661D23312F31066CA5298FD453301C930553528FFE0FF1',
+			'98BEC4842DEE913E737CC267D984F5FCC955C981291B3936'
+		],
+		'multisigAddresses': [
+			'98D35CCF663D61C64E6B083C08B1544C3D9538EB01369248',
+			'98996F3C23DDE4258E9D3E0F0BE4BAED48370CA6EDD7DD2C'
+		]
+	}
 }
 
 # endregion
@@ -123,6 +143,13 @@ def server(event_loop, aiohttp_client):
 				}
 			})
 
+		async def account_multisig(self, request):
+			address = Address(request.match_info['address'])
+			if Address(unhexlify(MULTISIG_INFO_1['multisig']['accountAddress'])) == address:
+				return await self._process(request, MULTISIG_INFO_1)
+
+			return await self._process(request, {'code': 'ResourceNotFound', 'message': 'no resource exists with id'})
+
 		async def _process(self, request, response_body):
 			self.urls.append(str(request.url))
 			return web.Response(body=json.dumps(response_body), headers={'Content-Type': 'application/json'})
@@ -138,6 +165,7 @@ def server(event_loop, aiohttp_client):
 	app.router.add_get('/node/info', mock_server.node_info)
 	app.router.add_get('/node/peers', mock_server.node_peers)
 	app.router.add_get(r'/accounts/{account_id}', mock_server.accounts_by_id)
+	app.router.add_get(r'/account/{address}/multisig', mock_server.account_multisig)
 	server = event_loop.run_until_complete(aiohttp_client(app))  # pylint: disable=redefined-outer-name
 
 	server.mock = mock_server
@@ -389,5 +417,44 @@ async def test_can_query_account_links_for_account_with_all_links(server):  # py
 	assert PublicKey('BCC8F27E4CF085FB4668EE787E76308DED7C4B811C8B8188CE4452A916F8378F') == links.linked_public_key
 	assert PublicKey('5BD25262153603172A79677DC2703984D1249F43186BB970D2B70C88C78C0724') == links.vrf_public_key
 	_assert_voting_public_keys(links)
+
+# endregion
+
+
+# region GET (account_multisig)
+
+async def test_can_query_account_multisig_information_for_unknown_account(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	connector = SymbolConnector(server.make_url(''))
+
+	# Act:
+	multisig_info = await connector.account_multisig(Address('TCVLQ6BNIRJPBXTMQKTXRO3JG7CQTONBV7PSGIA'))
+
+	# Assert:
+	assert 0 == multisig_info.min_approval
+	assert 0 == multisig_info.min_removal
+	assert [] == multisig_info.cosignatory_addresses
+	assert [] == multisig_info.multisig_addresses
+
+
+async def test_can_query_account_multisig_information_for_known_account(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	connector = SymbolConnector(server.make_url(''))
+
+	# Act:
+	multisig_info = await connector.account_multisig(Address(unhexlify(MULTISIG_INFO_1['multisig']['accountAddress'])))
+
+	# Assert:
+	assert 2 == multisig_info.min_approval
+	assert 3 == multisig_info.min_removal
+	assert [
+		Address('TCVLQ6BNIRJPBXTMQKTXRO3JG7CQTONBV7PSGIA'),
+		Address('TBTB2IZRF4YQM3FFFGH5IUZQDSJQKU2SR77A74I'),
+		Address('TC7MJBBN52IT4434YJT5TBHV7TEVLSMBFENTSNQ')
+	] == multisig_info.cosignatory_addresses
+	assert [
+		Address('TDJVZT3GHVQ4MTTLBA6ARMKUJQ6ZKOHLAE3JESA'),
+		Address('TCMW6PBD3XSCLDU5HYHQXZF25VEDODFG5XL52LA')
+	] == multisig_info.multisig_addresses
 
 # endregion

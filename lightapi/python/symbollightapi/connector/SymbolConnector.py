@@ -1,7 +1,8 @@
+from binascii import unhexlify
 from collections import namedtuple
 
 from symbolchain.CryptoTypes import Hash256, PublicKey
-from symbolchain.symbol.Network import NetworkTimestamp
+from symbolchain.symbol.Network import Address, NetworkTimestamp
 
 from ..model.Endpoint import Endpoint
 from ..model.NodeInfo import NodeInfo
@@ -9,6 +10,7 @@ from .BasicConnector import BasicConnector
 
 ChainStatistics = namedtuple('ChainStatistics', ['height', 'score_high', 'score_low'])
 FinalizationStatistics = namedtuple('FinalizationStatistics', ['epoch', 'point', 'height', 'hash'])
+MultisigInfo = namedtuple('MultisigInfo', ['min_approval', 'min_removal', 'cosignatory_addresses', 'multisig_addresses'])
 VotingPublicKey = namedtuple('VotingPublicKey', ['start_epoch', 'end_epoch', 'public_key'])
 
 
@@ -125,3 +127,21 @@ class SymbolConnector(BasicConnector):
 			]
 
 		return links
+
+	async def account_multisig(self, address):
+		"""Gets multisig information about an account."""
+
+		json_response = await self.get(f'account/{address}/multisig')
+		if 'code' in json_response:
+			return MultisigInfo(0, 0, [], [])
+
+		multisig_dict = json_response['multisig']
+		return MultisigInfo(
+			multisig_dict['minApproval'],
+			multisig_dict['minRemoval'],
+			[self._decoded_string_to_address(decoded_address) for decoded_address in multisig_dict['cosignatoryAddresses']],
+			[self._decoded_string_to_address(decoded_address) for decoded_address in multisig_dict['multisigAddresses']])
+
+	@staticmethod
+	def _decoded_string_to_address(decoded_address):
+		return Address(unhexlify(decoded_address))
