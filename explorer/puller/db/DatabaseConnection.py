@@ -3,16 +3,19 @@ import psycopg2
 
 class DatabaseConnection:
 	def __init__(self, db_config):
-		self.connection = psycopg2.connect(
-			database=db_config['database'],
-			user=db_config['user'],
-			password=db_config['password'],
-			host=db_config['host'],
-			port=db_config['port']
-		)
+		self.db_config = db_config
+		self.connection = None
 
 	def __enter__(self):
 		"""Connects to databases."""
+
+		self.connection = psycopg2.connect(
+			database=self.db_config['database'],
+			user=self.db_config['user'],
+			password=self.db_config['password'],
+			host=self.db_config['host'],
+			port=self.db_config['port']
+		)
 
 		return self
 
