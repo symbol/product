@@ -9,13 +9,14 @@ class BlockTest(unittest.TestCase):
 	@staticmethod
 	def _create_default_block():
 		return Block(
-			5,
+			1,
 			'2015-03-29 00:06:25',
 			0,
-			10,
-			'100%',
-			'1dd9d4d7b6af603d29c082f9aa4e123f07d18154ddbcd7ddc6702491b854c5e4',
-			'NALICEPFLZQRZGPRIJTMJOCPWDNECXTNNG7QLSG3'
+			5,
+			100000000000000,
+			'438cf6375dab5a0d32f9b7bf151d4539e00a590f7c022d5572c7d41815a24be4',
+			'8d07f90fb4bbe7715fa327c926770166a11be2e494a970605f2e12557f66c9b9',
+			'2abdd19ad3efab0413b42772a586faa19dedb16d35f665f90d598046a2132c4ad1e71001545ceaa44e63c04345591e7aadbfd330af82a0d8a1da5643e791ff0f'
 		)
 
 	def test_can_create_block(self):
@@ -23,13 +24,17 @@ class BlockTest(unittest.TestCase):
 		block = self._create_default_block()
 
 		# Assert:
-		self.assertEqual(5, block.height)
+		self.assertEqual(1, block.height)
 		self.assertEqual('2015-03-29 00:06:25', block.timestamp)
 		self.assertEqual(0, block.total_fees)
-		self.assertEqual(10, block.total_transactions)
-		self.assertEqual('100%', block.difficulty)
-		self.assertEqual('1dd9d4d7b6af603d29c082f9aa4e123f07d18154ddbcd7ddc6702491b854c5e4', block.block_hash)
-		self.assertEqual('NALICEPFLZQRZGPRIJTMJOCPWDNECXTNNG7QLSG3', block.signer)
+		self.assertEqual(5, block.total_transactions)
+		self.assertEqual(100000000000000, block.difficulty)
+		self.assertEqual('438cf6375dab5a0d32f9b7bf151d4539e00a590f7c022d5572c7d41815a24be4', block.block_hash)
+		self.assertEqual('8d07f90fb4bbe7715fa327c926770166a11be2e494a970605f2e12557f66c9b9', block.signer)
+		self.assertEqual(
+			'2abdd19ad3efab0413b42772a586faa19dedb16d35f665f90d598046a2132c4ad1e71001545ceaa44e63c04345591e7aadbfd330af82a0d8a1da5643e791ff0f',
+			block.signature
+		)
 
 	def test_convert_timestamp_to_datetime(self):
 		# Arrange:

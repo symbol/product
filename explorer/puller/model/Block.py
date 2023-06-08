@@ -1,5 +1,5 @@
 class Block:
-	def __init__(self, height, timestamp, total_fees, total_transactions, difficulty, block_hash, signer):
+	def __init__(self, height, timestamp, total_fees, total_transactions, difficulty, block_hash, signer, signature):
 		"""Create Block model."""
 
 		# pylint: disable=too-many-arguments
@@ -11,6 +11,7 @@ class Block:
 		self.difficulty = difficulty
 		self.block_hash = block_hash
 		self.signer = signer
+		self.signature = signature
 
 	@staticmethod
 	def convert_timestamp_to_datetime(facade, timestamp):
@@ -24,5 +25,6 @@ class Block:
 			self.total_transactions == other.total_transactions,
 			self.difficulty == other.difficulty,
 			self.block_hash == other.block_hash,
-			self.signer == other.signer
+			self.signer == other.signer,
+			self.signature == other.signature
 		])
