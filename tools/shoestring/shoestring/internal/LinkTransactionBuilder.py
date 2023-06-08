@@ -1,6 +1,8 @@
 from symbolchain.facade.SymbolFacade import SymbolFacade
 from symbolchain.sc import Amount
 
+COSIGNATURE_SIZE = 104
+
 
 class LinkTransactionBuilder:
 	"""Builder for creating an aggregate transaction containing account key link and unlink transactions."""
@@ -58,18 +60,23 @@ class LinkTransactionBuilder:
 
 		self._transactions.append(self._prepare_link_transaction('voting', root_voting_public_key, 'unlink', (start_epoch, end_epoch)))
 
-	# TODO: handle multisig (?)
-	def build(self, deadline, fee_multiplier):
+	def build(self, deadline, fee_multiplier, min_cosignatures_count):
 		"""Creates the configured aggregate transaction."""
 
+		aggregate_type = 'complete' if min_cosignatures_count <= 1 else 'bonded'
+
 		aggregate_transaction = self.facade.transaction_factory.create({
-			'type': 'aggregate_complete_transaction_v2',
-			'signer_public_key': self.signer_public_key,  # TODO: this might be different signer...
+			'type': f'aggregate_{aggregate_type}_transaction_v2',
+			'signer_public_key': self.signer_public_key,  # if this is a multisig account, this will be updated during signing
 			'fee': 0,
 			'deadline': deadline.timestamp,
 			'transactions_hash': self.facade.hash_embedded_transactions(self._transactions),
 			'transactions': self._transactions
 		})
 
-		aggregate_transaction.fee = Amount(fee_multiplier * aggregate_transaction.size)
+		size = aggregate_transaction.size
+		if min_cosignatures_count > 1:
+			size += COSIGNATURE_SIZE * (min_cosignatures_count - 1)
+
+		aggregate_transaction.fee = Amount(fee_multiplier * size)
 		return aggregate_transaction, self.facade.hash_transaction(aggregate_transaction)

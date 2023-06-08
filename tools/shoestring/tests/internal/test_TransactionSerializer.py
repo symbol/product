@@ -16,7 +16,7 @@ class TransactionSerializerTest(unittest.TestCase):
 		# Arrange:
 		with tempfile.TemporaryDirectory() as directory:
 			builder = LinkTransactionBuilder(PublicKey('1695B400FC0111F56F5630AC7EDDF5F9AAA45EED21B8E400A2C26BEF8E758FCE'), 'testnet')
-			transaction, transaction_hash = builder.build(NetworkTimestamp(1234), 987)
+			transaction, transaction_hash = builder.build(NetworkTimestamp(1234), 987, 0)
 
 			# Act:
 			transaction_filepath = Path(directory) / 'foo.dat'

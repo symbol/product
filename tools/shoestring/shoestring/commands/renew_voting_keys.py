@@ -40,7 +40,8 @@ async def _save_transaction(transaction_config, directories, transaction_builder
 	network_time = await _get_network_time(directories.resources)
 	aggregate_transaction, transaction_hash = transaction_builder.build(
 		network_time.add_hours(transaction_config.timeout_hours),
-		transaction_config.fee_multiplier)
+		transaction_config.fee_multiplier,
+		transaction_config.min_cosignatures_count)
 	log.info(f'created aggregate transaction with hash {transaction_hash}')
 
 	write_transaction_to_file(aggregate_transaction, directories.output_directory / 'renew_voting_keys_transaction.dat')

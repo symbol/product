@@ -1,78 +1,89 @@
-import os
+from pathlib import Path
 
-from symbolchain.CryptoTypes import PrivateKey
+from symbolchain import sc
 from symbolchain.facade.SymbolFacade import SymbolFacade
-from symbolchain.sc import TransactionFactory, TransactionType
 from symbolchain.symbol.KeyPair import KeyPair
 from zenlog import log
 
-from ..internal.OpensslExecutor import OpensslExecutor
 from ..internal.PemUtils import read_private_key_from_private_key_pem_file
 from ..internal.ShoestringConfiguration import parse_shoestring_configuration
+from ..internal.TransactionSerializer import write_transaction_to_file
 
 
-def _load_private_key(key_path, password):
-	if not password:
-		return read_private_key_from_private_key_pem_file(key_path)
-
-	# use OpensslExecutor instead of cryptography API to support all openssl password input formats automatically
-	openssl_executor = OpensslExecutor(os.environ.get('OPENSSL_EXECUTABLE', 'openssl'))
-	lines = openssl_executor.dispatch([
-		'pkey',
-		'-in', key_path,
-		'-noout',
-		'-text'
-	] + ([] if not password else ['-passin', password]), show_output=False)
-
-	is_private_key_line = False
-	raw_private_key_str = ''
-	for line in lines:
-		if line.startswith('priv:'):
-			is_private_key_line = True
-		elif line.startswith('pub:'):
-			break
-		elif is_private_key_line:
-			raw_private_key_str += line
-
-	return PrivateKey(''.join([ch.upper() for ch in raw_private_key_str if '0' <= ch <= '9' or 'a' <= ch <= 'f']))
+def _is_aggregate(transaction):
+	return transaction.type_ in (sc.TransactionType.AGGREGATE_BONDED, sc.TransactionType.AGGREGATE_COMPLETE)
 
 
-def run_main(args):
-	with open(args.filename, 'rb') as infile:
+def _load_transaction(filename):
+	with open(filename, 'rb') as infile:
 		payload = infile.read()
 
-	transaction = TransactionFactory.deserialize(payload)
+	return sc.TransactionFactory.deserialize(payload)
 
-	if transaction.type_ in [TransactionType.AGGREGATE_BONDED, TransactionType.AGGREGATE_COMPLETE]:
-		temp = transaction.transactions
-		transaction.transactions = []
-		log.info(f'Aggregate transaction: {transaction}')
-		log.info('Inner transactions:')
-		for sub_transaction in temp:
-			log.info(f'  {sub_transaction}')
 
-		transaction.transactions = temp
-	else:
+def _print_transaction(transaction):
+	if not _is_aggregate(transaction):
 		log.info(f'Transaction: {transaction}')
+		return
 
-	# todo: query if it's ok to sign
+	child_transactions = transaction.transactions
+	transaction.transactions = []
 
-	config = parse_shoestring_configuration(args.config)
-	facade = SymbolFacade(config.network)
+	log.info(f'Aggregate transaction: {transaction}')
+	log.info('Inner transactions:')
+	for child_transaction in child_transactions:
+		log.info(f'  {child_transaction}')
 
-	key_pair = KeyPair(_load_private_key(args.ca_key_path, config.node.ca_password))
+	transaction.transactions = child_transactions
 
+
+def _sign_transaction(facade, key_pair, transaction):
 	signature = facade.sign_transaction(key_pair, transaction)
 	facade.transaction_factory.attach_signature(transaction, signature)
 
 	transaction_hash = facade.hash_transaction(transaction)
-	print(f'transaction hash: {transaction_hash}')
+
+	log.info(f'Signed transaction {transaction.type_} with hash: {transaction_hash}')
+	return transaction_hash
+
+
+def run_main(args):
+	config = parse_shoestring_configuration(args.config)
+	facade = SymbolFacade(config.network)
+
+	transaction = _load_transaction(args.filename)
+	key_pair = KeyPair(read_private_key_from_private_key_pem_file(args.ca_key_path, config.node.ca_password))
+
+	if _is_aggregate(transaction):  # change the aggregate signer to be a valid cosigner
+		transaction.signer_public_key = sc.PublicKey(key_pair.public_key.bytes)
+
+	_print_transaction(transaction)
+
+	# todo: query if it's ok to sign
+
+	transaction_hash = _sign_transaction(facade, key_pair, transaction)
 
 	if args.save:
-		with open(args.filename, 'wb') as outfile:
-			outfile.write(transaction.serialize())
+		write_transaction_to_file(transaction, Path(args.filename))
 
-		log.info(f'Saved {args.filename}')
+	if sc.TransactionType.AGGREGATE_BONDED != transaction.type_:
+		return
+
+	hash_lock_transaction = facade.transaction_factory.create({
+		'type': 'hash_lock_transaction_v1',
+		'signer_public_key': key_pair.public_key,
+
+		'deadline': transaction.deadline,
+
+		'duration': config.transaction.hash_lock_duration,
+		'hash': transaction_hash
+	})
+
+	hash_lock_transaction.fee = sc.Amount(config.transaction.fee_multiplier * hash_lock_transaction.size)
+	_sign_transaction(facade, key_pair, hash_lock_transaction)
+
+	if args.save:
+		write_transaction_to_file(hash_lock_transaction, Path(args.filename).with_suffix('.hash_lock.dat'))
 
 
 def add_arguments(parser):

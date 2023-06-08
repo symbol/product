@@ -8,7 +8,7 @@ from symbolchain.symbol.Network import NetworkTimestamp
 
 from shoestring.internal.LinkTransactionBuilder import LinkTransactionBuilder
 
-from ..test.TransactionTestUtils import AggregateDescriptor, LinkDescriptor, assert_aggregate_complete_transaction, assert_link_transaction
+from ..test.TransactionTestUtils import AggregateDescriptor, LinkDescriptor, assert_aggregate_transaction, assert_link_transaction
 
 
 class LinkTransactionBuilderTest(unittest.TestCase):
@@ -26,8 +26,11 @@ class LinkTransactionBuilderTest(unittest.TestCase):
 	def _random_public_key():
 		return KeyPair(PrivateKey.random()).public_key
 
-	def _assert_aggregate(self, transaction, expected_size):
-		assert_aggregate_complete_transaction(self, transaction, AggregateDescriptor(expected_size, 100, 1234, self.SIGNER_PUBLIC_KEY))
+	def _assert_aggregate(self, transaction, expected_size, expected_cosignatures_size=0, is_complete=True):
+		assert_aggregate_transaction(
+			self,
+			transaction,
+			AggregateDescriptor(expected_size, 100, 1234, self.SIGNER_PUBLIC_KEY, expected_cosignatures_size, is_complete))
 
 	def _assert_link(self, transaction, expected_link_descriptor):
 		assert_link_transaction(self, transaction, expected_link_descriptor)
@@ -37,7 +40,7 @@ class LinkTransactionBuilderTest(unittest.TestCase):
 		builder = self._create_builder()
 
 		# Act:
-		transaction, transaction_hash = builder.build(NetworkTimestamp(1234), 100)
+		transaction, transaction_hash = builder.build(NetworkTimestamp(1234), 100, 0)
 
 		# Assert:
 		self._assert_aggregate(transaction, 168)
@@ -53,7 +56,7 @@ class LinkTransactionBuilderTest(unittest.TestCase):
 			*(expected_link_descriptor.epoch_range or ()))
 
 		# Act:
-		transaction, transaction_hash = builder.build(NetworkTimestamp(1234), 100)
+		transaction, transaction_hash = builder.build(NetworkTimestamp(1234), 100, 0)
 
 		# Assert:
 		self._assert_aggregate(transaction, 168 + 48 + 33 + 7 + (8 if expected_link_descriptor.epoch_range else 0))
@@ -92,7 +95,7 @@ class LinkTransactionBuilderTest(unittest.TestCase):
 			lambda builder: builder.unlink_voting_public_key,
 			LinkDescriptor(TransactionType.VOTING_KEY_LINK, self._random_public_key(), LinkAction.UNLINK, (1111, 3344)))
 
-	def test_can_build_aggregate_with_all_links(self):
+	def _test_can_build_aggregate_with_all_links(self, min_cosignatures_count, expected_cosignatures_size, expected_is_complete):
 		# Arrange:
 		linked_public_keys = [self._random_public_key() for _ in range(6)]
 
@@ -105,10 +108,10 @@ class LinkTransactionBuilderTest(unittest.TestCase):
 		builder.link_voting_public_key(linked_public_keys[5], 3333, 4444)
 
 		# Act:
-		transaction, transaction_hash = builder.build(NetworkTimestamp(1234), 100)
+		transaction, transaction_hash = builder.build(NetworkTimestamp(1234), 100, min_cosignatures_count)
 
 		# Assert:
-		self._assert_aggregate(transaction, 168 + 6 * 88 + 2 * 8)
+		self._assert_aggregate(transaction, 168 + 6 * 88 + 2 * 8, expected_cosignatures_size, expected_is_complete)
 		self.assertEqual(6, len(transaction.transactions))
 		self._assert_link(
 			transaction.transactions[0],
@@ -130,3 +133,12 @@ class LinkTransactionBuilderTest(unittest.TestCase):
 			LinkDescriptor(TransactionType.VOTING_KEY_LINK, linked_public_keys[5], LinkAction.LINK, (3333, 4444)))
 
 		self.assertEqual(self._hash_transaction(transaction), transaction_hash)
+
+	def test_can_build_aggregate_with_all_links_no_cosignatures(self):
+		self._test_can_build_aggregate_with_all_links(0, 0, True)
+
+	def test_can_build_aggregate_with_all_links_one_cosignature(self):
+		self._test_can_build_aggregate_with_all_links(1, 0, True)
+
+	def test_can_build_aggregate_with_all_links_multiple_cosignatures(self):
+		self._test_can_build_aggregate_with_all_links(5, 4 * 104, False)

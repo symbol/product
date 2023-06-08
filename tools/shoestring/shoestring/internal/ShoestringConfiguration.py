@@ -9,7 +9,9 @@ from .NodeFeatures import NodeFeatures
 
 ImagesConfiguration = namedtuple('ImagesConfiguration', ['client', 'rest'])
 ServicesConfiguration = namedtuple('ServicesConfiguration', ['nodewatch'])
-TransactionConfiguration = namedtuple('TransactionConfiguration', ['fee_multiplier', 'timeout_hours'])
+TransactionConfiguration = namedtuple('TransactionConfiguration', [
+	'fee_multiplier', 'timeout_hours', 'min_cosignatures_count', 'hash_lock_duration'
+])
 NodeConfiguration = namedtuple('NodeConfiguration', [
 	'features', 'user_id', 'group_id', 'ca_password', 'api_https', 'ca_common_name', 'node_common_name'
 ])
@@ -43,8 +45,10 @@ def parse_transaction_configuration(config):
 
 	fee_multiplier = int(config['feeMultiplier'])
 	timeout_hours = int(config['timeoutHours'])
+	min_cosignatures_count = int(config['minCosignaturesCount'])
+	hash_lock_duration = int(config['hashLockDuration'])
 
-	return TransactionConfiguration(fee_multiplier, timeout_hours)
+	return TransactionConfiguration(fee_multiplier, timeout_hours, min_cosignatures_count, hash_lock_duration)
 
 
 def parse_node_configuration(config):

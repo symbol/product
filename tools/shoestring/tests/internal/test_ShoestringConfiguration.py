@@ -40,6 +40,8 @@ class ShoestringConfigurationTest(unittest.TestCase):
 	VALID_TRANSACTION_CONFIGURATION = {
 		'feeMultiplier': '234',
 		'timeoutHours': '3',
+		'minCosignaturesCount': '2',
+		'hashLockDuration': '1440'
 	}
 
 	VALID_NODE_CONFIGURATION = {
@@ -146,6 +148,8 @@ class ShoestringConfigurationTest(unittest.TestCase):
 		# Assert:
 		self.assertEqual(234, transaction_config.fee_multiplier)
 		self.assertEqual(3, transaction_config.timeout_hours)
+		self.assertEqual(2, transaction_config.min_cosignatures_count)
+		self.assertEqual(1440, transaction_config.hash_lock_duration)
 
 	def test_cannot_parse_transaction_configuration_incomplete(self):
 		# Arrange:
@@ -161,7 +165,9 @@ class ShoestringConfigurationTest(unittest.TestCase):
 		# Arrange:
 		corrupt_overrides = {
 			'feeMultiplier': 'not an int',
-			'timeoutHours': 'not an int'
+			'timeoutHours': 'not an int',
+			'minCosignaturesCount': 'not an int',
+			'hashLockDuration': 'not an int'
 		}
 
 		for key, value in corrupt_overrides.items():
@@ -270,6 +276,8 @@ class ShoestringConfigurationTest(unittest.TestCase):
 
 			self.assertEqual(234, config.transaction.fee_multiplier)
 			self.assertEqual(3, config.transaction.timeout_hours)
+			self.assertEqual(2, config.transaction.min_cosignatures_count)
+			self.assertEqual(1440, config.transaction.hash_lock_duration)
 
 			self.assertEqual(NodeFeatures.API | NodeFeatures.PEER | NodeFeatures.VOTER, config.node.features)
 			self.assertEqual(1234, config.node.user_id)

@@ -22,7 +22,7 @@ from ..test.ConfigurationTestUtils import prepare_shoestring_configuration
 from ..test.LogTestUtils import assert_message_is_logged
 from ..test.MockNodewatchServer import setup_mock_nodewatch_server
 from ..test.TestPackager import prepare_testnet_package
-from ..test.TransactionTestUtils import AggregateDescriptor, LinkDescriptor, assert_aggregate_complete_transaction, assert_link_transaction
+from ..test.TransactionTestUtils import AggregateDescriptor, LinkDescriptor, assert_aggregate_transaction, assert_link_transaction
 
 # region server fixture
 
@@ -157,7 +157,7 @@ async def test_can_renew_voting_keys_when_none_are_present(server, caplog):  # p
 			# - transaction is created
 			transaction = _read_transaction(output_directory)
 			ca_public_key = read_public_key_from_public_key_pem_file(Path(output_directory) / 'keys' / 'cert' / 'ca.pubkey.pem')
-			assert_aggregate_complete_transaction(PytestAsserter(), transaction, AggregateDescriptor(
+			assert_aggregate_transaction(PytestAsserter(), transaction, AggregateDescriptor(
 				168 + 96,
 				200,
 				123456789 + 1 * 60 * 60 * 1000,
@@ -200,7 +200,7 @@ async def test_can_renew_voting_keys_when_some_are_present_and_active(server):  
 			# - transaction is created
 			transaction = _read_transaction(output_directory)
 			ca_public_key = read_public_key_from_public_key_pem_file(Path(output_directory) / 'keys' / 'cert' / 'ca.pubkey.pem')
-			assert_aggregate_complete_transaction(PytestAsserter(), transaction, AggregateDescriptor(
+			assert_aggregate_transaction(PytestAsserter(), transaction, AggregateDescriptor(
 				168 + 96,
 				200,
 				123456789 + 1 * 60 * 60 * 1000,
@@ -245,7 +245,7 @@ async def test_can_renew_voting_keys_when_some_are_present_and_inactive(server):
 			# - transaction is created
 			transaction = _read_transaction(output_directory)
 			ca_public_key = read_public_key_from_public_key_pem_file(Path(output_directory) / 'keys' / 'cert' / 'ca.pubkey.pem')
-			assert_aggregate_complete_transaction(PytestAsserter(), transaction, AggregateDescriptor(
+			assert_aggregate_transaction(PytestAsserter(), transaction, AggregateDescriptor(
 				168 + 3 * 96,
 				200,
 				123456789 + 1 * 60 * 60 * 1000,

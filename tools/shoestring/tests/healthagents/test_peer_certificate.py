@@ -185,6 +185,14 @@ async def test_validate_warns_when_ca_certificate_is_near_expiry(caplog):
 	assert_max_log_level(LogLevel.WARNING, caplog)
 
 
+def _copy_certificates_from_test_resources(directory, certificates_directory):
+	(certificates_directory / 'ca.crt.pem').chmod(0o600)
+	(certificates_directory / 'node.crt.pem').chmod(0o600)
+	shutil.copy(f'./tests/resources/{directory}/ca.crt.pem', certificates_directory / 'ca.crt.pem')
+	shutil.copy(f'./tests/resources/{directory}/node.crt.pem', certificates_directory / 'node.crt.pem')
+	_regenerate_node_full_certificate(certificates_directory)
+
+
 async def test_validate_fails_when_ca_certificate_starts_in_future(caplog):
 	# Arrange:
 	with tempfile.TemporaryDirectory() as output_directory:
@@ -193,9 +201,7 @@ async def test_validate_fails_when_ca_certificate_starts_in_future(caplog):
 			preparer.generate_certificates(Path(output_directory) / 'ca.key.pem', require_ca=False)
 
 			# - replace certs with fake ones
-			shutil.copy('./tests/resources/future_peer_certs/ca.crt.pem', preparer.directories.certificates / 'ca.crt.pem')
-			shutil.copy('./tests/resources/future_peer_certs/node.crt.pem', preparer.directories.certificates / 'node.crt.pem')
-			_regenerate_node_full_certificate(preparer.directories.certificates)
+			_copy_certificates_from_test_resources('future_peer_certs', preparer.directories.certificates)
 
 			# Act:
 			await _dispatch_validate(preparer.directories)
@@ -214,9 +220,7 @@ async def test_validate_fails_when_ca_certificate_is_expired(caplog):
 			preparer.generate_certificates(Path(output_directory) / 'ca.key.pem', require_ca=False)
 
 			# - replace certs with fake ones
-			shutil.copy('./tests/resources/expired_ca_cert/ca.crt.pem', preparer.directories.certificates / 'ca.crt.pem')
-			shutil.copy('./tests/resources/expired_ca_cert/node.crt.pem', preparer.directories.certificates / 'node.crt.pem')
-			_regenerate_node_full_certificate(preparer.directories.certificates)
+			_copy_certificates_from_test_resources('expired_ca_cert', preparer.directories.certificates)
 
 			# Act:
 			await _dispatch_validate(preparer.directories)
@@ -301,9 +305,7 @@ async def test_validate_fails_when_node_certificate_is_expired(caplog):
 			preparer.generate_certificates(Path(output_directory) / 'ca.key.pem', require_ca=False)
 
 			# - replace certs with fake ones
-			shutil.copy('./tests/resources/expired_node_cert/ca.crt.pem', preparer.directories.certificates / 'ca.crt.pem')
-			shutil.copy('./tests/resources/expired_node_cert/node.crt.pem', preparer.directories.certificates / 'node.crt.pem')
-			_regenerate_node_full_certificate(preparer.directories.certificates)
+			_copy_certificates_from_test_resources('expired_node_cert', preparer.directories.certificates)
 
 			# Act:
 			await _dispatch_validate(preparer.directories)
