@@ -40,3 +40,20 @@ class BlockTest(unittest.TestCase):
 
 		# Assert:
 		self.assertEqual('2015-03-29 00:06:25', timestamp)
+
+	def test_can_compare_equal_blocks(self):
+		# Arrange:
+		block1 = self._create_default_block()
+		block2 = self._create_default_block()
+
+		# Act + Assert:
+		self.assertEqual(block1, block2)
+
+	def test_can_compare_unequal_blocks(self):
+		# Arrange:
+		block1 = self._create_default_block()
+		block2 = self._create_default_block()
+		block2.height = 6
+
+		# Act + Assert:
+		self.assertNotEqual(block1, block2)
