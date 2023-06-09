@@ -360,6 +360,7 @@ class Preparer:
 			NetworkTimestamp(timestamp).add_hours(self.config.transaction.timeout_hours),
 			self.config.transaction.fee_multiplier,
 			self.config.transaction.min_cosignatures_count)
+
 		if self.log:
 			self.log.info(f'created aggregate transaction with hash {transaction_hash}')
 

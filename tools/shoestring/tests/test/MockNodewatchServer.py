@@ -1,6 +1,7 @@
 import json
 
 from aiohttp import web
+from symbolchain.symbol.Network import Address
 
 NODEWATCH_PEER_NODES = [
 	{
@@ -84,6 +85,7 @@ def setup_mock_nodewatch_server(event_loop, aiohttp_client, redirect_network_req
 		def __init__(self):
 			self.urls = []
 			self.endpoint = ''
+			self.multisig_account_addresses = []
 
 		async def api_symbol_height(self, request):
 			return await self._process(request, {
@@ -121,6 +123,29 @@ def setup_mock_nodewatch_server(event_loop, aiohttp_client, redirect_network_req
 				}
 			})
 
+		async def account_multisig(self, request):
+			address = Address(request.match_info['address'])
+
+			# if address should be treated as a multisig account, return a 2/3 multisig info
+			if address in self.multisig_account_addresses:
+				return await self._process(request, {
+					'multisig': {
+						'version': 1,
+						'accountAddress': '987BC1722F417C93BA80C4212AA0E4621FB5B18550CC4103',
+						'minApproval': 2,
+						'minRemoval': 3,
+						'cosignatoryAddresses': [
+							'98AAB8782D4452F0DE6C82A778BB6937C509B9A1AFDF2320',
+							'98661D23312F31066CA5298FD453301C930553528FFE0FF1',
+							'98BEC4842DEE913E737CC267D984F5FCC955C981291B3936'
+						],
+						'multisigAddresses': []
+					}
+				})
+
+			# otherwise, treat account as a non-multisig account
+			return await self._process(request, {'code': 'ResourceNotFound', 'message': 'no resource exists with id'})
+
 		async def _process(self, request, response_body):
 			self.urls.append(str(request.url))
 			return web.Response(body=json.dumps(response_body), headers={'Content-Type': 'application/json'})
@@ -137,6 +162,7 @@ def setup_mock_nodewatch_server(event_loop, aiohttp_client, redirect_network_req
 	if redirect_network_requests:
 		app.router.add_get(r'/accounts/{account_id}', mock_server.accounts_by_id)
 		app.router.add_get('/node/time', mock_server.node_time)
+		app.router.add_get(r'/account/{address}/multisig', mock_server.account_multisig)
 
 	server = event_loop.run_until_complete(aiohttp_client(app))  # pylint: disable=redefined-outer-name
 

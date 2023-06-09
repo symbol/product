@@ -15,6 +15,7 @@ def parse_args(args):
 	subparsers = parser.add_subparsers(title='subcommands', help='valid subcommands')
 
 	register_subcommand(subparsers, 'health', 'does health check')
+	register_subcommand(subparsers, 'min-cosignatures-count', 'detects minimum cosignatures required for an account')
 	register_subcommand(subparsers, 'pemtool', 'generates PEM files')
 	register_subcommand(subparsers, 'renew-certificates', 'renews certificates')
 	register_subcommand(subparsers, 'renew-voting-keys', 'renews voting keys')

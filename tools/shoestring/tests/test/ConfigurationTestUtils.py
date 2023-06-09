@@ -6,6 +6,7 @@ def prepare_shoestring_configuration(directory, node_features, services_nodewatc
 	"""Prepares a shoestring configuration file in the specified directory."""
 
 	parser = configparser.ConfigParser()
+	parser.optionxform = str
 	parser.read(Path('tests/resources/sai.shoestring.ini').absolute())
 
 	parser['services']['nodewatch'] = str(services_nodewatch)
