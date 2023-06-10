@@ -8,5 +8,6 @@
     "URL_DISCORD_CH_HELP_DESK": "https://discord.gg/gKDHkNBRhn",
     "DISCORD_CH_HELP_DESK": "#helpdesk",
     "BACKEND_URL": "http://localhost:5001",
-    "AUTH_URL": "http://localhost:5002"
+    "AUTH_URL": "http://localhost:5002",
+    "AES_SECRET": "secret"
 }

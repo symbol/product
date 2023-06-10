@@ -7,8 +7,7 @@ describe('config', () => {
 		twitterAppKey: 'twitterAppKey',
 		twitterAppSecret: 'twitterAppSecret',
 		twitterCallbackUrl: 'http://127.0.0.1:3000',
-		jwtSecret: 'hello',
-		aesSecret: '703453cc3a2dba8d0bed63a5757cc905ee6a6ab357caed7cdf8acdb16d9ea070'
+		jwtSecret: 'hello'
 	};
 
 	const twitterConfigurationError = 'provided twitter configuration is incomplete';

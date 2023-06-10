@@ -3,8 +3,7 @@ const config = {
 	twitterAppKey: process.env.TWITTER_APP_KEY,
 	twitterAppSecret: process.env.TWITTER_APP_SECRET,
 	twitterCallbackUrl: process.env.TWITTER_CALLBACK_URL,
-	jwtSecret: process.env.JWT_SECRET,
-	aesSecret: process.env.AES_SECRET
+	jwtSecret: process.env.JWT_SECRET
 };
 
 const validateConfiguration = configParams => {

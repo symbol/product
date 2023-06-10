@@ -12,7 +12,8 @@ const config = {
 	URL_DISCORD_CH_HELP_DESK: process.env.NEXT_PUBLIC_URL_DISCORD_CH_HELPDESK ?? defaultConfig.URL_DISCORD_CH_HELP_DESK,
 	DISCORD_CH_HELP_DESK: process.env.NEXT_PUBLIC_DISCORD_CH_HELPDESK ?? defaultConfig.DISCORD_CH_HELP_DESK,
 	BACKEND_URL: process.env.NEXT_PUBLIC_BACKEND_URL ?? defaultConfig.BACKEND_URL,
-	AUTH_URL: process.env.NEXT_PUBLIC_AUTH_URL ?? defaultConfig.AUTH_URL
+	AUTH_URL: process.env.NEXT_PUBLIC_AUTH_URL ?? defaultConfig.AUTH_URL,
+	AES_SECRET: process.env.NEXT_PUBLIC_AES_SECRET ?? defaultConfig.AES_SECRET
 };
 
 export default config;

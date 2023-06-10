@@ -40,7 +40,8 @@ const HomeContainer = function (props) {
 		addressFirstChar: faucetAddress[0],
 		minFollowers: backendConfig.minFollowers,
 		minAccountAge: backendConfig.minAccountAge,
-		theme: 'light'
+		theme: 'light',
+		aesSecret: Config.AES_SECRET
 	};
 
 	useEffect(() => {

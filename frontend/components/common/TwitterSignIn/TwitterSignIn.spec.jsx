@@ -1,4 +1,5 @@
 import TwitterSignIn from '.';
+import { decrypt, encrypt } from '../../../utils/helper';
 import { jest } from '@jest/globals';
 import {
 	fireEvent, render, screen, waitFor
@@ -30,6 +31,7 @@ describe('components/TwitterSignIn', () => {
 
 	const setStatus = jest.fn();
 	const authUrl = 'http://auth.url';
+	const aesSecret = '703453cc3a2dba8d0bed63a5757cc905ee6a6ab357caed7cdf8acdb16d9ea070';
 
 	it('renders sign in button when isSignedIn is false', () => {
 		// Arrange + Act:
@@ -37,6 +39,7 @@ describe('components/TwitterSignIn', () => {
 			twitterAccountStatus={signInStatus}
 			setTwitterAccountStatus={setStatus}
 			authUrl={authUrl}
+			aesSecret={aesSecret}
 		/>);
 
 		const elementSignInButton = screen.queryByText('translated_home_form_button_auth_twitter');
@@ -56,6 +59,7 @@ describe('components/TwitterSignIn', () => {
 			}}
 			setTwitterAccountStatus={setStatus}
 			authUrl={authUrl}
+			aesSecret={aesSecret}
 		/>);
 
 		const elementSignInButton = screen.queryByText('translated_home_form_button_auth_twitter');
@@ -77,6 +81,7 @@ describe('components/TwitterSignIn', () => {
 			}}
 			setTwitterAccountStatus={setStatus}
 			authUrl={authUrl}
+			aesSecret={aesSecret}
 		/>);
 
 		// Act:
@@ -104,6 +109,7 @@ describe('components/TwitterSignIn', () => {
 			twitterAccountStatus={signInStatus}
 			setTwitterAccountStatus={setStatus}
 			authUrl={authUrl}
+			aesSecret={aesSecret}
 		/>);
 
 		// Act:
@@ -113,7 +119,13 @@ describe('components/TwitterSignIn', () => {
 		// Assert:
 		expect(axios.get).toHaveBeenCalledWith('/twitter/auth');
 		expect(elementSignInButton).toBeDisabled();
-		await waitFor(() => expect(sessionStorage.setItem).toHaveBeenCalledWith('twitterOauthTokenSecret', 'secret'));
+		await waitFor(() => {
+			// twitterOauthTokenSecret stored in encrypted format, it can't be predictable
+			const encryptedValue = sessionStorage.getItem('twitterOauthTokenSecret');
+			expect(sessionStorage.setItem).toHaveBeenCalledWith('twitterOauthTokenSecret', encryptedValue);
+			// ensure encrypted value is correct
+			expect(decrypt(encryptedValue, aesSecret)).toEqual('secret');
+		});
 		expect(window.location.assign).toHaveBeenCalledWith('called/back/url');
 	});
 
@@ -151,7 +163,8 @@ describe('components/TwitterSignIn', () => {
 			});
 
 			jest.spyOn(Storage.prototype, 'getItem').mockImplementation(key => {
-				return 'twitterOauthTokenSecret' === key ? twitterOauthTokenSecret : null;
+				// twitterOauthTokenSecret is stored in encrypted format
+				return 'twitterOauthTokenSecret' === key ? encrypt(twitterOauthTokenSecret, aesSecret) : null;
 			});
 
 			// twitter verify called back
@@ -164,6 +177,7 @@ describe('components/TwitterSignIn', () => {
 				twitterAccountStatus={signInStatus}
 				setTwitterAccountStatus={setStatus}
 				authUrl={authUrl}
+				aesSecret={aesSecret}
 			/>);
 
 			// Assert:
@@ -187,6 +201,7 @@ describe('components/TwitterSignIn', () => {
 				twitterAccountStatus={signInStatus}
 				setTwitterAccountStatus={setStatus}
 				authUrl={authUrl}
+				aesSecret={aesSecret}
 			/>);
 
 			// Assert:
@@ -205,6 +220,7 @@ describe('components/TwitterSignIn', () => {
 				twitterAccountStatus={signInStatus}
 				setTwitterAccountStatus={setStatus}
 				authUrl={authUrl}
+				aesSecret={aesSecret}
 			/>);
 
 			// Assert:

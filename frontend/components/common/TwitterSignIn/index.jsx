@@ -1,3 +1,4 @@
+import { decrypt, encrypt } from '../../../utils/helper';
 import Button from '../Button';
 import axios from 'axios';
 import { decode } from 'jsonwebtoken';
@@ -7,7 +8,8 @@ import React, { useEffect, useState } from 'react';
 const TwitterSignIn = function ({
 	twitterAccountStatus,
 	setTwitterAccountStatus,
-	authUrl
+	authUrl,
+	aesSecret
 }) {
 	const [isLoading, setIsLoading] = useState(false);
 
@@ -17,7 +19,9 @@ const TwitterSignIn = function ({
 	const twitterAuth = async () => {
 		setIsLoading(true);
 		const { data } = await authRequest.get('/twitter/auth');
-		sessionStorage.setItem('twitterOauthTokenSecret', data.oauthTokenSecret);
+		// encrypt oauthTokenSecret and store it in sessionStorage
+		// https://codeql.github.com/codeql-query-help/javascript/js-clear-text-storage-of-sensitive-data/#recommendation
+		sessionStorage.setItem('twitterOauthTokenSecret', encrypt(data.oauthTokenSecret, aesSecret));
 		window.location.assign(data.url);
 	};
 
@@ -37,7 +41,7 @@ const TwitterSignIn = function ({
 		const oauthVerifier = query.get('oauth_verifier');
 
 		const twitterVerify = async () => {
-			const oauthTokenSecret = sessionStorage.getItem('twitterOauthTokenSecret');
+			const oauthTokenSecret = decrypt(sessionStorage.getItem('twitterOauthTokenSecret'), aesSecret);
 
 			const { data } = await authRequest.get('/twitter/verify', {
 				params: {

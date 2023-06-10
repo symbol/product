@@ -1,6 +1,8 @@
 import {
 	absoluteToRelativeAmount,
 	createI18n,
+	decrypt,
+	encrypt,
 	relativeToAbsoluteAmount,
 	validateNEMAddress,
 	validateSymbolAddress
@@ -141,6 +143,48 @@ describe('utils/helper', () => {
 				null,
 				'[missing_translation]wrong_key'
 			);
+		});
+	});
+
+	describe('crypto encrypt / decrypt', () => {
+		const secret = '703453cc3a2dba8d0bed63a5757cc905ee6a6ab357caed7cdf8acdb16d9ea070';
+
+		it('returns encrypted hex string', () => {
+			// Act:
+			const result = encrypt('oauth-token-secret', secret);
+
+			// Assert:
+			const textParts = result.split(':');
+			// vi is 16 bytes
+			expect(textParts[0].length).toEqual(32);
+			// auth tag is 16 bytes
+			expect(textParts[1].length).toEqual(32);
+			// encrypted text is 18 bytes
+			expect(textParts[2].length).toEqual(36);
+			expect(result.length).toEqual(102);
+			expect(decrypt(result, secret)).toEqual('oauth-token-secret');
+		});
+
+		it('return decrypt value from encrypted string', () => {
+			// Act:
+			const result = decrypt(
+				'ccd36d217a5a498545a5e24be0455f3d:70b6a18de851f0e530d562d544bf60f0:17798b8c1e14e7e1fff849f217c0bac3293d',
+				secret
+			);
+
+			// Assert:
+			expect(result).toEqual('oauth-token-secret');
+		});
+
+		it('round trip', () => {
+			// Arrange:
+			const text = 'test-round-trip';
+
+			// Act:
+			const encrypted = encrypt(text, secret);
+
+			// Assert:
+			expect(decrypt(encrypted, secret)).toEqual(text);
 		});
 	});
 });

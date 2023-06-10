@@ -181,6 +181,7 @@ const FaucetForm = function ({ config, addressValidation }) {
 					twitterAccountStatus={onAuthStatus}
 					setTwitterAccountStatus={setAuthStatus}
 					authUrl={config.authUrl}
+					aesSecret={config.aesSecret}
 				/>
 			</div>
 
