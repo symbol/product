@@ -87,3 +87,12 @@ class NodeDownloader:
 			async with session.get(f'{self.endpoint}/{url_path}') as response:
 				response_json = await response.json()
 				return response_json
+
+
+async def detect_api_endpoints(nodewatch_endpoint, count=1):
+	"""Uses nodewatch to detect up to the specified number of API endpoints."""
+
+	downloader = NodeDownloader(nodewatch_endpoint)
+	downloader.max_output_nodes = count
+	await downloader.download_peer_nodes()
+	return downloader.select_api_endpoints()[:count]

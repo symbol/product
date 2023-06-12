@@ -5,22 +5,15 @@ from zenlog import log
 
 from shoestring.internal.ConfigurationManager import ConfigurationManager
 from shoestring.internal.MultisigAnalyzer import calculate_min_cosignatures_count
-from shoestring.internal.NodeDownloader import NodeDownloader
+from shoestring.internal.NodeDownloader import detect_api_endpoints
 from shoestring.internal.PemUtils import read_public_key_from_private_key_pem_file
 from shoestring.internal.ShoestringConfiguration import parse_shoestring_configuration
-
-
-async def _detect_api_endpoint(nodewatch_endpoint):
-	downloader = NodeDownloader(nodewatch_endpoint)
-	downloader.max_output_nodes = 1
-	await downloader.download_peer_nodes()
-	return downloader.select_api_endpoints()[0]
 
 
 async def run_main(args):
 	config = parse_shoestring_configuration(args.config)
 
-	api_endpoint = await _detect_api_endpoint(config.services.nodewatch)
+	api_endpoint = (await detect_api_endpoints(config.services.nodewatch, 1))[0]
 
 	log.info(f'connecting to {api_endpoint}')
 	connector = SymbolConnector(api_endpoint)

@@ -86,6 +86,7 @@ def setup_mock_nodewatch_server(event_loop, aiohttp_client, redirect_network_req
 			self.urls = []
 			self.endpoint = ''
 			self.multisig_account_addresses = []
+			self.request_json_payloads = []
 
 		async def api_symbol_height(self, request):
 			return await self._process(request, {
@@ -146,6 +147,11 @@ def setup_mock_nodewatch_server(event_loop, aiohttp_client, redirect_network_req
 			# otherwise, treat account as a non-multisig account
 			return await self._process(request, {'code': 'ResourceNotFound', 'message': 'no resource exists with id'})
 
+		async def announce_transaction(self, request):
+			request_json = await request.json()
+			self.request_json_payloads.append(request_json)
+			return await self._process(request, {'message': 'packet 9 was pushed to the network via /transactions'})
+
 		async def _process(self, request, response_body):
 			self.urls.append(str(request.url))
 			return web.Response(body=json.dumps(response_body), headers={'Content-Type': 'application/json'})
@@ -163,6 +169,8 @@ def setup_mock_nodewatch_server(event_loop, aiohttp_client, redirect_network_req
 		app.router.add_get(r'/accounts/{account_id}', mock_server.accounts_by_id)
 		app.router.add_get('/node/time', mock_server.node_time)
 		app.router.add_get(r'/account/{address}/multisig', mock_server.account_multisig)
+		app.router.add_put('/transactions', mock_server.announce_transaction)
+		app.router.add_put('/transactions/partial', mock_server.announce_transaction)
 
 	server = event_loop.run_until_complete(aiohttp_client(app))  # pylint: disable=redefined-outer-name
 

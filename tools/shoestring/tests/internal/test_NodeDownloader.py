@@ -2,7 +2,7 @@ from functools import reduce
 
 import pytest
 
-from shoestring.internal.NodeDownloader import NodeDownloader
+from shoestring.internal.NodeDownloader import NodeDownloader, detect_api_endpoints
 
 from ..test.MockNodewatchServer import setup_mock_nodewatch_server
 
@@ -276,16 +276,7 @@ async def test_can_filter_selected_api_endpoints_by_min_balance(server):  # pyli
 	] == endpoints
 
 
-async def test_can_limit_selected_api_endpoints(server):  # pylint: disable=redefined-outer-name
-	# Arrange:
-	downloader = await _create_downloader_with_nodes(server)
-	downloader.max_output_nodes = 2
-
-	# Act:
-	endpoints = downloader.select_api_endpoints()
-
-	# Assert:
-	assert 2 == len(endpoints)
+def _assert_api_endpoints_subset(endpoints):
 	expected_endpoints = [
 		'http://0-0-5symbol.open-nodes.com:3000',
 		'http://ik1-432-48199.vs.sakura.ne.jp:3333',
@@ -296,6 +287,32 @@ async def test_can_limit_selected_api_endpoints(server):  # pylint: disable=rede
 		lambda total, endpoint: total + (1 if endpoint in endpoints else 0),
 		expected_endpoints,
 		0)
-	assert 2 == matching_endpoint_count
+	assert len(endpoints) == matching_endpoint_count
+
+
+async def test_can_limit_selected_api_endpoints(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	downloader = await _create_downloader_with_nodes(server)
+	downloader.max_output_nodes = 2
+
+	# Act:
+	endpoints = downloader.select_api_endpoints()
+
+	# Assert:
+	assert 2 == len(endpoints)
+	_assert_api_endpoints_subset(endpoints)
+
+# endregion
+
+
+# region detect_api_endpoints
+
+async def can_detect_api_endpoints(server):  # pylint: disable=redefined-outer-name
+	# Act:
+	endpoints = await detect_api_endpoints(server.make_url(''), 2)
+
+	# Assert:
+	assert 2 == len(endpoints)
+	_assert_api_endpoints_subset(endpoints)
 
 # endregion
