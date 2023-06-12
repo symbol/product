@@ -5,6 +5,7 @@ import {
 	fireEvent, render, screen, waitFor
 } from '@testing-library/react';
 import axios from 'axios';
+import crypto from 'crypto';
 
 describe('components/TwitterSignIn', () => {
 	beforeEach(() => {
@@ -31,7 +32,7 @@ describe('components/TwitterSignIn', () => {
 
 	const setStatus = jest.fn();
 	const authUrl = 'http://auth.url';
-	const aesSecret = '703453cc3a2dba8d0bed63a5757cc905ee6a6ab357caed7cdf8acdb16d9ea070';
+	const aesSecret = crypto.randomBytes(32).toString('hex');;
 
 	it('renders sign in button when isSignedIn is false', () => {
 		// Arrange + Act:
