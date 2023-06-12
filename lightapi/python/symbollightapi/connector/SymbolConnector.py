@@ -1,4 +1,4 @@
-from binascii import unhexlify
+from binascii import hexlify, unhexlify
 from collections import namedtuple
 
 from symbolchain.CryptoTypes import Hash256, PublicKey
@@ -145,3 +145,29 @@ class SymbolConnector(BasicConnector):
 	@staticmethod
 	def _decoded_string_to_address(decoded_address):
 		return Address(unhexlify(decoded_address))
+
+	async def _announce_transaction(self, transaction_payload, url_path):
+		"""Announces a transaction to the network."""
+
+		if hasattr(transaction_payload, 'serialize'):
+			transaction_buffer = transaction_payload.serialize()
+		else:
+			transaction_buffer = transaction_payload
+
+		hex_payload = hexlify(transaction_buffer).decode('utf8').upper()
+		json_response = await self.put(url_path, {
+			'payload': hex_payload
+		})
+
+		if 'code' in json_response:
+			raise RuntimeError(f'send transaction failed: {json_response["message"]}')
+
+	async def announce_transaction(self, transaction_payload):
+		"""Announces a transaction to the network."""
+
+		await self._announce_transaction(transaction_payload, 'transactions')
+
+	async def announce_partial_transaction(self, transaction_payload):
+		"""Announces a partial transaction to the network."""
+
+		await self._announce_transaction(transaction_payload, 'transactions/partial')

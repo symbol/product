@@ -76,6 +76,8 @@ def server(event_loop, aiohttp_client):
 	class MockSymbolServer:
 		def __init__(self):
 			self.urls = []
+			self.request_json_payloads = []
+			self.simulate_error = False
 
 		async def network_properties(self, request):
 			return await self._process(request, {
@@ -150,6 +152,15 @@ def server(event_loop, aiohttp_client):
 
 			return await self._process(request, {'code': 'ResourceNotFound', 'message': 'no resource exists with id'})
 
+		async def announce_transaction(self, request):
+			request_json = await request.json()
+			self.request_json_payloads.append(request_json)
+
+			if self.simulate_error:
+				return await self._process(request, {'code': 'InvalidContent', 'message': 'Invalid JSON'})
+
+			return await self._process(request, {'message': 'packet 9 was pushed to the network via /transactions'})
+
 		async def _process(self, request, response_body):
 			self.urls.append(str(request.url))
 			return web.Response(body=json.dumps(response_body), headers={'Content-Type': 'application/json'})
@@ -166,6 +177,8 @@ def server(event_loop, aiohttp_client):
 	app.router.add_get('/node/peers', mock_server.node_peers)
 	app.router.add_get(r'/accounts/{account_id}', mock_server.accounts_by_id)
 	app.router.add_get(r'/account/{address}/multisig', mock_server.account_multisig)
+	app.router.add_put('/transactions', mock_server.announce_transaction)
+	app.router.add_put('/transactions/partial', mock_server.announce_transaction)
 	server = event_loop.run_until_complete(aiohttp_client(app))  # pylint: disable=redefined-outer-name
 
 	server.mock = mock_server
@@ -431,6 +444,7 @@ async def test_can_query_account_multisig_information_for_unknown_account(server
 	multisig_info = await connector.account_multisig(Address('TCVLQ6BNIRJPBXTMQKTXRO3JG7CQTONBV7PSGIA'))
 
 	# Assert:
+	assert [f'{server.make_url("")}/account/TCVLQ6BNIRJPBXTMQKTXRO3JG7CQTONBV7PSGIA/multisig'] == server.mock.urls
 	assert 0 == multisig_info.min_approval
 	assert 0 == multisig_info.min_removal
 	assert [] == multisig_info.cosignatory_addresses
@@ -445,6 +459,7 @@ async def test_can_query_account_multisig_information_for_known_account(server):
 	multisig_info = await connector.account_multisig(Address(unhexlify(MULTISIG_INFO_1['multisig']['accountAddress'])))
 
 	# Assert:
+	assert [f'{server.make_url("")}/account/TB54C4RPIF6JHOUAYQQSVIHEMIP3LMMFKDGECAY/multisig'] == server.mock.urls
 	assert 2 == multisig_info.min_approval
 	assert 3 == multisig_info.min_removal
 	assert [
@@ -456,5 +471,74 @@ async def test_can_query_account_multisig_information_for_known_account(server):
 		Address('TDJVZT3GHVQ4MTTLBA6ARMKUJQ6ZKOHLAE3JESA'),
 		Address('TCMW6PBD3XSCLDU5HYHQXZF25VEDODFG5XL52LA')
 	] == multisig_info.multisig_addresses
+
+# endregion
+
+
+# region PUT (announce_transaction, announce_partial_transaction)
+
+async def _assert_can_announce_transaction(server, transaction_payload, connector_function_name, url_path):
+	# pylint: disable=redefined-outer-name
+	# Arrange:
+	connector = SymbolConnector(server.make_url(''))
+
+	# Act:
+	await getattr(connector, connector_function_name)(transaction_payload)
+
+	# Assert:
+	assert [f'{server.make_url("")}/{url_path}'] == server.mock.urls
+	assert [{'payload': '68656C6C6F20776F726C6421'}] == server.mock.request_json_payloads
+
+
+async def _assert_can_announce_transaction_object(server, connector_function_name, url_path):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	class MockTransaction:
+		def __init__(self, buffer):
+			self.buffer = buffer
+
+		def serialize(self):
+			return self.buffer
+
+	# Act + Assert:
+	await _assert_can_announce_transaction(server, MockTransaction(b'hello world!'), connector_function_name, url_path)
+
+
+async def _assert_can_announce_transaction_buffer(server, connector_function_name, url_path):  # pylint: disable=redefined-outer-name
+	await _assert_can_announce_transaction(server, b'hello world!', connector_function_name, url_path)
+
+
+async def _assert_cannot_announce_transaction_with_error(server, connector_function_name):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	server.mock.simulate_error = True
+
+	connector = SymbolConnector(server.make_url(''))
+
+	# Act + Assert:
+	with pytest.raises(RuntimeError):
+		await getattr(connector, connector_function_name)(b'hello world!')
+
+
+async def test_can_announce_transaction_object(server):  # pylint: disable=redefined-outer-name
+	await _assert_can_announce_transaction_object(server, 'announce_transaction', 'transactions')
+
+
+async def test_can_announce_transaction_object_partial(server):  # pylint: disable=redefined-outer-name
+	await _assert_can_announce_transaction_object(server, 'announce_partial_transaction', 'transactions/partial')
+
+
+async def test_can_announce_transaction_buffer(server):  # pylint: disable=redefined-outer-name
+	await _assert_can_announce_transaction_buffer(server, 'announce_transaction', 'transactions')
+
+
+async def test_can_announce_transaction_buffer_partial(server):  # pylint: disable=redefined-outer-name
+	await _assert_can_announce_transaction_buffer(server, 'announce_partial_transaction', 'transactions/partial')
+
+
+async def test_cannot_announce_transaction_with_error(server):  # pylint: disable=redefined-outer-name
+	await _assert_cannot_announce_transaction_with_error(server, 'announce_transaction')
+
+
+async def test_cannot_announce_transaction_with_error_partial(server):  # pylint: disable=redefined-outer-name
+	await _assert_cannot_announce_transaction_with_error(server, 'announce_partial_transaction')
 
 # endregion
