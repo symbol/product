@@ -1,0 +1,13 @@
+{
+    "URL_GITHUB": "https://github.com/nemproject",
+    "URL_TWITTER": "https://twitter.com/NEMofficial",
+    "URL_DISCORD": "https://discord.gg/xymcity",
+    "URL_EXPLORER": "https://testnet-explorer.nemtool.com",
+    "URL_TELEGRAM_CH_HELP_DESK": "https://t.me/nemhelpdesk",
+    "TELEGRAM_CH_HELP_DESK": "@nemhelpdesk",
+    "URL_DISCORD_CH_HELP_DESK": "https://discord.gg/gKDHkNBRhn",
+    "DISCORD_CH_HELP_DESK": "#helpdesk",
+    "BACKEND_URL": "http://localhost:5001",
+    "AUTH_URL": "http://localhost:5002",
+    "AES_SECRET": "secret"
+}
