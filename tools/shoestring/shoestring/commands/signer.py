@@ -75,6 +75,10 @@ def run_main(args):
 
 		'deadline': transaction.deadline,
 
+		'mosaic': {
+			'mosaic_id': config.transaction.currency_mosaic_id,
+			'amount': config.transaction.locked_funds_per_aggregate
+		},
 		'duration': config.transaction.hash_lock_duration,
 		'hash': transaction_hash
 	})

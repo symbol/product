@@ -24,6 +24,8 @@ def _assert_hash_lock_transaction(transaction, expected_signer_public_key, expec
 	assert 184 * 200 == transaction.fee.value
 	assert NetworkTimestamp(1234000) == NetworkTimestamp(transaction.deadline.value)  # should be same as agggregate
 
+	assert 0x72C0212E67A08BCE == transaction.mosaic.mosaic_id.value
+	assert 10000000 == transaction.mosaic.amount.value
 	assert 1440 == transaction.duration.value
 	assert expected_hash == Hash256(transaction.hash.bytes)
 
