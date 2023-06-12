@@ -3,10 +3,9 @@ import { Image, StyleSheet } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import { Button, ButtonClose, ButtonPlain, FormItem, MnemonicInput, QRCode, QRScanner, Screen, StyledText, WalletCreationAnimation } from 'src/components';
 import store from 'src/store';
-import { createPrivateKeysFromMnemonic, handleError, publicAccountFromPrivateKey, useDataManager, usePasscode } from 'src/utils';
+import { createOptInPrivateKeyFromMnemonic, handleError, useDataManager, usePasscode } from 'src/utils';
 import { Router } from 'src/Router';
 import { $t } from 'src/localization';
-import { optInWhiteList } from 'src/config';
 
 export const ImportWallet = () => {
     const [name] = useState($t('s_importWallet_defaultAccountName'));
@@ -28,11 +27,9 @@ export const ImportWallet = () => {
     const next = () => createPasscode();
     const [checkOptInAccounts] = useDataManager(
         async () => {
-            const [optInPrivateKey] = createPrivateKeysFromMnemonic(mnemonic.trim(), [0], 'mainnet', 'optin');
-            const optInAccount = publicAccountFromPrivateKey(optInPrivateKey, 'mainnet');
-            const isKeyWhitelisted = optInWhiteList.some(publicKey => publicKey === optInAccount.publicKey);
+            const optInPrivateKey = createOptInPrivateKeyFromMnemonic(mnemonic);
             setLoadingStep(4)
-            setTimeout(() => saveMnemonic(isKeyWhitelisted ? optInPrivateKey : null), 500);
+            setTimeout(() => saveMnemonic(optInPrivateKey), 500);
         },
         null,
         handleError

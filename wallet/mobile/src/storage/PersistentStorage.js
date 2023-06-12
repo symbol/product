@@ -19,7 +19,7 @@ export class PersistentStorage {
     static getDataSchemaVersion = async () => {
         const version = await this.get(this.DATA_SCHEMA_VERSION);
 
-        if (null) {
+        if (version === null) {
             return null;
         }
 

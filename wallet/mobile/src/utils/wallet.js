@@ -8,6 +8,7 @@ import RNFetchBlob from 'rn-fetch-blob';
 import { Buffer } from 'buffer';
 import { networkIdentifierToNetworkType } from './network';
 import store from 'src/store';
+import { optInWhiteList } from 'src/config';
 
 export const generateMnemonic = () => {
     return MnemonicPassPhrase.createRandom().plain;
@@ -103,3 +104,11 @@ export const writeFile = async (data, filename, encoding) => {
 
     return true;
 };
+
+export const createOptInPrivateKeyFromMnemonic = (mnemonic) => {
+    const [optInPrivateKey] = createPrivateKeysFromMnemonic(mnemonic.trim(), [0], 'mainnet', 'optin');
+    const optInAccount = publicAccountFromPrivateKey(optInPrivateKey, 'mainnet');
+    const isKeyWhitelisted = optInWhiteList.some(publicKey => publicKey === optInAccount.publicKey);
+
+    return isKeyWhitelisted ? optInPrivateKey : null;
+}

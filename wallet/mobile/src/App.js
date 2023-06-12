@@ -7,7 +7,7 @@ import SplashScreen from 'react-native-splash-screen';
 import FlashMessage from 'react-native-flash-message';
 import { ConnectionStatus } from './components';
 import { Passcode } from './screens';
-import { SecureStorage } from './storage';
+import { SecureStorage, StorageMigration } from './storage';
 import store from 'src/store';
 import { initLocalization } from './localization';
 import { Router, RouterView } from './Router';
@@ -35,6 +35,7 @@ const App = () => {
         setIsUnlocked(true);
     };
     const load = async () => {
+        await StorageMigration.migrate();
         await initLocalization();
         const isPasscodeEnabled = await hasUserSetPinCode();
         const isWalletExist = !!(await SecureStorage.getMnemonic());
@@ -73,7 +74,7 @@ const App = () => {
                         <StatusBar backgroundColor={colors.bgStatusbar} barStyle="light-content" />
                         <Provider store={store}>
                             {isMainContainerShown && <ConnectionStatus />}
-                            <FlashMessage 
+                            <FlashMessage
                                 statusBarHeight={8} animationDuration={200} titleStyle={flashMessageTextStyle} style={flashMessageStyle} />
                             <RouterView isActive={isMainContainerShown} />
                             {isPasscodeShown && <Passcode hideCancelButton keepListener keepNavigation route={{ params: passcodeParams }} />}
