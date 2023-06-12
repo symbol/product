@@ -1,7 +1,7 @@
 import { useIsFocused } from '@react-navigation/native';
 import React, { useState } from 'react';
 import { useEffect } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { borders, colors, spacings } from 'src/styles';
 import { FormItem, TouchableNative } from 'src/components';
@@ -46,8 +46,11 @@ export function ItemBase(props) {
     const isFocused = useIsFocused();
 
     useEffect(() => {
-        if (isFocused && isExpanded) {
+        const shouldCollapse = isFocused && isExpanded;
+        if (Platform.OS === 'android' && shouldCollapse) {
             scale.value = MAX_SCALE;
+        }
+        if (shouldCollapse) {
             scale.value = withTiming(MIN_SCALE, { duration: ANIMATION_DURATION });
             setIsExpanded(false);
         }
