@@ -1,0 +1,17 @@
+@import "../variables";
+
+.footer {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: $spacing-padding * 1;
+    color: $color-text-footer;
+    background-color: $color-background-footer;
+
+    .footerLogo {
+        width: $spacing-base * 8;
+        height: $spacing-base * 8;
+    }
+}

@@ -1,0 +1,30 @@
+{
+  "extends": [
+    "eslint-config-next",
+    "plugin:import/react",
+    "plugin:prettier/recommended",
+    "../../_symbol/linters/javascript/default.eslintrc"
+  ],
+  "rules": {
+    "import/extensions": [
+      "error",
+      "always",
+      {
+        "json": "always",
+        "js": "never",
+        "jsx": "never"
+      }
+    ],
+    "yoda": "off"
+  },
+  "settings": {
+    "import/resolver": {
+      "jsconfig": {
+        "config": "jsconfig.json"
+      }
+    }
+  },
+  "globals": {
+    "$t": false
+  }
+}

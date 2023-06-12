@@ -1,0 +1,83 @@
+@import "../variables";
+
+.wrapper {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    min-height: 100%;
+    overflow-x: hidden;
+    background-color: #eef5f9;
+    background-size: cover;
+    background-blend-mode: color-burn;
+    transition: width 0.25s ease-in-out, opacity 0.25s ease-in-out;
+
+    &::before {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-image: url("/images/bg-tree-left.png"), url("/images/bg-tree-right.png");
+        background-repeat: no-repeat;
+        background-position: top left, bottom right;
+        background-size: 50.41rem 50.33rem, 24.25rem 49.92rem;
+        content: "";
+    }
+
+
+    .contentContainer {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        flex-grow: 1;
+        align-items: center;
+        width: 100%;
+        height: 100%;
+
+        .contentContainerInner {
+            width: 100%;
+            height: 100%;
+        }
+    }
+
+    @media #{$screen-desktop} {
+        .contentContainer {
+            padding: 0 $spacing-content-container-margin-desktop;
+
+            .contentContainerInner {
+                max-width: $spacing-content-container-width-desktop;
+            }
+        }
+    }
+
+    @media #{$screen-laptop} {
+        .contentContainer {
+            padding: 0 $spacing-content-container-margin-laptop;
+
+            .contentContainerInner {
+                max-width: $spacing-content-container-width-laptop;
+            }
+        }
+    }
+
+    @media #{$screen-mobile} {
+        .contentContainer {
+            padding: 0 $spacing-content-container-margin-mobile;
+
+            .contentContainerInner {
+                max-width: $spacing-content-container-width-mobile;
+            }
+        }
+    }
+}
+
+.grid {
+    background: repeating-linear-gradient(
+        to bottom,
+        #e5120355 0,
+        #e5120355 $spacing-base / 2,
+        #fff0 $spacing-base / 2,
+        #fff0 $spacing-base
+    );
+}

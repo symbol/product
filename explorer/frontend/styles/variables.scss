@@ -1,0 +1,57 @@
+// Colors
+$color-background-main: #eef5f9;
+$color-background-card: #fff;
+$color-background-header: rgba(255, 255, 255, 40%);
+$color-background-footer: #000;
+$color-primary: #50B9AD;
+$color-secondary: #FAB700;
+$color-text-body: #0B0118;
+$color-text-footer: #fff;
+$color-text-link: #66B7E7;
+$color-success: #4cc773;
+$color-danger: #ed514e;
+
+// Borders
+$border-radius-card: 1rem;
+$border-radius-input: 0.5rem;
+$border-radius-button: 0;
+
+// Typography
+$font-body: 400 1rem / 133.33% 'Nunito Sans', sans-serif;
+$font-h1: 400 / 4.66rem 'Abhaya Libre', sans-serif;
+$font-h2: 400 3.25rem / 4rem 'Abhaya Libre', sans-serif;
+$font-h3: 400 2.66rem / 3.33rem 'Abhaya Libre', sans-serif;
+$font-title: 700 1rem / 133.33% 'Nunito Sans', sans-serif;
+$font-tab: 700 1rem / 133.33% 'Nunito Sans', sans-serif;
+$font-nav: 700 1rem / 133.33% 'Nunito Sans', sans-serif;
+$font-input-placeholder: 700 1rem / 133.33% 'Nunito Sans', sans-serif;
+$font-input-text: 700 1rem / 133.33% 'Nunito Sans', sans-serif;
+$font-button: 700 1rem / 133.33% 'Nunito Sans', sans-serif;
+
+// Spacings General
+$spacing-base: calc(1rem / 3 * 2);
+$spacing-padding: $spacing-base * 3;
+$spacing-card-gap: $spacing-base * 3;
+$spacing-section-gap: $spacing-base * 4;
+$spacing-header-height: $spacing-base * 8;
+$spacing-heading-margin: $spacing-base;
+
+// Spacings Desktop
+$spacing-content-container-width-desktop: $spacing-base * 152;
+$spacing-content-container-margin-desktop: $spacing-base * 3;
+$multiplier-font-desktop: 0.833vw;
+
+// Spacings Laptop
+$spacing-content-container-width-laptop: $spacing-base * 152;
+$spacing-content-container-margin-laptop: $spacing-base * 3;
+$multiplier-font-laptop: 0.95vw;
+
+// Spacings Mobile
+$spacing-content-container-width-mobile: 100%;
+$spacing-content-container-margin-mobile: $spacing-base * 2;
+$multiplier-font-mobile: 10px;
+
+// Breakpoints
+$screen-desktop: "(min-width: 1440px)";
+$screen-laptop: "(max-width: 1439.8px) and (min-width: 768px)";
+$screen-mobile: "(max-width: 767.8px)";
