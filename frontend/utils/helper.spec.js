@@ -7,6 +7,7 @@ import {
 	validateNEMAddress,
 	validateSymbolAddress
 } from './helper';
+import crypto from 'crypto';
 
 describe('utils/helper', () => {
 	const runBasicValidateAddressTests = (validateAddress, { testnet, mainnet, invalid }) => {
@@ -147,7 +148,7 @@ describe('utils/helper', () => {
 	});
 
 	describe('crypto encrypt / decrypt', () => {
-		const secret = '703453cc3a2dba8d0bed63a5757cc905ee6a6ab357caed7cdf8acdb16d9ea070';
+		const secret = crypto.randomBytes(32).toString('hex');
 
 		it('returns encrypted hex string', () => {
 			// Act:
@@ -167,10 +168,8 @@ describe('utils/helper', () => {
 
 		it('return decrypt value from encrypted string', () => {
 			// Act:
-			const result = decrypt(
-				'ccd36d217a5a498545a5e24be0455f3d:70b6a18de851f0e530d562d544bf60f0:17798b8c1e14e7e1fff849f217c0bac3293d',
-				secret
-			);
+			const encrypted = encrypt('oauth-token-secret', secret);
+			const result = decrypt(encrypted, secret);
 
 			// Assert:
 			expect(result).toEqual('oauth-token-secret');
