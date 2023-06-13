@@ -26,19 +26,19 @@ def _openssl_get_certificate_date(openssl_executor, certificate_path, date_type)
 	return parsedate_to_datetime(rfc_822_date)
 
 
-def _process_end_certificate_date(current_datetime, prefix, certificate_datetime):
+def _process_end_certificate_date(current_datetime, name, certificate_datetime):
 	days_remaining = (certificate_datetime - current_datetime).days
 	if certificate_datetime < current_datetime:
-		log.error(f'{prefix} certificate expired ({-days_remaining} day(s) ago)')
+		log.error(_('health-peer-certificate-expired').format(name=name, days_expired=-days_remaining))
 	elif (certificate_datetime - current_datetime).days < CERT_RENEW_DAYS_WARNING:
-		log.warning(f'{prefix} certificate near expiry ({days_remaining} day(s))')
+		log.warning(_('health-peer-certificate-near-expiry').format(name=name, days_remaining=days_remaining))
 	else:
-		log.info(f'{prefix} certificate not near expiry ({days_remaining} day(s))')
+		log.info(_('health-peer-certificate-not-near-expiry').format(name=name, days_remaining=days_remaining))
 
 
-def _process_start_certificate_date(current_datetime, prefix, certificate_datetime):
+def _process_start_certificate_date(current_datetime, name, certificate_datetime):
 	if current_datetime < certificate_datetime:
-		log.error(f'{prefix} certificate start date is in future ({certificate_datetime.strftime("%y%m%d")})')
+		log.error(_('health-peer-certificate-future-start').format(name=name, start_date=certificate_datetime.strftime('%y-%m-%d')))
 
 
 def _load_binary_file_data(filename):
@@ -60,7 +60,7 @@ def _verify_certificate(openssl_executor, ca_crt_path, crt_path, name):
 	try:
 		openssl_executor.dispatch(['verify', '-CAfile', ca_crt_path, crt_path])
 	except RuntimeError:
-		log.error(f'could not verify {name} certificate')
+		log.error(_('health-peer-certificate-not-verifiable').format(name=name))
 
 
 async def validate(context):
@@ -69,7 +69,7 @@ async def validate(context):
 
 	if expected_package_files != package_files:
 		missing_files = ', '.join(sorted(set(expected_package_files) - set(package_files)))
-		log.error(f'there are missing files in certificate directory: {missing_files}')
+		log.error(_('health-peer-certificate-missing-files').format(missing_files=missing_files))
 		return
 
 	# verify that node.full == node.crt + ca.crt
@@ -80,7 +80,7 @@ async def validate(context):
 	ca_crt_data = _load_binary_file_data(ca_crt_path)
 
 	if node_full_crt_data != node_crt_data + ca_crt_data:
-		log.error('node.full.crt.pem does not look like a product of node and CA certificates')
+		log.error(_('health-peer-certificate-corrupt-full-certificate'))
 		return
 
 	# check certificate lifetime

@@ -19,7 +19,7 @@ async def validate(context):
 		# extract user id from connect response
 		response_json = json.loads(await websocket.recv())
 		user_id = response_json['uid']
-		log.info(f'websocket connected to {context.websocket_endpoint}, subscribing and waiting for block')
+		log.info(_('health-websockets-connected').format(endpoint=context.websocket_endpoint))
 
 		# subscribe to block messages
 		subscribe_message = {'uid': user_id, 'subscribe': 'block'}
@@ -36,8 +36,8 @@ async def validate(context):
 			topic = response_json['topic']
 			if 'block' == topic:
 				height = int(response_json['data']['block']['height'])
-				log.info(f'websocket received a block with height {height}')
+				log.info(_('health-websockets-received-block').format(height=height))
 			else:
-				log.error(f'received a message but it has wrong topic \'{topic}\'')
+				log.error(_('health-websockets-received-wrong-topic').format(topic=topic))
 		except asyncio.exceptions.TimeoutError:
-			log.error('timeout when waiting for a block, this might indicate a problem between broker <-> REST')
+			log.error(_('health-websockets-timed-out'))

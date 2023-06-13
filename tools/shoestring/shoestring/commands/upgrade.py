@@ -13,12 +13,12 @@ from .setup import run_main as run_setup_main
 
 
 def _purge_directory(directory):
-	log.info(f'purging DIRECTORY {directory}')
+	log.info(_('upgrade-purging-directory').format(directory=directory))
 	shutil.rmtree(directory)
 
 
 def _recreate_directory(directory):
-	log.info(f'recreating DIRECTORY {directory}')
+	log.info(_('upgrade-recreating-directory').format(directory=directory))
 	directory.mkdir(mode=0o700, exist_ok=False)
 
 

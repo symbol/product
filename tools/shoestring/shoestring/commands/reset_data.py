@@ -8,7 +8,7 @@ from shoestring.internal.ShoestringConfiguration import parse_shoestring_configu
 
 
 def _purge_and_recreate(directory):
-	log.info(f'purging and recreating DIRECTORY {directory}')
+	log.info(_('reset-data-recreating-directory').format(directory=directory))
 
 	shutil.rmtree(directory)
 	directory.mkdir(mode=0o700, exist_ok=False)
@@ -48,12 +48,12 @@ class VoterStateProcessor:
 		if not source_path.exists():
 			return
 
-		log.info(f'copying FILE {source_path} into {destination_path}')
+		log.info(_('general-copying-file').format(source_path=source_path, destination_path=destination_path))
 		shutil.copy(source_path, destination_path)
 
 	@staticmethod
 	def _copy_tree(source_path, destination_path):
-		log.info(f'copying TREE {source_path} to {destination_path}')
+		log.info(_('general-copying-tree').format(source_path=source_path, destination_path=destination_path))
 		shutil.copytree(source_path, destination_path)
 
 
@@ -76,6 +76,6 @@ async def run_main(args):
 
 
 def add_arguments(parser):
-	parser.add_argument('--config', help='path to shoestring configuration file', required=True)
-	parser.add_argument('--directory', help=f'installation directory (default: {Path.home()})', default=str(Path.home()))
+	parser.add_argument('--config', help=_('argument-help-config'), required=True)
+	parser.add_argument('--directory', help=_('argument-help-directory').format(default_path=Path.home()), default=str(Path.home()))
 	parser.set_defaults(func=run_main)

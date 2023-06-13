@@ -67,11 +67,11 @@ async def run_main(args):
 		module = importlib.import_module(f'shoestring.healthagents.{agent_name}')
 
 		if module.should_run(config.node):
-			log.debug(f'running health agent for {module.NAME}')
+			log.debug(_('health-running-health-agent').format(module_name=module.NAME))
 			await module.validate(context)
 
 
 def add_arguments(parser):
-	parser.add_argument('--config', help='path to shoestring configuration file', required=True)
-	parser.add_argument('--directory', help=f'installation directory (default: {Path.home()})', default=str(Path.home()))
+	parser.add_argument('--config', help=_('argument-help-config'), required=True)
+	parser.add_argument('--directory', help=_('argument-help-directory').format(default_path=Path.home()), default=str(Path.home()))
 	parser.set_defaults(func=run_main)

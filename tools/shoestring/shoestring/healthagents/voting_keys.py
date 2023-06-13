@@ -18,20 +18,19 @@ async def validate(context):
 	voting_key_descriptors = inspect_voting_key_files(context.directories.voting_keys)
 	for descriptor in voting_key_descriptors:
 		if descriptor.end_epoch < current_finalization_epoch:
-			log.warning(f'expired voting keys discovered for epochs {descriptor.start_epoch} to {descriptor.end_epoch}')
+			log.warning(_('health-voting-keys-expired').format(start_epoch=descriptor.start_epoch, end_epoch=descriptor.end_epoch))
 		elif descriptor.start_epoch <= current_finalization_epoch <= descriptor.end_epoch:
-			log.info(f'active voting keys discovered for epochs {descriptor.start_epoch} to {descriptor.end_epoch}')
+			log.info(_('health-voting-keys-active').format(start_epoch=descriptor.start_epoch, end_epoch=descriptor.end_epoch))
 			first_gap_finalization_epoch = descriptor.end_epoch + 1
 		else:
-			log.info(f'future voting keys discovered for epochs {descriptor.start_epoch} to {descriptor.end_epoch}')
+			log.info(_('health-voting-keys-future').format(start_epoch=descriptor.start_epoch, end_epoch=descriptor.end_epoch))
 
 			if descriptor.start_epoch == first_gap_finalization_epoch:
 				first_gap_finalization_epoch = descriptor.end_epoch + 1
 
 	if first_gap_finalization_epoch == current_finalization_epoch:
-		log.error(f'no voting keys are registered for the current epoch {current_finalization_epoch}')
+		log.error(_('health-voting-keys-not-registered').format(epoch=current_finalization_epoch))
 	else:
-		log.info(''.join([
-			f'voting keys are registered from the current epoch {current_finalization_epoch}',
-			f' until epoch {first_gap_finalization_epoch - 1}'
-		]))
+		log.info(_('health-voting-keys-registered').format(
+			start_epoch=current_finalization_epoch,
+			end_epoch=first_gap_finalization_epoch - 1))

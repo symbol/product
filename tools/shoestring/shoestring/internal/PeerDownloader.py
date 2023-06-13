@@ -10,14 +10,14 @@ from .NodeDownloader import NodeDownloader
 
 def _save_peers_file(nodes, directory, name):
 	nodes.sort(key=lambda node: node['publicKey'])
-	filename = directory / f'peers-{name}.json'
-	with open(filename, 'wt', encoding='utf8') as outfile:
+	filepath = directory / f'peers-{name}.json'
+	with open(filepath, 'wt', encoding='utf8') as outfile:
 		json.dump({
 			'knownPeers': nodes,
 			'_info': f'this file contains a list of {name} peers and can be shared',
 		}, outfile, indent=2)
 
-	log.info(f'saved peers file {filename}')
+	log.info(_('peer-downloader-saved-file').format(filepath=filepath))
 
 
 async def download_peers(nodewatch_endpoint, resources_directory, save_api_nodes=False, min_balance=0):
@@ -61,7 +61,7 @@ def load_api_endpoints(resources_directory):
 		if not peers_filepath.exists():
 			continue
 
-		log.info(f'loading api endpoints from {peers_filepath}')
+		log.info(_('peer-downloader-loading-api-endpoints').format(filepath=peers_filepath))
 		with open(peers_filepath, 'rt', encoding='utf8') as infile:
 			peers_json = json.loads(infile.read())
 			api_endpoints.update([_extract_api_endpoint(node_json) for node_json in peers_json['knownPeers'] if _is_api_node(node_json)])

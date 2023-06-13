@@ -12,7 +12,7 @@ async def run_main(args):
 
 	api_endpoint = (await detect_api_endpoints(config.services.nodewatch, 1))[0]
 
-	log.info(f'connecting to {api_endpoint}')
+	log.info(_('general-connecting-to-node').format(endpoint=api_endpoint))
 	connector = SymbolConnector(api_endpoint)
 
 	with open(args.transaction, 'rb') as infile:
@@ -21,17 +21,17 @@ async def run_main(args):
 
 	transaction_type = transaction.type_
 	transaction_hash = SymbolFacade(config.network).hash_transaction(transaction)
-	log.info(f'preparing to announce transaction {transaction_hash} of type {transaction_type}')
+	log.info(_('announce-transaction-preparing-to-announce').format(transaction_hash=transaction_hash, transaction_type=transaction_type))
 
 	announce_transaction = connector.announce_transaction
 	if sc.TransactionType.AGGREGATE_BONDED == transaction_type:
 		announce_transaction = connector.announce_partial_transaction
 
 	await announce_transaction(transaction)
-	log.info('transaction was successfully sent to the network')
+	log.info(_('announce-transaction-announce-successful'))
 
 
 def add_arguments(parser):
-	parser.add_argument('--config', help='path to shoestring configuration file', required=True)
-	parser.add_argument('--transaction', help='file containing serialized transaction to send', required=True)
+	parser.add_argument('--config', help=_('argument-help-config'), required=True)
+	parser.add_argument('--transaction', help=_('argument-help-announce-transaction-transaction'), required=True)
 	parser.set_defaults(func=run_main)

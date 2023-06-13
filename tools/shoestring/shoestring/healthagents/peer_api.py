@@ -14,6 +14,6 @@ async def validate(context):
 	try:
 		connector = SymbolPeerConnector(host, port, context.directories.certificates)
 		chain_statistics = await connector.chain_statistics()
-		log.info(f'peer API accessible, height = {chain_statistics.height}')
+		log.info(_('health-peer-api-success').format(height=chain_statistics.height))
 	except NodeException:
-		log.error(f'cannot access peer API at {host} on port {port}')
+		log.error(_('health-peer-api-error').format(host=host, port=port))
