@@ -77,29 +77,43 @@ export class StorageMigration {
         }
 
         // Format accounts
-        const mainnetPrivateKey = createPrivateKeysFromMnemonic(mnemonic, [0], 'mainnet')[0];
-        const testnetPrivateKey = createPrivateKeysFromMnemonic(mnemonic, [0], 'testnet')[0];
-        const networkAccounts = {
-            mainnet: [
-                createWalletAccount(mainnetPrivateKey, 'mainnet', 'My Account', 'seed', 0)
-            ],
-            testnet: [
-                createWalletAccount(testnetPrivateKey, 'testnet', 'My Account', 'seed', 0)
-            ]
-        };
-        let rawAccounts = [];
+        let accounts = [];
         try {
-            rawAccounts = JSON.parse(accountsModel) || [];
+            accounts = JSON.parse(accountsModel) || [];
         } catch {}
-        const externalAccounts = rawAccounts.filter(account => account.type !== 'hd');
-        networkAccounts.mainnet.push(...externalAccounts
-            .filter(account => account.network === 'mainnet')
-            .map(account => createWalletAccount(account.privateKey, 'mainnet', account.name, 'external', null))
-        );
-        networkAccounts.testnet.push(...externalAccounts
-            .filter(account => account.network === 'testnet')
-            .map(account => createWalletAccount(account.privateKey, 'testnet', account.name, 'external', null))
-        );
+        const networkAccounts = {
+            mainnet: [],
+            testnet: []
+        };
+        accounts.forEach(account => {
+            // Format seed accounts
+            if (account.type === 'hd' && account.path) {
+                // Get seed index from path
+                const startPath = account.network === 'testnet' ? "m/44'/1'/" : "m/44'/4343'/";
+                const endPath = "'/0'/0'"
+                const index = parseInt(account.type.replace(startPath, '').replace(endPath, ''));
+                const walletAccount = createWalletAccount(account.privateKey, account.network, account.name, 'seed', index);
+                networkAccounts[account.network].push(walletAccount);
+            }
+            // Format privateKey and optIn accounts
+            else if (account.type !== 'hd') {
+                const walletAccount = createWalletAccount(account.privateKey, account.network, account.name, 'external', null);
+                networkAccounts[account.network].push(walletAccount);
+            }
+        });
+
+        //If no account exist for network, add default 0 seed account
+        if (!networkAccounts.mainnet.length) {
+            const privateKey = createPrivateKeysFromMnemonic(mnemonic, [0], 'mainnet')[0];
+            const walletAccount = createWalletAccount(privateKey, 'mainnet', 'My Account', 'seed', 0);
+            networkAccounts.mainnet.push(walletAccount);
+        }
+        if (!networkAccounts.testnet.length) {
+            const privateKey = createPrivateKeysFromMnemonic(mnemonic, [0], 'testnet')[0];
+            const walletAccount = createWalletAccount(privateKey, 'testnet', 'My Account', 'seed', 0);
+            networkAccounts.testnet.push(walletAccount);
+        }
+
 
         // Format address book
         let addressBook;
