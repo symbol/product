@@ -389,3 +389,42 @@ msgstr "purging DIRECTORY {directory}"
 msgid "upgrade-recreating-directory"
 msgstr "recreating DIRECTORY {directory}"
 
+#: shoestring/wizard/__main__.py:81
+msgid "wizard-network-type-mainnet"
+msgstr "Main network"
+
+#: shoestring/wizard/__main__.py:82
+msgid "wizard-network-type-testnet"
+msgstr "Current test network (sai)"
+
+#: shoestring/wizard/__main__.py:128
+msgid "wizard-node-harvester-title"
+msgstr "Harvester settings"
+
+#: shoestring/wizard/__main__.py:117
+msgid "wizard-node-https-title"
+msgstr "Setup https? (only for api)"
+
+#: shoestring/wizard/__main__.py:90
+msgid "wizard-node-type-dual"
+msgstr "Dual (peer + api) node"
+
+#: shoestring/wizard/__main__.py:91
+msgid "wizard-node-type-peer"
+msgstr "Peer node"
+
+#: shoestring/wizard/__main__.py:139
+msgid "wizard-node-voter-title"
+msgstr "Voter settings"
+
+#: shoestring/wizard/__main__.py:107
+msgid "wizard-peer-cert-names-title"
+msgstr "CA name + node cert name"
+
+#: shoestring/wizard/__main__.py:73
+msgid "wizard-welcome-steps"
+msgstr "to shoestring node configurator\ntest\ntest\ntest"
+
+#: shoestring/wizard/__main__.py:70
+msgid "wizard-welcome-title"
+msgstr "Welcome"

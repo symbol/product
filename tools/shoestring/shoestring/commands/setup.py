@@ -102,6 +102,7 @@ async def run_main(args):
 				('localnode', 'friendlyName', 'read or ask 2')
 			]
 		}
+
 		if args.overrides:
 			user_patches = load_patches_from_file(args.overrides)
 

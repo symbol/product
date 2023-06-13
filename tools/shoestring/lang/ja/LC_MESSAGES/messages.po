@@ -377,3 +377,42 @@ msgstr ""
 msgid "upgrade-recreating-directory"
 msgstr ""
 
+#: shoestring/wizard/__main__.py:81
+msgid "wizard-network-type-mainnet"
+msgstr ""
+
+#: shoestring/wizard/__main__.py:82
+msgid "wizard-network-type-testnet"
+msgstr ""
+
+#: shoestring/wizard/__main__.py:128
+msgid "wizard-node-harvester-title"
+msgstr ""
+
+#: shoestring/wizard/__main__.py:117
+msgid "wizard-node-https-title"
+msgstr ""
+
+#: shoestring/wizard/__main__.py:90
+msgid "wizard-node-type-dual"
+msgstr ""
+
+#: shoestring/wizard/__main__.py:91
+msgid "wizard-node-type-peer"
+msgstr ""
+
+#: shoestring/wizard/__main__.py:139
+msgid "wizard-node-voter-title"
+msgstr ""
+
+#: shoestring/wizard/__main__.py:107
+msgid "wizard-peer-cert-names-title"
+msgstr ""
+
+#: shoestring/wizard/__main__.py:73
+msgid "wizard-welcome-steps"
+msgstr ""
+
+#: shoestring/wizard/__main__.py:70
+msgid "wizard-welcome-title"
+msgstr ""
