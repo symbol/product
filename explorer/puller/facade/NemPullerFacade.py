@@ -37,30 +37,50 @@ class NemPullerFacade:
 		"""Setup the facade."""
 
 		network = await self.client().node_network()
-		self.nem_facade = NemFacade(network.name)
+		self.nem_facade = NemFacade(str(network))
 
 		log.info(f'Network: {network}')
+
+	def _process_block(self, block_data):
+		"""Process block data."""
+
+		block = block_data['block']
+		transactions = block_data['txes']
+
+		timestamp = Block.convert_timestamp_to_datetime(self.nem_facade, block['timeStamp'])
+		total_fees = sum(tx['tx']['fee'] for tx in transactions)
+
+		return Block(
+			block['height'],
+			timestamp,
+			total_fees,
+			len(transactions),
+			block_data['difficulty'],
+			block_data['hash'],
+			block['signer'],
+			block['signature'],
+		)
+
+	def _store_block(self, cursor, block):
+		"""Store block data."""
+
+		save_block = self._process_block(block)
+		self.database().insert_block(cursor, save_block)
 
 	async def sync_nemesis_block(self):
 		"""Sync the Nemesis block."""
 
-		block = await self.client().get_block(1)
+		nemesis_block = await self.client().get_block(1)
 
-		nemesis_block = {
-			'difficulty': 0,
-			'block': block,
-			'txes': [{
-				'tx': tx,
-				'hash': f'#NemesisBlock# {index}'
-			} for index, tx in enumerate(block['transactions'], start=1)
-			],
-			'hash': '#'
-		}
+		# initialize cursor
+		cursor = self.database().connection.cursor()
 
-		save_block = Block.from_nem_block_data(nemesis_block, self.nem_facade)
-		self.database().insert_block(save_block)
+		self._store_block(cursor, nemesis_block)
 
-		log.info(f'added block from height 1')
+		# commit changes
+		self.database().connection.commit()
+
+		log.info('added block from height 1')
 
 	async def sync_blocks(self, db_height, chain_height):
 		"""Sync network blocks."""
@@ -70,9 +90,14 @@ class NemPullerFacade:
 
 			blocks = await self.client().get_blocks_after(db_height)
 
+			# initialize cursor
+			cursor = self.database().connection.cursor()
+
 			for block in blocks['data']:
-				save_block = Block.from_nem_block_data(block, self.nem_facade)
-				self.database().insert_block(save_block)
+				self._store_block(cursor, block)
+
+			# commit changes
+			self.database().connection.commit()
 
 			db_height = blocks['data'][-1]['block']['height']
 			first_block_height = blocks['data'][0]['block']['height']
