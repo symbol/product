@@ -23,14 +23,14 @@ def _load_transaction(filename):
 
 def _print_transaction(transaction):
 	if not _is_aggregate(transaction):
-		log.info(f'Transaction: {transaction}')
+		log.info(_('signer-transaction').format(transaction=transaction))
 		return
 
 	child_transactions = transaction.transactions
 	transaction.transactions = []
 
-	log.info(f'Aggregate transaction: {transaction}')
-	log.info('Inner transactions:')
+	log.info(_('signer-aggregate-transaction').format(transaction=transaction))
+	log.info(_('signer-inner-transactions'))
 	for child_transaction in child_transactions:
 		log.info(f'  {child_transaction}')
 
@@ -43,7 +43,7 @@ def _sign_transaction(facade, key_pair, transaction):
 
 	transaction_hash = facade.hash_transaction(transaction)
 
-	log.info(f'Signed transaction {transaction.type_} with hash: {transaction_hash}')
+	log.info(_('signer-signed-transaction').format(transaction_type=transaction.type_, transaction_hash=transaction_hash))
 	return transaction_hash
 
 
@@ -91,8 +91,8 @@ def run_main(args):
 
 
 def add_arguments(parser):
-	parser.add_argument('--config', help='path to shoestring configuration file', required=True)
-	parser.add_argument('--ca-key-path', help='path to main private key PEM file', required=True)
-	parser.add_argument('--save', action='store_true', help='save signed payload into same file as input')
-	parser.add_argument('filename', help='transaction binary payload')
+	parser.add_argument('--config', help=_('argument-help-config'), required=True)
+	parser.add_argument('--ca-key-path', help=_('argument-help-ca-key-path'), required=True)
+	parser.add_argument('--save', help=_('argument-help-signer-save'), action='store_true')
+	parser.add_argument('filename', help=_('argument-help-signer-filename'))
 	parser.set_defaults(func=run_main)

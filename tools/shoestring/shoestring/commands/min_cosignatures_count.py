@@ -15,13 +15,13 @@ async def run_main(args):
 
 	api_endpoint = (await detect_api_endpoints(config.services.nodewatch, 1))[0]
 
-	log.info(f'connecting to {api_endpoint}')
+	log.info(_('general-connecting-to-node').format(endpoint=api_endpoint))
 	connector = SymbolConnector(api_endpoint)
 
 	public_key = read_public_key_from_private_key_pem_file(args.ca_key_path)
 	address = config.network.public_key_to_address(public_key)
 	min_cosignatures_count = await calculate_min_cosignatures_count(connector, address)
-	log.info(f'detected at least {min_cosignatures_count} cosignatures are required for transactions from {address}')
+	log.info(_('min-cosignatures-count-cosignatures-detected').format(min_cosignatures_count=min_cosignatures_count, address=address))
 
 	if args.update:
 		config_filepath = Path(args.config)
@@ -31,7 +31,7 @@ async def run_main(args):
 
 
 def add_arguments(parser):
-	parser.add_argument('--config', help='path to shoestring configuration file', required=True)
-	parser.add_argument('--ca-key-path', help='path to main private key PEM file', required=True)
-	parser.add_argument('--update', help='update the shoestring configuration file', action='store_true')
+	parser.add_argument('--config', help=_('argument-help-config'), required=True)
+	parser.add_argument('--ca-key-path', help=_('argument-help-ca-key-path'), required=True)
+	parser.add_argument('--update', help=_('argument-help-min-cosignatures-count-update'), action='store_true')
 	parser.set_defaults(func=run_main)

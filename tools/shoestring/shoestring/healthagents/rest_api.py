@@ -17,6 +17,6 @@ async def validate(context):
 
 	try:
 		chain_statistics = await connector.chain_statistics()
-		log.info(f'REST API accessible, height = {chain_statistics.height}')
+		log.info(_('health-rest-api-success').format(height=chain_statistics.height))
 	except NodeException:
-		log.error(f'cannot access REST API at {endpoint}')
+		log.error(_('health-rest-api-error').format(endpoint=endpoint))

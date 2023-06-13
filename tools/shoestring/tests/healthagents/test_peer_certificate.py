@@ -208,7 +208,7 @@ async def test_validate_fails_when_ca_certificate_starts_in_future(caplog):
 
 			# Assert:
 			future_time = datetime(2053, 6, 12, 14, 59, 59, 0, timezone.utc)
-			assert_message_is_logged(f'ca certificate start date is in future ({future_time.strftime("%y%m%d")})', caplog)
+			assert_message_is_logged(f'ca certificate start date is in future ({future_time.strftime("%y-%m-%d")})', caplog)
 			assert_max_log_level(LogLevel.ERROR, caplog)
 
 
@@ -293,7 +293,7 @@ async def test_validate_fails_when_node_certificate_starts_in_future(caplog):
 	await _validate_node_certificate_lifetime_check(300, start_date)
 
 	# Assert:
-	assert_message_is_logged(f'node certificate start date is in future ({start_date.strftime("%y%m%d")})', caplog)
+	assert_message_is_logged(f'node certificate start date is in future ({start_date.strftime("%y-%m-%d")})', caplog)
 	assert_max_log_level(LogLevel.ERROR, caplog)
 
 

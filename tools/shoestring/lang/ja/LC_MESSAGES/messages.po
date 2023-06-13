@@ -1,0 +1,343 @@
+# Translations for Shoestring.
+# Copyright (C) 2023 Symbol Contributors
+# This file is distributed under the same license as the Shoestring project.
+msgid ""
+msgstr ""
+
+#: shoestring/commands/announce_transaction.py:31
+msgid "announce-transaction-announce-successful"
+msgstr ""
+
+#: shoestring/commands/announce_transaction.py:24
+msgid "announce-transaction-preparing-to-announce"
+msgstr ""
+
+#: shoestring/commands/announce_transaction.py:36
+msgid "argument-help-announce-transaction-transaction"
+msgstr ""
+
+#: shoestring/commands/min_cosignatures_count.py:35
+#: shoestring/commands/renew_certificates.py:27
+#: shoestring/commands/setup.py:134 shoestring/commands/signer.py:95
+msgid "argument-help-ca-key-path"
+msgstr ""
+
+#: shoestring/commands/announce_transaction.py:35
+#: shoestring/commands/health.py:75
+#: shoestring/commands/min_cosignatures_count.py:34
+#: shoestring/commands/renew_certificates.py:25
+#: shoestring/commands/renew_voting_keys.py:112
+#: shoestring/commands/reset_data.py:79 shoestring/commands/setup.py:127
+#: shoestring/commands/signer.py:94
+msgid "argument-help-config"
+msgstr ""
+
+#: shoestring/commands/health.py:76
+#: shoestring/commands/renew_certificates.py:26
+#: shoestring/commands/renew_voting_keys.py:113
+#: shoestring/commands/reset_data.py:80 shoestring/commands/setup.py:129
+msgid "argument-help-directory"
+msgstr ""
+
+#: shoestring/commands/min_cosignatures_count.py:36
+msgid "argument-help-min-cosignatures-count-update"
+msgstr ""
+
+#: shoestring/commands/pemtool.py:49
+msgid "argument-help-pemtool-ask-pass"
+msgstr ""
+
+#: shoestring/commands/pemtool.py:50
+msgid "argument-help-pemtool-force"
+msgstr ""
+
+#: shoestring/commands/pemtool.py:48
+msgid "argument-help-pemtool-input"
+msgstr ""
+
+#: shoestring/commands/pemtool.py:47
+msgid "argument-help-pemtool-output"
+msgstr ""
+
+#: shoestring/commands/renew_certificates.py:28
+msgid "argument-help-renew-certificates-renew-ca"
+msgstr ""
+
+#: shoestring/commands/setup.py:130
+msgid "argument-help-setup-overrides"
+msgstr ""
+
+#: shoestring/commands/setup.py:128
+msgid "argument-help-setup-package"
+msgstr ""
+
+#: shoestring/commands/setup.py:133
+msgid "argument-help-setup-security"
+msgstr ""
+
+#: shoestring/commands/signer.py:97
+msgid "argument-help-signer-filename"
+msgstr ""
+
+#: shoestring/commands/signer.py:96
+msgid "argument-help-signer-save"
+msgstr ""
+
+#: shoestring/internal/FileDownloader.py:40
+msgid "file-downloader-already-downloaded"
+msgstr ""
+
+#: shoestring/internal/FileDownloader.py:54
+msgid "file-downloader-downloaded-with-invalid-hash"
+msgstr ""
+
+#: shoestring/internal/FileDownloader.py:43
+msgid "file-downloader-exists-with-invalid-hash"
+msgstr ""
+
+#: shoestring/commands/announce_transaction.py:15
+#: shoestring/commands/min_cosignatures_count.py:18
+#: shoestring/commands/renew_voting_keys.py:32 shoestring/commands/setup.py:61
+msgid "general-connecting-to-node"
+msgstr ""
+
+#: shoestring/commands/reset_data.py:51 shoestring/internal/Preparer.py:183
+msgid "general-copying-file"
+msgstr ""
+
+#: shoestring/commands/reset_data.py:56 shoestring/internal/Preparer.py:189
+msgid "general-copying-tree"
+msgstr ""
+
+#: shoestring/commands/renew_voting_keys.py:46
+#: shoestring/internal/Preparer.py:365
+msgid "general-created-aggregate-transaction"
+msgstr ""
+
+#: shoestring/healthagents/peer_api.py:19
+msgid "health-peer-api-error"
+msgstr ""
+
+#: shoestring/healthagents/peer_api.py:17
+msgid "health-peer-api-success"
+msgstr ""
+
+#: shoestring/healthagents/peer_certificate.py:83
+msgid "health-peer-certificate-corrupt-full-certificate"
+msgstr ""
+
+#: shoestring/healthagents/peer_certificate.py:32
+msgid "health-peer-certificate-expired"
+msgstr ""
+
+#: shoestring/healthagents/peer_certificate.py:41
+msgid "health-peer-certificate-future-start"
+msgstr ""
+
+#: shoestring/healthagents/peer_certificate.py:72
+msgid "health-peer-certificate-missing-files"
+msgstr ""
+
+#: shoestring/healthagents/peer_certificate.py:34
+msgid "health-peer-certificate-near-expiry"
+msgstr ""
+
+#: shoestring/healthagents/peer_certificate.py:36
+msgid "health-peer-certificate-not-near-expiry"
+msgstr ""
+
+#: shoestring/healthagents/peer_certificate.py:63
+msgid "health-peer-certificate-not-verifiable"
+msgstr ""
+
+#: shoestring/healthagents/rest_api.py:22
+msgid "health-rest-api-error"
+msgstr ""
+
+#: shoestring/healthagents/rest_api.py:20
+msgid "health-rest-api-success"
+msgstr ""
+
+#: shoestring/healthagents/rest_https_certificate.py:55
+msgid "health-rest-https-certificate-invalid"
+msgstr ""
+
+#: shoestring/healthagents/rest_https_certificate.py:58
+msgid "health-rest-https-certificate-valid"
+msgstr ""
+
+#: shoestring/commands/health.py:70
+msgid "health-running-health-agent"
+msgstr ""
+
+#: shoestring/healthagents/voting_keys.py:23
+msgid "health-voting-keys-active"
+msgstr ""
+
+#: shoestring/healthagents/voting_keys.py:21
+msgid "health-voting-keys-expired"
+msgstr ""
+
+#: shoestring/healthagents/voting_keys.py:26
+msgid "health-voting-keys-future"
+msgstr ""
+
+#: shoestring/healthagents/voting_keys.py:32
+msgid "health-voting-keys-not-registered"
+msgstr ""
+
+#: shoestring/healthagents/voting_keys.py:34
+msgid "health-voting-keys-registered"
+msgstr ""
+
+#: shoestring/healthagents/websockets.py:22
+msgid "health-websockets-connected"
+msgstr ""
+
+#: shoestring/healthagents/websockets.py:39
+msgid "health-websockets-received-block"
+msgstr ""
+
+#: shoestring/healthagents/websockets.py:41
+msgid "health-websockets-received-wrong-topic"
+msgstr ""
+
+#: shoestring/healthagents/websockets.py:43
+msgid "health-websockets-timed-out"
+msgstr ""
+
+#: shoestring/__main__.py:22
+msgid "main-announce-transaction-help"
+msgstr ""
+
+#: shoestring/__main__.py:23
+msgid "main-health-help"
+msgstr ""
+
+#: shoestring/__main__.py:24
+msgid "main-min-cosignatures-count-help"
+msgstr ""
+
+#: shoestring/__main__.py:25
+msgid "main-pemtool-help"
+msgstr ""
+
+#: shoestring/__main__.py:26
+msgid "main-renew-certificates-help"
+msgstr ""
+
+#: shoestring/__main__.py:27
+msgid "main-renew-voting-keys-help"
+msgstr ""
+
+#: shoestring/__main__.py:28
+msgid "main-reset-data-help"
+msgstr ""
+
+#: shoestring/__main__.py:29
+msgid "main-setup-help"
+msgstr ""
+
+#: shoestring/__main__.py:30
+msgid "main-signer-help"
+msgstr ""
+
+#: shoestring/__main__.py:20
+msgid "main-subcommands-help"
+msgstr ""
+
+#: shoestring/__main__.py:19
+msgid "main-title"
+msgstr ""
+
+#: shoestring/__main__.py:31
+msgid "main-upgrade-help"
+msgstr ""
+
+#: shoestring/commands/min_cosignatures_count.py:24
+msgid "min-cosignatures-count-cosignatures-detected"
+msgstr ""
+
+#: shoestring/internal/NodewatchClient.py:37
+msgid "nodewatch-client-detected-epoch"
+msgstr ""
+
+#: shoestring/internal/NodewatchClient.py:33
+msgid "nodewatch-client-detected-height"
+msgstr ""
+
+#: shoestring/internal/PeerDownloader.py:64
+msgid "peer-downloader-loading-api-endpoints"
+msgstr ""
+
+#: shoestring/internal/PeerDownloader.py:20
+msgid "peer-downloader-saved-file"
+msgstr ""
+
+#: shoestring/commands/pemtool.py:12
+msgid "pemtool-enter-private-key"
+msgstr ""
+
+#: shoestring/commands/pemtool.py:27
+msgid "pemtool-error-output-file-already-exists"
+msgstr ""
+
+#: shoestring/commands/pemtool.py:39
+msgid "pemtool-error-password-length"
+msgstr ""
+
+#: shoestring/commands/pemtool.py:36
+msgid "pemtool-error-password-mismatch"
+msgstr ""
+
+#: shoestring/commands/pemtool.py:43
+msgid "pemtool-saved-pem-file"
+msgstr ""
+
+#: shoestring/commands/renew_voting_keys.py:89
+msgid "renew-voting-keys-maximum-already-registered"
+msgstr ""
+
+#: shoestring/commands/renew_voting_keys.py:85
+msgid "renew-voting-keys-no-voting-keys-found"
+msgstr ""
+
+#: shoestring/commands/renew_voting_keys.py:72
+msgid "renew-voting-keys-not-voting"
+msgstr ""
+
+#: shoestring/commands/renew_voting_keys.py:58
+msgid "renew-voting-keys-removing-expired-voting-keys"
+msgstr ""
+
+#: shoestring/commands/reset_data.py:11
+msgid "reset-data-recreating-directory"
+msgstr ""
+
+#: shoestring/commands/signer.py:32
+msgid "signer-aggregate-transaction"
+msgstr ""
+
+#: shoestring/commands/signer.py:33
+msgid "signer-inner-transactions"
+msgstr ""
+
+#: shoestring/commands/signer.py:46
+msgid "signer-signed-transaction"
+msgstr ""
+
+#: shoestring/commands/signer.py:26
+msgid "signer-transaction"
+msgstr ""
+
+#: shoestring/internal/TransactionSerializer.py:12
+msgid "transaction-serializer-saved-file"
+msgstr ""
+
+#: shoestring/commands/upgrade.py:16
+msgid "upgrade-purging-directory"
+msgstr ""
+
+#: shoestring/commands/upgrade.py:21
+msgid "upgrade-recreating-directory"
+msgstr ""

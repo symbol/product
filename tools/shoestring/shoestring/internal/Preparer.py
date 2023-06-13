@@ -180,13 +180,13 @@ class Preparer:
 
 	def _copy_file(self, source_path, destination_path):
 		if self.log:
-			self.log.info(f'copying FILE {source_path} into {destination_path}')
+			self.log.info(_('general-copying-file').format(source_path=source_path, destination_path=destination_path))
 
 		shutil.copy(source_path, destination_path)
 
 	def _copy_tree_readonly(self, source_path, destination_path):
 		if self.log:
-			self.log.info(f'copying TREE {source_path} to {destination_path}')
+			self.log.info(_('general-copying-tree').format(source_path=source_path, destination_path=destination_path))
 
 		shutil.copytree(source_path, destination_path, copy_function=shutil.copy)
 		self._make_files_readonly(destination_path)
@@ -362,6 +362,6 @@ class Preparer:
 			self.config.transaction.min_cosignatures_count)
 
 		if self.log:
-			self.log.info(f'created aggregate transaction with hash {transaction_hash}')
+			self.log.info(_('general-created-aggregate-transaction').format(transaction_hash=transaction_hash))
 
 		return aggregate_transaction

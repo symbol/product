@@ -52,9 +52,11 @@ async def validate(context):
 	result, dates_or_error = _openssl_run_sclient_verify(hostname, test_args)
 
 	if not result:
-		log.warning(f'HTTPS certificate looks invalid: {dates_or_error}')
+		log.warning(_('health-rest-https-certificate-invalid').format(error_message=dates_or_error))
 	else:
 		date_range = dates_or_error[-1]
-		log.info(f'HTTPS certificate looks ok: valid from {date_range[0].strftime("%y-%m-%d")} to {date_range[1].strftime("%y-%m-%d")}')
+		log.info(_('health-rest-https-certificate-valid').format(
+			start_date=date_range[0].strftime('%y-%m-%d'),
+			end_date=date_range[1].strftime('%y-%m-%d')))
 
 	# note: I don't think we need to check dates, as verify should do that

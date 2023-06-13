@@ -22,8 +22,8 @@ async def run_main(args):
 
 
 def add_arguments(parser):
-	parser.add_argument('--config', help='path to shoestring configuration file', required=True)
-	parser.add_argument('--directory', help=f'installation directory (default: {Path.home()})', default=str(Path.home()))
-	parser.add_argument('--ca-key-path', help='path to main private key PEM file', required=True)
-	parser.add_argument('--renew-ca', help='renews CA certificate too', action='store_true')
+	parser.add_argument('--config', help=_('argument-help-config'), required=True)
+	parser.add_argument('--directory', help=_('argument-help-directory').format(default_path=Path.home()), default=str(Path.home()))
+	parser.add_argument('--ca-key-path', help=_('argument-help-ca-key-path'), required=True)
+	parser.add_argument('--renew-ca', help=_('argument-help-renew-certificates-renew-ca'), action='store_true')
 	parser.set_defaults(func=run_main)

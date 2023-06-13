@@ -1,5 +1,6 @@
 import argparse
 import asyncio
+import gettext
 import importlib
 import sys
 
@@ -11,24 +12,27 @@ def register_subcommand(subparsers, name, help_text):
 
 
 def parse_args(args):
-	parser = argparse.ArgumentParser(description='Shoestring Tool')
-	subparsers = parser.add_subparsers(title='subcommands', help='valid subcommands')
+	parser = argparse.ArgumentParser(description=_('main-title'))
+	subparsers = parser.add_subparsers(title='subcommands', help=_('main-subcommands-help'))
 
-	register_subcommand(subparsers, 'announce-transaction', 'announces a transaction to the network')
-	register_subcommand(subparsers, 'health', 'does health check')
-	register_subcommand(subparsers, 'min-cosignatures-count', 'detects minimum cosignatures required for an account')
-	register_subcommand(subparsers, 'pemtool', 'generates PEM files')
-	register_subcommand(subparsers, 'renew-certificates', 'renews certificates')
-	register_subcommand(subparsers, 'renew-voting-keys', 'renews voting keys')
-	register_subcommand(subparsers, 'reset-data', 'resets data to allow a resync from scratch')
-	register_subcommand(subparsers, 'setup', 'sets up a node')
-	register_subcommand(subparsers, 'signer', 'signs a transaction')
-	register_subcommand(subparsers, 'upgrade', 'upgrades a node to the latest client version')
+	register_subcommand(subparsers, 'announce-transaction', _('main-announce-transaction-help'))
+	register_subcommand(subparsers, 'health', _('main-health-help'))
+	register_subcommand(subparsers, 'min-cosignatures-count', _('main-min-cosignatures-count-help'))
+	register_subcommand(subparsers, 'pemtool', _('main-pemtool-help'))
+	register_subcommand(subparsers, 'renew-certificates', _('main-renew-certificates-help'))
+	register_subcommand(subparsers, 'renew-voting-keys', _('main-renew-voting-keys-help'))
+	register_subcommand(subparsers, 'reset-data', _('main-reset-data-help'))
+	register_subcommand(subparsers, 'setup', _('main-setup-help'))
+	register_subcommand(subparsers, 'signer', _('main-signer-help'))
+	register_subcommand(subparsers, 'upgrade', _('main-upgrade-help'))
 
 	return parser.parse_args(args)
 
 
 async def main(args):
+	lang = gettext.translation('messages', localedir='lang', languages=('ja', 'en'))  # TODO: how should we detect language?
+	lang.install()
+
 	args = parse_args(args)
 	possible_task = args.func(args)
 	if possible_task:

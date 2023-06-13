@@ -30,10 +30,10 @@ async def get_current_finalization_epoch(nodewatch_endpoint, config_manager):
 
 	nodewatch_client = NodewatchClient(nodewatch_endpoint)
 	last_finalized_height = await nodewatch_client.symbol_finalized_height()
-	log.info(f'detected last finalized height as {last_finalized_height}')
+	log.info(_('nodewatch-client-detected-height').format(height=last_finalized_height))
 
 	voting_set_grouping = int(config_manager.lookup('config-network.properties', [('chain', 'votingSetGrouping')])[0])
 	current_finalization_epoch = calculate_finalization_epoch_for_height(last_finalized_height, voting_set_grouping)
-	log.info(f'detected current finalization epoch as {current_finalization_epoch}')
+	log.info(_('nodewatch-client-detected-epoch').format(epoch=current_finalization_epoch))
 
 	return current_finalization_epoch

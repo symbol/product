@@ -9,5 +9,5 @@ def write_transaction_to_file(transaction, transaction_filepath):
 
 	transaction_filepath.chmod(0o600)
 
-	log.info(f'transaction file written to {transaction_filepath}:')
+	log.info(_('transaction-serializer-saved-file').format(filepath=transaction_filepath))
 	log.info(transaction)

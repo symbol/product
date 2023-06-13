@@ -37,10 +37,10 @@ async def download_file(descriptor, output_directory):
 			raise RuntimeError(f'{output_path} exists, remove manually and retry')
 
 		if descriptor['hash'] == _calculate_file_hash(output_path):
-			log.info(f'proper file already downloaded ({descriptor_name})')
+			log.info(_('file-downloader-already-downloaded').format(name=descriptor_name))
 			return
 
-		log.info('file exists, but has invalid hash, re-downloading')
+		log.info(_('file-downloader-exists-with-invalid-hash'))
 		output_path.unlink()
 
 	url = descriptor['url']
@@ -51,7 +51,7 @@ async def download_file(descriptor, output_directory):
 		file_buffer = await _get_file(url)
 
 	if 'hash' in descriptor and descriptor['hash'] != _calculate_buffer_hash(file_buffer):
-		raise RuntimeError(f'downloaded file ({descriptor_name}) has invalid hash')
+		raise RuntimeError(_('file-downloader-downloaded-with-invalid-hash').format(name=descriptor_name))
 
 	with open(output_path, 'wb') as outfile:
 		outfile.write(file_buffer)

@@ -58,7 +58,7 @@ async def _prepare_keys_and_certificates(config, preparer, ca_key_path):
 
 
 async def _prepare_linking_transaction(preparer, api_endpoint):
-	log.info(f'connecting to {api_endpoint}')
+	log.info(_('general-connecting-to-node').format(endpoint=api_endpoint))
 	connector = SymbolConnector(api_endpoint)
 
 	account_public_key = read_public_key_from_public_key_pem_file(preparer.directories.certificates / 'ca.pubkey.pem')
@@ -124,16 +124,12 @@ async def run_main(args):
 
 
 def add_arguments(parser, is_initial_setup=True):
-	parser.add_argument('--config', help='path to shoestring configuration file', required=True)
-	parser.add_argument(
-		'--package',
-		help='Network configuration package. Possible values: (name | file:///filename | http(s)://uri) (default: mainnet)',
-		default='mainnet')
-	parser.add_argument('--directory', help=f'installation directory (default: {Path.home()})', default=str(Path.home()))
-	parser.add_argument('--overrides', help='path to custom user settings')
+	parser.add_argument('--config', help=_('argument-help-config'), required=True)
+	parser.add_argument('--package', help=_('argument-help-setup-package'), default='mainnet')
+	parser.add_argument('--directory', help=_('argument-help-directory').format(default_path=Path.home()), default=str(Path.home()))
+	parser.add_argument('--overrides', help=_('argument-help-setup-overrides'))
 
 	if is_initial_setup:
-		parser.add_argument('--security', help='security mode (default: default)', choices=SECURITY_MODES, default='default')
-		parser.add_argument('--ca-key-path', help='path to main private key PEM file', required=True)
-
+		parser.add_argument('--security', help=_('argument-help-setup-security'), choices=SECURITY_MODES, default='default')
+		parser.add_argument('--ca-key-path', help=_('argument-help-ca-key-path'), required=True)
 		parser.set_defaults(func=run_main)

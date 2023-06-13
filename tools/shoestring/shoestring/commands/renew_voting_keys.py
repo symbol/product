@@ -29,7 +29,7 @@ def _load_voting_key_descriptors(directory, current_epoch):
 async def _get_network_time(resources_directory):
 	api_endpoints = load_api_endpoints(resources_directory)
 
-	log.info(f'connecting to {api_endpoints[0]}')
+	log.info(_('general-connecting-to-node').format(endpoint=api_endpoints[0]))
 	connector = SymbolConnector(api_endpoints[0])
 
 	network_time = await connector.network_time()
@@ -43,7 +43,7 @@ async def _save_transaction(transaction_config, directories, transaction_builder
 		transaction_config.fee_multiplier,
 		transaction_config.min_cosignatures_count)
 
-	log.info(f'created aggregate transaction with hash {transaction_hash}')
+	log.info(_('general-created-aggregate-transaction').format(transaction_hash=transaction_hash))
 
 	write_transaction_to_file(aggregate_transaction, directories.output_directory / 'renew_voting_keys_transaction.dat')
 
@@ -55,7 +55,7 @@ def _clean_up_voting_keys_files(voting_keys_directory, inactive_voting_key_descr
 	# remove inactive voting keys files
 	for descriptor in inactive_voting_key_descriptors:
 		expired_voting_keys_filepath = _get_voting_keys_filepath(descriptor.ordinal)
-		log.info(f'removing expired voting keys: {expired_voting_keys_filepath}')
+		log.info(_('renew-voting-keys-removing-expired-voting-keys').format(filepath=expired_voting_keys_filepath))
 		expired_voting_keys_filepath.unlink()
 
 	# renumber active voting keys files
@@ -69,7 +69,7 @@ async def run_main(args):
 	config = parse_shoestring_configuration(args.config)
 
 	if NodeFeatures.VOTER not in config.node.features:
-		log.error('node is not configured for voting, aborting')
+		log.error(_('renew-voting-keys-not-voting'))
 		return
 
 	directories = Preparer.DirectoryLocator(None, Path(args.directory))
@@ -82,11 +82,11 @@ async def run_main(args):
 		current_finalization_epoch)
 
 	if not active_voting_key_descriptors:
-		log.warning('voting is enabled, but no existing voting key files were found')
+		log.warning(_('renew-voting-keys-no-voting-keys-found'))
 
 	max_voting_keys_per_account = int(config_manager.lookup('config-network.properties', [('chain', 'maxVotingKeysPerAccount')])[0])
 	if len(active_voting_key_descriptors) - len(inactive_voting_key_descriptors) >= max_voting_keys_per_account:
-		log.error('maximum number of voting keys are already registered for this account')
+		log.error(_('renew-voting-keys-maximum-already-registered'))
 		return
 
 	account_public_key = read_public_key_from_public_key_pem_file(directories.certificates / 'ca.pubkey.pem')
@@ -109,6 +109,6 @@ async def run_main(args):
 
 
 def add_arguments(parser):
-	parser.add_argument('--config', help='path to shoestring configuration file', required=True)
-	parser.add_argument('--directory', help=f'installation directory (default: {Path.home()})', default=str(Path.home()))
+	parser.add_argument('--config', help=_('argument-help-config'), required=True)
+	parser.add_argument('--directory', help=_('argument-help-directory').format(default_path=Path.home()), default=str(Path.home()))
 	parser.set_defaults(func=run_main)
