@@ -77,7 +77,7 @@ export const Send = connect((state) => ({
             ? [
                   {
                       ...selectedMosaic,
-                      amount: parseFloat(amount),
+                      amount: parseFloat(amount || 0),
                   },
               ]
             : [],
