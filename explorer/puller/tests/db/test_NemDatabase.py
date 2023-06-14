@@ -1,4 +1,5 @@
 import datetime
+import psycopg2
 import unittest
 
 import testing.postgresql
@@ -48,7 +49,7 @@ class NemDatabaseTest(unittest.TestCase):
 		# Destroy the temporary PostgreSQL database
 		self.postgresql.stop()
 
-	def test_create_tables(self):
+	def test_can_create_tables(self):
 		# Arrange:
 		with NemDatabase(self.db_config) as nem_database:
 			# Act:
@@ -62,7 +63,7 @@ class NemDatabaseTest(unittest.TestCase):
 		self.assertIsNotNone(result)
 		self.assertEqual(result[0], 'blocks')
 
-	def test_insert_block(self):
+	def test_can_insert_block(self):
 		# Arrange:
 		with NemDatabase(self.db_config) as nem_database:
 			nem_database.create_tables()
@@ -93,7 +94,20 @@ class NemDatabaseTest(unittest.TestCase):
 		)
 		self.assertEqual(result, expected_result)
 
-	def test_get_current_height(self):
+	def test_cannot_insert_same_block_multiple_times(self):
+		# Arrange:
+		with NemDatabase(self.db_config) as nem_database:
+			nem_database.create_tables()
+
+			cursor = nem_database.connection.cursor()
+
+			nem_database.insert_block(cursor, BLOCKS[0])
+
+			# Act + Assert:
+			with self.assertRaises(psycopg2.errors.IntegrityError):
+				nem_database.insert_block(cursor, BLOCKS[0])
+
+	def test_can_get_current_height(self):
 		# Arrange:
 		with NemDatabase(self.db_config) as nem_database:
 			nem_database.create_tables()
@@ -110,3 +124,14 @@ class NemDatabaseTest(unittest.TestCase):
 
 		# Assert:
 		self.assertEqual(result, 2)
+
+	def test_can_get_current_height_is_zero_database_empty(self):
+		# Arrange:
+		with NemDatabase(self.db_config) as nem_database:
+			nem_database.create_tables()
+
+			# Act:
+			result = nem_database.get_current_height()
+
+		# Assert:
+		self.assertEqual(result, 0)
