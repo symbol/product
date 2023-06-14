@@ -66,11 +66,73 @@ async def test_can_reset_data_voter_node_without_voter_state():
 # endregion
 
 
+# region harvester state
+
+DEFAULT_SUBDIRECTORIES_FOR_STATE_TESTS = ['data', 'logs', 'dbdata', 'keys', 'unknown']
+DEFAULT_EXPECTED_DATA_FILES_FOR_STATE_TESTS = [
+	'dbdata',
+	'dbdata/placeholder.dat',
+	'keys',
+	'keys/placeholder.dat',
+	'logs',
+	'sai.shoestring.ini',
+	'unknown',
+	'unknown/placeholder.dat'
+]
+
+
+def _assert_data_files_and_contents(output_directory, expected_data_files, expected_file_contents):
+	# all folders should be present and folders not recreated should still have placeholder files
+	files = sorted(str(path.relative_to(output_directory)) for path in Path(output_directory).glob('**/*'))
+	assert expected_data_files + DEFAULT_EXPECTED_DATA_FILES_FOR_STATE_TESTS == files
+
+	# check file contents
+	for key, value in expected_file_contents.items():
+		with open(Path(output_directory) / key, 'rt', encoding='utf8') as infile:
+			assert value == infile.read()
+
+
+async def _assert_reset_data_with_harvester_state(additional_command_args, expected_data_files, expected_file_contents):
+	# Arrange:
+	subdirectory_names = DEFAULT_SUBDIRECTORIES_FOR_STATE_TESTS
+	with tempfile.TemporaryDirectory() as output_directory:
+		config_filepath = prepare_shoestring_configuration(output_directory, NodeFeatures.HARVESTER)
+
+		# - create some directories each with a placeholder file
+		_create_directories_with_placeholders(output_directory, subdirectory_names)
+
+		# - prepare harvesters.dat
+		with open(Path(output_directory) / 'data' / 'harvesters.dat', 'wt', encoding='utf8') as outfile:
+			outfile.write('sed ut perspiciatis unde omnis')
+
+		# Act:
+		await main([
+			'reset-data',
+			'--config', str(config_filepath),
+			'--directory', output_directory
+		] + additional_command_args)
+
+		# Assert: check files and contents
+		_assert_data_files_and_contents(output_directory, expected_data_files, expected_file_contents)
+
+
+async def test_can_reset_data_harvester_node_with_purge_harvesters_flag():
+	await _assert_reset_data_with_harvester_state(['--purge-harvesters'], ['data'], {})
+
+
+async def test_can_reset_data_harvester_node_without_purge_harvesters_flag():
+	await _assert_reset_data_with_harvester_state([], ['data', 'data/harvesters.dat'], {
+		'data/harvesters.dat': 'sed ut perspiciatis unde omnis'
+	})
+
+# endregion
+
+
 # region voter state
 
 async def _assert_reset_data_with_voter_state(votes_backup_epochs, expected_data_files, expected_file_contents):
 	# Arrange:
-	subdirectory_names = ('data', 'logs', 'dbdata', 'keys', 'unknown', 'data/votes_backup')
+	subdirectory_names = [*DEFAULT_SUBDIRECTORIES_FOR_STATE_TESTS, 'data/votes_backup']
 	with tempfile.TemporaryDirectory() as output_directory:
 		config_filepath = prepare_shoestring_configuration(output_directory, NodeFeatures.VOTER)
 
@@ -96,23 +158,8 @@ async def _assert_reset_data_with_voter_state(votes_backup_epochs, expected_data
 			'--directory', output_directory
 		])
 
-		# Assert: all folders should be present and folders not recreated should still have placeholder files
-		files = sorted(str(path.relative_to(output_directory)) for path in Path(output_directory).glob('**/*'))
-		assert expected_data_files + [
-			'dbdata',
-			'dbdata/placeholder.dat',
-			'keys',
-			'keys/placeholder.dat',
-			'logs',
-			'sai.shoestring.ini',
-			'unknown',
-			'unknown/placeholder.dat'
-		] == files
-
-		# - check file contents
-		for key, value in expected_file_contents.items():
-			with open(Path(output_directory) / key, 'rt', encoding='utf8') as infile:
-				assert value == infile.read()
+		# Assert: check files and contents
+		_assert_data_files_and_contents(output_directory, expected_data_files, expected_file_contents)
 
 
 async def test_can_reset_data_voter_node_with_voting_status_but_not_votes_backup():

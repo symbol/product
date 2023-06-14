@@ -21,7 +21,7 @@ msgstr ""
 #: shoestring/commands/min_cosignatures_count.py:34
 #: shoestring/commands/renew_certificates.py:25
 #: shoestring/commands/renew_voting_keys.py:112
-#: shoestring/commands/reset_data.py:79 shoestring/commands/setup.py:127
+#: shoestring/commands/reset_data.py:87 shoestring/commands/setup.py:127
 #: shoestring/commands/signer.py:94
 msgid "argument-help-config"
 msgstr ""
@@ -29,7 +29,7 @@ msgstr ""
 #: shoestring/commands/health.py:76
 #: shoestring/commands/renew_certificates.py:26
 #: shoestring/commands/renew_voting_keys.py:113
-#: shoestring/commands/reset_data.py:80 shoestring/commands/setup.py:129
+#: shoestring/commands/reset_data.py:88 shoestring/commands/setup.py:129
 msgid "argument-help-directory"
 msgstr ""
 
@@ -55,6 +55,10 @@ msgstr ""
 
 #: shoestring/commands/renew_certificates.py:28
 msgid "argument-help-renew-certificates-renew-ca"
+msgstr ""
+
+#: shoestring/commands/reset_data.py:89
+msgid "argument-help-reset-data-purge-harvesters"
 msgstr ""
 
 #: shoestring/commands/setup.py:130
@@ -95,11 +99,11 @@ msgstr ""
 msgid "general-connecting-to-node"
 msgstr ""
 
-#: shoestring/commands/reset_data.py:51 shoestring/internal/Preparer.py:183
+#: shoestring/commands/reset_data.py:57 shoestring/internal/Preparer.py:183
 msgid "general-copying-file"
 msgstr ""
 
-#: shoestring/commands/reset_data.py:56 shoestring/internal/Preparer.py:189
+#: shoestring/commands/reset_data.py:62 shoestring/internal/Preparer.py:189
 msgid "general-copying-tree"
 msgstr ""
 
