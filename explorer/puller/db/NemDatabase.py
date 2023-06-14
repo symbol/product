@@ -9,7 +9,7 @@ class NemDatabase(DatabaseConnection):
 
 		cursor = self.connection.cursor()
 		cursor.execute('''CREATE TABLE IF NOT EXISTS blocks (
-			height bigint NOT NULL,
+			height bigint NOT NULL PRIMARY KEY,
 			timestamp timestamp NOT NULL,
 			totalFees bigint DEFAULT 0,
 			totalTransactions bigint DEFAULT 0,
