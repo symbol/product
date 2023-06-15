@@ -3,6 +3,7 @@ import unittest
 from tempfile import NamedTemporaryFile
 from unittest.mock import AsyncMock
 
+import psycopg2
 import testing.postgresql
 
 from client.NemClient import NemClient
@@ -164,6 +165,31 @@ class NemPullerFacadeTest(unittest.IsolatedAsyncioTestCase):
 			self.assertEqual(len(results), 2)
 			self.assertEqual(results[0], self.expected_result_0)
 			self.assertEqual(results[1], self.expected_result_1)
+
+	async def test_cannot_insert_blocks_when_block_existing_in_database(self):
+		# Arrange:
+		facade = self._create_facade_and_setup({
+			'node_network': AsyncMock(return_value='mainnet'),
+			'get_blocks_after': AsyncMock(side_effect=[
+				{
+					'data': [CHAIN_BLOCK_1, CHAIN_BLOCK_2] # First call
+				},
+				{
+					'data': [CHAIN_BLOCK_2] # Second call
+				},
+			])
+		})
+
+		await facade.setup_facade()
+
+		with facade.database() as databases:
+			databases.create_tables()
+
+			await facade.sync_blocks(1, 2)
+
+			# Act + Assert:
+			with self.assertRaises(psycopg2.IntegrityError):
+				await facade.sync_blocks(2, 3)
 
 	async def test_skip_block_insert_if_db_height_exceeds_chain_height(self):
 		# Arrange:

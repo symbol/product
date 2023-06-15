@@ -1,7 +1,7 @@
 import datetime
-import psycopg2
 import unittest
 
+import psycopg2
 import testing.postgresql
 
 from db.NemDatabase import NemDatabase
@@ -104,7 +104,7 @@ class NemDatabaseTest(unittest.TestCase):
 			nem_database.insert_block(cursor, BLOCKS[0])
 
 			# Act + Assert:
-			with self.assertRaises(psycopg2.errors.IntegrityError):
+			with self.assertRaises(psycopg2.IntegrityError):
 				nem_database.insert_block(cursor, BLOCKS[0])
 
 	def test_can_get_current_height(self):
