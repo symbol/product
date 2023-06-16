@@ -1,0 +1,9 @@
+builds:
+  - name: Authenticator
+    path: authenticator
+
+  - name: Backend
+    path: backend
+
+  - name: Frontend
+    path: nem
