@@ -11,7 +11,7 @@ from symbollightapi.model.PacketHeader import PacketHeader, PacketType
 from shoestring.healthagents.peer_api import should_run, validate
 from shoestring.internal.NodeFeatures import NodeFeatures
 from shoestring.internal.Preparer import Preparer
-from shoestring.internal.ShoestringConfiguration import NodeConfiguration, ShoestringConfiguration
+from shoestring.internal.ShoestringConfiguration import ImportsConfiguration, NodeConfiguration, ShoestringConfiguration
 
 from ..test.LogTestUtils import LogLevel, assert_max_log_level, assert_message_is_logged
 
@@ -20,7 +20,7 @@ from ..test.LogTestUtils import LogLevel, assert_max_log_level, assert_message_i
 
 def _create_configuration():
 	node_config = NodeConfiguration(NodeFeatures.PEER, None, None, None, None, 'CA CN', 'NODE CN')
-	return ShoestringConfiguration('testnet', None, None, None, node_config)
+	return ShoestringConfiguration('testnet', *(3 * [None]), ImportsConfiguration(None, None), node_config)
 
 
 @pytest.fixture

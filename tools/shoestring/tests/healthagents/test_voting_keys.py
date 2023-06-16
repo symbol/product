@@ -82,7 +82,7 @@ async def _dispatch_validate(directories, server):  # pylint: disable=redefined-
 	context = HealthAgentContext(
 		ConfigurationManager(directories.resources),
 		directories,
-		ShoestringConfiguration('testnet', None, ServicesConfiguration(server.make_url('')), None, None))
+		ShoestringConfiguration('testnet', None, ServicesConfiguration(server.make_url('')), None, None, None))
 
 	# Act:
 	await validate(context)

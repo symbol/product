@@ -12,10 +12,11 @@ ServicesConfiguration = namedtuple('ServicesConfiguration', ['nodewatch'])
 TransactionConfiguration = namedtuple('TransactionConfiguration', [
 	'fee_multiplier', 'timeout_hours', 'min_cosignatures_count', 'hash_lock_duration', 'currency_mosaic_id', 'locked_funds_per_aggregate'
 ])
+ImportsConfiguration = namedtuple('ImportsConfiguration', ['harvester', 'voter'])
 NodeConfiguration = namedtuple('NodeConfiguration', [
 	'features', 'user_id', 'group_id', 'ca_password', 'api_https', 'ca_common_name', 'node_common_name'
 ])
-ShoestringConfiguration = namedtuple('ShoestringConfiguration', ['network', 'images', 'services', 'transaction', 'node'])
+ShoestringConfiguration = namedtuple('ShoestringConfiguration', ['network', 'images', 'services', 'transaction', 'imports', 'node'])
 
 
 def parse_network_configuration(config):
@@ -59,6 +60,12 @@ def parse_transaction_configuration(config):
 		locked_funds_per_aggregate)
 
 
+def parse_imports_configuration(config):
+	"""Parses imports configuration."""
+
+	return ImportsConfiguration(config['harvester'], config['voter'])
+
+
 def parse_node_configuration(config):
 	"""Parses node configuration."""
 
@@ -91,4 +98,5 @@ def parse_shoestring_configuration(filename):
 		parse_images_configuration(parser['images']),
 		parse_services_configuration(parser['services']),
 		parse_transaction_configuration(parser['transaction']),
+		parse_imports_configuration(parser['imports']),
 		parse_node_configuration(parser['node']))

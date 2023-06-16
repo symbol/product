@@ -130,8 +130,8 @@ class Preparer:
 		self.new_voting_key_file_epoch_range = None
 
 		self.config_manager = ConfigurationManager(self.directories.resources)
-		self.harvester_configurator = HarvesterConfigurator(self.config_manager)
-		self.voter_configurator = VoterConfigurator(self.config_manager)
+		self.harvester_configurator = HarvesterConfigurator(self.config_manager, self.config.imports.harvester)
+		self.voter_configurator = VoterConfigurator(self.config_manager, self.config.imports.voter)
 
 	def __enter__(self):
 		self.temp_directory = tempfile.TemporaryDirectory()
@@ -335,31 +335,36 @@ class Preparer:
 
 		transaction_builder = LinkTransactionBuilder(account_public_key, self.config.network)
 
-		if existing_links.linked_public_key:
-			transaction_builder.unlink_account_public_key(existing_links.linked_public_key)
+		if not self.harvester_configurator.is_imported:
+			if existing_links.linked_public_key:
+				transaction_builder.unlink_account_public_key(existing_links.linked_public_key)
 
-		if existing_links.vrf_public_key:
-			transaction_builder.unlink_vrf_public_key(existing_links.vrf_public_key)
+			if existing_links.vrf_public_key:
+				transaction_builder.unlink_vrf_public_key(existing_links.vrf_public_key)
 
-		if existing_links.voting_public_keys:
-			transaction_builder.unlink_voting_public_key(
-				existing_links.voting_public_keys[0].public_key,
-				existing_links.voting_public_keys[0].start_epoch,
-				existing_links.voting_public_keys[0].end_epoch)
+			if NodeFeatures.HARVESTER in self.config.node.features:
+				transaction_builder.link_account_public_key(self.harvester_configurator.remote_key_pair.public_key)
+				transaction_builder.link_vrf_public_key(self.harvester_configurator.vrf_key_pair.public_key)
 
-		if NodeFeatures.HARVESTER in self.config.node.features:
-			transaction_builder.link_account_public_key(self.harvester_configurator.remote_key_pair.public_key)
-			transaction_builder.link_vrf_public_key(self.harvester_configurator.vrf_key_pair.public_key)
+		if not self.voter_configurator.is_imported:
+			if existing_links.voting_public_keys:
+				transaction_builder.unlink_voting_public_key(
+					existing_links.voting_public_keys[0].public_key,
+					existing_links.voting_public_keys[0].start_epoch,
+					existing_links.voting_public_keys[0].end_epoch)
 
-		if NodeFeatures.VOTER in self.config.node.features and self.new_voting_key_file_epoch_range:
-			transaction_builder.link_voting_public_key(
-				self.voter_configurator.voting_key_pair.public_key,
-				*self.new_voting_key_file_epoch_range)
+			if NodeFeatures.VOTER in self.config.node.features and self.new_voting_key_file_epoch_range:
+				transaction_builder.link_voting_public_key(
+					self.voter_configurator.voting_key_pair.public_key,
+					*self.new_voting_key_file_epoch_range)
 
 		aggregate_transaction, transaction_hash = transaction_builder.build(
 			NetworkTimestamp(timestamp).add_hours(self.config.transaction.timeout_hours),
 			self.config.transaction.fee_multiplier,
 			self.config.transaction.min_cosignatures_count)
+
+		if 0 == len(aggregate_transaction.transactions):
+			return None
 
 		if self.log:
 			self.log.info(_('general-created-aggregate-transaction').format(transaction_hash=transaction_hash))

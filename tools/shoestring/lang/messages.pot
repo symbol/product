@@ -12,7 +12,7 @@ msgstr ""
 
 #: shoestring/commands/min_cosignatures_count.py:35
 #: shoestring/commands/renew_certificates.py:27
-#: shoestring/commands/setup.py:134 shoestring/commands/signer.py:95
+#: shoestring/commands/setup.py:137 shoestring/commands/signer.py:95
 msgid "argument-help-ca-key-path"
 msgstr ""
 
@@ -21,7 +21,7 @@ msgstr ""
 #: shoestring/commands/min_cosignatures_count.py:34
 #: shoestring/commands/renew_certificates.py:25
 #: shoestring/commands/renew_voting_keys.py:112
-#: shoestring/commands/reset_data.py:87 shoestring/commands/setup.py:127
+#: shoestring/commands/reset_data.py:87 shoestring/commands/setup.py:130
 #: shoestring/commands/signer.py:94
 msgid "argument-help-config"
 msgstr ""
@@ -29,7 +29,7 @@ msgstr ""
 #: shoestring/commands/health.py:76
 #: shoestring/commands/renew_certificates.py:26
 #: shoestring/commands/renew_voting_keys.py:113
-#: shoestring/commands/reset_data.py:88 shoestring/commands/setup.py:129
+#: shoestring/commands/reset_data.py:88 shoestring/commands/setup.py:132
 msgid "argument-help-directory"
 msgstr ""
 
@@ -61,15 +61,15 @@ msgstr ""
 msgid "argument-help-reset-data-purge-harvesters"
 msgstr ""
 
-#: shoestring/commands/setup.py:130
+#: shoestring/commands/setup.py:133
 msgid "argument-help-setup-overrides"
 msgstr ""
 
-#: shoestring/commands/setup.py:128
+#: shoestring/commands/setup.py:131
 msgid "argument-help-setup-package"
 msgstr ""
 
-#: shoestring/commands/setup.py:133
+#: shoestring/commands/setup.py:136
 msgid "argument-help-setup-security"
 msgstr ""
 
@@ -100,6 +100,7 @@ msgid "general-connecting-to-node"
 msgstr ""
 
 #: shoestring/commands/reset_data.py:57 shoestring/internal/Preparer.py:183
+#: shoestring/internal/VoterConfigurator.py:53
 msgid "general-copying-file"
 msgstr ""
 
@@ -108,7 +109,7 @@ msgid "general-copying-tree"
 msgstr ""
 
 #: shoestring/commands/renew_voting_keys.py:46
-#: shoestring/internal/Preparer.py:365
+#: shoestring/internal/Preparer.py:370
 msgid "general-created-aggregate-transaction"
 msgstr ""
 
@@ -204,51 +205,51 @@ msgstr ""
 msgid "health-websockets-timed-out"
 msgstr ""
 
-#: shoestring/__main__.py:22
+#: shoestring/__main__.py:18
 msgid "main-announce-transaction-help"
 msgstr ""
 
-#: shoestring/__main__.py:23
+#: shoestring/__main__.py:19
 msgid "main-health-help"
 msgstr ""
 
-#: shoestring/__main__.py:24
+#: shoestring/__main__.py:20
 msgid "main-min-cosignatures-count-help"
 msgstr ""
 
-#: shoestring/__main__.py:25
+#: shoestring/__main__.py:21
 msgid "main-pemtool-help"
 msgstr ""
 
-#: shoestring/__main__.py:26
+#: shoestring/__main__.py:22
 msgid "main-renew-certificates-help"
 msgstr ""
 
-#: shoestring/__main__.py:27
+#: shoestring/__main__.py:23
 msgid "main-renew-voting-keys-help"
 msgstr ""
 
-#: shoestring/__main__.py:28
+#: shoestring/__main__.py:24
 msgid "main-reset-data-help"
 msgstr ""
 
-#: shoestring/__main__.py:29
+#: shoestring/__main__.py:25
 msgid "main-setup-help"
 msgstr ""
 
-#: shoestring/__main__.py:30
+#: shoestring/__main__.py:26
 msgid "main-signer-help"
 msgstr ""
 
-#: shoestring/__main__.py:20
+#: shoestring/__main__.py:16
 msgid "main-subcommands-help"
 msgstr ""
 
-#: shoestring/__main__.py:19
+#: shoestring/__main__.py:15
 msgid "main-title"
 msgstr ""
 
-#: shoestring/__main__.py:31
+#: shoestring/__main__.py:27
 msgid "main-upgrade-help"
 msgstr ""
 
@@ -310,6 +311,10 @@ msgstr ""
 
 #: shoestring/commands/reset_data.py:11
 msgid "reset-data-recreating-directory"
+msgstr ""
+
+#: shoestring/commands/setup.py:73
+msgid "setup-no-state-changes-required"
 msgstr ""
 
 #: shoestring/commands/signer.py:32

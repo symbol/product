@@ -1,4 +1,5 @@
 import re
+import shutil
 from collections import namedtuple
 from pathlib import Path
 
@@ -6,6 +7,7 @@ from symbolchain.BufferReader import BufferReader
 from symbolchain.CryptoTypes import PrivateKey, PublicKey
 from symbolchain.symbol.KeyPair import KeyPair
 from symbolchain.symbol.VotingKeysGenerator import VotingKeysGenerator
+from zenlog import log
 
 VotingFileDescriptor = namedtuple('VotingFileDescriptor', ['ordinal', 'public_key', 'start_epoch', 'end_epoch'])
 EpochRange = namedtuple('EpochRange', ['start_epoch', 'end_epoch'])
@@ -14,11 +16,19 @@ EpochRange = namedtuple('EpochRange', ['start_epoch', 'end_epoch'])
 class VoterConfigurator:
 	"""Configures a voter."""
 
-	def __init__(self, config_manager):
+	def __init__(self, config_manager, import_source=None):
 		"""Creates a voter configurator."""
 
 		self.config_manager = config_manager
-		self.voting_key_pair = KeyPair(PrivateKey.random())
+		self.is_imported = bool(import_source)
+		self._import_source = Path(import_source) if import_source else None
+
+		if not self.is_imported:
+			self.voting_key_pair = KeyPair(PrivateKey.random())
+		else:
+			# when importing, each file should have its own key pair
+			# since the voting keys don't need to be reregistered later, the keys don't need to be extracted
+			self.voting_key_pair = None
 
 	def patch_configuration(self):
 		"""Patches voting settings."""
@@ -37,6 +47,16 @@ class VoterConfigurator:
 
 	def generate_voting_key_file(self, directory, current_finalization_epoch, grace_period_epochs=1):
 		"""Generates a voting key file."""
+
+		if self.is_imported:
+			for source_filepath in Path(self._import_source).glob('private_key_tree*.dat'):
+				log.info(_('general-copying-file').format(source_path=source_filepath, destination_path=directory))
+				shutil.copy(source_filepath, directory)
+				(directory / source_filepath.name).chmod(0o600)
+
+			# when importing, each file should have its own epoch range
+			# since the voting keys don't need to be reregistered later, the ranges don't need to be extracted
+			return None
 
 		max_voting_key_lifetime = int(self.config_manager.lookup('config-network.properties', [('chain', 'maxVotingKeyLifetime')])[0])
 

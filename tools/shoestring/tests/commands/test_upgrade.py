@@ -11,7 +11,14 @@ from ..test.ConfigurationTestUtils import prepare_shoestring_configuration
 from ..test.FileSystemTestUtils import assert_expected_files_and_permissions
 from ..test.MockNodewatchServer import setup_mock_nodewatch_server
 from ..test.TestPackager import prepare_testnet_package
-from .test_setup import API_OUTPUT_FILES, HARVESTER_OUTPUT_FILES, HTTPS_OUTPUT_FILES, PEER_OUTPUT_FILES, VOTER_OUTPUT_FILES
+from .test_setup import (
+	API_OUTPUT_FILES,
+	HARVESTER_OUTPUT_FILES,
+	HTTPS_OUTPUT_FILES,
+	PEER_OUTPUT_FILES,
+	STATE_CHANGE_OUTPUT_FILES,
+	VOTER_OUTPUT_FILES
+)
 
 # region server fixture
 
@@ -204,19 +211,21 @@ async def test_can_upgrade_api_node_with_https(server):  # pylint: disable=redef
 
 
 async def test_can_upgrade_harvester_node(server):  # pylint: disable=redefined-outer-name
-	expected_output_files = {**PEER_OUTPUT_FILES, **HARVESTER_OUTPUT_FILES}
+	expected_output_files = {**PEER_OUTPUT_FILES, **HARVESTER_OUTPUT_FILES, **STATE_CHANGE_OUTPUT_FILES}
 	expected_changed_files = sorted(PEER_CHANGED_FILES + HARVESTER_CHANGED_FILES)
 	await _assert_can_upgrade_node(server, NodeFeatures.HARVESTER, expected_output_files, expected_changed_files)
 
 
 async def test_can_upgrade_voter_node(server):  # pylint: disable=redefined-outer-name
-	expected_output_files = {**PEER_OUTPUT_FILES, **VOTER_OUTPUT_FILES}
+	expected_output_files = {**PEER_OUTPUT_FILES, **VOTER_OUTPUT_FILES, **STATE_CHANGE_OUTPUT_FILES}
 	await _assert_can_upgrade_node(server, NodeFeatures.VOTER, expected_output_files, PEER_CHANGED_FILES)
 
 
 async def test_can_upgrade_full_node(server):  # pylint: disable=redefined-outer-name
 	node_features = NodeFeatures.API | NodeFeatures.HARVESTER | NodeFeatures.VOTER
-	expected_output_files = {**PEER_OUTPUT_FILES, **API_OUTPUT_FILES, **HARVESTER_OUTPUT_FILES, **VOTER_OUTPUT_FILES}
+	expected_output_files = {
+		**PEER_OUTPUT_FILES, **API_OUTPUT_FILES, **HARVESTER_OUTPUT_FILES, **VOTER_OUTPUT_FILES, **STATE_CHANGE_OUTPUT_FILES
+	}
 	expected_changed_files = sorted(PEER_CHANGED_FILES + API_CHANGED_FILES + HARVESTER_CHANGED_FILES)
 	await _assert_can_upgrade_node(server, node_features, expected_output_files, expected_changed_files)
 

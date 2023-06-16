@@ -5,7 +5,7 @@ from shoestring.__main__ import main
 from shoestring.commands.health import HealthAgentContext
 from shoestring.internal.NodeFeatures import NodeFeatures
 from shoestring.internal.Preparer import Preparer
-from shoestring.internal.ShoestringConfiguration import NodeConfiguration, ShoestringConfiguration
+from shoestring.internal.ShoestringConfiguration import ImportsConfiguration, NodeConfiguration, ShoestringConfiguration
 
 from ..test.ConfigurationTestUtils import prepare_shoestring_configuration
 from ..test.LogTestUtils import assert_all_messages_are_logged
@@ -30,7 +30,10 @@ def _write_resources(directories, host, port, rest_port):
 
 
 def _create_configuration(api_https):
-	return ShoestringConfiguration(None, None, None, None, NodeConfiguration(NodeFeatures.PEER, None, None, None, api_https, 'CA', 'NODE'))
+	return ShoestringConfiguration(
+		*(4 * [None]),
+		ImportsConfiguration(None, None),
+		NodeConfiguration(NodeFeatures.PEER, None, None, None, api_https, 'CA', 'NODE'))
 
 
 # pylint: disable=invalid-name

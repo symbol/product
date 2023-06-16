@@ -39,7 +39,19 @@ class VoterConfiguratorTest(unittest.TestCase):
 		configurator2 = VoterConfigurator(None)
 
 		# Assert:
+		self.assertEqual(False, configurator1.is_imported)
+		self.assertEqual(False, configurator2.is_imported)
+
 		self.assertEqual(2, len(set([configurator1.voting_key_pair.public_key, configurator2.voting_key_pair.public_key])))
+
+	def test_configurator_can_import_key_pairs(self):
+		# Act:
+		configurator = VoterConfigurator(None, 'path/to/private_key_tree_directory')
+
+		# Assert:
+		self.assertEqual(True, configurator.is_imported)
+
+		self.assertEqual(None, configurator.voting_key_pair)
 
 	def test_can_patch_configuration(self):
 		# Arrange:
@@ -183,6 +195,38 @@ class VoterConfiguratorTest(unittest.TestCase):
 			self.assertEqual(400, epoch_range.start_epoch)
 			self.assertEqual(400 + 221, epoch_range.end_epoch)
 
+	def test_can_generate_voting_key_file_import(self):
+		# Arrange:
+		with tempfile.TemporaryDirectory() as source_directory:
+			public_key_1 = self._write_voting_key_file_header(source_directory, 'private_key_tree3.dat', 100, 199)
+			public_key_2 = self._write_voting_key_file_header(source_directory, 'private_key_tree5.dat', 200, 299)
+			public_key_3 = self._write_voting_key_file_header(source_directory, 'private_key_tree7.dat', 300, 399)
+
+			with tempfile.TemporaryDirectory() as temp_directory:
+				voting_key_file_directory = self._prepare_generate_voting_key_file_test(temp_directory)
+
+				# Act:
+				config_manager = ConfigurationManager(temp_directory)
+				configurator = VoterConfigurator(config_manager, Path(source_directory))
+				epoch_range = configurator.generate_voting_key_file(voting_key_file_directory, 400)
+
+				# Assert: check files present
+				voting_files = sorted(list(path.name for path in voting_key_file_directory.iterdir()))
+				self.assertEqual([f'private_key_tree{i}.dat' for i in (3, 5, 7)], voting_files)
+
+				# - check voting file permissions
+				for i in (3, 5, 7):
+					self.assertEqual(0o600, (voting_key_file_directory / f'private_key_tree{i}.dat').stat().st_mode & 0o777)
+
+				# - check voting file contents
+				descriptors = inspect_voting_key_files(voting_key_file_directory)
+				self.assertEqual([3, 5, 7], [descriptor.ordinal for descriptor in descriptors])
+				self.assertEqual([public_key_1, public_key_2, public_key_3], [descriptor.public_key for descriptor in descriptors])
+				self.assertEqual([100, 200, 300], [descriptor.start_epoch for descriptor in descriptors])
+				self.assertEqual([199, 299, 399], [descriptor.end_epoch for descriptor in descriptors])
+
+				# - returned range is unset
+				self.assertEqual(None, epoch_range)
 	# endregion
 
 	# region inspect_voting_key_files

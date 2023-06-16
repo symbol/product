@@ -4,16 +4,29 @@ from symbolchain.CryptoTypes import PrivateKey
 from symbolchain.PrivateKeyStorage import PrivateKeyStorage
 from symbolchain.symbol.KeyPair import KeyPair
 
+from .ConfigurationManager import ConfigurationManager
+
 
 class HarvesterConfigurator:
 	"""Configures a harvester."""
 
-	def __init__(self, config_manager):
+	def __init__(self, config_manager, import_source=None):
 		"""Creates a harvester configurator."""
 
 		self.config_manager = config_manager
-		self.remote_key_pair = KeyPair(PrivateKey.random())
-		self.vrf_key_pair = KeyPair(PrivateKey.random())
+		self.is_imported = bool(import_source)
+
+		import_source = Path(import_source) if import_source else None
+		if not self.is_imported:
+			self.remote_key_pair = KeyPair(PrivateKey.random())
+			self.vrf_key_pair = KeyPair(PrivateKey.random())
+		else:
+			imported_private_keys = ConfigurationManager(import_source.parent).lookup(import_source.name, [
+				('harvesting', 'harvesterSigningPrivateKey'),
+				('harvesting', 'harvesterVrfPrivateKey')
+			])
+			self.remote_key_pair = KeyPair(PrivateKey(imported_private_keys[0]))
+			self.vrf_key_pair = KeyPair(PrivateKey(imported_private_keys[1]))
 
 	def patch_configuration(self):
 		"""Patches harvesting settings."""

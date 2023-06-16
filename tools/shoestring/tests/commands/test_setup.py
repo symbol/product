@@ -38,7 +38,6 @@ PEER_OUTPUT_FILES = {
 	'keys/cert/node.crt.pem': 0o400,
 	'keys/cert/node.full.crt.pem': 0o400,
 	'keys/cert/node.key.pem': 0o400,
-	'linking_transaction.dat': 0o600,
 	'logs': 0o700,
 	'seed': 0o700,
 	'seed/00000': 0o700,
@@ -108,6 +107,10 @@ HARVESTER_OUTPUT_FILES = {
 VOTER_OUTPUT_FILES = {
 	'keys/voting': 0o700,
 	'keys/voting/private_key_tree1.dat': 0o600
+}
+
+STATE_CHANGE_OUTPUT_FILES = {
+	'linking_transaction.dat': 0o600
 }
 
 # endregion
@@ -215,15 +218,21 @@ async def test_can_prepare_api_node_with_https(server):  # pylint: disable=redef
 
 
 async def test_can_prepare_harvester_node(server):  # pylint: disable=redefined-outer-name
-	await _assert_can_prepare_node(server, NodeFeatures.HARVESTER, {**PEER_OUTPUT_FILES, **HARVESTER_OUTPUT_FILES})
+	await _assert_can_prepare_node(server, NodeFeatures.HARVESTER, {
+		**PEER_OUTPUT_FILES, **HARVESTER_OUTPUT_FILES, **STATE_CHANGE_OUTPUT_FILES
+	})
 
 
 async def test_can_prepare_voter_node(server):  # pylint: disable=redefined-outer-name
-	await _assert_can_prepare_node(server, NodeFeatures.VOTER, {**PEER_OUTPUT_FILES, **VOTER_OUTPUT_FILES})
+	await _assert_can_prepare_node(server, NodeFeatures.VOTER, {
+		**PEER_OUTPUT_FILES, **VOTER_OUTPUT_FILES, **STATE_CHANGE_OUTPUT_FILES
+	})
 
 
 async def test_can_prepare_full_node(server):  # pylint: disable=redefined-outer-name
-	expected_output_files = {**PEER_OUTPUT_FILES, **API_OUTPUT_FILES, **HARVESTER_OUTPUT_FILES, **VOTER_OUTPUT_FILES}
+	expected_output_files = {
+		**PEER_OUTPUT_FILES, **API_OUTPUT_FILES, **HARVESTER_OUTPUT_FILES, **VOTER_OUTPUT_FILES, **STATE_CHANGE_OUTPUT_FILES
+	}
 	await _assert_can_prepare_node(server, NodeFeatures.API | NodeFeatures.HARVESTER | NodeFeatures.VOTER, expected_output_files)
 
 # endregion

@@ -15,7 +15,12 @@ from symbollightapi.connector.SymbolConnector import LinkedPublicKeys, VotingPub
 from shoestring.internal.NodeFeatures import NodeFeatures
 from shoestring.internal.OpensslExecutor import OpensslExecutor
 from shoestring.internal.Preparer import API_EXTENSIONS, HARVESTER_EXTENSIONS, PEER_EXTENSIONS, Preparer
-from shoestring.internal.ShoestringConfiguration import NodeConfiguration, ShoestringConfiguration, TransactionConfiguration
+from shoestring.internal.ShoestringConfiguration import (
+	ImportsConfiguration,
+	NodeConfiguration,
+	ShoestringConfiguration,
+	TransactionConfiguration
+)
 
 from ..test.TestPackager import prepare_testnet_package
 from ..test.TransactionTestUtils import AggregateDescriptor, LinkDescriptor, assert_aggregate_transaction, assert_link_transaction
@@ -27,12 +32,13 @@ class PreparerTest(unittest.TestCase):
 	# region utils
 
 	@staticmethod
-	def _create_configuration(node_features, api_https=True):
+	def _create_configuration(node_features, api_https=True, imports_config=None):
 		return ShoestringConfiguration(
 			'testnet',
 			None,
 			None,
 			TransactionConfiguration(234, 3, 0, 0, 0, 0),
+			imports_config if imports_config else ImportsConfiguration(None, None),
 			NodeConfiguration(node_features, None, None, None, api_https, 'CA CN', 'NODE CN'))
 
 	def _assert_readonly(self, directory, filenames):
@@ -765,7 +771,13 @@ class PreparerTest(unittest.TestCase):
 					transaction.transactions[0],
 					LinkDescriptor(TransactionType.VOTING_KEY_LINK, new_voting_public_key, LinkAction.LINK, (10, 729)))
 
-	def test_prepare_linking_transaction_can_create_aggregate_with_all_links_and_unlinks(self):
+	def _assert_prepare_linking_transaction_can_create_aggregate_with_all_links_and_unlinks(
+		self,
+		imports_config,
+		expected_link_transaction_count,
+		expect_harvester_links,
+		expect_voter_links
+	):  # pylint: disable=too-many-locals
 		# Arrange:
 		account_public_key = self._random_public_key()
 
@@ -778,7 +790,8 @@ class PreparerTest(unittest.TestCase):
 		]
 
 		with tempfile.TemporaryDirectory() as output_directory:
-			with Preparer(output_directory, self._create_configuration(NodeFeatures.HARVESTER | NodeFeatures.VOTER)) as preparer:
+			config = self._create_configuration(NodeFeatures.HARVESTER | NodeFeatures.VOTER, imports_config=imports_config)
+			with Preparer(output_directory, config) as preparer:
 				self._initialize_temp_directory_with_package_files(preparer)
 				preparer.prepare_resources()
 				preparer.configure_keys(5, 4)
@@ -787,42 +800,101 @@ class PreparerTest(unittest.TestCase):
 				transaction = preparer.prepare_linking_transaction(account_public_key, existing_links, 2222)
 
 				# Assert:
-				expected_size = 168 + 6 * 88 + 2 * 8
+				if 0 == expected_link_transaction_count:
+					self.assertEqual(None, transaction)
+					return
+
+				expected_size = 168
+				if expect_harvester_links:
+					expected_size += 4 * 88
+				if expect_voter_links:
+					expected_size += 2 * 88 + 2 * 8
+
 				expected_aggregate_descriptor = AggregateDescriptor(expected_size, 234, 2222 + 3 * 60 * 60 * 1000, account_public_key)
 				assert_aggregate_transaction(self, transaction, expected_aggregate_descriptor)
-				self.assertEqual(6, len(transaction.transactions))
+				self.assertEqual(expected_link_transaction_count, len(transaction.transactions))
 
-				# - check unlinks
-				assert_link_transaction(
-					self,
-					transaction.transactions[0],
-					LinkDescriptor(TransactionType.ACCOUNT_KEY_LINK, existing_links.linked_public_key, LinkAction.UNLINK, None))
-				assert_link_transaction(
-					self,
-					transaction.transactions[1],
-					LinkDescriptor(TransactionType.VRF_KEY_LINK, existing_links.vrf_public_key, LinkAction.UNLINK, None))
+				voter_links_start_index = 0
+				if expect_harvester_links:
+					# - check harvester unlinks
+					assert_link_transaction(
+						self,
+						transaction.transactions[0],
+						LinkDescriptor(TransactionType.ACCOUNT_KEY_LINK, existing_links.linked_public_key, LinkAction.UNLINK, None))
+					assert_link_transaction(
+						self,
+						transaction.transactions[1],
+						LinkDescriptor(TransactionType.VRF_KEY_LINK, existing_links.vrf_public_key, LinkAction.UNLINK, None))
 
-				first_existing_voting_public_key = existing_links.voting_public_keys[0].public_key
-				assert_link_transaction(
-					self,
-					transaction.transactions[2],
-					LinkDescriptor(TransactionType.VOTING_KEY_LINK, first_existing_voting_public_key, LinkAction.UNLINK, (1111, 2222)))
+					# - check harvester links
+					new_remote_public_key = preparer.harvester_configurator.remote_key_pair.public_key
+					new_vrf_public_key = preparer.harvester_configurator.vrf_key_pair.public_key
+					assert_link_transaction(
+						self,
+						transaction.transactions[2],
+						LinkDescriptor(TransactionType.ACCOUNT_KEY_LINK, new_remote_public_key, LinkAction.LINK, None))
+					assert_link_transaction(
+						self,
+						transaction.transactions[3],
+						LinkDescriptor(TransactionType.VRF_KEY_LINK, new_vrf_public_key, LinkAction.LINK, None))
 
-				# - check links
-				new_remote_public_key = preparer.harvester_configurator.remote_key_pair.public_key
-				new_vrf_public_key = preparer.harvester_configurator.vrf_key_pair.public_key
-				new_voting_public_key = preparer.voter_configurator.voting_key_pair.public_key
-				assert_link_transaction(
-					self,
-					transaction.transactions[3],
-					LinkDescriptor(TransactionType.ACCOUNT_KEY_LINK, new_remote_public_key, LinkAction.LINK, None))
-				assert_link_transaction(
-					self,
-					transaction.transactions[4],
-					LinkDescriptor(TransactionType.VRF_KEY_LINK, new_vrf_public_key, LinkAction.LINK, None))
-				assert_link_transaction(
-					self,
-					transaction.transactions[5],
-					LinkDescriptor(TransactionType.VOTING_KEY_LINK, new_voting_public_key, LinkAction.LINK, (10, 729)))
+					voter_links_start_index = 4
+
+				if expect_voter_links:
+					# - check voter links
+					first_existing_voting_public_key = existing_links.voting_public_keys[0].public_key
+					assert_link_transaction(
+						self,
+						transaction.transactions[voter_links_start_index],
+						LinkDescriptor(TransactionType.VOTING_KEY_LINK, first_existing_voting_public_key, LinkAction.UNLINK, (1111, 2222)))
+
+					# - check voting unlinks
+					new_voting_public_key = preparer.voter_configurator.voting_key_pair.public_key
+					assert_link_transaction(
+						self,
+						transaction.transactions[voter_links_start_index + 1],
+						LinkDescriptor(TransactionType.VOTING_KEY_LINK, new_voting_public_key, LinkAction.LINK, (10, 729)))
+
+	def test_prepare_linking_transaction_can_create_aggregate_with_all_links_and_unlinks(self):
+		self._assert_prepare_linking_transaction_can_create_aggregate_with_all_links_and_unlinks(None, 6, True, True)
+
+	@staticmethod
+	def _write_harvester_imports_file(filepath):
+		with open(filepath, 'wt', encoding='utf8') as outfile:
+			outfile.write('\n'.join([
+				'[harvesting]',
+				'harvesterSigningPrivateKey = 089C662614A68C49F62F6C0B54F3F66D2D5DB0AFCD62BD69BF7A16312A83B746',
+				'harvesterVrfPrivateKey = 87E1184A136E92C62981848680AEA78D0BF098911B658295454B94EDBEE25808'
+			]))
+
+	def test_prepare_linking_transaction_can_create_aggregate_with_all_links_and_unlinks_import_harvester(self):
+		# Arrange:
+		with tempfile.TemporaryDirectory() as source_directory:
+			imports_harvester_filepath = Path(source_directory) / 'import.properties'
+			self._write_harvester_imports_file(imports_harvester_filepath)
+
+			imports_config = ImportsConfiguration(imports_harvester_filepath, None)
+
+			# Act + Assert: only voter (un)links are present
+			self._assert_prepare_linking_transaction_can_create_aggregate_with_all_links_and_unlinks(imports_config, 2, False, True)
+
+	def test_prepare_linking_transaction_can_create_aggregate_with_all_links_and_unlinks_import_voter(self):
+		# Arrange:
+		with tempfile.TemporaryDirectory() as source_directory:
+			imports_config = ImportsConfiguration(None, source_directory)
+
+			# Act + Assert: only harvester (un)links are present
+			self._assert_prepare_linking_transaction_can_create_aggregate_with_all_links_and_unlinks(imports_config, 4, True, False)
+
+	def test_prepare_linking_transaction_can_create_aggregate_with_all_links_and_unlinks_import_harvester_and_voter(self):
+		# Arrange:
+		with tempfile.TemporaryDirectory() as source_directory:
+			imports_harvester_filepath = Path(source_directory) / 'import.properties'
+			self._write_harvester_imports_file(imports_harvester_filepath)
+
+			imports_config = ImportsConfiguration(imports_harvester_filepath, source_directory)
+
+			# Act + Assert: neither harvester nor voter (un)links are present
+			self._assert_prepare_linking_transaction_can_create_aggregate_with_all_links_and_unlinks(imports_config, 0, False, False)
 
 	# endregion

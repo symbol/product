@@ -8,6 +8,7 @@ from symbolchain.CryptoTypes import Hash256
 from shoestring.internal.NodeFeatures import NodeFeatures
 from shoestring.internal.ShoestringConfiguration import (
 	parse_images_configuration,
+	parse_imports_configuration,
 	parse_network_configuration,
 	parse_node_configuration,
 	parse_services_configuration,
@@ -44,6 +45,11 @@ class ShoestringConfigurationTest(unittest.TestCase):
 		'hashLockDuration': '1440',
 		'currencyMosaicId': '0x72C0212E67A08BCE',
 		'lockedFundsPerAggregate': '10000000'
+	}
+
+	VALID_IMPORTS_CONFIGURATION = {
+		'harvester': 'path/to/config-harvesting.properties',
+		'voter': 'path/to/private_key_tree_directory'
 	}
 
 	VALID_NODE_CONFIGURATION = {
@@ -186,6 +192,28 @@ class ShoestringConfigurationTest(unittest.TestCase):
 
 	# endregion
 
+	# region imports configuration
+
+	def test_can_parse_valid_imports_configuration(self):
+		# Act:
+		imports_config = parse_imports_configuration(self.VALID_IMPORTS_CONFIGURATION)
+
+		# Assert:
+		self.assertEqual('path/to/config-harvesting.properties', imports_config.harvester)
+		self.assertEqual('path/to/private_key_tree_directory', imports_config.voter)
+
+	def test_cannot_parse_imports_configuration_incomplete(self):
+		# Arrange:
+		for key in self.VALID_IMPORTS_CONFIGURATION:
+			incomplete_config = {**self.VALID_IMPORTS_CONFIGURATION}
+			del incomplete_config[key]
+
+			# Act + Assert:
+			with self.assertRaises(KeyError):
+				parse_imports_configuration(incomplete_config)
+
+	# endregion
+
 	# region node configuration
 
 	def test_can_parse_valid_node_configuration_single_value(self):
@@ -264,6 +292,7 @@ class ShoestringConfigurationTest(unittest.TestCase):
 				self._write_section(outfile, '\n[images]', self.VALID_IMAGES_CONFIGURATION)
 				self._write_section(outfile, '\n[services]', self.VALID_SERVICES_CONFIGURATION)
 				self._write_section(outfile, '\n[transaction]', self.VALID_TRANSACTION_CONFIGURATION)
+				self._write_section(outfile, '\n[imports]', self.VALID_IMPORTS_CONFIGURATION)
 				self._write_section(outfile, '\n[node]', self.VALID_NODE_CONFIGURATION)
 
 			# Act:
@@ -286,6 +315,9 @@ class ShoestringConfigurationTest(unittest.TestCase):
 			self.assertEqual(1440, config.transaction.hash_lock_duration)
 			self.assertEqual(0x72C0212E67A08BCE, config.transaction.currency_mosaic_id)
 			self.assertEqual(10000000, config.transaction.locked_funds_per_aggregate)
+
+			self.assertEqual('path/to/config-harvesting.properties', config.imports.harvester)
+			self.assertEqual('path/to/private_key_tree_directory', config.imports.voter)
 
 			self.assertEqual(NodeFeatures.API | NodeFeatures.PEER | NodeFeatures.VOTER, config.node.features)
 			self.assertEqual(1234, config.node.user_id)

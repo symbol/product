@@ -30,7 +30,7 @@ def server(event_loop, aiohttp_client):
 
 
 def _create_configuration():
-	return ShoestringConfiguration(None, None, None, None, NodeConfiguration(NodeFeatures.PEER, None, None, None, False, None, None))
+	return ShoestringConfiguration(*(5 * [None]), NodeConfiguration(NodeFeatures.PEER, None, None, None, False, None, None))
 
 
 def _load_ca_address(ca_pem_filepath):

@@ -2,6 +2,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from symbolchain.CryptoTypes import PrivateKey
 from symbolchain.PrivateKeyStorage import PrivateKeyStorage
 from symbolchain.symbol.KeyPair import KeyPair
 
@@ -16,12 +17,39 @@ class HarvesterConfiguratorTest(unittest.TestCase):
 		configurator2 = HarvesterConfigurator(None)
 
 		# Assert:
+		self.assertEqual(False, configurator1.is_imported)
+		self.assertEqual(False, configurator2.is_imported)
+
 		self.assertEqual(4, len(set([
 			configurator1.remote_key_pair.public_key,
 			configurator1.vrf_key_pair.public_key,
 			configurator2.remote_key_pair.public_key,
 			configurator2.vrf_key_pair.public_key
 		])))
+
+	def test_configurator_can_import_key_pairs(self):
+		# Arrange:
+		with tempfile.TemporaryDirectory() as temp_directory:
+			import_filepath = Path(temp_directory) / 'import.properties'
+			with open(import_filepath, 'wt', encoding='utf8') as outfile:
+				outfile.write('\n'.join([
+					'[harvesting]',
+					'harvesterSigningPrivateKey = 089C662614A68C49F62F6C0B54F3F66D2D5DB0AFCD62BD69BF7A16312A83B746',
+					'harvesterVrfPrivateKey = 87E1184A136E92C62981848680AEA78D0BF098911B658295454B94EDBEE25808'
+				]))
+
+			# Act:
+			configurator = HarvesterConfigurator(None, import_filepath)
+
+			# Assert:
+			self.assertEqual(True, configurator.is_imported)
+
+			self.assertEqual(
+				PrivateKey('089C662614A68C49F62F6C0B54F3F66D2D5DB0AFCD62BD69BF7A16312A83B746'),
+				configurator.remote_key_pair.private_key)
+			self.assertEqual(
+				PrivateKey('87E1184A136E92C62981848680AEA78D0BF098911B658295454B94EDBEE25808'),
+				configurator.vrf_key_pair.private_key)
 
 	def test_can_patch_configuration(self):
 		# Arrange:

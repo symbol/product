@@ -10,7 +10,7 @@ from shoestring.internal.CertificateFactory import CertificateFactory
 from shoestring.internal.NodeFeatures import NodeFeatures
 from shoestring.internal.OpensslExecutor import OpensslExecutor
 from shoestring.internal.Preparer import Preparer
-from shoestring.internal.ShoestringConfiguration import NodeConfiguration, ShoestringConfiguration
+from shoestring.internal.ShoestringConfiguration import ImportsConfiguration, NodeConfiguration, ShoestringConfiguration
 
 from ..test.LogTestUtils import LogLevel, assert_max_log_level, assert_message_is_logged
 
@@ -35,7 +35,7 @@ def _create_executor():
 
 def _create_configuration():
 	node_config = NodeConfiguration(NodeFeatures.PEER, None, None, None, None, 'CA CN', 'NODE CN')
-	return ShoestringConfiguration('testnet', None, None, None, node_config)
+	return ShoestringConfiguration('testnet', *(3 * [None]), ImportsConfiguration(None, None), node_config)
 
 
 async def _dispatch_validate(directories):

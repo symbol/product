@@ -67,7 +67,10 @@ async def _prepare_linking_transaction(preparer, api_endpoint):
 	network_time = await connector.network_time()
 	transaction = preparer.prepare_linking_transaction(account_public_key, existing_links, network_time.timestamp)
 
-	write_transaction_to_file(transaction, preparer.directories.output_directory / 'linking_transaction.dat')
+	if transaction:
+		write_transaction_to_file(transaction, preparer.directories.output_directory / 'linking_transaction.dat')
+	else:
+		log.info(_('setup-no-state-changes-required'))
 
 
 async def run_main(args):
