@@ -1,27 +1,35 @@
 // Colors
 $color-background-main: #eef5f9;
 $color-background-card: #fff;
-$color-background-header: rgba(255, 255, 255, 40%);
-$color-background-footer: #000;
+$color-background-header: #F5F9FBEE;
+$color-background-footer: rgba(25, 41, 97, 0.05);
+$color-background-mosaic: rgba(25, 41, 97, 0.05);
 $color-primary: #50B9AD;
+$color-primary-light: rgba(79, 185, 172, 0.12);
 $color-secondary: #FAB700;
 $color-text-body: #0B0118;
 $color-text-footer: #fff;
 $color-text-link: #66B7E7;
+$color-info: #66B7E7;
 $color-success: #4cc773;
-$color-danger: #ed514e;
+$color-warning: #FAB700;
+$color-danger: #B94F4F;
 
 // Borders
 $border-radius-card: 1rem;
+$border-radius-label: 1rem;
 $border-radius-input: 0.5rem;
+$border-radius-chip: 0.5rem;
 $border-radius-button: 0;
 
 // Typography
 $font-body: 400 1rem / 133.33% 'Nunito Sans', sans-serif;
+$font-body-bold: 700 1rem / 133.33% 'Nunito Sans', sans-serif;
 $font-h1: 400 / 4.66rem 'Abhaya Libre', sans-serif;
 $font-h2: 400 3.25rem / 4rem 'Abhaya Libre', sans-serif;
 $font-h3: 400 2.66rem / 3.33rem 'Abhaya Libre', sans-serif;
 $font-title: 700 1rem / 133.33% 'Nunito Sans', sans-serif;
+$font-highlighted: 700 2.08rem / 2rem 'Nunito Sans', sans-serif;
 $font-tab: 700 1rem / 133.33% 'Nunito Sans', sans-serif;
 $font-nav: 700 1rem / 133.33% 'Nunito Sans', sans-serif;
 $font-input-placeholder: 700 1rem / 133.33% 'Nunito Sans', sans-serif;

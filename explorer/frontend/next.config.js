@@ -1,11 +1,13 @@
-import webpack from 'webpack';
+const webpack = require('webpack');
+const i18nConfig = require('./next-i18next.config.js');
 
-const nextConfig = {
+module.exports = {
 	distDir: 'build',
 	reactStrictMode: true,
 	experimental: {
 		appDir: true
 	},
+	i18n: i18nConfig.i18n,
 	webpack: (config, { isServer }) => {
 		// use a browser-optimized wasm for Ed25519 crypto operations
 		const moduleRegExp = /symbol-crypto-wasm-node/;
@@ -18,5 +20,3 @@ const nextConfig = {
 		return config;
 	}
 };
-
-export default nextConfig;
