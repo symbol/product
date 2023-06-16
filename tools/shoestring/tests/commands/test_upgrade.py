@@ -128,7 +128,8 @@ async def _assert_can_upgrade_node(
 	node_features,
 	expected_output_files,
 	expected_changed_files,
-	api_https=False):
+	api_https=False
+):
 	# Arrange:
 	with tempfile.TemporaryDirectory() as output_directory:
 		with tempfile.TemporaryDirectory() as package_directory:

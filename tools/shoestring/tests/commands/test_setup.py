@@ -140,7 +140,8 @@ async def _assert_can_prepare_node(
 	node_features,
 	expected_output_files,
 	ca_mode=CaMode.NONE,
-	api_https=False):
+	api_https=False
+):
 	# Arrange:
 	with tempfile.TemporaryDirectory() as output_directory:
 		with tempfile.TemporaryDirectory() as package_directory:
@@ -298,7 +299,8 @@ async def _assert_cannot_prepare_with_hostname(
 	hostname,
 	node_features,
 	expected_exception,
-	api_https=None):
+	api_https=None
+):
 	# Arrange:
 	with tempfile.TemporaryDirectory() as output_directory:
 		with tempfile.TemporaryDirectory() as package_directory:
