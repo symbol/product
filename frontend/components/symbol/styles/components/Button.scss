@@ -1,0 +1,34 @@
+.button {
+	display: inline-flex;
+	flex-direction: row;
+	align-items: center;
+	justify-content: center;
+	width: 100%;
+	min-width: 40px;
+	margin-bottom: var(--margin-control);
+	padding: var(--padding-button);
+	color: var(--color-darkmode-button-default-text);
+	font: var(--font-button);
+	letter-spacing: var(--typography-button-letter-spacing);
+	text-align: center;
+	text-transform: var(--typography-button-text-transform);
+	text-decoration: none;
+	background: var(--color-darkmode-button-default-bg);
+	border: 2px solid var(--color-darkmode-button-default-stroke);
+	border-radius: 4px;
+	box-shadow: var(--effect-button-default);
+	cursor: pointer;
+	transition: background-color 0.2s;
+	user-select: none;
+
+	&:hover {
+		background: var(--color-darkmode-button-hover-bg);
+		color: var(--color-darkmode-button-hover-text);
+		border: 2px solid var(--color-darkmode-button-hover-stroke);
+		box-shadow: var(--effect-button-hover);
+	}
+
+	&:last-child {
+		margin-bottom: 0;
+	}
+}

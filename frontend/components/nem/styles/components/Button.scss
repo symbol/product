@@ -1,0 +1,34 @@
+.button {
+	display: inline-flex;
+	flex-direction: row;
+	align-items: center;
+	justify-content: center;
+	width: 100%;
+	min-width: 40px;
+	margin-bottom: var(--margin-control);
+	padding: var(--padding-button);
+	color: var(--color-darkmode-button-secondary-text);
+	font: var(--font-button);
+	font-size: 100%;
+	font-family: "Nunito Sans";
+	letter-spacing: 0.03rem;
+	text-align: center;
+	text-transform: var(--typography-button-text-transform);
+	text-decoration: none;
+	background: var(--color-darkmode-button-secondary-bg);
+	border: 2px solid var(--color-darkmode-button-secondary-stroke);
+	border-radius: 4px;
+	box-shadow: var(--effect-button-secondary);
+	cursor: pointer;
+	transition: background-color 0.2s;
+	user-select: none;
+
+	&:hover {
+		color: var(--color-darkmode-button-hover-text);
+		background: var(--color-darkmode-button-hover-bg);
+	}
+
+	&:last-child {
+		margin-bottom: 0;
+	}
+}

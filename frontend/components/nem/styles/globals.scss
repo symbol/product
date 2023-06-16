@@ -1,0 +1,120 @@
+@use "fonts";
+
+@import "./design-system.css";
+@import "./breakpoints/landscape-large.scss";
+@import "./breakpoints/landscape-mobile-short.scss";
+@import "./breakpoints/landscape-mobile.scss";
+@import "./breakpoints/portrait-desktop-short.scss";
+@import "./breakpoints/portrait-desktop.scss";
+@import "./breakpoints/portrait-large-l.scss";
+@import "./breakpoints/portrait-large-short.scss";
+@import "./breakpoints/portrait-large-xl.scss";
+@import "./breakpoints/portrait-large.scss";
+@import "./breakpoints/portrait-mobile-s.scss";
+@import "./breakpoints/portrait-mobile-short-s.scss";
+@import "./breakpoints/portrait-mobile-short-xs.scss";
+@import "./breakpoints/portrait-mobile-short.scss";
+@import "./breakpoints/portrait-mobile-xs.scss";
+@import "./breakpoints/portrait-mobile.scss";
+@import "../../../node_modules/bootstrap/scss/bootstrap";
+
+// Global styles
+
+html,
+body,
+#root {
+	width: 100%;
+	height: 100%;
+	overflow-x: hidden;
+	font: var(--font-body) !important;
+}
+
+body {
+	margin: 0;
+	padding: 0;
+	color: var(--color-darkmode-text-body);
+	letter-spacing: var(--typography-body-letter-spacing);
+	background-color: var(--color-darkmode-bg-main);
+	transition: all 0.25s ease-in;
+}
+
+a {
+	color: var(--color-darkmode-text-learn-more);
+
+	&:hover {
+		color: var(--color-darkmode-text-learn-more);
+		opacity: 0.9;
+	}
+}
+
+p {
+	position: relative;
+	margin-bottom: var(--margin-paragraph-inner);
+
+	&:first-child {
+		margin-top: var(--text-crop-body-top);
+	}
+
+	&:last-child {
+		margin-bottom: var(--text-crop-body-bottom);
+	}
+}
+
+p.hero {
+	font: var(--font-body-hero);
+
+	&:first-child {
+		margin-bottom: var(--text-crop-body-hero-top);
+	}
+
+	&:last-child {
+		margin-bottom: var(--text-crop-body-hero-bottom);
+	}
+}
+
+.pre-line {
+	white-space: pre-line;
+}
+
+.visible {
+	opacity: 1;
+}
+
+.mb-base {
+	margin-bottom: var(--margin-base);
+}
+
+.Toastify__toast-container {
+	max-width: 20rem;
+	width: 100%;
+}
+
+.Toastify__toast {
+	padding: 0.75rem;
+	font-size: 0.75rem;
+	line-height: 1.25rem;
+}
+
+.toast-body {
+	div:last-child {
+		word-wrap: break-word;
+		width: 0;
+		padding-right: 2rem;
+	}
+}
+
+.toast-progress {
+	height: 0.1rem,
+}
+
+// Animations & Transitions
+
+@keyframes fade-in {
+	from {
+		opacity: 0;
+	}
+
+	to {
+		opacity: 1;
+	}
+}

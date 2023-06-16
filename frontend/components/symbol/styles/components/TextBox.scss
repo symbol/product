@@ -1,0 +1,42 @@
+.text-box {
+	width: 100%;
+	min-width: 40px;
+	height: auto;
+	margin-bottom: var(--margin-control);
+	padding: var(--padding-input);
+	color: var(--color-darkmode-button-text);
+	font: var(--font-body);
+	text-decoration: none;
+	background: var(--color-darkmode-button-bg);
+	border: 2px solid var(--color-darkmode-form-accent-light);
+	border-radius: 4px;
+	box-shadow: var(--effect-button-default);
+	transition: all 0.2s;
+
+	&:hover {
+		filter: drop-shadow(0 0 9px #ea00ff);
+	}
+
+	&:focus {
+		box-shadow: 0px 0px 4px 4px rgba(255, 153, 153, 0.2);
+	}
+
+	&:last-child {
+		margin-bottom: 0;
+	}
+
+	&::placeholder {
+		text-align: center;
+	}
+
+	&[type=number] {
+		-webkit-appearance: textfield;
+		-moz-appearance: textfield;
+		appearance: textfield;
+	}
+
+	&[type=number]::-webkit-inner-spin-button,
+	&[type=number]::-webkit-outer-spin-button {
+		-webkit-appearance: none;
+	}
+}

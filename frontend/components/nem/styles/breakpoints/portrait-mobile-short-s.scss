@@ -1,0 +1,44 @@
+.portrait-mobile-short-s {
+	--size-main-content-width: 400px;
+	--size-bg-spacer-width: 0px;
+	--size-logo-width: 155.87px;
+	--size-logo-height: 62.12px;
+	--size-footer-link-icon-width: 45.9px;
+	--size-footer-link-icon-height: 45.9px;
+
+	--font-faucet-address: 400 10.52px/125% Nunito Sans;
+	--font-body: 400 10.52px/150% Nunito Sans;
+	--font-body-hero: 400 10.52px/150% Nunito Sans;
+	--font-input: 400 12.43px/150% Nunito Sans;
+	--font-button: 700 16.25px/100% Abhaya Libre;
+	--font-footer-link: 500 9.56px/120% Nunito Sans;
+
+	--typography-body-letter-spacing: var(--typography-web-mobile-body-letter-spacing);
+	--typography-button-letter-spacing: var(--typography-web-mobile-button-medium-letter-spacing);
+	--typography-button-text-transform: var(--typography-web-mobile-button-medium-text-case);
+
+	--text-crop-body-top: 0;
+	--text-crop-body-bottom: 0;
+
+	--text-crop-body-hero-top: 0;
+	--text-crop-body-hero-bottom: 0;
+
+	--border-input-width: 1.91px;
+	--border-button-width: 1.91px;
+
+	--padding-base: 15.3px;
+	--padding-form: 15.3px;
+	--padding-input: 9.56px 10.52px 10.52px;
+	--padding-button: 11.47px 22.95px;
+
+	--margin-logo: 11.91px;
+	--margin-footer: 11.91px;
+	--margin-control: 15.3px;
+	--margin-base: 11.91px;
+	--margin-paragraph-inner: 9px;
+
+	--display-mobile-bg: block;
+	--display-desktop-bg: none;
+	--display-portrait-form: block;
+	--display-landscape-form: none;
+}

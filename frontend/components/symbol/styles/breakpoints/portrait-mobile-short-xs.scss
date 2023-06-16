@@ -1,0 +1,44 @@
+.portrait-mobile-short-xs {
+	--size-main-content-width: 400px;
+	--size-bg-spacer-width: 0px;
+	--size-logo-width: 136.86px;
+	--size-logo-height: 54.54px;
+	--size-footer-link-icon-width: 40.3px;
+	--size-footer-link-icon-height: 40.3px;
+
+	--font-faucet-address: 400 9.24px/125% Protipo;
+	--font-body: 400 9.24px/150% Protipo;
+	--font-body-hero: 400 9.24px/150% Protipo;
+	--font-input: 400 10.92px/150% Protipo;
+	--font-button: 700 14.27px/100% Rajdhani;
+	--font-footer-link: 500 8.4px/120% Carbon;
+
+	--typography-body-letter-spacing: var(--typography-web-mobile-body-letter-spacing);
+	--typography-button-letter-spacing: var(--typography-web-mobile-button-medium-letter-spacing);
+	--typography-button-text-transform: var(--typography-web-mobile-button-medium-text-case);
+
+	--text-crop-body-top: 0;
+	--text-crop-body-bottom: 0;
+
+	--text-crop-body-hero-top: 0;
+	--text-crop-body-hero-bottom: 0;
+
+	--border-input-width: 1.91px;
+	--border-button-width: 1.91px;
+
+	--padding-base: 13.43px;
+	--padding-form: 13.43px;
+	--padding-input: 9.56px 10.52px 10.52px;
+	--padding-button: 11.47px 22.95px;
+
+	--margin-logo: 10.08px;
+	--margin-footer: 12.49px;
+	--margin-control: 13.43px;
+	--margin-base: 12.49px;
+	--margin-paragraph-inner: 8px;
+
+	--display-mobile-bg: block;
+	--display-desktop-bg: none;
+	--display-portrait-form: block;
+	--display-landscape-form: none;
+}
