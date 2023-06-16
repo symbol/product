@@ -1,0 +1,42 @@
+.text-box {
+	width: 100%;
+	min-width: 40px;
+	height: auto;
+	margin-bottom: var(--margin-control);
+	padding: var(--padding-input);
+	color: var(--color-darkmode-button-text);
+	font: var(--font-body);
+	text-decoration: none;
+	background: var(--color-darkmode-textbox-bg);
+	border: 2px solid var(--color-darkmode-textbox-stroke);
+	border-radius: 4px;
+	transition: all 0.2s;
+
+	&:hover {
+		border-color: var(--color-darkmode-textbox-hover-stroke);
+	}
+
+	&:focus {
+		border-color: var(--color-darkmode-textbox-hover-stroke);
+		outline: none;
+	}
+
+	&:last-child {
+		margin-bottom: 0;
+	}
+
+	&::placeholder {
+		text-align: center;
+	}
+
+	&[type=number] {
+		-webkit-appearance: textfield;
+		-moz-appearance: textfield;
+		appearance: textfield;
+	}
+
+	&[type=number]::-webkit-inner-spin-button,
+	&[type=number]::-webkit-outer-spin-button {
+		-webkit-appearance: none;
+	}
+}

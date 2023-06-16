@@ -1,0 +1,218 @@
+[
+    {
+        "width": 0,
+        "height": 0,
+        "portrait": true,
+        "className": "portrait-mobile-short-xs"
+    },
+    {
+        "width": 567,
+        "height": 233,
+        "portrait": false,
+        "className": "landscape-mobile-short"
+    },
+    {
+        "width": 812,
+        "height": 288,
+        "portrait": false,
+        "className": "landscape-mobile"
+    },
+    {
+        "width": 360,
+        "height": 540,
+        "portrait": true,
+        "className": "portrait-mobile-short-s"
+    },
+    {
+        "width": 360,
+        "height": 661,
+        "portrait": true,
+        "className": "portrait-mobile-s"
+    },
+    {
+        "width": 375,
+        "height": 568,
+        "portrait": true,
+        "className": "portrait-mobile-short"
+    },
+    {
+        "width": 375,
+        "height": 713,
+        "portrait": true,
+        "className": "portrait-mobile"
+    },
+    {
+        "width": 412,
+        "height": 633,
+        "portrait": true,
+        "className": "portrait-mobile-xs"
+    },
+    {
+        "width": 412,
+        "height": 723,
+        "portrait": true,
+        "className": "portrait-mobile"
+    },
+    {
+        "width": 414,
+        "height": 637,
+        "portrait": true,
+        "className": "portrait-mobile-xs"
+    },
+    {
+        "width": 414,
+        "height": 797,
+        "portrait": true,
+        "className": "portrait-mobile"
+    },
+    {
+        "width": 1280,
+        "height": 873,
+        "portrait": true,
+        "className": "portrait-desktop-short"
+    },
+    {
+        "width": 1360,
+        "height": 681,
+        "portrait": true,
+        "className": "portrait-mobile-short"
+    },
+    {
+        "width": 1368,
+        "height": 825,
+        "portrait": true,
+        "className": "portrait-desktop-short"
+    },
+    {
+        "width": 1439,
+        "height": 813,
+        "portrait": true,
+        "className": "portrait-desktop-short"
+    },
+    {
+        "width": 1536,
+        "height": 776,
+        "portrait": true,
+        "className": "portrait-mobile"
+    },
+    {
+        "width": 1600,
+        "height": 813,
+        "portrait": true,
+        "className": "portrait-desktop-short"
+    },
+    {
+        "width": 1600,
+        "height": 931,
+        "portrait": true,
+        "className": "portrait-desktop"
+    },
+    {
+        "width": 1600,
+        "height": 1113,
+        "portrait": true,
+        "className": "portrait-large"
+    },
+    {
+        "width": 1680,
+        "height": 963,
+        "portrait": true,
+        "className": "portrait-desktop"
+    },
+    {
+        "width": 1900,
+        "height": 1113,
+        "portrait": true,
+        "className": "portrait-large"
+    },
+    {
+        "width": 1920,
+        "height": 113,
+        "portrait": true,
+        "className": "portrait-large"
+    },
+    {
+        "width": 1920,
+        "height": 1353,
+        "portrait": true,
+        "className": "portrait-large"
+    },
+    {
+        "width": 1920,
+        "height": 1449,
+        "portrait": true,
+        "className": "portrait-large"
+    },
+    {
+        "width": 2048,
+        "height": 1000,
+        "portrait": true,
+        "className": "portrait-desktop"
+    },
+    {
+        "width": 2560,
+        "height": 993,
+        "portrait": true,
+        "className": "portrait-large-short"
+    },
+    {
+        "width": 2560,
+        "height": 1353,
+        "portrait": true,
+        "className": "portrait-large"
+    },
+    {
+        "width": 2560,
+        "height": 1511,
+        "portrait": true,
+        "className": "portrait-large"
+    },
+    {
+        "width": 2560,
+        "height": 1833,
+        "portrait": true,
+        "className": "portrait-large"
+    },
+    {
+        "width": 3440,
+        "height": 1353,
+        "portrait": true,
+        "className": "portrait-large"
+    },
+    {
+        "width": 3840,
+        "height": 1511,
+        "portrait": false,
+        "className": "landscape-large"
+    },
+    {
+        "width": 3840,
+        "height": 2073,
+        "portrait": false,
+        "className": "landscape-large"
+    },
+    {
+        "width": 3840,
+        "height": 2313,
+        "portrait": true,
+        "className": "portrait-large-l"
+    },
+    {
+        "width": 3840,
+        "height": 2793,
+        "portrait": true,
+        "className": "portrait-large-l"
+    },
+    {
+        "width": 3840,
+        "height": 2985,
+        "portrait": true,
+        "className": "portrait-large-l"
+    },
+    {
+        "width": 6016,
+        "height": 3293,
+        "portrait": true,
+        "className": "portrait-large-xl"
+    }
+]

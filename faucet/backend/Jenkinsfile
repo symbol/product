@@ -1,0 +1,12 @@
+defaultCiPipeline {
+	platform = ['ubuntu']
+	ciBuildDockerfile = 'javascript.Dockerfile'
+
+	packageId = 'faucet-backend'
+
+	publisher = 'docker'
+	dockerImageName = 'symbolplatform/faucet-backend'
+
+	codeCoverageTool = 'c8'
+	minimumCodeCoverage = 95
+}
