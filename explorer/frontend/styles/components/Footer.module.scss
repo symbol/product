@@ -1,6 +1,7 @@
 @import "../variables";
 
 .footer {
+    margin-top: $spacing-section-gap;
     position: relative;
     display: flex;
     align-items: center;

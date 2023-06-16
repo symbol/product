@@ -1,20 +1,247 @@
+import RecentBlocks from '@/components/RecentBlocks';
 import Field from '@/components/Field';
 import FieldPrice from '@/components/FieldPrice';
+import RecentTransactions from '@/components/RecentTransactions';
 import Section from '@/components/Section';
+import Separator from '@/components/Separator';
 import styles from '@/styles/pages/Home.module.scss';
+import { useTranslation } from 'next-i18next';
+import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 import Head from 'next/head';
 
-const Home = () => (
-	<div className={styles.wrapper}>
-		<Head>
-			<title>Home</title>
-		</Head>
-		<Section title="Base Info">
-			<Field title="Price">
-				<FieldPrice value={5.17} change={13} />
-			</Field>
-		</Section>
-	</div>
-);
+export const getStaticProps = async ({ locale }) => {
+	const blocks = [
+		{
+			height: 3999820,
+			timestamp: 1686756587280,
+			transactionCount: 2,
+			totalFee: 2.13
+		},
+		{
+			height: 3999819,
+			timestamp: 1686666586280,
+			transactionCount: 0,
+			totalFee: 0
+		},
+		{
+			height: 3999818,
+			timestamp: 1686536585280,
+			transactionCount: 5,
+			totalFee: 8.77
+		},
+		{
+			height: 3999817,
+			timestamp: 1686426584280,
+			transactionCount: 1,
+			totalFee: 0.69
+		},
+		{
+			height: 3999816,
+			timestamp: 1686426584280,
+			transactionCount: 1,
+			totalFee: 0.69
+		},
+		{
+			height: 3999815,
+			timestamp: 1686426584280,
+			transactionCount: 1,
+			totalFee: 0.69
+		},
+		{
+			height: 3999814,
+			timestamp: 1686426584280,
+			transactionCount: 1,
+			totalFee: 0.69
+		},
+		{
+			height: 3999813,
+			timestamp: 1686426584280,
+			transactionCount: 1,
+			totalFee: 0.69
+		},
+		{
+			height: 3999812,
+			timestamp: 1686426584280,
+			transactionCount: 1,
+			totalFee: 0.69
+		},
+	];
+
+	const fees = {
+		slow: 0.001,
+		medium: 0.005,
+		fast: 0.01
+	}
+
+	const latestTransactions = [
+		{
+			type: 'transfer',
+			hash: '7EC5...1147',
+			timestamp: 1686426584280,
+			fee: 0.65,
+			amount: 20471.65
+		}, {
+			type: 'transfer',
+			hash: '7EC5...1147',
+			timestamp: 1686426584280,
+			fee: 0.65,
+			amount: 20471.65
+		}, {
+			type: 'transfer',
+			hash: '7EC5...1147',
+			timestamp: 1686426584280,
+			fee: 0.65,
+			amount: 20471.65
+		}, {
+			type: 'transfer',
+			hash: '7EC5...1147',
+			timestamp: 1686426584280,
+			fee: 0.65,
+			amount: 20471.65
+		}, {
+			type: 'transfer',
+			hash: '7EC5...1147',
+			timestamp: 1686426584280,
+			fee: 0.65,
+			amount: 20471.65
+		},
+	];
+
+	const baseInfo = {
+		totalTransactions: 99888777154,
+		transactionsPerBlock: 15,
+		price: 5.17,
+		priceChange: 13,
+		volume: 1200000000,
+		circulatingSupply: 999999999999,
+		treasury: 628549820,
+		totalNodes: 145,
+		supernodes: 66,
+	};
+
+	const chainInfo = {
+		height: 3999820,
+		lastSafeBlock: 399120,
+		currentBlockTime: 15,
+	}
+
+	return {
+		props: {
+			blocks,
+			fees,
+			latestTransactions,
+			baseInfo,
+			chainInfo,
+			...(await serverSideTranslations(locale, ['common', 'home'])),
+		},
+	}
+};
+
+const Home = ({blocks, fees, latestTransactions, baseInfo, chainInfo}) => {
+	const { t } = useTranslation('home');
+
+	return (
+		<div className={styles.wrapper}>
+			<Head>
+				<title>Home</title>
+			</Head>
+			<RecentBlocks data={blocks} />
+			<Section>
+				<div className="layout-flex-row">
+					<div className="layout-grid-row layout-flex-fill">
+						<div className="layout-flex-col layout-flex-fill">
+							<Field title={t('field_totalTransactions')}>
+								{baseInfo.totalTransactions}
+							</Field>
+							<Field title={t('field_transactionsPerBlock')}>
+								{baseInfo.transactionsPerBlock}
+							</Field>
+						</div>
+						<img src="/images/stub-price-chart.png" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+					</div>
+					<Separator />
+					<div className="layout-grid-row layout-flex-fill">
+						<div className="layout-flex-col layout-flex-fill">
+							<Field title={t('field_price')}>
+								<FieldPrice value={baseInfo.price} change={baseInfo.priceChange} />
+							</Field>
+							<Field title={t('field_volume')}>
+								${baseInfo.volume}
+							</Field>
+						</div>
+						<div className="layout-flex-col layout-flex-fill">
+							<Field title={t('field_circulatingSupply')} textAlign="right">
+								${baseInfo.circulatingSupply}
+							</Field>
+							<Field title={t('field_treasury')} textAlign="right">
+								{baseInfo.treasury}XEM
+							</Field>
+						</div>
+					</div>
+					<Separator />
+					<div className="layout-grid-row layout-flex-fill">
+						<div className="layout-flex-col layout-flex-fill">
+							<Field title={t('field_totalNodes')}>
+								{baseInfo.totalNodes}
+							</Field>
+							<Field title={t('field_supernodes')}>
+								{baseInfo.supernodes}
+							</Field>
+						</div>
+						<img src="/images/stub-node-chart.svg" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+					</div>
+				</div>
+			</Section>
+			<div className="layout-flex-row">
+				<Section title={t('section_fees')}>
+					<div className="layout-flex-row">
+						<div className="layout-flex-fill">
+							<Field title={t('field_feeSlow')}>
+								{fees.slow} XEM
+							</Field>
+						</div>
+						<div className="layout-flex-fill">
+							<Field title={t('field_feeMedium')}>
+								{fees.medium} XEM
+							</Field>
+						</div>
+						<div className="layout-flex-fill">
+							<Field title={t('field_feeFast')}>
+								{fees.fast} XEM
+							</Field>
+						</div>
+					</div>
+				</Section>
+				<Section title={t('section_chain')}>
+					<div className="layout-flex-row">
+						<div className="layout-flex-fill">
+							<Field title={t('field_height')}>
+								{chainInfo.height}
+							</Field>
+						</div>
+						<div className="layout-flex-fill">
+							<Field title={t('field_lastSafeBlock')}>
+								{chainInfo.lastSafeBlock}
+							</Field>
+						</div>
+						<div className="layout-flex-fill">
+							<Field title={t('field_currentBlockTime')}>
+								{chainInfo.currentBlockTime}
+							</Field>
+						</div>
+					</div>
+				</Section>
+			</div>
+			<div className="layout-flex-row">
+				<Section title={t('section_pendingTransactions')}>
+					<RecentTransactions data={latestTransactions} />
+				</Section>
+				<Section title={t('section_latestTransactions')}>
+					<RecentTransactions data={latestTransactions} />
+				</Section>
+			</div>
+		</div>
+	)
+};
 
 export default Home;

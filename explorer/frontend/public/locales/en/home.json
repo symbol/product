@@ -1,0 +1,21 @@
+{
+    "section_fees": "Fees",
+    "section_chain": "Chain",
+    "section_pendingTransactions": "Pending Transactions",
+    "section_latestTransactions": "Latest Transactions",
+
+    "field_totalTransactions": "Total Transactions",
+    "field_transactionsPerBlock": "Transactions per Block",
+    "field_price": "Price",
+    "field_volume": "Volume 24h",
+    "field_circulatingSupply": "Circulating Supply",
+    "field_treasury": "Treasury",
+    "field_totalNodes": "Total Nodes",
+    "field_supernodes": "Supernodes",
+    "field_feeSlow": "Slow",
+    "field_feeMedium": "Medium",
+    "field_feeFast": "Fast",
+    "field_height": "Height",
+    "field_lastSafeBlock": "Last Safe Block",
+    "field_currentBlockTime": "CurrentBlockTime"
+}

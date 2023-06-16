@@ -1,0 +1,39 @@
+@import "../variables";
+
+.recentBlocks {
+    position: relative;
+    width: 100%;
+}
+
+.blockPreviewScrollable {
+    position: relative;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    overflow-x: auto;
+    margin-top: $spacing-padding;
+
+    &::-webkit-scrollbar {
+        display: none;
+    }
+}
+
+%button {
+    position: absolute;
+    top: 50%;
+    width: 2rem;
+    height: 2rem;
+    cursor: pointer;
+}
+
+.buttonLeft {
+    @extend %button;
+    transform: translateX(-100%) translateY(-50%);
+    left: 0;
+}
+
+.buttonRight {
+    @extend %button;
+    right: 0;
+    transform: translateX(100%) translateY(-50%);
+}

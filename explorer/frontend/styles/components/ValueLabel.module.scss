@@ -1,0 +1,34 @@
+@import "../variables";
+
+.valueLabel {
+    width: fit-content;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    background: $color-background-mosaic;
+    border-radius: $border-radius-label;
+    padding: 0 $spacing-base * 2;
+    gap: $spacing-base;
+    font: $font-body-bold;
+}
+
+.icon {
+    width: 1.33rem;
+    height: 1.33rem;
+}
+
+.success {
+    color: $color-primary;
+}
+
+.warning {
+    color: $color-warning;
+}
+
+.danger {
+    color: $color-danger;
+}
+
+.info {
+    color: $color-info;
+}
