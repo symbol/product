@@ -307,8 +307,8 @@ class PreparerTest(unittest.TestCase):
 					])
 					self.assertEqual([
 						'true',
-						str(preparer.harvester_configurator.remote_key_pair.public_key),
-						str(preparer.harvester_configurator.vrf_key_pair.public_key)
+						str(preparer.harvester_configurator.remote_key_pair.private_key),
+						str(preparer.harvester_configurator.vrf_key_pair.private_key)
 					], harvesting_values)
 
 				# - all files are readonly

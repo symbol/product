@@ -33,8 +33,8 @@ class HarvesterConfigurator:
 
 		self.config_manager.patch('config-harvesting.properties', [
 			('harvesting', 'enableAutoHarvesting', 'true'),
-			('harvesting', 'harvesterSigningPrivateKey', self.remote_key_pair.public_key),
-			('harvesting', 'harvesterVrfPrivateKey', self.vrf_key_pair.public_key)
+			('harvesting', 'harvesterSigningPrivateKey', self.remote_key_pair.private_key),
+			('harvesting', 'harvesterVrfPrivateKey', self.vrf_key_pair.private_key)
 		])
 
 	def generate_harvester_key_files(self, directory):

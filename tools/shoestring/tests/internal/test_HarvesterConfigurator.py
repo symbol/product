@@ -79,8 +79,8 @@ class HarvesterConfiguratorTest(unittest.TestCase):
 			])
 
 			self.assertEqual([
-				str(configurator.remote_key_pair.public_key),
-				str(configurator.vrf_key_pair.public_key),
+				str(configurator.remote_key_pair.private_key),
+				str(configurator.vrf_key_pair.private_key),
 				'true',
 				'ddd'
 			], updated_values)
