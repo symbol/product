@@ -17,7 +17,7 @@ msgid "argument-help-ca-key-path"
 msgstr ""
 
 #: shoestring/commands/announce_transaction.py:35
-#: shoestring/commands/health.py:75
+#: shoestring/commands/health.py:75 shoestring/commands/import_bootstrap.py:28
 #: shoestring/commands/min_cosignatures_count.py:34
 #: shoestring/commands/renew_certificates.py:25
 #: shoestring/commands/renew_voting_keys.py:112
@@ -31,6 +31,10 @@ msgstr ""
 #: shoestring/commands/renew_voting_keys.py:113
 #: shoestring/commands/reset_data.py:88 shoestring/commands/setup.py:132
 msgid "argument-help-directory"
+msgstr ""
+
+#: shoestring/commands/import_bootstrap.py:29
+msgid "argument-help-import-bootstrap-bootstrap"
 msgstr ""
 
 #: shoestring/commands/min_cosignatures_count.py:36
@@ -205,6 +209,14 @@ msgstr ""
 msgid "health-websockets-timed-out"
 msgstr ""
 
+#: shoestring/commands/import_bootstrap.py:14
+msgid "import-bootstrap-importing-harvester"
+msgstr ""
+
+#: shoestring/commands/import_bootstrap.py:19
+msgid "import-bootstrap-importing-voter"
+msgstr ""
+
 #: shoestring/__main__.py:18
 msgid "main-announce-transaction-help"
 msgstr ""
@@ -214,30 +226,34 @@ msgid "main-health-help"
 msgstr ""
 
 #: shoestring/__main__.py:20
-msgid "main-min-cosignatures-count-help"
+msgid "main-import-bootstrap-help"
 msgstr ""
 
 #: shoestring/__main__.py:21
-msgid "main-pemtool-help"
+msgid "main-min-cosignatures-count-help"
 msgstr ""
 
 #: shoestring/__main__.py:22
-msgid "main-renew-certificates-help"
+msgid "main-pemtool-help"
 msgstr ""
 
 #: shoestring/__main__.py:23
-msgid "main-renew-voting-keys-help"
+msgid "main-renew-certificates-help"
 msgstr ""
 
 #: shoestring/__main__.py:24
-msgid "main-reset-data-help"
+msgid "main-renew-voting-keys-help"
 msgstr ""
 
 #: shoestring/__main__.py:25
-msgid "main-setup-help"
+msgid "main-reset-data-help"
 msgstr ""
 
 #: shoestring/__main__.py:26
+msgid "main-setup-help"
+msgstr ""
+
+#: shoestring/__main__.py:27
 msgid "main-signer-help"
 msgstr ""
 
@@ -249,7 +265,7 @@ msgstr ""
 msgid "main-title"
 msgstr ""
 
-#: shoestring/__main__.py:27
+#: shoestring/__main__.py:28
 msgid "main-upgrade-help"
 msgstr ""
 

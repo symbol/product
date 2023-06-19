@@ -25,7 +25,7 @@ msgid "argument-help-ca-key-path"
 msgstr "path to main private key PEM file"
 
 #: shoestring/commands/announce_transaction.py:35
-#: shoestring/commands/health.py:75
+#: shoestring/commands/health.py:75 shoestring/commands/import_bootstrap.py:28
 #: shoestring/commands/min_cosignatures_count.py:34
 #: shoestring/commands/renew_certificates.py:25
 #: shoestring/commands/renew_voting_keys.py:112
@@ -40,6 +40,10 @@ msgstr "path to shoestring configuration file"
 #: shoestring/commands/reset_data.py:88 shoestring/commands/setup.py:132
 msgid "argument-help-directory"
 msgstr "installation directory (default: {default_path})"
+
+#: shoestring/commands/import_bootstrap.py:29
+msgid "argument-help-import-bootstrap-bootstrap"
+msgstr "path to bootstrap target directory"
 
 #: shoestring/commands/min_cosignatures_count.py:36
 msgid "argument-help-min-cosignatures-count-update"
@@ -219,6 +223,14 @@ msgstr ""
 "timeout when waiting for a block, this might indicate a problem between "
 "broker <-> REST"
 
+#: shoestring/commands/import_bootstrap.py:14
+msgid "import-bootstrap-importing-harvester"
+msgstr "importing harvesting keys from bootstrap ({path})"
+
+#: shoestring/commands/import_bootstrap.py:19
+msgid "import-bootstrap-importing-voter"
+msgstr "importing voting keys from bootstrap ({path})"
+
 #: shoestring/__main__.py:18
 msgid "main-announce-transaction-help"
 msgstr "announces a transaction to the network"
@@ -228,30 +240,34 @@ msgid "main-health-help"
 msgstr "does health check"
 
 #: shoestring/__main__.py:20
+msgid "main-import-bootstrap-help"
+msgstr "imports settings from a bootstap installation"
+
+#: shoestring/__main__.py:21
 msgid "main-min-cosignatures-count-help"
 msgstr "detects minimum cosignatures required for an account"
 
-#: shoestring/__main__.py:21
+#: shoestring/__main__.py:22
 msgid "main-pemtool-help"
 msgstr "generates PEM files"
 
-#: shoestring/__main__.py:22
+#: shoestring/__main__.py:23
 msgid "main-renew-certificates-help"
 msgstr "renews certificates"
 
-#: shoestring/__main__.py:23
+#: shoestring/__main__.py:24
 msgid "main-renew-voting-keys-help"
 msgstr "renews voting keys"
 
-#: shoestring/__main__.py:24
+#: shoestring/__main__.py:25
 msgid "main-reset-data-help"
 msgstr "resets data to allow a resync from scratch"
 
-#: shoestring/__main__.py:25
+#: shoestring/__main__.py:26
 msgid "main-setup-help"
 msgstr "sets up a node"
 
-#: shoestring/__main__.py:26
+#: shoestring/__main__.py:27
 msgid "main-signer-help"
 msgstr "signs a transaction"
 
@@ -263,7 +279,7 @@ msgstr "valid subcommands"
 msgid "main-title"
 msgstr "Shoestring Tool"
 
-#: shoestring/__main__.py:27
+#: shoestring/__main__.py:28
 msgid "main-upgrade-help"
 msgstr "upgrades a node to the latest client version"
 

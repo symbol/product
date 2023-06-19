@@ -25,9 +25,9 @@ async def run_main(args):
 
 	if args.update:
 		config_filepath = Path(args.config)
-		ConfigurationManager(config_filepath.parent).patch(config_filepath.name, {
+		ConfigurationManager(config_filepath.parent).patch(config_filepath.name, [
 			('transaction', 'minCosignaturesCount', min_cosignatures_count)
-		})
+		])
 
 
 def add_arguments(parser):
