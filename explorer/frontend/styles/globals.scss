@@ -115,6 +115,15 @@ a {
     #root {
         font-size: $multiplier-font-mobile;
     }
+
+    .layout-flex-row {
+        flex-direction: column;
+        justify-content: space-between;
+    }
+
+    .no-mobile {
+        display: none;
+    }
 }
 
 

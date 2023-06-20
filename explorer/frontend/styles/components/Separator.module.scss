@@ -4,3 +4,11 @@
     width: 0.16rem;
     background-color: $color-secondary;
 }
+
+
+@media #{$screen-mobile} {
+    .separator {
+        width: auto;
+        height: 0.16rem;
+    }
+}

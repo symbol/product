@@ -10,62 +10,22 @@ import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 import Head from 'next/head';
 
 export const getStaticProps = async ({ locale }) => {
-	const blocks = [
-		{
-			height: 3999820,
-			timestamp: 1686756587280,
-			transactionCount: 2,
-			totalFee: 2.13
-		},
-		{
-			height: 3999819,
-			timestamp: 1686666586280,
-			transactionCount: 0,
-			totalFee: 0
-		},
-		{
-			height: 3999818,
-			timestamp: 1686536585280,
-			transactionCount: 5,
-			totalFee: 8.77
-		},
-		{
-			height: 3999817,
-			timestamp: 1686426584280,
-			transactionCount: 1,
-			totalFee: 0.69
-		},
-		{
-			height: 3999816,
-			timestamp: 1686426584280,
-			transactionCount: 1,
-			totalFee: 0.69
-		},
-		{
-			height: 3999815,
-			timestamp: 1686426584280,
-			transactionCount: 1,
-			totalFee: 0.69
-		},
-		{
-			height: 3999814,
-			timestamp: 1686426584280,
-			transactionCount: 1,
-			totalFee: 0.69
-		},
-		{
-			height: 3999813,
-			timestamp: 1686426584280,
-			transactionCount: 1,
-			totalFee: 0.69
-		},
-		{
-			height: 3999812,
-			timestamp: 1686426584280,
-			transactionCount: 1,
-			totalFee: 0.69
-		},
-	];
+	const blocks = new Array(50).fill(null).map((item, index) => {
+		const transactionCount = Math.floor(Math.random() * 10);
+		const timestamp = new Date(Date.now() - 15 * index * 60000).getTime();
+		const transactionFees = new Array(transactionCount).fill(null).map(() => ({
+			fee: Math.floor(Math.random() * 100) / 100,
+			size: Math.floor(Math.random() * 300 + 100),
+		}));
+
+		return {
+			height: 3999820 - index,
+			timestamp,
+			transactionCount,
+			totalFee: + transactionFees.reduce((partialSum, a) => partialSum + a.fee, 0).toFixed(2),
+			transactionFees
+		}
+	});
 
 	const fees = {
 		slow: 0.001,

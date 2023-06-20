@@ -8,8 +8,8 @@ import ValueTransactionSquares from './ValueTransactionSquares';
 import { forwardRef, useEffect, useState } from 'react';
 import ValueAge from './ValueAge';
 
-const BlockPreview = ({ data, isNext, isSelected, onClose, onSelect }, ref) => {
-	const { height, timestamp } = data;
+const BlockPreview = ({ data, isNext, isSelected, onClose, onSelect, smallBoxRef, bigBoxRef }) => {
+	const { height, transactionCount, timestamp } = data;
 	const [isTransactionSquaresRendered, setIsTransactionSquaresRendered] = useState(false);
 	const [expandedStyle, setExpandedStyle] = useState('')
 	const containerClassName = isSelected ? styles.blockCard : styles.blockCube;
@@ -37,7 +37,9 @@ const BlockPreview = ({ data, isNext, isSelected, onClose, onSelect }, ref) => {
 
 	return (
 		<div className={`${styles.blockPreview} ${expandedStyle}`}>
-			<div className={containerClassName} onClick={handleClick} ref={ref}>
+			<div className={styles.bigBox} ref={bigBoxRef} />
+			<div className={styles.smallBox} ref={smallBoxRef} />
+			<div className={containerClassName} onClick={handleClick}>
 				{isSelected
 					? <div className="layout-flex-col">
 						<ButtonClose className={styles.buttonClose} onClick={onClose} />
@@ -61,14 +63,17 @@ const BlockPreview = ({ data, isNext, isSelected, onClose, onSelect }, ref) => {
 							</Field>
 						</div>
 						<Field title="Transaction Fees">
-							{isTransactionSquaresRendered && <ValueTransactionSquares />}
+							{isTransactionSquaresRendered && <ValueTransactionSquares data={data.transactionFees} />}
 						</Field>
 					</div>
 					: <>
 						<div className={styles.age}>
 							<ValueAge value={timestamp} />.
 						</div>
-						<div className={styles.height}>{height}</div>
+						<div className={styles.middle}>
+							<div className={styles.height}>{height}</div>
+							<div>{transactionCount} TXs.</div>
+						</div>
 						<Field title="Total Fee">
 							<ValueMosaic className={styles.fee} mosaicId="6BED913FA20223F8" amount={data.totalFee} />
 						</Field>

@@ -14,35 +14,19 @@ const Tooltip = ({fee}) => (
 
 
 const ValueTransactionSquares = ({ data }) => {
+	const colorHigh = '#52B12C';
+	const colorMedium = '#F3BA2F';
+	const colorLow = '#B94F4F';
+
+	const colors = [colorHigh, colorMedium, colorLow];
+
 	const series = [
 		{
-			data: [
-				{
-					x: '1.2',
-					y: 1.2,
-					fillColor: '#52B12C'
-				},
-				{
-					x: '0.4',
-					y: 0.4,
-					fillColor: '#F3BA2F'
-				},
-				{
-					x: '1.8',
-					y: 1.8,
-					fillColor: '#F3BA2F'
-				},
-				{
-					x: '1.9',
-					y: 1.9,
-					fillColor: '#52B12C'
-				},
-				{
-					x: '0.03',
-					y: 0.1,
-					fillColor: '#B94F4F'
-				},
-			]
+			data: data.map((item) => ({
+				x: item.fee,
+				y: item.fee,
+				fillColor: colors[Math.round(Math.random(3))]
+			}))
 		}
 	];
 	const options = {

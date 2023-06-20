@@ -8,19 +8,27 @@ const RecentBlocks = ({ data }) => {
 	const [selectedBlockHeight, setSelectedBlockHeight] = useState(-1);
 	const dataWithRefs = data.map((item) => ({
 		...item,
-		ref: createRef()
+		smallBoxRef: createRef(),
+		bigBoxRef: createRef(),
 	}))
 
 	const handleBlockSelect = (item) => {
 		setSelectedBlockHeight(item.height);
 
-		if (!item.ref.current) return;
-
-		item.ref.current.scrollIntoView({
-			behavior: 'smooth',
-			block: "center",
-			inline: 'center'
-		});
+		if (item.height > selectedBlockHeight) {
+			item.bigBoxRef.current.scrollIntoView({
+				behavior: 'smooth',
+				block: "center",
+				inline: 'center'
+			});
+		}
+		else {
+			item.smallBoxRef.current.scrollIntoView({
+				behavior: 'smooth',
+				block: "center",
+				inline: 'center'
+			});
+		}
 	};
 	const handleClose = () => setSelectedBlockHeight(-1);
 	const scrollLeft = () => {
@@ -49,16 +57,17 @@ const RecentBlocks = ({ data }) => {
 						isSelected={selectedBlockHeight === item.height}
 						data={item}
 						key={key}
-						ref={item.ref}
+						smallBoxRef={item.smallBoxRef}
+						bigBoxRef={item.bigBoxRef}
 						onClose={handleClose}
 						onSelect={() => handleBlockSelect(item)}
 					/>
 				))}
 			</div>
 			{isButtonLeftVisible && (
-				<img className={styles.buttonLeft} src="/images/icon-left.svg" onClick={scrollLeft}/>
+				<img className={`${styles.buttonLeft} no-mobile`} src="/images/icon-left.svg" onClick={scrollLeft}/>
 			)}
-			<img className={styles.buttonRight} src="/images/icon-right.svg" onClick={scrollRight}/>
+			<img className={`${styles.buttonRight} no-mobile`} src="/images/icon-right.svg" onClick={scrollRight}/>
 		</div>
 	);
 };
