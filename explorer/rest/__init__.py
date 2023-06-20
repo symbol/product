@@ -37,6 +37,13 @@ def setup_nem_routes(app, nem_api_facade):
 			abort(404)
 		return jsonify(result)
 
+	@app.route('/api/nem/blocks')
+	def api_get_nem_blocks():
+		limit = int(request.args.get('limit', 10))
+		offset = int(request.args.get('offset', 0))
+
+		return jsonify(nem_api_facade.get_blocks(limit=limit, offset=offset))
+
 def setup_error_handlers(app):
 	@app.errorhandler(404)
 	def not_found(_):
