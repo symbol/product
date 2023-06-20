@@ -20,6 +20,7 @@ _temp/
 node_modules/
 npm-*.log*
 _data/
+.next/
 
 # python
 __pycache__/

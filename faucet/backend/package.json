@@ -1,0 +1,40 @@
+{
+  "name": "faucet-backend",
+  "version": "1.0.0",
+  "description": "Backend services use for faucet application (NEM / Symbol)",
+  "type": "module",
+  "scripts": {
+    "start": "node -r dotenv/config src/server.js",
+    "dev": "nodemon -r dotenv/config src/server.js",
+    "lint": "eslint src/ test/",
+    "lint:fix": "eslint src/ test/ --fix",
+    "test": "TZ=utc mocha --full-trace --recursive test --exit -r dotenv/config dotenv_config_path=./.env.test",
+    "test:jenkins": "c8 --require mocha --no-clean --reporter=lcov npm run test"
+  },
+  "author": "Symbol Contributors <contributors@symbol.dev>",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.4.0",
+    "dotenv": "^16.0.3",
+    "jsonwebtoken": "^9.0.0",
+    "restify": "^11.1.0",
+    "restify-errors": "^8.0.2",
+    "sqlite3": "^5.1.6",
+    "symbol-sdk": "^3.0.7",
+    "winston": "^3.8.2"
+  },
+  "devDependencies": {
+    "assert-plus": "^1.0.0",
+    "axios-mock-adapter": "^1.21.4",
+    "c8": "^7.13.0",
+    "chai": "^4.3.7",
+    "chai-as-promised": "^7.1.1",
+    "eslint": "^8.40.0",
+    "eslint-config-airbnb": "^19.0.4",
+    "mocha": "^10.2.0",
+    "nodemon": "^2.0.22",
+    "sinon": "^15.0.4",
+    "sinon-chai": "^3.7.0",
+    "supertest": "^6.3.3"
+  }
+}

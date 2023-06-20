@@ -1,6 +1,15 @@
 builds:
-  - name: Nodewatch
+  - name: Explorer Nodewatch
     path: explorer/nodewatch
+
+  - name: Faucet Authenticator
+    path: faucet/authenticator
+
+  - name: Faucet Backend
+    path: faucet/backend
+
+  - name: Faucet Frontend
+    path: faucet/frontend
 
   - name: Light API Python
     path: lightapi/python

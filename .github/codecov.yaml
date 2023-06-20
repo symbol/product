@@ -6,17 +6,35 @@ coverage:
       default:
         target: 95%  # overall project / repo coverage
 
-      lightapi-python:
-        target: auto
-        threshold: 1%
-        flags:
-          - lightapi-python
-
       explorer-nodewatch:
         target: auto
         threshold: 1%
         flags:
           - explorer-nodewatch
+
+      faucet-authenticator:
+        target: auto
+        threshold: 1%
+        flags:
+          - faucet-authenticator
+
+      faucet-backend:
+        target: auto
+        threshold: 1%
+        flags:
+          - faucet-backend
+
+      faucet-frontend:
+        target: auto
+        threshold: 1%
+        flags:
+          - faucet-frontend
+
+      lightapi-python:
+        target: auto
+        threshold: 1%
+        flags:
+          - lightapi-python
 
       optin-puller:
         target: auto
@@ -49,14 +67,29 @@ coverage:
 # monorepo.  This allows code coverage per package.
 
 flags:
-  lightapi-python:
-    paths:
-      - lightapi/python
-    carryforward: true
-
   explorer-nodewatch:
     paths:
       - explorer/nodewatch
+    carryforward: true
+
+  faucet-authenticator:
+    paths:
+      - faucet/authenticator
+    carryforward: true
+
+  faucet-backend:
+    paths:
+      - faucet/backend
+    carryforward: true
+
+  faucet-frontend:
+    paths:
+      - faucet/frontend
+    carryforward: true
+
+  lightapi-python:
+    paths:
+      - lightapi/python
     carryforward: true
 
   optin-puller:

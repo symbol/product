@@ -1,0 +1,22 @@
+.header {
+	width: 100%;
+	margin-bottom: var(--margin-logo);
+}
+
+.logo {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: space-between;
+	width: var(--size-logo-width);
+	height: var(--size-logo-height);
+	margin: 0 auto;
+}
+
+.logo-image {
+	height: 50%;
+}
+
+.logo-wordmark {
+	width: 100%;
+}
