@@ -85,10 +85,10 @@ async def test_validate_passes_when_node_is_available_without_https(server, capl
 
 async def test_validate_fails_when_node_is_offline(server, caplog):  # pylint: disable=redefined-outer-name
 	# Act:
-	await _dispatch_validate(server.port + 1)
+	await _dispatch_validate(server.port + 2)
 
 	# Assert:
-	assert_message_is_logged(f'cannot access REST API at http://localhost:{server.port + 1}', caplog)
+	assert_message_is_logged(f'cannot access REST API at http://localhost:{server.port + 2}', caplog)
 	assert_max_log_level(LogLevel.ERROR, caplog)
 
 # endregion
