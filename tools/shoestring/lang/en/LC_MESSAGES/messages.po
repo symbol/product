@@ -26,6 +26,7 @@ msgstr "path to main private key PEM file"
 
 #: shoestring/commands/announce_transaction.py:35
 #: shoestring/commands/health.py:75 shoestring/commands/import_bootstrap.py:28
+#: shoestring/commands/init.py:23
 #: shoestring/commands/min_cosignatures_count.py:34
 #: shoestring/commands/renew_certificates.py:25
 #: shoestring/commands/renew_voting_keys.py:112
@@ -77,7 +78,7 @@ msgstr "purge harvesters.dat file"
 msgid "argument-help-setup-overrides"
 msgstr "path to custom user settings"
 
-#: shoestring/commands/setup.py:131
+#: shoestring/commands/init.py:22 shoestring/commands/setup.py:131
 msgid "argument-help-setup-package"
 msgstr ""
 "Network configuration package. Possible values: (name | file:///filename "
@@ -113,7 +114,8 @@ msgstr "downloaded file ({descriptor_name}) has invalid hash"
 msgid "general-connecting-to-node"
 msgstr "connecting to {endpoint}"
 
-#: shoestring/commands/reset_data.py:57 shoestring/internal/Preparer.py:183
+#: shoestring/commands/init.py:16 shoestring/commands/reset_data.py:57
+#: shoestring/internal/Preparer.py:183
 #: shoestring/internal/VoterConfigurator.py:53
 msgid "general-copying-file"
 msgstr "copying FILE {source_path} into {destination_path}"
@@ -244,30 +246,34 @@ msgid "main-import-bootstrap-help"
 msgstr "imports settings from a bootstap installation"
 
 #: shoestring/__main__.py:21
+msgid "main-init-help"
+msgstr "extracts a template shoestring configuration file from a package"
+
+#: shoestring/__main__.py:22
 msgid "main-min-cosignatures-count-help"
 msgstr "detects minimum cosignatures required for an account"
 
-#: shoestring/__main__.py:22
+#: shoestring/__main__.py:23
 msgid "main-pemtool-help"
 msgstr "generates PEM files"
 
-#: shoestring/__main__.py:23
+#: shoestring/__main__.py:24
 msgid "main-renew-certificates-help"
 msgstr "renews certificates"
 
-#: shoestring/__main__.py:24
+#: shoestring/__main__.py:25
 msgid "main-renew-voting-keys-help"
 msgstr "renews voting keys"
 
-#: shoestring/__main__.py:25
+#: shoestring/__main__.py:26
 msgid "main-reset-data-help"
 msgstr "resets data to allow a resync from scratch"
 
-#: shoestring/__main__.py:26
+#: shoestring/__main__.py:27
 msgid "main-setup-help"
 msgstr "sets up a node"
 
-#: shoestring/__main__.py:27
+#: shoestring/__main__.py:28
 msgid "main-signer-help"
 msgstr "signs a transaction"
 
@@ -279,7 +285,7 @@ msgstr "valid subcommands"
 msgid "main-title"
 msgstr "Shoestring Tool"
 
-#: shoestring/__main__.py:28
+#: shoestring/__main__.py:29
 msgid "main-upgrade-help"
 msgstr "upgrades a node to the latest client version"
 

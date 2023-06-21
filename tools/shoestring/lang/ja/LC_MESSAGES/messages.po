@@ -24,6 +24,7 @@ msgstr ""
 
 #: shoestring/commands/announce_transaction.py:35
 #: shoestring/commands/health.py:75 shoestring/commands/import_bootstrap.py:28
+#: shoestring/commands/init.py:23
 #: shoestring/commands/min_cosignatures_count.py:34
 #: shoestring/commands/renew_certificates.py:25
 #: shoestring/commands/renew_voting_keys.py:112
@@ -75,7 +76,7 @@ msgstr ""
 msgid "argument-help-setup-overrides"
 msgstr ""
 
-#: shoestring/commands/setup.py:131
+#: shoestring/commands/init.py:22 shoestring/commands/setup.py:131
 msgid "argument-help-setup-package"
 msgstr ""
 
@@ -109,7 +110,8 @@ msgstr ""
 msgid "general-connecting-to-node"
 msgstr ""
 
-#: shoestring/commands/reset_data.py:57 shoestring/internal/Preparer.py:183
+#: shoestring/commands/init.py:16 shoestring/commands/reset_data.py:57
+#: shoestring/internal/Preparer.py:183
 #: shoestring/internal/VoterConfigurator.py:53
 msgid "general-copying-file"
 msgstr ""
@@ -236,30 +238,34 @@ msgid "main-import-bootstrap-help"
 msgstr ""
 
 #: shoestring/__main__.py:21
-msgid "main-min-cosignatures-count-help"
+msgid "main-init-help"
 msgstr ""
 
 #: shoestring/__main__.py:22
-msgid "main-pemtool-help"
+msgid "main-min-cosignatures-count-help"
 msgstr ""
 
 #: shoestring/__main__.py:23
-msgid "main-renew-certificates-help"
+msgid "main-pemtool-help"
 msgstr ""
 
 #: shoestring/__main__.py:24
-msgid "main-renew-voting-keys-help"
+msgid "main-renew-certificates-help"
 msgstr ""
 
 #: shoestring/__main__.py:25
-msgid "main-reset-data-help"
+msgid "main-renew-voting-keys-help"
 msgstr ""
 
 #: shoestring/__main__.py:26
-msgid "main-setup-help"
+msgid "main-reset-data-help"
 msgstr ""
 
 #: shoestring/__main__.py:27
+msgid "main-setup-help"
+msgstr ""
+
+#: shoestring/__main__.py:28
 msgid "main-signer-help"
 msgstr ""
 
@@ -271,7 +277,7 @@ msgstr ""
 msgid "main-title"
 msgstr ""
 
-#: shoestring/__main__.py:28
+#: shoestring/__main__.py:29
 msgid "main-upgrade-help"
 msgstr ""
 
