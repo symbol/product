@@ -236,7 +236,7 @@ class Preparer:
 				],
 				'node': [
 					('node', 'enableAutoSyncCleanup', 'false'),
-					('node', 'trustedHosts', '127.0.0.1'),
+					('node', 'trustedHosts', '127.0.0.1,172.20.0.25'),
 					('node', 'localNetworks', '127.0.0.1,172.20'),
 					('localnode', 'roles', 'Peer,Api'),
 				]

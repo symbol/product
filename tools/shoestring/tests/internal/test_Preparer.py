@@ -335,7 +335,7 @@ class PreparerTest(unittest.TestCase):
 		self._assert_can_configure_resources(NodeFeatures.API, {
 			'extensions-server': ['true', 'true', 'false'],
 			'extensions-recovery': ['true', 'true', 'true'],
-			'node': ['false', '127.0.0.1', '127.0.0.1,172.20', 'Peer,Api', 'friendly-node.symbol.cloud', 'hello friends'],
+			'node': ['false', '127.0.0.1,172.20.0.25', '127.0.0.1,172.20', 'Peer,Api', 'friendly-node.symbol.cloud', 'hello friends'],
 			'finalization': ['false', '10m']
 		})
 
@@ -361,7 +361,7 @@ class PreparerTest(unittest.TestCase):
 			'extensions-server': ['true', 'true', 'true'],
 			'extensions-recovery': ['true', 'true', 'true'],
 			'node': [
-				'false', '127.0.0.1', '127.0.0.1,172.20', 'Peer,Api,Voting', 'friendly-node.symbol.cloud', 'hello friends'
+				'false', '127.0.0.1,172.20.0.25', '127.0.0.1,172.20', 'Peer,Api,Voting', 'friendly-node.symbol.cloud', 'hello friends'
 			],
 			'finalization': ['true', '0m'],
 			'harvesting': True
