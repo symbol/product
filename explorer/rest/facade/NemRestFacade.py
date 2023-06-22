@@ -18,7 +18,7 @@ class NemRestFacade:
 		with self.nem_db as db:
 			block = db.get_block(height)
 
-		return Block(*block).to_dict() if block else None
+		return Block(**block).to_dict() if block else None
 
 	def get_blocks(self, **kwargs):
 		"""Gets blocks pagination."""
@@ -29,4 +29,4 @@ class NemRestFacade:
 		with self.nem_db as db:
 			blocks = db.get_blocks(limit, offset)
 
-		return [Block(*block).to_dict() for block in blocks] if blocks else None
+		return [Block(**block).to_dict() for block in blocks]
