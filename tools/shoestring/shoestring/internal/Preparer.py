@@ -122,7 +122,7 @@ class Preparer:
 	def __init__(self, directory, config, logger=None):
 		"""Creates a preparer for preparing a Symbol node with the specified features ."""
 
-		self.directory = Path(directory)
+		self.directory = Path(directory).absolute()
 		self.config = config
 		self.log = logger
 

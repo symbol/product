@@ -1,4 +1,5 @@
 import configparser
+import os
 import tempfile
 from enum import Enum
 from pathlib import Path
@@ -246,6 +247,49 @@ async def test_can_prepare_peer_node_with_existing_ca_without_password(server): 
 
 async def test_can_prepare_peer_node_with_existing_ca_with_password(server):  # pylint: disable=redefined-outer-name
 	await _assert_can_prepare_node(server, NodeFeatures.PEER, PEER_OUTPUT_FILES, CaMode.WITH_PASSWORD)
+
+# endregion
+
+
+# region relative output path
+
+async def test_can_prepare_node_with_relative_output_directory(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	with tempfile.TemporaryDirectory(dir=os.getcwd()) as output_directory:
+		with tempfile.TemporaryDirectory() as package_directory:
+			prepare_shoestring_configuration(
+				package_directory,
+				NodeFeatures.PEER,
+				server.make_url(''),
+				api_https=False,
+				ca_common_name='my CA CN',
+				node_common_name='my Node CN')
+			_prepare_overrides(package_directory)
+			prepare_testnet_package(package_directory, 'resources.zip')
+
+			with tempfile.TemporaryDirectory() as ca_directory:
+				# Act:
+				await main([
+					'setup',
+					'--config', str(Path(package_directory) / 'sai.shoestring.ini'),
+					'--security', 'insecure',
+					'--package', f'file://{Path(package_directory) / "resources.zip"}',
+					'--directory', str(Path(output_directory).relative_to(os.getcwd())),
+					'--ca-key-path', str(Path(ca_directory) / 'xyz.key.pem'),
+					'--overrides', str(Path(package_directory) / 'user_overrides.ini')
+				])
+
+				# Assert: spot check all expected output files and permissions
+				assert_expected_files_and_permissions(output_directory, PEER_OUTPUT_FILES)
+
+				# - spot check all expected CA files are present
+				ca_files = sorted(str(path.relative_to(ca_directory)) for path in Path(ca_directory).glob('**/*'))
+				assert ['xyz.key.pem'] == ca_files
+
+				# - check certificates
+				certificates_directory = Path(output_directory) / 'keys' / 'cert'
+				assert_certificate_properties(certificates_directory / 'node.crt.pem', 'my CA CN', 'my Node CN', 375)
+				assert_certificate_properties(certificates_directory / 'ca.crt.pem', 'my CA CN', 'my CA CN', 20 * 365)
 
 # endregion
 
