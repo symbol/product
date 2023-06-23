@@ -1,5 +1,6 @@
 class Screens:
-	def __init__(self):
+	def __init__(self, navbar):
+		self.navbar = navbar  # added so that screens can access and modify it directly
 		self.ordered = []
 		self.current_id = 0
 		self.ordered_group_names = []

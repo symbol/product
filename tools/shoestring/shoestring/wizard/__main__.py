@@ -23,7 +23,7 @@ ScreenGroup = namedtuple('ScreenGroup', ['group_name', 'screen_names'])
 
 def prepare_screens(screens):
 	screen_setup = [
-		ScreenGroup('Welcome', ['welcome']),
+		ScreenGroup('Welcome', ['welcome', 'root_check']),
 		ScreenGroup('Basic settings', ['network_type', 'node_type']),
 
 		ScreenGroup('Certificates', ['certificates']),
@@ -56,7 +56,7 @@ async def main():
 	app_styles = styles.initialize()
 	navbar = navigation.initialize()
 
-	screens = Screens()
+	screens = Screens(navbar)
 	prepare_screens(screens)
 
 	main_container = screens.current
@@ -94,7 +94,9 @@ async def main():
 	navbar.prev.handler = prev_clicked
 	navbar.next.handler = next_clicked
 
-	await app.run_async()
+	result = await app.run_async()
+	if result:
+		return
 
 	# TODO: temporary here, move up
 	with tempfile.TemporaryDirectory() as temp_directory:
