@@ -24,7 +24,7 @@ ScreenGroup = namedtuple('ScreenGroup', ['group_name', 'screen_names'])
 def prepare_screens(screens):
 	screen_setup = [
 		ScreenGroup('Welcome', ['welcome', 'root_check']),
-		ScreenGroup('Basic settings', ['network_type', 'node_type']),
+		ScreenGroup('Basic settings', ['obligatory', 'network_type', 'node_type']),
 
 		ScreenGroup('Certificates', ['certificates']),
 		ScreenGroup('Harvesting', ['harvesting']),
@@ -103,13 +103,15 @@ async def main():
 		prepare_overrides_file(screens, Path(temp_directory) / 'overrides.ini')
 		await prepare_shoestring_files(screens, Path(temp_directory))
 
-		Path('./temporary-destination').mkdir()
+		obligatory_settings = screens.get('obligatory')
+		destination_directory = Path(obligatory_settings.destination_directory)
+
 		await run_setup(SetupArgs(
 			config=Path(temp_directory) / 'shoestring.ini',
 			package=screens.get('network-type').current_value,
-			directory=Path('./temporary-destination').absolute(),
+			directory=destination_directory.absolute(),
 			overrides=Path(temp_directory) / 'overrides.ini',
-			ca_key_path=Path('ca.key.pem')
+			ca_key_path=Path(obligatory_settings.ca_pem_path)
 		))
 
 	print('Done 👋')
