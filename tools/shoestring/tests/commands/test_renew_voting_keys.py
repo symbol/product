@@ -60,6 +60,7 @@ async def _prepare_output_directory(package_directory, output_directory, node_fe
 	# extract resources
 	prepare_testnet_package(package_directory, 'resources.zip')
 	await download_and_extract_package(f'file://{package_directory}/resources.zip', package_directory)
+	(Path(package_directory) / 'shoestring.ini').unlink()  # remove template from package (configuration will be recreated later)
 
 	resources_directory = output_directory / 'userconfig' / 'resources'
 	shutil.copytree(package_directory / 'resources', resources_directory)
@@ -113,8 +114,8 @@ async def test_renew_voting_keys_fails_when_node_is_not_voter(server, caplog):  
 	with tempfile.TemporaryDirectory() as output_directory:
 		with tempfile.TemporaryDirectory() as package_directory:
 			node_features = NodeFeatures.PEER | NodeFeatures.API | NodeFeatures.HARVESTER
-			config_filepath = prepare_shoestring_configuration(package_directory, node_features)
 			await _prepare_output_directory(Path(package_directory), Path(output_directory), node_features, server.make_url(''))
+			config_filepath = prepare_shoestring_configuration(package_directory, node_features)
 
 			# Act:
 			await main([
@@ -137,8 +138,8 @@ async def test_can_renew_voting_keys_when_none_are_present(server, caplog):  # p
 	# Arrange:
 	with tempfile.TemporaryDirectory() as output_directory:
 		with tempfile.TemporaryDirectory() as package_directory:
-			config_filepath = prepare_shoestring_configuration(package_directory, NodeFeatures.VOTER, server.make_url(''))
 			await _prepare_output_directory(Path(package_directory), Path(output_directory), NodeFeatures.VOTER, server.make_url(''))
+			config_filepath = prepare_shoestring_configuration(package_directory, NodeFeatures.VOTER, server.make_url(''))
 
 			# Act:
 			await main([
@@ -175,8 +176,8 @@ async def test_can_renew_voting_keys_when_some_are_present_and_active(server):  
 	# Arrange:
 	with tempfile.TemporaryDirectory() as output_directory:
 		with tempfile.TemporaryDirectory() as package_directory:
-			config_filepath = prepare_shoestring_configuration(package_directory, NodeFeatures.VOTER, server.make_url(''))
 			await _prepare_output_directory(Path(package_directory), Path(output_directory), NodeFeatures.VOTER, server.make_url(''))
+			config_filepath = prepare_shoestring_configuration(package_directory, NodeFeatures.VOTER, server.make_url(''))
 
 			voting_keys_directory = Path(output_directory) / 'keys' / 'voting'
 			_write_voting_keys_file(voting_keys_directory, 1, 2800, 2899)
@@ -218,8 +219,8 @@ async def test_can_renew_voting_keys_when_some_are_present_and_inactive(server):
 	# Arrange:
 	with tempfile.TemporaryDirectory() as output_directory:
 		with tempfile.TemporaryDirectory() as package_directory:
-			config_filepath = prepare_shoestring_configuration(package_directory, NodeFeatures.VOTER, server.make_url(''))
 			await _prepare_output_directory(Path(package_directory), Path(output_directory), NodeFeatures.VOTER, server.make_url(''))
+			config_filepath = prepare_shoestring_configuration(package_directory, NodeFeatures.VOTER, server.make_url(''))
 
 			voting_keys_directory = Path(output_directory) / 'keys' / 'voting'
 			expired_root_voting_public_key_1 = _write_voting_keys_file(voting_keys_directory, 1, 2600, 2699)
@@ -273,8 +274,8 @@ async def test_cannot_renew_voting_keys_when_max_keys_are_active(server, caplog)
 	# Arrange:
 	with tempfile.TemporaryDirectory() as output_directory:
 		with tempfile.TemporaryDirectory() as package_directory:
-			config_filepath = prepare_shoestring_configuration(package_directory, NodeFeatures.VOTER, server.make_url(''))
 			await _prepare_output_directory(Path(package_directory), Path(output_directory), NodeFeatures.VOTER, server.make_url(''))
+			config_filepath = prepare_shoestring_configuration(package_directory, NodeFeatures.VOTER, server.make_url(''))
 
 			voting_keys_directory = Path(output_directory) / 'keys' / 'voting'
 			_write_voting_keys_file(voting_keys_directory, 1, 2800, 2825)  # last epoch matches current epoch

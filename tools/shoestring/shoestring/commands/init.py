@@ -11,11 +11,9 @@ async def run_main(args):
 	with tempfile.TemporaryDirectory() as temp_directory:
 		await download_and_extract_package(args.package, Path(temp_directory))
 
-		for path in Path(temp_directory).iterdir():
-			if path.name.endswith('.shoestring.ini'):
-				log.info(_('general-copying-file').format(source_path=path, destination_path=args.config))
-				shutil.copy(path, args.config)
-				return
+		template_filepath = Path(temp_directory) / 'shoestring.ini'
+		log.info(_('general-copying-file').format(source_path=template_filepath, destination_path=args.config))
+		shutil.copy(template_filepath, args.config)
 
 
 def add_arguments(parser):

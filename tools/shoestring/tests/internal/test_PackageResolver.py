@@ -197,7 +197,15 @@ async def test_can_download_and_extract(package_server):  # pylint: disable=rede
 
 			# Assert:
 			top_level_names = sorted([path.name for path in output_directory.iterdir()])
-			assert ['README.md', 'configuration-package.zip', 'mongo', 'resources', 'rest', 'seed'] == top_level_names
+			assert [
+				'README.md',
+				'configuration-package.zip',
+				'mongo',
+				'resources',
+				'rest',
+				'seed',
+				'shoestring.ini'
+			] == top_level_names
 
 
 async def _assert_can_download_and_extract_local_package_using_file_protocol(add_files_to_archive):
