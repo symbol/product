@@ -6,6 +6,7 @@ from rest.db.DatabaseConnection import DatabaseConnection
 def _format_bytes(buffer):
 	return hexlify(buffer).decode('utf8')
 
+
 class NemDatabase(DatabaseConnection):
 	"""Database containing Nem blockchain data."""
 

@@ -2,6 +2,8 @@ class Block:
 	def __init__(self, height, timestamp, total_fees, total_transactions, difficulty, block_hash, signer, signature):
 		"""Create Block model."""
 
+		# pylint: disable=too-many-arguments
+
 		self.height = height
 		self.timestamp = timestamp
 		self.total_fees = total_fees

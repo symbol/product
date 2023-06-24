@@ -1,5 +1,3 @@
-from zenlog import log
-
 from rest.db.NemDatabase import NemDatabase
 from rest.model.Block import Block
 
@@ -15,8 +13,8 @@ class NemRestFacade:
 	def get_block(self, height):
 		"""Gets block by height."""
 
-		with self.nem_db as db:
-			block = db.get_block(height)
+		with self.nem_db as database:
+			block = database.get_block(height)
 
 		return Block(**block).to_dict() if block else None
 
@@ -26,7 +24,7 @@ class NemRestFacade:
 		limit = kwargs.get('limit')
 		offset = kwargs.get('offset')
 
-		with self.nem_db as db:
-			blocks = db.get_blocks(limit, offset)
+		with self.nem_db as database:
+			blocks = database.get_blocks(limit, offset)
 
 		return [Block(**block).to_dict() for block in blocks]

@@ -1,11 +1,11 @@
 import configparser
-
 from pathlib import Path
 
-from flask import abort, Flask, jsonify, request
+from flask import Flask, abort, jsonify, request
 from zenlog import log
 
 from rest.facade.NemRestFacade import NemRestFacade
+
 
 def create_app():
 	app = Flask(__name__)
@@ -18,16 +18,19 @@ def create_app():
 
 	return app
 
+
 def setup_app_config(app):
 	app.config.from_envvar('EXPLORER_REST_SETTINGS')
 	db_path = Path(app.config.get('DATABASE_PATH'))
 	log.info(f'loading database config from {db_path}')
+
 
 def setup_nem_facade(app):
 	config = configparser.ConfigParser()
 	db_path = Path(app.config.get('DATABASE_PATH'))
 	config.read(db_path)
 	return NemRestFacade(config['nem_db'])
+
 
 def setup_nem_routes(app, nem_api_facade):
 	@app.route('/api/nem/block/<height>')
@@ -43,6 +46,7 @@ def setup_nem_routes(app, nem_api_facade):
 		offset = int(request.args.get('offset', 0))
 
 		return jsonify(nem_api_facade.get_blocks(limit=limit, offset=offset))
+
 
 def setup_error_handlers(app):
 	@app.errorhandler(404)
