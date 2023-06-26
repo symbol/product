@@ -17,7 +17,7 @@
     "sass": "^1.63.6",
     "symbol-crypto-wasm-web": "^0.1.1",
     "symbol-sdk": "^3.0.7",
-    "web-vitals": "^2.1.4"
+    "web-vitals": "^3.3.2"
   },
   "devDependencies": {
     "@testing-library/dom": "^9.3.1",
