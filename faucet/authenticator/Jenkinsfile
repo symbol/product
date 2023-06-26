@@ -4,10 +4,10 @@ defaultCiPipeline {
 
 	ciBuildDockerfile = 'javascript.Dockerfile'
 
-	packageId = 'authenticator'
+	packageId = 'faucet-authenticator'
 
 	publisher = 'docker'
-	dockerImageName = 'symbolplatform/authenticator'
+	dockerImageName = 'symbolplatform/faucet-authenticator'
 
 	codeCoverageTool = 'c8'
 	minimumCodeCoverage = 95
