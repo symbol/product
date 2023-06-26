@@ -10,5 +10,7 @@ def initialize():
 		('button.arrow', 'fg:ansiblue'),
 		('button button.focused', 'bg:ansiwhite fg:ansibrightgreen bold'),
 
+		('error', 'fg:ansibrightred bold'),
+
 		('shadow', 'bg:black fg:black')  # doesn't seem to be working
 	])

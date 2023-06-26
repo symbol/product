@@ -17,6 +17,12 @@ from shoestring.wizard.SetupFiles import prepare_overrides_file, prepare_shoestr
 from . import keybindings, navigation, styles
 from .Screens import Screens
 
+from prompt_toolkit.filters.base import Condition
+from prompt_toolkit.layout.containers import ConditionalContainer, Window
+from prompt_toolkit.layout.controls import FormattedTextControl
+from prompt_toolkit.widgets.toolbars import ValidationToolbar
+
+
 SetupArgs = namedtuple('SetupArgs', ['config', 'package', 'directory', 'overrides', 'ca_key_path'])
 ScreenGroup = namedtuple('ScreenGroup', ['group_name', 'screen_names'])
 
@@ -66,6 +72,17 @@ async def main():
 		Window(height=1, char='-'),
 
 		main_container,
+		ValidationToolbar(),
+
+		ConditionalContainer(
+			Window(
+				FormattedTextControl('one or more inputs have errors that need fixing'),
+				height=1,
+				style='class:validation-toolbar'
+			),
+			filter=Condition(lambda: not screens.current.is_valid()),
+		),
+
 		navbar.container
 	])
 	update_titlebar(root_container, screens)
@@ -73,6 +90,7 @@ async def main():
 	layout = Layout(root_container, focused_element=navbar.next)
 
 	app = Application(layout, key_bindings=key_bindings, style=app_styles, full_screen=True)
+
 
 	def prev_clicked():
 		root_container.children[2] = screens.previous()
@@ -95,7 +113,9 @@ async def main():
 	navbar.next.handler = next_clicked
 
 	result = await app.run_async()
-	if result:
+
+	# second condition is temporarily added, to break processing when ctrl-q or ctrl-c is pressed
+	if result or navbar.next.text != 'Finish!':
 		return
 
 	# TODO: temporary here, move up

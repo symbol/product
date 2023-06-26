@@ -11,15 +11,18 @@ class Screen(HSplit):
 		self.screen_id = screen_id
 		self.accessor = kwargs.pop('accessor', None)
 		self.should_show = kwargs.pop('should_show', lambda: True)
+		self.is_valid = kwargs.pop('is_valid', lambda: True)
 
 
 class ScreenDialog(Screen):
 	def __init__(self, screen_id, **kwargs):
 		accessor = kwargs.pop('accessor', None)
 		should_show = kwargs.pop('should_show', lambda: True)
+		is_valid = kwargs.pop('is_valid', lambda: True)
 
 		super().__init__(
 			screen_id,
 			Box(Shadow(Frame(style='class:dialog.body', **kwargs))),
 			accessor=accessor,
-			should_show=should_show)
+			should_show=should_show,
+			is_valid=is_valid)
