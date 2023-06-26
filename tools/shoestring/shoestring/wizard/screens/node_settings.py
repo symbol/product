@@ -31,9 +31,9 @@ class NodeSettings:
 	def __repr__(self):
 		return (
 			f'(https={self.api_https}, '
-			f'domain_name={self.domain_name}, '
-			f'friendly_name={self.friendly_name}, '
-			f'metadata_info={self.metadata_info})'
+			f'domain_name=\'{self.domain_name}\', '
+			f'friendly_name=\'{self.friendly_name}\', '
+			f'metadata_info=\'{self.metadata_info}\')'
 		)
 
 

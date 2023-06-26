@@ -132,9 +132,10 @@ async def _assert_can_prepare_shoestring_files(expected_node_features, node_type
 
 			assert harvesting_properties_filepath.exists()
 
-			(harvester_signing_private_key, harvester_vrf_private_key) = _lookup_harvester_private_keys(harvesting_properties_filepath)
-			assert kwargs.get('harvester_signing_private_key') == harvester_signing_private_key
-			assert kwargs.get('harvester_vrf_private_key') == harvester_vrf_private_key
+			private_keys = _lookup_harvester_private_keys(harvesting_properties_filepath)
+			assert 2 == len(private_keys)
+			assert kwargs.get('harvester_signing_private_key') == private_keys[0]
+			assert kwargs.get('harvester_vrf_private_key') == private_keys[1]
 
 
 async def test_can_prepare_shoestring_files_peer():

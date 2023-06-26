@@ -1,8 +1,9 @@
 from prompt_toolkit.filters import Condition
 from prompt_toolkit.layout.containers import ConditionalContainer, HSplit, VSplit
-from prompt_toolkit.widgets import Box, CheckboxList, Label, TextArea
+from prompt_toolkit.widgets import Box, CheckboxList
 
 from shoestring.wizard.Screen import ScreenDialog
+from shoestring.wizard.ValidatingTextBox import ValidatingTextBox, is_hex_private_key_string
 
 
 class HarvestingSettings:
@@ -23,11 +24,11 @@ class HarvestingSettings:
 
 	@property
 	def harvester_signing_private_key(self):
-		return self._signing_key.text
+		return self._signing_key.input.text
 
 	@property
 	def harvester_vrf_private_key(self):
-		return self._vrf_key.text
+		return self._vrf_key.input.text
 
 	@property
 	def enable_delegated_harvesters_auto_detection(self):  # pylint: disable=invalid-name
@@ -52,8 +53,14 @@ def create(_screens):
 		('harvesting-generate-keys-bool', 'generate new random keys and transaction')
 	], default_values=['harvesting-generate-keys-bool'])
 
-	harvesting_signing_key = TextArea(multiline=False)
-	harvesting_vrf_key = TextArea(multiline=False)
+	harvesting_signing_key = ValidatingTextBox(
+		'harvester signing key',
+		is_hex_private_key_string,
+		'signing private key must be a valid hex private key string')
+	harvesting_vrf_key = ValidatingTextBox(
+		'harvester vrf key',
+		is_hex_private_key_string,
+		'vrf private key must be a valid hex private key string')
 
 	harvesting_delegate_flag = CheckboxList(values=[
 		('harvesting-delegate-bool', 'enable delegated harvesters auto detection?')
@@ -81,12 +88,12 @@ def create(_screens):
 						Box(
 							VSplit([
 								HSplit([
-									Label('harvester signing key:'),
-									Label('harvester vrf key')
+									harvesting_signing_key.label,
+									harvesting_vrf_key.label
 								], width=30),
 								HSplit([
-									harvesting_signing_key,
-									harvesting_vrf_key,
+									harvesting_signing_key.input,
+									harvesting_vrf_key.input,
 								]),
 							]),
 							padding=1
@@ -99,5 +106,6 @@ def create(_screens):
 			)
 		]),
 
-		accessor=settings
+		accessor=settings,
+		is_valid=lambda: harvesting_generate_flag.current_values or (harvesting_signing_key.is_valid and harvesting_vrf_key.is_valid)
 	)

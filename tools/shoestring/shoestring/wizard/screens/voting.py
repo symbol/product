@@ -12,6 +12,9 @@ class VotingSettings:
 	def active(self):
 		return bool(self._flag.current_values)
 
+	def __repr__(self):
+		return f'(active={self.active})'
+
 
 def create(_screens):
 	node_voter_flag = CheckboxList(values=[

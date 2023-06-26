@@ -1,11 +1,10 @@
 from pathlib import Path
 
-from prompt_toolkit.filters import Always
 from prompt_toolkit.layout.containers import HSplit, VSplit
-from prompt_toolkit.validation import Validator
-from prompt_toolkit.widgets import Box, Label, TextArea
+from prompt_toolkit.widgets import Box
 
 from shoestring.wizard.Screen import ScreenDialog
+from shoestring.wizard.ValidatingTextBox import ValidatingTextBox, is_directory_path, is_file_path
 
 
 class ObligatorySettings:
@@ -15,44 +14,28 @@ class ObligatorySettings:
 
 	@property
 	def destination_directory(self):
-		return self._destination_directory.text
+		return self._destination_directory.input.text
 
 	@property
 	def ca_pem_path(self):
-		return self._ca_pem_path.text
+		return self._ca_pem_path.input.text
 
 	def __repr__(self):
 		return f'(destination_directory=\'{self.destination_directory}\', ca_pem_path=\'{self.ca_pem_path}\')'
 
 
-def non_empty_input(x):
-	return bool(x)
-
-
 def create(_screens):
-	# needs new certificates?
+	destination_directory = ValidatingTextBox(
+		'Configuration destination directory',
+		is_directory_path,
+		'destination directory must be a valid directory',
+		str(Path.home().absolute() / 'symbol'))
 
-	destination_directory = TextArea(
-		str(Path.home().absolute()),
-		multiline=False,
-		validator=Validator.from_callable(non_empty_input, 'Input cannot be empty'))
-
-	# window is already created, and Label's style is only expected to be a string, so we need to modify
-	# underlying window's style directly
-	destination_directory_label = Label('Configuration destination directory')
-	destination_directory_label.window.style = lambda: 'class:label,error' if destination_directory.buffer.validation_error else 'class:label'
-
-	destination_directory.buffer.validate_while_typing = Always()
-
-	ca_pem_path = TextArea(
-		'ca.key.pem',
-		multiline=False,
-		validator=Validator.from_callable(non_empty_input, 'Input cannot be empty'))
-
-	ca_pem_path_label = Label('CA PEM file path (main accout key)')
-	ca_pem_path_label.window.style = lambda: 'class:label,error' if ca_pem_path.buffer.validation_error else 'class:label'
-
-	ca_pem_path.buffer.validate_while_typing = Always()
+	ca_pem_path = ValidatingTextBox(
+		'CA PEM file path (main account)',
+		is_file_path,
+		'ca pem file path must be a valid file',
+		'ca.key.pem')
 
 	return ScreenDialog(
 		screen_id='obligatory',
@@ -61,18 +44,18 @@ def create(_screens):
 			HSplit([
 				VSplit([
 					HSplit([
-						destination_directory_label,
-						ca_pem_path_label,
+						destination_directory.label,
+						ca_pem_path.label
 					], width=40),
 					HSplit([
-						destination_directory,
-						ca_pem_path,
+						destination_directory.input,
+						ca_pem_path.input
 					]),
 				])
 			]),
-			padding=1,
+			padding=1
 		),
 
 		accessor=ObligatorySettings(destination_directory, ca_pem_path),
-		is_valid=lambda: not (destination_directory.buffer.validation_error or ca_pem_path.buffer.validation_error)
+		is_valid=lambda: destination_directory.is_valid and ca_pem_path.is_valid
 	)

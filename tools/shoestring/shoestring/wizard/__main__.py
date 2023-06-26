@@ -6,22 +6,19 @@ from collections import namedtuple
 from pathlib import Path
 
 from prompt_toolkit import Application
+from prompt_toolkit.filters.base import Condition
 from prompt_toolkit.formatted_text import HTML
-from prompt_toolkit.layout.containers import HSplit, Window
+from prompt_toolkit.layout.containers import ConditionalContainer, HSplit, Window
+from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.layout.layout import Layout
 from prompt_toolkit.widgets import Label
+from prompt_toolkit.widgets.toolbars import ValidationToolbar
 
 from shoestring.commands.setup import run_main as run_setup
 from shoestring.wizard.SetupFiles import prepare_overrides_file, prepare_shoestring_files
 
 from . import keybindings, navigation, styles
 from .Screens import Screens
-
-from prompt_toolkit.filters.base import Condition
-from prompt_toolkit.layout.containers import ConditionalContainer, Window
-from prompt_toolkit.layout.controls import FormattedTextControl
-from prompt_toolkit.widgets.toolbars import ValidationToolbar
-
 
 SetupArgs = namedtuple('SetupArgs', ['config', 'package', 'directory', 'overrides', 'ca_key_path'])
 ScreenGroup = namedtuple('ScreenGroup', ['group_name', 'screen_names'])
@@ -85,12 +82,13 @@ async def main():
 
 		navbar.container
 	])
+	navbar.next.state_filter = Condition(lambda: not screens.current.is_valid())
+
 	update_titlebar(root_container, screens)
 
 	layout = Layout(root_container, focused_element=navbar.next)
 
 	app = Application(layout, key_bindings=key_bindings, style=app_styles, full_screen=True)
-
 
 	def prev_clicked():
 		root_container.children[2] = screens.previous()

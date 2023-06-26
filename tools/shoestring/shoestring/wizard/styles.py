@@ -6,9 +6,13 @@ def initialize():
 		('titlebar', 'fg:black bg:white'),
 		('navigation', 'bg:ansiblue'),
 
-		('button', 'bg:white fg:black'),
+		('button', 'bg:ansiwhite fg:ansigray'),
+		('button button.focused', 'bg:white fg:black bold'),
+
+		('button button.inactive', 'bg:ansired fg:ansired'),
+		('button button.focused button.focused.inactive', 'bg:ansired fg:ansired'),
+
 		('button.arrow', 'fg:ansiblue'),
-		('button button.focused', 'bg:ansiwhite fg:ansibrightgreen bold'),
 
 		('error', 'fg:ansibrightred bold'),
 

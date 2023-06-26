@@ -15,7 +15,11 @@ class Screen(HSplit):
 
 
 class ScreenDialog(Screen):
+	"""Represents a single configuration screen."""
+
 	def __init__(self, screen_id, **kwargs):
+		"""Creates a configuration screen."""
+
 		accessor = kwargs.pop('accessor', None)
 		should_show = kwargs.pop('should_show', lambda: True)
 		is_valid = kwargs.pop('is_valid', lambda: True)
