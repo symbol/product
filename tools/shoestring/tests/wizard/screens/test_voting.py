@@ -20,3 +20,6 @@ def test_can_generate_diagnostic_accessor_representation():
 
 	# Act + Assert:
 	assert '(active=False)' == repr(screen.accessor)
+	assert [
+		('voter role', 'disabled')
+	] == screen.accessor.tokens

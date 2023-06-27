@@ -5,6 +5,10 @@ from prompt_toolkit.widgets import CheckboxList, Label, TextArea
 from shoestring.wizard.Screen import ScreenDialog
 
 
+def _to_enabled_string(value):
+	return 'enabled' if value else 'disabled'
+
+
 class NodeSettings:
 	def __init__(self, https_flag, domain_name, friendly_name, metadata_info):
 		self._https_flag = https_flag
@@ -27,6 +31,15 @@ class NodeSettings:
 	@property
 	def metadata_info(self):
 		return self._metadata_info.text
+
+	@property
+	def tokens(self):
+		return [
+			('https', _to_enabled_string(self.api_https)),
+			('domain name', self.domain_name),
+			('friendly name', self.friendly_name),
+			('metadata', self.metadata_info),
+		]
 
 	def __repr__(self):
 		return (

@@ -20,6 +20,10 @@ class CertSettings:
 	def __repr__(self):
 		return f'(ca_common_name=\'{self.ca_common_name}\', node_common_name=\'{self.node_common_name}\')'
 
+	@property
+	def tokens(self):
+		return [('ca common name', self.ca_common_name), ('node common name', self.node_common_name)]
+
 
 def create(_screens):
 	# needs new certificates?

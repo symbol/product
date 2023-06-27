@@ -12,6 +12,7 @@ class Screen(HSplit):
 		self.accessor = kwargs.pop('accessor', None)
 		self.should_show = kwargs.pop('should_show', lambda: True)
 		self.is_valid = kwargs.pop('is_valid', lambda: True)
+		self.hide_navbar = kwargs.pop('hide_navbar', False)
 
 
 class ScreenDialog(Screen):

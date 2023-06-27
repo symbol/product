@@ -42,3 +42,7 @@ async def test_can_generate_diagnostic_accessor_representation():
 
 	# Assert:
 	assert '(ca_common_name=\'my ca common name\', node_common_name=\'my node common name\')' == repr(screen.accessor)
+	assert [
+		('ca common name', 'my ca common name'),
+		('node common name', 'my node common name')
+	] == screen.accessor.tokens

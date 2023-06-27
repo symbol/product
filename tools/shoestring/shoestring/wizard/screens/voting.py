@@ -4,6 +4,10 @@ from prompt_toolkit.widgets import CheckboxList
 from shoestring.wizard.Screen import ScreenDialog
 
 
+def _to_enabled_string(value):
+	return 'enabled' if value else 'disabled'
+
+
 class VotingSettings:
 	def __init__(self, flag):
 		self._flag = flag
@@ -11,6 +15,10 @@ class VotingSettings:
 	@property
 	def active(self):
 		return bool(self._flag.current_values)
+
+	@property
+	def tokens(self):
+		return [('voter role', _to_enabled_string(self.active))]
 
 	def __repr__(self):
 		return f'(active={self.active})'

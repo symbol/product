@@ -98,7 +98,26 @@ async def test_fails_validation_when_entered_vrf_key_is_invalid():
 	assert not screen.is_valid()
 
 
-async def test_can_generate_diagnostic_accessor_representation():
+async def test_can_generate_diagnostic_accessor_representation_harvester_disabled():
+	# Arrange:
+	screen = create(None)
+	screen.accessor._flag.current_values = []  # pylint: disable=protected-access
+	screen.accessor._generate_keys_flag.current_values = []  # pylint: disable=protected-access
+	screen.accessor._signing_key.input.text = TEST_PRIVATE_KEY_1  # pylint: disable=protected-access
+	screen.accessor._vrf_key.input.text = TEST_PRIVATE_KEY_2  # pylint: disable=protected-access
+	screen.accessor._delegate_flag.current_values = [()]  # pylint: disable=protected-access
+
+	# Assert: check entered values
+	assert (
+		f'(active=False, generate=False, signing_key=\'{TEST_PRIVATE_KEY_1}\','
+		f' vrf_key=\'{TEST_PRIVATE_KEY_2}\', delegate=True)' == repr(screen.accessor)
+	)
+	assert [
+		('harvester role', 'disabled')
+	] == screen.accessor.tokens
+
+
+async def test_can_generate_diagnostic_accessor_representation_harvester_enabled_imported_keys():
 	# Arrange:
 	screen = create(None)
 	screen.accessor._flag.current_values = [()]  # pylint: disable=protected-access
@@ -112,3 +131,27 @@ async def test_can_generate_diagnostic_accessor_representation():
 		f'(active=True, generate=False, signing_key=\'{TEST_PRIVATE_KEY_1}\','
 		f' vrf_key=\'{TEST_PRIVATE_KEY_2}\', delegate=True)' == repr(screen.accessor)
 	)
+	assert [
+		('harvester role', 'enabled'),
+		('* generate keys?', 'disabled'),
+		('* auto detect delegates?', 'enabled')
+	] == screen.accessor.tokens
+
+
+async def test_can_generate_diagnostic_accessor_representation_harvester_enabled_generated_keys():
+	# Arrange:
+	screen = create(None)
+	screen.accessor._flag.current_values = [()]  # pylint: disable=protected-access
+	screen.accessor._generate_keys_flag.current_values = [()]  # pylint: disable=protected-access
+	screen.accessor._delegate_flag.current_values = []  # pylint: disable=protected-access
+
+	# Assert: check entered values
+	assert (
+		'(active=True, generate=True, signing_key=\'\','
+		' vrf_key=\'\', delegate=False)' == repr(screen.accessor)
+	)
+	assert [
+		('harvester role', 'enabled'),
+		('* generate keys?', 'enabled'),
+		('* auto detect delegates?', 'disabled')
+	] == screen.accessor.tokens

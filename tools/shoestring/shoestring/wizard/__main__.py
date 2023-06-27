@@ -1,6 +1,7 @@
 import asyncio
 import gettext
 import importlib
+import shutil
 import tempfile
 from collections import namedtuple
 from pathlib import Path
@@ -14,13 +15,13 @@ from prompt_toolkit.layout.layout import Layout
 from prompt_toolkit.widgets import Label
 from prompt_toolkit.widgets.toolbars import ValidationToolbar
 
-from shoestring.commands.setup import run_main as run_setup
+from shoestring.__main__ import main as shoestring_main
 from shoestring.wizard.SetupFiles import prepare_overrides_file, prepare_shoestring_files
+from shoestring.wizard.ShoestringOperation import ShoestringOperation, build_shoestring_command, requires_ca_key_path
 
 from . import keybindings, navigation, styles
 from .Screens import Screens
 
-SetupArgs = namedtuple('SetupArgs', ['config', 'package', 'directory', 'overrides', 'ca_key_path'])
 ScreenGroup = namedtuple('ScreenGroup', ['group_name', 'screen_names'])
 
 
@@ -45,13 +46,64 @@ def prepare_screens(screens):
 			screens.add(group.group_name, screen)
 
 
+def set_titlebar(root_container, text):
+	root_container.children[0].content.text = HTML(text)
+
+
 def update_titlebar(root_container, screens):
 	current_group = screens.group_name[screens.current_id]
 	elements = [f'<b>{name}</b>' if current_group == name else name for name in screens.ordered_group_names]
-	root_container.children[0].content.text = HTML(' -&gt; '.join(elements))
+	set_titlebar(root_container, ' -&gt; '.join(elements))
 
 
-async def main():
+def get_screens_list(screens, operation):
+	# set welcome screen button handlers
+	operation_screens = {
+		ShoestringOperation.UPGRADE: ['welcome', 'obligatory', 'network-type', 'end-screen'],
+		ShoestringOperation.RESET_DATA: ['welcome', 'obligatory', 'end-screen'],
+		ShoestringOperation.RENEW_CERTIFICATES: ['welcome', 'obligatory', 'end-screen'],
+		ShoestringOperation.RENEW_VOTING_KEYS: ['welcome', 'obligatory', 'end-screen']
+	}
+
+	default_screens = [screen.screen_id for screen in screens.ordered]
+	return operation_screens.get(operation, default_screens)
+
+
+async def run_shoestring_command(screens):
+	obligatory_settings = screens.get('obligatory')
+	destination_directory = Path(obligatory_settings.destination_directory)
+	shoestring_directory = destination_directory / 'shoestring'
+
+	operation = screens.get('welcome').operation
+	package = screens.get('network-type').current_value
+
+	if ShoestringOperation.SETUP == operation:
+		with tempfile.TemporaryDirectory() as temp_directory:
+			prepare_overrides_file(screens, Path(temp_directory) / 'overrides.ini')
+			await prepare_shoestring_files(screens, Path(temp_directory))
+
+			shoestring_args = build_shoestring_command(
+				operation,
+				destination_directory,
+				temp_directory,
+				obligatory_settings.ca_pem_path,
+				package)
+			await shoestring_main(shoestring_args)
+
+			shoestring_directory.mkdir()
+			for filename in ('shoestring.ini', 'overrides.ini'):
+				shutil.copy(Path(temp_directory) / filename, shoestring_directory)
+	else:
+		shoestring_args = build_shoestring_command(
+			operation,
+			destination_directory,
+			shoestring_directory,
+			obligatory_settings.ca_pem_path,
+			package)
+		await shoestring_main(shoestring_args)
+
+
+async def main():  # pylint: disable=too-many-locals, too-many-statements
 	lang = gettext.translation('messages', localedir='lang', languages=('ja', 'en'))  # TODO: how should we detect language?
 	lang.install()
 
@@ -80,19 +132,23 @@ async def main():
 			filter=Condition(lambda: not screens.current.is_valid()),
 		),
 
-		navbar.container
+		ConditionalContainer(
+			navbar.container,
+			filter=Condition(lambda: not screens.current.hide_navbar),
+		),
 	])
 	navbar.next.state_filter = Condition(lambda: not screens.current.is_valid())
 
-	update_titlebar(root_container, screens)
+	initial_titlebar = '<b>Welcome, pick operation</b>'
+	set_titlebar(root_container, initial_titlebar)
 
 	layout = Layout(root_container, focused_element=navbar.next)
 
 	app = Application(layout, key_bindings=key_bindings, style=app_styles, full_screen=True)
 
-	def prev_clicked():
-		root_container.children[2] = screens.previous()
-		update_titlebar(root_container, screens)
+	layout.focus(root_container.children[2])
+
+	# set navigation bar button handlers
 
 	def next_clicked():
 		root_container.children[2] = screens.next()
@@ -101,14 +157,52 @@ async def main():
 		if 'end-screen' != screens.ordered[screens.current_id].screen_id:
 			layout.focus(root_container.children[2])
 		else:
+			operation = screens.get('welcome').operation
+			allowed_screens_list = get_screens_list(screens, operation)
+
+			tokens = []
+			for screen_id in allowed_screens_list:
+				screen = screens.get(screen_id)
+				if hasattr(screen, 'tokens'):
+					tokens.extend(screen.tokens)
+
+			root_container.children[2].clear()
+			for token in tokens:
+				root_container.children[2].add_setting(*token)
 
 			# generate_settings() will go here
-
 			navbar.next.text = 'Finish!'
 			navbar.next.handler = app.exit
 
+	def prev_clicked():
+		if screens.has_previous():
+			root_container.children[2] = screens.previous()
+			update_titlebar(root_container, screens)
+
+		if not screens.has_previous():
+			set_titlebar(root_container, initial_titlebar)
+
+		# restore handler in case it got replaced
+		navbar.next.handler = next_clicked
+		navbar.next.text = 'Next'
+
 	navbar.prev.handler = prev_clicked
 	navbar.next.handler = next_clicked
+
+	# set welcome screen button handlers
+	def create_button_handler(button):
+		def button_handler():
+			allowed_screens_list = get_screens_list(screens, button.operation)
+			screens.set_list(allowed_screens_list)
+			next_clicked()
+
+			screens.current.require_ca_pem_path(requires_ca_key_path(button.operation))
+			screens.get('welcome').select(button)
+
+		return button_handler
+
+	for button in screens.get('welcome').buttons:
+		button.handler = create_button_handler(button)
 
 	result = await app.run_async()
 
@@ -117,20 +211,7 @@ async def main():
 		return
 
 	# TODO: temporary here, move up
-	with tempfile.TemporaryDirectory() as temp_directory:
-		prepare_overrides_file(screens, Path(temp_directory) / 'overrides.ini')
-		await prepare_shoestring_files(screens, Path(temp_directory))
-
-		obligatory_settings = screens.get('obligatory')
-		destination_directory = Path(obligatory_settings.destination_directory)
-
-		await run_setup(SetupArgs(
-			config=Path(temp_directory) / 'shoestring.ini',
-			package=screens.get('network-type').current_value,
-			directory=destination_directory.absolute(),
-			overrides=Path(temp_directory) / 'overrides.ini',
-			ca_key_path=Path(obligatory_settings.ca_pem_path)
-		))
+	await run_shoestring_command(screens)
 
 	print('Done 👋')
 

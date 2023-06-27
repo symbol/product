@@ -35,3 +35,9 @@ async def test_can_generate_diagnostic_accessor_representation():
 		'(https=True, domain_name=\'symbol.fyi\', friendly_name=\'explorer node\', '
 		'metadata_info=\'some json blob\')' == repr(screen.accessor)
 	)
+	assert [
+		('https', 'enabled'),
+		('domain name', 'symbol.fyi'),
+		('friendly name', 'explorer node'),
+		('metadata', 'some json blob')
+	] == screen.accessor.tokens

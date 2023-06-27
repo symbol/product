@@ -3,6 +3,22 @@ from prompt_toolkit.widgets import RadioList
 from shoestring.wizard.Screen import ScreenDialog
 
 
+class NetworkTypeAccessor:
+	def __init__(self, radio_list):
+		self._radio_list = radio_list
+
+	@property
+	def current_value(self):
+		return self._radio_list.current_value
+
+	@property
+	def tokens(self):
+		return [('network type', self.current_value)]
+
+	def __repr__(self):
+		return f'(network_type=\'{self.current_value}\')'
+
+
 def create(_screens):
 	network_types_radio_list = RadioList(
 		values=[
@@ -16,5 +32,5 @@ def create(_screens):
 		title='Choose network type',
 		body=network_types_radio_list,
 
-		accessor=network_types_radio_list
+		accessor=NetworkTypeAccessor(network_types_radio_list)
 	)

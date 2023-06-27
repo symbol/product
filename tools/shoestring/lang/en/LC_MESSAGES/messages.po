@@ -423,7 +423,7 @@ msgstr "CA name + node cert name"
 
 #: shoestring/wizard/__main__.py:73
 msgid "wizard-welcome-steps"
-msgstr "to shoestring node configurator\ntest\ntest\ntest"
+msgstr "1. setup\n2. upgrade\n3. reset data\n4. renew certificates\n5. renew voting keys"
 
 #: shoestring/wizard/__main__.py:70
 msgid "wizard-welcome-title"

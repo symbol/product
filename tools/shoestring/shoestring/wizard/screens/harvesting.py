@@ -6,6 +6,10 @@ from shoestring.wizard.Screen import ScreenDialog
 from shoestring.wizard.ValidatingTextBox import ValidatingTextBox, is_hex_private_key_string
 
 
+def _to_enabled_string(value):
+	return 'enabled' if value else 'disabled'
+
+
 class HarvestingSettings:
 	def __init__(self, flag, generate_keys_flag, signing_key, vrf_key, delegate_flag):  # pylint: disable=too-many-arguments
 		self._flag = flag
@@ -33,6 +37,17 @@ class HarvestingSettings:
 	@property
 	def enable_delegated_harvesters_auto_detection(self):  # pylint: disable=invalid-name
 		return bool(self._delegate_flag.current_values)
+
+	@property
+	def tokens(self):
+		tokens = [('harvester role', _to_enabled_string(self.active))]
+		if self.active:
+			tokens.extend([
+				('* generate keys?', _to_enabled_string(self.generate_keys)),
+				('* auto detect delegates?', _to_enabled_string(self.enable_delegated_harvesters_auto_detection))
+			])
+
+		return tokens
 
 	def __repr__(self):
 		return (

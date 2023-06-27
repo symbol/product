@@ -1,6 +1,7 @@
 from pathlib import Path
 
-from prompt_toolkit.layout.containers import HSplit, VSplit
+from prompt_toolkit.filters import Always, Condition, Never
+from prompt_toolkit.layout.containers import ConditionalContainer, HSplit, VSplit
 from prompt_toolkit.widgets import Box
 
 from shoestring.wizard.Screen import ScreenDialog
@@ -11,6 +12,7 @@ class ObligatorySettings:
 	def __init__(self, destination_directory, ca_pem_path):
 		self._destination_directory = destination_directory
 		self._ca_pem_path = ca_pem_path
+		self.is_ca_pem_path_required = True
 
 	@property
 	def destination_directory(self):
@@ -19,6 +21,14 @@ class ObligatorySettings:
 	@property
 	def ca_pem_path(self):
 		return self._ca_pem_path.input.text
+
+	@property
+	def tokens(self):
+		tokens = [('destination directory', self.destination_directory)]
+		if self.is_ca_pem_path_required:
+			tokens.append(('ca pem path', self.ca_pem_path))
+
+		return tokens
 
 	def __repr__(self):
 		return f'(destination_directory=\'{self.destination_directory}\', ca_pem_path=\'{self.ca_pem_path}\')'
@@ -37,7 +47,9 @@ def create(_screens):
 		'ca pem file path must be a valid file',
 		'ca.key.pem')
 
-	return ScreenDialog(
+	# note: deliberately wrapped in condition to allow swap later
+	show_ca_pem_path = Condition(Always())
+	dialog = ScreenDialog(
 		screen_id='obligatory',
 		title='Obligatory settings',
 		body=Box(
@@ -45,11 +57,11 @@ def create(_screens):
 				VSplit([
 					HSplit([
 						destination_directory.label,
-						ca_pem_path.label
+						ConditionalContainer(ca_pem_path.label, filter=show_ca_pem_path)
 					], width=40),
 					HSplit([
 						destination_directory.input,
-						ca_pem_path.input
+						ConditionalContainer(ca_pem_path.input, filter=show_ca_pem_path)
 					]),
 				])
 			]),
@@ -57,5 +69,12 @@ def create(_screens):
 		),
 
 		accessor=ObligatorySettings(destination_directory, ca_pem_path),
-		is_valid=lambda: destination_directory.is_valid and ca_pem_path.is_valid
+		is_valid=lambda: destination_directory.is_valid and (not dialog.accessor.is_ca_pem_path_required or ca_pem_path.is_valid)
 	)
+
+	def require_ca_pem_path(require):
+		show_ca_pem_path.func = Always() if require else Never()
+		dialog.accessor.is_ca_pem_path_required = require
+
+	dialog.require_ca_pem_path = require_ca_pem_path
+	return dialog
