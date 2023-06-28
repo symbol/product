@@ -35,7 +35,6 @@ body,
 }
 
 #__next {
-    overflow-x: hidden;
     font: $font-body;
 }
 
@@ -60,6 +59,12 @@ h3 {
 a {
     color: inherit;
     text-decoration: inherit;
+    color: $color-text-link;
+    transition: color 250ms;
+
+    &:hover {
+        color: $color-text-link-hover;
+    }
 }
 
 .value-highlighted {
@@ -82,15 +87,40 @@ a {
     gap: $spacing-padding;
 }
 
+
+.layout-section-row {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    gap: $spacing-padding;
+}
+
 .layout-grid-row {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
 }
 
+.layout-align-end {
+    align-self: flex-end;
+}
+
+
 .layout-flex-col {
     display: flex;
     flex-direction: column;
     gap: $spacing-padding;
+}
+
+:root {
+    --toastify-color-info: $color-info;
+    --toastify-color-success: $color-success;
+    --toastify-color-warning: $color-warning;
+    --toastify-color-error: $color-danger;
+
+    --toastify-toast-width: 20rem;
+    --toastify-toast-background: #fff;
+    --toastify-toast-min-height: 2rem;
+    --toastify-toast-max-height: 5rem;
 }
 
 @media #{$screen-desktop} {
@@ -119,6 +149,12 @@ a {
     .layout-flex-row {
         flex-direction: column;
         justify-content: space-between;
+    }
+
+    .layout-section-row {
+        flex-direction: column;
+        justify-content: space-between;
+        gap: 0;
     }
 
     .no-mobile {

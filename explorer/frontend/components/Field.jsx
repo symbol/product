@@ -10,7 +10,7 @@ const Field = ({ title, children, textAlign }) => {
 	return (
 		<div className={`${styles.field} ${textAlignStyle}`}>
 			<div className={styles.title}>{title}</div>
-			<div>{children}</div>
+			<div className={styles.value}>{children}</div>
 		</div>
 	)
 }

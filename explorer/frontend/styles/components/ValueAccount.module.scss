@@ -1,0 +1,14 @@
+@import "../variables";
+
+.valueAccount {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: $spacing-base / 2;
+    font: $font-body-monospace;
+}
+
+.containerMd {
+    inline-size: 15rem;
+    overflow-wrap: break-word;
+}

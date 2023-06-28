@@ -5,7 +5,7 @@ module.exports = {
 	distDir: 'build',
 	reactStrictMode: true,
 	experimental: {
-		appDir: true
+		scrollRestoration: true,
 	},
 	i18n: i18nConfig.i18n,
 	webpack: (config, { isServer }) => {

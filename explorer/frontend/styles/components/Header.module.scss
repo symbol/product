@@ -37,7 +37,13 @@
             font: $font-nav;
             text-transform: uppercase;
             cursor: pointer;
+            color: $color-tab-inactive;
             user-select: none;
+            transition: color 250ms;
+        }
+
+        .headerMenuItem__active {
+            color: $color-tab-active;
         }
     }
 }

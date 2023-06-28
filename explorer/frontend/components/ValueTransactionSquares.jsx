@@ -9,11 +9,11 @@ const ReactApexChart = dynamic(
 );
 
 const Tooltip = ({fee}) => (
-	<ValueMosaic mosaicId="6BED913FA20223F8" amount={fee} />
+	<ValueMosaic isNative amount={fee} />
 );
 
 
-const ValueTransactionSquares = ({ data }) => {
+const ValueTransactionSquares = ({ data, className }) => {
 	const colorHigh = '#52B12C';
 	const colorMedium = '#F3BA2F';
 	const colorLow = '#B94F4F';
@@ -25,7 +25,7 @@ const ValueTransactionSquares = ({ data }) => {
 			data: data.map((item) => ({
 				x: item.fee,
 				y: item.fee,
-				fillColor: colors[Math.round(Math.random(3))]
+				fillColor: colorHigh, //colors[Math.round(Math.random(3))]
 			}))
 		}
 	];
@@ -82,7 +82,7 @@ const ValueTransactionSquares = ({ data }) => {
 	};
 
 	return (
-		<div className={styles.valueTransactionSquares} id="chart">
+		<div className={`${styles.valueTransactionSquares} ${className}`} id="chart">
 			<ReactApexChart
 				options={options}
 				series={series}

@@ -1,6 +1,6 @@
 import RecentBlocks from '@/components/RecentBlocks';
 import Field from '@/components/Field';
-import FieldPrice from '@/components/FieldPrice';
+import ValuePrice from '@/components/ValuePrice';
 import RecentTransactions from '@/components/RecentTransactions';
 import Section from '@/components/Section';
 import Separator from '@/components/Separator';
@@ -8,97 +8,40 @@ import styles from '@/styles/pages/Home.module.scss';
 import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 import Head from 'next/head';
+import LineChart from '@/components/LineChart';
+import { formatDate } from '../utils';
+import { getBlockPage } from './api/blocks';
+import { getStats } from './api/stats';
+import { getTransactionPage } from './api/transactions';
+
 
 export const getStaticProps = async ({ locale }) => {
-	const blocks = new Array(50).fill(null).map((item, index) => {
-		const transactionCount = Math.floor(Math.random() * 10);
-		const timestamp = new Date(Date.now() - 15 * index * 60000).getTime();
-		const transactionFees = new Array(transactionCount).fill(null).map(() => ({
-			fee: Math.floor(Math.random() * 100) / 100,
-			size: Math.floor(Math.random() * 300 + 100),
-		}));
-
-		return {
-			height: 3999820 - index,
-			timestamp,
-			transactionCount,
-			totalFee: + transactionFees.reduce((partialSum, a) => partialSum + a.fee, 0).toFixed(2),
-			transactionFees
-		}
-	});
-
-	const fees = {
-		slow: 0.001,
-		medium: 0.005,
-		fast: 0.01
-	}
-
-	const latestTransactions = [
-		{
-			type: 'transfer',
-			hash: '7EC5...1147',
-			timestamp: 1686426584280,
-			fee: 0.65,
-			amount: 20471.65
-		}, {
-			type: 'transfer',
-			hash: '7EC5...1147',
-			timestamp: 1686426584280,
-			fee: 0.65,
-			amount: 20471.65
-		}, {
-			type: 'transfer',
-			hash: '7EC5...1147',
-			timestamp: 1686426584280,
-			fee: 0.65,
-			amount: 20471.65
-		}, {
-			type: 'transfer',
-			hash: '7EC5...1147',
-			timestamp: 1686426584280,
-			fee: 0.65,
-			amount: 20471.65
-		}, {
-			type: 'transfer',
-			hash: '7EC5...1147',
-			timestamp: 1686426584280,
-			fee: 0.65,
-			amount: 20471.65
-		},
-	];
-
-	const baseInfo = {
-		totalTransactions: 99888777154,
-		transactionsPerBlock: 15,
-		price: 5.17,
-		priceChange: 13,
-		volume: 1200000000,
-		circulatingSupply: 999999999999,
-		treasury: 628549820,
-		totalNodes: 145,
-		supernodes: 66,
-	};
-
-	const chainInfo = {
-		height: 3999820,
-		lastSafeBlock: 399120,
-		currentBlockTime: 15,
-	}
+	const blocksPage = await getBlockPage();
+	const latestTransactionsPage = await getTransactionPage({ pageSize: 5 }, 'confirmed');
+	const pendingTransactionsPage = await getTransactionPage({ pageSize: 3 }, 'unconfirmed');
+	const stats = await getStats();
 
 	return {
 		props: {
-			blocks,
-			fees,
-			latestTransactions,
-			baseInfo,
-			chainInfo,
+			blocks: blocksPage.data,
+			latestTransactions: latestTransactionsPage.data,
+			pendingTransactions: pendingTransactionsPage.data,
+			fees: stats.fees,
+			baseInfo: stats.baseInfo,
+			chainInfo: stats.chainInfo,
+			charts: stats.charts,
 			...(await serverSideTranslations(locale, ['common', 'home'])),
 		},
 	}
 };
 
-const Home = ({blocks, fees, latestTransactions, baseInfo, chainInfo}) => {
+const Home = ({blocks, fees, latestTransactions, pendingTransactions, baseInfo, chainInfo, charts}) => {
 	const { t } = useTranslation('home');
+	const { t: commonT } = useTranslation('common');
+	const formattedCharts = {
+		...charts,
+		transactions: charts.transactions.map(item => [formatDate(item[0], commonT), item[1]])
+	};
 
 	return (
 		<div className={styles.wrapper}>
@@ -117,13 +60,13 @@ const Home = ({blocks, fees, latestTransactions, baseInfo, chainInfo}) => {
 								{baseInfo.transactionsPerBlock}
 							</Field>
 						</div>
-						<img src="/images/stub-price-chart.png" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+						<LineChart data={formattedCharts.transactions} name={t('chart_series_transactions')} />
 					</div>
 					<Separator />
 					<div className="layout-grid-row layout-flex-fill">
 						<div className="layout-flex-col layout-flex-fill">
 							<Field title={t('field_price')}>
-								<FieldPrice value={baseInfo.price} change={baseInfo.priceChange} />
+								<ValuePrice value={baseInfo.price} change={baseInfo.priceChange} />
 							</Field>
 							<Field title={t('field_volume')}>
 								${baseInfo.volume}
@@ -134,7 +77,7 @@ const Home = ({blocks, fees, latestTransactions, baseInfo, chainInfo}) => {
 								${baseInfo.circulatingSupply}
 							</Field>
 							<Field title={t('field_treasury')} textAlign="right">
-								{baseInfo.treasury}XEM
+								{baseInfo.treasury} XEM
 							</Field>
 						</div>
 					</div>
@@ -152,7 +95,7 @@ const Home = ({blocks, fees, latestTransactions, baseInfo, chainInfo}) => {
 					</div>
 				</div>
 			</Section>
-			<div className="layout-flex-row">
+			<div className="layout-section-row">
 				<Section title={t('section_fees')}>
 					<div className="layout-flex-row">
 						<div className="layout-flex-fill">
@@ -186,18 +129,18 @@ const Home = ({blocks, fees, latestTransactions, baseInfo, chainInfo}) => {
 						</div>
 						<div className="layout-flex-fill">
 							<Field title={t('field_currentBlockTime')}>
-								{chainInfo.currentBlockTime}
+								{chainInfo.blockGenerationTime}
 							</Field>
 						</div>
 					</div>
 				</Section>
 			</div>
-			<div className="layout-flex-row">
-				<Section title={t('section_pendingTransactions')}>
-					<RecentTransactions data={latestTransactions} />
-				</Section>
+			<div className="layout-section-row">
 				<Section title={t('section_latestTransactions')}>
 					<RecentTransactions data={latestTransactions} />
+				</Section>
+				<Section title={t('section_pendingTransactions')}>
+					<RecentTransactions data={pendingTransactions} />
 				</Section>
 			</div>
 		</div>

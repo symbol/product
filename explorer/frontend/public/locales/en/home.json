@@ -17,5 +17,7 @@
     "field_feeFast": "Fast",
     "field_height": "Height",
     "field_lastSafeBlock": "Last Safe Block",
-    "field_currentBlockTime": "CurrentBlockTime"
+    "field_currentBlockTime": "CurrentBlockTime",
+
+    "chart_series_transactions": "Transactions"
 }
