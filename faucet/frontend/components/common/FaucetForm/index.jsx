@@ -2,7 +2,7 @@ import Button from '../Button';
 import TextBox from '../TextBox';
 import TwitterSignIn from '../TwitterSignIn';
 import axios from 'axios';
-import { decode } from 'jsonwebtoken';
+import jwt from 'jsonwebtoken';
 import PropTypes from 'prop-types';
 import React, { useEffect, useState } from 'react';
 import { ToastContainer, toast } from 'react-toastify';
@@ -69,7 +69,7 @@ const FaucetForm = function ({ config, addressValidation }) {
 		const numericAmount = 0 === Number(amount) ? defaultAmount : Number(amount);
 		const isAddressValid = addressValidation(formattedAddress);
 		const isAmountValid = !Number.isNaN(numericAmount) && 0 <= numericAmount && numericAmount <= config.maxAmount;
-		const twitterInfo = decode(sessionStorage.getItem('authToken'));
+		const twitterInfo = jwt.decode(sessionStorage.getItem('authToken'));
 
 		const isTwitterVerify = getTwitterVerifyStatus(twitterInfo);
 
