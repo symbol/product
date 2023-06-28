@@ -7,6 +7,7 @@ from symbolchain.CryptoTypes import Hash256, PublicKey, Signature
 from symbolchain.facade.NemFacade import NemFacade
 from symbolchain.nem.Network import Address, NetworkTimestamp
 
+from ..model.Block import Block
 from ..model.Constants import DEFAULT_ASYNC_LIMITER_ARGUMENTS, TransactionStatus
 from ..model.Endpoint import Endpoint
 from ..model.Exceptions import NodeException
@@ -293,5 +294,34 @@ class NemConnector(BasicConnector):
 				await asyncio.sleep(timeout_settings.interval)
 
 		return False
+
+	# endregion
+
+	# region POST (get_blocks_after, get_block)
+	async def get_blocks_after(self, height):
+		""""Gets Blocks data"""
+
+		blocks_after_dict = await self.post('local/chain/blocks-after', {'height': height})
+		return [self._map_to_block(block) for block in blocks_after_dict['data']]
+
+	async def get_block(self, height):
+		""""Gets Block data"""
+
+		block_dict = await self.post('local/block/at', {'height': height})
+		return self._map_to_block(block_dict)
+
+	@staticmethod
+	def _map_to_block(block_dict):
+		block = block_dict['block']
+
+		return Block(
+			block['height'],
+			block['timeStamp'],
+			block_dict['txes'],
+			block_dict['difficulty'],
+			block_dict['hash'],
+			block['signer'],
+			block['signature'],
+		)
 
 	# endregion
