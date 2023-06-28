@@ -1,6 +1,7 @@
 from symbolchain.CryptoTypes import PublicKey
 from symbolchain.nem.Network import Address
 
+from ..model.Block import Block
 from ..model.Endpoint import Endpoint
 from ..model.NodeInfo import NodeInfo
 from .BasicConnector import BasicConnector
@@ -91,3 +92,29 @@ class NemConnector(BasicConnector):
 			node_dict['identity']['name'],
 			node_dict['metaData']['version'],
 			NodeInfo.API_ROLE_FLAG)
+
+	async def get_blocks_after(self, height):
+		""""Gets Blocks data"""
+
+		blocks_after_dict = await self.post('local/chain/blocks-after', {'height': height})
+		return [self._map_to_block(block) for block in blocks_after_dict['data']]
+
+	async def get_block(self, height):
+		""""Gets Block data"""
+
+		block_dict = await self.post('local/block/at', {'height': height})
+		return self._map_to_block(block_dict)
+
+	@staticmethod
+	def _map_to_block(block_dict):
+		block = block_dict['block']
+
+		return Block(
+			block['height'],
+			block['timeStamp'],
+			block_dict['txes'],
+			block_dict['difficulty'],
+			block_dict['hash'],
+			block['signer'],
+			block['signature'],
+		)

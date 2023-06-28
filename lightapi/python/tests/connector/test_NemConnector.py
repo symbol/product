@@ -6,6 +6,7 @@ from symbolchain.CryptoTypes import PublicKey
 from symbolchain.nem.Network import Address, Network
 
 from symbollightapi.connector.NemConnector import NemConnector
+from symbollightapi.model.Block import Block
 from symbollightapi.model.Endpoint import Endpoint
 from symbollightapi.model.NodeInfo import NodeInfo
 
@@ -166,6 +167,49 @@ ACCOUNT_INFO_4 = {
 }
 
 
+CHAIN_BLOCK_1 = {
+	'difficulty': 100000000000000,
+	'txes': [],
+	'block': {
+		'timeStamp': 73976,
+		'signature': (
+			'fdf6a9830e9320af79123f467fcb03d6beab735575ff50eab363d812c5581436'
+			'2ad7be0503db2ee70e60ac3408d83cdbcbd941067a6df703e0c21c7bf389f105'
+		),
+		'prevBlockHash': {
+			'data': '438cf6375dab5a0d32f9b7bf151d4539e00a590f7c022d5572c7d41815a24be4'
+		},
+		'type': 1,
+		'transactions': [],
+		'version': 1744830465,
+		'signer': 'f9bd190dd0c364261f5c8a74870cc7f7374e631352293c62ecc437657e5de2cd',
+		'height': 2
+	},
+	'hash': '1dd9d4d7b6af603d29c082f9aa4e123f07d18154ddbcd7ddc6702491b854c5e4'
+}
+
+CHAIN_BLOCK_2 = {
+	'difficulty': 90250000000000,
+	'txes': [],
+	'block': {
+		'timeStamp': 78976,
+		'signature': (
+			'919ae66a34119b49812b335827b357f86884ab08b628029fd6e8db3572faeb4f'
+			'323a7bf9488c76ef8faa5b513036bbcce2d949ba3e41086d95a54c0007403c0b'
+		),
+		'prevBlockHash': {
+			'data': '1dd9d4d7b6af603d29c082f9aa4e123f07d18154ddbcd7ddc6702491b854c5e4'
+		},
+		'type': 1,
+		'transactions': [],
+		'version': 1744830465,
+		'signer': '45c1553fb1be7f25b6f79278b9ede1129bb9163f3b85883ea90f1c66f497e68b',
+		'height': 3
+	},
+	'hash': '9708256e8a8dfb76eed41dcfa2e47f4af520b7b3286afb7f60dca02851f8a53e'
+}
+
+
 # endregion
 
 
@@ -201,6 +245,12 @@ def server(event_loop, aiohttp_client):
 
 			return await self._process(request, account_info)
 
+		async def local_chain_blocks_after(self, request):
+			return await self._process(request, {'data': [CHAIN_BLOCK_1, CHAIN_BLOCK_2]})
+
+		async def local_block_at(self, request):
+			return await self._process(request, CHAIN_BLOCK_1)
+
 		async def _process(self, request, response_body):
 			self.urls.append(str(request.url))
 			return web.Response(body=json.dumps(response_body), headers={'Content-Type': 'application/json'})
@@ -215,6 +265,9 @@ def server(event_loop, aiohttp_client):
 	app.router.add_get('/node/peer-list/reachable', mock_server.node_peers_reachable)
 	app.router.add_get('/account/get', mock_server.account_info)
 	app.router.add_get('/account/get/forwarded', mock_server.account_info_forwarded)
+	app.router.add_post('/local/chain/blocks-after', mock_server.local_chain_blocks_after)
+	app.router.add_post('/local/block/at', mock_server.local_block_at)
+
 	server = event_loop.run_until_complete(aiohttp_client(app))  # pylint: disable=redefined-outer-name
 
 	server.mock = mock_server
@@ -379,5 +432,72 @@ async def test_can_query_account_info_without_public_key(server):  # pylint: dis
 	assert 0.00022692560084412516 == account_info.importance
 	assert 0 == account_info.harvested_blocks
 	assert 'INACTIVE' == account_info.remote_status
+
+# endregion
+
+
+# region local chain blocks after
+
+async def test_can_query_blocks_after(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	connector = NemConnector(server.make_url(''))
+
+	# Act:
+	blocks = await connector.get_blocks_after(1)
+
+	# Assert:
+	assert [f'{server.make_url("")}/local/chain/blocks-after'] == server.mock.urls
+	assert 2 == len(blocks)
+	assert Block(
+		2,
+		73976,
+		[],
+		100000000000000,
+		'1dd9d4d7b6af603d29c082f9aa4e123f07d18154ddbcd7ddc6702491b854c5e4',
+		'f9bd190dd0c364261f5c8a74870cc7f7374e631352293c62ecc437657e5de2cd',
+		(
+			'fdf6a9830e9320af79123f467fcb03d6beab735575ff50eab363d812c5581436'
+			'2ad7be0503db2ee70e60ac3408d83cdbcbd941067a6df703e0c21c7bf389f105'
+		)
+	) == blocks[0]
+	assert Block(
+		3,
+		78976,
+		[],
+		90250000000000,
+		'9708256e8a8dfb76eed41dcfa2e47f4af520b7b3286afb7f60dca02851f8a53e',
+		'45c1553fb1be7f25b6f79278b9ede1129bb9163f3b85883ea90f1c66f497e68b',
+		(
+			'919ae66a34119b49812b335827b357f86884ab08b628029fd6e8db3572faeb4f'
+			'323a7bf9488c76ef8faa5b513036bbcce2d949ba3e41086d95a54c0007403c0b'
+		)
+	) == blocks[1]
+
+# endregion
+
+
+# region local block at public
+
+async def test_can_query_block_at(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	connector = NemConnector(server.make_url(''))
+
+	# Act:
+	block = await connector.get_block(2)
+
+	# Assert:
+	assert [f'{server.make_url("")}/local/block/at'] == server.mock.urls
+	assert Block(
+		2,
+		73976,
+		[],
+		100000000000000,
+		'1dd9d4d7b6af603d29c082f9aa4e123f07d18154ddbcd7ddc6702491b854c5e4',
+		'f9bd190dd0c364261f5c8a74870cc7f7374e631352293c62ecc437657e5de2cd',
+		(
+			'fdf6a9830e9320af79123f467fcb03d6beab735575ff50eab363d812c5581436'
+			'2ad7be0503db2ee70e60ac3408d83cdbcbd941067a6df703e0c21c7bf389f105'
+		)
+	) == block
 
 # endregion
