@@ -1,4 +1,4 @@
-import { NATIVE_MOSAIC_ID, NATIVE_MOSAIC_TICKER } from '@/config';
+import config from '@/config';
 import styles from '@/styles/components/ValueMosaic.module.scss';
 
 const ValueMosaic = ({ mosaicName, mosaicId, amount = 0, isNative, className, onClick }) => {
@@ -7,7 +7,7 @@ const ValueMosaic = ({ mosaicName, mosaicId, amount = 0, isNative, className, on
 
 	const [integer, decimal] = amount.toString().split('.');
 
-	if (mosaicId === NATIVE_MOSAIC_ID || isNative) {
+	if (mosaicId === config.NATIVE_MOSAIC_ID || isNative) {
 		displayedName = ''; // NATIVE_MOSAIC_TICKER;
 		imageSrc = '/images/icon-mosaic-native.svg';
 	}
