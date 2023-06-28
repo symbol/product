@@ -28,9 +28,8 @@
     min-height: 32rem;
 }
 
-.blockCube {
+%block-cube-base {
     transition: all 0.25s;
-    background: #50B9AD;
     width: 15.33rem;
     height: 15.33rem;
     position: relative;
@@ -42,50 +41,83 @@
     justify-content: space-between;
     color: #fff;
     padding: $spacing-base;
+}
+
+%block-cube-base--before {
+    content: '';
+    display: inline-block;
+    width: 100%;
+    height: 1.33rem;
+    transform: skewX(-45deg);
+    position: absolute;
+    top: -1.30rem;
+    left: 0.7rem;
+}
+
+%block-cube-base--after {
+    content: '';
+    display: inline-block;
+    width: 1.33rem;
+    height: 100%;
+    transform: skewY(-45deg);
+    position: absolute;
+    top: -0.7rem;
+    left: 100%;
+}
+
+.blockCube {
+    @extend %block-cube-base;
+
+    background: #50B9AD;
 
     &::before {
-        content: '';
-        display: inline-block;
+        @extend %block-cube-base--before;
+
         background: #038C7C;
-        width: 100%;
-        height: 1.33rem;
-        transform: skewX(-45deg);
-        position: absolute;
-        top: -1.30rem;
-        left: 0.7rem;
     }
 
     &::after {
-        content: '';
-        display: inline-block;
+        @extend %block-cube-base--after;
+
         background: #016A5E;
-        width: 1.33rem;
-        height: 100%;
-        transform: skewY(-45deg);
-        position: absolute;
-        top: -0.7rem;
-        left: 100%;
+    }
+}
+
+.blockCubeNext {
+    @extend %block-cube-base;
+    background: #D1A11F;
+
+    &::before {
+        @extend %block-cube-base--before;
+
+        background: #A47E13;
     }
 
-    .middle {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-    }
+    &::after {
+        @extend %block-cube-base--after;
 
-    .height {
-        margin-top: 1.5rem;
-        font: $font-highlighted;
+        background: #6D5208;
     }
+}
 
-    .age {
-        min-height: 1rem;
-    }
+.middle {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
 
-    .fee {
-        & img {
-            filter: invert(1);
-        }
+.height {
+    margin-top: 1.5rem;
+    font: $font-highlighted;
+}
+
+.age {
+    min-height: 1rem;
+}
+
+.fee {
+    & img {
+        filter: invert(1);
     }
 }
 

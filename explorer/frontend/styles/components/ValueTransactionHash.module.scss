@@ -1,0 +1,10 @@
+@import "../variables";
+
+.valueTransactionHash {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: $spacing-base / 2;
+    font: $font-body-monospace;
+    text-transform: uppercase;
+}

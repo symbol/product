@@ -1,0 +1,10 @@
+@import "../variables";
+
+.buttonCopy {
+    position: relative;
+    width: 1rem;
+    height: 1rem;
+    user-select: none;
+    cursor: pointer;
+    flex-shrink: 0;
+}

@@ -8,11 +8,64 @@ import ValueTransactionSquares from './ValueTransactionSquares';
 import { forwardRef, useEffect, useState } from 'react';
 import ValueAge from './ValueAge';
 
+const BlockExpanded = ({ data, isNext, isTransactionSquaresRendered, onClose }) => {
+	const { height, timestamp, transactionFees, totalFee, medianFee} = data;
+
+	return (
+		<div className="layout-flex-col">
+			<ButtonClose className={styles.buttonClose} onClick={onClose} />
+			<Field title="Height">
+				<div className="value-highlighted">{height}</div>
+			</Field>
+			<div className="layout-grid-row">
+				<Field title="Status">
+					{isNext && <ValueLabel text="Pending" type="warning" iconName="pending" />}
+					{!isNext && <ValueLabel text="Safe" type="success" iconName="doublecheck" />}
+				</Field>
+				<Field title="Timestamp">
+					{!isNext && <ValueTimestamp value={timestamp} hasTime hasSeconds />}
+				</Field>
+			</div>
+			<div className="layout-grid-row">
+				<Field title="Total Fee">
+					<ValueMosaic isNative amount={totalFee} />
+				</Field>
+				<Field title="Median Fee">
+					<ValueMosaic isNative amount={medianFee} />
+				</Field>
+			</div>
+			<Field title="Transaction Fees">
+				{isTransactionSquaresRendered && <ValueTransactionSquares data={transactionFees} />}
+			</Field>
+		</div>
+	)
+}
+
+const BlockCube = ({ data, isNext }) => {
+	const { height, timestamp, transactionCount, totalFee} = data;
+
+	return (
+		<>
+			<div className={styles.age}>
+				<ValueAge value={timestamp} />.
+			</div>
+			<div className={styles.middle}>
+				<div className={styles.height}>{height}</div>
+				<div>{transactionCount} TXs.</div>
+			</div>
+			<Field title="Total Fee">
+				<ValueMosaic className={styles.fee} isNative amount={totalFee} />
+			</Field>
+		</>
+	);
+};
+
 const BlockPreview = ({ data, isNext, isSelected, onClose, onSelect, smallBoxRef, bigBoxRef }) => {
-	const { height, transactionCount, timestamp } = data;
+	const { height } = data;
 	const [isTransactionSquaresRendered, setIsTransactionSquaresRendered] = useState(false);
-	const [expandedStyle, setExpandedStyle] = useState('')
-	const containerClassName = isSelected ? styles.blockCard : styles.blockCube;
+	const [expandedStyle, setExpandedStyle] = useState('');
+	const cubeClassName = isNext ? styles.blockCubeNext : styles.blockCube;
+	const containerClassName = isSelected ? styles.blockCard : cubeClassName;
 	const iconChainSrc = isNext ? '/images/icon-chain-pending.svg' : '/images/icon-chain.svg';
 
 	const handleClick = () => {
@@ -41,43 +94,12 @@ const BlockPreview = ({ data, isNext, isSelected, onClose, onSelect, smallBoxRef
 			<div className={styles.smallBox} ref={smallBoxRef} />
 			<div className={containerClassName} onClick={handleClick}>
 				{isSelected
-					? <div className="layout-flex-col">
-						<ButtonClose className={styles.buttonClose} onClick={onClose} />
-						<Field title="Height">
-							<div className="value-highlighted">{data.height}</div>
-						</Field>
-						<div className="layout-grid-row">
-							<Field title="Status">
-								<ValueLabel text="Finalized" type="success" iconName="doublecheck" />
-							</Field>
-							<Field title="Timestamp">
-								<ValueTimestamp value={data.timestamp} hasTime/>
-							</Field>
-						</div>
-						<div className="layout-grid-row">
-							<Field title="Total Fee">
-								<ValueMosaic mosaicId="6BED913FA20223F8" amount={data.totalFee} />
-							</Field>
-							<Field title="Median Fee">
-								<ValueMosaic mosaicId="6BED913FA20223F8" amount={data.totalFee} />
-							</Field>
-						</div>
-						<Field title="Transaction Fees">
-							{isTransactionSquaresRendered && <ValueTransactionSquares data={data.transactionFees} />}
-						</Field>
-					</div>
-					: <>
-						<div className={styles.age}>
-							<ValueAge value={timestamp} />.
-						</div>
-						<div className={styles.middle}>
-							<div className={styles.height}>{height}</div>
-							<div>{transactionCount} TXs.</div>
-						</div>
-						<Field title="Total Fee">
-							<ValueMosaic className={styles.fee} mosaicId="6BED913FA20223F8" amount={data.totalFee} />
-						</Field>
-					</>
+					? <BlockExpanded
+						data={data}
+						isTransactionSquaresRendered={isTransactionSquaresRendered}
+						onClose={onClose}
+					/>
+					: <BlockCube data={data} isNext={isNext} />
 				}
 			</div>
 			<img className={styles.iconChain} src={iconChainSrc} />

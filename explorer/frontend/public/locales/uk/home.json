@@ -17,5 +17,6 @@
     "field_feeFast": "Швидка",
     "field_height": "Висота",
     "field_lastSafeBlock": "Крайній безпечний блок",
-    "field_currentBlockTime": "Новий блок кожні"
+    "field_currentBlockTime": "Новий блок кожні",
+    "chart_series_transactions": "Транзакції"
 }

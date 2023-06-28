@@ -1,0 +1,17 @@
+{
+    "page_blocks": "Блоки",
+    "section_blocks": "Блоки",
+
+    "page_block": "Блок",
+    "section_block": "Блок",
+    "section_transactions": "Транзакції",
+
+    "field_blockGenerationTime": "Новий блок",
+    "field_averageFee": "Середня комісія",
+    "field_difficulty": "Важкість",
+    "value_blockGenerationTime": "{{value}} секунд",
+    "value_averageFee": "{{value}} XEM / Байт",
+    "chart_series_blockTime": "Секунди",
+    "chart_series_fee": "Комісія, XEM",
+    "chart_series_difficulty": "Важкість, %"
+}

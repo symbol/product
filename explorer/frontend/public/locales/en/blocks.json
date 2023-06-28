@@ -1,0 +1,17 @@
+{
+    "page_blocks": "Blocks",
+    "section_blocks": "Blocks",
+
+    "page_block": "Block",
+    "section_block": "Block",
+    "section_transactions": "Transactions",
+
+    "field_blockGenerationTime": "Block Generation Time",
+    "field_averageFee": "Average Fee",
+    "field_difficulty": "Difficulty",
+    "value_blockGenerationTime": "{{value}} seconds",
+    "value_averageFee": "{{value}} XEM / Byte",
+    "chart_series_blockTime": "Seconds",
+    "chart_series_fee": "Fee, XEM",
+    "chart_series_difficulty": "Difficulty, %"
+}
