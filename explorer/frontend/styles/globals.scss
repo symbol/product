@@ -123,6 +123,14 @@ a {
     --toastify-toast-max-height: 5rem;
 }
 
+@media #{$screen-large} {
+    html,
+    body,
+    #root {
+        font-size: $multiplier-font-large;
+    }
+}
+
 @media #{$screen-desktop} {
     html,
     body,

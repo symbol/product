@@ -43,6 +43,16 @@
         }
     }
 
+    @media #{$screen-large} {
+        .contentContainer {
+            padding: 0 $spacing-content-container-margin-large;
+
+            .contentContainerInner {
+                max-width: $spacing-content-container-width-large;
+            }
+        }
+    }
+
     @media #{$screen-desktop} {
         .contentContainer {
             padding: 0 $spacing-content-container-margin-desktop;

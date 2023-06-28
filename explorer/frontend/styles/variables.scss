@@ -48,6 +48,11 @@ $spacing-section-gap: $spacing-base * 4;
 $spacing-header-height: $spacing-base * 8;
 $spacing-heading-margin: $spacing-base;
 
+// Spacings Large
+$spacing-content-container-width-large: $spacing-base * 152;
+$spacing-content-container-margin-large: $spacing-base * 3;
+$multiplier-font-large: 14px;
+
 // Spacings Desktop
 $spacing-content-container-width-desktop: $spacing-base * 152;
 $spacing-content-container-margin-desktop: $spacing-base * 3;
@@ -64,6 +69,7 @@ $spacing-content-container-margin-mobile: $spacing-base * 2;
 $multiplier-font-mobile: 10px;
 
 // Breakpoints
-$screen-desktop: "(min-width: 1440px)";
+$screen-large: "(min-width: 2000px)";
+$screen-desktop: "(max-width: 1999.8px) and (min-width: 1440px)";
 $screen-laptop: "(max-width: 1439.8px) and (min-width: 768px)";
 $screen-mobile: "(max-width: 767.8px)";
