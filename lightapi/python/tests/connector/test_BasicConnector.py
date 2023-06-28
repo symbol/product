@@ -26,6 +26,10 @@ def server(event_loop, aiohttp_client):
 			request_json = await request.json()
 			return await self._process(request, {'message': request_json['message'], 'action': 'put'})
 
+		async def echo_post(self, request):
+			request_json = await request.json()
+			return await self._process(request, {'message': request_json['message'], 'action': 'post'})
+
 		async def status_code(self, request):
 			status_code = int(request.match_info['status_code'])
 
@@ -63,6 +67,7 @@ def server(event_loop, aiohttp_client):
 	app = web.Application()
 	app.router.add_get('/node/info', mock_server.node_info)
 	app.router.add_put('/echo/put', mock_server.echo_put)
+	app.router.add_post('/echo/post', mock_server.echo_post)
 	app.router.add_get(r'/status/{status_code}', mock_server.status_code)
 	server = event_loop.run_until_complete(aiohttp_client(app))  # pylint: disable=redefined-outer-name
 
@@ -98,30 +103,6 @@ async def test_can_issue_get_with_named_property(server):  # pylint: disable=red
 	# Assert:
 	assert [f'{server.make_url("")}/node/info'] == server.mock.urls
 	assert 152 == network_identifier
-
-
-async def test_can_issue_put(server):  # pylint: disable=redefined-outer-name
-	# Arrange:
-	connector = BasicConnector(server.make_url(''))
-
-	# Act:
-	response_json = await connector.put('echo/put', {'message': 'hello world'})
-
-	# Assert:
-	assert [f'{server.make_url("")}/echo/put'] == server.mock.urls
-	assert {'message': 'hello world', 'action': 'put'} == response_json
-
-
-async def test_can_issue_put_with_named_property(server):  # pylint: disable=redefined-outer-name
-	# Arrange:
-	connector = BasicConnector(server.make_url(''))
-
-	# Act:
-	response_message = await connector.put('echo/put', {'message': 'hello world'}, 'message')
-
-	# Assert:
-	assert [f'{server.make_url("")}/echo/put'] == server.mock.urls
-	assert 'hello world' == response_message
 
 # endregion
 
@@ -179,12 +160,20 @@ async def test_can_handle_timeout_put(server):  # pylint: disable=redefined-oute
 	await _assert_can_handle_timeout(server, 'put', 'echo/put', request_payload={'message': 'hello world'})
 
 
+async def test_can_handle_timeout_post(server):  # pylint: disable=redefined-outer-name
+	await _assert_can_handle_timeout(server, 'post', 'echo/post', request_payload={'message': 'hello world'})
+
+
 async def test_can_handle_content_type_error_get(server):  # pylint: disable=redefined-outer-name
 	await _assert_can_handle_content_type_error(server, 'get', 'node/info')
 
 
 async def test_can_handle_content_type_error_put(server):  # pylint: disable=redefined-outer-name
 	await _assert_can_handle_content_type_error(server, 'put', 'echo/put', request_payload={'message': 'hello world'})
+
+
+async def test_can_handle_content_type_error_post(server):  # pylint: disable=redefined-outer-name
+	await _assert_can_handle_content_type_error(server, 'post', 'echo/post', request_payload={'message': 'hello world'})
 
 
 async def test_can_handle_corrupt_json_response_get(server):  # pylint: disable=redefined-outer-name
@@ -195,12 +184,20 @@ async def test_can_handle_corrupt_json_response_put(server):  # pylint: disable=
 	await _assert_can_handle_corrupt_json_response(server, 'put', 'echo/put', request_payload={'message': 'hello world'})
 
 
+async def test_can_handle_corrupt_json_response_post(server):  # pylint: disable=redefined-outer-name
+	await _assert_can_handle_corrupt_json_response(server, 'post', 'echo/post', request_payload={'message': 'hello world'})
+
+
 async def test_can_handle_stopped_node_get():
 	await _assert_can_handle_stopped_node('get', 'node/info')
 
 
 async def test_can_handle_stopped_node_put():
 	await _assert_can_handle_stopped_node('put', 'echo/put', request_payload={'message': 'hello world'})
+
+
+async def test_can_handle_stopped_node_post():
+	await _assert_can_handle_stopped_node('post', 'echo/post', request_payload={'message': 'hello world'})
 
 # endregion
 
@@ -244,5 +241,47 @@ async def test_fail_propagate_500_result_without_message(server):  # pylint: dis
 	# Act + Assert:
 	with pytest.raises(NodeException, match=r'^HTTP request failed with code 500$'):
 		await connector.get('status/500')
+
+
+async def _assert_can_issue_request(server, action, url_path):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	connector = BasicConnector(server.make_url(''))
+
+	# Act:
+	action_method = getattr(connector, action)
+	response_json = await action_method(url_path, {'message': 'hello world'})
+
+	# Assert:
+	assert [f'{server.make_url("")}/{url_path}'] == server.mock.urls
+	assert {'message': 'hello world', 'action': action} == response_json
+
+
+async def _assert_can_issue_request_with_named_property(server, action, url_path):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	connector = BasicConnector(server.make_url(''))
+
+	# Act:
+	action_method = getattr(connector, action)
+	response_message = await action_method(url_path, {'message': 'hello world'}, 'message')
+
+	# Assert:
+	assert [f'{server.make_url("")}/{url_path}'] == server.mock.urls
+	assert 'hello world' == response_message
+
+
+async def test_can_issue_put(server):  # pylint: disable=redefined-outer-name
+	await _assert_can_issue_request(server, 'put', 'echo/put')
+
+
+async def test_can_issue_put_with_named_property(server):  # pylint: disable=redefined-outer-name
+	await _assert_can_issue_request_with_named_property(server, 'put', 'echo/put')
+
+
+async def test_can_issue_post(server):  # pylint: disable=redefined-outer-name
+	await _assert_can_issue_request(server, 'post', 'echo/post')
+
+
+async def test_can_issue_post_with_named_property(server):  # pylint: disable=redefined-outer-name
+	await _assert_can_issue_request_with_named_property(server, 'post', 'echo/post')
 
 # endregion
