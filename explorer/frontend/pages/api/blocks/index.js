@@ -1,9 +1,7 @@
 import { createPage, createSearchCriteria, getSearchCriteria } from '@/utils';
 import { NextResponse } from 'next/server';
 import symbolSDK from 'symbol-sdk';
-
-const BASE_URL = 'http://192.168.51.192:3000';
-const REST_URL = 'http://ec2-3-85-86-70.compute-1.amazonaws.com:4000'
+import config from '@/config';
 
 export default async (req, res) => {
 	if (req.method !== 'GET') {
@@ -24,7 +22,7 @@ export const GET = async (req) => {
 
 export const fetchBlockPage = async (searchCriteria) => {
 	const params = new URLSearchParams(searchCriteria).toString();
-	const response = await fetch(`${BASE_URL}/api/blocks?${params}`);
+	const response = await fetch(`/api/blocks?${params}`);
 
 	return response.json();
 }
