@@ -8,6 +8,9 @@ module.exports = {
 		scrollRestoration: true,
 	},
 	i18n: i18nConfig.i18n,
+	eslint: {
+		ignoreDuringBuilds: true,
+	},
 	webpack: (config, { isServer }) => {
 		// use a browser-optimized wasm for Ed25519 crypto operations
 		const moduleRegExp = /symbol-crypto-wasm-node/;
