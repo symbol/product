@@ -1,7 +1,6 @@
+import config from '@/config';
 import { createPage, createSearchCriteria } from '@/utils';
 import symbolSDK from 'symbol-sdk';
-
-const BASE_URL = 'http://192.168.51.192:3000';
 
 export default async (req, res) => {
 	if (req.method !== 'GET') {
@@ -15,7 +14,7 @@ export default async (req, res) => {
 
 export const fetchTransactionPage = async (searchCriteria) => {
 	const params = new URLSearchParams(searchCriteria).toString();
-	const response = await fetch(`${BASE_URL}/api/transactions?${params}`);
+	const response = await fetch(`/api/transactions?${params}`);
 
 	return response.json();
 }
