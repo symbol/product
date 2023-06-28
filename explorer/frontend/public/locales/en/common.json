@@ -10,7 +10,7 @@
     "table_field_hash": "Hash",
     "table_field_type": "Type",
     "table_field_signer": "From",
-    "table_field_recipient": "Recipient",
+    "table_field_recipient": "To",
     "table_field_amount": "Amount",
     "table_field_fee": "Fee",
     "month_jan": "Jan",
