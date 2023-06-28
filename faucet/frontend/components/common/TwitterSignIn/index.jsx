@@ -1,7 +1,7 @@
 import { decrypt, encrypt } from '../../../utils/helper';
 import Button from '../Button';
 import axios from 'axios';
-import { decode } from 'jsonwebtoken';
+import jwt from 'jsonwebtoken';
 import PropTypes from 'prop-types';
 import React, { useEffect, useState } from 'react';
 
@@ -34,7 +34,7 @@ const TwitterSignIn = function ({
 	};
 
 	useEffect(() => {
-		const twitterInfo = decode(sessionStorage.getItem('authToken'));
+		const twitterInfo = jwt.decode(sessionStorage.getItem('authToken'));
 
 		const query = new URLSearchParams(window.location.search);
 		const oauthToken = query.get('oauth_token');
