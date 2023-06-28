@@ -11,8 +11,12 @@ async def run_main(args):
 	config = parse_shoestring_configuration(args.config)
 	directories = Preparer.DirectoryLocator(None, Path(args.directory))
 
+	ca_key_path = Path(args.ca_key_path).absolute()
+	if not ca_key_path.exists():
+		raise RuntimeError(f'CA key is required but does not exist at path {ca_key_path}')
+
 	openssl_executor = OpensslExecutor(os.environ.get('OPENSSL_EXECUTABLE', 'openssl'))
-	with CertificateFactory(openssl_executor, args.ca_key_path, config.node.ca_password) as factory:
+	with CertificateFactory(openssl_executor, ca_key_path, config.node.ca_password) as factory:
 		factory.generate_ca_certificate(config.node.ca_common_name)
 		factory.generate_random_node_private_key()
 		factory.generate_node_certificate(config.node.node_common_name)
