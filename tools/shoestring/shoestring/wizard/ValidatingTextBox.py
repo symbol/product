@@ -28,6 +28,12 @@ def is_directory_path(value):
 	return Path(value).is_dir()
 
 
+def is_integer(value):
+	"""Returns True when input is an integer (without a sign)."""
+
+	return value.isdigit()
+
+
 def is_hex_private_key_string(value):
 	"""Returns True when input is a valid directory path."""
 

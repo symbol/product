@@ -2,25 +2,54 @@ from prompt_toolkit.filters import Condition
 from prompt_toolkit.layout.containers import ConditionalContainer, HSplit, VSplit
 from prompt_toolkit.widgets import Box, CheckboxList
 
+from symbolchain.facade.SymbolFacade import SymbolFacade
+
 from shoestring.wizard.Screen import ScreenDialog
-from shoestring.wizard.ValidatingTextBox import ValidatingTextBox, is_hex_private_key_string
+from shoestring.wizard.ValidatingTextBox import ValidatingTextBox, is_hex_private_key_string, is_integer
 
 
 def _to_enabled_string(value):
 	return 'enabled' if value else 'disabled'
 
 
+def facade(screens):
+	# TODO: not sure if this makes sense
+	network = 'mainnet' if 'mainnet' == screens.get('network-type').current_value else 'testnet'
+	return SymbolFacade(network)
+
+
 class HarvestingSettings:
-	def __init__(self, flag, generate_keys_flag, signing_key, vrf_key, delegate_flag):  # pylint: disable=too-many-arguments
+	# pylint: disable=too-many-instance-attributes
+
+	def __init__(
+		self,
+		flag,
+		auto_harvest_flag,
+		generate_keys_flag,
+		signing_key,
+		vrf_key,
+		delegate_flag,
+		max_unlocked_accounts,
+		min_fee_multiplier,
+		beneficiary_address
+	):  # pylint: disable=too-many-arguments
 		self._flag = flag
+		self._auto_harvest_flag = auto_harvest_flag
 		self._generate_keys_flag = generate_keys_flag
 		self._signing_key = signing_key
 		self._vrf_key = vrf_key
 		self._delegate_flag = delegate_flag
+		self._max_unlocked_accounts = max_unlocked_accounts
+		self._min_fee_multiplier = min_fee_multiplier
+		self._beneficiary_address = beneficiary_address
 
 	@property
 	def active(self):
 		return bool(self._flag.current_values)
+
+	@property
+	def auto_harvest(self):
+		return bool(self._auto_harvest_flag.current_values)
 
 	@property
 	def generate_keys(self):
@@ -39,12 +68,28 @@ class HarvestingSettings:
 		return bool(self._delegate_flag.current_values)
 
 	@property
+	def max_unlocked_accounts(self):
+		return int(self._max_unlocked_accounts.input.text)
+
+	@property
+	def min_fee_multiplier(self):
+		return int(self._min_fee_multiplier.input.text)
+
+	@property
+	def beneficiary_address(self):
+		return self._beneficiary_address.input.text
+
+	@property
 	def tokens(self):
 		tokens = [('harvester role', _to_enabled_string(self.active))]
 		if self.active:
 			tokens.extend([
+				('* auto harvest?', _to_enabled_string(self.auto_harvest)),
 				('* generate keys?', _to_enabled_string(self.generate_keys)),
-				('* auto detect delegates?', _to_enabled_string(self.enable_delegated_harvesters_auto_detection))
+				('* auto detect delegates?', _to_enabled_string(self.enable_delegated_harvesters_auto_detection)),
+				('* max unlocked accounts', self.max_unlocked_accounts),
+				('* min fee multiplier', self.min_fee_multiplier),
+				('* beneficiary address', self.beneficiary_address)
 			])
 
 		return tokens
@@ -52,17 +97,25 @@ class HarvestingSettings:
 	def __repr__(self):
 		return (
 			f'(active={self.active}, '
+			f'auto_harvest={self.auto_harvest}, '
 			f'generate={self.generate_keys}, '
 			f'signing_key=\'{self.harvester_signing_private_key}\', '
 			f'vrf_key=\'{self.harvester_vrf_private_key}\', '
-			f'delegate={self.enable_delegated_harvesters_auto_detection})'
+			f'delegate={self.enable_delegated_harvesters_auto_detection}, '
+			f'max_unlocked_accounts={self.max_unlocked_accounts}, '
+			f'min_fee_multiplier={self.min_fee_multiplier}, '
+			f'beneficiary_address={self.beneficiary_address})'
 		)
 
 
-def create(_screens):
+def create(screens):
 	harvesting_flag = CheckboxList(values=[
 		('harvesting-bool', 'would you like to enable harvesting?')
 	])
+
+	harvesting_auto_harvest_flag = CheckboxList(values=[
+		('harvesting-auto-harvest-bool', 'would you like to auto harvest?')
+	], default_values=['harvesting-auto-harvest-bool'])
 
 	harvesting_generate_flag = CheckboxList(values=[
 		('harvesting-generate-keys-bool', 'generate new random keys and transaction')
@@ -81,13 +134,40 @@ def create(_screens):
 		('harvesting-delegate-bool', 'enable delegated harvesters auto detection?')
 	])
 
+	max_unlocked_accounts = ValidatingTextBox(
+		'max unlocked accounts',
+		is_integer,
+		'max unlocked accounts value must be a number',
+		default_value='5')
+
+	min_fee_multiplier = ValidatingTextBox(
+		'min fee multiplier',
+		is_integer,
+		'min fee multiplier value must be a number',
+		default_value='100')
+
+	beneficiary_address = ValidatingTextBox(
+		'beneficiary address',
+		lambda value: not value or facade(screens).network.is_valid_address_string(value),
+		'beneficiary address needs to be address (in proper network)')
+
 	settings = HarvestingSettings(
 		harvesting_flag,
+		harvesting_auto_harvest_flag,
 		harvesting_generate_flag,
 		harvesting_signing_key,
 		harvesting_vrf_key,
-		harvesting_delegate_flag
+		harvesting_delegate_flag,
+		max_unlocked_accounts,
+		min_fee_multiplier,
+		beneficiary_address
 	)
+
+	def is_valid():
+		if not (max_unlocked_accounts.is_valid and min_fee_multiplier.is_valid and beneficiary_address.is_valid):
+			return False
+
+		return harvesting_generate_flag.current_values or (harvesting_signing_key.is_valid and harvesting_vrf_key.is_valid)
 
 	return ScreenDialog(
 		screen_id='harvesting',
@@ -98,6 +178,7 @@ def create(_screens):
 			# display more elements here when checked...
 			ConditionalContainer(
 				HSplit([
+					harvesting_auto_harvest_flag,
 					harvesting_generate_flag,
 					ConditionalContainer(
 						Box(
@@ -116,11 +197,26 @@ def create(_screens):
 						filter=Condition(lambda: not harvesting_generate_flag.current_values)
 					),
 					harvesting_delegate_flag,
+
+					# TODO: should both of them be dependent on auto-delegate?
+					VSplit([
+						HSplit([
+							max_unlocked_accounts.label,
+							min_fee_multiplier.label,
+							beneficiary_address.label
+						], width=30),
+						HSplit([
+							max_unlocked_accounts.input,
+							min_fee_multiplier.input,
+							beneficiary_address.input
+						])
+					])
+
 				]),
 				filter=Condition(lambda: harvesting_flag.current_values)
 			)
 		]),
 
 		accessor=settings,
-		is_valid=lambda: harvesting_generate_flag.current_values or (harvesting_signing_key.is_valid and harvesting_vrf_key.is_valid)
+		is_valid=is_valid
 	)

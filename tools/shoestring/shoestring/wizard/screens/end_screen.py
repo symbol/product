@@ -20,7 +20,7 @@ def create(_screens):
 
 	def add_setting(name, value):
 		label_container.children.append(to_container(Label(name)))
-		value_container.children.append(to_container(Label(value)))
+		value_container.children.append(to_container(Label(str(value))))
 
 	def clear():
 		label_container.children.clear()

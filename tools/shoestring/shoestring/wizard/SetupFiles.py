@@ -33,6 +33,13 @@ def prepare_overrides_file(screens, output_filename):
 				'[user.account]',
 				f'enableDelegatedHarvestersAutoDetection = {enable_auto_detection}',
 				'',
+				'[harvesting.harvesting]',
+				f'maxUnlockedAccounts = {harvesting.max_unlocked_accounts}',
+				f'beneficiaryAddress = {harvesting.beneficiary_address}',
+				'',
+				'[node.node]',
+				f'minFeeMultiplier = {harvesting.min_fee_multiplier}',
+				'',
 				''
 			]))
 
@@ -77,16 +84,21 @@ async def prepare_shoestring_files(screens, directory):
 		('node', 'features', ','.join(node_feature[len('NodeFeatures.'):] for node_feature in str(node_features).split(',')))
 	]
 
-	if harvesting.active and not harvesting.generate_keys:
-		# create a .properties file with harvesting keys
-		config_harvesting_filepath = directory / 'config-harvesting.properties'
-		with open(config_harvesting_filepath, 'wt', encoding='utf8') as outfile:
-			outfile.write('\n'.join([
-				'[harvesting]',
-				f'harvesterSigningPrivateKey = {harvesting.harvester_signing_private_key}',
-				f'harvesterVrfPrivateKey = {harvesting.harvester_vrf_private_key}'
-			]))
+	if harvesting.active:
+		config_harvesting_filepath = None
+		if not harvesting.auto_harvest:
+			config_harvesting_filepath = 'none'
+		elif not harvesting.generate_keys:
+			# create a .properties file with harvesting keys
+			config_harvesting_filepath = directory / 'config-harvesting.properties'
+			with open(config_harvesting_filepath, 'wt', encoding='utf8') as outfile:
+				outfile.write('\n'.join([
+					'[harvesting]',
+					f'harvesterSigningPrivateKey = {harvesting.harvester_signing_private_key}',
+					f'harvesterVrfPrivateKey = {harvesting.harvester_vrf_private_key}'
+				]))
 
-		replacements.append(('imports', 'harvester', str(config_harvesting_filepath)))
+		if config_harvesting_filepath:
+			replacements.append(('imports', 'harvester', str(config_harvesting_filepath)))
 
 	ConfigurationManager(config_filepath.parent).patch(config_filepath.name, replacements)

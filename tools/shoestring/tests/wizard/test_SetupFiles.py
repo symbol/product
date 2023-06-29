@@ -12,10 +12,14 @@ from ..test.TestPackager import prepare_testnet_package
 CertificatesScreen = namedtuple('CertificatesScreen', ['ca_common_name', 'node_common_name'])
 HarvestingScreen = namedtuple('HarvestingScreen', [
 	'active',
+	'auto_harvest',
 	'generate_keys',
 	'enable_delegated_harvesters_auto_detection',
 	'harvester_signing_private_key',
-	'harvester_vrf_private_key'
+	'harvester_vrf_private_key',
+	'max_unlocked_accounts',
+	'min_fee_multiplier',
+	'beneficiary_address'
 ])
 NodeSettingsScreen = namedtuple('NodeSettingsScreen', ['domain_name', 'friendly_name', 'api_https'])
 SingleValueScreen = namedtuple('SingleValueScreen', ['current_value'])
@@ -34,7 +38,7 @@ def _assert_can_prepare_overrides_file_when_harvesting_enabled(expected_auto_det
 
 		# Act:
 		prepare_overrides_file({
-			'harvesting': HarvestingScreen(True, False, 'true' == expected_auto_detection_value, None, None),
+			'harvesting': HarvestingScreen(True, False, False, 'true' == expected_auto_detection_value, None, None, 7, 111, 'abc'),
 			'node-settings': NodeSettingsScreen('san.symbol.ninja', 'Symbol San', None)
 		}, overrides_filepath)
 
@@ -44,6 +48,13 @@ def _assert_can_prepare_overrides_file_when_harvesting_enabled(expected_auto_det
 			assert '\n'.join([
 				'[user.account]',
 				f'enableDelegatedHarvestersAutoDetection = {expected_auto_detection_value}',
+				'',
+				'[harvesting.harvesting]',
+				'maxUnlockedAccounts = 7',
+				'beneficiaryAddress = abc',
+				'',
+				'[node.node]',
+				'minFeeMultiplier = 111',
 				'',
 				'[node.localnode]',
 				'host = san.symbol.ninja',
@@ -66,7 +77,7 @@ def test_can_prepare_overrides_file_when_harvesting_disabled():
 
 		# Act:
 		prepare_overrides_file({
-			'harvesting': HarvestingScreen(False, False, True, None, None),
+			'harvesting': HarvestingScreen(False, False, False, True, None, None, None, None, None),
 			'node-settings': NodeSettingsScreen('san.symbol.ninja', 'Symbol San', None)
 		}, overrides_filepath)
 
@@ -99,6 +110,7 @@ async def _assert_can_prepare_shoestring_files(expected_node_features, node_type
 		with tempfile.TemporaryDirectory() as output_directory:
 			harvesting_properties_filepath = Path(output_directory) / 'config-harvesting.properties'
 			is_harvester_imported = 'harvester_signing_private_key' in kwargs
+			is_auto_harvest_enabled = kwargs.get('is_auto_harvest_enabled', True)
 
 			# Act:
 			await prepare_shoestring_files({
@@ -107,10 +119,14 @@ async def _assert_can_prepare_shoestring_files(expected_node_features, node_type
 				'certificates': CertificatesScreen('my ca common name', 'my node common name'),
 				'harvesting': HarvestingScreen(
 					kwargs.get('is_harvesting_active', False),
+					is_auto_harvest_enabled,
 					'harvester_signing_private_key' not in kwargs,
 					True,
 					kwargs.get('harvester_signing_private_key', None),
-					kwargs.get('harvester_vrf_private_key', None)),
+					kwargs.get('harvester_vrf_private_key', None),
+					None,
+					None,
+					None),
 				'voting': VotingScreen(kwargs.get('is_voting_active', False)),
 				'node-settings': NodeSettingsScreen('san.symbol.ninja', 'Symbol San', kwargs.get('api_https', False))
 			}, Path(output_directory))
@@ -122,8 +138,8 @@ async def _assert_can_prepare_shoestring_files(expected_node_features, node_type
 			assert 'my node common name' == config.node.node_common_name
 			assert expected_node_features == config.node.features
 
-			if not is_harvester_imported:
-				assert '' == config.imports.harvester
+			if not is_harvester_imported or not is_auto_harvest_enabled:
+				assert ('' if is_auto_harvest_enabled else 'none') == config.imports.harvester
 
 				assert not harvesting_properties_filepath.exists()
 				return
@@ -160,6 +176,10 @@ async def test_can_prepare_shoestring_files_harvester_imported():
 		'harvester_signing_private_key': '605CAA1C6D03133FCE6C1D2482EDDB9C928F4A05BE1CA501A277AEA16C30628E',
 		'harvester_vrf_private_key': '09160DF296FE41F6215F59768B7C1B17D2B6D09335670CC6494B348C7B3A1427',
 	})
+
+
+async def test_can_prepare_shoestring_files_harvester_auto_harvest_disabled():
+	await _assert_can_prepare_shoestring_files(NodeFeatures.HARVESTER, 'peer', is_harvesting_active=True, is_auto_harvest_enabled=False)
 
 
 async def test_can_prepare_shoestring_files_voter():

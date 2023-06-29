@@ -7,6 +7,7 @@ from shoestring.wizard.ValidatingTextBox import (
 	is_file_path,
 	is_hex_private_key_string,
 	is_hostname,
+	is_integer,
 	is_ip_address,
 	is_not_empty
 )
@@ -46,6 +47,16 @@ def test_is_directory_path_returns_true_only_for_valid_directory_paths():
 		assert not is_directory_path(temp_file)  # file
 		assert is_directory_path(temp_directory)  # directory
 		assert not is_directory_path(Path(temp_directory) / 'bar.txt')  # does not exist
+
+
+def test_is_integer_returns_true_only_for_valid_integer():
+	assert is_integer('123')  # valid
+	assert is_integer('0')
+	assert not is_integer('+123')
+	assert not is_integer('-123')
+	assert not is_integer('ABC')
+	assert not is_integer('1B4')
+	assert not is_integer('')
 
 
 def test_is_hex_private_key_string_returns_true_only_for_valid_hex_private_key_strings():
