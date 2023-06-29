@@ -51,7 +51,7 @@ class HarvesterConfiguratorTest(unittest.TestCase):
 				PrivateKey('87E1184A136E92C62981848680AEA78D0BF098911B658295454B94EDBEE25808'),
 				configurator.vrf_key_pair.private_key)
 
-	def test_can_patch_configuration(self):
+	def _assert_can_patch_configuration(self, import_filepath, expected_values_accessor):
 		# Arrange:
 		with tempfile.TemporaryDirectory() as temp_directory:
 			with open(Path(temp_directory) / 'config-harvesting.properties', 'wt', encoding='utf8') as outfile:
@@ -65,7 +65,7 @@ class HarvesterConfiguratorTest(unittest.TestCase):
 
 			# Act:
 			config_manager = ConfigurationManager(temp_directory)
-			configurator = HarvesterConfigurator(config_manager)
+			configurator = HarvesterConfigurator(config_manager, import_filepath)
 			configurator.patch_configuration()
 
 			# Assert: all values were updated
@@ -78,14 +78,25 @@ class HarvesterConfiguratorTest(unittest.TestCase):
 				]
 			])
 
-			self.assertEqual([
-				str(configurator.remote_key_pair.private_key),
-				str(configurator.vrf_key_pair.private_key),
-				'true',
-				'ddd'
-			], updated_values)
+			self.assertEqual(expected_values_accessor(configurator), updated_values)
 
-	def test_can_save_harvester_key_files(self):
+	def test_can_patch_configuration_enabled(self):
+		self._assert_can_patch_configuration(None, lambda configurator: [
+			str(configurator.remote_key_pair.private_key),
+			str(configurator.vrf_key_pair.private_key),
+			'true',
+			'ddd'
+		])
+
+	def test_can_patch_configuration_disabled(self):
+		self._assert_can_patch_configuration('none', lambda _: [
+			'aaa',
+			'bbb',
+			'false',
+			'ddd'
+		])
+
+	def test_can_save_harvester_key_files_enabled(self):
 		# Arrange:
 		with tempfile.TemporaryDirectory() as keys_directory:
 			configurator = HarvesterConfigurator(None)
@@ -105,3 +116,15 @@ class HarvesterConfiguratorTest(unittest.TestCase):
 			# - check file permissions
 			for generated_file in generated_files:
 				self.assertEqual(0o400, (Path(keys_directory) / generated_file).stat().st_mode & 0o777)
+
+	def test_cannot_save_harvester_key_files_disabled(self):
+		# Arrange:
+		with tempfile.TemporaryDirectory() as keys_directory:
+			configurator = HarvesterConfigurator(None, 'none')
+
+			# Act:
+			configurator.generate_harvester_key_files(keys_directory)
+
+			# Assert:
+			generated_files = sorted([path.name for path in Path(keys_directory).iterdir()])
+			self.assertEqual([], generated_files)

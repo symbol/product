@@ -15,12 +15,13 @@ class HarvesterConfigurator:
 
 		self.config_manager = config_manager
 		self.is_imported = bool(import_source)
+		self.is_enabled = 'none' != import_source
 
-		import_source = Path(import_source) if import_source else None
 		if not self.is_imported:
 			self.remote_key_pair = KeyPair(PrivateKey.random())
 			self.vrf_key_pair = KeyPair(PrivateKey.random())
-		else:
+		elif self.is_enabled:
+			import_source = Path(import_source)
 			imported_private_keys = ConfigurationManager(import_source.parent).lookup(import_source.name, [
 				('harvesting', 'harvesterSigningPrivateKey'),
 				('harvesting', 'harvesterVrfPrivateKey')
@@ -31,14 +32,22 @@ class HarvesterConfigurator:
 	def patch_configuration(self):
 		"""Patches harvesting settings."""
 
-		self.config_manager.patch('config-harvesting.properties', [
-			('harvesting', 'enableAutoHarvesting', 'true'),
-			('harvesting', 'harvesterSigningPrivateKey', self.remote_key_pair.private_key),
-			('harvesting', 'harvesterVrfPrivateKey', self.vrf_key_pair.private_key)
-		])
+		if self.is_enabled:
+			self.config_manager.patch('config-harvesting.properties', [
+				('harvesting', 'enableAutoHarvesting', 'true'),
+				('harvesting', 'harvesterSigningPrivateKey', self.remote_key_pair.private_key),
+				('harvesting', 'harvesterVrfPrivateKey', self.vrf_key_pair.private_key)
+			])
+		else:
+			self.config_manager.patch('config-harvesting.properties', [
+				('harvesting', 'enableAutoHarvesting', 'false')
+			])
 
 	def generate_harvester_key_files(self, directory):
 		"""Generates harvester private key files for use with openssl."""
+
+		if not self.is_enabled:
+			return
 
 		storage = PrivateKeyStorage(directory)
 		storage.save('remote', self.remote_key_pair.private_key)
