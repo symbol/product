@@ -30,11 +30,11 @@ def prepare_screens(screens):
 		ScreenGroup('Welcome', ['welcome', 'root_check']),
 		ScreenGroup('Basic settings', ['obligatory', 'network_type', 'node_type']),
 
-		ScreenGroup('Certificates', ['certificates']),
 		ScreenGroup('Harvesting', ['harvesting']),
 		ScreenGroup('Voting', ['voting']),
 
 		ScreenGroup('Node settings', ['node_settings']),
+		ScreenGroup('Certificates', ['certificates']),
 
 		ScreenGroup('🎉', ['end_screen'])
 	]
@@ -151,11 +151,15 @@ async def main():  # pylint: disable=too-many-locals, too-many-statements
 	# set navigation bar button handlers
 
 	def next_clicked():
-		root_container.children[2] = screens.next()
+		next_screen = screens.next()
+		root_container.children[2] = next_screen
 		update_titlebar(root_container, screens)
 
 		if 'end-screen' != screens.ordered[screens.current_id].screen_id:
-			layout.focus(root_container.children[2])
+			if hasattr(next_screen, 'reset'):
+				next_screen.reset()
+
+			layout.focus(next_screen)
 		else:
 			operation = screens.get('welcome').operation
 			allowed_screens_list = get_screens_list(screens, operation)
@@ -166,9 +170,9 @@ async def main():  # pylint: disable=too-many-locals, too-many-statements
 				if hasattr(screen, 'tokens'):
 					tokens.extend(screen.tokens)
 
-			root_container.children[2].clear()
+			next_screen.clear()
 			for token in tokens:
-				root_container.children[2].add_setting(*token)
+				next_screen.add_setting(*token)
 
 			# generate_settings() will go here
 			navbar.next.text = 'Finish!'

@@ -25,7 +25,7 @@ class CertSettings:
 		return [('ca common name', self.ca_common_name), ('node common name', self.node_common_name)]
 
 
-def create(_screens):
+def create(screens):
 	# needs new certificates?
 
 	peer_cert_name_ca = ValidatingTextBox('Cert CA name', is_not_empty, 'CA name must not be empty')
@@ -34,7 +34,15 @@ def create(_screens):
 	# TODO: probably need to add peer_cert_name_ca and peer_cert_name_node somewhere,
 	# as I'm not sure if we can easily access values there...
 
-	return ScreenDialog(
+	def reset():
+		node_settings = screens.get('node-settings')
+		if not peer_cert_name_ca.input.text:
+			peer_cert_name_ca.input.text = f'CA {node_settings.friendly_name}'
+
+		if not peer_cert_name_node.input.text:
+			peer_cert_name_node.input.text = f'{node_settings.friendly_name} {node_settings.domain_name}'
+
+	dialog = ScreenDialog(
 		screen_id='certificates',
 		title=_('wizard-peer-cert-names-title'),
 		body=VSplit([
@@ -51,3 +59,6 @@ def create(_screens):
 		accessor=CertSettings(peer_cert_name_ca, peer_cert_name_node),
 		is_valid=lambda: peer_cert_name_ca.is_valid and peer_cert_name_node.is_valid
 	)
+
+	dialog.reset = reset
+	return dialog

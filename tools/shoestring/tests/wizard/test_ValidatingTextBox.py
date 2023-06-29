@@ -1,7 +1,15 @@
 import tempfile
 from pathlib import Path
 
-from shoestring.wizard.ValidatingTextBox import ValidatingTextBox, is_directory_path, is_file_path, is_hex_private_key_string, is_not_empty
+from shoestring.wizard.ValidatingTextBox import (
+	ValidatingTextBox,
+	is_directory_path,
+	is_file_path,
+	is_hex_private_key_string,
+	is_hostname,
+	is_ip_address,
+	is_not_empty
+)
 
 # pylint: disable=invalid-name
 
@@ -40,11 +48,23 @@ def test_is_directory_path_returns_true_only_for_valid_directory_paths():
 		assert not is_directory_path(Path(temp_directory) / 'bar.txt')  # does not exist
 
 
-def test_is_hex_private_key_string_true_only_for_valid_hex_private_key_strings():
+def test_is_hex_private_key_string_returns_true_only_for_valid_hex_private_key_strings():
 	assert is_hex_private_key_string('AA912E32BEE88EACA1E88294A7CE9E4F15F3BB4B65D6F7C5017A954E3DED0636')  # valid
 	assert not is_hex_private_key_string('AA912E32BEE88EACA1E88294A7CE9E4F15F3BB4B65D6F7C5017A954E3DED0G36')  # invalid digit
 	assert not is_hex_private_key_string('AA912E32BEE88EACA1E88294A7CE9E4F15F3BB4B65D6F7C5017A954E3DED063')  # too short
 	assert not is_hex_private_key_string('AA912E32BEE88EACA1E88294A7CE9E4F15F3BB4B65D6F7C5017A954E3DED06366')  # too long
+
+
+def test_is_ip_address_returns_true_only_for_valid_ip_address():
+	assert is_ip_address('127.0.0.1')
+	assert not is_ip_address('127.0.0')
+	assert not is_ip_address('')
+
+
+def test_is_hostname_returns_true_only_for_valid_hostname():
+	assert is_hostname('localhost')
+	assert not is_hostname('foo')
+	assert not is_hostname('')
 
 # endregion
 

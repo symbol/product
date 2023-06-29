@@ -1,3 +1,5 @@
+import ipaddress
+import socket
 from pathlib import Path
 
 from prompt_toolkit.filters import Always
@@ -33,6 +35,29 @@ def is_hex_private_key_string(value):
 		PrivateKey(value)
 		return True
 	except ValueError:
+		return False
+
+
+def is_ip_address(value):
+	"""Returns True when input is a valid IP address."""
+
+	try:
+		ipaddress.ip_address(value)
+		return True
+	except ValueError:
+		return False
+
+
+def is_hostname(value):
+	"""Returns True when input is a valid hostname."""
+
+	if not value:
+		return False
+
+	try:
+		socket.getaddrinfo(value, 7890)
+		return True
+	except socket.gaierror:
 		return False
 
 # endregion
