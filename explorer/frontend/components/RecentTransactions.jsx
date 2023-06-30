@@ -6,7 +6,7 @@ import ValueTransactionHash from './ValueTransactionHash';
 import styles from '@/styles/components/RecentTransactions.module.scss';
 import { useTranslation } from 'next-i18next';
 
-const TransactionPreview = ({ type, group, hash, timestamp, deadline, fee, amount }) => {
+const TransactionPreview = ({ type, group, hash, timestamp, deadline, amount }) => {
 	const { t } = useTranslation();
 	const typeText = t(`transactionType_${type}`);
 	const isUnconfirmed = group === 'unconfirmed';
@@ -26,7 +26,6 @@ const TransactionPreview = ({ type, group, hash, timestamp, deadline, fee, amoun
 			</div>
 			<div className={styles.amount}>
 				<ValueMosaic isNative amount={amount} />
-				{/* <ValueMosaic isNative amount={fee} /> */}
 			</div>
 		</div>
 	);

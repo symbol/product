@@ -16,7 +16,7 @@ import Link from 'next/link';
 import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 
-export const getStaticProps = async ({ locale }) => {
+export const getServerSideProps = async ({ locale }) => {
 	const blocksPage = await getBlockPage();
 	const stats = await getStats();
 
@@ -42,7 +42,7 @@ const Blocks = ({ blocks, chainInfo, charts }) => {
 		},
 		{
 			key: 'harvester',
-			size: '30rem', //'27.33rem',
+			size: '30rem',
 			renderValue: value => <ValueAccount address={value} size="sm" />
 		},
 		{

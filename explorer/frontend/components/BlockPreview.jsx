@@ -1,3 +1,4 @@
+import { useTranslation } from 'next-i18next';
 import ButtonClose from './ButtonClose';
 import CustomImage from './CustomImage';
 import Field from './Field';
@@ -11,35 +12,37 @@ import { forwardRef, useEffect, useState } from 'react';
 
 const BlockExpanded = ({ data, isNext, isTransactionSquaresRendered, onClose }) => {
 	const { height, timestamp, transactionFees, totalFee, medianFee } = data;
+	const { t } = useTranslation();
 
 	return (
 		<div className="layout-flex-col">
 			<ButtonClose className={styles.buttonClose} onClick={onClose} />
-			<Field title="Height">
+			<Field title={t('field_height')}>
 				<div className="value-highlighted">{height}</div>
 			</Field>
 			<div className="layout-grid-row">
-				<Field title="Status">
-					{isNext && <ValueLabel text="Pending" type="warning" iconName="pending" />}
-					{!isNext && <ValueLabel text="Safe" type="success" iconName="doublecheck" />}
+				<Field title={t('field_status')}>
+					{isNext && <ValueLabel text={t('label_pending')} type="warning" iconName="pending" />}
+					{!isNext && <ValueLabel text={t('label_safe')} type="success" iconName="doublecheck" />}
 				</Field>
-				<Field title="Timestamp">{!isNext && <ValueTimestamp value={timestamp} hasTime hasSeconds />}</Field>
+				<Field title={t('field_timestamp')}>{!isNext && <ValueTimestamp value={timestamp} hasTime hasSeconds />}</Field>
 			</div>
 			<div className="layout-grid-row">
-				<Field title="Total Fee">
+				<Field title={t('field_totalFee')}>
 					<ValueMosaic isNative amount={totalFee} />
 				</Field>
-				<Field title="Median Fee">
+				<Field title={t('field_medianFee')}>
 					<ValueMosaic isNative amount={medianFee} />
 				</Field>
 			</div>
-			<Field title="Transaction Fees">{isTransactionSquaresRendered && <ValueTransactionSquares data={transactionFees} />}</Field>
+			<Field title={t('field_transactionFees')}>{isTransactionSquaresRendered && <ValueTransactionSquares data={transactionFees} />}</Field>
 		</div>
 	);
 };
 
 const BlockCube = ({ data }) => {
 	const { height, timestamp, transactionCount, totalFee } = data;
+	const { t } = useTranslation();
 
 	return (
 		<>
@@ -50,7 +53,7 @@ const BlockCube = ({ data }) => {
 				<div className={styles.height}>{height}</div>
 				<div>{transactionCount} TXs.</div>
 			</div>
-			<Field title="Total Fee">
+			<Field title={t('field_totalFee')}>
 				<ValueMosaic className={styles.fee} isNative amount={totalFee} />
 			</Field>
 		</>

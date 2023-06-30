@@ -12,7 +12,7 @@ const getColorFromHash = hash => {
 	const lightness = 0.8;
 	const numbers = [...Array(10).keys()];
 	const alphabet = Array.from(Array(26))
-		.map((e, i) => i + 65)
+		.map((_, i) => i + 65)
 		.map(x => String.fromCharCode(x));
 	const charset = [...numbers, ...alphabet];
 
