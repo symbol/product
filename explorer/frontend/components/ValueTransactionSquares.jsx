@@ -1,17 +1,11 @@
+import ValueMosaic from './ValueMosaic';
 import styles from '@/styles/components/ValueTransactionSquares.module.scss';
 import dynamic from 'next/dynamic';
 import { renderToString } from 'react-dom/server';
-import ValueMosaic from './ValueMosaic';
 
-const ReactApexChart = dynamic(
-	() => import('react-apexcharts'),
-	{ ssr: false }
-);
+const ReactApexChart = dynamic(() => import('react-apexcharts'), { ssr: false });
 
-const Tooltip = ({fee}) => (
-	<ValueMosaic isNative amount={fee} />
-);
-
+const Tooltip = ({ fee }) => <ValueMosaic isNative amount={fee} />;
 
 const ValueTransactionSquares = ({ data, className }) => {
 	const colorHigh = '#52B12C';
@@ -22,10 +16,10 @@ const ValueTransactionSquares = ({ data, className }) => {
 
 	const series = [
 		{
-			data: data.map((item) => ({
+			data: data.map(item => ({
 				x: item.fee,
 				y: item.fee,
-				fillColor: colorHigh, //colors[Math.round(Math.random(3))]
+				fillColor: colorHigh //colors[Math.round(Math.random(3))]
 			}))
 		}
 	];
@@ -40,10 +34,10 @@ const ValueTransactionSquares = ({ data, className }) => {
 			width: '100%',
 			type: 'treemap',
 			animations: {
-				enabled: false,
+				enabled: false
 			},
 			toolbar: {
-				show: false,
+				show: false
 			},
 			sparkline: {
 				enabled: true
@@ -52,10 +46,10 @@ const ValueTransactionSquares = ({ data, className }) => {
 		dataLabels: {
 			enabled: false,
 			style: {
-				fontSize: '12px',
+				fontSize: '12px'
 			},
 			formatter: function (text, op) {
-				return [text, op.value]
+				return [text, op.value];
 			},
 			offsetY: -4
 		},
@@ -63,34 +57,29 @@ const ValueTransactionSquares = ({ data, className }) => {
 			treemap: {
 				enableShades: false,
 				useFillColorAsStroke: false,
-				shadeIntensity: 1,
+				shadeIntensity: 1
 			}
 		},
 		tooltip: {
 			custom: ({ series, seriesIndex, dataPointIndex, w }) => {
 				const fee = series[seriesIndex][dataPointIndex];
-				return renderToString(<Tooltip size={113} fee={fee}/>);
+				return renderToString(<Tooltip size={113} fee={fee} />);
 			}
 		},
 		states: {
 			hover: {
-			 filter: {
-				type: 'none'
-			  }
+				filter: {
+					type: 'none'
+				}
 			}
 		}
 	};
 
 	return (
 		<div className={`${styles.valueTransactionSquares} ${className}`} id="chart">
-			<ReactApexChart
-				options={options}
-				series={series}
-				type="treemap"
-				height="100%"
-			/>
+			<ReactApexChart options={options} series={series} type="treemap" height="100%" />
 		</div>
-	)
-}
+	);
+};
 
 export default ValueTransactionSquares;

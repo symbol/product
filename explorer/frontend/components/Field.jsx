@@ -12,7 +12,7 @@ const Field = ({ title, children, textAlign }) => {
 			<div className={styles.title}>{title}</div>
 			<div className={styles.value}>{children}</div>
 		</div>
-	)
-}
+	);
+};
 
 export default Field;

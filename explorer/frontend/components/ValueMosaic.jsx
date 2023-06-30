@@ -1,6 +1,6 @@
+import CustomImage from './CustomImage';
 import config from '@/config';
 import styles from '@/styles/components/ValueMosaic.module.scss';
-import CustomImage from './CustomImage';
 
 const ValueMosaic = ({ mosaicName, mosaicId, amount = 0, isNative, className, onClick }) => {
 	let displayedName;
@@ -11,8 +11,7 @@ const ValueMosaic = ({ mosaicName, mosaicId, amount = 0, isNative, className, on
 	if (mosaicId === config.NATIVE_MOSAIC_ID || isNative) {
 		displayedName = ''; // NATIVE_MOSAIC_TICKER;
 		imageSrc = '/images/icon-mosaic-native.svg';
-	}
-	else {
+	} else {
 		displayedName = mosaicName;
 		imageSrc = '/images/icon-mosaic-custom.svg';
 	}
@@ -28,7 +27,7 @@ const ValueMosaic = ({ mosaicName, mosaicId, amount = 0, isNative, className, on
 			</div>
 			{!!displayedName && <div>{displayedName}</div>}
 		</div>
-	)
-}
+	);
+};
 
 export default ValueMosaic;

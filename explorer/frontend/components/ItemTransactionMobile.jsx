@@ -1,15 +1,14 @@
-import styles from '@/styles/components/ItemTransactionMobile.module.scss';
+import CustomImage from './CustomImage';
+import IconTransactionType from './IconTransactionType';
+import ValueAccount from './ValueAccount';
 import ValueMosaic from './ValueMosaic';
 import ValueTimestamp from './ValueTimestamp';
-import ValueAccount from './ValueAccount';
-import IconTransactionType from './IconTransactionType';
 import ValueTransactionHash from './ValueTransactionHash';
+import styles from '@/styles/components/ItemTransactionMobile.module.scss';
 import { useTranslation } from 'next-i18next';
-import CustomImage from './CustomImage';
-
 
 const ItemTransactionMobile = ({ data }) => {
-    const { hash, signer, recipient, amount, type, timestamp} = data;
+	const { hash, signer, recipient, amount, type, timestamp } = data;
 	const { t } = useTranslation();
 	const typeText = t(`transactionType_${type}`);
 
@@ -31,14 +30,13 @@ const ItemTransactionMobile = ({ data }) => {
 				</div>
 
 				<div className={styles.end}>
-					<ValueTimestamp value={timestamp} hasTime/>
+					<ValueTimestamp value={timestamp} hasTime />
 					<ValueMosaic isNative amount={amount} />
 				</div>
 			</div>
 		</div>
 	);
-}
-
+};
 
 // const ItemTransactionMobile = ({ data }) => {
 //     const { hash, signer, recipient, amount, type, timestamp} = data;

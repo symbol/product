@@ -1,5 +1,5 @@
-import styles from '@/styles/components/Footer.module.scss';
 import CustomImage from './CustomImage';
+import styles from '@/styles/components/Footer.module.scss';
 
 const Footer = () => (
 	<footer className={styles.footer}>

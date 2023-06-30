@@ -13,8 +13,7 @@ const ValueMosaic = ({ mosaicName, mosaicId, amount = 0, className, onClick }) =
 	if (mosaicId === NATIVE_MOSAIC_ID) {
 		displayedName = NATIVE_MOSAIC_TICKER;
 		imageSrc = '/images/icon-mosaic-native.svg';
-	}
-	else {
+	} else {
 		displayedName = mosaicName;
 		imageSrc = '/images/icon-mosaic-custom.svg';
 	}
@@ -32,7 +31,7 @@ const ValueMosaic = ({ mosaicName, mosaicId, amount = 0, className, onClick }) =
 			</div>
 			<div>{displayedName}</div>
 		</div>
-	)
-}
+	);
+};
 
 export default ValueMosaic;

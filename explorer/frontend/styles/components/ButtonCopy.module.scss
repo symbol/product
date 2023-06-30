@@ -2,9 +2,9 @@
 
 .buttonCopy {
     position: relative;
+    flex-shrink: 0;
     width: 1rem;
     height: 1rem;
-    user-select: none;
     cursor: pointer;
-    flex-shrink: 0;
+    user-select: none;
 }

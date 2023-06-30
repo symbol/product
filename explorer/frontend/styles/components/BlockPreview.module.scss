@@ -1,11 +1,11 @@
 @import "../variables";
 
 .blockPreview {
-    transition: all 0.5s;
-    min-height: 0;
+    position: relative;
     display: flex;
     align-items: center;
-    position: relative;
+    min-height: 0;
+    transition: all 0.5s;
 
     .bigBox {
         position: absolute;
@@ -29,40 +29,39 @@
 }
 
 %block-cube-base {
-    transition: all 0.25s;
-    width: 15.33rem;
-    height: 15.33rem;
     position: relative;
-    margin: 1.33rem 1.33rem 0 0;
-    color: #000;
-    cursor: pointer;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    color: #fff;
+    width: 15.33rem;
+    height: 15.33rem;
+    margin: 1.33rem 1.33rem 0 0;
     padding: $spacing-base;
+    color: #fff;
+    cursor: pointer;
+    transition: all 0.25s;
 }
 
-%block-cube-base--before {
-    content: '';
+%block-cube-base-before {
+    position: absolute;
+    top: -1.30rem;
+    left: 0.7rem;
     display: inline-block;
     width: 100%;
     height: 1.33rem;
     transform: skewX(-45deg);
-    position: absolute;
-    top: -1.30rem;
-    left: 0.7rem;
+    content: '';
 }
 
-%block-cube-base--after {
-    content: '';
+%block-cube-base-after {
+    position: absolute;
+    top: -0.7rem;
+    left: 100%;
     display: inline-block;
     width: 1.33rem;
     height: 100%;
     transform: skewY(-45deg);
-    position: absolute;
-    top: -0.7rem;
-    left: 100%;
+    content: '';
 }
 
 .blockCube {
@@ -71,13 +70,13 @@
     background: #50B9AD;
 
     &::before {
-        @extend %block-cube-base--before;
+        @extend %block-cube-base-before;
 
         background: #038C7C;
     }
 
     &::after {
-        @extend %block-cube-base--after;
+        @extend %block-cube-base-after;
 
         background: #016A5E;
     }
@@ -85,16 +84,17 @@
 
 .blockCubeNext {
     @extend %block-cube-base;
+
     background: #D1A11F;
 
     &::before {
-        @extend %block-cube-base--before;
+        @extend %block-cube-base-before;
 
         background: #A47E13;
     }
 
     &::after {
-        @extend %block-cube-base--after;
+        @extend %block-cube-base-after;
 
         background: #6D5208;
     }
@@ -122,14 +122,13 @@
 }
 
 .blockCard {
-    transition: all 0.25s;
+    position: relative;
     width: 32rem;
     height: 32rem;
     padding: $spacing-padding;
     background-color: $color-background-card;
     border-radius: $border-radius-card;
-    //filter: drop-shadow(0px 4px 40px rgba(25, 41, 97, 0.29));
-    position: relative;
+    transition: all 0.25s;
 
     .buttonClose {
         position: absolute;

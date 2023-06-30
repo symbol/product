@@ -58,8 +58,8 @@ h3 {
 
 a {
     color: inherit;
-    text-decoration: inherit;
     color: $color-text-link;
+    text-decoration: inherit;
     transition: color 250ms;
 
     &:hover {
@@ -83,16 +83,16 @@ a {
 .layout-flex-row {
     display: flex;
     flex-direction: row;
-    justify-content: space-between;
     gap: $spacing-padding;
+    justify-content: space-between;
 }
 
 
 .layout-section-row {
     display: flex;
     flex-direction: row;
-    justify-content: space-between;
     gap: $spacing-padding;
+    justify-content: space-between;
 }
 
 .layout-grid-row {
@@ -116,7 +116,6 @@ a {
     --toastify-color-success: $color-success;
     --toastify-color-warning: $color-warning;
     --toastify-color-error: $color-danger;
-
     --toastify-toast-width: 20rem;
     --toastify-toast-background: #fff;
     --toastify-toast-min-height: 2rem;
@@ -161,8 +160,8 @@ a {
 
     .layout-section-row {
         flex-direction: column;
-        justify-content: space-between;
         gap: 0;
+        justify-content: space-between;
     }
 
     .no-mobile {

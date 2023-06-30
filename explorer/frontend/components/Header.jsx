@@ -17,8 +17,7 @@ const menuItems = [
 const Header = () => {
 	const router = useRouter();
 
-	const getItemStyle = (href) =>
-		`${styles.headerMenuItem} ${router.asPath === href && styles.headerMenuItem__active}`;
+	const getItemStyle = href => `${styles.headerMenuItem} ${router.asPath === href && styles.headerMenuItem__active}`;
 
 	return (
 		<div className={styles.headerWrapper}>
@@ -36,6 +35,6 @@ const Header = () => {
 			</header>
 		</div>
 	);
-}
+};
 
 export default Header;
