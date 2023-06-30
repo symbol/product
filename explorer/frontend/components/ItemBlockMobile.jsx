@@ -3,6 +3,7 @@ import ValueMosaic from './ValueMosaic';
 import ValueTimestamp from './ValueTimestamp';
 import ValueAccount from './ValueAccount';
 import Link from 'next/link';
+import CustomImage from './CustomImage';
 
 
 const ItemBlockMobile = ({ data }) => {
@@ -18,7 +19,7 @@ const ItemBlockMobile = ({ data }) => {
 			<div className={styles.end}>
 				<div className={styles.info}>
                     <div className={styles.counter}>
-                        <img src="images/icon-transaction.svg" />
+                        <CustomImage src="images/icon-transaction.svg" />
                         <div>{transactionCount}</div>
                     </div>
                 </div>

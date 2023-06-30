@@ -1,5 +1,6 @@
 import config from '@/config';
 import styles from '@/styles/components/ValueMosaic.module.scss';
+import CustomImage from './CustomImage';
 
 const ValueMosaic = ({ mosaicName, mosaicId, amount = 0, isNative, className, onClick }) => {
 	let displayedName;
@@ -20,7 +21,7 @@ const ValueMosaic = ({ mosaicName, mosaicId, amount = 0, isNative, className, on
 
 	return (
 		<div className={`${styles.valueMosaic} ${className}`} onClick={handleClick}>
-			<img src={imageSrc} className={styles.icon} alt="Mosaic" />
+			<CustomImage src={imageSrc} className={styles.icon} alt="Mosaic" />
 			<div className={styles.amount}>
 				<div>{integer}</div>
 				{!!decimal && <div className={styles.decimal}>.{decimal}</div>}
