@@ -38,7 +38,7 @@ const BlockExpanded = ({ data, isNext, isTransactionSquaresRendered, onClose }) 
 	);
 };
 
-const BlockCube = ({ data, isNext }) => {
+const BlockCube = ({ data }) => {
 	const { height, timestamp, transactionCount, totalFee } = data;
 
 	return (
