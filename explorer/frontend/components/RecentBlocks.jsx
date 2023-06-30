@@ -1,32 +1,31 @@
-import { createRef, useRef, useState } from 'react';
-import styles from '@/styles/components/RecentBlocks.module.scss';
 import BlockPreview from './BlockPreview';
 import CustomImage from './CustomImage';
+import styles from '@/styles/components/RecentBlocks.module.scss';
+import { createRef, useRef, useState } from 'react';
 
 const RecentBlocks = ({ data }) => {
 	const containerRef = useRef();
 	const [isButtonLeftVisible, setIsButtonLeftVisible] = useState(false);
 	const [selectedBlockHeight, setSelectedBlockHeight] = useState(-1);
-	const dataWithRefs = data.map((item) => ({
+	const dataWithRefs = data.map(item => ({
 		...item,
 		smallBoxRef: createRef(),
-		bigBoxRef: createRef(),
-	}))
+		bigBoxRef: createRef()
+	}));
 
-	const handleBlockSelect = (item) => {
+	const handleBlockSelect = item => {
 		setSelectedBlockHeight(item.height);
 
 		if (item.height > selectedBlockHeight) {
 			item.bigBoxRef.current.scrollIntoView({
 				behavior: 'smooth',
-				block: "center",
+				block: 'center',
 				inline: 'center'
 			});
-		}
-		else {
+		} else {
 			item.smallBoxRef.current.scrollIntoView({
 				behavior: 'smooth',
-				block: "center",
+				block: 'center',
 				inline: 'center'
 			});
 		}
@@ -37,7 +36,7 @@ const RecentBlocks = ({ data }) => {
 
 		const containerWidth = containerRef.current.offsetWidth;
 		const currentScrollPosition = containerRef.current.scrollLeft;
-		const scrollAmount = - containerWidth / 2;
+		const scrollAmount = -containerWidth / 2;
 		containerRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
 		setIsButtonLeftVisible(currentScrollPosition + scrollAmount > 0);
 	};
@@ -48,7 +47,7 @@ const RecentBlocks = ({ data }) => {
 		const scrollAmount = containerWidth / 2;
 		containerRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
 		setIsButtonLeftVisible(true);
-	}
+	};
 
 	return (
 		<div className={styles.recentBlocks}>
@@ -66,9 +65,9 @@ const RecentBlocks = ({ data }) => {
 				))}
 			</div>
 			{isButtonLeftVisible && (
-				<CustomImage className={`${styles.buttonLeft} no-mobile`} src="/images/icon-left.svg" onClick={scrollLeft}/>
+				<CustomImage className={`${styles.buttonLeft} no-mobile`} src="/images/icon-left.svg" onClick={scrollLeft} />
 			)}
-			<CustomImage className={`${styles.buttonRight} no-mobile`} src="/images/icon-right.svg" onClick={scrollRight}/>
+			<CustomImage className={`${styles.buttonRight} no-mobile`} src="/images/icon-right.svg" onClick={scrollRight} />
 		</div>
 	);
 };

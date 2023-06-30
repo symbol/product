@@ -1,15 +1,15 @@
-import { memo, useRef } from 'react';
-import { useRouter } from 'next/router';
-import { appWithTranslation } from 'next-i18next';
-import { ToastContainer } from 'react-toastify';
-import TimeAgo from 'javascript-time-ago'
-import en from 'javascript-time-ago/locale/en.json'
-import uk from 'javascript-time-ago/locale/uk.json'
-import zh from 'javascript-time-ago/locale/zh.json'
-import ja from 'javascript-time-ago/locale/ja.json'
 import Footer from '@/components/Footer';
 import Header from '@/components/Header';
 import styles from '@/styles/pages/Layout.module.scss';
+import TimeAgo from 'javascript-time-ago';
+import en from 'javascript-time-ago/locale/en.json';
+import ja from 'javascript-time-ago/locale/ja.json';
+import uk from 'javascript-time-ago/locale/uk.json';
+import zh from 'javascript-time-ago/locale/zh.json';
+import { useRouter } from 'next/router';
+import { appWithTranslation } from 'next-i18next';
+import { memo, useRef } from 'react';
+import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import '@/styles/globals.scss';
 
@@ -30,26 +30,22 @@ const App = ({ Component, pageProps }) => {
 		retainedComponents.current[router.asPath] = <MemoComponent {...pageProps} />;
 	}
 
-	const getDisplayStyle = (flag) => ({ display: flag ? 'block' : 'none' });
+	const getDisplayStyle = flag => ({ display: flag ? 'block' : 'none' });
 
 	return (
 		<div className={styles.wrapper}>
 			<Header />
-			<ToastContainer
-				autoClose={2000}
-				hideProgressBar
-				pauseOnHover
-			/>
+			<ToastContainer autoClose={2000} hideProgressBar pauseOnHover />
 			<div className={styles.contentContainer}>
 				<main className={styles.contentContainerInner}>
-				<div style={getDisplayStyle(isRetainableRoute)}>
-					{Object.entries(retainedComponents.current).map(([path, component]) => (
-						<div style={getDisplayStyle(router.asPath === path)} key={path}>
-							{component}
-						</div>
-					))}
-				</div>
-				{!isRetainableRoute && <Component {...pageProps} />}
+					<div style={getDisplayStyle(isRetainableRoute)}>
+						{Object.entries(retainedComponents.current).map(([path, component]) => (
+							<div style={getDisplayStyle(router.asPath === path)} key={path}>
+								{component}
+							</div>
+						))}
+					</div>
+					{!isRetainableRoute && <Component {...pageProps} />}
 				</main>
 			</div>
 			<Footer />

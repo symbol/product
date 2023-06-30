@@ -34,12 +34,12 @@
         .headerMenuItem {
             margin-left: 1rem;
             padding: 0.625rem;
+            color: $color-tab-inactive;
             font: $font-nav;
             text-transform: uppercase;
             cursor: pointer;
-            color: $color-tab-inactive;
-            user-select: none;
             transition: color 250ms;
+            user-select: none;
         }
 
         .headerMenuItem__active {

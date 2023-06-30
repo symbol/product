@@ -1,16 +1,16 @@
-import styles from '@/styles/components/BlockPreview.module.scss';
 import ButtonClose from './ButtonClose';
+import CustomImage from './CustomImage';
 import Field from './Field';
+import ValueAge from './ValueAge';
+import ValueLabel from './ValueLabel';
 import ValueMosaic from './ValueMosaic';
 import ValueTimestamp from './ValueTimestamp';
-import ValueLabel from './ValueLabel';
 import ValueTransactionSquares from './ValueTransactionSquares';
+import styles from '@/styles/components/BlockPreview.module.scss';
 import { forwardRef, useEffect, useState } from 'react';
-import ValueAge from './ValueAge';
-import CustomImage from './CustomImage';
 
 const BlockExpanded = ({ data, isNext, isTransactionSquaresRendered, onClose }) => {
-	const { height, timestamp, transactionFees, totalFee, medianFee} = data;
+	const { height, timestamp, transactionFees, totalFee, medianFee } = data;
 
 	return (
 		<div className="layout-flex-col">
@@ -23,9 +23,7 @@ const BlockExpanded = ({ data, isNext, isTransactionSquaresRendered, onClose }) 
 					{isNext && <ValueLabel text="Pending" type="warning" iconName="pending" />}
 					{!isNext && <ValueLabel text="Safe" type="success" iconName="doublecheck" />}
 				</Field>
-				<Field title="Timestamp">
-					{!isNext && <ValueTimestamp value={timestamp} hasTime hasSeconds />}
-				</Field>
+				<Field title="Timestamp">{!isNext && <ValueTimestamp value={timestamp} hasTime hasSeconds />}</Field>
 			</div>
 			<div className="layout-grid-row">
 				<Field title="Total Fee">
@@ -35,15 +33,13 @@ const BlockExpanded = ({ data, isNext, isTransactionSquaresRendered, onClose }) 
 					<ValueMosaic isNative amount={medianFee} />
 				</Field>
 			</div>
-			<Field title="Transaction Fees">
-				{isTransactionSquaresRendered && <ValueTransactionSquares data={transactionFees} />}
-			</Field>
+			<Field title="Transaction Fees">{isTransactionSquaresRendered && <ValueTransactionSquares data={transactionFees} />}</Field>
 		</div>
-	)
-}
+	);
+};
 
 const BlockCube = ({ data, isNext }) => {
-	const { height, timestamp, transactionCount, totalFee} = data;
+	const { height, timestamp, transactionCount, totalFee } = data;
 
 	return (
 		<>
@@ -81,8 +77,7 @@ const BlockPreview = ({ data, isNext, isSelected, onClose, onSelect, smallBoxRef
 
 		if (isSelected) {
 			setExpandedStyle(styles.blockPreview_expanded);
-		}
-		else {
+		} else {
 			setTimeout(() => {
 				setExpandedStyle('');
 			}, 300);
@@ -94,14 +89,11 @@ const BlockPreview = ({ data, isNext, isSelected, onClose, onSelect, smallBoxRef
 			<div className={styles.bigBox} ref={bigBoxRef} />
 			<div className={styles.smallBox} ref={smallBoxRef} />
 			<div className={containerClassName} onClick={handleClick}>
-				{isSelected
-					? <BlockExpanded
-						data={data}
-						isTransactionSquaresRendered={isTransactionSquaresRendered}
-						onClose={onClose}
-					/>
-					: <BlockCube data={data} isNext={isNext} />
-				}
+				{isSelected ? (
+					<BlockExpanded data={data} isTransactionSquaresRendered={isTransactionSquaresRendered} onClose={onClose} />
+				) : (
+					<BlockCube data={data} isNext={isNext} />
+				)}
 			</div>
 			<CustomImage className={styles.iconChain} src={iconChainSrc} />
 		</div>

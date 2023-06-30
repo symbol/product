@@ -1,12 +1,12 @@
 @import "../variables";
 
 .footer {
-    margin-top: $spacing-section-gap;
     position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
     width: 100%;
+    margin-top: $spacing-section-gap;
     padding: $spacing-padding * 1;
     color: $color-text-footer;
     background-color: $color-background-footer;

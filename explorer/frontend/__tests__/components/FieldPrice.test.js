@@ -1,5 +1,5 @@
-import { render, screen } from '@testing-library/react';
 import ValuePrice from '@/components/ValuePrice';
+import { render, screen } from '@testing-library/react';
 
 describe('components/ValuePrice', () => {
 	const runValuePriceTest = (change, expectedChangeText, expectedClassName) => {

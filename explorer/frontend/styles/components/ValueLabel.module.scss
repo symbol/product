@@ -1,15 +1,15 @@
 @import "../variables";
 
 .valueLabel {
-    width: fit-content;
     display: flex;
     flex-direction: row;
+    gap: $spacing-base;
     align-items: center;
+    width: fit-content;
+    padding: 0 $spacing-base * 2;
+    font: $font-body-bold;
     background: $color-background-mosaic;
     border-radius: $border-radius-label;
-    padding: 0 $spacing-base * 2;
-    gap: $spacing-base;
-    font: $font-body-bold;
 }
 
 .icon {

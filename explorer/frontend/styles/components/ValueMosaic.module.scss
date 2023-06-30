@@ -1,15 +1,15 @@
 @import "../variables";
 
 .valueMosaic {
-    overflow: hidden;
-    width: fit-content;
     display: flex;
     flex-direction: row;
+    gap: $spacing-base / 2;
     align-items: center;
+    width: fit-content;
+    padding: 0 $spacing-base / 2;
+    overflow: hidden;
     background: $color-background-mosaic;
     border-radius: $border-radius-chip;
-    padding: 0 $spacing-base / 2;
-    gap: $spacing-base / 2;
 }
 
 .icon {
@@ -18,10 +18,10 @@
 }
 
 .amount {
-    font: $font-body-bold;
     display: flex;
     flex-direction: row;
     align-items: baseline;
+    font: $font-body-bold;
 }
 
 .decimal {

@@ -4,25 +4,25 @@ $offset: 187;
 $duration: 2s;
 
 .tablePageLoader {
-    width: 100%;
     display: flex;
-    justify-content: center;
     align-items: center;
+    justify-content: center;
+    width: 100%;
 }
 
 .spinner {
-    margin: $spacing-padding;
-    animation: rotator $duration linear infinite;
     width: 2rem;
     height: 2rem;
+    margin: $spacing-padding;
+    animation: rotator $duration linear infinite;
 }
 
 .path {
-    stroke-dasharray: $offset;
-    stroke-dashoffset: 0;
     transform-origin: center;
+    animation: dash $duration ease-in-out infinite,;
     stroke: $color-primary;
-    animation: dash $duration ease-in-out infinite,
+    stroke-dasharray: $offset;
+    stroke-dashoffset: 0
 }
 
 @keyframes rotator {
@@ -41,7 +41,7 @@ $duration: 2s;
     }
 
     50% {
-        stroke-dashoffset: $offset/4;
+        stroke-dashoffset: $offset / 4;
         transform: rotate(135deg);
     }
 
