@@ -1,4 +1,3 @@
-import { fetchTransactionPage, getTransactionPage } from '../api/transactions';
 import Field from '@/components/Field';
 import ItemTransactionMobile from '@/components/ItemTransactionMobile';
 import Section from '@/components/Section';
@@ -12,8 +11,8 @@ import ValueTransactionHash from '@/components/ValueTransactionHash';
 import ValueTransactionSquares from '@/components/ValueTransactionSquares';
 import ValueTransactionType from '@/components/ValueTransactionType';
 import { getBlockInfo } from '@/pages/api/blocks';
+import { getTransactionPage } from '@/pages/api/transactions';
 import styles from '@/styles/pages/BlockInfo.module.scss';
-import { usePagination } from '@/utils';
 import Head from 'next/head';
 import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
@@ -39,10 +38,6 @@ export const getServerSideProps = async ({ locale, params }) => {
 
 const Blocks = ({ blockInfo, transactions }) => {
 	const { t } = useTranslation('blocks');
-	// const [loadTransactionPage, transactionList, isLoading, pageNumber, isLastPage] = usePagination(
-	//     fetchTransactionPage,
-	//     transactions,
-	// );
 
 	const tableColumns = [
 		{
