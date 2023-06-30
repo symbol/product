@@ -7,6 +7,7 @@ import ValueLabel from './ValueLabel';
 import ValueTransactionSquares from './ValueTransactionSquares';
 import { forwardRef, useEffect, useState } from 'react';
 import ValueAge from './ValueAge';
+import CustomImage from './CustomImage';
 
 const BlockExpanded = ({ data, isNext, isTransactionSquaresRendered, onClose }) => {
 	const { height, timestamp, transactionFees, totalFee, medianFee} = data;
@@ -102,7 +103,7 @@ const BlockPreview = ({ data, isNext, isSelected, onClose, onSelect, smallBoxRef
 					: <BlockCube data={data} isNext={isNext} />
 				}
 			</div>
-			<img className={styles.iconChain} src={iconChainSrc} />
+			<CustomImage className={styles.iconChain} src={iconChainSrc} />
 		</div>
 	);
 };

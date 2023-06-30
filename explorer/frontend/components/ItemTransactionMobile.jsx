@@ -5,6 +5,7 @@ import ValueAccount from './ValueAccount';
 import IconTransactionType from './IconTransactionType';
 import ValueTransactionHash from './ValueTransactionHash';
 import { useTranslation } from 'next-i18next';
+import CustomImage from './CustomImage';
 
 
 const ItemTransactionMobile = ({ data }) => {
@@ -19,13 +20,13 @@ const ItemTransactionMobile = ({ data }) => {
 				{/* <div className={styles.end}> */}
 				<div className={styles.type}>{typeText}</div>
 				<div className={styles.row}>
-					<img className={styles.iconDirection} src="/images/icon-hash.svg" />
+					<CustomImage className={styles.iconDirection} src="/images/icon-hash.svg" />
 					<ValueTransactionHash value={hash} />
 				</div>
 				{/* </div> */}
 				<ValueAccount address={signer} size="sm" />
 				<div className={styles.row}>
-					<img className={styles.iconDirection} src="/images/icon-transaction-direction.svg" />
+					<CustomImage className={styles.iconDirection} src="/images/icon-transaction-direction.svg" />
 					<ValueAccount address={recipient} size="sm" />
 				</div>
 

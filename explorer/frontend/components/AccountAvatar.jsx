@@ -1,5 +1,6 @@
 import styles from '@/styles/components/AccountAvatar.module.scss';
 import hslToRgb from 'hsl-rgb';
+import CustomImage from './CustomImage';
 
 const getColorFromHash = (hash) => {
     if (!hash) {
@@ -74,7 +75,7 @@ const AccountAvatar = ({ address, size }) => {
 
 	return (
 		<div className={`${styles.container} ${rootStyle}`}>
-			<img src={image.src} className={styles.image} style={image.style} />
+			<CustomImage src={image.src} className={styles.image} style={image.style} />
 		</div>
 	)
 }

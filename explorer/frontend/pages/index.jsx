@@ -13,6 +13,7 @@ import { formatDate } from '../utils';
 import { getBlockPage } from './api/blocks';
 import { getStats } from './api/stats';
 import { getTransactionPage } from './api/transactions';
+import CustomImage from '@/components/CustomImage';
 
 
 export const getStaticProps = async ({ locale }) => {
@@ -91,7 +92,7 @@ const Home = ({blocks, fees, latestTransactions, pendingTransactions, baseInfo, 
 								{baseInfo.supernodes}
 							</Field>
 						</div>
-						<img src="/images/stub-node-chart.svg" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+						<CustomImage src="/images/stub-node-chart.svg" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
 					</div>
 				</div>
 			</Section>

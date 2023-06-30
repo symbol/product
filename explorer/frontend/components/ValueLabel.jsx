@@ -1,4 +1,5 @@
 import styles from '@/styles/components/ValueLabel.module.scss';
+import CustomImage from './CustomImage';
 
 const iconsMap = {
 	doublecheck: '/images/icon-doublecheck.svg'
@@ -13,7 +14,7 @@ const styleMap = {
 const ValueLabel = ({ text, type, iconName }) => {
 	return (
 		<div className={styles.valueLabel}>
-			<img
+			<CustomImage
 				src={iconsMap[iconName]}
 				className={`${styles.icon} ${styleMap[type]}`}
 			/>

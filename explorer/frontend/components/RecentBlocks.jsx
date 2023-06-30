@@ -1,6 +1,7 @@
 import { createRef, useRef, useState } from 'react';
 import styles from '@/styles/components/RecentBlocks.module.scss';
 import BlockPreview from './BlockPreview';
+import CustomImage from './CustomImage';
 
 const RecentBlocks = ({ data }) => {
 	const containerRef = useRef();
@@ -65,9 +66,9 @@ const RecentBlocks = ({ data }) => {
 				))}
 			</div>
 			{isButtonLeftVisible && (
-				<img className={`${styles.buttonLeft} no-mobile`} src="/images/icon-left.svg" onClick={scrollLeft}/>
+				<CustomImage className={`${styles.buttonLeft} no-mobile`} src="/images/icon-left.svg" onClick={scrollLeft}/>
 			)}
-			<img className={`${styles.buttonRight} no-mobile`} src="/images/icon-right.svg" onClick={scrollRight}/>
+			<CustomImage className={`${styles.buttonRight} no-mobile`} src="/images/icon-right.svg" onClick={scrollRight}/>
 		</div>
 	);
 };
