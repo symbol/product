@@ -1,5 +1,5 @@
 import styles from '@/styles/components/IconTransactionType.module.scss';
-import Image from 'next/image';
+import CustomImage from './CustomImage';
 
 const iconTypeMap = {
 	transfer: '/images/transaction/transfer.svg'
@@ -7,9 +7,7 @@ const iconTypeMap = {
 
 const IconTransactionType = ({ value, className }) => {
 	return (
-		<div className={`${styles.iconTransactionType} ${className}`}>
-			<Image src={iconTypeMap[value]} fill/>
-		</div>
+		<CustomImage src={iconTypeMap[value]} className={`${styles.iconTransactionType} ${className}`} alt={value} />
 	);
 };
 

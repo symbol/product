@@ -12,7 +12,8 @@ export const useDataManager = (callback, defaultData, onError) => {
                 setData(data);
             } catch (error) {
                 if (onError) {
-                    onError(error);
+                    // eslint-disable-next-line no-console
+                    onError('[Data Manager] Error:', error);
                 }
             }
             setIsLoading(false);
@@ -42,7 +43,8 @@ export const usePagination = (callback, defaultData) => {
                 }
 
             } catch (error) {
-                console.error(error)
+                // eslint-disable-next-line no-console
+                onError('[Pagination] Error:', error);
             }
             setIsLoading(false);
         });

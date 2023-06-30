@@ -1,9 +1,7 @@
-import { createPage, createSearchCriteria, getSearchCriteria } from '@/utils';
-import { NextResponse } from 'next/server';
+import { createPage, createSearchCriteria } from '@/utils';
 import symbolSDK from 'symbol-sdk';
-import config from '@/config';
 
-export default async (req, res) => {
+export default async function handler(req, res) {
 	if (req.method !== 'GET') {
 		return;
 	}
@@ -11,13 +9,6 @@ export default async (req, res) => {
 	const data = await getBlockPage(req.query);
 
 	res.status(200).json(data);
-}
-
-export const GET = async (req) => {
-    const searchCriteria = getSearchCriteria(req);
-    const data = await getBlockPage(searchCriteria);
-
-    return NextResponse.json({ data });
 }
 
 export const fetchBlockPage = async (searchCriteria) => {
@@ -29,11 +20,6 @@ export const fetchBlockPage = async (searchCriteria) => {
 
 export const getBlockPage = async (searchCriteria) => {
 	const { pageNumber, pageSize } = createSearchCriteria(searchCriteria);
-
-	const params = new URLSearchParams({
-		limit: pageSize,
-		offset: pageSize * pageNumber
-	}).toString();
 
     const blocks = new Array(pageSize).fill(null).map((_, index) => {
 		const transactionCount = Math.floor(Math.random() * 20 + 2);
@@ -68,8 +54,6 @@ export const getBlockPage = async (searchCriteria) => {
 			transactionFees
 		}
 	});
-
-	// await new Promise(resolve => setTimeout(resolve, 2000));
 
     return Promise.resolve(createPage(pageNumber === 10 ? [] : blocks, pageNumber));
 }
@@ -108,22 +92,5 @@ export const getBlockInfo = async (height) => {
 		medianFee: + (totalFee / transactionFees.length).toFixed(2),
 		reward: + transactionFees.reduce((partialSum, a) => partialSum + a.fee, 0).toFixed(2),
 		transactionFees
-	}
-}
-
-
-export const getNextBlock = async () => {
-	const transactionCount = Math.floor(Math.random() * 20);
-	const timestamp = new Date(Date.now() - 15 * 60000).getTime();
-	const transactionFees = new Array(transactionCount).fill(null).map(() => ({
-		fee: Math.floor(Math.random() * 100 + 5) / 100,
-		size: Math.floor(Math.random() * 300 + 100),
-	}));
-
-
-
-	return {
-		height,
-		timestamp,
 	}
 }
