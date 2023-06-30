@@ -1,9 +1,9 @@
 {
   "extends": [
+    "../../_symbol/linters/javascript/default.eslintrc",
     "eslint-config-next",
     "plugin:import/react",
-    "plugin:prettier/recommended",
-    "../../_symbol/linters/javascript/default.eslintrc"
+    "plugin:prettier/recommended"
   ],
   "rules": {
     "import/extensions": [
