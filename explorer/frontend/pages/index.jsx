@@ -15,7 +15,7 @@ import Head from 'next/head';
 import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 
-export const getStaticProps = async ({ locale }) => {
+export const getServerSideProps = async ({ locale }) => {
 	const blocksPage = await getBlockPage();
 	const latestTransactionsPage = await getTransactionPage({ pageSize: 5 }, 'confirmed');
 	const pendingTransactionsPage = await getTransactionPage({ pageSize: 3 }, 'unconfirmed');

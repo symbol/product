@@ -89,46 +89,46 @@ const Blocks = ({ blockInfo, transactions }) => {
 			<div className="layout-section-row">
 				<Section title={t('section_block')} className={styles.firstSection} cardClassName={styles.firstSectionCard}>
 					<div className="layout-flex-col">
-						<Field title="Height">
+						<Field title={t('field_height')}>
 							<div className="value-highlighted">{blockInfo.height}</div>
 						</Field>
 						<div className="layout-grid-row">
-							<Field title="Status">
+							<Field title={t('field_status')}>
 								<ValueLabel text="Safe" type="success" iconName="doublecheck" />
 							</Field>
-							<Field title="Timestamp">
+							<Field title={t('field_timestamp')}>
 								<ValueTimestamp value={blockInfo.timestamp} hasTime />
 							</Field>
 						</div>
 						<div className="layout-grid-row">
-							<Field title="Total Fee">
+							<Field title={t('field_totalFee')}>
 								<ValueMosaic isNative amount={blockInfo.totalFee} />
 							</Field>
-							<Field title="Median Fee">
+							<Field title={t('field_medianFee')}>
 								<ValueMosaic isNative amount={blockInfo.medianFee} />
 							</Field>
 						</div>
-						<Field title="Transaction Fees">
+						<Field title={t('field_transactionFees')}>
 							<ValueTransactionSquares data={blockInfo.transactionFees} className={styles.valueTransactionSquares} />
 						</Field>
 					</div>
 				</Section>
 				<Section className="layout-align-end" cardClassName={styles.secondSectionCard}>
 					<div className="layout-flex-col">
-						<Field title="Harvester">
+						<Field title={t('field_harvester')}>
 							<ValueAccount address={blockInfo.harvester} size="sm" />
 						</Field>
-						<Field title="Beneficiary">
+						<Field title={t('field_beneficiary')}>
 							<ValueAccount address={blockInfo.beneficiary} size="sm" />
 						</Field>
-						<Field title="Transactions">{blockInfo.transactionCount}</Field>
-						<Field title="Size">{blockInfo.size} B</Field>
-						<Field title="Difficulty">{blockInfo.difficulty} %</Field>
-						<Field title="Version">{blockInfo.version}</Field>
-						<Field title="Signature">
+						<Field title={t('field_transactions')}>{blockInfo.transactionCount}</Field>
+						<Field title={t('field_size')}>{blockInfo.size} B</Field>
+						<Field title={t('field_difficulty')}>{blockInfo.difficulty} %</Field>
+						<Field title={t('field_version')}>{blockInfo.version}</Field>
+						<Field title={t('field_signature')}>
 							<ValueCopy value={blockInfo.signature} />
 						</Field>
-						<Field title="Hash">
+						<Field title={t('field_hash')}>
 							<ValueCopy value={blockInfo.hash} />
 						</Field>
 					</div>

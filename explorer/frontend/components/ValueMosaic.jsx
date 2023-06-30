@@ -9,7 +9,7 @@ const ValueMosaic = ({ mosaicName, mosaicId, amount = 0, isNative, className, on
 	const [integer, decimal] = amount.toString().split('.');
 
 	if (mosaicId === config.NATIVE_MOSAIC_ID || isNative) {
-		displayedName = ''; // NATIVE_MOSAIC_TICKER;
+		displayedName = '';
 		imageSrc = '/images/icon-mosaic-native.svg';
 	} else {
 		displayedName = mosaicName;
