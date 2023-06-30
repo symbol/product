@@ -1,8 +1,7 @@
-import config from '@/config';
 import { createPage, createSearchCriteria } from '@/utils';
 import symbolSDK from 'symbol-sdk';
 
-export default async (req, res) => {
+export default async function handler(req, res) {
 	if (req.method !== 'GET') {
 		return;
 	}

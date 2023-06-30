@@ -12,7 +12,7 @@ const TablePageLoader = ({ onLoad, isLoading }) => {
 			onLoad();
 		}
 	}
-	useEffect(handleTargetInView, [isLoadingTargetInView, isLoading]);
+	useEffect(handleTargetInView, [isLoadingTargetInView, isLoading, onLoad]);
 
 	return (
 		<div className={styles.tablePageLoader}>

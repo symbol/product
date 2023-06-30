@@ -1,5 +1,5 @@
 const webpack = require('webpack');
-const i18nConfig = require('./next-i18next.config.js');
+const i18nConfig = require('./next-i18next.config.js'); // eslint-disable-line import/extensions
 
 module.exports = {
 	distDir: 'build',

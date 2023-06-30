@@ -1,14 +1,15 @@
-import FieldPrice from '@/components/FieldPrice';
 import { render, screen } from '@testing-library/react';
+import ValuePrice from '@/components/ValuePrice';
 
-describe('components/FieldPrice', () => {
-	const runFieldPriceTest = (change, expectedChangeText, expectedClassName) => {
+describe('components/ValuePrice', () => {
+	const runValuePriceTest = (change, expectedChangeText, expectedClassName) => {
 		// Arrange:
 		const value = 5;
+		const expectedValueText = '$5';
 
 		// Act:
-		render(<FieldPrice value={value} change={change} />);
-		const valueElement = screen.getByText(value.toString());
+		render(<ValuePrice value={value} change={change} />);
+		const valueElement = screen.getByText(expectedValueText);
 		const changeElement = screen.getByText(expectedChangeText);
 
 		// Assert:
@@ -24,7 +25,7 @@ describe('components/FieldPrice', () => {
 		const expectedClassName = 'changeIncrease';
 
 		// Act + Assert:
-		runFieldPriceTest(change, expectedChangeText, expectedClassName);
+		runValuePriceTest(change, expectedChangeText, expectedClassName);
 	});
 
 	it('renders price decrease', () => {
@@ -34,6 +35,6 @@ describe('components/FieldPrice', () => {
 		const expectedClassName = 'changeDecrease';
 
 		// Act + Assert:
-		runFieldPriceTest(change, expectedChangeText, expectedClassName);
+		runValuePriceTest(change, expectedChangeText, expectedClassName);
 	});
 });
