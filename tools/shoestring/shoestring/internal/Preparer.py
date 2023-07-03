@@ -1,3 +1,4 @@
+import json
 import os
 import shutil
 import tempfile
@@ -260,7 +261,7 @@ class Preparer:
 		# make all resources read only
 		self._make_files_readonly(self.directories.resources)
 
-	def configure_rest(self):
+	def configure_rest(self, node_metadata_filename=None):
 		"""Copies mongo and rest files."""
 
 		if NodeFeatures.API not in self.config.node.features:
@@ -270,6 +271,22 @@ class Preparer:
 		self._make_files_readonly(self.directories.mongo)
 
 		self._copy_file(self.directories.temp / 'rest' / 'rest.json', self.directories.userconfig)
+
+		if node_metadata_filename:
+			rest_json_filepath = self.directories.userconfig / 'rest.json'
+
+			# load the rest config
+			with open(rest_json_filepath, 'rt', encoding='utf8') as rest_config_infile:
+				rest_config = json.load(rest_config_infile)
+
+			# replace user metadata
+			with open(node_metadata_filename, 'rt', encoding='utf8') as node_metadata_infile:
+				rest_config['nodeMetadata'] = json.load(node_metadata_infile)
+
+			# rewrite the rest config
+			with open(rest_json_filepath, 'wt', encoding='utf8') as rest_config_outfile:
+				rest_config_outfile.write(json.dumps(rest_config, indent=2))
+
 		self._make_files_readonly(self.directories.userconfig)
 
 	def configure_https(self):

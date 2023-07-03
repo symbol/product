@@ -19,16 +19,16 @@ msgid "argument-help-announce-transaction-transaction"
 msgstr "file containing serialized transaction to send"
 
 #: shoestring/commands/min_cosignatures_count.py:35
-#: shoestring/commands/renew_certificates.py:27
-#: shoestring/commands/setup.py:137 shoestring/commands/signer.py:95
+#: shoestring/commands/renew_certificates.py:31
+#: shoestring/commands/setup.py:138 shoestring/commands/signer.py:95
 msgid "argument-help-ca-key-path"
 msgstr "path to main private key PEM file"
 
 #: shoestring/commands/announce_transaction.py:35
 #: shoestring/commands/health.py:75 shoestring/commands/import_bootstrap.py:28
-#: shoestring/commands/init.py:23
+#: shoestring/commands/init.py:21
 #: shoestring/commands/min_cosignatures_count.py:34
-#: shoestring/commands/renew_certificates.py:25
+#: shoestring/commands/renew_certificates.py:29
 #: shoestring/commands/renew_voting_keys.py:112
 #: shoestring/commands/reset_data.py:87 shoestring/commands/setup.py:130
 #: shoestring/commands/signer.py:94
@@ -36,7 +36,7 @@ msgid "argument-help-config"
 msgstr "path to shoestring configuration file"
 
 #: shoestring/commands/health.py:76
-#: shoestring/commands/renew_certificates.py:26
+#: shoestring/commands/renew_certificates.py:30
 #: shoestring/commands/renew_voting_keys.py:113
 #: shoestring/commands/reset_data.py:88 shoestring/commands/setup.py:132
 msgid "argument-help-directory"
@@ -66,7 +66,7 @@ msgstr "input private key file (optional)"
 msgid "argument-help-pemtool-output"
 msgstr "output PEM key file"
 
-#: shoestring/commands/renew_certificates.py:28
+#: shoestring/commands/renew_certificates.py:32
 msgid "argument-help-renew-certificates-renew-ca"
 msgstr "renews CA certificate too"
 
@@ -74,17 +74,21 @@ msgstr "renews CA certificate too"
 msgid "argument-help-reset-data-purge-harvesters"
 msgstr "purge harvesters.dat file"
 
+#: shoestring/commands/setup.py:134
+msgid "argument-help-setup-metadata"
+msgstr "Custom node metadata (this is only valid for API roles)"
+
 #: shoestring/commands/setup.py:133
 msgid "argument-help-setup-overrides"
 msgstr "path to custom user settings"
 
-#: shoestring/commands/init.py:22 shoestring/commands/setup.py:131
+#: shoestring/commands/init.py:20 shoestring/commands/setup.py:131
 msgid "argument-help-setup-package"
 msgstr ""
 "Network configuration package. Possible values: (name | file:///filename "
 "| http(s)://uri) (default: mainnet)"
 
-#: shoestring/commands/setup.py:136
+#: shoestring/commands/setup.py:137
 msgid "argument-help-setup-security"
 msgstr "security mode (default: default)"
 
@@ -114,18 +118,18 @@ msgstr "downloaded file ({descriptor_name}) has invalid hash"
 msgid "general-connecting-to-node"
 msgstr "connecting to {endpoint}"
 
-#: shoestring/commands/init.py:16 shoestring/commands/reset_data.py:57
-#: shoestring/internal/Preparer.py:183
+#: shoestring/commands/init.py:15 shoestring/commands/reset_data.py:57
+#: shoestring/internal/Preparer.py:184
 #: shoestring/internal/VoterConfigurator.py:53
 msgid "general-copying-file"
 msgstr "copying FILE {source_path} into {destination_path}"
 
-#: shoestring/commands/reset_data.py:62 shoestring/internal/Preparer.py:189
+#: shoestring/commands/reset_data.py:62 shoestring/internal/Preparer.py:190
 msgid "general-copying-tree"
 msgstr "copying TREE {source_path} to {destination_path}"
 
 #: shoestring/commands/renew_voting_keys.py:46
-#: shoestring/internal/Preparer.py:370
+#: shoestring/internal/Preparer.py:385
 msgid "general-created-aggregate-transaction"
 msgstr "created aggregate transaction with hash {transaction_hash}"
 

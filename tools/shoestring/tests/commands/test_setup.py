@@ -1,4 +1,5 @@
 import configparser
+import json
 import os
 import tempfile
 from enum import Enum
@@ -329,6 +330,48 @@ async def _assert_can_prepare_with_hostname(server, hostname, node_features, api
 
 async def test_can_apply_user_overrides(server):  # pylint: disable=redefined-outer-name
 	await _assert_can_prepare_with_hostname(server, 'symbol.fyi', NodeFeatures.PEER, False)
+
+
+async def test_can_apply_custom_node_metadata(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	with tempfile.TemporaryDirectory() as output_directory:
+		with tempfile.TemporaryDirectory() as package_directory:
+			_prepare_overrides(package_directory)
+			prepare_shoestring_configuration(package_directory, NodeFeatures.API, server.make_url(''))
+			prepare_testnet_package(package_directory, 'resources.zip')
+
+			node_metadata_filepath = Path(package_directory) / 'metadata.json'
+			with open(node_metadata_filepath, 'wt', encoding='utf8') as outfile:
+				outfile.write('\n'.join([
+					'{',
+					'  "animal": "wolf",',
+					'  "weight": "43kg",',
+					'  "height": "72cm"',
+					'}'
+				]))
+
+			with tempfile.TemporaryDirectory() as ca_directory:
+				# Act:
+				await main([
+					'setup',
+					'--config', str(Path(package_directory) / 'sai.shoestring.ini'),
+					'--security', 'insecure',
+					'--package', f'file://{Path(package_directory) / "resources.zip"}',
+					'--directory', output_directory,
+					'--ca-key-path', str(Path(ca_directory) / 'xyz.key.pem'),
+					'--overrides', str(Path(package_directory) / 'user_overrides.ini'),
+					'--metadata', str(node_metadata_filepath)
+				])
+
+				# Assert: check custom node metadata was applied
+				with open(Path(output_directory) / 'userconfig' / 'rest.json', 'rt', encoding='utf8') as rest_config_infile:
+					rest_config = json.load(rest_config_infile)
+
+				assert {
+					'animal': 'wolf',
+					'weight': '43kg',
+					'height': '72cm'
+				} == rest_config['nodeMetadata']
 
 # endregion
 

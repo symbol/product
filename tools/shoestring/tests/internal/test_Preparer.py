@@ -1,3 +1,4 @@
+import json
 import os
 import shutil
 import tempfile
@@ -415,6 +416,34 @@ class PreparerTest(unittest.TestCase):
 			'mongoRestrictionAccountDbPrepare.js',
 			'mongoRestrictionMosaicDbPrepare.js',
 		])
+
+	def test_can_configure_rest_api_node_with_custom_metadata(self):
+		# Arrange:
+		with tempfile.TemporaryDirectory() as output_directory:
+			with Preparer(output_directory, self._create_configuration(NodeFeatures.API)) as preparer:
+				self._initialize_temp_directory_with_package_files(preparer)
+
+				with open(preparer.directories.temp / 'metadata.json', 'wt', encoding='utf8') as outfile:
+					outfile.write('\n'.join([
+						'{',
+						'  "animal": "wolf",',
+						'  "weight": "43kg",',
+						'  "height": "72cm"',
+						'}'
+					]))
+
+				# Act:
+				preparer.configure_rest(preparer.directories.temp / 'metadata.json')
+
+				# Assert: check rest config
+				with open(preparer.directories.userconfig / 'rest.json', 'rt', encoding='utf8') as rest_config_infile:
+					rest_config = json.load(rest_config_infile)
+
+				self.assertEqual({
+					'animal': 'wolf',
+					'weight': '43kg',
+					'height': '72cm'
+				}, rest_config['nodeMetadata'])
 
 	# endregion
 

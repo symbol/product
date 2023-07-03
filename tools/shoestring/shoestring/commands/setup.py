@@ -106,7 +106,7 @@ async def run_main(args):
 			user_patches = load_patches_from_file(args.overrides)
 
 		preparer.configure_resources(user_patches)
-		preparer.configure_rest()
+		preparer.configure_rest(args.metadata)
 
 		hostname = _resolve_hostname_and_configure_https(config, preparer)
 
@@ -131,6 +131,7 @@ def add_arguments(parser, is_initial_setup=True):
 	parser.add_argument('--package', help=_('argument-help-setup-package'), default='mainnet')
 	parser.add_argument('--directory', help=_('argument-help-directory').format(default_path=Path.home()), default=str(Path.home()))
 	parser.add_argument('--overrides', help=_('argument-help-setup-overrides'))
+	parser.add_argument('--metadata', help=_('argument-help-setup-metadata'))
 
 	if is_initial_setup:
 		parser.add_argument('--security', help=_('argument-help-setup-security'), choices=SECURITY_MODES, default='default')
