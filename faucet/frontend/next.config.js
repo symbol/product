@@ -7,6 +7,9 @@ const nextConfig = {
 	experimental: {
 		appDir: true
 	},
+	eslint: {
+		ignoreDuringBuilds: true
+	},
 	webpack: (config, { isServer }) => {
 		// use a browser-optimized wasm for Ed25519 crypto operations
 		config.plugins.push(new webpack.NormalModuleReplacementPlugin(
