@@ -5,7 +5,7 @@ from pathlib import Path
 from shoestring.internal.ConfigurationManager import ConfigurationManager
 from shoestring.internal.NodeFeatures import NodeFeatures
 from shoestring.internal.ShoestringConfiguration import parse_shoestring_configuration
-from shoestring.wizard.SetupFiles import prepare_overrides_file, prepare_shoestring_files
+from shoestring.wizard.SetupFiles import prepare_overrides_file, prepare_shoestring_files, try_prepare_node_metadata_file
 
 from ..test.TestPackager import prepare_testnet_package
 
@@ -21,12 +21,48 @@ HarvestingScreen = namedtuple('HarvestingScreen', [
 	'min_fee_multiplier',
 	'beneficiary_address'
 ])
-NodeSettingsScreen = namedtuple('NodeSettingsScreen', ['domain_name', 'friendly_name', 'api_https'])
+NodeSettingsScreen = namedtuple('NodeSettingsScreen', ['domain_name', 'friendly_name', 'api_https', 'metadata_info'])
 SingleValueScreen = namedtuple('SingleValueScreen', ['current_value'])
 VotingScreen = namedtuple('Voting', ['active'])
 
 
 # pylint: disable=invalid-name
+
+
+# region try_prepare_node_metadata_file
+
+def _assert_can_prepare_node_metadata_file(node_type, node_metadata, should_create):
+	# Arrange:
+	with tempfile.TemporaryDirectory() as output_directory:
+		metadata_filepath = Path(output_directory) / 'metadata.json'
+
+		# Act:
+		try_prepare_node_metadata_file({
+			'node-type': SingleValueScreen(node_type),
+			'node-settings': NodeSettingsScreen(None, None, None, node_metadata)
+		}, metadata_filepath)
+
+		# Assert:
+		assert should_create == metadata_filepath.exists()
+
+		if should_create:
+			with open(metadata_filepath, 'rt', encoding='utf8') as infile:
+				metadata_contents = infile.read()
+				assert '{"animal": "wolf"}' == metadata_contents
+
+
+def test_can_prepare_node_metadata_file_when_dual_mode_and_metadata_specified():
+	_assert_can_prepare_node_metadata_file('dual', '{"animal": "wolf"}', True)
+
+
+def test_cannot_prepare_node_metadata_file_when_peer_mode_and_metadata_specified():
+	_assert_can_prepare_node_metadata_file('peer', '{"animal": "wolf"}', False)
+
+
+def test_cannot_prepare_node_metadata_file_when_dual_mode_and_no_metadata_specified():
+	_assert_can_prepare_node_metadata_file('dual', '', False)
+
+# endregion
 
 
 # region prepare_overrides_file
@@ -39,7 +75,7 @@ def _assert_can_prepare_overrides_file_when_harvesting_enabled(expected_auto_det
 		# Act:
 		prepare_overrides_file({
 			'harvesting': HarvestingScreen(True, False, False, 'true' == expected_auto_detection_value, None, None, 7, 111, 'abc'),
-			'node-settings': NodeSettingsScreen('san.symbol.ninja', 'Symbol San', None)
+			'node-settings': NodeSettingsScreen('san.symbol.ninja', 'Symbol San', None, None)
 		}, overrides_filepath)
 
 		# Assert:
@@ -78,7 +114,7 @@ def test_can_prepare_overrides_file_when_harvesting_disabled():
 		# Act:
 		prepare_overrides_file({
 			'harvesting': HarvestingScreen(False, False, False, True, None, None, None, None, None),
-			'node-settings': NodeSettingsScreen('san.symbol.ninja', 'Symbol San', None)
+			'node-settings': NodeSettingsScreen('san.symbol.ninja', 'Symbol San', None, None)
 		}, overrides_filepath)
 
 		# Assert:
@@ -128,7 +164,7 @@ async def _assert_can_prepare_shoestring_files(expected_node_features, node_type
 					None,
 					None),
 				'voting': VotingScreen(kwargs.get('is_voting_active', False)),
-				'node-settings': NodeSettingsScreen('san.symbol.ninja', 'Symbol San', kwargs.get('api_https', False))
+				'node-settings': NodeSettingsScreen('san.symbol.ninja', 'Symbol San', kwargs.get('api_https', False), None)
 			}, Path(output_directory))
 
 			# Assert:

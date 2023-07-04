@@ -18,7 +18,14 @@ def requires_ca_key_path(operation):
 	return operation in (ShoestringOperation.SETUP, ShoestringOperation.RENEW_CERTIFICATES)
 
 
-def build_shoestring_command(operation, destination_directory, shoestring_directory, ca_pem_path, package):
+def build_shoestring_command(
+	operation,
+	destination_directory,
+	shoestring_directory,
+	ca_pem_path,
+	package,
+	has_custom_node_metadata=False
+):  # pylint: disable=too-many-arguments
 	"""Builds shoestring command arguments."""
 
 	command_name = None
@@ -50,5 +57,8 @@ def build_shoestring_command(operation, destination_directory, shoestring_direct
 
 	if ShoestringOperation.SETUP == operation:
 		shoestring_args.extend(['--security', 'insecure'])
+
+		if has_custom_node_metadata:
+			shoestring_args.extend(['--metadata', str(Path(shoestring_directory) / 'node_metadata.json')])
 
 	return shoestring_args

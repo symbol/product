@@ -20,6 +20,21 @@ def _to_bool_string(flag):
 	return 'true' if flag else 'false'
 
 
+def try_prepare_node_metadata_file(screens, output_filename):
+	"""Prepares a node metadata file based on screens, if specified."""
+
+	node_type = screens.get('node-type').current_value
+	node_settings = screens.get('node-settings')
+
+	if 'dual' != node_type or not node_settings.metadata_info:
+		return False
+
+	with open(output_filename, 'wt', encoding='utf8') as outfile:
+		outfile.write(node_settings.metadata_info)
+
+	return True
+
+
 def prepare_overrides_file(screens, output_filename):
 	"""Prepares an overrides file based on screens."""
 

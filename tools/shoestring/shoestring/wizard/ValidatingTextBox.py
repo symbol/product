@@ -1,4 +1,5 @@
 import ipaddress
+import json
 import socket
 from pathlib import Path
 
@@ -66,6 +67,19 @@ def is_hostname(value):
 	except socket.gaierror:
 		return False
 
+
+def is_json(value):
+	"""Returns True when input is valid json."""
+
+	if not value:
+		return True
+
+	try:
+		json.loads(value)
+		return True
+	except ValueError:
+		return False
+
 # endregion
 
 
@@ -74,12 +88,19 @@ def is_hostname(value):
 class ValidatingTextBox:
 	"""Composed of a label and a text area with custom validation support."""
 
-	def __init__(self, label_text, validator, validation_error_text, default_value=''):
+	def __init__(
+		self,
+		label_text,
+		validator,
+		validation_error_text,
+		default_value='',
+		multiline=False
+	):  # pylint: disable=too-many-arguments
 		"""Creates a validating text box."""
 
 		self.input = TextArea(
 			default_value,
-			multiline=False,
+			multiline=multiline,
 			validator=Validator.from_callable(validator, validation_error_text))
 		self.input.buffer.validate_while_typing = Always()
 

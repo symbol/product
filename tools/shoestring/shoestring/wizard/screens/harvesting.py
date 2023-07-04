@@ -1,7 +1,6 @@
 from prompt_toolkit.filters import Condition
 from prompt_toolkit.layout.containers import ConditionalContainer, HSplit, VSplit
 from prompt_toolkit.widgets import Box, CheckboxList
-
 from symbolchain.facade.SymbolFacade import SymbolFacade
 
 from shoestring.wizard.Screen import ScreenDialog

@@ -9,6 +9,7 @@ from shoestring.wizard.ValidatingTextBox import (
 	is_hostname,
 	is_integer,
 	is_ip_address,
+	is_json,
 	is_not_empty
 )
 
@@ -76,6 +77,12 @@ def test_is_hostname_returns_true_only_for_valid_hostname():
 	assert is_hostname('localhost')
 	assert not is_hostname('foo')
 	assert not is_hostname('')
+
+
+def test_is_json_returns_true_only_for_valid_json():
+	assert is_json('{"animal": "wolf"}')
+	assert not is_json('{"animal": wolf}')  # value not quoted
+	assert is_json('')
 
 # endregion
 

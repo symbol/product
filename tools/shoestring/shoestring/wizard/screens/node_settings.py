@@ -3,7 +3,7 @@ from prompt_toolkit.layout.containers import ConditionalContainer, HSplit, VSpli
 from prompt_toolkit.widgets import CheckboxList, Label, TextArea
 
 from shoestring.wizard.Screen import ScreenDialog
-from shoestring.wizard.ValidatingTextBox import ValidatingTextBox, is_hostname, is_ip_address
+from shoestring.wizard.ValidatingTextBox import ValidatingTextBox, is_hostname, is_ip_address, is_json
 
 
 def _to_enabled_string(value):
@@ -31,7 +31,7 @@ class NodeSettings:
 
 	@property
 	def metadata_info(self):
-		return self._metadata_info.text
+		return self._metadata_info.input.text
 
 	@property
 	def tokens(self):
@@ -57,7 +57,6 @@ def create(screens):
 	])
 
 	friendly_name = TextArea(multiline=False)
-	metadata_info = TextArea(multiline=True, height=5)
 
 	def is_valid_ip_or_domain_name(value):
 		if is_ip_address(value):
@@ -69,6 +68,12 @@ def create(screens):
 		'IP or domain name',
 		is_valid_ip_or_domain_name,
 		'valid hostname is required when https is selected, otherwise valid IP address or hostname is required')
+
+	metadata_info = ValidatingTextBox(
+		'Node metadata information (description)',
+		is_json,
+		'metadata must be specified as valid JSON',
+		multiline=True)
 
 	return ScreenDialog(
 		screen_id='node-settings',
@@ -85,15 +90,15 @@ def create(screens):
 				HSplit([
 					ip_or_domain_name.label,
 					Label('Friendly node name'),
-					Label('Node metadata information (description)'),
+					metadata_info.label
 				], width=30),
 				HSplit([
 					ip_or_domain_name.input,
 					friendly_name,
-					metadata_info
+					metadata_info.input
 				])
 			])
 		]),
 		accessor=NodeSettings(https_flag, ip_or_domain_name, friendly_name, metadata_info),
-		is_valid=lambda: ip_or_domain_name.is_valid
+		is_valid=lambda: ip_or_domain_name.is_valid and metadata_info.is_valid
 	)

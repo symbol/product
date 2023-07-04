@@ -16,7 +16,7 @@ from prompt_toolkit.widgets import Label
 from prompt_toolkit.widgets.toolbars import ValidationToolbar
 
 from shoestring.__main__ import main as shoestring_main
-from shoestring.wizard.SetupFiles import prepare_overrides_file, prepare_shoestring_files
+from shoestring.wizard.SetupFiles import prepare_overrides_file, prepare_shoestring_files, try_prepare_node_metadata_file
 from shoestring.wizard.ShoestringOperation import ShoestringOperation, build_shoestring_command, requires_ca_key_path
 
 from . import keybindings, navigation, styles
@@ -79,6 +79,7 @@ async def run_shoestring_command(screens):
 
 	if ShoestringOperation.SETUP == operation:
 		with tempfile.TemporaryDirectory() as temp_directory:
+			has_custom_node_metadata = try_prepare_node_metadata_file(screens, Path(temp_directory) / 'node_metadata.json')
 			prepare_overrides_file(screens, Path(temp_directory) / 'overrides.ini')
 			await prepare_shoestring_files(screens, Path(temp_directory))
 
@@ -87,7 +88,8 @@ async def run_shoestring_command(screens):
 				destination_directory,
 				temp_directory,
 				obligatory_settings.ca_pem_path,
-				package)
+				package,
+				has_custom_node_metadata)
 			await shoestring_main(shoestring_args)
 
 			shoestring_directory.mkdir()
