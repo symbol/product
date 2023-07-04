@@ -51,9 +51,7 @@ class BasicConnector:
 		Raises NodeException on connection or content failure.
 		"""
 
-		return await self._dispatch('put', url_path, property_name, data=json.dumps(request_payload), headers={
-			'Content-Type': 'application/json'
-		})
+		return await self._dispatch('put', url_path, property_name, json=request_payload)
 
 	async def post(self, url_path, request_payload, property_name=None):
 		"""
@@ -61,6 +59,4 @@ class BasicConnector:
 		Raises NodeException on connection or content failure.
 		"""
 
-		return await self._dispatch('post', url_path, property_name, data=json.dumps(request_payload), headers={
-			'Content-Type': 'application/json'
-		})
+		return await self._dispatch('post', url_path, property_name, json=request_payload)
