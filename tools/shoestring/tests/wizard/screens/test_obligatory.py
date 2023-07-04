@@ -46,6 +46,7 @@ async def test_can_enter_valid_input_ca_pem_path_not_required():  # must be asyn
 	# Arrange:
 	with tempfile.TemporaryDirectory() as temp_directory:
 		screen = create(None)
+		screen.require_main_private_key(False)
 
 		# Act:
 		screen.accessor._destination_directory.input.text = temp_directory  # pylint: disable=protected-access
@@ -71,10 +72,10 @@ def test_can_generate_diagnostic_accessor_representation():
 	] == screen.accessor.tokens
 
 
-def test_can_generate_diagnostic_accessor_representation_ca_pem_path_not_required():
+def test_can_generate_diagnostic_accessor_representation_main_private_key_not_required():
 	# Arrange:
 	screen = create(None)
-	screen.require_ca_pem_path(False)
+	screen.require_main_private_key(False)
 
 	# Act + Assert:
 	assert f'(destination_directory=\'{Path.home().absolute() / "symbol"}\', ca_pem_path=\'ca.key.pem\')' == repr(screen.accessor)

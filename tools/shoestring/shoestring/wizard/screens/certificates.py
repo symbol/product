@@ -37,9 +37,6 @@ def create(screens):
 		is_not_empty,
 		_('wizard-certificates-peer-cert-error-text'))
 
-	# TODO: probably need to add peer_cert_name_ca and peer_cert_name_node somewhere,
-	# as I'm not sure if we can easily access values there...
-
 	def reset():
 		node_settings = screens.get('node-settings')
 		if not peer_cert_name_ca.input.text:

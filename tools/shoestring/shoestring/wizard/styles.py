@@ -16,6 +16,11 @@ def initialize():
 
 		('button.arrow', 'fg:ansiblue'),
 
+		('tab-list', 'bg:white'),
+		('tab', 'bg:ansigray'),
+		('tab-selected', 'bold'),
+		('tab-checked', 'bg:white'),
+
 		('error', 'fg:ansibrightred bold'),
 
 		('shadow', 'bg:black fg:black')  # doesn't seem to be working

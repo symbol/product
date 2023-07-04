@@ -23,6 +23,12 @@ def is_file_path(value):
 	return Path(value).is_file()
 
 
+def does_not_exist(value):
+	"""Returns True when input is not a path to existing filesystem object."""
+
+	return not Path(value).exists() and Path(value).parent.absolute().is_dir()
+
+
 def is_directory_path(value):
 	"""Returns True when input is a valid directory path."""
 
@@ -97,11 +103,12 @@ class ValidatingTextBox:
 		multiline=False
 	):  # pylint: disable=too-many-arguments
 		"""Creates a validating text box."""
+		validator = validator if isinstance(validator, Validator) else Validator.from_callable(validator, validation_error_text)
 
 		self.input = TextArea(
 			default_value,
 			multiline=multiline,
-			validator=Validator.from_callable(validator, validation_error_text))
+			validator=validator)
 		self.input.buffer.validate_while_typing = Always()
 
 		# window is already created and Label's style is only expected to be a string, so we need to modify

@@ -223,59 +223,59 @@ msgstr ""
 msgid "import-bootstrap-importing-voter"
 msgstr ""
 
-#: shoestring/__main__.py:18
+#: shoestring/__main__.py:19
 msgid "main-announce-transaction-help"
 msgstr ""
 
-#: shoestring/__main__.py:19
+#: shoestring/__main__.py:20
 msgid "main-health-help"
 msgstr ""
 
-#: shoestring/__main__.py:20
+#: shoestring/__main__.py:21
 msgid "main-import-bootstrap-help"
 msgstr ""
 
-#: shoestring/__main__.py:21
+#: shoestring/__main__.py:22
 msgid "main-init-help"
 msgstr ""
 
-#: shoestring/__main__.py:22
+#: shoestring/__main__.py:23
 msgid "main-min-cosignatures-count-help"
 msgstr ""
 
-#: shoestring/__main__.py:23
+#: shoestring/__main__.py:24
 msgid "main-pemtool-help"
 msgstr ""
 
-#: shoestring/__main__.py:24
+#: shoestring/__main__.py:25
 msgid "main-renew-certificates-help"
 msgstr ""
 
-#: shoestring/__main__.py:25
+#: shoestring/__main__.py:26
 msgid "main-renew-voting-keys-help"
 msgstr ""
 
-#: shoestring/__main__.py:26
+#: shoestring/__main__.py:27
 msgid "main-reset-data-help"
 msgstr ""
 
-#: shoestring/__main__.py:27
+#: shoestring/__main__.py:28
 msgid "main-setup-help"
 msgstr ""
 
-#: shoestring/__main__.py:28
+#: shoestring/__main__.py:29
 msgid "main-signer-help"
 msgstr ""
 
-#: shoestring/__main__.py:16
+#: shoestring/__main__.py:17
 msgid "main-subcommands-help"
 msgstr ""
 
-#: shoestring/__main__.py:15
+#: shoestring/__main__.py:16
 msgid "main-title"
 msgstr ""
 
-#: shoestring/__main__.py:29
+#: shoestring/__main__.py:30
 msgid "main-upgrade-help"
 msgstr ""
 
@@ -371,11 +371,11 @@ msgstr ""
 msgid "upgrade-recreating-directory"
 msgstr ""
 
-#: shoestring/wizard/__main__.py:181 shoestring/wizard/__main__.py:217
+#: shoestring/wizard/__main__.py:192 shoestring/wizard/__main__.py:228
 msgid "wizard-button-finish"
 msgstr ""
 
-#: shoestring/wizard/__main__.py:194 shoestring/wizard/navigation.py:40
+#: shoestring/wizard/__main__.py:205 shoestring/wizard/navigation.py:40
 msgid "wizard-button-next"
 msgstr ""
 
@@ -405,6 +405,22 @@ msgstr ""
 
 #: shoestring/wizard/screens/certificates.py:53
 msgid "wizard-certificates-title"
+msgstr ""
+
+#: shoestring/wizard/screens/obligatory.py:81
+msgid "wizard-dialog-message-generation-text"
+msgstr ""
+
+#: shoestring/wizard/screens/obligatory.py:81
+msgid "wizard-dialog-message-generation-title"
+msgstr ""
+
+#: shoestring/wizard/screens/obligatory.py:94
+msgid "wizard-dialog-message-import-text"
+msgstr ""
+
+#: shoestring/wizard/screens/obligatory.py:94
+msgid "wizard-dialog-message-import-title"
 msgstr ""
 
 #: shoestring/wizard/screens/end_screen.py:14
@@ -499,12 +515,16 @@ msgstr ""
 msgid "wizard-harvesting-vrf-key-label"
 msgstr ""
 
-#: shoestring/wizard/__main__.py:223
+#: shoestring/wizard/__main__.py:234
 msgid "wizard-main-done"
 msgstr ""
 
-#: shoestring/wizard/__main__.py:145
+#: shoestring/wizard/__main__.py:151
 msgid "wizard-main-initial-title"
+msgstr ""
+
+#: shoestring/wizard/screens/modal.py:27
+msgid "wizard-modal-button-ok"
 msgstr ""
 
 #: shoestring/wizard/screens/network_type.py:25
@@ -583,31 +603,77 @@ msgstr ""
 msgid "wizard-node-type-token"
 msgstr ""
 
-#: shoestring/wizard/screens/obligatory.py:47
+#: shoestring/wizard/screens/obligatory.py:114
+#: shoestring/wizard/screens/obligatory.py:122
 msgid "wizard-obligatory-ca-pem-path-error-text"
 msgstr ""
 
-#: shoestring/wizard/screens/obligatory.py:45
+#: shoestring/wizard/screens/obligatory.py:115
+#: shoestring/wizard/screens/obligatory.py:116
+msgid "wizard-obligatory-ca-pem-path-error-text-not-exist"
+msgstr ""
+
+#: shoestring/wizard/screens/obligatory.py:120
 msgid "wizard-obligatory-ca-pem-path-label"
 msgstr ""
 
-#: shoestring/wizard/screens/obligatory.py:41
+#: shoestring/wizard/screens/obligatory.py:101
 msgid "wizard-obligatory-destination-directory-error-text"
 msgstr ""
 
-#: shoestring/wizard/screens/obligatory.py:39
+#: shoestring/wizard/screens/obligatory.py:99
 msgid "wizard-obligatory-destination-directory-label"
 msgstr ""
 
-#: shoestring/wizard/screens/obligatory.py:54
+#: shoestring/wizard/screens/obligatory.py:134
+msgid "wizard-obligatory-generate-button"
+msgstr ""
+
+#: shoestring/wizard/screens/obligatory.py:133
+msgid "wizard-obligatory-import-button"
+msgstr ""
+
+#: shoestring/wizard/screens/obligatory.py:105
+msgid "wizard-obligatory-priv-ca"
+msgstr ""
+
+#: shoestring/wizard/screens/obligatory.py:107
+msgid "wizard-obligatory-priv-generate-new"
+msgstr ""
+
+#: shoestring/wizard/screens/obligatory.py:106
+msgid "wizard-obligatory-priv-import-hex"
+msgstr ""
+
+#: shoestring/wizard/screens/obligatory.py:138
+msgid "wizard-obligatory-private-key-ca-pem-path-description"
+msgstr ""
+
+#: shoestring/wizard/screens/obligatory.py:149
+msgid "wizard-obligatory-private-key-generate-description"
+msgstr ""
+
+#: shoestring/wizard/screens/obligatory.py:141
+msgid "wizard-obligatory-private-key-hex-description"
+msgstr ""
+
+#: shoestring/wizard/screens/obligatory.py:128
+msgid "wizard-obligatory-private-key-hex-error-text"
+msgstr ""
+
+#: shoestring/wizard/screens/obligatory.py:126
+msgid "wizard-obligatory-private-key-hex-label"
+msgstr ""
+
+#: shoestring/wizard/screens/obligatory.py:163
 msgid "wizard-obligatory-title"
 msgstr ""
 
-#: shoestring/wizard/screens/obligatory.py:29
+#: shoestring/wizard/screens/obligatory.py:41
 msgid "wizard-obligatory-token-ca-pem-path"
 msgstr ""
 
-#: shoestring/wizard/screens/obligatory.py:27
+#: shoestring/wizard/screens/obligatory.py:39
 msgid "wizard-obligatory-token-destination-directory"
 msgstr ""
 
@@ -619,39 +685,39 @@ msgstr ""
 msgid "wizard-root-check-title"
 msgstr ""
 
-#: shoestring/wizard/__main__.py:38
+#: shoestring/wizard/__main__.py:42
 msgid "wizard-screen-group-certificates"
 msgstr ""
 
-#: shoestring/wizard/__main__.py:40
+#: shoestring/wizard/__main__.py:44
 msgid "wizard-screen-group-end-screen"
 msgstr ""
 
-#: shoestring/wizard/__main__.py:34
+#: shoestring/wizard/__main__.py:38
 msgid "wizard-screen-group-harvesting"
 msgstr ""
 
-#: shoestring/wizard/__main__.py:37
+#: shoestring/wizard/__main__.py:41
 msgid "wizard-screen-group-node-settings"
 msgstr ""
 
-#: shoestring/wizard/__main__.py:32
+#: shoestring/wizard/__main__.py:36
 msgid "wizard-screen-group-obligatory"
 msgstr ""
 
-#: shoestring/wizard/__main__.py:35
+#: shoestring/wizard/__main__.py:39
 msgid "wizard-screen-group-voting"
 msgstr ""
 
-#: shoestring/wizard/__main__.py:31
+#: shoestring/wizard/__main__.py:35
 msgid "wizard-screen-group-welcome"
 msgstr ""
 
-#: shoestring/wizard/styles.py:28
+#: shoestring/wizard/styles.py:33
 msgid "wizard-toggle-disabled"
 msgstr ""
 
-#: shoestring/wizard/styles.py:28
+#: shoestring/wizard/styles.py:33
 msgid "wizard-toggle-enabled"
 msgstr ""
 

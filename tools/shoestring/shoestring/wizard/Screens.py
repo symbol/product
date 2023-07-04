@@ -12,6 +12,9 @@ class Screens:
 		self.allowed_list = None
 		self.chain = []
 
+		# bit hacky, added here so that screens can show message box
+		self.message_box = None
+
 	def add(self, screen_group_name, descriptor):
 		"""Adds a screen group."""
 
