@@ -2,6 +2,8 @@ from prompt_toolkit.styles import Style
 
 
 def initialize():
+	"""Returns wizard styles."""
+
 	return Style([
 		('titlebar', 'fg:black bg:white'),
 		('navigation', 'bg:ansiblue'),
@@ -18,3 +20,9 @@ def initialize():
 
 		('shadow', 'bg:black fg:black')  # doesn't seem to be working
 	])
+
+
+def to_enabled_string(value):
+	"""Formats a boolean value to describe an enabled/disabled toggle."""
+
+	return 'enabled' if value else 'disabled'

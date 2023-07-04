@@ -2,10 +2,7 @@ from prompt_toolkit.layout.containers import HSplit
 from prompt_toolkit.widgets import CheckboxList
 
 from shoestring.wizard.Screen import ScreenDialog
-
-
-def _to_enabled_string(value):
-	return 'enabled' if value else 'disabled'
+from shoestring.wizard.styles import to_enabled_string
 
 
 class VotingSettings:
@@ -18,7 +15,7 @@ class VotingSettings:
 
 	@property
 	def tokens(self):
-		return [('voter role', _to_enabled_string(self.active))]
+		return [('voter role', to_enabled_string(self.active))]
 
 	def __repr__(self):
 		return f'(active={self.active})'

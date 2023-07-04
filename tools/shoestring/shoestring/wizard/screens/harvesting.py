@@ -4,11 +4,8 @@ from prompt_toolkit.widgets import Box, CheckboxList
 from symbolchain.facade.SymbolFacade import SymbolFacade
 
 from shoestring.wizard.Screen import ScreenDialog
+from shoestring.wizard.styles import to_enabled_string
 from shoestring.wizard.ValidatingTextBox import ValidatingTextBox, is_hex_private_key_string, is_integer
-
-
-def _to_enabled_string(value):
-	return 'enabled' if value else 'disabled'
 
 
 def facade(screens):
@@ -80,12 +77,12 @@ class HarvestingSettings:
 
 	@property
 	def tokens(self):
-		tokens = [('harvester role', _to_enabled_string(self.active))]
+		tokens = [('harvester role', to_enabled_string(self.active))]
 		if self.active:
 			tokens.extend([
-				('* auto harvest?', _to_enabled_string(self.auto_harvest)),
-				('* generate keys?', _to_enabled_string(self.generate_keys)),
-				('* auto detect delegates?', _to_enabled_string(self.enable_delegated_harvesters_auto_detection)),
+				('* auto harvest?', to_enabled_string(self.auto_harvest)),
+				('* generate keys?', to_enabled_string(self.generate_keys)),
+				('* auto detect delegates?', to_enabled_string(self.enable_delegated_harvesters_auto_detection)),
 				('* max unlocked accounts', self.max_unlocked_accounts),
 				('* min fee multiplier', self.min_fee_multiplier),
 				('* beneficiary address', self.beneficiary_address)
