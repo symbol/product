@@ -11,7 +11,7 @@ def create(_screens):
 
 	dialog = ScreenDialog(
 		screen_id='end-screen',
-		title='writing configuration',
+		title=_('wizard-end-title'),
 		body=Box(VSplit([
 			label_container,
 			value_container

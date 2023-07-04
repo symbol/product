@@ -15,7 +15,7 @@ class VotingSettings:
 
 	@property
 	def tokens(self):
-		return [('voter role', to_enabled_string(self.active))]
+		return [(_('wizard-voting-token-active'), to_enabled_string(self.active))]
 
 	def __repr__(self):
 		return f'(active={self.active})'
@@ -23,26 +23,14 @@ class VotingSettings:
 
 def create(_screens):
 	node_voter_flag = CheckboxList(values=[
-		('node-voter-bool', 'would you like to enable voting?')
+		('node-voter-bool', _('wizard-voting-active'))
 	])
 
 	return ScreenDialog(
 		screen_id='voting',
-		title=_('wizard-node-voter-title'),
+		title=_('wizard-voting-title'),
 		body=HSplit([
-			node_voter_flag,
-
-			# ConditionalContainer(
-			# 	VSplit([
-			# 		HSplit([
-			# 			Label('dummy')
-			# 		], width=30),
-			# 		HSplit([
-			# 			TextArea(multiline=False),
-			# 		]),
-			# 	]),
-			# 	filter=Condition(lambda: node_voter_flag.current_values)
-			# )
+			node_voter_flag
 		]),
 
 		accessor=VotingSettings(node_voter_flag)

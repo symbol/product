@@ -13,7 +13,7 @@ class NodeTypeAccessor:
 
 	@property
 	def tokens(self):
-		return [('node type', self.current_value)]
+		return [(_('wizard-node-type-token'), self.current_value)]
 
 	def __repr__(self):
 		return f'(node_type=\'{self.current_value}\')'
@@ -30,7 +30,7 @@ def create(_screens):
 
 	return ScreenDialog(
 		screen_id='node-type',
-		title='Choose node type',
+		title=_('wizard-node-type-title'),
 		body=node_type_radio,
 
 		accessor=NodeTypeAccessor(node_type_radio)

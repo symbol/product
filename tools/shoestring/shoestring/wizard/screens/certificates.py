@@ -28,8 +28,14 @@ class CertSettings:
 def create(screens):
 	# needs new certificates?
 
-	peer_cert_name_ca = ValidatingTextBox('Cert CA name', is_not_empty, 'CA name must not be empty')
-	peer_cert_name_node = ValidatingTextBox('Cert Peer name', is_not_empty, 'Peer name must not be empty')
+	peer_cert_name_ca = ValidatingTextBox(
+		_('wizard-certificates-ca-cert-label'),
+		is_not_empty,
+		_('wizard-certificates-ca-cert-error-text'))
+	peer_cert_name_node = ValidatingTextBox(
+		_('wizard-certificates-peer-cert-label'),
+		is_not_empty,
+		_('wizard-certificates-peer-cert-error-text'))
 
 	# TODO: probably need to add peer_cert_name_ca and peer_cert_name_node somewhere,
 	# as I'm not sure if we can easily access values there...
@@ -44,7 +50,7 @@ def create(screens):
 
 	dialog = ScreenDialog(
 		screen_id='certificates',
-		title=_('wizard-peer-cert-names-title'),
+		title=_('wizard-certificates-title'),
 		body=VSplit([
 			HSplit([
 				peer_cert_name_ca.label,

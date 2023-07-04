@@ -13,7 +13,7 @@ def is_running_as_root(screens):
 		return False
 
 	screens.navbar.prev = None
-	screens.navbar.next.text = 'QUIT'
+	screens.navbar.next.text = _('wizard-button-quit')
 	screens.navbar.next.handler = lambda: get_app().exit(1)
 	return True
 
@@ -23,17 +23,8 @@ def create(screens):
 		'root-check',
 		Box(Shadow(
 			HSplit([
-				Window(
-					FormattedTextControl('root check'),
-					align=WindowAlign.CENTER
-				),
-				TextArea(
-					text=(
-						'Wizard detected it is running as ROOT user, shoestring does not support such setup.\n'
-						'Please create a user account with access to \'docker\'.'
-					),
-					read_only=True
-				)
+				Window(FormattedTextControl(_('wizard-root-check-title')), align=WindowAlign.CENTER),
+				TextArea(text=(_('wizard-root-check-error-text')), read_only=True)
 			])
 		)),
 

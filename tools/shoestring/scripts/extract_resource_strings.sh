@@ -2,7 +2,7 @@
 
 set -ex
 
-pybabel extract --omit-header --sort-output -o lang/messages.pot shoestring/*.py shoestring/**/*.py
+pybabel extract --omit-header --sort-output -o lang/messages.pot shoestring/*.py shoestring/**/*.py shoestring/**/**/*.py
 
 for lang in "en" "ja";
 do

@@ -24,9 +24,9 @@ class ObligatorySettings:
 
 	@property
 	def tokens(self):
-		tokens = [('destination directory', self.destination_directory)]
+		tokens = [(_('wizard-obligatory-token-destination-directory'), self.destination_directory)]
 		if self.is_ca_pem_path_required:
-			tokens.append(('ca pem path', self.ca_pem_path))
+			tokens.append((_('wizard-obligatory-token-ca-pem-path'), self.ca_pem_path))
 
 		return tokens
 
@@ -36,22 +36,22 @@ class ObligatorySettings:
 
 def create(_screens):
 	destination_directory = ValidatingTextBox(
-		'Configuration destination directory',
+		_('wizard-obligatory-destination-directory-label'),
 		is_directory_path,
-		'destination directory must be a valid directory',
+		_('wizard-obligatory-destination-directory-error-text'),
 		str(Path.home().absolute() / 'symbol'))
 
 	ca_pem_path = ValidatingTextBox(
-		'CA PEM file path (main account)',
+		_('wizard-obligatory-ca-pem-path-label'),
 		is_file_path,
-		'ca pem file path must be a valid file',
+		_('wizard-obligatory-ca-pem-path-error-text'),
 		'ca.key.pem')
 
 	# note: deliberately wrapped in condition to allow swap later
 	show_ca_pem_path = Condition(Always())
 	dialog = ScreenDialog(
 		screen_id='obligatory',
-		title='Obligatory settings',
+		title=_('wizard-obligatory-title'),
 		body=Box(
 			HSplit([
 				VSplit([

@@ -24,7 +24,7 @@ class WelcomeSettings:
 
 	@property
 	def tokens(self):
-		return [('command', self.operation_label)]
+		return [(_('wizard-welcome-command-token'), self.operation_label)]
 
 	def __repr__(self):
 		return f'(command=\'{self.operation_label}\')'
@@ -32,11 +32,11 @@ class WelcomeSettings:
 
 def create(_screens):
 	values = [
-		(ShoestringOperation.SETUP, 'setup'),
-		(ShoestringOperation.UPGRADE, 'upgrade'),
-		(ShoestringOperation.RESET_DATA, 'reset data'),
-		(ShoestringOperation.RENEW_CERTIFICATES, 'renew certificates'),
-		(ShoestringOperation.RENEW_VOTING_KEYS, 'renew voting keys')
+		(ShoestringOperation.SETUP, _('wizard-welcome-setup')),
+		(ShoestringOperation.UPGRADE, _('wizard-welcome-upgrade')),
+		(ShoestringOperation.RESET_DATA, _('wizard-welcome-reset-data')),
+		(ShoestringOperation.RENEW_CERTIFICATES, _('wizard-welcome-renew-certificates')),
+		(ShoestringOperation.RENEW_VOTING_KEYS, _('wizard-welcome-renew-voting-keys'))
 	]
 
 	max_label = max(len(label) for (_, label) in values)

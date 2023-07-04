@@ -25,4 +25,4 @@ def initialize():
 def to_enabled_string(value):
 	"""Formats a boolean value to describe an enabled/disabled toggle."""
 
-	return 'enabled' if value else 'disabled'
+	return _('wizard-toggle-enabled') if value else _('wizard-toggle-disabled')

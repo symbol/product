@@ -77,15 +77,15 @@ class HarvestingSettings:
 
 	@property
 	def tokens(self):
-		tokens = [('harvester role', to_enabled_string(self.active))]
+		tokens = [(_('wizard-harvesting-token-active'), to_enabled_string(self.active))]
 		if self.active:
 			tokens.extend([
-				('* auto harvest?', to_enabled_string(self.auto_harvest)),
-				('* generate keys?', to_enabled_string(self.generate_keys)),
-				('* auto detect delegates?', to_enabled_string(self.enable_delegated_harvesters_auto_detection)),
-				('* max unlocked accounts', self.max_unlocked_accounts),
-				('* min fee multiplier', self.min_fee_multiplier),
-				('* beneficiary address', self.beneficiary_address)
+				(_('wizard-harvesting-token-auto-harvest'), to_enabled_string(self.auto_harvest)),
+				(_('wizard-harvesting-token-generate-keys'), to_enabled_string(self.generate_keys)),
+				(_('wizard-harvesting-token-delegate'), to_enabled_string(self.enable_delegated_harvesters_auto_detection)),
+				(_('wizard-harvesting-token-max-unlocked-accounts'), self.max_unlocked_accounts),
+				(_('wizard-harvesting-token-min-fee-multiplier'), self.min_fee_multiplier),
+				(_('wizard-harvesting-token-beneficiary-address'), self.beneficiary_address)
 			])
 
 		return tokens
@@ -106,46 +106,46 @@ class HarvestingSettings:
 
 def create(screens):
 	harvesting_flag = CheckboxList(values=[
-		('harvesting-bool', 'would you like to enable harvesting?')
+		('harvesting-bool', _('wizard-harvesting-active'))
 	])
 
 	harvesting_auto_harvest_flag = CheckboxList(values=[
-		('harvesting-auto-harvest-bool', 'would you like to auto harvest?')
+		('harvesting-auto-harvest-bool', _('wizard-harvesting-auto-harvest'))
 	], default_values=['harvesting-auto-harvest-bool'])
 
 	harvesting_generate_flag = CheckboxList(values=[
-		('harvesting-generate-keys-bool', 'generate new random keys and transaction')
+		('harvesting-generate-keys-bool', _('wizard-harvesting-generate-keys'))
 	], default_values=['harvesting-generate-keys-bool'])
 
 	harvesting_signing_key = ValidatingTextBox(
-		'harvester signing key',
+		_('wizard-harvesting-signing-key-label'),
 		is_hex_private_key_string,
-		'signing private key must be a valid hex private key string')
+		_('wizard-harvesting-signing-key-error-text'))
 	harvesting_vrf_key = ValidatingTextBox(
-		'harvester vrf key',
+		_('wizard-harvesting-vrf-key-label'),
 		is_hex_private_key_string,
-		'vrf private key must be a valid hex private key string')
+		_('wizard-harvesting-vrf-key-error-text'))
 
 	harvesting_delegate_flag = CheckboxList(values=[
-		('harvesting-delegate-bool', 'enable delegated harvesters auto detection?')
+		('harvesting-delegate-bool', _('wizard-harvesting-delegate'))
 	])
 
 	max_unlocked_accounts = ValidatingTextBox(
-		'max unlocked accounts',
+		_('wizard-harvesting-max-unlocked-accounts-label'),
 		is_integer,
-		'max unlocked accounts value must be a number',
+		_('wizard-harvesting-max-unlocked-accounts-error-text'),
 		default_value='5')
 
 	min_fee_multiplier = ValidatingTextBox(
-		'min fee multiplier',
+		_('wizard-harvesting-min-fee-multiplier-label'),
 		is_integer,
-		'min fee multiplier value must be a number',
+		_('wizard-harvesting-min-fee-multiplier-error-text'),
 		default_value='100')
 
 	beneficiary_address = ValidatingTextBox(
-		'beneficiary address',
+		_('wizard-harvesting-beneficiary-address-label'),
 		lambda value: not value or facade(screens).network.is_valid_address_string(value),
-		'beneficiary address needs to be address (in proper network)')
+		_('wizard-harvesting-beneficiary-address-error-text'))
 
 	settings = HarvestingSettings(
 		harvesting_flag,
@@ -167,7 +167,7 @@ def create(screens):
 
 	return ScreenDialog(
 		screen_id='harvesting',
-		title=_('wizard-node-harvester-title'),
+		title=_('wizard-harvesting-title'),
 		body=HSplit([
 			harvesting_flag,
 

@@ -14,6 +14,7 @@ from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.layout.layout import Layout
 from prompt_toolkit.widgets import Label
 from prompt_toolkit.widgets.toolbars import ValidationToolbar
+from zenlog import log
 
 from shoestring.__main__ import main as shoestring_main
 from shoestring.wizard.SetupFiles import prepare_overrides_file, prepare_shoestring_files, try_prepare_node_metadata_file
@@ -27,16 +28,16 @@ ScreenGroup = namedtuple('ScreenGroup', ['group_name', 'screen_names'])
 
 def prepare_screens(screens):
 	screen_setup = [
-		ScreenGroup('Welcome', ['welcome', 'root_check']),
-		ScreenGroup('Basic settings', ['obligatory', 'network_type', 'node_type']),
+		ScreenGroup(_('wizard-screen-group-welcome'), ['welcome', 'root_check']),
+		ScreenGroup(_('wizard-screen-group-obligatory'), ['obligatory', 'network_type', 'node_type']),
 
-		ScreenGroup('Harvesting', ['harvesting']),
-		ScreenGroup('Voting', ['voting']),
+		ScreenGroup(_('wizard-screen-group-harvesting'), ['harvesting']),
+		ScreenGroup(_('wizard-screen-group-voting'), ['voting']),
 
-		ScreenGroup('Node settings', ['node_settings']),
-		ScreenGroup('Certificates', ['certificates']),
+		ScreenGroup(_('wizard-screen-group-node-settings'), ['node_settings']),
+		ScreenGroup(_('wizard-screen-group-certificates'), ['certificates']),
 
-		ScreenGroup('🎉', ['end_screen'])
+		ScreenGroup(_('wizard-screen-group-end-screen'), ['end_screen'])
 	]
 
 	for group in screen_setup:
@@ -141,7 +142,7 @@ async def main():  # pylint: disable=too-many-locals, too-many-statements
 	])
 	navbar.next.state_filter = Condition(lambda: not screens.current.is_valid())
 
-	initial_titlebar = '<b>Welcome, pick operation</b>'
+	initial_titlebar = _('wizard-main-initial-title')
 	set_titlebar(root_container, initial_titlebar)
 
 	layout = Layout(root_container, focused_element=navbar.next)
@@ -177,7 +178,7 @@ async def main():  # pylint: disable=too-many-locals, too-many-statements
 				next_screen.add_setting(*token)
 
 			# generate_settings() will go here
-			navbar.next.text = 'Finish!'
+			navbar.next.text = _('wizard-button-finish')
 			navbar.next.handler = app.exit
 
 	def prev_clicked():
@@ -190,7 +191,7 @@ async def main():  # pylint: disable=too-many-locals, too-many-statements
 
 		# restore handler in case it got replaced
 		navbar.next.handler = next_clicked
-		navbar.next.text = 'Next'
+		navbar.next.text = _('wizard-button-next')
 
 	navbar.prev.handler = prev_clicked
 	navbar.next.handler = next_clicked
@@ -213,13 +214,13 @@ async def main():  # pylint: disable=too-many-locals, too-many-statements
 	result = await app.run_async()
 
 	# second condition is temporarily added, to break processing when ctrl-q or ctrl-c is pressed
-	if result or navbar.next.text != 'Finish!':
+	if result or navbar.next.text != _('wizard-button-finish'):
 		return
 
 	# TODO: temporary here, move up
 	await run_shoestring_command(screens)
 
-	print('Done 👋')
+	log.info(_('wizard-main-done'))
 
 
 if '__main__' == __name__:

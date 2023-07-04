@@ -36,8 +36,8 @@ class ExtendedButton(Button):
 def initialize():
 	navigation = Navigation(
 		None,
-		Button(text='Back'),
-		ExtendedButton(text='Next')
+		Button(text=_('wizard-button-prev')),
+		ExtendedButton(text=_('wizard-button-next')),
 	)
 
 	navigation.container = Box(

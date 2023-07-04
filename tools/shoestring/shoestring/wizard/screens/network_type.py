@@ -13,7 +13,7 @@ class NetworkTypeAccessor:
 
 	@property
 	def tokens(self):
-		return [('network type', self.current_value)]
+		return [(_('wizard-network-type-token'), self.current_value)]
 
 	def __repr__(self):
 		return f'(network_type=\'{self.current_value}\')'
@@ -29,7 +29,7 @@ def create(_screens):
 
 	return ScreenDialog(
 		screen_id='network-type',
-		title='Choose network type',
+		title=_('wizard-network-type-title'),
 		body=network_types_radio_list,
 
 		accessor=NetworkTypeAccessor(network_types_radio_list)

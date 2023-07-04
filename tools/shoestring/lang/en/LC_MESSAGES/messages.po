@@ -20,7 +20,7 @@ msgstr "file containing serialized transaction to send"
 
 #: shoestring/commands/min_cosignatures_count.py:35
 #: shoestring/commands/renew_certificates.py:31
-#: shoestring/commands/setup.py:138 shoestring/commands/signer.py:95
+#: shoestring/commands/setup.py:139 shoestring/commands/signer.py:95
 msgid "argument-help-ca-key-path"
 msgstr "path to main private key PEM file"
 
@@ -30,7 +30,7 @@ msgstr "path to main private key PEM file"
 #: shoestring/commands/min_cosignatures_count.py:34
 #: shoestring/commands/renew_certificates.py:29
 #: shoestring/commands/renew_voting_keys.py:112
-#: shoestring/commands/reset_data.py:87 shoestring/commands/setup.py:130
+#: shoestring/commands/reset_data.py:87 shoestring/commands/setup.py:131
 #: shoestring/commands/signer.py:94
 msgid "argument-help-config"
 msgstr "path to shoestring configuration file"
@@ -38,7 +38,7 @@ msgstr "path to shoestring configuration file"
 #: shoestring/commands/health.py:76
 #: shoestring/commands/renew_certificates.py:30
 #: shoestring/commands/renew_voting_keys.py:113
-#: shoestring/commands/reset_data.py:88 shoestring/commands/setup.py:132
+#: shoestring/commands/reset_data.py:88 shoestring/commands/setup.py:133
 msgid "argument-help-directory"
 msgstr "installation directory (default: {default_path})"
 
@@ -74,21 +74,21 @@ msgstr "renews CA certificate too"
 msgid "argument-help-reset-data-purge-harvesters"
 msgstr "purge harvesters.dat file"
 
-#: shoestring/commands/setup.py:134
+#: shoestring/commands/setup.py:135
 msgid "argument-help-setup-metadata"
 msgstr "Custom node metadata (this is only valid for API roles)"
 
-#: shoestring/commands/setup.py:133
+#: shoestring/commands/setup.py:134
 msgid "argument-help-setup-overrides"
 msgstr "path to custom user settings"
 
-#: shoestring/commands/init.py:20 shoestring/commands/setup.py:131
+#: shoestring/commands/init.py:20 shoestring/commands/setup.py:132
 msgid "argument-help-setup-package"
 msgstr ""
 "Network configuration package. Possible values: (name | file:///filename "
 "| http(s)://uri) (default: mainnet)"
 
-#: shoestring/commands/setup.py:137
+#: shoestring/commands/setup.py:138
 msgid "argument-help-setup-security"
 msgstr "security mode (default: default)"
 
@@ -129,7 +129,7 @@ msgid "general-copying-tree"
 msgstr "copying TREE {source_path} to {destination_path}"
 
 #: shoestring/commands/renew_voting_keys.py:46
-#: shoestring/internal/Preparer.py:385
+#: shoestring/internal/Preparer.py:387
 msgid "general-created-aggregate-transaction"
 msgstr "created aggregate transaction with hash {transaction_hash}"
 
@@ -389,42 +389,332 @@ msgstr "purging DIRECTORY {directory}"
 msgid "upgrade-recreating-directory"
 msgstr "recreating DIRECTORY {directory}"
 
-#: shoestring/wizard/__main__.py:81
+#: shoestring/wizard/__main__.py:181 shoestring/wizard/__main__.py:217
+msgid "wizard-button-finish"
+msgstr "Finish!"
+
+#: shoestring/wizard/__main__.py:194 shoestring/wizard/navigation.py:40
+msgid "wizard-button-next"
+msgstr "Next"
+
+#: shoestring/wizard/navigation.py:39
+msgid "wizard-button-prev"
+msgstr "Back"
+
+#: shoestring/wizard/screens/root_check.py:16
+msgid "wizard-button-quit"
+msgstr "QUIT"
+
+#: shoestring/wizard/screens/certificates.py:34
+msgid "wizard-certificates-ca-cert-error-text"
+msgstr "CA name must not be empty"
+
+#: shoestring/wizard/screens/certificates.py:32
+msgid "wizard-certificates-ca-cert-label"
+msgstr "Cert CA name"
+
+#: shoestring/wizard/screens/certificates.py:38
+msgid "wizard-certificates-peer-cert-error-text"
+msgstr "Peer name must not be empty"
+
+#: shoestring/wizard/screens/certificates.py:36
+msgid "wizard-certificates-peer-cert-label"
+msgstr "Cert Peer name"
+
+#: shoestring/wizard/screens/certificates.py:53
+msgid "wizard-certificates-title"
+msgstr "CA name + node cert name"
+
+#: shoestring/wizard/screens/end_screen.py:14
+msgid "wizard-end-title"
+msgstr "writing configuration"
+
+#: shoestring/wizard/screens/harvesting.py:109
+msgid "wizard-harvesting-active"
+msgstr "would you like to enable harvesting?"
+
+#: shoestring/wizard/screens/harvesting.py:113
+msgid "wizard-harvesting-auto-harvest"
+msgstr "would you like to auto harvest?"
+
+#: shoestring/wizard/screens/harvesting.py:148
+msgid "wizard-harvesting-beneficiary-address-error-text"
+msgstr "beneficiary address needs to be address (in proper network)"
+
+#: shoestring/wizard/screens/harvesting.py:146
+msgid "wizard-harvesting-beneficiary-address-label"
+msgstr "beneficiary address"
+
+#: shoestring/wizard/screens/harvesting.py:130
+msgid "wizard-harvesting-delegate"
+msgstr "enable delegated harvesters auto detection?"
+
+#: shoestring/wizard/screens/harvesting.py:117
+msgid "wizard-harvesting-generate-keys"
+msgstr "generate new random keys and transaction"
+
+#: shoestring/wizard/screens/harvesting.py:136
+msgid "wizard-harvesting-max-unlocked-accounts-error-text"
+msgstr "max unlocked accounts value must be a number"
+
+#: shoestring/wizard/screens/harvesting.py:134
+msgid "wizard-harvesting-max-unlocked-accounts-label"
+msgstr "max unlocked accounts"
+
+#: shoestring/wizard/screens/harvesting.py:142
+msgid "wizard-harvesting-min-fee-multiplier-error-text"
+msgstr "min fee multiplier value must be a number"
+
+#: shoestring/wizard/screens/harvesting.py:140
+msgid "wizard-harvesting-min-fee-multiplier-label"
+msgstr "min fee multiplier"
+
+#: shoestring/wizard/screens/harvesting.py:123
+msgid "wizard-harvesting-signing-key-error-text"
+msgstr "signing private key must be a valid hex private key string"
+
+#: shoestring/wizard/screens/harvesting.py:121
+msgid "wizard-harvesting-signing-key-label"
+msgstr "harvester signing key"
+
+#: shoestring/wizard/screens/harvesting.py:170
+msgid "wizard-harvesting-title"
+msgstr "Harvester settings"
+
+#: shoestring/wizard/screens/harvesting.py:80
+msgid "wizard-harvesting-token-active"
+msgstr "harvester role"
+
+#: shoestring/wizard/screens/harvesting.py:83
+msgid "wizard-harvesting-token-auto-harvest"
+msgstr "* auto harvest?"
+
+#: shoestring/wizard/screens/harvesting.py:88
+msgid "wizard-harvesting-token-beneficiary-address"
+msgstr "* beneficiary address"
+
+#: shoestring/wizard/screens/harvesting.py:85
+msgid "wizard-harvesting-token-delegate"
+msgstr "* auto detect delegates?"
+
+#: shoestring/wizard/screens/harvesting.py:84
+msgid "wizard-harvesting-token-generate-keys"
+msgstr "* generate keys?"
+
+#: shoestring/wizard/screens/harvesting.py:86
+msgid "wizard-harvesting-token-max-unlocked-accounts"
+msgstr "* max unlocked accounts"
+
+#: shoestring/wizard/screens/harvesting.py:87
+msgid "wizard-harvesting-token-min-fee-multiplier"
+msgstr "* min fee multiplier"
+
+#: shoestring/wizard/screens/harvesting.py:127
+msgid "wizard-harvesting-vrf-key-error-text"
+msgstr "vrf private key must be a valid hex private key string"
+
+#: shoestring/wizard/screens/harvesting.py:125
+msgid "wizard-harvesting-vrf-key-label"
+msgstr "harvester vrf key"
+
+#: shoestring/wizard/__main__.py:223
+msgid "wizard-main-done"
+msgstr "Done 👋"
+
+#: shoestring/wizard/__main__.py:145
+msgid "wizard-main-initial-title"
+msgstr "<b>Welcome, pick operation</b>"
+
+#: shoestring/wizard/screens/network_type.py:25
 msgid "wizard-network-type-mainnet"
 msgstr "Main network"
 
-#: shoestring/wizard/__main__.py:82
+#: shoestring/wizard/screens/network_type.py:26
 msgid "wizard-network-type-testnet"
 msgstr "Current test network (sai)"
 
-#: shoestring/wizard/__main__.py:128
-msgid "wizard-node-harvester-title"
-msgstr "Harvester settings"
+#: shoestring/wizard/screens/network_type.py:32
+msgid "wizard-network-type-title"
+msgstr "Choose network type"
 
-#: shoestring/wizard/__main__.py:117
-msgid "wizard-node-https-title"
-msgstr "Setup https? (only for api)"
+#: shoestring/wizard/screens/network_type.py:16
+msgid "wizard-network-type-token"
+msgstr "network type"
 
-#: shoestring/wizard/__main__.py:90
+#: shoestring/wizard/screens/node_settings.py:89
+msgid "wizard-node-settings-friendly-name-label"
+msgstr "Friendly node name"
+
+#: shoestring/wizard/screens/node_settings.py:53
+msgid "wizard-node-settings-https"
+msgstr "enable https for API (using https-portal), requires registered domain name"
+
+#: shoestring/wizard/screens/node_settings.py:67
+msgid "wizard-node-settings-ip-or-domain-name-error-text"
+msgstr ""
+"valid hostname is required when https is selected, otherwise valid IP "
+"address or hostname is required"
+
+#: shoestring/wizard/screens/node_settings.py:65
+msgid "wizard-node-settings-ip-or-domain-name-label"
+msgstr "IP or domain name"
+
+#: shoestring/wizard/screens/node_settings.py:72
+msgid "wizard-node-settings-metadata-info-error-text"
+msgstr "metadata must be specified as valid JSON"
+
+#: shoestring/wizard/screens/node_settings.py:70
+msgid "wizard-node-settings-metadata-info-label"
+msgstr "Node metadata information (description)"
+
+#: shoestring/wizard/screens/node_settings.py:77
+msgid "wizard-node-settings-title"
+msgstr "Node settings"
+
+#: shoestring/wizard/screens/node_settings.py:37
+msgid "wizard-node-settings-token-domain-name"
+msgstr "domain name"
+
+#: shoestring/wizard/screens/node_settings.py:38
+msgid "wizard-node-settings-token-friendly-name"
+msgstr "friendly name"
+
+#: shoestring/wizard/screens/node_settings.py:36
+msgid "wizard-node-settings-token-https"
+msgstr "https"
+
+#: shoestring/wizard/screens/node_settings.py:39
+msgid "wizard-node-settings-token-metadata"
+msgstr "metadata"
+
+#: shoestring/wizard/screens/node_type.py:25
 msgid "wizard-node-type-dual"
 msgstr "Dual (peer + api) node"
 
-#: shoestring/wizard/__main__.py:91
+#: shoestring/wizard/screens/node_type.py:26
 msgid "wizard-node-type-peer"
 msgstr "Peer node"
 
-#: shoestring/wizard/__main__.py:139
-msgid "wizard-node-voter-title"
+#: shoestring/wizard/screens/node_type.py:33
+msgid "wizard-node-type-title"
+msgstr "Choose node type"
+
+#: shoestring/wizard/screens/node_type.py:16
+msgid "wizard-node-type-token"
+msgstr "node type"
+
+#: shoestring/wizard/screens/obligatory.py:47
+msgid "wizard-obligatory-ca-pem-path-error-text"
+msgstr "ca pem file path must be a valid file"
+
+#: shoestring/wizard/screens/obligatory.py:45
+msgid "wizard-obligatory-ca-pem-path-label"
+msgstr "CA PEM file path (main account)"
+
+#: shoestring/wizard/screens/obligatory.py:41
+msgid "wizard-obligatory-destination-directory-error-text"
+msgstr "destination directory must be a valid directory"
+
+#: shoestring/wizard/screens/obligatory.py:39
+msgid "wizard-obligatory-destination-directory-label"
+msgstr "Configuration destination directory"
+
+#: shoestring/wizard/screens/obligatory.py:54
+msgid "wizard-obligatory-title"
+msgstr "Obligatory settings"
+
+#: shoestring/wizard/screens/obligatory.py:29
+msgid "wizard-obligatory-token-ca-pem-path"
+msgstr "ca pem path"
+
+#: shoestring/wizard/screens/obligatory.py:27
+msgid "wizard-obligatory-token-destination-directory"
+msgstr "destination directory"
+
+#: shoestring/wizard/screens/root_check.py:27
+msgid "wizard-root-check-error-text"
+msgstr ""
+"Wizard detected it is running as ROOT user, shoestring does not support "
+"such setup.\n"
+"Please create a user account with access to 'docker'."
+
+#: shoestring/wizard/screens/root_check.py:26
+msgid "wizard-root-check-title"
+msgstr "root check"
+
+#: shoestring/wizard/__main__.py:38
+msgid "wizard-screen-group-certificates"
+msgstr "Certificates"
+
+#: shoestring/wizard/__main__.py:40
+msgid "wizard-screen-group-end-screen"
+msgstr "🎉"
+
+#: shoestring/wizard/__main__.py:34
+msgid "wizard-screen-group-harvesting"
+msgstr "Harvesting"
+
+#: shoestring/wizard/__main__.py:37
+msgid "wizard-screen-group-node-settings"
+msgstr "Node settings"
+
+#: shoestring/wizard/__main__.py:32
+msgid "wizard-screen-group-obligatory"
+msgstr "Basic settings"
+
+#: shoestring/wizard/__main__.py:35
+msgid "wizard-screen-group-voting"
+msgstr "Voting"
+
+#: shoestring/wizard/__main__.py:31
+msgid "wizard-screen-group-welcome"
+msgstr "Welcome"
+
+#: shoestring/wizard/styles.py:28
+msgid "wizard-toggle-disabled"
+msgstr "disabled"
+
+#: shoestring/wizard/styles.py:28
+msgid "wizard-toggle-enabled"
+msgstr "enabled"
+
+#: shoestring/wizard/screens/voting.py:26
+msgid "wizard-voting-active"
+msgstr "would you like to enable voting?"
+
+#: shoestring/wizard/screens/voting.py:31
+msgid "wizard-voting-title"
 msgstr "Voter settings"
 
-#: shoestring/wizard/__main__.py:107
-msgid "wizard-peer-cert-names-title"
-msgstr "CA name + node cert name"
+#: shoestring/wizard/screens/voting.py:18
+msgid "wizard-voting-token-active"
+msgstr "voter role"
 
-#: shoestring/wizard/__main__.py:73
-msgid "wizard-welcome-steps"
-msgstr "1. setup\n2. upgrade\n3. reset data\n4. renew certificates\n5. renew voting keys"
+#: shoestring/wizard/screens/welcome.py:27
+msgid "wizard-welcome-command-token"
+msgstr "command"
 
-#: shoestring/wizard/__main__.py:70
+#: shoestring/wizard/screens/welcome.py:38
+msgid "wizard-welcome-renew-certificates"
+msgstr "renew certificates"
+
+#: shoestring/wizard/screens/welcome.py:39
+msgid "wizard-welcome-renew-voting-keys"
+msgstr "renew voting keys"
+
+#: shoestring/wizard/screens/welcome.py:37
+msgid "wizard-welcome-reset-data"
+msgstr "reset data"
+
+#: shoestring/wizard/screens/welcome.py:35
+msgid "wizard-welcome-setup"
+msgstr "setup"
+
+#: shoestring/wizard/screens/welcome.py:54
 msgid "wizard-welcome-title"
 msgstr "Welcome"
+
+#: shoestring/wizard/screens/welcome.py:36
+msgid "wizard-welcome-upgrade"
+msgstr "upgrade"
+

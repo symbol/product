@@ -33,10 +33,10 @@ class NodeSettings:
 	@property
 	def tokens(self):
 		return [
-			('https', to_enabled_string(self.api_https)),
-			('domain name', self.domain_name),
-			('friendly name', self.friendly_name),
-			('metadata', self.metadata_info),
+			(_('wizard-node-settings-token-https'), to_enabled_string(self.api_https)),
+			(_('wizard-node-settings-token-domain-name'), self.domain_name),
+			(_('wizard-node-settings-token-friendly-name'), self.friendly_name),
+			(_('wizard-node-settings-token-metadata'), self.metadata_info),
 		]
 
 	def __repr__(self):
@@ -50,7 +50,7 @@ class NodeSettings:
 
 def create(screens):
 	https_flag = CheckboxList(values=[
-		('node-https-bool', 'enable https for API (using https-portal), requires registered domain name')
+		('node-https-bool', _('wizard-node-settings-https'))
 	])
 
 	friendly_name = TextArea(multiline=False)
@@ -62,19 +62,19 @@ def create(screens):
 		return is_hostname(value)
 
 	ip_or_domain_name = ValidatingTextBox(
-		'IP or domain name',
+		_('wizard-node-settings-ip-or-domain-name-label'),
 		is_valid_ip_or_domain_name,
-		'valid hostname is required when https is selected, otherwise valid IP address or hostname is required')
+		_('wizard-node-settings-ip-or-domain-name-error-text'))
 
 	metadata_info = ValidatingTextBox(
-		'Node metadata information (description)',
+		_('wizard-node-settings-metadata-info-label'),
 		is_json,
-		'metadata must be specified as valid JSON',
+		_('wizard-node-settings-metadata-info-error-text'),
 		multiline=True)
 
 	return ScreenDialog(
 		screen_id='node-settings',
-		title=_('wizard-node-https-title'),  # TODO: change title
+		title=_('wizard-node-settings-title'),
 		body=HSplit([
 			# only show https option if it's a dual node
 			ConditionalContainer(
@@ -86,7 +86,7 @@ def create(screens):
 			VSplit([
 				HSplit([
 					ip_or_domain_name.label,
-					Label('Friendly node name'),
+					Label(_('wizard-node-settings-friendly-name-label')),
 					metadata_info.label
 				], width=30),
 				HSplit([
