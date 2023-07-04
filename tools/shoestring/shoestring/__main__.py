@@ -2,6 +2,7 @@ import argparse
 import asyncio
 import gettext
 import importlib
+import os
 import sys
 
 
@@ -32,7 +33,7 @@ def parse_args(args):
 
 
 async def main(args):
-	lang = gettext.translation('messages', localedir='lang', languages=('ja', 'en'))  # TODO: how should we detect language?
+	lang = gettext.translation('messages', localedir='lang', languages=(os.environ.get('LC_MESSAGES', 'en'), 'en'))
 	lang.install()
 
 	args = parse_args(args)

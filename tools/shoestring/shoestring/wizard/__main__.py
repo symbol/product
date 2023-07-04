@@ -1,6 +1,7 @@
 import asyncio
 import gettext
 import importlib
+import os
 import shutil
 import tempfile
 from collections import namedtuple
@@ -107,7 +108,7 @@ async def run_shoestring_command(screens):
 
 
 async def main():  # pylint: disable=too-many-locals, too-many-statements
-	lang = gettext.translation('messages', localedir='lang', languages=('ja', 'en'))  # TODO: how should we detect language?
+	lang = gettext.translation('messages', localedir='lang', languages=(os.environ.get('LC_MESSAGES', 'en'), 'en'))
 	lang.install()
 
 	key_bindings = keybindings.initialize()
