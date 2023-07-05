@@ -135,6 +135,19 @@
         top: 2rem;
         right: 2rem;
     }
+
+    .buttonMore {
+        position: absolute;
+        top: 2rem;
+        right: 4.5rem;
+    }
+
+    .buttonMoreIcon {
+        width: 2rem;
+        height: 2rem;
+        cursor: pointer;
+        user-select: none;
+    }
 }
 
 .iconChain {

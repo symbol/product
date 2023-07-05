@@ -1,8 +1,8 @@
 import styles from '@/styles/components/Header.module.scss';
-import { useTranslation } from 'next-i18next';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
+import { useTranslation } from 'next-i18next';
 
 const Header = () => {
 	const router = useRouter();

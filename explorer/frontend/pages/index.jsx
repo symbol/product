@@ -30,17 +30,16 @@ export const getServerSideProps = async ({ locale }) => {
 			baseInfo: stats.baseInfo,
 			chainInfo: stats.chainInfo,
 			charts: stats.charts,
-			...(await serverSideTranslations(locale, ['common', 'home']))
+			...(await serverSideTranslations(locale, ['common']))
 		}
 	};
 };
 
 const Home = ({ blocks, fees, latestTransactions, pendingTransactions, baseInfo, chainInfo, charts }) => {
-	const { t } = useTranslation('home');
-	const { t: commonT } = useTranslation('common');
+	const { t } = useTranslation();
 	const formattedCharts = {
 		...charts,
-		transactions: charts.transactions.map(item => [formatDate(item[0], commonT), item[1]])
+		transactions: charts.transactions.map(item => [formatDate(item[0], t), item[1]])
 	};
 
 	return (
@@ -54,7 +53,9 @@ const Home = ({ blocks, fees, latestTransactions, pendingTransactions, baseInfo,
 					<div className="layout-grid-row layout-flex-fill">
 						<div className="layout-flex-col layout-flex-fill">
 							<Field title={t('field_totalTransactions')}>{baseInfo.totalTransactions}</Field>
-							<Field title={t('field_transactionsPerBlock')}>{baseInfo.transactionsPerBlock}</Field>
+							<Field title={t('field_transactionsPerBlock')} description={t('field_transactionsPerBlock_description')}>
+								{baseInfo.transactionsPerBlock}
+							</Field>
 						</div>
 						<LineChart data={formattedCharts.transactions} name={t('chart_series_transactions')} />
 					</div>

@@ -25,13 +25,13 @@ export const getServerSideProps = async ({ locale }) => {
 			blocks: blocksPage.data,
 			chainInfo: stats.chainInfo,
 			charts: stats.charts,
-			...(await serverSideTranslations(locale, ['common', 'blocks']))
+			...(await serverSideTranslations(locale, ['common']))
 		}
 	};
 };
 
 const Blocks = ({ blocks, chainInfo, charts }) => {
-	const { t } = useTranslation('blocks');
+	const { t } = useTranslation();
 	const [loadBlockPage, blockList, isLoading, pageNumber, isLastPage] = usePagination(fetchBlockPage, blocks);
 
 	const tableColumns = [
