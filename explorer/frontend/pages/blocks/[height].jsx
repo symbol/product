@@ -31,13 +31,13 @@ export const getServerSideProps = async ({ locale, params }) => {
 		props: {
 			blockInfo,
 			transactions: transactionsPage.data,
-			...(await serverSideTranslations(locale, ['common', 'blocks']))
+			...(await serverSideTranslations(locale, ['common']))
 		}
 	};
 };
 
 const Blocks = ({ blockInfo, transactions }) => {
-	const { t } = useTranslation('blocks');
+	const { t } = useTranslation();
 
 	const tableColumns = [
 		{
@@ -115,7 +115,7 @@ const Blocks = ({ blockInfo, transactions }) => {
 				</Section>
 				<Section className="layout-align-end" cardClassName={styles.secondSectionCard}>
 					<div className="layout-flex-col">
-						<Field title={t('field_harvester')}>
+						<Field title={t('field_harvester')} description={t('field_harvester_description')}>
 							<ValueAccount address={blockInfo.harvester} size="sm" />
 						</Field>
 						<Field title={t('field_beneficiary')}>

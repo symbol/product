@@ -1,7 +1,7 @@
 import styles from '@/styles/components/ButtonCopy.module.scss';
 import { copyToClipboard } from '@/utils';
-import { useTranslation } from 'next-i18next';
 import Image from 'next/image';
+import { useTranslation } from 'next-i18next';
 import { toast } from 'react-toastify';
 
 const ButtonCopy = ({ value, className }) => {

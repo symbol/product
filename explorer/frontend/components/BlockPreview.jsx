@@ -1,4 +1,3 @@
-import { useTranslation } from 'next-i18next';
 import ButtonClose from './ButtonClose';
 import CustomImage from './CustomImage';
 import Field from './Field';
@@ -8,15 +7,21 @@ import ValueMosaic from './ValueMosaic';
 import ValueTimestamp from './ValueTimestamp';
 import ValueTransactionSquares from './ValueTransactionSquares';
 import styles from '@/styles/components/BlockPreview.module.scss';
+import Link from 'next/link';
+import { useTranslation } from 'next-i18next';
 import { forwardRef, useEffect, useState } from 'react';
 
 const BlockExpanded = ({ data, isNext, isTransactionSquaresRendered, onClose }) => {
 	const { height, timestamp, transactionFees, totalFee, medianFee } = data;
 	const { t } = useTranslation();
+	const href = `/blocks/${height}`;
 
 	return (
 		<div className="layout-flex-col">
 			<ButtonClose className={styles.buttonClose} onClick={onClose} />
+			<Link href={href} className={styles.buttonMore} target="_blank">
+				<CustomImage className={styles.buttonMoreIcon} src="/images/icon-circle-more.png" alt="more" />
+			</Link>
 			<Field title={t('field_height')}>
 				<div className="value-highlighted">{height}</div>
 			</Field>
@@ -35,7 +40,9 @@ const BlockExpanded = ({ data, isNext, isTransactionSquaresRendered, onClose }) 
 					<ValueMosaic isNative amount={medianFee} />
 				</Field>
 			</div>
-			<Field title={t('field_transactionFees')}>{isTransactionSquaresRendered && <ValueTransactionSquares data={transactionFees} />}</Field>
+			<Field title={t('field_transactionFees')}>
+				{isTransactionSquaresRendered && <ValueTransactionSquares data={transactionFees} />}
+			</Field>
 		</div>
 	);
 };

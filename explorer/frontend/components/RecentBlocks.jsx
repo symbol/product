@@ -64,10 +64,10 @@ const RecentBlocks = ({ data }) => {
 					/>
 				))}
 			</div>
-			{isButtonLeftVisible && (
+			{/* {isButtonLeftVisible && (
 				<CustomImage className={`${styles.buttonLeft} no-mobile`} src="/images/icon-left.svg" onClick={scrollLeft} />
 			)}
-			<CustomImage className={`${styles.buttonRight} no-mobile`} src="/images/icon-right.svg" onClick={scrollRight} />
+			<CustomImage className={`${styles.buttonRight} no-mobile`} src="/images/icon-right.svg" onClick={scrollRight} /> */}
 		</div>
 	);
 };
