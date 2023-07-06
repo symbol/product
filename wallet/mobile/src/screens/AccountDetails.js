@@ -4,7 +4,6 @@ import { ScrollView } from 'react-native-gesture-handler';
 import { AccountAvatar, ButtonPlain, DialogBox, FormItem, Screen, TableView, Widget } from 'src/components';
 import { config } from 'src/config';
 import { $t } from 'src/localization';
-import { Router } from 'src/Router';
 import { connect } from 'src/store';
 import { layout } from 'src/styles';
 import { publicAccountFromPrivateKey, usePasscode, useToggle } from 'src/utils';
