@@ -8,11 +8,13 @@ const i18n = new I18n();
 
 const translationGetters = {
     en: () => require('./locales/en.json'),
+    // uk: () => require('./locales/uk.json'),
     // Require new languages here
 };
 
 const languageNames = {
     en: 'English',
+    // uk: 'Українська',
     // Add names for new languages here
 };
 
