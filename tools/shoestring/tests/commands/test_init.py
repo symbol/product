@@ -1,3 +1,4 @@
+import os
 import tempfile
 from pathlib import Path
 
@@ -34,3 +35,7 @@ async def test_can_download_configuration_file_template():
 
 			config = parse_shoestring_configuration(config_filepath)
 			assert Hash256('49D6E1CE276A85B70EAFE52349AACCA389302E7A9754BCF1221E79494FC665A4') == config.network.generation_hash_seed
+
+			# - user and group ids are updated
+			assert os.getuid() == config.node.user_id
+			assert os.getgid() == config.node.group_id
