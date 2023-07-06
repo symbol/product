@@ -6,8 +6,6 @@ import { ButtonClose, LoadingIndicator } from 'src/components';
 import { $t } from 'src/localization';
 import { Router } from 'src/Router';
 
-const translate = (_) => _;
-
 export const Passcode = (props) => {
     const { route, hideCancelButton, keepListener, keepNavigation } = props;
     const { successEvent, cancelEvent, type } = route.params;
@@ -24,7 +22,7 @@ export const Passcode = (props) => {
 
     const onCancel = () => {
         DeviceEventEmitter.emit(cancelEvent);
-        
+
         if(!keepNavigation) {
             Router.goBack();
         }
@@ -55,13 +53,13 @@ export const Passcode = (props) => {
                 <>
                     <PINCode
                         status={type}
-                        titleEnter={translate('Unlock the Wallet')}
-                        titleChoose={translate('Create a PIN')}
-                        subtitleChoose={translate('Enter new PIN-code')}
-                        titleConfirm={translate('Confirm')}
-                        subtitleConfirm={translate('Enter PIN-code again')}
-                        titleAttemptFailed={translate('Attempt Failed')}
-                        subtitleError={translate('Incorrect')}
+                        titleEnter={$t('s_passcode_titleEnter')}
+                        titleChoose={$t('s_passcode_titleChoose')}
+                        subtitleChoose={$t('s_passcode_subtitleChoose')}
+                        titleConfirm={$t('s_passcode_titleConfirm')}
+                        subtitleConfirm={$t('s_passcode_subtitleConfirm')}
+                        titleAttemptFailed={$t('s_passcode_titleAttemptFailed')}
+                        subtitleError={$t('s_passcode_subtitleError')}
                         maxAttempts={maxAttempts}
                         stylePinCodeTextTitle={fonts.title}
                         stylePinCodeTextSubtitle={fonts.body}
