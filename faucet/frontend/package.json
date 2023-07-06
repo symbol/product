@@ -43,7 +43,8 @@
     "test:jenkins:cov": "NODE_OPTIONS=--experimental-vm-modules npx jest --coverage",
     "eject": "react-scripts eject",
     "lint": "eslint --ext js,jsx .",
-    "lint:fix": "eslint --ext js,jsx --fix ."
+    "lint:fix": "eslint --ext js,jsx --fix .",
+    "version": "echo $npm_package_version"
   },
   "browserslist": {
     "production": [
