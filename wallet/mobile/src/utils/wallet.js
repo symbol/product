@@ -9,6 +9,7 @@ import { Buffer } from 'buffer';
 import { networkIdentifierToNetworkType } from './network';
 import store from 'src/store';
 import { optInWhiteList } from 'src/config';
+import { publicAccountFromPrivateKey } from './account';
 
 export const generateMnemonic = () => {
     return MnemonicPassPhrase.createRandom().plain;
