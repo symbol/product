@@ -106,11 +106,7 @@ store.dispatchAction = ({ type, payload }) => {
 };
 
 store.reset = () => {
-    const state = store.getState();
-    console.log('state', state)
     store.dispatch((dispatch) => dispatch({ type: 'reset' }));
-    const newstate = store.getState();
-    console.log('NEW', newstate)
 };
 
 export { connect } from 'react-redux';
