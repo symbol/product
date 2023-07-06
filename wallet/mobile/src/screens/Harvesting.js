@@ -53,7 +53,8 @@ export const Harvesting = connect((state) => ({
     const [speed, setSpeed] = useState('medium');
     const transactionSize = 700;
     const transactionFees = useMemo(() => getTransactionFees({}, networkProperties, transactionSize), [])
-    const confirmTableData = { nodeUrl, fee };
+    const confirmStartTableData = { nodeUrl, fee };
+    const confirmStopTableData = { fee };
 
     const [fetchStatus, isStatusLoading, status] = useDataManager(
         async () => {
@@ -291,7 +292,7 @@ export const Harvesting = connect((state) => ({
                 type="confirm"
                 title={$t('s_harvesting_confirm_start_title')}
                 text={$t('s_harvesting_confirm_start_description')}
-                body={<TableView style={{marginTop: spacings.margin}} data={confirmTableData}/>} 
+                body={<TableView style={{marginTop: spacings.margin}} data={confirmStartTableData}/>}
                 isVisible={isStartConfirmVisible}
                 onSuccess={handleStartPress}
                 onCancel={toggleStartConfirm}
@@ -299,7 +300,7 @@ export const Harvesting = connect((state) => ({
             <DialogBox
                 type="confirm"
                 title={$t('s_harvesting_confirm_stop_title')}
-                body={<TableView style={{marginTop: spacings.margin}} data={confirmTableData}/>} 
+                body={<TableView style={{marginTop: spacings.margin}} data={confirmStopTableData}/>}
                 isVisible={isStopConfirmVisible}
                 onSuccess={handleStopPress}
                 onCancel={toggleStopConfirm}
