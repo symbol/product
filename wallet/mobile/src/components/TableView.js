@@ -23,7 +23,18 @@ const renderTypeMap = {
         '_receivedCosignatures',
         '_addressDeletions',
     ],
-    copyButton: ['metadataValue', 'privateKey', 'publicKey', 'vrfPublicKey', 'remotePublicKey', 'linkedPublicKey', 'nodePublicKey', 'secret', 'proof', 'hash'],
+    copyButton: [
+        'metadataValue',
+        'privateKey',
+        'publicKey',
+        'vrfPublicKey',
+        'remotePublicKey',
+        'linkedPublicKey',
+        'nodePublicKey',
+        'secret',
+        'proof',
+        'hash',
+    ],
     boolean: ['supplyMutable', 'transferable', 'restrictable', 'revokable'],
     fee: ['fee', 'maxFee'],
     message: ['message'],
@@ -160,9 +171,7 @@ export const TableView = connect((state) => ({
                             mosaic.name === 'symbol.xym'
                                 ? require('src/assets/images/icon-select-mosaic-native.png')
                                 : require('src/assets/images/icon-select-mosaic-custom.png');
-                        const getMosaicStyle = (index) => index === 0
-                            ? [styles.mosaic, { marginTop: 0 }]
-                            : styles.mosaic;
+                        const getMosaicStyle = (index) => (index === 0 ? [styles.mosaic, { marginTop: 0 }] : styles.mosaic);
                         ItemTemplate = (
                             <View style={styles.col}>
                                 {item.value.map((mosaic, index) => (

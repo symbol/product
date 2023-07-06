@@ -1,7 +1,18 @@
 import React, { useState } from 'react';
 import { Image, StyleSheet } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
-import { Button, ButtonClose, ButtonPlain, FormItem, MnemonicInput, QRCode, QRScanner, Screen, StyledText, WalletCreationAnimation } from 'src/components';
+import {
+    Button,
+    ButtonClose,
+    ButtonPlain,
+    FormItem,
+    MnemonicInput,
+    QRCode,
+    QRScanner,
+    Screen,
+    StyledText,
+    WalletCreationAnimation,
+} from 'src/components';
 import store from 'src/store';
 import { createOptInPrivateKeyFromMnemonic, handleError, useDataManager, usePasscode } from 'src/utils';
 import { Router } from 'src/Router';
@@ -21,14 +32,14 @@ export const ImportWallet = () => {
         $t('s_importWallet_loading_step3'),
         $t('s_importWallet_loading_step4'),
         $t('s_importWallet_loading_step5'),
-    ]
+    ];
 
     const toggleQRScanner = () => setIsQRScannerVisible(!isQRScannerVisible);
     const next = () => createPasscode();
     const [checkOptInAccounts] = useDataManager(
         async () => {
             const optInPrivateKey = createOptInPrivateKeyFromMnemonic(mnemonic);
-            setLoadingStep(4)
+            setLoadingStep(4);
             setTimeout(() => saveMnemonic(optInPrivateKey), 500);
         },
         null,
@@ -55,7 +66,7 @@ export const ImportWallet = () => {
         setTimeout(() => setLoadingStep(2), 500);
         setTimeout(() => setLoadingStep(3), 1000);
         setTimeout(checkOptInAccounts, 1500);
-    }
+    };
     const completeLoading = async () => {
         Router.goToHome();
     };
@@ -64,9 +75,11 @@ export const ImportWallet = () => {
     return (
         <Screen
             bottomComponent={
-                !isLoading && <FormItem>
-                    <Button title={$t('button_next')} isDisabled={isButtonDisabled} onPress={next} />
-                </FormItem>
+                !isLoading && (
+                    <FormItem>
+                        <Button title={$t('button_next')} isDisabled={isButtonDisabled} onPress={next} />
+                    </FormItem>
+                )
             }
         >
             {isLoading && <WalletCreationAnimation steps={steps} currentStep={loadingStep} />}

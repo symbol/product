@@ -15,7 +15,7 @@ export class AccountService {
                 linkedPublicKey: linked ? linked.publicKey : null,
                 nodePublicKey: node ? node.publicKey : null,
                 vrfPublicKey: vrf ? vrf.publicKey : null,
-            }
+            },
         };
     }
 

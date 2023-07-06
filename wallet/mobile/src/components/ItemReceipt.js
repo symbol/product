@@ -15,7 +15,7 @@ export const ItemReceipt = connect((state) => ({
     const description = `Block #${height}`;
     const amountText = `${amount} ${ticker}`;
     const iconSrc = require('src/assets/images/icon-harvesting.png');
-    const title = 'Harvesting Reward'//$t(`transactionDescriptor_16724`);
+    const title = 'Harvesting Reward'; //$t(`transactionDescriptor_16724`);
 
     return (
         <ItemBase contentContainerStyle={styles.root} isLayoutAnimationEnabled onPress={onPress}>

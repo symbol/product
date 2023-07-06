@@ -15,8 +15,8 @@ export default {
         linkedKeys: {
             linkedPublicKey: null,
             nodePublicKey: null,
-            vrfPublicKey: null
-        }
+            vrfPublicKey: null,
+        },
     },
     mutations: {
         setCurrent(state, payload) {
@@ -75,7 +75,7 @@ export default {
                 commit({ type: 'account/setMosaics', payload: [] });
                 commit({ type: 'account/setNamespaces', payload: [] });
                 commit({ type: 'account/setImportance', payload: 0 });
-                commit({ type: 'account/setLinkedKeys', payload: {}});
+                commit({ type: 'account/setLinkedKeys', payload: {} });
             }
 
             commit({ type: 'account/setCurrent', payload: currentAccount });

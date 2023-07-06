@@ -72,7 +72,7 @@ export const AccountDetails = connect((state) => ({
             <DialogBox
                 type="alert"
                 title={$t('dialog_sensitive')}
-                body={<TableView data={{privateKey}} />}
+                body={<TableView data={{ privateKey }} />}
                 isVisible={isPrivateKeyDialogShown}
                 onSuccess={togglePrivateKeyDialog}
             />

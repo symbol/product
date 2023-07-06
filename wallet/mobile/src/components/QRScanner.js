@@ -102,6 +102,6 @@ const styles = StyleSheet.create({
     buttonCancel: {
         position: 'absolute',
         right: spacings.margin,
-        top: spacings.margin
+        top: spacings.margin,
     },
 });

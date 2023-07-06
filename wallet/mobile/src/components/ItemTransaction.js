@@ -4,7 +4,15 @@ import { FormItem, ItemBase } from 'src/components';
 import { $t } from 'src/localization';
 import { connect } from 'src/store';
 import { colors, fonts, spacings } from 'src/styles';
-import { formatDate, getAddressName, isAggregateTransaction, isHarvestingServiceTransaction, isIncomingTransaction, isOutgoingTransaction, trunc } from 'src/utils';
+import {
+    formatDate,
+    getAddressName,
+    isAggregateTransaction,
+    isHarvestingServiceTransaction,
+    isIncomingTransaction,
+    isOutgoingTransaction,
+    trunc,
+} from 'src/utils';
 import { TransactionType } from 'symbol-sdk';
 
 export const ItemTransaction = connect((state) => ({
@@ -59,8 +67,8 @@ export const ItemTransaction = connect((state) => ({
         const count = transaction.innerTransactions.length - 1;
         description = isHarvestingServiceTransaction(transaction)
             ? $t('transactionDescriptionShort_aggregateHarvesting')
-            : count 
-            ? $t('transactionDescriptionShort_aggregateMultiple', { type, count }) 
+            : count
+            ? $t('transactionDescriptionShort_aggregateMultiple', { type, count })
             : type;
         iconSrc = require('src/assets/images/icon-tx-aggregate.png');
     } else if (type === TransactionType.NAMESPACE_REGISTRATION) {

@@ -106,7 +106,7 @@ export const AccountList = connect((state) => ({
     const handleConfirmRemove = () => {
         removeAccount(accountToBeRemoved);
         toggleRemoveConfirm();
-    }
+    };
 
     const fetchBalances = async () => {
         const updatedAccountBalanceStateMap = {};

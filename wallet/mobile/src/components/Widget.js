@@ -5,10 +5,7 @@ import { StyledText, TouchableNative } from 'src/components';
 
 export const Widget = (props) => {
     const { children, title, color, onHeaderPress } = props;
-    const style = [
-        styles.widget, 
-        color ? { backgroundColor: color } : null
-    ];
+    const style = [styles.widget, color ? { backgroundColor: color } : null];
 
     return (
         <View style={style}>

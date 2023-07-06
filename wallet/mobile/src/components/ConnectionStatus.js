@@ -41,7 +41,7 @@ export const ConnectionStatus = connect((state) => ({
             default:
                 isShown.value = withTiming(true, timings.press);
         }
-    }
+    };
 
     const animatedContainer = useAnimatedStyle(() => ({
         backgroundColor: interpolateColor(color.value, [0, 1, 2], [statusColors[0], statusColors[1], statusColors[2]]),

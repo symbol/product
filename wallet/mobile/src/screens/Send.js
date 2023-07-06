@@ -35,17 +35,8 @@ export const Send = connect((state) => ({
     ticker: state.network.ticker,
     chainHeight: state.network.chainHeight,
 }))(function Send(props) {
-    const {
-        currentAccount,
-        cosignatories,
-        isMultisigAccount,
-        isAccountReady,
-        mosaics,
-        networkProperties,
-        ticker,
-        chainHeight,
-        route,
-    } = props;
+    const { currentAccount, cosignatories, isMultisigAccount, isAccountReady, mosaics, networkProperties, ticker, chainHeight, route } =
+        props;
     const [recipient, setRecipient] = useProp(route.params?.recipientAddress || '');
     const [mosaicId, setMosaicId] = useProp(route.params?.mosaicId, mosaics[0]?.id);
     const [amount, setAmount] = useProp(route.params?.amount, '0');
@@ -102,7 +93,7 @@ export const Send = connect((state) => ({
     const handleConfirmPress = () => {
         toggleConfirm();
         confirmSend();
-    }
+    };
 
     useEffect(() => {
         if (transactionFees.medium) {

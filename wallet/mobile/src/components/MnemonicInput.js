@@ -21,20 +21,18 @@ export const MnemonicInput = (props) => {
             .replace(/\s+/g, ' ')
             .toLowerCase();
         onChange(formattedString);
-        
+
         const lastWord = formattedString.split(' ').pop();
-        const suggestions = _.filter(wordlist, word => 
-            word.startsWith(lastWord)
-        );
+        const suggestions = _.filter(wordlist, (word) => word.startsWith(lastWord));
         const isSuggestionsShown = suggestions.length < 20;
         setSuggestions(isSuggestionsShown ? suggestions : []);
-    }
+    };
     const handleSuggestionPress = (word) => {
         const lastSpaceIndex = value.lastIndexOf(' ');
         const stringWithoutLastWord = value.substring(0, lastSpaceIndex);
         handleChange(`${stringWithoutLastWord} ${word} `);
         textBoxRef.current.focus();
-    }
+    };
 
     useEffect(() => {
         onValidityChange(!errorMessage);
@@ -42,14 +40,14 @@ export const MnemonicInput = (props) => {
 
     return (
         <View style={styles.root}>
-            <TextBox 
-                multiline 
+            <TextBox
+                multiline
                 innerRef={textBoxRef}
-                testID={testID} 
-                errorMessage={errorMessage} 
+                testID={testID}
+                errorMessage={errorMessage}
                 value={value}
                 keyboardType={Platform.OS === 'ios' ? null : 'visible-password'}
-                onChange={handleChange} 
+                onChange={handleChange}
             />
             <View style={styles.suggestionsWrapper}>
                 <FlatList
@@ -61,12 +59,14 @@ export const MnemonicInput = (props) => {
                     keyExtractor={(_, index) => 'sg' + index}
                     renderItem={({ item }) => (
                         <View style={styles.button}>
-                            <TouchableNative 
+                            <TouchableNative
                                 containerStyle={styles.buttonInner}
                                 color={colors.bgCard}
                                 onPress={() => handleSuggestionPress(item)}
                             >
-                                <StyledText type="label" style={styles.text}>{item}</StyledText>
+                                <StyledText type="label" style={styles.text}>
+                                    {item}
+                                </StyledText>
                             </TouchableNative>
                         </View>
                     )}
@@ -84,7 +84,7 @@ const styles = StyleSheet.create({
         position: 'absolute',
         bottom: 0,
         width: '100%',
-        paddingHorizontal: borders.borderWidth
+        paddingHorizontal: borders.borderWidth,
     },
     suggestions: {
         width: '100%',
@@ -105,10 +105,10 @@ const styles = StyleSheet.create({
         paddingVertical: spacings.margin / 2,
         justifyContent: 'center',
         alignItems: 'center',
-        height: '100%'
+        height: '100%',
     },
     text: {
         fontSize: 13,
-        color: colors.bgMain
+        color: colors.bgMain,
     },
 });

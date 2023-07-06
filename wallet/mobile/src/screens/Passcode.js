@@ -15,7 +15,7 @@ export const Passcode = (props) => {
         setIsLoading(true);
         DeviceEventEmitter.emit(successEvent);
 
-        if(!keepNavigation) {
+        if (!keepNavigation) {
             Router.goBack();
         }
     };
@@ -23,7 +23,7 @@ export const Passcode = (props) => {
     const onCancel = () => {
         DeviceEventEmitter.emit(cancelEvent);
 
-        if(!keepNavigation) {
+        if (!keepNavigation) {
             Router.goBack();
         }
     };
@@ -103,7 +103,7 @@ const styles = StyleSheet.create({
     buttonCancel: {
         position: 'absolute',
         right: spacings.margin,
-        top: spacings.margin
+        top: spacings.margin,
     },
     buttonBackspace: {
         height: '100%',

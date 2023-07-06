@@ -14,9 +14,7 @@ export const TouchableNative = (props) => {
         </TouchableNativeFeedback>
     ) : (
         <TouchableHighlight underlayColor={getIosColor()} style={containerStyle} {...rest}>
-            <View style={style}>
-                {children}
-            </View> 
+            <View style={style}>{children}</View>
         </TouchableHighlight>
     );
 };

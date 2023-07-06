@@ -46,7 +46,7 @@ export function ItemAsset(props) {
 
     useEffect(() => {
         if (!isUnlimitedDuration) {
-            setTimeout(() => (displayedPercentage.value = withTiming(agePercent, {duration: 500})), 1000);
+            setTimeout(() => (displayedPercentage.value = withTiming(agePercent, { duration: 500 })), 1000);
         }
     }, [agePercent]);
 
