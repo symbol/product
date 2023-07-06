@@ -205,7 +205,7 @@ export const History = connect((state) => ({
                             <>
                                 <ItemTransactionPlaceholder />
                                 <ItemTransactionPlaceholder />
-                                <ActivityIndicator color={colors.primary} style={styles.loadingIndicator} />
+                                {isPageLoading && <ActivityIndicator color={colors.primary} style={styles.loadingIndicator} />}
                             </>
                         )}
                     </FormItem>

@@ -1,7 +1,7 @@
 import Color from 'color';
 import React, { useMemo } from 'react';
 import { View } from 'react-native';
-import { TouchableHighlight, TouchableNativeFeedback, TouchableOpacity } from 'react-native-gesture-handler';
+import { TouchableHighlight, TouchableNativeFeedback } from 'react-native-gesture-handler';
 
 export const TouchableNative = (props) => {
     const { color, children, style, containerStyle, ...rest } = props;
