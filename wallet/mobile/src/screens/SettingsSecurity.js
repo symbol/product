@@ -39,7 +39,6 @@ export function SettingsSecurity() {
 
     const showMnemonic = () => {
         setIsMnemonicShown(true);
-        Router.goBack();
     };
     const confirmShowMnemonic = usePasscode('enter', showMnemonic);
 
