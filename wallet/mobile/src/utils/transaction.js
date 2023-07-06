@@ -29,8 +29,8 @@ export const isHarvestingServiceTransaction = (transaction) => {
     let hasUnrelatedTypes = false;
     const transferTransactions = [];
 
-    transaction.innerTransactions.forEach(innerTransaction => {
-        const isKeyLinkTransaction = keyLinkTypes.some(type => type === innerTransaction.type);
+    transaction.innerTransactions.forEach((innerTransaction) => {
+        const isKeyLinkTransaction = keyLinkTypes.some((type) => type === innerTransaction.type);
         if (isKeyLinkTransaction) {
             hasKeyLinkTransaction = true;
             return;
@@ -56,7 +56,7 @@ export const isHarvestingServiceTransaction = (transaction) => {
     }
 
     return true;
-}
+};
 
 export const getTransactionFees = (transaction, networkProperties, transactionSize) => {
     const {

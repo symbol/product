@@ -68,13 +68,7 @@ export const InputAddress = (props) => {
                     </TouchableOpacity>
                 }
             />
-            <InputAddressDropdown
-                title={title}
-                value={value}
-                isOpen={isDropdownOpen}
-                onChange={onChange}
-                onClose={toggleDropdown}
-            />
+            <InputAddressDropdown title={title} value={value} isOpen={isDropdownOpen} onChange={onChange} onClose={toggleDropdown} />
         </>
     );
 };

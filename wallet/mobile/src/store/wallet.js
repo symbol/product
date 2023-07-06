@@ -81,7 +81,7 @@ export default {
         fetchAll: async ({ dispatchAction }) => {
             await dispatchAction({ type: 'network/fetchData' });
             await dispatchAction({ type: 'account/fetchData' });
-            await dispatchAction({ type: 'transaction/fetchData', payload: {}});
+            await dispatchAction({ type: 'transaction/fetchData', payload: {} });
         },
         // Load data from cache or set an empty values
         loadState: async ({ commit }) => {
@@ -116,11 +116,14 @@ export default {
             await dispatchAction({ type: 'wallet/addSeedAccount', payload: { name, index: 0, networkIdentifier: 'testnet' } });
             await dispatchAction({ type: 'wallet/addSeedAccount', payload: { name, index: 0, networkIdentifier: 'mainnet' } });
             if (optInPrivateKey) {
-                await dispatchAction({ type: 'wallet/addExternalAccount', payload: { 
-                    name: 'Opt-In', 
-                    privateKey: optInPrivateKey, 
-                    networkIdentifier: 'mainnet' 
-                }});
+                await dispatchAction({
+                    type: 'wallet/addExternalAccount',
+                    payload: {
+                        name: 'Opt-In',
+                        privateKey: optInPrivateKey,
+                        networkIdentifier: 'mainnet',
+                    },
+                });
             }
             await dispatchAction({ type: 'wallet/loadAll' });
         },

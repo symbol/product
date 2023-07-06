@@ -47,7 +47,9 @@ export const Actions = connect((state) => ({
                     <ItemBase contentContainerStyle={styles.item} key={'act' + index} onPress={item.handler}>
                         <Image source={item.icon} style={styles.itemIcon} />
                         <View style={styles.itemTextContainer}>
-                            <StyledText type="subtitle" style={styles.itemTitle}>{item.title}</StyledText>
+                            <StyledText type="subtitle" style={styles.itemTitle}>
+                                {item.title}
+                            </StyledText>
                             <StyledText type="body">{item.description}</StyledText>
                         </View>
                     </ItemBase>
@@ -58,8 +60,7 @@ export const Actions = connect((state) => ({
 });
 
 const styles = StyleSheet.create({
-    container: {
-    },
+    container: {},
     item: {
         padding: 0,
         minHeight: 100,
@@ -75,9 +76,9 @@ const styles = StyleSheet.create({
     },
     itemTextContainer: {
         marginLeft: 100,
-        padding: spacings.margin
+        padding: spacings.margin,
     },
     itemTitle: {
-        marginBottom: spacings.margin / 2
-    }
+        marginBottom: spacings.margin / 2,
+    },
 });

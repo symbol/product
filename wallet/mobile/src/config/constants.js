@@ -93,6 +93,6 @@ export class Constants {
     };
 
     static Events = {
-        CONFIRMED_TRANSACTION: 'event.listener.confirmed'
-    }
+        CONFIRMED_TRANSACTION: 'event.listener.confirmed',
+    };
 }

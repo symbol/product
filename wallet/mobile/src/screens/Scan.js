@@ -1,6 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import { useIsFocused } from '@react-navigation/native';
-import { AccountAvatar, Button, FormItem, ItemTransaction, QRScanner, Screen, StyledText, TableView, TabNavigator, TitleBar, Widget } from 'src/components';
+import {
+    AccountAvatar,
+    Button,
+    FormItem,
+    ItemTransaction,
+    QRScanner,
+    Screen,
+    StyledText,
+    TabNavigator,
+    TableView,
+    TitleBar,
+    Widget,
+} from 'src/components';
 import { $t } from 'src/localization';
 import { Router } from 'src/Router';
 import { connect } from 'src/store';
@@ -14,10 +26,10 @@ const getQrAddress = (data) => {
         return addressFromPublicKey(data.accountPublicKey, networkIdentifier);
     }
     return addressFromPrivateKey(data.accountPrivateKey, networkIdentifier);
-}
+};
 const getQrAmount = (data, networkProperties) => {
     return getNativeMosaicAmount(data.transaction.mosaics, networkProperties.networkCurrency.mosaicId);
-}
+};
 const renderEmptyComponent = () => () => null;
 const AccountCard = ({ address }) => (
     <FormItem>
@@ -26,20 +38,22 @@ const AccountCard = ({ address }) => (
                 <AccountAvatar address={address} size="lg" />
             </FormItem>
             <FormItem>
-                <TableView data={{address}} rawAddresses />
+                <TableView data={{ address }} rawAddresses />
             </FormItem>
         </Widget>
     </FormItem>
 );
 const TransactionCard = ({ recipientAddress, signerAddress, amount }) => (
-    <ItemTransaction transaction={{ 
-        recipientAddress, 
-        signerAddress, 
-        amount: -amount, 
-        type: TransactionType.TRANSFER, 
-        deadline: Date().toString() 
-    }} />
-)
+    <ItemTransaction
+        transaction={{
+            recipientAddress,
+            signerAddress,
+            amount: -amount,
+            type: TransactionType.TRANSFER,
+            deadline: Date().toString(),
+        }}
+    />
+);
 
 export const Scan = connect((state) => ({
     balances: state.wallet.balances,
@@ -108,19 +122,22 @@ export const Scan = connect((state) => ({
                 networkTypeToIdentifier(data.networkType) === networkIdentifier &&
                 data.transaction.mosaics?.length === 1 &&
                 data.transaction.mosaics[0].id === networkProperties.networkCurrency.mosaicId,
-            renderComponent: (data) => <TransactionCard 
-                recipientAddress={data.transaction.recipientAddress} 
-                amount={getQrAmount(data, networkProperties)} 
-                signerAddress={currentAccount.address}
-            />,
+            renderComponent: (data) => (
+                <TransactionCard
+                    recipientAddress={data.transaction.recipientAddress}
+                    amount={getQrAmount(data, networkProperties)}
+                    signerAddress={currentAccount.address}
+                />
+            ),
             actions: [
                 {
                     title: $t('button_sendTransferTransaction'),
-                    handler: (data) => Router.goToSend({
-                        recipientAddress: data.transaction.recipientAddress,
-                        amount: getQrAmount(data, networkProperties),
-                        message: data.transaction.message,
-                    })
+                    handler: (data) =>
+                        Router.goToSend({
+                            recipientAddress: data.transaction.recipientAddress,
+                            amount: getQrAmount(data, networkProperties),
+                            message: data.transaction.message,
+                        }),
                 },
             ],
         },
@@ -170,10 +187,7 @@ export const Scan = connect((state) => ({
     }, [isFocused]);
 
     return (
-        <Screen
-            titleBar={<TitleBar accountSelector settings currentAccount={currentAccount} />}
-            navigator={<TabNavigator />}
-        >
+        <Screen titleBar={<TitleBar accountSelector settings currentAccount={currentAccount} />} navigator={<TabNavigator />}>
             <FormItem>
                 <StyledText type="title">{$t('s_scan_title')}</StyledText>
                 <StyledText type="body">{description}</StyledText>

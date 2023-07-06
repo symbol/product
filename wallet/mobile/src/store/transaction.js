@@ -1,7 +1,12 @@
 import _ from 'lodash';
 import { MosaicService, NamespaceService, TransactionService } from 'src/services';
 import { PersistentStorage } from 'src/storage';
-import { filterAllowedTransactions, filterBlacklistedTransactions, getUnresolvedIdsFromTransactionDTOs, transactionFromDTO } from 'src/utils';
+import {
+    filterAllowedTransactions,
+    filterBlacklistedTransactions,
+    getUnresolvedIdsFromTransactionDTOs,
+    transactionFromDTO,
+} from 'src/utils';
 
 export default {
     namespace: 'transaction',
@@ -79,16 +84,15 @@ export default {
             const confirmedPage = confirmedDTO.map((transactionDTO) => transactionFromDTO(transactionDTO, transactionOptions));
 
             //Filter allowed
-            let  filteredPartialPage;
-            let  filteredUnconfirmedPage;
-            let  filteredConfirmedPage;
+            let filteredPartialPage;
+            let filteredUnconfirmedPage;
+            let filteredConfirmedPage;
 
             if (filter?.blocked) {
                 filteredPartialPage = filterBlacklistedTransactions(partialPage, blackList);
                 filteredUnconfirmedPage = filterBlacklistedTransactions(unconfirmedPage, blackList);
                 filteredConfirmedPage = filterBlacklistedTransactions(confirmedPage, blackList);
-            }
-            else {
+            } else {
                 filteredPartialPage = filterAllowedTransactions(partialPage, blackList);
                 filteredUnconfirmedPage = filterAllowedTransactions(unconfirmedPage, blackList);
                 filteredConfirmedPage = filterAllowedTransactions(confirmedPage, blackList);
@@ -149,8 +153,7 @@ export default {
             let filteredConfirmedPage;
             if (filter?.blocked) {
                 filteredConfirmedPage = filterBlacklistedTransactions(confirmedPage, blackList);
-            }
-            else {
+            } else {
                 filteredConfirmedPage = filterAllowedTransactions(confirmedPage, blackList);
             }
             const updatedConfirmed = _.uniqBy([...confirmed, ...filteredConfirmedPage], 'hash');

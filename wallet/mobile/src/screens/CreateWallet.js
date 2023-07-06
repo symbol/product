@@ -2,7 +2,18 @@ import React, { useEffect, useState } from 'react';
 import { Image, StyleSheet } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import { showMessage } from 'react-native-flash-message';
-import { Button, ButtonClose, Checkbox, FormItem, MnemonicView, Screen, Steps, StyledText, TextBox, WalletCreationAnimation } from 'src/components';
+import {
+    Button,
+    ButtonClose,
+    Checkbox,
+    FormItem,
+    MnemonicView,
+    Screen,
+    Steps,
+    StyledText,
+    TextBox,
+    WalletCreationAnimation,
+} from 'src/components';
 import store from 'src/store';
 import {
     createPrivateKeysFromMnemonic,
@@ -36,7 +47,7 @@ export const CreateWallet = () => {
         $t('s_createWallet_loading_step2'),
         $t('s_createWallet_loading_step3'),
         $t('s_createWallet_loading_step4'),
-    ]
+    ];
 
     const showMnemonic = () => setIsMnemonicShown(true);
     const [downloadMnemonic, isMnemonicDownloading] = useDataManager(
@@ -56,7 +67,7 @@ export const CreateWallet = () => {
         setTimeout(() => setLoadingStep(2), 500);
         setTimeout(() => setLoadingStep(3), 1000);
         setTimeout(saveMnemonic, 1500);
-    }
+    };
     const completeLoading = async () => {
         Router.goToHome();
     };

@@ -2,20 +2,9 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { DeviceEventEmitter, Image, StyleSheet, View } from 'react-native';
 import { RefreshControl, ScrollView } from 'react-native-gesture-handler';
 import Animated, { FadeIn, FadeInDown, FadeOut } from 'react-native-reanimated';
-import {
-    Button,
-    DialogBox,
-    Dropdown,
-    FeeSelector,
-    FormItem,
-    Screen,
-    StyledText,
-    TableView,
-    Widget,
-} from 'src/components';
+import { Button, DialogBox, Dropdown, FeeSelector, FormItem, Screen, StyledText, TableView, Widget } from 'src/components';
 import { Constants } from 'src/config';
 import { $t } from 'src/localization';
-import { Router } from 'src/Router';
 import { AccountService, HarvestingService } from 'src/services';
 import { connect } from 'src/store';
 import { colors, fonts, layout, spacings } from 'src/styles';
@@ -32,19 +21,10 @@ export const Harvesting = connect((state) => ({
     nodeUrls: state.network.nodeUrls,
     ticker: state.network.ticker,
 }))(function Harvesting(props) {
-    const {
-        balances,
-        currentAccount,
-        isAccountReady,
-        isWalletReady,
-        networkIdentifier,
-        networkProperties,
-        chainHeight,
-        nodeUrls,
-        ticker
-    } = props;
-    const accountBalance = currentAccount ? balances[currentAccount.address] : 0
-    const nodeList = nodeUrls[networkIdentifier].map(el => ({label: el, value: el}));
+    const { balances, currentAccount, isAccountReady, isWalletReady, networkIdentifier, networkProperties, chainHeight, nodeUrls, ticker } =
+        props;
+    const accountBalance = currentAccount ? balances[currentAccount.address] : 0;
+    const nodeList = nodeUrls[networkIdentifier].map((el) => ({ label: el, value: el }));
     const [isActionMade, setIsActionMade] = useState(false);
     const [nodeUrl, setNodeUrl] = useState(nodeList[0].value);
     const [isStartConfirmVisible, toggleStartConfirm] = useToggle(false);
@@ -52,7 +32,7 @@ export const Harvesting = connect((state) => ({
     const [fee, setFee] = useState(0);
     const [speed, setSpeed] = useState('medium');
     const transactionSize = 700;
-    const transactionFees = useMemo(() => getTransactionFees({}, networkProperties, transactionSize), [])
+    const transactionFees = useMemo(() => getTransactionFees({}, networkProperties, transactionSize), []);
     const confirmStartTableData = { nodeUrl, fee };
     const confirmStopTableData = { fee };
 
@@ -75,7 +55,7 @@ export const Harvesting = connect((state) => ({
             latestHeight: null,
             latestDate: null,
             amountPer30Days: 0,
-            blocksHarvestedPer30Days: 0
+            blocksHarvestedPer30Days: 0,
         },
         handleError
     );
@@ -100,7 +80,7 @@ export const Harvesting = connect((state) => ({
             fetchStatus();
             fetchHarvestedBlocks();
         }
-    }
+    };
     const confirmStart = usePasscode('enter', start);
     const confirmStop = usePasscode('enter', stop);
     const handleStartPress = () => {
@@ -116,7 +96,7 @@ export const Harvesting = connect((state) => ({
     const latestHeightText = summary.latestHeight ? `#${summary.latestHeight}` : $t('s_harvesting_harvested_nothing_to_show');
     const latestDateText = summary.latestDate ? formatDate(summary.latestDate, $t, true) : ' ';
     const amountPer30DaysText = summary.amountPer30Days ? `+ ${summary.amountPer30Days} ${ticker}` : `0 ${ticker}`;
-    const blocksHarvestedPer30DaysText = $t('s_harvesting_harvested_blocks', {count: summary.blocksHarvestedPer30Days});
+    const blocksHarvestedPer30DaysText = $t('s_harvesting_harvested_blocks', { count: summary.blocksHarvestedPer30Days });
     const isEnoughBalance = accountBalance > 10000;
     const isEnoughImportance = importance > 0;
     const isAccountEligibleForHarvesting = isEnoughBalance && isEnoughImportance;
@@ -136,7 +116,7 @@ export const Harvesting = connect((state) => ({
             isNodeSelectorVisible = isAccountEligibleForHarvesting;
             isButtonVisible = isAccountEligibleForHarvesting;
             buttonHandle = toggleStartConfirm;
-            buttonText = $t('button_start');;
+            buttonText = $t('button_start');
             statusColor = colors.neutral;
             break;
         case 'pending':
@@ -182,11 +162,9 @@ export const Harvesting = connect((state) => ({
 
     if (status.status === 'inactive' && !isEnoughBalance) {
         warningText = $t('s_harvesting_warning_balance');
-    }
-    else if (status.status === 'inactive' && !isEnoughImportance) {
+    } else if (status.status === 'inactive' && !isEnoughImportance) {
         warningText = $t('s_harvesting_warning_importance');
-    }
-    else if (status.status === 'inactive' && linkedKeys.nodePublicKey) {
+    } else if (status.status === 'inactive' && linkedKeys.nodePublicKey) {
         warningText = $t('s_harvesting_warning_node_down');
     }
 
@@ -200,7 +178,7 @@ export const Harvesting = connect((state) => ({
 
         () => {
             DeviceEventEmitter.removeAllListeners(Constants.Events.CONFIRMED_TRANSACTION);
-        }
+        };
     }, [isAccountReady, isWalletReady]);
 
     useEffect(() => {
@@ -221,20 +199,28 @@ export const Harvesting = connect((state) => ({
                     <Widget color={statusColor}>
                         <FormItem style={[layout.row, layout.alignCenter]}>
                             <Image source={statusIconSrc} style={styles.statusIcon} />
-                            <StyledText type="body" style={[styles.statusTextColor, styles.statusTextLabel]}>{statusText}</StyledText>
+                            <StyledText type="body" style={[styles.statusTextColor, styles.statusTextLabel]}>
+                                {statusText}
+                            </StyledText>
                         </FormItem>
                         {status.nodeUrl && (
                             <Animated.View entering={FadeIn} exiting={FadeOut}>
                                 <FormItem clear="top">
-                                    <StyledText type="label" style={styles.statusTextColor}>Node</StyledText>
-                                    <StyledText type="body" style={styles.statusTextColor}>{status.nodeUrl}</StyledText>
+                                    <StyledText type="label" style={styles.statusTextColor}>
+                                        Node
+                                    </StyledText>
+                                    <StyledText type="body" style={styles.statusTextColor}>
+                                        {status.nodeUrl}
+                                    </StyledText>
                                 </FormItem>
                             </Animated.View>
                         )}
                         {!!warningText && (
                             <Animated.View entering={FadeIn} exiting={FadeOut}>
                                 <FormItem clear="top">
-                                    <StyledText type="body" style={styles.statusTextColor}>{warningText}</StyledText>
+                                    <StyledText type="body" style={styles.statusTextColor}>
+                                        {warningText}
+                                    </StyledText>
                                 </FormItem>
                             </Animated.View>
                         )}
@@ -249,7 +235,9 @@ export const Harvesting = connect((state) => ({
                                 <Animated.View style={layout.alignEnd} entering={FadeIn} exiting={FadeOut} key={latestAmountText}>
                                     <StyledText type="subtitle">{latestAmountText}</StyledText>
                                     <StyledText type="regular">{latestHeightText}</StyledText>
-                                    <StyledText type="regular" style={styles.date}>{latestDateText}</StyledText>
+                                    <StyledText type="regular" style={styles.date}>
+                                        {latestDateText}
+                                    </StyledText>
                                 </Animated.View>
                             </View>
                             <View style={styles.separator} />
@@ -271,20 +259,22 @@ export const Harvesting = connect((state) => ({
                                 <Dropdown title={$t('input_nodeUrl')} value={nodeUrl} list={nodeList} onChange={setNodeUrl} />
                             )}
                         </FormItem>
-                        {isButtonVisible && (<>
-                            <FormItem clear="bottom">
-                                <FeeSelector
-                                    title={$t('input_transactionFee')}
-                                    value={speed}
-                                    fees={transactionFees}
-                                    ticker={ticker}
-                                    onChange={setSpeed}
-                                />
-                            </FormItem>
-                            <FormItem>
-                                <Button title={buttonText} onPress={buttonHandle} />
-                            </FormItem>
-                        </>)}
+                        {isButtonVisible && (
+                            <>
+                                <FormItem clear="bottom">
+                                    <FeeSelector
+                                        title={$t('input_transactionFee')}
+                                        value={speed}
+                                        fees={transactionFees}
+                                        ticker={ticker}
+                                        onChange={setSpeed}
+                                    />
+                                </FormItem>
+                                <FormItem>
+                                    <Button title={buttonText} onPress={buttonHandle} />
+                                </FormItem>
+                            </>
+                        )}
                     </Animated.View>
                 )}
             </ScrollView>
@@ -292,7 +282,7 @@ export const Harvesting = connect((state) => ({
                 type="confirm"
                 title={$t('s_harvesting_confirm_start_title')}
                 text={$t('s_harvesting_confirm_start_description')}
-                body={<TableView style={{marginTop: spacings.margin}} data={confirmStartTableData}/>}
+                body={<TableView style={{ marginTop: spacings.margin }} data={confirmStartTableData} />}
                 isVisible={isStartConfirmVisible}
                 onSuccess={handleStartPress}
                 onCancel={toggleStartConfirm}
@@ -300,7 +290,7 @@ export const Harvesting = connect((state) => ({
             <DialogBox
                 type="confirm"
                 title={$t('s_harvesting_confirm_stop_title')}
-                body={<TableView style={{marginTop: spacings.margin}} data={confirmStopTableData}/>}
+                body={<TableView style={{ marginTop: spacings.margin }} data={confirmStopTableData} />}
                 isVisible={isStopConfirmVisible}
                 onSuccess={handleStopPress}
                 onCancel={toggleStopConfirm}
@@ -309,17 +299,16 @@ export const Harvesting = connect((state) => ({
     );
 });
 
-
 const styles = StyleSheet.create({
     separator: {
         width: '100%',
         height: 2,
         marginVertical: spacings.margin,
         backgroundColor: colors.textBody,
-        opacity: 0.4
+        opacity: 0.4,
     },
     statusTextColor: {
-        color: colors.bgForm
+        color: colors.bgForm,
     },
     statusTextLabel: {
         ...fonts.amount,

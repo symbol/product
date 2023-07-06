@@ -139,7 +139,7 @@ export const transferTransactionFromDTO = (transaction, { networkProperties, mos
         message = {
             text: messagePayload,
             isEncrypted: isMessageEncrypted,
-            isDelegatedHarvestingMessage
+            isDelegatedHarvestingMessage,
         };
     } else if (messagePayload && isMessageEncrypted) {
         message = {

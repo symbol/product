@@ -75,9 +75,15 @@ const App = () => {
                         <Provider store={store}>
                             {isMainContainerShown && <ConnectionStatus />}
                             <FlashMessage
-                                statusBarHeight={8} animationDuration={200} titleStyle={flashMessageTextStyle} style={flashMessageStyle} />
+                                statusBarHeight={8}
+                                animationDuration={200}
+                                titleStyle={flashMessageTextStyle}
+                                style={flashMessageStyle}
+                            />
                             <RouterView isActive={isMainContainerShown} />
-                            {isPasscodeShown && <Passcode hideCancelButton keepListener keepNavigation route={{ params: passcodeParams }} />}
+                            {isPasscodeShown && (
+                                <Passcode hideCancelButton keepListener keepNavigation route={{ params: passcodeParams }} />
+                            )}
                         </Provider>
                     </View>
                 </SafeAreaView>

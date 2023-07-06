@@ -12,17 +12,14 @@ export const Filter = (props) => {
     const { data, value, isDisabled, onChange } = props;
     const [expandedFilter, setExpandedFilter] = useState({});
 
-    const isFilerActive = name => !!value[name];
-    const isFilterAvailable = name => (Object.keys(value).length === 0 || value.hasOwnProperty(name)) && !isDisabled;
-    const getButtonStyle = name => [
+    const isFilerActive = (name) => !!value[name];
+    const isFilterAvailable = (name) => (Object.keys(value).length === 0 || value.hasOwnProperty(name)) && !isDisabled;
+    const getButtonStyle = (name) => [
         styles.button,
         isFilerActive(name) ? styles.buttonActive : null,
-        !isFilterAvailable(name) ? styles.buttonDisabled : null
+        !isFilterAvailable(name) ? styles.buttonDisabled : null,
     ];
-    const getTextStyle = name => [
-        styles.text,
-        isFilerActive(name) ? styles.textActive : null,
-    ];
+    const getTextStyle = (name) => [styles.text, isFilerActive(name) ? styles.textActive : null];
     const clear = () => onChange({});
     const handleFilterPress = (filter) => {
         if (!isFilterAvailable(filter.name)) {
@@ -31,23 +28,21 @@ export const Filter = (props) => {
 
         if (filter.type === 'boolean') {
             changeFilterValue(filter, !value[filter.name]);
-        }
-        else {
+        } else {
             setExpandedFilter(filter);
         }
-    }
+    };
     const changeFilterValue = (filter, filterValue) => {
-        const currentFilterValues = {...value};
-        
+        const currentFilterValues = { ...value };
+
         if (filterValue) {
             currentFilterValues[filter.name] = filterValue;
-        }
-        else {
+        } else {
             delete currentFilterValues[filter.name];
         }
 
         onChange(currentFilterValues);
-    }
+    };
 
     return (
         <View>
@@ -60,47 +55,50 @@ export const Filter = (props) => {
                 keyExtractor={(_, index) => 'filter' + index}
                 renderItem={({ item }) => (
                     <View style={getButtonStyle(item.name)}>
-                        <TouchableNative 
+                        <TouchableNative
                             containerStyle={styles.buttonInner}
                             color={colors.bgCard}
                             disabled={isDisabled}
                             onPress={() => handleFilterPress(item, true)}
                         >
-                            <StyledText type="label" style={getTextStyle(item.name)}>{item.title}</StyledText>
+                            <StyledText type="label" style={getTextStyle(item.name)}>
+                                {item.title}
+                            </StyledText>
                         </TouchableNative>
                     </View>
                 )}
                 ListHeaderComponent={
                     <View style={styles.button}>
-                        <TouchableNative 
-                            containerStyle={styles.buttonInner}
-                            color={colors.bgCard}
-                            disabled={isDisabled}
-                            onPress={clear}
-                        >
+                        <TouchableNative containerStyle={styles.buttonInner} color={colors.bgCard} disabled={isDisabled} onPress={clear}>
                             <View style={[layout.row, layout.alignCenter]}>
                                 <Image source={require('src/assets/images/icon-chip-clear.png')} style={styles.icon} />
-                                <StyledText type="label" style={styles.text}>{$t('button_clear')}</StyledText>
+                                <StyledText type="label" style={styles.text}>
+                                    {$t('button_clear')}
+                                </StyledText>
                             </View>
                         </TouchableNative>
                     </View>
                 }
             />
-            {expandedFilter?.type === 'select' && <DropdownModal 
-                isOpen
-                title={expandedFilter.title}
-                list={expandedFilter.options} 
-                value={value[expandedFilter.name]} 
-                onChange={value => changeFilterValue(expandedFilter, value)}
-                onClose={() => setExpandedFilter(null)}
-            />}
-            {expandedFilter?.type === 'address' && <InputAddressDropdown 
-                isOpen
-                title={expandedFilter.title}
-                value={value[expandedFilter.name]} 
-                onChange={value => changeFilterValue(expandedFilter, value)}
-                onClose={() => setExpandedFilter(null)}
-            />}
+            {expandedFilter?.type === 'select' && (
+                <DropdownModal
+                    isOpen
+                    title={expandedFilter.title}
+                    list={expandedFilter.options}
+                    value={value[expandedFilter.name]}
+                    onChange={(value) => changeFilterValue(expandedFilter, value)}
+                    onClose={() => setExpandedFilter(null)}
+                />
+            )}
+            {expandedFilter?.type === 'address' && (
+                <InputAddressDropdown
+                    isOpen
+                    title={expandedFilter.title}
+                    value={value[expandedFilter.name]}
+                    onChange={(value) => changeFilterValue(expandedFilter, value)}
+                    onClose={() => setExpandedFilter(null)}
+                />
+            )}
         </View>
     );
 };
@@ -132,18 +130,18 @@ const styles = StyleSheet.create({
         paddingVertical: spacings.margin / 2,
         justifyContent: 'center',
         alignItems: 'center',
-        height: '100%'
+        height: '100%',
     },
     text: {
         fontSize: 13,
-        color: colors.primary
+        color: colors.primary,
     },
     textActive: {
-        color: colors.bgForm
+        color: colors.bgForm,
     },
     icon: {
         height: 13,
         width: 13,
-        marginRight: spacings.margin / 4
-    }
+        marginRight: spacings.margin / 4,
+    },
 });

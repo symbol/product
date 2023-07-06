@@ -32,26 +32,26 @@ export default {
                     // handle confirmed transactions
                     onConfirmedAdd: () => {
                         dispatchAction({ type: 'account/fetchData' });
-                        dispatchAction({ type: 'transaction/fetchData', payload: {keepPages: true} });
+                        dispatchAction({ type: 'transaction/fetchData', payload: { keepPages: true } });
                         DeviceEventEmitter.emit(Constants.Events.CONFIRMED_TRANSACTION);
                         showMessage({ message: $t('message_transactionConfirmed'), type: 'info' });
                     },
                     // handle unconfirmed transactions
                     onUnconfirmedAdd: () => {
-                        dispatchAction({ type: 'transaction/fetchData', payload: {keepPages: true} });
+                        dispatchAction({ type: 'transaction/fetchData', payload: { keepPages: true } });
                     },
                     // handle unconfirmed transactions
                     onUnconfirmedRemove: () => {
-                        dispatchAction({ type: 'transaction/fetchData', payload: {keepPages: true} });
+                        dispatchAction({ type: 'transaction/fetchData', payload: { keepPages: true } });
                     },
                     // handle aggregate bonded transactions
                     onAggregateBondedAdd: () => {
-                        dispatchAction({ type: 'transaction/fetchData', payload: {keepPages: true} });
+                        dispatchAction({ type: 'transaction/fetchData', payload: { keepPages: true } });
                         showMessage({ message: $t('message_newAggregateBondedTransaction'), type: 'info' });
                     },
                     // handle aggregate bonded transactions
                     onAggregateBondedRemove: () => {
-                        dispatchAction({ type: 'transaction/fetchData', payload: {keepPages: true} });
+                        dispatchAction({ type: 'transaction/fetchData', payload: { keepPages: true } });
                     },
                     // handle transaction error
                     onTransactionError: (e) => handleError(Error(`error_${e.code}`)),

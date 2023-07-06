@@ -33,8 +33,8 @@ export const Assets = connect((state) => ({
             return mosaics;
         }
 
-        return mosaics.filter(mosaic => mosaic.isUnlimitedDuration || mosaic.endHeight > chainHeight);
-    }, [filter, mosaics])
+        return mosaics.filter((mosaic) => mosaic.isUnlimitedDuration || mosaic.endHeight > chainHeight);
+    }, [filter, mosaics]);
 
     sections.push({
         title: $t('s_assets_mosaics'),
@@ -50,11 +50,13 @@ export const Assets = connect((state) => ({
         });
     }
 
-    const filterConfig = [{
-        name: 'expired',
-        title: $t('s_assets_filter_expired'),
-        type: 'boolean',
-    },];
+    const filterConfig = [
+        {
+            name: 'expired',
+            title: $t('s_assets_filter_expired'),
+            type: 'boolean',
+        },
+    ];
 
     return (
         <Screen titleBar={<TitleBar accountSelector settings currentAccount={currentAccount} />} navigator={<TabNavigator />}>

@@ -27,12 +27,7 @@ export function ItemBase(props) {
         ...styles.cardWithBorder,
         borderColor: borderColor,
     };
-    const styleCard = [
-        styles.card,
-        borderColor ? stylesCardWithBorder : null,
-        animatedContainer,
-        contentContainerStyle,
-    ];
+    const styleCard = [styles.card, borderColor ? stylesCardWithBorder : null, animatedContainer, contentContainerStyle];
     const styleRoot = [styles.root, style];
     // const layoutAnimationDelay = index < 15 ? index * 50 : 50;
 

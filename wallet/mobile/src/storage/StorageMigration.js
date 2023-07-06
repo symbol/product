@@ -44,9 +44,7 @@ export class StorageMigration {
                 createWalletAccount(mainnetPrivateKey, 'mainnet', 'My Account', 'seed', 0),
                 createWalletAccount(optInPrivateKey, 'mainnet', 'My Account', 'external', null),
             ],
-            testnet: [
-                createWalletAccount(testnetPrivateKey, 'testnet', 'My Account', 'seed', 0)
-            ]
+            testnet: [createWalletAccount(testnetPrivateKey, 'testnet', 'My Account', 'seed', 0)],
         };
 
         // Clear the old data and set the formatted one
@@ -66,8 +64,7 @@ export class StorageMigration {
         let mnemonic;
         try {
             mnemonic = JSON.parse(mnemonicModel).mnemonic;
-        }
-        catch {}
+        } catch {}
 
         // Escape if mnemonic does not exist in the storage
         if (!mnemonic?.length) {
@@ -83,14 +80,14 @@ export class StorageMigration {
         } catch {}
         const networkAccounts = {
             mainnet: [],
-            testnet: []
+            testnet: [],
         };
-        accounts.forEach(account => {
+        accounts.forEach((account) => {
             // Format seed accounts
             if (account.type === 'hd' && account.path) {
                 // Get seed index from path
                 const startPath = account.network === 'testnet' ? "m/44'/1'/" : "m/44'/4343'/";
-                const endPath = "'/0'/0'"
+                const endPath = "'/0'/0'";
                 const index = parseInt(account.type.replace(startPath, '').replace(endPath, ''));
                 const walletAccount = createWalletAccount(account.privateKey, account.network, account.name, 'seed', index);
                 networkAccounts[account.network].push(walletAccount);
@@ -113,7 +110,6 @@ export class StorageMigration {
             const walletAccount = createWalletAccount(privateKey, 'testnet', 'My Account', 'seed', 0);
             networkAccounts.testnet.push(walletAccount);
         }
-
 
         // Format address book
         let addressBook;

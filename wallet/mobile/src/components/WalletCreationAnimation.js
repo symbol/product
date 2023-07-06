@@ -16,10 +16,10 @@ export const WalletCreationAnimation = (props) => {
         const duration = 10;
         setIndex(0);
         clearInterval(timer);
-        
+
         const newTimer = setInterval(() => {
-            setIndex(index => index < textLength ? index + 1 : index);
-        }, duration); 
+            setIndex((index) => (index < textLength ? index + 1 : index));
+        }, duration);
         setTimer(newTimer);
     }, [currentStep]);
 
@@ -50,7 +50,7 @@ const styles = StyleSheet.create({
         justifyContent: 'space-around',
         alignItems: 'center',
         backgroundColor: colors.bgForm,
-        padding: spacings.padding
+        padding: spacings.padding,
     },
     logo: {
         width: '100%',
@@ -59,7 +59,7 @@ const styles = StyleSheet.create({
     },
     terminal: {
         width: '100%',
-        minHeight: '30%'
+        minHeight: '30%',
     },
     line: {
         width: '100%',
@@ -70,6 +70,6 @@ const styles = StyleSheet.create({
     },
     loadingText: {
         ...fonts.label,
-        color: colors.textBody
-    }
+        color: colors.textBody,
+    },
 });

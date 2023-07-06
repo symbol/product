@@ -59,30 +59,30 @@ export const DialogBox = (props) => {
 
     return (
         <Modal animationType="fade" transparent visible={isVisible} onRequestClose={onCancel}>
-            {isVisible && (    
+            {isVisible && (
                 <View style={styles.root}>
                     <SafeAreaView style={styles.modalContainer}>
-                    <View style={[styles.modal, style]}>
-                        <View style={[styles.content, contentContainerStyle]}>
-                            <StyledText type="title">{title}</StyledText>
-                            {text && !isPrompt && <StyledText type="body">{text}</StyledText>}
-                            {body}
-                            {isPrompt && (
-                                <TextBox title={text} errorMessage={promptErrorMessage} value={promptValue} onChange={setPromptValue} />
-                            )}
+                        <View style={[styles.modal, style]}>
+                            <View style={[styles.content, contentContainerStyle]}>
+                                <StyledText type="title">{title}</StyledText>
+                                {text && !isPrompt && <StyledText type="body">{text}</StyledText>}
+                                {body}
+                                {isPrompt && (
+                                    <TextBox title={text} errorMessage={promptErrorMessage} value={promptValue} onChange={setPromptValue} />
+                                )}
+                            </View>
+                            <View style={styles.controls}>
+                                {buttons.map((button, index) => (
+                                    <View style={styles.button} key={'modalbtn' + index}>
+                                        <TouchableOpacity onPress={button.handler} style={[styles.buttonPressable, button.style]}>
+                                            <Text style={styles.textButton}>{button.text}</Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                ))}
+                            </View>
                         </View>
-                        <View style={styles.controls}>
-                            {buttons.map((button, index) => (
-                                <View style={styles.button} key={'modalbtn' + index}>
-                                    <TouchableOpacity onPress={button.handler} style={[styles.buttonPressable, button.style]}>
-                                        <Text style={styles.textButton}>{button.text}</Text>
-                                    </TouchableOpacity>
-                                </View>
-                            ))}
-                        </View>
-                    </View>
                     </SafeAreaView>
-                </View> 
+                </View>
             )}
         </Modal>
     );
@@ -101,7 +101,7 @@ const styles = StyleSheet.create({
     modalContainer: {
         flex: 1,
         justifyContent: 'center',
-        alignItems: 'center',  
+        alignItems: 'center',
     },
     modal: {
         width: '100%',

@@ -24,7 +24,7 @@ const defaultRootState = {
     network: network.state,
     transaction: transaction.state,
     wallet: wallet.state,
-}
+};
 
 const createModuleReducer = (module, state = {}, action) => {
     if (!state[module.namespace]) state[module.namespace] = _.cloneDeep(module.state);
