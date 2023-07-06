@@ -42,7 +42,6 @@
     "button_addRecipientToAddressBook": "Add recipient to address book",
     "button_downloadBackup": "Download mnemonic to file",
     "button_showMnemonic": "Show Mnemonic Phrase",
-
     "input_name": "Name",
     "input_accountName": "Account Name",
     "input_address": "Address",
@@ -51,27 +50,23 @@
     "input_nodeUrl": "Node URL",
     "input_transactionFee": "Transaction Fee",
     "dialog_sensitive": "Sensitive information",
-
-    
-    "month_jan" : "Jan",
-    "month_feb" : "Feb",
-    "month_mar" : "Mar",
-    "month_apr" : "Apr",
-    "month_may" : "May",
-    "month_jun" : "Jun",
-    "month_jul" : "Jul",
-    "month_aug" : "Aug",
-    "month_sep" : "Sep",
-    "month_oct" : "Oct",
-    "month_nov" : "Nov",
-    "month_dec" : "Dec",
-
+    "month_jan": "Jan",
+    "month_feb": "Feb",
+    "month_mar": "Mar",
+    "month_apr": "Apr",
+    "month_may": "May",
+    "month_jun": "Jun",
+    "month_jul": "Jul",
+    "month_aug": "Aug",
+    "month_sep": "Sep",
+    "month_oct": "Oct",
+    "month_nov": "Nov",
+    "month_dec": "Dec",
     "navigation_home": "Home",
     "navigation_history": "History",
     "navigation_scan": "Scan",
     "navigation_assets": "Assets",
     "navigation_actions": "Actions",
-
     "screen_Welcome": "Welcome",
     "screen_CreateWallet": "Create Wallet",
     "screen_ImportWallet": "Import Wallet",
@@ -97,7 +92,6 @@
     "screen_AssetDetails": "Asset Details",
     "screen_Harvesting": "Harvesting",
     "screen_Passcode": "Passcode",
-
     "data_accountAliasNames": "Alias Names",
     "data_innerTransactionNo": "Inner Transaction #",
     "data_signature": "Signature",
@@ -219,7 +213,6 @@
     "data_endHeight": "End Height",
     "data_expireIn": "Expiration",
     "data_nodeUrl": "Node URL",
-
     "data_v_unlimited": "UNLIMITED",
     "data_v_na": "N/A",
     "data_v_infinity": "INFINITY",
@@ -253,7 +246,6 @@
     "data_v_mosaicRestrictionTypeLT": "<",
     "data_v_mosaicRestrictionTypeNE": "≠",
     "data_v_mosaicRestrictionTypeNONE": "No Restriction",
-
     "transactionDescriptor_16724": "Transfer",
     "transactionDescriptor_16724_incoming": "Received",
     "transactionDescriptor_16724_outgoing": "Sent",
@@ -289,7 +281,6 @@
     "transactionDescriptor_16707_unlink": "Voting Key unlink",
     "transactionDescriptor_16972_unlink": "Node Key unlink",
     "transactionDescriptor_postLaunchOptIn": "Opt-in",
-
     "transactionDescriptionShort_transferFrom": "From %{address}",
     "transactionDescriptionShort_transferTo": "To %{address}",
     "transactionDescriptionShort_aggregateMultiple": "%{type} and %{count} more",
@@ -299,20 +290,16 @@
     "transactionDescriptionShort_mosaic": "Mosaic %{id}",
     "transactionDescriptionShort_mosaicRestriction": "Mosaic %{id}",
     "transactionDescriptionShort_hashLock": "Duration %{duration} blocks",
-
     "transactionGroup_partial": "Awaiting Signature",
     "transactionGroup_unconfirmed": "Unconfirmed",
     "transactionGroup_confirmed": "Confirmed",
     "transactionGroup_harvested": "Harvested",
-
     "transactionStatus_partial": "Partial",
     "transactionStatus_unconfirmed": "Unconfirmed",
     "transactionStatus_confirmed": "Confirmed",
     "transactionStatus_failed": "Failed",
-
     "transaction_from": "From",
     "transaction_to": "To",
-
     "c_accountCard_prompt_title": "Rename Account",
     "c_accountCard_prompt_text": "New Account Name",
     "c_accountCard_title_account": "Account",
@@ -326,7 +313,6 @@
     "c_connectionStatus_connected": "Connected.",
     "c_connectionStatus_connecting": "Connecting...",
     "c_scanner_title": "Scan Symbol QR-code",
-
     "s_home_widgets": "Widgets",
     "s_history_widget_name": "New Transactions",
     "s_history_filter_type": "Type",
@@ -348,7 +334,6 @@
     "s_transactionDetails_cosignatureForm_unknown_description": "This transaction was created by an unknown address and is awaiting signature. Please carefully review all amounts and recipient addresses as transactions are not reversible. If you understand the risks and wish to continue, please add the sender (signer) to the address book whitelist. If the transaction looks suspicious, please block the sender.",
     "s_transactionDetails_cosignatureForm_trusted_description": "Please carefully review all amounts and recipient addresses, as transactions are not reversible. Malicious transactions can result in a total loss of funds.",
     "s_transactionDetails_cosignatureForm_blocked_description": "Sender (signer) of this transaction is on your blacklist. If you wish to accept this transaction, please remove this contact from your blacklist.",
-
     "s_send_description": "Send transfer transaction to an account. Type the recipient address or select one from the address book. Select the mosaic you would like to transfer and specify the amount. Note that some exchanges require a code to be sent in the message to make a deposit.",
     "form_transfer_title": "Transfer",
     "form_transfer_input_recipient": "Recipient",
@@ -370,7 +355,6 @@
     "selector_fee_fast": "Fast",
     "selector_fee_medium": "Medium",
     "selector_fee_slow": "Slow",
-
     "s_scan_title": "QR Scanner",
     "s_scan_mnemonic_description": "This QR-code contains mnemonic backup phrase. If you wish to import it, you should first logout from current wallet (Settings -> Logout).",
     "s_scan_account_description": "This QR-code contains account. Please select an action below.",
@@ -379,7 +363,6 @@
     "s_scan_address_wrongNetwork_description": "This QR-code contains address from different network. Please switch a network type in the Settings and try again.",
     "s_scan_transaction_description": "This QR-code contains transaction request. Please select an action below.",
     "s_scan_transaction_wrongTransaction_description": "This QR-code contains transaction request. Recipient address is from different network or mosaic is not XYM",
-
     "s_assets_mosaics": "Mosaics",
     "s_assets_namespaces": "Namespaces",
     "s_assets_item_id": "ID: %{id}",
@@ -392,7 +375,6 @@
     "s_assetDetails_namespace": "Namespace",
     "s_assetDetails_expired": "Expired (no longer available for sending)",
     "s_assetDetails_expireInBlocks": "Expire in %{blocks} blocks",
-
     "s_harvesting_title": "About Harvesting",
     "s_harvesting_description": "Delegated Harvesting allows receiving rewards from creating new blocks using the account's importance score without running a node. To activate Delegated Harvesting you have to request a node to harvest for your account. If the pending status does not change to active within 2 minutes, please restart harvesting using another node",
     "s_harvesting_status_unknown": "Unknown",
@@ -412,7 +394,6 @@
     "s_harvesting_harvested_blocks": "Blocks: %{count}",
     "s_harvesting_harvested_nothing_to_show": "Nothing to show",
     "s_harvesting_manage_title": "Manage",
-
     "s_accountList_confirm_removeExternal_title": "Remove external account",
     "s_accountList_confirm_removeExternal_body": "You are about to remove account \"%{name}\" %{address} from your wallet. Please make sure that the private key is securely backed up and you will be able to access it. Note that this account cannot be restored from you mnemonic backup phrase. You won't be able to access again this account unless you have its private key.",
     "s_addAccount_seed_name_default": "Seed Account %{index}",
@@ -423,7 +404,6 @@
     "s_addAccount_privateKey_title": "Account Private Key",
     "s_addAccount_privateKey_description": "Please make sure that the private key is securely backed up and you will be able to access it. Note that this account cannot be restored from you mnemonic backup phrase.",
     "s_addAccount_privateKey_input": "Private Key",
-
     "s_addressBook_widget_name": "Address Book",
     "s_addressBook_list": "List",
     "s_addressBook_whitelist": "Whitelist",
@@ -436,12 +416,10 @@
     "s_addressBook_manage_title_add": "Add Contact",
     "s_addressBook_manage_description_add": "Add contact to whitelist if you want easily send transactions and recognize it in the transaction details. If you need to cosign transactions from an account, it is mandatory to add this account to whitelist. \n\nAdd account to blacklist if you want to hide transactions from it in the history screen.",
     "s_addressBook_account_blacklist_defaultName": "Blocked",
-
     "s_welcome_wallet_title": "Welcome to\nSymbol Wallet!",
     "s_welcome_modal_title": "Symbol Wallet",
     "s_welcome_modal_tnc": "Terms and Conditions",
     "s_welcome_modal_privacy": "Privacy Policy",
-
     "s_importWallet_defaultAccountName": "My Account",
     "s_importWallet_title": "Import Mnemonic Backup Phrase",
     "s_importWallet_text": "Your secret backup phrase (mnemonic) makes it easy to back up and restore your wallet.",
@@ -450,8 +428,6 @@
     "s_importWallet_loading_step3": "Checking Opt-In account.",
     "s_importWallet_loading_step4": "Generating your account.",
     "s_importWallet_loading_step5": "All done!",
-
-
     "s_createWallet_defaultAccountName": "My Account",
     "s_createWallet_accountName_title": "Name Your First Account",
     "s_createWallet_accountName_text": "Enter a name that allows you to easily identify your account or use the default below. You can also change the name later.",
@@ -469,7 +445,13 @@
     "s_createWallet_loading_step2": "Setting up PIN-code.",
     "s_createWallet_loading_step3": "Generating your account.",
     "s_createWallet_loading_step4": "All done!",
-
+    "s_passcode_titleEnter": "Unlock the Wallet",
+    "s_passcode_titleChoose": "Create a PIN",
+    "s_passcode_subtitleChoose": "Enter new PIN-code",
+    "s_passcode_titleConfirm": "Confirm",
+    "s_passcode_subtitleConfirm": "Enter PIN-code again",
+    "s_passcode_titleAttemptFailed": "Attempt Failed",
+    "s_passcode_subtitleError": "Incorrect",
     "s_settings_item_network_title": "Network",
     "s_settings_item_network_description": "Select network type and node you would like to connect to.",
     "s_settings_item_language_title": "Language",
@@ -480,14 +462,12 @@
     "s_settings_item_about_description": "Learn morn about Symbol. Application version information.",
     "s_settings_item_logout_title": "Logout",
     "s_settings_item_logout_description": "Remove all accounts from device storage.",
-
     "s_settings_network_select_title": "Select Network:",
     "s_settings_networkType_modal_title": "Network Type",
     "s_settings_networkType_testnet": "Testnet",
     "s_settings_networkType_mainnet": "Mainnet",
     "s_settings_node_select_title": "Select Node:",
     "s_settings_node_automatically": "Select Automatically",
-
     "settings_about_symbol_title": "About Symbol",
     "settings_about_symbol_body": "Learn more about Symbol in the socials.",
     "settings_about_version_title": "About App",
@@ -498,7 +478,6 @@
     "settings_security_mnemonic_body": "Review backup mnemonic phrase. Mnemonic is a list of words which store all the information needed to recover the accounts under this profile. Anybody else who discovers the phrase can access your funds, so it must be kept safe. Note that you won't be able to access again your wallet unless you have a backup mnemonic phrase.",
     "settings_logout_confirm_title": "Are you sure you want to logout?",
     "settings_logout_confirm_text": "By logging out the data on the device will be removed. You won't be able to access again your wallet unless you have a backup mnemonic phrase. Please make sure you have a backup mnemonic phrase before proceeding.",
-    
     "validation_error_field_required": "Field required",
     "validation_error_contact_name_long": "Too long",
     "validation_error_account_name_long": "Too long",
@@ -508,15 +487,12 @@
     "validation_error_address_invalid": "Invalid address",
     "validation_error_balance_not_enough": "Not enough balance",
     "validation_error_already_exists": "Already exists",
-
     "warning_multisig_title": "Multisig Account",
     "warning_multisig_body": "To send transactions from this account, please announce it from cosignature account!",
-
     "message_emptyList": "Nothing to show",
     "message_downloaded": "Downloaded",
     "message_transactionConfirmed": "Transaction Confirmed",
     "message_newAggregateBondedTransaction": "Aggregate Bonded Transaction",
-
     "error_failed_add_account_already_exists": "Account is already in the wallet",
     "error_qr_failed_parse": "Failed to parse",
     "error_qr_expected_type": "Wrong QR-code type",
