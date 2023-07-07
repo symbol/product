@@ -17,7 +17,8 @@ const handleRoute = async (res, next, handler) => {
 const twitterRoute = server => {
 	server.get('/twitter/auth', (req, res, next) => {
 		const handler = async () => {
-			const { oauthTokenSecret, url } = await twitterController.requestToken();
+			const { redirectUrl } = req.params;
+			const { oauthTokenSecret, url } = await twitterController.requestToken(redirectUrl);
 
 			return {
 				oauthTokenSecret,

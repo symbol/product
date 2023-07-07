@@ -5,15 +5,16 @@ const jwt = require('jsonwebtoken');
 const twitter = {
 	/**
 	 * Request oauth token from twitter
+	 * @param {string} twitterCallbackUrl callback url
 	 * @returns {Promise<{oauthToken: string, oauthTokenSecret: string, url: string}>} Oauth token info
 	 */
-	requestToken: async () => {
+	requestToken: async twitterCallbackUrl => {
 		const twitterClient = createTwitterClient();
 
 		try {
 			const {
 				oauth_token, oauth_token_secret, url
-			} = await twitterClient.generateAuthLink(config.twitterCallbackUrl);
+			} = await twitterClient.generateAuthLink(twitterCallbackUrl);
 			return {
 				oauthToken: oauth_token,
 				oauthTokenSecret: oauth_token_secret,
