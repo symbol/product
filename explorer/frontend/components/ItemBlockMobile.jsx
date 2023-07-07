@@ -14,17 +14,17 @@ const ItemBlockMobile = ({ data }) => {
 				<Link href={`/blocks/${height}`} className={styles.height}>
 					{height}
 				</Link>
-				<ValueAccount address={harvester} size="sm" />
-				<ValueTimestamp value={timestamp} hasTime />
-			</div>
-			<div className={styles.end}>
-				<div className={styles.info}>
+				<div className={styles.row}>
+					<ValueAccount address={harvester} size="sm" />
 					<div className={styles.counter}>
-						<CustomImage src="images/icon-transaction.svg" />
+						<CustomImage className={styles.counterImage} src="/images/icon-transaction.svg" />
 						<div>{transactionCount}</div>
 					</div>
 				</div>
-				<ValueMosaic isNative amount={totalFee} />
+				<div className={styles.row}>
+					<ValueTimestamp value={timestamp} hasTime />
+					<ValueMosaic isNative amount={totalFee} />
+				</div>
 			</div>
 		</div>
 	);

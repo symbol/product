@@ -23,8 +23,6 @@
         }
 
         .row {
-            // display: grid;
-            // grid-template-columns: 4rem auto;
             display: flex;
             flex-direction: row;
             gap: $spacing-base / 2;
