@@ -45,7 +45,6 @@ npm install
 PORT=5002
 TWITTER_APP_KEY=appkey
 TWITTER_APP_SECRET=secret
-TWITTER_CALLBACK_URL=http://127.0.0.1:3000
 JWT_SECRET=secret
 ```
 
