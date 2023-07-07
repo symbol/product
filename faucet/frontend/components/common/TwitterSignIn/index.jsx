@@ -18,7 +18,7 @@ const TwitterSignIn = function ({
 
 	const twitterAuth = async () => {
 		setIsLoading(true);
-		const { data } = await authRequest.get('/twitter/auth');
+		const { data } = await authRequest.get(`/twitter/auth?redirectUrl=${window.location.origin}`);
 		// encrypt oauthTokenSecret and store it in sessionStorage
 		// https://codeql.github.com/codeql-query-help/javascript/js-clear-text-storage-of-sensitive-data/#recommendation
 		sessionStorage.setItem('twitterOauthTokenSecret', encrypt(data.oauthTokenSecret, aesSecret));

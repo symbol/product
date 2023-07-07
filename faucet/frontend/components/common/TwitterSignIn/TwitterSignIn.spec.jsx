@@ -106,6 +106,10 @@ describe('components/TwitterSignIn', () => {
 			}
 		});
 
+		const { location } = window;
+		delete window.location;
+		window.location = { ...location, origin: 'http://frontend.com' };
+
 		render(<TwitterSignIn
 			twitterAccountStatus={signInStatus}
 			setTwitterAccountStatus={setStatus}
@@ -118,7 +122,7 @@ describe('components/TwitterSignIn', () => {
 		fireEvent.click(elementSignInButton);
 
 		// Assert:
-		expect(axios.get).toHaveBeenCalledWith('/twitter/auth');
+		expect(axios.get).toHaveBeenCalledWith('/twitter/auth?redirectUrl=http://frontend.com');
 		expect(elementSignInButton).toBeDisabled();
 		await waitFor(() => {
 			// twitterOauthTokenSecret stored in encrypted format, it can't be predictable
