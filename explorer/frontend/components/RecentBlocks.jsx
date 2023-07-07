@@ -30,7 +30,16 @@ const RecentBlocks = ({ data }) => {
 			});
 		}
 	};
-	const handleClose = () => setSelectedBlockHeight(-1);
+	const handleClose = () => {
+		setSelectedBlockHeight(-1);
+		scrollStart();
+	};
+	const scrollStart = () => {
+		if (!containerRef.current) return;
+
+		const { scrollWidth } = containerRef.current;
+		containerRef.current.scrollBy({ left: -scrollWidth, behavior: 'smooth' });
+	};
 	const scrollLeft = () => {
 		if (!containerRef.current) return;
 
