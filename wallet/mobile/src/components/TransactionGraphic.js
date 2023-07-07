@@ -23,7 +23,7 @@ export const TransactionGraphic = connect((state) => ({
 }))(function TransactionGraphic(props) {
     const { transaction, ticker, addressBook, currentAccount, networkIdentifier, networkProperties, walletAccounts } = props;
     const [isExpanded, setIsExpanded] = useState(false);
-    const [hasBeenExpanded, setHasBeenExpanded] = useState(false);
+    const [hasBeenExpanded, setHasBeenExpanded] = useState(props.isExpanded);
     const accounts = walletAccounts[networkIdentifier];
     const signerName = getAddressName(transaction.signerAddress, currentAccount, accounts, addressBook);
     const signerNameColorStyle = {
