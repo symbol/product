@@ -82,7 +82,7 @@ const Home = ({ blocks, fees, latestTransactions, pendingTransactions, baseInfo,
 							<Field title={t('field_totalNodes')}>{baseInfo.totalNodes}</Field>
 							<Field title={t('field_supernodes')}>{baseInfo.supernodes}</Field>
 						</div>
-						<CustomImage src="/images/stub-node-chart.svg" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+						<CustomImage src="/images/stub-node-chart.svg" style={{ width: '100%', objectFit: 'contain' }} />
 					</div>
 				</div>
 			</Section>
