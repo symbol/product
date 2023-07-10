@@ -14,6 +14,10 @@ MultisigInfo = namedtuple('MultisigInfo', ['min_approval', 'min_removal', 'cosig
 VotingPublicKey = namedtuple('VotingPublicKey', ['start_epoch', 'end_epoch', 'public_key'])
 
 
+def _is_not_found(json_response):
+	return 'code' in json_response and 'ResourceNotFound' == json_response['code']
+
+
 class LinkedPublicKeys:
 	"""Collection of public keys linked to an account."""
 
@@ -103,7 +107,7 @@ class SymbolConnector(BasicConnector):
 		"""Gets account links for a specified account."""
 
 		json_response = await self.get(f'accounts/{account_id}')
-		if 'code' in json_response:
+		if _is_not_found(json_response):
 			return LinkedPublicKeys()
 
 		return self._parse_links(json_response['account']['supplementalPublicKeys'])
@@ -132,7 +136,7 @@ class SymbolConnector(BasicConnector):
 		"""Gets multisig information about an account."""
 
 		json_response = await self.get(f'account/{address}/multisig')
-		if 'code' in json_response:
+		if _is_not_found(json_response):
 			return MultisigInfo(0, 0, [], [])
 
 		multisig_dict = json_response['multisig']
@@ -155,12 +159,9 @@ class SymbolConnector(BasicConnector):
 			transaction_buffer = transaction_payload
 
 		hex_payload = hexlify(transaction_buffer).decode('utf8').upper()
-		json_response = await self.put(url_path, {
+		await self.put(url_path, {
 			'payload': hex_payload
 		})
-
-		if 'code' in json_response:
-			raise RuntimeError(f'send transaction failed: {json_response["message"]}')
 
 	async def announce_transaction(self, transaction_payload):
 		"""Announces a transaction to the network."""

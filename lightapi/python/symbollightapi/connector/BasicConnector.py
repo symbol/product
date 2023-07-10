@@ -25,6 +25,14 @@ class BasicConnector:
 					except (client_exceptions.ContentTypeError, json.decoder.JSONDecodeError) as ex:
 						raise NodeException from ex
 
+					if response.status not in (200, 404):
+						error_message = f'HTTP request failed with code {response.status}'
+						for key in ('code', 'message'):
+							if key in response_json:
+								error_message += f'\n{response_json[key]}'
+
+						raise NodeException(error_message)
+
 					return response_json if property_name is None else response_json[property_name]
 		except (asyncio.TimeoutError, client_exceptions.ClientConnectorError) as ex:
 			raise NodeException from ex

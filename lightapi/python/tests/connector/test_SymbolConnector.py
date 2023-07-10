@@ -8,6 +8,7 @@ from symbolchain.symbol.Network import Address
 
 from symbollightapi.connector.SymbolConnector import SymbolConnector
 from symbollightapi.model.Endpoint import Endpoint
+from symbollightapi.model.Exceptions import NodeException
 from symbollightapi.model.NodeInfo import NodeInfo
 
 # region test data
@@ -114,7 +115,7 @@ def server(event_loop, aiohttp_client):
 		async def accounts_by_id(self, request):
 			account_id = request.match_info['account_id']
 			if 'error' == account_id:
-				return await self._process(request, {'code': 'InvalidArgument', 'message': 'accountId has an invalid format'})
+				return await self._process(request, {'code': 'ResourceNotFound', 'message': 'accountId does not exist'}, 404)
 
 			json_supplemental_public_keys = {}
 			if account_id in ('linked', 'all'):
@@ -150,20 +151,20 @@ def server(event_loop, aiohttp_client):
 			if Address(unhexlify(MULTISIG_INFO_1['multisig']['accountAddress'])) == address:
 				return await self._process(request, MULTISIG_INFO_1)
 
-			return await self._process(request, {'code': 'ResourceNotFound', 'message': 'no resource exists with id'})
+			return await self._process(request, {'code': 'ResourceNotFound', 'message': 'no resource exists with id'}, 404)
 
 		async def announce_transaction(self, request):
 			request_json = await request.json()
 			self.request_json_payloads.append(request_json)
 
 			if self.simulate_error:
-				return await self._process(request, {'code': 'InvalidContent', 'message': 'Invalid JSON'})
+				return await self._process(request, {'code': 'InvalidContent', 'message': 'Invalid JSON'}, 500)
 
 			return await self._process(request, {'message': 'packet 9 was pushed to the network via /transactions'})
 
-		async def _process(self, request, response_body):
+		async def _process(self, request, response_body, status_code=200):
 			self.urls.append(str(request.url))
-			return web.Response(body=json.dumps(response_body), headers={'Content-Type': 'application/json'})
+			return web.Response(body=json.dumps(response_body), headers={'Content-Type': 'application/json'}, status=status_code)
 
 	# create a mock server
 	mock_server = MockSymbolServer()
@@ -514,7 +515,7 @@ async def _assert_cannot_announce_transaction_with_error(server, connector_funct
 	connector = SymbolConnector(server.make_url(''))
 
 	# Act + Assert:
-	with pytest.raises(RuntimeError):
+	with pytest.raises(NodeException, match='Invalid JSON'):
 		await getattr(connector, connector_function_name)(b'hello world!')
 
 
