@@ -70,6 +70,7 @@ export const TableView = connect((state) => ({
 
     if (!Array.isArray(data)) {
         tableData = Object.entries(data)
+            // eslint-disable-next-line no-unused-vars
             .filter(([_, value]) => value !== null && value !== undefined)
             .map(([key, value]) => ({ key, value }));
     }
