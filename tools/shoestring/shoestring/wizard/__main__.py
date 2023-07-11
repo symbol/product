@@ -22,16 +22,7 @@ from shoestring.wizard.ShoestringOperation import ShoestringOperation, build_sho
 from . import keybindings, navigation, styles
 from .ScreenLoader import load_screens, lookup_screens_list_for_operation
 from .Screens import Screens
-
-
-def set_titlebar(root_container, text):
-	root_container.children[0].content.text = HTML(text)
-
-
-def update_titlebar(root_container, screens):
-	current_group = screens.group_name[screens.current_id]
-	elements = [f'<b>{name}</b>' if current_group == name else name for name in screens.ordered_group_names]
-	set_titlebar(root_container, ' -&gt; '.join(elements))
+from .TitleBar import TitleBar
 
 
 async def run_shoestring_command(screens):
@@ -106,8 +97,7 @@ async def main():  # pylint: disable=too-many-locals, too-many-statements
 	])
 	navbar.next.state_filter = Condition(lambda: not screens.current.is_valid())
 
-	initial_titlebar = _('wizard-main-initial-title')
-	set_titlebar(root_container, initial_titlebar)
+	title_bar = TitleBar(root_container.children[0].content)
 
 	layout = Layout(root_container, focused_element=navbar.next)
 
@@ -120,7 +110,7 @@ async def main():  # pylint: disable=too-many-locals, too-many-statements
 	def next_clicked():
 		next_screen = screens.next()
 		root_container.children[2] = next_screen
-		update_titlebar(root_container, screens)
+		title_bar.update_navigation(screens)
 
 		if 'end-screen' != screens.ordered[screens.current_id].screen_id:
 			if hasattr(next_screen, 'reset'):
@@ -148,9 +138,9 @@ async def main():  # pylint: disable=too-many-locals, too-many-statements
 	def prev_clicked():
 		if screens.has_previous:
 			root_container.children[2] = screens.previous()
-			update_titlebar(root_container, screens)
+			title_bar.update_navigation(screens)
 		else:
-			set_titlebar(root_container, initial_titlebar)
+			title_bar.reset()
 
 		# restore handler in case it got replaced
 		navbar.next.handler = next_clicked
