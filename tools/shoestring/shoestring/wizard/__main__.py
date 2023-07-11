@@ -1,10 +1,8 @@
 import asyncio
 import gettext
-import importlib
 import os
 import shutil
 import tempfile
-from collections import namedtuple
 from pathlib import Path
 
 from prompt_toolkit import Application
@@ -22,30 +20,8 @@ from shoestring.wizard.SetupFiles import prepare_overrides_file, prepare_shoestr
 from shoestring.wizard.ShoestringOperation import ShoestringOperation, build_shoestring_command, requires_ca_key_path
 
 from . import keybindings, navigation, styles
+from .ScreenLoader import load_screens, lookup_screens_list_for_operation
 from .Screens import Screens
-
-ScreenGroup = namedtuple('ScreenGroup', ['group_name', 'screen_names'])
-
-
-def prepare_screens(screens):
-	screen_setup = [
-		ScreenGroup(_('wizard-screen-group-welcome'), ['welcome', 'root_check']),
-		ScreenGroup(_('wizard-screen-group-obligatory'), ['obligatory', 'network_type', 'node_type']),
-
-		ScreenGroup(_('wizard-screen-group-harvesting'), ['harvesting']),
-		ScreenGroup(_('wizard-screen-group-voting'), ['voting']),
-
-		ScreenGroup(_('wizard-screen-group-node-settings'), ['node_settings']),
-		ScreenGroup(_('wizard-screen-group-certificates'), ['certificates']),
-
-		ScreenGroup(_('wizard-screen-group-end-screen'), ['end_screen'])
-	]
-
-	for group in screen_setup:
-		for name in group.screen_names:
-			module = importlib.import_module(f'shoestring.wizard.screens.{name.replace("-", "_")}')
-			screen = module.create(screens)
-			screens.add(group.group_name, screen)
 
 
 def set_titlebar(root_container, text):
@@ -56,19 +32,6 @@ def update_titlebar(root_container, screens):
 	current_group = screens.group_name[screens.current_id]
 	elements = [f'<b>{name}</b>' if current_group == name else name for name in screens.ordered_group_names]
 	set_titlebar(root_container, ' -&gt; '.join(elements))
-
-
-def get_screens_list(screens, operation):
-	# set welcome screen button handlers
-	operation_screens = {
-		ShoestringOperation.UPGRADE: ['welcome', 'obligatory', 'network-type', 'end-screen'],
-		ShoestringOperation.RESET_DATA: ['welcome', 'obligatory', 'end-screen'],
-		ShoestringOperation.RENEW_CERTIFICATES: ['welcome', 'obligatory', 'end-screen'],
-		ShoestringOperation.RENEW_VOTING_KEYS: ['welcome', 'obligatory', 'end-screen']
-	}
-
-	default_screens = [screen.screen_id for screen in screens.ordered]
-	return operation_screens.get(operation, default_screens)
 
 
 async def run_shoestring_command(screens):
@@ -116,7 +79,7 @@ async def main():  # pylint: disable=too-many-locals, too-many-statements
 	navbar = navigation.initialize()
 
 	screens = Screens(navbar)
-	prepare_screens(screens)
+	load_screens(screens)
 
 	main_container = screens.current
 	root_container = HSplit([
@@ -166,7 +129,7 @@ async def main():  # pylint: disable=too-many-locals, too-many-statements
 			layout.focus(next_screen)
 		else:
 			operation = screens.get('welcome').operation
-			allowed_screens_list = get_screens_list(screens, operation)
+			allowed_screens_list = lookup_screens_list_for_operation(screens, operation)
 
 			tokens = []
 			for screen_id in allowed_screens_list:
@@ -199,7 +162,7 @@ async def main():  # pylint: disable=too-many-locals, too-many-statements
 	# set welcome screen button handlers
 	def create_button_handler(button):
 		def button_handler():
-			allowed_screens_list = get_screens_list(screens, button.operation)
+			allowed_screens_list = lookup_screens_list_for_operation(screens, button.operation)
 			screens.set_list(allowed_screens_list)
 			next_clicked()
 
