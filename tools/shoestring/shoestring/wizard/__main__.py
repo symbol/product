@@ -183,11 +183,10 @@ async def main():  # pylint: disable=too-many-locals, too-many-statements
 			navbar.next.handler = app.exit
 
 	def prev_clicked():
-		if screens.has_previous():
+		if screens.has_previous:
 			root_container.children[2] = screens.previous()
 			update_titlebar(root_container, screens)
-
-		if not screens.has_previous():
+		else:
 			set_titlebar(root_container, initial_titlebar)
 
 		# restore handler in case it got replaced
