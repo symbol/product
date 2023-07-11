@@ -1,5 +1,6 @@
 from prompt_toolkit.filters import Condition
 from prompt_toolkit.layout.containers import ConditionalContainer, HSplit, VSplit
+from prompt_toolkit.validation import ThreadedValidator, Validator
 from prompt_toolkit.widgets import CheckboxList, Label, TextArea
 
 from shoestring.wizard.Screen import ScreenDialog
@@ -63,8 +64,8 @@ def create(screens):
 
 	ip_or_domain_name = ValidatingTextBox(
 		_('wizard-node-settings-ip-or-domain-name-label'),
-		is_valid_ip_or_domain_name,
-		_('wizard-node-settings-ip-or-domain-name-error-text'))
+		ThreadedValidator(Validator.from_callable(is_valid_ip_or_domain_name, _('wizard-node-settings-ip-or-domain-name-error-text'))),
+		None)
 
 	metadata_info = ValidatingTextBox(
 		_('wizard-node-settings-metadata-info-label'),
