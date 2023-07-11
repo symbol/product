@@ -1,9 +1,6 @@
 import asyncio
 import gettext
 import os
-import shutil
-import tempfile
-from pathlib import Path
 
 from prompt_toolkit import Application
 from prompt_toolkit.filters.base import Condition
@@ -16,49 +13,13 @@ from prompt_toolkit.widgets.toolbars import ValidationToolbar
 from zenlog import log
 
 from shoestring.__main__ import main as shoestring_main
-from shoestring.wizard.SetupFiles import prepare_overrides_file, prepare_shoestring_files, try_prepare_node_metadata_file
-from shoestring.wizard.ShoestringOperation import ShoestringOperation, build_shoestring_command, requires_ca_key_path
+from shoestring.wizard.ShoestringOperation import requires_ca_key_path
 
 from . import keybindings, navigation, styles
 from .ScreenLoader import load_screens, lookup_screens_list_for_operation
 from .Screens import Screens
+from .ShoestringExecutor import dispatch_shoestring_command
 from .TitleBar import TitleBar
-
-
-async def run_shoestring_command(screens):
-	obligatory_settings = screens.get('obligatory')
-	destination_directory = Path(obligatory_settings.destination_directory)
-	shoestring_directory = destination_directory / 'shoestring'
-
-	operation = screens.get('welcome').operation
-	package = screens.get('network-type').current_value
-
-	if ShoestringOperation.SETUP == operation:
-		with tempfile.TemporaryDirectory() as temp_directory:
-			has_custom_node_metadata = try_prepare_node_metadata_file(screens, Path(temp_directory) / 'node_metadata.json')
-			prepare_overrides_file(screens, Path(temp_directory) / 'overrides.ini')
-			await prepare_shoestring_files(screens, Path(temp_directory))
-
-			shoestring_args = build_shoestring_command(
-				operation,
-				destination_directory,
-				temp_directory,
-				obligatory_settings.ca_pem_path,
-				package,
-				has_custom_node_metadata)
-			await shoestring_main(shoestring_args)
-
-			shoestring_directory.mkdir()
-			for filename in ('shoestring.ini', 'overrides.ini'):
-				shutil.copy(Path(temp_directory) / filename, shoestring_directory)
-	else:
-		shoestring_args = build_shoestring_command(
-			operation,
-			destination_directory,
-			shoestring_directory,
-			obligatory_settings.ca_pem_path,
-			package)
-		await shoestring_main(shoestring_args)
 
 
 async def main():  # pylint: disable=too-many-locals, too-many-statements
@@ -171,7 +132,7 @@ async def main():  # pylint: disable=too-many-locals, too-many-statements
 		return
 
 	# TODO: temporary here, move up
-	await run_shoestring_command(screens)
+	await dispatch_shoestring_command(screens, shoestring_main)
 
 	log.info(_('wizard-main-done'))
 
