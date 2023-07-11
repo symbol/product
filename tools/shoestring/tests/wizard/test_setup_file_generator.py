@@ -5,7 +5,7 @@ from pathlib import Path
 from shoestring.internal.ConfigurationManager import ConfigurationManager
 from shoestring.internal.NodeFeatures import NodeFeatures
 from shoestring.internal.ShoestringConfiguration import parse_shoestring_configuration
-from shoestring.wizard.SetupFiles import prepare_overrides_file, prepare_shoestring_files, try_prepare_node_metadata_file
+from shoestring.wizard.setup_file_generator import prepare_overrides_file, prepare_shoestring_files, try_prepare_node_metadata_file
 
 from ..test.TestPackager import prepare_testnet_package
 

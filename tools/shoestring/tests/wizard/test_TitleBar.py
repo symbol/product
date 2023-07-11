@@ -1,6 +1,6 @@
 from prompt_toolkit.widgets import Label
 
-from shoestring.wizard.ScreenLoader import load_screens
+from shoestring.wizard.screen_loader import load_screens
 from shoestring.wizard.Screens import Screens
 from shoestring.wizard.TitleBar import TitleBar
 

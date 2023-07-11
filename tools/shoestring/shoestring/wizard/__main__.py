@@ -16,9 +16,9 @@ from shoestring.__main__ import main as shoestring_main
 from shoestring.wizard.ShoestringOperation import requires_ca_key_path
 
 from . import keybindings, navigation, styles
-from .ScreenLoader import load_screens, lookup_screens_list_for_operation
+from .screen_loader import load_screens, lookup_screens_list_for_operation
 from .Screens import Screens
-from .ShoestringExecutor import dispatch_shoestring_command
+from .shoestring_dispatcher import dispatch_shoestring_command
 from .TitleBar import TitleBar
 
 

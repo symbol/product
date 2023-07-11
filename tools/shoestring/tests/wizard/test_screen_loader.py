@@ -1,5 +1,5 @@
 
-from shoestring.wizard.ScreenLoader import load_screens, lookup_screens_list_for_operation
+from shoestring.wizard.screen_loader import load_screens, lookup_screens_list_for_operation
 from shoestring.wizard.Screens import Screens
 from shoestring.wizard.ShoestringOperation import ShoestringOperation
 

@@ -2,7 +2,7 @@ import shutil
 import tempfile
 from pathlib import Path
 
-from shoestring.wizard.SetupFiles import prepare_overrides_file, prepare_shoestring_files, try_prepare_node_metadata_file
+from shoestring.wizard.setup_file_generator import prepare_overrides_file, prepare_shoestring_files, try_prepare_node_metadata_file
 from shoestring.wizard.ShoestringOperation import ShoestringOperation, build_shoestring_command
 
 
