@@ -6,7 +6,6 @@ describe('config', () => {
 		port: '5002',
 		twitterAppKey: 'twitterAppKey',
 		twitterAppSecret: 'twitterAppSecret',
-		twitterCallbackUrl: 'http://127.0.0.1:3000',
 		jwtSecret: 'hello'
 	};
 
@@ -35,10 +34,6 @@ describe('config', () => {
 
 	it('throws error when twitterAppSecret missing in config', () => {
 		assertTwitterInvalidConfig('twitterAppSecret', twitterConfigurationError);
-	});
-
-	it('throws error when twitterCallbackUrl missing in config', () => {
-		assertTwitterInvalidConfig('twitterCallbackUrl', twitterConfigurationError);
 	});
 
 	it('throws error when jwtSecret missing in config', () => {

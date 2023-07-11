@@ -15,6 +15,7 @@ const { expect } = chai;
 describe('twitter controller', () => {
 	describe('requestToken', () => {
 		let generateAuthLinkStub = {};
+		const frontendCallbackUrl = 'http://frontend.com';
 
 		beforeEach(() => {
 			generateAuthLinkStub = stub(TwitterApi.prototype, 'generateAuthLink');
@@ -34,10 +35,10 @@ describe('twitter controller', () => {
 			generateAuthLinkStub.returns(Promise.resolve(twitterAuthResponse));
 
 			// Act:
-			const result = await twitter.requestToken();
+			const result = await twitter.requestToken(frontendCallbackUrl);
 
 			// Assert:
-			expect(generateAuthLinkStub).to.have.been.calledWith('http://127.0.0.1:3000');
+			expect(generateAuthLinkStub).to.have.been.calledWith(frontendCallbackUrl);
 			expect(result).to.be.deep.equal({
 				oauthToken: twitterAuthResponse.oauth_token,
 				oauthTokenSecret: twitterAuthResponse.oauth_token_secret,
@@ -50,7 +51,7 @@ describe('twitter controller', () => {
 			generateAuthLinkStub.throws();
 
 			// Act:
-			const promise = twitter.requestToken();
+			const promise = twitter.requestToken(frontendCallbackUrl);
 
 			// Assert:
 			await expect(promise).to.be.rejectedWith('fail to request twitter token');
