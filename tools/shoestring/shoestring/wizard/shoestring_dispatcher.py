@@ -32,8 +32,10 @@ async def dispatch_shoestring_command(screens, executor):
 			await executor(shoestring_args)
 
 			shoestring_directory.mkdir()
-			for filename in ('shoestring.ini', 'overrides.ini'):
-				shutil.copy(Path(temp_directory) / filename, shoestring_directory)
+			for filename in ('shoestring.ini', 'overrides.ini', 'node_metadata.json'):
+				source_path = Path(temp_directory) / filename
+				if source_path.exists():
+					shutil.copy(source_path, shoestring_directory)
 	else:
 		shoestring_args = build_shoestring_command(
 			operation,
