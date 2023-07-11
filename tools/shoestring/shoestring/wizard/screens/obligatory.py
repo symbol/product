@@ -53,7 +53,7 @@ def is_path_to_non_existing_pem_file(value):
 # this is needed to create single DynamicValidator for ca_pem_path input box
 def create_validator_selector(tab_list, messages):
 	def get_validator():
-		# TODO: hardcoded
+		# note: this relies on the values of tabs in `ca_key_tab_list` below
 		if 0 == tab_list.current_value:
 			return Validator.from_callable(is_file_path, messages[0])
 
@@ -72,6 +72,7 @@ def generate_handler(screens, ca_pem_path, on_close_callback):
 	if not ca_pem_path.is_valid:
 		return
 
+	# TODO (optionally): password
 	filepath = Path(ca_pem_path.input.text)
 	storage = PrivateKeyStorage(filepath.parent.absolute())
 
@@ -91,6 +92,7 @@ def import_handler(screens, ca_pem_path, on_close_callback, private_key_hex):
 	filepath = Path(ca_pem_path.input.text)
 	storage = PrivateKeyStorage(filepath.parent.absolute())
 
+	# TODO (optionally): password
 	if filepath.suffix == '.pem':
 		storage.save(filepath.stem, PrivateKey(private_key_hex.input.text))
 
@@ -161,11 +163,14 @@ def create(screens):
 		lambda: True,
 	])
 
-	def switch_to_first_tab():
-		ca_key_tab_list.current_value = 0
+	def switch_to_tab(value):
+		ca_key_tab_list.current_value = value
 
-	button_generate.handler = partial(generate_handler, screens, ca_pem_path, switch_to_first_tab)
+	def switch_to_first_tab():
+		switch_to_tab(0)
+
 	button_import.handler = partial(import_handler, screens, ca_pem_path, switch_to_first_tab, private_key_hex)
+	button_generate.handler = partial(generate_handler, screens, ca_pem_path, switch_to_first_tab)
 
 	dialog = ScreenDialog(
 		screen_id='obligatory',
@@ -201,4 +206,16 @@ def create(screens):
 		dialog.accessor.is_main_private_key_required = require
 
 	dialog.require_main_private_key = require_main_private_key
+	dialog.switch_to_tab = switch_to_tab
+
+	elements = {
+		'destination-directory': destination_directory,
+		'ca-pem-path': ca_pem_path,
+		'tab-list': ca_key_tab_list,
+		'private-key-text': private_key_hex,
+		'import-button': button_import,
+		'generate-button': button_generate
+	}
+	dialog._get_element = elements.get  # pylint: disable=protected-access
+
 	return dialog

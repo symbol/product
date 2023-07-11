@@ -2,7 +2,7 @@ from collections import namedtuple
 
 from prompt_toolkit.widgets import Label
 
-from shoestring.wizard.buttons import create_next_clicked_handler, create_prev_clicked_handler
+from shoestring.wizard.buttons import create_next_clicked_handler, create_operation_button_handler, create_prev_clicked_handler
 from shoestring.wizard.Screens import Screens
 from shoestring.wizard.ShoestringOperation import ShoestringOperation
 from shoestring.wizard.TitleBar import TitleBar
@@ -19,6 +19,11 @@ class MockButton:
 		self.text = None
 
 
+class MockOperationButton:
+	def __init__(self, operation):
+		self.operation = operation
+
+
 class StartScreen:
 	def __init__(self):
 		self.screen_id = 'welcome'
@@ -26,6 +31,10 @@ class StartScreen:
 		self.should_show = lambda: True
 
 		self.operation = ShoestringOperation.RESET_DATA
+		self.selected_buttons = []
+
+	def select(self, button):
+		self.selected_buttons.append(button)
 
 
 class SkippedScreen:
@@ -46,6 +55,7 @@ class MidScreen:
 		self.should_show = lambda: True
 
 		self.reset_count = 0
+		self.require_main_private_key_trace = []
 
 	@property
 	def tokens(self):
@@ -53,6 +63,9 @@ class MidScreen:
 
 	def reset(self):
 		self.reset_count += 1
+
+	def require_main_private_key(self, value):
+		self.require_main_private_key_trace.append(value)
 
 
 class EndScreen:
@@ -217,5 +230,59 @@ def test_can_move_to_previous_screen_when_no_previous_screen_exists():
 	assert 'HTML(\'<b>Welcome, pick operation</b>\')' == str(context.title_bar.text)
 	assert context.next_handler == context.next_button.handler
 	assert 'Next' == context.next_button.text
+
+# endregion
+
+
+# region create_operation_button_handler
+
+class OperationButtonTestContext:
+	def __init__(self, operation):
+		self.screens = ButtonTestContext().screens
+		self.button = MockOperationButton(operation)
+
+		self.next_call_count = 0
+
+	def next(self):
+		self.next_call_count += 1
+
+
+def test_can_select_operation_requiring_main_public_key():
+	# Arrange:
+	context = OperationButtonTestContext(ShoestringOperation.SETUP)
+	handler = create_operation_button_handler(context.screens, context.button, context.next)
+
+	# Act:
+	handler()
+
+	# Assert:
+	assert ['welcome', 'skipped', 'obligatory', 'end-screen'] == context.screens.allowed_list
+	assert 1 == context.next_call_count
+	assert [context.button] == context.screens.get('welcome').selected_buttons
+
+	# Sanity:
+	assert not hasattr(context.screens.current, 'require_main_private_key')
+
+
+def test_can_select_operation_not_requiring_main_public_key():
+	# Arrange:
+	context = OperationButtonTestContext(ShoestringOperation.UPGRADE)
+	handler = create_operation_button_handler(context.screens, context.button, context.next)
+
+	context.screens.next()
+	context.screens.next()  # move to obligatory screen with require_main_private_key
+
+	# Act:
+	handler()
+
+	# Assert:
+	assert ['welcome', 'obligatory', 'network-type', 'end-screen'] == context.screens.allowed_list
+	assert 1 == context.next_call_count
+	assert [context.button] == context.screens.get('welcome').selected_buttons
+
+	assert [False] == context.screens.current.require_main_private_key_trace
+
+	# Sanity:
+	assert hasattr(context.screens.current, 'require_main_private_key')
 
 # endregion

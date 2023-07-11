@@ -8,7 +8,7 @@ from prompt_toolkit.layout.dimension import Dimension as D
 from prompt_toolkit.widgets import Box, Button, Frame, Shadow
 
 
-def hide_me(message_box_float):
+def _hide_me(message_box_float):
 	message_box_float.visible = False
 	message_box_float.on_close()
 
@@ -18,9 +18,8 @@ def show(message_box_float, title=None, text=None, on_close_callback=None):
 	message_box_float.text_control.text = text
 	message_box_float.visible = True
 	message_box_float.on_close = on_close_callback
-	get_app().layout.focus(message_box_float.ok_button)
 
-	# TODO: need to disable keybindings :grimacing:
+	get_app().layout.focus(message_box_float.ok_button)
 
 
 def create():
@@ -54,6 +53,6 @@ def create():
 	message_box_float.frame = frame
 	message_box_float.text_control = text_control
 
-	button.handler = partial(hide_me, message_box_float)
+	button.handler = partial(_hide_me, message_box_float)
 
 	return message_box_float

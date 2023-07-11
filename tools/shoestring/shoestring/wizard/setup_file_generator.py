@@ -75,9 +75,6 @@ async def prepare_shoestring_files(screens, directory):
 	voting = screens.get('voting')
 	node_settings = screens.get('node-settings')
 
-	# TODO: modify rest settings
-	# node_settings.metadata_info ?
-
 	config_filepath = directory / 'shoestring.ini'
 	with DisableLogger():
 		await run_init(InitArgs(network_type, config_filepath))

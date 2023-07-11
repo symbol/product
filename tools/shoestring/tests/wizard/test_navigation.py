@@ -1,4 +1,6 @@
-from shoestring.wizard.navigation import ExtendedButton, Navigation
+from prompt_toolkit.widgets import Button
+
+from shoestring.wizard.navigation import ExtendedButton, Navigation, initialize
 
 # pylint: disable=invalid-name
 
@@ -59,3 +61,11 @@ def test_can_dynamically_change_extended_button_state():
 		# Assert:
 		assert 'class:button' == button.conditional_style()
 		assert button.handler is not None
+
+
+def test_can_initialize_navigation():
+	# Act
+	navigation = initialize()
+
+	assert isinstance(navigation.prev, Button)
+	assert isinstance(navigation.next, ExtendedButton)

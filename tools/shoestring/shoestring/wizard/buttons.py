@@ -1,4 +1,5 @@
 from .screen_loader import lookup_screens_list_for_operation
+from .ShoestringOperation import requires_ca_key_path
 
 
 def create_next_clicked_handler(screens, activate_screen, title_bar, next_button, exit_handler):
@@ -50,5 +51,21 @@ def create_prev_clicked_handler(screens, activate_screen, title_bar, next_button
 		# restore handler in case it got replaced
 		next_button.handler = next_clicked
 		next_button.text = _('wizard-button-next')
+
+	return handler
+
+
+def create_operation_button_handler(screens, button, next_clicked):
+	"""Selects an shoestring operation."""
+
+	def handler():
+		allowed_screens_list = lookup_screens_list_for_operation(screens, button.operation)
+		screens.set_list(allowed_screens_list)
+		next_clicked()
+
+		if hasattr(screens.current, 'require_main_private_key'):
+			screens.current.require_main_private_key(requires_ca_key_path(button.operation))
+
+		screens.get('welcome').select(button)
 
 	return handler

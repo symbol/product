@@ -194,7 +194,6 @@ def create(screens):
 					),
 					harvesting_delegate_flag,
 
-					# TODO: should both of them be dependent on auto-delegate?
 					VSplit([
 						HSplit([
 							max_unlocked_accounts.label,

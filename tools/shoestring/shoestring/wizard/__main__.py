@@ -16,11 +16,10 @@ from zenlog import log
 from shoestring.__main__ import main as shoestring_main
 from shoestring.wizard.screens.modal import create as create_message_box_float
 from shoestring.wizard.screens.modal import show as show_message_box
-from shoestring.wizard.ShoestringOperation import requires_ca_key_path
 
 from . import keybindings, navigation, styles
-from .buttons import create_next_clicked_handler, create_prev_clicked_handler
-from .screen_loader import load_screens, lookup_screens_list_for_operation
+from .buttons import create_next_clicked_handler, create_operation_button_handler, create_prev_clicked_handler
+from .screen_loader import load_screens
 from .Screens import Screens
 from .shoestring_dispatcher import dispatch_shoestring_command
 from .TitleBar import TitleBar
@@ -30,13 +29,14 @@ async def main():  # pylint: disable=too-many-locals, too-many-statements
 	lang = gettext.translation('messages', localedir='lang', languages=(os.environ.get('LC_MESSAGES', 'en'), 'en'))
 	lang.install()
 
-	key_bindings = keybindings.initialize()
+	message_box_float = create_message_box_float()
+
+	key_bindings = keybindings.initialize(lambda: message_box_float.visible)
 	app_styles = styles.initialize()
 	navbar = navigation.initialize()
 
 	screens = Screens(navbar)
 	load_screens(screens)
-	message_box_float = create_message_box_float()
 	screens.message_box = partial(show_message_box, message_box_float)
 
 	main_container = screens.current
@@ -81,28 +81,15 @@ async def main():  # pylint: disable=too-many-locals, too-many-statements
 
 	def activate_screen(screen):
 		root_container.children[2] = screen
-
-		if 'end-screen' != screen.screen_id:  # cannot be focused because it has no input controls
-			layout.focus(screen)
+		layout.focus(screen)
 
 	next_clicked = create_next_clicked_handler(screens, activate_screen, title_bar, navbar.next, app.exit)
 	navbar.next.handler = next_clicked
 	navbar.prev.handler = create_prev_clicked_handler(screens, activate_screen, title_bar, navbar.next, next_clicked)
 
 	# set welcome screen button handlers
-	def create_button_handler(button):
-		def button_handler():
-			allowed_screens_list = lookup_screens_list_for_operation(screens, button.operation)
-			screens.set_list(allowed_screens_list)
-			next_clicked()
-
-			screens.current.require_main_private_key(requires_ca_key_path(button.operation))
-			screens.get('welcome').select(button)
-
-		return button_handler
-
 	for button in screens.get('welcome').buttons:
-		button.handler = create_button_handler(button)
+		button.handler = create_operation_button_handler(screens, button, next_clicked)
 
 	result = await app.run_async()
 

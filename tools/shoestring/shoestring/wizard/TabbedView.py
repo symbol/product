@@ -52,8 +52,9 @@ class TabList(RadioList):
 			position of the mouse click event.
 			"""
 			if mouse_event.event_type == MouseEventType.MOUSE_UP:
-				self._selected_index = mouse_event.position.y
-				self._handle_enter()
+				# self._selected_index = mouse_event.position.y
+				# self._handle_enter()
+				pass
 
 		result = []
 		for i, value in enumerate(self.values):
@@ -91,7 +92,7 @@ class TabList(RadioList):
 		return list(map(lambda item: (*item, mouse_handler), result))
 
 
-def create_condition(controller, index):
+def _create_condition(controller, index):
 	return Condition(lambda: controller.current_value == index)
 
 
@@ -124,7 +125,7 @@ class Tabs(HSplit):
 
 		frame_or_space = []
 		for index, item in enumerate(controller.values):
-			frame_or_space.extend(frame(len(item[1]) + 4, create_condition(controller, index)))
+			frame_or_space.extend(frame(len(item[1]) + 4, _create_condition(controller, index)))
 
 		tab_pages = []
 		for index, item in enumerate(items):
@@ -135,7 +136,7 @@ class Tabs(HSplit):
 						item,
 						fill(width=1, char=Border.VERTICAL)
 					], padding=1),
-					filter=create_condition(controller, index),
+					filter=_create_condition(controller, index),
 				),
 			)
 
