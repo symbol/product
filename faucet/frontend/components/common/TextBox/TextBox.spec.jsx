@@ -21,8 +21,10 @@ describe('components/TextBox', () => {
 		expect(callback).toHaveBeenCalledTimes(0);
 	});
 
-	it('should fire onChange event with entered text', () => {
+	it('should fire onChange event with entered text', async () => {
 		// Arrange:
+		const user = userEvent.setup();
+
 		const callback = jest.fn();
 		const text = 'entered text';
 
@@ -31,7 +33,7 @@ describe('components/TextBox', () => {
 			onChange={callback}
 		/>);
 		const element = screen.getByRole('textbox');
-		userEvent.default.type(element, text);
+		await user.type(element, text);
 
 		// Assert:
 		expect(callback).toHaveBeenCalledWith(text);

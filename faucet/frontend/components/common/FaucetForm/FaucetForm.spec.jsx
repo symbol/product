@@ -96,7 +96,13 @@ describe('components/FaucetForm', () => {
 			sessionStorage.setItem('authToken', jwtAuthToken);
 		};
 
-		beforeEach(() => createSessionStorageTwitterInfo());
+		// mock user event
+		let user = {};
+
+		beforeEach(() => {
+			createSessionStorageTwitterInfo();
+			user = userEvent.setup();
+		});
 
 		afterEach(() => sessionStorage.clear());
 
@@ -173,8 +179,8 @@ describe('components/FaucetForm', () => {
 				const elementRecipient = screen.getByPlaceholderText(formInputRecipient);
 				const elementAmount = screen.getByPlaceholderText(formInputAmount);
 				const elementButton = screen.getByText(formButtonClaim);
-				userEvent.default.type(elementRecipient, recipientAddress);
-				userEvent.default.type(elementAmount, amount);
+				await user.type(elementRecipient, recipientAddress);
+				await user.type(elementAmount, amount);
 				fireEvent.click(elementButton);
 
 				// Assert:
@@ -239,8 +245,8 @@ describe('components/FaucetForm', () => {
 					const elementRecipient = screen.getByPlaceholderText(formInputRecipient);
 					const elementAmount = screen.getByPlaceholderText(formInputAmount);
 					const elementButton = screen.getByText(formButtonClaim);
-					userEvent.default.type(elementRecipient, formInput.address);
-					userEvent.default.type(elementAmount, formInput.amount);
+					await user.type(elementRecipient, formInput.address);
+					await user.type(elementAmount, formInput.amount);
 					fireEvent.click(elementButton);
 
 					// Assert:
@@ -281,8 +287,8 @@ describe('components/FaucetForm', () => {
 				const elementRecipient = screen.getByPlaceholderText(formInputRecipient);
 				const elementAmount = screen.getByPlaceholderText(formInputAmount);
 				const elementButton = screen.getByText(formButtonClaim);
-				userEvent.default.type(elementRecipient, recipientAddress);
-				userEvent.default.type(elementAmount, '100');
+				await user.type(elementRecipient, recipientAddress);
+				await user.type(elementAmount, '100');
 				fireEvent.click(elementButton);
 
 				// Assert:
@@ -334,8 +340,8 @@ describe('components/FaucetForm', () => {
 					const elementRecipient = screen.getByPlaceholderText(formInputRecipient);
 					const elementAmount = screen.getByPlaceholderText(formInputAmount);
 					const elementButton = screen.getByText(formButtonClaim);
-					userEvent.default.type(elementRecipient, recipientAddress);
-					userEvent.default.type(elementAmount, '100');
+					await user.type(elementRecipient, recipientAddress);
+					await user.type(elementAmount, '100');
 					fireEvent.click(elementButton);
 
 					// Assert:
@@ -416,8 +422,8 @@ describe('components/FaucetForm', () => {
 					const elementRecipient = screen.getByPlaceholderText(formInputRecipient);
 					const elementAmount = screen.getByPlaceholderText(formInputAmount);
 					const elementButton = screen.getByText(formButtonClaim);
-					userEvent.default.type(elementRecipient, recipientAddress);
-					userEvent.default.type(elementAmount, amount);
+					await user.type(elementRecipient, recipientAddress);
+					await user.type(elementAmount, amount);
 					fireEvent.click(elementButton);
 
 					// Assert:
