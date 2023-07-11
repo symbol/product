@@ -85,15 +85,29 @@ cd faucet/backend
 npm install
 ```
 
+3. Create a database (sqlite) file in root, or any local path you want, you need assign the path in `.env` file.
+
+```
+sqlite3 claim.db
+```
+
 3. Create `.env` in [backend/](/backend/) root directory, containing all balance and amount in absolute units.
+
 ```env
 NEM_FAUCET_ADDRESS=<Address>
 NEM_FAUCET_PRIVATE_KEY=<private key>
 NEM_ENDPOINT=http://hugetestalice.nem.ninja:7890
+SYMBOL_FAUCET_ADDRESS=<Address>
+SYMBOL_FAUCET_PRIVATE_KEY=<private key>
+SYMBOL_ENDPOINT=https://201-sai-dual.symboltest.net:3001
 RECEIPT_MAX_BALANCE=200000000
 SEND_OUT_MAX_AMOUNT=500000000
 MOSAIC_DIVISIBILITY=6
 PORT=8080
+JWT_SECRET=secret
+MIN_FOLLOWERS_COUNT=10
+MIN_ACCOUNT_AGE=30
+DB_PATH=./claim.db
 ```
 
 4. Start server.
