@@ -16,6 +16,7 @@ from shoestring.__main__ import main as shoestring_main
 from shoestring.wizard.ShoestringOperation import requires_ca_key_path
 
 from . import keybindings, navigation, styles
+from .buttons import create_next_clicked_handler, create_prev_clicked_handler
 from .screen_loader import load_screens, lookup_screens_list_for_operation
 from .Screens import Screens
 from .shoestring_dispatcher import dispatch_shoestring_command
@@ -68,47 +69,15 @@ async def main():  # pylint: disable=too-many-locals, too-many-statements
 
 	# set navigation bar button handlers
 
-	def next_clicked():
-		next_screen = screens.next()
-		root_container.children[2] = next_screen
-		title_bar.update_navigation(screens)
+	def activate_screen(screen):
+		root_container.children[2] = screen
 
-		if 'end-screen' != screens.ordered[screens.current_id].screen_id:
-			if hasattr(next_screen, 'reset'):
-				next_screen.reset()
+		if 'end-screen' != screen.screen_id:  # cannot be focused because it has no input controls
+			layout.focus(screen)
 
-			layout.focus(next_screen)
-		else:
-			operation = screens.get('welcome').operation
-			allowed_screens_list = lookup_screens_list_for_operation(screens, operation)
-
-			tokens = []
-			for screen_id in allowed_screens_list:
-				screen = screens.get(screen_id)
-				if hasattr(screen, 'tokens'):
-					tokens.extend(screen.tokens)
-
-			next_screen.clear()
-			for token in tokens:
-				next_screen.add_setting(*token)
-
-			# generate_settings() will go here
-			navbar.next.text = _('wizard-button-finish')
-			navbar.next.handler = app.exit
-
-	def prev_clicked():
-		if screens.has_previous:
-			root_container.children[2] = screens.previous()
-			title_bar.update_navigation(screens)
-		else:
-			title_bar.reset()
-
-		# restore handler in case it got replaced
-		navbar.next.handler = next_clicked
-		navbar.next.text = _('wizard-button-next')
-
-	navbar.prev.handler = prev_clicked
+	next_clicked = create_next_clicked_handler(screens, activate_screen, title_bar, navbar.next, app.exit)
 	navbar.next.handler = next_clicked
+	navbar.prev.handler = create_prev_clicked_handler(screens, activate_screen, title_bar, navbar.next, next_clicked)
 
 	# set welcome screen button handlers
 	def create_button_handler(button):
