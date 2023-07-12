@@ -9,6 +9,7 @@ from symbollightapi.connector.NemConnector import NemConnector
 from symbollightapi.model.Block import Block
 from symbollightapi.model.Endpoint import Endpoint
 from symbollightapi.model.NodeInfo import NodeInfo
+from symbollightapi.model.Transaction import ConvertAccountToMultisig, ImportanceTransferTransaction, TransferTransaction
 
 # region test data
 
@@ -167,9 +168,73 @@ ACCOUNT_INFO_4 = {
 }
 
 
-CHAIN_BLOCK_1 = {
+CHAIN_BLOCK_1 = {  # Added ConvertAccountToMultisig, ImportanceTransferTransaction, TransferTransaction
 	'difficulty': 100000000000000,
-	'txes': [],
+	'txes': [
+		{
+			'tx': {
+				'timeStamp': 73397,
+				'mode': 1,
+				'signature': (
+					'1b81379847241e45da86b27911e5c9a9192ec04f644d98019657d32838b49c14'
+					'3eaa4815a3028b80f9affdbf0b94cd620f7a925e02783dda67b8627b69ddf70e'
+				),
+				'fee': 8000000,
+				'remoteAccount': '7195f4d7a40ad7e31958ae96c4afed002962229675a4cae8dc8a18e290618981',
+				'type': 2049,
+				'deadline': 83397,
+				'version': 1744830465,
+				'signer': '22df5f43ee3739a10c346b3ec2d3878668c5514696be425f9067d3a11c777f1d'
+			},
+			'hash': '306f20260a1b7af692834809d3e7d53edd41616d5076ac0fac6cfa75982185df'
+		},
+		{
+			'tx': {
+				'timeStamp': 73397,
+				'amount': 180000040000000,
+				'signature': (
+					'e0cc7f71e353ca0aaf2f009d74aeac5f97d4796b0f08c009058fb33d93c2e8ca'
+					'68c0b63e46ff125f43314014d324ac032d2c82996a6e47068b251f1d71fdd001'
+				),
+				'fee': 9000000,
+				'recipient': 'NCOPERAWEWCD4A34NP5UQCCKEX44MW4SL3QYJYS5',
+				'type': 257,
+				'deadline': 83397,
+				'message': {
+					'payload': '476f6f64206c75636b21',
+					'type': 1
+				},
+				'version': 1744830465,
+				'signer': '8d07f90fb4bbe7715fa327c926770166a11be2e494a970605f2e12557f66c9b9'
+			},
+			'hash': 'd6c9902cfa23dbbdd212d720f86391dd91d215bf77d806f03a6c2dd2e730628a'
+		},
+		{
+			'tx': {
+				'timeStamp': 73397,
+				'signature': (
+					'81ff2235f9ad6f3f8adbc16051bf8691a45ee5ddcace4d6260ce9a2ae63dba59'
+					'4f2b486f25451a1f90da7f0e312d9e8570e4bc03798e58d19dec86feb4152307'
+				),
+				'fee': 40000000,
+				'type': 4097,
+				'deadline': 83397,
+				'version': 1744830465,
+				'signer': 'f41b99320549741c5cce42d9e4bb836d98c50ed5415d0c3c2912d1bb50e6a0e5',
+				'modifications': [
+					{
+						'modificationType': 1,
+						'cosignatoryAccount': '1fbdbdde28daf828245e4533765726f0b7790e0b7146e2ce205df3e86366980b'
+					},
+					{
+						'modificationType': 1,
+						'cosignatoryAccount': 'f94e8702eb1943b23570b1b83be1b81536df35538978820e98bfce8f999e2d37'
+					}
+				]
+			},
+			'hash': 'cc64ca69bfa95db2ff7ac1e21fe6d27ece189c603200ebc9778d8bb80ca25c3c'
+		},
+	],
 	'block': {
 		'timeStamp': 73976,
 		'signature': (
@@ -438,6 +503,73 @@ async def test_can_query_account_info_without_public_key(server):  # pylint: dis
 
 # region local chain blocks after
 
+EXPECTED_BLOCK_2 = Block(
+	2,
+	73976,
+	[
+		ImportanceTransferTransaction(
+			'306f20260a1b7af692834809d3e7d53edd41616d5076ac0fac6cfa75982185df',
+			2,
+			'22df5f43ee3739a10c346b3ec2d3878668c5514696be425f9067d3a11c777f1d',
+			8000000,
+			73397,
+			83397,
+			'1b81379847241e45da86b27911e5c9a9192ec04f644d98019657d32838b49c14'
+			'3eaa4815a3028b80f9affdbf0b94cd620f7a925e02783dda67b8627b69ddf70e',
+			2049,
+			1,
+			'7195f4d7a40ad7e31958ae96c4afed002962229675a4cae8dc8a18e290618981'
+		),
+		TransferTransaction(
+			'd6c9902cfa23dbbdd212d720f86391dd91d215bf77d806f03a6c2dd2e730628a',
+			2,
+			'8d07f90fb4bbe7715fa327c926770166a11be2e494a970605f2e12557f66c9b9',
+			9000000,
+			73397,
+			83397,
+			'e0cc7f71e353ca0aaf2f009d74aeac5f97d4796b0f08c009058fb33d93c2e8ca'
+			'68c0b63e46ff125f43314014d324ac032d2c82996a6e47068b251f1d71fdd001',
+			257,
+			180000040000000,
+			'NCOPERAWEWCD4A34NP5UQCCKEX44MW4SL3QYJYS5',
+			{
+				'payload': '476f6f64206c75636b21',
+				'type': 1,
+			},
+			None
+		),
+		ConvertAccountToMultisig(
+			'cc64ca69bfa95db2ff7ac1e21fe6d27ece189c603200ebc9778d8bb80ca25c3c',
+			2,
+			'f41b99320549741c5cce42d9e4bb836d98c50ed5415d0c3c2912d1bb50e6a0e5',
+			40000000,
+			73397,
+			83397,
+			'81ff2235f9ad6f3f8adbc16051bf8691a45ee5ddcace4d6260ce9a2ae63dba59'
+			'4f2b486f25451a1f90da7f0e312d9e8570e4bc03798e58d19dec86feb4152307',
+			4097,
+			[
+				{
+					'modificationType': 1,
+					'cosignatoryAccount': '1fbdbdde28daf828245e4533765726f0b7790e0b7146e2ce205df3e86366980b'
+				},
+				{
+					'modificationType': 1,
+					'cosignatoryAccount': 'f94e8702eb1943b23570b1b83be1b81536df35538978820e98bfce8f999e2d37'
+				}
+			]
+		)
+	],
+	100000000000000,
+	'1dd9d4d7b6af603d29c082f9aa4e123f07d18154ddbcd7ddc6702491b854c5e4',
+	'f9bd190dd0c364261f5c8a74870cc7f7374e631352293c62ecc437657e5de2cd',
+	(
+		'fdf6a9830e9320af79123f467fcb03d6beab735575ff50eab363d812c5581436'
+		'2ad7be0503db2ee70e60ac3408d83cdbcbd941067a6df703e0c21c7bf389f105'
+	)
+)
+
+
 async def test_can_query_blocks_after(server):  # pylint: disable=redefined-outer-name
 	# Arrange:
 	connector = NemConnector(server.make_url(''))
@@ -448,18 +580,7 @@ async def test_can_query_blocks_after(server):  # pylint: disable=redefined-oute
 	# Assert:
 	assert [f'{server.make_url("")}/local/chain/blocks-after'] == server.mock.urls
 	assert 2 == len(blocks)
-	assert Block(
-		2,
-		73976,
-		[],
-		100000000000000,
-		'1dd9d4d7b6af603d29c082f9aa4e123f07d18154ddbcd7ddc6702491b854c5e4',
-		'f9bd190dd0c364261f5c8a74870cc7f7374e631352293c62ecc437657e5de2cd',
-		(
-			'fdf6a9830e9320af79123f467fcb03d6beab735575ff50eab363d812c5581436'
-			'2ad7be0503db2ee70e60ac3408d83cdbcbd941067a6df703e0c21c7bf389f105'
-		)
-	) == blocks[0]
+	assert EXPECTED_BLOCK_2 == blocks[0]
 	assert Block(
 		3,
 		78976,
@@ -487,17 +608,6 @@ async def test_can_query_block_at(server):  # pylint: disable=redefined-outer-na
 
 	# Assert:
 	assert [f'{server.make_url("")}/local/block/at'] == server.mock.urls
-	assert Block(
-		2,
-		73976,
-		[],
-		100000000000000,
-		'1dd9d4d7b6af603d29c082f9aa4e123f07d18154ddbcd7ddc6702491b854c5e4',
-		'f9bd190dd0c364261f5c8a74870cc7f7374e631352293c62ecc437657e5de2cd',
-		(
-			'fdf6a9830e9320af79123f467fcb03d6beab735575ff50eab363d812c5581436'
-			'2ad7be0503db2ee70e60ac3408d83cdbcbd941067a6df703e0c21c7bf389f105'
-		)
-	) == block
+	assert EXPECTED_BLOCK_2 == block
 
 # endregion

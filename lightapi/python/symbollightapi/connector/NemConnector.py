@@ -3,7 +3,9 @@ from symbolchain.nem.Network import Address
 
 from ..model.Block import Block
 from ..model.Endpoint import Endpoint
+from ..model.Exceptions import UnknownTransactionType
 from ..model.NodeInfo import NodeInfo
+from ..model.Transaction import ConvertAccountToMultisig, ImportanceTransferTransaction, TransferTransaction
 from .BasicConnector import BasicConnector
 
 MICROXEM_PER_XEM = 1000000
@@ -108,13 +110,72 @@ class NemConnector(BasicConnector):
 	@staticmethod
 	def _map_to_block(block_dict):
 		block = block_dict['block']
+		difficulty = block_dict['difficulty']
+		block_hash = block_dict['hash']
+		transactions = block_dict['txes']
 
 		return Block(
 			block['height'],
 			block['timeStamp'],
-			block_dict['txes'],
-			block_dict['difficulty'],
-			block_dict['hash'],
+			NemConnector._map_to_transaction(transactions, block['height']),
+			difficulty,
+			block_hash,
 			block['signer'],
 			block['signature'],
 		)
+
+	@staticmethod
+	def _map_to_transaction(txes_dict, block_height):
+		"""Maps a transaction dictionary to a transaction object."""
+
+		# Define a mapping from transaction types to constructor functions
+		transaction_mapping = {
+			257: TransferTransaction,
+			2049: ImportanceTransferTransaction,
+			4097: ConvertAccountToMultisig,
+		}
+
+		transactions = []
+
+		for transaction in txes_dict:
+			tx_type = transaction['tx']['type']
+
+			# Define common arguments for all transactions
+			common_args = {
+				'transaction_hash': transaction['hash'],
+				'height': block_height,
+				'sender': transaction['tx']['signer'],
+				'fee': transaction['tx']['fee'],
+				'timestamp': transaction['tx']['timeStamp'],
+				'deadline': transaction['tx']['deadline'],
+				'signature': transaction['tx']['signature'],
+				'transaction_type': transaction['tx']['type'],
+			}
+
+			if tx_type in transaction_mapping:
+				if tx_type == 257:
+					specific_args = {
+						'amount': transaction['tx']['amount'],
+						'recipient': transaction['tx']['recipient'],
+						'message': transaction['tx']['message'],
+						'mosaics': transaction['tx'].get('mosaics',),
+					}
+				elif tx_type == 2049:
+					specific_args = {
+						'mode': transaction['tx']['mode'],
+						'remote_account': transaction['tx']['remoteAccount'],
+					}
+				elif tx_type == 4097:
+					specific_args = {
+						'modifications': transaction['tx']['modifications'],
+					}
+				else:
+					specific_args = {}
+
+				transaction_object = transaction_mapping[tx_type](**common_args, **specific_args)
+			else:
+				raise UnknownTransactionType(f'Unknown transaction type {tx_type}')
+
+			transactions.append(transaction_object)
+
+		return transactions
