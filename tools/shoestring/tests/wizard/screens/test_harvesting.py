@@ -1,4 +1,8 @@
+from collections import namedtuple
+
 from shoestring.wizard.screens.harvesting import create
+
+SingleValueScreen = namedtuple('SingleValueScreen', ['current_value'])
 
 TEST_PRIVATE_KEY_1 = 'C379733959D5CE7A06A3D80035B716E671678824630C7B97927BF0945504F319'
 TEST_PRIVATE_KEY_2 = '8D3CCE310AA48479B5E0A853D71BA2BAB9D00D376A24BC00CA0AD69B235723E7'
@@ -134,9 +138,21 @@ async def test_fails_validation_when_entered_min_fee_multiplier_is_invalid():
 	assert not screen.is_valid()
 
 
+async def test_fails_validation_when_entered_beneficiary_address_is_invalid():
+	# Arrange:
+	screen = create({'network-type': SingleValueScreen('sai')})
+	screen.accessor._flag.current_values = [()]  # pylint: disable=protected-access
+	screen.accessor._delegate_flag.current_values = [()]  # pylint: disable=protected-access
+	screen.accessor._beneficiary_address.input.text = 'ABC'  # pylint: disable=protected-access
+	screen.accessor._beneficiary_address.input.buffer.validate()  # pylint: disable=protected-access
+
+	# Asssert: inputs are not valid
+	assert not screen.is_valid()
+
+
 async def test_can_generate_diagnostic_accessor_representation_harvester_disabled():
 	# Arrange:
-	screen = create(None)
+	screen = create({'network-type': SingleValueScreen('sai')})
 	screen.accessor._flag.current_values = []  # pylint: disable=protected-access
 	screen.accessor._auto_harvest_flag.current_values = [()]  # pylint: disable=protected-access
 	screen.accessor._generate_keys_flag.current_values = []  # pylint: disable=protected-access
@@ -160,7 +176,7 @@ async def test_can_generate_diagnostic_accessor_representation_harvester_disable
 
 async def test_can_generate_diagnostic_accessor_representation_harvester_enabled_imported_keys():
 	# Arrange:
-	screen = create(None)
+	screen = create({'network-type': SingleValueScreen('sai')})
 	screen.accessor._flag.current_values = [()]  # pylint: disable=protected-access
 	screen.accessor._auto_harvest_flag.current_values = [()]  # pylint: disable=protected-access
 	screen.accessor._generate_keys_flag.current_values = []  # pylint: disable=protected-access
@@ -190,7 +206,7 @@ async def test_can_generate_diagnostic_accessor_representation_harvester_enabled
 
 async def test_can_generate_diagnostic_accessor_representation_harvester_enabled_generated_keys():
 	# Arrange:
-	screen = create(None)
+	screen = create({'network-type': SingleValueScreen('sai')})
 	screen.accessor._flag.current_values = [()]  # pylint: disable=protected-access
 	screen.accessor._auto_harvest_flag.current_values = []  # pylint: disable=protected-access
 	screen.accessor._generate_keys_flag.current_values = [()]  # pylint: disable=protected-access
