@@ -1,20 +1,7 @@
-[tool.poetry]
-name = 'symbol-lightapi'
-version = '0.0.2'
-description = 'Symbol Light API'
-authors = ['Symbol Contributors <contributors@symbol.dev>']
-maintainers = ['Symbol Contributors <contributors@symbol.dev>']
-license = 'MIT'
-
-readme = 'README.md'
-
-packages = [{ include = 'symbollightapi' }]
-
-repository = 'https://github.com/symbol/product/tree/main/python/lightapi'
-
-keywords = ['symbol', 'symbollightapi', 'lightapi', 'Symbol Light API']
-
-classifiers = ['Programming Language :: Python :: 3.7']
-
-[tool.poetry.dependencies]
-python = "^3.7"
+[build-system]
+requires = [
+	"setuptools>=61",
+	"wheel",
+	"cffi>=1.15.0",
+]
+build-backend = "setuptools.build_meta"
