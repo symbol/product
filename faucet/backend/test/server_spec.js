@@ -13,11 +13,11 @@ describe('Server', () => {
 	let claimDatabase = {};
 	let server = {};
 
-	beforeEach(() => {
+	beforeEach(async () => {
 		const { connection } = new DatabaseConnection(':memory:');
 		claimDatabase = new ClaimDatabase(connection);
 
-		claimDatabase.createTable();
+		await claimDatabase.createTable();
 
 		server = createRestifyServer(claimDatabase);
 	});
