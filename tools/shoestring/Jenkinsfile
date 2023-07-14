@@ -6,6 +6,8 @@ defaultCiPipeline {
 
 	packageId = 'tools-shoestring'
 
+	publisher = 'pypi'
+
 	codeCoverageTool = 'coverage'
 	minimumCodeCoverage = 95
 }
