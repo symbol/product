@@ -29,6 +29,6 @@ if '__main__' == __name__:
 		cmdclass=cmdclass,
 		# CFFI
 		zip_safe=False,
-		ext_package='_lightapi_openssl_cffi_bindings',
+		ext_package='symbollightapi/bindings',
 		cffi_modules=['cffi_src/openssl_build.py:ffi_builder'],
 	)
