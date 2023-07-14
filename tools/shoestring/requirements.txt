@@ -5,7 +5,7 @@ Jinja2==3.1.2
 prompt_toolkit==3.0.38
 PyYAML==6.0
 requests==2.31.0
-symbol-lightapi==0.0.2
+symbol-lightapi==0.0.4
 symbol-sdk-python==3.0.7
 websockets==11.0.3
 zenlog==1.1
