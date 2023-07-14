@@ -9,7 +9,7 @@ from symbollightapi.connector.NemConnector import NemConnector
 from symbollightapi.model.Block import Block
 from symbollightapi.model.Endpoint import Endpoint
 from symbollightapi.model.NodeInfo import NodeInfo
-from symbollightapi.model.Transaction import ConvertAccountToMultisig, ImportanceTransferTransaction, TransferTransaction
+from symbollightapi.model.Transaction import ConvertAccountToMultisigTransaction, ImportanceTransferTransaction, TransferTransaction
 
 # region test data
 
@@ -168,7 +168,7 @@ ACCOUNT_INFO_4 = {
 }
 
 
-CHAIN_BLOCK_1 = {  # Added ConvertAccountToMultisig, ImportanceTransferTransaction, TransferTransaction
+CHAIN_BLOCK_1 = {  # Added ConvertAccountToMultisigTransaction, ImportanceTransferTransaction, TransferTransaction
 	'difficulty': 100000000000000,
 	'txes': [
 		{
@@ -217,6 +217,9 @@ CHAIN_BLOCK_1 = {  # Added ConvertAccountToMultisig, ImportanceTransferTransacti
 					'4f2b486f25451a1f90da7f0e312d9e8570e4bc03798e58d19dec86feb4152307'
 				),
 				'fee': 40000000,
+				"minCosignatories": {
+					"relativeChange": 2
+				},
 				'type': 4097,
 				'deadline': 83397,
 				'version': 1744830465,
@@ -532,13 +535,10 @@ EXPECTED_BLOCK_2 = Block(
 			257,
 			180000040000000,
 			'NCOPERAWEWCD4A34NP5UQCCKEX44MW4SL3QYJYS5',
-			{
-				'payload': '476f6f64206c75636b21',
-				'type': 1,
-			},
+			('476f6f64206c75636b21', 1),
 			None
 		),
-		ConvertAccountToMultisig(
+		ConvertAccountToMultisigTransaction(
 			'cc64ca69bfa95db2ff7ac1e21fe6d27ece189c603200ebc9778d8bb80ca25c3c',
 			2,
 			'f41b99320549741c5cce42d9e4bb836d98c50ed5415d0c3c2912d1bb50e6a0e5',
@@ -548,15 +548,10 @@ EXPECTED_BLOCK_2 = Block(
 			'81ff2235f9ad6f3f8adbc16051bf8691a45ee5ddcace4d6260ce9a2ae63dba59'
 			'4f2b486f25451a1f90da7f0e312d9e8570e4bc03798e58d19dec86feb4152307',
 			4097,
+			2,
 			[
-				{
-					'modificationType': 1,
-					'cosignatoryAccount': '1fbdbdde28daf828245e4533765726f0b7790e0b7146e2ce205df3e86366980b'
-				},
-				{
-					'modificationType': 1,
-					'cosignatoryAccount': 'f94e8702eb1943b23570b1b83be1b81536df35538978820e98bfce8f999e2d37'
-				}
+				(1, '1fbdbdde28daf828245e4533765726f0b7790e0b7146e2ce205df3e86366980b'),
+				(1, 'f94e8702eb1943b23570b1b83be1b81536df35538978820e98bfce8f999e2d37')
 			]
 		)
 	],

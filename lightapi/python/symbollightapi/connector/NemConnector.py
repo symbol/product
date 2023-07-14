@@ -1,3 +1,5 @@
+from collections import namedtuple
+
 from symbolchain.CryptoTypes import PublicKey
 from symbolchain.nem.Network import Address
 
@@ -5,8 +7,16 @@ from ..model.Block import Block
 from ..model.Endpoint import Endpoint
 from ..model.Exceptions import UnknownTransactionType
 from ..model.NodeInfo import NodeInfo
-from ..model.Transaction import ConvertAccountToMultisig, ImportanceTransferTransaction, TransferTransaction
+from ..model.Transaction import (
+	ConvertAccountToMultisigTransaction,
+	ImportanceTransferTransaction,
+	TransferTransaction
+)
 from .BasicConnector import BasicConnector
+
+Message = namedtuple('Message', ['payload', 'is_plain'])
+Mosaic = namedtuple('Mosaic', ['namespace_name', 'quantity'])
+Modification = namedtuple('Modification', ['modification_type', 'cosignatory_account'])
 
 MICROXEM_PER_XEM = 1000000
 
@@ -132,42 +142,63 @@ class NemConnector(BasicConnector):
 		transaction_mapping = {
 			257: TransferTransaction,
 			2049: ImportanceTransferTransaction,
-			4097: ConvertAccountToMultisig,
+			4097: ConvertAccountToMultisigTransaction,
 		}
 
 		transactions = []
 
 		for transaction in txes_dict:
-			tx_type = transaction['tx']['type']
+			transaction_detail = transaction['tx']
+			tx_type = transaction_detail['type']
 
 			# Define common arguments for all transactions
 			common_args = {
 				'transaction_hash': transaction['hash'],
 				'height': block_height,
-				'sender': transaction['tx']['signer'],
-				'fee': transaction['tx']['fee'],
-				'timestamp': transaction['tx']['timeStamp'],
-				'deadline': transaction['tx']['deadline'],
-				'signature': transaction['tx']['signature'],
-				'transaction_type': transaction['tx']['type'],
+				'sender': transaction_detail['signer'],
+				'fee': transaction_detail['fee'],
+				'timestamp': transaction_detail['timeStamp'],
+				'deadline': transaction_detail['deadline'],
+				'signature': transaction_detail['signature'],
+				'transaction_type': transaction_detail['type'],
 			}
 
 			if tx_type in transaction_mapping:
 				if tx_type == 257:
+					payload = transaction_detail['message']['payload']
+					type = transaction_detail['message']['type']
+
+					mosaics = None
+					if 'mosaics' in transaction_detail:
+						mosaics = [
+							Mosaic(
+								f'{mosaic["mosaicId"]["namespaceId"]}.{mosaic["mosaicId"]["name"]}',
+								mosaic['quantity']
+							)
+							for mosaic in transaction_detail['mosaics']
+						]
+
 					specific_args = {
-						'amount': transaction['tx']['amount'],
-						'recipient': transaction['tx']['recipient'],
-						'message': transaction['tx']['message'],
-						'mosaics': transaction['tx'].get('mosaics',),
+						'amount': transaction_detail['amount'],
+						'recipient': transaction_detail['recipient'],
+						'message': Message(payload, type),
+						'mosaics': mosaics,
 					}
 				elif tx_type == 2049:
 					specific_args = {
-						'mode': transaction['tx']['mode'],
-						'remote_account': transaction['tx']['remoteAccount'],
+						'mode': transaction_detail['mode'],
+						'remote_account': transaction_detail['remoteAccount'],
 					}
 				elif tx_type == 4097:
 					specific_args = {
-						'modifications': transaction['tx']['modifications'],
+						'min_cosignatories': transaction_detail['minCosignatories']['relativeChange'],
+						'modifications': [
+							Modification(
+								modification['modificationType'],
+								modification['cosignatoryAccount'])
+							for modification in transaction_detail['modifications']
+						]
+					}
 					}
 				else:
 					specific_args = {}
