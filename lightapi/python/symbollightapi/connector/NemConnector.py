@@ -9,7 +9,12 @@ from ..model.Exceptions import UnknownTransactionType
 from ..model.NodeInfo import NodeInfo
 from ..model.Transaction import (
 	ConvertAccountToMultisigTransaction,
+	CosignSignatureTransaction,
 	ImportanceTransferTransaction,
+	MosaicDefinitionTransaction,
+	MosaicSupplyChangeTransaction,
+	MultisigTransaction,
+	NamespaceRegistrationTransaction,
 	TransferTransaction
 )
 from .BasicConnector import BasicConnector
@@ -17,6 +22,8 @@ from .BasicConnector import BasicConnector
 Message = namedtuple('Message', ['payload', 'is_plain'])
 Mosaic = namedtuple('Mosaic', ['namespace_name', 'quantity'])
 Modification = namedtuple('Modification', ['modification_type', 'cosignatory_account'])
+MosaicLevy = namedtuple('MosaicLevy', ['fee', 'recipient', 'type', 'namespace_name'])
+MosaicProperties = namedtuple('MosaicProperties', ['divisibility', 'initial_supply', 'supply_mutable', 'transferable'])
 
 MICROXEM_PER_XEM = 1000000
 
@@ -109,12 +116,14 @@ class NemConnector(BasicConnector):
 		""""Gets Blocks data"""
 
 		blocks_after_dict = await self.post('local/chain/blocks-after', {'height': height})
+		# blocks_after_dict = Blocks
 		return [self._map_to_block(block) for block in blocks_after_dict['data']]
 
 	async def get_block(self, height):
 		""""Gets Block data"""
 
 		block_dict = await self.post('local/block/at', {'height': height})
+		# block_dict = Block_1
 		return self._map_to_block(block_dict)
 
 	@staticmethod
@@ -127,7 +136,10 @@ class NemConnector(BasicConnector):
 		return Block(
 			block['height'],
 			block['timeStamp'],
-			NemConnector._map_to_transaction(transactions, block['height']),
+			[
+				NemConnector._map_to_transaction(transaction['tx'], transaction['hash'], block['height'])
+				for transaction in transactions
+			],
 			difficulty,
 			block_hash,
 			block['signer'],
@@ -135,7 +147,7 @@ class NemConnector(BasicConnector):
 		)
 
 	@staticmethod
-	def _map_to_transaction(txes_dict, block_height):
+	def _map_to_transaction(tx_dict, tx_hash, block_height):
 		"""Maps a transaction dictionary to a transaction object."""
 
 		# Define a mapping from transaction types to constructor functions
@@ -143,70 +155,112 @@ class NemConnector(BasicConnector):
 			257: TransferTransaction,
 			2049: ImportanceTransferTransaction,
 			4097: ConvertAccountToMultisigTransaction,
+			4098: CosignSignatureTransaction,
+			4100: MultisigTransaction,
+			8193: NamespaceRegistrationTransaction,
+			16385: MosaicDefinitionTransaction,
+			16386: MosaicSupplyChangeTransaction,
 		}
 
-		transactions = []
+		tx_type = tx_dict['type']
 
-		for transaction in txes_dict:
-			transaction_detail = transaction['tx']
-			tx_type = transaction_detail['type']
+		# Define common arguments for all transactions
+		common_args = {
+			'transaction_hash': tx_hash,
+			'height': block_height,
+			'sender': tx_dict['signer'],
+			'fee': tx_dict['fee'],
+			'timestamp': tx_dict['timeStamp'],
+			'deadline': tx_dict['deadline'],
+			'signature': tx_dict['signature'],
+			'transaction_type': tx_dict['type'],
+		}
 
-			# Define common arguments for all transactions
-			common_args = {
-				'transaction_hash': transaction['hash'],
-				'height': block_height,
-				'sender': transaction_detail['signer'],
-				'fee': transaction_detail['fee'],
-				'timestamp': transaction_detail['timeStamp'],
-				'deadline': transaction_detail['deadline'],
-				'signature': transaction_detail['signature'],
-				'transaction_type': transaction_detail['type'],
-			}
+		if tx_type in transaction_mapping:
+			if tx_type == 257:
+				payload = tx_dict['message']['payload']
+				type = tx_dict['message']['type']
 
-			if tx_type in transaction_mapping:
-				if tx_type == 257:
-					payload = transaction_detail['message']['payload']
-					type = transaction_detail['message']['type']
+				mosaics = None
+				if 'mosaics' in tx_dict:
+					mosaics = [
+						Mosaic(
+							f'{mosaic["mosaicId"]["namespaceId"]}.{mosaic["mosaicId"]["name"]}',
+							mosaic['quantity']
+						)
+						for mosaic in tx_dict['mosaics']
+					]
 
-					mosaics = None
-					if 'mosaics' in transaction_detail:
-						mosaics = [
-							Mosaic(
-								f'{mosaic["mosaicId"]["namespaceId"]}.{mosaic["mosaicId"]["name"]}',
-								mosaic['quantity']
-							)
-							for mosaic in transaction_detail['mosaics']
-						]
+				specific_args = {
+					'amount': tx_dict['amount'],
+					'recipient': tx_dict['recipient'],
+					'message': Message(payload, type),
+					'mosaics': mosaics,
+				}
+			elif tx_type == 2049:
+				specific_args = {
+					'mode': tx_dict['mode'],
+					'remote_account': tx_dict['remoteAccount'],
+				}
+			elif tx_type == 4097:
+				specific_args = {
+					'min_cosignatories': tx_dict['minCosignatories']['relativeChange'],
+					'modifications': [
+						Modification(
+							modification['modificationType'],
+							modification['cosignatoryAccount'])
+						for modification in tx_dict['modifications']
+					]
+				}
+			elif tx_type == 4100:
+				# Todo: implement
+				specific_args = {}
+			elif tx_type == 8193:
+				specific_args = {
+					'rental_fee_sink': tx_dict['rentalFeeSink'],
+					'rental_fee': tx_dict['rentalFee'],
+					'parent': tx_dict['parent'],
+					'namespace': tx_dict['newPart'],
+				}
+			elif tx_type == 16385:
+				mosaic_definition = tx_dict['mosaicDefinition']
+				mosaic_id = mosaic_definition['id']
+				mosaic_levy = mosaic_definition['levy']
+				mosaic_properties_dict = {
+					item['name']: item['value']
+					for item in mosaic_definition['properties']
+				}
 
-					specific_args = {
-						'amount': transaction_detail['amount'],
-						'recipient': transaction_detail['recipient'],
-						'message': Message(payload, type),
-						'mosaics': mosaics,
-					}
-				elif tx_type == 2049:
-					specific_args = {
-						'mode': transaction_detail['mode'],
-						'remote_account': transaction_detail['remoteAccount'],
-					}
-				elif tx_type == 4097:
-					specific_args = {
-						'min_cosignatories': transaction_detail['minCosignatories']['relativeChange'],
-						'modifications': [
-							Modification(
-								modification['modificationType'],
-								modification['cosignatoryAccount'])
-							for modification in transaction_detail['modifications']
-						]
-					}
-					}
-				else:
-					specific_args = {}
+				specific_args = {
+					'creation_fee': tx_dict['creationFee'],
+					'creation_fee_sink': tx_dict['creationFeeSink'],
+					'creator': mosaic_definition['creator'],
+					'description': mosaic_definition['description'],
+					'properties': MosaicProperties(
+						int(mosaic_properties_dict['divisibility']),
+						int(mosaic_properties_dict['initialSupply']),
+						mosaic_properties_dict['supplyMutable'] != 'false',
+						mosaic_properties_dict['transferable'] != 'false'
+					),
+					'levy': MosaicLevy(
+						mosaic_levy['fee'],
+						mosaic_levy['recipient'],
+						mosaic_levy['type'],
+						f'{mosaic_levy["mosaicId"]["namespaceId"]}.{mosaic_levy["mosaicId"]["name"] }'
+					),
+					'namespace_name': f'{mosaic_id["namespaceId"]}.{mosaic_id["name"] }'
+				}
+			elif tx_type == 16386:
+				mosaic_id = tx_dict['mosaicId']
 
-				transaction_object = transaction_mapping[tx_type](**common_args, **specific_args)
+				specific_args = {
+					'supply_type': tx_dict['supplyType'],
+					'delta': tx_dict['delta'],
+					'namespace_name': f'{mosaic_id["namespaceId"]}.{mosaic_id["name"] }',
+				}
 			else:
-				raise UnknownTransactionType(f'Unknown transaction type {tx_type}')
+				specific_args = {}
 
-			transactions.append(transaction_object)
-
-		return transactions
+			return transaction_mapping[tx_type](**common_args, **specific_args)
+		else:
+			raise UnknownTransactionType(f'Unknown transaction type {tx_type}')

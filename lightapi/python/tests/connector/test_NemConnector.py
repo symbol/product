@@ -9,7 +9,14 @@ from symbollightapi.connector.NemConnector import NemConnector
 from symbollightapi.model.Block import Block
 from symbollightapi.model.Endpoint import Endpoint
 from symbollightapi.model.NodeInfo import NodeInfo
-from symbollightapi.model.Transaction import ConvertAccountToMultisigTransaction, ImportanceTransferTransaction, TransferTransaction
+from symbollightapi.model.Transaction import (
+	ConvertAccountToMultisigTransaction,
+	ImportanceTransferTransaction,
+	MosaicDefinitionTransaction,
+	MosaicSupplyChangeTransaction,
+	NamespaceRegistrationTransaction,
+	TransferTransaction
+)
 
 # region test data
 
@@ -217,8 +224,8 @@ CHAIN_BLOCK_1 = {  # Added ConvertAccountToMultisigTransaction, ImportanceTransf
 					'4f2b486f25451a1f90da7f0e312d9e8570e4bc03798e58d19dec86feb4152307'
 				),
 				'fee': 40000000,
-				"minCosignatories": {
-					"relativeChange": 2
+				'minCosignatories': {
+					'relativeChange': 2
 				},
 				'type': 4097,
 				'deadline': 83397,
@@ -236,6 +243,98 @@ CHAIN_BLOCK_1 = {  # Added ConvertAccountToMultisigTransaction, ImportanceTransf
 				]
 			},
 			'hash': 'cc64ca69bfa95db2ff7ac1e21fe6d27ece189c603200ebc9778d8bb80ca25c3c'
+		},
+		{
+			'tx': {
+				'timeStamp': 73397,
+				'parent': None,
+				'signature': (
+					'9fc70720d0333d7d8f9eb14ef45ce45a846d37e79cf7a4244b4db36dcb0d3dfe'
+					'0170daefbf4d30f92f343110a6f03a14aedcf7913e465a4a1cc199639169410a'
+				),
+				'fee': 150000,
+				'rentalFeeSink': 'NAMESPACEWH4MKFMBCVFERDPOOP4FK7MTBXDPZZA',
+				'rentalFee': 100000000,
+				'newPart': 'namespace',
+				'type': 8193,
+				'deadline': 83397,
+				'version': 1744830465,
+				'signer': 'a700809530e5428066807ec0d34859c52e260fc60634aaac13e3972dcfc08736'
+			},
+			'hash': '7e547e45cfc9c34809ce184db6ae7b028360c0f1492cc37b7b4d31c22af07dc3'
+		},
+		{
+			'tx': {
+				'timeStamp': 73397,
+				'creationFee': 10000000,
+				'mosaicDefinition': {
+					'creator': 'a700809530e5428066807ec0d34859c52e260fc60634aaac13e3972dcfc08736',
+					'description': 'NEM namespace test',
+					'id': {
+						'namespaceId': 'namespace',
+						'name': 'test'
+					},
+					'properties': [
+						{
+							'name': 'divisibility',
+							'value': '4'
+						},
+						{
+							'name': 'initialSupply',
+							'value': '3100000'
+						},
+						{
+							'name': 'supplyMutable',
+							'value': 'false'
+						},
+						{
+							'name': 'transferable',
+							'value': 'true'
+						}
+					],
+					'levy': {
+						'fee': 500,
+						'recipient': 'NBRYCNWZINEVNITUESKUMFIENWKYCRUGNFZV25AV',
+						'type': 1,
+						'mosaicId': {
+							'namespaceId': 'nem',
+							'name': 'xem'
+						}
+					}
+				},
+				'signature': (
+					'a80ccd44955ded7d35ee3aa011bfafd3f30cc746f63cb59a9d02171f908a0f4a'
+					'0294fcbba0b2838acd184daf1d9ae3c0f645308b442547156364192cd3d2d605'
+				),
+				'fee': 150000,
+				'creationFeeSink': 'NBMOSAICOD4F54EE5CDMR23CCBGOAM2XSIUX6TRS',
+				'type': 16385,
+				'deadline': 83397,
+				'version': 1744830465,
+				'signer': 'a700809530e5428066807ec0d34859c52e260fc60634aaac13e3972dcfc08736'
+			},
+			'hash': '4725e523e5d5a562121f38953d6da3ae695060533fc0c5634b31de29c3b766e1'
+		},
+		{
+			'tx': {
+				'timeStamp': 73397,
+				'signature': (
+					'7fef5a89a1c6c98347b8d488a8dd28902e8422680f917c28f3ef0100d394b91c'
+					'd85f7cdfd7bdcd6f0cb8089ae9d4e6ef24a8caca35d1cfec7e33c9ccab5e1503'
+				),
+				'fee': 150000,
+				'supplyType': 2,
+				'delta': 500000,
+				'type': 16386,
+				'deadline': 83397,
+				'mosaicId': {
+					'namespaceId': 'namespace',
+					'name': 'test'
+				},
+				'version': 1744830465,
+				'signer': 'da04b4a1d64add6c70958d383f9d247af1aaa957cb89f15b2d059b278e0594d5'
+			},
+			'hash': 'cb805b4499479135934e70452d12ad9ecc26c46a111fe0cdda8e09741d257708'
 		},
 	],
 	'block': {
@@ -553,6 +652,53 @@ EXPECTED_BLOCK_2 = Block(
 				(1, '1fbdbdde28daf828245e4533765726f0b7790e0b7146e2ce205df3e86366980b'),
 				(1, 'f94e8702eb1943b23570b1b83be1b81536df35538978820e98bfce8f999e2d37')
 			]
+		),
+		NamespaceRegistrationTransaction(
+			'7e547e45cfc9c34809ce184db6ae7b028360c0f1492cc37b7b4d31c22af07dc3',
+			2,
+			'a700809530e5428066807ec0d34859c52e260fc60634aaac13e3972dcfc08736',
+			150000,
+			73397,
+			83397,
+			'9fc70720d0333d7d8f9eb14ef45ce45a846d37e79cf7a4244b4db36dcb0d3dfe'
+			'0170daefbf4d30f92f343110a6f03a14aedcf7913e465a4a1cc199639169410a',
+			8193,
+			'NAMESPACEWH4MKFMBCVFERDPOOP4FK7MTBXDPZZA',
+			100000000,
+			None,
+			'namespace'
+		),
+		MosaicDefinitionTransaction(
+			'4725e523e5d5a562121f38953d6da3ae695060533fc0c5634b31de29c3b766e1',
+			2,
+			'a700809530e5428066807ec0d34859c52e260fc60634aaac13e3972dcfc08736',
+			150000,
+			73397,
+			83397,
+			'a80ccd44955ded7d35ee3aa011bfafd3f30cc746f63cb59a9d02171f908a0f4a'
+			'0294fcbba0b2838acd184daf1d9ae3c0f645308b442547156364192cd3d2d605',
+			16385,
+			10000000,
+			'NBMOSAICOD4F54EE5CDMR23CCBGOAM2XSIUX6TRS',
+			'a700809530e5428066807ec0d34859c52e260fc60634aaac13e3972dcfc08736',
+			'NEM namespace test',
+			(4, 3100000, False, True),
+			(500, 'NBRYCNWZINEVNITUESKUMFIENWKYCRUGNFZV25AV', 1, 'nem.xem'),
+			'namespace.test'
+		),
+		MosaicSupplyChangeTransaction(
+			'cb805b4499479135934e70452d12ad9ecc26c46a111fe0cdda8e09741d257708',
+			2,
+			'da04b4a1d64add6c70958d383f9d247af1aaa957cb89f15b2d059b278e0594d5',
+			150000,
+			73397,
+			83397,
+			'7fef5a89a1c6c98347b8d488a8dd28902e8422680f917c28f3ef0100d394b91c'
+			'd85f7cdfd7bdcd6f0cb8089ae9d4e6ef24a8caca35d1cfec7e33c9ccab5e1503',
+			16386,
+			2,
+			500000,
+			'namespace.test'
 		)
 	],
 	100000000000000,
