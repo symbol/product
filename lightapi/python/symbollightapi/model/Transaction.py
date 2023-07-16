@@ -167,3 +167,145 @@ class ConvertAccountToMultisigTransaction(Transaction):
 			self.min_cosignatories == other.min_cosignatories,
 			self.modifications == other.modifications,
 		])
+class NamespaceRegistrationTransaction(Transaction):
+	def __init__(
+		self,
+		transaction_hash,
+		height,
+		sender,
+		fee,
+		timestamp,
+		deadline,
+		signature,
+		transaction_type,
+		rental_fee_sink,
+		rental_fee,
+		parent,
+		namespace
+	):
+		"""Create NamespaceRegistration model."""
+
+		# pylint: disable=too-many-arguments
+
+		super().__init__(
+			transaction_hash,
+			height,
+			sender,
+			fee,
+			timestamp,
+			deadline,
+			signature,
+			transaction_type
+		)
+
+		self.rental_fee_sink = rental_fee_sink
+		self.rental_fee = rental_fee
+		self.parent = parent
+		self.namespace = namespace
+
+	def __eq__(self, other):
+		return isinstance(other, NamespaceRegistrationTransaction) and all([
+			super().__eq__(other),
+			self.rental_fee_sink == other.rental_fee_sink,
+			self.rental_fee == other.rental_fee,
+			self.parent == other.parent,
+			self.namespace == other.namespace,
+		])
+
+
+class MosaicDefinitionTransaction(Transaction):
+	def __init__(
+		self,
+		transaction_hash,
+		height,
+		sender,
+		fee,
+		timestamp,
+		deadline,
+		signature,
+		transaction_type,
+		creation_fee,
+		creation_fee_sink,
+		creator,
+		description,
+		properties,
+		levy,
+		namespace_name
+	):
+		"""Create NamespaceRegistration model."""
+
+		# pylint: disable=too-many-arguments
+
+		super().__init__(
+			transaction_hash,
+			height,
+			sender,
+			fee,
+			timestamp,
+			deadline,
+			signature,
+			transaction_type
+		)
+
+		self.creation_fee = creation_fee
+		self.creation_fee_sink = creation_fee_sink
+		self.creator = creator
+		self.description = description
+		self.namespace_name = namespace_name
+		self.properties = properties
+		self.levy = levy
+
+	def __eq__(self, other):
+		return isinstance(other, MosaicDefinitionTransaction) and all([
+			super().__eq__(other),
+			self.creation_fee == other.creation_fee,
+			self.creation_fee_sink == other.creation_fee_sink,
+			self.creator == other.creator,
+			self.description == other.description,
+			self.namespace_name == other.namespace_name,
+			self.properties == other.properties,
+			self.levy == other.levy,
+		])
+
+
+class MosaicSupplyChangeTransaction(Transaction):
+	def __init__(
+		self,
+		transaction_hash,
+		height,
+		sender,
+		fee,
+		timestamp,
+		deadline,
+		signature,
+		transaction_type,
+		supply_type,
+		delta,
+		namespace_name
+	):
+		"""Create MosaicSupplyChangeTransaction model."""
+
+		# pylint: disable=too-many-arguments
+
+		super().__init__(
+			transaction_hash,
+			height,
+			sender,
+			fee,
+			timestamp,
+			deadline,
+			signature,
+			transaction_type
+		)
+
+		self.supply_type = supply_type
+		self.delta = delta
+		self.namespace_name = namespace_name
+
+	def __eq__(self, other):
+		return isinstance(other, MosaicSupplyChangeTransaction) and all([
+			super().__eq__(other),
+			self.supply_type == other.supply_type,
+			self.delta == other.delta,
+			self.namespace_name == other.namespace_name,
+		])
