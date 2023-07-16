@@ -22,7 +22,7 @@
     "restify-errors": "^8.0.2",
     "sqlite3": "^5.1.6",
     "symbol-sdk": "^3.0.7",
-    "winston": "^3.9.0"
+    "winston": "^3.10.0"
   },
   "devDependencies": {
     "assert-plus": "^1.0.0",
