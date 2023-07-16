@@ -1,6 +1,6 @@
 aiohttp==3.8.4
 Jinja2==3.1.2
-prompt_toolkit==3.0.38
+prompt_toolkit==3.0.39
 PyYAML==6.0
 requests==2.31.0
 symbol-lightapi==0.0.4
