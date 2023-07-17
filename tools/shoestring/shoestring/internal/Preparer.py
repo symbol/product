@@ -335,10 +335,6 @@ class Preparer:
 		"""Prepares docker-compose file."""
 
 		if NodeFeatures.API in self.config.node.features:
-			#
-			# TODO: where should those (startup + docker templates) be copied from?
-			# we can copy from within repo, but will shoestring be a separate installable (pypi) package?
-			#
 			self._copy_tree_readonly('startup', self.directories.startup)
 
 		compose_template_filename_postfix = 'dual' if NodeFeatures.API in self.config.node.features else 'peer'
