@@ -4,6 +4,7 @@ import gettext
 import importlib
 import os
 import sys
+from pathlib import Path
 
 
 def register_subcommand(subparsers, name, help_text):
@@ -33,7 +34,8 @@ def parse_args(args):
 
 
 async def main(args):
-	lang = gettext.translation('messages', localedir='lang', languages=(os.environ.get('LC_MESSAGES', 'en'), 'en'))
+	lang_directory = Path(__file__).resolve().parent.parent / 'lang'
+	lang = gettext.translation('messages', localedir=lang_directory, languages=(os.environ.get('LC_MESSAGES', 'en'), 'en'))
 	lang.install()
 
 	args = parse_args(args)
