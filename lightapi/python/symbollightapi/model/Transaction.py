@@ -1,10 +1,3 @@
-from collections import namedtuple
-
-Message = namedtuple('Message', ['payload', 'is_plain'])
-Mosaic = namedtuple('Mosaic', ['namespace_name', 'quantity'])
-Modification = namedtuple('Modification', ['modification_type', 'cosignatory_account'])
-
-
 class Transaction:
 	def __init__(
 		self,
@@ -167,6 +160,89 @@ class ConvertAccountToMultisigTransaction(Transaction):
 			self.min_cosignatories == other.min_cosignatories,
 			self.modifications == other.modifications,
 		])
+
+
+class MultisigTransaction(Transaction):
+	def __init__(
+		self,
+		transaction_hash,
+		height,
+		sender,
+		fee,
+		timestamp,
+		deadline,
+		signature,
+		transaction_type,
+		signatures,
+		other_transaction,
+		inner_hash
+	):
+		"""Create MultisigTransaction model."""
+
+		# pylint: disable=too-many-arguments
+
+		super().__init__(
+			transaction_hash,
+			height,
+			sender,
+			fee,
+			timestamp,
+			deadline,
+			signature,
+			transaction_type
+		)
+
+		self.signatures = signatures
+		self.other_transaction = other_transaction
+		self.inner_hash = inner_hash
+
+	def __eq__(self, other):
+		return isinstance(other, MultisigTransaction) and all([
+			super().__eq__(other),
+			self.signatures == other.signatures,
+			self.other_transaction == other.other_transaction,
+			self.inner_hash == other.inner_hash
+		])
+
+
+class CosignSignatureTransaction():
+	def __init__(
+		self,
+		timestamp,
+		other_hash,
+		other_account,
+		sender,
+		fee,
+		deadline,
+		signature,
+		transaction_type
+	):
+		"""Create CosignTransaction model."""
+
+		# pylint: disable=too-many-arguments
+
+		self.timestamp = timestamp
+		self.other_hash = other_hash
+		self.other_account = other_account
+		self.sender = sender
+		self.fee = fee
+		self.deadline = deadline
+		self.signature = signature
+		self.transaction_type = transaction_type
+
+	def __eq__(self, other):
+		return isinstance(other, CosignSignatureTransaction) and all([
+			self.timestamp == other.timestamp,
+			self.other_hash == other.other_hash,
+			self.other_account == other.other_account,
+			self.sender == other.sender,
+			self.fee == other.fee,
+			self.deadline == other.deadline,
+			self.signature == other.signature,
+			self.transaction_type == other.transaction_type
+		])
+
+
 class NamespaceRegistrationTransaction(Transaction):
 	def __init__(
 		self,
