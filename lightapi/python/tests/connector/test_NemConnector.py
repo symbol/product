@@ -11,9 +11,11 @@ from symbollightapi.model.Endpoint import Endpoint
 from symbollightapi.model.NodeInfo import NodeInfo
 from symbollightapi.model.Transaction import (
 	ConvertAccountToMultisigTransaction,
+	CosignSignatureTransaction,
 	ImportanceTransferTransaction,
 	MosaicDefinitionTransaction,
 	MosaicSupplyChangeTransaction,
+	MultisigTransaction,
 	NamespaceRegistrationTransaction,
 	TransferTransaction
 )
@@ -336,6 +338,51 @@ CHAIN_BLOCK_1 = {  # Added ConvertAccountToMultisigTransaction, ImportanceTransf
 			},
 			'hash': 'cb805b4499479135934e70452d12ad9ecc26c46a111fe0cdda8e09741d257708'
 		},
+		{
+			'tx': {
+				'timeStamp': 73397,
+				'signature': (
+					'0e7112b029e030d2d1c7dff79c88a29812f7254422d80e37a7aac5228fff5706'
+					'133500b0119a1327cab8787416b5873cc873e3181066c46cb2b108c5da10d90f'
+				),
+				'fee': 500000,
+				'type': 4100,
+				'deadline': 83397,
+				'version': 1744830465,
+				'signatures': [
+					{
+						'timeStamp': 261593985,
+						'otherHash': {
+							'data': 'edcc8d1c48165f5b771087fbe3c4b4d41f5f8f6c4ce715e050b86fb4e7fdeb64'
+						},
+						'otherAccount': 'NAGJG3QFWYZ37LMI7IQPSGQNYADGSJZGJRD2DIYA',
+						'signature': (
+							'249bc2dbad96e827eabc991b59dff7f12cc27f3e0da8ab3db6a3201169431786'
+							'72f712ba14ed7a3b890e161357a163e7408aa22e1d6d1382ebada57973862706'
+						),
+						'fee': 500000,
+						'type': 4098,
+						'deadline': 261680385,
+						'version': 1744830465,
+						'signer': 'ae6754c70b7e3ba0c51617c8f9efd462d0bf680d45e09c3444e817643d277826'
+					}
+				],
+				'signer': 'aa455d831430872feb0c6ae14265209182546c985a321c501be7fdc96ed04757',
+				'otherTrans': {
+					'timeStamp': 73397,
+					'amount': 150000000000,
+					'fee': 750000,
+					'recipient': 'NBUH72UCGBIB64VYTAAJ7QITJ62BLISFFQOHVP65',
+					'type': 257,
+					'deadline': 83397,
+					'message': {},
+					'version': 1744830465,
+					'signer': 'fbae41931de6a0cc25153781321f3de0806c7ba9a191474bb9a838118c8de4d3'
+				}
+			},
+			'innerHash': 'edcc8d1c48165f5b771087fbe3c4b4d41f5f8f6c4ce715e050b86fb4e7fdeb64',
+			'hash': '3375969dbc2aaae1cad0d89854d4f41b4fef553dbe9c7d39bdf72e3c538f98fe'
+		}
 	],
 	'block': {
 		'timeStamp': 73976,
@@ -699,6 +746,45 @@ EXPECTED_BLOCK_2 = Block(
 			2,
 			500000,
 			'namespace.test'
+		),
+		MultisigTransaction(
+			'3375969dbc2aaae1cad0d89854d4f41b4fef553dbe9c7d39bdf72e3c538f98fe',
+			2,
+			'aa455d831430872feb0c6ae14265209182546c985a321c501be7fdc96ed04757',
+			500000,
+			73397,
+			83397,
+			'0e7112b029e030d2d1c7dff79c88a29812f7254422d80e37a7aac5228fff5706'
+			'133500b0119a1327cab8787416b5873cc873e3181066c46cb2b108c5da10d90f',
+			4100,
+			[
+				CosignSignatureTransaction(
+					261593985,
+					'edcc8d1c48165f5b771087fbe3c4b4d41f5f8f6c4ce715e050b86fb4e7fdeb64',
+					'NAGJG3QFWYZ37LMI7IQPSGQNYADGSJZGJRD2DIYA',
+					'ae6754c70b7e3ba0c51617c8f9efd462d0bf680d45e09c3444e817643d277826',
+					500000,
+					261680385,
+					'249bc2dbad96e827eabc991b59dff7f12cc27f3e0da8ab3db6a3201169431786'
+					'72f712ba14ed7a3b890e161357a163e7408aa22e1d6d1382ebada57973862706',
+					4098
+				)
+			],
+			TransferTransaction(
+				None,
+				None,
+				'fbae41931de6a0cc25153781321f3de0806c7ba9a191474bb9a838118c8de4d3',
+				750000,
+				73397,
+				83397,
+				None,
+				257,
+				150000000000,
+				'NBUH72UCGBIB64VYTAAJ7QITJ62BLISFFQOHVP65',
+				{},
+				None
+			),
+			'edcc8d1c48165f5b771087fbe3c4b4d41f5f8f6c4ce715e050b86fb4e7fdeb64'
 		)
 	],
 	100000000000000,

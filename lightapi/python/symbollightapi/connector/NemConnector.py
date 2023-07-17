@@ -137,7 +137,7 @@ class NemConnector(BasicConnector):
 			block['height'],
 			block['timeStamp'],
 			[
-				NemConnector._map_to_transaction(transaction['tx'], transaction['hash'], block['height'])
+				NemConnector._map_to_transaction(transaction, False, block['height'])
 				for transaction in transactions
 			],
 			difficulty,
@@ -147,7 +147,7 @@ class NemConnector(BasicConnector):
 		)
 
 	@staticmethod
-	def _map_to_transaction(tx_dict, tx_hash, block_height):
+	def _map_to_transaction(transaction, is_embedded=False, block_height=None):
 		"""Maps a transaction dictionary to a transaction object."""
 
 		# Define a mapping from transaction types to constructor functions
@@ -155,31 +155,36 @@ class NemConnector(BasicConnector):
 			257: TransferTransaction,
 			2049: ImportanceTransferTransaction,
 			4097: ConvertAccountToMultisigTransaction,
-			4098: CosignSignatureTransaction,
 			4100: MultisigTransaction,
 			8193: NamespaceRegistrationTransaction,
 			16385: MosaicDefinitionTransaction,
 			16386: MosaicSupplyChangeTransaction,
 		}
 
+		tx_dict = transaction if is_embedded else transaction['tx']
 		tx_type = tx_dict['type']
 
 		# Define common arguments for all transactions
 		common_args = {
-			'transaction_hash': tx_hash,
-			'height': block_height,
+			'transaction_hash': None if is_embedded else transaction['hash'],
+			'height': None if is_embedded else block_height,
 			'sender': tx_dict['signer'],
 			'fee': tx_dict['fee'],
 			'timestamp': tx_dict['timeStamp'],
 			'deadline': tx_dict['deadline'],
-			'signature': tx_dict['signature'],
+			'signature': None if is_embedded else tx_dict['signature'],
 			'transaction_type': tx_dict['type'],
 		}
 
 		if tx_type in transaction_mapping:
 			if tx_type == 257:
-				payload = tx_dict['message']['payload']
-				type = tx_dict['message']['type']
+				message = tx_dict['message']
+
+				if 'payload' in message and 'type' in message:
+					message = Message(
+						message['payload'],
+						message['type']
+					)
 
 				mosaics = None
 				if 'mosaics' in tx_dict:
@@ -194,7 +199,7 @@ class NemConnector(BasicConnector):
 				specific_args = {
 					'amount': tx_dict['amount'],
 					'recipient': tx_dict['recipient'],
-					'message': Message(payload, type),
+					'message': message,
 					'mosaics': mosaics,
 				}
 			elif tx_type == 2049:
@@ -213,8 +218,23 @@ class NemConnector(BasicConnector):
 					]
 				}
 			elif tx_type == 4100:
-				# Todo: implement
-				specific_args = {}
+				specific_args = {
+					'signatures': [
+						CosignSignatureTransaction(
+							signature['timeStamp'],
+							signature['otherHash']['data'],
+							signature['otherAccount'],
+							signature['signer'],
+							signature['fee'],
+							signature['deadline'],
+							signature['signature'],
+							signature['type'],
+						)
+						for signature in tx_dict['signatures']
+					],
+					'other_transaction': NemConnector._map_to_transaction(tx_dict['otherTrans'], True),
+					'inner_hash': transaction['innerHash'],
+				}
 			elif tx_type == 8193:
 				specific_args = {
 					'rental_fee_sink': tx_dict['rentalFeeSink'],
