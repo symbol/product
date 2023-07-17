@@ -2,6 +2,7 @@ import asyncio
 import gettext
 import os
 from functools import partial
+from pathlib import Path
 
 from prompt_toolkit import Application
 from prompt_toolkit.filters.base import Condition
@@ -25,8 +26,9 @@ from .shoestring_dispatcher import dispatch_shoestring_command
 from .TitleBar import TitleBar
 
 
-async def main():  # pylint: disable=too-many-locals, too-many-statements
-	lang = gettext.translation('messages', localedir='lang', languages=(os.environ.get('LC_MESSAGES', 'en'), 'en'))
+async def main():  # pylint: disable=too-many-locals
+	lang_directory = Path(__file__).resolve().parent.parent.parent / 'lang'
+	lang = gettext.translation('messages', localedir=lang_directory, languages=(os.environ.get('LC_MESSAGES', 'en'), 'en'))
 	lang.install()
 
 	message_box_float = create_message_box_float()
