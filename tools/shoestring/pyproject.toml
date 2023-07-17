@@ -16,5 +16,7 @@ keywords = ['symbol', 'shoestring', 'deployment', 'node']
 
 classifiers = ['Programming Language :: Python :: 3.7']
 
+include = ['lang', 'templates']
+
 [tool.poetry.dependencies]
 python = "^3.7"
