@@ -2,6 +2,8 @@ import { createOptInPrivateKeyFromMnemonic, createPrivateKeysFromMnemonic, creat
 import { PersistentStorage } from './PersistentStorage';
 import { SecureStorage } from './SecureStorage';
 import { AddressBook } from 'symbol-address-book';
+import RNSecureStorage from 'rn-secure-storage';
+import { Platform } from 'react-native';
 
 export const CURRENT_DATA_SCHEMA_VERSION = 3;
 
@@ -18,15 +20,31 @@ export class StorageMigration {
             case 2:
                 await this.migrate2();
                 break;
+            case 3:
+                break;
+            default:
+                await this.migrateUnknown();
+                break;
         }
 
         // Save current schema version
         return PersistentStorage.setDataSchemaVersion(CURRENT_DATA_SCHEMA_VERSION);
     }
 
+    static async migrateUnknown() {
+        await SecureStorage.removeAll();
+        await PersistentStorage.removeAll();
+    }
+
     static async migrate0() {
         // Load data from storage
-        const mnemonic = await SecureStorage.get('mnemonics');
+        const oldStorage = Platform.OS === 'android' ? RNSecureStorage : SecureStorage;
+
+        let mnemonic;
+        try {
+            mnemonic = await oldStorage.get('mnemonics');
+        }
+        catch {};
 
         // Escape if mnemonic does not exist in the storage
         if (!mnemonic?.length) {
@@ -48,21 +66,25 @@ export class StorageMigration {
         };
 
         // Clear the old data and set the formatted one
-        SecureStorage.removeAll();
-        PersistentStorage.removeAll();
+        try {
+            await oldStorage.remove('mnemonics');
+            await PersistentStorage.removeAll();
+            await SecureStorage.removeAll();
+        }
+        catch {}
+
         await SecureStorage.setMnemonic(mnemonic);
         await SecureStorage.setAccounts(networkAccounts);
     }
 
     static async migrate2() {
         // Load data from storage
-        const mnemonicModel = await SecureStorage.get('MNEMONIC_MODEL');
-        const accountsModel = await SecureStorage.get('ACCOUNTS');
-        const addressBookModel = await SecureStorage.get('CONTACTS');
+        const oldStorage = Platform.OS === 'android' ? RNSecureStorage : SecureStorage;
 
         // Format mnemonic
         let mnemonic;
         try {
+            const mnemonicModel = await oldStorage.get('MNEMONIC_MODEL');
             mnemonic = JSON.parse(mnemonicModel).mnemonic;
         } catch {}
 
@@ -76,6 +98,7 @@ export class StorageMigration {
         // Format accounts
         let accounts = [];
         try {
+            const accountsModel = await oldStorage.get('ACCOUNTS');
             accounts = JSON.parse(accountsModel) || [];
         } catch {}
         const networkAccounts = {
@@ -114,14 +137,22 @@ export class StorageMigration {
         // Format address book
         let addressBook;
         try {
+            const addressBookModel = await oldStorage.get('CONTACTS');
             addressBook = AddressBook.fromJSON(addressBookModel);
         } catch {
             addressBook = new AddressBook([]);
         }
 
         // Clear the old data and set the formatted one
-        SecureStorage.removeAll();
-        PersistentStorage.removeAll();
+        try {
+            await oldStorage.remove('MNEMONIC_MODEL');
+            await oldStorage.remove('ACCOUNTS');
+            await oldStorage.remove('CONTACTS');
+            await PersistentStorage.removeAll();
+            await SecureStorage.removeAll();
+        }
+        catch {}
+
         await SecureStorage.setMnemonic(mnemonic);
         await SecureStorage.setAccounts(networkAccounts);
         await PersistentStorage.setAddressBook(addressBook);
