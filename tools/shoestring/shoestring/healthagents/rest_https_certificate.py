@@ -22,27 +22,37 @@ def _openssl_run_sclient_verify(hostname, test_args):
 		'-servername', hostname,
 		'-connect',
 		'localhost:3001'
-	] + test_args, command_input='Q', show_output=False)
+	] + test_args + [
+		'|',
+		'openssl',
+		'x509',
+		'-inform',
+		'pem',
+		'-noout',
+		'-text'
+	], command_input='Q', show_output=False, use_shell=True)
 
+	searching_for_date = [r'Not Before: (.*)', r'Not After : (.*)']
 	collect_dates = False
 	collected_dates = []
 	for line in lines:
 		line = line.strip()
-		if collect_dates:
-			res = re.search(r'NotBefore: (.*); NotAfter: (.*)', line)
+		if collect_dates and searching_for_date:
+			res = re.search(searching_for_date[0], line)
 			if res:
-				collected_dates.append((parsedate_to_datetime(res.group(1)), parsedate_to_datetime(res.group(2))))
+				collected_dates.append(parsedate_to_datetime(res.group(1)))
+				searching_for_date.pop(0)
 
-		if line == 'Certificate chain':
+		if line == 'Certificate:':
 			collect_dates = True
 
-		if line.startswith('Verify return code:'):
-			if 'Verify return code: 0 (ok)' == line:
-				return True, collected_dates
-
+		if line.startswith('verify error:'):
+			# normalize error message
+			if '1.1.1' in openssl_executor.version():
+				line = line.replace('self signed', 'self-signed')
 			return False, line
 
-	return False, 'could not parse s_client response'
+	return (True, collected_dates) if 2 == len(collected_dates) else (False, 'could not parse s_client response')
 
 
 async def validate(context):
@@ -54,7 +64,7 @@ async def validate(context):
 	if not result:
 		log.warning(_('health-rest-https-certificate-invalid').format(error_message=dates_or_error))
 	else:
-		date_range = dates_or_error[-1]
+		date_range = dates_or_error
 		log.info(_('health-rest-https-certificate-valid').format(
 			start_date=date_range[0].strftime('%y-%m-%d'),
 			end_date=date_range[1].strftime('%y-%m-%d')))

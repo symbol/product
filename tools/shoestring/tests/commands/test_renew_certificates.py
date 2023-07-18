@@ -82,7 +82,7 @@ async def test_can_renew_node_certificate():
 
 
 async def test_can_renew_node_certificate_with_ca_password():
-	await _assert_can_renew_node_certificate('abc')
+	await _assert_can_renew_node_certificate('abcd')
 
 # endregion
 
@@ -143,7 +143,7 @@ async def test_can_renew_ca_and_node_certificates():
 
 
 async def test_can_renew_ca_and_node_certificates_with_ca_password():
-	await _assert_can_renew_ca_and_node_certificates('abc')
+	await _assert_can_renew_ca_and_node_certificates('abcd')
 
 # endregion
 

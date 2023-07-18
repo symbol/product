@@ -53,7 +53,7 @@ async def _dispatch_validate(test_args=None):
 	HealthAgentContext = namedtuple('HealthAgentContext', ['hostname', 'test_args'])
 	context = HealthAgentContext('localhost', test_args or [])
 
-	await asyncio.to_thread(_validate_thread, context)
+	await asyncio.get_running_loop().run_in_executor(None, _validate_thread, context)
 
 
 async def test_validate_fails_when_certificate_is_self_signed(server, caplog):  # pylint: disable=redefined-outer-name, unused-argument
@@ -61,7 +61,7 @@ async def test_validate_fails_when_certificate_is_self_signed(server, caplog):  
 	await _dispatch_validate()
 
 	# Assert:
-	assert_message_is_logged('HTTPS certificate looks invalid: Verify return code: 18 (self-signed certificate)', caplog)
+	assert_message_is_logged('HTTPS certificate looks invalid: verify error:num=18:self-signed certificate', caplog)
 	assert_max_log_level(LogLevel.WARNING, caplog)
 
 

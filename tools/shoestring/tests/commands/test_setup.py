@@ -150,7 +150,7 @@ async def _assert_can_prepare_node(
 	# Arrange:
 	with tempfile.TemporaryDirectory() as output_directory:
 		with tempfile.TemporaryDirectory() as package_directory:
-			ca_password = 'abc' if CaMode.WITH_PASSWORD == ca_mode else ''
+			ca_password = 'abcd' if CaMode.WITH_PASSWORD == ca_mode else ''
 			prepare_shoestring_configuration(
 				package_directory,
 				node_features,
