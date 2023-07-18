@@ -1,3 +1,8 @@
+from symbolchain.nc import TransactionType
+
+from ..model.Exceptions import UnknownTransactionType
+
+
 class Transaction:
 	def __init__(
 		self,
@@ -7,8 +12,7 @@ class Transaction:
 		fee,
 		timestamp,
 		deadline,
-		signature,
-		transaction_type
+		signature
 	):
 		"""Create Transaction model."""
 
@@ -21,18 +25,16 @@ class Transaction:
 		self.timestamp = timestamp
 		self.deadline = deadline
 		self.signature = signature
-		self.transaction_type = transaction_type
 
 	def __eq__(self, other):
 		return isinstance(other, Transaction) and all([
-			self.transaction_type == other.transaction_type,
+			self.transaction_hash == other.transaction_hash,
 			self.height == other.height,
 			self.sender == other.sender,
 			self.fee == other.fee,
 			self.timestamp == other.timestamp,
 			self.deadline == other.deadline,
-			self.signature == other.signature,
-			self.transaction_type == other.transaction_type
+			self.signature == other.signature
 		])
 
 
@@ -46,7 +48,6 @@ class TransferTransaction(Transaction):
 		timestamp,
 		deadline,
 		signature,
-		transaction_type,
 		amount,
 		recipient,
 		message,
@@ -63,10 +64,10 @@ class TransferTransaction(Transaction):
 			fee,
 			timestamp,
 			deadline,
-			signature,
-			transaction_type
+			signature
 		)
 
+		self.transaction_type = TransactionType.TRANSFER.value
 		self.amount = amount
 		self.recipient = recipient
 		self.message = message
@@ -92,7 +93,6 @@ class ImportanceTransferTransaction(Transaction):
 		timestamp,
 		deadline,
 		signature,
-		transaction_type,
 		mode,
 		remote_account
 	):
@@ -107,10 +107,10 @@ class ImportanceTransferTransaction(Transaction):
 			fee,
 			timestamp,
 			deadline,
-			signature,
-			transaction_type
+			signature
 		)
 
+		self.transaction_type = TransactionType.ACCOUNT_KEY_LINK.value
 		self.mode = mode
 		self.remote_account = remote_account
 
@@ -132,7 +132,6 @@ class ConvertAccountToMultisigTransaction(Transaction):
 		timestamp,
 		deadline,
 		signature,
-		transaction_type,
 		min_cosignatories,
 		modifications
 	):
@@ -147,10 +146,10 @@ class ConvertAccountToMultisigTransaction(Transaction):
 			fee,
 			timestamp,
 			deadline,
-			signature,
-			transaction_type
+			signature
 		)
 
+		self.transaction_type = TransactionType.MULTISIG_ACCOUNT_MODIFICATION.value
 		self.min_cosignatories = min_cosignatories
 		self.modifications = modifications
 
@@ -172,7 +171,6 @@ class MultisigTransaction(Transaction):
 		timestamp,
 		deadline,
 		signature,
-		transaction_type,
 		signatures,
 		other_transaction,
 		inner_hash
@@ -188,10 +186,10 @@ class MultisigTransaction(Transaction):
 			fee,
 			timestamp,
 			deadline,
-			signature,
-			transaction_type
+			signature
 		)
 
+		self.transaction_type = TransactionType.MULTISIG_TRANSACTION.value
 		self.signatures = signatures
 		self.other_transaction = other_transaction
 		self.inner_hash = inner_hash
@@ -214,13 +212,13 @@ class CosignSignatureTransaction():
 		sender,
 		fee,
 		deadline,
-		signature,
-		transaction_type
+		signature
 	):
-		"""Create CosignTransaction model."""
+		"""Create CosignSignatureTransaction model."""
 
 		# pylint: disable=too-many-arguments
 
+		self.transaction_type = TransactionType.MULTISIG_COSIGNATURE.value
 		self.timestamp = timestamp
 		self.other_hash = other_hash
 		self.other_account = other_account
@@ -228,7 +226,6 @@ class CosignSignatureTransaction():
 		self.fee = fee
 		self.deadline = deadline
 		self.signature = signature
-		self.transaction_type = transaction_type
 
 	def __eq__(self, other):
 		return isinstance(other, CosignSignatureTransaction) and all([
@@ -238,8 +235,7 @@ class CosignSignatureTransaction():
 			self.sender == other.sender,
 			self.fee == other.fee,
 			self.deadline == other.deadline,
-			self.signature == other.signature,
-			self.transaction_type == other.transaction_type
+			self.signature == other.signature
 		])
 
 
@@ -253,7 +249,6 @@ class NamespaceRegistrationTransaction(Transaction):
 		timestamp,
 		deadline,
 		signature,
-		transaction_type,
 		rental_fee_sink,
 		rental_fee,
 		parent,
@@ -270,10 +265,10 @@ class NamespaceRegistrationTransaction(Transaction):
 			fee,
 			timestamp,
 			deadline,
-			signature,
-			transaction_type
+			signature
 		)
 
+		self.transaction_type = TransactionType.NAMESPACE_REGISTRATION.value
 		self.rental_fee_sink = rental_fee_sink
 		self.rental_fee = rental_fee
 		self.parent = parent
@@ -299,7 +294,6 @@ class MosaicDefinitionTransaction(Transaction):
 		timestamp,
 		deadline,
 		signature,
-		transaction_type,
 		creation_fee,
 		creation_fee_sink,
 		creator,
@@ -308,7 +302,7 @@ class MosaicDefinitionTransaction(Transaction):
 		levy,
 		namespace_name
 	):
-		"""Create NamespaceRegistration model."""
+		"""Create MosaicDefinitionTransaction model."""
 
 		# pylint: disable=too-many-arguments
 
@@ -319,10 +313,10 @@ class MosaicDefinitionTransaction(Transaction):
 			fee,
 			timestamp,
 			deadline,
-			signature,
-			transaction_type
+			signature
 		)
 
+		self.transaction_type = TransactionType.MOSAIC_DEFINITION.value
 		self.creation_fee = creation_fee
 		self.creation_fee_sink = creation_fee_sink
 		self.creator = creator
@@ -354,7 +348,6 @@ class MosaicSupplyChangeTransaction(Transaction):
 		timestamp,
 		deadline,
 		signature,
-		transaction_type,
 		supply_type,
 		delta,
 		namespace_name
@@ -370,10 +363,10 @@ class MosaicSupplyChangeTransaction(Transaction):
 			fee,
 			timestamp,
 			deadline,
-			signature,
-			transaction_type
+			signature
 		)
 
+		self.transaction_type = TransactionType.MOSAIC_SUPPLY_CHANGE.value
 		self.supply_type = supply_type
 		self.delta = delta
 		self.namespace_name = namespace_name
@@ -385,3 +378,26 @@ class MosaicSupplyChangeTransaction(Transaction):
 			self.delta == other.delta,
 			self.namespace_name == other.namespace_name,
 		])
+
+
+class TransactionFactory:
+	"""Create transaction models."""
+
+	@staticmethod
+	def create_transaction(tx_type, common_args, specific_args):
+		transaction_mapping = {
+			TransactionType.TRANSFER.value: TransferTransaction,
+			TransactionType.ACCOUNT_KEY_LINK.value: ImportanceTransferTransaction,
+			TransactionType.MULTISIG_ACCOUNT_MODIFICATION.value: ConvertAccountToMultisigTransaction,
+			TransactionType.MULTISIG_TRANSACTION.value: MultisigTransaction,
+			TransactionType.NAMESPACE_REGISTRATION.value: NamespaceRegistrationTransaction,
+			TransactionType.MOSAIC_DEFINITION.value: MosaicDefinitionTransaction,
+			TransactionType.MOSAIC_SUPPLY_CHANGE.value: MosaicSupplyChangeTransaction,
+		}
+
+		transaction_class = transaction_mapping.get(tx_type)
+
+		if not transaction_class:
+			raise UnknownTransactionType(f'Unknown transaction type {tx_type}')
+
+		return transaction_class(**common_args, **specific_args)
