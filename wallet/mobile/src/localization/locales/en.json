@@ -506,6 +506,7 @@
     "error_permission_denied_write_storage": "Permission denied",
     "error_fetch_rate_limit": "Too many requests",
     "error_fetch_server_error": "Error occurred on the node side",
+    "error_failed_harvesting_wrong_node_network": "Failed. Wrong node.\nPlease use node from the current network",
     "error_Failure_Extension_Partial_Transaction_Cache_Prune": "Partial transaction is expired",
     "error_Failure_Multisig_Operation_Prohibited_By_Account": "Operation prohibited",
     "error_Failure_Mosaic_Expired": "Mosaic expired"

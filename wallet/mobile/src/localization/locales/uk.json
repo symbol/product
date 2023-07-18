@@ -506,6 +506,7 @@
     "error_permission_denied_write_storage": "У дозволі відмовлено",
     "error_fetch_rate_limit": "Забагато запитів",
     "error_fetch_server_error": "Сталася помилка на стороні сервера",
+    "error_failed_harvesting_wrong_node_network": "Помилка активації харвестингу\nОбрана нода з невідповідої мережі, оберіть іншу",
     "error_Failure_Extension_Partial_Transaction_Cache_Prune": "Термін дії часткової транзакції минув",
     "error_Failure_Multisig_Operation_Prohibited_By_Account": "Операція заборонена",
     "error_Failure_Mosaic_Expired": "Термін дії мозаїки минув"

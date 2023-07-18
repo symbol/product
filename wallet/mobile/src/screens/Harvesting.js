@@ -1,8 +1,9 @@
+import _ from 'lodash';
 import React, { useEffect, useMemo, useState } from 'react';
 import { DeviceEventEmitter, Image, StyleSheet, View } from 'react-native';
 import { RefreshControl, ScrollView } from 'react-native-gesture-handler';
 import Animated, { FadeIn, FadeInDown, FadeOut } from 'react-native-reanimated';
-import { Button, DialogBox, Dropdown, FeeSelector, FormItem, Screen, StyledText, TableView, Widget } from 'src/components';
+import { Button, DialogBox, FeeSelector, FormItem, Screen, StyledText, TableView, TextBox, Widget } from 'src/components';
 import { Constants } from 'src/config';
 import { $t } from 'src/localization';
 import { AccountService, HarvestingService } from 'src/services';
@@ -24,9 +25,8 @@ export const Harvesting = connect((state) => ({
     const { balances, currentAccount, isAccountReady, isWalletReady, networkIdentifier, networkProperties, chainHeight, nodeUrls, ticker } =
         props;
     const accountBalance = currentAccount ? balances[currentAccount.address] : 0;
-    const nodeList = nodeUrls[networkIdentifier].map((el) => ({ label: el, value: el }));
     const [isActionMade, setIsActionMade] = useState(false);
-    const [nodeUrl, setNodeUrl] = useState(nodeList[0].value);
+    const [nodeUrl, setNodeUrl] = useState('');
     const [isStartConfirmVisible, toggleStartConfirm] = useToggle(false);
     const [isStopConfirmVisible, toggleStopConfirm] = useToggle(false);
     const [fee, setFee] = useState(0);
@@ -59,6 +59,15 @@ export const Harvesting = connect((state) => ({
         },
         handleError
     );
+    const [fetchNodeList, isNodeListLoading, nodeList] = useDataManager(
+        async () => {
+            const nodes = await HarvestingService.fetchNodeList(networkIdentifier);
+
+            return _.shuffle(nodes);
+        },
+        [],
+        handleError
+    );
     const [start, isStarting] = useDataManager(
         async () => {
             await HarvestingService.start(networkProperties, currentAccount, nodeUrl, linkedKeys, fee);
@@ -79,6 +88,7 @@ export const Harvesting = connect((state) => ({
         if (isWalletReady) {
             fetchStatus();
             fetchHarvestedBlocks();
+            fetchNodeList();
         }
     };
     const confirmStart = usePasscode('enter', start);
@@ -170,7 +180,7 @@ export const Harvesting = connect((state) => ({
 
     const isManageSectionVisible = isNodeSelectorVisible || isButtonVisible;
     const isBlockedLoading = isStarting || isStopping;
-    const isLoading = isStatusLoading || isSummaryLoading;
+    const isLoading = isStatusLoading || isSummaryLoading || isNodeListLoading;
 
     useEffect(() => {
         DeviceEventEmitter.addListener(Constants.Events.CONFIRMED_TRANSACTION, loadData);
@@ -186,6 +196,12 @@ export const Harvesting = connect((state) => ({
             setFee(transactionFees[speed]);
         }
     }, [transactionFees, speed]);
+
+    useEffect(() => {
+        if (nodeList.length) {
+            setNodeUrl(nodeList[0]);
+        }
+    }, [nodeList]);
 
     return (
         <Screen isLoading={isBlockedLoading}>
@@ -256,7 +272,7 @@ export const Harvesting = connect((state) => ({
                         <FormItem clear="bottom">
                             <StyledText type="title">{$t('s_harvesting_manage_title')}</StyledText>
                             {isNodeSelectorVisible && (
-                                <Dropdown title={$t('input_nodeUrl')} value={nodeUrl} list={nodeList} onChange={setNodeUrl} />
+                                <TextBox title={$t('input_nodeUrl')} value={nodeUrl} onChange={setNodeUrl} />
                             )}
                         </FormItem>
                         {isButtonVisible && (

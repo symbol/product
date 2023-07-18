@@ -132,7 +132,11 @@ export class HarvestingService {
         // Get nodePublicKey of the selected node
         const networkType = networkIdentifierToNetworkType(networkProperties.networkIdentifier);
         const endpoint = `${nodeUrl}/node/info`;
-        const { nodePublicKey } = await makeRequest(endpoint);
+        const { nodePublicKey, networkIdentifier: nodeNetworkType} = await makeRequest(endpoint);
+
+        if (nodeNetworkType !== networkType) {
+            throw Error('error_failed_harvesting_wrong_node_network');
+        }
 
         // Generate brand new VRF and remote account keys
         const vrfAccount = Account.generateNewAccount(networkType);
@@ -289,5 +293,15 @@ export class HarvestingService {
         const transactionHttp = new TransactionHttp(networkProperties.nodeUrl);
 
         return transactionHttp.announce(signedTransaction).toPromise();
+    }
+
+    static async fetchNodeList(networkIdentifier) {
+        const baseUrl = config.statisticsServiceURL[networkIdentifier];
+        const filter = 'suggested';
+        const endpoint = `${baseUrl}/nodes?filter=${filter}&ssl=true`;
+
+        const nodes = await makeRequest(endpoint);
+
+        return nodes.map((node) => node.apiStatus.restGatewayUrl);
     }
 }
