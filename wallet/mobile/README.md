@@ -26,10 +26,22 @@ yarn run dev
 ```
 
 ### Android (production)
-To generate production APK, run following command:
+1. Set up signing key `release.keystore` to `android/app`.
+
+2. Specify key properties in the `android/app/key.properties`:
+```
+storeFile=release.keystore
+storePassword=***
+keyAlias=***
+keyPassword=***
+```
+
+3. Generate production APK, by running following command:
 ```sh
 yarn run build:android:prod
 ```
+
+4. Artifact can be found here: `android/app/build/outputs/apk/release/app-release.apk`.
 
 ### iOS
 https://reactnative.dev/docs/running-on-device
@@ -38,7 +50,7 @@ https://reactnative.dev/docs/running-on-device
 - `src`: This folder is the main container of all the code inside the application.
   - `assets`: Asset folder to store all images, fonts, etc.
   - `components`: Folder to store any common component that is used through the app.
-  - `config`: 
+  - `config`:
     - `config.json`: Main configuration file of the app. Contains all endpoints.
     - `constants.js`: Stores any kind of constant.
     - `knownAccounts.json`: Contains the list of known accounts (exchanges, orgs, etc.).

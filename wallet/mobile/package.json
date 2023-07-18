@@ -1,6 +1,6 @@
 {
   "name": "SymbolMobileWallet",
-  "version": "0.0.1",
+  "version": "2.0.0",
   "private": true,
   "scripts": {
     "connect": "adb reverse tcp:8081 tcp:8081",
