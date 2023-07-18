@@ -50,6 +50,7 @@
     "redux": "^4.2.0",
     "redux-thunk": "^2.4.2",
     "rn-fetch-blob": "^0.12.0",
+    "rn-secure-storage": "^2.0.8",
     "symbol-address-book": "^1.0.1",
     "symbol-hd-wallets": "^0.14.2",
     "symbol-qr-library": "^0.14.2",

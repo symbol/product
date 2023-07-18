@@ -7648,6 +7648,11 @@ rn-nodeify@^10.3.0:
     semver "^5.0.1"
     xtend "^4.0.0"
 
+rn-secure-storage@^2.0.8:
+  version "2.0.8"
+  resolved "https://registry.yarnpkg.com/rn-secure-storage/-/rn-secure-storage-2.0.8.tgz#ccdb0aa3e69239b77fecc3a3dee88ddfa46371e3"
+  integrity sha512-byk51qL+4GNfaBxs30TZsv3l1vXRry8Pck3q2xzwNUYfSyEdTn8NnCW2l8hOog0XEGCJdfbeFy5+EgCVnMsRAQ==
+
 rsvp@^4.8.4:
   version "4.8.5"
   resolved "https://registry.yarnpkg.com/rsvp/-/rsvp-4.8.5.tgz#c8f155311d167f68f21e168df71ec5b083113734"
