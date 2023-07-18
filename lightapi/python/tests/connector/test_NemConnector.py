@@ -10,11 +10,11 @@ from symbollightapi.model.Block import Block
 from symbollightapi.model.Endpoint import Endpoint
 from symbollightapi.model.NodeInfo import NodeInfo
 from symbollightapi.model.Transaction import (
-	ConvertAccountToMultisigTransaction,
+	AccountKeyLinkTransaction,
 	CosignSignatureTransaction,
-	ImportanceTransferTransaction,
 	MosaicDefinitionTransaction,
 	MosaicSupplyChangeTransaction,
+	MultisigAccountModificationTransaction,
 	MultisigTransaction,
 	NamespaceRegistrationTransaction,
 	TransferTransaction
@@ -177,7 +177,7 @@ ACCOUNT_INFO_4 = {
 }
 
 
-CHAIN_BLOCK_1 = {  # Added ConvertAccountToMultisigTransaction, ImportanceTransferTransaction, TransferTransaction
+CHAIN_BLOCK_1 = {  # Included all type of transaction in the block
 	'difficulty': 100000000000000,
 	'txes': [
 		{
@@ -656,7 +656,7 @@ EXPECTED_BLOCK_2 = Block(
 	2,
 	73976,
 	[
-		ImportanceTransferTransaction(
+		AccountKeyLinkTransaction(
 			'306f20260a1b7af692834809d3e7d53edd41616d5076ac0fac6cfa75982185df',
 			2,
 			'22df5f43ee3739a10c346b3ec2d3878668c5514696be425f9067d3a11c777f1d',
@@ -682,7 +682,7 @@ EXPECTED_BLOCK_2 = Block(
 			('476f6f64206c75636b21', 1),
 			None
 		),
-		ConvertAccountToMultisigTransaction(
+		MultisigAccountModificationTransaction(
 			'cc64ca69bfa95db2ff7ac1e21fe6d27ece189c603200ebc9778d8bb80ca25c3c',
 			2,
 			'f41b99320549741c5cce42d9e4bb836d98c50ed5415d0c3c2912d1bb50e6a0e5',

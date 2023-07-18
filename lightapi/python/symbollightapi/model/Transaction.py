@@ -83,7 +83,7 @@ class TransferTransaction(Transaction):
 		])
 
 
-class ImportanceTransferTransaction(Transaction):
+class AccountKeyLinkTransaction(Transaction):
 	def __init__(
 		self,
 		transaction_hash,
@@ -96,7 +96,7 @@ class ImportanceTransferTransaction(Transaction):
 		mode,
 		remote_account
 	):
-		"""Create ImportanceTransferTransaction model."""
+		"""Create AccountKeyLinkTransaction model."""
 
 		# pylint: disable=too-many-arguments
 
@@ -115,14 +115,14 @@ class ImportanceTransferTransaction(Transaction):
 		self.remote_account = remote_account
 
 	def __eq__(self, other):
-		return isinstance(other, ImportanceTransferTransaction) and all([
+		return isinstance(other, AccountKeyLinkTransaction) and all([
 			super().__eq__(other),
 			self.mode == other.mode,
 			self.remote_account == other.remote_account
 		])
 
 
-class ConvertAccountToMultisigTransaction(Transaction):
+class MultisigAccountModificationTransaction(Transaction):
 	def __init__(
 		self,
 		transaction_hash,
@@ -135,7 +135,7 @@ class ConvertAccountToMultisigTransaction(Transaction):
 		min_cosignatories,
 		modifications
 	):
-		"""Create ConvertAccountToMultisigTransaction model."""
+		"""Create MultisigAccountModificationTransaction model."""
 
 		# pylint: disable=too-many-arguments
 
@@ -154,7 +154,7 @@ class ConvertAccountToMultisigTransaction(Transaction):
 		self.modifications = modifications
 
 	def __eq__(self, other):
-		return isinstance(other, ConvertAccountToMultisigTransaction) and all([
+		return isinstance(other, MultisigAccountModificationTransaction) and all([
 			super().__eq__(other),
 			self.min_cosignatories == other.min_cosignatories,
 			self.modifications == other.modifications,
@@ -387,8 +387,8 @@ class TransactionFactory:
 	def create_transaction(tx_type, common_args, specific_args):
 		transaction_mapping = {
 			TransactionType.TRANSFER.value: TransferTransaction,
-			TransactionType.ACCOUNT_KEY_LINK.value: ImportanceTransferTransaction,
-			TransactionType.MULTISIG_ACCOUNT_MODIFICATION.value: ConvertAccountToMultisigTransaction,
+			TransactionType.ACCOUNT_KEY_LINK.value: AccountKeyLinkTransaction,
+			TransactionType.MULTISIG_ACCOUNT_MODIFICATION.value: MultisigAccountModificationTransaction,
 			TransactionType.MULTISIG_TRANSACTION.value: MultisigTransaction,
 			TransactionType.NAMESPACE_REGISTRATION.value: NamespaceRegistrationTransaction,
 			TransactionType.MOSAIC_DEFINITION.value: MosaicDefinitionTransaction,
