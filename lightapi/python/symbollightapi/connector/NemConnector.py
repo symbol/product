@@ -1,22 +1,13 @@
 from collections import namedtuple
 
 from symbolchain.CryptoTypes import PublicKey
+from symbolchain.nc import TransactionType
 from symbolchain.nem.Network import Address
 
 from ..model.Block import Block
 from ..model.Endpoint import Endpoint
-from ..model.Exceptions import UnknownTransactionType
 from ..model.NodeInfo import NodeInfo
-from ..model.Transaction import (
-	ConvertAccountToMultisigTransaction,
-	CosignSignatureTransaction,
-	ImportanceTransferTransaction,
-	MosaicDefinitionTransaction,
-	MosaicSupplyChangeTransaction,
-	MultisigTransaction,
-	NamespaceRegistrationTransaction,
-	TransferTransaction
-)
+from ..model.Transaction import CosignSignatureTransaction, TransactionFactory
 from .BasicConnector import BasicConnector
 
 Message = namedtuple('Message', ['payload', 'is_plain'])
@@ -150,17 +141,6 @@ class NemConnector(BasicConnector):
 	def _map_to_transaction(transaction, is_embedded=False, block_height=None):
 		"""Maps a transaction dictionary to a transaction object."""
 
-		# Define a mapping from transaction types to constructor functions
-		transaction_mapping = {
-			257: TransferTransaction,
-			2049: ImportanceTransferTransaction,
-			4097: ConvertAccountToMultisigTransaction,
-			4100: MultisigTransaction,
-			8193: NamespaceRegistrationTransaction,
-			16385: MosaicDefinitionTransaction,
-			16386: MosaicSupplyChangeTransaction,
-		}
-
 		tx_dict = transaction if is_embedded else transaction['tx']
 		tx_type = tx_dict['type']
 
@@ -173,114 +153,109 @@ class NemConnector(BasicConnector):
 			'timestamp': tx_dict['timeStamp'],
 			'deadline': tx_dict['deadline'],
 			'signature': None if is_embedded else tx_dict['signature'],
-			'transaction_type': tx_dict['type'],
 		}
 
-		if tx_type in transaction_mapping:
-			if tx_type == 257:
-				message = tx_dict['message']
+		specific_args = {}
 
-				if 'payload' in message and 'type' in message:
-					message = Message(
-						message['payload'],
-						message['type']
+		if TransactionType.TRANSFER.value == tx_type:
+			message = tx_dict['message']
+
+			if 'payload' in message and 'type' in message:
+				message = Message(
+					message['payload'],
+					message['type']
+				)
+
+			mosaics = None
+			if 'mosaics' in tx_dict:
+				mosaics = [
+					Mosaic(
+						f'{mosaic["mosaicId"]["namespaceId"]}.{mosaic["mosaicId"]["name"]}',
+						mosaic['quantity']
 					)
+					for mosaic in tx_dict['mosaics']
+				]
 
-				mosaics = None
-				if 'mosaics' in tx_dict:
-					mosaics = [
-						Mosaic(
-							f'{mosaic["mosaicId"]["namespaceId"]}.{mosaic["mosaicId"]["name"]}',
-							mosaic['quantity']
-						)
-						for mosaic in tx_dict['mosaics']
-					]
+			specific_args = {
+				'amount': tx_dict['amount'],
+				'recipient': tx_dict['recipient'],
+				'message': message,
+				'mosaics': mosaics,
+			}
+		elif TransactionType.ACCOUNT_KEY_LINK.value == tx_type:
+			specific_args = {
+				'mode': tx_dict['mode'],
+				'remote_account': tx_dict['remoteAccount'],
+			}
+		elif TransactionType.MULTISIG_ACCOUNT_MODIFICATION.value == tx_type:
+			specific_args = {
+				'min_cosignatories': tx_dict['minCosignatories']['relativeChange'],
+				'modifications': [
+					Modification(
+						modification['modificationType'],
+						modification['cosignatoryAccount'])
+					for modification in tx_dict['modifications']
+				]
+			}
+		elif TransactionType.MULTISIG_TRANSACTION.value == tx_type:
+			specific_args = {
+				'signatures': [
+					CosignSignatureTransaction(
+						signature['timeStamp'],
+						signature['otherHash']['data'],
+						signature['otherAccount'],
+						signature['signer'],
+						signature['fee'],
+						signature['deadline'],
+						signature['signature']
+					)
+					for signature in tx_dict['signatures']
+				],
+				'other_transaction': NemConnector._map_to_transaction(tx_dict['otherTrans'], True),
+				'inner_hash': transaction['innerHash'],
+			}
+		elif TransactionType.NAMESPACE_REGISTRATION.value == tx_type:
+			specific_args = {
+				'rental_fee_sink': tx_dict['rentalFeeSink'],
+				'rental_fee': tx_dict['rentalFee'],
+				'parent': tx_dict['parent'],
+				'namespace': tx_dict['newPart'],
+			}
+		elif TransactionType.MOSAIC_DEFINITION.value == tx_type:
+			mosaic_definition = tx_dict['mosaicDefinition']
+			mosaic_id = mosaic_definition['id']
+			mosaic_levy = mosaic_definition['levy']
+			mosaic_properties_dict = {
+				item['name']: item['value']
+				for item in mosaic_definition['properties']
+			}
 
-				specific_args = {
-					'amount': tx_dict['amount'],
-					'recipient': tx_dict['recipient'],
-					'message': message,
-					'mosaics': mosaics,
-				}
-			elif tx_type == 2049:
-				specific_args = {
-					'mode': tx_dict['mode'],
-					'remote_account': tx_dict['remoteAccount'],
-				}
-			elif tx_type == 4097:
-				specific_args = {
-					'min_cosignatories': tx_dict['minCosignatories']['relativeChange'],
-					'modifications': [
-						Modification(
-							modification['modificationType'],
-							modification['cosignatoryAccount'])
-						for modification in tx_dict['modifications']
-					]
-				}
-			elif tx_type == 4100:
-				specific_args = {
-					'signatures': [
-						CosignSignatureTransaction(
-							signature['timeStamp'],
-							signature['otherHash']['data'],
-							signature['otherAccount'],
-							signature['signer'],
-							signature['fee'],
-							signature['deadline'],
-							signature['signature'],
-							signature['type'],
-						)
-						for signature in tx_dict['signatures']
-					],
-					'other_transaction': NemConnector._map_to_transaction(tx_dict['otherTrans'], True),
-					'inner_hash': transaction['innerHash'],
-				}
-			elif tx_type == 8193:
-				specific_args = {
-					'rental_fee_sink': tx_dict['rentalFeeSink'],
-					'rental_fee': tx_dict['rentalFee'],
-					'parent': tx_dict['parent'],
-					'namespace': tx_dict['newPart'],
-				}
-			elif tx_type == 16385:
-				mosaic_definition = tx_dict['mosaicDefinition']
-				mosaic_id = mosaic_definition['id']
-				mosaic_levy = mosaic_definition['levy']
-				mosaic_properties_dict = {
-					item['name']: item['value']
-					for item in mosaic_definition['properties']
-				}
+			specific_args = {
+				'creation_fee': tx_dict['creationFee'],
+				'creation_fee_sink': tx_dict['creationFeeSink'],
+				'creator': mosaic_definition['creator'],
+				'description': mosaic_definition['description'],
+				'properties': MosaicProperties(
+					int(mosaic_properties_dict['divisibility']),
+					int(mosaic_properties_dict['initialSupply']),
+					mosaic_properties_dict['supplyMutable'] != 'false',
+					mosaic_properties_dict['transferable'] != 'false'
+				),
+				'levy': MosaicLevy(
+					mosaic_levy['fee'],
+					mosaic_levy['recipient'],
+					mosaic_levy['type'],
+					f'{mosaic_levy["mosaicId"]["namespaceId"]}.{mosaic_levy["mosaicId"]["name"] }'
+				),
+				'namespace_name': f'{mosaic_id["namespaceId"]}.{mosaic_id["name"] }'
+			}
+		elif TransactionType.MOSAIC_SUPPLY_CHANGE.value == tx_type:
+			mosaic_id = tx_dict['mosaicId']
 
-				specific_args = {
-					'creation_fee': tx_dict['creationFee'],
-					'creation_fee_sink': tx_dict['creationFeeSink'],
-					'creator': mosaic_definition['creator'],
-					'description': mosaic_definition['description'],
-					'properties': MosaicProperties(
-						int(mosaic_properties_dict['divisibility']),
-						int(mosaic_properties_dict['initialSupply']),
-						mosaic_properties_dict['supplyMutable'] != 'false',
-						mosaic_properties_dict['transferable'] != 'false'
-					),
-					'levy': MosaicLevy(
-						mosaic_levy['fee'],
-						mosaic_levy['recipient'],
-						mosaic_levy['type'],
-						f'{mosaic_levy["mosaicId"]["namespaceId"]}.{mosaic_levy["mosaicId"]["name"] }'
-					),
-					'namespace_name': f'{mosaic_id["namespaceId"]}.{mosaic_id["name"] }'
-				}
-			elif tx_type == 16386:
-				mosaic_id = tx_dict['mosaicId']
+			specific_args = {
+				'supply_type': tx_dict['supplyType'],
+				'delta': tx_dict['delta'],
+				'namespace_name': f'{mosaic_id["namespaceId"]}.{mosaic_id["name"] }',
+			}
 
-				specific_args = {
-					'supply_type': tx_dict['supplyType'],
-					'delta': tx_dict['delta'],
-					'namespace_name': f'{mosaic_id["namespaceId"]}.{mosaic_id["name"] }',
-				}
-			else:
-				specific_args = {}
-
-			return transaction_mapping[tx_type](**common_args, **specific_args)
-		else:
-			raise UnknownTransactionType(f'Unknown transaction type {tx_type}')
+		return TransactionFactory.create_transaction(tx_type, common_args, specific_args)
