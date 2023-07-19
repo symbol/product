@@ -1,6 +1,8 @@
 import os
 import re
+import tempfile
 from email.utils import parsedate_to_datetime
+from pathlib import Path
 
 from zenlog import log
 
@@ -22,15 +24,31 @@ def _openssl_run_sclient_verify(hostname, test_args):
 		'-servername', hostname,
 		'-connect',
 		'localhost:3001'
-	] + test_args + [
-		'|',
-		'openssl',
-		'x509',
-		'-inform',
-		'pem',
-		'-noout',
-		'-text'
-	], command_input='Q', show_output=False, use_shell=True)
+	] + test_args, command_input='Q', show_output=False)
+
+	# verify the certificate is valid
+	for line in lines:
+		line = line.strip()
+		if line.startswith('verify error:'):
+			# normalize error message
+			if '1.1.1' in openssl_executor.version():
+				line = line.replace('self signed', 'self-signed')
+			return False, line
+
+	with tempfile.TemporaryDirectory() as temp_directory:
+		temp_file = Path(temp_directory) / 'cert.txt'
+		with open(temp_file, 'w', encoding='utf-8') as cert_file:
+			cert_file.writelines(lines)
+
+		lines = openssl_executor.dispatch([
+			'x509',
+			'-inform',
+			'pem',
+			'-noout',
+			'-text',
+			'-in',
+			temp_file
+		], command_input='Q', show_output=False)
 
 	searching_for_date = [r'Not Before: (.*)', r'Not After : (.*)']
 	collect_dates = False
@@ -45,12 +63,6 @@ def _openssl_run_sclient_verify(hostname, test_args):
 
 		if line == 'Certificate:':
 			collect_dates = True
-
-		if line.startswith('verify error:'):
-			# normalize error message
-			if '1.1.1' in openssl_executor.version():
-				line = line.replace('self signed', 'self-signed')
-			return False, line
 
 	return (True, collected_dates) if 2 == len(collected_dates) else (False, 'could not parse s_client response')
 
