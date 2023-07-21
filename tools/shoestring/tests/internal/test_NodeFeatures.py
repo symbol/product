@@ -67,4 +67,4 @@ class NodeFeaturesTest(unittest.TestCase):
 
 		# Act + Assert:
 		with self.assertRaises(ValueError):
-			list(NodeFeatures._iter_bits_lsb(node_features_value))
+			str(NodeFeatures(node_features_value))
