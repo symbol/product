@@ -1315,7 +1315,11 @@ EXPECTED_BLOCK_2 = Block(
 )
 
 
-async def test_can_query_blocks_after(server):
+async def test_can_query_blocks_after(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	connector = NemConnector(server.make_url(''))
+
+	# Act:
 	blocks = await connector.get_blocks_after(1)
 
 	# Assert:
