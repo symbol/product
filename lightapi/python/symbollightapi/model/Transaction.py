@@ -12,7 +12,8 @@ class Transaction:
 		fee,
 		timestamp,
 		deadline,
-		signature
+		signature,
+		transaction_type
 	):
 		"""Create Transaction model."""
 
@@ -25,6 +26,7 @@ class Transaction:
 		self.timestamp = timestamp
 		self.deadline = deadline
 		self.signature = signature
+		self.transaction_type = transaction_type
 
 	def __eq__(self, other):
 		return isinstance(other, Transaction) and all([
@@ -34,7 +36,8 @@ class Transaction:
 			self.fee == other.fee,
 			self.timestamp == other.timestamp,
 			self.deadline == other.deadline,
-			self.signature == other.signature
+			self.signature == other.signature,
+			self.transaction_type == other.transaction_type
 		])
 
 
@@ -64,10 +67,10 @@ class TransferTransaction(Transaction):
 			fee,
 			timestamp,
 			deadline,
-			signature
+			signature,
+			TransactionType.TRANSFER.value
 		)
 
-		self.transaction_type = TransactionType.TRANSFER.value
 		self.amount = amount
 		self.recipient = recipient
 		self.message = message
@@ -107,10 +110,10 @@ class AccountKeyLinkTransaction(Transaction):
 			fee,
 			timestamp,
 			deadline,
-			signature
+			signature,
+			TransactionType.ACCOUNT_KEY_LINK.value
 		)
 
-		self.transaction_type = TransactionType.ACCOUNT_KEY_LINK.value
 		self.mode = mode
 		self.remote_account = remote_account
 
@@ -146,10 +149,10 @@ class MultisigAccountModificationTransaction(Transaction):
 			fee,
 			timestamp,
 			deadline,
-			signature
+			signature,
+			TransactionType.MULTISIG_ACCOUNT_MODIFICATION.value
 		)
 
-		self.transaction_type = TransactionType.MULTISIG_ACCOUNT_MODIFICATION.value
 		self.min_cosignatories = min_cosignatories
 		self.modifications = modifications
 
@@ -186,10 +189,10 @@ class MultisigTransaction(Transaction):
 			fee,
 			timestamp,
 			deadline,
-			signature
+			signature,
+			TransactionType.MULTISIG_TRANSACTION.value
 		)
 
-		self.transaction_type = TransactionType.MULTISIG_TRANSACTION.value
 		self.signatures = signatures
 		self.other_transaction = other_transaction
 		self.inner_hash = inner_hash
@@ -265,10 +268,10 @@ class NamespaceRegistrationTransaction(Transaction):
 			fee,
 			timestamp,
 			deadline,
-			signature
+			signature,
+			TransactionType.NAMESPACE_REGISTRATION.value
 		)
 
-		self.transaction_type = TransactionType.NAMESPACE_REGISTRATION.value
 		self.rental_fee_sink = rental_fee_sink
 		self.rental_fee = rental_fee
 		self.parent = parent
@@ -313,10 +316,10 @@ class MosaicDefinitionTransaction(Transaction):
 			fee,
 			timestamp,
 			deadline,
-			signature
+			signature,
+			TransactionType.MOSAIC_DEFINITION.value
 		)
 
-		self.transaction_type = TransactionType.MOSAIC_DEFINITION.value
 		self.creation_fee = creation_fee
 		self.creation_fee_sink = creation_fee_sink
 		self.creator = creator
@@ -363,10 +366,10 @@ class MosaicSupplyChangeTransaction(Transaction):
 			fee,
 			timestamp,
 			deadline,
-			signature
+			signature,
+			TransactionType.MOSAIC_SUPPLY_CHANGE.value
 		)
 
-		self.transaction_type = TransactionType.MOSAIC_SUPPLY_CHANGE.value
 		self.supply_type = supply_type
 		self.delta = delta
 		self.namespace_name = namespace_name
