@@ -20,3 +20,51 @@ class NodeFeaturesTest(unittest.TestCase):
 		self.assertEqual(NodeFeatures.API | NodeFeatures.VOTER, NodeFeatures.parse('API, VOTER'))
 		self.assertEqual(NodeFeatures.HARVESTER, NodeFeatures.parse('  PEER  ,  HARVESTER  '))
 		self.assertEqual(NodeFeatures.API | NodeFeatures.VOTER | NodeFeatures.HARVESTER, NodeFeatures.parse(' API, VOTER,HARVESTER '))
+
+	def test_can_convert_single_value_to_string(self):
+		# Arrange:
+		node_features = NodeFeatures.API
+
+		# Act:
+		node_features_str = str(node_features)
+
+		# Assert:
+		self.assertEqual('NodeFeatures.API', node_features_str)
+
+	def test_can_convert_multiple_values_to_string(self):
+		# Arrange:
+		node_features = NodeFeatures.API | NodeFeatures.VOTER
+
+		# Act:
+		node_features_str = str(node_features)
+
+		# Assert:
+		self.assertEqual('NodeFeatures.API|VOTER', node_features_str)
+
+	def test_can_convert_single_zero_value_to_string(self):
+		# Arrange:
+		node_features = NodeFeatures.PEER
+
+		# Act:
+		node_features_str = str(node_features)
+
+		# Assert:
+		self.assertEqual('NodeFeatures.PEER', node_features_str)
+
+	def test_can_convert_multiple_values_with_peer_to_string(self):
+		# Arrange:
+		node_features = NodeFeatures.API | NodeFeatures.PEER | NodeFeatures.VOTER
+
+		# Act:
+		node_features_str = str(node_features)
+
+		# Assert:
+		self.assertEqual('NodeFeatures.API|VOTER', node_features_str)
+
+	def test_cannot_parse_negative_value(self):
+		# Arrange:
+		node_features_value = -1
+
+		# Act + Assert:
+		with self.assertRaises(ValueError):
+			list(NodeFeatures._iter_bits_lsb(node_features_value))

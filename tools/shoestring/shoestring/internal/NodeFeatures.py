@@ -39,15 +39,15 @@ class NodeFeatures(IntFlag):
 			yield value
 			num ^= value
 
-	def get_flag_values(self, value):
+	def _get_flag_values(self, value):
 		return list(self._iter_bits_lsb(value))
 
-	def get_flags(self, value):
-		flag_values = self.get_flag_values(value)
+	def _get_flags(self, value):
+		flag_values = self._get_flag_values(value)
 		return [NodeFeatures(flag_value) for flag_value in flag_values]
 
 	def __str__(self):
 		if self.name is None:
-			return f'{self.__class__.__name__}.{"|".join([str(m.name) for m in self.get_flags(self.value)])}'
+			return f'{self.__class__.__name__}.{"|".join([str(m.name) for m in self._get_flags(self.value)])}'
 
 		return f'{self.__class__.__name__}.{self.name}'
