@@ -37,29 +37,27 @@ def _openssl_run_sclient_verify(hostname, test_args):
 
 	with tempfile.TemporaryDirectory() as temp_directory:
 		temp_file = Path(temp_directory) / 'cert.txt'
-		with open(temp_file, 'w', encoding='utf-8') as cert_file:
-			cert_file.writelines(lines)
+		with open(temp_file, 'wt', encoding='utf-8') as cert_outfile:
+			cert_outfile.writelines(lines)
 
 		lines = openssl_executor.dispatch([
 			'x509',
-			'-inform',
-			'pem',
+			'-inform', 'pem',
 			'-noout',
 			'-text',
-			'-in',
-			temp_file
+			'-in', temp_file
 		], command_input='Q', show_output=False)
 
-	searching_for_date = [r'Not Before: (.*)', r'Not After : (.*)']
+	date_patterns = [r'Not Before: (.*)', r'Not After : (.*)']
 	collect_dates = False
 	collected_dates = []
 	for line in lines:
 		line = line.strip()
-		if collect_dates and searching_for_date:
-			res = re.search(searching_for_date[0], line)
+		if collect_dates and date_patterns:
+			res = re.search(date_patterns[0], line)
 			if res:
 				collected_dates.append(parsedate_to_datetime(res.group(1)))
-				searching_for_date.pop(0)
+				date_patterns.pop(0)
 
 		if line == 'Certificate:':
 			collect_dates = True
