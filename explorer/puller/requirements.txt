@@ -1,4 +1,4 @@
-aiohttp==3.8.4
+aiohttp==3.8.5
 psycopg2-binary==2.9.6
 symbol-sdk-python==3.0.7
 zenlog==1.1
