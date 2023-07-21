@@ -37,6 +37,6 @@ class OpensslExecutor:
 
 			if 0 != process.returncode:
 				formatted_command_line = ' '.join(command_line)
-				raise RuntimeError(f'{formatted_command_line} exited with {process.returncode}, stdout:\n {stdout_lines}')
+				raise RuntimeError(f'{formatted_command_line} exited with {process.returncode}, stdout:\n{stdout_lines}')
 
 		return all_lines

@@ -30,9 +30,6 @@ def _openssl_run_sclient_verify(hostname, test_args):
 	for line in lines:
 		line = line.strip()
 		if line.startswith('verify error:'):
-			# normalize error message
-			if '1.1.1' in openssl_executor.version():
-				line = line.replace('self signed', 'self-signed')
 			return False, line
 
 	with tempfile.TemporaryDirectory() as temp_directory:
