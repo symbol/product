@@ -106,16 +106,16 @@ class NemConnector(BasicConnector):
 	async def get_blocks_after(self, height):
 		""""Gets Blocks data"""
 
-		blocks_after_dict = await self.post('local/chain/blocks-after', {'height': height})
+		blocks = await self.post('local/chain/blocks-after', {'height': height})
 		# blocks_after_dict = Blocks
-		return [self._map_to_block(block) for block in blocks_after_dict['data']]
+		return [self._map_to_block(block) for block in blocks['data']]
 
 	async def get_block(self, height):
 		""""Gets Block data"""
 
-		block_dict = await self.post('local/block/at', {'height': height})
+		block = await self.post('local/block/at', {'height': height})
 		# block_dict = Block_1
-		return self._map_to_block(block_dict)
+		return self._map_to_block(block)
 
 	@staticmethod
 	def _map_to_block(block_dict):
