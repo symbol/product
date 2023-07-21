@@ -1,5 +1,3 @@
-from collections import namedtuple
-
 from symbolchain.CryptoTypes import PublicKey
 from symbolchain.nc import TransactionType
 from symbolchain.nem.Network import Address
@@ -7,14 +5,8 @@ from symbolchain.nem.Network import Address
 from ..model.Block import Block
 from ..model.Endpoint import Endpoint
 from ..model.NodeInfo import NodeInfo
-from ..model.Transaction import CosignSignatureTransaction, TransactionFactory
+from ..model.Transaction import TransactionFactory, TransactionHandler
 from .BasicConnector import BasicConnector
-
-Message = namedtuple('Message', ['payload', 'is_plain'])
-Mosaic = namedtuple('Mosaic', ['namespace_name', 'quantity'])
-Modification = namedtuple('Modification', ['modification_type', 'cosignatory_account'])
-MosaicLevy = namedtuple('MosaicLevy', ['fee', 'recipient', 'type', 'namespace_name'])
-MosaicProperties = namedtuple('MosaicProperties', ['divisibility', 'initial_supply', 'supply_mutable', 'transferable'])
 
 MICROXEM_PER_XEM = 1000000
 
@@ -117,8 +109,7 @@ class NemConnector(BasicConnector):
 		# block_dict = Block_1
 		return self._map_to_block(block)
 
-	@staticmethod
-	def _map_to_block(block_dict):
+	def _map_to_block(self, block_dict):
 		block = block_dict['block']
 		difficulty = block_dict['difficulty']
 		block_hash = block_dict['hash']
@@ -128,7 +119,7 @@ class NemConnector(BasicConnector):
 			block['height'],
 			block['timeStamp'],
 			[
-				NemConnector._map_to_transaction(transaction, False, block['height'])
+				self._map_to_transaction(transaction, block['height'])
 				for transaction in transactions
 			],
 			difficulty,
@@ -138,124 +129,28 @@ class NemConnector(BasicConnector):
 		)
 
 	@staticmethod
-	def _map_to_transaction(transaction, is_embedded=False, block_height=None):
+	def _map_to_transaction(transaction, block_height):
 		"""Maps a transaction dictionary to a transaction object."""
 
-		tx_dict = transaction if is_embedded else transaction['tx']
+		tx_dict = transaction['tx']
 		tx_type = tx_dict['type']
 
 		# Define common arguments for all transactions
 		common_args = {
-			'transaction_hash': None if is_embedded else transaction['hash'],
-			'height': None if is_embedded else block_height,
+			'transaction_hash': transaction['hash'],
+			'height': block_height,
 			'sender': tx_dict['signer'],
 			'fee': tx_dict['fee'],
 			'timestamp': tx_dict['timeStamp'],
 			'deadline': tx_dict['deadline'],
-			'signature': None if is_embedded else tx_dict['signature'],
+			'signature': tx_dict['signature'],
 		}
 
 		specific_args = {}
 
-		if TransactionType.TRANSFER.value == tx_type:
-			message = tx_dict['message']
-
-			if 'payload' in message and 'type' in message:
-				message = Message(
-					message['payload'],
-					message['type']
-				)
-
-			mosaics = None
-			if 'mosaics' in tx_dict:
-				mosaics = [
-					Mosaic(
-						f'{mosaic["mosaicId"]["namespaceId"]}.{mosaic["mosaicId"]["name"]}',
-						mosaic['quantity']
-					)
-					for mosaic in tx_dict['mosaics']
-				]
-
-			specific_args = {
-				'amount': tx_dict['amount'],
-				'recipient': tx_dict['recipient'],
-				'message': message,
-				'mosaics': mosaics,
-			}
-		elif TransactionType.ACCOUNT_KEY_LINK.value == tx_type:
-			specific_args = {
-				'mode': tx_dict['mode'],
-				'remote_account': tx_dict['remoteAccount'],
-			}
-		elif TransactionType.MULTISIG_ACCOUNT_MODIFICATION.value == tx_type:
-			specific_args = {
-				'min_cosignatories': tx_dict['minCosignatories']['relativeChange'],
-				'modifications': [
-					Modification(
-						modification['modificationType'],
-						modification['cosignatoryAccount'])
-					for modification in tx_dict['modifications']
-				]
-			}
-		elif TransactionType.MULTISIG_TRANSACTION.value == tx_type:
-			specific_args = {
-				'signatures': [
-					CosignSignatureTransaction(
-						signature['timeStamp'],
-						signature['otherHash']['data'],
-						signature['otherAccount'],
-						signature['signer'],
-						signature['fee'],
-						signature['deadline'],
-						signature['signature']
-					)
-					for signature in tx_dict['signatures']
-				],
-				'other_transaction': NemConnector._map_to_transaction(tx_dict['otherTrans'], True),
-				'inner_hash': transaction['innerHash'],
-			}
-		elif TransactionType.NAMESPACE_REGISTRATION.value == tx_type:
-			specific_args = {
-				'rental_fee_sink': tx_dict['rentalFeeSink'],
-				'rental_fee': tx_dict['rentalFee'],
-				'parent': tx_dict['parent'],
-				'namespace': tx_dict['newPart'],
-			}
-		elif TransactionType.MOSAIC_DEFINITION.value == tx_type:
-			mosaic_definition = tx_dict['mosaicDefinition']
-			mosaic_id = mosaic_definition['id']
-			mosaic_levy = mosaic_definition['levy']
-			mosaic_properties_dict = {
-				item['name']: item['value']
-				for item in mosaic_definition['properties']
-			}
-
-			specific_args = {
-				'creation_fee': tx_dict['creationFee'],
-				'creation_fee_sink': tx_dict['creationFeeSink'],
-				'creator': mosaic_definition['creator'],
-				'description': mosaic_definition['description'],
-				'properties': MosaicProperties(
-					int(mosaic_properties_dict['divisibility']),
-					int(mosaic_properties_dict['initialSupply']),
-					mosaic_properties_dict['supplyMutable'] != 'false',
-					mosaic_properties_dict['transferable'] != 'false'
-				),
-				'levy': MosaicLevy(
-					mosaic_levy['fee'],
-					mosaic_levy['recipient'],
-					mosaic_levy['type'],
-					f'{mosaic_levy["mosaicId"]["namespaceId"]}.{mosaic_levy["mosaicId"]["name"] }'
-				),
-				'namespace_name': f'{mosaic_id["namespaceId"]}.{mosaic_id["name"] }'
-			}
-		elif TransactionType.MOSAIC_SUPPLY_CHANGE.value == tx_type:
-			mosaic_id = tx_dict['mosaicId']
-
-			specific_args = {
-				'supply_type': tx_dict['supplyType'],
-				'delta': tx_dict['delta'],
-				'namespace_name': f'{mosaic_id["namespaceId"]}.{mosaic_id["name"] }',
-			}
+		if TransactionType.MULTISIG_TRANSACTION.value == tx_type:
+			specific_args = TransactionHandler().map[tx_type](tx_dict, transaction['innerHash'])
+		else:
+			specific_args = TransactionHandler().map[tx_type](tx_dict)
 
 		return TransactionFactory.create_transaction(tx_type, common_args, specific_args)

@@ -1,6 +1,14 @@
+from collections import namedtuple
+
 from symbolchain.nc import TransactionType
 
 from ..model.Exceptions import UnknownTransactionType
+
+Message = namedtuple('Message', ['payload', 'is_plain'])
+Mosaic = namedtuple('Mosaic', ['namespace_name', 'quantity'])
+Modification = namedtuple('Modification', ['modification_type', 'cosignatory_account'])
+MosaicLevy = namedtuple('MosaicLevy', ['fee', 'recipient', 'type', 'namespace_name'])
+MosaicProperties = namedtuple('MosaicProperties', ['divisibility', 'initial_supply', 'supply_mutable', 'transferable'])
 
 
 class Transaction:
@@ -381,6 +389,152 @@ class MosaicSupplyChangeTransaction(Transaction):
 			self.delta == other.delta,
 			self.namespace_name == other.namespace_name,
 		])
+
+
+class TransactionHandler:
+	"""Transaction handle mapper."""
+	def __init__(self):
+		self.map = {
+			TransactionType.TRANSFER.value: self._map_transfer_args,
+			TransactionType.ACCOUNT_KEY_LINK.value: self._map_account_key_link_args,
+			TransactionType.MULTISIG_ACCOUNT_MODIFICATION.value: self._map_multisig_account_modification_args,
+			TransactionType.MULTISIG_TRANSACTION.value: self._map_multisig_transaction_args,
+			TransactionType.NAMESPACE_REGISTRATION.value: self._map_namespace_registration_args,
+			TransactionType.MOSAIC_DEFINITION.value: self._map_mosaic_definition_args,
+			TransactionType.MOSAIC_SUPPLY_CHANGE.value: self._map_mosaic_supply_change_args,
+		}
+
+	@staticmethod
+	def _map_transfer_args(tx_dict):
+		message = tx_dict['message']
+
+		if message:
+			message = Message(
+				message['payload'],
+				message['type']
+			)
+
+		mosaics = None
+		if 'mosaics' in tx_dict:
+			mosaics = [
+				Mosaic(
+					f'{mosaic["mosaicId"]["namespaceId"]}.{mosaic["mosaicId"]["name"]}',
+					mosaic['quantity']
+				)
+				for mosaic in tx_dict['mosaics']
+			]
+
+		return {
+			'amount': tx_dict['amount'],
+			'recipient': tx_dict['recipient'],
+			'message': message,
+			'mosaics': mosaics,
+		}
+
+	@staticmethod
+	def _map_account_key_link_args(tx_dict):
+		return {
+			'mode': tx_dict['mode'],
+			'remote_account': tx_dict['remoteAccount'],
+		}
+
+	@staticmethod
+	def _map_multisig_account_modification_args(tx_dict):
+		return {
+			'min_cosignatories': tx_dict['minCosignatories']['relativeChange'],
+			'modifications': [
+				Modification(
+					modification['modificationType'],
+					modification['cosignatoryAccount'])
+				for modification in tx_dict['modifications']
+			]
+		}
+
+	def _map_multisig_transaction_args(self, tx_dict, inner_hash):
+
+		other_transaction = tx_dict['otherTrans']
+
+		specific_args = self.map[other_transaction['type']](other_transaction)
+
+		common_args = {
+			'transaction_hash': None,
+			'height': None,
+			'sender': other_transaction['signer'],
+			'fee': other_transaction['fee'],
+			'timestamp': other_transaction['timeStamp'],
+			'deadline': other_transaction['deadline'],
+			'signature': None,
+		}
+
+		return {
+			'signatures': [
+				CosignSignatureTransaction(
+					signature['timeStamp'],
+					signature['otherHash']['data'],
+					signature['otherAccount'],
+					signature['signer'],
+					signature['fee'],
+					signature['deadline'],
+					signature['signature']
+				)
+				for signature in tx_dict['signatures']
+			],
+			'other_transaction': TransactionFactory.create_transaction(other_transaction['type'], common_args, specific_args),
+			'inner_hash': inner_hash,
+		}
+
+	@staticmethod
+	def _map_namespace_registration_args(tx_dict):
+		return {
+			'rental_fee_sink': tx_dict['rentalFeeSink'],
+			'rental_fee': tx_dict['rentalFee'],
+			'parent': tx_dict['parent'],
+			'namespace': tx_dict['newPart'],
+		}
+
+	@staticmethod
+	def _map_mosaic_definition_args(tx_dict):
+		mosaic_definition = tx_dict['mosaicDefinition']
+		mosaic_id = mosaic_definition['id']
+		mosaic_levy = mosaic_definition['levy']
+		mosaic_properties_dict = {
+			item['name']: item['value']
+			for item in mosaic_definition['properties']
+		}
+
+		mosaic_properties = MosaicProperties(
+			int(mosaic_properties_dict['divisibility']),
+			int(mosaic_properties_dict['initialSupply']),
+			mosaic_properties_dict['supplyMutable'] != 'false',
+			mosaic_properties_dict['transferable'] != 'false'
+		)
+
+		if mosaic_levy:
+			mosaic_levy = MosaicLevy(
+				mosaic_levy['fee'],
+				mosaic_levy['recipient'],
+				mosaic_levy['type'],
+				f'{mosaic_levy["mosaicId"]["namespaceId"]}.{mosaic_levy["mosaicId"]["name"] }'
+			)
+
+		return {
+			'creation_fee': tx_dict['creationFee'],
+			'creation_fee_sink': tx_dict['creationFeeSink'],
+			'creator': mosaic_definition['creator'],
+			'description': mosaic_definition['description'],
+			'namespace_name': f'{mosaic_id["namespaceId"]}.{mosaic_id["name"] }',
+			'properties': mosaic_properties,
+			'levy': mosaic_levy,
+		}
+
+	@staticmethod
+	def _map_mosaic_supply_change_args(tx_dict):
+		mosaic_id = tx_dict['mosaicId']
+		return {
+			'supply_type': tx_dict['supplyType'],
+			'delta': tx_dict['delta'],
+			'namespace_name': f'{mosaic_id["namespaceId"]}.{mosaic_id["name"] }',
+		}
 
 
 class TransactionFactory:
