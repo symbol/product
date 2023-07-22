@@ -1,4 +1,5 @@
 import asyncio
+import os
 import ssl
 from collections import namedtuple
 
@@ -6,6 +7,7 @@ import pytest
 from aiohttp import web
 
 from shoestring.healthagents.rest_https_certificate import should_run, validate
+from shoestring.internal.OpensslExecutor import OpensslExecutor
 from shoestring.internal.ShoestringConfiguration import NodeConfiguration
 
 from ..test.LogTestUtils import LogLevel, assert_max_log_level, assert_message_is_logged
@@ -53,15 +55,23 @@ async def _dispatch_validate(test_args=None):
 	HealthAgentContext = namedtuple('HealthAgentContext', ['hostname', 'test_args'])
 	context = HealthAgentContext('localhost', test_args or [])
 
-	await asyncio.to_thread(_validate_thread, context)
+	await asyncio.get_running_loop().run_in_executor(None, _validate_thread, context)
 
 
 async def test_validate_fails_when_certificate_is_self_signed(server, caplog):  # pylint: disable=redefined-outer-name, unused-argument
+	# Arrange:
+	expected_error_message = 'HTTPS certificate looks invalid: verify error:num=18:self-signed certificate'
+
+	# normalize error message
+	openssl_executor = OpensslExecutor(os.environ.get('OPENSSL_EXECUTABLE', 'openssl'))
+	if '1.1.1' in openssl_executor.version():
+		expected_error_message = expected_error_message.replace('self-signed', 'self signed')
+
 	# Act:
 	await _dispatch_validate()
 
 	# Assert:
-	assert_message_is_logged('HTTPS certificate looks invalid: Verify return code: 18 (self-signed certificate)', caplog)
+	assert_message_is_logged(expected_error_message, caplog)
 	assert_max_log_level(LogLevel.WARNING, caplog)
 
 

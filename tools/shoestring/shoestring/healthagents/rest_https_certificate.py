@@ -1,6 +1,8 @@
 import os
 import re
+import tempfile
 from email.utils import parsedate_to_datetime
+from pathlib import Path
 
 from zenlog import log
 
@@ -24,25 +26,40 @@ def _openssl_run_sclient_verify(hostname, test_args):
 		'localhost:3001'
 	] + test_args, command_input='Q', show_output=False)
 
+	# verify the certificate is valid
+	for line in lines:
+		line = line.strip()
+		if line.startswith('verify error:'):
+			return False, line
+
+	with tempfile.TemporaryDirectory() as temp_directory:
+		temp_file = Path(temp_directory) / 'cert.txt'
+		with open(temp_file, 'wt', encoding='utf-8') as cert_outfile:
+			cert_outfile.writelines(lines)
+
+		lines = openssl_executor.dispatch([
+			'x509',
+			'-inform', 'pem',
+			'-noout',
+			'-text',
+			'-in', temp_file
+		], command_input='Q', show_output=False)
+
+	date_patterns = [r'Not Before: (.*)', r'Not After : (.*)']
 	collect_dates = False
 	collected_dates = []
 	for line in lines:
 		line = line.strip()
-		if collect_dates:
-			res = re.search(r'NotBefore: (.*); NotAfter: (.*)', line)
+		if collect_dates and date_patterns:
+			res = re.search(date_patterns[0], line)
 			if res:
-				collected_dates.append((parsedate_to_datetime(res.group(1)), parsedate_to_datetime(res.group(2))))
+				collected_dates.append(parsedate_to_datetime(res.group(1)))
+				date_patterns.pop(0)
 
-		if line == 'Certificate chain':
+		if line == 'Certificate:':
 			collect_dates = True
 
-		if line.startswith('Verify return code:'):
-			if 'Verify return code: 0 (ok)' == line:
-				return True, collected_dates
-
-			return False, line
-
-	return False, 'could not parse s_client response'
+	return (True, collected_dates) if 2 == len(collected_dates) else (False, 'could not parse s_client response')
 
 
 async def validate(context):
@@ -54,7 +71,7 @@ async def validate(context):
 	if not result:
 		log.warning(_('health-rest-https-certificate-invalid').format(error_message=dates_or_error))
 	else:
-		date_range = dates_or_error[-1]
+		date_range = dates_or_error
 		log.info(_('health-rest-https-certificate-valid').format(
 			start_date=date_range[0].strftime('%y-%m-%d'),
 			end_date=date_range[1].strftime('%y-%m-%d')))

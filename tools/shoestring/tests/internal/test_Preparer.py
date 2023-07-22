@@ -206,7 +206,7 @@ class PreparerTest(unittest.TestCase):
 				continue
 
 			for file in subdir.glob('**/*'):
-				shutil.move(file, preparer.directories.temp)
+				shutil.move(str(file), str(preparer.directories.temp))
 
 			subdir.rmdir()
 			break

@@ -88,7 +88,7 @@ def _move_to_parent(destination_directory):
 			continue
 
 		for file in subdir.glob('*'):
-			shutil.move(file, destination_directory)
+			shutil.move(str(file), str(destination_directory))
 
 		subdir.rmdir()
 
