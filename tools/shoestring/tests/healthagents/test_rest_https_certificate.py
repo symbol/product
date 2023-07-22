@@ -60,18 +60,18 @@ async def _dispatch_validate(test_args=None):
 
 async def test_validate_fails_when_certificate_is_self_signed(server, caplog):  # pylint: disable=redefined-outer-name, unused-argument
 	# Arrange:
-	error_message = 'HTTPS certificate looks invalid: verify error:num=18:self-signed certificate'
+	expected_error_message = 'HTTPS certificate looks invalid: verify error:num=18:self-signed certificate'
 
 	# normalize error message
 	openssl_executor = OpensslExecutor(os.environ.get('OPENSSL_EXECUTABLE', 'openssl'))
 	if '1.1.1' in openssl_executor.version():
-		error_message = error_message.replace('self-signed', 'self signed')
+		expected_error_message = expected_error_message.replace('self-signed', 'self signed')
 
 	# Act:
 	await _dispatch_validate()
 
 	# Assert:
-	assert_message_is_logged(error_message, caplog)
+	assert_message_is_logged(expected_error_message, caplog)
 	assert_max_log_level(LogLevel.WARNING, caplog)
 
 
