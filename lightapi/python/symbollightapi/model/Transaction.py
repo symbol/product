@@ -440,8 +440,12 @@ class TransactionHandler:
 
 	@staticmethod
 	def _map_multisig_account_modification_args(tx_dict):
+		min_cosignatories = 0
+		if 'minCosignatories' in tx_dict:
+			min_cosignatories = tx_dict['minCosignatories']['relativeChange']
+
 		return {
-			'min_cosignatories': tx_dict['minCosignatories']['relativeChange'],
+			'min_cosignatories': min_cosignatories,
 			'modifications': [
 				Modification(
 					modification['modificationType'],
