@@ -31,7 +31,7 @@
     "react-scripts": "5.0.1",
     "react-tabs": "^4.3.0",
     "react-transition-group": "^4.4.5",
-    "sass": "^1.63.6",
+    "sass": "^1.64.1",
     "symbol-sdk": "^3.0.0",
     "web-vitals": "^3.4.0"
   },
