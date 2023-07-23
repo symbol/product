@@ -1,12 +1,15 @@
 import configparser
+import json
 
 from symbolchain.facade.NemFacade import NemFacade
+from symbolchain.nc import TransactionType
 from symbolchain.nem.Network import Network
 from symbollightapi.connector.NemConnector import NemConnector
 from zenlog import log
 
 from db.NemDatabase import NemDatabase
 from model.Block import Block
+from model.Transaction import Transaction, TransferTransaction
 
 
 class NemPuller:
@@ -30,7 +33,7 @@ class NemPuller:
 		"""Process block data."""
 
 		timestamp = Block.convert_timestamp_to_datetime(self.nem_facade, block_data.timestamp)
-		total_fees = sum(tx['tx']['fee'] for tx in block_data.transactions)
+		total_fees = sum(transaction.fee for transaction in block_data.transactions)
 
 		return Block(
 			block_data.height,
@@ -49,6 +52,44 @@ class NemPuller:
 		save_block = self._process_block(block)
 		self.nem_db.insert_block(cursor, save_block)
 
+	def _store_transactions(self, cursor, transactions):
+		"""Store transactions data."""
+
+		for transaction in transactions:
+			timestamp = Block.convert_timestamp_to_datetime(self.nem_facade, transaction.timestamp)
+			deadline = Block.convert_timestamp_to_datetime(self.nem_facade, transaction.deadline)
+
+			transaction_common = Transaction(
+				transaction.transaction_hash,
+				transaction.height,
+				transaction.sender,
+				transaction.fee,
+				timestamp,
+				deadline,
+				transaction.signature,
+				transaction.transaction_type,
+			)
+
+			if TransactionType.TRANSFER.value == transaction.transaction_type:
+				# checking message first byte "fe" (HEX:) for apostille
+				is_apostille = (
+					transaction.recipient == 'NCZSJHLTIMESERVBVKOW6US64YDZG2PFGQCSV23J' and
+					transaction.message[0][:2] == 'fe' and
+					transaction.message[1] == 1
+				)
+
+				transfer_transaction = TransferTransaction(
+					transaction.amount,
+					transaction.recipient,
+					transaction.mosaics,
+					json.dumps(transaction.message._asdict()),
+					is_apostille
+				)
+
+				transaction_id = self.nem_db.insert_transaction(cursor, transaction_common)
+
+				self.nem_db.insert_transfer_transactions(cursor, transaction_id, transfer_transaction)
+
 	async def sync_nemesis_block(self):
 		"""Sync the Nemesis block."""
 
@@ -58,6 +99,7 @@ class NemPuller:
 		cursor = self.nem_db.connection.cursor()
 
 		self._store_block(cursor, nemesis_block)
+		self._store_transactions(cursor, nemesis_block.transactions)
 
 		# commit changes
 		self.nem_db.connection.commit()
@@ -77,6 +119,7 @@ class NemPuller:
 
 			for block in blocks:
 				self._store_block(cursor, block)
+				self._store_transactions(cursor, block.transactions)
 
 			# commit changes
 			self.nem_db.connection.commit()
