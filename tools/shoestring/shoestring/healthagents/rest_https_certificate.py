@@ -27,25 +27,38 @@ def _openssl_run_sclient_verify(hostname, test_args):
 	] + test_args, command_input='Q', show_output=False)
 
 	# verify the certificate is valid
+	certificates = []
+	collect_certificates = False
 	for line in lines:
 		line = line.strip()
 		if line.startswith('verify error:'):
 			return False, line
 
+		# collect all certificates
+		if line.startswith('-----BEGIN CERTIFICATE-----'):
+			collect_certificates = True
+
+		if collect_certificates:
+			certificates.append(f'{line}\n')
+
+		if line.startswith('-----END CERTIFICATE-----'):
+			collect_certificates = False
+
 	with tempfile.TemporaryDirectory() as temp_directory:
 		temp_file = Path(temp_directory) / 'cert.txt'
 		with open(temp_file, 'wt', encoding='utf-8') as cert_outfile:
-			cert_outfile.writelines(lines)
+			cert_outfile.writelines(certificates)
 
 		lines = openssl_executor.dispatch([
-			'x509',
-			'-inform', 'pem',
-			'-noout',
+			'storeutl',
 			'-text',
-			'-in', temp_file
-		], command_input='Q', show_output=False)
+			'-noout',
+			'-certs',
+			temp_file
+		], show_output=False)
 
-	date_patterns = [r'Not Before: (.*)', r'Not After : (.*)']
+	date_patterns = []
+	certificate_dates = []
 	collect_dates = False
 	collected_dates = []
 	for line in lines:
@@ -53,13 +66,24 @@ def _openssl_run_sclient_verify(hostname, test_args):
 		if collect_dates and date_patterns:
 			res = re.search(date_patterns[0], line)
 			if res:
-				collected_dates.append(parsedate_to_datetime(res.group(1)))
+				certificate_dates.append(parsedate_to_datetime(res.group(1)))
 				date_patterns.pop(0)
+				if not date_patterns:
+					# we have collected both dates for a certificate
+					collected_dates.append((certificate_dates[0], certificate_dates[1]))
+					certificate_dates.clear()
+					collect_dates = False
 
-		if line == 'Certificate:':
+				continue
+
+		if 'Certificate:' == line:
 			collect_dates = True
+			date_patterns = [r'Not Before: (.*)', r'Not After : (.*)']
 
-	return (True, collected_dates) if 2 == len(collected_dates) else (False, 'could not parse s_client response')
+		if f'Total found: {len(collected_dates)}' == line:
+			return True, collected_dates
+
+	return False, 'could not parse s_client response'
 
 
 async def validate(context):
@@ -71,7 +95,7 @@ async def validate(context):
 	if not result:
 		log.warning(_('health-rest-https-certificate-invalid').format(error_message=dates_or_error))
 	else:
-		date_range = dates_or_error
+		date_range = dates_or_error[-1]
 		log.info(_('health-rest-https-certificate-valid').format(
 			start_date=date_range[0].strftime('%y-%m-%d'),
 			end_date=date_range[1].strftime('%y-%m-%d')))
