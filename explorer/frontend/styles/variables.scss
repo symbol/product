@@ -13,19 +13,27 @@ $color-text-footer: #fff;
 $color-text-link: #0D155C;
 $color-text-link-hover: #66B7E7;
 $color-text-tooltip: #fff;
+$color-text-textbox-placeholder: #A8A6A6;
 $color-tab-active: #0B0118;
 $color-tab-inactive: #A8A6A6;
+$color-filter-active: #fff;
+$color-filter-inactive: #50B9AD;
 $color-info: #66B7E7;
 $color-success: #4cc773;
 $color-warning: #FAB700;
 $color-danger: #B94F4F;
+$color-textbox-border: #50B9AD;
+$color-textbox-bg: #FFF;
+
 
 // Borders
 $border-radius-card: 1rem;
 $border-radius-label: 1rem;
-$border-radius-input: 0.5rem;
+$border-radius-input: 0.33rem;
 $border-radius-chip: 0.5rem;
+$border-radius-filter: 1.5rem;
 $border-radius-button: 0;
+$border-width-textbox: 0.083rem;
 
 // Typography
 $font-body: 400 1rem / 133.33% 'Nunito Sans', sans-serif;
@@ -39,7 +47,7 @@ $font-highlighted: 700 2.08rem / 2rem 'Nunito Sans', sans-serif;
 $font-tab: 700 1rem / 133.33% 'Nunito Sans', sans-serif;
 $font-nav: 700 1rem / 133.33% 'Nunito Sans', sans-serif;
 $font-input-placeholder: 700 1rem / 133.33% 'Nunito Sans', sans-serif;
-$font-input-text: 700 1rem / 133.33% 'Nunito Sans', sans-serif;
+$font-input-text: 400 1rem / 133.33% 'Nunito Sans', sans-serif;
 $font-button: 700 1rem / 133.33% 'Nunito Sans', sans-serif;
 
 // Spacings General
@@ -49,6 +57,7 @@ $spacing-card-gap: $spacing-base * 3;
 $spacing-section-gap: $spacing-base * 4;
 $spacing-header-height: $spacing-base * 8;
 $spacing-heading-margin: $spacing-base;
+$spacing-textbox-height: $spacing-base * 4.75;
 
 // Spacings Large
 $spacing-content-container-width-large: $spacing-base * 152;

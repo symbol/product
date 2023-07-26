@@ -3,6 +3,8 @@ import config from '@/config';
 import styles from '@/styles/components/ValueMosaic.module.scss';
 
 const ValueMosaic = ({ mosaicName, mosaicId, amount = 0, isNative, className, onClick }) => {
+	if (isNaN(amount) || amount === null) return null;
+
 	let displayedName;
 	let imageSrc;
 

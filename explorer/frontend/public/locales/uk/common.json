@@ -1,4 +1,5 @@
 {
+	"button_clear": "Очистити",
 	"chart_series_blockTime": "Секунди",
 	"chart_series_difficulty": "Важкість, %",
 	"chart_series_fee": "Комісія, XEM",
@@ -34,6 +35,11 @@
 	"field_treasury": "Казна",
 	"field_version": "Версія",
 	"field_volume": "Об'єм",
+
+	"filter_latest": "Останні",
+	"filter_activeHarvesting": "Харвестинг Активовано",
+	"filter_service": "Службові",
+
 	"menu_blocks": "Блоки",
 	"menu_home": "Домашня",
 	"message_copyFailed": "Помилка копіювання",
@@ -72,6 +78,11 @@
 	"table_field_totalFee": "Комісія",
 	"table_field_transactionCount": "Транзакції",
 	"table_field_type": "Тип",
+	"table_field_address": "Адреса",
+	"table_field_name": "Назва",
+	"table_field_description": "Опис",
+	"table_field_balance": "Баланс",
+	"table_field_importance": "Важливість",
 	"transactionType_transfer": "Переказ",
 	"value_averageFee": "{{value}} XEM / Байт",
 	"value_blockGenerationTime": "{{value}} секунд"

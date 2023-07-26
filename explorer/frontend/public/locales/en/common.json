@@ -1,4 +1,5 @@
 {
+	"button_clear": "Clear",
 	"chart_series_blockTime": "Seconds",
 	"chart_series_difficulty": "Difficulty, %",
 	"chart_series_fee": "Fee, XEM",
@@ -34,6 +35,11 @@
 	"field_treasury": "Treasury",
 	"field_version": "Version",
 	"field_volume": "Volume 24h",
+
+	"filter_latest": "Latest",
+	"filter_activeHarvesting": "Active Harvesting",
+	"filter_service": "Service",
+
 	"menu_blocks": "Blocks",
 	"menu_home": "Home",
 	"message_copyFailed": "Failed to copy",
@@ -72,6 +78,11 @@
 	"table_field_totalFee": "Fee",
 	"table_field_transactionCount": "Transactions",
 	"table_field_type": "Type",
+	"table_field_address": "Address",
+	"table_field_name": "Name",
+	"table_field_description": "Description",
+	"table_field_balance": "Balance",
+	"table_field_importance": "Importance",
 	"transactionType_transfer": "Transfer",
 	"value_averageFee": "{{value}} XEM / Byte",
 	"value_blockGenerationTime": "{{value}} seconds"
