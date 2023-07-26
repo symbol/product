@@ -1,0 +1,31 @@
+@import "../variables";
+
+.textBox {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    position: relative;
+    width: 100%;
+    height: $spacing-textbox-height;
+    border-radius: $border-radius-input;
+    border: $border-width-textbox solid $color-textbox-border;
+    padding: 0 $spacing-base;
+    gap: $spacing-base / 2;
+    background-color: $color-textbox-bg;
+}
+
+.input {
+    border: none;
+    flex: 1;
+    font: $font-input-text;
+
+    &::placeholder {
+        color: $color-text-textbox-placeholder;
+        font: $font-input-placeholder;
+    }
+}
+
+.icon {
+    width: 1.167rem;
+    height: 1.167rem;
+}

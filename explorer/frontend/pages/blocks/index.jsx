@@ -32,7 +32,7 @@ export const getServerSideProps = async ({ locale }) => {
 
 const Blocks = ({ blocks, chainInfo, charts }) => {
 	const { t } = useTranslation();
-	const [loadBlockPage, blockList, isLoading, pageNumber, isLastPage] = usePagination(fetchBlockPage, blocks);
+	const {requestNextPage, data, isLoading, pageNumber, isLastPage} = usePagination(fetchBlockPage, blocks);
 
 	const tableColumns = [
 		{
@@ -99,12 +99,12 @@ const Blocks = ({ blocks, chainInfo, charts }) => {
 			</Section>
 			<Section>
 				<Table
-					data={blockList}
+					data={data}
 					columns={tableColumns}
 					ItemMobile={ItemBlockMobile}
 					isLoading={isLoading}
 					isLastPage={isLastPage}
-					onEndReached={() => loadBlockPage({ pageNumber: pageNumber + 1 })}
+					onEndReached={() => requestNextPage({ pageNumber: pageNumber + 1 })}
 				/>
 			</Section>
 		</div>

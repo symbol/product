@@ -24,20 +24,21 @@ export const useDataManager = (callback, defaultData, onError) => {
 };
 
 export const usePagination = (callback, defaultData) => {
+	const [filter, setFilter] = useState({});
 	const [isLoading, setIsLoading] = useState(false);
 	const [isLastPage, setIsLastPage] = useState(false);
 	const [pageNumber, setPageNumber] = useState(1);
 	const [data, setData] = useState(defaultData);
 
-	const call = (...args) => {
+	const call = (pageNumber, filter) => {
 		setIsLoading(true);
 		setTimeout(async () => {
 			try {
-				const { data, pageNumber: nextPageNumber } = await callback(...args);
+				const { data, pageNumber: currentPageNumber } = await callback({ pageNumber: pageNumber, ...filter});
 
-				if (nextPageNumber > pageNumber) {
+				if (currentPageNumber === pageNumber) {
 					setData(v => [...v, ...data]);
-					setPageNumber(nextPageNumber);
+					setPageNumber(currentPageNumber);
 					setIsLastPage(data.length === 0);
 				}
 			} catch (error) {
@@ -48,5 +49,32 @@ export const usePagination = (callback, defaultData) => {
 		});
 	};
 
-	return [call, data, isLoading, pageNumber, isLastPage];
+	const requestNextPage = () => {
+		const nextPageNumber = pageNumber + 1;
+		call(nextPageNumber, filter);
+	}
+
+	const changeFilter = (filter) => {
+		setData([]);
+		setPageNumber(0);
+		setFilter(filter);
+		call(1, filter);
+	}
+
+	return { requestNextPage, data, isLoading, pageNumber, isLastPage, filter, changeFilter };
 };
+
+export const useDelayedCall = (callback) => {
+	const [timer, setTimer] = useState(setTimeout(() => {}));
+	const delay = 750;
+
+	const call = (...args) => {
+		if (timer)
+			clearTimeout(timer);
+
+		const newTimer = setTimeout(() => callback(...args), delay);
+		setTimer(newTimer);
+	};
+
+	return [call];
+}
