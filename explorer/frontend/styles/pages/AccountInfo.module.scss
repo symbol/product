@@ -1,0 +1,57 @@
+@import "../variables";
+
+.wrapper {
+    height: 100%;
+}
+
+.firstSection {
+    max-width: 41.08rem;
+
+    .firstSectionCard {
+        height: 23rem;
+    }
+}
+
+.secondSectionCard {
+    height: 23rem;
+}
+
+.stateSectionCard {
+    height: 23rem;
+
+    .stateTable {
+        display: flex;
+        flex-flow: column wrap;
+        gap: $spacing-base;
+        height: 16rem;
+        overflow-x: auto;
+    }
+}
+
+
+@media #{$screen-mobile} {
+    .firstSection {
+        max-width: 100%;
+
+        .firstSectionCard {
+            height: auto;
+        }
+    }
+
+    .secondSectionCard {
+        height: auto;
+    }
+
+    .stateSectionCard {
+        height: auto;
+    }
+
+    .stateSectionCard {
+        height: auto;
+
+        .stateTable {
+            height: auto;
+            max-height: 30rem;
+        }
+    }
+}

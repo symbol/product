@@ -36,7 +36,7 @@ export const getServerSideProps = async ({ locale, params }) => {
 	};
 };
 
-const Blocks = ({ blockInfo, transactions }) => {
+const BlockInfo = ({ blockInfo, transactions }) => {
 	const { t } = useTranslation();
 
 	const tableColumns = [
@@ -84,11 +84,11 @@ const Blocks = ({ blockInfo, transactions }) => {
 	return (
 		<div className={styles.wrapper}>
 			<Head>
-				<title>{t('page_block')}</title>
+				<title>{t('page_blockInfo')}</title>
 			</Head>
 			<div className="layout-section-row">
 				<Section title={t('section_block')} className={styles.firstSection} cardClassName={styles.firstSectionCard}>
-					<div className="layout-flex-col">
+					<div className="layout-flex-col-fields">
 						<Field title={t('field_height')}>
 							<div className="value-highlighted">{blockInfo.height}</div>
 						</Field>
@@ -114,7 +114,7 @@ const Blocks = ({ blockInfo, transactions }) => {
 					</div>
 				</Section>
 				<Section className="layout-align-end" cardClassName={styles.secondSectionCard}>
-					<div className="layout-flex-col">
+					<div className="layout-flex-col-fields">
 						<Field title={t('field_harvester')} description={t('field_harvester_description')}>
 							<ValueAccount address={blockInfo.harvester} size="sm" />
 						</Field>
@@ -141,4 +141,4 @@ const Blocks = ({ blockInfo, transactions }) => {
 	);
 };
 
-export default Blocks;
+export default BlockInfo;

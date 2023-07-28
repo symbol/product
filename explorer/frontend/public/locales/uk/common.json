@@ -1,5 +1,6 @@
 {
 	"button_clear": "Очистити",
+	"button_csv": "Завантажити CSV",
 	"chart_series_blockTime": "Секунди",
 	"chart_series_difficulty": "Важкість, %",
 	"chart_series_fee": "Комісія, XEM",

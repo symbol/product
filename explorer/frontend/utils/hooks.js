@@ -64,6 +64,21 @@ export const usePagination = (callback, defaultData) => {
 	return { requestNextPage, data, isLoading, pageNumber, isLastPage, filter, changeFilter };
 };
 
+export const useClientSideFilter = (data) => {
+	const [filter, setFilter] = useState({});
+	const filteredData = data.filter((item) =>
+		Object.keys(filter).every(filterKey =>
+			item[filterKey] === filter[filterKey]
+		)
+	);
+
+	return {
+		data: filteredData,
+		filter,
+		changeFilter: setFilter
+	};
+}
+
 export const useDelayedCall = (callback) => {
 	const [timer, setTimer] = useState(setTimeout(() => {}));
 	const delay = 750;

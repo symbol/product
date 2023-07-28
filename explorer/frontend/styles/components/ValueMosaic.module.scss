@@ -28,3 +28,21 @@
     font-size: 0.83rem;
     line-height: 0.83rem;
 }
+
+.incoming {
+    color: $color-primary;
+}
+
+.outgoing {
+    color: $color-danger;
+}
+
+.containerMd {
+    background-color: transparent;
+}
+
+.valueMosaicMdTextSection {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}

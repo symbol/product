@@ -1,14 +1,21 @@
-import AccountAvatar from '@/components/AccountAvatar';
+import Avatar from '@/components/Avatar';
 import ButtonCopy from '@/components/ButtonCopy';
 import styles from '@/styles/components/ValueAccount.module.scss';
+import Link from 'next/link';
 
-const ValueAccount = ({ address, size }) => {
+const ValueAccount = ({ address, size, onClick }) => {
 	const extendedStyle = size === 'md' ? styles.containerMd : '';
+
+	const handleClick = (e) => {
+		if (!onClick) return;
+		e.preventDefault();
+		onClick();
+	}
 
 	return (
 		<div className={styles.valueAccount}>
-			<AccountAvatar address={address} size={size} />
-			<div className={extendedStyle}>{address}</div>
+			<Avatar type="account" value={address} size={size} />
+			<Link className={extendedStyle} href={`/accounts/${address}`} onClick={handleClick}>{address}</Link>
 			<ButtonCopy value={address} />
 		</div>
 	);

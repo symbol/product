@@ -17,7 +17,7 @@ const BlockExpanded = ({ data, isNext, isTransactionSquaresRendered, onClose }) 
 	const href = `/blocks/${height}`;
 
 	return (
-		<div className="layout-flex-col">
+		<div className="layout-flex-col-fields">
 			<ButtonClose className={styles.buttonClose} onClick={onClose} />
 			<Link href={href} className={styles.buttonMore} target="_blank">
 				<CustomImage className={styles.buttonMoreIcon} src="/images/icon-circle-more.png" alt="more" />

@@ -71,6 +71,10 @@ a {
     font: $font-highlighted;
 }
 
+.value-description {
+    opacity: 0.3;
+}
+
 .overflow-hidden {
     position: fixed;
     overflow: hidden;
@@ -109,6 +113,12 @@ a {
     display: flex;
     flex-direction: column;
     gap: $spacing-padding;
+}
+
+.layout-flex-col-fields {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-fields;
 }
 
 :root {
