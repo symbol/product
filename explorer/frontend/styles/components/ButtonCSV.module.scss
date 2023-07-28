@@ -1,0 +1,21 @@
+@import "../variables";
+
+.buttonCSV {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-width: 4rem;
+    height: 2rem;
+    cursor: pointer;
+    user-select: none;
+    background-color: $color-button-bg;
+    color: $color-text-button;
+    padding: 0 $spacing-base * 2;
+    flex-shrink: 0;
+
+    &:hover {
+        background-color: $color-button-bg;
+        color: $color-text-button;
+        opacity: 0.9;
+    }
+}

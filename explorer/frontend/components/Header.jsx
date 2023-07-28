@@ -15,6 +15,10 @@ const Header = () => {
 		{
 			text: t('menu_blocks'),
 			href: '/blocks'
+		},
+		{
+			text: t('accounts'),
+			href: '/accounts'
 		}
 	];
 

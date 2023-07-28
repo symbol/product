@@ -25,7 +25,9 @@ export const getTransactionsStub = async (searchCriteria, group) => {
 			signer: address1.toString(),
 			recipient: address2.toString(),
 			fee: Math.floor(Math.random() * 100 + 5) / 100,
-			amount: Math.floor(Math.random() * 4000000) / 100
+			amount: Math.floor(Math.random() * 4000000) / 100,
+			account: address2.toString(),
+			direction: Math.random() < 0.5 ? 'incoming' : 'outgoing'
 		};
 	});
 

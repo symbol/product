@@ -20,7 +20,7 @@ const Table = ({ data, columns, ItemMobile, onEndReached, isLoading, isLastPage 
 					<div className={styles.dataRow} key={'tr' + index}>
 						{columns.map((item, index) => (
 							<div className={styles.dataCell} style={{ width: item.size }} key={'td' + index}>
-								{item.renderValue ? item.renderValue(row[item.key]) : row[item.key]}
+								{item.renderValue ? item.renderValue(row[item.key], row) : row[item.key]}
 							</div>
 						))}
 					</div>
