@@ -1,1 +1,1 @@
-symbol-sdk-python==3.0.7
+symbol-sdk-python==3.0.11
