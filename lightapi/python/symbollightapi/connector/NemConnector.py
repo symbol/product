@@ -148,7 +148,7 @@ class NemConnector(BasicConnector):
 
 		specific_args = {}
 
-		if TransactionType.MULTISIG_TRANSACTION.value == tx_type:
+		if TransactionType.MULTISIG.value == tx_type:
 			specific_args = TransactionHandler().map[tx_type](tx_dict, transaction['innerHash'])
 		else:
 			specific_args = TransactionHandler().map[tx_type](tx_dict)
