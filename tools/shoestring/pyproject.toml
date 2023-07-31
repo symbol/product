@@ -1,6 +1,6 @@
 [tool.poetry]
 name = 'symbol-shoestring'
-version = '0.0.2'
+version = '0.0.3'
 description = 'Symbol Shoestring Deployment Tool'
 authors = ['Symbol Contributors <contributors@symbol.dev>']
 maintainers = ['Symbol Contributors <contributors@symbol.dev>']
@@ -14,9 +14,9 @@ repository = 'https://github.com/symbol/product/tree/main/tools/shoestring'
 
 keywords = ['symbol', 'shoestring', 'deployment', 'node']
 
-classifiers = ['Programming Language :: Python :: 3.7']
+classifiers = ['Programming Language :: Python :: 3.8']
 
 include = ['lang', 'templates']
 
 [tool.poetry.dependencies]
-python = "^3.7"
+python = "^3.8"
