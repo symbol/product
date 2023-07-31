@@ -25,7 +25,7 @@
   },
   "devDependencies": {
     "assert-plus": "^1.0.0",
-    "c8": "^8.0.0",
+    "c8": "^8.0.1",
     "chai": "^4.3.7",
     "chai-as-promised": "^7.1.1",
     "eslint": "^8.45.0",
