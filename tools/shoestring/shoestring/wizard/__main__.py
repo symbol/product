@@ -21,7 +21,7 @@ from shoestring.wizard.screens.modal import show as show_message_box
 from . import keybindings, navigation, styles
 from .buttons import create_next_clicked_handler, create_operation_button_handler, create_prev_clicked_handler
 from .screen_loader import load_screens
-from .Screens import Screens
+from .ScreenContainer import ScreenContainer
 from .shoestring_dispatcher import dispatch_shoestring_command
 from .TitleBar import TitleBar
 
@@ -37,7 +37,7 @@ async def main():  # pylint: disable=too-many-locals
 	app_styles = styles.initialize()
 	navbar = navigation.initialize()
 
-	screens = Screens(navbar)
+	screens = ScreenContainer(navbar)
 	load_screens(screens)
 	screens.message_box = partial(show_message_box, message_box_float)
 

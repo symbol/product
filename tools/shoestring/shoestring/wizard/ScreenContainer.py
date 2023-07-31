@@ -1,4 +1,4 @@
-class Screens:
+class ScreenContainer:
 	"""Container of screens."""
 
 	def __init__(self, navbar):
