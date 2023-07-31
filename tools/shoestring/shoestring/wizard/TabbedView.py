@@ -57,6 +57,9 @@ class TabList(RadioList):
 
 			return mouse_handler
 
+		def fragments_to_items(selected_index, fragments):
+			return map(lambda item: (*item, create_mouse_handler(selected_index)), fragments)
+
 		result = []
 		for i, value in enumerate(self.values):
 			fragments = []
@@ -90,7 +93,7 @@ class TabList(RadioList):
 			if checked:
 				fragments.append(('', Border.VERTICAL))
 
-			result.extend(map(lambda item: (*item, create_mouse_handler(i)), fragments))
+			result.extend(fragments_to_items(i, fragments))
 
 		return result
 
