@@ -27,7 +27,7 @@ from .TitleBar import TitleBar
 
 
 async def main():  # pylint: disable=too-many-locals
-	lang_directory = Path(__file__).resolve().parent.parent.parent / 'lang'
+	lang_directory = Path(__file__).resolve().parent.parent / 'lang'
 	lang = gettext.translation('messages', localedir=lang_directory, languages=(os.environ.get('LC_MESSAGES', 'en'), 'en'))
 	lang.install()
 

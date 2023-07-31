@@ -1,10 +1,3 @@
-# Translations for Shoestring.
-# Copyright (C) 2023 Symbol Contributors
-# This file is distributed under the same license as the Shoestring project.
-msgid ""
-msgstr ""
-"Content-Type: text/plain; charset=UTF-8\n"
-
 #: shoestring/commands/announce_transaction.py:31
 msgid "announce-transaction-announce-successful"
 msgstr ""
@@ -19,7 +12,7 @@ msgstr ""
 
 #: shoestring/commands/min_cosignatures_count.py:35
 #: shoestring/commands/renew_certificates.py:31
-#: shoestring/commands/setup.py:139 shoestring/commands/signer.py:95
+#: shoestring/commands/setup.py:139 shoestring/commands/signer.py:93
 msgid "argument-help-ca-key-path"
 msgstr ""
 
@@ -30,7 +23,7 @@ msgstr ""
 #: shoestring/commands/renew_certificates.py:29
 #: shoestring/commands/renew_voting_keys.py:112
 #: shoestring/commands/reset_data.py:87 shoestring/commands/setup.py:131
-#: shoestring/commands/signer.py:94
+#: shoestring/commands/signer.py:92
 msgid "argument-help-config"
 msgstr ""
 
@@ -89,11 +82,11 @@ msgstr ""
 msgid "argument-help-setup-security"
 msgstr ""
 
-#: shoestring/commands/signer.py:97
+#: shoestring/commands/signer.py:95
 msgid "argument-help-signer-filename"
 msgstr ""
 
-#: shoestring/commands/signer.py:96
+#: shoestring/commands/signer.py:94
 msgid "argument-help-signer-save"
 msgstr ""
 
@@ -174,11 +167,11 @@ msgstr ""
 msgid "health-rest-api-success"
 msgstr ""
 
-#: shoestring/healthagents/rest_https_certificate.py:55
+#: shoestring/healthagents/rest_https_certificate.py:96
 msgid "health-rest-https-certificate-invalid"
 msgstr ""
 
-#: shoestring/healthagents/rest_https_certificate.py:58
+#: shoestring/healthagents/rest_https_certificate.py:99
 msgid "health-rest-https-certificate-valid"
 msgstr ""
 
@@ -414,19 +407,19 @@ msgstr ""
 msgid "wizard-certificates-title"
 msgstr ""
 
-#: shoestring/wizard/screens/obligatory.py:84
+#: shoestring/wizard/screens/obligatory.py:83
 msgid "wizard-dialog-message-generation-text"
 msgstr ""
 
-#: shoestring/wizard/screens/obligatory.py:83
+#: shoestring/wizard/screens/obligatory.py:82
 msgid "wizard-dialog-message-generation-title"
 msgstr ""
 
-#: shoestring/wizard/screens/obligatory.py:101
+#: shoestring/wizard/screens/obligatory.py:99
 msgid "wizard-dialog-message-import-text"
 msgstr ""
 
-#: shoestring/wizard/screens/obligatory.py:100
+#: shoestring/wizard/screens/obligatory.py:98
 msgid "wizard-dialog-message-import-title"
 msgstr ""
 
@@ -434,95 +427,95 @@ msgstr ""
 msgid "wizard-end-title"
 msgstr ""
 
-#: shoestring/wizard/screens/harvesting.py:109
+#: shoestring/wizard/screens/harvesting.py:108
 msgid "wizard-harvesting-active"
 msgstr ""
 
-#: shoestring/wizard/screens/harvesting.py:113
+#: shoestring/wizard/screens/harvesting.py:112
 msgid "wizard-harvesting-auto-harvest"
 msgstr ""
 
-#: shoestring/wizard/screens/harvesting.py:148
+#: shoestring/wizard/screens/harvesting.py:147
 msgid "wizard-harvesting-beneficiary-address-error-text"
 msgstr ""
 
-#: shoestring/wizard/screens/harvesting.py:146
+#: shoestring/wizard/screens/harvesting.py:145
 msgid "wizard-harvesting-beneficiary-address-label"
 msgstr ""
 
-#: shoestring/wizard/screens/harvesting.py:130
+#: shoestring/wizard/screens/harvesting.py:129
 msgid "wizard-harvesting-delegate"
 msgstr ""
 
-#: shoestring/wizard/screens/harvesting.py:117
+#: shoestring/wizard/screens/harvesting.py:116
 msgid "wizard-harvesting-generate-keys"
 msgstr ""
 
-#: shoestring/wizard/screens/harvesting.py:136
+#: shoestring/wizard/screens/harvesting.py:135
 msgid "wizard-harvesting-max-unlocked-accounts-error-text"
 msgstr ""
 
-#: shoestring/wizard/screens/harvesting.py:134
+#: shoestring/wizard/screens/harvesting.py:133
 msgid "wizard-harvesting-max-unlocked-accounts-label"
 msgstr ""
 
-#: shoestring/wizard/screens/harvesting.py:142
+#: shoestring/wizard/screens/harvesting.py:141
 msgid "wizard-harvesting-min-fee-multiplier-error-text"
 msgstr ""
 
-#: shoestring/wizard/screens/harvesting.py:140
+#: shoestring/wizard/screens/harvesting.py:139
 msgid "wizard-harvesting-min-fee-multiplier-label"
 msgstr ""
 
-#: shoestring/wizard/screens/harvesting.py:123
+#: shoestring/wizard/screens/harvesting.py:122
 msgid "wizard-harvesting-signing-key-error-text"
 msgstr ""
 
-#: shoestring/wizard/screens/harvesting.py:121
+#: shoestring/wizard/screens/harvesting.py:120
 msgid "wizard-harvesting-signing-key-label"
 msgstr ""
 
-#: shoestring/wizard/screens/harvesting.py:170
+#: shoestring/wizard/screens/harvesting.py:169
 msgid "wizard-harvesting-title"
 msgstr ""
 
-#: shoestring/wizard/screens/harvesting.py:80
+#: shoestring/wizard/screens/harvesting.py:79
 msgid "wizard-harvesting-token-active"
 msgstr ""
 
-#: shoestring/wizard/screens/harvesting.py:83
+#: shoestring/wizard/screens/harvesting.py:82
 msgid "wizard-harvesting-token-auto-harvest"
 msgstr ""
 
-#: shoestring/wizard/screens/harvesting.py:88
+#: shoestring/wizard/screens/harvesting.py:87
 msgid "wizard-harvesting-token-beneficiary-address"
 msgstr ""
 
-#: shoestring/wizard/screens/harvesting.py:85
+#: shoestring/wizard/screens/harvesting.py:84
 msgid "wizard-harvesting-token-delegate"
 msgstr ""
 
-#: shoestring/wizard/screens/harvesting.py:84
+#: shoestring/wizard/screens/harvesting.py:83
 msgid "wizard-harvesting-token-generate-keys"
 msgstr ""
 
-#: shoestring/wizard/screens/harvesting.py:86
+#: shoestring/wizard/screens/harvesting.py:85
 msgid "wizard-harvesting-token-max-unlocked-accounts"
 msgstr ""
 
-#: shoestring/wizard/screens/harvesting.py:87
+#: shoestring/wizard/screens/harvesting.py:86
 msgid "wizard-harvesting-token-min-fee-multiplier"
 msgstr ""
 
-#: shoestring/wizard/screens/harvesting.py:127
+#: shoestring/wizard/screens/harvesting.py:126
 msgid "wizard-harvesting-vrf-key-error-text"
 msgstr ""
 
-#: shoestring/wizard/screens/harvesting.py:125
+#: shoestring/wizard/screens/harvesting.py:124
 msgid "wizard-harvesting-vrf-key-label"
 msgstr ""
 
-#: shoestring/wizard/__main__.py:105
+#: shoestring/wizard/__main__.py:104
 msgid "wizard-main-done"
 msgstr ""
 
@@ -610,69 +603,69 @@ msgstr ""
 msgid "wizard-node-type-token"
 msgstr ""
 
-#: shoestring/wizard/screens/obligatory.py:122
-#: shoestring/wizard/screens/obligatory.py:130
+#: shoestring/wizard/screens/obligatory.py:120
+#: shoestring/wizard/screens/obligatory.py:128
 msgid "wizard-obligatory-ca-pem-path-error-text"
 msgstr ""
 
-#: shoestring/wizard/screens/obligatory.py:123
-#: shoestring/wizard/screens/obligatory.py:124
+#: shoestring/wizard/screens/obligatory.py:121
+#: shoestring/wizard/screens/obligatory.py:122
 msgid "wizard-obligatory-ca-pem-path-error-text-not-exist"
 msgstr ""
 
-#: shoestring/wizard/screens/obligatory.py:128
+#: shoestring/wizard/screens/obligatory.py:126
 msgid "wizard-obligatory-ca-pem-path-label"
 msgstr ""
 
-#: shoestring/wizard/screens/obligatory.py:109
+#: shoestring/wizard/screens/obligatory.py:107
 msgid "wizard-obligatory-destination-directory-error-text"
 msgstr ""
 
-#: shoestring/wizard/screens/obligatory.py:107
+#: shoestring/wizard/screens/obligatory.py:105
 msgid "wizard-obligatory-destination-directory-label"
 msgstr ""
 
-#: shoestring/wizard/screens/obligatory.py:142
+#: shoestring/wizard/screens/obligatory.py:140
 msgid "wizard-obligatory-generate-button"
 msgstr ""
 
-#: shoestring/wizard/screens/obligatory.py:141
+#: shoestring/wizard/screens/obligatory.py:139
 msgid "wizard-obligatory-import-button"
 msgstr ""
 
-#: shoestring/wizard/screens/obligatory.py:113
+#: shoestring/wizard/screens/obligatory.py:111
 msgid "wizard-obligatory-priv-ca"
 msgstr ""
 
-#: shoestring/wizard/screens/obligatory.py:115
+#: shoestring/wizard/screens/obligatory.py:113
 msgid "wizard-obligatory-priv-generate-new"
 msgstr ""
 
-#: shoestring/wizard/screens/obligatory.py:114
+#: shoestring/wizard/screens/obligatory.py:112
 msgid "wizard-obligatory-priv-import-hex"
 msgstr ""
 
-#: shoestring/wizard/screens/obligatory.py:146
+#: shoestring/wizard/screens/obligatory.py:144
 msgid "wizard-obligatory-private-key-ca-pem-path-description"
 msgstr ""
 
-#: shoestring/wizard/screens/obligatory.py:157
+#: shoestring/wizard/screens/obligatory.py:155
 msgid "wizard-obligatory-private-key-generate-description"
 msgstr ""
 
-#: shoestring/wizard/screens/obligatory.py:149
+#: shoestring/wizard/screens/obligatory.py:147
 msgid "wizard-obligatory-private-key-hex-description"
 msgstr ""
 
-#: shoestring/wizard/screens/obligatory.py:136
+#: shoestring/wizard/screens/obligatory.py:134
 msgid "wizard-obligatory-private-key-hex-error-text"
 msgstr ""
 
-#: shoestring/wizard/screens/obligatory.py:134
+#: shoestring/wizard/screens/obligatory.py:132
 msgid "wizard-obligatory-private-key-hex-label"
 msgstr ""
 
-#: shoestring/wizard/screens/obligatory.py:177
+#: shoestring/wizard/screens/obligatory.py:175
 msgid "wizard-obligatory-title"
 msgstr ""
 

@@ -295,7 +295,7 @@ class Preparer:
 		if not self.config.node.api_https:
 			return
 
-		self._copy_file('templates/nginx.conf.erb', self.directories.https_proxy)
+		self._copy_file('shoestring/templates/nginx.conf.erb', self.directories.https_proxy)
 		(self.directories.https_proxy / 'nginx.conf.erb').chmod(0o400)
 
 	def configure_keys(self, current_finalization_epoch=1, grace_period_epochs=1):
@@ -335,10 +335,10 @@ class Preparer:
 		"""Prepares docker-compose file."""
 
 		if NodeFeatures.API in self.config.node.features:
-			self._copy_tree_readonly('startup', self.directories.startup)
+			self._copy_tree_readonly('shoestring/startup', self.directories.startup)
 
 		compose_template_filename_postfix = 'dual' if NodeFeatures.API in self.config.node.features else 'peer'
-		compose_template_filename = f'templates/docker-compose-{compose_template_filename_postfix}.yaml'
+		compose_template_filename = f'shoestring/templates/docker-compose-{compose_template_filename_postfix}.yaml'
 		compose_output_filepath = self.directory / 'docker-compose.yaml'
 		apply_template(compose_template_filename, template_mapping, compose_output_filepath)
 		compose_output_filepath.chmod(0o400)

@@ -34,7 +34,7 @@ def parse_args(args):
 
 
 async def main(args):
-	lang_directory = Path(__file__).resolve().parent.parent / 'lang'
+	lang_directory = Path(__file__).resolve().parent / 'lang'
 	lang = gettext.translation('messages', localedir=lang_directory, languages=(os.environ.get('LC_MESSAGES', 'en'), 'en'))
 	lang.install()
 

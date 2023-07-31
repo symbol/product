@@ -16,7 +16,7 @@ keywords = ['symbol', 'shoestring', 'deployment', 'node']
 
 classifiers = ['Programming Language :: Python :: 3.8']
 
-include = ['lang', 'templates']
+include = ['shoestring/lang/*/LC_MESSAGES/messages.mo']
 
 [tool.poetry.dependencies]
 python = "^3.8"
