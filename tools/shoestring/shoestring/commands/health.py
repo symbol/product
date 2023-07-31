@@ -52,7 +52,7 @@ class HealthAgentContext:
 
 	def _load_rest_port(self):
 		if self.config.node.api_https:
-			return 3001  # TODO: should we read this from somewhere?
+			return 3001  # assume default HTTPS port
 
 		with open(self.directories.userconfig / 'rest.json', 'rt', encoding='utf8') as infile:
 			rest_json = json.loads(infile.read())

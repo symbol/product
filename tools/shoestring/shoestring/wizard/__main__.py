@@ -99,7 +99,6 @@ async def main():  # pylint: disable=too-many-locals
 	if result or navbar.next.text != _('wizard-button-finish'):
 		return
 
-	# TODO: temporary here, move up
 	await dispatch_shoestring_command(screens, shoestring_main)
 
 	log.info(_('wizard-main-done'))

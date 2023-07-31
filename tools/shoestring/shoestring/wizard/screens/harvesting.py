@@ -9,7 +9,6 @@ from shoestring.wizard.ValidatingTextBox import ValidatingTextBox, is_hex_privat
 
 
 def facade(screens):
-	# TODO: not sure if this makes sense
 	network = 'mainnet' if 'mainnet' == screens.get('network-type').current_value else 'testnet'
 	return SymbolFacade(network)
 
