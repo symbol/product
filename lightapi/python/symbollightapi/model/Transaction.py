@@ -198,7 +198,7 @@ class MultisigTransaction(Transaction):
 			timestamp,
 			deadline,
 			signature,
-			TransactionType.MULTISIG_TRANSACTION.value
+			TransactionType.MULTISIG.value
 		)
 
 		self.signatures = signatures
@@ -398,7 +398,7 @@ class TransactionHandler:
 			TransactionType.TRANSFER.value: self._map_transfer_args,
 			TransactionType.ACCOUNT_KEY_LINK.value: self._map_account_key_link_args,
 			TransactionType.MULTISIG_ACCOUNT_MODIFICATION.value: self._map_multisig_account_modification_args,
-			TransactionType.MULTISIG_TRANSACTION.value: self._map_multisig_transaction_args,
+			TransactionType.MULTISIG.value: self._map_multisig_args,
 			TransactionType.NAMESPACE_REGISTRATION.value: self._map_namespace_registration_args,
 			TransactionType.MOSAIC_DEFINITION.value: self._map_mosaic_definition_args,
 			TransactionType.MOSAIC_SUPPLY_CHANGE.value: self._map_mosaic_supply_change_args,
@@ -454,7 +454,7 @@ class TransactionHandler:
 			]
 		}
 
-	def _map_multisig_transaction_args(self, tx_dict, inner_hash):
+	def _map_multisig_args(self, tx_dict, inner_hash):
 
 		other_transaction = tx_dict['otherTrans']
 
@@ -550,7 +550,7 @@ class TransactionFactory:
 			TransactionType.TRANSFER.value: TransferTransaction,
 			TransactionType.ACCOUNT_KEY_LINK.value: AccountKeyLinkTransaction,
 			TransactionType.MULTISIG_ACCOUNT_MODIFICATION.value: MultisigAccountModificationTransaction,
-			TransactionType.MULTISIG_TRANSACTION.value: MultisigTransaction,
+			TransactionType.MULTISIG.value: MultisigTransaction,
 			TransactionType.NAMESPACE_REGISTRATION.value: NamespaceRegistrationTransaction,
 			TransactionType.MOSAIC_DEFINITION.value: MosaicDefinitionTransaction,
 			TransactionType.MOSAIC_SUPPLY_CHANGE.value: MosaicSupplyChangeTransaction,
