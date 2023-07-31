@@ -189,7 +189,7 @@ def create(screens):
 					filter=show_private_key_tabs
 				),
 				ConditionalContainer(main_private_key_tabs, filter=show_private_key_tabs)
-			], width=200),
+			]),
 			padding=1
 		),
 
