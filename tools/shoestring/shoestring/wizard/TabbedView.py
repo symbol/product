@@ -45,19 +45,24 @@ class TabList(RadioList):
 		kb.add('right',)(_down.handler)
 
 	def _get_text_fragments(self):
-		# TODO: this mouse handler is likely wrong I (gimre) cannot verify/test it
-		def mouse_handler(mouse_event):
-			"""
-			Set `_selected_index` and `current_value` according to the y
-			position of the mouse click event.
-			"""
-			if mouse_event.event_type == MouseEventType.MOUSE_UP:
-				# self._selected_index = mouse_event.position.y
-				# self._handle_enter()
-				pass
+		def create_mouse_handler(selected_index):
+			def mouse_handler(mouse_event):
+				"""
+				Set `_selected_index` and `current_value` according to the y
+				position of the mouse click event.
+				"""
+				if mouse_event.event_type == MouseEventType.MOUSE_UP:
+					self._selected_index = selected_index
+					self._handle_enter()
+
+			return mouse_handler
+
+		def fragments_to_items(selected_index, fragments):
+			return map(lambda item: (*item, create_mouse_handler(selected_index)), fragments)
 
 		result = []
 		for i, value in enumerate(self.values):
+			fragments = []
 			checked = value[0] == self.current_value
 			selected = i == self._selected_index
 
@@ -69,27 +74,28 @@ class TabList(RadioList):
 
 			# note: the else condition relies on the fact, that values are 0-based indexes
 			if checked:
-				result.append(('', Border.VERTICAL))
+				fragments.append(('', Border.VERTICAL))
 			elif i - 1 != self.current_value:
-				result.append(('', ' '))
+				fragments.append(('', ' '))
 
 			if checked:
-				result.append((style, ' *'))
+				fragments.append((style, ' *'))
 			else:
-				result.append((style, '  '))
+				fragments.append((style, '  '))
 
 			if selected:
-				result.append(('[SetCursorPosition]', ''))
+				fragments.append(('[SetCursorPosition]', ''))
 
-			result.append((style, ' '))
-			result.extend(to_formatted_text(value[1], style=style))
-			result.append((style, ' '))
+			fragments.append((style, ' '))
+			fragments.extend(to_formatted_text(value[1], style=style))
+			fragments.append((style, ' '))
 
 			if checked:
-				result.append(('', Border.VERTICAL))
+				fragments.append(('', Border.VERTICAL))
 
-		# Add mouse handler to all fragments.
-		return list(map(lambda item: (*item, mouse_handler), result))
+			result.extend(fragments_to_items(i, fragments))
+
+		return result
 
 
 def _create_condition(controller, index):

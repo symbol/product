@@ -75,7 +75,7 @@ async def main():  # pylint: disable=too-many-locals
 	)
 	layout = Layout(root_with_dialog_box, focused_element=navbar.next)
 
-	app = Application(layout, key_bindings=key_bindings, style=app_styles, full_screen=True)
+	app = Application(layout, key_bindings=key_bindings, style=app_styles, full_screen=True, mouse_support=True)
 
 	layout.focus(root_container.children[2])
 
