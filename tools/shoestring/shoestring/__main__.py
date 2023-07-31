@@ -30,7 +30,12 @@ def parse_args(args):
 	register_subcommand(subparsers, 'signer', _('main-signer-help'))
 	register_subcommand(subparsers, 'upgrade', _('main-upgrade-help'))
 
-	return parser.parse_args(args)
+	args = parser.parse_args(args)
+	if not hasattr(args, 'func'):
+		parser.print_help()
+		raise SystemExit()
+
+	return args
 
 
 async def main(args):
