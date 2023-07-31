@@ -72,7 +72,6 @@ def generate_handler(screens, ca_pem_path, on_close_callback):
 	if not ca_pem_path.is_valid:
 		return
 
-	# TODO (optionally): password
 	filepath = Path(ca_pem_path.input.text)
 	storage = PrivateKeyStorage(filepath.parent.absolute())
 
@@ -92,7 +91,6 @@ def import_handler(screens, ca_pem_path, on_close_callback, private_key_hex):
 	filepath = Path(ca_pem_path.input.text)
 	storage = PrivateKeyStorage(filepath.parent.absolute())
 
-	# TODO (optionally): password
 	if filepath.suffix == '.pem':
 		storage.save(filepath.stem, PrivateKey(private_key_hex.input.text))
 

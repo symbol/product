@@ -38,7 +38,6 @@ def test_can_get_ordered_screen_group_names():
 	_add_default_five_screens(screens)
 
 	# Act + Assert:
-	# TODO: gimre - should hidden show up here or be filtered?
 	assert ['start', 'middle', 'hidden', 'end'] == screens.ordered_group_names
 
 

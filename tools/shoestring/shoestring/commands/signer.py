@@ -59,8 +59,6 @@ def run_main(args):
 
 	_print_transaction(transaction)
 
-	# todo: query if it's ok to sign
-
 	transaction_hash = _sign_transaction(facade, key_pair, transaction)
 
 	if args.save:
