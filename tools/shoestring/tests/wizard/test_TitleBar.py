@@ -1,7 +1,7 @@
 from prompt_toolkit.widgets import Label
 
 from shoestring.wizard.screen_loader import load_screens
-from shoestring.wizard.Screens import Screens
+from shoestring.wizard.ScreenContainer import ScreenContainer
 from shoestring.wizard.TitleBar import TitleBar
 
 # pylint: disable=invalid-name
@@ -42,7 +42,7 @@ async def test_can_display_screen_based_navigation():
 	# Arrange:
 	title_bar = TitleBar(Label(''))
 
-	screens = Screens(None)
+	screens = ScreenContainer(None)
 	load_screens(screens)
 
 	# Sanity:

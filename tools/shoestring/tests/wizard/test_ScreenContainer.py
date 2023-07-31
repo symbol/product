@@ -1,6 +1,6 @@
 from collections import namedtuple
 
-from shoestring.wizard.Screens import Screens
+from shoestring.wizard.ScreenContainer import ScreenContainer
 
 ChildScreen = namedtuple('ChildScreen', ['screen_id', 'accessor', 'should_show'], defaults=[None, None, lambda: True])
 
@@ -19,7 +19,7 @@ def _add_default_five_screens(screens):
 
 def test_can_add_screen_groups():
 	# Arrange:
-	screens = Screens(None)
+	screens = ScreenContainer(None)
 
 	# Act:
 	screens.add('start', ChildScreen('start_screen', 1))
@@ -34,7 +34,7 @@ def test_can_add_screen_groups():
 
 def test_can_get_ordered_screen_group_names():
 	# Arrange:
-	screens = Screens(None)
+	screens = ScreenContainer(None)
 	_add_default_five_screens(screens)
 
 	# Act + Assert:
@@ -44,7 +44,7 @@ def test_can_get_ordered_screen_group_names():
 
 def test_can_get_ordered_screen_group_names_with_custom_allow_list():
 	# Arrange:
-	screens = Screens(None)
+	screens = ScreenContainer(None)
 	screens.set_list(['start_screen', 'end_screen'])
 	_add_default_five_screens(screens)
 
@@ -54,7 +54,7 @@ def test_can_get_ordered_screen_group_names_with_custom_allow_list():
 
 def test_can_access_current_screen():
 	# Arrange:
-	screens = Screens(None)
+	screens = ScreenContainer(None)
 	_add_default_five_screens(screens)
 
 	# Act + Assert:
@@ -64,7 +64,7 @@ def test_can_access_current_screen():
 
 def test_cannot_move_to_previous_when_current_is_first_screen():
 	# Arrange:
-	screens = Screens(None)
+	screens = ScreenContainer(None)
 	_add_default_five_screens(screens)
 
 	# Act:
@@ -77,7 +77,7 @@ def test_cannot_move_to_previous_when_current_is_first_screen():
 
 def test_can_move_through_screens_via_prev():
 	# Arrange:
-	screens = Screens(None)
+	screens = ScreenContainer(None)
 	_add_default_five_screens(screens)
 
 	for _ in range(4):
@@ -95,7 +95,7 @@ def test_can_move_through_screens_via_prev():
 
 def test_can_move_through_screens_via_prev_with_custom_allow_list():
 	# Arrange:
-	screens = Screens(None)
+	screens = ScreenContainer(None)
 	screens.set_list(['', 'mid_screen', 'end_screen'])
 	_add_default_five_screens(screens)
 
@@ -114,7 +114,7 @@ def test_can_move_through_screens_via_prev_with_custom_allow_list():
 
 def test_can_move_to_next_screen():
 	# Arrange:
-	screens = Screens(None)
+	screens = ScreenContainer(None)
 	_add_default_five_screens(screens)
 
 	# Act:
@@ -127,7 +127,7 @@ def test_can_move_to_next_screen():
 
 def test_can_move_through_screens_via_next():
 	# Arrange:
-	screens = Screens(None)
+	screens = ScreenContainer(None)
 	_add_default_five_screens(screens)
 
 	# Act:
@@ -142,7 +142,7 @@ def test_can_move_through_screens_via_next():
 
 def test_can_move_through_screens_via_next_with_custom_allow_list():
 	# Arrange:
-	screens = Screens(None)
+	screens = ScreenContainer(None)
 	screens.set_list(['start_screen', 'mid_screen', 'end_screen'])
 	_add_default_five_screens(screens)
 
@@ -158,7 +158,7 @@ def test_can_move_through_screens_via_next_with_custom_allow_list():
 
 def test_cannot_move_to_next_when_current_is_last_screen():
 	# Arrange:
-	screens = Screens(None)
+	screens = ScreenContainer(None)
 	_add_default_five_screens(screens)
 
 	# - move to last screen

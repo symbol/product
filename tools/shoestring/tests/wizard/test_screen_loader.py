@@ -1,6 +1,6 @@
 
 from shoestring.wizard.screen_loader import load_screens, lookup_screens_list_for_operation
-from shoestring.wizard.Screens import Screens
+from shoestring.wizard.ScreenContainer import ScreenContainer
 from shoestring.wizard.ShoestringOperation import ShoestringOperation
 
 ALL_SCREEN_IDS = [
@@ -19,7 +19,7 @@ ALL_SCREEN_IDS = [
 
 def test_can_load_screens():
 	# Arrange:
-	screens = Screens(None)
+	screens = ScreenContainer(None)
 
 	# Act:
 	load_screens(screens)
@@ -31,7 +31,7 @@ def test_can_load_screens():
 
 def _assert_operation_screens(operation, expected_screen_list):
 	# Arrange:
-	screens = Screens(None)
+	screens = ScreenContainer(None)
 	load_screens(screens)
 
 	# Act:

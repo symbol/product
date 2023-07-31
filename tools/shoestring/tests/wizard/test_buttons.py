@@ -3,7 +3,7 @@ from collections import namedtuple
 from prompt_toolkit.widgets import Label
 
 from shoestring.wizard.buttons import create_next_clicked_handler, create_operation_button_handler, create_prev_clicked_handler
-from shoestring.wizard.Screens import Screens
+from shoestring.wizard.ScreenContainer import ScreenContainer
 from shoestring.wizard.ShoestringOperation import ShoestringOperation
 from shoestring.wizard.TitleBar import TitleBar
 
@@ -94,7 +94,7 @@ class ButtonTestContext:
 
 	@staticmethod
 	def _create_screens():
-		screens = Screens(None)
+		screens = ScreenContainer(None)
 		screens.add('start', StartScreen())
 		screens.add('skipped', SkippedScreen())
 		screens.add('middle', MidScreen())
