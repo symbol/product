@@ -63,3 +63,18 @@ class AccountKeyLinkTransaction:
 			self.remote_account == other.remote_account
 		])
 
+
+class MultisigAccountModificationTransaction:
+	def __init__(self, min_cosignatories, modifications):
+		"""Create MultisigAccountModificationTransaction model."""
+
+		# pylint: disable=too-many-arguments
+
+		self.min_cosignatories = min_cosignatories
+		self.modifications = modifications
+
+	def __eq__(self, other):
+		return isinstance(other, MultisigAccountModificationTransaction) and all([
+			self.min_cosignatories == other.min_cosignatories,
+			self.modifications == other.modifications
+		])

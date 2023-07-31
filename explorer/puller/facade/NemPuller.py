@@ -99,6 +99,17 @@ class NemPuller:
 				transaction_id = self.nem_db.insert_transaction(cursor, transaction_common)
 
 				self.nem_db.insert_account_key_link_transactions(cursor, transaction_id, account_key_link_transaction)
+
+			elif TransactionType.MULTISIG_ACCOUNT_MODIFICATION.value == transaction.transaction_type:
+				multisig_account_modification_transaction = MultisigAccountModificationTransaction(
+					transaction.min_cosignatories,
+					json.dumps([modification._asdict() for modification in transaction.modifications])
+				)
+
+				transaction_id = self.nem_db.insert_transaction(cursor, transaction_common)
+
+				self.nem_db.insert_multisig_account_modification_transactions(cursor, transaction_id, multisig_account_modification_transaction)
+
 	async def sync_nemesis_block(self):
 		"""Sync the Nemesis block."""
 

@@ -75,6 +75,20 @@ class NemDatabase(DatabaseConnection):
 			'''
 		)
 
+		# Create mutlisig account modification transactions table
+		cursor.execute(
+			'''
+			CREATE TABLE IF NOT EXISTS multisig_account_modification_transactions (
+				id serial PRIMARY KEY,
+				transaction_id serial NOT NULL,
+				min_cosignatories int NOT NULL,
+				modifications json,
+				FOREIGN KEY (transaction_id) REFERENCES transactions(id)
+				ON DELETE CASCADE
+			)
+			'''
+		)
+
 		self.connection.commit()
 
 	def insert_block(self, cursor, block):  # pylint: disable=no-self-use
@@ -149,6 +163,21 @@ class NemDatabase(DatabaseConnection):
 				transaction_id,
 				account_key_link_transactions.mode,
 				unhexlify(account_key_link_transactions.remote_account),
+			)
+		)
+
+	def insert_multisig_account_modification_transactions(self, cursor, transaction_id, multisig_account_modification_transactions):
+		"""Adds multisig account modification into multisig_account_modification_transactions table"""
+
+		cursor.execute(
+			'''
+			INSERT INTO multisig_account_modification_transactions (transaction_id, min_cosignatories, modifications)
+			VALUES (%s, %s, %s)
+			''',
+			(
+				transaction_id,
+				multisig_account_modification_transactions.min_cosignatories,
+				multisig_account_modification_transactions.modifications,
 			)
 		)
 
