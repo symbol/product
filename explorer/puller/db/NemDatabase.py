@@ -61,6 +61,20 @@ class NemDatabase(DatabaseConnection):
 			'''
 		)
 
+		# Create account key link transactions table
+		cursor.execute(
+			'''
+			CREATE TABLE IF NOT EXISTS account_key_link_transactions (
+				id serial PRIMARY KEY,
+				transaction_id serial NOT NULL,
+				mode int NOT NULL,
+				remote_account bytea NOT NULL,
+				FOREIGN KEY (transaction_id) REFERENCES transactions(id)
+				ON DELETE CASCADE
+			)
+			'''
+		)
+
 		self.connection.commit()
 
 	def insert_block(self, cursor, block):  # pylint: disable=no-self-use
@@ -120,6 +134,21 @@ class NemDatabase(DatabaseConnection):
 				Address(transfer_transactions.recipient).bytes,
 				transfer_transactions.message,
 				transfer_transactions.is_apostille
+			)
+		)
+
+	def insert_account_key_link_transactions(self, cursor, transaction_id, account_key_link_transactions):
+		"""Adds account key link into account_key_link_transactions table"""
+
+		cursor.execute(
+			'''
+			INSERT INTO account_key_link_transactions (transaction_id, mode, remote_account)
+			VALUES (%s, %s, %s)
+			''',
+			(
+				transaction_id,
+				account_key_link_transactions.mode,
+				unhexlify(account_key_link_transactions.remote_account),
 			)
 		)
 

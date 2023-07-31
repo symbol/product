@@ -9,7 +9,7 @@ from zenlog import log
 
 from db.NemDatabase import NemDatabase
 from model.Block import Block
-from model.Transaction import Transaction, TransferTransaction
+from model.Transaction import AccountKeyLinkTransaction, MultisigAccountModificationTransaction, Transaction, TransferTransaction
 
 
 class NemPuller:
@@ -90,6 +90,15 @@ class NemPuller:
 
 				self.nem_db.insert_transfer_transactions(cursor, transaction_id, transfer_transaction)
 
+			elif TransactionType.ACCOUNT_KEY_LINK.value == transaction.transaction_type:
+				account_key_link_transaction = AccountKeyLinkTransaction(
+					transaction.mode,
+					transaction.remote_account
+				)
+
+				transaction_id = self.nem_db.insert_transaction(cursor, transaction_common)
+
+				self.nem_db.insert_account_key_link_transactions(cursor, transaction_id, account_key_link_transaction)
 	async def sync_nemesis_block(self):
 		"""Sync the Nemesis block."""
 

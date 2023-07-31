@@ -46,3 +46,20 @@ class TransferTransaction:
 			self.message == other.message,
 			self.is_apostille == other.is_apostille
 		])
+
+
+class AccountKeyLinkTransaction:
+	def __init__(self, mode, remote_account):
+		""""Create AccountKeyLinkTransaction model."""
+
+		# pylint: disable=too-many-arguments
+
+		self.mode = mode
+		self.remote_account = remote_account
+
+	def __eq__(self, other):
+		return isinstance(other, AccountKeyLinkTransaction) and all([
+			self.mode == other.mode,
+			self.remote_account == other.remote_account
+		])
+
