@@ -1,6 +1,7 @@
 import json
 import os
 import shutil
+import sys
 import tempfile
 from collections import namedtuple
 from pathlib import Path
@@ -33,6 +34,10 @@ PEER_EXTENSIONS = [
 ]
 API_EXTENSIONS = ['database', 'extensions-broker', 'logging-broker', 'messaging', 'pt']
 HARVESTER_EXTENSIONS = ['harvesting']
+
+
+def _qualify_resource(resource_name):
+	return Path(sys.modules[__name__].__file__).parent.parent / resource_name
 
 
 class Preparer:
@@ -295,7 +300,7 @@ class Preparer:
 		if not self.config.node.api_https:
 			return
 
-		self._copy_file('shoestring/templates/nginx.conf.erb', self.directories.https_proxy)
+		self._copy_file(_qualify_resource('templates/nginx.conf.erb'), self.directories.https_proxy)
 		(self.directories.https_proxy / 'nginx.conf.erb').chmod(0o400)
 
 	def configure_keys(self, current_finalization_epoch=1, grace_period_epochs=1):
@@ -335,10 +340,10 @@ class Preparer:
 		"""Prepares docker-compose file."""
 
 		if NodeFeatures.API in self.config.node.features:
-			self._copy_tree_readonly('shoestring/startup', self.directories.startup)
+			self._copy_tree_readonly(_qualify_resource('startup'), self.directories.startup)
 
 		compose_template_filename_postfix = 'dual' if NodeFeatures.API in self.config.node.features else 'peer'
-		compose_template_filename = f'shoestring/templates/docker-compose-{compose_template_filename_postfix}.yaml'
+		compose_template_filename = _qualify_resource(f'templates/docker-compose-{compose_template_filename_postfix}.yaml')
 		compose_output_filepath = self.directory / 'docker-compose.yaml'
 		apply_template(compose_template_filename, template_mapping, compose_output_filepath)
 		compose_output_filepath.chmod(0o400)
