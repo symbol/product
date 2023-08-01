@@ -99,7 +99,7 @@ class NemPuller:
 
 				transaction_id = self.nem_db.insert_transaction(cursor, transaction_common)
 
-				self.nem_db.insert_transfer_transactions(cursor, transaction_id, transfer_transaction)
+				self.nem_db.insert_transactions_transfer(cursor, transaction_id, transfer_transaction)
 
 			elif TransactionType.ACCOUNT_KEY_LINK.value == transaction.transaction_type:
 				account_key_link_transaction = AccountKeyLinkTransaction(
@@ -109,7 +109,7 @@ class NemPuller:
 
 				transaction_id = self.nem_db.insert_transaction(cursor, transaction_common)
 
-				self.nem_db.insert_account_key_link_transactions(cursor, transaction_id, account_key_link_transaction)
+				self.nem_db.insert_transactions_account_key_link(cursor, transaction_id, account_key_link_transaction)
 
 			elif TransactionType.MULTISIG_ACCOUNT_MODIFICATION.value == transaction.transaction_type:
 				multisig_account_modification_transaction = MultisigAccountModificationTransaction(
@@ -119,7 +119,7 @@ class NemPuller:
 
 				transaction_id = self.nem_db.insert_transaction(cursor, transaction_common)
 
-				self.nem_db.insert_multisig_account_modification_transactions(cursor, transaction_id, multisig_account_modification_transaction)
+				self.nem_db.insert_transactions_multisig_account_modification(cursor, transaction_id, multisig_account_modification_transaction)
 
 			elif TransactionType.MULTISIG.value == transaction.transaction_type:
 				multisig_transaction = MultisigTransaction(
@@ -130,7 +130,7 @@ class NemPuller:
 
 				transaction_id = self.nem_db.insert_transaction(cursor, transaction_common)
 
-				self.nem_db.insert_multisig_transactions(cursor, transaction_id, multisig_transaction)
+				self.nem_db.insert_transactions_multisig(cursor, transaction_id, multisig_transaction)
 
 			elif TransactionType.NAMESPACE_REGISTRATION.value == transaction.transaction_type:
 				namespace_registration_transaction = NamespaceRegistrationTransaction(
@@ -142,7 +142,7 @@ class NemPuller:
 
 				transaction_id = self.nem_db.insert_transaction(cursor, transaction_common)
 
-				self.nem_db.insert_namespace_registration_transactions(cursor, transaction_id, namespace_registration_transaction)
+				self.nem_db.insert_transactions_namespace_registration(cursor, transaction_id, namespace_registration_transaction)
 
 			elif TransactionType.MOSAIC_DEFINITION.value == transaction.transaction_type:
 				mosaic_definition_transaction = MosaicDefinitionTransaction(
@@ -157,7 +157,7 @@ class NemPuller:
 
 				transaction_id = self.nem_db.insert_transaction(cursor, transaction_common)
 
-				self.nem_db.insert_mosaic_definition_creation_transactions(cursor, transaction_id, mosaic_definition_transaction)
+				self.nem_db.insert_transactions_mosaic_definition_creation(cursor, transaction_id, mosaic_definition_transaction)
 
 			elif TransactionType.MOSAIC_SUPPLY_CHANGE.value == transaction.transaction_type:
 				mosaic_supply_change_transaction = MosaicSupplyChangeTransaction(
@@ -168,7 +168,7 @@ class NemPuller:
 
 				transaction_id = self.nem_db.insert_transaction(cursor, transaction_common)
 
-				self.nem_db.insert_mosaic_supply_change_transactions(cursor, transaction_id, mosaic_supply_change_transaction)
+				self.nem_db.insert_transactions_mosaic_supply_change(cursor, transaction_id, mosaic_supply_change_transaction)
 
 	async def sync_nemesis_block(self):
 		"""Sync the Nemesis block."""
