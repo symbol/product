@@ -13,6 +13,7 @@ from model.Transaction import (
 	AccountKeyLinkTransaction,
 	MultisigAccountModificationTransaction,
 	MultisigTransaction,
+	NamespaceRegistrationTransaction,
 	Transaction,
 	TransferTransaction
 )
@@ -128,6 +129,18 @@ class NemPuller:
 				transaction_id = self.nem_db.insert_transaction(cursor, transaction_common)
 
 				self.nem_db.insert_multisig_transactions(cursor, transaction_id, multisig_transaction)
+
+			elif TransactionType.NAMESPACE_REGISTRATION.value == transaction.transaction_type:
+				namespace_registration_transaction = NamespaceRegistrationTransaction(
+					transaction.rental_fee_sink,
+					transaction.rental_fee,
+					transaction.parent,
+					transaction.namespace,
+				)
+
+				transaction_id = self.nem_db.insert_transaction(cursor, transaction_common)
+
+				self.nem_db.insert_namespace_registration_transactions(cursor, transaction_id, namespace_registration_transaction)
 
 	async def sync_nemesis_block(self):
 		"""Sync the Nemesis block."""

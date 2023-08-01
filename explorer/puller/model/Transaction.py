@@ -97,3 +97,24 @@ class MultisigTransaction:
 			self.inner_hash == other.inner_hash
 		])
 
+
+class NamespaceRegistrationTransaction:
+	def __init__(self, rental_fee_sink, rental_fee, parent, namespace):
+		"""Create NamespaceRegistrationTransaction model."""
+
+		# pylint: disable=too-many-arguments
+
+		self.rental_fee_sink = rental_fee_sink
+		self.rental_fee = rental_fee
+		self.parent = parent
+		self.namespace = namespace
+
+	def __eq__(self, other):
+		return isinstance(other, NamespaceRegistrationTransaction) and all([
+			self.rental_fee_sink == other.rental_fee_sink,
+			self.rental_fee == other.rental_fee,
+			self.parent == other.parent,
+			self.namespace == other.namespace
+		])
+
+

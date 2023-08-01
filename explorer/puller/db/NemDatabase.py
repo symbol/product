@@ -104,6 +104,22 @@ class NemDatabase(DatabaseConnection):
 			'''
 		)
 
+		# Create namespace registration transactions table
+		cursor.execute(
+			'''
+			CREATE TABLE IF NOT EXISTS namespace_registration_transactions (
+				id serial PRIMARY KEY,
+				transaction_id serial NOT NULL,
+				rental_fee_sink bytea NOT NULL,
+				rental_fee bigint DEFAULT 0,
+				parent varchar(16),
+				namespace varchar(64),
+				FOREIGN KEY (transaction_id) REFERENCES transactions(id)
+				ON DELETE CASCADE
+			)
+			'''
+		)
+
 
 		self.connection.commit()
 
@@ -217,6 +233,30 @@ class NemDatabase(DatabaseConnection):
 				unhexlify(multisig_transactions.inner_hash),
 			)
 		)
+
+	def insert_namespace_registration_transactions(self, cursor, transaction_id, namespace_registration_transactions):
+		"""Adds namespace registration into namespace_registration_transactions table"""
+
+		cursor.execute(
+			'''
+			INSERT INTO namespace_registration_transactions (
+				transaction_id,
+				rental_fee_sink,
+				rental_fee,
+				parent,
+				namespace
+			)
+			VALUES (%s, %s, %s, %s, %s)
+			''',
+			(
+				transaction_id,
+				Address(namespace_registration_transactions.rental_fee_sink).bytes,
+				namespace_registration_transactions.rental_fee,
+				namespace_registration_transactions.parent,
+				namespace_registration_transactions.namespace,
+			)
+		)
+
 	def get_current_height(self):
 		"""Gets current height from database"""
 
