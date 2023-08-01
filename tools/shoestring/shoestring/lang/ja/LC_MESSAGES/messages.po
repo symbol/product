@@ -116,17 +116,17 @@ msgid "general-connecting-to-node"
 msgstr ""
 
 #: shoestring/commands/init.py:17 shoestring/commands/reset_data.py:57
-#: shoestring/internal/Preparer.py:184
+#: shoestring/internal/Preparer.py:189
 #: shoestring/internal/VoterConfigurator.py:53
 msgid "general-copying-file"
 msgstr ""
 
-#: shoestring/commands/reset_data.py:62 shoestring/internal/Preparer.py:190
+#: shoestring/commands/reset_data.py:62 shoestring/internal/Preparer.py:195
 msgid "general-copying-tree"
 msgstr ""
 
 #: shoestring/commands/renew_voting_keys.py:46
-#: shoestring/internal/Preparer.py:383
+#: shoestring/internal/Preparer.py:388
 msgid "general-created-aggregate-transaction"
 msgstr ""
 
