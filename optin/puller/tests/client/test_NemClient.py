@@ -31,7 +31,7 @@ def server(event_loop, aiohttp_client):
 			})
 
 		async def historical_account(self, request):
-			return await self._process(request, {'data': [{'address': NEM_ADDRESSES[0], 'balance':1234567890}]})
+			return await self._process(request, {'data': [{'address': NEM_ADDRESSES[0], 'balance': 1234567890}]})
 
 		async def transfers(self, request):
 			address = Address(request.rel_url.query['address'])
