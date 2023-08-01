@@ -78,10 +78,12 @@ class NemPuller:
 					transaction.message[1] == 1
 				)
 
+				mosaics = json.dumps([mosaic._asdict() for mosaic in transaction.mosaics]) if transaction.mosaics else None
+
 				transfer_transaction = TransferTransaction(
 					transaction.amount,
 					transaction.recipient,
-					transaction.mosaics,
+					mosaics,
 					json.dumps(transaction.message._asdict()),
 					is_apostille
 				)
