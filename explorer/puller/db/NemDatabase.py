@@ -120,6 +120,39 @@ class NemDatabase(DatabaseConnection):
 			'''
 		)
 
+		# Create mosaic definition creation transactions table
+		cursor.execute(
+			'''
+			CREATE TABLE IF NOT EXISTS mosaic_definition_creation_transactions (
+				id serial PRIMARY KEY,
+				transaction_id serial NOT NULL,
+				creation_fee_sink bytea NOT NULL,
+				creation_fee bigint DEFAULT 0,
+				creator bytea NOT NULL,
+				description varchar(512),
+				namespace_name varchar(146),
+				properties json NOT NULL,
+				levy json,
+				FOREIGN KEY (transaction_id) REFERENCES transactions(id)
+				ON DELETE CASCADE
+			)
+			'''
+		)
+
+		# Create mosaic supply change transactions table
+		cursor.execute(
+			'''
+			CREATE TABLE IF NOT EXISTS mosaic_supply_change_transactions (
+				id serial PRIMARY KEY,
+				transaction_id serial NOT NULL,
+				supply_type int NOT NULL,
+				delta bigint DEFAULT 0,
+				namespace_name varchar(146),
+				FOREIGN KEY (transaction_id) REFERENCES transactions(id)
+				ON DELETE CASCADE
+			)
+			'''
+		)
 
 		self.connection.commit()
 
@@ -254,6 +287,51 @@ class NemDatabase(DatabaseConnection):
 				namespace_registration_transactions.rental_fee,
 				namespace_registration_transactions.parent,
 				namespace_registration_transactions.namespace,
+			)
+		)
+
+	def insert_mosaic_definition_creation_transactions(self, cursor, transaction_id, mosaic_definition_creation_transactions):
+		"""Adds mosaic definition creation into mosaic_definition_creation_transactions table"""
+
+		cursor.execute(
+			'''
+			INSERT INTO mosaic_definition_creation_transactions (
+				transaction_id,
+				creation_fee_sink,
+				creation_fee,
+				creator,
+				description,
+				namespace_name,
+				properties,
+				levy
+			)
+			VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+			''',
+			(
+				transaction_id,
+				Address(mosaic_definition_creation_transactions.creation_fee_sink).bytes,
+				mosaic_definition_creation_transactions.creation_fee,
+				unhexlify(mosaic_definition_creation_transactions.creator),
+				mosaic_definition_creation_transactions.description,
+				mosaic_definition_creation_transactions.namespace_name,
+				mosaic_definition_creation_transactions.properties,
+				mosaic_definition_creation_transactions.levy,
+			)
+		)
+
+	def insert_mosaic_supply_change_transactions(self, cursor, transaction_id, mosaic_supply_change_transactions):
+		"""Adds mosaic supply change into mosaic_supply_change_transactions table"""
+
+		cursor.execute(
+			'''
+			INSERT INTO mosaic_supply_change_transactions (transaction_id, supply_type, delta, namespace_name)
+			VALUES (%s, %s, %s, %s)
+			''',
+			(
+				transaction_id,
+				mosaic_supply_change_transactions.supply_type,
+				mosaic_supply_change_transactions.delta,
+				mosaic_supply_change_transactions.namespace_name
 			)
 		)
 

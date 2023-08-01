@@ -118,3 +118,45 @@ class NamespaceRegistrationTransaction:
 		])
 
 
+class MosaicDefinitionTransaction:
+	def __init__(self, creation_fee_sink, creation_fee, creator, description, namespace_name, properties, levy):
+		"""Create MosaicDefinitionTransaction model."""
+
+		# pylint: disable=too-many-arguments
+
+		self.creation_fee_sink = creation_fee_sink
+		self.creation_fee = creation_fee
+		self.creator = creator
+		self.description = description
+		self.namespace_name = namespace_name
+		self.properties = properties
+		self.levy = levy
+
+	def __eq__(self, other):
+		return isinstance(other, MosaicDefinitionTransaction) and all([
+			self.creation_fee_sink == other.creation_fee_sink,
+			self.creation_fee == other.creation_fee,
+			self.creator == other.creator,
+			self.description == other.description,
+			self.namespace_name == other.namespace_name,
+			self.properties == other.properties,
+			self.levy == other.levy
+		])
+
+
+class MosaicSupplyChangeTransaction:
+	def __init__(self, supply_type, delta, namespace_name):
+		"""Create MosaicSupplyChangeTransaction model."""
+
+		# pylint: disable=too-many-arguments
+
+		self.supply_type = supply_type
+		self.delta = delta
+		self.namespace_name = namespace_name
+
+	def __eq__(self, other):
+		return isinstance(other, MosaicSupplyChangeTransaction) and all([
+			self.supply_type == other.supply_type,
+			self.delta == other.delta,
+			self.namespace_name == other.namespace_name
+		])

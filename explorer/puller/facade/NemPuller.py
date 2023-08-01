@@ -11,6 +11,8 @@ from db.NemDatabase import NemDatabase
 from model.Block import Block
 from model.Transaction import (
 	AccountKeyLinkTransaction,
+	MosaicDefinitionTransaction,
+	MosaicSupplyChangeTransaction,
 	MultisigAccountModificationTransaction,
 	MultisigTransaction,
 	NamespaceRegistrationTransaction,
@@ -141,6 +143,32 @@ class NemPuller:
 				transaction_id = self.nem_db.insert_transaction(cursor, transaction_common)
 
 				self.nem_db.insert_namespace_registration_transactions(cursor, transaction_id, namespace_registration_transaction)
+
+			elif TransactionType.MOSAIC_DEFINITION.value == transaction.transaction_type:
+				mosaic_definition_transaction = MosaicDefinitionTransaction(
+					transaction.creation_fee_sink,
+					transaction.creation_fee,
+					transaction.creator,
+					transaction.description,
+					transaction.namespace_name,
+					json.dumps(transaction.properties._asdict()),
+					json.dumps(transaction.levy._asdict()) if transaction.levy else None,
+				)
+
+				transaction_id = self.nem_db.insert_transaction(cursor, transaction_common)
+
+				self.nem_db.insert_mosaic_definition_creation_transactions(cursor, transaction_id, mosaic_definition_transaction)
+
+			elif TransactionType.MOSAIC_SUPPLY_CHANGE.value == transaction.transaction_type:
+				mosaic_supply_change_transaction = MosaicSupplyChangeTransaction(
+					transaction.supply_type,
+					transaction.delta,
+					transaction.namespace_name,
+				)
+
+				transaction_id = self.nem_db.insert_transaction(cursor, transaction_common)
+
+				self.nem_db.insert_mosaic_supply_change_transactions(cursor, transaction_id, mosaic_supply_change_transaction)
 
 	async def sync_nemesis_block(self):
 		"""Sync the Nemesis block."""
