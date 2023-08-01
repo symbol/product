@@ -89,6 +89,22 @@ class NemDatabase(DatabaseConnection):
 			'''
 		)
 
+		# Create mutlisig transactions table
+		cursor.execute(
+			'''
+			CREATE TABLE IF NOT EXISTS multisig_transactions (
+				id serial PRIMARY KEY,
+				transaction_id serial NOT NULL,
+				signatures json NOT NULL,
+				other_transaction json NOT NULL,
+				inner_hash bytea NOT NULL,
+				FOREIGN KEY (transaction_id) REFERENCES transactions(id)
+				ON DELETE CASCADE
+			)
+			'''
+		)
+
+
 		self.connection.commit()
 
 	def insert_block(self, cursor, block):  # pylint: disable=no-self-use
@@ -181,6 +197,26 @@ class NemDatabase(DatabaseConnection):
 			)
 		)
 
+	def insert_multisig_transactions(self, cursor, transaction_id, multisig_transactions):
+		"""Adds multisig into multisig_transactions table"""
+
+		cursor.execute(
+			'''
+			INSERT INTO multisig_transactions (
+				transaction_id,
+				signatures,
+				other_transaction,
+				inner_hash
+			)
+			VALUES (%s, %s, %s, %s)
+			''',
+			(
+				transaction_id,
+				multisig_transactions.signatures,
+				multisig_transactions.other_transaction,
+				unhexlify(multisig_transactions.inner_hash),
+			)
+		)
 	def get_current_height(self):
 		"""Gets current height from database"""
 

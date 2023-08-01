@@ -9,7 +9,13 @@ from zenlog import log
 
 from db.NemDatabase import NemDatabase
 from model.Block import Block
-from model.Transaction import AccountKeyLinkTransaction, MultisigAccountModificationTransaction, Transaction, TransferTransaction
+from model.Transaction import (
+	AccountKeyLinkTransaction,
+	MultisigAccountModificationTransaction,
+	MultisigTransaction,
+	Transaction,
+	TransferTransaction
+)
 
 
 class NemPuller:
@@ -111,6 +117,17 @@ class NemPuller:
 				transaction_id = self.nem_db.insert_transaction(cursor, transaction_common)
 
 				self.nem_db.insert_multisig_account_modification_transactions(cursor, transaction_id, multisig_account_modification_transaction)
+
+			elif TransactionType.MULTISIG.value == transaction.transaction_type:
+				multisig_transaction = MultisigTransaction(
+					json.dumps([signature.__dict__ for signature in transaction.signatures]),
+					json.dumps(transaction.other_transaction.__dict__),
+					transaction.inner_hash,
+				)
+
+				transaction_id = self.nem_db.insert_transaction(cursor, transaction_common)
+
+				self.nem_db.insert_multisig_transactions(cursor, transaction_id, multisig_transaction)
 
 	async def sync_nemesis_block(self):
 		"""Sync the Nemesis block."""
