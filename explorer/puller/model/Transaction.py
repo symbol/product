@@ -1,3 +1,6 @@
+from symbolchain.nc import TransactionType
+
+
 class Transaction:
 	def __init__(self, transaction_hash, height, sender, fee, timestamp, deadline, signature, transaction_type):
 		"""Create Block model."""
@@ -160,3 +163,24 @@ class MosaicSupplyChangeTransaction:
 			self.delta == other.delta,
 			self.namespace_name == other.namespace_name
 		])
+
+
+class TransactionFactory:
+	transaction_type_mapping = {
+		TransactionType.TRANSFER.value: TransferTransaction,
+		TransactionType.ACCOUNT_KEY_LINK.value: AccountKeyLinkTransaction,
+		TransactionType.MULTISIG_ACCOUNT_MODIFICATION.value: MultisigAccountModificationTransaction,
+		TransactionType.MULTISIG.value: MultisigTransaction,
+		TransactionType.NAMESPACE_REGISTRATION.value: NamespaceRegistrationTransaction,
+		TransactionType.MOSAIC_DEFINITION.value: MosaicDefinitionTransaction,
+		TransactionType.MOSAIC_SUPPLY_CHANGE.value: MosaicSupplyChangeTransaction,
+	}
+
+	@classmethod
+	def create_transaction(cls, transaction_type, *args):
+		transaction_class = cls.transaction_type_mapping.get(transaction_type)
+
+		if not transaction_class:
+			raise ValueError(f"Unsupported transaction type: {transaction_type}")
+
+		return transaction_class(*args)

@@ -10,16 +10,7 @@ from zenlog import log
 from db.NemDatabase import NemDatabase
 from model.Block import Block
 from model.Mosaic import Mosaic
-from model.Transaction import (
-	AccountKeyLinkTransaction,
-	MosaicDefinitionTransaction,
-	MosaicSupplyChangeTransaction,
-	MultisigAccountModificationTransaction,
-	MultisigTransaction,
-	NamespaceRegistrationTransaction,
-	Transaction,
-	TransferTransaction
-)
+from model.Transaction import Transaction, TransactionFactory
 
 
 class NemPuller:
@@ -89,6 +80,107 @@ class NemPuller:
 			mosaic.initial_supply += adjustment
 			self.nem_db.update_mosaic_supply(cursor, transaction.namespace_name, mosaic.initial_supply)
 
+	def _process_transfer_transaction(self, cursor, transaction_id, transaction):
+		"""Process transfer transaction data."""
+
+		# checking message first byte "fe" (HEX:) for apostille
+		is_apostille = (
+			transaction.recipient == 'NCZSJHLTIMESERVBVKOW6US64YDZG2PFGQCSV23J' and
+			transaction.message[0][:2] == 'fe' and
+			transaction.message[1] == 1
+		)
+
+		mosaics = json.dumps([mosaic._asdict() for mosaic in transaction.mosaics]) if transaction.mosaics else None
+
+		transfer_transaction = TransactionFactory.create_transaction(
+			transaction.transaction_type,
+			transaction.amount,
+			transaction.recipient,
+			mosaics,
+			json.dumps(transaction.message._asdict()),
+			is_apostille
+		)
+
+		self.nem_db.insert_transactions_transfer(cursor, transaction_id, transfer_transaction)
+
+	def _process_account_key_link_transaction(self, cursor, transaction_id, transaction):
+		"""Process account key link transaction data."""
+
+		account_key_link_transaction = TransactionFactory.create_transaction(
+			transaction.transaction_type,
+			transaction.mode,
+			transaction.remote_account
+		)
+
+		self.nem_db.insert_transactions_account_key_link(cursor, transaction_id, account_key_link_transaction)
+
+	def _process_multisig_account_modification_transaction(self, cursor, transaction_id, transaction):
+		"""Process multisig account modification transaction data."""
+
+		multisig_account_modification_transaction = TransactionFactory.create_transaction(
+			transaction.transaction_type,
+			transaction.min_cosignatories,
+			json.dumps([modification._asdict() for modification in transaction.modifications])
+		)
+
+		self.nem_db.insert_transactions_multisig_account_modification(cursor, transaction_id, multisig_account_modification_transaction)
+
+	def _process_multisig_transaction(self, cursor, transaction_id, transaction):
+		"""Process multisig transaction data."""
+
+		multisig_transaction = TransactionFactory.create_transaction(
+			transaction.transaction_type,
+			json.dumps([signature.__dict__ for signature in transaction.signatures]),
+			json.dumps(transaction.other_transaction.__dict__),
+			transaction.inner_hash,
+		)
+
+		self.nem_db.insert_transactions_multisig(cursor, transaction_id, multisig_transaction)
+
+	def _process_namespace_registration_transaction(self, cursor, transaction_id, transaction):
+		"""Process namespace registration transaction data."""
+
+		namespace_registration_transaction = TransactionFactory.create_transaction(
+			transaction.transaction_type,
+			transaction.rental_fee_sink,
+			transaction.rental_fee,
+			transaction.parent,
+			transaction.namespace,
+		)
+
+		self.nem_db.insert_transactions_namespace_registration(cursor, transaction_id, namespace_registration_transaction)
+
+	def _process_mosaic_definition_creation_transaction(self, cursor, transaction_id, transaction):
+		"""Process mosaic definition creation transaction data."""
+
+		mosaic_properties = transaction.properties
+		mosaic_levy = transaction.levy if transaction.levy else None
+
+		mosaic_definition_transaction = TransactionFactory.create_transaction(
+			transaction.transaction_type,
+			transaction.creation_fee_sink,
+			transaction.creation_fee,
+			transaction.creator,
+			transaction.description,
+			transaction.namespace_name,
+			json.dumps(mosaic_properties._asdict()),
+			json.dumps(mosaic_levy._asdict()) if mosaic_levy else None,
+		)
+
+		self.nem_db.insert_transactions_mosaic_definition_creation(cursor, transaction_id, mosaic_definition_transaction)
+
+	def _process_mosaic_supply_change_transaction(self, cursor, transaction_id, transaction):
+		"""Process mosaic supply change transaction data."""
+
+		mosaic_supply_change_transaction = TransactionFactory.create_transaction(
+			transaction.transaction_type,
+			transaction.supply_type,
+			transaction.delta,
+			transaction.namespace_name,
+		)
+
+		self.nem_db.insert_transactions_mosaic_supply_change(cursor, transaction_id, mosaic_supply_change_transaction)
+
 	def _store_block(self, cursor, block):
 		"""Store block data."""
 
@@ -97,6 +189,16 @@ class NemPuller:
 
 	def _store_transactions(self, cursor, transactions):
 		"""Store transactions data."""
+
+		transaction_process_map = {
+			TransactionType.TRANSFER.value: self._process_transfer_transaction,
+			TransactionType.ACCOUNT_KEY_LINK.value: self._process_account_key_link_transaction,
+			TransactionType.MULTISIG_ACCOUNT_MODIFICATION.value: self._process_multisig_account_modification_transaction,
+			TransactionType.MULTISIG.value: self._process_multisig_transaction,
+			TransactionType.NAMESPACE_REGISTRATION.value: self._process_namespace_registration_transaction,
+			TransactionType.MOSAIC_DEFINITION.value: self._process_mosaic_definition_creation_transaction,
+			TransactionType.MOSAIC_SUPPLY_CHANGE.value: self._process_mosaic_supply_change_transaction,
+		}
 
 		for transaction in transactions:
 			timestamp = Block.convert_timestamp_to_datetime(self.nem_facade, transaction.timestamp)
@@ -113,99 +215,11 @@ class NemPuller:
 				transaction.transaction_type,
 			)
 
-			if TransactionType.TRANSFER.value == transaction.transaction_type:
-				# checking message first byte "fe" (HEX:) for apostille
-				is_apostille = (
-					transaction.recipient == 'NCZSJHLTIMESERVBVKOW6US64YDZG2PFGQCSV23J' and
-					transaction.message[0][:2] == 'fe' and
-					transaction.message[1] == 1
-				)
+			transaction_id = self.nem_db.insert_transaction(cursor, transaction_common)
 
-				mosaics = json.dumps([mosaic._asdict() for mosaic in transaction.mosaics]) if transaction.mosaics else None
+			transaction_processor = transaction_process_map.get(transaction.transaction_type)
 
-				transfer_transaction = TransferTransaction(
-					transaction.amount,
-					transaction.recipient,
-					mosaics,
-					json.dumps(transaction.message._asdict()),
-					is_apostille
-				)
-
-				transaction_id = self.nem_db.insert_transaction(cursor, transaction_common)
-
-				self.nem_db.insert_transactions_transfer(cursor, transaction_id, transfer_transaction)
-
-			elif TransactionType.ACCOUNT_KEY_LINK.value == transaction.transaction_type:
-				account_key_link_transaction = AccountKeyLinkTransaction(
-					transaction.mode,
-					transaction.remote_account
-				)
-
-				transaction_id = self.nem_db.insert_transaction(cursor, transaction_common)
-
-				self.nem_db.insert_transactions_account_key_link(cursor, transaction_id, account_key_link_transaction)
-
-			elif TransactionType.MULTISIG_ACCOUNT_MODIFICATION.value == transaction.transaction_type:
-				multisig_account_modification_transaction = MultisigAccountModificationTransaction(
-					transaction.min_cosignatories,
-					json.dumps([modification._asdict() for modification in transaction.modifications])
-				)
-
-				transaction_id = self.nem_db.insert_transaction(cursor, transaction_common)
-
-				self.nem_db.insert_transactions_multisig_account_modification(cursor, transaction_id, multisig_account_modification_transaction)
-
-			elif TransactionType.MULTISIG.value == transaction.transaction_type:
-				multisig_transaction = MultisigTransaction(
-					json.dumps([signature.__dict__ for signature in transaction.signatures]),
-					json.dumps(transaction.other_transaction.__dict__),
-					transaction.inner_hash,
-				)
-
-				transaction_id = self.nem_db.insert_transaction(cursor, transaction_common)
-
-				self.nem_db.insert_transactions_multisig(cursor, transaction_id, multisig_transaction)
-
-			elif TransactionType.NAMESPACE_REGISTRATION.value == transaction.transaction_type:
-				namespace_registration_transaction = NamespaceRegistrationTransaction(
-					transaction.rental_fee_sink,
-					transaction.rental_fee,
-					transaction.parent,
-					transaction.namespace,
-				)
-
-				transaction_id = self.nem_db.insert_transaction(cursor, transaction_common)
-
-				self.nem_db.insert_transactions_namespace_registration(cursor, transaction_id, namespace_registration_transaction)
-
-			elif TransactionType.MOSAIC_DEFINITION.value == transaction.transaction_type:
-				mosaic_properties = transaction.properties
-				mosaic_levy = transaction.levy if transaction.levy else None
-
-				mosaic_definition_transaction = MosaicDefinitionTransaction(
-					transaction.creation_fee_sink,
-					transaction.creation_fee,
-					transaction.creator,
-					transaction.description,
-					transaction.namespace_name,
-					json.dumps(mosaic_properties._asdict()),
-					json.dumps(mosaic_levy._asdict()) if mosaic_levy else None,
-				)
-
-				transaction_id = self.nem_db.insert_transaction(cursor, transaction_common)
-
-				self.nem_db.insert_transactions_mosaic_definition_creation(cursor, transaction_id, mosaic_definition_transaction)
-
-			elif TransactionType.MOSAIC_SUPPLY_CHANGE.value == transaction.transaction_type:
-				mosaic_supply_change_transaction = MosaicSupplyChangeTransaction(
-					transaction.supply_type,
-					transaction.delta,
-					transaction.namespace_name,
-				)
-
-				transaction_id = self.nem_db.insert_transaction(cursor, transaction_common)
-
-				self.nem_db.insert_transactions_mosaic_supply_change(cursor, transaction_id, mosaic_supply_change_transaction)
+			transaction_processor(cursor, transaction_id, transaction)
 
 	def _store_mosaics(self, cursor, transactions, block_height):
 		"""Store mosaics."""
