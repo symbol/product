@@ -9,6 +9,7 @@ from zenlog import log
 
 from db.NemDatabase import NemDatabase
 from model.Block import Block
+from model.Mosaic import Mosaic
 from model.Transaction import (
 	AccountKeyLinkTransaction,
 	MosaicDefinitionTransaction,
@@ -54,6 +55,39 @@ class NemPuller:
 			block_data.signer,
 			block_data.signature,
 		)
+
+	def _process_mosaic_definition(self, cursor, transaction, block_height):
+		"""Process mosaic definition data."""
+
+		mosaic_properties = transaction.properties
+		mosaic_levy = transaction.levy if transaction.levy else None
+
+		mosaic_definition = Mosaic(
+			transaction.namespace_name,
+			transaction.description,
+			transaction.creator,
+			block_height,
+			mosaic_properties.initial_supply,
+			mosaic_properties.divisibility,
+			mosaic_properties.supply_mutable,
+			mosaic_properties.transferable,
+			mosaic_levy.type if mosaic_levy else None,
+			mosaic_levy.namespace_name if mosaic_levy else None,
+			mosaic_levy.fee if mosaic_levy else None,
+			mosaic_levy.recipient if mosaic_levy else None,
+		)
+
+		self.nem_db.insert_mosaic(cursor, mosaic_definition)
+
+	def _process_mosaic_supply_change(self, cursor, transaction):
+		"""Process mosaic supply change data."""
+
+		mosaic = self.nem_db.get_mosaic_by_namespace_name(cursor, transaction.namespace_name)
+
+		if mosaic:
+			adjustment = transaction.delta if transaction.supply_type == 1 else -transaction.delta
+			mosaic.initial_supply += adjustment
+			self.nem_db.update_mosaic_supply(cursor, transaction.namespace_name, mosaic.initial_supply)
 
 	def _store_block(self, cursor, block):
 		"""Store block data."""
@@ -145,14 +179,17 @@ class NemPuller:
 				self.nem_db.insert_transactions_namespace_registration(cursor, transaction_id, namespace_registration_transaction)
 
 			elif TransactionType.MOSAIC_DEFINITION.value == transaction.transaction_type:
+				mosaic_properties = transaction.properties
+				mosaic_levy = transaction.levy if transaction.levy else None
+
 				mosaic_definition_transaction = MosaicDefinitionTransaction(
 					transaction.creation_fee_sink,
 					transaction.creation_fee,
 					transaction.creator,
 					transaction.description,
 					transaction.namespace_name,
-					json.dumps(transaction.properties._asdict()),
-					json.dumps(transaction.levy._asdict()) if transaction.levy else None,
+					json.dumps(mosaic_properties._asdict()),
+					json.dumps(mosaic_levy._asdict()) if mosaic_levy else None,
 				)
 
 				transaction_id = self.nem_db.insert_transaction(cursor, transaction_common)
@@ -169,6 +206,15 @@ class NemPuller:
 				transaction_id = self.nem_db.insert_transaction(cursor, transaction_common)
 
 				self.nem_db.insert_transactions_mosaic_supply_change(cursor, transaction_id, mosaic_supply_change_transaction)
+
+	def _store_mosaics(self, cursor, transactions, block_height):
+		"""Store mosaics."""
+
+		for transaction in transactions:
+			if TransactionType.MOSAIC_DEFINITION.value == transaction.transaction_type:
+				self._process_mosaic_definition(cursor, transaction, block_height)
+			elif TransactionType.MOSAIC_SUPPLY_CHANGE.value == transaction.transaction_type:
+				self._process_mosaic_supply_change(cursor, transaction)
 
 	async def sync_nemesis_block(self):
 		"""Sync the Nemesis block."""
@@ -200,6 +246,7 @@ class NemPuller:
 			for block in blocks:
 				self._store_block(cursor, block)
 				self._store_transactions(cursor, block.transactions)
+				self._store_mosaics(cursor, block.transactions, block.height)
 
 			# commit changes
 			self.nem_db.connection.commit()

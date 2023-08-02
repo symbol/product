@@ -1,8 +1,9 @@
-from binascii import unhexlify
+from binascii import hexlify, unhexlify
 
 from symbolchain.nem.Network import Address
 
 from db.DatabaseConnection import DatabaseConnection
+from model.Mosaic import Mosaic
 
 
 class NemDatabase(DatabaseConnection):
@@ -150,6 +151,27 @@ class NemDatabase(DatabaseConnection):
 				namespace_name varchar(146),
 				FOREIGN KEY (transaction_id) REFERENCES transactions(id)
 				ON DELETE CASCADE
+			)
+			'''
+		)
+
+		# Create mosaics table
+		cursor.execute(
+			'''
+			CREATE TABLE IF NOT EXISTS mosaics (
+				id serial PRIMARY KEY,
+				namespace_name varchar(146),
+				description varchar(512),
+				creator bytea NOT NULL,
+				registered_height bigint NOT NULL,
+				initial_supply bigint DEFAULT 0,
+				divisibility int NOT NULL,
+				supply_mutable boolean DEFAULT false,
+				transferable boolean DEFAULT false,
+				levy_type int,
+				levy_namespace_name varchar(146),
+				levy_fee bigint DEFAULT 0,
+				levy_recipient bytea
 			)
 			'''
 		)
@@ -333,6 +355,98 @@ class NemDatabase(DatabaseConnection):
 				transactions_mosaic_supply_change.delta,
 				transactions_mosaic_supply_change.namespace_name
 			)
+		)
+
+	def insert_mosaic(self, cursor, mosaic):
+		"""Adds mosaic into mosaics table"""
+
+		cursor.execute(
+			'''
+			INSERT INTO mosaics (
+				namespace_name,
+				description,
+				creator,
+				registered_height,
+				initial_supply,
+				divisibility,
+				supply_mutable,
+				transferable,
+				levy_type,
+				levy_namespace_name,
+				levy_fee,
+				levy_recipient
+			)
+			VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+			''',
+			(
+				mosaic.namespace_name,
+				mosaic.description,
+				unhexlify(mosaic.creator),
+				mosaic.registered_height,
+				mosaic.initial_supply,
+				mosaic.divisibility,
+				mosaic.supply_mutable,
+				mosaic.transferable,
+				mosaic.levy_type,
+				mosaic.levy_namespace_name,
+				mosaic.levy_fee,
+				Address(mosaic.levy_recipient).bytes,
+			)
+		)
+
+	def get_mosaic_by_namespace_name(self, cursor, namespace_name):
+		"""Searches mosaic in mosaics table"""
+
+		cursor.execute(
+			'''
+			SELECT
+				description,
+				creator,
+				registered_height,
+				initial_supply,
+				divisibility,
+				supply_mutable,
+				transferable,
+				levy_type,
+				levy_namespace_name,
+				levy_fee,
+				levy_recipient
+			FROM mosaics
+			WHERE namespace_name = %s
+			''',
+			(namespace_name,)
+		)
+
+		result = cursor.fetchone()
+		if result is None:
+			return None
+
+		return Mosaic(
+			namespace_name,
+			result[0],
+			result(result[1]),
+			result[2],
+			result[3],
+			result[4],
+			result[5],
+			result[6],
+			result[7],
+			result[8],
+			result[9],
+			hexlify(result[10]),
+		)
+
+	def update_mosaic_supply(self, cursor, namespace_name, supply):
+		"""Updates mosaic supply in mosaics table"""
+
+		cursor.execute(
+			'''
+			UPDATE mosaics
+			SET
+				initial_supply = %s
+			WHERE namespace_name = %s
+			''',
+			(supply, namespace_name)
 		)
 
 	def get_current_height(self):
