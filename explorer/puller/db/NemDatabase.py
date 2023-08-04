@@ -176,6 +176,32 @@ class NemDatabase(DatabaseConnection):
 			'''
 		)
 
+		# Create root namespaces table
+		cursor.execute(
+			'''
+			CREATE TABLE IF NOT EXISTS namespaces_root (
+				id serial PRIMARY KEY,
+				namespace_name varchar(16),
+				owner bytea NOT NULL,
+				registered_height bigint NOT NULL,
+				expiration_height bigint NOT NULL
+			)
+			'''
+		)
+
+		# Create sub namespaces table
+		cursor.execute(
+			'''
+			CREATE TABLE IF NOT EXISTS namespaces_sub (
+				id serial PRIMARY KEY,
+				root_namespace_id serial NOT NULL,
+				namespace_name varchar(146),
+				FOREIGN KEY (root_namespace_id) REFERENCES namespaces_root(id)
+				ON DELETE CASCADE
+			)
+			'''
+		)
+
 		self.connection.commit()
 
 	def insert_block(self, cursor, block):  # pylint: disable=no-self-use
@@ -447,6 +473,44 @@ class NemDatabase(DatabaseConnection):
 			WHERE namespace_name = %s
 			''',
 			(supply, namespace_name)
+		)
+
+	def insert_namespace_root(self, cursor, namespace):
+		"""Adds root namespace into namespaces table"""
+
+		cursor.execute(
+			'''
+			INSERT INTO namespaces_root (
+				namespace_name,
+				owner,
+				registered_height,
+				expiration_height
+			)
+			VALUES (%s, %s, %s, %s)
+			''',
+			(
+				namespace.namespace_name,
+				unhexlify(namespace.owner),
+				namespace.registered_height,
+				namespace.expiration_height,
+			)
+		)
+
+	def insert_namespace_sub(self, cursor, root_namespace_id, namespace_name):
+		"""Adds sub namespace into sub namespaces table"""
+
+		cursor.execute(
+			'''
+			INSERT INTO namespaces_sub (
+				root_namespace_id,
+				namespace_name,
+			)
+			VALUES (%s, %s)
+			''',
+			(
+				root_namespace_id,
+				namespace_name
+			)
 		)
 
 	def get_current_height(self):
