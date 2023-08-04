@@ -4,6 +4,7 @@ from symbolchain.nem.Network import Address
 
 from db.DatabaseConnection import DatabaseConnection
 from model.Mosaic import Mosaic
+from model.Namespace import Namespace
 
 
 class NemDatabase(DatabaseConnection):
@@ -176,28 +177,16 @@ class NemDatabase(DatabaseConnection):
 			'''
 		)
 
-		# Create root namespaces table
+		# Create namespaces table
 		cursor.execute(
 			'''
-			CREATE TABLE IF NOT EXISTS namespaces_root (
+			CREATE TABLE IF NOT EXISTS namespaces (
 				id serial PRIMARY KEY,
-				namespace_name varchar(16),
+				root_namespace varchar(16),
 				owner bytea NOT NULL,
 				registered_height bigint NOT NULL,
-				expiration_height bigint NOT NULL
-			)
-			'''
-		)
-
-		# Create sub namespaces table
-		cursor.execute(
-			'''
-			CREATE TABLE IF NOT EXISTS namespaces_sub (
-				id serial PRIMARY KEY,
-				root_namespace_id serial NOT NULL,
-				namespace_name varchar(146),
-				FOREIGN KEY (root_namespace_id) REFERENCES namespaces_root(id)
-				ON DELETE CASCADE
+				expiration_height bigint NOT NULL,
+				sub_namespaces VARCHAR(146)[]
 			)
 			'''
 		)
@@ -475,42 +464,84 @@ class NemDatabase(DatabaseConnection):
 			(supply, namespace_name)
 		)
 
-	def insert_namespace_root(self, cursor, namespace):
+	def insert_namespace(self, cursor, namespace):
 		"""Adds root namespace into namespaces table"""
 
 		cursor.execute(
 			'''
-			INSERT INTO namespaces_root (
-				namespace_name,
+			INSERT INTO namespaces (
+				root_namespace,
 				owner,
 				registered_height,
-				expiration_height
+				expiration_height,
+				sub_namespaces
 			)
-			VALUES (%s, %s, %s, %s)
+			VALUES (%s, %s, %s, %s, %s)
 			''',
 			(
-				namespace.namespace_name,
+				namespace.root_namespace,
 				unhexlify(namespace.owner),
 				namespace.registered_height,
 				namespace.expiration_height,
+				namespace.sub_namespaces
 			)
 		)
 
-	def insert_namespace_sub(self, cursor, root_namespace_id, namespace_name):
-		"""Adds sub namespace into sub namespaces table"""
+	def update_namespace(self, cursor, root_namespace, expiration_height=None, sub_namespaces=None, owner=None):
+		"""Updates namespace in namespaces table"""
+
+		query = 'UPDATE namespaces SET '
+		optional_query = []
+		values = []
+
+		if expiration_height is not None:
+			optional_query.append('expiration_height = %s')
+			values.append(expiration_height)
+
+		if sub_namespaces is not None:
+			optional_query.append('sub_namespaces = %s')
+			values.append(sub_namespaces)
+
+		if owner is not None:
+			optional_query.append('owner = %s')
+			values.append(unhexlify(owner))
+
+		# Join all the updates
+		query += ', '.join(optional_query)
+
+		# Add the where clause
+		query += ' WHERE root_namespace = %s'
+		values.append(root_namespace)
+
+		# Execute the query
+		cursor.execute(query, values)
+
+	def get_namespace_by_root_namespace(self, cursor, root_namespace):
+		"""Searches namespace in namespaces table"""
 
 		cursor.execute(
 			'''
-			INSERT INTO namespaces_sub (
-				root_namespace_id,
-				namespace_name,
-			)
-			VALUES (%s, %s)
+			SELECT
+				owner,
+				registered_height,
+				expiration_height,
+				sub_namespaces
+			FROM namespaces
+			WHERE root_namespace = %s
 			''',
-			(
-				root_namespace_id,
-				namespace_name
-			)
+			(root_namespace,)
+		)
+
+		result = cursor.fetchone()
+		if result is None:
+			return None
+
+		return Namespace(
+			root_namespace,
+			hexlify(result[0]),
+			result[1],
+			result[2],
+			result[3]
 		)
 
 	def get_current_height(self):
