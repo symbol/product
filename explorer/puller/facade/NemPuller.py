@@ -10,6 +10,7 @@ from zenlog import log
 from db.NemDatabase import NemDatabase
 from model.Block import Block
 from model.Mosaic import Mosaic
+from model.Namespace import Namespace
 from model.Transaction import Transaction, TransactionFactory
 
 
@@ -181,6 +182,60 @@ class NemPuller:
 
 		self.nem_db.insert_transactions_mosaic_supply_change(cursor, transaction_id, mosaic_supply_change_transaction)
 
+	def _process_root_namespace(self, cursor, transaction, block_height):
+		"""Process root namespace data."""
+
+		namespace = self.nem_db.get_namespace_by_root_namespace(cursor, transaction.namespace)
+
+		# add 1 year to expired height
+		expired_height = block_height + (365 * 1440)
+
+		if namespace:
+			self._update_existing_namespace(cursor, namespace, transaction, expired_height)
+		else:
+			self._create_new_root_namespace(cursor, transaction, block_height, expired_height)
+
+	def _process_sub_namespace(self, cursor, transaction):
+		"""Process sub namespace data."""
+
+		root_namespace = transaction.parent.split('.')[0]
+		namespace = self.nem_db.get_namespace_by_root_namespace(cursor, root_namespace)
+
+		namespace.sub_namespaces.append(f'{transaction.parent}.{transaction.namespace}')
+
+		self.nem_db.update_namespace(cursor, namespace.root_namespace, sub_namespaces=namespace.sub_namespaces)
+
+	def _create_new_root_namespace(self, cursor, transaction, block_height, expired_height):
+		"""Create new root namespace."""
+
+		# new namespace
+		namespace = Namespace(
+			transaction.namespace,
+			transaction.sender,
+			block_height,
+			expired_height,
+			[]
+		)
+		self.nem_db.insert_namespace(cursor, namespace)
+
+	def _update_existing_namespace(self, cursor, namespace, transaction, expired_height):
+		"""Update existing namespace."""
+
+		if transaction.sender == namespace.owner:
+			# renew namespace
+			self.nem_db.update_namespace(cursor, namespace.root_namespace, expired_height)
+		else:
+			# update new owner
+			self.nem_db.update_namespace(cursor, namespace.root_namespace, expired_height, [], transaction.sender)
+
+	def _process_namespace(self, cursor, transaction, block_height):
+		"""Process namespace data."""
+
+		if transaction.parent:
+			self._process_sub_namespace(cursor, transaction)
+		else:
+			self._process_root_namespace(cursor, transaction, block_height)
+
 	def _store_block(self, cursor, block):
 		"""Store block data."""
 
@@ -230,6 +285,13 @@ class NemPuller:
 			elif TransactionType.MOSAIC_SUPPLY_CHANGE.value == transaction.transaction_type:
 				self._process_mosaic_supply_change(cursor, transaction)
 
+	def _store_namespaces(self, cursor, transactions, block_height):
+		"""Store namespaces."""
+
+		for transaction in transactions:
+			if TransactionType.NAMESPACE_REGISTRATION.value == transaction.transaction_type:
+				self._process_namespace(cursor, transaction, block_height)
+
 	async def sync_nemesis_block(self):
 		"""Sync the Nemesis block."""
 
@@ -261,6 +323,7 @@ class NemPuller:
 				self._store_block(cursor, block)
 				self._store_transactions(cursor, block.transactions)
 				self._store_mosaics(cursor, block.transactions, block.height)
+				self._store_namespaces(cursor, block.transactions, block.height)
 
 			# commit changes
 			self.nem_db.connection.commit()
