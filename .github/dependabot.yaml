@@ -17,6 +17,7 @@ updates:
       day: sunday
     target-branch: dev
     labels: [Explorer]
+    versioning-strategy: increase-if-necessary
     commit-message:
       prefix: '[dependency]'
 
@@ -27,7 +28,7 @@ updates:
       day: sunday
     target-branch: dev
     labels: [Faucet Authenticator]
-    versioning-strategy: increase
+    versioning-strategy: increase-if-necessary
     commit-message:
       prefix: '[dependency]'
 
@@ -38,7 +39,7 @@ updates:
       day: sunday
     target-branch: dev
     labels: [Faucet Backend]
-    versioning-strategy: increase
+    versioning-strategy: increase-if-necessary
     commit-message:
       prefix: '[dependency]'
 
@@ -49,7 +50,7 @@ updates:
       day: sunday
     target-branch: dev
     labels: [Faucet Frontend]
-    versioning-strategy: increase
+    versioning-strategy: increase-if-necessary
     commit-message:
       prefix: '[dependency]'
 
@@ -60,6 +61,7 @@ updates:
       day: sunday
     target-branch: dev
     labels: [LightAPI]
+    versioning-strategy: increase-if-necessary
     commit-message:
       prefix: '[dependency]'
 
@@ -70,6 +72,7 @@ updates:
       day: sunday
     target-branch: dev
     labels: [Opt-In]
+    versioning-strategy: increase-if-necessary
     commit-message:
       prefix: '[dependency]'
     ignore:
@@ -83,7 +86,7 @@ updates:
       day: sunday
     target-branch: dev
     labels: [Opt-In]
-    versioning-strategy: increase
+    versioning-strategy: increase-if-necessary
     commit-message:
       prefix: '[dependency]'
     ignore:
@@ -97,7 +100,7 @@ updates:
       day: sunday
     target-branch: dev
     labels: [Opt-In]
-    versioning-strategy: increase
+    versioning-strategy: increase-if-necessary
     commit-message:
       prefix: '[dependency]'
     ignore:
@@ -111,6 +114,7 @@ updates:
       day: sunday
     target-branch: dev
     labels: ['Shoestring']
+    versioning-strategy: increase-if-necessary
     commit-message:
       prefix: '[dependency]'
 
@@ -121,5 +125,6 @@ updates:
       day: sunday
     target-branch: dev
     labels: ['Vanity']
+    versioning-strategy: increase-if-necessary
     commit-message:
       prefix: '[dependency]'
