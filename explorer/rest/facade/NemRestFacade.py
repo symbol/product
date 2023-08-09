@@ -18,11 +18,8 @@ class NemRestFacade:
 
 		return Block(**block).to_dict() if block else None
 
-	def get_blocks(self, **kwargs):
+	def get_blocks(self, limit, offset):
 		"""Gets blocks pagination."""
-
-		limit = kwargs.get('limit')
-		offset = kwargs.get('offset')
 
 		with self.nem_db as database:
 			blocks = database.get_blocks(limit, offset)
