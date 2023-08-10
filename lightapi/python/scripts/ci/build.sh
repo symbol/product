@@ -2,4 +2,4 @@
 
 set -ex
 
-python3 -m build --wheel
+python3 -m build --sdist
