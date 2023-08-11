@@ -1,4 +1,4 @@
-class Block:
+class BlockView:
 	def __init__(self, height, timestamp, total_fees, total_transactions, difficulty, block_hash, signer, signature):
 		"""Create Block model."""
 
@@ -14,7 +14,7 @@ class Block:
 		self.signature = signature
 
 	def __eq__(self, other):
-		return isinstance(other, Block) and all([
+		return isinstance(other, BlockView) and all([
 			self.height == other.height,
 			self.timestamp == other.timestamp,
 			self.total_fees == other.total_fees,

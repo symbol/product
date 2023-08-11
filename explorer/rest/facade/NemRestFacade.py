@@ -1,5 +1,5 @@
 from rest.db.NemDatabase import NemDatabase
-from rest.model.Block import Block
+from rest.model.Block import BlockView
 
 
 class NemRestFacade:
@@ -15,11 +15,11 @@ class NemRestFacade:
 
 		block = self.nem_db.get_block(height)
 
-		return Block(**block).to_dict() if block else None
+		return BlockView(**block).to_dict() if block else None
 
 	def get_blocks(self, limit, offset):
 		"""Gets blocks pagination."""
 
 		blocks = self.nem_db.get_blocks(limit, offset)
 
-		return [Block(**block).to_dict() for block in blocks]
+		return [BlockView(**block).to_dict() for block in blocks]
