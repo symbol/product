@@ -43,14 +43,15 @@ def setup_nem_routes(app, nem_api_facade):
 		try:
 			limit = int(request.args.get('limit', 10))
 			offset = int(request.args.get('offset', 0))
+			min_height = int(request.args.get('min_height', 1))
 
-			if limit < 0 or offset < 0:
+			if limit < 0 or offset < 0 or min_height < 1:
 				raise ValueError()
 
 		except ValueError:
 			abort(400)
 
-		return jsonify(nem_api_facade.get_blocks(limit=limit, offset=offset))
+		return jsonify(nem_api_facade.get_blocks(limit=limit, offset=offset, min_height=min_height))
 
 
 def setup_error_handlers(app):
