@@ -10,7 +10,6 @@ from rest.facade.NemRestFacade import NemRestFacade
 def create_app():
 	app = Flask(__name__)
 
-	setup_app_config(app)
 	setup_error_handlers(app)
 
 	nem_api_facade = setup_nem_facade(app)
@@ -19,15 +18,13 @@ def create_app():
 	return app
 
 
-def setup_app_config(app):
-	app.config.from_envvar('EXPLORER_REST_SETTINGS')
-	db_path = Path(app.config.get('DATABASE_PATH'))
-	log.info(f'loading database config from {db_path}')
-
-
 def setup_nem_facade(app):
+	app.config.from_envvar('EXPLORER_REST_SETTINGS')
 	config = configparser.ConfigParser()
 	db_path = Path(app.config.get('DATABASE_PATH'))
+
+	log.info(f'loading database config from {db_path}')
+
 	config.read(db_path)
 	return NemRestFacade(config['nem_db'])
 
@@ -38,6 +35,7 @@ def setup_nem_routes(app, nem_api_facade):
 		result = nem_api_facade.get_block(height)
 		if not result:
 			abort(404)
+
 		return jsonify(result)
 
 	@app.route('/api/nem/blocks')
