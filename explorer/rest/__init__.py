@@ -1,10 +1,13 @@
 import configparser
+from collections import namedtuple
 from pathlib import Path
 
 from flask import Flask, abort, jsonify, request
 from zenlog import log
 
 from rest.facade.NemRestFacade import NemRestFacade
+
+DatabaseConfig = namedtuple('DatabaseConfig', ['database', 'user', 'password', 'host', 'port'])
 
 
 def create_app():
@@ -26,7 +29,17 @@ def setup_nem_facade(app):
 	log.info(f'loading database config from {db_path}')
 
 	config.read(db_path)
-	return NemRestFacade(config['nem_db'])
+
+	nem_db = config['nem_db']
+	db_params = DatabaseConfig(
+		nem_db['database'],
+		nem_db['user'],
+		nem_db['password'],
+		nem_db['host'],
+		nem_db['port']
+	)
+
+	return NemRestFacade(db_params)
 
 
 def setup_nem_routes(app, nem_api_facade):

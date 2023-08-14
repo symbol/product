@@ -16,11 +16,11 @@ class DatabaseConnectionPool:
 		return pool.SimpleConnectionPool(
 			self.min_connections,
 			self.max_connections,
-			database=self.db_config['database'],
-			user=self.db_config['user'],
-			password=self.db_config['password'],
-			host=self.db_config['host'],
-			port=self.db_config['port']
+			database=self.db_config.database,
+			user=self.db_config.user,
+			password=self.db_config.password,
+			host=self.db_config.host,
+			port=self.db_config.port
 		)
 
 	def connection(self):
