@@ -1,6 +1,6 @@
 class BlockView:
 	def __init__(self, height, timestamp, total_fees, total_transactions, difficulty, block_hash, signer, signature):
-		"""Create Block model."""
+		"""Create Block view."""
 
 		# pylint: disable=too-many-arguments
 
