@@ -30,13 +30,13 @@ def setup_nem_facade(app):
 
 	config.read(db_path)
 
-	nem_db = config['nem_db']
+	nem_db_config = config['nem_db']
 	db_params = DatabaseConfig(
-		nem_db['database'],
-		nem_db['user'],
-		nem_db['password'],
-		nem_db['host'],
-		nem_db['port']
+		nem_db_config['database'],
+		nem_db_config['user'],
+		nem_db_config['password'],
+		nem_db_config['host'],
+		nem_db_config['port']
 	)
 
 	return NemRestFacade(db_params)

@@ -11,7 +11,8 @@ def _format_bytes(buffer):
 class NemDatabase(DatabaseConnectionPool):
 	"""Database containing Nem blockchain data."""
 
-	def _create_block_view(self, result):  # pylint: disable=no-self-use
+	@staticmethod
+	def _create_block_view(result):
 		return BlockView(
 			height=result[0],
 			timestamp=result[1],
