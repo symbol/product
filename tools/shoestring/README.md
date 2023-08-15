@@ -1,6 +1,63 @@
 # shoestring
 
+# Security
+
+> [!IMPORTANT]
+> CLI commands will generate unencrypted PEM file by default. The file specified via the argument  `--ca-key-path` is expected to contain the **main** private key. This file itself is NOT needed to run the node and can be removed after the node is properly configured.
+>
+> Additionally, the `pemtool` command can produce a encrypted PEM file, which is supported by all CLI commands.
+>
+> In order to limit security risk, it is recommended to:
+> 1. Make sure to back up `ca.key.pem`
+> 2. Remove `ca.key.pem` after node setup
+> 3. Use an encrypted PEM file if **main** account is sufficient valuable.
+
+> [!WARNING]
+> `shoestring.wizard` does not currently support encrypted PEM files because there is no password input currently.
+
+## PEM files
+
+To import existing private key and optionally encrypt it, we recommend using `pemtool` command, described below in [pemtool section](#pemtool).
+
+OpenSSL can be used to inspect the contents of a PEM file.
+
+To print the public key only:
+```sh
+openssl pkey -in PEM_FILE.pem -noout -text_pub
+```
+
+To print both the private key and public key:
+```sh
+openssl pkey -in PEM_FILE.pem -noout -text
+```
+
+OpenSSL can also be used to generate completely new key:
+```sh
+openssl genpkey -algorithm ed25519 -out ca.key.pem
+```
+
+To generate new encrypted key:
+```sh
+openssl genpkey -algorithm ed25519 -out ca.key.pem -pass OPTIONS-FOLLOW
+```
+
+For details on openssl `-pass` switch we refer to [openssl passphrase documentation](https://www.openssl.org/docs/manmaster/man1/openssl-passphrase-options.html).
+
+# Tips
+
+If you are setting up a new node from scratch, it is recommended to use `init` and `setup`.
+
+If you are setting up a new node but have existing harvesting and/or voting keys, it is recommended to update the imports section of the shoestring configuration file downloaded by `init` before running `setup`.
+
+If you need to renew voting key files, it is recommended to use `renew-voting-keys`. This command will unregister all expired voting keys and register a new set of voting keys starting at first epoch without a registered voting key.
+
 # CLI Commands
+
+In commands that require `--package` switch, the list of currently supported network aliases are:
+ * mainnet
+ * sai (current testnet)
+
+As documented below, alternatively full path to package zip file can be provided using `file:///filename` or `http(s)://`.
 
 ## Setup Commands
 
@@ -305,20 +362,26 @@ JSON file that is ingested and used to replace the contents of `nodeMetadata` in
 This data is then accessible via the `node/metadata` REST endpoint.
 This file is optional and only used for deployments including API role.
 
+# Running
+
 ## Prerequisites:
 
-    apt-get install python3 python3-pip openssl
-    python3 -m pip install -r requirements.txt
-
-## Temporarily (until lightapi package fix):
-
+```sh
+apt-get install python3 python3-pip openssl
 ```
-cd product/lightapi/python
-./scripts/ci/setup_lint.sh
-./scripts/ci/lint.sh
-./scripts/ci/test.sh
 
-# to run shoestring
+## Installing and running prepared package:
 
-PYTHONPATH=}full path here{/product/lightapi/python python3 -m shoestring
+```sh
+python3 -m pip install symbol-shoestring
+python3 -m shoestring --help
+```
+
+## (Alternative) Running from github clone:
+
+```sh
+cd symbol-product-directory/tools/shoestring
+
+python3 -m pip install -r requirements.txt
+PYTHONPATH=. python3 -m shoestring --help
 ```
