@@ -39,13 +39,11 @@ def create_prev_clicked_handler(screens, activate_screen, title_bar, next_button
 
 	def handler():
 		if screens.has_previous:
-			print('has previous')
 			previous_screen = screens.previous()
 			title_bar.update_navigation(screens)
 
 			activate_screen(previous_screen)
 		else:
-			print('has NO previous')
 			title_bar.reset()
 
 		# restore handler in case it got replaced
