@@ -2,6 +2,9 @@ builds:
   - name: Explorer Nodewatch
     path: explorer/nodewatch
 
+  - name: Explorer Rest
+    path: explorer/rest
+
   - name: Faucet Authenticator
     path: faucet/authenticator
 

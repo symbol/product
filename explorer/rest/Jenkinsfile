@@ -1,0 +1,11 @@
+defaultCiPipeline {
+	operatingSystem = ['ubuntu']
+	instanceSize = 'medium'
+
+	ciBuildDockerfile = 'python.Dockerfile'
+
+	packageId = 'explorer-rest'
+
+	codeCoverageTool = 'coverage'
+	minimumCodeCoverage = 95
+}
