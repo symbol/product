@@ -1,3 +1,4 @@
+import sys
 from pathlib import Path
 
 from zenlog import log
@@ -9,6 +10,10 @@ async def run_main(args):
 	replacements = []
 
 	bootstrap_node_path = Path(args.bootstrap) / 'nodes/node'
+	if not bootstrap_node_path.exists():
+		log.error(_('import-bootstrap-invalid-directory').format(directory=bootstrap_node_path))
+		sys.exit(1)
+
 	bootstrap_harvesting_properties = bootstrap_node_path / 'server-config/resources/config-harvesting.properties'
 	if bootstrap_harvesting_properties.exists():
 		log.info(_('import-bootstrap-importing-harvester').format(path=bootstrap_harvesting_properties))
