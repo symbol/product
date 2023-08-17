@@ -1,6 +1,8 @@
 import tempfile
 from pathlib import Path
 
+import pytest
+
 from shoestring.__main__ import main
 from shoestring.internal.ConfigurationManager import ConfigurationManager
 from shoestring.internal.NodeFeatures import NodeFeatures
@@ -48,6 +50,7 @@ async def _run_test(is_harvester, is_voter, expected_imports_harvester, expected
 
 # pylint: disable=invalid-name
 
+# region success
 
 async def test_can_import_with_neither_harvester_nor_voter():
 	await _run_test(False, False, '', '')
@@ -67,5 +70,26 @@ async def test_can_import_with_both_harvester_and_voter():
 		True,
 		'{bootstrap_root}/nodes/node/server-config/resources/config-harvesting.properties',
 		'{bootstrap_root}/nodes/node/votingkeys')
+
+# endregion
+
+
+# region failure
+
+async def test_cannot_import_when_bootstrap_directory_invalid():
+	# Arrange:
+	with tempfile.TemporaryDirectory() as output_directory:
+		config_filepath = prepare_shoestring_configuration(output_directory, NodeFeatures.PEER)
+
+		with tempfile.TemporaryDirectory() as bootstrap_directory:
+			# Act + Assert:
+			with pytest.raises(SystemExit) as ex_info:
+				await main([
+					'import-bootstrap',
+					'--config', str(config_filepath),
+					'--bootstrap', str(bootstrap_directory)
+				])
+
+			assert 1 == ex_info.value.code
 
 # endregion

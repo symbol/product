@@ -26,7 +26,7 @@ msgid "argument-help-ca-key-path"
 msgstr "path to main private key PEM file"
 
 #: shoestring/commands/announce_transaction.py:35
-#: shoestring/commands/health.py:75 shoestring/commands/import_bootstrap.py:28
+#: shoestring/commands/health.py:75 shoestring/commands/import_bootstrap.py:33
 #: shoestring/commands/init.py:29
 #: shoestring/commands/min_cosignatures_count.py:34
 #: shoestring/commands/renew_certificates.py:29
@@ -43,7 +43,7 @@ msgstr "path to shoestring configuration file"
 msgid "argument-help-directory"
 msgstr "installation directory (default: {default_path})"
 
-#: shoestring/commands/import_bootstrap.py:29
+#: shoestring/commands/import_bootstrap.py:34
 msgid "argument-help-import-bootstrap-bootstrap"
 msgstr "path to bootstrap target directory"
 
@@ -230,13 +230,19 @@ msgstr ""
 "timeout when waiting for a block, this might indicate a problem between "
 "broker <-> REST"
 
-#: shoestring/commands/import_bootstrap.py:14
+#: shoestring/commands/import_bootstrap.py:19
 msgid "import-bootstrap-importing-harvester"
 msgstr "importing harvesting keys from bootstrap ({path})"
 
-#: shoestring/commands/import_bootstrap.py:19
+#: shoestring/commands/import_bootstrap.py:24
 msgid "import-bootstrap-importing-voter"
 msgstr "importing voting keys from bootstrap ({path})"
+
+#: shoestring/commands/import_bootstrap.py:14
+msgid "import-bootstrap-invalid-directory"
+msgstr ""
+"bootstrap directory provided ({directory}) does not look like bootstrap's"
+" target directory, nothing to import"
 
 #: shoestring/__main__.py:20
 msgid "main-announce-transaction-help"

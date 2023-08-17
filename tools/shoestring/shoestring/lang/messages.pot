@@ -17,7 +17,7 @@ msgid "argument-help-ca-key-path"
 msgstr ""
 
 #: shoestring/commands/announce_transaction.py:35
-#: shoestring/commands/health.py:75 shoestring/commands/import_bootstrap.py:28
+#: shoestring/commands/health.py:75 shoestring/commands/import_bootstrap.py:33
 #: shoestring/commands/init.py:29
 #: shoestring/commands/min_cosignatures_count.py:34
 #: shoestring/commands/renew_certificates.py:29
@@ -34,7 +34,7 @@ msgstr ""
 msgid "argument-help-directory"
 msgstr ""
 
-#: shoestring/commands/import_bootstrap.py:29
+#: shoestring/commands/import_bootstrap.py:34
 msgid "argument-help-import-bootstrap-bootstrap"
 msgstr ""
 
@@ -215,12 +215,16 @@ msgstr ""
 msgid "health-websockets-timed-out"
 msgstr ""
 
-#: shoestring/commands/import_bootstrap.py:14
+#: shoestring/commands/import_bootstrap.py:19
 msgid "import-bootstrap-importing-harvester"
 msgstr ""
 
-#: shoestring/commands/import_bootstrap.py:19
+#: shoestring/commands/import_bootstrap.py:24
 msgid "import-bootstrap-importing-voter"
+msgstr ""
+
+#: shoestring/commands/import_bootstrap.py:14
+msgid "import-bootstrap-invalid-directory"
 msgstr ""
 
 #: shoestring/__main__.py:20
