@@ -1,7 +1,7 @@
 from binascii import hexlify
 
-from rest.db.DatabaseConnection import DatabaseConnectionPool
-from rest.model.Block import BlockView
+from db.DatabaseConnection import DatabaseConnectionPool
+from model.Block import BlockView
 
 
 def _format_bytes(buffer):
