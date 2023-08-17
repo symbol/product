@@ -1,5 +1,6 @@
 import ipaddress
 import socket
+import sys
 from pathlib import Path
 
 from symbollightapi.connector.SymbolConnector import SymbolConnector
@@ -77,7 +78,11 @@ async def run_main(args):
 	config = parse_shoestring_configuration(args.config)
 
 	with Preparer(Path(args.directory), config, log) as preparer:
-		is_initial_setup = not preparer.directories.resources.exists()
+		is_initial_setup = hasattr(args, 'security')
+
+		if is_initial_setup and preparer.directories.resources.exists():
+			log.error(_('setup-resources-directory-exists').format(directory=preparer.directories.resources))
+			sys.exit(1)
 
 		if is_initial_setup:
 			# setup basic directories
