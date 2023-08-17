@@ -449,3 +449,34 @@ async def test_cannot_prepare_peer_with_https(server):  # pylint: disable=redefi
 		True)
 
 # endregion
+
+
+# region directory checks
+
+async def test_cannot_rerun_setup_when_directory_exists(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	with tempfile.TemporaryDirectory() as output_directory:
+		with tempfile.TemporaryDirectory() as package_directory:
+			prepare_shoestring_configuration(package_directory, NodeFeatures.PEER, server.make_url(''), api_https=False)
+			_prepare_overrides(package_directory)
+			prepare_testnet_package(package_directory, 'resources.zip')
+
+			# - create resources directory
+			(Path(output_directory) / 'userconfig' / 'resources').mkdir(parents=True)
+
+			with tempfile.TemporaryDirectory() as ca_directory:
+				# Act + Assert:
+				with pytest.raises(SystemExit) as ex_info:
+					await main([
+						'setup',
+						'--config', str(Path(package_directory) / 'sai.shoestring.ini'),
+						'--security', 'insecure',
+						'--package', f'file://{Path(package_directory) / "resources.zip"}',
+						'--directory', output_directory,
+						'--ca-key-path', str(Path(ca_directory) / 'xyz.key.pem'),
+						'--overrides', str(Path(package_directory) / 'user_overrides.ini')
+					])
+
+				assert 1 == ex_info.value.code
+
+# endregion

@@ -21,7 +21,7 @@ msgstr "file containing serialized transaction to send"
 
 #: shoestring/commands/min_cosignatures_count.py:35
 #: shoestring/commands/renew_certificates.py:31
-#: shoestring/commands/setup.py:139 shoestring/commands/signer.py:93
+#: shoestring/commands/setup.py:144 shoestring/commands/signer.py:93
 msgid "argument-help-ca-key-path"
 msgstr "path to main private key PEM file"
 
@@ -31,7 +31,7 @@ msgstr "path to main private key PEM file"
 #: shoestring/commands/min_cosignatures_count.py:34
 #: shoestring/commands/renew_certificates.py:29
 #: shoestring/commands/renew_voting_keys.py:112
-#: shoestring/commands/reset_data.py:87 shoestring/commands/setup.py:131
+#: shoestring/commands/reset_data.py:87 shoestring/commands/setup.py:136
 #: shoestring/commands/signer.py:92
 msgid "argument-help-config"
 msgstr "path to shoestring configuration file"
@@ -39,7 +39,7 @@ msgstr "path to shoestring configuration file"
 #: shoestring/commands/health.py:76
 #: shoestring/commands/renew_certificates.py:30
 #: shoestring/commands/renew_voting_keys.py:113
-#: shoestring/commands/reset_data.py:88 shoestring/commands/setup.py:133
+#: shoestring/commands/reset_data.py:88 shoestring/commands/setup.py:138
 msgid "argument-help-directory"
 msgstr "installation directory (default: {default_path})"
 
@@ -75,21 +75,21 @@ msgstr "renews CA certificate too"
 msgid "argument-help-reset-data-purge-harvesters"
 msgstr "purge harvesters.dat file"
 
-#: shoestring/commands/setup.py:135
+#: shoestring/commands/setup.py:140
 msgid "argument-help-setup-metadata"
 msgstr "Custom node metadata (this is only valid for API roles)"
 
-#: shoestring/commands/setup.py:134
+#: shoestring/commands/setup.py:139
 msgid "argument-help-setup-overrides"
 msgstr "path to custom user settings"
 
-#: shoestring/commands/init.py:28 shoestring/commands/setup.py:132
+#: shoestring/commands/init.py:28 shoestring/commands/setup.py:137
 msgid "argument-help-setup-package"
 msgstr ""
 "Network configuration package. Possible values: (name | file:///filename "
 "| http(s)://uri) (default: mainnet)"
 
-#: shoestring/commands/setup.py:138
+#: shoestring/commands/setup.py:143
 msgid "argument-help-setup-security"
 msgstr "security mode (default: default)"
 
@@ -115,7 +115,7 @@ msgstr "downloaded file ({descriptor_name}) has invalid hash"
 
 #: shoestring/commands/announce_transaction.py:15
 #: shoestring/commands/min_cosignatures_count.py:18
-#: shoestring/commands/renew_voting_keys.py:32 shoestring/commands/setup.py:61
+#: shoestring/commands/renew_voting_keys.py:32 shoestring/commands/setup.py:62
 msgid "general-connecting-to-node"
 msgstr "connecting to {endpoint}"
 
@@ -356,11 +356,17 @@ msgstr "removing expired voting keys: {filepath}"
 msgid "reset-data-recreating-directory"
 msgstr "purging and recreating DIRECTORY {directory}"
 
-#: shoestring/commands/setup.py:73
+#: shoestring/commands/setup.py:74
 msgid "setup-no-state-changes-required"
 msgstr ""
 "no transaction has been generated because account is already properly "
 "configured"
+
+#: shoestring/commands/setup.py:84
+msgid "setup-resources-directory-exists"
+msgstr ""
+"setup failed because resources directory {directory} already exists, did "
+"you intend to run upgrade?"
 
 #: shoestring/commands/signer.py:32
 msgid "signer-aggregate-transaction"
@@ -394,7 +400,7 @@ msgstr "recreating DIRECTORY {directory}"
 msgid "wizard-button-finish"
 msgstr "Finish!"
 
-#: shoestring/wizard/buttons.py:53 shoestring/wizard/navigation.py:52
+#: shoestring/wizard/buttons.py:51 shoestring/wizard/navigation.py:52
 msgid "wizard-button-next"
 msgstr "Next"
 
