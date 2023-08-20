@@ -16,7 +16,7 @@ class NemDatabase(DatabaseConnectionPool):
 	def _create_block_view(result):
 		return BlockView(
 			height=result[0],
-			timestamp=result[1],
+			timestamp=str(result[1]),
 			total_fees=result[2],
 			total_transactions=result[3],
 			difficulty=result[4],
