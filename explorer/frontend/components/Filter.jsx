@@ -9,8 +9,9 @@ import { useDelayedCall } from '@/utils';
 import ValueAccount from './ValueAccount';
 import ValueMosaic from './ValueMosaic';
 import Field from './Field';
+import ValueTransactionType from './ValueTransactionType';
 
-const FilterModal = ({ title, type, options, onSearchRequest, onClose, onSelect }) => {
+const FilterModal = ({ title, type, isSearchEnabled, options, onSearchRequest, onClose, onSelect }) => {
 	const [text, setText] =  useState('');
 	const [searchResult, setSearchResult] =  useState(null);
 	const [search] = useDelayedCall(async (text) => {
@@ -28,11 +29,14 @@ const FilterModal = ({ title, type, options, onSearchRequest, onClose, onSelect 
 		switch(type) {
 			case 'account': return <ValueAccount address={item.address} size="sm" onClick={() => onSelect(item.address)} />
 			case 'mosaic': return <ValueMosaic mosaicName={item.name} mosaicId={item.id} size="md" onClick={() => onSelect(item.id)} />
+			case 'transaction-type': return <ValueTransactionType value={item} onClick={() => onSelect(item)} />
 			default: return item;
 		}
 	}
 	const list = searchResult ? [searchResult] : options;
-	const listTitle = searchResult
+	const listTitle = !isSearchEnabled
+		? ''
+		: searchResult
 		? 'Search results'
 		: options.length
 		? 'Suggestions'
@@ -43,11 +47,13 @@ const FilterModal = ({ title, type, options, onSearchRequest, onClose, onSelect 
 			<Card className={styles.card} onClick={e => e.stopPropagation()}>
 				<ButtonClose className={styles.buttonClose} onClick={onClose} />
 				<h3>{title}</h3>
-				<TextBox
-					iconSrc="/images/icon-search.svg"
-					placeholder={type} value={text}
-					onChange={handleSearchTextChange}
-				/>
+				{isSearchEnabled && (
+					<TextBox
+						iconSrc="/images/icon-search.svg"
+						placeholder={type} value={text}
+						onChange={handleSearchTextChange}
+					/>
+				)}
 				<Field title={listTitle}>
 					<div className={styles.resultList}>
 						{list.map((item, index) => (
@@ -70,7 +76,14 @@ const Filter = ({ data, value, search, isDisabled, onChange }) => {
     const [expandedFilter, setExpandedFilter] = useState({});
 
     const isFilerActive = (name) => !!value[name];
-    const isFilterAvailable = (name) => (Object.keys(value).length === 0 || value.hasOwnProperty(name)) && !isDisabled;
+    const isFilterAvailable = (name) => (
+		!Object.keys(value)
+			.some(selectedFilterName => data
+				.find(filter => filter.name === selectedFilterName)
+				?.conflicts?.some(conflictFilterName => conflictFilterName === name)
+			)
+		|| value.hasOwnProperty(name)
+	) && !isDisabled;
     const getButtonStyle = (name) => `
         ${styles.button}
         ${isFilerActive(name) ? styles.buttonActive : null}
@@ -99,6 +112,8 @@ const Filter = ({ data, value, search, isDisabled, onChange }) => {
     const changeFilterValue = (filter, filterValue) => {
         const currentFilterValues = { ...value };
 
+		filter.off?.forEach(filterName => delete currentFilterValues[filterName]);
+
         if (filterValue) {
             currentFilterValues[filter.name] = filterValue;
         } else {
@@ -108,7 +123,7 @@ const Filter = ({ data, value, search, isDisabled, onChange }) => {
         onChange(currentFilterValues);
     };
 
-	const isFilterModalShown = expandedFilter?.type === 'account' || expandedFilter?.type === 'mosaic';
+	const isFilterModalShown = ['account', 'mosaic', 'transaction-type'].some((value)=> value === expandedFilter?.type);
 
     return (
         <div className={styles.filter}>
@@ -136,13 +151,13 @@ const Filter = ({ data, value, search, isDisabled, onChange }) => {
 				<FilterModal
 					title={expandedFilter.title}
 					type={expandedFilter?.type}
+					isSearchEnabled={expandedFilter?.isSearchEnabled}
 					options={expandedFilter.options || []}
 					onClose={() => setExpandedFilter(null)}
 					onSelect={handleFilterSelection}
 					onSearchRequest={search}
 				/>
             )}
-			{JSON.stringify(value)}
         </div>
     );
 };
