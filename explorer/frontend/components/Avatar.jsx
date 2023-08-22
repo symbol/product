@@ -2,6 +2,7 @@ import config from '@/config';
 import CustomImage from './CustomImage';
 import styles from '@/styles/components/Avatar.module.scss';
 import hslToRgb from 'hsl-rgb';
+import IconTransactionType from './IconTransactionType';
 
 const getColorFromHash = hash => {
 	if (!hash) {
@@ -66,11 +67,20 @@ const MosaicAvatar = ({ mosaicId }) => {
 	return <CustomImage src={imageSrc} className={styles.image} />;
 };
 
+const TransactionAvatar = ({ type }) => {
+	return (
+		<div className={styles.imageDefault}>
+			<IconTransactionType value={type} />
+		</div>
+	);
+};
+
 const Avatar = ({ size, type, value}) => {
 	const sizeStyleMap = {
 		sm: styles.containerSm,
 		md: styles.containerMd,
 		lg: styles.containerLg,
+		xl: styles.containerXl,
 	};
 
 	const ChildComponent =
@@ -78,6 +88,8 @@ const Avatar = ({ size, type, value}) => {
 		? <AccountAvatar address={value} />
 		: type === 'mosaic'
 		? <MosaicAvatar mosaicId={value} />
+		: type === 'transaction'
+		? <TransactionAvatar type={value} />
 		: null;
 
 
