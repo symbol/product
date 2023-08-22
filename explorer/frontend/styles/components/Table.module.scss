@@ -37,6 +37,10 @@
             animation-duration: 250ms;
             animation-timing-function: linear;
 
+            &:last-child {
+                border-bottom: none;
+            }
+
             &:hover {
                 background-color: #F3F4F7;
                 transition: background-color 250ms linear;
@@ -44,7 +48,7 @@
         }
     }
 
-    .dataMobile {
+    .listMobile {
         display: none;
 
         .itemMobile {
@@ -63,6 +67,16 @@
         }
     }
 
+    .section {
+        margin-top: $spacing-base * 3;
+    }
+
+    .sectionHeader {
+        border-radius: 1rem 1rem 0rem 0rem;
+        background: #F3F4F7;
+        display: inline-block;
+    }
+
 
     @media #{$screen-mobile} {
         .header {
@@ -74,7 +88,36 @@
         }
 
         .dataMobile {
+            overflow-x: auto;
+            border: none;
+            display: flex !important;
+            flex-direction: column;
+            gap: $spacing-base;
+
+            .dataRow {
+                gap: $spacing-base * 2;
+                padding: 0 0 $spacing-base;
+
+                &:last-child {
+                    border-bottom: none;
+                    padding: 0
+                }
+            }
+        }
+
+        .listMobile {
             display: block;
+        }
+
+        .section {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sectionHeader {
+            align-self: center;
+            margin-bottom: $spacing-base * 2;
+            border-radius: $spacing-base;
         }
     }
 }
