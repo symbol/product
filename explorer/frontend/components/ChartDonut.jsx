@@ -3,10 +3,10 @@ import dynamic from 'next/dynamic';
 
 const ReactApexChart = dynamic(() => import('react-apexcharts'), { ssr: false });
 
-const DonutChart = ({ data = [], name, label }) => {
+const ChartDonut = ({ data = [], name, label }) => {
 	const colorMain = '#50B9AD';
 	const colorEnd = '#E9F6F5';
-	const colors = [...Array(data.length - 1).fill(colorMain), colorEnd];
+	const colors = [...Array(Math.max(data.length - 1, 0)).fill(colorMain), colorEnd];
 	const series = data.map(item => item[0]);
 	const options = {
 		legend: {
@@ -42,7 +42,7 @@ const DonutChart = ({ data = [], name, label }) => {
 	return (
 		<div className={styles.container}>
 			<div className={styles.donutLabel}>{label}</div>
-			<div className={styles.donutChart} id="chart">
+			<div className={styles.chartDonut} id="chart">
 				<ReactApexChart options={options} series={series} type="donut" height="100%" />
 			</div>
 			<div className={styles.name}>{name}</div>
@@ -50,4 +50,4 @@ const DonutChart = ({ data = [], name, label }) => {
 	);
 };
 
-export default DonutChart;
+export default ChartDonut;

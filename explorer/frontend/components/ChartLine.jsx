@@ -1,9 +1,9 @@
-import styles from '@/styles/components/LineChart.module.scss';
+import styles from '@/styles/components/Chart.module.scss';
 import dynamic from 'next/dynamic';
 
 const ReactApexChart = dynamic(() => import('react-apexcharts'), { ssr: false });
 
-const LineChart = ({ data = [], name }) => {
+const ChartLine = ({ data = [], name }) => {
 	const series = [
 		{
 			name: name,
@@ -44,12 +44,12 @@ const LineChart = ({ data = [], name }) => {
 	};
 
 	return (
-		<div className={styles.lineChart}>
-			<div className={styles.container} id="chart">
+		<div className={styles.container}>
+			<div className={styles.chartLine} id="chart">
 				<ReactApexChart options={options} series={series} type="line" height="100%" />
 			</div>
 		</div>
 	);
 };
 
-export default LineChart;
+export default ChartLine;
