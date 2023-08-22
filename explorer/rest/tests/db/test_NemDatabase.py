@@ -1,14 +1,11 @@
 import unittest
-from collections import namedtuple
 
 import testing.postgresql
 
 from rest.db.NemDatabase import NemDatabase
 from rest.model.Block import BlockView
 
-from ..test.DatabaseTestUtils import BLOCKS, initialize_database
-
-DatabaseConfig = namedtuple('DatabaseConfig', ['database', 'user', 'password', 'host', 'port'])
+from ..test.DatabaseTestUtils import BLOCKS, DatabaseConfig, initialize_database
 
 # region test data
 

@@ -1,6 +1,5 @@
 import os
 import tempfile
-from collections import namedtuple
 from pathlib import Path
 
 import pytest
@@ -9,9 +8,8 @@ import testing.postgresql
 from rest import create_app
 from rest.model.Block import BlockView
 
-from .test.DatabaseTestUtils import BLOCKS, initialize_database
+from .test.DatabaseTestUtils import BLOCKS, DatabaseConfig, initialize_database
 
-DatabaseConfig = namedtuple('DatabaseConfig', ['database', 'user', 'password', 'host', 'port'])
 DATABASE_CONFIG_INI = 'db_config.ini'
 
 postgresql = testing.postgresql.Postgresql(port=5433)

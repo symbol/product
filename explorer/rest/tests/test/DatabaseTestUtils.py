@@ -4,6 +4,7 @@ from collections import namedtuple
 from rest.db.NemDatabase import NemDatabase
 
 Block = namedtuple('Block', ['height', 'timestamp', 'total_fees', 'total_transactions', 'difficulty', 'block_hash', 'signer', 'signature'])
+DatabaseConfig = namedtuple('DatabaseConfig', ['database', 'user', 'password', 'host', 'port'])
 
 # region test data
 

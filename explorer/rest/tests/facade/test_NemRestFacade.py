@@ -1,14 +1,11 @@
 import unittest
-from collections import namedtuple
 
 import testing.postgresql
 
 from rest.db.NemDatabase import NemDatabase
 from rest.facade.NemRestFacade import NemRestFacade
 
-from ..test.DatabaseTestUtils import initialize_database
-
-DatabaseConfig = namedtuple('DatabaseConfig', ['database', 'user', 'password', 'host', 'port'])
+from ..test.DatabaseTestUtils import DatabaseConfig, initialize_database
 
 # region test data
 
