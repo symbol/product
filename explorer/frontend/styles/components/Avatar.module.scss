@@ -16,6 +16,11 @@
 }
 
 .containerLg {
+    width: 4.67rem;
+    height: 4.67rem;
+}
+
+.containerXl {
     width: 6.67rem;
     height: 6.67rem;
 }
@@ -23,4 +28,14 @@
 .image {
     width: 100%;
     height: 100%;
+}
+
+.imageDefault {
+    width: 100%;
+    height: 100%;
+    background-color: #fff;
+    filter: invert(1);
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
