@@ -4,7 +4,7 @@ from collections import namedtuple
 import psycopg2
 import testing.postgresql
 
-from db.DatabaseConnection import DatabaseConnectionPool
+from rest.db.DatabaseConnection import DatabaseConnectionPool
 
 DatabaseConfig = namedtuple('DatabaseConfig', ['database', 'user', 'password', 'host', 'port'])
 
