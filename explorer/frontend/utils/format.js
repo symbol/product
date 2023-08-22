@@ -1,4 +1,4 @@
-export const formatDate = (dateStr, translate, showTime = false, showSeconds = false) => {
+export const formatDate = (dateStr, translate, showTime = false, showSeconds = false, showDay = true) => {
 	const months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
 
 	const addZero = num => {
@@ -13,8 +13,9 @@ export const formatDate = (dateStr, translate, showTime = false, showSeconds = f
 	const day = dateObj.getDate();
 	const year = dateObj.getFullYear();
 
-	let formattedDate = `${month} ${day}, ${year}`;
-
+	let formattedDate = `${month}`;
+	formattedDate += showDay ? ` ${day}` : '';
+	formattedDate += `, ${year}`;
 	formattedDate += showTime ? ` • ${hour}:${minutes}` : '';
 	formattedDate += showTime && showSeconds ? `:${seconds}` : '';
 
