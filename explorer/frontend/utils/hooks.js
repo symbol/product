@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 export const useDataManager = (callback, defaultData, onError) => {
 	const [isLoading, setIsLoading] = useState(false);
@@ -43,7 +43,7 @@ export const usePagination = (callback, defaultData) => {
 				}
 			} catch (error) {
 				// eslint-disable-next-line no-console
-				onError('[Pagination] Error:', error);
+				console.error('[Pagination] Error:', error);
 			}
 			setIsLoading(false);
 		});
@@ -62,6 +62,42 @@ export const usePagination = (callback, defaultData) => {
 	}
 
 	return { requestNextPage, data, isLoading, pageNumber, isLastPage, filter, changeFilter };
+};
+
+export const useFilter = (callback, defaultData, initialCall) => {
+	const [filter, setFilter] = useState({});
+	const [isLoading, setIsLoading] = useState(false);
+	const [data, setData] = useState(defaultData);
+
+	const call = (filter) => {
+		setIsLoading(true);
+		setTimeout(async () => {
+			try {
+				const data = await callback({ ...filter});
+				setData(data);
+
+			} catch (error) {
+				// eslint-disable-next-line no-console
+				console.error('[Filter] Error:', error);
+			}
+			setIsLoading(false);
+		});
+	};
+
+
+	const changeFilter = (filter) => {
+		setData(defaultData);
+		setFilter(filter);
+		call(filter);
+	}
+
+	useEffect(() => {
+		if (initialCall) {
+			call(filter);
+		}
+	}, [initialCall])
+
+	return { data, isLoading, filter, changeFilter };
 };
 
 export const useClientSideFilter = (data) => {
@@ -93,3 +129,11 @@ export const useDelayedCall = (callback) => {
 
 	return [call];
 }
+
+export const useToggle = (initialValue) => {
+    const [value, setValue] = useState(initialValue);
+
+    const toggle = () => setValue((value) => !value);
+
+    return [value, toggle];
+};

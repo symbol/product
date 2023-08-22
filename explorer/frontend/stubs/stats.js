@@ -1,7 +1,7 @@
+import { getAccountsStub } from "./accounts";
+
 export const getStatsStub = async () => {
 	const baseInfo = {
-		totalTransactions: 99888777154,
-		transactionsPerBlock: 15,
 		price: 5.17,
 		priceChange: 13,
 		volume: 1200000000,
@@ -25,6 +25,19 @@ export const getStatsStub = async () => {
 		fast: 0.01
 	};
 
+	const accounts = {
+		total: 1777154,
+		harvesting: 8411,
+		eligibleForHarvesting: 1005242
+	}
+
+	const transactions = {
+		totalAll: 99888777154,
+		total30Days: 8411,
+		total24Hours: 316,
+		averagePerBlock: 15,
+	};
+
 	const charts = {
 		blockTime: new Array(30)
 			.fill(null)
@@ -45,6 +58,47 @@ export const getStatsStub = async () => {
 		baseInfo,
 		chainInfo,
 		fees,
+		accounts,
+		transactions,
 		charts
 	});
+};
+
+
+export const getTransactionChartStub = async (filter) => {
+	switch (filter) {
+		case 'perDay':
+			return new Array(90)
+				.fill(null)
+				.map((_, index) => [
+					new Date(Date.now() - 60 * Math.abs(index - 89) * 60000 * 24).getTime(),
+					Math.floor(Math.random() * 100 + 300 + Math.log(index * 20) * 50)
+				]);
+		case 'perMonth':
+			return new Array(36)
+			.fill(null)
+			.map((_, index) => [
+				new Date(Date.now() - 60 * Math.abs(index - 35) * 60000 * 24 * 31).getTime(),
+				Math.floor(Math.random() * 100 + 300 + Math.log(index * 20) * 50)
+			]);
+		default:
+			return new Array(240)
+				.fill(null)
+				.map((_, index) => [
+					3999770 + index,
+					Math.floor(Math.random() * 100 + 300 + Math.log(index * 20) * 50)
+				]);
+	}
+};
+
+export const getAccountChartsStub = async () => {
+	const accounts = (await getAccountsStub({pageNumber: 1, pageSize: 10})).slice(0, 9);
+
+	return {
+		importanceBreakdown: [
+			...accounts.map(account => [account.importance, account.address]),
+			[48.9, 'rest']
+		],
+		harvestingImportance: [[34.54, 'harvesting'], [65.46, 'not harvesting']]
+	}
 };
