@@ -14,12 +14,6 @@ builds:
   - name: Light API Python
     path: lightapi/python
 
-  - name: Optin Puller
-    path: optin/puller
-
-  - name: Optin Reporting
-    path: optin/reporting
-
   - name: Shoestring
     path: tools/shoestring
 

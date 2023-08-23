@@ -36,18 +36,6 @@ coverage:
         flags:
           - lightapi-python
 
-      optin-puller:
-        target: auto
-        threshold: 1%
-        flags:
-          - optin-puller
-
-      optin-reporting:
-        target: auto
-        threshold: 1%
-        flags:
-          - optin-reporting
-
       tools-shoestring:
         target: auto
         threshold: 1%

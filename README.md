@@ -10,8 +10,6 @@ It includes our optin manager.
 | [@faucet/backend](faucet/backend) | [![lint][faucet-backend-lint]][faucet-backend-job] | | [![test][faucet-backend-test]][faucet-backend-job]| [![][faucet-backend-cov]][faucet-backend-cov-link] |
 | [@faucet/frontend](faucet/frontend) | [![lint][faucet-frontend-lint]][faucet-frontend-job] | [![build][faucet-frontend-build]][faucet-frontend-job] | [![test][faucet-frontend-test]][faucet-frontend-job]| [![][faucet-frontend-cov]][faucet-frontend-cov-link] |
 | [@lightapi/python](lightapi/python) | [![lint][lightapi-python-lint]][lightapi-python-job] | | [![test][lightapi-python-test]][lightapi-python-job] | [![][lightapi-python-cov]][lightapi-python-cov-link]
-| [@optin/puller](optin/puller) | [![lint][optin-puller-lint]][optin-puller-job] | | [![test][optin-puller-test]][optin-puller-job]| [![][optin-puller-cov]][optin-puller-cov-link] |
-| [@optin/reporting](optin/reporting) | [![lint][optin-reporting-lint]][optin-reporting-job] | [![build][optin-reporting-build]][optin-reporting-job] | [![test][optin-reporting-test]][optin-reporting-job]| [![][optin-reporting-cov]][optin-reporting-cov-link] |
 | [@tools/shoestring](tools/shoestring) | [![lint][tools-shoestring-lint]][tools-shoestring-job] | | [![test][tools-shoestring-test]][tools-shoestring-job]| [![][tools-shoestring-cov]][tools-shoestring-cov-link] |
 | [@tools/vanity](tools/vanity) | [![lint][tools-vanity-lint]][tools-vanity-job] | | [![test][tools-vanity-test]][tools-vanity-job]| [![][tools-vanity-cov]][tools-vanity-cov-link] |
 
@@ -54,19 +52,6 @@ Detailed version can be seen on [codecov.io][product-cov-link].
 [lightapi-python-test]: https://jenkins.symboldev.com/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Flightapi-python%2Fdev%2F&config=lightapi-python-test
 [lightapi-python-cov]: https://codecov.io/gh/symbol/product/branch/dev/graph/badge.svg?token=SSYYBMK0M7&flag=lightapi-python
 [lightapi-python-cov-link]: https://codecov.io/gh/symbol/product/tree/dev/lightapi/python
-
-[optin-puller-job]: https://jenkins.symboldev.com/blue/organizations/jenkins/Symbol%2Fgenerated%2Fproduct%2Foptin-puller/activity?branch=dev
-[optin-puller-lint]: https://jenkins.symboldev.com/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Foptin-puller%2Fdev%2F&config=optin-puller-lint
-[optin-puller-test]: https://jenkins.symboldev.com/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Foptin-puller%2Fdev%2F&config=optin-puller-test
-[optin-puller-cov]: https://codecov.io/gh/symbol/product/branch/dev/graph/badge.svg?token=SSYYBMK0M7&flag=optin-puller
-[optin-puller-cov-link]: https://codecov.io/gh/symbol/product/tree/dev/optin/puller
-
-[optin-reporting-job]: https://jenkins.symboldev.com/blue/organizations/jenkins/Symbol%2Fgenerated%2Fproduct%2Foptin-reporting/activity?branch=dev
-[optin-reporting-lint]: https://jenkins.symboldev.com/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Foptin-reporting%2Fdev%2F&config=optin-reporting-lint
-[optin-reporting-build]: https://jenkins.symboldev.com/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Foptin-reporting%2Fdev%2F&config=optin-reporting-build
-[optin-reporting-test]: https://jenkins.symboldev.com/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Foptin-reporting%2Fdev%2F&config=optin-reporting-test
-[optin-reporting-cov]: https://codecov.io/gh/symbol/product/branch/dev/graph/badge.svg?token=SSYYBMK0M7&flag=optin-reporting
-[optin-reporting-cov-link]: https://codecov.io/gh/symbol/product/tree/dev/optin/reporting
 
 [tools-shoestring-job]: https://jenkins.symboldev.com/blue/organizations/jenkins/Symbol%2Fgenerated%2Fproduct%2Ftools-shoestring/activity?branch=dev
 [tools-shoestring-lint]: https://jenkins.symboldev.com/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Ftools-shoestring%2Fdev%2F&config=tools-shoestring-lint
