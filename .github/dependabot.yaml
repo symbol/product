@@ -66,48 +66,6 @@ updates:
       prefix: '[dependency]'
 
   - package-ecosystem: pip
-    directory: /optin/puller
-    schedule:
-      interval: weekly
-      day: sunday
-    target-branch: dev
-    labels: [Opt-In]
-    versioning-strategy: increase-if-necessary
-    commit-message:
-      prefix: '[dependency]'
-    ignore:
-      - dependency-name: "*"
-        update-types: ["version-update:semver-major"]
-
-  - package-ecosystem: npm
-    directory: /optin/reporting
-    schedule:
-      interval: weekly
-      day: sunday
-    target-branch: dev
-    labels: [Opt-In]
-    versioning-strategy: increase-if-necessary
-    commit-message:
-      prefix: '[dependency]'
-    ignore:
-      - dependency-name: "*"
-        update-types: ["version-update:semver-major"]
-
-  - package-ecosystem: npm
-    directory: /optin/reporting/client
-    schedule:
-      interval: weekly
-      day: sunday
-    target-branch: dev
-    labels: [Opt-In]
-    versioning-strategy: increase-if-necessary
-    commit-message:
-      prefix: '[dependency]'
-    ignore:
-      - dependency-name: "*"
-        update-types: ["version-update:semver-major"]
-
-  - package-ecosystem: pip
     directory: /tools/shoestring
     schedule:
       interval: weekly

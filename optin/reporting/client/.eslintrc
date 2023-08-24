@@ -1,5 +1,0 @@
----
-extends:
-- react-app
-- react-app/jest
-- ../../../linters/javascript/default.eslintrc
