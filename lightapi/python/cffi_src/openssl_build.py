@@ -22,7 +22,7 @@ ffi_builder.set_source(
 	''',
 	include_dirs=include_dirs,
 	library_dirs=library_dirs,
-	libraries=['crypto', 'ssl'])
+	libraries=['libcrypto', 'libssl'] if os.name == 'nt' else ['crypto', 'ssl'])
 
 # add all openssl constants, types and functions being used
 ffi_builder.cdef('''
