@@ -16,3 +16,11 @@ export const ACCOUNT_STATE_CHANGE_ACTION = {
     BURN: 'burn',
     MINT: 'mint'
 }
+
+export const EVENT = {
+    ADDRESS_BOOK_UPDATE: 'client.storage.contacts.update'
+}
+
+export const STORAGE_KEY = {
+    ADDRESS_BOOK: 'ADDRESS_BOOK',
+}
