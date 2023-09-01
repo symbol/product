@@ -1,18 +1,17 @@
+import Avatar from './Avatar';
 import CustomImage from './CustomImage';
 import config from '@/config';
-import styles from '@/styles/components/ValueMosaic.module.scss';
-import Avatar from './Avatar';
 import { ACCOUNT_STATE_CHANGE_ACTION, TRANSACTION_DIRECTION } from '@/constants';
+import styles from '@/styles/components/ValueMosaic.module.scss';
 
 const ValueMosaic = ({ mosaicName, mosaicId, amount, isNative, className, direction, size, onClick }) => {
-
 	let displayedName;
 	let imageSrc;
 	const directionStyleMap = {
 		[TRANSACTION_DIRECTION.INCOMING]: styles.incoming,
 		[ACCOUNT_STATE_CHANGE_ACTION.RECEIVE]: styles.incoming,
 		[TRANSACTION_DIRECTION.OUTGOING]: styles.outgoing,
-		[ACCOUNT_STATE_CHANGE_ACTION.SEND]: styles.outgoing,
+		[ACCOUNT_STATE_CHANGE_ACTION.SEND]: styles.outgoing
 	};
 	const directionStyle = directionStyleMap[direction];
 	const isAmountExist = !isNaN(amount) && amount !== null;
@@ -28,8 +27,7 @@ const ValueMosaic = ({ mosaicName, mosaicId, amount, isNative, className, direct
 
 	const handleClick = () => onClick && onClick(mosaicId);
 
-	return size === 'md'
-	? (
+	return size === 'md' ? (
 		<div className={`${styles.valueMosaic} ${styles.containerMd} ${className}`} onClick={handleClick}>
 			<Avatar type="mosaic" size="md" value={mosaicId} />
 			<div className={styles.valueMosaicMdTextSection}>
@@ -37,8 +35,7 @@ const ValueMosaic = ({ mosaicName, mosaicId, amount, isNative, className, direct
 				{isAmountExist && <div>{amount}</div>}
 			</div>
 		</div>
-	)
-	: (
+	) : (
 		<div className={`${styles.valueMosaic} ${directionStyle} ${className}`} onClick={handleClick}>
 			<CustomImage src={imageSrc} className={styles.icon} alt="Mosaic" />
 			<div className={styles.amount}>

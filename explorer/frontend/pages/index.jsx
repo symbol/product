@@ -1,6 +1,6 @@
+import ChartLine from '@/components/ChartLine';
 import CustomImage from '@/components/CustomImage';
 import Field from '@/components/Field';
-import ChartLine from '@/components/ChartLine';
 import RecentBlocks from '@/components/RecentBlocks';
 import RecentTransactions from '@/components/RecentTransactions';
 import Section from '@/components/Section';

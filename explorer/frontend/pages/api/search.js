@@ -11,12 +11,12 @@ export default async function handler(req, res) {
 }
 
 export const fetchSearch = async q => {
-	const params = new URLSearchParams({q}).toString();
+	const params = new URLSearchParams({ q }).toString();
 	const response = await fetch(`/search?${params}`);
 
 	return response.json();
 };
 
-export const search = async (query) => {
-    return searchStub(query);
+export const search = async query => {
+	return searchStub(query);
 };

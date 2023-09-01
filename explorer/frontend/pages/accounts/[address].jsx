@@ -1,28 +1,28 @@
+import { getAccountInfo } from '../api/accounts';
+import { search } from '../api/search';
+import Avatar from '@/components/Avatar';
+import ButtonCSV from '@/components/ButtonCSV';
 import Field from '@/components/Field';
+import Filter from '@/components/Filter';
 import ItemTransactionMobile from '@/components/ItemTransactionMobile';
 import Section from '@/components/Section';
 import Table from '@/components/Table';
 import ValueAccount from '@/components/ValueAccount';
+import ValueAccountBalance from '@/components/ValueAccountBalance';
 import ValueCopy from '@/components/ValueCopy';
 import ValueLabel from '@/components/ValueLabel';
 import ValueMosaic from '@/components/ValueMosaic';
 import ValueTimestamp from '@/components/ValueTimestamp';
+import ValueTransactionDirection from '@/components/ValueTransactionDirection';
 import ValueTransactionHash from '@/components/ValueTransactionHash';
 import ValueTransactionType from '@/components/ValueTransactionType';
+import { TRANSACTION_TYPE } from '@/constants';
 import { fetchTransactionPage, getTransactionPage } from '@/pages/api/transactions';
 import styles from '@/styles/pages/AccountInfo.module.scss';
+import { useClientSideFilter, usePagination } from '@/utils';
 import Head from 'next/head';
 import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
-import { search } from '../api/search';
-import ButtonCSV from '@/components/ButtonCSV';
-import Filter from '@/components/Filter';
-import { useClientSideFilter, usePagination } from '@/utils';
-import Avatar from '@/components/Avatar';
-import { getAccountInfo } from '../api/accounts';
-import ValueAccountBalance from '@/components/ValueAccountBalance';
-import ValueTransactionDirection from '@/components/ValueTransactionDirection';
-import { TRANSACTION_TYPE } from '@/constants';
 
 export const getServerSideProps = async ({ locale, params }) => {
 	const accountInfo = await getAccountInfo(params.address);
@@ -50,17 +50,17 @@ const AccountInfo = ({ accountInfo, preloadedTransactions }) => {
 	const mosaics = useClientSideFilter(accountInfo.mosaics);
 
 	const mosaicFilterConfig = [
-        {
-            name: 'isCreatedByAccount',
-            title: t('filter_created'),
-            type: 'boolean',
-        },
-        {
-            name: 'isExpired',
-            title: t('filter_expired'),
-            type: 'boolean',
-        }
-    ];
+		{
+			name: 'isCreatedByAccount',
+			title: t('filter_created'),
+			type: 'boolean'
+		},
+		{
+			name: 'isExpired',
+			title: t('filter_expired'),
+			type: 'boolean'
+		}
+	];
 
 	const transactionTableColumns = [
 		{
@@ -100,36 +100,36 @@ const AccountInfo = ({ accountInfo, preloadedTransactions }) => {
 		}
 	];
 	const transactionFilterConfig = [
-        {
-            name: 'from',
-            title: t('filter_from'),
-            type: 'account',
+		{
+			name: 'from',
+			title: t('filter_from'),
+			type: 'account',
 			conflicts: ['to'],
 			isSearchEnabled: true
-        },
-        {
-            name: 'to',
-            title: t('filter_to'),
-            type: 'account',
+		},
+		{
+			name: 'to',
+			title: t('filter_to'),
+			type: 'account',
 			conflicts: ['from'],
 			isSearchEnabled: true
-        },
+		},
 		{
-            name: 'mosaic',
-            title: t('filter_mosaic'),
-            type: 'mosaic',
+			name: 'mosaic',
+			title: t('filter_mosaic'),
+			type: 'mosaic',
 			conflicts: ['type'],
 			isSearchEnabled: true,
 			options: accountInfo.mosaics
-        },
+		},
 		{
-            name: 'type',
-            title: t('filter_type'),
+			name: 'type',
+			title: t('filter_type'),
 			conflicts: ['mosaic'],
-            type: 'transaction-type',
+			type: 'transaction-type',
 			options: Object.values(TRANSACTION_TYPE)
-        },
-    ];
+		}
+	];
 
 	return (
 		<div className={styles.wrapper}>
@@ -170,14 +170,9 @@ const AccountInfo = ({ accountInfo, preloadedTransactions }) => {
 				</Section>
 			</div>
 			<Section title={t('section_accountState')} cardClassName={styles.stateSectionCard}>
-				<div className='layout-flex-col'>
-					<div className='layout-flex-row-mobile-col'>
-						<Filter
-							data={mosaicFilterConfig}
-							value={mosaics.filter}
-							onChange={mosaics.changeFilter}
-							search={search}
-						/>
+				<div className="layout-flex-col">
+					<div className="layout-flex-row-mobile-col">
+						<Filter data={mosaicFilterConfig} value={mosaics.filter} onChange={mosaics.changeFilter} search={search} />
 						<ButtonCSV data={mosaics.data} fileName={`mosaics-${address}`} />
 					</div>
 					<div className={styles.stateTable}>
@@ -188,8 +183,8 @@ const AccountInfo = ({ accountInfo, preloadedTransactions }) => {
 				</div>
 			</Section>
 			<Section title={t('section_transactions')}>
-				<div className='layout-flex-col'>
-					<div className='layout-flex-row-mobile-col'>
+				<div className="layout-flex-col">
+					<div className="layout-flex-row-mobile-col">
 						<Filter
 							data={transactionFilterConfig}
 							isDisabled={transactionPagination.isLoading}
@@ -197,7 +192,7 @@ const AccountInfo = ({ accountInfo, preloadedTransactions }) => {
 							onChange={transactionPagination.changeFilter}
 							search={search}
 						/>
-						<ButtonCSV data={transactionPagination.data} fileName={`transactions-${address}`}/>
+						<ButtonCSV data={transactionPagination.data} fileName={`transactions-${address}`} />
 					</div>
 					<Table
 						data={transactionPagination.data}

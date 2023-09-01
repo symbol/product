@@ -1,4 +1,4 @@
-import { getAccountsStub } from "./accounts";
+import { getAccountsStub } from './accounts';
 
 export const getStatsStub = async () => {
 	const baseInfo = {
@@ -29,13 +29,13 @@ export const getStatsStub = async () => {
 		total: 1777154,
 		harvesting: 8411,
 		eligibleForHarvesting: 1005242
-	}
+	};
 
 	const transactions = {
 		totalAll: 99888777154,
 		total30Days: 8411,
 		total24Hours: 316,
-		averagePerBlock: 15,
+		averagePerBlock: 15
 	};
 
 	const charts = {
@@ -64,8 +64,7 @@ export const getStatsStub = async () => {
 	});
 };
 
-
-export const getTransactionChartStub = async (filter) => {
+export const getTransactionChartStub = async filter => {
 	switch (filter) {
 		case 'perDay':
 			return new Array(90)
@@ -76,29 +75,26 @@ export const getTransactionChartStub = async (filter) => {
 				]);
 		case 'perMonth':
 			return new Array(36)
-			.fill(null)
-			.map((_, index) => [
-				new Date(Date.now() - 60 * Math.abs(index - 35) * 60000 * 24 * 31).getTime(),
-				Math.floor(Math.random() * 100 + 300 + Math.log(index * 20) * 50)
-			]);
+				.fill(null)
+				.map((_, index) => [
+					new Date(Date.now() - 60 * Math.abs(index - 35) * 60000 * 24 * 31).getTime(),
+					Math.floor(Math.random() * 100 + 300 + Math.log(index * 20) * 50)
+				]);
 		default:
 			return new Array(240)
 				.fill(null)
-				.map((_, index) => [
-					3999770 + index,
-					Math.floor(Math.random() * 100 + 300 + Math.log(index * 20) * 50)
-				]);
+				.map((_, index) => [3999770 + index, Math.floor(Math.random() * 100 + 300 + Math.log(index * 20) * 50)]);
 	}
 };
 
 export const getAccountChartsStub = async () => {
-	const accounts = (await getAccountsStub({pageNumber: 1, pageSize: 10})).slice(0, 9);
+	const accounts = (await getAccountsStub({ pageNumber: 1, pageSize: 10 })).slice(0, 9);
 
 	return {
-		importanceBreakdown: [
-			...accounts.map(account => [account.importance, account.address]),
-			[48.9, 'rest']
-		],
-		harvestingImportance: [[34.54, 'harvesting'], [65.46, 'not harvesting']]
-	}
+		importanceBreakdown: [...accounts.map(account => [account.importance, account.address]), [48.9, 'rest']],
+		harvestingImportance: [
+			[34.54, 'harvesting'],
+			[65.46, 'not harvesting']
+		]
+	};
 };

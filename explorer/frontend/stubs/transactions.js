@@ -49,19 +49,19 @@ export const getTransactionInfoStub = async hash => {
 		{
 			id: config.NATIVE_MOSAIC_ID,
 			name: 'NEM.XEM',
-			amount: Math.floor(Math.random() * 4000000) / 100,
+			amount: Math.floor(Math.random() * 4000000) / 100
 		},
 		{
 			id: '5AED903FB202130B',
 			name: 'namespace.supercoin',
-			amount: Math.floor(Math.random() * 40),
+			amount: Math.floor(Math.random() * 40)
 		},
 		{
 			id: 'BECD903AB20213AA',
 			name: 'tomato.nft',
-			amount: 1,
+			amount: 1
 		}
-	].slice(0, Math.round((Math.random() * 2) + 1));
+	].slice(0, Math.round(Math.random() * 2 + 1));
 
 	return {
 		type: 'transfer',
@@ -85,7 +85,7 @@ export const getTransactionInfoStub = async hash => {
 					text: 'Hello',
 					isEncrypted: false
 				}
-			},
+			}
 		]
 	};
 };

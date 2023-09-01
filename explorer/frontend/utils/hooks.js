@@ -34,7 +34,7 @@ export const usePagination = (callback, defaultData) => {
 		setIsLoading(true);
 		setTimeout(async () => {
 			try {
-				const { data, pageNumber: currentPageNumber } = await callback({ pageNumber: pageNumber, ...filter});
+				const { data, pageNumber: currentPageNumber } = await callback({ pageNumber: pageNumber, ...filter });
 
 				if (currentPageNumber === pageNumber) {
 					setData(v => [...v, ...data]);
@@ -52,14 +52,14 @@ export const usePagination = (callback, defaultData) => {
 	const requestNextPage = () => {
 		const nextPageNumber = pageNumber + 1;
 		call(nextPageNumber, filter);
-	}
+	};
 
-	const changeFilter = (filter) => {
+	const changeFilter = filter => {
 		setData([]);
 		setPageNumber(0);
 		setFilter(filter);
 		call(1, filter);
-	}
+	};
 
 	return { requestNextPage, data, isLoading, pageNumber, isLastPage, filter, changeFilter };
 };
@@ -69,13 +69,12 @@ export const useFilter = (callback, defaultData, initialCall) => {
 	const [isLoading, setIsLoading] = useState(false);
 	const [data, setData] = useState(defaultData);
 
-	const call = (filter) => {
+	const call = filter => {
 		setIsLoading(true);
 		setTimeout(async () => {
 			try {
-				const data = await callback({ ...filter});
+				const data = await callback({ ...filter });
 				setData(data);
-
 			} catch (error) {
 				// eslint-disable-next-line no-console
 				console.error('[Filter] Error:', error);
@@ -84,56 +83,50 @@ export const useFilter = (callback, defaultData, initialCall) => {
 		});
 	};
 
-
-	const changeFilter = (filter) => {
+	const changeFilter = filter => {
 		setData(defaultData);
 		setFilter(filter);
 		call(filter);
-	}
+	};
 
 	useEffect(() => {
 		if (initialCall) {
 			call(filter);
 		}
-	}, [initialCall])
+	}, [initialCall]);
 
 	return { data, isLoading, filter, changeFilter };
 };
 
-export const useClientSideFilter = (data) => {
+export const useClientSideFilter = data => {
 	const [filter, setFilter] = useState({});
-	const filteredData = data.filter((item) =>
-		Object.keys(filter).every(filterKey =>
-			item[filterKey] === filter[filterKey]
-		)
-	);
+	const filteredData = data.filter(item => Object.keys(filter).every(filterKey => item[filterKey] === filter[filterKey]));
 
 	return {
 		data: filteredData,
 		filter,
 		changeFilter: setFilter
 	};
-}
+};
 
-export const useDelayedCall = (callback) => {
+export const useDelayedCall = callback => {
 	const [timer, setTimer] = useState(setTimeout(() => {}));
 	const delay = 750;
 
 	const call = (...args) => {
-		if (timer)
-			clearTimeout(timer);
+		if (timer) clearTimeout(timer);
 
 		const newTimer = setTimeout(() => callback(...args), delay);
 		setTimer(newTimer);
 	};
 
 	return [call];
-}
+};
 
-export const useToggle = (initialValue) => {
-    const [value, setValue] = useState(initialValue);
+export const useToggle = initialValue => {
+	const [value, setValue] = useState(initialValue);
 
-    const toggle = () => setValue((value) => !value);
+	const toggle = () => setValue(value => !value);
 
-    return [value, toggle];
+	return [value, toggle];
 };

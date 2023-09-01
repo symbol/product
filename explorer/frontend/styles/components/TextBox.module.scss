@@ -1,23 +1,23 @@
 @import "../variables";
 
 .textBox {
+    position: relative;
     display: flex;
     flex-direction: row;
+    gap: $spacing-base / 2;
     align-items: center;
-    position: relative;
     width: 100%;
     height: $spacing-textbox-height;
-    border-radius: $border-radius-input;
-    border: $border-width-textbox solid $color-textbox-border;
     padding: 0 $spacing-base;
-    gap: $spacing-base / 2;
     background-color: $color-textbox-bg;
+    border: $border-width-textbox solid $color-textbox-border;
+    border-radius: $border-radius-input;
 }
 
 .input {
-    border: none;
     flex: 1;
     font: $font-input-text;
+    border: none;
 
     &::placeholder {
         color: $color-text-textbox-placeholder;

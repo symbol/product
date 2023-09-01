@@ -1,6 +1,6 @@
+import ChartLine from '@/components/ChartLine';
 import Field from '@/components/Field';
 import ItemBlockMobile from '@/components/ItemBlockMobile';
-import ChartLine from '@/components/ChartLine';
 import Section from '@/components/Section';
 import Separator from '@/components/Separator';
 import Table from '@/components/Table';
@@ -32,7 +32,7 @@ export const getServerSideProps = async ({ locale }) => {
 
 const Blocks = ({ blocks, chainInfo, charts }) => {
 	const { t } = useTranslation();
-	const {requestNextPage, data, isLoading, pageNumber, isLastPage} = usePagination(fetchBlockPage, blocks);
+	const { requestNextPage, data, isLoading, pageNumber, isLastPage } = usePagination(fetchBlockPage, blocks);
 
 	const tableColumns = [
 		{

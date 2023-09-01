@@ -56,18 +56,18 @@
     .profileIcon {
         width: 2.66rem;
         height: 2.66rem;
-        user-select: none;
-        cursor: pointer;
         margin-left: $spacing-base;
+        cursor: pointer;
+        user-select: none;
     }
 
     .overlay {
         position: fixed;
         top: 0;
         left: 0;
+        z-index: 100;
         width: 100%;
         height: 100vh;
-        z-index: 100;
         background-color: #0001;
         animation-name: fade-in;
         animation-duration: 250ms;
@@ -76,8 +76,11 @@
 
     .modal {
         position: absolute;
-        right: $spacing-base * 3;
         top: $spacing-header-height + $spacing-base;
+        right: $spacing-base * 3;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
         width: 37rem;
         height: 30rem;
         box-shadow: 0 0.3rem 2rem rgba(0, 0, 0, 5%), 0 0 0.2rem rgba(0, 0, 0, 20%), 0 0.3rem 2rem rgba(0, 0, 0, 5%);
@@ -85,10 +88,6 @@
         animation-name: fade-in;
         animation-duration: 250ms;
         animation-timing-function: linear;
-
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
     }
 
     .contactList {
@@ -97,23 +96,23 @@
     }
 
     .buttonRemove {
+        flex-shrink: 0;
+        align-self: center;
         width: $spacing-base * 2;
         height: $spacing-base * 2;
-        align-self: center;
         cursor: pointer;
-        flex-shrink: 0;
     }
 
     .buttonAddContainer {
-        border-radius: 50%;
-        background-color: $color-button-bg;
+        display: flex;
+        flex-shrink: 0;
+        align-items: center;
+        align-self: flex-end;
+        justify-content: center;
         width: $spacing-base * 4;
         height: $spacing-base * 4;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        flex-shrink: 0;
-        align-self: flex-end;
+        background-color: $color-button-bg;
+        border-radius: 50%;
         cursor: pointer;
     }
 
@@ -123,15 +122,15 @@
     }
 
     .button {
-        border-radius: 0.2rem;
-        background-color: $color-button-bg;
-        color: $color-text-button;
-        padding: $spacing-base;
         display: flex;
-        justify-content: center;
-        align-items: center;
         flex: 1;
+        align-items: center;
         align-self: flex-end;
+        justify-content: center;
+        padding: $spacing-base;
+        color: $color-text-button;
+        background-color: $color-button-bg;
+        border-radius: 0.2rem;
         cursor: pointer;
     }
 
@@ -142,8 +141,8 @@
 
         .modal {
             position: absolute;
-            right: 0;
             top: $spacing-header-height + $spacing-base;
+            right: 0;
             width: 100%;
             height: auto;
             max-height: 70vh;
@@ -161,8 +160,8 @@
         .menuIcon {
             width: $spacing-base * 3;
             height: $spacing-base * 3;
-            cursor: pointer;
             margin-left: $spacing-base * 2;
+            cursor: pointer;
         }
     }
 

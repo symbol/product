@@ -3,8 +3,8 @@
 .valueAccountBalance {
     display: flex;
     flex-direction: row;
-    align-items: baseline;
     gap: $spacing-base / 2;
+    align-items: baseline;
 }
 
 .value {
