@@ -2,12 +2,19 @@ import CustomImage from './CustomImage';
 import config from '@/config';
 import styles from '@/styles/components/ValueMosaic.module.scss';
 import Avatar from './Avatar';
+import { ACCOUNT_STATE_CHANGE_ACTION, TRANSACTION_DIRECTION } from '@/constants';
 
 const ValueMosaic = ({ mosaicName, mosaicId, amount, isNative, className, direction, size, onClick }) => {
 
 	let displayedName;
 	let imageSrc;
-	const directionStyle = styles[direction];
+	const directionStyleMap = {
+		[TRANSACTION_DIRECTION.INCOMING]: styles.incoming,
+		[ACCOUNT_STATE_CHANGE_ACTION.RECEIVE]: styles.incoming,
+		[TRANSACTION_DIRECTION.OUTGOING]: styles.outgoing,
+		[ACCOUNT_STATE_CHANGE_ACTION.SEND]: styles.outgoing,
+	};
+	const directionStyle = directionStyleMap[direction];
 	const isAmountExist = !isNaN(amount) && amount !== null;
 	const [integer, decimal] = isAmountExist ? amount.toString().split('.') : ['-'];
 

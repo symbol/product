@@ -8,7 +8,27 @@
     font: $font-body-monospace;
 }
 
-.containerMd {
+.textMd {
     inline-size: 15rem;
     overflow-wrap: break-word;
+}
+
+.addressContainer {
+    display: flex;
+    flex-direction: row;
+    gap: $spacing-base / 2;
+    align-items: center;
+}
+
+.containerLeft {
+    flex-direction: column-reverse;
+    gap: 0;
+    align-items: flex-start;
+}
+
+.containerRight {
+    flex-direction: column;
+    gap: 0;
+    align-items: flex-end;
+    text-align: right;
 }
