@@ -1,0 +1,77 @@
+@import "../variables";
+
+.wrapper {
+    height: 100%;
+}
+
+.firstSection {
+    max-width: 32rem;
+
+    .firstSectionCard {
+        height: 27rem;
+    }
+}
+
+.secondSectionCard {
+    height: 27rem;
+}
+
+.transactionGraphic {
+    .graphic {
+        position: relative;
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        flex-grow: 1;
+        flex-shrink: 0;
+        height: 8rem;
+
+        .transactionType {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -100%);
+            font: $font-body-bold;
+        }
+
+        .arrow {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 10rem;
+            height: 2rem;
+        }
+    }
+
+    .info {
+        flex: 1
+    }
+
+    .accountLeft {
+        position: absolute;
+        top: 0;
+        left: 0;
+    }
+
+    .accountRight {
+        position: absolute;
+        bottom: 0;
+        right: 0;
+    }
+}
+
+@media #{$screen-mobile} {
+    .firstSection {
+        max-width: 100%;
+
+        .firstSectionCard {
+            height: auto;
+        }
+    }
+
+    .secondSectionCard {
+        height: auto;
+    }
+}
