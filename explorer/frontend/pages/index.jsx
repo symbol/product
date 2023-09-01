@@ -1,6 +1,6 @@
 import CustomImage from '@/components/CustomImage';
 import Field from '@/components/Field';
-import LineChart from '@/components/LineChart';
+import ChartLine from '@/components/ChartLine';
 import RecentBlocks from '@/components/RecentBlocks';
 import RecentTransactions from '@/components/RecentTransactions';
 import Section from '@/components/Section';
@@ -30,12 +30,13 @@ export const getServerSideProps = async ({ locale }) => {
 			baseInfo: stats.baseInfo,
 			chainInfo: stats.chainInfo,
 			charts: stats.charts,
+			transactionInfo: stats.transactions,
 			...(await serverSideTranslations(locale, ['common']))
 		}
 	};
 };
 
-const Home = ({ blocks, fees, latestTransactions, pendingTransactions, baseInfo, chainInfo, charts }) => {
+const Home = ({ blocks, fees, latestTransactions, pendingTransactions, baseInfo, chainInfo, charts, transactionInfo }) => {
 	const { t } = useTranslation();
 	const formattedCharts = {
 		...charts,
@@ -49,15 +50,15 @@ const Home = ({ blocks, fees, latestTransactions, pendingTransactions, baseInfo,
 			</Head>
 			<RecentBlocks data={blocks} />
 			<Section>
-				<div className="layout-flex-row">
+				<div className="layout-flex-row-mobile-col">
 					<div className="layout-grid-row layout-flex-fill">
 						<div className="layout-flex-col layout-flex-fill">
-							<Field title={t('field_totalTransactions')}>{baseInfo.totalTransactions}</Field>
+							<Field title={t('field_totalTransactions')}>{transactionInfo.totalAll}</Field>
 							<Field title={t('field_transactionsPerBlock')} description={t('field_transactionsPerBlock_description')}>
-								{baseInfo.transactionsPerBlock}
+								{transactionInfo.averagePerBlock}
 							</Field>
 						</div>
-						<LineChart data={formattedCharts.transactions} name={t('chart_series_transactions')} />
+						<ChartLine data={formattedCharts.transactions} name={t('chart_series_transactions')} />
 					</div>
 					<Separator />
 					<div className="layout-grid-row layout-flex-fill">
@@ -88,7 +89,7 @@ const Home = ({ blocks, fees, latestTransactions, pendingTransactions, baseInfo,
 			</Section>
 			<div className="layout-section-row">
 				<Section title={t('section_fees')}>
-					<div className="layout-flex-row">
+					<div className="layout-flex-row-mobile-col">
 						<div className="layout-flex-fill">
 							<Field title={t('field_feeSlow')}>{fees.slow} XEM</Field>
 						</div>
@@ -101,7 +102,7 @@ const Home = ({ blocks, fees, latestTransactions, pendingTransactions, baseInfo,
 					</div>
 				</Section>
 				<Section title={t('section_chain')}>
-					<div className="layout-flex-row">
+					<div className="layout-flex-row-mobile-col">
 						<div className="layout-flex-fill">
 							<Field title={t('field_height')}>{chainInfo.height}</Field>
 						</div>

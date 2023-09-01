@@ -1,4 +1,4 @@
-import { getStatsStub } from '../../stubs/stats';
+import { searchStub } from '../../stubs/search';
 
 export default async function handler(req, res) {
 	if (req.method !== 'GET') {
@@ -18,5 +18,5 @@ export const fetchSearch = async q => {
 };
 
 export const search = async (query) => {
-	return null;
+    return searchStub(query);
 };

@@ -27,23 +27,153 @@
         user-select: none;
     }
 
+    .headerRightSection {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+    }
+
     .headerMenu {
         display: flex;
         flex-direction: row;
+    }
 
-        .headerMenuItem {
-            margin-left: 1rem;
-            padding: 0.625rem;
-            color: $color-tab-inactive;
-            font: $font-nav;
-            text-transform: uppercase;
+    .menuItem {
+        margin-left: 1rem;
+        padding: 0.625rem;
+        color: $color-tab-inactive;
+        font: $font-nav;
+        text-transform: uppercase;
+        cursor: pointer;
+        transition: color 250ms;
+        user-select: none;
+    }
+
+    .menuItem__active {
+        color: $color-tab-active;
+    }
+
+    .profileIcon {
+        width: 2.66rem;
+        height: 2.66rem;
+        user-select: none;
+        cursor: pointer;
+        margin-left: $spacing-base;
+    }
+
+    .overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100vh;
+        z-index: 100;
+        background-color: #0001;
+        animation-name: fade-in;
+        animation-duration: 250ms;
+        animation-timing-function: linear;
+    }
+
+    .modal {
+        position: absolute;
+        right: $spacing-base * 3;
+        top: $spacing-header-height + $spacing-base;
+        width: 37rem;
+        height: 30rem;
+        box-shadow: 0 0.3rem 2rem rgba(0, 0, 0, 5%), 0 0 0.2rem rgba(0, 0, 0, 20%), 0 0.3rem 2rem rgba(0, 0, 0, 5%);
+        backdrop-filter: blur(12px);
+        animation-name: fade-in;
+        animation-duration: 250ms;
+        animation-timing-function: linear;
+
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+
+    .contactList {
+        flex: 1;
+        overflow-y: auto;
+    }
+
+    .buttonRemove {
+        width: $spacing-base * 2;
+        height: $spacing-base * 2;
+        align-self: center;
+        cursor: pointer;
+        flex-shrink: 0;
+    }
+
+    .buttonAddContainer {
+        border-radius: 50%;
+        background-color: $color-button-bg;
+        width: $spacing-base * 4;
+        height: $spacing-base * 4;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-shrink: 0;
+        align-self: flex-end;
+        cursor: pointer;
+    }
+
+    .buttonAddIcon {
+        width: $spacing-base * 2;
+        height: $spacing-base * 2;
+    }
+
+    .button {
+        border-radius: 0.2rem;
+        background-color: $color-button-bg;
+        color: $color-text-button;
+        padding: $spacing-base;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex: 1;
+        align-self: flex-end;
+        cursor: pointer;
+    }
+
+    @media #{$screen-mobile} {
+        .headerMenu {
+            display: none;
+        }
+
+        .modal {
+            position: absolute;
+            right: 0;
+            top: $spacing-header-height + $spacing-base;
+            width: 100%;
+            height: auto;
+            max-height: 70vh;
+        }
+
+        .buttonAddContainer {
+            width: $spacing-base * 8;
+            height: $spacing-base * 8;
+        }
+
+        .button {
+            padding: $spacing-base * 1.5;
+        }
+
+        .menuIcon {
+            width: $spacing-base * 3;
+            height: $spacing-base * 3;
             cursor: pointer;
-            transition: color 250ms;
-            user-select: none;
+            margin-left: $spacing-base * 2;
         }
+    }
 
-        .headerMenuItem__active {
-            color: $color-tab-active;
-        }
+}
+
+@keyframes fade-in {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
     }
 }

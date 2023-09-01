@@ -5,16 +5,16 @@ import Separator from '@/components/Separator';
 import Table from '@/components/Table';
 import ValueAccount from '@/components/ValueAccount';
 import ValueMosaic from '@/components/ValueMosaic';
-import { getStats } from '@/pages/api/stats';
+import { fetchAccountCharts, getStats } from '@/pages/api/stats';
 import styles from '@/styles/pages/Home.module.scss';
-import { usePagination } from '@/utils';
+import { useFilter, usePagination } from '@/utils';
 import Head from 'next/head';
 import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 import { fetchAccountPage, getAccountPage } from '@/pages/api/accounts';
 import Filter from '@/components/Filter';
 import { search } from '../api/search';
-import DonutChart from '@/components/DonutChart';
+import ChartDonut from '@/components/ChartDonut';
 import ButtonCSV from '@/components/ButtonCSV';
 
 export const getServerSideProps = async ({ locale }) => {
@@ -24,16 +24,16 @@ export const getServerSideProps = async ({ locale }) => {
 	return {
 		props: {
 			preloadedData: page.data,
-			chainInfo: stats.chainInfo,
-			charts: stats.charts,
+			stats: stats.accounts,
 			...(await serverSideTranslations(locale, ['common']))
 		}
 	};
 };
 
-const Accounts = ({ preloadedData, chainInfo, charts }) => {
+const Accounts = ({ preloadedData, stats }) => {
 	const { t } = useTranslation();
 	const { requestNextPage, data, isLoading, isLastPage, filter, changeFilter } = usePagination(fetchAccountPage, preloadedData);
+	const charts = useFilter(fetchAccountCharts, {}, true);
 
 	const tableColumns = [
 		{
@@ -57,7 +57,7 @@ const Accounts = ({ preloadedData, chainInfo, charts }) => {
 		{
 			key: 'importance',
 			size: '7rem',
-			renderValue: value => <ValueMosaic amount={value} isNative />
+			renderValue: value => <div>{value}</div>
 		},
 	];
 	const filterConfig = [
@@ -84,31 +84,28 @@ const Accounts = ({ preloadedData, chainInfo, charts }) => {
 				<title>{t('page_accounts')}</title>
 			</Head>
 			<Section title={t('section_accounts')}>
-				<div className="layout-flex-row">
+				<div className="layout-flex-row-mobile-col">
 					<div className="layout-flex-col layout-flex-fill">
-						<Field title={t('field_blockGenerationTime')}>
-							{t('value_blockGenerationTime', { value: chainInfo.blockGenerationTime })}
+						<Field title={t('field_totalAccounts')}>
+							{stats.total}
 						</Field>
-						<Field title={t('field_blockGenerationTime')}>
-							{t('value_blockGenerationTime', { value: chainInfo.blockGenerationTime })}
+						<Field title={t('field_harvestingAccounts')}>
+							{stats.harvesting}
 						</Field>
-						<Field title={t('field_blockGenerationTime')}>
-							{t('value_blockGenerationTime', { value: chainInfo.blockGenerationTime })}
-						</Field>
-						<Field title={t('field_blockGenerationTime')}>
-							{t('value_blockGenerationTime', { value: chainInfo.blockGenerationTime })}
+						<Field title={t('field_accountsEligibleForHarvesting')}>
+							{stats.eligibleForHarvesting}
 						</Field>
 					</div>
 					<Separator className="no-mobile" />
 					<div className="layout-grid-row layout-flex-fill">
-						<DonutChart
-							data={[[30, 'address'], [12, 'azaza'], [5, 'small']]}
-							name={'Top 10 Account\nImportance Breakdown'}
+						<ChartDonut
+							data={charts.data.importanceBreakdown}
+							name={t('chart_name_importance_breakdown')}
 							label="51.1%"
 						/>
-						<DonutChart
-							data={[[30, 'address'], [12, 'azaza'], [5, 'small']]}
-							name={'Total Harvesting\nAccount Importance'}
+						<ChartDonut
+							data={charts.data.harvestingImportance}
+							name={t('chart_name_harvesting_importance')}
 							label="34.54%"
 						/>
 					</div>
@@ -116,7 +113,7 @@ const Accounts = ({ preloadedData, chainInfo, charts }) => {
 			</Section>
 			<Section>
 				<div className='layout-flex-col'>
-					<div className='layout-flex-row'>
+					<div className='layout-flex-row-mobile-col'>
 						<Filter data={filterConfig} isDisabled={isLoading} value={filter} onChange={changeFilter} search={search}/>
 						<ButtonCSV data={data} />
 					</div>
