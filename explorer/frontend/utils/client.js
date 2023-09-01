@@ -1,3 +1,5 @@
+import { EVENT, STORAGE_KEY } from "@/constants";
+
 export const copyToClipboard = async text => {
 	if (navigator.clipboard) {
 		return navigator.clipboard.writeText(text);
@@ -65,3 +67,18 @@ export const trunc = (str, type, length = 5) => {
 			return trunc(str, 'end', length);
 	}
 };
+
+export const getContactsFromStorage = () => {
+	try {
+		const jsonString = localStorage.getItem(STORAGE_KEY.ADDRESS_BOOK);
+		return JSON.parse(jsonString) || [];
+	}
+	catch {
+		return [];
+	}
+}
+
+export const setContactsToStorage = (value) => {
+	localStorage.setItem(STORAGE_KEY.ADDRESS_BOOK, JSON.stringify(value));
+	dispatchEvent(new Event(EVENT.ADDRESS_BOOK_UPDATE));
+}
