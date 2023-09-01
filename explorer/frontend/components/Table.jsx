@@ -16,7 +16,7 @@ const Table = ({ data, sections, columns, ItemMobile, renderSectionHeader, onEnd
 				</div>
 			))}
 		</div>
-	)
+	);
 	const renderMobileListItem = (item, index) => (
 		<div className={styles.itemMobile} key={'trm' + index}>
 			<ItemMobile data={item} />
@@ -32,32 +32,17 @@ const Table = ({ data, sections, columns, ItemMobile, renderSectionHeader, onEnd
 					</div>
 				))}
 			</div>
-			{!!data && (
-				<div className={`${styles.data} ${desktopTableStyle}`}>
-					{data.map(renderRow)}
-				</div>
-			)}
-			{!!data && !!ItemMobile && (
-				<div className={styles.listMobile}>
-					{data.map(renderMobileListItem)}
-				</div>
-			)}
+			{!!data && <div className={`${styles.data} ${desktopTableStyle}`}>{data.map(renderRow)}</div>}
+			{!!data && !!ItemMobile && <div className={styles.listMobile}>{data.map(renderMobileListItem)}</div>}
 
-			{!!sections && sections.map((section, index) => (
-				<div className={styles.section} key={'sc' + index}>
-					<div className={styles.sectionHeader}>
-						{renderSectionHeader(section)}
+			{!!sections &&
+				sections.map((section, index) => (
+					<div className={styles.section} key={'sc' + index}>
+						<div className={styles.sectionHeader}>{renderSectionHeader(section)}</div>
+						<div className={`${styles.data} ${desktopTableStyle}`}>{section.data.map(renderRow)}</div>
+						{!!ItemMobile && <div className={styles.listMobile}>{section.data.map(renderMobileListItem)}</div>}
 					</div>
-					<div className={`${styles.data} ${desktopTableStyle}`}>
-						{section.data.map(renderRow)}
-					</div>
-					{!!ItemMobile && (
-						<div className={styles.listMobile}>
-							{section.data.map(renderMobileListItem)}
-						</div>
-					)}
-				</div>
-			))}
+				))}
 
 			{!isLastPage && <TablePageLoader isLoading={isLoading} onLoad={onEndReached} />}
 		</div>

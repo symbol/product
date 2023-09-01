@@ -4,26 +4,26 @@
     width: 100%;
 
     .list {
-        width: 100%;
         display: flex;
         flex-direction: row;
         gap: $spacing-base;
+        width: 100%;
         overflow-x: auto;
     }
 
     .button {
-        height: $spacing-base * 3;
-        padding: 0 $spacing-base;
         display: flex;
         flex-direction: row;
-        justify-content: center;
-        align-items: center;
-        border-radius: $border-radius-filter;
-        background-color: $color-primary-light;
-        cursor: pointer;
-        user-select: none;
-        transition: all 250ms;
         flex-shrink: 0;
+        align-items: center;
+        justify-content: center;
+        height: $spacing-base * 3;
+        padding: 0 $spacing-base;
+        background-color: $color-primary-light;
+        border-radius: $border-radius-filter;
+        cursor: pointer;
+        transition: all 250ms;
+        user-select: none;
     }
 
     .buttonActive {
@@ -31,14 +31,14 @@
     }
 
     .buttonDisabled {
-        opacity: 0.3;
         cursor: not-allowed;
+        opacity: 0.3;
         transition-delay: 500ms;
     }
 
     .text {
-        font: $font-tab;
         color: $color-filter-inactive;
+        font: $font-tab;
     }
 
     .textActive {
@@ -46,8 +46,8 @@
     }
 
     .icon {
-        height: 1rem;
         width: 1rem;
+        height: 1rem;
         margin-right: $spacing-base / 2;
     }
 
@@ -56,12 +56,12 @@
         position: fixed;
         top: 0;
         left: 0;
+        z-index: 100;
+        display: flex;
+        align-items: center;
+        justify-content: center;
         width: 100%;
         height: 100%;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        z-index: 100;
         background-color: #0001;
         animation-name: fade-in;
         animation-duration: 250ms;
@@ -72,10 +72,10 @@
             display: flex;
             flex-direction: column;
             gap: $spacing-padding;
-            box-shadow: 0px 4px 40px 0px rgba(25, 41, 97, 0.29);
             max-width: 41rem;
-            margin: 0 $spacing-padding;
             height: 22rem;
+            margin: 0 $spacing-padding;
+            box-shadow: 0 4px 40px 0 rgba(25, 41, 97, 29%);
         }
 
         .buttonClose {
@@ -85,8 +85,8 @@
         }
 
         .resultList {
-            flex: 1;
             display: flex;
+            flex: 1;
             flex-direction: column;
             gap: $spacing-base / 2;
             overflow-y: auto;

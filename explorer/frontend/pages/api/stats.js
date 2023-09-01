@@ -12,13 +12,13 @@ export default async function handler(req, res) {
 
 export const fetchAccountCharts = async () => {
 	return getAccountChartsStub();
-}
+};
 
-export const fetchTransactionChart = async ({ isPerDay, isPerMonth}) => {
+export const fetchTransactionChart = async ({ isPerDay, isPerMonth }) => {
 	const filter = isPerDay ? 'perDay' : isPerMonth ? 'perMonth' : '';
 
 	return getTransactionChartStub(filter);
-}
+};
 
 export const getStats = async () => {
 	return getStatsStub();

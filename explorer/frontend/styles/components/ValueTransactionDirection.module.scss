@@ -10,10 +10,10 @@
     height: $spacing-base * 2;
     font: $font-body-bold;
     font-size: 0.83rem;
+    text-align: center;
+    text-transform: uppercase;
     background: $color-background-mosaic;
     border-radius: $border-radius-label;
-    text-transform: uppercase;
-    text-align: center;
 }
 
 .incoming {

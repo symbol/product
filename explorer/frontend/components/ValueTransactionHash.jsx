@@ -6,7 +6,9 @@ import Link from 'next/link';
 const ValueTransactionHash = ({ value }) => {
 	return (
 		<div className={styles.valueTransactionHash}>
-			<Link className={styles.text} href={`/transactions/${value}`}>{trunc(value, 'hash')}</Link>
+			<Link className={styles.text} href={`/transactions/${value}`}>
+				{trunc(value, 'hash')}
+			</Link>
 			<ButtonCopy value={value} />
 		</div>
 	);

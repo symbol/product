@@ -1,8 +1,8 @@
-import config from '@/config';
 import CustomImage from './CustomImage';
+import IconTransactionType from './IconTransactionType';
+import config from '@/config';
 import styles from '@/styles/components/Avatar.module.scss';
 import hslToRgb from 'hsl-rgb';
-import IconTransactionType from './IconTransactionType';
 
 const getColorFromHash = hash => {
 	if (!hash) {
@@ -37,8 +37,8 @@ const AccountAvatar = ({ address }) => {
 			A: '/images/avatars/avatar-1.png',
 			B: '/images/avatars/avatar-2.png',
 			C: '/images/avatars/avatar-3.png',
-			D: '/images/avatars/avatar-4.png',
-		}
+			D: '/images/avatars/avatar-4.png'
+		};
 
 		const addressSecondChar = address[1].toUpperCase();
 		const src = addressSrcMap[addressSecondChar];
@@ -56,10 +56,9 @@ const AccountAvatar = ({ address }) => {
 	return <CustomImage src={image.src} className={styles.image} style={image.style} />;
 };
 
-
 const MosaicAvatar = ({ mosaicId }) => {
 	const mosaicIdSrcMap = {
-		[config.NATIVE_MOSAIC_ID]: '/images/mosaics/currency.png',
+		[config.NATIVE_MOSAIC_ID]: '/images/mosaics/currency.png'
 	};
 	const customMosaicSrc = '/images/mosaics/custom.png';
 	const imageSrc = mosaicIdSrcMap[mosaicId] ? mosaicIdSrcMap[mosaicId] : customMosaicSrc;
@@ -75,29 +74,24 @@ const TransactionAvatar = ({ type }) => {
 	);
 };
 
-const Avatar = ({ size, type, value}) => {
+const Avatar = ({ size, type, value }) => {
 	const sizeStyleMap = {
 		sm: styles.containerSm,
 		md: styles.containerMd,
 		lg: styles.containerLg,
-		xl: styles.containerXl,
+		xl: styles.containerXl
 	};
 
 	const ChildComponent =
-		type === 'account'
-		? <AccountAvatar address={value} />
-		: type === 'mosaic'
-		? <MosaicAvatar mosaicId={value} />
-		: type === 'transaction'
-		? <TransactionAvatar type={value} />
-		: null;
+		type === 'account' ? (
+			<AccountAvatar address={value} />
+		) : type === 'mosaic' ? (
+			<MosaicAvatar mosaicId={value} />
+		) : type === 'transaction' ? (
+			<TransactionAvatar type={value} />
+		) : null;
 
-
-	return (
-		<div className={`${styles.container} ${sizeStyleMap[size]}`}>
-			{ChildComponent}
-		</div>
-	);
+	return <div className={`${styles.container} ${sizeStyleMap[size]}`}>{ChildComponent}</div>;
 };
 
 export default Avatar;

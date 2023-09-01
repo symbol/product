@@ -72,9 +72,9 @@
     }
 
     .sectionHeader {
-        border-radius: 1rem 1rem 0rem 0rem;
-        background: #F3F4F7;
         display: inline-block;
+        background: #F3F4F7;
+        border-radius: 1rem 1rem 0 0;
     }
 
 
@@ -88,19 +88,19 @@
         }
 
         .dataMobile {
-            overflow-x: auto;
-            border: none;
             display: flex !important;
             flex-direction: column;
             gap: $spacing-base;
+            overflow-x: auto;
+            border: none;
 
             .dataRow {
                 gap: $spacing-base * 2;
                 padding: 0 0 $spacing-base;
 
                 &:last-child {
-                    border-bottom: none;
-                    padding: 0
+                    padding: 0;
+                    border-bottom: none
                 }
             }
         }

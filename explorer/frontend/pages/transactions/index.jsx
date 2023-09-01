@@ -1,6 +1,15 @@
+import { search } from '../api/search';
+import { fetchTransactionChart, getStats } from '../api/stats';
+import ButtonCSV from '@/components/ButtonCSV';
+import ChartColumns from '@/components/ChartColumns';
+import ChartDonut from '@/components/ChartDonut';
+import CustomImage from '@/components/CustomImage';
 import Field from '@/components/Field';
+import Filter from '@/components/Filter';
 import ItemTransactionMobile from '@/components/ItemTransactionMobile';
 import Section from '@/components/Section';
+import SectionHeaderTransaction from '@/components/SectionHeaderTransaction';
+import Separator from '@/components/Separator';
 import Table from '@/components/Table';
 import ValueAccount from '@/components/ValueAccount';
 import ValueCopy from '@/components/ValueCopy';
@@ -10,23 +19,14 @@ import ValueTimestamp from '@/components/ValueTimestamp';
 import ValueTransactionHash from '@/components/ValueTransactionHash';
 import ValueTransactionSquares from '@/components/ValueTransactionSquares';
 import ValueTransactionType from '@/components/ValueTransactionType';
+import { TRANSACTION_TYPE } from '@/constants';
 import { fetchTransactionPage, getTransactionInfo } from '@/pages/api/transactions';
 import { getTransactionPage } from '@/pages/api/transactions';
 import styles from '@/styles/pages/TransactionList.module.scss';
+import { formatDate, useFilter, usePagination } from '@/utils';
 import Head from 'next/head';
 import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
-import { formatDate, useFilter, usePagination } from '@/utils';
-import CustomImage from '@/components/CustomImage';
-import SectionHeaderTransaction from '@/components/SectionHeaderTransaction';
-import { TRANSACTION_TYPE } from '@/constants';
-import Filter from '@/components/Filter';
-import { search } from '../api/search';
-import ButtonCSV from '@/components/ButtonCSV';
-import Separator from '@/components/Separator';
-import ChartDonut from '@/components/ChartDonut';
-import ChartColumns from '@/components/ChartColumns';
-import { fetchTransactionChart, getStats } from '../api/stats';
 
 export const getServerSideProps = async ({ locale }) => {
 	const transactionsPage = await getTransactionPage();
@@ -47,12 +47,12 @@ const TransactionInfo = ({ preloadedData, stats }) => {
 	const chart = useFilter(fetchTransactionChart, [], true);
 	const formattedChartData = chart.data.map(item => {
 		if (chart.filter.isPerDay) {
-			return [formatDate(item[0], t), item[1]]
+			return [formatDate(item[0], t), item[1]];
 		}
 		if (chart.filter.isPerMonth) {
-			return [formatDate(item[0], t, false, false, false), item[1]]
+			return [formatDate(item[0], t, false, false, false), item[1]];
 		}
-		return [t('chart_label_block', { height: item[0]}), item[1]];
+		return [t('chart_label_block', { height: item[0] }), item[1]];
 	});
 
 	const tableColumns = [
@@ -85,75 +85,73 @@ const TransactionInfo = ({ preloadedData, stats }) => {
 			key: 'fee',
 			size: '7rem',
 			renderValue: value => <ValueMosaic amount={value} isNative hasTime />
-		},
+		}
 	];
 
 	const transactionFilterConfig = [
-        {
-            name: 'from',
-            title: t('filter_from'),
-            type: 'account',
+		{
+			name: 'from',
+			title: t('filter_from'),
+			type: 'account',
 			conflicts: ['to'],
 			isSearchEnabled: true
-        },
-        {
-            name: 'to',
-            title: t('filter_to'),
-            type: 'account',
+		},
+		{
+			name: 'to',
+			title: t('filter_to'),
+			type: 'account',
 			conflicts: ['from'],
 			isSearchEnabled: true
-        },
+		},
 		{
-            name: 'mosaic',
-            title: t('filter_mosaic'),
-            type: 'mosaic',
+			name: 'mosaic',
+			title: t('filter_mosaic'),
+			type: 'mosaic',
 			conflicts: ['type'],
-			isSearchEnabled: true,
-        },
+			isSearchEnabled: true
+		},
 		{
-            name: 'type',
-            title: t('filter_type'),
+			name: 'type',
+			title: t('filter_type'),
 			conflicts: ['mosaic'],
-            type: 'transaction-type',
+			type: 'transaction-type',
 			options: Object.values(TRANSACTION_TYPE)
-        },
-    ];
+		}
+	];
 
 	const chartFilterConfig = [
 		{
-            name: 'type',
-            title: t('filter_type'),
-            type: 'transaction-type',
+			name: 'type',
+			title: t('filter_type'),
+			type: 'transaction-type',
 			options: Object.values(TRANSACTION_TYPE)
-        },
+		},
 		{
-            name: 'isPerDay',
-            title: t('filter_perDay'),
+			name: 'isPerDay',
+			title: t('filter_perDay'),
 			off: ['isPerMonth'],
-            type: 'boolean',
-        },{
-            name: 'isPerMonth',
-            title: t('filter_perMonth'),
+			type: 'boolean'
+		},
+		{
+			name: 'isPerMonth',
+			title: t('filter_perMonth'),
 			off: ['isPerDay'],
-            type: 'boolean',
-        }
-    ];
+			type: 'boolean'
+		}
+	];
 
 	const transactionsGrouped = [];
-	data.forEach((transaction) => {
+	data.forEach(transaction => {
 		const lastGroupIndex = transactionsGrouped.length - 1;
 		const { height, timestamp } = transaction;
 
 		if (transactionsGrouped[lastGroupIndex]?.height === height) {
 			transactionsGrouped[lastGroupIndex].data.push(transaction);
-		}
-		else {
+		} else {
 			transactionsGrouped[lastGroupIndex + 1] = {
 				height,
 				timestamp,
-				data: [
-					transaction
-				]
+				data: [transaction]
 			};
 		}
 	});
@@ -166,15 +164,9 @@ const TransactionInfo = ({ preloadedData, stats }) => {
 			<Section title={t('section_transactions')}>
 				<div className="layout-flex-row-mobile-col">
 					<div className={`layout-flex-col layout-flex-fill ${styles.statsSection}`}>
-						<Field title={t('field_transactionsAll')}>
-							{stats.totalAll}
-						</Field>
-						<Field title={t('field_transactions30Days')}>
-							{stats.total30Days}
-						</Field>
-						<Field title={t('field_transactions24Hours')}>
-							{stats.total24Hours}
-						</Field>
+						<Field title={t('field_transactionsAll')}>{stats.totalAll}</Field>
+						<Field title={t('field_transactions30Days')}>{stats.total30Days}</Field>
+						<Field title={t('field_transactions24Hours')}>{stats.total24Hours}</Field>
 						<Field title={t('field_transactionsPerBlockShort')} description={t('field_transactionsPerBlock_description')}>
 							{stats.averagePerBlock}
 						</Field>
@@ -188,16 +180,13 @@ const TransactionInfo = ({ preloadedData, stats }) => {
 							onChange={chart.changeFilter}
 							search={search}
 						/>
-						<ChartColumns
-							data={formattedChartData}
-							name={t('field_transactions')}
-						/>
+						<ChartColumns data={formattedChartData} name={t('field_transactions')} />
 					</div>
 				</div>
 			</Section>
 			<Section>
-				<div className='layout-flex-col'>
-					<div className='layout-flex-row-mobile-col'>
+				<div className="layout-flex-col">
+					<div className="layout-flex-row-mobile-col">
 						<Filter
 							data={transactionFilterConfig}
 							isDisabled={isLoading}

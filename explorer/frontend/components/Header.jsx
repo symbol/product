@@ -1,16 +1,16 @@
+import Card from './Card';
+import CustomImage from './CustomImage';
+import Field from './Field';
+import TextBox from './TextBox';
+import ValueAccount from './ValueAccount';
 import styles from '@/styles/components/Header.module.scss';
+import { getContactsFromStorage, setContactsToStorage, useToggle } from '@/utils';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useTranslation } from 'next-i18next';
-import { getContactsFromStorage, setContactsToStorage, useToggle } from '@/utils';
 import { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
-import CustomImage from './CustomImage';
-import Card from './Card';
-import Field from './Field';
-import ValueAccount from './ValueAccount';
-import TextBox from './TextBox';
 
 const Header = () => {
 	const router = useRouter();
@@ -48,13 +48,13 @@ const Header = () => {
 				</Link>
 			))}
 		</>
-	)
+	);
 	const getItemStyle = href => `${styles.menuItem} ${router.asPath === href && styles.menuItem__active}`;
-	const removeContact = (contact) => {
+	const removeContact = contact => {
 		const updatedContacts = contacts.filter(item => item.address !== contact.address);
 		setContactsToStorage(updatedContacts);
 		setContacts(getContactsFromStorage());
-	}
+	};
 	const addAddress = () => {
 		if (address.length < 40) {
 			return toast.error('Incorrect address');
@@ -72,22 +72,21 @@ const Header = () => {
 			return toast.error('Address with such Name already added');
 		}
 
-		setContactsToStorage([...contacts, { address, name}]);
+		setContactsToStorage([...contacts, { address, name }]);
 		setAddress('');
 		setName('');
 		setContacts(getContactsFromStorage());
 		toggleAddContact();
-	}
+	};
 	const dismissNewContact = () => {
 		setAddress('');
 		setName('');
 		toggleAddContact();
-	}
-
+	};
 
 	useEffect(() => {
 		setContacts(getContactsFromStorage());
-	}, [])
+	}, []);
 
 	return (
 		<div className={styles.headerWrapper}>
@@ -96,15 +95,13 @@ const Header = () => {
 					<Image src="/images/logo-nem.png" fill alt="NEM" />
 				</div>
 				<div className={styles.headerRightSection}>
-					<div className={styles.headerMenu}>
-						{renderMenu()}
-					</div>
+					<div className={styles.headerMenu}>{renderMenu()}</div>
 					<CustomImage className={styles.profileIcon} src="/images/icon-profile.svg" alt="profile" onClick={toggleProfile} />
 					<CustomImage className={styles.menuIcon} src="/images/icon-menu.svg" alt="profile" onClick={toggleMenu} />
 				</div>
 				{isProfileOpen && (
 					<div className={styles.overlay} onClick={toggleProfile}>
-						<Card className={styles.modal} onClick={(e) => e.stopPropagation()}>
+						<Card className={styles.modal} onClick={e => e.stopPropagation()}>
 							<div>
 								<h3>Address Book</h3>
 								Give accounts names to easily identify them through the explorer.
@@ -115,11 +112,7 @@ const Header = () => {
 										<div className={styles.profileAddress} key={index}>
 											<Field title={item.name}>
 												<div className="layout-flex-row">
-													<ValueAccount
-														address={item.address}
-														raw
-														size="sm"
-													/>
+													<ValueAccount address={item.address} raw size="sm" />
 													<CustomImage
 														src="/images/icon-delete.png"
 														className={styles.buttonRemove}
@@ -146,8 +139,12 @@ const Header = () => {
 										<TextBox value={name} onChange={setName} />
 									</Field>
 									<div className="layout-flex-row">
-										<div className={styles.button} onClick={addAddress}>Add</div>
-										<div className={styles.button} onClick={dismissNewContact}>Cancel</div>
+										<div className={styles.button} onClick={addAddress}>
+											Add
+										</div>
+										<div className={styles.button} onClick={dismissNewContact}>
+											Cancel
+										</div>
 									</div>
 								</div>
 							)}
@@ -157,9 +154,7 @@ const Header = () => {
 				{isMenuOpen && (
 					<div className={styles.overlay} onClick={toggleMenu}>
 						<Card className={styles.modal}>
-							<div>
-								{renderMenu()}
-							</div>
+							<div>{renderMenu()}</div>
 						</Card>
 					</div>
 				)}

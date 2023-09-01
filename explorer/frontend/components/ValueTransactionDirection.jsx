@@ -1,6 +1,6 @@
-import { useTranslation } from 'next-i18next';
-import styles from '@/styles/components/ValueTransactionDirection.module.scss';
 import { TRANSACTION_DIRECTION } from '@/constants';
+import styles from '@/styles/components/ValueTransactionDirection.module.scss';
+import { useTranslation } from 'next-i18next';
 
 const ValueTransactionDirection = ({ value }) => {
 	const { t } = useTranslation();
@@ -8,7 +8,7 @@ const ValueTransactionDirection = ({ value }) => {
 	const isOutgoing = value === TRANSACTION_DIRECTION.OUTGOING;
 	const styleMap = {
 		[TRANSACTION_DIRECTION.INCOMING]: styles.incoming,
-		[TRANSACTION_DIRECTION.OUTGOING]: styles.outgoing,
+		[TRANSACTION_DIRECTION.OUTGOING]: styles.outgoing
 	};
 
 	if (!isIncoming && !isOutgoing) return null;
