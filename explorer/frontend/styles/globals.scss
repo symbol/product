@@ -84,13 +84,19 @@ a {
     flex: 1;
 }
 
-.layout-flex-row {
+.layout-flex-row-mobile-col {
     display: flex;
     flex-direction: row;
     gap: $spacing-padding;
     justify-content: space-between;
 }
 
+.layout-flex-row {
+    display: flex;
+    flex-direction: row;
+    gap: $spacing-padding;
+    justify-content: space-between;
+}
 
 .layout-section-row {
     display: flex;
@@ -119,6 +125,17 @@ a {
     display: flex;
     flex-direction: column;
     gap: $spacing-fields;
+}
+
+.stripes {
+    & > *:nth-child(even) {
+        background-color: #fcfcfc;
+    }
+
+    & > *:hover {
+        background-color: #fafafa;
+        transition: color 250ms;
+    }
 }
 
 :root {
@@ -163,7 +180,7 @@ a {
         font-size: $multiplier-font-mobile;
     }
 
-    .layout-flex-row {
+    .layout-flex-row-mobile-col {
         flex-direction: column;
         justify-content: space-between;
     }

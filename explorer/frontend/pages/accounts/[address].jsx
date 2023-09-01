@@ -22,6 +22,7 @@ import Avatar from '@/components/Avatar';
 import { getAccountInfo } from '../api/accounts';
 import ValueAccountBalance from '@/components/ValueAccountBalance';
 import ValueTransactionDirection from '@/components/ValueTransactionDirection';
+import { TRANSACTION_TYPE } from '@/constants';
 
 export const getServerSideProps = async ({ locale, params }) => {
 	const accountInfo = await getAccountInfo(params.address);
@@ -103,17 +104,30 @@ const AccountInfo = ({ accountInfo, preloadedTransactions }) => {
             name: 'from',
             title: t('filter_from'),
             type: 'account',
+			conflicts: ['to'],
+			isSearchEnabled: true
         },
         {
             name: 'to',
             title: t('filter_to'),
             type: 'account',
+			conflicts: ['from'],
+			isSearchEnabled: true
         },
 		{
             name: 'mosaic',
             title: t('filter_mosaic'),
             type: 'mosaic',
+			conflicts: ['type'],
+			isSearchEnabled: true,
 			options: accountInfo.mosaics
+        },
+		{
+            name: 'type',
+            title: t('filter_type'),
+			conflicts: ['mosaic'],
+            type: 'transaction-type',
+			options: Object.values(TRANSACTION_TYPE)
         },
     ];
 
@@ -125,7 +139,7 @@ const AccountInfo = ({ accountInfo, preloadedTransactions }) => {
 			<div className="layout-section-row">
 				<Section title={t('section_account')} className={styles.firstSection} cardClassName={styles.firstSectionCard}>
 					<div className="layout-flex-col-fields">
-						<Avatar type="account" value={accountInfo.address} size="lg" />
+						<Avatar type="account" value={accountInfo.address} size="xl" />
 						<Field title={t('field_balance')}>
 							<ValueAccountBalance value={accountInfo.balance} valueUSD={accountInfo.balanceUSD}></ValueAccountBalance>
 						</Field>
@@ -157,7 +171,7 @@ const AccountInfo = ({ accountInfo, preloadedTransactions }) => {
 			</div>
 			<Section title={t('section_accountState')} cardClassName={styles.stateSectionCard}>
 				<div className='layout-flex-col'>
-					<div className='layout-flex-row'>
+					<div className='layout-flex-row-mobile-col'>
 						<Filter
 							data={mosaicFilterConfig}
 							value={mosaics.filter}
@@ -167,15 +181,15 @@ const AccountInfo = ({ accountInfo, preloadedTransactions }) => {
 						<ButtonCSV data={mosaics.data} fileName={`mosaics-${address}`} />
 					</div>
 					<div className={styles.stateTable}>
-						{mosaics.data.map((item) => (
-							<ValueMosaic size="md" mosaicId={item.id} mosaicName={item.name} amount={item.amount} />
+						{mosaics.data.map((item, key) => (
+							<ValueMosaic size="md" mosaicId={item.id} mosaicName={item.name} amount={item.amount} key={'ownmos' + key} />
 						))}
 					</div>
 				</div>
 			</Section>
 			<Section title={t('section_transactions')}>
 				<div className='layout-flex-col'>
-					<div className='layout-flex-row'>
+					<div className='layout-flex-row-mobile-col'>
 						<Filter
 							data={transactionFilterConfig}
 							isDisabled={transactionPagination.isLoading}
