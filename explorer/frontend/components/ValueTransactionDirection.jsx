@@ -1,14 +1,19 @@
 import { useTranslation } from 'next-i18next';
 import styles from '@/styles/components/ValueTransactionDirection.module.scss';
+import { TRANSACTION_DIRECTION } from '@/constants';
 
 const ValueTransactionDirection = ({ value }) => {
 	const { t } = useTranslation();
-	const isIncoming = value === 'incoming';
-	const isOutgoing = value === 'outgoing';
+	const isIncoming = value === TRANSACTION_DIRECTION.INCOMING;
+	const isOutgoing = value === TRANSACTION_DIRECTION.OUTGOING;
+	const styleMap = {
+		[TRANSACTION_DIRECTION.INCOMING]: styles.incoming,
+		[TRANSACTION_DIRECTION.OUTGOING]: styles.outgoing,
+	};
 
 	if (!isIncoming && !isOutgoing) return null;
 
-	const style = styles[value];
+	const style = styleMap[value];
 	const text = t(`label_${value}`);
 
 	return (
