@@ -37,7 +37,7 @@ def app():
 
 		with open(file_name, 'wt', encoding='utf8') as config_file:
 			print(f'creating config file {file_name}...')
-			config_file.write(f'DATABASE_PATH="{db_config_path}"\n')
+			config_file.write(f'DATABASE_CONFIG_FILEPATH="{db_config_path}"\n')
 			config_file.flush()
 
 			temp_file_path = file_name.resolve()

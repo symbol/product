@@ -24,7 +24,7 @@ def create_app():
 def setup_nem_facade(app):
 	app.config.from_envvar('EXPLORER_REST_SETTINGS')
 	config = configparser.ConfigParser()
-	db_path = Path(app.config.get('DATABASE_PATH'))
+	db_path = Path(app.config.get('DATABASE_CONFIG_FILEPATH'))
 
 	log.info(f'loading database config from {db_path}')
 
