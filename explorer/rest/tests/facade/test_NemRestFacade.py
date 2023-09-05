@@ -9,7 +9,7 @@ from ..test.DatabaseTestUtils import DatabaseConfig, initialize_database
 
 # region test data
 
-Expected_Block_1 = {
+EXPECTED_BLOCK_1 = {
 	'height': 1,
 	'timestamp': '2015-03-29 00:06:25',
 	'totalFees': 102000000,
@@ -23,7 +23,7 @@ Expected_Block_1 = {
 	)
 }
 
-Expected_Block_2 = {
+EXPECTED_BLOCK_2 = {
 	'height': 2,
 	'timestamp': '2015-03-29 20:34:19',
 	'totalFees': 201000000,
@@ -80,19 +80,19 @@ class TestNemRestFacade(unittest.TestCase):
 		self.assertEqual(blocks, expected_blocks)
 
 	def test_retrieve_block_by_height(self):
-		self._assert_can_retrieve_block(1, Expected_Block_1)
+		self._assert_can_retrieve_block(1, EXPECTED_BLOCK_1)
 
 	def test_returns_none_for_nonexistent_block(self):
 		self._assert_can_retrieve_block(3, None)
 
 	def test_blocks_filtered_by_limit(self):
-		self._assert_can_retrieve_blocks(1, 0, 0, [Expected_Block_1])
+		self._assert_can_retrieve_blocks(1, 0, 0, [EXPECTED_BLOCK_1])
 
 	def test_blocks_filtered_by_offset(self):
-		self._assert_can_retrieve_blocks(1, 1, 0, [Expected_Block_2])
+		self._assert_can_retrieve_blocks(1, 1, 0, [EXPECTED_BLOCK_2])
 
 	def test_blocks_filtered_by_min_height(self):
-		self._assert_can_retrieve_blocks(10, 0, 2, [Expected_Block_2])
+		self._assert_can_retrieve_blocks(10, 0, 2, [EXPECTED_BLOCK_2])
 
 	def test_returns_empty_list_on_no_matches(self):
 		self._assert_can_retrieve_blocks(10, 0, 3, [])

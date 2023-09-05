@@ -9,9 +9,9 @@ from ..test.DatabaseTestUtils import BLOCKS, DatabaseConfig, initialize_database
 
 # region test data
 
-Expected_Block_View_1 = BlockView(*BLOCKS[0])
+EXPECTED_BLOCK_VIEW_1 = BlockView(*BLOCKS[0])
 
-Expected_Block_View_2 = BlockView(*BLOCKS[1])
+EXPECTED_BLOCK_VIEW_2 = BlockView(*BLOCKS[1])
 
 # endregion
 
@@ -49,26 +49,25 @@ class NemDatabaseTest(unittest.TestCase):
 		self.assertEqual(blocks_view, expected_blocks)
 
 	def test_can_query_block_by_height_1(self):
-		self._assert_can_query_block_by_height(1, Expected_Block_View_1)
+		self._assert_can_query_block_by_height(1, EXPECTED_BLOCK_VIEW_1)
 
 	def test_can_query_nonexistent_block(self):
 		self._assert_can_query_block_by_height(3, None)
 
 	def test_can_query_blocks_filtered_limit(self):
-		self._assert_can_query_blocks_with_filter(1, 0, 1, [Expected_Block_View_1])
+		self._assert_can_query_blocks_with_filter(1, 0, 1, [EXPECTED_BLOCK_VIEW_1])
 
 	def test_can_query_blocks_filtered_offset_0(self):
-		self._assert_can_query_blocks_with_filter(1, 0, 0, [Expected_Block_View_1])
+		self._assert_can_query_blocks_with_filter(1, 0, 0, [EXPECTED_BLOCK_VIEW_1])
 
 	def test_can_query_blocks_filtered_offset_1(self):
-		self._assert_can_query_blocks_with_filter(1, 1, 0, [Expected_Block_View_2])
+		self._assert_can_query_blocks_with_filter(1, 1, 0, [EXPECTED_BLOCK_VIEW_2])
 
 	def test_can_query_blocks_filtered_min_height_1(self):
-		#
-		self._assert_can_query_blocks_with_filter(10, 0, 1, [Expected_Block_View_1, Expected_Block_View_2])
+		self._assert_can_query_blocks_with_filter(10, 0, 1, [EXPECTED_BLOCK_VIEW_1, EXPECTED_BLOCK_VIEW_2])
 
 	def test_can_query_blocks_filtered_min_height_2(self):
-		self._assert_can_query_blocks_with_filter(10, 0, 2, [Expected_Block_View_2])
+		self._assert_can_query_blocks_with_filter(10, 0, 2, [EXPECTED_BLOCK_VIEW_2])
 
 	def test_can_query_blocks_filtered_min_height_3(self):
 		self._assert_can_query_blocks_with_filter(10, 0, 3, [])
