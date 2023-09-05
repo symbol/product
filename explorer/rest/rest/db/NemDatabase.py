@@ -6,7 +6,7 @@ from .DatabaseConnection import DatabaseConnectionPool
 
 
 def _format_bytes(buffer):
-	return hexlify(buffer).decode('utf8')
+	return hexlify(buffer).decode('utf8').upper()
 
 
 class NemDatabase(DatabaseConnectionPool):
