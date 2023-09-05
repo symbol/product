@@ -17,7 +17,7 @@ class TestDatabaseConnectionPool(unittest.TestCase):
 	def tearDown(self):
 		self.postgresql.stop()
 
-	def test_acquire_connection(self):
+	def test_can_acquire_connection(self):
 		# Arrange:
 		database_connection_pool = DatabaseConnectionPool(self.db_config)
 
@@ -27,7 +27,7 @@ class TestDatabaseConnectionPool(unittest.TestCase):
 			self.assertIsNotNone(connection)
 			self.assertIsInstance(connection, psycopg2.extensions.connection)
 
-	def test_release_connection(self):
+	def test_can_release_connection(self):
 		# Arrange:
 		database_connection_pool = DatabaseConnectionPool(self.db_config, min_connections=1, max_connections=1)
 

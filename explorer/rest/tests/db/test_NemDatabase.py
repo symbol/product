@@ -51,7 +51,7 @@ class NemDatabaseTest(unittest.TestCase):
 	def test_can_query_block_by_height_1(self):
 		self._assert_can_query_block_by_height(1, EXPECTED_BLOCK_VIEW_1)
 
-	def test_can_query_nonexistent_block(self):
+	def test_cannot_query_nonexistent_block(self):
 		self._assert_can_query_block_by_height(3, None)
 
 	def test_can_query_blocks_filtered_limit(self):
