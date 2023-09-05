@@ -3,6 +3,7 @@ import CustomImage from './CustomImage';
 import config from '@/config';
 import { ACCOUNT_STATE_CHANGE_ACTION, TRANSACTION_DIRECTION } from '@/constants';
 import styles from '@/styles/components/ValueMosaic.module.scss';
+import Link from 'next/link';
 
 const ValueMosaic = ({ mosaicName, mosaicId, amount, isNative, className, direction, size, onClick }) => {
 	let displayedName;
@@ -25,13 +26,19 @@ const ValueMosaic = ({ mosaicName, mosaicId, amount, isNative, className, direct
 		imageSrc = '/images/icon-mosaic-custom.svg';
 	}
 
-	const handleClick = () => onClick && onClick(mosaicId);
+	const handleClick = e => {
+		if (!onClick) return;
+		e.preventDefault();
+		onClick(mosaicId);
+	};
 
 	return size === 'md' ? (
 		<div className={`${styles.valueMosaic} ${styles.containerMd} ${className}`} onClick={handleClick}>
 			<Avatar type="mosaic" size="md" value={mosaicId} />
 			<div className={styles.valueMosaicMdTextSection}>
-				<div>{mosaicName}</div>
+				<Link href={`/mosaics/${mosaicId}`} onClick={handleClick}>
+					{mosaicName}
+				</Link>
 				{isAmountExist && <div>{amount}</div>}
 			</div>
 		</div>
