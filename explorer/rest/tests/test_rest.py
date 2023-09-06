@@ -94,7 +94,7 @@ def test_api_nem_block_by_invalid_height(client):  # pylint: disable=redefined-o
 # region /blocks
 
 def _get_api_nem_blocks(client, **query_params):  # pylint: disable=redefined-outer-name
-	query_string = '&'.join(f"{key}={val}" for key, val in query_params.items())
+	query_string = '&'.join(f'{key}={val}' for key, val in query_params.items())
 	return client.get(f'/api/nem/blocks?{query_string}')
 
 
