@@ -31,6 +31,8 @@ export const getAccountInfoStub = async address => {
 		importance: 0.037,
 		vestedBalance: 8423.142938,
 		names: ['namespace.account', 'another.name'],
+		isMultisig: false,
+		isHarvestingActive: true,
 		namespaces: [
 			{
 				id: 'namespace.account',

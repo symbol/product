@@ -17,8 +17,9 @@ const ValueMosaic = ({ mosaicName, mosaicId, amount, isNative, className, direct
 	const directionStyle = directionStyleMap[direction];
 	const isAmountExist = !isNaN(amount) && amount !== null;
 	const [integer, decimal] = isAmountExist ? amount.toString().split('.') : ['-'];
+	const finalMosaicId = isNative ? config.NATIVE_MOSAIC_ID : mosaicId;
 
-	if (mosaicId === config.NATIVE_MOSAIC_ID || isNative) {
+	if (finalMosaicId === config.NATIVE_MOSAIC_ID) {
 		displayedName = '';
 		imageSrc = '/images/icon-mosaic-native.svg';
 	} else {
@@ -29,21 +30,21 @@ const ValueMosaic = ({ mosaicName, mosaicId, amount, isNative, className, direct
 	const handleClick = e => {
 		if (!onClick) return;
 		e.preventDefault();
-		onClick(mosaicId);
+		onClick(finalMosaicId);
 	};
 
 	return size === 'md' ? (
 		<div className={`${styles.valueMosaic} ${styles.containerMd} ${className}`} onClick={handleClick}>
-			<Avatar type="mosaic" size="md" value={mosaicId} />
+			<Avatar type="mosaic" size="md" value={finalMosaicId} />
 			<div className={styles.valueMosaicMdTextSection}>
-				<Link href={`/mosaics/${mosaicId}`} onClick={handleClick}>
+				<Link href={`/mosaics/${finalMosaicId}`} onClick={handleClick}>
 					{mosaicName}
 				</Link>
 				{isAmountExist && <div>{amount}</div>}
 			</div>
 		</div>
 	) : (
-		<Link href={`/mosaics/${mosaicId}`} className={`${styles.valueMosaic} ${directionStyle} ${className}`} onClick={handleClick}>
+		<Link href={`/mosaics/${finalMosaicId}`} className={`${styles.valueMosaic} ${directionStyle} ${className}`} onClick={handleClick}>
 			<CustomImage src={imageSrc} className={styles.icon} alt="Mosaic" />
 			<div className={styles.amount}>
 				<div>{integer}</div>

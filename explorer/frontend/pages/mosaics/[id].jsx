@@ -8,6 +8,7 @@ import Section from '@/components/Section';
 import Table from '@/components/Table';
 import ValueAccount from '@/components/ValueAccount';
 import ValueCopy from '@/components/ValueCopy';
+import ValueLabel from '@/components/ValueLabel';
 import ValueMosaic from '@/components/ValueMosaic';
 import ValueTimestamp from '@/components/ValueTimestamp';
 import ValueTransactionHash from '@/components/ValueTransactionHash';
@@ -44,6 +45,14 @@ const MosaicInfo = ({ mosaicInfo, preloadedTransactions }) => {
 	const { t } = useTranslation();
 	const transactionPagination = usePagination(fetchTransactionPage, preloadedTransactions);
 	const [chainHeight, setChainHeight] = useState(0);
+	const labelTransferable = {
+		type: mosaicInfo.isTransferable ? 'true' : 'false',
+		text: t('label_transferable')
+	};
+	const labelSupplyMutable = {
+		type: mosaicInfo.isSupplyMutable ? 'true' : 'false',
+		text: t('label_supplyMutable')
+	};
 
 	const transactionTableColumns = [
 		{
@@ -113,6 +122,10 @@ const MosaicInfo = ({ mosaicInfo, preloadedTransactions }) => {
 						<Field title={t('field_id')}>
 							<ValueCopy value={mosaicInfo.id} />
 						</Field>
+						<div className="layout-flex-row-stacked">
+							<ValueLabel type={labelTransferable.type} text={labelTransferable.text} />
+							<ValueLabel type={labelSupplyMutable.type} text={labelSupplyMutable.text} />
+						</div>
 						<div className="value-description">{mosaicInfo.description || 'No description'}</div>
 					</div>
 				</Section>

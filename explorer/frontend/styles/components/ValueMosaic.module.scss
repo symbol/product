@@ -8,6 +8,7 @@
     width: fit-content;
     padding: 0 $spacing-base / 2;
     overflow: hidden;
+    color: unset;
     background: $color-background-mosaic;
     border-radius: $border-radius-chip;
 }
@@ -21,7 +22,6 @@
     display: flex;
     flex-direction: row;
     align-items: baseline;
-    color: $color-text-body !important;
     font: $font-body-bold;
 }
 

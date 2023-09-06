@@ -98,6 +98,12 @@ a {
     justify-content: space-between;
 }
 
+.layout-flex-row-stacked {
+    display: flex;
+    flex-flow: row wrap;
+    gap: $spacing-padding;
+}
+
 .layout-section-row {
     display: flex;
     flex-direction: row;

@@ -172,6 +172,13 @@
 	"label_incoming": "From",
 	"label_outgoing": "To",
 	"label_safe": "Safe",
+	"label_confirmed": "Confirmed",
+	"label_unconfirmed": "Unconfirmed",
+	"label_pending": "Pending",
+	"label_multisig": "Multisig",
+	"label_harvesting": "Harvesting",
+	"label_transferable": "Transferable",
+	"label_supplyMutable": "Supply Mutable",
 	"label_send": "Send",
 	"label_receive": "Receive"
 }
