@@ -2,7 +2,6 @@ import unittest
 
 import testing.postgresql
 
-from rest.db.NemDatabase import NemDatabase
 from rest.facade.NemRestFacade import NemRestFacade
 
 from ..test.DatabaseTestUtils import DatabaseConfig, initialize_database
@@ -51,13 +50,6 @@ class TestNemRestFacade(unittest.TestCase):
 	@classmethod
 	def tearDownClass(cls):
 		cls.postgresql.stop()
-
-	def test_can_create_facade(self):
-		# Arrange + Act:
-		nem_rest_facade = NemRestFacade(self.db_config)
-
-		# Assert:
-		self.assertIsInstance(nem_rest_facade.nem_db, NemDatabase)
 
 	def _assert_can_retrieve_block(self, height, expected_block):
 		# Arrange:
