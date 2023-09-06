@@ -43,14 +43,14 @@ const ValueMosaic = ({ mosaicName, mosaicId, amount, isNative, className, direct
 			</div>
 		</div>
 	) : (
-		<div className={`${styles.valueMosaic} ${directionStyle} ${className}`} onClick={handleClick}>
+		<Link href={`/mosaics/${mosaicId}`} className={`${styles.valueMosaic} ${directionStyle} ${className}`} onClick={handleClick}>
 			<CustomImage src={imageSrc} className={styles.icon} alt="Mosaic" />
 			<div className={styles.amount}>
 				<div>{integer}</div>
 				{!!decimal && <div className={styles.decimal}>.{decimal}</div>}
 			</div>
 			{!!displayedName && <div>{displayedName}</div>}
-		</div>
+		</Link>
 	);
 };
 

@@ -21,6 +21,7 @@
     display: flex;
     flex-direction: row;
     align-items: baseline;
+    color: $color-text-body !important;
     font: $font-body-bold;
 }
 
@@ -30,11 +31,11 @@
 }
 
 .incoming {
-    color: $color-primary;
+    color: $color-primary !important;
 }
 
 .outgoing {
-    color: $color-danger;
+    color: $color-danger !important;
 }
 
 .containerMd {
