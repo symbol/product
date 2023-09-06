@@ -22,8 +22,8 @@ export const getMosaicInfoStub = async id => {
 		creator: address1.toString(),
 		revision: 1,
 		registrationHeight: 1887726,
-		expirationHeight: 2887726,
-		expireIn: 2887726 - 1887726,
+		expirationHeight: 4999770,
+		expireIn: 4999770 - 1887726,
 
 		levy: {
 			type: 'absolute_fee',

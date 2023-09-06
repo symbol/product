@@ -1,6 +1,9 @@
+import { fetchBlockPage } from '../api/blocks';
+import { getMosaicInfo } from '../api/mosaic';
 import Avatar from '@/components/Avatar';
 import Field from '@/components/Field';
 import ItemTransactionMobile from '@/components/ItemTransactionMobile';
+import Progress from '@/components/Progress';
 import Section from '@/components/Section';
 import Table from '@/components/Table';
 import ValueAccount from '@/components/ValueAccount';
@@ -15,7 +18,7 @@ import { usePagination } from '@/utils';
 import Head from 'next/head';
 import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
-import { getMosaicInfo } from '../api/mosaic';
+import { useEffect, useState } from 'react';
 
 export const getServerSideProps = async ({ locale, params }) => {
 	const mosaicInfo = await getMosaicInfo(params.id);
@@ -40,6 +43,7 @@ const MosaicInfo = ({ mosaicInfo, preloadedTransactions }) => {
 	const { levy } = mosaicInfo;
 	const { t } = useTranslation();
 	const transactionPagination = usePagination(fetchTransactionPage, preloadedTransactions);
+	const [chainHeight, setChainHeight] = useState(0);
 
 	const transactionTableColumns = [
 		{
@@ -83,6 +87,17 @@ const MosaicInfo = ({ mosaicInfo, preloadedTransactions }) => {
 		}
 	];
 
+	useEffect(() => {
+		const fetchChainHeight = async () => {
+			const { data } = await fetchBlockPage();
+
+			if (data[0]) {
+				setChainHeight(data[0].height);
+			}
+		};
+		fetchChainHeight();
+	}, []);
+
 	return (
 		<div className={styles.wrapper}>
 			<Head>
@@ -115,12 +130,16 @@ const MosaicInfo = ({ mosaicInfo, preloadedTransactions }) => {
 						<Field title={t('field_mosaicCreator')}>
 							<ValueAccount address={mosaicInfo.creator} size="sm" />
 						</Field>
-						<Field title={t('field_revision')}>
-							{mosaicInfo.revision}
-						</Field>
 						<Field title={t('field_mosaicExpiration')} description={t('field_mosaicExpiration_description')}>
-							{mosaicInfo.expireIn}
+							{t('value_mosaicExpiration', { value: mosaicInfo.expireIn })}
 						</Field>
+						<Progress
+							titleLeft={t('field_mosaicRegistrationHeight')}
+							titleRight={t('field_mosaicExpirationHeight')}
+							valueLeft={mosaicInfo.registrationHeight}
+							valueRight={mosaicInfo.expirationHeight}
+							value={chainHeight}
+						/>
 					</div>
 				</Section>
 			</div>
@@ -132,9 +151,7 @@ const MosaicInfo = ({ mosaicInfo, preloadedTransactions }) => {
 					<Field title={t('field_levyMosaic')} description={t('field_levyMosaic_description')}>
 						<ValueCopy value={levy.mosaic} />
 					</Field>
-					<Field title={t('field_levyFee')}>
-						{levy.fee}
-					</Field>
+					<Field title={t('field_levyFee')}>{levy.fee}</Field>
 					<Field title={t('field_levyRecipient')} description={t('field_levyRecipient_description')}>
 						<ValueAccount address={levy.recipient} size="sm" />
 					</Field>
