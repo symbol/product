@@ -1,4 +1,5 @@
 import unittest
+from collections import namedtuple
 
 import testing.postgresql
 
@@ -6,6 +7,8 @@ from rest.db.NemDatabase import NemDatabase
 from rest.model.Block import BlockView
 
 from ..test.DatabaseTestUtils import BLOCKS, DatabaseConfig, initialize_database
+
+BlockQueryParams = namedtuple('BlockQueryParams', ['limit', 'offset', 'min_height'])
 
 # region test data
 
@@ -38,12 +41,12 @@ class NemDatabaseTest(unittest.TestCase):
 		# Assert:
 		self.assertEqual(expected_block, block_view)
 
-	def _assert_can_query_blocks_with_filter(self, limit, offset, min_height, expected_blocks):
+	def _assert_can_query_blocks_with_filter(self, query_params, expected_blocks):
 		# Arrange:
 		nem_db = NemDatabase(self.db_config)
 
 		# Act:
-		blocks_view = nem_db.get_blocks(limit, offset, min_height)
+		blocks_view = nem_db.get_blocks(query_params.limit, query_params.offset, query_params.min_height)
 
 		# Assert:
 		self.assertEqual(expected_blocks, blocks_view)
@@ -55,19 +58,19 @@ class NemDatabaseTest(unittest.TestCase):
 		self._assert_can_query_block_by_height(3, None)
 
 	def test_can_query_blocks_filtered_limit(self):
-		self._assert_can_query_blocks_with_filter(1, 0, 1, [EXPECTED_BLOCK_VIEW_1])
+		self._assert_can_query_blocks_with_filter(BlockQueryParams(1, 0, 1), [EXPECTED_BLOCK_VIEW_1])
 
 	def test_can_query_blocks_filtered_offset_0(self):
-		self._assert_can_query_blocks_with_filter(1, 0, 0, [EXPECTED_BLOCK_VIEW_1])
+		self._assert_can_query_blocks_with_filter(BlockQueryParams(1, 0, 0), [EXPECTED_BLOCK_VIEW_1])
 
 	def test_can_query_blocks_filtered_offset_1(self):
-		self._assert_can_query_blocks_with_filter(1, 1, 0, [EXPECTED_BLOCK_VIEW_2])
+		self._assert_can_query_blocks_with_filter(BlockQueryParams(1, 1, 0), [EXPECTED_BLOCK_VIEW_2])
 
 	def test_can_query_blocks_filtered_min_height_1(self):
-		self._assert_can_query_blocks_with_filter(10, 0, 1, [EXPECTED_BLOCK_VIEW_1, EXPECTED_BLOCK_VIEW_2])
+		self._assert_can_query_blocks_with_filter(BlockQueryParams(10, 0, 1), [EXPECTED_BLOCK_VIEW_1, EXPECTED_BLOCK_VIEW_2])
 
 	def test_can_query_blocks_filtered_min_height_2(self):
-		self._assert_can_query_blocks_with_filter(10, 0, 2, [EXPECTED_BLOCK_VIEW_2])
+		self._assert_can_query_blocks_with_filter(BlockQueryParams(10, 0, 2), [EXPECTED_BLOCK_VIEW_2])
 
 	def test_can_query_blocks_filtered_min_height_3(self):
-		self._assert_can_query_blocks_with_filter(10, 0, 3, [])
+		self._assert_can_query_blocks_with_filter(BlockQueryParams(10, 0, 3), [])
