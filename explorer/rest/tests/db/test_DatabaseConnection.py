@@ -29,11 +29,15 @@ class TestDatabaseConnectionPool(unittest.TestCase):
 
 	def test_can_release_connection(self):
 		# Arrange:
-		database_connection_pool = DatabaseConnectionPool(self.db_config, min_connections=1, max_connections=1)
+		database_connection_pool = DatabaseConnectionPool(self.db_config, min_connections=1, max_connections=2)
 
-		# Act:
-		with database_connection_pool.connection() as connection:  # pylint: disable=unused-variable
-			self.assertEqual(1, len(database_connection_pool._pool._used))  # pylint: disable=protected-access
+		# Act & Assert:
+		with database_connection_pool.connection() as connection1:
+			with database_connection_pool.connection() as connection2:
+				self.assertNotEqual(connection1, connection2)
 
-		# Assert:
-		self.assertEqual(0, len(database_connection_pool._pool._used))  # pylint: disable=protected-access
+		with database_connection_pool.connection() as connection1:
+			pass
+
+		with database_connection_pool.connection() as connection2:
+			self.assertEqual(connection1, connection2)
