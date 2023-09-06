@@ -36,7 +36,7 @@ class NemDatabaseTest(unittest.TestCase):
 		block_view = nem_db.get_block(height)
 
 		# Assert:
-		self.assertEqual(block_view, expected_block)
+		self.assertEqual(expected_block, block_view)
 
 	def _assert_can_query_blocks_with_filter(self, limit, offset, min_height, expected_blocks):
 		# Arrange:
@@ -46,7 +46,7 @@ class NemDatabaseTest(unittest.TestCase):
 		blocks_view = nem_db.get_blocks(limit, offset, min_height)
 
 		# Assert:
-		self.assertEqual(blocks_view, expected_blocks)
+		self.assertEqual(expected_blocks, blocks_view)
 
 	def test_can_query_block_by_height_1(self):
 		self._assert_can_query_block_by_height(1, EXPECTED_BLOCK_VIEW_1)

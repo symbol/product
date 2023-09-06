@@ -67,7 +67,7 @@ class TestNemRestFacade(unittest.TestCase):
 		block = nem_rest_facade.get_block(height)
 
 		# Assert:
-		self.assertEqual(block, expected_block)
+		self.assertEqual(expected_block, block)
 
 	def _assert_can_retrieve_blocks(self, limit, offset, min_height, expected_blocks):
 		# Arrange:
@@ -77,7 +77,7 @@ class TestNemRestFacade(unittest.TestCase):
 		blocks = nem_rest_facade.get_blocks(limit, offset, min_height)
 
 		# Assert:
-		self.assertEqual(blocks, expected_blocks)
+		self.assertEqual(expected_blocks, blocks)
 
 	def test_retrieve_block_by_height(self):
 		self._assert_can_retrieve_block(1, EXPECTED_BLOCK_1)
