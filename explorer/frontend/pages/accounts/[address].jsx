@@ -139,7 +139,13 @@ const AccountInfo = ({ accountInfo, preloadedTransactions }) => {
 			<div className="layout-section-row">
 				<Section title={t('section_account')} className={styles.firstSection} cardClassName={styles.firstSectionCard}>
 					<div className="layout-flex-col-fields">
-						<Avatar type="account" value={accountInfo.address} size="xl" />
+						<div className="layout-flex-row">
+							<Avatar type="account" value={accountInfo.address} size="xl" />
+							<div className="layout-flex-row-stacked">
+								{accountInfo.isHarvestingActive && <ValueLabel type="harvesting" text={t('label_harvesting')} />}
+								{accountInfo.isMultisig && <ValueLabel type="multisig" text={t('label_multisig')} />}
+							</div>
+						</div>
 						<Field title={t('field_balance')}>
 							<ValueAccountBalance value={accountInfo.balance} valueUSD={accountInfo.balanceUSD}></ValueAccountBalance>
 						</Field>

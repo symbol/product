@@ -2,20 +2,29 @@ import CustomImage from './CustomImage';
 import styles from '@/styles/components/ValueLabel.module.scss';
 
 const iconsMap = {
-	doublecheck: '/images/icon-doublecheck.svg'
+	confirmed: '/images/icon-label-confirmed.svg',
+	true: '/images/icon-label-true.svg',
+	false: '/images/icon-label-false.svg',
+	harvesting: '/images/icon-label-harvesting.svg',
+	multisig: '/images/icon-label-multisig.svg'
 };
 const styleMap = {
-	success: styles.success,
-	warning: styles.warning,
-	danger: styles.danger,
-	info: styles.info
+	confirmed: styles.success,
+	true: styles.success,
+	pending: styles.warning,
+	false: styles.danger,
+	harvesting: styles.info,
+	multisig: styles.info
 };
 
-const ValueLabel = ({ text, type, iconName }) => {
+const ValueLabel = ({ text, type }) => {
+	const iconSrc = iconsMap[type];
+	const colorStyle = styleMap[type];
+
 	return (
 		<div className={styles.valueLabel}>
-			<CustomImage src={iconsMap[iconName]} className={`${styles.icon} ${styleMap[type]}`} />
-			<div className={styleMap[type]}>{text}</div>
+			<CustomImage src={iconSrc} className={`${styles.icon} ${colorStyle}`} />
+			<div className={colorStyle}>{text}</div>
 		</div>
 	);
 };

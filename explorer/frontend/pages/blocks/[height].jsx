@@ -94,7 +94,7 @@ const BlockInfo = ({ blockInfo, transactions }) => {
 						</Field>
 						<div className="layout-grid-row">
 							<Field title={t('field_status')}>
-								<ValueLabel text="Safe" type="success" iconName="doublecheck" />
+								<ValueLabel text={t('label_safe')} type="confirmed" />
 							</Field>
 							<Field title={t('field_timestamp')}>
 								<ValueTimestamp value={blockInfo.timestamp} hasTime />

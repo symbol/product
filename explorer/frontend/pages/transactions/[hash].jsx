@@ -86,7 +86,12 @@ const TransactionInfo = ({ transactionInfo }) => {
 						</Field>
 						<div className="layout-grid-row">
 							<Field title={t('field_status')}>
-								<ValueLabel text="Confirmed" type="success" iconName="doublecheck" />
+								{transactionInfo.group === 'confirmed' && (
+									<ValueLabel text={t('label_transaction_confirmed')} type="confirmed" />
+								)}
+								{transactionInfo.group === 'unconfirmed' && (
+									<ValueLabel text={t('label_transaction_unconfirmed')} type="pending" />
+								)}
 							</Field>
 							<Field title={t('field_timestamp')}>
 								<ValueTimestamp value={transactionInfo.timestamp} hasTime />

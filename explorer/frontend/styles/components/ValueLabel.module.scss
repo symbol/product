@@ -3,10 +3,11 @@
 .valueLabel {
     display: flex;
     flex-direction: row;
-    gap: $spacing-base;
+    gap: $spacing-base / 2;
     align-items: center;
     width: fit-content;
-    padding: 0 $spacing-base * 2;
+    height: $spacing-base * 2;
+    padding: 0 $spacing-base * 2 0 $spacing-base * 1.5;
     font: $font-body-bold;
     background: $color-background-mosaic;
     border-radius: $border-radius-label;
