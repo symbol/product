@@ -45,6 +45,14 @@ def setup_nem_facade(app):
 def setup_nem_routes(app, nem_api_facade):
 	@app.route('/api/nem/block/<height>')
 	def api_get_nem_block_by_height(height):
+		try:
+			height = int(height)
+			if height < 1:
+				raise ValueError()
+
+		except ValueError:
+			abort(400)
+
 		result = nem_api_facade.get_block(height)
 		if not result:
 			abort(404)

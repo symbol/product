@@ -73,6 +73,13 @@ def test_api_nem_block_non_exist(client):  # pylint: disable=redefined-outer-nam
 		'status': 404
 	})
 
+
+def test_api_nem_block_by_invalid_height(client):  # pylint: disable=redefined-outer-name
+	_assert_get_api_nem_block_by_height(client, 'invalid', 400, {
+		'message': 'Bad request',
+		'status': 400
+	})
+
 # endregion
 
 
