@@ -87,10 +87,10 @@ const TransactionInfo = ({ transactionInfo }) => {
 						<div className="layout-grid-row">
 							<Field title={t('field_status')}>
 								{transactionInfo.group === 'confirmed' && (
-									<ValueLabel text={t('label_transaction_confirmed')} type="confirmed" />
+									<ValueLabel text={t('label_confirmed')} type="confirmed" />
 								)}
 								{transactionInfo.group === 'unconfirmed' && (
-									<ValueLabel text={t('label_transaction_unconfirmed')} type="pending" />
+									<ValueLabel text={t('label_unconfirmed')} type="pending" />
 								)}
 							</Field>
 							<Field title={t('field_timestamp')}>
