@@ -65,6 +65,7 @@ export const getTransactionInfoStub = async hash => {
 
 	return {
 		type: 'transfer',
+		group: 'confirmed',
 		hash,
 		timestamp,
 		sender: address1.toString(),
