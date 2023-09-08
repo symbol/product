@@ -39,15 +39,16 @@ class NemDatabase(DatabaseConnectionPool):
 
 			return self._create_block_view(result) if result else None
 
-	def get_blocks(self, limit, offset, min_height):
+	def get_blocks(self, limit, offset, min_height, sort):
 		"""Gets blocks pagination in database."""
 
 		with self.connection() as connection:
 			cursor = connection.cursor()
-			cursor.execute('''
+			cursor.execute(f'''
 				SELECT *
 				FROM blocks
 				WHERE height >= %s
+				ORDER BY height {sort}
 				LIMIT %s OFFSET %s
 			''', (min_height, limit, offset,))
 			results = cursor.fetchall()
