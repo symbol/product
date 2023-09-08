@@ -2,7 +2,8 @@ defaultCiPipeline {
 	operatingSystem = ['ubuntu']
 	instanceSize = 'medium'
 
-	ciBuildDockerfile = 'python.Dockerfile'
+	environment = 'python'
+	otherEnvironments = ['python-ubuntu-base', 'python-ubuntu-latest']
 
 	packageId = 'tools-shoestring'
 
