@@ -1,4 +1,5 @@
 import { getAccountInfoStub, getAccountsStub } from '../../../stubs/accounts';
+import { getMarketData } from '../stats';
 import { createPage, createSearchCriteria } from '@/utils';
 
 export default async function handler(req, res) {
@@ -26,5 +27,11 @@ export const getAccountPage = async (searchCriteria = {}) => {
 };
 
 export const getAccountInfo = async height => {
-	return getAccountInfoStub(height);
+	const accountInfo = await getAccountInfoStub(height);
+	const marketData = await getMarketData();
+
+	return {
+		...accountInfo,
+		balanceUSD: accountInfo.balance * marketData.price
+	};
 };

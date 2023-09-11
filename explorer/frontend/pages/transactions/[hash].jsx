@@ -1,3 +1,4 @@
+import { getPriceByDate } from '../api/stats';
 import { getTransactionInfo } from '../api/transactions';
 import Avatar from '@/components/Avatar';
 import CustomImage from '@/components/CustomImage';
@@ -12,9 +13,11 @@ import ValueMosaic from '@/components/ValueMosaic';
 import ValueTimestamp from '@/components/ValueTimestamp';
 import ValueTransactionType from '@/components/ValueTransactionType';
 import styles from '@/styles/pages/TransactionInfo.module.scss';
+import { truncateDecimals } from '@/utils';
 import Head from 'next/head';
 import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
+import { useEffect, useState } from 'react';
 
 export const getServerSideProps = async ({ locale, params }) => {
 	const transactionInfo = await getTransactionInfo(params.hash);
@@ -35,6 +38,7 @@ export const getServerSideProps = async ({ locale, params }) => {
 
 const TransactionInfo = ({ transactionInfo }) => {
 	const { t } = useTranslation();
+	const [amountUSD, setAmountUSD] = useState(null);
 
 	const tableColumns = [
 		{
@@ -72,6 +76,18 @@ const TransactionInfo = ({ transactionInfo }) => {
 		}
 	];
 
+	useEffect(() => {
+		const fetchAmountUSD = async () => {
+			const price = await getPriceByDate(transactionInfo.timestamp);
+
+			setAmountUSD(transactionInfo.amount * price);
+		};
+
+		if (transactionInfo.amount) {
+			fetchAmountUSD();
+		}
+	}, [transactionInfo]);
+
 	return (
 		<div className={styles.wrapper}>
 			<Head>
@@ -86,17 +102,23 @@ const TransactionInfo = ({ transactionInfo }) => {
 						</Field>
 						<div className="layout-grid-row">
 							<Field title={t('field_status')}>
-								{transactionInfo.group === 'confirmed' && (
-									<ValueLabel text={t('label_confirmed')} type="confirmed" />
-								)}
-								{transactionInfo.group === 'unconfirmed' && (
-									<ValueLabel text={t('label_unconfirmed')} type="pending" />
-								)}
+								{transactionInfo.group === 'confirmed' && <ValueLabel text={t('label_confirmed')} type="confirmed" />}
+								{transactionInfo.group === 'unconfirmed' && <ValueLabel text={t('label_unconfirmed')} type="pending" />}
 							</Field>
 							<Field title={t('field_timestamp')}>
 								<ValueTimestamp value={transactionInfo.timestamp} hasTime />
 							</Field>
 						</div>
+						{transactionInfo.amount && (
+							<div className="layout-grid-row">
+								<Field title={t('field_amount')}>
+									<ValueMosaic isNative amount={transactionInfo.amount} />
+								</Field>
+								<Field title={t('field_amountUSD')}>
+									<div>~${truncateDecimals(amountUSD, 2)}</div>
+								</Field>
+							</div>
+						)}
 						<Field title={t('field_fee')}>
 							<ValueMosaic isNative amount={transactionInfo.fee} />
 						</Field>

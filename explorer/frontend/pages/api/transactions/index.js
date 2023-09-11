@@ -1,4 +1,5 @@
 import { getTransactionInfoStub, getTransactionsStub } from '../../../stubs/transactions';
+import config from '@/config';
 import { ACCOUNT_STATE_CHANGE_ACTION, TRANSACTION_TYPE } from '@/constants';
 import { createPage, createSearchCriteria } from '@/utils';
 
@@ -71,8 +72,16 @@ export const getTransactionInfo = async hash => {
 		});
 	});
 
+	let amount = null;
+
+	if (transactionInfo.body.length === 1 && transactionInfo.body[0].type === TRANSACTION_TYPE.TRANSFER) {
+		const nativeMosaic = transactionInfo.body[0].mosaics.find(mosaic => mosaic.id === config.NATIVE_MOSAIC_ID);
+		amount = nativeMosaic ? nativeMosaic.amount : null;
+	}
+
 	return {
 		...transactionInfo,
-		accountStateChange
+		accountStateChange,
+		amount
 	};
 };
