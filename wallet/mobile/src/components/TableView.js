@@ -35,10 +35,20 @@ const renderTypeMap = {
         'proof',
         'hash',
     ],
-    boolean: ['supplyMutable', 'transferable', 'restrictable', 'revokable'],
-    fee: ['fee', 'maxFee'],
+    boolean: [
+        'supplyMutable',
+        'transferable',
+        'restrictable',
+        'revokable',
+        'isSupplyMutable',
+        'isTransferable',
+        'isRestrictable',
+        'isRevokable',
+    ],
+    fee: ['fee', 'maxFee', 'rentalFee', 'transactionFee'],
     message: ['message'],
     mosaics: ['mosaics'],
+    mosaic: ['mosaic'],
     encryption: ['messageEncrypted'],
     transactionType: ['type', 'transactionType', '_restrictionOperationAdditions', '_restrictionOperationDeletions'],
     translate: [
@@ -51,6 +61,12 @@ const renderTypeMap = {
         'linkAction',
     ],
 };
+
+const getMosaicIconSrc = (mosaic) =>
+    mosaic.name === 'symbol.xym'
+        ? require('src/assets/images/icon-select-mosaic-native.png')
+        : require('src/assets/images/icon-select-mosaic-custom.png');
+const getMosaicStyle = (index) => (index === 0 ? [styles.mosaic, { marginTop: 0 }] : styles.mosaic);
 
 export const TableView = connect((state) => ({
     currentAccount: state.account.current,
@@ -167,12 +183,22 @@ export const TableView = connect((state) => ({
                             </View>
                         );
                         break;
+                    case 'mosaic':
+                        ItemTemplate = (
+                            <View style={styles.col}>
+                                <View style={getMosaicStyle(0)}>
+                                    <Image source={getMosaicIconSrc(item.value)} style={styles.mosaicIcon} />
+                                    <View style={styles.mosaicBody}>
+                                        <StyledText type="body">{item.value.name}</StyledText>
+                                        <StyledText type="body" style={styles.mosaicAmount}>
+                                            {item.value.amount === null ? '?' : item.value.amount}
+                                        </StyledText>
+                                    </View>
+                                </View>
+                            </View>
+                        );
+                        break;
                     case 'mosaics':
-                        const getMosaicIconSrc = (mosaic) =>
-                            mosaic.name === 'symbol.xym'
-                                ? require('src/assets/images/icon-select-mosaic-native.png')
-                                : require('src/assets/images/icon-select-mosaic-custom.png');
-                        const getMosaicStyle = (index) => (index === 0 ? [styles.mosaic, { marginTop: 0 }] : styles.mosaic);
                         ItemTemplate = (
                             <View style={styles.col}>
                                 {item.value.map((mosaic, index) => (

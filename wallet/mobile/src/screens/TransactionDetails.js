@@ -26,6 +26,7 @@ import {
     isAddressKnown,
     isAggregateTransaction,
     isIncomingTransaction,
+    isMosaicRevokable,
     isOutgoingTransaction,
     useDataManager,
     useInit,
@@ -38,13 +39,14 @@ const COSIGNATURE_FORM_HEIGHT = SCREEN_HEIGHT / 4;
 export const TransactionDetails = connect((state) => ({
     isWalletReady: state.wallet.isReady,
     addressBook: state.addressBook.addressBook,
+    chainHeight: state.network.chainHeight,
     walletAccounts: state.wallet.accounts,
     currentAccount: state.account.current,
     ticker: state.network.ticker,
     networkIdentifier: state.network.networkIdentifier,
     networkProperties: state.network.networkProperties,
 }))(function TransactionDetails(props) {
-    const { isWalletReady, addressBook, walletAccounts, currentAccount, ticker, networkIdentifier, networkProperties } = props;
+    const { isWalletReady, addressBook, chainHeight, walletAccounts, currentAccount, ticker, networkIdentifier, networkProperties } = props;
     const { transaction } = props.route.params;
     const accounts = walletAccounts[networkIdentifier];
     const [fetchPartialInfo, isPartialInfoLoading, partialInfo] = useDataManager(() => {
@@ -80,9 +82,11 @@ export const TransactionDetails = connect((state) => ({
     const statusTextStyle = [styles.statusText];
     const statusText = status?.group ? $t(`transactionStatus_${status.group}`) : '';
     let action = $t(`transactionDescriptor_${transaction.type}`);
+    const revokableMosaics = [];
     let statusIconSrc;
     let isAddSignerContactButtonShown = false;
     let isAddRecipientContactButtonShown = false;
+    let isRevokeButtonVisible = false;
 
     switch (status?.group) {
         case 'unconfirmed':
@@ -106,6 +110,12 @@ export const TransactionDetails = connect((state) => ({
     if (transaction.type === TransactionType.TRANSFER && isOutgoingTransaction(transaction, currentAccount)) {
         action = $t(`transactionDescriptor_${transaction.type}_outgoing`);
         isAddRecipientContactButtonShown = !isAddressKnown(transaction.recipientAddress, accounts, addressBook);
+        transaction.mosaics.forEach((mosaic) => {
+            if (isMosaicRevokable(mosaic, chainHeight, currentAccount.address)) {
+                revokableMosaics.push(mosaic);
+            }
+        });
+        isRevokeButtonVisible = status?.group === 'confirmed' && !!revokableMosaics.length;
     } else if (transaction.type === TransactionType.TRANSFER && isIncomingTransaction(transaction, currentAccount)) {
         action = $t(`transactionDescriptor_${transaction.type}_incoming`);
         isAddSignerContactButtonShown = !isAddressKnown(transaction.signerAddress, accounts, addressBook);
@@ -137,6 +147,7 @@ export const TransactionDetails = connect((state) => ({
         Router.goToAddressBookEdit({ address: transaction.recipientAddress });
     };
     const openBlockExplorer = () => Linking.openURL(config.explorerURL[networkIdentifier] + '/transactions/' + transaction.hash);
+    const handleRevokePress = () => Router.goToRevoke({ mosaics: revokableMosaics, sourceAddress: transaction.recipientAddress });
 
     return (
         <Screen bottomComponent2={partialInfo && <TransactionCosignatureForm height={COSIGNATURE_FORM_HEIGHT} transaction={partialInfo} />}>
@@ -205,6 +216,15 @@ export const TransactionDetails = connect((state) => ({
                             icon={require('src/assets/images/icon-primary-address-book.png')}
                             title={$t('button_addRecipientToAddressBook')}
                             onPress={addRecipientContact}
+                        />
+                    </FormItem>
+                )}
+                {isRevokeButtonVisible && (
+                    <FormItem>
+                        <ButtonPlain
+                            icon={require('src/assets/images/icon-primary-revoke.png')}
+                            title={$t('button_revoke')}
+                            onPress={handleRevokePress}
                         />
                     </FormItem>
                 )}

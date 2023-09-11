@@ -7,6 +7,7 @@ import { config } from 'src/config';
 import { $t } from 'src/localization';
 import { Router } from 'src/Router';
 import { connect } from 'src/store';
+import { isMosaicRevokable } from 'src/utils';
 
 export const AssetDetails = connect((state) => ({
     currentAccount: state.account.current,
@@ -37,9 +38,11 @@ export const AssetDetails = connect((state) => ({
     }
 
     const isSendButtonVisible = group === 'mosaic' && (!isExpired || asset.isUnlimitedDuration);
+    const isRevokeButtonVisible = group === 'mosaic' && isMosaicRevokable(asset, chainHeight, currentAccount.address);
 
     const handleOpenBlockExplorer = () => Linking.openURL(`${config.explorerURL[networkIdentifier]}/${group}s/${asset.id}`);
     const handleSendPress = () => Router.goToSend({ mosaicId: asset.id });
+    const handleRevokePress = () => Router.goToRevoke({ mosaics: [asset] });
 
     return (
         <Screen
@@ -51,6 +54,15 @@ export const AssetDetails = connect((state) => ({
                                 icon={require('src/assets/images/icon-primary-send-2.png')}
                                 title={$t('button_sendTransferTransaction')}
                                 onPress={handleSendPress}
+                            />
+                        </FormItem>
+                    )}
+                    {isRevokeButtonVisible && (
+                        <FormItem>
+                            <ButtonPlain
+                                icon={require('src/assets/images/icon-primary-revoke.png')}
+                                title={$t('button_revoke')}
+                                onPress={handleRevokePress}
                             />
                         </FormItem>
                     )}

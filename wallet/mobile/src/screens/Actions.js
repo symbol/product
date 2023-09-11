@@ -31,6 +31,12 @@ export const Actions = connect((state) => ({
             icon: require('src/assets/images/art-ship.png'),
             handler: Router.goToSend,
         },
+        {
+            title: $t('s_actions_createMosaic_title'),
+            description: $t('s_actions_createMosaic_description'),
+            icon: require('src/assets/images/art-mosaic.png'),
+            handler: Router.goToMosaicCreation,
+        },
     ];
 
     return (

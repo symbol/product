@@ -1,6 +1,7 @@
 import _ from 'lodash';
 import { addressFromRaw, getMosaicRelativeAmountString, makeRequest } from 'src/utils';
 import { NamespaceService } from './';
+import { Constants } from 'src/config';
 
 export class MosaicService {
     static async fetchMosaicInfo(networkProperties, mosaicId) {
@@ -31,6 +32,7 @@ export class MosaicService {
             const isUnlimitedDuration = duration === 0;
             const creator = addressFromRaw(mosaicInfos.mosaic.ownerAddress);
             const supply = getMosaicRelativeAmountString(mosaicInfos.mosaic.supply, parseInt(mosaicInfos.mosaic.divisibility));
+            const { flags } = mosaicInfos.mosaic;
 
             return [
                 mosaicInfos.mosaic.id,
@@ -42,6 +44,10 @@ export class MosaicService {
                     isUnlimitedDuration,
                     creator,
                     supply,
+                    isSupplyMutable: (flags & Constants.MosaicFlags.SUPPLY_MUTABLE) !== 0,
+                    isTransferable: (flags & Constants.MosaicFlags.TRANSFERABLE) !== 0,
+                    isRestrictable: (flags & Constants.MosaicFlags.RESTRICTABLE) !== 0,
+                    isRevokable: (flags & Constants.MosaicFlags.REVOKABLE) !== 0,
                 },
             ];
         });

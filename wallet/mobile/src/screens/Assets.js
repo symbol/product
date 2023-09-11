@@ -71,6 +71,7 @@ export const Assets = connect((state) => ({
                         asset={item}
                         chainHeight={chainHeight}
                         blockGenerationTargetTime={networkProperties.blockGenerationTargetTime}
+                        nativeMosaicId={networkProperties.networkCurrency.mosaicId}
                         group={section.group}
                         onPress={() =>
                             Router.goToAssetDetails({
