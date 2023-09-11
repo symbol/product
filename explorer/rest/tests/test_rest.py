@@ -61,7 +61,6 @@ def client(app):  # pylint: disable=redefined-outer-name
 
 # region /block/<height>
 
-
 def _assert_get_api_nem_block_by_height(client, height, expected_status_code, expected_result):  # pylint: disable=redefined-outer-name
 	# Act:
 	response = client.get(f'/api/nem/block/{height}')
@@ -128,15 +127,15 @@ def test_api_nem_blocks_without_params(client):  # pylint: disable=redefined-out
 	assert [BlockView(*block).to_dict() for block in BLOCKS] == response.json
 
 
-def test_api_nem_blocks_limit_to_1(client):  # pylint: disable=redefined-outer-name
+def test_api_nem_blocks_applies_limit(client):  # pylint: disable=redefined-outer-name
 	_assert_get_api_nem_blocks(client, 200, [BlockView(*BLOCKS[0]).to_dict()], limit=1)
 
 
-def test_api_nem_blocks_offset_to_1(client):  # pylint: disable=redefined-outer-name
+def test_api_nem_blocks_applies_offset(client):  # pylint: disable=redefined-outer-name
 	_assert_get_api_nem_blocks(client, 200, [BlockView(*BLOCKS[1]).to_dict()], offset=1)
 
 
-def test_api_nem_blocks_min_height_to_3(client):  # pylint: disable=redefined-outer-name
+def test_api_nem_blocks_applies_min_height(client):  # pylint: disable=redefined-outer-name, invalid-name
 	_assert_get_api_nem_blocks(client, 200, [], min_height=10)
 
 
