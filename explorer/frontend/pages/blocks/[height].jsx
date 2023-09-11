@@ -69,15 +69,6 @@ const BlockInfo = ({ blockInfo, transactions }) => {
 			key: 'fee',
 			size: '7rem',
 			renderValue: value => <ValueMosaic amount={value} isNative hasTime />
-		},
-		{
-			key: 'height',
-			size: '6rem'
-		},
-		{
-			key: 'timestamp',
-			size: '10rem',
-			renderValue: value => <ValueTimestamp value={value} hasTime />
 		}
 	];
 

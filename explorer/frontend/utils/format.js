@@ -21,3 +21,36 @@ export const formatDate = (dateStr, translate, showTime = false, showSeconds = f
 
 	return formattedDate;
 };
+
+export const numberToShortString = num => {
+	const value = num.toString().replace(/[^0-9.]/g, '');
+
+	if (1000 > value) return '' + value;
+
+	let si = [
+		{ v: 1e3, s: 'K' },
+		{ v: 1e6, s: 'M' },
+		{ v: 1e9, s: 'B' }
+	];
+
+	let index;
+	for (index = si.length - 1; 0 < index; --index) {
+		if (value >= si[index].v) break;
+	}
+
+	return (value / si[index].v).toFixed(2).replace(/\.0+$|(\.[0-9]*[1-9])0+$/, '$1') + si[index].s;
+};
+
+export const truncateDecimals = (num, decimal) => {
+	const multiplier = Math.pow(10, decimal);
+	const adjustedNum = num * multiplier;
+	let truncatedNum;
+
+	if (adjustedNum < 0) {
+		truncatedNum = Math.ceil(adjustedNum);
+	} else {
+		truncatedNum = Math.floor(adjustedNum);
+	}
+
+	return truncatedNum / multiplier;
+};

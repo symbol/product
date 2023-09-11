@@ -7,10 +7,10 @@ import Section from '@/components/Section';
 import Separator from '@/components/Separator';
 import ValuePrice from '@/components/ValuePrice';
 import { getBlockPage } from '@/pages/api/blocks';
-import { getStats } from '@/pages/api/stats';
+import { getMarketData, getStats } from '@/pages/api/stats';
 import { getTransactionPage } from '@/pages/api/transactions';
 import styles from '@/styles/pages/Home.module.scss';
-import { formatDate } from '@/utils';
+import { formatDate, numberToShortString, truncateDecimals } from '@/utils';
 import Head from 'next/head';
 import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
@@ -20,9 +20,11 @@ export const getServerSideProps = async ({ locale }) => {
 	const latestTransactionsPage = await getTransactionPage({ pageSize: 5 }, 'confirmed');
 	const pendingTransactionsPage = await getTransactionPage({ pageSize: 3 }, 'unconfirmed');
 	const stats = await getStats();
+	const marketData = await getMarketData();
 
 	return {
 		props: {
+			marketData,
 			blocks: blocksPage.data,
 			latestTransactions: latestTransactionsPage.data,
 			pendingTransactions: pendingTransactionsPage.data,
@@ -36,7 +38,7 @@ export const getServerSideProps = async ({ locale }) => {
 	};
 };
 
-const Home = ({ blocks, fees, latestTransactions, pendingTransactions, baseInfo, chainInfo, charts, transactionInfo }) => {
+const Home = ({ blocks, fees, latestTransactions, pendingTransactions, baseInfo, chainInfo, charts, transactionInfo, marketData }) => {
 	const { t } = useTranslation();
 	const formattedCharts = {
 		...charts,
@@ -53,7 +55,7 @@ const Home = ({ blocks, fees, latestTransactions, pendingTransactions, baseInfo,
 				<div className="layout-flex-row-mobile-col">
 					<div className="layout-grid-row layout-flex-fill">
 						<div className="layout-flex-col layout-flex-fill">
-							<Field title={t('field_totalTransactions')}>{transactionInfo.totalAll}</Field>
+							<Field title={t('field_totalTransactions')}>{numberToShortString(transactionInfo.totalAll)}</Field>
 							<Field title={t('field_transactionsPerBlock')} description={t('field_transactionsPerBlock_description')}>
 								{transactionInfo.averagePerBlock}
 							</Field>
@@ -64,16 +66,19 @@ const Home = ({ blocks, fees, latestTransactions, pendingTransactions, baseInfo,
 					<div className="layout-grid-row layout-flex-fill">
 						<div className="layout-flex-col layout-flex-fill">
 							<Field title={t('field_price')}>
-								<ValuePrice value={baseInfo.price} change={baseInfo.priceChange} />
+								<ValuePrice
+									value={truncateDecimals(marketData.price, 3)}
+									change={truncateDecimals(marketData.priceChange, 1)}
+								/>
 							</Field>
-							<Field title={t('field_volume')}>${baseInfo.volume}</Field>
+							<Field title={t('field_volume')}>${numberToShortString(marketData.volume)}</Field>
 						</div>
 						<div className="layout-flex-col layout-flex-fill">
 							<Field title={t('field_circulatingSupply')} textAlign="right">
-								${baseInfo.circulatingSupply}
+								${numberToShortString(marketData.circulatingSupply)}
 							</Field>
 							<Field title={t('field_treasury')} textAlign="right">
-								{baseInfo.treasury} XEM
+								{numberToShortString(baseInfo.treasury)} XEM
 							</Field>
 						</div>
 					</div>
