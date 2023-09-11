@@ -5,6 +5,7 @@ import {
     EncryptedMessage,
     Mosaic,
     MosaicId,
+    MosaicSupplyRevocationTransaction,
     PlainMessage,
     TransactionType,
     TransferTransaction,
@@ -110,6 +111,19 @@ export const transferTransactionToDTO = (transaction, networkProperties, current
 
 export const transferTransactionFromPayload = (payload) => {
     return TransferTransaction.createFromPayload(payload);
+};
+
+export const revokeTransactionToDTO = (transaction, networkProperties) => {
+    return MosaicSupplyRevocationTransaction.create(
+        Deadline.create(networkProperties.epochAdjustment),
+        Address.createFromRawAddress(transaction.sourceAddress),
+        new Mosaic(
+            new MosaicId(transaction.mosaic.id),
+            UInt64.fromUint(transaction.mosaic.amount * Math.pow(10, transaction.mosaic.divisibility))
+        ),
+        networkIdentifierToNetworkType(networkProperties.networkIdentifier),
+        UInt64.fromUint(transaction.fee * Math.pow(10, networkProperties.networkCurrency.divisibility))
+    );
 };
 
 export const getUnresolvedIdsFromTransactionDTOs = (transactions) => {

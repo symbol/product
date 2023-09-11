@@ -53,3 +53,27 @@ export const validateExisted = (existedValues) => (str) => {
         return 'validation_error_already_exists';
     }
 };
+
+export const validateMosaicSupply = () => (str) => {
+    const numeric = +str;
+
+    if (!Number.isInteger(numeric) || numeric < 1 || numeric > 9999999999) {
+        return 'validation_error_mosaic_supply';
+    }
+};
+
+export const validateMosaicDivisibility = () => (str) => {
+    const numeric = +str;
+
+    if (!Number.isInteger(numeric) || numeric < 0 || numeric > 6) {
+        return 'validation_error_mosaic_divisibility';
+    }
+};
+
+export const validateMosaicDuration = (blockGenerationTargetTime) => (str) => {
+    const numeric = +str;
+
+    if (!Number.isInteger(numeric) || numeric < 1 || numeric > (3650 * 86400) / blockGenerationTargetTime) {
+        return 'validation_error_mosaic_duration';
+    }
+};

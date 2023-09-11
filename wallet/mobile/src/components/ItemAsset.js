@@ -8,7 +8,7 @@ import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-na
 import { useEffect } from 'react';
 
 export function ItemAsset(props) {
-    const { group, asset, chainHeight, blockGenerationTargetTime, onPress } = props;
+    const { group, asset, chainHeight, blockGenerationTargetTime, onPress, nativeMosaicId } = props;
     const { amount, name, id, startHeight, isUnlimitedDuration } = asset;
     const amountText = amount ? amount : '';
     let description;
@@ -17,7 +17,10 @@ export function ItemAsset(props) {
 
     if (group === 'mosaic') {
         description = $t('s_assets_item_id', { id });
-        iconSrc = require('src/assets/images/icon-mosaic-native.png');
+        iconSrc =
+            id === nativeMosaicId
+                ? require('src/assets/images/icon-mosaic-native.png')
+                : require('src/assets/images/icon-mosaic-custom.png');
         endHeight = asset.startHeight + asset.duration;
     } else if (group === 'namespace') {
         const linkedId = asset.linkedMosaicId || asset.linkedAddress;

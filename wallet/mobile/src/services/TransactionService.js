@@ -1,17 +1,35 @@
 import {
     decryptMessage,
+    getMosaicAbsoluteAmount,
     isAggregateTransaction,
     isIncomingTransaction,
     isOutgoingTransaction,
     makeRequest,
     networkIdentifierToNetworkType,
     publicAccountFromPrivateKey,
+    revokeTransactionToDTO,
     timestampToLocalDate,
     transactionFromDTO,
     transferTransactionToDTO,
 } from 'src/utils';
 import { AccountService } from 'src/services';
-import { Account, Address, CosignatureTransaction, Order, TransactionHttp, TransactionType } from 'symbol-sdk';
+import {
+    Account,
+    Address,
+    AggregateTransaction,
+    CosignatureTransaction,
+    Deadline,
+    MosaicDefinitionTransaction,
+    MosaicFlags,
+    MosaicId,
+    MosaicNonce,
+    MosaicSupplyChangeAction,
+    MosaicSupplyChangeTransaction,
+    Order,
+    TransactionHttp,
+    TransactionType,
+    UInt64,
+} from 'symbol-sdk';
 export class TransactionService {
     static async fetchAccountTransactions(account, networkProperties, { pageNumber = 1, pageSize = 15, group = 'confirmed', filter = {} }) {
         const transactionHttp = new TransactionHttp(networkProperties.nodeUrl);
@@ -67,6 +85,68 @@ export class TransactionService {
             transactionDTO,
             networkProperties.generationHash
         );
+        const transactionHttp = new TransactionHttp(networkProperties.nodeUrl);
+
+        return transactionHttp.announce(signedTransaction).toPromise();
+    }
+
+    static async sendRevokeTransaction(transaction, account, networkProperties) {
+        const networkType = networkIdentifierToNetworkType(networkProperties.networkIdentifier);
+        const transactionDTO = revokeTransactionToDTO(transaction, networkProperties, account);
+        const signedTransaction = Account.createFromPrivateKey(account.privateKey, networkType).sign(
+            transactionDTO,
+            networkProperties.generationHash
+        );
+        const transactionHttp = new TransactionHttp(networkProperties.nodeUrl);
+
+        return transactionHttp.announce(signedTransaction).toPromise();
+    }
+
+    static async sendMosaicCreationTransaction(transaction, account, networkProperties) {
+        const networkType = networkIdentifierToNetworkType(networkProperties.networkIdentifier);
+        const maxFee = UInt64.fromUint(getMosaicAbsoluteAmount(transaction.fee, networkProperties.networkCurrency.divisibility));
+        const transactions = [];
+
+        const nonce = MosaicNonce.createFromHex(transaction.nonce);
+        const mosaicId = new MosaicId(transaction.mosaicId);
+        transactions.push(
+            MosaicDefinitionTransaction.create(
+                Deadline.create(networkProperties.epochAdjustment),
+                nonce,
+                mosaicId,
+                MosaicFlags.create(
+                    transaction.isSupplyMutable,
+                    transaction.isTransferable,
+                    transaction.isRestrictable,
+                    transaction.isRevokable
+                ),
+                transaction.divisibility,
+                UInt64.fromUint(transaction.duration),
+                networkType,
+                maxFee
+            )
+        );
+        transactions.push(
+            MosaicSupplyChangeTransaction.create(
+                Deadline.create(networkProperties.epochAdjustment),
+                mosaicId,
+                MosaicSupplyChangeAction.Increase,
+                UInt64.fromUint(transaction.supply * Math.pow(10, transaction.divisibility)),
+                networkType,
+                maxFee
+            )
+        );
+
+        // Prepare, sign and announce aggregate transaction
+        const currentAccount = Account.createFromPrivateKey(account.privateKey, networkType);
+        const aggregateTransaction = AggregateTransaction.createComplete(
+            Deadline.create(networkProperties.epochAdjustment),
+            transactions.map((transaction) => transaction.toAggregate(currentAccount.publicAccount)),
+            networkType,
+            [],
+            maxFee
+        );
+        const signedTransaction = currentAccount.sign(aggregateTransaction, networkProperties.generationHash);
         const transactionHttp = new TransactionHttp(networkProperties.nodeUrl);
 
         return transactionHttp.announce(signedTransaction).toPromise();

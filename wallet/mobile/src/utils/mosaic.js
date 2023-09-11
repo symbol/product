@@ -1,3 +1,5 @@
+import { Address, MosaicId, MosaicNonce } from 'symbol-sdk';
+
 export const getNativeMosaicAmount = (mosaicList, nativeMosaicId) => {
     if (!mosaicList || !nativeMosaicId) {
         return null;
@@ -12,8 +14,9 @@ export const getMosaicRelativeAmountString = (absoluteAmount, divisibility) => {
         return absoluteAmount;
     }
 
-    const array = absoluteAmount.split('');
-    array.splice(absoluteAmount.length - divisibility, 0, '.');
+    const absoluteAmountString = '' + absoluteAmount;
+    const array = absoluteAmountString.split('');
+    array.splice(absoluteAmountString.length - divisibility, 0, '.');
 
     return array.join('');
 };
@@ -54,4 +57,22 @@ export const getMosaicWithRelativeAmount = (mosaic, mosaicInfo) => {
 
 export const filterCustomMosaics = (mosaicList, nativeMosaicId) => {
     return mosaicList.filter((mosaic) => mosaic.id !== nativeMosaicId);
+};
+
+export const isMosaicRevokable = (mosaic, chainHeight, currentAddress, sourceAddress) => {
+    const hasRevokableFlag = mosaic.isRevokable;
+    const isCreatorCurrentAccount = mosaic.creator === currentAddress;
+    const isSelfRevocation = sourceAddress === currentAddress;
+    const isMosaicExpired = mosaic.endHeight - chainHeight <= 0;
+    const isMosaicActive = !isMosaicExpired || mosaic.isUnlimitedDuration;
+
+    return hasRevokableFlag && isCreatorCurrentAccount && !isSelfRevocation && isMosaicActive;
+};
+
+export const generateNonce = () => {
+    return MosaicNonce.createRandom().toHex();
+};
+
+export const generateMosaicId = (nonce, ownerAddress) => {
+    return MosaicId.createFromNonce(MosaicNonce.createFromHex(nonce), Address.createFromRawAddress(ownerAddress)).toHex();
 };

@@ -48,6 +48,8 @@ const keys = {
     TransactionDetails: 'TransactionDetails',
     AssetDetails: 'AssetDetails',
     Harvesting: 'Harvesting',
+    Revoke: 'Revoke',
+    MosaicCreation: 'MosaicCreation',
     Passcode: 'Passcode',
 };
 
@@ -87,6 +89,8 @@ export const RouterView = ({ isActive }) => (
                         <Stack.Screen name={keys.TransactionDetails} component={screens.TransactionDetails} />
                         <Stack.Screen name={keys.AssetDetails} component={screens.AssetDetails} />
                         <Stack.Screen name={keys.Harvesting} component={screens.Harvesting} />
+                        <Stack.Screen name={keys.Revoke} component={screens.Revoke} />
+                        <Stack.Screen name={keys.MosaicCreation} component={screens.MosaicCreation} />
                     </Stack.Group>
                     <Stack.Group screenOptions={{ headerShown: false }}>
                         <Stack.Screen name={keys.Passcode} component={screens.Passcode} />
@@ -190,6 +194,12 @@ export class Router {
     }
     static goToHarvesting(params) {
         navigationRef.navigate(keys.Harvesting, params);
+    }
+    static goToRevoke(params) {
+        navigationRef.navigate(keys.Revoke, params);
+    }
+    static goToMosaicCreation(params) {
+        navigationRef.navigate(keys.MosaicCreation, params);
     }
     static goToPasscode(params) {
         navigationRef.navigate(keys.Passcode, params);

@@ -1,5 +1,5 @@
 import { config } from 'src/config';
-import { makeRequest, networkTypeToIdentifier } from 'src/utils';
+import { getMosaicRelativeAmount, makeRequest, networkTypeToIdentifier } from 'src/utils';
 import { ChainHttp, DtoMapping, NetworkHttp } from 'symbol-sdk';
 import { timeout } from 'rxjs/operators';
 import { MosaicService } from './MosaicService';
@@ -57,5 +57,19 @@ export class NetworkService {
         const chainInfo = await makeRequest(endpoint);
 
         return parseInt(chainInfo.height);
+    }
+
+    static async fetchRentalFees(networkProperties) {
+        const endpoint = `${networkProperties.nodeUrl}/network/fees/rental`;
+        const fees = await makeRequest(endpoint);
+
+        return {
+            mosaic: getMosaicRelativeAmount(fees.effectiveMosaicRentalFee, networkProperties.networkCurrency.divisibility),
+            rootNamespacePerBlock: getMosaicRelativeAmount(
+                fees.effectiveRootNamespaceRentalFeePerBlock,
+                networkProperties.networkCurrency.divisibility
+            ),
+            subNamespace: getMosaicRelativeAmount(fees.effectiveChildNamespaceRentalFee, networkProperties.networkCurrency.divisibility),
+        };
     }
 }
