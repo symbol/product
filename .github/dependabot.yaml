@@ -21,6 +21,17 @@ updates:
     commit-message:
       prefix: '[dependency]'
 
+  - package-ecosystem: pip
+    directory: /explorer/rest
+    schedule:
+      interval: weekly
+      day: sunday
+    target-branch: dev
+    labels: [Explorer]
+    versioning-strategy: increase-if-necessary
+    commit-message:
+      prefix: '[dependency]'
+
   - package-ecosystem: npm
     directory: /faucet/authenticator
     schedule:
