@@ -12,6 +12,12 @@ coverage:
         flags:
           - explorer-nodewatch
 
+      explorer-rest:
+        target: auto
+        threshold: 1%
+        flags:
+          - explorer-rest
+
       faucet-authenticator:
         target: auto
         threshold: 1%
