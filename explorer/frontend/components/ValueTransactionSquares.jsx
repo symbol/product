@@ -7,7 +7,7 @@ const ReactApexChart = dynamic(() => import('react-apexcharts'), { ssr: false })
 
 const Tooltip = ({ fee }) => <ValueMosaic isNative amount={fee} />;
 
-const ValueTransactionSquares = ({ data, className }) => {
+const ValueTransactionSquares = ({ data = [], className }) => {
 	const colorHigh = '#52B12C';
 	const colorMedium = '#F3BA2F';
 	const colorLow = '#B94F4F';

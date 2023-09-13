@@ -9,6 +9,7 @@ import Section from '@/components/Section';
 import Table from '@/components/Table';
 import ValueAccount from '@/components/ValueAccount';
 import ValueAccountBalance from '@/components/ValueAccountBalance';
+import ValueBlockHeight from '@/components/ValueBlockHeight';
 import ValueCopy from '@/components/ValueCopy';
 import ValueLabel from '@/components/ValueLabel';
 import ValueMosaic from '@/components/ValueMosaic';
@@ -23,7 +24,6 @@ import { useClientSideFilter, usePagination } from '@/utils';
 import Head from 'next/head';
 import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
-import ValueBlockHeight from '@/components/ValueBlockHeight';
 
 export const getServerSideProps = async ({ locale, params }) => {
 	const accountInfo = await getAccountInfo(params.address);

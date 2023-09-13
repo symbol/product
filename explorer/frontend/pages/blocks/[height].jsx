@@ -100,7 +100,7 @@ const BlockInfo = ({ blockInfo, transactions }) => {
 							</Field>
 						</div>
 						<Field title={t('field_transactionFees')}>
-							<ValueTransactionSquares data={blockInfo.transactionFees} className={styles.valueTransactionSquares} />
+							<ValueTransactionSquares data={transactions} className={styles.valueTransactionSquares} />
 						</Field>
 					</div>
 				</Section>
@@ -109,13 +109,9 @@ const BlockInfo = ({ blockInfo, transactions }) => {
 						<Field title={t('field_harvester')} description={t('field_harvester_description')}>
 							<ValueAccount address={blockInfo.harvester} size="sm" />
 						</Field>
-						<Field title={t('field_beneficiary')}>
-							<ValueAccount address={blockInfo.beneficiary} size="sm" />
-						</Field>
 						<Field title={t('field_transactions')}>{blockInfo.transactionCount}</Field>
 						<Field title={t('field_size')}>{blockInfo.size} B</Field>
 						<Field title={t('field_difficulty')}>{blockInfo.difficulty} %</Field>
-						<Field title={t('field_version')}>{blockInfo.version}</Field>
 						<Field title={t('field_signature')}>
 							<ValueCopy value={blockInfo.signature} />
 						</Field>

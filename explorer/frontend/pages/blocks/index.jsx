@@ -5,6 +5,7 @@ import Section from '@/components/Section';
 import Separator from '@/components/Separator';
 import Table from '@/components/Table';
 import ValueAccount from '@/components/ValueAccount';
+import ValueBlockHeight from '@/components/ValueBlockHeight';
 import ValueMosaic from '@/components/ValueMosaic';
 import ValueTimestamp from '@/components/ValueTimestamp';
 import { fetchBlockPage, getBlockPage } from '@/pages/api/blocks';
@@ -14,7 +15,6 @@ import { usePagination } from '@/utils';
 import Head from 'next/head';
 import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
-import ValueBlockHeight from '@/components/ValueBlockHeight';
 
 export const getServerSideProps = async ({ locale }) => {
 	const blocksPage = await getBlockPage();

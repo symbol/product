@@ -3,18 +3,27 @@ import CustomImage from './CustomImage';
 import styles from '@/styles/components/RecentBlocks.module.scss';
 import { createRef, useRef, useState } from 'react';
 
-const RecentBlocks = ({ data }) => {
+const RecentBlocks = ({ data, onTransactionListRequest }) => {
 	const containerRef = useRef();
 	const [isButtonLeftVisible, setIsButtonLeftVisible] = useState(false);
 	const [selectedBlockHeight, setSelectedBlockHeight] = useState(-1);
+	const [transactions, setTransactions] = useState([]);
 	const dataWithRefs = data.map(item => ({
 		...item,
 		smallBoxRef: createRef(),
 		bigBoxRef: createRef()
 	}));
 
+	const fetchTransactionList = async height => {
+		const transactions = await onTransactionListRequest(height);
+
+		setTransactions(transactions.data);
+	};
+
 	const handleBlockSelect = item => {
 		setSelectedBlockHeight(item.height);
+		setTransactions([]);
+		fetchTransactionList(item.height);
 
 		if (item.height > selectedBlockHeight) {
 			item.bigBoxRef.current.scrollIntoView({
@@ -65,6 +74,7 @@ const RecentBlocks = ({ data }) => {
 					<BlockPreview
 						isSelected={selectedBlockHeight === item.height}
 						data={item}
+						transactions={transactions}
 						key={key}
 						smallBoxRef={item.smallBoxRef}
 						bigBoxRef={item.bigBoxRef}
