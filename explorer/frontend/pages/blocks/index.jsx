@@ -12,9 +12,9 @@ import { getStats } from '@/pages/api/stats';
 import styles from '@/styles/pages/Home.module.scss';
 import { usePagination } from '@/utils';
 import Head from 'next/head';
-import Link from 'next/link';
 import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
+import ValueBlockHeight from '@/components/ValueBlockHeight';
 
 export const getServerSideProps = async ({ locale }) => {
 	const blocksPage = await getBlockPage();
@@ -38,7 +38,7 @@ const Blocks = ({ blocks, chainInfo, charts }) => {
 		{
 			key: 'height',
 			size: '8rem',
-			renderValue: value => <Link href={`/blocks/${value}`}>{value}</Link>
+			renderValue: value => <ValueBlockHeight value={value} />
 		},
 		{
 			key: 'harvester',
@@ -52,12 +52,7 @@ const Blocks = ({ blocks, chainInfo, charts }) => {
 		{
 			key: 'totalFee',
 			size: '7rem',
-			renderValue: value => <ValueMosaic amount={value} isNative hasTime />
-		},
-		{
-			key: 'reward',
-			size: '7rem',
-			renderValue: value => <ValueMosaic amount={value} isNative hasTime />
+			renderValue: value => <ValueMosaic amount={value} isNative />
 		},
 		{
 			key: 'timestamp',

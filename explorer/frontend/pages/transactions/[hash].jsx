@@ -18,6 +18,7 @@ import Head from 'next/head';
 import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 import { useEffect, useState } from 'react';
+import ValueBlockHeight from '@/components/ValueBlockHeight';
 
 export const getServerSideProps = async ({ locale, params }) => {
 	const transactionInfo = await getTransactionInfo(params.hash);
@@ -133,7 +134,7 @@ const TransactionInfo = ({ transactionInfo }) => {
 							<ValueAccount address={transactionInfo.sender} size="sm" />
 						</Field>
 						<Field title={t('field_transaction_block')} description={t('field_transaction_block_description')}>
-							{transactionInfo.height}
+							<ValueBlockHeight value={transactionInfo.height} />
 						</Field>
 						<Field title={t('field_size')}>{transactionInfo.size} B</Field>
 						<Field title={t('field_version')}>{transactionInfo.version}</Field>
