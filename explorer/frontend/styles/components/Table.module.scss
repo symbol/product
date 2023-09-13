@@ -78,12 +78,12 @@
     }
 
     .emptyListMessage {
-        width: 100%;
-        opacity: 0.7;
-        height: $spacing-base * 5;
         display: flex;
         align-items: flex-end;
         justify-content: center;
+        width: 100%;
+        height: $spacing-base * 5;
+        opacity: 0.7;
     }
 
 

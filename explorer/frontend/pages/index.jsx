@@ -8,7 +8,7 @@ import Separator from '@/components/Separator';
 import ValuePrice from '@/components/ValuePrice';
 import { getBlockPage } from '@/pages/api/blocks';
 import { getMarketData, getStats } from '@/pages/api/stats';
-import { getTransactionPage } from '@/pages/api/transactions';
+import { fetchTransactionPage, getTransactionPage } from '@/pages/api/transactions';
 import styles from '@/styles/pages/Home.module.scss';
 import { formatDate, numberToShortString, truncateDecimals } from '@/utils';
 import Head from 'next/head';
@@ -45,12 +45,14 @@ const Home = ({ blocks, fees, latestTransactions, pendingTransactions, baseInfo,
 		transactions: charts.transactions.map(item => [formatDate(item[0], t), item[1]])
 	};
 
+	const fetchBlockTransactions = height => fetchTransactionPage({ pageSize: 160 }, { height });
+
 	return (
 		<div className={styles.wrapper}>
 			<Head>
 				<title>Home</title>
 			</Head>
-			<RecentBlocks data={blocks} />
+			<RecentBlocks data={blocks} onTransactionListRequest={fetchBlockTransactions} />
 			<Section>
 				<div className="layout-flex-row-mobile-col">
 					<div className="layout-grid-row layout-flex-fill">

@@ -19,4 +19,19 @@ export const createSearchCriteria = (searchCriteria = {}) => {
 	};
 };
 
-export const createPage = (data, pageNumber) => ({ data, pageNumber });
+export const createPage = (data, pageNumber, formatter) => ({
+	data: formatter ? data.map(formatter) : data,
+	pageNumber
+});
+
+export const createAPISearchURL = (baseURL, searchCriteria, filter = {}) => {
+	const limit = searchCriteria.pageSize;
+	const offset = searchCriteria.pageSize * searchCriteria.pageNumber;
+	const params = new URLSearchParams({
+		limit,
+		offset,
+		...filter
+	}).toString();
+
+	return `${baseURL}?${params}`;
+};

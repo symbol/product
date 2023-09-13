@@ -11,8 +11,8 @@ import Link from 'next/link';
 import { useTranslation } from 'next-i18next';
 import { forwardRef, useEffect, useState } from 'react';
 
-const BlockExpanded = ({ data, isNext, isTransactionSquaresRendered, onClose }) => {
-	const { height, timestamp, transactionFees, totalFee, medianFee } = data;
+const BlockExpanded = ({ data, transactions, isNext, isTransactionSquaresRendered, onClose }) => {
+	const { height, timestamp, totalFee, medianFee } = data;
 	const { t } = useTranslation();
 	const href = `/blocks/${height}`;
 
@@ -41,7 +41,7 @@ const BlockExpanded = ({ data, isNext, isTransactionSquaresRendered, onClose }) 
 				</Field>
 			</div>
 			<Field title={t('field_transactionFees')}>
-				{isTransactionSquaresRendered && <ValueTransactionSquares data={transactionFees} />}
+				{isTransactionSquaresRendered && <ValueTransactionSquares data={transactions} />}
 			</Field>
 		</div>
 	);
@@ -67,7 +67,7 @@ const BlockCube = ({ data }) => {
 	);
 };
 
-const BlockPreview = ({ data, isNext, isSelected, onClose, onSelect, smallBoxRef, bigBoxRef }) => {
+const BlockPreview = ({ data, transactions, isNext, isSelected, onClose, onSelect, smallBoxRef, bigBoxRef }) => {
 	const { height } = data;
 	const [isTransactionSquaresRendered, setIsTransactionSquaresRendered] = useState(false);
 	const [expandedStyle, setExpandedStyle] = useState('');
@@ -100,7 +100,12 @@ const BlockPreview = ({ data, isNext, isSelected, onClose, onSelect, smallBoxRef
 			<div className={styles.smallBox} ref={smallBoxRef} />
 			<div className={containerClassName} onClick={handleClick}>
 				{isSelected ? (
-					<BlockExpanded data={data} isTransactionSquaresRendered={isTransactionSquaresRendered} onClose={onClose} />
+					<BlockExpanded
+						data={data}
+						transactions={transactions}
+						isTransactionSquaresRendered={isTransactionSquaresRendered}
+						onClose={onClose}
+					/>
 				) : (
 					<BlockCube data={data} isNext={isNext} />
 				)}

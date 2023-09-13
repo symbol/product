@@ -7,6 +7,7 @@ import Section from '@/components/Section';
 import Separator from '@/components/Separator';
 import Table from '@/components/Table';
 import ValueAccount from '@/components/ValueAccount';
+import ValueBlockHeight from '@/components/ValueBlockHeight';
 import ValueCopy from '@/components/ValueCopy';
 import ValueLabel from '@/components/ValueLabel';
 import ValueMosaic from '@/components/ValueMosaic';
@@ -18,7 +19,6 @@ import Head from 'next/head';
 import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 import { useEffect, useState } from 'react';
-import ValueBlockHeight from '@/components/ValueBlockHeight';
 
 export const getServerSideProps = async ({ locale, params }) => {
 	const transactionInfo = await getTransactionInfo(params.hash);

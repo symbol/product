@@ -20,8 +20,9 @@ export const fetchTransactionPage = async searchCriteria => {
 	return response.json();
 };
 
-export const getTransactionPage = async (searchCriteria, group = 'confirmed') => {
+export const getTransactionPage = async (searchCriteria, filter = {}) => {
 	const { pageNumber, pageSize } = createSearchCriteria(searchCriteria);
+	const group = filter.group || 'confirmed';
 	const transactions = await getTransactionsStub({ pageNumber, pageSize }, group);
 
 	return createPage(transactions, pageNumber);
