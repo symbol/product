@@ -24,7 +24,8 @@ class NemDatabase(DatabaseConnection):
 				difficulty bigInt NOT NULL,
 				hash bytea NOT NULL,
 				signer bytea NOT NULL,
-				signature bytea NOT NULL
+				signature bytea NOT NULL,
+				size bigint DEFAULT 0
 			)
 			'''
 		)
@@ -199,7 +200,7 @@ class NemDatabase(DatabaseConnection):
 		cursor.execute(
 			'''
 			INSERT INTO blocks
-			VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+			VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
 			''', (
 				block.height,
 				block.timestamp,
@@ -208,7 +209,8 @@ class NemDatabase(DatabaseConnection):
 				block.difficulty,
 				unhexlify(block.block_hash),
 				unhexlify(block.signer),
-				unhexlify(block.signature)
+				unhexlify(block.signature),
+				block.size
 			)
 		)
 

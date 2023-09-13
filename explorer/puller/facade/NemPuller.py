@@ -46,6 +46,7 @@ class NemPuller:
 			block_data.block_hash,
 			block_data.signer,
 			block_data.signature,
+			block_data.size
 		)
 
 	def _process_mosaic_definition(self, cursor, transaction, block_height):
