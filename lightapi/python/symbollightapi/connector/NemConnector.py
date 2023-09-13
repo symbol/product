@@ -1,3 +1,4 @@
+import asyncio
 from symbolchain.CryptoTypes import PublicKey
 from symbolchain.nc import TransactionType
 from symbolchain.nem.Network import Address
@@ -99,21 +100,37 @@ class NemConnector(BasicConnector):
 		""""Gets Blocks data"""
 
 		blocks = await self.post('local/chain/blocks-after', {'height': height})
-		# blocks_after_dict = Blocks
+
+		block_heights = [block['block']['height'] for block in blocks['data']]
+		block_sizes = await asyncio.gather(*[self.get_block_size(height) for height in block_heights])
+
+		for block, size in zip(blocks['data'], block_sizes):
+			block['size'] = size
+
 		return [self._map_to_block(block) for block in blocks['data']]
 
 	async def get_block(self, height):
 		""""Gets Block data"""
 
 		block = await self.post('local/block/at', {'height': height})
-		# block_dict = Block_1
+
+		block_sizes = await self.get_block_size(height)
+		block['size'] = block_sizes
+
 		return self._map_to_block(block)
+
+	async def get_block_size(self, height):
+		""""Gets Block size"""
+
+		block_size = await self.post('block/at/public', {'height': height}, response_type='binary')
+		return len(block_size)
 
 	def _map_to_block(self, block_dict):
 		block = block_dict['block']
 		difficulty = block_dict['difficulty']
 		block_hash = block_dict['hash']
 		transactions = block_dict['txes']
+		size = block_dict['size']
 
 		return Block(
 			block['height'],
@@ -126,6 +143,7 @@ class NemConnector(BasicConnector):
 			block_hash,
 			block['signer'],
 			block['signature'],
+			size
 		)
 
 	@staticmethod
