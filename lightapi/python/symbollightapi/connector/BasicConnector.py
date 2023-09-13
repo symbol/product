@@ -16,14 +16,27 @@ class BasicConnector:
 		self.timeout_seconds = None
 
 	async def _dispatch(self, action, url_path, property_name, not_found_as_error, **kwargs):
+		headers = kwargs.get('headers', {})
+		response_type = kwargs.pop('response_type', 'json')
+
+		if response_type == 'binary':
+			headers['Accept'] = 'application/binary'
+
+		kwargs['headers'] = headers
+
 		try:
 			timeout = ClientTimeout(total=self.timeout_seconds)
 			async with ClientSession(timeout=timeout) as session:
 				async with getattr(session, action)(f'{self.endpoint}/{url_path}', **kwargs) as response:
-					try:
-						response_json = await response.json()
-					except (client_exceptions.ContentTypeError, json.decoder.JSONDecodeError) as ex:
-						raise NodeException from ex
+					if response_type == 'json':
+						try:
+							response_json = await response.json()
+						except (client_exceptions.ContentTypeError, json.decoder.JSONDecodeError) as ex:
+							raise NodeException from ex
+					elif response_type == 'binary':
+						response_json = await response.read()
+					else:
+						raise ValueError(f"Unsupported response type: {response_type}")
 
 					if 400 <= response.status and (404 != response.status or not_found_as_error):
 						error_message = f'HTTP request failed with code {response.status}'
@@ -33,7 +46,10 @@ class BasicConnector:
 
 						raise NodeException(error_message)
 
-					return response_json if property_name is None else response_json[property_name]
+					if response_type == 'json':
+						return response_json if property_name is None else response_json[property_name]
+					return response_json
+
 		except (asyncio.TimeoutError, client_exceptions.ClientConnectorError) as ex:
 			raise NodeException from ex
 
