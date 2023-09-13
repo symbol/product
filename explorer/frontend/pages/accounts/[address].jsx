@@ -23,6 +23,7 @@ import { useClientSideFilter, usePagination } from '@/utils';
 import Head from 'next/head';
 import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
+import ValueBlockHeight from '@/components/ValueBlockHeight';
 
 export const getServerSideProps = async ({ locale, params }) => {
 	const accountInfo = await getAccountInfo(params.address);
@@ -164,7 +165,7 @@ const AccountInfo = ({ accountInfo, preloadedTransactions }) => {
 							<ValueCopy value={accountInfo.publicKey} />
 						</Field>
 						<Field title={t('field_height')} description={t('field_account_height_description')}>
-							{accountInfo.height}
+							<ValueBlockHeight value={accountInfo.height} />
 						</Field>
 						<Field title={t('field_importance')} description={t('field_importance_description')}>
 							{accountInfo.importance} %
