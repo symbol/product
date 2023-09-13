@@ -15,15 +15,27 @@ class BasicConnector:
 		self.endpoint = endpoint
 		self.timeout_seconds = None
 
-	async def _dispatch(self, action, url_path, property_name, **kwargs):
+	async def _dispatch(self, action, url_path, property_name=None, response_type='json', **kwargs):
+		headers = kwargs.get('headers', {})
+
+		if response_type == 'binary':
+			headers['Accept'] = 'application/binary'
+
+		kwargs['headers'] = headers
+
 		try:
 			timeout = ClientTimeout(total=self.timeout_seconds)
 			async with ClientSession(timeout=timeout) as session:
 				async with getattr(session, action)(f'{self.endpoint}/{url_path}', **kwargs) as response:
-					try:
-						response_json = await response.json()
-					except (client_exceptions.ContentTypeError, json.decoder.JSONDecodeError) as ex:
-						raise NodeException from ex
+					if response_type == 'json':
+						try:
+							response_json = await response.json()
+						except (client_exceptions.ContentTypeError, json.decoder.JSONDecodeError) as ex:
+							raise NodeException from ex
+					elif response_type == 'binary':
+						response_json = await response.read()
+					else:
+						raise ValueError(f"Unsupported response type: {response_type}")
 
 					if response.status not in (200, 404):
 						error_message = f'HTTP request failed with code {response.status}'
@@ -33,7 +45,10 @@ class BasicConnector:
 
 						raise NodeException(error_message)
 
-					return response_json if property_name is None else response_json[property_name]
+					if response_type == 'json':
+						return response_json if property_name is None else response_json[property_name]
+					return response_json
+
 		except (asyncio.TimeoutError, client_exceptions.ClientConnectorError) as ex:
 			raise NodeException from ex
 
@@ -53,10 +68,10 @@ class BasicConnector:
 
 		return await self._dispatch('put', url_path, property_name, json=request_payload)
 
-	async def post(self, url_path, request_payload, property_name=None):
+	async def post(self, url_path, request_payload, property_name=None, response_type='json'):
 		"""
 		Initiates a POST to the specified path and returns the desired property.
 		Raises NodeException on connection or content failure.
 		"""
 
-		return await self._dispatch('post', url_path, property_name, json=request_payload)
+		return await self._dispatch('post', url_path, property_name, json=request_payload, response_type=response_type)
