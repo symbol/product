@@ -34,6 +34,7 @@ const Table = ({ data, sections, columns, ItemMobile, renderSectionHeader, onEnd
 			</div>
 			{!!data && <div className={`${styles.data} ${desktopTableStyle}`}>{data.map(renderRow)}</div>}
 			{!!data && !!ItemMobile && <div className={styles.listMobile}>{data.map(renderMobileListItem)}</div>}
+			{!!data && !data.length && <div className={styles.emptyListMessage}>{t('message_emptyTable')}</div>}
 
 			{!!sections &&
 				sections.map((section, index) => (
