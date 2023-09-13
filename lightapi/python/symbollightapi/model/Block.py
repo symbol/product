@@ -1,7 +1,7 @@
 class Block:
 	"""Block model."""
 
-	def __init__(self, height, timestamp, transactions, difficulty, block_hash, signer, signature):
+	def __init__(self, height, timestamp, transactions, difficulty, block_hash, signer, signature, size):
 		"""Create a Block model."""
 
 		# pylint: disable=too-many-arguments
@@ -13,6 +13,7 @@ class Block:
 		self.block_hash = block_hash
 		self.signer = signer
 		self.signature = signature
+		self.size = size
 
 	def __eq__(self, other):
 		return isinstance(other, Block) and all([
@@ -22,5 +23,6 @@ class Block:
 			self.difficulty == other.difficulty,
 			self.block_hash == other.block_hash,
 			self.signer == other.signer,
-			self.signature == other.signature
+			self.signature == other.signature,
+			self.size == other.size
 		])
