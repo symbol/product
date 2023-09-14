@@ -3,6 +3,7 @@ from collections import namedtuple
 from pathlib import Path
 
 from flask import Flask, abort, jsonify, request
+from symbolchain.nem.Network import Network
 from zenlog import log
 
 from rest.facade.NemRestFacade import NemRestFacade
@@ -25,6 +26,7 @@ def setup_nem_facade(app):
 	app.config.from_envvar('EXPLORER_REST_SETTINGS')
 	config = configparser.ConfigParser()
 	db_path = Path(app.config.get('DATABASE_CONFIG_FILEPATH'))
+	network = Network.MAINNET if str(Path(app.config.get('NETWORK'))).upper() == 'MAINNET' else Network.TESTNET
 
 	log.info(f'loading database config from {db_path}')
 
@@ -39,7 +41,7 @@ def setup_nem_facade(app):
 		nem_db_config['port']
 	)
 
-	return NemRestFacade(db_params)
+	return NemRestFacade(db_params, network)
 
 
 def setup_nem_routes(app, nem_api_facade):
