@@ -413,6 +413,8 @@ class TransactionHandler:
 				message['payload'],
 				message['type']
 			)
+		else:
+			message = None
 
 		mosaics = None
 		if 'mosaics' in tx_dict:
@@ -441,7 +443,7 @@ class TransactionHandler:
 	@staticmethod
 	def _map_multisig_account_modification_args(tx_dict):
 		min_cosignatories = 0
-		if 'minCosignatories' in tx_dict:
+		if 'minCosignatories' in tx_dict and 'relativeChange' in tx_dict['minCosignatories']:
 			min_cosignatories = tx_dict['minCosignatories']['relativeChange']
 
 		return {
