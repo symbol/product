@@ -94,12 +94,14 @@ class NemPuller:
 
 		mosaics = json.dumps([mosaic._asdict() for mosaic in transaction.mosaics]) if transaction.mosaics else None
 
+		message_dict = transaction.message._asdict() if transaction.message is not None else {}
+
 		transfer_transaction = TransactionFactory.create_transaction(
 			transaction.transaction_type,
 			transaction.amount,
 			transaction.recipient,
 			mosaics,
-			json.dumps(transaction.message._asdict()),
+			json.dumps(message_dict),
 			is_apostille
 		)
 
