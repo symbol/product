@@ -4,12 +4,13 @@ import { connect } from 'src/store';
 import { spacings } from 'src/styles';
 import { AccountAvatar, ButtonCopy, FormItem, StyledText } from 'src/components';
 import { $t } from 'src/localization';
-import { getAddressName } from 'src/utils';
+import { getAddressName, isSymbolAddress } from 'src/utils';
 
 const renderTypeMap = {
     address: [
         'address',
         'recipientAddress',
+        'recipient',
         'signerAddress',
         'linkedAccountAddress',
         'targetAddress',
@@ -34,6 +35,7 @@ const renderTypeMap = {
         'secret',
         'proof',
         'hash',
+        'name',
     ],
     boolean: [
         'supplyMutable',
@@ -127,24 +129,31 @@ export const TableView = connect((state) => ({
                         ItemTemplate = <StyledText type="body">{$t(`transactionDescriptor_${item.value}`)}</StyledText>;
                         break;
                     case 'address':
-                        ItemTemplate = (
-                            <View style={styles.account}>
-                                {!rawAddresses && (
-                                    <>
-                                        <AccountAvatar address={item.value} style={styles.avatar} size="sm" />
-                                        <StyledText type="body" style={styles.copyText}>
-                                            {getAddressName(item.value, currentAccount, accounts, addressBook)}
-                                        </StyledText>
-                                    </>
-                                )}
-                                {rawAddresses && (
+                        ItemTemplate =
+                            !rawAddresses && isSymbolAddress(item.value) ? (
+                                <View style={styles.account}>
+                                    <AccountAvatar address={item.value} style={styles.avatar} size="sm" />
+                                    <StyledText type="body" style={styles.copyText}>
+                                        {getAddressName(item.value, currentAccount, accounts, addressBook)}
+                                    </StyledText>
+                                    <ButtonCopy content={item.value} style={styles.button} />
+                                </View>
+                            ) : !rawAddresses ? (
+                                <View style={styles.account}>
+                                    <Image source={require('src/assets/images/icon-account-name.png')} style={styles.mosaicIcon} />
                                     <StyledText type="body" style={styles.copyText}>
                                         {item.value}
                                     </StyledText>
-                                )}
-                                <ButtonCopy content={item.value} style={styles.button} />
-                            </View>
-                        );
+                                    <ButtonCopy content={item.value} style={styles.button} />
+                                </View>
+                            ) : (
+                                <View style={styles.account}>
+                                    <StyledText type="body" style={styles.copyText}>
+                                        {item.value}
+                                    </StyledText>
+                                    <ButtonCopy content={item.value} style={styles.button} />
+                                </View>
+                            );
                         break;
                     case 'copyButton':
                         ItemTemplate = (

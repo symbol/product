@@ -4,6 +4,7 @@ import {
     isAggregateTransaction,
     isIncomingTransaction,
     isOutgoingTransaction,
+    isSymbolAddress,
     makeRequest,
     networkIdentifierToNetworkType,
     publicAccountFromPrivateKey,
@@ -12,7 +13,7 @@ import {
     transactionFromDTO,
     transferTransactionToDTO,
 } from 'src/utils';
-import { AccountService } from 'src/services';
+import { AccountService, NamespaceService } from 'src/services';
 import {
     Account,
     Address,
@@ -76,11 +77,25 @@ export class TransactionService {
 
     static async sendTransferTransaction(transaction, account, networkProperties) {
         const networkType = networkIdentifierToNetworkType(networkProperties.networkIdentifier);
-        if (transaction.messageEncrypted) {
-            const recipientAccount = await AccountService.fetchAccountInfo(networkProperties, transaction.recipientAddress);
-            transaction.recipientPublicKey = recipientAccount.publicKey;
+        const transactionWithResolvedAddress = { ...transaction };
+
+        if (isSymbolAddress(transaction.recipient)) {
+            transactionWithResolvedAddress.recipientAddress = transaction.recipient;
+        } else {
+            transactionWithResolvedAddress.recipientAddress = await NamespaceService.namespaceNameToAddress(
+                networkProperties,
+                transaction.recipient.toLowerCase()
+            );
         }
-        const transactionDTO = transferTransactionToDTO(transaction, networkProperties, account);
+
+        if (transactionWithResolvedAddress.messageEncrypted) {
+            const recipientAccount = await AccountService.fetchAccountInfo(
+                networkProperties,
+                transactionWithResolvedAddress.recipientAddress
+            );
+            transactionWithResolvedAddress.recipientPublicKey = recipientAccount.publicKey;
+        }
+        const transactionDTO = transferTransactionToDTO(transactionWithResolvedAddress, networkProperties, account);
         const signedTransaction = Account.createFromPrivateKey(account.privateKey, networkType).sign(
             transactionDTO,
             networkProperties.generationHash

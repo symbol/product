@@ -553,6 +553,7 @@
     "error_Failure_Extension_Partial_Transaction_Cache_Prune": "Partial transaction is expired",
     "error_Failure_Multisig_Operation_Prohibited_By_Account": "Operation prohibited",
     "error_Failure_Mosaic_Expired": "Mosaic expired",
+    "error_unknown_account_name": "Address not found",
 
     "transaction_confirm_title": "Confirm Transaction",
     "transaction_success_title": "Transaction announced",
