@@ -31,7 +31,7 @@ export const validateMnemonic = () => (str) => {
 };
 
 export const validateUnresolvedAddress = () => (str) => {
-    if (str.length < 3) {
+    if (str.length < 1) {
         return 'validation_error_address_short';
     }
 };

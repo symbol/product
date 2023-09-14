@@ -1,5 +1,6 @@
 import { addressFromRaw, makeRequest, namespaceIdFromRaw } from 'src/utils';
 import _ from 'lodash';
+import { NamespaceId } from 'symbol-sdk';
 
 export class NamespaceService {
     static async fetchAccountNamespaces(address, networkProperties) {
@@ -119,6 +120,26 @@ export class NamespaceService {
     static async namespaceIdToAddress(networkProperties, namespaceId) {
         const namespace = await NamespaceService.fetchNamespaceInfo(networkProperties, namespaceId);
 
+        if (!namespace.alias.address) {
+            throw Error('error_unknown_account_name');
+        }
+
         return addressFromRaw(namespace.alias.address);
+    }
+
+    static async namespaceNameToAddress(networkProperties, namespaceName) {
+        const namespaceId = new NamespaceId(namespaceName).toHex();
+
+        try {
+            const address = await NamespaceService.namespaceIdToAddress(networkProperties, namespaceId);
+
+            return address;
+        } catch (e) {
+            if (e.message === 'error_fetch_not_found') {
+                throw Error('error_unknown_account_name');
+            }
+
+            throw Error(e.message);
+        }
     }
 }

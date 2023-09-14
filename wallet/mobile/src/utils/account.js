@@ -42,10 +42,12 @@ export const isSymbolAddress = (address) => {
     if (typeof address !== 'string') {
         return false;
     }
-    if (address.length !== 39) {
+
+    const addressTrimAndUpperCase = address.trim().toUpperCase().replace(/-/g, '');
+
+    if (addressTrimAndUpperCase.length !== 39) {
         return false;
     }
-    const addressTrimAndUpperCase = address.trim().toUpperCase().replace(/-/g, '');
 
     if (addressTrimAndUpperCase.charAt(0) !== 'T' && addressTrimAndUpperCase.charAt(0) !== 'N') {
         return false;

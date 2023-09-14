@@ -63,7 +63,7 @@ export const Send = connect((state) => ({
 
     const transaction = {
         signerAddress: currentAccount.address,
-        recipientAddress: recipient,
+        recipient,
         mosaics: selectedMosaic
             ? [
                   {
