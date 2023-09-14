@@ -11,6 +11,9 @@ import { useRouter } from 'next/router';
 import { useTranslation } from 'next-i18next';
 import { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
+import SearchBar from './SearchBar';
+import Modal from './Modal';
+import { search } from '@/pages/api/search';
 
 const Header = () => {
 	const router = useRouter();
@@ -31,14 +34,24 @@ const Header = () => {
 			href: '/blocks'
 		},
 		{
-			text: t('accounts'),
+			text: t('menu_accounts'),
 			href: '/accounts'
 		},
 		{
-			text: t('transactions'),
+			text: t('menu_transactions'),
 			href: '/transactions'
 		}
 	];
+	const languages = [
+		{
+			locale: 'en',
+			title: 'English',
+		},
+		{
+			locale: 'uk',
+			title: 'Українська',
+		}
+	]
 
 	const renderMenu = () => (
 		<>
@@ -94,70 +107,81 @@ const Header = () => {
 				<div className={styles.headerLogo}>
 					<Image src="/images/logo-nem.png" fill alt="NEM" />
 				</div>
+
 				<div className={styles.headerRightSection}>
 					<div className={styles.headerMenu}>{renderMenu()}</div>
+					<SearchBar className={styles.searchBar} modalClassName={styles.modal} onSearchRequest={search}/>
 					<CustomImage className={styles.profileIcon} src="/images/icon-profile.svg" alt="profile" onClick={toggleProfile} />
 					<CustomImage className={styles.menuIcon} src="/images/icon-menu.svg" alt="profile" onClick={toggleMenu} />
 				</div>
-				{isProfileOpen && (
-					<div className={styles.overlay} onClick={toggleProfile}>
-						<Card className={styles.modal} onClick={e => e.stopPropagation()}>
-							<div>
-								<h3>Address Book</h3>
-								Give accounts names to easily identify them through the explorer.
+				<Modal className={`${styles.modal} ${styles.modalProfile}`} isVisible={isProfileOpen} onClose={toggleProfile}>
+					<div className="layout-flex-col">
+						<div>
+							<h4>Language</h4>
+							<div className={styles.modalCompactList}>
+								{languages.map((item) => (
+									<Link
+										href="/"
+										locale={item.locale}
+										key={'locale' + item.locale}
+										onClick={toggleProfile}
+									>
+										{item.title}
+									</Link>
+								))}
 							</div>
-							{!isAddContactOpen && (
-								<div className={styles.contactList}>
-									{contacts.map((item, index) => (
-										<div className={styles.profileAddress} key={index}>
-											<Field title={item.name}>
-												<div className="layout-flex-row">
-													<ValueAccount address={item.address} raw size="sm" />
-													<CustomImage
-														src="/images/icon-delete.png"
-														className={styles.buttonRemove}
-														alt="Remove"
-														onClick={() => removeContact(item)}
-													/>
-												</div>
-											</Field>
-										</div>
-									))}
-								</div>
-							)}
-							{!isAddContactOpen && (
-								<div className={styles.buttonAddContainer} onClick={toggleAddContact}>
-									<CustomImage src="/images/icon-account-add.png" className={styles.buttonAddIcon} alt="Add" />
-								</div>
-							)}
-							{isAddContactOpen && (
-								<div className="layout-flex-col-fields">
-									<Field title="Address">
-										<TextBox value={address} onChange={setAddress} />
-									</Field>
-									<Field title="Name">
-										<TextBox value={name} onChange={setName} />
-									</Field>
-									<div className="layout-flex-row">
-										<div className={styles.button} onClick={addAddress}>
-											Add
-										</div>
-										<div className={styles.button} onClick={dismissNewContact}>
-											Cancel
-										</div>
-									</div>
-								</div>
-							)}
-						</Card>
+						</div>
+						<div>
+							<h4>Address Book</h4>
+							Give accounts names to easily identify them through the explorer.
+						</div>
 					</div>
-				)}
-				{isMenuOpen && (
-					<div className={styles.overlay} onClick={toggleMenu}>
-						<Card className={styles.modal}>
-							<div>{renderMenu()}</div>
-						</Card>
-					</div>
-				)}
+					{!isAddContactOpen && (
+						<div className={styles.contactList}>
+							{contacts.map((item, index) => (
+								<div className={styles.profileAddress} key={index}>
+									<Field title={item.name}>
+										<div className="layout-flex-row">
+											<ValueAccount address={item.address} raw size="md" />
+											<CustomImage
+												src="/images/icon-delete.png"
+												className={styles.buttonRemove}
+												alt="Remove"
+												onClick={() => removeContact(item)}
+											/>
+										</div>
+									</Field>
+								</div>
+							))}
+						</div>
+					)}
+					{!isAddContactOpen && (
+						<div className={styles.buttonAddContainer} onClick={toggleAddContact}>
+							<CustomImage src="/images/icon-account-add.png" className={styles.buttonAddIcon} alt="Add" />
+						</div>
+					)}
+					{isAddContactOpen && (
+						<div className="layout-flex-col-fields">
+							<Field title="Address">
+								<TextBox value={address} onChange={setAddress} />
+							</Field>
+							<Field title="Name">
+								<TextBox value={name} onChange={setName} />
+							</Field>
+							<div className="layout-flex-row">
+								<div className={styles.button} onClick={addAddress}>
+									Add
+								</div>
+								<div className={styles.button} onClick={dismissNewContact}>
+									Cancel
+								</div>
+							</div>
+						</div>
+					)}
+				</Modal>
+				<Modal className={styles.modal} isVisible={isMenuOpen} onClose={toggleMenu}>
+					<div>{renderMenu()}</div>
+				</Modal>
 			</header>
 		</div>
 	);

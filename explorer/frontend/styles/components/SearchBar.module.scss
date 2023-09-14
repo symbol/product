@@ -1,0 +1,14 @@
+@import "../variables";
+
+.textBox {
+    width: 100%;
+}
+
+.notFoundMessage {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    width: 100%;
+    height: $spacing-base * 5;
+    opacity: 0.7;
+}
