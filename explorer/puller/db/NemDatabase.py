@@ -407,7 +407,7 @@ class NemDatabase(DatabaseConnection):
 				mosaic.levy_type,
 				mosaic.levy_namespace_name,
 				mosaic.levy_fee,
-				Address(mosaic.levy_recipient).bytes,
+				Address(mosaic.levy_recipient).bytes if mosaic.levy_recipient is not None else None,
 			)
 		)
 
