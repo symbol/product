@@ -2,5 +2,10 @@
     display: flex;
     flex-direction: column;
     justify-content: center;
-    height: 100%;
+    align-items: center;
+    height: 50vh;
+}
+
+.container {
+    width: 80%;
 }

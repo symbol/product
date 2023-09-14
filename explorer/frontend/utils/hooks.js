@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 
-export const useDataManager = (callback, defaultData, onError) => {
-	const [isLoading, setIsLoading] = useState(false);
+export const useDataManager = (callback, defaultData, onError, loadingState = false) => {
+	const [isLoading, setIsLoading] = useState(loadingState);
 	const [data, setData] = useState(defaultData);
 
 	const call = (...args) => {
