@@ -1,5 +1,5 @@
 import config from '@/config';
-import { createAPISearchURL, createPage, createSearchCriteria } from '@/utils';
+import { createAPICallFunction, createAPISearchURL, createPage, createSearchCriteria, truncateDecimals } from '@/utils';
 
 export default async function handler(req, res) {
 	if (req.method !== 'GET') {
@@ -33,15 +33,26 @@ export const getBlockPage = async searchCriteria => {
 	}));
 };
 
-export const getBlockInfo = async height => {
+export const getChainHight = async () => {
+	const blockPage = await getBlockPage({ pageSize: 1 });
+
+	return blockPage.data[0].height;
+}
+
+export const getBlockInfo = createAPICallFunction(async height => {
 	const response = await fetch(`${config.API_BASE_URL}/block/${height}`);
 	const block = await response.json();
+	const chainHeight = await getChainHight();
 
 	return {
 		...block,
+		isSafe: chainHeight - block.height > config.BLOCKCHAIN_UNWIND_LIMIT,
 		harvester: block.signer,
 		totalFee: block.totalFees,
 		transactionCount: block.totalTransactions,
-		difficulty: ((block.difficulty / Math.pow(10, 14)) * 100).toFixed(2)
+		difficulty: ((block.difficulty / Math.pow(10, 14)) * 100).toFixed(2),
+		averageFee: block.totalTransactions
+			? truncateDecimals(block.totalFees / block.totalTransactions, config.NATIVE_MOSAIC_DIVISIBILITY)
+			: null
 	};
-};
+});

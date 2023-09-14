@@ -19,7 +19,6 @@ import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 
 export const getServerSideProps = async ({ locale, params }) => {
 	const blockInfo = await getBlockInfo(params.height);
-	const transactionsPage = await getTransactionPage({ pageSize: blockInfo.transactionCount });
 
 	if (!blockInfo) {
 		return {
@@ -27,10 +26,12 @@ export const getServerSideProps = async ({ locale, params }) => {
 		};
 	}
 
+	const transactionsPage = await getTransactionPage({ pageSize: blockInfo.transactionCount });
+
 	return {
 		props: {
 			blockInfo,
-			transactions: transactionsPage.data,
+			transactions: [], // transactionsPage.data,
 			...(await serverSideTranslations(locale, ['common']))
 		}
 	};
@@ -80,23 +81,24 @@ const BlockInfo = ({ blockInfo, transactions }) => {
 			<div className="layout-section-row">
 				<Section title={t('section_block')} className={styles.firstSection} cardClassName={styles.firstSectionCard}>
 					<div className="layout-flex-col-fields">
-						<Field title={t('field_height')}>
+						<Field title={t('field_height')} description={t('field_height_description')}>
 							<div className="value-highlighted">{blockInfo.height}</div>
 						</Field>
 						<div className="layout-grid-row">
 							<Field title={t('field_status')}>
-								<ValueLabel text={t('label_safe')} type="confirmed" />
+								{!blockInfo.isSafe && <ValueLabel text={t('label_created')} type="created" />}
+								{blockInfo.isSafe && <ValueLabel text={t('label_safe')} type="safe" />}
 							</Field>
 							<Field title={t('field_timestamp')}>
 								<ValueTimestamp value={blockInfo.timestamp} hasTime />
 							</Field>
 						</div>
 						<div className="layout-grid-row">
-							<Field title={t('field_totalFee')}>
+							<Field title={t('field_totalFee')} description={t('field_totalFee_description')}>
 								<ValueMosaic isNative amount={blockInfo.totalFee} />
 							</Field>
-							<Field title={t('field_medianFee')}>
-								<ValueMosaic isNative amount={blockInfo.medianFee} />
+							<Field title={t('field_averageFee')} description={t('field_averageFeeBlock_description')}>
+								<ValueMosaic isNative amount={blockInfo.averageFee} />
 							</Field>
 						</div>
 						<Field title={t('field_transactionFees')}>
@@ -121,9 +123,9 @@ const BlockInfo = ({ blockInfo, transactions }) => {
 					</div>
 				</Section>
 			</div>
-			<Section title={t('section_transactions')}>
+			{/* <Section title={t('section_transactions')}>
 				<Table data={transactions} columns={tableColumns} ItemMobile={ItemTransactionMobile} isLastPage={true} />
-			</Section>
+			</Section> */}
 		</div>
 	);
 };
