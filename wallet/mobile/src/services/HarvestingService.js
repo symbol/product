@@ -132,7 +132,7 @@ export class HarvestingService {
         // Get nodePublicKey of the selected node
         const networkType = networkIdentifierToNetworkType(networkProperties.networkIdentifier);
         const endpoint = `${nodeUrl}/node/info`;
-        const { nodePublicKey, networkIdentifier: nodeNetworkType} = await makeRequest(endpoint);
+        const { nodePublicKey, networkIdentifier: nodeNetworkType } = await makeRequest(endpoint);
 
         if (nodeNetworkType !== networkType) {
             throw Error('error_failed_harvesting_wrong_node_network');

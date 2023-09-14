@@ -43,8 +43,7 @@ export class StorageMigration {
         let mnemonic;
         try {
             mnemonic = await oldStorage.get('mnemonics');
-        }
-        catch {};
+        } catch {}
 
         // Escape if mnemonic does not exist in the storage
         if (!mnemonic?.length) {
@@ -70,8 +69,7 @@ export class StorageMigration {
             await oldStorage.remove('mnemonics');
             await PersistentStorage.removeAll();
             await SecureStorage.removeAll();
-        }
-        catch {}
+        } catch {}
 
         await SecureStorage.setMnemonic(mnemonic);
         await SecureStorage.setAccounts(networkAccounts);
@@ -150,8 +148,7 @@ export class StorageMigration {
             await oldStorage.remove('CONTACTS');
             await PersistentStorage.removeAll();
             await SecureStorage.removeAll();
-        }
-        catch {}
+        } catch {}
 
         await SecureStorage.setMnemonic(mnemonic);
         await SecureStorage.setAccounts(networkAccounts);

@@ -271,9 +271,7 @@ export const Harvesting = connect((state) => ({
                     <Animated.View entering={FadeInDown} exiting={FadeOut}>
                         <FormItem clear="bottom">
                             <StyledText type="title">{$t('s_harvesting_manage_title')}</StyledText>
-                            {isNodeSelectorVisible && (
-                                <TextBox title={$t('input_nodeUrl')} value={nodeUrl} onChange={setNodeUrl} />
-                            )}
+                            {isNodeSelectorVisible && <TextBox title={$t('input_nodeUrl')} value={nodeUrl} onChange={setNodeUrl} />}
                         </FormItem>
                         {isButtonVisible && (
                             <>
