@@ -25,12 +25,19 @@
         width: 3.75rem;
         height: 3.75rem;
         user-select: none;
+        margin: auto 0;
+    }
+
+    .searchBar {
+        min-width: 10rem;
     }
 
     .headerRightSection {
         display: flex;
         flex-direction: row;
         align-items: center;
+        justify-content: flex-end;
+        gap: $spacing-base * 2;
     }
 
     .headerMenu {
@@ -56,38 +63,29 @@
     .profileIcon {
         width: 2.66rem;
         height: 2.66rem;
-        margin-left: $spacing-base;
         cursor: pointer;
         user-select: none;
-    }
-
-    .overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        z-index: 100;
-        width: 100%;
-        height: 100vh;
-        background-color: #0001;
-        animation-name: fade-in;
-        animation-duration: 250ms;
-        animation-timing-function: linear;
     }
 
     .modal {
         position: absolute;
         top: $spacing-header-height + $spacing-base;
         right: $spacing-base * 3;
+        width: 28rem;
+        height: 35rem;
+    }
+
+    .modalProfile {
         display: flex;
         flex-direction: column;
         justify-content: space-between;
-        width: 37rem;
-        height: 30rem;
-        box-shadow: 0 0.3rem 2rem rgba(0, 0, 0, 5%), 0 0 0.2rem rgba(0, 0, 0, 20%), 0 0.3rem 2rem rgba(0, 0, 0, 5%);
-        backdrop-filter: blur(12px);
-        animation-name: fade-in;
-        animation-duration: 250ms;
-        animation-timing-function: linear;
+    }
+
+    .modalCompactList {
+        display: flex;
+        flex-direction: column;
+        gap: $spacing-base / 2;
+        margin: $spacing-base / 2 0;
     }
 
     .contactList {
@@ -139,8 +137,17 @@
             display: none;
         }
 
-        .modal {
+        .searchBar {
             position: absolute;
+            width: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            min-width: 10rem;
+            margin: auto 0;
+            top: 50%;
+        }
+
+        .modal {
             top: $spacing-header-height + $spacing-base;
             right: 0;
             width: 100%;
@@ -149,8 +156,8 @@
         }
 
         .buttonAddContainer {
-            width: $spacing-base * 8;
-            height: $spacing-base * 8;
+            width: $spacing-base * 6;
+            height: $spacing-base * 6;
         }
 
         .button {
@@ -160,19 +167,8 @@
         .menuIcon {
             width: $spacing-base * 3;
             height: $spacing-base * 3;
-            margin-left: $spacing-base * 2;
             cursor: pointer;
         }
     }
 
-}
-
-@keyframes fade-in {
-    from {
-        opacity: 0;
-    }
-
-    to {
-        opacity: 1;
-    }
 }
