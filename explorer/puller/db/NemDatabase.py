@@ -441,7 +441,7 @@ class NemDatabase(DatabaseConnection):
 		return Mosaic(
 			namespace_name,
 			result[0],
-			result(result[1]),
+			hexlify(result[1]),
 			result[2],
 			result[3],
 			result[4],
@@ -450,7 +450,7 @@ class NemDatabase(DatabaseConnection):
 			result[7],
 			result[8],
 			result[9],
-			hexlify(result[10]),
+			hexlify(result[10]) if result[10] is not None else None,
 		)
 
 	def update_mosaic_supply(self, cursor, namespace_name, supply):
