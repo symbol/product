@@ -85,16 +85,20 @@ class NemPuller:
 	def _process_transfer_transaction(self, cursor, transaction_id, transaction):
 		"""Process transfer transaction data."""
 
-		# checking message first byte "fe" (HEX:) for apostille
-		is_apostille = (
-			transaction.recipient == 'NCZSJHLTIMESERVBVKOW6US64YDZG2PFGQCSV23J' and
-			transaction.message[0][:2] == 'fe' and
-			transaction.message[1] == 1
-		)
+		message_dict = {}
+		is_apostille = False
+
+		if transaction.message is not None:
+			message_dict = transaction.message._asdict()
+
+			# checking message first byte "fe" (HEX:) for apostille
+			is_apostille = (
+				transaction.recipient == 'NCZSJHLTIMESERVBVKOW6US64YDZG2PFGQCSV23J' and
+				transaction.message[0][:2] == 'fe' and
+				transaction.message[1] == 1
+			)
 
 		mosaics = json.dumps([mosaic._asdict() for mosaic in transaction.mosaics]) if transaction.mosaics else None
-
-		message_dict = transaction.message._asdict() if transaction.message is not None else {}
 
 		transfer_transaction = TransactionFactory.create_transaction(
 			transaction.transaction_type,
@@ -204,7 +208,9 @@ class NemPuller:
 		root_namespace = transaction.parent.split('.')[0]
 		namespace = self.nem_db.get_namespace_by_root_namespace(cursor, root_namespace)
 
-		namespace.sub_namespaces.append(f'{transaction.parent}.{transaction.namespace}')
+		new_sub_namespace = f'{transaction.parent}.{transaction.namespace}'
+		if new_sub_namespace not in namespace.sub_namespaces:
+			namespace.sub_namespaces.append(new_sub_namespace)
 
 		self.nem_db.update_namespace(cursor, namespace.root_namespace, sub_namespaces=namespace.sub_namespaces)
 
