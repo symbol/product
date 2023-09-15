@@ -108,6 +108,7 @@ class NemDatabase(DatabaseConnection):
 		)
 
 		# Create transactions namespace registration table
+		# parent is varchar(81) example: example: "nem" or "nem.xem"
 		cursor.execute(
 			'''
 			CREATE TABLE IF NOT EXISTS transactions_namespace_registration (
@@ -115,7 +116,7 @@ class NemDatabase(DatabaseConnection):
 				transaction_id serial NOT NULL,
 				rental_fee_sink bytea NOT NULL,
 				rental_fee bigint DEFAULT 0,
-				parent varchar(16),
+				parent varchar(81),
 				namespace varchar(64),
 				FOREIGN KEY (transaction_id) REFERENCES transactions(id)
 				ON DELETE CASCADE
