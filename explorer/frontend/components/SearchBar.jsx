@@ -2,13 +2,12 @@ import Field from './Field';
 import Modal from './Modal';
 import TextBox from './TextBox';
 import ValueAccount from './ValueAccount';
+import ValueBlockHeight from './ValueBlockHeight';
 import ValueMosaic from './ValueMosaic';
 import styles from '@/styles/components/SearchBar.module.scss';
 import { useDataManager, useDelayedCall } from '@/utils';
 import { useTranslation } from 'next-i18next';
 import { useEffect, useState } from 'react';
-import ValueBlockHeight from './ValueBlockHeight';
-
 
 const SearchResults = ({ type, text, onSearchRequest }) => {
 	const { t } = useTranslation();
@@ -21,11 +20,9 @@ const SearchResults = ({ type, text, onSearchRequest }) => {
 	const [search, isLoading] = useDataManager(async text => {
 		const searchResult = await onSearchRequest(text);
 
-		if (searchResult)
-			setResult(searchResult);
-		else
-			setResult({});
-	}, null, console.error, true);
+		if (searchResult) setResult(searchResult);
+		else setResult({});
+	});
 	const [delayedSearch] = useDelayedCall(text => search(text));
 
 	useEffect(() => {
@@ -51,8 +48,8 @@ const SearchResults = ({ type, text, onSearchRequest }) => {
 			)}
 			{isNothingFound && <div className={styles.notFoundMessage}>{t('message_nothingFound')}</div>}
 		</div>
-	)
-}
+	);
+};
 
 const SearchBar = ({ className, modalClassName, onSearchRequest }) => {
 	const [text, setText] = useState('');
@@ -60,7 +57,7 @@ const SearchBar = ({ className, modalClassName, onSearchRequest }) => {
 
 	const closeModal = () => {
 		setText('');
-	}
+	};
 
 	return (
 		<div>
@@ -71,19 +68,14 @@ const SearchBar = ({ className, modalClassName, onSearchRequest }) => {
 				value={text}
 				onChange={setText}
 			/>
-			<Modal
-				className={modalClassName}
-				isVisible={isModalVisible}
-				onClose={closeModal}
-				onClick={closeModal}
-			>
+			<Modal className={modalClassName} isVisible={isModalVisible} onClose={closeModal} onClick={closeModal}>
 				<div className="layout-flex-col">
 					<h4>Search</h4>
-					<SearchResults text={text} onSearchRequest={onSearchRequest}/>
+					<SearchResults text={text} onSearchRequest={onSearchRequest} />
 				</div>
 			</Modal>
 		</div>
-	)
-}
+	);
+};
 
 export default SearchBar;

@@ -28,7 +28,7 @@ const Table = ({ data, sections, columns, ItemMobile, renderSectionHeader, onEnd
 			<div className={styles.header}>
 				{columns.map((item, index) => (
 					<div className={styles.headerCell} style={{ width: item.size }} key={'th' + index}>
-						{t(`table_field_${item.key}`)}
+						{item.renderTitle ? item.renderTitle(item.key) : t(`table_field_${item.key}`)}
 					</div>
 				))}
 			</div>

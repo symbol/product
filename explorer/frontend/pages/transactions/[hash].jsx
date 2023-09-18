@@ -3,6 +3,7 @@ import { getTransactionInfo } from '../api/transactions';
 import Avatar from '@/components/Avatar';
 import CustomImage from '@/components/CustomImage';
 import Field from '@/components/Field';
+import FieldTimestamp from '@/components/FieldTimestamp';
 import Section from '@/components/Section';
 import Separator from '@/components/Separator';
 import Table from '@/components/Table';
@@ -106,9 +107,7 @@ const TransactionInfo = ({ transactionInfo }) => {
 								{transactionInfo.group === 'confirmed' && <ValueLabel text={t('label_confirmed')} type="confirmed" />}
 								{transactionInfo.group === 'unconfirmed' && <ValueLabel text={t('label_unconfirmed')} type="pending" />}
 							</Field>
-							<Field title={t('field_timestamp')}>
-								<ValueTimestamp value={transactionInfo.timestamp} hasTime />
-							</Field>
+							<FieldTimestamp value={transactionInfo.timestamp} hasTime />
 						</div>
 						{transactionInfo.amount && (
 							<div className="layout-grid-row">

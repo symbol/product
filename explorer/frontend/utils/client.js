@@ -69,15 +69,33 @@ export const trunc = (str, type, length = 5) => {
 };
 
 export const getContactsFromStorage = () => {
+	const defaultValue = [];
+
 	try {
 		const jsonString = localStorage.getItem(STORAGE_KEY.ADDRESS_BOOK);
-		return JSON.parse(jsonString) || [];
+		return JSON.parse(jsonString) || defaultValue;
 	} catch {
-		return [];
+		return defaultValue;
 	}
 };
 
 export const setContactsToStorage = value => {
 	localStorage.setItem(STORAGE_KEY.ADDRESS_BOOK, JSON.stringify(value));
 	dispatchEvent(new Event(EVENT.ADDRESS_BOOK_UPDATE));
+};
+
+export const getTimestampTypeFromStorage = () => {
+	const defaultValue = 'UTC';
+
+	try {
+		const value = localStorage.getItem(STORAGE_KEY.STORAGE_KEY);
+		return value || defaultValue;
+	} catch {
+		return defaultValue;
+	}
+};
+
+export const setTimestampTypeToStorage = value => {
+	localStorage.setItem(STORAGE_KEY.STORAGE_KEY, value);
+	dispatchEvent(new Event(EVENT.TIMESTAMP_TYPE_UPDATE));
 };

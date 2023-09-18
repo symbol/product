@@ -3,6 +3,7 @@ import { search } from '../api/search';
 import Avatar from '@/components/Avatar';
 import ButtonCSV from '@/components/ButtonCSV';
 import Field from '@/components/Field';
+import FieldTimestamp from '@/components/FieldTimestamp';
 import Filter from '@/components/Filter';
 import ItemTransactionMobile from '@/components/ItemTransactionMobile';
 import Section from '@/components/Section';
@@ -97,6 +98,7 @@ const AccountInfo = ({ accountInfo, preloadedTransactions }) => {
 		{
 			key: 'timestamp',
 			size: '10rem',
+			renderTitle: () => <FieldTimestamp />,
 			renderValue: value => <ValueTimestamp value={value} hasTime />
 		}
 	];

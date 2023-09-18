@@ -2,6 +2,7 @@ import { fetchBlockPage } from '../api/blocks';
 import { getMosaicInfo } from '../api/mosaic';
 import Avatar from '@/components/Avatar';
 import Field from '@/components/Field';
+import FieldTimestamp from '@/components/FieldTimestamp';
 import ItemTransactionMobile from '@/components/ItemTransactionMobile';
 import Progress from '@/components/Progress';
 import Section from '@/components/Section';
@@ -92,6 +93,7 @@ const MosaicInfo = ({ mosaicInfo, preloadedTransactions }) => {
 		{
 			key: 'timestamp',
 			size: '10rem',
+			renderTitle: () => <FieldTimestamp />,
 			renderValue: value => <ValueTimestamp value={value} hasTime />
 		}
 	];
