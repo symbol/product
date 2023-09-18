@@ -3,6 +3,7 @@ from binascii import hexlify
 from symbolchain.CryptoTypes import PublicKey
 
 from rest.model.Block import BlockView
+from rest.model.Namespace import NamespaceView
 
 from .DatabaseConnection import DatabaseConnectionPool
 
@@ -36,6 +37,16 @@ class NemDatabase(DatabaseConnectionPool):
 			size=result[8]
 		)
 
+	def _create_namespace_view(self, result):
+		owner_public_key = PublicKey(_format_bytes(result[1]))
+		return NamespaceView(
+			root_namespace=result[0],
+			owner=self.network.public_key_to_address(owner_public_key),
+			registered_height=result[2],
+			expiration_height=result[3],
+			sub_namespaces=result[4]
+		)
+
 	def get_block(self, height):
 		"""Gets block by height in database."""
 
@@ -65,3 +76,42 @@ class NemDatabase(DatabaseConnectionPool):
 			results = cursor.fetchall()
 
 			return [self._create_block_view(result) for result in results]
+
+	def get_namespace(self, root_namespace):
+		"""Gets namespace by name in database."""
+
+		with self.connection() as connection:
+			cursor = connection.cursor()
+			cursor.execute('''
+				SELECT
+					root_namespace,
+					owner,
+					registered_height,
+					expiration_height,
+					sub_namespaces
+				FROM namespaces
+				WHERE root_namespace = %s
+			''', (root_namespace,))
+			result = cursor.fetchone()
+
+			return self._create_namespace_view(result) if result else None
+
+	def get_namespaces(self, limit, offset, sort):
+		"""Gets namespaces pagination in database."""
+
+		with self.connection() as connection:
+			cursor = connection.cursor()
+			cursor.execute(f'''
+				SELECT
+					root_namespace,
+					owner,
+					registered_height,
+					expiration_height,
+					sub_namespaces
+				FROM namespaces
+				ORDER BY id {sort}
+				LIMIT %s OFFSET %s
+			''', (limit, offset,))
+			results = cursor.fetchall()
+
+			return [self._create_namespace_view(result) for result in results]
