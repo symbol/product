@@ -1,0 +1,16 @@
+@import "../variables";
+
+.valueTransaction {
+    display: flex;
+    flex-direction: row;
+    gap: $spacing-base / 2;
+    align-items: center;
+    padding: 0 $spacing-base / 2;
+}
+
+.sectionAmount {
+    display: flex;
+    flex: 1;
+    align-items: flex-end;
+    justify-content: flex-end;
+}

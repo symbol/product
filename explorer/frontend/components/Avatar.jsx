@@ -69,7 +69,7 @@ const MosaicAvatar = ({ mosaicId }) => {
 const TransactionAvatar = ({ type }) => {
 	return (
 		<div className={styles.imageDefault}>
-			<IconTransactionType value={type} />
+			<IconTransactionType value={type} className={styles.imageTransactionType} />
 		</div>
 	);
 };

@@ -6,7 +6,7 @@ import { trunc, useStorage } from '@/utils';
 import Link from 'next/link';
 import { useState } from 'react';
 
-const ValueAccount = ({ address, size, raw, position, className, onClick }) => {
+const ValueAccount = ({ address, size, raw, position, className, isNavigationDisabled, onClick }) => {
 	const [name, setName] = useState();
 	useStorage(STORAGE_KEY.ADDRESS_BOOK, [], addressBook => {
 		const name = addressBook.find(item => item.address === address)?.name;
@@ -26,8 +26,9 @@ const ValueAccount = ({ address, size, raw, position, className, onClick }) => {
 	}
 
 	const handleClick = e => {
+		e.stopPropagation();
 		if (!onClick) return;
-		e.preventDefault();
+		if (isNavigationDisabled) e.preventDefault();
 		onClick();
 	};
 
