@@ -1,10 +1,10 @@
 import ButtonClose from './ButtonClose';
 import CustomImage from './CustomImage';
 import Field from './Field';
+import FieldTimestamp from './FieldTimestamp';
 import ValueAge from './ValueAge';
 import ValueLabel from './ValueLabel';
 import ValueMosaic from './ValueMosaic';
-import ValueTimestamp from './ValueTimestamp';
 import ValueTransactionSquares from './ValueTransactionSquares';
 import styles from '@/styles/components/BlockPreview.module.scss';
 import Link from 'next/link';
@@ -30,7 +30,7 @@ const BlockExpanded = ({ data, transactions, isNext, isTransactionSquaresRendere
 					{isNext && <ValueLabel text={t('label_pending')} type="pending" />}
 					{!isNext && <ValueLabel text={t('label_safe')} type="confirmed" />}
 				</Field>
-				<Field title={t('field_timestamp')}>{!isNext && <ValueTimestamp value={timestamp} hasTime hasSeconds />}</Field>
+				<FieldTimestamp value={timestamp} hasTime hasSeconds />
 			</div>
 			<div className="layout-grid-row">
 				<Field title={t('field_totalFee')}>

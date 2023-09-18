@@ -1,3 +1,4 @@
+import { STORAGE_KEY } from '@/constants';
 import { useEffect, useState } from 'react';
 
 export const useDataManager = (callback, defaultData, onError, loadingState = false) => {
@@ -129,4 +130,70 @@ export const useToggle = initialValue => {
 	const toggle = () => setValue(value => !value);
 
 	return [value, toggle];
+};
+
+export const useStorage = (key, defaultValue, callback) => {
+	const [value, setValue] = useState(defaultValue);
+	const [setter, setSetter] = useState(null);
+	const getEvent = key => `storage.update.${key}`;
+	const storage = {
+		[STORAGE_KEY.ADDRESS_BOOK]: {
+			get: () => {
+				const defaultValue = [];
+
+				try {
+					const jsonString = localStorage.getItem(STORAGE_KEY.ADDRESS_BOOK);
+					return JSON.parse(jsonString) || defaultValue;
+				} catch {
+					return defaultValue;
+				}
+			},
+			set: value => {
+				localStorage.setItem(STORAGE_KEY.ADDRESS_BOOK, JSON.stringify(value));
+				dispatchEvent(new Event(getEvent(STORAGE_KEY.ADDRESS_BOOK)));
+			}
+		},
+		[STORAGE_KEY.TIMESTAMP_TYPE]: {
+			get: () => {
+				const defaultValue = 'UTC';
+
+				try {
+					const value = localStorage.getItem(STORAGE_KEY.TIMESTAMP_TYPE);
+					return value || defaultValue;
+				} catch {
+					return defaultValue;
+				}
+			},
+			set: value => {
+				localStorage.setItem(STORAGE_KEY.TIMESTAMP_TYPE, value);
+				dispatchEvent(new Event(getEvent(STORAGE_KEY.TIMESTAMP_TYPE)));
+			}
+		}
+	};
+
+	useEffect(() => {
+		const accessor = storage[key];
+
+		if (!accessor) {
+			throw Error(`Failed to access store. Unknown key "${key}"`);
+		}
+
+		const updateValue = () => {
+			const value = accessor.get();
+			setValue(value);
+			if (callback) {
+				callback(value);
+			}
+		};
+
+		setSetter(() => accessor.set);
+		updateValue();
+		window?.addEventListener(getEvent(key), updateValue);
+
+		return () => {
+			window?.removeEventListener(getEvent(key), updateValue);
+		};
+	}, []);
+
+	return [value, setter];
 };

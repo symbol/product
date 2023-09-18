@@ -12,15 +12,11 @@ import SectionHeaderTransaction from '@/components/SectionHeaderTransaction';
 import Separator from '@/components/Separator';
 import Table from '@/components/Table';
 import ValueAccount from '@/components/ValueAccount';
-import ValueCopy from '@/components/ValueCopy';
-import ValueLabel from '@/components/ValueLabel';
 import ValueMosaic from '@/components/ValueMosaic';
-import ValueTimestamp from '@/components/ValueTimestamp';
 import ValueTransactionHash from '@/components/ValueTransactionHash';
-import ValueTransactionSquares from '@/components/ValueTransactionSquares';
 import ValueTransactionType from '@/components/ValueTransactionType';
 import { TRANSACTION_TYPE } from '@/constants';
-import { fetchTransactionPage, getTransactionInfo } from '@/pages/api/transactions';
+import { fetchTransactionPage } from '@/pages/api/transactions';
 import { getTransactionPage } from '@/pages/api/transactions';
 import styles from '@/styles/pages/TransactionList.module.scss';
 import { formatDate, useFilter, usePagination } from '@/utils';
@@ -50,7 +46,7 @@ const TransactionInfo = ({ preloadedData, stats }) => {
 			return [formatDate(item[0], t), item[1]];
 		}
 		if (chart.filter.isPerMonth) {
-			return [formatDate(item[0], t, false, false, false), item[1]];
+			return [formatDate(item[0], t, { hasDays: false }), item[1]];
 		}
 		return [t('chart_label_block', { height: item[0] }), item[1]];
 	});

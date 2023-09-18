@@ -1,4 +1,5 @@
 import Field from '@/components/Field';
+import FieldTimestamp from '@/components/FieldTimestamp';
 import ItemTransactionMobile from '@/components/ItemTransactionMobile';
 import Section from '@/components/Section';
 import Table from '@/components/Table';
@@ -6,7 +7,6 @@ import ValueAccount from '@/components/ValueAccount';
 import ValueCopy from '@/components/ValueCopy';
 import ValueLabel from '@/components/ValueLabel';
 import ValueMosaic from '@/components/ValueMosaic';
-import ValueTimestamp from '@/components/ValueTimestamp';
 import ValueTransactionHash from '@/components/ValueTransactionHash';
 import ValueTransactionSquares from '@/components/ValueTransactionSquares';
 import ValueTransactionType from '@/components/ValueTransactionType';
@@ -31,7 +31,7 @@ export const getServerSideProps = async ({ locale, params }) => {
 	return {
 		props: {
 			blockInfo,
-			transactions: [], // transactionsPage.data,
+			transactions: transactionsPage.data,
 			...(await serverSideTranslations(locale, ['common']))
 		}
 	};
@@ -89,9 +89,7 @@ const BlockInfo = ({ blockInfo, transactions }) => {
 								{!blockInfo.isSafe && <ValueLabel text={t('label_created')} type="created" />}
 								{blockInfo.isSafe && <ValueLabel text={t('label_safe')} type="safe" />}
 							</Field>
-							<Field title={t('field_timestamp')}>
-								<ValueTimestamp value={blockInfo.timestamp} hasTime />
-							</Field>
+							<FieldTimestamp value={blockInfo.timestamp} hasTime hasSeconds />
 						</div>
 						<div className="layout-grid-row">
 							<Field title={t('field_totalFee')} description={t('field_totalFee_description')}>
@@ -123,9 +121,9 @@ const BlockInfo = ({ blockInfo, transactions }) => {
 					</div>
 				</Section>
 			</div>
-			{/* <Section title={t('section_transactions')}>
+			<Section title={t('section_transactions')}>
 				<Table data={transactions} columns={tableColumns} ItemMobile={ItemTransactionMobile} isLastPage={true} />
-			</Section> */}
+			</Section>
 		</div>
 	);
 };

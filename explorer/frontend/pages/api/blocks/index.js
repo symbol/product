@@ -37,7 +37,7 @@ export const getChainHight = async () => {
 	const blockPage = await getBlockPage({ pageSize: 1 });
 
 	return blockPage.data[0].height;
-}
+};
 
 export const getBlockInfo = createAPICallFunction(async height => {
 	const response = await fetch(`${config.API_BASE_URL}/block/${height}`);

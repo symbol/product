@@ -30,6 +30,8 @@
 	"field_status": "Status",
 	"field_supernodes": "Supernodes",
 	"field_timestamp": "Timestamp",
+	"field_timestampUTC": "Date Time (UTC)",
+	"field_timestampLocal": "Date Time (Local)",
 	"field_totalFee": "Total Fee",
 	"field_totalFee_description": "Total transaction fee in the block",
 	"field_totalNodes": "Total Nodes",

@@ -1,11 +1,13 @@
-export const formatDate = (dateStr, translate, showTime = false, showSeconds = false, showDay = true) => {
+export const formatDate = (dateStr, translate, config = {}) => {
+	const { type, hasTime = false, hasSeconds = false, hasDays = true } = config;
 	const months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
 
 	const addZero = num => {
 		return 0 <= num && 10 > num ? '0' + num : num + '';
 	};
 
-	const dateObj = new Date(dateStr);
+	const dateObj =
+		type === 'local' ? new Date(dateStr) : new Date(new Date(dateStr).getTime() + new Date(dateStr).getTimezoneOffset() * 60000);
 	const seconds = addZero(dateObj.getSeconds());
 	const minutes = addZero(dateObj.getMinutes());
 	const hour = addZero(dateObj.getHours());
@@ -14,10 +16,10 @@ export const formatDate = (dateStr, translate, showTime = false, showSeconds = f
 	const year = dateObj.getFullYear();
 
 	let formattedDate = `${month}`;
-	formattedDate += showDay ? ` ${day}` : '';
+	formattedDate += hasDays ? ` ${day}` : '';
 	formattedDate += `, ${year}`;
-	formattedDate += showTime ? ` • ${hour}:${minutes}` : '';
-	formattedDate += showTime && showSeconds ? `:${seconds}` : '';
+	formattedDate += hasTime ? ` • ${hour}:${minutes}` : '';
+	formattedDate += hasTime && hasSeconds ? `:${seconds}` : '';
 
 	return formattedDate;
 };

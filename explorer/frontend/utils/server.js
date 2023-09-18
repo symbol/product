@@ -36,17 +36,18 @@ export const createAPISearchURL = (baseURL, searchCriteria, filter = {}) => {
 	return `${baseURL}?${params}`;
 };
 
-export const createAPICallFunction = (func) => async (...args) => {
-	try {
-		const data = await func(...args);
+export const createAPICallFunction =
+	func =>
+	async (...args) => {
+		try {
+			const data = await func(...args);
 
-		if (data.status) {
+			if (data.status) {
+				return null;
+			}
+
+			return data;
+		} catch {
 			return null;
 		}
-
-		return data;
-	}
-	catch {
-		return null;
-	}
-}
+	};
