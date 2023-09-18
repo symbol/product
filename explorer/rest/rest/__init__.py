@@ -3,6 +3,7 @@ from collections import namedtuple
 from pathlib import Path
 
 from flask import Flask, abort, jsonify, request
+from flask_cors import CORS
 from zenlog import log
 
 from rest.facade.NemRestFacade import NemRestFacade
@@ -12,6 +13,8 @@ DatabaseConfig = namedtuple('DatabaseConfig', ['database', 'user', 'password', '
 
 def create_app():
 	app = Flask(__name__)
+
+	CORS(app)
 
 	setup_error_handlers(app)
 
