@@ -4,3 +4,4 @@ psycopg2-binary==2.9.7
 symbol-sdk-python==3.1.0
 zenlog==1.1
 Path==16.7.1
+flask_cors==4.0.0
