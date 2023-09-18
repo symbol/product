@@ -5,7 +5,7 @@ import { ACCOUNT_STATE_CHANGE_ACTION, TRANSACTION_DIRECTION } from '@/constants'
 import styles from '@/styles/components/ValueMosaic.module.scss';
 import Link from 'next/link';
 
-const ValueMosaic = ({ mosaicName, mosaicId, amount, isNative, className, direction, size, onClick }) => {
+const ValueMosaic = ({ mosaicName, mosaicId, amount, isNative, className, direction, size, onClick, isNavigationDisabled }) => {
 	let displayedName;
 	let imageSrc;
 	const directionStyleMap = {
@@ -28,8 +28,9 @@ const ValueMosaic = ({ mosaicName, mosaicId, amount, isNative, className, direct
 	}
 
 	const handleClick = e => {
+		e.stopPropagation();
 		if (!onClick) return;
-		e.preventDefault();
+		if (isNavigationDisabled) e.preventDefault();
 		onClick(finalMosaicId);
 	};
 

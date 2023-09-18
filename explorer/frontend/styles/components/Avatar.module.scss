@@ -11,8 +11,8 @@
 }
 
 .containerMd {
-    width: 2.67rem;
-    height: 2.67rem;
+    width: $spacing-base * 4;
+    height: $spacing-base * 4;
 }
 
 .containerLg {
@@ -28,6 +28,11 @@
 .image {
     width: 100%;
     height: 100%;
+}
+
+.imageTransactionType {
+    width: 30%;
+    height: 30%;
 }
 
 .imageDefault {

@@ -22,10 +22,12 @@ const ItemTransactionMobile = ({ data }) => {
 					<ValueTransactionHash value={hash} />
 				</div>
 				<ValueAccount address={signer} size="sm" />
-				<div className={styles.row}>
-					<CustomImage className={styles.iconDirection} src="/images/icon-transaction-direction.svg" />
-					<ValueAccount address={recipient} size="sm" />
-				</div>
+				{!!recipient && (
+					<div className={styles.row}>
+						<CustomImage className={styles.iconDirection} src="/images/icon-transaction-direction.svg" />
+						<ValueAccount address={recipient} size="sm" />
+					</div>
+				)}
 
 				<div className={styles.end}>
 					<ValueTimestamp value={timestamp} hasTime />
