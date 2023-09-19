@@ -6,6 +6,7 @@ class Mosaic:
             creator,
             registered_height,
             initial_supply,
+            total_supply,
             divisibility,
             supply_mutable,
             transferable,
@@ -23,6 +24,7 @@ class Mosaic:
         self.creator = creator
         self.registered_height = registered_height
         self.initial_supply = initial_supply
+        self.total_supply = total_supply
         self.divisibility = divisibility
         self.supply_mutable = supply_mutable
         self.transferable = transferable
@@ -38,6 +40,7 @@ class Mosaic:
             self.creator == other.creator,
             self.registered_height == other.registered_height,
             self.initial_supply == other.initial_supply,
+            self.total_supply == other.total_supply,
             self.divisibility == other.divisibility,
             self.supply_mutable == other.supply_mutable,
             self.transferable == other.transferable,

@@ -61,6 +61,7 @@ class NemPuller:
 			transaction.creator,
 			block_height,
 			mosaic_properties.initial_supply,
+			mosaic_properties.initial_supply,  # initial supply as total supply when first insert
 			mosaic_properties.divisibility,
 			mosaic_properties.supply_mutable,
 			mosaic_properties.transferable,
@@ -79,8 +80,8 @@ class NemPuller:
 
 		if mosaic:
 			adjustment = transaction.delta if transaction.supply_type == 1 else -transaction.delta
-			mosaic.initial_supply += adjustment
-			self.nem_db.update_mosaic_supply(cursor, transaction.namespace_name, mosaic.initial_supply)
+			mosaic.total_supply += adjustment
+			self.nem_db.update_mosaic_total_supply(cursor, transaction.namespace_name, mosaic.total_supply)
 
 	def _process_transfer_transaction(self, cursor, transaction_id, transaction):
 		"""Process transfer transaction data."""

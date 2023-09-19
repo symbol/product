@@ -168,6 +168,7 @@ class NemDatabase(DatabaseConnection):
 				creator bytea NOT NULL,
 				registered_height bigint NOT NULL,
 				initial_supply bigint DEFAULT 0,
+				total_supply bigint DEFAULT 0,
 				divisibility int NOT NULL,
 				supply_mutable boolean DEFAULT false,
 				transferable boolean DEFAULT false,
@@ -386,6 +387,7 @@ class NemDatabase(DatabaseConnection):
 				creator,
 				registered_height,
 				initial_supply,
+				total_supply,
 				divisibility,
 				supply_mutable,
 				transferable,
@@ -394,7 +396,7 @@ class NemDatabase(DatabaseConnection):
 				levy_fee,
 				levy_recipient
 			)
-			VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+			VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
 			''',
 			(
 				mosaic.namespace_name,
@@ -402,6 +404,7 @@ class NemDatabase(DatabaseConnection):
 				unhexlify(mosaic.creator),
 				mosaic.registered_height,
 				mosaic.initial_supply,
+				mosaic.total_supply,
 				mosaic.divisibility,
 				mosaic.supply_mutable,
 				mosaic.transferable,
@@ -422,6 +425,7 @@ class NemDatabase(DatabaseConnection):
 				creator,
 				registered_height,
 				initial_supply,
+				total_supply,
 				divisibility,
 				supply_mutable,
 				transferable,
@@ -451,17 +455,18 @@ class NemDatabase(DatabaseConnection):
 			result[7],
 			result[8],
 			result[9],
-			hexlify(result[10]) if result[10] is not None else None,
+			result[10],
+			hexlify(result[11]) if result[11] is not None else None,
 		)
 
-	def update_mosaic_supply(self, cursor, namespace_name, supply):
+	def update_mosaic_total_supply(self, cursor, namespace_name, supply):
 		"""Updates mosaic supply in mosaics table"""
 
 		cursor.execute(
 			'''
 			UPDATE mosaics
 			SET
-				initial_supply = %s
+				total_supply = %s
 			WHERE namespace_name = %s
 			''',
 			(supply, namespace_name)
