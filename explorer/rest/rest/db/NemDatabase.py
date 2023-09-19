@@ -1,8 +1,10 @@
 from binascii import hexlify
 
 from symbolchain.CryptoTypes import PublicKey
+from symbolchain.nem.Network import Address
 
 from rest.model.Block import BlockView
+from rest.model.Mosaic import MosaicView
 from rest.model.Namespace import NamespaceView
 
 from .DatabaseConnection import DatabaseConnectionPool
@@ -14,6 +16,10 @@ def _format_bytes(buffer):
 
 def _format_xem_relative(amount):
 	return amount / (10 ** 6)
+
+
+def _format_relative(amount, divisibility):
+	return amount / (10 ** divisibility)
 
 
 class NemDatabase(DatabaseConnectionPool):
@@ -45,6 +51,31 @@ class NemDatabase(DatabaseConnectionPool):
 			registered_height=result[2],
 			expiration_height=result[3],
 			sub_namespaces=result[4]
+		)
+
+	def _create_mosaic_view(self, result):
+		levy_types = {
+			1: 'absolute fee',
+			2: 'percentile'
+		}
+
+		creator_public_key = PublicKey(_format_bytes(result[2]))
+		levy_type = levy_types.get(result[8], None)
+		levy_fee = _format_relative(result[11], result[10]) if levy_type else None
+
+		return MosaicView(
+			namespace_name=result[0],
+			description=result[1],
+			creator=self.network.public_key_to_address(creator_public_key),
+			registered_height=result[3],
+			initial_supply=result[4],
+			divisibility=result[5],
+			supply_mutable=result[6],
+			transferable=result[7],
+			levy_type=levy_type,
+			levy_namespace=result[9],
+			levy_fee=levy_fee,
+			levy_recipient=Address(result[12]) if result[12] else None
 		)
 
 	def get_block(self, height):
@@ -115,3 +146,68 @@ class NemDatabase(DatabaseConnectionPool):
 			results = cursor.fetchall()
 
 			return [self._create_namespace_view(result) for result in results]
+
+	def get_mosaic(self, namespace_name):
+		"""Gets mosaic by namespace name in database."""
+
+		with self.connection() as connection:
+			cursor = connection.cursor()
+			cursor.execute('''
+				SELECT
+					m1.namespace_name,
+					m1.description,
+					m1.creator,
+					m1.registered_height,
+					m1.initial_supply,
+					m1.divisibility,
+					m1.supply_mutable,
+					m1.transferable,
+					m1.levy_type,
+					m1.levy_namespace_name,
+					CASE
+						WHEN m1.levy_namespace_name = 'nem.xem' THEN 6
+						WHEN m1.levy_namespace_name IS NULL THEN NULL
+						ELSE m2.divisibility
+					END AS levy_namespace_divisibility,
+					m1.levy_fee,
+					m1.levy_recipient
+				FROM mosaics m1
+				LEFT JOIN mosaics m2 ON m1.levy_namespace_name = m2.namespace_name AND m1.levy_namespace_name IS NOT NULL
+				WHERE m1.namespace_name = %s
+			''', (namespace_name,))
+			result = cursor.fetchone()
+
+			return self._create_mosaic_view(result) if result else None
+
+	def get_mosaics(self, limit, offset, sort):
+		"""Gets mosaics pagination in database."""
+
+		with self.connection() as connection:
+			cursor = connection.cursor()
+			cursor.execute(f'''
+				SELECT
+					m1.namespace_name,
+					m1.description,
+					m1.creator,
+					m1.registered_height,
+					m1.initial_supply,
+					m1.divisibility,
+					m1.supply_mutable,
+					m1.transferable,
+					m1.levy_type,
+					m1.levy_namespace_name,
+					CASE
+						WHEN m1.levy_namespace_name = 'nem.xem' THEN 6
+						WHEN m1.levy_namespace_name IS NULL THEN NULL
+						ELSE m2.divisibility
+					END AS levy_namespace_divisibility,
+					m1.levy_fee,
+					m1.levy_recipient
+				FROM mosaics m1
+				LEFT JOIN mosaics m2 ON m1.levy_namespace_name = m2.namespace_name AND m1.levy_namespace_name IS NOT NULL
+				ORDER BY m1.id {sort}
+				LIMIT %s OFFSET %s
+			''', (limit, offset,))
+			results = cursor.fetchall()
+
+			return [self._create_mosaic_view(result) for result in results]

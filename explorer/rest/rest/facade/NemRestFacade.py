@@ -36,3 +36,17 @@ class NemRestFacade:
 		namespaces = self.nem_db.get_namespaces(limit, offset, sort)
 
 		return [namespace.to_dict() for namespace in namespaces]
+
+	def get_mosaic(self, name):
+		"""Gets mosaic by namespace name."""
+
+		mosaic = self.nem_db.get_mosaic(name)
+
+		return mosaic.to_dict() if mosaic else None
+
+	def get_mosaics(self, limit, offset, sort):
+		"""Gets mosaics pagination."""
+
+		mosaics = self.nem_db.get_mosaics(limit, offset, sort)
+
+		return [mosaic.to_dict() for mosaic in mosaics]
