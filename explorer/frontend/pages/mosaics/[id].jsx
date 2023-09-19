@@ -1,5 +1,5 @@
 import { fetchBlockPage } from '../api/blocks';
-import { getMosaicInfo } from '../api/mosaic';
+import { getMosaicInfo } from '../api/mosaics';
 import Avatar from '@/components/Avatar';
 import Field from '@/components/Field';
 import FieldTimestamp from '@/components/FieldTimestamp';
@@ -16,7 +16,7 @@ import ValueTransactionHash from '@/components/ValueTransactionHash';
 import ValueTransactionType from '@/components/ValueTransactionType';
 import { fetchTransactionPage, getTransactionPage } from '@/pages/api/transactions';
 import styles from '@/styles/pages/MosaicInfo.module.scss';
-import { usePagination } from '@/utils';
+import { arrayToText, usePagination } from '@/utils';
 import Head from 'next/head';
 import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
@@ -134,7 +134,7 @@ const MosaicInfo = ({ mosaicInfo, preloadedTransactions }) => {
 				<Section className="layout-align-end" cardClassName={styles.secondSectionCard}>
 					<div className="layout-flex-col-fields">
 						<Field title={t('field_mosaic_names')} description={t('field_mosaic_names_description')}>
-							{mosaicInfo.names.join(', ')}
+							{arrayToText(mosaicInfo.names)}
 						</Field>
 						<Field title={t('field_supply')} description={t('field_supply_description')}>
 							{mosaicInfo.supply}
@@ -142,15 +142,15 @@ const MosaicInfo = ({ mosaicInfo, preloadedTransactions }) => {
 						<Field title={t('field_divisibility')} description={t('field_divisibility_description')}>
 							{mosaicInfo.divisibility}
 						</Field>
-						<Field title={t('field_mosaicCreator')}>
+						<Field title={t('field_creator')}>
 							<ValueAccount address={mosaicInfo.creator} size="sm" />
 						</Field>
-						<Field title={t('field_mosaicExpiration')} description={t('field_mosaicExpiration_description')}>
-							{t('value_mosaicExpiration', { value: mosaicInfo.expireIn })}
+						<Field title={t('field_expiration')} description={t('field_mosaicExpiration_description')}>
+							{t('value_expiration', { value: mosaicInfo.expireIn })}
 						</Field>
 						<Progress
-							titleLeft={t('field_mosaicRegistrationHeight')}
-							titleRight={t('field_mosaicExpirationHeight')}
+							titleLeft={t('field_registrationHeight')}
+							titleRight={t('field_expirationHeight')}
 							valueLeft={mosaicInfo.registrationHeight}
 							valueRight={mosaicInfo.expirationHeight}
 							value={chainHeight}

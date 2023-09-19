@@ -1,4 +1,4 @@
-import { getTransactionInfoStub, getTransactionsStub } from '../../../stubs/transactions';
+import { getTransactionInfoStub, getTransactionsStub } from '../../stubs/transactions';
 import config from '@/config';
 import { ACCOUNT_STATE_CHANGE_ACTION, TRANSACTION_TYPE } from '@/constants';
 import { createPage, createSearchCriteria } from '@/utils';

@@ -169,7 +169,9 @@ const Header = () => {
 					)}
 				</Modal>
 				<Modal className={styles.modal} isVisible={isMenuOpen} onClose={toggleMenu}>
-					<div>{renderMenu()}</div>
+					<div className={styles.mobileMenu} onClick={toggleMenu}>
+						{renderMenu()}
+					</div>
 				</Modal>
 			</header>
 		</div>

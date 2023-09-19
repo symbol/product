@@ -99,3 +99,11 @@ export const setTimestampTypeToStorage = value => {
 	localStorage.setItem(STORAGE_KEY.STORAGE_KEY, value);
 	dispatchEvent(new Event(EVENT.TIMESTAMP_TYPE_UPDATE));
 };
+
+export const nullableValueToText = value => {
+	return value === null ? '-' : value;
+};
+
+export const arrayToText = value => {
+	return value.length === 0 ? '-' : value.join(', ');
+};

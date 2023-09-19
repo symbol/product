@@ -26,7 +26,11 @@ const ValueNamespace = ({ namespaceName, namespaceId, className, size, onClick, 
 			</div>
 		</Link>
 	) : (
-		<Link href={`/namespaces/${namespaceId}`} className={`${styles.valueNamespace} ${directionStyle} ${className}`} onClick={handleClick}>
+		<Link
+			href={`/namespaces/${namespaceId}`}
+			className={`${styles.valueNamespace} ${directionStyle} ${className}`}
+			onClick={handleClick}
+		>
 			<CustomImage src="" className={styles.icon} alt="Namespace" />
 			<div>{namespaceName}</div>
 		</Link>
