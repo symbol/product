@@ -66,6 +66,10 @@ const MosaicAvatar = ({ mosaicId }) => {
 	return <CustomImage src={imageSrc} className={styles.image} />;
 };
 
+const NamespaceAvatar = () => {
+	return <CustomImage src={'/images/namespaces/namespace.png'} className={styles.image} />;
+};
+
 const TransactionAvatar = ({ type }) => {
 	return (
 		<div className={styles.imageDefault}>
@@ -89,6 +93,8 @@ const Avatar = ({ size, type, value }) => {
 			<MosaicAvatar mosaicId={value} />
 		) : type === 'transaction' ? (
 			<TransactionAvatar type={value} />
+		) : type === 'namespace' ? (
+			<NamespaceAvatar namespaceId={value} />
 		) : null;
 
 	return <div className={`${styles.container} ${sizeStyleMap[size]}`}>{ChildComponent}</div>;
