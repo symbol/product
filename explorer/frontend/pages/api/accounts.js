@@ -1,5 +1,5 @@
-import { getAccountInfoStub, getAccountsStub } from '../../../stubs/accounts';
-import { getMarketData } from '../stats';
+import { getMarketData } from './stats';
+import { getAccountInfoStub, getAccountsStub } from '../../stubs/accounts';
 import { createPage, createSearchCriteria } from '@/utils';
 
 export default async function handler(req, res) {

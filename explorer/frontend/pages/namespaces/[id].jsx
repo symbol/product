@@ -7,11 +7,11 @@ import Section from '@/components/Section';
 import ValueAccount from '@/components/ValueAccount';
 import ValueCopy from '@/components/ValueCopy';
 import styles from '@/styles/pages/NamespaceInfo.module.scss';
+import { arrayToText, nullableValueToText } from '@/utils';
 import Head from 'next/head';
 import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 import { useEffect, useState } from 'react';
-import { arrayToText, nullableValueToText } from '@/utils';
 
 export const getServerSideProps = async ({ locale, params }) => {
 	const namespaceInfo = await getNamespaceInfo(params.id);
@@ -43,10 +43,10 @@ const MosaicInfo = ({ namespaceInfo }) => {
 			const { data } = await fetchBlockPage();
 
 			if (data[0]) {
-				const chainHeight= data[0].height;
+				const chainHeight = data[0].height;
 				const expireIn = namespaceInfo.expirationHeight - chainHeight;
 				setChainHeight(chainHeight);
-				setExpireIn(expireIn)
+				setExpireIn(expireIn);
 			}
 		};
 		fetchChainHeight();
@@ -71,12 +71,8 @@ const MosaicInfo = ({ namespaceInfo }) => {
 				</Section>
 				<Section className="layout-align-end" cardClassName={styles.secondSectionCard}>
 					<div className="layout-flex-col-fields">
-						<Field title={t('field_rootNamespace')}>
-							{nullableValueToText(namespaceInfo.rootNamespace)}
-						</Field>
-						<Field title={t('field_subNamespaces')}>
-							{arrayToText(namespaceInfo.subNamespaces)}
-						</Field>
+						<Field title={t('field_rootNamespace')}>{nullableValueToText(namespaceInfo.rootNamespace)}</Field>
+						<Field title={t('field_subNamespaces')}>{arrayToText(namespaceInfo.subNamespaces)}</Field>
 						<Field title={t('field_owner')}>
 							<ValueAccount address={namespaceInfo.owner} size="sm" />
 						</Field>

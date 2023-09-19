@@ -21,7 +21,7 @@ import ValueTransactionType from '@/components/ValueTransactionType';
 import { TRANSACTION_TYPE } from '@/constants';
 import { fetchTransactionPage, getTransactionPage } from '@/pages/api/transactions';
 import styles from '@/styles/pages/AccountInfo.module.scss';
-import { useClientSideFilter, usePagination } from '@/utils';
+import { arrayToText, useClientSideFilter, usePagination } from '@/utils';
 import Head from 'next/head';
 import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
@@ -161,7 +161,7 @@ const AccountInfo = ({ accountInfo, preloadedTransactions }) => {
 				<Section className="layout-align-end" cardClassName={styles.secondSectionCard}>
 					<div className="layout-flex-col-fields">
 						<Field title={t('field_account_names')} description={t('field_account_names_description')}>
-							{accountInfo.names.join(', ')}
+							{arrayToText(accountInfo.names)}
 						</Field>
 						<Field title={t('field_publicKey')} description={t('field_publicKey_description')}>
 							<ValueCopy value={accountInfo.publicKey} />

@@ -132,6 +132,10 @@
         cursor: pointer;
     }
 
+    .mobileMenu {
+        display: none;
+    }
+
     @media #{$screen-mobile} {
         .headerMenu {
             display: none;
@@ -169,6 +173,11 @@
             height: $spacing-base * 3;
             cursor: pointer;
         }
-    }
 
+        .mobileMenu {
+            display: flex;
+            flex-direction: column;
+            gap: $spacing-base;
+        }
+    }
 }
