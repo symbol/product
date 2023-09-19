@@ -102,6 +102,13 @@ def setup_nem_routes(app, nem_api_facade):
 
 		return jsonify(nem_api_facade.get_namespaces(limit=limit, offset=offset, sort=sort))
 
+	@app.route('/api/nem/mosaic/<name>')
+	def api_get_nem_mosaic_by_name(name):
+		result = nem_api_facade.get_mosaic(name)
+		if not result:
+			abort(404)
+		return jsonify(result)
+
 
 def setup_error_handlers(app):
 	@app.errorhandler(404)
