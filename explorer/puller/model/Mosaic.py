@@ -1,6 +1,7 @@
 class Mosaic:
     def __init__(
             self,
+            root_namespace,
             namespace_name,
             description,
             creator,
@@ -19,6 +20,7 @@ class Mosaic:
 
         # pylint: disable=too-many-arguments
 
+        self.root_namespace = root_namespace
         self.namespace_name = namespace_name
         self.description = description
         self.creator = creator
@@ -35,6 +37,7 @@ class Mosaic:
 
     def __eq__(self, other):
         return isinstance(other, Mosaic) and all([
+            self.root_namespace == other.root_namespace,
             self.namespace_name == other.namespace_name,
             self.description == other.description,
             self.creator == other.creator,

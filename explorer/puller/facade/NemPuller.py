@@ -54,8 +54,10 @@ class NemPuller:
 
 		mosaic_properties = transaction.properties
 		mosaic_levy = transaction.levy if transaction.levy else None
+		root_namespace = transaction.namespace_name.split('.')[0]
 
 		mosaic_definition = Mosaic(
+			root_namespace,
 			transaction.namespace_name,
 			transaction.description,
 			transaction.creator,

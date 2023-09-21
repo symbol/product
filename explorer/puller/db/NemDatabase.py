@@ -163,6 +163,7 @@ class NemDatabase(DatabaseConnection):
 			'''
 			CREATE TABLE IF NOT EXISTS mosaics (
 				id serial PRIMARY KEY,
+				root_namespace varchar(16),
 				namespace_name varchar(146),
 				description varchar(512),
 				creator bytea NOT NULL,
@@ -382,6 +383,7 @@ class NemDatabase(DatabaseConnection):
 		cursor.execute(
 			'''
 			INSERT INTO mosaics (
+				root_namespace,
 				namespace_name,
 				description,
 				creator,
@@ -396,9 +398,10 @@ class NemDatabase(DatabaseConnection):
 				levy_fee,
 				levy_recipient
 			)
-			VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+			VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
 			''',
 			(
+				mosaic.root_namespace,
 				mosaic.namespace_name,
 				mosaic.description,
 				unhexlify(mosaic.creator),
