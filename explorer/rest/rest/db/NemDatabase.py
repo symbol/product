@@ -60,8 +60,8 @@ class NemDatabase(DatabaseConnectionPool):
 		}
 
 		creator_public_key = PublicKey(_format_bytes(result[2]))
-		levy_type = levy_types.get(result[9], None)
-		levy_fee = _format_relative(result[12], result[11]) if levy_type else None
+		levy_type = levy_types.get(result[10], None)
+		levy_fee = _format_relative(result[13], result[12]) if levy_type else None
 
 		namespace_mosaic_name = result[0].split('.')
 		namespace_name = '.'.join(namespace_mosaic_name[:-1])
@@ -73,18 +73,19 @@ class NemDatabase(DatabaseConnectionPool):
 			description=result[1],
 			creator=self.network.public_key_to_address(creator_public_key),
 			registered_height=result[3],
-			initial_supply=result[4],
-			total_supply=result[5],
-			divisibility=result[6],
-			supply_mutable=result[7],
-			transferable=result[8],
+			registered_timestamp=result[4],
+			initial_supply=result[5],
+			total_supply=result[6],
+			divisibility=result[7],
+			supply_mutable=result[8],
+			transferable=result[9],
 			levy_type=levy_type,
-			levy_namespace=result[11],
+			levy_namespace=result[12],
 			levy_fee=levy_fee,
-			levy_recipient=Address(result[13]) if result[13] else None,
-			root_namespace_registered_height=result[14],
-			root_namespace_registered_timestamp=result[15],
-			root_namespace_expiration_height=result[16],
+			levy_recipient=Address(result[14]) if result[14] else None,
+			root_namespace_registered_height=result[15],
+			root_namespace_registered_timestamp=result[16],
+			root_namespace_expiration_height=result[17],
 		)
 
 	def get_block(self, height):
@@ -166,7 +167,8 @@ class NemDatabase(DatabaseConnectionPool):
 					m1.namespace_name,
 					m1.description,
 					m1.creator,
-					m1.registered_height,
+					m1.registered_height as mosaic_registered_height,
+					b2.timestamp as mosaic_registered_timestamp,
 					m1.initial_supply,
 					m1.total_supply,
 					m1.divisibility,
@@ -181,16 +183,18 @@ class NemDatabase(DatabaseConnectionPool):
 					END AS levy_namespace_divisibility,
 					m1.levy_fee,
 					m1.levy_recipient,
-					n.registered_height AS registered_height,
-					b.timestamp as registered_height_timestamp,
+					n.registered_height AS root_namespace_registered_height,
+					b1.timestamp AS root_namespace_registered_timestamp,
 					n.expiration_height
 				FROM mosaics m1
 				LEFT JOIN mosaics m2
 					ON m1.levy_namespace_name = m2.namespace_name AND m1.levy_namespace_name IS NOT NULL
 				LEFT JOIN namespaces n
 					ON m1.root_namespace = n.root_namespace
-				LEFT JOIN blocks b
-					ON b.height = n.registered_height
+				LEFT JOIN blocks b1
+					ON b1.height = n.registered_height
+				LEFT JOIN blocks b2
+					ON b2.height = m1.registered_height
 				WHERE m1.namespace_name = %s
 			''', (namespace_name,))
 			result = cursor.fetchone()
@@ -207,7 +211,8 @@ class NemDatabase(DatabaseConnectionPool):
 					m1.namespace_name,
 					m1.description,
 					m1.creator,
-					m1.registered_height,
+					m1.registered_height as mosaic_registered_height,
+					b2.timestamp as mosaic_registered_timestamp,
 					m1.initial_supply,
 					m1.total_supply,
 					m1.divisibility,
@@ -222,16 +227,18 @@ class NemDatabase(DatabaseConnectionPool):
 					END AS levy_namespace_divisibility,
 					m1.levy_fee,
 					m1.levy_recipient,
-					n.registered_height AS registered_height,
-					b.timestamp as registered_height_timestamp,
+					n.registered_height AS root_namespace_registered_height,
+					b1.timestamp AS root_namespace_registered_timestamp,
 					n.expiration_height
 				FROM mosaics m1
 				LEFT JOIN mosaics m2
 					ON m1.levy_namespace_name = m2.namespace_name AND m1.levy_namespace_name IS NOT NULL
 				LEFT JOIN namespaces n
 					ON m1.root_namespace = n.root_namespace
-				LEFT JOIN blocks b
-					ON b.height = n.registered_height
+				LEFT JOIN blocks b1
+					ON b1.height = n.registered_height
+				LEFT JOIN blocks b2
+					ON b2.height = m1.registered_height
 				ORDER BY m1.id {sort}
 				LIMIT %s OFFSET %s
 			''', (limit, offset,))
