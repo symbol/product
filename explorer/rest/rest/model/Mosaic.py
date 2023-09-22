@@ -6,6 +6,7 @@ class MosaicView:  # pylint: disable=too-many-instance-attributes, too-many-loca
 		description,
 		creator,
 		registered_height,
+		registered_timestamp,
 		initial_supply,
 		total_supply,
 		divisibility,
@@ -28,6 +29,7 @@ class MosaicView:  # pylint: disable=too-many-instance-attributes, too-many-loca
 		self.description = description
 		self.creator = creator
 		self.registered_height = registered_height
+		self.registered_timestamp = registered_timestamp
 		self.initial_supply = initial_supply
 		self.total_supply = total_supply
 		self.divisibility = divisibility
@@ -48,6 +50,7 @@ class MosaicView:  # pylint: disable=too-many-instance-attributes, too-many-loca
 			self.description == other.description,
 			self.creator == other.creator,
 			self.registered_height == other.registered_height,
+			self.registered_timestamp == other.registered_timestamp,
 			self.initial_supply == other.initial_supply,
 			self.total_supply == other.total_supply,
 			self.divisibility == other.divisibility,
@@ -71,6 +74,7 @@ class MosaicView:  # pylint: disable=too-many-instance-attributes, too-many-loca
 			'description': self.description,
 			'creator': str(self.creator),
 			'registeredHeight': self.registered_height,
+			'registeredTimestamp': self.registered_timestamp,
 			'initialSupply': self.initial_supply,
 			'totalSupply': self.total_supply,
 			'divisibility': self.divisibility,
