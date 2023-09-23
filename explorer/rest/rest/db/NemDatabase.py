@@ -44,7 +44,7 @@ class NemDatabase(DatabaseConnectionPool):
 
 		mosaics = []
 
-		if result[5] != []:
+		if result[6] != []:
 			# Formatting mosaics info
 			for mosaic in result[6]:
 				namespace_mosaic_name = mosaic['namespace_name'].split('.')
