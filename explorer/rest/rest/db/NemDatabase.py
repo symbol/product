@@ -100,7 +100,7 @@ class NemDatabase(DatabaseConnectionPool):
 
 			return [self._create_block_view(result) for result in results]
 
-	def get_namespace(self, root_namespace):
+	def get_namespace(self, namespace):
 		"""Gets namespace by name in database."""
 
 		with self.connection() as connection:
@@ -130,7 +130,7 @@ class NemDatabase(DatabaseConnectionPool):
 					ON n.registered_height = b1.height
 				LEFT JOIN blocks b2
 					ON m.registered_height = b2.height
-				WHERE n.root_namespace = %s
+				WHERE n.root_namespace = %s or %s = ANY(n.sub_namespaces)
 				GROUP BY
 					n.root_namespace,
 					n.owner,
@@ -138,7 +138,7 @@ class NemDatabase(DatabaseConnectionPool):
 					b1.timestamp,
 					n.expiration_height,
 					n.sub_namespaces
-			''', (root_namespace,))
+			''', (namespace, namespace))
 			result = cursor.fetchone()
 
 			return self._create_namespace_view(result) if result else None
