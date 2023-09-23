@@ -41,12 +41,33 @@ class NemDatabase(DatabaseConnectionPool):
 
 	def _create_namespace_view(self, result):
 		owner_public_key = PublicKey(_format_bytes(result[1]))
+
+		mosaics = []
+
+		if result[5] != []:
+			# Formatting mosaics info
+			for mosaic in result[6]:
+				namespace_mosaic_name = mosaic['namespace_name'].split('.')
+				namespace_name = '.'.join(namespace_mosaic_name[:-1])
+				mosaic_name = namespace_mosaic_name[-1]
+
+				mosaics.append({
+					'namespaceName': namespace_name,
+					'mosaicName': mosaic_name,
+					'totalSupply': mosaic['total_supply'],
+					'divisibility': mosaic['divisibility'],
+					'registeredHeight': mosaic['registered_height'],
+					'registeredTimestamp': mosaic['registered_timestamp'].replace('T', ' ')
+				})
+
 		return NamespaceView(
 			root_namespace=result[0],
 			owner=self.network.public_key_to_address(owner_public_key),
 			registered_height=result[2],
-			expiration_height=result[3],
-			sub_namespaces=result[4]
+			registered_timestamp=str(result[3]),
+			expiration_height=result[4],
+			sub_namespaces=result[5],
+			mosaics=mosaics
 		)
 
 	def get_block(self, height):
@@ -86,13 +107,37 @@ class NemDatabase(DatabaseConnectionPool):
 			cursor = connection.cursor()
 			cursor.execute('''
 				SELECT
-					root_namespace,
-					owner,
-					registered_height,
-					expiration_height,
-					sub_namespaces
-				FROM namespaces
-				WHERE root_namespace = %s
+					n.root_namespace,
+					n.owner,
+					n.registered_height,
+					b1.timestamp AS registered_timestamp,
+					n.expiration_height,
+					n.sub_namespaces,
+					CASE
+						WHEN COUNT(m.namespace_name) = 0 THEN '[]'
+						ELSE json_agg(json_build_object(
+							'namespace_name', namespace_name,
+							'total_supply', m.total_supply,
+							'divisibility', m.divisibility,
+							'registered_height', m.registered_height,
+							'registered_timestamp', b2.timestamp
+						))
+					END AS mosaics
+				FROM namespaces n
+				LEFT JOIN mosaics m
+					ON n.root_namespace = m.root_namespace
+				LEFT JOIN blocks b1
+					ON n.registered_height = b1.height
+				LEFT JOIN blocks b2
+					ON m.registered_height = b2.height
+				WHERE n.root_namespace = %s
+				GROUP BY
+					n.root_namespace,
+					n.owner,
+					n.registered_height,
+					b1.timestamp,
+					n.expiration_height,
+					n.sub_namespaces
 			''', (root_namespace,))
 			result = cursor.fetchone()
 
@@ -104,15 +149,39 @@ class NemDatabase(DatabaseConnectionPool):
 		with self.connection() as connection:
 			cursor = connection.cursor()
 			cursor.execute(f'''
-				SELECT
-					root_namespace,
-					owner,
-					registered_height,
-					expiration_height,
-					sub_namespaces
-				FROM namespaces
-				ORDER BY id {sort}
-				LIMIT %s OFFSET %s
+			SELECT
+				n.root_namespace,
+				n.owner,
+				n.registered_height,
+				b1.timestamp AS registered_timestamp,
+				n.expiration_height,
+				n.sub_namespaces,
+				CASE
+					WHEN COUNT(m.namespace_name) = 0 THEN '[]'
+					ELSE json_agg(json_build_object(
+						'namespace_name', namespace_name,
+						'total_supply', m.total_supply,
+						'divisibility', m.divisibility,
+						'registered_height', m.registered_height,
+						'registered_timestamp', b2.timestamp
+					))
+				END AS mosaics
+			FROM namespaces n
+			LEFT JOIN mosaics m
+				ON n.root_namespace = m.root_namespace
+			LEFT JOIN blocks b1
+				ON n.registered_height = b1.height
+			LEFT JOIN blocks b2
+				ON m.registered_height = b2.height
+			GROUP BY
+				n.root_namespace,
+				n.owner,
+				n.registered_height,
+				b1.timestamp,
+				n.expiration_height,
+				n.sub_namespaces
+			ORDER BY n.registered_height {sort}
+			LIMIT %s OFFSET %s
 			''', (limit, offset,))
 			results = cursor.fetchall()
 
