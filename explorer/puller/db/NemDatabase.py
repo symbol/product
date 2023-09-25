@@ -424,6 +424,7 @@ class NemDatabase(DatabaseConnection):
 		cursor.execute(
 			'''
 			SELECT
+				root_namespace,
 				description,
 				creator,
 				registered_height,
@@ -447,10 +448,10 @@ class NemDatabase(DatabaseConnection):
 			return None
 
 		return Mosaic(
-			namespace_name,
 			result[0],
-			hexlify(result[1]),
-			result[2],
+			namespace_name,
+			result[1],
+			hexlify(result[2]),
 			result[3],
 			result[4],
 			result[5],
@@ -459,7 +460,8 @@ class NemDatabase(DatabaseConnection):
 			result[8],
 			result[9],
 			result[10],
-			hexlify(result[11]) if result[11] is not None else None,
+			result[11],
+			hexlify(result[12]) if result[12] is not None else None,
 		)
 
 	def update_mosaic_total_supply(self, cursor, namespace_name, supply):
