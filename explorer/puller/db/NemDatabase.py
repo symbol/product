@@ -217,7 +217,7 @@ class NemDatabase(DatabaseConnection):
 			)
 		)
 
-	def insert_transaction(self, cursor, transaction):
+	def insert_transaction(self, cursor, transaction):  # pylint: disable=no-self-use
 		"""Adds transactions into transactions table"""
 
 		cursor.execute(
@@ -240,7 +240,7 @@ class NemDatabase(DatabaseConnection):
 
 		return cursor.fetchone()[0]
 
-	def insert_transactions_transfer(self, cursor, transaction_id, transactions_transfer):
+	def insert_transactions_transfer(self, cursor, transaction_id, transactions_transfer):  # pylint: disable=no-self-use
 		"""Adds transfer into transactions_transfer table"""
 
 		cursor.execute(
@@ -258,7 +258,7 @@ class NemDatabase(DatabaseConnection):
 			)
 		)
 
-	def insert_transactions_account_key_link(self, cursor, transaction_id, transactions_account_key_link):
+	def insert_transactions_account_key_link(self, cursor, transaction_id, account_key_link):  # pylint: disable=no-self-use
 		"""Adds account key link into transactions_account_key_link table"""
 
 		cursor.execute(
@@ -268,12 +268,17 @@ class NemDatabase(DatabaseConnection):
 			''',
 			(
 				transaction_id,
-				transactions_account_key_link.mode,
-				unhexlify(transactions_account_key_link.remote_account),
+				account_key_link.mode,
+				unhexlify(account_key_link.remote_account),
 			)
 		)
 
-	def insert_transactions_multisig_account_modification(self, cursor, transaction_id, transactions_multisig_account_modification):
+	def insert_transactions_multisig_account_modification(
+		self,
+		cursor,
+		transaction_id,
+		multisig_account_modification
+	):  # pylint: disable=no-self-use, invalid-name
 		"""Adds multisig account modification into transactions_multisig_account_modification table"""
 
 		cursor.execute(
@@ -283,12 +288,12 @@ class NemDatabase(DatabaseConnection):
 			''',
 			(
 				transaction_id,
-				transactions_multisig_account_modification.min_cosignatories,
-				transactions_multisig_account_modification.modifications,
+				multisig_account_modification.min_cosignatories,
+				multisig_account_modification.modifications,
 			)
 		)
 
-	def insert_transactions_multisig(self, cursor, transaction_id, transactions_multisig):
+	def insert_transactions_multisig(self, cursor, transaction_id, multisig):  # pylint: disable=no-self-use
 		"""Adds multisig into transactions_multisig table"""
 
 		cursor.execute(
@@ -303,13 +308,18 @@ class NemDatabase(DatabaseConnection):
 			''',
 			(
 				transaction_id,
-				transactions_multisig.signatures,
-				transactions_multisig.other_transaction,
-				unhexlify(transactions_multisig.inner_hash),
+				multisig.signatures,
+				multisig.other_transaction,
+				unhexlify(multisig.inner_hash),
 			)
 		)
 
-	def insert_transactions_namespace_registration(self, cursor, transaction_id, transactions_namespace_registration):
+	def insert_transactions_namespace_registration(
+		self,
+		cursor,
+		transaction_id,
+		namespace_registration
+	):  # pylint: disable=no-self-use, invalid-name
 		"""Adds namespace registration into transactions_namespace_registration table"""
 
 		cursor.execute(
@@ -325,14 +335,19 @@ class NemDatabase(DatabaseConnection):
 			''',
 			(
 				transaction_id,
-				Address(transactions_namespace_registration.rental_fee_sink).bytes,
-				transactions_namespace_registration.rental_fee,
-				transactions_namespace_registration.parent,
-				transactions_namespace_registration.namespace,
+				Address(namespace_registration.rental_fee_sink).bytes,
+				namespace_registration.rental_fee,
+				namespace_registration.parent,
+				namespace_registration.namespace,
 			)
 		)
 
-	def insert_transactions_mosaic_definition_creation(self, cursor, transaction_id, transactions_mosaic_definition_creation):
+	def insert_transactions_mosaic_definition_creation(
+		self,
+		cursor,
+		transaction_id,
+		mosaic_definition_creation
+	):  # pylint: disable=no-self-use, invalid-name
 		"""Adds mosaic definition creation into transactions_mosaic_definition_creation table"""
 
 		cursor.execute(
@@ -351,17 +366,22 @@ class NemDatabase(DatabaseConnection):
 			''',
 			(
 				transaction_id,
-				Address(transactions_mosaic_definition_creation.creation_fee_sink).bytes,
-				transactions_mosaic_definition_creation.creation_fee,
-				unhexlify(transactions_mosaic_definition_creation.creator),
-				transactions_mosaic_definition_creation.description,
-				transactions_mosaic_definition_creation.namespace_name,
-				transactions_mosaic_definition_creation.properties,
-				transactions_mosaic_definition_creation.levy,
+				Address(mosaic_definition_creation.creation_fee_sink).bytes,
+				mosaic_definition_creation.creation_fee,
+				unhexlify(mosaic_definition_creation.creator),
+				mosaic_definition_creation.description,
+				mosaic_definition_creation.namespace_name,
+				mosaic_definition_creation.properties,
+				mosaic_definition_creation.levy,
 			)
 		)
 
-	def insert_transactions_mosaic_supply_change(self, cursor, transaction_id, transactions_mosaic_supply_change):
+	def insert_transactions_mosaic_supply_change(
+		self,
+		cursor,
+		transaction_id,
+		mosaic_supply_change
+	):  # pylint: disable=no-self-use, invalid-name
 		"""Adds mosaic supply change into transactions_mosaic_supply_change table"""
 
 		cursor.execute(
@@ -371,13 +391,13 @@ class NemDatabase(DatabaseConnection):
 			''',
 			(
 				transaction_id,
-				transactions_mosaic_supply_change.supply_type,
-				transactions_mosaic_supply_change.delta,
-				transactions_mosaic_supply_change.namespace_name
+				mosaic_supply_change.supply_type,
+				mosaic_supply_change.delta,
+				mosaic_supply_change.namespace_name
 			)
 		)
 
-	def insert_mosaic(self, cursor, mosaic):
+	def insert_mosaic(self, cursor, mosaic):  # pylint: disable=no-self-use
 		"""Adds mosaic into mosaics table"""
 
 		cursor.execute(
@@ -418,7 +438,7 @@ class NemDatabase(DatabaseConnection):
 			)
 		)
 
-	def get_mosaic_by_namespace_name(self, cursor, namespace_name):
+	def get_mosaic_by_namespace_name(self, cursor, namespace_name):  # pylint: disable=no-self-use
 		"""Searches mosaic in mosaics table"""
 
 		cursor.execute(
@@ -464,7 +484,7 @@ class NemDatabase(DatabaseConnection):
 			hexlify(result[12]) if result[12] is not None else None,
 		)
 
-	def update_mosaic_total_supply(self, cursor, namespace_name, supply):
+	def update_mosaic_total_supply(self, cursor, namespace_name, supply):  # pylint: disable=no-self-use
 		"""Updates mosaic supply in mosaics table"""
 
 		cursor.execute(
@@ -477,7 +497,7 @@ class NemDatabase(DatabaseConnection):
 			(supply, namespace_name)
 		)
 
-	def insert_namespace(self, cursor, namespace):
+	def insert_namespace(self, cursor, namespace):  # pylint: disable=no-self-use
 		"""Adds root namespace into namespaces table"""
 
 		cursor.execute(
@@ -500,7 +520,14 @@ class NemDatabase(DatabaseConnection):
 			)
 		)
 
-	def update_namespace(self, cursor, root_namespace, expiration_height=None, sub_namespaces=None, owner=None):
+	def update_namespace(
+		self,
+		cursor,
+		root_namespace,
+		expiration_height=None,
+		sub_namespaces=None,
+		owner=None
+	):  # pylint: disable=no-self-use, invalid-name
 		"""Updates namespace in namespaces table"""
 
 		query = 'UPDATE namespaces SET '
@@ -529,7 +556,7 @@ class NemDatabase(DatabaseConnection):
 		# Execute the query
 		cursor.execute(query, values)
 
-	def get_namespace_by_root_namespace(self, cursor, root_namespace):
+	def get_namespace_by_root_namespace(self, cursor, root_namespace):  # pylint: disable=no-self-use
 		"""Searches namespace in namespaces table"""
 
 		cursor.execute(
@@ -557,7 +584,7 @@ class NemDatabase(DatabaseConnection):
 			result[3]
 		)
 
-	def get_current_height(self):
+	def get_current_height(self):  # pylint: disable=no-self-use
 		"""Gets current height from database"""
 
 		cursor = self.connection.cursor()
