@@ -1,0 +1,11 @@
+@import "../variables";
+
+.itemNamespaceMobile {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-base / 2;
+
+    .timestamp {
+        align-self: flex-end;
+    }
+}
