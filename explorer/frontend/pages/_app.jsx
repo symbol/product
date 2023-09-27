@@ -1,5 +1,6 @@
 import Footer from '@/components/Footer';
 import Header from '@/components/Header';
+import PageLoadingIndicator from '@/components/PageLoadingIndicator';
 import styles from '@/styles/pages/Layout.module.scss';
 import TimeAgo from 'javascript-time-ago';
 import en from 'javascript-time-ago/locale/en.json';
@@ -36,6 +37,7 @@ const App = ({ Component, pageProps }) => {
 		<div className={styles.wrapper}>
 			<Header />
 			<ToastContainer autoClose={2000} hideProgressBar pauseOnHover />
+			<PageLoadingIndicator />
 			<div className={styles.contentContainer}>
 				<main className={styles.contentContainerInner}>
 					<div style={getDisplayStyle(isRetainableRoute)}>
