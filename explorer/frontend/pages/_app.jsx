@@ -18,7 +18,7 @@ TimeAgo.addLocale(uk);
 TimeAgo.addLocale(zh);
 TimeAgo.addLocale(ja);
 
-const ROUTES_TO_RETAIN = ['/blocks', '/accounts'];
+const ROUTES_TO_RETAIN = ['/accounts', '/blocks', '/mosaics', '/namespaces', '/transactions'];
 
 const App = ({ Component, pageProps }) => {
 	const router = useRouter();

@@ -50,7 +50,7 @@ const FilterModal = ({ title, type, isSearchEnabled, options, onSearchRequest, o
 		<div className={styles.modal} onClick={onClose}>
 			<Card className={styles.card} onClick={e => e.stopPropagation()}>
 				<ButtonClose className={styles.buttonClose} onClick={onClose} />
-				<h3>{title}</h3>
+				<h4>{title}</h4>
 				{isSearchEnabled && (
 					<TextBox iconSrc="/images/icon-search.svg" placeholder={type} value={text} onChange={handleSearchTextChange} />
 				)}
