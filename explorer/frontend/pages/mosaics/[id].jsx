@@ -18,10 +18,10 @@ import { fetchTransactionPage, getTransactionPage } from '@/pages/api/transactio
 import styles from '@/styles/pages/MosaicInfo.module.scss';
 import { createPageHref, nullableValueToText, usePagination } from '@/utils';
 import Head from 'next/head';
+import Link from 'next/link';
 import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
 
 export const getServerSideProps = async ({ locale, params }) => {
 	const mosaicInfo = await getMosaicInfo(params.id);
@@ -142,9 +142,7 @@ const MosaicInfo = ({ mosaicInfo, preloadedTransactions }) => {
 				<Section className="layout-align-end" cardClassName={styles.secondSectionCard}>
 					<div className="layout-flex-col-fields">
 						<Field title={t('field_mosaic_namespace')} description={t('field_mosaic_namespace_description')}>
-							<Link href={createPageHref('namespaces', mosaicInfo.rootNamespaceName)}>
-								{mosaicInfo.namespaceName}
-							</Link>
+							<Link href={createPageHref('namespaces', mosaicInfo.rootNamespaceName)}>{mosaicInfo.namespaceName}</Link>
 						</Field>
 						<Field title={t('field_supply')} description={t('field_supply_description')}>
 							{mosaicInfo.supply}
@@ -156,9 +154,7 @@ const MosaicInfo = ({ mosaicInfo, preloadedTransactions }) => {
 							<ValueAccount address={mosaicInfo.creator} size="sm" />
 						</Field>
 						<Field title={t('field_registrationHeight')} description={t('field_mosaicRegistrationHeight_description')}>
-							<Link href={createPageHref('blocks', mosaicInfo.registrationHeight)}>
-								{mosaicInfo.registrationHeight}
-							</Link>
+							<Link href={createPageHref('blocks', mosaicInfo.registrationHeight)}>{mosaicInfo.registrationHeight}</Link>
 						</Field>
 						<Field title={t('field_namespaceExpiration')} description={t('field_mosaicNamespaceExpiration_description')}>
 							{nullableValueToText(expirationText)}

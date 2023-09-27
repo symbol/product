@@ -1,7 +1,7 @@
-import { useTranslation } from 'next-i18next';
 import Progress from './Progress';
 import ValueNamespace from './ValueNamespace';
 import styles from '@/styles/components/ItemNamespaceMobile.module.scss';
+import { useTranslation } from 'next-i18next';
 
 const ItemNamespaceMobile = ({ data, chainHeight }) => {
 	const { t } = useTranslation();

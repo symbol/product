@@ -1,7 +1,7 @@
-import { createPageHref } from '@/utils';
 import CustomImage from './CustomImage';
 import ValueTimestamp from './ValueTimestamp';
 import styles from '@/styles/components/ValueBlockHeight.module.scss';
+import { createPageHref } from '@/utils';
 import Link from 'next/link';
 
 const ValueBlockHeight = ({ value, timestamp, className, size, isNavigationDisabled, onClick }) => {

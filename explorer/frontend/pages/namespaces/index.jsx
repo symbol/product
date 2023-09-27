@@ -1,15 +1,15 @@
+import { getNamespacePage } from '../api/namespaces';
+import ItemNamespaceMobile from '@/components/ItemNamespaceMobile';
 import Section from '@/components/Section';
 import Table from '@/components/Table';
 import ValueAccount from '@/components/ValueAccount';
+import ValueBlockHeight from '@/components/ValueBlockHeight';
 import styles from '@/styles/pages/Home.module.scss';
 import { createPageHref, usePagination } from '@/utils';
 import Head from 'next/head';
+import Link from 'next/link';
 import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
-import { getNamespacePage } from '../api/namespaces';
-import Link from 'next/link';
-import ValueBlockHeight from '@/components/ValueBlockHeight';
-import ItemNamespaceMobile from '@/components/ItemNamespaceMobile';
 
 export const getServerSideProps = async ({ locale }) => {
 	const namespacePage = await getNamespacePage();
@@ -51,7 +51,7 @@ const Blocks = ({ namespaces }) => {
 			key: 'expirationHeight',
 			size: '10rem',
 			renderValue: value => value
-		},
+		}
 	];
 
 	return (

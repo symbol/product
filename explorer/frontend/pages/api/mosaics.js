@@ -1,5 +1,12 @@
 import config from '@/config';
-import { createAPICallFunction, createAPISearchURL, createMosaicName, createPage, createSearchCriteria, getRootNamespaceName } from '@/utils';
+import {
+	createAPICallFunction,
+	createAPISearchURL,
+	createMosaicName,
+	createPage,
+	createSearchCriteria,
+	getRootNamespaceName
+} from '@/utils';
 
 export const getMosaicInfo = createAPICallFunction(async id => {
 	const mosaicResponse = await fetch(`${config.API_BASE_URL}/mosaic/${id}`);
@@ -34,10 +41,12 @@ export const formatMosaic = data => ({
 	namespaceExpirationTimestamp: data.rootNamespaceRegisteredTimestamp,
 	isSupplyMutable: data.supplyMutable,
 	isTransferable: data.transferable,
-	levy: data.levyFee ? {
-		fee: data.levyFee,
-		mosaic: data.levyNamespace,
-		recipient: data.levyRecipient,
-		type: data.levyType,
-	} : null,
+	levy: data.levyFee
+		? {
+				fee: data.levyFee,
+				mosaic: data.levyNamespace,
+				recipient: data.levyRecipient,
+				type: data.levyType
+		  }
+		: null
 });

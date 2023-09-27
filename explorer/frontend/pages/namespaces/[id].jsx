@@ -2,22 +2,22 @@ import { fetchBlockPage } from '../api/blocks';
 import { getNamespaceInfo } from '../api/namespaces';
 import Avatar from '@/components/Avatar';
 import Field from '@/components/Field';
+import FieldTimestamp from '@/components/FieldTimestamp';
+import ItemMosaicMobile from '@/components/ItemMosaicMobile';
 import Progress from '@/components/Progress';
 import Section from '@/components/Section';
+import Table from '@/components/Table';
 import ValueAccount from '@/components/ValueAccount';
+import ValueList from '@/components/ValueList';
+import ValueNamespace from '@/components/ValueNamespace';
+import ValueTimestamp from '@/components/ValueTimestamp';
 import styles from '@/styles/pages/NamespaceInfo.module.scss';
 import { createPageHref, nullableValueToText } from '@/utils';
 import Head from 'next/head';
+import Link from 'next/link';
 import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 import { useEffect, useState } from 'react';
-import FieldTimestamp from '@/components/FieldTimestamp';
-import Table from '@/components/Table';
-import Link from 'next/link';
-import ValueNamespace from '@/components/ValueNamespace';
-import ItemMosaicMobile from '@/components/ItemMosaicMobile';
-import ValueList from '@/components/ValueList';
-import ValueTimestamp from '@/components/ValueTimestamp';
 
 export const getServerSideProps = async ({ locale, params }) => {
 	const namespaceInfo = await getNamespaceInfo(params.id);
@@ -122,7 +122,9 @@ const NamespaceInfo = ({ namespaceInfo }) => {
 					ItemMobile={ItemMosaicMobile}
 					isLastPage={true}
 					isLastColumnAligned={true}
-					renderSectionHeader={(section) => <ValueNamespace namespaceName={section.namespaceName} namespaceId={section.namespaceId} size="md" />}
+					renderSectionHeader={section => (
+						<ValueNamespace namespaceName={section.namespaceName} namespaceId={section.namespaceId} size="md" />
+					)}
 				/>
 			</Section>
 		</div>

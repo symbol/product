@@ -7,10 +7,10 @@ import ValueLabel from './ValueLabel';
 import ValueMosaic from './ValueMosaic';
 import ValueTransactionSquares from './ValueTransactionSquares';
 import styles from '@/styles/components/BlockPreview.module.scss';
+import { createPageHref } from '@/utils';
 import Link from 'next/link';
 import { useTranslation } from 'next-i18next';
 import { forwardRef, useEffect, useState } from 'react';
-import { createPageHref } from '@/utils';
 
 const BlockExpanded = ({ data, transactions, isNext, isTransactionSquaresRendered, onClose }) => {
 	const { height, timestamp, totalFee, medianFee } = data;

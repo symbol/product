@@ -3,6 +3,7 @@ import ButtonCSV from '@/components/ButtonCSV';
 import ChartDonut from '@/components/ChartDonut';
 import Field from '@/components/Field';
 import Filter from '@/components/Filter';
+import ItemAccountMobile from '@/components/ItemAccountMobile';
 import Section from '@/components/Section';
 import Separator from '@/components/Separator';
 import Table from '@/components/Table';
@@ -15,7 +16,6 @@ import { useFilter, usePagination } from '@/utils';
 import Head from 'next/head';
 import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
-import ItemAccountMobile from '@/components/ItemAccountMobile';
 
 export const getServerSideProps = async ({ locale }) => {
 	const page = await getAccountPage();

@@ -1,15 +1,15 @@
+import { getMosaicPage } from '../api/mosaics';
+import ItemMosaicMobile from '@/components/ItemMosaicMobile';
 import Section from '@/components/Section';
 import Table from '@/components/Table';
 import ValueAccount from '@/components/ValueAccount';
+import ValueBlockHeight from '@/components/ValueBlockHeight';
 import styles from '@/styles/pages/Home.module.scss';
 import { createPageHref, usePagination } from '@/utils';
 import Head from 'next/head';
+import Link from 'next/link';
 import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
-import Link from 'next/link';
-import ValueBlockHeight from '@/components/ValueBlockHeight';
-import { getMosaicPage } from '../api/mosaics';
-import ItemMosaicMobile from '@/components/ItemMosaicMobile';
 
 export const getServerSideProps = async ({ locale }) => {
 	const mosaicPage = await getMosaicPage();

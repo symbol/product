@@ -1,6 +1,6 @@
-import { useEffect } from 'react';
 import Card from './Card';
 import styles from '@/styles/components/Modal.module.scss';
+import { useEffect } from 'react';
 
 const Modal = ({ children, className, isVisible, onClick, onClose }) => {
 	const handleCardClick = e => {
@@ -13,11 +13,10 @@ const Modal = ({ children, className, isVisible, onClick, onClose }) => {
 	useEffect(() => {
 		if (isVisible) {
 			document.body.classList.add('disable-scroll');
-		}
-		else {
+		} else {
 			document.body.classList.remove('disable-scroll');
 		}
-	}, [isVisible])
+	}, [isVisible]);
 
 	return isVisible ? (
 		<div className={styles.overlay} onClick={onClose}>

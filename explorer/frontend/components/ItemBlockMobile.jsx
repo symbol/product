@@ -1,9 +1,9 @@
-import { createPageHref } from '@/utils';
 import CustomImage from './CustomImage';
 import ValueAccount from './ValueAccount';
 import ValueMosaic from './ValueMosaic';
 import ValueTimestamp from './ValueTimestamp';
 import styles from '@/styles/components/ItemBlockMobile.module.scss';
+import { createPageHref } from '@/utils';
 import Link from 'next/link';
 
 const ItemBlockMobile = ({ data }) => {
