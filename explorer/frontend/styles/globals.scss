@@ -162,6 +162,11 @@ a {
     --toastify-toast-max-height: 5rem;
 }
 
+.disable-scroll {
+    overflow-x: hidden;
+    overflow-y: hidden;
+}
+
 @media #{$screen-large} {
     html,
     body,
