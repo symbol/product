@@ -16,11 +16,12 @@ import ValueTransactionHash from '@/components/ValueTransactionHash';
 import ValueTransactionType from '@/components/ValueTransactionType';
 import { fetchTransactionPage, getTransactionPage } from '@/pages/api/transactions';
 import styles from '@/styles/pages/MosaicInfo.module.scss';
-import { arrayToText, usePagination } from '@/utils';
+import { arrayToText, createPageHref, nullableValueToText, usePagination } from '@/utils';
 import Head from 'next/head';
 import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 
 export const getServerSideProps = async ({ locale, params }) => {
 	const mosaicInfo = await getMosaicInfo(params.id);
@@ -46,6 +47,8 @@ const MosaicInfo = ({ mosaicInfo, preloadedTransactions }) => {
 	const { t } = useTranslation();
 	const transactionPagination = usePagination(fetchTransactionPage, preloadedTransactions);
 	const [chainHeight, setChainHeight] = useState(0);
+	const [expirationText, setExpirationText] = useState(null);
+	const [progressType, setProgressType] = useState('');
 	const labelTransferable = {
 		type: mosaicInfo.isTransferable ? 'true' : 'false',
 		text: t('label_transferable')
@@ -103,11 +106,18 @@ const MosaicInfo = ({ mosaicInfo, preloadedTransactions }) => {
 			const { data } = await fetchBlockPage();
 
 			if (data[0]) {
-				setChainHeight(data[0].height);
+				const chainHeight = data[0].height;
+				const expireIn = mosaicInfo.namespaceExpirationHeight - chainHeight;
+				const isExpired = expireIn < 0;
+				const expirationText = isExpired ? t('value_expired') : t('value_expiration', { value: expireIn });
+				const progressType = isExpired ? 'danger' : '';
+				setChainHeight(chainHeight);
+				setExpirationText(expirationText);
+				setProgressType(progressType);
 			}
 		};
 		fetchChainHeight();
-	}, []);
+	}, [mosaicInfo]);
 
 	return (
 		<div className={styles.wrapper}>
@@ -121,9 +131,7 @@ const MosaicInfo = ({ mosaicInfo, preloadedTransactions }) => {
 						<Field title={t('field_name')}>
 							<div className="value-highlighted">{mosaicInfo.name}</div>
 						</Field>
-						<Field title={t('field_id')}>
-							<ValueCopy value={mosaicInfo.id} />
-						</Field>
+						<FieldTimestamp title={t('field_created')} value={mosaicInfo.registrationTimestamp} hasTime />
 						<div className="layout-flex-row-stacked">
 							<ValueLabel type={labelTransferable.type} text={labelTransferable.text} />
 							<ValueLabel type={labelSupplyMutable.type} text={labelSupplyMutable.text} />
@@ -133,8 +141,10 @@ const MosaicInfo = ({ mosaicInfo, preloadedTransactions }) => {
 				</Section>
 				<Section className="layout-align-end" cardClassName={styles.secondSectionCard}>
 					<div className="layout-flex-col-fields">
-						<Field title={t('field_mosaic_names')} description={t('field_mosaic_names_description')}>
-							{arrayToText(mosaicInfo.names)}
+						<Field title={t('field_mosaic_namespace')} description={t('field_mosaic_namespace_description')}>
+							<Link href={createPageHref('namespaces', mosaicInfo.rootNamespaceName)}>
+								{mosaicInfo.namespaceName}
+							</Link>
 						</Field>
 						<Field title={t('field_supply')} description={t('field_supply_description')}>
 							{mosaicInfo.supply}
@@ -145,33 +155,41 @@ const MosaicInfo = ({ mosaicInfo, preloadedTransactions }) => {
 						<Field title={t('field_creator')}>
 							<ValueAccount address={mosaicInfo.creator} size="sm" />
 						</Field>
-						<Field title={t('field_expiration')} description={t('field_mosaicExpiration_description')}>
-							{t('value_expiration', { value: mosaicInfo.expireIn })}
+						<Field title={t('field_registrationHeight')} description={t('field_mosaicRegistrationHeight_description')}>
+							<Link href={createPageHref('blocks', mosaicInfo.registrationHeight)}>
+								{mosaicInfo.registrationHeight}
+							</Link>
+						</Field>
+						<Field title={t('field_namespaceExpiration')} description={t('field_mosaicNamespaceExpiration_description')}>
+							{nullableValueToText(expirationText)}
 						</Field>
 						<Progress
-							titleLeft={t('field_registrationHeight')}
-							titleRight={t('field_expirationHeight')}
-							valueLeft={mosaicInfo.registrationHeight}
-							valueRight={mosaicInfo.expirationHeight}
+							titleLeft={t('field_namespaceRegistrationHeight')}
+							titleRight={t('field_namespaceExpirationHeight')}
+							valueLeft={mosaicInfo.namespaceRegistrationHeight}
+							valueRight={mosaicInfo.namespaceExpirationHeight}
 							value={chainHeight}
+							type={progressType}
 						/>
 					</div>
 				</Section>
 			</div>
-			<Section title={t('section_associatedData')} cardClassName={styles.stateSectionCard}>
-				<div className="layout-flex-col-fields">
-					<Field title={t('field_levyType')} description={t('field_levyType_description')}>
-						{levy.type}
-					</Field>
-					<Field title={t('field_levyMosaic')} description={t('field_levyMosaic_description')}>
-						<ValueCopy value={levy.mosaic} />
-					</Field>
-					<Field title={t('field_levyFee')}>{levy.fee}</Field>
-					<Field title={t('field_levyRecipient')} description={t('field_levyRecipient_description')}>
-						<ValueAccount address={levy.recipient} size="sm" />
-					</Field>
-				</div>
-			</Section>
+			{!!levy && (
+				<Section title={t('section_associatedData')} cardClassName={styles.stateSectionCard}>
+					<div className="layout-flex-col-fields">
+						<Field title={t('field_levyType')} description={t('field_levyType_description')}>
+							{levy.type}
+						</Field>
+						<Field title={t('field_levyMosaic')} description={t('field_levyMosaic_description')}>
+							<ValueCopy value={levy.mosaic} />
+						</Field>
+						<Field title={t('field_levyFee')}>{levy.fee}</Field>
+						<Field title={t('field_levyRecipient')} description={t('field_levyRecipient_description')}>
+							<ValueAccount address={levy.recipient} size="sm" />
+						</Field>
+					</div>
+				</Section>
+			)}
 			<Section title={t('section_transactions')}>
 				<Table
 					data={transactionPagination.data}
