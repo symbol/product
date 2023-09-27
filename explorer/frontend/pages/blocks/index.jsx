@@ -1,5 +1,6 @@
 import ChartLine from '@/components/ChartLine';
 import Field from '@/components/Field';
+import FieldTimestamp from '@/components/FieldTimestamp';
 import ItemBlockMobile from '@/components/ItemBlockMobile';
 import Section from '@/components/Section';
 import Separator from '@/components/Separator';
@@ -57,6 +58,7 @@ const Blocks = ({ blocks, chainInfo, charts }) => {
 		{
 			key: 'timestamp',
 			size: '11rem',
+			renderTitle: () => <FieldTimestamp />,
 			renderValue: value => <ValueTimestamp value={value} hasTime />
 		}
 	];
