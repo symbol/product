@@ -18,6 +18,10 @@
         .headerCell {
             font: $font-title;
         }
+
+        .headerCell_aligned:last-child {
+            text-align: right;
+        }
     }
 
     .data {
@@ -45,6 +49,11 @@
                 background-color: #F3F4F7;
                 transition: background-color 250ms linear;
             }
+        }
+
+        .dataCell_aligned:last-child {
+            display: flex;
+            justify-content: flex-end;
         }
     }
 
