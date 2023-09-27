@@ -1,0 +1,39 @@
+@import "../variables";
+.listColumn {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.listRow {
+    display: inline-block;
+}
+
+.buttonMore {
+    cursor: pointer;
+    display: inline-block;
+    color: $color-primary;
+    padding: 0 $spacing-base / 2;
+    margin: 0 $spacing-base / 2;
+    background-color: $color-primary-light;
+    border-radius: $border-radius-chip;
+}
+
+.modal {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-base * 2;
+}
+
+.modalContent {
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-base;
+}
+
+.buttonClose {
+    position: absolute;
+    top: 2rem;
+    right: 2rem;
+}
