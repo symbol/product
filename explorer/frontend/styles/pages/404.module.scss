@@ -1,11 +1,66 @@
+@import "../variables";
+
 .wrapper {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    height: 50vh;
+    height: 80vh;
 }
 
 .container {
-    width: 80%;
+    width: 70%;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: $spacing-base * 4;
+}
+
+.code {
+    font-size: 10rem;
+    line-height: 10rem;
+}
+
+.separator {
+    height: 100%;
+    width: $spacing-base / 4;
+    background-color: $color-text-body;
+}
+
+.text {
+    width: 50%;
+    display: flex;
+    flex-direction: column;
+}
+
+.description {
+    font-size: 2rem;
+    line-height: 3rem;
+}
+
+.link {
+    margin-top: $spacing-base;
+    text-decoration: underline;
+}
+
+
+@media #{$screen-mobile} {
+    .container {
+        width: 80%;
+        gap: $spacing-base;
+    }
+
+    .code {
+        font-size: 5rem;
+        line-height: 5rem;
+    }
+
+    .description {
+        font-size: 1rem;
+        line-height: 1.5rem;
+    }
+
+    .link {
+        margin-top: $spacing-base / 2;
+    }
 }
