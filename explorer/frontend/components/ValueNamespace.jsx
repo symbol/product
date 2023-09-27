@@ -1,3 +1,4 @@
+import { createPageHref } from '@/utils';
 import Avatar from './Avatar';
 import CustomImage from './CustomImage';
 import styles from '@/styles/components/ValueNamespace.module.scss';
@@ -16,7 +17,7 @@ const ValueNamespace = ({ namespaceName, namespaceId, className, size, onClick, 
 	return size === 'md' ? (
 		<Link
 			className={`${styles.valueNamespace} ${styles.containerMd} ${className}`}
-			href={`/namespaces/${namespaceId}`}
+			href={createPageHref('namespaces', namespaceId)}
 			onClick={handleClick}
 		>
 			<Avatar type="namespace" size="md" value={namespaceId} />
@@ -27,8 +28,8 @@ const ValueNamespace = ({ namespaceName, namespaceId, className, size, onClick, 
 		</Link>
 	) : (
 		<Link
-			href={`/namespaces/${namespaceId}`}
-			className={`${styles.valueNamespace} ${directionStyle} ${className}`}
+			href={createPageHref('namespaces', namespaceId)}
+			className={`${styles.valueNamespace} ${className}`}
 			onClick={handleClick}
 		>
 			<CustomImage src="" className={styles.icon} alt="Namespace" />
