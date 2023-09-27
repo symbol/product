@@ -8,6 +8,7 @@ import Progress from '@/components/Progress';
 import Section from '@/components/Section';
 import Table from '@/components/Table';
 import ValueAccount from '@/components/ValueAccount';
+import ValueBlockHeight from '@/components/ValueBlockHeight';
 import ValueList from '@/components/ValueList';
 import ValueNamespace from '@/components/ValueNamespace';
 import ValueTimestamp from '@/components/ValueTimestamp';
@@ -50,12 +51,18 @@ const NamespaceInfo = ({ namespaceInfo }) => {
 		},
 		{
 			key: 'supply',
-			size: '20rem',
+			size: '15rem',
 			renderValue: value => value
 		},
 		{
-			key: 'registrationTimestamp',
+			key: 'registrationHeight',
 			size: '10rem',
+			renderValue: value => <ValueBlockHeight value={value} />
+		},
+		{
+			key: 'registrationTimestamp',
+			size: '11rem',
+			renderTitle: () => <FieldTimestamp title={t('field_created')} />,
 			renderValue: value => <ValueTimestamp value={value} hasTime />
 		}
 	];

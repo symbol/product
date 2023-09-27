@@ -1,9 +1,11 @@
 import { getMosaicPage } from '../api/mosaics';
+import FieldTimestamp from '@/components/FieldTimestamp';
 import ItemMosaicMobile from '@/components/ItemMosaicMobile';
 import Section from '@/components/Section';
 import Table from '@/components/Table';
 import ValueAccount from '@/components/ValueAccount';
 import ValueBlockHeight from '@/components/ValueBlockHeight';
+import ValueTimestamp from '@/components/ValueTimestamp';
 import styles from '@/styles/pages/Home.module.scss';
 import { createPageHref, usePagination } from '@/utils';
 import Head from 'next/head';
@@ -41,6 +43,12 @@ const Mosaics = ({ mosaics }) => {
 			key: 'registrationHeight',
 			size: '10rem',
 			renderValue: value => <ValueBlockHeight value={value} />
+		},
+		{
+			key: 'registrationTimestamp',
+			size: '11rem',
+			renderTitle: () => <FieldTimestamp title={t('field_created')} />,
+			renderValue: value => <ValueTimestamp value={value} hasTime />
 		}
 	];
 
