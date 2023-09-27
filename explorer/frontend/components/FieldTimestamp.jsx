@@ -5,22 +5,23 @@ import styles from '@/styles/components/FieldTimestamp.module.scss';
 import { useStorage } from '@/utils';
 import { useTranslation } from 'next-i18next';
 
-const FieldTimestamp = ({ value, hasTime, hasSeconds }) => {
+const FieldTimestamp = ({ value, title, hasTime, hasSeconds }) => {
 	const { t } = useTranslation();
 	const [type, setType] = useStorage(STORAGE_KEY.TIMESTAMP_TYPE);
-	let title;
+	const titleText = title || t('field_timestamp');
+	let finalTitle;
 	let iconSrc;
 	let nextType;
 
 	switch (type) {
 		case 'local':
-			title = t('field_timestampLocal');
+			finalTitle = t('field_timestampLocal', { title: titleText });
 			nextType = 'UTC';
 			iconSrc = '/images/icon-switch-2.svg';
 			break;
 		case 'UTC':
 		default:
-			title = t('field_timestampUTC');
+			finalTitle = t('field_timestampUTC', { title: titleText });
 			nextType = 'local';
 			iconSrc = '/images/icon-switch.svg';
 			break;
@@ -31,7 +32,7 @@ const FieldTimestamp = ({ value, hasTime, hasSeconds }) => {
 	};
 
 	return (
-		<Field titleClassName={styles.fieldTimestamp} title={title} iconSrc={iconSrc} onTitleClick={switchType}>
+		<Field titleClassName={styles.fieldTimestamp} title={finalTitle} iconSrc={iconSrc} onTitleClick={switchType}>
 			{!!value && <ValueTimestamp value={value} hasTime={hasTime} hasSeconds={hasSeconds} />}
 		</Field>
 	);
