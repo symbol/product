@@ -8,12 +8,14 @@
     max-width: 32rem;
 
     .firstSectionCard {
-        height: 29rem;
+        min-height: 33rem;
+        overflow: hidden;
+        word-wrap: break-word;
     }
 }
 
 .secondSectionCard {
-    height: 29rem;
+    min-height: 33rem;
 }
 
 @media #{$screen-mobile} {
@@ -21,11 +23,11 @@
         max-width: 100%;
 
         .firstSectionCard {
-            height: auto;
+            min-height: auto;
         }
     }
 
     .secondSectionCard {
-        height: auto;
+        min-height: auto;
     }
 }
