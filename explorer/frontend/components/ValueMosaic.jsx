@@ -3,8 +3,8 @@ import CustomImage from './CustomImage';
 import config from '@/config';
 import { ACCOUNT_STATE_CHANGE_ACTION, TRANSACTION_DIRECTION } from '@/constants';
 import styles from '@/styles/components/ValueMosaic.module.scss';
-import Link from 'next/link';
 import { createPageHref } from '@/utils';
+import Link from 'next/link';
 
 const ValueMosaic = ({ mosaicName, mosaicId, amount, isNative, className, direction, size, onClick, isNavigationDisabled }) => {
 	let displayedName;
@@ -48,7 +48,11 @@ const ValueMosaic = ({ mosaicName, mosaicId, amount, isNative, className, direct
 			</div>
 		</Link>
 	) : (
-		<Link href={createPageHref('mosaics', finalMosaicId)} className={`${styles.valueMosaic} ${directionStyle} ${className}`} onClick={handleClick}>
+		<Link
+			href={createPageHref('mosaics', finalMosaicId)}
+			className={`${styles.valueMosaic} ${directionStyle} ${className}`}
+			onClick={handleClick}
+		>
 			<CustomImage src={imageSrc} className={styles.icon} alt="Mosaic" />
 			<div className={styles.amount}>
 				<div>{integer}</div>

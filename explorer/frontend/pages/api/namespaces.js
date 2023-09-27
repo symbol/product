@@ -1,11 +1,10 @@
+import { formatMosaic } from './mosaics';
 import config from '@/config';
 import { createAPICallFunction, createAPISearchURL, createMosaicName, createPage, createSearchCriteria } from '@/utils';
-import { formatMosaic } from './mosaics';
 
 export const getNamespaceInfo = createAPICallFunction(async id => {
 	const response = await fetch(`${config.API_BASE_URL}/namespace/${id}`);
 	const namespace = await response.json();
-	console.log(namespace)
 
 	return formatNamespace(namespace);
 });
@@ -23,13 +22,13 @@ const formatNamespace = data => {
 	const namespaceMosaicsMap = {};
 	data.mosaics.forEach(item => {
 		if (!namespaceMosaicsMap[item.namespaceName]) namespaceMosaicsMap[item.namespaceName] = [];
-		namespaceMosaicsMap[item.namespaceName].push(({
+		namespaceMosaicsMap[item.namespaceName].push({
 			id: createMosaicName(item.namespaceName, item.mosaicName),
 			name: createMosaicName(item.namespaceName, item.mosaicName),
 			registrationHeight: item.registeredHeight,
 			registrationTimestamp: item.registeredTimestamp,
 			supply: item.totalSupply
-		}));
+		});
 	});
 
 	return {
@@ -46,5 +45,5 @@ const formatNamespace = data => {
 			namespaceName,
 			data: mosaics
 		}))
-	}
+	};
 };

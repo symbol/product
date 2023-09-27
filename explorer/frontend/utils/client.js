@@ -101,13 +101,12 @@ export const setTimestampTypeToStorage = value => {
 };
 
 export const nullableValueToText = value => {
-	return (value === null || value === undefined) ? '-' : value;
+	return value === null || value === undefined ? '-' : value;
 };
 
 export const arrayToText = value => {
 	return value.length === 0 ? '-' : value.join(', ');
 };
-
 
 export const createPageHref = (pageName, parameter) => {
 	let href;
@@ -139,4 +138,4 @@ export const createPageHref = (pageName, parameter) => {
 	}
 
 	return href;
-}
+};

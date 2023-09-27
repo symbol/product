@@ -9,11 +9,11 @@
 }
 
 .container {
-    width: 70%;
     display: flex;
     flex-direction: row;
-    align-items: center;
     gap: $spacing-base * 4;
+    align-items: center;
+    width: 70%;
 }
 
 .code {
@@ -22,15 +22,15 @@
 }
 
 .separator {
-    height: 100%;
     width: $spacing-base / 4;
+    height: 100%;
     background-color: $color-text-body;
 }
 
 .text {
-    width: 50%;
     display: flex;
     flex-direction: column;
+    width: 50%;
 }
 
 .description {
@@ -46,8 +46,8 @@
 
 @media #{$screen-mobile} {
     .container {
-        width: 80%;
         gap: $spacing-base;
+        width: 80%;
     }
 
     .code {

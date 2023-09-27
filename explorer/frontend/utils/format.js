@@ -57,6 +57,6 @@ export const truncateDecimals = (num, decimal) => {
 	return truncatedNum / multiplier;
 };
 
-export const getRootNamespaceName = (namespaceName) => namespaceName.split('.')[0];
+export const getRootNamespaceName = namespaceName => namespaceName.split('.')[0];
 
 export const createMosaicName = (namespaceId, mosaicId) => `${namespaceId}.${mosaicId}`;

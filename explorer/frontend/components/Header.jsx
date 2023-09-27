@@ -122,7 +122,12 @@ const Header = () => {
 							<h4>Language</h4>
 							<div className={styles.modalCompactList}>
 								{languages.map(item => (
-									<Link href={createPageHref('home')} locale={item.locale} key={'locale' + item.locale} onClick={toggleProfile}>
+									<Link
+										href={createPageHref('home')}
+										locale={item.locale}
+										key={'locale' + item.locale}
+										onClick={toggleProfile}
+									>
 										{item.title}
 									</Link>
 								))}
