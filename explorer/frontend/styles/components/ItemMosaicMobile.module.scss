@@ -1,0 +1,10 @@
+@import "../variables";
+
+.itemMosaicMobile {
+    display: flex;
+    flex-direction: column;
+
+    .timestamp {
+        align-self: flex-end;
+    }
+}

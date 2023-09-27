@@ -1,0 +1,17 @@
+@import "../variables";
+
+.itemAccountMobile {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: $spacing-base / 2;
+
+
+    .row {
+        display: flex;
+        flex-direction: row;
+        gap: $spacing-base;
+        align-items: center;
+        justify-content: space-between;
+    }
+}
