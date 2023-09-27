@@ -10,11 +10,12 @@ import styles from '@/styles/components/BlockPreview.module.scss';
 import Link from 'next/link';
 import { useTranslation } from 'next-i18next';
 import { forwardRef, useEffect, useState } from 'react';
+import { createPageHref } from '@/utils';
 
 const BlockExpanded = ({ data, transactions, isNext, isTransactionSquaresRendered, onClose }) => {
 	const { height, timestamp, totalFee, medianFee } = data;
 	const { t } = useTranslation();
-	const href = `/blocks/${height}`;
+	const href = createPageHref('blocks', height);
 
 	return (
 		<div className="layout-flex-col-fields">

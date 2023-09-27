@@ -2,7 +2,7 @@ import Avatar from '@/components/Avatar';
 import ButtonCopy from '@/components/ButtonCopy';
 import { STORAGE_KEY } from '@/constants';
 import styles from '@/styles/components/ValueAccount.module.scss';
-import { trunc, useStorage } from '@/utils';
+import { createPageHref, trunc, useStorage } from '@/utils';
 import Link from 'next/link';
 import { useState } from 'react';
 
@@ -36,7 +36,7 @@ const ValueAccount = ({ address, size, raw, position, className, isNavigationDis
 		<div className={`${styles.valueAccount} ${containerStyle} ${className}`}>
 			<Avatar type="account" value={address} size={size} />
 			<div className={styles.addressContainer}>
-				<Link className={textStyle} href={`/accounts/${address}`} onClick={handleClick}>
+				<Link className={textStyle} href={createPageHref('accounts', address)} onClick={handleClick}>
 					{displayedText}
 				</Link>
 				<ButtonCopy value={address} />

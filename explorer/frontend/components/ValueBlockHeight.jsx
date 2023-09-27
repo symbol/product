@@ -1,3 +1,4 @@
+import { createPageHref } from '@/utils';
 import CustomImage from './CustomImage';
 import ValueTimestamp from './ValueTimestamp';
 import styles from '@/styles/components/ValueBlockHeight.module.scss';
@@ -12,7 +13,7 @@ const ValueBlockHeight = ({ value, timestamp, className, size, isNavigationDisab
 	};
 
 	return size === 'md' ? (
-		<Link className={styles.valueBlockHeight} href={`/blocks/${value}`} onClick={handleClick}>
+		<Link className={styles.valueBlockHeight} href={createPageHref('blocks', value)} onClick={handleClick}>
 			<CustomImage className={styles.icon} src="/images/icon-transaction-header-block.svg" alt="Block" />
 			<div>
 				<div className={styles.title}>{value}</div>
@@ -20,7 +21,7 @@ const ValueBlockHeight = ({ value, timestamp, className, size, isNavigationDisab
 			</div>
 		</Link>
 	) : (
-		<Link className={className} href={`/blocks/${value}`} onClick={handleClick}>
+		<Link className={className} href={createPageHref('blocks', value)} onClick={handleClick}>
 			{value}
 		</Link>
 	);

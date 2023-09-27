@@ -7,7 +7,7 @@ import ValueAccount from './ValueAccount';
 import { STORAGE_KEY } from '@/constants';
 import { search } from '@/pages/api/search';
 import styles from '@/styles/components/Header.module.scss';
-import { useStorage, useToggle } from '@/utils';
+import { createPageHref, useStorage, useToggle } from '@/utils';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
@@ -27,19 +27,27 @@ const Header = () => {
 	const menuItems = [
 		{
 			text: t('menu_home'),
-			href: '/'
+			href: createPageHref('home')
 		},
 		{
 			text: t('menu_blocks'),
-			href: '/blocks'
+			href: createPageHref('blocks')
 		},
 		{
 			text: t('menu_accounts'),
-			href: '/accounts'
+			href: createPageHref('accounts')
 		},
 		{
 			text: t('menu_transactions'),
-			href: '/transactions'
+			href: createPageHref('transactions')
+		},
+		{
+			text: t('menu_mosaics'),
+			href: createPageHref('mosaics')
+		},
+		{
+			text: t('menu_namespaces'),
+			href: createPageHref('namespaces')
 		}
 	];
 	const languages = [
@@ -114,7 +122,7 @@ const Header = () => {
 							<h4>Language</h4>
 							<div className={styles.modalCompactList}>
 								{languages.map(item => (
-									<Link href="/" locale={item.locale} key={'locale' + item.locale} onClick={toggleProfile}>
+									<Link href={createPageHref('home')} locale={item.locale} key={'locale' + item.locale} onClick={toggleProfile}>
 										{item.title}
 									</Link>
 								))}

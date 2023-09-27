@@ -1,3 +1,4 @@
+import { createPageHref } from '@/utils';
 import CustomImage from './CustomImage';
 import ValueAccount from './ValueAccount';
 import ValueMosaic from './ValueMosaic';
@@ -11,7 +12,7 @@ const ItemBlockMobile = ({ data }) => {
 	return (
 		<div className={styles.itemBlockMobile}>
 			<div className={styles.middle}>
-				<Link href={`/blocks/${height}`} className={styles.height}>
+				<Link href={createPageHref('blocks', height)} className={styles.height}>
 					{height}
 				</Link>
 				<div className={styles.row}>
