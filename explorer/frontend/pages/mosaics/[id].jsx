@@ -16,7 +16,7 @@ import ValueTransactionHash from '@/components/ValueTransactionHash';
 import ValueTransactionType from '@/components/ValueTransactionType';
 import { fetchTransactionPage, getTransactionPage } from '@/pages/api/transactions';
 import styles from '@/styles/pages/MosaicInfo.module.scss';
-import { arrayToText, createPageHref, nullableValueToText, usePagination } from '@/utils';
+import { createPageHref, nullableValueToText, usePagination } from '@/utils';
 import Head from 'next/head';
 import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
