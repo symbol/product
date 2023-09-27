@@ -51,7 +51,7 @@ const AccountAvatar = ({ address }) => {
 		};
 	};
 
-	const image = address ? getImage() : { src: '/images/icon-question.png' };
+	const image = address?.length > 2 ? getImage() : { src: '/images/icon-question.png' };
 
 	return <CustomImage src={image.src} className={styles.image} style={image.style} />;
 };
