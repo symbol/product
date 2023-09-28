@@ -37,7 +37,7 @@ export const getMarketData = async () => {
 	};
 };
 
-export const getPriceByDate = async timestamp => {
+export const getPriceByDate = async (timestamp, currency = 'USD') => {
 	const date = new Date(timestamp);
 	const yyyy = date.getFullYear();
 	let mm = date.getMonth() + 1;
@@ -51,5 +51,5 @@ export const getPriceByDate = async timestamp => {
 	const response = await fetch(`https://api.coingecko.com/api/v3/coins/nem/history?date=${formattedDate}`);
 	const parsedResponse = await response.json();
 
-	return parsedResponse.market_data.current_price.usd;
+	return parsedResponse.market_data.current_price[currency.toLowerCase()];
 };
