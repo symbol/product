@@ -142,13 +142,11 @@ class NemDatabase(DatabaseConnectionPool):
 			timestamp
 		) = result
 
-		value = []
-		fees = [{
-			'transaction_fee': _format_xem_relative(fee)
-		}]
-
 		from_address = self.network.public_key_to_address(PublicKey(_format_bytes(address_from)))
 		to_address = Address(unhexlify(_format_bytes(address_to))) if address_to else None
+		fee = _format_xem_relative(fee)
+
+		value = []
 
 		if transaction_type == 257:  # Transfer
 			# Todo: supply formatting divisibility
@@ -215,11 +213,9 @@ class NemDatabase(DatabaseConnectionPool):
 				rental_fee = multisig_inner_transaction['rental_fee']
 				namespace = multisig_inner_transaction['namespace']
 
-				fees.append({
-					'sink_fee': _format_xem_relative(rental_fee)
-				})
 				value.append({
-					'namespace_name': namespace
+					'namespace_name': namespace,
+					'sink_fee': _format_xem_relative(rental_fee)
 				})
 
 			elif multisig_inner_transaction['transaction_type'] == 16385:
@@ -227,11 +223,9 @@ class NemDatabase(DatabaseConnectionPool):
 				creation_fee = multisig_inner_transaction['creation_fee']
 				namespace_name = multisig_inner_transaction['namespace_name']
 
-				fees.append({
-					'sink_fee': _format_xem_relative(creation_fee)
-				})
 				value.append({
-					'mosaic_namespace_name': namespace_name
+					'mosaic_namespace_name': namespace_name,
+					'sink_fee': _format_xem_relative(creation_fee)
 				})
 			elif multisig_inner_transaction['transaction_type'] == 16386:
 				value.append({
@@ -241,18 +235,14 @@ class NemDatabase(DatabaseConnectionPool):
 				})
 
 		elif transaction_type == 8193:  # Namespace registration
-			fees.append({
-				'sink_fee': _format_xem_relative(mosaic_namespace_sink_fee)
-			})
 			value.append({
-				'namespace_name': mosaic_namespace_creation_name
+				'namespace_name': mosaic_namespace_creation_name,
+				'sink_fee': _format_xem_relative(mosaic_namespace_sink_fee)
 			})
 		elif transaction_type == 16385:  # Mosaic namespace creation
-			fees.append({
-				'sink_fee': _format_xem_relative(mosaic_namespace_sink_fee)
-			})
 			value.append({
-				'mosaic_namespace_name': mosaic_namespace_creation_name
+				'mosaic_namespace_name': mosaic_namespace_creation_name,
+				'sink_fee': _format_xem_relative(mosaic_namespace_sink_fee)
 			})
 		elif transaction_type == 16386:  # Mosaic supply change
 			value.append({
@@ -267,7 +257,7 @@ class NemDatabase(DatabaseConnectionPool):
 			from_address=from_address,
 			to_address=to_address,
 			value=value,
-			fees=fees,
+			fee=fee,
 			height=height,
 			timestamp=timestamp
 		)
