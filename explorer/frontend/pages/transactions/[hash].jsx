@@ -12,14 +12,13 @@ import ValueBlockHeight from '@/components/ValueBlockHeight';
 import ValueCopy from '@/components/ValueCopy';
 import ValueLabel from '@/components/ValueLabel';
 import ValueMosaic from '@/components/ValueMosaic';
-import ValueTimestamp from '@/components/ValueTimestamp';
 import ValueTransactionType from '@/components/ValueTransactionType';
+import { STORAGE_KEY } from '@/constants';
 import styles from '@/styles/pages/TransactionInfo.module.scss';
-import { truncateDecimals } from '@/utils';
+import { truncateDecimals, useStorage, useUserCurrencyAmount } from '@/utils';
 import Head from 'next/head';
 import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
-import { useEffect, useState } from 'react';
 
 export const getServerSideProps = async ({ locale, params }) => {
 	const transactionInfo = await getTransactionInfo(params.hash);
@@ -40,7 +39,8 @@ export const getServerSideProps = async ({ locale, params }) => {
 
 const TransactionInfo = ({ transactionInfo }) => {
 	const { t } = useTranslation();
-	const [amountUSD, setAmountUSD] = useState(null);
+	const [userCurrency] = useStorage(STORAGE_KEY.USER_CURRENCY, 'usd');
+	const amountInUserCurrency = useUserCurrencyAmount(getPriceByDate, transactionInfo.amount, userCurrency, transactionInfo.timestamp);
 
 	const tableColumns = [
 		{
@@ -78,18 +78,6 @@ const TransactionInfo = ({ transactionInfo }) => {
 		}
 	];
 
-	useEffect(() => {
-		const fetchAmountUSD = async () => {
-			const price = await getPriceByDate(transactionInfo.timestamp);
-
-			setAmountUSD(transactionInfo.amount * price);
-		};
-
-		if (transactionInfo.amount) {
-			fetchAmountUSD();
-		}
-	}, [transactionInfo]);
-
 	return (
 		<div className={styles.wrapper}>
 			<Head>
@@ -114,8 +102,8 @@ const TransactionInfo = ({ transactionInfo }) => {
 								<Field title={t('field_amount')}>
 									<ValueMosaic isNative amount={transactionInfo.amount} />
 								</Field>
-								<Field title={t('field_amountUSD')}>
-									<div>~${truncateDecimals(amountUSD, 2)}</div>
+								<Field title={t('field_amountInUserCurrency', { currency: userCurrency })}>
+									<div>~{truncateDecimals(amountInUserCurrency, 2)}</div>
 								</Field>
 							</div>
 						)}

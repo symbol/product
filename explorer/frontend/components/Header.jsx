@@ -1,4 +1,5 @@
 import CustomImage from './CustomImage';
+import { Dropdown } from './Dropdown';
 import Field from './Field';
 import Modal from './Modal';
 import SearchBar from './SearchBar';
@@ -19,6 +20,8 @@ const Header = () => {
 	const router = useRouter();
 	const { t } = useTranslation();
 	const [contacts, setContacts] = useStorage(STORAGE_KEY.ADDRESS_BOOK, []);
+	const [userLanguage, setUserLanguage] = useStorage(STORAGE_KEY.USER_LANGUAGE, 'en');
+	const [userCurrency, setUserCurrency] = useStorage(STORAGE_KEY.USER_CURRENCY, 'usd');
 	const [address, setAddress] = useState('');
 	const [name, setName] = useState('');
 	const [isProfileOpen, toggleProfile] = useToggle(false);
@@ -52,12 +55,34 @@ const Header = () => {
 	];
 	const languages = [
 		{
-			locale: 'en',
-			title: 'English'
+			value: 'en',
+			label: 'English'
 		},
 		{
-			locale: 'uk',
-			title: 'Українська'
+			value: 'uk',
+			label: 'Українська'
+		}
+	];
+	const currencies = [
+		{
+			value: 'USD',
+			label: 'USD'
+		},
+		{
+			value: 'EUR',
+			label: 'EUR'
+		},
+		{
+			value: 'UAH',
+			label: 'UAH'
+		},
+		{
+			value: 'GBP',
+			label: 'GBP'
+		},
+		{
+			value: 'JPY',
+			label: 'JPY'
 		}
 	];
 
@@ -102,6 +127,11 @@ const Header = () => {
 		setName('');
 		toggleAddContact();
 	};
+	const selectLanguage = locale => {
+		setUserLanguage(locale);
+		router.push(createPageHref('home'), null, { locale });
+		toggleProfile();
+	};
 
 	return (
 		<div className={styles.headerWrapper}>
@@ -117,44 +147,37 @@ const Header = () => {
 					<CustomImage className={styles.menuIcon} src="/images/icon-menu.svg" alt="profile" onClick={toggleMenu} />
 				</div>
 				<Modal className={`${styles.modal} ${styles.modalProfile}`} isVisible={isProfileOpen} onClose={toggleProfile}>
-					<div className="layout-flex-col">
-						<div>
-							<h4>Language</h4>
-							<div className={styles.modalCompactList}>
-								{languages.map(item => (
-									<Link
-										href={createPageHref('home')}
-										locale={item.locale}
-										key={'locale' + item.locale}
-										onClick={toggleProfile}
-									>
-										{item.title}
-									</Link>
+					{!isAddContactOpen && (
+						<div className="layout-flex-col">
+							<div>
+								<h4>Language</h4>
+								<Dropdown options={languages} value={userLanguage} onChange={selectLanguage} />
+							</div>
+							<div>
+								<h4>Currency</h4>
+								<Dropdown options={currencies} value={userCurrency} onChange={setUserCurrency} />
+							</div>
+							<div>
+								<h4>Address Book</h4>
+								Give accounts names to easily identify them through the explorer.
+							</div>
+							<div className={styles.contactList}>
+								{contacts.map((item, index) => (
+									<div className={styles.profileAddress} key={index}>
+										<Field title={item.name}>
+											<div className="layout-flex-row">
+												<ValueAccount address={item.address} raw size="md" />
+												<CustomImage
+													src="/images/icon-delete.png"
+													className={styles.buttonRemove}
+													alt="Remove"
+													onClick={() => removeContact(item)}
+												/>
+											</div>
+										</Field>
+									</div>
 								))}
 							</div>
-						</div>
-						<div>
-							<h4>Address Book</h4>
-							Give accounts names to easily identify them through the explorer.
-						</div>
-					</div>
-					{!isAddContactOpen && (
-						<div className={styles.contactList}>
-							{contacts.map((item, index) => (
-								<div className={styles.profileAddress} key={index}>
-									<Field title={item.name}>
-										<div className="layout-flex-row">
-											<ValueAccount address={item.address} raw size="md" />
-											<CustomImage
-												src="/images/icon-delete.png"
-												className={styles.buttonRemove}
-												alt="Remove"
-												onClick={() => removeContact(item)}
-											/>
-										</div>
-									</Field>
-								</div>
-							))}
 						</div>
 					)}
 					{!isAddContactOpen && (

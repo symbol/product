@@ -168,6 +168,38 @@ export const useStorage = (key, defaultValue, callback) => {
 				localStorage.setItem(STORAGE_KEY.TIMESTAMP_TYPE, value);
 				dispatchEvent(new Event(getEvent(STORAGE_KEY.TIMESTAMP_TYPE)));
 			}
+		},
+		[STORAGE_KEY.USER_CURRENCY]: {
+			get: () => {
+				const defaultValue = 'usd';
+
+				try {
+					const value = localStorage.getItem(STORAGE_KEY.USER_CURRENCY);
+					return value || defaultValue;
+				} catch {
+					return defaultValue;
+				}
+			},
+			set: value => {
+				localStorage.setItem(STORAGE_KEY.USER_CURRENCY, value);
+				dispatchEvent(new Event(getEvent(STORAGE_KEY.USER_CURRENCY)));
+			}
+		},
+		[STORAGE_KEY.USER_LANGUAGE]: {
+			get: () => {
+				const defaultValue = 'en';
+
+				try {
+					const value = localStorage.getItem(STORAGE_KEY.USER_LANGUAGE);
+					return value || defaultValue;
+				} catch {
+					return defaultValue;
+				}
+			},
+			set: value => {
+				localStorage.setItem(STORAGE_KEY.USER_LANGUAGE, value);
+				dispatchEvent(new Event(getEvent(STORAGE_KEY.USER_LANGUAGE)));
+			}
 		}
 	};
 
@@ -196,4 +228,22 @@ export const useStorage = (key, defaultValue, callback) => {
 	}, []);
 
 	return [value, setter];
+};
+
+export const useUserCurrencyAmount = (fetchPrice, amount, currency, timestamp) => {
+	const [amountInUserCurrency, setAmountInUserCurrency] = useState(null);
+
+	useEffect(() => {
+		const fetchUserCurrencyAmount = async () => {
+			const price = await fetchPrice(timestamp, currency);
+
+			setAmountInUserCurrency(amount * price);
+		};
+
+		if (amount) {
+			fetchUserCurrencyAmount();
+		}
+	}, [fetchPrice, amount, currency, timestamp]);
+
+	return amountInUserCurrency;
 };

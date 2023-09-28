@@ -1,5 +1,6 @@
 import { getAccountInfo } from '../api/accounts';
 import { search } from '../api/search';
+import { getPriceByDate } from '../api/stats';
 import Avatar from '@/components/Avatar';
 import ButtonCSV from '@/components/ButtonCSV';
 import Field from '@/components/Field';
@@ -18,10 +19,10 @@ import ValueTimestamp from '@/components/ValueTimestamp';
 import ValueTransactionDirection from '@/components/ValueTransactionDirection';
 import ValueTransactionHash from '@/components/ValueTransactionHash';
 import ValueTransactionType from '@/components/ValueTransactionType';
-import { TRANSACTION_TYPE } from '@/constants';
+import { STORAGE_KEY, TRANSACTION_TYPE } from '@/constants';
 import { fetchTransactionPage, getTransactionPage } from '@/pages/api/transactions';
 import styles from '@/styles/pages/AccountInfo.module.scss';
-import { arrayToText, useClientSideFilter, usePagination } from '@/utils';
+import { arrayToText, useClientSideFilter, usePagination, useStorage, useUserCurrencyAmount } from '@/utils';
 import Head from 'next/head';
 import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
@@ -47,6 +48,8 @@ export const getServerSideProps = async ({ locale, params }) => {
 
 const AccountInfo = ({ accountInfo, preloadedTransactions }) => {
 	const { address } = accountInfo;
+	const [userCurrency] = useStorage(STORAGE_KEY.USER_CURRENCY, 'usd');
+	const balanceInUserCurrency = useUserCurrencyAmount(getPriceByDate, accountInfo.balance, userCurrency, Date.now());
 	const { t } = useTranslation();
 	const transactionPagination = usePagination(fetchTransactionPage, preloadedTransactions);
 	const mosaics = useClientSideFilter(accountInfo.mosaics);
@@ -150,7 +153,11 @@ const AccountInfo = ({ accountInfo, preloadedTransactions }) => {
 							</div>
 						</div>
 						<Field title={t('field_balance')}>
-							<ValueAccountBalance value={accountInfo.balance} valueUSD={accountInfo.balanceUSD}></ValueAccountBalance>
+							<ValueAccountBalance
+								value={accountInfo.balance}
+								valueInUserCurrency={balanceInUserCurrency}
+								userCurrency={userCurrency}
+							/>
 						</Field>
 						<Field title={t('field_address')}>
 							<ValueCopy value={accountInfo.address} />
