@@ -1,4 +1,4 @@
-from binascii import hexlify
+from binascii import hexlify, unhexlify
 
 from symbolchain.CryptoTypes import PublicKey
 from symbolchain.nem.Network import Address
@@ -6,6 +6,7 @@ from symbolchain.nem.Network import Address
 from rest.model.Block import BlockView
 from rest.model.Mosaic import MosaicView
 from rest.model.Namespace import NamespaceView
+from rest.model.Transaction import TransactionListView
 
 from .DatabaseConnection import DatabaseConnectionPool
 
@@ -107,6 +108,168 @@ class NemDatabase(DatabaseConnectionPool):
 			root_namespace_registered_height=result[15],
 			root_namespace_registered_timestamp=result[16],
 			root_namespace_expiration_height=result[17],
+		)
+
+	def _create_transaction_list_view(self, result):
+		transaction_type_mapping = {
+			257: 'transfer',
+			2049: 'account_key_link',
+			4100: 'multisig',
+			4097: 'multisig_account_modification',
+			16385: 'mosaic_namespace_creation',
+			16386: 'mosaic_supply_change',
+			8193: 'namespace_registration'
+		}
+
+		(
+			transaction_hash,
+			transaction_type,
+			address_from,
+			address_to,
+			transfer_mosaic,
+			transfer_amount,
+			mosaic_namespace_creation_name,
+			multisig_inner_transaction,
+			account_key_link_mode,
+			multisig_account_modification_min_cosignatories,
+			multisig_account_modification_modifications,
+			mosaic_supply_change_type,
+			mosaic_supply_change_delta,
+			mosaic_supply_change_namespace_name,
+			fee,
+			mosaic_namespace_sink_fee,
+			height,
+			timestamp
+		) = result
+
+		value = []
+		fees = [{
+			'transaction_fee': _format_xem_relative(fee)
+		}]
+
+		from_address = self.network.public_key_to_address(PublicKey(_format_bytes(address_from)))
+		to_address = Address(unhexlify(_format_bytes(address_to))) if address_to else None
+
+		if transaction_type == 257:  # Transfer
+			# Todo: supply formatting divisibility
+
+			if transfer_mosaic is None:
+				value.append({
+					'namespace': 'nem.xem',
+					'amount': _format_xem_relative(transfer_amount)
+				})
+			else:
+				multiply = transfer_amount if transfer_amount == 0 else transfer_amount / 1000000
+
+				for mosaic in transfer_mosaic:
+					amount = mosaic['quantity'] * multiply
+					value.append({
+						'namespace': mosaic['namespace_name'],
+						'amount': _format_xem_relative(amount) if mosaic['namespace_name'] == 'nem.xem' else amount
+					})
+
+		elif transaction_type == 2049:  # Account key link
+			value.append({
+				'account_key_link_mode': account_key_link_mode
+			})
+		elif transaction_type == 4097:  # Multisig account modification
+			value.append({
+				'min_cosignatories': multisig_account_modification_min_cosignatories,
+				'modifications': multisig_account_modification_modifications
+			})
+		elif transaction_type == 4100:  # Multisig
+			if multisig_inner_transaction['transaction_type'] == 257:
+				to_address = multisig_inner_transaction['recipient']
+
+				mosaics = multisig_inner_transaction['mosaics']
+				amount = multisig_inner_transaction['amount']
+
+				if not mosaics:
+					value.append({
+						'namespace': 'nem.xem',
+						'amount': _format_xem_relative(amount)
+					})
+				else:
+					multiply = amount if amount == 0 else amount / 1000000
+
+					for mosaic in mosaics:
+						amount = mosaic['quantity'] * multiply
+						value.append({
+							'namespace': mosaic['namespace_name'],
+							'amount': (_format_xem_relative(amount) if mosaic['namespace_name'] == 'nem.xem' else amount)
+						})
+
+			elif multisig_inner_transaction['transaction_type'] == 2049:
+				value.append({
+					'account_key_link_mode': multisig_inner_transaction['mode']
+				})
+
+			elif multisig_inner_transaction['transaction_type'] == 4097:
+				value.append({
+					'min_cosignatories': multisig_inner_transaction['min_cosignatories'],
+					'modifications': multisig_inner_transaction['modifications']
+				})
+
+			elif multisig_inner_transaction['transaction_type'] == 8193:
+				to_address = multisig_inner_transaction['rental_fee_sink']
+				rental_fee = multisig_inner_transaction['rental_fee']
+				namespace = multisig_inner_transaction['namespace']
+
+				fees.append({
+					'sink_fee': _format_xem_relative(rental_fee)
+				})
+				value.append({
+					'namespace_name': namespace
+				})
+
+			elif multisig_inner_transaction['transaction_type'] == 16385:
+				to_address = multisig_inner_transaction['creation_fee_sink']
+				creation_fee = multisig_inner_transaction['creation_fee']
+				namespace_name = multisig_inner_transaction['namespace_name']
+
+				fees.append({
+					'sink_fee': _format_xem_relative(creation_fee)
+				})
+				value.append({
+					'mosaic_namespace_name': namespace_name
+				})
+			elif multisig_inner_transaction['transaction_type'] == 16386:
+				value.append({
+					'supply_type': multisig_inner_transaction['supply_type'],
+					'delta': multisig_inner_transaction['delta'],
+					'namespace_name': multisig_inner_transaction['namespace_name']
+				})
+
+		elif transaction_type == 8193:  # Namespace registration
+			fees.append({
+				'sink_fee': _format_xem_relative(mosaic_namespace_sink_fee)
+			})
+			value.append({
+				'namespace_name': mosaic_namespace_creation_name
+			})
+		elif transaction_type == 16385:  # Mosaic namespace creation
+			fees.append({
+				'sink_fee': _format_xem_relative(mosaic_namespace_sink_fee)
+			})
+			value.append({
+				'mosaic_namespace_name': mosaic_namespace_creation_name
+			})
+		elif transaction_type == 16386:  # Mosaic supply change
+			value.append({
+				'supply_type': mosaic_supply_change_type,
+				'delta': mosaic_supply_change_delta,
+				'namespace_name': mosaic_supply_change_namespace_name
+			})
+
+		return TransactionListView(
+			transaction_hash=_format_bytes(transaction_hash),
+			transaction_type=transaction_type_mapping.get(transaction_type, None),
+			from_address=from_address,
+			to_address=to_address,
+			value=value,
+			fees=fees,
+			height=height,
+			timestamp=timestamp
 		)
 
 	def get_block(self, height):
@@ -314,3 +477,89 @@ class NemDatabase(DatabaseConnectionPool):
 			results = cursor.fetchall()
 
 			return [self._create_mosaic_view(result) for result in results]
+
+	def get_transactions(self, limit, offset, sort):
+		"""Gets transactions pagination in database."""
+
+		with self.connection() as connection:
+			cursor = connection.cursor()
+			cursor.execute(f'''
+				SELECT
+					t.transaction_hash,
+					t.transaction_type,
+					t.sender AS from,
+					CASE
+						WHEN transaction_type = 257 THEN tt.recipient
+						WHEN transaction_type = 8193 THEN tnr.rental_fee_sink
+						WHEN transaction_type = 16385 THEN tmdc.creation_fee_sink
+						ELSE NULL
+					END AS to,
+					CASE
+						WHEN transaction_type = 257 Then tt.mosaics
+						ELSE NULL
+					END AS transfer_mosaic,
+					CASE
+						WHEN transaction_type = 257 Then tt.amount
+						ELSE NULL
+					END AS transfer_amount,
+					CASE
+						WHEN transaction_type = 8193 THEN tnr.namespace
+						WHEN transaction_type = 16385 THEN tmdc.namespace_name
+					END AS mosaic_namespace_creation_name,
+					CASE
+						WHEN transaction_type = 4100 Then tm.other_transaction
+						ELSE NULL
+					END AS multisig_inner_transaction,
+					CASE
+						WHEN transaction_type = 2049 Then takl.mode
+						ELSE NULL
+					END AS account_key_link_mode,
+					CASE
+						WHEN transaction_type = 4097 Then tmam.min_cosignatories
+						ELSE NULL
+					END AS multisig_account_modification_min_cosignatories,
+					CASE
+						WHEN transaction_type = 4097 Then tmam.modifications
+						ELSE NULL
+					END AS multisig_account_modification_modifications,
+					CASE
+						WHEN transaction_type = 16386 Then tmsc.supply_type
+						ELSE NULL
+					END AS mosaic_supply_change_type,
+					CASE
+						WHEN transaction_type = 16386 Then tmsc.delta
+						ELSE NULL
+					END AS mosaic_supply_change_delta,
+					CASE
+						WHEN transaction_type = 16386 Then tmsc.namespace_name
+						ELSE NULL
+					END AS mosaic_supply_change_namespace_name,
+					t.fee,
+					CASE
+						WHEN transaction_type = 8193 THEN tnr.rental_fee
+						WHEN transaction_type = 16385 THEN tmdc.creation_fee
+						ELSE NULL
+					END AS mosaic_namespace_sink_fee,
+					t.height,
+					t.timestamp
+				FROM transactions t
+				LEFT JOIN transactions_account_key_link takl
+					ON t.id = takl.transaction_id
+				LEFT JOIN transactions_mosaic_definition_creation tmdc
+					ON t.id = tmdc.transaction_id
+				LEFT JOIN transactions_mosaic_supply_change tmsc
+					ON t.id = tmsc.transaction_id
+				LEFT JOIN transactions_multisig tm
+					ON t.id = tm.transaction_id
+				LEFT JOIN transactions_multisig_account_modification tmam
+					ON t.id = tmam.transaction_id
+				LEFT JOIN transactions_namespace_registration tnr
+					ON t.id = tnr.transaction_id
+				LEFT JOIN transactions_transfer tt
+					ON t.id = tt.transaction_id
+				ORDER BY t.height {sort}
+				LIMIT %s OFFSET %s
+			''', (limit, offset,))
+			results = cursor.fetchall()
+
+			return [self._create_transaction_list_view(result) for result in results]
