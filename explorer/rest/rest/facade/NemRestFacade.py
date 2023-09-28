@@ -50,3 +50,10 @@ class NemRestFacade:
 		mosaics = self.nem_db.get_mosaics(limit, offset, sort)
 
 		return [mosaic.to_dict() for mosaic in mosaics]
+
+	def get_transactions(self, limit, offset, sort):
+		"""Gets transactions pagination."""
+
+		transactions = self.nem_db.get_transactions(limit, offset, sort)
+
+		return [transaction.to_dict() for transaction in transactions]

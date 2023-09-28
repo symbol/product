@@ -125,6 +125,21 @@ def setup_nem_routes(app, nem_api_facade):
 
 		return jsonify(nem_api_facade.get_mosaics(limit=limit, offset=offset, sort=sort))
 
+	@app.route('/api/nem/transactions')
+	def api_get_nem_transactions():
+		try:
+			limit = int(request.args.get('limit', 10))
+			offset = int(request.args.get('offset', 0))
+			sort = request.args.get('sort', 'DESC')
+
+			if limit < 0 or offset < 0 or sort.upper() not in ['ASC', 'DESC']:
+				raise ValueError()
+
+		except ValueError:
+			abort(400)
+
+		return jsonify(nem_api_facade.get_transactions(limit=limit, offset=offset, sort=sort))
+
 
 def setup_error_handlers(app):
 	@app.errorhandler(404)
