@@ -67,7 +67,11 @@ const MosaicAvatar = ({ mosaicId }) => {
 };
 
 const NamespaceAvatar = () => {
-	return <CustomImage src={'/images/namespaces/namespace.png'} className={styles.image} />;
+	return <CustomImage src={'/images/namespaces/namespace.svg'} className={styles.image} />;
+};
+
+const BlockAvatar = () => {
+	return <CustomImage src={'/images/blocks/block.svg'} className={styles.image} />;
 };
 
 const TransactionAvatar = ({ type }) => {
@@ -93,6 +97,8 @@ const Avatar = ({ size, type, value }) => {
 			<MosaicAvatar mosaicId={value} />
 		) : type === 'transaction' ? (
 			<TransactionAvatar type={value} />
+		) : type === 'block' ? (
+			<BlockAvatar />
 		) : type === 'namespace' ? (
 			<NamespaceAvatar namespaceId={value} />
 		) : null;
