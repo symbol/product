@@ -22,8 +22,7 @@ export const Harvesting = connect((state) => ({
     nodeUrls: state.network.nodeUrls,
     ticker: state.network.ticker,
 }))(function Harvesting(props) {
-    const { balances, currentAccount, isAccountReady, isWalletReady, networkIdentifier, networkProperties, chainHeight, nodeUrls, ticker } =
-        props;
+    const { balances, currentAccount, isAccountReady, isWalletReady, networkIdentifier, networkProperties, chainHeight, ticker } = props;
     const accountBalance = currentAccount ? balances[currentAccount.address] : 0;
     const [isActionMade, setIsActionMade] = useState(false);
     const [nodeUrl, setNodeUrl] = useState('');
