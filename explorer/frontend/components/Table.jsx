@@ -3,10 +3,20 @@ import dynamic from 'next/dynamic';
 import { useTranslation } from 'next-i18next';
 const TablePageLoader = dynamic(() => import('./TablePageLoader'), { ssr: false });
 
-const Table = ({ data, sections, columns, ItemMobile, renderSectionHeader, onEndReached, isLoading, isLastPage, isLastColumnAligned }) => {
+const Table = ({
+	data,
+	sections,
+	columns,
+	renderItemMobile,
+	renderSectionHeader,
+	onEndReached,
+	isLoading,
+	isLastPage,
+	isLastColumnAligned
+}) => {
 	const { t } = useTranslation('common');
 
-	const desktopTableStyle = !ItemMobile ? styles.dataMobile : '';
+	const desktopTableStyle = !renderItemMobile ? styles.dataMobile : '';
 	const headerCellStyle = `${styles.headerCell} ${isLastColumnAligned && styles.headerCell_aligned}`;
 	const dataCellStyle = isLastColumnAligned ? styles.dataCell_aligned : '';
 
@@ -21,7 +31,7 @@ const Table = ({ data, sections, columns, ItemMobile, renderSectionHeader, onEnd
 	);
 	const renderMobileListItem = (item, index) => (
 		<div className={styles.itemMobile} key={'trm' + index}>
-			<ItemMobile data={item} />
+			{renderItemMobile(item)}
 		</div>
 	);
 
@@ -35,7 +45,7 @@ const Table = ({ data, sections, columns, ItemMobile, renderSectionHeader, onEnd
 				))}
 			</div>
 			{!!data && <div className={`${styles.data} ${desktopTableStyle}`}>{data.map(renderRow)}</div>}
-			{!!data && !!ItemMobile && <div className={styles.listMobile}>{data.map(renderMobileListItem)}</div>}
+			{!!data && !!renderItemMobile && <div className={styles.listMobile}>{data.map(renderMobileListItem)}</div>}
 			{!!data && !data.length && <div className={styles.emptyListMessage}>{t('message_emptyTable')}</div>}
 			{!!sections && !sections.length && <div className={styles.emptyListMessage}>{t('message_emptyTable')}</div>}
 
@@ -44,7 +54,7 @@ const Table = ({ data, sections, columns, ItemMobile, renderSectionHeader, onEnd
 					<div className={styles.section} key={'sc' + index}>
 						<div className={styles.sectionHeader}>{renderSectionHeader(section)}</div>
 						<div className={`${styles.data} ${desktopTableStyle}`}>{section.data.map(renderRow)}</div>
-						{!!ItemMobile && <div className={styles.listMobile}>{section.data.map(renderMobileListItem)}</div>}
+						{!!renderItemMobile && <div className={styles.listMobile}>{section.data.map(renderMobileListItem)}</div>}
 					</div>
 				))}
 

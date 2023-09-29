@@ -106,7 +106,7 @@ const Accounts = ({ preloadedData, stats }) => {
 					<Table
 						data={data}
 						columns={tableColumns}
-						ItemMobile={ItemAccountMobile}
+						renderItemMobile={data => <ItemAccountMobile data={data} />}
 						isLoading={isLoading}
 						isLastPage={isLastPage}
 						onEndReached={requestNextPage}

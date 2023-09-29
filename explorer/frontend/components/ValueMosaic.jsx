@@ -6,7 +6,19 @@ import styles from '@/styles/components/ValueMosaic.module.scss';
 import { createPageHref } from '@/utils';
 import Link from 'next/link';
 
-const ValueMosaic = ({ mosaicName, mosaicId, amount, isNative, className, direction, size, onClick, isNavigationDisabled }) => {
+const ValueMosaic = ({
+	mosaicName,
+	mosaicId,
+	amount,
+	isNative,
+	className,
+	direction,
+	size,
+	onClick,
+	isNavigationDisabled,
+	chainHeight,
+	expirationHeight
+}) => {
 	let displayedName;
 	let imageSrc;
 	const directionStyleMap = {
@@ -19,6 +31,8 @@ const ValueMosaic = ({ mosaicName, mosaicId, amount, isNative, className, direct
 	const isAmountExist = !isNaN(amount) && amount !== null;
 	const [integer, decimal] = isAmountExist ? amount.toString().split('.') : ['-'];
 	const finalMosaicId = isNative ? config.NATIVE_MOSAIC_ID : mosaicId;
+
+	const dot = !chainHeight ? null : chainHeight < expirationHeight ? 'green' : 'red';
 
 	if (finalMosaicId === config.NATIVE_MOSAIC_ID) {
 		displayedName = '';
@@ -41,7 +55,7 @@ const ValueMosaic = ({ mosaicName, mosaicId, amount, isNative, className, direct
 			href={createPageHref('mosaics', finalMosaicId)}
 			onClick={handleClick}
 		>
-			<Avatar type="mosaic" size="md" value={finalMosaicId} />
+			<Avatar type="mosaic" size="md" value={finalMosaicId} dot={dot} />
 			<div className={styles.valueMosaicMdTextSection}>
 				<div>{mosaicName}</div>
 				{isAmountExist && <div>{amount}</div>}

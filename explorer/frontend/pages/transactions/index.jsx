@@ -195,7 +195,7 @@ const TransactionInfo = ({ preloadedData, stats }) => {
 					<Table
 						sections={transactionsGrouped}
 						columns={tableColumns}
-						ItemMobile={ItemTransactionMobile}
+						renderItemMobile={data => <ItemTransactionMobile data={data} />}
 						isLoading={isLoading}
 						isLastPage={isLastPage}
 						onEndReached={requestNextPage}

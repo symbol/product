@@ -82,12 +82,16 @@ const TransactionAvatar = ({ type }) => {
 	);
 };
 
-const Avatar = ({ size, type, value }) => {
+const Avatar = ({ size, type, value, dot }) => {
 	const sizeStyleMap = {
 		sm: styles.containerSm,
 		md: styles.containerMd,
 		lg: styles.containerLg,
 		xl: styles.containerXl
+	};
+	const dotStyleMap = {
+		red: styles.dotRed,
+		green: styles.dotGreen
 	};
 
 	const ChildComponent =
@@ -103,7 +107,12 @@ const Avatar = ({ size, type, value }) => {
 			<NamespaceAvatar namespaceId={value} />
 		) : null;
 
-	return <div className={`${styles.container} ${sizeStyleMap[size]}`}>{ChildComponent}</div>;
+	return (
+		<div className={`${styles.container} ${sizeStyleMap[size]}`}>
+			{ChildComponent}
+			{!!dot && <div className={dotStyleMap[dot]} />}
+		</div>
+	);
 };
 
 export default Avatar;
