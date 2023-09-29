@@ -12,8 +12,6 @@ import { layout } from 'src/styles';
 import {
     generateMosaicId,
     generateNonce,
-    getMosaicAbsoluteAmount,
-    getMosaicRelativeAmountString,
     getTransactionFees,
     handleError,
     useDataManager,
@@ -58,31 +56,21 @@ export const MosaicCreation = connect((state) => ({
         [validateRequired(), validateMosaicDuration(networkProperties?.blockGenerationTargetTime)],
         $t
     );
-    const summaryTable = {
-        quantity: getMosaicRelativeAmountString(getMosaicAbsoluteAmount(supply, +divisibility), +divisibility),
-        duration: isExpiring
-            ? $t('s_mosaicCreation_durationDays', {
-                  duration: Math.round((networkProperties?.blockGenerationTargetTime * duration) / 86400),
-              })
-            : '∞',
-        mosaicId,
-        transactionFee: maxFee,
-        rentalFee,
-    };
     const isButtonDisabled = !!supplyErrorMessage || !!divisibilityErrorMessage;
 
     const transaction = {
         signerAddress: currentAccount.address,
-        mosaicId,
-        nonce,
-        duration: isExpiring ? +duration : 0,
+        fee: maxFee,
+        rentalFee,
         supply: parseInt(supply || 0),
         divisibility: parseInt(divisibility || 0),
+        duration: isExpiring ? +duration : 0,
+        mosaicId,
+        nonce,
         isSupplyMutable,
         isTransferable,
         isRestrictable,
         isRevokable,
-        fee: maxFee,
     };
 
     const transactionSize = 700;
@@ -226,6 +214,17 @@ export const MosaicCreation = connect((state) => ({
                                     value={duration}
                                     errorMessage={durationErrorMessage}
                                     onChange={setDuration}
+                                    contentRight={
+                                        <StyledText type="regular">
+                                            {isExpiring
+                                                ? $t('s_mosaicCreation_durationDays', {
+                                                      duration: Math.round(
+                                                          (networkProperties?.blockGenerationTargetTime * duration) / 86400
+                                                      ),
+                                                  })
+                                                : '∞'}
+                                        </StyledText>
+                                    }
                                 />
                             </FormItem>
                         )}
@@ -237,14 +236,6 @@ export const MosaicCreation = connect((state) => ({
                                 ticker={ticker}
                                 onChange={setSpeed}
                             />
-                        </FormItem>
-                        <FormItem>
-                            <StyledText type="title">{$t('s_mosaicCreation_summary_title')}</StyledText>
-                            <Widget>
-                                <FormItem>
-                                    <TableView data={summaryTable} />
-                                </FormItem>
-                            </Widget>
                         </FormItem>
                     </>
                 )}
