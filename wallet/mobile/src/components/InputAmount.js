@@ -1,15 +1,16 @@
 import React, { useEffect } from 'react';
 import { StyleSheet, Text } from 'react-native';
 import { TouchableOpacity } from 'react-native-gesture-handler';
-import { TextBox } from 'src/components';
+import { DialogBox, TextBox } from 'src/components';
 import { $t } from 'src/localization';
 import { colors, fonts } from 'src/styles';
-import { useValidation, validateAmount } from 'src/utils';
+import { useToggle, useValidation, validateAmount } from 'src/utils';
 
 export const InputAmount = (props) => {
     const { title, value, availableBalance, onChange, onValidityChange } = props;
     const errorMessage = useValidation(value, [validateAmount(availableBalance)], $t);
     const isAvailableBalanceShown = availableBalance !== undefined;
+    const [isConfirmVisible, toggleConfirm] = useToggle(false);
 
     const handleChange = (str) => {
         const formattedStr = str
@@ -20,6 +21,7 @@ export const InputAmount = (props) => {
     };
     const setMax = () => {
         handleChange('' + availableBalance);
+        toggleConfirm();
     };
 
     useEffect(() => {
@@ -27,21 +29,33 @@ export const InputAmount = (props) => {
     }, [value, errorMessage]);
 
     return (
-        <TextBox
-            title={title}
-            keyboardType="decimal-pad"
-            nativePlaceholder="0"
-            errorMessage={errorMessage}
-            value={value}
-            onChange={handleChange}
-            contentRight={
-                isAvailableBalanceShown && (
-                    <TouchableOpacity onPress={setMax}>
-                        <Text style={styles.availableBalanceText}>Available: {availableBalance}</Text>
-                    </TouchableOpacity>
-                )
-            }
-        />
+        <>
+            <TextBox
+                title={title}
+                keyboardType="decimal-pad"
+                nativePlaceholder="0"
+                errorMessage={errorMessage}
+                value={value}
+                onChange={handleChange}
+                contentRight={
+                    isAvailableBalanceShown && (
+                        <TouchableOpacity onPress={toggleConfirm}>
+                            <Text style={styles.availableBalanceText}>
+                                {$t('c_inputAmount_label_available')}: {availableBalance}
+                            </Text>
+                        </TouchableOpacity>
+                    )
+                }
+            />
+            <DialogBox
+                type="confirm"
+                title={$t('c_inputAmount_confirm_title')}
+                text={$t('c_inputAmount_confirm_text', { amount: availableBalance })}
+                isVisible={isConfirmVisible}
+                onSuccess={setMax}
+                onCancel={toggleConfirm}
+            />
+        </>
     );
 };
 
