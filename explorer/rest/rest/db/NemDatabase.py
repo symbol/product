@@ -478,93 +478,117 @@ class NemDatabase(DatabaseConnectionPool):
 
 			return [self._create_mosaic_view(result) for result in results]
 
-	def get_transactions(self, limit, offset, sort):
+	def get_transactions(self, limit, offset, sort, height, type):
 		"""Gets transactions pagination in database."""
+
+		sql = """
+		SELECT
+			t.transaction_hash,
+			t.transaction_type,
+			t.sender AS from,
+			CASE
+				WHEN transaction_type = 257 THEN tt.recipient
+				WHEN transaction_type = 8193 THEN tnr.rental_fee_sink
+				WHEN transaction_type = 16385 THEN tmdc.creation_fee_sink
+				ELSE NULL
+			END AS to,
+			CASE
+				WHEN transaction_type = 257 Then tt.mosaics
+				ELSE NULL
+			END AS transfer_mosaic,
+			CASE
+				WHEN transaction_type = 257 Then tt.amount
+				ELSE NULL
+			END AS transfer_amount,
+			CASE
+				WHEN transaction_type = 257 Then tt.message
+				ELSE NULL
+			END AS transfer_message,
+			CASE
+				WHEN transaction_type = 8193 THEN tnr.namespace
+				WHEN transaction_type = 16385 THEN tmdc.namespace_name
+			END AS mosaic_namespace_creation_name,
+			CASE
+				WHEN transaction_type = 4100 Then tm.other_transaction
+				ELSE NULL
+			END AS multisig_inner_transaction,
+			CASE
+				WHEN transaction_type = 2049 Then takl.mode
+				ELSE NULL
+			END AS account_key_link_mode,
+			CASE
+				WHEN transaction_type = 4097 Then tmam.min_cosignatories
+				ELSE NULL
+			END AS multisig_account_modification_min_cosignatories,
+			CASE
+				WHEN transaction_type = 4097 Then tmam.modifications
+				ELSE NULL
+			END AS multisig_account_modification_modifications,
+			CASE
+				WHEN transaction_type = 16386 Then tmsc.supply_type
+				ELSE NULL
+			END AS mosaic_supply_change_type,
+			CASE
+				WHEN transaction_type = 16386 Then tmsc.delta
+				ELSE NULL
+			END AS mosaic_supply_change_delta,
+			CASE
+				WHEN transaction_type = 16386 Then tmsc.namespace_name
+				ELSE NULL
+			END AS mosaic_supply_change_namespace_name,
+			t.fee,
+			CASE
+				WHEN transaction_type = 8193 THEN tnr.rental_fee
+				WHEN transaction_type = 16385 THEN tmdc.creation_fee
+				ELSE NULL
+			END AS mosaic_namespace_sink_fee,
+			t.height,
+			t.timestamp,
+			t.deadline
+		FROM transactions t
+		LEFT JOIN transactions_account_key_link takl
+			ON t.id = takl.transaction_id
+		LEFT JOIN transactions_mosaic_definition_creation tmdc
+			ON t.id = tmdc.transaction_id
+		LEFT JOIN transactions_mosaic_supply_change tmsc
+			ON t.id = tmsc.transaction_id
+		LEFT JOIN transactions_multisig tm
+			ON t.id = tm.transaction_id
+		LEFT JOIN transactions_multisig_account_modification tmam
+			ON t.id = tmam.transaction_id
+		LEFT JOIN transactions_namespace_registration tnr
+			ON t.id = tnr.transaction_id
+		LEFT JOIN transactions_transfer tt
+			ON t.id = tt.transaction_id
+		"""
+
+		# Define parameters list
+		params = []
+
+		# Create a list to hold WHERE clauses
+		where_clauses = []
+
+		# Check for height filter
+		if height is not None:
+			where_clauses.append("t.height = %s")
+			params.append(height)
+
+		# Check for transaction type filter
+		if type is not None:
+			where_clauses.append("t.transaction_type = %s")
+			params.append(type)
+
+		# Append WHERE clauses to SQL string if any exists
+		if where_clauses:
+			sql += " WHERE " + " AND ".join(where_clauses)
+
+		# Append the ORDER BY and LIMIT/OFFSET
+		sql += f" ORDER BY t.height {sort} LIMIT %s OFFSET %s"
+		params.extend([limit, offset])
 
 		with self.connection() as connection:
 			cursor = connection.cursor()
-			cursor.execute(f'''
-				SELECT
-					t.transaction_hash,
-					t.transaction_type,
-					t.sender AS from,
-					CASE
-						WHEN transaction_type = 257 THEN tt.recipient
-						WHEN transaction_type = 8193 THEN tnr.rental_fee_sink
-						WHEN transaction_type = 16385 THEN tmdc.creation_fee_sink
-						ELSE NULL
-					END AS to,
-					CASE
-						WHEN transaction_type = 257 Then tt.mosaics
-						ELSE NULL
-					END AS transfer_mosaic,
-					CASE
-						WHEN transaction_type = 257 Then tt.amount
-						ELSE NULL
-					END AS transfer_amount,
-					CASE
-						WHEN transaction_type = 257 Then tt.message
-						ELSE NULL
-					END AS transfer_message,
-					CASE
-						WHEN transaction_type = 8193 THEN tnr.namespace
-						WHEN transaction_type = 16385 THEN tmdc.namespace_name
-					END AS mosaic_namespace_creation_name,
-					CASE
-						WHEN transaction_type = 4100 Then tm.other_transaction
-						ELSE NULL
-					END AS multisig_inner_transaction,
-					CASE
-						WHEN transaction_type = 2049 Then takl.mode
-						ELSE NULL
-					END AS account_key_link_mode,
-					CASE
-						WHEN transaction_type = 4097 Then tmam.min_cosignatories
-						ELSE NULL
-					END AS multisig_account_modification_min_cosignatories,
-					CASE
-						WHEN transaction_type = 4097 Then tmam.modifications
-						ELSE NULL
-					END AS multisig_account_modification_modifications,
-					CASE
-						WHEN transaction_type = 16386 Then tmsc.supply_type
-						ELSE NULL
-					END AS mosaic_supply_change_type,
-					CASE
-						WHEN transaction_type = 16386 Then tmsc.delta
-						ELSE NULL
-					END AS mosaic_supply_change_delta,
-					CASE
-						WHEN transaction_type = 16386 Then tmsc.namespace_name
-						ELSE NULL
-					END AS mosaic_supply_change_namespace_name,
-					t.fee,
-					CASE
-						WHEN transaction_type = 8193 THEN tnr.rental_fee
-						WHEN transaction_type = 16385 THEN tmdc.creation_fee
-						ELSE NULL
-					END AS mosaic_namespace_sink_fee,
-					t.height,
-					t.timestamp,
-					t.deadline
-				FROM transactions t
-				LEFT JOIN transactions_account_key_link takl
-					ON t.id = takl.transaction_id
-				LEFT JOIN transactions_mosaic_definition_creation tmdc
-					ON t.id = tmdc.transaction_id
-				LEFT JOIN transactions_mosaic_supply_change tmsc
-					ON t.id = tmsc.transaction_id
-				LEFT JOIN transactions_multisig tm
-					ON t.id = tm.transaction_id
-				LEFT JOIN transactions_multisig_account_modification tmam
-					ON t.id = tmam.transaction_id
-				LEFT JOIN transactions_namespace_registration tnr
-					ON t.id = tnr.transaction_id
-				LEFT JOIN transactions_transfer tt
-					ON t.id = tt.transaction_id
-				ORDER BY t.height {sort}
-				LIMIT %s OFFSET %s
-			''', (limit, offset,))
+			cursor.execute(sql, params)
 			results = cursor.fetchall()
 
 			return [self._create_transaction_list_view(result) for result in results]

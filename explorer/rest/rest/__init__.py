@@ -4,6 +4,7 @@ from pathlib import Path
 
 from flask import Flask, abort, jsonify, request
 from flask_cors import CORS
+from symbolchain.nc import TransactionType
 from symbolchain.nem.Network import Network
 from zenlog import log
 
@@ -131,6 +132,26 @@ def setup_nem_routes(app, nem_api_facade):
 			limit = int(request.args.get('limit', 10))
 			offset = int(request.args.get('offset', 0))
 			sort = request.args.get('sort', 'DESC')
+			height = request.args.get('height', None)
+			type = request.args.get('type', None)
+
+			if height is not None:
+				height = int(height)
+				if height < 1:
+					raise ValueError()
+
+			if type is not None:
+				type = int(type)
+				if type not in [
+					TransactionType.TRANSFER.value,
+					TransactionType.ACCOUNT_KEY_LINK.value,
+					TransactionType.MULTISIG_ACCOUNT_MODIFICATION.value,
+					TransactionType.MULTISIG.value,
+					TransactionType.NAMESPACE_REGISTRATION.value,
+					TransactionType.MOSAIC_DEFINITION.value,
+					TransactionType.MOSAIC_SUPPLY_CHANGE.value
+				]:
+					raise ValueError()
 
 			if limit < 0 or offset < 0 or sort.upper() not in ['ASC', 'DESC']:
 				raise ValueError()
@@ -138,7 +159,7 @@ def setup_nem_routes(app, nem_api_facade):
 		except ValueError:
 			abort(400)
 
-		return jsonify(nem_api_facade.get_transactions(limit=limit, offset=offset, sort=sort))
+		return jsonify(nem_api_facade.get_transactions(limit=limit, offset=offset, sort=sort, height=height, type=type))
 
 
 def setup_error_handlers(app):
