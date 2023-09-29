@@ -30,6 +30,90 @@ class NemDatabase(DatabaseConnectionPool):
 		super().__init__(db_config)
 		self.network = network
 
+	def _generate_transaction_sql_query(self):
+		"""Base transaction sql query."""
+
+		return """
+			SELECT
+				t.transaction_hash,
+				t.transaction_type,
+				t.sender AS from,
+				t.fee,
+				t.height,
+				t.timestamp,
+				t.deadline,
+				CASE
+					WHEN transaction_type = 257 THEN tt.recipient
+					WHEN transaction_type = 8193 THEN tnr.rental_fee_sink
+					WHEN transaction_type = 16385 THEN tmdc.creation_fee_sink
+					ELSE NULL
+				END AS to,
+				CASE
+					WHEN transaction_type = 257 Then tt.mosaics
+					ELSE NULL
+				END AS transfer_mosaic,
+				CASE
+					WHEN transaction_type = 257 Then tt.amount
+					ELSE NULL
+				END AS transfer_amount,
+				CASE
+					WHEN transaction_type = 257 Then tt.message
+					ELSE NULL
+				END AS transfer_message,
+				CASE
+					WHEN transaction_type = 8193 THEN tnr.namespace
+					WHEN transaction_type = 16385 THEN tmdc.namespace_name
+				END AS mosaic_namespace_creation_name,
+				CASE
+					WHEN transaction_type = 4100 Then tm.other_transaction
+					ELSE NULL
+				END AS multisig_inner_transaction,
+				CASE
+					WHEN transaction_type = 2049 Then takl.mode
+					ELSE NULL
+				END AS account_key_link_mode,
+				CASE
+					WHEN transaction_type = 4097 Then tmam.min_cosignatories
+					ELSE NULL
+				END AS multisig_account_modification_min_cosignatories,
+				CASE
+					WHEN transaction_type = 4097 Then tmam.modifications
+					ELSE NULL
+				END AS multisig_account_modification_modifications,
+				CASE
+					WHEN transaction_type = 16386 Then tmsc.supply_type
+					ELSE NULL
+				END AS mosaic_supply_change_type,
+				CASE
+					WHEN transaction_type = 16386 Then tmsc.delta
+					ELSE NULL
+				END AS mosaic_supply_change_delta,
+				CASE
+					WHEN transaction_type = 16386 Then tmsc.namespace_name
+					ELSE NULL
+				END AS mosaic_supply_change_namespace_name,
+				CASE
+					WHEN transaction_type = 8193 THEN tnr.rental_fee
+					WHEN transaction_type = 16385 THEN tmdc.creation_fee
+					ELSE NULL
+				END AS mosaic_namespace_sink_fee
+			FROM transactions t
+			LEFT JOIN transactions_account_key_link takl
+				ON t.id = takl.transaction_id
+			LEFT JOIN transactions_mosaic_definition_creation tmdc
+				ON t.id = tmdc.transaction_id
+			LEFT JOIN transactions_mosaic_supply_change tmsc
+				ON t.id = tmsc.transaction_id
+			LEFT JOIN transactions_multisig tm
+				ON t.id = tm.transaction_id
+			LEFT JOIN transactions_multisig_account_modification tmam
+				ON t.id = tmam.transaction_id
+			LEFT JOIN transactions_namespace_registration tnr
+				ON t.id = tnr.transaction_id
+			LEFT JOIN transactions_transfer tt
+				ON t.id = tt.transaction_id
+		"""
+
 	def _create_block_view(self, result):
 		harvest_public_key = PublicKey(_format_bytes(result[6]))
 		return BlockView(
@@ -125,6 +209,10 @@ class NemDatabase(DatabaseConnectionPool):
 			transaction_hash,
 			transaction_type,
 			address_from,
+			fee,
+			height,
+			timestamp,
+			deadline,
 			address_to,
 			transfer_mosaic,
 			transfer_amount,
@@ -137,11 +225,7 @@ class NemDatabase(DatabaseConnectionPool):
 			mosaic_supply_change_type,
 			mosaic_supply_change_delta,
 			mosaic_supply_change_namespace_name,
-			fee,
-			mosaic_namespace_sink_fee,
-			height,
-			timestamp,
-			deadline
+			mosaic_namespace_sink_fee
 		) = result
 
 		from_address = self.network.public_key_to_address(PublicKey(_format_bytes(address_from)))
@@ -478,89 +562,24 @@ class NemDatabase(DatabaseConnectionPool):
 
 			return [self._create_mosaic_view(result) for result in results]
 
-	def get_transactions(self, limit, offset, sort, height, type):
+	def get_transaction(self, transaction_hash):
+		"""Gets transaction by transaction hash in database."""
+
+		sql = self._generate_transaction_sql_query()
+		sql += " WHERE t.transaction_hash = %s"
+		params = ('\\x' + transaction_hash,)
+
+		with self.connection() as connection:
+			cursor = connection.cursor()
+			cursor.execute(sql, params)
+			result = cursor.fetchone()
+
+			return self._create_transaction_list_view(result) if result else None
+
+	def get_transactions(self, limit, offset, sort, height, transaction_type):
 		"""Gets transactions pagination in database."""
 
-		sql = """
-		SELECT
-			t.transaction_hash,
-			t.transaction_type,
-			t.sender AS from,
-			CASE
-				WHEN transaction_type = 257 THEN tt.recipient
-				WHEN transaction_type = 8193 THEN tnr.rental_fee_sink
-				WHEN transaction_type = 16385 THEN tmdc.creation_fee_sink
-				ELSE NULL
-			END AS to,
-			CASE
-				WHEN transaction_type = 257 Then tt.mosaics
-				ELSE NULL
-			END AS transfer_mosaic,
-			CASE
-				WHEN transaction_type = 257 Then tt.amount
-				ELSE NULL
-			END AS transfer_amount,
-			CASE
-				WHEN transaction_type = 257 Then tt.message
-				ELSE NULL
-			END AS transfer_message,
-			CASE
-				WHEN transaction_type = 8193 THEN tnr.namespace
-				WHEN transaction_type = 16385 THEN tmdc.namespace_name
-			END AS mosaic_namespace_creation_name,
-			CASE
-				WHEN transaction_type = 4100 Then tm.other_transaction
-				ELSE NULL
-			END AS multisig_inner_transaction,
-			CASE
-				WHEN transaction_type = 2049 Then takl.mode
-				ELSE NULL
-			END AS account_key_link_mode,
-			CASE
-				WHEN transaction_type = 4097 Then tmam.min_cosignatories
-				ELSE NULL
-			END AS multisig_account_modification_min_cosignatories,
-			CASE
-				WHEN transaction_type = 4097 Then tmam.modifications
-				ELSE NULL
-			END AS multisig_account_modification_modifications,
-			CASE
-				WHEN transaction_type = 16386 Then tmsc.supply_type
-				ELSE NULL
-			END AS mosaic_supply_change_type,
-			CASE
-				WHEN transaction_type = 16386 Then tmsc.delta
-				ELSE NULL
-			END AS mosaic_supply_change_delta,
-			CASE
-				WHEN transaction_type = 16386 Then tmsc.namespace_name
-				ELSE NULL
-			END AS mosaic_supply_change_namespace_name,
-			t.fee,
-			CASE
-				WHEN transaction_type = 8193 THEN tnr.rental_fee
-				WHEN transaction_type = 16385 THEN tmdc.creation_fee
-				ELSE NULL
-			END AS mosaic_namespace_sink_fee,
-			t.height,
-			t.timestamp,
-			t.deadline
-		FROM transactions t
-		LEFT JOIN transactions_account_key_link takl
-			ON t.id = takl.transaction_id
-		LEFT JOIN transactions_mosaic_definition_creation tmdc
-			ON t.id = tmdc.transaction_id
-		LEFT JOIN transactions_mosaic_supply_change tmsc
-			ON t.id = tmsc.transaction_id
-		LEFT JOIN transactions_multisig tm
-			ON t.id = tm.transaction_id
-		LEFT JOIN transactions_multisig_account_modification tmam
-			ON t.id = tmam.transaction_id
-		LEFT JOIN transactions_namespace_registration tnr
-			ON t.id = tnr.transaction_id
-		LEFT JOIN transactions_transfer tt
-			ON t.id = tt.transaction_id
-		"""
+		sql = self._generate_transaction_sql_query()
 
 		# Define parameters list
 		params = []
@@ -574,9 +593,9 @@ class NemDatabase(DatabaseConnectionPool):
 			params.append(height)
 
 		# Check for transaction type filter
-		if type is not None:
+		if transaction_type is not None:
 			where_clauses.append("t.transaction_type = %s")
-			params.append(type)
+			params.append(transaction_type)
 
 		# Append WHERE clauses to SQL string if any exists
 		if where_clauses:

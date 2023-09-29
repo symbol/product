@@ -51,6 +51,13 @@ class NemRestFacade:
 
 		return [mosaic.to_dict() for mosaic in mosaics]
 
+	def get_transaction(self, hash):
+		"""Gets transaction by hash."""
+
+		transaction = self.nem_db.get_transaction(hash)
+
+		return transaction.to_dict() if transaction else None
+
 	def get_transactions(self, limit, offset, sort, height, type):
 		"""Gets transactions pagination."""
 

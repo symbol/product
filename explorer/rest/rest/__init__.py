@@ -126,6 +126,13 @@ def setup_nem_routes(app, nem_api_facade):
 
 		return jsonify(nem_api_facade.get_mosaics(limit=limit, offset=offset, sort=sort))
 
+	@app.route('/api/nem/transaction/<hash>')
+	def api_get_nem_transaction_by_hash(hash):
+		result = nem_api_facade.get_transaction(hash)
+		if not result:
+			abort(404)
+		return jsonify(result)
+
 	@app.route('/api/nem/transactions')
 	def api_get_nem_transactions():
 		try:
