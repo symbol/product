@@ -59,7 +59,7 @@ const Blocks = ({ namespaces }) => {
 			<Head>
 				<title>{t('page_namespaces')}</title>
 			</Head>
-			<Section>
+			<Section title={t('section_namespaces')}>
 				<Table
 					data={data}
 					columns={tableColumns}

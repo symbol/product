@@ -94,7 +94,7 @@ const Home = ({ blocks, fees, latestTransactions, pendingTransactions, baseInfo,
 					</div>
 				</div>
 			</Section>
-			<div className="layout-section-row">
+			{/* <div className="layout-section-row">
 				<Section title={t('section_fees')}>
 					<div className="layout-flex-row-mobile-col">
 						<div className="layout-flex-fill">
@@ -121,7 +121,7 @@ const Home = ({ blocks, fees, latestTransactions, pendingTransactions, baseInfo,
 						</div>
 					</div>
 				</Section>
-			</div>
+			</div> */}
 			<div className="layout-section-row">
 				<Section title={t('section_latestTransactions')}>
 					<RecentTransactions data={latestTransactions} />

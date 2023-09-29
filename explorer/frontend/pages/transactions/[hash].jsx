@@ -81,7 +81,7 @@ const TransactionInfo = ({ transactionInfo }) => {
 	return (
 		<div className={styles.wrapper}>
 			<Head>
-				<title>{t('page_transactionInfo')}</title>
+				<title>{t('page_transactionInfo', { type: transactionInfo.type })}</title>
 			</Head>
 			<div className="layout-section-row">
 				<Section title={t('section_transaction')} className={styles.firstSection} cardClassName={styles.firstSectionCard}>

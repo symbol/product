@@ -57,7 +57,7 @@ const Mosaics = ({ mosaics }) => {
 			<Head>
 				<title>{t('page_mosaics')}</title>
 			</Head>
-			<Section>
+			<Section title={t('section_mosaics')}>
 				<Table
 					data={data}
 					columns={tableColumns}

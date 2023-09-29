@@ -76,7 +76,7 @@ const BlockInfo = ({ blockInfo, transactions }) => {
 	return (
 		<div className={styles.wrapper}>
 			<Head>
-				<title>{t('page_blockInfo')}</title>
+				<title>{t('page_blockInfo', { height: blockInfo.height })}</title>
 			</Head>
 			<div className="layout-section-row">
 				<Section title={t('section_block')} className={styles.firstSection} cardClassName={styles.firstSectionCard}>
