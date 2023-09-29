@@ -140,7 +140,7 @@ const AccountInfo = ({ accountInfo, preloadedTransactions }) => {
 	return (
 		<div className={styles.wrapper}>
 			<Head>
-				<title>{t('page_accountInfo')}</title>
+				<title>{t('page_accountInfo', { address: accountInfo.address })}</title>
 			</Head>
 			<div className="layout-section-row">
 				<Section title={t('section_account')} className={styles.firstSection} cardClassName={styles.firstSectionCard}>

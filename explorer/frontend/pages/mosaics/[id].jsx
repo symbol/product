@@ -122,7 +122,7 @@ const MosaicInfo = ({ mosaicInfo, preloadedTransactions }) => {
 	return (
 		<div className={styles.wrapper}>
 			<Head>
-				<title>{t('page_mosaicsInfo')}</title>
+				<title>{t('page_mosaicInfo', { name: mosaicInfo.name })}</title>
 			</Head>
 			<div className="layout-section-row">
 				<Section title={t('section_mosaic')} className={styles.firstSection} cardClassName={styles.firstSectionCard}>

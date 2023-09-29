@@ -88,7 +88,7 @@ const NamespaceInfo = ({ namespaceInfo }) => {
 	return (
 		<div className={styles.wrapper}>
 			<Head>
-				<title>{t('page_namespaceInfo')}</title>
+				<title>{t('page_namespaceInfo', { name: namespaceInfo.name })}</title>
 			</Head>
 			<div className="layout-section-row">
 				<Section title={t('section_namespace')} className={styles.firstSection} cardClassName={styles.firstSectionCard}>
