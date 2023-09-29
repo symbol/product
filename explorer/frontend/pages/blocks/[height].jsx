@@ -122,7 +122,12 @@ const BlockInfo = ({ blockInfo, transactions }) => {
 				</Section>
 			</div>
 			<Section title={t('section_transactions')}>
-				<Table data={transactions} columns={tableColumns} ItemMobile={ItemTransactionMobile} isLastPage={true} />
+				<Table
+					data={transactions}
+					columns={tableColumns}
+					renderItemMobile={data => <ItemTransactionMobile data={data} />}
+					isLastPage={true}
+				/>
 			</Section>
 		</div>
 	);

@@ -1,6 +1,7 @@
 @import "../variables";
 
 .container {
+    position: relative;
     overflow: hidden;
     border-radius: 50%;
 }
@@ -43,4 +44,26 @@
     height: 100%;
     background-color: #fff;
     filter: invert(1);
+}
+
+%dot {
+    position: absolute;
+    right: 8%;
+    bottom: 8%;
+    width: $spacing-base;
+    height: $spacing-base;
+    border: $spacing-base / 4 solid $color-background-card;
+    border-radius: 50%;
+}
+
+.dotGreen {
+    @extend %dot;
+
+    background-color: $color-success;
+}
+
+.dotRed {
+    @extend %dot;
+
+    background-color: $color-danger;
 }

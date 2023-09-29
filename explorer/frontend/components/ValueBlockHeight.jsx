@@ -1,9 +1,8 @@
-import CustomImage from './CustomImage';
+import Avatar from './Avatar';
 import ValueTimestamp from './ValueTimestamp';
 import styles from '@/styles/components/ValueBlockHeight.module.scss';
 import { createPageHref } from '@/utils';
 import Link from 'next/link';
-import Avatar from './Avatar';
 
 const ValueBlockHeight = ({ value, timestamp, className, size, isNavigationDisabled, onClick }) => {
 	const handleClick = e => {

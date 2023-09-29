@@ -247,3 +247,23 @@ export const useUserCurrencyAmount = (fetchPrice, amount, currency, timestamp) =
 
 	return amountInUserCurrency;
 };
+
+export const useAsyncCallOnMount = (callback, defaultData, onError) => {
+	const [data, setData] = useState(defaultData);
+
+	useEffect(() => {
+		const call = async () => {
+			try {
+				const data = await callback();
+				setData(data);
+			} catch (e) {
+				if (onError) {
+					onError(e);
+				}
+			}
+		};
+		call();
+	}, [callback]);
+
+	return data;
+};

@@ -1,3 +1,4 @@
+import { getChainHight } from '../api/blocks';
 import { getNamespacePage } from '../api/namespaces';
 import ItemNamespaceMobile from '@/components/ItemNamespaceMobile';
 import Section from '@/components/Section';
@@ -5,7 +6,7 @@ import Table from '@/components/Table';
 import ValueAccount from '@/components/ValueAccount';
 import ValueBlockHeight from '@/components/ValueBlockHeight';
 import styles from '@/styles/pages/Home.module.scss';
-import { createPageHref, usePagination } from '@/utils';
+import { createPageHref, useAsyncCallOnMount, usePagination } from '@/utils';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useTranslation } from 'next-i18next';
@@ -25,6 +26,7 @@ export const getServerSideProps = async ({ locale }) => {
 const Blocks = ({ namespaces }) => {
 	const { t } = useTranslation();
 	const { requestNextPage, data, isLoading, pageNumber, isLastPage } = usePagination(getNamespacePage, namespaces);
+	const chainHeight = useAsyncCallOnMount(getChainHight, 0);
 
 	const tableColumns = [
 		{
@@ -63,7 +65,7 @@ const Blocks = ({ namespaces }) => {
 				<Table
 					data={data}
 					columns={tableColumns}
-					ItemMobile={ItemNamespaceMobile}
+					renderItemMobile={data => <ItemNamespaceMobile data={data} chainHeight={chainHeight} />}
 					isLoading={isLoading}
 					isLastPage={isLastPage}
 					isLastColumnAligned={true}

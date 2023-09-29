@@ -1,4 +1,4 @@
-import { fetchBlockPage } from '../api/blocks';
+import { getChainHight } from '../api/blocks';
 import { getNamespaceInfo } from '../api/namespaces';
 import Avatar from '@/components/Avatar';
 import Field from '@/components/Field';
@@ -69,18 +69,14 @@ const NamespaceInfo = ({ namespaceInfo }) => {
 
 	useEffect(() => {
 		const fetchChainHeight = async () => {
-			const { data } = await fetchBlockPage();
-
-			if (data[0]) {
-				const chainHeight = data[0].height;
-				const expireIn = namespaceInfo.expirationHeight - chainHeight;
-				const isExpired = expireIn < 0;
-				const expirationText = isExpired ? t('value_expired') : t('value_expiration', { value: expireIn });
-				const progressType = isExpired ? 'danger' : '';
-				setChainHeight(chainHeight);
-				setExpirationText(expirationText);
-				setProgressType(progressType);
-			}
+			const chainHeight = await getChainHight();
+			const expireIn = namespaceInfo.expirationHeight - chainHeight;
+			const isExpired = expireIn < 0;
+			const expirationText = isExpired ? t('value_expired') : t('value_expiration', { value: expireIn });
+			const progressType = isExpired ? 'danger' : '';
+			setChainHeight(chainHeight);
+			setExpirationText(expirationText);
+			setProgressType(progressType);
 		};
 		fetchChainHeight();
 	}, [namespaceInfo]);
@@ -126,7 +122,7 @@ const NamespaceInfo = ({ namespaceInfo }) => {
 				<Table
 					sections={namespaceInfo.namespaceMosaics}
 					columns={tableColumns}
-					ItemMobile={ItemMosaicMobile}
+					renderItemMobile={data => <ItemMosaicMobile data={data} />}
 					isLastPage={true}
 					isLastColumnAligned={true}
 					renderSectionHeader={section => (

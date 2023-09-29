@@ -1,3 +1,4 @@
+import { getChainHight } from '../api/blocks';
 import { getMosaicPage } from '../api/mosaics';
 import FieldTimestamp from '@/components/FieldTimestamp';
 import ItemMosaicMobile from '@/components/ItemMosaicMobile';
@@ -7,7 +8,7 @@ import ValueAccount from '@/components/ValueAccount';
 import ValueBlockHeight from '@/components/ValueBlockHeight';
 import ValueTimestamp from '@/components/ValueTimestamp';
 import styles from '@/styles/pages/Home.module.scss';
-import { createPageHref, usePagination } from '@/utils';
+import { createPageHref, useAsyncCallOnMount, usePagination } from '@/utils';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useTranslation } from 'next-i18next';
@@ -27,6 +28,7 @@ export const getServerSideProps = async ({ locale }) => {
 const Mosaics = ({ mosaics }) => {
 	const { t } = useTranslation();
 	const { requestNextPage, data, isLoading, pageNumber, isLastPage } = usePagination(getMosaicPage, mosaics);
+	const chainHeight = useAsyncCallOnMount(getChainHight, 0);
 
 	const tableColumns = [
 		{
@@ -61,7 +63,7 @@ const Mosaics = ({ mosaics }) => {
 				<Table
 					data={data}
 					columns={tableColumns}
-					ItemMobile={ItemMosaicMobile}
+					renderItemMobile={data => <ItemMosaicMobile data={data} chainHeight={chainHeight} />}
 					isLoading={isLoading}
 					isLastPage={isLastPage}
 					isLastColumnAligned={true}

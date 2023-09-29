@@ -213,7 +213,7 @@ const AccountInfo = ({ accountInfo, preloadedTransactions }) => {
 					<Table
 						data={transactionPagination.data}
 						columns={transactionTableColumns}
-						ItemMobile={ItemTransactionMobile}
+						renderItemMobile={data => <ItemTransactionMobile data={data} />}
 						isLoading={transactionPagination.isLoading}
 						isLastPage={transactionPagination.isLastPage}
 						onEndReached={transactionPagination.requestNextPage}

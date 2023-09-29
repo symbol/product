@@ -98,7 +98,7 @@ const Blocks = ({ blocks, chainInfo, charts }) => {
 				<Table
 					data={data}
 					columns={tableColumns}
-					ItemMobile={ItemBlockMobile}
+					renderItemMobile={data => <ItemBlockMobile data={data} />}
 					isLoading={isLoading}
 					isLastPage={isLastPage}
 					onEndReached={() => requestNextPage({ pageNumber: pageNumber + 1 })}
