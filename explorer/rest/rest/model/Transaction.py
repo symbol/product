@@ -1,5 +1,5 @@
 class TransactionListView:
-	def __init__(self, transaction_hash, transaction_type, from_address, to_address, value, fee, height, timestamp):
+	def __init__(self, transaction_hash, transaction_type, from_address, to_address, value, fee, height, timestamp, deadline):
 		"""Create transaction list view."""
 
 		# pylint: disable=too-many-arguments
@@ -12,6 +12,7 @@ class TransactionListView:
 		self.fee = fee
 		self.height = height
 		self.timestamp = timestamp
+		self.deadline = deadline
 
 	def __eq__(self, other):
 		return isinstance(other, TransactionListView) and all([
@@ -22,7 +23,8 @@ class TransactionListView:
 			self.value == other.value,
 			self.fee == other.fee,
 			self.height == other.height,
-			self.timestamp == other.timestamp
+			self.timestamp == other.timestamp,
+			self.deadline == other.deadline
 		])
 
 	def to_dict(self):
@@ -36,5 +38,6 @@ class TransactionListView:
 			'value': self.value,
 			'fee': self.fee,
 			'height': self.height,
-			'timestamp': str(self.timestamp)
+			'timestamp': str(self.timestamp),
+			'deadline': str(self.deadline)
 		}

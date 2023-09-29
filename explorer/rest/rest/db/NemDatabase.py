@@ -128,6 +128,7 @@ class NemDatabase(DatabaseConnectionPool):
 			address_to,
 			transfer_mosaic,
 			transfer_amount,
+			transfer_message,
 			mosaic_namespace_creation_name,
 			multisig_inner_transaction,
 			account_key_link_mode,
@@ -139,7 +140,8 @@ class NemDatabase(DatabaseConnectionPool):
 			fee,
 			mosaic_namespace_sink_fee,
 			height,
-			timestamp
+			timestamp,
+			deadline
 		) = result
 
 		from_address = self.network.public_key_to_address(PublicKey(_format_bytes(address_from)))
@@ -149,8 +151,11 @@ class NemDatabase(DatabaseConnectionPool):
 		value = []
 
 		if transaction_type == 257:  # Transfer
-			# Todo: supply formatting divisibility
+			value.append({
+				'message': transfer_message
+			})
 
+			# Todo: supply formatting divisibility
 			if transfer_mosaic is None:
 				value.append({
 					'namespace': 'nem.xem',
@@ -181,6 +186,10 @@ class NemDatabase(DatabaseConnectionPool):
 
 				mosaics = multisig_inner_transaction['mosaics']
 				amount = multisig_inner_transaction['amount']
+
+				value.append({
+					'message': transfer_message
+				})
 
 				if not mosaics:
 					value.append({
@@ -259,7 +268,8 @@ class NemDatabase(DatabaseConnectionPool):
 			value=value,
 			fee=fee,
 			height=height,
-			timestamp=timestamp
+			timestamp=timestamp,
+			deadline=deadline
 		)
 
 	def get_block(self, height):
@@ -493,6 +503,10 @@ class NemDatabase(DatabaseConnectionPool):
 						ELSE NULL
 					END AS transfer_amount,
 					CASE
+						WHEN transaction_type = 257 Then tt.message
+						ELSE NULL
+					END AS transfer_message,
+					CASE
 						WHEN transaction_type = 8193 THEN tnr.namespace
 						WHEN transaction_type = 16385 THEN tmdc.namespace_name
 					END AS mosaic_namespace_creation_name,
@@ -531,7 +545,8 @@ class NemDatabase(DatabaseConnectionPool):
 						ELSE NULL
 					END AS mosaic_namespace_sink_fee,
 					t.height,
-					t.timestamp
+					t.timestamp,
+					t.deadline
 				FROM transactions t
 				LEFT JOIN transactions_account_key_link takl
 					ON t.id = takl.transaction_id
