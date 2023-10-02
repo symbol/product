@@ -34,13 +34,18 @@ const ValueAccount = ({ address, size, raw, position, className, isNavigationDis
 
 	return (
 		<div className={`${styles.valueAccount} ${containerStyle} ${className}`}>
-			<Avatar type="account" value={address} size={size} />
-			<div className={styles.addressContainer}>
-				<Link className={textStyle} href={createPageHref('accounts', address)} onClick={handleClick}>
-					{displayedText}
-				</Link>
-				<ButtonCopy value={address} />
-			</div>
+			{!address && '-'}
+			{!!address && (
+				<>
+					<Avatar type="account" value={address} size={size} />
+					<div className={styles.addressContainer}>
+						<Link className={textStyle} href={createPageHref('accounts', address)} onClick={handleClick}>
+							{displayedText}
+						</Link>
+						<ButtonCopy value={address} />
+					</div>
+				</>
+			)}
 		</div>
 	);
 };

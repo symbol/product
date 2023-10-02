@@ -26,7 +26,7 @@ export const getServerSideProps = async ({ locale, params }) => {
 		};
 	}
 
-	const transactionsPage = await getTransactionPage({ pageSize: blockInfo.transactionCount });
+	const transactionsPage = await getTransactionPage({ pageSize: blockInfo.transactionCount }, { height: params.height });
 
 	return {
 		props: {

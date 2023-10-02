@@ -1,7 +1,7 @@
 import { getTransactionInfoStub, getTransactionsStub } from '../../stubs/transactions';
 import config from '@/config';
 import { ACCOUNT_STATE_CHANGE_ACTION, TRANSACTION_TYPE } from '@/constants';
-import { createPage, createSearchCriteria } from '@/utils';
+import { createAPISearchURL, createPage, createSearchCriteria } from '@/utils';
 
 export default async function handler(req, res) {
 	if (req.method !== 'GET') {
@@ -22,10 +22,11 @@ export const fetchTransactionPage = async searchCriteria => {
 
 export const getTransactionPage = async (searchCriteria, filter = {}) => {
 	const { pageNumber, pageSize } = createSearchCriteria(searchCriteria);
-	const group = filter.group || 'confirmed';
-	const transactions = await getTransactionsStub({ pageNumber, pageSize }, group);
+	const url = createAPISearchURL(`${config.API_BASE_URL}/transactions`, { pageNumber, pageSize }, filter);
+	const response = await fetch(url);
+	const transactions = await response.json();
 
-	return createPage(transactions, pageNumber);
+	return createPage(transactions, pageNumber, formatTransaction);
 };
 
 export const getTransactionInfo = async hash => {
@@ -84,5 +85,24 @@ export const getTransactionInfo = async hash => {
 		...transactionInfo,
 		accountStateChange,
 		amount
+	};
+};
+
+const formatTransaction = data => {
+	const nativeMosaicTransfer = data.value.find(item => item.namespace === 'nem.xem');
+
+	return {
+		type: data.transactionType,
+		group: 'confirmed',
+		hash: data.transactionHash,
+		timestamp: data.timestamp,
+		signer: data.fromAddress,
+		recipient: data.toAddress !== 'None' ? data.toAddress : null,
+		size: 0,
+		height: data.height,
+		version: 0,
+		signature: ' ',
+		fee: data.fee,
+		amount: nativeMosaicTransfer ? nativeMosaicTransfer.amount : 0
 	};
 };
