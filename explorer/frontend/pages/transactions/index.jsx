@@ -39,7 +39,7 @@ export const getServerSideProps = async ({ locale }) => {
 
 const TransactionInfo = ({ preloadedData, stats }) => {
 	const { t } = useTranslation();
-	const { requestNextPage, data, isLoading, isLastPage, filter, changeFilter } = usePagination(fetchTransactionPage, preloadedData);
+	const { requestNextPage, data, isLoading, isLastPage, filter, changeFilter } = usePagination(getTransactionPage, preloadedData);
 	const chart = useFilter(fetchTransactionChart, [], true);
 	const formattedChartData = chart.data.map(item => {
 		if (chart.filter.isPerDay) {
@@ -59,7 +59,7 @@ const TransactionInfo = ({ preloadedData, stats }) => {
 		},
 		{
 			key: 'type',
-			size: '9rem',
+			size: '10rem',
 			renderValue: value => <ValueTransactionType value={value} />
 		},
 		{

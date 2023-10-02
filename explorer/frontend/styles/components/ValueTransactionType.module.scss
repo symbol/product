@@ -6,3 +6,9 @@
     gap: $spacing-base / 2;
     align-items: center;
 }
+
+.icon {
+    width: $spacing-base * 2;
+    height: $spacing-base * 2;
+    flex-shrink: 0;
+}

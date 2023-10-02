@@ -21,6 +21,7 @@ const ValueMosaic = ({
 }) => {
 	let displayedName;
 	let imageSrc;
+	let title;
 	const directionStyleMap = {
 		[TRANSACTION_DIRECTION.INCOMING]: styles.incoming,
 		[ACCOUNT_STATE_CHANGE_ACTION.RECEIVE]: styles.incoming,
@@ -37,9 +38,11 @@ const ValueMosaic = ({
 	if (finalMosaicId === config.NATIVE_MOSAIC_ID) {
 		displayedName = '';
 		imageSrc = '/images/icon-mosaic-native.svg';
+		title = `${amount} ${config.NATIVE_MOSAIC_TICKER}`;
 	} else {
 		displayedName = mosaicName;
 		imageSrc = '/images/icon-mosaic-custom.svg';
+		title = `${amount} ${displayedName}`;
 	}
 
 	const handleClick = e => {
@@ -53,6 +56,7 @@ const ValueMosaic = ({
 		<Link
 			className={`${styles.valueMosaic} ${styles.containerMd} ${className}`}
 			href={createPageHref('mosaics', finalMosaicId)}
+			title={title}
 			onClick={handleClick}
 		>
 			<Avatar type="mosaic" size="md" value={finalMosaicId} dot={dot} />
@@ -65,6 +69,7 @@ const ValueMosaic = ({
 		<Link
 			href={createPageHref('mosaics', finalMosaicId)}
 			className={`${styles.valueMosaic} ${directionStyle} ${className}`}
+			title={title}
 			onClick={handleClick}
 		>
 			<CustomImage src={imageSrc} className={styles.icon} alt="Mosaic" />

@@ -10,7 +10,7 @@ const ValueTransactionType = ({ value, className, hideIcon, onClick }) => {
 
 	return (
 		<div className={`${styles.valueTransactionType} ${className}`} onClick={handleClick}>
-			{!hideIcon && <IconTransactionType value={value} />}
+			{!hideIcon && <IconTransactionType className={styles.icon} value={value} />}
 			<div>{typeText}</div>
 		</div>
 	);
