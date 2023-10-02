@@ -140,33 +140,38 @@ def setup_nem_routes(app, nem_api_facade):
 			offset = int(request.args.get('offset', 0))
 			sort = request.args.get('sort', 'DESC')
 			height = request.args.get('height', None)
-			type = request.args.get('type', None)
+			transaction_type = request.args.get('type', None)
+
+			if limit < 0 or offset < 0 or sort.upper() not in ['ASC', 'DESC']:
+				raise ValueError()
 
 			if height is not None:
 				height = int(height)
 				if height < 1:
 					raise ValueError()
 
-			if type is not None:
-				type = int(type)
-				if type not in [
-					TransactionType.TRANSFER.value,
-					TransactionType.ACCOUNT_KEY_LINK.value,
-					TransactionType.MULTISIG_ACCOUNT_MODIFICATION.value,
-					TransactionType.MULTISIG.value,
-					TransactionType.NAMESPACE_REGISTRATION.value,
-					TransactionType.MOSAIC_DEFINITION.value,
-					TransactionType.MOSAIC_SUPPLY_CHANGE.value
-				]:
+			if transaction_type:
+				VALID_TRANSACTION_TYPES = {
+					TransactionType.TRANSFER.name,
+					TransactionType.ACCOUNT_KEY_LINK.name,
+					TransactionType.MULTISIG_ACCOUNT_MODIFICATION.name,
+					TransactionType.MULTISIG.name,
+					TransactionType.NAMESPACE_REGISTRATION.name,
+					TransactionType.MOSAIC_DEFINITION.name,
+					TransactionType.MOSAIC_SUPPLY_CHANGE.name
+				}
+
+				transaction_type = transaction_type.upper()
+
+				if transaction_type not in VALID_TRANSACTION_TYPES:
 					raise ValueError()
 
-			if limit < 0 or offset < 0 or sort.upper() not in ['ASC', 'DESC']:
-				raise ValueError()
+				transaction_type = TransactionType[transaction_type].value
 
 		except ValueError:
 			abort(400)
 
-		return jsonify(nem_api_facade.get_transactions(limit=limit, offset=offset, sort=sort, height=height, type=type))
+		return jsonify(nem_api_facade.get_transactions(limit=limit, offset=offset, sort=sort, height=height, transaction_type=transaction_type))
 
 
 def setup_error_handlers(app):

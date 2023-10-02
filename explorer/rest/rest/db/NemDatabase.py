@@ -1,6 +1,7 @@
 from binascii import hexlify, unhexlify
 
 from symbolchain.CryptoTypes import PublicKey
+from symbolchain.nc import TransactionType
 from symbolchain.nem.Network import Address
 
 from rest.model.Block import BlockView
@@ -196,13 +197,13 @@ class NemDatabase(DatabaseConnectionPool):
 
 	def _create_transaction_list_view(self, result):
 		transaction_type_mapping = {
-			257: 'transfer',
-			2049: 'account_key_link',
-			4100: 'multisig',
-			4097: 'multisig_account_modification',
-			16385: 'mosaic_namespace_creation',
-			16386: 'mosaic_supply_change',
-			8193: 'namespace_registration'
+			257: TransactionType.TRANSFER.name,
+			2049: TransactionType.ACCOUNT_KEY_LINK.name,
+			4100: TransactionType.MULTISIG.name,
+			4097: TransactionType.MULTISIG_ACCOUNT_MODIFICATION.name,
+			16385: TransactionType.MOSAIC_DEFINITION.name,
+			16386: TransactionType.MOSAIC_SUPPLY_CHANGE.name,
+			8193: TransactionType.NAMESPACE_REGISTRATION.name
 		}
 
 		(

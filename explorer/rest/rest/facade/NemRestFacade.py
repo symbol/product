@@ -58,9 +58,9 @@ class NemRestFacade:
 
 		return transaction.to_dict() if transaction else None
 
-	def get_transactions(self, limit, offset, sort, height, type):
+	def get_transactions(self, limit, offset, sort, height, transaction_type):
 		"""Gets transactions pagination."""
 
-		transactions = self.nem_db.get_transactions(limit, offset, sort, height, type)
+		transactions = self.nem_db.get_transactions(limit, offset, sort, height, transaction_type)
 
 		return [transaction.to_dict() for transaction in transactions]
