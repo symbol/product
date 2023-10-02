@@ -19,6 +19,7 @@ const Table = ({
 	const desktopTableStyle = !renderItemMobile ? styles.dataMobile : '';
 	const headerCellStyle = `${styles.headerCell} ${isLastColumnAligned && styles.headerCell_aligned}`;
 	const dataCellStyle = isLastColumnAligned ? styles.dataCell_aligned : '';
+	const isEmptyTableMessageShown = !isLoading && ((!!data && !data.length) || (!!sections && !sections.length));
 
 	const renderRow = (row, index) => (
 		<div className={styles.dataRow} key={'tr' + index}>
@@ -46,8 +47,7 @@ const Table = ({
 			</div>
 			{!!data && <div className={`${styles.data} ${desktopTableStyle}`}>{data.map(renderRow)}</div>}
 			{!!data && !!renderItemMobile && <div className={styles.listMobile}>{data.map(renderMobileListItem)}</div>}
-			{!!data && !data.length && <div className={styles.emptyListMessage}>{t('message_emptyTable')}</div>}
-			{!!sections && !sections.length && <div className={styles.emptyListMessage}>{t('message_emptyTable')}</div>}
+			{isEmptyTableMessageShown && <div className={styles.emptyListMessage}>{t('message_emptyTable')}</div>}
 
 			{!!sections &&
 				sections.map((section, index) => (
