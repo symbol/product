@@ -26,7 +26,7 @@ export const createPage = (data, pageNumber, formatter) => ({
 
 export const createAPISearchURL = (baseURL, searchCriteria, filter = {}) => {
 	const limit = searchCriteria.pageSize;
-	const offset = searchCriteria.pageSize * searchCriteria.pageNumber;
+	const offset = searchCriteria.pageSize * (searchCriteria.pageNumber - 1);
 	const params = new URLSearchParams({
 		limit,
 		offset,

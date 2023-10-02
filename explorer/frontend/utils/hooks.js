@@ -35,7 +35,7 @@ export const usePagination = (callback, defaultData) => {
 		setIsLoading(true);
 		setTimeout(async () => {
 			try {
-				const { data, pageNumber: currentPageNumber } = await callback({ pageNumber: pageNumber, ...filter });
+				const { data, pageNumber: currentPageNumber } = await callback({ pageNumber: pageNumber }, { ...filter });
 
 				if (currentPageNumber === pageNumber) {
 					setData(v => [...v, ...data]);
