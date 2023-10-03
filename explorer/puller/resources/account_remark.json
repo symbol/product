@@ -1,0 +1,3912 @@
+{
+	"remarks": [
+		{
+			"address": "NDEVPOSK4OMR4PRTLYFHX4W5QTOND7TZDT2DTU4Q",
+			"remark": "Post-V1 Fund - 400 - Fund stakes"
+		},
+		{
+			"address": "NAFUNDEULL67VO7WCJBGBHCLCMD5KEH5EI7G5SGR",
+			"remark": "NEM Sustainable Ecosystem Loop Fund (NEMSELF) - - Dev-Fund"
+		},
+		{
+			"address": "NDEVPRE5ZWVG2PXSM54BGZBFF525G24UKVOGOZNT",
+			"remark": "Pre-V1 Fund - 250 - Fund stakes"
+		},
+		{
+			"address": "NAHPYR2PHSZ5MGXKQSW3HFDMIXM36JBHDHCPXDQB",
+			"remark": "poloniex.com cold storage - - Exchange Wallet"
+		},
+		{
+			"address": "NBRUUI57CIEUFQJQ3EUWHLXDH56CKSEK6PYTU2FB",
+			"remark": "BTC38 cold storage - - Exchange Wallet"
+		},
+		{
+			"address": "NAFUNDDWQUHMIKPV2JUH2VNCYEAQX3O7QKHECZUV",
+			"remark": "Community Fund - - Dev-Fund"
+		},
+		{
+			"address": "NAGJG3QFWYZ37LMI7IQPSGQNYADGSJZGJRD2DIYA",
+			"remark": "zaif - - Exchange"
+		},
+		{
+			"address": "NCMARKECQXP3SQZSJPCBKOQWIXRRI7LIS4FTU4VZ",
+			"remark": "Marketing Fund - 112.5 - Fund stakes"
+		},
+		{
+			"address": "NAFUNDCJBFWXJWQZITUJOIW4O3E6YHQYQYSISPVA",
+			"remark": "Silver Coins for Distribution to Stakeholders - - Dev-Fund"
+		},
+		{
+			"address": "NAFUNDHZWSIV4ARXSGGSFONCGFGYTLCB7VOT53SR",
+			"remark": "Operational Costs Fund II - - Dev-Fund"
+		},
+		{
+			"address": "NAFUNDFE4HIZWV36FKGFXFFHG5SMUH2XVEEKE4ZD",
+			"remark": "Unconventional Marketing - - Dev-Fund"
+		},
+		{
+			"address": "NAFUNDBUKIOSTMD4BNXL7ZFE735QHN7A3FBS6CMY",
+			"remark": "NIS Node Rewards - - Dev-Fund"
+		},
+		{
+			"address": "NAFUNDAFO2MHWRR446YHADKR43XQBDJGWFRTMICH",
+			"remark": "Mobile Application and NCC Development - - Dev-Fund"
+		},
+		{
+			"address": "NCOPERAWEWCD4A34NP5UQCCKEX44MW4SL3QYJYS5",
+			"remark": "Operational Costs - 80 - Fund stakes"
+		},
+		{
+			"address": "NBXROP2ZNWBH7LYC3ZU2J5PU5JUQUY2QJLR42KGB",
+			"remark": "NXT-E2P2-RCMZ-MELT-8FSUY - 2.0 - User Stake"
+		},
+		{
+			"address": "NBZMQO7ZPBYNBDUR7F75MAKA2S3DHDCIFG775N3D",
+			"remark": "poloniex.com hot wallet - - Exchange Wallet"
+		},
+		{
+			"address": "ND3IFIYYEMFJEHNHCW6NRVMLOYKYHUWUZCW3UHXW",
+			"remark": "zaif - - Exchange"
+		},
+		{
+			"address": "ND2JRPQIWXHKAA26INVGA7SREEUMX5QAI6VU7HNR",
+			"remark": "Bittrex - - Exchange Wallet"
+		},
+		{
+			"address": "NA6R3QUSPFXV75B4RQTWXUZDVEEFWHUVF6VHSNTL",
+			"remark": "rockethead - 14.85 - Marketing Stakes"
+		},
+		{
+			"address": "NDXY4OJ4Y2CKOGDN6WUTS2DWXE7ZYPCOZ4NVDS2M",
+			"remark": "OLHD - 2.0 - User Stake"
+		},
+		{
+			"address": "NCONTRLFKPO6YVXO5WUIJ4SWSCSKBJIPV456RSCL",
+			"remark": "Contributors - 12.25 - Fund stakes Contributors - late claim - - Dev-Fund"
+		},
+		{
+			"address": "NAJAGSLY4CMHKIRKI3GP5K7CUWNMPI7UHYYZ5P24",
+			"remark": "Jaguar0625C - 11 - Dev Stakes"
+		},
+		{
+			"address": "NAJAGOFNPSJS2SXLJRN5L34CD3QWO7RKY6LQZ757",
+			"remark": "Jaguar0625A - 11 - Dev Stakes"
+		},
+		{
+			"address": "NAJAGRSQQP75VJJDU7CDSHMASMM33A2R2W6DUHH7",
+			"remark": "Jaguar0625B - 11 - Dev Stakes"
+		},
+		{
+			"address": "NAJAGFR6N2JPQX6IRXCDKLWWKYIZEHRJDV3WEE7K",
+			"remark": "Jaguar0625E - 11 - Dev Stakes"
+		},
+		{
+			"address": "NAJAGTYZITCFJQNKZNZO7HLHJLTN4R7PDAHBVYTX",
+			"remark": "Jaguar0625D - 11 - Dev Stakes"
+		},
+		{
+			"address": "NCLQS2WUOHFVHCWXNTQLUEN4MWWKMMQFSABGIGHT",
+			"remark": "go - 9 - Dev Stakes"
+		},
+		{
+			"address": "NCXIQA4FF5JB6AMQ53NQ3ZMRD3X3PJEWDJJJIGHT",
+			"remark": "jusan - 9 - Dev Stakes"
+		},
+		{
+			"address": "NDOGFVWHQQFR4BZS7RCAPANFYLUMVADLYPHEIGHT",
+			"remark": "hachi - 9 - Dev Stakes"
+		},
+		{
+			"address": "NBKQWJJGPOHL462DBVMTYOAERXGG2BOS5WFSIGHT",
+			"remark": "san - 9 - Dev Stakes"
+		},
+		{
+			"address": "NBDBKJMUIAZ7IPVVITVI45PDQW3KYHMMMFGDCZRU",
+			"remark": "NXT-BPZH-L5JZ-TS9Q-6RVTM - 10.0 - User Stake"
+		},
+		{
+			"address": "NCVERVBVZ4BK4IKUICTPUXRAAV2APLZLOKUNIGHT",
+			"remark": "nijuichi - 9 - Dev Stakes"
+		},
+		{
+			"address": "NDN5Z6OVQY4O6AZZ32MB5TBTXBRQ6LEDPVAY72JI",
+			"remark": "Thies1965 - 16 - Dev Stakes"
+		},
+		{
+			"address": "NDS3R3ZVAUCQGIU4GUG7L56II4IIXBGIMREL45YG",
+			"remark": "gimre - 10 - Dev Stakes"
+		},
+		{
+			"address": "NAQKDE5COK62JHYWDEIVREYL4FFBPCWO27O7Q5EJ",
+			"remark": "thilon - 1.0 - User Stake thilon aka macroder - 0.75 - contributor-stakes"
+		},
+		{
+			"address": "NBUBYUCFD2MZRZKMFEP5C7K5S2LEY7YU2HY54AY5",
+			"remark": "NXT-6SQK-M5YM-74ZE-GXXD6 - 0.3 - User Stake NXT-6SQK-M5YM-74ZE-GXXD6 - 1.0 - User Stake NXT-6SQK-M5YM-74ZE-GXXD6 - 0.7 - User Stake NXT-6SQK-M5YM-74ZE-GXXD6 - 0.1 - User Stake"
+		},
+		{
+			"address": "NDE7TMMUPAE5L6M3ILF6YEU2ZREVJTT4F3ZBIZSD",
+			"remark": "mixmaster - 1.0 - User Stake Mixmaster - 4 - contributor-stakes"
+		},
+		{
+			"address": "ND7ELER5FZMMV3A4TY56XWPPR7SS3KUPF7HQ7KKQ",
+			"remark": "NXT-K42W-RJRQ-X5T3-HZG4Q - 0.1 - User Stake NXT-K42W-RJRQ-X5T3-HZG4Q - 0.1 - User Stake NXT-K42W-RJRQ-X5T3-HZG4Q - 0.1 - User Stake"
+		},
+		{
+			"address": "NAKRER4LALE2QVDR2OKNHKRBGRG3IS5WDXU6O6IZ",
+			"remark": "NXT-KWG3-L8QZ-QGXH-8335Y - 2.0 - User Stake"
+		},
+		{
+			"address": "NDZ4YPCKVKWAIIZBB5T7T5EL67N2XWPQODGGWIYT",
+			"remark": "nembit86 - 1.0 - User Stake"
+		},
+		{
+			"address": "NALKQSZERYRPBXXQVBCCF7BGUHQPWSFGSHRHF3AJ",
+			"remark": "NXT-6UVG-7A7J-CSHM-4XD6L - 4.8 - User Stake"
+		},
+		{
+			"address": "NDER3BPTUKQJFP7XRYME2LPZEGZNA3WMJKSBLAZ6",
+			"remark": "NXT-JKCL-N9PV-77XE-H5CLX - 12.9 - User Stake"
+		},
+		{
+			"address": "NCAE2LNUZK6OOJXKIR3EHKWJR7Q3XKWI5HKETG22",
+			"remark": "NXT-YYXR-4QSE-REXS-4AQZD - 4.3 - User Stake"
+		},
+		{
+			"address": "NDIWBXLPR5I5AGHVDWBZRB5DU26G7QOMDCQPMXKT",
+			"remark": "NXT-E8HK-U2P6-M4GF-A55XG - 2.2 - User Stake"
+		},
+		{
+			"address": "NCT2PIDY4OSX6I3A6QUQOD6I7NFCAWCBVZ6ASMKG",
+			"remark": "Fatih87SK - 1.0 - User Stake"
+		},
+		{
+			"address": "NCBIGALICOWCT3UIAU7PYYWIAR3XHN6AQX6BLKSR",
+			"remark": "BigAlice3 - 7 - Dev Stakes"
+		},
+		{
+			"address": "NDJBEJ4RJFOEC24BYT3FBT724L45HI4ADSVO27GO",
+			"remark": "yshin365new - 1.0 - User Stake"
+		},
+		{
+			"address": "NAZAR65A4HOONIFDILIJPZNLS45RKSDW7RDYEBNR",
+			"remark": "NXT-Z5FC-DEDF-4ZWV-85VQZ - 5.4 - User Stake"
+		},
+		{
+			"address": "NBMD4IIR3W4SFSYWWSHVZV3WTKAOAZ5RF5R2QJ7F",
+			"remark": "NXT-UNKV-T7NG-DUFL-APZ57 - 2.0 - User Stake"
+		},
+		{
+			"address": "NBJGL4BNGUZZIRVDNFDPA5BOVNMRCUEGIKZOX6V5",
+			"remark": "NXT-QSW6-7829-D6LU-7RMFM - 3.7 - User Stake"
+		},
+		{
+			"address": "NDSPN6LIZ4VTF2YVTNR4BTTYSGE36634BOBFSXBR",
+			"remark": "elderek - 1.0 - User Stake"
+		},
+		{
+			"address": "NCIDMHIO7GD5AQ526XK6WZFPWRYB5EN4L5QPX4SE",
+			"remark": "NXT-JZ7R-3DTT-HUMN-GUBYX - 1.0 - User Stake lordoliver - 1.0 - User Stake"
+		},
+		{
+			"address": "NADRMILTAHUWU6Z3F6WDTCXEDHTDS5SW4KCNCZLO",
+			"remark": "freigeist - 1.0 - User Stake Freigeist - 2.2 - contributor-stakes Freigeist - 0.2 - contributor-stakes"
+		},
+		{
+			"address": "NALICEPFLZQRZGPRIJTMJOCPWDNECXTNNG7QLSG3",
+			"remark": "Alice - 6 - Dev Stakes"
+		},
+		{
+			"address": "NCQMAXXZTLWAR5RFRBABYNOQZEZJED4HSRFUAHJE",
+			"remark": "NXT-53UN-4NKV-VVGJ-HUXNG - 2.7 - User Stake"
+		},
+		{
+			"address": "NBIGGCSZL6K7OWB4FPFBSRLNFCKKVKRW2UQDIPFE",
+			"remark": "himmelsfaller2 - 1.0 - User Stake"
+		},
+		{
+			"address": "NCYALHNZI2BVCXWL5ZDZSGLE55U7HKCDBLFXKUP2",
+			"remark": "NXT-9VAZ-H5D3-S3E8-35A2A - 1.2 - User Stake"
+		},
+		{
+			"address": "NBADSK44LRPFKKYWGJQZX42XUBG6DLAP7LMH7MPW",
+			"remark": "jabo38 - 7.4 - Marketing Stakes"
+		},
+		{
+			"address": "NALICE4W7LH6LFMC5GXB3VPVWIERQDOCJNEMG47U",
+			"remark": "Alice4 - 7 - Dev Stakes"
+		},
+		{
+			"address": "NAYWESIOVQ6MO62GWS6P5WYUGSI632WXB3M75ZHK",
+			"remark": "pheromone - 1.0 - User Stake Pheromone - 1.75 - contributor-stakes"
+		},
+		{
+			"address": "NDWYJY4BS6NM4TLP7EVMVNMFBRYP5ORJPFPIQMN5",
+			"remark": "NXT-G44K-K7CD-6CMT-EFAND - 1.1 - User Stake"
+		},
+		{
+			"address": "NCHSGYGX5BOIME7HUQZKS5S3QRDDIU23PGCNNRMA",
+			"remark": "mepsipax - 1.0 - User Stake"
+		},
+		{
+			"address": "NBDOYCJLY43IMMXG5TO2HUS32OAKD2FMAKOTOAFD",
+			"remark": "makoto1337 - 19 - Dev Stakes"
+		},
+		{
+			"address": "NBGJF6HPBQ3DETGXYLS73YRKIGM7R7TNS643YNMD",
+			"remark": "NXT-NQRQ-SWUE-85TF-6725E - 2.0 - User Stake NXT-NQRQ-SWUE-85TF-6725E - 0.2 - User Stake"
+		},
+		{
+			"address": "NAXELONHBATWGKRJA6SE62YCHTA3U3OC4MEI2RCM",
+			"remark": "NXT-ZGQQ-XRJC-3HJ4-4XSSH - 4.5 - User Stake"
+		},
+		{
+			"address": "NDKAZ7JNVWWUXI5FDG2C5NR5YDQW6454MJR5ODJQ",
+			"remark": "oddiccey001 - 1.0 - User Stake"
+		},
+		{
+			"address": "NBO4XFBYPJCYS5TH57INWGVAOP3QGF3VUZXBS6K3",
+			"remark": "NXT-WJ65-B4UZ-8DSN-FCN7H - 2.0 - User Stake"
+		},
+		{
+			"address": "NAUSZHT72NSSYQ4U2M7Y7VPCHSEWSV6KSBINOMJD",
+			"remark": "NXT-C892-6B2F-DV6P-HZT7R - 2.0 - User Stake"
+		},
+		{
+			"address": "NCG3OSLZH4VDX3GU7KQ4IX4N4SXJ2BMVAAZTBZMP",
+			"remark": "NXT-Q5NJ-TCLT-9ZDP-34YKS - 2.0 - User Stake"
+		},
+		{
+			"address": "NB7R4XDZLF4PKUR6XMALRYDOZOEHHRQKNENEA6FW",
+			"remark": "NXT-MJHZ-2HYF-6QYP-3PN7U - 2.0 - User Stake"
+		},
+		{
+			"address": "NBCZ6YJGJXNFEDZZI5PG2DWOE7DQW2FUP4J2Q3XQ",
+			"remark": "NXT-VLJ8-5S89-QSJT-94LYN - 2.0 - User Stake"
+		},
+		{
+			"address": "NB2GROAPKKOK442QSAUANTBBXTOJEKMTGDMSDI5B",
+			"remark": "Kooream - 1.0 - User Stake"
+		},
+		{
+			"address": "NDQSZSWWX6ZNVHOKTLNNTIHZL2SYZML32FZKID55",
+			"remark": "NXT-GEWV-6KSY-ZZZR-23APE - 2.0 - User Stake NXT-DQ8G-S2QM-F64C-5PN5Y - 2.0 - User Stake"
+		},
+		{
+			"address": "NCFKEEJ6FVEPPBA2DSIJHZLHG7IHTLK6GCZLRDKK",
+			"remark": "NXT-P6VQ-SUAZ-T2UE-HV24Q - 2.0 - User Stake"
+		},
+		{
+			"address": "NBYS2LNNUZEWCYF5IYINJXYP5HEZWABEAE3RBMBN",
+			"remark": "NXT-KZD6-8AL4-GALW-HJZSY - 2.0 - User Stake"
+		},
+		{
+			"address": "NDSFHLPJSJNQR6AW2PVYANRHGZXUUSZX3ZVJ3EPR",
+			"remark": "NXT-74RD-5STZ-H6HV-E4KFQ - 2.0 - User Stake"
+		},
+		{
+			"address": "NCL6GUKHPSP2UQFLJYQHVJ4AE7UPA7ORGNMOUD6P",
+			"remark": "NXT-G3B4-K56A-C4SV-9ZMFF - 2.0 - User Stake"
+		},
+		{
+			"address": "NCCVEOAD4SVRE3ZPOOTYBVW5VP7WYQRHE4RTARKW",
+			"remark": "pgb - 2.0 - User Stake"
+		},
+		{
+			"address": "NAUXK4RLIWFRDUE37QTOIXTU7TDS4T7274YOW3GL",
+			"remark": "thomastaylor - 1.0 - User Stake"
+		},
+		{
+			"address": "NDNTFLKPC7HSDZGWBISFI4D33F2WTBJIINEA5DX5",
+			"remark": "Lazz - 1.0 - User Stake"
+		},
+		{
+			"address": "NBXIODRIB5XJ4NBFQ4C7F55LJGN5QRDBKSTKKSVH",
+			"remark": "zsuhsl - 1.0 - User Stake"
+		},
+		{
+			"address": "NCVEVJSXVSEMH7KPKBBMP7EHL3RWG3EYNMPPINMI",
+			"remark": "Brainofmasses - 1.0 - User Stake BrainOfMasses - 0.2 - contributor-stakes"
+		},
+		{
+			"address": "NBTGNACKRVZVWCXU35YL3R6LBIGNEAVB3KVL2WAK",
+			"remark": "JG7777 - 1.0 - User Stake"
+		},
+		{
+			"address": "NARJCSULHI3XEHV6PBRJFJWNSHOKDVB42AJSLXES",
+			"remark": "SfRunner - 1.0 - User Stake"
+		},
+		{
+			"address": "NAPA4IPV3TYTJF74TFVRL2PA34IXIGOFHHRIC5QN",
+			"remark": "NXT-GL8T-QFNK-MXYX-GEEEZ - 2.0 - User Stake NXT-NQDR-S9XS-QEGB-ENLAW - 0.5 - User Stake"
+		},
+		{
+			"address": "NCAWALLB2DOSBWPBYIN44EBKZ3PCU3HE3KPIULPP",
+			"remark": "jnuqsx - 1.0 - User Stake"
+		},
+		{
+			"address": "NCOIP5XGVTAKZPBIUN56BYFZEBCIWZ3FLBVVOCGG",
+			"remark": "Owon - 1.75 - contributor-stakes"
+		},
+		{
+			"address": "NA2BKIP3B2K5KSYQBKIOAZJ5DAR63AK3EIYPGDM5",
+			"remark": "zsutbd - 1.0 - User Stake"
+		},
+		{
+			"address": "NC4NNYG7IAL7O7GWQZG5W7RAF77LPUV2PKDSLWL2",
+			"remark": "McDoxy1 - 1.0 - User Stake"
+		},
+		{
+			"address": "NCWEOJMRQTBLF2O4UAZE26P2ZHGR7TQSKO733HPF",
+			"remark": "mirador17 - 1.0 - User Stake"
+		},
+		{
+			"address": "NAIB45KFI53K3VNQOCNLAVSPY7CCPL27INSG4BTB",
+			"remark": "NXT-KVRR-4MT2-2JWJ-3C7CV - 0.6 - User Stake"
+		},
+		{
+			"address": "NCUFZ5VXD4ISSKCLSUQKPH2ISLZZMQUZOMIT2KGJ",
+			"remark": "NXT-728T-YV25-D3AB-6FUVF - 1.5 - User Stake"
+		},
+		{
+			"address": "NDDCBBDS5B2K3FB2DYQEQWCLWXS6TD45NF7BLTNX",
+			"remark": "jkoil - 1.0 - User Stake jkoil - 0.5 - contributor-stakes"
+		},
+		{
+			"address": "NBCHN6JXGTKY4R7LWWU6I3IEOS6TDBZMB4746L63",
+			"remark": "Bogdana - 1.0 - User Stake"
+		},
+		{
+			"address": "NCPLLHCLUA5QYBNSYA65MUAPXXBPLIPYMF5RKBRB",
+			"remark": "NXT-S3DZ-HMKC-2KJ8-2H37Z - 2.0 - User Stake NXT-YTPN-5MUU-GEC4-8LFP3 - 0.2 - User Stake"
+		},
+		{
+			"address": "NAIVE43D3SLI5MFIIXRFIY64RKOWIYQQQ6MBM2CC",
+			"remark": "Spider - 1.0 - User Stake Spider - 0.2 - contributor-stakes"
+		},
+		{
+			"address": "NARQGBT4UWT4D3AB3GGMBDP43NJEOGFFBWXOESYC",
+			"remark": "NXT-KU8J-3FTE-BCZD-7E5UY - 2.6 - User Stake"
+		},
+		{
+			"address": "NADB75QZUIM4L7VKR2IARK77UHZ5JJRT4EFGEIMJ",
+			"remark": "rajc - 1.0 - User Stake NXT-R8CJ-8AXE-PGHB-4F78P - 0.1 - User Stake"
+		},
+		{
+			"address": "NASHIIBF7GSMB6XL36RVNUHXC5ZEER72H2RN6U4I",
+			"remark": "NXT-XJBZ-4W56-XJS2-FPLZT - 1.0 - User Stake Lcharles - 0.2 - contributor-stakes"
+		},
+		{
+			"address": "NC7HKOMA4N4ZCYJ7PXJPUGGQLSBLQL6S6LEFQHNZ",
+			"remark": "Gemdealer - 1.0 - User Stake"
+		},
+		{
+			"address": "ND5RH3ASI3JNC4JSQ3WNSGBQZ6UGZ6HI2POXQ57B",
+			"remark": "orbedragones - 1.0 - User Stake"
+		},
+		{
+			"address": "NBVSL5634PZALZWYYCWYV7LQRJJR54GRSQVI7I2R",
+			"remark": "NXT-PKDU-9ACB-PBGL-3YS5T - 3.8 - User Stake"
+		},
+		{
+			"address": "NCIDW3ALGHN3HJL37B7UENHRNQGIM6V36BUWDWZU",
+			"remark": "NXT-H8VH-DVCW-43BC-AZPEZ - 0.7 - User Stake"
+		},
+		{
+			"address": "NCGW7D7Z5OFU5PSRJHQEQQHIO6SZWIM4CROZX42X",
+			"remark": "bodhi - 1.0 - User Stake Tehfiend - 1.0 - User Stake"
+		},
+		{
+			"address": "NCCKENDHJYAVOQN6O5XFV5BD4CMI6PBMIXEZIP4C",
+			"remark": "biscodyl - 1.0 - User Stake"
+		},
+		{
+			"address": "NACHUIVTK4CLYQU2LDCCZ3KEA7TJ4UTPAVMWQNFT",
+			"remark": "Sylvie - 1.0 - User Stake"
+		},
+		{
+			"address": "NBIRDQCN2YFGYLPX4AGZHTEBKKDJYYGGNVJTPKKD",
+			"remark": "krisnl - 1.0 - User Stake"
+		},
+		{
+			"address": "NAABM4BUWB2TXJJ6QMJ5FAYIPIARCD53ELHPOJMY",
+			"remark": "huzhuzhu - 1.0 - User Stake"
+		},
+		{
+			"address": "NAER2BCBWRUKO3CFQ2SZUWDH5G3IDMFSLY7VIHOU",
+			"remark": "Xpedite - 1.0 - User Stake"
+		},
+		{
+			"address": "NALICE2A73DLYTP4365GNFCURAUP3XVBFO7YNYOW",
+			"remark": "Alice2 - 7 - Dev Stakes"
+		},
+		{
+			"address": "NDQSDPQQTCKIGNXNPIAEGNEW2DBZVXYYUQ57ASGI",
+			"remark": "swiss - 1.0 - User Stake"
+		},
+		{
+			"address": "NAQ7ACUBA6PLKPDWOJFMZN7TRXS7UMEEM6O7JD6J",
+			"remark": "penter - 1.0 - User Stake"
+		},
+		{
+			"address": "NCX6YI57H5OCENASLTI3AHCEYOLTZAJD7DDZBLRX",
+			"remark": "meyns - 1.0 - User Stake"
+		},
+		{
+			"address": "NBK3SAKJDOHERAEHNNEJJLIDUM6ACES3JJVZTVUA",
+			"remark": "NXT-65PU-ZM5D-AF2Z-GQZND - 0.3 - User Stake"
+		},
+		{
+			"address": "NA2MYIXXC7RHPRADJUZCWNPYFO3QQ5NIG22AOUKC",
+			"remark": "makoto - 14.85 - Marketing Stakes"
+		},
+		{
+			"address": "NCPOL3DOM6CYJKFFWBSTY5OWYWI3IXX7RLJLZKO6",
+			"remark": "tank - 1.0 - User Stake"
+		},
+		{
+			"address": "NB2NWDSG5CEONZOX66P2JI2FMXB6BMCEAFV3LFKK",
+			"remark": "quasimodo - 1.0 - User Stake"
+		},
+		{
+			"address": "NDNDV7KCSMKQHIJFBTVIVJXU7YCJ3EJSBWITVI7F",
+			"remark": "suky321 - 1.0 - User Stake"
+		},
+		{
+			"address": "NALICE5BV6LRJ6SU3KHC3SRRWHYYF6VCAL64XVZG",
+			"remark": "Alice5 - 7 - Dev Stakes"
+		},
+		{
+			"address": "NB6RLQ4UC32E7UX5JVKZZGWM74W6UZ4KSOEG3IW5",
+			"remark": "NXT-RNJ9-YWLW-Y3UG-79872 - 1.0 - User Stake"
+		},
+		{
+			"address": "NALICE6XEEEOBFJVY3ZCENZ7WBG6LB4KB6CQNYKR",
+			"remark": "Alice6 - 7 - Dev Stakes"
+		},
+		{
+			"address": "NALICE3JX3N72HZ3IODXCO2HWQIWSTCPC5FVGW7I",
+			"remark": "Alice3 - 7 - Dev Stakes"
+		},
+		{
+			"address": "NALICE7GX3PF3WAOWVLXFOQ4ZMOBP7GUMNB2RCYQ",
+			"remark": "Alice7 - 7 - Dev Stakes"
+		},
+		{
+			"address": "NB44AVVZTOE4ANIXPRQDZWM5RTVPPS3Q4KHOVBDX",
+			"remark": "NXT-NUFX-LN8H-ZT62-FLX8J - 1.0 - User Stake"
+		},
+		{
+			"address": "NCXXAASE3GTNZGX4W2YJAB54DUKW7BWX7JHRFU47",
+			"remark": "threetwoone - 1.0 - User Stake"
+		},
+		{
+			"address": "NCAMMAXJMXLOJKVUITIQC5MNY7MGUR73K3WB6TG2",
+			"remark": "andme - 1.0 - User Stake Andme - 0.75 - contributor-stakes"
+		},
+		{
+			"address": "NCTDZSA4TYMSH5VYJ7FQXQ5V5TRIYALJ2RKTD3WK",
+			"remark": "Silkasus - 1.0 - User Stake"
+		},
+		{
+			"address": "NBQU44CBJ26OTEKAV5GTGROFRTPD4DMMQTAGPDES",
+			"remark": "NXT-8CBP-XQAH-J47K-GNQPB - 0.1 - User Stake"
+		},
+		{
+			"address": "NDRTZT55KJDNFIGEJI53BS6KYTXQC76PUZGSBGVF",
+			"remark": "NXT-PWGP-H7H4-MDMW-22KUB - 10.0 - User Stake vytasz7 - 1.0 - User Stake"
+		},
+		{
+			"address": "NABDV653MBTOJAP2EVBS47JJ3LFO7NMNWSMCABDC",
+			"remark": "NXT-PJ4S-P5MU-LFBV-6ARBY - 1.5 - User Stake Martismartis - 0.2 - contributor-stakes"
+		},
+		{
+			"address": "NA66YNZY36MQXEBFWUDTU3TOJIUCH5FWETQC7DSF",
+			"remark": "XbladeX - 1.0 - User Stake"
+		},
+		{
+			"address": "NBGY4PA5QGI4XUWTJB6Q5ST6OVJRPAQSS6GVUYK2",
+			"remark": "NXT-EFR9-BPVT-FGAN-CUUGD - 1.0 - User Stake howi53 - 1.0 - User Stake"
+		},
+		{
+			"address": "NCFACRQFF5FQ5DEXODQWADUTTMWQLBXO5DAYN4EQ",
+			"remark": "gadado - 1.0 - User Stake"
+		},
+		{
+			"address": "ND52OETOLPINJRA7HOFJXMEXJVBKHL575K6O53SK",
+			"remark": "rigel - 1.0 - User Stake"
+		},
+		{
+			"address": "NCJCSJO5CDYZYX5HENNU62BNCJXN5MZCKWARP7D5",
+			"remark": "NXT-2GHV-KSSE-Z2DV-FDUFD - 5.0 - User Stake DIMKAZDS - 1.0 - User Stake"
+		},
+		{
+			"address": "NC6AU7H2N7VTAGUL4SFVS5ZVNWJKV4E4B64UFAUA",
+			"remark": "NXT-7GR4-4C9H-GVMN-27QQU - 0.6 - User Stake"
+		},
+		{
+			"address": "NAMV2DUZZK5ITFTBUW6DBB4CTVTLPVIQLFYMSDP3",
+			"remark": "KkotNEM - 0.75 - contributor-stakes"
+		},
+		{
+			"address": "NBZN7HB4S7RSDTIC6EIJAXVO4ZJX6RR4PUSDVIV4",
+			"remark": "NXT-HS8E-WWF9-TY4E-FWYMW - 0.5 - User Stake"
+		},
+		{
+			"address": "NCS6EJAS7V4COBGRPDAXR2WP5SBAUULI5JY5JHWC",
+			"remark": "NXT-NRGJ-86TR-QBUU-D2C3S - 1.1 - User Stake"
+		},
+		{
+			"address": "NAUIOIAH3CLZVV4SVKO3VFNV2QOXO667VA23CG2E",
+			"remark": "4nniK4 - 1.0 - User Stake"
+		},
+		{
+			"address": "NDTLIMWAXBZUDDNG2DYVSVM75DI5RJCVVG5VF7MG",
+			"remark": "Espo - 1.0 - User Stake"
+		},
+		{
+			"address": "NALETVQRYBKKBONY7N4LTGZJR4F7O4ONQKJ6B4Z2",
+			"remark": "jabo38 - 1.0 - User Stake"
+		},
+		{
+			"address": "NBPJFPRLOSWYLKD42LKGEM47XHIMY7JLUOLGWQT5",
+			"remark": "NXT-NX6H-BFNZ-YBKW-7WLNY - 2.0 - User Stake"
+		},
+		{
+			"address": "NCXIP5JNP4GC3JXXBBU2UHF4F4JYJ44DWFMNEIMQ",
+			"remark": "cryptonit - 1.0 - User Stake"
+		},
+		{
+			"address": "NCUNYIER2ANEEODETLEU65B452W2CUOLX3M2XUNZ",
+			"remark": "crackerhead - 1.0 - User Stake NXT-LYCQ-SCBP-LAYH-CX3AY - 0.9 - User Stake Cracker Head - 3.75 - contributor-stakes"
+		},
+		{
+			"address": "NBP6LCF2GEKJSZG66HJXWA7SW3MS2VSCZ7DWLT7Y",
+			"remark": "NXT-GWXU-2PDF-P4CF-BWQMX - 12.3 - User Stake"
+		},
+		{
+			"address": "NC2MYWXT3YOSAIBTWBCW7ZKCE4R4NIKYCF7S76UC",
+			"remark": "Bter - - Exchange Wallet"
+		},
+		{
+			"address": "NCNBQ6SVCMKWEPGMJGYMF2BMCJS5LHZ4MJMAHPXD",
+			"remark": "gentlemand - 1.0 - User Stake NXT-38MG-6B5C-6WNG-95E6U - 0.3 - User Stake"
+		},
+		{
+			"address": "NAHAT7TXTSBTTLMHE77ZANIULFMEU2536OPJS4BP",
+			"remark": "tolstoy - 1.0 - User Stake"
+		},
+		{
+			"address": "NBLGXIPZMRZMU3ZXJHNJHOFSHTSXPEUEPUAGVJGB",
+			"remark": "solix - 1.0 - User Stake Indiana - solix - 0.2 - contributor-stakes"
+		},
+		{
+			"address": "NCLLDLLEWESHESJHREQUDBLEZBFQGFT3Z43VMELC",
+			"remark": "happy4209 - 1.0 - User Stake"
+		},
+		{
+			"address": "NAAIJJCRKHI33V7PJ6BJOB5KHGJNVXYPDD7J2D4H",
+			"remark": "Parana - 1.0 - User Stake Parana - 0.2 - contributor-stakes"
+		},
+		{
+			"address": "NB6WHSZOYAODJPB5WCBHAT3J6QD7LPZMNSYYX3T4",
+			"remark": "NXT-QT5B-J7UY-XFAH-GSQUM - 0.2 - User Stake gck - 1.0 - User Stake"
+		},
+		{
+			"address": "NDTCO2UKWTPFOVXK3DVIRAG6LAO7HGJ5XCNEM5WI",
+			"remark": "myhometalk - 1.0 - User Stake"
+		},
+		{
+			"address": "NBN5533BOARTAA5GADFZVJ4JBPABA5K2H7VFWXV7",
+			"remark": "jxmhqjg - 1.0 - User Stake"
+		},
+		{
+			"address": "NAQQN25YODWL2T2PPVMMFGF45RPWNKMZKNUMLVE2",
+			"remark": "NXT-ZDKF-7M96-M4DR-HZ6VR - 1.0 - User Stake"
+		},
+		{
+			"address": "NDEZD4MFZKNIWWOV3FICUGKCXOBR7GKC5UASQEKN",
+			"remark": "Simakki - 1.0 - User Stake NXT-KGEF-MYUA-BWFB-GHUWM - 1.2 - User Stake"
+		},
+		{
+			"address": "NC753ARFUK2ZTVYEK7HEHUQCKBYTW52BPCMM26KD",
+			"remark": "NXT-9SH5-EWEG-78NP-FHDT6 - 1.2 - User Stake"
+		},
+		{
+			"address": "NBUICZGZ24KBAWKGTMJA764BSHITESRPOQWXYBON",
+			"remark": "NXT-JSLR-VU44-YXAF-HWR2Z - 0.1 - User Stake msunxter - 1.0 - User Stake"
+		},
+		{
+			"address": "NBTW7KSEZFA2NV7BOO4URZWRJ5UUMR2SBB67NPAG",
+			"remark": "nxtvisa - 1.0 - User Stake"
+		},
+		{
+			"address": "NDTQZHUJHXLTUQCFXX7VQ3QVGBZULGMZOWVDSXNG",
+			"remark": "nemfreak - 1.0 - User Stake"
+		},
+		{
+			"address": "NA7SW4LAYET5GRWY3U3DBGJSYEUW6W4AAUI3SOPS",
+			"remark": "nervozaur - 1.0 - User Stake"
+		},
+		{
+			"address": "NC7LQD4CQLBEFINE3I3TWJKD72W5NTVSO7BM25SL",
+			"remark": "NXT-GZYP-FMRT-FQ9K-3YQGS - 1.0 - User Stake"
+		},
+		{
+			"address": "NDFS3ASGSXT4XYDK7CSPMGORGVNDNQZUYQZHHLIH",
+			"remark": "NXT-YD2V-E8PY-R6TR-DZ8MK - 1.0 - User Stake"
+		},
+		{
+			"address": "NDC33O3FBR6M7K3B3NGVXQZP3ROI56IBGNEBLLMQ",
+			"remark": "syjrmswx - 1.0 - User Stake"
+		},
+		{
+			"address": "NARWBBO4C7WYH46L5IMM5FCWUU6SOHYGIYCXKK2Q",
+			"remark": "hackerp1337 - 1.0 - User Stake"
+		},
+		{
+			"address": "NC3TV4OQ4ZBCWTXPKGLJEPYENDEKAZY7CK64PPE2",
+			"remark": "f376 - 1.0 - User Stake"
+		},
+		{
+			"address": "NCCZL2VKCYZ7KBFZQHFJXAKASLTQNBMVNLGNHIDR",
+			"remark": "Kmonk - 1.0 - User Stake"
+		},
+		{
+			"address": "NAXWXWM3FG5ROLK4VDNOICPEEAY5W2H2GP2SGTNU",
+			"remark": "owon - 1.0 - User Stake"
+		},
+		{
+			"address": "NAVLWMJDOZ5LJF66XPUBYQBGNERGHLCLNGDEUXIC",
+			"remark": "NXT-3NTD-BHG3-4MRR-FXWVM - 1.0 - User Stake"
+		},
+		{
+			"address": "NASZH2XVUKNHBYSQ42QOVDFFZNAHIS47DHKSW7MJ",
+			"remark": "Ivan166 - 1.0 - User Stake"
+		},
+		{
+			"address": "NAAPM3WS4GHJ4VEJQEW23GRA36II7WZCC2MYZJLF",
+			"remark": "NXT-WKMU-KC9V-PES8-HAVQ5 - 1.0 - User Stake"
+		},
+		{
+			"address": "NDQWIW7GTOCFXELVZCN6BD42O636HAGZXSYMDRLP",
+			"remark": "sampsonm - 1.0 - User Stake"
+		},
+		{
+			"address": "NCFJTT44PNMVM65XNAE5RUCWP7ZDD4SD7COVKGNP",
+			"remark": "lyaffe2 - 1.0 - User Stake"
+		},
+		{
+			"address": "NB335PJKGG47ISRNS7C4FZV4VXOQLQBZAAYQGMZG",
+			"remark": "hysnz - 1.0 - User Stake"
+		},
+		{
+			"address": "ND7G7LUVGG725XW277PVLIUBV6HY5USVBCXYUQZE",
+			"remark": "Tompasson - 1.0 - User Stake"
+		},
+		{
+			"address": "NAVLJ5B7ODXZBVPXUNTKBUTOLMQQJ363JLXKSVWS",
+			"remark": "bambe - 1.0 - User Stake"
+		},
+		{
+			"address": "NBKPRISXVACFURYIEDQ57VDY5ZNKZXN3EKES6HXV",
+			"remark": "NxtSwag - 1.0 - User Stake"
+		},
+		{
+			"address": "ND3JXV7Q6UA6L6NS74J6WS7HIGCPU3FTIK5VM7P5",
+			"remark": "rainbowrain - 1.0 - User Stake"
+		},
+		{
+			"address": "NDRBAOJHIDVQ5OR4ZQ3HL7XSLVLXHVMH45RN3VNH",
+			"remark": "sandor111 - 1.0 - User Stake"
+		},
+		{
+			"address": "NAGXTJTQQRBKSTPNOWLTQLLC22FY2TG75XXPWTQR",
+			"remark": "Orlander - 1.0 - User Stake"
+		},
+		{
+			"address": "NAZTJJLTRSM5JHTAKM6UJKSMT3ELLYBHIKHFPZTJ",
+			"remark": "tron666 - 1.0 - User Stake"
+		},
+		{
+			"address": "NCRQE3CDSYYA2M3HBL2AZZE5X6WPPMPIERXX6YXY",
+			"remark": "SuperZeus - 1.0 - User Stake"
+		},
+		{
+			"address": "NDL22HIAZKHRE7DFU5KDE76SPCH7WUSKP5Z4GPGR",
+			"remark": "katsuro - 1.0 - User Stake"
+		},
+		{
+			"address": "NDDRO57SQ2KWC2S3E3VWPBNJWKGTP2VJBDICLMUU",
+			"remark": "GatorJMT - 1.0 - User Stake"
+		},
+		{
+			"address": "ND2V7AAZS3XBASWXILXKCMH6XJUMZBBRBNXIHLYQ",
+			"remark": "Graf_de - 1.0 - User Stake"
+		},
+		{
+			"address": "NDVR5RJHJJJQHTVK4G2UHWTFW363W3L434MUBAQI",
+			"remark": "bluewhackadoo - 1.0 - User Stake"
+		},
+		{
+			"address": "NBYTCELQ4ITCN3JWVWG3LDYXQ7JXUJ2ZLFI3J4D3",
+			"remark": "Lagyo - 1.0 - User Stake"
+		},
+		{
+			"address": "NBL3NREYUWF6M7LVS5KGXNTINGVHTSIVARMPE5JM",
+			"remark": "Marmeto2 - 1.0 - User Stake"
+		},
+		{
+			"address": "NC36RSIMC6ZQRGFAF6ULA3SCYSWYPQO2OLEIWBSF",
+			"remark": "goodhopes - 1.0 - User Stake"
+		},
+		{
+			"address": "NDFC327TNXY7755HIBG4Q7P5LIUSI5BE6KVTX4VK",
+			"remark": "HaOtt - 1.0 - User Stake"
+		},
+		{
+			"address": "NDUYPMSUGRXWQUAPG6HPO2QUQBVFSN5XRFJKHPJR",
+			"remark": "gramufibus - 1.0 - User Stake"
+		},
+		{
+			"address": "NC2W2ZR2BEXBBCOGNRUCB26CJSBCHCNN242VIH2P",
+			"remark": "arseny - 1.0 - User Stake"
+		},
+		{
+			"address": "NBANKOCXDVLXURBYU2PRPLFEJ4IQXMT5JK4EV7KK",
+			"remark": "ceric35 - 1.0 - User Stake"
+		},
+		{
+			"address": "ND623ZEWBQ6GXSTU7WO2HP624F4LIJQMHLJ6TT7P",
+			"remark": "Trendzter - 1.0 - User Stake"
+		},
+		{
+			"address": "ND3JZJSFVEMUZV7VSN6ZTDBWQM5JEC6HZOU6XTGH",
+			"remark": "jyou17 - 1.0 - User Stake"
+		},
+		{
+			"address": "NBW2MSZUDXE5KVK3C4QZEZRVH3NLPFLYOCKWSK7C",
+			"remark": "NXT-29MR-B3YQ-3M2B-62TCS - 1.0 - User Stake"
+		},
+		{
+			"address": "NAUS4Y3F2GP42RURQOEPMIITMT235XAMYQ5RSK4N",
+			"remark": "NXT-4MN6-M5AL-9NEQ-92FUU - 1.0 - User Stake"
+		},
+		{
+			"address": "NCVTXY4UARE5J7MACJMXDASS27YURSVLQRZVMBUR",
+			"remark": "romaniancoins - 1.0 - User Stake"
+		},
+		{
+			"address": "NDWXXDJLDZD3JD6AS5Y27RQRLPWSLW7L4RPES6KO",
+			"remark": "NXT-Y6H2-4WE9-Z75E-5ZDFQ - 1.0 - User Stake"
+		},
+		{
+			"address": "ND6XUQ43E3YTXQWEN5KKPSX6ORB6UKEKZUZB65RG",
+			"remark": "Allu__ - 1.0 - User Stake"
+		},
+		{
+			"address": "NAK346U2IDF2PG62FPH7QHNZRY7P4DMIAECZJQ43",
+			"remark": "Noelle - 1.0 - User Stake"
+		},
+		{
+			"address": "ND5YOD3OCKOFNSWUX3G6BVFEOJHWC73YJ4U5SHFH",
+			"remark": "NXT-QJE8-6K9T-NK2Q-AHD56 - 1.0 - User Stake"
+		},
+		{
+			"address": "NBDOJHQ6DCQUVBYRGVIB6K5M5X3H5ZREQO3UQ3R6",
+			"remark": "danarwed - 1.0 - User Stake"
+		},
+		{
+			"address": "NBNNNNNHJQNUW2Z44U7MTURGVCOYC5FQWLDILTB5",
+			"remark": "NXT-AN9T-KLF9-9R6E-8S7LE - 1.0 - User Stake"
+		},
+		{
+			"address": "NCJZHGQX5PCROSII44OCHE5WZLBXVZII7I3M7UV2",
+			"remark": "caratheodory - 1.0 - User Stake"
+		},
+		{
+			"address": "NBWH6RDXUTY34YPY2PIFWY4QR4NW5HPH3XYFHXXU",
+			"remark": "KimNg - 1.0 - User Stake"
+		},
+		{
+			"address": "NDNHVTL7T5YTZFUVH35MJBTXZLL4QTDD2EEEMPIM",
+			"remark": "selavy59 - 1.0 - User Stake"
+		},
+		{
+			"address": "NDS3RZHDKRH337L2QIBHQQNBPWQDFGNASAJX2PHO",
+			"remark": "greenbay - 1.0 - User Stake"
+		},
+		{
+			"address": "NDW6FP4CVRKSXTLCM4TYZT6PGD6ZU35W6WXCQC6T",
+			"remark": "antonioffaxii - 1.0 - User Stake"
+		},
+		{
+			"address": "NDW5JCUB6OEEYSKVTEDTFMY226SEY67G4FKEM3SR",
+			"remark": "ptuov - 1.0 - User Stake"
+		},
+		{
+			"address": "NDLJ53GVAMAEOSKZP2DHL5KFQ4D24DMYUJSS2ECA",
+			"remark": "bigogiant - 1.0 - User Stake"
+		},
+		{
+			"address": "NDTMKJG5GZA7IKOBTAZG4S5S6PKMD2ZL3625MCIK",
+			"remark": "Jsnow - 1.0 - User Stake"
+		},
+		{
+			"address": "NC464V3ERVDRLIOGVQQYOR6L5ZOMEFG25QJXOHOV",
+			"remark": "wiseye - 1.0 - User Stake"
+		},
+		{
+			"address": "NBJM3KYYS5Q5GRP2EGGGKEDJLIYEGHLTF4EAEARH",
+			"remark": "peer2peer360 - 1.0 - User Stake"
+		},
+		{
+			"address": "NDAZ5H4YCQNJ6DULBHBNEF233JHO25FQELAXFEQU",
+			"remark": "Anubis2013 - 1.0 - User Stake"
+		},
+		{
+			"address": "NBW3KQXCXCJ4DKH76KO2SITNXHA7WG72JMEYO726",
+			"remark": "muto - 1.0 - User Stake"
+		},
+		{
+			"address": "NDEWA4UGSOZWYDJ7THZBOSGJMLLXGXJLHOANWDG2",
+			"remark": "Sh1n - 1.0 - User Stake"
+		},
+		{
+			"address": "NA7WWNLMZ2JZXNT57AQY2FNIHYER6ZYMYN5LIHLW",
+			"remark": "Althoelzer - 1.0 - User Stake"
+		},
+		{
+			"address": "NDNX2ZFGVP4CZZZWNKQ4ONRWECHIACRFTMVPBSMG",
+			"remark": "nexter - 1.0 - User Stake"
+		},
+		{
+			"address": "NCLQIM3YQP7SDRKRFYDS4NXYGEZ4FUSKGSJYTKG3",
+			"remark": "tinadrake - 1.0 - User Stake"
+		},
+		{
+			"address": "NCHMFUBALAMIC65RHVTEQ47SRN472OTLFFSVLK5Y",
+			"remark": "NXT-DCYL-RK4K-DS97-DR34S - 1.0 - User Stake"
+		},
+		{
+			"address": "NBVJCIF33DBGPBEEDMAW3O67RIGFH4I3A5F23YJ2",
+			"remark": "Zimmermann - 1.0 - User Stake"
+		},
+		{
+			"address": "NB2P23S5CAL67LZRRJJFPUN2QYZ7BDRJKS4ROJVT",
+			"remark": "pcarmona - 1.0 - User Stake"
+		},
+		{
+			"address": "NDQANFYHMIFIXKO5MMUJH4FOXUECNKYICJA4REBL",
+			"remark": "SBOSS - 1.0 - User Stake"
+		},
+		{
+			"address": "NC53J4L73LLLGMCD5H44YDCRXYFSKKXRTGJPEYOF",
+			"remark": "nakauchi - 1.0 - User Stake"
+		},
+		{
+			"address": "NA6DV4FIPMN42S7AG5E3ZK66UHH7IAQEZFE7PG27",
+			"remark": "whitejack82 - 1.0 - User Stake"
+		},
+		{
+			"address": "NCVSRRAWL27RJUE2DPYJ5BWQNYVUXHGTZVUI23SA",
+			"remark": "chengren - 1.0 - User Stake"
+		},
+		{
+			"address": "NDIFQ746MPAELNYOJVIWN6DFR46LGDI332TTEBPK",
+			"remark": "SydorFunk - 1.0 - User Stake"
+		},
+		{
+			"address": "NBW4U3WGRG6L57VVGMTN3RB4RXX7HDZLZUDV43QM",
+			"remark": "nfigueir - 1.0 - User Stake"
+		},
+		{
+			"address": "NDO4M3RRK32CHJMCGGMJFOS37J7Z3QDN265OWFLR",
+			"remark": "watchtheskies - 1.0 - User Stake"
+		},
+		{
+			"address": "NCDOVWBHSBXWP3UFF67RJV44FSZXYPI7YP2ILFU5",
+			"remark": "NXT-78YT-QJ7R-DJH6-F2PUV - 1.0 - User Stake"
+		},
+		{
+			"address": "NDAEHYYQIUBAHZE5B4K2PHUIGN4C3GGCKITKULIK",
+			"remark": "rocker10 - 1.0 - User Stake"
+		},
+		{
+			"address": "NCJINYKAXYETBG432YRAOUT5ZZ5TFDU3PBPICDTO",
+			"remark": "ralnock - 1.0 - User Stake"
+		},
+		{
+			"address": "NDMMKTTFWPY3ETKPGUL466I6PMYSV4DNZA3J2POL",
+			"remark": "visaco - 1.0 - User Stake"
+		},
+		{
+			"address": "NDOANI3B6MP6GEFIVJH5LQMWX5VKKLBHWHZUIA5V",
+			"remark": "nickimprov - 1.0 - User Stake"
+		},
+		{
+			"address": "NBZCOQYS6M5LOPCTA5DUGQVBZWDXWK22Z64MFSXX",
+			"remark": "icoinv - 1.0 - User Stake"
+		},
+		{
+			"address": "NDFCJEVGTNO5XT7AC6UJD6734K3JHY3UIZHDX5EK",
+			"remark": "burning94 - 1.0 - User Stake"
+		},
+		{
+			"address": "NDRS72IB7BLA2HKPIXWCWZC6I255FRPABBGLPBTR",
+			"remark": "Scharfenberger - 1.0 - User Stake"
+		},
+		{
+			"address": "NAPWO22CMJLWPNUA6FSI5VET4CIKYOWYXKVVDXYD",
+			"remark": "dhingydog - 1.0 - User Stake"
+		},
+		{
+			"address": "NDWQV5HOAY7V33UR344MAQR5RFV24DCAVWR7D7FZ",
+			"remark": "utens - 1.0 - User Stake"
+		},
+		{
+			"address": "NCBOXXHIPCJXIQKEPKLPZ5YUYLR43ARUWXMSGX4B",
+			"remark": "tfyt - 1.0 - User Stake"
+		},
+		{
+			"address": "NDGSTB7ZWIDX4UY6AASNHYFG4SS3JEBFYZV6TPUQ",
+			"remark": "therealbigcoin - 1.0 - User Stake"
+		},
+		{
+			"address": "NCV22WNYRW3BOAYNGT7UJ4EES4HS4QCJSBIWQIZ5",
+			"remark": "flaminius - 1.0 - User Stake"
+		},
+		{
+			"address": "NDWIARBHLJ2WO3PRVXSEDFUYUD7VW5ZAF6ZV65ZH",
+			"remark": "gargouri2001 - 1.0 - User Stake"
+		},
+		{
+			"address": "NDOD4WJXM5ESIQEF5EHHASLG4AWKVH7ZHML2LI3A",
+			"remark": "NXT-WB8T-VA9K-QHZ4-BUTX3 - 1.0 - User Stake"
+		},
+		{
+			"address": "NAJTU4HYXJW7TGZTWN776V2RLFO2IE3Z34IPQDEM",
+			"remark": "dhnl - 1.0 - User Stake"
+		},
+		{
+			"address": "ND2N7RPB4FZOLIUWRXHOLM6E46P5XVPF2XFWFU7D",
+			"remark": "NXM - 1.0 - User Stake"
+		},
+		{
+			"address": "NC2SMGE7U3WECJ2R2MZCZNCT42Y2FOYGYX4SVGXH",
+			"remark": "shenjie - 1.0 - User Stake"
+		},
+		{
+			"address": "NC2NOEK2EGHKYFCA3WTYARG6EUV27C6BFLYWQKLD",
+			"remark": "jowee127 - 1.0 - User Stake"
+		},
+		{
+			"address": "NBWOU3JPWF754KVUST33QNY4XWLA43ZUVEJHLMMS",
+			"remark": "NXT-6388-KYMM-HTPK-7LNT4 - 1.0 - User Stake"
+		},
+		{
+			"address": "NDZOEKQ6X3NJNTZUFULS3BCTFCH5M6DHIQLZ7ZX7",
+			"remark": "antonioc - 1.0 - User Stake"
+		},
+		{
+			"address": "NBH3QBG7UNIBQCVTTZUZ4RLWQAWMSLCDFYWHCM6E",
+			"remark": "NXT-9XEN-PLLG-RUW8-2H7SV - 1.0 - User Stake"
+		},
+		{
+			"address": "NCVBUF3D4OLXQA7CMCXXEQ22VQEBX6NWPEB5YKHX",
+			"remark": "crackfoo - 1.0 - User Stake"
+		},
+		{
+			"address": "NAJG46XI2JUZZ3ZXEBHTABFXKCVN3I2BOWHACGM4",
+			"remark": "holzbaum - 1.0 - User Stake"
+		},
+		{
+			"address": "NC3KNII63RU65HOBGZH65KVCA2VL4WSK672DYS4U",
+			"remark": "robertjr - 1.0 - User Stake"
+		},
+		{
+			"address": "NBEH3TEEQ4GHOINBY7QHKGOAXXCK57WJNDOVMA66",
+			"remark": "CycleSurfer - 1.0 - User Stake"
+		},
+		{
+			"address": "NCYYJEJM7SMDHRDW5EEUBNASFIHW64F56TT4NCMD",
+			"remark": "gramp - 1.0 - User Stake"
+		},
+		{
+			"address": "NBPYOSGNZRKKNNIP3FE3R6VZKZHT3HFJE6XD362N",
+			"remark": "QBTC - 1.0 - User Stake"
+		},
+		{
+			"address": "NDJ64IR5LJX2OBT4F2VZZZB73NVOMVOYTZMQDXYB",
+			"remark": "goldenmail - 1.0 - User Stake"
+		},
+		{
+			"address": "ND3UVEML3NCV2J6DN5XX3PTWPSFPTAT6KCBZHJGT",
+			"remark": "cyb72 - 1.0 - User Stake"
+		},
+		{
+			"address": "NDZT3L5E36USEEL7LWTZSSSW3ZQYEYNYOLMOL5SM",
+			"remark": "CycleSurfer360 - 1.0 - User Stake"
+		},
+		{
+			"address": "NCZMG7F5XNV3AGOU45H4EBJHVCAAROIHOBLYMF5X",
+			"remark": "igmaca - 1.0 - User Stake"
+		},
+		{
+			"address": "NDG3K2R5MLZTJUNIYCORJUS3VK5THPKJOJXPLS24",
+			"remark": "Jacqul - 1.0 - User Stake"
+		},
+		{
+			"address": "NCX4YUSRC6P3IMVP53UTOG3CX3FYGA7XY77RXGS3",
+			"remark": "gabbabo - 1.0 - User Stake"
+		},
+		{
+			"address": "NA25F6T4GSWYOEBB7PMHGMKDYTDPDR2ILGPVDX7T",
+			"remark": "mindact - 1.0 - User Stake"
+		},
+		{
+			"address": "NC5VFZ5I3GWNAPTRDGMRRLO7SO4FH7ENJV7MVII5",
+			"remark": "33THOTH2013 - 1.0 - User Stake"
+		},
+		{
+			"address": "NDMEBCIKPKQATZUNPOQONY5S6KIAYBPMEWCOMGN3",
+			"remark": "nextgencoin - 1.0 - User Stake"
+		},
+		{
+			"address": "NDUK2DSJKNEFU47D5TDBKFSXZFEF7CBD3KKXJN5N",
+			"remark": "metrix - 1.0 - User Stake"
+		},
+		{
+			"address": "NC4QKKHY6F7EPHAATFP6RR7XHMKX5JYUKA3W4GDF",
+			"remark": "NXT-MW9P-TJXN-MRSX-9GC5X - 1.0 - User Stake"
+		},
+		{
+			"address": "ND6H5Z66BR6CCY6CBWB5U7JADVL2UXJ4QCTSF2ZL",
+			"remark": "bummerstink - 1.0 - User Stake"
+		},
+		{
+			"address": "NALLW6APLXVS7DIVX5S4NMR5YB5CJFSTNQ7R723G",
+			"remark": "NXT-Y9TC-AFR6-FRLX-C92KL - 1.0 - User Stake"
+		},
+		{
+			"address": "NDIY4IVU2FLWJXO555NED54FIZODCHSD7QTHX5N6",
+			"remark": "unsure - 1.0 - User Stake"
+		},
+		{
+			"address": "NAH7SVACDG7CHCW3PTFEWGGIVVKGAWBVS3F2XFO4",
+			"remark": "mik3 - 1.0 - User Stake"
+		},
+		{
+			"address": "NBHNF26SU5LWHIH76HK3IZK4KBLLOZ3U2YAQXUKL",
+			"remark": "NXT-BR4R-ETBF-4RPW-AA6S4 - 1.0 - User Stake"
+		},
+		{
+			"address": "NAYZPOR4D3F2OSZWWHAMJ2A5HOR7CSRFASFSY2ZB",
+			"remark": "ddiioo - 1.0 - User Stake"
+		},
+		{
+			"address": "NANQITM4XF6JJYK63W2SAMUSXAEHJCLEDCB32NEM",
+			"remark": "supersuber - 1.0 - User Stake"
+		},
+		{
+			"address": "NBY6QS6LWIGQBXUKFNX2J2AHMLSWLHI54CS4BOCE",
+			"remark": "Montanha - 1.0 - User Stake"
+		},
+		{
+			"address": "NBRT6SQFHO36GXI4YPRWCHW3VJQFNNOI4LBWHYJP",
+			"remark": "fgbnbb - 1.0 - User Stake"
+		},
+		{
+			"address": "NBKTHM5RVJEQNPOP2RYMDF7VSSAGV3KGUX5T4KJF",
+			"remark": "gu7008 - 1.0 - User Stake"
+		},
+		{
+			"address": "NBNTJD44WHH7SMW7PAIBDKBOXO3RW6IVCP7C4TRF",
+			"remark": "halbortico - 1.0 - User Stake"
+		},
+		{
+			"address": "NBVF2UX2PVTXBH5IE5LM4JBRWUI4AW5QETLM2NZG",
+			"remark": "Xesplayer - 1.0 - User Stake"
+		},
+		{
+			"address": "NDOLQKPUA4QZMHWVPBG6EMROIVZDZMFGSCYMFBUZ",
+			"remark": "akapamej - 1.0 - User Stake"
+		},
+		{
+			"address": "NCUYIOM3YHBBEB7MJD7WLIVBNEHWWPB2AP6AZKJB",
+			"remark": "PhotoFinish - 1.0 - User Stake"
+		},
+		{
+			"address": "NBTQB5Z74LYRIK4KSINCQ27DIQUB3Z3R3L55LFVK",
+			"remark": "snork - 1.0 - User Stake"
+		},
+		{
+			"address": "NDCL5PP5ZWO55SCOV3JB6P2ITE3FNKCWKLAZ2PE4",
+			"remark": "depreciated - 1.0 - User Stake"
+		},
+		{
+			"address": "NCIFDUQ37QZNYAJKZXXM7Q637ODW7SOUMUNU2DBX",
+			"remark": "NXT-ZLGQ-QBXW-7AEB-6H6U9 - 1.0 - User Stake"
+		},
+		{
+			"address": "NADP63FUUAOS2LDXY75SJ4TOLW4S7YXEAGT25IXG",
+			"remark": "KUPE - 1.0 - User Stake"
+		},
+		{
+			"address": "NBZHED3VW5LMGMFOXKYGHOVCY7SSESLLXWIGI7D6",
+			"remark": "Raggsock - 1.0 - User Stake"
+		},
+		{
+			"address": "NARMM2HRA76TYL6R2VCGL32B3SD3WVMXUCGFXJVB",
+			"remark": "xiaohailuo - 1.0 - User Stake"
+		},
+		{
+			"address": "NAQWXQILRJ5OV43XROQZFNLB4VI63OUKNTP6QASR",
+			"remark": "sympathisant - 1.0 - User Stake"
+		},
+		{
+			"address": "NCS2KHCDAWHC7N4JYBELD74RIS76LEIEXLKE55HF",
+			"remark": "nine009 - 1.0 - User Stake"
+		},
+		{
+			"address": "ND4VQHMXNC3CKZQAI7EOA7JBBLHGO4Q7E3IZY5FW",
+			"remark": "dbgirl - 1.0 - User Stake"
+		},
+		{
+			"address": "NDVRVZRO5SLTMVYEDUNQQT57WDTEJ7PCLQBL6LTA",
+			"remark": "grex - 1.0 - User Stake"
+		},
+		{
+			"address": "NA47ENWVWPWDHRPB2QJ6EV43QYC7NQQ3GVSQX3UU",
+			"remark": "Lydian - 1.0 - User Stake"
+		},
+		{
+			"address": "NAYXHWE3B3CDJCDA5OCPNIOXIEBYCWJS7E25TG5E",
+			"remark": "michey1980 - 1.0 - User Stake"
+		},
+		{
+			"address": "NDXFE7XYOEU6TNH47LDUWYTS7OKSIZV2NNBQFIMG",
+			"remark": "Alohaboy?! - 1.0 - User Stake"
+		},
+		{
+			"address": "NDBMYE2AMWNOF2LAZSJ5NHPXOO75FWQ2GJYKUQHW",
+			"remark": "standards - 1.0 - User Stake"
+		},
+		{
+			"address": "NDWX4JZ2COVOBU6YTRHDIEN3BBAMC6AC67TWY5JS",
+			"remark": "xenofanesSkarak - 1.0 - User Stake"
+		},
+		{
+			"address": "NDJELNMDPHDNTHLHMKUY6E2B3BUXDXDRDBUKRLBX",
+			"remark": "staykc - 1.0 - User Stake"
+		},
+		{
+			"address": "NA7TMO7CR3RBWIVHFMYPNGHJ4FRXQ4V3QCGRLJQJ",
+			"remark": "NXT-4LSP-HG5D-L4ML-F6BJL - 1.0 - User Stake"
+		},
+		{
+			"address": "NBWQ6NPTKTRPOW36SQPOVA53LNUZOTU6A376XS5D",
+			"remark": "MuChHaPpyDoge - 1.0 - User Stake"
+		},
+		{
+			"address": "NAGFAJNQM43RMFVCXFPYBVBCIWN55PMJW6NKGFXO",
+			"remark": "MaSch242 - 1.0 - User Stake"
+		},
+		{
+			"address": "NCJ76M363CTDTQYV7VLYVQEFVUQVN27U3ZMF2YM5",
+			"remark": "NXT-6XQ7-N76X-G5CJ-A68KE - 1.0 - User Stake"
+		},
+		{
+			"address": "NDD32LN5GOXIOV7ZOQOF3FWXFT5U2M5RFPSLCKDG",
+			"remark": "DrosteEffect - 1.0 - User Stake"
+		},
+		{
+			"address": "NBYN3YJ7OJO5ABEADYK22P6AYBD6SQSUD5VZVEWV",
+			"remark": "jackeygo1229 - 1.0 - User Stake"
+		},
+		{
+			"address": "NCURKDXYWVQBKLKAGCEA44HI3ROJTZ7OEIZB4YE7",
+			"remark": "chuck888 - 1.0 - User Stake"
+		},
+		{
+			"address": "NDFADUDZFTK32SSWTHVU4KEPMHGQWRJIKUDJHVOT",
+			"remark": "NullOp - 1.0 - User Stake"
+		},
+		{
+			"address": "NCSL345UPDK5X4WAZ2RMDVCYBAFZATIDCTTLHFFK",
+			"remark": "Man-aqua - 1.0 - User Stake"
+		},
+		{
+			"address": "NBLC3HCXHSVNVCFBRI2OOQHW2N56V7WHBCUMLDOW",
+			"remark": "ximennet - 1.0 - User Stake"
+		},
+		{
+			"address": "NBPFB446X7Y6SSOZ2DRNINHO4QIMXG7SZ6ZIPJBU",
+			"remark": "NXT-3JGX-ZSUQ-N6R8-9UA4Y - 1.0 - User Stake"
+		},
+		{
+			"address": "NDRHC4PJVXZSCPAX6UWEGSGV6B4QIWCVFNVIVP4L",
+			"remark": "Kkaos - 1.0 - User Stake"
+		},
+		{
+			"address": "NC4NZPHPWAWUBNV3MQABWQQ2JOC7MIT6OTPNXAK6",
+			"remark": "Vsevolod - 1.0 - User Stake"
+		},
+		{
+			"address": "NCXEOX6LMGRFEBFTQWCKJBRB5GZC3MCZRJEHDVTP",
+			"remark": "xperiencia - 1.0 - User Stake"
+		},
+		{
+			"address": "NBGIHN6DZTTG2UUBSV5HO5NA3AFHZS2YZA3OVR4U",
+			"remark": "a123 - 1.0 - User Stake"
+		},
+		{
+			"address": "NBVEWRYUFXFX5B7J4GH6KLA2GJEKA3PQNT4LF5ER",
+			"remark": "ltcmining - 1.0 - User Stake"
+		},
+		{
+			"address": "NDGV3OJF235D6MUML25AB25UEINFXHMJE6TJKXP5",
+			"remark": "bmr1 - 1.0 - User Stake"
+		},
+		{
+			"address": "NA2PVOJDSBPLY6KNJFWKN6Y6HJ3JKMXR3NHFBZBM",
+			"remark": "jluhxd - 1.0 - User Stake"
+		},
+		{
+			"address": "NAPYYFPMFI3DDUFWHEH4ZSTQTXIUZVY6HIHDMLFI",
+			"remark": "Sondey10mg - 1.0 - User Stake"
+		},
+		{
+			"address": "NDJFDBCHR4DQWCC4QVXZE5V6MYHPVM2LC3RUFWEE",
+			"remark": "NXT-26MN-75KR-8H26-A9HK6 - 0.1 - User Stake NXT-26MN-75KR-8H26-A9HK6 - 0.9 - User Stake"
+		},
+		{
+			"address": "NAPQKFZLXFX6UTA3TV2QWYCO3WCKB4LDWQ4VZE6J",
+			"remark": "NXT-E7TR-U9QT-E9A2-HVSYW - 0.9 - User Stake"
+		},
+		{
+			"address": "NA6CMPKJF4TLRBNROWYO35ZY5XMY6HB5KZEKK3UQ",
+			"remark": "NXT-9QSY-BTC6-CLE3-F89H6 - 2.3 - User Stake"
+		},
+		{
+			"address": "NDDDLUUPRL5OSZUKC6HSUHBMD4YPSNHVJD7W5M3K",
+			"remark": "feixiangyu - 1.0 - User Stake"
+		},
+		{
+			"address": "NA7F7KZ4B3IKU4YQX7KZT5W2Y5BZWM4I4SYHOJNV",
+			"remark": "frktor - 1.0 - User Stake"
+		},
+		{
+			"address": "NDUET7TER2TDYEU3PEVBHB2JLIBYEWAAZFBA2VG5",
+			"remark": "NXT-5P9L-NB3D-L76N-9YUM4 - 2.0 - User Stake"
+		},
+		{
+			"address": "NCMLFKHQFKCSHA7R3LKVCVBS75RW5F5N3ZIBU2AQ",
+			"remark": "samysamy1 - 1.0 - User Stake"
+		},
+		{
+			"address": "ND6C7GQQQDZX7DBPH44YUELETCQTNXLNYCQ4ZXSB",
+			"remark": "Silmarils - 1.0 - User Stake"
+		},
+		{
+			"address": "NAT7BR4HL6MEISL5JH2WHDXY2O3DDCDHWECWBUWJ",
+			"remark": "tangshaowan - 1.0 - User Stake"
+		},
+		{
+			"address": "NAE66AMG4XI3WQTJT7HX4A7AGRHP5X6WAAAPZ4BX",
+			"remark": "hardshot - 1.0 - User Stake"
+		},
+		{
+			"address": "NAAB3MHR5A5T53PKTN7W3MQEADLOFL2AU2JAMTSY",
+			"remark": "khitan - 1.0 - User Stake"
+		},
+		{
+			"address": "NDAD5A3COUNWWA4JF7IESHCAUDIQW4CRGZKOOUVD",
+			"remark": "NorrisK - 1.0 - User Stake NXT-DYE3-GQK7-C7WU-DQZ7D - 0.1 - User Stake"
+		},
+		{
+			"address": "NANSBJNYND7WZX6OBX57GA3I2CTVVLL2CIT2UKBU",
+			"remark": "InvRegistr - 1.0 - User Stake"
+		},
+		{
+			"address": "NDBTNMVQ5Z3LAUTBGOA4PDKJOP7LQAZWTVSFX5NL",
+			"remark": "Skerberus - 1.0 - User Stake"
+		},
+		{
+			"address": "ND4HADSLN62QXQM7TI6LBWE7EX6NDD6QOO6ZT76V",
+			"remark": "bitcatch - 1.0 - User Stake"
+		},
+		{
+			"address": "NBMBNXNZQX4S34SEEZPXEX2OG2DSDWFBD35CWB5N",
+			"remark": "NXT-X357-JT4A-SMCT-27ZFQ - 2.0 - User Stake"
+		},
+		{
+			"address": "NB35S4ER75ODWDL5CF77VMZHLBUEOG3LTQPRSQ2C",
+			"remark": "schnötzel - 1.0 - User Stake"
+		},
+		{
+			"address": "NAQU4JRHN7QFKBAF67NMAOATF26TUEJZDZUHZMN7",
+			"remark": "Birdynamnam - 1.0 - User Stake"
+		},
+		{
+			"address": "NC6TCBD6KBBSCG76IWVFIQFPEO5QADK7JAYIT23D",
+			"remark": "gaazje - 1.0 - User Stake NXT-G45K-EM76-8QV5-9VX5J - 0.2 - User Stake"
+		},
+		{
+			"address": "ND56JWDJVKXDJTAX2SMUMPWWU4XAWVVNVKWQD7UB",
+			"remark": "slaytg - 1.0 - User Stake"
+		},
+		{
+			"address": "NBDVXKRIIKPY4YC2XMS63RHM4LQUACSUQHJKUNWN",
+			"remark": "Adamlm - 1.0 - User Stake"
+		},
+		{
+			"address": "NCNAINCO4DGZMFSA4FI2GASOCX7EKPBBC7IVFODD",
+			"remark": "LiteMag - 1.0 - User Stake"
+		},
+		{
+			"address": "NBWMUKGHCEFW26L2KN27VQXWMJX6QKCDDWAQM63C",
+			"remark": "konane - 1.0 - User Stake"
+		},
+		{
+			"address": "NCB2YI7KJBXC2JKKFIPYAC3K6H5WNL6EBLQYRQR7",
+			"remark": "koukaras - 1.0 - User Stake"
+		},
+		{
+			"address": "NCX4IPGE7EKXISFVY2IPZUIY6422JWBSB4SGHWKB",
+			"remark": "Allen A - 1.0 - User Stake"
+		},
+		{
+			"address": "NBUBCQ2YWEJ46BEVCDJIENPU2NDOSMKDGQGRWPK4",
+			"remark": "NXT-QJRT-6QKM-H727-EJ7W2 - 0.8 - User Stake"
+		},
+		{
+			"address": "NA5XNOVCYTGSDQXQZY4NWU6P6VVP4ILPVKZVKO6V",
+			"remark": "NXT-38HL-ZRBE-DAMD-A56AH - 0.8 - User Stake"
+		},
+		{
+			"address": "NBAKCTUPPRBEQ6UOZYFTERPQMWOCVZDR72X32DFH",
+			"remark": "NXT-GFF2-SUXT-P4ZJ-BLJC4 - 0.8 - User Stake"
+		},
+		{
+			"address": "NDSH67JMHRJEGI7CEZPPS4XMF4GTTXTVJDSJWJ2Y",
+			"remark": "NXT-WV3G-7MB6-33QC-6BMKD - 0.8 - User Stake"
+		},
+		{
+			"address": "NCCCD6BIMZ2RGMRCSXD5AVI3FPDHM2PCPK6EL7BD",
+			"remark": "NXT-KJNS-6W52-CYPM-3K8ZX - 0.1 - User Stake NXT-KJNS-6W52-CYPM-3K8ZX - 0.7 - User Stake"
+		},
+		{
+			"address": "NAUJI6GWUYV7LS2P5PTAU375V3PG2Z7V6I7ELSJO",
+			"remark": "inushkin - 1.0 - User Stake"
+		},
+		{
+			"address": "NBC4HHZ5W5Q5H5P5NRZVCYSZURH3SOPK7C4V6YSX",
+			"remark": "kronicblazer - 1.0 - User Stake"
+		},
+		{
+			"address": "NCJADGY4THJ2X7AJYWQG7W5OEWZX3G4FZY2S4UZE",
+			"remark": "gazoox - 1.0 - User Stake"
+		},
+		{
+			"address": "NCSCU7P35LLTZ2ZDSNPO46CZXJ3IAT3J2PKXNWYR",
+			"remark": "wosch76 - 1.0 - User Stake"
+		},
+		{
+			"address": "NBE223WPKEBHQPCYUC4U4CDUQCRRFMPZLOQLB5OP",
+			"remark": "n3lz0n - 1.0 - User Stake"
+		},
+		{
+			"address": "NBCFGD4KYHJR6S75GMHQGGVJ2RXSQKYO6Z3R4CXW",
+			"remark": "NXT-9W77-8ZNS-SZWB-9AFCX - 0.1 - User Stake NXT-9W77-8ZNS-SZWB-9AFCX - 0.1 - User Stake gsxrl3oi - 1.0 - User Stake"
+		},
+		{
+			"address": "NDHCZQRPVGCL46TURU77D5VDLDKPW5SSORKBYMW6",
+			"remark": "LiQio - 1.0 - User Stake"
+		},
+		{
+			"address": "NDE4MXRB5N7LX7Q2GIU4FSLDX6KYXUTF4VLTLLFM",
+			"remark": "NXT-BPMM-Y5WY-LMA7-2QRBF - 0.3 - User Stake highscore - 1.0 - User Stake"
+		},
+		{
+			"address": "NBFYQPSPN462QI2HEEZQFMFP6J7I566BG65EDCR6",
+			"remark": "NXT-GG7T-X3CN-QMLF-3S7GQ - 0.7 - User Stake"
+		},
+		{
+			"address": "NDVDQPUH5IX7AMU5I56UVIUJYIXRONOVVSRC7KHN",
+			"remark": "NXT-VZYH-HHXP-RRMJ-B8ADB - 1. - User Stake0"
+		},
+		{
+			"address": "NCOLJFSJZUSYF5AGJTVAGF7HUPUZJTCGXLGILYFE",
+			"remark": "Sharker - 1.0 - User Stake"
+		},
+		{
+			"address": "ND67BSDQLSGVXFGEXYN74KR6NO4SMQZB4EF5ZUQ3",
+			"remark": "mlwlxz - 1.0 - User Stake"
+		},
+		{
+			"address": "NDMPLKNBLFGQ7YHTW3YAU7ANE4YBYU3DMHWTICRB",
+			"remark": "elelegzet - 1.0 - User Stake"
+		},
+		{
+			"address": "NCO55FPAX4WFTT2PBFJ6WEIBOX3ND2AFXODSDDCW",
+			"remark": "NXT-6EK7-4PKA-XFZM-9VV4W - 1.0 - User Stake"
+		},
+		{
+			"address": "NDDJSNPI4WEQ4PH2SGZYGKL2I4HMAOL6DQWCD25C",
+			"remark": "NXT-2PTP-GTKP-HTWH-6CRYR - 4.0 - User Stake"
+		},
+		{
+			"address": "NDDMRITEHHHQGVJPFYVMZB2ADHCIAGPXA3SETEN2",
+			"remark": "EvilDave - 1.0 - User Stake NXT-772X-VVVV-HGJ3-HG7ZK - 0.2 - User Stake NXT-TMVC-69YC-SJB4-8YCH7 - 0.3 - User Stake"
+		},
+		{
+			"address": "NDLJVSE5A4RTKNLJHUDGUPTQQKVOIG3PGDUTKM2N",
+			"remark": "dreggsagg - 1.0 - User Stake"
+		},
+		{
+			"address": "NCI6CDZ6CO3RX6EVMLFLTZMOIJWMZLF5ICCZ62G4",
+			"remark": "wiser - 1.0 - User Stake"
+		},
+		{
+			"address": "NAAKE4DZ6OLRPJ2BNXEJXXLI2ULAX77HWVOZD4TV",
+			"remark": "NXT-9XYC-YHR6-LXAY-5GV6S - 1.0 - User Stake"
+		},
+		{
+			"address": "NALANHHEB6FKBC2DLDZCDWV4IVMA2V3326V6ZJUB",
+			"remark": "NXT-BC88-N4GZ-AZAM-8NHA6 - 2.0 - User Stake"
+		},
+		{
+			"address": "NAEVQGJWG467SSU7VURCJ6BIMNFIBBP7KWJOKBEX",
+			"remark": "NXT-NTRQ-NMPY-DLD6-3472W - 2.0 - User Stake"
+		},
+		{
+			"address": "NDS3HU7LHH3UZ4HGF2QDG4IX5SB3N3WXWPWZVVP6",
+			"remark": "kaffeeb00n - 1.0 - User Stake"
+		},
+		{
+			"address": "NDR7KP4SLRPANN2ELJOQLK3K6WHLVLFW6Y7YU565",
+			"remark": "banders - 1.0 - User Stake"
+		},
+		{
+			"address": "NB5VXCNTHQI7VXIPCCJ7WII2XJHGFPAOTM3PG3PY",
+			"remark": "NXT-ZMUK-YQT7-7CCB-9CN8H - 4.9 - User Stake"
+		},
+		{
+			"address": "NBIHTV2VI6H4C3Q4MC45LEIXSHUABLTHNGB5RMH4",
+			"remark": "NXT-D9QF-CQ6Q-RPVU-48SQB - 0.5 - User Stake"
+		},
+		{
+			"address": "NBLBLKBDYO2CZV2NEL6TR2DLPI7OUY57ZM3OHFTP",
+			"remark": "NXT-QKH6-ZV3K-RUEY-58VV5 - 0.6 - User Stake"
+		},
+		{
+			"address": "NAIENN4TFSZGV6IYB4PNYZ3TZ4UGZLC6RGFFCXSB",
+			"remark": "NXT-9TEN-QA9F-TZHC-3LDUZ - 1.5 - User Stake"
+		},
+		{
+			"address": "NAHLVZMSQPO5EF26OX3JVELBVAZM5QIPUFLOQEY2",
+			"remark": "NXT-TVKA-T2LB-ZX22-9TNPW - 0.6 - User Stake"
+		},
+		{
+			"address": "NCBFARWJFGIEQF7IOT7FM24KOHBFXVHW53QN5MTH",
+			"remark": "NXT-6MMC-HFZT-QTK8-2NRAM - 0.6 - User Stake"
+		},
+		{
+			"address": "NCKMD4NWJY33IHVYPSRW4B5EJ5T5S3MCC5GDLQON",
+			"remark": "NXT-7MFU-QPNG-672X-8FAQ5 - 0.6 - User Stake"
+		},
+		{
+			"address": "NBW7KZ3SMDHKPSX7EOPGU7JYFGGWKTFHDYV4BR2V",
+			"remark": "NXT-CH8B-TC6F-YWKN-2B8ZG - 0.6 - User Stake"
+		},
+		{
+			"address": "NCDYOMFFNO5T567SBODMNGZAYBGWREFCIGZ7T26J",
+			"remark": "Boyciesbitcions - 1.0 - User Stake"
+		},
+		{
+			"address": "NCGJOHR33V45AIFAYFDJNXUPATHYJGU7Q5NHLOSD",
+			"remark": "Aloha - 1.0 - User Stake"
+		},
+		{
+			"address": "NCWNQCBDMR5IQRBJXFQIBH2LXWQYTH3I3NIAAEXX",
+			"remark": "Wamatt1 - 1.0 - User Stake"
+		},
+		{
+			"address": "NB3AO56WS5TPVKXUZ4HKCWY7HX73QS34IVLLNLSB",
+			"remark": "MessyCoin - 1.0 - User Stake"
+		},
+		{
+			"address": "NB54254XGOFR3IKEN2OGX37IC6QPTOC33LKIT6LB",
+			"remark": "yabit - 1.0 - User Stake"
+		},
+		{
+			"address": "NAO6WV6HEU7CXTT2UF7DMSMH3CJ5ENFIJGO7QYLO",
+			"remark": "NXT-75VQ-4YQU-5YT2-CG4X5 - 1.0 - User Stake"
+		},
+		{
+			"address": "NB3N5U2MLQIAYMTTYK64SOXPM43XPNGEFCTYZERG",
+			"remark": "NXT-NFDZ-F697-TS87-FMVHR - 1.0 - User Stake"
+		},
+		{
+			"address": "NADJYD7A2BITYH2L2FFK4SMNQFDNF7WUUQDW6676",
+			"remark": "NXT-4HFF-7TTU-YTVL-AVMWV - 3.0 - User Stake NXT-4HFF-7TTU-YTVL-AVMWV - 3.0 - User Stake NXT-4HFF-7TTU-YTVL-AVMWV - 0.1 - User Stake NXT-4HFF-7TTU-YTVL-AVMWV - 3.4 - User Stake NXT-4HFF-7TTU-YTVL-AVMWV - 0.2 - User Stake NXT-4HFF-7TTU-YTVL-AVMWV - 2.7 - User Stake"
+		},
+		{
+			"address": "NA6C5XSTED27MBBZRNX2U7EJ4VLAYJMH7XAH6WKU",
+			"remark": "jubalix - 1.0 - User Stake"
+		},
+		{
+			"address": "NAMMNPSRFSN4S7YXBOVL7PDC2NAHZORXGKPXLKP7",
+			"remark": "NXT-WDH3-MGHT-JSL8-9HR9W - 1.0 - User Stake"
+		},
+		{
+			"address": "ND4YWFP4V7W65AHF7T6JSZ3DM64HQ6RTXBERLI6D",
+			"remark": "mortare - 1.0 - User Stake"
+		},
+		{
+			"address": "NB22LWIVEGUUFS22L7CX6HS7BPWCBXOTELY24HTK",
+			"remark": "danzilla - 1.0 - User Stake"
+		},
+		{
+			"address": "NBSIUY3ODWHAVAENOL5Q35XABXQKAXGDP4O4BNLV",
+			"remark": "thatbluedude - 1.0 - User Stake"
+		},
+		{
+			"address": "NCTTMMIZZA4BL2IS252VLK6OT3X5QFR42YVQB4LF",
+			"remark": "NXT-N8U7-TU6Z-HU3S-759Y7 - 1.0 - User Stake"
+		},
+		{
+			"address": "NAZXX525OUJULWS3UMVZ4EQQCXVKDWEKUUUQTWNY",
+			"remark": "NXT-HD7E-Q4LP-MTP2-49RAH - 0.5 - User Stake"
+		},
+		{
+			"address": "NBENNCQUK3TPDVUTCMMSFIN43ZYQN5ACIJQWKMRP",
+			"remark": "NXT-EFDP-WX3A-NEQ2-88HW3 - 0.5 - User Stake"
+		},
+		{
+			"address": "NCNF76GQSFNV4PZWF5LWCZSHPR7SC6QUZ6BPIXQ4",
+			"remark": "NXT-DH4T-9PH3-5V8S-HQJC5 - 0.5 - User Stake"
+		},
+		{
+			"address": "NB2THSZJRJJYLNLD2YLEMBWHQ3EZLDMP7GPQQAUM",
+			"remark": "tshel_bt - 1.0 - User Stake"
+		},
+		{
+			"address": "NDMSI7HDHQEC3KNTLGGBJHV6KELSEQ2CP4G67NT5",
+			"remark": "NXT-VM4V-WX6N-EY9K-7W6TC - 2.0 - User Stake"
+		},
+		{
+			"address": "NBDDHCX33DRRLRQTGYOW2FPXJMQ3NIXQPMG5AKKG",
+			"remark": "wipeer - 1.0 - User Stake"
+		},
+		{
+			"address": "NBAD2SOIE2KTR4T5M2CDVHFR6BCCLEA6NS5RS3ZJ",
+			"remark": "NXT-7T8P-6U8Y-XEFS-CFFDZ - 1.0 - User Stake"
+		},
+		{
+			"address": "NBSKEVT7VTGAADOHW7EODQQUISIDZW6THGT4WUCO",
+			"remark": "Mageant - 1.0 - User Stake"
+		},
+		{
+			"address": "NC7IKKBCK4T7BIT2HBG5SMIOU3JIEKXBRXUULDWE",
+			"remark": "ozie - 1.0 - User Stake"
+		},
+		{
+			"address": "NBOEKKLLELZGG5FNEQ3DLFCFNJHC55APVH7YLB4F",
+			"remark": "blackfyre175 - 1.0 - User Stake"
+		},
+		{
+			"address": "NC4PJ4IXEBGSRCNXROHIYSHWY7FMIVLUCIO67FCP",
+			"remark": "luis77 - 1.0 - User Stake"
+		},
+		{
+			"address": "NCNKAOG5P37KSM7XFEVDT54AB6PS75ZF3SW5EHD6",
+			"remark": "NXT-F5QY-WR3M-YBH2-DJDVA - 0.1 - User Stake NXT-F5QY-WR3M-YBH2-DJDVA - 0.1 - User Stake"
+		},
+		{
+			"address": "ND2JJARIS5K7FSL7OC5PKSZWOKEGC6RNHF3GRQRY",
+			"remark": "NXT-YESG-TDFV-4QPN-FZJQL - 1.0 - User Stake"
+		},
+		{
+			"address": "NDD64AZHTIS2ENHLRUCXLACNDDCMBGT2V5JBTGMG",
+			"remark": "NXT-VEBF-9BJR-54FB-4VEEF - 0.5 - User Stake"
+		},
+		{
+			"address": "ND4Y2JSTEU35XUI7WJIJPH27WLBM32NUGUFOBYMK",
+			"remark": "NXT-8RXS-2SSK-RNF2-HSNL8 - 1.0 - User Stake"
+		},
+		{
+			"address": "NCJEXCK6ZXRIRPJW6TW7T5TG6QCNTIEBURYHP4OG",
+			"remark": "notindexed - 1.0 - User Stake"
+		},
+		{
+			"address": "NCGHHU6EAQMQWSRXBCLHSWHFLNQZUO7RIL6NIRZV",
+			"remark": "BeeFer310 - 1.0 - User Stake"
+		},
+		{
+			"address": "NAGWR44DJPNQRCSEJT5PMGIOTHTSFDUYVAQL7FGV",
+			"remark": "NXT-DZ8P-HUCW-2PNL-HW658 - 0.1 - User Stake NXT-DZ8P-HUCW-2PNL-HW658 - 0.4 - User Stake NXT-DZ8P-HUCW-2PNL-HW658 - 0.1 - User Stake"
+		},
+		{
+			"address": "NCLM32VRDBVEAYIN3P6X3H4DWXTXSBZ3YMPR2NIA",
+			"remark": "Dwayne - 1.0 - User Stake"
+		},
+		{
+			"address": "NDZ5RFQIVSXQRUPP7XLFX2ZYZJVTQDFTEATPW3SY",
+			"remark": "hotflame - 1.0 - User Stake"
+		},
+		{
+			"address": "NATSO72X7UPVAYG73K2KMOFXKIEB5TD7SEWVYDV7",
+			"remark": "Elated - 1.0 - User Stake"
+		},
+		{
+			"address": "NA5XRRYNK7R3STTU4HQQWJZL2FGSELE2XUZ5EYXO",
+			"remark": "NXT-PWVQ-6CHD-YRVP-DWSGD - 0.4 - User Stake"
+		},
+		{
+			"address": "NCRZKPCYITTZLGJUR47RB6I7FOFBGZEPVS74TZ4N",
+			"remark": "NXT-D89Q-LY73-ATAG-C5MYS - 0.4 - User Stake"
+		},
+		{
+			"address": "NCDUE3DYOZ23YORIVX2QFPE5X5U5UHMDL3FPDZQA",
+			"remark": "NXT-LDLW-ASGE-EARM-7GHP3 - 0.4 - User Stake"
+		},
+		{
+			"address": "NCKDRVEBQC23SQYSLB4FHUQSIZIR4KG5DWDOTK2U",
+			"remark": "NXT-MWKQ-54DL-M4DW-FAP57 - 1.9 - User Stake"
+		},
+		{
+			"address": "ND5KF7QUSC7V37YPE5XENIN7E6RV2EEA5V3SSWN2",
+			"remark": "macdadon341 - 1.0 - User Stake"
+		},
+		{
+			"address": "NBERYXA4CVXKBEMM65XXFG4ZX7YPKQN2HKC6JSCF",
+			"remark": "NXT-77PX-3FX2-FMHS-G9JP7 - 1.8 - User Stake"
+		},
+		{
+			"address": "NDWYUQVCNV3J7DO47GYH4KRHCSTZ56LTSWKR26A6",
+			"remark": "mrnxtuser - 1.0 - User Stake"
+		},
+		{
+			"address": "NCRZ75SL2I6EEB6MFAIJWPQW4SHRPB4Z74LC73WU",
+			"remark": "J.B.O - 1.0 - User Stake"
+		},
+		{
+			"address": "NB6MAPTMUQTC6OCNMXUCIF3P4UGGNS42CCYL32OQ",
+			"remark": "NXT-3FH7-TS6Q-44EV-8B9LN - 0.1 - User Stake NXT-3FH7-TS6Q-44EV-8B9LN - 0.9 - User Stake"
+		},
+		{
+			"address": "NC4LZBTRMSHGVIXEV3HOGE7LAERYFZSNHQYFZ7EP",
+			"remark": "NXT-36CD-HPSQ-DBF6-94V2R - 0.3 - User Stake"
+		},
+		{
+			"address": "NC6G25YTJ4L44U25UHV7PIQTHPFWXW6DIAD43GI2",
+			"remark": "NXT-EF3N-TTM5-8J4J-7ZGPR - 0.3 - User Stake"
+		},
+		{
+			"address": "NC4GTK2WZMO4ZQJQKCQ5C5GDRVT7TEDG76KNSHMN",
+			"remark": "anthilles - 1.0 - User Stake"
+		},
+		{
+			"address": "NB7UUBTTGZUXPUZ3VC25ZYKRYRMXIKHU4MIIY2ST",
+			"remark": "Wesiematic - 1.0 - User Stake"
+		},
+		{
+			"address": "NDBU4TOZAQFARLNCD7RMOKQVVDYECROHIPMOIJ73",
+			"remark": "NXT-RT5L-ABNN-ASG8-G94GE - 1.0 - User Stake"
+		},
+		{
+			"address": "NDDTOG647EVWSDLE35MJJTGQH5GYKAYNFWNXAK4T",
+			"remark": "NXT-KQPG-PQBB-SMBQ-3PRHP - 0.4 - User Stake"
+		},
+		{
+			"address": "NC2O3TDW7BJG3BZ4F5OFUJ2ZQGIHLPV374YISZ7W",
+			"remark": "NXT-BFFC-BSZL-KUVY-CRLL3 - 1.0 - User Stake NXT-BFFC-BSZL-KUVY-CRLL3 - 0.1 - User Stake"
+		},
+		{
+			"address": "NBSR4CSSIRZWKAXC7I666DODEKOMDEXCR7NTDQMO",
+			"remark": "spndr7 - 1.0 - User Stake"
+		},
+		{
+			"address": "NDWW5TAW4PVRH3SHIORYVVOJMLDSKKQPYPBMEAOK",
+			"remark": "NXT-AMUY-UUWP-MPZZ-D57DT - 18.0 - User Stake NXT-AMUY-UUWP-MPZZ-D57DT - 2.0 - User Stake"
+		},
+		{
+			"address": "ND2EGMCXJNE7AKAUPB6KZ5KCYVUZWOCX4FBZKJIS",
+			"remark": "NXT-MDMC-LEY4-8US3-44AL4 - 0.6 - User Stake"
+		},
+		{
+			"address": "NDRPIYEECNWNFKKKWNRFKGVVYKSOAXW4L53Z34LO",
+			"remark": "NXT-BHSV-NECZ-QZNM-AASW9 - 0.2 - User Stake NXT-BHSV-NECZ-QZNM-AASW9 - 2.0 - User Stake NXT-CKNZ-PNJD-XCHJ-2S58R - 0.9 - User Stake"
+		},
+		{
+			"address": "NBBL6XGOC7J7FDPWHQRG4WAAW6PUIMZLNAW4S6MI",
+			"remark": "NXT-TY3H-NC47-AFPK-G9CE7 - 0.2 - User Stake"
+		},
+		{
+			"address": "ND7BAQWGEJFLXPQFOFI3I4XW4XNHCEAT4D64X2WT",
+			"remark": "NXT-7C85-5PWQ-N69P-8DFQG - 1.0 - User Stake"
+		},
+		{
+			"address": "NB7HLHGAQJPY3NZMNENJY4K2KVBZ6OU2A2AOPGC3",
+			"remark": "NXT-DW9G-AC2R-NCBH-9T5UK - 0.8 - User Stake"
+		},
+		{
+			"address": "NBF7RZ3YEBZCI3GUGFSJB3LIKZ7W3FMFGW6T2PQX",
+			"remark": "MGGB - 1.0 - User Stake"
+		},
+		{
+			"address": "NDWQ4YG2JB3U44LQKAOA57F7IO6PYILTDP7WNNZ2",
+			"remark": "NXT-FLVS-VRBV-LDPD-6DZ9W - 0.5 - User Stake"
+		},
+		{
+			"address": "NAG7DO32TSBHLWSPP4C2F4HUQATKFUD6YLNWJDT2",
+			"remark": "emc - 1.0 - User Stake"
+		},
+		{
+			"address": "NCMKTIFGGOQD6STZ3CR77WFOQ6OKRAOV5QPMRWPK",
+			"remark": "Ccmaster - 1.0 - User Stake"
+		},
+		{
+			"address": "NCMEQFM7CGJZKPZLYIORP7KCODF4HQZYYRWROE6L",
+			"remark": "NXT-T42Q-CW9H-CZ4A-2H4NA - 0.5 - User Stake"
+		},
+		{
+			"address": "NBXCVD2CQV5MHC6TFROUAOKUL322RZRJAAQ5EINU",
+			"remark": "xzhybbs - 1.0 - User Stake"
+		},
+		{
+			"address": "NBEV4NNFYXOG35O5LNHEG53VYN6FV3TD2277OQ6O",
+			"remark": "NXT-N969-VBNG-QJD9-H3S9V - 1.0 - User Stake"
+		},
+		{
+			"address": "NBDN4XJOMLY33C5IEJQKH5GVPNIVFBJFJ5MDNPCX",
+			"remark": "BuliH - 1.0 - User Stake"
+		},
+		{
+			"address": "ND6J6NSA7LN25PP2NHVPBP7ZPJLYAOQWULDVPBN2",
+			"remark": "amt - 1.0 - User Stake"
+		},
+		{
+			"address": "NCPCCCF6URTBCFFAE4LYMWRI6UZXDBBRMXQOGNGM",
+			"remark": "NXT-9PMG-66GR-4WB5-2V5PY - 0.1 - User Stake NXT-9PMG-66GR-4WB5-2V5PY - 0.3 - User Stake"
+		},
+		{
+			"address": "NA4PZIM3EPQC7ES5SA4EQ3O2IGARHEHVIJPXF3UK",
+			"remark": "tianwen - 1.0 - User Stake"
+		},
+		{
+			"address": "NBNK6HCHYTZNCG2S72UPIIEXYMES2H2IOJSZOFFO",
+			"remark": "NXT-N7US-CHK3-THEF-3ARQK - 0.1 - User Stake NXT-N7US-CHK3-THEF-3ARQK - 0.1 - User Stake"
+		},
+		{
+			"address": "NCP5Y2L54ZAIVQ7CMHQOVPJI6JRXSREKEOOLF4TM",
+			"remark": "NXT-ZDMA-T2X8-JPQQ-6NES7 - 0.2 - User Stake"
+		},
+		{
+			"address": "NAGTDJVZZGJS2C62VKOC3LYHSP4FGE6YOA37756J",
+			"remark": "NXT-TQJF-CT4F-BZGA-H3HFV - 0.2 - User Stake"
+		},
+		{
+			"address": "NAFZ53TCKZASMKPCLHJILWL3F6JBQL3ABS6U2347",
+			"remark": "NXT-3UNQ-3LQG-S3Y4-9WJVZ - 0.1 - User Stake NXT-3UNQ-3LQG-S3Y4-9WJVZ - 0.1 - User Stake"
+		},
+		{
+			"address": "NBJBJFVEXF47JKN5ZDOU4JZTR66WHV4A4YWIOJI7",
+			"remark": "NXT-GZVY-WACM-8RM9-AFYCQ - 0.1 - User Stake NXT-GZVY-WACM-8RM9-AFYCQ - 0.1 - User Stake"
+		},
+		{
+			"address": "NBIVO5FGQ54NWIMRW53LCF6EDE7VY2J37AUULEZY",
+			"remark": "NXT-FSHC-RL4M-D5SD-8DASY - 0.2 - User Stake"
+		},
+		{
+			"address": "NBOCOWD45UHFA7CJUXHK7PD3KUEXEPPMECIZBJFP",
+			"remark": "iaminitnow06 - 0.2 - contributor-stakes"
+		},
+		{
+			"address": "NCXTHDX2SFJDQOOXP4COEAIAQUOAXUT4EQPETDBS",
+			"remark": "cryptohunter - 1.0 - User Stake"
+		},
+		{
+			"address": "NBK2WNY6UWT26TV7DYXPYSUN3RQJFNPD3RFHLFOA",
+			"remark": "NXT-G2B8-D648-K8WA-HSCCP - 0.1 - User Stake"
+		},
+		{
+			"address": "NDYDTGR5X2IA4JLC5Q2EVOXZYUIJRVHBNZGEYCLI",
+			"remark": "NXT-BMMJ-AN5U-T36R-AAEBN - 0.2 - User Stake"
+		},
+		{
+			"address": "NAKWV7RLE3QLIIT3MG5GSRTN6HG3GS63VROZ4Q7C",
+			"remark": "rukawa - 1.0 - User Stake"
+		},
+		{
+			"address": "NBE6MYRSW23PFYP5OBBTHXV3VQIKXEN52WNSFZZI",
+			"remark": "c_lab - 1.0 - User Stake"
+		},
+		{
+			"address": "NDSZQYXX65JX3HT4XVFZOWVA47IGQXKEFOYPA4VK",
+			"remark": "NXT-PMMZ-4YPL-YXFE-G9DSP - 0.1 - User Stake"
+		},
+		{
+			"address": "NALL6I7FCSH2H63LDG5UT4APKFZV4TTCELB66QEI",
+			"remark": "NXT-96KC-H4S5-RHT5-FQQYR - 0.4 - User Stake"
+		},
+		{
+			"address": "NDOYKZV2M2WTXHZZMLVNQHB7ESOBZSV5WBYPXMSX",
+			"remark": "BitcoinForumator - 1.0 - User Stake"
+		},
+		{
+			"address": "NBLZQ6FRIDCMSWBPMGGGOEFGF7T6KJ4JT3ZMLXWJ",
+			"remark": "dabbad - 1.0 - User Stake"
+		},
+		{
+			"address": "NADOY5TRHK25SMJNV4VOMIFVIHYW4XB2RMH5MUKW",
+			"remark": "renoteng.li - 2.75 - contributor-stakes"
+		},
+		{
+			"address": "NBYIF2J7AOWHQNACLSW5OURZ5K4YJITRL6LLSUJD",
+			"remark": "NXT-F2P4-HFJL-RKWA-DGN7Y - 0.2 - User Stake NXT-F2P4-HFJL-RKWA-DGN7Y - 0.2 - User Stake"
+		},
+		{
+			"address": "NANKTBDWNB4JQ2C6GGGVNF7GEJDPLBVXOILAZRCM",
+			"remark": "MacroPower - 1.0 - User Stake"
+		},
+		{
+			"address": "NCONSB4SJCFKU5EWYSQDKKITRDKLWCI5PK4PZEQ3",
+			"remark": "NXT-L8EV-EMP8-7VE8-88WWL - 0.5 - User Stake"
+		},
+		{
+			"address": "NDE3A4Z7HLQKNTGDY2IGXJAQWN3QDRD6MKP56BRE",
+			"remark": "NXT-LV2D-SRL7-JVMH-9UCU2 - 0.1 - User Stake"
+		},
+		{
+			"address": "ND7SA65QUTMCJTVSI7Q2UATZDLD2B2AA5G6J45CM",
+			"remark": "NXT-QS5J-MYVX-UUG8-3NC7N - 0.3 - User Stake"
+		},
+		{
+			"address": "NAYOOEE5QBHWFXJVQTRANC6FJ3BLNRL3XBQI44O3",
+			"remark": "m-s-v - 1.0 - User Stake"
+		},
+		{
+			"address": "NCB2LBY2GJ2WC2OED3ZTPOH22JLFUJFTGFLKT472",
+			"remark": "aysyr - 1.0 - User Stake"
+		},
+		{
+			"address": "NAGGU5TCZPLUNKJ55B3CV4Z2MUB46VY6G6HRZC3O",
+			"remark": "nottrulyevil - 1.0 - User Stake"
+		},
+		{
+			"address": "NCBQEBUEHSUI27HEFO5ML63NHWYZF7RWVCYAQ56L",
+			"remark": "NXT-B5XL-QD7G-UMMH-8QCU8 - 1.0 - User Stake"
+		},
+		{
+			"address": "NCAL4LSPKLIM2I65SH4P2OHNZCXD7CBKX2O5427A",
+			"remark": "al kohol - 1.0 - User Stake"
+		},
+		{
+			"address": "NCFIMPMCZVLTAKRMMFYCNX3W4MNRQKSGHTSZERTU",
+			"remark": "apenzl - 1.0 - User Stake"
+		},
+		{
+			"address": "NDUZNSEPS34ZVM4NZAN5PHO7ZPC25D3HEPQ22W5U",
+			"remark": "GheorgheCuza - 1.0 - User Stake"
+		},
+		{
+			"address": "NDWKTNSX7SXCD5ZJZG37OFYMCX5C3LPH6ERWU62V",
+			"remark": "lijingtaoshihaoren - 1.0 - User Stake"
+		},
+		{
+			"address": "NAK6LMW6KWFYUUXUT4KJK4XBAXR3ZPCC4Y5AQWE5",
+			"remark": "ziyoubi - 1.0 - User Stake"
+		},
+		{
+			"address": "NB2RV6SFNIF6RQ2JDLAW6KAYISR5EBZ6NQXEGQOM",
+			"remark": "kwest - 1.0 - User Stake"
+		},
+		{
+			"address": "NDM7R2RESTDGSW6B5RNUPGLDIHGDBSL4YHCZ5E5L",
+			"remark": "5Dzz - 1.0 - User Stake"
+		},
+		{
+			"address": "NBXK2BO5HBD4JAUCTYLVVKLZIIGN3INA3EA7SAWE",
+			"remark": "NXT-5HZF-TPQ5-GSHF-7GV33 - 0.1 - User Stake"
+		},
+		{
+			"address": "NBJOOHQLYVDUWJ27IVR32PINE5COD4XRKENIMTOC",
+			"remark": "NXT-THLJ-CYAL-JQST-6FNS5 - 0.1 - User Stake"
+		},
+		{
+			"address": "NBYPPANTFAJG5EUBPX7FW2HHQEKRTSF2SHYHVLYS",
+			"remark": "NXT-P7CR-RTWV-KTBR-9TT79 - 0.1 - User Stake"
+		},
+		{
+			"address": "NAUXH6E52QDXPSSWZS4ZY5QIYFPB6H6AMYLZWJK2",
+			"remark": "NXT-Q3FL-S6D3-DHLR-7WNSX - 0.1 - User Stake"
+		},
+		{
+			"address": "NB7R4YGTTOVOOOVW675ERGSHJ6FGS3NSEGQY4WQ6",
+			"remark": "NXT-2MHA-D9WD-L4PD-DVRL9 - 0.1 - User Stake"
+		},
+		{
+			"address": "NCGIHIGXAIATT5RV2TQH3SYYSZGHBDAUTQVO6RTW",
+			"remark": "NXT-PAXS-YZ3E-ZJ84-2NMRN - 0.1 - User Stake"
+		},
+		{
+			"address": "NDFLQUQMD4DQXD7O2VD2X2J54O5GAQVJCQWZ5LZA",
+			"remark": "NXT-SRBH-LQ5F-4U7H-F47QH - 0.1 - User Stake"
+		},
+		{
+			"address": "NALA7EJBEHPV4QVVKX3JI55OT3SWGY5QWYL23KXY",
+			"remark": "NXT-55X6-ELYM-S78M-AZFX8 - 0.1 - User Stake"
+		},
+		{
+			"address": "NAGPNUHRA4GQEERBTW7EVQARCN6IPN6XDTDXKWVS",
+			"remark": "NXT-55X6-ELYM-S78M-AZFX8 - 0.1 - User Stake"
+		},
+		{
+			"address": "NCERGPDTSS2KFSDSH4HN62XWPCYFELKGYFSIP6VD",
+			"remark": "NXT-55X6-ELYM-S78M-AZFX8 - 0.1 - User Stake"
+		},
+		{
+			"address": "ND5YO5HYCXU6AEBK5SGGTF3DY4Y3VI5WKZS234MT",
+			"remark": "NXT-NH53-QEG6-NG4U-6D9DZ - 0.1 - User Stake"
+		},
+		{
+			"address": "NDWU2N7WDMJK7B4KIE5REJNZLPARGQHZKXWRSSDF",
+			"remark": "NXT-WJ47-44J6-FJER-DW3HB - 0.1 - User Stake"
+		},
+		{
+			"address": "NDLJCLGQW3JJ2IDQ7F4VPOHOO7AKYSA6CC4AWEJJ",
+			"remark": "NXT-55X6-ELYM-S78M-AZFX8 - 0.1 - User Stake"
+		},
+		{
+			"address": "NBHQTYP4NLSGJOLPIQ2MN5QHVIKZ4C3RRK6WUQVZ",
+			"remark": "NXT-CFWZ-K5BL-EMDS-FL4M9 - 0.1 - User Stake"
+		},
+		{
+			"address": "NDHNLFIEZEAMQL4FI3SHRNDKQPQKODMQ6HWU4E5X",
+			"remark": "NXT-55X6-ELYM-S78M-AZFX8 - 0.1 - User Stake"
+		},
+		{
+			"address": "NCKJDWKQ7WKSGFAQ4CRDS7NP56V6TSMOKG2PDZY2",
+			"remark": "NXT-55X6-ELYM-S78M-AZFX8 - 0.1 - User Stake"
+		},
+		{
+			"address": "NBDR3245C7PPPDLDVESU5PC7G6NBOJXDZH72AHDA",
+			"remark": "NXT-2F8J-H5TE-B2LB-4R34A - 0.1 - User Stake"
+		},
+		{
+			"address": "ND2BTSYUORF2J7DGS5RH3SER53LRLU7MI55OYJ4L",
+			"remark": "NXT-55X6-ELYM-S78M-AZFX8 - 0.1 - User Stake"
+		},
+		{
+			"address": "NB43JX27UU7OJM33HXLM7J5C3EFQ47XY64MQE7S7",
+			"remark": "NXT-K4K8-YCLX-9R9U-2C862 - 0.1 - User Stake"
+		},
+		{
+			"address": "NCRFJEULYMXNAIIEHYK52E33UXF56XQ4EGSBK2CK",
+			"remark": "NXT-AA4B-YMKV-WNHG-4UUPP - 0.1 - User Stake"
+		},
+		{
+			"address": "NDBJSXOO74AC2OOCLFWZRUWV6ZOXNCUXIYQHQY6B",
+			"remark": "NXT-55X6-ELYM-S78M-AZFX8 - 0.1 - User Stake"
+		},
+		{
+			"address": "NB4LWNHT5234OH5YLRXTS3VH5JHXDFHDJW4UIO26",
+			"remark": "NXT-BY7Y-UB4X-6Z3C-8PP3V - 0.1 - User Stake"
+		},
+		{
+			"address": "NDO3UZ2CFVSM33FQH3KCAMBBLJF3TKLECDXXXO25",
+			"remark": "NXT-55X6-ELYM-S78M-AZFX8 - 0.1 - User Stake"
+		},
+		{
+			"address": "NB7D4H6DSK2EB3FYR7DKBPTUEQ6G3HIX7K7WIMFQ",
+			"remark": "NXT-UQML-WKFA-XPRX-3CW3Y - 0.1 - User Stake"
+		},
+		{
+			"address": "NC44ASK2GUWEYAFZVUP5ZBZ2W4MMDZSCMQTNX737",
+			"remark": "NXT-49U3-FPUG-WKVS-A6JLP - 0.1 - User Stake"
+		},
+		{
+			"address": "NDGGDGC5QJTXXUIRPVCEHJEW4MJMHOVT2KBGTQZJ",
+			"remark": "NXT-55X6-ELYM-S78M-AZFX8 - 0.1 - User Stake"
+		},
+		{
+			"address": "NATHXFHEJ2EPJAPSWEOJ6UEMSMSVUEM3KHCVZJCN",
+			"remark": "NXT-XM4X-KPSP-NJAT-AW6UX - 0.1 - User Stake"
+		},
+		{
+			"address": "NDMZFGVOWRR5GRXV2SNGCTOEKQ3VAPOB3ZEVUGRV",
+			"remark": "NXT-55X6-ELYM-S78M-AZFX8 - 0.1 - User Stake"
+		},
+		{
+			"address": "NCTOXW7KHM7OJTDGFYBXDOOYHMZ23ZA3T2AB7LZQ",
+			"remark": "NXT-A6DL-4GN2-SPA2-A3KKL - 0.1 - User Stake"
+		},
+		{
+			"address": "NBFH7Z5HHMHLGVYHHVGJYYRZSF7O37EWAHIFYRMB",
+			"remark": "NXT-ZBLP-BVUG-U5PY-CS4K4 - 0.1 - User Stake"
+		},
+		{
+			"address": "NDXUFQ4D7DSFD6PHPORVP25YCM3QDJHKUON7IT7Z",
+			"remark": "NXT-55X6-ELYM-S78M-AZFX8 - 0.1 - User Stake"
+		},
+		{
+			"address": "NDDYUPR7PPC4QTSWFR5GY2XJOPESTF55HIZZK2GE",
+			"remark": "NXT-55X6-ELYM-S78M-AZFX8 - 0.1 - User Stake"
+		},
+		{
+			"address": "NDDQZJOTZWVOAGJAZQLZSMJXOTYXHGJBFOBGPBJQ",
+			"remark": "NXT-A2X2-8JTW-7X4V-DN6Y3 - 0.1 - User Stake"
+		},
+		{
+			"address": "NAM7AGLJIMJIDOOTFVNAQAWQP5DPSG74NKAWB22Y",
+			"remark": "WinterParker - 1.0 - User Stake"
+		},
+		{
+			"address": "ND2RRX7GMHQ6JPMPC5EWGI2HKT2IGXIWUDJYECVH",
+			"remark": "nublike - 1.0 - User Stake"
+		},
+		{
+			"address": "NDA3NSDRXMMV3JFV4EOTMUPSI6KBGTKIF4XUCUZG",
+			"remark": "NXT-RNCR-YXDZ-V866-BS5RX - 0.1 - User Stake NXT-RNCR-YXDZ-V866-BS5RX - 0.1 - User Stake NXT-RNCR-YXDZ-V866-BS5RX - 0.3 - User Stake"
+		},
+		{
+			"address": "NAE6ZBYCT55TZWMS7BV7LEGIGDD5PXSBS75YUBAH",
+			"remark": "NXT-M4DN-3TAD-HP2R-E8ZGP - 2.0 - User Stake"
+		},
+		{
+			"address": "NC56WX725DHRETUZZN7XELGY67Q6Z3YTTCFFKXOW",
+			"remark": "NXT-HE44-MADA-U99V-DLRMX - 0.1 - User Stake"
+		},
+		{
+			"address": "NBIMEEEQBSBP7NNMG2OR766OQUPSS6CE5ZBKVSUR",
+			"remark": "colombuszka - 1.0 - User Stake"
+		},
+		{
+			"address": "NARKE6LCUICIMP4D3ZYJQ44GU5POAPVEENYWQYEY",
+			"remark": "sepi - 1.0 - User Stake"
+		},
+		{
+			"address": "NCOHZT6LYTMXSPROTYEMAWUFU6NR4DV5GCOT7542",
+			"remark": "NXT-9CPJ-WEW9-VHPF-FL79G - 0.6 - User Stake"
+		},
+		{
+			"address": "NAHYQCXDJKE7WSGTENWRQTSL4KK4HJLVGBN63LLC",
+			"remark": "NXT-3BW7-XNCV-SBX8-687G5 - 0.1 - User Stake"
+		},
+		{
+			"address": "NCBKEXB75C6XEYMABGDAPU7RVWUHWKGL5MJTMWMA",
+			"remark": "NXT-KYGW-EYUW-9L99-4PL4U - 0.2 - User Stake"
+		},
+		{
+			"address": "NDN23RDQ2QP6Z3BPLCVH4CLZKPZ3FKHOVM37EZ2E",
+			"remark": "NXT-NAA9-WYL3-GUPV-EZE6N - 0.5 - User Stake"
+		},
+		{
+			"address": "NBX4WQOB7TMF4OHOSBCRGYGY36KUWJBHAVTNG5QU",
+			"remark": "NXT-ADZ6-YVGQ-5LLV-AP5YH - 1.2 - User Stake"
+		},
+		{
+			"address": "NBWPGPAIINPWVJR75ZGSESLCELQ3QZOQL3RE2PLL",
+			"remark": "Hagade - 1.0 - User Stake"
+		},
+		{
+			"address": "NBJTS7T7HLFYESBOXE75GTUXK62QAIMFMMDCY6FV",
+			"remark": "NXT-EVPU-KNB6-TAYK-8UUZR - 0.4 - User Stake"
+		},
+		{
+			"address": "NC3BW4RXRGH4HTYSOQEGF2ASXLVZCESNUHRR772N",
+			"remark": "robertober - 1.0 - User Stake"
+		},
+		{
+			"address": "NA2R4ERUT7N3FFGCBG6F5R2U2IZN2O3TTM3KQ5SE",
+			"remark": "hoolio - 1.0 - User Stake"
+		},
+		{
+			"address": "NDQ6DVGPYKUVHTSZHCZEWKSKKEDKCYOOBYEDG7VH",
+			"remark": "NXT-2Y3N-HSYF-UW8V-F4XWL - 2.0 - User Stake"
+		},
+		{
+			"address": "NA6OKGWGRSWHWFJT7URWZ42CHQ3UHNIJ4V32TFG2",
+			"remark": "NXT-CWPU-6JV6-3TLV-B7WTM - 0.2 - User Stake"
+		},
+		{
+			"address": "NDIVU524NBKKEFCBASI3XJON75DTQUE6Y7PQN5FP",
+			"remark": "ple - 1.0 - User Stake"
+		},
+		{
+			"address": "NAIQGLDRX7JIMVBW3VKG33POABOJIFLHZGSQ2I2L",
+			"remark": "randombit - 1.0 - User Stake NXT-UL8R-WCRV-TU5M-AFREU - 0.2 - User Stake"
+		},
+		{
+			"address": "NBEUAXWJJ2RN3GXC3NHCUMWUGHJOBFO6IDZHQJZL",
+			"remark": "Tompa - 1.0 - User Stake NXT-5Q2B-RE5S-2UW7-B2V9V - 0.7 - User Stake"
+		},
+		{
+			"address": "NBWCH7JIXJ3A5LJTBYVI7XFWARRP63ORJAHEE2SW",
+			"remark": "renatoym - 1.0 - User Stake"
+		},
+		{
+			"address": "NDUMCXPI7XHEG57U25Y6IPODDK255LWRRS4LQX54",
+			"remark": "NXT-EMW3-JMR6-SQC3-EPJJG - 0.1 - User Stake"
+		},
+		{
+			"address": "NB3L5M27SVEDDEUIJTJJZSDNX4VTPHW57LSRAWEF",
+			"remark": "Ubitq - 1.0 - User Stake"
+		},
+		{
+			"address": "ND6YBVUCCIA4DCKQREIJZF4QEOR3NEPCMVNR6KAE",
+			"remark": "plateex - 1.0 - User Stake"
+		},
+		{
+			"address": "NAOD7KSVV6JTRFGZEAIZ32EAZ6GEARZP63PQEVUH",
+			"remark": "NXT-EDLZ-9ZKY-9GLS-7UBCL - 0.5 - User Stake"
+		},
+		{
+			"address": "NB4CB44NKG2PXZ24CU65Y74SZKNYIVLDVAYHSPMA",
+			"remark": "Agent86 - 1.0 - User Stake"
+		},
+		{
+			"address": "NBAZ4T4NN5P2ASDTPUVTDKELZ3J74NGYPNK5QM7B",
+			"remark": "NXT-LX2U-GPQ7-F5S8-BV3KK - 1.3 - User Stake"
+		},
+		{
+			"address": "NASQG7HLZN7E5ODQRWLWEZA3KK6QZENMFX6YICGJ",
+			"remark": "NXT-HFGU-SKRB-5S5T-6EKT4 - 3.1 - User Stake"
+		},
+		{
+			"address": "NCNPUIFWAKZTNILBDVEWVULP4TAYYKARFRUTLQRI",
+			"remark": "NXT-CENL-9WHA-GS2U-362P5 - 0.2 - User Stake NXT-CENL-9WHA-GS2U-362P5 - 0.3 - User Stake"
+		},
+		{
+			"address": "NCXDY26BJQ3P5EYWTJCW27AUZKT5WYPXSF7PWKXD",
+			"remark": "paveel90 - 1.0 - User Stake"
+		},
+		{
+			"address": "NCPJC6TSR4OIK57WFQZSYSJDJFQFBZ6MQJ5LGFB5",
+			"remark": "SirNext - 1.0 - User Stake"
+		},
+		{
+			"address": "NA4UASROES5ZIYSCVV4G6X5CP4ONGTW45WSUJFWY",
+			"remark": "NXT-GAX7-BWPG-HYSG-A2HWW - 0.4 - User Stake"
+		},
+		{
+			"address": "NDI234QSSXHJZVN2FQZL3FFKFBCFTLG7X5LBF3M3",
+			"remark": "krendelb - 1.0 - User Stake NXT-JAYM-QRWN-H7M8-AX93P - 0.4 - User Stake"
+		},
+		{
+			"address": "NBR2XCM25J7DHTXFL6E3FE2HK2Y65SATPEENJWWQ",
+			"remark": "Tobo - 1.0 - User Stake"
+		},
+		{
+			"address": "NCBPWQFYRNTVH6T7L6322SCKNWKE2XAAMNAC5JII",
+			"remark": "NXT-8AMC-HL36-9VA2-CXC8V - 1.0 - User Stake"
+		},
+		{
+			"address": "NAHZ6WVMEZYB5WX5OYOS2ZF4TTEKQTZ2FGD3GFRQ",
+			"remark": "digichris - 1.0 - User Stake"
+		},
+		{
+			"address": "NASBCAXVUCTMDCMMGGDU42I7Z6G43QZBQM6KPUBZ",
+			"remark": "nightengale - 1.0 - User Stake"
+		},
+		{
+			"address": "NACDJQQU2ETGXLZAQAHWD6CR7GS4ETEF4YOLHAWA",
+			"remark": "NXT-RQ59-49XB-A8H4-DBR6G - 0.6 - User Stake"
+		},
+		{
+			"address": "NDACZ36MLPDAZBKA4PH6ILGPYLOK4GL3BR4RVLQB",
+			"remark": "NXT-WGW4-NFNL-XFMC-4DZEL - 1.0 - User Stake NXT-WGW4-NFNL-XFMC-4DZEL - 0.2 - User Stake"
+		},
+		{
+			"address": "NAOE2F5AIRZ7TBOH5N5JPRU5HMJV47ZLJ7TXYEEV",
+			"remark": "ThomasZ80 - 1.0 - User Stake"
+		},
+		{
+			"address": "NDZWWRD5PGKZWMGN4QGHTCBBR56KV7WKLR7AP3TM",
+			"remark": "rafeyip - 1.0 - User Stake"
+		},
+		{
+			"address": "NDEFC3H4VAIUFQ5GFTIK3IJR4DGKF7PEQKRWLPZ5",
+			"remark": "NXT-8WXJ-8KM8-EDUC-CFTUL - 0.1 - User Stake"
+		},
+		{
+			"address": "NCBBRH5HZQZVZPIUOB5RVDK4XNABOIDV4GWXZNIO",
+			"remark": "NXT-ZH62-4RHW-HGFB-6T8CU - 0.4 - User Stake"
+		},
+		{
+			"address": "NCUTRNNGLV5HOMQGQC3UL5V24KD6AQ26ORU3AXAD",
+			"remark": "NXT-BGFS-T9VJ-SJ5G-FNHJK - 0.1 - User Stake NXT-BGFS-T9VJ-SJ5G-FNHJK - 0.2 - User Stake"
+		},
+		{
+			"address": "NBQJ6YVAIRSZGI4Z6IPQWHOT2WJT2ULWRUB37KBN",
+			"remark": "dowsonsky - 1.0 - User Stake"
+		},
+		{
+			"address": "NCIMFYNNLFQSGDFIEJY27FWPUMWM2GWYTELB5LDF",
+			"remark": "cropotkin - 1.0 - User Stake"
+		},
+		{
+			"address": "NBBYPTNH3DVIIGNT4UFF656DG22JEMAWORTYCZU6",
+			"remark": "NXT-87WX-6TPJ-2DXT-CWGEN - 2.0 - User Stake"
+		},
+		{
+			"address": "NC6J7H53Q635G25ON4OITJXU3FFH65HCPZIALNTW",
+			"remark": "punapeter - 1.0 - User Stake"
+		},
+		{
+			"address": "NAUURIWYGTSZJFDBJ22YAPVUUZHGUPZWOFNSSPWV",
+			"remark": "NXT-JGNJ-5RZ7-C6KY-AC2XL - 0.5 - User Stake"
+		},
+		{
+			"address": "NBSIYY5SJQOZ4H2FKCQEYEC5TQZTLK55AEXJI3KU",
+			"remark": "arniebaby - 1.0 - User Stake"
+		},
+		{
+			"address": "NBVEDAWHJEK24PS7FPEYZ7JIFLZ6CRBOGSJAR453",
+			"remark": "lubing7683 - 1.0 - User Stake"
+		},
+		{
+			"address": "NAUNFPEJEBGGIEGAQPCWTYP2NOOGP5VDU4T47ZGB",
+			"remark": "andreja1982 - 1.0 - User Stake NXT-SWR3-Q446-ECJY-CSKC2 - 0.3 - User Stake NXT-YVVV-XANW-8CV3-2KGMZ - 1.1 - User Stake"
+		},
+		{
+			"address": "NAZGYWSMNUZDOBKW77AJ6K6UFIEEAVDSQGOI5AUH",
+			"remark": "NXT-UGD4-GLG7-626L-C6TTF - 0.1 - User Stake"
+		},
+		{
+			"address": "ND2GT5WJEC6RN5SI4A5WSWEZYHHPN7OMO5DFAIEW",
+			"remark": "OrphanedGland - 1.0 - User Stake"
+		},
+		{
+			"address": "NAJVTOJTEKRY3DPXF4TBKFPU5ZPOU2EVEQH5H5LG",
+			"remark": "NXT-HG2S-J887-FVKG-EZL83 - 0.5 - User Stake"
+		},
+		{
+			"address": "NCE2C6SVBBS35Z4M3QDACP2E3XHZVB6TY3CVVY7X",
+			"remark": "NXT-NJPQ-WNDE-U8RP-DUYCZ - 0.5 - User Stake"
+		},
+		{
+			"address": "NDHWALW6BYTGIIDE7TK4GVJ6LD6WVISLBIGAP4ZH",
+			"remark": "NXT-3DYK-ZJGE-A5B3-3JLAT - 0.5 - User Stake"
+		},
+		{
+			"address": "NADWQ67RNRHGYK5PBRB6TQYDHQCCMNTNUG4DVU4V",
+			"remark": "psybits - 1.0 - User Stake NXT-6RW7-X55A-TA4P-EFNYG - 0.3 - User Stake"
+		},
+		{
+			"address": "NDCSZ2EMKAYJWM6RIVN6RZRTUIM7BE5AJUCIRWSJ",
+			"remark": "vfilchef - 1.0 - User Stake filchef - 0.2 - contributor-stakes"
+		},
+		{
+			"address": "NA7LPDKYLAJJSLCOBFNBHY5JUTETDVYJ72B2UDEQ",
+			"remark": "lbjnext - 1.0 - User Stake"
+		},
+		{
+			"address": "NAFHBFX7RKTIJEXGATXBMFMO4X3UTCZBRJ7GJBLQ",
+			"remark": "Keyser - 1.0 - User Stake"
+		},
+		{
+			"address": "ND2LB3LLKJOGIWVMHRNNANVHCCZ6GT7QHN3JKX6I",
+			"remark": "robertino - 1.0 - User Stake"
+		},
+		{
+			"address": "NBCWAVC5TTJFX3PHZYNVYATTE5JQTKNP7P6R5VWM",
+			"remark": "blockexplore.in - - Website"
+		},
+		{
+			"address": "NDJM4V3HOXOMBBDBNUZWP63S3SSKDDSVMXJTCYAX",
+			"remark": "publicstalker - 1.0 - User Stake"
+		},
+		{
+			"address": "NDML7UI3M7Z35GAQ44GFJAUDUOZDSU2KX6YYZRKD",
+			"remark": "Coinsy - 1.0 - User Stake"
+		},
+		{
+			"address": "NDWRELZVUAVMOCX5CW7J2OCNQSMADNNTMMCB3OQ7",
+			"remark": "NXT-RNCR-YXDZ-V866-BS5RX - 0.1 - User Stake NXT-RNCR-YXDZ-V866-BS5RX - 0.1 - User Stake"
+		},
+		{
+			"address": "NCMUCSK4AWA57AVGSMW5UMNZGYODMKGCGC3QJTKW",
+			"remark": "Burakius - 1.0 - User Stake"
+		},
+		{
+			"address": "NDPZUU6C75CTIEDDVTVWGCAW4TA26FTMRAH2D4I7",
+			"remark": "cryptolawyer - 1.0 - User Stake"
+		},
+		{
+			"address": "NDAAOERM4DOLERIPRFPZFOINPYM335XW6T3GJZYM",
+			"remark": "vaelrock - 1.0 - User Stake"
+		},
+		{
+			"address": "NDYV2DZTBVLXZ6SS7MUMTT3VSQXDTDNEXSEGGRQP",
+			"remark": "Zombie123 - 1.0 - User Stake"
+		},
+		{
+			"address": "NBWWTS2SFOHEOBE4BEEAY7H3SEDK5UIT5ANXUBCV",
+			"remark": "vonBerlichingen - 1.0 - User Stake"
+		},
+		{
+			"address": "NDANKF4UNBIHNY4GA5ZMEIUGFAIZMZ3SBSLS3EYK",
+			"remark": "wangjj1 - 1.0 - User Stake"
+		},
+		{
+			"address": "NDLN5ZLEOVHIP6GPRW3GZSLPH6EWUYQ3H27AWFQR",
+			"remark": "NXT-JSXZ-R3MM-FMDS-5YBF3 - 0.4 - User Stake"
+		},
+		{
+			"address": "ND7ADAH2ZNKCDI45WXHJKNAETY6SUHNAX35RI7HL",
+			"remark": "Denad - 1.0 - User Stake"
+		},
+		{
+			"address": "NC7E5YHY2ZGPPE5GLQHYYJHO35HAAAWFY2WGI434",
+			"remark": "rohan1 - 1.0 - User Stake"
+		},
+		{
+			"address": "NDNF6V7Z6OS6KTSECFM5OC2GZUUP6NOT2FUACTCP",
+			"remark": "NXT-ZX4M-M4DS-WAKR-8FT76 - 0.3 - User Stake"
+		},
+		{
+			"address": "NDQMKVOO6M4HPEPFEGE72EECRXY7FNLCBYIKZXGX",
+			"remark": "NXT-X3GN-722U-E97N-DMWJT - 0.3 - User Stake"
+		},
+		{
+			"address": "NBR2Z73U7XDE2T77VHFECKONIV4337AGSIHTRM3C",
+			"remark": "NXT-HRP7-NQET-FQ8B-F8NV5 - 0.2 - User Stake"
+		},
+		{
+			"address": "NBT3WHA2YXG2IR4PWKFFMO772JWOITTD2V4PECSB",
+			"remark": "NXT-96RM-PCHV-R7A4-7VSWR - 2.1 - User Stake boestin - 0.2 - contributor-stakes"
+		},
+		{
+			"address": "NAGORVGU7VGE23KYF2HZNGCJHZLHKSEA7SIYFPAI",
+			"remark": "amytheplanarshift - 1. - User Stake0 NXT-XEE2-5TCY-6BER-75V9M - 0.9 - User Stake Amy - 0.75 - contributor-stakes"
+		},
+		{
+			"address": "NDRMQ3IER34MWOTNQQENB5FQ45EH7SQUK4CCZWPV",
+			"remark": "NXT-ND7Z-BKP8-9YVX-HSBV2 - 0.2 - User Stake"
+		},
+		{
+			"address": "NBL457JOOJ6MWMUUIU2HTIAJZ32YNEFOQX5AQO6O",
+			"remark": "NXT-V8GL-CUTE-3A87-FSPLH - 3.0 - User Stake NXT-V8GL-CUTE-3A87-FSPLH - 1.2 - User Stake"
+		},
+		{
+			"address": "NDJAKLV5WPRZPBG3DSJBC4Y6KRGNML4W2XC2KPPX",
+			"remark": "NXT-C6BK-W8WE-7EFU-6NCNX - 0.5 - User Stake"
+		},
+		{
+			"address": "NAQNIDJ7GIEA2ESHJRV7GQOT237YGNVX3AETVDNX",
+			"remark": "NXT-58BQ-CURQ-UKQM-7JF5E - 0.1 - User Stake"
+		},
+		{
+			"address": "NASBC4ZO3K2FHDKL54WSMHHNISOMP2LTCVN77ULP",
+			"remark": "elianite - 1.0 - User Stake"
+		},
+		{
+			"address": "ND3DTHFL2FN2RUR4HA2KRNCVZA6ACWNKGTYHMO5W",
+			"remark": "MairaObergh - 1.0 - User Stake"
+		},
+		{
+			"address": "ND4VR23AQ77R7WOQZDODKRG4PJWVUOADJAITSGDN",
+			"remark": "drm - 1.0 - User Stake"
+		},
+		{
+			"address": "NDBXMV3PKFI6SGWAT5XHBX7BGL2RHBOBRH3MM7E4",
+			"remark": "teletobi - 1.0 - User Stake"
+		},
+		{
+			"address": "NBONLWBGXQUYSILZJ5OPIYS5HLIBIFNAKXENQ4JP",
+			"remark": "afxxx - 1.0 - User Stake"
+		},
+		{
+			"address": "NCOHUOKDOR7H5TXCLD3WUNPWDF7EP4GSW6MJ5JYT",
+			"remark": "vanea84 - 1.0 - User Stake"
+		},
+		{
+			"address": "NAT4NKHX6NVS7AD7SHZAYIVUCYDUL52CMUM7CMZ7",
+			"remark": "NXT-KNYT-QY6H-XDP8-H8KHS - 0.1 - User Stake"
+		},
+		{
+			"address": "NDYTQ7ITKON62OJGEHTT6MPBV2WCNGTRAD2S72LR",
+			"remark": "luffy - 1.0 - User Stake"
+		},
+		{
+			"address": "NAOUNRTEJCY6XUQRMIZ3VLB3MYRFYRC3YRMWIXX3",
+			"remark": "NXT-C7HZ-P8MP-9WJ5-4SMWS - 0.1 - User Stake"
+		},
+		{
+			"address": "NA7XNIL2ZJEEMQY7QYUPIB4KRUQQ5NGWIXLSJCZL",
+			"remark": "mmedinas - 1.0 - User Stake"
+		},
+		{
+			"address": "NBJFJUQ3I4KCSRAI6ATRW7PSJJBPXWJMJZMSCAEO",
+			"remark": "NXT-ULX3-JFFQ-Q9NV-CD3LU - 1.4 - User Stake"
+		},
+		{
+			"address": "NBJKVLOFHBMDXWW6WFB25EF6OQBMYESYCJD4HART",
+			"remark": "mill0601 - 1.0 - User Stake"
+		},
+		{
+			"address": "NBSSCICREYFQD6MGSEBZ3PFXE7ZDWELTHULTDGTV",
+			"remark": "esc747 - 1.0 - User Stake"
+		},
+		{
+			"address": "NB426CQLJSOZND7SWQIYTTISAV5HFQWJVWS4P664",
+			"remark": "mljandrew - 1.0 - User Stake"
+		},
+		{
+			"address": "NBEFX37TQOUQX2NVRY2PWOVZH6L34PPESL7FHFBX",
+			"remark": "NXT-P44H-3ZA6-TQBD-FESF3 - 0.1 - User Stake NXT-P44H-3ZA6-TQBD-FESF3 - 0.9 - User Stake"
+		},
+		{
+			"address": "NCUQBQQKZTJ4YOAOLUAFIRNSP6DRKNW2C2WBG44E",
+			"remark": "johnV - 1.0 - User Stake"
+		},
+		{
+			"address": "ND5IOHFZZDH5JOGFF37HUFMJMNN5RLDZPI7MLFBG",
+			"remark": "NXT-99TU-KS6V-6PVS-8TLN5 - 1.0 - User Stake"
+		},
+		{
+			"address": "NB4YACODTXLN2V5I26RBUKB7D52T7MO7XM7CFUYC",
+			"remark": "fRames6 - 1.0 - User Stake"
+		},
+		{
+			"address": "ND7BUDTCF43GHW3O7BYVGQSKHQYXBFJBZ72XUP5W",
+			"remark": "NXT-HBYN-SCZJ-ZQYH-HGXXL - 0.8 - User Stake HerCule - 1.0 - User Stake"
+		},
+		{
+			"address": "NDGKU3BYPNOT7ZMEUHHNEYDGVGVQR5UXJDZL6JYH",
+			"remark": "claux - 1.0 - User Stake"
+		},
+		{
+			"address": "NBFHS5WYUB5OZMDAOHMPXNDRLHM7Q27D2IDOJEVY",
+			"remark": "claudiadesigner - 1.0 - User Stake"
+		},
+		{
+			"address": "NAUGTIOXM26TUXJNDMJUH445YQBNAV5JWIEPKQPI",
+			"remark": "PureVision - 1.0 - User Stake"
+		},
+		{
+			"address": "NCPQBYPOCBQKMKJLXBX4INUZZU2F3LMYKI2SNEZK",
+			"remark": "NXT-B65T-FAEG-5M75-CCCHD - 1.0 - User Stake"
+		},
+		{
+			"address": "NBUPWAZYM3R4AYXCG3BFURCUS5EWOBDPJXBNOZNL",
+			"remark": "raizor - 1.0 - User Stake"
+		},
+		{
+			"address": "NC3V7B3TPTMA6JXPXKWIMCKZS3QAFXCUDRUSP4DK",
+			"remark": "NXT-AVKE-2GXL-Q4JA-59AT8 - 4.6 - User Stake"
+		},
+		{
+			"address": "NDVREKKDGPIEY5ZXU6Q3TOKX3F34VD4KQI4TLEGY",
+			"remark": "NXT-QGZ5-CKS9-BXJH-B2CPH - 6.1 - User Stake"
+		},
+		{
+			"address": "NDYC5TIABHMFUP2RR2XNMNKNRHPTUCKU5PIZUD2S",
+			"remark": "sevenyears26 - 1.0 - User Stake"
+		},
+		{
+			"address": "NBK3OZC2KB4AYFTFHEUUJ7MMM35K3TYXYJKIB4O4",
+			"remark": "rnr - 1.0 - User Stake"
+		},
+		{
+			"address": "NBBKQXMIEBKSAWY3ADVC6WWXE5HESDLKGOTLR5RG",
+			"remark": "sdersdf3 - 1.0 - User Stake"
+		},
+		{
+			"address": "NCI2YRPR4BBE3GQCLZSIFAEQT2JFCY63CDCAVXI7",
+			"remark": "JordanBTC - 1.0 - User Stake"
+		},
+		{
+			"address": "NDXRN2HJ2DWJ35PZ4YAT4NRS3FE5GBFDGZIZHIXO",
+			"remark": "haggis - 1.0 - User Stake"
+		},
+		{
+			"address": "NDV2BDUEHKVPPEWZR4BNZSGWTZPVOHTR7IX4GD6Z",
+			"remark": "TheGreatWodan - 1.0 - User Stake"
+		},
+		{
+			"address": "NBEK4LS6LMRET2NR2SR7IM3WPWDUCQU5NMBWE6OJ",
+			"remark": "goostatic74829 - 1.0 - User Stake"
+		},
+		{
+			"address": "NB72CQQFQPQ6DPWJF47C4VI3XKDHFF3CDJYC7EGJ",
+			"remark": "georgeblair - 1.0 - User Stake"
+		},
+		{
+			"address": "NAN26N3JB6APY46PTF3B6FI5N7SYK7NVBWTJIII5",
+			"remark": "AtarErren - 1.0 - User Stake"
+		},
+		{
+			"address": "NBVMAAJGPOHSH7WNNS3WFEEOYFSKJDK65VER3AEF",
+			"remark": "TeseracT - 1.0 - User Stake"
+		},
+		{
+			"address": "NBBS6UHWGXX4FOX6ZVWLOK5MUSI3RN3E2PK5EFOE",
+			"remark": "NXT-53SX-ECVH-TQGH-885U2 - 0.4 - User Stake NXT-53SX-ECVH-TQGH-885U2 - 0.1 - User Stake"
+		},
+		{
+			"address": "NBCIIRBIVY2JEYDWS2VHFBGIUMPJLFMEKDN2LXM7",
+			"remark": "sjarkara - 1.0 - User Stake"
+		},
+		{
+			"address": "NDE7BTYCGGPFEMTR4YQNL77IX72O63RKX5QEAES2",
+			"remark": "nxtsurfer - 1.0 - User Stake"
+		},
+		{
+			"address": "NC3EUKWJRS5GQFOZ6IVE7MMPPNSUVLYPRWVYJDHY",
+			"remark": "striker7334 2.0 - 1.0 - User Stake"
+		},
+		{
+			"address": "NC4PH2J4KFSOOCVT35TADB6XWPQFVYLGJIZUZCMS",
+			"remark": "NXT-2L4G-2KTP-7YKJ-HZNJY - 0.3 - User Stake"
+		},
+		{
+			"address": "NC3B2MYWEA7SIFQR7H4QMP2YLUCUE5OZAZMG54YP",
+			"remark": "NXT-DFDV-58KQ-LTD7-9XC9T - 1.0 - User Stake"
+		},
+		{
+			"address": "NBXRMWQOV4HKAT6SNWREIVEBVUOK57QH3RTWPOL4",
+			"remark": "manrus - 1.0 - User Stake"
+		},
+		{
+			"address": "NALBJ4XJRQZVDXZX7C5ZVYLMHNDDTUA26566FGDN",
+			"remark": "NXT-5QHS-AV37-ZPLD-GX9Z5 - 0.6 - User Stake"
+		},
+		{
+			"address": "NA3OBWOBSFUT4XKISPK6SBGGJGHTEZ5WILLNDQR6",
+			"remark": "salsacz - 1.0 - User Stake"
+		},
+		{
+			"address": "NBI6RRMWFTHLT43NP7OOHOVXTR6BHQFQWNVB6JCB",
+			"remark": "NXT-5GQB-C3NS-A6W4-CLHR8 - 1.0 - User Stake"
+		},
+		{
+			"address": "NAKJWB4WL7KBFX2YNXN6KEPTDD6YOZPPQYQUKYTW",
+			"remark": "NXT-7D5M-9WW9-PFSS-96M57 - 2.7 - User Stake"
+		},
+		{
+			"address": "NAFCI77KBOIBFSDPQBZFRLZIWNMGCX3SP5QIABYT",
+			"remark": "asdlolciterquit - 1.0 - User Stake"
+		},
+		{
+			"address": "NCF5HONM5IZYGBPQKZLUOEWZE3ZCVHQKVHGOEJTF",
+			"remark": "Dropfliesup - 1.0 - User Stake"
+		},
+		{
+			"address": "NAMWIOW2SKBEKFUILKAMO5CQFBPEEG6A7ICAIWMP",
+			"remark": "Freeze101 - 1.0 - User Stake"
+		},
+		{
+			"address": "NBELMYCEYRZ7EVHZYBPINFC7RJ7AMGIZNF2AQS2M",
+			"remark": "Lemma - 1.0 - User Stake"
+		},
+		{
+			"address": "NB43QTUT7NRIMM4V32GAXA3AYA2NHWWSOWVPH6O4",
+			"remark": "atias - 1.0 - User Stake"
+		},
+		{
+			"address": "NDJAYQ2BQHP4BKO2AE5M3FZAR7WLMMVM4GUEJOG4",
+			"remark": "NXT-7TJT-8NS2-8QBS-5Y89X - 2.0 - User Stake"
+		},
+		{
+			"address": "NB2HJXAGBCVIXWNLDTEG4EUCYNHD6PP5SJT5J7IL",
+			"remark": "NXT-ZH62-4RHW-HGFB-6T8CU - 12.8 - User Stake"
+		},
+		{
+			"address": "NDQBDDEXQF7RQAPWSJIYUSUC5GO5EBCJ2FFYDWEW",
+			"remark": "Doriangrayz - 1.0 - User Stake"
+		},
+		{
+			"address": "NDNFA5YO3VS2TUQYBILQDORS6IXBCXOOHFWARO4W",
+			"remark": "kauppalahti - 1.0 - User Stake kauppalahti - 0.2 - contributor-stakes"
+		},
+		{
+			"address": "NBHWBGMDTQZK3SOU2KC4EN6OWSXQUMQVIYIMXTX6",
+			"remark": "chedigital - 1.0 - User Stake"
+		},
+		{
+			"address": "NDI3PSESUOPWXCT5TKTOXS6M4CFHHPV55W4BV3NC",
+			"remark": "NXT-JTA7-B2QR-8BFC-2V222 - 3.0 - User Stake"
+		},
+		{
+			"address": "NB7ZCXLKLPFIIODIIILSZLND5XVPBHVRRQM7ZJ4K",
+			"remark": "d13id - 1.0 - User Stake"
+		},
+		{
+			"address": "NCO74KN25ZCDD7FPENFEXJHHNYZF67HPUTGOPMDK",
+			"remark": "LeFiste - 1.0 - User Stake"
+		},
+		{
+			"address": "NAJS6Q7ZKG6NAWXXGXSJWMOXAFNWCC3UZD6JYDX5",
+			"remark": "NXT-JT5W-D3NS-BMX7-3L8HS - 0.7 - User Stake"
+		},
+		{
+			"address": "NC354Y7SV7YV2KVEJKMP47XFIZBLQH4DI3R365N2",
+			"remark": "rebel24 - 1.0 - User Stake"
+		},
+		{
+			"address": "NAO5O2RPKDOWIQQ5A2PU72N5X2X6OOGN6JMNVJX5",
+			"remark": "acqa - 1.0 - User Stake"
+		},
+		{
+			"address": "NAAINRGGFAJ5BWGKKDOY33OCZPTZ3GYXE4DOUKDG",
+			"remark": "Ferdinandreyes - 1.0 - User Stake"
+		},
+		{
+			"address": "NDGSTDMVLMNTEFRLTBF2K2TPCK52K2JEOTVYQD7G",
+			"remark": "lukey25 - 1.0 - User Stake"
+		},
+		{
+			"address": "NDZNXNNJWH4EYCJTDXL2AK2OKB32TLWB7PQDR4O5",
+			"remark": "NXT-AMRH-ZAC3-7LLY-AV2FS - 0.4 - User Stake"
+		},
+		{
+			"address": "NAM57WPU6S26SSYLDXSXTQZNLLRRUWCWNLSKJZSG",
+			"remark": "pixmo - 1.0 - User Stake"
+		},
+		{
+			"address": "NBC2DYE42D2ZGTANRHC6YYITXTJ2ZC662T24O3RC",
+			"remark": "cc5alive - 1.0 - User Stake"
+		},
+		{
+			"address": "NASGIKZVZCU7OOEZZJ7XNEKPOXTCYWFYZL3V22ND",
+			"remark": "NXT-NY9T-5YRS-VJ6W-CA78L - 0.2 - User Stake"
+		},
+		{
+			"address": "NBAYZUFKIXJ2S7LVSBE64QV4DRSKHRQRF2QDZMJU",
+			"remark": "cryptonikus - 1.0 - User Stake"
+		},
+		{
+			"address": "NBYQOBCJGZCCAI3OYYIEFRPPWNTPHL5ZWKOTFIST",
+			"remark": "Qwitnix - 1.0 - User Stake"
+		},
+		{
+			"address": "NDPFEUGF7N2GX2SKHGX2RP22O3SACBWUGDR7BTYG",
+			"remark": "elmust - 1.0 - User Stake"
+		},
+		{
+			"address": "NCAVYCPBY22CGHMFXKJLCN4C474OLFLOXPUZEMC7",
+			"remark": "NXT-UFMZ-U6FT-NS4L-3WF3P - 5.4 - User Stake"
+		},
+		{
+			"address": "NDOYIUY3TU6P4RTJDFVWH5PEXGWBDZ25LU4XESWU",
+			"remark": "NXT-M5JR-2L5Z-CFBP-8X7P3 - 1.5 - User Stake"
+		},
+		{
+			"address": "NBS44VECL3BH6AJPTXS75RBX3MDCH2YFS2WYXAE7",
+			"remark": "geyu - 1.0 - User Stake"
+		},
+		{
+			"address": "NABAIDXQJUP6YCZBYAHR4SVFCUVOOJSCZS46YE6R",
+			"remark": "uccoins - 1.0 - User Stake"
+		},
+		{
+			"address": "NDZNKLAGENRQPT75UUMXI3TNRO6YYVSPAILFTIEM",
+			"remark": "xandebnu - 1.0 - User Stake"
+		},
+		{
+			"address": "NDEF3I453W4WUAA4Y3PEKQHWYXP5CEXIUM77Q3XZ",
+			"remark": "NXT-4HKQ-BUV3-7V8K-73LQB - 2.0 - User Stake"
+		},
+		{
+			"address": "NBCFKPLJS5YWTWCGOHGTKOPS4NHBSV6NY6FZTXKX",
+			"remark": "Elena82 - 1.0 - User Stake"
+		},
+		{
+			"address": "NCOLTGZE4PJIEPR7W6JEYWPREXXOVYGETEPZKIHT",
+			"remark": "Sharky444 - 1.0 - User Stake"
+		},
+		{
+			"address": "NDCUZDEGV4M4XUI6QVSZAJTYL22BX3B6WWXBUARI",
+			"remark": "albertdros - 1.0 - User Stake"
+		},
+		{
+			"address": "NCYCACR3ON3HKAEE4YDN2YPD3NB2WHGQTCQPJF73",
+			"remark": "NXT-VBM2-233A-MW89-7TLCL - 0.3 - User Stake"
+		},
+		{
+			"address": "NC62GYOLU5I3WSONGL72ZD4KEWA47LADKFJNRXDP",
+			"remark": "dr_btc - 1.0 - User Stake"
+		},
+		{
+			"address": "NAM5AWPZTVG2TOP454CTZ56D4EXOWSTWSQHJXNK2",
+			"remark": "NXT-UKKM-76G6-GH25-6UT3V - 0.5 - User Stake"
+		},
+		{
+			"address": "NCTZVQQBJTIINHRXUZYBHQUZK325H7NI2H3ZJT3K",
+			"remark": "DanteFortal2 - 1.0 - User Stake"
+		},
+		{
+			"address": "NABOMXZFEE6RDIWRCINW7ZS3EIGVGD7VFT7CEZ5E",
+			"remark": "maxxyryo - 1.0 - User Stake"
+		},
+		{
+			"address": "NBDRM7Q2SUTPVNQ6HRYT2GIDEZKZDMWWU2PHBRFJ",
+			"remark": "halll90000 - 1.0 - User Stake"
+		},
+		{
+			"address": "NCBPTPQ626F5LEDSYRQFN5MVQM3HUNWLDBY4EXQ2",
+			"remark": "eqing9988 - 1.0 - User Stake"
+		},
+		{
+			"address": "NDTOTTUYVI5TZ7MHZ73H3ATGKYPFVQ7PGRSUJZXO",
+			"remark": "NXT-E2P2-RCMZ-MELT-8FSUY - 2.0 - User Stake"
+		},
+		{
+			"address": "NB7K3KBTG5ZPDYZ65UVH5NKEFAQM7QOW7N7CKXHS",
+			"remark": "NXT-76CF-3FFB-9RKM-EBFUT - 2.0 - User Stake"
+		},
+		{
+			"address": "NAMJ5FKRFC3RHMHQRTGQEEDHM6APAA3SNLNM2OQE",
+			"remark": "rage1337 - 1.0 - User Stake"
+		},
+		{
+			"address": "NCR2AYZS25HRPFOSAOOR3MHOSZRAVZFGX6D74UEX",
+			"remark": "NXT-98EP-BVRB-WU6B-386RA - 1.0 - User Stake"
+		},
+		{
+			"address": "NDYBY2YOIGKQUWQEGWF6NXMMSHNOG32IM7Q74HNM",
+			"remark": "CLains - 1.0 - User Stake"
+		},
+		{
+			"address": "NCRALVALSEVHDBV6IVUHNAXTOYNFD7VOO7ALBCJN",
+			"remark": "NXT-RVZV-2XWA-LF4P-ACKCM - 1.0 - User Stake"
+		},
+		{
+			"address": "NB2KCSCNKRXSZRO37UQZP2ECUGEDPNXG557VJSUD",
+			"remark": "NXT-5PPT-HMMV-SLDN-GV4MT - 2.0 - User Stake"
+		},
+		{
+			"address": "NDJIN5WOL2LMEVXRFDVXFWGGPJHWURUA5ECUT43I",
+			"remark": "ctenc001 - 1.0 - User Stake"
+		},
+		{
+			"address": "NCEIV52VWTGUTMYOXYPVTGMGBMQC77EH4PUPA5WO",
+			"remark": "NXT-2GR5-UW2W-CZ5B-7TJT3 - 15.0 - User Stake"
+		},
+		{
+			"address": "NCN4K47HN4LRSPGELOMUPHYZG5MUA25KBEEUP4JS",
+			"remark": "NXT-UDD4-3XJV-LBLR-9H2WC - 1.0 - User Stake"
+		},
+		{
+			"address": "NALLOTL3EZR2KFPSUODCJ7GST76YPNIR3SR27NDT",
+			"remark": "NXT-EZ5X-Y68W-63ZZ-77MTY - 1.0 - User Stake"
+		},
+		{
+			"address": "NCC3VQL6SNJ6UKHZHT6CFC5OTTQIWD3GBTJ7UAZE",
+			"remark": "Doken - 1.0 - User Stake"
+		},
+		{
+			"address": "NAQL4B7XKJWORI3NIZTTCT5CRMJZUED7H72Q34XV",
+			"remark": "oliviern - 1.0 - User Stake"
+		},
+		{
+			"address": "NC5UTODYVCICTTR7XU47NTQIADNJTV7RGSCWX5GY",
+			"remark": "NXT-CJT2-DYBH-VSU5-H525T - 0.9 - User Stake"
+		},
+		{
+			"address": "NDBM2J7IDMZ3B4QQ5NF27W6THNXIC545JGHFTBMQ",
+			"remark": "city19akro - 1.0 - User Stake"
+		},
+		{
+			"address": "NDSUMFYDYPRLFFUQEPZNLMZI6NHL6JCVMEWWHGZX",
+			"remark": "Happy_idiot - 1.0 - User Stake"
+		},
+		{
+			"address": "NB5GBI6KDQJRHZLPCVPC5LQGLFL64MGUDXFIOG7M",
+			"remark": "NXT-8DUK-H4NF-YSJW-EX8GV - 1.5 - User Stake"
+		},
+		{
+			"address": "NAAKTI5224KXEZNEVCTRFSQOLT52CXTNRQCMNQJC",
+			"remark": "mamichula - 1.0 - User Stake"
+		},
+		{
+			"address": "NA4J54A4ZJIDMSDLGZEME2VYOYD2NDDWBCXBWA4V",
+			"remark": "joywon - 1.0 - User Stake"
+		},
+		{
+			"address": "NBR3OC53FG4ICR7J7VGW2ALMNWTA2AZN7VNKQ3DY",
+			"remark": "NXT-389K-V6KV-BUJ2-343FP - 4.0 - User Stake"
+		},
+		{
+			"address": "NDPZYV3RKKFHFYP7HVGG6RE4GJN7XGLG4RDJRX3D",
+			"remark": "yoyomax - 1.0 - User Stake"
+		},
+		{
+			"address": "NCJZM5FCCCYVHOQJGGOOAAAWJB4HLIMSJQ7ULFDK",
+			"remark": "Mota - 1.0 - User Stake"
+		},
+		{
+			"address": "NCA25O2AH5KLIWWWQDX6G4V4TNNW4OIEFFYTJCQB",
+			"remark": "drakoin - 1.0 - User Stake"
+		},
+		{
+			"address": "ND55VKAY4D42WUVT5F7LX6GXFQ4F4R4YIFYLNNSR",
+			"remark": "NXT-2Q57-T33J-J6M6-9QDR9 - 2.0 - User Stake"
+		},
+		{
+			"address": "NB3W4J53SREI3OTMC62VWDMKVOH3Q4PDQ2AQH2RZ",
+			"remark": "chuki - 1.0 - User Stake"
+		},
+		{
+			"address": "NB24UNDA6SD5YHNCATDGUPE7JOGDR3ZGC6WWDLVS",
+			"remark": "hydkyll - 1.0 - User Stake"
+		},
+		{
+			"address": "NDQTAA43MV3CFC2XNJ6RRK3DXWWGJIGCCUIZFVWQ",
+			"remark": "dabster - 1.0 - User Stake"
+		},
+		{
+			"address": "NBWZI66YYHX7SDEM7YARPUQLMIKN3GXEA36XCQG2",
+			"remark": "averagejoe - 0.75 - contributor-stakes"
+		},
+		{
+			"address": "NDZHFTUCPQRUMXIDVE6FVA4LPGIL6HINJ2MJY36R",
+			"remark": "wangzhaolong - 1.0 - User Stake"
+		},
+		{
+			"address": "NC7GHUGGALRJ2GOUWGGPHU2QOHW4UWX4TSDXV74H",
+			"remark": "templebar - 1.0 - User Stake"
+		},
+		{
+			"address": "NCPYPHZKUXH7UAGTGQBK3A7YLJFXGAUF7OOM642Y",
+			"remark": "cryptoconomist - 1.0 - User Stake"
+		},
+		{
+			"address": "ND7ERWUNWYQP3KKVBKHII73E7E6IVEB7D46J6Y42",
+			"remark": "NXT-67RC-ZPFH-DK65-CGTZC - 2.0 - User Stake"
+		},
+		{
+			"address": "NB52P4KC2CFIVIHMT7EDBCWS4PGLXFYZYJMRBACX",
+			"remark": "ShawnLeary - 1.0 - User Stake Shawn Leary - 0.75 - contributor-stakes"
+		},
+		{
+			"address": "NDWTSM3DIYHPVY6O247XIUV2AIQVBQUPDQMXPCXX",
+			"remark": "engmax - 1.0 - User Stake"
+		},
+		{
+			"address": "NAPZHSNWGX4Y6QAE5BL7ONIBXTFQHRDQSQIUCAF2",
+			"remark": "WayToGo - 1.0 - User Stake"
+		},
+		{
+			"address": "NBD6P7LNNGYKS6SFN4MVWXGPLPRLBUNBGATDXIDA",
+			"remark": "NXT-57HD-5ZYH-ACQ6-7H8PC - 0.8 - User Stake"
+		},
+		{
+			"address": "NBW6SR6IEHSCP5TJIUQHWWF2E5YGMQPUQOQUWKB2",
+			"remark": "DjstarX - 1.0 - User Stake"
+		},
+		{
+			"address": "NATWPNEFWYTOCHXOMWEFIJM4LVKQWETUS7RFEKMI",
+			"remark": "NXT-L892-ZKXZ-2JJY-AD9JV - 0.1 - User Stake"
+		},
+		{
+			"address": "NDWQ7FP5SFNAFMTFUF3YCOQJBOUYOPFJ5HNXZZ7Q",
+			"remark": "NXT-TSGD-JPGP-FEX3-F2V32 - 0.2 - User Stake NXT-PPN3-J2CA-NQKW-B4AW3 - 0.1 - User Stake"
+		},
+		{
+			"address": "ND7SWDYGCUWO6C524ZTSJKHGMFODFITVIOUE3NB4",
+			"remark": "NXT-HRLR-KAGB-TK65-EZEMK - 0.2 - User Stake"
+		},
+		{
+			"address": "NDCRSP7JZOJBASW5XSPF6SDAUAVHC3P3RJW5EBL4",
+			"remark": "overthetop2011 - 1.0 - User Stake"
+		},
+		{
+			"address": "NDL3KYQJYA36MGFLQYKFUTLOSF633CEGPHQKW4HE",
+			"remark": "converge80 - 1.0 - User Stake"
+		},
+		{
+			"address": "NB3Z7ZQ3NDFPGHPR53QKR4UA3MS4M6RXQZ2MIZ4Y",
+			"remark": "drippx - 1.0 - User Stake"
+		},
+		{
+			"address": "NCCTYMX6UW7W43LT2QEPO36ADBPDLWS57SJOFP76",
+			"remark": "NXT-4W8S-MSTU-8N8Q-2RXSL - 0.4 - User Stake"
+		},
+		{
+			"address": "NA6XQLR652V54R2URQNRPZSBRS4QZUNUL5GF7M73",
+			"remark": "naurisdede - 1.0 - User Stake"
+		},
+		{
+			"address": "NC3SUFFKCTQ5DPINIY2INUU4RWZW3KIAH5VNNKRL",
+			"remark": "bilderberger - 1.0 - User Stake"
+		},
+		{
+			"address": "NDMJM2WAUAO3X3Y52P2NPTO6XI3MZYIVAW2KVHBH",
+			"remark": "thetreebro - 1.0 - User Stake"
+		},
+		{
+			"address": "NANZNPXQN3BVY7L7E5DVDRAPBHPSYCW77CE3JKYH",
+			"remark": "mr.sanches - 1.0 - User Stake"
+		},
+		{
+			"address": "NBEHIFIJB3BZ5LB5BBSFRFM7N4YW4UO74QTZ4MR7",
+			"remark": "TotalPanda - 1.0 - User Stake"
+		},
+		{
+			"address": "NCOPJ3EHMBAAQYL76SWKVUYV2NPAMTD2STQGPSTK",
+			"remark": "donn2012 - 1.0 - User Stake"
+		},
+		{
+			"address": "NCIHQTYDDZYDNXAMSVUBNW5TCM7IA65ZYRKEDE6L",
+			"remark": "gabbo876 - 1.0 - User Stake"
+		},
+		{
+			"address": "NC65O7HAHLXVXPZ6MQEFP3JLE4Y2F5E7553XLXAW",
+			"remark": "NXT-339N-B3SW-ZFM2-3U4JL - 2.7 - User Stake"
+		},
+		{
+			"address": "NAJDDJ7IHS54JOKVPJILSCWF2E3XCAPAWTXMJUOP",
+			"remark": "NXT-QGGS-5FWK-895D-GT3UB - 0.7 - User Stake"
+		},
+		{
+			"address": "NAIMMQVPQ6NCZT2LETSPOQVP6DNTEN4WM44VJ4L2",
+			"remark": "feeleep - 1.0 - User Stake"
+		},
+		{
+			"address": "NC5X32FJX2OELTCH3CA7EIMARQRNRV5ZL4KZSFU7",
+			"remark": "ReWeR - 1.0 - User Stake"
+		},
+		{
+			"address": "NBO4QZ7MU6XKNJDBV6F4KAKPGZ7COKYJWBX5UKIL",
+			"remark": "tifozi - 1.0 - User Stake"
+		},
+		{
+			"address": "NAUDS5IBMHHP534GN5SXG2JHHLNE3F6FGIZQHNBR",
+			"remark": "BestofSR - 1.0 - User Stake"
+		},
+		{
+			"address": "NA3R4M4HUMDZWV7XLWZFIWOZLK6EYVESCKJGJFPY",
+			"remark": "SpinWolf - 1.0 - User Stake"
+		},
+		{
+			"address": "NAUL3Z4S55CKQH5BHCKZM3FUIAG5X53WNAY6KJ6Y",
+			"remark": "botija - 1.0 - User Stake"
+		},
+		{
+			"address": "NDYHG6T5WCZZWDCR2F6GMEMUDUERNTJNOFSOESA4",
+			"remark": "leo66 - 1.0 - User Stake"
+		},
+		{
+			"address": "NBURPF2S46QSWZSYOPKSTTXCIX4C2HY2O5RRYKPQ",
+			"remark": "dylan123 - 1.0 - User Stake"
+		},
+		{
+			"address": "NBKA2ZGR52JSLCXBY7ZQYBDZXD6WL665ZGNDVJLC",
+			"remark": "LifeisGreat88088 - 1.0 - User Stake"
+		},
+		{
+			"address": "NA6W5NPGVON4ECDAZHKBCXVAWNOK6SX4352VVZ2F",
+			"remark": "deftonikus - 1.0 - User Stake"
+		},
+		{
+			"address": "NBK3FH5KBUOTQL6GYIBHMX344MMRY7HBG7A7HM7V",
+			"remark": "liudanli - 1.0 - User Stake"
+		},
+		{
+			"address": "NBHA375F6GAE3DGOYMIYYFTLJXWAS7AXNY4T46IB",
+			"remark": "2fresh - 1.0 - User Stake"
+		},
+		{
+			"address": "NA2BGOXBHFLRK7ZFZ5NDXAXMUTZCXPJLJJKBSYUS",
+			"remark": "yweetot - 1.0 - User Stake"
+		},
+		{
+			"address": "NCU5KINQGBEMYKB5NCALNS2Y2J5FUQ3F3TGTINJ7",
+			"remark": "xtester - 10.4 - Marketing Stakes"
+		},
+		{
+			"address": "NCOFMKICGA7I4ZCFPM5NTA567XI7ZOI5QZKKO5IL",
+			"remark": "bahamapascal - 1.0 - User Stake"
+		},
+		{
+			"address": "NATIMGPZVPOKIUBTXZGTIEQ76T4LKRZBZJ5QOMRL",
+			"remark": "xiaoxiao123 - 1.0 - User Stake"
+		},
+		{
+			"address": "ND6XMYBLH2LXMOZKUXHB5TTNDDVUHZAIRS3C3CGN",
+			"remark": "will777 - 1.0 - User Stake"
+		},
+		{
+			"address": "NBO64TZSPIGT5TGRV32SGJRGLCEMFBIDZE4LUGXI",
+			"remark": "dodgecharger - 1.0 - User Stake"
+		},
+		{
+			"address": "ND7QCOSUFH7STCTIOIHGXXWTMHW52IMJ35DC4MLC",
+			"remark": "avkinp - 1.0 - User Stake"
+		},
+		{
+			"address": "NDGWUO5UTF47H26GEZEI5CJJRPVWUKKLISXKNM3L",
+			"remark": "Flepper - 1.0 - User Stake"
+		},
+		{
+			"address": "NBGVL46ZH3HZDZY5STPUMWRJGHXWBU2KONNNSKTR",
+			"remark": "gd_kuaile - 1.0 - User Stake"
+		},
+		{
+			"address": "NA46E6XPVAZHFRHFZ3TPJEXYSXYNDJ3JFXDXDJPL",
+			"remark": "Schnitz - 1.0 - User Stake"
+		},
+		{
+			"address": "NCHMB3I2RJHN7JIUDC5J4BDGAOQ6QTCHNHJK7OAC",
+			"remark": "lpp416 - 1.0 - User Stake"
+		},
+		{
+			"address": "NCBAM4LBJ47QGKVH2EYAX53RQXOYUGWAKTJS2YUI",
+			"remark": "NXT-GX8T-Z8GP-EN3J-CKP9R - 1.2 - User Stake"
+		},
+		{
+			"address": "ND4Q3DO75VHFJUW6UHNRWF5JFTOHW5QGXXZ6XOTY",
+			"remark": "kinzula - 1.0 - User Stake"
+		},
+		{
+			"address": "NBJKLA6ZVW5EU42ZGCDGELUOXYACNZTFSNRTO5VO",
+			"remark": "Multi - 1.0 - User Stake"
+		},
+		{
+			"address": "NDLZGYHX5PAOMSEAX5DWOLCESA3SOKYSK7T4ILQE",
+			"remark": "NXT-T6XN-KVAB-L7Y4-AGZJ9 - 1.4 - User Stake"
+		},
+		{
+			"address": "NBIUSZBGSUZRPZ5FICISLA2HYTEZEY5IHRJVFMFF",
+			"remark": "NXT-E3HB-9UUQ-BG7Q-3FHMN - 0.2 - User Stake NXT-E3HB-9UUQ-BG7Q-3FHMN - 1.9 - User Stake"
+		},
+		{
+			"address": "NAPKDLH6LSCOCNYPAD7ISGELHDZL66CWKGWVT6UX",
+			"remark": "hichman - 1.0 - User Stake"
+		},
+		{
+			"address": "NBA7COQCUJKPI2EMUBP2ADUNQ245OC2QLHVF6BIQ",
+			"remark": "Eumels - 1.0 - User Stake"
+		},
+		{
+			"address": "NBCPDX5VWHBGHPGIOV5ULUWPSAGYMGMAXI2OZK4X",
+			"remark": "joann - 1.0 - User Stake"
+		},
+		{
+			"address": "NBXA34DKIPY5QKN6EUMI2JFKAJVRNZ2UC7LMEPPO",
+			"remark": "NXT-HL2A-7YBE-TK9R-C2VWQ - 2.0 - User Stake"
+		},
+		{
+			"address": "NBEISBBQUCX4PIZDS53BWW2UIXXWLCQVGZV4AE77",
+			"remark": "OwnZoR - 1.0 - User Stake"
+		},
+		{
+			"address": "NCR3NTYMZN6CA4JBSHEZ4S6NIO2FU7FGMJXBX5KB",
+			"remark": "Neznaika911 - 1.0 - User Stake"
+		},
+		{
+			"address": "ND6TUIARDPMYTPU5GB5OP7V5OEU65O2FMTERM7EO",
+			"remark": "NXT-F4T9-XQR5-BTQ8-99AGL - 2.0 - User Stake"
+		},
+		{
+			"address": "NCNT5DVON5BHN2IDWBIYL6QQNKDA3C5ZH644ISH6",
+			"remark": "Klapper - 1.0 - User Stake NXT-TJ66-UWW7-GKC9-3F3PE - 2.4 - User Stake NXT-TJ66-UWW7-GKC9-3F3PE - 1.0 - User Stake NXT-TJ66-UWW7-GKC9-3F3PE - 0.7 - User Stake NXT-TJ66-UWW7-GKC9-3F3PE - 0.2 - User Stake NXT-TJ66-UWW7-GKC9-3F3PE - 1.0 - User Stake Panther03 - 0.2 - contributor-stakes"
+		},
+		{
+			"address": "NDS2EKSOU2SGE2VNF6OVYF2G4P5IHCHZLKCCH2EQ",
+			"remark": "NXT-JBCS-ZYVL-GCC8-DCFWD - 0.1 - User Stake"
+		},
+		{
+			"address": "NDZOWFOE4ZH67QBHHKZZ34QLVBGV57TEARCCW2FF",
+			"remark": "midnight_rgs - 1.0 - User Stake"
+		},
+		{
+			"address": "NAOPS66G2PDYQTSXPAMBBHJHHTXHQKBT2OBNKPKA",
+			"remark": "Froyoss - 1.0 - User Stake"
+		},
+		{
+			"address": "NBXSX35GJT7EZWI4W3Z3YGOZTHLVQ3NX6UO6WFSV",
+			"remark": "thejepper - 1.0 - User Stake"
+		},
+		{
+			"address": "NCKOG3TJAHKYXA2MIJ5ER2TDB47LWX76RKPOH3BH",
+			"remark": "NXT-AM5F-GGW9-H4J3-DL7SS - 0.2 - User Stake"
+		},
+		{
+			"address": "NDJTJFKXRYQN7QZIJCYN23DBP2DAZGXZBRCZOKAY",
+			"remark": "NXT-3YBT-UKFL-ZCAY-466Q6 - 1.0 - User Stake"
+		},
+		{
+			"address": "NCAVJ5OO7X26HLWJC7QU5ES2KOSCFLRYENRJ76EV",
+			"remark": "j23a - 1.0 - User Stake"
+		},
+		{
+			"address": "NCLT47SADV26NQXWMRBJK5JLIWIXWOAIED2FCWVC",
+			"remark": "NXT-4DHD-T39N-YNHD-DWQCG - 1.0 - User Stake FromRussiaWithLove - 1.0 - User Stake"
+		},
+		{
+			"address": "NBV2RI6YU3JQHTPXHQ57GHZTGYWGZ3WLKBDQR7S3",
+			"remark": "NXT-JTFQ-ZYEZ-YD26-95FCV - 0.2 - User Stake"
+		},
+		{
+			"address": "NCWYKLEQF2JMA7UCLOKUKOTOZ46RFRFBQ3KJ6F4V",
+			"remark": "NXT-QTCA-67EQ-VCBL-EUTZD - 1.0 - User Stake NXT-QTCA-67EQ-VCBL-EUTZD - 1.0 - User Stake NXT-QTCA-67EQ-VCBL-EUTZD - 1.2 - User Stake Djinou94 - 1.0 - User Stake"
+		},
+		{
+			"address": "NASHFVX2Z5NUVPVITYGPPUTQV55TTYK7SFDMAMPG",
+			"remark": "check07 - 1.0 - User Stake"
+		},
+		{
+			"address": "NCNR5VVNPWF5COWFIJGP5EHL2FP4XB27OKBAY3ES",
+			"remark": "zhunifa - 1.0 - User Stake"
+		},
+		{
+			"address": "NDR4JA5QLHND7W6XHPCTUR5HBIFIEIVVNOGZUB4B",
+			"remark": "Thies1965 - 1.0 - User Stake"
+		},
+		{
+			"address": "NADBXDZLPMLLNOR6MXKZWC66RUCEQH6DBYVWCBW3",
+			"remark": "robdark - 1.0 - User Stake"
+		},
+		{
+			"address": "NALLILLJWT7QGINBQNJVT42STTGGHQ3RGNGRZW7Y",
+			"remark": "NXT-6KYQ-HPM6-7TGJ-4VJS4 - 5.7 - User Stake"
+		},
+		{
+			"address": "NCZVBGSO3W4NSHIVVEOMCRRGC5MPCR75KMO5FC4O",
+			"remark": "NXT-52VR-VER9-DC23-5T2R6 - 0.2 - User Stake"
+		},
+		{
+			"address": "NBBSGBUEYNY4JSW6S4SATELUWXB3GNSXT25EJXXN",
+			"remark": "mueller37 - 1.0 - User Stake"
+		},
+		{
+			"address": "NBOGZKG6ULLK4UACNNHUY7TZECSRARSV5QAZ5BAV",
+			"remark": "NXT-5R6V-36FV-LQY8-8EAHL - 0.8 - User Stake"
+		},
+		{
+			"address": "NCVVDVDK4DSLFTM4X47LGTI5OKHUEGJA75G3O55L",
+			"remark": "NXT-W5VE-QYCQ-XKTY-2P6XE - 0.4 - User Stake"
+		},
+		{
+			"address": "NCO3245VOM4467AT7MTVFUAOFUJ2BL7WLSYYXTXV",
+			"remark": "alexkuz - 1.0 - User Stake"
+		},
+		{
+			"address": "NBZW5NUJR5CEGNDOB5KIWHDY72XNM5FECDCT55BU",
+			"remark": "usagi1949 - 1.0 - User Stake"
+		},
+		{
+			"address": "NCN4JU3X7F4MK4WG3IGQJ4DI3XIEE3Z45PXK6VSF",
+			"remark": "zhengqi - 1.0 - User Stake"
+		},
+		{
+			"address": "NBDBWPTY3MKFWKHFQA6BAE6MO5GWQPWZ3VRMSFXM",
+			"remark": "kodtycoon - 8.9 - Marketing Stakes"
+		},
+		{
+			"address": "NBKCU4SLA4O2MJQGXAYUA44C5XXQRZV67YDZIYRN",
+			"remark": "Cerafim - 1.0 - User Stake"
+		},
+		{
+			"address": "NBGPY7WM32KKCTUYZA3EUFGB7POZ32OJI3ZKBVOU",
+			"remark": "BitThink - 1.0 - User Stake"
+		},
+		{
+			"address": "NAXFB324AQEII4O6CH7PBH74VS6FCJG6KHZD6NXI",
+			"remark": "Buratino - 1.0 - User Stake"
+		},
+		{
+			"address": "ND5ZRBO25CMZL6CQKMLGSPOLZSV6NTMFL7DTJCX3",
+			"remark": "gustav - 1.0 - User Stake"
+		},
+		{
+			"address": "NAOW3K7WQWRT3Z2ZLHH55FWANTVC7GMTN3SY5IYH",
+			"remark": "lajz99 - 1.0 - User Stake"
+		},
+		{
+			"address": "NCHBEU6QN6763KCW2B2WCOYYKP2CPP2Y2GMC3ISO",
+			"remark": "erkki12 - 1.0 - User Stake BraBraBra - 1.0 - User Stake"
+		},
+		{
+			"address": "NBXHI4XK42AMVZYFKZTGUZF3RTGXEPPSYORRHUUF",
+			"remark": "NXT-6VB2-QUMQ-X4JB-2PN9Z - 0.3 - User Stake"
+		},
+		{
+			"address": "NCTVN5WH5GBOM3TDGF27E6KAT6LZWKC2D4CJI7JS",
+			"remark": "atleticofa - 1.0 - User Stake"
+		},
+		{
+			"address": "NACJOB3NYDPRL3RTTTUYOG3QLPJDTLDMGEJ463YX",
+			"remark": "unvoid - 1.0 - User Stake unvoidpl - 0.75 - contributor-stakes"
+		},
+		{
+			"address": "NDCRMT4KZMYYMGCANEZNSRCWJXXSWIDLNX5AAGUD",
+			"remark": "baobaoxuzihan - 1.0 - User Stake"
+		},
+		{
+			"address": "NDNIDO65O6XGPFNPGNZHRMBNU24CY4F5MQIMEDXI",
+			"remark": "chenmeilin - 1.0 - User Stake"
+		},
+		{
+			"address": "NDXAVH7JZW6UH4L5FEEJ5TI6PUECN37QQM5RX6PA",
+			"remark": "Caesar V - 1.0 - User Stake"
+		},
+		{
+			"address": "NC75OZN7EZ642OC6PA5WVGGWI4VAVIVGEK4JRASC",
+			"remark": "datguyian - 1.0 - User Stake"
+		},
+		{
+			"address": "NBSXM5E4WT3QA6TD473G7YLYD5W4KX6YPV27JCGI",
+			"remark": "NXT-2RVZ-JRYZ-ERVM-2PCVK - 2.0 - User Stake"
+		},
+		{
+			"address": "ND4VTRUW2WPXJ7MURWT2FOK6DRQ2HWCR4K2QDMMM",
+			"remark": "Apollo75 - 1.0 - User Stake"
+		},
+		{
+			"address": "NBYQMM7BWRHR2UPNJZ3K4ZXXFVHPETBILFF4BEON",
+			"remark": "foggy1421 - 1.0 - User Stake"
+		},
+		{
+			"address": "NCEGNVTKJ5TUHUPWOXSO47PYLWQLIOGH2WP2VFNX",
+			"remark": "bluedude - 1.0 - User Stake"
+		},
+		{
+			"address": "NBMF2UEFNDS3IMMG2KD3BKZA3EM5UNQOAOV4T4IV",
+			"remark": "shinep - 1.0 - User Stake"
+		},
+		{
+			"address": "NDGQNHQ3RPE36XLLXFOEBMW7BJNZCCFPEXGE3EBL",
+			"remark": "NXT-45UP-CR2D-U9YD-BQYMM - 0.1 - User Stake"
+		},
+		{
+			"address": "NBGE5S4OBA46IV3LZN6QCLXEGFC4PICGBOV72JME",
+			"remark": "Neonforge - 1.0 - User Stake"
+		},
+		{
+			"address": "NBVOVDU27VD6HHUCRMSBFPX3YQWKHB4KTTQPE4D4",
+			"remark": "Hollowman338 - 1.0 - User Stake"
+		},
+		{
+			"address": "NDXGFZ6U2IMGT2E66XSENOAET3L4EAHQBYPR73DO",
+			"remark": "ATOREND - 1.0 - User Stake"
+		},
+		{
+			"address": "NDJGS4BSAKEXN7Z4RVMVRSQS2SZGKMVUA345PSFB",
+			"remark": "luke997 - 1.0 - User Stake"
+		},
+		{
+			"address": "NAG4K7ROOAIPK6KUYT5PQUMIP65WMHK254JXK23V",
+			"remark": "Asmodeus - 1.0 - User Stake"
+		},
+		{
+			"address": "NAOOLJIJ4NJ54QHSN5FQUYNIPKDHV6SLOAFMW26L",
+			"remark": "yufu571 - 1.0 - User Stake"
+		},
+		{
+			"address": "NAV3RJT63SWG663G3G4ATTXU6JFA3VRTUEU42HSS",
+			"remark": "NEMoon - 1.0 - User Stake"
+		},
+		{
+			"address": "NBM6ODGBR2YOI4GPEGKYPSJLIORUOKXT4HTFFTKJ",
+			"remark": "jack.tinad - 1.0 - User Stake"
+		},
+		{
+			"address": "NCQRIQV52NLMZROQMSU3L6DUMWKGBVTBGTGHHAUI",
+			"remark": "esse83 - 1.0 - User Stake"
+		},
+		{
+			"address": "NBBPMRIKJRUIA3SYNDHKQ2Y2XT6L3ROSE2GFGR2F",
+			"remark": "JakeThePanda - 1.0 - User Stake"
+		},
+		{
+			"address": "NDHDFD6N3PGAJ4IYVUMZ7W53S4A5PQTYOFZIFK6R",
+			"remark": "NXT-2UKS-7VYN-Q73Y-EKE8Y - 0.4 - User Stake"
+		},
+		{
+			"address": "NDIHNHRATEICH5LAC7CMC5NBEDUTFPRYUNT7C5TY",
+			"remark": "vely064 - 1.0 - User Stake"
+		},
+		{
+			"address": "NDIOKCOFFVJKJUQONTXTPQJW7YFJV2POTYM63UER",
+			"remark": "NXT-Y9VJ-PNT9-QKT3-EK4FH - 0.4 - User Stake"
+		},
+		{
+			"address": "ND5M2JQMZX4YBWWX6R56ONR42D7XDCY2CVBMEXFS",
+			"remark": "mautscho - 1.0 - User Stake"
+		},
+		{
+			"address": "NAIPEPSTSLKACEK7HUWXJ4HSHQL4GWNSBFMMFS5P",
+			"remark": "NXT-KGUG-ETBM-W37L-BPXV8 - 1.0 - User Stake"
+		},
+		{
+			"address": "NBH7HMBSVEICY6RZVB2AVEBCKLFALBDSUMLRJMSE",
+			"remark": "Moloch - 1.0 - User Stake Spiritas - 1.0 - User Stake"
+		},
+		{
+			"address": "NC445FNXGEI4EUZJDTEUIH35AEB4EP2A5DTM4XYE",
+			"remark": "NXT-896Y-34R6-N4M2-ECBAA - 0.5 - User Stake"
+		},
+		{
+			"address": "NCNGLE7PCYM5POWDBR7H3LKJWVYPEPPIFQVHUVXH",
+			"remark": "Lmenda - 1.0 - User Stake"
+		},
+		{
+			"address": "NDMQOWZ3ITTIGQLXWN3OQKOYO2KAZETVVNYIR34H",
+			"remark": "MarioMan - 1.0 - User Stake"
+		},
+		{
+			"address": "NCLZQG5OHRD3F63LDZORN4UC5QQJWHHJCVZM7LFI",
+			"remark": "swansong - 1.0 - User Stake"
+		},
+		{
+			"address": "NAIHJJ67FPS6FO3ZHSXHZBQCL2YAHE37SUJ3FZAC",
+			"remark": "jebus911 - 1.0 - User Stake"
+		},
+		{
+			"address": "NDXSOCLEG3DF4BR3ZTBKXF77TB62NIHC3Y2IJCIQ",
+			"remark": "ddvcrypto - 1.0 - User Stake"
+		},
+		{
+			"address": "NBJ3YMXMN4TUNRFOTLAXMXNKI6I7AOQLWLETAVUR",
+			"remark": "leo14 - 1.0 - User Stake"
+		},
+		{
+			"address": "NAPTLF7H4V3SBNY7PQ24XO2Y6UHMOVAZOWCKEQ2G",
+			"remark": "bitcoin79 - 1.0 - User Stake"
+		},
+		{
+			"address": "NA7H4TU5EW7NMDGES4I56B2I5QE4ETCYQY5WCH6R",
+			"remark": "heyu - 1.0 - User Stake"
+		},
+		{
+			"address": "NBAKWICFZBI4EFGTT56IRT6VIZQO3GB4SUI5MPJB",
+			"remark": "pandher - 1.0 - User Stake"
+		},
+		{
+			"address": "NA6MIOZDH6AE34H5NJ7ZMG3MYP7UFRASLP6H4NPD",
+			"remark": "jman887854 - 1.0 - User Stake"
+		},
+		{
+			"address": "NCBCP3CJL3PEHXXKLNSHBCH7YJIOKFZTLRYGRMXL",
+			"remark": "NXT-RAL2-Q4DM-8HTL-845KB - 1.9 - User Stake"
+		},
+		{
+			"address": "NB664VORNS4RGXK3YHXDOH2YNW6PZYM6DLZ544ZN",
+			"remark": "NXT-WD4Y-CNVP-V8K8-CJDS9 - 1.0 - User Stake"
+		},
+		{
+			"address": "NABN2CIWXEENFZ7R3DBJ6SEBBIICEPI2O7THGQP5",
+			"remark": "NXT-U2CZ-XLCD-NM83-C2S27 - 0.5 - User Stake"
+		},
+		{
+			"address": "NAWCPQV657YYDEMGZDOJP52OGESN4U7YHCBXYYK5",
+			"remark": "stuipooi1234 - 1.0 - User Stake"
+		},
+		{
+			"address": "NAUUUBNCWVB6SMPRAA4C237KF7TLCMQMRMQG65MW",
+			"remark": "hedge - 1.0 - User Stake"
+		},
+		{
+			"address": "NCZPGANHHBBBSTG526WQDKKOG4QFOLAQQDIW66PG",
+			"remark": "bob131313 - 1.0 - User Stake"
+		},
+		{
+			"address": "NBD434GDXAFSCVAFZXFHQMIIQO3LUAOXVVLYAUC2",
+			"remark": "levinhostar - 1.0 - User Stake"
+		},
+		{
+			"address": "NDWF6OLC5W5LXRBGP5AOLS3KC72OIU3S2E7FH2DL",
+			"remark": "BTCHunter2010 - 1.0 - User Stake Stadtfeger - 1.0 - User Stake"
+		},
+		{
+			"address": "NDUYLKXFJD7MBPOJ2BIYDJPE6KQZDN3PCZOESXF6",
+			"remark": "NXT-5J2A-VUNM-HQUW-A6526 - 0.9 - User Stake"
+		},
+		{
+			"address": "NAKHDHF4BGRXM5CNCFRLRDIHJLEWEJ4QDOY246L2",
+			"remark": "NXT-D8B6-6E38-675L-4SH5T - 2.0 - User Stake"
+		},
+		{
+			"address": "NB6T77YMWIWTQQPMLXUYCPCL5ZILOXI6D4YG6SYO",
+			"remark": "qoraer - 1.0 - User Stake"
+		},
+		{
+			"address": "NA6W36YD3GYPXHVENF772JFPS3CLSZT777MZ3JPM",
+			"remark": "NXT-E2P2-RCMZ-MELT-8FSUY - 0.2 - User Stake"
+		},
+		{
+			"address": "NBCGR7M2FUYJOS2DBEODXAA3EMUMYQJ3KPT5CXOG",
+			"remark": "NXT-A6HD-MLFX-5QXT-CRX3R - 3.1 - User Stake"
+		},
+		{
+			"address": "NCRGHVKKRV4RQ62P5A7DZS57UPXD4GK2TQFLMR46",
+			"remark": "NXT-JJEY-TWBC-6QAY-4H67A - 12.0 - User Stake"
+		},
+		{
+			"address": "NANMJGPCU37ATJSNM6AGBGW5RM6ZQYBYWX4EFWFR",
+			"remark": "NXT-E2P2-RCMZ-MELT-8FSUY - 2.0 - User Stake"
+		},
+		{
+			"address": "NA32FXAA25BUEKB3O4KTNVFSDHQ7SHZW4FDMVLDL",
+			"remark": "NXT-Z2A2-SQMM-4JPB-5GR85 - 0.8 - User Stake"
+		},
+		{
+			"address": "NA27GBXDUQ4NHFXYWNGI6NWYEBYSPKSRAFKQYAJH",
+			"remark": "NXT-7VZ6-PSHV-HE82-6WA2P - 0.3 - User Stake"
+		},
+		{
+			"address": "NATPZL5ZWAHMSVE3X7TRMZY63JCK4R46GY3K5ISQ",
+			"remark": "mudshark79 - 1.0 - User Stake"
+		},
+		{
+			"address": "NA6AJV67VDNGRKWYWPCJVI4ATXG6Z4DLOS4UEZO5",
+			"remark": "tadkis - 1.0 - User Stake"
+		},
+		{
+			"address": "NDVFRTSPF5YPGARULEBHFFUDMY5E2OW2SX3CJMPC",
+			"remark": "greentea - 1.0 - User Stake"
+		},
+		{
+			"address": "NDL3RGVH65M5YYFCJHMMNHYQGQG4SWVN2ZYMEEA4",
+			"remark": "NXT-3R26-L9SQ-AFZA-H4HCR - 2.0 - User Stake"
+		},
+		{
+			"address": "NDFBIWS5YRONMY2CQ5HIOQPXTUZILCHTIPDA3MBA",
+			"remark": "Hauberg81 - 1.0 - User Stake Siegtal81 - 1.0 - User Stake NXT-S7RD-ETUJ-HQ53-5D4KX - 8.0 - User Stake"
+		},
+		{
+			"address": "NCDPQ57VC3LTRB2LSDCOXLPHUCGILBDBYALKJJ5T",
+			"remark": "shantell - 1.0 - User Stake"
+		},
+		{
+			"address": "NCWFCZOUBBKAOO6OZNWR6TWHAIDLFGF7RDLOTOWD",
+			"remark": "NXT-AGKD-2NZN-FHNL-DXZML - 0.5 - User Stake langkeming - 1.0 - User Stake"
+		},
+		{
+			"address": "NBDADGCQSAIZJNI3CRTBRFEXFTKBRT7YKMKML7YG",
+			"remark": "NXT-93YZ-83SQ-PJGF-EQB43 - 0.1 - User Stake"
+		},
+		{
+			"address": "NDSTLM765RJ3N7ENHVXSRF6475W6W567BDA3KOH6",
+			"remark": "timmyd - 1.0 - User Stake"
+		},
+		{
+			"address": "NDNUHIRYTEOUI7DXPCULO5UB4HUJFKZCHKVQYVMK",
+			"remark": "huzut66 - 1.0 - User Stake AltcoinNewbie - 1.0 - User Stake"
+		},
+		{
+			"address": "NA7VA7AKR6XQSPOVNOGZW7UNYXZTHTTKRU75DP55",
+			"remark": "NXT-8QLY-CRHV-NSJZ-CCZ5K - 0.2 - User Stake"
+		},
+		{
+			"address": "NDAUREQNTQYVA55VUZFQJAXJHLN357R3WC3IJDJF",
+			"remark": "NXT-6D8B-PS6P-83LM-AFFFK - 4.0 - User Stake"
+		},
+		{
+			"address": "NCKKIT6VMV7ODT6RRDXNNWS372S26DB3NQQIDZRX",
+			"remark": "lybship53 - 1.0 - User Stake"
+		},
+		{
+			"address": "NDGQBYJRDW4H4APMB4TCCRHXUQ4H4F7MYRKT4XF5",
+			"remark": "NXT-RDF8-WZHY-26RY-7GQP6 - 1.1 - User Stake"
+		},
+		{
+			"address": "NCWX2332NDA6PH4NB7KRQVCN6RBUJN3YI3BKGZ6I",
+			"remark": "jimppu - 1.0 - User Stake"
+		},
+		{
+			"address": "NAIHDNMUJDPWIYSCXAN6J6C3YEPVLPYWH3NV34RH",
+			"remark": "Soloturn - 1.0 - User Stake"
+		},
+		{
+			"address": "NATU2YWPMBX7G4VMADOZ7HLRUSTHOTPP3EPZT6M5",
+			"remark": "krypton87 - 1.0 - User Stake"
+		},
+		{
+			"address": "NA3JA4EA2SEIY5ZYCPCRRHOOS3S5MCOAC2X3VGKW",
+			"remark": "JungleBook - 1.0 - User Stake"
+		},
+		{
+			"address": "NAKC46HAF6WHPN3AD3M3BB2J2U6ZHBUKJC25YOSA",
+			"remark": "NXT-QSHE-T3BN-FWU5-EVFG3 - 2.0 - User Stake"
+		},
+		{
+			"address": "NCQTXYZONJRN2LGLZP4XJ5BBIOSSWFHN7HSVGP7T",
+			"remark": "NXT-433P-UW8G-Y687-7YCAD - 0.1 - User Stake NXT-433P-UW8G-Y687-7YCAD - 0.1 - User Stake"
+		},
+		{
+			"address": "NABZWYQQ6WACEPI2LKVWLONT5373YVMFR35LEKRX",
+			"remark": "NXT-ULQQ-G6HD-5GV4-9DYU5 - 0.6 - User Stake"
+		},
+		{
+			"address": "NAWPSJDIN7OTXU5KCBHISG4AL55OUU3KCRPAUULX",
+			"remark": "NXT-4YK8-RTHK-3P86-8F4SW - 0.5 - User Stake"
+		},
+		{
+			"address": "NCU6WY7AH5GHNRPZWULZUY3Z4IU35IYT3FYLN4AH",
+			"remark": "Issac - 1.0 - User Stake"
+		},
+		{
+			"address": "NBLVHJQJDSLP77MRDEUVE4SQNMCSE4U25WTGE53F",
+			"remark": "theFork - 1.0 - User Stake"
+		},
+		{
+			"address": "NBWJKGH4DHPUIACV7QLDC22GK6KAWWOQAFRUAPBF",
+			"remark": "degxtra1 - 1.0 - User Stake"
+		},
+		{
+			"address": "NBTEJKNZWMTH5UBID3FADTGLASQBSYOARQJKXW4H",
+			"remark": "NXT-VX6Z-YGHU-X67A-8LL9Q - 0.4 - User Stake"
+		},
+		{
+			"address": "NCOXO3YQ2HUZVTJAWL2FUJCLZHXMYT3WN2AWOYUW",
+			"remark": "adbconsole - 1.0 - User Stake"
+		},
+		{
+			"address": "NCMTHJ7HMWAFZMXEXHDTNL4BLG47YWMDNQ3NYWL7",
+			"remark": "NXT-J84Q-B2DA-UP5G-D5B89 - 5.5 - User Stake"
+		},
+		{
+			"address": "NDY46Q3V453TAQRU63HQPWQMC6ANYF5RATDYV5QX",
+			"remark": "25104070 - 1.0 - User Stake"
+		},
+		{
+			"address": "NCVN6JDT5EDWY6V4ESHJMWUWEQJMGLE42JM4CW6F",
+			"remark": "jcarl987 - 1.0 - User Stake"
+		},
+		{
+			"address": "NB47CE6GAT6ZU6WGJNQLLB35BMO36V5UQGTSTE5H",
+			"remark": "autumnyellow152 - 1.0 - User Stake"
+		},
+		{
+			"address": "NBEXYWVVHDNW2WMECA5JOTSFAW35EFNZDWWLEXMF",
+			"remark": "jenea4pda - 1.0 - User Stake"
+		},
+		{
+			"address": "NB4EUP4JMTL6ZVYAY6BA5QAUFWSNIDOESKVIK5F2",
+			"remark": "Tommyhurley - 1.0 - User Stake"
+		},
+		{
+			"address": "NDUPGSICQ7665XR2HC4JSTJ54OP5EPZO2QSQVJEK",
+			"remark": "KLONE::Vader - 1.0 - User Stake NXT-RENL-259B-SZLT-DKR82 - 21.2 - User Stake cryptojunk - 1.0 - User Stake"
+		},
+		{
+			"address": "NCBUXSVVBBPIQQMLRRM3PFU4MJOFVTB2XJM666RH",
+			"remark": "NXT-93YZ-83SQ-PJGF-EQB43 - 0.4 - User Stake"
+		},
+		{
+			"address": "NBTJG7BCV62CZQYTPROBA3VW45VIYEJBLDFAI4WP",
+			"remark": "steyast012 - 1.0 - User Stake"
+		},
+		{
+			"address": "NDYLZWRGN2BDXF7WG26H2Y2OEJKN6KUWVHL3ZA4J",
+			"remark": "reginalkri - 1.0 - User Stake"
+		},
+		{
+			"address": "NCAL2GLT2UF5QXCXQVU6KLTC6DNCGKSJN4NZSF2R",
+			"remark": "epenue - 1.0 - User Stake"
+		},
+		{
+			"address": "NCXLYFPWN2L7DIM2M2X2ZXDZ2J5DFMUWPK5VN4I6",
+			"remark": "Raxe.io - 1.0 - User Stake"
+		},
+		{
+			"address": "NDHZLGBBJ7DTUTWU6N54MIZRUEKR6XWEPBKG3L7A",
+			"remark": "Galgenfrist - 1.0 - User Stake"
+		},
+		{
+			"address": "NB555XVPYMKZMGPUV2X3PFHGWQAIEYLNGGARK26Y",
+			"remark": "NXT-93YZ-83SQ-PJGF-EQB43 - 1.1 - User Stake"
+		},
+		{
+			"address": "NCMO3ESUXCE4XRP73OIWJ7TTYFUJNEF2QBCNQFU3",
+			"remark": "jepakki - 1.0 - User Stake"
+		},
+		{
+			"address": "NAAI3FOSUH74L6B4IPYB2KQSB4BH3EQO377AO5BJ",
+			"remark": "KingCole - 1.0 - User Stake"
+		},
+		{
+			"address": "NCOW3SSMEK4DXYK2GHKRMSLAVUP53SYHX6GELMGL",
+			"remark": "lyka - 1.0 - User Stake"
+		},
+		{
+			"address": "NDB44PC3EXPRMINBZJSY7IUCAFLJE2Q3ZE7VDYOK",
+			"remark": "bonznumber1 - 1.0 - User Stake"
+		},
+		{
+			"address": "NCZCMGWMNPLX6CKPUQ3R3DSPZ4U7BR3D5UHSX6PT",
+			"remark": "Thekitten - 1.0 - User Stake"
+		},
+		{
+			"address": "NCQHOYCAPNEJBVVQ7BATLU4R2ITSEWM3VNIJ4574",
+			"remark": "Blas - 1.0 - User Stake"
+		},
+		{
+			"address": "NDAORF6VKPJA5HU4SJMAM6UMQ3BONYABQZBDYYPZ",
+			"remark": "y17171 - 1.0 - User Stake"
+		},
+		{
+			"address": "NADWZY74LXK52PEK4ASTYK5RTXWI6WDVEOL53NNP",
+			"remark": "NXT-93YZ-83SQ-PJGF-EQB43 - 0.1 - User Stake NXT-93YZ-83SQ-PJGF-EQB43 - 0.4 - User Stake"
+		},
+		{
+			"address": "NBXTBD7X2LCUNQCBIQ23SUBXJCYQAXSYMHBSUUIP",
+			"remark": "assisd - 1.0 - User Stake"
+		},
+		{
+			"address": "NBTXTLPSS5QWVEWRMNQ6B65Y5IKUXQNNEGWXXK2F",
+			"remark": "mhall - 1.0 - User Stake"
+		},
+		{
+			"address": "NCBLYXZAT2AVYTLL5SHW4BY6GCHI653UDLNKH56C",
+			"remark": "aleix - 1.0 - User Stake"
+		},
+		{
+			"address": "NBT4IFMJVHSP57PSRIN6CTRMUXMV3ECNEPZTXWGN",
+			"remark": "vivinamie - 1.0 - User Stake"
+		},
+		{
+			"address": "NDRMBGVZF3YGEICMYEZKG3UH7JLDN6WJV7SIK7VP",
+			"remark": "her0 - 1.0 - User Stake"
+		},
+		{
+			"address": "NAZSVXY56UDB5IGBFN4OHYLEJMCN5UIUC24U2SKG",
+			"remark": "crypto_coin - 1.0 - User Stake"
+		},
+		{
+			"address": "NCPPY4X6T23WBOIA735E4LR74AZ2AO3NIUHPJW6W",
+			"remark": "tontsa74 - 1.0 - User Stake"
+		},
+		{
+			"address": "NCCBABVX5CD7F3LGMK4Q6UDO2UOV34N6QBU2MLWU",
+			"remark": "NXT-R5YG-NWXZ-GRVR-6V2GX - 0.6 - User Stake"
+		},
+		{
+			"address": "NAGF7PNOG3PKYPZE3ME5TQBB3CXO2NKJ5Q3WK3QI",
+			"remark": "eXtatiC - 1.0 - User Stake"
+		},
+		{
+			"address": "NDMBADM4LFJBLH4JJWENZCPGUFYL457ZYLXVMM2V",
+			"remark": "NXT-UAAA-C95A-RWYQ-D6NTR - 1.3 - User Stake"
+		},
+		{
+			"address": "NCPOOLUWJ6WV2SAD4B4UQFVU55N34VFILCTTJ4ET",
+			"remark": "NXT-65LQ-S69R-62PW-HNQP2 - 1.7 - User Stake"
+		},
+		{
+			"address": "NDDQUZVB5GGIL4INRCFKD34XUD7FIBSYME4ARLYN",
+			"remark": "NXT-6KTZ-X5SU-VARG-H9H4V - 1.0 - User Stake"
+		},
+		{
+			"address": "NCX3VKVICDY3KN43W5NGJBQ4ZFQCA4YPY6ZSS5YQ",
+			"remark": "zhuangyx - 1.0 - User Stake"
+		},
+		{
+			"address": "NC2V6ZPLVGHLUSJLXA453LAWHYIC2EYPQGWRLBYO",
+			"remark": "NXT-ABGA-WTPC-3BMW-HZL4Y - 1.0 - User Stake"
+		},
+		{
+			"address": "NBAGUSTI5UOTFNULQEWINA5ZWGQ6UH4PIPVSFRFS",
+			"remark": "NXT-XW9M-ZHXY-L8CU-HFH9A - 2.0 - User Stake"
+		},
+		{
+			"address": "NA3WDGA3NVRMKUADKXTCRFJ6DY3RW2NFCQO3S4G5",
+			"remark": "zjangma - 1.0 - User Stake"
+		},
+		{
+			"address": "NCGZBKR6Q2E2IA36UF4DRUJ3MCVA3PPEH4K34E4D",
+			"remark": "torstenz - 1.0 - User Stake"
+		},
+		{
+			"address": "NCT2WDP36TEERQ3S7VM4A7ZUWBHYQMC7ZEOHZPCN",
+			"remark": "NXT-3KQE-7PSR-P9PD-48ZV9 - 1.7 - User Stake"
+		},
+		{
+			"address": "NB7HN32GXVP2NBHYOBPQBDA3RQM3J7FWERNDJ353",
+			"remark": "Mjbmonetarymetals - 1.0 - User Stake"
+		},
+		{
+			"address": "NCPX5LDOOJ452RAMXHKLBTWWVNVP3UNPGORRCVWH",
+			"remark": "CryptoFan4life - 1.0 - User Stake"
+		},
+		{
+			"address": "NBISJOPO3TXQ3IMQAD6CADMYUJFW5BOEZIEWYXVC",
+			"remark": "NXT-M78C-BM2J-ZVT2-BE6PG - 1.4 - User Stake"
+		},
+		{
+			"address": "NCKOF3RWFOUGHZB3OCERXWOPNAFVAK72RZ3JN4DD",
+			"remark": "NXT-MKM4-W4L3-7CT2-F52DG - 1.0 - User Stake"
+		},
+		{
+			"address": "NDUVQA6NAPF5QWU7WTLVUYA6TWB3X4BAJWYCNT25",
+			"remark": "NXT-XN6A-SZNH-K8HS-BY68B - 1.8 - User Stake"
+		},
+		{
+			"address": "NBGRGEYR2F4DGQJ7YQEGBWDG2DU5WVWFAIT6IRJF",
+			"remark": "NXT-8MK3-RB4M-C2F9-2GCJS - 1.0 - User Stake"
+		},
+		{
+			"address": "NDQR57735D5JGWUH5KLV5M4GH44SGMR52E3KPRTB",
+			"remark": "NXT-76VN-YGGB-ZCEH-HU6G3 - 0.5 - User Stake"
+		},
+		{
+			"address": "NDQBA2CZEGDKURFV3Q7GPIHSY6CM3R6CX52CWCJ5",
+			"remark": "boob7788 - 1.0 - User Stake"
+		},
+		{
+			"address": "NBOTAB23HPYFIBVBEZJ2EGEYW5TYA4I2A3GP7VLA",
+			"remark": "NXT-3TWE-F2UL-B24Z-EYHK2 - 1.6 - User Stake"
+		},
+		{
+			"address": "NCTTJQBWUEGNHKVL35W474OCKPE4TZYHUCOT5UOQ",
+			"remark": "winnipegc - 1.0 - User Stake"
+		},
+		{
+			"address": "NBCR3SIIOVZG6UCQFSD24X5T2YHICV25HBVHML7O",
+			"remark": "NXT-J9J3-TX2G-DA8U-3X36F - 0.8 - User Stake"
+		},
+		{
+			"address": "NCOGEI7BWO3DDMWTFANROJF772HDFS4DX6QEH66W",
+			"remark": "NXT-X5RY-BJKF-7GK5-F7GAA - 1.8 - User Stake"
+		},
+		{
+			"address": "NAVKEG5SBWGKZ2ESMAAXQJWY6L6B54AOXFCBTB73",
+			"remark": "NXT-5AG4-86JG-XKS3-4E2D5 - 0.4 - User Stake"
+		},
+		{
+			"address": "NDRGPKVQ655J4LSAGPRZAS2QMEUNKO4EPZFV7D72",
+			"remark": "NXT-GZ79-5GCT-9G8E-7QXSM - 0.3 - User Stake"
+		},
+		{
+			"address": "NCVDB6GZYIHIP7EXHJKF3A6EEAM62KQXPNGYZQD3",
+			"remark": "benyate - 1.0 - User Stake"
+		},
+		{
+			"address": "NAGGNSSVZH3RDRNMRMUMV5XUIPNXRXUJWXLQDXO5",
+			"remark": "Kattywampus - 1.0 - User Stake"
+		},
+		{
+			"address": "NBIR6VLCE32BC2KDCXMZEF7UUSKXG224CYHYQVAE",
+			"remark": "NXT-QZ7R-ZRBT-JFZU-BM4SD - 0.8 - User Stake NXT-QZ7R-ZRBT-JFZU-BM4SD - 0.1 - User Stake NXT-QZ7R-ZRBT-JFZU-BM4SD - 0.1 - User Stake"
+		},
+		{
+			"address": "NCS7FOFNHEYO56HX43Q56BJH4XDG3MDTIYNBZ6VP",
+			"remark": "joinmicah - 1.0 - User Stake"
+		},
+		{
+			"address": "NCX73FWGEIGCOSPXHB3BA2NZDOWDA6WDM4MSQQQQ",
+			"remark": "NXT-8CXC-PJE7-GTVC-2NHEX - 2.0 - User Stake"
+		},
+		{
+			"address": "NDVKMEGZOIAOGX724WLOHZ7U44SALWN4ATVX7Q4M",
+			"remark": "NXT-KZTG-NAKD-JET3-EQAG6 - 1.0 - User Stake"
+		},
+		{
+			"address": "NAI55BKVFRPZBGHOXYGZBUUCOSWOEFASZTQB6NGH",
+			"remark": "NXT-JS3B-HZQ4-GAN2-5QZQG - 1.0 - User Stake"
+		},
+		{
+			"address": "NCYNM6N456PEZ6TQUQDBEAZJ43QY5AVM4KILLMVK",
+			"remark": "NXT-VJME-TT89-XK35-GNLXU - 2.0 - User Stake"
+		},
+		{
+			"address": "NARJDOUALQEMU7WT3FO4N2MVVHWP6FY5XCPTDXDD",
+			"remark": "M4rcD - 1.0 - User Stake"
+		},
+		{
+			"address": "NB43CA4YZZLXGBBZI3WEX74U33N7MZQQJLP6BWXS",
+			"remark": "NXT-QXCH-C3FQ-PZRW-HUFAK - 1.6 - User Stake"
+		},
+		{
+			"address": "NBNJTN4FZN3HFESST5EBKVMGA5PYR2K7FZDLG3FK",
+			"remark": "Ganefull - 1.0 - User Stake"
+		},
+		{
+			"address": "NB7MZOO6OFTPINDQD3MEWP7IFZ5T52ALYGNAN23F",
+			"remark": "NXT-C3PZ-DGE9-XSGH-5AGZE - 4.5 - User Stake"
+		},
+		{
+			"address": "NBGNOBSNMQBWHYC3OBSDWEJP6F5HSLRFXLANQNUW",
+			"remark": "Market6677 - 1.0 - User Stake Juzion - 1.0 - User Stake"
+		},
+		{
+			"address": "NAVIGGXCUIM26TYXTOEOYWGSI6PCRE33I4EIKWQJ",
+			"remark": "vivalinux - 1.0 - User Stake"
+		},
+		{
+			"address": "NDS5S7MTYEKAYO26L4Y5DO6JAYS6TK25WPIXXLLB",
+			"remark": "NXT-Y7B3-DAYW-FH6R-7YY9Q - 0.5 - User Stake NXT-Y7B3-DAYW-FH6R-7YY9Q - 1.2 - User Stake NXT-Y7B3-DAYW-FH6R-7YY9Q - 1.2 - User Stake NXT-Y7B3-DAYW-FH6R-7YY9Q - 1.9 - User Stake"
+		},
+		{
+			"address": "NAVQJIHZC7XHYEE665SS7EOEVFSCBHRYJFUQCNQH",
+			"remark": "NXT-ETSU-W2XS-ZT5E-3J66W - 1.0 - User Stake NXT-ETSU-W2XS-ZT5E-3J66W - 1.0 - User Stake"
+		},
+		{
+			"address": "NCYYYT23JLBISVA3GKCWKVSYQZGQYQC4KLMHNGDE",
+			"remark": "DeadlyEskimo - 1.0 - User Stake NXT-W932-MWXN-42D3-FP6RA - 1.7 - User Stake"
+		},
+		{
+			"address": "NCRZQYHRPHGSBOR2OAVAQFFM3P24D5WDDS4GKYL7",
+			"remark": "NXT-B6UG-NU5R-86NR-CC87D - 1.0 - User Stake"
+		},
+		{
+			"address": "NDTIVGJNV3DZKLFG6GG6X62OHNY53IFCKEOSCBBQ",
+			"remark": "NXT-WCKP-RDGX-76XY-BQ9U7 - 2.0 - User Stake"
+		},
+		{
+			"address": "NBY7KHBAJM3APBVAK5DHGHFY2ODZNOCV32JA2LFV",
+			"remark": "NXT-T5BQ-JZGT-QMFL-AA3CS - 0.1 - User Stake"
+		},
+		{
+			"address": "NCVPDOVHA6F3TADFTEQJBSKPDAYHL5ZJD37ALBZJ",
+			"remark": "dasource - 1.0 - User Stake"
+		},
+		{
+			"address": "NBVPXPTRMLU3DZQWL5YZKMR7NXANC6FDUNTXV7GR",
+			"remark": "Acook3 - 1.0 - User Stake"
+		},
+		{
+			"address": "NC5QXZINO3GMDATUGADAORETQXI4IEZLWKWSDHOD",
+			"remark": "che$$master - 1.0 - User Stake"
+		},
+		{
+			"address": "NAJMSRI2T3TZ67CLYFQPGVAIATMRYBNHGUJKQDEP",
+			"remark": "Trollollo - 1.0 - User Stake"
+		},
+		{
+			"address": "NASWQPWC24OJKQBUIQRBX6WAUAU4PNJDUJYBUVP2",
+			"remark": "libertyzeal2 - 1.0 - User Stake"
+		},
+		{
+			"address": "NBRNPIJAKHR7NQIL67AKWZMAH5AK35PHZQ7ZJRCE",
+			"remark": "hvezdasmrti - 1.0 - User Stake"
+		},
+		{
+			"address": "NDVG7FQIQLY3TWAEZR7GADPG55B3DVVVVZHVOYBF",
+			"remark": "NXT-C599-7AC4-VA5Q-7N29S - 0.3 - User Stake"
+		},
+		{
+			"address": "NC6ZLYRZ6RWPTKWHAUNDNJ2FGLDZUG6SWM3HKI2A",
+			"remark": "NXT-QK5L-7YM9-YPVF-55GL5 - 0.2 - User Stake NXT-QK5L-7YM9-YPVF-55GL5 - 0.1 - User Stake NXT-QK5L-7YM9-YPVF-55GL5 - 0.2 - User Stake NXT-QK5L-7YM9-YPVF-55GL5 - 0.1 - User Stake"
+		},
+		{
+			"address": "NB3T23B5KQ5KZ65TPLLPYF2BWWPWLQ7SLGPK6VWC",
+			"remark": "NXT-89EW-F96Z-X6BY-DJC6F - 0.5 - User Stake"
+		},
+		{
+			"address": "NB3NGT3JBZA6NTCBLSWURQOVG7UEWOFDUNKAISAQ",
+			"remark": "Zeegeuze - 1.0 - User Stake"
+		},
+		{
+			"address": "NB2EMOX7QHEAWBFOCTDKCUVYO74VK5MVIQAV5C34",
+			"remark": "smaragda - 1.0 - User Stake"
+		},
+		{
+			"address": "NCC7PLUQDFQISR4IN2HIW6RVNZ6B7OOPBFN67T7Y",
+			"remark": "Starfleet.Intelligence - 1.0 - User Stake"
+		},
+		{
+			"address": "NCWUSDDDOZNALBG3E3ERIVRJCKHRACHQIBT2KTNW",
+			"remark": "iruu - 1.0 - User Stake"
+		}
+	]
+}

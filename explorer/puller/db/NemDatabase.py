@@ -195,6 +195,40 @@ class NemDatabase(DatabaseConnection):
 			'''
 		)
 
+		# Create accounts remarks table
+		cursor.execute(
+			'''
+			CREATE TABLE IF NOT EXISTS account_remarks (
+				id serial PRIMARY KEY,
+				address bytea UNIQUE,
+				remarks varchar NOT NULL
+			)
+			'''
+		)
+
+		self.connection.commit()
+
+	def insert_account_remarks_from_json(self, accounts_remarks_json):
+		"""Adds account remarks into accounts_remarks table"""
+
+		if 'remarks' not in accounts_remarks_json:
+			return
+
+		cursor = self.connection.cursor()
+		cursor.executemany(
+			'''
+			INSERT INTO account_remarks (address, remarks)
+			VALUES (%s, %s)
+			ON CONFLICT (address) DO NOTHING
+			''',
+			[
+				(
+					Address(account['address']).bytes,
+					account['remark']
+				) for account in accounts_remarks_json['remarks']
+			]
+		)
+
 		self.connection.commit()
 
 	def insert_block(self, cursor, block):  # pylint: disable=no-self-use

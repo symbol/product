@@ -1,4 +1,5 @@
 import argparse
+import json
 from asyncio import run
 
 from zenlog import log
@@ -13,6 +14,7 @@ def parse_args():
 	parser.add_argument('--nem-node', help='NEM node(local) url', default='http://localhost:7890')
 	parser.add_argument('--network', help='mainnet or testnet', choices=['mainnet', 'testnet'], default='mainnet')
 	parser.add_argument('--db-config', help='database config file *.ini', default='config.ini')
+	parser.add_argument('--account-remarks', help='account remarks info', default='./resources/account_remark.json')
 	return parser.parse_args()
 
 
@@ -26,6 +28,11 @@ async def main():
 
 	with facade.nem_db as databases:
 		databases.create_tables()
+
+		# pre insert account remarks
+		with open(args.account_remarks, 'rt', encoding='utf8') as remark_file:
+			data = json.load(remark_file)
+			databases.insert_account_remarks_from_json(data)
 
 		db_height = databases.get_current_height()
 		log.info(f'current database height: {db_height}')
