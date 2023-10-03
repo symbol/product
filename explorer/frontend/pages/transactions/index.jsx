@@ -2,8 +2,6 @@ import { search } from '../api/search';
 import { fetchTransactionChart, getStats } from '../api/stats';
 import ButtonCSV from '@/components/ButtonCSV';
 import ChartColumns from '@/components/ChartColumns';
-import ChartDonut from '@/components/ChartDonut';
-import CustomImage from '@/components/CustomImage';
 import Field from '@/components/Field';
 import Filter from '@/components/Filter';
 import ItemTransactionMobile from '@/components/ItemTransactionMobile';
@@ -12,11 +10,11 @@ import SectionHeaderTransaction from '@/components/SectionHeaderTransaction';
 import Separator from '@/components/Separator';
 import Table from '@/components/Table';
 import ValueAccount from '@/components/ValueAccount';
+import ValueList from '@/components/ValueList';
 import ValueMosaic from '@/components/ValueMosaic';
 import ValueTransactionHash from '@/components/ValueTransactionHash';
 import ValueTransactionType from '@/components/ValueTransactionType';
 import { TRANSACTION_TYPE } from '@/constants';
-import { fetchTransactionPage } from '@/pages/api/transactions';
 import { getTransactionPage } from '@/pages/api/transactions';
 import styles from '@/styles/pages/TransactionList.module.scss';
 import { formatDate, useFilter, usePagination } from '@/utils';
@@ -63,7 +61,7 @@ const TransactionInfo = ({ preloadedData, stats }) => {
 			renderValue: value => <ValueTransactionType value={value} />
 		},
 		{
-			key: 'signer',
+			key: 'sender',
 			size: '20rem',
 			renderValue: value => <ValueAccount address={value} size="md" />
 		},
@@ -73,9 +71,16 @@ const TransactionInfo = ({ preloadedData, stats }) => {
 			renderValue: value => <ValueAccount address={value} size="md" />
 		},
 		{
-			key: 'amount',
-			size: '10rem',
-			renderValue: value => <ValueMosaic amount={value} isNative hasTime />
+			key: 'value',
+			size: '20rem',
+			renderValue: value => (
+				<ValueList
+					data={value}
+					max={2}
+					direction="column"
+					renderItem={item => <ValueMosaic mosaicId={item.id} mosaicName={item.name} amount={item.amount} isTickerShown />}
+				/>
+			)
 		},
 		{
 			key: 'fee',

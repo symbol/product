@@ -10,11 +10,12 @@ import Table from '@/components/Table';
 import ValueAccount from '@/components/ValueAccount';
 import ValueCopy from '@/components/ValueCopy';
 import ValueLabel from '@/components/ValueLabel';
+import ValueList from '@/components/ValueList';
 import ValueMosaic from '@/components/ValueMosaic';
 import ValueTimestamp from '@/components/ValueTimestamp';
 import ValueTransactionHash from '@/components/ValueTransactionHash';
 import ValueTransactionType from '@/components/ValueTransactionType';
-import { fetchTransactionPage, getTransactionPage } from '@/pages/api/transactions';
+import { getTransactionPage } from '@/pages/api/transactions';
 import styles from '@/styles/pages/MosaicInfo.module.scss';
 import { createPageHref, nullableValueToText, usePagination } from '@/utils';
 import Head from 'next/head';
@@ -25,7 +26,7 @@ import { useEffect, useState } from 'react';
 
 export const getServerSideProps = async ({ locale, params }) => {
 	const mosaicInfo = await getMosaicInfo(params.id);
-	const transactionsPage = await getTransactionPage({ mosaic: params.id });
+	const transactionsPage = await getTransactionPage({}, { mosaic: params.id });
 
 	if (!mosaicInfo) {
 		return {
@@ -45,7 +46,7 @@ export const getServerSideProps = async ({ locale, params }) => {
 const MosaicInfo = ({ mosaicInfo, preloadedTransactions }) => {
 	const { levy } = mosaicInfo;
 	const { t } = useTranslation();
-	const transactionPagination = usePagination(fetchTransactionPage, preloadedTransactions);
+	const transactionPagination = usePagination(getTransactionPage, preloadedTransactions, { mosaic: mosaicInfo.id });
 	const [chainHeight, setChainHeight] = useState(0);
 	const [expirationText, setExpirationText] = useState(null);
 	const [progressType, setProgressType] = useState('');
@@ -70,7 +71,7 @@ const MosaicInfo = ({ mosaicInfo, preloadedTransactions }) => {
 			renderValue: value => <ValueTransactionType value={value} />
 		},
 		{
-			key: 'signer',
+			key: 'sender',
 			size: '20rem',
 			renderValue: value => <ValueAccount address={value} size="md" />
 		},
@@ -80,18 +81,16 @@ const MosaicInfo = ({ mosaicInfo, preloadedTransactions }) => {
 			renderValue: value => <ValueAccount address={value} size="md" />
 		},
 		{
-			key: 'amount',
-			size: '10rem',
-			renderValue: value => <ValueMosaic amount={value} isNative />
-		},
-		{
-			key: 'fee',
-			size: '7rem',
-			renderValue: value => <ValueMosaic amount={value} isNative />
-		},
-		{
-			key: 'height',
-			size: '6rem'
+			key: 'value',
+			size: '20rem',
+			renderValue: value => (
+				<ValueList
+					data={value}
+					max={2}
+					direction="column"
+					renderItem={item => <ValueMosaic mosaicId={item.id} mosaicName={item.name} amount={item.amount} isTickerShown />}
+				/>
+			)
 		},
 		{
 			key: 'timestamp',
@@ -189,6 +188,7 @@ const MosaicInfo = ({ mosaicInfo, preloadedTransactions }) => {
 					renderItemMobile={data => <ItemTransactionMobile data={data} />}
 					isLoading={transactionPagination.isLoading}
 					isLastPage={transactionPagination.isLastPage}
+					isLastColumnAligned
 					onEndReached={transactionPagination.requestNextPage}
 				/>
 			</Section>
