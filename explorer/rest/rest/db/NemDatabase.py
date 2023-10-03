@@ -234,6 +234,7 @@ class NemDatabase(DatabaseConnectionPool):
 		fee = _format_xem_relative(fee)
 
 		value = []
+		embedded_transactions = None
 
 		if transaction_type == 257:  # Transfer
 			value.append({
@@ -266,67 +267,69 @@ class NemDatabase(DatabaseConnectionPool):
 				'modifications': multisig_account_modification_modifications
 			})
 		elif transaction_type == 4100:  # Multisig
-			if multisig_inner_transaction['transaction_type'] == 257:
+			value = None
+			embedded_transactions = []
+			inner_transaction = {}
+			inner_transaction_type = multisig_inner_transaction['transaction_type']
+
+			inner_transaction['transactionType'] = transaction_type_mapping.get(inner_transaction_type, None)
+
+			if inner_transaction_type == 257:
 				to_address = multisig_inner_transaction['recipient']
 
 				mosaics = multisig_inner_transaction['mosaics']
 				amount = multisig_inner_transaction['amount']
 
-				value.append({
-					'message': transfer_message
-				})
+				inner_transaction['message'] = transfer_message
 
 				if not mosaics:
-					value.append({
+					inner_transaction['mosaics'] = {
 						'namespace': 'nem.xem',
 						'amount': _format_xem_relative(amount)
-					})
+					}
 				else:
 					multiply = amount if amount == 0 else amount / 1000000
 
 					for mosaic in mosaics:
 						amount = mosaic['quantity'] * multiply
-						value.append({
+						inner_transaction['mosaics'] = {
 							'namespace': mosaic['namespace_name'],
 							'amount': (_format_xem_relative(amount) if mosaic['namespace_name'] == 'nem.xem' else amount)
-						})
+						}
 
-			elif multisig_inner_transaction['transaction_type'] == 2049:
-				value.append({
-					'account_key_link_mode': multisig_inner_transaction['mode']
-				})
+			elif inner_transaction_type == 2049:
+				inner_transaction['mode'] = multisig_inner_transaction['mode']
+				inner_transaction['remoteAccount'] = multisig_inner_transaction['remote_account']
 
-			elif multisig_inner_transaction['transaction_type'] == 4097:
-				value.append({
-					'min_cosignatories': multisig_inner_transaction['min_cosignatories'],
-					'modifications': multisig_inner_transaction['modifications']
-				})
+			elif inner_transaction_type == 4097:
+				inner_transaction['minCosignatories'] = multisig_inner_transaction['min_cosignatories']
+				inner_transaction['modifications'] = [{
+					'cosignatoryAccount': str(self.network.public_key_to_address(PublicKey(modification['cosignatory_account']))),
+					'modificationType': modification['modification_type']
+				} for modification in multisig_inner_transaction['modifications']]
 
-			elif multisig_inner_transaction['transaction_type'] == 8193:
+			elif inner_transaction_type == 8193:
 				to_address = multisig_inner_transaction['rental_fee_sink']
 				rental_fee = multisig_inner_transaction['rental_fee']
 				namespace = multisig_inner_transaction['namespace']
 
-				value.append({
-					'namespace_name': namespace,
-					'sink_fee': _format_xem_relative(rental_fee)
-				})
+				inner_transaction['namespaceName'] = namespace
+				inner_transaction['sinkFee'] = _format_xem_relative(rental_fee)
 
-			elif multisig_inner_transaction['transaction_type'] == 16385:
+			elif inner_transaction_type == 16385:
 				to_address = multisig_inner_transaction['creation_fee_sink']
 				creation_fee = multisig_inner_transaction['creation_fee']
 				namespace_name = multisig_inner_transaction['namespace_name']
 
-				value.append({
-					'mosaic_namespace_name': namespace_name,
-					'sink_fee': _format_xem_relative(creation_fee)
-				})
-			elif multisig_inner_transaction['transaction_type'] == 16386:
-				value.append({
-					'supply_type': multisig_inner_transaction['supply_type'],
-					'delta': multisig_inner_transaction['delta'],
-					'namespace_name': multisig_inner_transaction['namespace_name']
-				})
+				inner_transaction['mosaicNamespaceName'] = namespace_name
+				inner_transaction['sinkFee'] = _format_xem_relative(creation_fee)
+
+			elif inner_transaction_type == 16386:
+				inner_transaction['supplyType'] = multisig_inner_transaction['supply_type']
+				inner_transaction['delta'] = multisig_inner_transaction['delta']
+				inner_transaction['namespaceName'] = multisig_inner_transaction['namespace_name']
+
+			embedded_transactions.append(inner_transaction)
 
 		elif transaction_type == 8193:  # Namespace registration
 			value.append({
@@ -354,7 +357,8 @@ class NemDatabase(DatabaseConnectionPool):
 			fee=fee,
 			height=height,
 			timestamp=timestamp,
-			deadline=deadline
+			deadline=deadline,
+			embedded_transactions=embedded_transactions
 		)
 
 	def get_block(self, height):
