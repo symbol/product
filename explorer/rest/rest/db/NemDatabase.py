@@ -74,6 +74,10 @@ class NemDatabase(DatabaseConnectionPool):
 					ELSE NULL
 				END AS account_key_link_mode,
 				CASE
+					WHEN transaction_type = 2049 Then takl.remote_account
+					ELSE NULL
+				END AS account_key_link_remote_account,
+				CASE
 					WHEN transaction_type = 4097 Then tmam.min_cosignatories
 					ELSE NULL
 				END AS multisig_account_modification_min_cosignatories,
@@ -221,6 +225,7 @@ class NemDatabase(DatabaseConnectionPool):
 			mosaic_namespace_creation_name,
 			multisig_inner_transaction,
 			account_key_link_mode,
+			account_key_link_remote_account,
 			multisig_account_modification_min_cosignatories,
 			multisig_account_modification_modifications,
 			mosaic_supply_change_type,
@@ -259,8 +264,10 @@ class NemDatabase(DatabaseConnectionPool):
 
 		elif transaction_type == 2049:  # Account key link
 			value.append({
-				'account_key_link_mode': account_key_link_mode
+				'mode': account_key_link_mode,
+				'remoteAccount': _format_bytes(account_key_link_remote_account)
 			})
+
 		elif transaction_type == 4097:  # Multisig account modification
 			value.append({
 				'min_cosignatories': multisig_account_modification_min_cosignatories,
