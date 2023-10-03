@@ -16,6 +16,7 @@ const ValueMosaic = ({
 	size,
 	onClick,
 	isNavigationDisabled,
+	isTickerShown,
 	chainHeight,
 	expirationHeight
 }) => {
@@ -36,13 +37,13 @@ const ValueMosaic = ({
 	const dot = !chainHeight ? null : chainHeight < expirationHeight ? 'green' : 'red';
 
 	if (finalMosaicId === config.NATIVE_MOSAIC_ID) {
-		displayedName = '';
+		displayedName = isTickerShown ? config.NATIVE_MOSAIC_TICKER : '';
 		imageSrc = '/images/icon-mosaic-native.svg';
-		title = `${amount} ${config.NATIVE_MOSAIC_TICKER}`;
+		title = amount ? `${amount} ${config.NATIVE_MOSAIC_TICKER}` : '';
 	} else {
 		displayedName = mosaicName;
 		imageSrc = '/images/icon-mosaic-custom.svg';
-		title = `${amount} ${displayedName}`;
+		title = amount ? `${amount} ${mosaicName}` : '';
 	}
 
 	const handleClick = e => {
