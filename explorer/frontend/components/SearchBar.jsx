@@ -64,7 +64,13 @@ const SearchResults = ({ type, text, onSearchRequest, onSelect }) => {
 			)}
 			{isTransactionResult && (
 				<Field title={t('field_transaction')}>
-					<ValueTransaction value={result.transaction.hash} type={result.transaction.type} size="md" onClick={onSelect} />
+					<ValueTransaction
+						value={result.transaction.hash}
+						type={result.transaction.type}
+						amount={result.transaction.amount}
+						size="md"
+						onClick={onSelect}
+					/>
 				</Field>
 			)}
 			{isNothingFound && <div className={styles.notFoundMessage}>{t('message_nothingFound')}</div>}
