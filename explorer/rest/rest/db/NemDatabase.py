@@ -270,9 +270,13 @@ class NemDatabase(DatabaseConnectionPool):
 
 		elif transaction_type == 4097:  # Multisig account modification
 			value.append({
-				'min_cosignatories': multisig_account_modification_min_cosignatories,
-				'modifications': multisig_account_modification_modifications
+				'minCosignatories': multisig_account_modification_min_cosignatories,
+				'modifications': [{
+					'cosignatoryAccount': str(self.network.public_key_to_address(PublicKey(modification['cosignatory_account']))),
+					'modificationType': modification['modification_type']
+				} for modification in multisig_account_modification_modifications]
 			})
+
 		elif transaction_type == 4100:  # Multisig
 			value = None
 			embedded_transactions = []
