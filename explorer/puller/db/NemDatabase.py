@@ -10,6 +10,101 @@ from model.Namespace import Namespace
 class NemDatabase(DatabaseConnection):
 	"""Database containing Nem blockchain data."""
 
+	@staticmethod
+	def _create_table_indexes(cursor):
+		"""Create indexes for tables"""
+
+		cursor.execute(
+			'''
+			CREATE INDEX IF NOT EXISTS idx_sender
+				ON transactions(sender)
+			'''
+		)
+
+		cursor.execute(
+			'''
+			CREATE INDEX IF NOT EXISTS idx_transaction_hash
+				ON transactions(transaction_hash)
+			'''
+		)
+
+		cursor.execute(
+			'''
+			CREATE INDEX IF NOT EXISTS idx_transaction_type
+				ON transactions(transaction_type)
+			'''
+		)
+
+		cursor.execute(
+			'''
+			CREATE INDEX IF NOT EXISTS idx_transaction_height
+				ON transactions(height)
+			'''
+		)
+
+		cursor.execute(
+			'''
+			CREATE INDEX IF NOT EXISTS idx_takl_transaction_id
+				ON transactions_account_key_link(transaction_id)
+			'''
+		)
+
+		cursor.execute(
+			'''
+			CREATE INDEX IF NOT EXISTS idx_tmdc_transaction_id
+				ON transactions_mosaic_definition_creation(transaction_id)
+			'''
+		)
+
+		cursor.execute(
+			'''
+			CREATE INDEX IF NOT EXISTS idx_tmsc_transaction_id
+				ON transactions_mosaic_supply_change(transaction_id)
+			'''
+		)
+
+		cursor.execute(
+			'''
+			CREATE INDEX IF NOT EXISTS idx_tm_transaction_id
+				ON transactions_multisig(transaction_id)
+			'''
+		)
+
+		cursor.execute(
+			'''
+			CREATE INDEX IF NOT EXISTS idx_tmam_transaction_id
+				ON transactions_multisig_account_modification(transaction_id)
+			'''
+		)
+
+		cursor.execute(
+			'''
+			CREATE INDEX IF NOT EXISTS idx_tnr_transaction_id
+				ON transactions_namespace_registration(transaction_id)
+			'''
+		)
+
+		cursor.execute(
+			'''
+			CREATE INDEX IF NOT EXISTS idx_tt_transaction_id
+				ON transactions_transfer(transaction_id)
+			'''
+		)
+
+		cursor.execute(
+			'''
+			CREATE INDEX IF NOT EXISTS idx_recipient
+				ON transactions_transfer(recipient)
+			'''
+		)
+
+		cursor.execute(
+			'''
+			CREATE INDEX IF NOT EXISTS idx_account_remarks_address
+				ON account_remarks (address)
+			'''
+		)
+
 	def create_tables(self):
 		"""Creates blocks database tables."""
 
@@ -205,6 +300,8 @@ class NemDatabase(DatabaseConnection):
 			)
 			'''
 		)
+
+		self._create_table_indexes(cursor)
 
 		self.connection.commit()
 
