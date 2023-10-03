@@ -344,19 +344,19 @@ class NemDatabase(DatabaseConnectionPool):
 
 		elif transaction_type == 8193:  # Namespace registration
 			value.append({
-				'namespace_name': mosaic_namespace_creation_name,
-				'sink_fee': _format_xem_relative(mosaic_namespace_sink_fee)
+				'namespaceName': mosaic_namespace_creation_name,
+				'sinkFee': _format_xem_relative(mosaic_namespace_sink_fee)
 			})
 		elif transaction_type == 16385:  # Mosaic namespace creation
 			value.append({
-				'mosaic_namespace_name': mosaic_namespace_creation_name,
-				'sink_fee': _format_xem_relative(mosaic_namespace_sink_fee)
+				'mosaicNamespaceName': mosaic_namespace_creation_name,
+				'sinkFee': _format_xem_relative(mosaic_namespace_sink_fee)
 			})
 		elif transaction_type == 16386:  # Mosaic supply change
 			value.append({
-				'supply_type': mosaic_supply_change_type,
+				'supplyType': mosaic_supply_change_type,
 				'delta': mosaic_supply_change_delta,
-				'namespace_name': mosaic_supply_change_namespace_name
+				'namespaceName': mosaic_supply_change_namespace_name
 			})
 
 		return TransactionListView(
