@@ -35,7 +35,7 @@ export const search = async text => {
 	if (!namespace && query.split('.').length > 1) namespace = await getNamespaceInfo(query.split('.')[0]);
 
 	if (block) results.block = block;
-	// if (transaction) results.transaction = transaction;
+	if (transaction) results.transaction = transaction;
 	// if (account) results.account = account;
 	if (mosaic) results.mosaic = mosaic;
 	if (namespace) results.namespace = namespace;
