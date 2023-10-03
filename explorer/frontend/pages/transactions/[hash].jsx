@@ -1,19 +1,18 @@
 import { getPriceByDate } from '../api/stats';
 import { getTransactionInfo } from '../api/transactions';
 import Avatar from '@/components/Avatar';
-import CustomImage from '@/components/CustomImage';
 import Field from '@/components/Field';
 import FieldTimestamp from '@/components/FieldTimestamp';
 import Section from '@/components/Section';
-import Separator from '@/components/Separator';
 import Table from '@/components/Table';
+import TransactionGraphic from '@/components/TransactionGraphic';
 import ValueAccount from '@/components/ValueAccount';
 import ValueBlockHeight from '@/components/ValueBlockHeight';
 import ValueCopy from '@/components/ValueCopy';
 import ValueLabel from '@/components/ValueLabel';
 import ValueMosaic from '@/components/ValueMosaic';
 import ValueTransactionType from '@/components/ValueTransactionType';
-import { STORAGE_KEY } from '@/constants';
+import { STORAGE_KEY, TRANSACTION_TYPE } from '@/constants';
 import styles from '@/styles/pages/TransactionInfo.module.scss';
 import { truncateDecimals, useStorage, useUserCurrencyAmount } from '@/utils';
 import Head from 'next/head';
@@ -41,6 +40,8 @@ const TransactionInfo = ({ transactionInfo }) => {
 	const { t } = useTranslation();
 	const [userCurrency] = useStorage(STORAGE_KEY.USER_CURRENCY, 'usd');
 	const amountInUserCurrency = useUserCurrencyAmount(getPriceByDate, transactionInfo.amount, userCurrency, transactionInfo.timestamp);
+	const isAccountStateChangeSectionShown =
+		transactionInfo.type === TRANSACTION_TYPE.TRANSFER || transactionInfo.type === TRANSACTION_TYPE.MULTISIG;
 
 	const tableColumns = [
 		{
@@ -97,7 +98,7 @@ const TransactionInfo = ({ transactionInfo }) => {
 							</Field>
 							<FieldTimestamp value={transactionInfo.timestamp} hasTime />
 						</div>
-						{transactionInfo.amount && (
+						{!!transactionInfo.amount && (
 							<div className="layout-grid-row">
 								<Field title={t('field_amount')}>
 									<ValueMosaic isNative amount={transactionInfo.amount} />
@@ -131,29 +132,13 @@ const TransactionInfo = ({ transactionInfo }) => {
 					</div>
 				</Section>
 			</div>
-			<Section title={t('section_accountStateChange')}>
-				<Table data={transactionInfo.accountStateChange} columns={tableColumns} isLastPage={true} />
-			</Section>
-			<Section title={t('section_transactionBody')} cardClassName="layout-flex-col">
-				{transactionInfo.body.map((item, index) => (
-					<div className={`layout-flex-row-mobile-col ${styles.transactionGraphic}`} key={index}>
-						<div className={styles.graphic}>
-							<ValueAccount className={styles.accountLeft} address={item.sender} size="md" position="left" />
-							<CustomImage src="/images/transaction-arrow.svg" className={styles.arrow} />
-							<ValueTransactionType hideIcon className={styles.transactionType} value={item.type} />
-							<ValueAccount className={styles.accountRight} address={item.recipient} size="md" position="right" />
-						</div>
-						<Separator />
-						<div className={`layout-flex-col-fields ${styles.info}`}>
-							<Field title={t('field_mosaics')}>
-								{item.mosaics.map((mosaic, index) => (
-									<ValueMosaic mosaicId={mosaic.id} amount={mosaic.amount} mosaicName={mosaic.name} key={index} />
-								))}
-							</Field>
-							{item.message && <Field title={t('field_message')}>{item.message.text}</Field>}
-						</div>
-					</div>
-				))}
+			{isAccountStateChangeSectionShown && (
+				<Section title={t('section_accountStateChange')}>
+					<Table data={transactionInfo.accountStateChange} columns={tableColumns} isLastPage={true} />
+				</Section>
+			)}
+			<Section title={t('section_transactionBody')}>
+				<TransactionGraphic transactions={transactionInfo.body} />
 			</Section>
 		</div>
 	);
