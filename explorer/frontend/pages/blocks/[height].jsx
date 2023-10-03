@@ -6,6 +6,7 @@ import Table from '@/components/Table';
 import ValueAccount from '@/components/ValueAccount';
 import ValueCopy from '@/components/ValueCopy';
 import ValueLabel from '@/components/ValueLabel';
+import ValueList from '@/components/ValueList';
 import ValueMosaic from '@/components/ValueMosaic';
 import ValueTransactionHash from '@/components/ValueTransactionHash';
 import ValueTransactionSquares from '@/components/ValueTransactionSquares';
@@ -52,7 +53,7 @@ const BlockInfo = ({ blockInfo, transactions }) => {
 			renderValue: value => <ValueTransactionType value={value} />
 		},
 		{
-			key: 'signer',
+			key: 'sender',
 			size: '20rem',
 			renderValue: value => <ValueAccount address={value} size="md" />
 		},
@@ -62,9 +63,16 @@ const BlockInfo = ({ blockInfo, transactions }) => {
 			renderValue: value => <ValueAccount address={value} size="md" />
 		},
 		{
-			key: 'amount',
-			size: '10rem',
-			renderValue: value => <ValueMosaic amount={value} isNative hasTime />
+			key: 'value',
+			size: '20rem',
+			renderValue: value => (
+				<ValueList
+					data={value}
+					max={2}
+					direction="column"
+					renderItem={item => <ValueMosaic mosaicId={item.id} mosaicName={item.name} amount={item.amount} isTickerShown />}
+				/>
+			)
 		},
 		{
 			key: 'fee',

@@ -24,8 +24,8 @@ export const useDataManager = (callback, defaultData, onError, loadingState = fa
 	return [call, isLoading, data];
 };
 
-export const usePagination = (callback, defaultData) => {
-	const [filter, setFilter] = useState({});
+export const usePagination = (callback, defaultData, defaultFilter = {}) => {
+	const [filter, setFilter] = useState(defaultFilter);
 	const [isLoading, setIsLoading] = useState(false);
 	const [isLastPage, setIsLastPage] = useState(false);
 	const [pageNumber, setPageNumber] = useState(1);
