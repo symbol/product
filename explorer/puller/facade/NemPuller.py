@@ -13,6 +13,8 @@ from model.Mosaic import Mosaic
 from model.Namespace import Namespace
 from model.Transaction import Transaction, TransactionFactory
 
+APOSTILLE_ADDRESS = 'NCZSJHLTIMESERVBVKOW6US64YDZG2PFGQCSV23J'
+
 
 class NemPuller:
 	"""Facade for pulling data from NEM network."""
@@ -95,11 +97,11 @@ class NemPuller:
 			message_dict = transaction.message._asdict()
 
 			# checking message first byte "fe" (HEX:) for apostille
-			is_apostille = (
-				transaction.recipient == 'NCZSJHLTIMESERVBVKOW6US64YDZG2PFGQCSV23J' and
-				transaction.message[0][:2] == 'fe' and
-				transaction.message[1] == 1
-			)
+			message_first_byte = transaction.message[0][:2] == 'fe'
+			# checking message type is plain text
+			message_type = transaction.message[1] == 1
+
+			is_apostille = transaction.recipient == APOSTILLE_ADDRESS and message_first_byte and message_type
 
 		mosaics = json.dumps([mosaic._asdict() for mosaic in transaction.mosaics]) if transaction.mosaics else None
 
