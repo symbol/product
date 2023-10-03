@@ -51,5 +51,5 @@ export const getPriceByDate = async (timestamp, currency = 'USD') => {
 	const response = await fetch(`https://api.coingecko.com/api/v3/coins/nem/history?date=${formattedDate}`);
 	const parsedResponse = await response.json();
 
-	return parsedResponse.market_data.current_price[currency.toLowerCase()];
+	return parsedResponse?.market_data?.current_price[currency.toLowerCase()] || null;
 };
