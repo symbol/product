@@ -9,6 +9,13 @@ updates:
     target-branch: dev
     commit-message:
       prefix: '[dependency]'
+    groups:
+      github-action-dependencies:
+        patterns:
+          - '*'
+        update-types:
+          - minor
+          - patch
 
   - package-ecosystem: pip
     directory: /explorer/nodewatch
@@ -20,6 +27,13 @@ updates:
     versioning-strategy: increase-if-necessary
     commit-message:
       prefix: '[dependency]'
+    groups:
+      explorer-nodewatch-dependencies:
+        patterns:
+          - '*'
+        update-types:
+          - minor
+          - patch
 
   - package-ecosystem: pip
     directory: /explorer/rest
@@ -31,6 +45,13 @@ updates:
     versioning-strategy: increase-if-necessary
     commit-message:
       prefix: '[dependency]'
+    groups:
+      explorer-rest-dependencies:
+        patterns:
+          - '*'
+        update-types:
+          - minor
+          - patch
 
   - package-ecosystem: npm
     directory: /faucet/authenticator
@@ -42,6 +63,13 @@ updates:
     versioning-strategy: increase-if-necessary
     commit-message:
       prefix: '[dependency]'
+    groups:
+      faucet-authenticator-dependencies:
+        patterns:
+          - '*'
+        update-types:
+          - minor
+          - patch
 
   - package-ecosystem: npm
     directory: /faucet/backend
@@ -53,6 +81,13 @@ updates:
     versioning-strategy: increase-if-necessary
     commit-message:
       prefix: '[dependency]'
+    groups:
+      faucet-backend-dependencies:
+        patterns:
+          - '*'
+        update-types:
+          - minor
+          - patch
 
   - package-ecosystem: npm
     directory: /faucet/frontend
@@ -64,6 +99,13 @@ updates:
     versioning-strategy: increase-if-necessary
     commit-message:
       prefix: '[dependency]'
+    groups:
+      faucet-frontend-dependencies:
+        patterns:
+          - '*'
+        update-types:
+          - minor
+          - patch
 
   - package-ecosystem: pip
     directory: /lightapi/python
@@ -75,6 +117,13 @@ updates:
     versioning-strategy: increase-if-necessary
     commit-message:
       prefix: '[dependency]'
+    groups:
+      light-python-dependencies:
+        patterns:
+          - '*'
+        update-types:
+          - minor
+          - patch
 
   - package-ecosystem: pip
     directory: /tools/shoestring
@@ -86,6 +135,13 @@ updates:
     versioning-strategy: increase-if-necessary
     commit-message:
       prefix: '[dependency]'
+    groups:
+      tools-shoestring-dependencies:
+        patterns:
+          - '*'
+        update-types:
+          - minor
+          - patch
 
   - package-ecosystem: pip
     directory: /tools/vanity
@@ -97,3 +153,10 @@ updates:
     versioning-strategy: increase-if-necessary
     commit-message:
       prefix: '[dependency]'
+    groups:
+      tools-vanity-dependencies:
+        patterns:
+          - '*'
+        update-types:
+          - minor
+          - patch
