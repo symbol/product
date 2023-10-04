@@ -304,7 +304,8 @@ class NemConnector(BasicConnector):
 
 	# endregion
 
-	# region POST (get_blocks_after, get_block)
+	# region POST (get_blocks_after, get_block, get_block_size)
+
 	async def get_blocks_after(self, height):
 		""""Gets Blocks data"""
 
@@ -355,9 +356,6 @@ class NemConnector(BasicConnector):
 			size
 		)
 
-	# endregion
-
-
 	@staticmethod
 	def _map_to_transaction(transaction, block_height):
 		"""Maps a transaction dictionary to a transaction object."""
@@ -384,3 +382,5 @@ class NemConnector(BasicConnector):
 			specific_args = TransactionHandler().map[tx_type](tx_dict)
 
 		return TransactionFactory.create_transaction(tx_type, common_args, specific_args)
+
+	# endregion

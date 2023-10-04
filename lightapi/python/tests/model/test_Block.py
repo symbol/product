@@ -16,7 +16,8 @@ class BlockTest(unittest.TestCase):
 			(
 				'a4bbf324a3480f58c2d15bdb15d0232da94db9519d5b727a3ea12c11cc11d368'
 				'e0037c08e1994bc07adc4f790bcb09c1d727066b0308463e406e175572c4150a'
-			)
+			),
+			888
 		)
 
 		if override:
@@ -40,6 +41,7 @@ class BlockTest(unittest.TestCase):
 				'a4bbf324a3480f58c2d15bdb15d0232da94db9519d5b727a3ea12c11cc11d368'
 				'e0037c08e1994bc07adc4f790bcb09c1d727066b0308463e406e175572c4150a'
 			), block.signature)
+		self.assertEqual(888, block.size)
 
 	def test_eq_is_supported(self):
 		# Arrange:
@@ -56,3 +58,4 @@ class BlockTest(unittest.TestCase):
 		self.assertNotEqual(block, self._create_default_block(('block_hash', 'invalid hash')))
 		self.assertNotEqual(block, self._create_default_block(('signer', 'invalid signer')))
 		self.assertNotEqual(block, self._create_default_block(('signature', 'invalid signature')))
+		self.assertNotEqual(block, self._create_default_block(('size', 123)))
