@@ -70,6 +70,10 @@ class NemDatabase(DatabaseConnectionPool):
 					ELSE NULL
 				END AS multisig_inner_transaction,
 				CASE
+					WHEN transaction_type = 4100 Then tm.signatures
+					ELSE NULL
+				END AS multisig_signatures,
+				CASE
 					WHEN transaction_type = 2049 Then takl.mode
 					ELSE NULL
 				END AS account_key_link_mode,
@@ -224,6 +228,7 @@ class NemDatabase(DatabaseConnectionPool):
 			transfer_message,
 			mosaic_namespace_creation_name,
 			multisig_inner_transaction,
+			multisig_signatures,
 			account_key_link_mode,
 			account_key_link_remote_account,
 			multisig_account_modification_min_cosignatories,
@@ -281,9 +286,18 @@ class NemDatabase(DatabaseConnectionPool):
 			value = None
 			embedded_transactions = []
 			inner_transaction = {}
+
+			from_address = self.network.public_key_to_address(PublicKey(multisig_inner_transaction['sender']))
+			to_address = None
+
 			inner_transaction_type = multisig_inner_transaction['transaction_type']
 
+			inner_transaction['initiator'] = str(from_address)
 			inner_transaction['transactionType'] = transaction_type_mapping.get(inner_transaction_type, None)
+			inner_transaction['signatures'] = [{
+				'signer': str(self.network.public_key_to_address(PublicKey(signature['sender']))),
+				'signature': signature['signature'].upper()
+			} for signature in multisig_signatures]
 
 			if inner_transaction_type == 257:
 				to_address = multisig_inner_transaction['recipient']
