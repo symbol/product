@@ -20,8 +20,8 @@ export const fetchTransactionPage = async searchCriteria => {
 	return response.json();
 };
 
-export const getTransactionPage = async (searchCriteria, filter = {}) => {
-	const { pageNumber, pageSize } = createSearchCriteria(searchCriteria);
+export const getTransactionPage = async searchCriteria => {
+	const { pageNumber, pageSize, filter } = createSearchCriteria(searchCriteria);
 	const url = createAPISearchURL(`${config.API_BASE_URL}/transactions`, { pageNumber, pageSize }, filter);
 	const response = await fetch(url);
 	const transactions = await response.json();

@@ -8,6 +8,23 @@ import {
 	getRootNamespaceName
 } from '@/utils';
 
+export default async function handler(req, res) {
+	if (req.method !== 'GET') {
+		return;
+	}
+
+	const data = await getMosaicPage(req.query);
+
+	res.status(200).json(data);
+}
+
+export const fetchMosaicPage = async searchCriteria => {
+	const params = new URLSearchParams(searchCriteria).toString();
+	const response = await fetch(`/api/mosaics?${params}`);
+
+	return response.json();
+};
+
 export const getMosaicInfo = createAPICallFunction(async id => {
 	const mosaicResponse = await fetch(`${config.API_BASE_URL}/mosaic/${id}`);
 	const mosaic = await mosaicResponse.json();

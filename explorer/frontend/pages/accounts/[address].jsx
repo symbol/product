@@ -49,7 +49,7 @@ export const getServerSideProps = async ({ locale, params }) => {
 const AccountInfo = ({ accountInfo, preloadedTransactions }) => {
 	const { address } = accountInfo;
 	const [userCurrency] = useStorage(STORAGE_KEY.USER_CURRENCY, 'usd');
-	const balanceInUserCurrency = useUserCurrencyAmount(getPriceByDate, accountInfo.balance, userCurrency, Date.now());
+	const balanceInUserCurrency = useUserCurrencyAmount(getPriceByDate, accountInfo.balance, userCurrency);
 	const { t } = useTranslation();
 	const transactionPagination = usePagination(fetchTransactionPage, preloadedTransactions);
 	const mosaics = useClientSideFilter(accountInfo.mosaics);

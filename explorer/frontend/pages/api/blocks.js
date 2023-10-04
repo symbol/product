@@ -33,6 +33,12 @@ export const getBlockPage = async searchCriteria => {
 	}));
 };
 
+export const fetchChainHight = async () => {
+	const blockPage = await fetchBlockPage({ pageSize: 1 });
+
+	return blockPage.data[0].height;
+};
+
 export const getChainHight = async () => {
 	const blockPage = await getBlockPage({ pageSize: 1 });
 
