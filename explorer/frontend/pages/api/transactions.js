@@ -113,6 +113,7 @@ const formatBaseTransaction = (data, address) => {
 		group: 'confirmed',
 		hash: data.transactionHash,
 		timestamp: data.timestamp,
+		signer: sender,
 		sender,
 		recipient,
 		address: isOutgoing ? recipient : sender,
@@ -307,6 +308,8 @@ const formatMultisigTransaction = (data, address) => {
 
 	return {
 		...formatBaseTransaction(data, address),
+		signatures: data.embeddedTransactions[0].signatures,
+		signer: data.embeddedTransactions[0].initiator,
 		amount: formattedEmbeddedTransaction.amount,
 		value: formattedEmbeddedTransaction.value,
 		body: formattedEmbeddedTransaction.body
