@@ -72,13 +72,14 @@
         top: $spacing-header-height + $spacing-base;
         right: $spacing-base * 3;
         width: 28rem;
-        height: 35rem;
+        height: 36rem;
     }
 
     .modalProfile {
         display: flex;
         flex-direction: column;
         justify-content: space-between;
+        overflow-y: auto;
     }
 
     .modalCompactList {
@@ -90,7 +91,7 @@
 
     .contactList {
         flex: 1;
-        overflow-y: auto;
+        overflow: visible;
     }
 
     .buttonRemove {

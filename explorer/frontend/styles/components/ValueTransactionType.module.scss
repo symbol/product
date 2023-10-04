@@ -8,7 +8,7 @@
 }
 
 .icon {
+    flex-shrink: 0;
     width: $spacing-base * 2;
     height: $spacing-base * 2;
-    flex-shrink: 0;
 }

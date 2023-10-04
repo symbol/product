@@ -1,3 +1,4 @@
+import ValueCopy from './ValueCopy';
 import ValueList from './ValueList';
 import CustomImage from '@/components/CustomImage';
 import Field from '@/components/Field';
@@ -129,6 +130,11 @@ const TransactionGraphic = ({ transactions }) => {
 							<Field title={t('field_keyLinkAction')}>
 								{item.keyLinkAction === KEY_LINK_ACTION.LINK && t('value_keyLink')}
 								{item.keyLinkAction === KEY_LINK_ACTION.UNLINK && t('value_keyUnlink')}
+							</Field>
+						)}
+						{!!item.publicKey && (
+							<Field title={t('field_publicKey')}>
+								<ValueCopy value={item.publicKey} />
 							</Field>
 						)}
 					</div>
