@@ -35,7 +35,7 @@ export const usePagination = (callback, defaultData, defaultFilter = {}) => {
 		setIsLoading(true);
 		setTimeout(async () => {
 			try {
-				const { data, pageNumber: currentPageNumber } = await callback({ pageNumber: pageNumber }, { ...filter });
+				const { data, pageNumber: currentPageNumber } = await callback({ pageNumber: pageNumber, ...filter });
 
 				if (currentPageNumber === pageNumber) {
 					setData(v => [...v, ...data]);
@@ -235,7 +235,7 @@ export const useUserCurrencyAmount = (fetchPrice, amount, currency, timestamp) =
 
 	useEffect(() => {
 		const fetchUserCurrencyAmount = async () => {
-			const price = await fetchPrice(timestamp, currency);
+			const price = await fetchPrice(timestamp || Date.now(), currency);
 
 			setAmountInUserCurrency(amount * price);
 		};

@@ -1,5 +1,5 @@
-import { getChainHight } from '../api/blocks';
-import { getNamespacePage } from '../api/namespaces';
+import { fetchChainHight } from '../api/blocks';
+import { fetchNamespacePage, getNamespacePage } from '../api/namespaces';
 import ItemNamespaceMobile from '@/components/ItemNamespaceMobile';
 import Section from '@/components/Section';
 import Table from '@/components/Table';
@@ -25,8 +25,8 @@ export const getServerSideProps = async ({ locale }) => {
 
 const Blocks = ({ namespaces }) => {
 	const { t } = useTranslation();
-	const { requestNextPage, data, isLoading, pageNumber, isLastPage } = usePagination(getNamespacePage, namespaces);
-	const chainHeight = useAsyncCallOnMount(getChainHight, 0);
+	const { requestNextPage, data, isLoading, pageNumber, isLastPage } = usePagination(fetchNamespacePage, namespaces);
+	const chainHeight = useAsyncCallOnMount(fetchChainHight, 0);
 
 	const tableColumns = [
 		{

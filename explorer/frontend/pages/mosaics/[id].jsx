@@ -1,4 +1,4 @@
-import { getChainHight } from '../api/blocks';
+import { fetchChainHight } from '../api/blocks';
 import { getMosaicInfo } from '../api/mosaics';
 import Avatar from '@/components/Avatar';
 import Field from '@/components/Field';
@@ -15,7 +15,7 @@ import ValueMosaic from '@/components/ValueMosaic';
 import ValueTimestamp from '@/components/ValueTimestamp';
 import ValueTransactionHash from '@/components/ValueTransactionHash';
 import ValueTransactionType from '@/components/ValueTransactionType';
-import { getTransactionPage } from '@/pages/api/transactions';
+import { fetchTransactionPage, getTransactionPage } from '@/pages/api/transactions';
 import styles from '@/styles/pages/MosaicInfo.module.scss';
 import { createPageHref, nullableValueToText, usePagination } from '@/utils';
 import Head from 'next/head';
@@ -46,7 +46,7 @@ export const getServerSideProps = async ({ locale, params }) => {
 const MosaicInfo = ({ mosaicInfo, preloadedTransactions }) => {
 	const { levy } = mosaicInfo;
 	const { t } = useTranslation();
-	const transactionPagination = usePagination(getTransactionPage, preloadedTransactions, { mosaic: mosaicInfo.id });
+	const transactionPagination = usePagination(fetchTransactionPage, preloadedTransactions, { mosaic: mosaicInfo.id });
 	const [chainHeight, setChainHeight] = useState(0);
 	const [expirationText, setExpirationText] = useState(null);
 	const [progressType, setProgressType] = useState('');
@@ -102,7 +102,7 @@ const MosaicInfo = ({ mosaicInfo, preloadedTransactions }) => {
 
 	useEffect(() => {
 		const fetchChainHeight = async () => {
-			const chainHeight = await getChainHight();
+			const chainHeight = await fetchChainHight();
 			const expireIn = mosaicInfo.namespaceExpirationHeight - chainHeight;
 			const isExpired = expireIn < 0;
 			const expirationText = isExpired ? t('value_expired') : t('value_expiration', { value: expireIn });

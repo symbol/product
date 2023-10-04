@@ -10,12 +10,14 @@ export const getSearchCriteria = req => {
 };
 
 export const createSearchCriteria = (searchCriteria = {}) => {
-	const pageNumber = parseInt(searchCriteria.pageNumber);
-	const pageSize = parseInt(searchCriteria.pageSize);
+	const { pageNumber, pageSize, ...filter } = searchCriteria;
+	const parsedPageNumber = parseInt(pageNumber);
+	const parsedPageSize = parseInt(pageSize);
 
 	return {
-		pageNumber: isNaN(pageNumber) ? 1 : pageNumber,
-		pageSize: isNaN(pageSize) ? 50 : pageSize
+		pageNumber: isNaN(parsedPageNumber) ? 1 : parsedPageNumber,
+		pageSize: isNaN(parsedPageSize) ? 50 : parsedPageSize,
+		filter
 	};
 };
 
