@@ -60,3 +60,17 @@ export const truncateDecimals = (num, decimal) => {
 export const getRootNamespaceName = namespaceName => namespaceName.split('.')[0];
 
 export const createMosaicName = (namespaceId, mosaicId) => `${namespaceId}.${mosaicId}`;
+
+export const formatTransactionCSV = (row, translate) => {
+	return {
+		[translate('table_field_type')]: translate(`transactionType_${row.type}`),
+		[translate('table_field_sender')]: row.sender,
+		[translate('table_field_recipient')]: row.recipient,
+		[translate('table_field_amount')]: row.amount,
+		[translate('table_field_fee')]: row.fee,
+		[translate('table_field_timestamp')]: row.timestamp,
+		[translate('table_field_height')]: row.height,
+		[translate('table_field_hash')]: row.hash,
+		[translate('table_field_value')]: row.value.map(item => `${item.amount}(${item.name})`).join(' ')
+	};
+};

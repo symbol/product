@@ -17,7 +17,7 @@ import ValueTransactionType from '@/components/ValueTransactionType';
 import { TRANSACTION_TYPE } from '@/constants';
 import { getTransactionPage } from '@/pages/api/transactions';
 import styles from '@/styles/pages/TransactionList.module.scss';
-import { formatDate, useFilter, usePagination } from '@/utils';
+import { formatDate, formatTransactionCSV, useFilter, usePagination } from '@/utils';
 import Head from 'next/head';
 import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
@@ -195,7 +195,7 @@ const TransactionInfo = ({ preloadedData, stats }) => {
 							onChange={changeFilter}
 							search={search}
 						/>
-						<ButtonCSV data={data} fileName="transactions" />
+						<ButtonCSV data={data} fileName="transactions" format={row => formatTransactionCSV(row, t)} />
 					</div>
 					<Table
 						sections={transactionsGrouped}
