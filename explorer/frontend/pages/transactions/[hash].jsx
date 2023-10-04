@@ -42,8 +42,9 @@ const TransactionInfo = ({ transactionInfo }) => {
 	const amountInUserCurrency = useUserCurrencyAmount(getPriceByDate, transactionInfo.amount, userCurrency, transactionInfo.timestamp);
 	const isAccountStateChangeSectionShown =
 		transactionInfo.type === TRANSACTION_TYPE.TRANSFER || transactionInfo.type === TRANSACTION_TYPE.MULTISIG;
+	const isSignaturesSectionShown = transactionInfo.type === TRANSACTION_TYPE.MULTISIG;
 
-	const tableColumns = [
+	const accountStateTableColumns = [
 		{
 			key: 'address',
 			size: '20rem',
@@ -76,6 +77,19 @@ const TransactionInfo = ({ transactionInfo }) => {
 					))}
 				</>
 			)
+		}
+	];
+
+	const signaturesTableColumns = [
+		{
+			key: 'signer',
+			size: '20rem',
+			renderValue: value => <ValueAccount address={value} size="md" />
+		},
+		{
+			key: 'signature',
+			size: '40rem',
+			renderValue: value => <ValueCopy value={value} />
 		}
 	];
 
@@ -118,8 +132,8 @@ const TransactionInfo = ({ transactionInfo }) => {
 						<Field title={t('field_transaction_hash')} description={t('field_transaction_hash_description')}>
 							<ValueCopy value={transactionInfo.hash} />
 						</Field>
-						<Field title={t('field_sender')}>
-							<ValueAccount address={transactionInfo.sender} size="sm" />
+						<Field title={t('field_signer')}>
+							<ValueAccount address={transactionInfo.signer} size="sm" />
 						</Field>
 						<Field title={t('field_transaction_block')} description={t('field_transaction_block_description')}>
 							<ValueBlockHeight value={transactionInfo.height} />
@@ -132,14 +146,19 @@ const TransactionInfo = ({ transactionInfo }) => {
 					</div>
 				</Section>
 			</div>
-			{isAccountStateChangeSectionShown && (
-				<Section title={t('section_accountStateChange')}>
-					<Table data={transactionInfo.accountStateChange} columns={tableColumns} isLastPage={true} />
-				</Section>
-			)}
 			<Section title={t('section_transactionBody')}>
 				<TransactionGraphic transactions={transactionInfo.body} />
 			</Section>
+			{isAccountStateChangeSectionShown && (
+				<Section title={t('section_accountStateChange')}>
+					<Table data={transactionInfo.accountStateChange} columns={accountStateTableColumns} isLastPage={true} />
+				</Section>
+			)}
+			{isSignaturesSectionShown && (
+				<Section title={t('section_signatures')}>
+					<Table data={transactionInfo.signatures} columns={signaturesTableColumns} isLastPage={true} />
+				</Section>
+			)}
 		</div>
 	);
 };
