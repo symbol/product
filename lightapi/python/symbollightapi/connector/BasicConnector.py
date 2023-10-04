@@ -36,7 +36,7 @@ class BasicConnector:
 					elif response_type == 'binary':
 						response_json = await response.read()
 					else:
-						raise ValueError(f"Unsupported response type: {response_type}")
+						raise ValueError(f'Unsupported response type: {response_type}')
 
 					if 400 <= response.status and (404 != response.status or not_found_as_error):
 						error_message = f'HTTP request failed with code {response.status}'
