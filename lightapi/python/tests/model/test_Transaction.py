@@ -277,3 +277,114 @@ class CosignSignatureTransactionTest(unittest.TestCase):
 			'72f712ba14ed7a3b890e161357a163e7408aa22e1d6d1382ebada57973862706', cosign_signature_transaction.signature)
 		self.assertEqual(TransactionType.MULTISIG_COSIGNATURE.value, cosign_signature_transaction.transaction_type)
 
+
+class TransactionFactoryTest(unittest.TestCase):
+	def _run_common_args_test(self, transaction):
+		self.assertEqual(COMMON_ARGS['transaction_hash'], transaction.transaction_hash)
+		self.assertEqual(COMMON_ARGS['height'], transaction.height)
+		self.assertEqual(COMMON_ARGS['sender'], transaction.sender)
+		self.assertEqual(COMMON_ARGS['fee'], transaction.fee)
+		self.assertEqual(COMMON_ARGS['timestamp'], transaction.timestamp)
+		self.assertEqual(COMMON_ARGS['deadline'], transaction.deadline)
+		self.assertEqual(COMMON_ARGS['signature'], transaction.signature)
+
+	def test_create_transfer_transaction(self):
+		# Arrange + Act:
+		transaction = TransactionFactory.create_transaction(TransactionType.TRANSFER.value, COMMON_ARGS, TRANSFER_TRANSACTION_ARGS)
+
+		# Assert:
+		self._run_common_args_test(transaction)
+		self.assertEqual(TRANSFER_TRANSACTION_ARGS['recipient'], transaction.recipient)
+		self.assertEqual(TRANSFER_TRANSACTION_ARGS['amount'], transaction.amount)
+		self.assertEqual(TRANSFER_TRANSACTION_ARGS['message'], transaction.message)
+		self.assertEqual(TRANSFER_TRANSACTION_ARGS['mosaics'], transaction.mosaics)
+		self.assertEqual(TransactionType.TRANSFER.value, transaction.transaction_type)
+
+	def test_create_account_key_link_transaction(self):
+		# Arrange + Act:
+		transaction = TransactionFactory.create_transaction(
+			TransactionType.ACCOUNT_KEY_LINK.value,
+			COMMON_ARGS,
+			ACCOUNT_KEY_LINK_TRANSACTION_ARGS
+		)
+
+		# Assert:
+		self._run_common_args_test(transaction)
+		self.assertEqual(ACCOUNT_KEY_LINK_TRANSACTION_ARGS['mode'], transaction.mode)
+		self.assertEqual(ACCOUNT_KEY_LINK_TRANSACTION_ARGS['remote_account'], transaction.remote_account)
+		self.assertEqual(TransactionType.ACCOUNT_KEY_LINK.value, transaction.transaction_type)
+
+	def test_create_multisig_account_modification_transaction(self):
+		# Arrange + Act:
+		transaction = TransactionFactory.create_transaction(
+			TransactionType.MULTISIG_ACCOUNT_MODIFICATION.value,
+			COMMON_ARGS,
+			MULTISIG_ACCOUNT_MODIFICATION_TRANSACTION_ARGS
+		)
+
+		# Assert:
+		self._run_common_args_test(transaction)
+		self.assertEqual(MULTISIG_ACCOUNT_MODIFICATION_TRANSACTION_ARGS['min_cosignatories'], transaction.min_cosignatories)
+		self.assertEqual(MULTISIG_ACCOUNT_MODIFICATION_TRANSACTION_ARGS['modifications'], transaction.modifications)
+		self.assertEqual(TransactionType.MULTISIG_ACCOUNT_MODIFICATION.value, transaction.transaction_type)
+
+	def test_create_multisig_transaction(self):
+		# Arrange + Act:
+		transaction = TransactionFactory.create_transaction(TransactionType.MULTISIG.value, COMMON_ARGS, MULTISIG_TRANSACTION_ARGS)
+
+		# Assert:
+		self._run_common_args_test(transaction)
+		self.assertEqual(MULTISIG_TRANSACTION_ARGS['signatures'], transaction.signatures)
+		self.assertEqual(MULTISIG_TRANSACTION_ARGS['other_transaction'], transaction.other_transaction)
+		self.assertEqual(MULTISIG_TRANSACTION_ARGS['inner_hash'], transaction.inner_hash)
+		self.assertEqual(TransactionType.MULTISIG.value, transaction.transaction_type)
+
+	def test_create_namespace_registration_transaction(self):
+		# Arrange + Act:
+		transaction = TransactionFactory.create_transaction(
+			TransactionType.NAMESPACE_REGISTRATION.value,
+			COMMON_ARGS,
+			NAMESPACE_REGISTRATION_TRANSACTION_ARGS
+		)
+
+		# Assert:
+		self._run_common_args_test(transaction)
+		self.assertEqual(NAMESPACE_REGISTRATION_TRANSACTION_ARGS['rental_fee_sink'], transaction.rental_fee_sink)
+		self.assertEqual(NAMESPACE_REGISTRATION_TRANSACTION_ARGS['rental_fee'], transaction.rental_fee)
+		self.assertEqual(NAMESPACE_REGISTRATION_TRANSACTION_ARGS['parent'], transaction.parent)
+		self.assertEqual(NAMESPACE_REGISTRATION_TRANSACTION_ARGS['namespace'], transaction.namespace)
+		self.assertEqual(TransactionType.NAMESPACE_REGISTRATION.value, transaction.transaction_type)
+
+	def test_create_mosaic_definition_transaction(self):
+		# Arrange + Act:
+		transaction = TransactionFactory.create_transaction(
+			TransactionType.MOSAIC_DEFINITION.value,
+			COMMON_ARGS,
+			MOSAIC_DEFINITION_TRANSACTION_ARGS
+		)
+
+		# Assert:
+		self._run_common_args_test(transaction)
+		self.assertEqual(MOSAIC_DEFINITION_TRANSACTION_ARGS['creation_fee'], transaction.creation_fee)
+		self.assertEqual(MOSAIC_DEFINITION_TRANSACTION_ARGS['creation_fee_sink'], transaction.creation_fee_sink)
+		self.assertEqual(MOSAIC_DEFINITION_TRANSACTION_ARGS['creator'], transaction.creator)
+		self.assertEqual(MOSAIC_DEFINITION_TRANSACTION_ARGS['description'], transaction.description)
+		self.assertEqual(MOSAIC_DEFINITION_TRANSACTION_ARGS['namespace_name'], transaction.namespace_name)
+		self.assertEqual(MOSAIC_DEFINITION_TRANSACTION_ARGS['properties'], transaction.properties)
+		self.assertEqual(MOSAIC_DEFINITION_TRANSACTION_ARGS['levy'], transaction.levy)
+		self.assertEqual(TransactionType.MOSAIC_DEFINITION.value, transaction.transaction_type)
+
+	def test_create_mosaic_supply_change_transaction(self):
+		# Arrange + Act:
+		transaction = TransactionFactory.create_transaction(
+			TransactionType.MOSAIC_SUPPLY_CHANGE.value,
+			COMMON_ARGS,
+			MOSAIC_SUPPLY_CHANGE_TRANSACTION_ARGS
+		)
+
+		# Assert:
+		self._run_common_args_test(transaction)
+		self.assertEqual(MOSAIC_SUPPLY_CHANGE_TRANSACTION_ARGS['supply_type'], transaction.supply_type)
+		self.assertEqual(MOSAIC_SUPPLY_CHANGE_TRANSACTION_ARGS['delta'], transaction.delta)
+		self.assertEqual(MOSAIC_SUPPLY_CHANGE_TRANSACTION_ARGS['namespace_name'], transaction.namespace_name)
+		self.assertEqual(TransactionType.MOSAIC_SUPPLY_CHANGE.value, transaction.transaction_type)
