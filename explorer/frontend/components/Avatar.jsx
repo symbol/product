@@ -2,58 +2,24 @@ import CustomImage from './CustomImage';
 import IconTransactionType from './IconTransactionType';
 import config from '@/config';
 import styles from '@/styles/components/Avatar.module.scss';
-import hslToRgb from 'hsl-rgb';
-
-const getColorFromHash = hash => {
-	if (!hash) {
-		return '#000';
-	}
-
-	const spread = 100;
-	const saturation = 0.9;
-	const lightness = 0.8;
-	const numbers = [...Array(10).keys()];
-	const alphabet = Array.from(Array(26))
-		.map((_, i) => i + 65)
-		.map(x => String.fromCharCode(x));
-	const charset = [...numbers, ...alphabet];
-
-	let totalValue = 0;
-
-	for (const char of hash) totalValue += charset.indexOf(char.toUpperCase());
-
-	const k = Math.trunc(totalValue / spread);
-	const offsetValue = totalValue - spread * k;
-	const hue = offsetValue / 100;
-
-	const color = hslToRgb(hue * 360, saturation, lightness);
-
-	return `rgb(${color[0]}, ${color[1]}, ${color[2]})`;
-};
+import makeBlockie from 'ethereum-blockies-base64';
+import { useEffect, useState } from 'react';
 
 const AccountAvatar = ({ address }) => {
-	const getImage = () => {
-		const addressSrcMap = {
-			A: '/images/avatars/avatar-1.png',
-			B: '/images/avatars/avatar-2.png',
-			C: '/images/avatars/avatar-3.png',
-			D: '/images/avatars/avatar-4.png'
-		};
+	const [image, setImage] = useState('');
 
-		const addressSecondChar = address[1].toUpperCase();
-		const src = addressSrcMap[addressSecondChar];
+	useEffect(() => {
+		const image = makeBlockie(address);
 
-		return {
-			src,
-			style: {
-				backgroundColor: getColorFromHash(address)
-			}
-		};
-	};
+		setImage(image);
+	}, [address]);
 
-	const image = address?.length > 2 ? getImage() : { src: '/images/icon-question.png' };
-
-	return <CustomImage src={image.src} className={styles.image} style={image.style} />;
+	return (
+		<div className={styles.accountImageContainer}>
+			{!!image && <img src={image} className={styles.accountIdenticon} style={image.style} />}
+			<CustomImage className={styles.accountIcon} src="/images/icon-account.svg" alt="account" />
+		</div>
+	);
 };
 
 const MosaicAvatar = ({ mosaicId }) => {
@@ -76,7 +42,7 @@ const BlockAvatar = () => {
 
 const TransactionAvatar = ({ type }) => {
 	return (
-		<div className={styles.imageDefault}>
+		<div className={styles.imageContainerTransactionType}>
 			<IconTransactionType value={type} className={styles.imageTransactionType} />
 		</div>
 	);

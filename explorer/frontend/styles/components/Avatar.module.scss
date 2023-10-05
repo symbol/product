@@ -36,7 +36,7 @@
     height: 30%;
 }
 
-.imageDefault {
+.imageContainerTransactionType {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -44,6 +44,27 @@
     height: 100%;
     background-color: #fff;
     filter: invert(1);
+}
+
+.accountImageContainer {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    background-color: #000;
+}
+
+.accountIdenticon {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+}
+
+.accountIcon {
+    width: 50%;
+    height: 50%;
 }
 
 %dot {
