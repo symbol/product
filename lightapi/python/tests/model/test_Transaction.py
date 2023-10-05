@@ -109,7 +109,7 @@ class BaseTransactionTest(unittest.TestCase):
 	]
 
 	def _create_default_transaction(self, override=None):
-		transaction = self.TRANSACTION_CLASS(**COMMON_ARGS, **self.TRANSACTION_ARGS)
+		transaction = self.TRANSACTION_CLASS(**COMMON_ARGS, **self.TRANSACTION_ARGS)  # pylint: disable=not-callable
 
 		if override:
 			setattr(transaction, override[0], override[1])
