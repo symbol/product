@@ -2,6 +2,7 @@ import unittest
 
 from symbolchain.nc import TransactionType
 
+from symbollightapi.model.Exceptions import UnknownTransactionType
 from symbollightapi.model.Transaction import (
 	AccountKeyLinkTransaction,
 	CosignSignatureTransaction,
@@ -16,6 +17,7 @@ from symbollightapi.model.Transaction import (
 	MultisigTransaction,
 	NamespaceRegistrationTransaction,
 	TransactionFactory,
+	TransactionMapperFactory,
 	TransferTransaction
 )
 
@@ -64,8 +66,14 @@ MULTISIG_TRANSACTION_ARGS = {
 		)
 	],
 	'other_transaction': TransferTransaction(
-		**COMMON_ARGS,
-		**TRANSFER_TRANSACTION_ARGS
+		**TRANSFER_TRANSACTION_ARGS,
+		timestamp=73397,
+		deadline=83397,
+		fee=8000000,
+		signature=None,
+		transaction_hash=None,
+		height=None,
+		sender='22df5f43ee3739a10c346b3ec2d3878668c5514696be425f9067d3a11c777f1d'
 	)
 }
 
@@ -385,3 +393,199 @@ class TransactionFactoryTest(unittest.TestCase):
 		self.assertEqual(MOSAIC_SUPPLY_CHANGE_TRANSACTION_ARGS['delta'], transaction.delta)
 		self.assertEqual(MOSAIC_SUPPLY_CHANGE_TRANSACTION_ARGS['namespace_name'], transaction.namespace_name)
 		self.assertEqual(TransactionType.MOSAIC_SUPPLY_CHANGE.value, transaction.transaction_type)
+
+
+class TransactionMapperFactoryTest(unittest.TestCase):
+	def _run_mapper_test(self, tx_dict, tx_type, expected_result):
+		# Arrange + Act:
+		mapper = TransactionMapperFactory.get_mapper(tx_type)
+		result = mapper.map_transaction(tx_dict)
+
+		# Assert:
+		self.assertEqual(expected_result, result)
+
+	def test_get_mapper_raises_error_for_invalid_transaction_type(self):
+		# Act + Assert:
+		with self.assertRaises(UnknownTransactionType):
+			TransactionMapperFactory.get_mapper(123)
+
+	def test_get_mapper_return_transfer_transaction(self):
+		# Arrange:
+		tx_dict = {
+			'type': 257,
+			'amount': 1000000,
+			'recipient': 'TCWZ6H3Y6K6G4FLH2YF2JBK2ZJU2Z4K4JZ3W5KQ',
+			'message': {
+				'payload': 'test',
+				'type': 1
+			},
+			'mosaics': [
+				{
+					'quantity': 1000000,
+					'mosaicId': {
+						'namespaceId': 'nem',
+						'name': 'xem'
+					}
+				}
+			],
+		}
+
+		self._run_mapper_test(tx_dict, tx_dict['type'], TRANSFER_TRANSACTION_ARGS)
+
+	def test_get_mapper_return_transfer_transaction_without_message_mosaics(self):
+		# Arrange:
+		tx_dict = {
+			'type': 257,
+			'amount': 1000000,
+			'recipient': 'TCWZ6H3Y6K6G4FLH2YF2JBK2ZJU2Z4K4JZ3W5KQ',
+			'message': {}
+		}
+
+		self._run_mapper_test(tx_dict, tx_dict['type'], {
+			'amount': 1000000,
+			'recipient': 'TCWZ6H3Y6K6G4FLH2YF2JBK2ZJU2Z4K4JZ3W5KQ',
+			'message': None,
+			'mosaics': None,
+		})
+
+	def test_get_mapper_return_account_key_link_transaction(self):
+		# Arrange:
+		tx_dict = {
+			'type': 2049,
+			'mode': 1,
+			'remoteAccount': '22df5f43ee3739a10c346b3ec2d3878668c5514696be425f9067d3a11c777f1d'
+		}
+
+		self._run_mapper_test(tx_dict, tx_dict['type'], ACCOUNT_KEY_LINK_TRANSACTION_ARGS)
+
+	def test_get_mapper_return_multisig_account_modification_transaction(self):
+		# Arrange:
+		tx_dict = {
+			'type': 4097,
+			'minCosignatories': {
+				'relativeChange': 1
+			},
+			'modifications': [
+				{
+					'modificationType': 1,
+					'cosignatoryAccount': '22df5f43ee3739a10c346b3ec2d3878668c5514696be425f9067d3a11c777f1d'
+				}
+			]
+		}
+
+		self._run_mapper_test(tx_dict, tx_dict['type'], MULTISIG_ACCOUNT_MODIFICATION_TRANSACTION_ARGS)
+
+	def test_get_mapper_return_namespace_registration_transaction(self):
+		# Arrange:
+		tx_dict = {
+			'type': 8193,
+			'rentalFeeSink': 'TALIC367CZIV55GIQT35HDZAZ53CN3VPB3G55BMU',
+			'rentalFee': 1000000,
+			'parent': None,
+			'newPart': 'test-namespace'
+		}
+
+		self._run_mapper_test(tx_dict, tx_dict['type'], NAMESPACE_REGISTRATION_TRANSACTION_ARGS)
+
+	def test_get_mapper_return_mosaic_definition_transaction(self):
+		# Arrange:
+		tx_dict = {
+			'type': 16385,
+			'creationFeeSink': 'TALIC367CZIV55GIQT35HDZAZ53CN3VPB3G55BMU',
+			'creationFee': 1000000,
+			'mosaicDefinition': {
+				'creator': '595613ba7254a20f1c4c7d215103509f9f9c809de03897cff2b3527b181274e2',
+				'description': 'mosaic description info',
+				'id': {
+					'namespaceId': 'test-namespace',
+					'name': 'name'
+				},
+				'properties': [
+					{
+						'name': 'divisibility',
+						'value': '0'
+					},
+					{
+						'name': 'initialSupply',
+						'value': '1000000'
+					},
+					{
+						'name': 'supplyMutable',
+						'value': 'true'
+					},
+					{
+						'name': 'transferable',
+						'value': 'true'
+					}
+				],
+				'levy': {
+					'type': 1,
+					'recipient': 'TALIC367CZIV55GIQT35HDZAZ53CN3VPB3G55BMU',
+					'mosaicId': {
+						'namespaceId': 'nem',
+						'name': 'xem'
+					},
+					'fee': 1
+				}
+			}
+		}
+
+		self._run_mapper_test(tx_dict, tx_dict['type'], MOSAIC_DEFINITION_TRANSACTION_ARGS)
+
+	def test_get_mapper_return_mosaic_supply_change_transaction(self):
+		# Arrange:
+		tx_dict = {
+			'type': 16386,
+			'mosaicId': {
+				'namespaceId': 'test-namespace',
+				'name': 'name'
+			},
+			'supplyType': 1,
+			'delta': 1000000
+		}
+
+		self._run_mapper_test(tx_dict, tx_dict['type'], MOSAIC_SUPPLY_CHANGE_TRANSACTION_ARGS)
+
+	def test_get_mapper_return_multisig_transaction(self):
+		# Arrange:
+		tx_dict = {
+			'type': 4100,
+			'signatures': [
+				{
+					'timeStamp': 261593985,
+					'otherHash': {
+						'data': 'edcc8d1c48165f5b771087fbe3c4b4d41f5f8f6c4ce715e050b86fb4e7fdeb64'
+					},
+					'otherAccount': 'TALIC367CZIV55GIQT35HDZAZ53CN3VPB3G55BMU',
+					'signature':
+						'249bc2dbad96e827eabc991b59dff7f12cc27f3e0da8ab3db6a3201169431786'
+						'72f712ba14ed7a3b890e161357a163e7408aa22e1d6d1382ebada57973862706',
+					'fee': 500000,
+					'type': 4098,
+					'deadline': 261593985,
+					'signer': '22df5f43ee3739a10c346b3ec2d3878668c5514696be425f9067d3a11c777f1d'
+				}
+			],
+			'otherTrans': {
+				'timeStamp': 73397,
+				'amount': 1000000,
+				'fee': 8000000,
+				'recipient': 'TCWZ6H3Y6K6G4FLH2YF2JBK2ZJU2Z4K4JZ3W5KQ',
+				'type': 257,
+				'deadline': 83397,
+				'message': {
+					'payload': 'test',
+					'type': 1
+				},
+				'mosaics': [{
+					'quantity': 1000000,
+					'mosaicId': {
+						'namespaceId': 'nem',
+						'name': 'xem'
+					}
+				}],
+				'signer': '22df5f43ee3739a10c346b3ec2d3878668c5514696be425f9067d3a11c777f1d'
+			}
+		}
+
+		self._run_mapper_test(tx_dict, tx_dict['type'], MULTISIG_TRANSACTION_ARGS)
