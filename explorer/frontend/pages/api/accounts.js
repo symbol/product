@@ -28,10 +28,23 @@ export const getAccountPage = async (searchCriteria = {}) => {
 
 export const getAccountInfo = async height => {
 	const accountInfo = await getAccountInfoStub(height);
-	const marketData = await getMarketData();
 
 	return {
-		...accountInfo,
-		balanceUSD: accountInfo.balance * marketData.price
+		remoteAddress: accountInfo.remoteAddress,
+		address: accountInfo.address,
+		publicKey: accountInfo.publicKey,
+		description: accountInfo.remarkLabel,
+		balance: accountInfo.balance,
+		vestedBalance: accountInfo.vestedBalance,
+		mosaics: accountInfo.mosaics,
+		importance: accountInfo.importance,
+		harvestedBlocks: accountInfo.harvestedBlocks,
+		harvestedFees: accountInfo.harvestedFees,
+		height: accountInfo.createdHeight,
+		minCosignatories: accountInfo.minCosignatories,
+		cosignatoryOf: accountInfo.cosignatoryOf,
+		cosignatories: accountInfo.cosignatories,
+		isMultisig: accountInfo.cosignatories.length > 0,
+		isHarvestingActive: accountInfo.harvestRemoteStatus === 'active'
 	};
 };

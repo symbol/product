@@ -4,7 +4,7 @@ import styles from '@/styles/components/ValueList.module.scss';
 import { arrayToText, useToggle } from '@/utils';
 import { useTranslation } from 'next-i18next';
 
-const ValueList = ({ className, data, direction, max, title, renderItem }) => {
+const ValueList = ({ className, data = [], direction, max, title, renderItem }) => {
 	const { t } = useTranslation();
 	const [isMenuOpen, toggleMenu] = useToggle(false);
 	const isColumn = direction === 'column';

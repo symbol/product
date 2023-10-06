@@ -1,6 +1,7 @@
 import { getAccountInfo } from '../api/accounts';
 import { search } from '../api/search';
 import { getPriceByDate } from '../api/stats';
+import AccountMultisigTree from '@/components/AccountMultisigTree';
 import Avatar from '@/components/Avatar';
 import ButtonCSV from '@/components/ButtonCSV';
 import Field from '@/components/Field';
@@ -8,12 +9,14 @@ import FieldTimestamp from '@/components/FieldTimestamp';
 import Filter from '@/components/Filter';
 import ItemTransactionMobile from '@/components/ItemTransactionMobile';
 import Section from '@/components/Section';
+import Separator from '@/components/Separator';
 import Table from '@/components/Table';
 import ValueAccount from '@/components/ValueAccount';
 import ValueAccountBalance from '@/components/ValueAccountBalance';
 import ValueBlockHeight from '@/components/ValueBlockHeight';
 import ValueCopy from '@/components/ValueCopy';
 import ValueLabel from '@/components/ValueLabel';
+import ValueList from '@/components/ValueList';
 import ValueMosaic from '@/components/ValueMosaic';
 import ValueTimestamp from '@/components/ValueTimestamp';
 import ValueTransactionDirection from '@/components/ValueTransactionDirection';
@@ -53,6 +56,7 @@ const AccountInfo = ({ accountInfo, preloadedTransactions }) => {
 	const { t } = useTranslation();
 	const transactionPagination = usePagination(fetchTransactionPage, preloadedTransactions);
 	const mosaics = useClientSideFilter(accountInfo.mosaics);
+	const isMultisigSectionShown = accountInfo.isMultisig || accountInfo.cosignatoryOf.length > 0;
 
 	const mosaicFilterConfig = [
 		{
@@ -167,9 +171,6 @@ const AccountInfo = ({ accountInfo, preloadedTransactions }) => {
 				</Section>
 				<Section className="layout-align-end" cardClassName={styles.secondSectionCard}>
 					<div className="layout-flex-col-fields">
-						<Field title={t('field_account_names')} description={t('field_account_names_description')}>
-							{arrayToText(accountInfo.names)}
-						</Field>
 						<Field title={t('field_publicKey')} description={t('field_publicKey_description')}>
 							<ValueCopy value={accountInfo.publicKey} />
 						</Field>
@@ -198,6 +199,49 @@ const AccountInfo = ({ accountInfo, preloadedTransactions }) => {
 					</div>
 				</div>
 			</Section>
+			{isMultisigSectionShown && (
+				<Section title={t('section_multisig')}>
+					<div className="layout-flex-row-mobile-col">
+						<div className="layout-flex-col-fields layout-flex-fill">
+							{accountInfo.isMultisig && (
+								<Field title={t('field_minCosignatories')} description={t('field_minCosignatories_description')}>
+									{accountInfo.minCosignatories}
+								</Field>
+							)}
+							{accountInfo.isMultisig && (
+								<Field title={t('field_accountCosignatories')} description={t('field_accountCosignatories_description')}>
+									<ValueList
+										data={accountInfo.cosignatories}
+										max={3}
+										direction="column"
+										title={t('field_accountCosignatories')}
+										renderItem={item => <ValueAccount address={item} size="sm" />}
+									/>
+								</Field>
+							)}
+							{accountInfo.cosignatoryOf.length > 0 && (
+								<Field title={t('field_cosignatoryOf')} description={t('field_cosignatoryOf_description')}>
+									<ValueList
+										data={accountInfo.cosignatoryOf}
+										max={3}
+										direction="column"
+										title={t('field_cosignatoryOf')}
+										renderItem={item => <ValueAccount address={item} size="sm" />}
+									/>
+								</Field>
+							)}
+						</div>
+						<Separator />
+						<div className="layout-flex-fill">
+							<AccountMultisigTree
+								address={accountInfo.address}
+								cosignatories={accountInfo.cosignatories}
+								cosignatoryOf={accountInfo.cosignatoryOf}
+							/>
+						</div>
+					</div>
+				</Section>
+			)}
 			<Section title={t('section_transactions')}>
 				<div className="layout-flex-col">
 					<div className="layout-flex-row-mobile-col">
