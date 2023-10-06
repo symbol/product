@@ -28,6 +28,8 @@ export const getAccountInfoStub = async address => {
 	const address2 = facade.network.publicKeyToAddress(key_pair2.publicKey);
 	const key_pair3 = new symbolSDK.facade.NemFacade.KeyPair(symbolSDK.PrivateKey.random());
 	const address3 = facade.network.publicKeyToAddress(key_pair3.publicKey);
+	const key_pair4 = new symbolSDK.facade.NemFacade.KeyPair(symbolSDK.PrivateKey.random());
+	const address4 = facade.network.publicKeyToAddress(key_pair4.publicKey);
 	const mosaics = (await getMosaicPage({ pageSize: 10 })).data;
 
 	let minCosignatories = 0;
@@ -36,7 +38,7 @@ export const getAccountInfoStub = async address => {
 
 	if (address[1] === 'A') {
 		minCosignatories = 2;
-		cosignatories = [address2.toString(), address3.toString(), address2.toString()];
+		cosignatories = [address2.toString(), address3.toString(), address4.toString()];
 	}
 	if (address[1] === 'B') {
 		cosignatoryOf = [address2.toString(), address3.toString()];
