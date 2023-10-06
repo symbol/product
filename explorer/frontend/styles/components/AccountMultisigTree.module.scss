@@ -1,0 +1,39 @@
+@import "../variables";
+
+.accountMultisigTree {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: min-content;
+}
+
+.accountListContainer {
+    display: flex;
+    flex-direction: row;
+    gap: $spacing-base * 8;
+    justify-content: space-around;
+}
+
+.accountWithLine {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.lineVertical {
+    width: $spacing-base / 4;
+    height: $spacing-base * 4;
+    background: $color-text-body;
+}
+
+.lineHorizontal {
+    align-self: stretch;
+    height: $spacing-base / 4;
+    margin: 0 $spacing-base * 2;
+    background: $color-text-body;
+}
