@@ -66,8 +66,7 @@ MULTISIG_TRANSACTION_ARGS = {
 	'other_transaction': TransferTransaction(
 		**COMMON_ARGS,
 		**TRANSFER_TRANSACTION_ARGS
-	),
-	'inner_hash': '306f20260a1b7af692834809d3e7d53edd41616d5076ac0fac6cfa75982185df'
+	)
 }
 
 NAMESPACE_REGISTRATION_TRANSACTION_ARGS = {
@@ -188,8 +187,7 @@ class MultisigTransactionTest(BaseTransactionTest):
 	TRANSACTION_ARGS = MULTISIG_TRANSACTION_ARGS
 	INVALID_OBJECT = BaseTransactionTest.INVALID_OBJECT + [
 		('signatures', []),
-		('other_transaction', 1),
-		('inner_hash', 'inner_hash')
+		('other_transaction', 1)
 	]
 
 	def test_eq_is_supported(self):
@@ -336,7 +334,6 @@ class TransactionFactoryTest(unittest.TestCase):
 		self._run_common_args_test(transaction)
 		self.assertEqual(MULTISIG_TRANSACTION_ARGS['signatures'], transaction.signatures)
 		self.assertEqual(MULTISIG_TRANSACTION_ARGS['other_transaction'], transaction.other_transaction)
-		self.assertEqual(MULTISIG_TRANSACTION_ARGS['inner_hash'], transaction.inner_hash)
 		self.assertEqual(TransactionType.MULTISIG.value, transaction.transaction_type)
 
 	def test_create_namespace_registration_transaction(self):
