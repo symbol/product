@@ -1,6 +1,6 @@
 aiohttp==3.8.5
 Flask==3.0.0
-psycopg2-binary==2.9.8
+psycopg2-binary==2.9.9
 symbol-sdk-python==3.1.0
 zenlog==1.1
 Path==16.7.1
