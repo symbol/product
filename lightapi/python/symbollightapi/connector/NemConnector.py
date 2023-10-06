@@ -13,7 +13,7 @@ from ..model.Constants import DEFAULT_ASYNC_LIMITER_ARGUMENTS, TransactionStatus
 from ..model.Endpoint import Endpoint
 from ..model.Exceptions import NodeException, UnknownTransactionType
 from ..model.NodeInfo import NodeInfo
-from ..model.Transaction import TransactionFactory, TransactionHandler
+from ..model.Transaction import TransactionFactory, TransactionMapperFactory
 from .BasicConnector import BasicConnector
 
 MosaicFeeInformation = namedtuple('MosaicFeeInformation', ['supply', 'divisibility'])
@@ -376,10 +376,8 @@ class NemConnector(BasicConnector):
 
 		specific_args = {}
 
-		if TransactionType.MULTISIG.value == tx_type:
-			specific_args = TransactionHandler().map[tx_type](tx_dict, transaction['innerHash'])
-		else:
-			specific_args = TransactionHandler().map[tx_type](tx_dict)
+		mapper = TransactionMapperFactory.get_mapper(tx_type)
+		specific_args = mapper.map_transaction(tx_dict)
 
 		return TransactionFactory.create_transaction(tx_type, common_args, specific_args)
 

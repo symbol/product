@@ -388,22 +388,21 @@ class MosaicSupplyChangeTransaction(Transaction):
 		])
 
 
-class TransactionHandler:
-	"""Transaction handle mapper."""
-	def __init__(self):
-		self.map = {
-			TransactionType.TRANSFER.value: self._map_transfer_args,
-			TransactionType.ACCOUNT_KEY_LINK.value: self._map_account_key_link_args,
-			TransactionType.MULTISIG_ACCOUNT_MODIFICATION.value: self._map_multisig_account_modification_args,
-			TransactionType.MULTISIG.value: self._map_multisig_args,
-			TransactionType.NAMESPACE_REGISTRATION.value: self._map_namespace_registration_args,
-			TransactionType.MOSAIC_DEFINITION.value: self._map_mosaic_definition_args,
-			TransactionType.MOSAIC_SUPPLY_CHANGE.value: self._map_mosaic_supply_change_args,
-		}
+class BaseTransactionMapper:
+	"""Base mapper for all transactions."""
 
 	@staticmethod
-	def _map_transfer_args(tx_dict):
+	def map_transaction(tx_dict):
+		raise NotImplementedError('This method must be implemented in a child class')
+
+
+class TransferTransactionMapper(BaseTransactionMapper):
+	"""Maps raw transfer transaction data to a structured format."""
+
+	@staticmethod
+	def map_transaction(tx_dict):
 		message = tx_dict['message']
+		mosaics = None
 
 		if message:
 			message = Message(
@@ -413,7 +412,6 @@ class TransactionHandler:
 		else:
 			message = None
 
-		mosaics = None
 		if 'mosaics' in tx_dict:
 			mosaics = [
 				Mosaic(
@@ -430,15 +428,23 @@ class TransactionHandler:
 			'mosaics': mosaics,
 		}
 
+
+class AccountKeyLinkTransactionMapper(BaseTransactionMapper):
+	"""Maps raw account key link transaction data to a structured format."""
+
 	@staticmethod
-	def _map_account_key_link_args(tx_dict):
+	def map_transaction(tx_dict):
 		return {
 			'mode': tx_dict['mode'],
 			'remote_account': tx_dict['remoteAccount'],
 		}
 
+
+class MultisigAccountModificationTransactionMapper(BaseTransactionMapper):
+	"""Maps raw multisig account modification transaction data to a structured format."""
+
 	@staticmethod
-	def _map_multisig_account_modification_args(tx_dict):
+	def map_transaction(tx_dict):
 		min_cosignatories = 0
 		if 'minCosignatories' in tx_dict and 'relativeChange' in tx_dict['minCosignatories']:
 			min_cosignatories = tx_dict['minCosignatories']['relativeChange']
@@ -453,11 +459,17 @@ class TransactionHandler:
 			]
 		}
 
-	def _map_multisig_args(self, tx_dict, inner_hash):
 
+class MultisigTransactionMapper(BaseTransactionMapper):
+	"""Maps raw multisig transaction data to a structured format."""
+
+	@staticmethod
+	def map_transaction(tx_dict):
 		other_transaction = tx_dict['otherTrans']
 
-		specific_args = self.map[other_transaction['type']](other_transaction)
+		mapper = TransactionMapperFactory.get_mapper(other_transaction['type'])
+
+		specific_args = mapper.map_transaction(other_transaction)
 
 		common_args = {
 			'transaction_hash': None,
@@ -482,12 +494,15 @@ class TransactionHandler:
 				)
 				for signature in tx_dict['signatures']
 			],
-			'other_transaction': TransactionFactory.create_transaction(other_transaction['type'], common_args, specific_args),
-			'inner_hash': inner_hash,
+			'other_transaction': TransactionFactory.create_transaction(other_transaction['type'], common_args, specific_args)
 		}
 
+
+class NamespaceRegistrationTransactionMapper(BaseTransactionMapper):
+	"""Maps raw namespace registration transaction data to a structured format."""
+
 	@staticmethod
-	def _map_namespace_registration_args(tx_dict):
+	def map_transaction(tx_dict):
 		return {
 			'rental_fee_sink': tx_dict['rentalFeeSink'],
 			'rental_fee': tx_dict['rentalFee'],
@@ -495,8 +510,12 @@ class TransactionHandler:
 			'namespace': tx_dict['newPart'],
 		}
 
+
+class MosaicDefinitionTransactionMapper(BaseTransactionMapper):
+	"""Maps raw mosaic definition transaction data to a structured format."""
+
 	@staticmethod
-	def _map_mosaic_definition_args(tx_dict):
+	def map_transaction(tx_dict):
 		mosaic_definition = tx_dict['mosaicDefinition']
 		mosaic_id = mosaic_definition['id']
 		mosaic_levy = mosaic_definition['levy']
@@ -530,14 +549,38 @@ class TransactionHandler:
 			'levy': mosaic_levy,
 		}
 
+
+class MosaicSupplyChangeTransactionMapper(BaseTransactionMapper):
+	"""Maps raw mosaic supply change transaction data to a structured format."""
+
 	@staticmethod
-	def _map_mosaic_supply_change_args(tx_dict):
+	def map_transaction(tx_dict):
 		mosaic_id = tx_dict['mosaicId']
 		return {
 			'supply_type': tx_dict['supplyType'],
 			'delta': tx_dict['delta'],
 			'namespace_name': f'{mosaic_id["namespaceId"]}.{mosaic_id["name"] }',
 		}
+
+
+class TransactionMapperFactory:
+	MAPPERS = {
+		TransactionType.TRANSFER.value: TransferTransactionMapper,
+		TransactionType.ACCOUNT_KEY_LINK.value: AccountKeyLinkTransactionMapper,
+		TransactionType.MULTISIG_ACCOUNT_MODIFICATION.value: MultisigAccountModificationTransactionMapper,
+		TransactionType.MULTISIG.value: MultisigTransactionMapper,
+		TransactionType.NAMESPACE_REGISTRATION.value: NamespaceRegistrationTransactionMapper,
+		TransactionType.MOSAIC_DEFINITION.value: MosaicDefinitionTransactionMapper,
+		TransactionType.MOSAIC_SUPPLY_CHANGE.value: MosaicSupplyChangeTransactionMapper
+	}
+
+	@staticmethod
+	def get_mapper(transaction_type):
+		mapper = TransactionMapperFactory.MAPPERS.get(transaction_type)
+
+		if mapper is None:
+			raise UnknownTransactionType(f'Unknown transaction type {transaction_type}')
+		return mapper
 
 
 class TransactionFactory:
