@@ -1,13 +1,21 @@
+import { fetchBlockPage } from './blocks';
 import { getAccountChartsStub, getStatsStub, getTransactionChartStub } from '../stubs/stats';
 
 export const fetchAccountCharts = async () => {
 	return getAccountChartsStub();
 };
 
-export const fetchTransactionChart = async ({ isPerDay, isPerMonth }) => {
+export const fetchTransactionChart = async ({ isPerDay, isPerMonth, type }) => {
 	const filter = isPerDay ? 'perDay' : isPerMonth ? 'perMonth' : '';
 
-	return getTransactionChartStub(filter);
+	switch (filter) {
+		case 'perDay':
+			return getTransactionChartStub(filter);
+		case 'perMonth':
+			return getTransactionChartStub(filter);
+		default:
+			return (await fetchBlockPage({ pageSize: 240 })).data.map(item => [item.height, item.transactionCount]).reverse();
+	}
 };
 
 export const fetchStats = async () => {
