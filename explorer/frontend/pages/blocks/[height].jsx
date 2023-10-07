@@ -1,3 +1,5 @@
+import { fetchBlockInfo } from '@/api/blocks';
+import { fetchTransactionPage } from '@/api/transactions';
 import Field from '@/components/Field';
 import FieldTimestamp from '@/components/FieldTimestamp';
 import ItemTransactionMobile from '@/components/ItemTransactionMobile';
@@ -11,15 +13,13 @@ import ValueMosaic from '@/components/ValueMosaic';
 import ValueTransactionHash from '@/components/ValueTransactionHash';
 import ValueTransactionSquares from '@/components/ValueTransactionSquares';
 import ValueTransactionType from '@/components/ValueTransactionType';
-import { getBlockInfo } from '@/pages/api/blocks';
-import { getTransactionPage } from '@/pages/api/transactions';
 import styles from '@/styles/pages/BlockInfo.module.scss';
 import Head from 'next/head';
 import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 
 export const getServerSideProps = async ({ locale, params }) => {
-	const blockInfo = await getBlockInfo(params.height);
+	const blockInfo = await fetchBlockInfo(params.height);
 
 	if (!blockInfo) {
 		return {
@@ -27,7 +27,7 @@ export const getServerSideProps = async ({ locale, params }) => {
 		};
 	}
 
-	const transactionsPage = await getTransactionPage({ pageSize: blockInfo.transactionCount }, { height: params.height });
+	const transactionsPage = await fetchTransactionPage({ pageSize: blockInfo.transactionCount }, { height: params.height });
 
 	return {
 		props: {

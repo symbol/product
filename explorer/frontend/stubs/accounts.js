@@ -1,4 +1,4 @@
-import { getMosaicPage } from '@/pages/api/mosaics';
+import { fetchMosaicPage } from '@/api/mosaics';
 import symbolSDK from 'symbol-sdk';
 
 export const getAccountsStub = async searchCriteria => {
@@ -30,7 +30,7 @@ export const getAccountInfoStub = async address => {
 	const address3 = facade.network.publicKeyToAddress(key_pair3.publicKey);
 	const key_pair4 = new symbolSDK.facade.NemFacade.KeyPair(symbolSDK.PrivateKey.random());
 	const address4 = facade.network.publicKeyToAddress(key_pair4.publicKey);
-	const mosaics = (await getMosaicPage({ pageSize: 10 })).data;
+	const mosaics = (await fetchMosaicPage({ pageSize: 10 })).data;
 
 	let minCosignatories = 0;
 	let cosignatoryOf = [];

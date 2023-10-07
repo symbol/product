@@ -1,5 +1,6 @@
-import { fetchChainHight } from '../api/blocks';
-import { getMosaicInfo } from '../api/mosaics';
+import { fetchChainHight } from '@/api/blocks';
+import { fetchMosaicInfo } from '@/api/mosaics';
+import { fetchTransactionPage } from '@/api/transactions';
 import Avatar from '@/components/Avatar';
 import Field from '@/components/Field';
 import FieldTimestamp from '@/components/FieldTimestamp';
@@ -15,7 +16,6 @@ import ValueMosaic from '@/components/ValueMosaic';
 import ValueTimestamp from '@/components/ValueTimestamp';
 import ValueTransactionHash from '@/components/ValueTransactionHash';
 import ValueTransactionType from '@/components/ValueTransactionType';
-import { fetchTransactionPage, getTransactionPage } from '@/pages/api/transactions';
 import styles from '@/styles/pages/MosaicInfo.module.scss';
 import { createPageHref, nullableValueToText, usePagination } from '@/utils';
 import Head from 'next/head';
@@ -25,8 +25,8 @@ import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 import { useEffect, useState } from 'react';
 
 export const getServerSideProps = async ({ locale, params }) => {
-	const mosaicInfo = await getMosaicInfo(params.id);
-	const transactionsPage = await getTransactionPage({}, { mosaic: params.id });
+	const mosaicInfo = await fetchMosaicInfo(params.id);
+	const transactionsPage = await fetchTransactionPage({}, { mosaic: params.id });
 
 	if (!mosaicInfo) {
 		return {

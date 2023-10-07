@@ -1,5 +1,6 @@
-import { search } from '../api/search';
-import { fetchTransactionChart, getStats } from '../api/stats';
+import { search } from '@/api/search';
+import { fetchTransactionChart, fetchStats } from '@/api/stats';
+import { fetchTransactionPage } from '@/api/transactions';
 import ButtonCSV from '@/components/ButtonCSV';
 import ChartColumns from '@/components/ChartColumns';
 import Field from '@/components/Field';
@@ -15,7 +16,6 @@ import ValueMosaic from '@/components/ValueMosaic';
 import ValueTransactionHash from '@/components/ValueTransactionHash';
 import ValueTransactionType from '@/components/ValueTransactionType';
 import { TRANSACTION_TYPE } from '@/constants';
-import { fetchTransactionPage, getTransactionPage } from '@/pages/api/transactions';
 import styles from '@/styles/pages/TransactionList.module.scss';
 import { formatDate, formatTransactionCSV, useFilter, usePagination } from '@/utils';
 import Head from 'next/head';
@@ -23,8 +23,8 @@ import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 
 export const getServerSideProps = async ({ locale }) => {
-	const transactionsPage = await getTransactionPage();
-	const stats = await getStats();
+	const transactionsPage = await fetchTransactionPage();
+	const stats = await fetchStats();
 
 	return {
 		props: {

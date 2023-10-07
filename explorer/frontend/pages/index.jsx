@@ -1,3 +1,6 @@
+import { fetchBlockPage } from '@/api/blocks';
+import { fetchMarketData, fetchStats } from '@/api/stats';
+import { fetchTransactionPage } from '@/api/transactions';
 import ChartLine from '@/components/ChartLine';
 import CustomImage from '@/components/CustomImage';
 import Field from '@/components/Field';
@@ -6,9 +9,6 @@ import RecentTransactions from '@/components/RecentTransactions';
 import Section from '@/components/Section';
 import Separator from '@/components/Separator';
 import ValuePrice from '@/components/ValuePrice';
-import { getBlockPage } from '@/pages/api/blocks';
-import { getMarketData, getStats } from '@/pages/api/stats';
-import { fetchTransactionPage, getTransactionPage } from '@/pages/api/transactions';
 import styles from '@/styles/pages/Home.module.scss';
 import { formatDate, numberToShortString, truncateDecimals } from '@/utils';
 import Head from 'next/head';
@@ -16,11 +16,11 @@ import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 
 export const getServerSideProps = async ({ locale }) => {
-	const blocksPage = await getBlockPage();
-	const latestTransactionsPage = await getTransactionPage({ pageSize: 5 }, 'confirmed');
-	const pendingTransactionsPage = await getTransactionPage({ pageSize: 3 }, 'unconfirmed');
-	const stats = await getStats();
-	const marketData = await getMarketData();
+	const blocksPage = await fetchBlockPage();
+	const latestTransactionsPage = await fetchTransactionPage({ pageSize: 5 }, 'confirmed');
+	const pendingTransactionsPage = await fetchTransactionPage({ pageSize: 3 }, 'unconfirmed');
+	const stats = await fetchStats();
+	const marketData = await fetchMarketData();
 
 	return {
 		props: {
