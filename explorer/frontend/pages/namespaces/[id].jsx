@@ -1,5 +1,5 @@
-import { fetchChainHight } from '../api/blocks';
-import { getNamespaceInfo } from '../api/namespaces';
+import { fetchChainHight } from '@/api/blocks';
+import { fetchNamespaceInfo } from '@/api/namespaces';
 import Avatar from '@/components/Avatar';
 import Field from '@/components/Field';
 import FieldTimestamp from '@/components/FieldTimestamp';
@@ -21,7 +21,7 @@ import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 import { useEffect, useState } from 'react';
 
 export const getServerSideProps = async ({ locale, params }) => {
-	const namespaceInfo = await getNamespaceInfo(params.id);
+	const namespaceInfo = await fetchNamespaceInfo(params.id);
 
 	if (!namespaceInfo) {
 		return {

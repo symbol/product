@@ -1,6 +1,7 @@
-import { getAccountInfo } from '../api/accounts';
-import { search } from '../api/search';
-import { getPriceByDate } from '../api/stats';
+import { fetchAccountInfo } from '@/api/accounts';
+import { search } from '@/api/search';
+import { fetchPriceByDate } from '@/api/stats';
+import { fetchTransactionPage } from '@/api/transactions';
 import AccountMultisigTree from '@/components/AccountMultisigTree';
 import Avatar from '@/components/Avatar';
 import ButtonCSV from '@/components/ButtonCSV';
@@ -23,7 +24,6 @@ import ValueTransactionDirection from '@/components/ValueTransactionDirection';
 import ValueTransactionHash from '@/components/ValueTransactionHash';
 import ValueTransactionType from '@/components/ValueTransactionType';
 import { STORAGE_KEY, TRANSACTION_TYPE } from '@/constants';
-import { fetchTransactionPage, getTransactionPage } from '@/pages/api/transactions';
 import styles from '@/styles/pages/AccountInfo.module.scss';
 import { arrayToText, formatTransactionCSV, useClientSideFilter, usePagination, useStorage, useUserCurrencyAmount } from '@/utils';
 import Head from 'next/head';
@@ -31,8 +31,8 @@ import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 
 export const getServerSideProps = async ({ locale, params }) => {
-	const accountInfo = await getAccountInfo(params.address);
-	const transactionsPage = await getTransactionPage({ address: params.address });
+	const accountInfo = await fetchAccountInfo(params.address);
+	const transactionsPage = await fetchTransactionPage({ address: params.address });
 
 	if (!accountInfo) {
 		return {
@@ -52,7 +52,7 @@ export const getServerSideProps = async ({ locale, params }) => {
 const AccountInfo = ({ accountInfo, preloadedTransactions }) => {
 	const { address } = accountInfo;
 	const [userCurrency] = useStorage(STORAGE_KEY.USER_CURRENCY, 'usd');
-	const balanceInUserCurrency = useUserCurrencyAmount(getPriceByDate, accountInfo.balance, userCurrency);
+	const balanceInUserCurrency = useUserCurrencyAmount(fetchPriceByDate, accountInfo.balance, userCurrency);
 	const { t } = useTranslation();
 	const transactionPagination = usePagination(fetchTransactionPage, preloadedTransactions);
 	const mosaics = useClientSideFilter(accountInfo.mosaics);

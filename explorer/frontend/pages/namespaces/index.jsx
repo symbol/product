@@ -1,5 +1,5 @@
-import { fetchChainHight } from '../api/blocks';
-import { fetchNamespacePage, getNamespacePage } from '../api/namespaces';
+import { fetchChainHight } from '@/api/blocks';
+import { fetchNamespacePage } from '@/api/namespaces';
 import ItemNamespaceMobile from '@/components/ItemNamespaceMobile';
 import Section from '@/components/Section';
 import Table from '@/components/Table';
@@ -13,7 +13,7 @@ import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 
 export const getServerSideProps = async ({ locale }) => {
-	const namespacePage = await getNamespacePage();
+	const namespacePage = await fetchNamespacePage();
 
 	return {
 		props: {

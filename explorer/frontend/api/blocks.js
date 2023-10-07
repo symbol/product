@@ -1,24 +1,7 @@
 import config from '@/config';
 import { createAPICallFunction, createAPISearchURL, createPage, createSearchCriteria, truncateDecimals } from '@/utils';
 
-export default async function handler(req, res) {
-	if (req.method !== 'GET') {
-		return;
-	}
-
-	const data = await getBlockPage(req.query);
-
-	res.status(200).json(data);
-}
-
 export const fetchBlockPage = async searchCriteria => {
-	const params = new URLSearchParams(searchCriteria).toString();
-	const response = await fetch(`/api/blocks?${params}`);
-
-	return response.json();
-};
-
-export const getBlockPage = async searchCriteria => {
 	const { pageNumber, pageSize } = createSearchCriteria(searchCriteria);
 	const url = createAPISearchURL(`${config.API_BASE_URL}/blocks`, { pageNumber, pageSize });
 	const response = await fetch(url);
@@ -39,13 +22,7 @@ export const fetchChainHight = async () => {
 	return blockPage.data[0].height;
 };
 
-export const getChainHight = async () => {
-	const blockPage = await getBlockPage({ pageSize: 1 });
-
-	return blockPage.data[0].height;
-};
-
-export const getBlockInfo = createAPICallFunction(async height => {
+export const fetchBlockInfo = createAPICallFunction(async height => {
 	const response = await fetch(`${config.API_BASE_URL}/block/${height}`);
 	const block = await response.json();
 	const chainHeight = await getChainHight();

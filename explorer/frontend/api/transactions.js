@@ -1,26 +1,8 @@
-import { getTransactionInfoStub } from '../../stubs/transactions';
 import config from '@/config';
 import { ACCOUNT_STATE_CHANGE_ACTION, COSIGNATORY_MODIFICATION_ACTION, TRANSACTION_DIRECTION, TRANSACTION_TYPE } from '@/constants';
 import { createAPISearchURL, createPage, createSearchCriteria } from '@/utils';
 
-export default async function handler(req, res) {
-	if (req.method !== 'GET') {
-		return;
-	}
-
-	const data = await getTransactionPage(req.query);
-
-	res.status(200).json(data);
-}
-
 export const fetchTransactionPage = async searchCriteria => {
-	const params = new URLSearchParams(searchCriteria).toString();
-	const response = await fetch(`/api/transactions?${params}`);
-
-	return response.json();
-};
-
-export const getTransactionPage = async searchCriteria => {
 	const { pageNumber, pageSize, filter } = createSearchCriteria(searchCriteria);
 	const url = createAPISearchURL(`${config.API_BASE_URL}/transactions`, { pageNumber, pageSize }, filter);
 	const response = await fetch(url);
@@ -29,7 +11,7 @@ export const getTransactionPage = async searchCriteria => {
 	return createPage(transactions, pageNumber, formatTransaction);
 };
 
-export const getTransactionInfo = async hash => {
+export const fetchTransactionInfo = async hash => {
 	const response = await fetch(`${config.API_BASE_URL}/transaction/${hash}`);
 	const transaction = await response.json();
 	const transactionInfo = formatTransaction(transaction);

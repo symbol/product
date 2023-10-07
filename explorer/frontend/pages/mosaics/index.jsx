@@ -1,5 +1,5 @@
-import { fetchChainHight } from '../api/blocks';
-import { fetchMosaicPage, getMosaicPage } from '../api/mosaics';
+import { fetchChainHight } from '@/api/blocks';
+import { fetchMosaicPage } from '@/api/mosaics';
 import FieldTimestamp from '@/components/FieldTimestamp';
 import ItemMosaicMobile from '@/components/ItemMosaicMobile';
 import Section from '@/components/Section';
@@ -15,7 +15,7 @@ import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 
 export const getServerSideProps = async ({ locale }) => {
-	const mosaicPage = await getMosaicPage();
+	const mosaicPage = await fetchMosaicPage();
 
 	return {
 		props: {

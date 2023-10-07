@@ -1,3 +1,5 @@
+import { fetchBlockPage } from '@/api/blocks';
+import { fetchStats } from '@/api/stats';
 import ChartLine from '@/components/ChartLine';
 import Field from '@/components/Field';
 import FieldTimestamp from '@/components/FieldTimestamp';
@@ -9,8 +11,6 @@ import ValueAccount from '@/components/ValueAccount';
 import ValueBlockHeight from '@/components/ValueBlockHeight';
 import ValueMosaic from '@/components/ValueMosaic';
 import ValueTimestamp from '@/components/ValueTimestamp';
-import { fetchBlockPage, getBlockPage } from '@/pages/api/blocks';
-import { getStats } from '@/pages/api/stats';
 import styles from '@/styles/pages/Home.module.scss';
 import { usePagination } from '@/utils';
 import Head from 'next/head';
@@ -18,8 +18,8 @@ import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 
 export const getServerSideProps = async ({ locale }) => {
-	const blocksPage = await getBlockPage();
-	const stats = await getStats();
+	const blocksPage = await fetchBlockPage();
+	const stats = await fetchStats();
 
 	return {
 		props: {

@@ -1,14 +1,4 @@
-import { getAccountChartsStub, getStatsStub, getTransactionChartStub } from '../../stubs/stats';
-
-export default async function handler(req, res) {
-	if (req.method !== 'GET') {
-		return;
-	}
-
-	const data = await getStats();
-
-	res.status(200).json(data);
-}
+import { getAccountChartsStub, getStatsStub, getTransactionChartStub } from '../stubs/stats';
 
 export const fetchAccountCharts = async () => {
 	return getAccountChartsStub();
@@ -20,11 +10,11 @@ export const fetchTransactionChart = async ({ isPerDay, isPerMonth }) => {
 	return getTransactionChartStub(filter);
 };
 
-export const getStats = async () => {
+export const fetchStats = async () => {
 	return getStatsStub();
 };
 
-export const getMarketData = async () => {
+export const fetchMarketData = async () => {
 	const response = await fetch('https://min-api.cryptocompare.com/data/pricemultifull?fsyms=XEM&tsyms=USD');
 	const parsedResponse = await response.json();
 	const data = parsedResponse.RAW.XEM.USD;
@@ -37,7 +27,7 @@ export const getMarketData = async () => {
 	};
 };
 
-export const getPriceByDate = async (timestamp, currency = 'USD') => {
+export const fetchPriceByDate = async (timestamp, currency = 'USD') => {
 	const date = new Date(timestamp);
 	const yyyy = date.getFullYear();
 	let mm = date.getMonth() + 1;

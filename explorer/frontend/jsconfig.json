@@ -6,6 +6,7 @@
             "@/config": ["config/index.js"],
             "@/constants": ["constants/index.js"],
             "@/pages/*": ["pages/*"],
+            "@/api/*": ["api/*"],
             "@/public/*": ["public/*"],
             "@/styles/*": ["styles/*"],
             "@/utils": ["utils"]

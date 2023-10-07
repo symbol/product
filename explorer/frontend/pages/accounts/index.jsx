@@ -1,4 +1,6 @@
-import { search } from '../api/search';
+import { fetchAccountPage } from '@/api/accounts';
+import { search } from '@/api/search';
+import { fetchAccountCharts, fetchStats } from '@/api/stats';
 import ButtonCSV from '@/components/ButtonCSV';
 import ChartDonut from '@/components/ChartDonut';
 import Field from '@/components/Field';
@@ -9,8 +11,6 @@ import Separator from '@/components/Separator';
 import Table from '@/components/Table';
 import ValueAccount from '@/components/ValueAccount';
 import ValueMosaic from '@/components/ValueMosaic';
-import { fetchAccountPage, getAccountPage } from '@/pages/api/accounts';
-import { fetchAccountCharts, getStats } from '@/pages/api/stats';
 import styles from '@/styles/pages/Home.module.scss';
 import { useFilter, usePagination } from '@/utils';
 import Head from 'next/head';
@@ -18,8 +18,8 @@ import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 
 export const getServerSideProps = async ({ locale }) => {
-	const page = await getAccountPage();
-	const stats = await getStats();
+	const page = await fetchAccountPage();
+	const stats = await fetchStats();
 
 	return {
 		props: {
