@@ -1,7 +1,6 @@
 import IconTransactionType from './IconTransactionType';
 import ValueAge from './ValueAge';
 import ValueMosaic from './ValueMosaic';
-import ValueTimestamp from './ValueTimestamp';
 import ValueTransactionHash from './ValueTransactionHash';
 import styles from '@/styles/components/RecentTransactions.module.scss';
 import { useTranslation } from 'next-i18next';
@@ -22,7 +21,7 @@ const TransactionPreview = ({ type, group, hash, timestamp, deadline, amount }) 
 						~ <ValueAge value={deadline} />
 					</span>
 				)}
-				{!isUnconfirmed && <ValueTimestamp value={timestamp} />}
+				{!isUnconfirmed && <ValueAge value={timestamp} hasTime hasSeconds />}
 			</div>
 			<div className={styles.amount}>
 				<ValueMosaic isNative amount={amount} />
@@ -32,6 +31,8 @@ const TransactionPreview = ({ type, group, hash, timestamp, deadline, amount }) 
 };
 
 const RecentTransactions = ({ data }) => {
+	const { t } = useTranslation('common');
+
 	return (
 		<div className={styles.table}>
 			{data.map((item, key) => (
@@ -46,6 +47,7 @@ const RecentTransactions = ({ data }) => {
 					key={key}
 				/>
 			))}
+			{data.length === 0 && <div className={styles.emptyListMessage}>{t('message_emptyTable')}</div>}
 		</div>
 	);
 };
