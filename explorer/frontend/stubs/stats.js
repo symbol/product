@@ -71,7 +71,7 @@ export const getTransactionChartStub = async filter => {
 				.fill(null)
 				.map((_, index) => [
 					new Date(Date.now() - 60 * Math.abs(index - 89) * 60000 * 24).getTime(),
-					Math.floor(Math.random() * 100 + 300 + Math.log(index * 20) * 50)
+					Math.floor(Math.random() * 10 + 2)
 				]);
 		case 'perMonth':
 			return new Array(36)
