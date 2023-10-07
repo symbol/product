@@ -25,7 +25,7 @@ export const fetchChainHight = async () => {
 export const fetchBlockInfo = createAPICallFunction(async height => {
 	const response = await fetch(`${config.API_BASE_URL}/block/${height}`);
 	const block = await response.json();
-	const chainHeight = await getChainHight();
+	const chainHeight = await fetchChainHight();
 
 	return {
 		...block,
