@@ -8,7 +8,7 @@ import ValueAccount from '@/components/ValueAccount';
 import ValueBlockHeight from '@/components/ValueBlockHeight';
 import ValueTimestamp from '@/components/ValueTimestamp';
 import styles from '@/styles/pages/Home.module.scss';
-import { createPageHref, useAsyncCallOnMount, usePagination } from '@/utils';
+import { createPageHref, useAsyncCall, usePagination } from '@/utils';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useTranslation } from 'next-i18next';
@@ -28,7 +28,7 @@ export const getServerSideProps = async ({ locale }) => {
 const Mosaics = ({ mosaics }) => {
 	const { t } = useTranslation();
 	const { requestNextPage, data, isLoading, pageNumber, isLastPage } = usePagination(fetchMosaicPage, mosaics);
-	const chainHeight = useAsyncCallOnMount(fetchChainHight, 0);
+	const chainHeight = useAsyncCall(fetchChainHight, 0);
 
 	const tableColumns = [
 		{

@@ -10,24 +10,25 @@ import Section from '@/components/Section';
 import Separator from '@/components/Separator';
 import ValuePrice from '@/components/ValuePrice';
 import styles from '@/styles/pages/Home.module.scss';
-import { formatDate, numberToShortString, truncateDecimals } from '@/utils';
+import { formatDate, numberToShortString, truncateDecimals, useAsyncCall } from '@/utils';
 import Head from 'next/head';
 import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
+import { useCallback } from 'react';
 
 export const getServerSideProps = async ({ locale }) => {
 	const blocksPage = await fetchBlockPage();
-	const latestTransactionsPage = await fetchTransactionPage({ pageSize: 5 }, 'confirmed');
-	const pendingTransactionsPage = await fetchTransactionPage({ pageSize: 3 }, 'unconfirmed');
+	const latestTransactionsPage = await fetchTransactionPage({ pageSize: 5, group: 'confirmed' });
+	const pendingTransactionsPage = await fetchTransactionPage({ pageSize: 5, group: 'unconfirmed' });
 	const stats = await fetchStats();
 	const marketData = await fetchMarketData();
 
 	return {
 		props: {
 			marketData,
-			blocks: blocksPage.data,
-			latestTransactions: latestTransactionsPage.data,
-			pendingTransactions: pendingTransactionsPage.data,
+			preloadedBlocks: blocksPage,
+			preloadedLatestTransactions: latestTransactionsPage,
+			preloadedPendingTransactions: pendingTransactionsPage,
 			fees: stats.fees,
 			baseInfo: stats.baseInfo,
 			chainInfo: stats.chainInfo,
@@ -38,21 +39,44 @@ export const getServerSideProps = async ({ locale }) => {
 	};
 };
 
-const Home = ({ blocks, fees, latestTransactions, pendingTransactions, baseInfo, chainInfo, charts, transactionInfo, marketData }) => {
+const Home = ({
+	preloadedBlocks,
+	fees,
+	preloadedLatestTransactions,
+	preloadedPendingTransactions,
+	baseInfo,
+	chainInfo,
+	charts,
+	transactionInfo,
+	marketData
+}) => {
 	const { t } = useTranslation();
 	const formattedCharts = {
 		...charts,
 		transactions: charts.transactions.map(item => [formatDate(item[0], t), item[1]])
 	};
+	const latestTransactions = useAsyncCall(
+		() => fetchTransactionPage({ pageSize: 5, group: 'confirmed' }),
+		preloadedLatestTransactions,
+		null,
+		60000
+	);
+	const pendingTransactions = useAsyncCall(
+		() => fetchTransactionPage({ pageSize: 5, group: 'unconfirmed' }),
+		preloadedPendingTransactions,
+		null,
+		60000
+	);
+	const blocks = useAsyncCall(fetchBlockPage, preloadedBlocks, null, 60000);
 
-	const fetchBlockTransactions = height => fetchTransactionPage({ pageSize: 160 }, { height });
+	const fetchBlockTransactions = useCallback(height => fetchTransactionPage({ pageSize: 160, height }), [fetchTransactionPage]);
 
 	return (
 		<div className={styles.wrapper}>
 			<Head>
 				<title>Home</title>
 			</Head>
-			<RecentBlocks data={blocks} onTransactionListRequest={fetchBlockTransactions} />
+			<RecentBlocks data={blocks.data} onTransactionListRequest={fetchBlockTransactions} />
 			<Section>
 				<div className="layout-flex-row-mobile-col">
 					<div className="layout-grid-row layout-flex-fill">
@@ -124,10 +148,10 @@ const Home = ({ blocks, fees, latestTransactions, pendingTransactions, baseInfo,
 			</div> */}
 			<div className="layout-section-row">
 				<Section title={t('section_latestTransactions')}>
-					<RecentTransactions data={latestTransactions} />
+					<RecentTransactions data={latestTransactions.data} />
 				</Section>
 				<Section title={t('section_pendingTransactions')}>
-					<RecentTransactions data={pendingTransactions} />
+					<RecentTransactions data={pendingTransactions.data} />
 				</Section>
 			</div>
 		</div>

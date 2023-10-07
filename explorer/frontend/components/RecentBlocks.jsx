@@ -1,5 +1,4 @@
 import BlockPreview from './BlockPreview';
-import CustomImage from './CustomImage';
 import styles from '@/styles/components/RecentBlocks.module.scss';
 import { createRef, useRef, useState } from 'react';
 
@@ -70,12 +69,12 @@ const RecentBlocks = ({ data, onTransactionListRequest }) => {
 	return (
 		<div className={styles.recentBlocks}>
 			<div className={styles.blockPreviewScrollable} ref={containerRef}>
-				{dataWithRefs.map((item, key) => (
+				{dataWithRefs.map(item => (
 					<BlockPreview
 						isSelected={selectedBlockHeight === item.height}
 						data={item}
 						transactions={transactions}
-						key={key}
+						key={item.height}
 						smallBoxRef={item.smallBoxRef}
 						bigBoxRef={item.bigBoxRef}
 						onClose={handleClose}

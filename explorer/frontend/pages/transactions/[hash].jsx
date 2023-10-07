@@ -38,7 +38,7 @@ export const getServerSideProps = async ({ locale, params }) => {
 
 const TransactionInfo = ({ transactionInfo }) => {
 	const { t } = useTranslation();
-	const [userCurrency] = useStorage(STORAGE_KEY.USER_CURRENCY, 'usd');
+	const [userCurrency] = useStorage(STORAGE_KEY.USER_CURRENCY, 'USD');
 	const amountInUserCurrency = useUserCurrencyAmount(fetchPriceByDate, transactionInfo.amount, userCurrency, transactionInfo.timestamp);
 	const isAccountStateChangeSectionShown =
 		transactionInfo.type === TRANSACTION_TYPE.TRANSFER || transactionInfo.type === TRANSACTION_TYPE.MULTISIG;

@@ -248,7 +248,7 @@ export const useUserCurrencyAmount = (fetchPrice, amount, currency, timestamp) =
 	return amountInUserCurrency;
 };
 
-export const useAsyncCallOnMount = (callback, defaultData, onError) => {
+export const useAsyncCall = (callback, defaultData, onError, repeatInterval) => {
 	const [data, setData] = useState(defaultData);
 
 	useEffect(() => {
@@ -262,8 +262,13 @@ export const useAsyncCallOnMount = (callback, defaultData, onError) => {
 				}
 			}
 		};
-		call();
-	}, [callback]);
+
+		if (repeatInterval) {
+			setInterval(() => call(), repeatInterval);
+		} else {
+			call();
+		}
+	}, []);
 
 	return data;
 };

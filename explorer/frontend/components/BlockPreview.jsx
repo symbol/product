@@ -13,7 +13,7 @@ import { useTranslation } from 'next-i18next';
 import { forwardRef, useEffect, useState } from 'react';
 
 const BlockExpanded = ({ data, transactions, isNext, isTransactionSquaresRendered, onClose }) => {
-	const { height, timestamp, totalFee, medianFee } = data;
+	const { height, timestamp, totalFee, averageFee } = data;
 	const { t } = useTranslation();
 	const href = createPageHref('blocks', height);
 
@@ -37,8 +37,8 @@ const BlockExpanded = ({ data, transactions, isNext, isTransactionSquaresRendere
 				<Field title={t('field_totalFee')}>
 					<ValueMosaic isNative amount={totalFee} />
 				</Field>
-				<Field title={t('field_medianFee')}>
-					<ValueMosaic isNative amount={medianFee} />
+				<Field title={t('field_averageFee')}>
+					<ValueMosaic isNative amount={averageFee} />
 				</Field>
 			</div>
 			<Field title={t('field_transactionFees')}>
