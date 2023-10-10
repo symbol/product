@@ -609,7 +609,7 @@ class NemDatabase(DatabaseConnectionPool):
 	def get_transactions(self, limit, offset, sort, query: TransactionQuery):
 		"""Gets transactions pagination in database."""
 
-		height, transaction_type, address, sender_address, recipient_address = query
+		height, transaction_type, sender, address, sender_address, recipient_address = query
 
 		sql = self._generate_transaction_sql_query()
 
@@ -640,6 +640,11 @@ class NemDatabase(DatabaseConnectionPool):
 				sender_address_hex = _format_bytes(Address(sender_address).bytes)
 				where_clauses.append("t.signer_address = %s")
 				params.extend(['\\x' + sender_address_hex])
+			else:
+				# Check for sender public key
+				if sender is not None:
+					where_clauses.append("t.sender = %s")
+					params.extend(['\\x' + PublicKey(sender).bytes.hex()])
 
 			# Check for recipient address filter
 			if recipient_address is not None:

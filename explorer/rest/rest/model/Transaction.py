@@ -1,6 +1,13 @@
 from collections import namedtuple
 
-TransactionQuery = namedtuple('TransactionQuery', ['height', 'transaction_type', 'address', 'sender_address', 'recipient_address'])
+TransactionQuery = namedtuple('TransactionQuery', [
+	'height',
+	'transaction_type',
+	'sender',
+	'address',
+	'sender_address',
+	'recipient_address'
+])
 
 
 class TransactionListView:

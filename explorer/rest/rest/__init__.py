@@ -4,6 +4,7 @@ from pathlib import Path
 
 from flask import Flask, abort, jsonify, request
 from flask_cors import CORS
+from symbolchain.CryptoTypes import PublicKey
 from symbolchain.nc import TransactionType
 from symbolchain.nem.Network import Network
 from zenlog import log
@@ -146,7 +147,8 @@ def setup_nem_routes(app, nem_api_facade):
 				transaction_type=request.args.get('type', None),
 				address=request.args.get('address', None),
 				sender_address=request.args.get('senderAddress', None),
-				recipient_address=request.args.get('recipientAddress', None)
+				recipient_address=request.args.get('recipientAddress', None),
+				sender=request.args.get('senderPublicKey', None)
 			)
 
 			if limit < 0 or offset < 0 or sort.upper() not in ['ASC', 'DESC']:
@@ -163,6 +165,9 @@ def setup_nem_routes(app, nem_api_facade):
 			else:
 				if transaction_query.sender_address is not None:
 					if not nem_api_facade.network.is_valid_address_string(transaction_query.sender_address):
+						raise ValueError()
+				else:
+					if transaction_query.sender is not None and not PublicKey(transaction_query.sender):
 						raise ValueError()
 
 				if transaction_query.recipient_address is not None:
