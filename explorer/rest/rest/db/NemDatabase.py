@@ -7,7 +7,7 @@ from symbolchain.nem.Network import Address
 from rest.model.Block import BlockView
 from rest.model.Mosaic import MosaicView
 from rest.model.Namespace import NamespaceView
-from rest.model.Transaction import TransactionListView
+from rest.model.Transaction import TransactionListView, TransactionQuery
 
 from .DatabaseConnection import DatabaseConnectionPool
 
@@ -606,8 +606,10 @@ class NemDatabase(DatabaseConnectionPool):
 
 			return self._create_transaction_list_view(result) if result else None
 
-	def get_transactions(self, limit, offset, sort, height, transaction_type):
+	def get_transactions(self, limit, offset, sort, query: TransactionQuery):
 		"""Gets transactions pagination in database."""
+
+		height, transaction_type, address, sender_address, recipient_address = query
 
 		sql = self._generate_transaction_sql_query()
 
@@ -626,6 +628,24 @@ class NemDatabase(DatabaseConnectionPool):
 		if transaction_type is not None:
 			where_clauses.append("t.transaction_type = %s")
 			params.append(transaction_type)
+
+		# Check for address filter
+		if address is not None:
+			address_hex = _format_bytes(Address(address).bytes)
+			where_clauses.append("(t.signer_address = %s OR tt.recipient = %s)")
+			params.extend(['\\x' + address_hex, '\\x' + address_hex])
+		else:
+			# Check for sender address filter
+			if sender_address is not None:
+				sender_address_hex = _format_bytes(Address(sender_address).bytes)
+				where_clauses.append("t.signer_address = %s")
+				params.extend(['\\x' + sender_address_hex])
+
+			# Check for recipient address filter
+			if recipient_address is not None:
+				recipient_address_hex = _format_bytes(Address(recipient_address).bytes)
+				where_clauses.append("tt.recipient = %s")
+				params.extend(['\\x' + recipient_address_hex])
 
 		# Append WHERE clauses to SQL string if any exists
 		if where_clauses:

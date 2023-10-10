@@ -1,4 +1,5 @@
 from rest.db.NemDatabase import NemDatabase
+from rest.model.Transaction import TransactionQuery
 
 
 class NemRestFacade:
@@ -8,6 +9,7 @@ class NemRestFacade:
 		"""Creates a facade object."""
 
 		self.nem_db = NemDatabase(db_config, network)
+		self.network = network
 
 	def get_block(self, height):
 		"""Gets block by height."""
@@ -58,9 +60,9 @@ class NemRestFacade:
 
 		return transaction.to_dict() if transaction else None
 
-	def get_transactions(self, limit, offset, sort, height, transaction_type):
+	def get_transactions(self, limit, offset, sort, query: TransactionQuery):
 		"""Gets transactions pagination."""
 
-		transactions = self.nem_db.get_transactions(limit, offset, sort, height, transaction_type)
+		transactions = self.nem_db.get_transactions(limit, offset, sort, query)
 
 		return [transaction.to_dict() for transaction in transactions]

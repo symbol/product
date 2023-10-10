@@ -9,6 +9,7 @@ from symbolchain.nem.Network import Network
 from zenlog import log
 
 from rest.facade.NemRestFacade import NemRestFacade
+from rest.model.Transaction import TransactionQuery
 
 DatabaseConfig = namedtuple('DatabaseConfig', ['database', 'user', 'password', 'host', 'port'])
 
@@ -139,18 +140,36 @@ def setup_nem_routes(app, nem_api_facade):
 			limit = int(request.args.get('limit', 10))
 			offset = int(request.args.get('offset', 0))
 			sort = request.args.get('sort', 'DESC')
-			height = request.args.get('height', None)
-			transaction_type = request.args.get('type', None)
+
+			transaction_query = TransactionQuery(
+				height=request.args.get('height', None),
+				transaction_type=request.args.get('type', None),
+				address=request.args.get('address', None),
+				sender_address=request.args.get('senderAddress', None),
+				recipient_address=request.args.get('recipientAddress', None)
+			)
 
 			if limit < 0 or offset < 0 or sort.upper() not in ['ASC', 'DESC']:
 				raise ValueError()
 
-			if height is not None:
-				height = int(height)
+			if transaction_query.height is not None:
+				height = int(transaction_query.height)
 				if height < 1:
 					raise ValueError()
 
-			if transaction_type:
+			if transaction_query.address is not None:
+				if not nem_api_facade.network.is_valid_address_string(transaction_query.address):
+					raise ValueError()
+			else:
+				if transaction_query.sender_address is not None:
+					if not nem_api_facade.network.is_valid_address_string(transaction_query.sender_address):
+						raise ValueError()
+
+				if transaction_query.recipient_address is not None:
+					if not nem_api_facade.network.is_valid_address_string(transaction_query.recipient_address):
+						raise ValueError()
+
+			if transaction_query.transaction_type:
 				VALID_TRANSACTION_TYPES = {
 					TransactionType.TRANSFER.name,
 					TransactionType.ACCOUNT_KEY_LINK.name,
@@ -161,7 +180,7 @@ def setup_nem_routes(app, nem_api_facade):
 					TransactionType.MOSAIC_SUPPLY_CHANGE.name
 				}
 
-				transaction_type = transaction_type.upper()
+				transaction_type = transaction_query.transaction_type.upper()
 
 				if transaction_type not in VALID_TRANSACTION_TYPES:
 					raise ValueError()
@@ -171,7 +190,7 @@ def setup_nem_routes(app, nem_api_facade):
 		except ValueError:
 			abort(400)
 
-		return jsonify(nem_api_facade.get_transactions(limit=limit, offset=offset, sort=sort, height=height, transaction_type=transaction_type))
+		return jsonify(nem_api_facade.get_transactions(limit=limit, offset=offset, sort=sort, query=transaction_query))
 
 
 def setup_error_handlers(app):

@@ -1,3 +1,8 @@
+from collections import namedtuple
+
+TransactionQuery = namedtuple('TransactionQuery', ['height', 'transaction_type', 'address', 'sender_address', 'recipient_address'])
+
+
 class TransactionListView:
 	def __init__(
 		self,
