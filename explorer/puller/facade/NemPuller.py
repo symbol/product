@@ -1,6 +1,7 @@
 import configparser
 import json
 
+from symbolchain.CryptoTypes import PublicKey
 from symbolchain.facade.NemFacade import NemFacade
 from symbolchain.nc import TransactionType
 from symbolchain.nem.Network import Network
@@ -32,6 +33,7 @@ class NemPuller:
 		self.nem_db = NemDatabase(db_config)
 		self.nem_connector = NemConnector(node_url, network)
 		self.nem_facade = NemFacade(str(network))
+		self.network = network
 
 	def _process_block(self, block_data):
 		"""Process block data."""
@@ -277,6 +279,7 @@ class NemPuller:
 				transaction.transaction_hash,
 				transaction.height,
 				transaction.sender,
+				self.network.public_key_to_address(PublicKey(transaction.sender)),
 				transaction.fee,
 				timestamp,
 				deadline,

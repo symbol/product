@@ -23,6 +23,13 @@ class NemDatabase(DatabaseConnection):
 
 		cursor.execute(
 			'''
+			CREATE INDEX IF NOT EXISTS idx_signer_address
+				ON transactions(signer_address)
+			'''
+		)
+
+		cursor.execute(
+			'''
 			CREATE INDEX IF NOT EXISTS idx_transaction_hash
 				ON transactions(transaction_hash)
 			'''
@@ -133,6 +140,7 @@ class NemDatabase(DatabaseConnection):
 				transaction_hash bytea NOT NULL,
 				height bigint NOT NULL,
 				sender bytea NOT NULL,
+				signer_address bytea NOT NULL,
 				fee bigint DEFAULT 0,
 				timestamp timestamp NOT NULL,
 				deadline timestamp NOT NULL,
@@ -353,14 +361,15 @@ class NemDatabase(DatabaseConnection):
 
 		cursor.execute(
 			'''
-			INSERT INTO transactions (transaction_hash, height, sender, fee, timestamp, deadline, signature, transaction_type)
-			VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+			INSERT INTO transactions (transaction_hash, height, sender, signer_address, fee, timestamp, deadline, signature, transaction_type)
+			VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
 			RETURNING id
 			''',
 			(
 				unhexlify(transaction.transaction_hash),
 				transaction.height,
 				unhexlify(transaction.sender),
+				Address(transaction.signer_address).bytes,
 				transaction.fee,
 				transaction.timestamp,
 				transaction.deadline,

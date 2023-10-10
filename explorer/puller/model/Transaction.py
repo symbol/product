@@ -2,7 +2,7 @@ from symbolchain.nc import TransactionType
 
 
 class Transaction:
-	def __init__(self, transaction_hash, height, sender, fee, timestamp, deadline, signature, transaction_type):
+	def __init__(self, transaction_hash, height, sender, signer_address, fee, timestamp, deadline, signature, transaction_type):
 		"""Create Block model."""
 
 		# pylint: disable=too-many-arguments
@@ -10,6 +10,7 @@ class Transaction:
 		self.transaction_hash = transaction_hash
 		self.height = height
 		self.sender = sender
+		self.signer_address = signer_address
 		self.fee = fee
 		self.timestamp = timestamp
 		self.deadline = deadline
@@ -21,6 +22,7 @@ class Transaction:
 			self.transaction_hash == other.transaction_hash,
 			self.height == other.height,
 			self.sender == other.sender,
+			self.signer_address == other.signer_address,
 			self.fee == other.fee,
 			self.timestamp == other.timestamp,
 			self.deadline == other.deadline,
