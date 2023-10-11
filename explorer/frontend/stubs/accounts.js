@@ -2,22 +2,21 @@ import { fetchMosaicPage } from '@/api/mosaics';
 import symbolSDK from 'symbol-sdk';
 
 export const getAccountsStub = async searchCriteria => {
-	const { pageNumber, pageSize } = searchCriteria;
-	const data = new Array(pageSize).fill(null).map((_, index) => {
-		const facade = new symbolSDK.facade.NemFacade('testnet');
-		const key_pair1 = new symbolSDK.facade.NemFacade.KeyPair(symbolSDK.PrivateKey.random());
-		const address1 = facade.network.publicKeyToAddress(key_pair1.publicKey);
+	const { pageNumber } = searchCriteria;
 
-		return {
-			address: address1.toString(),
-			name: '',
-			description: '',
-			balance: Math.floor(1787990951624116 / (index + 1 + (pageNumber - 1) * pageSize)) / 1000000,
-			importance: Math.floor(20624116 / (index + 1 + (pageNumber - 1) * pageSize)) / 1000000
-		};
+	const response = await fetch('https://explorer.nemtool.com/account/accountList', {
+		method: 'POST',
+		body: {
+			pageNumber
+		}
 	});
 
-	return Promise.resolve(data);
+	return (await response.json()).map(item => ({
+		...item,
+		balance: item.balance / 1000000,
+		importance: + item.importance.toFixed(5),
+		description: item.remark || ''
+	}));
 };
 
 export const getAccountInfoStub = async address => {

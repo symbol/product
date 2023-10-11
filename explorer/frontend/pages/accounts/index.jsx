@@ -32,7 +32,7 @@ export const getServerSideProps = async ({ locale }) => {
 
 const Accounts = ({ preloadedData, stats }) => {
 	const { t } = useTranslation();
-	const { requestNextPage, data, isLoading, isLastPage, filter, changeFilter } = usePagination(fetchAccountPage, preloadedData);
+	const { requestNextPage, data, isLoading, isError, isLastPage, filter, changeFilter } = usePagination(fetchAccountPage, preloadedData);
 	const charts = useFilter(fetchAccountCharts, {}, true);
 
 	const tableColumns = [
@@ -40,10 +40,6 @@ const Accounts = ({ preloadedData, stats }) => {
 			key: 'address',
 			size: '30rem',
 			renderValue: value => <ValueAccount address={value} size="sm" />
-		},
-		{
-			key: 'name',
-			size: '11rem'
 		},
 		{
 			key: 'description',
@@ -56,8 +52,8 @@ const Accounts = ({ preloadedData, stats }) => {
 		},
 		{
 			key: 'importance',
-			size: '7rem',
-			renderValue: value => <div>{value}</div>
+			size: '10rem',
+			renderValue: value => <div>{value} %</div>
 		}
 	];
 	const filterConfig = [
@@ -108,6 +104,7 @@ const Accounts = ({ preloadedData, stats }) => {
 						columns={tableColumns}
 						renderItemMobile={data => <ItemAccountMobile data={data} />}
 						isLoading={isLoading}
+						isError={isError}
 						isLastPage={isLastPage}
 						onEndReached={requestNextPage}
 					/>
