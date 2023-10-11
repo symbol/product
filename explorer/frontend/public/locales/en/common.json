@@ -2,6 +2,7 @@
 	"button_clear": "Clear",
 	"button_csv": "Download CSV",
 	"button_more": "+{{count}} more",
+	"button_tryAgain": "Try Again",
 	"chart_series_blockTime": "Seconds",
 	"chart_series_difficulty": "Difficulty, %",
 	"chart_series_fee": "Fee, XEM",
