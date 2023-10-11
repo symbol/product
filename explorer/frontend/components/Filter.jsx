@@ -141,12 +141,15 @@ const Filter = ({ isSelectedItemsShown, data, value, search, isDisabled, onChang
 	const isFilterModalShown = ['account', 'mosaic', 'transaction-type'].some(value => value === expandedFilter?.type);
 
 	useEffect(() => {
-		const updatedSelectedItems = { ...selectedItems };
-		Object.keys(updatedSelectedItems).forEach(
-			key => !Object.keys(value).some(filterValueKey => filterValueKey === key) && delete updatedSelectedItems[key]
-		);
-		setSelectedItems(updatedSelectedItems);
-	}, [value, selectedItems]);
+		setSelectedItems(selectedItems => {
+			const updatedSelectedItems = { ...selectedItems };
+			Object.keys(updatedSelectedItems).forEach(
+				key => !Object.keys(value).some(filterValueKey => filterValueKey === key) && delete updatedSelectedItems[key]
+			);
+
+			return updatedSelectedItems;
+		});
+	}, [value]);
 
 	return (
 		<div className={styles.filter}>
