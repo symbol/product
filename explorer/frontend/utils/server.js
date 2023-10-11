@@ -21,10 +21,24 @@ export const createSearchCriteria = (searchCriteria = {}) => {
 	};
 };
 
-export const createPage = (data, pageNumber, formatter) => ({
-	data: formatter ? data.map(formatter) : data,
-	pageNumber
-});
+export const createPage = (data, pageNumber, formatter) => {
+	let formattedData;
+
+	if (!data.length) {
+		formattedData = [];
+	}
+	else if (formatter) {
+		formattedData = data.map(formatter);
+	}
+	else {
+		formattedData = data;
+	}
+
+	return {
+		data: formattedData,
+		pageNumber
+	}
+};
 
 export const createAPISearchURL = (baseURL, searchCriteria, filter = {}) => {
 	const limit = searchCriteria.pageSize;
