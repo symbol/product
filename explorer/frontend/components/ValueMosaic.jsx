@@ -3,7 +3,7 @@ import CustomImage from './CustomImage';
 import config from '@/config';
 import { ACCOUNT_STATE_CHANGE_ACTION, TRANSACTION_DIRECTION } from '@/constants';
 import styles from '@/styles/components/ValueMosaic.module.scss';
-import { createPageHref } from '@/utils';
+import { createPageHref, numberToString } from '@/utils';
 import Link from 'next/link';
 
 const ValueMosaic = ({
@@ -63,7 +63,7 @@ const ValueMosaic = ({
 			<Avatar type="mosaic" size="md" value={finalMosaicId} dot={dot} />
 			<div className={styles.valueMosaicMdTextSection}>
 				<div>{mosaicName}</div>
-				{isAmountExist && <div>{amount}</div>}
+				{isAmountExist && <div>{numberToString(amount)}</div>}
 			</div>
 		</Link>
 	) : (
@@ -75,7 +75,7 @@ const ValueMosaic = ({
 		>
 			<CustomImage src={imageSrc} className={styles.icon} alt="Mosaic" />
 			<div className={styles.amount}>
-				<div>{integer}</div>
+				<div>{numberToString(integer)}</div>
 				{!!decimal && <div className={styles.decimal}>.{decimal}</div>}
 			</div>
 			{!!displayedName && <div>{displayedName}</div>}

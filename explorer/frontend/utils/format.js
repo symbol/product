@@ -43,6 +43,10 @@ export const numberToShortString = num => {
 	return (value / si[index].v).toFixed(2).replace(/\.0+$|(\.[0-9]*[1-9])0+$/, '$1') + si[index].s;
 };
 
+export const numberToString = num => {
+	return (+num).toLocaleString('en').replace(/,/g,' ');
+}
+
 export const truncateDecimals = (num, decimal) => {
 	const multiplier = Math.pow(10, decimal);
 	const adjustedNum = num * multiplier;
