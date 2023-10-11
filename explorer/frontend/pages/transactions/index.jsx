@@ -15,9 +15,9 @@ import ValueList from '@/components/ValueList';
 import ValueMosaic from '@/components/ValueMosaic';
 import ValueTransactionHash from '@/components/ValueTransactionHash';
 import ValueTransactionType from '@/components/ValueTransactionType';
-import { TRANSACTION_TYPE } from '@/constants';
+import { STORAGE_KEY, TRANSACTION_TYPE } from '@/constants';
 import styles from '@/styles/pages/TransactionList.module.scss';
-import { formatDate, formatTransactionCSV, useFilter, usePagination } from '@/utils';
+import { formatDate, formatTransactionCSV, useFilter, usePagination, useStorage } from '@/utils';
 import Head from 'next/head';
 import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
@@ -37,6 +37,7 @@ export const getServerSideProps = async ({ locale }) => {
 
 const TransactionInfo = ({ preloadedData, stats }) => {
 	const { t } = useTranslation();
+	const [contacts] = useStorage(STORAGE_KEY.ADDRESS_BOOK, []);
 	const { requestNextPage, data, isLoading, isLastPage, filter, changeFilter } = usePagination(fetchTransactionPage, preloadedData);
 	const chart = useFilter(fetchTransactionChart, [], true);
 	const formattedChartData = chart.data.map(item => {
@@ -95,14 +96,16 @@ const TransactionInfo = ({ preloadedData, stats }) => {
 			title: t('filter_from'),
 			type: 'account',
 			conflicts: ['to'],
-			isSearchEnabled: true
+			isSearchEnabled: true,
+			options: contacts
 		},
 		{
 			name: 'to',
 			title: t('filter_to'),
 			type: 'account',
 			conflicts: ['from'],
-			isSearchEnabled: true
+			isSearchEnabled: true,
+			options: contacts
 		},
 		{
 			name: 'mosaic',

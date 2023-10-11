@@ -51,10 +51,11 @@ export const getServerSideProps = async ({ locale, params }) => {
 
 const AccountInfo = ({ accountInfo, preloadedTransactions }) => {
 	const { address } = accountInfo;
-	const [userCurrency] = useStorage(STORAGE_KEY.USER_CURRENCY, 'usd');
+	const [userCurrency] = useStorage(STORAGE_KEY.USER_CURRENCY, 'USD');
+	const [contacts] = useStorage(STORAGE_KEY.ADDRESS_BOOK, []);
 	const balanceInUserCurrency = useUserCurrencyAmount(fetchPriceByDate, accountInfo.balance, userCurrency);
 	const { t } = useTranslation();
-	const transactionPagination = usePagination(fetchTransactionPage, preloadedTransactions);
+	const transactionPagination = usePagination(fetchTransactionPage, preloadedTransactions, { address });
 	const mosaics = useClientSideFilter(accountInfo.mosaics);
 	const isMultisigSectionShown = accountInfo.isMultisig || accountInfo.cosignatoryOf.length > 0;
 
@@ -79,12 +80,12 @@ const AccountInfo = ({ accountInfo, preloadedTransactions }) => {
 		},
 		{
 			key: 'type',
-			size: '9rem',
+			size: '10rem',
 			renderValue: value => <ValueTransactionType value={value} />
 		},
 		{
 			key: 'direction',
-			size: '9rem',
+			size: '7rem',
 			renderValue: value => <ValueTransactionDirection value={value} />
 		},
 		{
@@ -93,9 +94,16 @@ const AccountInfo = ({ accountInfo, preloadedTransactions }) => {
 			renderValue: value => <ValueAccount address={value} size="md" />
 		},
 		{
-			key: 'amount',
-			size: '10rem',
-			renderValue: (value, row) => <ValueMosaic amount={value} isNative direction={row.direction} />
+			key: 'value',
+			size: '20rem',
+			renderValue: (value, row) => (
+				<ValueList
+					data={value}
+					max={2}
+					direction="column"
+					renderItem={item => <ValueMosaic mosaicId={item.id} mosaicName={item.name} amount={item.amount} isTickerShown direction={row.direction} />}
+				/>
+			)
 		},
 		{
 			key: 'fee',
@@ -115,14 +123,16 @@ const AccountInfo = ({ accountInfo, preloadedTransactions }) => {
 			title: t('filter_from'),
 			type: 'account',
 			conflicts: ['to'],
-			isSearchEnabled: true
+			isSearchEnabled: true,
+			options: contacts
 		},
 		{
 			name: 'to',
 			title: t('filter_to'),
 			type: 'account',
 			conflicts: ['from'],
-			isSearchEnabled: true
+			isSearchEnabled: true,
+			options: contacts
 		},
 		{
 			name: 'mosaic',
