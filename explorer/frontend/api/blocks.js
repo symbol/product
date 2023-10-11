@@ -36,6 +36,6 @@ export const fetchBlockInfo = createAPICallFunction(async height => {
 		difficulty: ((block.difficulty / Math.pow(10, 14)) * 100).toFixed(2),
 		averageFee: block.totalTransactions
 			? truncateDecimals(block.totalFees / block.totalTransactions, config.NATIVE_MOSAIC_DIVISIBILITY)
-			: null
+			: 0
 	};
 });
