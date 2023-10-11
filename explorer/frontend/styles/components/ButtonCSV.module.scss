@@ -12,10 +12,18 @@
     background-color: $color-button-bg;
     cursor: pointer;
     user-select: none;
+    font: $font-button;
+    border-radius: $border-radius-button;
 
     &:hover {
         color: $color-text-button;
         background-color: $color-button-bg;
         opacity: 0.9;
+    }
+}
+
+@media #{$screen-mobile} {
+    .buttonCSV {
+        height: $spacing-base * 6;
     }
 }

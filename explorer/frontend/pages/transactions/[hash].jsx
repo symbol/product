@@ -63,7 +63,7 @@ const TransactionInfo = ({ transactionInfo }) => {
 		},
 		{
 			key: 'mosaic',
-			size: '30rem',
+			size: '15rem',
 			renderValue: (value, row) => (
 				<>
 					{value.map((mosaic, index) => (

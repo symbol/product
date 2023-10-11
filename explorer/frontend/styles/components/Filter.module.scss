@@ -101,6 +101,26 @@
     }
 }
 
+@media #{$screen-mobile} {
+    .filter {
+        .button {
+            height: $spacing-base * 4;
+            padding: 0 $spacing-base * 2;
+        }
+
+        .modal {
+            height: 50%;
+            position: absolute;
+            bottom: 0;
+            animation: slide-up 250ms ease-in-out;
+
+            .resultItem {
+                height: $spacing-base * 4;
+            }
+        }
+    }
+}
+
 @keyframes fade-in {
     from {
         opacity: 0;
@@ -108,5 +128,15 @@
 
     to {
         opacity: 1;
+    }
+}
+
+@keyframes slide-up {
+    from {
+        transform: translateY(100%);
+    }
+
+    to {
+        transform: translateY(0);
     }
 }
