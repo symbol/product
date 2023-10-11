@@ -192,6 +192,8 @@ def setup_nem_routes(app, nem_api_facade):
 
 				transaction_type = TransactionType[transaction_type].value
 
+				transaction_query = transaction_query._replace(transaction_type=transaction_type)
+
 		except ValueError:
 			abort(400)
 
