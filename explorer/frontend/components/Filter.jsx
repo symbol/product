@@ -1,27 +1,29 @@
 import ButtonClose from './ButtonClose';
-import Card from './Card';
 import CustomImage from './CustomImage';
 import Field from './Field';
+import LoadingIndicator from './LoadingIndicator';
+import Modal from './Modal';
 import TextBox from './TextBox';
 import ValueAccount from './ValueAccount';
 import ValueMosaic from './ValueMosaic';
 import ValueTransactionType from './ValueTransactionType';
 import styles from '@/styles/components/Filter.module.scss';
-import { useDelayedCall } from '@/utils';
+import { useDataManager, useDelayedCall } from '@/utils';
 import { useTranslation } from 'next-i18next';
 import { useState } from 'react';
 
 const FilterModal = ({ title, type, isSearchEnabled, options, onSearchRequest, onClose, onSelect }) => {
 	const [text, setText] = useState('');
 	const [searchResult, setSearchResult] = useState(null);
-	const [search] = useDelayedCall(async text => {
+	const [search, isLoading] = useDataManager(async text => {
 		const searchResult = await onSearchRequest(text);
 		if (searchResult?.[type]) setSearchResult(searchResult[type]);
 		else setSearchResult(null);
 	});
+	const [delayedSearch] = useDelayedCall(text => search(text));
 	const handleSearchTextChange = text => {
 		setText(text);
-		search(text);
+		delayedSearch(text);
 	};
 	const renderItem = item => {
 		switch (type) {
@@ -47,24 +49,23 @@ const FilterModal = ({ title, type, isSearchEnabled, options, onSearchRequest, o
 	const listTitle = !isSearchEnabled ? '' : searchResult ? 'Search results' : options.length ? 'Suggestions' : '';
 
 	return (
-		<div className={styles.modal} onClick={onClose}>
-			<Card className={styles.card} onClick={e => e.stopPropagation()}>
-				<ButtonClose className={styles.buttonClose} onClick={onClose} />
-				<h4>{title}</h4>
-				{isSearchEnabled && (
-					<TextBox iconSrc="/images/icon-search.svg" placeholder={type} value={text} onChange={handleSearchTextChange} />
-				)}
-				<Field title={listTitle}>
-					<div className={styles.resultList}>
-						{list.map((item, index) => (
-							<div className={styles.resultItem} key={'result' + index}>
-								{renderItem(item)}
-							</div>
-						))}
-					</div>
-				</Field>
-			</Card>
-		</div>
+		<Modal className={styles.modal} onClose={onClose} isVisible>
+			<ButtonClose className={styles.buttonClose} onClick={onClose} />
+			<h4>{title}</h4>
+			{isSearchEnabled && (
+				<TextBox iconSrc="/images/icon-search.svg" placeholder={type} value={text} onChange={handleSearchTextChange} />
+			)}
+			{isLoading && <LoadingIndicator className={styles.loadingIndicator} />}
+			<Field title={listTitle} className={styles.resultListField}>
+				<div className={styles.resultListContent}>
+					{list.map((item, index) => (
+						<div className={styles.resultItem} key={'result' + index}>
+							{renderItem(item)}
+						</div>
+					))}
+				</div>
+			</Field>
+		</Modal>
 	);
 };
 
