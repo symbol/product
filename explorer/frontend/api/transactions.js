@@ -4,11 +4,27 @@ import { createAPISearchURL, createPage, createSearchCriteria } from '@/utils';
 
 export const fetchTransactionPage = async searchCriteria => {
 	const { pageNumber, pageSize, filter } = createSearchCriteria(searchCriteria);
+	const formattedFilter = { ...filter };
+	if (formattedFilter.address && formattedFilter.from) {
+		formattedFilter.to = formattedFilter.address;
+		delete formattedFilter.address;
+	}
+	else if (formattedFilter.address && formattedFilter.to) {
+		formattedFilter.from = formattedFilter.address;
+		delete formattedFilter.address;
+	}
+	if (formattedFilter.from) {
+		formattedFilter.fromAddress = formattedFilter.from;
+	}
+	if (formattedFilter.to) {
+		formattedFilter.toAddress = formattedFilter.to;
+	}
 	const url = createAPISearchURL(`${config.API_BASE_URL}/transactions`, { pageNumber, pageSize }, filter);
 	const response = await fetch(url);
 	const transactions = await response.json();
+	const formatter = filter.address ? data => formatTransaction(data, filter.address) : formatTransaction;
 
-	return createPage(transactions, pageNumber, formatTransaction);
+	return createPage(transactions, pageNumber, formatter);
 };
 
 export const fetchTransactionInfo = async hash => {
@@ -98,7 +114,7 @@ const formatBaseTransaction = (data, address) => {
 		signer: sender,
 		sender,
 		recipient,
-		address: isOutgoing ? recipient : sender,
+		account: isOutgoing ? recipient : sender,
 		direction: isOutgoing ? TRANSACTION_DIRECTION.OUTGOING : TRANSACTION_DIRECTION.INCOMING,
 		size: '-',
 		height: data.height,
