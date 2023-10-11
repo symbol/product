@@ -145,6 +145,7 @@ class NemPuller:
 
 		multisig_transaction = TransactionFactory.create_transaction(
 			transaction.transaction_type,
+			transaction.sender,
 			json.dumps([signature.__dict__ for signature in transaction.signatures]),
 			json.dumps(transaction.other_transaction.__dict__),
 			transaction.inner_hash,
@@ -275,11 +276,16 @@ class NemPuller:
 			timestamp = Block.convert_timestamp_to_datetime(self.nem_facade, transaction.timestamp)
 			deadline = Block.convert_timestamp_to_datetime(self.nem_facade, transaction.deadline)
 
+			sender = transaction.sender
+			if transaction.transaction_type == TransactionType.MULTISIG.value:
+				# multisig address sender
+				sender = transaction.other_transaction.sender
+
 			transaction_common = Transaction(
 				transaction.transaction_hash,
 				transaction.height,
-				transaction.sender,
-				self.network.public_key_to_address(PublicKey(transaction.sender)),
+				sender,
+				self.network.public_key_to_address(PublicKey(sender)),
 				transaction.fee,
 				timestamp,
 				deadline,

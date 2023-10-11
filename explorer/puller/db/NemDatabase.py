@@ -201,6 +201,7 @@ class NemDatabase(DatabaseConnection):
 			CREATE TABLE IF NOT EXISTS transactions_multisig (
 				id serial PRIMARY KEY,
 				transaction_id serial NOT NULL,
+				initiator bytea NOT NULL,
 				signatures json NOT NULL,
 				other_transaction json NOT NULL,
 				inner_hash bytea NOT NULL,
@@ -440,14 +441,16 @@ class NemDatabase(DatabaseConnection):
 			'''
 			INSERT INTO transactions_multisig (
 				transaction_id,
+				initiator,
 				signatures,
 				other_transaction,
 				inner_hash
 			)
-			VALUES (%s, %s, %s, %s)
+			VALUES (%s, %s, %s, %s, %s)
 			''',
 			(
 				transaction_id,
+				unhexlify(multisig.initiator),
 				multisig.signatures,
 				multisig.other_transaction,
 				unhexlify(multisig.inner_hash),

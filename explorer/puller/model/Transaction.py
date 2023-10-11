@@ -86,17 +86,19 @@ class MultisigAccountModificationTransaction:
 
 
 class MultisigTransaction:
-	def __init__(self, signatures, other_transaction, inner_hash):
+	def __init__(self, initiator, signatures, other_transaction, inner_hash):
 		"""Create MultisigTransaction model."""
 
 		# pylint: disable=too-many-arguments
 
+		self.initiator = initiator
 		self.signatures = signatures
 		self.other_transaction = other_transaction
 		self.inner_hash = inner_hash
 
 	def __eq__(self, other):
 		return isinstance(other, MultisigTransaction) and all([
+			self.initiator == other.initiator,
 			self.signatures == other.signatures,
 			self.other_transaction == other.other_transaction,
 			self.inner_hash == other.inner_hash
