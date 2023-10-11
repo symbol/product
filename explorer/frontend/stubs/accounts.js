@@ -14,7 +14,7 @@ export const getAccountsStub = async searchCriteria => {
 	return (await response.json()).map(item => ({
 		...item,
 		balance: item.balance / 1000000,
-		importance: + item.importance.toFixed(5),
+		importance: +item.importance.toFixed(5),
 		description: item.remark || ''
 	}));
 };

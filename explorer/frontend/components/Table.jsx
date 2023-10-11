@@ -59,7 +59,11 @@ const Table = ({
 					</div>
 				))}
 			{!isLastPage && !isError && <TablePageLoader isLoading={isLoading} onLoad={onEndReached} />}
-			{!isLoading && isError && <div className={styles.tryAgainButton} onClick={onEndReached}>{t('button_tryAgain')}</div>}
+			{!isLoading && isError && (
+				<div className={styles.tryAgainButton} onClick={onEndReached}>
+					{t('button_tryAgain')}
+				</div>
+			)}
 		</div>
 	);
 };

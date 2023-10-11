@@ -101,7 +101,15 @@ const AccountInfo = ({ accountInfo, preloadedTransactions }) => {
 					data={value}
 					max={2}
 					direction="column"
-					renderItem={item => <ValueMosaic mosaicId={item.id} mosaicName={item.name} amount={item.amount} isTickerShown direction={row.direction} />}
+					renderItem={item => (
+						<ValueMosaic
+							mosaicId={item.id}
+							mosaicName={item.name}
+							amount={item.amount}
+							isTickerShown
+							direction={row.direction}
+						/>
+					)}
 				/>
 			)
 		},

@@ -97,12 +97,12 @@
     }
 
     .tryAgainButton {
-        font: $font-body-bold;
-        color: $color-primary;
-        cursor: pointer;
-        text-align: center;
         margin-top: $spacing-base * 2;
+        color: $color-primary;
+        font: $font-body-bold;
+        text-align: center;
         text-transform: uppercase;
+        cursor: pointer;
     }
 
 
