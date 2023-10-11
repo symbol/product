@@ -11,6 +11,7 @@ const Table = ({
 	renderSectionHeader,
 	onEndReached,
 	isLoading,
+	isError,
 	isLastPage,
 	isLastColumnAligned
 }) => {
@@ -57,8 +58,8 @@ const Table = ({
 						{!!renderItemMobile && <div className={styles.listMobile}>{section.data.map(renderMobileListItem)}</div>}
 					</div>
 				))}
-
-			{!isLastPage && <TablePageLoader isLoading={isLoading} onLoad={onEndReached} />}
+			{!isLastPage && !isError && <TablePageLoader isLoading={isLoading} onLoad={onEndReached} />}
+			{!isLoading && isError && <div className={styles.tryAgainButton} onClick={onEndReached}>{t('button_tryAgain')}</div>}
 		</div>
 	);
 };

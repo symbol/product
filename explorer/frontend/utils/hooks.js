@@ -27,11 +27,13 @@ export const useDataManager = (callback, defaultData, onError, loadingState = fa
 export const usePagination = (callback, defaultData, defaultFilter = {}) => {
 	const [filter, setFilter] = useState(defaultFilter);
 	const [isLoading, setIsLoading] = useState(false);
+	const [isError, setIsError] = useState(false);
 	const [isLastPage, setIsLastPage] = useState(false);
 	const [pageNumber, setPageNumber] = useState(1);
 	const [data, setData] = useState(defaultData);
 
 	const call = (pageNumber, filter) => {
+		setIsError(false);
 		setIsLoading(true);
 		setTimeout(async () => {
 			try {
@@ -45,6 +47,7 @@ export const usePagination = (callback, defaultData, defaultFilter = {}) => {
 			} catch (error) {
 				// eslint-disable-next-line no-console
 				console.error('[Pagination] Error:', error);
+				setIsError(true);
 			}
 			setIsLoading(false);
 		});
@@ -62,7 +65,7 @@ export const usePagination = (callback, defaultData, defaultFilter = {}) => {
 		call(1, filter);
 	};
 
-	return { requestNextPage, data, isLoading, pageNumber, isLastPage, filter, changeFilter };
+	return { requestNextPage, data, isLoading, pageNumber, isLastPage, filter, isError, changeFilter };
 };
 
 export const useFilter = (callback, defaultData, initialCall) => {
