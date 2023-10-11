@@ -9,7 +9,7 @@
 	"chart_series_transactions": "Transactions",
 	"chart_label_block": "Block: {{height}}",
 	"field_averageFee": "Average Fee",
-	"field_averageFeeBlock_description": "Average transaction fee  in the block",
+	"field_averageFeeBlock_description": "Average transaction fee in the block",
 	"field_beneficiary": "Beneficiary",
 	"field_blockGenerationTime": "Block Generation Time",
 	"field_circulatingSupply": "Circulating Supply",
