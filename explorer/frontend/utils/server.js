@@ -26,18 +26,16 @@ export const createPage = (data, pageNumber, formatter) => {
 
 	if (!data.length) {
 		formattedData = [];
-	}
-	else if (formatter) {
+	} else if (formatter) {
 		formattedData = data.map(formatter);
-	}
-	else {
+	} else {
 		formattedData = data;
 	}
 
 	return {
 		data: formattedData,
 		pageNumber
-	}
+	};
 };
 
 export const createAPISearchURL = (baseURL, searchCriteria, filter = {}) => {

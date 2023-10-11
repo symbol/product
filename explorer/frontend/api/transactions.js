@@ -8,8 +8,7 @@ export const fetchTransactionPage = async searchCriteria => {
 	if (formattedFilter.address && formattedFilter.from) {
 		formattedFilter.to = formattedFilter.address;
 		delete formattedFilter.address;
-	}
-	else if (formattedFilter.address && formattedFilter.to) {
+	} else if (formattedFilter.address && formattedFilter.to) {
 		formattedFilter.from = formattedFilter.address;
 		delete formattedFilter.address;
 	}

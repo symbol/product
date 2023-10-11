@@ -44,8 +44,8 @@ export const numberToShortString = num => {
 };
 
 export const numberToString = num => {
-	return (+num).toLocaleString('en').replace(/,/g,' ');
-}
+	return (+num).toLocaleString('en').replace(/,/g, ' ');
+};
 
 export const truncateDecimals = (num, decimal) => {
 	const multiplier = Math.pow(10, decimal);

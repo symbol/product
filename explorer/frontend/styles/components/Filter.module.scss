@@ -69,11 +69,11 @@
         }
 
         .resultListField {
-            flex: 1;
-            overflow-y: auto;
             display: flex;
+            flex: 1;
             flex-direction: column;
             gap: $spacing-base / 2;
+            overflow-y: auto;
         }
 
         .resultListContent {
