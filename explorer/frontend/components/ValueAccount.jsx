@@ -6,7 +6,7 @@ import { createPageHref, trunc, useStorage } from '@/utils';
 import Link from 'next/link';
 import { useState } from 'react';
 
-const ValueAccount = ({ address, size, raw, position, className, isNavigationDisabled, onClick }) => {
+const ValueAccount = ({ address, size, raw, position, className, isNavigationDisabled, isCopyDisabled, onClick }) => {
 	const [name, setName] = useState();
 	useStorage(STORAGE_KEY.ADDRESS_BOOK, [], addressBook => {
 		const name = addressBook.find(item => item.address === address)?.name;
@@ -42,7 +42,7 @@ const ValueAccount = ({ address, size, raw, position, className, isNavigationDis
 						<Link className={textStyle} href={createPageHref('accounts', address)} onClick={handleClick}>
 							{displayedText}
 						</Link>
-						<ButtonCopy value={address} />
+						{!isCopyDisabled && <ButtonCopy value={address} />}
 					</div>
 				</>
 			)}
