@@ -25,7 +25,7 @@ import ValueTransactionHash from '@/components/ValueTransactionHash';
 import ValueTransactionType from '@/components/ValueTransactionType';
 import { STORAGE_KEY, TRANSACTION_TYPE } from '@/constants';
 import styles from '@/styles/pages/AccountInfo.module.scss';
-import { arrayToText, formatTransactionCSV, useClientSideFilter, usePagination, useStorage, useUserCurrencyAmount } from '@/utils';
+import { formatMosaicCSV, formatTransactionCSV, useClientSideFilter, usePagination, useStorage, useUserCurrencyAmount } from '@/utils';
 import Head from 'next/head';
 import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
@@ -208,7 +208,7 @@ const AccountInfo = ({ accountInfo, preloadedTransactions }) => {
 				<div className="layout-flex-col">
 					<div className="layout-flex-row-mobile-col">
 						<Filter data={mosaicFilterConfig} value={mosaics.filter} onChange={mosaics.changeFilter} search={search} />
-						<ButtonCSV data={mosaics.data} fileName={`mosaics-${address}`} />
+						<ButtonCSV data={mosaics.data} fileName={`mosaics-${address}`} format={row => formatMosaicCSV(row, t)} />
 					</div>
 					<div className={styles.stateTable}>
 						{mosaics.data.map((item, key) => (
