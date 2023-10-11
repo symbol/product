@@ -75,7 +75,7 @@ const ValueMosaic = ({
 		>
 			<CustomImage src={imageSrc} className={styles.icon} alt="Mosaic" />
 			<div className={styles.amount}>
-				<div>{numberToString(integer)}</div>
+				{isAmountExist && <div>{numberToString(integer)}</div>}
 				{!!decimal && <div className={styles.decimal}>.{decimal}</div>}
 			</div>
 			{!!displayedName && <div>{displayedName}</div>}
