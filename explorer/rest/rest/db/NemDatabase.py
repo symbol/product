@@ -43,6 +43,7 @@ class NemDatabase(DatabaseConnectionPool):
 				t.height,
 				t.timestamp,
 				t.deadline,
+				t.signature,
 				CASE
 					WHEN transaction_type = 257 THEN tt.recipient
 					WHEN transaction_type = 8193 THEN tnr.rental_fee_sink
@@ -226,6 +227,7 @@ class NemDatabase(DatabaseConnectionPool):
 			height,
 			timestamp,
 			deadline,
+			signature,
 			address_to,
 			transfer_mosaic,
 			transfer_amount,
@@ -387,7 +389,8 @@ class NemDatabase(DatabaseConnectionPool):
 			height=height,
 			timestamp=timestamp,
 			deadline=deadline,
-			embedded_transactions=embedded_transactions
+			embedded_transactions=embedded_transactions,
+			signature=_format_bytes(signature)
 		)
 
 	def get_block(self, height):

@@ -22,7 +22,8 @@ class TransactionListView:
 		fee,
 		height,
 		timestamp,
-		deadline
+		deadline,
+		signature
 	):
 		"""Create transaction list view."""
 
@@ -38,6 +39,7 @@ class TransactionListView:
 		self.height = height
 		self.timestamp = timestamp
 		self.deadline = deadline
+		self.signature = signature
 
 	def __eq__(self, other):
 		return isinstance(other, TransactionListView) and all([
@@ -50,7 +52,8 @@ class TransactionListView:
 			self.fee == other.fee,
 			self.height == other.height,
 			self.timestamp == other.timestamp,
-			self.deadline == other.deadline
+			self.deadline == other.deadline,
+			self.signature == other.signature
 		])
 
 	def to_dict(self):
@@ -66,5 +69,6 @@ class TransactionListView:
 			'fee': self.fee,
 			'height': self.height,
 			'timestamp': str(self.timestamp),
-			'deadline': str(self.deadline)
+			'deadline': str(self.deadline),
+			'signature': str(self.signature),
 		}
