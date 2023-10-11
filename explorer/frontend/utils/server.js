@@ -16,7 +16,7 @@ export const createSearchCriteria = (searchCriteria = {}) => {
 
 	return {
 		pageNumber: isNaN(parsedPageNumber) ? 1 : parsedPageNumber,
-		pageSize: isNaN(parsedPageSize) ? 50 : parsedPageSize,
+		pageSize: isNaN(parsedPageSize) ? 10 : parsedPageSize,
 		filter
 	};
 };
