@@ -95,7 +95,7 @@ const TransactionInfo = ({ preloadedData, stats }) => {
 			name: 'from',
 			title: t('filter_from'),
 			type: 'account',
-			conflicts: ['to'],
+			conflicts: [],
 			isSearchEnabled: true,
 			options: contacts
 		},
@@ -103,7 +103,7 @@ const TransactionInfo = ({ preloadedData, stats }) => {
 			name: 'to',
 			title: t('filter_to'),
 			type: 'account',
-			conflicts: ['from'],
+			conflicts: ['type'],
 			isSearchEnabled: true,
 			options: contacts
 		},
@@ -117,9 +117,9 @@ const TransactionInfo = ({ preloadedData, stats }) => {
 		{
 			name: 'type',
 			title: t('filter_type'),
-			conflicts: ['mosaic'],
+			conflicts: ['mosaic', 'to'],
 			type: 'transaction-type',
-			options: Object.values(TRANSACTION_TYPE)
+			options: Object.values(TRANSACTION_TYPE).map(type => ({ type }))
 		}
 	];
 
@@ -128,7 +128,7 @@ const TransactionInfo = ({ preloadedData, stats }) => {
 			name: 'type',
 			title: t('filter_type'),
 			type: 'transaction-type',
-			options: Object.values(TRANSACTION_TYPE)
+			options: Object.values(TRANSACTION_TYPE).map(type => ({ type }))
 		},
 		{
 			name: 'isPerDay',
@@ -192,6 +192,7 @@ const TransactionInfo = ({ preloadedData, stats }) => {
 				<div className="layout-flex-col">
 					<div className="layout-flex-row-mobile-col">
 						<Filter
+							isSelectedItemsShown
 							data={transactionFilterConfig}
 							isDisabled={isLoading}
 							value={filter}

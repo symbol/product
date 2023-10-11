@@ -51,7 +51,16 @@
         margin-right: $spacing-base / 2;
     }
 
-
+    .selectedItem {
+        display: flex;
+        align-items: center;
+        height: $spacing-base * 4;
+        margin-top: $spacing-base;
+        padding-right: $spacing-base;
+        background-color: $color-background-mosaic;
+        border-radius: $spacing-base * 2;
+        cursor: pointer;
+    }
 
 
     .modal {

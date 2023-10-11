@@ -138,7 +138,7 @@ const AccountInfo = ({ accountInfo, preloadedTransactions }) => {
 			name: 'to',
 			title: t('filter_to'),
 			type: 'account',
-			conflicts: ['from'],
+			conflicts: ['type', 'from'],
 			isSearchEnabled: true,
 			options: contacts
 		},
@@ -153,9 +153,9 @@ const AccountInfo = ({ accountInfo, preloadedTransactions }) => {
 		{
 			name: 'type',
 			title: t('filter_type'),
-			conflicts: ['mosaic'],
+			conflicts: ['mosaic', 'to'],
 			type: 'transaction-type',
-			options: Object.values(TRANSACTION_TYPE)
+			options: Object.values(TRANSACTION_TYPE).map(type => ({ type }))
 		}
 	];
 
@@ -264,6 +264,7 @@ const AccountInfo = ({ accountInfo, preloadedTransactions }) => {
 				<div className="layout-flex-col">
 					<div className="layout-flex-row-mobile-col">
 						<Filter
+							isSelectedItemsShown
 							data={transactionFilterConfig}
 							isDisabled={transactionPagination.isLoading}
 							value={transactionPagination.filter}

@@ -10,9 +10,38 @@ import ValueTransactionType from './ValueTransactionType';
 import styles from '@/styles/components/Filter.module.scss';
 import { useDataManager, useDelayedCall } from '@/utils';
 import { useTranslation } from 'next-i18next';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
-const FilterModal = ({ title, type, isSearchEnabled, options, onSearchRequest, onClose, onSelect }) => {
+const renderItem = (item, type, onSelect) => {
+	switch (type) {
+		case 'account':
+			return (
+				<ValueAccount
+					address={item.address}
+					size="md"
+					isNavigationDisabled
+					isCopyDisabled
+					onClick={() => onSelect(item.address, item)}
+				/>
+			);
+		case 'mosaic':
+			return (
+				<ValueMosaic
+					mosaicName={item.name}
+					mosaicId={item.id}
+					size="md"
+					isNavigationDisabled
+					onClick={() => onSelect(item.id, item)}
+				/>
+			);
+		case 'transaction-type':
+			return <ValueTransactionType value={item.type} onClick={() => onSelect(item, item)} />;
+		default:
+			return item;
+	}
+};
+
+const FilterModal = ({ isVisible, title, type, isSearchEnabled, options, onSearchRequest, onClose, onSelect }) => {
 	const [text, setText] = useState('');
 	const [searchResult, setSearchResult] = useState(null);
 	const [search, isLoading] = useDataManager(async text => {
@@ -25,31 +54,11 @@ const FilterModal = ({ title, type, isSearchEnabled, options, onSearchRequest, o
 		setText(text);
 		delayedSearch(text);
 	};
-	const renderItem = item => {
-		switch (type) {
-			case 'account':
-				return <ValueAccount address={item.address} size="sm" isNavigationDisabled onClick={() => onSelect(item.address)} />;
-			case 'mosaic':
-				return (
-					<ValueMosaic
-						mosaicName={item.name}
-						mosaicId={item.id}
-						size="md"
-						isNavigationDisabled
-						onClick={() => onSelect(item.id)}
-					/>
-				);
-			case 'transaction-type':
-				return <ValueTransactionType value={item} onClick={() => onSelect(item)} />;
-			default:
-				return item;
-		}
-	};
 	const list = searchResult ? [searchResult] : options;
 	const listTitle = !isSearchEnabled ? '' : searchResult ? 'Search results' : options.length ? 'Suggestions' : '';
 
 	return (
-		<Modal className={styles.modal} onClose={onClose} isVisible>
+		<Modal className={styles.modal} onClose={onClose} isVisible={isVisible}>
 			<ButtonClose className={styles.buttonClose} onClick={onClose} />
 			<h4>{title}</h4>
 			{isSearchEnabled && (
@@ -60,7 +69,7 @@ const FilterModal = ({ title, type, isSearchEnabled, options, onSearchRequest, o
 				<div className={styles.resultListContent}>
 					{list.map((item, index) => (
 						<div className={styles.resultItem} key={'result' + index}>
-							{renderItem(item)}
+							{renderItem(item, type, onSelect)}
 						</div>
 					))}
 				</div>
@@ -69,9 +78,10 @@ const FilterModal = ({ title, type, isSearchEnabled, options, onSearchRequest, o
 	);
 };
 
-const Filter = ({ data, value, search, isDisabled, onChange }) => {
+const Filter = ({ isSelectedItemsShown, data, value, search, isDisabled, onChange }) => {
 	const { t } = useTranslation();
 	const [expandedFilter, setExpandedFilter] = useState({});
+	const [selectedItems, setSelectedItems] = useState({});
 
 	const isFilerActive = name => !!value[name];
 	const isFilterAvailable = name =>
@@ -101,11 +111,11 @@ const Filter = ({ data, value, search, isDisabled, onChange }) => {
 			setExpandedFilter(filter);
 		}
 	};
-	const handleFilterSelection = value => {
-		changeFilterValue(expandedFilter, value);
+	const handleFilterSelection = (value, item) => {
+		changeFilterValue(expandedFilter, value, item);
 		setExpandedFilter(null);
 	};
-	const changeFilterValue = (filter, filterValue) => {
+	const changeFilterValue = (filter, filterValue, item) => {
 		const currentFilterValues = { ...value };
 
 		filter.off?.forEach(filterName => delete currentFilterValues[filterName]);
@@ -116,10 +126,27 @@ const Filter = ({ data, value, search, isDisabled, onChange }) => {
 			delete currentFilterValues[filter.name];
 		}
 
+		setSelectedItems(selectedItems => {
+			const updatedSelectedItems = { ...selectedItems };
+			updatedSelectedItems[filter.name] = item;
+
+			return updatedSelectedItems;
+		});
 		onChange(currentFilterValues);
+	};
+	const removeFilter = filter => {
+		changeFilterValue(filter, null);
 	};
 
 	const isFilterModalShown = ['account', 'mosaic', 'transaction-type'].some(value => value === expandedFilter?.type);
+
+	useEffect(() => {
+		const updatedSelectedItems = { ...selectedItems };
+		Object.keys(updatedSelectedItems).forEach(
+			key => !Object.keys(value).some(filterValueKey => filterValueKey === key) && delete updatedSelectedItems[key]
+		);
+		setSelectedItems(updatedSelectedItems);
+	}, [value, selectedItems]);
 
 	return (
 		<div className={styles.filter}>
@@ -139,17 +166,27 @@ const Filter = ({ data, value, search, isDisabled, onChange }) => {
 					</div>
 				))}
 			</div>
-			{isFilterModalShown && (
-				<FilterModal
-					title={expandedFilter.title}
-					type={expandedFilter?.type}
-					isSearchEnabled={expandedFilter?.isSearchEnabled}
-					options={expandedFilter.options || []}
-					onClose={() => setExpandedFilter(null)}
-					onSelect={handleFilterSelection}
-					onSearchRequest={search}
-				/>
-			)}
+			<div className={styles.list}>
+				{isSelectedItemsShown &&
+					data.map(
+						(item, index) =>
+							selectedItems[item.name] && (
+								<div className={styles.selectedItem} key={index}>
+									{renderItem(selectedItems[item.name], item.type, () => removeFilter(item))}
+								</div>
+							)
+					)}
+			</div>
+			<FilterModal
+				isVisible={isFilterModalShown}
+				title={expandedFilter?.title}
+				type={expandedFilter?.type}
+				isSearchEnabled={expandedFilter?.isSearchEnabled}
+				options={expandedFilter?.options || []}
+				onClose={() => setExpandedFilter(null)}
+				onSelect={handleFilterSelection}
+				onSearchRequest={search}
+			/>
 		</div>
 	);
 };
