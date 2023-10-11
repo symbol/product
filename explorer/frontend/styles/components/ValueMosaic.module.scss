@@ -31,11 +31,11 @@
 }
 
 .incoming {
-    color: $color-primary !important;
+    background: $color-amount-incoming !important;
 }
 
 .outgoing {
-    color: $color-danger !important;
+    background: $color-amount-outgoing !important;
 }
 
 .containerMd {
