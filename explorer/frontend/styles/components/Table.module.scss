@@ -144,8 +144,15 @@
 
         .sectionHeader {
             align-self: center;
+            border-top-right-radius: $spacing-base;
+            border-top-left-radius: $spacing-base;
+        }
+
+        .sectionHeaderLineMobile {
+            display: flex;
+            width: 100%;
+            border-bottom: 0.16rem solid #F3F4F7;
             margin-bottom: $spacing-base * 2;
-            border-radius: $spacing-base;
         }
     }
 }

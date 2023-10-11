@@ -103,7 +103,7 @@ const BlockInfo = ({ blockInfo, transactions }) => {
 							<Field title={t('field_totalFee')} description={t('field_totalFee_description')}>
 								<ValueMosaic isNative amount={blockInfo.totalFee} />
 							</Field>
-							<Field title={t('field_averageFee')} description={t('field_averageFeeBlock_description')}>
+							<Field title={t('field_averageFee')}>
 								<ValueMosaic isNative amount={blockInfo.averageFee} />
 							</Field>
 						</div>
