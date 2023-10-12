@@ -65,6 +65,16 @@
     height: 100%;
 }
 
+@media #{$screen-mobile} {
+    .button {
+        height: $spacing-base * 6;
+    }
+
+    .option {
+        height: $spacing-base * 6;
+    }
+}
+
 @keyframes open {
     from {
         max-height: $spacing-base * 4;
