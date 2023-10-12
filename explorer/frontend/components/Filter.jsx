@@ -35,7 +35,7 @@ const renderItem = (item, type, onSelect) => {
 				/>
 			);
 		case 'transaction-type':
-			return <ValueTransactionType value={item.type} onClick={() => onSelect(item, item)} />;
+			return <ValueTransactionType value={item.type} onClick={() => onSelect(item.type, item)} />;
 		default:
 			return item;
 	}
