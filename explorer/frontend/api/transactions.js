@@ -104,6 +104,7 @@ const formatBaseTransaction = (data, address) => {
 	const sender = data.fromAddress;
 	const recipient = data.toAddress !== 'None' ? data.toAddress : null;
 	const isOutgoing = sender === address;
+	const isIncoming = recipient === address;
 
 	return {
 		type: data.transactionType,
@@ -114,7 +115,7 @@ const formatBaseTransaction = (data, address) => {
 		sender,
 		recipient,
 		account: isOutgoing ? recipient : sender,
-		direction: isOutgoing ? TRANSACTION_DIRECTION.OUTGOING : TRANSACTION_DIRECTION.INCOMING,
+		direction: isOutgoing ? TRANSACTION_DIRECTION.OUTGOING : isIncoming ? TRANSACTION_DIRECTION.INCOMING : null,
 		size: '-',
 		height: data.height,
 		version: '-',
