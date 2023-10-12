@@ -73,6 +73,7 @@ const TransactionInfo = ({ transactionInfo }) => {
 							amount={Math.abs(mosaic.amount)}
 							direction={row.action[index]}
 							key={'mosaic' + index}
+							isTickerShown
 						/>
 					))}
 				</>

@@ -22,6 +22,32 @@ export const fetchStats = async () => {
 	return getStatsStub();
 };
 
+export const fetchTransactionStats = async () => {
+	const blocks = (await fetchBlockPage({ pageSize: 240 })).data;
+	const total240Blocks = blocks.reduce((partialSum, block) => partialSum + block.transactionCount, 0);
+	const averagePerBlock = Math.ceil(total240Blocks / blocks.length);
+
+	return {
+		averagePerBlock,
+		totalAll: total240Blocks,
+		total30Days: total240Blocks,
+		total24Hours: total240Blocks
+	};
+};
+
+export const fetchNodeStats = async () => {
+	const blocks = (await fetchBlockPage({ pageSize: 240 })).data;
+	const total240Blocks = blocks.reduce((partialSum, block) => partialSum + block.transactionCount, 0);
+	const averagePerBlock = Math.ceil(total240Blocks / blocks.length);
+
+	return {
+		averagePerBlock,
+		totalAll: total240Blocks,
+		total30Days: total240Blocks,
+		total24Hours: total240Blocks
+	};
+};
+
 export const fetchMarketData = async () => {
 	const response = await fetch('https://min-api.cryptocompare.com/data/pricemultifull?fsyms=XEM&tsyms=USD');
 	const parsedResponse = await response.json();

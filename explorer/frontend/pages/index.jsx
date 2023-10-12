@@ -1,5 +1,5 @@
 import { fetchBlockPage } from '@/api/blocks';
-import { fetchMarketData, fetchStats } from '@/api/stats';
+import { fetchMarketData, fetchStats, fetchTransactionStats } from '@/api/stats';
 import { fetchTransactionPage } from '@/api/transactions';
 import ChartLine from '@/components/ChartLine';
 import CustomImage from '@/components/CustomImage';
@@ -22,6 +22,7 @@ export const getServerSideProps = async ({ locale }) => {
 	const pendingTransactionsPage = await fetchTransactionPage({ pageSize: 5, group: 'unconfirmed' });
 	const stats = await fetchStats();
 	const marketData = await fetchMarketData();
+	const transactionStats = await fetchTransactionStats();
 
 	return {
 		props: {
@@ -33,7 +34,7 @@ export const getServerSideProps = async ({ locale }) => {
 			baseInfo: stats.baseInfo,
 			chainInfo: stats.chainInfo,
 			charts: stats.charts,
-			transactionInfo: stats.transactions,
+			transactionStats,
 			...(await serverSideTranslations(locale, ['common']))
 		}
 	};
@@ -47,7 +48,7 @@ const Home = ({
 	baseInfo,
 	chainInfo,
 	charts,
-	transactionInfo,
+	transactionStats,
 	marketData
 }) => {
 	const { t } = useTranslation();
@@ -81,9 +82,9 @@ const Home = ({
 				<div className="layout-flex-row-mobile-col">
 					<div className="layout-grid-row layout-flex-fill">
 						<div className="layout-flex-col layout-flex-fill">
-							<Field title={t('field_totalTransactions')}>{numberToShortString(transactionInfo.totalAll)}</Field>
+							<Field title={t('field_totalTransactions')}>{numberToShortString(transactionStats.totalAll)}</Field>
 							<Field title={t('field_transactionsPerBlock')} description={t('field_transactionsPerBlock_description')}>
-								{transactionInfo.averagePerBlock}
+								{transactionStats.averagePerBlock}
 							</Field>
 						</div>
 						<ChartLine data={formattedCharts.transactions} name={t('chart_series_transactions')} />
