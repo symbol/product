@@ -109,9 +109,9 @@
         }
 
         .modal {
-            height: 50%;
             position: absolute;
             bottom: 0;
+            height: 50%;
             animation: slide-up 250ms ease-in-out;
 
             .resultItem {

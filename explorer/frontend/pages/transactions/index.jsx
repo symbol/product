@@ -1,5 +1,5 @@
 import { search } from '@/api/search';
-import { fetchTransactionChart, fetchStats } from '@/api/stats';
+import { fetchTransactionChart, fetchTransactionStats } from '@/api/stats';
 import { fetchTransactionPage } from '@/api/transactions';
 import ButtonCSV from '@/components/ButtonCSV';
 import ChartColumns from '@/components/ChartColumns';
@@ -24,12 +24,12 @@ import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 
 export const getServerSideProps = async ({ locale }) => {
 	const transactionsPage = await fetchTransactionPage();
-	const stats = await fetchStats();
+	const stats = await fetchTransactionStats();
 
 	return {
 		props: {
 			preloadedData: transactionsPage.data,
-			stats: stats.transactions,
+			stats: stats,
 			...(await serverSideTranslations(locale, ['common']))
 		}
 	};
