@@ -23,6 +23,7 @@
     flex-direction: row;
     align-items: baseline;
     font: $font-body-bold;
+    white-space: nowrap;
 }
 
 .decimal {
@@ -31,11 +32,19 @@
 }
 
 .incoming {
-    background: $color-amount-incoming !important;
+    color: $color-text-body;
+
+    & > * {
+        filter: brightness(20) hue-rotate(180deg);
+    }
 }
 
 .outgoing {
-    background: $color-amount-outgoing !important;
+    color: $color-text-body;
+
+    & > * {
+        filter: brightness(20) hue-rotate(90deg);
+    }
 }
 
 .containerMd {
