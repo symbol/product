@@ -2,6 +2,8 @@
 $color-background-main: #eef5f9;
 $color-background-card: #fff;
 $color-background-header: #F5F9FBEE;
+$color-background-navigation: #F5F9FBEE;
+$color-border-navigation: #eef5f9;
 $color-background-footer: #F5F9FBEE;
 $color-background-mosaic: rgba(25, 41, 97, 5%);
 $color-background-tooltip: #0B0118;
@@ -11,7 +13,7 @@ $color-secondary: #FAB700;
 $color-text-body: #0B0118;
 $color-text-footer: #fff;
 $color-text-link: #0D155C;
-$color-text-link-hover: #66B7E7;
+$color-text-link-hover: #0D155C;
 $color-text-tooltip: #fff;
 $color-text-textbox-placeholder: #A8A6A6;
 $color-text-button: #fff;
@@ -62,6 +64,7 @@ $spacing-fields: $spacing-base * 2;
 $spacing-card-gap: $spacing-base * 3;
 $spacing-section-gap: $spacing-base * 4;
 $spacing-header-height: $spacing-base * 8;
+$spacing-navigation-height: $spacing-base * 8;
 $spacing-heading-margin: $spacing-base;
 $spacing-textbox-height: $spacing-base * 4.75;
 
