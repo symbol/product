@@ -19,166 +19,215 @@
     background: $color-background-header;
     box-shadow: 0 4px 22px rgba(0, 0, 0, 5%);
     backdrop-filter: blur(12px);
+}
 
-    .headerLogo {
-        position: relative;
-        width: 3.75rem;
-        height: 3.75rem;
-        margin: auto 0;
-        user-select: none;
-    }
+.headerLogo {
+    position: relative;
+    width: 3.75rem;
+    height: 3.75rem;
+    margin: auto 0;
+    user-select: none;
+}
 
-    .searchBar {
-        min-width: 10rem;
-    }
+.searchBar {
+    min-width: 10rem;
+}
 
-    .headerRightSection {
-        display: flex;
-        flex-direction: row;
-        gap: $spacing-base * 2;
-        align-items: center;
-        justify-content: flex-end;
-    }
+.headerRightSection {
+    display: flex;
+    flex-direction: row;
+    gap: $spacing-base * 2;
+    align-items: center;
+    justify-content: flex-end;
+}
 
+.headerMenu {
+    display: flex;
+    flex-direction: row;
+}
+
+.menuItem {
+    margin-left: 1rem;
+    padding: 0.625rem;
+    color: $color-tab-inactive;
+    font: $font-nav;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: color 250ms;
+    user-select: none;
+}
+
+.menuItem__active {
+    color: $color-tab-active;
+}
+
+.menuIcon {
+    display: none;
+}
+
+.profileIcon {
+    width: 2.66rem;
+    height: 2.66rem;
+    cursor: pointer;
+    user-select: none;
+}
+
+.modal {
+    position: absolute;
+    top: $spacing-header-height + $spacing-base;
+    right: $spacing-base * 3;
+    width: 28rem;
+    height: 36rem;
+}
+
+.modalProfile {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    overflow-y: auto;
+}
+
+.modalCompactList {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-base / 2;
+    margin: $spacing-base / 2 0;
+}
+
+.contactList {
+    flex: 1;
+    overflow: visible;
+}
+
+.buttonRemove {
+    flex-shrink: 0;
+    align-self: center;
+    width: $spacing-base * 2;
+    height: $spacing-base * 2;
+    cursor: pointer;
+}
+
+.buttonAddContainer {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    align-self: flex-end;
+    justify-content: center;
+    width: $spacing-base * 4;
+    height: $spacing-base * 4;
+    background-color: $color-button-bg;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.buttonAddIcon {
+    width: $spacing-base * 2;
+    height: $spacing-base * 2;
+}
+
+.button {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    align-self: flex-end;
+    justify-content: center;
+    padding: $spacing-base;
+    color: $color-text-button;
+    background-color: $color-button-bg;
+    border-radius: 0.2rem;
+    cursor: pointer;
+}
+
+.mobileMenu {
+    display: none;
+}
+
+@media #{$screen-mobile} {
     .headerMenu {
-        display: flex;
-        flex-direction: row;
-    }
-
-    .menuItem {
-        margin-left: 1rem;
-        padding: 0.625rem;
-        color: $color-tab-inactive;
-        font: $font-nav;
-        text-transform: uppercase;
-        cursor: pointer;
-        transition: color 250ms;
-        user-select: none;
-    }
-
-    .menuItem__active {
-        color: $color-tab-active;
-    }
-
-    .profileIcon {
-        width: 2.66rem;
-        height: 2.66rem;
-        cursor: pointer;
-        user-select: none;
-    }
-
-    .modal {
-        position: absolute;
-        top: $spacing-header-height + $spacing-base;
-        right: $spacing-base * 3;
-        width: 28rem;
-        height: 36rem;
-    }
-
-    .modalProfile {
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-        overflow-y: auto;
-    }
-
-    .modalCompactList {
-        display: flex;
-        flex-direction: column;
-        gap: $spacing-base / 2;
-        margin: $spacing-base / 2 0;
-    }
-
-    .contactList {
-        flex: 1;
-        overflow: visible;
-    }
-
-    .buttonRemove {
-        flex-shrink: 0;
-        align-self: center;
-        width: $spacing-base * 2;
-        height: $spacing-base * 2;
-        cursor: pointer;
-    }
-
-    .buttonAddContainer {
-        display: flex;
-        flex-shrink: 0;
-        align-items: center;
-        align-self: flex-end;
-        justify-content: center;
-        width: $spacing-base * 4;
-        height: $spacing-base * 4;
-        background-color: $color-button-bg;
-        border-radius: 50%;
-        cursor: pointer;
-    }
-
-    .buttonAddIcon {
-        width: $spacing-base * 2;
-        height: $spacing-base * 2;
-    }
-
-    .button {
-        display: flex;
-        flex: 1;
-        align-items: center;
-        align-self: flex-end;
-        justify-content: center;
-        padding: $spacing-base;
-        color: $color-text-button;
-        background-color: $color-button-bg;
-        border-radius: 0.2rem;
-        cursor: pointer;
-    }
-
-    .mobileMenu {
         display: none;
     }
 
-    @media #{$screen-mobile} {
-        .headerMenu {
-            display: none;
-        }
+    .searchBar {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 50%;
+        min-width: 10rem;
+        margin: auto 0;
+        transform: translate(-50%, -50%);
+    }
 
-        .searchBar {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 50%;
-            min-width: 10rem;
-            margin: auto 0;
-            transform: translate(-50%, -50%);
-        }
+    .modal {
+        top: $spacing-header-height + $spacing-base;
+        right: 0;
+        width: 100%;
+        height: auto;
+        max-height: 70vh;
+    }
 
-        .modal {
-            top: $spacing-header-height + $spacing-base;
-            right: 0;
-            width: 100%;
-            height: auto;
-            max-height: 70vh;
-        }
+    .modalProfile {
+        min-height: 50vh;
+    }
 
-        .buttonAddContainer {
-            width: $spacing-base * 6;
-            height: $spacing-base * 6;
-        }
+    .buttonAddContainer {
+        width: $spacing-base * 6;
+        height: $spacing-base * 6;
+    }
 
-        .button {
-            padding: $spacing-base * 1.5;
-        }
+    .button {
+        padding: $spacing-base * 1.5;
+    }
+
+    .mobileMenu {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        z-index: 10;
+        display: flex;
+        flex-direction: row;
+        gap: $spacing-base / 2;
+        align-items: center;
+        width: 100%;
+        width: 100vw;
+        height: $spacing-navigation-height;
+        padding: 0 $spacing-padding;
+        overflow-x: auto;
+        background: $color-background-navigation;
+        border-top: $spacing-base / 4 solid $color-border-navigation;
+        backdrop-filter: blur(12px);
+    }
+
+    .menuItem {
+        display: flex;
+        flex-direction: column;
+        flex-grow: 0;
+        flex-shrink: 0;
+        align-items: center;
+        justify-content: center;
+        width: $spacing-base * 8;
+        color: $color-tab-active;
+        opacity: 0.3;
 
         .menuIcon {
+            display: block;
+            flex-grow: 0;
+            flex-shrink: 0;
             width: $spacing-base * 3;
             height: $spacing-base * 3;
-            cursor: pointer;
+            margin-bottom: $spacing-base / 2;
         }
 
-        .mobileMenu {
-            display: flex;
-            flex-direction: column;
-            gap: $spacing-base;
+        .menuText {
+            max-width: $spacing-base * 10;
+            overflow: hidden;
+            font-size: 0.75rem;
+            white-space: nowrap;
+            text-align: center;
+            text-overflow: ellipsis;
         }
+    }
+
+    .menuItem__active {
+        opacity: 1;
     }
 }

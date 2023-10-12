@@ -30,27 +30,33 @@ const Header = () => {
 	const menuItems = [
 		{
 			text: t('menu_home'),
-			href: createPageHref('home')
+			href: createPageHref('home'),
+			iconSrc: '/images/menu/home.svg'
 		},
 		{
 			text: t('menu_blocks'),
-			href: createPageHref('blocks')
+			href: createPageHref('blocks'),
+			iconSrc: '/images/menu/blocks.svg'
 		},
 		{
 			text: t('menu_accounts'),
-			href: createPageHref('accounts')
+			href: createPageHref('accounts'),
+			iconSrc: '/images/menu/accounts.svg'
 		},
 		{
 			text: t('menu_transactions'),
-			href: createPageHref('transactions')
+			href: createPageHref('transactions'),
+			iconSrc: '/images/menu/transactions.svg'
 		},
 		{
 			text: t('menu_mosaics'),
-			href: createPageHref('mosaics')
+			href: createPageHref('mosaics'),
+			iconSrc: '/images/menu/mosaics.svg'
 		},
 		{
 			text: t('menu_namespaces'),
-			href: createPageHref('namespaces')
+			href: createPageHref('namespaces'),
+			iconSrc: '/images/menu/namespaces.svg'
 		}
 	];
 	const languages = [
@@ -90,7 +96,8 @@ const Header = () => {
 		<>
 			{menuItems.map((item, index) => (
 				<Link className={getItemStyle(item.href)} key={index} href={item.href}>
-					{item.text}
+					<CustomImage src={item.iconSrc + ''} className={styles.menuIcon} />
+					<div className={styles.menuText}>{item.text}</div>
 				</Link>
 			))}
 		</>
@@ -144,7 +151,6 @@ const Header = () => {
 					<div className={styles.headerMenu}>{renderMenu()}</div>
 					<SearchBar className={styles.searchBar} modalClassName={styles.modal} onSearchRequest={search} />
 					<CustomImage className={styles.profileIcon} src="/images/icon-profile.svg" alt="profile" onClick={toggleProfile} />
-					<CustomImage className={styles.menuIcon} src="/images/icon-menu.svg" alt="profile" onClick={toggleMenu} />
 				</div>
 				<Modal className={`${styles.modal} ${styles.modalProfile}`} isVisible={isProfileOpen} onClose={toggleProfile}>
 					{!isAddContactOpen && (
@@ -210,6 +216,7 @@ const Header = () => {
 					</div>
 				</Modal>
 			</header>
+			<nav className={styles.mobileMenu}>{renderMenu()}</nav>
 		</div>
 	);
 };
