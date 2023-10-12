@@ -639,8 +639,8 @@ class NemDatabase(DatabaseConnectionPool):
 		# Check for address filter
 		if address is not None:
 			address_hex = _format_bytes(Address(address).bytes)
-			where_clauses.append("(t.signer_address = %s OR tt.recipient = %s)")
-			params.extend(['\\x' + address_hex, '\\x' + address_hex])
+			where_clauses.append("(t.signer_address = %s OR tt.recipient = %s OR tm.other_transaction ->> 'recipient' = %s)")
+			params.extend(['\\x' + address_hex, '\\x' + address_hex, address])
 		else:
 			# Check for sender address filter
 			if sender_address is not None:
@@ -656,8 +656,8 @@ class NemDatabase(DatabaseConnectionPool):
 			# Check for recipient address filter
 			if recipient_address is not None:
 				recipient_address_hex = _format_bytes(Address(recipient_address).bytes)
-				where_clauses.append("tt.recipient = %s")
-				params.extend(['\\x' + recipient_address_hex])
+				where_clauses.append("tt.recipient = %s OR tm.other_transaction ->> 'recipient' = %s")
+				params.extend(['\\x' + recipient_address_hex, recipient_address])
 
 		# Append WHERE clauses to SQL string if any exists
 		if where_clauses:
