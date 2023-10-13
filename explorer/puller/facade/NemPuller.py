@@ -35,13 +35,13 @@ class NemPuller:
 		self.nem_facade = NemFacade(str(network))
 		self.network = network
 
-	def _process_block(self, block_data):
+	def _process_block(self, cursor, block_data):
 		"""Process block data."""
 
 		timestamp = Block.convert_timestamp_to_datetime(self.nem_facade, block_data.timestamp)
 		total_fees = sum(transaction.fee for transaction in block_data.transactions)
 
-		return Block(
+		block = Block(
 			block_data.height,
 			timestamp,
 			total_fees,
@@ -52,6 +52,8 @@ class NemPuller:
 			block_data.signature,
 			block_data.size
 		)
+
+		self.nem_db.insert_block(cursor, block)
 
 	def _process_mosaic_definition(self, cursor, transaction, block_height):
 		"""Process mosaic definition data."""
@@ -256,8 +258,7 @@ class NemPuller:
 	def _store_block(self, cursor, block):
 		"""Store block data."""
 
-		save_block = self._process_block(block)
-		self.nem_db.insert_block(cursor, save_block)
+		self._process_block(cursor, block)
 
 	def _store_transactions(self, cursor, transactions):
 		"""Store transactions data."""
