@@ -112,6 +112,20 @@ class NemDatabase(DatabaseConnection):
 			'''
 		)
 
+		cursor.execute(
+			'''
+			CREATE INDEX IF NOT EXISTS idx_accounts_address
+				ON accounts (address)
+			'''
+		)
+
+		cursor.execute(
+			'''
+			CREATE INDEX IF NOT EXISTS idx_accounts_public_key
+				ON accounts (public_key)
+			'''
+		)
+
 	def create_tables(self):
 		"""Creates blocks database tables."""
 
@@ -306,6 +320,30 @@ class NemDatabase(DatabaseConnection):
 				id serial PRIMARY KEY,
 				address bytea UNIQUE,
 				remarks varchar NOT NULL
+			)
+			'''
+		)
+
+		# Create accounts table
+		cursor.execute(
+			'''
+			CREATE TABLE IF NOT EXISTS accounts (
+				id serial PRIMARY KEY,
+				address bytea NOT NULL,
+				public_key bytea NOT NULL,
+				remote_address bytea,
+				importance bigint DEFAULT 0,
+				balance bigint DEFAULT 0,
+				vested_balance bigint DEFAULT 0,
+				mosaics json,
+				harvested_fees bigint DEFAULT 0,
+				harvested_blocks bigint DEFAULT 0,
+				harvest_status int NOT NULL,
+				harvest_remote_status int NOT NULL,
+				height bigint NOT NULL,
+				min_cosignatories int,
+				cosignatory_of bytea[],
+				cosignatories bytea[]
 			)
 			'''
 		)
