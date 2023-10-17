@@ -18,9 +18,9 @@ export const fetchTransactionPage = async searchCriteria => {
 	if (formattedFilter.to) {
 		formattedFilter.recipientAddress = formattedFilter.to;
 	}
-	const url = createAPISearchURL(`${config.API_BASE_URL}/transactions`, { pageNumber, pageSize }, filter);
+	const url = createAPISearchURL(`${config.API_BASE_URL}/transactions`, { pageNumber, pageSize }, formattedFilter);
 	const transactions = await makeRequest(url);
-	const formatter = filter.address ? data => formatTransaction(data, filter.address) : formatTransaction;
+	const formatter = formattedFilter.address ? data => formatTransaction(data, formattedFilter.address) : formatTransaction;
 
 	return createPage(transactions, pageNumber, formatter);
 };
