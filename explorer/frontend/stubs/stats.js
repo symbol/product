@@ -1,4 +1,4 @@
-import { getAccountsStub } from './accounts';
+import symbolSDK from 'symbol-sdk';
 
 export const getStatsStub = async () => {
 	const baseInfo = {
@@ -87,14 +87,33 @@ export const getTransactionChartStub = async filter => {
 	}
 };
 
+const getAccountsStub = async searchCriteria => {
+	const { pageNumber, pageSize } = searchCriteria;
+	const data = new Array(pageSize).fill(null).map((_, index) => {
+		const facade = new symbolSDK.facade.NemFacade('mainnet');
+		const key_pair1 = new symbolSDK.facade.NemFacade.KeyPair(symbolSDK.PrivateKey.random());
+		const address1 = facade.network.publicKeyToAddress(key_pair1.publicKey);
+
+		return {
+			address: address1.toString(),
+			name: '',
+			description: '',
+			balance: Math.floor(1787990951624116 / (index + 1 + (pageNumber - 1) * pageSize)) / 1000000,
+			importance: Math.floor(20624116 / (index + 1 + (pageNumber - 1) * pageSize)) / 1000000
+		};
+	});
+
+	return Promise.resolve(data);
+};
+
 export const getAccountChartsStub = async () => {
 	const accounts = (await getAccountsStub({ pageNumber: 1, pageSize: 10 })).slice(0, 9);
 
 	return {
 		importanceBreakdown: [...accounts.map(account => [account.importance, account.address]), [48.9, 'rest']],
 		harvestingImportance: [
-			[34.54, 'harvesting'],
-			[65.46, 'not harvesting']
+			[34.54, 'Harvesting'],
+			[65.46, 'Not harvesting']
 		]
 	};
 };

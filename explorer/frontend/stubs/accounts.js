@@ -1,9 +1,8 @@
-import { fetchMosaicPage } from '@/api/mosaics';
-import symbolSDK from 'symbol-sdk';
+import config from '@/config';
+import axios from 'axios';
 
 export const getAccountsStub = async searchCriteria => {
 	const { pageNumber } = searchCriteria;
-
 	const response = await fetch('https://explorer.nemtool.com/account/accountList', {
 		method: 'POST',
 		body: {
@@ -20,48 +19,91 @@ export const getAccountsStub = async searchCriteria => {
 };
 
 export const getAccountInfoStub = async address => {
-	const facade = new symbolSDK.facade.NemFacade('testnet');
-	const key_pair1 = new symbolSDK.facade.NemFacade.KeyPair(symbolSDK.PrivateKey.random());
-	const address1 = facade.network.publicKeyToAddress(key_pair1.publicKey);
-	const key_pair2 = new symbolSDK.facade.NemFacade.KeyPair(symbolSDK.PrivateKey.random());
-	const address2 = facade.network.publicKeyToAddress(key_pair2.publicKey);
-	const key_pair3 = new symbolSDK.facade.NemFacade.KeyPair(symbolSDK.PrivateKey.random());
-	const address3 = facade.network.publicKeyToAddress(key_pair3.publicKey);
-	const key_pair4 = new symbolSDK.facade.NemFacade.KeyPair(symbolSDK.PrivateKey.random());
-	const address4 = facade.network.publicKeyToAddress(key_pair4.publicKey);
-	const mosaics = (await fetchMosaicPage({ pageSize: 10 })).data;
+	const accountInfo = (
+		await axios.post('https://explorer.nemtool.com/account/detail', {
+			address
+		})
+	).data;
 
-	let minCosignatories = 0;
-	let cosignatoryOf = [];
-	let cosignatories = [];
-
-	if (address[1] === 'A') {
-		minCosignatories = 2;
-		cosignatories = [address2.toString(), address3.toString(), address4.toString()];
-	}
-	if (address[1] === 'B') {
-		cosignatoryOf = [address2.toString(), address3.toString()];
-	}
+	const mosaicsReq = await fetch('https://explorer.nemtool.com/namespace/mosaicListByAddress', {
+		method: 'POST',
+		body: {
+			address
+		}
+	});
+	const mosaics = await mosaicsReq.json();
 
 	return {
-		remoteAddress: address1.toString(),
-		address,
-		publicKey: key_pair1.publicKey.toString(),
-		remarkLabel: 'Lorem ipsum',
-		balance: 8423.142938,
-		vestedBalance: 8423.142938,
-		mosaics: mosaics.map(mos => ({
-			...mos,
-			amount: (Math.random() * 10000).toFixed()
-		})),
-		importance: 0,
-		harvestedBlocks: 1200,
-		harvestedFees: 137,
-		harvestStatus: 'locked',
-		harvestRemoteStatus: 'active',
-		createdHeight: 73737,
-		minCosignatories,
-		cosignatoryOf,
-		cosignatories
+		remoteAddress: null,
+		address: accountInfo.address,
+		publicKey: accountInfo.publicKey,
+		remarkLabel: accountInfo.label,
+		balance: accountInfo.balance / 1000000,
+		vestedBalance: accountInfo.vestedBalance / 1000000,
+		mosaics: [
+			...mosaics.map(mosaic => ({
+				name: createMosaicName(mosaic.namespace, mosaic.mosaic),
+				id: createMosaicName(mosaic.namespace, mosaic.mosaic),
+				amount: mosaic.quantity / Math.pow(10, mosaic.div)
+			})),
+			{
+				name: config.NATIVE_MOSAIC_ID,
+				id: config.NATIVE_MOSAIC_ID,
+				amount: accountInfo.balance / 1000000
+			}
+		],
+		importance: accountInfo.importance,
+		harvestedBlocks: accountInfo.harvestedBlocks,
+		harvestedFees: 0,
+		createdHeight: 0,
+		minCosignatories: null,
+		cosignatoryOf: [],
+		cosignatories: [],
+		harvestRemoteStatus: (accountInfo.remoteStatus || '').toLowerCase()
 	};
+
+	// const facade = new symbolSDK.facade.NemFacade('testnet');
+	// const key_pair1 = new symbolSDK.facade.NemFacade.KeyPair(symbolSDK.PrivateKey.random());
+	// const address1 = facade.network.publicKeyToAddress(key_pair1.publicKey);
+	// const key_pair2 = new symbolSDK.facade.NemFacade.KeyPair(symbolSDK.PrivateKey.random());
+	// const address2 = facade.network.publicKeyToAddress(key_pair2.publicKey);
+	// const key_pair3 = new symbolSDK.facade.NemFacade.KeyPair(symbolSDK.PrivateKey.random());
+	// const address3 = facade.network.publicKeyToAddress(key_pair3.publicKey);
+	// const key_pair4 = new symbolSDK.facade.NemFacade.KeyPair(symbolSDK.PrivateKey.random());
+	// const address4 = facade.network.publicKeyToAddress(key_pair4.publicKey);
+	// const mosaics = (await fetchMosaicPage({ pageSize: 10 })).data;
+
+	// let minCosignatories = 0;
+	// let cosignatoryOf = [];
+	// let cosignatories = [];
+
+	// if (address[1] === 'A') {
+	// 	minCosignatories = 2;
+	// 	cosignatories = [address2.toString(), address3.toString(), address4.toString()];
+	// }
+	// if (address[1] === 'B') {
+	// 	cosignatoryOf = [address2.toString(), address3.toString()];
+	// }
+
+	// return {
+	// 	remoteAddress: address1.toString(),
+	// 	address,
+	// 	publicKey: key_pair1.publicKey.toString(),
+	// 	remarkLabel: 'Lorem ipsum',
+	// 	balance: 8423.142938,
+	// 	vestedBalance: 8423.142938,
+	// 	mosaics: mosaics.map(mos => ({
+	// 		...mos,
+	// 		amount: (Math.random() * 10000).toFixed()
+	// 	})),
+	// 	importance: 0,
+	// 	harvestedBlocks: 1200,
+	// 	harvestedFees: 137,
+	// 	harvestStatus: 'locked',
+	// 	harvestRemoteStatus: 'active',
+	// 	createdHeight: 73737,
+	// 	minCosignatories,
+	// 	cosignatoryOf,
+	// 	cosignatories
+	// };
 };

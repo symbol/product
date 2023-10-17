@@ -1,5 +1,5 @@
 import { fetchBlockPage } from '@/api/blocks';
-import { fetchBlockStats, fetchStats } from '@/api/stats';
+import { fetchBlockStats } from '@/api/stats';
 import ChartLine from '@/components/ChartLine';
 import Field from '@/components/Field';
 import FieldTimestamp from '@/components/FieldTimestamp';
