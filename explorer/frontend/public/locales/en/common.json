@@ -239,7 +239,7 @@
 	"transactionType_ACCOUNT_KEY_LINK": "Account Key Link",
 	"transactionType_MULTISIG": "Multisig",
 
-	"value_averageFee": "{{value}} XEM / Byte",
+	"value_averageFee": "{{value}} XEM",
 	"value_blockGenerationTime": "{{value}} seconds",
 	"value_expiration": "In {{value}} blocks",
 	"value_expired": "In 0 blocks (Expired)",

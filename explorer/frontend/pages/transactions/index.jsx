@@ -125,12 +125,6 @@ const TransactionInfo = ({ preloadedData, stats }) => {
 
 	const chartFilterConfig = [
 		{
-			name: 'type',
-			title: t('filter_type'),
-			type: 'transaction-type',
-			options: Object.values(TRANSACTION_TYPE).map(type => ({ type }))
-		},
-		{
 			name: 'isPerDay',
 			title: t('filter_perDay'),
 			off: ['isPerMonth'],

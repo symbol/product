@@ -1,5 +1,6 @@
 import { fetchBlockPage } from './blocks';
 import { getAccountChartsStub, getStatsStub, getTransactionChartStub } from '../stubs/stats';
+import config from '@/config';
 
 export const fetchAccountCharts = async () => {
 	return getAccountChartsStub();
@@ -29,22 +30,35 @@ export const fetchTransactionStats = async () => {
 
 	return {
 		averagePerBlock,
-		totalAll: total240Blocks,
-		total30Days: total240Blocks,
-		total24Hours: total240Blocks
+		totalAll: 0,
+		total30Days: 0,
+		total24Hours: 0
 	};
 };
 
-export const fetchNodeStats = async () => {
-	const blocks = (await fetchBlockPage({ pageSize: 240 })).data;
-	const total240Blocks = blocks.reduce((partialSum, block) => partialSum + block.transactionCount, 0);
-	const averagePerBlock = Math.ceil(total240Blocks / blocks.length);
+export const fetchBlockStats = async () => {
+	const blockPage = await fetchBlockPage({ pageSize: 241 });
+	const blocks = blockPage.data.slice(0, -1);
+	const blockTimeChart = blocks
+		.map((block, index) => [
+			block.height,
+			(new Date(block.timestamp).getTime() - new Date(blockPage.data[index + 1].timestamp).getTime()) / 1000
+		])
+		.reverse();
+	const blockFeeChart = blocks.map(block => [block.height, block.totalFee]).reverse();
+	const blockDifficultyChart = blocks.map(block => [block.height, block.difficulty]).reverse();
 
 	return {
-		averagePerBlock,
-		totalAll: total240Blocks,
-		total30Days: total240Blocks,
-		total24Hours: total240Blocks
+		blockTime: Math.round(blockTimeChart.reduce((partialSum, item) => partialSum + item[1], 0) / blockTimeChart.length),
+		blockFee: Number(
+			(blockFeeChart.reduce((partialSum, item) => partialSum + item[1], 0) / blockFeeChart.length).toFixed(
+				config.NATIVE_MOSAIC_DIVISIBILITY
+			)
+		),
+		blockDifficulty: blocks[0].difficulty,
+		blockTimeChart,
+		blockFeeChart,
+		blockDifficultyChart
 	};
 };
 

@@ -1,5 +1,5 @@
 import { fetchBlockPage } from '@/api/blocks';
-import { fetchStats } from '@/api/stats';
+import { fetchBlockStats, fetchStats } from '@/api/stats';
 import ChartLine from '@/components/ChartLine';
 import Field from '@/components/Field';
 import FieldTimestamp from '@/components/FieldTimestamp';
@@ -19,19 +19,18 @@ import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 
 export const getServerSideProps = async ({ locale }) => {
 	const blocksPage = await fetchBlockPage();
-	const stats = await fetchStats();
+	const stats = await fetchBlockStats();
 
 	return {
 		props: {
 			blocks: blocksPage.data,
-			chainInfo: stats.chainInfo,
-			charts: stats.charts,
+			stats,
 			...(await serverSideTranslations(locale, ['common']))
 		}
 	};
 };
 
-const Blocks = ({ blocks, chainInfo, charts }) => {
+const Blocks = ({ blocks, stats }) => {
 	const { t } = useTranslation();
 	const { requestNextPage, data, isLoading, pageNumber, isLastPage } = usePagination(fetchBlockPage, blocks);
 
@@ -73,24 +72,24 @@ const Blocks = ({ blocks, chainInfo, charts }) => {
 					<div className="layout-grid-row layout-flex-fill">
 						<div className="layout-flex-col layout-flex-fill">
 							<Field title={t('field_blockGenerationTime')}>
-								{t('value_blockGenerationTime', { value: chainInfo.blockGenerationTime })}
+								{t('value_blockGenerationTime', { value: stats.blockTime })}
 							</Field>
 						</div>
-						<ChartLine data={charts.blockTime} name={t('chart_series_blockTime')} />
+						<ChartLine data={stats.blockTimeChart} name={t('chart_series_blockTime')} />
 					</div>
 					<Separator className="no-mobile" />
 					<div className="layout-grid-row layout-flex-fill">
 						<div className="layout-flex-col layout-flex-fill">
-							<Field title={t('field_averageFee')}>{t('value_averageFee', { value: chainInfo.averageFee })}</Field>
+							<Field title={t('field_averageFee')}>{t('value_averageFee', { value: stats.blockFee })}</Field>
 						</div>
-						<ChartLine data={charts.fee} name={t('chart_series_fee')} />
+						<ChartLine data={stats.blockFeeChart} name={t('chart_series_fee')} />
 					</div>
 					<Separator className="no-mobile" />
 					<div className="layout-grid-row layout-flex-fill">
 						<div className="layout-flex-col layout-flex-fill">
-							<Field title={t('field_difficulty')}>{chainInfo.difficulty}%</Field>
+							<Field title={t('field_difficulty')}>{stats.blockDifficulty}%</Field>
 						</div>
-						<ChartLine data={charts.difficulty} name={t('chart_series_difficulty')} />
+						<ChartLine data={stats.blockDifficultyChart} name={t('chart_series_difficulty')} />
 					</div>
 				</div>
 			</Section>
