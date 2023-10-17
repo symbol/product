@@ -146,6 +146,7 @@
 	"filter_type": "Type",
 	"filter_perDay": "Per Day",
 	"filter_perMonth": "Per Month",
+	"filter_block": "Block",
 
 	"menu_home": "Home",
 	"menu_blocks": "Blocks",

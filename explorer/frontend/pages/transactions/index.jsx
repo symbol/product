@@ -38,7 +38,10 @@ export const getServerSideProps = async ({ locale }) => {
 const TransactionInfo = ({ preloadedData, stats }) => {
 	const { t } = useTranslation();
 	const [contacts] = useStorage(STORAGE_KEY.ADDRESS_BOOK, []);
-	const { requestNextPage, data, isLoading, isLastPage, filter, changeFilter } = usePagination(fetchTransactionPage, preloadedData);
+	const { requestNextPage, data, isLoading, isLastPage, isError, filter, changeFilter } = usePagination(
+		fetchTransactionPage,
+		preloadedData
+	);
 	const chart = useFilter(fetchTransactionChart, [], true);
 	const formattedChartData = chart.data.map(item => {
 		if (chart.filter.isPerDay) {
@@ -92,6 +95,13 @@ const TransactionInfo = ({ preloadedData, stats }) => {
 
 	const transactionFilterConfig = [
 		{
+			name: 'type',
+			title: t('filter_type'),
+			conflicts: ['mosaic', 'to'],
+			type: 'transaction-type',
+			options: Object.values(TRANSACTION_TYPE).map(type => ({ type }))
+		},
+		{
 			name: 'from',
 			title: t('filter_from'),
 			type: 'account',
@@ -115,11 +125,11 @@ const TransactionInfo = ({ preloadedData, stats }) => {
 			isSearchEnabled: true
 		},
 		{
-			name: 'type',
-			title: t('filter_type'),
-			conflicts: ['mosaic', 'to'],
-			type: 'transaction-type',
-			options: Object.values(TRANSACTION_TYPE).map(type => ({ type }))
+			name: 'block',
+			title: t('filter_block'),
+			type: 'block',
+			conflicts: [],
+			isSearchEnabled: true
 		}
 	];
 
@@ -201,6 +211,7 @@ const TransactionInfo = ({ preloadedData, stats }) => {
 						renderItemMobile={data => <ItemTransactionMobile data={data} />}
 						isLoading={isLoading}
 						isLastPage={isLastPage}
+						isError={isError}
 						onEndReached={requestNextPage}
 						renderSectionHeader={SectionHeaderTransaction}
 					/>

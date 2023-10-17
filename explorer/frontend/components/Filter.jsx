@@ -5,6 +5,7 @@ import LoadingIndicator from './LoadingIndicator';
 import Modal from './Modal';
 import TextBox from './TextBox';
 import ValueAccount from './ValueAccount';
+import ValueBlockHeight from './ValueBlockHeight';
 import ValueMosaic from './ValueMosaic';
 import ValueTransactionType from './ValueTransactionType';
 import styles from '@/styles/components/Filter.module.scss';
@@ -22,6 +23,16 @@ const renderItem = (item, type, onSelect) => {
 					isNavigationDisabled
 					isCopyDisabled
 					onClick={() => onSelect(item.address, item)}
+				/>
+			);
+		case 'block':
+			return (
+				<ValueBlockHeight
+					value={item.height}
+					timestamp={item.timestamp}
+					size="md"
+					isNavigationDisabled
+					onClick={() => onSelect(item.height, item)}
 				/>
 			);
 		case 'mosaic':
@@ -56,6 +67,11 @@ const FilterModal = ({ isVisible, title, type, isSearchEnabled, options, onSearc
 	};
 	const list = searchResult ? [searchResult] : options;
 	const listTitle = !isSearchEnabled ? '' : searchResult ? 'Search results' : options.length ? 'Suggestions' : '';
+
+	useEffect(() => {
+		setText('');
+		setSearchResult(null);
+	}, [isVisible]);
 
 	return (
 		<Modal className={styles.modal} onClose={onClose} isVisible={isVisible}>
@@ -138,7 +154,7 @@ const Filter = ({ isSelectedItemsShown, data, value, search, isDisabled, onChang
 		changeFilterValue(filter, null);
 	};
 
-	const isFilterModalShown = ['account', 'mosaic', 'transaction-type'].some(value => value === expandedFilter?.type);
+	const isFilterModalShown = ['account', 'block', 'mosaic', 'transaction-type'].some(value => value === expandedFilter?.type);
 
 	useEffect(() => {
 		setSelectedItems(selectedItems => {
