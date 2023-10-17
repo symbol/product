@@ -1,6 +1,6 @@
 import config from '@/config';
 import { ACCOUNT_STATE_CHANGE_ACTION, COSIGNATORY_MODIFICATION_ACTION, TRANSACTION_DIRECTION, TRANSACTION_TYPE } from '@/constants';
-import { createAPISearchURL, createPage, createSearchCriteria } from '@/utils';
+import { createAPISearchURL, createPage, createSearchCriteria, makeRequest } from '@/utils';
 
 export const fetchTransactionPage = async searchCriteria => {
 	const { pageNumber, pageSize, filter } = createSearchCriteria(searchCriteria);
@@ -13,22 +13,20 @@ export const fetchTransactionPage = async searchCriteria => {
 		delete formattedFilter.address;
 	}
 	if (formattedFilter.from) {
-		formattedFilter.fromAddress = formattedFilter.from;
+		formattedFilter.senderAddress = formattedFilter.from;
 	}
 	if (formattedFilter.to) {
-		formattedFilter.toAddress = formattedFilter.to;
+		formattedFilter.recipientAddress = formattedFilter.to;
 	}
 	const url = createAPISearchURL(`${config.API_BASE_URL}/transactions`, { pageNumber, pageSize }, filter);
-	const response = await fetch(url);
-	const transactions = await response.json();
+	const transactions = await makeRequest(url);
 	const formatter = filter.address ? data => formatTransaction(data, filter.address) : formatTransaction;
 
 	return createPage(transactions, pageNumber, formatter);
 };
 
 export const fetchTransactionInfo = async hash => {
-	const response = await fetch(`${config.API_BASE_URL}/transaction/${hash}`);
-	const transaction = await response.json();
+	const transaction = await makeRequest(`${config.API_BASE_URL}/transaction/${hash}`);
 	const transactionInfo = formatTransaction(transaction);
 	const accountsStateMap = {};
 	const mosaicInfo = {};

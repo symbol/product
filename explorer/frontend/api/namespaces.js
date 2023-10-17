@@ -1,9 +1,8 @@
 import config from '@/config';
-import { createAPICallFunction, createAPISearchURL, createMosaicName, createPage, createSearchCriteria } from '@/utils';
+import { createAPICallFunction, createAPISearchURL, createMosaicName, createPage, createSearchCriteria, makeRequest } from '@/utils';
 
 export const fetchNamespaceInfo = createAPICallFunction(async id => {
-	const response = await fetch(`${config.API_BASE_URL}/namespace/${id}`);
-	const namespace = await response.json();
+	const namespace = await makeRequest(`${config.API_BASE_URL}/namespace/${id}`);
 
 	return formatNamespace(namespace);
 });
@@ -11,8 +10,7 @@ export const fetchNamespaceInfo = createAPICallFunction(async id => {
 export const fetchNamespacePage = async searchCriteria => {
 	const { pageNumber, pageSize } = createSearchCriteria(searchCriteria);
 	const url = createAPISearchURL(`${config.API_BASE_URL}/namespaces`, { pageNumber, pageSize });
-	const response = await fetch(url);
-	const namespaces = await response.json();
+	const namespaces = await makeRequest(url);
 
 	return createPage(namespaces, pageNumber, formatNamespace);
 };

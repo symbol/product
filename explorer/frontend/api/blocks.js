@@ -1,11 +1,10 @@
 import config from '@/config';
-import { createAPICallFunction, createAPISearchURL, createPage, createSearchCriteria, truncateDecimals } from '@/utils';
+import { createAPICallFunction, createAPISearchURL, createPage, createSearchCriteria, makeRequest, truncateDecimals } from '@/utils';
 
 export const fetchBlockPage = async searchCriteria => {
 	const { pageNumber, pageSize } = createSearchCriteria(searchCriteria);
 	const url = createAPISearchURL(`${config.API_BASE_URL}/blocks`, { pageNumber, pageSize });
-	const response = await fetch(url);
-	const blocks = await response.json();
+	const blocks = await makeRequest(url);
 
 	return createPage(blocks, pageNumber, block => ({
 		...block,
@@ -23,8 +22,7 @@ export const fetchChainHight = async () => {
 };
 
 export const fetchBlockInfo = createAPICallFunction(async height => {
-	const response = await fetch(`${config.API_BASE_URL}/block/${height}`);
-	const block = await response.json();
+	const block = await makeRequest(`${config.API_BASE_URL}/block/${height}`);
 	const chainHeight = await fetchChainHight();
 
 	return {

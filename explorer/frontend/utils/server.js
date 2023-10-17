@@ -1,3 +1,5 @@
+import config from '@/config';
+
 export const getSearchCriteria = req => {
 	const { searchParams } = new URL(req.url);
 	const pageNumber = searchParams.get('pageNumber');
@@ -65,3 +67,18 @@ export const createAPICallFunction =
 			return null;
 		}
 	};
+
+export const makeRequest = async (url, options = {}) => {
+	const { timeout = config.REQUEST_TIMEOUT } = options;
+
+	const controller = new AbortController();
+	const id = setTimeout(() => controller.abort(), timeout);
+
+	const response = await fetch(url, {
+		...options,
+		signal: controller.signal
+	});
+	clearTimeout(id);
+
+	return response.json();
+};
