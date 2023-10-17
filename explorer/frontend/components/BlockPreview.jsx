@@ -29,7 +29,7 @@ const BlockExpanded = ({ data, transactions, isNext, isTransactionSquaresRendere
 			<div className="layout-grid-row">
 				<Field title={t('field_status')}>
 					{isNext && <ValueLabel text={t('label_pending')} type="pending" />}
-					{!isNext && <ValueLabel text={t('label_safe')} type="confirmed" />}
+					{!isNext && <ValueLabel text={t('label_created')} type="created" />}
 				</Field>
 				<FieldTimestamp value={timestamp} hasTime hasSeconds />
 			</div>
