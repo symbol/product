@@ -21,7 +21,7 @@ const Header = () => {
 	const { t } = useTranslation();
 	const [contacts, setContacts] = useStorage(STORAGE_KEY.ADDRESS_BOOK, []);
 	const [userLanguage, setUserLanguage] = useStorage(STORAGE_KEY.USER_LANGUAGE, 'en');
-	const [userCurrency, setUserCurrency] = useStorage(STORAGE_KEY.USER_CURRENCY, 'usd');
+	const [userCurrency, setUserCurrency] = useStorage(STORAGE_KEY.USER_CURRENCY, 'USD');
 	const [address, setAddress] = useState('');
 	const [name, setName] = useState('');
 	const [isProfileOpen, toggleProfile] = useToggle(false);
@@ -136,7 +136,6 @@ const Header = () => {
 	};
 	const selectLanguage = locale => {
 		setUserLanguage(locale);
-		router.push(createPageHref('home'), null, { locale });
 		toggleProfile();
 	};
 
