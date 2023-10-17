@@ -12,10 +12,13 @@ export const search = async text => {
 
 	const block = await fetchBlockInfo(query);
 	if (query.length === 64) transaction = await fetchTransactionInfo(query.toUpperCase());
-	const account = await fetchAccountInfo(query.toUpperCase());
+	//const account = await fetchAccountInfo(query.toUpperCase());
 	const mosaic = await fetchMosaicInfo(query.toLowerCase());
 	namespace = await fetchNamespaceInfo(query.toLowerCase());
-	if (!namespace && query.split('.').length > 1) namespace = await fetchNamespaceInfo(query.split('.')[0]);
+	if (!namespace && query.split('.').length > 1) {
+		const mosaicRootNamespaceName = query.split('.')[0] || '';
+		namespace = await fetchNamespaceInfo(mosaicRootNamespaceName.toLowerCase());
+	}
 
 	if (block) results.block = block;
 	if (transaction) results.transaction = transaction;
