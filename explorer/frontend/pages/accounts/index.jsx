@@ -1,6 +1,6 @@
 import { fetchAccountPage } from '@/api/accounts';
 import { search } from '@/api/search';
-import { fetchAccountCharts, fetchStats } from '@/api/stats';
+import { fetchAccountCharts, fetchAccountStats } from '@/api/stats';
 import ButtonCSV from '@/components/ButtonCSV';
 import ChartDonut from '@/components/ChartDonut';
 import Field from '@/components/Field';
@@ -12,19 +12,19 @@ import Table from '@/components/Table';
 import ValueAccount from '@/components/ValueAccount';
 import ValueMosaic from '@/components/ValueMosaic';
 import styles from '@/styles/pages/Home.module.scss';
-import { useFilter, usePagination } from '@/utils';
+import { useAsyncCall, usePagination } from '@/utils';
 import Head from 'next/head';
 import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 
 export const getServerSideProps = async ({ locale }) => {
 	const page = await fetchAccountPage();
-	const stats = await fetchStats();
+	const stats = await fetchAccountStats();
 
 	return {
 		props: {
 			preloadedData: page.data,
-			stats: stats.accounts,
+			stats,
 			...(await serverSideTranslations(locale, ['common']))
 		}
 	};
@@ -33,7 +33,7 @@ export const getServerSideProps = async ({ locale }) => {
 const Accounts = ({ preloadedData, stats }) => {
 	const { t } = useTranslation();
 	const { requestNextPage, data, isLoading, isError, isLastPage, filter, changeFilter } = usePagination(fetchAccountPage, preloadedData);
-	const charts = useFilter(fetchAccountCharts, {}, true);
+	const charts = useAsyncCall(fetchAccountCharts, {});
 
 	const tableColumns = [
 		{
@@ -88,8 +88,8 @@ const Accounts = ({ preloadedData, stats }) => {
 					</div>
 					<Separator className="no-mobile" />
 					<div className="layout-grid-row layout-flex-fill">
-						<ChartDonut data={charts.data.importanceBreakdown} name={t('chart_name_importance_breakdown')} label="51.1%" />
-						<ChartDonut data={charts.data.harvestingImportance} name={t('chart_name_harvesting_importance')} label="34.54%" />
+						<ChartDonut data={charts.importanceBreakdown} name={t('chart_name_importance_breakdown')} label="51.1%" />
+						<ChartDonut data={charts.harvestingImportance} name={t('chart_name_harvesting_importance')} label="34.54%" />
 					</div>
 				</div>
 			</Section>
