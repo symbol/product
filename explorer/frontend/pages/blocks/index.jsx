@@ -32,7 +32,7 @@ export const getServerSideProps = async ({ locale }) => {
 
 const Blocks = ({ blocks, stats }) => {
 	const { t } = useTranslation();
-	const { requestNextPage, data, isLoading, pageNumber, isLastPage } = usePagination(fetchBlockPage, blocks);
+	const { requestNextPage, data, isLoading, isError, pageNumber, isLastPage } = usePagination(fetchBlockPage, blocks);
 
 	const tableColumns = [
 		{
@@ -100,6 +100,7 @@ const Blocks = ({ blocks, stats }) => {
 					renderItemMobile={data => <ItemBlockMobile data={data} />}
 					isLoading={isLoading}
 					isLastPage={isLastPage}
+					isError={isError}
 					onEndReached={() => requestNextPage({ pageNumber: pageNumber + 1 })}
 				/>
 			</Section>

@@ -25,7 +25,7 @@ export const getServerSideProps = async ({ locale }) => {
 
 const Blocks = ({ namespaces }) => {
 	const { t } = useTranslation();
-	const { requestNextPage, data, isLoading, pageNumber, isLastPage } = usePagination(fetchNamespacePage, namespaces);
+	const { requestNextPage, data, isLoading, pageNumber, isLastPage, isError } = usePagination(fetchNamespacePage, namespaces);
 	const chainHeight = useAsyncCall(fetchChainHight, 0);
 
 	const tableColumns = [
@@ -68,6 +68,7 @@ const Blocks = ({ namespaces }) => {
 					renderItemMobile={data => <ItemNamespaceMobile data={data} chainHeight={chainHeight} />}
 					isLoading={isLoading}
 					isLastPage={isLastPage}
+					isError={isError}
 					isLastColumnAligned={true}
 					onEndReached={() => requestNextPage({ pageNumber: pageNumber + 1 })}
 				/>

@@ -127,6 +127,13 @@ const AccountInfo = ({ accountInfo, preloadedTransactions }) => {
 	];
 	const transactionFilterConfig = [
 		{
+			name: 'type',
+			title: t('filter_type'),
+			conflicts: ['mosaic', 'to'],
+			type: 'transaction-type',
+			options: Object.values(TRANSACTION_TYPE).map(type => ({ type }))
+		},
+		{
 			name: 'from',
 			title: t('filter_from'),
 			type: 'account',
@@ -149,13 +156,6 @@ const AccountInfo = ({ accountInfo, preloadedTransactions }) => {
 			conflicts: ['type'],
 			isSearchEnabled: true,
 			options: accountInfo.mosaics
-		},
-		{
-			name: 'type',
-			title: t('filter_type'),
-			conflicts: ['mosaic', 'to'],
-			type: 'transaction-type',
-			options: Object.values(TRANSACTION_TYPE).map(type => ({ type }))
 		}
 	];
 

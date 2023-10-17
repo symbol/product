@@ -27,7 +27,7 @@ export const getServerSideProps = async ({ locale }) => {
 
 const Mosaics = ({ mosaics }) => {
 	const { t } = useTranslation();
-	const { requestNextPage, data, isLoading, pageNumber, isLastPage } = usePagination(fetchMosaicPage, mosaics);
+	const { requestNextPage, data, isLoading, pageNumber, isLastPage, isError } = usePagination(fetchMosaicPage, mosaics);
 	const chainHeight = useAsyncCall(fetchChainHight, 0);
 
 	const tableColumns = [
@@ -66,6 +66,7 @@ const Mosaics = ({ mosaics }) => {
 					renderItemMobile={data => <ItemMosaicMobile data={data} chainHeight={chainHeight} />}
 					isLoading={isLoading}
 					isLastPage={isLastPage}
+					isError={isError}
 					isLastColumnAligned={true}
 					onEndReached={() => requestNextPage({ pageNumber: pageNumber + 1 })}
 				/>
