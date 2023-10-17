@@ -25,6 +25,10 @@ export const formatDate = (dateStr, translate, config = {}) => {
 };
 
 export const numberToShortString = num => {
+	if (typeof num !== 'number' && typeof num !== 'string') {
+		return '';
+	}
+
 	const value = num.toString().replace(/[^0-9.]/g, '');
 
 	if (1000 > value) return '' + value;
@@ -44,6 +48,10 @@ export const numberToShortString = num => {
 };
 
 export const numberToString = num => {
+	if (typeof num !== 'number' && typeof num !== 'string') {
+		return '';
+	}
+
 	return num.toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ' ');
 };
 
