@@ -6,7 +6,7 @@ from symbolchain.nem.Network import Address
 from ..model.Block import Block
 from ..model.Endpoint import Endpoint
 from ..model.NodeInfo import NodeInfo
-from ..model.Transaction import TransactionFactory, TransactionHandler
+from ..model.Transaction import TransactionFactory, TransactionHandler, Mosaic
 from .BasicConnector import BasicConnector
 
 MICROXEM_PER_XEM = 1000000
@@ -27,6 +27,11 @@ class NemAccountInfo:
 		self.harvested_blocks = 0
 
 		self.remote_status = None
+		self.harvest_status = None
+
+		self.min_cosignatories = None
+		self.cosignatories = None
+		self.cosignatory_of = None
 
 
 class NemConnector(BasicConnector):
@@ -81,6 +86,14 @@ class NemConnector(BasicConnector):
 
 		meta_dict = response_dict['meta']
 		account_info.remote_status = meta_dict['remoteStatus']
+		account_info.harvest_status = meta_dict['status']
+
+		account_info.cosignatories = [Address(cosignatories['address']) for cosignatories in meta_dict['cosignatories']]
+		account_info.cosignatory_of = [Address(cosignatoryOf['address']) for cosignatoryOf in meta_dict['cosignatoryOf']]
+
+		multisig_dict = account_dict['multisigInfo']
+		account_info.min_cosignatories = multisig_dict['minCosignatories'] if multisig_dict else None
+
 		return account_info
 
 	@staticmethod
@@ -172,3 +185,16 @@ class NemConnector(BasicConnector):
 			specific_args = TransactionHandler().map[tx_type](tx_dict)
 
 		return TransactionFactory.create_transaction(tx_type, common_args, specific_args)
+
+	async def account_mosaics(self, address):
+		"""Gets mosaics owned by an account."""
+
+		mosaics_dict = await self.get(f'account/mosaic/owned?address={address}', 'data')
+
+		return [
+			Mosaic(
+				f'{mosaic["mosaicId"]["namespaceId"]}.{mosaic["mosaicId"]["name"]}',
+				mosaic['quantity']
+			)
+			for mosaic in mosaics_dict
+		]
