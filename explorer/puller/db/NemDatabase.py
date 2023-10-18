@@ -3,6 +3,7 @@ from binascii import hexlify, unhexlify
 from symbolchain.nem.Network import Address
 
 from db.DatabaseConnection import DatabaseConnection
+from model.Account import Account
 from model.Mosaic import Mosaic
 from model.Namespace import Namespace
 
@@ -763,6 +764,148 @@ class NemDatabase(DatabaseConnection):
 			result[1],
 			result[2],
 			result[3]
+		)
+
+	def insert_account(self, cursor, account):  # pylint: disable=no-self-use
+		"""Adds account into accounts table"""
+
+		cursor.execute(
+			'''
+			INSERT INTO accounts (
+				address,
+				public_key,
+				remote_address,
+				importance,
+				balance,
+				vested_balance,
+				mosaics,
+				harvested_fees,
+				harvested_blocks,
+				harvest_status,
+				harvest_remote_status,
+				height,
+				min_cosignatories,
+				cosignatory_of,
+				cosignatories
+			)
+			VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s,
+				%s, %s, %s, %s, %s, %s)
+			''',
+			(
+				Address(account.address).bytes,
+				unhexlify(account.public_key) if account.remote_address is not None else None,
+				Address(account.remote_address).bytes if account.remote_address is not None else None,
+				account.importance,
+				account.balance,
+				account.vested_balance,
+				account.mosaics,
+				account.harvested_fees,
+				account.harvested_blocks,
+				account.harvest_status,
+				account.harvest_remote_status,
+				account.height,
+				account.min_cosignatories,
+				account.cosignatory_of,
+				account.cosignatories
+			)
+		)
+
+	def get_account_by_address(self, cursor, address):  # pylint: disable=no-self-use
+		"""Searches account in accounts table"""
+
+		cursor.execute(
+			'''
+			SELECT
+				public_key,
+				remote_address,
+				importance,
+				balance,
+				vested_balance,
+				mosaics,
+				harvested_fees,
+				harvested_blocks,
+				harvest_status,
+				harvest_remote_status,
+				height,
+				min_cosignatories,
+				cosignatory_of,
+				cosignatories
+			FROM accounts
+			WHERE address = %s
+			''',
+			(address.bytes,)
+		)
+
+		result = cursor.fetchone()
+		if result is None:
+			return None
+
+		return Account(
+			address,
+			hexlify(result[0]) if result[0] is not None else None,
+			Address(result[1]) if result[1] is not None else None,
+			result[2],
+			result[3],
+			result[4],
+			result[5],
+			result[6],
+			result[7],
+			result[8],
+			result[9],
+			result[10],
+			result[11],
+			result[12],
+			result[13]
+		)
+
+	def update_account_harvested_fees(self, cursor, address, fee):  # pylint: disable=no-self-use
+		"""Updates harvested fees in accounts table"""
+
+		cursor.execute(
+			'''
+			UPDATE accounts
+			SET harvested_fees = harvested_fees + %s
+			WHERE address = %s
+			''',
+			(fee, address.bytes)
+		)
+
+	def update_account(self, cursor, address, accountInfo: Account):  # pylint: disable=no-self-use
+		"""Updates account in accounts table"""
+
+		cursor.execute(
+			'''
+			UPDATE accounts
+			SET
+				remote_address = %s,
+				public_key = %s,
+				importance = %s,
+				balance = %s,
+				vested_balance = %s,
+				mosaics = %s,
+				harvested_blocks = %s,
+				harvest_status = %s,
+				harvest_remote_status = %s,
+				min_cosignatories = %s,
+				cosignatory_of = %s,
+				cosignatories = %s
+			WHERE address = %s
+			''',
+			(
+				accountInfo.remote_address.bytes if accountInfo.remote_address is not None else None,
+				accountInfo.public_key.bytes if accountInfo.public_key is not None else None,
+				accountInfo.importance,
+				accountInfo.balance,
+				accountInfo.vested_balance,
+				accountInfo.mosaics,
+				accountInfo.harvested_blocks,
+				accountInfo.harvest_status,
+				accountInfo.harvest_remote_status,
+				accountInfo.min_cosignatories,
+				[address.bytes for address in accountInfo.cosignatory_of] if len(accountInfo.cosignatory_of) > 0 else None,
+				[address.bytes for address in accountInfo.cosignatories] if len(accountInfo.cosignatories) > 0 else None,
+				address.bytes
+			)
 		)
 
 	def get_current_height(self):  # pylint: disable=no-self-use

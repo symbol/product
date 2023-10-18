@@ -1,14 +1,16 @@
+import asyncio
 import configparser
 import json
 
 from symbolchain.CryptoTypes import PublicKey
 from symbolchain.facade.NemFacade import NemFacade
 from symbolchain.nc import TransactionType
-from symbolchain.nem.Network import Network
+from symbolchain.nem.Network import Address, Network
 from symbollightapi.connector.NemConnector import NemConnector
 from zenlog import log
 
 from db.NemDatabase import NemDatabase
+from model.Account import Account
 from model.Block import Block
 from model.Mosaic import Mosaic
 from model.Namespace import Namespace
@@ -255,6 +257,48 @@ class NemPuller:
 		else:
 			self._process_root_namespace(cursor, transaction, block_height)
 
+	def _convert_public_key_to_address(self, public_key):
+		"""Convert public key to address."""
+
+		return self.network.public_key_to_address(PublicKey(public_key))
+
+	def _extract_addresses_from_block(self, block):
+		"""Extract address and public key from block and transactions."""
+
+		addresses = set()
+
+		def add_public_key_from_attribute(obj, attribute_name):
+			attribute_value = getattr(obj, attribute_name, None)
+			if attribute_value:
+				addresses.add(self._convert_public_key_to_address(attribute_value))
+
+		def add_address_from_attribute(obj, attribute_name):
+			attribute_value = getattr(obj, attribute_name, None)
+			if attribute_value:
+				addresses.add(Address(attribute_value))
+
+		# Block signer
+		add_public_key_from_attribute(block, 'signer')
+
+		# Block transactions
+		for transaction in block.transactions:
+			add_public_key_from_attribute(transaction, 'sender')
+			add_public_key_from_attribute(transaction, 'remote_account')
+			add_address_from_attribute(transaction, 'recipient')
+
+			for attribute_name in ['modifications', 'signatures']:
+				attribute_value = getattr(transaction, attribute_name, [])
+				for attribute in attribute_value:
+					add_public_key_from_attribute(attribute, 'cosignatory_account' if attribute_name == 'modifications' else 'sender')
+
+			other_transaction = getattr(transaction, 'other_transaction', None)
+			if other_transaction:
+				add_public_key_from_attribute(other_transaction, 'sender')
+				add_public_key_from_attribute(other_transaction, 'remote_account')
+				add_address_from_attribute(other_transaction, 'recipient')
+
+		return addresses
+
 	def _store_block(self, cursor, block):
 		"""Store block data."""
 
@@ -316,6 +360,79 @@ class NemPuller:
 			if TransactionType.NAMESPACE_REGISTRATION.value == transaction.transaction_type:
 				self._process_namespace(cursor, transaction, block_height)
 
+	async def _update_account_info(self, cursor, addresses):
+		"""Sync account info."""
+
+		account_infos = await asyncio.gather(*[self.nem_connector.account_info(address) for address in addresses])
+
+		for account in account_infos:
+			remote_account_info = None
+
+			mosaics = await self.nem_connector.account_mosaics(account.address)
+
+			if account.remote_status == 'REMOTE':
+				remote_account_info = await self.nem_connector.account_info(account.address, True)
+
+			self.nem_db.update_account(cursor, account.address, Account(
+				address=None,
+				harvested_fees=None,
+				height=None,
+				remote_address=remote_account_info.address if remote_account_info is not None else None,
+				public_key=account.public_key,
+				importance=account.importance,
+				balance=account.balance * 1000000,
+				vested_balance=account.vested_balance * 1000000,
+				mosaics=json.dumps([mosaic._asdict() for mosaic in mosaics]) if mosaics else None,
+				harvested_blocks=account.harvested_blocks,
+				harvest_status=account.harvest_status,
+				harvest_remote_status=account.remote_status,
+				min_cosignatories=account.min_cosignatories,
+				cosignatory_of=account.cosignatory_of,
+				cosignatories=account.cosignatories
+			))
+
+			log.info(f'updated account info for {account.address}')
+
+	def _store_accounts(self, cursor, block_height, addresses):
+		"""Store accounts."""
+
+		for address in addresses:
+			account = self.nem_db.get_account_by_address(cursor, address)
+
+			if account is None:
+				self.nem_db.insert_account(cursor, Account(
+					address=address,
+					height=block_height,
+					public_key=None,
+					remote_address=None,
+					balance=0,
+					vested_balance=0,
+					importance=0,
+					mosaics=None,
+					harvested_fees=0,
+					harvested_blocks=0,
+					harvest_status=None,
+					harvest_remote_status=None,
+					min_cosignatories=None,
+					cosignatory_of=None,
+					cosignatories=None
+				))
+
+	async def _update_account_harvested_fee(self, cursor, block):
+		"""Store account harvested fee."""
+
+		total_fees = sum(transaction.fee for transaction in block.transactions)
+		harvester_address = self._convert_public_key_to_address(block.signer)
+
+		account = await self.nem_connector.account_info(harvester_address)
+
+		# If account is remote, get remote account info
+		if account.remote_status == 'REMOTE':
+			remote_account_info = await self.nem_connector.account_info(account.address, True)
+			harvester_address = remote_account_info.address
+
+		self.nem_db.update_account_harvested_fees(cursor, harvester_address, total_fees)
+
 	async def sync_nemesis_block(self):
 		"""Sync the Nemesis block."""
 
@@ -324,8 +441,14 @@ class NemPuller:
 		# initialize cursor
 		cursor = self.nem_db.connection.cursor()
 
+		addresses_from_block = self._extract_addresses_from_block(nemesis_block)
+
+		self._store_accounts(cursor, 1, addresses_from_block)
 		self._store_block(cursor, nemesis_block)
 		self._store_transactions(cursor, nemesis_block.transactions)
+
+		await self._update_account_harvested_fee(cursor, nemesis_block)
+		await self._update_account_info(cursor, addresses_from_block)
 
 		# commit changes
 		self.nem_db.connection.commit()
@@ -343,11 +466,22 @@ class NemPuller:
 			# initialize cursor
 			cursor = self.nem_db.connection.cursor()
 
+			addresses = set()
+
 			for block in blocks:
+				addresses_from_block = self._extract_addresses_from_block(block)
+				addresses.update(addresses_from_block)
+
+				self._store_accounts(cursor, block.height, addresses_from_block)
 				self._store_block(cursor, block)
 				self._store_transactions(cursor, block.transactions)
 				self._store_mosaics(cursor, block.transactions, block.height)
 				self._store_namespaces(cursor, block.transactions, block.height)
+
+				await self._update_account_harvested_fee(cursor, block)
+
+			# sync account info
+			await self._update_account_info(cursor, addresses)
 
 			# commit changes
 			self.nem_db.connection.commit()
