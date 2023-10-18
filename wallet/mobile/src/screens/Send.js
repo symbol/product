@@ -55,12 +55,7 @@ export const Send = connect((state) => ({
         mosaicInfo: mosaic,
     }));
     const selectedMosaic = mosaics.find((mosaic) => mosaic.id === mosaicId);
-    const selectedMosaicBalance = selectedMosaic?.amount || 0;
-    const selectedMosaicDivisibility = selectedMosaic?.divisibility || 0;
-    const availableBalance = Math.max(0, toFixedNumber(selectedMosaicBalance - parseFloat(maxFee), selectedMosaicDivisibility));
-
     const isButtonDisabled = !isRecipientValid || !isAmountValid || !selectedMosaic;
-
     const transaction = {
         signerAddress: currentAccount.address,
         recipient,
@@ -76,11 +71,18 @@ export const Send = connect((state) => ({
         messageEncrypted: message ? isEncrypted : null,
         fee: maxFee,
     };
-
     const cosignatoryList = { cosignatories };
 
     const transactionFees = useMemo(() => getTransactionFees(transaction, networkProperties), [message, isEncrypted]);
 
+    const getAvailableBalance = () => {
+        const selectedMosaicBalance = selectedMosaic?.amount || 0;
+        const selectedMosaicDivisibility = selectedMosaic?.divisibility || 0;
+        const isSelectedNativeMosaic = mosaicId === networkProperties.networkCurrency.mosaicId;
+        const mosaicAmountSubtractFee = isSelectedNativeMosaic ? parseFloat(maxFee) : 0;
+
+        return Math.max(0, toFixedNumber(selectedMosaicBalance - mosaicAmountSubtractFee, selectedMosaicDivisibility));
+    };
     const [send] = useDataManager(
         async () => {
             await TransactionService.sendTransferTransaction(transaction, currentAccount, networkProperties);
@@ -153,7 +155,7 @@ export const Send = connect((state) => ({
                         <FormItem>
                             <InputAmount
                                 title={$t('form_transfer_input_amount')}
-                                availableBalance={availableBalance}
+                                availableBalance={getAvailableBalance()}
                                 value={amount}
                                 onChange={setAmount}
                                 onValidityChange={setAmountValid}
