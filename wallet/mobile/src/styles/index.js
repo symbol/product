@@ -77,7 +77,7 @@ export const colors = {
 
 export const fonts = {
     button: {
-        fontFamily: 'Rajdhani-Bold',
+        fontFamily: 'SofiaSansCondensed-ExtraBold',
         fontWeight: Platform.select({ ios: '700', android: undefined }),
         fontSize: 17,
         textTransform: 'uppercase',
@@ -87,26 +87,36 @@ export const fonts = {
         fontSize: 13,
     },
     placeholder: {
-        fontFamily: 'Carbon-Bold',
-        fontSize: 13,
+        fontFamily: 'JetBrainsMono-Bold',
+        fontSize: 10,
         textTransform: 'uppercase',
     },
     label: {
-        fontFamily: 'Carbon-Bold',
-        fontSize: 17,
+        fontFamily: 'JetBrainsMono-Bold',
+        fontSize: 13,
         lineHeight: 17,
+        letterSpacing: 0.2,
         textTransform: 'uppercase',
     },
     transactionSignerName: {
-        fontFamily: 'Carbon-Bold',
-        fontSize: 14,
+        fontFamily: 'JetBrainsMono-Bold',
+        fontSize: 11,
         lineHeight: 14,
+        letterSpacing: 0.2,
         textTransform: 'uppercase',
     },
     tab: {
-        fontFamily: 'Carbon-Bold',
-        fontSize: 13,
-        lineHeight: 15.6,
+        fontFamily: 'JetBrainsMono-Bold',
+        fontSize: 10,
+        lineHeight: 16,
+        letterSpacing: 0.2,
+        textTransform: 'uppercase',
+    },
+    filterChip: {
+        fontFamily: 'JetBrainsMono-Bold',
+        fontSize: 10,
+        lineHeight: 14,
+        letterSpacing: 0.2,
         textTransform: 'uppercase',
     },
     body: {
@@ -122,14 +132,14 @@ export const fonts = {
         fontSize: 17,
     },
     title: {
-        fontFamily: 'Rajdhani-Bold',
+        fontFamily: 'SofiaSansCondensed-ExtraBold',
         fontWeight: Platform.select({ ios: '700', android: undefined }),
         fontSize: 24,
         lineHeight: 26,
         textTransform: 'uppercase',
     },
     titleLarge: {
-        fontFamily: 'Rajdhani-Bold',
+        fontFamily: 'SofiaSansCondensed-ExtraBold',
         fontSize: 40,
         lineHeight: 48,
         textTransform: 'uppercase',

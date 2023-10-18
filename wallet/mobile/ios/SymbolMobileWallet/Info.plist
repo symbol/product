@@ -68,6 +68,8 @@
 		<string>Rajdhani-Medium.ttf</string>
 		<string>Rajdhani-Regular.ttf</string>
 		<string>Rajdhani-SemiBold.ttf</string>
+		<string>SofiaSansCondensed-ExtraBold.ttf</string>
+		<string>JetBrainsMono-Bold.ttf</string>
 	</array>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>

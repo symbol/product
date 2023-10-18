@@ -26,6 +26,10 @@
       "sha1": "187957196c861f04fb46f95dd28a7efbc0b900ce"
     },
     {
+      "path": "src/assets/fonts/JetBrainsMono-Bold.ttf",
+      "sha1": "17539ba6db6451a7f7fcbe46451dc86c3c39da5f"
+    },
+    {
       "path": "src/assets/fonts/Protipo-Bold-Italic.otf",
       "sha1": "1f3f8c997a1a3dff37cef2517f985a3b6cb4a9b3"
     },
@@ -92,6 +96,10 @@
     {
       "path": "src/assets/fonts/Rajdhani-SemiBold.ttf",
       "sha1": "4a960e6ec0385495631e04c320e239432741f650"
+    },
+    {
+      "path": "src/assets/fonts/SofiaSansCondensed-ExtraBold.ttf",
+      "sha1": "8e14b372e35812e7d373fc625a294493c481cd8f"
     }
   ]
 }

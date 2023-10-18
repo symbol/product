@@ -133,7 +133,7 @@ const styles = StyleSheet.create({
         height: '100%',
     },
     text: {
-        fontSize: 13,
+        ...fonts.filterChip,
         color: colors.primary,
     },
     textActive: {
