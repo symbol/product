@@ -7,8 +7,9 @@ export default {
     state: {
         current: null, // current account info (address, private key, name, etc.)
         isReady: false, // wether account data is loaded
-        isMultisig: false, // wether account data is multisig
+        isMultisig: false, // wether account is multisig
         cosignatories: [], // if an account is multisig, contains the list of its cosigners
+        multisigAddresses: [], // list of multisig addresses which the account is cosignatory of
         mosaics: [], // account owned mosaics
         namespaces: [], // account owned namespaces,
         importance: 0,
@@ -33,6 +34,10 @@ export default {
         },
         setCosignatories(state, payload) {
             state.account.cosignatories = payload;
+            return state;
+        },
+        setMultisigAddresses(state, payload) {
+            state.account.multisigAddresses = payload;
             return state;
         },
         setMosaics(state, payload) {
@@ -64,7 +69,8 @@ export default {
 
             if (accountInfo) {
                 commit({ type: 'account/setIsMultisig', payload: accountInfo.isMultisig });
-                commit({ type: 'account/setCosignatories', payload: accountInfo.cosignatories });
+                commit({ type: 'account/setCosignatories', payload: accountInfo.cosignatories || [] });
+                commit({ type: 'account/setMultisigAddresses', payload: accountInfo.multisigAddresses || [] });
                 commit({ type: 'account/setMosaics', payload: accountInfo.mosaics });
                 commit({ type: 'account/setNamespaces', payload: accountInfo.namespaces });
                 commit({ type: 'account/setImportance', payload: accountInfo.importance });
@@ -72,6 +78,7 @@ export default {
             } else {
                 commit({ type: 'account/setIsMultisig', payload: false });
                 commit({ type: 'account/setCosignatories', payload: [] });
+                commit({ type: 'account/setMultisigAddresses', payload: [] });
                 commit({ type: 'account/setMosaics', payload: [] });
                 commit({ type: 'account/setNamespaces', payload: [] });
                 commit({ type: 'account/setImportance', payload: 0 });
@@ -106,9 +113,11 @@ export default {
 
             let isMultisig;
             let cosignatories = [];
+            let multisigAddresses = [];
             try {
                 const multisigInfo = await AccountService.fetchMultisigInfo(networkProperties, address);
                 cosignatories = multisigInfo.cosignatories;
+                multisigAddresses = multisigInfo.multisigAddresses;
                 isMultisig = cosignatories.length > 0;
             } catch {
                 isMultisig = false;
@@ -122,6 +131,7 @@ export default {
 
             commit({ type: 'account/setIsMultisig', payload: isMultisig });
             commit({ type: 'account/setCosignatories', payload: cosignatories });
+            commit({ type: 'account/setMultisigAddresses', payload: multisigAddresses });
             commit({ type: 'account/setMosaics', payload: formattedMosaics });
             commit({ type: 'account/setNamespaces', payload: namespaces });
             commit({ type: 'account/setImportance', payload: fetchedAccountInfo.importance });

@@ -10,6 +10,7 @@ const renderTypeMap = {
     address: [
         'address',
         'recipientAddress',
+        'sender',
         'recipient',
         'signerAddress',
         'linkedAccountAddress',
@@ -23,6 +24,7 @@ const renderTypeMap = {
         '_addressAdditions',
         '_receivedCosignatures',
         '_addressDeletions',
+        '_multisigAddresses',
     ],
     copyButton: [
         'metadataValue',
