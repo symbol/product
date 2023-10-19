@@ -10,9 +10,10 @@ import { publicAccountFromPrivateKey, usePasscode, useToggle } from 'src/utils';
 
 export const AccountDetails = connect((state) => ({
     currentAccount: state.account.current,
+    multisigAddresses: state.account.multisigAddresses,
     networkIdentifier: state.network.networkIdentifier,
 }))(function AccountDetails(props) {
-    const { currentAccount, networkIdentifier } = props;
+    const { currentAccount, multisigAddresses, networkIdentifier } = props;
     const { privateKey, index, ...restAccountInfo } = currentAccount;
     const [isPrivateKeyDialogShown, togglePrivateKeyDialog] = useToggle(false);
     const tableData = {
@@ -20,6 +21,9 @@ export const AccountDetails = connect((state) => ({
         publicKey: publicAccountFromPrivateKey(privateKey, networkIdentifier).publicKey,
         seedIndex: index,
     };
+    if (multisigAddresses.length) {
+        tableData.multisigAddresses = multisigAddresses;
+    }
     const isTestnet = networkIdentifier === 'testnet';
 
     const openBlockExplorer = () => Linking.openURL(config.explorerURL[networkIdentifier] + '/accounts/' + currentAccount.address);

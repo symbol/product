@@ -3,6 +3,7 @@ import {
     Crypto,
     Deadline,
     EncryptedMessage,
+    HashLockTransaction,
     Mosaic,
     MosaicId,
     MosaicSupplyRevocationTransaction,
@@ -123,6 +124,22 @@ export const revokeTransactionToDTO = (transaction, networkProperties) => {
         ),
         networkIdentifierToNetworkType(networkProperties.networkIdentifier),
         UInt64.fromUint(transaction.fee * Math.pow(10, networkProperties.networkCurrency.divisibility))
+    );
+};
+
+export const hashLockTransactionToDTO = (networkProperties, signedTransaction, fee, duration = 1000) => {
+    const amount = 10;
+
+    return HashLockTransaction.create(
+        Deadline.create(networkProperties.epochAdjustment),
+        new Mosaic(
+            new MosaicId(networkProperties.networkCurrency.mosaicId),
+            UInt64.fromUint(amount * Math.pow(10, networkProperties.networkCurrency.divisibility))
+        ),
+        UInt64.fromUint(duration),
+        signedTransaction,
+        networkIdentifierToNetworkType(networkProperties.networkIdentifier),
+        UInt64.fromUint(fee * Math.pow(10, networkProperties.networkCurrency.divisibility))
     );
 };
 

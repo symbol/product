@@ -24,6 +24,7 @@ export class AccountService {
         const accountInfo = await makeRequest(url);
 
         return {
+            multisigAddresses: accountInfo.multisig.multisigAddresses.map((address) => addressFromRaw(address)),
             cosignatories: accountInfo.multisig.cosignatoryAddresses.map((address) => addressFromRaw(address)),
             minApproval: accountInfo.multisig.minApproval,
             minRemoval: accountInfo.multisig.minRemoval,

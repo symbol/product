@@ -1,6 +1,7 @@
 import {
     decryptMessage,
     getMosaicAbsoluteAmount,
+    hashLockTransactionToDTO,
     isAggregateTransaction,
     isIncomingTransaction,
     isOutgoingTransaction,
@@ -27,6 +28,9 @@ import {
     MosaicSupplyChangeAction,
     MosaicSupplyChangeTransaction,
     Order,
+    PublicAccount,
+    RepositoryFactoryHttp,
+    TransactionService as SymbolTransactionService,
     TransactionHttp,
     TransactionType,
     UInt64,
@@ -78,7 +82,9 @@ export class TransactionService {
     static async sendTransferTransaction(transaction, account, networkProperties) {
         const networkType = networkIdentifierToNetworkType(networkProperties.networkIdentifier);
         const transactionWithResolvedAddress = { ...transaction };
+        const isMultisigTransaction = !!transaction.sender;
 
+        // Resolve recipient address
         if (isSymbolAddress(transaction.recipient)) {
             transactionWithResolvedAddress.recipientAddress = transaction.recipient;
         } else {
@@ -88,6 +94,7 @@ export class TransactionService {
             );
         }
 
+        // If message is encrypted, fetch recipient publicKey
         if (transactionWithResolvedAddress.messageEncrypted) {
             const recipientAccount = await AccountService.fetchAccountInfo(
                 networkProperties,
@@ -95,12 +102,50 @@ export class TransactionService {
             );
             transactionWithResolvedAddress.recipientPublicKey = recipientAccount.publicKey;
         }
+
+        // If transaction is multisig use sender address as Transfer's signer
+        if (isMultisigTransaction) {
+            transactionWithResolvedAddress.signerAddress = transaction.sender;
+        }
+
+        // Prepare
         const transactionDTO = transferTransactionToDTO(transactionWithResolvedAddress, networkProperties, account);
-        const signedTransaction = Account.createFromPrivateKey(account.privateKey, networkType).sign(
-            transactionDTO,
-            networkProperties.generationHash
-        );
+        const currentAccount = Account.createFromPrivateKey(account.privateKey, networkType);
         const transactionHttp = new TransactionHttp(networkProperties.nodeUrl);
+
+        // If transaction is multisig, announce Aggregate Bonded
+        if (isMultisigTransaction) {
+            const senderAccount = await AccountService.fetchAccountInfo(networkProperties, transaction.sender);
+            const senderPublicAccount = PublicAccount.createFromPublicKey(senderAccount.publicKey, networkType);
+            const aggregateTransactionDTO = AggregateTransaction.createBonded(
+                Deadline.create(networkProperties.epochAdjustment),
+                [transactionDTO.toAggregate(senderPublicAccount)],
+                networkType,
+                [],
+                transactionDTO.maxFee
+            );
+            const signedTransaction = currentAccount.sign(aggregateTransactionDTO, networkProperties.generationHash);
+
+            const hashLockTransaction = hashLockTransactionToDTO(networkProperties, signedTransaction, transaction.fee);
+            const signedHashLockTransaction = currentAccount.sign(hashLockTransaction, networkProperties.generationHash);
+
+            const repositoryFactory = new RepositoryFactoryHttp(networkProperties.nodeUrl, {
+                websocketInjected: WebSocket,
+            });
+            const receiptHttp = repositoryFactory.createReceiptRepository();
+            const symbolTransactionService = new SymbolTransactionService(transactionHttp, receiptHttp);
+            const listener = repositoryFactory.createListener();
+            await listener.open();
+
+            await symbolTransactionService
+                .announceHashLockAggregateBonded(signedHashLockTransaction, signedTransaction, listener)
+                .toPromise();
+            listener.close();
+            return;
+        }
+
+        // Else, announce Transfer
+        const signedTransaction = currentAccount.sign(transactionDTO, networkProperties.generationHash);
 
         return transactionHttp.announce(signedTransaction).toPromise();
     }
