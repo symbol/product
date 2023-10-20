@@ -4,12 +4,17 @@ from symbolchain.CryptoTypes import PublicKey
 from symbolchain.nc import TransactionType
 from symbolchain.nem.Network import Address
 
+from rest.model.Account import AccountQuery, AccountView
 from rest.model.Block import BlockView
 from rest.model.Mosaic import MosaicView
 from rest.model.Namespace import NamespaceView
 from rest.model.Transaction import TransactionListView, TransactionQuery
 
 from .DatabaseConnection import DatabaseConnectionPool
+
+
+def _format_address_bytes(buffer):
+	return unhexlify(_format_bytes(buffer))
 
 
 def _format_bytes(buffer):
@@ -126,6 +131,32 @@ class NemDatabase(DatabaseConnectionPool):
 				ON t.id = tnr.transaction_id
 			LEFT JOIN transactions_transfer tt
 				ON t.id = tt.transaction_id
+		"""
+
+	def _generate_account_sql_query(self):
+		"""Base account sql query."""
+
+		return """
+			SELECT
+				a.address,
+				a.public_key,
+				a.remote_address,
+				a.importance,
+				a.balance,
+				a.vested_balance,
+				a.mosaics,
+				a.harvested_fees,
+				a.harvested_blocks,
+				a.harvest_status,
+				a.harvest_remote_status,
+				a.height,
+				a.min_cosignatories,
+				a.cosignatory_of,
+				a.cosignatories,
+				ar.remarks
+			FROM accounts a
+			LEFT JOIN account_remarks ar
+				ON ar.address = a.address
 		"""
 
 	def _create_block_view(self, result):
@@ -391,6 +422,46 @@ class NemDatabase(DatabaseConnectionPool):
 			deadline=deadline,
 			embedded_transactions=embedded_transactions,
 			signature=_format_bytes(signature)
+		)
+
+	def _create_account_view(self, result):
+
+		(
+			address,
+			public_key,
+			remote_address,
+			importance,
+			balance,
+			vested_balance,
+			mosaics,
+			harvested_fees,
+			harvested_blocks,
+			harvest_status,
+			harvest_remote_status,
+			height,
+			min_cosignatories,
+			cosignatory_of,
+			cosignatories,
+			remarks
+		) = result
+
+		return AccountView(
+			address=str(Address(_format_address_bytes(address))),
+			public_key=_format_bytes(public_key) if public_key else None,
+			remote_address=str(Address(_format_address_bytes(remote_address))) if remote_address else None,
+			importance=importance,
+			balance=_format_xem_relative(balance),
+			vested_balance=_format_xem_relative(vested_balance),
+			mosaics=mosaics,
+			harvested_fees=_format_xem_relative(harvested_fees),
+			harvested_blocks=harvested_blocks,
+			harvest_status=harvest_status,
+			harvest_remote_status=harvest_remote_status,
+			height=height,
+			min_cosignatories=min_cosignatories,
+			cosignatory_of=[str(Address(_format_address_bytes(address))) for address in cosignatory_of] if cosignatory_of else None,
+			cosignatories=[str(Address(_format_address_bytes(address))) for address in cosignatories] if cosignatories else None,
+			remarks=remarks
 		)
 
 	def get_block(self, height):
@@ -673,3 +744,49 @@ class NemDatabase(DatabaseConnectionPool):
 			results = cursor.fetchall()
 
 			return [self._create_transaction_list_view(result) for result in results]
+
+	def get_account(self, query: AccountQuery):
+		"""Gets account by address in database."""
+
+		address, public_key = query
+
+		sql = self._generate_account_sql_query()
+
+		params = []
+
+		where_clauses = []
+
+		if address is not None:
+			where_clauses.append("(a.address = %s)")
+			params.extend(['\\x' + Address(address).bytes.hex(),])
+		else:
+			if public_key is not None:
+				where_clauses.append("a.public_key = %s")
+				params.extend(['\\x' + PublicKey(public_key).bytes.hex()])
+
+		if where_clauses:
+			sql += " WHERE " + " AND ".join(where_clauses)
+
+		with self.connection() as connection:
+			cursor = connection.cursor()
+			cursor.execute(sql, params)
+			result = cursor.fetchone()
+
+			return self._create_account_view(result) if result else None
+
+	def get_accounts(self, limit, offset, sort):
+		"""Gets accounts pagination in database."""
+
+		sql = self._generate_account_sql_query()
+
+		params = []
+
+		sql += f" ORDER BY a.balance {sort} LIMIT %s OFFSET %s"
+		params.extend([limit, offset])
+
+		with self.connection() as connection:
+			cursor = connection.cursor()
+			cursor.execute(sql, params)
+			results = cursor.fetchall()
+
+			return [self._create_account_view(result) for result in results]

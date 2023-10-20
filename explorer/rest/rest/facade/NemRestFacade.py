@@ -1,4 +1,5 @@
 from rest.db.NemDatabase import NemDatabase
+from rest.model.Account import AccountQuery
 from rest.model.Transaction import TransactionQuery
 
 
@@ -66,3 +67,17 @@ class NemRestFacade:
 		transactions = self.nem_db.get_transactions(limit, offset, sort, query)
 
 		return [transaction.to_dict() for transaction in transactions]
+
+	def get_account(self, query: AccountQuery):
+		"""Gets account by address."""
+
+		account = self.nem_db.get_account(query)
+
+		return account.to_dict() if account else None
+
+	def get_accounts(self, limit, offset, sort):
+		"""Gets accounts pagination."""
+
+		accounts = self.nem_db.get_accounts(limit, offset, sort)
+
+		return [account.to_dict() for account in accounts]

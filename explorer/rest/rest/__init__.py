@@ -10,6 +10,7 @@ from symbolchain.nem.Network import Network
 from zenlog import log
 
 from rest.facade.NemRestFacade import NemRestFacade
+from rest.model.Account import AccountQuery
 from rest.model.Transaction import TransactionQuery
 
 DatabaseConfig = namedtuple('DatabaseConfig', ['database', 'user', 'password', 'host', 'port'])
@@ -198,6 +199,46 @@ def setup_nem_routes(app, nem_api_facade):
 			abort(400)
 
 		return jsonify(nem_api_facade.get_transactions(limit=limit, offset=offset, sort=sort, query=transaction_query))
+
+	@app.route('/api/nem/account')
+	def api_get_nem_account():
+		try:
+			address = request.args.get('address', None)
+			public_key = request.args.get('publicKey', None)
+
+			if address is not None:
+				if not nem_api_facade.network.is_valid_address_string(address):
+					raise ValueError()
+			else:
+				if public_key is not None and not PublicKey(public_key):
+					raise ValueError()
+		except ValueError:
+			abort(400)
+
+		account_query = AccountQuery(
+			address=address,
+			public_key=public_key
+		)
+
+		result = nem_api_facade.get_account(query=account_query)
+		if not result:
+			abort(404)
+		return jsonify(result)
+
+	@app.route('/api/nem/accounts')
+	def api_get_nem_accounts():
+		try:
+			limit = int(request.args.get('limit', 10))
+			offset = int(request.args.get('offset', 0))
+			sort = request.args.get('sort', 'DESC')
+
+			if limit < 0 or offset < 0 or sort.upper() not in ['ASC', 'DESC']:
+				raise ValueError()
+
+		except ValueError:
+			abort(400)
+
+		return jsonify(nem_api_facade.get_accounts(limit=limit, offset=offset, sort=sort))
 
 
 def setup_error_handlers(app):
