@@ -8,6 +8,7 @@ from rest.model.Account import AccountQuery, AccountView
 from rest.model.Block import BlockView
 from rest.model.Mosaic import MosaicView
 from rest.model.Namespace import NamespaceView
+from rest.model.Statistic import StatisticTransactionView
 from rest.model.Transaction import TransactionListView, TransactionQuery
 
 from .DatabaseConnection import DatabaseConnectionPool
@@ -464,6 +465,20 @@ class NemDatabase(DatabaseConnectionPool):
 			remarks=remarks
 		)
 
+	def _create_transaction_statistic_view(self, result):
+
+		(
+			total_transactions,
+			transaction_last_24_hours,
+			transaction_last_30_day
+		) = result
+
+		return StatisticTransactionView(
+			total_transactions=total_transactions,
+			transaction_last_24_hours=transaction_last_24_hours,
+			transaction_last_30_day=transaction_last_30_day
+		)
+
 	def get_block(self, height):
 		"""Gets block by height in database."""
 
@@ -790,3 +805,28 @@ class NemDatabase(DatabaseConnectionPool):
 			results = cursor.fetchall()
 
 			return [self._create_account_view(result) for result in results]
+
+	def get_transaction_statistics(self):
+		"""Gets transaction statistics from database."""
+
+		with self.connection() as connection:
+			cursor = connection.cursor()
+			cursor.execute('''
+				SELECT
+					(SELECT SUM(totaltransactions) FROM blocks) AS total_transactions,
+					(SELECT SUM(totaltransactions) FROM (
+						SELECT totaltransactions
+						FROM blocks
+						ORDER BY height DESC
+						LIMIT 1440
+					) AS latest_blocks) AS transaction_last_24_hours,
+					(SELECT SUM(totaltransactions) FROM (
+						SELECT totaltransactions
+						FROM blocks
+						ORDER BY height DESC
+						LIMIT 43200
+					) AS latest_blocks) AS transaction_last_30_day;
+			''')
+			result = cursor.fetchone()
+
+			return self._create_transaction_statistic_view(result) if result else None

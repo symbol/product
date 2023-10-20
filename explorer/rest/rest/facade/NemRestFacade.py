@@ -81,3 +81,10 @@ class NemRestFacade:
 		accounts = self.nem_db.get_accounts(limit, offset, sort)
 
 		return [account.to_dict() for account in accounts]
+
+	def get_transaction_statistics(self):
+		"""Gets statistics."""
+
+		statistics = self.nem_db.get_transaction_statistics()
+
+		return statistics.to_dict() if statistics else None
