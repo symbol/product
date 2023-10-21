@@ -1,0 +1,39 @@
+@import "../variables";
+
+.wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 80vh;
+}
+
+.container {
+    display: flex;
+    flex-direction: row;
+    gap: $spacing-base * 3;
+    align-items: center;
+}
+
+.code {
+    font-weight: 600;
+    font-size: $spacing-base * 3;
+    line-height: $spacing-base * 3;
+}
+
+.separator {
+    width: $spacing-base / 8;
+    height: 100%;
+    background-color: $color-text-body;
+}
+
+.text {
+    display: flex;
+    flex-direction: column;
+}
+
+
+.link {
+    margin-top: $spacing-base / 2;
+    text-decoration: underline;
+}
