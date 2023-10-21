@@ -7,6 +7,7 @@ import { colors, fonts, spacings } from 'src/styles';
 import {
     formatDate,
     getAddressName,
+    getUserCurrencyAmountText,
     isAggregateTransaction,
     isHarvestingServiceTransaction,
     isIncomingTransaction,
@@ -22,16 +23,18 @@ export const ItemTransaction = connect((state) => ({
     addressBook: state.addressBook.addressBook,
     ticker: state.network.ticker,
 }))(function ItemTransaction(props) {
-    const { currentAccount, walletAccounts, networkIdentifier, addressBook, group, transaction, ticker, onPress } = props;
+    const { currentAccount, walletAccounts, networkIdentifier, addressBook, group, transaction, ticker, price, isDateHidden, onPress } =
+        props;
     const accounts = walletAccounts[networkIdentifier];
     const { type, deadline, amount, signerAddress, recipientAddress } = transaction;
-    const dateText = formatDate(deadline, $t);
+    const dateText = !isDateHidden ? formatDate(deadline, $t) : '';
     let iconSrc;
     let action = $t(`transactionDescriptor_${type}`);
     let description = '';
     let amountText = '';
     const styleAmount = [styles.textAmount];
     const styleRoot = [styles.root];
+    const userCurrencyAmountText = getUserCurrencyAmountText(Math.abs(amount), price, networkIdentifier);
 
     if (amount < 0) {
         amountText = `${amount} ${ticker}`;
@@ -143,7 +146,12 @@ export const ItemTransaction = connect((state) => ({
                 <Text style={styles.textDescription}>{description}</Text>
                 <View style={styles.rowAmount}>
                     <Text style={styles.textDate}>{dateText}</Text>
-                    <Text style={styleAmount}>{amountText}</Text>
+                    <View style={styles.sectionAmount}>
+                        <Text style={styleAmount}>{amountText}</Text>
+                        {!!userCurrencyAmountText && (
+                            <Text style={[styleAmount, styles.textUserCurrencyAmount]}>{userCurrencyAmountText}</Text>
+                        )}
+                    </View>
                 </View>
             </View>
         </ItemBase>
@@ -194,6 +202,10 @@ const styles = StyleSheet.create({
         ...fonts.bodyBold,
         color: colors.textBody,
     },
+    textUserCurrencyAmount: {
+        ...fonts.bodyBold,
+        opacity: 0.7,
+    },
     outgoing: {
         color: colors.danger,
     },
@@ -214,5 +226,9 @@ const styles = StyleSheet.create({
         alignSelf: 'stretch',
         flexDirection: 'row',
         justifyContent: 'space-between',
+    },
+    sectionAmount: {
+        flexDirection: 'column',
+        alignItems: 'flex-end',
     },
 });

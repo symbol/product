@@ -16,9 +16,12 @@ export const config = {
     discordURL: configFile.discordURL,
     githubURL: configFile.githubURL,
     twitterURL: configFile.twitterURL,
+    marketDataURL: configFile.marketDataURL,
+    marketCurrencies: configFile.marketCurrencies,
     optInPayoutSigner: configFile.optInPayoutSigner,
     networkIdentifiers: configFile.networkIdentifiers,
     defaultNetworkIdentifier: configFile.defaultNetworkIdentifier,
     maxSeedAccounts: configFile.maxSeedAccounts,
     connectionInterval: configFile.connectionInterval,
+    allowedMarkedDataCallInterval: configFile.allowedMarkedDataCallInterval,
 };

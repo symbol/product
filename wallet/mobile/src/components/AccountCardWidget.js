@@ -3,14 +3,27 @@ import { ActivityIndicator, Image, StyleSheet, Text, View } from 'react-native';
 import { borders, colors, fonts, layout, spacings } from 'src/styles';
 import { ButtonCopy, DialogBox, TouchableNative } from 'src/components';
 import { TouchableOpacity } from 'react-native-gesture-handler';
-import { useToggle, validateAccountName, validateRequired } from 'src/utils';
+import { getUserCurrencyAmountText, useToggle, validateAccountName, validateRequired } from 'src/utils';
 import { $t } from 'src/localization';
 
 export const AccountCardWidget = (props) => {
-    const { address, balance, name, ticker, isLoading, onNameChange, onReceivePress, onSendPress, onDetailsPress } = props;
+    const {
+        address,
+        balance,
+        name,
+        ticker,
+        price,
+        networkIdentifier,
+        isLoading,
+        onNameChange,
+        onReceivePress,
+        onSendPress,
+        onDetailsPress,
+    } = props;
     const [isNameEditShown, toggleNameEdit] = useToggle(false);
     const nameValidators = [validateRequired(), validateAccountName()];
     const touchableBackground = colors.accentLightForm;
+    const userCurrencyBalanceText = getUserCurrencyAmountText(balance, price, networkIdentifier);
 
     const handleNameChange = (newName) => {
         toggleNameEdit();
@@ -34,6 +47,7 @@ export const AccountCardWidget = (props) => {
                     <Text style={styles.textBalance}>{balance}</Text>
                     <Text style={styles.textTicker}>{' ' + ticker}</Text>
                 </View>
+                {!!userCurrencyBalanceText && <Text style={styles.textUserCurrencyBalance}>{userCurrencyBalanceText}</Text>}
                 <Text style={styles.textTitle}>{$t('c_accountCard_title_address')}</Text>
                 <View style={layout.row}>
                     <Text style={styles.textAddress}>{address}</Text>
@@ -129,6 +143,13 @@ const styles = StyleSheet.create({
         fontSize: 16,
         lineHeight: 28,
         color: colors.textForm,
+    },
+    textUserCurrencyBalance: {
+        ...fonts.body,
+        fontSize: 16,
+        lineHeight: 20,
+        color: colors.textForm,
+        //marginLeft: spacings.margin,
     },
     textAddress: {
         ...fonts.body,

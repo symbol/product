@@ -76,12 +76,14 @@ export default {
             await dispatchAction({ type: 'account/loadState' });
             await dispatchAction({ type: 'addressBook/loadState' });
             await dispatchAction({ type: 'transaction/loadState' });
+            await dispatchAction({ type: 'market/loadState' });
         },
         // Fetch latest data from API in all modules
         fetchAll: async ({ dispatchAction }) => {
             await dispatchAction({ type: 'network/fetchData' });
             await dispatchAction({ type: 'account/fetchData' });
             await dispatchAction({ type: 'transaction/fetchData', payload: {} });
+            await dispatchAction({ type: 'market/fetchData' });
         },
         // Load data from cache or set an empty values
         loadState: async ({ commit }) => {

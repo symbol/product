@@ -4,6 +4,7 @@ import thunk from 'redux-thunk';
 import account from 'src/store/account';
 import addressBook from 'src/store/addressBook';
 import listener from 'src/store/listener';
+import market from 'src/store/market';
 import network from 'src/store/network';
 import transaction from 'src/store/transaction';
 import wallet from 'src/store/wallet';
@@ -12,6 +13,7 @@ const modules = {
     account,
     addressBook,
     listener,
+    market,
     network,
     transaction,
     wallet,
@@ -21,6 +23,7 @@ const defaultRootState = {
     account: account.state,
     addressBook: addressBook.state,
     listener: listener.state,
+    market: market.state,
     network: network.state,
     transaction: transaction.state,
     wallet: wallet.state,

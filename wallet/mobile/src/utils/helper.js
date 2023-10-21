@@ -290,3 +290,11 @@ export const blockDurationToDaysLeft = (duration, blockGenerationTargetTime) => 
     const seconds = duration * blockGenerationTargetTime;
     return moment.utc().add(seconds, 's').fromNow();
 };
+
+export const getUserCurrencyAmountText = (amount, price, networkIdentifier) => {
+    if (networkIdentifier !== 'mainnet' || !price) {
+        return '';
+    }
+
+    return `~${(price.value * amount).toFixed(2)} ${price.currency}`;
+};

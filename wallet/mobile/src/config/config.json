@@ -20,6 +20,8 @@
     "discordURL": "https://discord.gg/xymcity",
     "githubURL": "https://github.com/symbol",
     "twitterURL": "https://twitter.com/thesymbolchain",
+    "marketDataURL": "https://min-api.cryptocompare.com/data/price",
+    "marketCurrencies": ["USD", "EUR", "JPY", "UAH"],
     "optInPayoutSigner": {
         "testnet": [
             "E5F5638C626F58E1937C181E668EC383C94C5BC72AAE400C19AD28BDD3A4D37E"
@@ -31,5 +33,6 @@
     "networkIdentifiers": ["mainnet", "testnet"],
     "defaultNetworkIdentifier": "mainnet",
     "maxSeedAccounts": 10,
-    "connectionInterval": 10000
+    "connectionInterval": 10000,
+    "allowedMarkedDataCallInterval": 600000
 }
