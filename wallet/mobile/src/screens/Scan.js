@@ -43,8 +43,10 @@ const AccountCard = ({ address }) => (
         </Widget>
     </FormItem>
 );
-const TransactionCard = ({ recipientAddress, signerAddress, amount }) => (
+const TransactionCard = ({ recipientAddress, signerAddress, amount, price }) => (
     <ItemTransaction
+        isDateHidden
+        price={price}
         transaction={{
             recipientAddress,
             signerAddress,
@@ -62,9 +64,10 @@ export const Scan = connect((state) => ({
     networkIdentifier: state.network.networkIdentifier,
     networkProperties: state.network.networkProperties,
     ticker: state.network.ticker,
+    price: state.market.price,
     isWalletReady: state.wallet.isReady,
 }))(function Scan(props) {
-    const { currentAccount, networkIdentifier, networkProperties } = props;
+    const { currentAccount, networkIdentifier, networkProperties, price } = props;
     const [isScannerVisible, toggleScanner] = useToggle(true);
     const [response, setResponse] = useState(null);
     const [description, setDescription] = useState(null);
@@ -127,6 +130,7 @@ export const Scan = connect((state) => ({
                     recipientAddress={data.transaction.recipientAddress}
                     amount={getQrAmount(data, networkProperties)}
                     signerAddress={currentAccount.address}
+                    price={price}
                 />
             ),
             actions: [

@@ -3,16 +3,22 @@ import { Image, StyleSheet, View } from 'react-native';
 import { FlatList } from 'react-native-gesture-handler';
 import Animated, { FadeInRight } from 'react-native-reanimated';
 import { DialogBox, DropdownModal, FormItem, Screen, StyledText, TouchableNative } from 'src/components';
+import { config } from 'src/config';
 import { $t, getLanguages, initLocalization, setCurrentLanguage } from 'src/localization';
 import { Router } from 'src/Router';
-import store from 'src/store';
+import store, { connect } from 'src/store';
 import { borders, colors, fonts, layout, spacings } from 'src/styles';
 import { clearCache, usePasscode, useToggle } from 'src/utils';
 
-export const Settings = () => {
+export const Settings = connect((state) => ({
+    userCurrency: state.market.userCurrency,
+}))(function Settings(props) {
+    const { userCurrency } = props;
     const [isLogoutConfirmVisible, toggleLogoutConfirm] = useToggle(false);
     const [isLanguageSelectorVisible, toggleLanguageSelector] = useToggle(false);
+    const [isUserCurrencySelectorVisible, toggleUserCurrencySelector] = useToggle(false);
     const languageList = Object.entries(getLanguages()).map(([value, label]) => ({ value, label }));
+    const currencyList = config.marketCurrencies.map((currency) => ({ value: currency, label: currency }));
     const settingsList = [
         {
             title: $t('s_settings_item_network_title'),
@@ -33,6 +39,12 @@ export const Settings = () => {
             handler: Router.goToSettingsSecurity,
         },
         {
+            title: $t('s_settings_item_currency_title'),
+            description: $t('s_settings_item_currency_description'),
+            icon: require('src/assets/images/icon-settings-currency.png'),
+            handler: toggleUserCurrencySelector,
+        },
+        {
             title: $t('s_settings_item_about_title'),
             description: $t('s_settings_item_about_description'),
             icon: require('src/assets/images/icon-settings-about.png'),
@@ -49,6 +61,9 @@ export const Settings = () => {
     const changeLanguage = (language) => {
         setCurrentLanguage(language);
         Router.goToHome();
+    };
+    const changeUserCurrency = (userCurrency) => {
+        store.dispatchAction({ type: 'market/changeUserCurrency', payload: userCurrency });
     };
     const logoutConfirm = async () => {
         clearCache();
@@ -92,6 +107,14 @@ export const Settings = () => {
                 onChange={changeLanguage}
                 onClose={toggleLanguageSelector}
             />
+            <DropdownModal
+                title={$t('s_settings_item_currency_title')}
+                list={currencyList}
+                value={userCurrency}
+                isOpen={isUserCurrencySelectorVisible}
+                onChange={changeUserCurrency}
+                onClose={toggleUserCurrencySelector}
+            />
             <DialogBox
                 type="confirm"
                 title={$t('settings_logout_confirm_title')}
@@ -102,7 +125,7 @@ export const Settings = () => {
             />
         </Screen>
     );
-};
+});
 
 const styles = StyleSheet.create({
     item: {

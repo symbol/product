@@ -17,9 +17,10 @@ export const Home = connect((state) => ({
     currentAccount: state.account.current,
     networkIdentifier: state.network.networkIdentifier,
     ticker: state.network.ticker,
+    price: state.market.price,
     isWalletReady: state.wallet.isReady,
 }))(function Home(props) {
-    const { balances, currentAccount, isMultisigAccount, networkIdentifier, ticker, isWalletReady } = props;
+    const { balances, currentAccount, isMultisigAccount, networkIdentifier, ticker, price, isWalletReady } = props;
     const [loadState, isLoading] = useDataManager(
         async () => {
             await store.dispatchAction({ type: 'wallet/fetchAll' });
@@ -58,6 +59,8 @@ export const Home = connect((state) => ({
                             address={accountAddress}
                             balance={accountBalance}
                             ticker={ticker}
+                            price={price}
+                            networkIdentifier={networkIdentifier}
                             onReceivePress={Router.goToReceive}
                             onSendPress={Router.goToSend}
                             onDetailsPress={Router.goToAccountDetails}

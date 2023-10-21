@@ -514,6 +514,8 @@
     "s_settings_networkType_mainnet": "Mainnet",
     "s_settings_node_select_title": "Select Node:",
     "s_settings_node_automatically": "Select Automatically",
+    "s_settings_item_currency_title": "Currency",
+    "s_settings_item_currency_description": "Set your preferred local currency.",
     "settings_about_symbol_title": "About Symbol",
     "settings_about_symbol_body": "Learn more about Symbol in the socials.",
     "settings_about_version_title": "About App",

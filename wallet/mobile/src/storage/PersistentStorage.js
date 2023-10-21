@@ -14,6 +14,7 @@ export class PersistentStorage {
     static MOSAIC_INFOS_KEY = 'mosaicInfos';
     static ACCOUNT_INFOS_KEY = 'accountInfos';
     static ADDRESS_BOOK_KEY = 'addressBook';
+    static USER_CURRENCY_KEY = 'userCurrency';
 
     // Data Schema Version
     static getDataSchemaVersion = async () => {
@@ -182,6 +183,18 @@ export class PersistentStorage {
         return this.set(this.ADDRESS_BOOK_KEY, payload.toJSON());
     }
 
+    // User Currency
+    static async getUserCurrency() {
+        const value = await this.get(this.USER_CURRENCY_KEY);
+        const defaultValue = 'USD';
+
+        return value || defaultValue;
+    }
+
+    static async setUserCurrency(payload) {
+        return this.set(this.USER_CURRENCY_KEY, payload);
+    }
+
     // API
     static set = (key, value) => {
         return AsyncStorage.setItem(key, value);
@@ -208,6 +221,7 @@ export class PersistentStorage {
             this.remove(this.MOSAIC_INFOS_KEY),
             this.remove(this.ACCOUNT_INFOS_KEY),
             this.remove(this.ADDRESS_BOOK_KEY),
+            this.remove(this.USER_CURRENCY_KEY),
         ]);
     };
 }

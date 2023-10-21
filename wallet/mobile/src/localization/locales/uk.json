@@ -472,6 +472,8 @@
     "s_settings_networkType_mainnet": "Головна (Мейннет)",
     "s_settings_node_select_title": "Виберіть ноду:",
     "s_settings_node_automatically": "Вибирати автоматично",
+    "s_settings_item_currency_title": "Валюта",
+    "s_settings_item_currency_description": "Встановіть бажану валюту для відображення балансу.",
     "settings_about_symbol_title": "Про Symbol",
     "settings_about_symbol_body": "Дізнайтеся більше про Symbol у соціальних мережах.",
     "settings_about_version_title": "Про програму",

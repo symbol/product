@@ -49,6 +49,7 @@ export const Send = connect((state) => ({
     networkIdentifier: state.network.networkIdentifier,
     ticker: state.network.ticker,
     chainHeight: state.network.chainHeight,
+    price: state.market.price,
 }))(function Send(props) {
     const {
         walletAccounts,
@@ -63,6 +64,7 @@ export const Send = connect((state) => ({
         networkIdentifier,
         ticker,
         chainHeight,
+        price,
         route,
     } = props;
     const accounts = walletAccounts[networkIdentifier];
@@ -117,6 +119,11 @@ export const Send = connect((state) => ({
         const mosaicAmountSubtractFee = isSelectedNativeMosaic ? parseFloat(maxFee) : 0;
 
         return Math.max(0, toFixedNumber(selectedMosaicBalance - mosaicAmountSubtractFee, selectedMosaicDivisibility));
+    };
+    const getMosaicPrice = () => {
+        const isSelectedNativeMosaic = mosaicId === networkProperties.networkCurrency.mosaicId;
+
+        return isSelectedNativeMosaic ? price : null;
     };
     const [fetchAccountMosaics, isMosaicsLoading] = useDataManager(
         async (sender) => {
@@ -236,6 +243,8 @@ export const Send = connect((state) => ({
                             <InputAmount
                                 title={$t('form_transfer_input_amount')}
                                 availableBalance={getAvailableBalance()}
+                                price={getMosaicPrice()}
+                                networkIdentifier={networkIdentifier}
                                 value={amount}
                                 onChange={setAmount}
                                 onValidityChange={setAmountValid}
