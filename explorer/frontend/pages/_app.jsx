@@ -45,7 +45,7 @@ const App = ({ Component, pageProps }) => {
 	return (
 		<div className={styles.wrapper}>
 			<Header />
-			<ToastContainer autoClose={2000} hideProgressBar pauseOnHover />
+			<ToastContainer autoClose={2000} className="toast-container" hideProgressBar pauseOnHover />
 			<PageLoadingIndicator />
 			<div className={styles.contentContainer}>
 				<main className={styles.contentContainerInner}>

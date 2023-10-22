@@ -151,6 +151,10 @@ a {
     }
 }
 
+.toast-container {
+    top: $spacing-header-height;
+}
+
 :root {
     --toastify-color-info: $color-info;
     --toastify-color-success: $color-success;
