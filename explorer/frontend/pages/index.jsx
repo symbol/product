@@ -82,7 +82,9 @@ const Home = ({
 				<div className="layout-flex-row-mobile-col">
 					<div className="layout-grid-row layout-flex-fill">
 						<div className="layout-flex-col layout-flex-fill">
-							<Field title={t('field_totalTransactions')}>{numberToShortString(transactionStats.totalAll)}</Field>
+							<Field title={t('field_totalTransactions')}>
+								<div title={transactionStats.total}>{numberToShortString(transactionStats.total)}</div>
+							</Field>
 							<Field title={t('field_transactionsPerBlock')} description={t('field_transactionsPerBlock_description')}>
 								{transactionStats.averagePerBlock}
 							</Field>

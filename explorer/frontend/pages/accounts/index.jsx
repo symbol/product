@@ -1,6 +1,6 @@
 import { fetchAccountPage } from '@/api/accounts';
 import { search } from '@/api/search';
-import { fetchAccountCharts, fetchAccountStats } from '@/api/stats';
+import { fetchAccountStats } from '@/api/stats';
 import ButtonCSV from '@/components/ButtonCSV';
 import ChartDonut from '@/components/ChartDonut';
 import Field from '@/components/Field';
@@ -12,7 +12,7 @@ import Table from '@/components/Table';
 import ValueAccount from '@/components/ValueAccount';
 import ValueMosaic from '@/components/ValueMosaic';
 import styles from '@/styles/pages/Home.module.scss';
-import { useAsyncCall, usePagination } from '@/utils';
+import { usePagination } from '@/utils';
 import Head from 'next/head';
 import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
@@ -33,7 +33,6 @@ export const getServerSideProps = async ({ locale }) => {
 const Accounts = ({ preloadedData, stats }) => {
 	const { t } = useTranslation();
 	const { requestNextPage, data, isLoading, isError, isLastPage, filter, changeFilter } = usePagination(fetchAccountPage, preloadedData);
-	const charts = useAsyncCall(fetchAccountCharts, {});
 
 	const tableColumns = [
 		{
@@ -53,7 +52,7 @@ const Accounts = ({ preloadedData, stats }) => {
 		{
 			key: 'importance',
 			size: '10rem',
-			renderValue: value => <div>{value} %</div>
+			renderValue: value => <div>{value.toFixed(5)} %</div>
 		}
 	];
 	const filterConfig = [
@@ -88,8 +87,16 @@ const Accounts = ({ preloadedData, stats }) => {
 					</div>
 					<Separator className="no-mobile" />
 					<div className="layout-grid-row layout-flex-fill">
-						<ChartDonut data={charts.importanceBreakdown} name={t('chart_name_importance_breakdown')} label="51.1%" />
-						<ChartDonut data={charts.harvestingImportance} name={t('chart_name_harvesting_importance')} label="34.54%" />
+						<ChartDonut
+							data={stats.importanceBreakdown}
+							name={t('chart_name_importance_breakdown')}
+							label={`${stats.top10AccountsImportance}%`}
+						/>
+						<ChartDonut
+							data={stats.harvestingImportance}
+							name={t('chart_name_harvesting_importance')}
+							label={`${stats.harvesting}%`}
+						/>
 					</div>
 				</div>
 			</Section>

@@ -17,7 +17,7 @@ import ValueTransactionHash from '@/components/ValueTransactionHash';
 import ValueTransactionType from '@/components/ValueTransactionType';
 import { STORAGE_KEY, TRANSACTION_TYPE } from '@/constants';
 import styles from '@/styles/pages/TransactionList.module.scss';
-import { formatDate, formatTransactionCSV, useFilter, usePagination, useStorage } from '@/utils';
+import { formatDate, formatTransactionCSV, numberToShortString, useFilter, usePagination, useStorage } from '@/utils';
 import Head from 'next/head';
 import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
@@ -125,7 +125,7 @@ const TransactionInfo = ({ preloadedData, stats }) => {
 			isSearchEnabled: true
 		},
 		{
-			name: 'block',
+			name: 'height',
 			title: t('filter_block'),
 			type: 'block',
 			conflicts: [],
@@ -172,9 +172,15 @@ const TransactionInfo = ({ preloadedData, stats }) => {
 			<Section title={t('section_transactions')}>
 				<div className="layout-flex-row-mobile-col">
 					<div className={`layout-flex-col layout-flex-fill ${styles.statsSection}`}>
-						<Field title={t('field_transactionsAll')}>{stats.totalAll}</Field>
-						<Field title={t('field_transactions30Days')}>{stats.total30Days}</Field>
-						<Field title={t('field_transactions24Hours')}>{stats.total24Hours}</Field>
+						<Field title={t('field_transactionsAll')}>
+							<div title={stats.total}>{numberToShortString(stats.total)}</div>
+						</Field>
+						<Field title={t('field_transactions30Days')}>
+							<div title={stats.last30Day}>{numberToShortString(stats.last30Day)}</div>
+						</Field>
+						<Field title={t('field_transactions24Hours')}>
+							<div title={stats.last24Hours}>{numberToShortString(stats.last24Hours)}</div>
+						</Field>
 						<Field title={t('field_transactionsPerBlockShort')} description={t('field_transactionsPerBlock_description')}>
 							{stats.averagePerBlock}
 						</Field>
