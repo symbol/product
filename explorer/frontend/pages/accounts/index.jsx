@@ -12,7 +12,7 @@ import Table from '@/components/Table';
 import ValueAccount from '@/components/ValueAccount';
 import ValueMosaic from '@/components/ValueMosaic';
 import styles from '@/styles/pages/Home.module.scss';
-import { usePagination } from '@/utils';
+import { formatAccountCSV, usePagination } from '@/utils';
 import Head from 'next/head';
 import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
@@ -104,7 +104,7 @@ const Accounts = ({ preloadedData, stats }) => {
 				<div className="layout-flex-col">
 					<div className="layout-flex-row-mobile-col">
 						<Filter data={filterConfig} isDisabled={isLoading} value={filter} onChange={changeFilter} search={search} />
-						<ButtonCSV data={data} />
+						<ButtonCSV data={data} fileName="accounts" format={row => formatAccountCSV(row, t)} />
 					</div>
 					<Table
 						data={data}

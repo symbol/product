@@ -92,6 +92,8 @@ export const formatAccountCSV = (row, translate) => {
 		[translate('table_field_address')]: row.address,
 		[translate('table_field_balance')]: row.balance,
 		[translate('table_field_importance')]: row.importance,
+		[translate('table_field_isMultisig')]: row.isMultisig ? translate('value_true') : translate('value_false'),
+		[translate('table_field_isHarvestingActive')]: row.isHarvestingActive ? translate('value_true') : translate('value_false'),
 		[translate('table_field_description')]: row.description
 	};
 };
