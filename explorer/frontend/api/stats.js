@@ -1,17 +1,24 @@
+import { fetchAccountPage } from './accounts';
 import { fetchBlockPage } from './blocks';
-import { getAccountChartsStub, getTransactionChartStub } from '../stubs/stats';
+import { getTransactionChartStub } from '../stubs/stats';
 import config from '@/config';
-import { makeRequest } from '@/utils';
-
-export const fetchAccountCharts = async () => {
-	return getAccountChartsStub();
-};
+import { makeRequest, truncateDecimals } from '@/utils';
 
 export const fetchAccountStats = async () => {
+	const accounts = (await fetchAccountPage({ pageNumber: 1, pageSize: 10 })).data;
+	const top10AccountsImportance = accounts.reduce((partialSum, account) => partialSum + account.importance, 0);
+	const restAccountsImportance = 100 - top10AccountsImportance;
+
 	return {
 		total: 0,
 		harvesting: 0,
-		eligibleForHarvesting: 0
+		eligibleForHarvesting: 0,
+		top10AccountsImportance: truncateDecimals(top10AccountsImportance, 2),
+		importanceBreakdown: [...accounts.map(account => [account.importance, account.address]), [restAccountsImportance, 'Rest']],
+		harvestingImportance: [
+			[34.54, 'Harvesting'],
+			[65.46, 'Not harvesting']
+		]
 	};
 };
 
@@ -29,15 +36,16 @@ export const fetchTransactionChart = async ({ isPerDay, isPerMonth }) => {
 };
 
 export const fetchTransactionStats = async () => {
+	const stats = await makeRequest(`${config.API_BASE_URL}/transaction/statistics`);
 	const blocks = (await fetchBlockPage({ pageSize: 240 })).data;
 	const total240Blocks = blocks.reduce((partialSum, block) => partialSum + block.transactionCount, 0);
 	const averagePerBlock = Math.ceil(total240Blocks / blocks.length);
 
 	return {
 		averagePerBlock,
-		totalAll: 0,
-		total30Days: 0,
-		total24Hours: 0
+		total: stats.total,
+		last30Day: stats.last30Day,
+		last24Hours: stats.last24Hours
 	};
 };
 
