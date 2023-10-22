@@ -76,7 +76,7 @@ class AccountView:
 			'remoteAddress': self.remote_address,
 			'importance': self.importance,
 			'balance': self.balance,
-			'vestedBBalance': self.vested_balance,
+			'vestedBalance': self.vested_balance,
 			'mosaics': self.mosaics,
 			'harvestedFees': self.harvested_fees,
 			'harvestedBlocks': self.harvested_blocks,
