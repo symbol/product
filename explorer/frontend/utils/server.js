@@ -80,5 +80,15 @@ export const makeRequest = async (url, options = {}) => {
 	});
 	clearTimeout(id);
 
-	return response.json();
+	const data = await response.json();
+
+	if (data.status === 400) {
+		throw Error('error_400');
+	}
+
+	if (data.status === 404) {
+		throw Error('error_404');
+	}
+
+	return data;
 };
