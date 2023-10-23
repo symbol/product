@@ -7,7 +7,7 @@ export const getSearchCriteria = req => {
 
 	return {
 		pageNumber: pageNumber || 1,
-		pageSize: pageSize || 50
+		pageSize: pageSize || 10
 	};
 };
 
