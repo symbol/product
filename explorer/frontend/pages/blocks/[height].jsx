@@ -108,7 +108,11 @@ const BlockInfo = ({ blockInfo, transactions }) => {
 							</Field>
 						</div>
 						<Field title={t('field_transactionFees')}>
-							<ValueTransactionSquares data={transactions} className={styles.valueTransactionSquares} />
+							<ValueTransactionSquares
+								isTransactionPreviewEnabled
+								data={transactions}
+								className={styles.valueTransactionSquares}
+							/>
 						</Field>
 					</div>
 				</Section>
