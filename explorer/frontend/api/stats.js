@@ -14,7 +14,10 @@ export const fetchAccountStats = async () => {
 		harvesting: 0,
 		eligibleForHarvesting: 0,
 		top10AccountsImportance: truncateDecimals(top10AccountsImportance, 2),
-		importanceBreakdown: [...accounts.map(account => [account.importance, account.address]), [restAccountsImportance, 'Rest']],
+		importanceBreakdown: [
+			...accounts.map(account => [truncateDecimals(account.importance, 4), account.address]),
+			[truncateDecimals(restAccountsImportance, 4), 'Rest']
+		],
 		harvestingImportance: [
 			[34.54, 'Harvesting'],
 			[65.46, 'Not harvesting']

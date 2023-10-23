@@ -20,7 +20,7 @@ const DATA_REFRESH_INTERVAL = 60000;
 
 export const getServerSideProps = async ({ locale }) => {
 	const [blocksPage, latestTransactionsPage, pendingTransactionsPage] = await Promise.all([
-		fetchBlockPage(),
+		fetchBlockPage({ pageSize: 50 }),
 		fetchTransactionPage({ pageSize: 5, group: 'confirmed' }),
 		fetchTransactionPage({ pageSize: 5, group: 'unconfirmed' })
 	]);

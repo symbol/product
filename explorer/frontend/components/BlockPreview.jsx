@@ -37,9 +37,6 @@ const BlockExpanded = ({ data, transactions, isNext, isTransactionSquaresRendere
 				<Field title={t('field_totalFee')}>
 					<ValueMosaic isNative amount={totalFee} />
 				</Field>
-				<Field title={t('field_averageFee')}>
-					<ValueMosaic isNative amount={averageFee} />
-				</Field>
 			</div>
 			<Field title={t('field_transactionFees')}>
 				{isTransactionSquaresRendered && <ValueTransactionSquares data={transactions} />}
