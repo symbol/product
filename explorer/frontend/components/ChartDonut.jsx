@@ -36,7 +36,10 @@ const ChartDonut = ({ data = [], name, label }) => {
 			curve: 'smooth',
 			width: 1
 		},
-		labels: data.map(item => item[1])
+		labels: data.map(item => item[1]),
+		tooltip: {
+			fillSeriesColor: false
+		}
 	};
 
 	return (
