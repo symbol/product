@@ -1,6 +1,7 @@
 import asyncio
 import configparser
 import json
+import time
 
 from symbolchain.CryptoTypes import PublicKey
 from symbolchain.facade.NemFacade import NemFacade
@@ -360,10 +361,26 @@ class NemPuller:
 			if TransactionType.NAMESPACE_REGISTRATION.value == transaction.transaction_type:
 				self._process_namespace(cursor, transaction, block_height)
 
+	async def fetch_account_info_in_batches(self, addresses, batch_size=100):
+		"""Fetch account info in batches."""
+
+		address_list = list(addresses)
+
+		batches = [address_list[i:i + batch_size] for i in range(0, len(address_list), batch_size)]
+		all_account_infos = []
+
+		for batch in batches:
+			account_infos = await asyncio.gather(*[self.nem_connector.account_info(address) for address in batch])
+			time.sleep(2)
+
+			all_account_infos.extend(account_infos)
+
+		return all_account_infos
+
 	async def _update_account_info(self, cursor, addresses):
 		"""Sync account info."""
 
-		account_infos = await asyncio.gather(*[self.nem_connector.account_info(address) for address in addresses])
+		account_infos = await self.fetch_account_info_in_batches(addresses)
 
 		for account in account_infos:
 			remote_account_info = None
