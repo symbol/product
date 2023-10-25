@@ -863,16 +863,18 @@ class NemDatabase(DatabaseConnection):
 			result[14]
 		)
 
-	def update_account_harvested_fees(self, cursor, address, fee):  # pylint: disable=no-self-use
+	def update_account_harvested_fees(self, cursor, address, fee, last_harvested_height):  # pylint: disable=no-self-use
 		"""Updates harvested fees in accounts table"""
 
 		cursor.execute(
 			'''
 			UPDATE accounts
-			SET harvested_fees = harvested_fees + %s
+			SET
+				harvested_fees = harvested_fees + %s,
+				last_harvested_height = %s
 			WHERE address = %s
 			''',
-			(fee, address.bytes)
+			(fee, last_harvested_height, address.bytes)
 		)
 
 	def update_account(self, cursor, address, accountInfo: Account):  # pylint: disable=no-self-use

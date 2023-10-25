@@ -377,6 +377,7 @@ class NemPuller:
 				address=None,
 				harvested_fees=None,
 				height=None,
+				last_harvested_height=None,
 				remote_address=remote_account_info.address if remote_account_info is not None else None,
 				public_key=account.public_key,
 				importance=account.importance,
@@ -432,7 +433,8 @@ class NemPuller:
 			remote_account_info = await self.nem_connector.account_info(account.address, True)
 			harvester_address = remote_account_info.address
 
-		self.nem_db.update_account_harvested_fees(cursor, harvester_address, total_fees)
+		self.nem_db.update_account_harvested_fees(cursor, harvester_address, total_fees, block.height)
+		log.info(f'updated account: {total_fees} fees harvested fee by {harvester_address} in height {block.height}')
 
 	async def sync_nemesis_block(self):
 		"""Sync the Nemesis block."""
