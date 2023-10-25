@@ -344,7 +344,8 @@ class NemDatabase(DatabaseConnection):
 				height bigint NOT NULL,
 				min_cosignatories int,
 				cosignatory_of bytea[],
-				cosignatories bytea[]
+				cosignatories bytea[],
+				last_harvested_height bigint DEFAULT 0
 			)
 			'''
 		)
@@ -786,10 +787,11 @@ class NemDatabase(DatabaseConnection):
 				height,
 				min_cosignatories,
 				cosignatory_of,
-				cosignatories
+				cosignatories,
+				last_harvested_height
 			)
 			VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s,
-				%s, %s, %s, %s, %s, %s)
+				%s, %s, %s, %s, %s, %s, %s)
 			''',
 			(
 				Address(account.address).bytes,
@@ -806,7 +808,8 @@ class NemDatabase(DatabaseConnection):
 				account.height,
 				account.min_cosignatories,
 				account.cosignatory_of,
-				account.cosignatories
+				account.cosignatories,
+				account.last_harvested_height
 			)
 		)
 
@@ -829,7 +832,8 @@ class NemDatabase(DatabaseConnection):
 				height,
 				min_cosignatories,
 				cosignatory_of,
-				cosignatories
+				cosignatories,
+				last_harvested_height
 			FROM accounts
 			WHERE address = %s
 			''',
@@ -855,7 +859,8 @@ class NemDatabase(DatabaseConnection):
 			result[10],
 			result[11],
 			result[12],
-			result[13]
+			result[13],
+			result[14]
 		)
 
 	def update_account_harvested_fees(self, cursor, address, fee):  # pylint: disable=no-self-use

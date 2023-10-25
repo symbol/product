@@ -15,7 +15,8 @@ class Account:
 		height,
 		min_cosignatories,
 		cosignatory_of,
-		cosignatories
+		cosignatories,
+		last_harvested_height
 	):
 		"""Create Account model."""
 
@@ -36,6 +37,7 @@ class Account:
 		self.min_cosignatories = min_cosignatories
 		self.cosignatory_of = cosignatory_of
 		self.cosignatories = cosignatories
+		self.last_harvested_height = last_harvested_height
 
 		def __eq__(self, other):
 			return isinstance(other, Account) and all([
@@ -53,5 +55,6 @@ class Account:
 				self.height == other.height,
 				self.min_cosignatories == other.min_cosignatories,
 				self.cosignatory_of == other.cosignatory_of,
-				self.cosignatories == other.cosignatories
+				self.cosignatories == other.cosignatories,
+				self.last_harvested_height == other.last_harvested_height
 			])

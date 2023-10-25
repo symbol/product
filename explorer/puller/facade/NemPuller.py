@@ -415,7 +415,8 @@ class NemPuller:
 					harvest_remote_status=None,
 					min_cosignatories=None,
 					cosignatory_of=None,
-					cosignatories=None
+					cosignatories=None,
+					last_harvested_height=0
 				))
 
 	async def _update_account_harvested_fee(self, cursor, block):
