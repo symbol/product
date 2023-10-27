@@ -244,6 +244,10 @@ def setup_nem_routes(app, nem_api_facade):
 	def api_get_nem_transaction_statistics():
 		return jsonify(nem_api_facade.get_transaction_statistics())
 
+	@app.route('/api/nem/account/statistics')
+	def api_get_nem_account_statistics():
+		return jsonify(nem_api_facade.get_account_statistics())
+
 
 def setup_error_handlers(app):
 	@app.errorhandler(404)

@@ -8,7 +8,7 @@ from rest.model.Account import AccountQuery, AccountView
 from rest.model.Block import BlockView
 from rest.model.Mosaic import MosaicView
 from rest.model.Namespace import NamespaceView
-from rest.model.Statistic import StatisticTransactionView
+from rest.model.Statistic import StatisticAccountView, StatisticTransactionView
 from rest.model.Transaction import TransactionListView, TransactionQuery
 
 from .DatabaseConnection import DatabaseConnectionPool
@@ -479,6 +479,24 @@ class NemDatabase(DatabaseConnectionPool):
 			transaction_last_30_day=transaction_last_30_day
 		)
 
+	def _create_account_statistic_view(self, result):
+
+		(
+			total_accounts,
+			accounts_with_balance,
+			harvested_accounts,
+			total_importance,
+			eligible_harvest_accounts
+		) = result
+
+		return StatisticAccountView(
+			total_accounts=total_accounts,
+			accounts_with_balance=accounts_with_balance,
+			harvested_accounts=harvested_accounts,
+			eligible_harvest_accounts=eligible_harvest_accounts,
+			total_importance=total_importance
+		)
+
 	def get_block(self, height):
 		"""Gets block by height in database."""
 
@@ -830,3 +848,20 @@ class NemDatabase(DatabaseConnectionPool):
 			result = cursor.fetchone()
 
 			return self._create_transaction_statistic_view(result) if result else None
+
+	def get_account_statistics(self):
+		"""Gets account statistics from database."""
+
+		with self.connection() as connection:
+			cursor = connection.cursor()
+			cursor.execute('''
+				SELECT
+					(SELECT COUNT(*) FROM accounts) AS total_accounts,
+					(SELECT COUNT(*) FROM accounts WHERE balance > 0) AS accounts_with_balance,
+					(SELECT COUNT(*) FROM accounts WHERE harvested_blocks > 0) AS harvested_accounts,
+					(SELECT SUM(importance) FROM accounts) AS total_importance,
+					(SELECT COUNT(*) FROM accounts WHERE vested_balance > 0 AND balance > 10000000000) AS eligible_harvest_accounts
+			''')
+			result = cursor.fetchone()
+
+			return self._create_account_statistic_view(result) if result else None
