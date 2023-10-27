@@ -54,6 +54,13 @@ class NemRestFacade:
 
 		return [mosaic.to_dict() for mosaic in mosaics]
 
+	def get_mosaic_rich_list(self, limit, offset, namespace_name):
+		"""Gets mosaic rich list pagination."""
+
+		mosaics = self.nem_db.get_mosaic_rich_list(limit, offset, namespace_name)
+
+		return [mosaic.to_dict() for mosaic in mosaics]
+
 	def get_transaction(self, hash):
 		"""Gets transaction by hash."""
 

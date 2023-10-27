@@ -6,7 +6,7 @@ from symbolchain.nem.Network import Address
 
 from rest.model.Account import AccountQuery, AccountView
 from rest.model.Block import BlockView
-from rest.model.Mosaic import MosaicView
+from rest.model.Mosaic import MosaicRichListView, MosaicView
 from rest.model.Namespace import NamespaceView
 from rest.model.Statistic import StatisticAccountView, StatisticTransactionView
 from rest.model.Transaction import TransactionListView, TransactionQuery
@@ -497,6 +497,20 @@ class NemDatabase(DatabaseConnectionPool):
 			total_importance=total_importance
 		)
 
+	def _create_mosaic_rich_list_view(self, result):
+
+		(
+			address,
+			remark,
+			balance
+		) = result
+
+		return MosaicRichListView(
+			address=str(Address(_format_address_bytes(address))),
+			remark=remark,
+			balance=_format_xem_relative(balance)
+		)
+
 	def get_block(self, height):
 		"""Gets block by height in database."""
 
@@ -702,6 +716,38 @@ class NemDatabase(DatabaseConnectionPool):
 			results = cursor.fetchall()
 
 			return [self._create_mosaic_view(result) for result in results]
+
+	def get_mosaic_rich_list(self, limit, offset, namespace_name):
+		"""Gets mosaic rich list by namespace name pagination in database."""
+
+		with self.connection() as connection:
+			cursor = connection.cursor()
+			cursor.execute('''
+				WITH mosaic_list AS (
+					SELECT
+						a.address,
+						ar.remarks,
+						(mosaic->>'namespace_name') as namespace_name,
+						(mosaic->>'quantity')::bigint as balance
+					FROM
+						accounts a
+						LEFT JOIN account_remarks ar
+							ON ar.address = a.address,
+						json_array_elements(mosaics) as mosaic
+				)
+				SELECT
+					address,
+					remarks,
+					balance
+				FROM
+					mosaic_list
+				WHERE namespace_name = %s
+				ORDER BY balance DESC
+				LIMIT %s OFFSET %s
+			''', (namespace_name, limit, offset,))
+			results = cursor.fetchall()
+
+			return [self._create_mosaic_rich_list_view(result) for result in results]
 
 	def get_transaction(self, transaction_hash):
 		"""Gets transaction by transaction hash in database."""

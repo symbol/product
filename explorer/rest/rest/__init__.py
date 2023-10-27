@@ -129,6 +129,21 @@ def setup_nem_routes(app, nem_api_facade):
 
 		return jsonify(nem_api_facade.get_mosaics(limit=limit, offset=offset, sort=sort))
 
+	@app.route('/api/nem/mosaic/rich/list')
+	def api_get_nem_mosaic_rich_list_by_name():
+		try:
+			limit = int(request.args.get('limit', 10))
+			offset = int(request.args.get('offset', 0))
+			namespace_name = request.args.get('namespaceName', None)
+
+			if limit < 0 or offset < 0 or namespace_name is None:
+				raise ValueError()
+
+		except ValueError:
+			abort(400)
+
+		return jsonify(nem_api_facade.get_mosaic_rich_list(limit=limit, offset=offset, namespace_name=namespace_name))
+
 	@app.route('/api/nem/transaction/<hash>')
 	def api_get_nem_transaction_by_hash(hash):
 		result = nem_api_facade.get_transaction(hash)
