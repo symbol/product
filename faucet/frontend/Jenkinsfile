@@ -11,4 +11,6 @@ defaultCiPipeline {
 
 	codeCoverageTool = 'nyc'
 	minimumCodeCoverage = 95
+
+	discordWebHookUrlId = 'WALLET_DISCORD_WEB_HOOK_URL_ID'
 }

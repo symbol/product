@@ -8,4 +8,6 @@ defaultCiPipeline {
 
 	codeCoverageTool = 'coverage'
 	minimumCodeCoverage = 95
+
+	discordWebHookUrlId = 'CLIENT_DISCORD_WEB_HOOK_URL_ID'
 }
