@@ -23,4 +23,23 @@ export class ListenerService {
 
         return listener;
     }
+
+    static async awaitPartial(networkProperties, address, hash) {
+        const repositoryFactory = new RepositoryFactoryHttp(networkProperties.nodeUrl, {
+            websocketInjected: WebSocket,
+        });
+        const listener = repositoryFactory.createListener();
+        await listener.open();
+
+        const sdkAddress = Address.createFromRawAddress(address);
+
+        return new Promise((resolve) => {
+            listener.confirmed(sdkAddress).subscribe((transaction) => {
+                if (transaction.hash === hash) {
+                    listener.close();
+                    resolve();
+                }
+            });
+        });
+    }
 }

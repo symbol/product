@@ -46,6 +46,7 @@ export default {
                     },
                     // handle aggregate bonded transactions
                     onAggregateBondedAdd: () => {
+                        DeviceEventEmitter.emit(Constants.Events.PARTIAL_TRANSACTION);
                         dispatchAction({ type: 'transaction/fetchData', payload: { keepPages: true } });
                         showMessage({ message: $t('message_newAggregateBondedTransaction'), type: 'info' });
                     },

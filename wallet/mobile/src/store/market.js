@@ -43,7 +43,6 @@ export default {
                 currentTimestamp - oldPrices.requestTimestamp > config.allowedMarkedDataCallInterval
             ) {
                 prices = await MarketService.fetchPrices();
-                console.log('Fetch prices!', new Date().toISOString());
             } else {
                 prices = oldPrices;
             }

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Image, StyleSheet } from 'react-native';
+import { DeviceEventEmitter, Image, StyleSheet } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import { showMessage } from 'react-native-flash-message';
 import {
@@ -28,7 +28,7 @@ import {
     validateAccountName,
     validateRequired,
 } from 'src/utils';
-import { config } from 'src/config';
+import { Constants, config } from 'src/config';
 import { Router } from 'src/Router';
 import { $t } from 'src/localization';
 
@@ -69,7 +69,7 @@ export const CreateWallet = () => {
         setTimeout(saveMnemonic, 1500);
     };
     const completeLoading = async () => {
-        Router.goToHome();
+        DeviceEventEmitter.emit(Constants.Events.LOGIN);
     };
     const [saveMnemonic] = useDataManager(
         async () => {

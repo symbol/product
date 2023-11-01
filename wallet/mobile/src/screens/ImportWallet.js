@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Image, StyleSheet } from 'react-native';
+import { DeviceEventEmitter, Image, StyleSheet } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import {
     Button,
@@ -17,6 +17,7 @@ import store from 'src/store';
 import { createOptInPrivateKeyFromMnemonic, handleError, useDataManager, usePasscode } from 'src/utils';
 import { Router } from 'src/Router';
 import { $t } from 'src/localization';
+import { Constants } from 'src/config';
 
 export const ImportWallet = () => {
     const [name] = useState($t('s_importWallet_defaultAccountName'));
@@ -68,7 +69,7 @@ export const ImportWallet = () => {
         setTimeout(checkOptInAccounts, 1500);
     };
     const completeLoading = async () => {
-        Router.goToHome();
+        DeviceEventEmitter.emit(Constants.Events.LOGIN);
     };
     const createPasscode = usePasscode('choose', startLoading);
 

@@ -46,6 +46,7 @@ const keys = {
     SettingsNetwork: 'SettingsNetwork',
     SettingsSecurity: 'SettingsSecurity',
     TransactionDetails: 'TransactionDetails',
+    TransactionRequest: 'TransactionRequest',
     AssetDetails: 'AssetDetails',
     Harvesting: 'Harvesting',
     Revoke: 'Revoke',
@@ -53,49 +54,63 @@ const keys = {
     Passcode: 'Passcode',
 };
 
+const linkingOptions = {
+    prefixes: ['web+symbol://'],
+    config: {
+        screens: {
+            [keys.TransactionRequest]: 'transaction',
+        },
+    },
+};
+
 export const navigationRef = createNavigationContainerRef();
 
-export const RouterView = ({ isActive }) => (
-    <NavigationContainer theme={theme} ref={navigationRef}>
+export const RouterView = ({ isActive, isWalletExist }) => (
+    <NavigationContainer theme={theme} ref={navigationRef} linking={linkingOptions}>
         {isActive && (
             <Stack.Navigator screenOptions={screenOptions}>
-                <>
+                {!isWalletExist && (
                     <Stack.Group screenOptions={{ headerShown: false }}>
                         <Stack.Screen name={keys.Welcome} component={screens.Welcome} />
                         <Stack.Screen name={keys.CreateWallet} component={screens.CreateWallet} />
                         <Stack.Screen name={keys.ImportWallet} component={screens.ImportWallet} />
                     </Stack.Group>
-                    <Stack.Group screenOptions={{ headerShown: false }}>
-                        <Stack.Screen name={keys.Home} component={screens.Home} />
-                        <Stack.Screen name={keys.History} component={screens.History} />
-                        <Stack.Screen name={keys.Scan} component={screens.Scan} />
-                        <Stack.Screen name={keys.Assets} component={screens.Assets} />
-                        <Stack.Screen name={keys.Actions} component={screens.Actions} />
-                    </Stack.Group>
-                    <Stack.Group>
-                        <Stack.Screen name={keys.AccountDetails} component={screens.AccountDetails} />
-                        <Stack.Screen name={keys.AccountList} component={screens.AccountList} />
-                        <Stack.Screen name={keys.AddExternalAccount} component={screens.AddExternalAccount} />
-                        <Stack.Screen name={keys.AddSeedAccount} component={screens.AddSeedAccount} />
-                        <Stack.Screen name={keys.AddressBookEdit} component={screens.AddressBookEdit} />
-                        <Stack.Screen name={keys.AddressBookContact} component={screens.AddressBookContact} />
-                        <Stack.Screen name={keys.AddressBookList} component={screens.AddressBookList} />
-                        <Stack.Screen name={keys.Send} component={screens.Send} />
-                        <Stack.Screen name={keys.Receive} component={screens.Receive} />
-                        <Stack.Screen name={keys.Settings} component={screens.Settings} />
-                        <Stack.Screen name={keys.SettingsAbout} component={screens.SettingsAbout} />
-                        <Stack.Screen name={keys.SettingsNetwork} component={screens.SettingsNetwork} />
-                        <Stack.Screen name={keys.SettingsSecurity} component={screens.SettingsSecurity} />
-                        <Stack.Screen name={keys.TransactionDetails} component={screens.TransactionDetails} />
-                        <Stack.Screen name={keys.AssetDetails} component={screens.AssetDetails} />
-                        <Stack.Screen name={keys.Harvesting} component={screens.Harvesting} />
-                        <Stack.Screen name={keys.Revoke} component={screens.Revoke} />
-                        <Stack.Screen name={keys.MosaicCreation} component={screens.MosaicCreation} />
-                    </Stack.Group>
-                    <Stack.Group screenOptions={{ headerShown: false }}>
-                        <Stack.Screen name={keys.Passcode} component={screens.Passcode} />
-                    </Stack.Group>
-                </>
+                )}
+                {isWalletExist && (
+                    <>
+                        <Stack.Group screenOptions={{ headerShown: false }}>
+                            <Stack.Screen name={keys.Home} component={screens.Home} />
+                            <Stack.Screen name={keys.History} component={screens.History} />
+                            <Stack.Screen name={keys.Scan} component={screens.Scan} />
+                            <Stack.Screen name={keys.Assets} component={screens.Assets} />
+                            <Stack.Screen name={keys.Actions} component={screens.Actions} />
+                            <Stack.Screen name={keys.TransactionRequest} component={screens.TransactionRequest} />
+                        </Stack.Group>
+                        <Stack.Group>
+                            <Stack.Screen name={keys.AccountDetails} component={screens.AccountDetails} />
+                            <Stack.Screen name={keys.AccountList} component={screens.AccountList} />
+                            <Stack.Screen name={keys.AddExternalAccount} component={screens.AddExternalAccount} />
+                            <Stack.Screen name={keys.AddSeedAccount} component={screens.AddSeedAccount} />
+                            <Stack.Screen name={keys.AddressBookEdit} component={screens.AddressBookEdit} />
+                            <Stack.Screen name={keys.AddressBookContact} component={screens.AddressBookContact} />
+                            <Stack.Screen name={keys.AddressBookList} component={screens.AddressBookList} />
+                            <Stack.Screen name={keys.Send} component={screens.Send} />
+                            <Stack.Screen name={keys.Receive} component={screens.Receive} />
+                            <Stack.Screen name={keys.Settings} component={screens.Settings} />
+                            <Stack.Screen name={keys.SettingsAbout} component={screens.SettingsAbout} />
+                            <Stack.Screen name={keys.SettingsNetwork} component={screens.SettingsNetwork} />
+                            <Stack.Screen name={keys.SettingsSecurity} component={screens.SettingsSecurity} />
+                            <Stack.Screen name={keys.TransactionDetails} component={screens.TransactionDetails} />
+                            <Stack.Screen name={keys.AssetDetails} component={screens.AssetDetails} />
+                            <Stack.Screen name={keys.Harvesting} component={screens.Harvesting} />
+                            <Stack.Screen name={keys.Revoke} component={screens.Revoke} />
+                            <Stack.Screen name={keys.MosaicCreation} component={screens.MosaicCreation} />
+                        </Stack.Group>
+                    </>
+                )}
+                <Stack.Group screenOptions={{ headerShown: false }}>
+                    <Stack.Screen name={keys.Passcode} component={screens.Passcode} />
+                </Stack.Group>
             </Stack.Navigator>
         )}
     </NavigationContainer>

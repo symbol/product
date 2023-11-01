@@ -21,6 +21,7 @@ import { Router } from 'src/Router';
 import { AccountService, MosaicService, TransactionService } from 'src/services';
 import { connect } from 'src/store';
 import { getMosaicWithRelativeAmount, getTransactionFees, handleError, useDataManager, usePasscode, useProp, useToggle } from 'src/utils';
+import { TransactionType } from 'symbol-sdk';
 
 export const Revoke = connect((state) => ({
     currentAccount: state.account.current,
@@ -35,7 +36,7 @@ export const Revoke = connect((state) => ({
     const { mosaics } = route.params;
     const [sourceAddress, setSourceAddress] = useProp(route.params.sourceAddress || '');
     const [mosaicId, setMosaicId] = useProp(mosaics[0].id);
-    const [selectedMosaic, setSelectedMosaic] = useState({});
+    const [selectedMosaic, setSelectedMosaic] = useState({ id: '0000000000000000' });
     const [amount, setAmount] = useProp('0');
     const [maxFee, setMaxFee] = useState(0);
     const [speed, setSpeed] = useState('medium');
@@ -52,6 +53,7 @@ export const Revoke = connect((state) => ({
     const isButtonDisabled = !isSourceAddressValid || !isAmountValid;
 
     const transaction = {
+        type: TransactionType.MOSAIC_SUPPLY_REVOCATION,
         signerAddress: currentAccount.address,
         sourceAddress: sourceAddress,
         mosaic: {
@@ -60,11 +62,8 @@ export const Revoke = connect((state) => ({
         },
         fee: maxFee,
     };
-
     const cosignatoryList = { cosignatories };
-
-    const transactionSize = 700;
-    const transactionFees = useMemo(() => getTransactionFees({}, networkProperties, transactionSize), []);
+    const transactionFees = useMemo(() => getTransactionFees(transaction, networkProperties), []);
 
     const [fetchSourceAddressMosaicBalance, isBalanceLoading] = useDataManager(
         async () => {
@@ -88,7 +87,7 @@ export const Revoke = connect((state) => ({
     );
     const [send] = useDataManager(
         async () => {
-            await TransactionService.sendRevokeTransaction(transaction, currentAccount, networkProperties);
+            await TransactionService.signAndAnnounce(transaction, currentAccount, networkProperties);
             toggleSuccessAlert();
         },
         null,

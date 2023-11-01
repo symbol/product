@@ -1,5 +1,39 @@
-import { Constants } from 'src/config';
-import { TransactionType } from 'symbol-sdk';
+import { Constants, TransactionType } from 'src/config';
+import {
+    AccountKeyLinkTransaction,
+    AccountMetadataTransaction,
+    Address,
+    AddressAliasTransaction,
+    AggregateTransaction,
+    AliasAction,
+    Deadline,
+    EncryptedMessage,
+    HashLockTransaction,
+    Id,
+    LinkAction,
+    Mosaic,
+    MosaicAliasTransaction,
+    MosaicDefinitionTransaction,
+    MosaicFlags,
+    MosaicId,
+    MosaicMetadataTransaction,
+    MosaicNonce,
+    MosaicSupplyChangeAction,
+    MosaicSupplyChangeTransaction,
+    MosaicSupplyRevocationTransaction,
+    NamespaceId,
+    NamespaceMetadataTransaction,
+    NamespaceRegistrationTransaction,
+    NamespaceRegistrationType,
+    NodeKeyLinkTransaction,
+    PersistentDelegationRequestTransaction,
+    PlainMessage,
+    PublicAccount,
+    TransferTransaction,
+    UInt64,
+    VotingKeyLinkTransaction,
+    VrfKeyLinkTransaction,
+} from 'symbol-sdk';
 import {
     addressFromPublicKey,
     getMosaicRelativeAmount,
@@ -7,6 +41,7 @@ import {
     getNativeMosaicAmount,
     isIncomingTransaction,
     isOutgoingTransaction,
+    networkIdentifierToNetworkType,
 } from './';
 
 export const mosaicFromDTO = (mosaic) => ({
@@ -16,6 +51,19 @@ export const mosaicFromDTO = (mosaic) => ({
 
 export const addressFromDTO = (address, resolvedAddresses) =>
     address.isNamespaceId() ? resolvedAddresses[address.toHex()] : address.plain();
+
+export const createSignerDTO = (transaction, networkProperties) => {
+    return transaction.signerPublicKey
+        ? PublicAccount.createFromPublicKey(
+              transaction.signerPublicKey,
+              networkIdentifierToNetworkType(networkProperties.networkIdentifier)
+          )
+        : null;
+};
+
+export const createMaxFeeDTO = (transaction, networkProperties) => {
+    return UInt64.fromUint((transaction.fee || 0) * Math.pow(10, networkProperties.networkCurrency.divisibility));
+};
 
 export const transactionFromDTO = (transaction, config) => {
     const baseTransaction = baseTransactionFromDTO(transaction, config);
@@ -75,15 +123,86 @@ export const transactionFromDTO = (transaction, config) => {
     return baseTransaction;
 };
 
-export const baseTransactionFromDTO = (transaction, { networkProperties }) => {
+export const transactionToDTO = (transaction, networkProperties, currentAccount) => {
+    switch (transaction.type) {
+        case TransactionType.AGGREGATE_BONDED:
+        case TransactionType.AGGREGATE_COMPLETE:
+            return aggregateTransactionToDTO(transaction, networkProperties, currentAccount);
+        case TransactionType.TRANSFER:
+            return transferTransactionToDTO(transaction, networkProperties, currentAccount);
+        case TransactionType.ADDRESS_ALIAS:
+            return addressAliasTransactionToDTO(transaction, networkProperties);
+        case TransactionType.MOSAIC_ALIAS:
+            return mosaicAliasTransactionToDTO(transaction, networkProperties);
+        case TransactionType.NAMESPACE_REGISTRATION:
+            return namespaceRegistrationTransactionToDTO(transaction, networkProperties, currentAccount);
+        case TransactionType.MOSAIC_DEFINITION:
+            return mosaicDefinitionTransactionToDTO(transaction, networkProperties);
+        case TransactionType.MOSAIC_SUPPLY_CHANGE:
+            return mosaicSupplyChangeTransactionToDTO(transaction, networkProperties);
+        case TransactionType.MOSAIC_SUPPLY_REVOCATION:
+            return mosaicSupplyRevocationTransactionToDTO(transaction, networkProperties);
+        // case TransactionType.SECRET_LOCK:
+        //     return secretLockTransactionToDTO(transaction, networkProperties);
+        // case TransactionType.HASH_LOCK:
+        //     return hashLockTransactionToDTO(transaction, networkProperties);
+        // case TransactionType.SECRET_PROOF:
+        //     return secretProofTransactionToDTO(transaction, networkProperties);
+        case TransactionType.VRF_KEY_LINK:
+            return vrfKeyLinkTransactionToDTO(transaction, networkProperties);
+        case TransactionType.ACCOUNT_KEY_LINK:
+            return accountKeyLinkTransactionToDTO(transaction, networkProperties);
+        case TransactionType.NODE_KEY_LINK:
+            return nodeKeyLinkTransactionToDTO(transaction, networkProperties);
+        case TransactionType.VOTING_KEY_LINK:
+            return votingKeyLinkTransactionToDTO(transaction, networkProperties);
+        // case TransactionType.MOSAIC_GLOBAL_RESTRICTION:
+        //     return mosaicGlobalRestrictionTransactionToDTO(transaction, networkProperties);
+        // case TransactionType.MOSAIC_ADDRESS_RESTRICTION:
+        //     return mosaicAddressRestrictionTransactionToDTO(transaction, networkProperties);
+        // case TransactionType.ACCOUNT_OPERATION_RESTRICTION:
+        //     return accountOperationRestrictionTransactionToDTO(transaction, networkProperties);
+        // case TransactionType.ACCOUNT_ADDRESS_RESTRICTION:
+        //     return accountAddressRestrictionTransactionToDTO(transaction, networkProperties);
+        // case TransactionType.ACCOUNT_MOSAIC_RESTRICTION:
+        //     return accountMosaicRestrictionTransactionToDTO(transaction, networkProperties);
+        // case TransactionType.MULTISIG_ACCOUNT_MODIFICATION:
+        //     return multisigAccountModificationTransactionToDTO(transaction, networkProperties);
+        // case TransactionType.ACCOUNT_METADATA:
+        //     return accountMetadataTransactionToDTO(transaction, networkProperties);
+        // case TransactionType.NAMESPACE_METADATA:
+        //     return namespaceMetadataTransactionToDTO(transaction, networkProperties);
+        // case TransactionType.MOSAIC_METADATA:
+        //     return mosaicMetadataTransactionToDTO(transaction, networkProperties);
+        case TransactionType.PERSISTENT_DELEGATION_REQUEST:
+            return persistentDelegationRequestTransactionToDTO(transaction, networkProperties);
+    }
+
+    return null;
+};
+
+export const baseTransactionFromDTO = (transaction, config) => {
+    const isSignerPublicKeyProvided =
+        transaction.signer?.publicKey &&
+        transaction.signer?.publicKey !== '0000000000000000000000000000000000000000000000000000000000000000';
+    const signerPublicKey = isSignerPublicKeyProvided ? transaction.signer?.publicKey : config.fillSignerPublickey;
+
     return (baseTransaction = {
         type: transaction.type,
-        deadline: transaction.deadline.toLocalDateTime(networkProperties.epochAdjustment).toString(),
+        deadline: transaction.deadline.toLocalDateTime(config.networkProperties.epochAdjustment).toString(),
         height: transaction.transactionInfo?.height.toString(),
         hash: transaction.transactionInfo?.hash,
         id: transaction.transactionInfo?.id,
-        fee: getMosaicRelativeAmount(transaction.maxFee.toString(), networkProperties.networkCurrency.divisibility),
-        signerAddress: transaction.signer?.address.plain(),
+        fee: getMosaicRelativeAmount(transaction.maxFee.toString(), config.networkProperties.networkCurrency.divisibility),
+        signerAddress: isSignerPublicKeyProvided
+            ? transaction.signer.address.plain()
+            : !!signerPublicKey
+            ? Address.createFromPublicKey(
+                  signerPublicKey,
+                  networkIdentifierToNetworkType(config.networkProperties.networkIdentifier)
+              ).plain()
+            : null,
+        signerPublicKey,
     });
 };
 
@@ -112,14 +231,42 @@ export const aggregateTransactionFromDTO = (transaction, config) => {
     return info;
 };
 
-export const transferTransactionFromDTO = (transaction, { networkProperties, mosaicInfos, currentAccount, resolvedAddresses }) => {
-    const baseTransaction = baseTransactionFromDTO(transaction, { networkProperties });
+export const aggregateTransactionToDTO = (transaction, networkProperties, currentAccount) => {
+    const innerTransactions = transaction.innerTransactions.map((innerTransaction) =>
+        transactionToDTO(innerTransaction, networkProperties, currentAccount)
+    );
+
+    if (transaction.type === TransactionType.AGGREGATE_BONDED) {
+        return AggregateTransaction.createBonded(
+            Deadline.create(networkProperties.epochAdjustment),
+            innerTransactions,
+            networkIdentifierToNetworkType(networkProperties.networkIdentifier),
+            [],
+            createMaxFeeDTO(transaction, networkProperties),
+            undefined,
+            createSignerDTO(transaction, networkProperties)
+        );
+    }
+
+    return AggregateTransaction.createComplete(
+        Deadline.create(networkProperties.epochAdjustment),
+        innerTransactions,
+        networkIdentifierToNetworkType(networkProperties.networkIdentifier),
+        [],
+        createMaxFeeDTO(transaction, networkProperties),
+        undefined,
+        createSignerDTO(transaction, networkProperties)
+    );
+};
+
+export const transferTransactionFromDTO = (transaction, config) => {
+    const { networkProperties, mosaicInfos, currentAccount, resolvedAddresses } = config;
+    const baseTransaction = baseTransactionFromDTO(transaction, config);
     const mosaics = transaction.mosaics.map(mosaicFromDTO);
     const formattedMosaics = getMosaicsWithRelativeAmounts(mosaics, mosaicInfos);
     const nativeMosaicAmount = getNativeMosaicAmount(formattedMosaics, networkProperties.networkCurrency.mosaicId);
     const transactionBody = {
         ...baseTransaction,
-        signerPublicKey: transaction.signer?.publicKey,
         recipientAddress: addressFromDTO(transaction.recipientAddress, resolvedAddresses),
     };
     let resultAmount = 0;
@@ -156,8 +303,34 @@ export const transferTransactionFromDTO = (transaction, { networkProperties, mos
     };
 };
 
-export const namespaceRegistrationTransactionFromDTO = (transaction, { networkProperties }) => {
-    const baseTransaction = baseTransactionFromDTO(transaction, { networkProperties });
+export const transferTransactionToDTO = (transaction, networkProperties, currentAccount) => {
+    let message;
+
+    if (transaction.message?.isEncrypted) {
+        message = EncryptedMessage.create(
+            transaction.message.text,
+            { publicKey: transaction.recipientPublicKey },
+            currentAccount.privateKey
+        );
+    } else {
+        message = PlainMessage.create(transaction.message?.text);
+    }
+    return TransferTransaction.create(
+        Deadline.create(networkProperties.epochAdjustment),
+        Address.createFromRawAddress(transaction.recipientAddress),
+        transaction.mosaics.map(
+            (mosaic) => new Mosaic(new MosaicId(mosaic.id), UInt64.fromUint(mosaic.amount * Math.pow(10, mosaic.divisibility)))
+        ),
+        message,
+        networkIdentifierToNetworkType(networkProperties.networkIdentifier),
+        createMaxFeeDTO(transaction, networkProperties),
+        undefined,
+        createSignerDTO(transaction, networkProperties)
+    );
+};
+
+export const namespaceRegistrationTransactionFromDTO = (transaction, config) => {
+    const baseTransaction = baseTransactionFromDTO(transaction, config);
 
     return {
         ...baseTransaction,
@@ -167,6 +340,30 @@ export const namespaceRegistrationTransactionFromDTO = (transaction, { networkPr
         parentId: typeof transaction.parentId !== 'undefined' ? transaction.parentId?.toHex() : '',
         duration: typeof transaction.duration !== 'undefined' ? transaction.duration?.compact() : Constants.Message.UNLIMITED,
     };
+};
+
+export const namespaceRegistrationTransactionToDTO = (transaction, networkProperties) => {
+    if (transaction.registrationType === Constants.NamespaceRegistrationType[NamespaceRegistrationType.RootNamespace]) {
+        return NamespaceRegistrationTransaction.createRootNamespace(
+            Deadline.create(networkProperties.epochAdjustment),
+            transaction.namespaceName,
+            UInt64.fromUint(transaction.duration),
+            networkIdentifierToNetworkType(networkProperties.networkIdentifier),
+            createMaxFeeDTO(transaction, networkProperties),
+            undefined,
+            createSignerDTO(transaction, networkProperties)
+        );
+    } else {
+        return NamespaceRegistrationTransaction.createSubNamespace(
+            Deadline.create(networkProperties.epochAdjustment),
+            transaction.namespaceName,
+            transaction.parentId,
+            networkIdentifierToNetworkType(networkProperties.networkIdentifier),
+            createMaxFeeDTO(transaction, networkProperties),
+            undefined,
+            createSignerDTO(transaction, networkProperties)
+        );
+    }
 };
 
 export const addressAliasTransactionFromDTO = (transaction, config) => {
@@ -182,6 +379,19 @@ export const addressAliasTransactionFromDTO = (transaction, config) => {
     };
 };
 
+export const addressAliasTransactionToDTO = (transaction, networkProperties) => {
+    return AddressAliasTransaction.create(
+        Deadline.create(networkProperties.epochAdjustment),
+        Constants.AliasAction[AliasAction.Link] === transaction.aliasAction ? AliasAction.Link : AliasAction.Unlink,
+        new NamespaceId([Id.fromHex(transaction.namespaceId).lower, Id.fromHex(transaction.namespaceId).higher]),
+        Address.createFromRawAddress(transaction.address),
+        networkIdentifierToNetworkType(networkProperties.networkIdentifier),
+        createMaxFeeDTO(transaction, networkProperties),
+        undefined,
+        createSignerDTO(transaction, networkProperties)
+    );
+};
+
 export const mosaicAliasTransactionFromDTO = (transaction, config) => {
     const baseTransaction = baseTransactionFromDTO(transaction, config);
     const namespaceName = config.namespaceNames[transaction.namespaceId.toHex()];
@@ -195,6 +405,19 @@ export const mosaicAliasTransactionFromDTO = (transaction, config) => {
     };
 };
 
+export const mosaicAliasTransactionToDTO = (transaction, networkProperties) => {
+    return MosaicAliasTransaction.create(
+        Deadline.create(networkProperties.epochAdjustment),
+        Constants.AliasAction[AliasAction.Link] === transaction.aliasAction ? AliasAction.Link : AliasAction.Unlink,
+        new NamespaceId([Id.fromHex(transaction.namespaceId).lower, Id.fromHex(transaction.namespaceId).higher]),
+        new MosaicId(transaction.mosaicId),
+        networkIdentifierToNetworkType(networkProperties.networkIdentifier),
+        createMaxFeeDTO(transaction, networkProperties),
+        undefined,
+        createSignerDTO(transaction, networkProperties)
+    );
+};
+
 export const mosaicDefinitionTransactionFromDTO = (transaction, config) => {
     const baseTransaction = baseTransactionFromDTO(transaction, config);
 
@@ -204,11 +427,26 @@ export const mosaicDefinitionTransactionFromDTO = (transaction, config) => {
         divisibility: transaction.divisibility,
         duration: transaction.duration.compact(),
         nonce: transaction.nonce.toHex(),
-        supplyMutable: transaction.flags.supplyMutable,
-        transferable: transaction.flags.transferable,
-        restrictable: transaction.flags.restrictable,
-        revokable: transaction.flags.revokable,
+        isSupplyMutable: transaction.flags.supplyMutable,
+        isTransferable: transaction.flags.transferable,
+        isRestrictable: transaction.flags.restrictable,
+        isRevokable: transaction.flags.revokable,
     };
+};
+
+export const mosaicDefinitionTransactionToDTO = (transaction, networkProperties) => {
+    return MosaicDefinitionTransaction.create(
+        Deadline.create(networkProperties.epochAdjustment),
+        MosaicNonce.createFromHex(transaction.nonce),
+        new MosaicId(transaction.mosaicId),
+        MosaicFlags.create(transaction.isSupplyMutable, transaction.isTransferable, transaction.isRestrictable, transaction.isRevokable),
+        transaction.divisibility,
+        UInt64.fromUint(transaction.duration),
+        networkIdentifierToNetworkType(networkProperties.networkIdentifier),
+        createMaxFeeDTO(transaction, networkProperties),
+        undefined,
+        createSignerDTO(transaction, networkProperties)
+    );
 };
 
 export const mosaicSupplyChangeTransactionFromDTO = (transaction, config) => {
@@ -222,6 +460,24 @@ export const mosaicSupplyChangeTransactionFromDTO = (transaction, config) => {
     };
 };
 
+export const mosaicSupplyChangeTransactionToDTO = (transaction, networkProperties) => {
+    const action =
+        Constants.MosaicSupplyChangeAction[MosaicSupplyChangeAction.Increase] === transaction.action
+            ? MosaicSupplyChangeAction.Increase
+            : MosaicSupplyChangeAction.Decrease;
+
+    return MosaicSupplyChangeTransaction.create(
+        Deadline.create(networkProperties.epochAdjustment),
+        new MosaicId(transaction.mosaicId),
+        action,
+        UInt64.fromUint(transaction.delta),
+        networkIdentifierToNetworkType(networkProperties.networkIdentifier),
+        createMaxFeeDTO(transaction, networkProperties),
+        undefined,
+        createSignerDTO(transaction, networkProperties)
+    );
+};
+
 export const mosaicSupplyRevocationTransactionFromDTO = (transaction, config) => {
     const baseTransaction = baseTransactionFromDTO(transaction, config);
     const mosaic = mosaicFromDTO(transaction.mosaic);
@@ -231,9 +487,24 @@ export const mosaicSupplyRevocationTransactionFromDTO = (transaction, config) =>
     return {
         ...baseTransaction,
         mosaicId: transaction.mosaic.id.toHex(),
-        mosaics: formattedMosaics,
+        mosaic: formattedMosaics[0],
         sourceAddress,
     };
+};
+
+export const mosaicSupplyRevocationTransactionToDTO = (transaction, networkProperties) => {
+    return MosaicSupplyRevocationTransaction.create(
+        Deadline.create(networkProperties.epochAdjustment),
+        Address.createFromRawAddress(transaction.sourceAddress),
+        new Mosaic(
+            new MosaicId(transaction.mosaic.id),
+            UInt64.fromUint(transaction.mosaic.amount * Math.pow(10, transaction.mosaic.divisibility))
+        ),
+        networkIdentifierToNetworkType(networkProperties.networkIdentifier),
+        createMaxFeeDTO(transaction, networkProperties),
+        undefined,
+        createSignerDTO(transaction, networkProperties)
+    );
 };
 
 export const multisigAccountModificationTransactionFromDTO = (transaction, config) => {
@@ -262,6 +533,22 @@ export const hashLockTransactionFromDTO = (transaction, config) => {
         mosaics: formattedMosaics,
         lockedAmount,
     };
+};
+
+export const hashLockTransactionToDTO = (networkProperties, signedTransaction, fee, duration = 1000) => {
+    const amount = 10;
+
+    return HashLockTransaction.create(
+        Deadline.create(networkProperties.epochAdjustment),
+        new Mosaic(
+            new MosaicId(networkProperties.networkCurrency.mosaicId),
+            UInt64.fromUint(amount * Math.pow(10, networkProperties.networkCurrency.divisibility))
+        ),
+        UInt64.fromUint(duration),
+        signedTransaction,
+        networkIdentifierToNetworkType(networkProperties.networkIdentifier),
+        UInt64.fromUint(fee * Math.pow(10, networkProperties.networkCurrency.divisibility))
+    );
 };
 
 export const secretLockTransactionFromDTO = (transaction, config) => {
@@ -376,6 +663,20 @@ export const accountMetadataTransactionFromDTO = (transaction, config) => {
     };
 };
 
+export const accountMetadataTransactionToDTO = (transaction, networkProperties) => {
+    return AccountMetadataTransaction.create(
+        Deadline.create(networkProperties.epochAdjustment),
+        Address.createFromRawAddress(transaction.targetAddress),
+        UInt64.fromHex(transaction.scopedMetadataKey),
+        transaction.valueSizeDelta,
+        transaction.value,
+        networkIdentifierToNetworkType(networkProperties.networkIdentifier),
+        createMaxFeeDTO(transaction, networkProperties),
+        undefined,
+        createSignerDTO(transaction, networkProperties)
+    );
+};
+
 export const mosaicMetadataTransactionFromDTO = (transaction, config) => {
     const baseTransaction = baseTransactionFromDTO(transaction, config);
     const mosaicId = transaction.targetMosaicId.toHex();
@@ -391,6 +692,21 @@ export const mosaicMetadataTransactionFromDTO = (transaction, config) => {
         metadataValue: transaction.value,
         valueSizeDelta: transaction.valueSizeDelta,
     };
+};
+
+export const mosaicMetadataTransactionToDTO = (transaction, networkProperties) => {
+    return MosaicMetadataTransaction.create(
+        Deadline.create(networkProperties.epochAdjustment),
+        Address.createFromRawAddress(transaction.targetAddress),
+        UInt64.fromHex(transaction.scopedMetadataKey),
+        new MosaicId(transaction.targetMosaicId),
+        transaction.valueSizeDelta,
+        transaction.value,
+        networkIdentifierToNetworkType(networkProperties.networkIdentifier),
+        createMaxFeeDTO(transaction, networkProperties),
+        undefined,
+        createSignerDTO(transaction, networkProperties)
+    );
 };
 
 export const namespaceMetadataTransactionFromDTO = (transaction, config) => {
@@ -409,6 +725,21 @@ export const namespaceMetadataTransactionFromDTO = (transaction, config) => {
     };
 };
 
+export const namespaceMetadataTransactionToDTO = (transaction, networkProperties) => {
+    return NamespaceMetadataTransaction.create(
+        Deadline.create(networkProperties.epochAdjustment),
+        Address.createFromRawAddress(transaction.targetAddress),
+        UInt64.fromHex(transaction.scopedMetadataKey),
+        new NamespaceId([Id.fromHex(transaction.targetNamespaceId).lower, Id.fromHex(transaction.targetNamespaceId).higher]),
+        transaction.valueSizeDelta,
+        transaction.value,
+        networkIdentifierToNetworkType(networkProperties.networkIdentifier),
+        createMaxFeeDTO(transaction, networkProperties),
+        undefined,
+        createSignerDTO(transaction, networkProperties)
+    );
+};
+
 export const votingKeyLinkTransactionFromDTO = (transaction, config) => {
     const baseTransaction = baseTransactionFromDTO(transaction, config);
     const linkedAccountAddress = addressFromPublicKey(transaction.linkedPublicKey, config.networkProperties.networkIdentifier);
@@ -423,6 +754,18 @@ export const votingKeyLinkTransactionFromDTO = (transaction, config) => {
     };
 };
 
+export const votingKeyLinkTransactionToDTO = (transaction, networkProperties) => {
+    return VotingKeyLinkTransaction.create(
+        Deadline.create(networkProperties.epochAdjustment),
+        transaction.linkedPublicKey,
+        Constants.LinkAction[LinkAction.Link] === transaction.linkAction ? LinkAction.Link : LinkAction.Unlink,
+        networkIdentifierToNetworkType(networkProperties.networkIdentifier),
+        createMaxFeeDTO(transaction, networkProperties),
+        undefined,
+        createSignerDTO(transaction, networkProperties)
+    );
+};
+
 export const vrfKeyLinkTransactionFromDTO = (transaction, config) => {
     const baseTransaction = baseTransactionFromDTO(transaction, config);
     const linkedAccountAddress = addressFromPublicKey(transaction.linkedPublicKey, config.networkProperties.networkIdentifier);
@@ -433,6 +776,18 @@ export const vrfKeyLinkTransactionFromDTO = (transaction, config) => {
         linkedPublicKey: transaction.linkedPublicKey,
         linkedAccountAddress,
     };
+};
+
+export const vrfKeyLinkTransactionToDTO = (transaction, networkProperties) => {
+    return VrfKeyLinkTransaction.create(
+        Deadline.create(networkProperties.epochAdjustment),
+        transaction.linkedPublicKey,
+        Constants.LinkAction[LinkAction.Link] === transaction.linkAction ? LinkAction.Link : LinkAction.Unlink,
+        networkIdentifierToNetworkType(networkProperties.networkIdentifier),
+        createMaxFeeDTO(transaction, networkProperties),
+        undefined,
+        createSignerDTO(transaction, networkProperties)
+    );
 };
 
 export const nodeKeyLinkTransactionFromDTO = (transaction, config) => {
@@ -447,6 +802,18 @@ export const nodeKeyLinkTransactionFromDTO = (transaction, config) => {
     };
 };
 
+export const nodeKeyLinkTransactionToDTO = (transaction, networkProperties) => {
+    return NodeKeyLinkTransaction.create(
+        Deadline.create(networkProperties.epochAdjustment),
+        transaction.linkedPublicKey,
+        Constants.LinkAction[LinkAction.Link] === transaction.linkAction ? LinkAction.Link : LinkAction.Unlink,
+        networkIdentifierToNetworkType(networkProperties.networkIdentifier),
+        createMaxFeeDTO(transaction, networkProperties),
+        undefined,
+        createSignerDTO(transaction, networkProperties)
+    );
+};
+
 export const accountKeyLinkTransactionFromDTO = (transaction, config) => {
     const baseTransaction = baseTransactionFromDTO(transaction, config);
     const linkedAccountAddress = addressFromPublicKey(transaction.linkedPublicKey, config.networkProperties.networkIdentifier);
@@ -457,4 +824,29 @@ export const accountKeyLinkTransactionFromDTO = (transaction, config) => {
         linkedPublicKey: transaction.linkedPublicKey,
         linkedAccountAddress,
     };
+};
+
+export const accountKeyLinkTransactionToDTO = (transaction, networkProperties) => {
+    return AccountKeyLinkTransaction.create(
+        Deadline.create(networkProperties.epochAdjustment),
+        transaction.linkedPublicKey,
+        Constants.LinkAction[LinkAction.Link] === transaction.linkAction ? LinkAction.Link : LinkAction.Unlink,
+        networkIdentifierToNetworkType(networkProperties.networkIdentifier),
+        createMaxFeeDTO(transaction, networkProperties),
+        undefined,
+        createSignerDTO(transaction, networkProperties)
+    );
+};
+
+export const persistentDelegationRequestTransactionToDTO = (transaction, networkProperties) => {
+    return PersistentDelegationRequestTransaction.createPersistentDelegationRequestTransaction(
+        Deadline.create(networkProperties.epochAdjustment),
+        transaction.remoteAccountPrivateKey,
+        transaction.vrfPrivateKey,
+        transaction.nodePublicKey,
+        networkIdentifierToNetworkType(networkProperties.networkIdentifier),
+        createMaxFeeDTO(transaction, networkProperties),
+        undefined,
+        createSignerDTO(transaction, networkProperties)
+    );
 };
