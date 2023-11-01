@@ -1,6 +1,5 @@
 import {
     decryptMessage,
-    getMosaicAbsoluteAmount,
     hashLockTransactionToDTO,
     isAggregateTransaction,
     isIncomingTransaction,
@@ -9,32 +8,27 @@ import {
     makeRequest,
     networkIdentifierToNetworkType,
     publicAccountFromPrivateKey,
-    revokeTransactionToDTO,
     timestampToLocalDate,
     transactionFromDTO,
+    transactionToDTO,
     transferTransactionToDTO,
 } from 'src/utils';
-import { AccountService, NamespaceService } from 'src/services';
+import { AccountService, ListenerService, NamespaceService } from 'src/services';
 import {
     Account,
     Address,
     AggregateTransaction,
     CosignatureTransaction,
     Deadline,
-    MosaicDefinitionTransaction,
-    MosaicFlags,
-    MosaicId,
-    MosaicNonce,
     MosaicSupplyChangeAction,
-    MosaicSupplyChangeTransaction,
     Order,
     PublicAccount,
     RepositoryFactoryHttp,
     TransactionService as SymbolTransactionService,
     TransactionHttp,
     TransactionType,
-    UInt64,
 } from 'symbol-sdk';
+import { Constants } from 'src/config';
 export class TransactionService {
     static async fetchAccountTransactions(account, networkProperties, { pageNumber = 1, pageSize = 15, group = 'confirmed', filter = {} }) {
         const transactionHttp = new TransactionHttp(networkProperties.nodeUrl);
@@ -83,19 +77,20 @@ export class TransactionService {
         const networkType = networkIdentifierToNetworkType(networkProperties.networkIdentifier);
         const transactionWithResolvedAddress = { ...transaction };
         const isMultisigTransaction = !!transaction.sender;
+        const recipient = transaction.recipientAddress || transaction.recipient;
 
         // Resolve recipient address
-        if (isSymbolAddress(transaction.recipient)) {
-            transactionWithResolvedAddress.recipientAddress = transaction.recipient;
+        if (isSymbolAddress(recipient)) {
+            transactionWithResolvedAddress.recipientAddress = recipient;
         } else {
             transactionWithResolvedAddress.recipientAddress = await NamespaceService.namespaceNameToAddress(
                 networkProperties,
-                transaction.recipient.toLowerCase()
+                recipient.toLowerCase()
             );
         }
 
         // If message is encrypted, fetch recipient publicKey
-        if (transactionWithResolvedAddress.messageEncrypted) {
+        if (transactionWithResolvedAddress.message?.isEncrypted) {
             const recipientAccount = await AccountService.fetchAccountInfo(
                 networkProperties,
                 transactionWithResolvedAddress.recipientAddress
@@ -150,66 +145,36 @@ export class TransactionService {
         return transactionHttp.announce(signedTransaction).toPromise();
     }
 
-    static async sendRevokeTransaction(transaction, account, networkProperties) {
-        const networkType = networkIdentifierToNetworkType(networkProperties.networkIdentifier);
-        const transactionDTO = revokeTransactionToDTO(transaction, networkProperties, account);
-        const signedTransaction = Account.createFromPrivateKey(account.privateKey, networkType).sign(
-            transactionDTO,
-            networkProperties.generationHash
-        );
-        const transactionHttp = new TransactionHttp(networkProperties.nodeUrl);
-
-        return transactionHttp.announce(signedTransaction).toPromise();
-    }
-
     static async sendMosaicCreationTransaction(transaction, account, networkProperties) {
-        const networkType = networkIdentifierToNetworkType(networkProperties.networkIdentifier);
-        const maxFee = UInt64.fromUint(getMosaicAbsoluteAmount(transaction.fee, networkProperties.networkCurrency.divisibility));
+        const accountPublicKey = publicAccountFromPrivateKey(account.privateKey, networkProperties.networkIdentifier).publicKey;
         const transactions = [];
+        transactions.push({
+            type: TransactionType.MOSAIC_DEFINITION,
+            nonce: transaction.nonce,
+            mosaicId: transaction.mosaicId,
+            isSupplyMutable: transaction.isSupplyMutable,
+            isTransferable: transaction.isTransferable,
+            isRestrictable: transaction.isRestrictable,
+            isRevokable: transaction.isRevokable,
+            divisibility: transaction.divisibility,
+            duration: transaction.duration,
+            signerPublicKey: accountPublicKey,
+        });
+        transactions.push({
+            type: TransactionType.MOSAIC_SUPPLY_CHANGE,
+            mosaicId: transaction.mosaicId,
+            action: Constants.MosaicSupplyChangeAction[MosaicSupplyChangeAction.Increase],
+            delta: transaction.supply,
+            signerPublicKey: accountPublicKey,
+        });
+        const aggregateTransaction = {
+            type: TransactionType.AGGREGATE_COMPLETE,
+            innerTransactions: transactions,
+            signerPublicKey: accountPublicKey,
+            fee: transaction.fee,
+        };
 
-        const nonce = MosaicNonce.createFromHex(transaction.nonce);
-        const mosaicId = new MosaicId(transaction.mosaicId);
-        transactions.push(
-            MosaicDefinitionTransaction.create(
-                Deadline.create(networkProperties.epochAdjustment),
-                nonce,
-                mosaicId,
-                MosaicFlags.create(
-                    transaction.isSupplyMutable,
-                    transaction.isTransferable,
-                    transaction.isRestrictable,
-                    transaction.isRevokable
-                ),
-                transaction.divisibility,
-                UInt64.fromUint(transaction.duration),
-                networkType,
-                maxFee
-            )
-        );
-        transactions.push(
-            MosaicSupplyChangeTransaction.create(
-                Deadline.create(networkProperties.epochAdjustment),
-                mosaicId,
-                MosaicSupplyChangeAction.Increase,
-                UInt64.fromUint(transaction.supply * Math.pow(10, transaction.divisibility)),
-                networkType,
-                maxFee
-            )
-        );
-
-        // Prepare, sign and announce aggregate transaction
-        const currentAccount = Account.createFromPrivateKey(account.privateKey, networkType);
-        const aggregateTransaction = AggregateTransaction.createComplete(
-            Deadline.create(networkProperties.epochAdjustment),
-            transactions.map((transaction) => transaction.toAggregate(currentAccount.publicAccount)),
-            networkType,
-            [],
-            maxFee
-        );
-        const signedTransaction = currentAccount.sign(aggregateTransaction, networkProperties.generationHash);
-        const transactionHttp = new TransactionHttp(networkProperties.nodeUrl);
-
-        return transactionHttp.announce(signedTransaction).toPromise();
+        return TransactionService.signAndAnnounce(aggregateTransaction, account, networkProperties);
     }
 
     static async cosignTransaction(transaction, account, networkProperties) {
@@ -243,8 +208,15 @@ export class TransactionService {
     static async fetchPartialInfo(hash, currentAccount, networkProperties) {
         const transactionHttp = new TransactionHttp(networkProperties.nodeUrl);
         const transactionDTO = await transactionHttp.getTransaction(hash, 'partial').toPromise();
+        const transactionOptions = {
+            networkProperties,
+            currentAccount,
+            mosaicInfos: {},
+            namespaceNames: {},
+            resolvedAddresses: {},
+        };
 
-        return transactionFromDTO(transactionDTO, { networkProperties, currentAccount });
+        return transactionFromDTO(transactionDTO, transactionOptions);
     }
 
     static async decryptMessage(transaction, currentAccount, networkProperties) {
@@ -267,5 +239,58 @@ export class TransactionService {
         }
 
         throw Error('error_failed_decrypt_message_not_related');
+    }
+
+    static async announce(transactionPayload, networkProperties) {
+        const endpoint = `${networkProperties.nodeUrl}/transactions`;
+        const payload = {
+            payload: transactionPayload,
+        };
+
+        return makeRequest(endpoint, {
+            method: 'PUT',
+            body: JSON.stringify(payload),
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        });
+    }
+
+    static async announcePartial(transactionPayload, networkProperties) {
+        const endpoint = `${networkProperties.nodeUrl}/transactions/partial`;
+        const payload = {
+            payload: transactionPayload,
+        };
+
+        return makeRequest(endpoint, {
+            method: 'PUT',
+            body: JSON.stringify(payload),
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        });
+    }
+
+    static async signAndAnnounce(transaction, account, networkProperties) {
+        const networkType = networkIdentifierToNetworkType(networkProperties.networkIdentifier);
+        const transactionDTO = transactionToDTO(transaction, networkProperties, account);
+        const signedTransaction = Account.createFromPrivateKey(account.privateKey, networkType).sign(
+            transactionDTO,
+            networkProperties.generationHash
+        );
+
+        if (transaction.type === TransactionType.AGGREGATE_BONDED) {
+            const hashLockTransaction = hashLockTransactionToDTO(networkProperties, signedTransaction, transaction.fee);
+            const signedHashLockTransaction = Account.createFromPrivateKey(account.privateKey, networkType).sign(
+                hashLockTransaction,
+                networkProperties.generationHash
+            );
+
+            await TransactionService.announce(signedHashLockTransaction.payload, networkProperties);
+            await ListenerService.awaitPartial(networkProperties, account.address, hashLockTransaction.hash);
+            return TransactionService.announcePartial(signedTransaction.payload, networkProperties);
+        }
+
+        return TransactionService.announce(signedTransaction.payload, networkProperties);
     }
 }

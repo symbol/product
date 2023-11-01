@@ -189,6 +189,9 @@ export const layout = {
     alignEnd: {
         alignItems: 'flex-end',
     },
+    alignSelfCenter: {
+        alignSelf: 'center',
+    },
     fill: {
         flex: 1,
     },

@@ -1,20 +1,8 @@
-import {
-    Address,
-    Crypto,
-    Deadline,
-    EncryptedMessage,
-    HashLockTransaction,
-    Mosaic,
-    MosaicId,
-    MosaicSupplyRevocationTransaction,
-    PlainMessage,
-    TransactionType,
-    TransferTransaction,
-    UInt64,
-} from 'symbol-sdk';
+import { Crypto, TransactionMapping, TransferTransaction } from 'symbol-sdk';
 import { toFixedNumber } from './helper';
 import { getMosaicRelativeAmount } from './mosaic';
-import { networkIdentifierToNetworkType } from './network';
+import { transactionToDTO } from './dto';
+import { TransactionType } from 'src/config';
 
 export const isAggregateTransaction = (transaction) => {
     return transaction.type === TransactionType.AGGREGATE_BONDED || transaction.type === TransactionType.AGGREGATE_COMPLETE;
@@ -73,7 +61,7 @@ export const getTransactionFees = (transaction, networkProperties, transactionSi
     const stubCurrentAccount = {
         privateKey: '0000000000000000000000000000000000000000000000000000000000000000',
     };
-    const size = transactionSize || transferTransactionToDTO(stubTransaction, networkProperties, stubCurrentAccount).size;
+    const size = transactionSize || transactionToDTO(stubTransaction, networkProperties, stubCurrentAccount).size;
 
     const fast = (transactionFees.minFeeMultiplier + transactionFees.averageFeeMultiplier) * size;
     const medium = (transactionFees.minFeeMultiplier + transactionFees.averageFeeMultiplier * 0.65) * size;
@@ -86,61 +74,12 @@ export const getTransactionFees = (transaction, networkProperties, transactionSi
     };
 };
 
-export const transferTransactionToDTO = (transaction, networkProperties, currentAccount) => {
-    let message;
-
-    if (transaction.messageEncrypted) {
-        message = EncryptedMessage.create(
-            transaction.messageText,
-            { publicKey: transaction.recipientPublicKey },
-            currentAccount.privateKey
-        );
-    } else {
-        message = PlainMessage.create(transaction.messageText);
-    }
-    return TransferTransaction.create(
-        Deadline.create(networkProperties.epochAdjustment),
-        Address.createFromRawAddress(transaction.recipientAddress),
-        transaction.mosaics.map(
-            (mosaic) => new Mosaic(new MosaicId(mosaic.id), UInt64.fromUint(mosaic.amount * Math.pow(10, mosaic.divisibility)))
-        ),
-        message,
-        networkIdentifierToNetworkType(networkProperties.networkIdentifier),
-        UInt64.fromUint(transaction.fee * Math.pow(10, networkProperties.networkCurrency.divisibility))
-    );
-};
-
 export const transferTransactionFromPayload = (payload) => {
     return TransferTransaction.createFromPayload(payload);
 };
 
-export const revokeTransactionToDTO = (transaction, networkProperties) => {
-    return MosaicSupplyRevocationTransaction.create(
-        Deadline.create(networkProperties.epochAdjustment),
-        Address.createFromRawAddress(transaction.sourceAddress),
-        new Mosaic(
-            new MosaicId(transaction.mosaic.id),
-            UInt64.fromUint(transaction.mosaic.amount * Math.pow(10, transaction.mosaic.divisibility))
-        ),
-        networkIdentifierToNetworkType(networkProperties.networkIdentifier),
-        UInt64.fromUint(transaction.fee * Math.pow(10, networkProperties.networkCurrency.divisibility))
-    );
-};
-
-export const hashLockTransactionToDTO = (networkProperties, signedTransaction, fee, duration = 1000) => {
-    const amount = 10;
-
-    return HashLockTransaction.create(
-        Deadline.create(networkProperties.epochAdjustment),
-        new Mosaic(
-            new MosaicId(networkProperties.networkCurrency.mosaicId),
-            UInt64.fromUint(amount * Math.pow(10, networkProperties.networkCurrency.divisibility))
-        ),
-        UInt64.fromUint(duration),
-        signedTransaction,
-        networkIdentifierToNetworkType(networkProperties.networkIdentifier),
-        UInt64.fromUint(fee * Math.pow(10, networkProperties.networkCurrency.divisibility))
-    );
+export const transactionFromPayload = (payload) => {
+    return TransactionMapping.createFromPayload(payload);
 };
 
 export const getUnresolvedIdsFromTransactionDTOs = (transactions) => {

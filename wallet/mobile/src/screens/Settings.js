@@ -1,9 +1,9 @@
 import React from 'react';
-import { Image, StyleSheet, View } from 'react-native';
+import { DeviceEventEmitter, Image, StyleSheet, View } from 'react-native';
 import { FlatList } from 'react-native-gesture-handler';
 import Animated, { FadeInRight } from 'react-native-reanimated';
 import { DialogBox, DropdownModal, FormItem, Screen, StyledText, TouchableNative } from 'src/components';
-import { config } from 'src/config';
+import { Constants, config } from 'src/config';
 import { $t, getLanguages, initLocalization, setCurrentLanguage } from 'src/localization';
 import { Router } from 'src/Router';
 import store, { connect } from 'src/store';
@@ -70,7 +70,7 @@ export const Settings = connect((state) => ({
         initLocalization();
         await store.dispatchAction({ type: 'wallet/loadAll' });
         store.dispatchAction({ type: 'network/connect' });
-        Router.goToWelcome();
+        DeviceEventEmitter.emit(Constants.Events.LOGOUT);
     };
     const showLogoutPasscode = usePasscode('enter', logoutConfirm);
     const handleLogoutPress = () => {

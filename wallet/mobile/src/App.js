@@ -10,8 +10,9 @@ import { Passcode } from './screens';
 import { SecureStorage, StorageMigration } from './storage';
 import store from 'src/store';
 import { initLocalization } from './localization';
-import { Router, RouterView } from './Router';
+import { RouterView } from './Router';
 import { colors, fonts, layout } from './styles';
+import { Constants } from './config';
 
 const unsafeAreaStyle = { ...layout.fill, backgroundColor: colors.bgStatusbar };
 const safeAreaStyle = { ...layout.fill, backgroundColor: colors.bgGray };
@@ -55,16 +56,9 @@ const App = () => {
         // Listen for an event from the Passscode screen
         DeviceEventEmitter.addListener(passcodeParams.successEvent, unlock);
         DeviceEventEmitter.addListener(passcodeParams.cancel, BackHandler.exitApp);
+        DeviceEventEmitter.addListener(Constants.Events.LOGOUT, load);
+        DeviceEventEmitter.addListener(Constants.Events.LOGIN, load);
     }, []);
-
-    // If the main component shown (PIN-code is disabled or user unlocked the wallet)
-    // and the wallet exists (mnemonic stored in the cache), navigate to Home screen.
-    // Otherwise stay on the Welcome screen (default)
-    useEffect(() => {
-        if (isMainContainerShown && isWalletExist) {
-            Router.goToHome();
-        }
-    }, [isMainContainerShown]);
 
     return (
         <>
@@ -80,7 +74,7 @@ const App = () => {
                                 titleStyle={flashMessageTextStyle}
                                 style={flashMessageStyle}
                             />
-                            <RouterView isActive={isMainContainerShown} />
+                            <RouterView isActive={isMainContainerShown} isWalletExist={isWalletExist} />
                             {isPasscodeShown && (
                                 <Passcode hideCancelButton keepListener keepNavigation route={{ params: passcodeParams }} />
                             )}

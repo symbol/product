@@ -1,26 +1,15 @@
 import _ from 'lodash';
-import { config } from 'src/config';
+import { Constants, TransactionType, config } from 'src/config';
 import {
     addressFromRaw,
-    getMosaicAbsoluteAmount,
+    createKeyPair,
     getMosaicRelativeAmount,
     makeRequest,
     networkIdentifierToNetworkType,
     publicAccountFromPrivateKey,
     timestampToLocalDate,
 } from 'src/utils';
-import {
-    Account,
-    AccountKeyLinkTransaction,
-    AggregateTransaction,
-    Deadline,
-    LinkAction,
-    NodeKeyLinkTransaction,
-    PersistentDelegationRequestTransaction,
-    TransactionHttp,
-    UInt64,
-    VrfKeyLinkTransaction,
-} from 'symbol-sdk';
+import { LinkAction } from 'symbol-sdk';
 import { TransactionService } from './TransactionService';
 
 const HarvestingStatus = {
@@ -129,6 +118,8 @@ export class HarvestingService {
     }
 
     static async start(networkProperties, account, nodeUrl, linkedKeys, fee) {
+        const accountPublicKey = publicAccountFromPrivateKey(account.privateKey, networkProperties.networkIdentifier).publicKey;
+
         // Get nodePublicKey of the selected node
         const networkType = networkIdentifierToNetworkType(networkProperties.networkIdentifier);
         const endpoint = `${nodeUrl}/node/info`;
@@ -139,140 +130,104 @@ export class HarvestingService {
         }
 
         // Generate brand new VRF and remote account keys
-        const vrfAccount = Account.generateNewAccount(networkType);
-        const remoteAccount = Account.generateNewAccount(networkType);
-        const maxFee = UInt64.fromUint(getMosaicAbsoluteAmount(fee, networkProperties.networkCurrency.divisibility));
+        const vrfAccount = createKeyPair(networkProperties.networkIdentifier);
+        const remoteAccount = createKeyPair(networkProperties.networkIdentifier);
         const transactions = [];
 
         // If the keys is already linked to account, unlink them first
         if (linkedKeys.vrfPublicKey) {
-            transactions.push(
-                VrfKeyLinkTransaction.create(
-                    Deadline.create(networkProperties.epochAdjustment),
-                    linkedKeys.vrfPublicKey,
-                    LinkAction.Unlink,
-                    networkType,
-                    maxFee
-                )
-            );
+            transactions.push({
+                type: TransactionType.VRF_KEY_LINK,
+                linkAction: Constants.LinkAction[LinkAction.Unlink],
+                linkedPublicKey: linkedKeys.vrfPublicKey,
+                signerPublicKey: accountPublicKey,
+            });
         }
         if (linkedKeys.linkedPublicKey) {
-            transactions.push(
-                AccountKeyLinkTransaction.create(
-                    Deadline.create(networkProperties.epochAdjustment),
-                    linkedKeys.linkedPublicKey,
-                    LinkAction.Unlink,
-                    networkType,
-                    maxFee
-                )
-            );
+            transactions.push({
+                type: TransactionType.ACCOUNT_KEY_LINK,
+                linkAction: Constants.LinkAction[LinkAction.Unlink],
+                linkedPublicKey: linkedKeys.linkedPublicKey,
+                signerPublicKey: accountPublicKey,
+            });
         }
         if (linkedKeys.nodePublicKey) {
-            transactions.push(
-                NodeKeyLinkTransaction.create(
-                    Deadline.create(networkProperties.epochAdjustment),
-                    linkedKeys.nodePublicKey,
-                    LinkAction.Unlink,
-                    networkType,
-                    maxFee
-                )
-            );
+            transactions.push({
+                type: TransactionType.NODE_KEY_LINK,
+                linkAction: Constants.LinkAction[LinkAction.Unlink],
+                linkedPublicKey: linkedKeys.nodePublicKey,
+                signerPublicKey: accountPublicKey,
+            });
         }
 
         // Then link the new ones
-        transactions.push(
-            VrfKeyLinkTransaction.create(
-                Deadline.create(networkProperties.epochAdjustment),
-                vrfAccount.publicKey,
-                LinkAction.Link,
-                networkType,
-                maxFee
-            )
-        );
-        transactions.push(
-            AccountKeyLinkTransaction.create(
-                Deadline.create(networkProperties.epochAdjustment),
-                remoteAccount.publicKey,
-                LinkAction.Link,
-                networkType,
-                maxFee
-            )
-        );
-        transactions.push(
-            NodeKeyLinkTransaction.create(
-                Deadline.create(networkProperties.epochAdjustment),
-                nodePublicKey,
-                LinkAction.Link,
-                networkType,
-                maxFee
-            )
-        );
+        transactions.push({
+            type: TransactionType.VRF_KEY_LINK,
+            linkAction: Constants.LinkAction[LinkAction.Link],
+            linkedPublicKey: vrfAccount.publicKey,
+            signerPublicKey: accountPublicKey,
+        });
+        transactions.push({
+            type: TransactionType.ACCOUNT_KEY_LINK,
+            linkAction: Constants.LinkAction[LinkAction.Link],
+            linkedPublicKey: remoteAccount.publicKey,
+            signerPublicKey: accountPublicKey,
+        });
+        transactions.push({
+            type: TransactionType.NODE_KEY_LINK,
+            linkAction: Constants.LinkAction[LinkAction.Link],
+            linkedPublicKey: nodePublicKey,
+            signerPublicKey: accountPublicKey,
+        });
 
         // Request node for harvesting
-        transactions.push(
-            PersistentDelegationRequestTransaction.createPersistentDelegationRequestTransaction(
-                Deadline.create(networkProperties.epochAdjustment),
-                remoteAccount.privateKey,
-                vrfAccount.privateKey,
-                nodePublicKey,
-                networkType,
-                maxFee
-            )
-        );
+        transactions.push({
+            type: TransactionType.PERSISTENT_DELEGATION_REQUEST,
+            remoteAccountPrivateKey: remoteAccount.privateKey,
+            vrfPrivateKey: vrfAccount.privateKey,
+            nodePublicKey: nodePublicKey,
+            signerPublicKey: accountPublicKey,
+        });
 
         // Prepare, sign and announce aggregate transaction
-        const currentAccount = Account.createFromPrivateKey(account.privateKey, networkType);
-        const aggregateTransaction = AggregateTransaction.createComplete(
-            Deadline.create(networkProperties.epochAdjustment),
-            transactions.map((transaction) => transaction.toAggregate(currentAccount.publicAccount)),
-            networkType,
-            [],
-            maxFee
-        );
-        const signedTransaction = currentAccount.sign(aggregateTransaction, networkProperties.generationHash);
-        const transactionHttp = new TransactionHttp(networkProperties.nodeUrl);
+        const aggregateTransaction = {
+            type: TransactionType.AGGREGATE_COMPLETE,
+            innerTransactions: transactions,
+            signerPublicKey: accountPublicKey,
+            fee,
+        };
 
-        return transactionHttp.announce(signedTransaction).toPromise();
+        return TransactionService.signAndAnnounce(aggregateTransaction, account, networkProperties);
     }
 
     static async stop(networkProperties, account, linkedKeys, fee) {
-        const networkType = networkIdentifierToNetworkType(networkProperties.networkIdentifier);
-        const maxFee = UInt64.fromUint(getMosaicAbsoluteAmount(fee, networkProperties.networkCurrency.divisibility));
+        const accountPublicKey = publicAccountFromPrivateKey(account.privateKey, networkProperties.networkIdentifier).publicKey;
         const transactions = [];
 
         // Unlink supplemental key
         if (linkedKeys.vrfPublicKey) {
-            transactions.push(
-                VrfKeyLinkTransaction.create(
-                    Deadline.create(networkProperties.epochAdjustment),
-                    linkedKeys.vrfPublicKey,
-                    LinkAction.Unlink,
-                    networkType,
-                    maxFee
-                )
-            );
+            transactions.push({
+                type: TransactionType.VRF_KEY_LINK,
+                linkAction: Constants.LinkAction[LinkAction.Unlink],
+                linkedPublicKey: linkedKeys.vrfPublicKey,
+                signerPublicKey: accountPublicKey,
+            });
         }
         if (linkedKeys.linkedPublicKey) {
-            transactions.push(
-                AccountKeyLinkTransaction.create(
-                    Deadline.create(networkProperties.epochAdjustment),
-                    linkedKeys.linkedPublicKey,
-                    LinkAction.Unlink,
-                    networkType,
-                    maxFee
-                )
-            );
+            transactions.push({
+                type: TransactionType.ACCOUNT_KEY_LINK,
+                linkAction: Constants.LinkAction[LinkAction.Unlink],
+                linkedPublicKey: linkedKeys.linkedPublicKey,
+                signerPublicKey: accountPublicKey,
+            });
         }
         if (linkedKeys.nodePublicKey) {
-            transactions.push(
-                NodeKeyLinkTransaction.create(
-                    Deadline.create(networkProperties.epochAdjustment),
-                    linkedKeys.nodePublicKey,
-                    LinkAction.Unlink,
-                    networkType,
-                    maxFee
-                )
-            );
+            transactions.push({
+                type: TransactionType.NODE_KEY_LINK,
+                linkAction: Constants.LinkAction[LinkAction.Unlink],
+                linkedPublicKey: linkedKeys.nodePublicKey,
+                signerPublicKey: accountPublicKey,
+            });
         }
 
         // If nothing to unlink, then just escape
@@ -281,18 +236,14 @@ export class HarvestingService {
         }
 
         // Prepare, sign and announce aggregate transaction
-        const currentAccount = Account.createFromPrivateKey(account.privateKey, networkType);
-        const aggregateTransaction = AggregateTransaction.createComplete(
-            Deadline.create(networkProperties.epochAdjustment),
-            transactions.map((transaction) => transaction.toAggregate(currentAccount.publicAccount)),
-            networkType,
-            [],
-            maxFee
-        );
-        const signedTransaction = currentAccount.sign(aggregateTransaction, networkProperties.generationHash);
-        const transactionHttp = new TransactionHttp(networkProperties.nodeUrl);
+        const aggregateTransaction = {
+            type: TransactionType.AGGREGATE_COMPLETE,
+            innerTransactions: transactions,
+            signerPublicKey: accountPublicKey,
+            fee,
+        };
 
-        return transactionHttp.announce(signedTransaction).toPromise();
+        return TransactionService.signAndAnnounce(aggregateTransaction, account, networkProperties);
     }
 
     static async fetchNodeList(networkIdentifier) {
