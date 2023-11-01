@@ -1,7 +1,5 @@
-import React from 'react';
-import { useMemo } from 'react';
-import { useEffect } from 'react';
-import { useState } from 'react';
+import _ from 'lodash';
+import React, { useEffect, useMemo, useState } from 'react';
 import { ScrollView } from 'react-native-gesture-handler';
 import {
     Alert,
@@ -34,6 +32,7 @@ import {
     useProp,
     useToggle,
 } from 'src/utils';
+import { TransactionType } from 'symbol-sdk';
 
 export const Send = connect((state) => ({
     walletAccounts: state.wallet.accounts,
@@ -93,6 +92,7 @@ export const Send = connect((state) => ({
     const isAccountCosignatoryOfMultisig = !!multisigAddresses?.length;
     const isMultisig = sender !== currentAccount?.address;
     const transaction = {
+        type: TransactionType.TRANSFER,
         signerAddress: currentAccount.address,
         sender: isMultisig ? sender : null,
         recipient,
@@ -104,7 +104,12 @@ export const Send = connect((state) => ({
                   },
               ]
             : [],
-        messageText: message ? message : null,
+        message: message
+            ? {
+                  text: message,
+                  isEncrypted: !isMultisig ? isEncrypted : false,
+              }
+            : null,
         messageEncrypted: !!message && !isMultisig ? isEncrypted : null,
         fee: maxFee,
     };
@@ -112,6 +117,7 @@ export const Send = connect((state) => ({
 
     const transactionFees = useMemo(() => getTransactionFees(transaction, networkProperties), [message, isEncrypted]);
 
+    const getTransactionPreviewTable = (data) => _.omit(data, ['type']);
     const getAvailableBalance = () => {
         const selectedMosaicBalance = selectedMosaic?.amount || 0;
         const selectedMosaicDivisibility = selectedMosaic?.divisibility || 0;
@@ -273,7 +279,11 @@ export const Send = connect((state) => ({
             <DialogBox
                 type="confirm"
                 title={$t('form_transfer_confirm_title')}
-                body={<TableView data={transaction} />}
+                body={
+                    <ScrollView>
+                        <TableView data={getTransactionPreviewTable(transaction)} />
+                    </ScrollView>
+                }
                 isVisible={isConfirmVisible}
                 onSuccess={handleConfirmPress}
                 onCancel={toggleConfirm}

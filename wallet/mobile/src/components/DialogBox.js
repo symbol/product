@@ -106,6 +106,7 @@ const styles = StyleSheet.create({
     modal: {
         width: '100%',
         minHeight: 150,
+        maxHeight: '90%',
         flexDirection: 'column',
         justifyContent: 'space-between',
         backgroundColor: colors.bgMain,
@@ -115,15 +116,18 @@ const styles = StyleSheet.create({
     },
     content: {
         padding: spacings.padding,
+        flexShrink: 1,
     },
     controls: {
+        height: 48,
         flexDirection: 'row',
         overflow: 'hidden',
         borderColor: colors.accentLightForm,
     },
     button: {
         height: 48,
-        flex: 1,
+        flexShrink: 1,
+        flexGrow: 1,
         borderColor: colors.accentLightForm,
     },
     buttonPressable: {
