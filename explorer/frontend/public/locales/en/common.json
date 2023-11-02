@@ -135,6 +135,7 @@
 	"field_account_height_description": "The height at which the first transaction was issued.",
 	"chart_name_importance_breakdown": "Top 10 Account\nImportance Breakdown",
 	"chart_name_harvesting_importance": "Total Harvesting\nAccount Importance",
+	"chart_name_total_harvesting": "Total Harvesting\nAccounts",
 
 	"filter_latest": "Latest",
 	"filter_activeHarvesting": "Active Harvesting",
@@ -203,6 +204,9 @@
 	"section_namespaces": "Namespaces",
 	"section_signatures": "Signatures",
 	"section_multisig": "Multisig",
+	"section_holders": "Holders",
+	"section_transfers": "Transfers",
+	"section_distribution": "Distribution",
 	"table_field_amount": "Amount",
 	"table_field_fee": "Fee",
 	"table_field_harvester": "Harvester",
@@ -237,6 +241,7 @@
 	"table_field_supply": "Supply",
 	"table_field_registrationTimestamp": "Created",
 	"table_field_value": "Value",
+	"table_field_status": "Status",
 	"transactionType_TRANSFER": "Transfer",
 	"transactionType_MOSAIC_DEFINITION": "Mosaic Definition",
 	"transactionType_MOSAIC_SUPPLY_CHANGE": "Mosaic Supply Change",
@@ -267,5 +272,7 @@
 	"label_transferable": "Transferable",
 	"label_supplyMutable": "Supply Mutable",
 	"label_send": "Send",
-	"label_receive": "Receive"
+	"label_receive": "Receive",
+	"label_active": "Active",
+	"label_expired": "Expired"
 }

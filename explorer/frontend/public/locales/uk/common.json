@@ -133,6 +133,7 @@
 	"field_account_height_description": "Висота (номер блоку), на якій було здійснено першу транзакцію.",
 	"chart_name_importance_breakdown": "Топ 10 акаунтів\nза важливістю",
 	"chart_name_harvesting_importance": "Сумарна важливысть\nакаунтів що харвестять",
+	"chart_name_total_harvesting": "Усього Ааккаунтів,\nщо харвестять",
 	"filter_latest": "Останні",
 	"filter_activeHarvesting": "Харвестинг Активовано",
 	"filter_service": "Службові",
@@ -199,6 +200,9 @@
 	"section_namespaces": "Простори імен",
 	"section_signatures": "Підписи",
 	"section_multisig": "Мультипідпис",
+	"section_holders": "Власники",
+	"section_transfers": "Перекази",
+	"section_distribution": "Розподіл",
 	"table_field_amount": "Сума",
 	"table_field_fee": "Комісія",
 	"table_field_harvester": "Харвестер",
@@ -233,6 +237,7 @@
 	"table_field_supply": "Кількість",
 	"table_field_registrationTimestamp": "Зареєстровано",
 	"table_field_value": "Сума",
+	"table_field_status": "Стан",
 	"transactionType_TRANSFER": "Переказ",
 	"transactionType_MOSAIC_DEFINITION": "Створення мозаїки",
 	"transactionType_MOSAIC_SUPPLY_CHANGE": "Зміна кількості мозаїки",
@@ -262,5 +267,7 @@
 	"label_transferable": "Дозволено переказ",
 	"label_supplyMutable": "Кількість змінна",
 	"label_send": "Відправлено",
-	"label_receive": "Отримано"
+	"label_receive": "Отримано",
+	"label_active": "Активно",
+	"label_expired": "Прострочено"
 }

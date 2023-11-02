@@ -1,3 +1,4 @@
+import { fetchAccountPage } from '@/api/accounts';
 import { fetchChainHight } from '@/api/blocks';
 import { fetchMosaicInfo } from '@/api/mosaics';
 import { fetchTransactionPage } from '@/api/transactions';
@@ -26,7 +27,8 @@ import { useEffect, useState } from 'react';
 
 export const getServerSideProps = async ({ locale, params }) => {
 	const mosaicInfo = await fetchMosaicInfo(params.id);
-	const transactionsPage = await fetchTransactionPage({}, { mosaic: params.id });
+	const transactionsPage = await fetchTransactionPage({ mosaic: params.id });
+	const accountsPage = await fetchAccountPage({ mosaic: params.id });
 
 	if (!mosaicInfo) {
 		return {
@@ -38,14 +40,16 @@ export const getServerSideProps = async ({ locale, params }) => {
 		props: {
 			mosaicInfo,
 			preloadedTransactions: transactionsPage.data,
+			preloadedAccounts: accountsPage.data,
 			...(await serverSideTranslations(locale, ['common']))
 		}
 	};
 };
 
-const MosaicInfo = ({ mosaicInfo, preloadedTransactions }) => {
+const MosaicInfo = ({ mosaicInfo, preloadedTransactions, preloadedAccounts }) => {
 	const { levy } = mosaicInfo;
 	const { t } = useTranslation();
+	const accountPagination = usePagination(fetchAccountPage, preloadedAccounts, { mosaic: mosaicInfo.id });
 	const transactionPagination = usePagination(fetchTransactionPage, preloadedTransactions, { mosaic: mosaicInfo.id });
 	const [chainHeight, setChainHeight] = useState(0);
 	const [expirationText, setExpirationText] = useState(null);
@@ -59,6 +63,18 @@ const MosaicInfo = ({ mosaicInfo, preloadedTransactions }) => {
 		text: t('label_supplyMutable')
 	};
 
+	const accountsTableColumns = [
+		{
+			key: 'address',
+			size: '30rem',
+			renderValue: value => <ValueAccount address={value} size="sm" />
+		},
+		{
+			key: 'balance',
+			size: '20rem',
+			renderValue: value => <ValueMosaic amount={value} mosaicId={mosaicInfo.id} mosaicName={mosaicInfo.name} />
+		}
+	];
 	const transactionTableColumns = [
 		{
 			key: 'hash',
@@ -181,17 +197,37 @@ const MosaicInfo = ({ mosaicInfo, preloadedTransactions }) => {
 					</div>
 				</Section>
 			)}
-			<Section title={t('section_transactions')}>
-				<Table
-					data={transactionPagination.data}
-					columns={transactionTableColumns}
-					renderItemMobile={data => <ItemTransactionMobile data={data} />}
-					isLoading={transactionPagination.isLoading}
-					isLastPage={transactionPagination.isLastPage}
-					isLastColumnAligned
-					onEndReached={transactionPagination.requestNextPage}
-				/>
-			</Section>
+			<Section
+				title={t('section_distribution')}
+				tabs={[
+					{
+						label: t('section_holders'),
+						content: (
+							<Table
+								data={accountPagination.data}
+								columns={accountsTableColumns}
+								isLoading={accountPagination.isLoading}
+								isLastPage={accountPagination.isLastPage}
+								onEndReached={accountPagination.requestNextPage}
+							/>
+						)
+					},
+					{
+						label: t('section_transfers'),
+						content: (
+							<Table
+								data={transactionPagination.data}
+								columns={transactionTableColumns}
+								renderItemMobile={data => <ItemTransactionMobile data={data} />}
+								isLoading={transactionPagination.isLoading}
+								isLastPage={transactionPagination.isLastPage}
+								isLastColumnAligned
+								onEndReached={transactionPagination.requestNextPage}
+							/>
+						)
+					}
+				]}
+			/>
 		</div>
 	);
 };
