@@ -4,6 +4,7 @@ import testing.postgresql
 
 from rest.facade.NemRestFacade import NemRestFacade
 
+from ..db.test_NemDatabase import BlockQueryParams
 from ..test.DatabaseTestUtils import DatabaseConfig, initialize_database
 
 # region test data
@@ -61,12 +62,12 @@ class TestNemRestFacade(unittest.TestCase):
 		# Assert:
 		self.assertEqual(expected_block, block)
 
-	def _assert_can_retrieve_blocks(self, limit, offset, min_height, expected_blocks):
+	def _assert_can_retrieve_blocks(self, query_params, expected_blocks):
 		# Arrange:
 		nem_rest_facade = NemRestFacade(self.db_config)
 
 		# Act:
-		blocks = nem_rest_facade.get_blocks(limit, offset, min_height)
+		blocks = nem_rest_facade.get_blocks(query_params.limit, query_params.offset, query_params.min_height, query_params.sort)
 
 		# Assert:
 		self.assertEqual(expected_blocks, blocks)
@@ -78,13 +79,19 @@ class TestNemRestFacade(unittest.TestCase):
 		self._assert_can_retrieve_block(3, None)
 
 	def test_blocks_filtered_by_limit(self):
-		self._assert_can_retrieve_blocks(1, 0, 0, [EXPECTED_BLOCK_1])
+		self._assert_can_retrieve_blocks(BlockQueryParams(1, 0, 0, 'desc'), [EXPECTED_BLOCK_2])
 
 	def test_blocks_filtered_by_offset(self):
-		self._assert_can_retrieve_blocks(1, 1, 0, [EXPECTED_BLOCK_2])
+		self._assert_can_retrieve_blocks(BlockQueryParams(1, 1, 0, 'desc'), [EXPECTED_BLOCK_1])
 
 	def test_blocks_filtered_by_min_height(self):
-		self._assert_can_retrieve_blocks(10, 0, 2, [EXPECTED_BLOCK_2])
+		self._assert_can_retrieve_blocks(BlockQueryParams(10, 0, 2, 'desc'), [EXPECTED_BLOCK_2])
 
 	def test_returns_empty_list_on_no_matches(self):
-		self._assert_can_retrieve_blocks(10, 0, 3, [])
+		self._assert_can_retrieve_blocks(BlockQueryParams(10, 0, 3, 'desc'), [])
+
+	def test_blocks_sorted_by_height_asc(self):
+		self._assert_can_retrieve_blocks(BlockQueryParams(10, 0, 0, 'asc'), [EXPECTED_BLOCK_1, EXPECTED_BLOCK_2])
+
+	def test_blocks_sorted_by_height_desc(self):
+		self._assert_can_retrieve_blocks(BlockQueryParams(10, 0, 0, 'desc'), [EXPECTED_BLOCK_2, EXPECTED_BLOCK_1])
