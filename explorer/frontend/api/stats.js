@@ -5,22 +5,25 @@ import config from '@/config';
 import { makeRequest, truncateDecimals } from '@/utils';
 
 export const fetchAccountStats = async () => {
+	const stats = await makeRequest(`${config.API_BASE_URL}/account/statistics`);
 	const accounts = (await fetchAccountPage({ pageNumber: 1, pageSize: 10 })).data;
 	const top10AccountsImportance = accounts.reduce((partialSum, account) => partialSum + account.importance, 0);
 	const restAccountsImportance = 100 - top10AccountsImportance;
+	const harvestingAccountsPercentage = truncateDecimals((stats.harvestedAccounts / stats.total) * 100, 2);
 
 	return {
-		total: 0,
-		harvesting: 0,
-		eligibleForHarvesting: 0,
+		total: stats.total,
+		harvesting: stats.harvestedAccounts,
+		eligibleForHarvesting: stats.eligibleHarvestAccounts,
 		top10AccountsImportance: truncateDecimals(top10AccountsImportance, 2),
+		harvestingAccountsPercentage,
 		importanceBreakdown: [
 			...accounts.map(account => [truncateDecimals(account.importance, 4), account.address]),
 			[truncateDecimals(restAccountsImportance, 4), 'Rest']
 		],
-		harvestingImportance: [
-			[34.54, 'Harvesting'],
-			[65.46, 'Not harvesting']
+		harvestingAccountsChart: [
+			[harvestingAccountsPercentage, 'Harvesting'],
+			[100 - harvestingAccountsPercentage, 'Not harvesting']
 		]
 	};
 };
@@ -30,9 +33,9 @@ export const fetchTransactionChart = async ({ isPerDay, isPerMonth }) => {
 
 	switch (filter) {
 		case 'perDay':
-			return getTransactionChartStub(filter);
+			return [];
 		case 'perMonth':
-			return getTransactionChartStub(filter);
+			return [];
 		default:
 			return (await fetchBlockPage({ pageSize: 240 })).data.map(item => [item.height, item.transactionCount]).reverse();
 	}

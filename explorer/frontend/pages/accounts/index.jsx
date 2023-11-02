@@ -93,9 +93,9 @@ const Accounts = ({ preloadedData, stats }) => {
 							label={`${stats.top10AccountsImportance}%`}
 						/>
 						<ChartDonut
-							data={stats.harvestingImportance}
-							name={t('chart_name_harvesting_importance')}
-							label={`${stats.harvesting}%`}
+							data={stats.harvestingAccountsChart}
+							name={t('chart_name_total_harvesting')}
+							label={`${stats.harvestingAccountsPercentage}%`}
 						/>
 					</div>
 				</div>
