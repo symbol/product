@@ -42,7 +42,8 @@ def initialize_database(db_config):
 		# Create tables
 		cursor.execute('''
 			CREATE TABLE IF NOT EXISTS blocks (
-				height bigint NOT NULL PRIMARY KEY,
+				id serial NOT NULL PRIMARY KEY,
+				height bigint NOT NULL,
 				timestamp timestamp NOT NULL,
 				totalFees bigint DEFAULT 0,
 				totalTransactions int DEFAULT 0,
@@ -57,7 +58,7 @@ def initialize_database(db_config):
 		for block in BLOCKS:
 			cursor.execute(
 				'''
-				INSERT INTO blocks
+				INSERT INTO blocks (height, timestamp, totalFees, totalTransactions, difficulty, hash, signer, signature)
 				VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
 				''', (
 					block.height,

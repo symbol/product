@@ -15,14 +15,14 @@ class NemDatabase(DatabaseConnectionPool):
 	@staticmethod
 	def _create_block_view(result):
 		return BlockView(
-			height=result[0],
-			timestamp=str(result[1]),
-			total_fees=result[2],
-			total_transactions=result[3],
-			difficulty=result[4],
-			block_hash=_format_bytes(result[5]),
-			signer=_format_bytes(result[6]),
-			signature=_format_bytes(result[7])
+			height=result[1],
+			timestamp=str(result[2]),
+			total_fees=result[3],
+			total_transactions=result[4],
+			difficulty=result[5],
+			block_hash=_format_bytes(result[6]),
+			signer=_format_bytes(result[7]),
+			signature=_format_bytes(result[8])
 		)
 
 	def get_block(self, height):
@@ -48,7 +48,7 @@ class NemDatabase(DatabaseConnectionPool):
 				SELECT *
 				FROM blocks
 				WHERE height >= %s
-				ORDER BY height {sort}
+				ORDER BY id {sort}
 				LIMIT %s OFFSET %s
 			''', (min_height, limit, offset,))
 			results = cursor.fetchall()
