@@ -30,3 +30,10 @@ customBuilds:
     triggers:
       - type: cron
         schedule: '@midnight'
+
+  - name: Weekly Job
+    jobName: weeklyJob
+    scriptPath: .github/jenkinsfile/weeklyBuild.groovy
+    triggers:
+      - type: cron
+        schedule: '@weekly'
