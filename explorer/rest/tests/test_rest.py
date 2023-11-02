@@ -68,6 +68,7 @@ def _assert_get_api_nem_block_by_height(client, height, expected_status_code, ex
 	# Assert:
 	assert expected_status_code == response.status_code
 	assert expected_result == response.json
+	assert response.headers['Access-Control-Allow-Origin'] == '*'
 
 
 def test_api_nem_block_by_height(client):  # pylint: disable=redefined-outer-name
@@ -125,6 +126,7 @@ def test_api_nem_blocks_without_params(client):  # pylint: disable=redefined-out
 	# Assert:
 	assert 200 == response.status_code
 	assert [BlockView(*BLOCKS[1]).to_dict(), BlockView(*BLOCKS[0]).to_dict()] == response.json
+	assert response.headers['Access-Control-Allow-Origin'] == '*'
 
 
 def test_api_nem_blocks_applies_limit(client):  # pylint: disable=redefined-outer-name
