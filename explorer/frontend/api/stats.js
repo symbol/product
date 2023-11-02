@@ -1,6 +1,5 @@
 import { fetchAccountPage } from './accounts';
 import { fetchBlockPage } from './blocks';
-import { getTransactionChartStub } from '../stubs/stats';
 import config from '@/config';
 import { makeRequest, truncateDecimals } from '@/utils';
 
