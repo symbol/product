@@ -1,4 +1,5 @@
 import config from '@/config';
+import axios from 'axios';
 
 export const getSearchCriteria = req => {
 	const { searchParams } = new URL(req.url);
@@ -71,24 +72,12 @@ export const createAPICallFunction =
 export const makeRequest = async (url, options = {}) => {
 	const { timeout = config.REQUEST_TIMEOUT } = options;
 
-	const controller = new AbortController();
-	const id = setTimeout(() => controller.abort(), timeout);
-
-	const response = await fetch(url, {
-		...options,
-		signal: controller.signal
+	const response = await axios({
+		method: options.method || 'get',
+		url,
+		data: options.data || options.body,
+		timeout
 	});
-	clearTimeout(id);
 
-	const data = await response.json();
-
-	if (data.status === 400) {
-		throw Error('error_400');
-	}
-
-	if (data.status === 404) {
-		throw Error('error_404');
-	}
-
-	return data;
+	return response.data;
 };
