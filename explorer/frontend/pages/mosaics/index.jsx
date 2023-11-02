@@ -6,6 +6,7 @@ import Section from '@/components/Section';
 import Table from '@/components/Table';
 import ValueAccount from '@/components/ValueAccount';
 import ValueBlockHeight from '@/components/ValueBlockHeight';
+import ValueLabel from '@/components/ValueLabel';
 import ValueTimestamp from '@/components/ValueTimestamp';
 import styles from '@/styles/pages/Home.module.scss';
 import { createPageHref, useAsyncCall, usePagination } from '@/utils';
@@ -40,6 +41,17 @@ const Mosaics = ({ mosaics }) => {
 			key: 'creator',
 			size: '30rem',
 			renderValue: value => <ValueAccount address={value} size="sm" />
+		},
+		{
+			key: 'status',
+			size: '5rem',
+			renderValue: (value, row) => {
+				const isActive = chainHeight < row.namespaceExpirationHeight;
+				const status = isActive ? 'active' : 'inactive';
+				const text = isActive ? t('label_active') : t('label_expired');
+
+				return <ValueLabel type={status} title={text} />;
+			}
 		},
 		{
 			key: 'registrationHeight',

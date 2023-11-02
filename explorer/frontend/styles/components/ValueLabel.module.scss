@@ -13,6 +13,10 @@
     border-radius: $border-radius-label;
 }
 
+.valueLabel__noText {
+    padding: 0 $spacing-base;
+}
+
 .icon {
     width: 1.33rem;
     height: 1.33rem;

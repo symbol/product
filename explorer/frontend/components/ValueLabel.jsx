@@ -6,7 +6,9 @@ const iconsMap = {
 	safe: '/images/icon-label-confirmed.svg',
 	confirmed: '/images/icon-label-confirmed.svg',
 	true: '/images/icon-label-true.svg',
+	active: '/images/icon-label-true.svg',
 	false: '/images/icon-label-false.svg',
+	inactive: '/images/icon-label-false.svg',
 	harvesting: '/images/icon-label-harvesting.svg',
 	multisig: '/images/icon-label-multisig.svg'
 };
@@ -15,20 +17,24 @@ const styleMap = {
 	safe: styles.success,
 	confirmed: styles.success,
 	true: styles.success,
+	active: styles.success,
 	pending: styles.warning,
 	false: styles.danger,
+	inactive: styles.danger,
 	harvesting: styles.info,
 	multisig: styles.info
 };
 
-const ValueLabel = ({ text, type }) => {
+const ValueLabel = ({ text, type, isIconHidden, title }) => {
 	const iconSrc = iconsMap[type];
 	const colorStyle = styleMap[type];
+	const isTextShown = !!text;
+	const rootStyles = isTextShown ? styles.valueLabel : `${styles.valueLabel} ${styles.valueLabel__noText}`;
 
 	return (
-		<div className={styles.valueLabel}>
-			<CustomImage src={iconSrc} className={`${styles.icon} ${colorStyle}`} />
-			<div className={colorStyle}>{text}</div>
+		<div className={rootStyles} title={title}>
+			{!isIconHidden && <CustomImage src={iconSrc} className={`${styles.icon} ${colorStyle}`} />}
+			{isTextShown && <div className={colorStyle}>{text}</div>}
 		</div>
 	);
 };
