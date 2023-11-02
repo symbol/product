@@ -143,7 +143,7 @@ const Header = () => {
 		<div className={styles.headerWrapper}>
 			<header className={styles.header}>
 				<div className={styles.headerLogo}>
-					<Image src="/images/logo-nem.png" fill alt="NEM" />
+					<Image src="/images/logo-nem.png" fill alt="Logo" />
 				</div>
 
 				<div className={styles.headerRightSection}>

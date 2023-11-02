@@ -17,7 +17,7 @@ const AccountAvatar = ({ address }) => {
 	return (
 		<div className={styles.accountImageContainer}>
 			{!!image && <img src={image} className={styles.accountIdenticon} style={image.style} />}
-			<CustomImage className={styles.accountIcon} src="/images/icon-account.svg" alt="account" />
+			<CustomImage className={styles.accountIcon} src="/images/icon-account.svg" alt="Account" />
 		</div>
 	);
 };
@@ -29,15 +29,15 @@ const MosaicAvatar = ({ mosaicId }) => {
 	const customMosaicSrc = '/images/mosaics/custom.png';
 	const imageSrc = mosaicIdSrcMap[mosaicId] ? mosaicIdSrcMap[mosaicId] : customMosaicSrc;
 
-	return <CustomImage src={imageSrc} className={styles.image} />;
+	return <CustomImage src={imageSrc} className={styles.image} alt="Mosaic" />;
 };
 
 const NamespaceAvatar = () => {
-	return <CustomImage src={'/images/namespaces/namespace.svg'} className={styles.image} />;
+	return <CustomImage src={'/images/namespaces/namespace.svg'} className={styles.image} alt="Namespace" />;
 };
 
 const BlockAvatar = () => {
-	return <CustomImage src={'/images/blocks/block.svg'} className={styles.image} />;
+	return <CustomImage src={'/images/blocks/block.svg'} className={styles.image} alt="Block" />;
 };
 
 const TransactionAvatar = ({ type }) => {

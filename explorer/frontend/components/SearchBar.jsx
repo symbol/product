@@ -92,7 +92,7 @@ const SearchBar = ({ className, modalClassName, onSearchRequest }) => {
 		<div>
 			<Modal className={modalClassName} isVisible={isModalVisible} onClose={closeModal}>
 				<div className="layout-flex-col">
-					<h4>Search</h4>
+					<h4>{t('field_search')}</h4>
 					<SearchResults text={text} onSearchRequest={onSearchRequest} onSelect={closeModal} />
 				</div>
 			</Modal>

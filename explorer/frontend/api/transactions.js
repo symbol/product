@@ -20,6 +20,10 @@ export const fetchTransactionPage = async searchCriteria => {
 		formattedFilter.recipientAddress = formattedFilter.to;
 		delete formattedFilter.to;
 	}
+	if (formattedFilter.mosaic) {
+		formattedFilter.namespaceName = filter.mosaic;
+		delete formattedFilter.mosaic;
+	}
 	const url = createAPISearchURL(`${config.API_BASE_URL}/transactions`, { pageNumber, pageSize }, formattedFilter);
 
 	// TODO: remove try-catch section.

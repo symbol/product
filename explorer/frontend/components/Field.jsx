@@ -14,11 +14,11 @@ const Field = ({ className, titleClassName, title, description, children, textAl
 				{title}
 				{!!description && (
 					<div className={styles.tooltip}>
-						<CustomImage src="/images/icon-question.svg" className={styles.tooltipIcon} />
+						<CustomImage src="/images/icon-question.svg" className={styles.tooltipIcon} alt="Help" />
 						<div className={styles.tooltipContent}>{description}</div>
 					</div>
 				)}
-				{!!iconSrc && <CustomImage src={iconSrc} className={styles.icon} />}
+				{!!iconSrc && <CustomImage src={iconSrc} className={styles.icon} alt="Switch" />}
 			</div>
 			<div className={styles.value}>{children}</div>
 		</div>
