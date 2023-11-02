@@ -69,14 +69,7 @@ def parse_imports_configuration(config):
 def parse_node_configuration(config):
 	"""Parses node configuration."""
 
-	features = NodeFeatures(0)
-	for feature in config['features'].split('|'):
-		try:
-			features |= NodeFeatures[feature.strip()]
-		except KeyError as ex:
-			# rethrow KeyError as ValueError for consistency with other value parsing errors
-			raise ValueError(ex) from ex
-
+	features = NodeFeatures.parse(config['features'])
 	user_id = int(config['userId'])
 	group_id = int(config['groupId'])
 	ca_password = config['caPassword']

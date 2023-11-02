@@ -10,9 +10,7 @@ def prepare_shoestring_configuration(directory, node_features, services_nodewatc
 	parser.read(Path('tests/resources/sai.shoestring.ini').absolute())
 
 	parser['services']['nodewatch'] = str(services_nodewatch)
-
-	node_features_str = str(node_features)
-	parser['node']['features'] = node_features_str[node_features_str.index('.') + 1:]
+	parser['node']['features'] = node_features.to_formatted_string()
 
 	ca_password = node_kwargs.get('ca_password', None)
 	if ca_password:

@@ -93,7 +93,7 @@ async def prepare_shoestring_files(screens, directory):
 		('node', 'apiHttps', _to_bool_string(node_settings.api_https)),
 		('node', 'caCommonName', certificates.ca_common_name),
 		('node', 'nodeCommonName', certificates.node_common_name),
-		('node', 'features', ','.join(node_feature[len('NodeFeatures.'):] for node_feature in str(node_features).split(',')))
+		('node', 'features', node_features.to_formatted_string())
 	]
 
 	if harvesting.active:
