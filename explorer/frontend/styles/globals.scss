@@ -34,6 +34,10 @@ body,
     background-color: $color-background-main;
 }
 
+body {
+    overflow-y: scroll;
+}
+
 #__next {
     font: $font-body;
 }
