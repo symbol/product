@@ -3,7 +3,20 @@ from collections import namedtuple
 
 from rest.db.NemDatabase import NemDatabase
 
-Block = namedtuple('Block', ['height', 'timestamp', 'total_fees', 'total_transactions', 'difficulty', 'block_hash', 'signer', 'signature'])
+Block = namedtuple(
+	'Block',
+	[
+		'height',
+		'timestamp',
+		'total_fees',
+		'total_transactions',
+		'difficulty',
+		'block_hash',
+		'signer',
+		'signature',
+		'size'
+	]
+)
 DatabaseConfig = namedtuple('DatabaseConfig', ['database', 'user', 'password', 'host', 'port'])
 
 # region test data
@@ -18,7 +31,8 @@ BLOCKS = [
 		'438CF6375DAB5A0D32F9B7BF151D4539E00A590F7C022D5572C7D41815A24BE4',
 		'8D07F90FB4BBE7715FA327C926770166A11BE2E494A970605F2E12557F66C9B9',
 		'2ABDD19AD3EFAB0413B42772A586FAA19DEDB16D35F665F90D598046A2132C4A'
-		'D1E71001545CEAA44E63C04345591E7AADBFD330AF82A0D8A1DA5643E791FF0F'),
+		'D1E71001545CEAA44E63C04345591E7AADBFD330AF82A0D8A1DA5643E791FF0F',
+		936),
 	Block(
 		2,
 		'2015-03-29 20:34:19',
@@ -28,7 +42,8 @@ BLOCKS = [
 		'1DD9D4D7B6AF603D29C082F9AA4E123F07D18154DDBCD7DDC6702491B854C5E4',
 		'F9BD190DD0C364261F5C8A74870CC7F7374E631352293C62ECC437657E5DE2CD',
 		'1B81379847241E45DA86B27911E5C9A9192EC04F644D98019657D32838B49C14'
-		'3EAA4815A3028B80F9AFFDBF0B94CD620F7A925E02783DDA67B8627B69DDF70E')
+		'3EAA4815A3028B80F9AFFDBF0B94CD620F7A925E02783DDA67B8627B69DDF70E',
+		752),
 ]
 
 # endregion
@@ -50,7 +65,8 @@ def initialize_database(db_config):
 				difficulty bigInt NOT NULL,
 				hash bytea NOT NULL,
 				signer bytea NOT NULL,
-				signature bytea NOT NULL
+				signature bytea NOT NULL,
+				size bigint DEFAULT 0
 		)
 		''')
 
@@ -58,8 +74,8 @@ def initialize_database(db_config):
 		for block in BLOCKS:
 			cursor.execute(
 				'''
-				INSERT INTO blocks (height, timestamp, total_fees, total_transactions, difficulty, hash, signer, signature)
-				VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+				INSERT INTO blocks (height, timestamp, total_fees, total_transactions, difficulty, hash, signer, signature, size)
+				VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
 				''', (
 					block.height,
 					block.timestamp,
@@ -68,7 +84,8 @@ def initialize_database(db_config):
 					block.difficulty,
 					unhexlify(block.block_hash),
 					unhexlify(block.signer),
-					unhexlify(block.signature)
+					unhexlify(block.signature),
+					block.size
 				)
 			)
 

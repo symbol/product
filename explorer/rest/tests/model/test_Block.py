@@ -17,7 +17,8 @@ class BlockTest(unittest.TestCase):
 			(
 				'919AE66A34119B49812B335827B357F86884AB08B628029FD6E8DB3572FAEB4F'
 				'323A7BF9488C76EF8FAA5B513036BBCCE2D949BA3E41086D95A54C0007403C0B'
-			)
+			),
+			356
 		)
 
 		if override:
@@ -42,6 +43,7 @@ class BlockTest(unittest.TestCase):
 			'323A7BF9488C76EF8FAA5B513036BBCCE2D949BA3E41086D95A54C0007403C0B',
 			block_view.signature
 		)
+		self.assertEqual(356, block_view.size)
 
 	def test_can_convert_to_simple_dict(self):
 		# Arrange:
@@ -62,7 +64,8 @@ class BlockTest(unittest.TestCase):
 			'signature': (
 				'919AE66A34119B49812B335827B357F86884AB08B628029FD6E8DB3572FAEB4F'
 				'323A7BF9488C76EF8FAA5B513036BBCCE2D949BA3E41086D95A54C0007403C0B'
-			)
+			),
+			'size': 356
 		}, block_view_dict)
 
 	def test_eq_is_supported(self):
@@ -81,3 +84,4 @@ class BlockTest(unittest.TestCase):
 		self.assertNotEqual(block_view, self._create_default_block_view(('block_hash', 'random hash')))
 		self.assertNotEqual(block_view, self._create_default_block_view(('signer', 'random signer')))
 		self.assertNotEqual(block_view, self._create_default_block_view(('signature', 'random signature')))
+		self.assertNotEqual(block_view, self._create_default_block_view(('size', 'random size')))
