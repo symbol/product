@@ -45,8 +45,8 @@ def initialize_database(db_config):
 				id serial NOT NULL PRIMARY KEY,
 				height bigint NOT NULL,
 				timestamp timestamp NOT NULL,
-				totalFees bigint DEFAULT 0,
-				totalTransactions int DEFAULT 0,
+				total_fees bigint DEFAULT 0,
+				total_transactions int DEFAULT 0,
 				difficulty bigInt NOT NULL,
 				hash bytea NOT NULL,
 				signer bytea NOT NULL,
@@ -58,7 +58,7 @@ def initialize_database(db_config):
 		for block in BLOCKS:
 			cursor.execute(
 				'''
-				INSERT INTO blocks (height, timestamp, totalFees, totalTransactions, difficulty, hash, signer, signature)
+				INSERT INTO blocks (height, timestamp, total_fees, total_transactions, difficulty, hash, signer, signature)
 				VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
 				''', (
 					block.height,
