@@ -22,7 +22,8 @@ class NemDatabase(DatabaseConnectionPool):
 			difficulty=result[5],
 			block_hash=_format_bytes(result[6]),
 			signer=_format_bytes(result[7]),
-			signature=_format_bytes(result[8])
+			signature=_format_bytes(result[8]),
+			size=result[9]
 		)
 
 	def get_block(self, height):
