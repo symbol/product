@@ -1,6 +1,7 @@
 from binascii import hexlify
 
 from symbolchain.CryptoTypes import PublicKey
+from symbolchain.nem.Network import Network
 
 from rest.model.Block import BlockView
 
@@ -20,7 +21,7 @@ class NemDatabase(DatabaseConnectionPool):
 
 	def __init__(self, db_config, network):
 		super().__init__(db_config)
-		self.network = network
+		self.network = Network.MAINNET if network == 'MAINNET' else Network.TESTNET
 
 	def _create_block_view(self, result):
 		harvest_public_key = PublicKey(_format_bytes(result[7]))
