@@ -2,15 +2,15 @@ from collections import namedtuple
 
 from rest.db.NemDatabase import NemDatabase
 
-from ..test.DatabaseTestUtils import DatabaseTestBase
+from ..test.DatabaseTestUtils import BLOCK_VIEWS, DatabaseTestBase
 
 BlockQueryParams = namedtuple('BlockQueryParams', ['limit', 'offset', 'min_height', 'sort'])
 
 # region test data
 
-EXPECTED_BLOCK_VIEW_1 = BlockView(*BLOCKS[0])
+EXPECTED_BLOCK_VIEW_1 = BLOCK_VIEWS[0]
 
-EXPECTED_BLOCK_VIEW_2 = BlockView(*BLOCKS[1])
+EXPECTED_BLOCK_VIEW_2 = BLOCK_VIEWS[1]
 
 # endregion
 
@@ -19,7 +19,7 @@ class NemDatabaseTest(DatabaseTestBase):
 
 	def _assert_can_query_block_by_height(self, height, expected_block):
 		# Arrange:
-		nem_db = NemDatabase(self.db_config)
+		nem_db = NemDatabase(self.db_config, self.network)
 
 		# Act:
 		block_view = nem_db.get_block(height)
@@ -29,7 +29,7 @@ class NemDatabaseTest(DatabaseTestBase):
 
 	def _assert_can_query_blocks_with_filter(self, query_params, expected_blocks):
 		# Arrange:
-		nem_db = NemDatabase(self.db_config)
+		nem_db = NemDatabase(self.db_config, self.network)
 
 		# Act:
 		blocks_view = nem_db.get_blocks(query_params.limit, query_params.offset, query_params.min_height, query_params.sort)

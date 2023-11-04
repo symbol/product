@@ -61,7 +61,7 @@ BLOCK_VIEWS = [
 
 def initialize_database(db_config):
 	# Arrange + Act:
-	with NemDatabase(db_config).connection() as connection:
+	with NemDatabase(db_config, None).connection() as connection:
 		cursor = connection.cursor()
 
 		# Create tables
