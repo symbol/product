@@ -1,5 +1,8 @@
+import unittest
 from binascii import unhexlify
 from collections import namedtuple
+
+import testing.postgresql
 
 from rest.db.NemDatabase import NemDatabase
 
@@ -90,3 +93,16 @@ def initialize_database(db_config):
 			)
 
 		connection.commit()
+
+
+class DatabaseTestBase(unittest.TestCase):
+	@classmethod
+	def setUpClass(cls):
+		cls.postgresql = testing.postgresql.Postgresql()
+		cls.db_config = DatabaseConfig(**cls.postgresql.dsn(), password='')
+		cls.network = 'MAINNET'
+		initialize_database(cls.db_config)
+
+	@classmethod
+	def tearDownClass(cls):
+		cls.postgresql.stop()

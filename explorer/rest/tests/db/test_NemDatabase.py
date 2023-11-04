@@ -1,12 +1,8 @@
-import unittest
 from collections import namedtuple
 
-import testing.postgresql
-
 from rest.db.NemDatabase import NemDatabase
-from rest.model.Block import BlockView
 
-from ..test.DatabaseTestUtils import BLOCKS, DatabaseConfig, initialize_database
+from ..test.DatabaseTestUtils import DatabaseTestBase
 
 BlockQueryParams = namedtuple('BlockQueryParams', ['limit', 'offset', 'min_height', 'sort'])
 
@@ -19,17 +15,7 @@ EXPECTED_BLOCK_VIEW_2 = BlockView(*BLOCKS[1])
 # endregion
 
 
-class NemDatabaseTest(unittest.TestCase):
-
-	@classmethod
-	def setUpClass(cls):
-		cls.postgresql = testing.postgresql.Postgresql()
-		cls.db_config = DatabaseConfig(**cls.postgresql.dsn(), password='')
-		initialize_database(cls.db_config)
-
-	@classmethod
-	def tearDownClass(cls):
-		cls.postgresql.stop()
+class NemDatabaseTest(DatabaseTestBase):
 
 	def _assert_can_query_block_by_height(self, height, expected_block):
 		# Arrange:

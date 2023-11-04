@@ -1,11 +1,7 @@
-import unittest
-
-import testing.postgresql
-
 from rest.facade.NemRestFacade import NemRestFacade
 
 from ..db.test_NemDatabase import BlockQueryParams
-from ..test.DatabaseTestUtils import DatabaseConfig, initialize_database
+from ..test.DatabaseTestUtils import DatabaseTestBase
 
 # region test data
 
@@ -42,17 +38,7 @@ EXPECTED_BLOCK_2 = {
 # endregion
 
 
-class TestNemRestFacade(unittest.TestCase):
-
-	@classmethod
-	def setUpClass(cls):
-		cls.postgresql = testing.postgresql.Postgresql()
-		cls.db_config = DatabaseConfig(**cls.postgresql.dsn(), password='')
-		initialize_database(cls.db_config)
-
-	@classmethod
-	def tearDownClass(cls):
-		cls.postgresql.stop()
+class TestNemRestFacade(DatabaseTestBase):
 
 	def _assert_can_retrieve_block(self, height, expected_block):
 		# Arrange:
