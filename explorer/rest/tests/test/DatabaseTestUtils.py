@@ -3,8 +3,10 @@ from binascii import unhexlify
 from collections import namedtuple
 
 import testing.postgresql
+from symbolchain.nem.Network import Address
 
 from rest.db.NemDatabase import NemDatabase
+from rest.model.Block import BlockView
 
 Block = namedtuple(
 	'Block',
@@ -47,6 +49,11 @@ BLOCKS = [
 		'1B81379847241E45DA86B27911E5C9A9192EC04F644D98019657D32838B49C14'
 		'3EAA4815A3028B80F9AFFDBF0B94CD620F7A925E02783DDA67B8627B69DDF70E',
 		752),
+]
+
+BLOCK_VIEWS = [
+	BlockView(*BLOCKS[0]._replace(total_fees=102.0, signer=Address('NANEMOABLAGR72AZ2RV3V4ZHDCXW25XQ73O7OBT5'))),
+	BlockView(*BLOCKS[1]._replace(total_fees=201.0, signer=Address('NALICEPFLZQRZGPRIJTMJOCPWDNECXTNNG7QLSG3')))
 ]
 
 # endregion
