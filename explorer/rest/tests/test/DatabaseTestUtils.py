@@ -22,6 +22,16 @@ Block = namedtuple(
 		'size'
 	]
 )
+Namespace = namedtuple(
+	'Namespace',
+	[
+		'root_namespace',
+		'owner',
+		'registered_height',
+		'expiration_height',
+		'sub_namespaces'
+	]
+)
 DatabaseConfig = namedtuple('DatabaseConfig', ['database', 'user', 'password', 'host', 'port'])
 
 # region test data
@@ -56,6 +66,23 @@ BLOCK_VIEWS = [
 	BlockView(*BLOCKS[1]._replace(total_fees=201.0, signer=Address('NALICEPFLZQRZGPRIJTMJOCPWDNECXTNNG7QLSG3')))
 ]
 
+NAMESPACES = [
+	Namespace(
+		'oxford',
+		'8D07F90FB4BBE7715FA327C926770166A11BE2E494A970605F2E12557F66C9B9',
+		1000,
+		526600,
+		'{oxford.union,oxford.philosophy,oxford.comma,oxford.dictionary,oxford.blockchain}'
+	),
+	Namespace(
+		'dragon',
+		'F9BD190DD0C364261F5C8A74870CC7F7374E631352293C62ECC437657E5DE2CD',
+		2000,
+		527600,
+		'{}'
+	),
+]
+
 # endregion
 
 
@@ -80,6 +107,19 @@ def initialize_database(db_config, network_name):
 		)
 		''')
 
+		cursor.execute(
+			'''
+			CREATE TABLE IF NOT EXISTS namespaces (
+				id serial PRIMARY KEY,
+				root_namespace varchar(16),
+				owner bytea NOT NULL,
+				registered_height bigint NOT NULL,
+				expiration_height bigint NOT NULL,
+				sub_namespaces VARCHAR(146)[]
+			)
+			'''
+		)
+
 		# Insert data
 		for block in BLOCKS:
 			cursor.execute(
@@ -96,6 +136,20 @@ def initialize_database(db_config, network_name):
 					unhexlify(block.signer),
 					unhexlify(block.signature),
 					block.size
+				)
+			)
+
+		for namespace in NAMESPACES:
+			cursor.execute(
+				'''
+				INSERT INTO namespaces (root_namespace, owner, registered_height, expiration_height, sub_namespaces)
+				VALUES (%s, %s, %s, %s, %s)
+				''', (
+					namespace.root_namespace,
+					unhexlify(namespace.owner),
+					namespace.registered_height,
+					namespace.expiration_height,
+					namespace.sub_namespaces
 				)
 			)
 
