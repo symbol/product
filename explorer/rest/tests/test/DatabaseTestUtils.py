@@ -7,6 +7,7 @@ from symbolchain.nem.Network import Address
 
 from rest.db.NemDatabase import NemDatabase
 from rest.model.Block import BlockView
+from rest.model.Namespace import NamespaceView
 
 Block = namedtuple(
 	'Block',
@@ -89,15 +90,15 @@ NAMESPACES = [
 	Namespace(
 		'oxford',
 		'8D07F90FB4BBE7715FA327C926770166A11BE2E494A970605F2E12557F66C9B9',
-		1000,
-		526600,
-		'{oxford.union,oxford.philosophy,oxford.comma,oxford.dictionary,oxford.blockchain}'
+		1,
+		525601,
+		'{oxford.union,oxford.branch.uk}'
 	),
 	Namespace(
 		'dragon',
 		'F9BD190DD0C364261F5C8A74870CC7F7374E631352293C62ECC437657E5DE2CD',
-		2000,
-		527600,
+		2,
+		525602,
 		'{}'
 	),
 ]
@@ -121,6 +122,34 @@ MOSAICS = [
 	)
 ]
 
+
+NAMESPACE_VIEWS = [
+	NamespaceView(
+		NAMESPACES[0].root_namespace,
+		Address('NANEMOABLAGR72AZ2RV3V4ZHDCXW25XQ73O7OBT5'),
+		NAMESPACES[0].registered_height,
+		'2015-03-29 00:06:25',
+		NAMESPACES[0].expiration_height,
+		['oxford.union', 'oxford.branch.uk'],
+		[]
+	),
+	NamespaceView(
+		NAMESPACES[1].root_namespace,
+		Address('NALICEPFLZQRZGPRIJTMJOCPWDNECXTNNG7QLSG3'),
+		NAMESPACES[1].registered_height,
+		'2015-03-29 20:34:19',
+		NAMESPACES[1].expiration_height,
+		[],
+		[{
+			'namespaceName': 'dragon',
+			'mosaicName': 'dragonfly',
+			'totalSupply': 100,
+			'divisibility': 0,
+			'registeredHeight': 2,
+			'registeredTimestamp': '2015-03-29 20:34:19'
+		}]
+	),
+]
 
 # endregion
 
