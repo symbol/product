@@ -32,6 +32,25 @@ Namespace = namedtuple(
 		'sub_namespaces'
 	]
 )
+Mosaic = namedtuple(
+	'Mosaic',
+	[
+		'root_namespace',
+		'namespace_name',
+		'description',
+		'creator',
+		'registered_height',
+		'initial_supply',
+		'total_supply',
+		'divisibility',
+		'supply_mutable',
+		'transferable',
+		'levy_type',
+		'levy_namespace_name',
+		'levy_fee',
+		'levy_recipient'
+	]
+)
 DatabaseConfig = namedtuple('DatabaseConfig', ['database', 'user', 'password', 'host', 'port'])
 
 # region test data
@@ -83,6 +102,26 @@ NAMESPACES = [
 	),
 ]
 
+MOSAICS = [
+	Mosaic(
+		'dragon',
+		'dragon.dragonfly',
+		'sample information',
+		'F9BD190DD0C364261F5C8A74870CC7F7374E631352293C62ECC437657E5DE2CD',
+		2,
+		100,
+		100,
+		0,
+		False,
+		True,
+		None,
+		None,
+		None,
+		None
+	)
+]
+
+
 # endregion
 
 
@@ -120,6 +159,28 @@ def initialize_database(db_config, network_name):
 			'''
 		)
 
+		cursor.execute(
+			'''
+			CREATE TABLE IF NOT EXISTS mosaics (
+				id serial PRIMARY KEY,
+				root_namespace varchar(16),
+				namespace_name varchar(146),
+				description varchar(512),
+				creator bytea NOT NULL,
+				registered_height bigint NOT NULL,
+				initial_supply bigint DEFAULT 0,
+				total_supply bigint DEFAULT 0,
+				divisibility int NOT NULL,
+				supply_mutable boolean DEFAULT false,
+				transferable boolean DEFAULT false,
+				levy_type int,
+				levy_namespace_name varchar(146),
+				levy_fee bigint DEFAULT 0,
+				levy_recipient bytea
+			)
+			'''
+		)
+
 		# Insert data
 		for block in BLOCKS:
 			cursor.execute(
@@ -150,6 +211,44 @@ def initialize_database(db_config, network_name):
 					namespace.registered_height,
 					namespace.expiration_height,
 					namespace.sub_namespaces
+				)
+			)
+
+		for mosaic in MOSAICS:
+			cursor.execute(
+				'''
+				INSERT INTO mosaics (
+					root_namespace,
+					namespace_name,
+					description,
+					creator,
+					registered_height,
+					initial_supply,
+					total_supply,
+					divisibility,
+					supply_mutable,
+					transferable,
+					levy_type,
+					levy_namespace_name,
+					levy_fee,
+					levy_recipient
+				)
+				VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+				''', (
+					mosaic.root_namespace,
+					mosaic.namespace_name,
+					mosaic.description,
+					unhexlify(mosaic.creator),
+					mosaic.registered_height,
+					mosaic.initial_supply,
+					mosaic.total_supply,
+					mosaic.divisibility,
+					mosaic.supply_mutable,
+					mosaic.transferable,
+					mosaic.levy_type,
+					mosaic.levy_namespace_name,
+					mosaic.levy_fee,
+					Address(mosaic.levy_recipient).bytes if mosaic.levy_recipient is not None else None,
 				)
 			)
 
