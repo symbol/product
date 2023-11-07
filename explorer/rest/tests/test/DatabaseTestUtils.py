@@ -81,11 +81,6 @@ BLOCKS = [
 		752),
 ]
 
-BLOCK_VIEWS = [
-	BlockView(*BLOCKS[0]._replace(total_fees=102.0, signer=Address('NANEMOABLAGR72AZ2RV3V4ZHDCXW25XQ73O7OBT5'))),
-	BlockView(*BLOCKS[1]._replace(total_fees=201.0, signer=Address('NALICEPFLZQRZGPRIJTMJOCPWDNECXTNNG7QLSG3')))
-]
-
 NAMESPACES = [
 	Namespace(
 		'oxford',
@@ -122,6 +117,10 @@ MOSAICS = [
 	)
 ]
 
+BLOCK_VIEWS = [
+	BlockView(*BLOCKS[0]._replace(total_fees=102.0, signer=Address('NANEMOABLAGR72AZ2RV3V4ZHDCXW25XQ73O7OBT5'))),
+	BlockView(*BLOCKS[1]._replace(total_fees=201.0, signer=Address('NALICEPFLZQRZGPRIJTMJOCPWDNECXTNNG7QLSG3')))
+]
 
 NAMESPACE_VIEWS = [
 	NamespaceView(
