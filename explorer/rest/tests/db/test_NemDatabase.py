@@ -5,6 +5,7 @@ from rest.db.NemDatabase import NemDatabase
 from ..test.DatabaseTestUtils import BLOCK_VIEWS, DatabaseTestBase
 
 BlockQueryParams = namedtuple('BlockQueryParams', ['limit', 'offset', 'min_height', 'sort'])
+PaginationQueryParams = namedtuple('PaginationQueryParams', ['limit', 'offset', 'sort'])
 
 # region test data
 
