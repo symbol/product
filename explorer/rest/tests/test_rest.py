@@ -59,6 +59,11 @@ def client(app):  # pylint: disable=redefined-outer-name
 # endregion
 
 
+def _assert_status_code_and_headers(response, expected_status_code):
+	assert expected_status_code == response.status_code
+	assert response.headers['Access-Control-Allow-Origin'] == '*'
+
+
 # region /block/<height>
 
 def _assert_get_api_nem_block_by_height(client, height, expected_status_code, expected_result):  # pylint: disable=redefined-outer-name
@@ -66,7 +71,7 @@ def _assert_get_api_nem_block_by_height(client, height, expected_status_code, ex
 	response = client.get(f'/api/nem/block/{height}')
 
 	# Assert:
-	assert expected_status_code == response.status_code
+	_assert_status_code_and_headers(response, expected_status_code)
 	assert expected_result == response.json
 
 
@@ -97,24 +102,24 @@ def _get_api_nem_blocks(client, **query_params):  # pylint: disable=redefined-ou
 	return client.get(f'/api/nem/blocks?{query_string}')
 
 
-def _assert_get_api_nem_blocks(client, expected_code, expected_result, **query_params):  # pylint: disable=redefined-outer-name
+def _assert_get_api_nem_blocks(client, expected_status_code, expected_result, **query_params):  # pylint: disable=redefined-outer-name
 	# Act:
 	response = _get_api_nem_blocks(client, **query_params)
 
 	# Assert:
-	assert expected_code == response.status_code
+	_assert_status_code_and_headers(response, expected_status_code)
 	assert expected_result == response.json
 
 
-def _assert_get_api_nem_blocks_fail(client, **query_params):  # pylint: disable=redefined-outer-name
+def _assert_get_api_nem_blocks_fail(client, expected_status_code, **query_params):  # pylint: disable=redefined-outer-name
 	# Act:
 	response = _get_api_nem_blocks(client, **query_params)
 
 	# Assert:
-	assert 400 == response.status_code
+	_assert_status_code_and_headers(response, expected_status_code)
 	assert {
 		'message': 'Bad request',
-		'status': 400
+		'status': expected_status_code
 	} == response.json
 
 
@@ -123,7 +128,7 @@ def test_api_nem_blocks_without_params(client):  # pylint: disable=redefined-out
 	response = client.get('/api/nem/blocks')
 
 	# Assert:
-	assert 200 == response.status_code
+	_assert_status_code_and_headers(response, 200)
 	assert [BlockView(*BLOCKS[1]).to_dict(), BlockView(*BLOCKS[0]).to_dict()] == response.json
 
 
@@ -152,23 +157,23 @@ def test_api_nem_blocks_with_all_params(client):  # pylint: disable=redefined-ou
 
 
 def test_api_nem_blocks_invalid_min_height(client):  # pylint: disable=redefined-outer-name, invalid-name
-	_assert_get_api_nem_blocks_fail(client, min_height=0)
-	_assert_get_api_nem_blocks_fail(client, min_height='invalid')
+	_assert_get_api_nem_blocks_fail(client, 400, min_height=0)
+	_assert_get_api_nem_blocks_fail(client, 400, min_height='invalid')
 
 
 def test_api_nem_blocks_invalid_limit(client):  # pylint: disable=redefined-outer-name
-	_assert_get_api_nem_blocks_fail(client, limit=-1)
-	_assert_get_api_nem_blocks_fail(client, limit='invalid')
+	_assert_get_api_nem_blocks_fail(client, 400, limit=-1)
+	_assert_get_api_nem_blocks_fail(client, 400, limit='invalid')
 
 
 def test_api_nem_blocks_invalid_offset(client):  # pylint: disable=redefined-outer-name
-	_assert_get_api_nem_blocks_fail(client, offset=-1)
-	_assert_get_api_nem_blocks_fail(client, offset='invalid')
+	_assert_get_api_nem_blocks_fail(client, 400, offset=-1)
+	_assert_get_api_nem_blocks_fail(client, 400, offset='invalid')
 
 
 def test_api_nem_blocks_invalid_sort(client):  # pylint: disable=redefined-outer-name
-	_assert_get_api_nem_blocks_fail(client, sort=-1)
-	_assert_get_api_nem_blocks_fail(client, sort='invalid')
+	_assert_get_api_nem_blocks_fail(client, 400, sort=-1)
+	_assert_get_api_nem_blocks_fail(client, 400, sort='invalid')
 
 
 # endregion
