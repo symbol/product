@@ -26,7 +26,8 @@ EXPECTED_BLOCK_VIEW_2 = BLOCK_VIEWS[1]
 def database():
 	postgresql = testing.postgresql.Postgresql(port=5433)
 	db_config = DatabaseConfig(**postgresql.dsn(), password='')
-	initialize_database(db_config)
+	network_name = 'mainnet'
+	initialize_database(db_config, network_name)
 
 	yield db_config
 
@@ -52,7 +53,7 @@ def app(database):  # pylint: disable=redefined-outer-name, unused-argument
 		with open(file_name, 'wt', encoding='utf8') as config_file:
 			print(f'creating config file {file_name}...')
 			config_file.write(f'DATABASE_CONFIG_FILEPATH="{db_config_path}"\n')
-			config_file.write('NETWORK="mainnet"\n')
+			config_file.write('NETWORK_NAME="mainnet"\n')
 			config_file.flush()
 
 			temp_file_path = file_name.resolve()

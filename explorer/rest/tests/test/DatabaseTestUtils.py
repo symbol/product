@@ -59,9 +59,9 @@ BLOCK_VIEWS = [
 # endregion
 
 
-def initialize_database(db_config):
+def initialize_database(db_config, network_name):
 	# Arrange + Act:
-	with NemDatabase(db_config, None).connection() as connection:
+	with NemDatabase(db_config, network_name).connection() as connection:
 		cursor = connection.cursor()
 
 		# Create tables
@@ -107,8 +107,8 @@ class DatabaseTestBase(unittest.TestCase):
 	def setUp(self):
 		self.postgresql = testing.postgresql.Postgresql()
 		self.db_config = DatabaseConfig(**self.postgresql.dsn(), password='')
-		self.network = 'MAINNET'
-		initialize_database(self.db_config)
+		self.network_name = 'mainnet'
+		initialize_database(self.db_config, self.network_name)
 
 	def tearDown(self):
 		self.postgresql.stop()

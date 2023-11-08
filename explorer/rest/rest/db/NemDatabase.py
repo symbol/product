@@ -2,6 +2,7 @@ from binascii import hexlify
 
 from symbolchain.CryptoTypes import PublicKey
 from symbolchain.nem.Network import Network
+from symbolchain.Network import NetworkLocator
 
 from rest.model.Block import BlockView
 
@@ -19,9 +20,9 @@ def _format_xem_relative(amount):
 class NemDatabase(DatabaseConnectionPool):
 	"""Database containing Nem blockchain data."""
 
-	def __init__(self, db_config, network):
+	def __init__(self, db_config, network_name):
 		super().__init__(db_config)
-		self.network = Network.MAINNET if network == 'MAINNET' else Network.TESTNET
+		self.network = NetworkLocator.find_by_name(Network.NETWORKS, network_name)
 
 	def _create_block_view(self, result):
 		harvest_public_key = PublicKey(_format_bytes(result[7]))

@@ -19,7 +19,7 @@ class NemDatabaseTest(DatabaseTestBase):
 
 	def _assert_can_query_block_by_height(self, height, expected_block):
 		# Arrange:
-		nem_db = NemDatabase(self.db_config, self.network)
+		nem_db = NemDatabase(self.db_config, self.network_name)
 
 		# Act:
 		block_view = nem_db.get_block(height)
@@ -29,7 +29,7 @@ class NemDatabaseTest(DatabaseTestBase):
 
 	def _assert_can_query_blocks_with_filter(self, query_params, expected_blocks):
 		# Arrange:
-		nem_db = NemDatabase(self.db_config, self.network)
+		nem_db = NemDatabase(self.db_config, self.network_name)
 
 		# Act:
 		blocks_view = nem_db.get_blocks(query_params.limit, query_params.offset, query_params.min_height, query_params.sort)

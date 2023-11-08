@@ -16,7 +16,7 @@ class TestNemRestFacade(DatabaseTestBase):
 
 	def _assert_can_retrieve_block(self, height, expected_block):
 		# Arrange:
-		nem_rest_facade = NemRestFacade(self.db_config, self.network)
+		nem_rest_facade = NemRestFacade(self.db_config, self.network_name)
 
 		# Act:
 		block = nem_rest_facade.get_block(height)
@@ -26,7 +26,7 @@ class TestNemRestFacade(DatabaseTestBase):
 
 	def _assert_can_retrieve_blocks(self, query_params, expected_blocks):
 		# Arrange:
-		nem_rest_facade = NemRestFacade(self.db_config, self.network)
+		nem_rest_facade = NemRestFacade(self.db_config, self.network_name)
 
 		# Act:
 		blocks = nem_rest_facade.get_blocks(query_params.limit, query_params.offset, query_params.min_height, query_params.sort)
