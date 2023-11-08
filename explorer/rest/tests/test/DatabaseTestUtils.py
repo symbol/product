@@ -103,13 +103,12 @@ def initialize_database(db_config):
 
 
 class DatabaseTestBase(unittest.TestCase):
-	@classmethod
-	def setUpClass(cls):
-		cls.postgresql = testing.postgresql.Postgresql()
-		cls.db_config = DatabaseConfig(**cls.postgresql.dsn(), password='')
-		cls.network = 'MAINNET'
-		initialize_database(cls.db_config)
 
-	@classmethod
-	def tearDownClass(cls):
-		cls.postgresql.stop()
+	def setUp(self):
+		self.postgresql = testing.postgresql.Postgresql()
+		self.db_config = DatabaseConfig(**self.postgresql.dsn(), password='')
+		self.network = 'MAINNET'
+		initialize_database(self.db_config)
+
+	def tearDown(self):
+		self.postgresql.stop()
