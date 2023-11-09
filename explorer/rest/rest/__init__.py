@@ -28,6 +28,7 @@ def setup_nem_facade(app):
 	app.config.from_envvar('EXPLORER_REST_SETTINGS')
 	config = configparser.ConfigParser()
 	db_path = Path(app.config.get('DATABASE_CONFIG_FILEPATH'))
+	network_name = app.config.get('NETWORK_NAME', 'mainnet')
 
 	log.info(f'loading database config from {db_path}')
 
@@ -42,7 +43,7 @@ def setup_nem_facade(app):
 		nem_db_config['port']
 	)
 
-	return NemRestFacade(db_params)
+	return NemRestFacade(db_params, network_name)
 
 
 def setup_nem_routes(app, nem_api_facade):

@@ -6,11 +6,18 @@ import pytest
 import testing.postgresql
 
 from rest import create_app
-from rest.model.Block import BlockView
 
-from .test.DatabaseTestUtils import BLOCKS, DatabaseConfig, initialize_database
+from .test.DatabaseTestUtils import BLOCK_VIEWS, DatabaseConfig, initialize_database
 
 DATABASE_CONFIG_INI = 'db_config.ini'
+
+# region test data
+
+EXPECTED_BLOCK_VIEW_1 = BLOCK_VIEWS[0]
+
+EXPECTED_BLOCK_VIEW_2 = BLOCK_VIEWS[1]
+
+# endregion
 
 # region fixtures
 
@@ -19,7 +26,8 @@ DATABASE_CONFIG_INI = 'db_config.ini'
 def database():
 	postgresql = testing.postgresql.Postgresql(port=5433)
 	db_config = DatabaseConfig(**postgresql.dsn(), password='')
-	initialize_database(db_config)
+	network_name = 'mainnet'
+	initialize_database(db_config, network_name)
 
 	yield db_config
 
@@ -45,6 +53,7 @@ def app(database):  # pylint: disable=redefined-outer-name, unused-argument
 		with open(file_name, 'wt', encoding='utf8') as config_file:
 			print(f'creating config file {file_name}...')
 			config_file.write(f'DATABASE_CONFIG_FILEPATH="{db_config_path}"\n')
+			config_file.write('NETWORK_NAME="mainnet"\n')
 			config_file.flush()
 
 			temp_file_path = file_name.resolve()
@@ -76,7 +85,7 @@ def _assert_get_api_nem_block_by_height(client, height, expected_status_code, ex
 
 
 def test_api_nem_block_by_height(client):  # pylint: disable=redefined-outer-name
-	_assert_get_api_nem_block_by_height(client, 1, 200, BlockView(*BLOCKS[0]).to_dict())
+	_assert_get_api_nem_block_by_height(client, 1, 200, EXPECTED_BLOCK_VIEW_1.to_dict())
 
 
 def test_api_nem_block_non_exist(client):  # pylint: disable=redefined-outer-name
@@ -129,15 +138,15 @@ def test_api_nem_blocks_without_params(client):  # pylint: disable=redefined-out
 
 	# Assert:
 	_assert_status_code_and_headers(response, 200)
-	assert [BlockView(*BLOCKS[1]).to_dict(), BlockView(*BLOCKS[0]).to_dict()] == response.json
+	assert [EXPECTED_BLOCK_VIEW_2.to_dict(), EXPECTED_BLOCK_VIEW_1.to_dict()] == response.json
 
 
 def test_api_nem_blocks_applies_limit(client):  # pylint: disable=redefined-outer-name
-	_assert_get_api_nem_blocks(client, 200, [BlockView(*BLOCKS[1]).to_dict()], limit=1)
+	_assert_get_api_nem_blocks(client, 200, [EXPECTED_BLOCK_VIEW_2.to_dict()], limit=1)
 
 
 def test_api_nem_blocks_applies_offset(client):  # pylint: disable=redefined-outer-name
-	_assert_get_api_nem_blocks(client, 200, [BlockView(*BLOCKS[0]).to_dict()], offset=1)
+	_assert_get_api_nem_blocks(client, 200, [EXPECTED_BLOCK_VIEW_1.to_dict()], offset=1)
 
 
 def test_api_nem_blocks_applies_min_height(client):  # pylint: disable=redefined-outer-name, invalid-name
@@ -145,15 +154,15 @@ def test_api_nem_blocks_applies_min_height(client):  # pylint: disable=redefined
 
 
 def test_api_nem_blocks_applies_sorted_by_height_desc(client):  # pylint: disable=redefined-outer-name, invalid-name
-	_assert_get_api_nem_blocks(client, 200, [BlockView(*BLOCKS[1]).to_dict(), BlockView(*BLOCKS[0]).to_dict()], sort='desc')
+	_assert_get_api_nem_blocks(client, 200, [EXPECTED_BLOCK_VIEW_2.to_dict(), EXPECTED_BLOCK_VIEW_1.to_dict()], sort='desc')
 
 
 def test_api_nem_blocks_applies_sorted_by_height_asc(client):  # pylint: disable=redefined-outer-name, invalid-name
-	_assert_get_api_nem_blocks(client, 200, [BlockView(*BLOCKS[0]).to_dict(), BlockView(*BLOCKS[1]).to_dict()], sort='asc')
+	_assert_get_api_nem_blocks(client, 200, [EXPECTED_BLOCK_VIEW_1.to_dict(), EXPECTED_BLOCK_VIEW_2.to_dict()], sort='asc')
 
 
 def test_api_nem_blocks_with_all_params(client):  # pylint: disable=redefined-outer-name
-	_assert_get_api_nem_blocks(client, 200, [BlockView(*BLOCKS[1]).to_dict()], limit=1, offset=1, min_height=1, sort='asc')
+	_assert_get_api_nem_blocks(client, 200, [EXPECTED_BLOCK_VIEW_2.to_dict()], limit=1, offset=1, min_height=1, sort='asc')
 
 
 def test_api_nem_blocks_invalid_min_height(client):  # pylint: disable=redefined-outer-name, invalid-name

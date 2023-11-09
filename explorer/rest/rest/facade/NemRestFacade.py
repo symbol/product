@@ -4,10 +4,10 @@ from rest.db.NemDatabase import NemDatabase
 class NemRestFacade:
 	"""Nem Rest Facade."""
 
-	def __init__(self, db_config):
+	def __init__(self, db_config, network_name):
 		"""Creates a facade object."""
 
-		self.nem_db = NemDatabase(db_config)
+		self.nem_db = NemDatabase(db_config, network_name)
 
 	def get_block(self, height):
 		"""Gets block by height."""

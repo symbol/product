@@ -1,7 +1,12 @@
+import unittest
 from binascii import unhexlify
 from collections import namedtuple
 
+import testing.postgresql
+from symbolchain.nem.Network import Address
+
 from rest.db.NemDatabase import NemDatabase
+from rest.model.Block import BlockView
 
 Block = namedtuple(
 	'Block',
@@ -46,12 +51,17 @@ BLOCKS = [
 		752),
 ]
 
+BLOCK_VIEWS = [
+	BlockView(*BLOCKS[0]._replace(total_fees=102.0, signer=Address('NANEMOABLAGR72AZ2RV3V4ZHDCXW25XQ73O7OBT5'))),
+	BlockView(*BLOCKS[1]._replace(total_fees=201.0, signer=Address('NALICEPFLZQRZGPRIJTMJOCPWDNECXTNNG7QLSG3')))
+]
+
 # endregion
 
 
-def initialize_database(db_config):
+def initialize_database(db_config, network_name):
 	# Arrange + Act:
-	with NemDatabase(db_config).connection() as connection:
+	with NemDatabase(db_config, network_name).connection() as connection:
 		cursor = connection.cursor()
 
 		# Create tables
@@ -90,3 +100,15 @@ def initialize_database(db_config):
 			)
 
 		connection.commit()
+
+
+class DatabaseTestBase(unittest.TestCase):
+
+	def setUp(self):
+		self.postgresql = testing.postgresql.Postgresql()
+		self.db_config = DatabaseConfig(**self.postgresql.dsn(), password='')
+		self.network_name = 'mainnet'
+		initialize_database(self.db_config, self.network_name)
+
+	def tearDown(self):
+		self.postgresql.stop()
