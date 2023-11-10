@@ -200,7 +200,7 @@ def _assert_get_api_nem_namespace_by_name(client, name, expected_status_code, ex
 	response = client.get(f'/api/nem/namespace/{name}')
 
 	# Assert:
-	assert expected_status_code == response.status_code
+	_assert_status_code_and_headers(response, expected_status_code)
 	assert expected_result == response.json
 
 
@@ -224,12 +224,12 @@ def _get_api_nem_namespaces(client, **query_params):  # pylint: disable=redefine
 	return client.get(f'/api/nem/namespaces?{query_string}')
 
 
-def _assert_get_api_nem_namespaces(client, expected_code, expected_result, **query_params):  # pylint: disable=redefined-outer-name
+def _assert_get_api_nem_namespaces(client, expected_status_code, expected_result, **query_params):  # pylint: disable=redefined-outer-name
 	# Act:
 	response = _get_api_nem_namespaces(client, **query_params)
 
 	# Assert:
-	assert expected_code == response.status_code
+	_assert_status_code_and_headers(response, expected_status_code)
 	assert expected_result == response.json
 
 
@@ -238,7 +238,7 @@ def test_api_nem_namespaces_without_params(client):  # pylint: disable=redefined
 	response = _get_api_nem_namespaces(client)
 
 	# Assert:
-	assert 200 == response.status_code
+	_assert_status_code_and_headers(response, 200)
 	assert [EXPECTED_NAMESPACE_VIEW_2.to_dict(), EXPECTED_NAMESPACE_VIEW_1.to_dict()] == response.json
 
 
@@ -262,31 +262,31 @@ def test_api_nem_namespaces_with_all_params(client):  # pylint: disable=redefine
 	_assert_get_api_nem_namespaces(client, 200, [EXPECTED_NAMESPACE_VIEW_2.to_dict()], limit=1, offset=1, sort='asc')
 
 
-def _assert_get_api_nem_namespaces_fail(client, **query_params):  # pylint: disable=redefined-outer-name
+def _assert_get_api_nem_namespaces_fail(client, expected_status_code, **query_params):  # pylint: disable=redefined-outer-name
 	# Act:
 	response = _get_api_nem_namespaces(client, **query_params)
 
 	# Assert:
-	assert 400 == response.status_code
+	_assert_status_code_and_headers(response, expected_status_code)
 	assert {
 		'message': 'Bad request',
-		'status': 400
+		'status': expected_status_code
 	} == response.json
 
 
 def test_api_nem_namespaces_invalid_limit(client):  # pylint: disable=redefined-outer-name, invalid-name
-	_assert_get_api_nem_namespaces_fail(client, limit=-1)
-	_assert_get_api_nem_namespaces_fail(client, limit='invalid')
+	_assert_get_api_nem_namespaces_fail(client, 400, limit=-1)
+	_assert_get_api_nem_namespaces_fail(client, 400, limit='invalid')
 
 
 def test_api_nem_namespaces_invalid_offset(client):  # pylint: disable=redefined-outer-name, invalid-name
-	_assert_get_api_nem_namespaces_fail(client, offset=-1)
-	_assert_get_api_nem_namespaces_fail(client, offset='invalid')
+	_assert_get_api_nem_namespaces_fail(client, 400, offset=-1)
+	_assert_get_api_nem_namespaces_fail(client, 400, offset='invalid')
 
 
 def test_api_nem_namespaces_invalid_sort(client):  # pylint: disable=redefined-outer-name
-	_assert_get_api_nem_namespaces_fail(client, sort=-1)
-	_assert_get_api_nem_namespaces_fail(client, sort='invalid')
+	_assert_get_api_nem_namespaces_fail(client, 400, sort=-1)
+	_assert_get_api_nem_namespaces_fail(client, 400, sort='invalid')
 
 
 # endregion
