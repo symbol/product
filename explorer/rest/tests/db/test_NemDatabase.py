@@ -80,7 +80,7 @@ class NemDatabaseTest(DatabaseTestBase):
 
 	def _assert_can_query_namespace_by_name(self, name, expected_namespace):
 		# Arrange:
-		nem_db = NemDatabase(self.db_config, self.network)
+		nem_db = NemDatabase(self.db_config, self.network_name)
 
 		# Act:
 		namespace_view = nem_db.get_namespace(name)
@@ -90,7 +90,7 @@ class NemDatabaseTest(DatabaseTestBase):
 
 	def _assert_can_query_namespaces_with_filter(self, query_params, expected_namespaces):
 		# Arrange:
-		nem_db = NemDatabase(self.db_config, self.network)
+		nem_db = NemDatabase(self.db_config, self.network_name)
 
 		# Act:
 		namespaces_view = nem_db.get_namespaces(query_params.limit, query_params.offset, query_params.sort)

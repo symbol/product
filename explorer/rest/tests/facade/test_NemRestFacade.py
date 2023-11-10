@@ -70,7 +70,7 @@ class TestNemRestFacade(DatabaseTestBase):
 
 	def _assert_can_retrieve_namespace(self, name, expected_namespace):
 		# Arrange:
-		nem_rest_facade = NemRestFacade(self.db_config, self.network)
+		nem_rest_facade = NemRestFacade(self.db_config, self.network_name)
 
 		# Act:
 		namespace = nem_rest_facade.get_namespace(name)
@@ -80,7 +80,7 @@ class TestNemRestFacade(DatabaseTestBase):
 
 	def _assert_can_retrieve_namespaces(self, query_params, expected_namespaces):
 		# Arrange:
-		nem_rest_facade = NemRestFacade(self.db_config, self.network)
+		nem_rest_facade = NemRestFacade(self.db_config, self.network_name)
 
 		# Act:
 		namespaces = nem_rest_facade.get_namespaces(query_params.limit, query_params.offset, query_params.sort)
