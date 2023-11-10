@@ -199,8 +199,6 @@ def _assert_get_api_nem_namespace_by_name(client, name, expected_status_code, ex
 	# Act:
 	response = client.get(f'/api/nem/namespace/{name}')
 
-	print(response.json)
-
 	# Assert:
 	assert expected_status_code == response.status_code
 	assert expected_result == response.json
