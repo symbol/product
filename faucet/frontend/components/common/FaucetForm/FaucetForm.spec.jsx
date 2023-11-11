@@ -295,7 +295,10 @@ describe('components/FaucetForm', () => {
 				const toastElement = await screen.findByRole('alert');
 				const toastProgressbar = await screen.findByRole('progressbar');
 
-				assertToast(toastElement, toastProgressbar, $t('notification_error_unqualified_twitter_account'), 'error');
+				assertToast(toastElement, toastProgressbar, $t('notification_error_unqualified_twitter_account', {
+					minFollowers: config.minFollowers,
+					minAccountAge: config.minAccountAge
+				}), 'error');
 			};
 
 			it('renders error toast when twitter account followersCount less than 10', async () => {
