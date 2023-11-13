@@ -25,7 +25,7 @@
     "notification_info_requested": "Requested %amount %currency for %address.",
     "notification_error_address_invalid": "Incorrect address format.",
     "notification_error_amount_invalid": "Incorrect amount.",
-    "notification_error_unqualified_twitter_account": "Twitter account is unqualified.",
+    "notification_error_unqualified_twitter_account": "Twitter account does not meet the requirements, must have a minimum of %minFollowers followers and be registered for at least %minAccountAge days.",
     "notification_error_amount_max_request": "Transfer amount excess limit.",
     "notification_error_account_high_balance": "Your account balance is too high.",
     "notification_error_fund_drains": "Faucet balance not enough to pay out.",

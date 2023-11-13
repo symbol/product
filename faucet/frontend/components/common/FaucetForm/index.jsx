@@ -52,7 +52,7 @@ const FaucetForm = function ({ config, addressValidation }) {
 		return isTwitterVerify;
 	};
 
-	const showErrorToast = errorMessage => toast.error($t(errorMessage), toastConfig);
+	const showErrorToast = (errorMessage, params) => toast.error($t(errorMessage, params), toastConfig);
 
 	const handleAddressOnChange = value => {
 		const formattedAddress = value.replace(/-/g, '').replace(/\s/g, '');
@@ -129,7 +129,10 @@ const FaucetForm = function ({ config, addressValidation }) {
 			return;
 		}
 		else if (!isTwitterVerify) {
-			showErrorToast('notification_error_unqualified_twitter_account');
+			showErrorToast('notification_error_unqualified_twitter_account', {
+				minFollowers: config.minFollowers,
+				minAccountAge: config.minAccountAge
+			});
 			return;
 		}
 
