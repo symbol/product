@@ -27,6 +27,7 @@ const renderTypeMap = {
         '_multisigAddresses',
     ],
     copyButton: [
+        'id',
         'metadataValue',
         'privateKey',
         'publicKey',
