@@ -74,7 +74,7 @@ class MosaicView:  # pylint: disable=too-many-instance-attributes, too-many-loca
 			'description': self.description,
 			'creator': str(self.creator),
 			'registeredHeight': self.registered_height,
-			'registeredTimestamp': self.registered_timestamp,
+			'registeredTimestamp': str(self.registered_timestamp),
 			'initialSupply': self.initial_supply,
 			'totalSupply': self.total_supply,
 			'divisibility': self.divisibility,
@@ -85,6 +85,6 @@ class MosaicView:  # pylint: disable=too-many-instance-attributes, too-many-loca
 			'levyFee': self.levy_fee,
 			'levyRecipient': str(self.levy_recipient) if self.levy_recipient else None,
 			'rootNamespaceRegisteredHeight': self.root_namespace_registered_height,
-			'rootNamespaceRegisteredTimestamp': self.root_namespace_registered_timestamp,
+			'rootNamespaceRegisteredTimestamp': str(self.root_namespace_registered_timestamp),
 			'rootNamespaceExpirationHeight': self.root_namespace_expiration_height
 		}
