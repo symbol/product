@@ -1,4 +1,4 @@
-from binascii import hexlify
+from binascii import hexlify, unhexlify
 
 from symbolchain.CryptoTypes import PublicKey
 from symbolchain.nem.Network import Address, Network
@@ -9,6 +9,10 @@ from rest.model.Mosaic import MosaicView
 from rest.model.Namespace import NamespaceView
 
 from .DatabaseConnection import DatabaseConnectionPool
+
+
+def _format_address_bytes(buffer):
+	return unhexlify(_format_bytes(buffer))
 
 
 def _format_bytes(buffer):
@@ -146,7 +150,7 @@ class NemDatabase(DatabaseConnectionPool):
 			levy_type=levy_type,
 			levy_namespace=result[12],
 			levy_fee=levy_fee,
-			levy_recipient=Address(result[14]) if result[14] else None,
+			levy_recipient=Address(_format_address_bytes(result[14])) if result[14] else None,
 			root_namespace_registered_height=result[15],
 			root_namespace_registered_timestamp=result[16],
 			root_namespace_expiration_height=result[17],
