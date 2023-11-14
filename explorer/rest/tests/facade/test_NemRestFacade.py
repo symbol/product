@@ -1,7 +1,7 @@
 from rest.facade.NemRestFacade import NemRestFacade
 
 from ..db.test_NemDatabase import BlockQueryParams, PaginationQueryParams
-from ..test.DatabaseTestUtils import BLOCK_VIEWS, NAMESPACE_VIEWS, DatabaseTestBase
+from ..test.DatabaseTestUtils import BLOCK_VIEWS, MOSAIC_VIEWS, NAMESPACE_VIEWS, DatabaseTestBase
 
 # region test data
 
@@ -12,6 +12,8 @@ EXPECTED_BLOCK_2 = BLOCK_VIEWS[1].to_dict()
 EXPECTED_NAMESPACE_1 = NAMESPACE_VIEWS[0].to_dict()
 
 EXPECTED_NAMESPACE_2 = NAMESPACE_VIEWS[1].to_dict()
+
+EXPECTED_MOSAIC_1 = MOSAIC_VIEWS[0].to_dict()
 
 # endregion
 
@@ -105,5 +107,25 @@ class TestNemRestFacade(DatabaseTestBase):
 
 	def test_namespaces_sorted_by_id_desc(self):
 		self._assert_can_retrieve_namespaces(PaginationQueryParams(10, 0, 'desc'), [EXPECTED_NAMESPACE_2, EXPECTED_NAMESPACE_1])
+
+	# endregion
+
+	# region mosaic tests
+
+	def _assert_can_retrieve_mosaic(self, name, expected_mosaic):
+		# Arrange:
+		nem_rest_facade = NemRestFacade(self.db_config, self.network_name)
+
+		# Act:
+		mosaic = nem_rest_facade.get_mosaic(name)
+
+		# Assert:
+		self.assertEqual(expected_mosaic, mosaic)
+
+	def test_retrieve_mosaic_by_name(self):
+		self._assert_can_retrieve_mosaic('dragon.dragonfly', EXPECTED_MOSAIC_1)
+
+	def test_returns_none_for_nonexistent_mosaic(self):
+		self._assert_can_retrieve_mosaic('non_existing_mosaic', None)
 
 	# endregion

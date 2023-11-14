@@ -7,7 +7,7 @@ import testing.postgresql
 
 from rest import create_app
 
-from .test.DatabaseTestUtils import BLOCK_VIEWS, NAMESPACE_VIEWS, DatabaseConfig, initialize_database
+from .test.DatabaseTestUtils import BLOCK_VIEWS, MOSAIC_VIEWS, NAMESPACE_VIEWS, DatabaseConfig, initialize_database
 
 DATABASE_CONFIG_INI = 'db_config.ini'
 
@@ -21,6 +21,7 @@ EXPECTED_NAMESPACE_VIEW_1 = NAMESPACE_VIEWS[0]
 
 EXPECTED_NAMESPACE_VIEW_2 = NAMESPACE_VIEWS[1]
 
+EXPECTED_MOSAIC_VIEW_1 = MOSAIC_VIEWS[0]
 
 # endregion
 
@@ -288,5 +289,29 @@ def test_api_nem_namespaces_invalid_sort(client):  # pylint: disable=redefined-o
 	_assert_get_api_nem_namespaces_fail(client, 400, sort=-1)
 	_assert_get_api_nem_namespaces_fail(client, 400, sort='invalid')
 
+
+# endregion
+
+
+# region /mosaic/<name>
+
+def _assert_get_api_nem_mosaic_by_name(client, name, expected_status_code, expected_result):  # pylint: disable=redefined-outer-name
+	# Act:
+	response = client.get(f'/api/nem/mosaic/{name}')
+
+	# Assert:
+	_assert_status_code_and_headers(response, expected_status_code)
+	assert expected_result == response.json
+
+
+def test_api_nem_mosaic_by_name(client):  # pylint: disable=redefined-outer-name
+	_assert_get_api_nem_mosaic_by_name(client, 'dragon.dragonfly', 200, EXPECTED_MOSAIC_VIEW_1.to_dict())
+
+
+def test_api_nem_mosaic_non_exist(client):  # pylint: disable=redefined-outer-name
+	_assert_get_api_nem_mosaic_by_name(client, 'non_exist_mosaic', 404, {
+		'message': 'Resource not found',
+		'status': 404
+	})
 
 # endregion

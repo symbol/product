@@ -2,7 +2,7 @@ from collections import namedtuple
 
 from rest.db.NemDatabase import NemDatabase
 
-from ..test.DatabaseTestUtils import BLOCK_VIEWS, NAMESPACE_VIEWS, DatabaseTestBase
+from ..test.DatabaseTestUtils import BLOCK_VIEWS, MOSAIC_VIEWS, NAMESPACE_VIEWS, DatabaseTestBase
 
 BlockQueryParams = namedtuple('BlockQueryParams', ['limit', 'offset', 'min_height', 'sort'])
 PaginationQueryParams = namedtuple('PaginationQueryParams', ['limit', 'offset', 'sort'])
@@ -16,6 +16,8 @@ EXPECTED_BLOCK_VIEW_2 = BLOCK_VIEWS[1]
 EXPECTED_NAMESPACE_VIEW_1 = NAMESPACE_VIEWS[0]
 
 EXPECTED_NAMESPACE_VIEW_2 = NAMESPACE_VIEWS[1]
+
+EXPECTED_MOSAIC_VIEW_1 = MOSAIC_VIEWS[0]
 
 # endregion
 
@@ -79,10 +81,8 @@ class NemDatabaseTest(DatabaseTestBase):
 	# region namespace tests
 
 	def _assert_can_query_namespace_by_name(self, name, expected_namespace):
-		# Arrange:
 		nem_db = NemDatabase(self.db_config, self.network_name)
 
-		# Act:
 		namespace_view = nem_db.get_namespace(name)
 
 		# Assert:
@@ -121,5 +121,25 @@ class NemDatabaseTest(DatabaseTestBase):
 			PaginationQueryParams(10, 0, 'desc'),
 			[EXPECTED_NAMESPACE_VIEW_2, EXPECTED_NAMESPACE_VIEW_1]
 		)
+
+	# endregion
+
+	# region mosaic tests
+
+	def _assert_can_query_mosaic_by_name(self, namespace_name, expected_mosaic):
+		# Arrange:
+		nem_db = NemDatabase(self.db_config, self.network_name)
+
+		# Act:
+		mosaic_view = nem_db.get_mosaic(namespace_name)
+
+		# Assert:
+		self.assertEqual(expected_mosaic, mosaic_view)
+
+	def test_can_query_mosaic_by_name(self):
+		self._assert_can_query_mosaic_by_name('dragon.dragonfly', EXPECTED_MOSAIC_VIEW_1)
+
+	def test_cannot_query_nonexistent_mosaic(self):
+		self._assert_can_query_mosaic_by_name('non-exist-mosaic', None)
 
 	# endregion
