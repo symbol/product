@@ -16,13 +16,13 @@ class MosaicTest(unittest.TestCase):
 			2,
 			'2015-03-29 20:34:19',
 			100,
-			100,
+			1000,
 			0,
 			False,
 			True,
 			'percentile',
 			'nem.xem',
-			150000,
+			15,
 			Address('NALICEPFLZQRZGPRIJTMJOCPWDNECXTNNG7QLSG3'),
 			2,
 			'2015-03-29 20:34:19',
@@ -46,13 +46,13 @@ class MosaicTest(unittest.TestCase):
 		self.assertEqual(2, mosaic_view.registered_height)
 		self.assertEqual('2015-03-29 20:34:19', mosaic_view.registered_timestamp)
 		self.assertEqual(100, mosaic_view.initial_supply)
-		self.assertEqual(100, mosaic_view.total_supply)
+		self.assertEqual(1000, mosaic_view.total_supply)
 		self.assertEqual(0, mosaic_view.divisibility)
 		self.assertEqual(False, mosaic_view.supply_mutable)
 		self.assertEqual(True, mosaic_view.transferable)
 		self.assertEqual('percentile', mosaic_view.levy_type)
 		self.assertEqual('nem.xem', mosaic_view.levy_namespace)
-		self.assertEqual(150000, mosaic_view.levy_fee)
+		self.assertEqual(15, mosaic_view.levy_fee)
 		self.assertEqual(Address('NALICEPFLZQRZGPRIJTMJOCPWDNECXTNNG7QLSG3'), mosaic_view.levy_recipient)
 		self.assertEqual(2, mosaic_view.root_namespace_registered_height)
 		self.assertEqual('2015-03-29 20:34:19', mosaic_view.root_namespace_registered_timestamp)
@@ -74,13 +74,13 @@ class MosaicTest(unittest.TestCase):
 			'registeredHeight': 2,
 			'registeredTimestamp': '2015-03-29 20:34:19',
 			'initialSupply': 100,
-			'totalSupply': 100,
+			'totalSupply': 1000,
 			'divisibility': 0,
 			'supplyMutable': False,
 			'transferable': True,
 			'levyType': 'percentile',
 			'levyNamespace': 'nem.xem',
-			'levyFee': 150000,
+			'levyFee': 15,
 			'levyRecipient': 'NALICEPFLZQRZGPRIJTMJOCPWDNECXTNNG7QLSG3',
 			'rootNamespaceRegisteredHeight': 2,
 			'rootNamespaceRegisteredTimestamp': '2015-03-29 20:34:19',
