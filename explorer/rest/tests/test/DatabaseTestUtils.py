@@ -7,6 +7,7 @@ from symbolchain.nem.Network import Address
 
 from rest.db.NemDatabase import NemDatabase
 from rest.model.Block import BlockView
+from rest.model.Mosaic import MosaicView
 from rest.model.Namespace import NamespaceView
 
 Block = namedtuple(
@@ -52,6 +53,7 @@ Mosaic = namedtuple(
 		'levy_recipient'
 	]
 )
+
 DatabaseConfig = namedtuple('DatabaseConfig', ['database', 'user', 'password', 'host', 'port'])
 
 # region test data
@@ -110,10 +112,10 @@ MOSAICS = [
 		0,
 		False,
 		True,
-		None,
-		None,
-		None,
-		None
+		2,
+		'nem.xem',
+		15000,
+		'NALICEPFLZQRZGPRIJTMJOCPWDNECXTNNG7QLSG3'
 	)
 ]
 
@@ -147,7 +149,30 @@ NAMESPACE_VIEWS = [
 			'registeredHeight': 2,
 			'registeredTimestamp': '2015-03-29 20:34:19'
 		}]
-	),
+	)
+]
+
+MOSAIC_VIEWS = [
+	MosaicView(
+		'dragonfly',
+		'dragon',
+		MOSAICS[0].description,
+		Address('NALICEPFLZQRZGPRIJTMJOCPWDNECXTNNG7QLSG3'),
+		MOSAICS[0].registered_height,
+		'2015-03-29 20:34:19',
+		MOSAICS[0].initial_supply,
+		MOSAICS[0].total_supply,
+		MOSAICS[0].divisibility,
+		MOSAICS[0].supply_mutable,
+		MOSAICS[0].transferable,
+		'percentile',
+		'nem.xem',
+		0.015,
+		Address('NALICEPFLZQRZGPRIJTMJOCPWDNECXTNNG7QLSG3'),
+		2,
+		'2015-03-29 20:34:19',
+		525602
+	)
 ]
 
 # endregion
