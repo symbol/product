@@ -7,20 +7,6 @@ from ..test.DatabaseTestUtils import BLOCK_VIEWS, MOSAIC_VIEWS, NAMESPACE_VIEWS,
 BlockQueryParams = namedtuple('BlockQueryParams', ['limit', 'offset', 'min_height', 'sort'])
 PaginationQueryParams = namedtuple('PaginationQueryParams', ['limit', 'offset', 'sort'])
 
-# region test data
-
-EXPECTED_BLOCK_VIEW_1 = BLOCK_VIEWS[0]
-
-EXPECTED_BLOCK_VIEW_2 = BLOCK_VIEWS[1]
-
-EXPECTED_NAMESPACE_VIEW_1 = NAMESPACE_VIEWS[0]
-
-EXPECTED_NAMESPACE_VIEW_2 = NAMESPACE_VIEWS[1]
-
-EXPECTED_MOSAIC_VIEW_1 = MOSAIC_VIEWS[0]
-
-# endregion
-
 
 class NemDatabaseTest(DatabaseTestBase):
 
@@ -47,34 +33,34 @@ class NemDatabaseTest(DatabaseTestBase):
 		self.assertEqual(expected_blocks, blocks_view)
 
 	def test_can_query_block_by_height_1(self):
-		self._assert_can_query_block_by_height(1, EXPECTED_BLOCK_VIEW_1)
+		self._assert_can_query_block_by_height(1, BLOCK_VIEWS[0])
 
 	def test_cannot_query_nonexistent_block(self):
 		self._assert_can_query_block_by_height(3, None)
 
 	def test_can_query_blocks_filtered_limit(self):
-		self._assert_can_query_blocks_with_filter(BlockQueryParams(1, 0, 1, 'desc'), [EXPECTED_BLOCK_VIEW_2])
+		self._assert_can_query_blocks_with_filter(BlockQueryParams(1, 0, 1, 'desc'), [BLOCK_VIEWS[1]])
 
 	def test_can_query_blocks_filtered_offset_0(self):
-		self._assert_can_query_blocks_with_filter(BlockQueryParams(1, 0, 0, 'desc'), [EXPECTED_BLOCK_VIEW_2])
+		self._assert_can_query_blocks_with_filter(BlockQueryParams(1, 0, 0, 'desc'), [BLOCK_VIEWS[1]])
 
 	def test_can_query_blocks_filtered_offset_1(self):
-		self._assert_can_query_blocks_with_filter(BlockQueryParams(1, 1, 0, 'desc'), [EXPECTED_BLOCK_VIEW_1])
+		self._assert_can_query_blocks_with_filter(BlockQueryParams(1, 1, 0, 'desc'), [BLOCK_VIEWS[0]])
 
 	def test_can_query_blocks_filtered_min_height_1(self):
-		self._assert_can_query_blocks_with_filter(BlockQueryParams(10, 0, 1, 'desc'), [EXPECTED_BLOCK_VIEW_2, EXPECTED_BLOCK_VIEW_1])
+		self._assert_can_query_blocks_with_filter(BlockQueryParams(10, 0, 1, 'desc'), [BLOCK_VIEWS[1], BLOCK_VIEWS[0]])
 
 	def test_can_query_blocks_filtered_min_height_2(self):
-		self._assert_can_query_blocks_with_filter(BlockQueryParams(10, 0, 2, 'desc'), [EXPECTED_BLOCK_VIEW_2])
+		self._assert_can_query_blocks_with_filter(BlockQueryParams(10, 0, 2, 'desc'), [BLOCK_VIEWS[1]])
 
 	def test_can_query_blocks_filtered_min_height_3(self):
 		self._assert_can_query_blocks_with_filter(BlockQueryParams(10, 0, 3, 'desc'), [])
 
 	def test_can_query_blocks_sorted_by_height_asc(self):
-		self._assert_can_query_blocks_with_filter(BlockQueryParams(10, 0, 0, 'asc'), [EXPECTED_BLOCK_VIEW_1, EXPECTED_BLOCK_VIEW_2])
+		self._assert_can_query_blocks_with_filter(BlockQueryParams(10, 0, 0, 'asc'), [BLOCK_VIEWS[0], BLOCK_VIEWS[1]])
 
 	def test_can_query_blocks_sorted_by_height_desc(self):
-		self._assert_can_query_blocks_with_filter(BlockQueryParams(10, 0, 0, 'desc'), [EXPECTED_BLOCK_VIEW_2, EXPECTED_BLOCK_VIEW_1])
+		self._assert_can_query_blocks_with_filter(BlockQueryParams(10, 0, 0, 'desc'), [BLOCK_VIEWS[1], BLOCK_VIEWS[0]])
 
 	# endregion
 
@@ -99,27 +85,27 @@ class NemDatabaseTest(DatabaseTestBase):
 		self.assertEqual(expected_namespaces, namespaces_view)
 
 	def test_can_query_namespace_by_name(self):
-		self._assert_can_query_namespace_by_name('oxford', EXPECTED_NAMESPACE_VIEW_1)
+		self._assert_can_query_namespace_by_name('oxford', NAMESPACE_VIEWS[0])
 
 	def test_cannot_query_nonexistent_namespace(self):
 		self._assert_can_query_namespace_by_name('non_exist', None)
 
 	def test_can_query_namespaces_filtered_limit(self):
-		self._assert_can_query_namespaces_with_filter(PaginationQueryParams(1, 0, 'desc'), [EXPECTED_NAMESPACE_VIEW_2])
+		self._assert_can_query_namespaces_with_filter(PaginationQueryParams(1, 0, 'desc'), [NAMESPACE_VIEWS[1]])
 
 	def test_can_query_namespaces_filtered_offset_0(self):
-		self._assert_can_query_namespaces_with_filter(PaginationQueryParams(1, 0, 'desc'), [EXPECTED_NAMESPACE_VIEW_2])
+		self._assert_can_query_namespaces_with_filter(PaginationQueryParams(1, 0, 'desc'), [NAMESPACE_VIEWS[1]])
 
 	def test_can_query_namespaces_filtered_offset_1(self):
-		self._assert_can_query_namespaces_with_filter(PaginationQueryParams(1, 1, 'desc'), [EXPECTED_NAMESPACE_VIEW_1])
+		self._assert_can_query_namespaces_with_filter(PaginationQueryParams(1, 1, 'desc'), [NAMESPACE_VIEWS[0]])
 
 	def test_can_query_namespaces_sorted_by_id_asc(self):
-		self._assert_can_query_namespaces_with_filter(PaginationQueryParams(10, 0, 'asc'), [EXPECTED_NAMESPACE_VIEW_1, EXPECTED_NAMESPACE_VIEW_2])
+		self._assert_can_query_namespaces_with_filter(PaginationQueryParams(10, 0, 'asc'), [NAMESPACE_VIEWS[0], NAMESPACE_VIEWS[1]])
 
 	def test_can_query_namespaces_sorted_by_id_desc(self):
 		self._assert_can_query_namespaces_with_filter(
 			PaginationQueryParams(10, 0, 'desc'),
-			[EXPECTED_NAMESPACE_VIEW_2, EXPECTED_NAMESPACE_VIEW_1]
+			[NAMESPACE_VIEWS[1], NAMESPACE_VIEWS[0]]
 		)
 
 	# endregion
@@ -137,7 +123,7 @@ class NemDatabaseTest(DatabaseTestBase):
 		self.assertEqual(expected_mosaic, mosaic_view)
 
 	def test_can_query_mosaic_by_name(self):
-		self._assert_can_query_mosaic_by_name('dragon.dragonfly', EXPECTED_MOSAIC_VIEW_1)
+		self._assert_can_query_mosaic_by_name('dragon.dragonfly', MOSAIC_VIEWS[0])
 
 	def test_cannot_query_nonexistent_mosaic(self):
 		self._assert_can_query_mosaic_by_name('non-exist-mosaic', None)
