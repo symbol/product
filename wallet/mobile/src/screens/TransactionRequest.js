@@ -17,7 +17,9 @@ import {
     TableView,
     TitleBar,
     TransactionGraphic,
+    Widget,
 } from 'src/components';
+import { TransactionType } from 'src/config';
 import { $t } from 'src/localization';
 import { Router } from 'src/Router';
 import { MosaicService, NamespaceService, TransactionService } from 'src/services';
@@ -27,6 +29,7 @@ import {
     getTransactionFees,
     getUnresolvedIdsFromTransactionDTOs,
     handleError,
+    isAggregateTransaction,
     publicAccountFromPrivateKey,
     transactionFromDTO,
     transactionFromPayload,
@@ -35,6 +38,25 @@ import {
     usePasscode,
     useToggle,
 } from 'src/utils';
+
+const SUPPORTED_TRANSACTION_TYPES = [
+    TransactionType.AGGREGATE_BONDED,
+    TransactionType.AGGREGATE_COMPLETE,
+    TransactionType.TRANSFER,
+    TransactionType.ADDRESS_ALIAS,
+    TransactionType.MOSAIC_ALIAS,
+    TransactionType.NAMESPACE_REGISTRATION,
+    TransactionType.MOSAIC_DEFINITION,
+    TransactionType.MOSAIC_SUPPLY_CHANGE,
+    TransactionType.MOSAIC_SUPPLY_REVOCATION,
+    TransactionType.VRF_KEY_LINK,
+    TransactionType.ACCOUNT_KEY_LINK,
+    TransactionType.NODE_KEY_LINK,
+    TransactionType.VOTING_KEY_LINK,
+    TransactionType.ACCOUNT_METADATA,
+    TransactionType.NAMESPACE_METADATA,
+    TransactionType.MOSAIC_METADATA,
+];
 
 export const TransactionRequest = connect((state) => ({
     currentAccount: state.account.current,
@@ -55,6 +77,7 @@ export const TransactionRequest = connect((state) => ({
     const [isNetworkSupported, setIsNetworkSupported] = useState(false);
     const [isConfirmVisible, toggleConfirm] = useToggle(false);
     const [isSuccessAlertVisible, toggleSuccessAlert] = useToggle(false);
+    const [isErrorAlertVisible, toggleErrorAlert] = useToggle(false);
     const isTransactionLoaded = !!transaction;
     const cosignatoryList = { cosignatories };
     const isAggregate = !!transaction?.innerTransactions;
@@ -64,8 +87,16 @@ export const TransactionRequest = connect((state) => ({
         [payload]
     );
 
-    const getTransactionPreviewTable = (data) =>
-        _.omit(data, ['amount', 'innerTransactions', 'signTransactionObject', 'signerPublicKey', 'deadline']);
+    const getTransactionPreviewTable = (data, isEmbedded) =>
+        _.omit(data, [
+            'amount',
+            'innerTransactions',
+            'signTransactionObject',
+            'signerPublicKey',
+            'deadline',
+            'cosignaturePublicKeys',
+            isEmbedded ? 'fee' : null,
+        ]);
     const [loadTransaction, isTransactionLoading] = useDataManager(
         async (payload, generationHash) => {
             const transactionDTO = transactionFromPayload(payload);
@@ -90,14 +121,27 @@ export const TransactionRequest = connect((state) => ({
                 styleAmount.push(styles.incoming);
             }
 
+            let isTypeSupported = false;
+
+            if (isAggregateTransaction(transaction)) {
+                isTypeSupported = transaction.innerTransactions.every((transaction) =>
+                    SUPPORTED_TRANSACTION_TYPES.some((item) => item === transaction.type)
+                );
+            } else {
+                isTypeSupported = SUPPORTED_TRANSACTION_TYPES.some((item) => item === transaction.type);
+            }
+
             setPayload(payload);
             setTransaction(transaction);
-            setIsTypeSupported(true);
+            setIsTypeSupported(isTypeSupported);
             setIsNetworkSupported(generationHash === networkProperties.generationHash);
             setStyleAmount(styleAmount);
         },
         null,
-        handleError
+        (e) => {
+            handleError(e);
+            toggleErrorAlert();
+        }
     );
     const [send, isSending] = useDataManager(
         async () => {
@@ -137,7 +181,7 @@ export const TransactionRequest = connect((state) => ({
     useInit(loadState, isWalletReady, [currentAccount]);
 
     const isButtonDisabled = !isTransactionLoaded || !isTypeSupported || !isNetworkSupported || isMultisigAccount;
-    const isLoading = !isAccountReady || isTransactionLoading || isSending || !isTransactionLoaded || isStateLoading;
+    const isLoading = !isAccountReady || isTransactionLoading || isSending || isStateLoading;
 
     return (
         <Screen titleBar={<TitleBar accountSelector settings currentAccount={currentAccount} />} isLoading={isLoading}>
@@ -166,13 +210,27 @@ export const TransactionRequest = connect((state) => ({
                     </FormItem>
                 )}
                 {!isTypeSupported && (
-                    <FormItem>
-                        <Alert
-                            type="warning"
-                            title={$t('warning_transactionRequest_transactionType_title')}
-                            body={$t('warning_transactionRequest_transactionType_body')}
-                        />
-                    </FormItem>
+                    <>
+                        <FormItem>
+                            <Alert
+                                type="warning"
+                                title={$t('warning_transactionRequest_transactionType_title')}
+                                body={$t('warning_transactionRequest_transactionType_body')}
+                            />
+                        </FormItem>
+                        <FormItem>
+                            <Widget>
+                                <FormItem>
+                                    <StyledText type="subtitle">{$t('s_transactionRequest_supportedTypes_title')}</StyledText>
+                                    {SUPPORTED_TRANSACTION_TYPES.map((type, index) => (
+                                        <StyledText type="body" key={index}>
+                                            {$t(`transactionDescriptor_${type}`)}
+                                        </StyledText>
+                                    ))}
+                                </FormItem>
+                            </Widget>
+                        </FormItem>
+                    </>
                 )}
                 <FormItem>
                     <StyledText type="label">{$t('s_transactionDetails_amount')}</StyledText>
@@ -181,11 +239,12 @@ export const TransactionRequest = connect((state) => ({
                     </StyledText>
                 </FormItem>
                 <FormItem>
-                    {!isAggregate && <TransactionGraphic transaction={transaction} isExpanded />}
-                    {isAggregate &&
+                    {isTransactionLoaded && !isAggregate && <TransactionGraphic transaction={transaction} isExpanded={isTypeSupported} />}
+                    {isTransactionLoaded &&
+                        isAggregate &&
                         transaction.innerTransactions.map((item, index) => (
-                            <FormItem type="list" key={'inner' + index}>
-                                <TransactionGraphic transaction={item} isExpanded />
+                            <FormItem type="list" key={'tx' + index}>
+                                <TransactionGraphic transaction={item} isExpanded={isTypeSupported} />
                             </FormItem>
                         ))}
                 </FormItem>
@@ -209,7 +268,7 @@ export const TransactionRequest = connect((state) => ({
                         </FormItem>
                         {transaction?.innerTransactions?.map((innerTransaction, index) => (
                             <FormItem key={'inner' + index} clear="horizontal">
-                                <TableView data={getTransactionPreviewTable(innerTransaction)} />
+                                <TableView data={getTransactionPreviewTable(innerTransaction, true)} />
                             </FormItem>
                         ))}
                     </ScrollView>
@@ -223,6 +282,13 @@ export const TransactionRequest = connect((state) => ({
                 title={$t('transaction_success_title')}
                 text={$t('transaction_success_text')}
                 isVisible={isSuccessAlertVisible}
+                onSuccess={Router.goToHome}
+            />
+            <DialogBox
+                type="alert"
+                title={$t('s_transactionRequest_error_title')}
+                text={$t('s_transactionRequest_error_text')}
+                isVisible={isErrorAlertVisible}
                 onSuccess={Router.goToHome}
             />
         </Screen>

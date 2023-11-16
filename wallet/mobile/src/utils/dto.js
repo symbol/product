@@ -168,12 +168,12 @@ export const transactionToDTO = (transaction, networkProperties, currentAccount)
         //     return accountMosaicRestrictionTransactionToDTO(transaction, networkProperties);
         // case TransactionType.MULTISIG_ACCOUNT_MODIFICATION:
         //     return multisigAccountModificationTransactionToDTO(transaction, networkProperties);
-        // case TransactionType.ACCOUNT_METADATA:
-        //     return accountMetadataTransactionToDTO(transaction, networkProperties);
-        // case TransactionType.NAMESPACE_METADATA:
-        //     return namespaceMetadataTransactionToDTO(transaction, networkProperties);
-        // case TransactionType.MOSAIC_METADATA:
-        //     return mosaicMetadataTransactionToDTO(transaction, networkProperties);
+        case TransactionType.ACCOUNT_METADATA:
+            return accountMetadataTransactionToDTO(transaction, networkProperties);
+        case TransactionType.NAMESPACE_METADATA:
+            return namespaceMetadataTransactionToDTO(transaction, networkProperties);
+        case TransactionType.MOSAIC_METADATA:
+            return mosaicMetadataTransactionToDTO(transaction, networkProperties);
         case TransactionType.PERSISTENT_DELEGATION_REQUEST:
             return persistentDelegationRequestTransactionToDTO(transaction, networkProperties);
     }
@@ -228,10 +228,19 @@ export const aggregateTransactionFromDTO = (transaction, config) => {
         info.signTransactionObject = transaction;
     }
 
+    // if (transaction.cosignatures) {
+    //     info.cosignatures = transaction.cosignatures.map((signature) => ({
+    //         signerPublicKey: signature.signer.publicKey,
+    //         signature: signature.signature,
+    //         version: signature.version.toString()
+    //     }));
+    // }
+
     return info;
 };
 
 export const aggregateTransactionToDTO = (transaction, networkProperties, currentAccount) => {
+    //const networkType = networkIdentifierToNetworkType(networkProperties.networkIdentifier);
     const innerTransactions = transaction.innerTransactions.map((innerTransaction) =>
         transactionToDTO(innerTransaction, networkProperties, currentAccount)
     );
@@ -242,6 +251,13 @@ export const aggregateTransactionToDTO = (transaction, networkProperties, curren
             innerTransactions,
             networkIdentifierToNetworkType(networkProperties.networkIdentifier),
             [],
+            // transaction.cosignatures
+            //     ? transaction.cosignatures.map(signature => new AggregateTransactionCosignature(
+            //         signature.signature,
+            //         new PublicAccount.createFromPublicKey(signature.signerPublicKey, networkType),
+            //         UInt64.fromNumericString(signature.version)
+            //     ))
+            //     : [],
             createMaxFeeDTO(transaction, networkProperties),
             undefined,
             createSignerDTO(transaction, networkProperties)
@@ -253,6 +269,13 @@ export const aggregateTransactionToDTO = (transaction, networkProperties, curren
         innerTransactions,
         networkIdentifierToNetworkType(networkProperties.networkIdentifier),
         [],
+        // transaction.cosignatures
+        //     ? transaction.cosignatures.map(signature => new AggregateTransactionCosignature(
+        //         signature.signature,
+        //         new PublicAccount.createFromPublicKey(signature.signerPublicKey, networkType),
+        //         UInt64.fromNumericString(signature.version)
+        //     ))
+        //     : [],
         createMaxFeeDTO(transaction, networkProperties),
         undefined,
         createSignerDTO(transaction, networkProperties)
