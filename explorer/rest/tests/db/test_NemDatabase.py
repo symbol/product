@@ -8,7 +8,7 @@ BlockQueryParams = namedtuple('BlockQueryParams', ['limit', 'offset', 'min_heigh
 PaginationQueryParams = namedtuple('PaginationQueryParams', ['limit', 'offset', 'sort'])
 
 
-class NemDatabaseTest(DatabaseTestBase):
+class NemDatabaseTest(DatabaseTestBase):  # pylint: disable=too-many-public-methods
 
 	# region block tests
 
@@ -127,5 +127,37 @@ class NemDatabaseTest(DatabaseTestBase):
 
 	def test_cannot_query_nonexistent_mosaic(self):
 		self._assert_can_query_mosaic_by_name('non-exist-mosaic', None)
+
+	# endregion
+
+	# region mosaics tests
+
+	def _assert_can_query_mosaics_with_filter(self, query_params, expected_mosaics):
+		# Arrange:
+		nem_db = NemDatabase(self.db_config, self.network_name)
+
+		# Act:
+		mosaics_view = nem_db.get_mosaics(query_params.limit, query_params.offset, query_params.sort)
+
+		# Assert:
+		self.assertEqual(expected_mosaics, mosaics_view)
+
+	def test_can_query_mosaics_filtered_limit(self):
+		self._assert_can_query_mosaics_with_filter(PaginationQueryParams(1, 0, 'desc'), [MOSAIC_VIEWS[1]])
+
+	def test_can_query_mosaics_filtered_offset_0(self):
+		self._assert_can_query_mosaics_with_filter(PaginationQueryParams(1, 0, 'desc'), [MOSAIC_VIEWS[1]])
+
+	def test_can_query_mosaics_filtered_offset_1(self):
+		self._assert_can_query_mosaics_with_filter(PaginationQueryParams(1, 1, 'desc'), [MOSAIC_VIEWS[0]])
+
+	def test_can_query_mosaics_sorted_by_id_asc(self):
+		self._assert_can_query_mosaics_with_filter(PaginationQueryParams(10, 0, 'asc'), [MOSAIC_VIEWS[0], MOSAIC_VIEWS[1]])
+
+	def test_can_query_mosaics_sorted_by_id_desc(self):
+		self._assert_can_query_mosaics_with_filter(
+			PaginationQueryParams(10, 0, 'desc'),
+			[MOSAIC_VIEWS[1], MOSAIC_VIEWS[0]]
+		)
 
 	# endregion

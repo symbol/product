@@ -76,6 +76,44 @@ class NemDatabase(DatabaseConnectionPool):
 				n.sub_namespaces
 		'''
 
+	def _generate_mosaic_sql_query(self):  # pylint: disable=no-self-use
+		"""Base SQL query for mosaics."""
+
+		return '''
+			SELECT
+				m1.namespace_name,
+				m1.description,
+				m1.creator,
+				m1.registered_height as mosaic_registered_height,
+				b2.timestamp as mosaic_registered_timestamp,
+				m1.initial_supply,
+				m1.total_supply,
+				m1.divisibility,
+				m1.supply_mutable,
+				m1.transferable,
+				m1.levy_type,
+				m1.levy_namespace_name,
+				CASE
+					WHEN m1.levy_namespace_name = 'nem.xem' THEN 6
+					WHEN m1.levy_namespace_name IS NULL THEN NULL
+					ELSE m2.divisibility
+				END AS levy_namespace_divisibility,
+				m1.levy_fee,
+				m1.levy_recipient,
+				n.registered_height AS root_namespace_registered_height,
+				b1.timestamp AS root_namespace_registered_timestamp,
+				n.expiration_height
+			FROM mosaics m1
+			LEFT JOIN mosaics m2
+				ON m1.levy_namespace_name = m2.namespace_name AND m1.levy_namespace_name IS NOT NULL
+			LEFT JOIN namespaces n
+				ON m1.root_namespace = n.root_namespace
+			LEFT JOIN blocks b1
+				ON b1.height = n.registered_height
+			LEFT JOIN blocks b2
+				ON b2.height = m1.registered_height
+		'''
+
 	def _create_block_view(self, result):
 		harvest_public_key = PublicKey(_format_bytes(result[7]))
 		return BlockView(
@@ -221,43 +259,31 @@ class NemDatabase(DatabaseConnectionPool):
 	def get_mosaic(self, namespace_name):
 		"""Gets mosaic by namespace name in database."""
 
+		sql = self._generate_mosaic_sql_query()
+
+		sql += ' WHERE m1.namespace_name = %s'
+
+		params = (namespace_name,)
+
 		with self.connection() as connection:
 			cursor = connection.cursor()
-			cursor.execute('''
-				SELECT
-					m1.namespace_name,
-					m1.description,
-					m1.creator,
-					m1.registered_height as mosaic_registered_height,
-					b2.timestamp as mosaic_registered_timestamp,
-					m1.initial_supply,
-					m1.total_supply,
-					m1.divisibility,
-					m1.supply_mutable,
-					m1.transferable,
-					m1.levy_type,
-					m1.levy_namespace_name,
-					CASE
-						WHEN m1.levy_namespace_name = 'nem.xem' THEN 6
-						WHEN m1.levy_namespace_name IS NULL THEN NULL
-						ELSE m2.divisibility
-					END AS levy_namespace_divisibility,
-					m1.levy_fee,
-					m1.levy_recipient,
-					n.registered_height AS root_namespace_registered_height,
-					b1.timestamp AS root_namespace_registered_timestamp,
-					n.expiration_height
-				FROM mosaics m1
-				LEFT JOIN mosaics m2
-					ON m1.levy_namespace_name = m2.namespace_name AND m1.levy_namespace_name IS NOT NULL
-				LEFT JOIN namespaces n
-					ON m1.root_namespace = n.root_namespace
-				LEFT JOIN blocks b1
-					ON b1.height = n.registered_height
-				LEFT JOIN blocks b2
-					ON b2.height = m1.registered_height
-				WHERE m1.namespace_name = %s
-			''', (namespace_name,))
+			cursor.execute(sql, params)
 			result = cursor.fetchone()
 
 			return self._create_mosaic_view(result) if result else None
+
+	def get_mosaics(self, limit, offset, sort):
+		"""Gets mosaics pagination in database."""
+
+		sql = self._generate_mosaic_sql_query()
+
+		sql += f' ORDER BY m1.id {sort} LIMIT %s OFFSET %s'
+
+		params = (limit, offset)
+
+		with self.connection() as connection:
+			cursor = connection.cursor()
+			cursor.execute(sql, params)
+			results = cursor.fetchall()
+
+			return [self._create_mosaic_view(result) for result in results]
