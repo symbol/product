@@ -28,17 +28,17 @@
 		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
 		8D52D20F63C745A58751AEA9 /* Carbon-Bold.otf in Resources */ = {isa = PBXBuildFile; fileRef = E2D34C28F460410DA752653E /* Carbon-Bold.otf */; };
 		9AC94850DAEE4B9E943B707B /* Protipo-Medium.otf in Resources */ = {isa = PBXBuildFile; fileRef = 4170550CB97044DF9DC71DF9 /* Protipo-Medium.otf */; };
+		9E554137606B4AC999BD6932 /* SofiaSansCondensed-ExtraBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 3FDC5432061645E7882B6512 /* SofiaSansCondensed-ExtraBold.ttf */; };
 		A154303EC74F46F2A4D6E71F /* Protipo-Semibold-Italic.otf in Resources */ = {isa = PBXBuildFile; fileRef = A403BC1566FE4E37B2DAA735 /* Protipo-Semibold-Italic.otf */; };
 		A32224BBBA9F49ABB4D73A67 /* Rajdhani-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 4F5C9DCF0E72423A874CCC1B /* Rajdhani-Bold.ttf */; };
 		A64A152FF5A84D21AABFD1AD /* Protipo-Regular-Italic.otf in Resources */ = {isa = PBXBuildFile; fileRef = B2B66F2159FD4BD29997BFAF /* Protipo-Regular-Italic.otf */; };
 		AA6E2DAF336146BEA6966AF3 /* Protipo-Extrabold-Italic.otf in Resources */ = {isa = PBXBuildFile; fileRef = A708FDF4397C410997474DAA /* Protipo-Extrabold-Italic.otf */; };
 		AB20566DC84F4A1BADD865D2 /* Rajdhani-Light.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 9C849DCD4D5F441783D4FE68 /* Rajdhani-Light.ttf */; };
+		C3F4134096BC4DAA813ADD4F /* JetBrainsMono-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 2767D2E0CC044F68BA03C7A5 /* JetBrainsMono-Bold.ttf */; };
 		CBD19BF835944F359A8344F7 /* Protipo-Light-Italic.otf in Resources */ = {isa = PBXBuildFile; fileRef = 6B1F36E085634AD6AD39BE4F /* Protipo-Light-Italic.otf */; };
 		E0E12766B5BC4BE0A1C4443F /* Carbon-Thin.otf in Resources */ = {isa = PBXBuildFile; fileRef = 60801E6A6180448798E0229B /* Carbon-Thin.otf */; };
 		F2B63AF531824BDD96276884 /* Protipo-Regular.otf in Resources */ = {isa = PBXBuildFile; fileRef = 91DE3FA62B3D4492A63B84CA /* Protipo-Regular.otf */; };
 		FDC404BB27F347F89CE6F670 /* Carbon-Regular.otf in Resources */ = {isa = PBXBuildFile; fileRef = F3D2F271F96E497483AE76E2 /* Carbon-Regular.otf */; };
-		9E554137606B4AC999BD6932 /* SofiaSansCondensed-ExtraBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 3FDC5432061645E7882B6512 /* SofiaSansCondensed-ExtraBold.ttf */; };
-		C3F4134096BC4DAA813ADD4F /* JetBrainsMono-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 2767D2E0CC044F68BA03C7A5 /* JetBrainsMono-Bold.ttf */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -64,8 +64,10 @@
 		160BE945B20944199A2345DC /* Protipo-Bold.otf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Protipo-Bold.otf"; path = "../src/assets/fonts/Protipo-Bold.otf"; sourceTree = "<group>"; };
 		19F6CBCC0A4E27FBF8BF4A61 /* libPods-SymbolMobileWallet-SymbolMobileWalletTests.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-SymbolMobileWallet-SymbolMobileWalletTests.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		1CA1BEF6966D491B9C7B6F09 /* Protipo-Semibold.otf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Protipo-Semibold.otf"; path = "../src/assets/fonts/Protipo-Semibold.otf"; sourceTree = "<group>"; };
+		2767D2E0CC044F68BA03C7A5 /* JetBrainsMono-Bold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "JetBrainsMono-Bold.ttf"; path = "../src/assets/fonts/JetBrainsMono-Bold.ttf"; sourceTree = "<group>"; };
 		3B4392A12AC88292D35C810B /* Pods-SymbolMobileWallet.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-SymbolMobileWallet.debug.xcconfig"; path = "Target Support Files/Pods-SymbolMobileWallet/Pods-SymbolMobileWallet.debug.xcconfig"; sourceTree = "<group>"; };
 		3DDC4D41C0BD495D92453579 /* Rajdhani-SemiBold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Rajdhani-SemiBold.ttf"; path = "../src/assets/fonts/Rajdhani-SemiBold.ttf"; sourceTree = "<group>"; };
+		3FDC5432061645E7882B6512 /* SofiaSansCondensed-ExtraBold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "SofiaSansCondensed-ExtraBold.ttf"; path = "../src/assets/fonts/SofiaSansCondensed-ExtraBold.ttf"; sourceTree = "<group>"; };
 		4170550CB97044DF9DC71DF9 /* Protipo-Medium.otf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Protipo-Medium.otf"; path = "../src/assets/fonts/Protipo-Medium.otf"; sourceTree = "<group>"; };
 		4F5C9DCF0E72423A874CCC1B /* Rajdhani-Bold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Rajdhani-Bold.ttf"; path = "../src/assets/fonts/Rajdhani-Bold.ttf"; sourceTree = "<group>"; };
 		5709B34CF0A7D63546082F79 /* Pods-SymbolMobileWallet.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-SymbolMobileWallet.release.xcconfig"; path = "Target Support Files/Pods-SymbolMobileWallet/Pods-SymbolMobileWallet.release.xcconfig"; sourceTree = "<group>"; };
@@ -92,8 +94,6 @@
 		E2D34C28F460410DA752653E /* Carbon-Bold.otf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Carbon-Bold.otf"; path = "../src/assets/fonts/Carbon-Bold.otf"; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		F3D2F271F96E497483AE76E2 /* Carbon-Regular.otf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Carbon-Regular.otf"; path = "../src/assets/fonts/Carbon-Regular.otf"; sourceTree = "<group>"; };
-		3FDC5432061645E7882B6512 /* SofiaSansCondensed-ExtraBold.ttf */ = {isa = PBXFileReference; name = "SofiaSansCondensed-ExtraBold.ttf"; path = "../src/assets/fonts/SofiaSansCondensed-ExtraBold.ttf"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
-		2767D2E0CC044F68BA03C7A5 /* JetBrainsMono-Bold.ttf */ = {isa = PBXFileReference; name = "JetBrainsMono-Bold.ttf"; path = "../src/assets/fonts/JetBrainsMono-Bold.ttf"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -593,9 +593,9 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
-				CODE_SIGN_IDENTITY = "iPhone Distribution";
-				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 2303.22.1900;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 2311.14.2200;
 				DEVELOPMENT_TEAM = W594P93ZB8;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = SymbolMobileWallet/Info.plist;
@@ -612,7 +612,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.nemgrouplimited.symbolwallet;
 				PRODUCT_NAME = SymbolMobileWallet;
-				PROVISIONING_PROFILE_SPECIFIER = "symbol-wallet-dist";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -626,9 +626,9 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
-				CODE_SIGN_IDENTITY = "iPhone Distribution";
-				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 2303.22.1900;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 2311.14.2200;
 				DEVELOPMENT_TEAM = W594P93ZB8;
 				INFOPLIST_FILE = SymbolMobileWallet/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 11.0;
@@ -644,7 +644,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.nemgrouplimited.symbolwallet;
 				PRODUCT_NAME = SymbolMobileWallet;
-				PROVISIONING_PROFILE_SPECIFIER = "symbol-wallet-dist";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				VERSIONING_SYSTEM = "apple-generic";
@@ -700,7 +700,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 12.4;
+				IPHONEOS_DEPLOYMENT_TARGET = 11.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					/usr/lib/swift,
 					"$(inherited)",
@@ -765,7 +765,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 12.4;
+				IPHONEOS_DEPLOYMENT_TARGET = 11.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					/usr/lib/swift,
 					"$(inherited)",
