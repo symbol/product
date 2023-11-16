@@ -254,6 +254,7 @@
 	"value_blockGenerationTime": "{{value}} seconds",
 	"value_expiration": "In {{value}} blocks",
 	"value_expired": "In 0 blocks (Expired)",
+	"value_neverExpired": "Never expired (unlimited duration)",
 	"value_supplyIncrease": "Increase",
 	"value_supplyDecrease": "Decrease",
 	"value_keyLink": "Link",

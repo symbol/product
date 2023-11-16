@@ -249,6 +249,7 @@
 	"value_blockGenerationTime": "{{value}} секунд",
 	"value_expiration": "Через {{value}} блоків",
 	"value_expired": "Через 0 блоків (прострочено)",
+	"value_neverExpired": "Ніколи (безстрокове існування)",
 	"value_supplyIncrease": "Збільшити",
 	"value_supplyDecrease": "Зменшити",
 	"value_keyLink": "Прив'язати",

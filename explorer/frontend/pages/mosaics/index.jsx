@@ -46,7 +46,7 @@ const Mosaics = ({ mosaics }) => {
 			key: 'status',
 			size: '5rem',
 			renderValue: (value, row) => {
-				const isActive = chainHeight < row.namespaceExpirationHeight;
+				const isActive = row.isUnlimitedDuration || chainHeight < row.namespaceExpirationHeight;
 				const status = isActive ? 'active' : 'inactive';
 				const text = isActive ? t('label_active') : t('label_expired');
 

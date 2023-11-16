@@ -49,7 +49,7 @@ const Blocks = ({ namespaces }) => {
 			key: 'status',
 			size: '5rem',
 			renderValue: (value, row) => {
-				const isActive = chainHeight < row.expirationHeight;
+				const isActive = row.isUnlimitedDuration || chainHeight < row.expirationHeight;
 				const status = isActive ? 'active' : 'inactive';
 				const text = isActive ? t('label_active') : t('label_expired');
 

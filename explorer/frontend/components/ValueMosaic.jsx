@@ -18,7 +18,8 @@ const ValueMosaic = ({
 	isNavigationDisabled,
 	isTickerShown,
 	chainHeight,
-	expirationHeight
+	expirationHeight,
+	isUnlimitedDuration
 }) => {
 	let displayedName;
 	let imageSrc;
@@ -34,7 +35,7 @@ const ValueMosaic = ({
 	const [integer, decimal] = isAmountExist ? amount.toString().split('.') : ['-'];
 	const finalMosaicId = isNative ? config.NATIVE_MOSAIC_ID : mosaicId;
 
-	const dot = !chainHeight ? null : chainHeight < expirationHeight ? 'green' : 'red';
+	const dot = !chainHeight ? null : isUnlimitedDuration ? 'green' : chainHeight < expirationHeight ? 'green' : 'red';
 
 	if (finalMosaicId === config.NATIVE_MOSAIC_ID) {
 		displayedName = isTickerShown ? config.NATIVE_MOSAIC_TICKER : '';

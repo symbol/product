@@ -3,7 +3,7 @@ import ValueTimestamp from './ValueTimestamp';
 import styles from '@/styles/components/ItemMosaicMobile.module.scss';
 
 const ItemMosaicMobile = ({ data, chainHeight }) => {
-	const { name, id, supply, registrationTimestamp, namespaceExpirationHeight } = data;
+	const { name, id, supply, registrationTimestamp, namespaceExpirationHeight, isUnlimitedDuration } = data;
 
 	return (
 		<div className={styles.itemMosaicMobile}>
@@ -14,6 +14,7 @@ const ItemMosaicMobile = ({ data, chainHeight }) => {
 				size="md"
 				chainHeight={chainHeight}
 				expirationHeight={namespaceExpirationHeight}
+				isUnlimitedDuration={isUnlimitedDuration}
 			/>
 			<ValueTimestamp className={styles.timestamp} value={registrationTimestamp} />
 		</div>

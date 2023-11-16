@@ -62,6 +62,7 @@ const MosaicInfo = ({ mosaicInfo, preloadedTransactions, preloadedAccounts }) =>
 		type: mosaicInfo.isSupplyMutable ? 'true' : 'false',
 		text: t('label_supplyMutable')
 	};
+	const isExpirationShown = !mosaicInfo.isUnlimitedDuration;
 
 	const accountsTableColumns = [
 		{
@@ -121,7 +122,11 @@ const MosaicInfo = ({ mosaicInfo, preloadedTransactions, preloadedAccounts }) =>
 			const chainHeight = await fetchChainHight();
 			const expireIn = mosaicInfo.namespaceExpirationHeight - chainHeight;
 			const isExpired = expireIn < 0;
-			const expirationText = isExpired ? t('value_expired') : t('value_expiration', { value: expireIn });
+			const expirationText = mosaicInfo.isUnlimitedDuration
+				? t('value_neverExpired')
+				: isExpired
+				? t('value_expired')
+				: t('value_expiration', { value: expireIn });
 			const progressType = isExpired ? 'danger' : '';
 			setChainHeight(chainHeight);
 			setExpirationText(expirationText);
@@ -170,14 +175,16 @@ const MosaicInfo = ({ mosaicInfo, preloadedTransactions, preloadedAccounts }) =>
 						<Field title={t('field_namespaceExpiration')} description={t('field_mosaicNamespaceExpiration_description')}>
 							{nullableValueToText(expirationText)}
 						</Field>
-						<Progress
-							titleLeft={t('field_namespaceRegistrationHeight')}
-							titleRight={t('field_namespaceExpirationHeight')}
-							valueLeft={mosaicInfo.namespaceRegistrationHeight}
-							valueRight={mosaicInfo.namespaceExpirationHeight}
-							value={chainHeight}
-							type={progressType}
-						/>
+						{isExpirationShown && (
+							<Progress
+								titleLeft={t('field_namespaceRegistrationHeight')}
+								titleRight={t('field_namespaceExpirationHeight')}
+								valueLeft={mosaicInfo.namespaceRegistrationHeight}
+								valueRight={mosaicInfo.namespaceExpirationHeight}
+								value={chainHeight}
+								type={progressType}
+							/>
+						)}
 					</div>
 				</Section>
 			</div>

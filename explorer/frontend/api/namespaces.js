@@ -37,6 +37,7 @@ const formatNamespace = data => {
 		registrationTimestamp: data.registeredTimestamp,
 		registrationHeight: data.registeredHeight,
 		expirationHeight: data.expirationHeight,
+		isUnlimitedDuration: !data.expirationHeight,
 		namespaceMosaics: Object.entries(namespaceMosaicsMap).map(([namespaceName, mosaics]) => ({
 			namespaceId: namespaceName,
 			namespaceName,
