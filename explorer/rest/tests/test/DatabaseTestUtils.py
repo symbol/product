@@ -116,6 +116,22 @@ MOSAICS = [
 		'nem.xem',
 		15000,
 		'NALICEPFLZQRZGPRIJTMJOCPWDNECXTNNG7QLSG3'
+	),
+	Mosaic(
+		'dragon',
+		'dragon.hunter',
+		'hunter information',
+		'8D07F90FB4BBE7715FA327C926770166A11BE2E494A970605F2E12557F66C9B9',
+		2,
+		100,
+		100,
+		6,
+		False,
+		True,
+		None,
+		None,
+		None,
+		None
 	)
 ]
 
@@ -141,14 +157,24 @@ NAMESPACE_VIEWS = [
 		'2015-03-29 20:34:19',
 		NAMESPACES[1].expiration_height,
 		[],
-		[{
-			'namespaceName': 'dragon',
-			'mosaicName': 'dragonfly',
-			'totalSupply': 100,
-			'divisibility': 0,
-			'registeredHeight': 2,
-			'registeredTimestamp': '2015-03-29 20:34:19'
-		}]
+		[
+			{
+				'namespaceName': 'dragon',
+				'mosaicName': 'hunter',
+				'totalSupply': 100,
+				'divisibility': 6,
+				'registeredHeight': 2,
+				'registeredTimestamp': '2015-03-29 20:34:19'
+			},
+			{
+				'namespaceName': 'dragon',
+				'mosaicName': 'dragonfly',
+				'totalSupply': 100,
+				'divisibility': 0,
+				'registeredHeight': 2,
+				'registeredTimestamp': '2015-03-29 20:34:19'
+			}
+		]
 	)
 ]
 
@@ -169,6 +195,26 @@ MOSAIC_VIEWS = [
 		'nem.xem',
 		0.015,
 		Address('NALICEPFLZQRZGPRIJTMJOCPWDNECXTNNG7QLSG3'),
+		2,
+		'2015-03-29 20:34:19',
+		525602
+	),
+	MosaicView(
+		'hunter',
+		'dragon',
+		MOSAICS[1].description,
+		Address('NANEMOABLAGR72AZ2RV3V4ZHDCXW25XQ73O7OBT5'),
+		MOSAICS[1].registered_height,
+		'2015-03-29 20:34:19',
+		MOSAICS[1].initial_supply,
+		MOSAICS[1].total_supply,
+		MOSAICS[1].divisibility,
+		MOSAICS[1].supply_mutable,
+		MOSAICS[1].transferable,
+		None,
+		None,
+		None,
+		None,
 		2,
 		'2015-03-29 20:34:19',
 		525602
