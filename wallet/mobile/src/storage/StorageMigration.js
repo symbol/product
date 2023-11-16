@@ -32,8 +32,12 @@ export class StorageMigration {
     }
 
     static async migrateUnknown() {
-        await SecureStorage.removeAll();
-        await PersistentStorage.removeAll();
+        try {
+            await SecureStorage.removeAll();
+            await PersistentStorage.removeAll();
+        } catch (e) {
+            console.error('[StorageMigration] Error: failed to clear storage', e);
+        }
     }
 
     static async migrate0() {
@@ -69,7 +73,9 @@ export class StorageMigration {
             await oldStorage.remove('mnemonics');
             await PersistentStorage.removeAll();
             await SecureStorage.removeAll();
-        } catch {}
+        } catch (e) {
+            console.error('[StorageMigration] Error: failed to clear storage', e);
+        }
 
         await SecureStorage.setMnemonic(mnemonic);
         await SecureStorage.setAccounts(networkAccounts);
@@ -148,7 +154,9 @@ export class StorageMigration {
             await oldStorage.remove('CONTACTS');
             await PersistentStorage.removeAll();
             await SecureStorage.removeAll();
-        } catch {}
+        } catch (e) {
+            console.error('[StorageMigration] Error: failed to clear storage', e);
+        }
 
         await SecureStorage.setMnemonic(mnemonic);
         await SecureStorage.setAccounts(networkAccounts);
