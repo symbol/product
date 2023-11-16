@@ -301,3 +301,78 @@ def test_api_nem_mosaic_non_exist(client):  # pylint: disable=redefined-outer-na
 	})
 
 # endregion
+
+
+# region /mosaics
+
+def _get_api_nem_mosaics(client, **query_params):  # pylint: disable=redefined-outer-name
+	query_string = '&'.join(f'{key}={val}' for key, val in query_params.items())
+	return client.get(f'/api/nem/mosaics?{query_string}')
+
+
+def _assert_get_api_nem_mosaics(client, expected_status_code, expected_result, **query_params):  # pylint: disable=redefined-outer-name
+	# Act:
+	response = _get_api_nem_mosaics(client, **query_params)
+
+	# Assert:
+	_assert_status_code_and_headers(response, expected_status_code)
+	assert expected_result == response.json
+
+
+def test_api_nem_mosaics_without_params(client):  # pylint: disable=redefined-outer-name, invalid-name
+	# Act:
+	response = _get_api_nem_mosaics(client)
+
+	# Assert:
+	_assert_status_code_and_headers(response, 200)
+	assert [MOSAIC_VIEWS[1].to_dict(), MOSAIC_VIEWS[0].to_dict()] == response.json
+
+
+def test_api_nem_mosaics_applies_limit(client):  # pylint: disable=redefined-outer-name, invalid-name
+	_assert_get_api_nem_mosaics(client, 200, [MOSAIC_VIEWS[1].to_dict()], limit=1)
+
+
+def test_api_nem_mosaics_applies_offset(client):  # pylint: disable=redefined-outer-name, invalid-name
+	_assert_get_api_nem_mosaics(client, 200, [MOSAIC_VIEWS[0].to_dict()], offset=1)
+
+
+def test_api_nem_mosaics_applies_sorted_by_id_desc(client):  # pylint: disable=redefined-outer-name, invalid-name
+	_assert_get_api_nem_mosaics(client, 200, [MOSAIC_VIEWS[1].to_dict(), MOSAIC_VIEWS[0].to_dict()], sort='desc')
+
+
+def test_api_nem_mosaics_applies_sorted_by_id_asc(client):  # pylint: disable=redefined-outer-name, invalid-name
+	_assert_get_api_nem_mosaics(client, 200, [MOSAIC_VIEWS[0].to_dict(), MOSAIC_VIEWS[1].to_dict()], sort='asc')
+
+
+def test_api_nem_mosaics_with_all_params(client):  # pylint: disable=redefined-outer-name, invalid-name
+	_assert_get_api_nem_mosaics(client, 200, [MOSAIC_VIEWS[1].to_dict()], limit=1, offset=1, sort='asc')
+
+
+def _assert_get_api_nem_mosaics_fail(client, expected_status_code, **query_params):  # pylint: disable=redefined-outer-name
+	# Act:
+	response = _get_api_nem_mosaics(client, **query_params)
+
+	# Assert:
+	_assert_status_code_and_headers(response, expected_status_code)
+	assert {
+		'message': 'Bad request',
+		'status': expected_status_code
+	} == response.json
+
+
+def test_api_nem_mosaics_invalid_limit(client):  # pylint: disable=redefined-outer-name, invalid-name
+	_assert_get_api_nem_mosaics_fail(client, 400, limit=-1)
+	_assert_get_api_nem_mosaics_fail(client, 400, limit='invalid')
+
+
+def test_api_nem_mosaics_invalid_offset(client):  # pylint: disable=redefined-outer-name, invalid-name
+	_assert_get_api_nem_mosaics_fail(client, 400, offset=-1)
+	_assert_get_api_nem_mosaics_fail(client, 400, offset='invalid')
+
+
+def test_api_nem_mosaics_invalid_sort(client):  # pylint: disable=redefined-outer-name
+	_assert_get_api_nem_mosaics_fail(client, 400, sort=-1)
+	_assert_get_api_nem_mosaics_fail(client, 400, sort='invalid')
+
+
+# endregion
