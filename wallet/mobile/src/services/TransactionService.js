@@ -183,9 +183,21 @@ export class TransactionService {
         const signedTransaction = Account.createFromPrivateKey(account.privateKey, networkType).signCosignatureTransaction(
             cosignatureTransaction
         );
-        const transactionHttp = new TransactionHttp(networkProperties.nodeUrl);
+        const endpoint = `${networkProperties.nodeUrl}/transactions/cosignature`;
+        const payload = {
+            parentHash: signedTransaction.parentHash,
+            signature: signedTransaction.signature,
+            signerPublicKey: signedTransaction.signerPublicKey,
+            version: '0',
+        };
 
-        return transactionHttp.announceAggregateBondedCosignature(signedTransaction).toPromise();
+        return makeRequest(endpoint, {
+            method: 'PUT',
+            body: JSON.stringify(payload),
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        });
     }
 
     static async fetchDate(height, networkProperties) {
