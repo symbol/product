@@ -15,6 +15,8 @@ EXPECTED_NAMESPACE_2 = NAMESPACE_VIEWS[1].to_dict()
 
 EXPECTED_MOSAIC_1 = MOSAIC_VIEWS[0].to_dict()
 
+EXPECTED_MOSAIC_2 = MOSAIC_VIEWS[1].to_dict()
+
 # endregion
 
 
@@ -127,5 +129,31 @@ class TestNemRestFacade(DatabaseTestBase):
 
 	def test_returns_none_for_nonexistent_mosaic(self):
 		self._assert_can_retrieve_mosaic('non_existing_mosaic', None)
+
+	# endregion
+
+	# region mosaic tests
+
+	def _assert_can_retrieve_mosaics(self, query_params, expected_mosaics):
+		# Arrange:
+		nem_rest_facade = NemRestFacade(self.db_config, self.network_name)
+
+		# Act:
+		mosaics = nem_rest_facade.get_mosaics(query_params.limit, query_params.offset, query_params.sort)
+
+		# Assert:
+		self.assertEqual(expected_mosaics, mosaics)
+
+	def test_mosaics_filtered_by_limit(self):
+		self._assert_can_retrieve_mosaics(PaginationQueryParams(1, 0, 'desc'), [EXPECTED_MOSAIC_2])
+
+	def test_mosaics_filtered_by_offset(self):
+		self._assert_can_retrieve_mosaics(PaginationQueryParams(1, 1, 'desc'), [EXPECTED_MOSAIC_1])
+
+	def test_mosaics_sorted_by_id_asc(self):
+		self._assert_can_retrieve_mosaics(PaginationQueryParams(10, 0, 'asc'), [EXPECTED_MOSAIC_1, EXPECTED_MOSAIC_2])
+
+	def test_mosaics_sorted_by_id_desc(self):
+		self._assert_can_retrieve_mosaics(PaginationQueryParams(10, 0, 'desc'), [EXPECTED_MOSAIC_2, EXPECTED_MOSAIC_1])
 
 	# endregion
