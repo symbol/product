@@ -210,7 +210,7 @@ export const Harvesting = connect((state) => ({
                     <StyledText type="body">{$t('s_harvesting_description')}</StyledText>
                 </FormItem>
                 <FormItem>
-                    <StyledText type="title">Status</StyledText>
+                    <StyledText type="title">{$t('data_status')}</StyledText>
                     <Widget color={statusColor}>
                         <FormItem style={[layout.row, layout.alignCenter]}>
                             <Image source={statusIconSrc} style={styles.statusIcon} />
