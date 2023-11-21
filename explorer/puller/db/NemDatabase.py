@@ -60,7 +60,7 @@ class NemDatabase(DatabaseConnection):
 		cursor.execute(
 			'''
 			CREATE INDEX IF NOT EXISTS idx_transaction_height
-				ON transactions(height)
+				ON transactions(height DESC)
 			'''
 		)
 
