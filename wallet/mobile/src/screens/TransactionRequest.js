@@ -3,7 +3,7 @@ import React from 'react';
 import { useMemo } from 'react';
 import { useEffect } from 'react';
 import { useState } from 'react';
-import { StyleSheet } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import {
     Alert,
@@ -28,6 +28,7 @@ import { colors, fonts, layout } from 'src/styles';
 import {
     getTransactionFees,
     getUnresolvedIdsFromTransactionDTOs,
+    getUserCurrencyAmountText,
     handleError,
     isAggregateTransaction,
     publicAccountFromPrivateKey,
@@ -66,12 +67,15 @@ export const TransactionRequest = connect((state) => ({
     isWalletReady: state.wallet.isReady,
     networkProperties: state.network.networkProperties,
     ticker: state.network.ticker,
+    price: state.market.price,
 }))(function TransactionRequest(props) {
-    const { currentAccount, cosignatories, isMultisigAccount, isAccountReady, isWalletReady, networkProperties, ticker, route } = props;
+    const { currentAccount, cosignatories, isMultisigAccount, isAccountReady, isWalletReady, networkProperties, ticker, price, route } =
+        props;
     const { params } = route;
     const [transaction, setTransaction] = useState(null);
     const [payload, setPayload] = useState('');
     const [styleAmount, setStyleAmount] = useState(null);
+    const [userCurrencyAmountText, setUserCurrencyAmountText] = useState('');
     const [speed, setSpeed] = useState('medium');
     const [isTypeSupported, setIsTypeSupported] = useState(false);
     const [isNetworkSupported, setIsNetworkSupported] = useState(false);
@@ -131,11 +135,18 @@ export const TransactionRequest = connect((state) => ({
                 isTypeSupported = SUPPORTED_TRANSACTION_TYPES.some((item) => item === transaction.type);
             }
 
+            const userCurrencyAmountText = getUserCurrencyAmountText(
+                Math.abs(transaction.amount),
+                price,
+                networkProperties.networkIdentifier
+            );
+
             setPayload(payload);
             setTransaction(transaction);
             setIsTypeSupported(isTypeSupported);
             setIsNetworkSupported(generationHash === networkProperties.generationHash);
             setStyleAmount(styleAmount);
+            setUserCurrencyAmountText(userCurrencyAmountText);
         },
         null,
         (e) => {
@@ -234,9 +245,14 @@ export const TransactionRequest = connect((state) => ({
                 )}
                 <FormItem>
                     <StyledText type="label">{$t('s_transactionDetails_amount')}</StyledText>
-                    <StyledText style={styleAmount}>
-                        {transaction ? transaction.amount : '-'} {ticker}
-                    </StyledText>
+                    <View style={styles.amountRow}>
+                        <StyledText style={styleAmount}>
+                            {transaction ? transaction.amount : '-'} {ticker} {''}
+                        </StyledText>
+                        {!!userCurrencyAmountText && (
+                            <StyledText style={[styleAmount, styles.userCurrencyText]}>{userCurrencyAmountText}</StyledText>
+                        )}
+                    </View>
                 </FormItem>
                 <FormItem>
                     {isTransactionLoaded && !isAggregate && <TransactionGraphic transaction={transaction} isExpanded={isTypeSupported} />}
@@ -305,5 +321,12 @@ const styles = StyleSheet.create({
     },
     incoming: {
         color: colors.success,
+    },
+    amountRow: {
+        flexDirection: 'row',
+        alignItems: 'baseline',
+    },
+    userCurrencyText: {
+        ...fonts.body,
     },
 });
