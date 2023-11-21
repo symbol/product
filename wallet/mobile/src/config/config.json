@@ -21,7 +21,7 @@
     "githubURL": "https://github.com/symbol",
     "twitterURL": "https://twitter.com/thesymbolchain",
     "marketDataURL": "https://min-api.cryptocompare.com/data/price",
-    "marketCurrencies": ["USD", "EUR", "JPY", "UAH"],
+    "marketCurrencies": ["USD", "CNY", "EUR", "GBP", "JPY", "KRW", "UAH"],
     "optInPayoutSigner": {
         "testnet": [
             "E5F5638C626F58E1937C181E668EC383C94C5BC72AAE400C19AD28BDD3A4D37E"
