@@ -188,9 +188,9 @@ class NemDatabase(DatabaseConnection):
 				id serial PRIMARY KEY,
 				transaction_id serial NOT NULL,
 				amount bigint NOT NULL,
-				mosaics json,
+				mosaics jsonb,
 				recipient bytea NOT NULL,
-				message json,
+				message jsonb,
 				is_apostille boolean DEFAULT false,
 				FOREIGN KEY (transaction_id) REFERENCES transactions(id)
 				ON DELETE CASCADE
@@ -219,7 +219,7 @@ class NemDatabase(DatabaseConnection):
 				id serial PRIMARY KEY,
 				transaction_id serial NOT NULL,
 				min_cosignatories int NOT NULL,
-				modifications json,
+				modifications jsonb,
 				FOREIGN KEY (transaction_id) REFERENCES transactions(id)
 				ON DELETE CASCADE
 			)
@@ -233,8 +233,8 @@ class NemDatabase(DatabaseConnection):
 				id serial PRIMARY KEY,
 				transaction_id serial NOT NULL,
 				initiator bytea NOT NULL,
-				signatures json NOT NULL,
-				other_transaction json NOT NULL,
+				signatures jsonb NOT NULL,
+				other_transaction jsonb NOT NULL,
 				inner_hash bytea NOT NULL,
 				FOREIGN KEY (transaction_id) REFERENCES transactions(id)
 				ON DELETE CASCADE
@@ -270,8 +270,8 @@ class NemDatabase(DatabaseConnection):
 				creator bytea NOT NULL,
 				description varchar(512),
 				namespace_name varchar(146),
-				properties json NOT NULL,
-				levy json,
+				properties jsonb NOT NULL,
+				levy jsonb,
 				FOREIGN KEY (transaction_id) REFERENCES transactions(id)
 				ON DELETE CASCADE
 			)
@@ -352,7 +352,7 @@ class NemDatabase(DatabaseConnection):
 				importance decimal DEFAULT 0,
 				balance bigint DEFAULT 0,
 				vested_balance bigint DEFAULT 0,
-				mosaics json,
+				mosaics jsonb,
 				harvested_fees bigint DEFAULT 0,
 				harvested_blocks bigint DEFAULT 0,
 				harvest_status varchar(8) default NULL,
