@@ -456,6 +456,24 @@ class NemPuller:
 			self.nem_db.update_account_harvested_fees(cursor, harvester_address, total_fees, block.height)
 			log.info(f'updated account: {total_fees} fees harvested fee by {harvester_address} in height {block.height}')
 
+	def _store_native_mosaic(self, cursor):
+		self.nem_db.insert_mosaic(cursor, Mosaic(
+			'nem',
+			'nem.xem',
+			'',
+			'8d07f90fb4bbe7715fa327c926770166a11be2e494a970605f2e12557f66c9b9',
+			1,
+			8999999999,
+			8999999999,
+			6,
+			False,
+			True,
+			None,
+			None,
+			None,
+			None,
+		))
+
 	async def sync_nemesis_block(self):
 		"""Sync the Nemesis block."""
 
@@ -469,6 +487,7 @@ class NemPuller:
 		self._store_accounts(cursor, 1, addresses_from_block)
 		self._store_block(cursor, nemesis_block)
 		self._store_transactions(cursor, nemesis_block.transactions)
+		self._store_native_mosaic(cursor)
 
 		await self._update_account_harvested_fee(cursor, nemesis_block)
 		await self._update_account_info(cursor, addresses_from_block)
