@@ -7,14 +7,20 @@ const DEFAULT_LANGUAGE_CODE = 'en';
 const i18n = new I18n();
 
 const translationGetters = {
+    cn: () => require('./locales/cn.json'),
     en: () => require('./locales/en.json'),
-    // uk: () => require('./locales/uk.json'),
+    ja: () => require('./locales/ja.json'),
+    uk: () => require('./locales/uk.json'),
+    zh: () => require('./locales/zh.json'),
     // Require new languages here
 };
 
 const languageNames = {
+    cn: '汉语',
     en: 'English',
-    // uk: 'Українська',
+    ja: '日本語',
+    uk: 'Українська',
+    zh: '漢語',
     // Add names for new languages here
 };
 
