@@ -323,15 +323,25 @@ class NemPuller:
 			deadline = Block.convert_timestamp_to_datetime(self.nem_facade, transaction.deadline)
 
 			sender = transaction.sender
+			recipient_address = None
+			mosaics = None
+
 			if transaction.transaction_type == TransactionType.MULTISIG.value:
-				# multisig address sender
+				# multisig sender address
 				sender = transaction.other_transaction.sender
+				recipient_address = transaction.other_transaction.recipient
+				mosaics = transaction.other_transaction.mosaics if transaction.other_transaction.mosaics else None
+			elif transaction.transaction_type == TransactionType.TRANSFER.value:
+				recipient_address = transaction.recipient
+				mosaics = transaction.mosaics if transaction.mosaics else None
 
 			transaction_common = Transaction(
 				transaction.transaction_hash,
 				transaction.height,
 				sender,
 				self.network.public_key_to_address(PublicKey(sender)),
+				recipient_address,
+				json.dumps([mosaic._asdict() for mosaic in mosaics]) if mosaics else None,
 				transaction.fee,
 				timestamp,
 				deadline,

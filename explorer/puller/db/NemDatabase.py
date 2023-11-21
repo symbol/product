@@ -31,6 +31,20 @@ class NemDatabase(DatabaseConnection):
 
 		cursor.execute(
 			'''
+			CREATE INDEX IF NOT EXISTS idx_recipient_address
+				ON transactions(recipient_address)
+			'''
+		)
+
+		cursor.execute(
+			'''
+			CREATE INDEX IF NOT EXISTS idx_mosaics_namespace_name
+				ON transactions USING BTREE ((mosaics ->> 'namespace_name'));
+			'''
+		)
+
+		cursor.execute(
+			'''
 			CREATE INDEX IF NOT EXISTS idx_transaction_hash
 				ON transactions(transaction_hash)
 			'''
@@ -156,6 +170,8 @@ class NemDatabase(DatabaseConnection):
 				height bigint NOT NULL,
 				sender bytea NOT NULL,
 				signer_address bytea NOT NULL,
+				recipient_address bytea,
+				mosaics jsonb DEFAULT NULL,
 				fee bigint DEFAULT 0,
 				timestamp timestamp NOT NULL,
 				deadline timestamp NOT NULL,
@@ -402,8 +418,8 @@ class NemDatabase(DatabaseConnection):
 
 		cursor.execute(
 			'''
-			INSERT INTO transactions (transaction_hash, height, sender, signer_address, fee, timestamp, deadline, signature, transaction_type)
-			VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+			INSERT INTO transactions (transaction_hash, height, sender, signer_address, recipient_address, mosaics, fee, timestamp, deadline, signature, transaction_type)
+			VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
 			RETURNING id
 			''',
 			(
@@ -411,6 +427,8 @@ class NemDatabase(DatabaseConnection):
 				transaction.height,
 				unhexlify(transaction.sender),
 				Address(transaction.signer_address).bytes,
+				Address(transaction.recipient_address).bytes if transaction.recipient_address is not None else None,
+				transaction.mosaics,
 				transaction.fee,
 				transaction.timestamp,
 				transaction.deadline,
