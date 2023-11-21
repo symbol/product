@@ -10,6 +10,7 @@ Modification = namedtuple('Modification', ['modification_type', 'cosignatory_acc
 MosaicLevy = namedtuple('MosaicLevy', ['fee', 'recipient', 'type', 'namespace_name'])
 MosaicProperties = namedtuple('MosaicProperties', ['divisibility', 'initial_supply', 'supply_mutable', 'transferable'])
 
+MICROXEM_PER_XEM = 1000000
 
 class Transaction:
 	def __init__(
@@ -427,7 +428,7 @@ class TransactionHandler:
 			]
 
 		return {
-			'amount': tx_dict['amount'],
+			'amount': tx_dict['amount'] / MICROXEM_PER_XEM,
 			'recipient': tx_dict['recipient'],
 			'message': message,
 			'mosaics': mosaics,
@@ -466,7 +467,7 @@ class TransactionHandler:
 			'transaction_hash': None,
 			'height': None,
 			'sender': other_transaction['signer'],
-			'fee': other_transaction['fee'],
+			'fee': other_transaction['fee'] / MICROXEM_PER_XEM,
 			'timestamp': other_transaction['timeStamp'],
 			'deadline': other_transaction['deadline'],
 			'signature': None,
