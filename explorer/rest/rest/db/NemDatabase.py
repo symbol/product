@@ -68,13 +68,13 @@ class NemDatabase(DatabaseConnectionPool):
 				t.deadline,
 				t.signature,
 				CASE
-					WHEN transaction_type = 257 THEN tt.recipient
+					WHEN transaction_type = 257 THEN t.recipient_address
 					WHEN transaction_type = 8193 THEN tnr.rental_fee_sink
 					WHEN transaction_type = 16385 THEN tmdc.creation_fee_sink
 					ELSE NULL
 				END AS to,
 				CASE
-					WHEN transaction_type = 257 Then tt.mosaics
+					WHEN transaction_type = 257 Then t.mosaics
 					ELSE NULL
 				END AS transfer_mosaic,
 				CASE
@@ -804,15 +804,13 @@ class NemDatabase(DatabaseConnectionPool):
 
 		# Check for address filter
 		if address is not None:
-			address_hex = _format_bytes(Address(address).bytes)
-			where_clauses.append("(t.signer_address = %s OR tt.recipient = %s OR tm.other_transaction ->> 'recipient' = %s)")
-			params.extend(['\\x' + address_hex, '\\x' + address_hex, address])
+			where_clauses.append("(t.signer_address = %s OR t.recipient_address = %s)")
+			params.extend(['\\x' + Address(address).bytes.hex(), '\\x' + Address(address).bytes.hex()])
 		else:
 			# Check for sender address filter
 			if sender_address is not None:
-				sender_address_hex = _format_bytes(Address(sender_address).bytes)
 				where_clauses.append("t.signer_address = %s")
-				params.extend(['\\x' + sender_address_hex])
+				params.extend(['\\x' + Address(sender_address).bytes.hex()])
 			else:
 				# Check for sender public key
 				if sender is not None:
@@ -821,9 +819,8 @@ class NemDatabase(DatabaseConnectionPool):
 
 			# Check for recipient address filter
 			if recipient_address is not None:
-				recipient_address_hex = _format_bytes(Address(recipient_address).bytes)
-				where_clauses.append("tt.recipient = %s OR tm.other_transaction ->> 'recipient' = %s")
-				params.extend(['\\x' + recipient_address_hex, recipient_address])
+				where_clauses.append("t.recipient_address = %s")
+				params.extend(['\\x' + Address(recipient_address).bytes.hex()])
 
 		# Append WHERE clauses to SQL string if any exists
 		if where_clauses:
