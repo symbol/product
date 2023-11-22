@@ -877,15 +877,15 @@ class NemDatabase(DatabaseConnectionPool):
 			cursor = connection.cursor()
 			cursor.execute('''
 				SELECT
-					(SELECT SUM(totaltransactions) FROM blocks) AS total_transactions,
-					(SELECT SUM(totaltransactions) FROM (
-						SELECT totaltransactions
+					(SELECT SUM(total_transactions) FROM blocks) AS total_transactions,
+					(SELECT SUM(total_transactions) FROM (
+						SELECT total_transactions
 						FROM blocks
 						ORDER BY height DESC
 						LIMIT 1440
 					) AS latest_blocks) AS transaction_last_24_hours,
-					(SELECT SUM(totaltransactions) FROM (
-						SELECT totaltransactions
+					(SELECT SUM(total_transactions) FROM (
+						SELECT total_transactions
 						FROM blocks
 						ORDER BY height DESC
 						LIMIT 43200
