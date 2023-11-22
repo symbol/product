@@ -171,7 +171,7 @@ class NemConnector(BasicConnector):
 			'transaction_hash': transaction['hash'],
 			'height': block_height,
 			'sender': tx_dict['signer'],
-			'fee': tx_dict['fee'] / MICROXEM_PER_XEM,
+			'fee': tx_dict['fee'],
 			'timestamp': tx_dict['timeStamp'],
 			'deadline': tx_dict['deadline'],
 			'signature': tx_dict['signature'],
