@@ -141,6 +141,20 @@ class NemDatabase(DatabaseConnection):
 			'''
 		)
 
+		cursor.execute(
+			'''
+			CREATE INDEX IF NOT EXISTS idx_height
+				ON blocks (height desc)
+			'''
+		)
+
+		cursor.execute(
+			'''
+			CREATE INDEX IF NOT EXISTS idx_total_transactions
+				ON blocks (total_transactions)
+			'''
+		)
+
 	def create_tables(self):
 		"""Creates blocks database tables."""
 
@@ -148,10 +162,11 @@ class NemDatabase(DatabaseConnection):
 		cursor.execute(
 			'''
 			CREATE TABLE IF NOT EXISTS blocks (
-				height bigint NOT NULL PRIMARY KEY,
+				id serial PRIMARY KEY,
+				height bigint NOT NULL UNIQUE,
 				timestamp timestamp NOT NULL,
-				totalFees bigint DEFAULT 0,
-				totalTransactions int DEFAULT 0,
+				total_fees bigint DEFAULT 0,
+				total_transactions int DEFAULT 0,
 				difficulty bigInt NOT NULL,
 				hash bytea NOT NULL,
 				signer bytea NOT NULL,
@@ -398,7 +413,7 @@ class NemDatabase(DatabaseConnection):
 
 		cursor.execute(
 			'''
-			INSERT INTO blocks
+			INSERT INTO blocks (height, timestamp, total_fees, total_transactions, difficulty, hash, signer, signature, size)
 			VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
 			''', (
 				block.height,
