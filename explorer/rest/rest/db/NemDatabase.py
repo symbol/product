@@ -37,6 +37,23 @@ class NemDatabase(DatabaseConnectionPool):
 		super().__init__(db_config)
 		self.network = network
 
+	def _generate_block_sql_query(self):
+		"""Base block sql query."""
+
+		return """
+			SELECT
+				b.height,
+				b.timestamp,
+				b.total_fees,
+				b.total_transactions,
+				b.difficulty,
+				b.hash,
+				b.signer,
+				b.signature,
+				b.size
+			FROM blocks b
+		"""
+
 	def _generate_transaction_sql_query(self):
 		"""Base transaction sql query."""
 
@@ -514,13 +531,13 @@ class NemDatabase(DatabaseConnectionPool):
 	def get_block(self, height):
 		"""Gets block by height in database."""
 
+		sql = self._generate_block_sql_query()
+		sql += ' WHERE b.height = %s'
+		params = (height,)
+
 		with self.connection() as connection:
 			cursor = connection.cursor()
-			cursor.execute('''
-				SELECT *
-				FROM blocks
-				WHERE height = %s
-			''', (height,))
+			cursor.execute(sql, params)
 			result = cursor.fetchone()
 
 			return self._create_block_view(result) if result else None
@@ -528,15 +545,14 @@ class NemDatabase(DatabaseConnectionPool):
 	def get_blocks(self, limit, offset, min_height, sort):
 		"""Gets blocks pagination in database."""
 
+		sql = self._generate_block_sql_query()
+		sql += ' WHERE b.height >= %s'
+		sql += f' ORDER BY b.id {sort} LIMIT %s OFFSET %s'
+		params = (min_height, limit, offset)
+
 		with self.connection() as connection:
 			cursor = connection.cursor()
-			cursor.execute(f'''
-				SELECT *
-				FROM blocks
-				WHERE height >= %s
-				ORDER BY height {sort}
-				LIMIT %s OFFSET %s
-			''', (min_height, limit, offset,))
+			cursor.execute(sql, params)
 			results = cursor.fetchall()
 
 			return [self._create_block_view(result) for result in results]
