@@ -113,3 +113,31 @@ class MosaicRichListView:
 			'remark': self.remark,
 			'balance': self.balance
 		}
+
+
+class MosaicTransfersView:
+	def __init__(self, sender_address, recipient_address, timestamp, quantity):
+		"""Create mosaic transfers view."""
+
+		self.sender_address = sender_address
+		self.recipient_address = recipient_address
+		self.timestamp = timestamp
+		self.quantity = quantity
+
+	def __eq__(self, other):
+		return isinstance(other, MosaicTransfersView) and all([
+			self.sender_address == other.sender_address,
+			self.recipient_address == other.recipient_address,
+			self.timestamp == other.timestamp,
+			self.quantity == other.quantity
+		])
+
+	def to_dict(self):
+		"""Formats the mosaic transfers info as a dictionary."""
+
+		return {
+			'fromAddress': str(self.sender_address),
+			'toAddress': str(self.recipient_address),
+			'timestamp': self.timestamp,
+			'quantity': self.quantity
+		}
