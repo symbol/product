@@ -6,7 +6,7 @@ from symbolchain.nem.Network import Address
 
 from rest.model.Account import AccountQuery, AccountView
 from rest.model.Block import BlockView
-from rest.model.Mosaic import MosaicRichListView, MosaicView
+from rest.model.Mosaic import MosaicRichListView, MosaicTransfersView, MosaicView
 from rest.model.Namespace import NamespaceView
 from rest.model.Statistic import StatisticAccountView, StatisticTransactionView
 from rest.model.Transaction import TransactionListView, TransactionQuery
@@ -528,6 +528,22 @@ class NemDatabase(DatabaseConnectionPool):
 			balance=_format_xem_relative(balance)
 		)
 
+	def _create_mosaic_transfers_view(self, result):
+
+		(
+			sender_address,
+			recipient_address,
+			timestamp,
+			quantity
+		) = result
+
+		return MosaicTransfersView(
+			sender_address=str(Address(_format_address_bytes(sender_address))),
+			recipient_address=str(Address(_format_address_bytes(recipient_address))),
+			timestamp=str(timestamp),
+			quantity=quantity
+		)
+
 	def get_block(self, height):
 		"""Gets block by height in database."""
 
@@ -924,3 +940,24 @@ class NemDatabase(DatabaseConnectionPool):
 			result = cursor.fetchone()
 
 			return self._create_account_statistic_view(result) if result else None
+
+	def get_mosaic_transfers(self, limit, offset, namespace_name):
+		"""Gets mosaic transfers by namespace name pagination in database."""
+
+		with self.connection() as connection:
+			cursor = connection.cursor()
+			cursor.execute('''
+				SELECT
+					t.signer_address,
+					t.recipient_address,
+					t.timestamp,
+					mosaic_item->>'quantity' AS quantity
+				FROM transactions t,
+					jsonb_array_elements(t.mosaics) mosaic_item
+				WHERE mosaic_item->>'namespace_name' = %s
+				ORDER BY t.height DESC
+				LIMIT %s OFFSET %s
+			''', (namespace_name, limit, offset,))
+			results = cursor.fetchall()
+
+			return [self._create_mosaic_transfers_view(result) for result in results]
