@@ -102,3 +102,10 @@ class NemRestFacade:
 		statistics = self.nem_db.get_account_statistics()
 
 		return statistics.to_dict() if statistics else None
+
+	def get_mosaic_transfers(self, limit, offset, namespace_name):
+		"""Gets mosaic transfers pagination."""
+
+		mosaics = self.nem_db.get_mosaic_transfers(limit, offset, namespace_name)
+
+		return [mosaic.to_dict() for mosaic in mosaics]
