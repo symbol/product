@@ -10,6 +10,7 @@ const translationGetters = {
     cn: () => require('./locales/cn.json'),
     en: () => require('./locales/en.json'),
     ja: () => require('./locales/ja.json'),
+    ko: () => require('./locales/ko.json'),
     uk: () => require('./locales/uk.json'),
     zh: () => require('./locales/zh.json'),
     // Require new languages here
@@ -19,6 +20,7 @@ const languageNames = {
     cn: '汉语',
     en: 'English',
     ja: '日本語',
+    ko: '한국어',
     uk: 'Українська',
     zh: '漢語',
     // Add names for new languages here
