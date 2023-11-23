@@ -329,8 +329,11 @@ class NemPuller:
 			if transaction.transaction_type == TransactionType.MULTISIG.value:
 				# multisig sender address
 				sender = transaction.other_transaction.sender
-				recipient_address = transaction.other_transaction.recipient
-				mosaics = transaction.other_transaction.mosaics if transaction.other_transaction.mosaics else None
+
+				if transaction.other_transaction.transaction_type == TransactionType.TRANSFER.value:
+					recipient_address = transaction.other_transaction.recipient
+					mosaics = transaction.other_transaction.mosaics if transaction.other_transaction.mosaics else None
+
 			elif transaction.transaction_type == TransactionType.TRANSFER.value:
 				recipient_address = transaction.recipient
 				mosaics = transaction.mosaics if transaction.mosaics else None
