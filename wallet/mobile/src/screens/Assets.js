@@ -29,11 +29,16 @@ export const Assets = connect((state) => ({
 
     const sections = [];
     const filteredMosaics = useMemo(() => {
+        let mosaicsFilteredByCreator = mosaics;
+
+        if (filter.created) {
+            mosaicsFilteredByCreator = mosaics.filter((mosaic) => mosaic.creator === currentAccount.address);
+        }
         if (filter.expired) {
-            return mosaics;
+            return mosaicsFilteredByCreator;
         }
 
-        return mosaics.filter((mosaic) => mosaic.isUnlimitedDuration || mosaic.endHeight > chainHeight);
+        return mosaicsFilteredByCreator.filter((mosaic) => mosaic.isUnlimitedDuration || mosaic.endHeight > chainHeight);
     }, [filter, mosaics]);
 
     sections.push({
@@ -54,6 +59,11 @@ export const Assets = connect((state) => ({
         {
             name: 'expired',
             title: $t('s_assets_filter_expired'),
+            type: 'boolean',
+        },
+        {
+            name: 'created',
+            title: $t('s_assets_filter_created'),
             type: 'boolean',
         },
     ];
