@@ -798,7 +798,7 @@ class NemDatabase(DatabaseConnectionPool):
 	def get_transactions(self, limit, offset, sort, query: TransactionQuery):
 		"""Gets transactions pagination in database."""
 
-		height, transaction_type, sender, address, sender_address, recipient_address, mosaic = query
+		height, transaction_types, sender, address, sender_address, recipient_address, mosaic = query
 
 		# Base SQL with CTE
 		sql = """
@@ -819,9 +819,10 @@ class NemDatabase(DatabaseConnectionPool):
 			params.append(height)
 
 		# Check for transaction type filter
-		if transaction_type is not None:
-			where_clauses.append("t.transaction_type = %s")
-			params.append(transaction_type)
+		if transaction_types is not None:
+			placeholders = ', '.join(['%s'] * len(transaction_types))
+			where_clauses.append(f"t.transaction_type IN ({placeholders})")
+			params.extend(transaction_types)
 
 		# Check for address filter
 		if address is not None:

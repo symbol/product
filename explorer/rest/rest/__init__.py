@@ -175,7 +175,7 @@ def setup_nem_routes(app, nem_api_facade):
 
 			transaction_query = TransactionQuery(
 				height=request.args.get('height', None),
-				transaction_type=request.args.get('type', None),
+				transaction_types=request.args.get('types', None),
 				address=request.args.get('address', None),
 				sender_address=request.args.get('senderAddress', None),
 				recipient_address=request.args.get('recipientAddress', None),
@@ -206,7 +206,7 @@ def setup_nem_routes(app, nem_api_facade):
 					if not nem_api_facade.network.is_valid_address_string(transaction_query.recipient_address):
 						raise ValueError()
 
-			if transaction_query.transaction_type:
+			if transaction_query.transaction_types:
 				VALID_TRANSACTION_TYPES = {
 					TransactionType.TRANSFER.name,
 					TransactionType.ACCOUNT_KEY_LINK.name,
@@ -217,14 +217,15 @@ def setup_nem_routes(app, nem_api_facade):
 					TransactionType.MOSAIC_SUPPLY_CHANGE.name
 				}
 
-				transaction_type = transaction_query.transaction_type.upper()
+				transaction_types = [t.upper() for t in transaction_query.transaction_types.split(',')]
 
-				if transaction_type not in VALID_TRANSACTION_TYPES:
-					raise ValueError()
+				for type in transaction_types:
+					if type not in VALID_TRANSACTION_TYPES:
+						raise ValueError()
 
-				transaction_type = TransactionType[transaction_type].value
+				transaction_types = [TransactionType[t].value for t in transaction_types]
 
-				transaction_query = transaction_query._replace(transaction_type=transaction_type)
+				transaction_query = transaction_query._replace(transaction_types=transaction_types)
 
 		except ValueError:
 			abort(400)

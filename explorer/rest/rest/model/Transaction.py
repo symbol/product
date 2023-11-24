@@ -2,7 +2,7 @@ from collections import namedtuple
 
 TransactionQuery = namedtuple('TransactionQuery', [
 	'height',
-	'transaction_type',
+	'transaction_types',
 	'sender',
 	'address',
 	'sender_address',
