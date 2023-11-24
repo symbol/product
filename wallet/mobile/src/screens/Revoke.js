@@ -50,7 +50,7 @@ export const Revoke = connect((state) => ({
         mosaicInfo: selectedMosaic,
     }));
 
-    const isButtonDisabled = !isSourceAddressValid || !isAmountValid;
+    const isButtonDisabled = !isSourceAddressValid || !isAmountValid || !selectedMosaic.amount || !+amount;
 
     const transaction = {
         type: TransactionType.MOSAIC_SUPPLY_REVOCATION,
@@ -63,7 +63,7 @@ export const Revoke = connect((state) => ({
         fee: maxFee,
     };
     const cosignatoryList = { cosignatories };
-    const transactionFees = useMemo(() => getTransactionFees(transaction, networkProperties), []);
+    const transactionFees = useMemo(() => getTransactionFees({}, networkProperties, 168), []);
 
     const [fetchSourceAddressMosaicBalance, isBalanceLoading] = useDataManager(
         async () => {
@@ -137,8 +137,7 @@ export const Revoke = connect((state) => ({
                 {!isMultisigAccount && (
                     <>
                         <FormItem>
-                            <StyledText type="title">{$t('form_transfer_title')}</StyledText>
-                            <StyledText type="body">{$t('s_send_description')}</StyledText>
+                            <StyledText type="body">{$t('s_revoke_description')}</StyledText>
                         </FormItem>
                         <FormItem>
                             <InputAddress
@@ -160,7 +159,7 @@ export const Revoke = connect((state) => ({
                         <FormItem>
                             <InputAmount
                                 title={$t('input_amount')}
-                                availableBalance={selectedMosaic.amount}
+                                availableBalance={selectedMosaic.amount || 0}
                                 value={amount}
                                 onChange={setAmount}
                                 onValidityChange={setAmountValid}

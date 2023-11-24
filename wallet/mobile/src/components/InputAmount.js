@@ -12,6 +12,7 @@ export const InputAmount = (props) => {
     const isAvailableBalanceShown = availableBalance !== undefined;
     const [isConfirmVisible, toggleConfirm] = useToggle(false);
     const [priceText, setPriceText] = useState('');
+    const availableBalanceTextStyle = availableBalance ? styles.availableBalanceText : styles.availableBalanceTextError;
 
     const handleChange = (str) => {
         const formattedStr = str
@@ -43,8 +44,8 @@ export const InputAmount = (props) => {
                     <View style={styles.contentRight}>
                         {!!priceText && <Text style={styles.priceText}>{priceText}</Text>}
                         {isAvailableBalanceShown && (
-                            <TouchableOpacity onPress={toggleConfirm}>
-                                <Text style={styles.availableBalanceText}>
+                            <TouchableOpacity onPress={toggleConfirm} disabled={!availableBalance}>
+                                <Text style={availableBalanceTextStyle}>
                                     {$t('c_inputAmount_label_available')}: {availableBalance}
                                 </Text>
                             </TouchableOpacity>
@@ -72,6 +73,10 @@ const styles = StyleSheet.create({
     availableBalanceText: {
         ...fonts.placeholder,
         color: colors.primary,
+    },
+    availableBalanceTextError: {
+        ...fonts.placeholder,
+        color: colors.danger,
     },
     contentRight: {
         flexDirection: 'column',
