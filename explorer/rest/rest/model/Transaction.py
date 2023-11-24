@@ -6,7 +6,8 @@ TransactionQuery = namedtuple('TransactionQuery', [
 	'sender',
 	'address',
 	'sender_address',
-	'recipient_address'
+	'recipient_address',
+	'mosaic'
 ])
 
 

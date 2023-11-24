@@ -798,9 +798,14 @@ class NemDatabase(DatabaseConnectionPool):
 	def get_transactions(self, limit, offset, sort, query: TransactionQuery):
 		"""Gets transactions pagination in database."""
 
-		height, transaction_type, sender, address, sender_address, recipient_address = query
+		height, transaction_type, sender, address, sender_address, recipient_address, mosaic = query
 
-		sql = self._generate_transaction_sql_query()
+		# Base SQL with CTE
+		sql = """
+			WITH transaction_list as (
+				SELECT *
+				FROM transactions t
+		"""
 
 		# Define parameters list
 		params = []
@@ -838,13 +843,19 @@ class NemDatabase(DatabaseConnectionPool):
 				where_clauses.append("t.recipient_address = %s")
 				params.extend(['\\x' + Address(recipient_address).bytes.hex()])
 
+		if mosaic:
+			where_clauses.append(f"t.mosaics @> '[{{\"namespace_name\": \"{mosaic}\"}}]'")
+
 		# Append WHERE clauses to SQL string if any exists
 		if where_clauses:
 			sql += " WHERE " + " AND ".join(where_clauses)
 
-		# Append the ORDER BY and LIMIT/OFFSET
-		sql += f" ORDER BY t.height {sort} LIMIT %s OFFSET %s"
+		# Closing CTE and adding ORDER BY, LIMIT, and OFFSET
+		sql += f" ORDER BY t.height {sort} LIMIT %s OFFSET %s )"
 		params.extend([limit, offset])
+
+		# Join main query column from CTE table
+		sql += self._generate_transaction_sql_query().replace('FROM transactions t', 'FROM transaction_list t')
 
 		with self.connection() as connection:
 			cursor = connection.cursor()

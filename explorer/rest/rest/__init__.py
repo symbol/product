@@ -179,7 +179,8 @@ def setup_nem_routes(app, nem_api_facade):
 				address=request.args.get('address', None),
 				sender_address=request.args.get('senderAddress', None),
 				recipient_address=request.args.get('recipientAddress', None),
-				sender=request.args.get('senderPublicKey', None)
+				sender=request.args.get('senderPublicKey', None),
+				mosaic=request.args.get('mosaic', None)
 			)
 
 			if limit < 0 or offset < 0 or sort.upper() not in ['ASC', 'DESC']:
