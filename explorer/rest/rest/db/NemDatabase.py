@@ -765,7 +765,7 @@ class NemDatabase(DatabaseConnectionPool):
 						accounts a
 						LEFT JOIN account_remarks ar
 							ON ar.address = a.address,
-						json_array_elements(mosaics) as mosaic
+						jsonb_array_elements(mosaics) as mosaic
 				)
 				SELECT
 					address,
