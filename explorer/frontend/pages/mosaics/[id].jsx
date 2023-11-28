@@ -215,6 +215,7 @@ const MosaicInfo = ({ mosaicInfo, preloadedTransactions, preloadedAccounts }) =>
 								columns={accountsTableColumns}
 								isLoading={accountPagination.isLoading}
 								isLastPage={accountPagination.isLastPage}
+								isError={accountPagination.isError}
 								onEndReached={accountPagination.requestNextPage}
 							/>
 						)
@@ -228,6 +229,7 @@ const MosaicInfo = ({ mosaicInfo, preloadedTransactions, preloadedAccounts }) =>
 								renderItemMobile={data => <ItemTransactionMobile data={data} />}
 								isLoading={transactionPagination.isLoading}
 								isLastPage={transactionPagination.isLastPage}
+								isError={transactionPagination.isError}
 								isLastColumnAligned
 								onEndReached={transactionPagination.requestNextPage}
 							/>
