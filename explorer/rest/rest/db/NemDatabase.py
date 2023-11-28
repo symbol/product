@@ -360,7 +360,10 @@ class NemDatabase(DatabaseConnectionPool):
 				mosaics = multisig_inner_transaction['mosaics']
 				amount = multisig_inner_transaction['amount']
 
-				inner_transaction['message'] = transfer_message
+				inner_transaction['message'] = {
+					'payload': multisig_inner_transaction['message'][0],
+					'is_plain': multisig_inner_transaction['message'][1]
+				} if multisig_inner_transaction['message'] else None
 
 				if not mosaics:
 					inner_transaction['mosaics'] = {
@@ -370,11 +373,12 @@ class NemDatabase(DatabaseConnectionPool):
 				else:
 					multiply = amount if amount == 0 else amount / 1000000
 
+					# sample inner txs: [['nem.xem', 1000]]
 					for mosaic in mosaics:
-						amount = mosaic['quantity'] * multiply
+						amount = mosaic[1] * multiply
 						inner_transaction['mosaics'] = {
-							'namespace': mosaic['namespace_name'],
-							'amount': (_format_xem_relative(amount) if mosaic['namespace_name'] == 'nem.xem' else amount)
+							'namespace': mosaic[1],
+							'amount': (_format_xem_relative(amount) if mosaic[0] == 'nem.xem' else amount)
 						}
 
 			elif inner_transaction_type == 2049:
@@ -384,8 +388,8 @@ class NemDatabase(DatabaseConnectionPool):
 			elif inner_transaction_type == 4097:
 				inner_transaction['minCosignatories'] = multisig_inner_transaction['min_cosignatories']
 				inner_transaction['modifications'] = [{
-					'cosignatoryAccount': str(self.network.public_key_to_address(PublicKey(modification['cosignatory_account']))),
-					'modificationType': modification['modification_type']
+					'cosignatoryAccount': str(self.network.public_key_to_address(PublicKey(modification[1]))),
+					'modificationType': modification[0]
 				} for modification in multisig_inner_transaction['modifications']]
 
 			elif inner_transaction_type == 8193:
