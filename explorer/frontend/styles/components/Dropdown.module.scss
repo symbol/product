@@ -9,6 +9,7 @@
     width: 100%;
     height: $spacing-base * 4;
     padding: 0 $spacing-base;
+    color: $color-text-body;
     font: $font-body-bold;
     white-space: nowrap;
     text-align: center;
@@ -46,6 +47,7 @@
     position: relative;
     width: 100%;
     height: $spacing-base * 4;
+    color: $color-text-body;
     font: $font-body;
     background-color: $color-background-card;
     border: none;
