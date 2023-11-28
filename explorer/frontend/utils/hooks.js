@@ -174,7 +174,7 @@ export const useStorage = (key, defaultValue, callback) => {
 		},
 		[STORAGE_KEY.USER_CURRENCY]: {
 			get: () => {
-				const defaultValue = 'usd';
+				const defaultValue = 'USD';
 
 				try {
 					const value = localStorage.getItem(STORAGE_KEY.USER_CURRENCY);
