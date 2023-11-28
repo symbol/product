@@ -20,10 +20,6 @@ export const fetchTransactionPage = async searchCriteria => {
 		formattedFilter.recipientAddress = formattedFilter.to;
 		delete formattedFilter.to;
 	}
-	if (formattedFilter.mosaic) {
-		formattedFilter.namespaceName = filter.mosaic;
-		delete formattedFilter.mosaic;
-	}
 	const url = createAPISearchURL(`${config.API_BASE_URL}/transactions`, { pageNumber, pageSize }, formattedFilter);
 
 	// TODO: remove try-catch section.
@@ -34,7 +30,7 @@ export const fetchTransactionPage = async searchCriteria => {
 		transactions = [];
 	}
 
-	const formatter = formattedFilter.address ? data => formatTransaction(data, formattedFilter.address) : formatTransaction;
+	const formatter = data => formatTransaction(data, formattedFilter.address, formattedFilter.mosaic);
 
 	return createPage(transactions, pageNumber, formatter);
 };
@@ -91,10 +87,10 @@ export const fetchTransactionInfo = createAPICallFunction(async hash => {
 	};
 });
 
-const formatTransaction = (data, address) => {
+const formatTransaction = (data, address, mosaic) => {
 	switch (data.transactionType) {
 		case TRANSACTION_TYPE.TRANSFER:
-			return formatTransferTransaction(data, address);
+			return formatTransferTransaction(data, address, mosaic);
 		case TRANSACTION_TYPE.MOSAIC_CREATION:
 			return formatMosaicDefinition(data, address);
 		case TRANSACTION_TYPE.MOSAIC_SUPPLY_CHANGE:
@@ -144,14 +140,15 @@ const formatBaseTransaction = (data, address) => {
 	};
 };
 
-const formatTransferTransaction = (data, address) => {
+const formatTransferTransaction = (data, address, mosaic) => {
 	const mosaics = data.value
 		.filter(item => item.hasOwnProperty('amount') && item.hasOwnProperty('namespace'))
 		.map(item => ({
 			id: item.namespace,
 			name: item.namespace,
 			amount: item.amount
-		}));
+		}))
+		.sort((x, y) => (x.id == mosaic ? -1 : y.id == mosaic ? 1 : 0));
 	const nativeMosaicTransfer = mosaics.find(item => item.id === config.NATIVE_MOSAIC_ID);
 	const rawMessage = data.value.find(item => item.hasOwnProperty('message'))?.message;
 	const value = [...mosaics];

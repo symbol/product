@@ -56,7 +56,7 @@ const App = ({ Component, pageProps }) => {
 							</div>
 						))}
 					</div>
-					{!isRetainableRoute && <Component {...pageProps} />}
+					{!isRetainableRoute && <Component {...pageProps} key={router.asPath} />}
 				</main>
 			</div>
 			<Footer />
