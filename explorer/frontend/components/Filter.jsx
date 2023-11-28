@@ -67,6 +67,20 @@ const FilterModal = ({ isVisible, title, type, isSearchEnabled, options, onSearc
 	};
 	const list = searchResult ? [searchResult] : options;
 	const listTitle = !isSearchEnabled ? '' : searchResult ? 'Search results' : options.length ? 'Suggestions' : '';
+	const getListItemKey = (item, type, index) => {
+		switch (type) {
+			case 'account':
+				return item.address;
+			case 'block':
+				return item.height;
+			case 'mosaic':
+				return item.name;
+			case 'transaction-type':
+				return item.type;
+			default:
+				return index;
+		}
+	};
 
 	useEffect(() => {
 		setText('');
@@ -84,7 +98,7 @@ const FilterModal = ({ isVisible, title, type, isSearchEnabled, options, onSearc
 			<Field title={listTitle} className={styles.resultListField}>
 				<div className={styles.resultListContent}>
 					{list.map((item, index) => (
-						<div className={styles.resultItem} key={'result' + index}>
+						<div className={styles.resultItem} key={getListItemKey(item, type, index)}>
 							{renderItem(item, type, onSelect)}
 						</div>
 					))}
