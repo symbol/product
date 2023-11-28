@@ -6,7 +6,8 @@ export default function Document() {
 			<Head>
 				<meta charset="utf-8" />
 				<link rel="icon" href="/favicon.ico" />
-				<meta name="theme-color" content="#000000" />
+				<meta name="format-detection" content="telephone=no" />
+				<meta name="theme-color" content="#F5F9FB" />
 				<meta name="description" content="NEM Block Explorer" />
 				<link rel="apple-touch-icon" href="/logo192.png" />
 				<link rel="manifest" href="/manifest.json" />
