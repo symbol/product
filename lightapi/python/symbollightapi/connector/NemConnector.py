@@ -1,4 +1,5 @@
 import asyncio
+import random
 from symbolchain.CryptoTypes import PublicKey
 from symbolchain.nc import TransactionType
 from symbolchain.nem.Network import Address
@@ -10,6 +11,10 @@ from ..model.Transaction import TransactionFactory, TransactionHandler, Mosaic
 from .BasicConnector import BasicConnector
 
 MICROXEM_PER_XEM = 1000000
+
+def generate_random_hex_string(length=64):
+    characters = '0123456789abcdef'
+    return ''.join(random.choices(characters, k=length))
 
 
 class NemAccountInfo:
@@ -137,6 +142,30 @@ class NemConnector(BasicConnector):
 
 		block_size = await self.post('block/at/public', {'height': height}, response_type='binary')
 		return len(block_size)
+
+	async def get_unconfirmed_transactions(self):
+		"""Gets unconfirmed transactions."""
+
+		unconfirmed_transactions = await self.post(
+			'transactions/unconfirmed',
+			{
+				'entity': {
+					'hashShortIds': []
+				},
+				'challenge': {
+					'data': generate_random_hex_string()
+				}
+			},
+			property_name='entity'
+		)
+
+		return [
+			self._map_to_transaction({
+				'tx': tx,
+				'hash': None,
+				'innerHash': None
+			}, 0) for tx in unconfirmed_transactions['data']
+		]
 
 	def _map_to_block(self, block_dict):
 		block = block_dict['block']
