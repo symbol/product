@@ -34,6 +34,7 @@ def setup_nem_facade(app):
 	config = configparser.ConfigParser()
 	db_path = Path(app.config.get('DATABASE_CONFIG_FILEPATH'))
 	network = Network.MAINNET if str(Path(app.config.get('NETWORK'))).upper() == 'MAINNET' else Network.TESTNET
+	node_url = app.config.get('NEM_NODE_URL')
 
 	log.info(f'loading database config from {db_path}')
 
@@ -48,7 +49,7 @@ def setup_nem_facade(app):
 		nem_db_config['port']
 	)
 
-	return NemRestFacade(db_params, network)
+	return NemRestFacade(db_params, network, node_url)
 
 
 def setup_nem_routes(app, nem_api_facade):
@@ -231,6 +232,12 @@ def setup_nem_routes(app, nem_api_facade):
 			abort(400)
 
 		return jsonify(nem_api_facade.get_transactions(limit=limit, offset=offset, sort=sort, query=transaction_query))
+
+	@app.route('/api/nem/transactions/unconfirmed')
+	async def api_get_nem_transactions_unconfirmed():
+		unconfirmed_transactions = await nem_api_facade.get_unconfirmed_transactions()
+
+		return jsonify(unconfirmed_transactions)
 
 	@app.route('/api/nem/account')
 	def api_get_nem_account():
