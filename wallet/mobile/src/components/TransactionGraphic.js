@@ -8,7 +8,7 @@ import { AccountAvatar, TableView, TouchableNative } from 'src/components';
 import { $t } from 'src/localization';
 import { connect } from 'src/store';
 import { borders, colors, fonts, spacings } from 'src/styles';
-import { filterCustomMosaics, getAddressName, getColorFromHash, trunc } from 'src/utils';
+import { filterCustomMosaics, getAddressName, getColorFromHash, getNativeMosaicAmount, trunc } from 'src/utils';
 import { TransactionType } from 'symbol-sdk';
 
 const TABLE_MAX_HEIGHT = 500;
@@ -61,7 +61,7 @@ export const TransactionGraphic = connect((state) => ({
             targetNameStyle.push({
                 color: getColorFromHash(transaction.recipientAddress),
             });
-            const transferredAmount = transaction.amount;
+            const transferredAmount = getNativeMosaicAmount(transaction.mosaics, networkProperties.networkCurrency.mosaicId);
             const hasMessage = !!transaction.message;
             const hasCustomMosaic = !!filterCustomMosaics(transaction.mosaics, networkProperties.networkCurrency.mosaicId).length;
 
