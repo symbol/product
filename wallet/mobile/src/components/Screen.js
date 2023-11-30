@@ -1,17 +1,20 @@
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
 import { LoadingIndicator } from 'src/components';
 import { colors, spacings } from 'src/styles';
 
 export const Screen = (props) => {
     const { children, style, titleBar, bottomComponent, bottomComponent2, navigator, isLoading } = props;
+    const isKeyboardAvoidingViewEnabled = Platform.OS === 'ios' ? true : false;
 
     return isLoading ? (
         <LoadingIndicator fill />
     ) : (
         <View style={[styles.root, style]}>
             {titleBar}
-            <View style={styles.content}>{children}</View>
+            <KeyboardAvoidingView style={styles.content} enabled={isKeyboardAvoidingViewEnabled} behavior="padding">
+                {children}
+            </KeyboardAvoidingView>
             {bottomComponent2}
             {!!bottomComponent && <View style={styles.bottom}>{bottomComponent}</View>}
             {navigator}
