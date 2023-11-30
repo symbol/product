@@ -1,3 +1,4 @@
+import CustomImage from './CustomImage';
 import IconTransactionType from './IconTransactionType';
 import ValueAge from './ValueAge';
 import ValueMosaic from './ValueMosaic';
@@ -12,7 +13,8 @@ const TransactionPreview = ({ type, group, hash, timestamp, deadline, amount }) 
 
 	return (
 		<div className={styles.transactionPreview}>
-			<IconTransactionType value={type} />
+			{isUnconfirmed && <CustomImage src="/images/transaction/pending.svg" alt="Unconfirmed" className={styles.icon} />}
+			{!isUnconfirmed && <IconTransactionType value={type} />}
 			<div className={styles.info}>
 				<div className={styles.type}>{typeText}</div>
 				<ValueTransactionHash value={hash} />
@@ -21,7 +23,7 @@ const TransactionPreview = ({ type, group, hash, timestamp, deadline, amount }) 
 						~ <ValueAge value={deadline} />
 					</span>
 				)}
-				{!isUnconfirmed && <ValueAge value={timestamp} hasTime hasSeconds />}
+				{!isUnconfirmed && <ValueAge value={timestamp} />}
 			</div>
 			<div className={styles.amount}>
 				<ValueMosaic isNative amount={amount} />

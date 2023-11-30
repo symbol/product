@@ -20,7 +20,13 @@ export const fetchTransactionPage = async searchCriteria => {
 		formattedFilter.recipientAddress = formattedFilter.to;
 		delete formattedFilter.to;
 	}
-	const url = createAPISearchURL(`${config.API_BASE_URL}/transactions`, { pageNumber, pageSize }, formattedFilter);
+	let url;
+
+	if (formattedFilter.group === 'unconfirmed') {
+		url = createAPISearchURL(`${config.API_BASE_URL}/transactions/unconfirmed`, { pageNumber, pageSize }, formattedFilter);
+	} else {
+		url = createAPISearchURL(`${config.API_BASE_URL}/transactions`, { pageNumber, pageSize }, formattedFilter);
+	}
 
 	// TODO: remove try-catch section.
 	let transactions;
@@ -30,7 +36,7 @@ export const fetchTransactionPage = async searchCriteria => {
 		transactions = [];
 	}
 
-	const formatter = data => formatTransaction(data, formattedFilter.address, formattedFilter.mosaic);
+	const formatter = data => formatTransaction(data, formattedFilter);
 
 	return createPage(transactions, pageNumber, formatter);
 };
@@ -87,28 +93,29 @@ export const fetchTransactionInfo = createAPICallFunction(async hash => {
 	};
 });
 
-const formatTransaction = (data, address, mosaic) => {
+const formatTransaction = (data, filter = {}) => {
 	switch (data.transactionType) {
 		case TRANSACTION_TYPE.TRANSFER:
-			return formatTransferTransaction(data, address, mosaic);
+			return formatTransferTransaction(data, filter);
 		case TRANSACTION_TYPE.MOSAIC_CREATION:
-			return formatMosaicDefinition(data, address);
+			return formatMosaicDefinition(data, filter);
 		case TRANSACTION_TYPE.MOSAIC_SUPPLY_CHANGE:
-			return formatMosaicSupplyChange(data, address);
+			return formatMosaicSupplyChange(data, filter);
 		case TRANSACTION_TYPE.NAMESPACE_REGISTRATION:
-			return formatNamespaceRegistration(data, address);
+			return formatNamespaceRegistration(data, filter);
 		case TRANSACTION_TYPE.MULTISIG_ACCOUNT_MODIFICATION:
-			return formatMultisigAccountModification(data, address);
+			return formatMultisigAccountModification(data, filter);
 		case TRANSACTION_TYPE.ACCOUNT_KEY_LINK:
-			return formatAccountKeyLink(data, address);
+			return formatAccountKeyLink(data, filter);
 		case TRANSACTION_TYPE.MULTISIG:
-			return formatMultisigTransaction(data, address);
+			return formatMultisigTransaction(data, filter);
 		default:
-			return formatBaseTransaction(data, address);
+			return formatBaseTransaction(data, filter);
 	}
 };
 
-const formatBaseTransaction = (data, address) => {
+const formatBaseTransaction = (data, filter) => {
+	const { address, group } = filter;
 	const sender = data.fromAddress;
 	const recipient = data.toAddress !== 'None' ? data.toAddress : null;
 	const isOutgoing = sender === address;
@@ -116,18 +123,19 @@ const formatBaseTransaction = (data, address) => {
 
 	return {
 		type: data.transactionType,
-		group: 'confirmed',
+		group: group || 'confirmed',
 		hash: data.transactionHash,
 		timestamp: data.timestamp,
+		deadline: data.deadline,
 		signer: sender,
 		sender,
 		recipient,
 		account: isOutgoing ? recipient : sender,
 		direction: isOutgoing ? TRANSACTION_DIRECTION.OUTGOING : isIncoming ? TRANSACTION_DIRECTION.INCOMING : null,
-		size: '-',
-		height: data.height,
-		version: '-',
-		signature: '-',
+		size: data.size || null,
+		height: data.height || null,
+		version: data.version || null,
+		signature: data.signature || null,
 		fee: data.fee,
 		amount: 0,
 		value: [],
@@ -140,7 +148,8 @@ const formatBaseTransaction = (data, address) => {
 	};
 };
 
-const formatTransferTransaction = (data, address, mosaic) => {
+const formatTransferTransaction = (data, filter) => {
+	const { mosaic } = filter;
 	const mosaics = data.value
 		.filter(item => item.hasOwnProperty('amount') && item.hasOwnProperty('namespace'))
 		.map(item => ({
@@ -162,7 +171,7 @@ const formatTransferTransaction = (data, address, mosaic) => {
 	}
 
 	return {
-		...formatBaseTransaction(data, address),
+		...formatBaseTransaction(data, filter),
 		amount: nativeMosaicTransfer?.amount || 0,
 		value,
 		body: [
@@ -177,12 +186,12 @@ const formatTransferTransaction = (data, address, mosaic) => {
 	};
 };
 
-const formatMosaicDefinition = (data, address) => {
+const formatMosaicDefinition = (data, filter) => {
 	const rentalFee = data.value[0].sinkFee;
 	const mosaicName = data.value[0].mosaicNamespaceName;
 
 	return {
-		...formatBaseTransaction(data, address),
+		...formatBaseTransaction(data, filter),
 		amount: rentalFee,
 		value: [
 			{
@@ -206,13 +215,13 @@ const formatMosaicDefinition = (data, address) => {
 	};
 };
 
-const formatMosaicSupplyChange = (data, address) => {
+const formatMosaicSupplyChange = (data, filter) => {
 	const mosaicName = data.value[0].namespaceName;
 	const { delta } = data.value[0];
 	const supplyAction = data.value[0].supplyType;
 
 	return {
-		...formatBaseTransaction(data, address),
+		...formatBaseTransaction(data, filter),
 		body: [
 			{
 				type: data.transactionType,
@@ -228,12 +237,12 @@ const formatMosaicSupplyChange = (data, address) => {
 	};
 };
 
-const formatNamespaceRegistration = (data, address) => {
+const formatNamespaceRegistration = (data, filter) => {
 	const rentalFee = data.value[0].sinkFee;
 	const { namespaceName } = data.value[0];
 
 	return {
-		...formatBaseTransaction(data, address),
+		...formatBaseTransaction(data, filter),
 		value: [
 			{
 				id: config.NATIVE_MOSAIC_ID,
@@ -257,7 +266,7 @@ const formatNamespaceRegistration = (data, address) => {
 	};
 };
 
-const formatMultisigAccountModification = (data, address) => {
+const formatMultisigAccountModification = (data, filter) => {
 	const { minCosignatories } = data.value[0];
 	const { modifications } = data.value[0];
 	const cosignatoryAdditions = modifications
@@ -268,7 +277,7 @@ const formatMultisigAccountModification = (data, address) => {
 		.map(item => item.cosignatory_account);
 
 	return {
-		...formatBaseTransaction(data, address),
+		...formatBaseTransaction(data, filter),
 		body: [
 			{
 				type: data.transactionType,
@@ -282,12 +291,12 @@ const formatMultisigAccountModification = (data, address) => {
 	};
 };
 
-const formatAccountKeyLink = (data, address) => {
+const formatAccountKeyLink = (data, filter) => {
 	const keyLinkAction = data.value[0].mode;
 	const publicKey = data.value[0].remoteAccount;
 
 	return {
-		...formatBaseTransaction(data, address),
+		...formatBaseTransaction(data, filter),
 		body: [
 			{
 				type: data.transactionType,
@@ -300,7 +309,7 @@ const formatAccountKeyLink = (data, address) => {
 	};
 };
 
-const formatMultisigTransaction = (data, address) => {
+const formatMultisigTransaction = (data, filter) => {
 	const rawEmbeddedTransaction = {
 		...data,
 		transactionType: data.embeddedTransactions[0].transactionType
@@ -311,10 +320,10 @@ const formatMultisigTransaction = (data, address) => {
 		rawEmbeddedTransaction.value = data.embeddedTransactions;
 	}
 
-	const formattedEmbeddedTransaction = formatTransaction(rawEmbeddedTransaction, address);
+	const formattedEmbeddedTransaction = formatTransaction(rawEmbeddedTransaction, filter.address);
 
 	return {
-		...formatBaseTransaction(data, address),
+		...formatBaseTransaction(data, filter),
 		signatures: data.embeddedTransactions[0].signatures,
 		signer: data.embeddedTransactions[0].initiator,
 		amount: formattedEmbeddedTransaction.amount,

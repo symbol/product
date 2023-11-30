@@ -21,7 +21,7 @@ const DATA_REFRESH_INTERVAL = 60000;
 export const getServerSideProps = async ({ locale }) => {
 	const [blocksPage, latestTransactionsPage, pendingTransactionsPage] = await Promise.all([
 		fetchBlockPage({ pageSize: 50 }),
-		fetchTransactionPage({ pageSize: 5, group: 'confirmed' }),
+		fetchTransactionPage({ pageSize: 5 }),
 		fetchTransactionPage({ pageSize: 5, group: 'unconfirmed' })
 	]);
 	const [marketDataPromise, transactionStatsPromise, nodeStatsPromise, transactionChartPromise] = await Promise.allSettled([
@@ -57,7 +57,7 @@ const Home = ({
 	const { t } = useTranslation();
 	const formattedTransactionChart = transactionChart.map(item => [formatDate(item[0], t), item[1]]).slice(-14);
 	const latestTransactions = useAsyncCall(
-		() => fetchTransactionPage({ pageSize: 5, group: 'confirmed' }),
+		() => fetchTransactionPage({ pageSize: 5 }),
 		preloadedLatestTransactions,
 		null,
 		DATA_REFRESH_INTERVAL

@@ -7,6 +7,7 @@ const iconsMap = {
 	confirmed: '/images/icon-label-confirmed.svg',
 	true: '/images/icon-label-true.svg',
 	active: '/images/icon-label-true.svg',
+	pending: '/images/icon-label-pending.svg',
 	false: '/images/icon-label-false.svg',
 	inactive: '/images/icon-label-false.svg',
 	harvesting: '/images/icon-label-harvesting.svg',

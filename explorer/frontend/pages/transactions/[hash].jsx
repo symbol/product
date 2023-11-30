@@ -14,7 +14,7 @@ import ValueMosaic from '@/components/ValueMosaic';
 import ValueTransactionType from '@/components/ValueTransactionType';
 import { STORAGE_KEY, TRANSACTION_TYPE } from '@/constants';
 import styles from '@/styles/pages/TransactionInfo.module.scss';
-import { truncateDecimals, useStorage, useUserCurrencyAmount } from '@/utils';
+import { nullableValueToText, truncateDecimals, useStorage, useUserCurrencyAmount } from '@/utils';
 import Head from 'next/head';
 import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
@@ -137,10 +137,10 @@ const TransactionInfo = ({ transactionInfo }) => {
 							<ValueAccount address={transactionInfo.signer} size="sm" />
 						</Field>
 						<Field title={t('field_transaction_block')} description={t('field_transaction_block_description')}>
-							<ValueBlockHeight value={transactionInfo.height} />
+							<ValueBlockHeight value={nullableValueToText(transactionInfo.height)} />
 						</Field>
-						<Field title={t('field_size')}>{transactionInfo.size} B</Field>
-						<Field title={t('field_version')}>{transactionInfo.version}</Field>
+						<Field title={t('field_size')}>{nullableValueToText(transactionInfo.size)} B</Field>
+						<Field title={t('field_version')}>{nullableValueToText(transactionInfo.version)}</Field>
 						<Field title={t('field_signature')}>
 							<ValueCopy value={transactionInfo.signature} />
 						</Field>
