@@ -1,4 +1,5 @@
 from symbolchain.CryptoTypes import PublicKey
+from symbolchain.facade.NemFacade import NemFacade
 from symbolchain.nc import TransactionType
 from symbolchain.nem.Network import Address
 from symbollightapi.connector.NemConnector import NemConnector
@@ -17,6 +18,7 @@ class NemRestFacade:
 		self.nem_db = NemDatabase(db_config, network)
 		self.network = network
 		self.nem_connector = NemConnector(node_url, network)
+		self.nem_facade = NemFacade(str(network))
 
 	def get_block(self, height):
 		"""Gets block by height."""
@@ -121,6 +123,9 @@ class NemRestFacade:
 
 		def _format_xem_relative(amount):
 			return amount / (10 ** 6)
+
+		def _convert_timestamp_to_datetime(timestamp):
+			return self.nem_facade.network.datetime_converter.to_datetime(timestamp).strftime('%Y-%m-%d %H:%M:%S')
 
 		transaction_type_mapping = {
 			257: TransactionType.TRANSFER.name,
@@ -294,8 +299,8 @@ class NemRestFacade:
 					value=value,
 					fee=fee,
 					height=transaction.height,
-					timestamp=transaction.timestamp,
-					deadline=transaction.deadline,
+					timestamp=_convert_timestamp_to_datetime(transaction.timestamp),
+					deadline=_convert_timestamp_to_datetime(transaction.deadline),
 					embedded_transactions=embedded_transactions,
 					signature=transaction.signature.upper(),
 				)
