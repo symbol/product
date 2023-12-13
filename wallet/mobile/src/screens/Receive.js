@@ -24,7 +24,12 @@ export const Receive = connect((state) => ({
     const transaction = {
         recipientAddress: currentAccount.address,
         mosaics: [mosaic],
-        messageText: message ? message : null,
+        message: message
+            ? {
+                  text: message,
+                  isEncrypted: false,
+              }
+            : null,
         fee: 1,
     };
     const tableData = _.pick(transaction, 'recipientAddress');
