@@ -1,7 +1,7 @@
 import React from 'react';
 import { Linking } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
-import { AccountAvatar, ButtonPlain, DialogBox, FormItem, Screen, TableView, Widget } from 'src/components';
+import { ButtonPlain, DialogBox, FormItem, QRCode, Screen, TableView, Widget } from 'src/components';
 import { config } from 'src/config';
 import { $t } from 'src/localization';
 import { connect } from 'src/store';
@@ -11,11 +11,16 @@ import { publicAccountFromPrivateKey, usePasscode, useToggle } from 'src/utils';
 export const AccountDetails = connect((state) => ({
     currentAccount: state.account.current,
     multisigAddresses: state.account.multisigAddresses,
+    networkProperties: state.network.networkProperties,
     networkIdentifier: state.network.networkIdentifier,
 }))(function AccountDetails(props) {
-    const { currentAccount, multisigAddresses, networkIdentifier } = props;
+    const { currentAccount, multisigAddresses, networkProperties, networkIdentifier } = props;
     const { privateKey, index, ...restAccountInfo } = currentAccount;
     const [isPrivateKeyDialogShown, togglePrivateKeyDialog] = useToggle(false);
+    const QRData = {
+        address: currentAccount.address,
+        name: 'Account',
+    };
     const tableData = {
         ...restAccountInfo,
         publicKey: publicAccountFromPrivateKey(privateKey, networkIdentifier).publicKey,
@@ -64,7 +69,7 @@ export const AccountDetails = connect((state) => ({
                 <FormItem>
                     <Widget>
                         <FormItem style={layout.alignCenter}>
-                            <AccountAvatar address={currentAccount.address} size="lg" />
+                            <QRCode data={QRData} type={QRCode.QRTypes.address} networkProperties={networkProperties} />
                         </FormItem>
                         <FormItem>
                             <TableView data={tableData} rawAddresses />

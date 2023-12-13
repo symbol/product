@@ -21,6 +21,9 @@ import { layout } from 'src/styles';
 import { TransactionType } from 'symbol-sdk';
 
 const getQrAddress = (data) => {
+    if (data.accountAddress) {
+        return data.accountAddress;
+    }
     const networkIdentifier = networkTypeToIdentifier(data.networkType);
     if (data.accountPublicKey) {
         return addressFromPublicKey(data.accountPublicKey, networkIdentifier);
@@ -103,6 +106,22 @@ export const Scan = connect((state) => ({
             ],
         },
         contact: {
+            description: $t('s_scan_address_description'),
+            invalidDescription: $t('s_scan_address_wrongNetwork_description'),
+            validate: (data) => networkTypeToIdentifier(data.networkType) === networkIdentifier,
+            renderComponent: (data) => <AccountCard address={getQrAddress(data)} />,
+            actions: [
+                {
+                    title: $t('button_addToAddressBook'),
+                    handler: (data) => Router.goToAddressBookEdit({ address: getQrAddress(data) }),
+                },
+                {
+                    title: $t('button_sendTransactionToThisAccount'),
+                    handler: (data) => Router.goToSend({ recipientAddress: getQrAddress(data) }),
+                },
+            ],
+        },
+        address: {
             description: $t('s_scan_address_description'),
             invalidDescription: $t('s_scan_address_wrongNetwork_description'),
             validate: (data) => networkTypeToIdentifier(data.networkType) === networkIdentifier,
