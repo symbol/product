@@ -256,6 +256,7 @@
 	"value_keyUnlink": "Відв'язати",
 	"value_true": "Так",
 	"value_false": "Ні",
+	"value_transactionConfirmationTime": "~ через {{value}} сек.",
 	"label_incoming": "Від",
 	"label_outgoing": "Кому",
 	"label_created": "Створено",

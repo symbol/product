@@ -261,6 +261,7 @@
 	"value_keyUnlink": "Unlink",
 	"value_true": "Yes",
 	"value_false": "No",
+	"value_transactionConfirmationTime": "~ in {{value}} seconds",
 	"label_incoming": "From",
 	"label_outgoing": "To",
 	"label_created": "Created",

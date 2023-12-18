@@ -1,5 +1,5 @@
 import { fetchBlockPage } from '@/api/blocks';
-import { fetchMarketData, fetchNodeStats, fetchTransactionChart, fetchTransactionStats } from '@/api/stats';
+import { fetchBlockStats, fetchMarketData, fetchNodeStats, fetchTransactionChart, fetchTransactionStats } from '@/api/stats';
 import { fetchTransactionPage } from '@/api/transactions';
 import ChartLine from '@/components/ChartLine';
 import CustomImage from '@/components/CustomImage';
@@ -24,12 +24,14 @@ export const getServerSideProps = async ({ locale }) => {
 		fetchTransactionPage({ pageSize: 5 }),
 		fetchTransactionPage({ pageSize: 5, group: 'unconfirmed' })
 	]);
-	const [marketDataPromise, transactionStatsPromise, nodeStatsPromise, transactionChartPromise] = await Promise.allSettled([
-		fetchMarketData(),
-		fetchTransactionStats(),
-		fetchNodeStats(),
-		fetchTransactionChart({ isPerDay: true })
-	]);
+	const [marketDataPromise, transactionStatsPromise, nodeStatsPromise, transactionChartPromise, blockStatsPromise] =
+		await Promise.allSettled([
+			fetchMarketData(),
+			fetchTransactionStats(),
+			fetchNodeStats(),
+			fetchTransactionChart({ isPerDay: true }),
+			fetchBlockStats()
+		]);
 
 	return {
 		props: {
@@ -40,6 +42,7 @@ export const getServerSideProps = async ({ locale }) => {
 			transactionStats: transactionStatsPromise.value || {},
 			nodeStats: nodeStatsPromise.value || {},
 			transactionChart: transactionChartPromise.value || [],
+			blockTime: blockStatsPromise.value?.blockTime || 0,
 			...(await serverSideTranslations(locale, ['common']))
 		}
 	};
@@ -52,7 +55,8 @@ const Home = ({
 	transactionChart,
 	transactionStats,
 	marketData,
-	nodeStats
+	nodeStats,
+	blockTime
 }) => {
 	const { t } = useTranslation();
 	const formattedTransactionChart = transactionChart.map(item => [formatDate(item[0], t), item[1]]).slice(-14);
@@ -117,7 +121,7 @@ const Home = ({
 							<Field title={t('field_totalNodes')}>{nodeStats.total}</Field>
 							<Field title={t('field_supernodes')}>{nodeStats.supernodes}</Field>
 						</div>
-						<CustomImage src="/images/stub-node-chart.svg" style={{ width: '100%', objectFit: 'contain' }} />
+						{/* <CustomImage src="/images/stub-node-chart.svg" style={{ width: '100%', objectFit: 'contain' }} /> */}
 					</div>
 				</div>
 			</Section>
@@ -126,7 +130,7 @@ const Home = ({
 					<RecentTransactions data={latestTransactions.data} />
 				</Section>
 				<Section title={t('section_pendingTransactions')}>
-					<RecentTransactions data={pendingTransactions.data} />
+					<RecentTransactions data={pendingTransactions.data} blockTime={blockTime} />
 				</Section>
 			</div>
 		</div>

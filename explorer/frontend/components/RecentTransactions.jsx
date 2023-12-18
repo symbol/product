@@ -6,7 +6,7 @@ import ValueTransactionHash from './ValueTransactionHash';
 import styles from '@/styles/components/RecentTransactions.module.scss';
 import { useTranslation } from 'next-i18next';
 
-const TransactionPreview = ({ type, group, hash, timestamp, deadline, amount }) => {
+const TransactionPreview = ({ type, group, hash, timestamp, amount, blockTime }) => {
 	const { t } = useTranslation();
 	const typeText = t(`transactionType_${type}`);
 	const isUnconfirmed = group === 'unconfirmed';
@@ -17,12 +17,8 @@ const TransactionPreview = ({ type, group, hash, timestamp, deadline, amount }) 
 			{!isUnconfirmed && <IconTransactionType value={type} />}
 			<div className={styles.info}>
 				<div className={styles.type}>{typeText}</div>
-				<ValueTransactionHash value={hash} />
-				{isUnconfirmed && (
-					<span>
-						~ <ValueAge value={deadline} />
-					</span>
-				)}
+				{!!hash && <ValueTransactionHash value={hash} />}
+				{isUnconfirmed && <span>{t('value_transactionConfirmationTime', { value: blockTime })}</span>}
 				{!isUnconfirmed && <ValueAge value={timestamp} />}
 			</div>
 			<div className={styles.amount}>
@@ -32,7 +28,7 @@ const TransactionPreview = ({ type, group, hash, timestamp, deadline, amount }) 
 	);
 };
 
-const RecentTransactions = ({ data }) => {
+const RecentTransactions = ({ data, blockTime }) => {
 	const { t } = useTranslation('common');
 
 	return (
@@ -46,6 +42,7 @@ const RecentTransactions = ({ data }) => {
 					timestamp={item.timestamp}
 					fee={item.fee}
 					amount={item.amount}
+					blockTime={blockTime}
 					key={key}
 				/>
 			))}
