@@ -34,7 +34,7 @@ const Mosaics = ({ mosaics }) => {
 	const tableColumns = [
 		{
 			key: 'name',
-			size: '40rem',
+			size: '20rem',
 			renderValue: value => <Link href={createPageHref('mosaics', value)}>{value}</Link>
 		},
 		{

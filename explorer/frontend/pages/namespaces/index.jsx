@@ -32,7 +32,7 @@ const Blocks = ({ namespaces }) => {
 	const tableColumns = [
 		{
 			key: 'name',
-			size: '32rem',
+			size: '20rem',
 			renderValue: value => <Link href={createPageHref('namespaces', value)}>{value}</Link>
 		},
 		{
