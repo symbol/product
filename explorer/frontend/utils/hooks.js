@@ -65,7 +65,11 @@ export const usePagination = (callback, defaultData, defaultFilter = {}) => {
 		call(1, filter);
 	};
 
-	return { requestNextPage, data, isLoading, pageNumber, isLastPage, filter, isError, changeFilter };
+	const clearFilter = () => {
+		changeFilter(defaultFilter);
+	};
+
+	return { requestNextPage, data, isLoading, pageNumber, isLastPage, filter, isError, changeFilter, clearFilter };
 };
 
 export const useFilter = (callback, defaultData, initialCall) => {
