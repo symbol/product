@@ -1,4 +1,5 @@
 import { STORAGE_KEY } from '@/constants';
+import _ from 'lodash';
 import { useEffect, useState } from 'react';
 
 export const useDataManager = (callback, defaultData, onError, loadingState = false) => {
@@ -53,6 +54,16 @@ export const usePagination = (callback, defaultData, defaultFilter = {}) => {
 		});
 	};
 
+	const initialRequest = () => {
+		setFilter(defaultFilter);
+		setIsLoading(false);
+		setIsError(false);
+		setIsLastPage(false);
+		setPageNumber(1);
+		setData(defaultData);
+		call(1, filter);
+	};
+
 	const requestNextPage = () => {
 		const nextPageNumber = pageNumber + 1;
 		call(nextPageNumber, filter);
@@ -69,7 +80,37 @@ export const usePagination = (callback, defaultData, defaultFilter = {}) => {
 		changeFilter(defaultFilter);
 	};
 
-	return { requestNextPage, data, isLoading, pageNumber, isLastPage, filter, isError, changeFilter, clearFilter };
+	return { requestNextPage, initialRequest, data, isLoading, pageNumber, isLastPage, filter, isError, changeFilter, clearFilter };
+};
+
+export const useClientSidePagination = (fullData, pageSize = 10) => {
+	const isLoading = false;
+	const isError = false;
+	const [isLastPage, setIsLastPage] = useState(false);
+	const [pageNumber, setPageNumber] = useState(0);
+	const [dataChunks, setDataChunks] = useState([]);
+	const [data, setData] = useState([]);
+
+	const requestNextPage = () => {
+		const nextPageNumber = pageNumber + 1;
+		const page = dataChunks[nextPageNumber];
+
+		if (!page) {
+			setIsLastPage(true);
+			return;
+		}
+
+		setData([...data, ...page]);
+		setPageNumber(nextPageNumber);
+	};
+
+	useEffect(() => {
+		const dataChunks = _.chunk(fullData, pageSize);
+		setDataChunks(dataChunks);
+		setData(dataChunks[0]);
+	}, [fullData, pageSize]);
+
+	return { requestNextPage, data, isLoading, pageNumber, isLastPage, isError };
 };
 
 export const useFilter = (callback, defaultData, initialCall) => {

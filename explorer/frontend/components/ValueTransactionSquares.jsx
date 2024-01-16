@@ -1,3 +1,4 @@
+import LoadingIndicator from './LoadingIndicator';
 import ValueMosaic from './ValueMosaic';
 import ValueTransaction from './ValueTransaction';
 import styles from '@/styles/components/ValueTransactionSquares.module.scss';
@@ -8,15 +9,17 @@ import { renderToString } from 'react-dom/server';
 
 const ReactApexChart = dynamic(() => import('react-apexcharts'), { ssr: false });
 
+const MAX_DATA_LENGTH = 400;
+
 const Tooltip = ({ fee }) => <ValueMosaic isNative amount={fee} />;
 
-const ValueTransactionSquares = ({ data = [], isTransactionPreviewEnabled, className }) => {
+const ValueTransactionSquares = ({ data = [], isTransactionPreviewEnabled, isLoading, className }) => {
 	const { t } = useTranslation('common');
+	const isChartPresentable = data.length < MAX_DATA_LENGTH;
 	const [selectedTransaction, setSelectedTransaction] = useState(null);
 	const colorHigh = '#52B12C';
 	const colorMedium = '#F3BA2F';
 	const colorLow = '#B94F4F';
-
 	const colors = [colorHigh, colorMedium, colorLow];
 
 	const series = [
@@ -83,8 +86,10 @@ const ValueTransactionSquares = ({ data = [], isTransactionPreviewEnabled, class
 
 	return (
 		<div className={`${styles.valueTransactionSquares} ${className}`} id="chart">
-			{!!data.length && <ReactApexChart options={options} series={series} type="treemap" height="100%" />}
-			{!data.length && <div className={styles.emptyDataMessage}>{t('message_emptyTable')}</div>}
+			{!!data.length && !isLoading && isChartPresentable && (
+				<ReactApexChart className={styles.chart} options={options} series={series} type="treemap" height="100%" />
+			)}
+			{!data.length && !isLoading && <div className={styles.emptyDataMessage}>{t('message_emptyTable')}</div>}
 			{!!isTransactionPreviewEnabled && !!selectedTransaction && (
 				<div className={styles.selectedTransaction}>
 					<ValueTransaction
@@ -92,6 +97,11 @@ const ValueTransactionSquares = ({ data = [], isTransactionPreviewEnabled, class
 						value={selectedTransaction.hash}
 						amount={selectedTransaction.amount}
 					/>
+				</div>
+			)}
+			{isLoading && (
+				<div className={styles.loadingIndicator}>
+					<LoadingIndicator />
 				</div>
 			)}
 		</div>

@@ -14,9 +14,11 @@ import ValueTransactionHash from '@/components/ValueTransactionHash';
 import ValueTransactionSquares from '@/components/ValueTransactionSquares';
 import ValueTransactionType from '@/components/ValueTransactionType';
 import styles from '@/styles/pages/BlockInfo.module.scss';
+import { useClientSidePagination, usePagination } from '@/utils';
 import Head from 'next/head';
 import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
+import { useEffect } from 'react';
 
 export const getServerSideProps = async ({ locale, params }) => {
 	const blockInfo = await fetchBlockInfo(params.height);
@@ -27,19 +29,21 @@ export const getServerSideProps = async ({ locale, params }) => {
 		};
 	}
 
-	const transactionsPage = await fetchTransactionPage({ pageSize: blockInfo.transactionCount }, { height: params.height });
-
 	return {
 		props: {
 			blockInfo,
-			transactions: transactionsPage.data,
 			...(await serverSideTranslations(locale, ['common']))
 		}
 	};
 };
 
-const BlockInfo = ({ blockInfo, transactions }) => {
+const BlockInfo = ({ blockInfo }) => {
 	const { t } = useTranslation();
+	const transactionInitialPagination = usePagination(
+		async () => await fetchTransactionPage({ pageSize: blockInfo.transactionCount }, { height: blockInfo.height }),
+		[]
+	);
+	const transactionPagination = useClientSidePagination(transactionInitialPagination.data);
 
 	const tableColumns = [
 		{
@@ -81,6 +85,10 @@ const BlockInfo = ({ blockInfo, transactions }) => {
 		}
 	];
 
+	useEffect(() => {
+		transactionInitialPagination.initialRequest();
+	}, [blockInfo.height]);
+
 	return (
 		<div className={styles.wrapper}>
 			<Head>
@@ -110,7 +118,8 @@ const BlockInfo = ({ blockInfo, transactions }) => {
 						<Field title={t('field_transactionFees')}>
 							<ValueTransactionSquares
 								isTransactionPreviewEnabled
-								data={transactions}
+								data={transactionInitialPagination.data}
+								isLoading={transactionInitialPagination.isLoading}
 								className={styles.valueTransactionSquares}
 							/>
 						</Field>
@@ -135,10 +144,14 @@ const BlockInfo = ({ blockInfo, transactions }) => {
 			</div>
 			<Section title={t('section_transactions')}>
 				<Table
-					data={transactions}
 					columns={tableColumns}
 					renderItemMobile={data => <ItemTransactionMobile data={data} />}
-					isLastPage={true}
+					data={transactionPagination.data}
+					isLoading={transactionInitialPagination.isLoading}
+					isLastPage={transactionPagination.isLastPage}
+					isError={transactionInitialPagination.isError}
+					isLastColumnAligned
+					onEndReached={transactionPagination.requestNextPage}
 				/>
 			</Section>
 		</div>
