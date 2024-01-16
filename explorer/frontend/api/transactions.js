@@ -28,14 +28,7 @@ export const fetchTransactionPage = async searchCriteria => {
 		url = createAPISearchURL(`${config.API_BASE_URL}/transactions`, { pageNumber, pageSize }, formattedFilter);
 	}
 
-	// TODO: remove try-catch section.
-	let transactions;
-	try {
-		transactions = await makeRequest(url);
-	} catch {
-		transactions = [];
-	}
-
+	const transactions = await makeRequest(url);
 	const formatter = data => formatTransaction(data, formattedFilter);
 
 	return createPage(transactions, pageNumber, formatter);
