@@ -38,12 +38,11 @@ export const usePagination = (callback, defaultData, defaultFilter = {}) => {
 		setIsLoading(true);
 		setTimeout(async () => {
 			try {
-				const { data, pageNumber: currentPageNumber } = await callback({ pageNumber: pageNumber, ...filter });
-
+				const { data: currentData, pageNumber: currentPageNumber } = await callback({ pageNumber: pageNumber, ...filter });
 				if (currentPageNumber === pageNumber) {
-					setData(v => [...v, ...data]);
+					setData([...data, ...currentData]);
 					setPageNumber(currentPageNumber);
-					setIsLastPage(data.length === 0);
+					setIsLastPage(currentData.length === 0);
 				}
 			} catch (error) {
 				// eslint-disable-next-line no-console
@@ -108,6 +107,8 @@ export const useClientSidePagination = (fullData, pageSize = 10) => {
 		const dataChunks = _.chunk(fullData, pageSize);
 		setDataChunks(dataChunks);
 		setData(dataChunks[0]);
+		setIsLastPage(false);
+		setPageNumber(0);
 	}, [fullData, pageSize]);
 
 	return { requestNextPage, data, isLoading, pageNumber, isLastPage, isError };
