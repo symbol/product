@@ -7,7 +7,7 @@ export const formatDate = (dateStr, translate, config = {}) => {
 	};
 
 	const dateObj =
-		type === 'local' ? new Date(dateStr) : new Date(new Date(dateStr).getTime() + new Date(dateStr).getTimezoneOffset() * 60000);
+		type === 'local' ? new Date(new Date(dateStr).getTime() - new Date(dateStr).getTimezoneOffset() * 60000) : new Date(dateStr);
 	const seconds = addZero(dateObj.getSeconds());
 	const minutes = addZero(dateObj.getMinutes());
 	const hour = addZero(dateObj.getHours());
