@@ -1,6 +1,13 @@
 import config from '@/config';
 import { ACCOUNT_STATE_CHANGE_ACTION, COSIGNATORY_MODIFICATION_ACTION, TRANSACTION_DIRECTION, TRANSACTION_TYPE } from '@/constants';
-import { createAPICallFunction, createAPISearchURL, createPage, createSearchCriteria, makeRequest } from '@/utils';
+import {
+	createAPICallFunction,
+	createAPISearchURL,
+	createPage,
+	createSearchCriteria,
+	decodeTransactionMessage,
+	makeRequest
+} from '@/utils';
 
 export const fetchTransactionPage = async searchCriteria => {
 	const { pageNumber, pageSize, filter } = createSearchCriteria(searchCriteria);
@@ -159,7 +166,7 @@ const formatTransferTransaction = (data, filter) => {
 	if (rawMessage?.payload) {
 		message = {
 			type: rawMessage.isPlain ? 'plain' : '',
-			text: rawMessage.payload ? rawMessage.payload : null
+			text: rawMessage.payload ? decodeTransactionMessage(rawMessage.payload) : null
 		};
 	}
 
