@@ -114,3 +114,7 @@ export const formatMosaicCSV = (row, translate) => {
 		[translate('table_field_amount')]: row.amount
 	};
 };
+
+export const decodeTransactionMessage = text => {
+	return Buffer.from(text, 'hex').toString();
+};
