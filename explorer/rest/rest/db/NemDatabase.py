@@ -523,13 +523,14 @@ class NemDatabase(DatabaseConnectionPool):
 		(
 			address,
 			remark,
-			balance
+			balance,
+			divisibility
 		) = result
 
 		return MosaicRichListView(
 			address=str(Address(_format_address_bytes(address))),
 			remark=remark,
-			balance=_format_xem_relative(balance)
+			balance=_format_relative(balance, divisibility)
 		)
 
 	def _create_mosaic_transfers_view(self, result):
@@ -772,12 +773,15 @@ class NemDatabase(DatabaseConnectionPool):
 						jsonb_array_elements(mosaics) as mosaic
 				)
 				SELECT
-					address,
-					remarks,
-					balance
+					ml.address,
+					ml.remarks,
+					ml.balance,
+					m.divisibility
 				FROM
-					mosaic_list
-				WHERE namespace_name = %s
+					mosaic_list ml
+					LEFT JOIN mosaics m
+						ON ml.namespace_name = m.namespace_name
+				WHERE ml.namespace_name = %s
 				ORDER BY balance DESC
 				LIMIT %s OFFSET %s
 			''', (namespace_name, limit, offset,))
