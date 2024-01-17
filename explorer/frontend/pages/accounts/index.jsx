@@ -65,11 +65,6 @@ const Accounts = ({ preloadedData, stats }) => {
 			name: 'isActiveHarvesting',
 			title: t('filter_activeHarvesting'),
 			type: 'boolean'
-		},
-		{
-			name: 'isService',
-			title: t('filter_service'),
-			type: 'boolean'
 		}
 	];
 
