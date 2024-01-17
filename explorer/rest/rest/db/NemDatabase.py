@@ -249,7 +249,7 @@ class NemDatabase(DatabaseConnectionPool):
 			supply_mutable=result[8],
 			transferable=result[9],
 			levy_type=levy_type,
-			levy_namespace=result[12],
+			levy_namespace=result[11],
 			levy_fee=levy_fee,
 			levy_recipient=Address(result[14]) if result[14] else None,
 			root_namespace_registered_height=result[15],
