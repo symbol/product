@@ -40,7 +40,7 @@ export const getServerSideProps = async ({ locale, params }) => {
 const BlockInfo = ({ blockInfo }) => {
 	const { t } = useTranslation();
 	const transactionInitialPagination = usePagination(
-		async () => await fetchTransactionPage({ pageSize: blockInfo.transactionCount }, { height: blockInfo.height }),
+		async () => await fetchTransactionPage({ pageSize: blockInfo.transactionCount, height: blockInfo.height }),
 		[]
 	);
 	const transactionPagination = useClientSidePagination(transactionInitialPagination.data);
@@ -150,7 +150,6 @@ const BlockInfo = ({ blockInfo }) => {
 					isLoading={transactionInitialPagination.isLoading}
 					isLastPage={transactionPagination.isLastPage}
 					isError={transactionInitialPagination.isError}
-					isLastColumnAligned
 					onEndReached={transactionPagination.requestNextPage}
 				/>
 			</Section>

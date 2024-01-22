@@ -33,7 +33,7 @@ export const usePagination = (callback, defaultData, defaultFilter = {}) => {
 	const [pageNumber, setPageNumber] = useState(1);
 	const [data, setData] = useState(defaultData);
 
-	const call = (pageNumber, filter) => {
+	const call = (pageNumber, filter, data) => {
 		setIsError(false);
 		setIsLoading(true);
 		setTimeout(async () => {
@@ -60,19 +60,19 @@ export const usePagination = (callback, defaultData, defaultFilter = {}) => {
 		setIsLastPage(false);
 		setPageNumber(1);
 		setData(defaultData);
-		call(1, filter);
+		call(1, defaultFilter, defaultData);
 	};
 
 	const requestNextPage = () => {
 		const nextPageNumber = pageNumber + 1;
-		call(nextPageNumber, filter);
+		call(nextPageNumber, filter, data);
 	};
 
 	const changeFilter = filter => {
 		setData([]);
 		setPageNumber(0);
 		setFilter(filter);
-		call(1, filter);
+		call(1, filter, []);
 	};
 
 	const clearFilter = () => {
