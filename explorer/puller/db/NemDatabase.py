@@ -143,6 +143,13 @@ class NemDatabase(DatabaseConnection):
 
 		cursor.execute(
 			'''
+			CREATE INDEX IF NOT EXISTS idx_namespace_name_gin
+				ON accounts USING GIN ((mosaics->'namespace_name'))
+			'''
+		)
+
+		cursor.execute(
+			'''
 			CREATE INDEX IF NOT EXISTS idx_height
 				ON blocks (height desc)
 			'''
@@ -152,6 +159,13 @@ class NemDatabase(DatabaseConnection):
 			'''
 			CREATE INDEX IF NOT EXISTS idx_total_transactions
 				ON blocks (total_transactions)
+			'''
+		)
+
+		cursor.execute(
+			'''
+			CREATE INDEX IF NOT EXISTS idx_namespace_name
+				ON mosaics (namespace_name)
 			'''
 		)
 
