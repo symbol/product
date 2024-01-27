@@ -151,31 +151,86 @@ class NemDatabase(DatabaseConnectionPool):
 				ON t.id = tt.transaction_id
 		"""
 
-	def _generate_account_sql_query(self):
+	def _generate_account_sql_query(self, where_condition='', order_condition='', limit_condition=''):
 		"""Base account sql query."""
 
-		return """
+		return f'''
+			WITH expanded_accounts AS (
+				SELECT
+					a.address,
+					a.public_key,
+					a.remote_address,
+					a.importance,
+					a.balance,
+					a.vested_balance,
+					a.mosaics,
+					a.harvested_fees,
+					a.harvested_blocks,
+					a.harvest_status,
+					a.harvest_remote_status,
+					a.height,
+					a.min_cosignatories,
+					a.cosignatory_of,
+					a.cosignatories,
+					ar.remarks
+				FROM
+					accounts a
+						LEFT JOIN account_remarks ar ON ar.address = a.address
+				{where_condition}
+				{order_condition}
+				{limit_condition}
+			)
 			SELECT
-				a.address,
-				a.public_key,
-				a.remote_address,
-				a.importance,
-				a.balance,
-				a.vested_balance,
-				a.mosaics,
-				a.harvested_fees,
-				a.harvested_blocks,
-				a.harvest_status,
-				a.harvest_remote_status,
-				a.height,
-				a.min_cosignatories,
-				a.cosignatory_of,
-				a.cosignatories,
-				ar.remarks
-			FROM accounts a
-			LEFT JOIN account_remarks ar
-				ON ar.address = a.address
-		"""
+				ea.address,
+				ea.public_key,
+				ea.remote_address,
+				ea.importance,
+				ea.balance,
+				ea.vested_balance,
+				jsonb_agg(
+					jsonb_set(
+						mosaic.value,
+						'{{divisibility}}',
+						to_jsonb(
+							CASE
+								WHEN mosaic.value->>'namespace_name' = 'nem.xem' THEN 6
+								ELSE COALESCE(m.divisibility, 0)
+							END
+						)
+					)
+				) as mosaics,
+				ea.harvested_fees,
+				ea.harvested_blocks,
+				ea.harvest_status,
+				ea.harvest_remote_status,
+				ea.height,
+				ea.min_cosignatories,
+				ea.cosignatory_of,
+				ea.cosignatories,
+				ea.remarks
+			FROM
+				expanded_accounts ea
+			CROSS JOIN LATERAL
+				jsonb_array_elements(ea.mosaics) AS mosaic
+			LEFT JOIN
+				mosaics m ON mosaic.value->>'namespace_name' = m.namespace_name
+			GROUP BY
+				ea.address,
+				ea.public_key,
+				ea.remote_address,
+				ea.importance,
+				ea.balance,
+				ea.vested_balance,
+				ea.harvested_fees,
+				ea.harvested_blocks,
+				ea.harvest_status,
+				ea.harvest_remote_status,
+				ea.height,
+				ea.min_cosignatories,
+				ea.cosignatory_of,
+				ea.cosignatories,
+				ea.remarks
+		'''
 
 	def _create_block_view(self, result):
 		harvest_public_key = PublicKey(_format_bytes(result[6]))
@@ -474,7 +529,10 @@ class NemDatabase(DatabaseConnectionPool):
 			importance=importance,
 			balance=_format_xem_relative(balance),
 			vested_balance=_format_xem_relative(vested_balance),
-			mosaics=mosaics,
+			mosaics=[{
+				'namespace_name': mosaic['namespace_name'],
+				'quantity': _format_relative(mosaic['quantity'], mosaic['divisibility'])
+			} for mosaic in mosaics],
 			harvested_fees=_format_xem_relative(harvested_fees),
 			harvested_blocks=harvested_blocks,
 			harvest_status=harvest_status,
@@ -878,8 +936,6 @@ class NemDatabase(DatabaseConnectionPool):
 
 		address, public_key = query
 
-		sql = self._generate_account_sql_query()
-
 		params = []
 
 		where_clauses = []
@@ -893,7 +949,9 @@ class NemDatabase(DatabaseConnectionPool):
 				params.extend(['\\x' + PublicKey(public_key).bytes.hex()])
 
 		if where_clauses:
-			sql += " WHERE " + " AND ".join(where_clauses)
+			where_condition = " WHERE " + " AND ".join(where_clauses)
+
+		sql = self._generate_account_sql_query(where_condition)
 
 		with self.connection() as connection:
 			cursor = connection.cursor()
@@ -905,12 +963,14 @@ class NemDatabase(DatabaseConnectionPool):
 	def get_accounts(self, limit, offset, sort):
 		"""Gets accounts pagination in database."""
 
-		sql = self._generate_account_sql_query()
-
 		params = []
 
-		sql += f" ORDER BY a.balance {sort} LIMIT %s OFFSET %s"
+		order_condition = f" ORDER BY a.balance {sort} "
+		limit_condition = " LIMIT %s OFFSET %s"
+
 		params.extend([limit, offset])
+
+		sql = self._generate_account_sql_query(limit_condition=limit_condition, order_condition=order_condition)
 
 		with self.connection() as connection:
 			cursor = connection.cursor()
