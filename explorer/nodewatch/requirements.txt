@@ -1,4 +1,4 @@
-aiohttp==3.9.1
+aiohttp==3.9.2
 APScheduler==3.10.4
 Flask==3.0.1
 pandas==2.2.0
