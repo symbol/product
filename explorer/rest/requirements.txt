@@ -1,4 +1,4 @@
-aiohttp==3.9.1
+aiohttp==3.9.2
 Flask==3.0.1
 psycopg2-binary==2.9.9
 symbol-sdk-python==3.1.0
