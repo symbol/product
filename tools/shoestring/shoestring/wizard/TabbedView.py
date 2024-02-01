@@ -26,11 +26,11 @@ class TabList(RadioList):
 	:param values: List of (value, label) tuples.
 	"""
 
-	container_style = 'class:tab-list'
-	default_style = 'class:tab'
-	selected_style = 'class:tab-selected'
-	checked_style = 'class:tab-checked'
-	multiple_selection = False
+	container_style = 'class:tab-list'  # pylint: disable=invalid-name
+	default_style = 'class:tab'  # pylint: disable=invalid-name
+	selected_style = 'class:tab-selected'  # pylint: disable=invalid-name
+	checked_style = 'class:tab-checked'  # pylint: disable=invalid-name
+	multiple_selection = False  # pylint: disable=invalid-name
 
 	def __init__(self, values, default=None):
 		super().__init__(values, default)
