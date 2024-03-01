@@ -1,5 +1,5 @@
 build==1.0.3
 cffi==1.16.0
-pytest==8.0.1
+pytest==8.0.2
 pytest-aiohttp==1.0.5
 coverage>=6.3

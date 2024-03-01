@@ -1,4 +1,4 @@
 Babel==2.14.0
-pytest==8.0.1
+pytest==8.0.2
 pytest-aiohttp==1.0.5
 coverage>=6.3
