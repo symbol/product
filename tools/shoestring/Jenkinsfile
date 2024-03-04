@@ -1,9 +1,10 @@
 defaultCiPipeline {
-	operatingSystem = ['ubuntu']
+	// First OS is the default for CI
+	operatingSystem = ['ubuntu', 'fedora']
 	instanceSize = 'medium'
 
 	environment = 'python'
-	otherEnvironments = ['python-ubuntu-base', 'python-ubuntu-latest']
+	otherEnvironments = ['python-fedora-lts', 'python-ubuntu-base', 'python-ubuntu-latest']
 
 	packageId = 'tools-shoestring'
 
