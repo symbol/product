@@ -1,0 +1,12 @@
+---
+extends:
+  - airbnb
+  - ../../linters/javascript/default.eslintrc
+rules:
+  import/extensions:
+  - error
+  - ignorePackages
+globals:
+  snap: 'readonly'
+ignorePatterns:
+  - 'dist/'
