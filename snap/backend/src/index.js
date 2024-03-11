@@ -1,5 +1,6 @@
 import { panel, text } from '@metamask/snaps-sdk';
 
+// eslint-disable-next-line import/prefer-default-export
 export const onRpcRequest = async ({ origin, request }) => {
 	switch (request.method) {
 	case 'hello':
