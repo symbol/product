@@ -23,7 +23,8 @@
     "lint:fix": "eslint --ext js --fix .",
     "prepublishOnly": "mm-snap manifest",
     "serve": "mm-snap serve",
-    "start": "mm-snap watch"
+    "start": "mm-snap watch",
+    "test": "mocha --full-trace --recursive test"
   },
   "dependencies": {
     "@metamask/snaps-cli": "^6.0.2",
@@ -31,10 +32,11 @@
   },
   "devDependencies": {
     "@metamask/eslint-config": "^12.0.0",
-    "@metamask/eslint-config-jest": "^12.0.0",
-    "@metamask/snaps-jest": "^6.0.1",
+    "@metamask/snaps-jest": "^5.0.0",
+    "chai": "^5.1.0",
     "eslint": "^8.45.0",
     "eslint-config-airbnb": "^19.0.4",
-    "eslint-plugin-jest": "^27.1.5"
+    "mocha": "^10.3.0",
+    "sinon": "^17.0.1"
   }
 }
