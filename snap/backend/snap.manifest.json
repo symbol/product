@@ -1,0 +1,28 @@
+{
+  "version": "0.1.0",
+  "description": "Symbol snap.",
+  "proposedName": "Symbol",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/symbol/product.git"
+  },
+  "source": {
+    "shasum": "uhRryYWrO1D7U9yyDo8OIw41DbiV/tE1UAw89wuhxT8=",
+    "location": {
+      "npm": {
+        "filePath": "dist/bundle.js",
+        "iconPath": "images/icon.svg",
+        "packageName": "snap-backend",
+        "registry": "https://registry.npmjs.org/"
+      }
+    }
+  },
+  "initialPermissions": {
+    "snap_dialog": {},
+    "endowment:rpc": {
+      "dapps": true,
+      "snaps": false
+    }
+  },
+  "manifestVersion": "0.1"
+}
