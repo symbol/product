@@ -8,5 +8,10 @@ rules:
   - ignorePackages
 globals:
   snap: 'readonly'
+overrides:
+  - files:
+      - '*_spec.js'
+    extends:
+      - '@metamask/eslint-config-jest'
 ignorePatterns:
   - 'dist/'
