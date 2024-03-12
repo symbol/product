@@ -24,7 +24,8 @@
     "prepublishOnly": "mm-snap manifest",
     "serve": "mm-snap serve",
     "start": "mm-snap watch",
-    "test": "NODE_OPTIONS=--experimental-vm-modules jest"
+    "test": "NODE_OPTIONS=--experimental-vm-modules npx jest",
+    "test:jenkins:cov": "NODE_OPTIONS=--experimental-vm-modules npx jest --coverage"
   },
   "dependencies": {
     "@metamask/snaps-cli": "^6.0.2",
