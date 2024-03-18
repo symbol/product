@@ -1,0 +1,14 @@
+defaultCiPipeline {
+	operatingSystem = ['ubuntu']
+	instanceSize = 'medium'
+
+	ciBuildDockerfile = 'javascript.Dockerfile'
+
+	packageId = 'snap-backend'
+
+	publisher = 'docker'
+	dockerImageName = 'symbolplatform/snap-backend'
+
+	codeCoverageTool = 'c8'
+	minimumCodeCoverage = 95
+}
