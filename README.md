@@ -11,6 +11,7 @@ It includes our optin manager.
 | [@faucet/backend](faucet/backend) | [![lint][faucet-backend-lint]][faucet-backend-job] | | [![test][faucet-backend-test]][faucet-backend-job]| [![][faucet-backend-cov]][faucet-backend-cov-link] |
 | [@faucet/frontend](faucet/frontend) | [![lint][faucet-frontend-lint]][faucet-frontend-job] | [![build][faucet-frontend-build]][faucet-frontend-job] | [![test][faucet-frontend-test]][faucet-frontend-job]| [![][faucet-frontend-cov]][faucet-frontend-cov-link] |
 | [@lightapi/python](lightapi/python) | [![lint][lightapi-python-lint]][lightapi-python-job] | | [![test][lightapi-python-test]][lightapi-python-job] | [![][lightapi-python-cov]][lightapi-python-cov-link]
+| [@snap/backend](snap/backend) | [![lint][snap-backend-lint]][snap-backend-job] | [![build][snap-backend-build]][snap-backend-job] | [![test][snap-backend-test]][snap-backend-job] | [![][snap-backend-cov]][snap-backend-cov-link] |
 | [@tools/shoestring](tools/shoestring) | [![lint][tools-shoestring-lint]][tools-shoestring-job] | | [![test][tools-shoestring-test]][tools-shoestring-job]| [![][tools-shoestring-cov]][tools-shoestring-cov-link] |
 | [@tools/vanity](tools/vanity) | [![lint][tools-vanity-lint]][tools-vanity-job] | | [![test][tools-vanity-test]][tools-vanity-job]| [![][tools-vanity-cov]][tools-vanity-cov-link] |
 
@@ -59,6 +60,13 @@ Detailed version can be seen on [codecov.io][product-cov-link].
 [lightapi-python-test]: https://jenkins.symboldev.com/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Flightapi-python%2Fdev%2F&config=lightapi-python-test
 [lightapi-python-cov]: https://codecov.io/gh/symbol/product/branch/dev/graph/badge.svg?token=SSYYBMK0M7&flag=lightapi-python
 [lightapi-python-cov-link]: https://codecov.io/gh/symbol/product/tree/dev/lightapi/python
+
+[snap-backend-job]: https://jenkins.symboldev.com/blue/organizations/jenkins/Symbol%2Fgenerated%2Fproduct%2Fsnap-backend/activity?branch=dev
+[snap-backend-lint]: https://jenkins.symboldev.com/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Fsnap-backend%2Fdev%2F&config=snap-backend-lint
+[snap-backend-build]: https://jenkins.symboldev.com/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Fsnap-backend%2Fdev%2F&config=snap-backend-build
+[snap-backend-test]: https://jenkins.symboldev.com/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Fsnap-backend%2Fdev%2F&config=snap-backend-test
+[snap-backend-cov]: https://codecov.io/gh/symbol/product/branch/dev/graph/badge.svg?token=SSYYBMK0M7&flag=snap-backend
+[snap-backend-cov-link]: https://codecov.io/gh/symbol/product/tree/dev/snap/backend
 
 [tools-shoestring-job]: https://jenkins.symboldev.com/blue/organizations/jenkins/Symbol%2Fgenerated%2Fproduct%2Ftools-shoestring/activity?branch=dev
 [tools-shoestring-lint]: https://jenkins.symboldev.com/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Ftools-shoestring%2Fdev%2F&config=tools-shoestring-lint

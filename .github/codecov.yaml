@@ -42,6 +42,12 @@ coverage:
         flags:
           - lightapi-python
 
+      snap-backend:
+        target: auto
+        threshold: 1%
+        flags:
+          - snap-backend
+
       tools-shoestring:
         target: auto
         threshold: 1%
@@ -94,6 +100,11 @@ flags:
   optin-reporting:
     paths:
       - optin/reporting
+    carryforward: true
+
+  snap-backend:
+    paths:
+      - snap/backend
     carryforward: true
 
   tools-shoestring:
