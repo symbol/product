@@ -6,6 +6,7 @@ import {
     AddressAliasTransaction,
     AggregateTransaction,
     AliasAction,
+    Convert,
     Deadline,
     EncryptedMessage,
     HashLockTransaction,
@@ -29,6 +30,7 @@ import {
     PersistentDelegationRequestTransaction,
     PlainMessage,
     PublicAccount,
+    RawMessage,
     TransferTransaction,
     UInt64,
     VotingKeyLinkTransaction,
@@ -300,6 +302,7 @@ export const transferTransactionFromDTO = (transaction, config) => {
         resultAmount = -nativeMosaicAmount;
     }
 
+    const isMessageRaw = transaction.message.type === -1;
     const isMessageEncrypted = transaction.message.type === 1;
     const isDelegatedHarvestingMessage = transaction.message.type === 254;
     const messagePayload = transaction.message.payload;
@@ -308,6 +311,7 @@ export const transferTransactionFromDTO = (transaction, config) => {
     if (messagePayload && !isMessageEncrypted) {
         message = {
             text: messagePayload,
+            isRaw: isMessageRaw,
             isEncrypted: isMessageEncrypted,
             isDelegatedHarvestingMessage,
         };
@@ -315,6 +319,7 @@ export const transferTransactionFromDTO = (transaction, config) => {
         message = {
             encryptedText: messagePayload,
             isEncrypted: isMessageEncrypted,
+            isRaw: isMessageRaw,
         };
     }
 
@@ -329,7 +334,9 @@ export const transferTransactionFromDTO = (transaction, config) => {
 export const transferTransactionToDTO = (transaction, networkProperties, currentAccount) => {
     let message;
 
-    if (transaction.message?.isEncrypted) {
+    if (transaction.message?.isRaw) {
+        message = RawMessage.create(Convert.hexToUint8(transaction.message.text));
+    } else if (transaction.message?.isEncrypted) {
         message = EncryptedMessage.create(
             transaction.message.text,
             { publicKey: transaction.recipientPublicKey },
@@ -338,6 +345,7 @@ export const transferTransactionToDTO = (transaction, networkProperties, current
     } else {
         message = PlainMessage.create(transaction.message?.text);
     }
+
     return TransferTransaction.create(
         Deadline.create(networkProperties.epochAdjustment),
         Address.createFromRawAddress(transaction.recipientAddress),

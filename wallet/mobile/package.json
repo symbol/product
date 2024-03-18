@@ -54,7 +54,7 @@
     "symbol-address-book": "^1.0.1",
     "symbol-hd-wallets": "^0.14.2",
     "symbol-qr-library": "^0.14.2",
-    "symbol-sdk": "^2.0.3",
+    "symbol-sdk": "^2.0.5",
     "symbol-wallets-lib": "^0.1.0"
   },
   "devDependencies": {
