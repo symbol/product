@@ -189,9 +189,12 @@ export const TableView = connect((state) => ({
                         ItemTemplate = (
                             <View style={styles.message}>
                                 {item.value.isEncrypted && (
-                                    <Image source={require('src/assets/images/icon-tx-lock.png')} style={styles.messageLockIcon} />
+                                    <Image source={require('src/assets/images/icon-tx-lock.png')} style={styles.messageTypeIcon} />
                                 )}
-                                <StyledText type="body">{item.value.text}</StyledText>
+                                {item.value.isRaw && (
+                                    <Image source={require('src/assets/images/icon-tx-data.png')} style={styles.messageTypeIcon} />
+                                )}
+                                {!item.value.isRaw && <StyledText type="body">{item.value.text}</StyledText>}
                             </View>
                         );
                         break;
@@ -336,7 +339,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
     },
-    messageLockIcon: {
+    messageTypeIcon: {
         width: 12,
         height: 12,
         maxHeight: '100%',

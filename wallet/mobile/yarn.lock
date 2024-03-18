@@ -8228,10 +8228,10 @@ symbol-qr-library@^0.14.2:
     open "^8.4.0"
     qrcode "^1.5.0"
 
-symbol-sdk@^2.0.3:
-  version "2.0.3"
-  resolved "https://registry.yarnpkg.com/symbol-sdk/-/symbol-sdk-2.0.3.tgz#17337157ff8db046cec152b7b11657b1bf417928"
-  integrity sha512-cTy1/E0yQCTMBrzCNCMMSVwgZdY0MTsw5A3vJCOyG9Dne03a/u8djEW5uB1H5c+mSul91FjP74Dey1Ay7uw8MQ==
+symbol-sdk@^2.0.5:
+  version "2.0.5"
+  resolved "https://registry.yarnpkg.com/symbol-sdk/-/symbol-sdk-2.0.5.tgz#a69ae5646905e19e4326437929b55c8a8cd3f1f3"
+  integrity sha512-wAeTnk0W4Yca4LVFIpKk1lirs1g5HfHSAng7DatGCYugyRyuw4Bj3zKYgPq8r2TMpTHv8oPDo3v9mMA5FYvtVw==
   dependencies:
     "@js-joda/core" "^3.2.0"
     catbuffer-typescript "^1.0.2"
