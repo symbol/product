@@ -20,6 +20,9 @@ builds:
   - name: Shoestring
     path: tools/shoestring
 
+  - name: Snap Backend
+    path: snap/backend
+
   - name: Vanity Address Generator
     path: tools/vanity
 
