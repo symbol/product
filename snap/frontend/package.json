@@ -1,7 +1,14 @@
 {
-  "name": "frontend",
+  "name": "snap-frontend",
   "version": "0.1.0",
+  "description": "Frontend for the snap project",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/symbol/product.git"
+  },
   "private": true,
+  "author": "Symbol Contributors <contributors@symbol.dev>",
+  "license": "ISC",
   "type": "module",
   "scripts": {
     "dev": "next dev",
