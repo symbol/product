@@ -25,6 +25,7 @@
     "react-dom": "^18"
   },
   "devDependencies": {
+    "@jest/globals": "^29.7.0",
     "@testing-library/jest-dom": "^6.4.2",
     "@testing-library/react": "^14.2.1",
     "autoprefixer": "^10.0.1",
