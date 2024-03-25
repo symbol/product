@@ -9,7 +9,7 @@
 
 ## overview
 
-Snap fronted is a Symbol wallet application build on NextJS framework. It need connect to snap backend and interact with the Symbol blockchain.
+Snap fronted is a Symbol wallet application built on the NextJS framework. It must connect to the Snap backend to interact with the Symbol blockchain.
 
 ## Repository layout
 
