@@ -91,5 +91,71 @@
     "host": "02.symbol-node.net",
     "friendlyName": "Apple",
     "nodePublicKey": "FBEAFCB15D2674ECB8DC1CD2C028C4AC0D463489069FDD415F30BB71EAE69864"
+  },
+  {
+    "apiNodeInfo": {
+      "isHealth": true,
+      "isHttpsEnabled": true,
+      "isWssEnabled": true,
+      "restVersion": "2.4.2"
+    },
+    "extraData": {
+      "balance": 101027.849383,
+      "finalizedHeight": 1486740,
+      "height": 1486762
+    },
+    "friendlyName": "xym pool",
+    "host": "xym.pool.me",
+    "networkGenerationHashSeed": "57F7DA205008026C776CB6AED843393F04CD458E0AA2D9F1D5F31A402072B2D6",
+    "networkIdentifier": 104,
+    "nodePublicKey": "FE7D3DBE8DDD219E1B20247DEBF150D9411EA5A312989103B037EFBD9D237DE0",
+    "port": 7900,
+    "publicKey": "A54CC798373F42B569AF21845CD0EBE755AB42EA04B3B8E2BE897166F89A971C",
+    "roles": 3,
+    "version": 16777987
+  },
+  {
+    "apiNodeInfo": {
+      "isHealth": true,
+      "isHttpsEnabled": false,
+      "isWssEnabled": false,
+      "restVersion": "2.4.2"
+    },
+    "extraData": {
+      "balance": 99.98108,
+      "finalizedHeight": 1486740,
+      "height": 1486760
+    },
+    "friendlyName": "yasmine farm",
+    "host": "yasmine.farm.tokyo",
+    "networkGenerationHashSeed": "57F7DA205008026C776CB6AED843393F04CD458E0AA2D9F1D5F31A402072B2D6",
+    "networkIdentifier": 104,
+    "nodePublicKey": "D05BE3101F2916AA34839DDC1199BE45092103A9B66172FA3D05911DC041AADA",
+    "port": 7900,
+    "publicKey": "5B20F8F228FF0E064DB0DE7951155F6F41EF449D0EC10960067C2BF2DCD61874",
+    "roles": 3,
+    "version": 16777988
+  },
+  {
+    "apiNodeInfo": {
+      "isHealth": true,
+      "isHttpsEnabled": true,
+      "isWssEnabled": true,
+      "restVersion": "2.4.2"
+    },
+    "extraData": {
+      "balance": 3155632.471994,
+      "finalizedHeight": 1486740,
+      "height": 1486762
+    },
+    "friendlyName": "Allnodes251",
+    "host": "",
+    "networkGenerationHashSeed": "57F7DA205008026C776CB6AED843393F04CD458E0AA2D9F1D5F31A402072B2D6",
+    "networkIdentifier": 104,
+    "nodePublicKey": "F25FDB3CD1A97DDC71A993D124E9BDD6518699F9F4016C29D341F53208D150D8",
+    "port": 7900,
+    "publicKey": "C69B5BDE17EEF7449C6D92856C1D295FE02AA3472651F042FB3FC2F771DAAF7B",
+    "roles": 2,
+    "version": 16777988
   }
 ]
