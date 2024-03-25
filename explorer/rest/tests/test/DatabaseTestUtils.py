@@ -7,6 +7,7 @@ from symbolchain.nem.Network import Address
 
 from rest.db.NemDatabase import NemDatabase
 from rest.model.Block import BlockView
+from rest.model.Namespace import NamespaceView
 
 Block = namedtuple(
 	'Block',
@@ -20,6 +21,35 @@ Block = namedtuple(
 		'signer',
 		'signature',
 		'size'
+	]
+)
+Namespace = namedtuple(
+	'Namespace',
+	[
+		'root_namespace',
+		'owner',
+		'registered_height',
+		'expiration_height',
+		'sub_namespaces'
+	]
+)
+Mosaic = namedtuple(
+	'Mosaic',
+	[
+		'root_namespace',
+		'namespace_name',
+		'description',
+		'creator',
+		'registered_height',
+		'initial_supply',
+		'total_supply',
+		'divisibility',
+		'supply_mutable',
+		'transferable',
+		'levy_type',
+		'levy_namespace_name',
+		'levy_fee',
+		'levy_recipient'
 	]
 )
 DatabaseConfig = namedtuple('DatabaseConfig', ['database', 'user', 'password', 'host', 'port'])
@@ -51,9 +81,73 @@ BLOCKS = [
 		752),
 ]
 
+NAMESPACES = [
+	Namespace(
+		'oxford',
+		'8D07F90FB4BBE7715FA327C926770166A11BE2E494A970605F2E12557F66C9B9',
+		1,
+		525601,
+		'{oxford.union,oxford.branch.uk}'
+	),
+	Namespace(
+		'dragon',
+		'F9BD190DD0C364261F5C8A74870CC7F7374E631352293C62ECC437657E5DE2CD',
+		2,
+		525602,
+		'{}'
+	),
+]
+
+MOSAICS = [
+	Mosaic(
+		'dragon',
+		'dragon.dragonfly',
+		'sample information',
+		'F9BD190DD0C364261F5C8A74870CC7F7374E631352293C62ECC437657E5DE2CD',
+		2,
+		100,
+		100,
+		0,
+		False,
+		True,
+		None,
+		None,
+		None,
+		None
+	)
+]
+
 BLOCK_VIEWS = [
 	BlockView(*BLOCKS[0]._replace(total_fees=102.0, signer=Address('NANEMOABLAGR72AZ2RV3V4ZHDCXW25XQ73O7OBT5'))),
 	BlockView(*BLOCKS[1]._replace(total_fees=201.0, signer=Address('NALICEPFLZQRZGPRIJTMJOCPWDNECXTNNG7QLSG3')))
+]
+
+NAMESPACE_VIEWS = [
+	NamespaceView(
+		NAMESPACES[0].root_namespace,
+		Address('NANEMOABLAGR72AZ2RV3V4ZHDCXW25XQ73O7OBT5'),
+		NAMESPACES[0].registered_height,
+		'2015-03-29 00:06:25',
+		NAMESPACES[0].expiration_height,
+		['oxford.union', 'oxford.branch.uk'],
+		[]
+	),
+	NamespaceView(
+		NAMESPACES[1].root_namespace,
+		Address('NALICEPFLZQRZGPRIJTMJOCPWDNECXTNNG7QLSG3'),
+		NAMESPACES[1].registered_height,
+		'2015-03-29 20:34:19',
+		NAMESPACES[1].expiration_height,
+		[],
+		[{
+			'namespaceName': 'dragon',
+			'mosaicName': 'dragonfly',
+			'totalSupply': 100,
+			'divisibility': 0,
+			'registeredHeight': 2,
+			'registeredTimestamp': '2015-03-29 20:34:19'
+		}]
+	),
 ]
 
 # endregion
@@ -80,6 +174,41 @@ def initialize_database(db_config, network_name):
 		)
 		''')
 
+		cursor.execute(
+			'''
+			CREATE TABLE IF NOT EXISTS namespaces (
+				id serial PRIMARY KEY,
+				root_namespace varchar(16),
+				owner bytea NOT NULL,
+				registered_height bigint NOT NULL,
+				expiration_height bigint NOT NULL,
+				sub_namespaces VARCHAR(146)[]
+			)
+			'''
+		)
+
+		cursor.execute(
+			'''
+			CREATE TABLE IF NOT EXISTS mosaics (
+				id serial PRIMARY KEY,
+				root_namespace varchar(16),
+				namespace_name varchar(146),
+				description varchar(512),
+				creator bytea NOT NULL,
+				registered_height bigint NOT NULL,
+				initial_supply bigint DEFAULT 0,
+				total_supply bigint DEFAULT 0,
+				divisibility int NOT NULL,
+				supply_mutable boolean DEFAULT false,
+				transferable boolean DEFAULT false,
+				levy_type int,
+				levy_namespace_name varchar(146),
+				levy_fee bigint DEFAULT 0,
+				levy_recipient bytea
+			)
+			'''
+		)
+
 		# Insert data
 		for block in BLOCKS:
 			cursor.execute(
@@ -96,6 +225,58 @@ def initialize_database(db_config, network_name):
 					unhexlify(block.signer),
 					unhexlify(block.signature),
 					block.size
+				)
+			)
+
+		for namespace in NAMESPACES:
+			cursor.execute(
+				'''
+				INSERT INTO namespaces (root_namespace, owner, registered_height, expiration_height, sub_namespaces)
+				VALUES (%s, %s, %s, %s, %s)
+				''', (
+					namespace.root_namespace,
+					unhexlify(namespace.owner),
+					namespace.registered_height,
+					namespace.expiration_height,
+					namespace.sub_namespaces
+				)
+			)
+
+		for mosaic in MOSAICS:
+			cursor.execute(
+				'''
+				INSERT INTO mosaics (
+					root_namespace,
+					namespace_name,
+					description,
+					creator,
+					registered_height,
+					initial_supply,
+					total_supply,
+					divisibility,
+					supply_mutable,
+					transferable,
+					levy_type,
+					levy_namespace_name,
+					levy_fee,
+					levy_recipient
+				)
+				VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+				''', (
+					mosaic.root_namespace,
+					mosaic.namespace_name,
+					mosaic.description,
+					unhexlify(mosaic.creator),
+					mosaic.registered_height,
+					mosaic.initial_supply,
+					mosaic.total_supply,
+					mosaic.divisibility,
+					mosaic.supply_mutable,
+					mosaic.transferable,
+					mosaic.levy_type,
+					mosaic.levy_namespace_name,
+					mosaic.levy_fee,
+					Address(mosaic.levy_recipient).bytes if mosaic.levy_recipient is not None else None,
 				)
 			)
 
