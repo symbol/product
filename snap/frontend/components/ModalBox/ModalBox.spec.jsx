@@ -15,11 +15,11 @@ describe('components/ModalBox', () => {
 		const modalElement = screen.queryByText(modalText);
 
 		// Assert:
-		if (isOpen) 
+		if (isOpen)
 			expect(modalElement).toBeInTheDocument();
-		 else 
+		else
 			expect(modalElement).not.toBeInTheDocument();
-		
+
 	};
 
 	it('renders content with isOpen is true', () => {
