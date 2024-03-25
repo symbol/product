@@ -23,9 +23,9 @@ const Dropdown = ({ label, options, onSelect }) => {
 				onClick={() => setIsOpen(!isOpen)}
 			>
 				{label}
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M5 7.5L10 12.5L15 7.5H5Z" fill="white"/>
-                </svg>
+				<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+					<path d="M5 7.5L10 12.5L15 7.5H5Z" fill="white"/>
+				</svg>
 			</button>
 			{isOpen && (
 				<div className="absolute right-0 mt-2 py-2 w-48 bg-[#232329] rounded-xl">
