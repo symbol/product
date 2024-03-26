@@ -12,6 +12,18 @@ describe('components/Dropdown', () => {
 
 	const onSelect = jest.fn();
 
+	it('renders Dropdown with custom class', () => {
+		// Arrange:
+		const className = 'custom-class';
+
+		// Act:
+		render(<Dropdown label={label} options={options} onSelect={onSelect} className={className} role='dropdown' />);
+		const dropdownElement = screen.getByRole('dropdown');
+
+		// Assert:
+		expect(dropdownElement).toHaveClass(className);
+	});
+
 	describe('toggle', () => {
 		it('expand dropdown list', () => {
 			// Arrange:
