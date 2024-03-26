@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 
-const Dropdown = ({ label, options, onSelect }) => {
+const Dropdown = ({ label, options, onSelect, className, ...props}) => {
+	const combinedClassName = `relative ${className || ''}`;
+
 	const [isOpen, setIsOpen] = useState(false);
 	const dropdownRef = useRef(null);
 
@@ -17,7 +19,7 @@ const Dropdown = ({ label, options, onSelect }) => {
 	}, []);
 
 	return (
-		<div className="relative" ref={dropdownRef}>
+		<div className={combinedClassName} ref={dropdownRef} {...props}>
 			<button
 				className="px-4 py-2 mx-1 bg-[#333333] rounded-xl flex items-center"
 				onClick={() => setIsOpen(!isOpen)}
