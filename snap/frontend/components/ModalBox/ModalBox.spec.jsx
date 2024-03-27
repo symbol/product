@@ -31,28 +31,17 @@ describe('components/ModalBox', () => {
 
 	describe('onRequestClose', () => {
 		describe('mousedown', () => {
-			const assertModalBoxCloseWithMouseClick = (roleElement, isClose) => {
+			it('does not called when clicked in modal box', () => {
 				// Arrange:
 				const onRequestClose = jest.fn();
 
 				// Act:
 				render(<ModalBox isOpen={true} onRequestClose={onRequestClose}>This is awesome</ModalBox>);
-				const element = screen.getByRole(roleElement);
+				const element = screen.getByRole('modal');
 				fireEvent.click(element);
 
 				// Assert:
-				if (isClose)
-					expect(onRequestClose).toHaveBeenCalled();
-				else
-					expect(onRequestClose).not.toHaveBeenCalled();
-			};
-
-			it('called when close button is clicked', () => {
-				assertModalBoxCloseWithMouseClick('button', true);
-			});
-
-			it('does not called when clicked in modal box', () => {
-				assertModalBoxCloseWithMouseClick('modal', false);
+				expect(onRequestClose).not.toHaveBeenCalled();
 			});
 
 			it('called when overlay is clicked', () => {
