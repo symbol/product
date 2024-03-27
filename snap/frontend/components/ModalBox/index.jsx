@@ -30,13 +30,7 @@ const ModalBox = ({ children, isOpen, onRequestClose }) => {
 	return (
 		<>
 			<div role='overlay' className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-				<div role='modal' className="bg-[#232329] p-6 rounded-lg shadow-lg min-w-[300px]" ref={modalRef}>
-					<button
-						className="absolute mt-4 mr-4"
-						onClick={onRequestClose}
-					>
-					Close
-					</button>
+				<div role='modal' className="bg-[#232329] p-6 rounded-lg shadow-lg max-w-[400px]" ref={modalRef}>
 					{children}
 				</div>
 			</div>
