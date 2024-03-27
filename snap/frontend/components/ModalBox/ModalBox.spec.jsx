@@ -19,7 +19,6 @@ describe('components/ModalBox', () => {
 			expect(modalElement).toBeInTheDocument();
 		else
 			expect(modalElement).not.toBeInTheDocument();
-
 	};
 
 	it('renders content with isOpen is true', () => {
@@ -83,7 +82,6 @@ describe('components/ModalBox', () => {
 					expect(onRequestClose).toHaveBeenCalled();
 				else
 					expect(onRequestClose).not.toHaveBeenCalled();
-
 			};
 
 			it('called when ESC key is pressed', () => {
