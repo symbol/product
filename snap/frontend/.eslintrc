@@ -5,6 +5,9 @@ extends:
 - plugin:jsdoc/recommended-error
 - ../../linters/javascript/default.eslintrc
 rules:
+  eol-last:
+    - error
+    - always
   import/extensions:
     - error
     - always
