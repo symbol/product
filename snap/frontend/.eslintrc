@@ -2,6 +2,7 @@
 extends:
 - eslint-config-next
 - plugin:import/react
+- plugin:jsdoc/recommended-error
 - ../../linters/javascript/default.eslintrc
 rules:
   import/extensions:
