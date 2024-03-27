@@ -1,7 +1,8 @@
 import Image from 'next/image';
 
 const Button = ({ children, className, icon, ...props }) => {
-	const combinedClassName = `bg-[#333333] justify-between p-2 inline-flex items-center rounded-xl ${className || ''}`;
+	const combinedClassName = `bg-[#333333] justify-center
+		border-2 border-white p-2 inline-flex items-center rounded-xl ${className || ''}`;
 
 	return (
 		<button className={combinedClassName} {...props}>
