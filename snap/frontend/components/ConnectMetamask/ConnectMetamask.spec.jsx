@@ -1,15 +1,30 @@
 import ConnectMetamask from '.';
-import { fireEvent, render, screen } from '@testing-library/react';
+import * as WalletContext from '../../context/store';
+import symbolSnap from '../../utils/snap';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import React from 'react';
+
+const context = {
+	dispatch: jest.fn()
+};
 
 describe('components/ConnectMetamask', () => {
-	it('renders title, description and children with isOpen is true', () => {
+	afterEach(() => {
+		jest.clearAllMocks();
+	});
+
+	const customRender = ui => render(<WalletContext.default value={context}>
+		{ui}
+	</WalletContext.default>);
+
+	it('renders title, description and children with isOpen is true', async () => {
 		// Arrange:
 		const title = 'Connect to MetaMask Symbol Snap';
 		const description = 'If you do not have the Symbol snap installed you will be prompted to install it.';
 		const children = 'Connect MetaMask';
 
 		// Act:
-		render(<ConnectMetamask isOpen={true} onRequestClose={() => { }} />);
+		customRender(<ConnectMetamask isOpen={true} onRequestClose={() => { }} />);
 
 		// Assert:
 		const titleElement = screen.getByText(title);
@@ -23,7 +38,7 @@ describe('components/ConnectMetamask', () => {
 
 	it('does not render when isOpen is false', () => {
 		// Arrange + Act:
-		render(<ConnectMetamask isOpen={false} />);
+		customRender(<ConnectMetamask isOpen={false} />);
 
 		// Assert:
 		const modalElement = screen.queryByRole('modal');
@@ -36,7 +51,7 @@ describe('components/ConnectMetamask', () => {
 			it('does not called when clicked in modal box', () => {
 				// Arrange:
 				const onRequestClose = jest.fn();
-				render(<ConnectMetamask isOpen={true} onRequestClose={onRequestClose} />);
+				customRender(<ConnectMetamask isOpen={true} onRequestClose={onRequestClose} />);
 				const element = screen.getByRole('modal');
 
 				// Act:
@@ -49,7 +64,7 @@ describe('components/ConnectMetamask', () => {
 			it('called when overlay is clicked', () => {
 				// Arrange:
 				const onRequestClose = jest.fn();
-				render(<ConnectMetamask isOpen={true} onRequestClose={onRequestClose} />);
+				customRender(<ConnectMetamask isOpen={true} onRequestClose={onRequestClose} />);
 				const element = screen.getByRole('overlay');
 
 				// Act:
@@ -58,6 +73,29 @@ describe('components/ConnectMetamask', () => {
 				// Assert:
 				expect(onRequestClose).toHaveBeenCalled();
 			});
+		});
+	});
+
+	describe('handleConnectClick', () => {
+		const assertSnapIsConnected = async (isConnected, expectedResult) => {
+			// Arrange:
+			jest.spyOn(symbolSnap, 'connectSnap').mockResolvedValue(isConnected);
+			customRender(<ConnectMetamask isOpen={true} onRequestClose={() => { }} />);
+			const element = screen.getByText('Connect MetaMask');
+
+			// Act:
+			fireEvent.click(element);
+
+			// Assert:
+			await waitFor(() => expect(context.dispatch).toHaveBeenCalledWith({ type: 'setSnapInstalled', payload: expectedResult }));
+		};
+
+		it('dispatch setSnapInstalled true when connected', async () => {
+			assertSnapIsConnected(true, true);
+		});
+
+		it('dispatch setSnapInstalled false when connect snap throw error', async () => {
+			assertSnapIsConnected(false, false);
 		});
 	});
 });
