@@ -1,7 +1,7 @@
 'use client';
 
 import HomeComponent from '../components/Home';
-import { WalletContext, initialState, reducer } from '../context';
+import { WalletContextProvider, initialState, reducer } from '../context';
 import React, { useReducer } from 'react';
 
 /**
@@ -12,8 +12,8 @@ export default function Home() {
 	const [walletState, dispatch] = useReducer(reducer, initialState);
 
 	return (
-		<WalletContext.Provider value={{ walletState, dispatch: dispatch }}>
+		<WalletContextProvider value={{ walletState, dispatch: dispatch }}>
 			<HomeComponent />
-		</WalletContext.Provider>
+		</WalletContextProvider>
 	);
 }
