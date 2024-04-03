@@ -1,5 +1,10 @@
-import { createContext } from 'react';
+import { createContext, useContext } from 'react';
 
 const WalletContext = createContext();
 
-export default WalletContext;
+export const useWalletContext = () => {
+	const context = useContext(WalletContext);
+	return context;
+};
+
+export default WalletContext.Provider;

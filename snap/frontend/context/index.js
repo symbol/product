@@ -1,2 +1,2 @@
-export { default as WalletContext } from './store';
+export { default as WalletContextProvider, useWalletContext } from './store';
 export * from './reducer';
