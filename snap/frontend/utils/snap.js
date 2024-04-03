@@ -21,14 +21,10 @@ const symbolSnap = (provider = window.ethereum) =>({
 	 * @returns {object} The snap object returned by the extension.
 	 */
 	async getSnap(version) {
-		try {
-			const snaps = await this.getSnaps();
+		const snaps = await this.getSnaps();
 
-			return Object.values(snaps).find(snap =>
-				snap.id === defaultSnapOrigin && (!version || snap.version === version));
-		} catch {
-			return undefined;
-		}
+		return Object.values(snaps).find(snap =>
+			snap.id === defaultSnapOrigin && (!version || snap.version === version));
 	},
 	/**
 	 * Connect a snap to MetaMask.
