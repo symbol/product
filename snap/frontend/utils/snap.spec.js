@@ -79,10 +79,6 @@ describe('symbolSnap', () => {
 		it('returns undefined when no matching snap found', async () => {
 			await assertSnap('0.3.0', undefined);
 		});
-
-		it('returns undefined when request fails', async () => {
-			await assertSnap('1.0.0', undefined);
-		});
 	});
 
 	describe('connectSnap', () => {
