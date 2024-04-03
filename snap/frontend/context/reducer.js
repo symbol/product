@@ -5,8 +5,7 @@ export const initialState = {
 
 export const actionTypes = {
 	SET_METAMASK_INSTALLED: 'setMetamaskInstalled',
-	SET_SNAP_INSTALLED: 'setSnapInstalled',
-	SET_CONNECTED: 'setConnected'
+	SET_SNAP_INSTALLED: 'setSnapInstalled'
 };
 
 export const reducer = (state, action) => {
