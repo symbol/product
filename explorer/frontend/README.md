@@ -8,7 +8,7 @@
 
 # Overview
 
-The Blockchain Explorer SSR web application build on NextJS framework.
+NEM Blockchain Explorer. The SSR web application built with Next.js.
 
 
 ## Installation
