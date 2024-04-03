@@ -79,7 +79,7 @@ describe('components/ConnectMetamask', () => {
 	describe('handleConnectClick', () => {
 		const assertSnapIsConnected = async (isConnected, expectedResult) => {
 			// Arrange:
-			jest.spyOn(symbolSnap, 'connectSnap').mockResolvedValue(isConnected);
+			jest.spyOn(symbolSnap(), 'connectSnap').mockResolvedValue(isConnected);
 			customRender(<ConnectMetamask isOpen={true} onRequestClose={() => { }} />);
 			const element = screen.getByText('Connect MetaMask');
 
