@@ -19,7 +19,7 @@ const useWalletInstallation = () => {
 		};
 
 		checkInstallationStatus();
-	}, [isSnapInstalled, dispatch]);
+	}, [dispatch]);
 
 	return { isMetamaskInstalled, isSnapInstalled };
 };
