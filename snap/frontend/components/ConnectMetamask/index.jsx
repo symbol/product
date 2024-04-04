@@ -9,7 +9,7 @@ const ConnectMetamask = ({ isOpen, onRequestClose }) => {
 	const description = 'If you do not have the Symbol snap installed you will be prompted to install it.';
 
 	const handleConnectClick = async () => {
-		const isConnected = await symbolSnap.connectSnap();
+		const isConnected = await symbolSnap().connectSnap();
 
 		if (isConnected)
 			dispatch({ type: actionTypes.SET_SNAP_INSTALLED, payload: true });
