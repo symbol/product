@@ -1,26 +1,25 @@
-import { getSnap } from '../utils/snap';
-import { useEffect, useState } from 'react';
+import { actionTypes, useWalletContext } from '../context';
+import symbolSnap from '../utils/snap';
+import { useEffect } from 'react';
 
 const useWalletInstallation = () => {
-	const [isMetamaskInstalled, setIsMetamaskInstalled] = useState(false);
-	const [isSnapInstalled, setIsSnapInstalled] = useState(false);
+	const { walletState, dispatch } = useWalletContext();
+	const { isMetamaskInstalled, isSnapInstalled } = walletState;
 
 	useEffect(() => {
 		const checkInstallationStatus = async () => {
 			if (window.ethereum && window.ethereum.isMetaMask) {
-				setIsMetamaskInstalled(true);
+				dispatch({ type: actionTypes.SET_METAMASK_INSTALLED, payload: true });
 
-				const installedSnap = await getSnap();
+				const installedSnap = await symbolSnap().getSnap();
 
 				if (installedSnap && installedSnap.enabled)
-					setIsSnapInstalled(true);
-				else
-					throw new Error('Please connect snap and enable it in MetaMask');
+					dispatch({ type: actionTypes.SET_SNAP_INSTALLED, payload: true });
 			}
 		};
 
 		checkInstallationStatus();
-	}, [isSnapInstalled]);
+	}, [isSnapInstalled, dispatch]);
 
 	return { isMetamaskInstalled, isSnapInstalled };
 };
