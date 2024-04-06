@@ -1,6 +1,6 @@
 [tool.poetry]
 name = 'symbol-shoestring'
-version = '0.1.1'
+version = '0.1.2'
 description = 'Symbol Shoestring Deployment Tool'
 authors = ['Symbol Contributors <contributors@symbol.dev>']
 maintainers = ['Symbol Contributors <contributors@symbol.dev>']
