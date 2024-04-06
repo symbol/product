@@ -16,6 +16,7 @@ services:
     stop_grace_period: 300s
     ports:
       - 7900:7900
+    working_dir: /
     volumes:
       - ./startup:/startup:ro
       - ./userconfig:/userconfig:ro

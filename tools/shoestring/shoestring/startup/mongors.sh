@@ -9,7 +9,7 @@ pwd
 
 while true;
 do
-	if mongo --eval "db.runCommand( { serverStatus: 1 } )" db/local > /dev/null 2>&1; then
+	if mongosh --eval "db.runCommand( { serverStatus: 1 } )" db/local > /dev/null 2>&1; then
 		break;
 	fi
 	echo "waiting for mongod start..."
@@ -18,12 +18,12 @@ done
 
 echo " [+] Preparing db5"
 cd /mongo
-mongo db/catapult < mongoDbPrepare.js
+mongosh db/catapult < mongoDbPrepare.js
 echo " [.] (exit code: $?)"
 cd -
 
 echo " [+] db prepared, checking account indexes"
-mongo --eval 'db.accounts.getIndexes()' db/catapult
+mongosh --eval 'db.accounts.getIndexes()' db/catapult
 
 trap 'echo "exiting"; exit 0' SIGTERM
 mkdir -p "$(dirname "${state_filename}")"

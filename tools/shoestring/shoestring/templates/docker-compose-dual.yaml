@@ -2,7 +2,7 @@
 version: '2'
 services:
   db:
-    image: mongo:5.0.15
+    image: mongo:6.0.14
     user: '{{ user }}'
     command: mongod --dbpath=/dbdata
     stop_signal: SIGINT
@@ -13,7 +13,7 @@ services:
       - ./dbdata:/data:rw
 
   initiate:
-    image: mongo:5.0.15
+    image: mongo:6.0.14
     user: '{{ user }}'
     command: /bin/bash /startup/mongors.sh /real_data/startup/mongo-initialized
     volumes:
@@ -40,6 +40,7 @@ services:
     stop_grace_period: 300s
     ports:
       - 7900:7900
+    working_dir: /
     volumes:
       - ./startup:/startup:ro
       - ./userconfig:/userconfig:ro
@@ -58,7 +59,8 @@ services:
     environment:
       - LD_LIBRARY_PATH=/usr/catapult/lib:/usr/catapult/deps
     stop_signal: SIGINT
-    stop_grace_period: 20s
+    stop_grace_period: 60s
+    working_dir: /
     volumes:
       - ./startup:/startup:ro
       - ./userconfig:/userconfig:ro
