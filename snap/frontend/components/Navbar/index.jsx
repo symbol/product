@@ -1,7 +1,7 @@
-import Image from 'next/image';
-import Dropdown from '../Dropdown';
-import { useState } from 'react';
 import { useWalletContext } from '../../context';
+import Dropdown from '../Dropdown';
+import Image from 'next/image';
+import { useState } from 'react';
 
 const Navbar = () => {
 	const { walletState } = useWalletContext();
