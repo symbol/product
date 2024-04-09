@@ -125,8 +125,8 @@ class CertificateFactoryTest(unittest.TestCase):
 	# region certificates
 
 	def _assert_certificate_issuer_and_subject(self, x509_output, expected_issuer, expected_subject):
-		self.assertEqual(expected_issuer, re.search(r'Issuer: CN = (.*)\n', x509_output).group(1))
-		self.assertEqual(expected_subject, re.search(r'Subject: CN = (.*)\n', x509_output).group(1))
+		self.assertEqual(expected_issuer, re.search(r'Issuer: CN ?= ?(.*)\n', x509_output).group(1))
+		self.assertEqual(expected_subject, re.search(r'Subject: CN ?= ?(.*)\n', x509_output).group(1))
 
 	def _assert_certificate_duration(self, x509_output, test_start_time, expected_days, has_explicit_start_date=False):
 		time_format = '%b %d %H:%M:%S %Y %Z'
