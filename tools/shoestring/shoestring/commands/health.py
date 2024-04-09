@@ -23,8 +23,9 @@ class HealthAgentContext:
 	def peer_endpoint(self):
 		"""Peer endpoint."""
 
+		host = self._load_hostname()
 		port = int(self.config_manager.lookup('config-node.properties', [('node', 'port')])[0])
-		return ('localhost', port)
+		return (host, port)
 
 	@property
 	def rest_endpoint(self):
@@ -45,10 +46,8 @@ class HealthAgentContext:
 		return f'{scheme}://{hostname}:{port}/ws'
 
 	def _load_hostname(self):
-		if self.config.node.api_https:
-			return self.config_manager.lookup('config-node.properties', [('localnode', 'host')])[0]
-
-		return 'localhost'
+		host = self.config_manager.lookup('config-node.properties', [('localnode', 'host')])[0]
+		return host or 'localhost'
 
 	def _load_rest_port(self):
 		if self.config.node.api_https:

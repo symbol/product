@@ -15,13 +15,13 @@ def should_run(node_config):
 	return node_config.api_https
 
 
-def _openssl_run_sclient_verify(hostname, test_args):
+def _openssl_run_sclient_verify(servername, test_args):
 	# some other commands are listed here https://www.cyberciti.biz/faq/terminate-close-openssl-s_client-command-connection-linux-unix/
 	# note: adding '-quiet' flag seems to change behavior and s_client stops reacting to commands, so DON'T
 	openssl_executor = OpensslExecutor(os.environ.get('OPENSSL_EXECUTABLE', 'openssl'))
 	lines = openssl_executor.dispatch([
 		's_client',
-		'-servername', hostname,
+		'-servername', servername,
 		'-connect',
 		'localhost:3001'
 	] + test_args, command_input='Q', show_output=False)
@@ -87,10 +87,10 @@ def _openssl_run_sclient_verify(hostname, test_args):
 
 
 async def validate(context):
-	hostname = context.hostname
+	(host, _port) = context.peer_endpoint
 	test_args = getattr(context, 'test_args', [])
 
-	result, dates_or_error = _openssl_run_sclient_verify(hostname, test_args)
+	result, dates_or_error = _openssl_run_sclient_verify(host, test_args)
 
 	if not result:
 		log.warning(_('health-rest-https-certificate-invalid').format(error_message=dates_or_error))

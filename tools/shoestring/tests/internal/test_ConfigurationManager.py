@@ -73,6 +73,17 @@ class ConfigurationManagerTest(unittest.TestCase):
 		# Act + Assert:
 		self._assert_lookup(self.CONFIG_LINES_WITH_DISTINCT_KEYS, search_identifiers, expected_values)
 
+	def test_can_lookup_empty_value(self):
+		# Arrange:
+		search_identifiers = [
+			('operating_systems', ''),
+			('build_tools', '')
+		]
+		expected_values = [None, None]
+
+		# Act + Assert:
+		self._assert_lookup(self.CONFIG_LINES_WITH_DISTINCT_KEYS, search_identifiers, expected_values)
+
 	def test_can_lookup_value_with_shared_cross_section_key(self):
 		# Arrange:
 		search_identifiers = [

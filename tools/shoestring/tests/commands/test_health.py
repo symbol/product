@@ -38,6 +38,21 @@ def _create_configuration(api_https):
 
 # pylint: disable=invalid-name
 
+def test_can_detect_endpoints_without_host():
+	# Arrange:
+	with tempfile.TemporaryDirectory() as output_directory:
+		with Preparer(output_directory, _create_configuration(False)) as preparer:
+			preparer.create_subdirectories()
+			_write_resources(preparer.directories, '', 1111, 2345)
+
+			# Act:
+			context = HealthAgentContext(preparer.directories, preparer.config)
+
+			# Assert:
+			assert ('localhost', 1111) == context.peer_endpoint
+			assert 'http://localhost:2345' == context.rest_endpoint
+			assert 'ws://localhost:2345/ws' == context.websocket_endpoint
+
 
 def test_can_detect_endpoints_without_https():
 	# Arrange:
@@ -50,9 +65,9 @@ def test_can_detect_endpoints_without_https():
 			context = HealthAgentContext(preparer.directories, preparer.config)
 
 			# Assert:
-			assert ('localhost', 1111) == context.peer_endpoint
-			assert 'http://localhost:2345' == context.rest_endpoint
-			assert 'ws://localhost:2345/ws' == context.websocket_endpoint
+			assert ('symbol.fyi', 1111) == context.peer_endpoint
+			assert 'http://symbol.fyi:2345' == context.rest_endpoint
+			assert 'ws://symbol.fyi:2345/ws' == context.websocket_endpoint
 
 
 def test_can_detect_endpoints_with_https():
@@ -66,7 +81,7 @@ def test_can_detect_endpoints_with_https():
 			context = HealthAgentContext(preparer.directories, preparer.config)
 
 			# Assert:
-			assert ('localhost', 1111) == context.peer_endpoint
+			assert ('symbol.fyi', 1111) == context.peer_endpoint
 			assert 'https://symbol.fyi:3001' == context.rest_endpoint
 			assert 'wss://symbol.fyi:3001/ws' == context.websocket_endpoint
 

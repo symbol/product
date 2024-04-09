@@ -93,7 +93,7 @@ def test_should_run_for_all_roles():
 async def _dispatch_validate(port, preparer):
 	# Arrange:
 	HealthAgentContext = namedtuple('HealthAgentContext', ['peer_endpoint', 'directories'])
-	context = HealthAgentContext(('localhost', port), preparer.directories)
+	context = HealthAgentContext(('symbol.fyi', port), preparer.directories)
 
 	# Act:
 	await validate(context)

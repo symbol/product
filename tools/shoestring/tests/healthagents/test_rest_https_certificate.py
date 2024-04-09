@@ -52,8 +52,8 @@ def _validate_thread(context):
 
 
 async def _dispatch_validate(test_args=None):
-	HealthAgentContext = namedtuple('HealthAgentContext', ['hostname', 'test_args'])
-	context = HealthAgentContext('localhost', test_args or [])
+	HealthAgentContext = namedtuple('HealthAgentContext', ['peer_endpoint', 'test_args'])
+	context = HealthAgentContext(('localhost', 7890), test_args or [])
 
 	await asyncio.get_running_loop().run_in_executor(None, _validate_thread, context)
 
