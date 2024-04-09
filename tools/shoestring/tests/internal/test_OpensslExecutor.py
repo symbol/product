@@ -21,7 +21,7 @@ def test_can_retrieve_openssl_version():
 	version = executor.version()
 
 	# Assert:
-	assert re.match(r'3\.[0-1]\.*|1\.1\.1', version)
+	assert re.match(r'3\.[0-2]\.*|1\.1\.1', version)
 
 
 def test_can_dispatch_openssl_command_with_reflected_output(capfd):
