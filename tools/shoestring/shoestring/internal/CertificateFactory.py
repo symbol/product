@@ -87,9 +87,15 @@ class CertificateFactory:
 				'[req]',
 				'prompt = no',
 				'distinguished_name = dn',
+				'x509_extensions = x509_v3',
 				'',
 				'[dn]',
 				f'CN = {ca_cn}'
+				'',
+				'[x509_v3]',
+				'basicConstraints = critical,CA:TRUE',
+				'subjectKeyIdentifier = hash',
+				'authorityKeyIdentifier = keyid:always,issuer'
 			]))
 
 		# create new certs directory
@@ -123,9 +129,15 @@ class CertificateFactory:
 				'[req]',
 				'prompt = no',
 				'distinguished_name = dn',
+				'x509_extensions = x509_v3',
 				'',
 				'[dn]',
-				f'CN = {node_cn}'
+				f'CN = {node_cn}',
+				'',
+				'[x509_v3]',
+				'basicConstraints = CA:FALSE',
+				'subjectKeyIdentifier = hash',
+				'authorityKeyIdentifier = keyid,issuer'
 			]))
 
 		# prepare node certificate signing request
