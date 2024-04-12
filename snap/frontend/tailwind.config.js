@@ -5,7 +5,16 @@ const tailwind = {
 		'./app/**/*.{js,ts,jsx,tsx,mdx}'
 	],
 	theme: {
-		extend: {}
+		extend: {
+			colors: {
+				'title': 'var(--title)',
+				'sub-title': 'var(--sub-title)',
+				'background': 'var(--background)',
+				'primary': 'var(--primary)',
+				'secondary': 'var(--secondary)',
+				'green': 'var(--green)',
+			},
+		}
 	},
 	plugins: []
 };
