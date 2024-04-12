@@ -9,11 +9,11 @@ const TransactionTable =({transactions}) => {
 
 	return (
 		<div className='overflow-y-auto'>
-			<table className='text-[#BEBEBE] w-full'>
+			<table className='w-full'>
 				<tbody>
 					{
 						transactions.map((transaction, index) => (
-							<tr key={`tx_row_${index}`} className='border-t-[1px] border-[#BEBEBE] h-16'>
+							<tr key={`tx_row_${index}`} className='border-t-[1px] border-text h-16'>
 								<td className='px-2'>
 									{
 										transaction.sender === address ?
@@ -42,11 +42,11 @@ const TransactionTable =({transactions}) => {
 									{
 										null === transaction.height ?
 											<div className='font-bold'>Pending</div> :
-											<div className='text-green-500'>Confirmed</div>
+											<div className='font-bold text-green'>Confirmed</div>
 									}
 								</td>
 
-								<td className='flex pt-2'>
+								<td className='flex pt-2 text-sub-title'>
 									<div className='flex flex-col items-end pr-2'>
 										{
 											null !== transaction.amount ?
@@ -69,7 +69,7 @@ const TransactionTable =({transactions}) => {
 									}
 								</td>
 
-								<td>
+								<td className='text-sub-title'>
 									<div className='flex items-center'>
 										{transaction.height}
 										{

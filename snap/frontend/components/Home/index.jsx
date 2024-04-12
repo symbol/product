@@ -6,8 +6,7 @@ const Home = () => {
 	const { isMetamaskInstalled, isSnapInstalled } = useWalletInstallation();
 
 	return (
-		<div className='m-auto max-w-screen-xl max-h-min'>
-			Symbol Snap
+		<div className='m-auto max-w-screen-xl min-w-[910px] max-h-min p-5'>
 			{
 				!isMetamaskInstalled ?
 					<DetectMetamask isOpen={!isMetamaskInstalled} onRequestClose={() => false} /> :
