@@ -21,7 +21,7 @@ const Dropdown = ({ label, options, onSelect, className, ...props}) => {
 	return (
 		<div className={combinedClassName} ref={dropdownRef} {...props}>
 			<button
-				className="px-4 py-2 mx-1 bg-[#333333] rounded-xl flex items-center"
+				className="px-4 py-2 mx-1 bg-secondary rounded-xl flex items-center"
 				onClick={() => setIsOpen(!isOpen)}
 			>
 				{label}
@@ -30,12 +30,12 @@ const Dropdown = ({ label, options, onSelect, className, ...props}) => {
 				</svg>
 			</button>
 			{isOpen && (
-				<div className="absolute right-0 mt-2 py-2 w-48 bg-[#232329] rounded-xl">
+				<div className="absolute right-0 mt-2 py-2 w-48 bg-background rounded-xl">
 					{options.map(({label, value}, index) => (
 						<a
 							key={index}
 							href="#"
-							className="block px-4 py-2 text-sm text-gray-700 hover:bg-[#333333] hover:text-white"
+							className="block px-4 py-2 text-sm hover:bg-primary"
 							onClick={e => {
 								e.preventDefault();
 								onSelect({label, value});
