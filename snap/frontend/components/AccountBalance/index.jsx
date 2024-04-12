@@ -10,7 +10,7 @@ const AccountBalance = () => {
 	return (
 		<div className='flex flex-col items-center'>
 			<div className='text-2xl font-bold'> {xymBalance} XYM</div>
-			<div className='text-2xl text-[#BEBEBE]'>{convertToCurrency} {currency}</div>
+			<div className='text-2xl text-sub-title'>{convertToCurrency} {currency}</div>
 		</div>
 	);
 
