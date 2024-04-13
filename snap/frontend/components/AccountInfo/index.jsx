@@ -3,10 +3,11 @@ import Image from 'next/image';
 
 const AccountInfo = () => {
 	const { walletState } = useWalletContext();
-	const { address, label } = walletState.account;
+	const { selectedAccount } = walletState;
+	const { address, label } = selectedAccount;
 
 	return (
-		<div className='flex flex-col items-center justify-center p-2'>
+		selectedAccount && <div className='flex flex-col items-center justify-center p-2'>
 			<div className="rounded-full w-16 h-16 bg-gray-300" />
 			{/* Text Address and wallet label */}
 			<div className='flex flex-col items-center text-xs'>
