@@ -3,6 +3,10 @@ export const initialState = {
 	isSnapInstalled: false,
 	isLoading: false,
 	loadingMessage: '',
+	currency: {
+		symbol: 'usd',
+		currencyPerXYM: 0
+	},
 };
 
 export const actionTypes = {
