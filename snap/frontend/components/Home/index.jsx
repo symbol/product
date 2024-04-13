@@ -65,6 +65,8 @@ const Home = () => {
 
 			<Navbar />
 
+			<LoadingScreen />
+
 			<div className='flex items-center mt-4'>
 				{/* Left Panel */}
 				<div className='flex flex-col h-[500px] min-w-[240px] w-1/4 bg-primary rounded-md mr-4 text-200'>
