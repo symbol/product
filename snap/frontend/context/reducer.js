@@ -3,6 +3,7 @@ export const initialState = {
 	isSnapInstalled: false,
 	isLoading: false,
 	loadingMessage: '',
+	finalizedHeight: 0,
 	currency: {
 		symbol: 'usd',
 		currencyPerXYM: 0
@@ -11,6 +12,7 @@ export const initialState = {
 		address: '',
 		label: ''
 	},
+	transactions: []
 };
 
 export const actionTypes = {
