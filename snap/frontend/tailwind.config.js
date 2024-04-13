@@ -12,8 +12,8 @@ const tailwind = {
 				'background': 'var(--background)',
 				'primary': 'var(--primary)',
 				'secondary': 'var(--secondary)',
-				'green': 'var(--green)',
-			},
+				'green': 'var(--green)'
+			}
 		}
 	},
 	plugins: []
