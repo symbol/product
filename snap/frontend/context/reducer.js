@@ -7,6 +7,10 @@ export const initialState = {
 		symbol: 'usd',
 		currencyPerXYM: 0
 	},
+	selectedAccount: {
+		address: '',
+		label: ''
+	},
 };
 
 export const actionTypes = {
