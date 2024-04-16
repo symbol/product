@@ -17,7 +17,8 @@ const stateManager = {
 		await manageStateSnapRequest('update', state);
 	},
 	async getState() {
-		await manageStateSnapRequest('get');
+		const state = await manageStateSnapRequest('get');
+		return state;
 	},
 	async clear() {
 		await manageStateSnapRequest('clear');
