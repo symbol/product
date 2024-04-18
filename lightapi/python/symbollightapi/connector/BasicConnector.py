@@ -25,7 +25,7 @@ class BasicConnector:
 					except (client_exceptions.ContentTypeError, json.decoder.JSONDecodeError) as ex:
 						raise NodeException from ex
 
-					if response.status not in (200, 404):
+					if 400 <= response.status and 404 != response.status:
 						error_message = f'HTTP request failed with code {response.status}'
 						for key in ('code', 'message'):
 							if key in response_json:

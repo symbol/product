@@ -218,31 +218,38 @@ async def _assert_can_propagate_status_code_result(server, status_code):  # pyli
 	assert {'code': 'SomeCode', 'message': 'some message', 'status': status_code} == response_json
 
 
-async def test_can_propagate_200_result(server):  # pylint: disable=redefined-outer-name
-	await _assert_can_propagate_status_code_result(server, 200)
-
-
-async def test_can_propagate_404_result(server):  # pylint: disable=redefined-outer-name
-	await _assert_can_propagate_status_code_result(server, 404)
-
-
-async def test_fail_propagate_500_result_with_message(server):  # pylint: disable=redefined-outer-name
-	# Arrange:
-	connector = BasicConnector(server.make_url(''))
-
-	# Act + Assert:
-	with pytest.raises(NodeException, match=r'^HTTP request failed with code 500\nSomeCode\nsome message$'):
-		await connector.get('status/500')
-
-
-async def test_fail_propagate_500_result_without_message(server):  # pylint: disable=redefined-outer-name
+async def _assert_can_propagate_status_code_failure_result(server, status_code):  # pylint: disable=redefined-outer-name
 	# Arrange:
 	server.mock.omit_error_description = True
 
 	connector = BasicConnector(server.make_url(''))
 
 	# Act + Assert:
-	with pytest.raises(NodeException, match=r'^HTTP request failed with code 500$'):
-		await connector.get('status/500')
+	with pytest.raises(NodeException, match=f'HTTP request failed with code {status_code}'):
+		await connector.get(f'status/{status_code}')
+
+
+async def _assert_can_propagate_status_code_failure_result_with_message(server, status_code):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	connector = BasicConnector(server.make_url(''))
+
+	# Act + Assert:
+	with pytest.raises(NodeException, match=f'HTTP request failed with code {status_code}\nSomeCode\nsome message'):
+		await connector.get(f'status/{status_code}')
+
+
+async def test_can_propagate_http_success_results(server):  # pylint: disable=redefined-outer-name
+	for status_code in (200, 202, 300, 404):
+		await _assert_can_propagate_status_code_result(server, status_code)
+
+
+async def test_can_propagate_http_failure_results(server):  # pylint: disable=redefined-outer-name
+	for status_code in (400, 401, 500, 501):
+		await _assert_can_propagate_status_code_failure_result(server, status_code)
+
+
+async def test_can_propagate_http_failure_results_with_message(server):  # pylint: disable=redefined-outer-name
+	for status_code in (400, 401, 500, 501):
+		await _assert_can_propagate_status_code_failure_result_with_message(server, status_code)
 
 # endregion
