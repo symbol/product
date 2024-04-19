@@ -4,6 +4,7 @@ import AccountInfo from '../AccountInfo';
 import AssetList from '../AssetList';
 import ConnectMetamask from '../ConnectMetamask';
 import DetectMetamask from '../DetectMetamask';
+import LoadingScreen from '../LoadingScreen';
 import Navbar from '../Navbar';
 import TransactionTable from '../TransactionTable';
 
