@@ -17,8 +17,8 @@ msgid "argument-help-ca-key-path"
 msgstr ""
 
 #: shoestring/commands/announce_transaction.py:35
-#: shoestring/commands/health.py:75 shoestring/commands/import_bootstrap.py:33
-#: shoestring/commands/init.py:29
+#: shoestring/commands/health.py:74 shoestring/commands/import_bootstrap.py:33
+#: shoestring/commands/import_harvesters.py:94 shoestring/commands/init.py:29
 #: shoestring/commands/min_cosignatures_count.py:34
 #: shoestring/commands/renew_certificates.py:29
 #: shoestring/commands/renew_voting_keys.py:112
@@ -27,7 +27,7 @@ msgstr ""
 msgid "argument-help-config"
 msgstr ""
 
-#: shoestring/commands/health.py:76
+#: shoestring/commands/health.py:75
 #: shoestring/commands/renew_certificates.py:30
 #: shoestring/commands/renew_voting_keys.py:113
 #: shoestring/commands/reset_data.py:88 shoestring/commands/setup.py:138
@@ -36,6 +36,22 @@ msgstr ""
 
 #: shoestring/commands/import_bootstrap.py:34
 msgid "argument-help-import-bootstrap-bootstrap"
+msgstr ""
+
+#: shoestring/commands/import_harvesters.py:95
+msgid "argument-help-import-harvesters-in-harvesters"
+msgstr ""
+
+#: shoestring/commands/import_harvesters.py:96
+msgid "argument-help-import-harvesters-in-pem"
+msgstr ""
+
+#: shoestring/commands/import_harvesters.py:98
+msgid "argument-help-import-harvesters-out-harvesters"
+msgstr ""
+
+#: shoestring/commands/import_harvesters.py:99
+msgid "argument-help-import-harvesters-out-pem"
 msgstr ""
 
 #: shoestring/commands/min_cosignatures_count.py:36
@@ -123,11 +139,11 @@ msgstr ""
 msgid "general-created-aggregate-transaction"
 msgstr ""
 
-#: shoestring/healthagents/peer_api.py:19
+#: shoestring/healthagents/peer_api.py:25
 msgid "health-peer-api-error"
 msgstr ""
 
-#: shoestring/healthagents/peer_api.py:17
+#: shoestring/healthagents/peer_api.py:23
 msgid "health-peer-api-success"
 msgstr ""
 
@@ -175,7 +191,7 @@ msgstr ""
 msgid "health-rest-https-certificate-valid"
 msgstr ""
 
-#: shoestring/commands/health.py:70
+#: shoestring/commands/health.py:69
 msgid "health-running-health-agent"
 msgstr ""
 
@@ -227,6 +243,14 @@ msgstr ""
 msgid "import-bootstrap-invalid-directory"
 msgstr ""
 
+#: shoestring/commands/import_harvesters.py:74
+msgid "import-harvesters-error-in-harvesters-is-equal-to-out-harvesters"
+msgstr ""
+
+#: shoestring/commands/import_harvesters.py:51
+msgid "import-harvesters-list-header"
+msgstr ""
+
 #: shoestring/__main__.py:20
 msgid "main-announce-transaction-help"
 msgstr ""
@@ -240,34 +264,38 @@ msgid "main-import-bootstrap-help"
 msgstr ""
 
 #: shoestring/__main__.py:23
-msgid "main-init-help"
+msgid "main-import-harvesters-help"
 msgstr ""
 
 #: shoestring/__main__.py:24
-msgid "main-min-cosignatures-count-help"
+msgid "main-init-help"
 msgstr ""
 
 #: shoestring/__main__.py:25
-msgid "main-pemtool-help"
+msgid "main-min-cosignatures-count-help"
 msgstr ""
 
 #: shoestring/__main__.py:26
-msgid "main-renew-certificates-help"
+msgid "main-pemtool-help"
 msgstr ""
 
 #: shoestring/__main__.py:27
-msgid "main-renew-voting-keys-help"
+msgid "main-renew-certificates-help"
 msgstr ""
 
 #: shoestring/__main__.py:28
-msgid "main-reset-data-help"
+msgid "main-renew-voting-keys-help"
 msgstr ""
 
 #: shoestring/__main__.py:29
-msgid "main-setup-help"
+msgid "main-reset-data-help"
 msgstr ""
 
 #: shoestring/__main__.py:30
+msgid "main-setup-help"
+msgstr ""
+
+#: shoestring/__main__.py:31
 msgid "main-signer-help"
 msgstr ""
 
@@ -279,7 +307,7 @@ msgstr ""
 msgid "main-title"
 msgstr ""
 
-#: shoestring/__main__.py:31
+#: shoestring/__main__.py:32
 msgid "main-upgrade-help"
 msgstr ""
 

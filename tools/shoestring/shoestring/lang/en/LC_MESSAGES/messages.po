@@ -26,8 +26,8 @@ msgid "argument-help-ca-key-path"
 msgstr "path to main private key PEM file"
 
 #: shoestring/commands/announce_transaction.py:35
-#: shoestring/commands/health.py:75 shoestring/commands/import_bootstrap.py:33
-#: shoestring/commands/init.py:29
+#: shoestring/commands/health.py:74 shoestring/commands/import_bootstrap.py:33
+#: shoestring/commands/import_harvesters.py:94 shoestring/commands/init.py:29
 #: shoestring/commands/min_cosignatures_count.py:34
 #: shoestring/commands/renew_certificates.py:29
 #: shoestring/commands/renew_voting_keys.py:112
@@ -36,7 +36,7 @@ msgstr "path to main private key PEM file"
 msgid "argument-help-config"
 msgstr "path to shoestring configuration file"
 
-#: shoestring/commands/health.py:76
+#: shoestring/commands/health.py:75
 #: shoestring/commands/renew_certificates.py:30
 #: shoestring/commands/renew_voting_keys.py:113
 #: shoestring/commands/reset_data.py:88 shoestring/commands/setup.py:138
@@ -46,6 +46,22 @@ msgstr "installation directory (default: {default_path})"
 #: shoestring/commands/import_bootstrap.py:34
 msgid "argument-help-import-bootstrap-bootstrap"
 msgstr "path to bootstrap target directory"
+
+#: shoestring/commands/import_harvesters.py:95
+msgid "argument-help-import-harvesters-in-harvesters"
+msgstr "input harvesters.dat file that is encrypted with in-pem"
+
+#: shoestring/commands/import_harvesters.py:96
+msgid "argument-help-import-harvesters-in-pem"
+msgstr "PEM file that can be used to decrypt in-harvesters"
+
+#: shoestring/commands/import_harvesters.py:98
+msgid "argument-help-import-harvesters-out-harvesters"
+msgstr "output harvesters.dat file that will be encrypted with out-pem"
+
+#: shoestring/commands/import_harvesters.py:99
+msgid "argument-help-import-harvesters-out-pem"
+msgstr "PEM file that can be used to encrypt out-harvesters"
 
 #: shoestring/commands/min_cosignatures_count.py:36
 msgid "argument-help-min-cosignatures-count-update"
@@ -134,11 +150,11 @@ msgstr "copying TREE {source_path} to {destination_path}"
 msgid "general-created-aggregate-transaction"
 msgstr "created aggregate transaction with hash {transaction_hash}"
 
-#: shoestring/healthagents/peer_api.py:19
+#: shoestring/healthagents/peer_api.py:25
 msgid "health-peer-api-error"
 msgstr "cannot access peer API at {host} on port {port}"
 
-#: shoestring/healthagents/peer_api.py:17
+#: shoestring/healthagents/peer_api.py:23
 msgid "health-peer-api-success"
 msgstr "peer API accessible, height = {height}"
 
@@ -186,7 +202,7 @@ msgstr "HTTPS certificate looks invalid: {error_message}"
 msgid "health-rest-https-certificate-valid"
 msgstr "HTTPS certificate looks ok: valid from {start_date} to {end_date}"
 
-#: shoestring/commands/health.py:70
+#: shoestring/commands/health.py:69
 msgid "health-running-health-agent"
 msgstr "running health agent for {module_name}"
 
@@ -244,6 +260,14 @@ msgstr ""
 "bootstrap directory provided ({directory}) does not look like bootstrap's"
 " target directory, nothing to import"
 
+#: shoestring/commands/import_harvesters.py:74
+msgid "import-harvesters-error-in-harvesters-is-equal-to-out-harvesters"
+msgstr "in-harvesters and out-harvesters must be different"
+
+#: shoestring/commands/import_harvesters.py:51
+msgid "import-harvesters-list-header"
+msgstr "listing harvesters in {filepath} using public key {public_key}"
+
 #: shoestring/__main__.py:20
 msgid "main-announce-transaction-help"
 msgstr "announces a transaction to the network"
@@ -257,34 +281,38 @@ msgid "main-import-bootstrap-help"
 msgstr "imports settings from a bootstap installation"
 
 #: shoestring/__main__.py:23
+msgid "main-import-harvesters-help"
+msgstr "imports harvesters from an existing harvesters.dat file"
+
+#: shoestring/__main__.py:24
 msgid "main-init-help"
 msgstr "extracts a template shoestring configuration file from a package"
 
-#: shoestring/__main__.py:24
+#: shoestring/__main__.py:25
 msgid "main-min-cosignatures-count-help"
 msgstr "detects minimum cosignatures required for an account"
 
-#: shoestring/__main__.py:25
+#: shoestring/__main__.py:26
 msgid "main-pemtool-help"
 msgstr "generates PEM files"
 
-#: shoestring/__main__.py:26
+#: shoestring/__main__.py:27
 msgid "main-renew-certificates-help"
 msgstr "renews certificates"
 
-#: shoestring/__main__.py:27
+#: shoestring/__main__.py:28
 msgid "main-renew-voting-keys-help"
 msgstr "renews voting keys"
 
-#: shoestring/__main__.py:28
+#: shoestring/__main__.py:29
 msgid "main-reset-data-help"
 msgstr "resets data to allow a resync from scratch"
 
-#: shoestring/__main__.py:29
+#: shoestring/__main__.py:30
 msgid "main-setup-help"
 msgstr "sets up a node"
 
-#: shoestring/__main__.py:30
+#: shoestring/__main__.py:31
 msgid "main-signer-help"
 msgstr "signs a transaction"
 
@@ -296,7 +324,7 @@ msgstr "valid subcommands"
 msgid "main-title"
 msgstr "Shoestring Tool"
 
-#: shoestring/__main__.py:31
+#: shoestring/__main__.py:32
 msgid "main-upgrade-help"
 msgstr "upgrades a node to the latest client version"
 

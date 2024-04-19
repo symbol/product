@@ -96,6 +96,21 @@ import-bootstrap --config CONFIG --bootstrap BOOTSTRAP
   --bootstrap BOOTSTRAP path to bootstrap target directory
 ```
 
+### import-harvesters
+
+Imports harvesters from an existing harvesters.dat file.
+
+
+```
+import-harvesters --config CONFIG --in-harvesters IN_HARVESTERS --in-pem IN_PEM [--out-harvesters OUT_HARVESTERS] [--out-pem OUT_PEM]
+
+  --config CONFIG                 path to shoestring configuration file
+  --in-harvesters IN_HARVESTERS   input harvesters.dat file that is encrypted with in-pem
+  --in-pem IN_PEM                 PEM file that can be used to decrypt in-harvesters
+  --out-harvesters OUT_HARVESTERS output harvesters.dat file that will be encrypted with out-pem
+  --out-pem OUT_PEM               PEM file that can be used to encrypt out-harvesters
+```
+
 ### pemtool
 
 Generates a main private key PEM file that can be used by shoestring.
