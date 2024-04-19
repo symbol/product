@@ -1,8 +1,10 @@
 export const initialState = {
 	isMetamaskInstalled: false,
 	isSnapInstalled: false,
-	isLoading: false,
-	loadingMessage: '',
+	loadingStatus: {
+		isLoading: false,
+		message: ''
+	},
 	finalizedHeight: 0,
 	currency: {
 		symbol: 'usd',
@@ -19,8 +21,7 @@ export const initialState = {
 export const actionTypes = {
 	SET_METAMASK_INSTALLED: 'setMetamaskInstalled',
 	SET_SNAP_INSTALLED: 'setSnapInstalled',
-	SET_IS_LOADING: 'setIsLoading',
-	SET_LOADING_MESSAGE: 'setLoadingMessage'
+	SET_LOADING_STATUS: 'setLoadingStatus'
 };
 
 export const reducer = (state, action) => {
@@ -29,10 +30,8 @@ export const reducer = (state, action) => {
 		return { ...state, isMetamaskInstalled: action.payload };
 	case actionTypes.SET_SNAP_INSTALLED:
 		return { ...state, isSnapInstalled: action.payload };
-	case actionTypes.SET_IS_LOADING:
-		return { ...state, isLoading: action.payload };
-	case actionTypes.SET_LOADING_MESSAGE:
-		return { ...state, loadingMessage: action.payload };
+	case actionTypes.SET_LOADING_STATUS:
+		return { ...state, loadingStatus: action.payload };
 	default:
 		return state;
 	}
