@@ -2,41 +2,44 @@ import Button from '.';
 import { fireEvent, render, screen } from '@testing-library/react';
 
 describe('components/Button', () => {
-	it('renders Button', () => {
+	it('can render', () => {
 		// Arrange:
 		const buttonText = 'Click me';
 
 		// Act:
 		render(<Button>Click me</Button>);
-		const buttonElement = screen.getByRole('button');
 
 		// Assert:
+		const buttonElement = screen.getByRole('button');
+
 		expect(buttonElement).toHaveTextContent(buttonText);
 	});
 
-	it('renders Button with custom class', () => {
+	it('can render with custom class', () => {
 		// Arrange:
 		const className = 'custom-class';
 
 		// Act:
 		render(<Button className={className}>Click me</Button>);
-		const buttonElement = screen.getByRole('button');
 
 		// Assert:
+		const buttonElement = screen.getByRole('button');
+
 		expect(buttonElement).toHaveClass(className);
 	});
 
-	it('renders Button with icon', async () => {
+	it('can render with icon', async () => {
 		// Arrange:
 		const iconPath = './icon.url';
 		const buttonText = 'Click me';
 
 		// Act:
 		render(<Button icon={iconPath}>{buttonText}</Button>);
+
+		// Assert:
 		const buttonElement = screen.getByRole('button');
 		const imageElement = screen.getByRole('img');
 
-		// Assert:
 		expect(buttonElement).toHaveTextContent(buttonText);
 		expect(imageElement).toHaveAttribute('src', iconPath);
 	});
