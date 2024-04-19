@@ -4,8 +4,10 @@ extends:
 - plugin:import/react
 - plugin:jsdoc/recommended-error
 - ../../linters/javascript/default.eslintrc
+plugins:
+  - '@stylistic/js'
 rules:
-  eol-last:
+  '@stylistic/js/eol-last':
     - error
     - always
   import/extensions:
