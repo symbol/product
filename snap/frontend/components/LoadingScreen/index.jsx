@@ -2,12 +2,12 @@ import { useWalletContext } from '../../context';
 
 const LoadingScreen = () => {
 	const { walletState } = useWalletContext();
-	const { isLoading, loadingMessage } = walletState;
+	const { isLoading, message } = walletState.loadingStatus;
 
 	return (
 		isLoading && (
 			<div role='overlay' className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-				{loadingMessage}
+				{message}
 			</div>
 		)
 	);
