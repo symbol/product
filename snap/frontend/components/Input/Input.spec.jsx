@@ -2,43 +2,46 @@ import Input from '.';
 import { fireEvent, render, screen } from '@testing-library/react';
 
 describe('components/Input', () => {
-	it('renders Input', () => {
+	it('can render', () => {
 		// Arrange:
 		const labelText = 'Your Name';
 		const placeholderText = 'Enter your name';
 
 		// Act:
 		render(<Input label={labelText} placeholder={placeholderText} />);
+
+		// Assert:
 		const labelElement = screen.getByText(labelText);
 		const inputElement = screen.getByPlaceholderText(placeholderText);
 
-		// Assert:
 		expect(labelElement).toBeInTheDocument();
 		expect(inputElement).toBeInTheDocument();
 	});
 
-	it('renders Input without label', () => {
+	it('can render without label', () => {
 		// Arrange:
 		const placeholderText = 'Enter your name';
 
 		// Act:
 		render(<Input placeholder={placeholderText} />);
-		const labelElement = screen.queryByRole('label');
 
 		// Assert:
+		const labelElement = screen.queryByRole('label');
+
 		expect(labelElement).not.toBeInTheDocument();
 	});
 
-	it('renders Input with custom class', () => {
+	it('can render with custom class', () => {
 		// Arrange:
 		const placeholderText = 'Enter your name';
 		const className = 'custom-class';
 
 		// Act:
 		render(<Input placeholder={placeholderText} className={className} role='inputBox' />);
-		const inputBoxElement = screen.getByRole('inputBox');
 
 		// Assert:
+		const inputBoxElement = screen.getByRole('inputBox');
+
 		expect(inputBoxElement).toHaveClass(className);
 	});
 
