@@ -10,12 +10,13 @@ describe('components/WarningModalBox', () => {
 
 		// Act:
 		render(<WarningModalBox isOpen={true} title={title} description={description}>{children}</WarningModalBox>);
+
+		// Assert:
 		const titleElement = screen.getByText(title);
 		const descriptionElement = screen.getByText(description);
 		const imageElements = screen.queryAllByRole('img');
 		const childrenElement = screen.getByText(children);
 
-		// Assert:
 		expect(titleElement).toBeInTheDocument();
 		expect(descriptionElement).toBeInTheDocument();
 		expect(imageElements[0].src.split('/').pop()).toBe('symbol-logo.svg');
@@ -26,9 +27,10 @@ describe('components/WarningModalBox', () => {
 	it('does not render when isOpen is false', () => {
 		// Arrange + Act:
 		render(<WarningModalBox isOpen={false} />);
-		const modalElement = screen.queryByRole('modal');
 
 		// Assert:
+		const modalElement = screen.queryByRole('modal');
+
 		expect(modalElement).not.toBeInTheDocument();
 	});
 
@@ -37,10 +39,10 @@ describe('components/WarningModalBox', () => {
 			it('does not called when clicked in modal box', () => {
 				// Arrange:
 				const onRequestClose = jest.fn();
-
-				// Act:
 				render(<WarningModalBox isOpen={true} onRequestClose={onRequestClose} />);
 				const element = screen.getByRole('modal');
+
+				// Act:
 				fireEvent.click(element);
 
 				// Assert:
@@ -50,10 +52,10 @@ describe('components/WarningModalBox', () => {
 			it('called when overlay is clicked', () => {
 				// Arrange:
 				const onRequestClose = jest.fn();
-
-				// Act:
 				render(<WarningModalBox isOpen={true} onRequestClose={onRequestClose} />);
 				const element = screen.getByRole('overlay');
+
+				// Act:
 				fireEvent.mouseDown(element);
 
 				// Assert:
