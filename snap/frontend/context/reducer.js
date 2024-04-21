@@ -12,6 +12,7 @@ export const initialState = {
 		address: '',
 		label: ''
 	},
+	mosaics: [],
 	transactions: []
 };
 
