@@ -1,13 +1,12 @@
 import { config } from '../config/index.js';
 import createSymbolClient from '../services/symbolClient.js';
 import helper from '../utils/helper.js';
-import symbolSdk from 'symbol-sdk';
-
-const { PrivateKey, facade, symbol } = symbolSdk;
+import { PrivateKey } from 'symbol-sdk';
+import { NetworkTimestamp, SymbolFacade } from 'symbol-sdk/symbol'; /* eslint import/no-unresolved: [2, { ignore: ['\.symbol$'] }] */
 
 const symbolFacade = {
-	facade: new facade.SymbolFacade(config.network),
-	faucetKeyPair: new facade.SymbolFacade.KeyPair(new PrivateKey(config.symbol.faucetPrivateKey)),
+	facade: new SymbolFacade(config.network),
+	faucetKeyPair: new SymbolFacade.KeyPair(new PrivateKey(config.symbol.faucetPrivateKey)),
 	client: createSymbolClient(config.symbol),
 
 	/**
@@ -69,7 +68,7 @@ const symbolFacade = {
 			recipientAddress,
 			mosaics,
 			message: [0, ...(new TextEncoder('utf-8')).encode('Good Luck!')],
-			deadline: new symbol.NetworkTimestamp(networkTimestamp).addHours(2).timestamp
+			deadline: new NetworkTimestamp(networkTimestamp).addHours(2).timestamp
 		});
 
 		const { payload, transactionHash } = helper.signTransaction(this.facade, this.faucetKeyPair, transferTransaction);

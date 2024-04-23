@@ -1,7 +1,11 @@
 import { config } from '../../src/config/index.js';
 import helper from '../../src/utils/helper.js';
 import { expect } from 'chai';
-import symbolSDK from 'symbol-sdk';
+import { PrivateKey } from 'symbol-sdk';
+// disable until https://github.com/import-js/eslint-plugin-import/issues/1810 is resolved
+/* eslint import/no-unresolved: [2, { ignore: ['^symbol-sdk/'] }] */
+import { NemFacade } from 'symbol-sdk/nem';
+import { NetworkTimestamp, SymbolFacade } from 'symbol-sdk/symbol';
 
 describe('helper', () => {
 	it('can convert absolute amount to relative amount.', () => {
@@ -124,12 +128,10 @@ describe('helper', () => {
 	});
 
 	describe('signTransaction', () => {
-		const { PrivateKey, facade, symbol } = symbolSDK;
-
 		it('returns signed transaction hash and payload when nem facade provided', () => {
 			// Arrange:
-			const protocolFacade = new facade.NemFacade(config.network);
-			const keyPair = new facade.NemFacade.KeyPair(new PrivateKey(config.nem.faucetPrivateKey));
+			const protocolFacade = new NemFacade(config.network);
+			const keyPair = new NemFacade.KeyPair(new PrivateKey(config.nem.faucetPrivateKey));
 			const networkTimestamp = 10000;
 
 			const transferTransaction = protocolFacade.transactionFactory.create({
@@ -160,8 +162,8 @@ describe('helper', () => {
 
 		it('returns signed transaction hash and payload when symbol facade provided', () => {
 			// Arrange:
-			const protocolFacade = new facade.SymbolFacade(config.network);
-			const keyPair = new facade.SymbolFacade.KeyPair(new PrivateKey(config.symbol.faucetPrivateKey));
+			const protocolFacade = new SymbolFacade(config.network);
+			const keyPair = new SymbolFacade.KeyPair(new PrivateKey(config.symbol.faucetPrivateKey));
 
 			const transferTransaction = protocolFacade.transactionFactory.create({
 				type: 'transfer_transaction_v1',
@@ -170,7 +172,7 @@ describe('helper', () => {
 				recipientAddress: 'TBL6O45I3HL2J3X3LPRVCEAES3S6KTWLNZ76NDQ',
 				mosaics: [],
 				message: [],
-				deadline: new symbol.NetworkTimestamp(10000).addHours(2).timestamp
+				deadline: new NetworkTimestamp(10000).addHours(2).timestamp
 			});
 
 			// Act:

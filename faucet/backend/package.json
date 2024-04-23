@@ -21,7 +21,7 @@
     "restify": "^11.1.0",
     "restify-errors": "^8.0.2",
     "sqlite3": "^5.1.6",
-    "symbol-sdk": "^3.0.11",
+    "symbol-sdk": "^3.2.1",
     "winston": "^3.10.0"
   },
   "devDependencies": {

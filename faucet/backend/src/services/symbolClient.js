@@ -1,8 +1,6 @@
 import { axiosErrorHandler, client } from '../utils/axiosRequest.js';
-import symbolSdk from 'symbol-sdk';
-
-const { PrivateKey, facade } = symbolSdk;
-const { SymbolFacade } = facade;
+import { PrivateKey } from 'symbol-sdk';
+import { SymbolFacade } from 'symbol-sdk/symbol'; /* eslint import/no-unresolved: [2, { ignore: ['\.symbol$'] }] */
 
 const createSymbolClient = ({ endpoint, faucetPrivateKey }) => ({
 	axios: client(endpoint),

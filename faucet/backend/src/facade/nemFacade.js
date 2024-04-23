@@ -1,13 +1,12 @@
 import { config } from '../config/index.js';
 import createNemClient from '../services/nemClient.js';
 import helper from '../utils/helper.js';
-import symbolSDK from 'symbol-sdk';
-
-const { PrivateKey, facade, nem } = symbolSDK;
+import { PrivateKey } from 'symbol-sdk';
+import { NemFacade, NetworkTimestamp } from 'symbol-sdk/nem'; /* eslint import/no-unresolved: [2, { ignore: ['\.nem$'] }] */
 
 const nemFacade = {
-	facade: new facade.NemFacade(config.network),
-	faucetKeyPair: new facade.NemFacade.KeyPair(new PrivateKey(config.nem.faucetPrivateKey)),
+	facade: new NemFacade(config.network),
+	faucetKeyPair: new NemFacade.KeyPair(new PrivateKey(config.nem.faucetPrivateKey)),
 	client: createNemClient(config.nem),
 
 	/**
@@ -51,7 +50,7 @@ const nemFacade = {
 	async transfer(amount, recipientAddress) {
 		const timestamp = await nemFacade.getNetworkTimestamp();
 
-		const networkTimestamp = new nem.NetworkTimestamp(timestamp);
+		const networkTimestamp = new NetworkTimestamp(timestamp);
 
 		const transferTransaction = this.facade.transactionFactory.create({
 			type: 'transfer_transaction_v1',

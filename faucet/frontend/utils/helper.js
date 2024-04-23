@@ -1,7 +1,10 @@
-import symbolSDK from 'symbol-sdk';
+/* eslint-disable import/extensions */
+// disable until https://github.com/import-js/eslint-plugin-import/issues/1810 is resolved
+/* eslint import/no-unresolved: [2, { ignore: ['^symbol-sdk/'] }] */
+import { Network as NemNetwork } from 'symbol-sdk/nem';
+import { Network as SymbolNetwork } from 'symbol-sdk/symbol';
+/* eslint-enable import/extensions */
 import crypto from 'crypto';
-
-const { nem, symbol } = symbolSDK;
 
 const algorithm = 'aes-256-gcm';
 
@@ -27,7 +30,7 @@ export const relativeToAbsoluteAmount = (value, divisibility) => value * (10 ** 
  * @returns {boolean} address validity.
  */
 export const validateNEMAddress = address => {
-	return nem.Network.TESTNET.isValidAddressString(address);
+	return NemNetwork.TESTNET.isValidAddressString(address);
 };
 
 /**
@@ -36,7 +39,7 @@ export const validateNEMAddress = address => {
  * @returns {boolean} address validity.
  */
 export const validateSymbolAddress = address => {
-	return symbol.Network.TESTNET.isValidAddressString(address);
+	return SymbolNetwork.TESTNET.isValidAddressString(address);
 };
 
 /**
