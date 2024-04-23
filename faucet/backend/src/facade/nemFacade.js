@@ -2,7 +2,7 @@ import { config } from '../config/index.js';
 import createNemClient from '../services/nemClient.js';
 import helper from '../utils/helper.js';
 import { PrivateKey } from 'symbol-sdk';
-import { NemFacade, NetworkTimestamp } from 'symbol-sdk/nem'; /* eslint import/no-unresolved: [2, { ignore: ['\.nem$'] }] */
+import { NemFacade, NetworkTimestamp } from 'symbol-sdk/nem';
 
 const nemFacade = {
 	facade: new NemFacade(config.network),

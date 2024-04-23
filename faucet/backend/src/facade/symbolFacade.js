@@ -2,7 +2,7 @@ import { config } from '../config/index.js';
 import createSymbolClient from '../services/symbolClient.js';
 import helper from '../utils/helper.js';
 import { PrivateKey } from 'symbol-sdk';
-import { NetworkTimestamp, SymbolFacade } from 'symbol-sdk/symbol'; /* eslint import/no-unresolved: [2, { ignore: ['\.symbol$'] }] */
+import { NetworkTimestamp, SymbolFacade } from 'symbol-sdk/symbol';
 
 const symbolFacade = {
 	facade: new SymbolFacade(config.network),

@@ -1,6 +1,4 @@
 /* eslint-disable import/extensions */
-// disable until https://github.com/import-js/eslint-plugin-import/issues/1810 is resolved
-/* eslint import/no-unresolved: [2, { ignore: ['^symbol-sdk/'] }] */
 import { Network as NemNetwork } from 'symbol-sdk/nem';
 import { Network as SymbolNetwork } from 'symbol-sdk/symbol';
 /* eslint-enable import/extensions */
