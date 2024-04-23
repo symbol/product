@@ -2,8 +2,6 @@ import { config } from '../../src/config/index.js';
 import helper from '../../src/utils/helper.js';
 import { expect } from 'chai';
 import { PrivateKey } from 'symbol-sdk';
-// disable until https://github.com/import-js/eslint-plugin-import/issues/1810 is resolved
-/* eslint import/no-unresolved: [2, { ignore: ['^symbol-sdk/'] }] */
 import { NemFacade } from 'symbol-sdk/nem';
 import { NetworkTimestamp, SymbolFacade } from 'symbol-sdk/symbol';
 

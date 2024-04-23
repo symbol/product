@@ -1,7 +1,5 @@
-/* eslint-disable import/extensions */
 import { Network as NemNetwork } from 'symbol-sdk/nem';
 import { Network as SymbolNetwork } from 'symbol-sdk/symbol';
-/* eslint-enable import/extensions */
 import crypto from 'crypto';
 
 const algorithm = 'aes-256-gcm';
