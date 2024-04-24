@@ -7,7 +7,7 @@
     "url": "https://github.com/symbol/product.git"
   },
   "source": {
-    "shasum": "r9BK/WRHSBTR90A0WUgqH0l0G+6k+JMRlN7Pty+C9aY=",
+    "shasum": "rRtt2/Ee0L2qrqOznyiOFI55h/xul8Pwz02NoTfFhNk=",
     "location": {
       "npm": {
         "filePath": "dist/bundle.js",
@@ -24,7 +24,15 @@
     "endowment:rpc": {
       "dapps": true,
       "snaps": false
-    }
+    },
+    "snap_getBip44Entropy": [
+      {
+        "coinType": 1
+      },
+      {
+        "coinType": 4343
+      }
+    ]
   },
   "manifestVersion": "0.1"
 }
