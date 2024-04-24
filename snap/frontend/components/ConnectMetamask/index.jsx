@@ -11,10 +11,7 @@ const ConnectMetamask = ({ isOpen, onRequestClose }) => {
 	const handleConnectClick = async () => {
 		const isConnected = await symbolSnap().connectSnap();
 
-		if (isConnected)
-			dispatch({ type: actionTypes.SET_SNAP_INSTALLED, payload: true });
-		else
-			dispatch({ type: actionTypes.SET_SNAP_INSTALLED, payload: false });
+		dispatch({ type: actionTypes.SET_SNAP_INSTALLED, payload: isConnected });
 	};
 
 	return (
