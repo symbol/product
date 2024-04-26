@@ -31,7 +31,7 @@ def main(args):
 	parser.add_argument('--blockchain', help='blockchain to target', choices=('symbol', 'nem'), default='symbol')
 	parser.add_argument('--network', help='network to target', choices=('testnet', 'mainnet'), default='mainnet')
 	parser.add_argument('--patterns', help='patterns to match (comma delimited)', required=True)
-	parser.add_argument('--max-offset', help='maximum offset of match start', default=2)
+	parser.add_argument('--max-offset', help='maximum offset of match start', default=2, type=int)
 	parser.add_argument('--format', help='output format', choices=('pretty', 'csv'), default='pretty')
 	parser.add_argument('--suppress-console', help='suppress printing matches to console', action='store_true')
 	parser.add_argument('--out', help='output file')
