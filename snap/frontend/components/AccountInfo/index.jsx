@@ -8,7 +8,7 @@ const AccountInfo = () => {
 
 	return (
 		selectedAccount && <div className='flex flex-col items-center justify-center p-2'>
-			<div className="rounded-full w-16 h-16 bg-gray-300" />
+			<div role='profile-image' className="rounded-full w-16 h-16 bg-gray-300" />
 			{/* Text Address and wallet label */}
 			<div className='flex flex-col items-center text-xs'>
 				<div className='flex items-center pt-2 justify-center'>
