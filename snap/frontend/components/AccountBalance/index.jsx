@@ -5,7 +5,7 @@ const AccountBalance = () => {
 	const { mosaics, currency } = walletState;
 	const { symbol, currencyPerXYM } = currency;
 
-	const xymBalance = mosaics.find(m => '10BA3BAA50DEB76C' === m.id)?.amount || 0;
+	const xymBalance = mosaics.find(m => 'symbol.xym' === m.name)?.amount || 0;
 	const convertToCurrency = (xymBalance * currencyPerXYM).toFixed(2);
 
 	return (
