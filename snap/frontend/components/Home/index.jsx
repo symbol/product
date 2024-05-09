@@ -11,49 +11,6 @@ import TransactionTable from '../TransactionTable';
 const Home = () => {
 	const { isMetamaskInstalled, isSnapInstalled } = useWalletInstallation();
 
-	const mockTransactions = [
-		{
-			sender: 'NDUGJWR3NASYOM4FMRCLD2UCLXEYQOVHSH4GVEI',
-			transactionType: 'Reclaim',
-			amount: null,
-			currency: null,
-			message: null,
-			transactionHash: '730DD2C509533DC7BE91B4B11AAD62732EEDA0C056ACF4538551D10A9AB63D6B',
-			date: null,
-			height: null
-		},
-		{
-			sender: 'NDUGJWR3NASYOM4FMRCLD2UCLXEYQOVHSH4GVEI',
-			transactionType: 'Transfer',
-			amount: '10.000000',
-			currency: '50.00 JPY',
-			message: 'Send',
-			transactionHash: 'BFA649B68A9B30FE9BF5C6AF9BE16C066588EA8766999AD56A81783FD50E360E',
-			date: '2024-02-29 18:55:40',
-			height: 1684644
-		},
-		{
-			sender: 'NBQE6M2DQDAI7QFWX5YGAU7XOA6JNZEZQCRXRMA',
-			transactionType: 'Transfer',
-			amount: '10.000000',
-			currency: '50.00 JPY',
-			message: null,
-			transactionHash: 'A1ADB0380C268ED66F3B1C0B020FCA8FC7C9F8EE129D679D9AEDDD9DD98D4776',
-			date: '2024-03-1 18:55:40',
-			height: 1684645
-		},
-		{
-			sender: 'NDUGJWR3NASYOM4FMRCLD2UCLXEYQOVHSH4GVEI',
-			transactionType: 'Reclaim',
-			amount: null,
-			currency: null,
-			message: null,
-			transactionHash: '730DD2C509533DC7BE91B4B11AAD62732EEDA0C056ACF4538551D10A9AB63D6B',
-			date: '2024-03-2 18:55:40',
-			height: 1684646
-		}
-	];
-
 	return (
 		<div className='m-auto max-w-screen-xl min-w-[910px] max-h-min p-5'>
 			{
@@ -94,7 +51,7 @@ const Home = () => {
 						</div>
 					</div>
 
-					<TransactionTable transactions={mockTransactions} />
+					<TransactionTable />
 				</div>
 			</div>
 		</div>
