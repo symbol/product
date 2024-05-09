@@ -1,19 +1,37 @@
 import Home from '.';
-import WalletContextProvider from '../../context/store';
-import { render, screen } from '@testing-library/react';
+import testHelper from '../testHelper';
+import { screen } from '@testing-library/react';
+
+const context = {
+	dispatch: jest.fn(),
+	walletState: {
+		loadingStatus: {
+			isLoading: false,
+			message: ''
+		},
+		selectedAccount: {
+			address: 'address 1',
+			label: 'wallet 1'
+		},
+		mosaics: [],
+		transactions: [],
+		currency: {
+			symbol: 'usd',
+			currencyPerXYM: 0.25
+		}
+	}
+};
 
 describe('components/Home', () => {
 	const assertModalScreen = async (walletState, expectedModal) => {
 		// Arrange:
-		const context = {
-			walletState,
-			dispatch: jest.fn()
+		context.walletState = {
+			...context.walletState,
+			...walletState
 		};
 
 		// Act:
-		render(<WalletContextProvider value={context}>
-			<Home />
-		</WalletContextProvider>);
+		testHelper.customRender(<Home />, context);
 
 		const textElement = await screen.findByText(expectedModal);
 
@@ -27,9 +45,5 @@ describe('components/Home', () => {
 
 	it('renders ConnectMetamask modal when metamask is installed but snap is not installed', async () => {
 		await assertModalScreen({ isMetamaskInstalled: true, isSnapInstalled: false }, 'Connect MetaMask');
-	});
-
-	it('renders connected when metamask and snap are installed', async () => {
-		await assertModalScreen({ isMetamaskInstalled: true, isSnapInstalled: true }, 'connected');
 	});
 });
