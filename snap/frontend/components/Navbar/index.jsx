@@ -43,7 +43,7 @@ const Navbar = () => {
 			<div className='flex items-center'>
 				<Dropdown label={selectedNetwork} options={networks} onSelect={handleSelectNetwork}/>
 				<Dropdown label={selectedCurrency} options={currencies} onSelect={handleSelectCurrency} />
-				<div className={`rounded-full w-5 h-5 ml-2 ${isConnected ? 'bg-green' :'bg-red-500'}`}></div>
+				<div role='connection-status' className={`rounded-full w-5 h-5 ml-2 ${isConnected ? 'bg-green' :'bg-red-500'}`}></div>
 			</div>
 		</div>
 	);
