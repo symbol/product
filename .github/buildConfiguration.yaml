@@ -23,6 +23,9 @@ builds:
   - name: Snap Backend
     path: snap/backend
 
+  - name: Snap Frontend
+    path: snap/frontend
+
   - name: Vanity Address Generator
     path: tools/vanity
 
