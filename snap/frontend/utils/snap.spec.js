@@ -1,7 +1,8 @@
-import symbolSnap from './snap';
+import symbolSnapFactory from './snap';
 
-describe('symbolSnap', () => {
+describe('symbolSnapFactory', () => {
 	let mockProvider;
+	let symbolSnap;
 
 	const mockSnaps = { snap1: {
 		blocked: false,
@@ -23,11 +24,22 @@ describe('symbolSnap', () => {
 			request: jest.fn()
 		};
 
-		window.ethereum = mockProvider;
+		symbolSnap = symbolSnapFactory.create(mockProvider);
 	});
 
 	afterEach(() => {
 		jest.clearAllMocks();
+	});
+
+	describe('create', () => {
+		it('returns an object with provider and methods', () => {
+
+			// Assert:
+			expect(symbolSnap.provider).toBe(mockProvider);
+			expect(symbolSnap.getSnaps).toBeInstanceOf(Function);
+			expect(symbolSnap.getSnap).toBeInstanceOf(Function);
+			expect(symbolSnap.connectSnap).toBeInstanceOf(Function);
+		});
 	});
 
 	describe('getSnaps', () => {
@@ -36,7 +48,7 @@ describe('symbolSnap', () => {
 			mockProvider.request.mockResolvedValue(mockSnaps);
 
 			// Act:
-			const result = await symbolSnap().getSnaps();
+			const result = await symbolSnap.getSnaps();
 
 			// Assert:
 			expect(result).toEqual(mockSnaps);
@@ -48,7 +60,7 @@ describe('symbolSnap', () => {
 			mockProvider.request.mockRejectedValue();
 
 			// Act:
-			const result = await symbolSnap().getSnaps();
+			const result = await symbolSnap.getSnaps();
 
 			// Assert:
 			expect(result).toEqual({});
@@ -62,7 +74,7 @@ describe('symbolSnap', () => {
 			mockProvider.request.mockResolvedValue(mockSnaps);
 
 			// Act:
-			const result = await symbolSnap().getSnap(version);
+			const result = await symbolSnap.getSnap(version);
 
 			// Assert:
 			expect(result).toEqual(expectedSnap);
@@ -89,7 +101,7 @@ describe('symbolSnap', () => {
 
 			mockProvider.request.mockResolvedValue(mockSnaps.snap1);
 
-			const result = await symbolSnap().connectSnap(snapId, params);
+			const result = await symbolSnap.connectSnap(snapId, params);
 
 			expect(result).toBe(true);
 			expect(mockProvider.request).toHaveBeenCalledWith({
@@ -103,7 +115,7 @@ describe('symbolSnap', () => {
 			mockProvider.request.mockRejectedValueOnce();
 
 			// Act:
-			const result = await symbolSnap().connectSnap();
+			const result = await symbolSnap.connectSnap();
 
 			expect(result).toBe(false);
 		});
