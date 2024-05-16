@@ -9,7 +9,7 @@ const Navbar = () => {
 
 	const networks = [
 		{ label: 'Mainnet', value: 'mainnet' },
-		{ label: 'Sai Testnet', value: 'testnet' }
+		{ label: 'Testnet', value: 'testnet' }
 	];
 
 	const currencies = [
