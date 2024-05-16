@@ -51,7 +51,7 @@ describe('components/AssetList', () => {
 		assertMosaic(context, 'symbol', '10.023123 xym');
 	});
 
-	it('renders mosaic name without extension', () => {
+	it('renders multilevel mosaic name', () => {
 		// Arrange:
 		context.walletState.mosaics = [
 			{
