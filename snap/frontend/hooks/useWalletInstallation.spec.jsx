@@ -13,7 +13,8 @@ describe('hooks/useWalletInstallation', () => {
 		// Arrange:
 		const dispatch = jest.fn();
 		const walletState = { isMetamaskInstalled: false, isSnapInstalled: false };
-		const context = { walletState, dispatch };
+		const symbolSnap = { getSnap: jest.fn() };
+		const context = { walletState, dispatch, symbolSnap };
 
 		// Act:
 		renderHook(() => useWalletInstallation(), {
