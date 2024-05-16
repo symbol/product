@@ -67,12 +67,12 @@ describe('components/Navbar', () => {
 			});
 
 			it('renders options items', () => {
-				assertOptions('Network', ['Mainnet', 'Sai Testnet']);
+				assertOptions('Network', ['Mainnet', 'Testnet']);
 			});
 
 			it('sets selected network when clicked on item', () => {
 				assertSelectedOption('Network', 'Mainnet');
-				assertSelectedOption('Network', 'Sai Testnet');
+				assertSelectedOption('Network', 'Testnet');
 			});
 		});
 
