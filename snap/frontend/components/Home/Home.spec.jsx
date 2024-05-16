@@ -19,6 +19,9 @@ const context = {
 			symbol: 'usd',
 			currencyPerXYM: 0.25
 		}
+	},
+	symbolSnap: {
+		getSnap: jest.fn()
 	}
 };
 
