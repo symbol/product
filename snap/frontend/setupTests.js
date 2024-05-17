@@ -9,3 +9,8 @@ jest.mock('next/image', () => {
 	const mockImage = ({...props}) => <img {...props} />;
 	return mockImage;
 });
+
+jest.mock('@metamask/detect-provider', () => {
+	const detectEthereumProvider = jest.fn();
+	return detectEthereumProvider;
+});
