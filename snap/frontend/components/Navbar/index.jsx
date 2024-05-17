@@ -5,7 +5,7 @@ import { useState } from 'react';
 
 const Navbar = () => {
 	const { walletState } = useWalletContext();
-	const { isMetamaskInstalled, isSnapInstalled } = walletState;
+	const { isSnapInstalled } = walletState;
 
 	const networks = [
 		{ label: 'Mainnet', value: 'mainnet' },
@@ -19,7 +19,6 @@ const Navbar = () => {
 
 	const [selectedNetwork, setSelectedNetwork] = useState('Network');
 	const [selectedCurrency, setSelectedCurrency] = useState('Currency');
-	const isConnected = isMetamaskInstalled && isSnapInstalled;
 
 	const handleSelectNetwork = option => {
 		setSelectedNetwork(option.label);
@@ -43,7 +42,7 @@ const Navbar = () => {
 			<div className='flex items-center'>
 				<Dropdown label={selectedNetwork} options={networks} onSelect={handleSelectNetwork}/>
 				<Dropdown label={selectedCurrency} options={currencies} onSelect={handleSelectCurrency} />
-				<div role='connection-status' className={`rounded-full w-5 h-5 ml-2 ${isConnected ? 'bg-green' :'bg-red-500'}`}></div>
+				<div role='connection-status' className={`rounded-full w-5 h-5 ml-2 ${isSnapInstalled ? 'bg-green' :'bg-red-500'}`}></div>
 			</div>
 		</div>
 	);

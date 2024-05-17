@@ -1,5 +1,6 @@
 'use client';
 
+import DetectMetamask from '../components/DetectMetamask';
 import HomeComponent from '../components/Home';
 import { WalletContextProvider, initialState, reducer } from '../context';
 import symbolSnapFactory from '../utils/snap';
@@ -7,10 +8,10 @@ import detectEthereumProvider from '@metamask/detect-provider';
 import React, { useEffect, useMemo, useReducer, useState } from 'react';
 
 /**
- * Renders the home page.
+ * Renders the main page.
  * @returns {React.JSX} The home page component.
  */
-export default function Home() {
+export default function Main() {
 	const [walletState, dispatch] = useReducer(reducer, initialState);
 	const [provider, setProvider] = useState(null);
 
@@ -18,7 +19,6 @@ export default function Home() {
 		const detectedProvider = await detectEthereumProvider();
 		if (detectedProvider)
 			setProvider(detectedProvider);
-
 	};
 
 	useEffect(() => {
@@ -26,14 +26,15 @@ export default function Home() {
 	}, []);
 
 	const symbolSnap = useMemo(() => {
-		if (provider && provider.isMetaMask)
+		if (provider && provider.isMetaMask) 
 			return symbolSnapFactory.create(provider);
+		
 
 		return null;
 	}, [provider]);
 
 	if (!symbolSnap)
-		return null;
+		return (<DetectMetamask isOpen={true} onRequestClose={() => false} />);;
 
 	return (
 		<WalletContextProvider value={{ walletState, dispatch, symbolSnap }}>

@@ -3,22 +3,19 @@ import AccountBalance from '../AccountBalance';
 import AccountInfo from '../AccountInfo';
 import AssetList from '../AssetList';
 import ConnectMetamask from '../ConnectMetamask';
-import DetectMetamask from '../DetectMetamask';
 import LoadingScreen from '../LoadingScreen';
 import Navbar from '../Navbar';
 import TransactionTable from '../TransactionTable';
 
 const Home = () => {
-	const { isMetamaskInstalled, isSnapInstalled } = useWalletInstallation();
+	const { isSnapInstalled } = useWalletInstallation();
 
 	return (
 		<div className='m-auto max-w-screen-xl min-w-[910px] max-h-min p-5'>
 			{
-				!isMetamaskInstalled ?
-					<DetectMetamask isOpen={!isMetamaskInstalled} onRequestClose={() => false} /> :
-					!isSnapInstalled ?
-						<ConnectMetamask isOpen={!isSnapInstalled} onRequestClose={() => false} /> :
-						null
+				!isSnapInstalled ?
+					<ConnectMetamask isOpen={!isSnapInstalled} onRequestClose={() => false} /> :
+					null
 			}
 
 			<Navbar />
