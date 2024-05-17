@@ -104,17 +104,15 @@ describe('components/Navbar', () => {
 			expect(connectionStatus).toHaveClass(expectedResult);
 		};
 
-		it('renders green when isConnected is true', () => {
+		it('renders green when isSnapInstalled is true', () => {
 			// Arrange:
-			context.walletState.isMetamaskInstalled = true;
 			context.walletState.isSnapInstalled = true;
 
 			assertConnectionStatus(context, 'bg-green');
 		});
 
-		it('renders red when isConnected is false', () => {
+		it('renders red when isSnapInstalled is false', () => {
 			// Arrange:
-			context.walletState.isMetamaskInstalled = false;
 			context.walletState.isSnapInstalled = false;
 
 			assertConnectionStatus(context, 'bg-red-500');

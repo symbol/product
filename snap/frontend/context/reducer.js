@@ -1,5 +1,4 @@
 export const initialState = {
-	isMetamaskInstalled: false,
 	isSnapInstalled: false,
 	loadingStatus: {
 		isLoading: false,
@@ -19,15 +18,12 @@ export const initialState = {
 };
 
 export const actionTypes = {
-	SET_METAMASK_INSTALLED: 'setMetamaskInstalled',
 	SET_SNAP_INSTALLED: 'setSnapInstalled',
 	SET_LOADING_STATUS: 'setLoadingStatus'
 };
 
 export const reducer = (state, action) => {
 	switch (action.type) {
-	case actionTypes.SET_METAMASK_INSTALLED:
-		return { ...state, isMetamaskInstalled: action.payload };
 	case actionTypes.SET_SNAP_INSTALLED:
 		return { ...state, isSnapInstalled: action.payload };
 	case actionTypes.SET_LOADING_STATUS:
