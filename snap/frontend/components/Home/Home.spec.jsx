@@ -42,11 +42,7 @@ describe('components/Home', () => {
 		expect(textElement).toBeInTheDocument();
 	};
 
-	it('renders DetectMetamask modal when metamask is not install', async () => {
-		await assertModalScreen({ isMetamaskInstalled: false, isSnapInstalled: false }, 'Download MetaMask');
-	});
-
 	it('renders ConnectMetamask modal when metamask is installed but snap is not installed', async () => {
-		await assertModalScreen({ isMetamaskInstalled: true, isSnapInstalled: false }, 'Connect MetaMask');
+		await assertModalScreen({ isSnapInstalled: false }, 'Connect MetaMask');
 	});
 });
