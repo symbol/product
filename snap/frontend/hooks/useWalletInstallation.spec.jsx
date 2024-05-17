@@ -1,31 +1,37 @@
 import useWalletInstallation from './useWalletInstallation';
 import { WalletContextProvider } from '../context';
-import { renderHook } from '@testing-library/react';
+import { act, renderHook } from '@testing-library/react';
 
 describe('hooks/useWalletInstallation', () => {
-	beforeEach(() => {
-		window.ethereum = {
-			isMetaMask: true
-		};
-	});
-
-	it('dispatch setMetamaskInstalled if metamask install in browser', async () => {
+	const assertSetSnapInstalledDispatch = async (isSymbolSnapInstalled, expectedDispatchCall) => {
 		// Arrange:
 		const dispatch = jest.fn();
-		const walletState = { isMetamaskInstalled: false, isSnapInstalled: false };
-		const symbolSnap = { getSnap: jest.fn() };
-		const context = { walletState, dispatch, symbolSnap };
+		const walletState = { isSnapInstalled: false };
+		const symbolSnap = { getSnap: jest.fn().mockResolvedValue({ enabled: isSymbolSnapInstalled })};
+		const context = { dispatch, walletState, symbolSnap };
+
+		const wrapper = ({ children }) => (
+			<WalletContextProvider value={context}>
+				{children}
+			</WalletContextProvider>
+		);
 
 		// Act:
-		renderHook(() => useWalletInstallation(), {
-			wrapper: ({ children }) => (
-				<WalletContextProvider value={context}>
-					{children}
-				</WalletContextProvider>
-			)
-		});
+		await act(async () => renderHook(() => useWalletInstallation(), { wrapper }));
 
 		// Assert:
-		expect(dispatch).toHaveBeenCalledWith({ type: 'setMetamaskInstalled', payload: true });
+		if (expectedDispatchCall) 
+			expect(dispatch).toHaveBeenCalledWith(expectedDispatchCall);
+		 else 
+			expect(dispatch).not.toHaveBeenCalled();
+		
+	};
+
+	it('dispatch setSnapInstalled action when snap is installed and enabled', async () => {
+		await assertSetSnapInstalledDispatch(true, { type: 'setSnapInstalled', payload: true });
+	});
+
+	it('does not dispatch setSnapInstalled action when snap is not installed', async () => {
+		await assertSetSnapInstalledDispatch(false, null);
 	});
 });
