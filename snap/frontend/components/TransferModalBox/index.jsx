@@ -1,20 +1,44 @@
+import { NetworkType } from '../../config/constants';
 import { useWalletContext } from '../../context';
 import Button from '../Button';
 import Input from '../Input';
 import ModalBox from '../ModalBox';
 import { useEffect, useState } from 'react';
+import { SymbolFacade } from 'symbol-sdk/symbol';
 
 const TransferModalBox = ({ isOpen, onRequestClose }) => {
 	const { walletState } = useWalletContext();
-	const { selectedAccount, accountsMosaics } = walletState;
+	const { selectedAccount, accountsMosaics, network } = walletState;
 	const { address } = selectedAccount || {};
 	const mosaicsBalance = accountsMosaics[address] || [];
+	const facade = new SymbolFacade(NetworkType[network.identifier]);
 
 	const [to, setTo] = useState('');
 	const [message, setMessage] = useState('');
 	const [isEncrypt, setIsEncrypt] = useState(false);
 	const [mosaicSelectorManager, setMosaicSelectorManager] = useState([]);
 	const [selectedMosaics, setSelectedMosaics] = useState([]);
+	const [errors, setErrors] = useState({
+		address: null,
+		message: null,
+		amount: []
+	});
+
+	const validate = (field, value) => {
+		switch (field) {
+		case 'address':
+			return facade.network.isValidAddressString(value) ? null : 'Invalid address';
+		case 'message':
+			return 1024 >= value.length ? null : 'Message length should not exceed 1024 characters';
+		case 'amount':
+			return value.map((amount, index) => {
+				const maxBalance = mosaicsBalance.find(mosaic => mosaic.id === selectedMosaics[index].id).amount;
+				return amount > maxBalance ? 'Not enough balance' : null;
+			});
+		default:
+			return null;
+		}
+	};
 
 	const getUnselectedMosaics = () => {
 		const selectedMosaicIds = selectedMosaics.map(mosaic => mosaic.id);
@@ -60,18 +84,42 @@ const TransferModalBox = ({ isOpen, onRequestClose }) => {
 
 	const handleAmountChange = (event, index) => {
 		const newAmount = event.target.value;
+		const updateMosaics = [...selectedMosaics];
+		updateMosaics[index] = { ...updateMosaics[index], amount: newAmount };
+		setSelectedMosaics(updateMosaics);
 
-		setSelectedMosaics(prevMosaics => {
-			const newMosaics = [...prevMosaics];
-			newMosaics[index] = { ...newMosaics[index], amount: newAmount };
-			return newMosaics;
-		});
+		setErrors(errors => ({
+			...errors,
+			amount: validate('amount', updateMosaics.map(mosaic => mosaic.amount))
+		}));
 	};
 
 	const handleMaxAmount = index => {
 		const maxAmount = mosaicsBalance.find(mosaic => mosaic.id === selectedMosaics[index].id).amount;
-		selectedMosaics[index].amount = maxAmount;
-		setSelectedMosaics([...selectedMosaics]);
+
+		const updateMosaics = [...selectedMosaics];
+		updateMosaics[index] = { ...updateMosaics[index], amount: maxAmount };
+
+		setSelectedMosaics(updateMosaics);
+
+		setErrors(errors => ({
+			...errors,
+			amount: validate('amount', selectedMosaics.map(mosaic => mosaic.amount))
+		}));
+	};
+
+	const handleInputAddress = event => {
+		const newAddress = event.target.value;
+		setTo(newAddress);
+
+		setErrors(errors => ({ ...errors, address: validate('address', newAddress) }));
+	};
+
+	const handleMessageChange = event => {
+		const newMessage = event.target.value;
+		setMessage(newMessage);
+
+		setErrors(errors => ({ ...errors, message: validate('message', newMessage) }));
 	};
 
 	useEffect(() => {
@@ -96,21 +144,26 @@ const TransferModalBox = ({ isOpen, onRequestClose }) => {
 
 	const renderMosaicSelector = (mosaicOption, index) => {
 		return (
-			<div key={index} className='p-2 flex text-xs'>
-				<select className='w-2/3 px-4 text-black bg-[#D9D9D9] rounded-xl' onChange={event => handleSelectChange(event, index)}>
-					{
-						mosaicOption.map(option => (
-							<option key={option.id} value={option.id}>
-								{option.name ? option.name : option.id}
-							</option>
-						))
-					}
-				</select>
+			<div key={index} className='p-2 text-xs'>
+				<div className='flex'>
+					<select className='w-2/3 px-4 text-black bg-[#D9D9D9] rounded-xl' onChange={event => handleSelectChange(event, index)}>
+						{
+							mosaicOption.map(option => (
+								<option key={option.id} value={option.id}>
+									{option.name ? option.name : option.id}
+								</option>
+							))
+						}
+					</select>
 
-				<div className='flex items-center justify-around'>
-					<input className='w-2/3 px-4 py-2 text-black bg-[#D9D9D9] rounded-xl' type='number'
-						value={selectedMosaics[index]?.amount || 0} onChange={event => handleAmountChange(event, index)} />
-					<span className='cursor-pointer' onClick={() => handleMaxAmount(index)}>Max</span>
+					<div className='flex items-center justify-around'>
+						<input className='w-2/3 px-4 py-2 text-black bg-[#D9D9D9] rounded-xl' type='number'
+							value={selectedMosaics[index]?.amount || 0} onChange={event => handleAmountChange(event, index)} />
+						<span className='cursor-pointer' onClick={() => handleMaxAmount(index)}>Max</span>
+					</div>
+				</div>
+				<div>
+					{errors.amount[index] && <p className='text-red-500 text-xs'>{errors.amount[index]}</p>}
 				</div>
 			</div>
 		);
@@ -127,8 +180,8 @@ const TransferModalBox = ({ isOpen, onRequestClose }) => {
 					className='p-2 flex items-start'
 					label='To'
 					value={to}
-					onChange={event => setTo(event.target.value)}
-					errorMessage={false && 'Invalid private key'}
+					onChange={handleInputAddress}
+					errorMessage={errors.address}
 				/>
 
 				<div>
@@ -166,7 +219,8 @@ const TransferModalBox = ({ isOpen, onRequestClose }) => {
 						className='p-2 flex items-start'
 						label='Message'
 						value={message}
-						onChange={event => setMessage(event.target.value)}
+						onChange={handleMessageChange}
+						errorMessage={errors.message}
 					/>
 
 					<div className='flex items-center justify-end'>
