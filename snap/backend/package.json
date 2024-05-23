@@ -33,8 +33,7 @@
 		"crypto-js": "^4.2.0",
 		"empty-module": "^0.0.2",
 		"process": "^0.11.10",
-		"symbol-crypto-wasm-node": "^0.1.1",
-		"symbol-sdk": "^3.2.0",
+		"symbol-sdk": "^3.2.1",
 		"webpack": "^5.91.0"
 	},
 	"devDependencies": {
