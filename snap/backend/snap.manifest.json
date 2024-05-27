@@ -7,7 +7,7 @@
     "url": "https://github.com/symbol/product.git"
   },
   "source": {
-    "shasum": "vTkPsF6V824DRPlFe3gx/OM0hl/bk+G74M8NlYD4uR4=",
+    "shasum": "r9BK/WRHSBTR90A0WUgqH0l0G+6k+JMRlN7Pty+C9aY=",
     "location": {
       "npm": {
         "filePath": "dist/bundle.js",
@@ -20,6 +20,7 @@
   "initialPermissions": {
     "snap_dialog": {},
     "snap_manageState": {},
+    "endowment:network-access": {},
     "endowment:rpc": {
       "dapps": true,
       "snaps": false
