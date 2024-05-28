@@ -46,6 +46,45 @@ const symbolSnapFactory = {
 				} catch {
 					return false;
 				}
+			},
+			/**
+			 * Get current selected network from snap MetaMask.
+			 * @returns {object} The network object returned by the snap.
+			 */
+			async getNetwork() {
+				const networkData = await provider.request({
+					method: 'wallet_invokeSnap',
+					params: {
+						snapId: defaultSnapOrigin,
+						request: {
+							method: 'getNetwork'
+						}
+					}
+				});
+
+				return networkData;
+			},
+			/**
+			 * Switch network in snap MetaMask.
+			 * @typedef {'mainnet' | 'testnet'} NetworkName
+			 * @param {NetworkName} networkName - The name of the network to switch to.
+			 * @returns {object} The network object returned by the snap.
+			 */
+			async switchNetwork(networkName) {
+				const network = await provider.request({
+					method: 'wallet_invokeSnap',
+					params: {
+						snapId: defaultSnapOrigin,
+						request: {
+							method: 'switchNetwork',
+							params: {
+								networkName
+							}
+						}
+					}
+				});
+
+				return network;
 			}
 		};
 	}
