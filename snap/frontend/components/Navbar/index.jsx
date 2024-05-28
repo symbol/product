@@ -1,10 +1,10 @@
-import { useWalletContext } from '../../context';
+import { actionTypes, useWalletContext } from '../../context';
 import Dropdown from '../Dropdown';
 import Image from 'next/image';
 import { useState } from 'react';
 
 const Navbar = () => {
-	const { walletState } = useWalletContext();
+	const { walletState, dispatch, symbolSnap } = useWalletContext();
 	const { isSnapInstalled } = walletState;
 
 	const networks = [
@@ -20,8 +20,16 @@ const Navbar = () => {
 	const [selectedNetwork, setSelectedNetwork] = useState('Network');
 	const [selectedCurrency, setSelectedCurrency] = useState('Currency');
 
-	const handleSelectNetwork = option => {
+	const handleSelectNetwork = async option => {
+		if (option.label === selectedNetwork)
+			return;
+
+		// switch network
+		const networkData = await symbolSnap.switchNetwork(option.value);
+
 		setSelectedNetwork(option.label);
+
+		dispatch({ type: actionTypes.SET_NETWORK, payload: networkData });
 	};
 
 	const handleSelectCurrency = option => {
