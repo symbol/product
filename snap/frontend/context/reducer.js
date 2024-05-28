@@ -9,6 +9,7 @@ export const initialState = {
 		symbol: 'usd',
 		currencyPerXYM: 0
 	},
+	network: {},
 	selectedAccount: {
 		address: '',
 		label: ''
@@ -19,7 +20,8 @@ export const initialState = {
 
 export const actionTypes = {
 	SET_SNAP_INSTALLED: 'setSnapInstalled',
-	SET_LOADING_STATUS: 'setLoadingStatus'
+	SET_LOADING_STATUS: 'setLoadingStatus',
+	SET_NETWORK: 'setNetwork'
 };
 
 export const reducer = (state, action) => {
@@ -28,6 +30,8 @@ export const reducer = (state, action) => {
 		return { ...state, isSnapInstalled: action.payload };
 	case actionTypes.SET_LOADING_STATUS:
 		return { ...state, loadingStatus: action.payload };
+	case actionTypes.SET_NETWORK:
+		return { ...state, network: action.payload };
 	default:
 		return state;
 	}
