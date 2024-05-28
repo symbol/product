@@ -1,10 +1,13 @@
 import Navbar from '.';
 import testHelper from '../testHelper';
-import { fireEvent, screen } from '@testing-library/react';
+import { act, fireEvent, screen } from '@testing-library/react';
 
 const context = {
 	dispatch: jest.fn(),
-	walletState: {}
+	walletState: {},
+	symbolSnap: {
+		switchNetwork: jest.fn()
+	}
 };
 
 describe('components/Navbar', () => {
@@ -70,9 +73,59 @@ describe('components/Navbar', () => {
 				assertOptions('Network', ['Mainnet', 'Testnet']);
 			});
 
-			it('sets selected network when clicked on item', () => {
-				assertSelectedOption('Network', 'Mainnet');
-				assertSelectedOption('Network', 'Testnet');
+			it('renders nothing when selected same network', async () => {
+				// Arrange:
+				const mockNetworkData = {
+					identifier: 152,
+					networkName: 'testnet',
+					url: 'http://localhost:3000'
+				};
+
+				jest.spyOn(context.symbolSnap, 'switchNetwork').mockReturnValue(mockNetworkData);
+
+				testHelper.customRender(<Navbar />, context);
+				const dropdown = screen.getByText('Network');
+				fireEvent.click(dropdown);
+				const item = screen.getByText('Testnet');
+
+				await act(async () => fireEvent.click(item));
+
+				// Act:
+				// Click on the same network
+				await act(async () => fireEvent.click(item));
+
+				// Assert:
+				const selectedOption = screen.getByText('Testnet');
+
+				expect(selectedOption).toBeInTheDocument();
+				expect(context.symbolSnap.switchNetwork).toHaveBeenCalledTimes(1);
+				expect(context.dispatch).toHaveBeenCalledTimes(1);
+			});
+
+			it('sets selected network when clicked on item', async () => {
+				// Arrange:
+				const mockNetworkData = {
+					identifier: 152,
+					networkName: 'testnet',
+					url: 'http://localhost:3000'
+				};
+
+				jest.spyOn(context.symbolSnap, 'switchNetwork').mockReturnValue(mockNetworkData);
+
+				testHelper.customRender(<Navbar />, context);
+				const dropdown = screen.getByText('Network');
+				fireEvent.click(dropdown);
+				const item = screen.getByText('Testnet');
+
+				// Act:
+				await act(async () => fireEvent.click(item));
+
+				// Assert:
+				const selectedOption = screen.getByText('Testnet');
+
+				expect(selectedOption).toBeInTheDocument();
+				expect(context.symbolSnap.switchNetwork).toHaveBeenCalledWith('testnet');
+				expect(context.dispatch).toHaveBeenCalledWith({ type: 'setNetwork', payload: mockNetworkData });
 			});
 		});
 
