@@ -120,4 +120,64 @@ describe('symbolSnapFactory', () => {
 			expect(result).toBe(false);
 		});
 	});
+
+	describe('getNetwork', () => {
+		it('returns network data when provider request is successful', async () => {
+			// Arrange:
+			const mockNetworkData = {
+				identifier: 104,
+				networkName: 'mainnet',
+				url: 'http://localhost:3000'
+			};
+
+			mockProvider.request.mockResolvedValue(mockNetworkData);
+
+			// Act:
+			const result = await symbolSnap.getNetwork();
+
+			// Assert:
+			expect(result).toEqual(mockNetworkData);
+			expect(mockProvider.request).toHaveBeenCalledWith({
+				method: 'wallet_invokeSnap',
+				params: {
+					snapId: 'local:http://localhost:8080',
+					request: {
+						method: 'getNetwork'
+					}
+				}
+			});
+		});
+	});
+
+	describe('switchNetwork', () => {
+		it('returns network data when provider request is successful', async () => {
+			// Arrange:
+			const networkName = 'testnet';
+			const mockNetworkData = {
+				identifier: 152,
+				networkName: 'testnet',
+				url: 'http://localhost:3000'
+			};
+
+			mockProvider.request.mockResolvedValue(mockNetworkData);
+
+			// Act:
+			const result = await symbolSnap.switchNetwork(networkName);
+
+			// Assert:
+			expect(result).toEqual(mockNetworkData);
+			expect(mockProvider.request).toHaveBeenCalledWith({
+				method: 'wallet_invokeSnap',
+				params: {
+					snapId: 'local:http://localhost:8080',
+					request: {
+						method: 'switchNetwork',
+						params: {
+							networkName
+						}
+					}
+				}
+			});
+		});
+	});
 });
