@@ -27,39 +27,26 @@ describe('onRpcRequest', () => {
 		});
 	});
 
-	describe('initialize state', () => {
-		it('set default network (mainnet) if state is empty', async () => {
+	describe('initialSnap', () => {
+		it('returns snap states', async () => {
 			// Arrange:
 			stateManager.getState.mockResolvedValue(null);
 			statisticsClient.getNodeInfo.mockResolvedValue(mockNodeInfo);
 
 			// Act:
-			await onRpcRequest({
+			const response = await onRpcRequest({
 				request: {
-					method: 'getNetwork'
+					method: 'initialSnap',
+					params: {
+						networkName: 'mainnet'
+					}
 				}
 			});
 
 			// Assert:
-			expect(statisticsClient.getNodeInfo).toHaveBeenCalledWith('mainnet');
-			expect(stateManager.update).toHaveBeenCalledWith({
-				network: {
-					...mockNodeInfo
-				}
+			expect(response).toStrictEqual({
+				network: mockNodeInfo
 			});
-		});
-
-		it('does not set default network if state is not empty', async () => {
-			// Act:
-			await onRpcRequest({
-				request: {
-					method: 'getNetwork'
-				}
-			});
-
-			// Assert:
-			expect(statisticsClient.getNodeInfo).not.toHaveBeenCalled();
-			expect(stateManager.update).not.toHaveBeenCalled();
 		});
 	});
 
