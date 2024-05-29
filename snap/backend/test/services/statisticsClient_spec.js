@@ -10,7 +10,7 @@ describe('statisticsClient', () => {
 	});
 
 	describe('getNodeInfo', () => {
-		it('should fetch node info successfully', async () => {
+		it('can fetch node info successfully', async () => {
 			// Arrange:
 			const networkName = 'mainnet';
 			const nodes = [{
