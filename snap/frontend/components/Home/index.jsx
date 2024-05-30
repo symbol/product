@@ -1,3 +1,4 @@
+import { useWalletContext } from '../../context';
 import useWalletInstallation from '../../hooks/useWalletInstallation';
 import AccountBalance from '../AccountBalance';
 import AccountInfo from '../AccountInfo';
@@ -6,9 +7,34 @@ import ConnectMetamask from '../ConnectMetamask';
 import LoadingScreen from '../LoadingScreen';
 import Navbar from '../Navbar';
 import TransactionTable from '../TransactionTable';
+import { useEffect } from 'react';
 
 const Home = () => {
 	const { isSnapInstalled } = useWalletInstallation();
+	const { dispatch, symbolSnap } = useWalletContext();
+
+	useEffect(() => {
+		const initializeSnap = async () => {
+			if (isSnapInstalled) {
+				dispatch.setLoadingStatus({
+					isLoading: true,
+					message: 'Initializing Snap...'
+				});
+
+				const snapState = await symbolSnap.initialSnap();
+
+				dispatch.setNetwork(snapState.network);
+
+				dispatch.setLoadingStatus({
+					isLoading: false,
+					message: ''
+				});
+			}
+		};
+
+		initializeSnap();
+	}, [isSnapInstalled]); // eslint-disable-line react-hooks/exhaustive-deps
+
 
 	return (
 		<div className='m-auto max-w-screen-xl min-w-[910px] max-h-min p-5'>
