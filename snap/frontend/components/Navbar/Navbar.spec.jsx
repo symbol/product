@@ -3,10 +3,13 @@ import testHelper from '../testHelper';
 import { act, fireEvent, screen } from '@testing-library/react';
 
 const context = {
-	dispatch: jest.fn(),
+	dispatch: {
+		setNetwork: jest.fn()
+	},
 	walletState: {},
 	symbolSnap: {
-		switchNetwork: jest.fn()
+		switchNetwork: jest.fn(),
+		initialSnap: jest.fn()
 	}
 };
 
@@ -99,7 +102,7 @@ describe('components/Navbar', () => {
 
 				expect(selectedOption).toBeInTheDocument();
 				expect(context.symbolSnap.switchNetwork).toHaveBeenCalledTimes(1);
-				expect(context.dispatch).toHaveBeenCalledTimes(1);
+				expect(context.dispatch.setNetwork).toHaveBeenCalledTimes(1);
 			});
 
 			it('sets selected network when clicked on item', async () => {
@@ -125,7 +128,7 @@ describe('components/Navbar', () => {
 
 				expect(selectedOption).toBeInTheDocument();
 				expect(context.symbolSnap.switchNetwork).toHaveBeenCalledWith('testnet');
-				expect(context.dispatch).toHaveBeenCalledWith({ type: 'setNetwork', payload: mockNetworkData });
+				expect(context.dispatch.setNetwork).toHaveBeenCalledWith(mockNetworkData);
 			});
 		});
 
