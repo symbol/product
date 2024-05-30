@@ -85,6 +85,26 @@ const symbolSnapFactory = {
 				});
 
 				return network;
+			},
+			/**
+			 * Get the initial snap state.
+			 * @returns {object} The initial snap state.
+			 */
+			async initialSnap() {
+				const initialSnapState = await provider.request({
+					method: 'wallet_invokeSnap',
+					params: {
+						snapId: defaultSnapOrigin,
+						request: {
+							method: 'initialSnap',
+							params: {
+								networkName: 'mainnet'
+							}
+						}
+					}
+				});
+
+				return initialSnapState;
 			}
 		};
 	}
