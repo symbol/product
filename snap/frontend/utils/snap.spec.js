@@ -180,4 +180,37 @@ describe('symbolSnapFactory', () => {
 			});
 		});
 	});
+
+	describe('initialSnap', () => {
+		it('returns initial snap state when provider request is successful', async () => {
+			// Arrange:
+			const mockInitialSnapState = {
+				network: {
+					identifier: 104,
+					networkName: 'mainnet',
+					url: 'http://localhost:3000'
+				}
+			};
+
+			mockProvider.request.mockResolvedValue(mockInitialSnapState);
+
+			// Act:
+			const result = await symbolSnap.initialSnap();
+
+			// Assert:
+			expect(result).toEqual(mockInitialSnapState);
+			expect(mockProvider.request).toHaveBeenCalledWith({
+				method: 'wallet_invokeSnap',
+				params: {
+					snapId: 'local:http://localhost:8080',
+					request: {
+						method: 'initialSnap',
+						params: {
+							networkName: 'mainnet'
+						}
+					}
+				}
+			});
+		});
+	});
 });
