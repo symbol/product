@@ -4,7 +4,9 @@ import { fireEvent, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 
 const context = {
-	dispatch: jest.fn(),
+	dispatch: {
+		setIsSnapInstalled: jest.fn()
+	},
 	symbolSnap: {
 		connectSnap: jest.fn()
 	}
@@ -86,7 +88,7 @@ describe('components/ConnectMetamask', () => {
 			fireEvent.click(element);
 
 			// Assert:
-			await waitFor(() => expect(context.dispatch).toHaveBeenCalledWith({ type: 'setSnapInstalled', payload: expectedResult }));
+			await waitFor(() => expect(context.dispatch.setIsSnapInstalled).toHaveBeenCalledWith(expectedResult));
 		};
 
 		it('dispatch setSnapInstalled true when connected', async () => {
