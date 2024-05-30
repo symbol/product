@@ -68,6 +68,18 @@ describe('components/Navbar', () => {
 		};
 
 		describe('network', () => {
+			const assertInitialNetwork = (networkName, expectLabel) => {
+				// Arrange:
+				context.walletState.network = { networkName };
+
+				// Act:
+				testHelper.customRender(<Navbar />, context);
+
+				// Assert:
+				const label = screen.getByText(expectLabel);
+				expect(label).toBeInTheDocument();
+			};
+
 			it('renders dropdown', () => {
 				assertDropdown('Network');
 			});
@@ -129,6 +141,11 @@ describe('components/Navbar', () => {
 				expect(selectedOption).toBeInTheDocument();
 				expect(context.symbolSnap.switchNetwork).toHaveBeenCalledWith('testnet');
 				expect(context.dispatch.setNetwork).toHaveBeenCalledWith(mockNetworkData);
+			});
+
+			it('renders network name when network is set when initial', () => {
+				assertInitialNetwork('mainnet', 'Mainnet');
+				assertInitialNetwork('testnet', 'Testnet');
 			});
 		});
 
