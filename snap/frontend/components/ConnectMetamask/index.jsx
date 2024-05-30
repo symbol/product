@@ -1,4 +1,4 @@
-import { actionTypes, useWalletContext } from '../../context';
+import { useWalletContext } from '../../context';
 import WarningModalBox from '../WarningModalBox';
 
 const ConnectMetamask = ({ isOpen, onRequestClose }) => {
@@ -10,7 +10,7 @@ const ConnectMetamask = ({ isOpen, onRequestClose }) => {
 	const handleConnectClick = async () => {
 		const isConnected = await symbolSnap.connectSnap();
 
-		dispatch({ type: actionTypes.SET_SNAP_INSTALLED, payload: isConnected });
+		dispatch.setIsSnapInstalled(isConnected);
 	};
 
 	return (
