@@ -3,6 +3,7 @@
 import DetectMetamask from '../components/DetectMetamask';
 import HomeComponent from '../components/Home';
 import { WalletContextProvider, initialState, reducer } from '../context';
+import dispatchUtils from '../utils/dispatchUtils';
 import symbolSnapFactory from '../utils/snap';
 import detectEthereumProvider from '@metamask/detect-provider';
 import React, { useEffect, useMemo, useReducer, useState } from 'react';
@@ -12,7 +13,7 @@ import React, { useEffect, useMemo, useReducer, useState } from 'react';
  * @returns {React.JSX} The home page component.
  */
 export default function Main() {
-	const [walletState, dispatch] = useReducer(reducer, initialState);
+	const [walletState, dispatchState] = useReducer(reducer, initialState);
 	const [provider, setProvider] = useState(null);
 
 	const detectProvider = async () => {
@@ -25,10 +26,11 @@ export default function Main() {
 		detectProvider();
 	}, []);
 
+	const dispatch = useMemo(() => dispatchUtils(dispatchState), [dispatchState]);
+
 	const symbolSnap = useMemo(() => {
-		if (provider && provider.isMetaMask) 
+		if (provider && provider.isMetaMask)
 			return symbolSnapFactory.create(provider);
-		
 
 		return null;
 	}, [provider]);
