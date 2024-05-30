@@ -29,7 +29,7 @@ const Navbar = () => {
 
 		setSelectedNetwork(option.label);
 
-		dispatch({ type: actionTypes.SET_NETWORK, payload: networkData });
+		dispatch.setNetwork(networkData);
 	};
 
 	const handleSelectCurrency = option => {
