@@ -1,4 +1,4 @@
-import { actionTypes, useWalletContext } from '../context';
+import { useWalletContext } from '../context';
 import { useEffect } from 'react';
 
 const useWalletInstallation = () => {
@@ -10,7 +10,7 @@ const useWalletInstallation = () => {
 			const installedSnap = await symbolSnap.getSnap();
 
 			if (installedSnap && installedSnap.enabled)
-				dispatch({ type: actionTypes.SET_SNAP_INSTALLED, payload: true });
+				dispatch.setIsSnapInstalled(installedSnap && installedSnap.enabled);
 		};
 
 		checkInstallationStatus();
