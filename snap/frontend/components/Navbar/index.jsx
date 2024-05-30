@@ -1,11 +1,11 @@
 import { actionTypes, useWalletContext } from '../../context';
 import Dropdown from '../Dropdown';
 import Image from 'next/image';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 const Navbar = () => {
 	const { walletState, dispatch, symbolSnap } = useWalletContext();
-	const { isSnapInstalled } = walletState;
+	const { isSnapInstalled, network } = walletState;
 
 	const networks = [
 		{ label: 'Mainnet', value: 'mainnet' },
@@ -35,6 +35,14 @@ const Navbar = () => {
 	const handleSelectCurrency = option => {
 		setSelectedCurrency(option.label);
 	};
+
+	useEffect(() => {
+		// set selected network in dropdown label
+		if (network && network.hasOwnProperty('networkName')) {
+			const selected = networks.find(n => n.value === network.networkName);
+			setSelectedNetwork(selected.label);
+		}
+	}, [network]); // eslint-disable-line react-hooks/exhaustive-deps
 
 	return (
 		<div className='flex items-center justify-between'>
