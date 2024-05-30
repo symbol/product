@@ -12,7 +12,8 @@ describe('Main', () => {
 		jest.spyOn(symbolSnapFactory, 'create').mockReturnValue({
 			getSnap: () => ({
 				'enabled': true
-			})
+			}),
+			initialSnap: () => jest.fn()
 		});
 
 		// Act:
