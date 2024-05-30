@@ -1,9 +1,12 @@
 import Home from '.';
 import testHelper from '../testHelper';
-import { screen } from '@testing-library/react';
+import { act, screen } from '@testing-library/react';
 
 const context = {
-	dispatch: jest.fn(),
+	dispatch: {
+		setLoadingStatus: jest.fn(),
+		setNetwork: jest.fn()
+	},
 	walletState: {
 		loadingStatus: {
 			isLoading: false,
@@ -21,7 +24,8 @@ const context = {
 		}
 	},
 	symbolSnap: {
-		getSnap: jest.fn()
+		getSnap: jest.fn(),
+		initialSnap: jest.fn()
 	}
 };
 
@@ -44,5 +48,34 @@ describe('components/Home', () => {
 
 	it('renders ConnectMetamask modal when metamask is installed but snap is not installed', async () => {
 		await assertModalScreen({ isSnapInstalled: false }, 'Connect MetaMask');
+	});
+
+	it('calls initializeSnap when isSnapInstalled is true', async () => {
+		// Arrange:
+		const mockNetwork = {
+			identifier: 152,
+			networkName: 'testnet',
+			url: 'http://localhost:3000'
+		};
+
+		context.walletState.isSnapInstalled = true;
+
+		context.symbolSnap.initialSnap.mockResolvedValue({
+			network: mockNetwork
+		});
+
+		// Act:
+		await act(() => testHelper.customRender(<Home />, context));
+
+		// Assert:
+		expect(context.dispatch.setLoadingStatus).toHaveBeenCalledWith({
+			isLoading: true,
+			message: 'Initializing Snap...'
+		});
+		expect(context.dispatch.setNetwork).toHaveBeenCalledWith(mockNetwork);
+		expect(context.dispatch.setLoadingStatus).toHaveBeenCalledWith({
+			isLoading: false,
+			message: ''
+		});
 	});
 });
