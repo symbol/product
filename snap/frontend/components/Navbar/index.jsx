@@ -40,7 +40,8 @@ const Navbar = () => {
 		// set selected network in dropdown label
 		if (network && network.hasOwnProperty('networkName')) {
 			const selected = networks.find(n => n.value === network.networkName);
-			setSelectedNetwork(selected.label);
+			if (selected)
+				setSelectedNetwork(selected.label);
 		}
 	}, [network]); // eslint-disable-line react-hooks/exhaustive-deps
 
