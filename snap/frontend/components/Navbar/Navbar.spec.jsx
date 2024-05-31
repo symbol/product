@@ -147,6 +147,10 @@ describe('components/Navbar', () => {
 				assertInitialNetwork('mainnet', 'Mainnet');
 				assertInitialNetwork('testnet', 'Testnet');
 			});
+
+			it('does not render network name when network is not set when initial', () => {
+				assertInitialNetwork(undefined, 'Network');
+			});
 		});
 
 		describe('currency', () => {
