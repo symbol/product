@@ -1,16 +1,17 @@
 import { getBIP44AddressKeyDeriver } from '@metamask/key-tree';
 import { PrivateKey } from 'symbol-sdk';
-import { Network, SymbolFacade } from 'symbol-sdk/symbol';
+import { SymbolFacade } from 'symbol-sdk/symbol';
 
 const accountUtils = {
 	/**
 	 * * Derives a key pair from a mnemonic and an address index.
-	 * @param {104 | 152} identifier - The network identifier.
+	 * @param {'mainnet' | 'testnet'} networkName - The network name.
 	 * @param {number} addressIndex - The address index.
 	 * @returns {Promise<SymbolFacade.KeyPair>} - The derived key pair.
 	 */
-	async deriveKeyPair(identifier, addressIndex) {
-		const coinType = Network.MAINNET.identifier === identifier ? 4343 : 1;
+	async deriveKeyPair(networkName, addressIndex) {
+		const facade = new SymbolFacade(networkName);
+		const coinType = facade.bip32Path(addressIndex)[1];
 
 		const rootNode = await snap.request({
 			method: 'snap_getBip44Entropy',
