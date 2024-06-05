@@ -2,12 +2,13 @@ import accountUtils from '../../src/utils/accountUtils.js';
 import {
 	describe, it, jest
 } from '@jest/globals';
-import { Network, SymbolFacade } from 'symbol-sdk/symbol';
+import { SymbolFacade } from 'symbol-sdk/symbol';
 
 describe('accountUtils', () => {
 	describe('deriveKeyPair', () => {
-		const generateMockBip44Entropy = identifier => {
-			const coinType = Network.MAINNET.identifier === identifier ? 4343 : 1;
+		const generateMockBip44Entropy = networkName => {
+			const facade = new SymbolFacade(networkName);
+			const coinType = facade.bip32Path(0)[1];
 
 			return {
 				chainCode: '0x90d3d16b776e542d7b1888e502292fc7b18e91f69be869f33a07f95068ae6e6a',
@@ -23,16 +24,16 @@ describe('accountUtils', () => {
 			};
 		};
 
-		const assertDeriveKeyPair = async (identifier, expectedCoinType) => {
+		const assertDeriveKeyPair = async (networkName, expectedCoinType) => {
 			// Arrange:
 			const mockRequest = jest.fn();
 
 			global.snap = { request: mockRequest };
 
-			global.snap.request.mockResolvedValue(generateMockBip44Entropy(identifier));
+			global.snap.request.mockResolvedValue(generateMockBip44Entropy(networkName));
 
 			// Act:
-			const keyPair = await accountUtils.deriveKeyPair(identifier, 0);
+			const keyPair = await accountUtils.deriveKeyPair(networkName, 0);
 
 			// Assert:
 			expect(mockRequest).toHaveBeenCalledWith({
@@ -45,11 +46,11 @@ describe('accountUtils', () => {
 		};
 
 		it('can derive key pair with mainnet network', async () => {
-			await assertDeriveKeyPair(104, 4343);
+			await assertDeriveKeyPair('mainnet', 4343);
 		});
 
 		it('can derive key pair with testnet network', async () => {
-			await assertDeriveKeyPair(152, 1);
+			await assertDeriveKeyPair('testnet', 1);
 		});
 	});
 });
