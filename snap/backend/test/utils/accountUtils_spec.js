@@ -130,4 +130,113 @@ describe('accountUtils', () => {
 			assertLatestAccountIndex(accounts, 'mainnet', 2);
 		});
 	});
+
+	describe('createAccount', () => {
+		// Arrange:
+		const privateKey = '1F53BA3DA42800D092A0C331A20A41ACCE81D2DD6F710106953ADA277C502010';
+		const keyPair = new SymbolFacade.KeyPair(new PrivateKey(privateKey));
+
+		const assertCreateAccount = async (state, requestParams, expectedAddressIndex) => {
+			// Arrange:
+			jest.spyOn(accountUtils, 'deriveKeyPair').mockResolvedValue(keyPair);
+
+			// Act:
+			const account = await accountUtils.createAccount({ state, requestParams });
+
+			// Assert:
+			expect(stateManager.update).toHaveBeenCalledWith({
+				...state,
+				accounts: {
+					...state.accounts,
+					[account.id]: {
+						account,
+						privateKey
+					}
+				}
+			});
+
+			expect(account).toStrictEqual({
+				id: expect.any(String),
+				addressIndex: expectedAddressIndex,
+				type: 'metamask',
+				networkName: 'testnet',
+				label: requestParams.walletLabel,
+				address: 'TDCYZ45MX4IZ7SKEL5UL4ZA7O6KDDUAZZALCA6Y',
+				publicKey: 'FABAD1271A72816961B95CCCAAE1FD1E356F26A6AD3E0A91A25F703C1312F73D'
+			});
+		};
+
+		it('creates a first account if latest account index return not found', async () => {
+			// Arrange:
+			const state = {
+				network: {
+					networkName: 'testnet'
+				},
+				accounts: {}
+			};
+
+			const requestParams = {
+				walletLabel: 'my first wallet'
+			};
+
+			await assertCreateAccount(state, requestParams, 0);
+		});
+
+		it('creates a new account with a new address index', async () => {
+			// Arrange:
+			const state = {
+				network: {
+					networkName: 'testnet'
+				},
+				accounts: {
+					...generateAccounts(3, 'testnet'),
+					...generateAccounts(5, 'mainnet')
+				}
+			};
+
+			const requestParams = {
+				walletLabel: 'invest wallet'
+			};
+
+			await assertCreateAccount(state, requestParams, 3);
+		});
+
+		it('throws an error when network name invalid', async () => {
+			// Arrange:
+			const state = {
+				network: {
+					networkName: 'testnet1'
+				},
+				accounts: {}
+			};
+
+			const requestParams = {
+				walletLabel: 'my first wallet'
+			};
+
+			// Act + Assert:
+			const errorMessage = 'Failed to create account: no network found with name \'testnet1\'';
+			await expect(accountUtils.createAccount({ state, requestParams })).rejects.toThrow(errorMessage);
+		});
+
+		it('throws an error when failed to derive key pair', async () => {
+			// Arrange:
+			const state = {
+				network: {
+					networkName: 'testnet'
+				},
+				accounts: {}
+			};
+
+			const requestParams = {
+				walletLabel: 'my first wallet'
+			};
+
+			jest.spyOn(accountUtils, 'deriveKeyPair').mockRejectedValue(new Error('error'));
+
+			// Act + Assert:
+			const errorMessage = 'Failed to create account: error';
+			await expect(accountUtils.createAccount({ state, requestParams })).rejects.toThrow(errorMessage);
+		});
+	});
 });
