@@ -1,6 +1,7 @@
 import { onRpcRequest } from '../src/index.js';
 import statisticsClient from '../src/services/statisticsClient.js';
 import stateManager from '../src/stateManager.js';
+import accountUtils from '../src/utils/accountUtils.js';
 import {
 	describe, expect, it, jest
 } from '@jest/globals';
@@ -23,6 +24,7 @@ describe('onRpcRequest', () => {
 		jest.clearAllMocks();
 
 		stateManager.getState.mockResolvedValue({
+			accounts: {},
 			network: mockNodeInfo
 		});
 	});
@@ -45,6 +47,7 @@ describe('onRpcRequest', () => {
 
 			// Assert:
 			expect(response).toStrictEqual({
+				accounts: {},
 				network: mockNodeInfo
 			});
 		});
@@ -57,6 +60,34 @@ describe('onRpcRequest', () => {
 				method: 'unknownMethod'
 			}
 		})).rejects.toThrow('Method not found.');
+	});
+
+	describe('createAccount', () => {
+		it('returns new created account', async () => {
+			// Arrange:
+			jest.spyOn(accountUtils, 'createAccount').mockResolvedValue();
+
+			// Act:
+			await onRpcRequest({
+				request: {
+					method: 'createAccount',
+					params: {
+						walletLabel: 'my wallet'
+					}
+				}
+			});
+
+			// Assert:
+			expect(accountUtils.createAccount).toHaveBeenCalledWith({
+				state: {
+					accounts: {},
+					network: mockNodeInfo
+				},
+				requestParams: {
+					walletLabel: 'my wallet'
+				}
+			});
+		});
 	});
 
 	describe('getNetwork', () => {
