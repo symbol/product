@@ -1,6 +1,8 @@
+import stateManager from '../stateManager.js';
 import { getBIP44AddressKeyDeriver } from '@metamask/key-tree';
 import { PrivateKey } from 'symbol-sdk';
 import { SymbolFacade } from 'symbol-sdk/symbol';
+import { v4 as uuidv4 } from 'uuid';
 
 const WalletType = {
 	METAMASK: 'metamask'
@@ -42,6 +44,44 @@ const accountUtils = {
 				WalletType.METAMASK === walletAccount.account.type
 				&& networkName === walletAccount.account.networkName)
 			.reduce((maxIndex, walletAccount) => Math.max(maxIndex, walletAccount.account.addressIndex), -1);
+	},
+	async createAccount({ state, requestParams }) {
+		try {
+			const { walletLabel } = requestParams;
+			const { network, accounts } = state;
+
+			const facade = new SymbolFacade(network.networkName);
+
+			// Get the latest account index and increment it if it exists
+			const newAddressIndex = this.getLatestAccountIndex(accounts, network.networkName) + 1 || 0;
+
+			const newKeyPair = await this.deriveKeyPair(network.networkName, newAddressIndex);
+			const accountId = uuidv4();
+
+			const wallet = {
+				account: {
+					id: accountId,
+					addressIndex: newAddressIndex,
+					type: WalletType.METAMASK,
+					label: walletLabel,
+					address: facade.network.publicKeyToAddress(newKeyPair.publicKey).toString(),
+					publicKey: newKeyPair.publicKey.toString(),
+					networkName: network.networkName
+				},
+				privateKey: newKeyPair.privateKey.toString()
+			};
+
+			state.accounts = {
+				...state.accounts,
+				[accountId]: wallet
+			};
+
+			await stateManager.update(state);
+
+			return wallet.account;
+		} catch (error) {
+			throw new Error(`Failed to create account: ${error.message}`);
+		}
 	}
 };
 
