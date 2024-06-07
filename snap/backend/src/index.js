@@ -1,4 +1,5 @@
 import stateManager from './stateManager.js';
+import accountUtils from './utils/accountUtils.js';
 import networkUtils from './utils/networkUtils.js';
 
 // eslint-disable-next-line import/prefer-default-export
@@ -9,6 +10,7 @@ export const onRpcRequest = async ({ request }) => {
 
 	if (!state) {
 		state = {
+			accounts: {},
 			network: {}
 		};
 	}
@@ -23,6 +25,8 @@ export const onRpcRequest = async ({ request }) => {
 	case 'initialSnap':
 		await networkUtils.switchNetwork(apiParams);
 		return state;
+	case 'createAccount':
+		return accountUtils.createAccount(apiParams);
 	case 'getNetwork':
 		return state.network;
 	case 'switchNetwork':
