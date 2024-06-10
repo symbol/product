@@ -30,9 +30,9 @@ describe('onRpcRequest', () => {
 	});
 
 	describe('initialSnap', () => {
-		it('returns snap states', async () => {
+		const assertInitialSnap = async (state, expectedState) => {
 			// Arrange:
-			stateManager.getState.mockResolvedValue(null);
+			stateManager.getState.mockResolvedValue(state);
 			statisticsClient.getNodeInfo.mockResolvedValue(mockNodeInfo);
 
 			// Act:
@@ -46,8 +46,51 @@ describe('onRpcRequest', () => {
 			});
 
 			// Assert:
-			expect(response).toStrictEqual({
+			expect(response).toStrictEqual(expectedState);
+		};
+
+		it('returns basic snap states', async () => {
+			await assertInitialSnap(null, {
 				accounts: {},
+				network: mockNodeInfo
+			});
+		});
+
+		it('returns snap states with accounts', async () => {
+			// Arrange:
+			const state = {
+				accounts: {
+					'0x1': {
+						account: {
+							id: '0x1',
+							address: 'address',
+							label: 'Primary Account',
+							networkName: 'mainnet'
+						},
+						privateKey: 'private key'
+					},
+					'0x2': {
+						account: {
+							id: '0x2',
+							address: 'address',
+							label: 'Primary Account',
+							networkName: 'testnet'
+						},
+						privateKey: 'private key'
+					}
+				},
+				network: mockNodeInfo
+			};
+
+			await assertInitialSnap(state, {
+				accounts: {
+					'0x1': {
+						id: '0x1',
+						address: 'address',
+						label: 'Primary Account',
+						networkName: 'mainnet'
+					}
+				},
 				network: mockNodeInfo
 			});
 		});
