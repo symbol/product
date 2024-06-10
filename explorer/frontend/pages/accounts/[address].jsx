@@ -250,7 +250,7 @@ const AccountInfo = ({ accountInfo, preloadedTransactions }) => {
 							)}
 						</div>
 						<Separator />
-						<div className="layout-flex-fill">
+						<div className="layout-flex-fill overflow-x-auto">
 							<AccountMultisigTree
 								address={accountInfo.address}
 								cosignatories={accountInfo.cosignatories}
