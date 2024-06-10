@@ -45,6 +45,22 @@ const accountUtils = {
 				&& networkName === walletAccount.account.networkName)
 			.reduce((maxIndex, walletAccount) => Math.max(maxIndex, walletAccount.account.addressIndex), -1);
 	},
+	/**
+	 * Get accounts by network name without private key.
+	 * @param {Accounts} accounts - The accounts object.
+	 * @param {'mainnet' | 'testnet'} networkName - The network name.
+	 * @returns {Record<string, Account>} - The accounts object.
+	 */
+	getAccounts({ state }) {
+		const { network, accounts } = state;
+
+		return Object.keys(accounts).reduce((acc, key) => {
+			if (accounts[key].account.networkName === network.networkName)
+				acc[key] = accounts[key].account;
+
+			return acc;
+		}, {});
+	},
 	async createAccount({ state, requestParams }) {
 		try {
 			const { walletLabel } = requestParams;
