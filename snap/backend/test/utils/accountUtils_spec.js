@@ -131,6 +131,53 @@ describe('accountUtils', () => {
 		});
 	});
 
+	describe('getAccounts', () => {
+		const assertAccountsByNetwork = (state, mockAccounts) => {
+			// Act:
+			const accounts = accountUtils.getAccounts({ state });
+
+			// Assert:
+			const expectedAccounts = Object.values(mockAccounts).reduce((acc, { account }) => {
+				acc[account.id] = account;
+				return acc;
+			}, {});
+
+			expect(accounts).toStrictEqual(expectedAccounts);
+		};
+
+		it('returns accounts given testnet network', () => {
+			// Arrange:
+			const mockAccounts = generateAccounts(3, 'testnet');
+			const state = {
+				network: {
+					networkName: 'testnet'
+				},
+				accounts: {
+					...mockAccounts,
+					...generateAccounts(5, 'mainnet')
+				}
+			};
+
+			assertAccountsByNetwork(state, mockAccounts);
+		});
+
+		it('returns accounts given mainnet network', () => {
+			// Arrange:
+			const mockAccounts = generateAccounts(5, 'mainnet');
+			const state = {
+				network: {
+					networkName: 'mainnet'
+				},
+				accounts: {
+					...mockAccounts,
+					...generateAccounts(3, 'testnet')
+				}
+			};
+
+			assertAccountsByNetwork(state, mockAccounts);
+		});
+	});
+
 	describe('createAccount', () => {
 		// Arrange:
 		const privateKey = '1F53BA3DA42800D092A0C331A20A41ACCE81D2DD6F710106953ADA277C502010';
