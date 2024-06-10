@@ -7,7 +7,7 @@ import { toast } from 'react-toastify';
 const ButtonCopy = ({ value, className }) => {
 	const { t } = useTranslation();
 
-	const copy = e => {
+	const copy = () => {
 		try {
 			copyToClipboard(value);
 			toast.success(t('message_copySuccess'));

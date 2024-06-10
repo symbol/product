@@ -208,8 +208,9 @@ const Filter = ({ isSelectedItemsShown, data, value, search, isDisabled, onChang
 					data.map(
 						(item, index) =>
 							selectedItems[item.name] && (
-								<div className={styles.selectedItem} key={index}>
+								<div className={styles.selectedItem} key={index} onClick={() => removeFilter(item)}>
 									{renderItem(selectedItems[item.name], item.type, () => removeFilter(item))}
+									<CustomImage src="/images/icon-close.svg" alt="Remove" className={styles.iconRemoveItem} />
 								</div>
 							)
 					)}
