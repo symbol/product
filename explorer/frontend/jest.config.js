@@ -1,3 +1,8 @@
+/**
+ * For a detailed explanation regarding each configuration property, visit:
+ * https://jestjs.io/docs/configuration
+ */
+
 const nextJest = require('next/jest.js'); // eslint-disable-line import/extensions
 
 const createJestConfig = nextJest({
@@ -7,11 +12,35 @@ const createJestConfig = nextJest({
 
 // Add any custom config to be passed to Jest
 const customJestConfig = {
-	setupFilesAfterEnv: ['<rootDir>/setupTests.js'],
-	testEnvironment: 'jest-environment-jsdom',
+	workerThreads: true,
+	testPathIgnorePatterns: ['<rootDir>/__tests__/test-utils/'],
+	clearMocks: true,
+	coverageDirectory: 'coverage',
+	coverageProvider: 'babel',
+	coverageReporters: ['html', 'json-summary', 'text'],
+	coverageThreshold: {
+		global: {
+			branches: 90,
+			statements: 90
+		}
+	},
+	moduleNameMapper: {
+		'^@/api/(.*)$': '<rootDir>/api/$1',
+		'^@/components/(.*)$': '<rootDir>/components/$1',
+		'^@/config': '<rootDir>/config/index.js',
+		'^@/constants': '<rootDir>/constants/index.js',
+		'^@/pages/(.*)$': '<rootDir>/pages/$1',
+		'^@/public/(.*)$': '<rootDir>/public/$1',
+		'^@/styles/(.*)$': '<rootDir>/styles/$1',
+		'^@/utils/(.*)$': '<rootDir>/utils/$1'
+	},
 	transform: {},
+	resetMocks: true,
+	restoreMocks: true,
+	testEnvironment: 'jsdom',
+	testTimeout: 2500,
 	extensionsToTreatAsEsm: ['.jsx'],
-	coverageProvider: 'v8'
+	setupFilesAfterEnv: ['<rootDir>/setupTests.js']
 };
 
 // createJestConfig is exported this way to ensure that next/jest can load the Next.js config which is async

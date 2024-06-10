@@ -9,7 +9,8 @@
             "@/api/*": ["api/*"],
             "@/public/*": ["public/*"],
             "@/styles/*": ["styles/*"],
-            "@/utils": ["utils"]
+            "@/utils": ["utils"],
+            "@/utils/*": ["utils/*"]
         }
     },
     "exclude": [
