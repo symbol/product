@@ -66,7 +66,6 @@ const symbolSnapFactory = {
 			},
 			/**
 			 * Switch network in snap MetaMask.
-			 * @typedef {'mainnet' | 'testnet'} NetworkName
 			 * @param {NetworkName} networkName - The name of the network to switch to.
 			 * @returns {object} The network object returned by the snap.
 			 */
@@ -88,9 +87,10 @@ const symbolSnapFactory = {
 			},
 			/**
 			 * Get the initial snap state.
+			 * @param {NetworkName} networkName - The name of the network to switch to.
 			 * @returns {object} The initial snap state.
 			 */
-			async initialSnap() {
+			async initialSnap(networkName) {
 				const initialSnapState = await provider.request({
 					method: 'wallet_invokeSnap',
 					params: {
@@ -98,7 +98,7 @@ const symbolSnapFactory = {
 						request: {
 							method: 'initialSnap',
 							params: {
-								networkName: 'mainnet'
+								networkName
 							}
 						}
 					}
@@ -111,3 +111,12 @@ const symbolSnapFactory = {
 };
 
 export default symbolSnapFactory;
+
+// region type declarations
+
+/**
+ * Network name.
+ * @typedef {'mainnet' | 'testnet'} NetworkName
+ */
+
+// endregion
