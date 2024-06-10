@@ -2,7 +2,7 @@ import Avatar from './Avatar';
 import ValueMosaic from './ValueMosaic';
 import ValueTransactionType from './ValueTransactionType';
 import styles from '@/styles/components/ValueTransaction.module.scss';
-import { createPageHref, trunc } from '@/utils';
+import { createPageHref, truncateString } from '@/utils';
 import Link from 'next/link';
 
 const ValueTransaction = ({ value, type, amount, isNavigationDisabled, onClick }) => {
@@ -18,7 +18,7 @@ const ValueTransaction = ({ value, type, amount, isNavigationDisabled, onClick }
 			<Avatar type="transaction" value={type} size="md" />
 			<div>
 				<ValueTransactionType hideIcon value={type} />
-				{trunc(value, 'hash')}
+				{truncateString(value, 'hash')}
 			</div>
 			<div className={styles.sectionAmount}>
 				<ValueMosaic isNative amount={amount} />

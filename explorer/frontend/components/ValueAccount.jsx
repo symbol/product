@@ -2,7 +2,7 @@ import Avatar from '@/components/Avatar';
 import ButtonCopy from '@/components/ButtonCopy';
 import { STORAGE_KEY } from '@/constants';
 import styles from '@/styles/components/ValueAccount.module.scss';
-import { createPageHref, trunc, useStorage } from '@/utils';
+import { createPageHref, truncateString, useStorage } from '@/utils';
 import Link from 'next/link';
 import { useState } from 'react';
 
@@ -14,7 +14,7 @@ const ValueAccount = ({ address, size, raw, position, className, isNavigationDis
 	});
 	let containerStyle = '';
 	const textStyle = size === 'md' ? styles.textMd : '';
-	const displayedText = !raw && name ? `${name} (${trunc(address, 'address-short')})` : address;
+	const displayedText = !raw && name ? `${name} (${truncateString(address, 'address-short')})` : address;
 
 	switch (position) {
 		case 'left':

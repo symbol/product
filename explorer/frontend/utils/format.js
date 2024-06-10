@@ -1,3 +1,4 @@
+// Converts date to a readable text string.
 export const formatDate = (dateStr, translate, config = {}) => {
 	const { type, hasTime = false, hasSeconds = false, hasDays = true } = config;
 	const months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
@@ -6,8 +7,7 @@ export const formatDate = (dateStr, translate, config = {}) => {
 		return 0 <= num && 10 > num ? '0' + num : num + '';
 	};
 
-	const dateObj =
-		type === 'local' ? new Date(new Date(dateStr).getTime() - new Date(dateStr).getTimezoneOffset() * 60000) : new Date(dateStr);
+	const dateObj = type === 'local' ? dateToLocalDate(dateStr) : new Date(dateStr);
 	const seconds = addZero(dateObj.getSeconds());
 	const minutes = addZero(dateObj.getMinutes());
 	const hour = addZero(dateObj.getHours());
@@ -24,8 +24,14 @@ export const formatDate = (dateStr, translate, config = {}) => {
 	return formattedDate;
 };
 
+// Converts cain timestamp to a local date. Adds timezone offset.
+export const dateToLocalDate = date => {
+	return new Date(new Date(date).getTime() - new Date(date).getTimezoneOffset() * 60000);
+};
+
+// Converts number to a text string (e.g. "1K", "12M")
 export const numberToShortString = num => {
-	if (typeof num !== 'number' && typeof num !== 'string') {
+	if (isNaN(num)) {
 		return '';
 	}
 
@@ -47,14 +53,16 @@ export const numberToShortString = num => {
 	return (value / si[index].v).toFixed(2).replace(/\.0+$|(\.[0-9]*[1-9])0+$/, '$1') + si[index].s;
 };
 
+// Converts number to string.
 export const numberToString = num => {
-	if (typeof num !== 'number' && typeof num !== 'string') {
+	if (isNaN(num)) {
 		return '';
 	}
 
 	return num.toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ' ');
 };
 
+// Truncates a number to a specified decimal.
 export const truncateDecimals = (num, decimal) => {
 	const multiplier = Math.pow(10, decimal);
 	const adjustedNum = num * multiplier;
@@ -69,10 +77,53 @@ export const truncateDecimals = (num, decimal) => {
 	return truncatedNum / multiplier;
 };
 
+// Truncates a string using a "type" parameter.
+export const truncateString = (str, type) => {
+	if (typeof str !== 'string') {
+		return '';
+	}
+
+	const trunc = (text, cut, lengthFirst, lengthSecond) => {
+		if (cut === 'start' && lengthFirst < text.length) {
+			return '...' + text.substring(text.length - lengthFirst, text.length);
+		}
+		if (cut === 'middle' && lengthFirst + lengthSecond < text.length) {
+			return text.substring(0, lengthFirst) + '...' + text.substring(text.length - lengthSecond, text.length);
+		}
+		if (cut === 'end' && lengthFirst < text.length) {
+			return text.substring(0, lengthFirst) + '...';
+		}
+
+		return text;
+	};
+
+	switch (type) {
+		case 'address':
+			return trunc(str, 'middle', 6, 3);
+		case 'address-short':
+			return trunc(str, 'start', 3);
+		case 'hash':
+			return trunc(str, 'middle', 4, 4);
+		default:
+			return trunc(str, 'end', 9);
+	}
+};
+
+// Replaces empty value with a placeholder
+export const nullableValueToText = value => {
+	return value === null || value === undefined ? '-' : value;
+};
+
+// Transforms array into the text string.
+export const arrayToText = value => {
+	return value.length === 0 ? '-' : value.join(', ');
+};
+
 export const getRootNamespaceName = namespaceName => namespaceName.split('.')[0];
 
 export const createMosaicName = (namespaceId, mosaicId) => `${namespaceId}.${mosaicId}`;
 
+// Transforms transaction data row for CSV export.
 export const formatTransactionCSV = (row, translate) => {
 	return {
 		[translate('table_field_type')]: translate(`transactionType_${row.type}`),
@@ -87,6 +138,7 @@ export const formatTransactionCSV = (row, translate) => {
 	};
 };
 
+// Transforms account data row for CSV export.
 export const formatAccountCSV = (row, translate) => {
 	return {
 		[translate('table_field_address')]: row.address,
@@ -98,6 +150,7 @@ export const formatAccountCSV = (row, translate) => {
 	};
 };
 
+// Transforms block data row for CSV export.
 export const formatBlockCSV = (row, translate) => {
 	return {
 		[translate('table_field_height')]: row.height,
@@ -108,6 +161,7 @@ export const formatBlockCSV = (row, translate) => {
 	};
 };
 
+// Transforms mosaic data row for CSV export.
 export const formatMosaicCSV = (row, translate) => {
 	return {
 		[translate('table_field_name')]: row.name,
@@ -115,6 +169,7 @@ export const formatMosaicCSV = (row, translate) => {
 	};
 };
 
+// Decodes transaction message text from hex string.
 export const decodeTransactionMessage = text => {
 	return Buffer.from(text, 'hex').toString();
 };
