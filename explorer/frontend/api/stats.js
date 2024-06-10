@@ -1,7 +1,8 @@
 import { fetchAccountPage } from './accounts';
 import { fetchBlockPage } from './blocks';
 import config from '@/config';
-import { makeRequest, truncateDecimals } from '@/utils';
+import { truncateDecimals } from '@/utils/format';
+import { makeRequest } from '@/utils/server';
 
 export const fetchAccountStats = async () => {
 	const stats = await makeRequest(`${config.API_BASE_URL}/account/statistics`);

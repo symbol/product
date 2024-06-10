@@ -2,6 +2,7 @@ import { STORAGE_KEY } from '@/constants';
 import _ from 'lodash';
 import { useEffect, useState } from 'react';
 
+// Makes an async call. Handles the loading and error states.
 export const useDataManager = (callback, defaultData, onError, loadingState = false) => {
 	const [isLoading, setIsLoading] = useState(loadingState);
 	const [data, setData] = useState(defaultData);
@@ -25,6 +26,7 @@ export const useDataManager = (callback, defaultData, onError, loadingState = fa
 	return [call, isLoading, data];
 };
 
+// Makes a pagination calls. Handles the loading and error states.
 export const usePagination = (callback, defaultData, defaultFilter = {}) => {
 	const [filter, setFilter] = useState(defaultFilter);
 	const [isLoading, setIsLoading] = useState(false);
@@ -82,6 +84,7 @@ export const usePagination = (callback, defaultData, defaultFilter = {}) => {
 	return { requestNextPage, initialRequest, data, isLoading, pageNumber, isLastPage, filter, isError, changeFilter, clearFilter };
 };
 
+// Paginate a data list.
 export const useClientSidePagination = (fullData, pageSize = 10) => {
 	const isLoading = false;
 	const isError = false;
@@ -114,6 +117,7 @@ export const useClientSidePagination = (fullData, pageSize = 10) => {
 	return { requestNextPage, data, isLoading, pageNumber, isLastPage, isError };
 };
 
+// Makes an async call and handle a filter.
 export const useFilter = (callback, defaultData, initialCall) => {
 	const [filter, setFilter] = useState({});
 	const [isLoading, setIsLoading] = useState(false);
@@ -148,6 +152,7 @@ export const useFilter = (callback, defaultData, initialCall) => {
 	return { data, isLoading, filter, changeFilter };
 };
 
+// Filters a data list.
 export const useClientSideFilter = data => {
 	const [filter, setFilter] = useState({});
 	const filteredData = data.filter(item => Object.keys(filter).every(filterKey => item[filterKey] === filter[filterKey]));
@@ -159,6 +164,7 @@ export const useClientSideFilter = data => {
 	};
 };
 
+// Makes a call preventing a throttle. Used to handle the user inputs.
 export const useDelayedCall = callback => {
 	const [timer, setTimer] = useState(setTimeout(() => {}));
 	const delay = 750;
@@ -173,6 +179,7 @@ export const useDelayedCall = callback => {
 	return [call];
 };
 
+// Handles the boolean state. Switch between "true" and "false".
 export const useToggle = initialValue => {
 	const [value, setValue] = useState(initialValue);
 
@@ -181,6 +188,7 @@ export const useToggle = initialValue => {
 	return [value, toggle];
 };
 
+// Provides access to local storage.
 export const useStorage = (key, defaultValue, callback) => {
 	const [value, setValue] = useState(defaultValue);
 	const [setter, setSetter] = useState(null);
@@ -279,6 +287,7 @@ export const useStorage = (key, defaultValue, callback) => {
 	return [value, setter];
 };
 
+// Fetches user currency price and converts the amount.
 export const useUserCurrencyAmount = (fetchPrice, amount, currency, timestamp) => {
 	const [amountInUserCurrency, setAmountInUserCurrency] = useState(null);
 
@@ -297,6 +306,7 @@ export const useUserCurrencyAmount = (fetchPrice, amount, currency, timestamp) =
 	return amountInUserCurrency;
 };
 
+// Makes an async call on mount. Allows to specify a timer.
 export const useAsyncCall = (callback, defaultData, onError, repeatInterval) => {
 	const [data, setData] = useState(defaultData);
 
