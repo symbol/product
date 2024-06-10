@@ -1,27 +1,28 @@
 import config from '@/config';
-import { createAPICallFunction, createAPISearchURL, createPage, createSearchCriteria, makeRequest } from '@/utils';
+import { createFetchInfoFunction, createSearchURL, createPage, createSearchCriteria, makeRequest } from '@/utils/server';
 
-export const fetchAccountPage = async (searchCriteria = {}) => {
-	const { pageNumber, pageSize, filter } = createSearchCriteria(searchCriteria);
+export const fetchAccountPage = async searchParams => {
+	const searchCriteria = createSearchCriteria(searchParams);
 	let url;
 
-	if (filter.mosaic) {
-		url = createAPISearchURL(`${config.API_BASE_URL}/mosaic/rich/list`, { pageNumber, pageSize }, { namespaceName: filter.mosaic });
+	if (searchCriteria.filter.mosaic) {
+		searchCriteria.filter = { namespaceName: searchCriteria.filter.mosaic };
+		url = createSearchURL(`${config.API_BASE_URL}/mosaic/rich/list`, searchCriteria);
 	} else {
-		url = createAPISearchURL(`${config.API_BASE_URL}/accounts`, { pageNumber, pageSize }, filter);
+		url = createSearchURL(`${config.API_BASE_URL}/accounts`, searchCriteria);
 	}
 	const accounts = await makeRequest(url);
 
-	return createPage(accounts, pageNumber, formatAccount);
+	return createPage(accounts, searchCriteria.pageNumber, formatAccount);
 };
 
-export const fetchAccountInfo = createAPICallFunction(async address => {
+export const fetchAccountInfo = createFetchInfoFunction(async address => {
 	const accountInfo = await makeRequest(`${config.API_BASE_URL}/account?address=${address}`);
 
 	return formatAccount(accountInfo);
 });
 
-export const fetchAccountInfoByPublicKey = createAPICallFunction(async publicKey => {
+export const fetchAccountInfoByPublicKey = createFetchInfoFunction(async publicKey => {
 	const accountInfo = await makeRequest(`${config.API_BASE_URL}/account?publicKey=${publicKey}`);
 
 	return formatAccount(accountInfo);

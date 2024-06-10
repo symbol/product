@@ -1,26 +1,19 @@
 import config from '@/config';
-import {
-	createAPICallFunction,
-	createAPISearchURL,
-	createMosaicName,
-	createPage,
-	createSearchCriteria,
-	getRootNamespaceName,
-	makeRequest
-} from '@/utils';
+import { createMosaicName, getRootNamespaceName } from '@/utils/format';
+import { createFetchInfoFunction, createSearchURL, createPage, createSearchCriteria, makeRequest } from '@/utils/server';
 
-export const fetchMosaicInfo = createAPICallFunction(async id => {
+export const fetchMosaicInfo = createFetchInfoFunction(async id => {
 	const mosaic = await makeRequest(`${config.API_BASE_URL}/mosaic/${id}`);
 
 	return formatMosaic(mosaic);
 });
 
-export const fetchMosaicPage = async searchCriteria => {
-	const { pageNumber, pageSize } = createSearchCriteria(searchCriteria);
-	const url = createAPISearchURL(`${config.API_BASE_URL}/mosaics`, { pageNumber, pageSize });
+export const fetchMosaicPage = async searchParams => {
+	const searchCriteria = createSearchCriteria(searchParams);
+	const url = createSearchURL(`${config.API_BASE_URL}/mosaics`, searchCriteria);
 	const mosaics = await makeRequest(url);
 
-	return createPage(mosaics, pageNumber, formatMosaic);
+	return createPage(mosaics, searchCriteria.pageNumber, formatMosaic);
 };
 
 export const formatMosaic = data => ({

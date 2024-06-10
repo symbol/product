@@ -1,47 +1,42 @@
 import config from '@/config';
 import { ACCOUNT_STATE_CHANGE_ACTION, COSIGNATORY_MODIFICATION_ACTION, TRANSACTION_DIRECTION, TRANSACTION_TYPE } from '@/constants';
-import {
-	createAPICallFunction,
-	createAPISearchURL,
-	createPage,
-	createSearchCriteria,
-	decodeTransactionMessage,
-	makeRequest
-} from '@/utils';
+import { decodeTransactionMessage } from '@/utils/format';
+import { createFetchInfoFunction, createSearchURL, createPage, createSearchCriteria, makeRequest } from '@/utils/server';
 
-export const fetchTransactionPage = async searchCriteria => {
-	const { pageNumber, pageSize, filter } = createSearchCriteria(searchCriteria);
-	const formattedFilter = { ...filter };
-	if (formattedFilter.address && formattedFilter.from) {
-		formattedFilter.to = formattedFilter.address;
-		delete formattedFilter.address;
-	} else if (formattedFilter.address && formattedFilter.to) {
-		formattedFilter.from = formattedFilter.address;
-		delete formattedFilter.address;
+export const fetchTransactionPage = async searchParams => {
+	const searchCriteria = createSearchCriteria(searchParams);
+	const { filter } = searchCriteria;
+	if (filter.address && filter.from) {
+		filter.to = filter.address;
+		delete filter.address;
+	} else if (filter.address && filter.to) {
+		filter.from = filter.address;
+		delete filter.address;
 	}
-	if (formattedFilter.from) {
-		formattedFilter.senderAddress = formattedFilter.from;
-		delete formattedFilter.from;
+	if (filter.from) {
+		filter.senderAddress = filter.from;
+		delete filter.from;
 	}
-	if (formattedFilter.to) {
-		formattedFilter.recipientAddress = formattedFilter.to;
-		delete formattedFilter.to;
+	if (filter.to) {
+		filter.recipientAddress = filter.to;
+		delete filter.to;
 	}
+
 	let url;
-
-	if (formattedFilter.group === 'unconfirmed') {
-		url = createAPISearchURL(`${config.API_BASE_URL}/transactions/unconfirmed`, { pageNumber, pageSize }, formattedFilter);
+	if (filter.group === 'unconfirmed') {
+		delete filter.group;
+		url = createSearchURL(`${config.API_BASE_URL}/transactions/unconfirmed`, searchCriteria);
 	} else {
-		url = createAPISearchURL(`${config.API_BASE_URL}/transactions`, { pageNumber, pageSize }, formattedFilter);
+		url = createSearchURL(`${config.API_BASE_URL}/transactions`, searchCriteria);
 	}
 
 	const transactions = await makeRequest(url);
-	const formatter = data => formatTransaction(data, formattedFilter);
+	const formatter = data => formatTransaction(data, filter);
 
-	return createPage(transactions, pageNumber, formatter);
+	return createPage(transactions, searchCriteria.pageNumber, formatter);
 };
 
-export const fetchTransactionInfo = createAPICallFunction(async hash => {
+export const fetchTransactionInfo = createFetchInfoFunction(async hash => {
 	const transaction = await makeRequest(`${config.API_BASE_URL}/transaction/${hash}`);
 	const transactionInfo = formatTransaction(transaction);
 	const accountsStateMap = {};
@@ -270,11 +265,11 @@ const formatMultisigAccountModification = (data, filter) => {
 	const { minCosignatories } = data.value[0];
 	const { modifications } = data.value[0];
 	const cosignatoryAdditions = modifications
-		.filter(item => item.modification_type === COSIGNATORY_MODIFICATION_ACTION.ADDITION)
-		.map(item => item.cosignatory_account);
+		.filter(item => item.modificationType === COSIGNATORY_MODIFICATION_ACTION.ADDITION)
+		.map(item => item.cosignatoryAccount);
 	const cosignatoryDeletions = modifications
-		.filter(item => item.modification_type === COSIGNATORY_MODIFICATION_ACTION.REMOVAL)
-		.map(item => item.cosignatory_account);
+		.filter(item => item.modificationType === COSIGNATORY_MODIFICATION_ACTION.REMOVAL)
+		.map(item => item.cosignatoryAccount);
 
 	return {
 		...formatBaseTransaction(data, filter),

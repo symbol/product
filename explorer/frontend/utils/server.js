@@ -1,19 +1,10 @@
 import config from '@/config';
 import axios from 'axios';
 
-export const getSearchCriteria = req => {
-	const { searchParams } = new URL(req.url);
-	const pageNumber = searchParams.get('pageNumber');
-	const pageSize = searchParams.get('pageSize');
-
-	return {
-		pageNumber: pageNumber || 1,
-		pageSize: pageSize || 10
-	};
-};
-
-export const createSearchCriteria = (searchCriteria = {}) => {
-	const { pageNumber, pageSize, ...filter } = searchCriteria;
+// Creates search criteria from search parameters.
+// Uses default values if some is not provided.
+export const createSearchCriteria = (searchParams = {}) => {
+	const { pageNumber, pageSize, ...filter } = searchParams;
 	const parsedPageNumber = parseInt(pageNumber);
 	const parsedPageSize = parseInt(pageSize);
 
@@ -24,12 +15,26 @@ export const createSearchCriteria = (searchCriteria = {}) => {
 	};
 };
 
+// Creates a search URL, which uses in fetching paged data
+export const createSearchURL = (baseURL, searchCriteria) => {
+	const { pageNumber, pageSize, filter } = searchCriteria;
+	const limit = pageSize;
+	const offset = pageSize * (pageNumber - 1);
+	const params = new URLSearchParams({
+		limit,
+		offset,
+		...filter
+	}).toString();
+
+	return `${baseURL}?${params}`;
+};
+
+// Creates page from data response.
+// Formats data rows using the "formatter" callback
 export const createPage = (data, pageNumber, formatter) => {
 	let formattedData;
 
-	if (!data.length) {
-		formattedData = [];
-	} else if (formatter) {
+	if (formatter) {
 		formattedData = data.map(formatter);
 	} else {
 		formattedData = data;
@@ -41,39 +46,28 @@ export const createPage = (data, pageNumber, formatter) => {
 	};
 };
 
-export const createAPISearchURL = (baseURL, searchCriteria, filter = {}) => {
-	const limit = searchCriteria.pageSize;
-	const offset = searchCriteria.pageSize * (searchCriteria.pageNumber - 1);
-	const params = new URLSearchParams({
-		limit,
-		offset,
-		...filter
-	}).toString();
-
-	return `${baseURL}?${params}`;
-};
-
-export const createAPICallFunction =
+// Creates a wrapper for the info fetch function.
+// Handles 404 error
+export const createFetchInfoFunction =
 	func =>
 	async (...args) => {
 		try {
-			const data = await func(...args);
-
-			if (data.status) {
+			return await func(...args);
+		} catch (error) {
+			if (error.response.data.status === 404) {
 				return null;
 			}
 
-			return data;
-		} catch {
-			return null;
+			throw error.response.data;
 		}
 	};
 
+// Makes HTTP requests
 export const makeRequest = async (url, options = {}) => {
-	const { timeout = config.REQUEST_TIMEOUT } = options;
+	const { timeout = config.REQUEST_TIMEOUT, method = 'get' } = options;
 
 	const response = await axios({
-		method: options.method || 'get',
+		method,
 		url,
 		data: options.data || options.body,
 		timeout
