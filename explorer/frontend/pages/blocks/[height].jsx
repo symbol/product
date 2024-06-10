@@ -1,4 +1,4 @@
-import { fetchBlockInfo } from '@/api/blocks';
+import { fetchBlockInfo, fetchChainHight } from '@/api/blocks';
 import { fetchTransactionPage } from '@/api/transactions';
 import Field from '@/components/Field';
 import FieldTimestamp from '@/components/FieldTimestamp';
@@ -13,8 +13,9 @@ import ValueMosaic from '@/components/ValueMosaic';
 import ValueTransactionHash from '@/components/ValueTransactionHash';
 import ValueTransactionSquares from '@/components/ValueTransactionSquares';
 import ValueTransactionType from '@/components/ValueTransactionType';
+import config from '@/config';
 import styles from '@/styles/pages/BlockInfo.module.scss';
-import { useClientSidePagination, usePagination } from '@/utils';
+import { useAsyncCall, useClientSidePagination, usePagination } from '@/utils';
 import Head from 'next/head';
 import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
@@ -44,6 +45,8 @@ const BlockInfo = ({ blockInfo }) => {
 		[]
 	);
 	const transactionPagination = useClientSidePagination(transactionInitialPagination.data);
+	const chainHeight = useAsyncCall(fetchChainHight, 0);
+	const isSafeBlock = chainHeight > 0 && chainHeight - blockInfo.height > config.BLOCKCHAIN_UNWIND_LIMIT;
 
 	const tableColumns = [
 		{
@@ -102,8 +105,8 @@ const BlockInfo = ({ blockInfo }) => {
 						</Field>
 						<div className="layout-grid-row">
 							<Field title={t('field_status')}>
-								{!blockInfo.isSafe && <ValueLabel text={t('label_created')} type="created" />}
-								{blockInfo.isSafe && <ValueLabel text={t('label_safe')} type="safe" />}
+								{!isSafeBlock && <ValueLabel text={t('label_created')} type="created" />}
+								{isSafeBlock && <ValueLabel text={t('label_safe')} type="safe" />}
 							</Field>
 							<FieldTimestamp value={blockInfo.timestamp} hasTime hasSeconds />
 						</div>
