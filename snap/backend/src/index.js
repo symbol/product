@@ -24,7 +24,11 @@ export const onRpcRequest = async ({ request }) => {
 	switch (request.method) {
 	case 'initialSnap':
 		await networkUtils.switchNetwork(apiParams);
-		return state;
+
+		return {
+			...state,
+			accounts: accountUtils.getAccounts(apiParams)
+		};
 	case 'createAccount':
 		return accountUtils.createAccount(apiParams);
 	case 'getNetwork':
