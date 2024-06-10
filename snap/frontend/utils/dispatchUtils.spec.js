@@ -60,4 +60,25 @@ describe('dispatchUtils', () => {
 			expect(dispatchState).toHaveBeenCalledWith({ type: 'setNetwork', payload: network });
 		});
 	});
+
+	describe('setSelectedAccount', () => {
+		it('dispatches SET_SELECTED_ACCOUNT action with account', () => {
+			// Arrange:
+			const account = {
+				id: 'account',
+				addressIndex: 1,
+				type: 'metamask',
+				networkName: 'network',
+				label: 'label',
+				address: 'address',
+				publicKey: 'publicKey'
+			};
+
+			// Act:
+			dispatch.setSelectedAccount(account);
+
+			// Assert:
+			expect(dispatchState).toHaveBeenCalledWith({ type: 'setSelectedAccount', payload: account });
+		});
+	});
 });
