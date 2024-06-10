@@ -6,13 +6,15 @@ import ValueTransactionHash from './ValueTransactionHash';
 import styles from '@/styles/components/RecentTransactions.module.scss';
 import { useTranslation } from 'next-i18next';
 
-const TransactionPreview = ({ type, group, hash, timestamp, amount, blockTime }) => {
+const TransactionPreview = ({ type, group, signer, hash, timestamp, amount, blockTime }) => {
 	const { t } = useTranslation();
 	const typeText = t(`transactionType_${type}`);
+	const labelSenderText = t('table_field_sender');
 	const isUnconfirmed = group === 'unconfirmed';
+	const title = `${typeText}\n${labelSenderText}: ${signer}`;
 
 	return (
-		<div className={styles.transactionPreview}>
+		<div className={styles.transactionPreview} title={title}>
 			{isUnconfirmed && <CustomImage src="/images/transaction/pending.svg" alt="Unconfirmed" className={styles.icon} />}
 			{!isUnconfirmed && <IconTransactionType value={type} />}
 			<div className={styles.info}>
@@ -28,7 +30,7 @@ const TransactionPreview = ({ type, group, hash, timestamp, amount, blockTime })
 	);
 };
 
-const RecentTransactions = ({ data, blockTime }) => {
+const RecentTransactions = ({ data, blockTime, group }) => {
 	const { t } = useTranslation('common');
 
 	return (
@@ -36,7 +38,8 @@ const RecentTransactions = ({ data, blockTime }) => {
 			{data.map((item, key) => (
 				<TransactionPreview
 					type={item.type}
-					group={item.group}
+					signer={item.signer}
+					group={group}
 					hash={item.hash}
 					deadline={item.deadline}
 					timestamp={item.timestamp}
