@@ -184,6 +184,7 @@ describe('symbolSnapFactory', () => {
 	describe('initialSnap', () => {
 		it('returns initial snap state when provider request is successful', async () => {
 			// Arrange:
+			const networkName = 'mainnet';
 			const mockInitialSnapState = {
 				network: {
 					identifier: 104,
@@ -195,7 +196,7 @@ describe('symbolSnapFactory', () => {
 			mockProvider.request.mockResolvedValue(mockInitialSnapState);
 
 			// Act:
-			const result = await symbolSnap.initialSnap();
+			const result = await symbolSnap.initialSnap(networkName);
 
 			// Assert:
 			expect(result).toEqual(mockInitialSnapState);
@@ -206,7 +207,7 @@ describe('symbolSnapFactory', () => {
 					request: {
 						method: 'initialSnap',
 						params: {
-							networkName: 'mainnet'
+							networkName
 						}
 					}
 				}
