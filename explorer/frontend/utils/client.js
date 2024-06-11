@@ -29,33 +29,19 @@ export const copyToClipboard = async text => {
 
 // Creates a page link by page name. Used in navigation.
 export const createPageHref = (pageName, parameter) => {
-	let href;
-
-	switch (pageName) {
-		default:
-		case 'home':
-			href = '/';
-			break;
-		case 'accounts':
-			href = '/accounts';
-			break;
-		case 'blocks':
-			href = '/blocks';
-			break;
-		case 'mosaics':
-			href = '/mosaics';
-			break;
-		case 'namespaces':
-			href = '/namespaces';
-			break;
-		case 'transactions':
-			href = '/transactions';
-			break;
-	}
+	const routeNameMap = {
+		home: '/',
+		accounts: '/accounts',
+		blocks: '/blocks',
+		mosaics: '/mosaics',
+		namespaces: '/namespaces',
+		transactions: '/transactions'
+	};
+	const route = routeNameMap[pageName] || routeNameMap.home;
 
 	if (parameter !== undefined && parameter !== null) {
-		href += `/${parameter}`;
+		return `${route}/${parameter}`;
 	}
 
-	return href;
+	return route;
 };
