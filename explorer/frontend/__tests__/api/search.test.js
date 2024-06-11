@@ -17,11 +17,10 @@ const runSearchTest = async (searchQuery, responseMap, expectedResult) => {
 	// Arrange:
 	const spy = jest.spyOn(utils, 'makeRequest');
 
-	spy.mockImplementation((url) => {
+	spy.mockImplementation(url => {
 		const response = responseMap[url];
 
-		if (response)
-			return Promise.resolve(response);
+		if (response) return Promise.resolve(response);
 		else
 			return Promise.reject({
 				response: {
@@ -39,14 +38,13 @@ const runSearchTest = async (searchQuery, responseMap, expectedResult) => {
 	expect(result).toStrictEqual(expectedResult);
 };
 
-
 describe('api/search', () => {
 	it('searches block', async () => {
 		// Arrange:
 		const searchQuery = '1';
 		const responseMap = {
 			'https://explorer.backend/block/1': blockInfoResponse
-		}
+		};
 		const expectedResult = {
 			block: blockInfoResult
 		};
@@ -61,7 +59,7 @@ describe('api/search', () => {
 		const responseMap = {
 			'https://explorer.backend/block/1': blockInfoResponse,
 			'https://explorer.backend/namespace/1': namespaceInfoResponse
-		}
+		};
 		const expectedResult = {
 			block: blockInfoResult,
 			namespace: namespaceInfoResult
@@ -76,7 +74,7 @@ describe('api/search', () => {
 		const searchQuery = 'namespace-name';
 		const responseMap = {
 			'https://explorer.backend/namespace/namespace-name': namespaceInfoResponse
-		}
+		};
 		const expectedResult = {
 			namespace: namespaceInfoResult
 		};
@@ -91,7 +89,7 @@ describe('api/search', () => {
 		const responseMap = {
 			'https://explorer.backend/mosaic/namespace-name.sub-name': mosaicInfoResponse,
 			'https://explorer.backend/namespace/namespace-name.sub-name': namespaceInfoResponse
-		}
+		};
 		const expectedResult = {
 			mosaic: mosaicInfoResult,
 			namespace: namespaceInfoResult
@@ -105,10 +103,10 @@ describe('api/search', () => {
 		// Arrange:
 		const searchQuery = 'namespace-name.sub-name';
 		const responseMap = {
-			'https://explorer.backend/mosaic/namespace-name.sub-name': mosaicInfoResponse,
-		}
+			'https://explorer.backend/mosaic/namespace-name.sub-name': mosaicInfoResponse
+		};
 		const expectedResult = {
-			mosaic: mosaicInfoResult,
+			mosaic: mosaicInfoResult
 		};
 
 		// Act & Assert:
@@ -119,10 +117,10 @@ describe('api/search', () => {
 		// Arrange:
 		const searchQuery = '89DFA7AAD61024CCB564C41239CA865221A8984EE970FBDA0F492B09E4C70691';
 		const responseMap = {
-			'https://explorer.backend/transaction/89DFA7AAD61024CCB564C41239CA865221A8984EE970FBDA0F492B09E4C70691': transactionInfoResponse,
-		}
+			'https://explorer.backend/transaction/89DFA7AAD61024CCB564C41239CA865221A8984EE970FBDA0F492B09E4C70691': transactionInfoResponse
+		};
 		const expectedResult = {
-			transaction: transactionInfoResult,
+			transaction: transactionInfoResult
 		};
 
 		// Act & Assert:
@@ -133,10 +131,10 @@ describe('api/search', () => {
 		// Arrange:
 		const searchQuery = 'NADMEHCFJD45GPTDL4HZP2LJLZVAZRLYWYPNEMLY';
 		const responseMap = {
-			'https://explorer.backend/account?address=NADMEHCFJD45GPTDL4HZP2LJLZVAZRLYWYPNEMLY': accountInfoResponse,
-		}
+			'https://explorer.backend/account?address=NADMEHCFJD45GPTDL4HZP2LJLZVAZRLYWYPNEMLY': accountInfoResponse
+		};
 		const expectedResult = {
-			account: accountInfoResult,
+			account: accountInfoResult
 		};
 
 		// Act & Assert:
@@ -147,10 +145,11 @@ describe('api/search', () => {
 		// Arrange:
 		const searchQuery = '63D2E7B4F5479B0BF67AC34B0656F4A265B039CE66BF6CA9BDD7C196365D8E23';
 		const responseMap = {
-			'https://explorer.backend/account?publicKey=63D2E7B4F5479B0BF67AC34B0656F4A265B039CE66BF6CA9BDD7C196365D8E23': accountInfoResponse,
-		}
+			'https://explorer.backend/account?publicKey=63D2E7B4F5479B0BF67AC34B0656F4A265B039CE66BF6CA9BDD7C196365D8E23':
+				accountInfoResponse
+		};
 		const expectedResult = {
-			account: accountInfoResult,
+			account: accountInfoResult
 		};
 
 		// Act & Assert:
@@ -160,7 +159,7 @@ describe('api/search', () => {
 	it('returns empty object if nothing found', async () => {
 		// Arrange:
 		const searchQuery = 'NADMEHCFJD45GPTDL4HZP2LJLZVAZRLYWYPNEMLY';
-		const responseMap = {}
+		const responseMap = {};
 		const expectedResult = {};
 
 		// Act & Assert:
