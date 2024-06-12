@@ -1,21 +1,20 @@
 import Home from '.';
+import helper from '../../utils/helper';
 import testHelper from '../testHelper';
 import { act, screen } from '@testing-library/react';
 
 const context = {
 	dispatch: {
 		setLoadingStatus: jest.fn(),
-		setNetwork: jest.fn()
+		setNetwork: jest.fn(),
+		setSelectedAccount: jest.fn()
 	},
 	walletState: {
 		loadingStatus: {
 			isLoading: false,
 			message: ''
 		},
-		selectedAccount: {
-			address: 'address 1',
-			label: 'wallet 1'
-		},
+		selectedAccount: {},
 		mosaics: [],
 		transactions: [],
 		currency: {
@@ -25,7 +24,8 @@ const context = {
 	},
 	symbolSnap: {
 		getSnap: jest.fn(),
-		initialSnap: jest.fn()
+		initialSnap: jest.fn(),
+		createAccount: jest.fn()
 	}
 };
 
@@ -50,32 +50,27 @@ describe('components/Home', () => {
 		await assertModalScreen({ isSnapInstalled: false }, 'Connect MetaMask');
 	});
 
-	it('calls initializeSnap when isSnapInstalled is true', async () => {
+	it('calls setup snap with mainnet when isSnapInstalled is true', async () => {
 		// Arrange:
 		const mockNetwork = {
-			identifier: 152,
-			networkName: 'testnet',
+			identifier: 104,
+			networkName: 'mainnet',
 			url: 'http://localhost:3000'
 		};
 
 		context.walletState.isSnapInstalled = true;
 
+		jest.spyOn(helper, 'setupSnap');
+
 		context.symbolSnap.initialSnap.mockResolvedValue({
-			network: mockNetwork
+			network: mockNetwork,
+			accounts: {}
 		});
 
 		// Act:
 		await act(() => testHelper.customRender(<Home />, context));
 
 		// Assert:
-		expect(context.dispatch.setLoadingStatus).toHaveBeenCalledWith({
-			isLoading: true,
-			message: 'Initializing Snap...'
-		});
-		expect(context.dispatch.setNetwork).toHaveBeenCalledWith(mockNetwork);
-		expect(context.dispatch.setLoadingStatus).toHaveBeenCalledWith({
-			isLoading: false,
-			message: ''
-		});
+		expect(helper.setupSnap).toHaveBeenCalledWith(context.dispatch, context.symbolSnap, 'mainnet');
 	});
 });
