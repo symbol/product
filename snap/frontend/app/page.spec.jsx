@@ -13,7 +13,20 @@ describe('Main', () => {
 			getSnap: () => ({
 				'enabled': true
 			}),
-			initialSnap: () => jest.fn()
+			initialSnap: () => ({
+				network: {
+					identifier: 152,
+					networkName: 'testnet',
+					url: 'http://localhost:3000'
+				},
+				accounts: {
+					'0x1': {
+						id: '0x1',
+						addressIndex: 0,
+						type: 'metamask'
+					}
+				}
+			})
 		});
 
 		// Act:
