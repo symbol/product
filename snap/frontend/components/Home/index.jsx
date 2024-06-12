@@ -1,5 +1,6 @@
 import { useWalletContext } from '../../context';
 import useWalletInstallation from '../../hooks/useWalletInstallation';
+import helper from '../../utils/helper';
 import AccountBalance from '../AccountBalance';
 import AccountInfo from '../AccountInfo';
 import AssetList from '../AssetList';
@@ -15,21 +16,8 @@ const Home = () => {
 
 	useEffect(() => {
 		const initializeSnap = async () => {
-			if (isSnapInstalled) {
-				dispatch.setLoadingStatus({
-					isLoading: true,
-					message: 'Initializing Snap...'
-				});
-
-				const snapState = await symbolSnap.initialSnap();
-
-				dispatch.setNetwork(snapState.network);
-
-				dispatch.setLoadingStatus({
-					isLoading: false,
-					message: ''
-				});
-			}
+			if (isSnapInstalled)
+				await helper.setupSnap(dispatch, symbolSnap, 'mainnet');
 		};
 
 		initializeSnap();
