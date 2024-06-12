@@ -1,4 +1,5 @@
-import { actionTypes, useWalletContext } from '../../context';
+import { useWalletContext } from '../../context';
+import helper from '../../utils/helper';
 import Dropdown from '../Dropdown';
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
@@ -25,11 +26,9 @@ const Navbar = () => {
 			return;
 
 		// switch network
-		const networkData = await symbolSnap.switchNetwork(option.value);
+		await helper.setupSnap(dispatch, symbolSnap, option.value);
 
 		setSelectedNetwork(option.label);
-
-		dispatch.setNetwork(networkData);
 	};
 
 	const handleSelectCurrency = option => {
