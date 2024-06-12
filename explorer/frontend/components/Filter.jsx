@@ -9,7 +9,7 @@ import ValueBlockHeight from './ValueBlockHeight';
 import ValueMosaic from './ValueMosaic';
 import ValueTransactionType from './ValueTransactionType';
 import styles from '@/styles/components/Filter.module.scss';
-import { useDataManager, useDelayedCall } from '@/utils';
+import { useDataManager, useDebounce } from '@/utils';
 import { useTranslation } from 'next-i18next';
 import { useEffect, useState } from 'react';
 
@@ -60,7 +60,7 @@ const FilterModal = ({ isVisible, title, type, isSearchEnabled, options, onSearc
 		if (searchResult?.[type]) setSearchResult(searchResult[type]);
 		else setSearchResult(null);
 	});
-	const [delayedSearch] = useDelayedCall(text => search(text));
+	const [delayedSearch] = useDebounce(text => search(text));
 	const handleSearchTextChange = text => {
 		setText(text);
 		delayedSearch(text);

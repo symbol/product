@@ -3,8 +3,8 @@ import _ from 'lodash';
 import { useEffect, useState } from 'react';
 
 // Makes an async call. Handles the loading and error states.
-export const useDataManager = (callback, defaultData, onError, loadingState = false) => {
-	const [isLoading, setIsLoading] = useState(loadingState);
+export const useDataManager = (callback, defaultData, onError, defaultLoadingState = false) => {
+	const [isLoading, setIsLoading] = useState(defaultLoadingState);
 	const [data, setData] = useState(defaultData);
 
 	const call = (...args) => {
@@ -16,7 +16,7 @@ export const useDataManager = (callback, defaultData, onError, loadingState = fa
 			} catch (error) {
 				if (onError) {
 					// eslint-disable-next-line no-console
-					onError('[Data Manager] Error:', error);
+					onError(error);
 				}
 			}
 			setIsLoading(false);
@@ -86,24 +86,23 @@ export const usePagination = (callback, defaultData, defaultFilter = {}) => {
 
 // Paginate a data list.
 export const useClientSidePagination = (fullData, pageSize = 10) => {
-	const isLoading = false;
-	const isError = false;
 	const [isLastPage, setIsLastPage] = useState(false);
-	const [pageNumber, setPageNumber] = useState(0);
+	const [pageNumber, setPageNumber] = useState(1);
 	const [dataChunks, setDataChunks] = useState([]);
 	const [data, setData] = useState([]);
 
 	const requestNextPage = () => {
 		const nextPageNumber = pageNumber + 1;
-		const page = dataChunks[nextPageNumber];
+		const page = dataChunks[pageNumber];
 
-		if (!page) {
+		if (!dataChunks[nextPageNumber]) {
 			setIsLastPage(true);
-			return;
 		}
 
-		setData([...data, ...page]);
-		setPageNumber(nextPageNumber);
+		if (page) {
+			setData([...data, ...page]);
+			setPageNumber(nextPageNumber);
+		}
 	};
 
 	useEffect(() => {
@@ -111,10 +110,10 @@ export const useClientSidePagination = (fullData, pageSize = 10) => {
 		setDataChunks(dataChunks);
 		setData(dataChunks[0]);
 		setIsLastPage(false);
-		setPageNumber(0);
+		setPageNumber(1);
 	}, [fullData, pageSize]);
 
-	return { requestNextPage, data, isLoading, pageNumber, isLastPage, isError };
+	return { requestNextPage, data, pageNumber, isLastPage };
 };
 
 // Makes an async call and handle a filter.
@@ -131,7 +130,7 @@ export const useFilter = (callback, defaultData, initialCall) => {
 				setData(data);
 			} catch (error) {
 				// eslint-disable-next-line no-console
-				console.error('[Filter] Error:', error);
+				console.error(error);
 			}
 			setIsLoading(false);
 		});
@@ -165,7 +164,7 @@ export const useClientSideFilter = data => {
 };
 
 // Makes a call preventing a throttle. Used to handle the user inputs.
-export const useDelayedCall = callback => {
+export const useDebounce = callback => {
 	const [timer, setTimer] = useState(setTimeout(() => {}));
 	const delay = 750;
 
@@ -189,8 +188,8 @@ export const useToggle = initialValue => {
 };
 
 // Provides access to local storage.
-export const useStorage = (key, defaultValue, callback) => {
-	const [value, setValue] = useState(defaultValue);
+export const useStorage = (key, initialValue, callback) => {
+	const [value, setValue] = useState(initialValue);
 	const [setter, setSetter] = useState(null);
 	const getEvent = key => `storage.update.${key}`;
 	const storage = {
@@ -213,13 +212,8 @@ export const useStorage = (key, defaultValue, callback) => {
 		[STORAGE_KEY.TIMESTAMP_TYPE]: {
 			get: () => {
 				const defaultValue = 'UTC';
-
-				try {
-					const value = localStorage.getItem(STORAGE_KEY.TIMESTAMP_TYPE);
-					return value || defaultValue;
-				} catch {
-					return defaultValue;
-				}
+				const value = localStorage.getItem(STORAGE_KEY.TIMESTAMP_TYPE);
+				return value || defaultValue;
 			},
 			set: value => {
 				localStorage.setItem(STORAGE_KEY.TIMESTAMP_TYPE, value);
@@ -229,13 +223,8 @@ export const useStorage = (key, defaultValue, callback) => {
 		[STORAGE_KEY.USER_CURRENCY]: {
 			get: () => {
 				const defaultValue = 'USD';
-
-				try {
-					const value = localStorage.getItem(STORAGE_KEY.USER_CURRENCY);
-					return value || defaultValue;
-				} catch {
-					return defaultValue;
-				}
+				const value = localStorage.getItem(STORAGE_KEY.USER_CURRENCY);
+				return value || defaultValue;
 			},
 			set: value => {
 				localStorage.setItem(STORAGE_KEY.USER_CURRENCY, value);
@@ -245,13 +234,8 @@ export const useStorage = (key, defaultValue, callback) => {
 		[STORAGE_KEY.USER_LANGUAGE]: {
 			get: () => {
 				const defaultValue = 'en';
-
-				try {
-					const value = localStorage.getItem(STORAGE_KEY.USER_LANGUAGE);
-					return value || defaultValue;
-				} catch {
-					return defaultValue;
-				}
+				const value = localStorage.getItem(STORAGE_KEY.USER_LANGUAGE);
+				return value || defaultValue;
 			},
 			set: value => {
 				localStorage.setItem(STORAGE_KEY.USER_LANGUAGE, value);
@@ -300,14 +284,16 @@ export const useUserCurrencyAmount = (fetchPrice, amount, currency, timestamp) =
 
 		if (amount) {
 			fetchUserCurrencyAmount();
+		} else {
+			setAmountInUserCurrency(0);
 		}
 	}, [fetchPrice, amount, currency, timestamp]);
 
 	return amountInUserCurrency;
 };
 
-// Makes an async call on mount. Allows to specify a timer.
-export const useAsyncCall = (callback, defaultData, onError, repeatInterval) => {
+// Makes an async call on mount. Allows to repeat the call with a given interval.
+export const useAsyncCall = (callback, defaultData, pollingInterval) => {
 	const [data, setData] = useState(defaultData);
 
 	useEffect(() => {
@@ -315,15 +301,11 @@ export const useAsyncCall = (callback, defaultData, onError, repeatInterval) => 
 			try {
 				const data = await callback();
 				setData(data);
-			} catch (e) {
-				if (onError) {
-					onError(e);
-				}
-			}
+			} catch {}
 		};
 
-		if (repeatInterval) {
-			setInterval(() => call(), repeatInterval);
+		if (pollingInterval) {
+			setInterval(() => call(), pollingInterval);
 		} else {
 			call();
 		}

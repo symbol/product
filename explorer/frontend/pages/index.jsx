@@ -63,16 +63,14 @@ const Home = ({
 	const latestTransactions = useAsyncCall(
 		() => fetchTransactionPage({ pageSize: 5 }),
 		preloadedLatestTransactions,
-		null,
 		DATA_REFRESH_INTERVAL
 	);
 	const pendingTransactions = useAsyncCall(
 		() => fetchTransactionPage({ pageSize: 5, group: 'unconfirmed' }),
 		preloadedPendingTransactions,
-		null,
 		DATA_REFRESH_INTERVAL
 	);
-	const blocks = useAsyncCall(fetchBlockPage, preloadedBlocks, null, DATA_REFRESH_INTERVAL);
+	const blocks = useAsyncCall(fetchBlockPage, preloadedBlocks, DATA_REFRESH_INTERVAL);
 
 	const fetchBlockTransactions = useCallback(height => fetchTransactionPage({ pageSize: 160, height }), [fetchTransactionPage]);
 

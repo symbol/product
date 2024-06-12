@@ -8,7 +8,7 @@ import ValueMosaic from './ValueMosaic';
 import ValueNamespace from './ValueNamespace';
 import ValueTransaction from './ValueTransaction';
 import styles from '@/styles/components/SearchBar.module.scss';
-import { useDataManager, useDelayedCall } from '@/utils';
+import { useDataManager, useDebounce } from '@/utils';
 import { useTranslation } from 'next-i18next';
 import { useEffect, useState } from 'react';
 
@@ -27,7 +27,7 @@ const SearchResults = ({ type, text, onSearchRequest, onSelect }) => {
 		null,
 		true
 	);
-	const [delayedSearch] = useDelayedCall(text => search(text));
+	const [delayedSearch] = useDebounce(text => search(text));
 
 	const isNothingFound = Object.keys(result).length === 0 && !isLoading;
 	const isAccountResult = !!result.account && !isLoading && (!type || type === 'account');
