@@ -1,4 +1,5 @@
 import Navbar from '.';
+import helper from '../../utils/helper';
 import testHelper from '../testHelper';
 import { act, fireEvent, screen } from '@testing-library/react';
 
@@ -90,17 +91,13 @@ describe('components/Navbar', () => {
 
 			it('renders nothing when selected same network', async () => {
 				// Arrange:
-				const mockNetworkData = {
-					identifier: 152,
-					networkName: 'testnet',
-					url: 'http://localhost:3000'
-				};
-
-				jest.spyOn(context.symbolSnap, 'switchNetwork').mockReturnValue(mockNetworkData);
+				jest.spyOn(helper, 'setupSnap').mockReturnValue();
 
 				testHelper.customRender(<Navbar />, context);
+
 				const dropdown = screen.getByText('Network');
 				fireEvent.click(dropdown);
+
 				const item = screen.getByText('Testnet');
 
 				await act(async () => fireEvent.click(item));
@@ -111,21 +108,13 @@ describe('components/Navbar', () => {
 
 				// Assert:
 				const selectedOption = screen.getByText('Testnet');
-
 				expect(selectedOption).toBeInTheDocument();
-				expect(context.symbolSnap.switchNetwork).toHaveBeenCalledTimes(1);
-				expect(context.dispatch.setNetwork).toHaveBeenCalledTimes(1);
+				expect(helper.setupSnap).not.toHaveBeenNthCalledWith(2);
 			});
 
 			it('sets selected network when clicked on item', async () => {
 				// Arrange:
-				const mockNetworkData = {
-					identifier: 152,
-					networkName: 'testnet',
-					url: 'http://localhost:3000'
-				};
-
-				jest.spyOn(context.symbolSnap, 'switchNetwork').mockReturnValue(mockNetworkData);
+				jest.spyOn(helper, 'setupSnap').mockReturnValue();
 
 				testHelper.customRender(<Navbar />, context);
 				const dropdown = screen.getByText('Network');
@@ -139,8 +128,7 @@ describe('components/Navbar', () => {
 				const selectedOption = screen.getByText('Testnet');
 
 				expect(selectedOption).toBeInTheDocument();
-				expect(context.symbolSnap.switchNetwork).toHaveBeenCalledWith('testnet');
-				expect(context.dispatch.setNetwork).toHaveBeenCalledWith(mockNetworkData);
+				expect(helper.setupSnap).toHaveBeenCalledWith(context.dispatch, context.symbolSnap, 'testnet');
 			});
 
 			it('renders network name when network is set when initial', () => {
