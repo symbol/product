@@ -23,6 +23,26 @@ class StatisticTransactionView:
 		}
 
 
+class StatisticTransactionDailyView:
+	def __init__(self, date, total_transactions):
+		""""Create daily statistic view."""
+
+		self.date = date
+		self.total_transactions = total_transactions
+
+	def __eq__(self, other):
+		return isinstance(other, StatisticTransactionDailyView) and all([
+			self.date == other.date,
+			self.total_transactions == other.total_transactions
+		])
+
+	def to_dict(self):
+		return {
+			'date': self.date,
+			'totalTransactions': self.total_transactions
+		}
+
+
 class StatisticAccountView:
 	def __init__(self, total_accounts, accounts_with_balance, harvested_accounts, total_importance, eligible_harvest_accounts):
 		""""Create account statistic view."""

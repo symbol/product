@@ -1,5 +1,6 @@
 import configparser
 from collections import namedtuple
+from datetime import datetime
 from pathlib import Path
 
 from flask import Flask, abort, jsonify, request
@@ -282,6 +283,23 @@ def setup_nem_routes(app, nem_api_facade):
 	@app.route('/api/nem/transaction/statistics')
 	def api_get_nem_transaction_statistics():
 		return jsonify(nem_api_facade.get_transaction_statistics())
+
+	@app.route('/api/nem/transaction/daily')
+	def api_get_nem_transaction_daily():
+		try:
+			start_date_str = request.args.get('startDate')
+			end_date_str = request.args.get('endDate')
+
+			start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+			end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+
+			if start_date > end_date:
+				raise ValueError()
+
+		except ValueError:
+			abort(400)
+
+		return jsonify(nem_api_facade.get_transaction_statistics_daily(start_date=start_date_str, end_date=end_date_str))
 
 	@app.route('/api/nem/account/statistics')
 	def api_get_nem_account_statistics():

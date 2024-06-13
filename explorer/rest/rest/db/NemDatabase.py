@@ -8,7 +8,7 @@ from rest.model.Account import AccountQuery, AccountView
 from rest.model.Block import BlockView
 from rest.model.Mosaic import MosaicRichListView, MosaicTransfersView, MosaicView
 from rest.model.Namespace import NamespaceView
-from rest.model.Statistic import StatisticAccountView, StatisticTransactionView
+from rest.model.Statistic import StatisticAccountView, StatisticTransactionDailyView, StatisticTransactionView
 from rest.model.Transaction import TransactionListView, TransactionQuery
 
 from .DatabaseConnection import DatabaseConnectionPool
@@ -558,6 +558,18 @@ class NemDatabase(DatabaseConnectionPool):
 			transaction_last_30_day=transaction_last_30_day
 		)
 
+	def _create_transaction_daily_statistic_view(self, result):  # pylint: disable=no-self-use
+
+		(
+			date,
+			total_transactions
+		) = result
+
+		return StatisticTransactionDailyView(
+			date=str(date),
+			total_transactions=total_transactions
+		)
+
 	def _create_account_statistic_view(self, result):
 
 		(
@@ -1003,6 +1015,23 @@ class NemDatabase(DatabaseConnectionPool):
 			result = cursor.fetchone()
 
 			return self._create_transaction_statistic_view(result) if result else None
+
+	def get_transaction_statistics_daily(self, start_date, end_date):
+		with self.connection() as connection:
+			cursor = connection.cursor()
+			cursor.execute('''
+				SELECT
+					DATE(timestamp) as date,
+					SUM(total_transactions) as total_transactions
+				FROM blocks
+				WHERE timestamp BETWEEN %s AND %s
+				GROUP BY DATE(timestamp)
+				ORDER BY DATE(timestamp)
+			''', (start_date, end_date))
+
+			results = cursor.fetchall()
+
+			return [self._create_transaction_daily_statistic_view(result) for result in results]
 
 	def get_account_statistics(self):
 		"""Gets account statistics from database."""

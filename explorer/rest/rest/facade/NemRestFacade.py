@@ -104,6 +104,13 @@ class NemRestFacade:
 
 		return statistics.to_dict() if statistics else None
 
+	def get_transaction_statistics_daily(self, start_date, end_date):
+		"""Gets statistics daily."""
+
+		statistics = self.nem_db.get_transaction_statistics_daily(start_date, end_date)
+
+		return [stat.to_dict() for stat in statistics]
+
 	def get_account_statistics(self):
 		"""Gets account statistics."""
 
