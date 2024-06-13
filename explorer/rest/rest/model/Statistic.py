@@ -43,6 +43,26 @@ class StatisticTransactionDailyView:
 		}
 
 
+class StatisticTransactionMonthlyView:
+	def __init__(self, month, total_transactions):
+		""""Create monthly statistic view."""
+
+		self.month = month
+		self.total_transactions = total_transactions
+
+	def __eq__(self, other):
+		return isinstance(other, StatisticTransactionMonthlyView) and all([
+			self.month == other.month,
+			self.total_transactions == other.total_transactions
+		])
+
+	def to_dict(self):
+		return {
+			'month': self.month,
+			'totalTransactions': self.total_transactions
+		}
+
+
 class StatisticAccountView:
 	def __init__(self, total_accounts, accounts_with_balance, harvested_accounts, total_importance, eligible_harvest_accounts):
 		""""Create account statistic view."""

@@ -8,7 +8,12 @@ from rest.model.Account import AccountQuery, AccountView
 from rest.model.Block import BlockView
 from rest.model.Mosaic import MosaicRichListView, MosaicTransfersView, MosaicView
 from rest.model.Namespace import NamespaceView
-from rest.model.Statistic import StatisticAccountView, StatisticTransactionDailyView, StatisticTransactionView
+from rest.model.Statistic import (
+	StatisticAccountView,
+	StatisticTransactionDailyView,
+	StatisticTransactionMonthlyView,
+	StatisticTransactionView
+)
 from rest.model.Transaction import TransactionListView, TransactionQuery
 
 from .DatabaseConnection import DatabaseConnectionPool
@@ -570,6 +575,18 @@ class NemDatabase(DatabaseConnectionPool):
 			total_transactions=total_transactions
 		)
 
+	def _create_transaction_monthly_statistic_view(self, result):  # pylint: disable=no-self-use
+
+		(
+			month,
+			total_transactions
+		) = result
+
+		return StatisticTransactionMonthlyView(
+			month=str(month),
+			total_transactions=total_transactions
+		)
+
 	def _create_account_statistic_view(self, result):
 
 		(
@@ -1032,6 +1049,23 @@ class NemDatabase(DatabaseConnectionPool):
 			results = cursor.fetchall()
 
 			return [self._create_transaction_daily_statistic_view(result) for result in results]
+
+	def get_transaction_statistics_monthly(self, start_date, end_date):
+		with self.connection() as connection:
+			cursor = connection.cursor()
+			cursor.execute('''
+				SELECT
+					TO_CHAR(timestamp, 'YYYY-MM') as month,
+					SUM(total_transactions) as total_transactions
+				FROM blocks
+				WHERE timestamp BETWEEN %s AND %s
+				GROUP BY TO_CHAR(timestamp, 'YYYY-MM')
+				ORDER BY TO_CHAR(timestamp, 'YYYY-MM')
+			''', (start_date, end_date))
+
+			results = cursor.fetchall()
+
+			return [self._create_transaction_monthly_statistic_view(result) for result in results]
 
 	def get_account_statistics(self):
 		"""Gets account statistics from database."""

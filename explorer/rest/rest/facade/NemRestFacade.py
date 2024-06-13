@@ -111,6 +111,13 @@ class NemRestFacade:
 
 		return [stat.to_dict() for stat in statistics]
 
+	def get_transaction_statistics_monthly(self, start_date, end_date):
+		"""Gets statistics monthly."""
+
+		statistics = self.nem_db.get_transaction_statistics_monthly(start_date, end_date)
+
+		return [stat.to_dict() for stat in statistics]
+
 	def get_account_statistics(self):
 		"""Gets account statistics."""
 
