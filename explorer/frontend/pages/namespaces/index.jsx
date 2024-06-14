@@ -82,7 +82,7 @@ const Blocks = ({ namespaces }) => {
 					isLastPage={isLastPage}
 					isError={isError}
 					isLastColumnAligned={true}
-					onEndReached={() => requestNextPage({ pageNumber: pageNumber + 1 })}
+					onEndReached={requestNextPage}
 				/>
 			</Section>
 		</div>

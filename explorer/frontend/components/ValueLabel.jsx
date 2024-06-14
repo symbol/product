@@ -34,7 +34,7 @@ const ValueLabel = ({ text, type, isIconHidden, title }) => {
 
 	return (
 		<div className={rootStyles} title={title}>
-			{!isIconHidden && <CustomImage src={iconSrc} className={`${styles.icon} ${colorStyle}`} />}
+			{!isIconHidden && <CustomImage src={iconSrc} className={`${styles.icon} ${colorStyle}`} alt={type} />}
 			{isTextShown && <div className={colorStyle}>{text}</div>}
 		</div>
 	);

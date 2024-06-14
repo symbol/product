@@ -3,11 +3,13 @@ import dynamic from 'next/dynamic';
 
 const ReactApexChart = dynamic(() => import('react-apexcharts'), { ssr: false });
 
-const ChartColumns = ({ data = [], name }) => {
+const ChartColumns = ({ data, name }) => {
+	const xAxis = data.map(item => item[0]);
+	const yAxis = data.map(item => item[1]);
 	const series = [
 		{
 			name: name,
-			data: data.map(item => item[1])
+			data: yAxis
 		}
 	];
 	const options = {
@@ -39,7 +41,7 @@ const ChartColumns = ({ data = [], name }) => {
 			width: 1
 		},
 		xaxis: {
-			categories: data.map(item => item[0])
+			categories: xAxis
 		}
 	};
 

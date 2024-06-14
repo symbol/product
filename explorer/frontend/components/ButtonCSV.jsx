@@ -5,11 +5,10 @@ import { CSVLink } from 'react-csv';
 const ButtonCSV = ({ className, data, fileName, format }) => {
 	const { t } = useTranslation();
 	const text = t('button_csv');
-	const defaultFileName = 'explorer-export';
-	const formattedData = format ? data.map(format) : data;
+	const formattedData = data.map(row => format(row, t));
 
 	return (
-		<CSVLink className={`${styles.buttonCSV} ${className}`} filename={`${fileName || defaultFileName}.csv`} data={formattedData}>
+		<CSVLink className={`${styles.buttonCSV} ${className}`} filename={`${fileName}.csv`} data={formattedData}>
 			{text}
 		</CSVLink>
 	);

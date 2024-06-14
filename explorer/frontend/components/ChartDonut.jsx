@@ -3,7 +3,7 @@ import dynamic from 'next/dynamic';
 
 const ReactApexChart = dynamic(() => import('react-apexcharts'), { ssr: false });
 
-const ChartDonut = ({ data = [], name, label }) => {
+const ChartDonut = ({ data, name, label }) => {
 	const colorMain = '#50B9AD';
 	const colorEnd = '#E9F6F5';
 	const colors = [...Array(Math.max(data.length - 1, 0)).fill(colorMain), colorEnd];

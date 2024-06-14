@@ -3,7 +3,7 @@ import dynamic from 'next/dynamic';
 
 const ReactApexChart = dynamic(() => import('react-apexcharts'), { ssr: false });
 
-const ChartLine = ({ data = [], name }) => {
+const ChartLine = ({ data, name }) => {
 	const series = [
 		{
 			name: name,

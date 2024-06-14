@@ -101,7 +101,7 @@ const Blocks = ({ blocks, stats }) => {
 					isLoading={isLoading}
 					isLastPage={isLastPage}
 					isError={isError}
-					onEndReached={() => requestNextPage({ pageNumber: pageNumber + 1 })}
+					onEndReached={requestNextPage}
 				/>
 			</Section>
 		</div>

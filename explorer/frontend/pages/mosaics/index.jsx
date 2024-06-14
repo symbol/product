@@ -28,7 +28,7 @@ export const getServerSideProps = async ({ locale }) => {
 
 const Mosaics = ({ mosaics }) => {
 	const { t } = useTranslation();
-	const { requestNextPage, data, isLoading, pageNumber, isLastPage, isError } = usePagination(fetchMosaicPage, mosaics);
+	const { requestNextPage, data, isLoading, isLastPage, isError } = usePagination(fetchMosaicPage, mosaics);
 	const chainHeight = useAsyncCall(fetchChainHight, 0);
 
 	const tableColumns = [
@@ -80,7 +80,7 @@ const Mosaics = ({ mosaics }) => {
 					isLastPage={isLastPage}
 					isError={isError}
 					isLastColumnAligned={true}
-					onEndReached={() => requestNextPage({ pageNumber: pageNumber + 1 })}
+					onEndReached={requestNextPage}
 				/>
 			</Section>
 		</div>

@@ -272,11 +272,7 @@ const AccountInfo = ({ accountInfo, preloadedTransactions }) => {
 							onClear={transactionPagination.clearFilter}
 							search={search}
 						/>
-						<ButtonCSV
-							data={transactionPagination.data}
-							fileName={`transactions-${address}`}
-							format={row => formatTransactionCSV(row, t)}
-						/>
+						<ButtonCSV data={transactionPagination.data} fileName={`transactions-${address}`} format={formatTransactionCSV} />
 					</div>
 					<Table
 						data={transactionPagination.data}
