@@ -842,7 +842,7 @@ export const accountInfoResponse = {
 	harvestedBlocks: 0,
 	harvestedFees: 0,
 	height: 4661022,
-	importance: '0.0',
+	importance: '0.21075431784224505',
 	minCosignatories: null,
 	mosaics: [
 		{
@@ -855,7 +855,7 @@ export const accountInfoResponse = {
 		}
 	],
 	publicKey: '019B4EDDAEFA086A328EB907ECBC5ED0EABD6BBB6F3BA25B22A310CB5917A808',
-	remarks: null,
+	remarks: 'Description text',
 	remoteAddress: null,
 	vestedBalance: 0
 };
@@ -864,7 +864,7 @@ export const accountInfoResult = {
 	remoteAddress: null,
 	address: 'NDQXKN6REQRVT4WE6WIU2FXQLTJFEHKK5ITD2ZSV',
 	publicKey: '019B4EDDAEFA086A328EB907ECBC5ED0EABD6BBB6F3BA25B22A310CB5917A808',
-	description: null,
+	description: 'Description text',
 	balance: 539.527798,
 	vestedBalance: null,
 	mosaics: [
@@ -879,7 +879,7 @@ export const accountInfoResult = {
 			amount: 10000000
 		}
 	],
-	importance: 0,
+	importance: 21.075431784224506,
 	harvestedBlocks: null,
 	harvestedFees: null,
 	height: 4661022,
