@@ -3,6 +3,8 @@
 // expect(element).toHaveTextContent(/react/i)
 // learn more: https://github.com/testing-library/jest-dom
 import '@testing-library/jest-dom';
+import { setDevice } from './__tests__/test-utils/device';
+import { TextEncoder, TextDecoder } from 'util';
 
 global.$t = key => `translated_${key}`;
 
@@ -23,3 +25,11 @@ process.env = {
 	...originalEnv,
 	...envMock
 };
+
+Object.assign(global, { TextDecoder, TextEncoder });
+
+beforeEach(() => {
+	jest.spyOn(console, 'error').mockImplementation(jest.fn());
+	jest.spyOn(console, 'warn').mockImplementation(jest.fn());
+	setDevice('desktop');
+});
