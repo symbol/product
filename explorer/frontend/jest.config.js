@@ -32,7 +32,8 @@ const customJestConfig = {
 		'^@/pages/(.*)$': '<rootDir>/pages/$1',
 		'^@/public/(.*)$': '<rootDir>/public/$1',
 		'^@/styles/(.*)$': '<rootDir>/styles/$1',
-		'^@/utils/(.*)$': '<rootDir>/utils/$1'
+		'^@/utils/(.*)$': '<rootDir>/utils/$1',
+		'^@/utils': '<rootDir>/utils/index.js'
 	},
 	transform: {},
 	resetMocks: true,
