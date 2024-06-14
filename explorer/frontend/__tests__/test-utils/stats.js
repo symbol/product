@@ -428,6 +428,18 @@ export const priceByDateResponse = {
 	}
 };
 
+export const monthlyTransactionChartResponse = [
+	{ month: '2024-04', totalTransactions: 13779 },
+	{ month: '2024-05', totalTransactions: 11287 },
+	{ month: '2024-06', totalTransactions: 11983 }
+];
+
+export const dailyTransactionChartResponse = [
+	{ date: '2024-05-27', totalTransactions: 393 },
+	{ date: '2024-05-28', totalTransactions: 352 },
+	{ date: '2024-05-29', totalTransactions: 355 }
+];
+
 export const accountStatsResult = {
 	total: 984546,
 	harvesting: 23675,
@@ -506,3 +518,19 @@ export const marketDataResult = {
 	circulatingSupply: 189043980.66123033,
 	treasury: 0
 };
+
+export const monthlyTransactionChartResult = [
+	['2024-04-01', 13779],
+	['2024-05-01', 11287],
+	['2024-06-01', 11983]
+];
+export const dailyTransactionChartResult = [
+	['2024-05-27', 393],
+	['2024-05-28', 352],
+	['2024-05-29', 355]
+];
+export const blockTransactionChartResult = [
+	[4695076, 1],
+	[4695077, 0],
+	[4695078, 1]
+];

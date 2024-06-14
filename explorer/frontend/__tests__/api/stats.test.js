@@ -4,15 +4,28 @@ import {
 	accountStatisticsResponse,
 	accountStatsResult,
 	blockStatsResult,
+	blockTransactionChartResult,
+	dailyTransactionChartResponse,
+	dailyTransactionChartResult,
 	marketDataResponse,
 	marketDataResult,
+	monthlyTransactionChartResponse,
+	monthlyTransactionChartResult,
 	nodeListResponse,
 	priceByDateResponse,
 	supernodeStatsResponse,
 	transactionStatisticsResponse,
 	transactionStatsResult
 } from '../test-utils/stats';
-import { fetchAccountStats, fetchBlockStats, fetchMarketData, fetchNodeStats, fetchPriceByDate, fetchTransactionStats } from '@/api/stats';
+import {
+	fetchAccountStats,
+	fetchBlockStats,
+	fetchMarketData,
+	fetchNodeStats,
+	fetchPriceByDate,
+	fetchTransactionChart,
+	fetchTransactionStats
+} from '@/api/stats';
 import * as utils from '@/utils/server';
 
 jest.mock('@/utils/server', () => {
@@ -20,6 +33,15 @@ jest.mock('@/utils/server', () => {
 		__esModule: true,
 		...jest.requireActual('@/utils/server')
 	};
+});
+
+beforeAll(() => {
+	jest.useFakeTimers('modern');
+	jest.setSystemTime(new Date('2024-06-13T10:20:30Z'));
+});
+
+afterAll(() => {
+	jest.useRealTimers();
 });
 
 const runStatsTest = async (functionToTest, args, responseMap, expectedResult) => {
@@ -58,6 +80,44 @@ describe('api/stats', () => {
 				'https://explorer.backend/accounts?limit=10&offset=0': accountPageResponse
 			};
 			const expectedResult = accountStatsResult;
+
+			// Act & Assert:
+			await runStatsTest(functionToTest, args, responseMap, expectedResult);
+		});
+	});
+
+	describe('fetchTransactionChart', () => {
+		it('returns daily transaction chart data', async () => {
+			const functionToTest = fetchTransactionChart;
+			const args = [{ isPerDay: true }];
+			const responseMap = {
+				'https://explorer.backend/transaction/daily?startDate=2024-03-15&endDate=2024-06-13': dailyTransactionChartResponse
+			};
+			const expectedResult = dailyTransactionChartResult;
+
+			// Act & Assert:
+			await runStatsTest(functionToTest, args, responseMap, expectedResult);
+		});
+
+		it('returns monthly transaction chart data', async () => {
+			const functionToTest = fetchTransactionChart;
+			const args = [{ isPerMonth: true }];
+			const responseMap = {
+				'https://explorer.backend/transaction/monthly?startDate=2020-06-13&endDate=2024-06-13': monthlyTransactionChartResponse
+			};
+			const expectedResult = monthlyTransactionChartResult;
+
+			// Act & Assert:
+			await runStatsTest(functionToTest, args, responseMap, expectedResult);
+		});
+
+		it('returns block transaction chart data', async () => {
+			const functionToTest = fetchTransactionChart;
+			const args = [{}];
+			const responseMap = {
+				'https://explorer.backend/blocks?limit=240&offset=0': blockPageResponse.slice(-3)
+			};
+			const expectedResult = blockTransactionChartResult;
 
 			// Act & Assert:
 			await runStatsTest(functionToTest, args, responseMap, expectedResult);
