@@ -1,6 +1,7 @@
 import styles from '@/styles/components/Table.module.scss';
 import dynamic from 'next/dynamic';
 import { useTranslation } from 'next-i18next';
+import { useMediaQuery } from 'usehooks-ts';
 const TablePageLoader = dynamic(() => import('./TablePageLoader'), { ssr: false });
 
 const Table = ({
@@ -16,7 +17,9 @@ const Table = ({
 	isLastColumnAligned
 }) => {
 	const { t } = useTranslation('common');
-
+	const isMobile = useMediaQuery('(max-width: 767.8px)');
+	const isMobileTableVisible = isMobile && !!renderItemMobile;
+	const isDesktopTableVisible = !isMobile || !isMobileTableVisible;
 	const desktopTableStyle = !renderItemMobile ? styles.dataMobile : '';
 	const headerCellStyle = `${styles.headerCell} ${isLastColumnAligned && styles.headerCell_aligned}`;
 	const dataCellStyle = isLastColumnAligned ? styles.dataCell_aligned : '';
@@ -46,8 +49,8 @@ const Table = ({
 					</div>
 				))}
 			</div>
-			{!!data && <div className={`${styles.data} ${desktopTableStyle}`}>{data.map(renderRow)}</div>}
-			{!!data && !!renderItemMobile && <div className={styles.listMobile}>{data.map(renderMobileListItem)}</div>}
+			{!!data && isDesktopTableVisible && <div className={`${styles.data} ${desktopTableStyle}`}>{data.map(renderRow)}</div>}
+			{!!data && isMobileTableVisible && <div className={styles.listMobile}>{data.map(renderMobileListItem)}</div>}
 			{isEmptyTableMessageShown && <div className={styles.emptyListMessage}>{t('message_emptyTable')}</div>}
 
 			{!!sections &&
@@ -55,8 +58,10 @@ const Table = ({
 					<div className={styles.section} key={'sc' + index}>
 						<div className={styles.sectionHeader}>{renderSectionHeader(section)}</div>
 						<div className={styles.sectionHeaderLineMobile} />
-						<div className={`${styles.data} ${desktopTableStyle}`}>{section.data.map(renderRow)}</div>
-						{!!renderItemMobile && <div className={styles.listMobile}>{section.data.map(renderMobileListItem)}</div>}
+						{isDesktopTableVisible && (
+							<div className={`${styles.data} ${desktopTableStyle}`}>{section.data.map(renderRow)}</div>
+						)}
+						{isMobileTableVisible && <div className={styles.listMobile}>{section.data.map(renderMobileListItem)}</div>}
 					</div>
 				))}
 			{!isLastPage && !isError && <TablePageLoader isLoading={isLoading} onLoad={onEndReached} />}
