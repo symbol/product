@@ -164,7 +164,7 @@ class NemConnector(BasicConnector):
 				'tx': tx,
 				'hash': None,
 				'innerHash': None
-			}, 0) for tx in unconfirmed_transactions['data']
+			}, 0) for tx in unconfirmed_transactions['data'] if tx['type'] != TransactionType.MULTISIG_COSIGNATURE.value
 		]
 
 	def _map_to_block(self, block_dict):
