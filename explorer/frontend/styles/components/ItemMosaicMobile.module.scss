@@ -1,10 +1,18 @@
 @import "../variables";
 
 .itemMosaicMobile {
+    width: 100%;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
+    gap: $spacing-base;
 
-    .timestamp {
-        align-self: flex-end;
+    .info {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+
+        .name {
+            font: $font-body-bold;
+        }
     }
 }

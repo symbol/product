@@ -26,14 +26,14 @@ const styleMap = {
 	multisig: styles.info
 };
 
-const ValueLabel = ({ text, type, isIconHidden, title }) => {
+const ValueLabel = ({ className, text, type, isIconHidden, title }) => {
 	const iconSrc = iconsMap[type];
 	const colorStyle = styleMap[type];
 	const isTextShown = !!text;
 	const rootStyles = isTextShown ? styles.valueLabel : `${styles.valueLabel} ${styles.valueLabel__noText}`;
 
 	return (
-		<div className={rootStyles} title={title}>
+		<div className={`${rootStyles} ${className}`} title={title}>
 			{!isIconHidden && <CustomImage src={iconSrc} className={`${styles.icon} ${colorStyle}`} alt={type} />}
 			{isTextShown && <div className={colorStyle}>{text}</div>}
 		</div>

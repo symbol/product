@@ -1,17 +1,28 @@
 @import "../variables";
 
 .itemAccountMobile {
+    width: 100%;
     display: flex;
-    flex: 1;
-    flex-direction: column;
-    gap: $spacing-base / 2;
+    flex-direction: row;
+    gap: $spacing-base;
 
-
-    .row {
+    .info {
+        flex: 1;
         display: flex;
-        flex-direction: row;
-        gap: $spacing-base;
-        align-items: center;
-        justify-content: space-between;
+        flex-direction: column;
+
+        .name {
+            font: $font-body-monospace;
+        }
+
+        .labels {
+            display: flex;
+            flex-direction: row;
+            gap: $spacing-base / 2;
+        }
+
+        .label__hidden {
+            opacity: 0;
+        }
     }
 }

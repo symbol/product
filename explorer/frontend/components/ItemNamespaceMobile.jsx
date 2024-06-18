@@ -1,27 +1,29 @@
-import Progress from './Progress';
-import ValueNamespace from './ValueNamespace';
+import Avatar from './Avatar';
+import ValueLabel from './ValueLabel';
+import ValueTimestamp from './ValueTimestamp';
 import styles from '@/styles/components/ItemNamespaceMobile.module.scss';
+import { createPageHref } from '@/utils';
 import { useTranslation } from 'next-i18next';
 
 const ItemNamespaceMobile = ({ data, chainHeight }) => {
 	const { t } = useTranslation();
-	const { name, id, registrationHeight, expirationHeight } = data;
-	const expireIn = expirationHeight - chainHeight;
-	const isExpired = expireIn < 0;
-	const progressType = isExpired ? 'danger' : '';
+	const { name, id, registrationTimestamp, expirationHeight } = data;
+
+	const isActive = chainHeight < expirationHeight;
+	const status = isActive ? 'active' : 'inactive';
+	const text = isActive ? t('label_active') : t('label_expired');
 
 	return (
-		<div className={styles.itemNamespaceMobile}>
-			<ValueNamespace namespaceName={name} namespaceId={id} size="md" />
-			<Progress
-				titleLeft={t('field_registrationHeight')}
-				titleRight={t('field_expirationHeight')}
-				valueLeft={registrationHeight}
-				valueRight={expirationHeight}
-				value={chainHeight}
-				type={progressType}
-			/>
-		</div>
+		<a className={styles.itemNamespaceMobile} href={createPageHref('namespaces', id)}>
+			<Avatar type="namespace" size="md" value={id} />
+			<div className={styles.info}>
+				<div className={styles.name}>{name}</div>
+				<div className="layout-flex-row">
+					<ValueTimestamp className={styles.timestamp} value={registrationTimestamp} />
+					<ValueLabel type={status} text={text} />
+				</div>
+			</div>
+		</a>
 	);
 };
 
