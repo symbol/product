@@ -47,14 +47,14 @@ export const createPage = (data, pageNumber, formatter) => {
 };
 
 // Creates a wrapper for the info fetch function.
-// Handles 404 error
+// Handles client errors
 export const createFetchInfoFunction =
 	func =>
 	async (...args) => {
 		try {
 			return await func(...args);
 		} catch (error) {
-			if (error.response.data.status === 404) {
+			if (error.response.data.status === 400 || error.response.data.status === 404) {
 				return null;
 			}
 
