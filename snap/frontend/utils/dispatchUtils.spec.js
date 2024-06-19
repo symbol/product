@@ -81,4 +81,27 @@ describe('dispatchUtils', () => {
 			expect(dispatchState).toHaveBeenCalledWith({ type: 'setSelectedAccount', payload: account });
 		});
 	});
+
+	describe('setAccounts', () => {
+		it('dispatches SET_ACCOUNTS action with accounts', () => {
+			// Arrange:
+			const accounts = {
+				'account1': {
+					id: 'account1',
+					addressIndex: 1,
+					type: 'metamask',
+					networkName: 'network',
+					label: 'label',
+					address: 'address',
+					publicKey: 'publicKey'
+				}
+			};
+
+			// Act:
+			dispatch.setAccounts(accounts);
+
+			// Assert:
+			expect(dispatchState).toHaveBeenCalledWith({ type: 'setAccounts', payload: accounts });
+		});
+	});
 });
