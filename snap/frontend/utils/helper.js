@@ -14,9 +14,13 @@ const helper = {
 		if (0 < Object.keys(snapState.accounts).length) {
 			// set first account as selected account
 			account = Object.values(snapState.accounts)[0];
+			dispatch.setAccounts(snapState.accounts);
 		} else {
 			// create account from snap
 			account = await symbolSnap.createAccount('Wallet 1');
+			dispatch.setAccounts({
+				[account.id]: account
+			});
 		}
 
 		dispatch.setSelectedAccount(account);
