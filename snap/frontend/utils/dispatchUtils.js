@@ -28,6 +28,13 @@ const dispatchUtils = dispatch => ({
 	 */
 	setSelectedAccount: account => {
 		dispatch({ type: actionTypes.SET_SELECTED_ACCOUNT, payload: account });
+	},
+	/**
+	 * Set accounts
+	 * @param {Accounts} accounts - The accounts object.
+	 */
+	setAccounts: accounts => {
+		dispatch({ type: actionTypes.SET_ACCOUNTS, payload: accounts });
 	}
 });
 
