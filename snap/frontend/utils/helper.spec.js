@@ -9,7 +9,8 @@ describe('helper', () => {
 		const dispatch = {
 			setLoadingStatus: jest.fn(),
 			setNetwork: jest.fn(),
-			setSelectedAccount: jest.fn()
+			setSelectedAccount: jest.fn(),
+			setAccounts: jest.fn()
 		};
 
 		const symbolSnap = {
@@ -68,6 +69,7 @@ describe('helper', () => {
 			assertSetupSnap(mockSnapState, networkName);
 			expect(symbolSnap.createAccount).not.toHaveBeenCalled();
 			expect(dispatch.setSelectedAccount).toHaveBeenCalledWith(Object.values(mockSnapState.accounts)[0]);
+			expect(dispatch.setAccounts).toHaveBeenCalledWith(mockSnapState.accounts);
 		});
 
 		it('initializes snap and creates account when no accounts are found', async () => {
@@ -89,6 +91,9 @@ describe('helper', () => {
 			assertSetupSnap(mockSnapState, networkName);
 			expect(symbolSnap.createAccount).toHaveBeenCalledWith('Wallet 1');
 			expect(dispatch.setSelectedAccount).toHaveBeenCalledWith(mockAccount);
+			expect(dispatch.setAccounts).toHaveBeenCalledWith({
+				[mockAccount.id]: mockAccount
+			});
 		});
 	});
 });
