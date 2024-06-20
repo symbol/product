@@ -7,7 +7,8 @@ const context = {
 	dispatch: {
 		setLoadingStatus: jest.fn(),
 		setNetwork: jest.fn(),
-		setSelectedAccount: jest.fn()
+		setSelectedAccount: jest.fn(),
+		setAccounts: jest.fn()
 	},
 	walletState: {
 		loadingStatus: {
@@ -15,6 +16,7 @@ const context = {
 			message: ''
 		},
 		selectedAccount: {},
+		accounts: {},
 		mosaics: [],
 		transactions: [],
 		currency: {
@@ -65,6 +67,10 @@ describe('components/Home', () => {
 		context.symbolSnap.initialSnap.mockResolvedValue({
 			network: mockNetwork,
 			accounts: {}
+		});
+
+		context.symbolSnap.createAccount.mockResolvedValue({
+			...Object.values(testHelper.generateAccountsState(1))[0]
 		});
 
 		// Act:
