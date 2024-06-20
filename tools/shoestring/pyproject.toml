@@ -1,6 +1,6 @@
 [tool.poetry]
 name = 'symbol-shoestring'
-version = '0.1.2'
+version = '0.1.3'
 description = 'Symbol Shoestring Deployment Tool'
 authors = ['Symbol Contributors <contributors@symbol.dev>']
 maintainers = ['Symbol Contributors <contributors@symbol.dev>']
@@ -14,7 +14,12 @@ repository = 'https://github.com/symbol/product/tree/main/tools/shoestring'
 
 keywords = ['symbol', 'shoestring', 'deployment', 'node']
 
-classifiers = ['Programming Language :: Python :: 3.9', 'Programming Language :: Python :: 3.10', 'Programming Language :: Python :: 3.11']
+classifiers = [
+    'Programming Language :: Python :: 3.9',
+    'Programming Language :: Python :: 3.10',
+    'Programming Language :: Python :: 3.11',
+    'Programming Language :: Python :: 3.12'
+]
 
 include = ['shoestring/lang/*/LC_MESSAGES/messages.mo']
 
