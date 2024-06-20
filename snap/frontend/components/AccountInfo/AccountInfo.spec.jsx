@@ -1,6 +1,6 @@
 import AccountInfo from '.';
 import testHelper from '../testHelper';
-import { act, fireEvent,screen } from '@testing-library/react';
+import { act, fireEvent, screen } from '@testing-library/react';
 
 const context = {
 	dispatch: jest.fn(),

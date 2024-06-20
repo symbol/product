@@ -6,6 +6,23 @@ const testHelper = {
 		return render(<WalletContext.default value={context}>
 			{ui}
 		</WalletContext.default>);
+	},
+	generateAccountsState: numberOfAccounts => {
+		const accounts = {};
+
+		for (let index = 0; index < numberOfAccounts; index++) {
+			const accountId = `accountId ${index}`;
+			accounts[accountId] = {
+				id: accountId,
+				addressIndex: index,
+				type: 'metamask',
+				networkName: 'network',
+				label: `Wallet ${index}`,
+				address: `Address ${index}`,
+				publicKey: `publicKey ${index}`
+			};
+		}
+		return accounts;
 	}
 };
 
