@@ -7,8 +7,6 @@ export const runAPITest = async (functionToTest, searchCriteria, response, expec
 
 	// Act:
 	const result = await functionToTest(searchCriteria);
-	const fs = require('fs');
-	if (print) fs.writeFileSync('accounts.json', JSON.stringify(result));
 
 	// Assert:
 	expect(spy).toHaveBeenCalledWith(expectedURL);

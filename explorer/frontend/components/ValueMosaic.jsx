@@ -16,10 +16,7 @@ const ValueMosaic = ({
 	size,
 	onClick,
 	isNavigationDisabled,
-	isTickerShown,
-	chainHeight,
-	expirationHeight,
-	isUnlimitedDuration
+	isTickerShown
 }) => {
 	let displayedName;
 	let imageSrc;
@@ -34,8 +31,6 @@ const ValueMosaic = ({
 	const isAmountExist = !isNaN(amount) && amount !== null;
 	const [integer, decimal] = isAmountExist ? amount.toString().split('.') : ['-'];
 	const finalMosaicId = isNative ? config.NATIVE_MOSAIC_ID : mosaicId;
-
-	const dot = !chainHeight ? null : isUnlimitedDuration ? 'green' : chainHeight < expirationHeight ? 'green' : 'red';
 
 	if (finalMosaicId === config.NATIVE_MOSAIC_ID) {
 		displayedName = isTickerShown ? config.NATIVE_MOSAIC_TICKER : '';
@@ -58,7 +53,7 @@ const ValueMosaic = ({
 			title={title}
 			onClick={handleClick}
 		>
-			<Avatar type="mosaic" size="md" value={finalMosaicId} dot={dot} />
+			<Avatar type="mosaic" size="md" value={finalMosaicId} />
 			<div className={styles.valueMosaicMdTextSection}>
 				<div>{mosaicName}</div>
 				{isAmountExist && <div>{numberToString(amount)}</div>}

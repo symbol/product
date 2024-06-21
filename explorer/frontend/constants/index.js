@@ -47,3 +47,9 @@ export const KEY_LINK_ACTION = {
 	LINK: 1,
 	UNLINK: 2
 };
+
+export const TRANSACTION_CHART_TYPE = {
+	BLOCK: 'block',
+	DAILY: 'daily',
+	MONTHLY: 'monthly'
+};

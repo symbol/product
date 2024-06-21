@@ -1,4 +1,36 @@
 /**
+ * Handles copying a text string to clipboard.
+ * @param {string} text - text to copy
+ * @returns {Promise<void>} throws an error if failed to copy
+ */
+export const copyToClipboard = async text => {
+	if (navigator.clipboard) {
+		return navigator.clipboard.writeText(text);
+	}
+
+	// Fallback for browsers that do not support navigator.clipboard
+	const textArea = document.createElement('textarea');
+	textArea.value = text;
+	textArea.style.top = '0';
+	textArea.style.left = '0';
+	textArea.style.position = 'fixed';
+	document.body.appendChild(textArea);
+	textArea.focus();
+	textArea.select();
+
+	let isCopyExecuted = false;
+	try {
+		isCopyExecuted = document.execCommand('copy');
+	} catch {}
+
+	document.body.removeChild(textArea);
+
+	if (!isCopyExecuted) {
+		throw Error('Failed to copy to clipboard');
+	}
+};
+
+/**
  * Creates a page link by page name. Used in navigation.
  * @param {string} pageName - page name
  * @param {string} parameter - parameter
@@ -28,10 +60,10 @@ export const createPageHref = (pageName, parameter) => {
  * @param {Function} onClick - click handler
  * @param {string} value - value to pass to click handler
  * @param {boolean} isNavigationDisabled - flag indicating if navigation is disabled
+ * @returns {void} - nothing is returned
  */
 export const handleNavigationItemClick = (event, onClick, value, isNavigationDisabled) => {
 	event.stopPropagation();
-	if (!onClick) return;
 	if (isNavigationDisabled) event.preventDefault();
-	onClick(value);
+	if (onClick) onClick(value);
 };
