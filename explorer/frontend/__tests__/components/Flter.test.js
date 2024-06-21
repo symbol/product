@@ -234,12 +234,12 @@ describe('Filter', () => {
 		it('clears selected filters', async () => {
 			// Assert:
 			const filter = { boolean1: true };
-			const filterToPress = 'button_clear';
+			const buttonToPress = 'Clear button_clear';
 			const expectedFilter = {};
 			const shouldChangeFilter = true;
 
 			// Act + Assert:
-			await runSelectionTest(filter, filterToPress, expectedFilter, shouldChangeFilter);
+			await runSelectionTest(filter, buttonToPress, expectedFilter, shouldChangeFilter);
 		});
 	});
 
