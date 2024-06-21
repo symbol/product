@@ -5,7 +5,7 @@ import { useState } from 'react';
 
 const AccountInfo = () => {
 	const { walletState } = useWalletContext();
-	const { accounts, selectedAccount } = walletState;
+	const { selectedAccount } = walletState;
 
 	const [ accountListModalBoxVisible, setAccountListModalBoxVisible ] = useState(false);
 
@@ -15,7 +15,7 @@ const AccountInfo = () => {
 
 	return (
 		<>
-			<AccountListModalBox accounts={accounts} isOpen={accountListModalBoxVisible} onRequestClose={setAccountListModalBoxVisible} />
+			<AccountListModalBox isOpen={accountListModalBoxVisible} onRequestClose={setAccountListModalBoxVisible} />
 
 			<div className='flex flex-col items-center justify-center p-2'>
 				<div role='profile-image' className="rounded-full w-16 h-16 bg-gray-300" onClick={handleAccountListModalBox}/>
