@@ -1,22 +1,23 @@
 import helper from './helper';
+import testHelper from '../components/testHelper';
 
 describe('helper', () => {
+	const dispatch = {
+		setLoadingStatus: jest.fn(),
+		setNetwork: jest.fn(),
+		setSelectedAccount: jest.fn(),
+		setAccounts: jest.fn()
+	};
+
+	const symbolSnap = {
+		initialSnap: jest.fn(),
+		createAccount: jest.fn()
+	};
+
 	describe('setupSnap', () => {
 		beforeEach(() => {
 			jest.clearAllMocks();
 		});
-
-		const dispatch = {
-			setLoadingStatus: jest.fn(),
-			setNetwork: jest.fn(),
-			setSelectedAccount: jest.fn(),
-			setAccounts: jest.fn()
-		};
-
-		const symbolSnap = {
-			initialSnap: jest.fn(),
-			createAccount: jest.fn()
-		};
 
 		const mockSnapState = {
 			network: {
@@ -94,6 +95,26 @@ describe('helper', () => {
 			expect(dispatch.setAccounts).toHaveBeenCalledWith({
 				[mockAccount.id]: mockAccount
 			});
+		});
+	});
+
+	describe('createNewAccount', () => {
+		it('should create new account and updates account state', async () => {
+			// Arrange:
+			const accounts = {};
+
+			const walletName = 'new Wallet';
+			const newAccount = Object.values(testHelper.generateAccountsState(1))[0];
+
+			symbolSnap.createAccount.mockResolvedValue(newAccount);
+
+			// Act:
+			await helper.createNewAccount(dispatch, symbolSnap, accounts, walletName);
+
+			// Assert:
+			expect(symbolSnap.createAccount).toHaveBeenCalledWith(walletName);
+			expect(dispatch.setAccounts).toHaveBeenCalledWith({ ...accounts, [newAccount.id]: newAccount });
+			expect(dispatch.setSelectedAccount).toHaveBeenCalledWith(newAccount);
 		});
 	});
 });
