@@ -1,5 +1,12 @@
 import { runAPITest } from '../test-utils/api';
-import { transactionInfoResponse, transactionInfoResult, transactionPageResponse, transactionPageResult } from '../test-utils/transactions';
+import {
+	transactionInfoResponse,
+	transactionInfoResult,
+	transactionPageResponse,
+	transactionPageResult,
+	unsupportedTransactionInfoResponse,
+	unsupportedTransactionInfoResult
+} from '../test-utils/transactions';
 import { fetchTransactionInfo, fetchTransactionPage } from '@/api/transactions';
 
 jest.mock('@/utils/server', () => {
@@ -93,6 +100,16 @@ describe('api/transactions', () => {
 
 			// Act & Assert:
 			await runAPITest(fetchTransactionInfo, params, transactionInfoResponse, expectedURL, expectedResult);
+		});
+
+		it('fetch unsupported transaction info by hash', async () => {
+			// Arrange:
+			const params = '596E3EC601470D9A5FDF966833566390C13D5DB7D24F5C9C712AC2056D7AE255';
+			const expectedURL = 'https://explorer.backend/transaction/596E3EC601470D9A5FDF966833566390C13D5DB7D24F5C9C712AC2056D7AE255';
+			const expectedResult = unsupportedTransactionInfoResult;
+
+			// Act & Assert:
+			await runAPITest(fetchTransactionInfo, params, unsupportedTransactionInfoResponse, expectedURL, expectedResult);
 		});
 	});
 });

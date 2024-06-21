@@ -451,6 +451,53 @@ export const transactionPageResponse = [
 				namespace: 'nem.xem'
 			}
 		]
+	},
+	{
+		deadline: '2024-03-30 23:53:10',
+		embeddedTransactions: null,
+		fee: 0.05,
+		fromAddress: 'NCDZDXLTPSSHGWDGBWCNC67GDM7VU6ZQM4KJLXWZ',
+		height: 4695013,
+		signature:
+			'066F4E3926711AFD4BCA24CE45DCD7D931C29A1EC8CEC987D75A3C964D99C41E27BADA541FD0BFC500186C1BDD30AFE36692CD65845F93B5253A08F1B8042406',
+		timestamp: '2024-03-29 23:53:10',
+		toAddress: 'NDQXKN6REQRVT4WE6WIU2FXQLTJFEHKK5ITD2ZSV',
+		transactionHash: '000B20D34A4E15C06FAAECD6926E66CF25BC188F6757BA46EBE3655941BA41F0',
+		transactionType: 'TRANSFER',
+		value: [
+			{
+				message: {
+					is_plain: 0,
+					payload: 'raw-message'
+				}
+			},
+			{
+				amount: 306.639297,
+				namespace: 'nem.xem'
+			}
+		]
+	},
+	{
+		deadline: '2024-03-30 23:53:10',
+		embeddedTransactions: null,
+		fee: 0.05,
+		fromAddress: 'NCDZDXLTPSSHGWDGBWCNC67GDM7VU6ZQM4KJLXWZ',
+		height: 4695013,
+		signature:
+			'066F4E3926711AFD4BCA24CE45DCD7D931C29A1EC8CEC987D75A3C964D99C41E27BADA541FD0BFC500186C1BDD30AFE36692CD65845F93B5253A08F1B8042406',
+		timestamp: '2024-03-29 23:53:10',
+		toAddress: 'NDQXKN6REQRVT4WE6WIU2FXQLTJFEHKK5ITD2ZSV',
+		transactionHash: '111B20D34A4E15C06FAAECD6926E66CF25BC188F6757BA46EBE3655941BA41F0',
+		transactionType: 'TRANSFER',
+		value: [
+			{
+				message: {}
+			},
+			{
+				amount: 228,
+				namespace: 'rayon.coin'
+			}
+		]
 	}
 ];
 
@@ -467,9 +514,9 @@ export const transactionPageResult = {
 			recipient: null,
 			account: 'NDSUSTAAB2GWHBUFJXP7QQGYHBVEFWZESBUUWM4P',
 			direction: null,
-			size: null,
+
 			height: 1,
-			version: null,
+
 			signature:
 				'65E744B4F720A7B7ADBA413B6C4FCF38BDA1ED4124F1AEBEE5893B0D1D176C97FFBDDF558F5FF1224E115EA18BDAA608AB39A0487F227BE131AF8FF2A93C3B00',
 			fee: 34,
@@ -497,9 +544,9 @@ export const transactionPageResult = {
 			recipient: null,
 			account: 'NALICE7GX3PF3WAOWVLXFOQ4ZMOBP7GUMNB2RCYQ',
 			direction: null,
-			size: null,
+
 			height: 2,
-			version: null,
+
 			signature:
 				'84DD349E10D4669F3C727EE7F58DA8077D85455699E95536BBD0255C8708DAB5FD5C008676E29E3486F079927685218EE49F1D373FD95F0769B33F06F75B030A',
 			fee: 6,
@@ -526,9 +573,9 @@ export const transactionPageResult = {
 			recipient: null,
 			account: 'NDSUSTAAB2GWHBUFJXP7QQGYHBVEFWZESBUUWM4P',
 			direction: null,
-			size: null,
+
 			height: 1,
-			version: null,
+
 			signature:
 				'65E744B4F720A7B7ADBA413B6C4FCF38BDA1ED4124F1AEBEE5893B0D1D176C97FFBDDF558F5FF1224E115EA18BDAA608AB39A0487F227BE131AF8FF2A93C3B00',
 			fee: 34,
@@ -561,9 +608,9 @@ export const transactionPageResult = {
 			recipient: null,
 			account: 'NBGADJBTGICFNUHHTSJ5GVAUY5BS7GMWVMGRY2IT',
 			direction: null,
-			size: null,
+
 			height: 3459465,
-			version: null,
+
 			signature:
 				'E38040C9B1FA63978AE8566E6130304D3A516625FD872EAB85FC9625E286E66ABE37FD34F5B4FC5350088EB0CB67FFA90BCE9BF5C75524DE4D179B164A3D7A0F',
 			fee: 0.15,
@@ -593,9 +640,9 @@ export const transactionPageResult = {
 			recipient: 'NAMESPACEWH4MKFMBCVFERDPOOP4FK7MTBXDPZZA',
 			account: 'NDQXKN6REQRVT4WE6WIU2FXQLTJFEHKK5ITD2ZSV',
 			direction: null,
-			size: null,
+
 			height: 4661026,
-			version: null,
+
 			signature:
 				'F706BB1E3A10C11CE62F12CEDC2EE3F229ED24D1FEFDFB8348550C8FACD0088607365F679AB700A05407E03D2F07F89D342A2D37287286C05FA7DDAD32C80F09',
 			fee: 0.15,
@@ -631,9 +678,9 @@ export const transactionPageResult = {
 			recipient: 'NBMOSAICOD4F54EE5CDMR23CCBGOAM2XSIUX6TRS',
 			account: 'NDQXKN6REQRVT4WE6WIU2FXQLTJFEHKK5ITD2ZSV',
 			direction: null,
-			size: null,
+
 			height: 4661037,
-			version: null,
+
 			signature:
 				'528DE085B83427601E4917A045CE69910BF8F1B1D0529F424D5C33C0B73264CE6DA29FB13D8C58B99E0BA12E40545146F60B20AAACC5CC7F9B37B27A0685CA00',
 			fee: 0.15,
@@ -669,9 +716,9 @@ export const transactionPageResult = {
 			recipient: 'NCYAVMNQOZ3MZETEBD34ACMAX3S57WUSWAZWY3DW',
 			account: 'NCLT5BCPEVF5EZOS3OJOCL4DWSTJM4EFFF7A5MPG',
 			direction: null,
-			size: null,
+
 			height: 4694401,
-			version: null,
+
 			signature:
 				'7A4F8F82B6A144E568F5B33DE055D35E9F8D3EE2FC200F0DE9D2571DF5957FF942B8E5A99ED1726D3F459218CF9F27EA3F264011B04122BB9E3E391E72EE930D',
 			fee: 0.15,
@@ -708,9 +755,9 @@ export const transactionPageResult = {
 			recipient: 'NCYAVMNQOZ3MZETEBD34ACMAX3S57WUSWAZWY3DW',
 			account: 'NCLT5BCPEVF5EZOS3OJOCL4DWSTJM4EFFF7A5MPG',
 			direction: null,
-			size: null,
+
 			height: 4694401,
-			version: null,
+
 			signature:
 				'7A4F8F82B6A144E568F5B33DE055D35E9F8D3EE2FC200F0DE9D2571DF5957FF942B8E5A99ED1726D3F459218CF9F27EA3F264011B04122BB9E3E391E72EE930D',
 			fee: 0.15,
@@ -735,7 +782,7 @@ export const transactionPageResult = {
 						}
 					],
 					message: {
-						type: '',
+						type: 'plain',
 						text: '6002788'
 					}
 				}
@@ -759,9 +806,9 @@ export const transactionPageResult = {
 			recipient: 'NDABPHWFPH7KL5FADCW66V4GYLVXHKYQIPWL4G2B',
 			account: 'NAHJICE3OGYPQFRWGDEEG6POMSIPB7I6STY55PFZ',
 			direction: null,
-			size: null,
+
 			height: 4695050,
-			version: null,
+
 			signature:
 				'D5C0D2CADA5DD4113A66307C9B34BF110162591D69DDF4315071BF600257A56352218C1F96FDE3033A85C1653AE3DBA2D00CD313032C780F2B13B533988C510C',
 			fee: 0.1,
@@ -800,9 +847,9 @@ export const transactionPageResult = {
 			recipient: 'ND72SWJGHA7L7ECKIGWE5GLPSN5PYR6S3GZZOQBC',
 			account: 'ND4YES5J7SLSWNQMRMPS2R2B7574EWRVC6VQ6DUR',
 			direction: null,
-			size: null,
+
 			height: 4695075,
-			version: null,
+
 			signature:
 				'CBC08249F6852FACADF9859DD86F50DE3D37694B5730EC95F591621793AA02A2EECA03DC647C6300986C51EAE5B3A719B57E582107D45FBDE55579F562FFE809',
 			fee: 4,
@@ -827,7 +874,7 @@ export const transactionPageResult = {
 						}
 					],
 					message: {
-						type: '',
+						type: 'plain',
 						text: 'ND72SWJGHA7L7ECKIGWE5GLPSN5PYR6S3GZZOQBC'
 					}
 				}
@@ -844,9 +891,9 @@ export const transactionPageResult = {
 			recipient: 'NBFQ6XFBKB3DHJCFDKCMJI5MZ53HFQ56AKDLY4JK',
 			account: 'NCV25O4KE4NY2XO6LKJI6AWTQGTQ6BOW5FYAMDKI',
 			direction: null,
-			size: null,
+
 			height: 4695076,
-			version: null,
+
 			signature:
 				'0AE236BC60E4542B5AE7E4D680C3D396F25E6CBB8A9EBF3724114A03C7F4C0AC4DEB50250C522990358C170BBB0B58B6CCEAADAFFFF2CAFA6323FC13D0A8E90E',
 			fee: 0.05,
@@ -885,9 +932,9 @@ export const transactionPageResult = {
 			recipient: 'NBAPJNCPMLPRB3L76GCMO42XRAG4WKYFWMDULIKM',
 			account: 'ND7UYW56T6KUGRTCU736GLF4O26BNPWVQR664NE5',
 			direction: null,
-			size: null,
+
 			height: 4695055,
-			version: null,
+
 			signature:
 				'EF440DD7D7DA39C32A00ED037BA07BBECD4D56BA6A87695047F1311F4A6EF3D484EDE201D25441A4ED9672C1D65EA2E6F1EAF565DEC1B938CE473026C5819E0D',
 			fee: 0.1,
@@ -912,7 +959,7 @@ export const transactionPageResult = {
 						}
 					],
 					message: {
-						type: '',
+						type: 'plain',
 						text: 'c9977e015229d19d'
 					}
 				}
@@ -929,9 +976,9 @@ export const transactionPageResult = {
 			recipient: 'NCV25O4KE4NY2XO6LKJI6AWTQGTQ6BOW5FYAMDKI',
 			account: 'NAXB67KOXSIDPNGTOJA35MTNCK4AHB6JE2MJRER7',
 			direction: null,
-			size: null,
+
 			height: 4695050,
-			version: null,
+
 			signature:
 				'B7A9AB006C515B8D53883A2C8FB64A3B0122DA412024EF8C256FA9CC438D4E70E47DFD3826D2C54D190FE1D9E28CF24BCDD68A783EF5420B408C3B779E04A00F',
 			fee: 0.05,
@@ -970,9 +1017,9 @@ export const transactionPageResult = {
 			recipient: 'ND7UYW56T6KUGRTCU736GLF4O26BNPWVQR664NE5',
 			account: 'NCV25O4KE4NY2XO6LKJI6AWTQGTQ6BOW5FYAMDKI',
 			direction: null,
-			size: null,
+
 			height: 4695053,
-			version: null,
+
 			signature:
 				'498B1F5112F6487D2716DC609EAC2951BB7E33DDF90C2C89497537A2D7758A78AAFB215597E7F4E0C8790143D9196021083B434D6F93FA818635FE4BE525A10F',
 			fee: 0.05,
@@ -1011,9 +1058,9 @@ export const transactionPageResult = {
 			recipient: 'NAHJICE3OGYPQFRWGDEEG6POMSIPB7I6STY55PFZ',
 			account: 'NBCOABQGPNI356MN3Y2VGW3Q2MQ5GNBLTVU64OXU',
 			direction: null,
-			size: null,
+
 			height: 4695039,
-			version: null,
+
 			signature:
 				'38C507C5EF231AF3487A1768FA278249138E1FBA2B203E05E1E9A623CA51C2D5D5C1171D8567893579F15FF8DCFEEA43533BB99EC5CF6C7CE7D11FBCD4166E03',
 			fee: 0.1,
@@ -1052,9 +1099,9 @@ export const transactionPageResult = {
 			recipient: 'NBAPJNCPMLPRB3L76GCMO42XRAG4WKYFWMDULIKM',
 			account: 'NBFQ6XFBKB3DHJCFDKCMJI5MZ53HFQ56AKDLY4JK',
 			direction: null,
-			size: null,
+
 			height: 4695078,
-			version: null,
+
 			signature:
 				'B4AFE6F1A69401BF92CE0D406BD97F7E307B48FF93C8BCE3211041EC2205A796461C6D81AB18A3DEEA9A5B26D9DF42993FDCDADF8D06CF46B0B6EB7AFED05601',
 			fee: 0.1,
@@ -1109,7 +1156,7 @@ export const transactionPageResult = {
 						}
 					],
 					message: {
-						type: '',
+						type: 'plain',
 						text: 'f16f46f96ad1e191'
 					}
 				}
@@ -1126,9 +1173,9 @@ export const transactionPageResult = {
 			recipient: 'NCDZDXLTPSSHGWDGBWCNC67GDM7VU6ZQM4KJLXWZ',
 			account: 'NA3MZM72LRCVRJYXLIXWHQDKNUMLHY6KFO253ICC',
 			direction: null,
-			size: null,
+
 			height: 4695026,
-			version: null,
+
 			signature:
 				'C518237DCE59490A254B28A829698C3C22565763069B063D3750542722BA009590321E88441E422072088F389B8A277FE37076A48549E1C890B1C0254E5E3F07',
 			fee: 0.1,
@@ -1153,7 +1200,7 @@ export const transactionPageResult = {
 						}
 					],
 					message: {
-						type: '',
+						type: 'plain',
 						text: '10103904'
 					}
 				}
@@ -1170,9 +1217,9 @@ export const transactionPageResult = {
 			recipient: 'NDQXKN6REQRVT4WE6WIU2FXQLTJFEHKK5ITD2ZSV',
 			account: 'NCDZDXLTPSSHGWDGBWCNC67GDM7VU6ZQM4KJLXWZ',
 			direction: null,
-			size: null,
+
 			height: 4695013,
-			version: null,
+
 			signature:
 				'066F4E3926711AFD4BCA24CE45DCD7D931C29A1EC8CEC987D75A3C964D99C41E27BADA541FD0BFC500186C1BDD30AFE36692CD65845F93B5253A08F1B8042406',
 			fee: 0.05,
@@ -1194,6 +1241,91 @@ export const transactionPageResult = {
 							id: 'nem.xem',
 							name: 'nem.xem',
 							amount: 306.639297
+						}
+					],
+					message: null
+				}
+			]
+		},
+		{
+			type: 'TRANSFER',
+			group: 'confirmed',
+			hash: '000B20D34A4E15C06FAAECD6926E66CF25BC188F6757BA46EBE3655941BA41F0',
+			timestamp: '2024-03-29 23:53:10',
+			deadline: '2024-03-30 23:53:10',
+			signer: 'NCDZDXLTPSSHGWDGBWCNC67GDM7VU6ZQM4KJLXWZ',
+			sender: 'NCDZDXLTPSSHGWDGBWCNC67GDM7VU6ZQM4KJLXWZ',
+			recipient: 'NDQXKN6REQRVT4WE6WIU2FXQLTJFEHKK5ITD2ZSV',
+			account: 'NCDZDXLTPSSHGWDGBWCNC67GDM7VU6ZQM4KJLXWZ',
+			direction: null,
+
+			height: 4695013,
+
+			signature:
+				'066F4E3926711AFD4BCA24CE45DCD7D931C29A1EC8CEC987D75A3C964D99C41E27BADA541FD0BFC500186C1BDD30AFE36692CD65845F93B5253A08F1B8042406',
+			fee: 0.05,
+			amount: 306.639297,
+			value: [
+				{
+					id: 'nem.xem',
+					name: 'nem.xem',
+					amount: 306.639297
+				}
+			],
+			body: [
+				{
+					type: 'TRANSFER',
+					sender: 'NCDZDXLTPSSHGWDGBWCNC67GDM7VU6ZQM4KJLXWZ',
+					recipient: 'NDQXKN6REQRVT4WE6WIU2FXQLTJFEHKK5ITD2ZSV',
+					mosaics: [
+						{
+							id: 'nem.xem',
+							name: 'nem.xem',
+							amount: 306.639297
+						}
+					],
+					message: {
+						type: 'raw',
+						text: 'raw-message'
+					}
+				}
+			]
+		},
+		{
+			type: 'TRANSFER',
+			group: 'confirmed',
+			hash: '111B20D34A4E15C06FAAECD6926E66CF25BC188F6757BA46EBE3655941BA41F0',
+			timestamp: '2024-03-29 23:53:10',
+			deadline: '2024-03-30 23:53:10',
+			signer: 'NCDZDXLTPSSHGWDGBWCNC67GDM7VU6ZQM4KJLXWZ',
+			sender: 'NCDZDXLTPSSHGWDGBWCNC67GDM7VU6ZQM4KJLXWZ',
+			recipient: 'NDQXKN6REQRVT4WE6WIU2FXQLTJFEHKK5ITD2ZSV',
+			account: 'NCDZDXLTPSSHGWDGBWCNC67GDM7VU6ZQM4KJLXWZ',
+			direction: null,
+
+			height: 4695013,
+
+			signature:
+				'066F4E3926711AFD4BCA24CE45DCD7D931C29A1EC8CEC987D75A3C964D99C41E27BADA541FD0BFC500186C1BDD30AFE36692CD65845F93B5253A08F1B8042406',
+			fee: 0.05,
+			amount: 0,
+			value: [
+				{
+					id: 'rayon.coin',
+					name: 'rayon.coin',
+					amount: 228
+				}
+			],
+			body: [
+				{
+					type: 'TRANSFER',
+					sender: 'NCDZDXLTPSSHGWDGBWCNC67GDM7VU6ZQM4KJLXWZ',
+					recipient: 'NDQXKN6REQRVT4WE6WIU2FXQLTJFEHKK5ITD2ZSV',
+					mosaics: [
+						{
+							id: 'rayon.coin',
+							name: 'rayon.coin',
+							amount: 228
 						}
 					],
 					message: null
@@ -1250,9 +1382,9 @@ export const transactionInfoResult = {
 	recipient: 'NCDZDXLTPSSHGWDGBWCNC67GDM7VU6ZQM4KJLXWZ',
 	account: 'NB2CCC4ZKHX32CF4QU4X22S6LOS765W5A6LDKLJ2',
 	direction: null,
-	size: null,
+
 	height: 4694676,
-	version: null,
+
 	signature:
 		'84FC7751D87ED49EACDA60EE2D5F4B5F8020A32D7593A2E268054BCCC919FCD6DB4F66B35B60E1E0DF8E229B9510090C6A203D7426A7E6F595AEABE98EA3820F',
 	fee: 0.15,
@@ -1277,7 +1409,7 @@ export const transactionInfoResult = {
 				}
 			],
 			message: {
-				type: '',
+				type: 'plain',
 				text: '10882115'
 			}
 		}
@@ -1313,4 +1445,44 @@ export const transactionInfoResult = {
 			]
 		}
 	]
+};
+
+export const unsupportedTransactionInfoResponse = {
+	deadline: '2024-03-29 19:13:31',
+	fee: 0.15,
+	fromAddress: 'NB2CCC4ZKHX32CF4QU4X22S6LOS765W5A6LDKLJ2',
+	height: 4694676,
+	signature:
+		'84FC7751D87ED49EACDA60EE2D5F4B5F8020A32D7593A2E268054BCCC919FCD6DB4F66B35B60E1E0DF8E229B9510090C6A203D7426A7E6F595AEABE98EA3820F',
+	timestamp: '2024-03-29 18:13:31',
+	toAddress: 'NCDZDXLTPSSHGWDGBWCNC67GDM7VU6ZQM4KJLXWZ',
+	transactionHash: '596E3EC601470D9A5FDF966833566390C13D5DB7D24F5C9C712AC2056D7AE255',
+	transactionType: 'UNKNOWN',
+	value: null
+};
+
+export const unsupportedTransactionInfoResult = {
+	account: 'NB2CCC4ZKHX32CF4QU4X22S6LOS765W5A6LDKLJ2',
+	accountStateChange: [],
+	amount: 0,
+	body: [
+		{
+			sender: 'NB2CCC4ZKHX32CF4QU4X22S6LOS765W5A6LDKLJ2',
+			type: 'UNKNOWN'
+		}
+	],
+	deadline: '2024-03-29 19:13:31',
+	direction: null,
+	fee: 0.15,
+	group: 'confirmed',
+	hash: '596E3EC601470D9A5FDF966833566390C13D5DB7D24F5C9C712AC2056D7AE255',
+	height: 4694676,
+	recipient: 'NCDZDXLTPSSHGWDGBWCNC67GDM7VU6ZQM4KJLXWZ',
+	sender: 'NB2CCC4ZKHX32CF4QU4X22S6LOS765W5A6LDKLJ2',
+	signature:
+		'84FC7751D87ED49EACDA60EE2D5F4B5F8020A32D7593A2E268054BCCC919FCD6DB4F66B35B60E1E0DF8E229B9510090C6A203D7426A7E6F595AEABE98EA3820F',
+	signer: 'NB2CCC4ZKHX32CF4QU4X22S6LOS765W5A6LDKLJ2',
+	timestamp: '2024-03-29 18:13:31',
+	type: 'UNKNOWN',
+	value: []
 };
