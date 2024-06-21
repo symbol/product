@@ -127,7 +127,7 @@ const AccountInfo = ({ accountInfo, preloadedTransactions }) => {
 	];
 	const transactionFilterConfig = [
 		{
-			name: 'type',
+			name: 'types',
 			title: t('filter_type'),
 			conflicts: ['mosaic', 'to'],
 			type: 'transaction-type',
@@ -145,7 +145,7 @@ const AccountInfo = ({ accountInfo, preloadedTransactions }) => {
 			name: 'to',
 			title: t('filter_to'),
 			type: 'account',
-			conflicts: ['type', 'from'],
+			conflicts: ['types', 'from'],
 			isSearchEnabled: true,
 			options: contacts
 		},
@@ -153,7 +153,7 @@ const AccountInfo = ({ accountInfo, preloadedTransactions }) => {
 			name: 'mosaic',
 			title: t('filter_mosaic'),
 			type: 'mosaic',
-			conflicts: ['type'],
+			conflicts: ['types'],
 			isSearchEnabled: true,
 			options: accountInfo.mosaics
 		}
@@ -269,7 +269,6 @@ const AccountInfo = ({ accountInfo, preloadedTransactions }) => {
 							isDisabled={transactionPagination.isLoading}
 							value={transactionPagination.filter}
 							onChange={transactionPagination.changeFilter}
-							onClear={transactionPagination.clearFilter}
 							search={search}
 						/>
 						<ButtonCSV data={transactionPagination.data} fileName={`transactions-${address}`} format={formatTransactionCSV} />
@@ -281,6 +280,7 @@ const AccountInfo = ({ accountInfo, preloadedTransactions }) => {
 						isLoading={transactionPagination.isLoading}
 						isLastPage={transactionPagination.isLastPage}
 						onEndReached={transactionPagination.requestNextPage}
+						isLastColumnAligned={true}
 					/>
 				</div>
 			</Section>

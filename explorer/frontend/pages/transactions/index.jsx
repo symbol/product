@@ -95,7 +95,7 @@ const TransactionInfo = ({ preloadedData, stats }) => {
 
 	const transactionFilterConfig = [
 		{
-			name: 'type',
+			name: 'types',
 			title: t('filter_type'),
 			conflicts: ['mosaic', 'to'],
 			type: 'transaction-type',
@@ -113,7 +113,7 @@ const TransactionInfo = ({ preloadedData, stats }) => {
 			name: 'to',
 			title: t('filter_to'),
 			type: 'account',
-			conflicts: ['type'],
+			conflicts: ['types'],
 			isSearchEnabled: true,
 			options: contacts
 		},
@@ -121,7 +121,7 @@ const TransactionInfo = ({ preloadedData, stats }) => {
 			name: 'mosaic',
 			title: t('filter_mosaic'),
 			type: 'mosaic',
-			conflicts: ['type'],
+			conflicts: ['types'],
 			isSearchEnabled: true
 		},
 		{
