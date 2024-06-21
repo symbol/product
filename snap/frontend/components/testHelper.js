@@ -17,7 +17,7 @@ const testHelper = {
 				addressIndex: index,
 				type: 'metamask',
 				networkName: 'network',
-				label: `Wallet ${index}`,
+				label: `Account ${index}`,
 				address: `Address ${index}`,
 				publicKey: `publicKey ${index}`
 			};
