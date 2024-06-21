@@ -1,6 +1,6 @@
 import config from '@/config';
 import { ACCOUNT_STATE_CHANGE_ACTION, COSIGNATORY_MODIFICATION_ACTION, TRANSACTION_DIRECTION, TRANSACTION_TYPE } from '@/constants';
-import { decodeTransactionMessage } from '@/utils/format';
+import { decodeTransactionMessage } from '@/utils/common';
 import { createFetchInfoFunction, createSearchURL, createPage, createSearchCriteria, makeRequest } from '@/utils/server';
 
 /**
@@ -17,25 +17,27 @@ import { createFetchInfoFunction, createSearchURL, createPage, createSearchCrite
 export const fetchTransactionPage = async searchParams => {
 	const searchCriteria = createSearchCriteria(searchParams);
 	const { filter } = searchCriteria;
-	if (filter.address && filter.from) {
-		filter.to = filter.address;
-		delete filter.address;
-	} else if (filter.address && filter.to) {
-		filter.from = filter.address;
-		delete filter.address;
+	const updatedFilter = { ...filter };
+	if (updatedFilter.address && updatedFilter.from) {
+		updatedFilter.to = updatedFilter.address;
+		delete updatedFilter.address;
+	} else if (updatedFilter.address && updatedFilter.to) {
+		updatedFilter.from = updatedFilter.address;
+		delete updatedFilter.address;
 	}
-	if (filter.from) {
-		filter.senderAddress = filter.from;
-		delete filter.from;
+	if (updatedFilter.from) {
+		updatedFilter.senderAddress = updatedFilter.from;
+		delete updatedFilter.from;
 	}
-	if (filter.to) {
-		filter.recipientAddress = filter.to;
-		delete filter.to;
+	if (updatedFilter.to) {
+		updatedFilter.recipientAddress = updatedFilter.to;
+		delete updatedFilter.to;
 	}
+	searchCriteria.filter = updatedFilter;
 
 	let url;
-	if (filter.group === 'unconfirmed') {
-		delete filter.group;
+	if (updatedFilter.group === 'unconfirmed') {
+		delete updatedFilter.group;
 		url = createSearchURL(`${config.API_BASE_URL}/transactions/unconfirmed`, searchCriteria);
 	} else {
 		url = createSearchURL(`${config.API_BASE_URL}/transactions`, searchCriteria);
@@ -134,7 +136,7 @@ const transactionFromDTO = (data, filter = {}) => {
 const formatBaseTransaction = (data, filter) => {
 	const { address, group } = filter;
 	const sender = data.fromAddress;
-	const recipient = data.toAddress !== 'None' ? data.toAddress : null;
+	const recipient = data.toAddress;
 	const isOutgoing = sender === address;
 	const isIncoming = recipient === address;
 

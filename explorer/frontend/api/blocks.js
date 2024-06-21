@@ -1,5 +1,5 @@
 import config from '@/config';
-import { truncateDecimals } from '@/utils/format';
+import { truncateDecimals } from '@/utils/common';
 import { createFetchInfoFunction, createSearchURL, createPage, createSearchCriteria, makeRequest } from '@/utils/server';
 
 /**

@@ -1,5 +1,5 @@
 import config from '@/config';
-import { createMosaicName } from '@/utils/format';
+import { createMosaicName } from '@/utils/common';
 import { createFetchInfoFunction, createSearchURL, createPage, createSearchCriteria, makeRequest } from '@/utils/server';
 
 /**

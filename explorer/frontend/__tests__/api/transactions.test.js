@@ -1,9 +1,12 @@
 import { runAPITest } from '../test-utils/api';
 import {
+	transactionAccountPageResult,
 	transactionInfoResponse,
 	transactionInfoResult,
 	transactionPageResponse,
 	transactionPageResult,
+	transactionUnconfirmedPageResponse,
+	transactionUnconfirmedPageResult,
 	unsupportedTransactionInfoResponse,
 	unsupportedTransactionInfoResult
 } from '../test-utils/transactions';
@@ -18,6 +21,11 @@ jest.mock('@/utils/server', () => {
 
 describe('api/transactions', () => {
 	describe('fetchTransactionPage', () => {
+		// Arrange:
+		const currentAddress = 'NBFQ6XFBKB3DHJCFDKCMJI5MZ53HFQ56AKDLY4JK';
+		const senderAddress = 'FROM000BKB3DHJCFDKCMJI5MZ53HFQ56AKDLY000';
+		const recipientAddress = 'TO00000BKB3DHJCFDKCMJI5MZ53HFQ56AKDLY001';
+
 		it('fetch transaction page', async () => {
 			// Arrange:
 			const searchCriteria = {
@@ -39,36 +47,20 @@ describe('api/transactions', () => {
 				group: 'unconfirmed'
 			};
 			const expectedURL = 'https://explorer.backend/transactions/unconfirmed?limit=123&offset=246';
-			const expectedResult = transactionPageResult;
+			const expectedResult = transactionUnconfirmedPageResult;
 
 			// Act & Assert:
-			await runAPITest(fetchTransactionPage, searchCriteria, transactionPageResponse, expectedURL, expectedResult);
+			await runAPITest(fetchTransactionPage, searchCriteria, transactionUnconfirmedPageResponse, expectedURL, expectedResult);
 		});
 
 		it('fetch transaction page with "from" and "to" filters', async () => {
 			// Arrange:
 			const searchCriteria = {
 				pageNumber: 3,
-				from: 'test-sender-address',
-				to: 'test-recipient-address'
+				from: senderAddress,
+				to: recipientAddress
 			};
-			const expectedURL =
-				'https://explorer.backend/transactions?limit=10&offset=20&senderAddress=test-sender-address&recipientAddress=test-recipient-address';
-			const expectedResult = transactionPageResult;
-
-			// Act & Assert:
-			await runAPITest(fetchTransactionPage, searchCriteria, transactionPageResponse, expectedURL, expectedResult);
-		});
-
-		it('fetch transaction page for specific account with "from" filter', async () => {
-			// Arrange:
-			const searchCriteria = {
-				pageNumber: 3,
-				from: 'test-sender-address',
-				address: 'test-current-address'
-			};
-			const expectedURL =
-				'https://explorer.backend/transactions?limit=10&offset=20&senderAddress=test-sender-address&recipientAddress=test-current-address';
+			const expectedURL = `https://explorer.backend/transactions?limit=10&offset=20&senderAddress=${senderAddress}&recipientAddress=${recipientAddress}`;
 			const expectedResult = transactionPageResult;
 
 			// Act & Assert:
@@ -79,12 +71,38 @@ describe('api/transactions', () => {
 			// Arrange:
 			const searchCriteria = {
 				pageNumber: 3,
-				address: 'test-current-address',
-				to: 'test-recipient-address'
+				address: currentAddress
 			};
-			const expectedURL =
-				'https://explorer.backend/transactions?limit=10&offset=20&senderAddress=test-current-address&recipientAddress=test-recipient-address';
-			const expectedResult = transactionPageResult;
+			const expectedURL = `https://explorer.backend/transactions?limit=10&offset=20&address=${currentAddress}`;
+			const expectedResult = transactionAccountPageResult;
+
+			// Act & Assert:
+			await runAPITest(fetchTransactionPage, searchCriteria, transactionPageResponse, expectedURL, expectedResult);
+		});
+
+		it('fetch transaction page for specific account with "from" filter', async () => {
+			// Arrange:
+			const searchCriteria = {
+				pageNumber: 3,
+				from: senderAddress,
+				address: currentAddress
+			};
+			const expectedURL = `https://explorer.backend/transactions?limit=10&offset=20&senderAddress=${senderAddress}&recipientAddress=${currentAddress}`;
+			const expectedResult = transactionAccountPageResult;
+
+			// Act & Assert:
+			await runAPITest(fetchTransactionPage, searchCriteria, transactionPageResponse, expectedURL, expectedResult);
+		});
+
+		it('fetch transaction page for specific account with "to" filter', async () => {
+			// Arrange:
+			const searchCriteria = {
+				pageNumber: 3,
+				address: currentAddress,
+				to: recipientAddress
+			};
+			const expectedURL = `https://explorer.backend/transactions?limit=10&offset=20&senderAddress=${currentAddress}&recipientAddress=${recipientAddress}`;
+			const expectedResult = transactionAccountPageResult;
 
 			// Act & Assert:
 			await runAPITest(fetchTransactionPage, searchCriteria, transactionPageResponse, expectedURL, expectedResult);
