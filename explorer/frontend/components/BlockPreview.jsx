@@ -10,10 +10,10 @@ import styles from '@/styles/components/BlockPreview.module.scss';
 import { createPageHref } from '@/utils';
 import Link from 'next/link';
 import { useTranslation } from 'next-i18next';
-import { forwardRef, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 const BlockExpanded = ({ data, transactions, isNext, isTransactionSquaresRendered, onClose }) => {
-	const { height, timestamp, totalFee, averageFee } = data;
+	const { height, timestamp, totalFee } = data;
 	const { t } = useTranslation();
 	const href = createPageHref('blocks', height);
 
@@ -21,7 +21,7 @@ const BlockExpanded = ({ data, transactions, isNext, isTransactionSquaresRendere
 		<div className="layout-flex-col-fields">
 			<ButtonClose className={styles.buttonClose} onClick={onClose} />
 			<Link href={href} className={styles.buttonMore} target="_blank">
-				<CustomImage className={styles.buttonMoreIcon} src="/images/icon-circle-more.png" alt="more" />
+				<CustomImage className={styles.buttonMoreIcon} src="/images/icon-circle-more.png" alt="More" />
 			</Link>
 			<Field title={t('field_height')}>
 				<div className="value-highlighted">{height}</div>
@@ -108,9 +108,9 @@ const BlockPreview = ({ data, transactions, isNext, isSelected, onClose, onSelec
 					<BlockCube data={data} isNext={isNext} />
 				)}
 			</div>
-			<CustomImage className={styles.iconChain} src={iconChainSrc} />
+			<CustomImage className={styles.iconChain} src={iconChainSrc} alt="Chain icon" />
 		</div>
 	);
 };
 
-export default forwardRef(BlockPreview);
+export default BlockPreview;

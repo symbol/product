@@ -44,7 +44,11 @@ const ItemTransactionMobile = ({ data, isTimestampShown }) => {
 				<ValueAccount address={sender} size="sm" />
 				{!!recipient && (
 					<div className={styles.row}>
-						<CustomImage className={styles.iconDirection} src="/images/icon-transaction-direction.svg" />
+						<CustomImage
+							className={styles.iconDirection}
+							src="/images/icon-transaction-direction.svg"
+							alt="Transaction direction"
+						/>
 						<ValueAccount address={recipient} size="sm" />
 					</div>
 				)}

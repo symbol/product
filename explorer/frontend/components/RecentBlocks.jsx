@@ -4,7 +4,6 @@ import { createRef, useRef, useState } from 'react';
 
 const RecentBlocks = ({ data, onTransactionListRequest }) => {
 	const containerRef = useRef();
-	const [isButtonLeftVisible, setIsButtonLeftVisible] = useState(false);
 	const [selectedBlockHeight, setSelectedBlockHeight] = useState(-1);
 	const [transactions, setTransactions] = useState([]);
 	const dataWithRefs = data.map(item => ({
@@ -48,23 +47,6 @@ const RecentBlocks = ({ data, onTransactionListRequest }) => {
 		const { scrollWidth } = containerRef.current;
 		containerRef.current.scrollBy({ left: -scrollWidth, behavior: 'smooth' });
 	};
-	const scrollLeft = () => {
-		if (!containerRef.current) return;
-
-		const containerWidth = containerRef.current.offsetWidth;
-		const currentScrollPosition = containerRef.current.scrollLeft;
-		const scrollAmount = -containerWidth / 2;
-		containerRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
-		setIsButtonLeftVisible(currentScrollPosition + scrollAmount > 0);
-	};
-	const scrollRight = () => {
-		if (!containerRef.current) return;
-
-		const containerWidth = containerRef.current.offsetWidth;
-		const scrollAmount = containerWidth / 2;
-		containerRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
-		setIsButtonLeftVisible(true);
-	};
 
 	return (
 		<div className={styles.recentBlocks}>
@@ -82,10 +64,6 @@ const RecentBlocks = ({ data, onTransactionListRequest }) => {
 					/>
 				))}
 			</div>
-			{/* {isButtonLeftVisible && (
-				<CustomImage className={`${styles.buttonLeft} no-mobile`} src="/images/icon-left.svg" onClick={scrollLeft} />
-			)}
-			<CustomImage className={`${styles.buttonRight} no-mobile`} src="/images/icon-right.svg" onClick={scrollRight} /> */}
 		</div>
 	);
 };

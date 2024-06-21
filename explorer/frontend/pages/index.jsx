@@ -9,8 +9,10 @@ import RecentTransactions from '@/components/RecentTransactions';
 import Section from '@/components/Section';
 import Separator from '@/components/Separator';
 import ValuePrice from '@/components/ValuePrice';
+import { TRANSACTION_CHART_TYPE } from '@/constants';
 import styles from '@/styles/pages/Home.module.scss';
-import { formatDate, numberToShortString, truncateDecimals, useAsyncCall } from '@/utils';
+import { numberToShortString, truncateDecimals, useAsyncCall } from '@/utils';
+import { formatTransactionChart } from '@/utils/common';
 import Head from 'next/head';
 import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
@@ -59,7 +61,7 @@ const Home = ({
 	blockTime
 }) => {
 	const { t } = useTranslation();
-	const formattedTransactionChart = transactionChart.map(item => [formatDate(item[0], t), item[1]]).slice(-14);
+	const formattedTransactionChart = formatTransactionChart(transactionChart, TRANSACTION_CHART_TYPE.DAILY, t).slice(-14);
 	const latestTransactions = useAsyncCall(
 		() => fetchTransactionPage({ pageSize: 5 }),
 		preloadedLatestTransactions,
@@ -119,7 +121,6 @@ const Home = ({
 							<Field title={t('field_totalNodes')}>{nodeStats.total}</Field>
 							<Field title={t('field_supernodes')}>{nodeStats.supernodes}</Field>
 						</div>
-						{/* <CustomImage src="/images/stub-node-chart.svg" style={{ width: '100%', objectFit: 'contain' }} /> */}
 					</div>
 				</div>
 			</Section>

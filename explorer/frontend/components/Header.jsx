@@ -96,7 +96,7 @@ const Header = () => {
 		<>
 			{menuItems.map((item, index) => (
 				<Link className={getItemStyle(item.href)} key={index} href={item.href}>
-					<CustomImage src={item.iconSrc + ''} className={styles.menuIcon} />
+					<CustomImage src={item.iconSrc + ''} className={styles.menuIcon} alt={item.text} />
 					<div className={styles.menuText}>{item.text}</div>
 				</Link>
 			))}

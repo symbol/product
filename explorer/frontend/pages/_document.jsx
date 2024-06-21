@@ -4,7 +4,7 @@ export default function Document() {
 	return (
 		<Html>
 			<Head>
-				<meta charset="utf-8" />
+				<meta charSet="utf-8" />
 				<link rel="icon" href="/favicon.ico" />
 				<meta name="format-detection" content="telephone=no" />
 				<meta name="theme-color" content="#F5F9FB" />

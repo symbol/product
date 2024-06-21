@@ -195,7 +195,7 @@ const Filter = ({ isSelectedItemsShown, data, value, search, isDisabled, onChang
 		<div className={styles.filter}>
 			<div className={styles.list}>
 				<div className={styles.button} onClick={clear} role="button">
-					<CustomImage src={'/images/icon-chip-clear.png?d=1'} className={styles.icon} />
+					<CustomImage src={'/images/icon-chip-clear.png?d=1'} className={styles.icon} alt="Clear" />
 					<div className={styles.text}>{t('button_clear')}</div>
 				</div>
 				{data.map((item, index) => (
