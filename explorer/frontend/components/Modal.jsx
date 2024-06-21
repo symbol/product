@@ -2,12 +2,9 @@ import Card from './Card';
 import styles from '@/styles/components/Modal.module.scss';
 import { useEffect } from 'react';
 
-const Modal = ({ children, className, isVisible, onClick, onClose }) => {
+const Modal = ({ children, className, isVisible, onClose }) => {
 	const handleCardClick = e => {
 		e.stopPropagation();
-		if (onClick) {
-			onClick();
-		}
 	};
 
 	useEffect(() => {
@@ -19,7 +16,7 @@ const Modal = ({ children, className, isVisible, onClick, onClose }) => {
 	}, [isVisible]);
 
 	return isVisible ? (
-		<div className={styles.overlay} onClick={onClose}>
+		<div role="dialog" className={styles.overlay} onClick={onClose}>
 			<Card className={`${styles.modal} ${className}`} onClick={handleCardClick}>
 				{children}
 			</Card>
