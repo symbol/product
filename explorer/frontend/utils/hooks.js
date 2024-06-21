@@ -107,8 +107,9 @@ export const useClientSidePagination = (fullData, pageSize = 10) => {
 
 	useEffect(() => {
 		const dataChunks = _.chunk(fullData, pageSize);
+		const page = dataChunks[0];
 		setDataChunks(dataChunks);
-		setData(dataChunks[0]);
+		setData(page || []);
 		setIsLastPage(false);
 		setPageNumber(1);
 	}, [fullData, pageSize]);
