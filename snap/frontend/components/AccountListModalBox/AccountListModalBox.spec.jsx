@@ -25,7 +25,7 @@ describe('components/AccountListModalBox', () => {
 
 		for (let index = 0; index < numberOfAccounts; index++) {
 			// Act:
-			const accountLabel = screen.getByText('Wallet 0');
+			const accountLabel = screen.getByText('Account 0');
 			const accountAddress = screen.getByText('Address 0');
 
 			// Assert:
@@ -59,7 +59,7 @@ describe('components/AccountListModalBox', () => {
 		fireEvent.click(createButton);
 
 		// Assert:
-		const createWalletScreen = screen.getByText('Create Wallet');
-		expect(createWalletScreen).toBeInTheDocument();
+		const createAccountScreen = screen.getByText('Create Account');
+		expect(createAccountScreen).toBeInTheDocument();
 	});
 });
