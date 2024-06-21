@@ -192,6 +192,7 @@
         height: $spacing-navigation-height;
         padding: 0 $spacing-padding;
         overflow-x: auto;
+        overflow-y: hidden;
         background: $color-background-navigation;
         border-top: $spacing-base / 4 solid $color-border-navigation;
         backdrop-filter: blur(12px);
