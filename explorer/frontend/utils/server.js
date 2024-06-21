@@ -15,7 +15,7 @@ export const createSearchCriteria = (searchParams = {}) => {
 	};
 };
 
-// Creates a search URL, which uses in fetching paged data
+// Creates a search URL, which uses in fetching paged data.
 export const createSearchURL = (baseURL, searchCriteria) => {
 	const { pageNumber, pageSize, filter } = searchCriteria;
 	const limit = pageSize;
@@ -30,7 +30,7 @@ export const createSearchURL = (baseURL, searchCriteria) => {
 };
 
 // Creates page from data response.
-// Formats data rows using the "formatter" callback
+// Formats data rows using the "formatter" callback.
 export const createPage = (data, pageNumber, formatter) => {
 	let formattedData;
 
@@ -47,7 +47,7 @@ export const createPage = (data, pageNumber, formatter) => {
 };
 
 // Creates a wrapper for the info fetch function.
-// Handles client errors
+// Handles client errors.
 export const createFetchInfoFunction =
 	func =>
 	async (...args) => {
@@ -62,7 +62,7 @@ export const createFetchInfoFunction =
 		}
 	};
 
-// Makes HTTP requests
+// Makes HTTP requests.
 export const makeRequest = async (url, options = {}) => {
 	const { timeout = config.REQUEST_TIMEOUT, method = 'get' } = options;
 

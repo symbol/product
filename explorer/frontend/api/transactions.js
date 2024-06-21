@@ -3,6 +3,17 @@ import { ACCOUNT_STATE_CHANGE_ACTION, COSIGNATORY_MODIFICATION_ACTION, TRANSACTI
 import { decodeTransactionMessage } from '@/utils/format';
 import { createFetchInfoFunction, createSearchURL, createPage, createSearchCriteria, makeRequest } from '@/utils/server';
 
+/**
+ * @typedef Page
+ * @property {Array} data - the page data, an array of objects
+ * @property {number} pageNumber The page number
+ */
+
+/**
+ * Fetches the transaction page.
+ * @param {object} searchParams - search parameters
+ * @returns {Promise<Page>} transaction page
+ */
 export const fetchTransactionPage = async searchParams => {
 	const searchCriteria = createSearchCriteria(searchParams);
 	const { filter } = searchCriteria;
@@ -31,14 +42,19 @@ export const fetchTransactionPage = async searchParams => {
 	}
 
 	const transactions = await makeRequest(url);
-	const formatter = data => formatTransaction(data, filter);
+	const formatter = data => transactionFromDTO(data, filter);
 
 	return createPage(transactions, searchCriteria.pageNumber, formatter);
 };
 
+/**
+ * Fetches the transaction info.
+ * @param {String} hash - requested transaction hash
+ * @returns {Promise<Object>} transaction info
+ */
 export const fetchTransactionInfo = createFetchInfoFunction(async hash => {
 	const transaction = await makeRequest(`${config.API_BASE_URL}/transaction/${hash}`);
-	const transactionInfo = formatTransaction(transaction);
+	const transactionInfo = transactionFromDTO(transaction);
 	const accountsStateMap = {};
 	const mosaicInfo = {};
 
@@ -88,7 +104,13 @@ export const fetchTransactionInfo = createFetchInfoFunction(async hash => {
 	};
 });
 
-const formatTransaction = (data, filter = {}) => {
+/**
+ * Maps the transaction from the DTO.
+ * @param {object} data - raw data from response
+ * @param {object} filter - search filter
+ * @returns {object} mapped transaction
+ */
+const transactionFromDTO = (data, filter = {}) => {
 	switch (data.transactionType) {
 		case TRANSACTION_TYPE.TRANSFER:
 			return formatTransferTransaction(data, filter);
@@ -127,10 +149,8 @@ const formatBaseTransaction = (data, filter) => {
 		recipient,
 		account: isOutgoing ? recipient : sender,
 		direction: isOutgoing ? TRANSACTION_DIRECTION.OUTGOING : isIncoming ? TRANSACTION_DIRECTION.INCOMING : null,
-		size: data.size || null,
 		height: data.height || null,
-		version: data.version || null,
-		signature: data.signature || null,
+		signature: data.signature,
 		fee: data.fee,
 		amount: 0,
 		value: [],
@@ -160,8 +180,8 @@ const formatTransferTransaction = (data, filter) => {
 
 	if (rawMessage?.payload) {
 		message = {
-			type: rawMessage.isPlain ? 'plain' : '',
-			text: rawMessage.payload ? decodeTransactionMessage(rawMessage.payload) : null
+			type: rawMessage.is_plain ? 'plain' : 'raw',
+			text: rawMessage.is_plain ? decodeTransactionMessage(rawMessage.payload) : rawMessage.payload
 		};
 	}
 
@@ -315,7 +335,7 @@ const formatMultisigTransaction = (data, filter) => {
 		rawEmbeddedTransaction.value = data.embeddedTransactions;
 	}
 
-	const formattedEmbeddedTransaction = formatTransaction(rawEmbeddedTransaction, filter.address);
+	const formattedEmbeddedTransaction = transactionFromDTO(rawEmbeddedTransaction, filter.address);
 
 	return {
 		...formatBaseTransaction(data, filter),

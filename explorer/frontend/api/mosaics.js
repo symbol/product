@@ -2,21 +2,42 @@ import config from '@/config';
 import { createMosaicName, getRootNamespaceName } from '@/utils/format';
 import { createFetchInfoFunction, createSearchURL, createPage, createSearchCriteria, makeRequest } from '@/utils/server';
 
-export const fetchMosaicInfo = createFetchInfoFunction(async id => {
-	const mosaic = await makeRequest(`${config.API_BASE_URL}/mosaic/${id}`);
+/**
+ * @typedef Page
+ * @property {Array} data - the page data, an array of objects
+ * @property {number} pageNumber The page number
+ */
 
-	return formatMosaic(mosaic);
-});
-
+/**
+ * Fetches the mosaic page.
+ * @param {object} searchParams - search parameters
+ * @returns {Promise<Page>} mosaic page
+ */
 export const fetchMosaicPage = async searchParams => {
 	const searchCriteria = createSearchCriteria(searchParams);
 	const url = createSearchURL(`${config.API_BASE_URL}/mosaics`, searchCriteria);
 	const mosaics = await makeRequest(url);
 
-	return createPage(mosaics, searchCriteria.pageNumber, formatMosaic);
+	return createPage(mosaics, searchCriteria.pageNumber, mosaicInfoFromDTO);
 };
 
-export const formatMosaic = data => ({
+/**
+ * Fetches the mosaic info.
+ * @param {String} id - requested mosaic id
+ * @returns {Promise<Object>} mosaic info
+ */
+export const fetchMosaicInfo = createFetchInfoFunction(async id => {
+	const mosaic = await makeRequest(`${config.API_BASE_URL}/mosaic/${id}`);
+
+	return mosaicInfoFromDTO(mosaic);
+});
+
+/**
+ * Maps the mosaic info from the DTO.
+ * @param {object} data - raw data from response
+ * @returns {object} mapped mosaic info
+ */
+const mosaicInfoFromDTO = data => ({
 	id: createMosaicName(data.namespaceName, data.mosaicName),
 	name: createMosaicName(data.namespaceName, data.mosaicName),
 	namespaceName: data.namespaceName,

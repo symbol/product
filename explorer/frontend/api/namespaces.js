@@ -2,21 +2,42 @@ import config from '@/config';
 import { createMosaicName } from '@/utils/format';
 import { createFetchInfoFunction, createSearchURL, createPage, createSearchCriteria, makeRequest } from '@/utils/server';
 
-export const fetchNamespaceInfo = createFetchInfoFunction(async id => {
-	const namespace = await makeRequest(`${config.API_BASE_URL}/namespace/${id}`);
+/**
+ * @typedef Page
+ * @property {Array} data - the page data, an array of objects
+ * @property {number} pageNumber The page number
+ */
 
-	return formatNamespace(namespace);
-});
-
+/**
+ * Fetches the namespace page.
+ * @param {object} searchParams - search parameters
+ * @returns {Promise<Page>} namespace page
+ */
 export const fetchNamespacePage = async searchParams => {
 	const searchCriteria = createSearchCriteria(searchParams);
 	const url = createSearchURL(`${config.API_BASE_URL}/namespaces`, searchCriteria);
 	const namespaces = await makeRequest(url);
 
-	return createPage(namespaces, searchCriteria.pageNumber, formatNamespace);
+	return createPage(namespaces, searchCriteria.pageNumber, namespaceInfoFromDTO);
 };
 
-const formatNamespace = data => {
+/**
+ * Fetches the namespace info.
+ * @param {String} id - requested namespace id
+ * @returns {Promise<Object>} namespace info
+ */
+export const fetchNamespaceInfo = createFetchInfoFunction(async id => {
+	const namespace = await makeRequest(`${config.API_BASE_URL}/namespace/${id}`);
+
+	return namespaceInfoFromDTO(namespace);
+});
+
+/**
+ * Maps the namespace info from the DTO.
+ * @param {object} data - raw data from response
+ * @returns {object} mapped namespace info
+ */
+const namespaceInfoFromDTO = data => {
 	const namespaceMosaicsMap = {};
 	data.mosaics.forEach(item => {
 		if (!namespaceMosaicsMap[item.namespaceName]) namespaceMosaicsMap[item.namespaceName] = [];
