@@ -17,17 +17,12 @@ const ValueTransactionSquares = ({ data = [], isTransactionPreviewEnabled, isLoa
 	const { t } = useTranslation('common');
 	const isChartPresentable = data.length < MAX_DATA_LENGTH;
 	const [selectedTransaction, setSelectedTransaction] = useState(null);
-	const colorHigh = '#52B12C';
-	const colorMedium = '#F3BA2F';
-	const colorLow = '#B94F4F';
-	const colors = [colorHigh, colorMedium, colorLow];
-
 	const series = [
 		{
 			data: data.map(item => ({
 				x: `${item.fee}`,
 				y: item.fee,
-				fillColor: colorHigh //colors[Math.round(Math.random(3))]
+				fillColor: '#52B12C'
 			}))
 		}
 	];
