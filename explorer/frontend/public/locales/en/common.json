@@ -275,6 +275,7 @@
 	"label_supplyMutable": "Supply Mutable",
 	"label_send": "Send",
 	"label_receive": "Receive",
+	"label_none": "None",
 	"label_active": "Active",
 	"label_expired": "Expired"
 }
