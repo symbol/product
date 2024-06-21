@@ -1,4 +1,4 @@
-import { accountPageResult } from '../test-utils/account';
+import { accountPageResult } from '../test-utils/accounts';
 import { blockPageResult } from '../test-utils/blocks';
 import { transactionPageResult } from '../test-utils/transactions';
 import {

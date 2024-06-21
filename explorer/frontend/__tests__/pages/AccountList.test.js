@@ -1,6 +1,6 @@
 import '@testing-library/jest-dom';
 import 'react-intersection-observer/test-utils';
-import { accountPageResult } from '../test-utils/account';
+import { accountPageResult } from '../test-utils/accounts';
 import { setDevice } from '../test-utils/device';
 import { accountStatsResult } from '../test-utils/stats';
 import * as AccountService from '@/api/accounts';

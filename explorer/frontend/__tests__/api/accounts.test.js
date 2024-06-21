@@ -5,7 +5,7 @@ import {
 	accountPageMosaicFilterResult,
 	accountPageResponse,
 	accountPageResult
-} from '../test-utils/account';
+} from '../test-utils/accounts';
 import { runAPITest } from '../test-utils/api';
 import { fetchAccountPage, fetchAccountInfo, fetchAccountInfoByPublicKey } from '@/api/accounts';
 

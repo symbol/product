@@ -1,4 +1,4 @@
-import { accountPageResponse } from '../test-utils/account';
+import { accountPageResponse } from '../test-utils/accounts';
 import { blockPageResponse } from '../test-utils/blocks';
 import {
 	accountStatisticsResponse,

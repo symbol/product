@@ -1,6 +1,6 @@
 import '@testing-library/jest-dom';
 import 'react-intersection-observer/test-utils';
-import { accountInfoResult } from '../test-utils/account';
+import { accountInfoResult } from '../test-utils/accounts';
 import { transactionPageResult } from '../test-utils/transactions';
 import * as AccountService from '@/api/accounts';
 import * as TransactionService from '@/api/transactions';

@@ -1,4 +1,4 @@
-import { accountInfoResponse, accountInfoResult } from '../test-utils/account';
+import { accountInfoResponse, accountInfoResult } from '../test-utils/accounts';
 import { blockInfoResponse, blockInfoResult } from '../test-utils/blocks';
 import { mosaicInfoResponse, mosaicInfoResult } from '../test-utils/mosaics';
 import { namespaceInfoResponse, namespaceInfoResult } from '../test-utils/namespaces';
