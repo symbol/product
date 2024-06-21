@@ -3,7 +3,7 @@ import styles from '@/styles/components/ValueAccountBalance.module.scss';
 import { numberToString, truncateDecimals } from '@/utils';
 
 const ValueAccountBalance = ({ value, valueInUserCurrency, userCurrency }) => {
-	const userCurrencyText = (userCurrency || '').toUpperCase();
+	const userCurrencyText = userCurrency.toUpperCase();
 
 	return (
 		<div className={styles.valueAccountBalance}>

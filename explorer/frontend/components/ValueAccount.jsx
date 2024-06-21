@@ -2,7 +2,7 @@ import Avatar from '@/components/Avatar';
 import ButtonCopy from '@/components/ButtonCopy';
 import { STORAGE_KEY } from '@/constants';
 import styles from '@/styles/components/ValueAccount.module.scss';
-import { createPageHref, truncateString, useStorage } from '@/utils';
+import { createPageHref, handleNavigationItemClick, truncateString, useStorage } from '@/utils';
 import Link from 'next/link';
 import { useState } from 'react';
 
@@ -26,10 +26,7 @@ const ValueAccount = ({ address, size, raw, position, className, isNavigationDis
 	}
 
 	const handleClick = e => {
-		e.stopPropagation();
-		if (!onClick) return;
-		if (isNavigationDisabled) e.preventDefault();
-		onClick();
+		handleNavigationItemClick(e, onClick, address, isNavigationDisabled);
 	};
 
 	return (

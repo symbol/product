@@ -3,16 +3,23 @@
 .itemNamespaceMobile {
     width: 100%;
     display: flex;
-    flex-direction: row;
-    gap: $spacing-base;
+    flex-direction: column;
+    gap: $spacing-base * 2;
 
-    .info {
-        flex: 1;
+    .mainSection {
+        width: 100%;
         display: flex;
-        flex-direction: column;
+        flex-direction: row;
+        gap: $spacing-base;
 
-        .name {
-            font: $font-body-bold;
+        .info {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+
+            .name {
+                font: $font-body-bold;
+            }
         }
     }
 }

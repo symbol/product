@@ -1,15 +1,12 @@
 import Avatar from './Avatar';
 import ValueTimestamp from './ValueTimestamp';
 import styles from '@/styles/components/ValueBlockHeight.module.scss';
-import { createPageHref } from '@/utils';
+import { createPageHref, handleNavigationItemClick } from '@/utils';
 import Link from 'next/link';
 
 const ValueBlockHeight = ({ value, timestamp, className, size, isNavigationDisabled, onClick }) => {
 	const handleClick = e => {
-		e.stopPropagation();
-		if (!onClick) return;
-		if (isNavigationDisabled) e.preventDefault();
-		onClick(value);
+		handleNavigationItemClick(e, onClick, value, isNavigationDisabled);
 	};
 
 	return size === 'md' ? (

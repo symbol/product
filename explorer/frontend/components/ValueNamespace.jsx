@@ -1,17 +1,14 @@
 import Avatar from './Avatar';
 import CustomImage from './CustomImage';
 import styles from '@/styles/components/ValueNamespace.module.scss';
-import { createPageHref } from '@/utils';
+import { createPageHref, handleNavigationItemClick } from '@/utils';
 import Link from 'next/link';
 
 const ValueNamespace = ({ namespaceName, namespaceId, className, size, onClick, isNavigationDisabled }) => {
 	const isNameSameAsId = namespaceName === namespaceId;
 
 	const handleClick = e => {
-		e.stopPropagation();
-		if (!onClick) return;
-		if (isNavigationDisabled) e.preventDefault();
-		onClick(namespaceId);
+		handleNavigationItemClick(e, onClick, namespaceId, isNavigationDisabled);
 	};
 
 	return size === 'md' ? (

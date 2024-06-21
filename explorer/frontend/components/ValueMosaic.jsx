@@ -3,7 +3,7 @@ import CustomImage from './CustomImage';
 import config from '@/config';
 import { ACCOUNT_STATE_CHANGE_ACTION, TRANSACTION_DIRECTION } from '@/constants';
 import styles from '@/styles/components/ValueMosaic.module.scss';
-import { createPageHref, numberToString } from '@/utils';
+import { createPageHref, handleNavigationItemClick, numberToString } from '@/utils';
 import Link from 'next/link';
 
 const ValueMosaic = ({
@@ -48,10 +48,7 @@ const ValueMosaic = ({
 	}
 
 	const handleClick = e => {
-		e.stopPropagation();
-		if (!onClick) return;
-		if (isNavigationDisabled) e.preventDefault();
-		onClick(finalMosaicId);
+		handleNavigationItemClick(e, onClick, finalMosaicId, isNavigationDisabled);
 	};
 
 	return size === 'md' ? (
