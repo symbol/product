@@ -269,6 +269,7 @@ const AccountInfo = ({ accountInfo, preloadedTransactions }) => {
 							isDisabled={transactionPagination.isLoading}
 							value={transactionPagination.filter}
 							onChange={transactionPagination.changeFilter}
+							onClear={transactionPagination.clearFilter}
 							search={search}
 						/>
 						<ButtonCSV data={transactionPagination.data} fileName={`transactions-${address}`} format={formatTransactionCSV} />

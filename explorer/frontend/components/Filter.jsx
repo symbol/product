@@ -118,7 +118,7 @@ const FilterModal = ({ isVisible, title, type, isSearchEnabled, options, onSearc
 	);
 };
 
-const Filter = ({ isSelectedItemsShown, data, value, search, isDisabled, onChange }) => {
+const Filter = ({ isSelectedItemsShown, data, value, search, isDisabled, onChange, onClear }) => {
 	const { t } = useTranslation();
 	const [expandedFilter, setExpandedFilter] = useState({});
 	const [selectedItems, setSelectedItems] = useState({});
@@ -138,7 +138,11 @@ const Filter = ({ isSelectedItemsShown, data, value, search, isDisabled, onChang
 	const getTextStyle = name => `${styles.text} ${isFilerActive(name) ? styles.textActive : null}`;
 	const clear = () => {
 		setExpandedFilter(null);
-		onChange({});
+		if (onClear) {
+			onClear();
+		} else {
+			onChange({});
+		}
 	};
 	const handleFilterPress = filter => {
 		if (!isFilterAvailable(filter.name)) {
