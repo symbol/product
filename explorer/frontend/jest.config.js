@@ -13,7 +13,8 @@ const createJestConfig = nextJest({
 // Add any custom config to be passed to Jest
 const customJestConfig = {
 	workerThreads: true,
-	testPathIgnorePatterns: ['<rootDir>/__tests__/test-utils/'],
+	testPathIgnorePatterns: ['/test-utils/'],
+	coveragePathIgnorePatterns: ['/test-utils/'],
 	clearMocks: true,
 	coverageDirectory: 'coverage',
 	coverageProvider: 'babel',
