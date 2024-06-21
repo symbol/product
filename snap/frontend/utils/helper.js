@@ -29,6 +29,13 @@ const helper = {
 			isLoading: false,
 			message: ''
 		});
+	},
+	async createNewAccount (dispatch, symbolSnap, accounts, walletName) {
+		const newAccount = await symbolSnap.createAccount(walletName);
+
+		// update account state
+		dispatch.setAccounts({ ...accounts, [newAccount.id]: newAccount });
+		dispatch.setSelectedAccount(newAccount);
 	}
 };
 
