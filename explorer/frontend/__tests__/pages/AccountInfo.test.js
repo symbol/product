@@ -64,7 +64,7 @@ describe('AccountInfo', () => {
 				}
 			};
 
-			// Act & Assert:
+			// Act + Assert:
 			await runTest(accountInfo, expectedResult);
 		});
 
@@ -75,7 +75,7 @@ describe('AccountInfo', () => {
 				notFound: true
 			};
 
-			// Act & Assert:
+			// Act + Assert:
 			await runTest(accountInfo, expectedResult);
 		});
 	});

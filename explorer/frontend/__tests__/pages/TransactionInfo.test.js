@@ -57,7 +57,7 @@ describe('TransactionInfo', () => {
 				}
 			};
 
-			// Act & Assert:
+			// Act + Assert:
 			await runTest(transactionInfo, expectedResult);
 		});
 
@@ -68,7 +68,7 @@ describe('TransactionInfo', () => {
 				notFound: true
 			};
 
-			// Act & Assert:
+			// Act + Assert:
 			await runTest(transactionInfo, expectedResult);
 		});
 	});

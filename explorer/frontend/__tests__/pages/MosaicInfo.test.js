@@ -73,7 +73,7 @@ describe('MosaicInfo', () => {
 				}
 			};
 
-			// Act & Assert:
+			// Act + Assert:
 			await runTest(mosaicInfo, expectedResult);
 		});
 
@@ -84,7 +84,7 @@ describe('MosaicInfo', () => {
 				notFound: true
 			};
 
-			// Act & Assert:
+			// Act + Assert:
 			await runTest(mosaicInfo, expectedResult);
 		});
 	});
@@ -137,7 +137,7 @@ describe('MosaicInfo', () => {
 			const isUnlimitedDuration = false;
 			const expectedText = 'value_expiration';
 
-			// Act & Assert:
+			// Act + Assert:
 			await runStatusTest(chainHeight, expirationHeight, isUnlimitedDuration, expectedText);
 		});
 
@@ -148,7 +148,7 @@ describe('MosaicInfo', () => {
 			const isUnlimitedDuration = false;
 			const expectedText = 'value_expired';
 
-			// Act & Assert:
+			// Act + Assert:
 			await runStatusTest(chainHeight, expirationHeight, isUnlimitedDuration, expectedText);
 		});
 
@@ -159,7 +159,7 @@ describe('MosaicInfo', () => {
 			const isUnlimitedDuration = true;
 			const expectedText = 'value_neverExpired';
 
-			// Act & Assert:
+			// Act + Assert:
 			await runStatusTest(chainHeight, expirationHeight, isUnlimitedDuration, expectedText);
 		});
 	});
@@ -188,7 +188,7 @@ describe('MosaicInfo', () => {
 			const expectedLabelText = 'label_supplyMutable';
 			const expectedIconAlt = 'true';
 
-			// Act & Assert:
+			// Act + Assert:
 			await runFlagTest(mosaicInfo, expectedLabelText, expectedIconAlt);
 		});
 
@@ -201,7 +201,7 @@ describe('MosaicInfo', () => {
 			const expectedLabelText = 'label_supplyMutable';
 			const expectedIconAlt = 'false';
 
-			// Act & Assert:
+			// Act + Assert:
 			await runFlagTest(mosaicInfo, expectedLabelText, expectedIconAlt);
 		});
 
@@ -214,7 +214,7 @@ describe('MosaicInfo', () => {
 			const expectedLabelText = 'label_transferable';
 			const expectedIconAlt = 'true';
 
-			// Act & Assert:
+			// Act + Assert:
 			await runFlagTest(mosaicInfo, expectedLabelText, expectedIconAlt);
 		});
 
@@ -227,7 +227,7 @@ describe('MosaicInfo', () => {
 			const expectedLabelText = 'label_transferable';
 			const expectedIconAlt = 'false';
 
-			// Act & Assert:
+			// Act + Assert:
 			await runFlagTest(mosaicInfo, expectedLabelText, expectedIconAlt);
 		});
 	});
@@ -262,7 +262,7 @@ describe('MosaicInfo', () => {
 				...accountPageResult.data.map(account => account.address)
 			];
 
-			// Act & Assert:
+			// Act + Assert:
 			await runDistributionTest(tabToPress, expectedTextList);
 		});
 
@@ -277,7 +277,7 @@ describe('MosaicInfo', () => {
 				...transactionPageResult.data.map(transaction => utils.truncateString(transaction.hash, 'hash'))
 			];
 
-			// Act & Assert:
+			// Act + Assert:
 			await runDistributionTest(tabToPress, expectedTextList);
 		});
 	});
@@ -302,7 +302,7 @@ describe('MosaicInfo', () => {
 			};
 			const expectedText = mosaicInfo.description;
 
-			// Act & Assert:
+			// Act + Assert:
 			runDescriptionTest(mosaicInfo, expectedText);
 		});
 
@@ -314,7 +314,7 @@ describe('MosaicInfo', () => {
 			};
 			const expectedText = 'No description';
 
-			// Act & Assert:
+			// Act + Assert:
 			runDescriptionTest(mosaicInfo, expectedText);
 		});
 	});

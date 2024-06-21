@@ -79,7 +79,7 @@ describe('utils/server', () => {
 				pageNumber: 1
 			};
 
-			// Act & Assert:
+			// Act + Assert:
 			runCreatePageTest(data, formatter, expectedResult);
 		});
 
@@ -92,7 +92,7 @@ describe('utils/server', () => {
 				pageNumber: 1
 			};
 
-			// Act & Assert:
+			// Act + Assert:
 			runCreatePageTest(data, formatter, expectedResult);
 		});
 
@@ -105,7 +105,7 @@ describe('utils/server', () => {
 				pageNumber: 1
 			};
 
-			// Act & Assert:
+			// Act + Assert:
 			runCreatePageTest(data, formatter, expectedResult);
 		});
 	});
@@ -133,7 +133,7 @@ describe('utils/server', () => {
 				filter: {}
 			};
 
-			// Act & Assert:
+			// Act + Assert:
 			runCreateSearchCriteriaTest(searchParams1, expectedResult);
 			runCreateSearchCriteriaTest(searchParams2, expectedResult);
 			runCreateSearchCriteriaTest(searchParams3, expectedResult);
@@ -151,7 +151,7 @@ describe('utils/server', () => {
 				filter: {}
 			};
 
-			// Act & Assert:
+			// Act + Assert:
 			runCreateSearchCriteriaTest(searchParams, expectedResult);
 		});
 
@@ -172,7 +172,7 @@ describe('utils/server', () => {
 				}
 			};
 
-			// Act & Assert:
+			// Act + Assert:
 			runCreateSearchCriteriaTest(searchParams, expectedResult);
 		});
 	});

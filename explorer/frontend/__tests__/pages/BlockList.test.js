@@ -65,7 +65,7 @@ describe('BlockList', () => {
 		};
 
 		it('renders page with the list of blocks on desktop', () => {
-			// Act & Assert:
+			// Act + Assert:
 			runTest();
 		});
 
@@ -73,7 +73,7 @@ describe('BlockList', () => {
 			// Arrange:
 			setDevice('mobile');
 
-			// Act & Assert:
+			// Act + Assert:
 			runTest();
 		});
 	});

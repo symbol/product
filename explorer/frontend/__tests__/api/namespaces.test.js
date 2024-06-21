@@ -20,7 +20,7 @@ describe('api/namespaces', () => {
 			const expectedURL = 'https://explorer.backend/namespaces?limit=123&offset=246';
 			const expectedResult = namespacePageResult;
 
-			// Act & Assert:
+			// Act + Assert:
 			await runAPITest(fetchNamespacePage, searchCriteria, namespacePageResponse, expectedURL, expectedResult);
 		});
 	});
@@ -32,7 +32,7 @@ describe('api/namespaces', () => {
 			const expectedURL = 'https://explorer.backend/namespace/arustest.shone';
 			const expectedResult = namespaceInfoResult;
 
-			// Act & Assert:
+			// Act + Assert:
 			await runAPITest(fetchNamespaceInfo, params, namespaceInfoResponse, expectedURL, expectedResult);
 		});
 	});

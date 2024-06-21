@@ -49,7 +49,7 @@ describe('api/search', () => {
 			block: blockInfoResult
 		};
 
-		// Act & Assert:
+		// Act + Assert:
 		await runSearchTest(searchQuery, responseMap, expectedResult);
 	});
 
@@ -65,7 +65,7 @@ describe('api/search', () => {
 			namespace: namespaceInfoResult
 		};
 
-		// Act & Assert:
+		// Act + Assert:
 		await runSearchTest(searchQuery, responseMap, expectedResult);
 	});
 
@@ -79,7 +79,7 @@ describe('api/search', () => {
 			namespace: namespaceInfoResult
 		};
 
-		// Act & Assert:
+		// Act + Assert:
 		await runSearchTest(searchQuery, responseMap, expectedResult);
 	});
 
@@ -95,7 +95,7 @@ describe('api/search', () => {
 			namespace: namespaceInfoResult
 		};
 
-		// Act & Assert:
+		// Act + Assert:
 		await runSearchTest(searchQuery, responseMap, expectedResult);
 	});
 
@@ -109,7 +109,7 @@ describe('api/search', () => {
 			mosaic: mosaicInfoResult
 		};
 
-		// Act & Assert:
+		// Act + Assert:
 		await runSearchTest(searchQuery, responseMap, expectedResult);
 	});
 
@@ -123,7 +123,7 @@ describe('api/search', () => {
 			transaction: transactionInfoResult
 		};
 
-		// Act & Assert:
+		// Act + Assert:
 		await runSearchTest(searchQuery, responseMap, expectedResult);
 	});
 
@@ -137,7 +137,7 @@ describe('api/search', () => {
 			account: accountInfoResult
 		};
 
-		// Act & Assert:
+		// Act + Assert:
 		await runSearchTest(searchQuery, responseMap, expectedResult);
 	});
 
@@ -152,7 +152,7 @@ describe('api/search', () => {
 			account: accountInfoResult
 		};
 
-		// Act & Assert:
+		// Act + Assert:
 		await runSearchTest(searchQuery, responseMap, expectedResult);
 	});
 
@@ -162,7 +162,7 @@ describe('api/search', () => {
 		const responseMap = {};
 		const expectedResult = {};
 
-		// Act & Assert:
+		// Act + Assert:
 		await runSearchTest(searchQuery, responseMap, expectedResult);
 	});
 });

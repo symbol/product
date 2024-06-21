@@ -46,7 +46,7 @@ describe('NamespaceInfo', () => {
 				}
 			};
 
-			// Act & Assert:
+			// Act + Assert:
 			await runTest(namespaceInfo, expectedResult);
 		});
 
@@ -57,7 +57,7 @@ describe('NamespaceInfo', () => {
 				notFound: true
 			};
 
-			// Act & Assert:
+			// Act + Assert:
 			await runTest(namespaceInfo, expectedResult);
 		});
 	});
@@ -111,7 +111,7 @@ describe('NamespaceInfo', () => {
 			const isUnlimitedDuration = false;
 			const expectedText = 'value_expiration';
 
-			// Act & Assert:
+			// Act + Assert:
 			await runStatusTest(chainHeight, expirationHeight, isUnlimitedDuration, expectedText);
 		});
 
@@ -122,7 +122,7 @@ describe('NamespaceInfo', () => {
 			const isUnlimitedDuration = false;
 			const expectedText = 'value_expired';
 
-			// Act & Assert:
+			// Act + Assert:
 			await runStatusTest(chainHeight, expirationHeight, isUnlimitedDuration, expectedText);
 		});
 
@@ -133,7 +133,7 @@ describe('NamespaceInfo', () => {
 			const isUnlimitedDuration = true;
 			const expectedText = 'value_neverExpired';
 
-			// Act & Assert:
+			// Act + Assert:
 			await runStatusTest(chainHeight, expirationHeight, isUnlimitedDuration, expectedText);
 		});
 	});

@@ -20,7 +20,7 @@ describe('api/mosaics', () => {
 			const expectedURL = 'https://explorer.backend/mosaics?limit=123&offset=246';
 			const expectedResult = mosaicPageResult;
 
-			// Act & Assert:
+			// Act + Assert:
 			await runAPITest(fetchMosaicPage, searchCriteria, mosaicPageResponse, expectedURL, expectedResult);
 		});
 	});
@@ -32,7 +32,7 @@ describe('api/mosaics', () => {
 			const expectedURL = 'https://explorer.backend/mosaic/arustest.shone';
 			const expectedResult = mosaicInfoResult;
 
-			// Act & Assert:
+			// Act + Assert:
 			await runAPITest(fetchMosaicInfo, params, mosaicInfoResponse, expectedURL, expectedResult);
 		});
 	});

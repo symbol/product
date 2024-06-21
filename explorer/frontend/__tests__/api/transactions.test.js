@@ -35,7 +35,7 @@ describe('api/transactions', () => {
 			const expectedURL = 'https://explorer.backend/transactions?limit=123&offset=246';
 			const expectedResult = transactionPageResult;
 
-			// Act & Assert:
+			// Act + Assert:
 			await runAPITest(fetchTransactionPage, searchCriteria, transactionPageResponse, expectedURL, expectedResult);
 		});
 
@@ -49,7 +49,7 @@ describe('api/transactions', () => {
 			const expectedURL = 'https://explorer.backend/transactions/unconfirmed?limit=123&offset=246';
 			const expectedResult = transactionUnconfirmedPageResult;
 
-			// Act & Assert:
+			// Act + Assert:
 			await runAPITest(fetchTransactionPage, searchCriteria, transactionUnconfirmedPageResponse, expectedURL, expectedResult);
 		});
 
@@ -63,7 +63,7 @@ describe('api/transactions', () => {
 			const expectedURL = `https://explorer.backend/transactions?limit=10&offset=20&senderAddress=${senderAddress}&recipientAddress=${recipientAddress}`;
 			const expectedResult = transactionPageResult;
 
-			// Act & Assert:
+			// Act + Assert:
 			await runAPITest(fetchTransactionPage, searchCriteria, transactionPageResponse, expectedURL, expectedResult);
 		});
 
@@ -76,7 +76,7 @@ describe('api/transactions', () => {
 			const expectedURL = `https://explorer.backend/transactions?limit=10&offset=20&address=${currentAddress}`;
 			const expectedResult = transactionAccountPageResult;
 
-			// Act & Assert:
+			// Act + Assert:
 			await runAPITest(fetchTransactionPage, searchCriteria, transactionPageResponse, expectedURL, expectedResult);
 		});
 
@@ -90,7 +90,7 @@ describe('api/transactions', () => {
 			const expectedURL = `https://explorer.backend/transactions?limit=10&offset=20&senderAddress=${senderAddress}&recipientAddress=${currentAddress}`;
 			const expectedResult = transactionAccountPageResult;
 
-			// Act & Assert:
+			// Act + Assert:
 			await runAPITest(fetchTransactionPage, searchCriteria, transactionPageResponse, expectedURL, expectedResult);
 		});
 
@@ -104,7 +104,7 @@ describe('api/transactions', () => {
 			const expectedURL = `https://explorer.backend/transactions?limit=10&offset=20&senderAddress=${currentAddress}&recipientAddress=${recipientAddress}`;
 			const expectedResult = transactionAccountPageResult;
 
-			// Act & Assert:
+			// Act + Assert:
 			await runAPITest(fetchTransactionPage, searchCriteria, transactionPageResponse, expectedURL, expectedResult);
 		});
 	});
@@ -116,7 +116,7 @@ describe('api/transactions', () => {
 			const expectedURL = 'https://explorer.backend/transaction/596E3EC601470D9A5FDF966833566390C13D5DB7D24F5C9C712AC2056D7AE255';
 			const expectedResult = transactionInfoResult;
 
-			// Act & Assert:
+			// Act + Assert:
 			await runAPITest(fetchTransactionInfo, params, transactionInfoResponse, expectedURL, expectedResult);
 		});
 
@@ -126,7 +126,7 @@ describe('api/transactions', () => {
 			const expectedURL = 'https://explorer.backend/transaction/596E3EC601470D9A5FDF966833566390C13D5DB7D24F5C9C712AC2056D7AE255';
 			const expectedResult = unsupportedTransactionInfoResult;
 
-			// Act & Assert:
+			// Act + Assert:
 			await runAPITest(fetchTransactionInfo, params, unsupportedTransactionInfoResponse, expectedURL, expectedResult);
 		});
 	});

@@ -65,7 +65,7 @@ describe('AccountList', () => {
 		};
 
 		it('renders page with the list of accounts on desktop', () => {
-			// Act & Assert:
+			// Act + Assert:
 			runTest();
 		});
 
@@ -73,7 +73,7 @@ describe('AccountList', () => {
 			// Arrange:
 			setDevice('mobile');
 
-			// Act & Assert:
+			// Act + Assert:
 			runTest();
 		});
 	});

@@ -59,7 +59,7 @@ describe('MosaicList', () => {
 		};
 
 		it('renders page with the list of mosaics on desktop', () => {
-			// Act & Assert:
+			// Act + Assert:
 			runTest();
 		});
 
@@ -67,7 +67,7 @@ describe('MosaicList', () => {
 			// Arrange:
 			setDevice('mobile');
 
-			// Act & Assert:
+			// Act + Assert:
 			runTest();
 		});
 	});

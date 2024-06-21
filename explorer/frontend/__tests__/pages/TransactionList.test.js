@@ -66,7 +66,7 @@ describe('TransactionList', () => {
 		};
 
 		it('renders page with the list of transactions on desktop', () => {
-			// Act & Assert:
+			// Act + Assert:
 			runTest();
 		});
 
@@ -74,7 +74,7 @@ describe('TransactionList', () => {
 			// Arrange:
 			setDevice('mobile');
 
-			// Act & Assert:
+			// Act + Assert:
 			runTest();
 		});
 	});

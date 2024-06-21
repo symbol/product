@@ -20,7 +20,7 @@ describe('api/blocks', () => {
 			const expectedURL = 'https://explorer.backend/blocks?limit=123&offset=123';
 			const expectedResult = blockPageResult;
 
-			// Act & Assert:
+			// Act + Assert:
 			await runAPITest(fetchBlockPage, searchCriteria, blockPageResponse, expectedURL, expectedResult);
 		});
 	});
@@ -32,7 +32,7 @@ describe('api/blocks', () => {
 			const expectedURL = 'https://explorer.backend/block/1111111';
 			const expectedResult = blockInfoResult;
 
-			// Act & Assert:
+			// Act + Assert:
 			await runAPITest(fetchBlockInfo, params, blockInfoResponse, expectedURL, expectedResult);
 		});
 	});
@@ -44,7 +44,7 @@ describe('api/blocks', () => {
 			const expectedURL = 'https://explorer.backend/blocks?limit=1&offset=0';
 			const expectedResult = 4695085;
 
-			// Act & Assert:
+			// Act + Assert:
 			await runAPITest(fetchChainHight, params, blockPageResponse, expectedURL, expectedResult);
 		});
 	});

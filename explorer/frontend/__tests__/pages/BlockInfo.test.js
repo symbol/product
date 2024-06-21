@@ -47,7 +47,7 @@ describe('BlockInfo', () => {
 				}
 			};
 
-			// Act & Assert:
+			// Act + Assert:
 			await runTest(blockInfo, expectedResult);
 		});
 
@@ -58,7 +58,7 @@ describe('BlockInfo', () => {
 				notFound: true
 			};
 
-			// Act & Assert:
+			// Act + Assert:
 			await runTest(blockInfo, expectedResult);
 		});
 	});
@@ -102,7 +102,7 @@ describe('BlockInfo', () => {
 			const expectedShownLabelText = 'label_safe';
 			const expectedHiddenLabelText = 'label_unsafe';
 
-			// Act & Assert:
+			// Act + Assert:
 			runStatusLabelTest(chainHeightOffset, expectedShownLabelText, expectedHiddenLabelText);
 		});
 
@@ -112,7 +112,7 @@ describe('BlockInfo', () => {
 			const expectedShownLabelText = 'label_created';
 			const expectedHiddenLabelText = 'label_safe';
 
-			// Act & Assert:
+			// Act + Assert:
 			runStatusLabelTest(chainHeightOffset, expectedShownLabelText, expectedHiddenLabelText);
 		});
 	});

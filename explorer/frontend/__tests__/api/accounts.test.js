@@ -27,7 +27,7 @@ describe('api/accounts', () => {
 			const expectedURL = 'https://explorer.backend/accounts?limit=123&offset=123';
 			const expectedResult = accountPageResult;
 
-			// Act & Assert:
+			// Act + Assert:
 			await runAPITest(fetchAccountPage, searchCriteria, accountPageResponse, expectedURL, expectedResult);
 		});
 
@@ -41,7 +41,7 @@ describe('api/accounts', () => {
 			const expectedURL = 'https://explorer.backend/mosaic/rich/list?limit=123&offset=123&namespaceName=custom.mosaic';
 			const expectedResult = accountPageMosaicFilterResult;
 
-			// Act & Assert:
+			// Act + Assert:
 			await runAPITest(fetchAccountPage, searchCriteria, accountPageMosaicFilterResponse, expectedURL, expectedResult);
 		});
 	});
@@ -53,7 +53,7 @@ describe('api/accounts', () => {
 			const expectedURL = 'https://explorer.backend/account?address=NDHEJKXY6YK7JGRFQT2L7P3O5VMUGR4BWKQNVXXQ';
 			const expectedResult = accountInfoResult;
 
-			// Act & Assert:
+			// Act + Assert:
 			await runAPITest(fetchAccountInfo, params, accountInfoResponse, expectedURL, expectedResult);
 		});
 	});
@@ -66,7 +66,7 @@ describe('api/accounts', () => {
 				'https://explorer.backend/account?publicKey=019B4EDDAEFA086A328EB907ECBC5ED0EABD6BBB6F3BA25B22A310CB5917A808';
 			const expectedResult = accountInfoResult;
 
-			// Act & Assert:
+			// Act + Assert:
 			await runAPITest(fetchAccountInfoByPublicKey, params, accountInfoResponse, expectedURL, expectedResult);
 		});
 	});

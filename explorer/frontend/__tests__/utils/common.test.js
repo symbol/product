@@ -46,7 +46,7 @@ describe('utils/common', () => {
 			const config = undefined;
 			const expectedResult = 'translated_month_jan 1, 1900';
 
-			// Act & Assert:
+			// Act + Assert:
 			runFormatDateTest(timestamp, config, expectedResult);
 		});
 
@@ -58,7 +58,7 @@ describe('utils/common', () => {
 			};
 			const expectedResult = 'translated_month_nov 11, 1970 • 11:11';
 
-			// Act & Assert:
+			// Act + Assert:
 			runFormatDateTest(timestamp, config, expectedResult);
 		});
 
@@ -71,7 +71,7 @@ describe('utils/common', () => {
 			};
 			const expectedResult = 'translated_month_dec 31, 1999 • 23:59:59';
 
-			// Act & Assert:
+			// Act + Assert:
 			runFormatDateTest(timestamp, config, expectedResult);
 		});
 
@@ -83,7 +83,7 @@ describe('utils/common', () => {
 			};
 			const expectedResult = 'translated_month_jun, 2024';
 
-			// Act & Assert:
+			// Act + Assert:
 			runFormatDateTest(timestamp, config, expectedResult);
 		});
 
@@ -98,7 +98,7 @@ describe('utils/common', () => {
 			};
 			const expectedResult = 'translated_month_jun 6, 2024 • 22:21:01';
 
-			// Act & Assert:
+			// Act + Assert:
 			runFormatDateTest(timestamp, config, expectedResult);
 		});
 	});
@@ -167,7 +167,7 @@ describe('utils/common', () => {
 			const expectedResult6 = '1 234 567 890';
 			const expectedResult7 = '1 234 567 890';
 
-			// Act & Assert:
+			// Act + Assert:
 			runNumberToStringTest(value1, expectedResult1);
 			runNumberToStringTest(value2, expectedResult2);
 			runNumberToStringTest(value3, expectedResult3);
@@ -182,7 +182,7 @@ describe('utils/common', () => {
 			const value = 'foo';
 			const expectedResult = '';
 
-			// Act & Assert:
+			// Act + Assert:
 			runNumberToStringTest(value, expectedResult);
 		});
 	});
@@ -215,7 +215,7 @@ describe('utils/common', () => {
 			const expectedResult4 = 1234.56789;
 			const expectedResult5 = 1234.56789;
 
-			// Act & Assert:
+			// Act + Assert:
 			runTruncateDecimalsTest(value1, decimal1, expectedResult1);
 			runTruncateDecimalsTest(value2, decimal2, expectedResult2);
 			runTruncateDecimalsTest(value3, decimal3, expectedResult3);
@@ -239,7 +239,7 @@ describe('utils/common', () => {
 			const type = 'address';
 			const expectedResult = 'NBFA6X...4AB';
 
-			// Act & Assert:
+			// Act + Assert:
 			runTruncateStringTest(value, type, expectedResult);
 		});
 
@@ -249,7 +249,7 @@ describe('utils/common', () => {
 			const type = 'address-short';
 			const expectedResult = '...4AB';
 
-			// Act & Assert:
+			// Act + Assert:
 			runTruncateStringTest(value, type, expectedResult);
 		});
 
@@ -259,7 +259,7 @@ describe('utils/common', () => {
 			const type = 'hash';
 			const expectedResult = '455D...B285';
 
-			// Act & Assert:
+			// Act + Assert:
 			runTruncateStringTest(value, type, expectedResult);
 		});
 
@@ -271,7 +271,7 @@ describe('utils/common', () => {
 			const expectedResult1 = 'Hello wor...';
 			const expectedResult2 = 'Hello!';
 
-			// Act & Assert:
+			// Act + Assert:
 			runTruncateStringTest(value1, type, expectedResult1);
 			runTruncateStringTest(value2, type, expectedResult2);
 		});
@@ -282,7 +282,7 @@ describe('utils/common', () => {
 			const type = 'address';
 			const expectedResult = '';
 
-			// Act & Assert:
+			// Act + Assert:
 			runTruncateStringTest(value, type, expectedResult);
 		});
 	});
@@ -311,7 +311,7 @@ describe('utils/common', () => {
 			const expectedResult5 = value5;
 			const expectedResult6 = value6;
 
-			// Act & Assert:
+			// Act + Assert:
 			runNullableValueToTextTest(value1, expectedResult1);
 			runNullableValueToTextTest(value2, expectedResult2);
 			runNullableValueToTextTest(value3, expectedResult3);
@@ -327,7 +327,7 @@ describe('utils/common', () => {
 			const expectedResult1 = '-';
 			const expectedResult2 = '-';
 
-			// Act & Assert:
+			// Act + Assert:
 			runNullableValueToTextTest(value1, expectedResult1);
 			runNullableValueToTextTest(value2, expectedResult2);
 		});
@@ -347,7 +347,7 @@ describe('utils/common', () => {
 			const value = ['itemA', 'itemB', 'itemC'];
 			const expectedResult = 'itemA, itemB, itemC';
 
-			// Act & Assert:
+			// Act + Assert:
 			runArrayToTextTest(value, expectedResult);
 		});
 
@@ -356,7 +356,7 @@ describe('utils/common', () => {
 			const value = [];
 			const expectedResult = '-';
 
-			// Act & Assert:
+			// Act + Assert:
 			runArrayToTextTest(value, expectedResult);
 		});
 	});
@@ -375,7 +375,7 @@ describe('utils/common', () => {
 			const value = 'root.sub.mosaic';
 			const expectedResult = 'root';
 
-			// Act & Assert:
+			// Act + Assert:
 			runGetRootNamespaceNameTest(value, expectedResult);
 		});
 
@@ -384,7 +384,7 @@ describe('utils/common', () => {
 			const value = 'root.sub';
 			const expectedResult = 'root';
 
-			// Act & Assert:
+			// Act + Assert:
 			runGetRootNamespaceNameTest(value, expectedResult);
 		});
 
@@ -393,7 +393,7 @@ describe('utils/common', () => {
 			const value = 'root';
 			const expectedResult = 'root';
 
-			// Act & Assert:
+			// Act + Assert:
 			runGetRootNamespaceNameTest(value, expectedResult);
 		});
 	});
@@ -441,7 +441,7 @@ describe('utils/common', () => {
 				translated_table_field_value: '196.998614(nem.xem) 12.34(a.test.test) 8.1(c.test.test) 4(b.test.test)'
 			};
 
-			// Act & Assert:
+			// Act + Assert:
 			runFormatDateTest(formatter, dataRow, expectedResult);
 		});
 
@@ -458,7 +458,7 @@ describe('utils/common', () => {
 				translated_table_field_description: null
 			};
 
-			// Act & Assert:
+			// Act + Assert:
 			runFormatDateTest(formatter, dataRow, expectedResult);
 		});
 
@@ -474,7 +474,7 @@ describe('utils/common', () => {
 				translated_table_field_timestamp: '2024-03-30 01:06:25'
 			};
 
-			// Act & Assert:
+			// Act + Assert:
 			runFormatDateTest(formatter, dataRow, expectedResult);
 		});
 
@@ -487,7 +487,7 @@ describe('utils/common', () => {
 				translated_table_field_amount: 2014883839.88001
 			};
 
-			// Act & Assert:
+			// Act + Assert:
 			runFormatDateTest(formatter, dataRow, expectedResult);
 		});
 	});
@@ -520,7 +520,7 @@ describe('utils/common', () => {
 			const filter = { isPerDay: true };
 			const expectedResult = 'daily';
 
-			// Act & Assert:
+			// Act + Assert:
 			runTransactionChartFilterToTypeTest(filter, expectedResult);
 		});
 
@@ -529,7 +529,7 @@ describe('utils/common', () => {
 			const filter = { isPerMonth: true };
 			const expectedResult = 'monthly';
 
-			// Act & Assert:
+			// Act + Assert:
 			runTransactionChartFilterToTypeTest(filter, expectedResult);
 		});
 
@@ -538,7 +538,7 @@ describe('utils/common', () => {
 			const filter = {};
 			const expectedResult = 'block';
 
-			// Act & Assert:
+			// Act + Assert:
 			runTransactionChartFilterToTypeTest(filter, expectedResult);
 		});
 	});
@@ -567,7 +567,7 @@ describe('utils/common', () => {
 				['translated_month_mar 31, 2024', 200]
 			];
 
-			// Act & Assert:
+			// Act + Assert:
 			runFormatTransactionChartTest(data, type, expectedResult);
 		});
 
@@ -583,7 +583,7 @@ describe('utils/common', () => {
 				['translated_month_apr, 2024', 200]
 			];
 
-			// Act & Assert:
+			// Act + Assert:
 			runFormatTransactionChartTest(data, type, expectedResult);
 		});
 
@@ -599,7 +599,7 @@ describe('utils/common', () => {
 				['translated_chart_label_block', 200]
 			];
 
-			// Act & Assert:
+			// Act + Assert:
 			runFormatTransactionChartTest(data, type, expectedResult);
 		});
 	});
@@ -626,7 +626,7 @@ describe('utils/common', () => {
 				text: 'translated_label_expired'
 			};
 
-			// Act & Assert:
+			// Act + Assert:
 			runCreateExpirationLabelTest(expirationHeight, isUnlimitedDuration, expectedResult);
 		});
 
@@ -639,7 +639,7 @@ describe('utils/common', () => {
 				text: 'translated_label_active'
 			};
 
-			// Act & Assert:
+			// Act + Assert:
 			runCreateExpirationLabelTest(expirationHeight, isUnlimitedDuration, expectedResult);
 		});
 
@@ -652,7 +652,7 @@ describe('utils/common', () => {
 				text: 'translated_label_active'
 			};
 
-			// Act & Assert:
+			// Act + Assert:
 			runCreateExpirationLabelTest(expirationHeight, isUnlimitedDuration, expectedResult);
 		});
 	});

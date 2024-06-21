@@ -81,13 +81,14 @@ describe('api/stats', () => {
 			};
 			const expectedResult = accountStatsResult;
 
-			// Act & Assert:
+			// Act + Assert:
 			await runStatsTest(functionToTest, args, responseMap, expectedResult);
 		});
 	});
 
 	describe('fetchTransactionChart', () => {
 		it('returns daily transaction chart data', async () => {
+			// Arrange:
 			const functionToTest = fetchTransactionChart;
 			const args = [{ isPerDay: true }];
 			const responseMap = {
@@ -95,11 +96,12 @@ describe('api/stats', () => {
 			};
 			const expectedResult = dailyTransactionChartResult;
 
-			// Act & Assert:
+			// Act + Assert:
 			await runStatsTest(functionToTest, args, responseMap, expectedResult);
 		});
 
 		it('returns monthly transaction chart data', async () => {
+			// Arrange:
 			const functionToTest = fetchTransactionChart;
 			const args = [{ isPerMonth: true }];
 			const responseMap = {
@@ -107,11 +109,12 @@ describe('api/stats', () => {
 			};
 			const expectedResult = monthlyTransactionChartResult;
 
-			// Act & Assert:
+			// Act + Assert:
 			await runStatsTest(functionToTest, args, responseMap, expectedResult);
 		});
 
 		it('returns block transaction chart data', async () => {
+			// Arrange:
 			const functionToTest = fetchTransactionChart;
 			const args = [{}];
 			const responseMap = {
@@ -119,7 +122,7 @@ describe('api/stats', () => {
 			};
 			const expectedResult = blockTransactionChartResult;
 
-			// Act & Assert:
+			// Act + Assert:
 			await runStatsTest(functionToTest, args, responseMap, expectedResult);
 		});
 	});
@@ -135,7 +138,7 @@ describe('api/stats', () => {
 			};
 			const expectedResult = transactionStatsResult;
 
-			// Act & Assert:
+			// Act + Assert:
 			await runStatsTest(functionToTest, args, responseMap, expectedResult);
 		});
 	});
@@ -150,7 +153,7 @@ describe('api/stats', () => {
 			};
 			const expectedResult = blockStatsResult;
 
-			// Act & Assert:
+			// Act + Assert:
 			await runStatsTest(functionToTest, args, responseMap, expectedResult);
 		});
 	});
@@ -169,7 +172,7 @@ describe('api/stats', () => {
 				supernodes: 2
 			};
 
-			// Act & Assert:
+			// Act + Assert:
 			await runStatsTest(functionToTest, args, responseMap, expectedResult);
 		});
 	});
@@ -184,7 +187,7 @@ describe('api/stats', () => {
 			};
 			const expectedResult = marketDataResult;
 
-			// Act & Assert:
+			// Act + Assert:
 			await runStatsTest(functionToTest, args, responseMap, expectedResult);
 		});
 	});
@@ -199,7 +202,7 @@ describe('api/stats', () => {
 			};
 			const expectedResult = 0.857586129846396;
 
-			// Act & Assert:
+			// Act + Assert:
 			await runStatsTest(functionToTest, args, responseMap, expectedResult);
 		});
 
@@ -212,7 +215,7 @@ describe('api/stats', () => {
 			};
 			const expectedResult = 0.857586129846396;
 
-			// Act & Assert:
+			// Act + Assert:
 			await runStatsTest(functionToTest, args, responseMap, expectedResult);
 		});
 
@@ -225,7 +228,7 @@ describe('api/stats', () => {
 			};
 			const expectedResult = null;
 
-			// Act & Assert:
+			// Act + Assert:
 			await runStatsTest(functionToTest, args, responseMap, expectedResult);
 		});
 	});
