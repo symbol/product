@@ -190,12 +190,12 @@ describe('api/stats', () => {
 	});
 
 	describe('fetchPriceByDate', () => {
-		it('returns market data', async () => {
+		it('returns market data for provided ticker', async () => {
 			// Arrange:
 			const functionToTest = fetchPriceByDate;
-			const args = ['2024-06-10 20:56:08', 'UAH'];
+			const args = ['2024-06-06 20:56:08', 'UAH'];
 			const responseMap = {
-				'https://historical.price?date=10-06-2024': priceByDateResponse
+				'https://historical.price?date=06-06-2024': priceByDateResponse
 			};
 			const expectedResult = 0.857586129846396;
 
@@ -203,7 +203,20 @@ describe('api/stats', () => {
 			await runStatsTest(functionToTest, args, responseMap, expectedResult);
 		});
 
-		it('returns market data', async () => {
+		it('returns market data for provided ticker', async () => {
+			// Arrange:
+			const functionToTest = fetchPriceByDate;
+			const args = ['2024-11-11 20:56:08', 'UAH'];
+			const responseMap = {
+				'https://historical.price?date=11-11-2024': priceByDateResponse
+			};
+			const expectedResult = 0.857586129846396;
+
+			// Act & Assert:
+			await runStatsTest(functionToTest, args, responseMap, expectedResult);
+		});
+
+		it('returns null if ticker is not supported', async () => {
 			// Arrange:
 			const functionToTest = fetchPriceByDate;
 			const args = ['2024-06-10 20:56:08', 'UNKNOWN_FIAT_TICKER'];
