@@ -1,5 +1,5 @@
+import Avatar from './Avatar';
 import CustomImage from './CustomImage';
-import IconTransactionType from './IconTransactionType';
 import ValueAccount from './ValueAccount';
 import ValueList from './ValueList';
 import ValueMosaic from './ValueMosaic';
@@ -16,32 +16,31 @@ const ItemTransactionMobile = ({ data, isTimestampShown }) => {
 	const typeText = t(`transactionType_${type}`);
 
 	return (
-		<Link className={styles.itemTransactionMobile} href={createPageHref('transactions', hash)}>
-			<IconTransactionType value={type} />
-			<div className={styles.middle}>
-				<div className={styles.rowAmount}>
-					<div>
-						<div className={styles.type}>{typeText}</div>
-						<div className={styles.row}>
-							<CustomImage className={styles.iconDirection} src="/images/icon-hash.svg" />
-							<ValueTransactionHash value={hash} />
-						</div>
+		<div className={styles.itemTransactionMobile}>
+			<Link className={styles.mainSection} href={createPageHref('transactions', hash)}>
+				<Avatar type="transaction" size="md" value={type} />
+				<div className={styles.info}>
+					<div className={styles.name}>{typeText}</div>
+					<div className="layout-flex-row">
+						<ValueTransactionHash value={hash} />
+						<ValueList
+							data={value}
+							max={2}
+							direction="column"
+							renderItem={item => (
+								<ValueMosaic
+									mosaicId={item.id}
+									mosaicName={item.name}
+									amount={item.amount}
+									isTickerShown
+									direction={direction}
+								/>
+							)}
+						/>
 					</div>
-					<ValueList
-						data={value}
-						max={2}
-						direction="column"
-						renderItem={item => (
-							<ValueMosaic
-								mosaicId={item.id}
-								mosaicName={item.name}
-								amount={item.amount}
-								isTickerShown
-								direction={direction}
-							/>
-						)}
-					/>
 				</div>
+			</Link>
+			<div>
 				<ValueAccount address={sender} size="sm" />
 				{!!recipient && (
 					<div className={styles.row}>
@@ -49,9 +48,9 @@ const ItemTransactionMobile = ({ data, isTimestampShown }) => {
 						<ValueAccount address={recipient} size="sm" />
 					</div>
 				)}
-				{isTimestampShown && <ValueTimestamp value={timestamp} hasTime />}
 			</div>
-		</Link>
+			{isTimestampShown && <ValueTimestamp value={timestamp} hasTime />}
+		</div>
 	);
 };
 
