@@ -26,11 +26,11 @@ describe('components/AccountCreateModalBox', () => {
 		testHelper.customRender(<AccountCreateModalBox isOpen={true} onRequestClose={jest.fn()} />, context);
 
 		// Act:
-		const createWalletTitle = screen.getByText('Create Wallet');
+		const createAccountTitle = screen.getByText('Create Account');
 		const createButton = screen.getByText('Create');
 
 		// Assert:
-		expect(createWalletTitle).toBeInTheDocument();
+		expect(createAccountTitle).toBeInTheDocument();
 		expect(createButton).toBeInTheDocument();
 	});
 
@@ -41,7 +41,7 @@ describe('components/AccountCreateModalBox', () => {
 		testHelper.customRender(<AccountCreateModalBox isOpen={true} onRequestClose={onRequestClose} />, context);
 
 		const createButton = screen.getByText('Create');
-		const inputElement = screen.getByPlaceholderText('Wallet Name');
+		const inputElement = screen.getByPlaceholderText('Account Name');
 
 		const mockNewAccount = Object.values(testHelper.generateAccountsState(1))[0];
 		fireEvent.change(inputElement, { target: { value: mockNewAccount.label } });
@@ -63,12 +63,12 @@ describe('components/AccountCreateModalBox', () => {
 		expect(onRequestClose).toHaveBeenCalledWith(false);
 	});
 
-	it('can not creates new account when wallet name is empty', async () => {
+	it('can not creates new account when account name is empty', async () => {
 		// Arrange:
 		testHelper.customRender(<AccountCreateModalBox isOpen={true} onRequestClose={jest.fn()} />, context);
 
 		const createButton = screen.getByText('Create');
-		const inputElement = screen.getByPlaceholderText('Wallet Name');
+		const inputElement = screen.getByPlaceholderText('Account Name');
 
 		jest.spyOn(helper, 'createNewAccount');
 
@@ -81,18 +81,18 @@ describe('components/AccountCreateModalBox', () => {
 		expect(helper.createNewAccount).not.toHaveBeenCalled();
 	});
 
-	it('can not creates new account when wallet name already exist', async () => {
+	it('can not creates new account when account name already exist', async () => {
 		// Arrange:
 		context.walletState.accounts = testHelper.generateAccountsState(1);
 
 		testHelper.customRender(<AccountCreateModalBox isOpen={true} onRequestClose={jest.fn()} />, context);
 
 		const createButton = screen.getByText('Create');
-		const inputElement = screen.getByPlaceholderText('Wallet Name');
+		const inputElement = screen.getByPlaceholderText('Account Name');
 
 		jest.spyOn(helper, 'createNewAccount');
 
-		fireEvent.change(inputElement, { target: { value: 'Wallet 0' } });
+		fireEvent.change(inputElement, { target: { value: 'Account 0' } });
 
 		// Act:
 		await act(async () => fireEvent.click(createButton));
@@ -106,7 +106,7 @@ describe('components/AccountCreateModalBox', () => {
 		testHelper.customRender(<AccountCreateModalBox isOpen={true} onRequestClose={jest.fn()} />, context);
 
 		const createButton = screen.getByText('Create');
-		const inputElement = screen.getByPlaceholderText('Wallet Name');
+		const inputElement = screen.getByPlaceholderText('Account Name');
 
 		fireEvent.change(inputElement, { target: { value: input } });
 
@@ -118,13 +118,13 @@ describe('components/AccountCreateModalBox', () => {
 		expect(errorElement).toBeInTheDocument();
 	};
 
-	it('input box can validates wallet name already exists', async () => {
-		// create default wallet
+	it('input box can validates account name already exists', async () => {
+		// create default account
 		context.walletState.accounts = testHelper.generateAccountsState(1);
-		await assertValidationError('Wallet 0', context, 'Wallet name already exists');
+		await assertValidationError('Account 0', context, 'Account name already exists');
 	});
 
-	it('input box can validates wallet name when empty', async () => {
-		await assertValidationError(' ', context, 'Wallet name is required');
+	it('input box can validates account name when empty', async () => {
+		await assertValidationError(' ', context, 'Account name is required');
 	});
 });
