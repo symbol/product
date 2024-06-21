@@ -16,8 +16,8 @@ const AccountAvatar = ({ address }) => {
 
 	return (
 		<div className={styles.accountImageContainer}>
-			{!!image && <img src={image} className={styles.accountIdenticon} style={image.style} />}
-			<CustomImage className={styles.accountIcon} src="/images/icon-account.svg" alt="Account" />
+			{!!image && <img src={image} className={styles.accountIdenticon} style={image.style} alt="Account icon background" />}
+			<CustomImage className={styles.accountIcon} src="/images/icon-account.svg" alt="Account icon" />
 		</div>
 	);
 };

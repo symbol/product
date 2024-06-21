@@ -1,20 +1,20 @@
 @import "../variables";
 
 .itemMosaicMobile {
-    width: 100%;
     display: flex;
     flex-direction: column;
     gap: $spacing-base * 2;
+    width: 100%;
 
     .mainSection {
-        width: 100%;
         display: flex;
         flex-direction: row;
         gap: $spacing-base;
+        width: 100%;
 
         .info {
-            flex: 1;
             display: flex;
+            flex: 1;
             flex-direction: column;
 
             .name {

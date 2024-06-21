@@ -5,7 +5,7 @@ import { transactionStatsResult } from '../test-utils/stats';
 import { transactionPageResult } from '../test-utils/transactions';
 import * as StatsService from '@/api/stats';
 import * as TransactionService from '@/api/transactions';
-import TransactionList, { getServerSideProps } from '@/pages/transactions/index.jsx';
+import TransactionList, { getServerSideProps } from '@/pages/transactions/index';
 import * as utils from '@/utils';
 import { render, screen } from '@testing-library/react';
 

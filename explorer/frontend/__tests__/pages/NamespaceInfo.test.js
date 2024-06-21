@@ -3,7 +3,7 @@ import 'react-intersection-observer/test-utils';
 import { namespaceInfoResult } from '../test-utils/namespaces';
 import * as BlockService from '@/api/blocks';
 import * as NamespaceService from '@/api/namespaces';
-import NamespaceInfo, { getServerSideProps } from '@/pages/namespaces/[id].jsx';
+import NamespaceInfo, { getServerSideProps } from '@/pages/namespaces/[id]';
 import { render, screen, waitFor } from '@testing-library/react';
 
 jest.mock('@/api/blocks', () => {

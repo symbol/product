@@ -4,7 +4,7 @@ import { accountInfoResult } from '../test-utils/account';
 import { transactionPageResult } from '../test-utils/transactions';
 import * as AccountService from '@/api/accounts';
 import * as TransactionService from '@/api/transactions';
-import AccountInfo, { getServerSideProps } from '@/pages/accounts/[address].jsx';
+import AccountInfo, { getServerSideProps } from '@/pages/accounts/[address]';
 import * as utils from '@/utils';
 import { render, screen } from '@testing-library/react';
 

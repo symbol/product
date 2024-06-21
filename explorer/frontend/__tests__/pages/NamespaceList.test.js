@@ -3,7 +3,7 @@ import 'react-intersection-observer/test-utils';
 import { setDevice } from '../test-utils/device';
 import { namespacePageResult } from '../test-utils/namespaces';
 import * as NamespaceService from '@/api/namespaces';
-import NamespaceList, { getServerSideProps } from '@/pages/namespaces/index.jsx';
+import NamespaceList, { getServerSideProps } from '@/pages/namespaces/index';
 import { render, screen } from '@testing-library/react';
 
 jest.mock('@/api/namespaces', () => {

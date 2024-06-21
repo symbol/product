@@ -4,7 +4,6 @@ import TablePageLoader from '@/components/TablePageLoader';
 import { render, screen } from '@testing-library/react';
 import { mockAllIsIntersecting } from 'react-intersection-observer/test-utils';
 
-
 describe('TablePageLoader', () => {
 	describe('loading state', () => {
 		const runLoadingTest = isLoading => {

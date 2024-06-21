@@ -5,7 +5,7 @@ import { setDevice } from '../test-utils/device';
 import { blockStatsResult } from '../test-utils/stats';
 import * as BlockService from '@/api/blocks';
 import * as StatsService from '@/api/stats';
-import BlockList, { getServerSideProps } from '@/pages/blocks/index.jsx';
+import BlockList, { getServerSideProps } from '@/pages/blocks/index';
 import { render, screen } from '@testing-library/react';
 
 jest.mock('@/api/blocks', () => {

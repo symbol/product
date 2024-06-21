@@ -7,7 +7,7 @@ import * as AccountService from '@/api/accounts';
 import * as BlockService from '@/api/blocks';
 import * as MosaicService from '@/api/mosaics';
 import * as TransactionService from '@/api/transactions';
-import MosaicInfo, { getServerSideProps } from '@/pages/mosaics/[id].jsx';
+import MosaicInfo, { getServerSideProps } from '@/pages/mosaics/[id]';
 import * as utils from '@/utils';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 

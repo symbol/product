@@ -1,1 +1,2 @@
-export default address => `image-${address}`;
+const makeBlockie = address => `image-${address}`;
+export default makeBlockie;

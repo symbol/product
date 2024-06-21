@@ -2,7 +2,7 @@ import '@testing-library/jest-dom';
 import 'react-intersection-observer/test-utils';
 import { blockInfoResult } from '../test-utils/blocks';
 import * as BlockService from '@/api/blocks';
-import BlockInfo, { getServerSideProps } from '@/pages/blocks/[height].jsx';
+import BlockInfo, { getServerSideProps } from '@/pages/blocks/[height]';
 import * as utils from '@/utils';
 import { render, screen } from '@testing-library/react';
 
