@@ -1,7 +1,7 @@
 import { fetchAccountPage } from './accounts';
 import { fetchBlockPage } from './blocks';
 import config from '@/config';
-import { truncateDecimals } from '@/utils/format';
+import { transactionChartFilterToType, truncateDecimals } from '@/utils/common';
 import { makeRequest } from '@/utils/server';
 
 export const fetchAccountStats = async () => {
@@ -28,13 +28,13 @@ export const fetchAccountStats = async () => {
 	};
 };
 
-export const fetchTransactionChart = async ({ isPerDay, isPerMonth }) => {
-	const filter = isPerDay ? 'perDay' : isPerMonth ? 'perMonth' : '';
+export const fetchTransactionChart = async filter => {
+	const type = transactionChartFilterToType(filter);
 	const currentDate = new Date();
 	const endDateString = currentDate.toISOString().slice(0, 10);
 
-	switch (filter) {
-		case 'perDay': {
+	switch (type) {
+		case 'daily': {
 			const startDate = new Date();
 			startDate.setDate(startDate.getDate() - 90);
 			const startDateString = startDate.toISOString().slice(0, 10);
@@ -44,7 +44,7 @@ export const fetchTransactionChart = async ({ isPerDay, isPerMonth }) => {
 
 			return response.map(item => [item.date, item.totalTransactions]);
 		}
-		case 'perMonth': {
+		case 'monthly': {
 			const startDate = new Date();
 			startDate.setMonth(startDate.getMonth() - 48);
 			const startDateString = startDate.toISOString().slice(0, 10);
@@ -124,7 +124,7 @@ export const fetchMarketData = async () => {
 	};
 };
 
-export const fetchPriceByDate = async (timestamp, currency = 'USD') => {
+export const fetchPriceByDate = async (timestamp, currency) => {
 	const date = new Date(timestamp);
 	const yyyy = date.getFullYear();
 	let mm = date.getMonth() + 1;

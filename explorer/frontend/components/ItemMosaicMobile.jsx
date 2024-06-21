@@ -4,17 +4,14 @@ import ValueAccount from './ValueAccount';
 import ValueLabel from './ValueLabel';
 import ValueTimestamp from './ValueTimestamp';
 import styles from '@/styles/components/ItemMosaicMobile.module.scss';
-import { createPageHref } from '@/utils';
+import { createExpirationLabel, createPageHref } from '@/utils';
 import Link from 'next/link';
 import { useTranslation } from 'next-i18next';
 
 const ItemMosaicMobile = ({ data, chainHeight }) => {
 	const { t } = useTranslation();
 	const { name, id, creator, registrationTimestamp, namespaceExpirationHeight, isUnlimitedDuration } = data;
-
-	const isActive = isUnlimitedDuration || chainHeight < namespaceExpirationHeight;
-	const status = isActive ? 'active' : 'inactive';
-	const text = isActive ? t('label_active') : t('label_expired');
+	const { status, text } = createExpirationLabel(namespaceExpirationHeight, chainHeight, isUnlimitedDuration, t);
 
 	return (
 		<div className={styles.itemMosaicMobile}>

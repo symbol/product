@@ -3,6 +3,7 @@ import { blockPageResult } from '../test-utils/blocks';
 import { transactionPageResult } from '../test-utils/transactions';
 import {
 	arrayToText,
+	createExpirationLabel,
 	createMosaicName,
 	decodeTransactionMessage,
 	formatAccountCSV,
@@ -10,13 +11,15 @@ import {
 	formatDate,
 	formatMosaicCSV,
 	formatTransactionCSV,
+	formatTransactionChart,
 	getRootNamespaceName,
 	nullableValueToText,
 	numberToShortString,
 	numberToString,
+	transactionChartFilterToType,
 	truncateDecimals,
 	truncateString
-} from '@/utils/format';
+} from '@/utils/common';
 
 beforeEach(() => {
 	Date.prototype.getTimezoneOffset = function () {
@@ -24,7 +27,7 @@ beforeEach(() => {
 	};
 });
 
-describe('utils/format', () => {
+describe('utils/common', () => {
 	describe('formatDate', () => {
 		const runFormatDateTest = (timestamp, config, expectedResult) => {
 			// Arrange:
@@ -500,6 +503,157 @@ describe('utils/format', () => {
 
 			// Assert:
 			expect(result).toBe(expectedResult);
+		});
+	});
+
+	describe('transactionChartFilterToType', () => {
+		const runTransactionChartFilterToTypeTest = (filter, expectedResult) => {
+			// Act:
+			const result = transactionChartFilterToType(filter);
+
+			//Assert:
+			expect(result).toBe(expectedResult);
+		};
+
+		it('returns daily type', () => {
+			// Arrange:
+			const filter = { isPerDay: true };
+			const expectedResult = 'daily';
+
+			// Act & Assert:
+			runTransactionChartFilterToTypeTest(filter, expectedResult);
+		});
+
+		it('returns monthly type', () => {
+			// Arrange:
+			const filter = { isPerMonth: true };
+			const expectedResult = 'monthly';
+
+			// Act & Assert:
+			runTransactionChartFilterToTypeTest(filter, expectedResult);
+		});
+
+		it('returns default block type', () => {
+			// Arrange:
+			const filter = {};
+			const expectedResult = 'block';
+
+			// Act & Assert:
+			runTransactionChartFilterToTypeTest(filter, expectedResult);
+		});
+	});
+
+	describe('formatTransactionChart', () => {
+		const runFormatTransactionChartTest = (data, type, expectedResult) => {
+			// Arrange:
+			const translate = jest.fn().mockImplementation(key => `translated_${key}`);
+
+			// Act:
+			const result = formatTransactionChart(data, type, translate);
+
+			// Assert:
+			expect(result).toStrictEqual(expectedResult);
+		};
+
+		it('returns formatted daily chart data', () => {
+			// Arrange:
+			const data = [
+				['2024-03-30', 100],
+				['2024-03-31', 200]
+			];
+			const type = 'daily';
+			const expectedResult = [
+				['translated_month_mar 30, 2024', 100],
+				['translated_month_mar 31, 2024', 200]
+			];
+
+			// Act & Assert:
+			runFormatTransactionChartTest(data, type, expectedResult);
+		});
+
+		it('returns formatted monthly chart data', () => {
+			// Arrange:
+			const data = [
+				['2024-03-01', 100],
+				['2024-04-01', 200]
+			];
+			const type = 'monthly';
+			const expectedResult = [
+				['translated_month_mar, 2024', 100],
+				['translated_month_apr, 2024', 200]
+			];
+
+			// Act & Assert:
+			runFormatTransactionChartTest(data, type, expectedResult);
+		});
+
+		it('returns formatted block chart data', () => {
+			// Arrange:
+			const data = [
+				[100001, 100],
+				[100002, 200]
+			];
+			const type = 'block';
+			const expectedResult = [
+				['translated_chart_label_block', 100],
+				['translated_chart_label_block', 200]
+			];
+
+			// Act & Assert:
+			runFormatTransactionChartTest(data, type, expectedResult);
+		});
+	});
+
+	describe('createExpirationLabel', () => {
+		const runCreateExpirationLabelTest = (expirationHeight, isUnlimitedDuration, expectedResult) => {
+			// Arrange:
+			const translate = jest.fn().mockImplementation(key => `translated_${key}`);
+			const chainHeight = 100;
+
+			// Act:
+			const result = createExpirationLabel(expirationHeight, chainHeight, isUnlimitedDuration, translate);
+
+			// Assert:
+			expect(result).toStrictEqual(expectedResult);
+		};
+
+		it('returns expired status  when chain height is higher than expiration height', () => {
+			// Arrange:
+			const expirationHeight = 99;
+			const isUnlimitedDuration = false;
+			const expectedResult = {
+				status: 'inactive',
+				text: 'translated_label_expired'
+			};
+
+			// Act & Assert:
+			runCreateExpirationLabelTest(expirationHeight, isUnlimitedDuration, expectedResult);
+		});
+
+		it('returns active status when chain height is less than expiration height', () => {
+			// Arrange:
+			const expirationHeight = 101;
+			const isUnlimitedDuration = false;
+			const expectedResult = {
+				status: 'active',
+				text: 'translated_label_active'
+			};
+
+			// Act & Assert:
+			runCreateExpirationLabelTest(expirationHeight, isUnlimitedDuration, expectedResult);
+		});
+
+		it('returns active status when unlimited duration', () => {
+			// Arrange:
+			const expirationHeight = 101;
+			const isUnlimitedDuration = true;
+			const expectedResult = {
+				status: 'active',
+				text: 'translated_label_active'
+			};
+
+			// Act & Assert:
+			runCreateExpirationLabelTest(expirationHeight, isUnlimitedDuration, expectedResult);
 		});
 	});
 });

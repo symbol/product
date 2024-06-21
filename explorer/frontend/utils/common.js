@@ -1,3 +1,5 @@
+import { TRANSACTION_CHART_TYPE } from '@/constants';
+
 /**
  * Converts date to a readable text string.
  * @param {string} dateStr - Date string.
@@ -36,7 +38,6 @@ export const formatDate = (dateStr, translate, config = {}) => {
 	return formattedDate;
 };
 
-// Converts cain timestamp to a local date. Adds timezone offset.
 /**
  * Converts date to a local date.
  * @param {string} date - Date string.
@@ -91,7 +92,6 @@ export const numberToString = num => {
 	return num.toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ' ');
 };
 
-// Truncates a number to a specified decimal.
 /**
  * Truncates a number to a specified decimal.
  * @param {number} num - Number.
@@ -275,4 +275,55 @@ export const formatMosaicCSV = (row, translate) => {
  */
 export const decodeTransactionMessage = text => {
 	return Buffer.from(text, 'hex').toString();
+};
+
+/**
+ * Converts transaction chart filter to type.
+ * @param {object} filter - Transaction chart filter.
+ * @param {boolean} filter.isPerDay - The daily transaction chart.
+ * @param {boolean} filter.isPerMonth - The monthly transaction chart.
+ * @returns {string} Transaction chart type.
+ */
+export const transactionChartFilterToType = filter => {
+	return filter.isPerDay
+		? TRANSACTION_CHART_TYPE.DAILY
+		: filter.isPerMonth
+		? TRANSACTION_CHART_TYPE.MONTHLY
+		: TRANSACTION_CHART_TYPE.BLOCK;
+};
+
+/**
+ * Formats transaction chart data.
+ * @param {Array} data - Transaction chart data.
+ * @param {string} type - Transaction chart type.
+ * @param {Function} translate - Translation function.
+ * @returns {Array} Formatted transaction chart data.
+ */
+export const formatTransactionChart = (data, type, translate) => {
+	return data.map(item => {
+		switch (type) {
+			case TRANSACTION_CHART_TYPE.DAILY:
+				return [formatDate(item[0], translate), item[1]];
+			case TRANSACTION_CHART_TYPE.MONTHLY:
+				return [formatDate(item[0], translate, { hasDays: false }), item[1]];
+			default:
+				return [translate('chart_label_block', { height: item[0] }), item[1]];
+		}
+	});
+};
+
+/**
+ * Creates expiration label.
+ * @param {number} expirationHeight - Expiration height.
+ * @param {number} chainHeight - Current chain height.
+ * @param {boolean} isUnlimitedDuration - Whether duration is unlimited.
+ * @param {Function} translate - Translation function.
+ * @returns {object} Expiration label.
+ */
+export const createExpirationLabel = (expirationHeight, chainHeight, isUnlimitedDuration, translate) => {
+	const isActive = isUnlimitedDuration || chainHeight < expirationHeight;
+	const status = isActive ? 'active' : 'inactive';
+	const text = isActive ? translate('label_active') : translate('label_expired');
+
+	return { status, text };
 };

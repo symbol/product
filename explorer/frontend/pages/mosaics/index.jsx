@@ -9,7 +9,7 @@ import ValueBlockHeight from '@/components/ValueBlockHeight';
 import ValueLabel from '@/components/ValueLabel';
 import ValueTimestamp from '@/components/ValueTimestamp';
 import styles from '@/styles/pages/Home.module.scss';
-import { createPageHref, useAsyncCall, usePagination } from '@/utils';
+import { createExpirationLabel, createPageHref, useAsyncCall, usePagination } from '@/utils';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useTranslation } from 'next-i18next';
@@ -46,9 +46,7 @@ const Mosaics = ({ mosaics }) => {
 			key: 'status',
 			size: '5rem',
 			renderValue: (value, row) => {
-				const isActive = row.isUnlimitedDuration || chainHeight < row.namespaceExpirationHeight;
-				const status = isActive ? 'active' : 'inactive';
-				const text = isActive ? t('label_active') : t('label_expired');
+				const { status, text } = createExpirationLabel(row.namespaceExpirationHeight, chainHeight, row.isUnlimitedDuration, t);
 
 				return <ValueLabel type={status} title={text} />;
 			}
