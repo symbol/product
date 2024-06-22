@@ -218,12 +218,12 @@ describe('symbolSnapFactory', () => {
 	describe('createAccount', () => {
 		it('returns account data when provider request is successful', async () => {
 			// Arrange:
-			const walletLabel = 'Test Wallet';
+			const accountLabel = 'Test Wallet';
 			const mockAccountData = {
 				id: '1234',
 				addressIndex: 0,
 				address: 'TBZ6JU7K5Y3W4H3XJ7XJ5JQW6X3J5JQW6X3J5JQW',
-				label: walletLabel,
+				label: accountLabel,
 				networkName: 'testnet',
 				publicKey: '1234',
 				type: 'metamask'
@@ -232,7 +232,7 @@ describe('symbolSnapFactory', () => {
 			mockProvider.request.mockResolvedValue(mockAccountData);
 
 			// Act:
-			const result = await symbolSnap.createAccount(walletLabel);
+			const result = await symbolSnap.createAccount(accountLabel);
 
 			// Assert:
 			expect(result).toEqual(mockAccountData);
@@ -243,7 +243,7 @@ describe('symbolSnapFactory', () => {
 					request: {
 						method: 'createAccount',
 						params: {
-							walletLabel
+							accountLabel
 						}
 					}
 				}
