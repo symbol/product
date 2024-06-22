@@ -207,7 +207,7 @@ describe('accountUtils', () => {
 				addressIndex: expectedAddressIndex,
 				type: 'metamask',
 				networkName: 'testnet',
-				label: requestParams.walletLabel,
+				label: requestParams.accountLabel,
 				address: 'TDCYZ45MX4IZ7SKEL5UL4ZA7O6KDDUAZZALCA6Y',
 				publicKey: 'FABAD1271A72816961B95CCCAAE1FD1E356F26A6AD3E0A91A25F703C1312F73D'
 			});
@@ -223,7 +223,7 @@ describe('accountUtils', () => {
 			};
 
 			const requestParams = {
-				walletLabel: 'my first wallet'
+				accountLabel: 'my first wallet'
 			};
 
 			await assertCreateAccount(state, requestParams, 0);
@@ -242,7 +242,7 @@ describe('accountUtils', () => {
 			};
 
 			const requestParams = {
-				walletLabel: 'invest wallet'
+				accountLabel: 'invest wallet'
 			};
 
 			await assertCreateAccount(state, requestParams, 3);
@@ -258,7 +258,7 @@ describe('accountUtils', () => {
 			};
 
 			const requestParams = {
-				walletLabel: 'my first wallet'
+				accountLabel: 'my first wallet'
 			};
 
 			// Act + Assert:
@@ -276,7 +276,7 @@ describe('accountUtils', () => {
 			};
 
 			const requestParams = {
-				walletLabel: 'my first wallet'
+				accountLabel: 'my first wallet'
 			};
 
 			jest.spyOn(accountUtils, 'deriveKeyPair').mockRejectedValue(new Error('error'));
