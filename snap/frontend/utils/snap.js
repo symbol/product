@@ -108,10 +108,10 @@ const symbolSnapFactory = {
 			},
 			/**
 			 * Create an account in snap MetaMask.
-			 * @param {string} walletLabel - The label of the wallet.
+			 * @param {string} accountLabel - The label of the account.
 			 * @returns {Account} The account object returned by the snap.
 			 */
-			async createAccount(walletLabel) {
+			async createAccount(accountLabel) {
 				const account = await provider.request({
 					method: 'wallet_invokeSnap',
 					params: {
@@ -119,7 +119,7 @@ const symbolSnapFactory = {
 						request: {
 							method: 'createAccount',
 							params: {
-								walletLabel
+								accountLabel
 							}
 						}
 					}

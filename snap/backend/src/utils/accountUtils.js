@@ -4,7 +4,7 @@ import { PrivateKey } from 'symbol-sdk';
 import { SymbolFacade } from 'symbol-sdk/symbol';
 import { v4 as uuidv4 } from 'uuid';
 
-const WalletType = {
+const AccountType = {
 	METAMASK: 'metamask'
 };
 
@@ -41,7 +41,7 @@ const accountUtils = {
 	getLatestAccountIndex(accounts, networkName) {
 		return Object.values(accounts)
 			.filter(walletAccount =>
-				WalletType.METAMASK === walletAccount.account.type
+				AccountType.METAMASK === walletAccount.account.type
 				&& networkName === walletAccount.account.networkName)
 			.reduce((maxIndex, walletAccount) => Math.max(maxIndex, walletAccount.account.addressIndex), -1);
 	},
@@ -63,7 +63,7 @@ const accountUtils = {
 	},
 	async createAccount({ state, requestParams }) {
 		try {
-			const { walletLabel } = requestParams;
+			const { accountLabel } = requestParams;
 			const { network, accounts } = state;
 
 			const facade = new SymbolFacade(network.networkName);
@@ -74,12 +74,12 @@ const accountUtils = {
 			const newKeyPair = await this.deriveKeyPair(network.networkName, newAddressIndex);
 			const accountId = uuidv4();
 
-			const wallet = {
+			const newAccount = {
 				account: {
 					id: accountId,
 					addressIndex: newAddressIndex,
-					type: WalletType.METAMASK,
-					label: walletLabel,
+					type: AccountType.METAMASK,
+					label: accountLabel,
 					address: facade.network.publicKeyToAddress(newKeyPair.publicKey).toString(),
 					publicKey: newKeyPair.publicKey.toString(),
 					networkName: network.networkName
@@ -89,12 +89,12 @@ const accountUtils = {
 
 			state.accounts = {
 				...state.accounts,
-				[accountId]: wallet
+				[accountId]: newAccount
 			};
 
 			await stateManager.update(state);
 
-			return wallet.account;
+			return newAccount.account;
 		} catch (error) {
 			throw new Error(`Failed to create account: ${error.message}`);
 		}
