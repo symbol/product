@@ -45,11 +45,13 @@ const AccountCreateModalBox = ({ isOpen, onRequestClose }) => {
                         Create Account
 				</div>
 
-				<Input label='Account Name:' placeholder='Account Name' value={accountName} onChange={handleOnChangeAccountName} />
-
-				{
-					error && <p className='text-red-500 text-xs'>{error}</p>
-				}
+				<Input
+					label='Account Name:'
+					placeholder='Account Name'
+					value={accountName}
+					onChange={handleOnChangeAccountName}
+					errorMessage={error}
+				/>
 
 				<Button className='uppercase bg-secondary m-2' onClick={handleCreateNewAccount}>
                     Create

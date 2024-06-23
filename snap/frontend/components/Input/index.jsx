@@ -1,6 +1,6 @@
 import React from 'react';
 
-const Input = ({ label, placeholder, value, onChange, type = 'text', className, disabled = false, ...props }) => {
+const Input = ({ label, placeholder, value, onChange, type = 'text', className, disabled = false, errorMessage, ...props }) => {
 	const combinedClassName = `flex flex-col ${className || ''}`;
 
 	return (
@@ -14,6 +14,8 @@ const Input = ({ label, placeholder, value, onChange, type = 'text', className, 
 				className="w-full px-4 py-2 text-black bg-[#D9D9D9] rounded-xl"
 				disabled={disabled}
 			/>
+
+			{errorMessage && <p className='text-red-500 text-xs'>{errorMessage}</p>}
 		</div>
 	);
 };
