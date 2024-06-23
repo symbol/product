@@ -115,7 +115,7 @@ describe('onRpcRequest', () => {
 				request: {
 					method: 'createAccount',
 					params: {
-						walletLabel: 'my wallet'
+						accountLabel: 'my wallet'
 					}
 				}
 			});
@@ -127,7 +127,37 @@ describe('onRpcRequest', () => {
 					network: mockNodeInfo
 				},
 				requestParams: {
-					walletLabel: 'my wallet'
+					accountLabel: 'my wallet'
+				}
+			});
+		});
+	});
+
+	describe('importAccount', () => {
+		it('returns new import account', async () => {
+			// Arrange:
+			jest.spyOn(accountUtils, 'importAccount').mockResolvedValue();
+
+			// Act:
+			await onRpcRequest({
+				request: {
+					method: 'importAccount',
+					params: {
+						accountLabel: 'my wallet',
+						privateKey: 'private key'
+					}
+				}
+			});
+
+			// Assert:
+			expect(accountUtils.importAccount).toHaveBeenCalledWith({
+				state: {
+					accounts: {},
+					network: mockNodeInfo
+				},
+				requestParams: {
+					accountLabel: 'my wallet',
+					privateKey: 'private key'
 				}
 			});
 		});
