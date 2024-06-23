@@ -4,6 +4,9 @@ import {
 	beforeEach,
 	describe, expect, it, jest
 } from '@jest/globals';
+import {
+	copyable, heading, panel, text
+} from '@metamask/snaps-sdk';
 import { PrivateKey } from 'symbol-sdk';
 import { SymbolFacade } from 'symbol-sdk/symbol';
 import { v4 as uuidv4 } from 'uuid';
@@ -284,6 +287,135 @@ describe('accountUtils', () => {
 			// Act + Assert:
 			const errorMessage = 'Failed to create account: error';
 			await expect(accountUtils.createAccount({ state, requestParams })).rejects.toThrow(errorMessage);
+		});
+	});
+
+	describe('importAccount', () => {
+		it('can import an account', async () => {
+			// Arrange:
+			const state = {
+				network: {
+					networkName: 'testnet'
+				},
+				accounts: {}
+			};
+
+			const requestParams = {
+				privateKey: '1F53BA3DA42800D092A0C331A20A41ACCE81D2DD6F710106953ADA277C502010',
+				accountLabel: 'import account'
+			};
+
+			const mockRequest = jest.fn();
+
+			global.snap = { request: mockRequest };
+
+			global.snap.request.mockResolvedValue(true);
+
+			// Act:
+			const account = await accountUtils.importAccount({ state, requestParams });
+
+			// Assert:
+			expect(mockRequest).toHaveBeenCalledWith({
+				method: 'snap_dialog',
+				params: {
+					type: 'confirmation',
+					content: panel([
+						heading('Import account'),
+						heading('Address:'),
+						copyable('TDCYZ45MX4IZ7SKEL5UL4ZA7O6KDDUAZZALCA6Y'),
+						heading('Public Key:'),
+						copyable('FABAD1271A72816961B95CCCAAE1FD1E356F26A6AD3E0A91A25F703C1312F73D')
+					])
+				}
+			});
+
+			expect(stateManager.update).toHaveBeenCalledWith({
+				...state,
+				accounts: {
+					...state.accounts,
+					[account.id]: {
+						account,
+						privateKey: requestParams.privateKey
+					}
+				}
+			});
+
+			expect(account).toStrictEqual({
+				id: expect.any(String),
+				addressIndex: null,
+				type: 'import',
+				networkName: 'testnet',
+				label: requestParams.accountLabel,
+				address: 'TDCYZ45MX4IZ7SKEL5UL4ZA7O6KDDUAZZALCA6Y',
+				publicKey: 'FABAD1271A72816961B95CCCAAE1FD1E356F26A6AD3E0A91A25F703C1312F73D'
+			});
+		});
+
+		it('can not import an account if private key already exists', async () => {
+			// Arrange:
+			const state = {
+				network: {
+					networkName: 'testnet'
+				},
+				accounts: {
+					'0x1234': {
+						account: {
+							id: '0x1234',
+							addressIndex: null,
+							type: 'import',
+							networkName: 'testnet',
+							label: 'import account',
+							address: 'TDCYZ45MX4IZ7SKEL5UL4ZA7O6KDDUAZZALCA6Y',
+							publicKey: 'FABAD1271A72816961B95CCCAAE1FD1E356F26A6AD3E0A91A25F703C1312F73D'
+						},
+						privateKey: '1F53BA3DA42800D092A0C331A20A41ACCE81D2DD6F710106953ADA277C502010'
+					}
+				}
+			};
+
+			const requestParams = {
+				privateKey: '1F53BA3DA42800D092A0C331A20A41ACCE81D2DD6F710106953ADA277C502010',
+				accountLabel: 'import account'
+			};
+
+			const mockRequest = jest.fn();
+
+			global.snap = { request: mockRequest };
+
+			// Act:
+			const existingAccount = await accountUtils.importAccount({ state, requestParams });
+
+			// Assert:
+			expect(mockRequest).toHaveBeenCalledWith({
+				method: 'snap_dialog',
+				params: {
+					type: 'alert',
+					content: panel([
+						heading('Import account'),
+						text('Account already exists.')
+					])
+				}
+			});
+			expect(existingAccount).toStrictEqual(state.accounts['0x1234'].account);
+		});
+
+		it('throws an error when private key is empty', async () => {
+			// Arrange:
+			const state = {
+				network: {
+					networkName: 'testnet'
+				},
+				accounts: {}
+			};
+
+			const requestParams = {
+				privateKey: '',
+				accountLabel: 'import account'
+			};
+
+			// Act + Assert:
+			const errorMessage = 'Failed to import account: bytes was size 0 but must be 32';
+			await expect(accountUtils.importAccount({ state, requestParams })).rejects.toThrow(errorMessage);
 		});
 	});
 });

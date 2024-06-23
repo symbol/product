@@ -1,11 +1,15 @@
 import stateManager from '../stateManager.js';
 import { getBIP44AddressKeyDeriver } from '@metamask/key-tree';
+import {
+	copyable, heading, panel, text
+} from '@metamask/snaps-sdk';
 import { PrivateKey } from 'symbol-sdk';
 import { SymbolFacade } from 'symbol-sdk/symbol';
 import { v4 as uuidv4 } from 'uuid';
 
 const AccountType = {
-	METAMASK: 'metamask'
+	METAMASK: 'metamask',
+	IMPORTED: 'import'
 };
 
 const accountUtils = {
@@ -61,6 +65,44 @@ const accountUtils = {
 			return acc;
 		}, {});
 	},
+	/**
+	 * Create account and update state.
+	 * @param {object} state - The snap state object.
+	 * @param {SymbolFacade} facade - Symbol facade instance.
+	 * @param {SymbolFacade.KeyPair} keyPair - The key pair object.
+	 * @param {string} accountLabel - The account label.
+	 * @param {'metamask' | 'import'} type - The snap account type.
+	 * @param {number} addressIndex - The address index.
+	 * @returns {Account} - The account object.
+	 */
+	async createAccountAndUpdateState({
+		state, facade, keyPair, accountLabel, type, addressIndex = null
+	}) {
+		const { network } = state;
+		const accountId = uuidv4();
+
+		const newAccount = {
+			account: {
+				id: accountId,
+				addressIndex,
+				type,
+				label: accountLabel,
+				address: facade.network.publicKeyToAddress(keyPair.publicKey).toString(),
+				publicKey: keyPair.publicKey.toString(),
+				networkName: network.networkName
+			},
+			privateKey: keyPair.privateKey.toString()
+		};
+
+		state.accounts = {
+			...state.accounts,
+			[accountId]: newAccount
+		};
+
+		await stateManager.update(state);
+
+		return newAccount.account;
+	},
 	async createAccount({ state, requestParams }) {
 		try {
 			const { accountLabel } = requestParams;
@@ -70,33 +112,63 @@ const accountUtils = {
 
 			// Get the latest account index and increment it if it exists
 			const newAddressIndex = this.getLatestAccountIndex(accounts, network.networkName) + 1 || 0;
+			const keyPair = await this.deriveKeyPair(network.networkName, newAddressIndex);
 
-			const newKeyPair = await this.deriveKeyPair(network.networkName, newAddressIndex);
-			const accountId = uuidv4();
-
-			const newAccount = {
-				account: {
-					id: accountId,
-					addressIndex: newAddressIndex,
-					type: AccountType.METAMASK,
-					label: accountLabel,
-					address: facade.network.publicKeyToAddress(newKeyPair.publicKey).toString(),
-					publicKey: newKeyPair.publicKey.toString(),
-					networkName: network.networkName
-				},
-				privateKey: newKeyPair.privateKey.toString()
-			};
-
-			state.accounts = {
-				...state.accounts,
-				[accountId]: newAccount
-			};
-
-			await stateManager.update(state);
-
-			return newAccount.account;
+			return await this.createAccountAndUpdateState({
+				state, facade, keyPair, accountLabel, type: AccountType.METAMASK, addressIndex: newAddressIndex
+			});
 		} catch (error) {
 			throw new Error(`Failed to create account: ${error.message}`);
+		}
+	},
+	async importAccount({ state, requestParams }) {
+		try {
+			const { privateKey, accountLabel } = requestParams;
+			const { accounts, network } = state;
+
+			const keyPair = new SymbolFacade.KeyPair(new PrivateKey(privateKey));
+			const existingAccount = Object.values(accounts).find(account => account.privateKey === keyPair.privateKey.toString());
+
+			if (existingAccount) {
+				await snap.request({
+					method: 'snap_dialog',
+					params: {
+						type: 'alert',
+						content: panel([
+							heading('Import account'),
+							text('Account already exists.')
+						])
+					}
+				});
+
+				return existingAccount.account;
+			}
+
+			const facade = new SymbolFacade(network.networkName);
+
+			const confirmationResponse = await snap.request({
+				method: 'snap_dialog',
+				params: {
+					type: 'confirmation',
+					content: panel([
+						heading('Import account'),
+						heading('Address:'),
+						copyable(`${facade.network.publicKeyToAddress(keyPair.publicKey).toString()}`),
+						heading('Public Key:'),
+						copyable(`${keyPair.publicKey.toString()}`)
+					])
+				}
+			});
+
+			// User cancelled the import
+			if (!confirmationResponse)
+				return confirmationResponse;
+
+			return await this.createAccountAndUpdateState({
+				state, facade, keyPair, accountLabel, type: AccountType.IMPORTED
+			});
+		} catch (error) {
+			throw new Error(`Failed to import account: ${error.message}`);
 		}
 	}
 };
