@@ -45,6 +45,20 @@ describe('components/Input', () => {
 		expect(inputBoxElement).toHaveClass(className);
 	});
 
+	it('renders error message when message is not empty', () => {
+		// Arrange:
+		const placeholderText = 'Enter your name';
+		const errorMessage = 'Invalid name';
+
+		// Act:
+		render(<Input placeholder={placeholderText} errorMessage={errorMessage} />);
+
+		// Assert:
+		const errorMessageElement = screen.getByText(errorMessage);
+
+		expect(errorMessageElement).toBeInTheDocument();
+	});
+
 	it('should fire onChange event', () => {
 		// Arrange:
 		const placeholderText = 'Enter your name';
