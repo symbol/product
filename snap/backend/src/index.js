@@ -31,6 +31,8 @@ export const onRpcRequest = async ({ request }) => {
 		};
 	case 'createAccount':
 		return accountUtils.createAccount(apiParams);
+	case 'importAccount':
+		return accountUtils.importAccount(apiParams);
 	case 'getNetwork':
 		return state.network;
 	case 'switchNetwork':
