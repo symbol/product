@@ -10,7 +10,7 @@ const Input = ({ label, placeholder, value, onChange, type = 'text', className, 
 				type={type}
 				value={value}
 				placeholder={placeholder}
-				onChange={e => onChange(e.target.value)}
+				onChange={e => onChange(e)}
 				className="w-full px-4 py-2 text-black bg-[#D9D9D9] rounded-xl"
 				disabled={disabled}
 			/>
