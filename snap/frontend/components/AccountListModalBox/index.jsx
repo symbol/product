@@ -1,22 +1,40 @@
 import { useWalletContext } from '../../context';
-import AccountCreateModalBox from '../AccountCreateModalBox';
+import helper from '../../utils/helper';
+import AccountCreationFormModalBox from '../AccountCreationFormModalBox';
 import Button from '../Button';
 import ModalBox from '../ModalBox';
 import { useState } from 'react';
 
 const AccountListModalBox = ({ isOpen, onRequestClose }) => {
-	const { walletState, dispatch } = useWalletContext();
+	const { walletState, dispatch, symbolSnap } = useWalletContext();
 	const { accounts } = walletState;
-	const [ accountCreateModalBoxVisible, setAccountCreateModalBoxVisible ] = useState(false);
+	const [ accountCreateFormVisible, setAccountCreateFormVisible ] = useState(false);
 
-	const handleOpenAccountCreateModalBox = () => {
-		setAccountCreateModalBoxVisible(!accountCreateModalBoxVisible);
+	const handleOpenAccountCreateForm = () => {
+		setAccountCreateFormVisible(!accountCreateFormVisible);
 		onRequestClose(false);
 	};
 
 	const handleSelectAccount = account => {
 		dispatch.setSelectedAccount(account);
 		onRequestClose(false);
+	};
+
+	const validateAccountName = accountName => {
+		const isAccountNameExist = newAccountName => {
+			return Object.values(accounts).some(account => account.label.toUpperCase() === newAccountName.toUpperCase());
+		};
+
+		if ('' === accountName.trim() )
+			return 'Account name is required';
+		if (isAccountNameExist(accountName))
+			return 'Account name already exists';
+
+		return null;
+	};
+
+	const handleCreateNewAccount = ({ accountName }) => {
+		helper.createNewAccount(dispatch, symbolSnap, accounts, accountName);
 	};
 
 	const renderAccount = account => {
@@ -47,7 +65,7 @@ const AccountListModalBox = ({ isOpen, onRequestClose }) => {
 					</div>
 
 					<div className='flex justify-center font-bold pt-2'>
-						<Button className='uppercase w-40 h-10 bg-secondary m-2' onClick={handleOpenAccountCreateModalBox}>
+						<Button className='uppercase w-40 h-10 bg-secondary m-2' onClick={handleOpenAccountCreateForm}>
                         Create
 						</Button>
 						<Button className='uppercase w-40 h-10 bg-secondary m-2'>
@@ -57,7 +75,21 @@ const AccountListModalBox = ({ isOpen, onRequestClose }) => {
 				</div>
 			</ModalBox>
 
-			<AccountCreateModalBox isOpen={accountCreateModalBoxVisible} onRequestClose={setAccountCreateModalBoxVisible} />
+			<AccountCreationFormModalBox
+				isOpen={accountCreateFormVisible}
+				onRequestClose={setAccountCreateFormVisible}
+				title='Create Account'
+				onSubmit={handleCreateNewAccount}
+				inputs={[
+					{
+						label: 'Account Name:',
+						placeholder: 'Account Name',
+						value: '',
+						field: 'accountName',
+						validate: value => validateAccountName(value || '')
+					}
+				]}
+			/>
 		</>
 	);
 };
