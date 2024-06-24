@@ -12,7 +12,7 @@ const AccountCreationFormModalBox = ({
 	const handleSubmit = async () => {
 		const hasError = inputs.some(input => input.validate && null !== input.validate(formData[input.field]));
 
-		if (hasError) 
+		if (hasError)
 			return;
 
 		await onSubmit(formData);
