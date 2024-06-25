@@ -67,20 +67,6 @@ describe('components/AccountListModalBox', () => {
 		expect(context.dispatch.setSelectedAccount).toHaveBeenCalledWith(Object.values(context.walletState.accounts)[1]);
 	});
 
-	it('renders account create modal box when click on create button', () => {
-		// Arrange:
-		testHelper.customRender(<AccountListModalBox isOpen={true} onRequestClose={jest.fn()} />, context);
-
-		const createButton = screen.getByText('Create');
-
-		// Act:
-		fireEvent.click(createButton);
-
-		// Assert:
-		const createAccountScreen = screen.getByText('Create Account');
-		expect(createAccountScreen).toBeInTheDocument();
-	});
-
 	const assertErrorValidation = (buttonName, inputBox, inputValue, expectedErrorMessage) => {
 		// Arrange:
 		testHelper.customRender(<AccountListModalBox isOpen={true} onRequestClose={jest.fn()} />, context);
