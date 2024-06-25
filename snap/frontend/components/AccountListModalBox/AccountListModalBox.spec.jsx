@@ -27,12 +27,28 @@ describe('components/AccountListModalBox', () => {
 
 		for (let index = 0; index < numberOfAccounts; index++) {
 			// Act:
-			const accountLabel = screen.getByText('Account 0');
-			const accountAddress = screen.getByText('Address 0');
+			const accountLabel = screen.getByText(`Account ${index}`);
+			const accountAddress = screen.getByText(`Address ${index}`);
 
 			// Assert:
 			expect(accountLabel).toBeInTheDocument();
 			expect(accountAddress).toBeInTheDocument();
+		}
+	});
+
+	it('renders import type account list', () => {
+		// Arrange:
+		const numberOfAccounts = 2;
+		context.walletState.accounts = testHelper.generateAccountsState(numberOfAccounts, 'import');
+
+		testHelper.customRender(<AccountListModalBox isOpen={true} onRequestClose={jest.fn()} />, context);
+
+		for (let index = 0; index < numberOfAccounts; index++) {
+			// Act:
+			const importLabel = screen.getByText(`Account ${index} (import)`);
+
+			// Assert:
+			expect(importLabel).toBeInTheDocument();
 		}
 	});
 

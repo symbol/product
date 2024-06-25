@@ -58,19 +58,23 @@ const AccountListModalBox = ({ isOpen, onRequestClose }) => {
 		helper.importAccount(dispatch, symbolSnap, accounts, accountName, privateKey);
 	};
 
+	const renderImportType = type => {
+		return 'import' === type ? `(${type})` : '';
+	};
+
 	const renderAccount = account => {
 		return (
 			<div key={`wallet_${account.id}`} className='flex items-center cursor-pointer'
 				onClick={() => handleSelectAccount(account)}>
 				<div className="rounded-full w-10 h-10 bg-gray-300"/>
 				<div className='flex flex-col items-start justify-center p-2'>
-					<div className='font-bold'>{account.label}</div>
+					<div className='font-bold'>{account.label} {renderImportType(account.type)}</div>
 					<div className='truncate w-[180px]'>{account.address}</div>
 				</div>
 			</div>
 		);
-
 	};
+
 	return (
 		<>
 			<ModalBox isOpen={isOpen} onRequestClose={onRequestClose}>
