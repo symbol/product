@@ -98,7 +98,7 @@ const Accounts = ({ preloadedData, stats }) => {
 			<Section>
 				<div className="layout-flex-col">
 					<div className="layout-flex-row-mobile-col">
-						<Filter data={filterConfig} isDisabled={isLoading} value={filter} onChange={changeFilter} search={search} />
+						<Filter data={filterConfig} isDisabled value={filter} onChange={changeFilter} search={search} />
 						<ButtonCSV data={data} fileName="accounts" format={row => formatAccountCSV(row, t)} />
 					</div>
 					<Table
