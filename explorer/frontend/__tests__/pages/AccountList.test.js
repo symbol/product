@@ -2,7 +2,7 @@ import '@testing-library/jest-dom';
 import 'react-intersection-observer/test-utils';
 import { accountPageResult } from '../test-utils/accounts';
 import { setDevice } from '../test-utils/device';
-import { accountStatsResult } from '../test-utils/stats';
+import { accountStatisticsResult } from '../test-utils/stats';
 import * as AccountService from '@/api/accounts';
 import * as StatsService from '@/api/stats';
 import AccountList, { getServerSideProps } from '@/pages/accounts/index';
@@ -30,11 +30,11 @@ describe('AccountList', () => {
 			const fetchAccountPage = jest.spyOn(AccountService, 'fetchAccountPage');
 			fetchAccountPage.mockResolvedValue(accountPageResult);
 			const fetchAccountStats = jest.spyOn(StatsService, 'fetchAccountStats');
-			fetchAccountStats.mockResolvedValue(accountStatsResult);
+			fetchAccountStats.mockResolvedValue(accountStatisticsResult);
 			const expectedResult = {
 				props: {
 					preloadedData: accountPageResult.data,
-					stats: accountStatsResult
+					stats: accountStatisticsResult
 				}
 			};
 
@@ -55,7 +55,7 @@ describe('AccountList', () => {
 			const accountAddresses = accountPageResult.data.map(account => account.address);
 
 			// Act:
-			render(<AccountList preloadedData={accountPageResult.data} stats={accountStatsResult} />);
+			render(<AccountList preloadedData={accountPageResult.data} stats={accountStatisticsResult} />);
 
 			// Assert:
 			expect(screen.getByText(pageSectionText)).toBeInTheDocument();

@@ -59,7 +59,7 @@ describe('NamespaceList', () => {
 		};
 
 		it('renders page with the list of namespaces on desktop', () => {
-			// Act & Assert:
+			// Act + Assert:
 			runTest();
 		});
 
@@ -67,7 +67,7 @@ describe('NamespaceList', () => {
 			// Arrange:
 			setDevice('mobile');
 
-			// Act & Assert:
+			// Act + Assert:
 			runTest();
 		});
 	});

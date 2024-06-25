@@ -1,7 +1,7 @@
 import '@testing-library/jest-dom';
 import 'react-intersection-observer/test-utils';
 import { setDevice } from '../test-utils/device';
-import { transactionStatsResult } from '../test-utils/stats';
+import { transactionStatisticsResult } from '../test-utils/stats';
 import { transactionPageResult } from '../test-utils/transactions';
 import * as StatsService from '@/api/stats';
 import * as TransactionService from '@/api/transactions';
@@ -31,11 +31,11 @@ describe('TransactionList', () => {
 			const fetchTransactionPage = jest.spyOn(TransactionService, 'fetchTransactionPage');
 			fetchTransactionPage.mockResolvedValue(transactionPageResult);
 			const fetchTransactionStats = jest.spyOn(StatsService, 'fetchTransactionStats');
-			fetchTransactionStats.mockResolvedValue(transactionStatsResult);
+			fetchTransactionStats.mockResolvedValue(transactionStatisticsResult);
 			const expectedResult = {
 				props: {
 					preloadedData: transactionPageResult.data,
-					stats: transactionStatsResult
+					stats: transactionStatisticsResult
 				}
 			};
 
@@ -56,7 +56,7 @@ describe('TransactionList', () => {
 			const transactionHashes = transactionPageResult.data.map(transaction => utils.truncateString(transaction.hash, 'hash'));
 
 			// Act:
-			render(<TransactionList preloadedData={transactionPageResult.data} stats={transactionStatsResult} />);
+			render(<TransactionList preloadedData={transactionPageResult.data} stats={transactionStatisticsResult} />);
 
 			// Assert:
 			expect(screen.getByText(pageSectionText)).toBeInTheDocument();

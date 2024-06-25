@@ -2,7 +2,7 @@ import '@testing-library/jest-dom';
 import 'react-intersection-observer/test-utils';
 import { blockPageResult } from '../test-utils/blocks';
 import { setDevice } from '../test-utils/device';
-import { blockStatsResult } from '../test-utils/stats';
+import { blockStatisticsResult } from '../test-utils/stats';
 import * as BlockService from '@/api/blocks';
 import * as StatsService from '@/api/stats';
 import BlockList, { getServerSideProps } from '@/pages/blocks/index';
@@ -30,11 +30,11 @@ describe('BlockList', () => {
 			const fetchBlockPage = jest.spyOn(BlockService, 'fetchBlockPage');
 			fetchBlockPage.mockResolvedValue(blockPageResult);
 			const fetchBlockStats = jest.spyOn(StatsService, 'fetchBlockStats');
-			fetchBlockStats.mockResolvedValue(blockStatsResult);
+			fetchBlockStats.mockResolvedValue(blockStatisticsResult);
 			const expectedResult = {
 				props: {
 					blocks: blockPageResult.data,
-					stats: blockStatsResult
+					stats: blockStatisticsResult
 				}
 			};
 
@@ -55,7 +55,7 @@ describe('BlockList', () => {
 			const blocksHeight = blockPageResult.data.map(block => block.height);
 
 			// Act:
-			render(<BlockList blocks={blockPageResult.data} stats={blockStatsResult} />);
+			render(<BlockList blocks={blockPageResult.data} stats={blockStatisticsResult} />);
 
 			// Assert:
 			expect(screen.getByText(pageSectionText)).toBeInTheDocument();

@@ -48,7 +48,7 @@ export const nodeListResponse = [
 	}
 ];
 
-export const supernodeStatsResponse = {
+export const supernodeStatisticsResponse = {
 	participantCount: 2,
 	roundId: 1956,
 	totalPaid: 1896000000
@@ -440,7 +440,7 @@ export const dailyTransactionChartResponse = [
 	{ date: '2024-05-29', totalTransactions: 355 }
 ];
 
-export const accountStatsResult = {
+export const accountStatisticsResult = {
 	total: 984546,
 	harvesting: 23675,
 	eligibleForHarvesting: 9093,
@@ -465,7 +465,7 @@ export const accountStatsResult = {
 	]
 };
 
-export const blockStatsResult = {
+export const blockStatisticsResult = {
 	blockTimeChart: [
 		[4695077, 6],
 		[4695078, 66],
@@ -504,7 +504,7 @@ export const blockStatsResult = {
 	blockDifficulty: '18.46'
 };
 
-export const transactionStatsResult = {
+export const transactionStatisticsResult = {
 	averagePerBlock: 1,
 	total: 10667593,
 	last30Day: 17457,

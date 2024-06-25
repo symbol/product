@@ -2,8 +2,8 @@ import { accountPageResponse } from '../test-utils/accounts';
 import { blockPageResponse } from '../test-utils/blocks';
 import {
 	accountStatisticsResponse,
-	accountStatsResult,
-	blockStatsResult,
+	accountStatisticsResult,
+	blockStatisticsResult,
 	blockTransactionChartResult,
 	dailyTransactionChartResponse,
 	dailyTransactionChartResult,
@@ -13,9 +13,9 @@ import {
 	monthlyTransactionChartResult,
 	nodeListResponse,
 	priceByDateResponse,
-	supernodeStatsResponse,
+	supernodeStatisticsResponse,
 	transactionStatisticsResponse,
-	transactionStatsResult
+	transactionStatisticsResult
 } from '../test-utils/stats';
 import {
 	fetchAccountStats,
@@ -79,7 +79,7 @@ describe('api/stats', () => {
 				'https://explorer.backend/account/statistics': accountStatisticsResponse,
 				'https://explorer.backend/accounts?limit=10&offset=0': accountPageResponse
 			};
-			const expectedResult = accountStatsResult;
+			const expectedResult = accountStatisticsResult;
 
 			// Act + Assert:
 			await runStatsTest(functionToTest, args, responseMap, expectedResult);
@@ -136,7 +136,7 @@ describe('api/stats', () => {
 				'https://explorer.backend/transaction/statistics': transactionStatisticsResponse,
 				'https://explorer.backend/blocks?limit=240&offset=0': blockPageResponse
 			};
-			const expectedResult = transactionStatsResult;
+			const expectedResult = transactionStatisticsResult;
 
 			// Act + Assert:
 			await runStatsTest(functionToTest, args, responseMap, expectedResult);
@@ -151,7 +151,7 @@ describe('api/stats', () => {
 			const responseMap = {
 				'https://explorer.backend/blocks?limit=241&offset=0': blockPageResponse
 			};
-			const expectedResult = blockStatsResult;
+			const expectedResult = blockStatisticsResult;
 
 			// Act + Assert:
 			await runStatsTest(functionToTest, args, responseMap, expectedResult);
@@ -165,7 +165,7 @@ describe('api/stats', () => {
 			const args = [];
 			const responseMap = {
 				'https://node.list': nodeListResponse,
-				'https://supernode.stats': supernodeStatsResponse
+				'https://supernode.stats': supernodeStatisticsResponse
 			};
 			const expectedResult = {
 				total: 3,
