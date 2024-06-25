@@ -6,6 +6,12 @@ coverage:
       default:
         target: 95%  # overall project / repo coverage
 
+      explorer-frontend:
+        target: auto
+        threshold: 1%
+        flags:
+          - explorer-frontend
+
       explorer-nodewatch:
         target: auto
         threshold: 1%
@@ -61,6 +67,11 @@ coverage:
 # monorepo.  This allows code coverage per package.
 
 flags:
+  explorer-frontend:
+    paths:
+      - explorer/frontend
+    carryforward: true
+
   explorer-nodewatch:
     paths:
       - explorer/nodewatch

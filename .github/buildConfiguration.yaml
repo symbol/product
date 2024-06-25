@@ -1,4 +1,7 @@
 builds:
+  - name: Explorer Frontend
+    path: explorer/frontend
+
   - name: Explorer Nodewatch
     path: explorer/nodewatch
 
