@@ -4,14 +4,21 @@ import AccountCreationFormModalBox from '../AccountCreationFormModalBox';
 import Button from '../Button';
 import ModalBox from '../ModalBox';
 import { useState } from 'react';
+import { PrivateKey } from 'symbol-sdk';
 
 const AccountListModalBox = ({ isOpen, onRequestClose }) => {
 	const { walletState, dispatch, symbolSnap } = useWalletContext();
 	const { accounts } = walletState;
 	const [ accountCreateFormVisible, setAccountCreateFormVisible ] = useState(false);
+	const [ accountImportFormVisible, setAccountImportFormVisible ] = useState(false);
 
 	const handleOpenAccountCreateForm = () => {
 		setAccountCreateFormVisible(!accountCreateFormVisible);
+		onRequestClose(false);
+	};
+
+	const handleOpenAccountImportForm = () => {
+		setAccountImportFormVisible(!accountImportFormVisible);
 		onRequestClose(false);
 	};
 
@@ -33,8 +40,22 @@ const AccountListModalBox = ({ isOpen, onRequestClose }) => {
 		return null;
 	};
 
+	const validatePrivateKey = privateKey => {
+		try {
+			new PrivateKey(privateKey);
+			return null;
+		}
+		catch (error) {
+			return 'Invalid private key';
+		}
+	};
+
 	const handleCreateNewAccount = ({ accountName }) => {
 		helper.createNewAccount(dispatch, symbolSnap, accounts, accountName);
+	};
+
+	const handleImportAccount = ({ accountName, privateKey }) => {
+		helper.importAccount(dispatch, symbolSnap, accounts, accountName, privateKey);
 	};
 
 	const renderAccount = account => {
@@ -68,7 +89,7 @@ const AccountListModalBox = ({ isOpen, onRequestClose }) => {
 						<Button className='uppercase w-40 h-10 bg-secondary m-2' onClick={handleOpenAccountCreateForm}>
                         Create
 						</Button>
-						<Button className='uppercase w-40 h-10 bg-secondary m-2'>
+						<Button className='uppercase w-40 h-10 bg-secondary m-2' onClick={handleOpenAccountImportForm}>
                         Import
 						</Button>
 					</div>
@@ -87,6 +108,29 @@ const AccountListModalBox = ({ isOpen, onRequestClose }) => {
 						value: '',
 						field: 'accountName',
 						validate: value => validateAccountName(value || '')
+					}
+				]}
+			/>
+
+			<AccountCreationFormModalBox
+				isOpen={accountImportFormVisible}
+				onRequestClose={setAccountImportFormVisible}
+				title='Import Account'
+				onSubmit={handleImportAccount}
+				inputs={[
+					{
+						label: 'Account Name:',
+						placeholder: 'Account Name',
+						value: '',
+						field: 'accountName',
+						validate: value => validateAccountName(value || '')
+					},
+					{
+						label: 'Private Key:',
+						placeholder: 'Private Key',
+						value: '',
+						field: 'privateKey',
+						validate: value => validatePrivateKey(value)
 					}
 				]}
 			/>
