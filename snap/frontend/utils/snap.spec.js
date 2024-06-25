@@ -250,4 +250,41 @@ describe('symbolSnapFactory', () => {
 			});
 		});
 	});
+
+	describe('importAccount', () => {
+		it('returns account data when provider request is successful', async () => {
+			const accountLabel = 'Import Wallet';
+			const privateKey = '1F53BA3DA42800D092A0C331A20A41ACCE81D2DD6F710106953ADA277C502010';
+			const mockAccountData = {
+				id: '1234',
+				addressIndex: null,
+				address: 'TBZ6JU7K5Y3W4H3XJ7XJ5JQW6X3J5JQW6X3J5JQW',
+				label: accountLabel,
+				networkName: 'testnet',
+				publicKey: '1234',
+				type: 'metamask'
+			};
+
+			mockProvider.request.mockResolvedValue(mockAccountData);
+
+			// Act:
+			const result = await symbolSnap.importAccount(accountLabel, privateKey);
+
+			// Assert:
+			expect(result).toEqual(mockAccountData);
+			expect(mockProvider.request).toHaveBeenCalledWith({
+				method: 'wallet_invokeSnap',
+				params: {
+					snapId: 'local:http://localhost:8080',
+					request: {
+						method: 'importAccount',
+						params: {
+							accountLabel,
+							privateKey
+						}
+					}
+				}
+			});
+		});
+	});
 });

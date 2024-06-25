@@ -126,6 +126,23 @@ const symbolSnapFactory = {
 				});
 
 				return account;
+			},
+			async importAccount(accountLabel, privateKey) {
+				const account = await provider.request({
+					method: 'wallet_invokeSnap',
+					params: {
+						snapId: defaultSnapOrigin,
+						request: {
+							method: 'importAccount',
+							params: {
+								accountLabel,
+								privateKey
+							}
+						}
+					}
+				});
+
+				return account;
 			}
 		};
 	}
