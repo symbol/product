@@ -36,6 +36,17 @@ const helper = {
 		// update account state
 		dispatch.setAccounts({ ...accounts, [newAccount.id]: newAccount });
 		dispatch.setSelectedAccount(newAccount);
+	},
+	async importAccount (dispatch, symbolSnap, accounts, accountName, privateKey) {
+		const newAccount = await symbolSnap.importAccount(accountName, privateKey);
+
+		// If user did not approve the import from metamask confirmation
+		if(!newAccount)
+			return;
+
+		// update account state
+		dispatch.setAccounts({ ...accounts, [newAccount.id]: newAccount });
+		dispatch.setSelectedAccount(newAccount);
 	}
 };
 

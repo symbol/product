@@ -11,7 +11,8 @@ describe('helper', () => {
 
 	const symbolSnap = {
 		initialSnap: jest.fn(),
-		createAccount: jest.fn()
+		createAccount: jest.fn(),
+		importAccount: jest.fn()
 	};
 
 	describe('setupSnap', () => {
@@ -115,6 +116,47 @@ describe('helper', () => {
 			expect(symbolSnap.createAccount).toHaveBeenCalledWith(walletName);
 			expect(dispatch.setAccounts).toHaveBeenCalledWith({ ...accounts, [newAccount.id]: newAccount });
 			expect(dispatch.setSelectedAccount).toHaveBeenCalledWith(newAccount);
+		});
+	});
+
+	describe('importAccount', () => {
+		beforeEach(() => {
+			jest.clearAllMocks();
+		});
+
+		const assertImportAccount = async (mockImportAccount, expectedResult) => {
+			// Arrange:
+			const accounts = {};
+
+			const accountName = 'import wallet';
+			const privateKey = '1F53BA3DA42800D092A0C331A20A41ACCE81D2DD6F710106953ADA277C502010';
+
+			symbolSnap.importAccount.mockResolvedValue(mockImportAccount);
+
+			// Act:
+			await helper.importAccount(dispatch, symbolSnap, accounts, accountName, privateKey);
+
+			// Assert:
+			expect(symbolSnap.importAccount).toHaveBeenCalledWith(accountName, privateKey);
+
+			if (expectedResult) {
+				expect(dispatch.setAccounts).toHaveBeenCalledWith({ ...accounts, [mockImportAccount.id]: mockImportAccount });
+				expect(dispatch.setSelectedAccount).toHaveBeenCalledWith(mockImportAccount);
+			} else {
+				expect(dispatch.setAccounts).not.toHaveBeenCalled();
+				expect(dispatch.setSelectedAccount).not.toHaveBeenCalled();
+			}
+		};
+
+		it('should import account and updates account state', async () => {
+			// Arrange:
+			const importAccount = Object.values(testHelper.generateAccountsState(1))[0];
+
+			await assertImportAccount(importAccount, true);
+		});
+
+		it('should not import account if user does not approve the import from metamask confirmation', async () => {
+			await assertImportAccount(false, false);
 		});
 	});
 });
