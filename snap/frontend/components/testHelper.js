@@ -7,7 +7,7 @@ const testHelper = {
 			{ui}
 		</WalletContext.default>);
 	},
-	generateAccountsState: numberOfAccounts => {
+	generateAccountsState: (numberOfAccounts, type = 'metamask') => {
 		const accounts = {};
 
 		for (let index = 0; index < numberOfAccounts; index++) {
@@ -15,7 +15,7 @@ const testHelper = {
 			accounts[accountId] = {
 				id: accountId,
 				addressIndex: index,
-				type: 'metamask',
+				type,
 				networkName: 'network',
 				label: `Account ${index}`,
 				address: `Address ${index}`,
