@@ -18,7 +18,8 @@ const statisticsClient = {
 			return {
 				identifier: nodes[0].networkIdentifier,
 				networkName,
-				url: nodes[0].apiStatus.restGatewayUrl
+				url: nodes[0].apiStatus.restGatewayUrl,
+				networkGenerationHashSeed: nodes[0].networkGenerationHashSeed
 			};
 		} catch (error) {
 			throw new Error(`Failed to fetch nodes from statistics service: ${error.message}`);
@@ -36,6 +37,7 @@ export default statisticsClient;
  * @property {number} identifier - The network identifier.
  * @property {string} networkName - The network name.
  * @property {string} url - The node URL.
+ * @property {string} networkGenerationHashSeed - The network generation hash seed.
  */
 
 // endregion
