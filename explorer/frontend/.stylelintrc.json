@@ -7,7 +7,6 @@
         "stylelint-order"
     ],
     "rules": {
-        "indentation": 4,
         "font-family-no-missing-generic-family-keyword": null,
         "font-family-name-quotes": "always-unless-keyword",
         "color-function-notation": "legacy",

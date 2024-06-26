@@ -1,5 +1,5 @@
 import config from '@/config';
-import { createFetchInfoFunction, createSearchURL, createPage, createSearchCriteria, makeRequest } from '@/utils/server';
+import { createFetchInfoFunction, createPage, createSearchCriteria, createSearchURL, makeRequest } from '@/utils/server';
 
 /**
  * @typedef Page

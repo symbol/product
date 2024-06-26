@@ -7,7 +7,7 @@ import {
 	accountPageResult
 } from '../test-utils/accounts';
 import { runAPITest } from '../test-utils/api';
-import { fetchAccountPage, fetchAccountInfo, fetchAccountInfoByPublicKey } from '@/api/accounts';
+import { fetchAccountInfo, fetchAccountInfoByPublicKey, fetchAccountPage } from '@/api/accounts';
 
 jest.mock('@/utils/server', () => {
 	return {

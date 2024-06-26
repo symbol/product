@@ -207,7 +207,13 @@ const AccountInfo = ({ accountInfo, preloadedTransactions }) => {
 			<Section title={t('section_accountState')} cardClassName={styles.stateSectionCard}>
 				<div className="layout-flex-col">
 					<div className="layout-flex-row-mobile-col">
-						<Filter data={mosaicFilterConfig} value={mosaics.filter} isDisabled onChange={mosaics.changeFilter} search={search} />
+						<Filter
+							data={mosaicFilterConfig}
+							value={mosaics.filter}
+							isDisabled
+							onChange={mosaics.changeFilter}
+							search={search}
+						/>
 						<ButtonCSV data={mosaics.data} fileName={`mosaics-${address}`} format={row => formatMosaicCSV(row, t)} />
 					</div>
 					<div className={styles.stateTable}>

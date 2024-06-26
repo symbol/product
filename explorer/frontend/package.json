@@ -52,15 +52,15 @@
     "jest-environment-jsdom": "^29.7.0",
     "jest-mock-axios": "^4.7.3",
     "prettier": "^2.8.8",
-    "stylelint": "^15.7.0",
+    "stylelint": "^16.6.1",
     "stylelint-config-rational-order": "^0.1.2",
-    "stylelint-config-standard-scss": "^9.0.0",
-    "stylelint-order": "^6.0.3",
+    "stylelint-config-standard-scss": "^13.1.0",
+    "stylelint-order": "^6.0.4",
     "webpack": "^5.80.0"
   },
   "overrides": {
-    "stylelint": "^15.7.0",
-    "stylelint-order": "^6.0.3"
+    "stylelint": "^16.6.1",
+    "stylelint-order": "^6.0.4"
   },
   "browserslist": {
     "production": [

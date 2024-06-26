@@ -11,8 +11,7 @@
     flex-direction: row;
     align-items: center;
     margin-top: $spacing-padding;
-    overflow-x: auto;
-    overflow-y: hidden;
+    overflow: auto hidden;
 
     &::-webkit-scrollbar {
         display: none;
