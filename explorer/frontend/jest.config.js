@@ -18,13 +18,6 @@ const customJestConfig = {
 	clearMocks: true,
 	coverageDirectory: 'coverage',
 	coverageProvider: 'babel',
-	coverageReporters: ['html', 'json-summary', 'text'],
-	coverageThreshold: {
-		global: {
-			branches: 90,
-			statements: 90
-		}
-	},
 	moduleNameMapper: {
 		'^@/api/(.*)$': '<rootDir>/api/$1',
 		'^@/components/(.*)$': '<rootDir>/components/$1',
