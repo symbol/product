@@ -1,3 +1,5 @@
+import QRCode from 'qrcode';
+
 const helper = {
 	async setupSnap (dispatch, symbolSnap, networkName) {
 		dispatch.setLoadingStatus({
@@ -47,6 +49,20 @@ const helper = {
 		// update account state
 		dispatch.setAccounts({ ...accounts, [newAccount.id]: newAccount });
 		dispatch.setSelectedAccount(newAccount);
+	},
+	async generateAccountQRBase64 (label, publicKey, networkIdentifier, networkGenerationHashSeed) {
+		// The content is follow symbol-qr-library format.
+		const content = `{"v":3,"type":1,"network_id":${networkIdentifier},"chain_id":"${networkGenerationHashSeed}",` +
+		`"data":{"name":"${label}","publicKey":"${publicKey}"}}`;
+
+		return new Promise((resolve, reject) => {
+			QRCode.toDataURL(content, function (err, base64) {
+				if (err)
+					reject(err);
+
+				resolve(base64);
+			});
+		});
 	}
 };
 
