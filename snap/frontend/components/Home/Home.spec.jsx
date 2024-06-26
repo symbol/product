@@ -1,7 +1,7 @@
 import Home from '.';
 import helper from '../../utils/helper';
 import testHelper from '../testHelper';
-import { act, screen } from '@testing-library/react';
+import { act, fireEvent, screen } from '@testing-library/react';
 
 const context = {
 	dispatch: {
@@ -22,6 +22,12 @@ const context = {
 		currency: {
 			symbol: 'usd',
 			currencyPerXYM: 0.25
+		},
+		network: {
+			identifier: 104,
+			networkName: 'mainnet',
+			url: 'http://localhost:3000',
+			networkGenerationHash: 'networkGenerationHash'
 		}
 	},
 	symbolSnap: {
@@ -78,5 +84,19 @@ describe('components/Home', () => {
 
 		// Assert:
 		expect(helper.setupSnap).toHaveBeenCalledWith(context.dispatch, context.symbolSnap, 'mainnet');
+	});
+
+	it('renders receive modal box when receive button is clicked', async () => {
+		// Arrange:
+		testHelper.customRender(<Home />, context);
+
+		const receiveButton = screen.getByText('Receive');
+
+		// Act:
+		fireEvent.click(receiveButton);
+
+		// Assert:
+		const modalBox = screen.getByRole('receive-qr');
+		expect(modalBox).toBeInTheDocument();
 	});
 });
