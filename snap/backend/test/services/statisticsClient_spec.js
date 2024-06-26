@@ -17,7 +17,8 @@ describe('statisticsClient', () => {
 				networkIdentifier: 1,
 				apiStatus: {
 					restGatewayUrl: 'http://localhost:3000'
-				}
+				},
+				networkGenerationHashSeed: 'networkGenerationHashSeed'
 			}];
 
 			fetchUtils.fetchData.mockResolvedValue(nodes);
@@ -29,7 +30,8 @@ describe('statisticsClient', () => {
 			expect(result).toStrictEqual({
 				identifier: nodes[0].networkIdentifier,
 				networkName,
-				url: nodes[0].apiStatus.restGatewayUrl
+				url: nodes[0].apiStatus.restGatewayUrl,
+				networkGenerationHashSeed: nodes[0].networkGenerationHashSeed
 			});
 			expect(fetchUtils.fetchData).toHaveBeenCalledWith('https://symbol.services/nodes??filter=suggested&limit=1&ssl=true', 'GET');
 		});
