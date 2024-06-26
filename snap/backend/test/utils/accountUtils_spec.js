@@ -181,6 +181,45 @@ describe('accountUtils', () => {
 		});
 	});
 
+	describe('findAccountByPrivateKey', () => {
+		const privateKey = '1F53BA3DA42800D092A0C331A20A41ACCE81D2DD6F710106953ADA277C502010';
+
+		const assertFindAccountByPrivateKey = (accounts, expectedResult) => {
+			// Act:
+			const account = accountUtils.findAccountByPrivateKey(accounts, privateKey);
+
+			// Assert:
+			expect(account).toStrictEqual(expectedResult);
+		};
+
+		it('returns account given private key', () => {
+			// Arrange:
+			const accounts = {
+				'0x1234': {
+					account: {
+						id: '0x1234',
+						addressIndex: 0,
+						type: 'metamask',
+						networkName: 'testnet',
+						label: 'Wallet 0',
+						address: 'address 0',
+						publicKey: 'public key 0'
+					},
+					privateKey
+				}
+			};
+
+			assertFindAccountByPrivateKey(accounts, accounts['0x1234']);
+		});
+
+		it('returns undefined when account not found', () => {
+			// Arrange:
+			const accounts = {};
+
+			assertFindAccountByPrivateKey(accounts, undefined);
+		});
+	});
+
 	describe('createAccount', () => {
 		// Arrange:
 		const privateKey = '1F53BA3DA42800D092A0C331A20A41ACCE81D2DD6F710106953ADA277C502010';
