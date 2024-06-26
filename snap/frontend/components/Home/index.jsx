@@ -7,12 +7,19 @@ import AssetList from '../AssetList';
 import ConnectMetamask from '../ConnectMetamask';
 import LoadingScreen from '../LoadingScreen';
 import Navbar from '../Navbar';
+import ReceiveModalBox from '../ReceiveModalBox';
 import TransactionTable from '../TransactionTable';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 const Home = () => {
 	const { isSnapInstalled } = useWalletInstallation();
 	const { dispatch, symbolSnap } = useWalletContext();
+
+	const [ receiveModalBoxVisible, setReceiveModalBoxVisible ] = useState(false);
+
+	const handleReceiveModalBox = () => {
+		setReceiveModalBoxVisible(!receiveModalBoxVisible);
+	};
 
 	useEffect(() => {
 		const initializeSnap = async () => {
@@ -57,9 +64,12 @@ const Home = () => {
 
 						{/* Show Button Receive and Send */}
 						<div className='flex justify-center font-bold pt-2'>
-							<button className='bg-secondary border-2 m-2 rounded-xl uppercase w-40 h-10'>Receive</button>
+							<button className='bg-secondary border-2 m-2 rounded-xl uppercase w-40 h-10'
+								onClick={handleReceiveModalBox}>Receive</button>
 							<button className='bg-secondary border-2 m-2 rounded-xl uppercase w-40 h-10'>Send</button>
 						</div>
+
+						<ReceiveModalBox isOpen={receiveModalBoxVisible} onRequestClose={setReceiveModalBoxVisible} />
 					</div>
 
 					<TransactionTable />
