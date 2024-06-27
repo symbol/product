@@ -1,4 +1,5 @@
-import { onRpcRequest } from '../src/index.js';
+import { onCronjob, onRpcRequest } from '../src/index.js';
+import cryptoCompareClient from '../src/services/cryptocompareClient.js';
 import statisticsClient from '../src/services/statisticsClient.js';
 import stateManager from '../src/stateManager.js';
 import accountUtils from '../src/utils/accountUtils.js';
@@ -8,6 +9,7 @@ import {
 
 jest.spyOn(stateManager, 'getState').mockResolvedValue();
 jest.spyOn(stateManager, 'update').mockResolvedValue();
+jest.spyOn(cryptoCompareClient, 'fetchPrice').mockResolvedValue();
 jest.spyOn(statisticsClient, 'getNodeInfo').mockResolvedValue();
 global.snap = {
 	request: jest.fn()
@@ -20,12 +22,18 @@ describe('onRpcRequest', () => {
 		url: 'http://localhost:3000'
 	};
 
+	const mockCurrencies = {
+		USD: 0.25,
+		EUR: 0.20
+	};
+
 	beforeEach(() => {
 		jest.clearAllMocks();
 
 		stateManager.getState.mockResolvedValue({
 			accounts: {},
-			network: mockNodeInfo
+			network: mockNodeInfo,
+			currencies: mockCurrencies
 		});
 	});
 
@@ -34,13 +42,15 @@ describe('onRpcRequest', () => {
 			// Arrange:
 			stateManager.getState.mockResolvedValue(state);
 			statisticsClient.getNodeInfo.mockResolvedValue(mockNodeInfo);
+			cryptoCompareClient.fetchPrice.mockResolvedValue(mockCurrencies);
 
 			// Act:
 			const response = await onRpcRequest({
 				request: {
 					method: 'initialSnap',
 					params: {
-						networkName: 'mainnet'
+						networkName: 'mainnet',
+						currency: 'USD'
 					}
 				}
 			});
@@ -52,7 +62,12 @@ describe('onRpcRequest', () => {
 		it('returns basic snap states', async () => {
 			await assertInitialSnap(null, {
 				accounts: {},
-				network: mockNodeInfo
+				currencies: mockCurrencies,
+				network: mockNodeInfo,
+				currency: {
+					symbol: 'USD',
+					price: 0.25
+				}
 			});
 		});
 
@@ -91,7 +106,12 @@ describe('onRpcRequest', () => {
 						networkName: 'mainnet'
 					}
 				},
-				network: mockNodeInfo
+				network: mockNodeInfo,
+				currencies: mockCurrencies,
+				currency: {
+					symbol: 'USD',
+					price: 0.25
+				}
 			});
 		});
 	});
@@ -124,7 +144,8 @@ describe('onRpcRequest', () => {
 			expect(accountUtils.createAccount).toHaveBeenCalledWith({
 				state: {
 					accounts: {},
-					network: mockNodeInfo
+					network: mockNodeInfo,
+					currencies: mockCurrencies
 				},
 				requestParams: {
 					accountLabel: 'my wallet'
@@ -200,6 +221,60 @@ describe('onRpcRequest', () => {
 
 			// Assert:
 			expect(response).toStrictEqual(mockExpectedNodeInfo);
+		});
+	});
+
+	describe('getCurrency', () => {
+		it('returns the currency given by symbol', async () => {
+			// Arrange + Act:
+			const response = await onRpcRequest({
+				request: {
+					method: 'getCurrency',
+					params: {
+						currency: 'USD'
+					}
+				}
+			});
+
+			// Assert:
+			expect(response).toStrictEqual({
+				symbol: 'USD',
+				price: 0.25
+			});
+		});
+	});
+});
+
+describe('onCronjob', () => {
+	describe('fetchCurrencyPrice', () => {
+		it('fetches latest currency price and update state', async () => {
+			// Arrange:
+			const state = {
+				currencies: {
+					USD: 0.25,
+					JPY: 0.20
+				}
+			};
+
+			const mockLatestCurrencies = {
+				USD: 1.00,
+				JPY: 2.00
+			};
+
+			stateManager.getState.mockResolvedValue(state);
+			cryptoCompareClient.fetchPrice.mockResolvedValue(mockLatestCurrencies);
+
+			// Act:
+			await onCronjob({
+				request: {
+					method: 'fetchCurrencyPrice'
+				}
+			});
+
+			// Assert:
+			expect(stateManager.update).toHaveBeenCalledWith({
+				currencies: mockLatestCurrencies
+			});
 		});
 	});
 });
