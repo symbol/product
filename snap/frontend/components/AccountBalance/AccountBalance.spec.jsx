@@ -7,7 +7,7 @@ const context = {
 	walletState: {
 		currency: {
 			symbol: 'usd',
-			currencyPerXYM: 0.25
+			price: 0.25
 		}
 	}
 };
