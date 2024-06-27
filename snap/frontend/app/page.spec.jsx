@@ -25,6 +25,10 @@ describe('Main', () => {
 						addressIndex: 0,
 						type: 'metamask'
 					}
+				},
+				currency: {
+					symbol: 'usd',
+					price: 1.00
 				}
 			})
 		});
