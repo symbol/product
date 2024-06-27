@@ -8,7 +8,8 @@ const context = {
 		setLoadingStatus: jest.fn(),
 		setNetwork: jest.fn(),
 		setSelectedAccount: jest.fn(),
-		setAccounts: jest.fn()
+		setAccounts: jest.fn(),
+		setCurrency: jest.fn()
 	},
 	walletState: {
 		loadingStatus: {
@@ -21,7 +22,7 @@ const context = {
 		transactions: [],
 		currency: {
 			symbol: 'usd',
-			currencyPerXYM: 0.25
+			price: 0.25
 		},
 		network: {
 			identifier: 104,
@@ -72,7 +73,15 @@ describe('components/Home', () => {
 
 		context.symbolSnap.initialSnap.mockResolvedValue({
 			network: mockNetwork,
-			accounts: {}
+			accounts: {},
+			currencies: {
+				USD: 1,
+				JPY: 2
+			},
+			currency: {
+				symbol: 'USD',
+				price: 1
+			}
 		});
 
 		context.symbolSnap.createAccount.mockResolvedValue({
@@ -83,7 +92,7 @@ describe('components/Home', () => {
 		await act(() => testHelper.customRender(<Home />, context));
 
 		// Assert:
-		expect(helper.setupSnap).toHaveBeenCalledWith(context.dispatch, context.symbolSnap, 'mainnet');
+		expect(helper.setupSnap).toHaveBeenCalledWith(context.dispatch, context.symbolSnap, 'mainnet', 'USD');
 	});
 
 	it('renders receive modal box when receive button is clicked', async () => {
