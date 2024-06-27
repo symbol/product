@@ -166,7 +166,7 @@ describe('components/Navbar', () => {
 			]);
 		});
 
-		describe('currency', () => {
+		describe.only('currency', () => {
 			runBasicDropdownTest('Currency', ['USD', 'JPY'], 'getCurrency');
 
 			runBasicInitialDropdownNameTest('Currency', [

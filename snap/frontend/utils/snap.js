@@ -88,9 +88,10 @@ const symbolSnapFactory = {
 			/**
 			 * Get the initial snap state.
 			 * @param {NetworkName} networkName - The name of the network to switch to.
+			 * @param {'usd' | 'jpy'} currency - The currency to get the price for.
 			 * @returns {object} The initial snap state.
 			 */
-			async initialSnap(networkName) {
+			async initialSnap(networkName, currency) {
 				const initialSnapState = await provider.request({
 					method: 'wallet_invokeSnap',
 					params: {
@@ -98,7 +99,8 @@ const symbolSnapFactory = {
 						request: {
 							method: 'initialSnap',
 							params: {
-								networkName
+								networkName,
+								currency
 							}
 						}
 					}
@@ -143,6 +145,27 @@ const symbolSnapFactory = {
 				});
 
 				return account;
+			},
+			/**
+			 * Get the currency price from snap MetaMask.
+			 * @param {string} currency - The currency to get the price for.
+			 * @returns {Promise<Currency>} The price of the currency.
+			 */
+			async getCurrency(currency) {
+				const price = await provider.request({
+					method: 'wallet_invokeSnap',
+					params: {
+						snapId: defaultSnapOrigin,
+						request: {
+							method: 'getCurrency',
+							params: {
+								currency
+							}
+						}
+					}
+				});
+
+				return price;
 			}
 		};
 	}
@@ -167,6 +190,13 @@ export default symbolSnapFactory;
  * @property {string} label - The account label.
  * @property {string} address - The account address.
  * @property {string} publicKey - The account public key.
+ */
+
+/**
+ * Currency price.
+ * @typedef {number} Currency
+ * @property {string} symbol - The currency symbol.
+ * @property {number} price - The currency price.
  */
 
 // endregion
