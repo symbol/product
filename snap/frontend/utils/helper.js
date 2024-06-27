@@ -1,15 +1,16 @@
 import QRCode from 'qrcode';
 
 const helper = {
-	async setupSnap (dispatch, symbolSnap, networkName) {
+	async setupSnap (dispatch, symbolSnap, networkName, currency) {
 		dispatch.setLoadingStatus({
 			isLoading: true,
 			message: 'Initializing Snap...'
 		});
 
-		const snapState = await symbolSnap.initialSnap(networkName);
+		const snapState = await symbolSnap.initialSnap(networkName, currency);
 
 		dispatch.setNetwork(snapState.network);
+		dispatch.setCurrency(snapState.currency);
 
 		let account = {};
 
@@ -63,6 +64,11 @@ const helper = {
 				resolve(base64);
 			});
 		});
+	},
+	async getCurrency (dispatch, symbolSnap, symbol) {
+		const currency = await symbolSnap.getCurrency(symbol);
+
+		dispatch.setCurrency(currency);
 	}
 };
 
