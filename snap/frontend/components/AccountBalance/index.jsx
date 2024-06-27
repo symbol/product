@@ -3,10 +3,10 @@ import { useWalletContext } from '../../context';
 const AccountBalance = () => {
 	const { walletState } = useWalletContext();
 	const { mosaics, currency } = walletState;
-	const { symbol, currencyPerXYM } = currency;
+	const { symbol, price } = currency;
 
 	const xymBalance = mosaics.find(m => 'symbol.xym' === m.name)?.amount || 0;
-	const convertToCurrency = (xymBalance * currencyPerXYM).toFixed(2);
+	const convertToCurrency = (xymBalance * price).toFixed(2);
 
 	return (
 		<div className='flex flex-col items-center'>
