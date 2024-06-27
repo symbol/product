@@ -35,6 +35,13 @@ const dispatchUtils = dispatch => ({
 	 */
 	setAccounts: accounts => {
 		dispatch({ type: actionTypes.SET_ACCOUNTS, payload: accounts });
+	},
+	/**
+	 * Set currency
+	 * @param {{symbol: string, price: number}} currency - The currency object.
+	 */
+	setCurrency: currency => {
+		dispatch({ type: actionTypes.SET_CURRENCY, payload: currency });
 	}
 });
 

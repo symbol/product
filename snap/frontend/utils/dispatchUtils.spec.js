@@ -104,4 +104,20 @@ describe('dispatchUtils', () => {
 			expect(dispatchState).toHaveBeenCalledWith({ type: 'setAccounts', payload: accounts });
 		});
 	});
+
+	describe('setCurrency', () => {
+		it('dispatches SET_CURRENCY action with currency', () => {
+			// Arrange:
+			const currency = {
+				symbol: 'USD',
+				price: 1
+			};
+
+			// Act:
+			dispatch.setCurrency(currency);
+
+			// Assert:
+			expect(dispatchState).toHaveBeenCalledWith({ type: 'setCurrency', payload: currency });
+		});
+	});
 });
