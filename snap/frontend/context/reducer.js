@@ -6,8 +6,8 @@ export const initialState = {
 	},
 	finalizedHeight: 0,
 	currency: {
-		symbol: 'usd',
-		currencyPerXYM: 0
+		symbol: 'USD',
+		price: 0
 	},
 	network: {},
 	selectedAccount: {},
@@ -21,7 +21,8 @@ export const actionTypes = {
 	SET_LOADING_STATUS: 'setLoadingStatus',
 	SET_NETWORK: 'setNetwork',
 	SET_SELECTED_ACCOUNT: 'setSelectedAccount',
-	SET_ACCOUNTS: 'setAccounts'
+	SET_ACCOUNTS: 'setAccounts',
+	SET_CURRENCY: 'setCurrency'
 };
 
 export const reducer = (state, action) => {
@@ -36,6 +37,8 @@ export const reducer = (state, action) => {
 		return { ...state, selectedAccount: action.payload };
 	case actionTypes.SET_ACCOUNTS:
 		return { ...state, accounts: action.payload };
+	case actionTypes.SET_CURRENCY:
+		return { ...state, currency: action.payload };
 	default:
 		return state;
 	}
