@@ -11,7 +11,10 @@ const cryptoCompareClient = {
 			const currencies = config.supportCurrency.join(',');
 			const prices = await fetchUtils.fetchData(`${config.cryptoCompareURL}${currencies}`, 'GET');
 
-			return prices;
+			return {
+				usd: prices.USD,
+				jpy: prices.JPY
+			};
 		} catch (error) {
 			throw new Error(`Failed to fetch price from cryptoCompare service: ${error.message}`);
 		}
@@ -25,8 +28,8 @@ export default cryptoCompareClient;
 /**
  * Result of a price request.
  * @typedef {object} PriceInfo
- * @property {number} USD - The conversion rate to US Dollars.
- * @property {number} JPY - The conversion rate to Japanese Yen.
+ * @property {number} usd - The conversion rate to US Dollars.
+ * @property {number} jpy - The conversion rate to Japanese Yen.
  */
 
 // endregion

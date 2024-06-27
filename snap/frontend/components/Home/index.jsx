@@ -24,7 +24,7 @@ const Home = () => {
 	useEffect(() => {
 		const initializeSnap = async () => {
 			if (isSnapInstalled)
-				await helper.setupSnap(dispatch, symbolSnap, 'mainnet', 'USD');
+				await helper.setupSnap(dispatch, symbolSnap, 'mainnet', 'usd');
 		};
 
 		initializeSnap();

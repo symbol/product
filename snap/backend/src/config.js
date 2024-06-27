@@ -4,7 +4,7 @@ const config = {
 		testnet: 'https://testnet.symbol.services'
 	},
 	cryptoCompareURL: 'https://min-api.cryptocompare.com/data/price?fsym=xym&tsyms=',
-	supportCurrency: ['USD', 'JPY']
+	supportCurrency: ['usd', 'jpy']
 };
 
 export default config;

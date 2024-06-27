@@ -39,10 +39,10 @@ describe('priceUtils', () => {
 			}
 		};
 
-		it('should get currency price successfully', async () => {
+		const assertGetCurrencyPriceSuccessfully = async symbol => {
 			// Arrange:
 			const requestParams = {
-				currency: 'USD'
+				currency: symbol
 			};
 
 			// Act:
@@ -53,6 +53,16 @@ describe('priceUtils', () => {
 				symbol: requestParams.currency,
 				price: state.currencies[requestParams.currency]
 			});
+		};
+
+		it('should get currency price successfully', async () => {
+			// upper case letters
+			await assertGetCurrencyPriceSuccessfully('USD');
+			await assertGetCurrencyPriceSuccessfully('JPY');
+
+			// lower case letters
+			await assertGetCurrencyPriceSuccessfully('usd');
+			await assertGetCurrencyPriceSuccessfully('jpy');
 		});
 
 		it('should throw an error when currency is not supported', async () => {

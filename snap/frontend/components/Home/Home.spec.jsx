@@ -75,11 +75,11 @@ describe('components/Home', () => {
 			network: mockNetwork,
 			accounts: {},
 			currencies: {
-				USD: 1,
-				JPY: 2
+				usd: 1,
+				jpy: 2
 			},
 			currency: {
-				symbol: 'USD',
+				symbol: 'usd',
 				price: 1
 			}
 		});
@@ -92,7 +92,7 @@ describe('components/Home', () => {
 		await act(() => testHelper.customRender(<Home />, context));
 
 		// Assert:
-		expect(helper.setupSnap).toHaveBeenCalledWith(context.dispatch, context.symbolSnap, 'mainnet', 'USD');
+		expect(helper.setupSnap).toHaveBeenCalledWith(context.dispatch, context.symbolSnap, 'mainnet', 'usd');
 	});
 
 	it('renders receive modal box when receive button is clicked', async () => {
