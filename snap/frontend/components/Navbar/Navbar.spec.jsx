@@ -5,12 +5,14 @@ import { act, fireEvent, screen } from '@testing-library/react';
 
 const context = {
 	dispatch: {
-		setNetwork: jest.fn()
+		setNetwork: jest.fn(),
+		setCurrency: jest.fn()
 	},
 	walletState: {},
 	symbolSnap: {
 		switchNetwork: jest.fn(),
-		initialSnap: jest.fn()
+		initialSnap: jest.fn(),
+		getCurrency: jest.fn()
 	}
 };
 
@@ -27,6 +29,10 @@ describe('components/Navbar', () => {
 	});
 
 	describe('dropdowns', () => {
+		beforeEach(() => {
+			jest.clearAllMocks();
+		});
+
 		const assertDropdown = dropdownName => {
 			// Arrange:
 			testHelper.customRender(<Navbar />, context);
@@ -53,52 +59,37 @@ describe('components/Navbar', () => {
 			});
 		};
 
-		const assertSelectedOption = (dropdownName, option) => {
+		const assertInitialDropdownName = (state, expectLabel) => {
 			// Arrange:
-			testHelper.customRender(<Navbar />, context);
-			const dropdown = screen.getByText(dropdownName);
-			fireEvent.click(dropdown);
-			const item = screen.getByText(option);
+			context.walletState = state;
 
 			// Act:
-			fireEvent.click(item);
+			testHelper.customRender(<Navbar />, context);
 
 			// Assert:
-			const selectedOption = screen.getByText(option);
-			expect(selectedOption).toBeInTheDocument();
+			const label = screen.getByText(expectLabel);
+			expect(label).toBeInTheDocument();
 		};
 
-		describe('network', () => {
-			const assertInitialNetwork = (networkName, expectLabel) => {
-				// Arrange:
-				context.walletState.network = { networkName };
-
-				// Act:
-				testHelper.customRender(<Navbar />, context);
-
-				// Assert:
-				const label = screen.getByText(expectLabel);
-				expect(label).toBeInTheDocument();
-			};
-
+		const runBasicDropdownTest = (dropdownName, options, mockHelperMethodName) => {
 			it('renders dropdown', () => {
-				assertDropdown('Network');
+				assertDropdown(dropdownName);
 			});
 
 			it('renders options items', () => {
-				assertOptions('Network', ['Mainnet', 'Testnet']);
+				assertOptions(dropdownName, options);
 			});
 
-			it('renders nothing when selected same network', async () => {
+			it(`renders nothing when selected same ${dropdownName}`, async () => {
 				// Arrange:
 				jest.spyOn(helper, 'setupSnap').mockReturnValue();
 
 				testHelper.customRender(<Navbar />, context);
 
-				const dropdown = screen.getByText('Network');
+				const dropdown = screen.getByText(dropdownName);
 				fireEvent.click(dropdown);
 
-				const item = screen.getByText('Testnet');
+				const item = screen.getByText(options[1]);
 
 				await act(async () => fireEvent.click(item));
 
@@ -107,53 +98,103 @@ describe('components/Navbar', () => {
 				await act(async () => fireEvent.click(item));
 
 				// Assert:
-				const selectedOption = screen.getByText('Testnet');
+				const selectedOption = screen.getByText(options[1]);
 				expect(selectedOption).toBeInTheDocument();
 				expect(helper.setupSnap).not.toHaveBeenNthCalledWith(2);
 			});
 
-			it('sets selected network when clicked on item', async () => {
+			it(`sets selected ${dropdownName} when clicked on item`, async () => {
 				// Arrange:
-				jest.spyOn(helper, 'setupSnap').mockReturnValue();
+				jest.spyOn(helper, mockHelperMethodName).mockReturnValue();
 
 				testHelper.customRender(<Navbar />, context);
-				const dropdown = screen.getByText('Network');
+				const dropdown = screen.getByText(dropdownName);
 				fireEvent.click(dropdown);
-				const item = screen.getByText('Testnet');
+				const item = screen.getByText(options[1]);
 
 				// Act:
 				await act(async () => fireEvent.click(item));
 
 				// Assert:
-				const selectedOption = screen.getByText('Testnet');
+				const selectedOption = screen.getByText(options[1]);
 
 				expect(selectedOption).toBeInTheDocument();
-				expect(helper.setupSnap).toHaveBeenCalledWith(context.dispatch, context.symbolSnap, 'testnet');
+				expect(helper[mockHelperMethodName]).toHaveBeenCalledWith(context.dispatch, context.symbolSnap, options[1].toLowerCase());
 			});
+		};
 
-			it('renders network name when network is set when initial', () => {
-				assertInitialNetwork('mainnet', 'Mainnet');
-				assertInitialNetwork('testnet', 'Testnet');
+		const runBasicInitialDropdownNameTest = (dropdownName, states) => {
+			it(`renders ${dropdownName} name when ${dropdownName} is set when initial`, () => {
+				states.forEach(({
+					state,
+					expectLabel
+				}) => {
+					assertInitialDropdownName(state, expectLabel);
+				});
 			});
+		};
 
-			it('does not render network name when network is not set when initial', () => {
-				assertInitialNetwork(undefined, 'Network');
-			});
+		describe('network', () => {
+
+			runBasicDropdownTest('Network', ['Mainnet', 'Testnet'], 'setupSnap');
+
+			runBasicInitialDropdownNameTest('Network', [
+				{
+					state: {
+						network: {
+							networkName: 'mainnet'
+						}
+					},
+					expectLabel: 'Mainnet'
+				},
+				{
+					state: {
+						network: {
+							networkName: 'testnet'
+						}
+					},
+					expectLabel: 'Testnet'
+				},
+				{
+					state: {
+						network: {
+							networkName: undefined
+						}
+					},
+					expectLabel: 'Network'
+				}
+			]);
 		});
 
 		describe('currency', () => {
-			it('renders dropdown', () => {
-				assertDropdown('Currency');
-			});
+			runBasicDropdownTest('Currency', ['USD', 'JPY'], 'getCurrency');
 
-			it('renders options items', () => {
-				assertOptions('Currency', ['USD', 'JPY']);
-			});
-
-			it('sets selected currency when clicked on item', () => {
-				assertSelectedOption('Currency', 'USD');
-				assertSelectedOption('Currency', 'JPY');
-			});
+			runBasicInitialDropdownNameTest('Currency', [
+				{
+					state: {
+						currency: {
+							symbol: 'usd'
+						}
+					},
+					expectLabel: 'USD'
+				},
+				{
+					state: {
+						currency: {
+							symbol: 'jpy'
+						}
+					},
+					expectLabel: 'JPY'
+				},
+				{
+					state: {
+						currency: {
+							symbol: undefined
+						}
+					},
+					expectLabel: 'Currency'
+				}
+			]);
 		});
 	});
 
