@@ -13,7 +13,7 @@ const priceUtils = {
 	async getCurrencyPrice({ state, requestParams }) {
 		const { currency } = requestParams;
 
-		if (-1 === config.supportCurrency.indexOf(currency.toUpperCase()))
+		if (-1 === config.supportCurrency.indexOf(currency.toLowerCase()))
 			throw new Error('Currency not supported.');
 
 		return {
