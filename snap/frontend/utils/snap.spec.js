@@ -185,6 +185,7 @@ describe('symbolSnapFactory', () => {
 		it('returns initial snap state when provider request is successful', async () => {
 			// Arrange:
 			const networkName = 'mainnet';
+			const currency = 'usd';
 			const mockInitialSnapState = {
 				network: {
 					identifier: 104,
@@ -196,7 +197,7 @@ describe('symbolSnapFactory', () => {
 			mockProvider.request.mockResolvedValue(mockInitialSnapState);
 
 			// Act:
-			const result = await symbolSnap.initialSnap(networkName);
+			const result = await symbolSnap.initialSnap(networkName, currency);
 
 			// Assert:
 			expect(result).toEqual(mockInitialSnapState);
@@ -207,7 +208,8 @@ describe('symbolSnapFactory', () => {
 					request: {
 						method: 'initialSnap',
 						params: {
-							networkName
+							networkName,
+							currency
 						}
 					}
 				}
@@ -281,6 +283,37 @@ describe('symbolSnapFactory', () => {
 						params: {
 							accountLabel,
 							privateKey
+						}
+					}
+				}
+			});
+		});
+	});
+
+	describe('getCurrency', () => {
+		it('returns currency price when provider request is successful', async () => {
+			// Arrange:
+			const currency = 'usd';
+			const mockCurrencyPrice = {
+				symbol: currency,
+				price: 1.0
+			};
+
+			mockProvider.request.mockResolvedValue(mockCurrencyPrice);
+
+			// Act:
+			const result = await symbolSnap.getCurrency(currency);
+
+			// Assert:
+			expect(result).toEqual(mockCurrencyPrice);
+			expect(mockProvider.request).toHaveBeenCalledWith({
+				method: 'wallet_invokeSnap',
+				params: {
+					snapId: 'local:http://localhost:8080',
+					request: {
+						method: 'getCurrency',
+						params: {
+							currency
 						}
 					}
 				}
