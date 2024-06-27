@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 
 const Navbar = () => {
 	const { walletState, dispatch, symbolSnap } = useWalletContext();
-	const { isSnapInstalled, network } = walletState;
+	const { isSnapInstalled, network, currency } = walletState;
 
 	const networks = [
 		{ label: 'Mainnet', value: 'mainnet' },
@@ -31,7 +31,13 @@ const Navbar = () => {
 		setSelectedNetwork(option.label);
 	};
 
-	const handleSelectCurrency = option => {
+	const handleSelectCurrency = async option => {
+		if (option.label === selectedCurrency)
+			return;
+
+		// switch currency
+		await helper.getCurrency(dispatch, symbolSnap, option.value);
+
 		setSelectedCurrency(option.label);
 	};
 
@@ -41,6 +47,13 @@ const Navbar = () => {
 			const selected = networks.find(n => n.value === network.networkName);
 			if (selected)
 				setSelectedNetwork(selected.label);
+		}
+
+		// set selected currency in dropdown label
+		if (currency) {
+			const selected = currencies.find(c => c.value === currency.symbol);
+			if (selected)
+				setSelectedCurrency(selected.label);
 		}
 	}, [network]); // eslint-disable-line react-hooks/exhaustive-deps
 
