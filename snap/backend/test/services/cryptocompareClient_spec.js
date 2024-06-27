@@ -23,8 +23,12 @@ describe('cryptocompareClient', () => {
 			const result = await cryptoCompareClient.fetchPrice();
 
 			// Assert:
-			expect(result).toStrictEqual(prices);
-			expect(fetchUtils.fetchData).toHaveBeenCalledWith('https://min-api.cryptocompare.com/data/price?fsym=xym&tsyms=USD,JPY', 'GET');
+			expect(result).toStrictEqual({
+				usd: prices.USD,
+				jpy: prices.JPY
+
+			});
+			expect(fetchUtils.fetchData).toHaveBeenCalledWith('https://min-api.cryptocompare.com/data/price?fsym=xym&tsyms=usd,jpy', 'GET');
 		});
 
 		it('should throw an error when fetch fails', async () => {
