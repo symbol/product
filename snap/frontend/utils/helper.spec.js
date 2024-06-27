@@ -7,13 +7,15 @@ describe('helper', () => {
 		setLoadingStatus: jest.fn(),
 		setNetwork: jest.fn(),
 		setSelectedAccount: jest.fn(),
-		setAccounts: jest.fn()
+		setAccounts: jest.fn(),
+		setCurrency: jest.fn()
 	};
 
 	const symbolSnap = {
 		initialSnap: jest.fn(),
 		createAccount: jest.fn(),
-		importAccount: jest.fn()
+		importAccount: jest.fn(),
+		getCurrency: jest.fn()
 	};
 
 	describe('setupSnap', () => {
@@ -30,7 +32,7 @@ describe('helper', () => {
 			accounts: {}
 		};
 
-		const assertSetupSnap = (mockSnapState, networkName) => {
+		const assertSetupSnap = (mockSnapState, networkName, symbol) => {
 			// Assert:
 			expect(dispatch.setLoadingStatus).toHaveBeenNthCalledWith(1, {
 				isLoading: true,
@@ -40,13 +42,15 @@ describe('helper', () => {
 				isLoading: false,
 				message: ''
 			});
-			expect(symbolSnap.initialSnap).toHaveBeenCalledWith(networkName);
+			expect(symbolSnap.initialSnap).toHaveBeenCalledWith(networkName, symbol);
 			expect(dispatch.setNetwork).toHaveBeenCalledWith(mockSnapState.network);
+			expect(dispatch.setCurrency).toHaveBeenCalledWith(mockSnapState.currency);
 		};
 
 		it('initializes snap and sets network and selected account if accounts exist', async () => {
 			// Arrange:
 			const networkName = 'testnet';
+			const symbol = 'usd';
 
 			mockSnapState.accounts = {
 				'0x1': {
@@ -66,10 +70,10 @@ describe('helper', () => {
 			symbolSnap.initialSnap.mockResolvedValue(mockSnapState);
 
 			// Act:
-			await helper.setupSnap(dispatch, symbolSnap, networkName);
+			await helper.setupSnap(dispatch, symbolSnap, networkName, symbol);
 
 			// Assert:
-			assertSetupSnap(mockSnapState, networkName);
+			assertSetupSnap(mockSnapState, networkName, symbol);
 			expect(symbolSnap.createAccount).not.toHaveBeenCalled();
 			expect(dispatch.setSelectedAccount).toHaveBeenCalledWith(Object.values(mockSnapState.accounts)[0]);
 			expect(dispatch.setAccounts).toHaveBeenCalledWith(mockSnapState.accounts);
@@ -78,7 +82,9 @@ describe('helper', () => {
 		it('initializes snap and creates account when no accounts are found', async () => {
 			// Arrange:
 			const networkName = 'testnet';
+			const symbol = 'usd';
 			mockSnapState.accounts = {};
+
 			const mockAccount = {
 				id: '0x1',
 				name: 'Wallet 1'
@@ -88,10 +94,10 @@ describe('helper', () => {
 			symbolSnap.createAccount.mockResolvedValue(mockAccount);
 
 			// Act:
-			await helper.setupSnap(dispatch, symbolSnap, networkName);
+			await helper.setupSnap(dispatch, symbolSnap, networkName, symbol);
 
 			// Assert:
-			assertSetupSnap(mockSnapState, networkName);
+			assertSetupSnap(mockSnapState, networkName, symbol);
 			expect(symbolSnap.createAccount).toHaveBeenCalledWith('Wallet 1');
 			expect(dispatch.setSelectedAccount).toHaveBeenCalledWith(mockAccount);
 			expect(dispatch.setAccounts).toHaveBeenCalledWith({
@@ -197,6 +203,25 @@ describe('helper', () => {
 				networkIdentifier,
 				networkGenerationHashSeed
 			)).rejects.toThrow('Fail to generate QR');
+		});
+	});
+
+	describe('getCurrency', () => {
+		it('returns currency', async () => {
+			// Arrange:
+			const mockCurrency = {
+				symbol: 'usd',
+				price: 1.00
+			};
+
+			symbolSnap.getCurrency.mockResolvedValue(mockCurrency);
+
+			// Act:
+			await helper.getCurrency(dispatch, symbolSnap, mockCurrency.symbol);
+
+			// Assert:
+			expect(symbolSnap.getCurrency).toHaveBeenCalledWith(mockCurrency.symbol);
+			expect(dispatch.setCurrency).toHaveBeenCalledWith(mockCurrency);
 		});
 	});
 });
