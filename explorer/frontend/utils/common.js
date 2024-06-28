@@ -44,7 +44,11 @@ export const formatDate = (dateStr, translate, config = {}) => {
  * @returns {Date} Local date.
  */
 export const dateToLocalDate = date => {
-	return new Date(new Date(date).getTime() - new Date(date).getTimezoneOffset() * 60000);
+	const dateMilliseconds = new Date(date).getTime();
+	const localTimezoneOffsetMinutes = new Date().getTimezoneOffset();
+	const millisecondsCoefficient = 60000;
+
+	return new Date(dateMilliseconds - localTimezoneOffsetMinutes * millisecondsCoefficient);
 };
 
 /**
