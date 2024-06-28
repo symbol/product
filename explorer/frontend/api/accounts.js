@@ -1,5 +1,4 @@
-import config from '@/config';
-import { createFetchInfoFunction, createPage, createSearchCriteria, createSearchURL, makeRequest } from '@/utils/server';
+import { createAPIURL, createPage, createSearchCriteria, createSearchURL, createTryFetchInfoFunction, makeRequest } from '@/utils/server';
 
 /**
  * @typedef Page
@@ -18,9 +17,9 @@ export const fetchAccountPage = async searchParams => {
 
 	if (searchCriteria.filter.mosaic) {
 		searchCriteria.filter = { namespaceName: searchCriteria.filter.mosaic };
-		url = createSearchURL(`${config.API_BASE_URL}/mosaic/rich/list`, searchCriteria);
+		url = createSearchURL(createAPIURL('mosaic/rich/list'), searchCriteria);
 	} else {
-		url = createSearchURL(`${config.API_BASE_URL}/accounts`, searchCriteria);
+		url = createSearchURL(createAPIURL('accounts'), searchCriteria);
 	}
 	const accounts = await makeRequest(url);
 
@@ -32,8 +31,8 @@ export const fetchAccountPage = async searchParams => {
  * @param {String} address - requested account address
  * @returns {Promise<Object>} account info
  */
-export const fetchAccountInfo = createFetchInfoFunction(async address => {
-	const accountInfo = await makeRequest(`${config.API_BASE_URL}/account?address=${address}`);
+export const fetchAccountInfo = createTryFetchInfoFunction(async address => {
+	const accountInfo = await makeRequest(createAPIURL(`account?address=${address}`));
 
 	return accountInfoFromDTO(accountInfo);
 });
@@ -43,8 +42,8 @@ export const fetchAccountInfo = createFetchInfoFunction(async address => {
  * @param {String} publicKey - requested account public key
  * @returns {Promise<Object>} account info
  */
-export const fetchAccountInfoByPublicKey = createFetchInfoFunction(async publicKey => {
-	const accountInfo = await makeRequest(`${config.API_BASE_URL}/account?publicKey=${publicKey}`);
+export const fetchAccountInfoByPublicKey = createTryFetchInfoFunction(async publicKey => {
+	const accountInfo = await makeRequest(createAPIURL(`account?publicKey=${publicKey}`));
 
 	return accountInfoFromDTO(accountInfo);
 });

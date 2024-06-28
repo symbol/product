@@ -15,6 +15,9 @@ export const createSearchCriteria = (searchParams = {}) => {
 	};
 };
 
+// Creates an API URL.
+export const createAPIURL = path => `${config.API_BASE_URL}/${path}`;
+
 // Creates a search URL, which uses in fetching paged data.
 export const createSearchURL = (baseURL, searchCriteria) => {
 	const { pageNumber, pageSize, filter } = searchCriteria;
@@ -48,7 +51,7 @@ export const createPage = (data, pageNumber, formatter) => {
 
 // Creates a wrapper for the info fetch function.
 // Handles client errors.
-export const createFetchInfoFunction =
+export const createTryFetchInfoFunction =
 	func =>
 	async (...args) => {
 		try {

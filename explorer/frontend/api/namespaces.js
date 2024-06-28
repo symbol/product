@@ -1,6 +1,5 @@
-import config from '@/config';
 import { createMosaicName } from '@/utils/common';
-import { createFetchInfoFunction, createPage, createSearchCriteria, createSearchURL, makeRequest } from '@/utils/server';
+import { createAPIURL, createPage, createSearchCriteria, createSearchURL, createTryFetchInfoFunction, makeRequest } from '@/utils/server';
 
 /**
  * @typedef Page
@@ -15,7 +14,7 @@ import { createFetchInfoFunction, createPage, createSearchCriteria, createSearch
  */
 export const fetchNamespacePage = async searchParams => {
 	const searchCriteria = createSearchCriteria(searchParams);
-	const url = createSearchURL(`${config.API_BASE_URL}/namespaces`, searchCriteria);
+	const url = createSearchURL(createAPIURL('namespaces'), searchCriteria);
 	const namespaces = await makeRequest(url);
 
 	return createPage(namespaces, searchCriteria.pageNumber, namespaceInfoFromDTO);
@@ -26,8 +25,8 @@ export const fetchNamespacePage = async searchParams => {
  * @param {String} id - requested namespace id
  * @returns {Promise<Object>} namespace info
  */
-export const fetchNamespaceInfo = createFetchInfoFunction(async id => {
-	const namespace = await makeRequest(`${config.API_BASE_URL}/namespace/${id}`);
+export const fetchNamespaceInfo = createTryFetchInfoFunction(async id => {
+	const namespace = await makeRequest(createAPIURL(`namespace/${id}`));
 
 	return namespaceInfoFromDTO(namespace);
 });

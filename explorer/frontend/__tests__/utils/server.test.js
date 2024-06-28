@@ -1,4 +1,4 @@
-import { createFetchInfoFunction, createPage, createSearchCriteria, createSearchURL, makeRequest } from '@/utils/server';
+import { createAPIURL, createPage, createSearchCriteria, createSearchURL, createTryFetchInfoFunction, makeRequest } from '@/utils/server';
 import mockAxios from 'jest-mock-axios';
 
 afterEach(() => {
@@ -6,13 +6,13 @@ afterEach(() => {
 });
 
 describe('utils/server', () => {
-	describe('createFetchInfoFunction', () => {
+	describe('createTryFetchInfoFunction', () => {
 		it('returns result of fetch function', async () => {
 			// Arrange:
 			const fetchFunction = jest.fn().mockResolvedValue(45);
 			const functionArguments = ['a', 1, null, () => {}];
 			const expectedResult = 45;
-			const wrappedFetchFunction = createFetchInfoFunction(fetchFunction);
+			const wrappedFetchFunction = createTryFetchInfoFunction(fetchFunction);
 
 			// Act:
 			const result = await wrappedFetchFunction(...functionArguments);
@@ -32,7 +32,7 @@ describe('utils/server', () => {
 				}
 			});
 			const expectedResult = null;
-			const wrappedFetchFunction = createFetchInfoFunction(fetchFunction);
+			const wrappedFetchFunction = createTryFetchInfoFunction(fetchFunction);
 
 			// Act:
 			const result = await wrappedFetchFunction();
@@ -51,7 +51,7 @@ describe('utils/server', () => {
 					data: error
 				}
 			});
-			const wrappedFetchFunction = createFetchInfoFunction(fetchFunction);
+			const wrappedFetchFunction = createTryFetchInfoFunction(fetchFunction);
 
 			// Act:
 			const promise = wrappedFetchFunction();
@@ -174,6 +174,20 @@ describe('utils/server', () => {
 
 			// Act + Assert:
 			runCreateSearchCriteriaTest(searchParams, expectedResult);
+		});
+	});
+
+	describe('createAPIURL', () => {
+		it('returns API URL from path', () => {
+			// Arrange:
+			const path = 'blocks';
+			const expectedResult = 'https://explorer.backend/blocks';
+
+			// Act:
+			const result = createAPIURL(path);
+
+			// Assert:
+			expect(result).toBe(expectedResult);
 		});
 	});
 

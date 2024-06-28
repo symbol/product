@@ -1,7 +1,7 @@
 import config from '@/config';
 import { ACCOUNT_STATE_CHANGE_ACTION, COSIGNATORY_MODIFICATION_ACTION, TRANSACTION_DIRECTION, TRANSACTION_TYPE } from '@/constants';
 import { decodeTransactionMessage } from '@/utils/common';
-import { createFetchInfoFunction, createPage, createSearchCriteria, createSearchURL, makeRequest } from '@/utils/server';
+import { createAPIURL, createPage, createSearchCriteria, createSearchURL, createTryFetchInfoFunction, makeRequest } from '@/utils/server';
 
 /**
  * @typedef Page
@@ -38,9 +38,9 @@ export const fetchTransactionPage = async searchParams => {
 	let url;
 	if (updatedFilter.group === 'unconfirmed') {
 		delete updatedFilter.group;
-		url = createSearchURL(`${config.API_BASE_URL}/transactions/unconfirmed`, searchCriteria);
+		url = createSearchURL(createAPIURL('transactions/unconfirmed'), searchCriteria);
 	} else {
-		url = createSearchURL(`${config.API_BASE_URL}/transactions`, searchCriteria);
+		url = createSearchURL(createAPIURL('transactions'), searchCriteria);
 	}
 
 	const transactions = await makeRequest(url);
@@ -54,8 +54,8 @@ export const fetchTransactionPage = async searchParams => {
  * @param {String} hash - requested transaction hash
  * @returns {Promise<Object>} transaction info
  */
-export const fetchTransactionInfo = createFetchInfoFunction(async hash => {
-	const transaction = await makeRequest(`${config.API_BASE_URL}/transaction/${hash}`);
+export const fetchTransactionInfo = createTryFetchInfoFunction(async hash => {
+	const transaction = await makeRequest(createAPIURL(`transaction/${hash}`));
 	const transactionInfo = transactionFromDTO(transaction);
 	const accountsStateMap = {};
 	const mosaicInfo = {};

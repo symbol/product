@@ -51,8 +51,9 @@ const runStatsTest = async (functionToTest, args, responseMap, expectedResult) =
 	spy.mockImplementation(url => {
 		const response = responseMap[url];
 
-		if (response) return Promise.resolve(response);
-		else
+		if (response) {
+			return Promise.resolve(response);
+		} else
 			return Promise.reject({
 				response: {
 					data: {
