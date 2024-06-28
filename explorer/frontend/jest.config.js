@@ -16,7 +16,6 @@ const customJestConfig = {
 	testPathIgnorePatterns: ['/test-utils/'],
 	coveragePathIgnorePatterns: ['/test-utils/'],
 	clearMocks: true,
-	coverageDirectory: 'coverage',
 	coverageProvider: 'babel',
 	moduleNameMapper: {
 		'^@/api/(.*)$': '<rootDir>/api/$1',

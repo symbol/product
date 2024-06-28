@@ -7,8 +7,7 @@
     "start": "next start",
     "build": "next build",
     "test": "npx jest",
-    "test:jenkins": "npx jest",
-    "test:jenkins:cov": "npx c8 jest",
+    "test:jenkins": "npx c8 jest --reporter=lcov",
     "eject": "react-scripts eject",
     "lint": "eslint --ext js,jsx . && stylelint \"**/*.scss\"",
     "lint:fix": "eslint --ext js,jsx --fix . && stylelint \"**/*.scss\" --fix"
