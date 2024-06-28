@@ -4,7 +4,7 @@ import {
 	copyable, heading, panel, text
 } from '@metamask/snaps-sdk';
 import { PrivateKey } from 'symbol-sdk';
-import { SymbolFacade } from 'symbol-sdk/symbol';
+import { KeyPair, SymbolFacade } from 'symbol-sdk/symbol';
 import { v4 as uuidv4 } from 'uuid';
 
 const AccountType = {
@@ -17,7 +17,7 @@ const accountUtils = {
 	 * * Derives a key pair from a mnemonic and an address index.
 	 * @param {'mainnet' | 'testnet'} networkName - The network name.
 	 * @param {number} addressIndex - The address index.
-	 * @returns {Promise<SymbolFacade.KeyPair>} - The derived key pair.
+	 * @returns {Promise<KeyPair>} - The derived key pair.
 	 */
 	async deriveKeyPair(networkName, addressIndex) {
 		const facade = new SymbolFacade(networkName);
@@ -34,7 +34,7 @@ const accountUtils = {
 		const key = await derivePrivateKey(addressIndex);
 
 		const privateKey = new PrivateKey(key.privateKeyBytes);
-		return new SymbolFacade.KeyPair(privateKey);
+		return new KeyPair(privateKey);
 	},
 	/**
 	 * Get latest metamask account index.
@@ -68,15 +68,14 @@ const accountUtils = {
 	/**
 	 * Create account and update state.
 	 * @param {object} state - The snap state object.
-	 * @param {SymbolFacade} facade - Symbol facade instance.
-	 * @param {SymbolFacade.KeyPair} keyPair - The key pair object.
+	 * @param {SymbolAccount} symbolAccount - Symbol account instance.
 	 * @param {string} accountLabel - The account label.
 	 * @param {'metamask' | 'import'} type - The snap account type.
 	 * @param {number} addressIndex - The address index.
 	 * @returns {Account} - The account object.
 	 */
 	async createAccountAndUpdateState({
-		state, facade, keyPair, accountLabel, type, addressIndex = null
+		state, symbolAccount, accountLabel, type, addressIndex = null
 	}) {
 		const { network } = state;
 		const accountId = uuidv4();
@@ -87,11 +86,11 @@ const accountUtils = {
 				addressIndex,
 				type,
 				label: accountLabel,
-				address: facade.network.publicKeyToAddress(keyPair.publicKey).toString(),
-				publicKey: keyPair.publicKey.toString(),
+				address: symbolAccount.address.toString(),
+				publicKey: symbolAccount.publicKey.toString(),
 				networkName: network.networkName
 			},
-			privateKey: keyPair.privateKey.toString()
+			privateKey: symbolAccount.keyPair.privateKey.toString()
 		};
 
 		state.accounts = {
@@ -122,9 +121,10 @@ const accountUtils = {
 			// Get the latest account index and increment it if it exists
 			const newAddressIndex = this.getLatestAccountIndex(accounts, network.networkName) + 1 || 0;
 			const keyPair = await this.deriveKeyPair(network.networkName, newAddressIndex);
+			const symbolAccount = facade.createAccount(keyPair.privateKey);
 
 			return await this.createAccountAndUpdateState({
-				state, facade, keyPair, accountLabel, type: AccountType.METAMASK, addressIndex: newAddressIndex
+				state, symbolAccount, accountLabel, type: AccountType.METAMASK, addressIndex: newAddressIndex
 			});
 		} catch (error) {
 			throw new Error(`Failed to create account: ${error.message}`);
@@ -135,8 +135,10 @@ const accountUtils = {
 			const { privateKey, accountLabel } = requestParams;
 			const { accounts, network } = state;
 
-			const keyPair = new SymbolFacade.KeyPair(new PrivateKey(privateKey));
-			const existingAccount = this.findAccountByPrivateKey(accounts, keyPair.privateKey.toString());
+			const facade = new SymbolFacade(network.networkName);
+
+			const symbolAccount = facade.createAccount(new PrivateKey(privateKey));
+			const existingAccount = this.findAccountByPrivateKey(accounts, symbolAccount.keyPair.privateKey.toString());
 
 			if (existingAccount) {
 				await snap.request({
@@ -153,8 +155,6 @@ const accountUtils = {
 				return existingAccount.account;
 			}
 
-			const facade = new SymbolFacade(network.networkName);
-
 			const confirmationResponse = await snap.request({
 				method: 'snap_dialog',
 				params: {
@@ -162,9 +162,9 @@ const accountUtils = {
 					content: panel([
 						heading('Import account'),
 						heading('Address:'),
-						copyable(`${facade.network.publicKeyToAddress(keyPair.publicKey).toString()}`),
+						copyable(`${symbolAccount.address.toString()}`),
 						heading('Public Key:'),
-						copyable(`${keyPair.publicKey.toString()}`)
+						copyable(`${symbolAccount.publicKey.toString()}`)
 					])
 				}
 			});
@@ -174,7 +174,7 @@ const accountUtils = {
 				return confirmationResponse;
 
 			return await this.createAccountAndUpdateState({
-				state, facade, keyPair, accountLabel, type: AccountType.IMPORTED
+				state, symbolAccount, accountLabel, type: AccountType.IMPORTED
 			});
 		} catch (error) {
 			throw new Error(`Failed to import account: ${error.message}`);
