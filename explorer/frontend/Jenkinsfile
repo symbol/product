@@ -2,13 +2,13 @@ defaultCiPipeline {
 	operatingSystem = ['ubuntu']
 	instanceSize = 'medium'
 
-	ciBuildDockerfile = 'javascript.Dockerfile'
+	environment = 'javascript'
 
 	packageId = 'explorer-frontend'
 
 	publisher = 'docker'
 	dockerImageName = 'symbolplatform/explorer-frontend'
 
-	codeCoverageTool = 'nyc'
+	codeCoverageTool = 'c8'
 	minimumCodeCoverage = 95
 }

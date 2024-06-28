@@ -8,7 +8,7 @@
     "build": "next build",
     "test": "npx jest",
     "test:jenkins": "npx jest",
-    "test:jenkins:cov": "npx jest --coverage",
+    "test:jenkins:cov": "npx c8 jest",
     "eject": "react-scripts eject",
     "lint": "eslint --ext js,jsx . && stylelint \"**/*.scss\"",
     "lint:fix": "eslint --ext js,jsx --fix . && stylelint \"**/*.scss\" --fix"
@@ -40,6 +40,7 @@
     "@testing-library/jest-dom": "^6.4.6",
     "@testing-library/react": "^16.0.0",
     "@testing-library/user-event": "^14.5.2",
+    "c8": "^10.1.2",
     "dotenv": "^16.0.3",
     "eslint": "^8.39.0",
     "eslint-config-airbnb": "^19.0.4",
