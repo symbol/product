@@ -3,9 +3,9 @@ import fetchUtils from '../utils/fetchUtils.js';
 
 const cryptoCompareClient = {
 	/**
-     * Fetch the price of the supported currencies.
-     * @returns {Promise<PriceInfo>} The price of the supported currencies.
-     */
+	 * Fetch the price of the supported currencies.
+	 * @returns {Promise<PriceInfo>} The price of the supported currencies.
+	 */
 	fetchPrice: async () => {
 		try {
 			const currencies = config.supportCurrency.join(',');
