@@ -98,16 +98,14 @@ describe('Filter', () => {
 			const search = jest.fn();
 
 			// Act:
-			render(
-				<Filter
-					isSelectedItemsShown
-					data={filterConfig}
-					isDisabled={isDisabled}
-					value={filter}
-					onChange={changeFilter}
-					search={search}
-				/>
-			);
+			render(<Filter
+				isSelectedItemsShown
+				data={filterConfig}
+				isDisabled={isDisabled}
+				value={filter}
+				onChange={changeFilter}
+				search={search}
+			/>);
 
 			// Assert:
 			const buttons = screen.getAllByRole('button').slice(1);
@@ -163,16 +161,14 @@ describe('Filter', () => {
 			const search = jest.fn();
 
 			// Act:
-			render(
-				<Filter
-					isSelectedItemsShown
-					data={filterConfig}
-					isDisabled={false}
-					value={filter}
-					onChange={changeFilter}
-					search={search}
-				/>
-			);
+			render(<Filter
+				isSelectedItemsShown
+				data={filterConfig}
+				isDisabled={false}
+				value={filter}
+				onChange={changeFilter}
+				search={search}
+			/>);
 
 			// Act:
 			const button = screen.getByRole('button', { name: filterToPress });
@@ -251,9 +247,14 @@ describe('Filter', () => {
 			const searchText = 'search-text-value';
 
 			// Act:
-			render(
-				<Filter isSelectedItemsShown data={filterConfig} isDisabled={false} value={{}} onChange={changeFilter} search={search} />
-			);
+			render(<Filter
+				isSelectedItemsShown
+				data={filterConfig}
+				isDisabled={false}
+				value={{}}
+				onChange={changeFilter}
+				search={search}
+			/>);
 
 			// Act:
 			const button = screen.getByRole('button', { name: filterToPress });
@@ -266,9 +267,9 @@ describe('Filter', () => {
 			}
 
 			// Assert:
-			if (shouldUseSearch) {
+			if (shouldUseSearch)
 				expect(search).toHaveBeenCalledWith(searchText);
-			}
+
 			const assertionPromises = expectedTextList.map(text => {
 				return waitFor(() => expect(screen.getByText(text)).toBeInTheDocument());
 			});

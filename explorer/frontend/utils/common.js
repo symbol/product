@@ -48,7 +48,7 @@ export const dateToLocalDate = date => {
 	const localTimezoneOffsetMinutes = new Date().getTimezoneOffset();
 	const millisecondsCoefficient = 60000;
 
-	return new Date(dateMilliseconds - localTimezoneOffsetMinutes * millisecondsCoefficient);
+	return new Date(dateMilliseconds - (localTimezoneOffsetMinutes * millisecondsCoefficient));
 };
 
 /**
@@ -59,13 +59,13 @@ export const dateToLocalDate = date => {
  * numberToShortString(1234567); // "1.23M"
  */
 export const numberToShortString = num => {
-	if (isNaN(num)) {
+	if (isNaN(num))
 		return '';
-	}
 
 	const value = num.toString().replace(/[^0-9.]/g, '');
 
-	if (1000 > value) return '' + value;
+	if (1000 > value)
+		return '' + value;
 
 	let si = [
 		{ v: 1e3, s: 'K' },
@@ -75,7 +75,8 @@ export const numberToShortString = num => {
 
 	let index;
 	for (index = si.length - 1; 0 < index; --index) {
-		if (value >= si[index].v) break;
+		if (value >= si[index].v)
+			break;
 	}
 
 	return (value / si[index].v).toFixed(2).replace(/\.0+$|(\.[0-9]*[1-9])0+$/, '$1') + si[index].s;
@@ -89,9 +90,8 @@ export const numberToShortString = num => {
  * numberToString(1234567); // "1 234 567"
  */
 export const numberToString = num => {
-	if (isNaN(num)) {
+	if (isNaN(num))
 		return '';
-	}
 
 	return num.toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ' ');
 };
@@ -109,11 +109,10 @@ export const truncateDecimals = (num, decimal) => {
 	const adjustedNum = num * multiplier;
 	let truncatedNum;
 
-	if (adjustedNum < 0) {
+	if (adjustedNum < 0)
 		truncatedNum = Math.ceil(adjustedNum);
-	} else {
+	else
 		truncatedNum = Math.floor(adjustedNum);
-	}
 
 	return truncatedNum / multiplier;
 };
@@ -129,33 +128,29 @@ export const truncateDecimals = (num, decimal) => {
  * truncateString('DF63A631B0D29C807CBEE57FECBB6C7AC424A3171B70F82547922FCB0E7C0E6C', 'hash'); // "DF63...0E6C"
  */
 export const truncateString = (str, type) => {
-	if (typeof str !== 'string') {
+	if (typeof str !== 'string')
 		return '';
-	}
 
 	const trunc = (text, cut, lengthFirst, lengthSecond) => {
-		if (cut === 'start' && lengthFirst < text.length) {
+		if (cut === 'start' && lengthFirst < text.length)
 			return '...' + text.substring(text.length - lengthFirst, text.length);
-		}
-		if (cut === 'middle' && lengthFirst + lengthSecond < text.length) {
+		if (cut === 'middle' && lengthFirst + lengthSecond < text.length)
 			return text.substring(0, lengthFirst) + '...' + text.substring(text.length - lengthSecond, text.length);
-		}
-		if (cut === 'end' && lengthFirst < text.length) {
+		if (cut === 'end' && lengthFirst < text.length)
 			return text.substring(0, lengthFirst) + '...';
-		}
 
 		return text;
 	};
 
 	switch (type) {
-		case 'address':
-			return trunc(str, 'middle', 6, 3);
-		case 'address-short':
-			return trunc(str, 'start', 3);
-		case 'hash':
-			return trunc(str, 'middle', 4, 4);
-		default:
-			return trunc(str, 'end', 9);
+	case 'address':
+		return trunc(str, 'middle', 6, 3);
+	case 'address-short':
+		return trunc(str, 'start', 3);
+	case 'hash':
+		return trunc(str, 'middle', 4, 4);
+	default:
+		return trunc(str, 'end', 9);
 	}
 };
 
@@ -292,8 +287,8 @@ export const transactionChartFilterToType = filter => {
 	return filter.isPerDay
 		? TRANSACTION_CHART_TYPE.DAILY
 		: filter.isPerMonth
-		? TRANSACTION_CHART_TYPE.MONTHLY
-		: TRANSACTION_CHART_TYPE.BLOCK;
+			? TRANSACTION_CHART_TYPE.MONTHLY
+			: TRANSACTION_CHART_TYPE.BLOCK;
 };
 
 /**
@@ -306,12 +301,12 @@ export const transactionChartFilterToType = filter => {
 export const formatTransactionChart = (data, type, translate) => {
 	return data.map(item => {
 		switch (type) {
-			case TRANSACTION_CHART_TYPE.DAILY:
-				return [formatDate(item[0], translate), item[1]];
-			case TRANSACTION_CHART_TYPE.MONTHLY:
-				return [formatDate(item[0], translate, { hasDays: false }), item[1]];
-			default:
-				return [translate('chart_label_block', { height: item[0] }), item[1]];
+		case TRANSACTION_CHART_TYPE.DAILY:
+			return [formatDate(item[0], translate), item[1]];
+		case TRANSACTION_CHART_TYPE.MONTHLY:
+			return [formatDate(item[0], translate, { hasDays: false }), item[1]];
+		default:
+			return [translate('chart_label_block', { height: item[0] }), item[1]];
 		}
 	});
 };

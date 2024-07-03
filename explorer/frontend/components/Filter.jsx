@@ -15,44 +15,44 @@ import { useEffect, useState } from 'react';
 
 const renderItem = (item, type, onSelect) => {
 	switch (type) {
-		case 'account':
-			return (
-				<ValueAccount
-					address={item.address}
-					size="md"
-					isNavigationDisabled
-					isCopyDisabled
-					onClick={() => onSelect(item.address, item)}
-				/>
-			);
-		case 'block':
-			return (
-				<ValueBlockHeight
-					value={item.height}
-					timestamp={item.timestamp}
-					size="md"
-					isNavigationDisabled
-					onClick={() => onSelect(item.height, item)}
-				/>
-			);
-		case 'mosaic':
-			return (
-				<ValueMosaic
-					mosaicName={item.name}
-					mosaicId={item.id}
-					size="md"
-					isNavigationDisabled
-					onClick={() => onSelect(item.id, item)}
-				/>
-			);
-		case 'transaction-type':
-			return (
-				<div onClick={() => onSelect(item.type, item)}>
-					<ValueTransactionType value={item.type} />
-				</div>
-			);
-		default:
-			return item;
+	case 'account':
+		return (
+			<ValueAccount
+				address={item.address}
+				size="md"
+				isNavigationDisabled
+				isCopyDisabled
+				onClick={() => onSelect(item.address, item)}
+			/>
+		);
+	case 'block':
+		return (
+			<ValueBlockHeight
+				value={item.height}
+				timestamp={item.timestamp}
+				size="md"
+				isNavigationDisabled
+				onClick={() => onSelect(item.height, item)}
+			/>
+		);
+	case 'mosaic':
+		return (
+			<ValueMosaic
+				mosaicName={item.name}
+				mosaicId={item.id}
+				size="md"
+				isNavigationDisabled
+				onClick={() => onSelect(item.id, item)}
+			/>
+		);
+	case 'transaction-type':
+		return (
+			<div onClick={() => onSelect(item.type, item)}>
+				<ValueTransactionType value={item.type} />
+			</div>
+		);
+	default:
+		return item;
 	}
 };
 
@@ -61,8 +61,10 @@ const FilterModal = ({ isVisible, title, type, isSearchEnabled, options, onSearc
 	const [searchResult, setSearchResult] = useState(null);
 	const [search, isLoading] = useDataManager(async text => {
 		const searchResult = await onSearchRequest(text);
-		if (searchResult?.[type]) setSearchResult(searchResult[type]);
-		else setSearchResult(null);
+		if (searchResult?.[type])
+			setSearchResult(searchResult[type]);
+		else
+			setSearchResult(null);
 	});
 	const [delayedSearch] = useDebounce(text => search(text));
 	const handleSearchTextChange = text => {
@@ -73,16 +75,16 @@ const FilterModal = ({ isVisible, title, type, isSearchEnabled, options, onSearc
 	const listTitle = !isSearchEnabled ? '' : searchResult ? 'Search results' : options.length ? 'Suggestions' : '';
 	const getListItemKey = (item, type, index) => {
 		switch (type) {
-			case 'account':
-				return item.address;
-			case 'block':
-				return item.height;
-			case 'mosaic':
-				return item.name;
-			case 'transaction-type':
-				return item.type;
-			default:
-				return index;
+		case 'account':
+			return item.address;
+		case 'block':
+			return item.height;
+		case 'mosaic':
+			return item.name;
+		case 'transaction-type':
+			return item.type;
+		default:
+			return index;
 		}
 	};
 
@@ -126,8 +128,7 @@ const Filter = ({ isSelectedItemsShown, data, value, search, isDisabled, onChang
 	const isFilerActive = name => !!value[name];
 	const isFilterAvailable = name =>
 		(!Object.keys(value).some(selectedFilterName =>
-			data.find(filter => filter.name === selectedFilterName)?.conflicts?.some(conflictFilterName => conflictFilterName === name)
-		) ||
+			data.find(filter => filter.name === selectedFilterName)?.conflicts?.some(conflictFilterName => conflictFilterName === name)) ||
 			value.hasOwnProperty(name)) &&
 		!isDisabled;
 	const getButtonStyle = name => `
@@ -138,22 +139,19 @@ const Filter = ({ isSelectedItemsShown, data, value, search, isDisabled, onChang
 	const getTextStyle = name => `${styles.text} ${isFilerActive(name) ? styles.textActive : null}`;
 	const clear = () => {
 		setExpandedFilter(null);
-		if (onClear) {
+		if (onClear)
 			onClear();
-		} else {
+		else
 			onChange({});
-		}
 	};
 	const handleFilterPress = filter => {
-		if (!isFilterAvailable(filter.name)) {
+		if (!isFilterAvailable(filter.name))
 			return;
-		}
 
-		if (filter.type === 'boolean') {
+		if (filter.type === 'boolean')
 			changeFilterValue(filter, !value[filter.name]);
-		} else {
+		else
 			setExpandedFilter(filter);
-		}
 	};
 	const handleFilterSelection = (value, item) => {
 		changeFilterValue(expandedFilter, value, item);
@@ -164,11 +162,10 @@ const Filter = ({ isSelectedItemsShown, data, value, search, isDisabled, onChang
 
 		filter.off?.forEach(filterName => delete currentFilterValues[filterName]);
 
-		if (filterValue) {
+		if (filterValue)
 			currentFilterValues[filter.name] = filterValue;
-		} else {
+		else
 			delete currentFilterValues[filter.name];
-		}
 
 		setSelectedItems(selectedItems => {
 			const updatedSelectedItems = { ...selectedItems };
@@ -187,9 +184,9 @@ const Filter = ({ isSelectedItemsShown, data, value, search, isDisabled, onChang
 	useEffect(() => {
 		setSelectedItems(selectedItems => {
 			const updatedSelectedItems = { ...selectedItems };
-			Object.keys(updatedSelectedItems).forEach(
-				key => !Object.keys(value).some(filterValueKey => filterValueKey === key) && delete updatedSelectedItems[key]
-			);
+			Object.keys(updatedSelectedItems).forEach(key =>
+				!Object.keys(value).some(filterValueKey =>
+					filterValueKey === key) && delete updatedSelectedItems[key]);
 
 			return updatedSelectedItems;
 		});
@@ -217,15 +214,14 @@ const Filter = ({ isSelectedItemsShown, data, value, search, isDisabled, onChang
 			</div>
 			<div className={styles.list}>
 				{isSelectedItemsShown &&
-					data.map(
-						(item, index) =>
-							selectedItems[item.name] && (
-								<div className={styles.selectedItem} key={index} onClick={() => removeFilter(item)}>
-									{renderItem(selectedItems[item.name], item.type, () => removeFilter(item))}
-									<CustomImage src="/images/icon-close.svg" alt="Remove" className={styles.iconRemoveItem} />
-								</div>
-							)
-					)}
+					data.map((item, index) =>
+						selectedItems[item.name] && (
+							<div className={styles.selectedItem} key={index} onClick={() => removeFilter(item)}>
+								{renderItem(selectedItems[item.name], item.type, () => removeFilter(item))}
+								<CustomImage src="/images/icon-close.svg" alt="Remove" className={styles.iconRemoveItem} />
+							</div>
+						))
+				}
 			</div>
 			<FilterModal
 				isVisible={isFilterModalShown}

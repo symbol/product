@@ -1,21 +1,21 @@
-@import "../variables";
+@import '../variables';
 
 .fields {
-    display: flex;
-    flex-direction: row;
-    justify-content: space-between;
+	display: flex;
+	flex-direction: row;
+	justify-content: space-between;
 }
 
 .progress {
-    width: 100%;
-    height: $spacing-base * 2;
-    overflow: hidden;
-    background-color: $color-primary-light;
-    border-radius: $border-radius-card;
+	width: 100%;
+	height: $spacing-base * 2;
+	overflow: hidden;
+	background-color: $color-primary-light;
+	border-radius: $border-radius-card;
 }
 
 .progressInner {
-    height: 100%;
-    background-color: $color-primary;
-    transition: width 1s ease;
+	height: 100%;
+	background-color: $color-primary;
+	transition: width 1s ease;
 }

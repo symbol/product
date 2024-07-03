@@ -1,15 +1,15 @@
-@import "../variables";
+@import '../variables';
 
 .valuePrice {
-    display: flex;
-    flex-direction: row;
-    gap: $spacing-base / 2;
+	display: flex;
+	flex-direction: row;
+	gap: $spacing-base / 2;
 
-    .changeIncrease {
-        color: $color-success;
-    }
+	.changeIncrease {
+		color: $color-success;
+	}
 
-    .changeDecrease {
-        color: $color-danger;
-    }
+	.changeDecrease {
+		color: $color-danger;
+	}
 }

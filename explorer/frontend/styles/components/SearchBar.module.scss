@@ -1,19 +1,19 @@
-@import "../variables";
+@import '../variables';
 
 .textBox {
-    z-index: 100;
-    width: 100%;
+	z-index: 100;
+	width: 100%;
 }
 
 .notFoundMessage {
-    display: flex;
-    align-items: flex-end;
-    justify-content: center;
-    width: 100%;
-    height: $spacing-base * 5;
-    opacity: 0.7;
+	display: flex;
+	align-items: flex-end;
+	justify-content: center;
+	width: 100%;
+	height: $spacing-base * 5;
+	opacity: 0.7;
 }
 
 .loadingIndicator {
-    margin: auto;
+	margin: auto;
 }

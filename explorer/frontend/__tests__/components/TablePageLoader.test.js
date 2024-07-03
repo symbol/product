@@ -12,11 +12,10 @@ describe('TablePageLoader', () => {
 
 			// Assert:
 
-			if (isLoading) {
+			if (isLoading)
 				expect(screen.getByRole('status')).toBeInTheDocument();
-			} else {
+			else
 				expect(screen.queryByRole('status')).toBeNull();
-			}
 		};
 
 		it('renders loading state', () => {

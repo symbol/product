@@ -1,66 +1,65 @@
-@import "../variables";
+@import '../variables';
 
 .wrapper {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 80vh;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	height: 80vh;
 }
 
 .container {
-    display: flex;
-    flex-direction: row;
-    gap: $spacing-base * 4;
-    align-items: center;
-    width: 70%;
+	display: flex;
+	flex-direction: row;
+	gap: $spacing-base * 4;
+	align-items: center;
+	width: 70%;
 }
 
 .code {
-    font-size: 10rem;
-    line-height: 10rem;
+	font-size: 10rem;
+	line-height: 10rem;
 }
 
 .separator {
-    width: $spacing-base / 4;
-    height: 100%;
-    background-color: $color-text-body;
+	width: $spacing-base / 4;
+	height: 100%;
+	background-color: $color-text-body;
 }
 
 .text {
-    display: flex;
-    flex-direction: column;
-    width: 50%;
+	display: flex;
+	flex-direction: column;
+	width: 50%;
 }
 
 .description {
-    font-size: 2rem;
-    line-height: 3rem;
+	font-size: 2rem;
+	line-height: 3rem;
 }
 
 .link {
-    margin-top: $spacing-base;
-    text-decoration: underline;
+	margin-top: $spacing-base;
+	text-decoration: underline;
 }
 
-
 @media #{$screen-mobile} {
-    .container {
-        gap: $spacing-base;
-        width: 80%;
-    }
+	.container {
+		gap: $spacing-base;
+		width: 80%;
+	}
 
-    .code {
-        font-size: 5rem;
-        line-height: 5rem;
-    }
+	.code {
+		font-size: 5rem;
+		line-height: 5rem;
+	}
 
-    .description {
-        font-size: 1rem;
-        line-height: 1.5rem;
-    }
+	.description {
+		font-size: 1rem;
+		line-height: 1.5rem;
+	}
 
-    .link {
-        margin-top: $spacing-base / 2;
-    }
+	.link {
+		margin-top: $spacing-base / 2;
+	}
 }

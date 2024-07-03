@@ -241,9 +241,11 @@ describe('MosaicInfo', () => {
 			const preloadedAccounts = accountPageResult.data;
 
 			// Act:
-			render(
-				<MosaicInfo mosaicInfo={mosaicInfo} preloadedTransactions={preloadedTransactions} preloadedAccounts={preloadedAccounts} />
-			);
+			render(<MosaicInfo
+				mosaicInfo={mosaicInfo}
+				preloadedTransactions={preloadedTransactions}
+				preloadedAccounts={preloadedAccounts}
+			/>);
 			fireEvent.click(await screen.findByText(tabToPress));
 
 			// Assert:

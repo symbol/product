@@ -14,17 +14,17 @@ const FieldTimestamp = ({ value, title, hasTime, hasSeconds }) => {
 	let nextType;
 
 	switch (type) {
-		case 'local':
-			finalTitle = t('field_timestampLocal', { title: titleText });
-			nextType = 'UTC';
-			iconSrc = '/images/icon-switch-2.svg';
-			break;
-		case 'UTC':
-		default:
-			finalTitle = t('field_timestampUTC', { title: titleText });
-			nextType = 'local';
-			iconSrc = '/images/icon-switch.svg';
-			break;
+	case 'local':
+		finalTitle = t('field_timestampLocal', { title: titleText });
+		nextType = 'UTC';
+		iconSrc = '/images/icon-switch-2.svg';
+		break;
+	case 'UTC':
+	default:
+		finalTitle = t('field_timestampUTC', { title: titleText });
+		nextType = 'local';
+		iconSrc = '/images/icon-switch.svg';
+		break;
 	}
 
 	const switchType = () => {

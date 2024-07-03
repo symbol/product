@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 export const transactionPageResponse = [
 	{
 		deadline: '2015-03-29 00:06:25',

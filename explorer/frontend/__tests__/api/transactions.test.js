@@ -60,6 +60,7 @@ describe('api/transactions', () => {
 				from: senderAddress,
 				to: recipientAddress
 			};
+			// eslint-disable-next-line max-len
 			const expectedURL = `https://explorer.backend/transactions?limit=10&offset=20&senderAddress=${senderAddress}&recipientAddress=${recipientAddress}`;
 			const expectedResult = transactionPageResult;
 
@@ -87,6 +88,7 @@ describe('api/transactions', () => {
 				from: senderAddress,
 				address: currentAddress
 			};
+			// eslint-disable-next-line max-len
 			const expectedURL = `https://explorer.backend/transactions?limit=10&offset=20&senderAddress=${senderAddress}&recipientAddress=${currentAddress}`;
 			const expectedResult = transactionAccountPageResult;
 
@@ -101,6 +103,7 @@ describe('api/transactions', () => {
 				address: currentAddress,
 				to: recipientAddress
 			};
+			// eslint-disable-next-line max-len
 			const expectedURL = `https://explorer.backend/transactions?limit=10&offset=20&senderAddress=${currentAddress}&recipientAddress=${recipientAddress}`;
 			const expectedResult = transactionAccountPageResult;
 

@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 export const accountPageResponse = [
 	{
 		address: 'NANEPSBUVE5NLYXCTP52LK3YAOSZUAIVOAD4FGSV',

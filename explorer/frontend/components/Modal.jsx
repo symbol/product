@@ -8,11 +8,10 @@ const Modal = ({ children, className, isVisible, onClose }) => {
 	};
 
 	useEffect(() => {
-		if (isVisible) {
+		if (isVisible) 
 			document.body.classList.add('disable-scroll');
-		} else {
+		else 
 			document.body.classList.remove('disable-scroll');
-		}
 	}, [isVisible]);
 
 	return isVisible ? (

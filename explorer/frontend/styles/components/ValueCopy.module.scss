@@ -1,16 +1,16 @@
-@import "../variables";
+@import '../variables';
 
 .valueCopy {
-    display: flex;
-    flex-direction: row;
-    gap: $spacing-base / 2;
-    align-items: center;
-    max-width: 100%;
+	display: flex;
+	flex-direction: row;
+	gap: $spacing-base / 2;
+	align-items: center;
+	max-width: 100%;
 }
 
 .text {
-    max-width: 100%;
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
+	max-width: 100%;
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
 }

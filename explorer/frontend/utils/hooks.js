@@ -95,9 +95,8 @@ export const useClientSidePagination = (fullData, pageSize = 10) => {
 		const nextPageNumber = pageNumber + 1;
 		const page = dataChunks[pageNumber];
 
-		if (!dataChunks[nextPageNumber]) {
+		if (!dataChunks[nextPageNumber]) 
 			setIsLastPage(true);
-		}
 
 		if (page) {
 			setData([...data, ...page]);
@@ -144,9 +143,8 @@ export const useFilter = (callback, defaultData, initialCall) => {
 	};
 
 	useEffect(() => {
-		if (initialCall) {
+		if (initialCall) 
 			call(filter);
-		}
 	}, [initialCall]);
 
 	return { data, isLoading, filter, changeFilter };
@@ -170,7 +168,8 @@ export const useDebounce = callback => {
 	const delay = 750;
 
 	const call = (...args) => {
-		if (timer) clearTimeout(timer);
+		if (timer) 
+			clearTimeout(timer);
 
 		const newTimer = setTimeout(() => callback(...args), delay);
 		setTimer(newTimer);
@@ -248,16 +247,14 @@ export const useStorage = (key, initialValue, callback) => {
 	useEffect(() => {
 		const accessor = storage[key];
 
-		if (!accessor) {
+		if (!accessor) 
 			throw Error(`Failed to access store. Unknown key "${key}"`);
-		}
 
 		const updateValue = () => {
 			const value = accessor.get();
 			setValue(value);
-			if (callback) {
+			if (callback) 
 				callback(value);
-			}
 		};
 
 		setSetter(() => accessor.set);
@@ -283,11 +280,10 @@ export const useUserCurrencyAmount = (fetchPrice, amount, currency, timestamp) =
 			setAmountInUserCurrency(amount * price);
 		};
 
-		if (amount) {
+		if (amount) 
 			fetchUserCurrencyAmount();
-		} else {
+		else 
 			setAmountInUserCurrency(0);
-		}
 	}, [fetchPrice, amount, currency, timestamp]);
 
 	return amountInUserCurrency;
@@ -305,11 +301,10 @@ export const useAsyncCall = (callback, defaultData, pollingInterval) => {
 			} catch {}
 		};
 
-		if (pollingInterval) {
+		if (pollingInterval) 
 			setInterval(() => call(), pollingInterval);
-		} else {
+		else 
 			call();
-		}
 	}, []);
 
 	return data;

@@ -74,9 +74,8 @@ const BlockPreview = ({ data, transactions, isNext, isSelected, onClose, onSelec
 	const iconChainSrc = isNext ? '/images/icon-chain-pending.svg' : '/images/icon-chain.svg';
 
 	const handleClick = () => {
-		if (!isSelected) {
+		if (!isSelected) 
 			onSelect(height);
-		}
 	};
 
 	useEffect(() => {

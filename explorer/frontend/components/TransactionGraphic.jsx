@@ -16,16 +16,16 @@ const TransactionGraphic = ({ transactions }) => {
 
 	const getTargetText = transactionType => {
 		switch (transactionType) {
-			case TRANSACTION_TYPE.TRANSFER:
-				return t('field_recipient');
-			case TRANSACTION_TYPE.MOSAIC_CREATION:
-			case TRANSACTION_TYPE.NAMESPACE_REGISTRATION:
-				return t('field_sink');
-			case TRANSACTION_TYPE.MOSAIC_SUPPLY_CHANGE:
-				return t('field_targetMosaic');
-			case TRANSACTION_TYPE.MULTISIG_ACCOUNT_MODIFICATION:
-			case TRANSACTION_TYPE.ACCOUNT_KEY_LINK:
-				return t('field_targetAccount');
+		case TRANSACTION_TYPE.TRANSFER:
+			return t('field_recipient');
+		case TRANSACTION_TYPE.MOSAIC_CREATION:
+		case TRANSACTION_TYPE.NAMESPACE_REGISTRATION:
+			return t('field_sink');
+		case TRANSACTION_TYPE.MOSAIC_SUPPLY_CHANGE:
+			return t('field_targetMosaic');
+		case TRANSACTION_TYPE.MULTISIG_ACCOUNT_MODIFICATION:
+		case TRANSACTION_TYPE.ACCOUNT_KEY_LINK:
+			return t('field_targetAccount');
 		}
 	};
 

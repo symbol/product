@@ -17,12 +17,12 @@ const ValueAccount = ({ address, size, raw, position, className, isNavigationDis
 	const displayedText = !raw && name ? `${name} (${truncateString(address, 'address-short')})` : address;
 
 	switch (position) {
-		case 'left':
-			containerStyle = styles.containerLeft;
-			break;
-		case 'right':
-			containerStyle = styles.containerRight;
-			break;
+	case 'left':
+		containerStyle = styles.containerLeft;
+		break;
+	case 'right':
+		containerStyle = styles.containerRight;
+		break;
 	}
 
 	const handleClick = e => {

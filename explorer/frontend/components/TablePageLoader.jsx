@@ -9,9 +9,8 @@ const TablePageLoader = ({ onLoad, isLoading }) => {
 	const isLoadingTargetInView = loadingRef.inView;
 
 	const handleTargetInView = () => {
-		if (isLoadingTargetInView && !isLoading) {
+		if (isLoadingTargetInView && !isLoading) 
 			onLoad();
-		}
 	};
 	useEffect(handleTargetInView, [isLoadingTargetInView, isLoading, onLoad]);
 

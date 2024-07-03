@@ -34,24 +34,24 @@ export const fetchTransactionChart = async filter => {
 	const endDateString = currentDate.toISOString().slice(0, 10);
 
 	switch (type) {
-		case 'daily': {
-			const startDate = new Date();
-			startDate.setDate(startDate.getDate() - 90);
-			const startDateString = startDate.toISOString().slice(0, 10);
-			const response = await makeRequest(createAPIURL(`transaction/daily?startDate=${startDateString}&endDate=${endDateString}`));
+	case 'daily': {
+		const startDate = new Date();
+		startDate.setDate(startDate.getDate() - 90);
+		const startDateString = startDate.toISOString().slice(0, 10);
+		const response = await makeRequest(createAPIURL(`transaction/daily?startDate=${startDateString}&endDate=${endDateString}`));
 
-			return response.map(item => [item.date, item.totalTransactions]);
-		}
-		case 'monthly': {
-			const startDate = new Date();
-			startDate.setMonth(startDate.getMonth() - 48);
-			const startDateString = startDate.toISOString().slice(0, 10);
-			const response = await makeRequest(createAPIURL(`transaction/monthly?startDate=${startDateString}&endDate=${endDateString}`));
+		return response.map(item => [item.date, item.totalTransactions]);
+	}
+	case 'monthly': {
+		const startDate = new Date();
+		startDate.setMonth(startDate.getMonth() - 48);
+		const startDateString = startDate.toISOString().slice(0, 10);
+		const response = await makeRequest(createAPIURL(`transaction/monthly?startDate=${startDateString}&endDate=${endDateString}`));
 
-			return response.map(item => [`${item.month}-01`, item.totalTransactions]);
-		}
-		default:
-			return (await fetchBlockPage({ pageSize: 240 })).data.map(item => [item.height, item.transactionCount]).reverse();
+		return response.map(item => [`${item.month}-01`, item.totalTransactions]);
+	}
+	default:
+		return (await fetchBlockPage({ pageSize: 240 })).data.map(item => [item.height, item.transactionCount]).reverse();
 	}
 };
 
@@ -85,12 +85,11 @@ export const fetchBlockStats = async () => {
 		blockTimeChart,
 		blockFeeChart,
 		blockDifficultyChart,
-		blockTime: Math.round(blockTimeChart.reduce((partialSum, item) => partialSum + item[1], 0) / blockTimeChart.length),
-		blockFee: Number(
-			(blockFeeChart.reduce((partialSum, item) => partialSum + item[1], 0) / blockFeeChart.length).toFixed(
-				config.NATIVE_MOSAIC_DIVISIBILITY
-			)
-		),
+		blockTime: Math.round(blockTimeChart.reduce((partialSum, item) =>
+			partialSum + item[1], 0) / blockTimeChart.length),
+		blockFee: Number((blockFeeChart.reduce((partialSum, item) =>
+			partialSum + item[1], 0) / blockFeeChart.length
+		).toFixed(config.NATIVE_MOSAIC_DIVISIBILITY)),
 		blockDifficulty: blocks[0].difficulty
 	};
 };
@@ -126,8 +125,10 @@ export const fetchPriceByDate = async (timestamp, currency) => {
 	let mm = date.getMonth() + 1;
 	let dd = date.getDate();
 
-	if (dd < 10) dd = '0' + dd;
-	if (mm < 10) mm = '0' + mm;
+	if (dd < 10)
+		dd = '0' + dd;
+	if (mm < 10)
+		mm = '0' + mm;
 
 	const formattedDate = dd + '-' + mm + '-' + yyyy;
 	const response = await makeRequest(`${config.HISTORICAL_PRICE_URL}?date=${formattedDate}`);

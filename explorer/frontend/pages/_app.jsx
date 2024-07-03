@@ -37,9 +37,8 @@ const App = ({ Component, pageProps }) => {
 	const getDisplayStyle = flag => ({ display: flag ? 'block' : 'none' });
 
 	useEffect(() => {
-		if (userLanguage && userLanguage !== router.locale) {
+		if (userLanguage && userLanguage !== router.locale) 
 			router.push(router.asPath, null, { locale: userLanguage });
-		}
 	}, [userLanguage, router.locale]);
 
 	return (

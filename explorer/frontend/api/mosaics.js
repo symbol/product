@@ -56,10 +56,10 @@ const mosaicInfoFromDTO = data => ({
 	isTransferable: data.transferable,
 	levy: data.levyFee
 		? {
-				fee: data.levyFee,
-				mosaic: data.levyNamespace,
-				recipient: data.levyRecipient,
-				type: data.levyType
+			fee: data.levyFee,
+			mosaic: data.levyNamespace,
+			recipient: data.levyRecipient,
+			type: data.levyType
 		  }
 		: null
 });

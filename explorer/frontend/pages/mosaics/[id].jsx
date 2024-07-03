@@ -125,8 +125,8 @@ const MosaicInfo = ({ mosaicInfo, preloadedTransactions, preloadedAccounts }) =>
 			const expirationText = mosaicInfo.isUnlimitedDuration
 				? t('value_neverExpired')
 				: isExpired
-				? t('value_expired')
-				: t('value_expiration', { value: expireIn });
+					? t('value_expired')
+					: t('value_expiration', { value: expireIn });
 			const progressType = isExpired ? 'danger' : '';
 			setChainHeight(chainHeight);
 			setExpirationText(expirationText);

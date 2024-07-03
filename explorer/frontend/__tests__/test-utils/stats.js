@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 export const accountStatisticsResponse = {
 	eligibleHarvestAccounts: 9093,
 	harvestedAccounts: 23675,

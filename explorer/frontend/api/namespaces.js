@@ -39,7 +39,8 @@ export const fetchNamespaceInfo = createTryFetchInfoFunction(async id => {
 const namespaceInfoFromDTO = data => {
 	const namespaceMosaicsMap = {};
 	data.mosaics.forEach(item => {
-		if (!namespaceMosaicsMap[item.namespaceName]) namespaceMosaicsMap[item.namespaceName] = [];
+		if (!namespaceMosaicsMap[item.namespaceName]) 
+			namespaceMosaicsMap[item.namespaceName] = [];
 		namespaceMosaicsMap[item.namespaceName].push({
 			id: createMosaicName(item.namespaceName, item.mosaicName),
 			name: createMosaicName(item.namespaceName, item.mosaicName),

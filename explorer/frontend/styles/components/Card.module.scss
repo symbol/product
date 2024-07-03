@@ -1,9 +1,9 @@
-@import "../variables";
+@import '../variables';
 
 .card {
-    gap: $spacing-padding;
-    width: 100%;
-    padding: $spacing-padding;
-    background-color: $color-background-card;
-    border-radius: $border-radius-card;
+	gap: $spacing-padding;
+	width: 100%;
+	padding: $spacing-padding;
+	background-color: $color-background-card;
+	border-radius: $border-radius-card;
 }

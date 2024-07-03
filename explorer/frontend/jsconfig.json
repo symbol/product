@@ -1,21 +1,17 @@
 {
-    "compilerOptions": {
-        "baseUrl": ".",
-        "paths": {
-            "@/components/*": ["components/*"],
-            "@/config": ["config/index.js"],
-            "@/constants": ["constants/index.js"],
-            "@/pages/*": ["pages/*"],
-            "@/api/*": ["api/*"],
-            "@/public/*": ["public/*"],
-            "@/styles/*": ["styles/*"],
-            "@/utils": ["utils"],
-            "@/utils/*": ["utils/*"]
-        }
-    },
-    "exclude": [
-        "**/node_modules/*",
-        "**/build/*",
-        "**/scripts/*"
-    ]
+	"compilerOptions": {
+		"baseUrl": ".",
+		"paths": {
+			"@/components/*": ["components/*"],
+			"@/config": ["config/index.js"],
+			"@/constants": ["constants/index.js"],
+			"@/pages/*": ["pages/*"],
+			"@/api/*": ["api/*"],
+			"@/public/*": ["public/*"],
+			"@/styles/*": ["styles/*"],
+			"@/utils": ["utils"],
+			"@/utils/*": ["utils/*"]
+		}
+	},
+	"exclude": ["**/node_modules/*", "**/build/*", "**/scripts/*"]
 }

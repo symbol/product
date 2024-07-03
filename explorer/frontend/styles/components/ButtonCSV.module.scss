@@ -1,30 +1,30 @@
-@import "../variables";
+@import '../variables';
 
 .buttonCSV {
-    display: flex;
-    flex-shrink: 0;
-    align-items: center;
-    justify-content: center;
-    min-width: 4rem;
-    height: 2rem;
-    padding: 0 $spacing-base * 2;
-    color: $color-text-button;
-    font: $font-button;
-    background-color: $color-button-bg;
-    border-radius: $border-radius-button;
-    cursor: pointer;
-    user-select: none;
+	display: flex;
+	flex-shrink: 0;
+	align-items: center;
+	justify-content: center;
+	min-width: 4rem;
+	height: 2rem;
+	padding: 0 $spacing-base * 2;
+	color: $color-text-button;
+	font: $font-button;
+	background-color: $color-button-bg;
+	border-radius: $border-radius-button;
+	cursor: pointer;
+	user-select: none;
 
-    &:hover {
-        color: $color-text-button;
-        background-color: $color-button-bg;
-        opacity: 0.9;
-    }
+	&:hover {
+		color: $color-text-button;
+		background-color: $color-button-bg;
+		opacity: 0.9;
+	}
 }
 
 @media #{$screen-mobile} {
-    .buttonCSV {
-        display: none;
-        height: $spacing-base * 6;
-    }
+	.buttonCSV {
+		display: none;
+		height: $spacing-base * 6;
+	}
 }

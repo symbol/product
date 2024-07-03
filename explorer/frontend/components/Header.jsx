@@ -108,21 +108,16 @@ const Header = () => {
 		setContacts(updatedContacts);
 	};
 	const addAddress = () => {
-		if (address.length < 40) {
+		if (address.length < 40)
 			return toast.error('Incorrect address');
-		}
-		if (name.length === 0) {
+		if (name.length === 0)
 			return toast.error('Name should not be empty');
-		}
-		if (name.length > 15) {
+		if (name.length > 15)
 			return toast.error('Name should be up to 15 characters');
-		}
-		if (contacts.some(userAddress => userAddress.address === address)) {
+		if (contacts.some(userAddress => userAddress.address === address))
 			return toast.error('Address already added');
-		}
-		if (contacts.some(userAddress => userAddress.name === name)) {
+		if (contacts.some(userAddress => userAddress.name === name))
 			return toast.error('Address with such Name already added');
-		}
 
 		setContacts([...contacts, { address, name }]);
 		setAddress('');

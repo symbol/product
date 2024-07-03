@@ -42,7 +42,8 @@ const RecentBlocks = ({ data, onTransactionListRequest }) => {
 		scrollStart();
 	};
 	const scrollStart = () => {
-		if (!containerRef.current) return;
+		if (!containerRef.current) 
+			return;
 
 		const { scrollWidth } = containerRef.current;
 		containerRef.current.scrollBy({ left: -scrollWidth, behavior: 'smooth' });

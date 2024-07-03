@@ -12,3 +12,11 @@ export const runAPITest = async (functionToTest, searchCriteria, response, expec
 	expect(spy).toHaveBeenCalledWith(expectedURL);
 	expect(result).toEqual(expectedResult);
 };
+
+export const error404Response = {
+	response: {
+		data: {
+			status: 404
+		}
+	}
+};

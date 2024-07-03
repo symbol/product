@@ -75,8 +75,8 @@ const NamespaceInfo = ({ namespaceInfo }) => {
 			const expirationText = namespaceInfo.isUnlimitedDuration
 				? t('value_neverExpired')
 				: isExpired
-				? t('value_expired')
-				: t('value_expiration', { value: expireIn });
+					? t('value_expired')
+					: t('value_expiration', { value: expireIn });
 			const progressType = isExpired ? 'danger' : '';
 			setChainHeight(chainHeight);
 			setExpirationText(expirationText);

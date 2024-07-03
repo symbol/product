@@ -1,35 +1,35 @@
-@import "../variables";
+@import '../variables';
 
 .wrapper {
-    height: 100%;
+	height: 100%;
 }
 
 .firstSection {
-    max-width: 32rem;
+	max-width: 32rem;
 
-    .firstSectionCard {
-        height: 36rem;
-    }
+	.firstSectionCard {
+		height: 36rem;
+	}
 }
 
 .secondSectionCard {
-    height: 36rem;
+	height: 36rem;
 }
 
 .valueTransactionSquares {
-    height: 18rem;
+	height: 18rem;
 }
 
 @media #{$screen-mobile} {
-    .firstSection {
-        max-width: 100%;
+	.firstSection {
+		max-width: 100%;
 
-        .firstSectionCard {
-            height: auto;
-        }
-    }
+		.firstSectionCard {
+			height: auto;
+		}
+	}
 
-    .secondSectionCard {
-        height: auto;
-    }
+	.secondSectionCard {
+		height: auto;
+	}
 }

@@ -1,34 +1,34 @@
-@import "../variables";
+@import '../variables';
 
 .valueAccount {
-    display: flex;
-    flex-direction: row;
-    gap: $spacing-base / 2;
-    align-items: center;
-    font: $font-body-monospace;
+	display: flex;
+	flex-direction: row;
+	gap: $spacing-base / 2;
+	align-items: center;
+	font: $font-body-monospace;
 }
 
 .textMd {
-    inline-size: 15rem;
-    overflow-wrap: break-word;
+	inline-size: 15rem;
+	overflow-wrap: break-word;
 }
 
 .addressContainer {
-    display: flex;
-    flex-direction: row;
-    gap: $spacing-base / 2;
-    align-items: center;
+	display: flex;
+	flex-direction: row;
+	gap: $spacing-base / 2;
+	align-items: center;
 }
 
 .containerLeft {
-    flex-direction: column-reverse;
-    gap: 0;
-    align-items: flex-start;
+	flex-direction: column-reverse;
+	gap: 0;
+	align-items: flex-start;
 }
 
 .containerRight {
-    flex-direction: column;
-    gap: 0;
-    align-items: flex-end;
-    text-align: right;
+	flex-direction: column;
+	gap: 0;
+	align-items: flex-end;
+	text-align: right;
 }

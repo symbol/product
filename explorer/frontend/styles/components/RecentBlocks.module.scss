@@ -1,41 +1,41 @@
-@import "../variables";
+@import '../variables';
 
 .recentBlocks {
-    position: relative;
-    width: 100%;
+	position: relative;
+	width: 100%;
 }
 
 .blockPreviewScrollable {
-    position: relative;
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    margin-top: $spacing-padding;
-    overflow: auto hidden;
+	position: relative;
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	margin-top: $spacing-padding;
+	overflow: auto hidden;
 
-    &::-webkit-scrollbar {
-        display: none;
-    }
+	&::-webkit-scrollbar {
+		display: none;
+	}
 }
 
 %button {
-    position: absolute;
-    top: 50%;
-    width: 2rem;
-    height: 2rem;
-    cursor: pointer;
+	position: absolute;
+	top: 50%;
+	width: 2rem;
+	height: 2rem;
+	cursor: pointer;
 }
 
 .buttonLeft {
-    @extend %button;
+	@extend %button;
 
-    left: 0;
-    transform: translateX(-100%) translateY(-50%);
+	left: 0;
+	transform: translateX(-100%) translateY(-50%);
 }
 
 .buttonRight {
-    @extend %button;
+	@extend %button;
 
-    right: 0;
-    transform: translateX(100%) translateY(-50%);
+	right: 0;
+	transform: translateX(100%) translateY(-50%);
 }

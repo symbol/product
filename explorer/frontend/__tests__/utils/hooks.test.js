@@ -564,11 +564,10 @@ describe('utils/hooks', () => {
 
 			// Assert:
 			expect(result.current).toBe(expectedValue);
-			if (shouldFetchPrice) {
+			if (shouldFetchPrice) 
 				expect(fetchPrice).toHaveBeenCalledWith(123456, 'USD');
-			} else {
+			else 
 				expect(fetchPrice).not.toHaveBeenCalled();
-			}
 		};
 
 		it('converts an amount to the user currency', async () => {

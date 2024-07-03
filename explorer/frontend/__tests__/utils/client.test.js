@@ -35,11 +35,9 @@ describe('utils/client', () => {
 			// Assert:
 			expect(document.execCommand).toHaveBeenCalledWith('copy');
 			expect(document.body.removeChild).toHaveBeenCalledTimes(1);
-			expect(document.body.appendChild).toBeCalledWith(
-				expect.objectContaining({
-					value: textToCopy
-				})
-			);
+			expect(document.body.appendChild).toBeCalledWith(expect.objectContaining({
+				value: textToCopy
+			}));
 		});
 
 		it('throws an error when failed to copy', async () => {
@@ -202,12 +200,10 @@ describe('utils/client', () => {
 
 			// Assert:
 			expect(event.stopPropagation).toHaveBeenCalledTimes(1);
-			if (shouldCallOnClick) {
+			if (shouldCallOnClick)
 				expect(onClick).toHaveBeenCalledWith(value);
-			}
-			if (shouldCallPreventDefault) {
+			if (shouldCallPreventDefault)
 				expect(event.preventDefault).toHaveBeenCalledTimes(1);
-			}
 		};
 
 		it('does not call onClick when is not provided', () => {

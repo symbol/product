@@ -61,18 +61,14 @@ export const fetchTransactionInfo = createTryFetchInfoFunction(async hash => {
 	const mosaicInfo = {};
 
 	transactionInfo.body.forEach(transaction => {
-		if (transaction.type !== TRANSACTION_TYPE.TRANSFER) {
+		if (transaction.type !== TRANSACTION_TYPE.TRANSFER)
 			return;
-		}
 
 		const { sender, recipient } = transaction;
-		if (!accountsStateMap[sender]) {
+		if (!accountsStateMap[sender])
 			accountsStateMap[sender] = {};
-		}
-
-		if (!accountsStateMap[recipient]) {
+		if (!accountsStateMap[recipient])
 			accountsStateMap[recipient] = {};
-		}
 
 		transaction.mosaics.forEach(mosaic => {
 			accountsStateMap[sender][mosaic.id] = (accountsStateMap[sender][mosaic.id] || 0) - mosaic.amount;
@@ -90,9 +86,8 @@ export const fetchTransactionInfo = createTryFetchInfoFunction(async hash => {
 				amount > 0
 					? ACCOUNT_STATE_CHANGE_ACTION.RECEIVE
 					: amount < 0
-					? ACCOUNT_STATE_CHANGE_ACTION.SEND
-					: ACCOUNT_STATE_CHANGE_ACTION.NONE
-			),
+						? ACCOUNT_STATE_CHANGE_ACTION.SEND
+						: ACCOUNT_STATE_CHANGE_ACTION.NONE),
 			mosaic: Object.keys(accountsStateMap[address]).map(mosaicId => ({
 				...mosaicInfo[mosaicId],
 				amount: accountsStateMap[address][mosaicId]
@@ -114,22 +109,22 @@ export const fetchTransactionInfo = createTryFetchInfoFunction(async hash => {
  */
 const transactionFromDTO = (data, filter = {}) => {
 	switch (data.transactionType) {
-		case TRANSACTION_TYPE.TRANSFER:
-			return formatTransferTransaction(data, filter);
-		case TRANSACTION_TYPE.MOSAIC_CREATION:
-			return formatMosaicDefinition(data, filter);
-		case TRANSACTION_TYPE.MOSAIC_SUPPLY_CHANGE:
-			return formatMosaicSupplyChange(data, filter);
-		case TRANSACTION_TYPE.NAMESPACE_REGISTRATION:
-			return formatNamespaceRegistration(data, filter);
-		case TRANSACTION_TYPE.MULTISIG_ACCOUNT_MODIFICATION:
-			return formatMultisigAccountModification(data, filter);
-		case TRANSACTION_TYPE.ACCOUNT_KEY_LINK:
-			return formatAccountKeyLink(data, filter);
-		case TRANSACTION_TYPE.MULTISIG:
-			return formatMultisigTransaction(data, filter);
-		default:
-			return formatBaseTransaction(data, filter);
+	case TRANSACTION_TYPE.TRANSFER:
+		return formatTransferTransaction(data, filter);
+	case TRANSACTION_TYPE.MOSAIC_CREATION:
+		return formatMosaicDefinition(data, filter);
+	case TRANSACTION_TYPE.MOSAIC_SUPPLY_CHANGE:
+		return formatMosaicSupplyChange(data, filter);
+	case TRANSACTION_TYPE.NAMESPACE_REGISTRATION:
+		return formatNamespaceRegistration(data, filter);
+	case TRANSACTION_TYPE.MULTISIG_ACCOUNT_MODIFICATION:
+		return formatMultisigAccountModification(data, filter);
+	case TRANSACTION_TYPE.ACCOUNT_KEY_LINK:
+		return formatAccountKeyLink(data, filter);
+	case TRANSACTION_TYPE.MULTISIG:
+		return formatMultisigTransaction(data, filter);
+	default:
+		return formatBaseTransaction(data, filter);
 	}
 };
 
@@ -331,11 +326,10 @@ const formatMultisigTransaction = (data, filter) => {
 		...data,
 		transactionType: data.embeddedTransactions[0].transactionType
 	};
-	if (rawEmbeddedTransaction.transactionType === TRANSACTION_TYPE.TRANSFER) {
+	if (rawEmbeddedTransaction.transactionType === TRANSACTION_TYPE.TRANSFER)
 		rawEmbeddedTransaction.value = [{ message: data.embeddedTransactions[0].message }, data.embeddedTransactions[0].mosaics];
-	} else {
+	else
 		rawEmbeddedTransaction.value = data.embeddedTransactions;
-	}
 
 	const formattedEmbeddedTransaction = transactionFromDTO(rawEmbeddedTransaction, filter.address);
 

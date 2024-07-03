@@ -1,4 +1,5 @@
 import { accountPageResponse } from '../test-utils/accounts';
+import { error404Response } from '../test-utils/api';
 import { blockPageResponse } from '../test-utils/blocks';
 import {
 	accountStatisticsResponse,
@@ -51,16 +52,10 @@ const runStatsTest = async (functionToTest, args, responseMap, expectedResult) =
 	spy.mockImplementation(url => {
 		const response = responseMap[url];
 
-		if (response) {
+		if (response)
 			return Promise.resolve(response);
-		} else
-			return Promise.reject({
-				response: {
-					data: {
-						status: 404
-					}
-				}
-			});
+		else
+			return Promise.reject(error404Response);
 	});
 
 	// Act:

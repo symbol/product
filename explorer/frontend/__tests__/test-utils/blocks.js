@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 export const blockPageResponse = [
 	{
 		difficulty: 18458765235402,

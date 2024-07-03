@@ -1,3 +1,4 @@
+import { error404Response } from '../test-utils/api';
 import { createAPIURL, createPage, createSearchCriteria, createSearchURL, createTryFetchInfoFunction, makeRequest } from '@/utils/server';
 import mockAxios from 'jest-mock-axios';
 
@@ -24,13 +25,7 @@ describe('utils/server', () => {
 
 		it('returns null if function throws error with 404 status', async () => {
 			// Arrange:
-			const fetchFunction = jest.fn().mockRejectedValue({
-				response: {
-					data: {
-						status: 404
-					}
-				}
-			});
+			const fetchFunction = jest.fn().mockRejectedValue(error404Response);
 			const expectedResult = null;
 			const wrappedFetchFunction = createTryFetchInfoFunction(fetchFunction);
 

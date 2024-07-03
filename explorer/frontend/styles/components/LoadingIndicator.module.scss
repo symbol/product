@@ -1,45 +1,45 @@
-@import "../variables";
+@import '../variables';
 
 $offset: 187;
 $duration: 2s;
 
 .spinner {
-    width: 2rem;
-    height: 2rem;
-    margin: $spacing-padding;
-    animation: rotator $duration linear infinite;
+	width: 2rem;
+	height: 2rem;
+	margin: $spacing-padding;
+	animation: rotator $duration linear infinite;
 }
 
 .path {
-    transform-origin: center;
-    animation: dash $duration ease-in-out infinite,;
-    stroke: $color-primary;
-    stroke-dasharray: $offset;
-    stroke-dashoffset: 0
+	transform-origin: center;
+	animation: dash $duration ease-in-out infinite;
+	stroke: $color-primary;
+	stroke-dasharray: $offset;
+	stroke-dashoffset: 0;
 }
 
 @keyframes rotator {
-    0% {
-        transform: rotate(0deg);
-    }
+	0% {
+		transform: rotate(0deg);
+	}
 
-    100% {
-        transform: rotate(270deg);
-    }
+	100% {
+		transform: rotate(270deg);
+	}
 }
 
 @keyframes dash {
-    0% {
-        stroke-dashoffset: $offset;
-    }
+	0% {
+		stroke-dashoffset: $offset;
+	}
 
-    50% {
-        stroke-dashoffset: $offset / 4;
-        transform: rotate(135deg);
-    }
+	50% {
+		stroke-dashoffset: $offset / 4;
+		transform: rotate(135deg);
+	}
 
-    100% {
-        stroke-dashoffset: $offset;
-        transform: rotate(450deg);
-    }
+	100% {
+		stroke-dashoffset: $offset;
+		transform: rotate(450deg);
+	}
 }

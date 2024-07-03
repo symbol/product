@@ -11,7 +11,8 @@ const ValueTransactionDirection = ({ value }) => {
 		[TRANSACTION_DIRECTION.OUTGOING]: styles.outgoing
 	};
 
-	if (!isIncoming && !isOutgoing) return null;
+	if (!isIncoming && !isOutgoing) 
+		return null;
 
 	const style = styleMap[value];
 	const text = t(`label_${value}`);

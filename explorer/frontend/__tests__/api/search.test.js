@@ -1,4 +1,5 @@
 import { accountInfoResponse, accountInfoResult } from '../test-utils/accounts';
+import { error404Response } from '../test-utils/api';
 import { blockInfoResponse, blockInfoResult } from '../test-utils/blocks';
 import { mosaicInfoResponse, mosaicInfoResult } from '../test-utils/mosaics';
 import { namespaceInfoResponse, namespaceInfoResult } from '../test-utils/namespaces';
@@ -20,16 +21,10 @@ const runSearchTest = async (searchQuery, responseMap, expectedResult) => {
 	spy.mockImplementation(url => {
 		const response = responseMap[url];
 
-		if (response) {
+		if (response)
 			return Promise.resolve(response);
-		} else
-			return Promise.reject({
-				response: {
-					data: {
-						status: 404
-					}
-				}
-			});
+		else
+			return Promise.reject(error404Response);
 	});
 
 	// Act:

@@ -4,9 +4,8 @@
  * @returns {Promise<void>} throws an error if failed to copy
  */
 export const copyToClipboard = async text => {
-	if (navigator.clipboard) {
+	if (navigator.clipboard) 
 		return navigator.clipboard.writeText(text);
-	}
 
 	// Fallback for browsers that do not support navigator.clipboard
 	const textArea = document.createElement('textarea');
@@ -25,9 +24,8 @@ export const copyToClipboard = async text => {
 
 	document.body.removeChild(textArea);
 
-	if (!isCopyExecuted) {
+	if (!isCopyExecuted) 
 		throw Error('Failed to copy to clipboard');
-	}
 };
 
 /**
@@ -47,9 +45,8 @@ export const createPageHref = (pageName, parameter) => {
 	};
 	const route = routeNameMap[pageName] || routeNameMap.home;
 
-	if (parameter !== undefined && parameter !== null) {
+	if (parameter !== undefined && parameter !== null) 
 		return `${route}/${parameter}`;
-	}
 
 	return route;
 };
@@ -64,6 +61,8 @@ export const createPageHref = (pageName, parameter) => {
  */
 export const handleNavigationItemClick = (event, onClick, value, isNavigationDisabled) => {
 	event.stopPropagation();
-	if (isNavigationDisabled) event.preventDefault();
-	if (onClick) onClick(value);
+	if (isNavigationDisabled) 
+		event.preventDefault();
+	if (onClick) 
+		onClick(value);
 };

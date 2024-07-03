@@ -20,8 +20,10 @@ const SearchResults = ({ type, text, onSearchRequest, onSelect }) => {
 		async text => {
 			const searchResult = await onSearchRequest(text);
 
-			if (searchResult) setResult(searchResult);
-			else setResult({});
+			if (searchResult) 
+				setResult(searchResult);
+			else 
+				setResult({});
 		},
 		null,
 		null,

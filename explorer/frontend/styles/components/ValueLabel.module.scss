@@ -1,39 +1,39 @@
-@import "../variables";
+@import '../variables';
 
 .valueLabel {
-    display: flex;
-    flex-direction: row;
-    gap: $spacing-base / 2;
-    align-items: center;
-    width: fit-content;
-    height: $spacing-base * 2;
-    padding: 0 $spacing-base * 2 0 $spacing-base * 1.5;
-    font: $font-body-bold;
-    background: $color-background-mosaic;
-    border-radius: $border-radius-label;
+	display: flex;
+	flex-direction: row;
+	gap: $spacing-base / 2;
+	align-items: center;
+	width: fit-content;
+	height: $spacing-base * 2;
+	padding: 0 $spacing-base * 2 0 $spacing-base * 1.5;
+	font: $font-body-bold;
+	background: $color-background-mosaic;
+	border-radius: $border-radius-label;
 }
 
 .valueLabel__noText {
-    padding: 0 $spacing-base;
+	padding: 0 $spacing-base;
 }
 
 .icon {
-    width: 1.33rem;
-    height: 1.33rem;
+	width: 1.33rem;
+	height: 1.33rem;
 }
 
 .success {
-    color: $color-primary;
+	color: $color-primary;
 }
 
 .warning {
-    color: $color-warning;
+	color: $color-warning;
 }
 
 .danger {
-    color: $color-danger;
+	color: $color-danger;
 }
 
 .info {
-    color: $color-info;
+	color: $color-info;
 }

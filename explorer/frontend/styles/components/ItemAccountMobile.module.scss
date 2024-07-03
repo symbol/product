@@ -1,28 +1,28 @@
-@import "../variables";
+@import '../variables';
 
 .itemAccountMobile {
-    display: flex;
-    flex-direction: row;
-    gap: $spacing-base;
-    width: 100%;
+	display: flex;
+	flex-direction: row;
+	gap: $spacing-base;
+	width: 100%;
 
-    .info {
-        display: flex;
-        flex: 1;
-        flex-direction: column;
+	.info {
+		display: flex;
+		flex: 1;
+		flex-direction: column;
 
-        .name {
-            font: $font-body-monospace;
-        }
+		.name {
+			font: $font-body-monospace;
+		}
 
-        .labels {
-            display: flex;
-            flex-direction: row;
-            gap: $spacing-base / 2;
-        }
+		.labels {
+			display: flex;
+			flex-direction: row;
+			gap: $spacing-base / 2;
+		}
 
-        .label__hidden {
-            opacity: 0;
-        }
-    }
+		.label__hidden {
+			opacity: 0;
+		}
+	}
 }
