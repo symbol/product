@@ -10,7 +10,8 @@
     "test:jenkins": "npx c8 jest --reporter=lcov",
     "eject": "react-scripts eject",
     "lint": "eslint --ext js,jsx . && stylelint \"**/*.scss\"",
-    "lint:fix": "eslint --ext js,jsx --fix . && stylelint \"**/*.scss\" --fix"
+    "lint:fix": "eslint --ext js,jsx --fix . && stylelint \"**/*.scss\" --fix",
+    "format": "prettier --write \"**/*.{js,jsx,json,scss}\""
   },
   "dependencies": {
     "apexcharts": "^3.41.0",
