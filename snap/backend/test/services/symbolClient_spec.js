@@ -9,7 +9,7 @@ describe('symbolClient', () => {
 
 	beforeEach(() => {
 		jest.clearAllMocks();
-		client = symbolClient(nodeUrl);
+		client = symbolClient.create(nodeUrl);
 	});
 
 	describe('fetchNetworkCurrencyMosaicId', () => {
