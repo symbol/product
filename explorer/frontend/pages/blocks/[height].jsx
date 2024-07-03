@@ -110,14 +110,9 @@ const BlockInfo = ({ blockInfo }) => {
 							</Field>
 							<FieldTimestamp value={blockInfo.timestamp} hasTime hasSeconds />
 						</div>
-						<div className="layout-grid-row">
-							<Field title={t('field_totalFee')} description={t('field_totalFee_description')}>
-								<ValueMosaic isNative amount={blockInfo.totalFee} />
-							</Field>
-							<Field title={t('field_averageFee')}>
-								<ValueMosaic isNative amount={blockInfo.averageFee} />
-							</Field>
-						</div>
+						<Field title={t('field_totalFee')} description={t('field_totalFee_description')}>
+							<ValueMosaic isNative amount={blockInfo.totalFee} />
+						</Field>
 						<Field title={t('field_transactionFees')}>
 							<ValueTransactionSquares
 								isTransactionPreviewEnabled

@@ -137,8 +137,7 @@ export const blockPageResult = {
 			totalTransactions: 0,
 			harvester: 'NDE6Y5WNLHID5KRYN3AVNQ7U52XDXLQPHLXHV3OE',
 			totalFee: 0,
-			transactionCount: 0,
-			averageFee: 0
+			transactionCount: 0
 		},
 		{
 			difficulty: '18.06',
@@ -153,8 +152,7 @@ export const blockPageResult = {
 			totalTransactions: 0,
 			harvester: 'NBAEFLTJG3UWXNXHOLUUPSZIDEHB6VJYLLVW5DFG',
 			totalFee: 0,
-			transactionCount: 0,
-			averageFee: 0
+			transactionCount: 0
 		},
 		{
 			difficulty: '18.26',
@@ -169,8 +167,7 @@ export const blockPageResult = {
 			totalTransactions: 0,
 			harvester: 'NBKODY2QNE7XPK3CXX4LDLBTHFSOVJOEDKRH7IN3',
 			totalFee: 0,
-			transactionCount: 0,
-			averageFee: 0
+			transactionCount: 0
 		},
 		{
 			difficulty: '19.22',
@@ -185,8 +182,7 @@ export const blockPageResult = {
 			totalTransactions: 0,
 			harvester: 'NA3BELQHNQTZGQ6YIKQ4BAOBXL6PK5PWNHZIEHQ3',
 			totalFee: 0,
-			transactionCount: 0,
-			averageFee: 0
+			transactionCount: 0
 		},
 		{
 			difficulty: '18.94',
@@ -201,8 +197,7 @@ export const blockPageResult = {
 			totalTransactions: 0,
 			harvester: 'NC6YFZ6WW7U275NA4VRHMLB43OVECZUDNENH3IOF',
 			totalFee: 0,
-			transactionCount: 0,
-			averageFee: 0
+			transactionCount: 0
 		},
 		{
 			difficulty: '19.02',
@@ -217,8 +212,7 @@ export const blockPageResult = {
 			totalTransactions: 0,
 			harvester: 'NAYKIG657GWMEHWINSI5CTPCOKVO6GVLK54MH5JE',
 			totalFee: 0,
-			transactionCount: 0,
-			averageFee: 0
+			transactionCount: 0
 		},
 		{
 			difficulty: '19.03',
@@ -233,8 +227,7 @@ export const blockPageResult = {
 			totalTransactions: 0,
 			harvester: 'NCT72F3XLKJGPZGWVZTW7GHOR7WF2ZTZJHHXHVAG',
 			totalFee: 0,
-			transactionCount: 0,
-			averageFee: 0
+			transactionCount: 0
 		},
 		{
 			difficulty: '19.03',
@@ -249,8 +242,7 @@ export const blockPageResult = {
 			totalTransactions: 1,
 			harvester: 'NCBK2NYBANG3ROHB75D2HHDTA4DPWGHMGUXRMQRT',
 			totalFee: 0.1,
-			transactionCount: 1,
-			averageFee: 0.1
+			transactionCount: 1
 		},
 		{
 			difficulty: '19.01',
@@ -265,8 +257,7 @@ export const blockPageResult = {
 			totalTransactions: 0,
 			harvester: 'NCW43GZLH4BHDI2ITXIJMAYYIVMB5AFVY5VRCUT6',
 			totalFee: 0,
-			transactionCount: 0,
-			averageFee: 0
+			transactionCount: 0
 		},
 		{
 			difficulty: '20.01',
@@ -281,8 +272,7 @@ export const blockPageResult = {
 			totalTransactions: 1,
 			harvester: 'NC2ZQKEFQIL3JZEOB2OZPWXWPOR6LKYHIROCR7PK',
 			totalFee: 0.05,
-			transactionCount: 1,
-			averageFee: 0.05
+			transactionCount: 1
 		}
 	],
 	pageNumber: 2
@@ -314,6 +304,5 @@ export const blockInfoResult = {
 	totalTransactions: 3,
 	harvester: 'NAE3GBBXNEBPF6SWSANL5WSJDJZ6W4QQF45CYNZ2',
 	totalFee: 35,
-	transactionCount: 3,
-	averageFee: 11.666666
+	transactionCount: 3
 };

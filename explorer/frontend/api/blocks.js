@@ -52,6 +52,5 @@ const blockInfoFromDTO = data => ({
 	harvester: data.signer,
 	totalFee: data.totalFees,
 	transactionCount: data.totalTransactions,
-	difficulty: ((data.difficulty / Math.pow(10, 14)) * 100).toFixed(2),
-	averageFee: data.totalTransactions ? truncateDecimals(data.totalFees / data.totalTransactions, config.NATIVE_MOSAIC_DIVISIBILITY) : 0
+	difficulty: ((data.difficulty / Math.pow(10, 14)) * 100).toFixed(2)
 });
