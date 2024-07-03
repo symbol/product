@@ -50,7 +50,8 @@ describe('dispatchUtils', () => {
 			const network = {
 				identifier: 1,
 				networkName: 'network',
-				url: 'url'
+				url: 'url',
+				currencyMosaicId: 'mosaicId'
 			};
 
 			// Act:

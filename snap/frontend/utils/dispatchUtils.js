@@ -55,6 +55,7 @@ export default dispatchUtils;
  * @property {number} identifier - The network identifier.
  * @property {string} networkName - The network name.
  * @property {string} url - The node URL.
+ * @property {string} currencyMosaicId - The native currency mosaic id.
  */
 
 /**
