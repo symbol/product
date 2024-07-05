@@ -1,0 +1,31 @@
+@import '../variables';
+
+.wrapper {
+	height: 100%;
+}
+
+.firstSection {
+	max-width: 32rem;
+
+	.firstSectionCard {
+		height: 21rem;
+	}
+}
+
+.secondSectionCard {
+	height: 21rem;
+}
+
+@media #{$screen-mobile} {
+	.firstSection {
+		max-width: 100%;
+
+		.firstSectionCard {
+			height: auto;
+		}
+	}
+
+	.secondSectionCard {
+		height: auto;
+	}
+}

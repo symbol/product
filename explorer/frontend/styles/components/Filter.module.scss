@@ -1,0 +1,147 @@
+@import '../variables';
+
+.filter {
+	width: 100%;
+
+	.list {
+		display: flex;
+		flex-direction: row;
+		gap: $spacing-base;
+		width: 100%;
+		overflow-x: auto;
+	}
+
+	.button {
+		display: flex;
+		flex-direction: row;
+		flex-shrink: 0;
+		align-items: center;
+		justify-content: center;
+		height: $spacing-base * 3;
+		padding: 0 $spacing-base;
+		background-color: $color-primary-light;
+		border-radius: $border-radius-filter;
+		cursor: pointer;
+		transition: all 250ms;
+		user-select: none;
+	}
+
+	.buttonActive {
+		background-color: $color-primary;
+	}
+
+	.buttonDisabled {
+		cursor: not-allowed;
+		opacity: 0.3;
+		transition-delay: 500ms;
+	}
+
+	.text {
+		color: $color-filter-inactive;
+		font: $font-tab;
+	}
+
+	.textActive {
+		color: $color-filter-active;
+	}
+
+	.icon {
+		width: 1rem;
+		height: 1rem;
+		margin-right: $spacing-base / 2;
+	}
+
+	.iconRemoveItem {
+		width: 1rem;
+		height: 1rem;
+		margin-left: $spacing-base;
+	}
+
+	.selectedItem {
+		display: flex;
+		align-items: center;
+		height: $spacing-base * 4;
+		margin-top: $spacing-base;
+		padding-right: $spacing-base;
+		background-color: $color-background-mosaic;
+		border-radius: $spacing-base * 2;
+		cursor: pointer;
+	}
+
+	.modal {
+		position: relative;
+		display: flex;
+		flex-direction: column;
+		gap: $spacing-padding;
+		max-width: 41rem;
+		height: 25rem;
+
+		.buttonClose {
+			position: absolute;
+			top: 2rem;
+			right: 2rem;
+		}
+
+		.resultListField {
+			display: flex;
+			flex: 1;
+			flex-direction: column;
+			gap: $spacing-base / 2;
+			overflow-y: auto;
+		}
+
+		.resultListContent {
+			display: flex;
+			flex-direction: column;
+			gap: $spacing-base / 2;
+		}
+
+		.resultItem {
+			cursor: pointer;
+		}
+
+		.loadingIndicator {
+			margin: auto;
+		}
+	}
+}
+
+@media #{$screen-mobile} {
+	.filter {
+		.button {
+			height: $spacing-base * 4;
+			padding: 0 $spacing-base * 2;
+		}
+
+		.modal {
+			position: absolute;
+			bottom: 0;
+			height: 50%;
+			animation: slide-up 250ms ease-in-out;
+
+			.resultItem {
+				height: $spacing-base * 4;
+			}
+		}
+	}
+}
+
+@keyframes fade-in {
+	from {
+		opacity: 0;
+	}
+
+	to {
+		opacity: 1;
+	}
+}
+
+@keyframes slide-up {
+	from {
+		transform: translateY(100%);
+	}
+
+	to {
+		transform: translateY(0);
+	}
+}
