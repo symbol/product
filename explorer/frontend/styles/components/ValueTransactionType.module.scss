@@ -1,0 +1,14 @@
+@import '../variables';
+
+.valueTransactionType {
+	display: flex;
+	flex-direction: row;
+	gap: $spacing-base / 2;
+	align-items: center;
+}
+
+.icon {
+	flex-shrink: 0;
+	width: $spacing-base * 2;
+	height: $spacing-base * 2;
+}

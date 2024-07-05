@@ -1,0 +1,15 @@
+@import '../variables';
+
+.valueTransaction {
+	display: flex;
+	flex-direction: row;
+	gap: $spacing-base / 2;
+	align-items: center;
+}
+
+.sectionAmount {
+	display: flex;
+	flex: 1;
+	align-items: flex-end;
+	justify-content: flex-end;
+}

@@ -1,0 +1,17 @@
+@import '../variables';
+
+.valueBlockHeight {
+	display: flex;
+	flex-direction: row;
+	gap: $spacing-base / 2;
+	align-items: center;
+}
+
+.icon {
+	width: $spacing-base * 3;
+	height: $spacing-base * 3;
+}
+
+.title {
+	font: $font-body-bold;
+}

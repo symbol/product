@@ -1,0 +1,21 @@
+extends:
+  - ../../_symbol/linters/javascript/default.eslintrc
+  - eslint-config-next
+  - plugin:import/react
+
+rules:
+  import/extensions:
+    - error
+    - always
+    - json: always
+      js: never
+      jsx: never
+  yoda: off
+
+settings:
+  import/resolver:
+    jsconfig:
+      config: jsconfig.json
+
+globals:
+  $t: false
