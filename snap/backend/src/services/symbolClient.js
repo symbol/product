@@ -1,4 +1,6 @@
 import fetchUtils from '../utils/fetchUtils.js';
+import { utils } from 'symbol-sdk';
+import { Address } from 'symbol-sdk/symbol';
 
 const symbolClient = {
 	create(nodeUrl) {
@@ -14,9 +16,68 @@ const symbolClient = {
 				} catch (error) {
 					throw new Error(`Failed to fetch network properties info: ${error.message}`);
 				}
+			},
+			/**
+			 * Fetch mosaics info from mosaic ids.
+			 * @param {Array<string>} mosaicIds - The mosaic ids to fetch info.
+			 * @returns {Promise<object<string, MosaicsInfo>>} The mosaics info.
+			 */
+			fetchMosaicsInfo: async mosaicIds => {
+				if (!mosaicIds.length)
+					return {};
+
+				try {
+					const mosaics = await fetchUtils.fetchData(`${nodeUrl}/mosaics`, 'POST', { mosaicIds });
+
+					return mosaics.reduce((mosaicObj, { mosaic }) => {
+						const { id, divisibility } = mosaic;
+						mosaicObj[id] = { divisibility };
+						return mosaicObj;
+					}, {});
+				} catch (error) {
+					throw new Error(`Failed to fetch mosaics info: ${error.message}`);
+				}
+			},
+			/**
+			 * Fetch accounts mosaics from addresses.
+			 * @param {Array<string>} addresses - The addresses to fetch mosaics.
+			 * @returns {Promise<object<string, Array<AccountMosaics>>>} The accounts mosaics.
+			 */
+			fetchAccountsMosaics: async addresses => {
+				if (!addresses.length)
+					return {};
+
+				try {
+					const accounts = await fetchUtils.fetchData(`${nodeUrl}/accounts`, 'POST', { addresses });
+
+					return accounts.reduce((acc, { account }) => {
+						const address = new Address(utils.hexToUint8(account.address)).toString();
+						acc[address] = account.mosaics;
+						return acc;
+					}, {});
+				} catch (error) {
+					throw new Error(`Failed to fetch account mosaics: ${error.message}`);
+				}
 			}
 		};
 	}
 };
 
 export default symbolClient;
+
+// region type declarations
+
+/**
+ * state of the mosaic info.
+ * @typedef {object} MosaicsInfo
+ * @property {number} divisibility - The mosaic divisibility.
+ */
+
+/**
+ * state of the account mosaics.
+ * @typedef {object} AccountMosaics
+ * @property {string} id - The mosaic id.
+ * @property {number} amount - The mosaic amount.
+ */
+
+// endregion
