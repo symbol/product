@@ -1,0 +1,59 @@
+@import '../variables';
+
+.valueMosaic {
+	display: flex;
+	flex-direction: row;
+	gap: $spacing-base / 2;
+	align-items: center;
+	width: fit-content;
+	padding: 0 $spacing-base / 2;
+	overflow: hidden;
+	color: unset;
+	background: $color-background-mosaic;
+	border-radius: $border-radius-chip;
+}
+
+.icon {
+	width: 1rem;
+	height: 1rem;
+}
+
+.amount {
+	display: flex;
+	flex-direction: row;
+	align-items: baseline;
+	font: $font-body-bold;
+	white-space: nowrap;
+}
+
+.decimal {
+	font-size: 0.83rem;
+	line-height: 0.83rem;
+}
+
+.incoming {
+	color: $color-text-body;
+
+	& > * {
+		filter: brightness(20) hue-rotate(180deg);
+	}
+}
+
+.outgoing {
+	color: $color-text-body;
+
+	& > * {
+		filter: brightness(20) hue-rotate(90deg);
+	}
+}
+
+.containerMd {
+	padding: 0;
+	background-color: transparent;
+}
+
+.valueMosaicMdTextSection {
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+}

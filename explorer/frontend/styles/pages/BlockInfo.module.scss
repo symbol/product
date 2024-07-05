@@ -1,0 +1,35 @@
+@import '../variables';
+
+.wrapper {
+	height: 100%;
+}
+
+.firstSection {
+	max-width: 32rem;
+
+	.firstSectionCard {
+		height: 36rem;
+	}
+}
+
+.secondSectionCard {
+	height: 36rem;
+}
+
+.valueTransactionSquares {
+	height: 18rem;
+}
+
+@media #{$screen-mobile} {
+	.firstSection {
+		max-width: 100%;
+
+		.firstSectionCard {
+			height: auto;
+		}
+	}
+
+	.secondSectionCard {
+		height: auto;
+	}
+}
