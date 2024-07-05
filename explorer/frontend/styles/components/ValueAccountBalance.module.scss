@@ -1,0 +1,20 @@
+@import '../variables';
+
+.valueAccountBalance {
+	display: flex;
+	flex-direction: row;
+	gap: $spacing-base / 2;
+	align-items: baseline;
+}
+
+.value {
+	font: $font-highlighted;
+}
+
+.ticker {
+	font: $font-body-bold;
+}
+
+.valueUSD {
+	font: $font-body-bold;
+}

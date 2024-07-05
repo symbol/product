@@ -17,6 +17,24 @@ updates:
           - minor
           - patch
 
+  - package-ecosystem: npm
+    directory: /explorer/frontend
+    schedule:
+      interval: weekly
+      day: sunday
+    target-branch: dev
+    labels: [Explorer Frontend]
+    versioning-strategy: increase-if-necessary
+    commit-message:
+      prefix: '[dependency]'
+    groups:
+      explorer-frontend-dependencies:
+        patterns:
+          - '*'
+        update-types:
+          - minor
+          - patch
+
   - package-ecosystem: pip
     directory: /bridge
     schedule:
