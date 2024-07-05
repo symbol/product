@@ -1,0 +1,33 @@
+@import '../variables';
+
+.wrapper {
+	height: 100%;
+}
+
+.firstSection {
+	max-width: 32rem;
+
+	.firstSectionCard {
+		min-height: 33rem;
+		overflow: hidden;
+		word-wrap: break-word;
+	}
+}
+
+.secondSectionCard {
+	min-height: 33rem;
+}
+
+@media #{$screen-mobile} {
+	.firstSection {
+		max-width: 100%;
+
+		.firstSectionCard {
+			min-height: auto;
+		}
+	}
+
+	.secondSectionCard {
+		min-height: auto;
+	}
+}

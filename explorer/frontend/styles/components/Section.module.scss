@@ -1,0 +1,40 @@
+@import '../variables';
+
+.section {
+	width: 100%;
+	min-width: 0;
+	margin-top: $spacing-padding;
+}
+
+.titleRow {
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	justify-content: space-between;
+}
+
+.tabs {
+	display: flex;
+	flex-direction: row;
+	gap: $spacing-base * 4;
+	float: right;
+}
+
+.tab {
+	padding-bottom: $spacing-base / 2;
+	color: $color-tab-inactive;
+	font: $font-tab;
+	text-transform: uppercase;
+	border-bottom: $spacing-base / 2 solid transparent;
+	cursor: pointer;
+	transition: color 500ms;
+	user-select: none;
+}
+
+.tab__active {
+	color: $color-tab-active;
+	font: $font-tab;
+	text-transform: uppercase;
+	border-bottom-color: $color-secondary;
+	cursor: pointer;
+}
