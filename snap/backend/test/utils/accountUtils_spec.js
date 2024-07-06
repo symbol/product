@@ -1,5 +1,7 @@
+import symbolClient from '../../src/services/symbolClient.js';
 import stateManager from '../../src/stateManager.js';
 import accountUtils from '../../src/utils/accountUtils.js';
+import mosaicUtils from '../../src/utils/mosaicUtils.js';
 import {
 	beforeEach,
 	describe, expect, it, jest
@@ -35,9 +37,10 @@ describe('accountUtils', () => {
 					networkName,
 					label: `Wallet ${index}`,
 					address: facade.network.publicKeyToAddress(keyPair.publicKey).toString(),
-					publicKey: keyPair.publicKey.toString()
+					publicKey: keyPair.publicKey.toString(),
+					mosaics: []
 				},
-				privateKey
+				privateKey: privateKey.toString()
 			};
 		}
 
@@ -225,9 +228,10 @@ describe('accountUtils', () => {
 		const privateKey = '1F53BA3DA42800D092A0C331A20A41ACCE81D2DD6F710106953ADA277C502010';
 		const keyPair = new SymbolFacade.KeyPair(new PrivateKey(privateKey));
 
-		const assertCreateAccount = async (state, requestParams, expectedAddressIndex) => {
+		const assertCreateAccount = async (state, requestParams, mockMosaics, expectedResult) => {
 			// Arrange:
 			jest.spyOn(accountUtils, 'deriveKeyPair').mockResolvedValue(keyPair);
+			jest.spyOn(accountUtils, 'fetchAndUpdateAccountMosaics').mockResolvedValue(mockMosaics);
 
 			// Act:
 			const account = await accountUtils.createAccount({ state, requestParams });
@@ -246,13 +250,15 @@ describe('accountUtils', () => {
 
 			expect(account).toStrictEqual({
 				id: expect.any(String),
-				addressIndex: expectedAddressIndex,
+				addressIndex: expectedResult.addressIndex,
 				type: 'metamask',
 				networkName: 'testnet',
 				label: requestParams.accountLabel,
 				address: 'TDCYZ45MX4IZ7SKEL5UL4ZA7O6KDDUAZZALCA6Y',
-				publicKey: 'FABAD1271A72816961B95CCCAAE1FD1E356F26A6AD3E0A91A25F703C1312F73D'
+				publicKey: 'FABAD1271A72816961B95CCCAAE1FD1E356F26A6AD3E0A91A25F703C1312F73D',
+				mosaics: expectedResult.mosaics
 			});
+			expect(accountUtils.fetchAndUpdateAccountMosaics).toHaveBeenCalledWith(state, [account.address]);
 		};
 
 		it('creates a first account if latest account index return not found', async () => {
@@ -268,7 +274,7 @@ describe('accountUtils', () => {
 				accountLabel: 'my first wallet'
 			};
 
-			await assertCreateAccount(state, requestParams, 0);
+			await assertCreateAccount(state, requestParams, {}, { addressIndex: 0, mosaics: [] });
 		});
 
 		it('creates a new account with a new address index', async () => {
@@ -287,7 +293,52 @@ describe('accountUtils', () => {
 				accountLabel: 'invest wallet'
 			};
 
-			await assertCreateAccount(state, requestParams, 3);
+			await assertCreateAccount(state, requestParams, {}, { addressIndex: 3, mosaics: [] });
+		});
+
+		it('create new account with sort XYM mosaic to first place', async () => {
+			// Arrange:
+			const state = {
+				network: {
+					networkName: 'testnet',
+					currencyMosaicId: 'mosaicXYMId'
+				},
+				accounts: {
+					...generateAccounts(3, 'testnet'),
+					...generateAccounts(5, 'mainnet')
+				}
+			};
+
+			const requestParams = {
+				accountLabel: 'invest wallet'
+			};
+
+			const mockMosaicsResponse = {
+				TDCYZ45MX4IZ7SKEL5UL4ZA7O6KDDUAZZALCA6Y: [
+					{
+						id: 'mosaicId',
+						amount: 1000
+					},
+					{
+						id: 'mosaicXYMId',
+						amount: 1000
+					}
+				]
+			};
+
+			await assertCreateAccount(state, requestParams, mockMosaicsResponse, {
+				addressIndex: 3,
+				mosaics: [
+					{
+						id: 'mosaicXYMId',
+						amount: 1000
+					},
+					{
+						id: 'mosaicId',
+						amount: 1000
+					}
+				]
+			});
 		});
 
 		it('throws an error when network name invalid', async () => {
@@ -330,25 +381,15 @@ describe('accountUtils', () => {
 	});
 
 	describe('importAccount', () => {
-		it('can import an account', async () => {
+		const assertCanImportAccount = async (state, requestParams, mockAccountMosaicsResponse, expectedResult) => {
 			// Arrange:
-			const state = {
-				network: {
-					networkName: 'testnet'
-				},
-				accounts: {}
-			};
-
-			const requestParams = {
-				privateKey: '1F53BA3DA42800D092A0C331A20A41ACCE81D2DD6F710106953ADA277C502010',
-				accountLabel: 'import account'
-			};
-
 			const mockRequest = jest.fn();
 
 			global.snap = { request: mockRequest };
 
 			global.snap.request.mockResolvedValue(true);
+
+			jest.spyOn(accountUtils, 'fetchAndUpdateAccountMosaics').mockResolvedValue(mockAccountMosaicsResponse);
 
 			// Act:
 			const account = await accountUtils.importAccount({ state, requestParams });
@@ -379,14 +420,80 @@ describe('accountUtils', () => {
 				}
 			});
 
+			expect(accountUtils.fetchAndUpdateAccountMosaics).toHaveBeenCalledWith(state, [account.address]);
+
 			expect(account).toStrictEqual({
 				id: expect.any(String),
 				addressIndex: null,
 				type: 'import',
 				networkName: 'testnet',
-				label: requestParams.accountLabel,
+				label: expectedResult.label,
 				address: 'TDCYZ45MX4IZ7SKEL5UL4ZA7O6KDDUAZZALCA6Y',
-				publicKey: 'FABAD1271A72816961B95CCCAAE1FD1E356F26A6AD3E0A91A25F703C1312F73D'
+				publicKey: 'FABAD1271A72816961B95CCCAAE1FD1E356F26A6AD3E0A91A25F703C1312F73D',
+				mosaics: expectedResult.mosaics
+			});
+		};
+
+		it('can import an account', async () => {
+			// Arrange:
+			const state = {
+				network: {
+					networkName: 'testnet'
+				},
+				accounts: {}
+			};
+
+			const requestParams = {
+				privateKey: '1F53BA3DA42800D092A0C331A20A41ACCE81D2DD6F710106953ADA277C502010',
+				accountLabel: 'import account'
+			};
+
+			await assertCanImportAccount(state, requestParams, {}, {
+				label: 'import account',
+				mosaics: []
+			});
+		});
+
+		it('can import an account with sort XYM mosaics', async () => {
+			// Arrange:
+			const state = {
+				network: {
+					networkName: 'testnet',
+					currencyMosaicId: 'mosaicXYMId'
+				},
+				accounts: {}
+			};
+
+			const requestParams = {
+				privateKey: '1F53BA3DA42800D092A0C331A20A41ACCE81D2DD6F710106953ADA277C502010',
+				accountLabel: 'import account'
+			};
+
+			const mockAccountMosaicsResponse = {
+				TDCYZ45MX4IZ7SKEL5UL4ZA7O6KDDUAZZALCA6Y: [
+					{
+						id: 'mosaicId',
+						amount: 1000
+					},
+					{
+						id: 'mosaicXYMId',
+						amount: 1000
+					}
+				]
+			};
+
+			await assertCanImportAccount(state, requestParams, mockAccountMosaicsResponse, {
+				label: 'import account',
+				mosaics: [
+					{
+						id: 'mosaicXYMId',
+						amount: 1000
+					},
+					{
+						id: 'mosaicId',
+						amount: 1000
+					}
+				]
 			});
 		});
 
