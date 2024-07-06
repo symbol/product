@@ -217,6 +217,55 @@ const accountUtils = {
 
 		return accountsMosaics;
 	},
+	/**
+	 * Update account mosaics in snap state.
+	 * @param {object} state - The snap state object.
+	 * @param {Array<string>} accountIds - The account ids.
+	 * @param {Record<string, Array<AccountMosaics>>} accountsMosaics - The accounts mosaics object.
+	 * @returns {Promise<Record<string, Accounts>>} - The updated accounts object.
+	 */
+	async updateAccountMosaics(state, accountIds, accountsMosaics) {
+		const { network } = state;
+
+		// update state with mosaics
+		const updatedAccounts = accountIds.reduce((acc, accountId) => {
+			const accountData = state.accounts[accountId];
+			if (accountData) {
+				acc[accountId] = {
+					...accountData,
+					account: {
+						...accountData.account,
+						mosaics: sortXYMMosaics(accountsMosaics[accountData.account.address] || [], network.currencyMosaicId)
+					}
+				};
+			}
+			return acc;
+		}, {});
+
+		if (0 === Object.keys(updatedAccounts).length)
+			return updatedAccounts;
+
+		state.accounts = { ...state.accounts, ...updatedAccounts };
+
+		await stateManager.update(state);
+
+		return updatedAccounts;
+	},
+	/**
+	 * Fetch account mosaics and update state.
+	 * @param {object} state - The snap state object.
+	 * @param {{ accountIds: Array<string> }} requestParams - The request parameters containing account IDs to fetch mosaics for.
+	 * @returns {Promise<Record<string, Account>>} - The updated accounts object.
+	 */
+	async fetchAccountMosaics({ state, requestParams }) {
+		const { accountIds } = requestParams;
+
+		const addresses = accountIds.map(accountId => state.accounts[accountId].account.address);
+
+		const accountsMosaics = await this.fetchAndUpdateAccountMosaics(state, addresses);
+		const updatedAccounts = await this.updateAccountMosaics(state, accountIds, accountsMosaics);
+
+		return Object.fromEntries(Object.entries(updatedAccounts).map(([key, value]) => [key, value.account]));
 	}
 };
 
