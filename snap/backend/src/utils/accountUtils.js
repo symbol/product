@@ -14,6 +14,18 @@ const AccountType = {
 	IMPORTED: 'import'
 };
 
+/**
+ * Sort mosaics array, XYM will always at top.
+ * @param {Array<AccountMosaics>} mosaics - The mosaics array.
+ * @param {string} mosaicId - The mosaic id.
+ * @returns {Array<AccountMosaics>} - The sorted mosaics array.
+ */
+const sortXYMMosaics = (mosaics, mosaicId) => {
+	const xymMosaics = mosaics.filter(mosaic => mosaic.id === mosaicId);
+	const otherMosaics = mosaics.filter(mosaic => mosaic.id !== mosaicId);
+	return [...xymMosaics, ...otherMosaics];
+};
+
 const accountUtils = {
 	/**
 	 * * Derives a key pair from a mnemonic and an address index.
@@ -82,15 +94,19 @@ const accountUtils = {
 		const { network } = state;
 		const accountId = uuidv4();
 
+		const address = symbolAccount.address.toString();
+		const accountsMosaics = await this.fetchAndUpdateAccountMosaics(state, [address]);
+
 		const newAccount = {
 			account: {
 				id: accountId,
 				addressIndex,
 				type,
 				label: accountLabel,
-				address: symbolAccount.address.toString(),
+				address,
 				publicKey: symbolAccount.publicKey.toString(),
-				networkName: network.networkName
+				networkName: network.networkName,
+				mosaics: sortXYMMosaics(accountsMosaics[address] || [], network.currencyMosaicId)
 			},
 			privateKey: symbolAccount.keyPair.privateKey.toString()
 		};
@@ -218,6 +234,7 @@ export default accountUtils;
  * @property {string} label - The account label.
  * @property {string} address - The account address.
  * @property {string} publicKey - The account public key.
+ * @property {Array<AccountMosaics>} mosaics - The account mosaics.
  */
 
 /**
