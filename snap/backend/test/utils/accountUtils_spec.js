@@ -566,7 +566,7 @@ describe('accountUtils', () => {
 	});
 
 	describe('fetchAndUpdateAccountMosaics', () => {
-		it('fetches and updates account mosaics', async () => {
+		it('fetches account mosaic and updates mosaic info', async () => {
 			// Arrange:
 			const state = {
 				network: {
@@ -591,11 +591,12 @@ describe('accountUtils', () => {
 				]
 			};
 
+			jest.spyOn(accountUtils, 'fetchAndUpdateAccountMosaics').mockRestore();
+
 			const mockFetchAccountsMosaics = jest.fn().mockResolvedValue(mockMosaicsResponse);
 			jest.spyOn(symbolClient, 'create').mockImplementation(() => ({
 				fetchAccountsMosaics: mockFetchAccountsMosaics
 			}));
-
 			jest.spyOn(mosaicUtils, 'updateMosaicInfo').mockImplementation();
 
 			// Act:
@@ -608,6 +609,146 @@ describe('accountUtils', () => {
 				['mosaicId', 'mosaicXYMId']
 			);
 			expect(result).toStrictEqual(mockMosaicsResponse);
+		});
+	});
+
+	describe('updateAccountMosaics', () => {
+		// Arrange:
+		const state = {
+			network: {
+				networkName: 'testnet',
+				currencyMosaicId: 'mosaicXYMId'
+			},
+			accounts: generateAccounts(1, 'testnet')
+		};
+
+		it('updates account mosaics and sort XYM mosaic if account exist', async () => {
+			// Arrange:
+			const { account, privateKey } = Object.values(state.accounts)[0];
+
+			const accountIds = [account.id];
+
+			const accountsMosaics = {
+				[account.address]: [
+					{
+						id: 'mosaicId',
+						amount: 1000
+					},
+					{
+						id: 'mosaicXYMId',
+						amount: 1000
+					}
+				]
+			};
+
+			// Act:
+			const result = await accountUtils.updateAccountMosaics(state, accountIds, accountsMosaics);
+
+			// Assert:
+			const expectedAccountResult = {
+				[account.id]: {
+					account: {
+						...account,
+						mosaics: [
+							{
+								id: 'mosaicXYMId',
+								amount: 1000
+							},
+							{
+								id: 'mosaicId',
+								amount: 1000
+							}
+						]
+					},
+					privateKey
+				}
+			};
+
+			expect(stateManager.update).toHaveBeenCalledWith({
+				...state,
+				accounts: {
+					...expectedAccountResult
+				}
+			});
+			expect(result).toStrictEqual({
+				...expectedAccountResult
+			});
+		});
+
+		it('skip updating account mosaics if account not exist', async () => {
+			// Arrange:
+			const accountIds = ['0x1234'];
+
+			const accountsMosaics = {
+				TDCYZ45MX4IZ7SKEL5UL4ZA7O6KDDUAZZALCA6Y: [
+					{
+						id: 'mosaicId',
+						amount: 1000
+					},
+					{
+						id: 'mosaicXYMId',
+						amount: 1000
+					}
+				]
+			};
+
+			// Act:
+			const result = await accountUtils.updateAccountMosaics(state, accountIds, accountsMosaics);
+
+			// Assert:
+			expect(stateManager.update).not.toHaveBeenCalled();
+			expect(result).toStrictEqual({});
+		});
+	});
+
+	describe('fetchAccountMosaics', () => {
+		// Arrange:
+		const state = {
+			network: {
+				networkName: 'testnet',
+				currencyMosaicId: 'mosaicXYMId'
+			},
+			accounts: generateAccounts(1, 'testnet')
+		};
+
+		it('fetches and updates account mosaics', async () => {
+			// Arrange:
+			const { account, privateKey } = Object.values(state.accounts)[0];
+
+			const requestParams = {
+				accountIds: [account.id]
+			};
+
+			const mockAccountMosaicsResponse = {
+				[account.address]: [
+					{
+						id: 'mosaicId',
+						amount: 1000
+					},
+					{
+						id: 'mosaicXYMId',
+						amount: 1000
+					}
+				]
+			};
+
+			jest.spyOn(accountUtils, 'fetchAndUpdateAccountMosaics').mockResolvedValue(mockAccountMosaicsResponse);
+			jest.spyOn(accountUtils, 'updateAccountMosaics').mockResolvedValue({
+				[account.id]: {
+					account,
+					privateKey
+				}
+			});
+
+			// Act:
+			const result = await accountUtils.fetchAccountMosaics({ state, requestParams });
+
+			// Assert:
+			expect(accountUtils.fetchAndUpdateAccountMosaics).toHaveBeenCalledWith(state, [account.address]);
+			expect(accountUtils.updateAccountMosaics).toHaveBeenCalledWith(state, requestParams.accountIds, mockAccountMosaicsResponse);
+			expect(result).toStrictEqual({
+				[account.id]: account
+			});
 		});
 	});
 });
