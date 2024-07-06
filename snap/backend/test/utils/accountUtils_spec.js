@@ -457,4 +457,50 @@ describe('accountUtils', () => {
 			await expect(accountUtils.importAccount({ state, requestParams })).rejects.toThrow(errorMessage);
 		});
 	});
+
+	describe('fetchAndUpdateAccountMosaics', () => {
+		it('fetches and updates account mosaics', async () => {
+			// Arrange:
+			const state = {
+				network: {
+					networkName: 'testnet',
+					currencyMosaicId: 'mosaicXYMId'
+				},
+				accounts: generateAccounts(1, 'testnet')
+			};
+
+			const { account } = Object.values(state.accounts)[0];
+
+			const mockMosaicsResponse = {
+				[account.address]: [
+					{
+						id: 'mosaicId',
+						amount: 1000
+					},
+					{
+						id: 'mosaicXYMId',
+						amount: 1000
+					}
+				]
+			};
+
+			const mockFetchAccountsMosaics = jest.fn().mockResolvedValue(mockMosaicsResponse);
+			jest.spyOn(symbolClient, 'create').mockImplementation(() => ({
+				fetchAccountsMosaics: mockFetchAccountsMosaics
+			}));
+
+			jest.spyOn(mosaicUtils, 'updateMosaicInfo').mockImplementation();
+
+			// Act:
+			const result = await accountUtils.fetchAndUpdateAccountMosaics(state, [account.address]);
+
+			// Assert:
+			expect(mockFetchAccountsMosaics).toHaveBeenCalledWith([account.address]);
+			expect(mosaicUtils.updateMosaicInfo).toHaveBeenCalledWith(
+				state,
+				['mosaicId', 'mosaicXYMId']
+			);
+			expect(result).toStrictEqual(mockMosaicsResponse);
+		});
+	});
 });
