@@ -1,3 +1,5 @@
+import mosaicUtils from './mosaicUtils.js';
+import symbolClient from '../services/symbolClient.js';
 import stateManager from '../stateManager.js';
 import { getBIP44AddressKeyDeriver } from '@metamask/key-tree';
 import {
@@ -179,6 +181,26 @@ const accountUtils = {
 		} catch (error) {
 			throw new Error(`Failed to import account: ${error.message}`);
 		}
+	},
+	/**
+	 * Fetch account mosaic and update mosaic info.
+	 * @param {{ network: object }} state - The snap state object.
+	 * @param {Array<string>} addresses - The account addresses.
+	 * @returns {Promise<Record<string, Array<AccountMosaics>>>} - The accounts mosaics object.
+	 */
+	async fetchAndUpdateAccountMosaics(state, addresses) {
+		const { network } = state;
+
+		const client = symbolClient.create(network.url);
+		const accountsMosaics = await client.fetchAccountsMosaics(addresses);
+
+		// Get all unique mosaic ids
+		const mosaicIds = [...new Set(Object.values(accountsMosaics).flatMap(accountMosaics => accountMosaics.map(mosaic => mosaic.id)))];
+
+		await mosaicUtils.updateMosaicInfo(state, mosaicIds);
+
+		return accountsMosaics;
+	},
 	}
 };
 
@@ -201,6 +223,13 @@ export default accountUtils;
 /**
  * Accounts object.
  * @typedef {Record<string, { account: Account, privateKey: string }>} Accounts
+ */
+
+/**
+ * Account mosaics
+ * @typedef {object} AccountMosaics
+ * @property {string} id - The mosaic id.
+ * @property {number} amount - The mosaic amount.
  */
 
 // endregion
