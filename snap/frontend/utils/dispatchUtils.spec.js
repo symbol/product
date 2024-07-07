@@ -121,4 +121,26 @@ describe('dispatchUtils', () => {
 			expect(dispatchState).toHaveBeenCalledWith({ type: 'setCurrency', payload: currency });
 		});
 	});
+
+	describe('setMosaicInfo', () => {
+		it('dispatches SET_MOSAIC_INFO action with mosaicInfo', () => {
+			// Arrange:
+			const mosaicInfo = {
+				'mosaicId1': {
+					divisibility: 6,
+					networkName: 'testnet'
+				},
+				'mosaicId2': {
+					divisibility: 2,
+					networkName: 'testnet'
+				}
+			};
+
+			// Act:
+			dispatch.setMosaicInfo(mosaicInfo);
+
+			// Assert:
+			expect(dispatchState).toHaveBeenCalledWith({ type: 'setMosaicInfo', payload: mosaicInfo });
+		});
+	});
 });
