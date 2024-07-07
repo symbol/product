@@ -13,7 +13,8 @@ export const initialState = {
 	selectedAccount: {},
 	accounts: {},
 	mosaics: [],
-	transactions: []
+	transactions: [],
+	mosaicInfo: {}
 };
 
 export const actionTypes = {
@@ -22,7 +23,8 @@ export const actionTypes = {
 	SET_NETWORK: 'setNetwork',
 	SET_SELECTED_ACCOUNT: 'setSelectedAccount',
 	SET_ACCOUNTS: 'setAccounts',
-	SET_CURRENCY: 'setCurrency'
+	SET_CURRENCY: 'setCurrency',
+	SET_MOSAIC_INFO: 'setMosaicInfo'
 };
 
 export const reducer = (state, action) => {
@@ -39,6 +41,8 @@ export const reducer = (state, action) => {
 		return { ...state, accounts: action.payload };
 	case actionTypes.SET_CURRENCY:
 		return { ...state, currency: action.payload };
+	case actionTypes.SET_MOSAIC_INFO:
+		return { ...state, mosaicInfo: action.payload };
 	default:
 		return state;
 	}
