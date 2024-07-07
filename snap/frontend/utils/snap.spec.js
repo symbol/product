@@ -320,4 +320,107 @@ describe('symbolSnapFactory', () => {
 			});
 		});
 	});
+
+	describe('fetchAccountMosaics', () => {
+		it('returns account mosaics when provider request is successful', async () => {
+			// Arrange:
+			const mockAccountMosaics = {
+				'account1': {
+					id: 'account1',
+					addressIndex: 1,
+					type: 'metamask',
+					networkName: 'network',
+					label: 'label',
+					address: 'address',
+					publicKey: 'publicKey'
+				}
+			};
+
+			const accountIds = ['account1'];
+
+			mockProvider.request.mockResolvedValue(mockAccountMosaics);
+
+			// Act:
+			const result = await symbolSnap.fetchAccountMosaics(accountIds);
+
+			// Assert:
+			expect(result).toEqual(mockAccountMosaics);
+			expect(mockProvider.request).toHaveBeenCalledWith({
+				method: 'wallet_invokeSnap',
+				params: {
+					snapId: 'local:http://localhost:8080',
+					request: {
+						method: 'fetchAccountMosaics',
+						params: {
+							accountIds
+						}
+					}
+				}
+			});
+		});
+	});
+
+	describe('getAccounts', () => {
+		it('returns accounts when provider request is successful', async () => {
+			// Arrange:
+			const mockAccounts = {
+				'account1': {
+					id: 'account1',
+					addressIndex: 1,
+					type: 'metamask',
+					networkName: 'network',
+					label: 'label',
+					address: 'address',
+					publicKey: 'publicKey'
+				}
+			};
+
+			mockProvider.request.mockResolvedValue(mockAccounts);
+
+			// Act:
+			const result = await symbolSnap.getAccounts();
+
+			// Assert:
+			expect(result).toEqual(mockAccounts);
+			expect(mockProvider.request).toHaveBeenCalledWith({
+				method: 'wallet_invokeSnap',
+				params: {
+					snapId: 'local:http://localhost:8080',
+					request: {
+						method: 'getAccounts'
+					}
+				}
+			});
+		});
+	});
+
+	describe('getMosaicInfo', () => {
+		it('returns mosaic info when provider request is successful', async () => {
+			// Arrange:
+			const mosaicInfo = {
+				'mosaicId': {
+					id: 'mosaicId',
+					divisibility: 6,
+					networkName: 'network'
+				}
+			};
+
+			mockProvider.request.mockResolvedValue(mosaicInfo);
+
+			// Act:
+			const result = await symbolSnap.getMosaicInfo();
+
+			// Assert:
+			expect(result).toEqual(mosaicInfo);
+			expect(mockProvider.request).toHaveBeenCalledWith({
+				method: 'wallet_invokeSnap',
+				params: {
+					snapId: 'local:http://localhost:8080',
+					request: {
+						method: 'getMosaicInfo'
+					}
+				}
+			});
+		});
+	});
 });
