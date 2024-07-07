@@ -1,5 +1,6 @@
 import stateManager from './stateManager.js';
 import accountUtils from './utils/accountUtils.js';
+import mosaicUtils from './utils/mosaicUtils.js';
 import networkUtils from './utils/networkUtils.js';
 import priceUtils from './utils/priceUtils.js';
 
@@ -13,7 +14,8 @@ export const onRpcRequest = async ({ request }) => {
 		state = {
 			currencies: {},
 			accounts: {},
-			network: {}
+			network: {},
+			mosaicInfo: {}
 		};
 	}
 
@@ -31,7 +33,8 @@ export const onRpcRequest = async ({ request }) => {
 		return {
 			...state,
 			accounts: accountUtils.getAccounts(apiParams),
-			currency: await priceUtils.getCurrencyPrice(apiParams)
+			currency: await priceUtils.getCurrencyPrice(apiParams),
+			mosaicInfo: mosaicUtils.getMosaicInfo(apiParams)
 		};
 	case 'createAccount':
 		return accountUtils.createAccount(apiParams);
@@ -39,10 +42,16 @@ export const onRpcRequest = async ({ request }) => {
 		return accountUtils.importAccount(apiParams);
 	case 'getNetwork':
 		return state.network;
+	case 'getAccounts':
+		return accountUtils.getAccounts(apiParams);
 	case 'switchNetwork':
 		return networkUtils.switchNetwork(apiParams);
 	case 'getCurrency':
 		return priceUtils.getCurrencyPrice(apiParams);
+	case 'getMosaicInfo':
+		return mosaicUtils.getMosaicInfo(apiParams);
+	case 'fetchAccountMosaics':
+		return accountUtils.fetchAccountMosaics(apiParams);
 	default:
 		throw new Error('Method not found.');
 	}
