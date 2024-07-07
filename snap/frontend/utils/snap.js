@@ -166,6 +166,61 @@ const symbolSnapFactory = {
 				});
 
 				return price;
+			},
+			/**
+			 * Fetch account mosaics from snap MetaMask.
+			 * @param {Array<string>} accountIds - The ID of the account.
+			 * @returns {Promise<Record<string, Account>>} The mosaics object returned by the snap.
+			 */
+			async fetchAccountMosaics(accountIds) {
+				const accounts = await provider.request({
+					method: 'wallet_invokeSnap',
+					params: {
+						snapId: defaultSnapOrigin,
+						request: {
+							method: 'fetchAccountMosaics',
+							params: {
+								accountIds
+							}
+						}
+					}
+				});
+
+				return accounts;
+			},
+			/**
+			 * Get accounts from snap MetaMask.
+			 * @returns {Promise<Record<string, Account>>} The accounts object returned by the snap.
+			 */
+			async getAccounts() {
+				const accounts = await provider.request({
+					method: 'wallet_invokeSnap',
+					params: {
+						snapId: defaultSnapOrigin,
+						request: {
+							method: 'getAccounts'
+						}
+					}
+				});
+
+				return accounts;
+			},
+			/**
+			 * Get mosaic info from snap MetaMask.
+			 * @returns {object} The mosaic info object returned by the snap.
+			 */
+			async getMosaicInfo() {
+				const mosaicInfo = await provider.request({
+					method: 'wallet_invokeSnap',
+					params: {
+						snapId: defaultSnapOrigin,
+						request: {
+							method: 'getMosaicInfo'
+						}
+					}
+				});
+
+				return mosaicInfo;
 			}
 		};
 	}
