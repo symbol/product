@@ -42,6 +42,13 @@ const dispatchUtils = dispatch => ({
 	 */
 	setCurrency: currency => {
 		dispatch({ type: actionTypes.SET_CURRENCY, payload: currency });
+	},
+	/**
+	 * Set mosaic info
+	 * @param {Record<string, MosaicInfo>} mosaicInfo - The mosaic info object.
+	 */
+	setMosaicInfo: mosaicInfo => {
+		dispatch({ type: actionTypes.SET_MOSAIC_INFO, payload: mosaicInfo });
 	}
 });
 
@@ -75,5 +82,11 @@ export default dispatchUtils;
  * @typedef {Record<string, { account: Account, privateKey: string }>} Accounts
  */
 
+/**
+ * mosaic info object.
+ * @typedef {object} MosaicInfo
+ * @property {number} divisibility - The mosaic divisibility.
+ * @property {string} networkName - The network name.
+ */
 
 // endregion
