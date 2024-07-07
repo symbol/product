@@ -1,8 +1,10 @@
 import { onCronjob, onRpcRequest } from '../src/index.js';
 import cryptoCompareClient from '../src/services/cryptocompareClient.js';
 import statisticsClient from '../src/services/statisticsClient.js';
+import symbolClient from '../src/services/symbolClient.js';
 import stateManager from '../src/stateManager.js';
 import accountUtils from '../src/utils/accountUtils.js';
+import mosaicUtils from '../src/utils/mosaicUtils.js';
 import {
 	describe, expect, it, jest
 } from '@jest/globals';
@@ -54,6 +56,10 @@ describe('index', () => {
 		describe('initialSnap', () => {
 			const assertInitialSnap = async (state, expectedState) => {
 				// Arrange:
+				jest.spyOn(symbolClient, 'create').mockReturnValue({
+					fetchNetworkCurrencyMosaicId: jest.fn().mockResolvedValue('mosaicId')
+				});
+
 				stateManager.getState.mockResolvedValue(state);
 				statisticsClient.getNodeInfo.mockResolvedValue(mockNodeInfo);
 				cryptoCompareClient.fetchPrice.mockResolvedValue(mockCurrencies);
@@ -77,11 +83,15 @@ describe('index', () => {
 				await assertInitialSnap(null, {
 					accounts: {},
 					currencies: mockCurrencies,
-					network: mockNodeInfo,
+					network: {
+						...mockNodeInfo,
+						currencyMosaicId: 'mosaicId'
+					},
 					currency: {
 						symbol: 'USD',
 						price: 0.25
-					}
+					},
+					mosaicInfo: {}
 				});
 			});
 
@@ -108,7 +118,8 @@ describe('index', () => {
 							privateKey: 'private key'
 						}
 					},
-					network: mockNodeInfo
+					network: mockNodeInfo,
+					mosaicInfo: {}
 				};
 
 				await assertInitialSnap(state, {
@@ -120,12 +131,16 @@ describe('index', () => {
 							networkName: 'mainnet'
 						}
 					},
-					network: mockNodeInfo,
+					network: {
+						...mockNodeInfo,
+						currencyMosaicId: 'mosaicId'
+					},
 					currencies: mockCurrencies,
 					currency: {
 						symbol: 'USD',
 						price: 0.25
-					}
+					},
+					mosaicInfo: {}
 				});
 			});
 		});
@@ -207,13 +222,19 @@ describe('index', () => {
 		describe('switchNetwork', () => {
 			it('switches the network', async () => {
 				// Arrange:
+				const mockCurrencyMosaicId = 'mosaicId';
 				const mockExpectedNodeInfo = {
 					identifier: 152,
 					networkName: 'testnet',
-					url: 'http://localhost:3000'
+					url: 'http://localhost:3000',
+					currencyMosaicId: mockCurrencyMosaicId
 				};
 
 				statisticsClient.getNodeInfo.mockResolvedValue(mockExpectedNodeInfo);
+
+				jest.spyOn(symbolClient, 'create').mockReturnValue({
+					fetchNetworkCurrencyMosaicId: jest.fn().mockResolvedValue(mockCurrencyMosaicId)
+				});
 
 				// Act:
 				const response = await onRpcRequest({
@@ -246,6 +267,58 @@ describe('index', () => {
 				expect(response).toStrictEqual({
 					symbol: 'USD',
 					price: 0.25
+				});
+			});
+		});
+
+		const assertMethodCalled = async (func, method, request, expectedParams) => {
+			// Arrange:
+			jest.spyOn(func, method).mockReturnValue();
+			stateManager.getState.mockResolvedValue({});
+
+			// Act:
+			await onRpcRequest({
+				request
+			});
+
+			// Assert:
+			expect(func[method]).toHaveBeenCalledWith(expectedParams);
+		};
+
+		describe('getAccounts', () => {
+			it('should invoke accountUtils.getAccounts with the correct parameters', async () => {
+				await assertMethodCalled(accountUtils, 'getAccounts', {
+					method: 'getAccounts'
+				}, {
+					state: {},
+					requestParams: {}
+				});
+			});
+		});
+
+		describe('getMosaicInfo', () => {
+			it('should invoke mosaicUtils.getMosaicInfo with the correct parameters', async () => {
+				await assertMethodCalled(mosaicUtils, 'getMosaicInfo', {
+					method: 'getMosaicInfo'
+				}, {
+					state: {},
+					requestParams: {}
+				});
+			});
+		});
+
+		describe('fetchAccountMosaics', () => {
+			it('should invoke accountUtils.fetchAccountMosaics with the correct parameters', async () => {
+				await assertMethodCalled(accountUtils, 'fetchAccountMosaics', {
+					method: 'fetchAccountMosaics',
+					params: {
+						accountIds: ['0x1']
+					}
+				}, {
+					state: {},
+					requestParams: {
+						accountIds: ['0x1']
+					}
 				});
 			});
 		});
