@@ -8,14 +8,18 @@ describe('helper', () => {
 		setNetwork: jest.fn(),
 		setSelectedAccount: jest.fn(),
 		setAccounts: jest.fn(),
-		setCurrency: jest.fn()
+		setCurrency: jest.fn(),
+		setMosaicInfo: jest.fn()
 	};
 
 	const symbolSnap = {
 		initialSnap: jest.fn(),
 		createAccount: jest.fn(),
 		importAccount: jest.fn(),
-		getCurrency: jest.fn()
+		getCurrency: jest.fn(),
+		fetchAccountMosaics: jest.fn(),
+		getMosaicInfo: jest.fn(),
+		getAccounts: jest.fn()
 	};
 
 	describe('setupSnap', () => {
@@ -29,7 +33,8 @@ describe('helper', () => {
 				networkName: 'testnet',
 				url: 'http://localhost:3000'
 			},
-			accounts: {}
+			accounts: {},
+			mosaicInfo: {}
 		};
 
 		const assertSetupSnap = (mockSnapState, networkName, symbol) => {
@@ -45,9 +50,10 @@ describe('helper', () => {
 			expect(symbolSnap.initialSnap).toHaveBeenCalledWith(networkName, symbol);
 			expect(dispatch.setNetwork).toHaveBeenCalledWith(mockSnapState.network);
 			expect(dispatch.setCurrency).toHaveBeenCalledWith(mockSnapState.currency);
+			expect(dispatch.setMosaicInfo).toHaveBeenCalledWith({});
 		};
 
-		it('initializes snap and sets network and selected account if accounts exist', async () => {
+		it('initializes snap and sets network and selected account and fetch first account mosaic if accounts exist', async () => {
 			// Arrange:
 			const networkName = 'testnet';
 			const symbol = 'usd';
@@ -68,6 +74,11 @@ describe('helper', () => {
 			};
 
 			symbolSnap.initialSnap.mockResolvedValue(mockSnapState);
+			symbolSnap.fetchAccountMosaics.mockResolvedValue({
+				[mockSnapState.accounts['0x1'].id]: mockSnapState.accounts['0x1']
+			});
+			symbolSnap.getMosaicInfo.mockResolvedValue({});
+			symbolSnap.getAccounts.mockResolvedValue(mockSnapState.accounts);
 
 			// Act:
 			await helper.setupSnap(dispatch, symbolSnap, networkName, symbol);
@@ -92,6 +103,10 @@ describe('helper', () => {
 
 			symbolSnap.initialSnap.mockResolvedValue(mockSnapState);
 			symbolSnap.createAccount.mockResolvedValue(mockAccount);
+			symbolSnap.getAccounts.mockResolvedValue({
+				[mockAccount.id]: mockAccount
+			});
+			symbolSnap.getMosaicInfo.mockResolvedValue({});
 
 			// Act:
 			await helper.setupSnap(dispatch, symbolSnap, networkName, symbol);
