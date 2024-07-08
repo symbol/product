@@ -2,16 +2,24 @@ import { useWalletContext } from '../../context';
 
 const AccountBalance = () => {
 	const { walletState } = useWalletContext();
-	const { mosaics, currency } = walletState;
+	const { selectedAccount, currency, network, mosaicInfo } = walletState;
 	const { symbol, price } = currency;
 
-	const xymBalance = mosaics.find(m => 'symbol.xym' === m.name)?.amount || 0;
-	const convertToCurrency = (xymBalance * price).toFixed(2);
+	const getXYMMosaic = () => {
+		const balance = selectedAccount?.mosaics?.find(m => network.currencyMosaicId === m.id)?.amount || 0;
+
+		if (mosaicInfo[network.currencyMosaicId])
+			return balance / (10 ** mosaicInfo[network.currencyMosaicId].divisibility);
+
+		return balance;
+	};
+
+	const convertToCurrency = (getXYMMosaic() * price).toFixed(2);
 
 	return (
 		<div className='flex flex-col items-center'>
-			<div className='text-2xl font-bold'> {xymBalance} XYM</div>
-			<div className='text-2xl text-sub-title'>{convertToCurrency} {symbol}</div>
+			<div className='text-2xl font-bold'> {getXYMMosaic()} XYM</div>
+			<div className='text-2xl text-sub-title'>{convertToCurrency} {symbol.toUpperCase()}</div>
 		</div>
 	);
 
