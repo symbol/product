@@ -19,7 +19,8 @@ const testHelper = {
 				networkName: 'network',
 				label: `Account ${index}`,
 				address: `Address ${index}`,
-				publicKey: `publicKey ${index}`
+				publicKey: `publicKey ${index}`,
+				mosaics: []
 			};
 		}
 		return accounts;
