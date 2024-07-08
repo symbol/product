@@ -9,7 +9,8 @@ const context = {
 		setNetwork: jest.fn(),
 		setSelectedAccount: jest.fn(),
 		setAccounts: jest.fn(),
-		setCurrency: jest.fn()
+		setCurrency: jest.fn(),
+		setMosaicInfo: jest.fn()
 	},
 	walletState: {
 		loadingStatus: {
@@ -29,12 +30,16 @@ const context = {
 			networkName: 'mainnet',
 			url: 'http://localhost:3000',
 			networkGenerationHash: 'networkGenerationHash'
-		}
+		},
+		mosaicInfo: {}
 	},
 	symbolSnap: {
 		getSnap: jest.fn(),
 		initialSnap: jest.fn(),
-		createAccount: jest.fn()
+		createAccount: jest.fn(),
+		getMosaicInfo: jest.fn(),
+		getAccounts: jest.fn(),
+		fetchAccountMosaics: jest.fn()
 	}
 };
 
@@ -70,6 +75,7 @@ describe('components/Home', () => {
 		context.walletState.isSnapInstalled = true;
 
 		jest.spyOn(helper, 'setupSnap');
+		jest.spyOn(helper, 'updateAccountAndMosaicInfoState');
 
 		context.symbolSnap.initialSnap.mockResolvedValue({
 			network: mockNetwork,
@@ -88,11 +94,14 @@ describe('components/Home', () => {
 			...Object.values(testHelper.generateAccountsState(1))[0]
 		});
 
+		context.symbolSnap.getAccounts.mockResolvedValue(testHelper.generateAccountsState(1));
+
 		// Act:
 		await act(() => testHelper.customRender(<Home />, context));
 
 		// Assert:
 		expect(helper.setupSnap).toHaveBeenCalledWith(context.dispatch, context.symbolSnap, 'mainnet', 'usd');
+		expect(helper.updateAccountAndMosaicInfoState).toHaveBeenCalledWith(context.dispatch, context.symbolSnap);
 	});
 
 	it('renders receive modal box when receive button is clicked', async () => {
