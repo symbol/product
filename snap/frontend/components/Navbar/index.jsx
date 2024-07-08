@@ -26,7 +26,9 @@ const Navbar = () => {
 			return;
 
 		// switch network
-		await helper.setupSnap(dispatch, symbolSnap, option.value);
+		await helper.setupSnap(dispatch, symbolSnap, option.value, currency.symbol);
+		// update account and mosaic info state in background
+		helper.updateAccountAndMosaicInfoState(dispatch, symbolSnap);
 
 		setSelectedNetwork(option.label);
 	};

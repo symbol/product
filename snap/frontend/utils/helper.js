@@ -77,6 +77,21 @@ const helper = {
 		const currency = await symbolSnap.getCurrency(symbol);
 
 		dispatch.setCurrency(currency);
+	},
+	async updateAccountAndMosaicInfoState (dispatch, symbolSnap) {
+		const accounts = await symbolSnap.getAccounts();
+		const accountIds = Object.values(accounts).map(account => account.id);
+
+		await symbolSnap.fetchAccountMosaics(accountIds);
+
+		// fetch mosaic info and accounts
+		const [mosaicInfo, updateAccounts] = await Promise.all([
+			symbolSnap.getMosaicInfo(),
+			symbolSnap.getAccounts()
+		]);
+
+		dispatch.setMosaicInfo(mosaicInfo);
+		dispatch.setAccounts(updateAccounts);
 	}
 };
 

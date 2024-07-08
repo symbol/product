@@ -23,8 +23,11 @@ const Home = () => {
 
 	useEffect(() => {
 		const initializeSnap = async () => {
-			if (isSnapInstalled)
+			if (isSnapInstalled) {
 				await helper.setupSnap(dispatch, symbolSnap, 'mainnet', 'usd');
+				// update account and mosaic info state in background
+				helper.updateAccountAndMosaicInfoState(dispatch, symbolSnap);
+			}
 		};
 
 		initializeSnap();
