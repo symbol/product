@@ -1,4 +1,5 @@
 import Main from './page';
+import testHelper from '../components/testHelper';
 import symbolSnapFactory from '../utils/snap';
 import detectEthereumProvider from '@metamask/detect-provider';
 import { act, render } from '@testing-library/react';
@@ -30,7 +31,25 @@ describe('Main', () => {
 					symbol: 'usd',
 					price: 1.00
 				}
-			})
+			}),
+			fetchAccountMosaics: () => ({
+				'account1': {
+					id: 'account1',
+					addressIndex: 1,
+					type: 'metamask',
+					networkName: 'network',
+					label: 'label',
+					address: 'address',
+					publicKey: 'publicKey'
+				}
+			}),
+			getMosaicInfo: () => ({
+				'mosaicId1': {
+					divisibility: 6,
+					networkName: 'testnet'
+				}
+			}),
+			getAccounts: () => testHelper.generateAccountsState(1)
 		});
 
 		// Act:
