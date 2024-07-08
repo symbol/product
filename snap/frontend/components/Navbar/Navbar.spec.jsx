@@ -6,17 +6,34 @@ import { act, fireEvent, screen } from '@testing-library/react';
 const context = {
 	dispatch: {
 		setNetwork: jest.fn(),
-		setCurrency: jest.fn()
+		setCurrency: jest.fn(),
+		setLoadingStatus: jest.fn(),
+		setMosaicInfo: jest.fn(),
+		setAccounts: jest.fn()
 	},
-	walletState: {},
+	walletState: {
+		currency: {
+			symbol: 'USD',
+			price: 0
+		},
+		accounts: {},
+		network: {}
+	},
 	symbolSnap: {
 		switchNetwork: jest.fn(),
 		initialSnap: jest.fn(),
-		getCurrency: jest.fn()
+		getCurrency: jest.fn(),
+		getAccounts: jest.fn(),
+		fetchAccountMosaics: jest.fn(),
+		getMosaicInfo: jest.fn()
 	}
 };
 
 describe('components/Navbar', () => {
+	beforeEach(() => {
+		jest.clearAllMocks();
+	});
+
 	it('renders symbol logo', () => {
 		// Arrange:
 		testHelper.customRender(<Navbar />, context);
@@ -29,10 +46,6 @@ describe('components/Navbar', () => {
 	});
 
 	describe('dropdowns', () => {
-		beforeEach(() => {
-			jest.clearAllMocks();
-		});
-
 		const assertDropdown = dropdownName => {
 			// Arrange:
 			testHelper.customRender(<Navbar />, context);
@@ -79,48 +92,6 @@ describe('components/Navbar', () => {
 			it('renders options items', () => {
 				assertOptions(dropdownName, options);
 			});
-
-			it(`renders nothing when selected same ${dropdownName}`, async () => {
-				// Arrange:
-				jest.spyOn(helper, 'setupSnap').mockReturnValue();
-
-				testHelper.customRender(<Navbar />, context);
-
-				const dropdown = screen.getByText(dropdownName);
-				fireEvent.click(dropdown);
-
-				const item = screen.getByText(options[1]);
-
-				await act(async () => fireEvent.click(item));
-
-				// Act:
-				// Click on the same network
-				await act(async () => fireEvent.click(item));
-
-				// Assert:
-				const selectedOption = screen.getByText(options[1]);
-				expect(selectedOption).toBeInTheDocument();
-				expect(helper.setupSnap).not.toHaveBeenNthCalledWith(2);
-			});
-
-			it(`sets selected ${dropdownName} when clicked on item`, async () => {
-				// Arrange:
-				jest.spyOn(helper, mockHelperMethodName).mockReturnValue();
-
-				testHelper.customRender(<Navbar />, context);
-				const dropdown = screen.getByText(dropdownName);
-				fireEvent.click(dropdown);
-				const item = screen.getByText(options[1]);
-
-				// Act:
-				await act(async () => fireEvent.click(item));
-
-				// Assert:
-				const selectedOption = screen.getByText(options[1]);
-
-				expect(selectedOption).toBeInTheDocument();
-				expect(helper[mockHelperMethodName]).toHaveBeenCalledWith(context.dispatch, context.symbolSnap, options[1].toLowerCase());
-			});
 		};
 
 		const runBasicInitialDropdownNameTest = (dropdownName, states) => {
@@ -164,6 +135,59 @@ describe('components/Navbar', () => {
 					expectLabel: 'Network'
 				}
 			]);
+
+			it('sets selected Network when clicked on item', async () => {
+				// Arrange:
+				context.walletState.currency = {
+					symbol: 'USD',
+					price: 0
+				};
+
+				jest.spyOn(helper, 'setupSnap').mockReturnValue();
+				jest.spyOn(helper, 'updateAccountAndMosaicInfoState').mockReturnValue();
+
+				testHelper.customRender(<Navbar />, context);
+				const dropdown = screen.getByText('Network');
+
+				await act(async () => fireEvent.click(dropdown));
+
+				const item = screen.getByText('Testnet');
+
+				// Act:
+				await act(async () => fireEvent.click(item));
+
+				// Assert:
+				const selectedOption = screen.getByText('Testnet');
+
+				expect(selectedOption).toBeInTheDocument();
+				expect(helper.setupSnap).toHaveBeenCalledWith(context.dispatch, context.symbolSnap, 'testnet', 'USD');
+				expect(helper.updateAccountAndMosaicInfoState).toHaveBeenCalledWith(context.dispatch, context.symbolSnap);
+			});
+
+			it('renders nothing when selected same Network', async () => {
+				// Arrange:
+				jest.spyOn(helper, 'setupSnap').mockReturnValue();
+				jest.spyOn(helper, 'updateAccountAndMosaicInfoState').mockReturnValue();
+
+				testHelper.customRender(<Navbar />, context);
+
+				const dropdown = screen.getByText('Network');
+				fireEvent.click(dropdown);
+
+				const item = screen.getByText('Testnet');
+
+				await act(async () => fireEvent.click(item));
+
+				// Act:
+				// Click on the same network
+				await act(async () => fireEvent.click(item));
+
+				// Assert:
+				const selectedOption = screen.getByText('Testnet');
+				expect(selectedOption).toBeInTheDocument();
+				expect(helper.setupSnap).not.toHaveBeenNthCalledWith(2);
+				expect(helper.updateAccountAndMosaicInfoState).not.toHaveBeenNthCalledWith(2);
+			});
 		});
 
 		describe('currency', () => {
@@ -195,6 +219,48 @@ describe('components/Navbar', () => {
 					expectLabel: 'Currency'
 				}
 			]);
+
+			it('sets selected Currency when clicked on item', async () => {
+				// Arrange:
+				jest.spyOn(helper, 'getCurrency').mockReturnValue();
+
+				testHelper.customRender(<Navbar />, context);
+				const dropdown = screen.getByText('Currency');
+				fireEvent.click(dropdown);
+				const item = screen.getByText('JPY');
+
+				// Act:
+				await act(async () => fireEvent.click(item));
+
+				// Assert:
+				const selectedOption = screen.getByText('JPY');
+
+				expect(selectedOption).toBeInTheDocument();
+				expect(helper.getCurrency).toHaveBeenCalledWith(context.dispatch, context.symbolSnap, 'jpy');
+			});
+
+			it('renders nothing when selected same Currency', async () => {
+				// Arrange:
+				jest.spyOn(helper, 'setupSnap').mockReturnValue();
+
+				testHelper.customRender(<Navbar />, context);
+
+				const dropdown = screen.getByText('Currency');
+				fireEvent.click(dropdown);
+
+				const item = screen.getByText('JPY');
+
+				await act(async () => fireEvent.click(item));
+
+				// Act:
+				// Click on the same network
+				await act(async () => fireEvent.click(item));
+
+				// Assert:
+				const selectedOption = screen.getByText('JPY');
+				expect(selectedOption).toBeInTheDocument();
+				expect(helper.setupSnap).not.toHaveBeenNthCalledWith(2);
+			});
 		});
 	});
 

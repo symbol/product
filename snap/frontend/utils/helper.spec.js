@@ -239,4 +239,31 @@ describe('helper', () => {
 			expect(dispatch.setCurrency).toHaveBeenCalledWith(mockCurrency);
 		});
 	});
+
+	describe('updateAccountAndMosaicInfoState', () => {
+		it('fetch accounts and mosaic info and updates state', async () => {
+			// Arrange:
+			const mockAccounts = testHelper.generateAccountsState(2);
+			const mockMosaicInfo = {
+				'mosaicId 0': {
+					divisibility: 6,
+					networkName: 'testnet'
+				}
+			};
+
+			symbolSnap.getAccounts.mockResolvedValue(mockAccounts);
+			symbolSnap.getMosaicInfo.mockResolvedValue(mockMosaicInfo);
+
+			// Act:
+			await helper.updateAccountAndMosaicInfoState(dispatch, symbolSnap);
+
+			// Assert:
+			expect(symbolSnap.getAccounts).toHaveBeenCalled();
+			expect(symbolSnap.fetchAccountMosaics).toHaveBeenCalledWith(['accountId 0', 'accountId 1']);
+			expect(symbolSnap.getMosaicInfo).toHaveBeenCalled();
+			expect(symbolSnap.getAccounts).toHaveBeenNthCalledWith(2);
+			expect(dispatch.setMosaicInfo).toHaveBeenCalledWith(mockMosaicInfo);
+			expect(dispatch.setAccounts).toHaveBeenCalledWith(mockAccounts);
+		});
+	});
 });
