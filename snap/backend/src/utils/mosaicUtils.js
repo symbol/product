@@ -20,11 +20,15 @@ const mosaicUtils = {
 
 			const client = symbolClient.create(network.url);
 
-			const mosaics = await client.fetchMosaicsInfo(missingMosaicIds);
+			const [mosaics, namespaceNames] = await Promise.all([
+				client.fetchMosaicsInfo(missingMosaicIds),
+				client.fetchMosaicNamespace(missingMosaicIds)
+			]);
 
 			// update networkName in mosaic info
 			Object.keys(mosaics).forEach(mosaicId => {
 				mosaics[mosaicId].networkName = network.networkName;
+				mosaics[mosaicId].name = namespaceNames[mosaicId];
 			});
 
 			state.mosaicInfo = { ...mosaicInfo, ...mosaics };
@@ -60,6 +64,7 @@ export default mosaicUtils;
  * @typedef {object} MosaicInfo
  * @property {number} divisibility - The divisibility.
  * @property {string} networkName - The network name.
+ * @property {Array<string>} name - The mosaic namespace.
  */
 
 // endregion
