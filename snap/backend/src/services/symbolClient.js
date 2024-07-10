@@ -58,6 +58,29 @@ const symbolClient = {
 				} catch (error) {
 					throw new Error(`Failed to fetch account mosaics: ${error.message}`);
 				}
+			},
+			/**
+			 * Fetch mosaics namespace from mosaic ids.
+			 * @param {Array<string>} mosaicIds - The mosaic ids to fetch namespace.
+			 * @returns {Promise<Record<string, Array<string>>} The mosaics namespace.
+			 */
+			fetchMosaicNamespace: async mosaicIds => {
+				if (!mosaicIds.length)
+					return {};
+
+				try {
+					const mosaicNamespace = {};
+
+					const { mosaicNames } = await fetchUtils.fetchData(`${nodeUrl}/namespaces/mosaic/names`, 'POST', { mosaicIds });
+
+					mosaicNames.forEach(({ mosaicId, names }) => {
+						mosaicNamespace[mosaicId] = names;
+					});
+
+					return mosaicNamespace;
+				} catch (error) {
+					throw new Error(`Failed to fetch mosaics namespace: ${error.message}`);
+				}
 			}
 		};
 	}
