@@ -180,4 +180,63 @@ describe('symbolClient', () => {
 			await expect(client.fetchAccountsMosaics(addresses)).rejects.toThrow(errorMessage);
 		});
 	});
+
+	describe('fetchMosaicNamespace', () => {
+		it('can fetch mosaics namespace successfully', async () => {
+			// Arrange:
+			const mosaicIds = ['393AFB0B19902759', '0005EC25E3F9072D', '12CE9F2D2BCEE57D'];
+
+			const mockResponse = {
+				mosaicNames: [
+					{
+						mosaicId: '393AFB0B19902759',
+						names: []
+					},
+					{
+						mosaicId: '0005EC25E3F9072D',
+						names: [
+							'root.subnamespace'
+						]
+					},
+					{
+						mosaicId: '12CE9F2D2BCEE57D',
+						names: ['root.subNamespace_1', 'root.subnamespace_2']
+					}
+				]
+			};
+
+			fetchUtils.fetchData.mockResolvedValue(mockResponse);
+
+			// Act:
+			const result = await client.fetchMosaicNamespace(mosaicIds);
+
+			// Assert:
+			expect(result).toStrictEqual({
+				'393AFB0B19902759': [],
+				'0005EC25E3F9072D': ['root.subnamespace'],
+				'12CE9F2D2BCEE57D': ['root.subNamespace_1', 'root.subnamespace_2']
+			});
+			expect(fetchUtils.fetchData).toHaveBeenCalledWith(`${nodeUrl}/namespaces/mosaic/names`, 'POST', { mosaicIds });
+		});
+
+		it('returns empty object when mosaicIds is empty', async () => {
+			// Act:
+			const result = await client.fetchMosaicNamespace([]);
+
+			// Assert:
+			expect(result).toStrictEqual({});
+			expect(fetchUtils.fetchData).not.toHaveBeenCalled();
+		});
+
+		it('throws an error when fetch fails', async () => {
+			// Arrange:
+			const mosaicIds = ['393AFB0B19902759', '0005EC25E3F9072D'];
+
+			fetchUtils.fetchData.mockRejectedValue(new Error('Failed to fetch'));
+
+			// Assert:
+			const errorMessage = 'Failed to fetch mosaics namespace: Failed to fetch';
+			await expect(client.fetchMosaicNamespace(mosaicIds)).rejects.toThrow(errorMessage);
+		});
+	});
 });
