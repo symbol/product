@@ -25,14 +25,19 @@ describe('mosaicUtils', () => {
 				mosaicInfo: {}
 			};
 
-			const mosaicIds = ['mosaicId1', 'mosaicId2'];
+			const mosaicIds = ['mosaicId1'];
 
 			const mockFetchMosaicsInfo = jest.fn().mockResolvedValue({
 				mosaicId1: { divisibility: 6 }
 			});
 
+			const mockFetchMosaicNamespace = jest.fn().mockResolvedValue({
+				mosaicId1: ['namespace1']
+			});
+
 			jest.spyOn(symbolClient, 'create').mockImplementation(() => ({
-				fetchMosaicsInfo: mockFetchMosaicsInfo
+				fetchMosaicsInfo: mockFetchMosaicsInfo,
+				fetchMosaicNamespace: mockFetchMosaicNamespace
 			}));
 
 			// Act:
@@ -45,7 +50,8 @@ describe('mosaicUtils', () => {
 				mosaicInfo: {
 					mosaicId1: {
 						divisibility: 6,
-						networkName: 'testnet'
+						networkName: 'testnet',
+						name: ['namespace1']
 					}
 				}
 			});
@@ -75,7 +81,7 @@ describe('mosaicUtils', () => {
 			expect(stateManager.update).not.toHaveBeenCalled();
 		});
 
-		it('throw error if failed to update mosaic info', async () => {
+		const assertUpdateMosaicInfoThrowError = async (mockClient, errorMessage) => {
 			// Arrange:
 			const state = {
 				network: {
@@ -89,14 +95,30 @@ describe('mosaicUtils', () => {
 
 			const mosaicIds = ['mosaicId2'];
 
-			const client = {
-				fetchMosaicsInfo: jest.fn().mockRejectedValue(new Error('error'))
-			};
-
-			jest.spyOn(symbolClient, 'create').mockReturnValue(client);
+			jest.spyOn(symbolClient, 'create').mockReturnValue(mockClient);
 
 			// Act + Assert:
-			await expect(mosaicUtils.updateMosaicInfo(state, mosaicIds)).rejects.toThrow('Failed to update mosaic info: error');
+			await expect(mosaicUtils.updateMosaicInfo(state, mosaicIds)).rejects.toThrow(errorMessage);
+		};
+
+		it('throw error if client fetch mosaics info fail', async () => {
+			// Arrange:
+			const client = {
+				fetchMosaicsInfo: jest.fn().mockRejectedValue(new Error('error')),
+				fetchMosaicNamespace: jest.fn().mockResolvedValue({})
+			};
+
+			await assertUpdateMosaicInfoThrowError(client, 'Failed to update mosaic info: error');
+		});
+
+		it('throw error if client fetch mosaic namespace fail', async () => {
+			// Arrange:
+			const client = {
+				fetchMosaicsInfo: jest.fn().mockResolvedValue({}),
+				fetchMosaicNamespace: jest.fn().mockRejectedValue(new Error('error'))
+			};
+
+			await assertUpdateMosaicInfoThrowError(client, 'Failed to update mosaic info: error');
 		});
 	});
 
@@ -109,10 +131,12 @@ describe('mosaicUtils', () => {
 				},
 				mosaicInfo: {
 					mosaicId1: {
-						networkName: 'testnet'
+						networkName: 'testnet',
+						name: ['namespace1']
 					},
 					mosaicId2: {
-						networkName: 'mainnet'
+						networkName: 'mainnet',
+						name: ['namespace2']
 					}
 				}
 			};
@@ -126,13 +150,19 @@ describe('mosaicUtils', () => {
 
 		it('returns mosaic info from state filter by testnet', () => {
 			assertMosaicInfoFilterByNetworkName('testnet', {
-				mosaicId1: { networkName: 'testnet' }
+				mosaicId1: {
+					networkName: 'testnet',
+					name: ['namespace1']
+				}
 			});
 		});
 
 		it('returns mosaic info from state filter by mainnet', () => {
 			assertMosaicInfoFilterByNetworkName('mainnet', {
-				mosaicId2: { networkName: 'mainnet' }
+				mosaicId2: {
+					networkName: 'mainnet',
+					name: ['namespace2']
+				}
 			});
 		});
 	});
