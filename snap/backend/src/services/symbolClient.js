@@ -82,6 +82,13 @@ const symbolClient = {
 					throw new Error(`Failed to fetch mosaics namespace: ${error.message}`);
 				}
 			},
+			/**
+			 * Fetch transactions page by address with offset id.
+			 * @param {string} address - The address to account.
+			 * @param {string} offsetId - The offset id of transaction.
+			 * @param {'confirmed' | 'unconfirmed'} group - The group of transactions.
+			 * @returns {Promise<Array<Transaction>>} The transactions page.
+			 */
 			fetchTransactionPageByAddress: async (address, offsetId = '', group = 'confirmed') => {
 				if (!address)
 					throw new Error('Address is required');
@@ -95,6 +102,12 @@ const symbolClient = {
 					throw new Error(`Failed to fetch transactions page by address: ${error.message}`);
 				}
 			},
+			/**
+			 * Fetch and extract inner transactions.
+			 * @param {Array<string>} transactionIds - The transaction id.
+			 * @param {'confirmed' | 'unconfirmed'} group - The group of transaction.
+			 * @returns {Promise<Record<string, Array<Transaction>>>} The transaction.
+			 */
 			fetchInnerTransactionByAggregateIds: async (transactionIds, group = 'confirmed') => {
 				if (!transactionIds.length)
 					return {};
@@ -132,6 +145,48 @@ export default symbolClient;
  * @typedef {object} AccountMosaics
  * @property {string} id - The mosaic id.
  * @property {number} amount - The mosaic amount.
+ */
+
+/**
+ * Metadata associated with a transaction.
+ * @typedef {object} Meta
+ * @property {string} height - The block height.
+ * @property {string} hash - The transaction hash.
+ * @property {string} merkleComponentHash - The merkle component hash.
+ * @property {number} index - The index of the transaction.
+ * @property {string} timestamp - The transaction timestamp.
+ * @property {number} feeMultiplier - The fee multiplier.
+ */
+
+/**
+ * Cosignature of a transaction.
+ * @typedef {object} Cosignature
+ * @property {string} version - The version of cosignature.
+ * @property {string} signerPublicKey - The signer public key.
+ * @property {string} signature - The signature of cosignature.
+ */
+
+/**
+ * Details of the transaction.
+ * @typedef {object} TransactionDetails
+ * @property {number} size - The size of the transaction.
+ * @property {string} signature - The transaction signature.
+ * @property {string} signerPublicKey - The public key of the signer.
+ * @property {number} version - The transaction version.
+ * @property {number} network - The network type.
+ * @property {number} type - The transaction type.
+ * @property {string} maxFee - The maximum fee.
+ * @property {string} deadline - The deadline for the transaction.
+ * @property {string} transactionsHash - The hash of the transactions.
+ * @property {Cosignature[]} cosignatures - The cosignatures of the transaction.
+ */
+
+/**
+ * The transaction object.
+ * @typedef {object} Transaction
+ * @property {Meta} meta - The metadata of the transaction.
+ * @property {TransactionDetails} transaction - The details of the transaction.
+ * @property {string} id - The transaction id.
  */
 
 // endregion
