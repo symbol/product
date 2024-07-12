@@ -81,6 +81,19 @@ const symbolClient = {
 				} catch (error) {
 					throw new Error(`Failed to fetch mosaics namespace: ${error.message}`);
 				}
+			},
+			fetchTransactionPageByAddress: async (address, offsetId = '', group = 'confirmed') => {
+				if (!address)
+					throw new Error('Address is required');
+
+				try {
+					const url = `${nodeUrl}/transactions/${group}?order=desc&address=${address}&offset=${offsetId}`;
+
+					const transactions = await fetchUtils.fetchData(url);
+					return transactions.data;
+				} catch (error) {
+					throw new Error(`Failed to fetch transactions page by address: ${error.message}`);
+				}
 			}
 		};
 	}
