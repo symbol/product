@@ -20,21 +20,21 @@ const AssetList = () => {
 		// Check if mosaic information exists and render based on condition
 		const mosaicDetail = mosaicInfo[mosaic.id];
 
-		if (mosaicDetail) {
-			return 0 === mosaicDetail.name.length ? (
-				<div>{mosaic.id}</div>
-			) : (
-				<div>{mosaicDetail.name[0].split('.')[0]}</div>
-			);
-		}
-		return null;
+		if (!mosaicDetail)
+			throw new Error('Mosaic information not found');
+
+		return 0 === mosaicDetail.name.length ? (
+			<div>{mosaic.id}</div>
+		) : (
+			<div>{mosaicDetail.name[0].split('.')[0]}</div>
+		);
 	};
 
 	const renderMosaicDetails = mosaic => {
 		const mosaicDetail = mosaicInfo[mosaic.id];
 
 		if (!mosaicDetail)
-			return null;
+			throw new Error('Mosaic information not found');
 
 		const amount = mosaic.amount / (10 ** mosaicDetail.divisibility);
 		const subNamespace = 0 === mosaicDetail.name.length ? null : renderSubNamespace(mosaicDetail.name[0]);
