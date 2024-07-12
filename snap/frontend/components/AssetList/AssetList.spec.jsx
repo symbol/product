@@ -118,7 +118,6 @@ describe('components/AssetList', () => {
 		assertLoading(context);
 	});
 
-
 	it('does not render when mosaics is empty', () => {
 		// Arrange + Act:
 		testHelper.customRender(<AssetList />, context);
@@ -126,5 +125,21 @@ describe('components/AssetList', () => {
 		// Assert:
 		const assetElement = screen.queryByRole('asset_0');
 		expect(assetElement).not.toBeInTheDocument();
+	});
+
+	it('throws error when mosaic information is not found', () => {
+		// Arrange:
+		context.walletState.selectedAccount.mosaics = [
+			{
+				id: '3C596F764B5A1160',
+				amount: 2
+			}
+		];
+		context.walletState.mosaicInfo = {};
+
+		// Act + Assert:
+		expect(() => {
+			testHelper.customRender(<AssetList />, context);
+		}).toThrowError('Mosaic information not found');
 	});
 });
