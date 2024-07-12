@@ -239,4 +239,61 @@ describe('symbolClient', () => {
 			await expect(client.fetchMosaicNamespace(mosaicIds)).rejects.toThrow(errorMessage);
 		});
 	});
+
+	describe('fetchTransactionPageByAddress', () => {
+		// Arrange:
+		const mockAddress = 'TARDV42KTAIZEF64EQT4NXT7K55DHWBEFIXVJQY';
+		const mockResponse = {
+			data: [
+				{
+					meta: {},
+					transaction: {},
+					id: '1'
+				},
+				{
+					meta: {},
+					transaction: {},
+					id: '2'
+				}
+			]
+		};
+
+		const assertThrowError = async (address, errorMessage) => {
+			// Assert:
+			await expect(client.fetchTransactionPageByAddress(address)).rejects.toThrow(errorMessage);
+		};
+
+		const assertSuccessFetch = async (offsetId, group, expectedCalledUrl) => {
+			// Arrange:
+			fetchUtils.fetchData.mockResolvedValue(mockResponse);
+
+			// Act:
+			const result = await client.fetchTransactionPageByAddress(mockAddress, offsetId, group);
+
+			// Assert:
+			expect(result).toStrictEqual(mockResponse.data);
+			expect(fetchUtils.fetchData).toHaveBeenCalledWith(expectedCalledUrl);
+		};
+
+		it('can fetch confirmed transaction page by address', async () => {
+			await assertSuccessFetch('', 'confirmed', `${nodeUrl}/transactions/confirmed?order=desc&address=${mockAddress}&offset=`);
+		});
+
+		it('can fetch unconfirmed transaction page by address with offset id', async () => {
+			await assertSuccessFetch('1', 'unconfirmed', `${nodeUrl}/transactions/unconfirmed?order=desc&address=${mockAddress}&offset=1`);
+		});
+
+		it('throws an error when address is not provided', async () => {
+			await assertThrowError(undefined, 'Address is required');
+		});
+
+		it('throws an error when fetch fails', async () => {
+			// Arrange:
+			fetchUtils.fetchData.mockRejectedValue(new Error('Failed to fetch'));
+
+			// Assert:
+			const errorMessage = 'Failed to fetch transactions page by address: Failed to fetch';
+			await expect(client.fetchTransactionPageByAddress(mockAddress)).rejects.toThrow(errorMessage);
+		});
+	});
 });
