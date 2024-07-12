@@ -94,6 +94,24 @@ const symbolClient = {
 				} catch (error) {
 					throw new Error(`Failed to fetch transactions page by address: ${error.message}`);
 				}
+			},
+			fetchInnerTransactionByAggregateIds: async (transactionIds, group = 'confirmed') => {
+				if (!transactionIds.length)
+					return {};
+
+				try {
+					const innerTransactions = {};
+
+					const transactions = await fetchUtils.fetchData(`${nodeUrl}/transactions/${group}/ids`, 'POST', { transactionIds });
+
+					transactions.forEach(({ id, transaction }) => {
+						innerTransactions[id] = transaction.transactions;
+					});
+
+					return innerTransactions;
+				} catch (error) {
+					throw new Error(`Failed to fetch inner transactions by aggregate ids: ${error.message}`);
+				}
 			}
 		};
 	}
