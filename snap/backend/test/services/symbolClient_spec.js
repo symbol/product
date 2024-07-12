@@ -296,4 +296,77 @@ describe('symbolClient', () => {
 			await expect(client.fetchTransactionPageByAddress(mockAddress)).rejects.toThrow(errorMessage);
 		});
 	});
+
+	describe('fetchInnerTransactionByAggregateIds', () => {
+		// Arrange:
+		const mockTransactionIds = ['1', '2'];
+		const mockResponse = [
+			{
+				meta: {},
+				transaction: {
+					transactions: [
+						{
+							meta: {},
+							transaction: {},
+							id: '3'
+						},
+						{
+							meta: {},
+							transaction: {},
+							id: '4'
+						}
+					]
+				},
+				id: '1'
+			},
+			{
+				meta: {},
+				transaction: {
+					transactions: []
+				},
+				id: '2'
+			}
+		];
+
+		const assertSuccessFetch = async (group, expectedCalledUrl) => {
+			// Arrange:
+			fetchUtils.fetchData.mockResolvedValue(mockResponse);
+
+			// Act:
+			const result = await client.fetchInnerTransactionByAggregateIds(mockTransactionIds, group);
+
+			// Assert:
+			expect(result).toStrictEqual({
+				1: mockResponse[0].transaction.transactions,
+				2: mockResponse[1].transaction.transactions
+			});
+			expect(fetchUtils.fetchData).toHaveBeenCalledWith(expectedCalledUrl, 'POST', { transactionIds: mockTransactionIds });
+		};
+
+		it('can fetch confirmed inner transactions by aggregate ids', async () => {
+			await assertSuccessFetch('confirmed', `${nodeUrl}/transactions/confirmed/ids`);
+		});
+
+		it('can fetch unconfirmed inner transactions by aggregate ids', async () => {
+			await assertSuccessFetch('unconfirmed', `${nodeUrl}/transactions/unconfirmed/ids`);
+		});
+
+		it('returns empty object when transactionIds is empty', async () => {
+			// Act:
+			const result = await client.fetchInnerTransactionByAggregateIds([]);
+
+			// Assert:
+			expect(result).toStrictEqual({});
+			expect(fetchUtils.fetchData).not.toHaveBeenCalled();
+		});
+
+		it('throws an error when fetch fails', async () => {
+			// Arrange:
+			fetchUtils.fetchData.mockRejectedValue(new Error('Failed to fetch'));
+
+			// Assert:
+			const errorMessage = 'Failed to fetch inner transactions by aggregate ids: Failed to fetch';
+			await expect(client.fetchInnerTransactionByAggregateIds(mockTransactionIds)).rejects.toThrow(errorMessage);
+		});
+	});
 });
