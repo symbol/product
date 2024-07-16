@@ -3,6 +3,7 @@ import accountUtils from './utils/accountUtils.js';
 import mosaicUtils from './utils/mosaicUtils.js';
 import networkUtils from './utils/networkUtils.js';
 import priceUtils from './utils/priceUtils.js';
+import transactionUtils from './utils/transactionUtils.js';
 
 // eslint-disable-next-line import/prefer-default-export
 export const onRpcRequest = async ({ request }) => {
@@ -52,6 +53,8 @@ export const onRpcRequest = async ({ request }) => {
 		return mosaicUtils.getMosaicInfo(apiParams);
 	case 'fetchAccountMosaics':
 		return accountUtils.fetchAccountMosaics(apiParams);
+	case 'fetchAccountTransactions':
+		return transactionUtils.fetchAccountTransactions(apiParams);
 	default:
 		throw new Error('Method not found.');
 	}
