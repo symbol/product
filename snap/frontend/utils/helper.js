@@ -25,8 +25,6 @@ const helper = {
 			account = await symbolSnap.createAccount('Wallet 1');
 		}
 
-		dispatch.setSelectedAccount(account);
-
 		// fetch mosaic info and accounts
 		const [mosaicInfo, updateAccounts] = await Promise.all([
 			symbolSnap.getMosaicInfo(),
@@ -35,6 +33,8 @@ const helper = {
 
 		dispatch.setMosaicInfo(mosaicInfo);
 		dispatch.setAccounts(updateAccounts);
+
+		dispatch.setSelectedAccount(account);
 
 		dispatch.setLoadingStatus({
 			isLoading: false,
