@@ -5,6 +5,7 @@ import symbolClient from '../src/services/symbolClient.js';
 import stateManager from '../src/stateManager.js';
 import accountUtils from '../src/utils/accountUtils.js';
 import mosaicUtils from '../src/utils/mosaicUtils.js';
+import transactionUtils from '../src/utils/transactionUtils.js';
 import {
 	describe, expect, it, jest
 } from '@jest/globals';
@@ -318,6 +319,24 @@ describe('index', () => {
 					state: {},
 					requestParams: {
 						accountIds: ['0x1']
+					}
+				});
+			});
+		});
+
+		describe('fetchAccountTransactions', () => {
+			it('should invoke transactionUtils.fetchAccountTransactions with the correct parameters', async () => {
+				await assertMethodCalled(transactionUtils, 'fetchAccountTransactions', {
+					method: 'fetchAccountTransactions',
+					params: {
+						address: 'address',
+						offsetId: ''
+					}
+				}, {
+					state: {},
+					requestParams: {
+						address: 'address',
+						offsetId: ''
 					}
 				});
 			});
