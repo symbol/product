@@ -95,7 +95,7 @@ describe('transactionUtils', () => {
 			expect(result).toStrictEqual([
 				{
 					id: '1',
-					timestamp: '12345',
+					date: '2022-11-01 05:07:59',
 					height: '1552748',
 					transactionHash: 'hash',
 					transactionType: 'Transfer',
@@ -105,7 +105,7 @@ describe('transactionUtils', () => {
 				},
 				{
 					id: '2',
-					timestamp: '12345',
+					date: '2022-11-01 05:07:59',
 					height: '1552750',
 					transactionHash: 'hash',
 					transactionType: 'Node Key Link',
@@ -219,7 +219,7 @@ describe('transactionUtils', () => {
 			expect(result).toStrictEqual([
 				{
 					id: '3',
-					timestamp: '53513952699',
+					date: '2024-07-12 14:06:59',
 					height: '1571464',
 					transactionHash: 'hash',
 					transactionType: 'Aggregate Complete | Transfer',
@@ -229,11 +229,11 @@ describe('transactionUtils', () => {
 				},
 				{
 					id: '3',
-					timestamp: '53513952699',
+					date: '2024-07-12 14:06:59',
 					height: '1571464',
 					transactionHash: 'hash',
 					transactionType: 'Aggregate Complete | Transfer',
-					amount: null,
+					amount: 0,
 					message: 'message',
 					sender: 'TDJRSQNOOIZLAB4OQEETH2UNBQ4HC2MNQZY4P6A'
 				}
