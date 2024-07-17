@@ -94,7 +94,7 @@ const symbolClient = {
 					throw new Error('Address is required');
 
 				try {
-					const url = `${nodeUrl}/transactions/${group}?order=desc&address=${address}&offset=${offsetId}`;
+					const url = `${nodeUrl}/transactions/${group}?order=desc&address=${address}&offset=${offsetId}&pageSize=10`;
 
 					const transactions = await fetchUtils.fetchData(url);
 					return transactions.data;
