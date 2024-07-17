@@ -1,4 +1,5 @@
 import symbolClient from '../services/symbolClient.js';
+import moment from 'moment'; // eslint-disable-line
 import { PublicKey } from 'symbol-sdk';
 import { SymbolFacade } from 'symbol-sdk/symbol';
 
@@ -68,7 +69,7 @@ const transactionUtils = {
 	},
 	/**
      * Check if transaction is aggregate complete or aggregate bonded.
-     * @param {*} transaction
+     * @param {*} transaction - The transaction object from rest.
      * @returns {boolean} returns true if transaction is aggregate.
      */
 	isAggregateTransaction(transaction) {
@@ -112,18 +113,25 @@ const transactionUtils = {
      * @returns {TransactionInfo} - The transaction object.
      */
 	createTransaction(id, meta, transaction, network, transactionTypeOverride = null) {
-		const xymMosaic = transaction.mosaics?.find(mosaic => mosaic.id === network.currencyMosaicId) || null;
 		const facade = new SymbolFacade(network.networkName);
 		const senderAddress = facade.network.publicKeyToAddress(new PublicKey(transaction.signerPublicKey)).toString();
+		const date = moment(facade.network.toDatetime({ timestamp: BigInt(meta.timestamp) })).format('YYYY-MM-DD HH:mm:ss');
+
+		const isTransferTransaction = transaction.type === TRANSFER_TRANSACTION_TYPE;
+
+		const getXymAmount = mosaics => {
+			const xymMosaic = mosaics.find(mosaic => mosaic.id === network.currencyMosaicId);
+			return xymMosaic?.amount || 0;
+		};
 
 		return {
 			id,
-			timestamp: meta.timestamp,
+			date,
 			height: meta.height,
 			transactionHash: meta.hash,
 			transactionType: transactionTypeOverride || TRANSACTION_TYPE[transaction.type],
-			amount: xymMosaic ? xymMosaic.amount : null,
-			message: transaction.message || null,
+			amount: isTransferTransaction ? getXymAmount(transaction.mosaics) : null,
+			message: isTransferTransaction ? (transaction.message || null) : null,
 			sender: senderAddress
 		};
 	}
@@ -137,7 +145,7 @@ export default transactionUtils;
  * state of create transaction object.
  * @typedef {object} TransactionInfo
  * @property {string} id - The transaction id.
- * @property {string} timestamp - The transaction timestamp.
+ * @property {string} date - The transaction date time.
  * @property {number} height - The transaction block height.
  * @property {string} transactionHash - The transaction hash.
  * @property {string} transactionType - The transaction type.
