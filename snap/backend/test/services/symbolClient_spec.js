@@ -276,11 +276,17 @@ describe('symbolClient', () => {
 		};
 
 		it('can fetch confirmed transaction page by address', async () => {
-			await assertSuccessFetch('', 'confirmed', `${nodeUrl}/transactions/confirmed?order=desc&address=${mockAddress}&offset=`);
+			await assertSuccessFetch(
+				'', 'confirmed',
+				`${nodeUrl}/transactions/confirmed?order=desc&address=${mockAddress}&offset=&pageSize=10`
+			);
 		});
 
 		it('can fetch unconfirmed transaction page by address with offset id', async () => {
-			await assertSuccessFetch('1', 'unconfirmed', `${nodeUrl}/transactions/unconfirmed?order=desc&address=${mockAddress}&offset=1`);
+			await assertSuccessFetch(
+				'1', 'unconfirmed',
+				`${nodeUrl}/transactions/unconfirmed?order=desc&address=${mockAddress}&offset=1&pageSize=10`
+			);
 		});
 
 		it('throws an error when address is not provided', async () => {
