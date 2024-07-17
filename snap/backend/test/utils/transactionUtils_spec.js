@@ -95,7 +95,7 @@ describe('transactionUtils', () => {
 			expect(result).toStrictEqual([
 				{
 					id: '1',
-					date: '2022-11-01 05:07:59',
+					date: '2022-10-31 21:07:59',
 					height: '1552748',
 					transactionHash: 'hash',
 					transactionType: 'Transfer',
@@ -105,7 +105,7 @@ describe('transactionUtils', () => {
 				},
 				{
 					id: '2',
-					date: '2022-11-01 05:07:59',
+					date: '2022-10-31 21:07:59',
 					height: '1552750',
 					transactionHash: 'hash',
 					transactionType: 'Node Key Link',
@@ -219,7 +219,7 @@ describe('transactionUtils', () => {
 			expect(result).toStrictEqual([
 				{
 					id: '3',
-					date: '2024-07-12 14:06:59',
+					date: '2024-07-12 06:06:59',
 					height: '1571464',
 					transactionHash: 'hash',
 					transactionType: 'Aggregate Complete | Transfer',
@@ -229,7 +229,7 @@ describe('transactionUtils', () => {
 				},
 				{
 					id: '3',
-					date: '2024-07-12 14:06:59',
+					date: '2024-07-12 06:06:59',
 					height: '1571464',
 					transactionHash: 'hash',
 					transactionType: 'Aggregate Complete | Transfer',
