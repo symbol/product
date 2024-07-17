@@ -115,7 +115,7 @@ const transactionUtils = {
 	createTransaction(id, meta, transaction, network, transactionTypeOverride = null) {
 		const facade = new SymbolFacade(network.networkName);
 		const senderAddress = facade.network.publicKeyToAddress(new PublicKey(transaction.signerPublicKey)).toString();
-		const date = moment(facade.network.toDatetime({ timestamp: BigInt(meta.timestamp) })).format('YYYY-MM-DD HH:mm:ss');
+		const date = moment.utc(facade.network.toDatetime({ timestamp: BigInt(meta.timestamp) })).format('YYYY-MM-DD HH:mm:ss');
 
 		const isTransferTransaction = transaction.type === TRANSFER_TRANSACTION_TYPE;
 
