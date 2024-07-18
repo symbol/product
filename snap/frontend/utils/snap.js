@@ -221,6 +221,23 @@ const symbolSnapFactory = {
 				});
 
 				return mosaicInfo;
+			},
+			async fetchAccountTransactions(address, offsetId) {
+				const transactions = await provider.request({
+					method: 'wallet_invokeSnap',
+					params: {
+						snapId: defaultSnapOrigin,
+						request: {
+							method: 'fetchAccountTransactions',
+							params: {
+								address,
+								offsetId
+							}
+						}
+					}
+				});
+
+				return transactions;
 			}
 		};
 	}
