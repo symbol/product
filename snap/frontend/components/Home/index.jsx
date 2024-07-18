@@ -62,7 +62,7 @@ const Home = () => {
 				{/* Right Panel */}
 				<div className='flex flex-col h-[500px] min-w-[670px] w-3/4 rounded-md  bg-primary'>
 					{/* Account Balance container */}
-					<div className='flex flex-col h-48 justify-center items-center w-full'>
+					<div className='flex flex-col h-[180px] justify-center items-center w-full'>
 						<AccountBalance />
 
 						{/* Show Button Receive and Send */}
@@ -75,7 +75,9 @@ const Home = () => {
 						<ReceiveModalBox isOpen={receiveModalBoxVisible} onRequestClose={setReceiveModalBoxVisible} />
 					</div>
 
-					<TransactionTable />
+					<div className='flex flex-col h-[320px] border-t-2'>
+						<TransactionTable />
+					</div>
 				</div>
 			</div>
 		</div>
