@@ -423,4 +423,55 @@ describe('symbolSnapFactory', () => {
 			});
 		});
 	});
+
+	describe('fetchAccountTransactions', () => {
+		it('returns account transactions when provider request is successful', async () => {
+			// Arrange:
+			const address = 'address';
+			const offsetId = 'offsetId';
+			const mockTransactions = [
+				{
+					id: '2',
+					date: '2024-05-22 01:44:56',
+					height: 12,
+					transactionHash: 'hash',
+					transactionType: 'Transfer',
+					amount: 0,
+					message: null,
+					sender: 'sender address'
+				},
+				{
+					id: '1',
+					date: '2024-07-16 14:13:54',
+					height: 10,
+					transactionHash: 'hash',
+					transactionType: 'Transfer',
+					amount: 100,
+					message: 'message',
+					sender: 'sender address'
+				}
+			];
+
+			mockProvider.request.mockResolvedValue(mockTransactions);
+
+			// Act:
+			const result = await symbolSnap.fetchAccountTransactions(address, offsetId);
+
+			// Assert:
+			expect(result).toEqual(mockTransactions);
+			expect(mockProvider.request).toHaveBeenCalledWith({
+				method: 'wallet_invokeSnap',
+				params: {
+					snapId: 'local:http://localhost:8080',
+					request: {
+						method: 'fetchAccountTransactions',
+						params: {
+							address,
+							offsetId
+						}
+					}
+				}
+			});
+		});
+	});
 });
