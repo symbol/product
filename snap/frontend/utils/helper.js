@@ -92,6 +92,12 @@ const helper = {
 
 		dispatch.setMosaicInfo(mosaicInfo);
 		dispatch.setAccounts(updateAccounts);
+	},
+	async updateTransactions (dispatch, symbolSnap, address) {
+		dispatch.setTransactions([]);
+		const transactions = await symbolSnap.fetchAccountTransactions(address, '');
+
+		dispatch.setTransactions(transactions);
 	}
 };
 
