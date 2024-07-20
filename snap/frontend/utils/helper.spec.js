@@ -9,7 +9,8 @@ describe('helper', () => {
 		setSelectedAccount: jest.fn(),
 		setAccounts: jest.fn(),
 		setCurrency: jest.fn(),
-		setMosaicInfo: jest.fn()
+		setMosaicInfo: jest.fn(),
+		setTransactions: jest.fn()
 	};
 
 	const symbolSnap = {
@@ -19,7 +20,8 @@ describe('helper', () => {
 		getCurrency: jest.fn(),
 		fetchAccountMosaics: jest.fn(),
 		getMosaicInfo: jest.fn(),
-		getAccounts: jest.fn()
+		getAccounts: jest.fn(),
+		fetchAccountTransactions: jest.fn()
 	};
 
 	describe('setupSnap', () => {
@@ -264,6 +266,36 @@ describe('helper', () => {
 			expect(symbolSnap.getAccounts).toHaveBeenNthCalledWith(2);
 			expect(dispatch.setMosaicInfo).toHaveBeenCalledWith(mockMosaicInfo);
 			expect(dispatch.setAccounts).toHaveBeenCalledWith(mockAccounts);
+		});
+	});
+
+	describe('updateTransactions', () => {
+		it('reset transaction state and fetch transactions and updates state', async () => {
+			// Arrange:
+			const mockTransactions = [
+				{
+					id: '1',
+					amount: 10,
+					sender: 'address'
+				},
+				{
+					id: '2',
+					amount: 10,
+					sender: 'address'
+				}
+			];
+
+			const address = 'address';
+
+			symbolSnap.fetchAccountTransactions.mockResolvedValue(mockTransactions);
+
+			// Act:
+			await helper.updateTransactions(dispatch, symbolSnap, address);
+
+			// Assert:
+			expect(dispatch.setTransactions).toHaveBeenNthCalledWith(1, []);
+			expect(symbolSnap.fetchAccountTransactions).toHaveBeenCalledWith(address, '');
+			expect(dispatch.setTransactions).toHaveBeenNthCalledWith(2, mockTransactions);
 		});
 	});
 });
