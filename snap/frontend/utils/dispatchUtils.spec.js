@@ -143,4 +143,26 @@ describe('dispatchUtils', () => {
 			expect(dispatchState).toHaveBeenCalledWith({ type: 'setMosaicInfo', payload: mosaicInfo });
 		});
 	});
+
+	describe('setTransactions', () => {
+		it('dispatches SET_TRANSACTIONS action with transactions', () => {
+			// Arrange:
+			const transactions = [
+				{
+					id: 'transaction1',
+					transactionInfo: 'info1'
+				},
+				{
+					id: 'transaction2',
+					transactionInfo: 'info2'
+				}
+			];
+
+			// Act:
+			dispatch.setTransactions(transactions);
+
+			// Assert:
+			expect(dispatchState).toHaveBeenCalledWith({ type: 'setTransactions', payload: transactions });
+		});
+	});
 });
