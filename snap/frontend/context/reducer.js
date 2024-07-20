@@ -24,7 +24,8 @@ export const actionTypes = {
 	SET_SELECTED_ACCOUNT: 'setSelectedAccount',
 	SET_ACCOUNTS: 'setAccounts',
 	SET_CURRENCY: 'setCurrency',
-	SET_MOSAIC_INFO: 'setMosaicInfo'
+	SET_MOSAIC_INFO: 'setMosaicInfo',
+	SET_TRANSACTIONS: 'setTransactions'
 };
 
 export const reducer = (state, action) => {
@@ -43,6 +44,8 @@ export const reducer = (state, action) => {
 		return { ...state, currency: action.payload };
 	case actionTypes.SET_MOSAIC_INFO:
 		return { ...state, mosaicInfo: action.payload };
+	case actionTypes.SET_TRANSACTIONS:
+		return { ...state, transactions: action.payload };
 	default:
 		return state;
 	}
