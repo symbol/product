@@ -49,6 +49,13 @@ const dispatchUtils = dispatch => ({
 	 */
 	setMosaicInfo: mosaicInfo => {
 		dispatch({ type: actionTypes.SET_MOSAIC_INFO, payload: mosaicInfo });
+	},
+	/**
+	 * Set transactions
+	 * @param {Array<TransactionInfo>} transactions - The transactions array.
+	 */
+	setTransactions: transactions => {
+		dispatch({ type: actionTypes.SET_TRANSACTIONS, payload: transactions });
 	}
 });
 
@@ -87,6 +94,19 @@ export default dispatchUtils;
  * @typedef {object} MosaicInfo
  * @property {number} divisibility - The mosaic divisibility.
  * @property {string} networkName - The network name.
+ */
+
+/**
+ * state of create transaction object.
+ * @typedef {object} TransactionInfo
+ * @property {string} id - The transaction id.
+ * @property {string} date - The transaction date time.
+ * @property {number} height - The transaction block height.
+ * @property {string} transactionHash - The transaction hash.
+ * @property {string} transactionType - The transaction type.
+ * @property {number | null} amount - The transaction XYM amount.
+ * @property {string | null} message - The transaction message.
+ * @property {string} sender - The sender address.
  */
 
 // endregion
