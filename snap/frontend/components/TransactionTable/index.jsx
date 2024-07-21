@@ -1,11 +1,58 @@
+import { explorerUrl } from '../../config';
 import { useWalletContext } from '../../context';
+import helper from '../../utils/helper';
 import Image from 'next/image';
+import { useEffect, useState } from 'react';
+import { useInView } from 'react-intersection-observer';
 
-const TransactionTable =() => {
+const TransactionTable = () => {
 
-	const { walletState } = useWalletContext();
-	const { selectedAccount, finalizedHeight, transactions } = walletState;
+	const { walletState, symbolSnap, dispatch } = useWalletContext();
+	const { selectedAccount, finalizedHeight, mosaicInfo, network, currency, transactions } = walletState;
 	const { address } = selectedAccount;
+	const { symbol, price } = currency;
+	const [isLoading, setIsLoading] = useState(false);
+	const [isLastPage, setIsLastPage] = useState(false);
+	const { ref, inView } = useInView();
+
+	const getXYMRelativeAmount = amount => {
+		return amount / (10 ** (mosaicInfo[network.currencyMosaicId]?.divisibility || 6));
+	};
+
+	const getXYMPrice = amount => {
+		return (getXYMRelativeAmount(amount) * price).toFixed(2);
+	};
+
+	useEffect(() => {
+		if (!address)
+			return;
+
+		setIsLoading(true);
+
+		helper.updateTransactions(dispatch, symbolSnap, address);
+
+		setIsLoading(false);
+
+		setIsLastPage(false);
+	}, [address]);
+
+	useEffect(() => {
+		const loadMoreTransactions = async () => {
+			if (isLoading || isLastPage || !inView || !address)
+				return;
+
+			setIsLoading(true);
+
+			const lastTransactionId = 0 < transactions.length ? transactions[transactions.length - 1].id : '';
+			const transactionPage = await symbolSnap.fetchAccountTransactions(address, lastTransactionId);
+
+			setIsLastPage(0 === transactionPage.length || 10 > transactionPage.length);
+			transactions.push(...transactionPage);
+			setIsLoading(false);
+		};
+
+		loadMoreTransactions();
+	}, [inView]);
 
 	return (
 		<div className='overflow-y-auto'>
@@ -39,17 +86,14 @@ const TransactionTable =() => {
 									</td>
 
 									<td className='px-2'>
-										{
-											'Transfer' === transaction.transactionType ?
+										<a target='_blank'
+											href={`${explorerUrl[network.networkName]}/transactions/${transaction.transactionHash}`}>
+											{
 												transaction.sender === address ? 'Sent' : 'Received'
-												: transaction.transactionType
-										}
+											}
 
-										{
-											null === transaction.height ?
-												<div className='font-bold'>Pending</div> :
-												<div className='font-bold text-green'>Confirmed</div>
-										}
+											<div className='font-bold'>{transaction.transactionType}</div>
+										</a>
 									</td>
 
 									<td className='flex pt-2 text-sub-title'>
@@ -57,8 +101,8 @@ const TransactionTable =() => {
 											{
 												null !== transaction.amount ?
 													<>
-														<div>{transaction.amount} XYM</div>
-														<div>{transaction.currency}</div>
+														<div>{getXYMRelativeAmount(transaction.amount)} XYM</div>
+														<div>{getXYMPrice(transaction.amount) } {symbol.toUpperCase()}</div>
 													</>
 													: null
 											}
@@ -77,7 +121,17 @@ const TransactionTable =() => {
 
 									<td className='text-sub-title'>
 										<div className='flex items-center'>
-											{transaction.height}
+											{
+												transaction.height ?
+													<a
+														target='_blank'
+														href={`${explorerUrl[network.networkName]}/blocks/${transaction.height}`}>
+														{transaction.height}
+													</a> :
+
+													<div className='font-bold'>Pending</div>
+											}
+
 											{
 												finalizedHeight >= transaction.height && transaction.height ?
 													<Image
@@ -97,6 +151,7 @@ const TransactionTable =() => {
 					}
 				</tbody>
 			</table>
+			{!isLastPage && 0 !== transactions.length && <div ref={ref}>Loading more...</div>}
 		</div>
 	);
 };
