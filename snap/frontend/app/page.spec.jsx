@@ -49,7 +49,8 @@ describe('Main', () => {
 					networkName: 'testnet'
 				}
 			}),
-			getAccounts: () => testHelper.generateAccountsState(1)
+			getAccounts: () => testHelper.generateAccountsState(1),
+			fetchAccountTransactions: () => []
 		});
 
 		// Act:

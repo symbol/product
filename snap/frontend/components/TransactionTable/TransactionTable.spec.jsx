@@ -1,25 +1,46 @@
 import TransactionTable from '.';
 import testHelper from '../testHelper';
-import { screen } from '@testing-library/react';
+import { act, screen } from '@testing-library/react';
 
 const senderAddress = 'TAMYTGVH3UEVZRQSD64LGSMPKNTKMASOIDNYROI';
 const recipientAddress = 'TARDV42KTAIZEF64EQT4NXT7K55DHWBEFIXVJQY';
 
 const context = {
-	dispatch: jest.fn(),
+	dispatch: {
+		setTransactions: jest.fn()
+	},
 	walletState: {
 		selectedAccount: {
 			address: senderAddress
 		},
 		finalizedHeight: 10,
-		transactions: []
+		transactions: [],
+		mosaicInfo: {
+			mosaicId: {
+				divisibility: 6
+			}
+		},
+		network: {
+			currencyMosaicId: 'mosaicId',
+			networkName: 'testnet'
+		},
+		currency: {
+			symbol: 'USD',
+			price: 1
+		}
+	},
+	symbolSnap: {
+		fetchAccountTransactions: jest.fn()
 	}
 };
 
 describe('components/TransactionTable', () => {
+	beforeEach(() => {
+		jest.clearAllMocks();
+	});
+
 	it('renders no transactions found message when transactions are empty', () => {
 		// Arrange:
-
 		testHelper.customRender(<TransactionTable />, context);
 
 		// Act:
@@ -27,6 +48,26 @@ describe('components/TransactionTable', () => {
 
 		// Assert:
 		expect(transactionTable).toBeInTheDocument();
+		expect(context.symbolSnap.fetchAccountTransactions).toHaveBeenCalledTimes(1);
+	});
+
+	it('renders loading more transactions when in view', () => {
+		// Arrange:
+		context.walletState.transactions = [{
+			id: 1
+		}];
+		context.symbolSnap.fetchAccountTransactions.mockReturnValueOnce([{
+			id: 2
+		}]);
+
+		testHelper.customRender(<TransactionTable />, context);
+
+		// Act:
+		const transactionTable = screen.getByText('Loading more...');
+
+		// Assert:
+		expect(transactionTable).toBeInTheDocument();
+		expect(context.symbolSnap.fetchAccountTransactions).toHaveBeenCalledTimes(1);
 	});
 
 	describe('first column', () => {
@@ -46,7 +87,8 @@ describe('components/TransactionTable', () => {
 		it('renders send icon when sender is the same as selected account', () => {
 			assertIcon(
 				{
-					sender: senderAddress
+					sender: senderAddress,
+					transactionType: 'Transfer'
 				},
 				'Send logo'
 			);
@@ -55,7 +97,8 @@ describe('components/TransactionTable', () => {
 		it('renders receive icon when sender is not the same as selected account', () => {
 			assertIcon(
 				{
-					sender: recipientAddress
+					sender: recipientAddress,
+					transactionType: 'Transfer'
 				},
 				'Receive logo'
 			);
@@ -76,52 +119,39 @@ describe('components/TransactionTable', () => {
 			expect(transactionType).toBeInTheDocument();
 		};
 
-		it('renders transaction type as Sent when sender is the same as selected account', () => {
+		it('renders as Sent when sender is the same as selected account', () => {
 			assertTransactionType({
-				sender: senderAddress,
-				transactionType: 'Transfer'
+				sender: senderAddress
 			}, 'Sent');
 		});
 
-		it('renders transaction type as Received when sender is not the same as selected account', () => {
+		it('renders Received when sender is not the same as selected account', () => {
 			assertTransactionType({
-				sender: recipientAddress,
-				transactionType: 'Transfer'
+				sender: recipientAddress
 			}, 'Received');
 		});
 
-		it('renders transaction type as transaction type when not Transfer', () => {
+		it('renders transaction type', () => {
 			assertTransactionType({
-				sender: recipientAddress,
-				transactionType: 'Aggregate Bonded'
-			}, 'Aggregate Bonded');
+				transactionType: 'Namespace Registration'
+			}, 'Namespace Registration');
 		});
 
-		describe('transaction status', () => {
-			const assertTransactionStatus = (transaction, expectedTransactionStatus) => {
-				// Arrange:
-				context.walletState.transactions = [transaction];
+		it('renders transaction hash with link to explorer', () => {
+			// Arrange:
+			context.walletState.transactions = [{
+				transactionHash: '1234',
+				transactionType: 'Transfer'
+			}];
 
-				testHelper.customRender(<TransactionTable />, context);
+			testHelper.customRender(<TransactionTable />, context);
 
-				// Act:
-				const transactionStatus = screen.getByText(expectedTransactionStatus);
+			// Act:
+			const transactionType = screen.getByText('Transfer');
 
-				// Assert:
-				expect(transactionStatus).toBeInTheDocument();
-			};
-
-			it('renders transaction as Confirmed when height is not null', () => {
-				assertTransactionStatus({
-					height: 1
-				}, 'Confirmed');
-			});
-
-			it('renders transaction as Pending when height is null', () => {
-				assertTransactionStatus({
-					height: null
-				}, 'Pending');
-			});
+			// Assert:
+			expect(transactionType).toBeInTheDocument();
+			expect(transactionType.closest('a')).toHaveAttribute('href', 'https://testnet.symbol.fyi/transactions/1234');
 		});
 	});
 
@@ -129,7 +159,7 @@ describe('components/TransactionTable', () => {
 		it('renders transaction amount when amount is not null', () => {
 			// Arrange:
 			context.walletState.transactions = [{
-				amount: 100
+				amount: 100000000
 			}];
 
 			testHelper.customRender(<TransactionTable />, context);
@@ -183,8 +213,6 @@ describe('components/TransactionTable', () => {
 				expect(messageIcon).not.toBeInTheDocument();
 			});
 		});
-
-
 	});
 
 	describe('fourth column', () => {
@@ -230,22 +258,38 @@ describe('components/TransactionTable', () => {
 			});
 		});
 
-		it('renders transaction height and date', () => {
+		it('renders transaction height, date and link to explorer', () => {
 			// Arrange:
 			context.walletState.transactions = [{
 				height: 1,
-				date: '2021-07-07'
+				date: '2021-07-07 14:13:54'
 			}];
 
 			testHelper.customRender(<TransactionTable />, context);
 
 			// Act:
 			const height = screen.getByText('1');
-			const date = screen.getByText('2021-07-07');
+			const date = screen.getByText('2021-07-07 14:13:54');
 
 			// Assert:
 			expect(height).toBeInTheDocument();
 			expect(date).toBeInTheDocument();
+			expect(height.closest('a')).toHaveAttribute('href', 'https://testnet.symbol.fyi/blocks/1');
+		});
+
+		it('renders pending when transaction height is null', () => {
+			// Arrange:
+			context.walletState.transactions = [{
+				height: null
+			}];
+
+			testHelper.customRender(<TransactionTable />, context);
+
+			// Act:
+			const pending = screen.getByText('Pending');
+
+			// Assert:
+			expect(pending).toBeInTheDocument();
 		});
 	});
 });
