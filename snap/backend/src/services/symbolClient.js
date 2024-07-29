@@ -62,7 +62,7 @@ const symbolClient = {
 			/**
 			 * Fetch mosaics namespace from mosaic ids.
 			 * @param {Array<string>} mosaicIds - The mosaic ids to fetch namespace.
-			 * @returns {Promise<Record<string, Array<string>>} The mosaics namespace.
+			 * @returns {Promise<Record<string, Array<string>>>} The mosaics namespace.
 			 */
 			fetchMosaicNamespace: async mosaicIds => {
 				if (!mosaicIds.length)
@@ -124,6 +124,23 @@ const symbolClient = {
 					return innerTransactions;
 				} catch (error) {
 					throw new Error(`Failed to fetch inner transactions by aggregate ids: ${error.message}`);
+				}
+			},
+			/**
+			 * Fetch transaction fee multiplier.
+			 * @returns {Promise<FeeMultiplier>} The transaction fee multiplier.
+			 */
+			fetchTransactionFeeMultiplier: async () => {
+				try {
+					const fees = await fetchUtils.fetchData(`${nodeUrl}/network/fees/transaction`);
+
+					return {
+						slow: fees.minFeeMultiplier,
+						average: fees.averageFeeMultiplier,
+						fast: fees.highestFeeMultiplier
+					};
+				} catch (error) {
+					throw new Error(`Failed to fetch transaction fee multiplier: ${error.message}`);
 				}
 			}
 		};
@@ -187,6 +204,14 @@ export default symbolClient;
  * @property {Meta} meta - The metadata of the transaction.
  * @property {TransactionDetails} transaction - The details of the transaction.
  * @property {string} id - The transaction id.
+ */
+
+/**
+ * The transaction fee multiplier object.
+ * @typedef {object} FeeMultiplier
+ * @property {number} slow - The slow fee multiplier.
+ * @property {number} average - The average fee multiplier.
+ * @property {number} fast - The fast fee multiplier.
  */
 
 // endregion
