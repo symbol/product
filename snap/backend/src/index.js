@@ -70,6 +70,8 @@ export const onCronjob = async ({ request }) => {
 	switch (request.method) {
 	case 'fetchCurrencyPrice':
 		return priceUtils.getPrice({ state });
+	case 'fetchFeeMultiplier':
+		return transactionUtils.getFeeMultiplier({ state });
 	default:
 		throw new Error('Method not found.');
 	}
