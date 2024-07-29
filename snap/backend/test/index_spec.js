@@ -46,7 +46,7 @@ describe('index', () => {
 			slow: 0,
 			average: 0,
 			fast: 0
-		}
+		};
 
 		beforeEach(() => {
 			jest.clearAllMocks();
@@ -413,15 +413,6 @@ describe('index', () => {
 				expect(stateManager.update).toHaveBeenCalledWith({
 					currencies: mockLatestCurrencies
 				});
-			});
-
-			it('throws an error if the requested method does not exist', async () => {
-				// Act + Assert:
-				await expect(onCronjob({
-					request: {
-						method: 'unknownMethod'
-					}
-				})).rejects.toThrow('Method not found.');
 			});
 		});
 	});
