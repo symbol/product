@@ -1,6 +1,9 @@
 import symbolClient from '../../src/services/symbolClient.js';
+import stateManager from '../../src/stateManager.js';
 import transactionUtils from '../../src/utils/transactionUtils.js';
 import { describe, jest } from '@jest/globals';
+
+jest.spyOn(stateManager, 'update').mockResolvedValue();
 
 describe('transactionUtils', () => {
 	// Arrange:
@@ -240,6 +243,47 @@ describe('transactionUtils', () => {
 			]);
 			expect(mockFetchTransactionPageByAddress).toHaveBeenCalledWith('address', '');
 			expect(mockFetchInnerTransactionByAggregateIds).toHaveBeenCalledWith(['3']);
+		});
+	});
+
+	describe('getFeeMultiplier', () => {
+		it('returns fee multiplier', async () => {
+			// Arrange:
+			const state = {
+				network: {
+					identifier: 1,
+					networkName: 'testnet',
+					url: 'http://localhost:3000'
+				},
+				feeMultiplier: {
+					slow: 0,
+					average: 0,
+					fast: 0
+				}
+			};
+
+			const mockResponse = {
+				slow: 100,
+				average: 150,
+				fast: 200
+			};
+
+			const mockFetchTransactionFeeMultiplier = jest.fn().mockResolvedValue(mockResponse);
+
+			jest.spyOn(symbolClient, 'create').mockImplementation(() => ({
+				fetchTransactionFeeMultiplier: mockFetchTransactionFeeMultiplier
+			}));
+
+			// Act:
+			const result = await transactionUtils.getFeeMultiplier({ state });
+
+			// Assert:
+			expect(result).toStrictEqual(mockResponse);
+			expect(stateManager.update).toHaveBeenCalledWith({
+				network: state.network,
+				feeMultiplier: mockResponse
+			});
+			expect(mockFetchTransactionFeeMultiplier).toHaveBeenCalled();
 		});
 	});
 });
