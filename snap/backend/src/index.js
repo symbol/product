@@ -16,7 +16,8 @@ export const onRpcRequest = async ({ request }) => {
 			currencies: {},
 			accounts: {},
 			network: {},
-			mosaicInfo: {}
+			mosaicInfo: {},
+			feeMultiplier: { slow: 0, average: 0, fast: 0 }
 		};
 	}
 
@@ -30,6 +31,7 @@ export const onRpcRequest = async ({ request }) => {
 	case 'initialSnap':
 		await networkUtils.switchNetwork(apiParams);
 		await priceUtils.getPrice(apiParams);
+		await transactionUtils.getFeeMultiplier(apiParams);
 
 		return {
 			...state,
@@ -55,6 +57,8 @@ export const onRpcRequest = async ({ request }) => {
 		return accountUtils.fetchAccountMosaics(apiParams);
 	case 'fetchAccountTransactions':
 		return transactionUtils.fetchAccountTransactions(apiParams);
+	case 'getFeeMultiplier':
+		return state.feeMultiplier;
 	default:
 		throw new Error('Method not found.');
 	}

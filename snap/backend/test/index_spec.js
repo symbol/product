@@ -42,13 +42,20 @@ describe('index', () => {
 			EUR: 0.20
 		};
 
+		const mockFeeMultiplier = {
+			slow: 0,
+			average: 0,
+			fast: 0
+		}
+
 		beforeEach(() => {
 			jest.clearAllMocks();
 
 			stateManager.getState.mockResolvedValue({
 				accounts: {},
 				network: mockNodeInfo,
-				currencies: mockCurrencies
+				currencies: mockCurrencies,
+				feeMultiplier: mockFeeMultiplier
 			});
 		});
 
@@ -58,7 +65,12 @@ describe('index', () => {
 			const assertInitialSnap = async (state, expectedState) => {
 				// Arrange:
 				jest.spyOn(symbolClient, 'create').mockReturnValue({
-					fetchNetworkCurrencyMosaicId: jest.fn().mockResolvedValue('mosaicId')
+					fetchNetworkCurrencyMosaicId: jest.fn().mockResolvedValue('mosaicId'),
+					fetchTransactionFeeMultiplier: jest.fn().mockResolvedValue({
+						slow: 100,
+						average: 150,
+						fast: 200
+					})
 				});
 
 				stateManager.getState.mockResolvedValue(state);
@@ -92,7 +104,12 @@ describe('index', () => {
 						symbol: 'USD',
 						price: 0.25
 					},
-					mosaicInfo: {}
+					mosaicInfo: {},
+					feeMultiplier: {
+						slow: 100,
+						average: 150,
+						fast: 200
+					}
 				});
 			});
 
@@ -141,7 +158,12 @@ describe('index', () => {
 						symbol: 'USD',
 						price: 0.25
 					},
-					mosaicInfo: {}
+					mosaicInfo: {},
+					feeMultiplier: {
+						slow: 100,
+						average: 150,
+						fast: 200
+					}
 				});
 			});
 		});
@@ -166,7 +188,8 @@ describe('index', () => {
 					state: {
 						accounts: {},
 						network: mockNodeInfo,
-						currencies: mockCurrencies
+						currencies: mockCurrencies,
+						feeMultiplier: mockFeeMultiplier
 					},
 					requestParams: {
 						accountLabel: 'my wallet'
@@ -196,7 +219,8 @@ describe('index', () => {
 					state: {
 						accounts: {},
 						currencies: mockCurrencies,
-						network: mockNodeInfo
+						network: mockNodeInfo,
+						feeMultiplier: mockFeeMultiplier
 					},
 					requestParams: {
 						accountLabel: 'my wallet',
@@ -339,6 +363,20 @@ describe('index', () => {
 						offsetId: ''
 					}
 				});
+			});
+		});
+
+		describe('getFeeMultiplier', () => {
+			it('returns state fee multiplier', async () => {
+				// Act:
+				const response = await onRpcRequest({
+					request: {
+						method: 'getFeeMultiplier'
+					}
+				});
+
+				// Assert:
+				expect(response).toStrictEqual(mockFeeMultiplier);
 			});
 		});
 	});
