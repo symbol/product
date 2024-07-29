@@ -415,5 +415,38 @@ describe('index', () => {
 				});
 			});
 		});
+
+		describe('fetchFeeMultiplier', () => {
+			it('fetches latest fee multiplier and update state', async () => {
+				// Arrange:
+				const state = {
+					feeMultiplier: {
+						slow: 0,
+						average: 0,
+						fast: 0
+					}
+				};
+
+				stateManager.getState.mockResolvedValue(state);
+
+				jest.spyOn(transactionUtils, 'getFeeMultiplier').mockResolvedValue({
+					slow: 100,
+					average: 150,
+					fast: 200
+				});
+
+				// Act:
+				await onCronjob({
+					request: {
+						method: 'fetchFeeMultiplier'
+					}
+				});
+
+				// Assert:
+				expect(transactionUtils.getFeeMultiplier).toHaveBeenCalledWith({
+					state
+				});
+			});
+		});
 	});
 });
