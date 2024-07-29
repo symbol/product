@@ -1,4 +1,5 @@
 import symbolClient from '../services/symbolClient.js';
+import stateManager from '../stateManager.js';
 import moment from 'moment'; // eslint-disable-line
 import { PublicKey } from 'symbol-sdk';
 import { SymbolFacade, models } from 'symbol-sdk/symbol';
@@ -108,6 +109,18 @@ const transactionUtils = {
 			message: isTransferTransaction ? (transaction.message || null) : null,
 			sender: senderAddress
 		};
+	},
+	getFeeMultiplier: async ({ state }) => {
+		const { network } = state;
+		const client = symbolClient.create(network.url);
+
+		const feeMultiplier = await client.fetchTransactionFeeMultiplier();
+
+		state.feeMultiplier = feeMultiplier;
+
+		await stateManager.update(state);
+
+		return feeMultiplier;
 	}
 };
 
