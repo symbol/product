@@ -375,4 +375,39 @@ describe('symbolClient', () => {
 			await expect(client.fetchInnerTransactionByAggregateIds(mockTransactionIds)).rejects.toThrow(errorMessage);
 		});
 	});
+
+	describe('fetchTransactionFeeMultiplier', () => {
+		it('can fetch transaction fee multiplier successfully', async () => {
+			// Arrange:
+			const mockResponse = {
+				averageFeeMultiplier: 118,
+				medianFeeMultiplier: 100,
+				highestFeeMultiplier: 5681,
+				lowestFeeMultiplier: 0,
+				minFeeMultiplier: 100
+			};
+
+			fetchUtils.fetchData.mockResolvedValue(mockResponse);
+
+			// Act:
+			const result = await client.fetchTransactionFeeMultiplier();
+
+			// Assert:
+			expect(result).toStrictEqual({
+				slow: 100,
+				average: 118,
+				fast: 5681
+			});
+			expect(fetchUtils.fetchData).toHaveBeenCalledWith(`${nodeUrl}/network/fees/transaction`);
+		});
+
+		it('throws an error when fetch fails', async () => {
+			// Arrange:
+			fetchUtils.fetchData.mockRejectedValue(new Error('Failed to fetch'));
+
+			// Assert:
+			const errorMessage = 'Failed to fetch transaction fee multiplier: Failed to fetch';
+			await expect(client.fetchTransactionFeeMultiplier()).rejects.toThrow(errorMessage);
+		});
+	});
 });
