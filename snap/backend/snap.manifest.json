@@ -27,6 +27,12 @@
           "request": {
             "method": "fetchCurrencyPrice"
           }
+        },
+        {
+          "expression": "* * * * *",
+          "request": {
+            "method": "fetchFeeMultiplier"
+          }
         }
       ]
     },
