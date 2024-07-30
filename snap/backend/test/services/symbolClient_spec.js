@@ -350,11 +350,11 @@ describe('symbolClient', () => {
 		};
 
 		it('can fetch confirmed inner transactions by aggregate ids', async () => {
-			await assertSuccessFetch('confirmed', `${nodeUrl}/transactions/confirmed/ids`);
+			await assertSuccessFetch('confirmed', `${nodeUrl}/transactions/confirmed`);
 		});
 
 		it('can fetch unconfirmed inner transactions by aggregate ids', async () => {
-			await assertSuccessFetch('unconfirmed', `${nodeUrl}/transactions/unconfirmed/ids`);
+			await assertSuccessFetch('unconfirmed', `${nodeUrl}/transactions/unconfirmed`);
 		});
 
 		it('returns empty object when transactionIds is empty', async () => {
