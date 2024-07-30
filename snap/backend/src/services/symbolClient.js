@@ -115,7 +115,7 @@ const symbolClient = {
 				try {
 					const innerTransactions = {};
 
-					const transactions = await fetchUtils.fetchData(`${nodeUrl}/transactions/${group}/ids`, 'POST', { transactionIds });
+					const transactions = await fetchUtils.fetchData(`${nodeUrl}/transactions/${group}`, 'POST', { transactionIds });
 
 					transactions.forEach(({ id, transaction }) => {
 						innerTransactions[id] = transaction.transactions;
