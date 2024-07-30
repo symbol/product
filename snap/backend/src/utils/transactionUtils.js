@@ -1,39 +1,13 @@
 import symbolClient from '../services/symbolClient.js';
 import moment from 'moment'; // eslint-disable-line
 import { PublicKey } from 'symbol-sdk';
-import { SymbolFacade } from 'symbol-sdk/symbol';
+import { SymbolFacade, models } from 'symbol-sdk/symbol';
 
-const AGGREGATE_COMPLETE_TRANSACTION_TYPE = 16705;
-const AGGREGATE_BONDED_TRANSACTION_TYPE = 16961;
-const TRANSFER_TRANSACTION_TYPE = 16724;
-
-const TRANSACTION_TYPE = {
-	16724: 'Transfer',
-	16718: 'Namespace Registration',
-	16974: 'Address Alias',
-	17230: 'Mosaic Alias',
-	16717: 'Mosaic Definition',
-	16973: 'Mosaic Supply Change',
-	17229: 'Mosaic Supply Revocation',
-	16725: 'Multisig Account Modification',
-	16705: 'Aggregate Complete',
-	16961: 'Aggregate Bonded',
-	16712: 'Hash Lock',
-	16722: 'Secret Lock',
-	16978: 'Secret Proof',
-	16720: 'Account Address Restriction',
-	16976: 'Account Mosaic Restriction',
-	17232: 'Account Operation Restriction',
-	16716: 'Account Key Link',
-	16977: 'Mosaic Address Restriction',
-	16721: 'Mosaic Global Restriction',
-	16708: 'Account Metadata',
-	16964: 'Mosaic Metadata',
-	17220: 'Namespace Metadata',
-	16963: 'VRF Key Link',
-	16707: 'Voting Key Link',
-	16972: 'Node Key Link'
-};
+const getTransactionTypeName = inputTyeValue => models.TransactionType.valueToKey(inputTyeValue)
+	.toLowerCase()
+	.split('_')
+	.map(word => word.charAt(0).toUpperCase() + word.slice(1))
+	.join(' ');
 
 const transactionUtils = {
 	/**
@@ -73,7 +47,7 @@ const transactionUtils = {
      * @returns {boolean} returns true if transaction is aggregate.
      */
 	isAggregateTransaction(transaction) {
-		return [AGGREGATE_COMPLETE_TRANSACTION_TYPE, AGGREGATE_BONDED_TRANSACTION_TYPE].includes(transaction.type);
+		return [models.TransactionType.AGGREGATE_COMPLETE.value, models.TransactionType.AGGREGATE_BONDED.value].includes(transaction.type);
 	},
 	/**
      * Format transactions to flat object.
@@ -86,15 +60,15 @@ const transactionUtils = {
 
 		transactions.forEach(({ id, meta, transaction }) => {
 			const pushTransaction = (tx, suffix = '') => {
-				const typeLabel = suffix ? `${suffix} | ${TRANSACTION_TYPE[tx.type]}` : '';
+				const typeLabel = suffix ? `${suffix} | ${getTransactionTypeName(tx.type)}` : '';
 				flatTransactions.push(this.createTransaction(id, meta, tx, network, typeLabel));
 			};
 
-			if (transaction.type === TRANSFER_TRANSACTION_TYPE) {
+			if (transaction.type === models.TransactionType.TRANSFER.value) {
 				pushTransaction(transaction);
 			} else if (this.isAggregateTransaction(transaction)) {
 				transaction.innerTransactions.forEach(innerTransaction => {
-					pushTransaction(innerTransaction.transaction, `${TRANSACTION_TYPE[transaction.type]}`);
+					pushTransaction(innerTransaction.transaction, `${getTransactionTypeName(transaction.type)}`);
 				});
 			} else {
 				pushTransaction(transaction);
@@ -117,7 +91,7 @@ const transactionUtils = {
 		const senderAddress = facade.network.publicKeyToAddress(new PublicKey(transaction.signerPublicKey)).toString();
 		const date = moment.utc(facade.network.toDatetime({ timestamp: BigInt(meta.timestamp) })).format('YYYY-MM-DD HH:mm:ss');
 
-		const isTransferTransaction = transaction.type === TRANSFER_TRANSACTION_TYPE;
+		const isTransferTransaction = transaction.type === models.TransactionType.TRANSFER.value;
 
 		const getXymAmount = mosaics => {
 			const xymMosaic = mosaics.find(mosaic => mosaic.id === network.currencyMosaicId);
@@ -129,7 +103,7 @@ const transactionUtils = {
 			date,
 			height: meta.height,
 			transactionHash: meta.hash,
-			transactionType: transactionTypeOverride || TRANSACTION_TYPE[transaction.type],
+			transactionType: transactionTypeOverride || getTransactionTypeName(transaction.type),
 			amount: isTransferTransaction ? getXymAmount(transaction.mosaics) : null,
 			message: isTransferTransaction ? (transaction.message || null) : null,
 			sender: senderAddress
