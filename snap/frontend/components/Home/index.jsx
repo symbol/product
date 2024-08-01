@@ -9,6 +9,7 @@ import LoadingScreen from '../LoadingScreen';
 import Navbar from '../Navbar';
 import ReceiveModalBox from '../ReceiveModalBox';
 import TransactionTable from '../TransactionTable';
+import TransferModalBox from '../TransferModalBox';
 import { useEffect, useState } from 'react';
 
 const Home = () => {
@@ -16,9 +17,14 @@ const Home = () => {
 	const { dispatch, symbolSnap } = useWalletContext();
 
 	const [ receiveModalBoxVisible, setReceiveModalBoxVisible ] = useState(false);
+	const [ transferModalBoxVisible, setTransferModalBoxVisible ] = useState(false);
 
 	const handleReceiveModalBox = () => {
 		setReceiveModalBoxVisible(!receiveModalBoxVisible);
+	};
+
+	const handleTransferModalBox = () => {
+		setTransferModalBoxVisible(!transferModalBoxVisible);
 	};
 
 	useEffect(() => {
@@ -41,6 +47,14 @@ const Home = () => {
 					<ConnectMetamask isOpen={!isSnapInstalled} onRequestClose={() => false} /> :
 					null
 			}
+
+			{
+				transferModalBoxVisible && (
+					<TransferModalBox
+						isOpen={transferModalBoxVisible}
+						onRequestClose={setTransferModalBoxVisible}
+					/>
+				)}
 
 			<Navbar />
 
@@ -69,7 +83,9 @@ const Home = () => {
 						<div className='flex justify-center font-bold pt-2'>
 							<button className='bg-secondary border-2 m-2 rounded-xl uppercase w-40 h-10'
 								onClick={handleReceiveModalBox}>Receive</button>
-							<button className='bg-secondary border-2 m-2 rounded-xl uppercase w-40 h-10'>Send</button>
+
+							<button className='bg-secondary border-2 m-2 rounded-xl uppercase w-40 h-10'
+								onClick={handleTransferModalBox}>Send</button>
 						</div>
 
 						<ReceiveModalBox isOpen={receiveModalBoxVisible} onRequestClose={setReceiveModalBoxVisible} />
