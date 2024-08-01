@@ -1,4 +1,3 @@
-import { NetworkType } from '../../config/constants';
 import { useWalletContext } from '../../context';
 import Button from '../Button';
 import Input from '../Input';
@@ -8,10 +7,9 @@ import { SymbolFacade } from 'symbol-sdk/symbol';
 
 const TransferModalBox = ({ isOpen, onRequestClose }) => {
 	const { walletState } = useWalletContext();
-	const { selectedAccount, accountsMosaics, network } = walletState;
-	const { address } = selectedAccount || {};
-	const mosaicsBalance = accountsMosaics[address] || [];
-	const facade = new SymbolFacade(NetworkType[network.identifier]);
+	const { selectedAccount, network, mosaicInfo } = walletState;
+	const mosaicsBalance = selectedAccount.mosaics || [];
+	const facade = new SymbolFacade(network.networkName);
 
 	const [to, setTo] = useState('');
 	const [message, setMessage] = useState('');
@@ -33,11 +31,41 @@ const TransferModalBox = ({ isOpen, onRequestClose }) => {
 		case 'amount':
 			return value.map((amount, index) => {
 				const maxBalance = mosaicsBalance.find(mosaic => mosaic.id === selectedMosaics[index].id).amount;
-				return amount > maxBalance ? 'Not enough balance' : null;
+				const absoluteAmount = amount * (10 ** mosaicInfo[selectedMosaics[index].id].divisibility);
+
+				return absoluteAmount > maxBalance ? 'Not enough balance' : null;
 			});
 		default:
 			return null;
 		}
+	};
+
+	const validateForm = () => {
+		const validate = (field, value) => {
+			switch (field) {
+			case 'address':
+				return facade.network.isValidAddressString(value) ? null : 'Invalid address';
+			case 'message':
+				return 1024 >= value.length ? null : 'Message length should not exceed 1024 characters';
+			case 'amount':
+				return value.map((amount, index) => {
+					const maxBalance = mosaicsBalance.find(mosaic => mosaic.id === selectedMosaics[index].id).amount;
+					const absoluteAmount = amount * (10 ** mosaicInfo[selectedMosaics[index].id].divisibility);
+
+					return absoluteAmount > maxBalance ? 'Not enough balance' : null;
+				});
+			default:
+				return null;
+			}
+		};
+
+		setErrors(errors => ({
+			...errors,
+			amount: validate('amount', selectedMosaics.map(mosaic => mosaic.amount))
+		}));
+
+		setErrors(errors => ({ ...errors, address: validate('address', to) }));
+		setErrors(errors => ({ ...errors, message: validate('message', message) }));
 	};
 
 	const getUnselectedMosaics = () => {
@@ -87,18 +115,15 @@ const TransferModalBox = ({ isOpen, onRequestClose }) => {
 		const updateMosaics = [...selectedMosaics];
 		updateMosaics[index] = { ...updateMosaics[index], amount: newAmount };
 		setSelectedMosaics(updateMosaics);
-
-		setErrors(errors => ({
-			...errors,
-			amount: validate('amount', updateMosaics.map(mosaic => mosaic.amount))
-		}));
 	};
 
 	const handleMaxAmount = index => {
 		const maxAmount = mosaicsBalance.find(mosaic => mosaic.id === selectedMosaics[index].id).amount;
 
+		const relativeAmount = maxAmount / (10 ** mosaicInfo[selectedMosaics[index].id].divisibility);
+
 		const updateMosaics = [...selectedMosaics];
-		updateMosaics[index] = { ...updateMosaics[index], amount: maxAmount };
+		updateMosaics[index] = { ...updateMosaics[index], amount: relativeAmount };
 
 		setSelectedMosaics(updateMosaics);
 
@@ -111,19 +136,15 @@ const TransferModalBox = ({ isOpen, onRequestClose }) => {
 	const handleInputAddress = event => {
 		const newAddress = event.target.value;
 		setTo(newAddress);
-
-		setErrors(errors => ({ ...errors, address: validate('address', newAddress) }));
 	};
 
 	const handleMessageChange = event => {
 		const newMessage = event.target.value;
 		setMessage(newMessage);
-
-		setErrors(errors => ({ ...errors, message: validate('message', newMessage) }));
 	};
 
 	useEffect(() => {
-		if (selectedAccount && accountsMosaics) {
+		if (selectedAccount && selectedAccount.mosaics) {
 			if (0 === mosaicsBalance.length) {
 				return;
 			} else {
@@ -135,12 +156,17 @@ const TransferModalBox = ({ isOpen, onRequestClose }) => {
 			}
 		}
 
-	}, [accountsMosaics]);
+	}, [selectedAccount.mosaics]);
 
 	useEffect(() => {
 		// Update mosaic selector when selectedMosaics change
 		updateMosaicSelector();
+
 	}, [selectedMosaics]);
+
+	useEffect(() => {
+		validateForm();
+	}, [selectedMosaics, to, message]);
 
 	const renderMosaicSelector = (mosaicOption, index) => {
 		return (
@@ -150,14 +176,14 @@ const TransferModalBox = ({ isOpen, onRequestClose }) => {
 						{
 							mosaicOption.map(option => (
 								<option key={option.id} value={option.id}>
-									{option.name ? option.name : option.id}
+									{0 < mosaicInfo[option.id].name.length ? mosaicInfo[option.id].name[0] : option.id}
 								</option>
 							))
 						}
 					</select>
 
 					<div className='flex items-center justify-around'>
-						<input className='w-2/3 px-4 py-2 text-black bg-[#D9D9D9] rounded-xl' type='number'
+						<input className='w-2/3 px-4 py-2 text-black bg-[#D9D9D9] rounded-xl' type='number' placeholder='relative amount'
 							value={selectedMosaics[index]?.amount || 0} onChange={event => handleAmountChange(event, index)} />
 						<span className='cursor-pointer' onClick={() => handleMaxAmount(index)}>Max</span>
 					</div>
@@ -171,12 +197,14 @@ const TransferModalBox = ({ isOpen, onRequestClose }) => {
 
 	return (
 		<ModalBox isOpen={isOpen} onRequestClose={onRequestClose}>
-			<div className='flex flex-col px-5 text-center'>
+			<div role='transfer-form' className='flex flex-col px-5 text-center'>
 				<div className='text-2xl font-bold mb-6'>
                     Send
 				</div>
 
 				<Input
+					role='address-input'
+					placeholder='Recipient address'
 					className='p-2 flex items-start'
 					label='To'
 					value={to}
@@ -191,7 +219,7 @@ const TransferModalBox = ({ isOpen, onRequestClose }) => {
 
 					{
 						mosaicSelectorManager.map((mosaic, index) => (
-							<div key={index}>
+							<div role='mosaic-selector' key={index}>
 								{renderMosaicSelector(mosaic, index)}
 							</div>
 						))
@@ -216,6 +244,8 @@ const TransferModalBox = ({ isOpen, onRequestClose }) => {
 
 				<div>
 					<Input
+						role='message-input'
+						placeholder='Message...'
 						className='p-2 flex items-start'
 						label='Message'
 						value={message}
@@ -224,7 +254,9 @@ const TransferModalBox = ({ isOpen, onRequestClose }) => {
 					/>
 
 					<div className='flex items-center justify-end'>
-						<input type='checkbox' name='isEncrypt'
+						<input
+							role='message-checkbox'
+							type='checkbox' name='isEncrypt'
 							checked={isEncrypt}
 							onChange={event => setIsEncrypt(event.target.checked)} /> Encrypt
 					</div>
