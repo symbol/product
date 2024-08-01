@@ -19,7 +19,6 @@ const context = {
 		},
 		selectedAccount: {},
 		accounts: {},
-		mosaics: [],
 		transactions: [],
 		currency: {
 			symbol: 'usd',
@@ -115,6 +114,20 @@ describe('components/Home', () => {
 
 		// Assert:
 		const modalBox = screen.getByRole('receive-qr');
+		expect(modalBox).toBeInTheDocument();
+	});
+
+	it('renders transfer modal box when send button is clicked', async () => {
+		// Arrange:
+		testHelper.customRender(<Home />, context);
+
+		const sendButton = screen.getByText('Send');
+
+		// Act:
+		fireEvent.click(sendButton);
+
+		// Assert:
+		const modalBox = screen.getByRole('transfer-form');
 		expect(modalBox).toBeInTheDocument();
 	});
 });
