@@ -1,6 +1,6 @@
 import TransferModalBox from '.';
 import testHelper from '../testHelper';
-import { fireEvent, screen } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react';
 
 const context = {
 	walletState: {
@@ -23,6 +23,9 @@ const context = {
 				name: []
 			}
 		}
+	},
+	symbolSnap: {
+		getFeeMultiplier: jest.fn()
 	}
 };
 
@@ -59,6 +62,25 @@ describe('components/TransferModalBox', () => {
 		expect(mosaicSelector).toBeInTheDocument();
 		expect(messageInput).toBeInTheDocument();
 		expect(messageCheckbox).toBeInTheDocument();
+	});
+
+	it('renders fee multiplier components', async () => {
+		// Arrange:
+		context.symbolSnap.getFeeMultiplier.mockResolvedValue({
+			slow: 10,
+			average: 100,
+			fast: 1000
+		});
+
+		// Act:
+		await act(() => testHelper.customRender(<TransferModalBox isOpen={true} onRequestClose={jest.fn()} />, context));
+
+		// Assert:
+		await waitFor(() => {
+			expect(screen.getByLabelText('SLOW')).toBeInTheDocument();
+			expect(screen.getByLabelText('AVERAGE')).toBeInTheDocument();
+			expect(screen.getByLabelText('FAST')).toBeInTheDocument();
+		});
 	});
 
 	describe('form validation', () => {
