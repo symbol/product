@@ -474,4 +474,32 @@ describe('symbolSnapFactory', () => {
 			});
 		});
 	});
+
+	describe('getFeeMultiplier', () => {
+		it('returns fee multiplier when provider request is successful', async () => {
+			// Arrange:
+			const mockFeeMultiplier = {
+				slow: 10,
+				average: 100,
+				fast: 1000
+			};
+
+			mockProvider.request.mockResolvedValue(mockFeeMultiplier);
+
+			// Act:
+			const result = await symbolSnap.getFeeMultiplier();
+
+			// Assert:
+			expect(result).toEqual(mockFeeMultiplier);
+			expect(mockProvider.request).toHaveBeenCalledWith({
+				method: 'wallet_invokeSnap',
+				params: {
+					snapId: 'local:http://localhost:8080',
+					request: {
+						method: 'getFeeMultiplier'
+					}
+				}
+			});
+		});
+	});
 });
