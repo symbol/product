@@ -1,5 +1,6 @@
 import { useWalletContext } from '../../context';
 import Button from '../Button';
+import FeeMultiplier from '../FeeMultiplier';
 import Input from '../Input';
 import ModalBox from '../ModalBox';
 import { useEffect, useState } from 'react';
@@ -16,6 +17,7 @@ const TransferModalBox = ({ isOpen, onRequestClose }) => {
 	const [isEncrypt, setIsEncrypt] = useState(false);
 	const [mosaicSelectorManager, setMosaicSelectorManager] = useState([]);
 	const [selectedMosaics, setSelectedMosaics] = useState([]);
+	const [selectedFeeMultiplier, setSelectedFeeMultiplier] = useState(0);
 	const [errors, setErrors] = useState({
 		address: null,
 		message: null,
@@ -239,6 +241,9 @@ const TransferModalBox = ({ isOpen, onRequestClose }) => {
 					</div>
 
 				</div>
+
+				<FeeMultiplier selectedFeeMultiplier={selectedFeeMultiplier} setSelectedFeeMultiplier={setSelectedFeeMultiplier} />
+
 				<div>
 					<Button>Send</Button>
 				</div>
