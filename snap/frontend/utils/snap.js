@@ -238,6 +238,23 @@ const symbolSnapFactory = {
 				});
 
 				return transactions;
+			},
+			/**
+			 * Get the fee multiplier from snap MetaMask.
+			 * @returns {Promise<FeeMultiplier>} The fee multiplier object returned by the snap.
+			 */
+			async getFeeMultiplier() {
+				const feeMultiplier = await provider.request({
+					method: 'wallet_invokeSnap',
+					params: {
+						snapId: defaultSnapOrigin,
+						request: {
+							method: 'getFeeMultiplier'
+						}
+					}
+				});
+
+				return feeMultiplier;
 			}
 		};
 	}
@@ -269,6 +286,14 @@ export default symbolSnapFactory;
  * @typedef {number} Currency
  * @property {string} symbol - The currency symbol.
  * @property {number} price - The currency price.
+ */
+
+/**
+ * Fee multiplier.
+ * @typedef {object} FeeMultiplier
+ * @property {number} slow - The slow fee multiplier.
+ * @property {number} average - The average fee multiplier.
+ * @property {number} fast - The fast fee multiplier.
  */
 
 // endregion
