@@ -142,6 +142,13 @@ const symbolClient = {
 				} catch (error) {
 					throw new Error(`Failed to fetch transaction fee multiplier: ${error.message}`);
 				}
+			},
+			announceTransaction: async payload => {
+				try {
+					await fetchUtils.fetchData(`${nodeUrl}/transactions`, 'PUT', payload);
+				} catch (error) {
+					throw new Error(`Failed to announce transaction: ${error.message}`);
+				}
 			}
 		};
 	}
