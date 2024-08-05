@@ -38,7 +38,8 @@ const context = {
 		createAccount: jest.fn(),
 		getMosaicInfo: jest.fn(),
 		getAccounts: jest.fn(),
-		fetchAccountMosaics: jest.fn()
+		fetchAccountMosaics: jest.fn(),
+		getFeeMultiplier: jest.fn()
 	}
 };
 
