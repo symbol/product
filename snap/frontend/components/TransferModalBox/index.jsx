@@ -22,24 +22,6 @@ const TransferModalBox = ({ isOpen, onRequestClose }) => {
 		amount: []
 	});
 
-	const validate = (field, value) => {
-		switch (field) {
-		case 'address':
-			return facade.network.isValidAddressString(value) ? null : 'Invalid address';
-		case 'message':
-			return 1024 >= value.length ? null : 'Message length should not exceed 1024 characters';
-		case 'amount':
-			return value.map((amount, index) => {
-				const maxBalance = mosaicsBalance.find(mosaic => mosaic.id === selectedMosaics[index].id).amount;
-				const absoluteAmount = amount * (10 ** mosaicInfo[selectedMosaics[index].id].divisibility);
-
-				return absoluteAmount > maxBalance ? 'Not enough balance' : null;
-			});
-		default:
-			return null;
-		}
-	};
-
 	const validateForm = () => {
 		const validate = (field, value) => {
 			switch (field) {
