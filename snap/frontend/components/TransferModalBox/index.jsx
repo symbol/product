@@ -31,23 +31,23 @@ const TransferModalBox = ({ isOpen, onRequestClose }) => {
 				return 1024 >= value.length ? null : 'Message length should not exceed 1024 characters';
 			case 'amount':
 				return value.map((amount, index) => {
-					const maxBalance = mosaicsBalance.find(mosaic => mosaic.id === selectedMosaics[index].id).amount;
+					const currentBalance = mosaicsBalance.find(mosaic => mosaic.id === selectedMosaics[index].id).amount;
 					const absoluteAmount = amount * (10 ** mosaicInfo[selectedMosaics[index].id].divisibility);
 
-					return absoluteAmount > maxBalance ? 'Not enough balance' : null;
+					return absoluteAmount > currentBalance ? 'Not enough balance' : null;
 				});
 			default:
 				return null;
 			}
 		};
 
-		setErrors(errors => ({
-			...errors,
+		const newErrors = {
+			address: validate('address', to),
+			message: validate('message', message),
 			amount: validate('amount', selectedMosaics.map(mosaic => mosaic.amount))
-		}));
+		};
 
-		setErrors(errors => ({ ...errors, address: validate('address', to) }));
-		setErrors(errors => ({ ...errors, message: validate('message', message) }));
+		setErrors(errors => ({ ...errors, ...newErrors }));
 	};
 
 	const getUnselectedMosaics = () => {
@@ -108,11 +108,6 @@ const TransferModalBox = ({ isOpen, onRequestClose }) => {
 		updateMosaics[index] = { ...updateMosaics[index], amount: relativeAmount };
 
 		setSelectedMosaics(updateMosaics);
-
-		setErrors(errors => ({
-			...errors,
-			amount: validate('amount', selectedMosaics.map(mosaic => mosaic.amount))
-		}));
 	};
 
 	const handleInputAddress = event => {
