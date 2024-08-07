@@ -22,7 +22,7 @@ const FeeMultiplier = ({selectedFeeMultiplier, setSelectedFeeMultiplier}) => {
 					name='feeMultiplier'
 					value={feeMultiplier[key]}
 					className='appearance-none'
-					onClick={() => setSelectedFeeMultiplier(feeMultiplier[key])} />
+					onClick={() => setSelectedFeeMultiplier(key)} />
 				<div className={`rounded-xl text-center p-2 ${selectedFeeMultiplier === feeMultiplier[key] ? 'border-2' : ''}`}>
 					{key.toUpperCase()}
 				</div>

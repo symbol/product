@@ -28,7 +28,7 @@ describe('components/FeeMultiplier', () => {
 		});
 	});
 
-	it('update selected fee multiplier', async () => {
+	it('update selected fee multiplier (key)', async () => {
 		// Arrange:
 		context.symbolSnap.getFeeMultiplier.mockResolvedValue({
 			slow: 10,
@@ -45,6 +45,6 @@ describe('components/FeeMultiplier', () => {
 		await waitFor(() => fireEvent.click(screen.getByText('SLOW')));
 
 		// Assert:
-		expect(mockSetSelectedFeeMultiplier).toHaveBeenCalledWith(10);
+		expect(mockSetSelectedFeeMultiplier).toHaveBeenCalledWith('slow');
 	});
 });
