@@ -18,7 +18,7 @@ describe('components/FeeMultiplier', () => {
 		});
 
 		// Act:
-		await act(() => testHelper.customRender(<FeeMultiplier />, context));
+		await act(async () => await testHelper.customRender(<FeeMultiplier />, context));
 
 		// Assert:
 		await waitFor(() => {
@@ -38,7 +38,8 @@ describe('components/FeeMultiplier', () => {
 
 		const mockSetSelectedFeeMultiplier = jest.fn();
 
-		await act(() => testHelper.customRender(<FeeMultiplier setSelectedFeeMultiplier={mockSetSelectedFeeMultiplier} />, context));
+		await act(async () =>
+			await testHelper.customRender(<FeeMultiplier setSelectedFeeMultiplier={mockSetSelectedFeeMultiplier} />, context));
 
 		// Act:
 		await waitFor(() => fireEvent.click(screen.getByText('SLOW')));
