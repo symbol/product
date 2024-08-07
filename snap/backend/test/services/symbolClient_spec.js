@@ -410,4 +410,31 @@ describe('symbolClient', () => {
 			await expect(client.fetchTransactionFeeMultiplier()).rejects.toThrow(errorMessage);
 		});
 	});
+
+	describe('announceTransaction', () => {
+		// Arrange:
+		const mockPayload = {
+			payload: 'payload hex'
+		};
+
+		it('can announce transaction successfully', async () => {
+			// Arrange:
+			fetchUtils.fetchData.mockResolvedValue();
+
+			// Act:
+			await client.announceTransaction(mockPayload);
+
+			// Assert:
+			expect(fetchUtils.fetchData).toHaveBeenCalledWith(`${nodeUrl}/transactions`, 'PUT', mockPayload);
+		});
+
+		it('throws an error when fetch fails', async () => {
+			// Arrange:
+			fetchUtils.fetchData.mockRejectedValue(new Error('Failed to fetch'));
+
+			// Assert:
+			const errorMessage = 'Failed to announce transaction: Failed to fetch';
+			await expect(client.announceTransaction(mockPayload)).rejects.toThrow(errorMessage);
+		});
+	});
 });
