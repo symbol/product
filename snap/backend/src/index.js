@@ -59,6 +59,8 @@ export const onRpcRequest = async ({ request }) => {
 		return transactionUtils.fetchAccountTransactions(apiParams);
 	case 'getFeeMultiplier':
 		return state.feeMultiplier;
+	case 'signTransferTransaction':
+		return accountUtils.signTransferTransaction(apiParams);
 	default:
 		throw new Error('Method not found.');
 	}

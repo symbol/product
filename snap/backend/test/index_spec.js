@@ -379,6 +379,27 @@ describe('index', () => {
 				expect(response).toStrictEqual(mockFeeMultiplier);
 			});
 		});
+
+		describe('signTransferTransaction', () => {
+			it('should invoke accountUtils.signTransferTransaction with the correct parameters', async () => {
+				// Arrange:
+				const mockParams = {
+					accountId: '0x1',
+					recipient: 'address',
+					mosaics: [],
+					message: 'message',
+					feeMultiplier: 'slow'
+				};
+
+				await assertMethodCalled(accountUtils, 'signTransferTransaction', {
+					method: 'signTransferTransaction',
+					params: mockParams
+				}, {
+					state: {},
+					requestParams: mockParams
+				});
+			});
+		});
 	});
 
 	describe('onCronjob', () => {
