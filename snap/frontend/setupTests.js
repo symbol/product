@@ -1,6 +1,7 @@
 // learn more: https://github.com/testing-library/jest-dom
 import '@testing-library/jest-dom';
 import { jest } from '@jest/globals';
+import { TextEncoder } from 'util';
 
 global.jest = jest;
 global.IntersectionObserver = jest.fn().mockImplementation(() => ({
@@ -8,6 +9,7 @@ global.IntersectionObserver = jest.fn().mockImplementation(() => ({
 	unobserve: () => null,
 	disconnect: () => null
 }));
+global.TextEncoder = TextEncoder;
 
 
 class IntersectionObserver {
