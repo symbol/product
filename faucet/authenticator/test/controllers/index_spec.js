@@ -80,7 +80,8 @@ describe('twitter controller', () => {
 								public_metrics: {
 									followers_count: 3
 								},
-								created_at: new Date('2022-10-15T00:00:00.00Z')
+								created_at: new Date('2022-10-15T00:00:00.00Z'),
+								profile_image_url: 'https://twitter/profile/image_normal.png'
 							}
 						})
 					}
@@ -104,7 +105,8 @@ describe('twitter controller', () => {
 				accessToken: 'token1234',
 				screenName: 'twitterAccount',
 				followersCount: 3,
-				createdAt: '2022-10-15T00:00:00.000Z'
+				createdAt: '2022-10-15T00:00:00.000Z',
+				profileImageUrl: 'https://twitter/profile/image.png'
 			});
 		});
 

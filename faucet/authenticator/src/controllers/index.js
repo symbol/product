@@ -44,14 +44,15 @@ const twitter = {
 				client, screenName, accessToken, accessSecret
 			} = await twitterClient.login(oauthVerifier);
 
-			const { data } = await client.v2.me({ 'user.fields': ['created_at', 'public_metrics'] });
+			const { data } = await client.v2.me({ 'user.fields': ['created_at', 'public_metrics', 'profile_image_url'] });
 
 			const jwtToken = jwt.sign({
 				accessToken,
 				accessSecret,
 				screenName,
 				followersCount: data.public_metrics.followers_count,
-				createdAt: new Date(data.created_at)
+				createdAt: new Date(data.created_at),
+				profileImageUrl: data.profile_image_url.replace('_normal', '')
 			}, config.jwtSecret);
 
 			return jwtToken;
