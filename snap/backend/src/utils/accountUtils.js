@@ -6,7 +6,9 @@ import {
 	copyable, heading, panel, text
 } from '@metamask/snaps-sdk';
 import { PrivateKey } from 'symbol-sdk';
-import { KeyPair, SymbolFacade } from 'symbol-sdk/symbol';
+import {
+	KeyPair, SymbolFacade, models
+} from 'symbol-sdk/symbol';
 import { v4 as uuidv4 } from 'uuid';
 
 const AccountType = {
@@ -266,6 +268,116 @@ const accountUtils = {
 		const updatedAccounts = await this.updateAccountMosaics(state, accountIds, accountsMosaics);
 
 		return Object.fromEntries(Object.entries(updatedAccounts).map(([key, value]) => [key, value.account]));
+	},
+	/**
+	 * Sign transfer transaction and announce to network.
+	 * @param {object} state - The snap state object.
+	 * @param {TransferTransactionParams} requestParams - The request parameters.
+	 * @returns {Promise<string | boolean>} - The transaction hash.
+	 */
+	async signTransferTransaction({ state, requestParams }) {
+		const {
+			accountId,
+			recipient,
+			mosaics,
+			message,
+			feeMultiplierType
+		} = requestParams;
+
+		const {
+			network, accounts, mosaicInfo, feeMultiplier
+		} = state;
+		const { currencyMosaicId, networkName } = network;
+
+		const facade = new SymbolFacade(networkName);
+
+		const client = symbolClient.create(network.url);
+
+		// Find sender account
+		const symbolAccount = facade.createAccount(new PrivateKey(accounts[accountId].privateKey));
+
+		const createMosaic = mosaic => ({
+			mosaicId: BigInt(`0x${mosaic.id}`),
+			amount: BigInt(Number(mosaic.amount) * (10 ** mosaicInfo[mosaic.id].divisibility))
+		});
+
+		const transferTransaction = facade.transactionFactory.create({
+			type: 'transfer_transaction_v1',
+			signerPublicKey: symbolAccount.publicKey,
+			recipientAddress: recipient,
+			mosaics: mosaics.map(createMosaic),
+			message: [0, ...new TextEncoder('utf-8').encode(`${message}`)],
+			deadline: facade.now().addHours(2).timestamp
+		});
+
+		const currencyMosaicDivisibility = mosaicInfo[currencyMosaicId].divisibility;
+		const fee = transferTransaction.size * feeMultiplier[feeMultiplierType];
+
+		transferTransaction.fee = new models.Amount(BigInt(fee));
+
+		const buildContent = () => {
+			const content = [
+				heading('Do you want to sign this transaction?'),
+				heading(networkName),
+				heading('Signer Address:'),
+				copyable(`${facade.network.publicKeyToAddress(symbolAccount.publicKey).toString()}`),
+				heading('Recipient Address:'),
+				copyable(`${recipient}`),
+				heading('Estimated Fee (XYM):'),
+				copyable(`${fee / (10 ** currencyMosaicDivisibility)}`)
+			];
+
+			if ('' !== message) {
+				content.push(
+					heading('Message:'),
+					copyable(`${message}`)
+				);
+			}
+
+			if (0 < mosaics.length) {
+				content.push(
+					heading('Mosaics:'),
+					copyable(`${mosaics.map(mosaic => {
+						const info = mosaicInfo[mosaic.id];
+						return `${mosaic.amount} ${0 < info.name.length ? info.name[0] : mosaic.id}`;
+					}).join(', ')}`)
+				);
+			}
+
+			return content;
+		};
+
+		const confirmationResponse = await snap.request({
+			method: 'snap_dialog',
+			params: {
+				type: 'confirmation',
+				content: panel(buildContent())
+			}
+		});
+
+		if (!confirmationResponse)
+			return confirmationResponse;
+
+		const {
+			transactionHash,
+			jsonPayload
+		} = await this.signTransaction(facade, symbolAccount, transferTransaction);
+
+		await client.announceTransaction(jsonPayload);
+
+		return transactionHash;
+	},
+	async signTransaction(facade, symbolAccount, transaction) {
+		const signature = symbolAccount.signTransaction(transaction);
+		const jsonPayload = facade.transactionFactory.static.attachSignature(
+			transaction,
+			signature
+		);
+
+		return {
+			transactionHash: facade.hashTransaction(transaction).toString(),
+			jsonPayload: JSON.parse(jsonPayload)
+		};
 	}
 };
 
@@ -296,6 +408,16 @@ export default accountUtils;
  * @typedef {object} AccountMosaics
  * @property {string} id - The mosaic id.
  * @property {number} amount - The mosaic amount.
+ */
+
+/**
+ * Sign transfer transaction request parameters.
+ * @typedef {object} TransferTransactionParams
+ * @property {string} accountId - The account id from snap.
+ * @property {string} recipient - The accounts address.
+ * @property {Array<{mosaicId: string, amount: number}>} mosaics - An array of mosaic objects, each containing a mosaic ID and amount.
+ * @property {string} message - The message.
+ * @property {'slow' | 'average' | 'fast'} feeMultiplierType - The fee multiplier key.
  */
 
 // endregion
