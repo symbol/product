@@ -751,4 +751,179 @@ describe('accountUtils', () => {
 			});
 		});
 	});
+
+	describe('signTransferTransaction', () => {
+		const state = {
+			network: {
+				networkName: 'testnet',
+				currencyMosaicId: '6BED913FA20223F8'
+			},
+			accounts: generateAccounts(1, 'testnet'),
+			mosaicInfo: {
+				'6BED913FA20223F8': {
+					divisibility: 6,
+					name: ['symbol.xym']
+				},
+				'500EB0100D000000': {
+					divisibility: 2,
+					name: []
+				}
+			},
+			feeMultiplier: {
+				slow: 1,
+				average: 10,
+				fast: 100
+			}
+		};
+
+		it('returns transaction hash after confirm signs transfer transaction', async () => {
+			// Arrange:
+			const mockRequest = jest.fn();
+
+			global.snap = { request: mockRequest };
+
+			global.snap.request.mockResolvedValue(true);
+
+			const requestParams = {
+				accountId: state.accounts[Object.keys(state.accounts)[0]].account.id,
+				recipient: 'TDCYZ45MX4IZ7SKEL5UL4ZA7O6KDDUAZZALCA6Y',
+				mosaics: [
+					{
+						id: '6BED913FA20223F8',
+						amount: 1000
+					}
+				],
+				message: 'transfer message',
+				feeMultiplierType: 'slow'
+			};
+
+			jest.spyOn(symbolClient, 'create').mockImplementation(() => ({
+				announceTransaction: jest.fn().mockResolvedValue('announce success')
+			}));
+
+			const mockSignTransaction = jest.fn().mockResolvedValue({
+				transactionHash: 'mockTransactionHash',
+				jsonPayload: 'mockJsonPayload'
+			});
+			jest.spyOn(accountUtils, 'signTransaction').mockImplementation(mockSignTransaction);
+
+			// Act:
+			const result = await accountUtils.signTransferTransaction({ state, requestParams });
+
+			// Assert:
+			expect(result).toBe('mockTransactionHash');
+		});
+
+		describe('confirmTransaction content', () => {
+			const assertSnapDialogContent = async (moreParams, moreExpectedContent) => {
+				// Arrange:
+				const mockRequest = jest.fn();
+
+				global.snap = { request: mockRequest };
+
+				const requestParams = {
+					accountId: state.accounts[Object.keys(state.accounts)[0]].account.id,
+					recipient: 'TDCYZ45MX4IZ7SKEL5UL4ZA7O6KDDUAZZALCA6Y',
+					...moreParams,
+					feeMultiplierType: 'slow'
+				};
+
+				// Act:
+				await accountUtils.signTransferTransaction({ state, requestParams });
+
+				// Assert:
+				expect(mockRequest).toHaveBeenCalledWith({
+					method: 'snap_dialog',
+					params: {
+						type: 'confirmation',
+						content: panel([
+							heading('Do you want to sign this transaction?'),
+							heading('testnet'),
+							heading('Signer Address:'),
+							copyable(`${state.accounts[Object.keys(state.accounts)[0]].account.address}`),
+							heading('Recipient Address:'),
+							copyable('TDCYZ45MX4IZ7SKEL5UL4ZA7O6KDDUAZZALCA6Y'),
+							...moreExpectedContent
+						])
+					}
+				});
+			};
+
+			it('returns snap content', async () => {
+				await assertSnapDialogContent({
+					mosaics: [
+						{
+							id: '6BED913FA20223F8',
+							amount: 0.01
+						},
+						{
+							id: '500EB0100D000000',
+							amount: 2.23
+						}
+					],
+					message: 'transfer message'
+				}, [
+					heading('Estimated Fee (XYM):'),
+					copyable('0.000209'),
+					heading('Message:'),
+					copyable('transfer message'),
+					heading('Mosaics:'),
+					copyable('0.01 symbol.xym, 2.23 500EB0100D000000')
+				]);
+			});
+
+			it('returns snap content without mosaics', async () => {
+				await assertSnapDialogContent({
+					mosaics: [],
+					message: 'transfer message'
+				}, [
+					heading('Estimated Fee (XYM):'),
+					copyable('0.000177'),
+					heading('Message:'),
+					copyable('transfer message')
+				]);
+			});
+
+			it('returns snap content without message', async () => {
+				await assertSnapDialogContent({
+					mosaics: [
+						{
+							id: '6BED913FA20223F8',
+							amount: 0.01
+						}
+					],
+					message: ''
+				}, [
+					heading('Estimated Fee (XYM):'),
+					copyable('0.000177'),
+					heading('Mosaics:'),
+					copyable('0.01 symbol.xym')
+				]);
+			});
+		});
+
+		it('returns false if user does not confirm the transaction', async () => {
+			// Arrange:
+			global.snap.request.mockResolvedValue(false);
+
+			const requestParams = {
+				accountId: state.accounts[Object.keys(state.accounts)[0]].account.id,
+				recipient: 'TDCYZ45MX4IZ7SKEL5UL4ZA7O6KDDUAZZALCA6Y',
+				mosaics: [
+					{
+						id: '6BED913FA20223F8',
+						amount: 1000
+					}
+				],
+				message: 'transfer message',
+				feeMultiplierType: 'slow'
+			};
+
+			// Act:
+			const result = await accountUtils.signTransferTransaction({ state, requestParams });
+
+			// Assert:
+			expect(result).toBe(false);
+		});
+	});
 });
