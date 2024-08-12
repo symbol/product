@@ -98,6 +98,19 @@ const helper = {
 		const transactions = await symbolSnap.fetchAccountTransactions(address, '');
 
 		dispatch.setTransactions(transactions);
+	},
+	async signTransferTransaction (dispatch, symbolSnap, transferTransactionParams) {
+		dispatch.setLoadingStatus({
+			isLoading: true,
+			message: 'Sending...'
+		});
+
+		await symbolSnap.signTransferTransaction(transferTransactionParams);
+
+		dispatch.setLoadingStatus({
+			isLoading: false,
+			message: ''
+		});
 	}
 };
 
