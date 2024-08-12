@@ -1,10 +1,12 @@
 import TransferModalBox from '.';
+import helper from '../../utils/helper';
 import testHelper from '../testHelper';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react';
 
 const context = {
 	walletState: {
 		selectedAccount: {
+			id: 'accountId',
 			address: 'address 1',
 			label: 'wallet 1',
 			mosaics: []
@@ -25,7 +27,11 @@ const context = {
 		}
 	},
 	symbolSnap: {
-		getFeeMultiplier: jest.fn()
+		getFeeMultiplier: jest.fn(),
+		signTransferTransaction: jest.fn()
+	},
+	dispatch: {
+		setLoadingStatus: jest.fn()
 	}
 };
 
@@ -295,6 +301,105 @@ describe('components/TransferModalBox', () => {
 
 			// Assert:
 			expect(amountInput).toHaveValue(1);
+		});
+	});
+
+	describe('send transaction', () => {
+		beforeEach(() => {
+			context.symbolSnap.getFeeMultiplier.mockResolvedValue({
+				slow: 10,
+				average: 100,
+				fast: 1000
+			});
+
+			context.walletState.selectedAccount.mosaics = [
+				{
+					id: 'mosaicId',
+					amount: 1000000
+				}
+			];
+		});
+
+		const assertInvalidForm = async (inputComponentPlaceholderText, inputValue) => {
+			// Arrange:
+			testHelper.customRender(<TransferModalBox isOpen={true} onRequestClose={jest.fn()} />, context);
+			const inputComponent = screen.getByPlaceholderText(inputComponentPlaceholderText);
+
+			await waitFor(() => fireEvent.change(inputComponent, { target: { value: inputValue } }));
+
+			jest.spyOn(helper, 'signTransferTransaction');
+
+			// Act:
+			await waitFor(() => fireEvent.click(screen.getByRole('button', { name: /send/i })));
+
+			// Assert:
+			expect(helper.signTransferTransaction).not.toHaveBeenCalled();
+
+			// Reset input value
+			fireEvent.change(inputComponent, { target: { value: '' } });
+		};
+
+		it('does not invoke sendTransaction if form not valid (address input)', async () => {
+			await assertInvalidForm('Recipient address', 'abc');
+		});
+
+		it('does not invoke sendTransaction if form not valid (message input)', async () => {
+			await assertInvalidForm('Message...', '0'.repeat(1025));
+		});
+
+		it('does not invoke sendTransaction if form not valid (amount input)', async () => {
+			await assertInvalidForm('relative amount', '1.1' );
+		});
+
+		const assertValidateForm = async (mockSignResult, expectedResult) => {
+			// Arrange:
+			const mockOnRequestClose = jest.fn();
+
+			testHelper.customRender(<TransferModalBox isOpen={true} onRequestClose={mockOnRequestClose} />, context);
+			const addressInput = screen.getByPlaceholderText('Recipient address');
+			const amountInput = screen.getByPlaceholderText('relative amount');
+			const messageInput = screen.getByPlaceholderText('Message...');
+
+			fireEvent.change(addressInput, { target: { value: 'TDCYZ45MX4IZ7SKEL5UL4ZA7O6KDDUAZZALCA6Y' } });
+			fireEvent.change(amountInput, { target: { value: 0.5 } });
+			fireEvent.change(messageInput, { target: { value: 'hello world' } });
+
+			jest.spyOn(helper, 'signTransferTransaction').mockResolvedValue(mockSignResult);
+
+			// Act:
+			await waitFor(() => fireEvent.click(screen.getByRole('button', { name: /send/i })));
+
+			// Assert:
+			expect(helper.signTransferTransaction).toHaveBeenCalledWith(
+				context.dispatch,
+				context.symbolSnap,
+				{
+					accountId: 'accountId',
+					recipient: 'TDCYZ45MX4IZ7SKEL5UL4ZA7O6KDDUAZZALCA6Y',
+					mosaics: [
+						{
+							id: 'mosaicId',
+							amount: 0.5
+						}
+					],
+					message: 'hello world',
+					feeMultiplierType: 'slow'
+				}
+			);
+
+			if (expectedResult) 
+				expect(mockOnRequestClose).toHaveBeenCalled();
+			 else 
+				expect(mockOnRequestClose).not.toHaveBeenCalled();
+			
+		};
+
+		it('does not close modal box when result return false', async () => {
+			await assertValidateForm(false, false);
+		});
+
+		it('close modal box when result return transaction hash', async () => {
+			await assertValidateForm('hash', true);
 		});
 	});
 });
