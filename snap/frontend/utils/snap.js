@@ -255,6 +255,31 @@ const symbolSnapFactory = {
 				});
 
 				return feeMultiplier;
+			},
+			/**
+			 * Sign and announce a transfer transaction in snap MetaMask.
+			 * @param {TransferTransactionParams} params - The parameters to sign the transaction.
+			 * @returns {string | boolean} The transaction hash.
+			 */
+			async signTransferTransaction({ accountId, recipient, mosaics, message, feeMultiplierType }) {
+				const transactionHash = await provider.request({
+					method: 'wallet_invokeSnap',
+					params: {
+						snapId: defaultSnapOrigin,
+						request: {
+							method: 'signTransferTransaction',
+							params: {
+								accountId,
+								recipient,
+								mosaics,
+								message,
+								feeMultiplierType
+							}
+						}
+					}
+				});
+
+				return transactionHash;
 			}
 		};
 	}
@@ -294,6 +319,16 @@ export default symbolSnapFactory;
  * @property {number} slow - The slow fee multiplier.
  * @property {number} average - The average fee multiplier.
  * @property {number} fast - The fast fee multiplier.
+ */
+
+/**
+ * Sign transfer transaction request parameters.
+ * @typedef {object} TransferTransactionParams
+ * @property {string} accountId - The account id from snap.
+ * @property {string} recipient - The accounts address.
+ * @property {Array<{mosaicId: string, amount: number}>} mosaics - An array of mosaic objects, each containing a mosaic ID and amount.
+ * @property {string} message - The message.
+ * @property {'slow' | 'average' | 'fast'} feeMultiplierType - The fee multiplier key.
  */
 
 // endregion
