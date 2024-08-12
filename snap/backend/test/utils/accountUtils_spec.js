@@ -9,8 +9,8 @@ import {
 import {
 	copyable, heading, panel, text
 } from '@metamask/snaps-sdk';
-import { PrivateKey } from 'symbol-sdk';
-import { SymbolFacade } from 'symbol-sdk/symbol';
+import { PrivateKey, utils } from 'symbol-sdk';
+import { NetworkTimestamp, SymbolFacade } from 'symbol-sdk/symbol';
 import { v4 as uuidv4 } from 'uuid';
 
 global.snap = {
@@ -776,7 +776,7 @@ describe('accountUtils', () => {
 			}
 		};
 
-		it('returns transaction hash after confirm signs transfer transaction', async () => {
+		it('signs transfer transaction and announce payload', async () => {
 			// Arrange:
 			const mockRequest = jest.fn();
 
@@ -797,21 +797,41 @@ describe('accountUtils', () => {
 				feeMultiplierType: 'slow'
 			};
 
+			const mockAnnounceTransaction = jest.fn();
+
 			jest.spyOn(symbolClient, 'create').mockImplementation(() => ({
-				announceTransaction: jest.fn().mockResolvedValue('announce success')
+				announceTransaction: mockAnnounceTransaction
 			}));
 
-			const mockSignTransaction = jest.fn().mockResolvedValue({
-				transactionHash: 'mockTransactionHash',
-				jsonPayload: 'mockJsonPayload'
-			});
-			jest.spyOn(accountUtils, 'signTransaction').mockImplementation(mockSignTransaction);
-
 			// Act:
-			const result = await accountUtils.signTransferTransaction({ state, requestParams });
+			await accountUtils.signTransferTransaction({ state, requestParams });
 
 			// Assert:
-			expect(result).toBe('mockTransactionHash');
+			const facade = new SymbolFacade('testnet');
+			const { payload } = mockAnnounceTransaction.mock.calls[0][0];
+			const transactionObject = facade.transactionFactory.static.deserialize(utils.hexToUint8(payload));
+			const expectedTransactionObject = facade.transactionFactory.create({
+				type: 'transfer_transaction_v1',
+				signerPublicKey: state.accounts[Object.keys(state.accounts)[0]].account.publicKey,
+				recipientAddress: requestParams.recipient,
+				mosaics: [
+					{
+						mosaicId: BigInt('0x6BED913FA20223F8'),
+						amount: BigInt(1000000000)
+					}
+				],
+				message: [0, ...new TextEncoder('utf-8').encode(`${requestParams.message}`)],
+				deadline: facade.now().addHours(2).timestamp,
+				fee: BigInt(193)
+			});
+
+			expect(transactionObject.mosaics).toStrictEqual(expectedTransactionObject.mosaics);
+			expect(transactionObject.recipientAddress).toStrictEqual(expectedTransactionObject.recipientAddress);
+			expect(transactionObject.type).toStrictEqual(expectedTransactionObject.type);
+			expect(transactionObject.signerPublicKey).toStrictEqual(expectedTransactionObject.signerPublicKey);
+			expect(transactionObject.fee).toStrictEqual(expectedTransactionObject.fee);
+			expect(utils.uint8ToHex(transactionObject.message)).toStrictEqual(utils.uint8ToHex(expectedTransactionObject.message));
+			expect(mockAnnounceTransaction).toHaveBeenCalled();
 		});
 
 		describe('confirmTransaction content', () => {
@@ -924,6 +944,42 @@ describe('accountUtils', () => {
 
 			// Assert:
 			expect(result).toBe(false);
+		});
+	});
+
+	describe('signTransaction', () => {
+		beforeEach(() => {
+			jest.clearAllMocks(); // Reset all mocks before each test
+		});
+
+		it('returns transaction hash and json payload after signing transaction', async () => {
+			const facade = new SymbolFacade('testnet');
+			const privateKey = '25E39DC057C64CFA883D51AD05845DBE67759DE4B992FABF423C050915CC3931';
+
+			const symbolAccount = facade.createAccount(new PrivateKey(privateKey));
+
+			const transferTransaction = facade.transactionFactory.create({
+				type: 'transfer_transaction_v1',
+				signerPublicKey: symbolAccount.publicKey,
+				recipientAddress: 'TDCYZ45MX4IZ7SKEL5UL4ZA7O6KDDUAZZALCA6Y',
+				mosaics: [],
+				message: [0, ...new TextEncoder('utf-8').encode('transfer message')],
+				deadline: new NetworkTimestamp(1000).timestamp,
+				fee: BigInt(100000)
+			});
+
+			const result = await accountUtils.signTransaction(facade, symbolAccount, transferTransaction);
+
+			expect(result).toStrictEqual({
+				jsonPayload: {
+					payload: 'B1000000000000000B3F873C3DAD7ECADA3F5EAE0C154AA2AA24AC608352DF2C18163C'
+						+ '188DFCA018792AD997E163F7F438E28FA460970DA5994D63118E9FB5B0286D7DD4FAD8'
+						+ 'CD0AC9778F04D32AB17298275A37BABC0361D4BB4D1E979DFE59C0DB2C9CA672527400'
+						+ '00000001985441A086010000000000E80300000000000098C58CF3ACBF119FC9445F68'
+						+ 'BE641F779431D019C816207B1100000000000000007472616E73666572206D657373616765'
+				},
+				transactionHash: '90A662AA51A8CD6232943BF19DEEA187F07C56E1A769DAC9E71DF79CB9F5C56E'
+			});
 		});
 	});
 });
