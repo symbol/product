@@ -1,4 +1,5 @@
 import { useWalletContext } from '../../context';
+import helper from '../../utils/helper';
 import Button from '../Button';
 import FeeMultiplier from '../FeeMultiplier';
 import Input from '../Input';
@@ -7,7 +8,7 @@ import { useEffect, useState } from 'react';
 import { SymbolFacade } from 'symbol-sdk/symbol';
 
 const TransferModalBox = ({ isOpen, onRequestClose }) => {
-	const { walletState } = useWalletContext();
+	const { walletState, dispatch, symbolSnap } = useWalletContext();
 	const { selectedAccount, network, mosaicInfo } = walletState;
 	const mosaicsBalance = selectedAccount.mosaics || [];
 	const facade = new SymbolFacade(network.networkName);
@@ -17,7 +18,7 @@ const TransferModalBox = ({ isOpen, onRequestClose }) => {
 	const [isEncrypt, setIsEncrypt] = useState(false);
 	const [mosaicSelectorManager, setMosaicSelectorManager] = useState([]);
 	const [selectedMosaics, setSelectedMosaics] = useState([]);
-	const [selectedFeeMultiplier, setSelectedFeeMultiplier] = useState(0);
+	const [selectedFeeMultiplier, setSelectedFeeMultiplier] = useState('slow');
 	const [errors, setErrors] = useState({
 		address: null,
 		message: null,
@@ -97,7 +98,7 @@ const TransferModalBox = ({ isOpen, onRequestClose }) => {
 	const handleAmountChange = (event, index) => {
 		const newAmount = event.target.value;
 		const updateMosaics = [...selectedMosaics];
-		updateMosaics[index] = { ...updateMosaics[index], amount: newAmount };
+		updateMosaics[index] = { ...updateMosaics[index], amount: Number(newAmount) };
 		setSelectedMosaics(updateMosaics);
 	};
 
@@ -120,6 +121,31 @@ const TransferModalBox = ({ isOpen, onRequestClose }) => {
 	const handleMessageChange = event => {
 		const newMessage = event.target.value;
 		setMessage(newMessage);
+	};
+
+	const handleSendTransaction = async () => {
+		if (errors.address || errors.message || errors.amount.some(error => error))
+			return;
+
+		const transferMosaics = [];
+		selectedMosaics.map(mosaic => {
+			if (0 >= mosaic.amount)
+				return;
+
+			transferMosaics.push(mosaic);
+		});
+
+		const result = await helper.signTransferTransaction(dispatch, symbolSnap, {
+			accountId: selectedAccount.id,
+			recipient: to,
+			mosaics: transferMosaics,
+			message,
+			feeMultiplierType: selectedFeeMultiplier
+		});
+
+		if (result) 
+			onRequestClose();
+		
 	};
 
 	useEffect(() => {
@@ -245,7 +271,7 @@ const TransferModalBox = ({ isOpen, onRequestClose }) => {
 				<FeeMultiplier selectedFeeMultiplier={selectedFeeMultiplier} setSelectedFeeMultiplier={setSelectedFeeMultiplier} />
 
 				<div>
-					<Button>Send</Button>
+					<Button onClick={handleSendTransaction}>Send</Button>
 				</div>
 
 			</div>
