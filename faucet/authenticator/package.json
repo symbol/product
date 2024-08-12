@@ -1,6 +1,6 @@
 {
   "name": "faucet-authenticator",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Twitter authenticator for faucet",
   "type": "commonjs",
   "main": "src/server.js",
