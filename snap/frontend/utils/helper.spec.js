@@ -21,7 +21,8 @@ describe('helper', () => {
 		fetchAccountMosaics: jest.fn(),
 		getMosaicInfo: jest.fn(),
 		getAccounts: jest.fn(),
-		fetchAccountTransactions: jest.fn()
+		fetchAccountTransactions: jest.fn(),
+		signTransferTransaction: jest.fn()
 	};
 
 	describe('setupSnap', () => {
@@ -296,6 +297,33 @@ describe('helper', () => {
 			expect(dispatch.setTransactions).toHaveBeenNthCalledWith(1, []);
 			expect(symbolSnap.fetchAccountTransactions).toHaveBeenCalledWith(address, '');
 			expect(dispatch.setTransactions).toHaveBeenNthCalledWith(2, mockTransactions);
+		});
+	});
+
+	describe('signTransferTransaction', () => {
+		it('update loading status and sign transfer transaction', async () => {
+			// Arrange:
+			const mockTransferTransactionParams = {
+				accountId: 'account id',
+				recipient: 'Recipient Address',
+				mosaics: [],
+				message: 'this is a message',
+				feeMultiplierType: 'slow'
+			};
+
+			// Act:
+			await helper.signTransferTransaction(dispatch, symbolSnap, mockTransferTransactionParams);
+
+			// Assert:
+			expect(symbolSnap.signTransferTransaction).toHaveBeenCalledWith(mockTransferTransactionParams);
+			expect(dispatch.setLoadingStatus).toHaveBeenNthCalledWith(1, {
+				isLoading: true,
+				message: 'Sending...'
+			});
+			expect(dispatch.setLoadingStatus).toHaveBeenNthCalledWith(2, {
+				isLoading: false,
+				message: ''
+			});
 		});
 	});
 });
