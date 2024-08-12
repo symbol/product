@@ -502,4 +502,45 @@ describe('symbolSnapFactory', () => {
 			});
 		});
 	});
+
+	describe('signTransferTransaction', () => {
+		it('returns transaction hash after sign transfer transaction request is successful', async () => {
+			// Arrange:
+			const accountId = 'accountId';
+			const recipient = 'recipient';
+			const mosaics = [
+				{
+					id: 'mosaicId',
+					amount: 100
+				}
+			];
+			const message = 'message';
+			const feeMultiplierType = 'average';
+			const mockTransactionHash = 'transactionHash';
+
+			mockProvider.request.mockResolvedValue(mockTransactionHash);
+
+			// Act:
+			const result = await symbolSnap.signTransferTransaction({ accountId, recipient, mosaics, message, feeMultiplierType });
+
+			// Assert:
+			expect(result).toEqual(mockTransactionHash);
+			expect(mockProvider.request).toHaveBeenCalledWith({
+				method: 'wallet_invokeSnap',
+				params: {
+					snapId: 'local:http://localhost:8080',
+					request: {
+						method: 'signTransferTransaction',
+						params: {
+							accountId,
+							recipient,
+							mosaics,
+							message,
+							feeMultiplierType
+						}
+					}
+				}
+			});
+		});
+	});
 });
