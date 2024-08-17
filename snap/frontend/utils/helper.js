@@ -1,3 +1,4 @@
+import webSocketClient from './webSocketClient';
 import QRCode from 'qrcode';
 
 const helper = {
@@ -11,6 +12,10 @@ const helper = {
 
 		dispatch.setNetwork(snapState.network);
 		dispatch.setCurrency(snapState.currency);
+
+		const webSocket = webSocketClient.create(snapState.network.url);
+		await webSocket.open();
+		dispatch.setWebsocket(webSocket);
 
 		let account = {};
 
