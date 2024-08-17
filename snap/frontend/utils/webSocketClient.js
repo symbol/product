@@ -1,3 +1,5 @@
+import { Channels } from '../config';
+
 const webSocketClient = {
 	create(url) {
 		return {
@@ -51,6 +53,15 @@ const webSocketClient = {
 					subscribe: channel
 				};
 				this.webSocket.send(JSON.stringify(subscriptionMessage));
+			},
+			removeSubscriber(channel) {
+				delete this.subscribers[channel];
+			},
+			listenConfirmedTransaction(callback, address) {
+				const subscribe = `${Channels.confirmedAdded}/${address}`;
+
+				this.subscribeTo(subscribe);
+				this.subscribers[subscribe] = callback;
 			}
 		};
 	}

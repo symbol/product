@@ -6,3 +6,7 @@ export const explorerUrl = {
 	mainnet: 'https://symbol.fyi',
 	testnet: 'https://testnet.symbol.fyi'
 };
+
+export const Channels = {
+	confirmedAdded: 'confirmedAdded'
+};
