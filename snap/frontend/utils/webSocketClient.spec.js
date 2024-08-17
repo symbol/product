@@ -59,4 +59,29 @@ describe('webSocketClient', () => {
 		// Assert:
 		expect(wsInstance.webSocket.send).toHaveBeenCalledWith('{"uid":"1","subscribe":"channel"}');
 	});
+
+	it('can remove a subscriber', () => {
+		// Arrange:
+		wsInstance.subscribers['channel'] = jest.fn();
+
+		// Act:
+		wsInstance.removeSubscriber('channel');
+
+		// Assert:
+		expect(wsInstance.subscribers['channel']).toBeUndefined();
+	});
+
+	it('can listen to confirmed transactions', async () => {
+		// Arrange:
+		wsInstance.webSocket = {
+			send: jest.fn()
+		};
+		wsInstance.uid = '1';
+
+		// Act:
+		wsInstance.listenConfirmedTransaction(jest.fn(), 'address');
+
+		// Assert:
+		expect(wsInstance.webSocket.send).toHaveBeenCalledWith('{"uid":"1","subscribe":"confirmedAdded/address"}');
+	});
 });
