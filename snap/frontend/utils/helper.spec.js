@@ -1,4 +1,5 @@
 import helper from './helper';
+import webSocketClient from './webSocketClient';
 import testHelper from '../components/testHelper';
 import QRCode from 'qrcode';
 
@@ -10,7 +11,8 @@ describe('helper', () => {
 		setAccounts: jest.fn(),
 		setCurrency: jest.fn(),
 		setMosaicInfo: jest.fn(),
-		setTransactions: jest.fn()
+		setTransactions: jest.fn(),
+		setWebsocket: jest.fn()
 	};
 
 	const symbolSnap = {
@@ -26,8 +28,19 @@ describe('helper', () => {
 	};
 
 	describe('setupSnap', () => {
+		let mockWebSocketOpen;
+
 		beforeEach(() => {
 			jest.clearAllMocks();
+
+			mockWebSocketOpen = jest.fn();
+
+			jest.spyOn(webSocketClient, 'create').mockImplementation(() => {
+				return {
+					open: mockWebSocketOpen
+				};
+			});
+
 		});
 
 		const mockSnapState = {
@@ -54,6 +67,9 @@ describe('helper', () => {
 			expect(dispatch.setNetwork).toHaveBeenCalledWith(mockSnapState.network);
 			expect(dispatch.setCurrency).toHaveBeenCalledWith(mockSnapState.currency);
 			expect(dispatch.setMosaicInfo).toHaveBeenCalledWith({});
+			expect(dispatch.setWebsocket).toHaveBeenCalled();
+			expect(webSocketClient.create).toHaveBeenCalledWith('http://localhost:3000');
+			expect(mockWebSocketOpen).toHaveBeenCalled();
 		};
 
 		it('initializes snap and sets network and selected account and fetch first account mosaic if accounts exist', async () => {
