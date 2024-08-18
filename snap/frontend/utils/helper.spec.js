@@ -342,4 +342,41 @@ describe('helper', () => {
 			});
 		});
 	});
+
+	describe('updateAccountMosaics', () => {
+		it('fetch account mosaics and mosaic info and updates state', async () => {
+			// Arrange:
+			const accountId = 'account1';
+			const mockAccountMosaics = {
+				'account1': {
+					id: 'account1',
+					addressIndex: 1,
+					type: 'metamask',
+					networkName: 'network',
+					label: 'label',
+					address: 'address',
+					publicKey: 'publicKey'
+				}
+			};
+
+			const mockMosaicInfo = {
+				'mosaicId': {
+					divisibility: 6,
+					networkName: 'testnet'
+				}
+			};
+
+			symbolSnap.fetchAccountMosaics.mockResolvedValue(mockAccountMosaics);
+			symbolSnap.getMosaicInfo.mockResolvedValue(mockMosaicInfo);
+
+			// Act:
+			await helper.updateAccountMosaics(dispatch, symbolSnap, accountId);
+
+			// Assert:
+			expect(symbolSnap.fetchAccountMosaics).toHaveBeenCalledWith([accountId]);
+			expect(symbolSnap.getMosaicInfo).toHaveBeenCalled();
+			expect(dispatch.setMosaicInfo).toHaveBeenCalledWith(mockMosaicInfo);
+			expect(dispatch.setSelectedAccount).toHaveBeenCalledWith(mockAccountMosaics[accountId]);
+		});
+	});
 });
