@@ -1,4 +1,4 @@
-import { explorerUrl } from '../../config';
+import { Channels, explorerUrl } from '../../config';
 import { useWalletContext } from '../../context';
 import helper from '../../utils/helper';
 import Image from 'next/image';
@@ -8,8 +8,8 @@ import { useInView } from 'react-intersection-observer';
 const TransactionTable = () => {
 
 	const { walletState, symbolSnap, dispatch } = useWalletContext();
-	const { selectedAccount, finalizedHeight, mosaicInfo, network, currency, transactions } = walletState;
-	const { address } = selectedAccount;
+	const { selectedAccount, finalizedHeight, mosaicInfo, network, currency, transactions, websocket } = walletState;
+	const { address, id } = selectedAccount;
 	const { symbol, price } = currency;
 	const [isLoading, setIsLoading] = useState(false);
 	const [isLastPage, setIsLastPage] = useState(false);
@@ -34,6 +34,15 @@ const TransactionTable = () => {
 		setIsLoading(false);
 
 		setIsLastPage(false);
+
+		websocket.listenConfirmedTransaction(async () => {
+			helper.updateTransactions(dispatch, symbolSnap, address);
+			helper.updateAccountMosaics(dispatch, symbolSnap, id);
+		}, address);
+
+		return () => {
+			websocket.removeSubscriber(`${Channels.confirmedAdded}/${address}`);
+		};
 	}, [address]);
 
 	useEffect(() => {
