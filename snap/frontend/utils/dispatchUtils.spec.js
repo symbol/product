@@ -165,4 +165,21 @@ describe('dispatchUtils', () => {
 			expect(dispatchState).toHaveBeenCalledWith({ type: 'setTransactions', payload: transactions });
 		});
 	});
+
+	describe('setWebsocket', () => {
+		it('dispatches SET_WEBSOCKET action with websocket', () => {
+			// Arrange:
+			const websocket = {
+				url: 'url',
+				listenConfirmedTransaction: jest.fn(),
+				removeSubscriber: jest.fn()
+			};
+
+			// Act:
+			dispatch.setWebsocket(websocket);
+
+			// Assert:
+			expect(dispatchState).toHaveBeenCalledWith({ type: 'setWebsocket', payload: websocket });
+		});
+	});
 });
