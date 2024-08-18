@@ -116,6 +116,13 @@ const helper = {
 			isLoading: false,
 			message: ''
 		});
+	},
+	async updateAccountMosaics (dispatch, symbolSnap, accountId) {
+		const accountMosaics = await symbolSnap.fetchAccountMosaics([accountId]);
+		const mosaicInfo = await symbolSnap.getMosaicInfo();
+
+		dispatch.setMosaicInfo(mosaicInfo);
+		dispatch.setSelectedAccount(Object.values(accountMosaics)[0]);
 	}
 };
 
