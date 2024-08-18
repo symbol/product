@@ -1,6 +1,8 @@
 import TransactionTable from '.';
+import { Channels } from '../../config';
+import helper from '../../utils/helper';
 import testHelper from '../testHelper';
-import { act, screen } from '@testing-library/react';
+import { cleanup, screen, waitFor } from '@testing-library/react';
 
 const senderAddress = 'TAMYTGVH3UEVZRQSD64LGSMPKNTKMASOIDNYROI';
 const recipientAddress = 'TARDV42KTAIZEF64EQT4NXT7K55DHWBEFIXVJQY';
@@ -27,6 +29,10 @@ const context = {
 		currency: {
 			symbol: 'USD',
 			price: 1
+		},
+		websocket: {
+			listenConfirmedTransaction: jest.fn(),
+			removeSubscriber: jest.fn()
 		}
 	},
 	symbolSnap: {
@@ -68,6 +74,26 @@ describe('components/TransactionTable', () => {
 		// Assert:
 		expect(transactionTable).toBeInTheDocument();
 		expect(context.symbolSnap.fetchAccountTransactions).toHaveBeenCalledTimes(1);
+	});
+
+	it('update transactions when address change', async () => {
+		// Arrange:
+		jest.spyOn(helper, 'updateTransactions').mockResolvedValue();
+
+		testHelper.customRender(<TransactionTable />, context);
+
+		// Act:
+		cleanup();
+
+		// Assert:
+		await waitFor(() => {
+			expect(helper.updateTransactions).toHaveBeenCalledWith(context.dispatch, context.symbolSnap, senderAddress);
+			expect(context.walletState.websocket.listenConfirmedTransaction).toHaveBeenCalledWith(
+				expect.any(Function),
+				senderAddress
+			);
+			expect(context.walletState.websocket.removeSubscriber).toHaveBeenCalledWith(`${Channels.confirmedAdded}/${senderAddress}`);
+		});
 	});
 
 	describe('first column', () => {
