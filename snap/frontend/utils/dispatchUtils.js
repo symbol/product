@@ -56,6 +56,13 @@ const dispatchUtils = dispatch => ({
 	 */
 	setTransactions: transactions => {
 		dispatch({ type: actionTypes.SET_TRANSACTIONS, payload: transactions });
+	},
+	/**
+	 * Set websocket
+	 * @param {WebSocket} websocket - The websocket object.
+	 */
+	setWebsocket: websocket => {
+		dispatch({ type: actionTypes.SET_WEBSOCKET, payload: websocket });
 	}
 });
 
