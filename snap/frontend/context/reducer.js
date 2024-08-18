@@ -14,7 +14,8 @@ export const initialState = {
 	accounts: {},
 	mosaics: [],
 	transactions: [],
-	mosaicInfo: {}
+	mosaicInfo: {},
+	websocket: null
 };
 
 export const actionTypes = {
@@ -25,7 +26,8 @@ export const actionTypes = {
 	SET_ACCOUNTS: 'setAccounts',
 	SET_CURRENCY: 'setCurrency',
 	SET_MOSAIC_INFO: 'setMosaicInfo',
-	SET_TRANSACTIONS: 'setTransactions'
+	SET_TRANSACTIONS: 'setTransactions',
+	SET_WEBSOCKET: 'setWebsocket'
 };
 
 export const reducer = (state, action) => {
@@ -46,6 +48,8 @@ export const reducer = (state, action) => {
 		return { ...state, mosaicInfo: action.payload };
 	case actionTypes.SET_TRANSACTIONS:
 		return { ...state, transactions: action.payload };
+	case actionTypes.SET_WEBSOCKET:
+		return { ...state, websocket: action.payload };
 	default:
 		return state;
 	}
