@@ -820,9 +820,9 @@ describe('accountUtils', () => {
 						amount: BigInt(1000000000)
 					}
 				],
-				message: [0, ...new TextEncoder('utf-8').encode(`${requestParams.message}`)],
+				message: new TextEncoder('utf-8').encode(requestParams.message),
 				deadline: facade.now().addHours(2).timestamp,
-				fee: BigInt(193)
+				fee: BigInt(192)
 			});
 
 			expect(transactionObject.mosaics).toStrictEqual(expectedTransactionObject.mosaics);
@@ -884,7 +884,7 @@ describe('accountUtils', () => {
 					message: 'transfer message'
 				}, [
 					heading('Estimated Fee (XYM):'),
-					copyable('0.000209'),
+					copyable('0.000208'),
 					heading('Message:'),
 					copyable('transfer message'),
 					heading('Mosaics:'),
@@ -898,7 +898,7 @@ describe('accountUtils', () => {
 					message: 'transfer message'
 				}, [
 					heading('Estimated Fee (XYM):'),
-					copyable('0.000177'),
+					copyable('0.000176'),
 					heading('Message:'),
 					copyable('transfer message')
 				]);
@@ -915,7 +915,7 @@ describe('accountUtils', () => {
 					message: ''
 				}, [
 					heading('Estimated Fee (XYM):'),
-					copyable('0.000177'),
+					copyable('0.000176'),
 					heading('Mosaics:'),
 					copyable('0.01 symbol.xym')
 				]);
