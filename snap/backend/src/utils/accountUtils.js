@@ -296,7 +296,7 @@ const accountUtils = {
 		// Find sender account
 		const symbolAccount = facade.createAccount(new PrivateKey(accounts[accountId].privateKey));
 
-		const createMosaic = mosaic => ({
+		const createTransferMosaic = mosaic => ({
 			mosaicId: BigInt(`0x${mosaic.id}`),
 			amount: BigInt(Number(mosaic.amount) * (10 ** mosaicInfo[mosaic.id].divisibility))
 		});
@@ -305,8 +305,8 @@ const accountUtils = {
 			type: 'transfer_transaction_v1',
 			signerPublicKey: symbolAccount.publicKey,
 			recipientAddress: recipient,
-			mosaics: mosaics.map(createMosaic),
-			message: [0, ...new TextEncoder('utf-8').encode(`${message}`)],
+			mosaics: mosaics.map(createTransferMosaic),
+			message: new TextEncoder('utf-8').encode(message),
 			deadline: facade.now().addHours(2).timestamp
 		});
 
