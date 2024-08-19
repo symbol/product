@@ -57,6 +57,8 @@ describe('components/AccountListModalBox', () => {
 		const numberOfAccounts = 2;
 		context.walletState.accounts = testHelper.generateAccountsState(numberOfAccounts);
 
+		jest.spyOn(helper, 'updateAccountMosaics').mockImplementation();
+
 		testHelper.customRender(<AccountListModalBox isOpen={true} onRequestClose={jest.fn()} />, context);
 
 		// Act:
@@ -64,7 +66,7 @@ describe('components/AccountListModalBox', () => {
 		fireEvent.click(accountAddress);
 
 		// Assert:
-		expect(context.dispatch.setSelectedAccount).toHaveBeenCalledWith(Object.values(context.walletState.accounts)[1]);
+		expect(helper.updateAccountMosaics).toHaveBeenCalledWith(context.dispatch, context.symbolSnap, 'accountId 1');
 	});
 
 	const assertErrorValidation = (buttonName, inputBox, inputValue, expectedErrorMessage) => {
