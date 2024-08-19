@@ -22,8 +22,8 @@ const AccountListModalBox = ({ isOpen, onRequestClose }) => {
 		onRequestClose(false);
 	};
 
-	const handleSelectAccount = account => {
-		dispatch.setSelectedAccount(account);
+	const handleSelectAccount = async account => {
+		await helper.updateAccountMosaics(dispatch, symbolSnap, account.id);
 		onRequestClose(false);
 	};
 
