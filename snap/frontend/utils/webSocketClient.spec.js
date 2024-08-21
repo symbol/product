@@ -71,7 +71,7 @@ describe('webSocketClient', () => {
 		expect(wsInstance.subscribers['channel']).toBeUndefined();
 	});
 
-	it('can listen to confirmed transactions', async () => {
+	const assertListener = (listener, expectedData) => {
 		// Arrange:
 		wsInstance.webSocket = {
 			send: jest.fn()
@@ -79,9 +79,23 @@ describe('webSocketClient', () => {
 		wsInstance.uid = '1';
 
 		// Act:
-		wsInstance.listenConfirmedTransaction(jest.fn(), 'address');
+		wsInstance[listener](jest.fn(), 'address');
 
 		// Assert:
-		expect(wsInstance.webSocket.send).toHaveBeenCalledWith('{"uid":"1","subscribe":"confirmedAdded/address"}');
+		expect(wsInstance.webSocket.send).toHaveBeenCalledWith(expectedData);
+	};
+
+	it('can listen to confirmed transactions', async () => {
+		assertListener(
+			'listenConfirmedTransaction',
+			'{"uid":"1","subscribe":"confirmedAdded/address"}'
+		);
+	});
+
+	it('can listen to unconfirmed transactions', async () => {
+		assertListener(
+			'listenUnconfirmedTransaction',
+			'{"uid":"1","subscribe":"unconfirmedAdded/address"}'
+		);
 	});
 });
