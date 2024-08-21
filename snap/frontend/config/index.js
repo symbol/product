@@ -8,5 +8,11 @@ export const explorerUrl = {
 };
 
 export const Channels = {
-	confirmedAdded: 'confirmedAdded'
+	confirmedAdded: 'confirmedAdded',
+	unconfirmedAdded: 'unconfirmedAdded'
+};
+
+export const TransactionGroup = {
+	confirmed: 'confirmed',
+	unconfirmed: 'unconfirmed'
 };
