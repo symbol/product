@@ -467,7 +467,8 @@ describe('symbolSnapFactory', () => {
 						method: 'fetchAccountTransactions',
 						params: {
 							address,
-							offsetId
+							offsetId,
+							group: 'confirmed'
 						}
 					}
 				}

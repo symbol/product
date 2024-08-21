@@ -1,4 +1,4 @@
-import { defaultSnapOrigin } from '../config';
+import { TransactionGroup, defaultSnapOrigin } from '../config';
 
 const symbolSnapFactory = {
 	create(provider) {
@@ -222,7 +222,7 @@ const symbolSnapFactory = {
 
 				return mosaicInfo;
 			},
-			async fetchAccountTransactions(address, offsetId) {
+			async fetchAccountTransactions(address, offsetId, group = TransactionGroup.confirmed) {
 				const transactions = await provider.request({
 					method: 'wallet_invokeSnap',
 					params: {
@@ -231,7 +231,8 @@ const symbolSnapFactory = {
 							method: 'fetchAccountTransactions',
 							params: {
 								address,
-								offsetId
+								offsetId,
+								group
 							}
 						}
 					}
