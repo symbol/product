@@ -1,4 +1,5 @@
 import webSocketClient from './webSocketClient';
+import { TransactionGroup } from '../config';
 import QRCode from 'qrcode';
 
 const helper = {
@@ -100,9 +101,16 @@ const helper = {
 	},
 	async updateTransactions (dispatch, symbolSnap, address) {
 		dispatch.setTransactions([]);
-		const transactions = await symbolSnap.fetchAccountTransactions(address, '');
 
-		dispatch.setTransactions(transactions);
+		const [unconfirmedTransactions, confirmedTransactions] = await Promise.all([
+			symbolSnap.fetchAccountTransactions(address, '', TransactionGroup.unconfirmed),
+			symbolSnap.fetchAccountTransactions(address, '', TransactionGroup.confirmed)
+		]);
+
+		dispatch.setTransactions([
+			...unconfirmedTransactions,
+			...confirmedTransactions
+		]);
 	},
 	async signTransferTransaction (dispatch, symbolSnap, transferTransactionParams) {
 		dispatch.setLoadingStatus({
@@ -123,6 +131,17 @@ const helper = {
 
 		dispatch.setMosaicInfo(mosaicInfo);
 		dispatch.setSelectedAccount(Object.values(accountMosaics)[0]);
+	},
+	async updateUnconfirmedTransactions (dispatch, symbolSnap, address, transactions) {
+		const unconfirmedTransactions = await symbolSnap.fetchAccountTransactions(address, '', TransactionGroup.unconfirmed);
+
+		if (!unconfirmedTransactions.length)
+			return;
+
+		dispatch.setTransactions([
+			...unconfirmedTransactions,
+			...transactions
+		]);
 	}
 };
 
