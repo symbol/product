@@ -62,6 +62,12 @@ const webSocketClient = {
 
 				this.subscribeTo(subscribe);
 				this.subscribers[subscribe] = callback;
+			},
+			listenUnconfirmedTransaction(callback, address) {
+				const subscribe = `${Channels.unconfirmedAdded}/${address}`;
+
+				this.subscribeTo(subscribe);
+				this.subscribers[subscribe] = callback;
 			}
 		};
 	}
