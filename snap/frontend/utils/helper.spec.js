@@ -302,17 +302,30 @@ describe('helper', () => {
 				}
 			];
 
+			const mockUnconfirmedTransactions = [
+				{
+					id: '3',
+					amount: 10,
+					sender: 'address'
+				}
+			];
+
 			const address = 'address';
 
-			symbolSnap.fetchAccountTransactions.mockResolvedValue(mockTransactions);
+			symbolSnap.fetchAccountTransactions.mockResolvedValueOnce(mockUnconfirmedTransactions);
+			symbolSnap.fetchAccountTransactions.mockResolvedValueOnce(mockTransactions);
 
 			// Act:
 			await helper.updateTransactions(dispatch, symbolSnap, address);
 
 			// Assert:
 			expect(dispatch.setTransactions).toHaveBeenNthCalledWith(1, []);
-			expect(symbolSnap.fetchAccountTransactions).toHaveBeenCalledWith(address, '');
-			expect(dispatch.setTransactions).toHaveBeenNthCalledWith(2, mockTransactions);
+			expect(dispatch.setTransactions).toHaveBeenNthCalledWith(2, [
+				...mockUnconfirmedTransactions,
+				...mockTransactions
+			]);
+			expect(symbolSnap.fetchAccountTransactions).toHaveBeenNthCalledWith(1, address, '', 'unconfirmed');
+			expect(symbolSnap.fetchAccountTransactions).toHaveBeenNthCalledWith(2, address, '', 'confirmed');
 		});
 	});
 
@@ -377,6 +390,62 @@ describe('helper', () => {
 			expect(symbolSnap.getMosaicInfo).toHaveBeenCalled();
 			expect(dispatch.setMosaicInfo).toHaveBeenCalledWith(mockMosaicInfo);
 			expect(dispatch.setSelectedAccount).toHaveBeenCalledWith(mockAccountMosaics[accountId]);
+		});
+	});
+
+	describe('updateUnconfirmedTransactions', () => {
+		beforeEach(() => {
+			jest.clearAllMocks();
+		});
+
+		// Arrange:
+		const address = 'address';
+		const transactions = [
+			{
+				id: '1',
+				amount: 10,
+				sender: 'address'
+			},
+			{
+				id: '2',
+				amount: 10,
+				sender: 'address'
+			}
+		];
+
+		it('fetch unconfirmed transactions and append it to the top transaction state', async () => {
+			// Arrange:
+			const mockUnconfirmedTransactions = [
+				{
+					id: '3',
+					amount: 10,
+					sender: 'address'
+				}
+			];
+
+			symbolSnap.fetchAccountTransactions.mockResolvedValue(mockUnconfirmedTransactions);
+
+			// Act:
+			await helper.updateUnconfirmedTransactions(dispatch, symbolSnap, address, transactions);
+
+			// Assert:
+			expect(symbolSnap.fetchAccountTransactions).toHaveBeenCalledWith(address, '', 'unconfirmed');
+			expect(dispatch.setTransactions).toHaveBeenCalledWith([
+				...mockUnconfirmedTransactions,
+				...transactions
+			]);
+		});
+
+		it('skip update transaction state if no unconfirmed transactions', async () => {
+			// Arrange:
+			symbolSnap.fetchAccountTransactions.mockResolvedValue([]);
+
+			// Act:
+			await helper.updateUnconfirmedTransactions(dispatch, symbolSnap, address, transactions);
+
+			// Assert:
+			expect(symbolSnap.fetchAccountTransactions).toHaveBeenCalledWith(address, '', 'unconfirmed');
+			expect(dispatch.setTransactions).not.toHaveBeenCalled();
 		});
 	});
 });
