@@ -1,7 +1,8 @@
 import Home from '.';
 import helper from '../../utils/helper';
+import webSocketClient from '../../utils/webSocketClient';
 import testHelper from '../testHelper';
-import { act, fireEvent, screen } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react';
 
 const context = {
 	dispatch: {
@@ -10,7 +11,8 @@ const context = {
 		setSelectedAccount: jest.fn(),
 		setAccounts: jest.fn(),
 		setCurrency: jest.fn(),
-		setMosaicInfo: jest.fn()
+		setMosaicInfo: jest.fn(),
+		setWebsocket: jest.fn()
 	},
 	walletState: {
 		loadingStatus: {
@@ -44,6 +46,13 @@ const context = {
 };
 
 describe('components/Home', () => {
+	beforeEach(() => {
+		jest.spyOn(webSocketClient, 'create').mockImplementation(() => {
+			return {
+				open: jest.fn()
+			};
+		});
+	});
 	const assertModalScreen = async (walletState, expectedModal) => {
 		// Arrange:
 		context.walletState = {
@@ -128,7 +137,9 @@ describe('components/Home', () => {
 		fireEvent.click(sendButton);
 
 		// Assert:
-		const modalBox = screen.getByRole('transfer-form');
-		expect(modalBox).toBeInTheDocument();
+		await waitFor(() => {
+			const modalBox = screen.getByRole('transfer-form');
+			expect(modalBox).toBeInTheDocument();
+		});
 	});
 });
