@@ -18,11 +18,11 @@ const transactionUtils = {
      */
 	async fetchAccountTransactions({ state, requestParams }) {
 		const { network } = state;
-		const { address, offsetId } = requestParams;
+		const { address, offsetId, group } = requestParams;
 
 		const client = symbolClient.create(network.url);
 
-		const transactions = await client.fetchTransactionPageByAddress(address, offsetId);
+		const transactions = await client.fetchTransactionPageByAddress(address, offsetId, group);
 
 		const aggregateIds = [];
 
@@ -90,7 +90,10 @@ const transactionUtils = {
 	createTransaction(id, meta, transaction, network, transactionTypeOverride = null) {
 		const facade = new SymbolFacade(network.networkName);
 		const senderAddress = facade.network.publicKeyToAddress(new PublicKey(transaction.signerPublicKey)).toString();
-		const date = moment.utc(facade.network.toDatetime({ timestamp: BigInt(meta.timestamp) })).format('YYYY-MM-DD HH:mm:ss');
+
+		const date = meta && meta.timestamp
+			? moment.utc(facade.network.toDatetime({ timestamp: BigInt(meta.timestamp) })).format('YYYY-MM-DD HH:mm:ss')
+			: null;
 
 		const isTransferTransaction = transaction.type === models.TransactionType.TRANSFER.value;
 
@@ -132,7 +135,7 @@ export default transactionUtils;
  * state of create transaction object.
  * @typedef {object} TransactionInfo
  * @property {string} id - The transaction id.
- * @property {string} date - The transaction date time.
+ * @property {string | null} date - The transaction date time.
  * @property {number} height - The transaction block height.
  * @property {string} transactionHash - The transaction hash.
  * @property {string} transactionType - The transaction type.

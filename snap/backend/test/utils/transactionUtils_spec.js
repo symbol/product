@@ -75,7 +75,8 @@ describe('transactionUtils', () => {
 			// Arrange:
 			const mockRequestParams = {
 				address: 'address',
-				offsetId: ''
+				offsetId: '',
+				group: 'confirmed'
 			};
 
 			const mockTransactionResponse = [
@@ -117,7 +118,7 @@ describe('transactionUtils', () => {
 					sender: 'TCMDJ7EW5YMATRDH2D4ZQZEAXXAZE4YEHS3JSCA'
 				}
 			]);
-			expect(mockFetchTransactionPageByAddress).toHaveBeenCalledWith('address', '');
+			expect(mockFetchTransactionPageByAddress).toHaveBeenCalledWith('address', '', 'confirmed');
 			expect(mockFetchInnerTransactionByAggregateIds).not.toHaveBeenCalled();
 		});
 
@@ -125,7 +126,8 @@ describe('transactionUtils', () => {
 			// Arrange:
 			const mockRequestParams = {
 				address: 'address',
-				offsetId: ''
+				offsetId: '',
+				group: 'confirmed'
 			};
 
 			const mockTransactionResponse = [
@@ -241,8 +243,52 @@ describe('transactionUtils', () => {
 					sender: 'TDJRSQNOOIZLAB4OQEETH2UNBQ4HC2MNQZY4P6A'
 				}
 			]);
-			expect(mockFetchTransactionPageByAddress).toHaveBeenCalledWith('address', '');
+			expect(mockFetchTransactionPageByAddress).toHaveBeenCalledWith('address', '', 'confirmed');
 			expect(mockFetchInnerTransactionByAggregateIds).toHaveBeenCalledWith(['3']);
+		});
+
+		it('return account unconfirmed transactions', async () => {
+			// Arrange:
+			const mockRequestParams = {
+				address: 'address',
+				offsetId: '',
+				group: 'unconfirmed'
+			};
+
+			const unconfirmedTransaction = createMockTransferTransaction('1', '0');
+			delete unconfirmedTransaction.meta.timestamp;
+			delete unconfirmedTransaction.meta.feeMultiplier;
+
+			const mockUnconfirmedTransactionResponse = [
+				unconfirmedTransaction
+			];
+
+			const mockFetchTransactionPageByAddress = jest.fn().mockResolvedValue(mockUnconfirmedTransactionResponse);
+			const mockFetchInnerTransactionByAggregateIds = jest.fn().mockResolvedValue();
+
+			jest.spyOn(symbolClient, 'create').mockImplementation(() => ({
+				fetchTransactionPageByAddress: mockFetchTransactionPageByAddress,
+				fetchInnerTransactionByAggregateIds: mockFetchInnerTransactionByAggregateIds
+			}));
+
+			// Act:
+			const result = await transactionUtils.fetchAccountTransactions({ state: mockState, requestParams: mockRequestParams });
+
+			// Assert:
+			expect(result).toStrictEqual([
+				{
+					id: '1',
+					date: null,
+					height: '0',
+					transactionHash: 'hash',
+					transactionType: 'Transfer',
+					amount: '1000000',
+					message: null,
+					sender: 'TCZTBI7HCCFPREBWJPZIPJA3FVKC2S2NSSPJ6YQ'
+				}
+			]);
+			expect(mockFetchTransactionPageByAddress).toHaveBeenCalledWith('address', '', 'unconfirmed');
+			expect(mockFetchInnerTransactionByAggregateIds).not.toHaveBeenCalled();
 		});
 	});
 
