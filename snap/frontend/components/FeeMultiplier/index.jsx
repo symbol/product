@@ -33,7 +33,7 @@ const FeeMultiplier = ({selectedFeeMultiplier, setSelectedFeeMultiplier}) => {
 	return (
 		<div className='flex justify-evenly p-2'>
 			{
-				0 < Object.keys(feeMultiplier).length && (
+				feeMultiplier && 0 < Object.keys(feeMultiplier).length && (
 					Object.keys(feeMultiplier).map(key => {
 						return renderFeeMultiplier(key);
 					})
