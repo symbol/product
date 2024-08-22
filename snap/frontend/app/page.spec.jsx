@@ -14,6 +14,7 @@ describe('Main', () => {
 			return {
 				open: jest.fn(),
 				listenConfirmedTransaction: jest.fn(),
+				listenUnconfirmedTransaction: jest.fn(),
 				removeSubscriber: jest.fn()
 			};
 		});
