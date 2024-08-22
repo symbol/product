@@ -1,11 +1,24 @@
 import Main from './page';
 import testHelper from '../components/testHelper';
 import symbolSnapFactory from '../utils/snap';
+import webSocketClient from '../utils/webSocketClient';
 import detectEthereumProvider from '@metamask/detect-provider';
 import { act, render } from '@testing-library/react';
 import React from 'react';
 
 describe('Main', () => {
+	beforeEach(() => {
+		jest.clearAllMocks();
+
+		jest.spyOn(webSocketClient, 'create').mockImplementation(() => {
+			return {
+				open: jest.fn(),
+				listenConfirmedTransaction: jest.fn(),
+				removeSubscriber: jest.fn()
+			};
+		});
+	});
+
 	it('renders the HomeComponent when a provider is detected and symbolSnapFactory is created', async () => {
 		// Arrange:
 		const mockProvider = { isMetaMask: true };
