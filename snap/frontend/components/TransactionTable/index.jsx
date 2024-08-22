@@ -40,8 +40,13 @@ const TransactionTable = () => {
 			helper.updateAccountMosaics(dispatch, symbolSnap, id);
 		}, address);
 
+		websocket.listenUnconfirmedTransaction(async () => {
+			helper.updateUnconfirmedTransactions(dispatch, symbolSnap, address, transactions);
+		}, address);
+
 		return () => {
 			websocket.removeSubscriber(`${Channels.confirmedAdded}/${address}`);
+			websocket.removeSubscriber(`${Channels.unconfirmedAdded}/${address}`);
 		};
 	}, [address]);
 
@@ -131,7 +136,7 @@ const TransactionTable = () => {
 									<td className='text-sub-title'>
 										<div className='flex items-center'>
 											{
-												transaction.height ?
+												'0' !== transaction.height ?
 													<a
 														target='_blank'
 														href={`${explorerUrl[network.networkName]}/blocks/${transaction.height}`}>
@@ -142,7 +147,7 @@ const TransactionTable = () => {
 											}
 
 											{
-												finalizedHeight >= transaction.height && transaction.height ?
+												finalizedHeight >= transaction.height && '0' !== transaction.height ?
 													<Image
 														className='pl-2'
 														src='/finalized-icon.svg'

@@ -32,6 +32,7 @@ const context = {
 		},
 		websocket: {
 			listenConfirmedTransaction: jest.fn(),
+			listenUnconfirmedTransaction: jest.fn(),
 			removeSubscriber: jest.fn()
 		}
 	},
@@ -47,6 +48,8 @@ describe('components/TransactionTable', () => {
 
 	it('renders no transactions found message when transactions are empty', () => {
 		// Arrange:
+		context.symbolSnap.fetchAccountTransactions.mockReturnValue([]);
+
 		testHelper.customRender(<TransactionTable />, context);
 
 		// Act:
@@ -54,7 +57,7 @@ describe('components/TransactionTable', () => {
 
 		// Assert:
 		expect(transactionTable).toBeInTheDocument();
-		expect(context.symbolSnap.fetchAccountTransactions).toHaveBeenCalledTimes(1);
+		expect(context.symbolSnap.fetchAccountTransactions).toHaveBeenCalledTimes(2);
 	});
 
 	it('renders loading more transactions when in view', () => {
@@ -62,9 +65,7 @@ describe('components/TransactionTable', () => {
 		context.walletState.transactions = [{
 			id: 1
 		}];
-		context.symbolSnap.fetchAccountTransactions.mockReturnValueOnce([{
-			id: 2
-		}]);
+		context.symbolSnap.fetchAccountTransactions.mockReturnValue([]);
 
 		testHelper.customRender(<TransactionTable />, context);
 
@@ -73,7 +74,7 @@ describe('components/TransactionTable', () => {
 
 		// Assert:
 		expect(transactionTable).toBeInTheDocument();
-		expect(context.symbolSnap.fetchAccountTransactions).toHaveBeenCalledTimes(1);
+		expect(context.symbolSnap.fetchAccountTransactions).toHaveBeenCalledTimes(2);
 	});
 
 	it('update transactions when address change', async () => {
@@ -92,7 +93,12 @@ describe('components/TransactionTable', () => {
 				expect.any(Function),
 				senderAddress
 			);
+			expect(context.walletState.websocket.listenUnconfirmedTransaction).toHaveBeenCalledWith(
+				expect.any(Function),
+				senderAddress
+			);
 			expect(context.walletState.websocket.removeSubscriber).toHaveBeenCalledWith(`${Channels.confirmedAdded}/${senderAddress}`);
+			expect(context.walletState.websocket.removeSubscriber).toHaveBeenCalledWith(`${Channels.unconfirmedAdded}/${senderAddress}`);
 		});
 	});
 
@@ -260,11 +266,11 @@ describe('components/TransactionTable', () => {
 			};
 
 			it('renders finalized icon when transaction height is equal to finalized height', () => {
-				assertFinalizedIcon(10, 10, true);
+				assertFinalizedIcon(10, 10);
 			});
 
 			it('renders finalized icon when transaction height is greater than finalized height', () => {
-				assertFinalizedIcon(5, 10, true);
+				assertFinalizedIcon(5, 10);
 			});
 
 			it('does not render finalized icon when transaction height is less than finalized height', () => {
@@ -306,7 +312,7 @@ describe('components/TransactionTable', () => {
 		it('renders pending when transaction height is null', () => {
 			// Arrange:
 			context.walletState.transactions = [{
-				height: null
+				height: '0'
 			}];
 
 			testHelper.customRender(<TransactionTable />, context);
