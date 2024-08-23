@@ -118,12 +118,14 @@ const helper = {
 			message: 'Sending...'
 		});
 
-		await symbolSnap.signTransferTransaction(transferTransactionParams);
+		const transactionHash = await symbolSnap.signTransferTransaction(transferTransactionParams);
 
 		dispatch.setLoadingStatus({
 			isLoading: false,
 			message: ''
 		});
+
+		return transactionHash;
 	},
 	async updateAccountMosaics (dispatch, symbolSnap, accountId) {
 		const accountMosaics = await symbolSnap.fetchAccountMosaics([accountId]);
