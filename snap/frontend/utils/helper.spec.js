@@ -361,8 +361,10 @@ describe('helper', () => {
 				feeMultiplierType: 'slow'
 			};
 
+			symbolSnap.signTransferTransaction.mockResolvedValue('transactionHash');
+
 			// Act:
-			await helper.signTransferTransaction(dispatch, symbolSnap, mockTransferTransactionParams);
+			const transactionHash = await helper.signTransferTransaction(dispatch, symbolSnap, mockTransferTransactionParams);
 
 			// Assert:
 			expect(symbolSnap.signTransferTransaction).toHaveBeenCalledWith(mockTransferTransactionParams);
@@ -374,6 +376,7 @@ describe('helper', () => {
 				isLoading: false,
 				message: ''
 			});
+			expect(transactionHash).toBe('transactionHash');
 		});
 	});
 
