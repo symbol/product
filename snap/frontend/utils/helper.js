@@ -49,8 +49,10 @@ const helper = {
 	},
 	async createNewAccount (dispatch, symbolSnap, accounts, walletName) {
 		const newAccount = await symbolSnap.createAccount(walletName);
+		const mosaicInfo = await symbolSnap.getMosaicInfo();
 
-		// update account state
+		// update mosaic info and account state
+		dispatch.setMosaicInfo(mosaicInfo);
 		dispatch.setAccounts({ ...accounts, [newAccount.id]: newAccount });
 		dispatch.setSelectedAccount(newAccount);
 	},
@@ -61,7 +63,10 @@ const helper = {
 		if(!newAccount)
 			return;
 
-		// update account state
+		const mosaicInfo = await symbolSnap.getMosaicInfo();
+
+		// update mosaic info and account state
+		dispatch.setMosaicInfo(mosaicInfo);
 		dispatch.setAccounts({ ...accounts, [newAccount.id]: newAccount });
 		dispatch.setSelectedAccount(newAccount);
 	},
