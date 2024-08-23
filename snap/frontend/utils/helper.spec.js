@@ -148,15 +148,25 @@ describe('helper', () => {
 			const walletName = 'new Wallet';
 			const newAccount = Object.values(testHelper.generateAccountsState(1))[0];
 
+			const mosaicInfo = {
+				'mosaicId 0': {
+					divisibility: 6,
+					networkName: 'testnet'
+				}
+			};
+
 			symbolSnap.createAccount.mockResolvedValue(newAccount);
+			symbolSnap.getMosaicInfo.mockResolvedValue(mosaicInfo);
 
 			// Act:
 			await helper.createNewAccount(dispatch, symbolSnap, accounts, walletName);
 
 			// Assert:
 			expect(symbolSnap.createAccount).toHaveBeenCalledWith(walletName);
+			expect(symbolSnap.getMosaicInfo).toHaveBeenCalled();
 			expect(dispatch.setAccounts).toHaveBeenCalledWith({ ...accounts, [newAccount.id]: newAccount });
 			expect(dispatch.setSelectedAccount).toHaveBeenCalledWith(newAccount);
+			expect(dispatch.setMosaicInfo).toHaveBeenCalledWith(mosaicInfo);
 		});
 	});
 
@@ -172,7 +182,15 @@ describe('helper', () => {
 			const accountName = 'import wallet';
 			const privateKey = '1F53BA3DA42800D092A0C331A20A41ACCE81D2DD6F710106953ADA277C502010';
 
+			const mosaicInfo = {
+				'mosaicId 0': {
+					divisibility: 6,
+					networkName: 'testnet'
+				}
+			};
+
 			symbolSnap.importAccount.mockResolvedValue(mockImportAccount);
+			symbolSnap.getMosaicInfo.mockResolvedValue(mosaicInfo);
 
 			// Act:
 			await helper.importAccount(dispatch, symbolSnap, accounts, accountName, privateKey);
@@ -181,11 +199,14 @@ describe('helper', () => {
 			expect(symbolSnap.importAccount).toHaveBeenCalledWith(accountName, privateKey);
 
 			if (expectedResult) {
+				expect(symbolSnap.getMosaicInfo).toHaveBeenCalled();
 				expect(dispatch.setAccounts).toHaveBeenCalledWith({ ...accounts, [mockImportAccount.id]: mockImportAccount });
 				expect(dispatch.setSelectedAccount).toHaveBeenCalledWith(mockImportAccount);
+				expect(dispatch.setMosaicInfo).toHaveBeenCalledWith(mosaicInfo);
 			} else {
 				expect(dispatch.setAccounts).not.toHaveBeenCalled();
 				expect(dispatch.setSelectedAccount).not.toHaveBeenCalled();
+				expect(dispatch.setMosaicInfo).not.toHaveBeenCalled();
 			}
 		};
 
