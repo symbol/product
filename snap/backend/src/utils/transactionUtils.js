@@ -91,7 +91,7 @@ const transactionUtils = {
 		const facade = new SymbolFacade(network.networkName);
 		const senderAddress = facade.network.publicKeyToAddress(new PublicKey(transaction.signerPublicKey)).toString();
 
-		const date = meta && meta.timestamp
+		const date = meta.timestamp
 			? moment.utc(facade.network.toDatetime({ timestamp: BigInt(meta.timestamp) })).format('YYYY-MM-DD HH:mm:ss')
 			: null;
 
