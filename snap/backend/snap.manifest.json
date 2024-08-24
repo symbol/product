@@ -1,18 +1,18 @@
 {
   "version": "0.1.0",
-  "description": "Symbol snap.",
+  "description": "Manage Symbol mosaics, and connect to Symbol apps with MetaMask.",
   "proposedName": "Symbol",
   "repository": {
     "type": "git",
     "url": "https://github.com/symbol/product.git"
   },
   "source": {
-    "shasum": "OxwaCYK3ZvaID9tryJGNLP+dleeUIKbV/F47aGHA6fo=",
+    "shasum": "a+hD1aSKN53ZQKDdKt78ij8hblQMVmY1yyGaJDgyHZk=",
     "location": {
       "npm": {
         "filePath": "dist/bundle.js",
         "iconPath": "images/icon.svg",
-        "packageName": "snap-backend",
+        "packageName": "snap-symbol",
         "registry": "https://registry.npmjs.org/"
       }
     }
