@@ -29,10 +29,12 @@ describe('components/AccountListModalBox', () => {
 			// Act:
 			const accountLabel = screen.getByText(`Account ${index}`);
 			const accountAddress = screen.getByText(`Address ${index}`);
+			const accountIcons = screen.queryAllByAltText('account-profile');
 
 			// Assert:
 			expect(accountLabel).toBeInTheDocument();
 			expect(accountAddress).toBeInTheDocument();
+			expect(accountIcons.length).toBe(2);
 		}
 	});
 
