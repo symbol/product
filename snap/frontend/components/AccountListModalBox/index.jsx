@@ -3,6 +3,8 @@ import helper from '../../utils/helper';
 import AccountCreationFormModalBox from '../AccountCreationFormModalBox';
 import Button from '../Button';
 import ModalBox from '../ModalBox';
+import makeBlockie from 'ethereum-blockies-base64';
+import Image from 'next/image';
 import { useState } from 'react';
 import { PrivateKey } from 'symbol-sdk';
 
@@ -66,7 +68,12 @@ const AccountListModalBox = ({ isOpen, onRequestClose }) => {
 		return (
 			<div key={`wallet_${account.id}`} className='flex items-center cursor-pointer'
 				onClick={() => handleSelectAccount(account)}>
-				<div className="rounded-full w-10 h-10 bg-gray-300"/>
+				<Image
+					src={makeBlockie(account.address)}
+					alt='account-profile'
+					width={24}
+					height={24}
+					className='rounded-full w-10 h-10' />
 				<div className='flex flex-col items-start justify-center p-2'>
 					<div className='font-bold'>{account.label} {renderImportType(account.type)}</div>
 					<div className='truncate w-[180px]'>{account.address}</div>
