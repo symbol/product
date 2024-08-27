@@ -25,6 +25,9 @@ const context = {
 				name: ['root'],
 				divisibility: 0
 			}
+		},
+		network: {
+			currencyMosaicId: 'E74B99BA41F4AFEE'
 		}
 	}
 };
@@ -35,12 +38,10 @@ describe('components/AssetList', () => {
 		testHelper.customRender(<AssetList />, context);
 
 		// Act:
-		const mosaicImageElement = screen.getByRole(`mosaic-image_${0}`);
 		const mosaicNameElement = screen.getByText(name);
 		const mosaicAmountElement = screen.getByText(amountWithSubNamespace);
 
 		// Assert:
-		expect(mosaicImageElement).toBeInTheDocument();
 		expect(mosaicNameElement).toBeInTheDocument();
 		expect(mosaicAmountElement).toBeInTheDocument();
 	};
@@ -54,6 +55,17 @@ describe('components/AssetList', () => {
 		expect(loadingElement).toBeInTheDocument();
 	};
 
+	const assertMosaicIcon = (context, icon) => {
+		// Arrange:
+		testHelper.customRender(<AssetList />, context);
+
+		// Act:
+		const mosaicIcon = screen.queryAllByAltText(icon);
+
+		// Assert:
+		expect(mosaicIcon[0]).toBeInTheDocument();
+	};
+
 	it('renders mosaic id when name is undefined', () => {
 		// Arrange:
 		context.walletState.selectedAccount.mosaics = [
@@ -64,6 +76,7 @@ describe('components/AssetList', () => {
 		];
 
 		assertMosaic(context, '3C596F764B5A1160', '2');
+		assertMosaicIcon(context, 'mosaic-icon');
 	});
 
 	it('renders mosaic name when name is defined', () => {
@@ -76,6 +89,7 @@ describe('components/AssetList', () => {
 		];
 
 		assertMosaic(context, 'symbol', '10.023123 xym');
+		assertMosaicIcon(context, 'symbol-mosaic-icon');
 	});
 
 	it('renders multilevel mosaic name', () => {
@@ -88,6 +102,7 @@ describe('components/AssetList', () => {
 		];
 
 		assertMosaic(context, 'a', '0.000001 b.c');
+		assertMosaicIcon(context, 'mosaic-icon');
 	});
 
 	it('renders mosaic name without sub namespace', () => {
@@ -101,6 +116,7 @@ describe('components/AssetList', () => {
 		];
 
 		assertMosaic(context, 'root', '10');
+		assertMosaicIcon(context, 'mosaic-icon');
 	});
 
 	it('renders loading when mosaicInfo and selectedAccount is not loaded', () => {
