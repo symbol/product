@@ -32,6 +32,7 @@ export const onRpcRequest = async ({ request }) => {
 		await networkUtils.switchNetwork(apiParams);
 		await priceUtils.getPrice(apiParams);
 		await transactionUtils.getFeeMultiplier(apiParams);
+		await mosaicUtils.updateMosaicInfo(state, [state.network.currencyMosaicId]);
 
 		return {
 			...state,

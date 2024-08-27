@@ -65,11 +65,19 @@ describe('index', () => {
 			const assertInitialSnap = async (state, expectedState) => {
 				// Arrange:
 				jest.spyOn(symbolClient, 'create').mockReturnValue({
-					fetchNetworkCurrencyMosaicId: jest.fn().mockResolvedValue('mosaicId'),
+					fetchNetworkCurrencyMosaicId: jest.fn().mockResolvedValue('currencyMosaicId'),
 					fetchTransactionFeeMultiplier: jest.fn().mockResolvedValue({
 						slow: 100,
 						average: 150,
 						fast: 200
+					}),
+					fetchMosaicsInfo: jest.fn().mockResolvedValue({
+						currencyMosaicId: {
+							divisibility: 6
+						}
+					}),
+					fetchMosaicNamespace: jest.fn().mockResolvedValue({
+						currencyMosaicId: ['symbol.xym']
 					})
 				});
 
@@ -98,13 +106,19 @@ describe('index', () => {
 					currencies: mockCurrencies,
 					network: {
 						...mockNodeInfo,
-						currencyMosaicId: 'mosaicId'
+						currencyMosaicId: 'currencyMosaicId'
 					},
 					currency: {
 						symbol: 'USD',
 						price: 0.25
 					},
-					mosaicInfo: {},
+					mosaicInfo: {
+						currencyMosaicId: {
+							divisibility: 6,
+							networkName: 'mainnet',
+							name: ['symbol.xym']
+						}
+					},
 					feeMultiplier: {
 						slow: 100,
 						average: 150,
@@ -151,14 +165,20 @@ describe('index', () => {
 					},
 					network: {
 						...mockNodeInfo,
-						currencyMosaicId: 'mosaicId'
+						currencyMosaicId: 'currencyMosaicId'
 					},
 					currencies: mockCurrencies,
 					currency: {
 						symbol: 'USD',
 						price: 0.25
 					},
-					mosaicInfo: {},
+					mosaicInfo: {
+						currencyMosaicId: {
+							divisibility: 6,
+							networkName: 'mainnet',
+							name: ['symbol.xym']
+						}
+					},
 					feeMultiplier: {
 						slow: 100,
 						average: 150,
