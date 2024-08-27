@@ -19,7 +19,7 @@ describe('components/AccountInfo', () => {
 		testHelper.customRender(<AccountInfo />, context);
 
 		// Act:
-		const image = screen.getByRole('profile-image');
+		const image = screen.getByAltText('account-profile');
 
 		// Assert:
 		expect(image).toBeInTheDocument();
@@ -43,7 +43,7 @@ describe('components/AccountInfo', () => {
 	it('opens account list modal box when click on profile image', async () => {
 		// Arrange:
 		testHelper.customRender(<AccountInfo />, context);
-		const image = screen.getByRole('profile-image');
+		const image = screen.getByAltText('account-profile');
 
 		// Act:
 		await act(async () => fireEvent.click(image));
