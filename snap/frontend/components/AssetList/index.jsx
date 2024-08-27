@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 
 const AssetList = () => {
 	const { walletState } = useWalletContext();
-	const { selectedAccount, mosaicInfo } = walletState;
+	const { selectedAccount, mosaicInfo, network } = walletState;
 
 	const [isLoading, setIsLoading] = useState(true);
 
@@ -42,10 +42,17 @@ const AssetList = () => {
 
 	useEffect(() => {
 		// Check if mosaicInfo and selectedAccount are loaded
-		if (mosaicInfo && selectedAccount && Array.isArray(selectedAccount.mosaics))
+		if (mosaicInfo && selectedAccount && Array.isArray(selectedAccount.mosaics)) {
+
+			// Check if currencyMosaicId is not in selectedAccount.mosaics
+			if (!selectedAccount.mosaics.find(mosaic => mosaic.id === network.currencyMosaicId))
+				selectedAccount.mosaics.push({ id: network.currencyMosaicId, amount: '0' });
+
 			setIsLoading(false);
-		else
+		}
+		else {
 			setIsLoading(true);
+		}
 
 	}, [mosaicInfo, selectedAccount]);
 

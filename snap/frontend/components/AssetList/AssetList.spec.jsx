@@ -25,6 +25,9 @@ const context = {
 				name: ['root'],
 				divisibility: 0
 			}
+		},
+		network: {
+			currencyMosaicId: 'E74B99BA41F4AFEE'
 		}
 	}
 };
@@ -103,6 +106,50 @@ describe('components/AssetList', () => {
 		assertMosaic(context, 'root', '10');
 	});
 
+	const assertRenderCurrencyMosaic = (context, expectedAmount) => {
+		// Arrange:
+		testHelper.customRender(<AssetList />, context);
+
+		// Act:
+		const mosaicNameElement = screen.getByText('symbol');
+		const mosaicAmountElement = screen.getByText(expectedAmount);
+
+		// Assert:
+		expect(mosaicNameElement).toBeInTheDocument();
+		expect(mosaicAmountElement).toBeInTheDocument();
+	};
+
+	it('renders default currency mosaics when mosaics is empty', () => {
+		// Arrange:
+		context.walletState.selectedAccount.mosaics = [];
+
+		assertRenderCurrencyMosaic(context, '0 xym');
+	});
+
+	it('renders default currency mosaics when currency mosaic is not in mosaics', () => {
+		// Arrange:
+		context.walletState.selectedAccount.mosaics = [
+			{
+				id: '3C596F764B5A1160',
+				amount: 2
+			}
+		];
+
+		assertRenderCurrencyMosaic(context, '0 xym');
+	});
+
+	it('does not overwrite mosaic amount with existing currency mosaic is in mosaics', () => {
+		// Arrange:
+		context.walletState.selectedAccount.mosaics = [
+			{
+				id: 'E74B99BA41F4AFEE',
+				amount: 2000000
+			}
+		];
+
+		assertRenderCurrencyMosaic(context, '2 xym');
+	});
+
 	it('renders loading when mosaicInfo and selectedAccount is not loaded', () => {
 		// Arrange:
 		context.walletState.mosaicInfo = {};
@@ -116,15 +163,6 @@ describe('components/AssetList', () => {
 		context.walletState.selectedAccount = {};
 
 		assertLoading(context);
-	});
-
-	it('does not render when mosaics is empty', () => {
-		// Arrange + Act:
-		testHelper.customRender(<AssetList />, context);
-
-		// Assert:
-		const assetElement = screen.queryByRole('asset_0');
-		expect(assetElement).not.toBeInTheDocument();
 	});
 
 	it('throws error when mosaic information is not found', () => {
