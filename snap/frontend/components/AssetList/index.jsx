@@ -1,9 +1,10 @@
 import { useWalletContext } from '../../context';
+import Image from 'next/image';
 import { useEffect, useState } from 'react';
 
 const AssetList = () => {
 	const { walletState } = useWalletContext();
-	const { selectedAccount, mosaicInfo } = walletState;
+	const { selectedAccount, mosaicInfo, network } = walletState;
 
 	const [isLoading, setIsLoading] = useState(true);
 
@@ -40,6 +41,13 @@ const AssetList = () => {
 		);
 	};
 
+	const renderMosaicIcon = mosaic => {
+		const icon = mosaic.id === network.currencyMosaicId ? 'symbol-mosaic' : 'mosaic';
+		return (
+			<Image src={`/${icon}.svg`} width={20} height={20} alt={icon + '-icon'} className='rounded-full w-5 h-5 mr-2' />
+		);
+	};
+
 	useEffect(() => {
 		// Check if mosaicInfo and selectedAccount are loaded
 		if (mosaicInfo && selectedAccount && Array.isArray(selectedAccount.mosaics))
@@ -58,7 +66,8 @@ const AssetList = () => {
 			{
 				selectedAccount.mosaics.map((mosaic, index) => (
 					<div key={`asset_${index}`} className='flex items-center justify-start p-2'>
-						<div role={`mosaic-image_${index}`} className="rounded-full w-5 h-5 bg-gray-300 mr-2" />
+						{ renderMosaicIcon(mosaic) }
+
 						<div className='text-xs'>
 							{ renderMosaicDetailsWithName(mosaic) }
 						</div>
