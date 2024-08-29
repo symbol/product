@@ -3,27 +3,33 @@ import React, { useEffect, useState } from 'react';
 
 const FeeMultiplier = ({selectedFeeMultiplier, setSelectedFeeMultiplier}) => {
 	const { symbolSnap } = useWalletContext();
-	const [feeMultiplier, setFeeMultiplier] = useState({});
+	const [feeMultiplierOption, setFeeMultiplierOption] = useState({});
 
 	useEffect(() => {
 		const getFeeMultiplier = async () => {
 			const result = await symbolSnap.getFeeMultiplier();
-			setFeeMultiplier(result);
+			setFeeMultiplierOption(result);
+
+			const [key, value] = Object.entries(result)[0];
+			setSelectedFeeMultiplier({ key, value });
 		};
 
 		getFeeMultiplier();
 	}, [symbolSnap]);
 
-	const renderFeeMultiplier = key => {
+	const renderFeeMultiplier = (key, value) => {
 		return (
 			<label key={key} className='flex items-center cursor-pointer highest'>
 				<input
 					type='radio'
 					name='feeMultiplier'
-					value={feeMultiplier[key]}
+					value={feeMultiplierOption[key]}
 					className='appearance-none'
-					onClick={() => setSelectedFeeMultiplier(key)} />
-				<div className={`rounded-xl text-center p-2 ${selectedFeeMultiplier === key ? 'border-2' : ''}`}>
+					onClick={() => setSelectedFeeMultiplier({
+						key,
+						value
+					}) } />
+				<div className={`rounded-xl text-center p-2 ${selectedFeeMultiplier.key === key ? 'border-2' : ''}`}>
 					{key.toUpperCase()}
 				</div>
 			</label>
@@ -33,9 +39,9 @@ const FeeMultiplier = ({selectedFeeMultiplier, setSelectedFeeMultiplier}) => {
 	return (
 		<div className='flex justify-evenly p-2'>
 			{
-				feeMultiplier && 0 < Object.keys(feeMultiplier).length && (
-					Object.keys(feeMultiplier).map(key => {
-						return renderFeeMultiplier(key);
+				feeMultiplierOption && 0 < Object.keys(feeMultiplierOption).length && (
+					Object.entries(feeMultiplierOption).map(([key, value]) => {
+						return renderFeeMultiplier(key, value);
 					})
 				)
 			}
