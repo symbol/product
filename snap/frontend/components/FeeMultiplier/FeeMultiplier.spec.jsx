@@ -9,42 +9,47 @@ const context = {
 };
 
 describe('components/FeeMultiplier', () => {
-	it('renders FeeMultiplier', async () => {
-		// Arrange:
+	let mockSetSelectedFeeMultiplier;
+	let mockSelectedFeeMultiplier;
+
+	beforeEach(() => {
+		jest.clearAllMocks();
+
 		context.symbolSnap.getFeeMultiplier.mockResolvedValue({
 			slow: 10,
 			average: 100,
 			fast: 1000
 		});
 
+		mockSetSelectedFeeMultiplier = jest.fn();
+		mockSelectedFeeMultiplier = { key: 'slow', value: 10 };
+	});
+	it('renders FeeMultiplier', async () => {
 		// Act:
-		await act(async () => await testHelper.customRender(<FeeMultiplier />, context));
+		testHelper.customRender(<FeeMultiplier
+			selectedFeeMultiplier={mockSelectedFeeMultiplier}
+			setSelectedFeeMultiplier={mockSetSelectedFeeMultiplier} />, context);
 
 		// Assert:
 		await waitFor(() => {
 			expect(screen.getByText('SLOW')).toBeInTheDocument();
 			expect(screen.getByText('AVERAGE')).toBeInTheDocument();
 			expect(screen.getByText('FAST')).toBeInTheDocument();
+			expect(mockSetSelectedFeeMultiplier).toHaveBeenCalledWith(mockSelectedFeeMultiplier);
 		});
 	});
 
 	it('update selected fee multiplier (key)', async () => {
 		// Arrange:
-		context.symbolSnap.getFeeMultiplier.mockResolvedValue({
-			slow: 10,
-			average: 100,
-			fast: 1000
-		});
-
-		const mockSetSelectedFeeMultiplier = jest.fn();
-
-		await act(async () =>
-			await testHelper.customRender(<FeeMultiplier setSelectedFeeMultiplier={mockSetSelectedFeeMultiplier} />, context));
+		testHelper.customRender(<FeeMultiplier selectedFeeMultiplier={mockSelectedFeeMultiplier} setSelectedFeeMultiplier={mockSetSelectedFeeMultiplier} />, context);
 
 		// Act:
-		await waitFor(() => fireEvent.click(screen.getByText('SLOW')));
+		await waitFor(() => fireEvent.click(screen.getByText('FAST')));
 
 		// Assert:
-		expect(mockSetSelectedFeeMultiplier).toHaveBeenCalledWith('slow');
+		expect(mockSetSelectedFeeMultiplier).toHaveBeenCalledWith({
+			key: 'fast',
+			value: 1000
+		});
 	});
 });
