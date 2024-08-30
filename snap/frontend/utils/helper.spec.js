@@ -2,6 +2,7 @@ import helper from './helper';
 import webSocketClient from './webSocketClient';
 import testHelper from '../components/testHelper';
 import QRCode from 'qrcode';
+import { SymbolFacade, models } from 'symbol-sdk/symbol';
 
 describe('helper', () => {
 	const dispatch = {
@@ -470,6 +471,45 @@ describe('helper', () => {
 			// Assert:
 			expect(symbolSnap.fetchAccountTransactions).toHaveBeenCalledWith(address, '', 'unconfirmed');
 			expect(dispatch.setTransactions).not.toHaveBeenCalled();
+		});
+	});
+
+	describe('feeCalculator', () => {
+		// Arrange:
+		const facade = new SymbolFacade('testnet');
+
+		const mosaicInfo = {
+			'72C0212E67A08BCE': {
+				divisibility: 6,
+				networkName: 'testnet'
+			}
+		};
+		const params = {
+			signerPublicKey: 'FABAD1271A72816961B95CCCAAE1FD1E356F26A6AD3E0A91A25F703C1312F73D',
+			recipient: 'TDCYZ45MX4IZ7SKEL5UL4ZA7O6KDDUAZZALCA6Y',
+			mosaics: [
+				{
+					id: '72C0212E67A08BCE',
+					amount: 10
+				}
+			],
+			message: 'this is message',
+			feeMultiplier: 10
+		};
+
+		it('calculate transfer transaction fee', async () => {
+			// Act:
+			const fee = helper.feeCalculator(facade, models.TransactionType.TRANSFER.value, mosaicInfo, params);
+
+			// Assert:
+			expect(fee).toBe(1910);
+		});
+
+		it('throw error if transaction type is not found', async () => {
+			// Act + Assert:
+			expect(() => {
+				helper.feeCalculator(facade, 'unknown', mosaicInfo, params);
+			}).toThrow('Transaction type not support.');
 		});
 	});
 });
