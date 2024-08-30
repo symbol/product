@@ -794,7 +794,7 @@ describe('accountUtils', () => {
 					}
 				],
 				message: 'transfer message',
-				feeMultiplierType: 'slow'
+				fees: 10
 			};
 
 			const mockAnnounceTransaction = jest.fn();
@@ -822,7 +822,7 @@ describe('accountUtils', () => {
 				],
 				message: new TextEncoder('utf-8').encode(requestParams.message),
 				deadline: facade.now().addHours(2).timestamp,
-				fee: BigInt(192)
+				fee: BigInt(10)
 			});
 
 			expect(transactionObject.mosaics).toStrictEqual(expectedTransactionObject.mosaics);
@@ -845,7 +845,7 @@ describe('accountUtils', () => {
 					accountId: state.accounts[Object.keys(state.accounts)[0]].account.id,
 					recipient: 'TDCYZ45MX4IZ7SKEL5UL4ZA7O6KDDUAZZALCA6Y',
 					...moreParams,
-					feeMultiplierType: 'slow'
+					fees: 176
 				};
 
 				// Act:
@@ -884,7 +884,7 @@ describe('accountUtils', () => {
 					message: 'transfer message'
 				}, [
 					heading('Estimated Fee (XYM):'),
-					copyable('0.000208'),
+					copyable('0.000176'),
 					heading('Message:'),
 					copyable('transfer message'),
 					heading('Mosaics:'),
@@ -936,7 +936,7 @@ describe('accountUtils', () => {
 					}
 				],
 				message: 'transfer message',
-				feeMultiplierType: 'slow'
+				fees: 10
 			};
 
 			// Act:
