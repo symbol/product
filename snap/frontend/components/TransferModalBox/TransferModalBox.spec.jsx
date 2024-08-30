@@ -344,7 +344,7 @@ describe('components/TransferModalBox', () => {
 		});
 	});
 
-	describe.skip('send transaction', () => {
+	describe('send transaction', () => {
 		beforeEach(() => {
 			context.symbolSnap.getFeeMultiplier.mockResolvedValue({
 				slow: 10,
