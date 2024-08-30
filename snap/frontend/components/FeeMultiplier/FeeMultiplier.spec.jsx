@@ -41,7 +41,9 @@ describe('components/FeeMultiplier', () => {
 
 	it('update selected fee multiplier (key)', async () => {
 		// Arrange:
-		testHelper.customRender(<FeeMultiplier selectedFeeMultiplier={mockSelectedFeeMultiplier} setSelectedFeeMultiplier={mockSetSelectedFeeMultiplier} />, context);
+		testHelper.customRender(<FeeMultiplier
+			selectedFeeMultiplier={mockSelectedFeeMultiplier}
+			setSelectedFeeMultiplier={mockSetSelectedFeeMultiplier} />, context);
 
 		// Act:
 		await waitFor(() => fireEvent.click(screen.getByText('FAST')));
