@@ -1,6 +1,8 @@
 import webSocketClient from './webSocketClient';
 import { TransactionGroup } from '../config';
 import QRCode from 'qrcode';
+import { PublicKey } from 'symbol-sdk';
+import { models } from 'symbol-sdk/symbol';
 
 const helper = {
 	async setupSnap (dispatch, symbolSnap, networkName, currency) {
@@ -149,6 +151,31 @@ const helper = {
 			...unconfirmedTransactions,
 			...transactions
 		]);
+	},
+	feeCalculator (facade, transactionType, mosaicInfo, params) {
+		switch (transactionType) {
+		case models.TransactionType.TRANSFER.value:
+
+			const { signerPublicKey, recipient, mosaics, message, feeMultiplier } = params;
+
+			const createTransferMosaic = mosaic => ({
+				mosaicId: BigInt(`0x${mosaic.id}`),
+				amount: BigInt(Number(mosaic.amount) * (10 ** mosaicInfo[mosaic.id].divisibility))
+			});
+
+			const transferTransaction = facade.transactionFactory.create({
+				type: 'transfer_transaction_v1',
+				signerPublicKey: new PublicKey(signerPublicKey),
+				recipientAddress: recipient,
+				mosaics: mosaics.map(createTransferMosaic),
+				message: new TextEncoder('utf-8').encode(message),
+				deadline: facade.now().addHours(2).timestamp
+			});
+
+			return transferTransaction.size * feeMultiplier;
+		default:
+			throw new Error('Transaction type not support.');
+		}
 	}
 };
 
