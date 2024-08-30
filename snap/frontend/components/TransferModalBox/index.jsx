@@ -5,7 +5,7 @@ import FeeMultiplier from '../FeeMultiplier';
 import Input from '../Input';
 import ModalBox from '../ModalBox';
 import { useEffect, useState } from 'react';
-import { SymbolFacade } from 'symbol-sdk/symbol';
+import { SymbolFacade, models } from 'symbol-sdk/symbol';
 
 const TransferModalBox = ({ isOpen, onRequestClose }) => {
 	const { walletState, dispatch, symbolSnap } = useWalletContext();
@@ -18,11 +18,14 @@ const TransferModalBox = ({ isOpen, onRequestClose }) => {
 	const [isEncrypt, setIsEncrypt] = useState(false);
 	const [mosaicSelectorManager, setMosaicSelectorManager] = useState([]);
 	const [selectedMosaics, setSelectedMosaics] = useState([]);
-	const [selectedFeeMultiplier, setSelectedFeeMultiplier] = useState('slow');
+	const [selectedFeeMultiplier, setSelectedFeeMultiplier] = useState({});
+	const [fees, setFees] = useState(0);
+
 	const [errors, setErrors] = useState({
 		address: null,
 		message: null,
-		amount: []
+		amount: [],
+		fees: null
 	});
 
 	const validateForm = () => {
@@ -35,10 +38,19 @@ const TransferModalBox = ({ isOpen, onRequestClose }) => {
 			case 'amount':
 				return value.map((amount, index) => {
 					const currentBalance = mosaicsBalance.find(mosaic => mosaic.id === selectedMosaics[index].id).amount;
-					const absoluteAmount = amount * (10 ** mosaicInfo[selectedMosaics[index].id].divisibility);
+					let absoluteAmount = amount * (10 ** mosaicInfo[selectedMosaics[index].id].divisibility);
+
+					if (selectedMosaics[index].id === network.currencyMosaicId && 0 < absoluteAmount)
+						absoluteAmount += fees;
 
 					return absoluteAmount > currentBalance ? 'Not enough balance' : null;
 				});
+			case 'fees':
+				const currencyBalance = mosaicsBalance.find(mosaic => mosaic.id === network.currencyMosaicId)?.amount;
+				const spendCurrencyAmount = selectedMosaics.find(mosaic => mosaic.id === network.currencyMosaicId)?.amount;
+
+				if (spendCurrencyAmount + value > currencyBalance)
+					return 'Insufficient transaction fees';
 			default:
 				return null;
 			}
@@ -47,7 +59,8 @@ const TransferModalBox = ({ isOpen, onRequestClose }) => {
 		const newErrors = {
 			address: validate('address', to),
 			message: validate('message', message),
-			amount: validate('amount', selectedMosaics.map(mosaic => mosaic.amount))
+			amount: validate('amount', selectedMosaics.map(mosaic => mosaic.amount)),
+			fees: validate('fees', fees)
 		};
 
 		setErrors(errors => ({ ...errors, ...newErrors }));
@@ -103,9 +116,12 @@ const TransferModalBox = ({ isOpen, onRequestClose }) => {
 	};
 
 	const handleMaxAmount = index => {
-		const maxAmount = mosaicsBalance.find(mosaic => mosaic.id === selectedMosaics[index].id).amount;
+		let maxAmount = mosaicsBalance.find(mosaic => mosaic.id === selectedMosaics[index].id).amount;
 
-		const relativeAmount = maxAmount / (10 ** mosaicInfo[selectedMosaics[index].id].divisibility);
+		if (selectedMosaics[index].id === network.currencyMosaicId)
+			maxAmount -= fees;
+
+		const relativeAmount = Math.max(maxAmount, 0) / (10 ** mosaicInfo[selectedMosaics[index].id].divisibility);
 
 		const updateMosaics = [...selectedMosaics];
 		updateMosaics[index] = { ...updateMosaics[index], amount: relativeAmount };
@@ -124,7 +140,7 @@ const TransferModalBox = ({ isOpen, onRequestClose }) => {
 	};
 
 	const handleSendTransaction = async () => {
-		if (errors.address || errors.message || errors.amount.some(error => error))
+		if (errors.address || errors.message || errors.amount.some(error => error) || errors.fees)
 			return;
 
 		const transferMosaics = [];
@@ -140,12 +156,28 @@ const TransferModalBox = ({ isOpen, onRequestClose }) => {
 			recipient: to,
 			mosaics: transferMosaics,
 			message,
-			feeMultiplierType: selectedFeeMultiplier
+			feeMultiplierType: selectedFeeMultiplier.key
 		});
 
-		if (result) 
+		if (result)
 			onRequestClose();
-		
+
+	};
+
+	const feeCalculation = () => {
+		try {
+			const result = helper.feeCalculator(facade, models.TransactionType.TRANSFER.value , mosaicInfo, {
+				signerPublicKey: selectedAccount.publicKey,
+				recipient: to || selectedAccount.address,
+				mosaics: selectedMosaics,
+				message,
+				feeMultiplier: selectedFeeMultiplier.value
+			});
+
+			setFees(result);
+		} catch {
+			return;
+		}
 	};
 
 	useEffect(() => {
@@ -170,8 +202,9 @@ const TransferModalBox = ({ isOpen, onRequestClose }) => {
 	}, [selectedMosaics]);
 
 	useEffect(() => {
+		feeCalculation();
 		validateForm();
-	}, [selectedMosaics, to, message]);
+	}, [selectedMosaics, to, message, selectedFeeMultiplier, fees]);
 
 	const renderMosaicSelector = (mosaicOption, index) => {
 		return (
@@ -269,6 +302,11 @@ const TransferModalBox = ({ isOpen, onRequestClose }) => {
 				</div>
 
 				<FeeMultiplier selectedFeeMultiplier={selectedFeeMultiplier} setSelectedFeeMultiplier={setSelectedFeeMultiplier} />
+
+				<div role='fees' className='p-2'>
+					Fees: {fees / Math.pow(10, mosaicInfo[network.currencyMosaicId].divisibility)} XYM
+					{errors.fees && <p className='text-red-500 text-xs'>{errors.fees}</p>}
+				</div>
 
 				<div>
 					<Button onClick={handleSendTransaction}>Send</Button>
