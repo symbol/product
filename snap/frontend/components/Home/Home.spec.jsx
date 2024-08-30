@@ -30,9 +30,14 @@ const context = {
 			identifier: 104,
 			networkName: 'mainnet',
 			url: 'http://localhost:3000',
-			networkGenerationHash: 'networkGenerationHash'
+			networkGenerationHash: 'networkGenerationHash',
+			currencyMosaicId: 'mosaicId'
 		},
-		mosaicInfo: {}
+		mosaicInfo: {
+			'mosaicId': {
+				divisibility: 6
+			}
+		}
 	},
 	symbolSnap: {
 		getSnap: jest.fn(),
@@ -51,6 +56,12 @@ describe('components/Home', () => {
 			return {
 				open: jest.fn()
 			};
+		});
+
+		context.symbolSnap.getFeeMultiplier.mockResolvedValue({
+			slow: 10,
+			average: 100,
+			fast: 1000
 		});
 	});
 	const assertModalScreen = async (walletState, expectedModal) => {
