@@ -281,11 +281,11 @@ const accountUtils = {
 			recipient,
 			mosaics,
 			message,
-			feeMultiplierType
+			fees
 		} = requestParams;
 
 		const {
-			network, accounts, mosaicInfo, feeMultiplier
+			network, accounts, mosaicInfo
 		} = state;
 		const { currencyMosaicId, networkName } = network;
 
@@ -310,10 +310,9 @@ const accountUtils = {
 			deadline: facade.now().addHours(2).timestamp
 		});
 
-		const currencyMosaicDivisibility = mosaicInfo[currencyMosaicId].divisibility;
-		const fee = transferTransaction.size * feeMultiplier[feeMultiplierType];
+		transferTransaction.fee = new models.Amount(BigInt(fees));
 
-		transferTransaction.fee = new models.Amount(BigInt(fee));
+		const currencyMosaicDivisibility = mosaicInfo[currencyMosaicId].divisibility;
 
 		const buildContent = () => {
 			const content = [
@@ -324,7 +323,7 @@ const accountUtils = {
 				heading('Recipient Address:'),
 				copyable(`${recipient}`),
 				heading('Estimated Fee (XYM):'),
-				copyable(`${fee / (10 ** currencyMosaicDivisibility)}`)
+				copyable(`${fees / (10 ** currencyMosaicDivisibility)}`)
 			];
 
 			if ('' !== message) {
