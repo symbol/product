@@ -156,7 +156,7 @@ const TransferModalBox = ({ isOpen, onRequestClose }) => {
 			recipient: to,
 			mosaics: transferMosaics,
 			message,
-			feeMultiplierType: selectedFeeMultiplier.key
+			fees
 		});
 
 		if (result)
