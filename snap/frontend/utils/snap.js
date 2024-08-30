@@ -262,7 +262,7 @@ const symbolSnapFactory = {
 			 * @param {TransferTransactionParams} params - The parameters to sign the transaction.
 			 * @returns {string | boolean} The transaction hash.
 			 */
-			async signTransferTransaction({ accountId, recipient, mosaics, message, feeMultiplierType }) {
+			async signTransferTransaction({ accountId, recipient, mosaics, message, fees }) {
 				const transactionHash = await provider.request({
 					method: 'wallet_invokeSnap',
 					params: {
@@ -274,7 +274,7 @@ const symbolSnapFactory = {
 								recipient,
 								mosaics,
 								message,
-								feeMultiplierType
+								fees
 							}
 						}
 					}

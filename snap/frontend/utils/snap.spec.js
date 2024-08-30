@@ -516,13 +516,13 @@ describe('symbolSnapFactory', () => {
 				}
 			];
 			const message = 'message';
-			const feeMultiplierType = 'average';
+			const fees = 10;
 			const mockTransactionHash = 'transactionHash';
 
 			mockProvider.request.mockResolvedValue(mockTransactionHash);
 
 			// Act:
-			const result = await symbolSnap.signTransferTransaction({ accountId, recipient, mosaics, message, feeMultiplierType });
+			const result = await symbolSnap.signTransferTransaction({ accountId, recipient, mosaics, message, fees });
 
 			// Assert:
 			expect(result).toEqual(mockTransactionHash);
@@ -537,7 +537,7 @@ describe('symbolSnapFactory', () => {
 							recipient,
 							mosaics,
 							message,
-							feeMultiplierType
+							fees
 						}
 					}
 				}
