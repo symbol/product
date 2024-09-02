@@ -124,12 +124,16 @@ const accountUtils = {
 	},
 	/**
 	 * Find account by private key.
-	 * @param {Accounts} accounts - The accounts object.
+	 * @param {{ accounts: Accounts, network: object }} state - The snap state object.
 	 * @param {string} privateKey - The private key.
 	 * @returns {Account | undefined} - The account object.
 	 */
-	findAccountByPrivateKey(accounts, privateKey) {
-		return Object.values(accounts).find(account => account.privateKey === privateKey);
+	findAccountByPrivateKey(state, privateKey) {
+		const { accounts, network } = state;
+
+		return Object.values(accounts)
+			.find(({ account, privateKey: storedPrivateKey }) => storedPrivateKey === privateKey
+				&& account.networkName === network.networkName);
 	},
 	async createAccount({ state, requestParams }) {
 		try {
@@ -153,12 +157,12 @@ const accountUtils = {
 	async importAccount({ state, requestParams }) {
 		try {
 			const { privateKey, accountLabel } = requestParams;
-			const { accounts, network } = state;
+			const { network } = state;
 
 			const facade = new SymbolFacade(network.networkName);
 
 			const symbolAccount = facade.createAccount(new PrivateKey(privateKey));
-			const existingAccount = this.findAccountByPrivateKey(accounts, symbolAccount.keyPair.privateKey.toString());
+			const existingAccount = this.findAccountByPrivateKey(state, symbolAccount.keyPair.privateKey.toString());
 
 			if (existingAccount) {
 				await snap.request({
