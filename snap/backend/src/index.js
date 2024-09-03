@@ -62,6 +62,8 @@ export const onRpcRequest = async ({ request }) => {
 		return state.feeMultiplier;
 	case 'signTransferTransaction':
 		return accountUtils.signTransferTransaction(apiParams);
+	case 'renameAccountLabel':
+		return accountUtils.renameAccountLabel(apiParams);
 	default:
 		throw new Error('Method not found.');
 	}
