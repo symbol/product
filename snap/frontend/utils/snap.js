@@ -281,6 +281,29 @@ const symbolSnapFactory = {
 				});
 
 				return transactionHash;
+			},
+			/**
+			 * Rename account label in snap MetaMask.
+			 * @param {string} accountId - The account id.
+			 * @param {string} newLabel - The new label for the account.
+			 * @returns {Promise<Account>} The updated account object.
+			 */
+			async renameAccountLabel(accountId, newLabel) {
+				const updatedAccount = await provider.request({
+					method: 'wallet_invokeSnap',
+					params: {
+						snapId: defaultSnapOrigin,
+						request: {
+							method: 'renameAccountLabel',
+							params: {
+								accountId,
+								newLabel
+							}
+						}
+					}
+				});
+
+				return updatedAccount;
 			}
 		};
 	}
