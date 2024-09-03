@@ -544,4 +544,41 @@ describe('symbolSnapFactory', () => {
 			});
 		});
 	});
+
+	describe('renameAccountLabel', () => {
+		it('returns updated account when provider request is successful', async () => {
+			// Arrange:
+			const accountId = 'accountId';
+			const newLabel = 'newLabel';
+			const mockUpdatedAccount = {
+				id: 'accountId',
+				addressIndex: 1,
+				type: 'metamask',
+				networkName: 'network',
+				label: newLabel,
+				address: 'address',
+				publicKey: 'publicKey'
+			};
+
+			mockProvider.request.mockResolvedValue(mockUpdatedAccount);
+
+			// Act:
+			const result = await symbolSnap.renameAccountLabel(accountId, newLabel);
+			// Assert:
+			expect(result).toEqual(mockUpdatedAccount);
+			expect(mockProvider.request).toHaveBeenCalledWith({
+				method: 'wallet_invokeSnap',
+				params: {
+					snapId: 'local:http://localhost:8080',
+					request: {
+						method: 'renameAccountLabel',
+						params: {
+							accountId,
+							newLabel
+						}
+					}
+				}
+			});
+		});
+	});
 });
