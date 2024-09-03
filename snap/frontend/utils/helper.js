@@ -176,6 +176,11 @@ const helper = {
 		default:
 			throw new Error('Transaction type not support.');
 		}
+	},
+	async renameAccountLabel (dispatch, symbolSnap, accountId, newLabel) {
+		const updatedAccount = await symbolSnap.renameAccountLabel(accountId, newLabel);
+
+		dispatch.updateAccount(updatedAccount);
 	}
 };
 
