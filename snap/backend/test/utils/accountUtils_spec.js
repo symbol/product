@@ -1005,4 +1005,54 @@ describe('accountUtils', () => {
 			});
 		});
 	});
+
+	describe('renameAccountLabel', () => {
+		beforeEach(() => {
+			jest.clearAllMocks();
+		});
+
+		it('successfully renames an account label', async () => {
+			// Arrange
+			const state = {
+				accounts: {
+					123: {
+						account: {
+							id: '123',
+							label: 'Old Label'
+						}
+					}
+				}
+			};
+			const requestParams = {
+				accountId: '123',
+				newLabel: 'New Label'
+			};
+
+			// Act
+			const result = await accountUtils.renameAccountLabel({ state, requestParams });
+
+			// Assert
+			expect(result).toStrictEqual({
+				id: '123',
+				label: 'New Label'
+			});
+			expect(state.accounts['123'].account.label).toBe('New Label');
+			expect(stateManager.update).toHaveBeenCalledWith(state);
+		});
+
+		it('throws an error when account is not found', async () => {
+			// Arrange
+			const state = {
+				accounts: {}
+			};
+			const requestParams = {
+				accountId: 'nonexistent',
+				newLabel: 'New Label'
+			};
+
+			// Act & Assert
+			await expect(accountUtils.renameAccountLabel({ state, requestParams }))
+				.rejects.toThrow('Account with id nonexistent not found');
+		});
+	});
 });

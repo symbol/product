@@ -381,6 +381,26 @@ const accountUtils = {
 			transactionHash: facade.hashTransaction(transaction).toString(),
 			jsonPayload: JSON.parse(jsonPayload)
 		};
+	},
+	/**
+	 * Rename account label.
+	 * @param {object} state - The snap state object.
+	 * @param {{accountId: string, newLabel: string}} requestParams - The request parameters.
+	 * @returns {Promise<Account>} - The updated account object.
+	 */
+	async renameAccountLabel({ state, requestParams }) {
+		const { accountId, newLabel } = requestParams;
+		const { accounts } = state;
+		const account = accounts[accountId];
+
+		if (account) {
+			account.account.label = newLabel;
+			state.accounts[accountId] = account;
+			await stateManager.update(state);
+			return account.account;
+		}
+
+		throw new Error(`Account with id ${accountId} not found`);
 	}
 };
 
