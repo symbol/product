@@ -13,7 +13,8 @@ describe('helper', () => {
 		setCurrency: jest.fn(),
 		setMosaicInfo: jest.fn(),
 		setTransactions: jest.fn(),
-		setWebsocket: jest.fn()
+		setWebsocket: jest.fn(),
+		updateAccount: jest.fn()
 	};
 
 	const symbolSnap = {
@@ -25,7 +26,8 @@ describe('helper', () => {
 		getMosaicInfo: jest.fn(),
 		getAccounts: jest.fn(),
 		fetchAccountTransactions: jest.fn(),
-		signTransferTransaction: jest.fn()
+		signTransferTransaction: jest.fn(),
+		renameAccountLabel: jest.fn()
 	};
 
 	describe('setupSnap', () => {
@@ -510,6 +512,32 @@ describe('helper', () => {
 			expect(() => {
 				helper.feeCalculator(facade, 'unknown', mosaicInfo, params);
 			}).toThrow('Transaction type not support.');
+		});
+	});
+
+	describe('renameAccountLabel', () => {
+		it('updates account label and dispatches updateAccount action', async () => {
+			// Arrange:
+			const accountId = 'accountId';
+			const newLabel = 'newLabel';
+			const mockUpdatedAccount = {
+				id: 'accountId',
+				addressIndex: 1,
+				type: 'metamask',
+				networkName: 'network',
+				label: newLabel,
+				address: 'address',
+				publicKey: 'publicKey'
+			};
+
+			symbolSnap.renameAccountLabel.mockResolvedValue(mockUpdatedAccount);
+
+			// Act:
+			await helper.renameAccountLabel(dispatch, symbolSnap, accountId, newLabel);
+
+			// Assert:
+			expect(symbolSnap.renameAccountLabel).toHaveBeenCalledWith(accountId, newLabel);
+			expect(dispatch.updateAccount).toHaveBeenCalledWith(mockUpdatedAccount);
 		});
 	});
 });

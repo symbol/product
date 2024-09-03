@@ -163,19 +163,6 @@ describe('components/AssetList', () => {
 		assertRenderCurrencyMosaic(context, '2 xym');
 	});
 
-	const assertRenderCurrencyMosaic = (context, expectedAmount) => {
-		// Arrange:
-		testHelper.customRender(<AssetList />, context);
-
-		// Act:
-		const mosaicNameElement = screen.getByText('symbol');
-		const mosaicAmountElement = screen.getByText(expectedAmount);
-
-		// Assert:
-		expect(mosaicNameElement).toBeInTheDocument();
-		expect(mosaicAmountElement).toBeInTheDocument();
-	};
-
 	it('renders default currency mosaics when mosaics is empty', () => {
 		// Arrange:
 		context.walletState.selectedAccount.mosaics = [];
