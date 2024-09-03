@@ -63,6 +63,13 @@ const dispatchUtils = dispatch => ({
 	 */
 	setWebsocket: websocket => {
 		dispatch({ type: actionTypes.SET_WEBSOCKET, payload: websocket });
+	},
+	/**
+	 * Update account after renaming
+	 * @param {Account} updatedAccount - The updated account object.
+	 */
+	updateAccount: updatedAccount => {
+		dispatch({ type: actionTypes.UPDATE_ACCOUNT, payload: updatedAccount });
 	}
 });
 
