@@ -182,4 +182,25 @@ describe('dispatchUtils', () => {
 			expect(dispatchState).toHaveBeenCalledWith({ type: 'setWebsocket', payload: websocket });
 		});
 	});
+
+	describe('updateAccount', () => {
+		it('dispatches UPDATE_ACCOUNT action with updated account', () => {
+			// Arrange:
+			const updatedAccount = {
+				id: 'accountId',
+				addressIndex: 1,
+				type: 'metamask',
+				networkName: 'network',
+				label: 'newLabel',
+				address: 'address',
+				publicKey: 'publicKey'
+			};
+
+			// Act:
+			dispatch.updateAccount(updatedAccount);
+
+			// Assert:
+			expect(dispatchState).toHaveBeenCalledWith({ type: 'updateAccount', payload: updatedAccount });
+		});
+	});
 });
