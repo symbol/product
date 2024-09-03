@@ -27,7 +27,8 @@ export const actionTypes = {
 	SET_CURRENCY: 'setCurrency',
 	SET_MOSAIC_INFO: 'setMosaicInfo',
 	SET_TRANSACTIONS: 'setTransactions',
-	SET_WEBSOCKET: 'setWebsocket'
+	SET_WEBSOCKET: 'setWebsocket',
+	UPDATE_ACCOUNT: 'updateAccount'
 };
 
 export const reducer = (state, action) => {
@@ -50,6 +51,21 @@ export const reducer = (state, action) => {
 		return { ...state, transactions: action.payload };
 	case actionTypes.SET_WEBSOCKET:
 		return { ...state, websocket: action.payload };
+	case actionTypes.UPDATE_ACCOUNT:
+		const updatedAccount = action.payload;
+		const updatedState = {
+			...state,
+			accounts: {
+				...state.accounts,
+				[updatedAccount.id]: updatedAccount
+			}
+		};
+		
+		// If the updated account is the currently selected account, update selectedAccount as well
+		if (state.selectedAccount && state.selectedAccount.id === updatedAccount.id) 
+			updatedState.selectedAccount = updatedAccount;
+		
+		return updatedState;
 	default:
 		return state;
 	}
