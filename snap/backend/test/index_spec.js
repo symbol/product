@@ -420,6 +420,49 @@ describe('index', () => {
 				});
 			});
 		});
+
+		describe('renameAccountLabel', () => {
+			it('should invoke accountUtils.renameAccountLabel with the correct parameters', async () => {
+				// Arrange:
+				const mockParams = {
+					accountId: '123',
+					newLabel: 'New Account Label'
+				};
+
+				// Act & Assert:
+				await assertMethodCalled(accountUtils, 'renameAccountLabel', {
+					method: 'renameAccountLabel',
+					params: mockParams
+				}, {
+					state: {},
+					requestParams: mockParams
+				});
+			});
+
+			it('should return the result from accountUtils.renameAccountLabel', async () => {
+				// Arrange:
+				const mockParams = {
+					accountId: '123',
+					newLabel: 'New Account Label'
+				};
+				const mockResult = {
+					id: '123',
+					label: 'New Account Label'
+				};
+				accountUtils.renameAccountLabel.mockResolvedValue(mockResult);
+
+				// Act:
+				const response = await onRpcRequest({
+					request: {
+						method: 'renameAccountLabel',
+						params: mockParams
+					}
+				});
+
+				// Assert:
+				expect(response).toStrictEqual(mockResult);
+			});
+		});
 	});
 
 	describe('onCronjob', () => {
