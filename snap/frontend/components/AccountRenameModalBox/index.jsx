@@ -43,10 +43,10 @@ const AccountRenameModalBox = ({ isOpen, onRequestClose, onRename, currentName, 
 				/>
 				<div className='flex justify-center'>
 					<Button className='uppercase w-40 h-10 bg-secondary m-2' onClick={handleSubmit}>
-            Rename
+						Submit
 					</Button>
 					<Button className='uppercase w-40 h-10 bg-secondary m-2' onClick={onRequestClose}>
-            Cancel
+						Cancel
 					</Button>
 				</div>
 			</div>
