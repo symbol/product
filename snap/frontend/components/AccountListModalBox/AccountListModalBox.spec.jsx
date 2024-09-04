@@ -5,9 +5,12 @@ import { fireEvent, screen } from '@testing-library/react';
 
 const context = {
 	dispatch: {
-		setSelectedAccount: jest.fn()
+		setSelectedAccount: jest.fn(),
+		updateAccount: jest.fn()
 	},
-	symbolSnap: {},
+	symbolSnap: {
+		renameAccountLabel: jest.fn()
+	},
 	walletState: {
 		selectedAccount: {
 			address: 'address 1',
@@ -91,21 +94,16 @@ describe('components/AccountListModalBox', () => {
 		expect(error).toBeInTheDocument();
 	};
 
-	const runBasicValidationAccountNameInput = buttonName => {
+	const runBasicValidationAccountNameInput = (buttonName, placeholderName) => {
 		it('can validate account name is required', () => {
-			assertErrorValidation(buttonName, 'Account Name', ' ', 'Account name is required');
+			assertErrorValidation(buttonName, placeholderName, ' ', 'Account name is required');
 		});
 
 		it('can validate account name is exist', () => {
 			// Arrange:
-			context.walletState.accounts = {
-				'0x1234': {
-					address: 'address 1',
-					label: 'wallet 1'
-				}
-			};
+			context.walletState.accounts = testHelper.generateAccountsState(1);
 
-			assertErrorValidation(buttonName, 'Account Name', 'wallet 1', 'Account name already exists');
+			assertErrorValidation(buttonName, placeholderName, 'Account 0', 'Account name already exists');
 		});
 	};
 
@@ -129,7 +127,7 @@ describe('components/AccountListModalBox', () => {
 		});
 
 		describe('validation', () => {
-			runBasicValidationAccountNameInput('Create');
+			runBasicValidationAccountNameInput('Create', 'Account Name');
 		});
 
 		describe('submit', () => {
@@ -195,7 +193,7 @@ describe('components/AccountListModalBox', () => {
 		});
 
 		describe('validation', () => {
-			runBasicValidationAccountNameInput('Import');
+			runBasicValidationAccountNameInput('Import', 'Account Name');
 
 			it('can validate private key is invalid', () => {
 				assertErrorValidation('Import', 'Private Key', 'invalid private key', 'Invalid private key');
@@ -250,6 +248,72 @@ describe('components/AccountListModalBox', () => {
 			it('does not import account with invalid private key', () => {
 				assertSubmit('import 1', '', false);
 			});
+		});
+	});
+
+	describe('rename account modal box', () => {
+		beforeEach(() => {
+			jest.clearAllMocks();
+		});
+		
+		it('renders modal box', () => {
+			// Arrange:
+			context.walletState.accounts = testHelper.generateAccountsState(1);
+
+			testHelper.customRender(<AccountListModalBox isOpen={true} onRequestClose={jest.fn()} />, context);
+
+			// Act:
+			const renameButton = screen.getByText('Rename');
+			fireEvent.click(renameButton);
+
+			// Assert:
+			const accountNameInput = screen.getByPlaceholderText('New Account Name');
+			expect(accountNameInput).toBeInTheDocument();
+		});
+
+		describe('validation', () => {
+			runBasicValidationAccountNameInput('Rename', 'New Account Name');
+		});
+
+		describe('submit', () => {
+			const assertSubmit = (accountName, expectedResult) => {
+				// Arrange:
+				jest.spyOn(helper, 'renameAccountLabel').mockImplementation();
+
+				testHelper.customRender(<AccountListModalBox isOpen={true} onRequestClose={jest.fn()} />, context);
+
+				const buttonComponent = screen.getByText('Rename');
+				fireEvent.click(buttonComponent);
+
+				const accountNameInput = screen.getByPlaceholderText('New Account Name');
+				fireEvent.change(accountNameInput, { target: { value: accountName } });
+
+				const submitButton = screen.getByText('Submit');
+
+				// Act:
+				fireEvent.click(submitButton);
+
+				// Assert:
+				if (expectedResult) {
+					expect(helper.renameAccountLabel).toHaveBeenCalledWith(
+						context.dispatch,
+						context.symbolSnap,
+						'accountId 0',
+						accountName
+					);
+				} else {
+					expect(helper.renameAccountLabel).not.toHaveBeenCalled();
+				}
+			};
+
+			it('can rename account with valid data', () => {
+				assertSubmit('new name', true);
+			});
+
+			it('does not rename account with invalid account name', () => {
+				assertSubmit(' ', false);
+			});
+
 		});
 	});
 });
