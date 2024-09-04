@@ -46,8 +46,8 @@ describe('components/AccountRenameModalBox', () => {
 		const input = screen.getByPlaceholderText('New Account Name');
 		fireEvent.change(input, { target: { value: 'New Name' } });
 
-		const renameButton = screen.getByText('Rename');
-		fireEvent.click(renameButton);
+		const submitButton = screen.getByText('Submit');
+		fireEvent.click(submitButton);
 
 		// Assert
 		expect(mockValidateAccountName).toHaveBeenCalledWith('New Name');
@@ -74,8 +74,8 @@ describe('components/AccountRenameModalBox', () => {
 		const input = screen.getByPlaceholderText('New Account Name');
 		fireEvent.change(input, { target: { value: 'Invalid Name' } });
 
-		const renameButton = screen.getByText('Rename');
-		fireEvent.click(renameButton);
+		const submitButton = screen.getByText('Submit');
+		fireEvent.click(submitButton);
 
 		// Assert
 		const errorMessage = screen.getByText('Invalid name');
