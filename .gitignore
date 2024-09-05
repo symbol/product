@@ -23,6 +23,7 @@ _data/
 .next/
 
 # python
+.python-version
 __pycache__/
 *.egg-info/
 build/
