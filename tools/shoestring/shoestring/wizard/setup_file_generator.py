@@ -20,8 +20,8 @@ def _to_bool_string(flag):
 	return 'true' if flag else 'false'
 
 
-def try_prepare_node_metadata_file(screens, output_filename):
-	"""Prepares a node metadata file based on screens, if specified."""
+def try_prepare_rest_overrides_file(screens, output_filename):
+	"""Prepares a REST overrides file based on screens, if specified."""
 
 	node_type = screens.get('node-type').current_value
 	node_settings = screens.get('node-settings')
@@ -30,7 +30,7 @@ def try_prepare_node_metadata_file(screens, output_filename):
 		return False
 
 	with open(output_filename, 'wt', encoding='utf8') as outfile:
-		outfile.write(node_settings.metadata_info)
+		outfile.write(f'{{"nodeMetadata":{node_settings.metadata_info}}}')
 
 	return True
 

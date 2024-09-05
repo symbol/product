@@ -24,7 +24,7 @@ def build_shoestring_command(
 	shoestring_directory,
 	ca_pem_path,
 	package,
-	has_custom_node_metadata=False
+	has_custom_rest_overrides=False
 ):  # pylint: disable=too-many-arguments
 	"""Builds shoestring command arguments."""
 
@@ -58,7 +58,7 @@ def build_shoestring_command(
 	if ShoestringOperation.SETUP == operation:
 		shoestring_args.extend(['--security', 'insecure'])
 
-		if has_custom_node_metadata:
-			shoestring_args.extend(['--metadata', str(Path(shoestring_directory) / 'node_metadata.json')])
+		if has_custom_rest_overrides:
+			shoestring_args.extend(['--rest-overrides', str(Path(shoestring_directory) / 'rest_overrides.json')])
 
 	return shoestring_args

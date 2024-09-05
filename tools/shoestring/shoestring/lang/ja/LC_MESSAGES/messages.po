@@ -25,7 +25,7 @@ msgstr ""
 
 #: shoestring/commands/announce_transaction.py:35
 #: shoestring/commands/health.py:74 shoestring/commands/import_bootstrap.py:33
-#: shoestring/commands/import_harvesters.py:94 shoestring/commands/init.py:29
+#: shoestring/commands/import_harvesters.py:97 shoestring/commands/init.py:29
 #: shoestring/commands/min_cosignatures_count.py:34
 #: shoestring/commands/renew_certificates.py:29
 #: shoestring/commands/renew_voting_keys.py:112
@@ -45,19 +45,19 @@ msgstr ""
 msgid "argument-help-import-bootstrap-bootstrap"
 msgstr ""
 
-#: shoestring/commands/import_harvesters.py:95
+#: shoestring/commands/import_harvesters.py:98
 msgid "argument-help-import-harvesters-in-harvesters"
 msgstr ""
 
-#: shoestring/commands/import_harvesters.py:96
+#: shoestring/commands/import_harvesters.py:99
 msgid "argument-help-import-harvesters-in-pem"
 msgstr ""
 
-#: shoestring/commands/import_harvesters.py:98
+#: shoestring/commands/import_harvesters.py:101
 msgid "argument-help-import-harvesters-out-harvesters"
 msgstr ""
 
-#: shoestring/commands/import_harvesters.py:99
+#: shoestring/commands/import_harvesters.py:102
 msgid "argument-help-import-harvesters-out-pem"
 msgstr ""
 
@@ -89,16 +89,16 @@ msgstr ""
 msgid "argument-help-reset-data-purge-harvesters"
 msgstr ""
 
-#: shoestring/commands/setup.py:140
-msgid "argument-help-setup-metadata"
-msgstr ""
-
 #: shoestring/commands/setup.py:139
 msgid "argument-help-setup-overrides"
 msgstr ""
 
 #: shoestring/commands/init.py:28 shoestring/commands/setup.py:137
 msgid "argument-help-setup-package"
+msgstr ""
+
+#: shoestring/commands/setup.py:140
+msgid "argument-help-setup-rest-overrides"
 msgstr ""
 
 #: shoestring/commands/setup.py:143
@@ -250,11 +250,11 @@ msgstr ""
 msgid "import-bootstrap-invalid-directory"
 msgstr ""
 
-#: shoestring/commands/import_harvesters.py:74
+#: shoestring/commands/import_harvesters.py:75
 msgid "import-harvesters-error-in-harvesters-is-equal-to-out-harvesters"
 msgstr ""
 
-#: shoestring/commands/import_harvesters.py:51
+#: shoestring/commands/import_harvesters.py:52
 msgid "import-harvesters-list-header"
 msgstr ""
 
@@ -803,4 +803,3 @@ msgstr ""
 #: shoestring/wizard/screens/welcome.py:36
 msgid "wizard-welcome-upgrade"
 msgstr ""
-

@@ -73,10 +73,10 @@ async def test_can_dispatch_setup_command():
 			assert shoestring_directory.exists()
 			assert (shoestring_directory / 'shoestring.ini').exists()
 			assert (shoestring_directory / 'overrides.ini').exists()
-			assert not (shoestring_directory / 'node_metadata.json').exists()
+			assert not (shoestring_directory / 'rest_overrides.json').exists()
 
 
-async def test_can_dispatch_setup_command_with_custom_metadata():
+async def test_can_dispatch_setup_command_with_custom_rest_overrides():
 	# Arrange:
 	dispatched_args = []
 	with tempfile.TemporaryDirectory() as package_directory:
@@ -100,7 +100,7 @@ async def test_can_dispatch_setup_command_with_custom_metadata():
 				'--overrides', 'overrides.ini',
 				'--package', f'file://{Path(package_directory) / "resources.zip"}',
 				'--security', 'insecure',
-				'--metadata', 'node_metadata.json'
+				'--rest-overrides', 'rest_overrides.json'
 			] == dispatched_args
 
 			# - shoestring configuration files were created
@@ -108,7 +108,7 @@ async def test_can_dispatch_setup_command_with_custom_metadata():
 			assert shoestring_directory.exists()
 			assert (shoestring_directory / 'shoestring.ini').exists()
 			assert (shoestring_directory / 'overrides.ini').exists()
-			assert (shoestring_directory / 'node_metadata.json').exists()
+			assert (shoestring_directory / 'rest_overrides.json').exists()
 
 
 async def test_can_dispatch_upgrade_command():

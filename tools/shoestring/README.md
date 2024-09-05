@@ -134,17 +134,17 @@ setup \
     [--package PACKAGE] \
     [--directory DIRECTORY] \
     [--overrides OVERRIDES] \
-    [--metadata METADATA] \
+    [--rest-overrides REST_OVERRIDES] \
     [--security {default,paranoid,insecure}] \
     --ca-key-path CA_KEY_PATH
 
-  --config CONFIG           path to shoestring configuration file
-  --package PACKAGE         Network configuration package. Possible values: (name | file:///filename | http(s)://uri) (default: mainnet)
-  --directory DIRECTORY     installation directory (default: $HOME)
-  --overrides OVERRIDES     path to custom user settings
-  --metadata METADATA       custom node metadata (this is only valid for API roles)
-  --security                security mode (default: default)
-  --ca-key-path CA_KEY_PATH path to main private key PEM file
+  --config CONFIG                       path to shoestring configuration file
+  --package PACKAGE                     Network configuration package. Possible values: (name | file:///filename | http(s)://uri) (default: mainnet)
+  --directory DIRECTORY                 installation directory (default: $HOME)
+  --overrides OVERRIDES                 path to custom user settings
+  --rest-overrides REST_OVERRIDES       path to custom user REST settings (this is only valid for API roles)
+  --security                            security mode (default: default)
+  --ca-key-path CA_KEY_PATH             path to main private key PEM file
 ```
 
 Please note that only security mode "default" is supported at this time.
@@ -201,13 +201,13 @@ upgrade \
     [--package PACKAGE] \
     [--directory DIRECTORY] \
     [--overrides OVERRIDES] \
-    [--metadata METADATA]
+    [--rest-overrides REST_OVERRIDES]
 
-  --config CONFIG           path to shoestring configuration file
-  --package PACKAGE         Network configuration package. Possible values: (name | file:///filename | http(s)://uri) (default: mainnet)
-  --directory DIRECTORY     installation directory (default: $HOME)
-  --overrides OVERRIDES     path to custom user settings
-  --metadata METADATA       custom node metadata (this is only valid for API roles)
+  --config CONFIG                       path to shoestring configuration file
+  --package PACKAGE                     Network configuration package. Possible values: (name | file:///filename | http(s)://uri) (default: mainnet)
+  --directory DIRECTORY                 installation directory (default: $HOME)
+  --overrides OVERRIDES                 path to custom user settings
+  --rest-overrides REST_OVERRIDES       path to custom user REST settings (this is only valid for API roles)
 ```
 
 ### renew-certificates
@@ -371,10 +371,9 @@ maxUnlockedAccounts = 2
 Notice that these custom settings are applied *BEFORE* shoestring updates the Symbol configuration files.
 In cases of conflicts, the shoestring changes will take precedence.
 
-### Node Metadata
+### REST Overrides
 
-JSON file that is ingested and used to replace the contents of `nodeMetadata` in rest.json.
-This data is then accessible via the `node/metadata` REST endpoint.
+JSON file that is ingested and used to update the contents of rest.json.
 This file is optional and only used for deployments including API role.
 
 # Running

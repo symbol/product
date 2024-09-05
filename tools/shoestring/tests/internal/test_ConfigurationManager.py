@@ -2,7 +2,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from shoestring.internal.ConfigurationManager import ConfigurationManager, load_patches_from_file, parse_time_span
+from shoestring.internal.ConfigurationManager import ConfigurationManager, load_patches_from_file, merge_json_configuration, parse_time_span
 
 
 class ConfigurationManagerTest(unittest.TestCase):
@@ -258,5 +258,70 @@ class ConfigurationManagerTest(unittest.TestCase):
 		for invalid_str in ('12H4s', '', 's', '1234g'):
 			with self.assertRaises(ValueError):
 				parse_time_span(invalid_str)
+
+	# endregion
+
+	# region merge_json_configuration
+
+	def _run_merge_json_configuration_test(self, config2, expected_result_config):
+		# Arrange:
+		config1 = {
+			'foo': 123,
+			'car': {
+				'color': 'blue',
+				'brand': 'toyota'
+			}
+		}
+
+		# Act:
+		merge_json_configuration(config1, config2)
+
+		# Assert:
+		self.assertEqual(expected_result_config, config1)
+
+	def test_merge_json_configuration_can_merge_empty_object(self):
+		self._run_merge_json_configuration_test({}, {
+			'foo': 123,
+			'car': {
+				'color': 'blue',
+				'brand': 'toyota'
+			}
+		})
+
+	def test_merge_json_configuration_can_merge_outer_property_change(self):
+		self._run_merge_json_configuration_test({'foo': 'alpha'}, {
+			'foo': 'alpha',
+			'car': {
+				'color': 'blue',
+				'brand': 'toyota'
+			}
+		})
+
+	def test_merge_json_configuration_can_merge_inner_property_change(self):
+		self._run_merge_json_configuration_test({'car': {'brand': 'honda'}}, {
+			'foo': 123,
+			'car': {
+				'color': 'blue',
+				'brand': 'honda'
+			}
+		})
+
+	def test_merge_json_configuration_can_flatten_object(self):
+		self._run_merge_json_configuration_test({'car': 'alpha'}, {
+			'foo': 123,
+			'car': 'alpha'
+		})
+
+	def test_merge_json_configuration_can_add_object(self):
+		self._run_merge_json_configuration_test({'metal': {'type': 'bar'}}, {
+			'foo': 123,
+			'car': {
+				'color': 'blue',
+				'brand': 'toyota'
+			},
+			'metal': {
+				'type': 'bar'
+			}
+		})
 
 	# endregion

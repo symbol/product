@@ -332,7 +332,7 @@ async def test_can_apply_user_overrides(server):  # pylint: disable=redefined-ou
 	await _assert_can_prepare_with_hostname(server, 'symbol.fyi', NodeFeatures.PEER, False)
 
 
-async def test_can_apply_custom_node_metadata(server):  # pylint: disable=redefined-outer-name
+async def test_can_apply_custom_rest_overrides(server):  # pylint: disable=redefined-outer-name
 	# Arrange:
 	with tempfile.TemporaryDirectory() as output_directory:
 		with tempfile.TemporaryDirectory() as package_directory:
@@ -340,13 +340,16 @@ async def test_can_apply_custom_node_metadata(server):  # pylint: disable=redefi
 			prepare_shoestring_configuration(package_directory, NodeFeatures.API, server.make_url(''))
 			prepare_testnet_package(package_directory, 'resources.zip')
 
-			node_metadata_filepath = Path(package_directory) / 'metadata.json'
-			with open(node_metadata_filepath, 'wt', encoding='utf8') as outfile:
+			rest_overrides_filepath = Path(package_directory) / 'metadata.json'
+			with open(rest_overrides_filepath, 'wt', encoding='utf8') as outfile:
 				outfile.write('\n'.join([
 					'{',
-					'  "animal": "wolf",',
-					'  "weight": "43kg",',
-					'  "height": "72cm"',
+					'  "nodeMetadata": {',
+					'    "_info": "",',
+					'    "animal": "wolf",',
+					'    "weight": "43kg",',
+					'    "height": "72cm"',
+					'  }'
 					'}'
 				]))
 
@@ -360,7 +363,7 @@ async def test_can_apply_custom_node_metadata(server):  # pylint: disable=redefi
 					'--directory', output_directory,
 					'--ca-key-path', str(Path(ca_directory) / 'xyz.key.pem'),
 					'--overrides', str(Path(package_directory) / 'user_overrides.ini'),
-					'--metadata', str(node_metadata_filepath)
+					'--rest-overrides', str(rest_overrides_filepath)
 				])
 
 				# Assert: check custom node metadata was applied
@@ -368,6 +371,7 @@ async def test_can_apply_custom_node_metadata(server):  # pylint: disable=redefi
 					rest_config = json.load(rest_config_infile)
 
 				assert {
+					'_info': '',
 					'animal': 'wolf',
 					'weight': '43kg',
 					'height': '72cm'

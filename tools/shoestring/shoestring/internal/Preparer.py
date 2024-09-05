@@ -9,7 +9,7 @@ from pathlib import Path
 from symbolchain.symbol.Network import NetworkTimestamp
 
 from .CertificateFactory import CertificateFactory
-from .ConfigurationManager import ConfigurationManager
+from .ConfigurationManager import ConfigurationManager, merge_json_configuration
 from .FileTemplater import apply_template
 from .HarvesterConfigurator import HarvesterConfigurator
 from .LinkTransactionBuilder import LinkTransactionBuilder
@@ -266,7 +266,7 @@ class Preparer:
 		# make all resources read only
 		self._make_files_readonly(self.directories.resources)
 
-	def configure_rest(self, node_metadata_filename=None):
+	def configure_rest(self, rest_overrides_filename=None):
 		"""Copies mongo and rest files."""
 
 		if NodeFeatures.API not in self.config.node.features:
@@ -277,16 +277,16 @@ class Preparer:
 
 		self._copy_file(self.directories.temp / 'rest' / 'rest.json', self.directories.userconfig)
 
-		if node_metadata_filename:
+		if rest_overrides_filename:
 			rest_json_filepath = self.directories.userconfig / 'rest.json'
 
 			# load the rest config
 			with open(rest_json_filepath, 'rt', encoding='utf8') as rest_config_infile:
 				rest_config = json.load(rest_config_infile)
 
-			# replace user metadata
-			with open(node_metadata_filename, 'rt', encoding='utf8') as node_metadata_infile:
-				rest_config['nodeMetadata'] = json.load(node_metadata_infile)
+			# customize user rest config
+			with open(rest_overrides_filename, 'rt', encoding='utf8') as rest_overrides_infile:
+				merge_json_configuration(rest_config, json.load(rest_overrides_infile))
 
 			# rewrite the rest config
 			with open(rest_json_filepath, 'wt', encoding='utf8') as rest_config_outfile:

@@ -17,9 +17,9 @@ def test_requires_ca_key_path_returns_true_for_operations_requiring_ca_key_path(
 
 # region build_shoestring_command
 
-def _assert_can_build_shoestring_command_setup(has_custom_node_metadata, expected_additional_args):
+def _assert_can_build_shoestring_command_setup(has_custom_rest_overrides, expected_additional_args):
 	# Act:
-	args = build_shoestring_command(ShoestringOperation.SETUP, 'symbol', 'shoestring', 'cert/ca.key.pem', 'sai', has_custom_node_metadata)
+	args = build_shoestring_command(ShoestringOperation.SETUP, 'symbol', 'shoestring', 'cert/ca.key.pem', 'sai', has_custom_rest_overrides)
 
 	# Assert:
 	assert [
@@ -37,8 +37,8 @@ def test_can_build_shoestring_command_setup():
 	_assert_can_build_shoestring_command_setup(False, [])
 
 
-def test_can_build_shoestring_command_setup_with_custom_node_metadata():
-	_assert_can_build_shoestring_command_setup(True, ['--metadata', 'shoestring/node_metadata.json'])
+def test_can_build_shoestring_command_setup_with_custom_rest_overrides():
+	_assert_can_build_shoestring_command_setup(True, ['--rest-overrides', 'shoestring/rest_overrides.json'])
 
 
 def test_can_build_shoestring_command_upgrade():

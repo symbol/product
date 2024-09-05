@@ -5,7 +5,7 @@ from pathlib import Path
 from shoestring.internal.ConfigurationManager import ConfigurationManager
 from shoestring.internal.NodeFeatures import NodeFeatures
 from shoestring.internal.ShoestringConfiguration import parse_shoestring_configuration
-from shoestring.wizard.setup_file_generator import prepare_overrides_file, prepare_shoestring_files, try_prepare_node_metadata_file
+from shoestring.wizard.setup_file_generator import prepare_overrides_file, prepare_shoestring_files, try_prepare_rest_overrides_file
 
 from ..test.TestPackager import prepare_testnet_package
 
@@ -29,38 +29,38 @@ VotingScreen = namedtuple('VotingScreen', ['active'])
 # pylint: disable=invalid-name
 
 
-# region try_prepare_node_metadata_file
+# region try_prepare_rest_overrides_file
 
-def _assert_can_prepare_node_metadata_file(node_type, node_metadata, should_create):
+def _assert_can_prepare_rest_overrides_file(node_type, node_metadata, should_create):
 	# Arrange:
 	with tempfile.TemporaryDirectory() as output_directory:
-		metadata_filepath = Path(output_directory) / 'metadata.json'
+		rest_overrides_filepath = Path(output_directory) / 'metadata.json'
 
 		# Act:
-		try_prepare_node_metadata_file({
+		try_prepare_rest_overrides_file({
 			'node-type': SingleValueScreen(node_type),
 			'node-settings': NodeSettingsScreen(None, None, None, node_metadata)
-		}, metadata_filepath)
+		}, rest_overrides_filepath)
 
 		# Assert:
-		assert should_create == metadata_filepath.exists()
+		assert should_create == rest_overrides_filepath.exists()
 
 		if should_create:
-			with open(metadata_filepath, 'rt', encoding='utf8') as infile:
+			with open(rest_overrides_filepath, 'rt', encoding='utf8') as infile:
 				metadata_contents = infile.read()
-				assert '{"animal": "wolf"}' == metadata_contents
+				assert '{"nodeMetadata":{"animal": "wolf"}}' == metadata_contents
 
 
-def test_can_prepare_node_metadata_file_when_dual_mode_and_metadata_specified():
-	_assert_can_prepare_node_metadata_file('dual', '{"animal": "wolf"}', True)
+def test_can_prepare_rest_overrides_file_when_dual_mode_and_metadata_specified():
+	_assert_can_prepare_rest_overrides_file('dual', '{"animal": "wolf"}', True)
 
 
-def test_cannot_prepare_node_metadata_file_when_peer_mode_and_metadata_specified():
-	_assert_can_prepare_node_metadata_file('peer', '{"animal": "wolf"}', False)
+def test_cannot_prepare_rest_overrides_file_when_peer_mode_and_metadata_specified():
+	_assert_can_prepare_rest_overrides_file('peer', '{"animal": "wolf"}', False)
 
 
-def test_cannot_prepare_node_metadata_file_when_dual_mode_and_no_metadata_specified():
-	_assert_can_prepare_node_metadata_file('dual', '', False)
+def test_cannot_prepare_rest_overrides_file_when_dual_mode_and_no_metadata_specified():
+	_assert_can_prepare_rest_overrides_file('dual', '', False)
 
 # endregion
 

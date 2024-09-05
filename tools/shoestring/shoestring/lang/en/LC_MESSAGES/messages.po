@@ -27,7 +27,7 @@ msgstr "path to main private key PEM file"
 
 #: shoestring/commands/announce_transaction.py:35
 #: shoestring/commands/health.py:74 shoestring/commands/import_bootstrap.py:33
-#: shoestring/commands/import_harvesters.py:94 shoestring/commands/init.py:29
+#: shoestring/commands/import_harvesters.py:97 shoestring/commands/init.py:29
 #: shoestring/commands/min_cosignatures_count.py:34
 #: shoestring/commands/renew_certificates.py:29
 #: shoestring/commands/renew_voting_keys.py:112
@@ -47,19 +47,19 @@ msgstr "installation directory (default: {default_path})"
 msgid "argument-help-import-bootstrap-bootstrap"
 msgstr "path to bootstrap target directory"
 
-#: shoestring/commands/import_harvesters.py:95
+#: shoestring/commands/import_harvesters.py:98
 msgid "argument-help-import-harvesters-in-harvesters"
 msgstr "input harvesters.dat file that is encrypted with in-pem"
 
-#: shoestring/commands/import_harvesters.py:96
+#: shoestring/commands/import_harvesters.py:99
 msgid "argument-help-import-harvesters-in-pem"
 msgstr "PEM file that can be used to decrypt in-harvesters"
 
-#: shoestring/commands/import_harvesters.py:98
+#: shoestring/commands/import_harvesters.py:101
 msgid "argument-help-import-harvesters-out-harvesters"
 msgstr "output harvesters.dat file that will be encrypted with out-pem"
 
-#: shoestring/commands/import_harvesters.py:99
+#: shoestring/commands/import_harvesters.py:102
 msgid "argument-help-import-harvesters-out-pem"
 msgstr "PEM file that can be used to encrypt out-harvesters"
 
@@ -91,10 +91,6 @@ msgstr "renews CA certificate too"
 msgid "argument-help-reset-data-purge-harvesters"
 msgstr "purge harvesters.dat file"
 
-#: shoestring/commands/setup.py:140
-msgid "argument-help-setup-metadata"
-msgstr "Custom node metadata (this is only valid for API roles)"
-
 #: shoestring/commands/setup.py:139
 msgid "argument-help-setup-overrides"
 msgstr "path to custom user settings"
@@ -104,6 +100,10 @@ msgid "argument-help-setup-package"
 msgstr ""
 "Network configuration package. Possible values: (name | file:///filename "
 "| http(s)://uri) (default: mainnet)"
+
+#: shoestring/commands/setup.py:140
+msgid "argument-help-setup-rest-overrides"
+msgstr "path to custom user REST settings (this is only valid for API roles)"
 
 #: shoestring/commands/setup.py:143
 msgid "argument-help-setup-security"
@@ -260,11 +260,11 @@ msgstr ""
 "bootstrap directory provided ({directory}) does not look like bootstrap's"
 " target directory, nothing to import"
 
-#: shoestring/commands/import_harvesters.py:74
+#: shoestring/commands/import_harvesters.py:75
 msgid "import-harvesters-error-in-harvesters-is-equal-to-out-harvesters"
 msgstr "in-harvesters and out-harvesters must be different"
 
-#: shoestring/commands/import_harvesters.py:51
+#: shoestring/commands/import_harvesters.py:52
 msgid "import-harvesters-list-header"
 msgstr "listing harvesters in {filepath} using public key {public_key}"
 
@@ -826,4 +826,3 @@ msgstr "Welcome"
 #: shoestring/wizard/screens/welcome.py:36
 msgid "wizard-welcome-upgrade"
 msgstr "upgrade"
-

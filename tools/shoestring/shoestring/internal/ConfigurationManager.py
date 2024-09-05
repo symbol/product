@@ -111,3 +111,13 @@ def parse_time_span(str_value):
 		raise ValueError(f'time span specified in unknown units \'{unit_indicator}\'')
 
 	return value.timestamp
+
+
+def merge_json_configuration(lhs, rhs):
+	"""Merges two json configuration objects."""
+
+	for key in rhs.keys():
+		if isinstance(rhs[key], dict) and key in lhs and isinstance(lhs[key], dict):
+			merge_json_configuration(lhs[key], rhs[key])
+		else:
+			lhs[key] = rhs[key]

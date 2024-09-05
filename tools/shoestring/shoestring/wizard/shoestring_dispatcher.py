@@ -2,7 +2,7 @@ import shutil
 import tempfile
 from pathlib import Path
 
-from shoestring.wizard.setup_file_generator import prepare_overrides_file, prepare_shoestring_files, try_prepare_node_metadata_file
+from shoestring.wizard.setup_file_generator import prepare_overrides_file, prepare_shoestring_files, try_prepare_rest_overrides_file
 from shoestring.wizard.ShoestringOperation import ShoestringOperation, build_shoestring_command
 
 
@@ -18,7 +18,7 @@ async def dispatch_shoestring_command(screens, executor):
 
 	if ShoestringOperation.SETUP == operation:
 		with tempfile.TemporaryDirectory() as temp_directory:
-			has_custom_node_metadata = try_prepare_node_metadata_file(screens, Path(temp_directory) / 'node_metadata.json')
+			has_custom_rest_overrides = try_prepare_rest_overrides_file(screens, Path(temp_directory) / 'rest_overrides.json')
 			prepare_overrides_file(screens, Path(temp_directory) / 'overrides.ini')
 			await prepare_shoestring_files(screens, Path(temp_directory))
 
@@ -28,11 +28,11 @@ async def dispatch_shoestring_command(screens, executor):
 				temp_directory,
 				obligatory_settings.ca_pem_path,
 				package,
-				has_custom_node_metadata)
+				has_custom_rest_overrides)
 			await executor(shoestring_args)
 
 			shoestring_directory.mkdir()
-			for filename in ('shoestring.ini', 'overrides.ini', 'node_metadata.json'):
+			for filename in ('shoestring.ini', 'overrides.ini', 'rest_overrides.json'):
 				source_path = Path(temp_directory) / filename
 				if source_path.exists():
 					shutil.copy(source_path, shoestring_directory)
