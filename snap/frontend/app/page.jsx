@@ -7,6 +7,8 @@ import dispatchUtils from '../utils/dispatchUtils';
 import symbolSnapFactory from '../utils/snap';
 import detectEthereumProvider from '@metamask/detect-provider';
 import React, { useEffect, useMemo, useReducer, useState } from 'react';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 /**
  * Renders the main page.
@@ -40,6 +42,7 @@ export default function Main() {
 
 	return (
 		<WalletContextProvider value={{ walletState, dispatch, symbolSnap }}>
+			<ToastContainer theme="dark" />
 			<HomeComponent />
 		</WalletContextProvider>
 	);
