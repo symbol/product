@@ -1,4 +1,5 @@
 import symbolSnapFactory from './snap';
+import { defaultSnapOrigin } from '../config';
 
 describe('symbolSnapFactory', () => {
 	let mockProvider;
@@ -39,6 +40,51 @@ describe('symbolSnapFactory', () => {
 			expect(symbolSnap.getSnaps).toBeInstanceOf(Function);
 			expect(symbolSnap.getSnap).toBeInstanceOf(Function);
 			expect(symbolSnap.connectSnap).toBeInstanceOf(Function);
+		});
+	});
+
+	describe('invokeSnapMethod', () => {
+		const assertInvokeSnapMethod = async (method, params = {}, expectedParams) => {
+			// Arrange:
+			mockProvider.request.mockResolvedValue({});
+
+			// Act:
+			const result = await symbolSnap.invokeSnapMethod(method, params);
+
+			// Assert:
+			expect(result).toEqual({});
+			expect(mockProvider.request).toHaveBeenCalledWith({
+				method: 'wallet_invokeSnap',
+				params: {
+					snapId: defaultSnapOrigin,
+					request: expectedParams
+				}
+			});
+		};
+
+		it('returns response with params', async () => {
+			// Arrange:
+			const method = 'anyInvokeMethod';
+			const params = { param1: 'value1', param2: 'value2' };
+			const expectedParams = { method, params };
+
+			await assertInvokeSnapMethod(method, params, expectedParams);
+		});
+
+		it('returns response without params', async () => {
+			// Arrange:
+			const method = 'anyInvokeMethod';
+			const expectedParams = { method };
+
+			await assertInvokeSnapMethod(method, undefined, expectedParams);
+		});
+
+		it('returns response with empty params', async () => {
+			// Arrange:
+			const method = 'anyInvokeMethod';
+			const expectedParams = { method };
+
+			await assertInvokeSnapMethod(method, {}, expectedParams);
 		});
 	});
 
@@ -418,6 +464,7 @@ describe('symbolSnapFactory', () => {
 					snapId: 'local:http://localhost:8080',
 					request: {
 						method: 'getMosaicInfo'
+
 					}
 				}
 			});

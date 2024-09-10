@@ -5,6 +5,24 @@ const symbolSnapFactory = {
 		return {
 			provider: provider,
 			/**
+			 * A helper function to invoke a method in the snap.
+			 * @param {string} method - The method to invoke.
+			 * @param {object} params - The params to pass with the method.
+			 * @returns {object} The response from the snap.
+			 */
+			async invokeSnapMethod(method, params = {}) {
+				return await this.provider.request({
+					method: 'wallet_invokeSnap',
+					params: {
+						snapId: defaultSnapOrigin,
+						request: {
+							method,
+							...(Object.keys(params).length && { params })
+						}
+					}
+				});
+			},
+			/**
 			 * Get the installed snaps in MetaMask.
 			 * @returns {object} The snaps installed in MetaMask.
 			 */
@@ -52,15 +70,7 @@ const symbolSnapFactory = {
 			 * @returns {object} The network object returned by the snap.
 			 */
 			async getNetwork() {
-				const networkData = await provider.request({
-					method: 'wallet_invokeSnap',
-					params: {
-						snapId: defaultSnapOrigin,
-						request: {
-							method: 'getNetwork'
-						}
-					}
-				});
+				const networkData = await this.invokeSnapMethod('getNetwork');
 
 				return networkData;
 			},
@@ -70,17 +80,8 @@ const symbolSnapFactory = {
 			 * @returns {object} The network object returned by the snap.
 			 */
 			async switchNetwork(networkName) {
-				const network = await provider.request({
-					method: 'wallet_invokeSnap',
-					params: {
-						snapId: defaultSnapOrigin,
-						request: {
-							method: 'switchNetwork',
-							params: {
-								networkName
-							}
-						}
-					}
+				const network = await this.invokeSnapMethod('switchNetwork', {
+					networkName
 				});
 
 				return network;
@@ -92,18 +93,9 @@ const symbolSnapFactory = {
 			 * @returns {object} The initial snap state.
 			 */
 			async initialSnap(networkName, currency) {
-				const initialSnapState = await provider.request({
-					method: 'wallet_invokeSnap',
-					params: {
-						snapId: defaultSnapOrigin,
-						request: {
-							method: 'initialSnap',
-							params: {
-								networkName,
-								currency
-							}
-						}
-					}
+				const initialSnapState = await this.invokeSnapMethod('initialSnap', {
+					networkName,
+					currency
 				});
 
 				return initialSnapState;
@@ -114,34 +106,16 @@ const symbolSnapFactory = {
 			 * @returns {Account} The account object returned by the snap.
 			 */
 			async createAccount(accountLabel) {
-				const account = await provider.request({
-					method: 'wallet_invokeSnap',
-					params: {
-						snapId: defaultSnapOrigin,
-						request: {
-							method: 'createAccount',
-							params: {
-								accountLabel
-							}
-						}
-					}
+				const account = await this.invokeSnapMethod('createAccount', {
+					accountLabel
 				});
 
 				return account;
 			},
 			async importAccount(accountLabel, privateKey) {
-				const account = await provider.request({
-					method: 'wallet_invokeSnap',
-					params: {
-						snapId: defaultSnapOrigin,
-						request: {
-							method: 'importAccount',
-							params: {
-								accountLabel,
-								privateKey
-							}
-						}
-					}
+				const account = await this.invokeSnapMethod('importAccount', {
+					accountLabel,
+					privateKey
 				});
 
 				return account;
@@ -152,17 +126,8 @@ const symbolSnapFactory = {
 			 * @returns {Promise<Currency>} The price of the currency.
 			 */
 			async getCurrency(currency) {
-				const price = await provider.request({
-					method: 'wallet_invokeSnap',
-					params: {
-						snapId: defaultSnapOrigin,
-						request: {
-							method: 'getCurrency',
-							params: {
-								currency
-							}
-						}
-					}
+				const price = await this.invokeSnapMethod('getCurrency', {
+					currency
 				});
 
 				return price;
@@ -173,17 +138,8 @@ const symbolSnapFactory = {
 			 * @returns {Promise<Record<string, Account>>} The mosaics object returned by the snap.
 			 */
 			async fetchAccountMosaics(accountIds) {
-				const accounts = await provider.request({
-					method: 'wallet_invokeSnap',
-					params: {
-						snapId: defaultSnapOrigin,
-						request: {
-							method: 'fetchAccountMosaics',
-							params: {
-								accountIds
-							}
-						}
-					}
+				const accounts = await this.invokeSnapMethod('fetchAccountMosaics', {
+					accountIds
 				});
 
 				return accounts;
@@ -193,15 +149,7 @@ const symbolSnapFactory = {
 			 * @returns {Promise<Record<string, Account>>} The accounts object returned by the snap.
 			 */
 			async getAccounts() {
-				const accounts = await provider.request({
-					method: 'wallet_invokeSnap',
-					params: {
-						snapId: defaultSnapOrigin,
-						request: {
-							method: 'getAccounts'
-						}
-					}
-				});
+				const accounts = await this.invokeSnapMethod('getAccounts');
 
 				return accounts;
 			},
@@ -210,32 +158,15 @@ const symbolSnapFactory = {
 			 * @returns {object} The mosaic info object returned by the snap.
 			 */
 			async getMosaicInfo() {
-				const mosaicInfo = await provider.request({
-					method: 'wallet_invokeSnap',
-					params: {
-						snapId: defaultSnapOrigin,
-						request: {
-							method: 'getMosaicInfo'
-						}
-					}
-				});
+				const mosaicInfo = await this.invokeSnapMethod('getMosaicInfo');
 
 				return mosaicInfo;
 			},
 			async fetchAccountTransactions(address, offsetId, group = TransactionGroup.confirmed) {
-				const transactions = await provider.request({
-					method: 'wallet_invokeSnap',
-					params: {
-						snapId: defaultSnapOrigin,
-						request: {
-							method: 'fetchAccountTransactions',
-							params: {
-								address,
-								offsetId,
-								group
-							}
-						}
-					}
+				const transactions = await this.invokeSnapMethod('fetchAccountTransactions', {
+					address,
+					offsetId,
+					group
 				});
 
 				return transactions;
@@ -245,15 +176,7 @@ const symbolSnapFactory = {
 			 * @returns {Promise<FeeMultiplier>} The fee multiplier object returned by the snap.
 			 */
 			async getFeeMultiplier() {
-				const feeMultiplier = await provider.request({
-					method: 'wallet_invokeSnap',
-					params: {
-						snapId: defaultSnapOrigin,
-						request: {
-							method: 'getFeeMultiplier'
-						}
-					}
-				});
+				const feeMultiplier = await this.invokeSnapMethod('getFeeMultiplier');
 
 				return feeMultiplier;
 			},
@@ -263,21 +186,12 @@ const symbolSnapFactory = {
 			 * @returns {string | boolean} The transaction hash.
 			 */
 			async signTransferTransaction({ accountId, recipient, mosaics, message, fees }) {
-				const transactionHash = await provider.request({
-					method: 'wallet_invokeSnap',
-					params: {
-						snapId: defaultSnapOrigin,
-						request: {
-							method: 'signTransferTransaction',
-							params: {
-								accountId,
-								recipient,
-								mosaics,
-								message,
-								fees
-							}
-						}
-					}
+				const transactionHash = await this.invokeSnapMethod('signTransferTransaction', {
+					accountId,
+					recipient,
+					mosaics,
+					message,
+					fees
 				});
 
 				return transactionHash;
@@ -289,18 +203,9 @@ const symbolSnapFactory = {
 			 * @returns {Promise<Account>} The updated account object.
 			 */
 			async renameAccountLabel(accountId, newLabel) {
-				const updatedAccount = await provider.request({
-					method: 'wallet_invokeSnap',
-					params: {
-						snapId: defaultSnapOrigin,
-						request: {
-							method: 'renameAccountLabel',
-							params: {
-								accountId,
-								newLabel
-							}
-						}
-					}
+				const updatedAccount = await this.invokeSnapMethod('renameAccountLabel', {
+					accountId,
+					newLabel
 				});
 
 				return updatedAccount;
