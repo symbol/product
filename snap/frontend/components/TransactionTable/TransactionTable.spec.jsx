@@ -2,14 +2,18 @@ import TransactionTable from '.';
 import { Channels } from '../../config';
 import helper from '../../utils/helper';
 import testHelper from '../testHelper';
+import { expect, jest } from '@jest/globals';
 import { cleanup, screen, waitFor } from '@testing-library/react';
+import { toast } from 'react-toastify';
 
 const senderAddress = 'TAMYTGVH3UEVZRQSD64LGSMPKNTKMASOIDNYROI';
 const recipientAddress = 'TARDV42KTAIZEF64EQT4NXT7K55DHWBEFIXVJQY';
 
 const context = {
 	dispatch: {
-		setTransactions: jest.fn()
+		setTransactions: jest.fn(),
+		setMosaicInfo: jest.fn(),
+		setSelectedAccount: jest.fn()
 	},
 	walletState: {
 		selectedAccount: {
@@ -31,19 +35,32 @@ const context = {
 			price: 1
 		},
 		websocket: {
-			listenConfirmedTransaction: jest.fn(),
-			listenUnconfirmedTransaction: jest.fn(),
+			listenConfirmedTransaction: jest.fn((callback, address) => callback()),
+			listenUnconfirmedTransaction: jest.fn((callback, address) => callback()),
 			removeSubscriber: jest.fn()
 		}
 	},
 	symbolSnap: {
-		fetchAccountTransactions: jest.fn()
+		fetchAccountTransactions: jest.fn(),
+		fetchAccountMosaics : jest.fn(),
+		getMosaicInfo: jest.fn()
 	}
 };
 
 describe('components/TransactionTable', () => {
 	beforeEach(() => {
 		jest.clearAllMocks();
+		context.symbolSnap.fetchAccountMosaics.mockReturnValue({
+			'account1': {
+				id: 'account1',
+				addressIndex: 1,
+				type: 'metamask',
+				networkName: 'network',
+				label: 'label',
+				address: 'address',
+				publicKey: 'publicKey'
+			}
+		});
 	});
 
 	it('renders no transactions found message when transactions are empty', () => {
@@ -57,7 +74,7 @@ describe('components/TransactionTable', () => {
 
 		// Assert:
 		expect(transactionTable).toBeInTheDocument();
-		expect(context.symbolSnap.fetchAccountTransactions).toHaveBeenCalledTimes(2);
+		expect(context.symbolSnap.fetchAccountTransactions).toHaveBeenCalledTimes(5);
 	});
 
 	it('renders loading more transactions when in view', () => {
@@ -74,12 +91,15 @@ describe('components/TransactionTable', () => {
 
 		// Assert:
 		expect(transactionTable).toBeInTheDocument();
-		expect(context.symbolSnap.fetchAccountTransactions).toHaveBeenCalledTimes(2);
+		expect(context.symbolSnap.fetchAccountTransactions).toHaveBeenCalledTimes(5);
 	});
 
 	it('update transactions when address change', async () => {
 		// Arrange:
 		jest.spyOn(helper, 'updateTransactions').mockResolvedValue();
+		jest.spyOn(toast, 'success');
+
+		// context.symbolSnap.fetchAccountTransactions.mockReturnValue([]);
 
 		testHelper.customRender(<TransactionTable />, context);
 
@@ -89,6 +109,7 @@ describe('components/TransactionTable', () => {
 		// Assert:
 		await waitFor(() => {
 			expect(helper.updateTransactions).toHaveBeenCalledWith(context.dispatch, context.symbolSnap, senderAddress);
+			expect(toast.success).toHaveBeenNthCalledWith(1, 'New confirmed transaction');
 			expect(context.walletState.websocket.listenConfirmedTransaction).toHaveBeenCalledWith(
 				expect.any(Function),
 				senderAddress
@@ -97,6 +118,7 @@ describe('components/TransactionTable', () => {
 				expect.any(Function),
 				senderAddress
 			);
+			expect(toast.success).toHaveBeenNthCalledWith(2, 'New pending transaction');
 			expect(context.walletState.websocket.removeSubscriber).toHaveBeenCalledWith(`${Channels.confirmedAdded}/${senderAddress}`);
 			expect(context.walletState.websocket.removeSubscriber).toHaveBeenCalledWith(`${Channels.unconfirmedAdded}/${senderAddress}`);
 		});

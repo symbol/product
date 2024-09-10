@@ -1,7 +1,9 @@
 import TransferModalBox from '.';
 import helper from '../../utils/helper';
 import testHelper from '../testHelper';
+import { expect, jest } from '@jest/globals';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react';
+import { toast } from 'react-toastify';
 
 const context = {
 	walletState: {
@@ -394,6 +396,7 @@ describe('components/TransferModalBox', () => {
 		const assertValidateForm = async (mockSignResult, expectedResult) => {
 			// Arrange:
 			const mockOnRequestClose = jest.fn();
+			jest.spyOn(toast, 'success');
 
 			testHelper.customRender(<TransferModalBox isOpen={true} onRequestClose={mockOnRequestClose} />, context);
 			const addressInput = screen.getByPlaceholderText('Recipient address');
@@ -428,10 +431,12 @@ describe('components/TransferModalBox', () => {
 				}
 			);
 
-			if (expectedResult)
+			if (expectedResult) {
 				expect(mockOnRequestClose).toHaveBeenCalled();
-			else
+				expect(toast.success).toHaveBeenCalledWith('Announcing transaction');
+			} else {
 				expect(mockOnRequestClose).not.toHaveBeenCalled();
+			}
 
 		};
 

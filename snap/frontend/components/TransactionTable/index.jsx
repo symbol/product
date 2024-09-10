@@ -4,6 +4,7 @@ import helper from '../../utils/helper';
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import { useInView } from 'react-intersection-observer';
+import { toast } from 'react-toastify';
 
 const TransactionTable = () => {
 
@@ -36,11 +37,13 @@ const TransactionTable = () => {
 		setIsLastPage(false);
 
 		websocket.listenConfirmedTransaction(async () => {
+			toast.success('New confirmed transaction');
 			helper.updateTransactions(dispatch, symbolSnap, address);
 			helper.updateAccountMosaics(dispatch, symbolSnap, id);
 		}, address);
 
 		websocket.listenUnconfirmedTransaction(async () => {
+			toast.success('New pending transaction');
 			helper.updateUnconfirmedTransactions(dispatch, symbolSnap, address, transactions);
 		}, address);
 
