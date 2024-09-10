@@ -1,5 +1,7 @@
 import symbolSnapFactory from './snap';
 import { defaultSnapOrigin } from '../config';
+import { jest } from '@jest/globals';
+import { toast } from 'react-toastify';
 
 describe('symbolSnapFactory', () => {
 	let mockProvider;
@@ -85,6 +87,19 @@ describe('symbolSnapFactory', () => {
 			const expectedParams = { method };
 
 			await assertInvokeSnapMethod(method, {}, expectedParams);
+		});
+
+		it('toasts error message when provider request fails', async () => {
+			// Arrange:
+			mockProvider.request.mockRejectedValue(new Error('Error message'));
+			jest.spyOn(toast, 'error');
+
+			// Act:
+			await symbolSnap.invokeSnapMethod('anyInvokeMethod');
+
+			// Assert:
+			expect(mockProvider.request).toHaveBeenCalled;
+			expect(toast.error).toHaveBeenCalledWith('Metamask RPC Error: Error message');
 		});
 	});
 
