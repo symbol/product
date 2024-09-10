@@ -1,4 +1,5 @@
 import { TransactionGroup, defaultSnapOrigin } from '../config';
+import { toast } from 'react-toastify';
 
 const symbolSnapFactory = {
 	create(provider) {
@@ -11,16 +12,20 @@ const symbolSnapFactory = {
 			 * @returns {object} The response from the snap.
 			 */
 			async invokeSnapMethod(method, params = {}) {
-				return await this.provider.request({
-					method: 'wallet_invokeSnap',
-					params: {
-						snapId: defaultSnapOrigin,
-						request: {
-							method,
-							...(Object.keys(params).length && { params })
+				try {
+					return await this.provider.request({
+						method: 'wallet_invokeSnap',
+						params: {
+							snapId: defaultSnapOrigin,
+							request: {
+								method,
+								...(Object.keys(params).length && { params })
+							}
 						}
-					}
-				});
+					});
+				} catch (error) {
+					toast.error('Metamask RPC Error: ' + error.message);
+				}
 			},
 			/**
 			 * Get the installed snaps in MetaMask.
