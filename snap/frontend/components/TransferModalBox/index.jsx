@@ -5,6 +5,7 @@ import FeeMultiplier from '../FeeMultiplier';
 import Input from '../Input';
 import ModalBox from '../ModalBox';
 import { useEffect, useState } from 'react';
+import { toast } from 'react-toastify';
 import { SymbolFacade, models } from 'symbol-sdk/symbol';
 
 const TransferModalBox = ({ isOpen, onRequestClose }) => {
@@ -159,8 +160,10 @@ const TransferModalBox = ({ isOpen, onRequestClose }) => {
 			fees
 		});
 
-		if (result)
+		if (result) {
 			onRequestClose();
+			toast.success('Announcing transaction');
+		}
 
 	};
 
