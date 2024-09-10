@@ -75,7 +75,9 @@ describe('Main', () => {
 
 		// Assert:
 		const connectionStatus = component.queryByRole('connection-status');
+		const toastifyContainer = component.container.querySelector('.Toastify');
 		expect(connectionStatus).toBeInTheDocument();
+		expect(toastifyContainer).toBeInTheDocument();
 	});
 
 	it('renders the DetectMetamask component when provider is detected but symbolSnap is not created', async () => {
