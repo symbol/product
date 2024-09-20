@@ -15,6 +15,15 @@ export const fetchAccountPage = async searchParams => {
 	const searchCriteria = createSearchCriteria(searchParams);
 	let url;
 
+	if (searchCriteria.filter.isLatest) {
+		delete searchCriteria.filter.isLatest;
+		searchCriteria.filter.sort_field = 'height';
+	}
+	if (searchCriteria.filter.isActiveHarvesting) {
+		delete searchCriteria.filter.isActiveHarvesting;
+		searchCriteria.filter.is_harvesting = true;
+	}
+
 	if (searchCriteria.filter.mosaic) {
 		searchCriteria.filter = { namespaceName: searchCriteria.filter.mosaic };
 		url = createSearchURL(createAPIURL('mosaic/rich/list'), searchCriteria);
