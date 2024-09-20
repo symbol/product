@@ -989,17 +989,21 @@ class NemDatabase(DatabaseConnectionPool):
 
 			return self._create_account_view(result) if result else None
 
-	def get_accounts(self, limit, offset, sort):
+	def get_accounts(self, limit, offset, sort_field, sort_order, is_harvesting):
 		"""Gets accounts pagination in database."""
 
 		params = []
 
-		order_condition = f" ORDER BY a.balance {sort} "
+		where_condition = ''
+		if is_harvesting:
+			where_condition = f" WHERE a.harvest_remote_status = 'ACTIVE' "
+
+		order_condition = f" ORDER BY a.{sort_field} {sort_order} "
 		limit_condition = " LIMIT %s OFFSET %s"
 
 		params.extend([limit, offset])
 
-		sql = self._generate_account_sql_query(limit_condition=limit_condition, order_condition=order_condition)
+		sql = self._generate_account_sql_query(limit_condition=limit_condition, order_condition=order_condition, where_condition=where_condition)
 
 		with self.connection() as connection:
 			cursor = connection.cursor()

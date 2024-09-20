@@ -90,10 +90,10 @@ class NemRestFacade:
 
 		return account.to_dict() if account else None
 
-	def get_accounts(self, limit, offset, sort):
+	def get_accounts(self, limit, offset, sort_field, sort_order, is_harvesting):
 		"""Gets accounts pagination."""
 
-		accounts = self.nem_db.get_accounts(limit, offset, sort)
+		accounts = self.nem_db.get_accounts(limit, offset, sort_field, sort_order, is_harvesting)
 
 		return [account.to_dict() for account in accounts]
 

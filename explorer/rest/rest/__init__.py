@@ -270,15 +270,26 @@ def setup_nem_routes(app, nem_api_facade):
 		try:
 			limit = int(request.args.get('limit', 10))
 			offset = int(request.args.get('offset', 0))
-			sort = request.args.get('sort', 'DESC')
+			sort_field = request.args.get('sort_field', 'BALANCE')
+			sort_order = request.args.get('sort_order', 'DESC')
+			is_harvesting = request.args.get('is_harvesting', 'false').lower() == 'true'
 
-			if limit < 0 or offset < 0 or sort.upper() not in ['ASC', 'DESC']:
+			if limit < 0 or offset < 0 or sort_order.upper() not in ['ASC', 'DESC']:
+				raise ValueError()
+
+			if sort_field.upper() not in ['BALANCE', 'HEIGHT']:
 				raise ValueError()
 
 		except ValueError:
 			abort(400)
 
-		return jsonify(nem_api_facade.get_accounts(limit=limit, offset=offset, sort=sort))
+		return jsonify(nem_api_facade.get_accounts(
+			limit=limit,
+			offset=offset,
+			sort_field=sort_field,
+			sort_order=sort_order,
+			is_harvesting=is_harvesting
+		))
 
 	@app.route('/api/nem/transaction/statistics')
 	def api_get_nem_transaction_statistics():
