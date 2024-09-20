@@ -1,0 +1,12 @@
+{
+    "NDHEJKXY6YK7JGRFQT2L7P3O5VMUGR4BWKQNVXXQ": {
+        "name": "Binance",
+        "description": "Binance cold wallet",
+        "image": "/accounts/images/binance.png"
+    },
+    "NBCOABQGPNI356MN3Y2VGW3Q2MQ5GNBLTVU64OXU": {
+        "name": "Binance",
+        "description": "Binance hot wallet",
+        "image": "/accounts/images/binance.png"
+    }
+}
