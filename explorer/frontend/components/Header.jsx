@@ -65,6 +65,10 @@ const Header = () => {
 			label: 'English'
 		},
 		{
+			value: 'ja',
+			label: '日本語'
+		},
+		{
 			value: 'uk',
 			label: 'Українська'
 		}
