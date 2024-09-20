@@ -131,7 +131,7 @@
 	"field_importance": "Importance",
 	"field_importance_description": "The importance score determines the probability of an account to harvest the next block in case the account has harvesting turned on and all other accounts are harvesting too.",
 	"field_vestedBalance": "Vested Balance",
-	"field_vestedBalance_description": "???",
+	"field_vestedBalance_description": "The vested balance represents the amount of XEM in an account that has matured over time and is eligible for harvesting. The vested balance is used to calculate the account’s importance score for harvesting purposes.",
 	"field_account_height_description": "The height at which the first transaction was issued.",
 	"chart_name_importance_breakdown": "Top 10 Account\nImportance Breakdown",
 	"chart_name_harvesting_importance": "Total Harvesting\nAccount Importance",
