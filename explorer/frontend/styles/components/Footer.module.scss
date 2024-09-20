@@ -1,26 +1,126 @@
 @import '../variables';
 
-.footer {
-	position: relative;
+%links-container {
 	display: flex;
+	flex-direction: row;
 	align-items: center;
 	justify-content: center;
+}
+
+.footerSimplified {
+	padding: $spacing-padding;
+}
+
+.footer {
 	width: 100%;
 	margin-top: $spacing-section-gap;
-	padding: $spacing-padding;
-	color: $color-text-footer;
 	background-color: $color-background-footer;
 	box-shadow: 0 -4px 22px rgba(0, 0, 0, 5%);
 	backdrop-filter: blur(12px);
 
+	.footerInner {
+		position: relative;
+		display: flex;
+		flex-flow: row wrap;
+		gap: $spacing-base * 3 $spacing-base * 6;
+		align-items: center;
+		justify-content: flex-start;
+		width: 100%;
+		padding: $spacing-base * 3 $spacing-base;
+	}
+
+	.title {
+		margin: 0;
+		font: $font-title;
+	}
+
 	.footerLogo {
-		width: $spacing-base * 8;
-		height: $spacing-base * 8;
+		width: $spacing-base * 4;
+		height: $spacing-base * 4;
+	}
+
+	.footerLinksContainer {
+		display: flex;
+		flex-direction: row;
+		gap: $spacing-base * 3;
+
+		.footerLinks {
+			display: flex;
+			flex-flow: column wrap;
+			gap: $spacing-base * 0.5;
+			align-items: flex-start;
+			justify-content: flex-start;
+			width: $spacing-base * 18;
+
+			.footerLink {
+				color: $color-text-body;
+			}
+		}
+	}
+
+	.socialLinks {
+		display: flex;
+		flex: 1;
+		flex-direction: row;
+		gap: $spacing-base * 3;
+		align-items: center;
+		justify-content: flex-end;
+
+		.socialLink {
+			line-height: 0;
+
+			.socialIcon {
+				width: $spacing-base * 2;
+				height: $spacing-base * 2;
+			}
+		}
 	}
 }
 
 @media #{$screen-mobile} {
-	.footer {
+	.footerSimplified {
 		padding: $spacing-padding $spacing-padding $spacing-padding + $spacing-navigation-height;
+	}
+
+	.footer {
+		.footerInner {
+			flex-flow: row wrap;
+			gap: $spacing-base * 3;
+			align-items: flex-start;
+			padding: $spacing-base * 3 $spacing-base * 1 $spacing-padding + $spacing-navigation-height;
+		}
+
+		.footerLogo {
+			width: $spacing-base * 5;
+			height: $spacing-base * 5;
+		}
+
+		.socialLinks {
+			align-items: center;
+			order: 2;
+			height: $spacing-base * 5;
+
+			.socialLink {
+				.socialIcon {
+					width: $spacing-base * 3;
+					height: $spacing-base * 3;
+				}
+			}
+		}
+
+		.footerLinksContainer {
+			display: grid;
+			grid-template-columns: repeat(2, 1fr);
+			gap: $spacing-base * 3;
+			order: 3;
+			width: 100%;
+
+			.footerLinks {
+				flex-flow: column wrap;
+				gap: $spacing-base;
+				align-items: flex-start;
+				justify-content: flex-start;
+			}
+		}
 	}
 }

@@ -277,5 +277,12 @@
 	"label_receive": "Receive",
 	"label_none": "None",
 	"label_active": "Active",
-	"label_expired": "Expired"
+	"label_expired": "Expired",
+
+	"footer_title_section_1": "Resources",
+	"footer_title_section_2": "Products",
+	"footer_link_techRef": "Technical Reference",
+	"footer_link_docs": "Documentation",
+	"footer_link_faucet": "XEM Faucet",
+	"footer_link_supernode": "Supernode Program"
 }
