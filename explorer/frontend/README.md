@@ -44,6 +44,20 @@ These variables are prefixed with `NEXT_PUBLIC_` and are exposed to the browser,
 
 - **`NEXT_PUBLIC_HISTORICAL_PRICE_URL`**: Historical coin price endpoint. Example: `https://marketdata.com/history/data?sym1=XEM`.
 
+- **`NEXT_PUBLIC_SOCIAL_URL_TWITTER`**: The URL for the company's Twitter/X social profile. This can be used to display social media links in the application. Example: `https://twitter.com/company`.
+
+- **`NEXT_PUBLIC_SOCIAL_URL_GITHUB`**: The URL for the company's GitHub organization. This can be used to display social media links in the application. Example: `https://github.com/company`.
+
+- **`NEXT_PUBLIC_SOCIAL_URL_DISCORD`**: The URL for the company's Discord server. This can be used to display social media links in the application. Example: `https://discord.com/company`.
+
+- **`NEXT_PUBLIC_FOOTER_URL_DOCS`**: The URL for the NEM documentation. Example: `https://website.com`.
+
+- **`NEXT_PUBLIC_FOOTER_URL_TECHNICAL_REFERENCE`**: The URL for the NEM technical reference. Example: `https://website.com`.
+
+- **`NEXT_PUBLIC_FOOTER_URL_FAUCET`**: The URL for the XEM Faucet. Example: `https://website.com`.
+
+- **`NEXT_PUBLIC_FOOTER_URL_SUPERNODE_PROGRAM`**: The URL for the NEM Supernode Program. Example: `https://website.com`.
+
 ## Requirements
 
 - Node.js v20.11.0
