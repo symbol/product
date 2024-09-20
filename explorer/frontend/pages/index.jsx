@@ -110,9 +110,6 @@ const Home = ({
 							<Field title={t('field_circulatingSupply')} textAlign="right">
 								${numberToShortString(marketData.circulatingSupply)}
 							</Field>
-							<Field title={t('field_treasury')} textAlign="right">
-								{numberToShortString(marketData.treasury)} XEM
-							</Field>
 						</div>
 					</div>
 					<Separator />
