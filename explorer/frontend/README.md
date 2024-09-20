@@ -4,29 +4,45 @@ This project is a NEM blockchain explorer built using the Next.js framework. It 
 
 ## Folder Structure
 
-- **api/**: Contains modules for making requests to APIs to fetch data.
-- **components/**: Contains reusable UI components.
-- **config/**: Contains app configuration and reexports environment variables.
-- **constants/**: Contains constants used across the app.
-- **pages/**: Contains the pages of the application.
-- **public/**: Contains static files.
-- **scripts/**: Contains CI scripts.
-- **styles/**: Contains stylesheets.
-- **utils/**: Contains commonly used functions.
-- **.env**: Contains environment variables.
+```plaintext
+peregrine-partners/
+├── api/              # Functions for interacting with internal and external APIs
+├── components/       # Reusable React components
+├── config/           # Configuration for the project
+├── constants/        # Global constants used throughout the application
+├── pages/            # Website pages .
+├── public/           # Images, fonts and other static assets
+├── styles/           # Global SCSS files
+└── utils/            # Utility functions and helpers
+```
 
 ## Environment Variables
 
-- `NEXT_PUBLIC_NATIVE_MOSAIC_ID`: Native mosaic ID
-- `NEXT_PUBLIC_NATIVE_MOSAIC_TICKER`: Native mosaic ticker
-- `NEXT_PUBLIC_NATIVE_MOSAIC_DIVISIBILITY`: Native mosaic divisibility
-- `NEXT_PUBLIC_BLOCKCHAIN_UNWIND_LIMIT`: Blockchain unwind limit
-- `NEXT_PUBLIC_REQUEST_TIMEOUT`: Request timeout
-- `NEXT_PUBLIC_API_BASE_URL`: Explorer REST API endpoint
-- `NEXT_PUBLIC_SUPERNODE_STATS_URL`: Supernodes statistics endpoint
-- `NEXT_PUBLIC_NODELIST_URL`: Node list endpoint
-- `NEXT_PUBLIC_MARKET_DATA_URL`: Market data endpoint
-- `NEXT_PUBLIC_HISTORICAL_PRICE_URL`: Historical coin price endpoint
+All environment variables listed below are required for both development and production modes.
+
+### Public Environment Variables
+
+These variables are prefixed with `NEXT_PUBLIC_` and are exposed to the browser, meaning they can be accessed both on the server and in the client-side code.
+
+- **`NEXT_PUBLIC_NATIVE_MOSAIC_ID`**: Native mosaic ID. Example: `nem.xem`.
+
+- **`NEXT_PUBLIC_NATIVE_MOSAIC_TICKER`**: Native mosaic ticker. Example: `XEM`.
+
+- **`NEXT_PUBLIC_NATIVE_MOSAIC_DIVISIBILITY`**: Native mosaic divisibility. Example: `6`.
+
+- **`NEXT_PUBLIC_BLOCKCHAIN_UNWIND_LIMIT`**: Blockchain unwind limit. Example: `360`.
+
+- **`NEXT_PUBLIC_REQUEST_TIMEOUT`**: The timeout duration (in milliseconds) for network requests made by the application. Example: `15000` (15 seconds).
+
+- **`NEXT_PUBLIC_API_BASE_URL`**: Explorer REST API endpoint. Example: `http://explorer-backend.com:4000/api/nem`.
+
+- **`NEXT_PUBLIC_SUPERNODE_STATS_URL`**: Supernodes statistics endpoint. Example: `https://nem.io/supernode/api/statistics`.
+
+- **`NEXT_PUBLIC_NODELIST_URL`**: Node list endpoint. Example: `https://nodewatch.symbol.tools/api/nem/nodes`.
+
+- **`NEXT_PUBLIC_MARKET_DATA_URL`**: Market data endpoint. Example: `https://marketdata.com/data/data?sym1=XEM&sym2=USD`.
+
+- **`NEXT_PUBLIC_HISTORICAL_PRICE_URL`**: Historical coin price endpoint. Example: `https://marketdata.com/history/data?sym1=XEM`.
 
 ## Requirements
 
