@@ -1,5 +1,6 @@
 import asyncio
 import random
+
 from symbolchain.CryptoTypes import PublicKey
 from symbolchain.nc import TransactionType
 from symbolchain.nem.Network import Address
@@ -7,14 +8,15 @@ from symbolchain.nem.Network import Address
 from ..model.Block import Block
 from ..model.Endpoint import Endpoint
 from ..model.NodeInfo import NodeInfo
-from ..model.Transaction import TransactionFactory, TransactionHandler, Mosaic
+from ..model.Transaction import Mosaic, TransactionFactory, TransactionHandler
 from .BasicConnector import BasicConnector
 
 MICROXEM_PER_XEM = 1000000
 
+
 def generate_random_hex_string(length=64):
-    characters = '0123456789abcdef'
-    return ''.join(random.choices(characters, k=length))
+	characters = '0123456789abcdef'
+	return ''.join(random.choices(characters, k=length))
 
 
 class NemAccountInfo:
@@ -218,12 +220,16 @@ class NemConnector(BasicConnector):
 	async def account_mosaics(self, address):
 		"""Gets mosaics owned by an account."""
 
-		mosaics_dict = await self.get(f'account/mosaic/owned?address={address}', 'data')
+		try:
+			mosaics_dict = await self.get(f'account/mosaic/owned?address={address}', 'data')
 
-		return [
-			Mosaic(
-				f'{mosaic["mosaicId"]["namespaceId"]}.{mosaic["mosaicId"]["name"]}',
-				mosaic['quantity']
-			)
-			for mosaic in mosaics_dict
-		]
+			return [
+				Mosaic(
+					f'{mosaic["mosaicId"]["namespaceId"]}.{mosaic["mosaicId"]["name"]}',
+					mosaic['quantity']
+				)
+				for mosaic in mosaics_dict
+			]
+
+		except Exception:
+			return [Mosaic(namespace_name='nem.xem', quantity=0)]
