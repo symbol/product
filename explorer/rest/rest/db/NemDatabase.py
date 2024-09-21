@@ -193,15 +193,13 @@ class NemDatabase(DatabaseConnectionPool):
 				ea.balance,
 				ea.vested_balance,
 				jsonb_agg(
-					jsonb_set(
-						mosaic.value,
-						'{{divisibility}}',
-						to_jsonb(
-							CASE
-								WHEN mosaic.value->>'namespace_name' = 'nem.xem' THEN 6
-								ELSE COALESCE(m.divisibility, 0)
-							END
-						)
+					mosaic.value || jsonb_build_object(
+						'divisibility',
+						CASE
+							WHEN mosaic.value->>'namespace_name' = 'nem.xem' THEN 6
+							ELSE COALESCE(m.divisibility, 0)
+						END,
+						'creator', encode(m.creator::bytea, 'hex')
 					)
 				) as mosaics,
 				ea.harvested_fees,
@@ -536,7 +534,8 @@ class NemDatabase(DatabaseConnectionPool):
 			vested_balance=_format_xem_relative(vested_balance),
 			mosaics=[{
 				'namespace_name': mosaic['namespace_name'],
-				'quantity': _format_relative(mosaic['quantity'], mosaic['divisibility'])
+				'quantity': _format_relative(mosaic['quantity'], mosaic['divisibility']),
+				'creator': str(self.network.public_key_to_address(PublicKey(mosaic['creator']))) if mosaic['creator'] else None,
 			} for mosaic in mosaics],
 			harvested_fees=_format_xem_relative(harvested_fees),
 			harvested_blocks=harvested_blocks,
