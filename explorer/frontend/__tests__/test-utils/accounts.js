@@ -15,6 +15,7 @@ export const accountPageResponse = [
 		mosaics: [
 			{
 				namespace_name: 'nem.xem',
+				creator: 'NBBF4PC4RUB7HRKCCVDWFLILUUAO2HRETM34OCQZ',
 				quantity: 2014883839.88001
 			}
 		],
@@ -38,6 +39,7 @@ export const accountPageResponse = [
 		mosaics: [
 			{
 				namespace_name: 'nem.xem',
+				creator: 'NBBF4PC4RUB7HRKCCVDWFLILUUAO2HRETM34OCQZ',
 				quantity: 55692075.379926
 			}
 		],
@@ -65,10 +67,12 @@ export const accountPageResponse = [
 		mosaics: [
 			{
 				namespace_name: 'nem.xem',
+				creator: 'NBBF4PC4RUB7HRKCCVDWFLILUUAO2HRETM34OCQZ',
 				quantity: 311173592.240664
 			},
 			{
 				namespace_name: 'asset.ch0459804891b',
+				creator: 'NAXF4PC4RUB7HRKCCVDWFLILUUAO2HRETM34OCQZ',
 				quantity: 4000000
 			}
 		],
@@ -101,10 +105,12 @@ export const accountPageResponse = [
 			},
 			{
 				namespace_name: 'nem.xem',
+				creator: 'NBBF4PC4RUB7HRKCCVDWFLILUUAO2HRETM34OCQZ',
 				quantity: 656267445.651187
 			},
 			{
 				namespace_name: 'asset.ch0459804891b',
+				creator: 'NAXF4PC4RUB7HRKCCVDWFLILUUAO2HRETM34OCQZ',
 				quantity: 44000000
 			}
 		],
@@ -132,10 +138,12 @@ export const accountPageResponse = [
 			},
 			{
 				namespace_name: 'asset.ch0459804891b',
+				creator: 'NAXF4PC4RUB7HRKCCVDWFLILUUAO2HRETM34OCQZ',
 				quantity: 23000000
 			},
 			{
 				namespace_name: 'nem.xem',
+				creator: 'NBBF4PC4RUB7HRKCCVDWFLILUUAO2HRETM34OCQZ',
 				quantity: 58820555.132005
 			}
 		],
@@ -163,10 +171,12 @@ export const accountPageResponse = [
 		mosaics: [
 			{
 				namespace_name: 'nem.xem',
+				creator: 'NBBF4PC4RUB7HRKCCVDWFLILUUAO2HRETM34OCQZ',
 				quantity: 2420611957.02233
 			},
 			{
 				namespace_name: 'asset.ch0459804891b',
+				creator: 'NAXF4PC4RUB7HRKCCVDWFLILUUAO2HRETM34OCQZ',
 				quantity: 2000000
 			}
 		],
@@ -190,6 +200,7 @@ export const accountPageResponse = [
 		mosaics: [
 			{
 				namespace_name: 'nem.xem',
+				creator: 'NBBF4PC4RUB7HRKCCVDWFLILUUAO2HRETM34OCQZ',
 				quantity: 404352001.1
 			}
 		],
@@ -217,6 +228,7 @@ export const accountPageResponse = [
 			},
 			{
 				namespace_name: 'nem.xem',
+				creator: 'NBBF4PC4RUB7HRKCCVDWFLILUUAO2HRETM34OCQZ',
 				quantity: 52865318.484075
 			},
 			{
@@ -225,6 +237,7 @@ export const accountPageResponse = [
 			},
 			{
 				namespace_name: 'asset.ch0459804891b',
+				creator: 'NAXF4PC4RUB7HRKCCVDWFLILUUAO2HRETM34OCQZ',
 				quantity: 2000000
 			}
 		],
@@ -248,6 +261,7 @@ export const accountPageResponse = [
 		mosaics: [
 			{
 				namespace_name: 'nem.xem',
+				creator: 'NBBF4PC4RUB7HRKCCVDWFLILUUAO2HRETM34OCQZ',
 				quantity: 374786609.434
 			}
 		],
@@ -271,10 +285,12 @@ export const accountPageResponse = [
 		mosaics: [
 			{
 				namespace_name: 'asset.ch0459804891b',
+				creator: 'NAXF4PC4RUB7HRKCCVDWFLILUUAO2HRETM34OCQZ',
 				quantity: 2000000
 			},
 			{
 				namespace_name: 'nem.xem',
+				creator: 'NBBF4PC4RUB7HRKCCVDWFLILUUAO2HRETM34OCQZ',
 				quantity: 486417141.635
 			}
 		],
@@ -298,6 +314,7 @@ export const accountPageResult = {
 				{
 					name: 'nem.xem',
 					id: 'nem.xem',
+					isCreatedByAccount: false,
 					amount: 2014883839.88001
 				}
 			],
@@ -322,6 +339,7 @@ export const accountPageResult = {
 				{
 					name: 'nem.xem',
 					id: 'nem.xem',
+					isCreatedByAccount: false,
 					amount: 55692075.379926
 				}
 			],
@@ -346,11 +364,13 @@ export const accountPageResult = {
 				{
 					name: 'nem.xem',
 					id: 'nem.xem',
+					isCreatedByAccount: false,
 					amount: 311173592.240664
 				},
 				{
 					name: 'asset.ch0459804891b',
 					id: 'asset.ch0459804891b',
+					isCreatedByAccount: true,
 					amount: 4000000
 				}
 			],
@@ -379,16 +399,19 @@ export const accountPageResult = {
 				{
 					name: 'd.usd',
 					id: 'd.usd',
+					isCreatedByAccount: false,
 					amount: 4200
 				},
 				{
 					name: 'nem.xem',
 					id: 'nem.xem',
+					isCreatedByAccount: false,
 					amount: 656267445.651187
 				},
 				{
 					name: 'asset.ch0459804891b',
 					id: 'asset.ch0459804891b',
+					isCreatedByAccount: false,
 					amount: 44000000
 				}
 			],
@@ -418,16 +441,19 @@ export const accountPageResult = {
 				{
 					name: 'd.usd',
 					id: 'd.usd',
+					isCreatedByAccount: false,
 					amount: 2100
 				},
 				{
 					name: 'asset.ch0459804891b',
 					id: 'asset.ch0459804891b',
+					isCreatedByAccount: false,
 					amount: 23000000
 				},
 				{
 					name: 'nem.xem',
 					id: 'nem.xem',
+					isCreatedByAccount: false,
 					amount: 58820555.132005
 				}
 			],
@@ -452,11 +478,13 @@ export const accountPageResult = {
 				{
 					name: 'nem.xem',
 					id: 'nem.xem',
+					isCreatedByAccount: false,
 					amount: 2420611957.02233
 				},
 				{
 					name: 'asset.ch0459804891b',
 					id: 'asset.ch0459804891b',
+					isCreatedByAccount: false,
 					amount: 2000000
 				}
 			],
@@ -485,6 +513,7 @@ export const accountPageResult = {
 				{
 					name: 'nem.xem',
 					id: 'nem.xem',
+					isCreatedByAccount: false,
 					amount: 404352001.1
 				}
 			],
@@ -509,21 +538,25 @@ export const accountPageResult = {
 				{
 					name: 'pundix.npxs',
 					id: 'pundix.npxs',
+					isCreatedByAccount: false,
 					amount: 11788.788832
 				},
 				{
 					name: 'nem.xem',
 					id: 'nem.xem',
+					isCreatedByAccount: false,
 					amount: 52865318.484075
 				},
 				{
 					name: 'prover.proof',
 					id: 'prover.proof',
+					isCreatedByAccount: false,
 					amount: 0.05
 				},
 				{
 					name: 'asset.ch0459804891b',
 					id: 'asset.ch0459804891b',
+					isCreatedByAccount: false,
 					amount: 2000000
 				}
 			],
@@ -548,6 +581,7 @@ export const accountPageResult = {
 				{
 					name: 'nem.xem',
 					id: 'nem.xem',
+					isCreatedByAccount: false,
 					amount: 374786609.434
 				}
 			],
@@ -572,11 +606,13 @@ export const accountPageResult = {
 				{
 					name: 'asset.ch0459804891b',
 					id: 'asset.ch0459804891b',
+					isCreatedByAccount: false,
 					amount: 2000000
 				},
 				{
 					name: 'nem.xem',
 					id: 'nem.xem',
+					isCreatedByAccount: false,
 					amount: 486417141.635
 				}
 			],
@@ -848,10 +884,12 @@ export const accountInfoResponse = {
 	mosaics: [
 		{
 			namespace_name: 'nem.xem',
+			creator: 'NAXF4PC4RUB7HRKCCVDWFLILUUAO2HRETM34OCQZ',
 			quantity: 539.527798
 		},
 		{
 			namespace_name: 'holo.watacoin',
+			creator: 'NDQXKN6REQRVT4WE6WIU2FXQLTJFEHKK5ITD2ZSV',
 			quantity: 10000000
 		}
 	],
@@ -872,11 +910,13 @@ export const accountInfoResult = {
 		{
 			name: 'nem.xem',
 			id: 'nem.xem',
+			isCreatedByAccount: false,
 			amount: 539.527798
 		},
 		{
 			name: 'holo.watacoin',
 			id: 'holo.watacoin',
+			isCreatedByAccount: true,
 			amount: 10000000
 		}
 	],

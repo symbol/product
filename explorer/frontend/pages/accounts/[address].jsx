@@ -64,11 +64,6 @@ const AccountInfo = ({ accountInfo, preloadedTransactions }) => {
 			name: 'isCreatedByAccount',
 			title: t('filter_created'),
 			type: 'boolean'
-		},
-		{
-			name: 'isExpired',
-			title: t('filter_expired'),
-			type: 'boolean'
 		}
 	];
 
@@ -210,7 +205,6 @@ const AccountInfo = ({ accountInfo, preloadedTransactions }) => {
 						<Filter
 							data={mosaicFilterConfig}
 							value={mosaics.filter}
-							isDisabled
 							onChange={mosaics.changeFilter}
 							search={search}
 						/>
