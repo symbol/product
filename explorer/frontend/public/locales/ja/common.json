@@ -135,7 +135,7 @@
 	"field_vestedBalance_description": "権利確定残高は、時間の経過とともに成熟したアカウント内のXEMの量を表し、ハーベストの対象となります。権利確定残高は、ハーベスト目的のアカウント重要度を決定するために使用されます。",
 	"field_account_height_description": "最初の取引が発行されたブロック高です。",
 	"field_mainPublicKey": "公開鍵 (Main)",
-	"filed_nodePublicKey": "公開鍵 (Node)",
+	"field_nodePublicKey": "公開鍵 (Node)",
 	"field_endpoint": "エンドポイント",
 	"chart_name_importance_breakdown": "トップ10アカウント\n重要度の内訳",
 	"chart_name_harvesting_importance": "総ハーベスティング\nアカウント重要度",
