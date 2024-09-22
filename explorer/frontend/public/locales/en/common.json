@@ -135,7 +135,7 @@
 	"field_vestedBalance_description": "The vested balance represents the amount of XEM in an account that has matured over time and is eligible for harvesting. The vested balance is used to calculate the account’s importance score for harvesting purposes.",
 	"field_account_height_description": "The height at which the first transaction was issued.",
 	"field_mainPublicKey": "Main Public Key",
-	"filed_nodePublicKey": "Node Public Key",
+	"field_nodePublicKey": "Node Public Key",
 	"field_endpoint": "Endpoint",
 	"chart_name_importance_breakdown": "Top 10 Account\nImportance Breakdown",
 	"chart_name_harvesting_importance": "Total Harvesting\nAccount Importance",
