@@ -52,6 +52,10 @@ const BlockAvatar = () => {
 	return <CustomImage src={'/images/blocks/block.svg'} className={styles.image} alt="Block" />;
 };
 
+const NodeAvatar = () => {
+	return <CustomImage src={'/images/nodes/node.svg'} className={styles.image} alt="Node" />;
+};
+
 const TransactionAvatar = ({ type }) => {
 	return (
 		<div className={styles.imageContainerTransactionType}>
@@ -81,6 +85,8 @@ const Avatar = ({ size, type, value, dot }) => {
 			<TransactionAvatar type={value} />
 		) : type === 'block' ? (
 			<BlockAvatar />
+		) : type === 'node' ? (
+			<NodeAvatar />
 		) : type === 'namespace' ? (
 			<NamespaceAvatar namespaceId={value} />
 		) : null;

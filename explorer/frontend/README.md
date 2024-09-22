@@ -36,7 +36,7 @@ These variables are prefixed with `NEXT_PUBLIC_` and are exposed to the browser,
 
 - **`NEXT_PUBLIC_API_BASE_URL`**: Explorer REST API endpoint. Example: `http://explorer-backend.com:4000/api/nem`.
 
-- **`NEXT_PUBLIC_SUPERNODE_STATS_URL`**: Supernodes statistics endpoint. Example: `https://nem.io/supernode/api/statistics`.
+- **`NEXT_PUBLIC_SUPERNODE_API_URL`**: Supernodes API endpoint. Example: `https://nem.io/supernode/api/statistics`.
 
 - **`NEXT_PUBLIC_NODELIST_URL`**: Node list endpoint. Example: `https://nodewatch.symbol.tools/api/nem/nodes`.
 
