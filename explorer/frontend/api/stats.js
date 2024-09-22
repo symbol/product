@@ -115,7 +115,8 @@ export const fetchMarketData = async () => {
 		price: data.PRICE,
 		priceChange: data.CHANGEPCTDAY,
 		volume: data.VOLUME24HOUR,
-		circulatingSupply: data.CIRCULATINGSUPPLYMKTCAP,
+		circulatingSupply: data.CIRCULATINGSUPPLY,
+		marketCap: data.MKTCAP,
 		treasury: 0
 	};
 };

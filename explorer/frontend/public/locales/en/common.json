@@ -14,6 +14,7 @@
 	"field_beneficiary": "Beneficiary",
 	"field_blockGenerationTime": "Block Generation Time",
 	"field_circulatingSupply": "Circulating Supply",
+	"field_marketCap": "Market Capitalization",
 	"field_currentBlockTime": "Current Block Time",
 	"field_difficulty": "Difficulty",
 	"field_feeFast": "Fast",
