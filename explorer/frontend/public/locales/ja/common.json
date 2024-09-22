@@ -14,6 +14,7 @@
 	"field_beneficiary": "受益者",
 	"field_blockGenerationTime": "ブロック生成時間",
 	"field_circulatingSupply": "流通供給量",
+	"field_marketCap": "時価総額",
 	"field_currentBlockTime": "現在のブロック時間",
 	"field_difficulty": "難易度",
 	"field_feeFast": "高速",
