@@ -18,7 +18,7 @@ const AccountMultisigTree = ({ address, cosignatories, cosignatoryOf }) => {
 									className={styles.accountWithLine}
 									title={item}
 									key={'mul' + index}
-									href={createPageHref('blocks', item)}
+									href={createPageHref('accounts', item)}
 								>
 									<Avatar value={item} type="account" size="md" />
 									<div className={styles.lineVertical} />
@@ -42,7 +42,7 @@ const AccountMultisigTree = ({ address, cosignatories, cosignatoryOf }) => {
 									className={styles.accountWithLine}
 									title={item}
 									key={'cos' + index}
-									href={createPageHref('blocks', item)}
+									href={createPageHref('accounts', item)}
 								>
 									<div className={styles.lineVertical} />
 									<Avatar value={item} type="account" size="md" />
