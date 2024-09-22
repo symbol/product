@@ -24,6 +24,7 @@ const AccountAvatar = ({ address }) => {
 		// If the account is not a known account, generate the image using the address
 		const image = makeBlockie(address);
 		setImage(image);
+		setDescription(address);
 	}, [address]);
 
 	return (
