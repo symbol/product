@@ -57,6 +57,11 @@ const Header = () => {
 			text: t('menu_namespaces'),
 			href: createPageHref('namespaces'),
 			iconSrc: '/images/menu/namespaces.svg'
+		},
+		{
+			text: t('menu_nodes'),
+			href: createPageHref('nodes'),
+			iconSrc: '/images/menu/nodes.svg'
 		}
 	];
 	const languages = [
