@@ -3,7 +3,7 @@ import Avatar from '@/components/Avatar';
 import Field from '@/components/Field';
 import Section from '@/components/Section';
 import ValueCopy from '@/components/ValueCopy';
-import styles from '@/styles/pages/AccountInfo.module.scss';
+import styles from '@/styles/pages/NodeInfo.module.scss';
 import Head from 'next/head';
 import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';

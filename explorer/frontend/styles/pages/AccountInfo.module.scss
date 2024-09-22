@@ -16,8 +16,16 @@
 	height: 23rem;
 }
 
-.name {
-	word-break: break-all;
+.stateSectionCard {
+	height: 23rem;
+
+	.stateTable {
+		display: flex;
+		flex-flow: column wrap;
+		gap: $spacing-base;
+		height: 16rem;
+		overflow-x: auto;
+	}
 }
 
 @media #{$screen-mobile} {
@@ -31,5 +39,14 @@
 
 	.secondSectionCard {
 		height: auto;
+	}
+
+	.stateSectionCard {
+		height: auto;
+
+		.stateTable {
+			height: auto;
+			max-height: 30rem;
+		}
 	}
 }
