@@ -951,6 +951,7 @@ class NemDatabase(DatabaseConnectionPool):
 
 		# Join main query column from CTE table
 		sql += self._generate_transaction_sql_query().replace('FROM transactions t', 'FROM transaction_list t')
+		sql += f" ORDER BY t.timestamp {sort}"
 
 		with self.connection() as connection:
 			cursor = connection.cursor()
