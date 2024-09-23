@@ -3,6 +3,7 @@ import Avatar from '@/components/Avatar';
 import Field from '@/components/Field';
 import Section from '@/components/Section';
 import ValueCopy from '@/components/ValueCopy';
+import ValueMosaic from '@/components/ValueMosaic';
 import styles from '@/styles/pages/NodeInfo.module.scss';
 import Head from 'next/head';
 import { useTranslation } from 'next-i18next';
@@ -61,7 +62,7 @@ const NodeInfo = ({ nodeInfo }) => {
 							{nodeInfo.version}
 						</Field>
 						<Field title={t('field_balance')}>
-							{nodeInfo.balance} XEM
+							<ValueMosaic isNative amount={nodeInfo.balance} />
 						</Field>
 					</div>
 				</Section>
