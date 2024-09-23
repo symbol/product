@@ -194,7 +194,7 @@ const AccountInfo = ({ accountInfo, preloadedTransactions }) => {
 							{accountInfo.importance} %
 						</Field>
 						<Field title={t('field_vestedBalance')} description={t('field_vestedBalance_description')}>
-							{accountInfo.vestedBalance} XEM
+							<ValueMosaic isNative amount={accountInfo.vestedBalance} />
 						</Field>
 					</div>
 				</Section>

@@ -68,7 +68,7 @@ const accountInfoFromDTO = data => ({
 	publicKey: data.publicKey || null,
 	description: data.remarks || null,
 	balance: data.balance,
-	vestedBalance: data.vestedBalance || null,
+	vestedBalance: data.vestedBalance || 0,
 	mosaics:
 		data.mosaics?.map(item => ({
 			name: item.namespace_name,
