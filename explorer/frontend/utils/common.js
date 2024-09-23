@@ -1,6 +1,21 @@
 import { TRANSACTION_CHART_TYPE } from '@/constants';
 
 /**
+ * Checks if the value is numeric.
+ * @param {any} value - Value.
+ * @returns {boolean} True if the value is numeric, false otherwise.
+ * @example
+ * isNumeric(123); // true
+ * isNumeric('123'); // true
+ * isNumeric('abc'); // false
+ * isNumeric(null); // false
+ * isNumeric(undefined); // false
+ * isNumeric(NaN); // false
+ * isNumeric(Infinity); // false
+ */
+const isNumeric = value => (typeof value === 'number' || typeof value === 'string') && isFinite(value);
+
+/**
  * Converts date to a readable text string.
  * @param {string} dateStr - Date string.
  * @param {Function} translate - Translation function.
@@ -59,7 +74,7 @@ export const dateToLocalDate = date => {
  * numberToShortString(1234567); // "1.23M"
  */
 export const numberToShortString = num => {
-	if (isNaN(num))
+	if (!isNumeric(num))
 		return '';
 
 	const value = num.toString().replace(/[^0-9.]/g, '');
@@ -90,7 +105,7 @@ export const numberToShortString = num => {
  * numberToString(1234567); // "1 234 567"
  */
 export const numberToString = num => {
-	if (isNaN(num))
+	if (!isNumeric(num))
 		return '';
 
 	return num.toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ' ');
@@ -105,6 +120,9 @@ export const numberToString = num => {
  * truncateDecimals(1.2345, 2); // 1.23
  */
 export const truncateDecimals = (num, decimal) => {
+	if (!isNumeric(num))
+		return '';
+
 	const multiplier = Math.pow(10, decimal);
 	const adjustedNum = num * multiplier;
 	let truncatedNum;
