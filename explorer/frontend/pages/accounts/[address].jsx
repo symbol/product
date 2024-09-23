@@ -64,11 +64,6 @@ const AccountInfo = ({ accountInfo, preloadedTransactions }) => {
 			name: 'isCreatedByAccount',
 			title: t('filter_created'),
 			type: 'boolean'
-		},
-		{
-			name: 'isExpired',
-			title: t('filter_expired'),
-			type: 'boolean'
 		}
 	];
 
@@ -199,7 +194,7 @@ const AccountInfo = ({ accountInfo, preloadedTransactions }) => {
 							{accountInfo.importance} %
 						</Field>
 						<Field title={t('field_vestedBalance')} description={t('field_vestedBalance_description')}>
-							{accountInfo.vestedBalance} XEM
+							<ValueMosaic isNative amount={accountInfo.vestedBalance} />
 						</Field>
 					</div>
 				</Section>
@@ -210,7 +205,6 @@ const AccountInfo = ({ accountInfo, preloadedTransactions }) => {
 						<Filter
 							data={mosaicFilterConfig}
 							value={mosaics.filter}
-							isDisabled
 							onChange={mosaics.changeFilter}
 							search={search}
 						/>

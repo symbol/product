@@ -564,9 +564,9 @@ describe('utils/hooks', () => {
 
 			// Assert:
 			expect(result.current).toBe(expectedValue);
-			if (shouldFetchPrice) 
+			if (shouldFetchPrice)
 				expect(fetchPrice).toHaveBeenCalledWith(123456, 'USD');
-			else 
+			else
 				expect(fetchPrice).not.toHaveBeenCalled();
 		};
 

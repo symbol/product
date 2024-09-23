@@ -190,7 +190,7 @@
 		width: 100%;
 		width: 100vw;
 		height: $spacing-navigation-height;
-		padding: 0 $spacing-padding;
+		padding: 0 $spacing-base * 3 0 0;
 		overflow: auto hidden;
 		background: $color-background-navigation;
 		border-top: $spacing-base / 4 solid $color-border-navigation;

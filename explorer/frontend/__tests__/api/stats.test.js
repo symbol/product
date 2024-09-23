@@ -161,7 +161,7 @@ describe('api/stats', () => {
 			const args = [];
 			const responseMap = {
 				'https://node.list': nodeListResponse,
-				'https://supernode.stats': supernodeStatisticsResponse
+				'https://supernode.backend/statistics': supernodeStatisticsResponse
 			};
 			const expectedResult = {
 				total: 3,

@@ -1,0 +1,57 @@
+{
+    "NDHEJKXY6YK7JGRFQT2L7P3O5VMUGR4BWKQNVXXQ": {
+        "name": "Binance",
+        "description": "Binance cold wallet",
+        "image": "/accounts/images/binance.png"
+    },
+    "NBCOABQGPNI356MN3Y2VGW3Q2MQ5GNBLTVU64OXU": {
+        "name": "Binance",
+        "description": "Binance hot wallet",
+        "image": "/accounts/images/binance.png"
+    },
+    "NC64UFOWRO6AVMWFV2BFX2NT6W2GURK2EOX6FFMZ": {
+        "name": "Binance",
+        "description": "Binance hot wallet",
+        "image": "/accounts/images/binance.png"
+    },
+    "NDBRUFE7R5OANEDE43VCTMUVRHTI6XZ7TQFVNTMU": {
+        "name": "Binance",
+        "description": "Binance hot wallet",
+        "image": "/accounts/images/binance.png"
+    },
+    "NDV3DTJVBQRUPHYQRWRP4Q7IRRDN3CAPUFGZ7UXI": {
+        "name": "Kuna",
+        "description": "Kuna hot wallet",
+        "image": "/accounts/images/kuna.png"
+    },
+    "NAGJG3QFWYZ37LMI7IQPSGQNYADGSJZGJRD2DIYA": {
+        "name": "Zaif",
+        "description": "Zaif",
+        "image": "/accounts/images/zaif.png"
+    },
+    "NCES7OKBYZRCSTSNRX45H6E67J6OXABKNT6IRD2P": {
+        "name": "Zaif",
+        "description": "Zaif cold wallet",
+        "image": "/accounts/images/zaif.png"
+    },
+    "NA2P5F6DHPZMUJMKR2E2HNBFHDQVC3YRYNPFEH3V": {
+        "name": "Coincheck",
+        "description": "Coincheck",
+        "image": "/accounts/images/coincheck.png"
+    },
+    "NCYAVMNQOZ3MZETEBD34ACMAX3S57WUSWAZWY3DW": {
+        "name": "OKex",
+        "description": "OKex",
+        "image": "/accounts/images/okex.png"
+    },
+    "NBRT3YQTVHLTYBDUXH2HHURI5KCYDWRWJ63YWIGG": {
+        "name": "YoBit",
+        "description": "YoBit",
+        "image": "/accounts/images/yobit.png"
+    },
+    "ND2JRPQIWXHKAA26INVGA7SREEUMX5QAI6VU7HNR": {
+        "name": "Bittrex",
+        "description": "Bittrex",
+        "image": "/accounts/images/bittrex.png"
+    }
+}

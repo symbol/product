@@ -27,8 +27,6 @@ import { useEffect, useState } from 'react';
 
 export const getServerSideProps = async ({ locale, params }) => {
 	const mosaicInfo = await fetchMosaicInfo(params.id);
-	const transactionsPage = await fetchTransactionPage({ mosaic: params.id });
-	const accountsPage = await fetchAccountPage({ mosaic: params.id });
 
 	if (!mosaicInfo) {
 		return {
@@ -39,8 +37,8 @@ export const getServerSideProps = async ({ locale, params }) => {
 	return {
 		props: {
 			mosaicInfo,
-			preloadedTransactions: transactionsPage.data,
-			preloadedAccounts: accountsPage.data,
+			preloadedTransactions: [],
+			preloadedAccounts: [],
 			...(await serverSideTranslations(locale, ['common']))
 		}
 	};
@@ -133,6 +131,8 @@ const MosaicInfo = ({ mosaicInfo, preloadedTransactions, preloadedAccounts }) =>
 			setProgressType(progressType);
 		};
 		fetchChainHeight();
+		accountPagination.initialRequest();
+		transactionPagination.initialRequest();
 	}, [mosaicInfo]);
 
 	return (

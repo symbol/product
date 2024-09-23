@@ -18,10 +18,10 @@ const AccountMultisigTree = ({ address, cosignatories, cosignatoryOf }) => {
 									className={styles.accountWithLine}
 									title={item}
 									key={'mul' + index}
-									href={createPageHref('blocks', item)}
+									href={createPageHref('accounts', item)}
 								>
 									<Avatar value={item} type="account" size="md" />
-									<div className={styles.lineVertical} />
+									<div className={styles.lineVerticalWithArrow} />
 								</Link>
 							))}
 						</div>
@@ -31,7 +31,7 @@ const AccountMultisigTree = ({ address, cosignatories, cosignatoryOf }) => {
 				<div className={styles.accountWithLine} title={address}>
 					{isCosignatoryAccount && <div className={styles.lineVertical} />}
 					<Avatar value={address} type="account" size="lg" />
-					{isMultisigAccount && <div className={styles.lineVertical} />}
+					{isMultisigAccount && <div className={styles.lineVerticalWithArrow} />}
 				</div>
 				{isMultisigAccount && (
 					<div>
@@ -42,7 +42,7 @@ const AccountMultisigTree = ({ address, cosignatories, cosignatoryOf }) => {
 									className={styles.accountWithLine}
 									title={item}
 									key={'cos' + index}
-									href={createPageHref('blocks', item)}
+									href={createPageHref('accounts', item)}
 								>
 									<div className={styles.lineVertical} />
 									<Avatar value={item} type="account" size="md" />

@@ -516,7 +516,8 @@ export const marketDataResult = {
 	price: 0.02100488674247058,
 	priceChange: -0.9530425112576048,
 	volume: 49221365.7216442,
-	circulatingSupply: 189043980.66123033,
+	circulatingSupply: 8999999999,
+	marketCap: 189043980.66123033,
 	treasury: 0
 };
 
