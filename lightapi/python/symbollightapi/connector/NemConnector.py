@@ -1,8 +1,12 @@
+import asyncio
+
 from symbolchain.CryptoTypes import PublicKey
 from symbolchain.nem.Network import Address
 
+from ..model.Block import Block
 from ..model.Endpoint import Endpoint
 from ..model.NodeInfo import NodeInfo
+from ..model.Transaction import TransactionFactory, TransactionMapperFactory
 from .BasicConnector import BasicConnector
 
 MICROXEM_PER_XEM = 1000000
@@ -91,3 +95,78 @@ class NemConnector(BasicConnector):
 			node_dict['identity']['name'],
 			node_dict['metaData']['version'],
 			NodeInfo.API_ROLE_FLAG)
+
+	async def get_blocks_after(self, height):
+		""""Gets Blocks data"""
+
+		blocks = await self.post('local/chain/blocks-after', {'height': height})
+
+		block_heights = [block['block']['height'] for block in blocks['data']]
+		block_sizes = await asyncio.gather(*[self.get_block_size(height) for height in block_heights])
+
+		for block, size in zip(blocks['data'], block_sizes):
+			block['size'] = size
+
+		return [self._map_to_block(block) for block in blocks['data']]
+
+	async def get_block(self, height):
+		""""Gets Block data"""
+
+		block = await self.post('local/block/at', {'height': height})
+
+		block_sizes = await self.get_block_size(height)
+		block['size'] = block_sizes
+
+		return self._map_to_block(block)
+
+	async def get_block_size(self, height):
+		""""Gets Block size"""
+
+		block_size = await self.post('block/at/public', {'height': height}, response_type='binary')
+		return len(block_size)
+
+	def _map_to_block(self, block_dict):
+		block = block_dict['block']
+		difficulty = block_dict['difficulty']
+		block_hash = block_dict['hash']
+		transactions = block_dict['txes']
+		size = block_dict['size']
+
+		return Block(
+			block['height'],
+			block['timeStamp'],
+			[
+				self._map_to_transaction(transaction, block['height'])
+				for transaction in transactions
+			],
+			difficulty,
+			block_hash,
+			block['signer'],
+			block['signature'],
+			size
+		)
+
+	@staticmethod
+	def _map_to_transaction(transaction, block_height):
+		"""Maps a transaction dictionary to a transaction object."""
+
+		tx_dict = transaction['tx']
+		tx_type = tx_dict['type']
+
+		# Define common arguments for all transactions
+		common_args = {
+			'transaction_hash': transaction['hash'],
+			'height': block_height,
+			'sender': tx_dict['signer'],
+			'fee': tx_dict['fee'],
+			'timestamp': tx_dict['timeStamp'],
+			'deadline': tx_dict['deadline'],
+			'signature': tx_dict['signature'],
+		}
+
+		specific_args = {}
+
+		mapper = TransactionMapperFactory.get_mapper(tx_type)
+		specific_args = mapper.map_transaction(tx_dict)
+
+		return TransactionFactory.create_transaction(tx_type, common_args, specific_args)
