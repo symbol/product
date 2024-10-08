@@ -1,4 +1,4 @@
-build==1.2.2
+build==1.2.2.post1
 cffi==1.17.1
 pytest==8.3.3
 pytest-aiohttp==1.0.5
