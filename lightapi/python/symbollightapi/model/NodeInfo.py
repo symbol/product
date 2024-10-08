@@ -7,7 +7,7 @@ class NodeInfo:
 	def __init__(self, network_identifier, network_generation_hash_seed, main_public_key, node_public_key, endpoint, name, version, roles):
 		"""Creates a node model."""
 
-		# pylint: disable=too-many-arguments
+		# pylint: disable=too-many-arguments,too-many-positional-arguments
 
 		self.network_identifier = network_identifier
 		self.network_generation_hash_seed = network_generation_hash_seed
