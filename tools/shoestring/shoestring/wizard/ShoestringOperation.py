@@ -25,7 +25,7 @@ def build_shoestring_command(
 	ca_pem_path,
 	package,
 	has_custom_rest_overrides=False
-):  # pylint: disable=too-many-arguments
+):  # pylint: disable=too-many-arguments,too-many-positional-arguments
 	"""Builds shoestring command arguments."""
 
 	command_name = None

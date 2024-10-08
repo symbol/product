@@ -14,7 +14,7 @@ def facade(screens):
 
 
 class HarvestingSettings:
-	# pylint: disable=too-many-instance-attributes
+	# pylint: disable=too-many-instance-attributes,too-many-positional-arguments
 
 	def __init__(
 		self,

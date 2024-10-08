@@ -132,6 +132,7 @@ async def test_validate_fails_when_node_full_certificate_is_corrupt(caplog):
 
 # region validate - CA certificate date checks
 
+# pylint: disable=too-many-positional-arguments
 def _generate_certificates(openssl_executor, ca_key_path, certificates_directory, package_filter='', ca_args=None, node_args=None):
 	# pylint: disable=too-many-arguments
 	with CertificateFactory(openssl_executor, ca_key_path) as factory:

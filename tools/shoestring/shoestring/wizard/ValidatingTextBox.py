@@ -101,7 +101,7 @@ class ValidatingTextBox:
 		validation_error_text,
 		default_value='',
 		multiline=False
-	):  # pylint: disable=too-many-arguments
+	):  # pylint: disable=too-many-arguments,too-many-positional-arguments
 		"""Creates a validating text box."""
 		validator = validator if isinstance(validator, Validator) else Validator.from_callable(validator, validation_error_text)
 
