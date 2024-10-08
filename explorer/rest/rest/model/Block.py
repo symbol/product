@@ -2,7 +2,7 @@ class BlockView:  # pylint: disable=too-many-instance-attributes
 	def __init__(self, height, timestamp, total_fees, total_transactions, difficulty, block_hash, signer, signature, size):
 		"""Create Block view."""
 
-		# pylint: disable=too-many-arguments
+		# pylint: disable=too-many-arguments,too-many-positional-arguments
 
 		self.height = height
 		self.timestamp = timestamp
