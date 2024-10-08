@@ -19,7 +19,7 @@ INCOMPATIBLE_VERSION_COLORS = ['#FF0000', '#EB0000', '#D80000', '#C40000', '#B10
 class BasicRoutesFacade:
 	"""Routes facade common to NEM and Symbol."""
 
-	# pylint: disable=too-many-instance-attributes
+	# pylint: disable=too-many-instance-attributes,too-many-positional-arguments
 
 	def __init__(
 		self,
