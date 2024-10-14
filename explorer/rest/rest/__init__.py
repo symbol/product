@@ -79,6 +79,29 @@ def setup_nem_routes(app, nem_api_facade):
 
 		return jsonify(nem_api_facade.get_blocks(limit=limit, offset=offset, min_height=min_height, sort=sort))
 
+	@app.route('/api/nem/namespace/<name>')
+	def api_get_nem_namespace_by_name(name):
+		result = nem_api_facade.get_namespace(name)
+		if not result:
+			abort(404)
+		return jsonify(result)
+
+	@app.route('/api/nem/namespaces')
+	def api_get_nem_namespaces():
+		try:
+
+			limit = int(request.args.get('limit', 10))
+			offset = int(request.args.get('offset', 0))
+			sort = request.args.get('sort', 'DESC')
+
+			if limit < 0 or offset < 0 or sort.upper() not in ['ASC', 'DESC']:
+				raise ValueError()
+
+		except ValueError:
+			abort(400)
+
+		return jsonify(nem_api_facade.get_namespaces(limit=limit, offset=offset, sort=sort))
+
 
 def setup_error_handlers(app):
 	@app.errorhandler(404)
