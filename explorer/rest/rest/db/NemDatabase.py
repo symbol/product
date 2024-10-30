@@ -409,8 +409,10 @@ class NemDatabase(DatabaseConnectionPool):
 			inner_transaction['transactionType'] = transaction_type_mapping.get(inner_transaction_type, None)
 			inner_transaction['signatures'] = [{
 				'signer': str(self.network.public_key_to_address(PublicKey(signature['sender']))),
-				'signature': signature['signature'].upper()
+				'signature': signature['signature'].upper(),
+				'fee': _format_xem_relative(signature['fee'])
 			} for signature in multisig_signatures]
+			inner_transaction['fee'] = _format_xem_relative(multisig_inner_transaction['fee'])
 
 			if inner_transaction_type == 257:
 				to_address = multisig_inner_transaction['recipient']
