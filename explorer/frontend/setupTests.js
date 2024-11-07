@@ -5,6 +5,7 @@
 import '@testing-library/jest-dom';
 import { setDevice } from './__tests__/test-utils/device';
 import { TextEncoder, TextDecoder } from 'util';
+import 'react-intersection-observer/test-utils';
 
 global.$t = key => `translated_${key}`;
 

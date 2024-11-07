@@ -1,5 +1,4 @@
 import '@testing-library/jest-dom';
-import 'react-intersection-observer/test-utils';
 import { namespaceInfoResult } from '../test-utils/namespaces';
 import * as BlockService from '@/api/blocks';
 import * as NamespaceService from '@/api/namespaces';
