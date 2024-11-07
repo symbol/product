@@ -17,6 +17,9 @@ class NodeFeatures(IntFlag):
 	# Node that is able to participate in voting.
 	VOTER = 4
 
+	# Api light node that exposes a REST endpoint.
+	LIGHT = 8
+
 	def to_formatted_string(self):
 		"""Constructs a string representation of these Node features."""
 
@@ -26,7 +29,8 @@ class NodeFeatures(IntFlag):
 		value_name_tuples = [
 			(self.API, 'API'),
 			(self.HARVESTER, 'HARVESTER'),
-			(self.VOTER, 'VOTER')
+			(self.VOTER, 'VOTER'),
+			(self.LIGHT, 'LIGHT')
 		]
 
 		str_values = []
