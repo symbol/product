@@ -170,6 +170,10 @@ class Preparer:
 			if self.config.node.api_https:
 				directories.append(self.directories.https_proxy)
 
+		if NodeFeatures.LIGHT in self.config.node.features:
+			if self.config.node.api_https:
+				directories.append(self.directories.https_proxy)
+
 		if NodeFeatures.VOTER in self.config.node.features:
 			directories.append(self.directories.voting_keys)
 

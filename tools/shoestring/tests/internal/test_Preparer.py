@@ -145,6 +145,17 @@ class PreparerTest(unittest.TestCase):
 			'data', 'dbdata', 'keys', 'keys/cert', 'logs', 'rest-cache', 'userconfig', 'userconfig/resources'
 		])
 
+	def test_can_create_subdirectories_light_node_with_https(self):
+		self._assert_can_create_subdirectories(NodeFeatures.LIGHT, [
+			'data', 'https-proxy', 'keys', 'keys/cert', 'logs', 'userconfig', 'userconfig/resources'
+		])
+
+	def test_can_create_subdirectories_light_node_without_https(self):
+		config = self._create_configuration(NodeFeatures.LIGHT, api_https=False)
+		self._assert_can_create_subdirectories_configuration(config, [
+			'data', 'keys', 'keys/cert', 'logs', 'userconfig', 'userconfig/resources'
+		])
+
 	def test_can_create_subdirectories_harvester_node(self):
 		self._assert_can_create_subdirectories(NodeFeatures.HARVESTER, [
 			'data', 'keys', 'keys/cert', 'logs', 'userconfig', 'userconfig/resources'
@@ -158,6 +169,11 @@ class PreparerTest(unittest.TestCase):
 	def test_can_create_subdirectories_full_node(self):
 		self._assert_can_create_subdirectories(NodeFeatures.API | NodeFeatures.HARVESTER | NodeFeatures.VOTER, [
 			'data', 'dbdata', 'https-proxy', 'keys', 'keys/cert', 'keys/voting', 'logs', 'rest-cache', 'userconfig', 'userconfig/resources'
+		])
+
+	def test_can_create_subdirectories_full_light_node(self):
+		self._assert_can_create_subdirectories(NodeFeatures.LIGHT | NodeFeatures.HARVESTER | NodeFeatures.VOTER, [
+			'data', 'https-proxy', 'keys', 'keys/cert', 'keys/voting', 'logs', 'userconfig', 'userconfig/resources'
 		])
 
 	# endregion
