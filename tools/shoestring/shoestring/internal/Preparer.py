@@ -258,7 +258,7 @@ class Preparer:
 				'node': [
 					('node', 'trustedHosts', '127.0.0.1,172.20.0.25'),
 					('node', 'localNetworks', '127.0.0.1,172.20'),
-					('localnode', 'roles', 'Peer,Light'),
+					('localnode', 'roles', 'Peer'),
 				]
 			})
 

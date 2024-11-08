@@ -360,7 +360,7 @@ class PreparerTest(unittest.TestCase):
 		self._assert_can_configure_resources(NodeFeatures.LIGHT, {
 			'extensions-server': ['false', 'false', 'false'],
 			'extensions-recovery': ['false', 'false', 'false'],
-			'node': ['true', '127.0.0.1,172.20.0.25', '127.0.0.1,172.20', 'Peer,Light', 'friendly-node.symbol.cloud', 'hello friends'],
+			'node': ['true', '127.0.0.1,172.20.0.25', '127.0.0.1,172.20', 'Peer', 'friendly-node.symbol.cloud', 'hello friends'],
 			'finalization': ['false', '10m']
 		})
 
@@ -397,7 +397,7 @@ class PreparerTest(unittest.TestCase):
 			'extensions-server': ['false', 'false', 'true'],
 			'extensions-recovery': ['false', 'false', 'false'],
 			'node': [
-				'true', '127.0.0.1,172.20.0.25', '127.0.0.1,172.20', 'Peer,Light,Voting', 'friendly-node.symbol.cloud', 'hello friends'
+				'true', '127.0.0.1,172.20.0.25', '127.0.0.1,172.20', 'Peer,Voting', 'friendly-node.symbol.cloud', 'hello friends'
 			],
 			'finalization': ['true', '0m'],
 			'harvesting': True
