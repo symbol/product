@@ -270,6 +270,10 @@ class Preparer:
 	def configure_rest(self, rest_overrides_filename=None):
 		"""Copies mongo and rest files."""
 
+		if NodeFeatures.LIGHT in self.config.node.features:
+			self._copy_file(self.directories.temp / 'rest' / 'rest-light.json', self.directories.userconfig)
+			self._make_files_readonly(self.directories.userconfig)
+
 		if NodeFeatures.API not in self.config.node.features:
 			return
 

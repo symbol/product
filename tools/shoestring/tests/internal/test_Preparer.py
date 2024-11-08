@@ -449,6 +449,9 @@ class PreparerTest(unittest.TestCase):
 					'height': '72cm'
 				}, rest_config['nodeMetadata'])
 
+	def test_can_configure_rest_light_node(self):
+		self._assert_can_configure_rest(NodeFeatures.LIGHT, ['rest-light.json'], None)
+
 	# endregion
 
 	# region configure_https
