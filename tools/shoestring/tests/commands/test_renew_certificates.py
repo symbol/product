@@ -29,6 +29,11 @@ def _create_configuration(output_directory, ca_password, ca_common_name, node_co
 		filename=filename)
 
 
+def _load_binary_file_data(filename):
+	with open(filename, 'rb') as infile:
+		return infile.read()
+
+
 async def _assert_can_renew_node_certificate(ca_password=None):
 	# Arrange:
 	with tempfile.TemporaryDirectory() as output_directory:
@@ -75,6 +80,12 @@ async def _assert_can_renew_node_certificate(ca_password=None):
 		assert_certificate_properties(ca_certificate_path, 'ORIGINAL CA CN', 'ORIGINAL CA CN', 20 * 365)
 		create_openssl_executor().dispatch(['verify', '-CAfile', ca_certificate_path, ca_certificate_path])
 		assert ca_certificate_last_modified_time == ca_certificate_path.stat().st_mtime
+
+		# verify that node.full == node.crt + ca.crt
+		node_full_crt_data = _load_binary_file_data(preparer.directories.certificates / 'node.full.crt.pem')
+		node_crt_data = _load_binary_file_data(node_certificate_path)
+		ca_crt_data = _load_binary_file_data(ca_certificate_path)
+		assert node_full_crt_data == node_crt_data + ca_crt_data
 
 
 async def test_can_renew_node_certificate():
@@ -136,6 +147,12 @@ async def _assert_can_renew_ca_and_node_certificates(ca_password=None, use_relat
 			assert_certificate_properties(ca_certificate_path, 'NEW CA CN', 'NEW CA CN', 20 * 365)
 			create_openssl_executor().dispatch(['verify', '-CAfile', ca_certificate_path, ca_certificate_path])
 			assert ca_certificate_last_modified_time != ca_certificate_path.stat().st_mtime
+
+			# verify that node.full == node.crt + ca.crt
+			node_full_crt_data = _load_binary_file_data(preparer.directories.certificates / 'node.full.crt.pem')
+			node_crt_data = _load_binary_file_data(node_certificate_path)
+			ca_crt_data = _load_binary_file_data(ca_certificate_path)
+			assert node_full_crt_data == node_crt_data + ca_crt_data
 
 
 async def test_can_renew_ca_and_node_certificates():
