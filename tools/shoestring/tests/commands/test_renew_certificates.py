@@ -101,6 +101,8 @@ async def test_can_renew_node_certificate_with_ca_password():
 # region CA and node certificates renewal
 
 async def _assert_can_renew_ca_and_node_certificates(ca_password=None, use_relative_path=None):
+	# pylint: disable=too-many-locals
+
 	# Arrange:
 	with tempfile.TemporaryDirectory() as output_directory:
 		config_filepath_1 = _create_configuration(output_directory, ca_password, 'ORIGINAL CA CN', 'ORIGINAL NODE CN', '1.shoestring.ini')
