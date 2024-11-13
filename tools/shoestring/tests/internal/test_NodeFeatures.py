@@ -10,7 +10,7 @@ class NodeFeaturesTest(unittest.TestCase):
 		self.assertEqual('PEER', NodeFeatures(0).to_formatted_string())
 
 	def test_can_format_single_value(self):
-		for name in ('PEER', 'API', 'HARVESTER', 'VOTER', 'LIGHT'):
+		for name in ('PEER', 'API', 'HARVESTER', 'VOTER'):
 			self.assertEqual(name, NodeFeatures[name].to_formatted_string())
 
 	def test_can_format_multiple_values(self):
@@ -28,7 +28,7 @@ class NodeFeaturesTest(unittest.TestCase):
 		self.assertEqual(NodeFeatures.PEER, NodeFeatures.parse(''))
 
 	def test_can_parse_single_value(self):
-		for name in ('PEER', 'API', 'HARVESTER', 'VOTER', 'LIGHT'):
+		for name in ('PEER', 'API', 'HARVESTER', 'VOTER'):
 			self.assertEqual(NodeFeatures[name], NodeFeatures.parse(name))
 
 	def test_can_parse_multiple_values(self):
