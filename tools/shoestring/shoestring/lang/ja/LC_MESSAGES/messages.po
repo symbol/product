@@ -18,7 +18,7 @@ msgid "argument-help-announce-transaction-transaction"
 msgstr ""
 
 #: shoestring/commands/min_cosignatures_count.py:35
-#: shoestring/commands/renew_certificates.py:34
+#: shoestring/commands/renew_certificates.py:31
 #: shoestring/commands/setup.py:144 shoestring/commands/signer.py:93
 msgid "argument-help-ca-key-path"
 msgstr ""
@@ -27,7 +27,7 @@ msgstr ""
 #: shoestring/commands/health.py:74 shoestring/commands/import_bootstrap.py:33
 #: shoestring/commands/import_harvesters.py:97 shoestring/commands/init.py:29
 #: shoestring/commands/min_cosignatures_count.py:34
-#: shoestring/commands/renew_certificates.py:32
+#: shoestring/commands/renew_certificates.py:29
 #: shoestring/commands/renew_voting_keys.py:112
 #: shoestring/commands/reset_data.py:87 shoestring/commands/setup.py:136
 #: shoestring/commands/signer.py:92
@@ -35,7 +35,7 @@ msgid "argument-help-config"
 msgstr ""
 
 #: shoestring/commands/health.py:75
-#: shoestring/commands/renew_certificates.py:33
+#: shoestring/commands/renew_certificates.py:30
 #: shoestring/commands/renew_voting_keys.py:113
 #: shoestring/commands/reset_data.py:88 shoestring/commands/setup.py:138
 msgid "argument-help-directory"
@@ -81,7 +81,7 @@ msgstr ""
 msgid "argument-help-pemtool-output"
 msgstr ""
 
-#: shoestring/commands/renew_certificates.py:35
+#: shoestring/commands/renew_certificates.py:32
 msgid "argument-help-renew-certificates-renew-ca"
 msgstr ""
 
@@ -803,4 +803,3 @@ msgstr ""
 #: shoestring/wizard/screens/welcome.py:36
 msgid "wizard-welcome-upgrade"
 msgstr ""
-

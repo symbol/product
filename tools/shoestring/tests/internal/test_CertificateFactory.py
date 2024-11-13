@@ -269,6 +269,29 @@ class CertificateFactoryTest(unittest.TestCase):
 				with self.assertRaisesRegex(RuntimeError, 'Node common name cannot be empty'):
 					factory.generate_node_certificate('')
 
+	def test_can_reuse_ca_certificate(self):
+		with tempfile.TemporaryDirectory() as package_directory:
+			ca_certificate_path = Path(package_directory) / 'ca.crt.pem'
+
+			# - create a CA private key
+			with tempfile.TemporaryDirectory() as certificate_directory:
+				ca_private_key_path = self._create_ca_private_key(certificate_directory)
+
+				with CertificateFactory(self._create_executor(), ca_private_key_path) as factory:
+					# create CA certificate
+					ca_common_name = 'my CA common name'
+					factory.generate_ca_certificate(ca_common_name)
+					factory.package(package_directory)
+
+					# Act:
+					with CertificateFactory(self._create_executor(), ca_private_key_path) as renew_factory:
+						renew_factory.reuse_ca_certificate(ca_common_name, Path(package_directory))
+
+						# Assert:
+						assert Path('ca.crt.pem').exists()
+						assert Path('ca.cnf').exists()
+						assert ca_certificate_path.exists()
+
 	# endregion
 
 	# region packaging
