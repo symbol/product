@@ -359,7 +359,7 @@ class Preparer:
 		if NodeFeatures.API in self.config.node.features:
 			self._copy_tree_readonly(_qualify_resource('startup/rest'), self.directories.startup)
 			compose_template_filename_postfix = 'dual'
-		elif NodeFeatures.LIGHT in self.config.node.features:
+		elif self.config.node.light_api:
 			self._copy_tree_readonly(_qualify_resource('startup/light'), self.directories.startup)
 			compose_template_filename_postfix = 'light'
 		else:

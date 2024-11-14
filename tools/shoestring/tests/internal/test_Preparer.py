@@ -795,11 +795,11 @@ class PreparerTest(unittest.TestCase):
 		])
 
 	def test_can_configure_docker_light_node_with_https(self):
-		config = self._create_configuration(NodeFeatures.LIGHT)
+		config = self._create_configuration(NodeFeatures.PEER, api_https=True, light_api=True)
 		self._assert_can_configure_docker(config, ['lightrestapi.sh'], ['client', 'light-rest-api', 'rest-api-https-proxy'])
 
 	def test_can_configure_docker_light_node_without_https(self):
-		config = self._create_configuration(NodeFeatures.LIGHT, api_https=False)
+		config = self._create_configuration(NodeFeatures.PEER, api_https=False, light_api=True)
 		self._assert_can_configure_docker(config, ['lightrestapi.sh'], ['client', 'light-rest-api'])
 
 	# endregion
