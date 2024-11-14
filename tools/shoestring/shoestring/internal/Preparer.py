@@ -253,12 +253,11 @@ class Preparer:
 				]
 			})
 
-		if NodeFeatures.LIGHT in self.config.node.features:
+		if self.config.node.light_api:
 			self._patch_resources({
 				'node': [
 					('node', 'trustedHosts', '127.0.0.1,172.20.0.25'),
 					('node', 'localNetworks', '127.0.0.1,172.20'),
-					('localnode', 'roles', 'Peer'),
 				]
 			})
 

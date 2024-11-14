@@ -268,10 +268,10 @@ class PreparerTest(unittest.TestCase):
 
 	# region configure_resources
 
-	def _assert_can_configure_resources(self, node_features, expected_values, patch_custom=True):
+	def _assert_can_configure_resources(self, node_features, expected_values, patch_custom=True, light_api=False):
 		# Arrange:
 		with tempfile.TemporaryDirectory() as output_directory:
-			with Preparer(output_directory, self._create_configuration(node_features)) as preparer:
+			with Preparer(output_directory, self._create_configuration(node_features, True, light_api)) as preparer:
 				self._initialize_temp_directory_with_package_files(preparer)
 				preparer.prepare_resources()
 
@@ -359,12 +359,12 @@ class PreparerTest(unittest.TestCase):
 		})
 
 	def test_can_configure_resources_light_node(self):
-		self._assert_can_configure_resources(NodeFeatures.LIGHT, {
+		self._assert_can_configure_resources(NodeFeatures.PEER, {
 			'extensions-server': ['false', 'false', 'false'],
 			'extensions-recovery': ['false', 'false', 'false'],
 			'node': ['true', '127.0.0.1,172.20.0.25', '127.0.0.1,172.20', 'Peer', 'friendly-node.symbol.cloud', 'hello friends'],
 			'finalization': ['false', '10m']
-		})
+		}, light_api=True)
 
 	def test_can_configure_resources_harvester_node(self):
 		self._assert_can_configure_resources(NodeFeatures.HARVESTER, {
@@ -395,7 +395,7 @@ class PreparerTest(unittest.TestCase):
 		})
 
 	def test_can_configure_resources_full_light_node(self):
-		self._assert_can_configure_resources(NodeFeatures.LIGHT | NodeFeatures.HARVESTER | NodeFeatures.VOTER, {
+		self._assert_can_configure_resources(NodeFeatures.HARVESTER | NodeFeatures.VOTER, {
 			'extensions-server': ['false', 'false', 'true'],
 			'extensions-recovery': ['false', 'false', 'false'],
 			'node': [
@@ -403,7 +403,7 @@ class PreparerTest(unittest.TestCase):
 			],
 			'finalization': ['true', '0m'],
 			'harvesting': True
-		})
+		}, light_api=True)
 
 	# endregion
 
