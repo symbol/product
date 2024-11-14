@@ -59,6 +59,7 @@ class ShoestringConfigurationTest(unittest.TestCase):
 		'groupId': '9876',
 		'caPassword': 'pass:abc123',
 		'apiHttps': 'false',
+		'lightApi': 'false',
 		'caCommonName': 'my CA name',
 		'nodeCommonName': 'my Node name'
 	}
@@ -232,6 +233,7 @@ class ShoestringConfigurationTest(unittest.TestCase):
 		self.assertEqual(9876, node_config.group_id)
 		self.assertEqual('pass:abc123', node_config.ca_password)
 		self.assertEqual(False, node_config.api_https)
+		self.assertEqual(False, node_config.light_api)
 		self.assertEqual('my CA name', node_config.ca_common_name)
 		self.assertEqual('my Node name', node_config.node_common_name)
 
@@ -245,6 +247,26 @@ class ShoestringConfigurationTest(unittest.TestCase):
 		self.assertEqual(9876, node_config.group_id)
 		self.assertEqual('pass:abc123', node_config.ca_password)
 		self.assertEqual(False, node_config.api_https)
+		self.assertEqual(False, node_config.light_api)
+		self.assertEqual('my CA name', node_config.ca_common_name)
+		self.assertEqual('my Node name', node_config.node_common_name)
+
+	def test_can_parse_valid_node_configuration_light_api(self):
+		# Arrange:
+		config = {**self.VALID_NODE_CONFIGURATION}
+		config['features'] = 'PEER | HARVESTER'
+		config['lightApi'] = 'true'
+
+		# Act:
+		node_config = parse_node_configuration(config)
+
+		# Assert:
+		self.assertEqual(NodeFeatures.PEER | NodeFeatures.HARVESTER, node_config.features)
+		self.assertEqual(1234, node_config.user_id)
+		self.assertEqual(9876, node_config.group_id)
+		self.assertEqual('pass:abc123', node_config.ca_password)
+		self.assertEqual(False, node_config.api_https)
+		self.assertEqual(True, node_config.light_api)
 		self.assertEqual('my CA name', node_config.ca_common_name)
 		self.assertEqual('my Node name', node_config.node_common_name)
 
@@ -273,6 +295,21 @@ class ShoestringConfigurationTest(unittest.TestCase):
 			# Act + Assert:
 			with self.assertRaises(ValueError):
 				parse_node_configuration(corrupt_config)
+
+	def test_cannot_parse_node_configuration_enable_both_api(self):
+		# Arrange:
+		enable_both_api = {
+			'features': 'API | OTHER | VOTER',
+			'lightApi': 'true'
+		}
+
+		for key, value in enable_both_api.items():
+			invalid_config = {**self.VALID_NODE_CONFIGURATION}
+			invalid_config[key] = value
+
+			# Act + Assert:
+			with self.assertRaises(ValueError):
+				parse_node_configuration(invalid_config)
 
 	# endregion
 
