@@ -164,13 +164,13 @@ class Preparer:
 			self.directories.userconfig,
 			self.directories.resources
 		]
+
+		if self.config.node.light_api and self.config.node.api_https:
+			directories.append(self.directories.https_proxy)
+
 		if NodeFeatures.API in self.config.node.features:
 			directories.append(self.directories.dbdata)
 			directories.append(self.directories.rest_cache)
-			if self.config.node.api_https:
-				directories.append(self.directories.https_proxy)
-
-		if NodeFeatures.LIGHT in self.config.node.features:
 			if self.config.node.api_https:
 				directories.append(self.directories.https_proxy)
 

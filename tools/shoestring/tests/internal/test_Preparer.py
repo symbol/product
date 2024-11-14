@@ -33,14 +33,14 @@ class PreparerTest(unittest.TestCase):
 	# region utils
 
 	@staticmethod
-	def _create_configuration(node_features, api_https=True, imports_config=None):
+	def _create_configuration(node_features, api_https=True, light_api=False, imports_config=None):
 		return ShoestringConfiguration(
 			'testnet',
 			None,
 			None,
 			TransactionConfiguration(234, 3, 0, 0, 0, 0),
 			imports_config if imports_config else ImportsConfiguration(None, None, None),
-			NodeConfiguration(node_features, None, None, None, api_https, 'CA CN', 'NODE CN'))
+			NodeConfiguration(node_features, None, None, None, api_https, light_api, 'CA CN', 'NODE CN'))
 
 	def _assert_readonly(self, directory, filenames):
 		self.assertEqual(0o700, directory.stat().st_mode & 0o777)
@@ -146,12 +146,13 @@ class PreparerTest(unittest.TestCase):
 		])
 
 	def test_can_create_subdirectories_light_node_with_https(self):
-		self._assert_can_create_subdirectories(NodeFeatures.LIGHT, [
+		config = self._create_configuration(NodeFeatures.PEER, api_https=True, light_api=True)
+		self._assert_can_create_subdirectories_configuration(config, [
 			'data', 'https-proxy', 'keys', 'keys/cert', 'logs', 'userconfig', 'userconfig/resources'
 		])
 
 	def test_can_create_subdirectories_light_node_without_https(self):
-		config = self._create_configuration(NodeFeatures.LIGHT, api_https=False)
+		config = self._create_configuration(NodeFeatures.PEER, api_https=False, light_api=True)
 		self._assert_can_create_subdirectories_configuration(config, [
 			'data', 'keys', 'keys/cert', 'logs', 'userconfig', 'userconfig/resources'
 		])
@@ -172,7 +173,8 @@ class PreparerTest(unittest.TestCase):
 		])
 
 	def test_can_create_subdirectories_full_light_node(self):
-		self._assert_can_create_subdirectories(NodeFeatures.LIGHT | NodeFeatures.HARVESTER | NodeFeatures.VOTER, [
+		config = self._create_configuration(NodeFeatures.HARVESTER | NodeFeatures.VOTER, api_https=True, light_api=True)
+		self._assert_can_create_subdirectories_configuration(config, [
 			'data', 'https-proxy', 'keys', 'keys/cert', 'keys/voting', 'logs', 'userconfig', 'userconfig/resources'
 		])
 
