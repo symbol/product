@@ -409,10 +409,10 @@ class PreparerTest(unittest.TestCase):
 
 	# region configure_rest
 
-	def _assert_can_configure_rest(self, node_features, expected_userconfig_files, expected_mongo_files):
+	def _assert_can_configure_rest(self, node_features, expected_userconfig_files, expected_mongo_files, light_api=False):
 		# Arrange:
 		with tempfile.TemporaryDirectory() as output_directory:
-			with Preparer(output_directory, self._create_configuration(node_features)) as preparer:
+			with Preparer(output_directory, self._create_configuration(node_features, True, light_api)) as preparer:
 				self._initialize_temp_directory_with_package_files(preparer)
 
 				# Act:
@@ -487,7 +487,7 @@ class PreparerTest(unittest.TestCase):
 				}, rest_config['nodeMetadata'])
 
 	def test_can_configure_rest_light_node(self):
-		self._assert_can_configure_rest(NodeFeatures.LIGHT, ['rest-light.json'], None)
+		self._assert_can_configure_rest(NodeFeatures.PEER, ['rest-light.json'], None, True)
 
 	# endregion
 
