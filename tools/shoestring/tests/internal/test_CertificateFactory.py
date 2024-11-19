@@ -1,6 +1,7 @@
 import datetime
 import os
 import re
+import shutil
 import tempfile
 import unittest
 from pathlib import Path
@@ -287,6 +288,10 @@ class CertificateFactoryTest(unittest.TestCase):
 					ca_common_name = 'my CA common name'
 					factory.generate_ca_certificate(ca_common_name)
 					factory.package(package_directory)
+
+				# Sanity:
+				shutil.rmtree(certificate_directory)
+				assert not ca_private_key_path.exists()
 
 				# Act:
 				with CertificateFactory(self._create_executor(), ca_private_key_path) as renew_factory:
