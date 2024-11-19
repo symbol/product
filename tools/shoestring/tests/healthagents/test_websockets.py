@@ -3,7 +3,7 @@ import tempfile
 from collections import namedtuple
 from pathlib import Path
 
-from websockets.server import serve
+from websockets.asyncio.server import serve
 
 from shoestring.healthagents.websockets import should_run, validate
 from shoestring.internal.ConfigurationManager import ConfigurationManager
