@@ -61,8 +61,8 @@ class CertificateFactory:
 			'-algorithm', 'ed25519'
 		])
 
-	def generate_ca_certificate(self, ca_cn, days=7300):
-		"""Generates a CA certificate."""
+	def _prepare_ca_certificate(self, ca_cn):
+		"""Prepare CA certificate environment."""
 
 		if not ca_cn:
 			raise RuntimeError('CA common name cannot be empty')
@@ -105,6 +105,20 @@ class CertificateFactory:
 		# create index.txt
 		with open('index.txt', 'wt', encoding='utf8') as outfile:
 			outfile.write('')
+
+	def reuse_ca_certificate(self, ca_cn, ca_cert_path):
+		"""Setup current CA certificate."""
+
+		# prepare CA config
+		self._prepare_ca_certificate(ca_cn)
+
+		shutil.copy(ca_cert_path / 'ca.crt.pem', '.')
+
+	def generate_ca_certificate(self, ca_cn, days=7300):
+		"""Generates a CA certificate."""
+
+		# prepare CA config
+		self._prepare_ca_certificate(ca_cn)
 
 		# actually generate CA certificate
 		self.openssl_executor.dispatch(self._add_ca_password([
