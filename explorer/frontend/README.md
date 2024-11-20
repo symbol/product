@@ -58,6 +58,31 @@ These variables are prefixed with `NEXT_PUBLIC_` and are exposed to the browser,
 
 - **`NEXT_PUBLIC_FOOTER_URL_SUPERNODE_PROGRAM`**: The URL for the NEM Supernode Program. Example: `https://website.com`.
 
+### Known Accounts
+
+To add information about known accounts to the application, follow these steps:
+
+1. **Edit `known-accounts.json`**:
+
+Add information about the account to the `known-accounts.json` file located in the `public/accounts` directory. This file maps account addresses to their corresponding metadata, such as name, description, and image.
+
+Example of an entry in `known-accounts.json`:
+```json
+{
+    "NDHEJKXY6YK7JGRFQT2L7P3O5VMUGR4BWKQNVXXQ": {
+        "name": "Binance",
+        "description": "Binance cold wallet",
+        "image": "/accounts/images/binance.png"
+    }
+}
+```
+
+2. **Add Images**:
+
+Place the corresponding image (e.g., company logo) in the `public/accounts/images` directory. The image file path must match the path specified in the image property of the `known-accounts.json` entry.
+
+For example, for the entry above, the image file should be located at: `public/accounts/images/binance.png`.
+
 ## Requirements
 
 - Node.js v20.11.0
@@ -87,6 +112,8 @@ This project is part of a Product monorepo. Follow the steps below to set up and
    ```
 
 5. Setup environment variables (or create `.env` file in `frontend/` root directory).
+
+6. Add the known
 
 ## Building the Project
 
@@ -141,7 +168,13 @@ docker build -t symbolplatform/explorer-frontend .
 
 Run the Docker container:
 ```bash
-docker run -p 3000:3000 symbolplatform/explorer-frontend
+docker run -p 3000:3000 -v $(pwd)/accounts:/app/public/accounts symbolplatform/explorer-frontend
 ```
 
 This command will start the container and expose the application on port 3000.
+
+### Using Docker Compose
+
+```bash
+docker-compose up
+```

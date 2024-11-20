@@ -7,6 +7,11 @@ import { setDevice } from './__tests__/test-utils/device';
 import { TextEncoder, TextDecoder } from 'util';
 import 'react-intersection-observer/test-utils';
 
+jest.mock('@/contexts/ConfigContext', () => ({
+	__esModule: true,
+	useConfig: jest.fn()
+}));
+
 global.$t = key => `translated_${key}`;
 
 const originalEnv = { ...process.env };
@@ -29,8 +34,17 @@ process.env = {
 
 Object.assign(global, { TextDecoder, TextEncoder });
 
+const mockConfigContext = () => {
+	const ConfigContext = require('@/contexts/ConfigContext');
+	jest.spyOn(ConfigContext, 'useConfig').mockReturnValue({
+		knownAccounts: {}
+	});
+}
+
+
 beforeEach(() => {
 	jest.spyOn(console, 'error').mockImplementation(jest.fn());
 	jest.spyOn(console, 'warn').mockImplementation(jest.fn());
+	mockConfigContext();
 	setDevice('desktop');
 });

@@ -1,7 +1,7 @@
 import CustomImage from './CustomImage';
 import IconTransactionType from './IconTransactionType';
 import config from '@/config';
-import knownAccounts from '@/public/accounts/known-accounts.json';
+import { useConfig } from '@/contexts/ConfigContext';
 import styles from '@/styles/components/Avatar.module.scss';
 import makeBlockie from 'ethereum-blockies-base64';
 import { useEffect, useState } from 'react';
@@ -10,22 +10,29 @@ const AccountAvatar = ({ address }) => {
 	const [image, setImage] = useState('');
 	const [isKnownAccount, setIsKnownAccount] = useState(false);
 	const [description, setDescription] = useState('');
+	const { knownAccounts } = useConfig();
 
-	useEffect(() => {
-		// Check if the account is a known account and set the image and description
-		if (knownAccounts[address]) {
-			setImage(knownAccounts[address].image);
-			setDescription(knownAccounts[address].description);
-			setIsKnownAccount(true);
-
-			return;
-		}
-
-		// If the account is not a known account, generate the image using the address
+	const setKnownAccountInfo = address => {
+		setImage(knownAccounts[address].image);
+		setDescription(knownAccounts[address].description);
+		setIsKnownAccount(true);
+	};
+	const generateImage = address => {
 		const image = makeBlockie(address);
 		setImage(image);
 		setDescription(address);
-	}, [address]);
+	};
+
+	useEffect(() => {
+		// Check if the account is a known account and set the image and description
+		if (knownAccounts && knownAccounts[address]) 
+			setKnownAccountInfo(address);
+		
+		// If the account is not a known account, generate the image using the address
+		else if (knownAccounts) 
+			generateImage(address);
+		
+	}, [address, knownAccounts]);
 
 	return (
 		<div className={styles.accountImageContainer} title={description}>
