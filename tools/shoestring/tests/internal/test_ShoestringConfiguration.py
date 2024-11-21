@@ -234,6 +234,7 @@ class ShoestringConfigurationTest(unittest.TestCase):
 		self.assertEqual('pass:abc123', node_config.ca_password)
 		self.assertEqual(False, node_config.api_https)
 		self.assertEqual(False, node_config.light_api)
+		self.assertEqual(False, node_config.full_api)
 		self.assertEqual('my CA name', node_config.ca_common_name)
 		self.assertEqual('my Node name', node_config.node_common_name)
 
@@ -248,6 +249,7 @@ class ShoestringConfigurationTest(unittest.TestCase):
 		self.assertEqual('pass:abc123', node_config.ca_password)
 		self.assertEqual(False, node_config.api_https)
 		self.assertEqual(False, node_config.light_api)
+		self.assertEqual(True, node_config.full_api)
 		self.assertEqual('my CA name', node_config.ca_common_name)
 		self.assertEqual('my Node name', node_config.node_common_name)
 
@@ -267,6 +269,27 @@ class ShoestringConfigurationTest(unittest.TestCase):
 		self.assertEqual('pass:abc123', node_config.ca_password)
 		self.assertEqual(False, node_config.api_https)
 		self.assertEqual(True, node_config.light_api)
+		self.assertEqual(False, node_config.full_api)
+		self.assertEqual('my CA name', node_config.ca_common_name)
+		self.assertEqual('my Node name', node_config.node_common_name)
+
+	def test_can_parse_valid_node_configuration_full_api(self):
+		# Arrange:
+		config = {**self.VALID_NODE_CONFIGURATION}
+		config['features'] = 'API | HARVESTER'
+		config['lightApi'] = 'false'
+
+		# Act:
+		node_config = parse_node_configuration(config)
+
+		# Assert:
+		self.assertEqual(NodeFeatures.API | NodeFeatures.HARVESTER, node_config.features)
+		self.assertEqual(1234, node_config.user_id)
+		self.assertEqual(9876, node_config.group_id)
+		self.assertEqual('pass:abc123', node_config.ca_password)
+		self.assertEqual(False, node_config.api_https)
+		self.assertEqual(False, node_config.light_api)
+		self.assertEqual(True, node_config.full_api)
 		self.assertEqual('my CA name', node_config.ca_common_name)
 		self.assertEqual('my Node name', node_config.node_common_name)
 

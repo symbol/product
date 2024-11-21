@@ -33,10 +33,10 @@ def server(event_loop, aiohttp_client):
 
 def test_should_run_for_voter_role():
 	# Act + Assert:
-	assert should_run(NodeConfiguration(NodeFeatures.VOTER, *([None] * 7)))
+	assert should_run(NodeConfiguration(NodeFeatures.VOTER, *([None] * 8)))
 
 	for features in (NodeFeatures.PEER, NodeFeatures.API, NodeFeatures.HARVESTER):
-		assert not should_run(NodeConfiguration(features, *([None] * 7))), str(features)
+		assert not should_run(NodeConfiguration(features, *([None] * 8))), str(features)
 
 # endregion
 

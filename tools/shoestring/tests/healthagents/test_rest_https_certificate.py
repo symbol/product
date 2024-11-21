@@ -34,7 +34,7 @@ async def server(aiohttp_server):
 # region should_run
 
 def _create_node_configuration(api_https):
-	return NodeConfiguration(None, None, None, None, api_https, None, None, None)
+	return NodeConfiguration(None, None, None, None, api_https, None, None, None, None)
 
 
 def test_should_run_for_https_role():
