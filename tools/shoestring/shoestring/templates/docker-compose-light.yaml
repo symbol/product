@@ -29,7 +29,7 @@ services:
   light-rest-api:
     image: '{{ catapult_rest_image }}'
     user: '{{ user }}'
-    command: /bin/bash /startup/lightrestapi.sh
+    command: npm run start-light --prefix /app /userconfig/rest.json
     environment:
       - HOME=/symbol-workdir
       - NODE_ENV=production
