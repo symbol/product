@@ -357,14 +357,9 @@ class Preparer:
 		"""Prepares docker-compose file."""
 
 		if NodeFeatures.API in self.config.node.features:
-			self._copy_tree_readonly(_qualify_resource('startup/rest'), self.directories.startup)
-			compose_template_filename_postfix = 'dual'
-		elif self.config.node.light_api:
-			self._copy_tree_readonly(_qualify_resource('startup/light'), self.directories.startup)
-			compose_template_filename_postfix = 'light'
-		else:
-			compose_template_filename_postfix = 'peer'
+			self._copy_tree_readonly(_qualify_resource('startup'), self.directories.startup)
 
+		compose_template_filename_postfix = 'dual' if NodeFeatures.API in self.config.node.features else 'peer'
 		compose_template_filename = _qualify_resource(f'templates/docker-compose-{compose_template_filename_postfix}.yaml')
 		compose_output_filepath = self.directory / 'docker-compose.yaml'
 		apply_template(compose_template_filename, template_mapping, compose_output_filepath)

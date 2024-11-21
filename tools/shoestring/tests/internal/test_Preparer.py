@@ -753,8 +753,7 @@ class PreparerTest(unittest.TestCase):
 					'client': 'symbolplatform/symbol-server:gcc-a.b.c.d',
 					'broker': 'symbolplatform/symbol-server:gcc-a.b.c.d',
 					'rest-api': 'symbolplatform/symbol-rest:a.b.c',
-					'rest-api-https-proxy': 'steveltn/https-portal:1',
-					'light-rest-api': 'symbolplatform/symbol-rest:a.b.c'
+					'rest-api-https-proxy': 'steveltn/https-portal:1'
 				}
 
 				compose_filepath = Path(output_directory) / 'docker-compose.yaml'
@@ -793,14 +792,6 @@ class PreparerTest(unittest.TestCase):
 		], [
 			'db', 'initiate', 'client', 'broker', 'rest-api'
 		])
-
-	def test_can_configure_docker_light_node_with_https(self):
-		config = self._create_configuration(NodeFeatures.PEER, api_https=True, light_api=True)
-		self._assert_can_configure_docker(config, ['lightrestapi.sh'], ['client', 'light-rest-api', 'rest-api-https-proxy'])
-
-	def test_can_configure_docker_light_node_without_https(self):
-		config = self._create_configuration(NodeFeatures.PEER, api_https=False, light_api=True)
-		self._assert_can_configure_docker(config, ['lightrestapi.sh'], ['client', 'light-rest-api'])
 
 	# endregion
 
