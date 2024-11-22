@@ -92,7 +92,7 @@ async def run_main(args):
 		api_endpoints = await download_peers(
 			config.services.nodewatch,
 			preparer.directories.resources,
-			NodeFeatures.API in config.node.features)
+			config.node.full_api)
 		await download_and_extract_package(args.package, preparer.directories.temp)
 
 		# prepare nemesis data and resources

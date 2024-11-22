@@ -77,7 +77,7 @@ async def run_main(args):
 	for name in ('data', 'logs'):
 		_purge_and_recreate(directory / name)
 
-	if NodeFeatures.API in config.node.features:
+	if config.node.full_api:
 		_purge_and_recreate(directory / 'dbdata')
 
 	stateful_data_processor.restore()

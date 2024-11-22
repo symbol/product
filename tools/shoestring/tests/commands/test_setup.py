@@ -100,6 +100,10 @@ API_OUTPUT_FILES = {
 	'userconfig/rest.json': 0o400
 }
 
+LIGHT_API_OUTPUT_FILES = {
+	'userconfig/rest.json': 0o400
+}
+
 HARVESTER_OUTPUT_FILES = {
 	'keys/remote.pem': 0o400,
 	'keys/vrf.pem': 0o400,

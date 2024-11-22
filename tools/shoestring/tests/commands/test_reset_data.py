@@ -21,11 +21,11 @@ def _create_directories_with_placeholders(directory, subdirectory_names):
 
 # region basic
 
-async def _assert_reset_data(node_features, expected_recreated_subdirectories):
+async def _assert_reset_data(node_features, expected_recreated_subdirectories, light_api=False):
 	# Arrange:
 	subdirectory_names = ('data', 'logs', 'dbdata', 'keys', 'unknown')
 	with tempfile.TemporaryDirectory() as output_directory:
-		config_filepath = prepare_shoestring_configuration(output_directory, node_features)
+		config_filepath = prepare_shoestring_configuration(output_directory, node_features, light_api=light_api)
 
 		# - create some directories each with a placeholder file
 		_create_directories_with_placeholders(output_directory, subdirectory_names)
@@ -57,6 +57,9 @@ async def test_can_reset_data_peer_node():
 
 async def test_can_reset_data_api_node():
 	await _assert_reset_data(NodeFeatures.API, ['data', 'logs', 'dbdata'])
+
+async def test_can_reset_data_light_api_node():
+	await _assert_reset_data(NodeFeatures.API, ['data', 'logs'], light_api=True)
 
 
 async def test_can_reset_data_voter_node_without_voter_state():
