@@ -14,7 +14,7 @@ TransactionConfiguration = namedtuple('TransactionConfiguration', [
 ])
 ImportsConfiguration = namedtuple('ImportsConfiguration', ['harvester', 'voter', 'node_key'])
 NodeConfiguration = namedtuple('NodeConfiguration', [
-	'features', 'user_id', 'group_id', 'ca_password', 'api_https', 'light_api', 'full_api', 'ca_common_name', 'node_common_name'
+	'features', 'user_id', 'group_id', 'ca_password', 'api_https', 'full_api', 'ca_common_name', 'node_common_name'
 ])
 ShoestringConfiguration = namedtuple('ShoestringConfiguration', ['network', 'images', 'services', 'transaction', 'imports', 'node'])
 
@@ -74,15 +74,11 @@ def parse_node_configuration(config):
 	group_id = int(config['groupId'])
 	ca_password = config['caPassword']
 	api_https = config['apiHttps'].lower() == 'true'
-	light_api = config['lightApi'].lower() == 'true'
-	full_api = NodeFeatures.API in features and not light_api
+	full_api = NodeFeatures.API in features and not config['lightApi'].lower() == 'true'
 	ca_common_name = config['caCommonName']
 	node_common_name = config['nodeCommonName']
 
-	if NodeFeatures.API in features and light_api:
-		raise ValueError('lightApi cannot be enabled when API is enabled')
-
-	return NodeConfiguration(features, user_id, group_id, ca_password, api_https, light_api, full_api, ca_common_name, node_common_name)
+	return NodeConfiguration(features, user_id, group_id, ca_password, api_https, full_api, ca_common_name, node_common_name)
 
 
 def parse_shoestring_configuration(filename):

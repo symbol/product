@@ -40,7 +40,7 @@ class PreparerTest(unittest.TestCase):
 			None,
 			TransactionConfiguration(234, 3, 0, 0, 0, 0),
 			imports_config if imports_config else ImportsConfiguration(None, None, None),
-			NodeConfiguration(node_features, None, None, None, api_https, light_api, (NodeFeatures.API in node_features and not light_api), 'CA CN', 'NODE CN'))
+			NodeConfiguration(node_features, None, None, None, api_https, (NodeFeatures.API in node_features and not light_api), 'CA CN', 'NODE CN'))
 
 	def _assert_readonly(self, directory, filenames):
 		self.assertEqual(0o700, directory.stat().st_mode & 0o777)

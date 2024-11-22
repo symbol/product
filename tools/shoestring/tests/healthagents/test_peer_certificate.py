@@ -22,7 +22,7 @@ from ..test.LogTestUtils import LogLevel, assert_max_log_level, assert_message_i
 def test_should_run_for_all_roles():
 	# Act + Assert:
 	for features in (NodeFeatures.PEER, NodeFeatures.API, NodeFeatures.HARVESTER, NodeFeatures.VOTER):
-		assert should_run(NodeConfiguration(features, *([None] * 8))), str(features)
+		assert should_run(NodeConfiguration(features, *([None] * 7))), str(features)
 
 # endregion
 

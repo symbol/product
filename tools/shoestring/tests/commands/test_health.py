@@ -33,7 +33,7 @@ def _create_configuration(api_https):
 	return ShoestringConfiguration(
 		*(4 * [None]),
 		ImportsConfiguration(None, None, None),
-		NodeConfiguration(NodeFeatures.PEER, None, None, None, api_https, False, False, 'CA', 'NODE'))
+		NodeConfiguration(NodeFeatures.PEER, None, None, None, api_https, False, 'CA', 'NODE'))
 
 
 # pylint: disable=invalid-name
