@@ -146,13 +146,13 @@ class PreparerTest(unittest.TestCase):
 		])
 
 	def test_can_create_subdirectories_light_node_with_https(self):
-		config = self._create_configuration(NodeFeatures.PEER, api_https=True, light_api=True)
+		config = self._create_configuration(NodeFeatures.API, api_https=True, light_api=True)
 		self._assert_can_create_subdirectories_configuration(config, [
 			'data', 'https-proxy', 'keys', 'keys/cert', 'logs', 'userconfig', 'userconfig/resources'
 		])
 
 	def test_can_create_subdirectories_light_node_without_https(self):
-		config = self._create_configuration(NodeFeatures.PEER, api_https=False, light_api=True)
+		config = self._create_configuration(NodeFeatures.API, api_https=False, light_api=True)
 		self._assert_can_create_subdirectories_configuration(config, [
 			'data', 'keys', 'keys/cert', 'logs', 'userconfig', 'userconfig/resources'
 		])
@@ -173,7 +173,7 @@ class PreparerTest(unittest.TestCase):
 		])
 
 	def test_can_create_subdirectories_full_light_node(self):
-		config = self._create_configuration(NodeFeatures.HARVESTER | NodeFeatures.VOTER, api_https=True, light_api=True)
+		config = self._create_configuration(NodeFeatures.API | NodeFeatures.HARVESTER | NodeFeatures.VOTER, api_https=True, light_api=True)
 		self._assert_can_create_subdirectories_configuration(config, [
 			'data', 'https-proxy', 'keys', 'keys/cert', 'keys/voting', 'logs', 'userconfig', 'userconfig/resources'
 		])
@@ -359,7 +359,7 @@ class PreparerTest(unittest.TestCase):
 		})
 
 	def test_can_configure_resources_light_node(self):
-		self._assert_can_configure_resources(NodeFeatures.PEER, {
+		self._assert_can_configure_resources(NodeFeatures.API, {
 			'extensions-server': ['false', 'false', 'false'],
 			'extensions-recovery': ['false', 'false', 'false'],
 			'node': ['true', '127.0.0.1,172.20.0.25', '127.0.0.1,172.20', 'Peer', 'friendly-node.symbol.cloud', 'hello friends'],
@@ -395,7 +395,7 @@ class PreparerTest(unittest.TestCase):
 		})
 
 	def test_can_configure_resources_full_light_node(self):
-		self._assert_can_configure_resources(NodeFeatures.HARVESTER | NodeFeatures.VOTER, {
+		self._assert_can_configure_resources(NodeFeatures.API | NodeFeatures.HARVESTER | NodeFeatures.VOTER, {
 			'extensions-server': ['false', 'false', 'true'],
 			'extensions-recovery': ['false', 'false', 'false'],
 			'node': [
@@ -487,7 +487,7 @@ class PreparerTest(unittest.TestCase):
 				}, rest_config['nodeMetadata'])
 
 	def test_can_configure_rest_light_node(self):
-		self._assert_can_configure_rest(NodeFeatures.PEER, ['rest.json'], None, True)
+		self._assert_can_configure_rest(NodeFeatures.API | NodeFeatures.HARVESTER, ['rest.json'], None, True)
 
 	# endregion
 

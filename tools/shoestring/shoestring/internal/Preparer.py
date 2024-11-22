@@ -165,14 +165,13 @@ class Preparer:
 			self.directories.resources
 		]
 
-		if self.config.node.light_api and self.config.node.api_https:
-			directories.append(self.directories.https_proxy)
-
 		if NodeFeatures.API in self.config.node.features:
-			directories.append(self.directories.dbdata)
-			directories.append(self.directories.rest_cache)
 			if self.config.node.api_https:
 				directories.append(self.directories.https_proxy)
+
+		if self.config.node.full_api:
+			directories.append(self.directories.dbdata)
+			directories.append(self.directories.rest_cache)
 
 		if NodeFeatures.VOTER in self.config.node.features:
 			directories.append(self.directories.voting_keys)
@@ -221,7 +220,7 @@ class Preparer:
 
 		self._copy_properties_files(PEER_EXTENSIONS)
 
-		if NodeFeatures.API in self.config.node.features:
+		if self.config.node.full_api:
 			self._copy_properties_files(API_EXTENSIONS)
 
 		if NodeFeatures.HARVESTER in self.config.node.features:
@@ -236,6 +235,14 @@ class Preparer:
 
 		if NodeFeatures.API in self.config.node.features:
 			self._patch_resources({
+				'node': [
+					('node', 'trustedHosts', '127.0.0.1,172.20.0.25'),
+					('node', 'localNetworks', '127.0.0.1,172.20'),
+				]
+			})
+
+		if self.config.node.full_api:
+			self._patch_resources({
 				'extensions-server': [
 					('extensions', 'extension.filespooling', 'true'),
 					('extensions', 'extension.partialtransaction', 'true'),
@@ -247,19 +254,10 @@ class Preparer:
 				],
 				'node': [
 					('node', 'enableAutoSyncCleanup', 'false'),
-					('node', 'trustedHosts', '127.0.0.1,172.20.0.25'),
-					('node', 'localNetworks', '127.0.0.1,172.20'),
 					('localnode', 'roles', 'Peer,Api'),
 				]
 			})
 
-		if self.config.node.light_api:
-			self._patch_resources({
-				'node': [
-					('node', 'trustedHosts', '127.0.0.1,172.20.0.25'),
-					('node', 'localNetworks', '127.0.0.1,172.20'),
-				]
-			})
 
 		if NodeFeatures.HARVESTER in self.config.node.features:
 			self.harvester_configurator.patch_configuration()
@@ -282,7 +280,7 @@ class Preparer:
 	def configure_rest(self, rest_overrides_filename=None):
 		"""Copies mongo and rest files."""
 
-		if not self.config.node.full_api and not self.config.node.light_api:
+		if not NodeFeatures.API in self.config.node.features:
 			return
 
 		rest_file_name = 'rest' if self.config.node.full_api else 'rest-light'
@@ -354,10 +352,12 @@ class Preparer:
 	def configure_docker(self, template_mapping):
 		"""Prepares docker-compose file."""
 
-		if NodeFeatures.API in self.config.node.features:
-			self._copy_tree_readonly(_qualify_resource('startup'), self.directories.startup)
+		compose_template_filename_postfix = 'light' if NodeFeatures.API in self.config.node.features else 'peer'
 
-		compose_template_filename_postfix = 'dual' if NodeFeatures.API in self.config.node.features else 'peer'
+		if self.config.node.full_api:
+			self._copy_tree_readonly(_qualify_resource('startup'), self.directories.startup)
+			compose_template_filename_postfix = 'dual'
+
 		compose_template_filename = _qualify_resource(f'templates/docker-compose-{compose_template_filename_postfix}.yaml')
 		compose_output_filepath = self.directory / 'docker-compose.yaml'
 		apply_template(compose_template_filename, template_mapping, compose_output_filepath)
