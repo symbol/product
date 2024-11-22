@@ -42,6 +42,8 @@ def _assert_node_full_certificate(ca_certificate_filepath, node_certificate_file
 
 
 async def _assert_can_renew_node_certificate(ca_password=None, retain_key=False):
+	# pylint: disable=too-many-locals
+
 	# Arrange:
 	with tempfile.TemporaryDirectory() as output_directory:
 		config_filepath_1 = _create_configuration(output_directory, ca_password, 'ORIGINAL CA CN', 'ORIGINAL NODE CN', '1.shoestring.ini')
