@@ -3,7 +3,6 @@ from pathlib import Path
 
 from zenlog import log
 
-from shoestring.internal.NodeFeatures import NodeFeatures
 from shoestring.internal.ShoestringConfiguration import parse_shoestring_configuration
 
 

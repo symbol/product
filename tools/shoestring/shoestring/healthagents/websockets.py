@@ -5,7 +5,6 @@ from websockets import connect  # pylint: disable=no-name-in-module,import-self
 from zenlog import log
 
 from shoestring.internal.ConfigurationManager import parse_time_span
-from shoestring.internal.NodeFeatures import NodeFeatures
 
 NAME = 'REST websockets'
 

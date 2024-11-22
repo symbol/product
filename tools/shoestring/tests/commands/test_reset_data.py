@@ -58,6 +58,7 @@ async def test_can_reset_data_peer_node():
 async def test_can_reset_data_api_node():
 	await _assert_reset_data(NodeFeatures.API, ['data', 'logs', 'dbdata'])
 
+
 async def test_can_reset_data_light_api_node():
 	await _assert_reset_data(NodeFeatures.API, ['data', 'logs'], light_api=True)
 

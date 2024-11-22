@@ -2,8 +2,6 @@ from symbollightapi.connector.SymbolConnector import SymbolConnector
 from symbollightapi.model.Exceptions import NodeException
 from zenlog import log
 
-from shoestring.internal.NodeFeatures import NodeFeatures
-
 NAME = 'REST API'
 
 

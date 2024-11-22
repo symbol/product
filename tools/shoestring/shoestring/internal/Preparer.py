@@ -258,7 +258,6 @@ class Preparer:
 				]
 			})
 
-
 		if NodeFeatures.HARVESTER in self.config.node.features:
 			self.harvester_configurator.patch_configuration()
 		else:
@@ -280,7 +279,7 @@ class Preparer:
 	def configure_rest(self, rest_overrides_filename=None):
 		"""Copies mongo and rest files."""
 
-		if not NodeFeatures.API in self.config.node.features:
+		if NodeFeatures.API not in self.config.node.features:
 			return
 
 		rest_file_name = 'rest' if self.config.node.full_api else 'rest-light'

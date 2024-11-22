@@ -13,9 +13,9 @@ from ..test.MockNodewatchServer import setup_mock_nodewatch_server
 from ..test.TestPackager import prepare_testnet_package
 from .test_setup import (
 	API_OUTPUT_FILES,
-	LIGHT_API_OUTPUT_FILES,
 	HARVESTER_OUTPUT_FILES,
 	HTTPS_OUTPUT_FILES,
+	LIGHT_API_OUTPUT_FILES,
 	PEER_OUTPUT_FILES,
 	STATE_CHANGE_OUTPUT_FILES,
 	VOTER_OUTPUT_FILES
@@ -142,7 +142,7 @@ async def _assert_can_upgrade_node(
 	expected_changed_files,
 	api_https=False,
 	light_api=False
-):
+):  # pylint: disable=too-many-arguments,too-many-positional-arguments
 	# Arrange:
 	with tempfile.TemporaryDirectory() as output_directory:
 		with tempfile.TemporaryDirectory() as package_directory:
@@ -215,15 +215,18 @@ async def test_can_upgrade_api_node_with_https(server):  # pylint: disable=redef
 	expected_changed_files = sorted(PEER_CHANGED_FILES + API_CHANGED_FILES + HTTPS_CHANGED_FILES)
 	await _assert_can_upgrade_node(server, NodeFeatures.API, expected_output_files, expected_changed_files, api_https=True)
 
+
 async def test_can_upgrade_light_api_node(server):  # pylint: disable=redefined-outer-name
 	expected_output_files = {**PEER_OUTPUT_FILES, **LIGHT_API_OUTPUT_FILES}
 	expected_changed_files = sorted(PEER_CHANGED_FILES + LIGHT_API_CHANGED_FILES)
 	await _assert_can_upgrade_node(server, NodeFeatures.API, expected_output_files, expected_changed_files, light_api=True)
 
+
 async def test_can_upgrade_light_api_node_with_https(server):  # pylint: disable=redefined-outer-name
 	expected_output_files = {**PEER_OUTPUT_FILES, **LIGHT_API_OUTPUT_FILES, **HTTPS_OUTPUT_FILES}
 	expected_changed_files = sorted(PEER_CHANGED_FILES + LIGHT_API_CHANGED_FILES + HTTPS_CHANGED_FILES)
 	await _assert_can_upgrade_node(server, NodeFeatures.API, expected_output_files, expected_changed_files, api_https=True, light_api=True)
+
 
 async def test_can_upgrade_harvester_node(server):  # pylint: disable=redefined-outer-name
 	expected_output_files = {**PEER_OUTPUT_FILES, **HARVESTER_OUTPUT_FILES, **STATE_CHANGE_OUTPUT_FILES}
