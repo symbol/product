@@ -14,6 +14,7 @@ from .FileTemplater import apply_template
 from .HarvesterConfigurator import HarvesterConfigurator
 from .LinkTransactionBuilder import LinkTransactionBuilder
 from .NodeFeatures import NodeFeatures
+from .NodeKeyProvider import NodeKeyProvider
 from .OpensslExecutor import OpensslExecutor
 from .VoterConfigurator import VoterConfigurator
 
@@ -138,6 +139,7 @@ class Preparer:
 		self.config_manager = ConfigurationManager(self.directories.resources)
 		self.harvester_configurator = HarvesterConfigurator(self.config_manager, self.config.imports.harvester)
 		self.voter_configurator = VoterConfigurator(self.config_manager, self.config.imports.voter)
+		self.node_key_provider = NodeKeyProvider(self.config.imports.node_key)
 
 	def __enter__(self):
 		self.temp_directory = tempfile.TemporaryDirectory()
@@ -330,7 +332,7 @@ class Preparer:
 
 			factory.extract_ca_public_key()
 			factory.generate_ca_certificate(self.config.node.ca_common_name)
-			factory.generate_random_node_private_key()
+			self.node_key_provider.create_key_file(factory)
 			factory.generate_node_certificate(self.config.node.node_common_name)
 			factory.create_node_certificate_chain()
 

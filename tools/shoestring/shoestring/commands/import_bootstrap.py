@@ -24,6 +24,15 @@ async def run_main(args):
 		log.info(_('import-bootstrap-importing-voter').format(path=bootstrap_voting_keys_directory))
 		replacements.append(('imports', 'voter', str(bootstrap_voting_keys_directory)))
 
+	bootstrap_node_key = bootstrap_node_path / 'cert/node.key.pem'
+	if args.node_key:
+		if bootstrap_node_key.exists():
+			log.info(_('import-bootstrap-importing-node-key').format(path=bootstrap_node_key))
+			replacements.append(('imports', 'node_key', str(bootstrap_node_key.absolute())))
+		else:
+			log.error(_('import-bootstrap-importing-node-key-not-found').format(path=bootstrap_node_key))
+			sys.exit(1)
+
 	if replacements:
 		config_filepath = Path(args.config)
 		ConfigurationManager(config_filepath.parent).patch(config_filepath.name, replacements)
@@ -32,4 +41,5 @@ async def run_main(args):
 def add_arguments(parser):
 	parser.add_argument('--config', help=_('argument-help-config'), required=True)
 	parser.add_argument('--bootstrap', help=_('argument-help-import-bootstrap-bootstrap'), required=True)
+	parser.add_argument('--node-key', help=_('argument-help-import-bootstrap-node-key'), action='store_true')
 	parser.set_defaults(func=run_main)

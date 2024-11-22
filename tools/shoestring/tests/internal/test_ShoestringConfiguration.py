@@ -49,7 +49,8 @@ class ShoestringConfigurationTest(unittest.TestCase):
 
 	VALID_IMPORTS_CONFIGURATION = {
 		'harvester': 'path/to/config-harvesting.properties',
-		'voter': 'path/to/private_key_tree_directory'
+		'voter': 'path/to/private_key_tree_directory',
+		'node_key': 'path/to/node.key.pem'
 	}
 
 	VALID_NODE_CONFIGURATION = {

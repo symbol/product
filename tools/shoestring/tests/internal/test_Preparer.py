@@ -39,7 +39,7 @@ class PreparerTest(unittest.TestCase):
 			None,
 			None,
 			TransactionConfiguration(234, 3, 0, 0, 0, 0),
-			imports_config if imports_config else ImportsConfiguration(None, None),
+			imports_config if imports_config else ImportsConfiguration(None, None, None),
 			NodeConfiguration(node_features, None, None, None, api_https, 'CA CN', 'NODE CN'))
 
 	def _assert_readonly(self, directory, filenames):
@@ -906,7 +906,7 @@ class PreparerTest(unittest.TestCase):
 			imports_harvester_filepath = Path(source_directory) / 'import.properties'
 			self._write_harvester_imports_file(imports_harvester_filepath)
 
-			imports_config = ImportsConfiguration(imports_harvester_filepath, None)
+			imports_config = ImportsConfiguration(imports_harvester_filepath, None, None)
 
 			# Act + Assert: only voter (un)links are present
 			self._assert_prepare_linking_transaction_can_create_aggregate_with_all_links_and_unlinks(imports_config, 2, False, True)
@@ -914,7 +914,7 @@ class PreparerTest(unittest.TestCase):
 	def test_prepare_linking_transaction_can_create_aggregate_with_all_links_and_unlinks_import_voter(self):
 		# Arrange:
 		with tempfile.TemporaryDirectory() as source_directory:
-			imports_config = ImportsConfiguration(None, source_directory)
+			imports_config = ImportsConfiguration(None, source_directory, None)
 
 			# Act + Assert: only harvester (un)links are present
 			self._assert_prepare_linking_transaction_can_create_aggregate_with_all_links_and_unlinks(imports_config, 4, True, False)
@@ -925,7 +925,7 @@ class PreparerTest(unittest.TestCase):
 			imports_harvester_filepath = Path(source_directory) / 'import.properties'
 			self._write_harvester_imports_file(imports_harvester_filepath)
 
-			imports_config = ImportsConfiguration(imports_harvester_filepath, source_directory)
+			imports_config = ImportsConfiguration(imports_harvester_filepath, source_directory, None)
 
 			# Act + Assert: neither harvester nor voter (un)links are present
 			self._assert_prepare_linking_transaction_can_create_aggregate_with_all_links_and_unlinks(imports_config, 0, False, False)
