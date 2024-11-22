@@ -3,8 +3,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from shoestring.internal.NodeKeyProvider import NodeKeyProvider
 from shoestring.internal.CertificateFactory import CertificateFactory
+from shoestring.internal.NodeKeyProvider import NodeKeyProvider
 from shoestring.internal.OpensslExecutor import OpensslExecutor
 
 
@@ -65,7 +65,6 @@ class NodeKeyProviderTest(unittest.TestCase):
 				node_key_data = _load_binary_file_data(node_key_filepath)
 				renew_node_key_data = _load_binary_file_data(renew_node_key_filepath)
 				assert node_key_data == renew_node_key_data
-
 
 	def test_cannot_generates_node_key(self):
 		with self.assertRaises(RuntimeError):

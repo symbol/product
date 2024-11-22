@@ -60,18 +60,20 @@ async def _run_test(is_harvester, is_voter, is_node_key, expected_imports_harves
 # region success
 
 async def test_can_import_with_neither_harvester_nor_voter_nor_node_key():
-	await _run_test(False, False, False,'', '', '')
+	await _run_test(False, False, False, '', '', '')
 
 
 async def test_can_import_with_harvester_but_not_voter_or_node_key():
-	await _run_test(True, False, False,'{bootstrap_root}/nodes/node/server-config/resources/config-harvesting.properties', '', '')
+	await _run_test(True, False, False, '{bootstrap_root}/nodes/node/server-config/resources/config-harvesting.properties', '', '')
 
 
 async def test_can_import_with_voter_but_not_harvester_or_node_key():
 	await _run_test(False, True, False, '', '{bootstrap_root}/nodes/node/votingkeys', '')
 
+
 async def test_can_import_with_node_key_but_not_harvester_or_voter():
 	await _run_test(False, False, True, '', '', '{bootstrap_root}/nodes/node/cert/node.key.pem')
+
 
 async def test_can_import_with_harvester_and_voter_but_not_node_key():
 	await _run_test(
@@ -82,6 +84,7 @@ async def test_can_import_with_harvester_and_voter_but_not_node_key():
 		'{bootstrap_root}/nodes/node/votingkeys',
 		'')
 
+
 async def test_can_import_with_harvester_and_node_key_but_not_voter():
 	await _run_test(
 		True,
@@ -90,6 +93,7 @@ async def test_can_import_with_harvester_and_node_key_but_not_voter():
 		'{bootstrap_root}/nodes/node/server-config/resources/config-harvesting.properties',
 		'',
 		'{bootstrap_root}/nodes/node/cert/node.key.pem')
+
 
 async def test_can_import_with_both_harvester_and_voter_and_node_key():
 	await _run_test(
@@ -121,6 +125,7 @@ async def test_cannot_import_when_bootstrap_directory_invalid():
 
 			assert 1 == ex_info.value.code
 
+
 async def test_cannot_import_when_node_key_does_not_exist():
 	# Arrange:
 	with tempfile.TemporaryDirectory() as output_directory:
@@ -141,4 +146,5 @@ async def test_cannot_import_when_node_key_does_not_exist():
 
 			# Assert:
 			assert 1 == ex_info.value.code
+
 # endregion

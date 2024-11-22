@@ -108,6 +108,7 @@ async def test_can_renew_node_certificate():
 async def test_can_renew_node_certificate_with_ca_password():
 	await _assert_can_renew_node_certificate('abcd')
 
+
 async def test_can_renew_node_certificate_with_retain_key():
 	await _assert_can_renew_node_certificate(retain_key=True)
 

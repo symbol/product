@@ -23,4 +23,3 @@ class NodeKeyProvider:
 			raise RuntimeError('unable to generate node private key')
 
 		factory.generate_random_node_private_key()
-
