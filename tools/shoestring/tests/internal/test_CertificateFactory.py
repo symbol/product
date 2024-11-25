@@ -1,6 +1,7 @@
 import datetime
 import os
 import re
+import shutil
 import tempfile
 import unittest
 from pathlib import Path
@@ -268,6 +269,42 @@ class CertificateFactoryTest(unittest.TestCase):
 				# Act + Assert:
 				with self.assertRaisesRegex(RuntimeError, 'Node common name cannot be empty'):
 					factory.generate_node_certificate('')
+
+	def test_can_reuse_ca_certificate(self):
+		def _load_binary_file_data(filename):
+			with open(filename, 'rb') as infile:
+				return infile.read()
+
+		# Arrange:
+		with tempfile.TemporaryDirectory() as package_directory:
+			ca_certificate_filepath = Path(package_directory) / 'ca.crt.pem'
+
+			# - create a CA private key
+			with tempfile.TemporaryDirectory() as certificate_directory:
+				ca_private_key_path = self._create_ca_private_key(certificate_directory)
+
+				with CertificateFactory(self._create_executor(), ca_private_key_path) as factory:
+					# create CA certificate
+					ca_common_name = 'my CA common name'
+					factory.generate_ca_certificate(ca_common_name)
+					factory.package(package_directory)
+
+				# Sanity:
+				shutil.rmtree(certificate_directory)
+				assert not ca_private_key_path.exists()
+
+				# Act:
+				with CertificateFactory(self._create_executor(), ca_private_key_path) as renew_factory:
+					renew_factory.reuse_ca_certificate(ca_common_name, Path(package_directory))
+
+					# Assert:
+					assert Path('ca.crt.pem').exists()
+					assert Path('ca.cnf').exists()
+					assert ca_certificate_filepath.exists()
+
+					original_ca_crt_data = _load_binary_file_data(ca_certificate_filepath)
+					copied_ca_crt_data = _load_binary_file_data('ca.crt.pem')
+					assert original_ca_crt_data == copied_ca_crt_data
 
 	# endregion
 

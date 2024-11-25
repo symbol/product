@@ -29,6 +29,18 @@ def _create_configuration(output_directory, ca_password, ca_common_name, node_co
 		filename=filename)
 
 
+def _load_binary_file_data(filename):
+	with open(filename, 'rb') as infile:
+		return infile.read()
+
+
+def _assert_node_full_certificate(ca_certificate_filepath, node_certificate_filepath, certificates_path):
+	node_full_crt_data = _load_binary_file_data(certificates_path / 'node.full.crt.pem')
+	node_crt_data = _load_binary_file_data(node_certificate_filepath)
+	ca_crt_data = _load_binary_file_data(ca_certificate_filepath)
+	assert node_full_crt_data == node_crt_data + ca_crt_data
+
+
 async def _assert_can_renew_node_certificate(ca_password=None):
 	# Arrange:
 	with tempfile.TemporaryDirectory() as output_directory:
@@ -76,6 +88,9 @@ async def _assert_can_renew_node_certificate(ca_password=None):
 		create_openssl_executor().dispatch(['verify', '-CAfile', ca_certificate_path, ca_certificate_path])
 		assert ca_certificate_last_modified_time == ca_certificate_path.stat().st_mtime
 
+		# verify that node.full == node.crt + ca.crt
+		_assert_node_full_certificate(ca_certificate_path, node_certificate_path, preparer.directories.certificates)
+
 
 async def test_can_renew_node_certificate():
 	await _assert_can_renew_node_certificate()
@@ -90,6 +105,8 @@ async def test_can_renew_node_certificate_with_ca_password():
 # region CA and node certificates renewal
 
 async def _assert_can_renew_ca_and_node_certificates(ca_password=None, use_relative_path=None):
+	# pylint: disable=too-many-locals
+
 	# Arrange:
 	with tempfile.TemporaryDirectory() as output_directory:
 		config_filepath_1 = _create_configuration(output_directory, ca_password, 'ORIGINAL CA CN', 'ORIGINAL NODE CN', '1.shoestring.ini')
@@ -136,6 +153,9 @@ async def _assert_can_renew_ca_and_node_certificates(ca_password=None, use_relat
 			assert_certificate_properties(ca_certificate_path, 'NEW CA CN', 'NEW CA CN', 20 * 365)
 			create_openssl_executor().dispatch(['verify', '-CAfile', ca_certificate_path, ca_certificate_path])
 			assert ca_certificate_last_modified_time != ca_certificate_path.stat().st_mtime
+
+			# verify that node.full == node.crt + ca.crt
+			_assert_node_full_certificate(ca_certificate_path, node_certificate_path, preparer.directories.certificates)
 
 
 async def test_can_renew_ca_and_node_certificates():
