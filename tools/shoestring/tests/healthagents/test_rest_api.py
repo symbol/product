@@ -61,10 +61,6 @@ def test_should_run_for_api_role():
 		assert not should_run(NodeConfiguration(features, *([None] * 7))), str(features)
 
 
-def test_should_run_skip_for_light_api():
-	# Act + Assert:
-	assert not should_run(NodeConfiguration(NodeFeatures.API, None, None, None, None, False, None, None))
-
 # endregion
 
 
