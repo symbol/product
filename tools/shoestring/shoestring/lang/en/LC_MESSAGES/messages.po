@@ -26,7 +26,7 @@ msgid "argument-help-ca-key-path"
 msgstr "path to main private key PEM file"
 
 #: shoestring/commands/announce_transaction.py:35
-#: shoestring/commands/health.py:74 shoestring/commands/import_bootstrap.py:41
+#: shoestring/commands/health.py:74 shoestring/commands/import_bootstrap.py:42
 #: shoestring/commands/import_harvesters.py:97 shoestring/commands/init.py:29
 #: shoestring/commands/min_cosignatures_count.py:34
 #: shoestring/commands/renew_certificates.py:34
@@ -43,11 +43,11 @@ msgstr "path to shoestring configuration file"
 msgid "argument-help-directory"
 msgstr "installation directory (default: {default_path})"
 
-#: shoestring/commands/import_bootstrap.py:42
+#: shoestring/commands/import_bootstrap.py:43
 msgid "argument-help-import-bootstrap-bootstrap"
 msgstr "path to bootstrap target directory"
 
-#: shoestring/commands/import_bootstrap.py:43
+#: shoestring/commands/import_bootstrap.py:44
 msgid "argument-help-import-bootstrap-node-key"
 msgstr "import node key"
 
@@ -264,7 +264,7 @@ msgstr "importing node key from bootstrap ({path})"
 
 #: shoestring/commands/import_bootstrap.py:33
 msgid "import-bootstrap-importing-node-key-not-found"
-msgstr "importing node key from bootstrap failed.  File not found ({path})"
+msgstr "importing node key from bootstrap failed. File not found ({path})"
 
 #: shoestring/commands/import_bootstrap.py:24
 msgid "import-bootstrap-importing-voter"

@@ -24,7 +24,7 @@ msgid "argument-help-ca-key-path"
 msgstr ""
 
 #: shoestring/commands/announce_transaction.py:35
-#: shoestring/commands/health.py:74 shoestring/commands/import_bootstrap.py:41
+#: shoestring/commands/health.py:74 shoestring/commands/import_bootstrap.py:42
 #: shoestring/commands/import_harvesters.py:97 shoestring/commands/init.py:29
 #: shoestring/commands/min_cosignatures_count.py:34
 #: shoestring/commands/renew_certificates.py:34
@@ -41,11 +41,11 @@ msgstr ""
 msgid "argument-help-directory"
 msgstr ""
 
-#: shoestring/commands/import_bootstrap.py:42
+#: shoestring/commands/import_bootstrap.py:43
 msgid "argument-help-import-bootstrap-bootstrap"
 msgstr ""
 
-#: shoestring/commands/import_bootstrap.py:43
+#: shoestring/commands/import_bootstrap.py:44
 msgid "argument-help-import-bootstrap-node-key"
 msgstr ""
 
