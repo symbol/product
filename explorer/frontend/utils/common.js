@@ -13,7 +13,9 @@ import { TRANSACTION_CHART_TYPE } from '@/constants';
  * isNumeric(NaN); // false
  * isNumeric(Infinity); // false
  */
-const isNumeric = value => (typeof value === 'number' || typeof value === 'string') && isFinite(value);
+const isNumeric = value =>
+	(typeof value === 'number' && isFinite(value)) ||
+	(typeof value === 'string' && value.trim() !== '' && !isNaN(value));
 
 /**
  * Converts date to a readable text string.
