@@ -101,7 +101,8 @@ API_OUTPUT_FILES = {
 }
 
 LIGHT_API_OUTPUT_FILES = {
-	'userconfig/rest.json': 0o400
+	'userconfig/rest.json': 0o400,
+	'rest-cache': 0o700
 }
 
 HARVESTER_OUTPUT_FILES = {
