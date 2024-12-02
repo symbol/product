@@ -240,7 +240,7 @@ class SymbolRoutesFacade(BasicRoutesFacade):
 		tag = 'danger'
 		if not version:
 			tag = 'warning'
-		if version.startswith('1.0.3.') and not any(version.endswith(f'.{build}') for build in (0, 1, 2, 3, 4, 5, 6)):
+		if version.startswith('1.0.3.') and not any(version.endswith(f'.{build}') for build in range(7)):
 			tag = 'success'
 
 		return tag
