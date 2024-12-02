@@ -26,7 +26,7 @@ services:
       - ./logs:/logs
       - ./keys/voting:/votingkeys
 
-  light-rest-api:
+  rest-api:
     image: '{{ catapult_rest_image }}'
     user: '{{ user }}'
     command: npm run start-light --prefix /app /userconfig/rest.json
