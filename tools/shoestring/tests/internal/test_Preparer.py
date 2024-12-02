@@ -930,4 +930,33 @@ class PreparerTest(unittest.TestCase):
 			# Act + Assert: neither harvester nor voter (un)links are present
 			self._assert_prepare_linking_transaction_can_create_aggregate_with_all_links_and_unlinks(imports_config, 0, False, False)
 
+	@staticmethod
+	def _create_node_key_file(source_directory):
+		cert_path = Path(source_directory) / 'nodes/node/cert'
+		cert_path.mkdir(parents=True)
+		node_key_filepath = cert_path / 'node.key.pem'
+		os.mknod(node_key_filepath, 0o400)
+		return node_key_filepath
+
+	def test_prepare_linking_transaction_can_create_aggregate_with_all_links_and_unlinks_with_node_key(self):
+		# Arrange:
+		with tempfile.TemporaryDirectory() as source_directory:
+			node_key_filepath = self._create_node_key_file(source_directory)
+			imports_config = ImportsConfiguration(None, None, node_key_filepath)
+
+			# Act + Assert: both harvester and voter (un)links are present
+			self._assert_prepare_linking_transaction_can_create_aggregate_with_all_links_and_unlinks(imports_config, 6, True, True)
+
+	def test_prepare_linking_transaction_can_create_aggregate_with_all_links_and_unlinks_import_harvester_and_voter_and_node_key(self):
+		# Arrange:
+		with tempfile.TemporaryDirectory() as source_directory:
+			imports_harvester_filepath = Path(source_directory) / 'import.properties'
+			self._write_harvester_imports_file(imports_harvester_filepath)
+			node_key_filepath = self._create_node_key_file(source_directory)
+
+			imports_config = ImportsConfiguration(imports_harvester_filepath, source_directory, node_key_filepath)
+
+			# Act + Assert: neither harvester nor voter (un)links are present
+			self._assert_prepare_linking_transaction_can_create_aggregate_with_all_links_and_unlinks(imports_config, 0, False, False)
+
 	# endregion

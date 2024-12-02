@@ -81,7 +81,7 @@ async def _assert_can_renew_node_certificate(ca_password=None, retain_key=False)
 			'--config', str(config_filepath_2),
 			'--directory', output_directory,
 			'--ca-key-path', str(ca_key_path),
-			*(['--retain-key'] if retain_key else [])
+			*(['--retain-node-key'] if retain_key else [])
 		])
 
 		# Assert: node certificate is regenerated (subject changed)

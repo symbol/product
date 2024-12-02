@@ -92,7 +92,7 @@ msgid "argument-help-renew-certificates-renew-ca"
 msgstr "renews CA certificate too"
 
 #: shoestring/commands/renew_certificates.py:38
-msgid "argument-help-renew-certificates-retain-key"
+msgid "argument-help-renew-certificates-retain-node-key"
 msgstr "retain the node key"
 
 #: shoestring/commands/reset_data.py:89

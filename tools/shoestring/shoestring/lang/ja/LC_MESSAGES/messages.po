@@ -90,7 +90,7 @@ msgid "argument-help-renew-certificates-renew-ca"
 msgstr ""
 
 #: shoestring/commands/renew_certificates.py:38
-msgid "argument-help-renew-certificates-retain-key"
+msgid "argument-help-renew-certificates-retain-node-key"
 msgstr ""
 
 #: shoestring/commands/reset_data.py:89

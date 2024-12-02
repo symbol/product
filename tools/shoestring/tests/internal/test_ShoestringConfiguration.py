@@ -202,6 +202,7 @@ class ShoestringConfigurationTest(unittest.TestCase):
 		# Assert:
 		self.assertEqual('path/to/config-harvesting.properties', imports_config.harvester)
 		self.assertEqual('path/to/private_key_tree_directory', imports_config.voter)
+		self.assertEqual('path/to/node.key.pem', imports_config.node_key)
 
 	def test_cannot_parse_imports_configuration_incomplete(self):
 		# Arrange:
