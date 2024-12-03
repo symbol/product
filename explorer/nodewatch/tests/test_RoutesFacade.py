@@ -454,7 +454,7 @@ class SymbolRoutesFacadeTest(unittest.TestCase):
 
 		self.assertEqual('warning', _map_version_to_css_class(SymbolRoutesFacade, ''))
 
-		for version in ['1.0.3.6' , '1.0.3.5', '1.0.3.4', '1.0.3.3', '1.0.3.1', '1.0.3.0', '1.0.2.0', '1.0.1.0', '0.0.0.0']:
+		for version in ['1.0.3.6', '1.0.3.5', '1.0.3.4', '1.0.3.3', '1.0.3.1', '1.0.3.0', '1.0.2.0', '1.0.1.0', '0.0.0.0']:
 			self.assertEqual('danger', _map_version_to_css_class(SymbolRoutesFacade, version))
 
 	# endregion
