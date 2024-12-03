@@ -196,14 +196,16 @@ class SymbolRoutesFacade(BasicRoutesFacade):
 		"""Creates a facade."""
 
 		super().__init__(network, explorer_endpoint, 'symbol', 'Symbol', self._version_to_css_class, {
-			'1.0.3.6': (COMPATIBLE_VERSION_COLORS[0], 11),
-			'1.0.3.5': (COMPATIBLE_VERSION_COLORS[1], 10),
-			'1.0.3.4': (COMPATIBLE_VERSION_COLORS[2], 9),
-			'delegating / updating': (AMBIGUOUS_COLORS[0], 8),
-			'1.0.3.3': (INCOMPATIBLE_VERSION_COLORS[-1], 7),
-			'1.0.3.1': (INCOMPATIBLE_VERSION_COLORS[-2], 6),
-			'1.0.3.0': (INCOMPATIBLE_VERSION_COLORS[-3], 5),
-			'0.0.0.0': (INCOMPATIBLE_VERSION_COLORS[-5], 1)
+			'1.0.3.7': (COMPATIBLE_VERSION_COLORS[0], 10),
+			'delegating / updating': (AMBIGUOUS_COLORS[0], 9),
+			'1.0.3.6': (INCOMPATIBLE_VERSION_COLORS[1], 8),
+			'1.0.3.5': (INCOMPATIBLE_VERSION_COLORS[1], 7),
+			'1.0.3.4': (INCOMPATIBLE_VERSION_COLORS[1], 6),
+			'1.0.3.3': (INCOMPATIBLE_VERSION_COLORS[1], 5),
+			'1.0.3.2': (INCOMPATIBLE_VERSION_COLORS[1], 4),
+			'1.0.3.1': (INCOMPATIBLE_VERSION_COLORS[1], 3),
+			'1.0.3.0': (INCOMPATIBLE_VERSION_COLORS[1], 2),
+			'0.0.0.0': (INCOMPATIBLE_VERSION_COLORS[1], 1)
 		}, min_cluster_size)
 
 	def html_voters(self):
@@ -238,7 +240,7 @@ class SymbolRoutesFacade(BasicRoutesFacade):
 		tag = 'danger'
 		if not version:
 			tag = 'warning'
-		if version.startswith('1.0.3.') and not any(version.endswith(f'.{build}') for build in (0, 1, 2, 3)):
+		if version.startswith('1.0.3.') and not any(version.endswith(f'.{build}') for build in range(7)):
 			tag = 'success'
 
 		return tag
