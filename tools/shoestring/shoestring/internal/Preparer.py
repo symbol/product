@@ -165,11 +165,10 @@ class Preparer:
 			self.directories.resources
 		]
 
-		if NodeFeatures.API in self.config.node.features and self.config.node.api_https:
-			directories.append(self.directories.https_proxy)
-
 		if NodeFeatures.API in self.config.node.features:
 			directories.append(self.directories.rest_cache)
+			if self.config.node.api_https:
+				directories.append(self.directories.https_proxy)
 
 		if self.config.node.full_api:
 			directories.append(self.directories.dbdata)
