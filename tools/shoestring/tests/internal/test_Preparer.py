@@ -731,7 +731,8 @@ class PreparerTest(unittest.TestCase):
 					'catapult_client_image': 'symbolplatform/symbol-server:gcc-a.b.c.d',
 					'catapult_rest_image': 'symbolplatform/symbol-rest:a.b.c',
 					'user': '2222:3333',
-					'api_https': config.node.api_https
+					'api_https': config.node.api_https,
+					'light_api': NodeFeatures.API in config.node.features and not config.node.full_api,
 				})
 
 				# Assert: check startup files
@@ -792,6 +793,14 @@ class PreparerTest(unittest.TestCase):
 		], [
 			'db', 'initiate', 'client', 'broker', 'rest-api'
 		])
+
+	def test_can_configure_docker_api_light_node_with_https(self):
+		config = self._create_configuration(NodeFeatures.API, light_api=True)
+		self._assert_can_configure_docker(config, [], ['client', 'rest-api', 'rest-api-https-proxy'])
+
+	def test_can_configure_docker_api_light_node_without_https(self):
+		config = self._create_configuration(NodeFeatures.API, api_https=False, light_api=True)
+		self._assert_can_configure_docker(config, [], ['client', 'rest-api'])
 
 	# endregion
 

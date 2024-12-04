@@ -121,6 +121,7 @@ async def run_main(args):
 			'catapult_rest_image': config.images.rest,
 			'user': f'{config.node.user_id}:{config.node.group_id}',
 			'api_https': config.node.api_https,
+			'light_api': NodeFeatures.API in config.node.features and not config.node.full_api,
 			'domainname': hostname
 		})
 

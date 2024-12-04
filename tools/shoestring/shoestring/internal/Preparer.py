@@ -351,11 +351,11 @@ class Preparer:
 	def configure_docker(self, template_mapping):
 		"""Prepares docker-compose file."""
 
-		compose_template_filename_postfix = 'light' if NodeFeatures.API in self.config.node.features else 'peer'
-
 		if self.config.node.full_api:
 			self._copy_tree_readonly(_qualify_resource('startup'), self.directories.startup)
 			compose_template_filename_postfix = 'dual'
+		else:
+			compose_template_filename_postfix = 'peer'
 
 		compose_template_filename = _qualify_resource(f'templates/docker-compose-{compose_template_filename_postfix}.yaml')
 		compose_output_filepath = self.directory / 'docker-compose.yaml'
