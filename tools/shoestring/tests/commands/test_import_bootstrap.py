@@ -11,14 +11,14 @@ from shoestring.internal.ShoestringConfiguration import ImportsConfiguration
 
 from ..test.ConfigurationTestUtils import prepare_shoestring_configuration
 
-EnabledImports = namedtuple('ImportsExpected', ['is_harvester', 'is_voter', 'is_node_key'])
+EnabledImports = namedtuple('ImportsExpected', ['has_harvester', 'has_voter', 'has_node_key'])
 
 
 def build_expected_imports(enabled_imports):
 	return ImportsConfiguration(
-		'{bootstrap_root}/nodes/node/server-config/resources/config-harvesting.properties' if enabled_imports.is_harvester else '',
-		'{bootstrap_root}/nodes/node/votingkeys' if enabled_imports.is_voter else '',
-		'{bootstrap_root}/nodes/node/cert/node.key.pem' if enabled_imports.is_node_key else ''
+		'{bootstrap_root}/nodes/node/server-config/resources/config-harvesting.properties' if enabled_imports.has_harvester else '',
+		'{bootstrap_root}/nodes/node/votingkeys' if enabled_imports.has_voter else '',
+		'{bootstrap_root}/nodes/node/cert/node.key.pem' if enabled_imports.has_node_key else ''
 	)
 
 
@@ -31,17 +31,17 @@ async def _run_test(enabled_imports, expected_imports):
 			bootstrap_node_path = Path(bootstrap_directory) / 'nodes/node'
 			bootstrap_node_path.mkdir(parents=True)
 
-			if enabled_imports.is_harvester:
+			if enabled_imports.has_harvester:
 				bootstrap_resources_path = bootstrap_node_path / 'server-config/resources'
 				bootstrap_resources_path.mkdir(parents=True)
 				with open(bootstrap_resources_path / 'config-harvesting.properties', 'wt', encoding='utf8') as outfile:
 					outfile.write('lorem ipsum')
 
-			if enabled_imports.is_voter:
+			if enabled_imports.has_voter:
 				bootstrap_voting_keys_path = bootstrap_node_path / 'votingkeys'
 				bootstrap_voting_keys_path.mkdir(parents=True)
 
-			if enabled_imports.is_node_key:
+			if enabled_imports.has_node_key:
 				bootstrap_node_key_path = bootstrap_node_path / 'cert/node.key.pem'
 				bootstrap_node_key_path.mkdir(parents=True)
 
@@ -50,7 +50,7 @@ async def _run_test(enabled_imports, expected_imports):
 				'import-bootstrap',
 				'--config', str(config_filepath),
 				'--bootstrap', str(bootstrap_directory),
-				*(['--include-node-key'] if enabled_imports.is_node_key else [])
+				*(['--include-node-key'] if enabled_imports.has_node_key else [])
 			])
 
 			# Assert:
@@ -77,13 +77,13 @@ async def test_can_import_with_neither_harvester_nor_voter_nor_node_key():
 	await _run_test(actual_imports, expected_imports)
 
 
-async def test_can_import_with_harvester_but_not_voter_or_node_key():
+async def test_can_import_with_harvester_but_not_voter_nor_node_key():
 	actual_imports = EnabledImports(True, False, False)
 	expected_imports = build_expected_imports(actual_imports)
 	await _run_test(actual_imports, expected_imports)
 
 
-async def test_can_import_with_voter_but_not_harvester_or_node_key():
+async def test_can_import_with_voter_but_not_harvester_nor_node_key():
 	actual_imports = EnabledImports(False, True, False)
 	expected_imports = build_expected_imports(actual_imports)
 	await _run_test(actual_imports, expected_imports)

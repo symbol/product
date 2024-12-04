@@ -39,7 +39,7 @@ msgid "argument-help-import-bootstrap-bootstrap"
 msgstr ""
 
 #: shoestring/commands/import_bootstrap.py:44
-msgid "argument-help-import-bootstrap-node-key"
+msgid "argument-help-import-bootstrap-include-node-key"
 msgstr ""
 
 #: shoestring/commands/import_harvesters.py:98
@@ -133,17 +133,17 @@ msgid "general-connecting-to-node"
 msgstr ""
 
 #: shoestring/commands/init.py:17 shoestring/commands/reset_data.py:57
-#: shoestring/internal/Preparer.py:191
+#: shoestring/internal/Preparer.py:190
 #: shoestring/internal/VoterConfigurator.py:53
 msgid "general-copying-file"
 msgstr ""
 
-#: shoestring/commands/reset_data.py:62 shoestring/internal/Preparer.py:197
+#: shoestring/commands/reset_data.py:62 shoestring/internal/Preparer.py:196
 msgid "general-copying-tree"
 msgstr ""
 
 #: shoestring/commands/renew_voting_keys.py:46
-#: shoestring/internal/Preparer.py:390
+#: shoestring/internal/Preparer.py:389
 msgid "general-created-aggregate-transaction"
 msgstr ""
 

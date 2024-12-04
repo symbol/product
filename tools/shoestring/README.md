@@ -94,7 +94,7 @@ import-bootstrap --config CONFIG --bootstrap BOOTSTRAP [--include-node-key]
 
   --config CONFIG       path to shoestring configuration file
   --bootstrap BOOTSTRAP path to bootstrap target directory
-  --include-node-key            include the node key
+  --include-node-key    include node key
 ```
 
 ### import-harvesters
@@ -222,7 +222,7 @@ renew-certificates --config CONFIG [--directory DIRECTORY] --ca-key-path CA_KEY_
   --directory DIRECTORY     installation directory (default: $HOME)
   --ca-key-path CA_KEY_PATH path to main private key PEM file
   --renew-ca                renews CA certificate too
-  --retain-node-key              retain the node key
+  --retain-node-key         retain node key
 ```
 
 When `--renew-ca` is set, both CA and node certificates will be regenerated. Otherwise, only node certificate will be.

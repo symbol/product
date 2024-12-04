@@ -8,7 +8,7 @@ from shoestring.internal.NodeKeyUtils import write_node_key_file
 from shoestring.internal.OpensslExecutor import OpensslExecutor
 
 
-class NodeKeyProviderTest(unittest.TestCase):
+class NodeKeyUtilsTest(unittest.TestCase):
 	# region utils
 
 	@staticmethod
@@ -17,10 +17,10 @@ class NodeKeyProviderTest(unittest.TestCase):
 
 	# endregion
 
-	# region NodeKeyProvider
+	# region tests
 
 	def test_can_generate_random_node_key(self):
-		# Arrange + Act:
+		# Act:
 		with tempfile.TemporaryDirectory() as package_directory:
 			with CertificateFactory(self._create_executor(), Path(package_directory) / 'xyz.key.pem') as factory:
 				write_node_key_file(factory)

@@ -48,8 +48,8 @@ msgid "argument-help-import-bootstrap-bootstrap"
 msgstr "path to bootstrap target directory"
 
 #: shoestring/commands/import_bootstrap.py:44
-msgid "argument-help-import-bootstrap-node-key"
-msgstr "import node key"
+msgid "argument-help-import-bootstrap-include-node-key"
+msgstr "include node key"
 
 #: shoestring/commands/import_harvesters.py:98
 msgid "argument-help-import-harvesters-in-harvesters"
@@ -93,7 +93,7 @@ msgstr "renews CA certificate too"
 
 #: shoestring/commands/renew_certificates.py:38
 msgid "argument-help-renew-certificates-retain-node-key"
-msgstr "retain the node key"
+msgstr "retain node key"
 
 #: shoestring/commands/reset_data.py:89
 msgid "argument-help-reset-data-purge-harvesters"
@@ -144,17 +144,17 @@ msgid "general-connecting-to-node"
 msgstr "connecting to {endpoint}"
 
 #: shoestring/commands/init.py:17 shoestring/commands/reset_data.py:57
-#: shoestring/internal/Preparer.py:191
+#: shoestring/internal/Preparer.py:190
 #: shoestring/internal/VoterConfigurator.py:53
 msgid "general-copying-file"
 msgstr "copying FILE {source_path} into {destination_path}"
 
-#: shoestring/commands/reset_data.py:62 shoestring/internal/Preparer.py:197
+#: shoestring/commands/reset_data.py:62 shoestring/internal/Preparer.py:196
 msgid "general-copying-tree"
 msgstr "copying TREE {source_path} to {destination_path}"
 
 #: shoestring/commands/renew_voting_keys.py:46
-#: shoestring/internal/Preparer.py:390
+#: shoestring/internal/Preparer.py:389
 msgid "general-created-aggregate-transaction"
 msgstr "created aggregate transaction with hash {transaction_hash}"
 

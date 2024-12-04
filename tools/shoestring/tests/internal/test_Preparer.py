@@ -549,13 +549,16 @@ class PreparerTest(unittest.TestCase):
 	# region generate_certificates
 
 	@staticmethod
-	def _create_ca_private_key(directory):
+	def _create_private_key(filepath):
 		OpensslExecutor(os.environ.get('OPENSSL_EXECUTABLE', 'openssl')).dispatch([
 			'genpkey',
-			'-out', Path(directory) / 'ca.key.pem',
+			'-out', filepath,
 			'-outform', 'PEM',
 			'-algorithm', 'ed25519'
 		])
+
+	def _create_ca_private_key(self, directory):
+		self._create_private_key(Path(directory) / 'ca.key.pem')
 
 	def _assert_all_files_read_only(self, directory, expected_files):
 		# check files
@@ -616,6 +619,63 @@ class PreparerTest(unittest.TestCase):
 
 					# - check CA files
 					self._assert_all_files_read_only(ca_directory, ['ca.key.pem'])
+
+	@staticmethod
+	def _load_binary_file_data(filename):
+		with open(filename, 'rb') as infile:
+			return infile.read()
+
+	def test_can_generate_certificates_when_node_key_is_imported(self):
+		def _create_node_key_file(source_directory):
+			cert_path = Path(source_directory) / 'nodes/node/cert'
+			cert_path.mkdir(parents=True)
+			node_key_filepath = cert_path / 'node.key.pem'
+			self._create_private_key(node_key_filepath)
+			return node_key_filepath
+
+		# Arrange:
+		with tempfile.TemporaryDirectory() as output_directory:
+			node_key_filepath = _create_node_key_file(output_directory)
+			imports_config = ImportsConfiguration(None, None, node_key_filepath)
+			with Preparer(output_directory, self._create_configuration(NodeFeatures.PEER, imports_config=imports_config)) as preparer:
+				with tempfile.TemporaryDirectory() as ca_directory:
+					preparer.create_subdirectories()
+
+					# Act:
+					preparer.generate_certificates(Path(ca_directory) / 'ca.key.pem', require_ca=False)
+
+					# Assert: check package files
+					self._assert_all_files_read_only(preparer.directories.certificates, [
+						'ca.crt.pem', 'ca.pubkey.pem', 'node.crt.pem', 'node.full.crt.pem', 'node.key.pem'
+					])
+
+					# - check node key files
+					original_node_key_data = self._load_binary_file_data(node_key_filepath)
+					output_node_key_data = self._load_binary_file_data(Path(preparer.directories.certificates) / 'node.key.pem')
+					assert original_node_key_data == output_node_key_data
+
+	def test_can_generate_random_node_key_when_not_imported(self):
+		# Arrange:
+		with tempfile.TemporaryDirectory() as output_directory:
+			with Preparer(output_directory, self._create_configuration(NodeFeatures.PEER)) as preparer:
+				with tempfile.TemporaryDirectory() as ca_directory:
+					ca_key_filepath = Path(ca_directory) / 'ca.key.pem'
+					preparer.create_subdirectories()
+					preparer.generate_certificates(ca_key_filepath, require_ca=False)
+					node_key_filepath = preparer.directories.certificates / 'node.key.pem'
+					original_node_key_data = self._load_binary_file_data(node_key_filepath)
+
+					# Act:
+					preparer.generate_certificates(ca_key_filepath, require_ca=False)
+
+					# Assert: check package files
+					self._assert_all_files_read_only(preparer.directories.certificates, [
+						'ca.crt.pem', 'ca.pubkey.pem', 'node.crt.pem', 'node.full.crt.pem', 'node.key.pem'
+					])
+
+					# - check node key files are different
+					output_node_key_data = self._load_binary_file_data(node_key_filepath)
+					assert original_node_key_data != output_node_key_data
 
 	# endregion
 
@@ -926,35 +986,6 @@ class PreparerTest(unittest.TestCase):
 			self._write_harvester_imports_file(imports_harvester_filepath)
 
 			imports_config = ImportsConfiguration(imports_harvester_filepath, source_directory, None)
-
-			# Act + Assert: neither harvester nor voter (un)links are present
-			self._assert_prepare_linking_transaction_can_create_aggregate_with_all_links_and_unlinks(imports_config, 0, False, False)
-
-	@staticmethod
-	def _create_node_key_file(source_directory):
-		cert_path = Path(source_directory) / 'nodes/node/cert'
-		cert_path.mkdir(parents=True)
-		node_key_filepath = cert_path / 'node.key.pem'
-		os.mknod(node_key_filepath, 0o400)
-		return node_key_filepath
-
-	def test_prepare_linking_transaction_can_create_aggregate_with_all_links_and_unlinks_with_node_key(self):
-		# Arrange:
-		with tempfile.TemporaryDirectory() as source_directory:
-			node_key_filepath = self._create_node_key_file(source_directory)
-			imports_config = ImportsConfiguration(None, None, node_key_filepath)
-
-			# Act + Assert: both harvester and voter (un)links are present
-			self._assert_prepare_linking_transaction_can_create_aggregate_with_all_links_and_unlinks(imports_config, 6, True, True)
-
-	def test_prepare_linking_transaction_can_create_aggregate_with_all_links_and_unlinks_import_harvester_and_voter_and_node_key(self):
-		# Arrange:
-		with tempfile.TemporaryDirectory() as source_directory:
-			imports_harvester_filepath = Path(source_directory) / 'import.properties'
-			self._write_harvester_imports_file(imports_harvester_filepath)
-			node_key_filepath = self._create_node_key_file(source_directory)
-
-			imports_config = ImportsConfiguration(imports_harvester_filepath, source_directory, node_key_filepath)
 
 			# Act + Assert: neither harvester nor voter (un)links are present
 			self._assert_prepare_linking_transaction_can_create_aggregate_with_all_links_and_unlinks(imports_config, 0, False, False)
