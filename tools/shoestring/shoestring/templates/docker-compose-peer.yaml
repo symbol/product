@@ -60,7 +60,7 @@ services:
       - rest-api
     environment:
       - DOMAINS={{ domainname }} -> http://rest-api:3000
-      - WEBSOCKET=true
+      - WEBSOCKET=false
       - STAGE=production
       - FORCE_RENEW=false
     volumes:
