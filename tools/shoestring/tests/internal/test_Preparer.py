@@ -557,8 +557,9 @@ class PreparerTest(unittest.TestCase):
 			'-algorithm', 'ed25519'
 		])
 
-	def _create_ca_private_key(self, directory):
-		self._create_private_key(Path(directory) / 'ca.key.pem')
+	@staticmethod
+	def _create_ca_private_key(directory):
+		PreparerTest._create_private_key(Path(directory) / 'ca.key.pem')
 
 	def _assert_all_files_read_only(self, directory, expected_files):
 		# check files
