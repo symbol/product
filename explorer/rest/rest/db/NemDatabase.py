@@ -860,7 +860,7 @@ class NemDatabase(DatabaseConnectionPool):
 							ON ar.address = a.address,
 						jsonb_array_elements(mosaics) as mosaic
 				)
-				SELECT
+				SELECT DISTINCT
 					ml.address,
 					ml.remarks,
 					ml.balance,
