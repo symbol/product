@@ -449,12 +449,12 @@ class SymbolRoutesFacadeTest(unittest.TestCase):
 	# region utils
 
 	def test_can_map_version_to_css_class(self):
-		for version in ['1.0.3.6', '1.0.3.5', '1.0.3.4']:
+		for version in ['1.0.3.7']:
 			self.assertEqual('success', _map_version_to_css_class(SymbolRoutesFacade, version))
 
 		self.assertEqual('warning', _map_version_to_css_class(SymbolRoutesFacade, ''))
 
-		for version in ['1.0.3.3', '1.0.3.1', '1.0.3.0', '1.0.2.0', '1.0.1.0', '0.0.0.0']:
+		for version in ['1.0.3.6', '1.0.3.5', '1.0.3.4', '1.0.3.3', '1.0.3.1', '1.0.3.0', '1.0.2.0', '1.0.1.0', '0.0.0.0']:
 			self.assertEqual('danger', _map_version_to_css_class(SymbolRoutesFacade, version))
 
 	# endregion
