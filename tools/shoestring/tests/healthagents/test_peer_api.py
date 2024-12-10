@@ -20,7 +20,7 @@ from ..test.LogTestUtils import LogLevel, assert_max_log_level, assert_message_i
 
 def _create_configuration():
 	node_config = NodeConfiguration(NodeFeatures.PEER, None, None, None, None, 'CA CN', 'NODE CN')
-	return ShoestringConfiguration('testnet', *(3 * [None]), ImportsConfiguration(None, None), node_config)
+	return ShoestringConfiguration('testnet', *(3 * [None]), ImportsConfiguration(None, None, None), node_config)
 
 
 @pytest.fixture

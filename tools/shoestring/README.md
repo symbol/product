@@ -86,14 +86,15 @@ min-cosignatures-count --config CONFIG --ca-key-path CA_KEY_PATH [--update]
 
 ### import-bootstrap
 
-Imports settings from a symbol-bootstap installation.
+Imports settings from a symbol-bootstrap installation.
 
 
 ```
-import-bootstrap --config CONFIG --bootstrap BOOTSTRAP
+import-bootstrap --config CONFIG --bootstrap BOOTSTRAP [--include-node-key]
 
   --config CONFIG       path to shoestring configuration file
   --bootstrap BOOTSTRAP path to bootstrap target directory
+  --include-node-key    include node key
 ```
 
 ### import-harvesters
@@ -215,12 +216,13 @@ upgrade \
 Renews peer certificates.
 
 ```
-renew-certificates --config CONFIG [--directory DIRECTORY] --ca-key-path CA_KEY_PATH [--renew-ca]
+renew-certificates --config CONFIG [--directory DIRECTORY] --ca-key-path CA_KEY_PATH [--renew-ca] [--retain-node-key]
 
   --config CONFIG           path to shoestring configuration file
   --directory DIRECTORY     installation directory (default: $HOME)
   --ca-key-path CA_KEY_PATH path to main private key PEM file
   --renew-ca                renews CA certificate too
+  --retain-node-key         retain node key
 ```
 
 When `--renew-ca` is set, both CA and node certificates will be regenerated. Otherwise, only node certificate will be.

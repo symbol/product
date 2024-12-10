@@ -12,7 +12,7 @@ ServicesConfiguration = namedtuple('ServicesConfiguration', ['nodewatch'])
 TransactionConfiguration = namedtuple('TransactionConfiguration', [
 	'fee_multiplier', 'timeout_hours', 'min_cosignatures_count', 'hash_lock_duration', 'currency_mosaic_id', 'locked_funds_per_aggregate'
 ])
-ImportsConfiguration = namedtuple('ImportsConfiguration', ['harvester', 'voter'])
+ImportsConfiguration = namedtuple('ImportsConfiguration', ['harvester', 'voter', 'node_key'])
 NodeConfiguration = namedtuple('NodeConfiguration', [
 	'features', 'user_id', 'group_id', 'ca_password', 'api_https', 'ca_common_name', 'node_common_name'
 ])
@@ -63,7 +63,7 @@ def parse_transaction_configuration(config):
 def parse_imports_configuration(config):
 	"""Parses imports configuration."""
 
-	return ImportsConfiguration(config['harvester'], config['voter'])
+	return ImportsConfiguration(config['harvester'], config['voter'], config['node_key'])
 
 
 def parse_node_configuration(config):

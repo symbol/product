@@ -35,7 +35,7 @@ def _create_executor():
 
 def _create_configuration():
 	node_config = NodeConfiguration(NodeFeatures.PEER, None, None, None, None, 'CA CN', 'NODE CN')
-	return ShoestringConfiguration('testnet', *(3 * [None]), ImportsConfiguration(None, None), node_config)
+	return ShoestringConfiguration('testnet', *(3 * [None]), ImportsConfiguration(None, None, None), node_config)
 
 
 async def _dispatch_validate(directories):

@@ -41,7 +41,9 @@ def _assert_node_full_certificate(ca_certificate_filepath, node_certificate_file
 	assert node_full_crt_data == node_crt_data + ca_crt_data
 
 
-async def _assert_can_renew_node_certificate(ca_password=None):
+async def _assert_can_renew_node_certificate(ca_password=None, retain_key=False):
+	# pylint: disable=too-many-locals
+
 	# Arrange:
 	with tempfile.TemporaryDirectory() as output_directory:
 		config_filepath_1 = _create_configuration(output_directory, ca_password, 'ORIGINAL CA CN', 'ORIGINAL NODE CN', '1.shoestring.ini')
@@ -66,6 +68,9 @@ async def _assert_can_renew_node_certificate(ca_password=None):
 		node_certificate_path = preparer.directories.certificates / 'node.crt.pem'
 		node_certificate_last_modified_time = node_certificate_path.stat().st_mtime
 
+		node_key_path = preparer.directories.certificates / 'node.key.pem'
+		node_key_data = _load_binary_file_data(node_key_path)
+
 		# Sanity:
 		assert_certificate_properties(node_certificate_path, 'ORIGINAL CA CN', 'ORIGINAL NODE CN', 375)
 		assert_certificate_properties(ca_certificate_path, 'ORIGINAL CA CN', 'ORIGINAL CA CN', 20 * 365)
@@ -75,13 +80,19 @@ async def _assert_can_renew_node_certificate(ca_password=None):
 			'renew-certificates',
 			'--config', str(config_filepath_2),
 			'--directory', output_directory,
-			'--ca-key-path', str(ca_key_path)
+			'--ca-key-path', str(ca_key_path),
+			*(['--retain-node-key'] if retain_key else [])
 		])
 
 		# Assert: node certificate is regenerated (subject changed)
 		assert_certificate_properties(node_certificate_path, 'ORIGINAL CA CN', 'NEW NODE CN', 375)
 		create_openssl_executor().dispatch(['verify', '-CAfile', ca_certificate_path, node_certificate_path])
 		assert node_certificate_last_modified_time != node_certificate_path.stat().st_mtime
+		node_key_data_after = _load_binary_file_data(node_key_path)
+		if retain_key:
+			assert node_key_data == node_key_data_after
+		else:
+			assert node_key_data != node_key_data_after
 
 		# - ca certificate is not regenerated
 		assert_certificate_properties(ca_certificate_path, 'ORIGINAL CA CN', 'ORIGINAL CA CN', 20 * 365)
@@ -98,6 +109,10 @@ async def test_can_renew_node_certificate():
 
 async def test_can_renew_node_certificate_with_ca_password():
 	await _assert_can_renew_node_certificate('abcd')
+
+
+async def test_can_renew_node_certificate_with_retain_key():
+	await _assert_can_renew_node_certificate(retain_key=True)
 
 # endregion
 

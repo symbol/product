@@ -14,6 +14,7 @@ from .FileTemplater import apply_template
 from .HarvesterConfigurator import HarvesterConfigurator
 from .LinkTransactionBuilder import LinkTransactionBuilder
 from .NodeFeatures import NodeFeatures
+from .NodeKeyUtils import write_node_key_file
 from .OpensslExecutor import OpensslExecutor
 from .VoterConfigurator import VoterConfigurator
 
@@ -330,7 +331,7 @@ class Preparer:
 
 			factory.extract_ca_public_key()
 			factory.generate_ca_certificate(self.config.node.ca_common_name)
-			factory.generate_random_node_private_key()
+			write_node_key_file(factory, self.config.imports.node_key)
 			factory.generate_node_certificate(self.config.node.node_common_name)
 			factory.create_node_certificate_chain()
 

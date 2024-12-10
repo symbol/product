@@ -49,7 +49,8 @@ class ShoestringConfigurationTest(unittest.TestCase):
 
 	VALID_IMPORTS_CONFIGURATION = {
 		'harvester': 'path/to/config-harvesting.properties',
-		'voter': 'path/to/private_key_tree_directory'
+		'voter': 'path/to/private_key_tree_directory',
+		'node_key': 'path/to/node.key.pem'
 	}
 
 	VALID_NODE_CONFIGURATION = {
@@ -201,6 +202,7 @@ class ShoestringConfigurationTest(unittest.TestCase):
 		# Assert:
 		self.assertEqual('path/to/config-harvesting.properties', imports_config.harvester)
 		self.assertEqual('path/to/private_key_tree_directory', imports_config.voter)
+		self.assertEqual('path/to/node.key.pem', imports_config.node_key)
 
 	def test_cannot_parse_imports_configuration_incomplete(self):
 		# Arrange:

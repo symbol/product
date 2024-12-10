@@ -18,16 +18,16 @@ msgid "argument-help-announce-transaction-transaction"
 msgstr ""
 
 #: shoestring/commands/min_cosignatures_count.py:35
-#: shoestring/commands/renew_certificates.py:31
+#: shoestring/commands/renew_certificates.py:36
 #: shoestring/commands/setup.py:144 shoestring/commands/signer.py:93
 msgid "argument-help-ca-key-path"
 msgstr ""
 
 #: shoestring/commands/announce_transaction.py:35
-#: shoestring/commands/health.py:74 shoestring/commands/import_bootstrap.py:33
+#: shoestring/commands/health.py:74 shoestring/commands/import_bootstrap.py:42
 #: shoestring/commands/import_harvesters.py:97 shoestring/commands/init.py:29
 #: shoestring/commands/min_cosignatures_count.py:34
-#: shoestring/commands/renew_certificates.py:29
+#: shoestring/commands/renew_certificates.py:34
 #: shoestring/commands/renew_voting_keys.py:112
 #: shoestring/commands/reset_data.py:87 shoestring/commands/setup.py:136
 #: shoestring/commands/signer.py:92
@@ -35,14 +35,18 @@ msgid "argument-help-config"
 msgstr ""
 
 #: shoestring/commands/health.py:75
-#: shoestring/commands/renew_certificates.py:30
+#: shoestring/commands/renew_certificates.py:35
 #: shoestring/commands/renew_voting_keys.py:113
 #: shoestring/commands/reset_data.py:88 shoestring/commands/setup.py:138
 msgid "argument-help-directory"
 msgstr ""
 
-#: shoestring/commands/import_bootstrap.py:34
+#: shoestring/commands/import_bootstrap.py:43
 msgid "argument-help-import-bootstrap-bootstrap"
+msgstr ""
+
+#: shoestring/commands/import_bootstrap.py:44
+msgid "argument-help-import-bootstrap-include-node-key"
 msgstr ""
 
 #: shoestring/commands/import_harvesters.py:98
@@ -81,8 +85,12 @@ msgstr ""
 msgid "argument-help-pemtool-output"
 msgstr ""
 
-#: shoestring/commands/renew_certificates.py:32
+#: shoestring/commands/renew_certificates.py:37
 msgid "argument-help-renew-certificates-renew-ca"
+msgstr ""
+
+#: shoestring/commands/renew_certificates.py:38
+msgid "argument-help-renew-certificates-retain-node-key"
 msgstr ""
 
 #: shoestring/commands/reset_data.py:89
@@ -132,17 +140,17 @@ msgid "general-connecting-to-node"
 msgstr ""
 
 #: shoestring/commands/init.py:17 shoestring/commands/reset_data.py:57
-#: shoestring/internal/Preparer.py:189
+#: shoestring/internal/Preparer.py:190
 #: shoestring/internal/VoterConfigurator.py:53
 msgid "general-copying-file"
 msgstr ""
 
-#: shoestring/commands/reset_data.py:62 shoestring/internal/Preparer.py:195
+#: shoestring/commands/reset_data.py:62 shoestring/internal/Preparer.py:196
 msgid "general-copying-tree"
 msgstr ""
 
 #: shoestring/commands/renew_voting_keys.py:46
-#: shoestring/internal/Preparer.py:388
+#: shoestring/internal/Preparer.py:389
 msgid "general-created-aggregate-transaction"
 msgstr ""
 
@@ -240,6 +248,14 @@ msgstr ""
 
 #: shoestring/commands/import_bootstrap.py:19
 msgid "import-bootstrap-importing-harvester"
+msgstr ""
+
+#: shoestring/commands/import_bootstrap.py:30
+msgid "import-bootstrap-importing-node-key"
+msgstr ""
+
+#: shoestring/commands/import_bootstrap.py:33
+msgid "import-bootstrap-importing-node-key-not-found"
 msgstr ""
 
 #: shoestring/commands/import_bootstrap.py:24
@@ -803,3 +819,4 @@ msgstr ""
 #: shoestring/wizard/screens/welcome.py:36
 msgid "wizard-welcome-upgrade"
 msgstr ""
+
