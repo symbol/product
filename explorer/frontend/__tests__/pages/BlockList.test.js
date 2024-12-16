@@ -1,5 +1,4 @@
 import '@testing-library/jest-dom';
-import 'react-intersection-observer/test-utils';
 import { blockPageResult } from '../test-utils/blocks';
 import { setDevice } from '../test-utils/device';
 import { blockStatisticsResult } from '../test-utils/stats';

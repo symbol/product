@@ -1,5 +1,4 @@
 import '@testing-library/jest-dom';
-import 'react-intersection-observer/test-utils';
 import { blockInfoResult } from '../test-utils/blocks';
 import * as BlockService from '@/api/blocks';
 import BlockInfo, { getServerSideProps } from '@/pages/blocks/[height]';

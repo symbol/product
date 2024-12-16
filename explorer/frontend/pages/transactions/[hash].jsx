@@ -14,7 +14,7 @@ import ValueMosaic from '@/components/ValueMosaic';
 import ValueTransactionType from '@/components/ValueTransactionType';
 import { STORAGE_KEY, TRANSACTION_TYPE } from '@/constants';
 import styles from '@/styles/pages/TransactionInfo.module.scss';
-import { nullableValueToText, truncateDecimals, useStorage, useUserCurrencyAmount } from '@/utils';
+import { nullableValueToText, numberToShortString, truncateDecimals, useStorage, useUserCurrencyAmount } from '@/utils';
 import Head from 'next/head';
 import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
@@ -40,6 +40,7 @@ const TransactionInfo = ({ transactionInfo }) => {
 	const { t } = useTranslation();
 	const [userCurrency] = useStorage(STORAGE_KEY.USER_CURRENCY, 'USD');
 	const amountInUserCurrency = useUserCurrencyAmount(fetchPriceByDate, transactionInfo.amount, userCurrency, transactionInfo.timestamp);
+	const amountInUserCurrencyText = numberToShortString(truncateDecimals(amountInUserCurrency, 2));
 	const isAccountStateChangeSectionShown =
 		transactionInfo.type === TRANSACTION_TYPE.TRANSFER || transactionInfo.type === TRANSACTION_TYPE.MULTISIG;
 	const isSignaturesSectionShown = transactionInfo.type === TRANSACTION_TYPE.MULTISIG;
@@ -119,7 +120,7 @@ const TransactionInfo = ({ transactionInfo }) => {
 									<ValueMosaic isNative amount={transactionInfo.amount} />
 								</Field>
 								<Field title={t('field_amountInUserCurrency', { currency: userCurrency })}>
-									<div>~{truncateDecimals(amountInUserCurrency, 2)}</div>
+									<div>~{amountInUserCurrencyText}</div>
 								</Field>
 							</div>
 						)}
