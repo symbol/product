@@ -1,5 +1,4 @@
 import '@testing-library/jest-dom';
-import 'react-intersection-observer/test-utils';
 import { setDevice } from '../test-utils/device';
 import { mosaicPageResult } from '../test-utils/mosaics';
 import * as MosaicService from '@/api/mosaics';

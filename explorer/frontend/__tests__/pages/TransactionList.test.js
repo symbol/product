@@ -1,5 +1,4 @@
 import '@testing-library/jest-dom';
-import 'react-intersection-observer/test-utils';
 import { setDevice } from '../test-utils/device';
 import { transactionStatisticsResult } from '../test-utils/stats';
 import { transactionPageResult } from '../test-utils/transactions';

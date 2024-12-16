@@ -1,5 +1,4 @@
 import '@testing-library/jest-dom';
-import 'react-intersection-observer/test-utils';
 import { transactionInfoResult, transactionPageResult } from '../test-utils/transactions';
 import * as TransactionService from '@/api/transactions';
 import TransactionInfo, { getServerSideProps } from '@/pages/transactions/[hash]';

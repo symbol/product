@@ -12,7 +12,7 @@ import ValuePrice from '@/components/ValuePrice';
 import { TRANSACTION_CHART_TYPE } from '@/constants';
 import styles from '@/styles/pages/Home.module.scss';
 import { numberToShortString, truncateDecimals, useAsyncCall } from '@/utils';
-import { formatTransactionChart } from '@/utils/common';
+import { formatTransactionChart, numberToString } from '@/utils/common';
 import Head from 'next/head';
 import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
@@ -108,10 +108,10 @@ const Home = ({
 						</div>
 						<div className="layout-flex-col layout-flex-fill">
 							<Field title={t('field_circulatingSupply')} textAlign="right">
-								${numberToShortString(marketData.circulatingSupply)}
+								{numberToString(marketData.circulatingSupply)} XEM
 							</Field>
-							<Field title={t('field_treasury')} textAlign="right">
-								{numberToShortString(marketData.treasury)} XEM
+							<Field title={t('field_marketCap')} textAlign="right">
+								${numberToShortString(marketData.marketCap)}
 							</Field>
 						</div>
 					</div>

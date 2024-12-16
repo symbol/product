@@ -2,8 +2,25 @@
  * For a detailed explanation regarding each configuration property, visit:
  * https://jestjs.io/docs/configuration
  */
-
+const fs = require('fs');
+const path = require('path');
 const nextJest = require('next/jest.js'); // eslint-disable-line import/extensions
+
+// Map aliases from jsconfig.json to Jest moduleNameMapper
+const mapPathsToModuleNameMapper = () => {
+	const jsConfig = JSON.parse(fs.readFileSync(path.resolve(__dirname, 'jsconfig.json'), 'utf8'));
+	const paths = jsConfig.compilerOptions.paths || {};
+
+	const moduleNameMapper = Object.entries(paths).reduce((acc, [key, value]) => {
+		const formattedKey = `^${key.replace(/\*/g, '(.*)')}$`;
+		const formattedValue = path.join('<rootDir>', value[0].replace(/\*/g, '$1'));
+		acc[formattedKey] = formattedValue;
+
+		return acc;
+	}, {});
+
+	return moduleNameMapper;
+};
 
 const createJestConfig = nextJest({
 	// Provide the path to your Next.js app to load next.config.js and .env files in your test environment
@@ -17,17 +34,7 @@ const customJestConfig = {
 	coveragePathIgnorePatterns: ['/test-utils/'],
 	clearMocks: true,
 	coverageProvider: 'babel',
-	moduleNameMapper: {
-		'^@/api/(.*)$': '<rootDir>/api/$1',
-		'^@/components/(.*)$': '<rootDir>/components/$1',
-		'^@/config': '<rootDir>/config/index.js',
-		'^@/constants': '<rootDir>/constants/index.js',
-		'^@/pages/(.*)$': '<rootDir>/pages/$1',
-		'^@/public/(.*)$': '<rootDir>/public/$1',
-		'^@/styles/(.*)$': '<rootDir>/styles/$1',
-		'^@/utils/(.*)$': '<rootDir>/utils/$1',
-		'^@/utils': '<rootDir>/utils/index.js'
-	},
+	moduleNameMapper: mapPathsToModuleNameMapper(),
 	transform: {},
 	resetMocks: true,
 	restoreMocks: true,

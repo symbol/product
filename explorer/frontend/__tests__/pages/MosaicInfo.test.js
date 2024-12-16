@@ -1,5 +1,4 @@
 import '@testing-library/jest-dom';
-import 'react-intersection-observer/test-utils';
 import { accountPageResult } from '../test-utils/accounts';
 import { mosaicInfoResult } from '../test-utils/mosaics';
 import { transactionPageResult } from '../test-utils/transactions';
@@ -57,8 +56,8 @@ describe('MosaicInfo', () => {
 
 			// Assert:
 			expect(fetchMosaicInfo).toHaveBeenCalledWith(params.id);
-			expect(fetchAccountPage).toHaveBeenCalledWith({ mosaic: params.id });
-			expect(fetchTransactionPage).toHaveBeenCalledWith({ mosaic: params.id });
+			expect(fetchAccountPage).not.toHaveBeenCalled();
+			expect(fetchTransactionPage).not.toHaveBeenCalled();
 			expect(result).toEqual(expectedResult);
 		};
 
@@ -68,8 +67,8 @@ describe('MosaicInfo', () => {
 			const expectedResult = {
 				props: {
 					mosaicInfo,
-					preloadedTransactions: transactionPageResult.data,
-					preloadedAccounts: accountPageResult.data
+					preloadedTransactions: [],
+					preloadedAccounts: []
 				}
 			};
 

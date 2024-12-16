@@ -1,0 +1,8 @@
+version: '3'
+services:
+  app:
+    image: symbolplatform/explorer-frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./accounts:/app/public/accounts

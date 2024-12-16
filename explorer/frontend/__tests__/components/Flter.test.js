@@ -1,5 +1,4 @@
 import '@testing-library/jest-dom';
-import 'react-intersection-observer/test-utils';
 import Filter from '@/components/Filter';
 import { TRANSACTION_TYPE } from '@/constants';
 import * as utils from '@/utils';
