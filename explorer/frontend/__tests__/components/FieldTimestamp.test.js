@@ -1,5 +1,4 @@
 import '@testing-library/jest-dom';
-import 'react-intersection-observer/test-utils';
 import FieldTimestamp from '@/components/FieldTimestamp';
 import * as utils from '@/utils';
 import { fireEvent, render, screen } from '@testing-library/react';

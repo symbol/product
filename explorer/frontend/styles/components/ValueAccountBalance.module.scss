@@ -2,7 +2,7 @@
 
 .valueAccountBalance {
 	display: flex;
-	flex-direction: row;
+	flex-flow: row wrap;
 	gap: $spacing-base / 2;
 	align-items: baseline;
 }

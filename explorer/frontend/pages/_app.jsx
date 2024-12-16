@@ -2,6 +2,7 @@ import Footer from '@/components/Footer';
 import Header from '@/components/Header';
 import PageLoadingIndicator from '@/components/PageLoadingIndicator';
 import { STORAGE_KEY } from '@/constants';
+import { ConfigProvider } from '@/contexts/ConfigContext';
 import styles from '@/styles/pages/Layout.module.scss';
 import { useStorage } from '@/utils';
 import TimeAgo from 'javascript-time-ago';
@@ -37,7 +38,7 @@ const App = ({ Component, pageProps }) => {
 	const getDisplayStyle = flag => ({ display: flag ? 'block' : 'none' });
 
 	useEffect(() => {
-		if (userLanguage && userLanguage !== router.locale) 
+		if (userLanguage && userLanguage !== router.locale)
 			router.push(router.asPath, null, { locale: userLanguage });
 	}, [userLanguage, router.locale]);
 
@@ -46,18 +47,20 @@ const App = ({ Component, pageProps }) => {
 			<Header />
 			<ToastContainer autoClose={2000} className="toast-container" hideProgressBar pauseOnHover />
 			<PageLoadingIndicator />
-			<div className={styles.contentContainer}>
-				<main className={styles.contentContainerInner}>
-					<div style={getDisplayStyle(isRetainableRoute)}>
-						{Object.entries(retainedComponents.current).map(([path, component]) => (
-							<div style={getDisplayStyle(router.asPath === path)} key={path}>
-								{component}
-							</div>
-						))}
-					</div>
-					{!isRetainableRoute && <Component {...pageProps} key={router.asPath} />}
-				</main>
-			</div>
+			<ConfigProvider>
+				<div className={styles.contentContainer}>
+					<main className={styles.contentContainerInner}>
+						<div style={getDisplayStyle(isRetainableRoute)}>
+							{Object.entries(retainedComponents.current).map(([path, component]) => (
+								<div style={getDisplayStyle(router.asPath === path)} key={path}>
+									{component}
+								</div>
+							))}
+						</div>
+						{!isRetainableRoute && <Component {...pageProps} key={router.asPath} />}
+					</main>
+				</div>
+			</ConfigProvider>
 			<Footer />
 		</div>
 	);

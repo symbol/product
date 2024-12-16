@@ -19,7 +19,7 @@ const ItemBlockMobile = ({ data }) => {
 				<div className={styles.info}>
 					<div className={styles.name}>{height}</div>
 					<div className="layout-flex-row">
-						<ValueTimestamp className={styles.timestamp} value={timestamp} />
+						<ValueTimestamp className={styles.timestamp} value={timestamp} hasTime />
 						<ValueMosaic isNative amount={totalFee} />
 					</div>
 				</div>

@@ -1,5 +1,4 @@
 import '@testing-library/jest-dom';
-import 'react-intersection-observer/test-utils';
 import ItemNamespaceMobile from '@/components/ItemNamespaceMobile';
 import { render, screen } from '@testing-library/react';
 
