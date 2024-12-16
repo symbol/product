@@ -25,14 +25,35 @@
 	align-items: center;
 }
 
-.lineVertical {
+%line-vertical {
+	position: relative;
 	width: $spacing-base / 4;
 	height: $spacing-base * 4;
 	background: $color-text-body;
 }
 
+.lineVertical {
+	@extend %line-vertical;
+}
+
+.lineVerticalWithArrow {
+	@extend %line-vertical;
+
+	&::after {
+		position: absolute;
+		top: 0;
+		left: 50%;
+		border-right: $spacing-base / 2 solid transparent;
+		border-bottom: $spacing-base / 2 solid $color-text-body;
+		border-left: $spacing-base / 2 solid transparent;
+		transform: translateX(calc(-50%));
+		content: '';
+	}
+}
+
 .lineHorizontal {
 	align-self: stretch;
+	min-width: $spacing-base / 4;
 	height: $spacing-base / 4;
 	margin: 0 $spacing-base * 2;
 	background: $color-text-body;

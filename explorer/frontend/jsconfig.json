@@ -2,11 +2,12 @@
 	"compilerOptions": {
 		"baseUrl": ".",
 		"paths": {
+			"@/api/*": ["api/*"],
 			"@/components/*": ["components/*"],
 			"@/config": ["config/index.js"],
 			"@/constants": ["constants/index.js"],
+			"@/contexts/*": ["contexts/*"],
 			"@/pages/*": ["pages/*"],
-			"@/api/*": ["api/*"],
 			"@/public/*": ["public/*"],
 			"@/styles/*": ["styles/*"],
 			"@/utils": ["utils"],

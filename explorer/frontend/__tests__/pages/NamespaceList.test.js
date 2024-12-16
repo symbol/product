@@ -1,5 +1,4 @@
 import '@testing-library/jest-dom';
-import 'react-intersection-observer/test-utils';
 import { setDevice } from '../test-utils/device';
 import { namespacePageResult } from '../test-utils/namespaces';
 import * as NamespaceService from '@/api/namespaces';

@@ -102,6 +102,7 @@ const Blocks = ({ blocks, stats }) => {
 					isLastPage={isLastPage}
 					isError={isError}
 					onEndReached={requestNextPage}
+					isLastColumnAligned
 				/>
 			</Section>
 		</div>

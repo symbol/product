@@ -5,6 +5,12 @@
 import '@testing-library/jest-dom';
 import { setDevice } from './__tests__/test-utils/device';
 import { TextEncoder, TextDecoder } from 'util';
+import 'react-intersection-observer/test-utils';
+
+jest.mock('@/contexts/ConfigContext', () => ({
+	__esModule: true,
+	useConfig: jest.fn()
+}));
 
 global.$t = key => `translated_${key}`;
 
@@ -16,7 +22,7 @@ const envMock = {
 	NEXT_PUBLIC_BLOCKCHAIN_UNWIND_LIMIT: 360,
 	NEXT_PUBLIC_REQUEST_TIMEOUT: 5000,
 	NEXT_PUBLIC_API_BASE_URL: 'https://explorer.backend',
-	NEXT_PUBLIC_SUPERNODE_STATS_URL: 'https://supernode.stats',
+	NEXT_PUBLIC_SUPERNODE_API_URL: 'https://supernode.backend',
 	NEXT_PUBLIC_NODELIST_URL: 'https://node.list',
 	NEXT_PUBLIC_MARKET_DATA_URL: 'https://market.data',
 	NEXT_PUBLIC_HISTORICAL_PRICE_URL: 'https://historical.price'
@@ -28,8 +34,17 @@ process.env = {
 
 Object.assign(global, { TextDecoder, TextEncoder });
 
+const mockConfigContext = () => {
+	const ConfigContext = require('@/contexts/ConfigContext');
+	jest.spyOn(ConfigContext, 'useConfig').mockReturnValue({
+		knownAccounts: {}
+	});
+}
+
+
 beforeEach(() => {
 	jest.spyOn(console, 'error').mockImplementation(jest.fn());
 	jest.spyOn(console, 'warn').mockImplementation(jest.fn());
+	mockConfigContext();
 	setDevice('desktop');
 });

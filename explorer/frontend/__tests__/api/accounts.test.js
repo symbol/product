@@ -69,5 +69,35 @@ describe('api/accounts', () => {
 			// Act + Assert:
 			await runAPITest(fetchAccountInfoByPublicKey, params, accountInfoResponse, expectedURL, expectedResult);
 		});
+
+		describe('fetchAccountPage with specific filters', () => {
+			it('fetch account page with isLatest filter', async () => {
+				// Arrange:
+				const searchCriteria = {
+					pageNumber: 2,
+					pageSize: 123,
+					isLatest: true
+				};
+				const expectedURL = 'https://explorer.backend/accounts?limit=123&offset=123&sort_field=height';
+				const expectedResult = accountPageResult;
+
+				// Act + Assert:
+				await runAPITest(fetchAccountPage, searchCriteria, accountPageResponse, expectedURL, expectedResult);
+			});
+
+			it('fetch account page with isActiveHarvesting filter', async () => {
+				// Arrange:
+				const searchCriteria = {
+					pageNumber: 2,
+					pageSize: 123,
+					isActiveHarvesting: true
+				};
+				const expectedURL = 'https://explorer.backend/accounts?limit=123&offset=123&is_harvesting=true';
+				const expectedResult = accountPageResult;
+
+				// Act + Assert:
+				await runAPITest(fetchAccountPage, searchCriteria, accountPageResponse, expectedURL, expectedResult);
+			});
+		});
 	});
 });

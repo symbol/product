@@ -15,6 +15,15 @@ export const fetchAccountPage = async searchParams => {
 	const searchCriteria = createSearchCriteria(searchParams);
 	let url;
 
+	if (searchCriteria.filter.isLatest) {
+		delete searchCriteria.filter.isLatest;
+		searchCriteria.filter.sort_field = 'height';
+	}
+	if (searchCriteria.filter.isActiveHarvesting) {
+		delete searchCriteria.filter.isActiveHarvesting;
+		searchCriteria.filter.is_harvesting = true;
+	}
+
 	if (searchCriteria.filter.mosaic) {
 		searchCriteria.filter = { namespaceName: searchCriteria.filter.mosaic };
 		url = createSearchURL(createAPIURL('mosaic/rich/list'), searchCriteria);
@@ -59,12 +68,13 @@ const accountInfoFromDTO = data => ({
 	publicKey: data.publicKey || null,
 	description: data.remarks || null,
 	balance: data.balance,
-	vestedBalance: data.vestedBalance || null,
+	vestedBalance: data.vestedBalance || 0,
 	mosaics:
 		data.mosaics?.map(item => ({
 			name: item.namespace_name,
 			id: item.namespace_name,
-			amount: item.quantity
+			amount: item.quantity,
+			isCreatedByAccount: item.creator === data.address
 		})) || [],
 	importance: data.importance ? +data.importance * 100 : null,
 	harvestedBlocks: data.harvestedBlocks || null,

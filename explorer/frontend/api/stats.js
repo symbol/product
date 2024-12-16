@@ -1,5 +1,6 @@
 import { fetchAccountPage } from './accounts';
 import { fetchBlockPage } from './blocks';
+import { fetchNodeList } from './nodes';
 import config from '@/config';
 import { transactionChartFilterToType, truncateDecimals } from '@/utils/common';
 import { createAPIURL, makeRequest } from '@/utils/server';
@@ -96,8 +97,8 @@ export const fetchBlockStats = async () => {
 
 export const fetchNodeStats = async () => {
 	const [nodewatchResponse, supernodeResponse] = await Promise.all([
-		makeRequest(config.NODELIST_URL),
-		makeRequest(config.SUPERNODE_STATS_URL)
+		fetchNodeList(),
+		makeRequest(`${config.SUPERNODE_API_URL}/statistics`)
 	]);
 
 	return {
@@ -114,7 +115,8 @@ export const fetchMarketData = async () => {
 		price: data.PRICE,
 		priceChange: data.CHANGEPCTDAY,
 		volume: data.VOLUME24HOUR,
-		circulatingSupply: data.CIRCULATINGSUPPLYMKTCAP,
+		circulatingSupply: data.CIRCULATINGSUPPLY,
+		marketCap: data.MKTCAP,
 		treasury: 0
 	};
 };
