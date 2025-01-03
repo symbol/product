@@ -339,7 +339,7 @@ const formatMultisigTransaction = (data, filter) => {
 	const multisigFee = truncateDecimals(formattedTransaction.fee, config.NATIVE_MOSAIC_DIVISIBILITY);
 	const embeddedTransactionsFee = truncateDecimals(formattedEmbeddedTransaction.fee, config.NATIVE_MOSAIC_DIVISIBILITY);
 	const signaturesFee = truncateDecimals(
-		data.embeddedTransactions[0].signatures.reduce((total, signature) => total + (signature.fee || 0), 0),
+		data.embeddedTransactions[0].signatures.reduce((total, signature) => total + signature.fee, 0),
 		config.NATIVE_MOSAIC_DIVISIBILITY
 	);
 	const feesBreakdownData = {
