@@ -37,9 +37,9 @@ export const createSearchURL = (baseURL, searchCriteria) => {
 export const createPage = (data, pageNumber, formatter) => {
 	let formattedData;
 
-	if (formatter) 
+	if (formatter)
 		formattedData = data.map(formatter);
-	else 
+	else
 		formattedData = data;
 
 	return {
@@ -56,10 +56,10 @@ export const createTryFetchInfoFunction =
 			try {
 				return await func(...args);
 			} catch (error) {
-				if (error.response.data.status === 400 || error.response.data.status === 404) 
+				if (error.response?.data.status === 400 || error.response?.data.status === 404)
 					return null;
 
-				throw error.response.data;
+				throw error;
 			}
 		};
 
