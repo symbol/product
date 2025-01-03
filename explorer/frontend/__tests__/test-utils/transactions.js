@@ -153,9 +153,11 @@ export const transactionPageResponse = [
 		deadline: '2024-03-29 14:06:21',
 		embeddedTransactions: [
 			{
+				fee: 0.13,
 				initiator: 'ND2RSOCXYGMABR6LESAW5ENC22Z34G3IL63ABALN',
 				signatures: [
 					{
+						fee: 0.17,
 						signature:
 							'7D79A1ECFC4BE173BFFF9D54DCD0B0DED43C8F56E875E6BEF1E9EFFC32091E98A3BF0D7C4F66BDA9874A3120D1CB233C8D3A9EB963946100D776C8181F07EF01',
 						signer: 'NDIVJFQIJR3VWXJRDSNFK6U37HM4DZNORXI3IRTV'
@@ -179,6 +181,7 @@ export const transactionPageResponse = [
 		deadline: '2024-03-29 14:06:29',
 		embeddedTransactions: [
 			{
+				fee: 0.13,
 				initiator: 'ND2RSOCXYGMABR6LESAW5ENC22Z34G3IL63ABALN',
 				message: {
 					is_plain: 1,
@@ -190,6 +193,7 @@ export const transactionPageResponse = [
 				},
 				signatures: [
 					{
+						fee: 0.17,
 						signature:
 							'7D79A1ECFC4BE173BFFF9D54DCD0B0DED43C8F56E875E6BEF1E9EFFC32091E98A3BF0D7C4F66BDA9874A3120D1CB233C8D3A9EB963946100D776C8181F07EF01',
 						signer: 'NDIVJFQIJR3VWXJRDSNFK6U37HM4DZNORXI3IRTV'
@@ -746,7 +750,7 @@ export const transactionPageResult = {
 
 			signature:
 				'7A4F8F82B6A144E568F5B33DE055D35E9F8D3EE2FC200F0DE9D2571DF5957FF942B8E5A99ED1726D3F459218CF9F27EA3F264011B04122BB9E3E391E72EE930D',
-			fee: 0.15,
+			fee: 0.45,
 			value: [
 				{
 					id: 'nem.xem',
@@ -763,9 +767,28 @@ export const transactionPageResult = {
 			],
 			signatures: [
 				{
+					fee: 0.17,
 					signature:
 						'7D79A1ECFC4BE173BFFF9D54DCD0B0DED43C8F56E875E6BEF1E9EFFC32091E98A3BF0D7C4F66BDA9874A3120D1CB233C8D3A9EB963946100D776C8181F07EF01',
 					signer: 'NDIVJFQIJR3VWXJRDSNFK6U37HM4DZNORXI3IRTV'
+				}
+			],
+			feesBreakdown: [
+				{
+					type: 'multisigFee',
+					amount: 0.15
+				},
+				{
+					type: 'embeddedTransactionsFee',
+					amount: 0.13
+				},
+				{
+					type: 'signaturesFee',
+					amount: 0.17
+				},
+				{
+					type: 'totalFee',
+					amount: 0.45
 				}
 			]
 		},
@@ -785,7 +808,7 @@ export const transactionPageResult = {
 
 			signature:
 				'7A4F8F82B6A144E568F5B33DE055D35E9F8D3EE2FC200F0DE9D2571DF5957FF942B8E5A99ED1726D3F459218CF9F27EA3F264011B04122BB9E3E391E72EE930D',
-			fee: 0.15,
+			fee: 0.45,
 			amount: 13200,
 			value: [
 				{
@@ -814,9 +837,28 @@ export const transactionPageResult = {
 			],
 			signatures: [
 				{
+					fee: 0.17,
 					signature:
 						'7D79A1ECFC4BE173BFFF9D54DCD0B0DED43C8F56E875E6BEF1E9EFFC32091E98A3BF0D7C4F66BDA9874A3120D1CB233C8D3A9EB963946100D776C8181F07EF01',
 					signer: 'NDIVJFQIJR3VWXJRDSNFK6U37HM4DZNORXI3IRTV'
+				}
+			],
+			feesBreakdown: [
+				{
+					type: 'multisigFee',
+					amount: 0.15
+				},
+				{
+					type: 'embeddedTransactionsFee',
+					amount: 0.13
+				},
+				{
+					type: 'signaturesFee',
+					amount: 0.17
+				},
+				{
+					type: 'totalFee',
+					amount: 0.45
 				}
 			]
 		},
@@ -1612,7 +1654,7 @@ export const transactionAccountPageResult = {
 			height: 4694401,
 			signature:
 				'7A4F8F82B6A144E568F5B33DE055D35E9F8D3EE2FC200F0DE9D2571DF5957FF942B8E5A99ED1726D3F459218CF9F27EA3F264011B04122BB9E3E391E72EE930D',
-			fee: 0.15,
+			fee: 0.45,
 			value: [
 				{
 					id: 'nem.xem',
@@ -1629,9 +1671,28 @@ export const transactionAccountPageResult = {
 			],
 			signatures: [
 				{
+					fee: 0.17,
 					signature:
 						'7D79A1ECFC4BE173BFFF9D54DCD0B0DED43C8F56E875E6BEF1E9EFFC32091E98A3BF0D7C4F66BDA9874A3120D1CB233C8D3A9EB963946100D776C8181F07EF01',
 					signer: 'NDIVJFQIJR3VWXJRDSNFK6U37HM4DZNORXI3IRTV'
+				}
+			],
+			feesBreakdown: [
+				{
+					type: 'multisigFee',
+					amount: 0.15
+				},
+				{
+					type: 'embeddedTransactionsFee',
+					amount: 0.13
+				},
+				{
+					type: 'signaturesFee',
+					amount: 0.17
+				},
+				{
+					type: 'totalFee',
+					amount: 0.45
 				}
 			]
 		},
@@ -1649,7 +1710,7 @@ export const transactionAccountPageResult = {
 			height: 4694401,
 			signature:
 				'7A4F8F82B6A144E568F5B33DE055D35E9F8D3EE2FC200F0DE9D2571DF5957FF942B8E5A99ED1726D3F459218CF9F27EA3F264011B04122BB9E3E391E72EE930D',
-			fee: 0.15,
+			fee: 0.45,
 			amount: 13200,
 			value: [
 				{
@@ -1678,9 +1739,28 @@ export const transactionAccountPageResult = {
 			],
 			signatures: [
 				{
+					fee: 0.17,
 					signature:
 						'7D79A1ECFC4BE173BFFF9D54DCD0B0DED43C8F56E875E6BEF1E9EFFC32091E98A3BF0D7C4F66BDA9874A3120D1CB233C8D3A9EB963946100D776C8181F07EF01',
 					signer: 'NDIVJFQIJR3VWXJRDSNFK6U37HM4DZNORXI3IRTV'
+				}
+			],
+			feesBreakdown: [
+				{
+					type: 'multisigFee',
+					amount: 0.15
+				},
+				{
+					type: 'embeddedTransactionsFee',
+					amount: 0.13
+				},
+				{
+					type: 'signaturesFee',
+					amount: 0.17
+				},
+				{
+					type: 'totalFee',
+					amount: 0.45
 				}
 			]
 		},
@@ -2205,6 +2285,7 @@ export const transactionInfoResponse = {
 	deadline: '2024-03-29 19:13:31',
 	embeddedTransactions: [
 		{
+			fee: 0.13,
 			initiator: 'NANEWEN4LPV4CSDLFW3OPFUC57LQQDEFY5QDLHAG',
 			message: {
 				is_plain: 1,
@@ -2216,6 +2297,7 @@ export const transactionInfoResponse = {
 			},
 			signatures: [
 				{
+					fee: 0.17,
 					signature:
 						'8869F54E0B9CF93BFE2811982428799428656B3A18D73EB9B56C68D7FA64D5403860DA00EEF9EF3E63E0C6331D8CCF85078225E9888EEA50520A640C4A102709',
 					signer: 'NCQME4TROE2LM2SE53WYZMECOQZEPPKMQ27TZEN2'
@@ -2252,7 +2334,7 @@ export const transactionInfoResult = {
 
 	signature:
 		'84FC7751D87ED49EACDA60EE2D5F4B5F8020A32D7593A2E268054BCCC919FCD6DB4F66B35B60E1E0DF8E229B9510090C6A203D7426A7E6F595AEABE98EA3820F',
-	fee: 0.15,
+	fee: 0.45,
 	amount: 7,
 	value: [
 		{
@@ -2281,9 +2363,28 @@ export const transactionInfoResult = {
 	],
 	signatures: [
 		{
+			fee: 0.17,
 			signature:
 				'8869F54E0B9CF93BFE2811982428799428656B3A18D73EB9B56C68D7FA64D5403860DA00EEF9EF3E63E0C6331D8CCF85078225E9888EEA50520A640C4A102709',
 			signer: 'NCQME4TROE2LM2SE53WYZMECOQZEPPKMQ27TZEN2'
+		}
+	],
+	feesBreakdown: [
+		{
+			type: 'multisigFee',
+			amount: 0.15
+		},
+		{
+			type: 'embeddedTransactionsFee',
+			amount: 0.13
+		},
+		{
+			type: 'signaturesFee',
+			amount: 0.17
+		},
+		{
+			type: 'totalFee',
+			amount: 0.45
 		}
 	],
 	accountStateChange: [

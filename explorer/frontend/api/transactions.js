@@ -1,6 +1,6 @@
 import config from '@/config';
 import { ACCOUNT_STATE_CHANGE_ACTION, COSIGNATORY_MODIFICATION_ACTION, TRANSACTION_DIRECTION, TRANSACTION_TYPE } from '@/constants';
-import { decodeTransactionMessage } from '@/utils/common';
+import { decodeTransactionMessage, truncateDecimals } from '@/utils/common';
 import { createAPIURL, createPage, createSearchCriteria, createSearchURL, createTryFetchInfoFunction, makeRequest } from '@/utils/server';
 
 /**
@@ -324,21 +324,46 @@ const formatAccountKeyLink = (data, filter) => {
 const formatMultisigTransaction = (data, filter) => {
 	const rawEmbeddedTransaction = {
 		...data,
-		transactionType: data.embeddedTransactions[0].transactionType
+		transactionType: data.embeddedTransactions[0].transactionType,
+		fee: data.embeddedTransactions[0].fee
 	};
 	if (rawEmbeddedTransaction.transactionType === TRANSACTION_TYPE.TRANSFER)
 		rawEmbeddedTransaction.value = [{ message: data.embeddedTransactions[0].message }, data.embeddedTransactions[0].mosaics];
 	else
 		rawEmbeddedTransaction.value = data.embeddedTransactions;
 
+	const formattedTransaction = formatBaseTransaction(data, filter);
 	const formattedEmbeddedTransaction = transactionFromDTO(rawEmbeddedTransaction, filter.address);
 
+	// Fees breakdown
+	const multisigFee = truncateDecimals(formattedTransaction.fee, config.NATIVE_MOSAIC_DIVISIBILITY);
+	const embeddedTransactionsFee = truncateDecimals(formattedEmbeddedTransaction.fee, config.NATIVE_MOSAIC_DIVISIBILITY);
+	const signaturesFee = truncateDecimals(
+		data.embeddedTransactions[0].signatures.reduce((total, signature) => total + signature.fee, 0),
+		config.NATIVE_MOSAIC_DIVISIBILITY
+	);
+	const feesBreakdownData = {
+		multisigFee,
+		embeddedTransactionsFee,
+		signaturesFee,
+		totalFee: truncateDecimals(
+			(signaturesFee + multisigFee + embeddedTransactionsFee).toPrecision(config.NATIVE_MOSAIC_DIVISIBILITY),
+			config.NATIVE_MOSAIC_DIVISIBILITY
+		)
+	};
+	const feesBreakdown = Object.entries(feesBreakdownData).map(([key, value]) => ({
+		type: key,
+		amount: value
+	}));
+
 	return {
-		...formatBaseTransaction(data, filter),
+		...formattedTransaction,
 		signatures: data.embeddedTransactions[0].signatures,
 		signer: data.embeddedTransactions[0].initiator,
 		amount: formattedEmbeddedTransaction.amount,
 		value: formattedEmbeddedTransaction.value,
-		body: formattedEmbeddedTransaction.body
+		body: formattedEmbeddedTransaction.body,
+		fee: feesBreakdownData.totalFee,
+		feesBreakdown
 	};
 };
