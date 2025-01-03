@@ -39,13 +39,13 @@ describe('utils/server', () => {
 		it('throws error if function throws error with no 404 status', async () => {
 			// Arrange:
 			const error = {
-				status: 502
-			};
-			const fetchFunction = jest.fn().mockRejectedValue({
 				response: {
-					data: error
+					data: {
+						status: 502
+					}
 				}
-			});
+			};
+			const fetchFunction = jest.fn().mockRejectedValue(error);
 			const wrappedFetchFunction = createTryFetchInfoFunction(fetchFunction);
 
 			// Act:

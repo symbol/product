@@ -14,19 +14,23 @@ const Table = ({
 	isLoading,
 	isError,
 	isLastPage,
-	isLastColumnAligned
+	isLastColumnAligned,
+	isHeaderHidden,
+	isColumnsStacked
 }) => {
 	const { t } = useTranslation('common');
 	const isMobile = useMediaQuery('(max-width: 767.8px)');
 	const isMobileTableVisible = isMobile && !!renderItemMobile;
 	const isDesktopTableVisible = !isMobile || !isMobileTableVisible;
 	const desktopTableStyle = !renderItemMobile ? styles.dataMobile : '';
+	const headerRowStyle = `${styles.header} ${isColumnsStacked ? styles.header_stacked : ''}`;
 	const headerCellStyle = `${styles.headerCell} ${isLastColumnAligned && styles.headerCell_aligned}`;
+	const dataRowStyle = `${styles.dataRow} ${isColumnsStacked ? styles.dataRow_stacked : ''}`;
 	const dataCellStyle = isLastColumnAligned ? styles.dataCell_aligned : '';
 	const isEmptyTableMessageShown = !isLoading && ((!!data && !data.length) || (!!sections && !sections.length));
 
 	const renderRow = (row, index) => (
-		<div className={styles.dataRow} key={'tr' + index}>
+		<div className={dataRowStyle} key={'tr' + index}>
 			{columns.map((item, index) => (
 				<div className={dataCellStyle} style={{ width: item.size }} key={'td' + index}>
 					{item.renderValue ? item.renderValue(row[item.key], row) : row[item.key]}
@@ -42,13 +46,15 @@ const Table = ({
 
 	return (
 		<div className={styles.table}>
-			<div className={styles.header}>
-				{columns.map((item, index) => (
-					<div className={headerCellStyle} style={{ width: item.size }} key={'th' + index}>
-						{item.renderTitle ? item.renderTitle(item.key) : t(`table_field_${item.key}`)}
-					</div>
-				))}
-			</div>
+			{!isHeaderHidden && (
+				<div className={headerRowStyle}>
+					{columns.map((item, index) => (
+						<div className={headerCellStyle} style={{ width: item.size }} key={'th' + index}>
+							{item.renderTitle ? item.renderTitle(item.key) : t(`table_field_${item.key}`)}
+						</div>
+					))}
+				</div>
+			)}
 			{!!data && isDesktopTableVisible && <div className={`${styles.data} ${desktopTableStyle}`}>{data.map(renderRow)}</div>}
 			{!!data && isMobileTableVisible && <div className={styles.listMobile}>{data.map(renderMobileListItem)}</div>}
 			{isEmptyTableMessageShown && <div className={styles.emptyListMessage}>{t('message_emptyTable')}</div>}

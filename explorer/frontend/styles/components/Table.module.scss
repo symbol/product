@@ -24,6 +24,10 @@
 		}
 	}
 
+	.header_stacked {
+		justify-content: flex-start;
+	}
+
 	.data {
 		overflow: hidden;
 		border: 0.16rem solid #f3f4f7;
@@ -49,6 +53,10 @@
 				background-color: #f3f4f7;
 				transition: background-color 250ms linear;
 			}
+		}
+
+		.dataRow_stacked {
+			justify-content: flex-start;
 		}
 
 		.dataCell_aligned:last-child {

@@ -44,6 +44,7 @@ const TransactionInfo = ({ transactionInfo }) => {
 	const isAccountStateChangeSectionShown =
 		transactionInfo.type === TRANSACTION_TYPE.TRANSFER || transactionInfo.type === TRANSACTION_TYPE.MULTISIG;
 	const isSignaturesSectionShown = transactionInfo.type === TRANSACTION_TYPE.MULTISIG;
+	const isFeesBreakdownSectionShown = transactionInfo.type === TRANSACTION_TYPE.MULTISIG;
 
 	const accountStateTableColumns = [
 		{
@@ -81,17 +82,30 @@ const TransactionInfo = ({ transactionInfo }) => {
 			)
 		}
 	];
-
 	const signaturesTableColumns = [
 		{
 			key: 'signer',
-			size: '20rem',
+			size: '29rem',
 			renderValue: value => <ValueAccount address={value} size="md" />
 		},
 		{
 			key: 'signature',
 			size: '40rem',
 			renderValue: value => <ValueCopy value={value} />
+		}
+	];
+	const feesBreakdownTableColumns = [
+		{
+			key: 'type',
+			size: '29rem',
+			renderValue: value => value === 'totalFee'
+				? <strong>{t(`field_${value}`)}</strong>
+				: t(`field_${value}`)
+		},
+		{
+			key: 'amount',
+			size: '10rem',
+			renderValue: value => <ValueMosaic amount={value} isNative />
 		}
 	];
 
@@ -153,12 +167,28 @@ const TransactionInfo = ({ transactionInfo }) => {
 			</Section>
 			{isAccountStateChangeSectionShown && (
 				<Section title={t('section_accountStateChange')}>
-					<Table data={transactionInfo.accountStateChange} columns={accountStateTableColumns} isLastPage={true} />
+					<Table data={transactionInfo.accountStateChange} columns={accountStateTableColumns} isLastPage />
 				</Section>
 			)}
 			{isSignaturesSectionShown && (
 				<Section title={t('section_signatures')}>
-					<Table data={transactionInfo.signatures} columns={signaturesTableColumns} isLastPage={true} />
+					<Table
+						data={transactionInfo.signatures}
+						columns={signaturesTableColumns}
+						isLastPage
+						isColumnsStacked
+					/>
+				</Section>
+			)}
+			{isFeesBreakdownSectionShown && (
+				<Section title={t('section_feesBreakdown')}>
+					<Table
+						data={transactionInfo.feesBreakdown}
+						columns={feesBreakdownTableColumns}
+						isLastPage
+						isHeaderHidden
+						isColumnsStacked
+					/>
 				</Section>
 			)}
 		</div>
