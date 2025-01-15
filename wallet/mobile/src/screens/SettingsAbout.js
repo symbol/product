@@ -9,7 +9,7 @@ import packageJSON from '../../package.json';
 export function SettingsAbout() {
     const tableData = {
         appVersion: packageJSON.version,
-        symbolSdkVersion: packageJSON.dependencies['symbol-sdk'],
+        symbolSdkVersion: packageJSON.dependencies['symbol-sdk-v3'],
         reactNativeVersion: packageJSON.dependencies['react-native'],
     };
 

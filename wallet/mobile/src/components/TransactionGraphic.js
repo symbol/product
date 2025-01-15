@@ -9,7 +9,7 @@ import { $t } from 'src/localization';
 import { connect } from 'src/store';
 import { borders, colors, fonts, spacings } from 'src/styles';
 import { filterCustomMosaics, getAddressName, getColorFromHash, getNativeMosaicAmount, trunc } from 'src/utils';
-import { TransactionType } from 'symbol-sdk';
+import { TransactionType } from 'src/constants';
 
 const TABLE_MAX_HEIGHT = 500;
 
@@ -229,7 +229,7 @@ export const TransactionGraphic = connect((state) => ({
             'lockedAmount',
             'id',
             'innerTransactions',
-            'cosignaturePublicKeys',
+            'cosignatures',
             'deadline',
             'type',
             'fee',
@@ -240,7 +240,8 @@ export const TransactionGraphic = connect((state) => ({
             'signerPublicKey',
             'signerAddress',
             'recipientAddress',
-            'sourceAddress'
+            'sourceAddress',
+            'timestamp',
         );
     const handlePress = () => {
         if (!hasBeenExpanded) {

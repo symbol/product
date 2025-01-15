@@ -4,7 +4,7 @@ import { DeviceEventEmitter, Image, StyleSheet, View } from 'react-native';
 import { RefreshControl, ScrollView } from 'react-native-gesture-handler';
 import Animated, { FadeIn, FadeInDown, FadeOut } from 'react-native-reanimated';
 import { Button, DialogBox, FeeSelector, FormItem, Screen, StyledText, TableView, TextBox, Widget } from 'src/components';
-import { Constants } from 'src/config';
+import { ControllerEventName } from 'src/constants';
 import { $t } from 'src/localization';
 import { AccountService, HarvestingService } from 'src/services';
 import { connect } from 'src/store';
@@ -182,11 +182,11 @@ export const Harvesting = connect((state) => ({
     const isLoading = isStatusLoading || isSummaryLoading || isNodeListLoading;
 
     useEffect(() => {
-        DeviceEventEmitter.addListener(Constants.Events.CONFIRMED_TRANSACTION, loadData);
+        DeviceEventEmitter.addListener(ControllerEventName.CONFIRMED_TRANSACTION, loadData);
         loadData();
 
         () => {
-            DeviceEventEmitter.removeAllListeners(Constants.Events.CONFIRMED_TRANSACTION);
+            DeviceEventEmitter.removeAllListeners(ControllerEventName.CONFIRMED_TRANSACTION);
         };
     }, [isAccountReady, isWalletReady]);
 

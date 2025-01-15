@@ -21,7 +21,7 @@ import { Router } from 'src/Router';
 import { AccountService, MosaicService, TransactionService } from 'src/services';
 import { connect } from 'src/store';
 import { getMosaicWithRelativeAmount, getTransactionFees, handleError, useDataManager, usePasscode, useProp, useToggle } from 'src/utils';
-import { TransactionType } from 'symbol-sdk';
+import { TransactionType } from 'src/constants';
 
 export const Revoke = connect((state) => ({
     currentAccount: state.account.current,

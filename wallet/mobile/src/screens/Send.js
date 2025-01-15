@@ -32,7 +32,7 @@ import {
     useProp,
     useToggle,
 } from 'src/utils';
-import { TransactionType } from 'symbol-sdk';
+import { TransactionType } from 'src/constants';
 
 export const Send = connect((state) => ({
     walletAccounts: state.wallet.accounts,

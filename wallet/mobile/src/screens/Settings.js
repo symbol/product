@@ -3,7 +3,8 @@ import { DeviceEventEmitter, Image, StyleSheet, View } from 'react-native';
 import { FlatList } from 'react-native-gesture-handler';
 import Animated, { FadeInRight } from 'react-native-reanimated';
 import { DialogBox, DropdownModal, FormItem, Screen, StyledText, TouchableNative } from 'src/components';
-import { Constants, config } from 'src/config';
+import { config } from 'src/config';
+import { ControllerEventName } from 'src/constants';
 import { $t, getLanguages, initLocalization, setCurrentLanguage } from 'src/localization';
 import { Router } from 'src/Router';
 import store, { connect } from 'src/store';
@@ -70,7 +71,7 @@ export const Settings = connect((state) => ({
         initLocalization();
         await store.dispatchAction({ type: 'wallet/loadAll' });
         store.dispatchAction({ type: 'network/connect' });
-        DeviceEventEmitter.emit(Constants.Events.LOGOUT);
+        DeviceEventEmitter.emit(ControllerEventName.LOGOUT);
     };
     const showLogoutPasscode = usePasscode('enter', logoutConfirm);
     const handleLogoutPress = () => {

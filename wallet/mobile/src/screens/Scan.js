@@ -18,7 +18,7 @@ import { Router } from 'src/Router';
 import { connect } from 'src/store';
 import { addressFromPrivateKey, addressFromPublicKey, getNativeMosaicAmount, networkTypeToIdentifier, useToggle } from 'src/utils';
 import { layout } from 'src/styles';
-import { TransactionType } from 'symbol-sdk';
+import { TransactionType } from 'src/constants';
 
 const getQrAddress = (data) => {
     if (data.accountAddress) {

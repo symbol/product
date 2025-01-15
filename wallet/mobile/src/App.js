@@ -12,7 +12,7 @@ import store from 'src/store';
 import { initLocalization } from './localization';
 import { RouterView } from './Router';
 import { colors, fonts, layout } from './styles';
-import { Constants } from './config';
+import { ControllerEventName } from 'src/constants';
 
 const unsafeAreaStyle = { ...layout.fill, backgroundColor: colors.bgStatusbar };
 const safeAreaStyle = { ...layout.fill, backgroundColor: colors.bgGray };
@@ -56,8 +56,8 @@ const App = () => {
         // Listen for an event from the Passscode screen
         DeviceEventEmitter.addListener(passcodeParams.successEvent, unlock);
         DeviceEventEmitter.addListener(passcodeParams.cancel, BackHandler.exitApp);
-        DeviceEventEmitter.addListener(Constants.Events.LOGOUT, load);
-        DeviceEventEmitter.addListener(Constants.Events.LOGIN, load);
+        DeviceEventEmitter.addListener(ControllerEventName.LOGOUT, load);
+        DeviceEventEmitter.addListener(ControllerEventName.LOGIN, load);
     }, []);
 
     return (

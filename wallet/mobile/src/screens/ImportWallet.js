@@ -17,7 +17,7 @@ import store from 'src/store';
 import { createOptInPrivateKeyFromMnemonic, handleError, useDataManager, usePasscode } from 'src/utils';
 import { Router } from 'src/Router';
 import { $t } from 'src/localization';
-import { Constants } from 'src/config';
+import { ControllerEventName } from 'src/constants';
 
 export const ImportWallet = () => {
     const [name] = useState($t('s_importWallet_defaultAccountName'));
@@ -69,7 +69,7 @@ export const ImportWallet = () => {
         setTimeout(checkOptInAccounts, 1500);
     };
     const completeLoading = async () => {
-        DeviceEventEmitter.emit(Constants.Events.LOGIN);
+        DeviceEventEmitter.emit(ControllerEventName.LOGIN);
     };
     const createPasscode = usePasscode('choose', startLoading);
 

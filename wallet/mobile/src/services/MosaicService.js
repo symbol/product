@@ -1,7 +1,8 @@
 import _ from 'lodash';
-import { addressFromRaw, getMosaicRelativeAmountString, makeRequest } from 'src/utils';
 import { NamespaceService } from './';
-import { Constants } from 'src/config';
+import { addressFromRaw } from '@/utils/account';
+import { makeRequest } from '@/utils/network';
+import { getMosaicRelativeAmountString, isRestrictableFlag, isRevokableFlag, isSupplyMutableFlag, isTransferableFlag } from '@/utils/mosaic';
 
 export class MosaicService {
     static async fetchMosaicInfo(networkProperties, mosaicId) {
@@ -44,10 +45,10 @@ export class MosaicService {
                     isUnlimitedDuration,
                     creator,
                     supply,
-                    isSupplyMutable: (flags & Constants.MosaicFlags.SUPPLY_MUTABLE) !== 0,
-                    isTransferable: (flags & Constants.MosaicFlags.TRANSFERABLE) !== 0,
-                    isRestrictable: (flags & Constants.MosaicFlags.RESTRICTABLE) !== 0,
-                    isRevokable: (flags & Constants.MosaicFlags.REVOKABLE) !== 0,
+                    isSupplyMutable: isSupplyMutableFlag(flags),
+                    isTransferable: isTransferableFlag(flags),
+                    isRestrictable: isRestrictableFlag(flags),
+                    isRevokable: isRevokableFlag(flags),
                 },
             ];
         });
