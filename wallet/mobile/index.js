@@ -1,4 +1,5 @@
 import 'react-native-gesture-handler';
+import { TextEncoder, TextDecoder } from '@sinonjs/text-encoding';
 import { AppRegistry } from 'react-native';
 import App from './src/App';
 import { name as appName } from './app.json';
@@ -11,6 +12,9 @@ if (!process.nextTick) {
 if (!global.Buffer) {
     global.Buffer = require('buffer/').Buffer;
 }
+
+global.TextEncoder = TextEncoder;
+global.TextDecoder = TextDecoder;
 
 // Register main component
 AppRegistry.registerComponent(appName, () => App);

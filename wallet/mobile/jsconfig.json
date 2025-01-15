@@ -3,7 +3,11 @@
         "baseUrl": ".",
         "paths": {
             "config/*": ["config/*"],
-            "src/*": ["src/*"]
+            "src/*": ["src/*"],
+            "@/*": ["src/*"],
+            "__fixtures__/*": ["__fixtures__/*"]
         }
-    }
+    },
+    "include": ["src/**/*"],
+    "exclude": ["**/node_modules/*", "**/build/*", "**/scripts/*"]
 }
