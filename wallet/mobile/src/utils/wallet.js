@@ -2,7 +2,6 @@
 import { Clipboard, PermissionsAndroid, Platform } from 'react-native'; // Remove after fix https://github.com/react-native-clipboard/clipboard/issues/71
 import { deleteUserPinCode } from '@haskkor/react-native-pincode';
 import { PersistentStorage, SecureStorage } from 'src/storage';
-import { ExtendedKey, MnemonicPassPhrase, Network, Wallet } from 'symbol-hd-wallets';
 import { SymbolPaperWallet } from 'symbol-wallets-lib';
 import RNFetchBlob from 'rn-fetch-blob';
 import { Buffer } from 'buffer';
@@ -10,28 +9,34 @@ import { networkIdentifierToNetworkType } from './network';
 import store from 'src/store';
 import { optInWhiteList } from 'src/config';
 import { publicAccountFromPrivateKey } from './account';
+import { Bip32 } from 'symbol-sdk-v3';
+import { SymbolFacade } from 'symbol-sdk-v3/symbol';
 
 export const generateMnemonic = () => {
-    return MnemonicPassPhrase.createRandom().plain;
+    const bip = new Bip32();
+    const mnemonic = bip.random();
+
+    return mnemonic.toString();
 };
 
-export const createPrivateKeysFromMnemonic = (mnemonic, indexes, networkIdentifier, curveType) => {
-    const mnemonicPassPhrase = new MnemonicPassPhrase(mnemonic);
-    const seed = mnemonicPassPhrase.toSeed().toString('hex');
-    const curve = curveType === 'optin' ? Network.BITCOIN : Network.SYMBOL;
-    const extendedKey = ExtendedKey.createFromSeed(seed, curve);
-    const wallet = new Wallet(extendedKey);
+export const createPrivateKeysFromMnemonic = (mnemonic, indexes, networkIdentifier, isOptInCurve) => {
+    const facade = new SymbolFacade(networkIdentifier);
+    const symbolCurve = facade.static.BIP32_CURVE_NAME;
+    const optInCurve = 'secp256k1';
+    const curve = isOptInCurve ? optInCurve : symbolCurve;
+    const bip = new Bip32(curve);
+    const rootNode = bip.fromMnemonic(mnemonic, '');
 
     const privateKeys = indexes.map((index) => {
-        const pathTestnet = `m/44'/1'/${index}'/0'/0'`;
-        const pathMainnet = `m/44'/4343'/${index}'/0'/0'`;
-        const path = networkIdentifier === 'mainnet' ? pathMainnet : pathTestnet;
+        const path = facade.bip32Path(index);
+        const childNode = rootNode.derivePath(path);
+        const childKeyPair = facade.constructor.bip32NodeToKeyPair(childNode);
 
-        return wallet.getChildAccountPrivateKey(path);
+        return childKeyPair.privateKey.toString();
     });
 
     return privateKeys;
-};
+}
 
 export const clearCache = () => {
     SecureStorage.removeAll();
