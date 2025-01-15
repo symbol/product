@@ -14,7 +14,7 @@ import {
     isOutgoingTransaction,
     trunc,
 } from 'src/utils';
-import { TransactionType } from 'symbol-sdk';
+import { TransactionType } from 'src/constants';
 
 export const ItemTransaction = connect((state) => ({
     currentAccount: state.account.current,

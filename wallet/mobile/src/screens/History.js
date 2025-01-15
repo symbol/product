@@ -20,7 +20,7 @@ import { HarvestingService } from 'src/services';
 import store, { connect } from 'src/store';
 import { colors } from 'src/styles';
 import { handleError, useDataManager, useInit } from 'src/utils';
-import { TransactionType } from 'symbol-sdk';
+import { TransactionType } from 'src/constants';
 
 export const History = connect((state) => ({
     isWalletReady: state.wallet.isReady,

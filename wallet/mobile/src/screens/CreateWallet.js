@@ -28,9 +28,10 @@ import {
     validateAccountName,
     validateRequired,
 } from 'src/utils';
-import { Constants, config } from 'src/config';
+import { config } from 'src/config';
 import { Router } from 'src/Router';
 import { $t } from 'src/localization';
+import { ControllerEventName } from 'src/constants';
 
 export const CreateWallet = () => {
     const stepsCount = 2;
@@ -69,7 +70,7 @@ export const CreateWallet = () => {
         setTimeout(saveMnemonic, 1500);
     };
     const completeLoading = async () => {
-        DeviceEventEmitter.emit(Constants.Events.LOGIN);
+        DeviceEventEmitter.emit(ControllerEventName.LOGIN);
     };
     const [saveMnemonic] = useDataManager(
         async () => {

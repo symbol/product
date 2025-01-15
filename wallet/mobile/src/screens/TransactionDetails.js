@@ -31,7 +31,7 @@ import {
     useDataManager,
     useInit,
 } from 'src/utils';
-import { TransactionType } from 'symbol-sdk';
+import { TransactionType } from 'src/constants';
 
 const SCREEN_HEIGHT = Dimensions.get('screen').height;
 const COSIGNATURE_FORM_HEIGHT = SCREEN_HEIGHT / 4;
@@ -54,10 +54,9 @@ export const TransactionDetails = connect((state) => ({
             return TransactionService.fetchPartialInfo(transaction.hash, currentAccount, networkProperties);
         }
     });
-    const [fetchDate, isDateLoading, date] = useDataManager(async () => {
-        const timestamp = await TransactionService.fetchDate(transaction.height, networkProperties);
-        return formatDate(timestamp, $t, true);
-    }, null);
+    const date = transaction.timestamp 
+        ? formatDate(transaction.timestamp, $t, true)
+        : null;
     const [fetchStatus, isStatusLoading, status] = useDataManager(() => {
         return TransactionService.fetchStatus(transaction.hash || transaction.id, networkProperties);
     }, null);
@@ -71,11 +70,10 @@ export const TransactionDetails = connect((state) => ({
         null,
         handleError
     );
-    useInit(fetchDate, isWalletReady);
     useInit(fetchPartialInfo, isWalletReady);
     useInit(fetchStatus, isWalletReady);
     useInit(decryptMessage, isWalletReady);
-    const isLoading = isPartialInfoLoading || isDateLoading || isStatusLoading || isMessageLoading;
+    const isLoading = isPartialInfoLoading || isStatusLoading || isMessageLoading;
 
     const isAggregate = isAggregateTransaction(transaction);
     const styleAmount = [styles.textAmount];

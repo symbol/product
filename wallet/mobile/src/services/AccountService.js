@@ -1,4 +1,5 @@
-import { addressFromRaw, makeRequest } from 'src/utils';
+import { addressFromRaw } from '@/utils/account';
+import { makeRequest } from '@/utils/network';
 
 export class AccountService {
     static async fetchAccountInfo(networkProperties, address) {
