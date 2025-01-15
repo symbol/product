@@ -5,7 +5,7 @@ import QRCodeScanner from 'react-native-qrcode-scanner';
 import { AccountQR, AddressQR, ContactQR, MnemonicQR } from 'symbol-qr-library';
 import { ButtonClose, QRCode, StyledText } from 'src/components';
 import { colors, spacings } from 'src/styles';
-import { getUnresolvedIdsFromTransactionDTOs, transferTransactionFromDTO, transferTransactionFromPayload } from 'src/utils';
+import { getUnresolvedIdsFromSymbolTransactions, transferTransactionFromDTO, transferTransactionFromPayload } from 'src/utils';
 import { MosaicService } from 'src/services';
 import { $t } from 'src/localization';
 
@@ -54,7 +54,7 @@ export const QRScanner = (props) => {
                     const parsedData = JSON.parse(data);
                     const networkType = parsedData.network_id;
                     const transactionDTO = transferTransactionFromPayload(parsedData.data.payload);
-                    const { mosaicIds } = getUnresolvedIdsFromTransactionDTOs([transactionDTO]);
+                    const { mosaicIds } = getUnresolvedIdsFromSymbolTransactions([transactionDTO]);
                     const mosaicInfos = await MosaicService.fetchMosaicInfos(networkProperties, mosaicIds);
                     const transaction = transferTransactionFromDTO(transactionDTO, {
                         networkProperties,
