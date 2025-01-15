@@ -1,4 +1,4 @@
-import { NetworkType } from 'symbol-sdk';
+import { NetworkType } from 'src/constants';
 
 export const networkTypeToIdentifier = (networkType) => {
     if (networkType === NetworkType.MAIN_NET) return 'mainnet';

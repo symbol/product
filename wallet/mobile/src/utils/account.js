@@ -1,35 +1,37 @@
-import { networkIdentifierToNetworkType } from './network';
-import { Account, Address, Convert, RawAddress } from 'symbol-sdk';
+import { PrivateKey, PublicKey } from 'symbol-sdk-v3';
+import { SymbolFacade, Address } from 'symbol-sdk-v3/symbol';
 
-export const createKeyPair = (networkIdentifier) => {
-    const networkType = networkIdentifierToNetworkType(networkIdentifier);
-    const account = Account.generateNewAccount(networkType);
+export const generateKeyPair = () => {
+    const privateKey = PrivateKey.random();
+    const keyPair = new SymbolFacade.KeyPair(privateKey);
 
     return {
-        privateKey: account.privateKey,
-        publicKey: account.publicKey,
+        privateKey: privateKey.toString(),
+        publicKey: keyPair.publicKey.toString(),
     };
 };
-export const addressFromPrivateKey = (privateKey, networkIdentifier) => {
-    const networkType = networkIdentifierToNetworkType(networkIdentifier);
 
-    return Account.createFromPrivateKey(privateKey, networkType).address.plain();
+export const addressFromPrivateKey = (privateKey, networkIdentifier) => {
+    return publicAccountFromPrivateKey(privateKey, networkIdentifier).address;
 };
 
 export const addressFromPublicKey = (publicKey, networkIdentifier) => {
-    const networkType = networkIdentifierToNetworkType(networkIdentifier);
+    const facade = new SymbolFacade(networkIdentifier);
+    const _publicKey = new PublicKey(publicKey);
 
-    return Address.createFromPublicKey(publicKey, networkType).plain();
+    return facade.network.publicKeyToAddress(_publicKey).toString();
 };
 
 export const publicAccountFromPrivateKey = (privateKey, networkIdentifier) => {
-    const networkType = networkIdentifierToNetworkType(networkIdentifier);
-    const publicAccount = Account.createFromPrivateKey(privateKey, networkType);
+    const facade = new SymbolFacade(networkIdentifier);
+    const _privateKey = new PrivateKey(privateKey);
+    const keyPair = new SymbolFacade.KeyPair(_privateKey);
+    const address = facade.network.publicKeyToAddress(keyPair.publicKey);
 
     return {
-        address: publicAccount.address.plain(),
-        publicKey: publicAccount.publicKey,
-    };
+        address: address.toString(),
+        publicKey: keyPair.publicKey.toString(),
+    }
 };
 
 export const createWalletAccount = (privateKey, networkIdentifier, name, accountType, index) => {
@@ -66,12 +68,12 @@ export const isSymbolAddress = (address) => {
 };
 
 export const addressFromRaw = (rawAddress) => {
-    return RawAddress.addressToString(Convert.hexToUint8(rawAddress));
+    return new Address(Buffer.from(rawAddress, 'hex')).toString()
 };
 
-export const namespaceIdFromRaw = (rawNamespaceId) => {
-    const relevantPart = rawNamespaceId.substr(2, 16);
-    const encodedNamespaceId = Convert.uint8ToHex(Convert.hexToUint8Reverse(relevantPart));
+// export const namespaceIdFromRaw = (rawNamespaceId) => {
+//     const relevantPart = rawNamespaceId.substr(2, 16);
+//     const encodedNamespaceId = Convert.uint8ToHex(Convert.hexToUint8Reverse(relevantPart));
 
-    return encodedNamespaceId;
-};
+//     return encodedNamespaceId;
+// };

@@ -1,4 +1,4 @@
-import { Address, MosaicId, MosaicNonce } from 'symbol-sdk';
+import { MosaicFlags } from 'src/constants';
 
 export const getNativeMosaicAmount = (mosaicList, nativeMosaicId) => {
     if (!mosaicList || !nativeMosaicId) {
@@ -31,7 +31,7 @@ export const getMosaicAbsoluteAmount = (relativeAmount, divisibility) => {
 
 export const getMosaicsWithRelativeAmounts = (mosaics, mosaicInfos) => {
     if (!mosaics || !mosaicInfos) {
-        return null;
+        return [];
     }
 
     return mosaics.map((mosaic) => getMosaicWithRelativeAmount(mosaic, mosaicInfos[mosaic.id]));
@@ -70,9 +70,17 @@ export const isMosaicRevokable = (mosaic, chainHeight, currentAddress, sourceAdd
 };
 
 export const generateNonce = () => {
-    return MosaicNonce.createRandom().toHex();
+    const bytes = Crypto.randomBytes(4);
+    const nonce = new Uint8Array(bytes);
+
+    return new Uint32Array(nonce.buffer)[0];
 };
 
-export const generateMosaicId = (nonce, ownerAddress) => {
-    return MosaicId.createFromNonce(MosaicNonce.createFromHex(nonce), Address.createFromRawAddress(ownerAddress)).toHex();
-};
+// export const generateMosaicId = (nonce, ownerAddress) => {
+//     return MosaicId.createFromNonce(MosaicNonce.createFromHex(nonce), Address.createFromRawAddress(ownerAddress)).toHex();
+// };
+
+export const isSupplyMutableFlag = flags => (flags & MosaicFlags.SUPPLY_MUTABLE) !== 0;
+export const isTransferableFlag = flags => (flags & MosaicFlags.TRANSFERABLE) !== 0;
+export const isRestrictableFlag = flags => (flags & MosaicFlags.RESTRICTABLE) !== 0;
+export const isRevokableFlag = flags => (flags & MosaicFlags.REVOKABLE) !== 0;
