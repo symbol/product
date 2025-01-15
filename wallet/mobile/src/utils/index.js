@@ -1,5 +1,4 @@
 export * from './account';
-export * from './dto';
 export * from './helper';
 export * from './hooks';
 export * from './mosaic';
