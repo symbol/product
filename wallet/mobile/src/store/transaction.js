@@ -4,8 +4,6 @@ import { PersistentStorage } from 'src/storage';
 import {
     filterAllowedTransactions,
     filterBlacklistedTransactions,
-    getUnresolvedIdsFromTransactionDTOs,
-    transactionFromDTO,
 } from 'src/utils';
 
 export default {
@@ -55,33 +53,11 @@ export default {
             const { blackList } = state.addressBook;
 
             // Fetch transactions from DTO
-            const [partialDTO, unconfirmedDTO, confirmedDTO] = await Promise.all([
+            const [partialPage, unconfirmedPage, confirmedPage] = await Promise.all([
                 TransactionService.fetchAccountTransactions(current, networkProperties, { group: 'partial', filter }),
                 TransactionService.fetchAccountTransactions(current, networkProperties, { group: 'unconfirmed', filter }),
                 TransactionService.fetchAccountTransactions(current, networkProperties, { group: 'confirmed', filter }),
             ]);
-
-            // Fetch mosaic infos for transactions
-            const { addresses, mosaicIds, namespaceIds } = getUnresolvedIdsFromTransactionDTOs([
-                ...partialDTO,
-                ...unconfirmedDTO,
-                ...confirmedDTO,
-            ]);
-            const mosaicInfos = await MosaicService.fetchMosaicInfos(networkProperties, mosaicIds);
-            const namespaceNames = await NamespaceService.fetchNamespaceNames(networkProperties, namespaceIds);
-            const resolvedAddresses = await NamespaceService.resolveAddresses(networkProperties, addresses);
-
-            // Format transactions
-            const transactionOptions = {
-                networkProperties,
-                currentAccount: current,
-                mosaicInfos,
-                namespaceNames,
-                resolvedAddresses,
-            };
-            const partialPage = partialDTO.map((transactionDTO) => transactionFromDTO(transactionDTO, transactionOptions));
-            const unconfirmedPage = unconfirmedDTO.map((transactionDTO) => transactionFromDTO(transactionDTO, transactionOptions));
-            const confirmedPage = confirmedDTO.map((transactionDTO) => transactionFromDTO(transactionDTO, transactionOptions));
 
             //Filter allowed
             let filteredPartialPage;
@@ -126,28 +102,11 @@ export default {
             const { blackList } = state.addressBook;
 
             // Fetch transactions from DTO
-            const confirmedDTO = await TransactionService.fetchAccountTransactions(current, networkProperties, {
+            const confirmedPage = await TransactionService.fetchAccountTransactions(current, networkProperties, {
                 group: 'confirmed',
                 filter,
                 pageNumber,
             });
-
-            // Fetch mosaic infos for transactions
-            const { addresses, mosaicIds, namespaceIds } = getUnresolvedIdsFromTransactionDTOs([...confirmedDTO]);
-            const mosaicInfos = await MosaicService.fetchMosaicInfos(networkProperties, mosaicIds);
-            const namespaceNames = await NamespaceService.fetchNamespaceNames(networkProperties, namespaceIds);
-            const resolvedAddresses = await NamespaceService.resolveAddresses(networkProperties, addresses);
-
-            // Format transactions
-            const transactionOptions = {
-                networkProperties,
-                currentAccount: current,
-                mosaicInfos,
-                namespaceNames,
-                resolvedAddresses,
-            };
-            const confirmedPage = confirmedDTO.map((transactionDTO) => transactionFromDTO(transactionDTO, transactionOptions));
-            const isLastPage = confirmedPage.length === 0;
 
             //Filter allowed
             let filteredConfirmedPage;
