@@ -1,8 +1,7 @@
-import { config } from 'src/config';
-import { getMosaicRelativeAmount, makeRequest, networkTypeToIdentifier } from 'src/utils';
-import { ChainHttp, DtoMapping, NetworkHttp } from 'symbol-sdk';
-import { timeout } from 'rxjs/operators';
+import { config } from '@/config';
 import { MosaicService } from './MosaicService';
+import { makeRequest, networkTypeToIdentifier } from '@/utils/network';
+import { getMosaicRelativeAmount } from '@/utils/mosaic';
 
 const nodeProbeTimeout = 5000;
 export class NetworkService {
@@ -22,25 +21,23 @@ export class NetworkService {
     }
 
     static async fetchNetworkProperties(nodeUrl) {
-        const networkHttp = new NetworkHttp(nodeUrl);
-        const chainHttp = new ChainHttp(nodeUrl);
-        const [networkType, networkProps, transactionFees, chainInfo] = await Promise.all([
-            networkHttp.getNetworkType().pipe(timeout(nodeProbeTimeout)).toPromise(),
-            networkHttp.getNetworkProperties().pipe(timeout(nodeProbeTimeout)).toPromise(),
-            networkHttp.getTransactionFees().pipe(timeout(nodeProbeTimeout)).toPromise(),
-            chainHttp.getChainInfo().pipe(timeout(nodeProbeTimeout)).toPromise(),
+        const [nodeInfo, networkProps, transactionFees, chainInfo] = await Promise.all([
+            makeRequest(`${nodeUrl}/node/info`),
+            makeRequest(`${nodeUrl}/network/properties`),
+            makeRequest(`${nodeUrl}/network/fees/transaction`),
+            makeRequest(`${nodeUrl}/chain/info`),
         ]);
 
-        const networkCurrencyMosaicId = DtoMapping.toSimpleHex(networkProps.chain.currencyMosaicId);
+        const networkCurrencyMosaicId = networkProps.chain.currencyMosaicId.split("'").join('').replace(/^(0x)/, '');
         const mosaicInfo = await MosaicService.fetchMosaicInfo({ nodeUrl }, networkCurrencyMosaicId);
         const wsUrl = nodeUrl.replace('http', 'ws') + '/ws';
 
         return {
             nodeUrl,
             wsUrl,
-            networkIdentifier: networkTypeToIdentifier(networkType),
-            generationHash: networkProps.network.generationHashSeed,
-            chainHeight: chainInfo.height.compact(),
+            networkIdentifier: networkTypeToIdentifier(nodeInfo.networkIdentifier),
+            generationHash: nodeInfo.networkGenerationHashSeed,
+            chainHeight: parseInt(chainInfo.height),
             blockGenerationTargetTime: networkProps.chain.blockGenerationTargetTime.replace(/s/g, ''),
             epochAdjustment: parseInt(networkProps.network.epochAdjustment),
             transactionFees,
