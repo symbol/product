@@ -19,21 +19,18 @@ import {
     TransactionGraphic,
     Widget,
 } from 'src/components';
-import { TransactionType } from 'src/config';
+import { TransactionType } from 'src/constants';
 import { $t } from 'src/localization';
 import { Router } from 'src/Router';
-import { MosaicService, NamespaceService, TransactionService } from 'src/services';
+import { TransactionService } from 'src/services';
 import store, { connect } from 'src/store';
 import { colors, fonts, layout } from 'src/styles';
 import {
     getTransactionFees,
-    getUnresolvedIdsFromTransactionDTOs,
     getUserCurrencyAmountText,
     handleError,
     isAggregateTransaction,
     publicAccountFromPrivateKey,
-    transactionFromDTO,
-    transactionFromPayload,
     useDataManager,
     useInit,
     usePasscode,
@@ -98,25 +95,14 @@ export const TransactionRequest = connect((state) => ({
             'signTransactionObject',
             'signerPublicKey',
             'deadline',
-            'cosignaturePublicKeys',
+            'cosignatures',
+            'timestamp',
             isEmbedded ? 'fee' : null,
         ]);
     const [loadTransaction, isTransactionLoading] = useDataManager(
         async (payload, generationHash) => {
-            const transactionDTO = transactionFromPayload(payload);
-            const { addresses, mosaicIds, namespaceIds } = getUnresolvedIdsFromTransactionDTOs([transactionDTO]);
-            const mosaicInfos = await MosaicService.fetchMosaicInfos(networkProperties, mosaicIds);
-            const namespaceNames = await NamespaceService.fetchNamespaceNames(networkProperties, namespaceIds);
-            const resolvedAddresses = await NamespaceService.resolveAddresses(networkProperties, addresses);
-            const transactionOptions = {
-                networkProperties,
-                currentAccount,
-                mosaicInfos,
-                namespaceNames,
-                resolvedAddresses,
-                fillSignerPublickey: publicAccountFromPrivateKey(currentAccount.privateKey, networkProperties.networkIdentifier).publicKey,
-            };
-            const transaction = transactionFromDTO(transactionDTO, transactionOptions, currentAccount.address);
+            const fillSignerPublickey = publicAccountFromPrivateKey(currentAccount.privateKey, networkProperties.networkIdentifier).publicKey;
+            const transaction = await TransactionService.transactionFromPayload(payload, networkProperties, currentAccount, fillSignerPublickey);
 
             const styleAmount = [styles.textAmount];
             if (transaction.amount < 0) {
