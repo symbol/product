@@ -1,6 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { DeviceEventEmitter } from 'react-native';
+import { TransactionType } from 'src/constants';
 import { Router } from 'src/Router';
+import { getTransactionFees } from 'src/utils/transaction';
 
 export const usePasscode = (type, onSuccess, onCancel) => {
     const successState = '.s';
@@ -119,3 +121,19 @@ export const useToggle = (initialValue) => {
 
     return [value, toggle];
 };
+
+export const useTransactionFees = (transaction, networkProperties) => {
+    const defaultTransactionFees = {
+        fast: 0,
+        medium: 0,
+        slow: 0
+    };
+    const deps = [networkProperties];
+
+    if (transaction.type === TransactionType.TRANSFER) {
+        deps.push(...[transaction.message?.text, transaction.messageEncrypted])
+    }
+
+    return useMemo(() => networkProperties.networkIdentifier ? getTransactionFees(transaction, networkProperties) : defaultTransactionFees, deps);
+}
+

@@ -55,7 +55,11 @@ export default {
             return state;
         },
         setNetworkProperties(state, payload) {
-            state.network.networkProperties = payload;
+            state.network.networkProperties = {
+                ...payload,
+                nodeUrls: state.network.nodeUrls[payload.networkIdentifier],
+            };
+
             return state;
         },
         setChainHeight(state, payload) {
@@ -132,7 +136,7 @@ export default {
                 dispatchAction({ type: 'listener/connect' });
                 runAgain();
                 return;
-            } catch {}
+            } catch { }
 
             // Try to fetch the node list to verify if it is not the internet connection issue
             try {
@@ -165,7 +169,7 @@ export default {
                     }
                     runAgain();
                     return;
-                } catch {}
+                } catch { }
             }
 
             const newStatus = 'failed-auto';

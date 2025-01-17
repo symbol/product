@@ -30,7 +30,11 @@ export const getTransactionFees = (transaction, networkProperties) => {
         privateKey: stubKeySigner,
         publicKey: stubKeySigner,
     };
-    const size = transactionToSymbol(stubTransaction, networkProperties, stubCurrentAccount).size;
+    const transactionOptions = {
+        networkProperties,
+        currentAccount: stubCurrentAccount,
+    };
+    const size = transactionToSymbol(stubTransaction, transactionOptions).size;
 
     const fast = (transactionFees.minFeeMultiplier + transactionFees.averageFeeMultiplier) * size;
     const medium = (transactionFees.minFeeMultiplier + transactionFees.averageFeeMultiplier * 0.65) * size;
@@ -149,7 +153,11 @@ export const isHarvestingServiceTransaction = (transaction) => {
 
 export const signTransaction = async (networkProperties, transaction, privateAccount) => {
     // Map transaction
-    const transactionObject = transactionToSymbol(transaction, networkProperties, privateAccount);
+    const transactionOptions = {
+        networkProperties,
+        currentAccount: privateAccount,
+    };
+    const transactionObject = transactionToSymbol(transaction, transactionOptions);
 
     // Get signature
     const facade = new SymbolFacade(networkProperties.networkIdentifier);

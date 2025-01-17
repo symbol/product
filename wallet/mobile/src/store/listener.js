@@ -1,6 +1,6 @@
 import { DeviceEventEmitter } from 'react-native';
 import { showMessage } from 'react-native-flash-message';
-import { Constants } from 'src/config';
+import { ControllerEventName } from 'src/constants';
 import { $t } from 'src/localization';
 import { ListenerService } from 'src/services';
 import { handleError } from 'src/utils';
@@ -28,37 +28,28 @@ export default {
             }
 
             try {
-                const newListener = await ListenerService.listen(networkProperties, current.address, {
-                    // handle confirmed transactions
-                    onConfirmedAdd: () => {
-                        dispatchAction({ type: 'account/fetchData' });
-                        dispatchAction({ type: 'transaction/fetchData', payload: { keepPages: true } });
-                        DeviceEventEmitter.emit(Constants.Events.CONFIRMED_TRANSACTION);
-                        showMessage({ message: $t('message_transactionConfirmed'), type: 'info' });
-                    },
-                    // handle unconfirmed transactions
-                    onUnconfirmedAdd: () => {
-                        dispatchAction({ type: 'transaction/fetchData', payload: { keepPages: true } });
-                    },
-                    // handle unconfirmed transactions
-                    onUnconfirmedRemove: () => {
-                        dispatchAction({ type: 'transaction/fetchData', payload: { keepPages: true } });
-                    },
-                    // handle aggregate bonded transactions
-                    onAggregateBondedAdd: () => {
-                        DeviceEventEmitter.emit(Constants.Events.PARTIAL_TRANSACTION);
-                        dispatchAction({ type: 'transaction/fetchData', payload: { keepPages: true } });
-                        showMessage({ message: $t('message_newAggregateBondedTransaction'), type: 'info' });
-                    },
-                    // handle aggregate bonded transactions
-                    onAggregateBondedRemove: () => {
-                        dispatchAction({ type: 'transaction/fetchData', payload: { keepPages: true } });
-                    },
-                    // handle transaction error
-                    onTransactionError: (e) => handleError(Error(`error_${e.code}`)),
+                const newListener = new ListenerService(networkProperties, current);
+                await newListener.open();
+                newListener.listenTransactions('confirmed', () => {
+                    dispatchAction({ type: 'account/fetchData' });
+                    dispatchAction({ type: 'transaction/fetchData', payload: { keepPages: true } });
+                    DeviceEventEmitter.emit(ControllerEventName.CONFIRMED_TRANSACTION);
+                    showMessage({ message: $t('message_transactionConfirmed'), type: 'info' });
+                })
+                newListener.listenTransactions('unconfirmed', () => {
+                    DeviceEventEmitter.emit(ControllerEventName.TRANSACTION_UNCONFIRMED);
+                    dispatchAction({ type: 'transaction/fetchData', payload: { keepPages: true } });
+                },)
+                newListener.listenTransactions('partial', () => {
+                    DeviceEventEmitter.emit(ControllerEventName.PARTIAL_TRANSACTION);
+                    dispatchAction({ type: 'transaction/fetchData', payload: { keepPages: true } });
+                    showMessage({ message: $t('message_newAggregateBondedTransaction'), type: 'info' });
+                },)
+                newListener.listenTransactionError((error) => {
+                    handleError(new Error(`error_${error.code}`))
                 });
                 commit({ type: 'listener/setListener', payload: newListener });
-            } catch {}
+            } catch { }
         },
     },
 };
