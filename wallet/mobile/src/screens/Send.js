@@ -20,11 +20,10 @@ import {
 import { $t } from 'src/localization';
 import { Router } from 'src/Router';
 import { AccountService, MosaicService, TransactionService } from 'src/services';
-import { connect } from 'src/store';
+import store, { connect } from 'src/store';
 import {
     getAddressName,
     getMosaicsWithRelativeAmounts,
-    getTransactionFees,
     handleError,
     toFixedNumber,
     useDataManager,
@@ -32,6 +31,7 @@ import {
     useProp,
     useToggle,
 } from 'src/utils';
+import { useTransactionFees } from '@/utils/hooks';
 import { TransactionType } from 'src/constants';
 
 export const Send = connect((state) => ({
@@ -110,14 +110,21 @@ export const Send = connect((state) => ({
                   isEncrypted: !isMultisig ? isEncrypted : false,
               }
             : null,
-        messageEncrypted: !!message && !isMultisig ? isEncrypted : null,
         fee: maxFee,
     };
     const cosignatoryList = { cosignatories };
 
-    const transactionFees = useMemo(() => getTransactionFees(transaction, networkProperties), [message, isEncrypted]);
+    const transactionFees = useTransactionFees(transaction, networkProperties);
 
-    const getTransactionPreviewTable = (data) => _.omit(data, ['type']);
+    const getTransactionPreviewTable = (data) => {
+        const transactionWithoutType =  _.omit(data, ['type']);
+
+        return {
+            ...transactionWithoutType,
+            messageEncrypted: transactionWithoutType.message ? transactionWithoutType.message.isEncrypted : null,
+            fee: transactionWithoutType.fee,
+        }
+    };
     const getAvailableBalance = () => {
         const selectedMosaicBalance = selectedMosaic?.amount || 0;
         const selectedMosaicDivisibility = selectedMosaic?.divisibility || 0;
@@ -149,7 +156,7 @@ export const Send = connect((state) => ({
     );
     const [send, isSending] = useDataManager(
         async () => {
-            await TransactionService.sendTransferTransaction(transaction, currentAccount, networkProperties);
+            await store.dispatchAction({ type: 'transaction/sendTransferTransaction', payload: { transaction } });
             toggleSuccessAlert();
         },
         null,

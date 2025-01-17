@@ -1,9 +1,12 @@
 import _ from 'lodash';
-import { MosaicService, NamespaceService, TransactionService } from 'src/services';
+import { TransactionType } from 'src/constants';
+import { AccountService, NamespaceService, TransactionService } from 'src/services';
 import { PersistentStorage } from 'src/storage';
 import {
     filterAllowedTransactions,
     filterBlacklistedTransactions,
+    isSymbolAddress,
+    publicAccountFromPrivateKey,
 } from 'src/utils';
 
 export default {
@@ -102,11 +105,14 @@ export default {
             const { blackList } = state.addressBook;
 
             // Fetch transactions from DTO
+            const pageSize = 15;
             const confirmedPage = await TransactionService.fetchAccountTransactions(current, networkProperties, {
                 group: 'confirmed',
                 filter,
                 pageNumber,
+                pageSize
             });
+            const isLastPage = confirmedPage.length === 0 || confirmedPage.length < pageSize;
 
             //Filter allowed
             let filteredConfirmedPage;
@@ -120,6 +126,60 @@ export default {
             // Update store
             commit({ type: 'transaction/setConfirmed', payload: updatedConfirmed });
             commit({ type: 'transaction/setIsLastPage', payload: isLastPage });
+        },
+        sendTransferTransaction: async ({ state }, { transaction }) => {
+            const { networkProperties } = state.network;
+            const currentAccount = state.account.current;
+
+            // TODO: Remove
+            const signerPublicKey = publicAccountFromPrivateKey(currentAccount.privateKey, networkProperties.networkIdentifier).publicKey;
+
+            const preparedTransaction = {
+                type: transaction.type,
+                signerPublicKey,
+                mosaics: transaction.mosaics,
+                message: transaction.message,
+                fee: transaction.fee,
+            };
+            const isMultisigTransaction = !!transaction.sender;
+            const recipient = transaction.recipientAddress || transaction.recipient;
+
+            // Resolve recipient address
+            if (isSymbolAddress(recipient)) {
+                preparedTransaction.recipientAddress = recipient;
+            } else {
+                preparedTransaction.recipientAddress = await NamespaceService.namespaceNameToAddress(
+                    networkProperties,
+                    recipient.toLowerCase()
+                );
+            }
+
+            // If message is encrypted, fetch recipient publicKey
+            if (transaction.message?.isEncrypted) {
+                const recipientAccount = await AccountService.fetchAccountInfo(
+                    networkProperties,
+                    preparedTransaction.recipientAddress
+                );
+                preparedTransaction.recipientPublicKey = recipientAccount.publicKey;
+            }
+
+            // If transaction is multisig, announce Aggregate Bonded
+            if (isMultisigTransaction) {
+                const senderAccount = await AccountService.fetchAccountInfo(networkProperties, transaction.sender);
+                preparedTransaction.signerPublicKey = senderAccount.publicKey;
+
+                const aggregateTransaction = {
+                    type: TransactionType.AGGREGATE_BONDED,
+                    signerPublicKey: currentAccount.publicKey,
+                    fee: transaction.fee,
+                    innerTransactions: [preparedTransaction]
+                }
+
+                await TransactionService.signAndAnnounce(aggregateTransaction, networkProperties, currentAccount);
+            }
+
+            // Else, announce Transfer
+            await TransactionService.signAndAnnounce(preparedTransaction, networkProperties, currentAccount);
         },
     },
 };

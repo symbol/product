@@ -25,8 +25,6 @@ const addressFromDTO = (rawAddress, resolvedAddresses) => {
     if (rawAddress.length === 48)
         return addressFromRaw(rawAddress);
 
-    console.log(`${rawAddress} [${rawAddress.length}] => ${resolvedAddresses[rawAddress]}`);
-
     return resolvedAddresses[rawAddress] || null;
 };
 
