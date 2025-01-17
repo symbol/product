@@ -125,14 +125,14 @@ export const aggregateTransactionToSymbol = (transaction, config) => {
         transactionToSymbol(innerTransaction, { ...config, isEmbedded: true })
     );
     const merkleHash = facade.constructor.hashEmbeddedTransactions(innerTransactions);
-    const cousignatures = transaction.cosignatures.map(rawCosignature => {
+    const cosignatures = transaction.cosignatures?.map(rawCosignature => {
         const cosignature = new models.Cosignature();
         cosignature.version = 0n;
         cosignature.signerPublicKey = new models.PublicKey(rawCosignature.signerPublicKey);
         cosignature.signature = new models.Signature(rawCosignature.signature);
 
         return cosignature;
-    });
+    }) || [];
 
 
     let descriptor;
@@ -157,7 +157,7 @@ export const aggregateTransactionToSymbol = (transaction, config) => {
         };
     }
 
-    return createSymbolTransaction(descriptor, networkProperties, false, cousignatures);
+    return createSymbolTransaction(descriptor, networkProperties, false, cosignatures);
 };
 
 export const transferTransactionToSymbol = (transaction, config) => {

@@ -86,11 +86,12 @@ export class ListenerService {
             case ListenerChannelName.confirmedAdded:
             case ListenerChannelName.unconfirmedAdded:
             case ListenerChannelName.partialAdded:
-                this.handlers[channelName](await TransactionService.resolveTransactionDTOs(
+                const transactions = await TransactionService.resolveTransactionDTOs(
                     [message.data],
                     this.networkProperties,
                     this.currentAccount
-                ));
+                );
+                this.handlers[channelName](transactions[0]);
                 break;
             case ListenerChannelName.block:
                 this.handlers[channelName](message.data);
@@ -138,7 +139,7 @@ export class ListenerService {
         this.webSocket.send(JSON.stringify(subscriptionMessage));
     }
 
-    listenTransactions(callback, group = 'confirmed') {
+    listenTransactions(group, callback) {
         const channelMap = {
             confirmed: ListenerChannelName.confirmedAdded,
             unconfirmed: ListenerChannelName.unconfirmedAdded,

@@ -2,14 +2,15 @@ import { TransactionType } from '@/constants';
 import { AccountService } from './AccountService';
 import { ListenerService } from './ListenerService';
 import { makeRequest } from '@/utils/network';
-import { decryptMessage, signTransaction, symbolTransactionFromPayload } from '@/utils/transaction';
+import { decryptMessage, isIncomingTransaction, isOutgoingTransaction, signTransaction, symbolTransactionFromPayload } from '@/utils/transaction';
 import { getUnresolvedIdsFromTransactionDTOs, isAggregateTransactionDTO, transactionFromDTO } from 'src/utils/transaction-from-dto';
 import { MosaicService } from 'src/services/MosaicService';
 import { NamespaceService } from 'src/services/NamespaceService';
 import { getUnresolvedIdsFromSymbolTransactions, transactionFromSymbol } from 'src/utils/transaction-from-symbol';
+import { promiseAllSettled } from 'src/utils';
 
 export class TransactionService {
-    static async fetchAccountTransactions(account, networkProperties, { pageNumber = 1, pageSize = 100, group = 'confirmed', filter = {} }) {
+    static async fetchAccountTransactions(account, networkProperties, { pageNumber = 1, pageSize = 15, group = 'confirmed', filter = {} }) {
         const baseUrl = `${networkProperties.nodeUrl}/transactions/${group}`;
         const baseSearchCriteria = {
             pageNumber,
@@ -45,7 +46,7 @@ export class TransactionService {
             .map((transactionDTO) => transactionDTO.meta.hash);
         let aggregateDetailedDTOs = [];
         if (aggregateTransactionHashes.length) {
-            transactionDetailsUrl = `${networkProperties.nodeUrl}/transactions/${group}`;
+            const transactionDetailsUrl = `${networkProperties.nodeUrl}/transactions/${group}`;
             aggregateDetailedDTOs = await makeRequest(transactionDetailsUrl, {
                 method: 'POST',
                 body: JSON.stringify({ transactionIds: aggregateTransactionHashes }),
@@ -56,13 +57,22 @@ export class TransactionService {
         }
 
         // Merge aggregate transaction details with the list of transactions
-        const transactionsWithAggregate =  transactions.map((transactionDTO) =>
+        const transactionsWithAggregate = transactions.map((transactionDTO) =>
             isAggregateTransactionDTO(transactionDTO)
                 ? aggregateDetailedDTOs.find((detailedDTO) => detailedDTO.meta.hash === transactionDTO.meta.hash)
                 : transactionDTO
         );
 
         return TransactionService.resolveTransactionDTOs(transactionsWithAggregate, networkProperties, account);
+    }
+
+    static async fetchTransactionInfo(hash, config) {
+        const { group = 'confirmed', currentAccount, networkProperties } = config;
+        const transactionUrl = `${networkProperties.nodeUrl}/transactions/${group}/${hash}`;
+        const transactionDTO = await makeRequest(transactionUrl);
+        const transactions = await TransactionService.resolveTransactionDTOs([transactionDTO], networkProperties, currentAccount);
+
+        return transactions[0];
     }
 
     static async signAndAnnounce(transaction, networkProperties, privateAccount) {
@@ -85,7 +95,7 @@ export class TransactionService {
 
             const listener = new ListenerService(networkProperties, privateAccount);
             await listener.open();
-            listener.listenTransactions((transaction) => {
+            listener.listenTransactions('confirmed', (transaction) => {
                 if (transaction.hash === signedHashLockTransaction.hash) {
                     listener.close();
                     return resolve(this.announceBatchNode(signedTransaction.payload, networkProperties, true));
@@ -97,10 +107,16 @@ export class TransactionService {
     }
 
     static async announceBatchNode(transactionPayload, networkProperties, isPartial) {
-        const nodeUrls = networkProperties.nodeUrls.slice(0, 5);
+        const randomNodes = networkProperties.nodeUrls.sort(() => Math.random() - 0.5).slice(0, 3);
+        const nodeUrls = [networkProperties.nodeUrl, ...randomNodes];
         const promises = nodeUrls.map((nodeUrl => this.announce(transactionPayload, nodeUrl, isPartial)));
 
-        return Promise.all(promises);
+        const results = await promiseAllSettled(promises);
+        const hasSuccessfulResult = results.some((r) => r.status === 'fulfilled');
+
+        if (!hasSuccessfulResult) {
+            throw Error('error_failed_announce_transaction');
+        }
     }
 
     static async announce(transactionPayload, nodeUrl, isPartial) {
@@ -148,6 +164,7 @@ export class TransactionService {
 
     static async resolveTransactions(transactionDTOs, networkProperties, currentAccount, config) {
         const { unresolvedExtractor, transactionMapper, mapperConfig = {} } = config;
+        
         // Resolve addresses, mosaics and namespaces
         const { addresses, mosaicIds, namespaceIds } = unresolvedExtractor(transactionDTOs);
         const mosaicInfos = await MosaicService.fetchMosaicInfos(networkProperties, mosaicIds);
@@ -163,7 +180,7 @@ export class TransactionService {
             resolvedAddresses,
             ...mapperConfig,
         };
-        
+
         return transactionDTOs.map((transactionDTO) => transactionMapper(transactionDTO, transactionOptions));
     }
 
