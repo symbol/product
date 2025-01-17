@@ -6,7 +6,6 @@ import {
     filterAllowedTransactions,
     filterBlacklistedTransactions,
     isSymbolAddress,
-    publicAccountFromPrivateKey,
 } from 'src/utils';
 
 export default {
@@ -132,11 +131,9 @@ export default {
             const currentAccount = state.account.current;
 
             // TODO: Remove
-            const signerPublicKey = publicAccountFromPrivateKey(currentAccount.privateKey, networkProperties.networkIdentifier).publicKey;
-
             const preparedTransaction = {
                 type: transaction.type,
-                signerPublicKey,
+                signerPublicKey: currentAccount.publicKey,
                 mosaics: transaction.mosaics,
                 message: transaction.message,
                 fee: transaction.fee,

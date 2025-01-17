@@ -35,8 +35,8 @@ export const TransactionCosignatureForm = connect((state) => ({
 
     const isAwaitingSignature = isTransactionAwaitingSignatureByAccount(transaction, currentAccount) && !isMultisig;
     const signerContact = addressBook.getContactByAddress(signerAddress);
-    const isBlackListedSigner = signerContact && signerContact.isBlackListed;
-    const isWhiteListedSigner = signerContact && !isBlackListedSigner;
+    const isBlackListedSigner = !!signerContact && signerContact.isBlackListed;
+    const isWhiteListedSigner = !!signerContact && !isBlackListedSigner;
     const isWalletAccount = networkWalletAccounts.some((account) => account.address === signerAddress);
     const isTrustedSigner = isWhiteListedSigner || isWalletAccount;
     let viewId = null;

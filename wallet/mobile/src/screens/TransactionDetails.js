@@ -51,7 +51,12 @@ export const TransactionDetails = connect((state) => ({
     const accounts = walletAccounts[networkIdentifier];
     const [fetchPartialInfo, isPartialInfoLoading, partialInfo] = useDataManager(() => {
         if (transaction.type === TransactionType.AGGREGATE_BONDED) {
-            return TransactionService.fetchPartialInfo(transaction.hash, currentAccount, networkProperties);
+            const transactionOptions = {
+                group: 'partial',
+                currentAccount, 
+                networkProperties
+            }
+            return TransactionService.fetchTransactionInfo(transaction.hash, transactionOptions);
         }
     });
     const date = transaction.timestamp 

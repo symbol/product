@@ -1,6 +1,6 @@
 import { AccountService, MosaicService, NamespaceService } from 'src/services';
 import { PersistentStorage } from 'src/storage';
-import { getMosaicsWithRelativeAmounts } from 'src/utils';
+import { getMosaicsWithRelativeAmounts, publicAccountFromPrivateKey } from 'src/utils';
 
 export default {
     namespace: 'account',
@@ -63,7 +63,11 @@ export default {
             const { networkIdentifier } = state.network;
             const { selectedAccountId, accounts } = state.wallet;
             const networkAccounts = accounts[networkIdentifier];
-            const currentAccount = networkAccounts.find((account) => account.privateKey === selectedAccountId) || networkAccounts[0];
+            const currentAccountWithoutPublicKey = networkAccounts.find((account) => account.privateKey === selectedAccountId) || networkAccounts[0];
+            const currentAccount = {
+                ...currentAccountWithoutPublicKey,
+                publicKey: publicAccountFromPrivateKey(currentAccountWithoutPublicKey.privateKey, networkIdentifier).publicKey,
+            };
             const accountInfos = await PersistentStorage.getAccountInfos();
             const accountInfo = accountInfos[currentAccount?.address];
 
