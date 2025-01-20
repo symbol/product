@@ -2,7 +2,7 @@ import { TransactionType } from '@/constants';
 import { AccountService } from './AccountService';
 import { ListenerService } from './ListenerService';
 import { makeRequest } from '@/utils/network';
-import { decryptMessage, isIncomingTransaction, isOutgoingTransaction, signTransaction, symbolTransactionFromPayload } from '@/utils/transaction';
+import { cosignTransaction, decryptMessage, isIncomingTransaction, isOutgoingTransaction, signTransaction, symbolTransactionFromPayload } from '@/utils/transaction';
 import { getUnresolvedIdsFromTransactionDTOs, isAggregateTransactionDTO, transactionFromDTO } from 'src/utils/transaction-from-dto';
 import { MosaicService } from 'src/services/MosaicService';
 import { NamespaceService } from 'src/services/NamespaceService';
@@ -75,12 +75,21 @@ export class TransactionService {
         return transactions[0];
     }
 
+    static async cosignTransaction(transaction, privateAccount, networkProperties) {
+        if (transaction.type !== TransactionType.AGGREGATE_BONDED)
+            throw Error('error_failed_cosign_transaction_invalid_type');
+
+        const cosignedTransaction = await cosignTransaction(networkProperties, transaction, privateAccount);
+
+        return this.announce(cosignedTransaction.dto, networkProperties.nodeUrl, 'cosignature');
+    }
+
     static async signAndAnnounce(transaction, networkProperties, privateAccount) {
         return new Promise(async (resolve) => {
             const signedTransaction = await signTransaction(networkProperties, transaction, privateAccount);
 
             if (transaction.type !== TransactionType.AGGREGATE_BONDED) {
-                return resolve(this.announceBatchNode(signedTransaction.payload, networkProperties, false));
+                return resolve(this.announceBatchNode(signedTransaction.dto, networkProperties));
             }
 
             const hashLockTransaction = {
@@ -98,36 +107,47 @@ export class TransactionService {
             listener.listenTransactions('confirmed', (transaction) => {
                 if (transaction.hash === signedHashLockTransaction.hash) {
                     listener.close();
-                    return resolve(this.announceBatchNode(signedTransaction.payload, networkProperties, true));
+                    return resolve(this.announceBatchNode(signedTransaction.dto, networkProperties, 'partial'));
                 }
             })
 
-            await this.announceBatchNode(signedHashLockTransaction.payload, networkProperties, false);
+            await this.announceBatchNode(signedHashLockTransaction.dto, networkProperties);
         })
     }
 
-    static async announceBatchNode(transactionPayload, networkProperties, isPartial) {
+    static async announceBatchNode(dto, networkProperties, type) {
         const randomNodes = networkProperties.nodeUrls.sort(() => Math.random() - 0.5).slice(0, 3);
         const nodeUrls = [networkProperties.nodeUrl, ...randomNodes];
-        const promises = nodeUrls.map((nodeUrl => this.announce(transactionPayload, nodeUrl, isPartial)));
+        const promises = nodeUrls.map((nodeUrl => this.announce(dto, nodeUrl, type)));
 
         const results = await promiseAllSettled(promises);
         const hasSuccessfulResult = results.some((r) => r.status === 'fulfilled');
 
         if (!hasSuccessfulResult) {
-            throw Error('error_failed_announce_transaction');
+            const error = results.find((r) => r.status === 'rejected').reason;
+            throw new Error(error);
         }
     }
 
-    static async announce(transactionPayload, nodeUrl, isPartial) {
-        const endpoint = `${nodeUrl}/transactions${isPartial ? '/partial' : ''}`;
-        const payload = {
-            payload: transactionPayload,
-        };
+    static async announce(dto, nodeUrl, type = 'default') {
+        const typeEndpointMap = {
+            default: '/transactions',
+            partial: '/transactions/partial',
+            cosignature: '/transactions/cosignature',
+        }
+        const endpoint = `${nodeUrl}${typeEndpointMap[type]}`;
+
+        console.log(endpoint, JSON.stringify({
+            method: 'PUT',
+            body: JSON.stringify(dto),
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        }, null, 2))
 
         return makeRequest(endpoint, {
             method: 'PUT',
-            body: JSON.stringify(payload),
+            body: JSON.stringify(dto),
             headers: {
                 'Content-Type': 'application/json',
             },
