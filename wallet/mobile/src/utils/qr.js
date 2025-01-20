@@ -1,6 +1,6 @@
-import { transactionToPayload } from 'src/utils/transaction';
-import { networkIdentifierToNetworkType } from 'src/utils/network';
+import { networkIdentifierToNetworkType, networkTypeToIdentifier } from 'src/utils/network';
 import * as QRCodeCanvas from 'qrcode/lib/server';
+import { addressFromPublicKey, publicAccountFromPrivateKey } from 'src/utils/account';
 
 
 const SYMBOL_QR_CODE_VERSION = 3;
@@ -12,6 +12,9 @@ export const SymbolQRCodeType = {
     Mnemonic: 5,
     Address: 7,
 };
+
+
+// Create QR Codes
 
 const createBaseSymbolQR = (type, data, networkProperties) => ({
     v: SYMBOL_QR_CODE_VERSION,
@@ -38,17 +41,17 @@ export const createAccountSymbolQR = (privateKey, networkProperties) => {
     return createBaseSymbolQR(SymbolQRCodeType.Account, data, networkProperties);
 }
 
-export const createTransactionSymbolQR = (transaction, networkProperties) => {
+export const createTransactionSymbolQR = (transactionPayload, networkProperties) => {
     const data = {
-        payload: transactionToPayload(transaction, networkProperties)
+        payload: transactionPayload
     };
 
     return createBaseSymbolQR(SymbolQRCodeType.Transaction, data, networkProperties);
 };
 
-export const createMnemonicSymbolQR = (mnemonicString, networkProperties) => {
+export const createMnemonicSymbolQR = (mnemonicPlainText, networkProperties) => {
     const data = {
-        mnemonic: mnemonicString
+        mnemonic: mnemonicPlainText
     };
 
     return createBaseSymbolQR(SymbolQRCodeType.Mnemonic, data, networkProperties);
@@ -63,16 +66,16 @@ export const createAddressSymbolQR = (name, address, networkProperties) => {
     return createBaseSymbolQR(SymbolQRCodeType.Address, data, networkProperties);
 };
 
-export const createSymbolQR = async (type, data, networkProperties) => {
+export const createSymbolQR = (type, data, networkProperties) => {
     switch (type) {
         case SymbolQRCodeType.Contact:
             return createContactSymbolQR(data.name, data.publicKey, networkProperties);
         case SymbolQRCodeType.Account:
             return createAccountSymbolQR(data.privateKey, networkProperties);
         case SymbolQRCodeType.Transaction:
-            return createTransactionSymbolQR(data.transaction, networkProperties);
+            return createTransactionSymbolQR(data.transactionPayload, networkProperties);
         case SymbolQRCodeType.Mnemonic:
-            return createMnemonicSymbolQR(data.mnemonic, networkProperties);
+            return createMnemonicSymbolQR(data.mnemonicPlainText, networkProperties);
         case SymbolQRCodeType.Address:
             return createAddressSymbolQR(data.name, data.address, networkProperties);
         default:
@@ -80,10 +83,119 @@ export const createSymbolQR = async (type, data, networkProperties) => {
     }
 }
 
-export const convertQRToBase64 = async (qrData) => {
+export const convertQRToBase64 = (qrData) => {
     const settings = {
         errorCorrectionLevel: 'M',
     };
 
     return QRCodeCanvas.toDataURL(JSON.stringify(qrData), settings);
+}
+
+
+// Parse QR Codes
+
+const parseBaseSymbolQR = (qrData) => {
+    const isValidVersion = qrData.v === SYMBOL_QR_CODE_VERSION;
+    const supportedTypes = Object.values(SymbolQRCodeType);
+    const isSupportedType = supportedTypes.includes(qrData.type);
+
+    if (!isValidVersion || !isSupportedType)
+        throw new Error('error_qr_unsupported');
+
+    return {
+        type: qrData.type,
+        networkIdentifier: networkTypeToIdentifier(qrData.network_id),
+        generationHash: qrData.chain_id,
+        payload: qrData.data,
+    }
+}
+
+export const parseContactSymbolQR = (qrData) => {
+    const parsedData = parseBaseSymbolQR(qrData);
+    const { generationHash, networkIdentifier, payload, type } = parsedData;
+    const { name, publicKey } = payload;
+
+    return {
+        type,
+        generationHash,
+        networkIdentifier,
+        name,
+        publicKey,
+        address: addressFromPublicKey(publicKey, networkIdentifier),
+    };
+}
+
+export const parseAccountSymbolQR = (qrData) => {
+    const parsedData = parseBaseSymbolQR(qrData);
+    const { generationHash, networkIdentifier, payload, type } = parsedData;
+    const { privateKey } = payload;
+    const publicAccount = publicAccountFromPrivateKey(privateKey, networkIdentifier);
+
+    return {
+        type,
+        generationHash,
+        networkIdentifier,
+        privateKey,
+        publicKey: publicAccount.publicKey,
+        address: publicAccount.address,
+    };
+}
+
+export const parseTransactionSymbolQR = (qrData) => {
+    const parsedData = parseBaseSymbolQR(qrData);
+    const { generationHash, networkIdentifier, payload, type } = parsedData;
+    const { payload: transactionPayload } = payload;
+
+    return {
+        type,
+        generationHash,
+        networkIdentifier,
+        transactionPayload
+    };
+}
+
+export const parseMnemonicSymbolQR = (qrData) => {
+    const parsedData = parseBaseSymbolQR(qrData);
+    const { generationHash, networkIdentifier, payload, type } = parsedData;
+    const { mnemonic: mnemonicPlainText } = payload;
+
+    return {
+        type,
+        generationHash,
+        networkIdentifier,
+        mnemonicPlainText
+    };
+}
+
+export const parseAddressSymbolQR = (qrData) => {
+    const parsedData = parseBaseSymbolQR(qrData);
+    const { generationHash, networkIdentifier, payload, type } = parsedData;
+    const { name, address } = payload;
+
+    return {
+        type,
+        generationHash,
+        networkIdentifier,
+        name,
+        address
+    };
+}
+
+export const parseSymbolQR = (qrData) => {
+    const { type } = qrData;
+
+    switch (type) {
+        case SymbolQRCodeType.Contact:
+            return parseContactSymbolQR(qrData);
+        case SymbolQRCodeType.Account:
+            return parseAccountSymbolQR(qrData);
+        case SymbolQRCodeType.Transaction:
+            return parseTransactionSymbolQR(qrData);
+        case SymbolQRCodeType.Mnemonic:
+            return parseMnemonicSymbolQR(qrData);
+        case SymbolQRCodeType.Address:
+            return parseAddressSymbolQR(qrData);
+        default:
+            throw new Error('error_qr_unsupported');
+    }
 }

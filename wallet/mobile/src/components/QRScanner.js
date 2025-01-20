@@ -2,75 +2,49 @@ import React from 'react';
 import { Modal, SafeAreaView, StyleSheet, View } from 'react-native';
 import { showMessage } from 'react-native-flash-message';
 import QRCodeScanner from 'react-native-qrcode-scanner';
-import { AccountQR, AddressQR, ContactQR, MnemonicQR } from 'symbol-qr-library';
-import { ButtonClose, QRCode, StyledText } from 'src/components';
+import { ButtonClose, StyledText } from 'src/components';
 import { colors, spacings } from 'src/styles';
-import { getUnresolvedIdsFromSymbolTransactions, transferTransactionFromDTO, transferTransactionFromPayload } from 'src/utils';
-import { MosaicService } from 'src/services';
 import { $t } from 'src/localization';
+import { parseSymbolQR, SymbolQRCodeType } from 'src/utils/qr';
 
 export const QRScanner = (props) => {
-    const { isVisible, type, networkProperties, onSuccess, onClose } = props;
-    const { QRTypes } = QRCode;
+    const { isVisible, type, onSuccess, onClose } = props;
 
-    const handleScan = async (response) => {
-        let parsedType;
+    const handleParseError = (errorMessage) => {
+        showMessage({ message: $t(errorMessage), type: 'danger' });
+        onClose();
+    };
+    
+    const handleScan = (response) => {
+        // Parse the QR code string
         let data;
-
         try {
-            parsedType = JSON.parse(response.data).type;
-            data = response.data;
+            data = JSON.parse(response.data);
         } catch {
-            showMessage({ message: $t('error_qr_failed_parse'), type: 'danger' });
-            onClose();
-            return;
+            return handleParseError('error_qr_failed_parse');
         }
 
-        if (type && parsedType !== type) {
-            showMessage({ message: $t('error_qr_expected_type'), type: 'danger' });
-            onClose();
-            return;
-        }
-
+        // Parse the Symbol QR code data
+        let parsedData;
         try {
-            switch (parsedType) {
-                case QRTypes.Mnemonic:
-                    onSuccess(MnemonicQR.fromJSON(data).mnemonicPlainText, 'mnemonic');
-                    onClose();
-                    return;
-                case QRTypes.Address:
-                    onSuccess(AddressQR.fromJSON(data), 'address');
-                    onClose();
-                    return;
-                case QRTypes.Account:
-                    onSuccess(AccountQR.fromJSON(data), 'account');
-                    onClose();
-                    return;
-                case QRTypes.Contact:
-                    onSuccess(ContactQR.fromJSON(data), 'contact');
-                    onClose();
-                    return;
-                case QRTypes.Transaction:
-                    const parsedData = JSON.parse(data);
-                    const networkType = parsedData.network_id;
-                    const transactionDTO = transferTransactionFromPayload(parsedData.data.payload);
-                    const { mosaicIds } = getUnresolvedIdsFromSymbolTransactions([transactionDTO]);
-                    const mosaicInfos = await MosaicService.fetchMosaicInfos(networkProperties, mosaicIds);
-                    const transaction = transferTransactionFromDTO(transactionDTO, {
-                        networkProperties,
-                        mosaicInfos,
-                        currentAccount: {},
-                    });
-                    onSuccess({ transaction, networkType }, 'transaction');
-                    onClose();
-                    return;
-
-                default:
-                    showMessage({ message: $t('error_qr_unsupported'), type: 'danger' });
-            }
-        } catch (e) {
-            showMessage({ message: $t('error_qr_failed_parse'), type: 'danger' });
+            parsedData = parseSymbolQR(data);
+        } catch (error) {
+            return handleParseError(error.message);
         }
+
+        // Check if the parsed data type matches the expected type (if set)
+        if (type && parsedData.type !== type)
+            return handleParseError('error_qr_expected_type');
+
+        // Handle the parsed data. Deliver to the parent component 
+        const handlers = {
+            [SymbolQRCodeType.Contact]: data => onSuccess(data, 'contact'),
+            [SymbolQRCodeType.Account]: data => onSuccess(data, 'account'),
+            [SymbolQRCodeType.Transaction]: data => onSuccess(data, 'transaction'),
+            [SymbolQRCodeType.Mnemonic]: (data) => onSuccess(data.mnemonicPlainText, 'mnemonic'),
+            [SymbolQRCodeType.Address]: (data) => onSuccess(data, 'address'),
+        }
+        handlers[parsedData.type](parsedData);
         onClose();
     };
 
