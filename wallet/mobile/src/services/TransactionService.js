@@ -137,14 +137,6 @@ export class TransactionService {
         }
         const endpoint = `${nodeUrl}${typeEndpointMap[type]}`;
 
-        console.log(endpoint, JSON.stringify({
-            method: 'PUT',
-            body: JSON.stringify(dto),
-            headers: {
-                'Content-Type': 'application/json',
-            },
-        }, null, 2))
-
         return makeRequest(endpoint, {
             method: 'PUT',
             body: JSON.stringify(dto),
