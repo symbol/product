@@ -1,6 +1,7 @@
-import { addressFromRaw, makeRequest, namespaceIdFromRaw } from 'src/utils';
+import { addressFromRaw } from '@/utils/account';
+import { namespaceIdFromName, namespaceIdFromRaw } from '@/utils/namespace';
+import { makeRequest } from '@/utils/network';
 import _ from 'lodash';
-import { NamespaceId } from 'symbol-sdk';
 
 export class NamespaceService {
     static async fetchAccountNamespaces(address, networkProperties) {
@@ -128,7 +129,7 @@ export class NamespaceService {
     }
 
     static async namespaceNameToAddress(networkProperties, namespaceName) {
-        const namespaceId = new NamespaceId(namespaceName).toHex();
+        const namespaceId = namespaceIdFromName(namespaceName).toHex();
 
         try {
             const address = await NamespaceService.namespaceIdToAddress(networkProperties, namespaceId);
