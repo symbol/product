@@ -6,6 +6,7 @@ import { TransactionType } from 'src/constants';
 import { $t } from 'src/localization';
 import { connect } from 'src/store';
 import { layout } from 'src/styles';
+import { transactionToPayload } from 'src/utils';
 
 export const Receive = connect((state) => ({
     currentAccount: state.account.current,
@@ -36,7 +37,7 @@ export const Receive = connect((state) => ({
     };
     const tableData = _.pick(transaction, 'recipientAddress');
     const qrData = {
-        transaction,
+        transactionPayload: transactionToPayload(transaction, networkProperties),
     };
 
     return (
