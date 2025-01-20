@@ -59,6 +59,12 @@ export const symbolTransactionToPayload = (symbolTransaction) => {
     return utils.uint8ToHex(bytes);
 };
 
+export const transactionToPayload = (transaction, networkProperties) => {
+    const symbolTransaction = transactionToSymbol(transaction, { networkProperties});
+
+    return symbolTransactionToPayload(symbolTransaction);
+};
+
 export const createTransactionURI = (transactionPayload, generationHash) => {
     return `web+symbol://transaction?data=${transactionPayload}&generationHash=${generationHash}`;
 }
