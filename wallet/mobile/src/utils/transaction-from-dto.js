@@ -137,17 +137,17 @@ export const aggregateTransactionFromDTO = (transactionDTO, config) => {
     ) || [];
     const resultAmount = innerTransactions.reduce((accumulator, transaction) =>
         accumulator + (transaction.amount || 0), 0);
-
+    const cosignatures = transaction.cosignatures?.map((cosignature) => ({
+        signerPublicKey: cosignature.signerPublicKey,
+        signature: cosignature.signature,
+        version: Number(cosignature.version),
+    })) || [];
     const info = {
         ...baseTransaction,
         amount: resultAmount === -0 ? 0 : resultAmount,
         innerTransactions,
-        cosignatures: transaction.cosignatures.map((cosignature) => ({
-            signerPublicKey: cosignature.signerPublicKey,
-            signature: cosignature.signature,
-            version: Number(cosignature.version),
-        })),
-        receivedCosignatures: transaction.cosignatures.map((cosignature) =>
+        cosignatures,
+        receivedCosignatures: cosignatures.map((cosignature) =>
             addressFromPublicKey(cosignature.signerPublicKey, config.networkProperties.networkIdentifier)
         )
     };

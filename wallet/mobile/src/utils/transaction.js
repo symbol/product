@@ -1,7 +1,7 @@
 import { TransactionType } from '@/constants';
 import { getMosaicRelativeAmount } from './mosaic';
 import { toFixedNumber } from './helper';
-import { PrivateKey, PublicKey, utils } from 'symbol-sdk-v3';
+import { Hash256, PrivateKey, PublicKey, utils } from 'symbol-sdk-v3';
 import { SymbolFacade, MessageEncoder, models } from 'symbol-sdk-v3/symbol';
 import { transactionToSymbol } from './transaction-to-symbol';
 const { TransactionFactory } = models;
@@ -170,11 +170,24 @@ export const signTransaction = async (networkProperties, transaction, privateAcc
     const hash = facade.hashTransaction(transactionObject).toString();
 
     return {
-        payload: JSON.parse(jsonString).payload,
+        dto: JSON.parse(jsonString),
         hash
     }
 };
 
+export const cosignTransaction = async (networkProperties, transaction, privateAccount) => {
+    // Get signature
+    const facade = new SymbolFacade(networkProperties.networkIdentifier);
+    const privateKey = new PrivateKey(privateAccount.privateKey);
+    const keyPair = new SymbolFacade.KeyPair(privateKey);
+    const hash256 = new Hash256(transaction.hash);
+    const signature = facade.static.cosignTransactionHash(keyPair, hash256, true);
+
+    return {
+        dto: signature.toJson(),
+        hash: transaction.hash
+    }
+};
 
 export const getUnresolvedIdsFromTransactions = (transactions, config) => {
     const { 
