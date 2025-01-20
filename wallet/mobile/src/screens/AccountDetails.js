@@ -17,7 +17,7 @@ export const AccountDetails = connect((state) => ({
     const { currentAccount, multisigAddresses, networkProperties, networkIdentifier } = props;
     const { privateKey, index, ...restAccountInfo } = currentAccount;
     const [isPrivateKeyDialogShown, togglePrivateKeyDialog] = useToggle(false);
-    const QRData = {
+    const qrData = {
         address: currentAccount.address,
         name: 'Account',
     };
@@ -69,7 +69,7 @@ export const AccountDetails = connect((state) => ({
                 <FormItem>
                     <Widget>
                         <FormItem style={layout.alignCenter}>
-                            <QRCode data={QRData} type={QRCode.QRTypes.address} networkProperties={networkProperties} />
+                            <QRCode data={qrData} type={QRCode.QRTypes.Address} networkProperties={networkProperties} />
                         </FormItem>
                         <FormItem>
                             <TableView data={tableData} rawAddresses />

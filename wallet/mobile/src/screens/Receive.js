@@ -2,6 +2,7 @@ import _ from 'lodash';
 import React, { useState } from 'react';
 import { ScrollView } from 'react-native-gesture-handler';
 import { FormItem, InputAmount, QRCode, Screen, TableView, TextBox, Widget } from 'src/components';
+import { TransactionType } from 'src/constants';
 import { $t } from 'src/localization';
 import { connect } from 'src/store';
 import { layout } from 'src/styles';
@@ -22,6 +23,7 @@ export const Receive = connect((state) => ({
         amount: parseFloat(amount || 0),
     };
     const transaction = {
+        type: TransactionType.TRANSFER,
         recipientAddress: currentAccount.address,
         mosaics: [mosaic],
         message: message
@@ -33,6 +35,9 @@ export const Receive = connect((state) => ({
         fee: 1,
     };
     const tableData = _.pick(transaction, 'recipientAddress');
+    const qrData = {
+        transaction,
+    };
 
     return (
         <Screen isLoading={!isAccountReady}>
@@ -40,7 +45,7 @@ export const Receive = connect((state) => ({
                 <FormItem>
                     <Widget>
                         <FormItem style={layout.alignCenter}>
-                            <QRCode data={transaction} type={QRCode.QRTypes.transaction} networkProperties={networkProperties} />
+                            <QRCode data={qrData} type={QRCode.QRTypes.Transaction} networkProperties={networkProperties} />
                             <TableView data={tableData} rawAddresses />
                         </FormItem>
                     </Widget>

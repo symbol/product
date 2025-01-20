@@ -1,33 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import { Image, StyleSheet, View } from 'react-native';
-import { AddressQR, TransactionQR } from 'symbol-qr-library';
 import { LoadingIndicator } from 'src/components';
 import { borders, colors } from 'src/styles';
-import { handleError, networkIdentifierToNetworkType, transferTransactionToDTO, useDataManager } from 'src/utils';
-
-const QRCodeType = {
-    contact: 1,
-    account: 2,
-    transaction: 3,
-    mnemonic: 5,
-    address: 7,
-};
+import { handleError, useDataManager } from 'src/utils';
+import { convertQRToBase64, createSymbolQR, SymbolQRCodeType } from 'src/utils/qr';
 
 export const QRCode = (props) => {
     const { type, data, networkProperties } = props;
-    const { generationHash } = networkProperties;
-    const networkType = networkIdentifierToNetworkType(networkProperties.networkIdentifier);
     const [prevData, setPrevData] = useState(false);
 
     const [generateImage, isImageLoading, image] = useDataManager(
         (data) => {
-            switch (type) {
-                case QRCodeType.transaction:
-                    const transaction = transferTransactionToDTO(data, networkProperties);
-                    return new TransactionQR(transaction, networkType, generationHash).toBase64().toPromise();
-                case QRCodeType.address:
-                    return new AddressQR(data.name, data.address, networkType, generationHash).toBase64().toPromise();
-            }
+            const qrData = createSymbolQR(type, data, networkProperties);
+
+            return convertQRToBase64(qrData);
         },
         null,
         handleError
@@ -48,7 +34,7 @@ export const QRCode = (props) => {
     );
 };
 
-QRCode.QRTypes = QRCodeType;
+QRCode.QRTypes = SymbolQRCodeType;
 
 const styles = StyleSheet.create({
     root: {

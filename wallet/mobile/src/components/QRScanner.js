@@ -34,23 +34,23 @@ export const QRScanner = (props) => {
 
         try {
             switch (parsedType) {
-                case QRTypes.mnemonic:
+                case QRTypes.Mnemonic:
                     onSuccess(MnemonicQR.fromJSON(data).mnemonicPlainText, 'mnemonic');
                     onClose();
                     return;
-                case QRTypes.address:
+                case QRTypes.Address:
                     onSuccess(AddressQR.fromJSON(data), 'address');
                     onClose();
                     return;
-                case QRTypes.account:
+                case QRTypes.Account:
                     onSuccess(AccountQR.fromJSON(data), 'account');
                     onClose();
                     return;
-                case QRTypes.contact:
+                case QRTypes.Contact:
                     onSuccess(ContactQR.fromJSON(data), 'contact');
                     onClose();
                     return;
-                case QRTypes.transaction:
+                case QRTypes.Transaction:
                     const parsedData = JSON.parse(data);
                     const networkType = parsedData.network_id;
                     const transactionDTO = transferTransactionFromPayload(parsedData.data.payload);
