@@ -12,6 +12,7 @@ import {
     isHarvestingServiceTransaction,
     isIncomingTransaction,
     isOutgoingTransaction,
+    isTransactionAwaitingSignatureByAccount,
     trunc,
 } from 'src/utils';
 import { TransactionType } from 'src/constants';
@@ -26,12 +27,16 @@ export const ItemTransaction = connect((state) => ({
     const { currentAccount, walletAccounts, networkIdentifier, addressBook, group, transaction, ticker, price, isDateHidden, onPress } =
         props;
     const accounts = walletAccounts[networkIdentifier];
-    const { type, deadline, amount, signerAddress, recipientAddress } = transaction;
-    const dateText = !isDateHidden ? formatDate(deadline, $t) : '';
+    const { type, deadline, timestamp, amount, signerAddress, recipientAddress } = transaction;
+    const dateTextPrefix = group !== 'confirmed' ? '🕑' : '';
+    const dateText = !isDateHidden 
+        ? `${dateTextPrefix} ${formatDate(timestamp || deadline, $t, true)}` 
+        : '';
     let iconSrc;
     let action = $t(`transactionDescriptor_${type}`);
     let description = '';
     let amountText = '';
+    let isAwaitingAccountSignature = false;
     const styleAmount = [styles.textAmount];
     const styleRoot = [styles.root];
     const userCurrencyAmountText = getUserCurrencyAmountText(Math.abs(amount), price, networkIdentifier);
@@ -73,7 +78,15 @@ export const ItemTransaction = connect((state) => ({
             : count
             ? $t('transactionDescriptionShort_aggregateMultiple', { type, count })
             : type;
-        iconSrc = require('src/assets/images/icon-tx-aggregate.png');
+
+        const isPartial = group === 'partial';
+        const isPartialSignedByAccount = isPartial && !isTransactionAwaitingSignatureByAccount(transaction, currentAccount);
+        isAwaitingAccountSignature = isPartial && !isPartialSignedByAccount;
+        iconSrc = isPartialSignedByAccount 
+            ? require('src/assets/images/icon-tx-aggregate-signed.png')
+            : isAwaitingAccountSignature
+            ? require('src/assets/images/icon-tx-aggregate-awaiting.png')
+            : require('src/assets/images/icon-tx-aggregate.png');
     } else if (type === TransactionType.NAMESPACE_REGISTRATION) {
         const name = transaction.namespaceName;
         description = $t('transactionDescriptionShort_namespaceRegistration', { name });
@@ -136,8 +149,10 @@ export const ItemTransaction = connect((state) => ({
         styleRoot.push(styles.rootPartial);
     }
 
+    const borderColor = isAwaitingAccountSignature ? colors.info : null;
+    
     return (
-        <ItemBase contentContainerStyle={styleRoot} onPress={onPress}>
+        <ItemBase contentContainerStyle={styleRoot} onPress={onPress} borderColor={borderColor}>
             <View style={styles.sectionIcon}>
                 <Image source={iconSrc} style={styles.icon} />
             </View>
