@@ -18,7 +18,7 @@ import { $t } from 'src/localization';
 import { Router } from 'src/Router';
 import { HarvestingService } from 'src/services';
 import store, { connect } from 'src/store';
-import { colors } from 'src/styles';
+import { colors, spacings } from 'src/styles';
 import { handleError, useDataManager, useInit } from 'src/utils';
 import { TransactionType } from 'src/constants';
 
@@ -231,14 +231,16 @@ export const HistoryWidget = connect((state) => ({
             <Animated.View entering={FadeInDown.delay(125)} exiting={FadeOutUp}>
                 <FormItem>
                     <Widget title={$t('s_history_widget_name')} onHeaderPress={() => Router.goToHistory()}>
-                        {transactions.map((item) => (
-                            <ItemTransaction
-                                group={item.group}
-                                transaction={item}
-                                key={'tx' + item.hash || item.id}
-                                onPress={() => Router.goToTransactionDetails({ transaction: item })}
-                            />
-                        ))}
+                        <View style={styles.widgetList}>
+                            {transactions.map((item) => (
+                                <ItemTransaction
+                                    group={item.group}
+                                    transaction={item}
+                                    key={'tx' + item.hash || item.id}
+                                    onPress={() => Router.goToTransactionDetails({ transaction: item })}
+                                />
+                            ))}
+                        </View>
                     </Widget>
                 </FormItem>
             </Animated.View>
@@ -274,4 +276,7 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         color: colors.bgMain,
     },
+    widgetList: {
+        paddingTop: spacings.margin,
+    }
 });
