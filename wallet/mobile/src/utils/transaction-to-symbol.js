@@ -141,7 +141,7 @@ export const aggregateTransactionToSymbol = (transaction, config) => {
             type: 'aggregate_bonded_transaction_v2',
             signerPublicKey: createSignerPublicKey(transaction),
             fee: createFee(transaction, networkProperties),
-            deadline: createDeadline(transaction, networkProperties),
+            deadline: createDeadline(transaction, networkProperties, 48),
             transactionsHash: merkleHash,
             transactions: innerTransactions,
         };
