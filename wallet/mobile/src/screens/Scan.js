@@ -62,6 +62,37 @@ export const Scan = connect((state) => ({
     const [renderPreviewComponent, setRenderPreviewComponent] = useState(renderEmptyComponent);
     const [data, setData] = useState(null);
     const isFocused = useIsFocused();
+
+    // Validators
+    const validateNetwork = (data) => data.networkIdentifier === networkIdentifier;
+    const validateTransactionTransfersOnlyNativeMosaic = (data) => 
+        data.transaction.mosaics?.length === 1 &&
+        data.transaction.mosaics[0].id === networkProperties.networkCurrency.mosaicId;
+
+    // Action buttons
+    const createAddToAddressBookHandler = () => ({
+        title: $t('button_addToAddressBook'),
+        handler: (data) => Router.goToAddressBookEdit({ address: data.address }),
+    });
+    const createAddExternalAccountHandler = () => ({
+        title: $t('button_addToWallet'),
+        handler: (data) => Router.goToAddExternalAccount({ privateKey: data.accountPrivateKey }),
+    });
+    const createSendTransferToAddressHandler = () => ({
+        title: $t('button_sendTransactionToThisAccount'),
+        handler: (data) => Router.goToSend({ recipientAddress: data.address }),
+    });
+    const createSendTransactionHandler = () => ({
+        title: $t('button_sendTransferTransaction'),
+        handler: (data) =>
+            Router.goToSend({
+                recipientAddress: data.transaction.recipientAddress,
+                amount: data.transaction.mosaics[0].amount,
+                message: data.transaction.message,
+            }),
+    });
+
+    // Scanned QR types handlers
     const options = {
         mnemonic: {
             description: $t('s_scan_mnemonic_description'),
@@ -72,71 +103,48 @@ export const Scan = connect((state) => ({
         account: {
             description: $t('s_scan_account_description'),
             invalidDescription: $t('s_scan_account_wrongNetwork_description'),
-            validate: (data) => data.networkIdentifier === networkIdentifier,
+            validate: validateNetwork,
             renderComponent: (data) => <AccountCard address={data.address} />,
             actions: [
-                {
-                    title: $t('button_addToWallet'),
-                    handler: (data) => Router.goToAddExternalAccount({ privateKey: data.accountPrivateKey }),
-                },
-                {
-                    title: $t('button_addToAddressBook'),
-                    handler: (data) => Router.goToAddressBookEdit({ address: data.address }),
-                },
-                {
-                    title: $t('button_sendTransactionToThisAccount'),
-                    handler: (data) => Router.goToSend({ recipientAddress: data.address }),
-                },
+                createAddExternalAccountHandler(),
+                createAddToAddressBookHandler(),
+                createSendTransferToAddressHandler(),
             ],
         },
         contact: {
             description: $t('s_scan_address_description'),
             invalidDescription: $t('s_scan_address_wrongNetwork_description'),
-            validate: (data) => data.networkIdentifier === networkIdentifier,
+            validate: validateNetwork,
             renderComponent: (data) => <AccountCard address={data.address} />,
             actions: [
-                {
-                    title: $t('button_addToAddressBook'),
-                    handler: (data) => Router.goToAddressBookEdit({ address: data.address }),
-                },
-                {
-                    title: $t('button_sendTransactionToThisAccount'),
-                    handler: (data) => Router.goToSend({ recipientAddress: data.address }),
-                },
+                createAddToAddressBookHandler(),
+                createSendTransferToAddressHandler(),
             ],
         },
         address: {
             description: $t('s_scan_address_description'),
             invalidDescription: $t('s_scan_address_wrongNetwork_description'),
-            validate: (data) => data.networkIdentifier === networkIdentifier,
+            validate: validateNetwork,
             renderComponent: (data) => <AccountCard address={data.address} />,
             actions: [
-                {
-                    title: $t('button_addToAddressBook'),
-                    handler: (data) => Router.goToAddressBookEdit({ address: data.address }),
-                },
-                {
-                    title: $t('button_sendTransactionToThisAccount'),
-                    handler: (data) => Router.goToSend({ recipientAddress: data.address }),
-                },
+                createAddToAddressBookHandler(),
+                createSendTransferToAddressHandler(),
             ],
         },
         transaction: {
             description: $t('s_scan_transaction_description'),
             invalidDescription: $t('s_scan_transaction_wrongTransaction_description'),
             format: async (data) => {
+                // Convert transaction from payload and resolve it
                 const symbolTransaction = symbolTransactionFromPayload(data.transactionPayload);
                 const mapperOptions = {
                     fillSignerPublickey: currentAccount.publicKey,
                 }
                 const transaction = (await TransactionService.resolveSymbolTransactions([symbolTransaction], networkProperties, currentAccount, mapperOptions))[0];
-                
-                return { ...data, transaction};
+
+                return { ...data, transaction };
             },
-            validate: (data) =>
-                data.networkIdentifier === networkIdentifier &&
-                data.transaction.mosaics?.length === 1 &&
-                data.transaction.mosaics[0].id === networkProperties.networkCurrency.mosaicId,
+            validate: (data) => validateNetwork(data) && validateTransactionTransfersOnlyNativeMosaic(data),
             renderComponent: (data) => (
                 <TransactionCard
                     recipientAddress={data.transaction.recipientAddress}
@@ -146,15 +154,7 @@ export const Scan = connect((state) => ({
                 />
             ),
             actions: [
-                {
-                    title: $t('button_sendTransferTransaction'),
-                    handler: (data) =>
-                        Router.goToSend({
-                            recipientAddress: data.transaction.recipientAddress,
-                            amount: data.transaction.mosaics[0].amount,
-                            message: data.transaction.message,
-                        }),
-                },
+                createSendTransactionHandler(),
             ],
         },
     };
@@ -174,7 +174,7 @@ export const Scan = connect((state) => ({
             clear();
         }
 
-        const formattedData = responseOption.format 
+        const formattedData = responseOption.format
             ? await responseOption.format(response.data)
             : response.data;
 
