@@ -19,6 +19,9 @@ def prepare_shoestring_configuration(directory, node_features, services_nodewatc
 	if 'api_https' in node_kwargs:
 		parser['node']['apiHttps'] = 'true' if node_kwargs.get('api_https') else 'as-false-as-can-get'
 
+	if 'light_api' in node_kwargs:
+		parser['node']['lightApi'] = 'true' if node_kwargs.get('light_api') else 'as-false-as-can-get'
+
 	parser['node']['caCommonName'] = node_kwargs.get('ca_common_name', 'my CA name')
 	parser['node']['nodeCommonName'] = node_kwargs.get('node_common_name', 'my Node name')
 

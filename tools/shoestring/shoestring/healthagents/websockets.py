@@ -5,13 +5,12 @@ from websockets import connect  # pylint: disable=no-name-in-module,import-self
 from zenlog import log
 
 from shoestring.internal.ConfigurationManager import parse_time_span
-from shoestring.internal.NodeFeatures import NodeFeatures
 
 NAME = 'REST websockets'
 
 
 def should_run(node_config):
-	return NodeFeatures.API in node_config.features
+	return node_config.full_api
 
 
 async def validate(context):

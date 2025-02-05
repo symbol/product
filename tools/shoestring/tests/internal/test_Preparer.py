@@ -33,14 +33,14 @@ class PreparerTest(unittest.TestCase):
 	# region utils
 
 	@staticmethod
-	def _create_configuration(node_features, api_https=True, imports_config=None):
+	def _create_configuration(node_features, api_https=True, light_api=False, imports_config=None):
 		return ShoestringConfiguration(
 			'testnet',
 			None,
 			None,
 			TransactionConfiguration(234, 3, 0, 0, 0, 0),
 			imports_config if imports_config else ImportsConfiguration(None, None, None),
-			NodeConfiguration(node_features, None, None, None, api_https, 'CA CN', 'NODE CN'))
+			NodeConfiguration(node_features, *([None] * 3), api_https, (NodeFeatures.API in node_features and not light_api), 'CA CN', 'NODE CN'))
 
 	def _assert_readonly(self, directory, filenames):
 		self.assertEqual(0o700, directory.stat().st_mode & 0o777)
@@ -145,6 +145,18 @@ class PreparerTest(unittest.TestCase):
 			'data', 'dbdata', 'keys', 'keys/cert', 'logs', 'rest-cache', 'userconfig', 'userconfig/resources'
 		])
 
+	def test_can_create_subdirectories_light_node_with_https(self):
+		config = self._create_configuration(NodeFeatures.API, api_https=True, light_api=True)
+		self._assert_can_create_subdirectories_configuration(config, [
+			'data', 'https-proxy', 'keys', 'keys/cert', 'logs', 'rest-cache', 'userconfig', 'userconfig/resources'
+		])
+
+	def test_can_create_subdirectories_light_node_without_https(self):
+		config = self._create_configuration(NodeFeatures.API, api_https=False, light_api=True)
+		self._assert_can_create_subdirectories_configuration(config, [
+			'data', 'keys', 'keys/cert', 'logs', 'rest-cache', 'userconfig', 'userconfig/resources'
+		])
+
 	def test_can_create_subdirectories_harvester_node(self):
 		self._assert_can_create_subdirectories(NodeFeatures.HARVESTER, [
 			'data', 'keys', 'keys/cert', 'logs', 'userconfig', 'userconfig/resources'
@@ -158,6 +170,12 @@ class PreparerTest(unittest.TestCase):
 	def test_can_create_subdirectories_full_node(self):
 		self._assert_can_create_subdirectories(NodeFeatures.API | NodeFeatures.HARVESTER | NodeFeatures.VOTER, [
 			'data', 'dbdata', 'https-proxy', 'keys', 'keys/cert', 'keys/voting', 'logs', 'rest-cache', 'userconfig', 'userconfig/resources'
+		])
+
+	def test_can_create_subdirectories_full_light_node(self):
+		config = self._create_configuration(NodeFeatures.API | NodeFeatures.HARVESTER | NodeFeatures.VOTER, api_https=True, light_api=True)
+		self._assert_can_create_subdirectories_configuration(config, [
+			'data', 'https-proxy', 'keys', 'keys/cert', 'keys/voting', 'logs', 'rest-cache', 'userconfig', 'userconfig/resources'
 		])
 
 	# endregion
@@ -250,10 +268,10 @@ class PreparerTest(unittest.TestCase):
 
 	# region configure_resources
 
-	def _assert_can_configure_resources(self, node_features, expected_values, patch_custom=True):
+	def _assert_can_configure_resources(self, node_features, expected_values, patch_custom=True, light_api=False):
 		# Arrange:
 		with tempfile.TemporaryDirectory() as output_directory:
-			with Preparer(output_directory, self._create_configuration(node_features)) as preparer:
+			with Preparer(output_directory, self._create_configuration(node_features, True, light_api)) as preparer:
 				self._initialize_temp_directory_with_package_files(preparer)
 				preparer.prepare_resources()
 
@@ -340,6 +358,14 @@ class PreparerTest(unittest.TestCase):
 			'finalization': ['false', '10m']
 		})
 
+	def test_can_configure_resources_light_node(self):
+		self._assert_can_configure_resources(NodeFeatures.API, {
+			'extensions-server': ['false', 'false', 'false'],
+			'extensions-recovery': ['false', 'false', 'false'],
+			'node': ['true', '127.0.0.1,172.20.0.25', '127.0.0.1,172.20', 'Peer', 'friendly-node.symbol.cloud', 'hello friends'],
+			'finalization': ['false', '10m']
+		}, light_api=True)
+
 	def test_can_configure_resources_harvester_node(self):
 		self._assert_can_configure_resources(NodeFeatures.HARVESTER, {
 			'extensions-server': ['false', 'false', 'true'],
@@ -368,14 +394,25 @@ class PreparerTest(unittest.TestCase):
 			'harvesting': True
 		})
 
+	def test_can_configure_resources_full_light_node(self):
+		self._assert_can_configure_resources(NodeFeatures.API | NodeFeatures.HARVESTER | NodeFeatures.VOTER, {
+			'extensions-server': ['false', 'false', 'true'],
+			'extensions-recovery': ['false', 'false', 'false'],
+			'node': [
+				'true', '127.0.0.1,172.20.0.25', '127.0.0.1,172.20', 'Peer,Voting', 'friendly-node.symbol.cloud', 'hello friends'
+			],
+			'finalization': ['true', '0m'],
+			'harvesting': True
+		}, light_api=True)
+
 	# endregion
 
 	# region configure_rest
 
-	def _assert_can_configure_rest(self, node_features, expected_userconfig_files, expected_mongo_files):
+	def _assert_can_configure_rest(self, node_features, expected_userconfig_files, expected_mongo_files, light_api=False):
 		# Arrange:
 		with tempfile.TemporaryDirectory() as output_directory:
-			with Preparer(output_directory, self._create_configuration(node_features)) as preparer:
+			with Preparer(output_directory, self._create_configuration(node_features, True, light_api)) as preparer:
 				self._initialize_temp_directory_with_package_files(preparer)
 
 				# Act:
@@ -448,6 +485,9 @@ class PreparerTest(unittest.TestCase):
 					'weight': '43kg',
 					'height': '72cm'
 				}, rest_config['nodeMetadata'])
+
+	def test_can_configure_rest_light_node(self):
+		self._assert_can_configure_rest(NodeFeatures.API | NodeFeatures.HARVESTER, ['rest.json'], None, True)
 
 	# endregion
 
@@ -691,7 +731,8 @@ class PreparerTest(unittest.TestCase):
 					'catapult_client_image': 'symbolplatform/symbol-server:gcc-a.b.c.d',
 					'catapult_rest_image': 'symbolplatform/symbol-rest:a.b.c',
 					'user': '2222:3333',
-					'api_https': config.node.api_https
+					'api_https': config.node.api_https,
+					'light_api': NodeFeatures.API in config.node.features and not config.node.full_api,
 				})
 
 				# Assert: check startup files
@@ -752,6 +793,14 @@ class PreparerTest(unittest.TestCase):
 		], [
 			'db', 'initiate', 'client', 'broker', 'rest-api'
 		])
+
+	def test_can_configure_docker_api_light_node_with_https(self):
+		config = self._create_configuration(NodeFeatures.API, light_api=True)
+		self._assert_can_configure_docker(config, [], ['client', 'rest-api', 'rest-api-https-proxy'])
+
+	def test_can_configure_docker_api_light_node_without_https(self):
+		config = self._create_configuration(NodeFeatures.API, api_https=False, light_api=True)
+		self._assert_can_configure_docker(config, [], ['client', 'rest-api'])
 
 	# endregion
 
