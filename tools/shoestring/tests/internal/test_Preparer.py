@@ -28,7 +28,7 @@ from ..test.TransactionTestUtils import AggregateDescriptor, LinkDescriptor, ass
 
 
 class PreparerTest(unittest.TestCase):
-	# pylint: disable=too-many-public-methods
+	# pylint: disable=too-many-public-methods,too-many-lines
 
 	# region utils
 
