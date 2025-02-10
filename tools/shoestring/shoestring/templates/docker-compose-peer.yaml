@@ -25,3 +25,52 @@ services:
       - ./logs:/logs
       - ./keys/voting:/votingkeys
       - ./keys/cert:/certificates
+
+{%- if light_api %}
+  rest-api:
+    image: '{{ catapult_rest_image }}'
+    user: '{{ user }}'
+    command: npm run start-light --prefix /app /userconfig/rest.json
+    environment:
+      - HOME=/symbol-workdir
+      - NODE_ENV=production
+    working_dir: /symbol-workdir
+{%- if not api_https %}
+    ports:
+      - 3000:3000
+{%- endif %}
+    volumes:
+      - ./startup:/startup:ro
+      - ./userconfig:/userconfig:ro
+      - ./keys/cert:/certificates:ro
+      - ./data:/data
+      - ./logs:/logs
+      - ./rest-cache:/symbol-workdir
+    networks:
+      default:
+        ipv4_address: 172.20.0.25
+{%- if api_https %}
+  rest-api-https-proxy:
+    image: steveltn/https-portal:1
+    ports:
+      - 80:80
+      - 3000:80
+      - 3001:443
+    links:
+      - rest-api
+    environment:
+      - DOMAINS={{ domainname }} -> http://rest-api:3000
+      - WEBSOCKET=false
+      - STAGE=production
+      - FORCE_RENEW=false
+    volumes:
+      - ./https-proxy:/var/lib/https-portal
+      - ./https-proxy/nginx.conf.erb:/var/lib/nginx-conf/{{ domainname }}.conf.erb:ro
+{%- endif %}
+networks:
+  default:
+    name: catapult-node-network
+    ipam:
+      config:
+        - subnet: 172.20.0.0/24
+{%- endif %}

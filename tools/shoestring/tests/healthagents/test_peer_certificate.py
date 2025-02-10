@@ -22,7 +22,7 @@ from ..test.LogTestUtils import LogLevel, assert_max_log_level, assert_message_i
 def test_should_run_for_all_roles():
 	# Act + Assert:
 	for features in (NodeFeatures.PEER, NodeFeatures.API, NodeFeatures.HARVESTER, NodeFeatures.VOTER):
-		assert should_run(NodeConfiguration(features, *([None] * 6))), str(features)
+		assert should_run(NodeConfiguration(features, *([None] * 7))), str(features)
 
 # endregion
 
@@ -34,7 +34,7 @@ def _create_executor():
 
 
 def _create_configuration():
-	node_config = NodeConfiguration(NodeFeatures.PEER, None, None, None, None, 'CA CN', 'NODE CN')
+	node_config = NodeConfiguration(NodeFeatures.PEER, None, None, None, None, None, 'CA CN', 'NODE CN')
 	return ShoestringConfiguration('testnet', *(3 * [None]), ImportsConfiguration(None, None, None), node_config)
 
 

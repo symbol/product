@@ -45,12 +45,12 @@ async def run_main(args):
 	_recreate_directory(directories.userconfig)
 	_recreate_directory(directories.resources)
 
-	if NodeFeatures.API in config.node.features:
+	if config.node.full_api:
 		_purge_directory(directories.startup)
 		_purge_directory(directories.mongo)
 
-		if config.node.api_https:
-			(directories.https_proxy / 'nginx.conf.erb').unlink()
+	if NodeFeatures.API in config.node.features and config.node.api_https:
+		(directories.https_proxy / 'nginx.conf.erb').unlink()
 
 	await run_setup_main(args)
 
