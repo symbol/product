@@ -62,6 +62,7 @@ def test_cannot_prepare_rest_overrides_file_when_peer_mode_and_metadata_specifie
 def test_cannot_prepare_rest_overrides_file_when_dual_mode_and_no_metadata_specified():
 	_assert_can_prepare_rest_overrides_file('dual', '', False)
 
+
 def test_cannot_prepare_rest_overrides_file_when_light_mode():
 	_assert_can_prepare_rest_overrides_file('light', '', False)
 
@@ -205,11 +206,14 @@ async def test_can_prepare_shoestring_files_api_with_https():
 async def test_can_prepare_shoestring_files_api_without_https():
 	await _assert_can_prepare_shoestring_files(NodeFeatures.API, 'dual')
 
+
 async def test_can_prepare_shoestring_files_light_api_with_https():
 	await _assert_can_prepare_shoestring_files(NodeFeatures.API, 'light', api_https=True, expected_api_https=True)
 
+
 async def test_can_prepare_shoestring_files_light_api_without_https():
 	await _assert_can_prepare_shoestring_files(NodeFeatures.API, 'light')
+
 
 async def test_can_prepare_shoestring_files_harvester_new():
 	await _assert_can_prepare_shoestring_files(NodeFeatures.HARVESTER, 'peer', is_harvesting_active=True)
@@ -236,6 +240,7 @@ async def test_can_prepare_shoestring_files_full():
 		'is_harvesting_active': True,
 		'is_voting_active': True
 	})
+
 
 async def test_can_prepare_shoestring_files_light():
 	await _assert_can_prepare_shoestring_files(NodeFeatures.API | NodeFeatures.HARVESTER | NodeFeatures.VOTER, 'light', **{

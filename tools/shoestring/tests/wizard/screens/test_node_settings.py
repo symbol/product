@@ -115,6 +115,7 @@ async def test_can_generate_diagnostic_accessor_representation():
 		('metadata', 'some json blob')
 	] == screen.accessor.tokens
 
+
 async def test_can_generate_light_diagnostic_accessor_representation():
 	# Arrange:
 	screen = create({'node-type': SingleValueScreen('Light')})
@@ -125,12 +126,12 @@ async def test_can_generate_light_diagnostic_accessor_representation():
 
 	# Act + Assert:
 	assert (
-			'(https=True, domain_name=\'testnet.symbol.fyi\', friendly_name=\'explorer node\', '
-			'metadata_info=\'some json blob\')' == repr(screen.accessor)
+		'(https=True, domain_name=\'testnet.symbol.fyi\', friendly_name=\'explorer node\', '
+		'metadata_info=\'some json blob\')' == repr(screen.accessor)
 	)
 	assert [
-			   ('https', 'enabled'),
-			   ('domain name', 'testnet.symbol.fyi'),
-			   ('friendly name', 'explorer node'),
-			   ('metadata', 'some json blob')
-		   ] == screen.accessor.tokens
+		('https', 'enabled'),
+		('domain name', 'testnet.symbol.fyi'),
+		('friendly name', 'explorer node'),
+		('metadata', 'some json blob')
+	] == screen.accessor.tokens
