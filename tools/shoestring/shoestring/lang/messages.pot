@@ -12,7 +12,7 @@ msgstr ""
 
 #: shoestring/commands/min_cosignatures_count.py:35
 #: shoestring/commands/renew_certificates.py:36
-#: shoestring/commands/setup.py:144 shoestring/commands/signer.py:93
+#: shoestring/commands/setup.py:145 shoestring/commands/signer.py:93
 msgid "argument-help-ca-key-path"
 msgstr ""
 
@@ -22,7 +22,7 @@ msgstr ""
 #: shoestring/commands/min_cosignatures_count.py:34
 #: shoestring/commands/renew_certificates.py:34
 #: shoestring/commands/renew_voting_keys.py:112
-#: shoestring/commands/reset_data.py:87 shoestring/commands/setup.py:136
+#: shoestring/commands/reset_data.py:86 shoestring/commands/setup.py:137
 #: shoestring/commands/signer.py:92
 msgid "argument-help-config"
 msgstr ""
@@ -30,7 +30,7 @@ msgstr ""
 #: shoestring/commands/health.py:75
 #: shoestring/commands/renew_certificates.py:35
 #: shoestring/commands/renew_voting_keys.py:113
-#: shoestring/commands/reset_data.py:88 shoestring/commands/setup.py:138
+#: shoestring/commands/reset_data.py:87 shoestring/commands/setup.py:139
 msgid "argument-help-directory"
 msgstr ""
 
@@ -86,23 +86,23 @@ msgstr ""
 msgid "argument-help-renew-certificates-retain-node-key"
 msgstr ""
 
-#: shoestring/commands/reset_data.py:89
+#: shoestring/commands/reset_data.py:88
 msgid "argument-help-reset-data-purge-harvesters"
 msgstr ""
 
-#: shoestring/commands/setup.py:139
+#: shoestring/commands/setup.py:140
 msgid "argument-help-setup-overrides"
 msgstr ""
 
-#: shoestring/commands/init.py:28 shoestring/commands/setup.py:137
+#: shoestring/commands/init.py:28 shoestring/commands/setup.py:138
 msgid "argument-help-setup-package"
 msgstr ""
 
-#: shoestring/commands/setup.py:140
+#: shoestring/commands/setup.py:141
 msgid "argument-help-setup-rest-overrides"
 msgstr ""
 
-#: shoestring/commands/setup.py:143
+#: shoestring/commands/setup.py:144
 msgid "argument-help-setup-security"
 msgstr ""
 
@@ -132,18 +132,18 @@ msgstr ""
 msgid "general-connecting-to-node"
 msgstr ""
 
-#: shoestring/commands/init.py:17 shoestring/commands/reset_data.py:57
-#: shoestring/internal/Preparer.py:190
+#: shoestring/commands/init.py:17 shoestring/commands/reset_data.py:56
+#: shoestring/internal/Preparer.py:193
 #: shoestring/internal/VoterConfigurator.py:53
 msgid "general-copying-file"
 msgstr ""
 
-#: shoestring/commands/reset_data.py:62 shoestring/internal/Preparer.py:196
+#: shoestring/commands/reset_data.py:61 shoestring/internal/Preparer.py:199
 msgid "general-copying-tree"
 msgstr ""
 
 #: shoestring/commands/renew_voting_keys.py:46
-#: shoestring/internal/Preparer.py:389
+#: shoestring/internal/Preparer.py:402
 msgid "general-created-aggregate-transaction"
 msgstr ""
 
@@ -223,19 +223,19 @@ msgstr ""
 msgid "health-voting-keys-registered"
 msgstr ""
 
-#: shoestring/healthagents/websockets.py:22
+#: shoestring/healthagents/websockets.py:21
 msgid "health-websockets-connected"
 msgstr ""
 
-#: shoestring/healthagents/websockets.py:39
+#: shoestring/healthagents/websockets.py:38
 msgid "health-websockets-received-block"
 msgstr ""
 
-#: shoestring/healthagents/websockets.py:41
+#: shoestring/healthagents/websockets.py:40
 msgid "health-websockets-received-wrong-topic"
 msgstr ""
 
-#: shoestring/healthagents/websockets.py:43
+#: shoestring/healthagents/websockets.py:42
 msgid "health-websockets-timed-out"
 msgstr ""
 
@@ -383,7 +383,7 @@ msgstr ""
 msgid "renew-voting-keys-removing-expired-voting-keys"
 msgstr ""
 
-#: shoestring/commands/reset_data.py:11
+#: shoestring/commands/reset_data.py:10
 msgid "reset-data-recreating-directory"
 msgstr ""
 
@@ -643,11 +643,15 @@ msgstr ""
 msgid "wizard-node-type-dual"
 msgstr ""
 
+#: shoestring/wizard/screens/node_type.py:27
+msgid "wizard-node-type-light"
+msgstr ""
+
 #: shoestring/wizard/screens/node_type.py:26
 msgid "wizard-node-type-peer"
 msgstr ""
 
-#: shoestring/wizard/screens/node_type.py:33
+#: shoestring/wizard/screens/node_type.py:34
 msgid "wizard-node-type-title"
 msgstr ""
 

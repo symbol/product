@@ -82,7 +82,7 @@ def create(screens):
 				HSplit([
 					https_flag,
 				]),
-				filter=Condition(lambda: 'dual' == screens.get('node-type').current_value)
+				filter=Condition(lambda: screens.get('node-type').current_value in ['dual', 'light'])
 			),
 			VSplit([
 				HSplit([
