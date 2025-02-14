@@ -723,7 +723,7 @@ class PreparerTest(unittest.TestCase):
 	# region configure_docker
 
 	def _assert_can_configure_docker(self, config, expected_startup_files, expected_service_names, expected_recovery_service_names):
-		def _assert_can_configure_service(docker_compose_filepath, docker_compose_expected_service_names):
+		def _assert_can_configure_service(docker_compose_filepath, expected_names):
 			# - check compose file
 			expected_image_map = {
 				'db': 'mongo:7.0.16',
@@ -746,7 +746,7 @@ class PreparerTest(unittest.TestCase):
 
 					service_names.append(service_name)
 
-			self.assertEqual(docker_compose_expected_service_names, service_names)
+			self.assertEqual(expected_names, service_names)
 
 		# Arrange:
 		with tempfile.TemporaryDirectory() as output_directory:
