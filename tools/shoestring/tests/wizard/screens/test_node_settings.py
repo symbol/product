@@ -118,7 +118,7 @@ async def test_can_generate_diagnostic_accessor_representation():
 
 async def test_can_generate_light_diagnostic_accessor_representation():
 	# Arrange:
-	screen = create({'node-type': SingleValueScreen('Light')})
+	screen = create({'node-type': SingleValueScreen('light')})
 	screen.accessor._https_flag.current_values = [()]  # pylint: disable=protected-access
 	screen.accessor._domain_name.input.text = 'testnet.symbol.fyi'  # pylint: disable=protected-access
 	screen.accessor._friendly_name.text = 'explorer node'  # pylint: disable=protected-access

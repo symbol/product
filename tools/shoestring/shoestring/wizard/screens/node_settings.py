@@ -77,7 +77,7 @@ def create(screens):
 		screen_id='node-settings',
 		title=_('wizard-node-settings-title'),
 		body=HSplit([
-			# only show https option if it's a dual node
+			# show https option if it's a dual or light node
 			ConditionalContainer(
 				HSplit([
 					https_flag,
