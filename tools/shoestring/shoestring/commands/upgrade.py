@@ -40,6 +40,7 @@ async def run_main(args):
 		harvester_config_patches = _load_harvester_configuration_patches(config_manager)
 
 	(directories.output_directory / 'docker-compose.yaml').unlink()
+	(directories.output_directory / 'docker-compose-recovery.yaml').unlink()
 
 	_purge_directory(directories.userconfig)
 	_recreate_directory(directories.userconfig)

@@ -257,6 +257,13 @@ When `--purge-harvesters` is set, delegates discovered using old keys will be di
 
 ## Files
 
+### docker-compose-recovery.yaml
+
+The docker-compose-recovery.yaml file is used to recovery your node when there is a `server.lock` or `broker.lock` 
+present in the `data` folder after stopping your node.
+
+`docker compose -f docker-compose-recovery.yaml up --abort-on-container-exit`
+
 ### Shoestring Configuration INI
 
 INI file used by shoestring to customize a Symbol node deployment.

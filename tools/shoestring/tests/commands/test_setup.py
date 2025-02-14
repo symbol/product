@@ -33,6 +33,7 @@ def server(event_loop, aiohttp_client):
 PEER_OUTPUT_FILES = {
 	'data': 0o700,
 	'docker-compose.yaml': 0o400,
+	'docker-compose-recovery.yaml': 0o400,
 	'keys': 0o700,
 	'keys/cert': 0o700,
 	'keys/cert/ca.crt.pem': 0o400,
@@ -89,6 +90,7 @@ API_OUTPUT_FILES = {
 	'startup/delayrestapi.sh': 0o400,
 	'startup/mongors.sh': 0o400,
 	'startup/startBroker.sh': 0o400,
+	'startup/startRecovery.sh': 0o400,
 	'startup/startServer.sh': 0o400,
 	'startup/wait.sh': 0o400,
 	'userconfig/resources/config-database.properties': 0o400,

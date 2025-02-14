@@ -9,7 +9,11 @@ services:
       options:
         max-size: 25M
         max-file: '10'
+{%- if recovery %}
+    command: /usr/catapult/bin/catapult.recovery /userconfig
+{%- else %}
     command: /usr/catapult/bin/catapult.server /userconfig
+{%- endif %}
     environment:
       - LD_LIBRARY_PATH=/usr/catapult/lib:/usr/catapult/deps
     stop_signal: SIGINT
@@ -26,7 +30,7 @@ services:
       - ./keys/voting:/votingkeys
       - ./keys/cert:/certificates
 
-{%- if light_api %}
+{%- if light_api and not recovery %}
   rest-api:
     image: '{{ catapult_rest_image }}'
     user: '{{ user }}'

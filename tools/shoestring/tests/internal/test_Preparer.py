@@ -722,7 +722,32 @@ class PreparerTest(unittest.TestCase):
 
 	# region configure_docker
 
-	def _assert_can_configure_docker(self, config, expected_startup_files, expected_service_names):
+	def _assert_can_configure_docker(self, config, expected_startup_files, expected_service_names, expected_recovery_service_names):
+		def _assert_can_configure_service(docker_compose_filepath, docker_compose_expected_service_names):
+			# - check compose file
+			expected_image_map = {
+				'db': 'mongo:7.0.16',
+				'initiate': 'mongo:7.0.16',
+				'client': 'symbolplatform/symbol-server:gcc-a.b.c.d',
+				'broker': 'symbolplatform/symbol-server:gcc-a.b.c.d',
+				'rest-api': 'symbolplatform/symbol-rest:a.b.c',
+				'rest-api-https-proxy': 'steveltn/https-portal:1'
+			}
+
+			service_names = []
+			with open(docker_compose_filepath, 'rt', encoding='utf8') as infile:
+				compose_config = yaml.safe_load(infile)
+				for service_name in compose_config['services']:
+					service = compose_config['services'][service_name]
+					if 'rest-api-https-proxy' != service_name:
+						self.assertEqual('2222:3333', service['user'])
+
+					self.assertEqual(expected_image_map[service_name], service['image'])
+
+					service_names.append(service_name)
+
+			self.assertEqual(docker_compose_expected_service_names, service_names)
+
 		# Arrange:
 		with tempfile.TemporaryDirectory() as output_directory:
 			with Preparer(output_directory, config) as preparer:
@@ -747,60 +772,45 @@ class PreparerTest(unittest.TestCase):
 				else:
 					self.assertFalse(preparer.directories.startup.exists())
 
-				# - check compose file
-				expected_image_map = {
-					'db': 'mongo:7.0.16',
-					'initiate': 'mongo:7.0.16',
-					'client': 'symbolplatform/symbol-server:gcc-a.b.c.d',
-					'broker': 'symbolplatform/symbol-server:gcc-a.b.c.d',
-					'rest-api': 'symbolplatform/symbol-rest:a.b.c',
-					'rest-api-https-proxy': 'steveltn/https-portal:1'
-				}
-
 				compose_filepath = Path(output_directory) / 'docker-compose.yaml'
 				assert 0o400 == compose_filepath.stat().st_mode & 0o777
+				_assert_can_configure_service(compose_filepath, expected_service_names)
 
-				service_names = []
-				with open(compose_filepath, 'rt', encoding='utf8') as infile:
-					compose_config = yaml.safe_load(infile)
-					for service_name in compose_config['services']:
-						service = compose_config['services'][service_name]
-						if 'rest-api-https-proxy' != service_name:
-							self.assertEqual('2222:3333', service['user'])
-
-						self.assertEqual(expected_image_map[service_name], service['image'])
-
-						service_names.append(service_name)
-
-				self.assertEqual(expected_service_names, service_names)
+				recovery_compose_filepath = Path(output_directory) / 'docker-compose-recovery.yaml'
+				assert 0o400 == recovery_compose_filepath.stat().st_mode & 0o777
+				_assert_can_configure_service(recovery_compose_filepath, expected_recovery_service_names)
 
 	def test_can_configure_docker_peer_node(self):
 		config = self._create_configuration(NodeFeatures.PEER)
-		self._assert_can_configure_docker(config, None, ['client'])
+		self._assert_can_configure_docker(config, None, ['client'], ['client'])
 
 	def test_can_configure_docker_api_node_with_https(self):
 		config = self._create_configuration(NodeFeatures.API)
 		self._assert_can_configure_docker(config, [
-			'delayrestapi.sh', 'mongors.sh', 'startBroker.sh', 'startServer.sh', 'wait.sh'
+			'delayrestapi.sh', 'mongors.sh', 'startBroker.sh', 'startRecovery.sh', 'startServer.sh', 'wait.sh'
 		], [
 			'db', 'initiate', 'client', 'broker', 'rest-api', 'rest-api-https-proxy'
+		], [
+			'db', 'initiate', 'client'
 		])
 
 	def test_can_configure_docker_api_node_without_https(self):
 		config = self._create_configuration(NodeFeatures.API, api_https=False)
 		self._assert_can_configure_docker(config, [
-			'delayrestapi.sh', 'mongors.sh', 'startBroker.sh', 'startServer.sh', 'wait.sh'
+			'delayrestapi.sh', 'mongors.sh', 'startBroker.sh', 'startRecovery.sh', 'startServer.sh', 'wait.sh'
 		], [
 			'db', 'initiate', 'client', 'broker', 'rest-api'
+		], [
+			'db', 'initiate', 'client'
 		])
 
 	def test_can_configure_docker_api_light_node_with_https(self):
 		config = self._create_configuration(NodeFeatures.API, light_api=True)
-		self._assert_can_configure_docker(config, [], ['client', 'rest-api', 'rest-api-https-proxy'])
+		self._assert_can_configure_docker(config, [], ['client', 'rest-api', 'rest-api-https-proxy'], ['client'])
 
 	def test_can_configure_docker_api_light_node_without_https(self):
 		config = self._create_configuration(NodeFeatures.API, api_https=False, light_api=True)
-		self._assert_can_configure_docker(config, [], ['client', 'rest-api'])
+		self._assert_can_configure_docker(config, [], ['client', 'rest-api'], ['client'])
 
 	# endregion
 

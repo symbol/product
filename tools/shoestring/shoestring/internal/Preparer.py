@@ -362,6 +362,12 @@ class Preparer:
 		apply_template(compose_template_filename, template_mapping, compose_output_filepath)
 		compose_output_filepath.chmod(0o400)
 
+		recovery_compose_output_filepath = self.directory / 'docker-compose-recovery.yaml'
+		recovery_template_mapping = template_mapping.copy()
+		recovery_template_mapping['recovery'] = True
+		apply_template(compose_template_filename, recovery_template_mapping, recovery_compose_output_filepath)
+		recovery_compose_output_filepath.chmod(0o400)
+
 	def prepare_linking_transaction(self, account_public_key, existing_links, timestamp):
 		"""Creates an aggregate transaction containing account key link and unlink transactions """
 
