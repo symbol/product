@@ -62,6 +62,10 @@ def test_cannot_prepare_rest_overrides_file_when_peer_mode_and_metadata_specifie
 def test_cannot_prepare_rest_overrides_file_when_dual_mode_and_no_metadata_specified():
 	_assert_can_prepare_rest_overrides_file('dual', '', False)
 
+
+def test_cannot_prepare_rest_overrides_file_when_light_mode():
+	_assert_can_prepare_rest_overrides_file('light', '', False)
+
 # endregion
 
 
@@ -173,6 +177,7 @@ async def _assert_can_prepare_shoestring_files(expected_node_features, node_type
 			assert 'my ca common name' == config.node.ca_common_name
 			assert 'my node common name' == config.node.node_common_name
 			assert expected_node_features == config.node.features
+			assert ('dual' == node_type) == config.node.full_api
 
 			if not is_harvester_imported or not is_auto_harvest_enabled:
 				assert ('' if is_auto_harvest_enabled else 'none') == config.imports.harvester
@@ -202,6 +207,14 @@ async def test_can_prepare_shoestring_files_api_without_https():
 	await _assert_can_prepare_shoestring_files(NodeFeatures.API, 'dual')
 
 
+async def test_can_prepare_shoestring_files_light_api_with_https():
+	await _assert_can_prepare_shoestring_files(NodeFeatures.API, 'light', api_https=True, expected_api_https=True)
+
+
+async def test_can_prepare_shoestring_files_light_api_without_https():
+	await _assert_can_prepare_shoestring_files(NodeFeatures.API, 'light')
+
+
 async def test_can_prepare_shoestring_files_harvester_new():
 	await _assert_can_prepare_shoestring_files(NodeFeatures.HARVESTER, 'peer', is_harvesting_active=True)
 
@@ -224,6 +237,13 @@ async def test_can_prepare_shoestring_files_voter():
 
 async def test_can_prepare_shoestring_files_full():
 	await _assert_can_prepare_shoestring_files(NodeFeatures.API | NodeFeatures.HARVESTER | NodeFeatures.VOTER, 'dual', **{
+		'is_harvesting_active': True,
+		'is_voting_active': True
+	})
+
+
+async def test_can_prepare_shoestring_files_light():
+	await _assert_can_prepare_shoestring_files(NodeFeatures.API | NodeFeatures.HARVESTER | NodeFeatures.VOTER, 'light', **{
 		'is_harvesting_active': True,
 		'is_voting_active': True
 	})

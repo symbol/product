@@ -114,3 +114,24 @@ async def test_can_generate_diagnostic_accessor_representation():
 		('friendly name', 'explorer node'),
 		('metadata', 'some json blob')
 	] == screen.accessor.tokens
+
+
+async def test_can_generate_light_diagnostic_accessor_representation():
+	# Arrange:
+	screen = create({'node-type': SingleValueScreen('light')})
+	screen.accessor._https_flag.current_values = [()]  # pylint: disable=protected-access
+	screen.accessor._domain_name.input.text = 'testnet.symbol.fyi'  # pylint: disable=protected-access
+	screen.accessor._friendly_name.text = 'explorer node'  # pylint: disable=protected-access
+	screen.accessor._metadata_info.input.text = 'some json blob'  # pylint: disable=protected-access
+
+	# Act + Assert:
+	assert (
+		'(https=True, domain_name=\'testnet.symbol.fyi\', friendly_name=\'explorer node\', '
+		'metadata_info=\'some json blob\')' == repr(screen.accessor)
+	)
+	assert [
+		('https', 'enabled'),
+		('domain name', 'testnet.symbol.fyi'),
+		('friendly name', 'explorer node'),
+		('metadata', 'some json blob')
+	] == screen.accessor.tokens

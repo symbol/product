@@ -80,7 +80,7 @@ async def prepare_shoestring_files(screens, directory):
 		await run_init(InitArgs(network_type, config_filepath))
 
 	node_features = NodeFeatures.PEER
-	if 'dual' == node_type:
+	if node_type in ['dual', 'light']:
 		node_features = node_features | NodeFeatures.API
 
 	if harvesting.active:
@@ -93,7 +93,8 @@ async def prepare_shoestring_files(screens, directory):
 		('node', 'apiHttps', _to_bool_string(node_settings.api_https)),
 		('node', 'caCommonName', certificates.ca_common_name),
 		('node', 'nodeCommonName', certificates.node_common_name),
-		('node', 'features', node_features.to_formatted_string())
+		('node', 'features', node_features.to_formatted_string()),
+		('node', 'lightApi', 'light' == node_type)
 	]
 
 	if harvesting.active:

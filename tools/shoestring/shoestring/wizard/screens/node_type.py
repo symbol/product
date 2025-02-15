@@ -23,7 +23,8 @@ def create(_screens):
 	node_type_radio = RadioList(
 		values=[
 			('dual', _('wizard-node-type-dual')),
-			('peer', _('wizard-node-type-peer'))
+			('peer', _('wizard-node-type-peer')),
+			('light', _('wizard-node-type-light'))
 		],
 		default='peer'
 	)
