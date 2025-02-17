@@ -49,7 +49,7 @@ const TransactionCard = ({ recipientAddress, signerAddress, amount, price }) => 
 );
 
 export const Scan = observer(function Scan() {
-    const { currentAccount, networkIdentifier, networkProperties } = WalletController;
+    const { isWalletReady, currentAccount, networkIdentifier, networkProperties } = WalletController;
     const { price } = WalletController.modules.market;
     const [isScannerVisible, toggleScanner] = useToggle(true);
     const [response, setResponse] = useState(null);
@@ -198,7 +198,7 @@ export const Scan = observer(function Scan() {
         <Screen
             titleBar={<TitleBar accountSelector settings currentAccount={currentAccount} />}
             navigator={<TabNavigator />}
-            isLoading={!props.isWalletReady}
+            isLoading={!isWalletReady}
         >
             <FormItem>
                 <StyledText type="title">{$t('s_scan_title')}</StyledText>
