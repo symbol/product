@@ -1,8 +1,8 @@
-import { AddressRestrictionFlagMessage, AliasActionMessage, LinkActionMessage, LockHashAlgorithmMessage, Message, MosaicRestrictionFlagMessage, MosaicRestrictionTypeMessage, MosaicSupplyChangeActionMessage, NamespaceRegistrationTypeMessage, OperationRestrictionFlagMessage, TransactionType } from 'src/constants';
+import { AddressRestrictionFlagMessage, AliasActionMessage, LinkActionMessage, LockHashAlgorithmMessage, Message, MessageType, MosaicRestrictionFlagMessage, MosaicRestrictionTypeMessage, MosaicSupplyChangeActionMessage, NamespaceRegistrationTypeMessage, OperationRestrictionFlagMessage, TransactionType } from 'src/constants';
 import { addressFromPublicKey } from './account';
 import { getMosaicRelativeAmount, getMosaicsWithRelativeAmounts, getNativeMosaicAmount, isRestrictableFlag, isRevokableFlag, isSupplyMutableFlag, isTransferableFlag } from './mosaic';
-import { getUnresolvedIdsFromTransactions, isIncomingTransaction, isOutgoingTransaction } from './transaction';
-import { Address, models } from 'symbol-sdk-v3/symbol';
+import { decodePlainMessage, getUnresolvedIdsFromTransactions, isIncomingTransaction, isOutgoingTransaction } from './transaction';
+import { Address } from 'symbol-sdk-v3/symbol';
 
 const mapMosaic = (mosaic) => ({
     id: mosaic.mosaicId.toString().replace('0x', ''),
@@ -148,32 +148,15 @@ export const transferTransactionFromSymbol = (transaction, config) => {
 
     if (transaction.message?.length) {
         const messageType = transaction.message ? transaction.message[0] : null;
-        const isMessagePlain = messageType === 0;
-        const isMessageEncrypted = messageType === 1;
-        const isDelegatedHarvestingMessage = messageType === 254;
-        const isMessageRaw = messageType === !!transaction.message && !isMessagePlain && !isMessageEncrypted && !isDelegatedHarvestingMessage;
-        let messagePayload = null;
-
-        switch (true) {
-            case isMessagePlain:
-                messagePayload = Buffer.from(transaction.message.subarray(1)).toString();
-                break;
-            case isMessageEncrypted:
-                messagePayload = Buffer.from(transaction.message).toString('hex').toUpperCase();
-                break;
-            case isDelegatedHarvestingMessage:
-            case isMessageRaw:
-                messagePayload = Buffer.from(transaction.message).toString('hex').toUpperCase();
-                break;
-        }
+        const messagePayload = Buffer.from(transaction.message).toString('hex').toUpperCase()
+        const messageText = messageType === MessageType.PlainText
+            ? decodePlainMessage(messagePayload)
+            : null;
 
         transactionBody.message = {
-            encryptedText: isMessageEncrypted ? messagePayload : null,
-            text: isMessagePlain ? messagePayload : null,
-            payload: (isDelegatedHarvestingMessage || isMessageRaw) ? messagePayload : null,
-            isRaw: isMessageRaw,
-            isEncrypted: isMessageEncrypted,
-            isDelegatedHarvestingMessage,
+            type: messageType,
+            text: messageText,
+            payload: messagePayload,
         };
     }
 
