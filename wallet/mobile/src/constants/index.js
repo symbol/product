@@ -5,18 +5,46 @@ export const MAX_SEED_ACCOUNTS_PER_NETWORK = 10;
 export const ControllerEventName = {
     LOGOUT: 'symbol:app.logout',
     LOGIN: 'symbol:app.login',
-    NEW_TRANSACTION_CONFIRMED: 'symbol:transaction.confirmed',
-    NEW_TRANSACTION_UNCONFIRMED: 'symbol:transaction.unconfirmed',
-    NEW_TRANSACTION_PARTIAL: 'symbol:transaction.partial',
+    NEW_TRANSACTION_CONFIRMED: 'symbol:transaction.add.confirmed',
+    NEW_TRANSACTION_UNCONFIRMED: 'symbol:transaction.add.unconfirmed',
+    NEW_TRANSACTION_PARTIAL: 'symbol:transaction.add.partial',
+    REMOVE_TRANSACTION_UNCONFIRMED: 'symbol:transaction.remove.unconfirmed',
     TRANSACTION_ERROR: 'symbol:transaction.error',
     ACCOUNT_CHANGE: 'symbol:account.change',
     NETWORK_CHANGE: 'symbol:network.change',
     ERROR: 'symbol:app.error',
 };
 
+export const NetworkConnectionStatus = {
+    INITIAL: 'initial',
+    CONNECTED: 'connected',
+    NO_INTERNET: 'offline',
+    FAILED_CURRENT_NODE: 'failed-current',
+    FAILED_AUTO_SELECTION: 'failed-auto',
+}
+
 export const WalletAccountType = {
     SEED: 'seed',
     EXTERNAL: 'external'
+}
+
+export const TransactionGroup = {
+    CONFIRMED: 'confirmed',
+    UNCONFIRMED: 'unconfirmed',
+    PARTIAL: 'partial',
+    FAILED: 'failed',
+}
+
+export const TransactionAnnounceGroup = {
+    DEFAULT: 'default',
+    PARTIAL: 'partial',
+    COSIGNATURE: 'cosignature',
+}
+
+export const MessageType = {
+    PlainText: 0,
+    EncryptedText: 1,
+    DelegatedHarvesting: 254,
 }
 
 export const TransactionType = {

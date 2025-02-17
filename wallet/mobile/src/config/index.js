@@ -23,4 +23,5 @@ export const config = {
     maxSeedAccounts: configFile.maxSeedAccounts,
     connectionInterval: configFile.connectionInterval,
     allowedMarkedDataCallInterval: configFile.allowedMarkedDataCallInterval,
+    ticker: configFile.ticker,
 };
