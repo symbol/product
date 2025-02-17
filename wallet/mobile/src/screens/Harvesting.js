@@ -97,6 +97,7 @@ export const Harvesting = observer(function Harvesting() {
             fetchStatus();
             fetchHarvestedBlocks();
             fetchNodeList();
+            setIsActionMade(false);
         }
     };
     const confirmStart = usePasscode('enter', start);
