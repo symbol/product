@@ -34,5 +34,6 @@
     "defaultNetworkIdentifier": "mainnet",
     "maxSeedAccounts": 10,
     "connectionInterval": 10000,
-    "allowedMarkedDataCallInterval": 600000
+    "allowedMarkedDataCallInterval": 600000,
+    "ticker": "XYM"
 }
