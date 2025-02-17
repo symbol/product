@@ -122,10 +122,7 @@ export class HarvestingService {
 
         const nodes = await makeRequest(endpoint);
 
-        return nodes.map((node) => ({
-            url: node.apiStatus.restGatewayUrl,
-            nodePublicKey: node.apiStatus.publicKey,
-        }));
+        return nodes.map((node) => node.apiStatus.restGatewayUrl);
     }
 
     static async fetchNodeInfo(nodeUrl) {
