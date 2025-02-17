@@ -1,6 +1,6 @@
 import { I18n } from 'i18n-js';
 import { memoize } from 'lodash';
-import { PersistentStorage } from 'src/lib/storage';
+import { PersistentStorage } from '@/app/lib/storage';
 
 const DEFAULT_LANGUAGE_CODE = 'en';
 

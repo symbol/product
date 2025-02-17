@@ -2,16 +2,16 @@ import React, { useCallback, useEffect, useMemo } from 'react';
 import { ScrollView } from 'react-native';
 import { RefreshControl } from 'react-native-gesture-handler';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
-import { AccountCardWidget, Alert, FormItem, Screen, StyledText, TabNavigator, TitleBar } from 'src/components';
-import { $t } from 'src/localization';
-import { Router } from 'src/Router';
-import { colors } from 'src/styles';
-import { handleError, useDataManager, useInit } from 'src/utils';
+import { AccountCardWidget, Alert, FormItem, Screen, StyledText, TabNavigator, TitleBar } from '@/app/components';
+import { $t } from '@/app/localization';
+import { Router } from '@/app/Router';
+import { colors } from '@/app/styles';
+import { handleError, useDataManager, useInit } from '@/app/utils';
 import { AddressBookListWidget } from './AddressBookList';
 import { HistoryWidget } from './History';
-import WalletController from 'src/lib/controller/MobileWalletController';
+import WalletController from '@/app/lib/controller/MobileWalletController';
 import { observer } from 'mobx-react-lite';
-import { ControllerEventName, TransactionGroup } from 'src/constants';
+import { ControllerEventName, TransactionGroup } from '@/app/constants';
 
 export const Home = observer(function Home() {
     const { isWalletReady, currentAccount, currentAccountInfo, networkIdentifier, ticker, price } = WalletController;

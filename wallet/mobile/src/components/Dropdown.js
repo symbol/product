@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { FlatList, Image, Modal, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { ButtonClose, StyledText } from 'src/components';
+import { ButtonClose, StyledText } from '@/app/components';
 import Animated, { interpolateColor, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
-import { borders, colors, fonts, spacings, timings } from 'src/styles';
+import { borders, colors, fonts, spacings, timings } from '@/app/styles';
 
 export const DropdownModal = (props) => {
     const { value, list, title, isOpen, renderItem, onClose, onChange } = props;
@@ -70,7 +70,7 @@ export const Dropdown = (props) => {
                         </Text>
                     </View>
 
-                    <Image source={require('src/assets/images/icon-down.png')} style={styles.icon} />
+                    <Image source={require('@/app/assets/images/icon-down.png')} style={styles.icon} />
                 </Animated.View>
             </Pressable>
             <DropdownModal

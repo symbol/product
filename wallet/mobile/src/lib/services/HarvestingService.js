@@ -1,7 +1,7 @@
 import _ from 'lodash';
-import { config } from 'src/config';
-import { addressFromRaw, getMosaicRelativeAmount, makeRequest, networkTypeToIdentifier, timestampToLocalDate } from 'src/utils';
-import { NetworkService } from 'src/lib/services/NetworkService';
+import { config } from '@/app/config';
+import { addressFromRaw, getMosaicRelativeAmount, makeRequest, networkTypeToIdentifier, timestampToLocalDate } from '@/app/utils';
+import { NetworkService } from '@/app/lib/services/NetworkService';
 const HarvestingStatus = {
     inactive: 'inactive',
     active: 'active',

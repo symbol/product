@@ -1,7 +1,7 @@
 import React from 'react';
 import { Pressable, StyleSheet } from 'react-native';
 import Animated, { interpolateColor, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
-import { borders, colors, fonts, spacings, timings } from 'src/styles';
+import { borders, colors, fonts, spacings, timings } from '@/app/styles';
 
 export const Button = (props) => {
     const { isDisabled, style, testID, title, onPress } = props;

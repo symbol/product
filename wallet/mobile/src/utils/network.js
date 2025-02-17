@@ -1,4 +1,4 @@
-import { NetworkIdentifier, NetworkType } from 'src/constants';
+import { NetworkIdentifier, NetworkType } from '@/app/constants';
 
 export const networkTypeToIdentifier = (networkType) => {
     if (networkType === NetworkType.MAIN_NET) return NetworkIdentifier.MAIN_NET;

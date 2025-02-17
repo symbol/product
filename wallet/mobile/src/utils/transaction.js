@@ -1,10 +1,10 @@
-import { LinkAction, MessageType, TransactionType } from '@/constants';
+import { LinkAction, MessageType, TransactionType } from '@/app/constants';
 import { getMosaicRelativeAmount } from './mosaic';
 import { toFixedNumber } from './helper';
-import { Hash256, PrivateKey, PublicKey, utils } from 'symbol-sdk-v3';
-import { MessageEncoder, SymbolFacade, models } from 'symbol-sdk-v3/symbol';
+import { Hash256, PrivateKey, PublicKey, utils } from 'symbol-sdk';
+import { MessageEncoder, SymbolFacade, models } from 'symbol-sdk/symbol';
 import { transactionToSymbol } from './transaction-to-symbol';
-import { addressFromPublicKey, generateKeyPair } from 'src/utils/account';
+import { addressFromPublicKey, generateKeyPair } from '@/app/utils/account';
 const { TransactionFactory } = models;
 
 const STUB_KEY_1 = 'BE0B4CF546B7B4F4BBFCFF9F574FDA527C07A53D3FC76F8BB7DB746F8E8E0A9F';

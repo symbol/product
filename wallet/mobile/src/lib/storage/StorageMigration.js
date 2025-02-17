@@ -1,10 +1,10 @@
-import { createOptInPrivateKeyFromMnemonic, createPrivateKeysFromMnemonic, createWalletAccount } from 'src/utils';
+import { createOptInPrivateKeyFromMnemonic, createPrivateKeysFromMnemonic, createWalletAccount } from '@/app/utils';
 import { PersistentStorage } from './PersistentStorage';
 import { SecureStorage } from './SecureStorage';
 import { AddressBook } from 'symbol-address-book';
 import RNSecureStorage from 'rn-secure-storage';
 import { Platform } from 'react-native';
-import { NetworkIdentifier, WalletAccountType } from 'src/constants';
+import { NetworkIdentifier, WalletAccountType } from '@/app/constants';
 
 export const CURRENT_DATA_SCHEMA_VERSION = 3;
 

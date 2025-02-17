@@ -1,15 +1,15 @@
 import { useNavigation } from '@react-navigation/native';
 import React, { useEffect } from 'react';
 import DraggableFlatList from 'react-native-draggable-flatlist';
-import { AccountCard, ButtonCircle, DialogBox, FormItem, Screen, TouchableNative } from 'src/components';
-import { handleError, useDataManager, usePromises, useProp, useToggle, vibrate } from 'src/utils';
+import { AccountCard, ButtonCircle, DialogBox, FormItem, Screen, TouchableNative } from '@/app/components';
+import { handleError, useDataManager, usePromises, useProp, useToggle, vibrate } from '@/app/utils';
 import Animated, { interpolate, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
-import { colors, layout, timings } from 'src/styles';
-import { Router } from 'src/Router';
-import { $t } from 'src/localization';
+import { colors, layout, timings } from '@/app/styles';
+import { Router } from '@/app/Router';
+import { $t } from '@/app/localization';
 import { useState } from 'react';
 import { observer } from 'mobx-react-lite';
-import WalletController from 'src/lib/controller/MobileWalletController';
+import WalletController from '@/app/lib/controller/MobileWalletController';
 
 export const AccountList = observer(function AccountList() {
     const { currentAccount, accounts, accountInfos, networkIdentifier, ticker } = WalletController;
@@ -140,7 +140,7 @@ export const AccountList = observer(function AccountList() {
                     )}
                 />
             </FormItem>
-            <ButtonCircle source={require('src/assets/images/icon-dark-account-add.png')} onPress={() => Router.goToAddSeedAccount()} />
+            <ButtonCircle source={require('@/app/assets/images/icon-dark-account-add.png')} onPress={() => Router.goToAddSeedAccount()} />
             <DialogBox
                 type="confirm"
                 title={$t('s_accountList_confirm_removeExternal_title')}

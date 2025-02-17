@@ -1,10 +1,10 @@
 import React from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
-import { ItemBase } from 'src/components';
-import { $t } from 'src/localization';
-import { colors, fonts, spacings } from 'src/styles';
-import { formatDate } from 'src/utils';
-import WalletController from 'src/lib/controller/MobileWalletController';
+import { ItemBase } from '@/app/components';
+import { $t } from '@/app/localization';
+import { colors, fonts, spacings } from '@/app/styles';
+import { formatDate } from '@/app/utils';
+import WalletController from '@/app/lib/controller/MobileWalletController';
 import { observer } from 'mobx-react-lite';
 
 export const ItemReceipt = observer(function ItemReceipt(props) {
@@ -14,7 +14,7 @@ export const ItemReceipt = observer(function ItemReceipt(props) {
     const dateText = formatDate(date, $t);
     const description = `Block #${height}`;
     const amountText = `${amount} ${ticker}`;
-    const iconSrc = require('src/assets/images/icon-harvesting.png');
+    const iconSrc = require('@/app/assets/images/icon-harvesting.png');
     const title = 'Harvesting Reward'; //$t(`transactionDescriptor_16724`);
 
     return (

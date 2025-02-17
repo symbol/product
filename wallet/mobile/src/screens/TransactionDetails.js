@@ -13,12 +13,12 @@ import {
     TableView,
     TransactionCosignatureForm,
     TransactionGraphic,
-} from 'src/components';
-import { config } from 'src/config';
-import { $t } from 'src/localization';
-import { Router } from 'src/Router';
-import { TransactionService } from 'src/lib/services';
-import { borders, colors, fonts, spacings } from 'src/styles';
+} from '@/app/components';
+import { config } from '@/app/config';
+import { $t } from '@/app/localization';
+import { Router } from '@/app/Router';
+import { TransactionService } from '@/app/lib/services';
+import { borders, colors, fonts, spacings } from '@/app/styles';
 import {
     formatDate,
     handleError,
@@ -29,9 +29,9 @@ import {
     isOutgoingTransaction,
     useDataManager,
     useInit,
-} from 'src/utils';
-import { MessageType, TransactionGroup, TransactionType } from 'src/constants';
-import WalletController from 'src/lib/controller/MobileWalletController';
+} from '@/app/utils';
+import { MessageType, TransactionGroup, TransactionType } from '@/app/constants';
+import WalletController from '@/app/lib/controller/MobileWalletController';
 import { observer } from 'mobx-react-lite';
 
 const SCREEN_HEIGHT = Dimensions.get('screen').height;
@@ -88,19 +88,19 @@ export const TransactionDetails = observer(function TransactionDetails(props) {
     switch (status?.group) {
         case TransactionGroup.UNCONFIRMED:
             statusTextStyle.push(styles.statusTextUnconfirmed);
-            statusIconSrc = require('src/assets/images/icon-status-unconfirmed.png');
+            statusIconSrc = require('@/app/assets/images/icon-status-unconfirmed.png');
             break;
         case TransactionGroup.PARTIAL:
             statusTextStyle.push(styles.statusTextPartial);
-            statusIconSrc = require('src/assets/images/icon-status-partial-1.png');
+            statusIconSrc = require('@/app/assets/images/icon-status-partial-1.png');
             break;
         case TransactionGroup.CONFIRMED:
             statusTextStyle.push(styles.statusTextConfirmed);
-            statusIconSrc = require('src/assets/images/icon-status-confirmed.png');
+            statusIconSrc = require('@/app/assets/images/icon-status-confirmed.png');
             break;
         case TransactionGroup.FAILED:
             statusTextStyle.push(styles.statusTextFailed);
-            statusIconSrc = require('src/assets/images/icon-status-failed.png');
+            statusIconSrc = require('@/app/assets/images/icon-status-failed.png');
             break;
     }
 
@@ -201,7 +201,7 @@ export const TransactionDetails = observer(function TransactionDetails(props) {
                 {isAddSignerContactButtonShown && (
                     <FormItem>
                         <ButtonPlain
-                            icon={require('src/assets/images/icon-primary-address-book.png')}
+                            icon={require('@/app/assets/images/icon-primary-address-book.png')}
                             title={$t('button_addSignerToAddressBook')}
                             onPress={addSignerContact}
                         />
@@ -210,7 +210,7 @@ export const TransactionDetails = observer(function TransactionDetails(props) {
                 {isAddRecipientContactButtonShown && (
                     <FormItem>
                         <ButtonPlain
-                            icon={require('src/assets/images/icon-primary-address-book.png')}
+                            icon={require('@/app/assets/images/icon-primary-address-book.png')}
                             title={$t('button_addRecipientToAddressBook')}
                             onPress={addRecipientContact}
                         />
@@ -219,7 +219,7 @@ export const TransactionDetails = observer(function TransactionDetails(props) {
                 {isRevokeButtonVisible && (
                     <FormItem>
                         <ButtonPlain
-                            icon={require('src/assets/images/icon-primary-revoke.png')}
+                            icon={require('@/app/assets/images/icon-primary-revoke.png')}
                             title={$t('button_revoke')}
                             onPress={handleRevokePress}
                         />
@@ -227,7 +227,7 @@ export const TransactionDetails = observer(function TransactionDetails(props) {
                 )}
                 <FormItem>
                     <ButtonPlain
-                        icon={require('src/assets/images/icon-primary-explorer.png')}
+                        icon={require('@/app/assets/images/icon-primary-explorer.png')}
                         title={$t('button_openTransactionInExplorer')}
                         onPress={openBlockExplorer}
                     />

@@ -12,12 +12,12 @@ import {
     Screen,
     StyledText,
     WalletCreationAnimation,
-} from 'src/components';
-import { createOptInPrivateKeyFromMnemonic, handleError, useDataManager, usePasscode } from 'src/utils';
-import { Router } from 'src/Router';
-import { $t } from 'src/localization';
-import { NetworkIdentifier, WalletAccountType } from 'src/constants';
-import WalletController from 'src/lib/controller/MobileWalletController';
+} from '@/app/components';
+import { createOptInPrivateKeyFromMnemonic, handleError, useDataManager, usePasscode } from '@/app/utils';
+import { Router } from '@/app/Router';
+import { $t } from '@/app/localization';
+import { NetworkIdentifier, WalletAccountType } from '@/app/constants';
+import WalletController from '@/app/lib/controller/MobileWalletController';
 
 export const ImportWallet = () => {
     const [name] = useState($t('s_importWallet_defaultAccountName'));
@@ -92,7 +92,7 @@ export const ImportWallet = () => {
                 <ButtonClose type="cancel" style={styles.buttonCancel} onPress={Router.goBack} />
             </FormItem>
             <FormItem>
-                <Image source={require('src/assets/images/logo-symbol-full.png')} style={styles.logo} />
+                <Image source={require('@/app/assets/images/logo-symbol-full.png')} style={styles.logo} />
             </FormItem>
             <ScrollView>
                 <FormItem>

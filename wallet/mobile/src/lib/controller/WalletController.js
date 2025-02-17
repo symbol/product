@@ -1,7 +1,7 @@
 import { cloneDeep, omit } from 'lodash';
 import SafeEventEmitter from '@metamask/safe-event-emitter';
 import { makeAutoObservable, runInAction } from 'mobx';
-import { config } from '@/config';
+import { config } from '@/app/config';
 import {
     ControllerEventName,
     NetworkConnectionStatus,
@@ -10,13 +10,13 @@ import {
     TransactionGroup,
     TransactionType,
     WalletAccountType,
-} from '@/constants';
-import { AccountService, ListenerService, NamespaceService, NetworkService, TransactionService } from '@/lib/services';
-import { addressFromPublicKey, createWalletAccount, createWalletStorageAccount, publicAccountFromPublicKey } from '@/utils/account';
-import { createNetworkMap } from '@/utils/helper';
-import { getNativeMosaicAmount } from '@/utils/mosaic';
-import { createPrivateKeysFromMnemonic, generateSeedAccounts } from '@/utils/wallet';
-import { cosignTransaction, decryptMessage, encryptMessage, signTransaction } from 'src/utils';
+} from '@/app/constants';
+import { AccountService, ListenerService, NamespaceService, NetworkService, TransactionService } from '@/app/lib/services';
+import { addressFromPublicKey, createWalletAccount, createWalletStorageAccount, publicAccountFromPublicKey } from '@/app/utils/account';
+import { createNetworkMap } from '@/app/utils/helper';
+import { getNativeMosaicAmount } from '@/app/utils/mosaic';
+import { createPrivateKeysFromMnemonic, generateSeedAccounts } from '@/app/utils/wallet';
+import { cosignTransaction, decryptMessage, encryptMessage, signTransaction } from '@/app/utils';
 
 const defaultNetworkProperties = {
     nodeUrl: null, // currently connected node url. Used for fetching the data

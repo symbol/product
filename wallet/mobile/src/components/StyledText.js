@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text } from 'react-native';
-import { colors, fonts } from 'src/styles';
+import { colors, fonts } from '@/app/styles';
 
 export const StyledText = (props) => {
     const { children, style, type } = props;

@@ -11,10 +11,10 @@ import {
     NamespaceRegistrationTypeMessage,
     OperationRestrictionFlagMessage,
     TransactionType,
-} from 'src/constants';
+} from '@/app/constants';
 import { decodePlainMessage, getUnresolvedIdsFromTransactions, isAggregateTransaction } from './transaction';
-import { networkTypeToIdentifier } from 'src/utils/network';
-import { addressFromPublicKey, addressFromRaw } from 'src/utils/account';
+import { networkTypeToIdentifier } from '@/app/utils/network';
+import { addressFromPublicKey, addressFromRaw } from '@/app/utils/account';
 import {
     getMosaicRelativeAmount,
     getMosaicsWithRelativeAmounts,

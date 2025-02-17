@@ -2,11 +2,11 @@ import React, { useEffect } from 'react';
 import { useMemo } from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
 import { TouchableOpacity } from 'react-native-gesture-handler';
-import { AccountAvatar, DropdownModal, TextBox } from 'src/components';
-import { $t } from 'src/localization';
-import { colors, fonts, spacings } from 'src/styles';
-import { trunc, useToggle, useValidation, validateRequired, validateUnresolvedAddress } from 'src/utils';
-import WalletController from 'src/lib/controller/MobileWalletController';
+import { AccountAvatar, DropdownModal, TextBox } from '@/app/components';
+import { $t } from '@/app/localization';
+import { colors, fonts, spacings } from '@/app/styles';
+import { trunc, useToggle, useValidation, validateRequired, validateUnresolvedAddress } from '@/app/utils';
+import WalletController from '@/app/lib/controller/MobileWalletController';
 import { observer } from 'mobx-react-lite';
 
 export const InputAddressDropdown = observer(function InputAddressDropdown(props) {
@@ -63,7 +63,7 @@ export const InputAddress = (props) => {
                 onChange={onChange}
                 contentRight={
                     <TouchableOpacity onPress={toggleDropdown}>
-                        <Image style={styles.icon} source={require('src/assets/images/icon-address-book.png')} />
+                        <Image style={styles.icon} source={require('@/app/assets/images/icon-address-book.png')} />
                     </TouchableOpacity>
                 }
             />

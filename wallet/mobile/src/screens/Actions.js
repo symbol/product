@@ -1,10 +1,10 @@
 import React from 'react';
 import { Image, StyleSheet, View } from 'react-native';
-import { FormItem, ItemBase, Screen, StyledText, TabNavigator, TitleBar } from 'src/components';
-import { $t } from 'src/localization';
-import { Router } from 'src/Router';
-import { spacings } from 'src/styles';
-import WalletController from 'src/lib/controller/MobileWalletController';
+import { FormItem, ItemBase, Screen, StyledText, TabNavigator, TitleBar } from '@/app/components';
+import { $t } from '@/app/localization';
+import { Router } from '@/app/Router';
+import { spacings } from '@/app/styles';
+import WalletController from '@/app/lib/controller/MobileWalletController';
 import { observer } from 'mobx-react-lite';
 
 export const Actions = observer(function Actions() {
@@ -14,25 +14,25 @@ export const Actions = observer(function Actions() {
         {
             title: $t('s_actions_addressBook_title'),
             description: $t('s_actions_addressBook_description'),
-            icon: require('src/assets/images/art-address-book.png'),
+            icon: require('@/app/assets/images/art-address-book.png'),
             handler: Router.goToAddressBookList,
         },
         {
             title: $t('s_actions_harvesting_title'),
             description: $t('s_actions_harvesting_description'),
-            icon: require('src/assets/images/art-harvesting.png'),
+            icon: require('@/app/assets/images/art-harvesting.png'),
             handler: Router.goToHarvesting,
         },
         {
             title: $t('s_actions_send_title'),
             description: $t('s_actions_send_description'),
-            icon: require('src/assets/images/art-ship.png'),
+            icon: require('@/app/assets/images/art-ship.png'),
             handler: Router.goToSend,
         },
         // {
         //     title: $t('s_actions_createMosaic_title'),
         //     description: $t('s_actions_createMosaic_description'),
-        //     icon: require('src/assets/images/art-mosaic.png'),
+        //     icon: require('@/app/assets/images/art-mosaic.png'),
         //     handler: Router.goToMosaicCreation,
         // },
     ];

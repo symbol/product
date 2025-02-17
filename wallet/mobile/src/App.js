@@ -6,12 +6,12 @@ import SplashScreen from 'react-native-splash-screen';
 import FlashMessage from 'react-native-flash-message';
 import { ConnectionStatus } from './components';
 import { Passcode } from './screens';
-import { StorageMigration } from 'src/lib/storage';
+import { StorageMigration } from '@/app/lib/storage';
 import { initLocalization } from './localization';
 import { Router, RouterView } from './Router';
 import { colors, fonts, layout } from './styles';
-import { ControllerEventName } from 'src/constants';
-import WalletController from 'src/lib/controller/MobileWalletController';
+import { ControllerEventName } from '@/app/constants';
+import WalletController from '@/app/lib/controller/MobileWalletController';
 
 const unsafeAreaStyle = { ...layout.fill, backgroundColor: colors.bgStatusbar };
 const safeAreaStyle = { ...layout.fill, backgroundColor: colors.bgGray };

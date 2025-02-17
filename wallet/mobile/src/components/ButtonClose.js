@@ -1,8 +1,8 @@
 import React from 'react';
 import { Image, StyleSheet, TouchableOpacity } from 'react-native';
-import { StyledText } from 'src/components';
-import { $t } from 'src/localization';
-import { colors, fonts } from 'src/styles';
+import { StyledText } from '@/app/components';
+import { $t } from '@/app/localization';
+import { colors, fonts } from '@/app/styles';
 
 export const ButtonClose = (props) => {
     const { type, style, onPress } = props;
@@ -19,7 +19,7 @@ export const ButtonClose = (props) => {
                     {text}
                 </StyledText>
             )}
-            <Image source={require('src/assets/images/icon-close.png')} style={styles.icon} />
+            <Image source={require('@/app/assets/images/icon-close.png')} style={styles.icon} />
         </TouchableOpacity>
     );
 };

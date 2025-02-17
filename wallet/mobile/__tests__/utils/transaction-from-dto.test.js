@@ -1,4 +1,4 @@
-import { transactionFromDTO } from '@/utils/transaction-from-dto';
+import { transactionFromDTO } from '@/app/utils/transaction-from-dto';
 import { walletTransactions } from '__fixtures__/local/transactions';
 import { networkProperties } from '__fixtures__/local/network';
 import { currentAccount } from '__fixtures__/local/wallet';

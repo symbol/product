@@ -1,5 +1,5 @@
-import { PrivateKey, PublicKey } from 'symbol-sdk-v3';
-import { Address, SymbolFacade } from 'symbol-sdk-v3/symbol';
+import { PrivateKey, PublicKey } from 'symbol-sdk';
+import { Address, SymbolFacade } from 'symbol-sdk/symbol';
 
 export const generateKeyPair = () => {
     const privateKey = PrivateKey.random();

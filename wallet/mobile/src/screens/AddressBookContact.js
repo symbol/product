@@ -1,13 +1,13 @@
 import React from 'react';
 import { Linking } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
-import { AccountAvatar, ButtonPlain, DialogBox, FormItem, Screen, TableView, Widget } from 'src/components';
-import { config } from 'src/config';
-import { $t } from 'src/localization';
-import { Router } from 'src/Router';
-import { layout } from 'src/styles';
-import { useDataManager, useToggle } from 'src/utils';
-import WalletController from 'src/lib/controller/MobileWalletController';
+import { AccountAvatar, ButtonPlain, DialogBox, FormItem, Screen, TableView, Widget } from '@/app/components';
+import { config } from '@/app/config';
+import { $t } from '@/app/localization';
+import { Router } from '@/app/Router';
+import { layout } from '@/app/styles';
+import { useDataManager, useToggle } from '@/app/utils';
+import WalletController from '@/app/lib/controller/MobileWalletController';
 import { observer } from 'mobx-react-lite';
 
 export const AddressBookContact = observer(function AddressBookContact(props) {
@@ -39,28 +39,28 @@ export const AddressBookContact = observer(function AddressBookContact(props) {
                 <>
                     <FormItem>
                         <ButtonPlain
-                            icon={require('src/assets/images/icon-primary-send-2.png')}
+                            icon={require('@/app/assets/images/icon-primary-send-2.png')}
                             title={$t('button_sendTransferTransaction')}
                             onPress={handleSendPress}
                         />
                     </FormItem>
                     <FormItem>
                         <ButtonPlain
-                            icon={require('src/assets/images/icon-primary-explorer.png')}
+                            icon={require('@/app/assets/images/icon-primary-explorer.png')}
                             title={$t('button_openAccountInExplorer')}
                             onPress={handleOpenBlockExplorer}
                         />
                     </FormItem>
                     <FormItem>
                         <ButtonPlain
-                            icon={require('src/assets/images/icon-primary-edit.png')}
+                            icon={require('@/app/assets/images/icon-primary-edit.png')}
                             title={$t('button_edit')}
                             onPress={handleEditPress}
                         />
                     </FormItem>
                     <FormItem>
                         <ButtonPlain
-                            icon={require('src/assets/images/icon-primary-remove.png')}
+                            icon={require('@/app/assets/images/icon-primary-remove.png')}
                             title={$t('button_remove')}
                             onPress={toggleRemoveConfirm}
                         />

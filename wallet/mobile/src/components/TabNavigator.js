@@ -1,10 +1,10 @@
 import React from 'react';
 import { Image, StyleSheet, View } from 'react-native';
 import { useRoute } from '@react-navigation/native';
-import { StyledText, TouchableNative } from 'src/components';
-import { Router } from 'src/Router';
-import { borders, colors } from 'src/styles';
-import { $t } from 'src/localization';
+import { StyledText, TouchableNative } from '@/app/components';
+import { Router } from '@/app/Router';
+import { borders, colors } from '@/app/styles';
+import { $t } from '@/app/localization';
 
 export const TabNavigator = () => {
     const routeName = useRoute().name;
@@ -14,36 +14,36 @@ export const TabNavigator = () => {
         {
             title: $t('navigation_home'),
             name: 'Home',
-            icon: require('src/assets/images/icon-tabs-home.png'),
-            iconActive: require('src/assets/images/icon-tabs-home-active.png'),
+            icon: require('@/app/assets/images/icon-tabs-home.png'),
+            iconActive: require('@/app/assets/images/icon-tabs-home-active.png'),
             handler: () => routeName !== 'Home' && Router.goToHome(),
         },
         {
             title: $t('navigation_history'),
             name: 'History',
-            icon: require('src/assets/images/icon-tabs-history.png'),
-            iconActive: require('src/assets/images/icon-tabs-history-active.png'),
+            icon: require('@/app/assets/images/icon-tabs-history.png'),
+            iconActive: require('@/app/assets/images/icon-tabs-history-active.png'),
             handler: () => routeName !== 'History' && Router.goToHistory(),
         },
         {
             title: $t('navigation_scan'),
             name: 'Scan',
-            icon: require('src/assets/images/icon-tabs-scan.png'),
-            iconActive: require('src/assets/images/icon-tabs-scan-active.png'),
+            icon: require('@/app/assets/images/icon-tabs-scan.png'),
+            iconActive: require('@/app/assets/images/icon-tabs-scan-active.png'),
             handler: () => routeName !== 'Scan' && Router.goToScan(),
         },
         {
             title: $t('navigation_assets'),
             name: 'Assets',
-            icon: require('src/assets/images/icon-tabs-assets.png'),
-            iconActive: require('src/assets/images/icon-tabs-assets-active.png'),
+            icon: require('@/app/assets/images/icon-tabs-assets.png'),
+            iconActive: require('@/app/assets/images/icon-tabs-assets-active.png'),
             handler: () => routeName !== 'Assets' && Router.goToAssets(),
         },
         {
             title: $t('navigation_actions'),
             name: 'Actions',
-            icon: require('src/assets/images/icon-tabs-actions.png'),
-            iconActive: require('src/assets/images/icon-tabs-actions-active.png'),
+            icon: require('@/app/assets/images/icon-tabs-actions.png'),
+            iconActive: require('@/app/assets/images/icon-tabs-actions-active.png'),
             handler: () => routeName !== 'Actions' && Router.goToActions(),
         },
     ];

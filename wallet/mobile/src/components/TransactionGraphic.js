@@ -4,12 +4,12 @@ import React, { useState } from 'react';
 import { useEffect } from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
 import Animated, { interpolate, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
-import { AccountAvatar, TableView, TouchableNative } from 'src/components';
-import { $t } from 'src/localization';
-import { borders, colors, fonts, spacings } from 'src/styles';
-import { filterCustomMosaics, getAddressName, getColorFromHash, getNativeMosaicAmount, trunc } from 'src/utils';
-import { TransactionType } from 'src/constants';
-import WalletController from 'src/lib/controller/MobileWalletController';
+import { AccountAvatar, TableView, TouchableNative } from '@/app/components';
+import { $t } from '@/app/localization';
+import { borders, colors, fonts, spacings } from '@/app/styles';
+import { filterCustomMosaics, getAddressName, getColorFromHash, getNativeMosaicAmount, trunc } from '@/app/utils';
+import { TransactionType } from '@/app/constants';
+import WalletController from '@/app/lib/controller/MobileWalletController';
 import { observer } from 'mobx-react-lite';
 
 const TABLE_MAX_HEIGHT = 500;
@@ -36,17 +36,17 @@ export const TransactionGraphic = observer(function TransactionGraphic(props) {
 
     const TargetMosaic = () => (
         <View style={styles.targetIconWrapper}>
-            <Image source={require('src/assets/images/icon-tx-mosaic.png')} style={styles.targetIcon} />
+            <Image source={require('@/app/assets/images/icon-tx-mosaic.png')} style={styles.targetIcon} />
         </View>
     );
     const TargetNamespace = () => (
         <View style={styles.targetIconWrapper}>
-            <Image source={require('src/assets/images/icon-tx-namespace.png')} style={styles.targetIcon} />
+            <Image source={require('@/app/assets/images/icon-tx-namespace.png')} style={styles.targetIcon} />
         </View>
     );
     const TargetLock = () => (
         <View style={styles.targetIconWrapper}>
-            <Image source={require('src/assets/images/icon-tx-lock.png')} style={styles.targetIcon} />
+            <Image source={require('@/app/assets/images/icon-tx-lock.png')} style={styles.targetIcon} />
         </View>
     );
 
@@ -67,9 +67,9 @@ export const TransactionGraphic = observer(function TransactionGraphic(props) {
 
             ActionBody = () => (
                 <>
-                    {hasMessage && <Image style={styles.actionIcon} source={require('src/assets/images/icon-tx-message.png')} />}
+                    {hasMessage && <Image style={styles.actionIcon} source={require('@/app/assets/images/icon-tx-message.png')} />}
                     {hasCustomMosaic && (
-                        <Image style={styles.actionIcon} source={require('src/assets/images/icon-select-mosaic-custom.png')} />
+                        <Image style={styles.actionIcon} source={require('@/app/assets/images/icon-select-mosaic-custom.png')} />
                     )}
                     {!!transferredAmount && (
                         <Text style={styles.actionText}>
@@ -113,7 +113,7 @@ export const TransactionGraphic = observer(function TransactionGraphic(props) {
             });
             ActionBody = () => (
                 <>
-                    <Image style={styles.actionIcon} source={require('src/assets/images/icon-select-mosaic-custom.png')} />
+                    <Image style={styles.actionIcon} source={require('@/app/assets/images/icon-select-mosaic-custom.png')} />
                     <Text style={styles.actionText}>{transaction.mosaicId}</Text>
                 </>
             );
@@ -265,7 +265,7 @@ export const TransactionGraphic = observer(function TransactionGraphic(props) {
                 <AccountAvatar size="md" address={transaction.signerAddress} />
                 <View style={styles.arrowSection}>
                     <Text style={styles.actionTypeText}>{actionTypeText}</Text>
-                    <Image source={require('src/assets/images/graphic/arrow.png')} style={styles.arrow} />
+                    <Image source={require('@/app/assets/images/graphic/arrow.png')} style={styles.arrow} />
                     <View style={styles.actionBody}>
                         <ActionBody />
                     </View>
@@ -276,7 +276,7 @@ export const TransactionGraphic = observer(function TransactionGraphic(props) {
             </View>
             <Text style={targetNameStyle}>{targetName}</Text>
             <Animated.View style={animatedTable}>{hasBeenExpanded && <TableView data={getTableData()} />}</Animated.View>
-            <Animated.Image source={require('src/assets/images/icon-down.png')} style={iconExpandStyle} />
+            <Animated.Image source={require('@/app/assets/images/icon-down.png')} style={iconExpandStyle} />
         </TouchableNative>
     );
 });

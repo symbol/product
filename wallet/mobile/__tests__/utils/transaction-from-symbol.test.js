@@ -1,5 +1,5 @@
-import { symbolTransactionFromPayload } from '@/utils/transaction';
-import { transactionFromSymbol } from '@/utils/transaction-from-symbol';
+import { symbolTransactionFromPayload } from '@/app/utils/transaction';
+import { transactionFromSymbol } from '@/app/utils/transaction-from-symbol';
 import { payloads } from '__fixtures__/local/payloads';
 import { walletTransactions } from '__fixtures__/local/transactions';
 import { networkProperties } from '__fixtures__/local/network';

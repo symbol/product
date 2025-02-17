@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { Button, FormItem, Screen, StyledText, TextBox } from 'src/components';
-import { $t } from 'src/localization';
-import { Router } from 'src/Router';
-import { handleError, useDataManager, useProp, useValidation, validateAccountName, validateKey, validateRequired } from 'src/utils';
+import { Button, FormItem, Screen, StyledText, TextBox } from '@/app/components';
+import { $t } from '@/app/localization';
+import { Router } from '@/app/Router';
+import { handleError, useDataManager, useProp, useValidation, validateAccountName, validateKey, validateRequired } from '@/app/utils';
 import { observer } from 'mobx-react-lite';
-import { WalletAccountType } from 'src/constants';
-import WalletController from 'src/lib/controller/MobileWalletController';
+import { WalletAccountType } from '@/app/constants';
+import WalletController from '@/app/lib/controller/MobileWalletController';
 
 export const AddExternalAccount = observer(function AddExternalAccount(props) {
     const { networkIdentifier } = WalletController;

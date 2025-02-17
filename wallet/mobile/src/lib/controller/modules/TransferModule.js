@@ -1,8 +1,8 @@
 import { cloneDeep } from 'lodash';
 import { makeAutoObservable } from 'mobx';
-import { MessageType, TransactionType } from 'src/constants';
-import { AccountService, NamespaceService } from 'src/lib/services';
-import { encodePlainMessage, isIncomingTransaction, isOutgoingTransaction, isSymbolAddress } from 'src/utils';
+import { MessageType, TransactionType } from '@/app/constants';
+import { AccountService, NamespaceService } from '@/app/lib/services';
+import { encodePlainMessage, isIncomingTransaction, isOutgoingTransaction, isSymbolAddress } from '@/app/utils';
 
 const defaultState = {};
 

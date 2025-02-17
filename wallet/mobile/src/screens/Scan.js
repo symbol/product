@@ -12,14 +12,14 @@ import {
     TableView,
     TitleBar,
     Widget,
-} from 'src/components';
-import { $t } from 'src/localization';
-import { Router } from 'src/Router';
-import { symbolTransactionFromPayload, useToggle } from 'src/utils';
-import { layout } from 'src/styles';
-import { TransactionType } from 'src/constants';
-import { TransactionService } from 'src/lib/services';
-import WalletController from 'src/lib/controller/MobileWalletController';
+} from '@/app/components';
+import { $t } from '@/app/localization';
+import { Router } from '@/app/Router';
+import { symbolTransactionFromPayload, useToggle } from '@/app/utils';
+import { layout } from '@/app/styles';
+import { TransactionType } from '@/app/constants';
+import { TransactionService } from '@/app/lib/services';
+import WalletController from '@/app/lib/controller/MobileWalletController';
 import { observer } from 'mobx-react-lite';
 
 const renderEmptyComponent = () => () => null;

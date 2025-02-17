@@ -1,7 +1,7 @@
 import { observer } from 'mobx-react-lite';
 import React, { useEffect } from 'react';
 import { StyleSheet, Text } from 'react-native';
-import { colors, fonts, timings } from 'src/styles';
+import { colors, fonts, timings } from '@/app/styles';
 import Animated, {
     interpolate,
     interpolateColor,
@@ -10,9 +10,9 @@ import Animated, {
     useSharedValue,
     withTiming,
 } from 'react-native-reanimated';
-import { $t } from 'src/localization';
-import WalletController from 'src/lib/controller/MobileWalletController';
-import { NetworkConnectionStatus } from 'src/constants';
+import { $t } from '@/app/localization';
+import WalletController from '@/app/lib/controller/MobileWalletController';
+import { NetworkConnectionStatus } from '@/app/constants';
 
 export const ConnectionStatus = observer(function ConnectionStatus() {
     const { networkStatus } = WalletController;

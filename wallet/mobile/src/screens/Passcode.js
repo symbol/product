@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { DeviceEventEmitter, Image, StyleSheet, View } from 'react-native';
 import PINCode, { hasUserSetPinCode } from '@haskkor/react-native-pincode';
-import { colors, fonts, spacings } from 'src/styles';
-import { ButtonClose, LoadingIndicator } from 'src/components';
-import { $t } from 'src/localization';
-import { Router } from 'src/Router';
+import { colors, fonts, spacings } from '@/app/styles';
+import { ButtonClose, LoadingIndicator } from '@/app/components';
+import { $t } from '@/app/localization';
+import { Router } from '@/app/Router';
 
 export const Passcode = (props) => {
     const { route, hideCancelButton, keepListener, keepNavigation } = props;
@@ -78,7 +78,7 @@ export const Passcode = (props) => {
                         stylePinCodeColumnDeleteButton={styles.buttonDelete}
                         styleLockScreenColorIcon={styles.buttonDelete}
                         customBackSpaceIcon={() => (
-                            <Image source={require('src/assets/images/icon-backspace.png')} style={styles.buttonBackspace} />
+                            <Image source={require('@/app/assets/images/icon-backspace.png')} style={styles.buttonBackspace} />
                         )}
                         finishProcess={onFinish}
                         touchIDDisabled={type === 'choose'}

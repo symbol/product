@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
-import { spacings } from 'src/styles';
+import { spacings } from '@/app/styles';
 
 export const FormItem = (props) => {
     const { children, style, type, clear, fill } = props;

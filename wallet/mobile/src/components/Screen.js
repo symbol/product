@@ -1,7 +1,7 @@
 import React from 'react';
 import { KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
-import { LoadingIndicator } from 'src/components';
-import { colors, spacings } from 'src/styles';
+import { LoadingIndicator } from '@/app/components';
+import { colors, spacings } from '@/app/styles';
 
 export const Screen = (props) => {
     const { children, style, titleBar, bottomComponent, bottomComponent2, navigator, isLoading } = props;

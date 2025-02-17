@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
-import { colors, fonts, spacings } from 'src/styles';
+import { colors, fonts, spacings } from '@/app/styles';
 
 export const WalletCreationAnimation = (props) => {
     const { steps, currentStep } = props;
@@ -25,7 +25,7 @@ export const WalletCreationAnimation = (props) => {
 
     return (
         <View style={styles.root}>
-            <Image source={require('src/assets/images/logo-symbol-ascii-small.png')} style={styles.logo} />
+            <Image source={require('@/app/assets/images/logo-symbol-ascii-small.png')} style={styles.logo} />
             <View style={styles.terminal}>
                 {typedLines.map((line, index) => (
                     <Text style={styles.line} key={'la' + index}>

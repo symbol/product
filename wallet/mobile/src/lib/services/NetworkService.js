@@ -1,7 +1,7 @@
-import { config } from '@/config';
+import { config } from '@/app/config';
 import { MosaicService } from './MosaicService';
-import { makeRequest, networkTypeToIdentifier } from '@/utils/network';
-import { getMosaicRelativeAmount } from '@/utils/mosaic';
+import { makeRequest, networkTypeToIdentifier } from '@/app/utils/network';
+import { getMosaicRelativeAmount } from '@/app/utils/mosaic';
 
 export class NetworkService {
     static async getDefaultNodeList(networkIdentifier) {

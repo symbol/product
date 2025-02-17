@@ -2,11 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { Image, StyleSheet, View } from 'react-native';
 import { RefreshControl, ScrollView } from 'react-native-gesture-handler';
 import Animated, { FadeIn, FadeInDown, FadeOut } from 'react-native-reanimated';
-import { Button, DialogBox, FeeSelector, FormItem, Screen, StyledText, TableView, TextBox, Widget } from 'src/components';
-import { ControllerEventName } from 'src/constants';
-import { $t } from 'src/localization';
-import { HarvestingService } from 'src/lib/services';
-import { colors, fonts, layout, spacings } from 'src/styles';
+import { Button, DialogBox, FeeSelector, FormItem, Screen, StyledText, TableView, TextBox, Widget } from '@/app/components';
+import { ControllerEventName } from '@/app/constants';
+import { $t } from '@/app/localization';
+import { HarvestingService } from '@/app/lib/services';
+import { colors, fonts, layout, spacings } from '@/app/styles';
 import {
     createHarvestingTransactionStub,
     formatDate,
@@ -15,8 +15,8 @@ import {
     usePasscode,
     useToggle,
     useTransactionFees,
-} from 'src/utils';
-import WalletController from 'src/lib/controller/MobileWalletController';
+} from '@/app/utils';
+import WalletController from '@/app/lib/controller/MobileWalletController';
 import { observer } from 'mobx-react-lite';
 
 export const Harvesting = observer(function Harvesting() {
@@ -130,7 +130,7 @@ export const Harvesting = observer(function Harvesting() {
 
     switch (status.status) {
         case 'inactive':
-            statusIconSrc = require('src/assets/images/icon-dark-inactive.png');
+            statusIconSrc = require('@/app/assets/images/icon-dark-inactive.png');
             statusText = $t('s_harvesting_status_inactive');
             isNodeSelectorVisible = isAccountEligibleForHarvesting;
             isButtonVisible = isAccountEligibleForHarvesting;
@@ -139,7 +139,7 @@ export const Harvesting = observer(function Harvesting() {
             statusColor = colors.neutral;
             break;
         case 'pending':
-            statusIconSrc = require('src/assets/images/icon-dark-pending.png');
+            statusIconSrc = require('@/app/assets/images/icon-dark-pending.png');
             statusText = $t('s_harvesting_status_pending');
             isNodeSelectorVisible = false;
             isButtonVisible = true;
@@ -148,7 +148,7 @@ export const Harvesting = observer(function Harvesting() {
             statusColor = colors.warning;
             break;
         case 'active':
-            statusIconSrc = require('src/assets/images/icon-dark-success.png');
+            statusIconSrc = require('@/app/assets/images/icon-dark-success.png');
             statusText = $t('s_harvesting_status_active');
             isNodeSelectorVisible = false;
             isButtonVisible = true;
@@ -157,14 +157,14 @@ export const Harvesting = observer(function Harvesting() {
             statusColor = colors.success;
             break;
         case 'operator':
-            statusIconSrc = require('src/assets/images/icon-dark-success.png');
+            statusIconSrc = require('@/app/assets/images/icon-dark-success.png');
             statusText = $t('s_harvesting_status_operator');
             isNodeSelectorVisible = false;
             isButtonVisible = false;
             statusColor = colors.success;
             break;
         default:
-            statusIconSrc = require('src/assets/images/icon-dark-unknown.png');
+            statusIconSrc = require('@/app/assets/images/icon-dark-unknown.png');
             statusText = $t('s_harvesting_status_unknown');
             isNodeSelectorVisible = false;
             isButtonVisible = false;
@@ -172,7 +172,7 @@ export const Harvesting = observer(function Harvesting() {
     }
 
     if (isActionMade) {
-        statusIconSrc = require('src/assets/images/icon-dark-pending.png');
+        statusIconSrc = require('@/app/assets/images/icon-dark-pending.png');
         statusText = $t('s_harvesting_status_pending');
         isNodeSelectorVisible = false;
         isButtonVisible = false;

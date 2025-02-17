@@ -1,15 +1,15 @@
 import React from 'react';
 import { Image, Linking, StyleSheet, View } from 'react-native';
 import { TouchableOpacity } from 'react-native-gesture-handler';
-import { FormItem, Screen, StyledText, TableView } from 'src/components';
-import { config } from 'src/config';
-import { $t } from 'src/localization';
+import { FormItem, Screen, StyledText, TableView } from '@/app/components';
+import { config } from '@/app/config';
+import { $t } from '@/app/localization';
 import packageJSON from '../../package.json';
 
 export function SettingsAbout() {
     const tableData = {
         appVersion: packageJSON.version,
-        symbolSdkVersion: packageJSON.dependencies['symbol-sdk-v3'],
+        symbolSdkVersion: packageJSON.dependencies['symbol-sdk'],
         reactNativeVersion: packageJSON.dependencies['react-native'],
     };
 
@@ -30,13 +30,13 @@ export function SettingsAbout() {
             <FormItem>
                 <View style={styles.badges}>
                     <TouchableOpacity style={styles.badge} containerStyle={styles.badge} onPress={onDiscordPress}>
-                        <Image style={styles.image} source={require('src/assets/images/badge-discord.png')} />
+                        <Image style={styles.image} source={require('@/app/assets/images/badge-discord.png')} />
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.badge} containerStyle={styles.badge} onPress={onGithubPress}>
-                        <Image style={styles.image} containerStyle={styles.badge} source={require('src/assets/images/badge-github.png')} />
+                        <Image style={styles.image} containerStyle={styles.badge} source={require('@/app/assets/images/badge-github.png')} />
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.badge} containerStyle={styles.badge} onPress={onTwitterPress}>
-                        <Image style={styles.image} source={require('src/assets/images/badge-twitter.png')} />
+                        <Image style={styles.image} source={require('@/app/assets/images/badge-twitter.png')} />
                     </TouchableOpacity>
                 </View>
             </FormItem>

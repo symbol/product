@@ -2,10 +2,10 @@ import React from 'react';
 import { Modal, SafeAreaView, StyleSheet, View } from 'react-native';
 import { showMessage } from 'react-native-flash-message';
 import QRCodeScanner from 'react-native-qrcode-scanner';
-import { ButtonClose, StyledText } from 'src/components';
-import { colors, spacings } from 'src/styles';
-import { $t } from 'src/localization';
-import { SymbolQRCodeType, parseSymbolQR } from 'src/utils/qr';
+import { ButtonClose, StyledText } from '@/app/components';
+import { colors, spacings } from '@/app/styles';
+import { $t } from '@/app/localization';
+import { SymbolQRCodeType, parseSymbolQR } from '@/app/utils/qr';
 
 export const QRScanner = (props) => {
     const { isVisible, type, onSuccess, onClose } = props;

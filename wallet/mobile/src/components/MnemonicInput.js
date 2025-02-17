@@ -2,10 +2,10 @@ import React, { useEffect, useRef, useState } from 'react';
 import * as bip39 from 'bip39';
 import { Platform, StyleSheet, View } from 'react-native';
 import { FlatList } from 'react-native-gesture-handler';
-import { StyledText, TextBox, TouchableNative } from 'src/components';
-import { $t } from 'src/localization';
-import { borders, colors, fonts, spacings } from 'src/styles';
-import { useValidation, validateMnemonic, validateRequired } from 'src/utils';
+import { StyledText, TextBox, TouchableNative } from '@/app/components';
+import { $t } from '@/app/localization';
+import { borders, colors, fonts, spacings } from '@/app/styles';
+import { useValidation, validateMnemonic, validateRequired } from '@/app/utils';
 import _ from 'lodash';
 
 export const MnemonicInput = (props) => {

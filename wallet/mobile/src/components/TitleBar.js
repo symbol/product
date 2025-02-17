@@ -1,9 +1,9 @@
 import React from 'react';
 import { ActivityIndicator, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { Router } from 'src/Router';
-import { borders, colors, fonts, spacings } from 'src/styles';
-import { trunc } from 'src/utils';
-import { AccountAvatar } from 'src/components';
+import { Router } from '@/app/Router';
+import { borders, colors, fonts, spacings } from '@/app/styles';
+import { trunc } from '@/app/utils';
+import { AccountAvatar } from '@/app/components';
 
 export const TitleBar = (props) => {
     const { currentAccount } = props;
@@ -25,10 +25,10 @@ export const TitleBar = (props) => {
                     </View>
                 )}
                 {!currentAccount && <ActivityIndicator color={colors.primary} />}
-                <Image source={require('src/assets/images/icon-down.png')} style={styles.icon} />
+                <Image source={require('@/app/assets/images/icon-down.png')} style={styles.icon} />
             </TouchableOpacity>
             <TouchableOpacity hitSlop={10} onPress={handleSettingsPress}>
-                <Image source={require('src/assets/images/icon-settings.png')} style={styles.icon} />
+                <Image source={require('@/app/assets/images/icon-settings.png')} style={styles.icon} />
             </TouchableOpacity>
         </View>
     );

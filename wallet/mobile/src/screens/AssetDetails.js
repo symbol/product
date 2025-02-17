@@ -2,12 +2,12 @@ import _ from 'lodash';
 import React from 'react';
 import { Linking } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
-import { ButtonPlain, FormItem, Screen, StyledText, TableView, Widget } from 'src/components';
-import { config } from 'src/config';
-import { $t } from 'src/localization';
-import { Router } from 'src/Router';
-import { isMosaicRevokable } from 'src/utils';
-import WalletController from 'src/lib/controller/MobileWalletController';
+import { ButtonPlain, FormItem, Screen, StyledText, TableView, Widget } from '@/app/components';
+import { config } from '@/app/config';
+import { $t } from '@/app/localization';
+import { Router } from '@/app/Router';
+import { isMosaicRevokable } from '@/app/utils';
+import WalletController from '@/app/lib/controller/MobileWalletController';
 import { observer } from 'mobx-react-lite';
 
 export const AssetDetails = observer(function AssetDetails(props) {
@@ -49,7 +49,7 @@ export const AssetDetails = observer(function AssetDetails(props) {
                     {isSendButtonVisible && (
                         <FormItem>
                             <ButtonPlain
-                                icon={require('src/assets/images/icon-primary-send-2.png')}
+                                icon={require('@/app/assets/images/icon-primary-send-2.png')}
                                 title={$t('button_sendTransferTransaction')}
                                 onPress={handleSendPress}
                             />
@@ -58,7 +58,7 @@ export const AssetDetails = observer(function AssetDetails(props) {
                     {isRevokeButtonVisible && (
                         <FormItem>
                             <ButtonPlain
-                                icon={require('src/assets/images/icon-primary-revoke.png')}
+                                icon={require('@/app/assets/images/icon-primary-revoke.png')}
                                 title={$t('button_revoke')}
                                 onPress={handleRevokePress}
                             />
@@ -66,7 +66,7 @@ export const AssetDetails = observer(function AssetDetails(props) {
                     )}
                     <FormItem>
                         <ButtonPlain
-                            icon={require('src/assets/images/icon-primary-explorer.png')}
+                            icon={require('@/app/assets/images/icon-primary-explorer.png')}
                             title={$t('button_openTransactionInExplorer')}
                             onPress={handleOpenBlockExplorer}
                         />
