@@ -1,18 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { BackHandler, DeviceEventEmitter, SafeAreaView, StatusBar, View } from 'react-native';
-import { Provider } from 'react-redux';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { hasUserSetPinCode } from '@haskkor/react-native-pincode';
+import { deleteUserPinCode, hasUserSetPinCode } from '@haskkor/react-native-pincode';
 import SplashScreen from 'react-native-splash-screen';
 import FlashMessage from 'react-native-flash-message';
 import { ConnectionStatus } from './components';
 import { Passcode } from './screens';
-import { SecureStorage, StorageMigration } from './storage';
-import store from 'src/store';
+import { StorageMigration } from 'src/lib/storage';
 import { initLocalization } from './localization';
-import { RouterView } from './Router';
+import { Router, RouterView } from './Router';
 import { colors, fonts, layout } from './styles';
 import { ControllerEventName } from 'src/constants';
+import WalletController from 'src/lib/controller/MobileWalletController';
 
 const unsafeAreaStyle = { ...layout.fill, backgroundColor: colors.bgStatusbar };
 const safeAreaStyle = { ...layout.fill, backgroundColor: colors.bgGray };
@@ -22,10 +21,10 @@ const flashMessageTextStyle = { ...fonts.notification, color: colors.primary };
 const App = () => {
     const [isPasscodeEnabled, setIsPasscodeEnabled] = useState(false);
     const [isUnlocked, setIsUnlocked] = useState(false);
-    const [isWalletExist, setIsWalletExist] = useState(false);
-    const [isLoading, setIsLoading] = useState(true);
+    const [isWalletStored, setIsWalletStored] = useState(false);
+    const [isWalletLoaded, setIsWalletLoaded] = useState(false);
     const isPasscodeShown = isPasscodeEnabled && !isUnlocked;
-    const isMainContainerShown = !isLoading && !isPasscodeShown;
+    const isMainContainerShown = isWalletLoaded && !isPasscodeShown;
     const passcodeParams = {
         type: 'enter',
         successEvent: 'event.passcode.root.success',
@@ -35,29 +34,57 @@ const App = () => {
     const unlock = () => {
         setIsUnlocked(true);
     };
-    const load = async () => {
+    const init = async () => {
+        setIsWalletStored(false)
+        setIsWalletLoaded(false);
         await StorageMigration.migrate();
         await initLocalization();
-        const isPasscodeEnabled = await hasUserSetPinCode();
-        const isWalletExist = !!(await SecureStorage.getMnemonic());
-        await store.dispatchAction({ type: 'wallet/loadAll' });
-        store.dispatchAction({ type: 'network/connect' });
 
+        const isPasscodeEnabled = await hasUserSetPinCode();
         setIsPasscodeEnabled(isPasscodeEnabled);
-        setIsWalletExist(isWalletExist);
-        setIsLoading(false);
+
+        await load();
         SplashScreen.hide();
+    };
+    const load = async () => {
+        const isWalletStored = await WalletController.isWalletCreated();
+        setIsWalletStored(isWalletStored);
+        
+        await WalletController.loadCache();
+        setIsWalletLoaded(true);
+        
+        WalletController.runConnectionJob();
+        WalletController.modules.market.fetchData();
+    };
+    const handleLogout = async () => {
+        await deleteUserPinCode();
+        handleLoginStateChange();
+    };
+    const handleLoginStateChange = () => {
+        Router.goToHome();
+        load();
+    };
+    const handleAccountChange = () => {
+        WalletController.fetchAccountInfo();
     };
 
     useEffect(() => {
         // Initialize wallet and load data from cache
-        load();
+        init();
 
         // Listen for an event from the Passscode screen
         DeviceEventEmitter.addListener(passcodeParams.successEvent, unlock);
         DeviceEventEmitter.addListener(passcodeParams.cancel, BackHandler.exitApp);
-        DeviceEventEmitter.addListener(ControllerEventName.LOGOUT, load);
-        DeviceEventEmitter.addListener(ControllerEventName.LOGIN, load);
+        WalletController.on(ControllerEventName.LOGIN, handleLoginStateChange);
+        WalletController.on(ControllerEventName.LOGOUT, handleLogout);
+        WalletController.on(ControllerEventName.ACCOUNT_CHANGE, handleAccountChange);
+
+        return () => {
+            WalletController.removeListener(ControllerEventName.LOGIN, handleLoginStateChange);
+            WalletController.removeListener(ControllerEventName.LOGOUT, handleLogout);
+            WalletController.removeListener(ControllerEventName.ACCOUNT_CHANGE, handleAccountChange);
+
+        }
     }, []);
 
     return (
@@ -66,19 +93,17 @@ const App = () => {
                 <SafeAreaView style={unsafeAreaStyle}>
                     <View style={safeAreaStyle}>
                         <StatusBar backgroundColor={colors.bgStatusbar} barStyle="light-content" />
-                        <Provider store={store}>
-                            {isMainContainerShown && <ConnectionStatus />}
-                            <FlashMessage
-                                statusBarHeight={8}
-                                animationDuration={200}
-                                titleStyle={flashMessageTextStyle}
-                                style={flashMessageStyle}
-                            />
-                            <RouterView isActive={isMainContainerShown} isWalletExist={isWalletExist} />
-                            {isPasscodeShown && (
-                                <Passcode hideCancelButton keepListener keepNavigation route={{ params: passcodeParams }} />
-                            )}
-                        </Provider>
+                        {isMainContainerShown && <ConnectionStatus />}
+                        <FlashMessage
+                            statusBarHeight={8}
+                            animationDuration={200}
+                            titleStyle={flashMessageTextStyle}
+                            style={flashMessageStyle}
+                        />
+                        <RouterView isActive={isMainContainerShown} isLoggedIn={isWalletStored} />
+                        {isPasscodeShown && (
+                            <Passcode hideCancelButton keepListener keepNavigation route={{ params: passcodeParams }} />
+                        )}
                     </View>
                 </SafeAreaView>
             </GestureHandlerRootView>

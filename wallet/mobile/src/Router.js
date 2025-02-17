@@ -65,18 +65,18 @@ const linkingOptions = {
 
 export const navigationRef = createNavigationContainerRef();
 
-export const RouterView = ({ isActive, isWalletExist }) => (
+export const RouterView = ({ isActive, isLoggedIn }) => (
     <NavigationContainer theme={theme} ref={navigationRef} linking={linkingOptions}>
         {isActive && (
             <Stack.Navigator screenOptions={screenOptions}>
-                {!isWalletExist && (
+                {!isLoggedIn && (
                     <Stack.Group screenOptions={{ headerShown: false }}>
                         <Stack.Screen name={keys.Welcome} component={screens.Welcome} />
                         <Stack.Screen name={keys.CreateWallet} component={screens.CreateWallet} />
                         <Stack.Screen name={keys.ImportWallet} component={screens.ImportWallet} />
                     </Stack.Group>
                 )}
-                {isWalletExist && (
+                {isLoggedIn && (
                     <>
                         <Stack.Group screenOptions={{ headerShown: false }}>
                             <Stack.Screen name={keys.Home} component={screens.Home} />
