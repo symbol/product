@@ -1,6 +1,6 @@
 import React from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
-import { colors } from 'src/styles';
+import { colors } from '@/app/styles';
 
 export const LoadingIndicator = (props) => {
     const { size, fill } = props;

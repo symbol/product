@@ -1,12 +1,12 @@
 import React from 'react';
 import { Image, StyleSheet, View } from 'react-native';
-import { spacings } from 'src/styles';
-import { AccountAvatar, ButtonCopy, FormItem, StyledText } from 'src/components';
-import { $t } from 'src/localization';
-import { getAddressName, isSymbolAddress } from 'src/utils';
-import WalletController from 'src/lib/controller/MobileWalletController';
+import { spacings } from '@/app/styles';
+import { AccountAvatar, ButtonCopy, FormItem, StyledText } from '@/app/components';
+import { $t } from '@/app/localization';
+import { getAddressName, isSymbolAddress } from '@/app/utils';
+import WalletController from '@/app/lib/controller/MobileWalletController';
 import { observer } from 'mobx-react-lite';
-import { MessageType } from 'src/constants';
+import { MessageType } from '@/app/constants';
 
 const renderTypeMap = {
     address: [
@@ -71,8 +71,8 @@ const renderTypeMap = {
 
 const getMosaicIconSrc = (mosaic) =>
     mosaic.name === 'symbol.xym'
-        ? require('src/assets/images/icon-select-mosaic-native.png')
-        : require('src/assets/images/icon-select-mosaic-custom.png');
+        ? require('@/app/assets/images/icon-select-mosaic-native.png')
+        : require('@/app/assets/images/icon-select-mosaic-custom.png');
 const getMosaicStyle = (index) => (index === 0 ? [styles.mosaic, { marginTop: 0 }] : styles.mosaic);
 
 export const TableView = observer(function TableView(props) {
@@ -118,10 +118,10 @@ export const TableView = observer(function TableView(props) {
                         ItemTemplate = (
                             <View style={styles.bool}>
                                 {item.value === true && (
-                                    <Image source={require('src/assets/images/icon-bool-true.png')} style={styles.boolIcon} />
+                                    <Image source={require('@/app/assets/images/icon-bool-true.png')} style={styles.boolIcon} />
                                 )}
                                 {item.value === false && (
-                                    <Image source={require('src/assets/images/icon-bool-false.png')} style={styles.boolIcon} />
+                                    <Image source={require('@/app/assets/images/icon-bool-false.png')} style={styles.boolIcon} />
                                 )}
                             </View>
                         );
@@ -141,7 +141,7 @@ export const TableView = observer(function TableView(props) {
                                 </View>
                             ) : !rawAddresses ? (
                                 <View style={styles.account}>
-                                    <Image source={require('src/assets/images/icon-account-name.png')} style={styles.mosaicIcon} />
+                                    <Image source={require('@/app/assets/images/icon-account-name.png')} style={styles.mosaicIcon} />
                                     <StyledText type="body" style={styles.copyText}>
                                         {item.value}
                                     </StyledText>
@@ -176,7 +176,7 @@ export const TableView = observer(function TableView(props) {
                     case 'fee':
                         ItemTemplate = (
                             <View style={styles.fee}>
-                                <Image source={require('src/assets/images/icon-select-mosaic-native.png')} style={styles.mosaicIcon} />
+                                <Image source={require('@/app/assets/images/icon-select-mosaic-native.png')} style={styles.mosaicIcon} />
                                 <StyledText type="body">
                                     {item.value} {ticker}
                                 </StyledText>
@@ -187,10 +187,10 @@ export const TableView = observer(function TableView(props) {
                         ItemTemplate = (
                             <View style={styles.message}>
                                 {item.value.type === MessageType.EncryptedText && (
-                                    <Image source={require('src/assets/images/icon-tx-lock.png')} style={styles.messageTypeIcon} />
+                                    <Image source={require('@/app/assets/images/icon-tx-lock.png')} style={styles.messageTypeIcon} />
                                 )}
                                 {!item.value.text && (
-                                    <Image source={require('src/assets/images/icon-tx-data.png')} style={styles.messageTypeIcon} />
+                                    <Image source={require('@/app/assets/images/icon-tx-data.png')} style={styles.messageTypeIcon} />
                                 )}
                                 {item.value.text && <StyledText type="body">{item.value.text}</StyledText>}
                             </View>

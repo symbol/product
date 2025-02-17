@@ -1,12 +1,12 @@
 import _ from 'lodash';
 import React, { useState } from 'react';
 import { ScrollView } from 'react-native-gesture-handler';
-import { FormItem, InputAmount, QRCode, Screen, TableView, TextBox, Widget } from 'src/components';
-import { TransactionType } from 'src/constants';
-import { $t } from 'src/localization';
-import { layout } from 'src/styles';
-import { transactionToPayload } from 'src/utils';
-import WalletController from 'src/lib/controller/MobileWalletController';
+import { FormItem, InputAmount, QRCode, Screen, TableView, TextBox, Widget } from '@/app/components';
+import { TransactionType } from '@/app/constants';
+import { $t } from '@/app/localization';
+import { layout } from '@/app/styles';
+import { transactionToPayload } from '@/app/utils';
+import WalletController from '@/app/lib/controller/MobileWalletController';
 import { observer } from 'mobx-react-lite';
 
 export const Receive = observer(function Receive() {

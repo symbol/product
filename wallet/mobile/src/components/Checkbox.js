@@ -1,7 +1,7 @@
 import React from 'react';
 import { Pressable, StyleSheet } from 'react-native';
 import Animated, { interpolate, interpolateColor, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
-import { borders, colors, fonts, timings } from 'src/styles';
+import { borders, colors, fonts, timings } from '@/app/styles';
 
 export const Checkbox = (props) => {
     const { style, testID, title, value, onChange } = props;
@@ -36,7 +36,7 @@ export const Checkbox = (props) => {
     return (
         <Pressable style={[styles.root, style]} hitSlop={5} onPress={handlePress} onPressIn={handlePressIn} onPressOut={handlePressOut}>
             <Animated.View style={[styles.container, animatedContainer]}>
-                <Animated.Image source={require('src/assets/images/icon-check.png')} style={stylesCheck} />
+                <Animated.Image source={require('@/app/assets/images/icon-check.png')} style={stylesCheck} />
             </Animated.View>
             <Animated.Text style={[fonts.label, animatedText]} testID={testID}>
                 {title}

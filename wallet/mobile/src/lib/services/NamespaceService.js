@@ -1,6 +1,6 @@
-import { addressFromRaw } from '@/utils/account';
-import { namespaceIdFromName, namespaceIdFromRaw } from '@/utils/namespace';
-import { makeRequest } from '@/utils/network';
+import { addressFromRaw } from '@/app/utils/account';
+import { namespaceIdFromName, namespaceIdFromRaw } from '@/app/utils/namespace';
+import { makeRequest } from '@/app/utils/network';
 import _ from 'lodash';
 
 export class NamespaceService {

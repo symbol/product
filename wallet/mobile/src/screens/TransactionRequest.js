@@ -18,12 +18,12 @@ import {
     TitleBar,
     TransactionGraphic,
     Widget,
-} from 'src/components';
-import { TransactionType } from 'src/constants';
-import { $t } from 'src/localization';
-import { Router } from 'src/Router';
-import { TransactionService } from 'src/lib/services';
-import { colors, fonts, layout } from 'src/styles';
+} from '@/app/components';
+import { TransactionType } from '@/app/constants';
+import { $t } from '@/app/localization';
+import { Router } from '@/app/Router';
+import { TransactionService } from '@/app/lib/services';
+import { colors, fonts, layout } from '@/app/styles';
 import {
     getTransactionFees,
     getUserCurrencyAmountText,
@@ -33,8 +33,8 @@ import {
     useInit,
     usePasscode,
     useToggle,
-} from 'src/utils';
-import WalletController from 'src/lib/controller/MobileWalletController';
+} from '@/app/utils';
+import WalletController from '@/app/lib/controller/MobileWalletController';
 import { observer } from 'mobx-react-lite';
 
 const SUPPORTED_TRANSACTION_TYPES = [

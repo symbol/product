@@ -14,13 +14,13 @@ import {
     SelectMosaic,
     StyledText,
     TableView,
-} from 'src/components';
-import { $t } from 'src/localization';
-import { Router } from 'src/Router';
-import { AccountService, MosaicService } from 'src/lib/services';
-import { getMosaicWithRelativeAmount, handleError, useDataManager, usePasscode, useProp, useToggle, useTransactionFees } from 'src/utils';
-import { TransactionType } from 'src/constants';
-import WalletController from 'src/lib/controller/MobileWalletController';
+} from '@/app/components';
+import { $t } from '@/app/localization';
+import { Router } from '@/app/Router';
+import { AccountService, MosaicService } from '@/app/lib/services';
+import { getMosaicWithRelativeAmount, handleError, useDataManager, usePasscode, useProp, useToggle, useTransactionFees } from '@/app/utils';
+import { TransactionType } from '@/app/constants';
+import WalletController from '@/app/lib/controller/MobileWalletController';
 import { observer } from 'mobx-react-lite';
 
 export const Revoke = observer(function Revoke(props) {

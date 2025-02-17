@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { TouchableOpacity } from 'react-native-gesture-handler';
-import { DialogBox, TextBox } from 'src/components';
-import { $t } from 'src/localization';
-import { colors, fonts } from 'src/styles';
-import { getUserCurrencyAmountText, useToggle, useValidation, validateAmount } from 'src/utils';
+import { DialogBox, TextBox } from '@/app/components';
+import { $t } from '@/app/localization';
+import { colors, fonts } from '@/app/styles';
+import { getUserCurrencyAmountText, useToggle, useValidation, validateAmount } from '@/app/utils';
 
 export const InputAmount = (props) => {
     const { title, value, price, networkIdentifier, availableBalance, onChange, onValidityChange } = props;

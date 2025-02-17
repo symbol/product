@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Image, StyleSheet, View } from 'react-native';
 import { FlatList } from 'react-native-gesture-handler';
-import { $t } from 'src/localization';
-import { borders, colors, fonts, layout, spacings } from 'src/styles';
+import { $t } from '@/app/localization';
+import { borders, colors, fonts, layout, spacings } from '@/app/styles';
 import { DropdownModal } from './Dropdown';
 import { InputAddressDropdown } from './InputAddress';
 import { StyledText } from './StyledText';
@@ -71,7 +71,7 @@ export const Filter = (props) => {
                     <View style={styles.button}>
                         <TouchableNative containerStyle={styles.buttonInner} color={colors.bgCard} disabled={isDisabled} onPress={clear}>
                             <View style={[layout.row, layout.alignCenter]}>
-                                <Image source={require('src/assets/images/icon-chip-clear.png')} style={styles.icon} />
+                                <Image source={require('@/app/assets/images/icon-chip-clear.png')} style={styles.icon} />
                                 <StyledText type="label" style={styles.text}>
                                     {$t('button_clear')}
                                 </StyledText>

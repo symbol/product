@@ -1,8 +1,8 @@
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { borders, colors, fonts, spacings } from 'src/styles';
-import { ButtonCopy } from 'src/components';
-import { $t } from 'src/localization';
+import { borders, colors, fonts, spacings } from '@/app/styles';
+import { ButtonCopy } from '@/app/components';
+import { $t } from '@/app/localization';
 
 export const MnemonicView = (props) => {
     const { isShown, isCopyDisabled, mnemonic, onShowPress } = props;

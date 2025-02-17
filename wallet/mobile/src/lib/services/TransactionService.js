@@ -1,12 +1,12 @@
 import { AccountService } from './AccountService';
-import { makeRequest } from '@/utils/network';
-import { symbolTransactionFromPayload } from '@/utils/transaction';
-import { getUnresolvedIdsFromTransactionDTOs, isAggregateTransactionDTO, transactionFromDTO } from 'src/utils/transaction-from-dto';
-import { MosaicService } from 'src/lib/services/MosaicService';
-import { NamespaceService } from 'src/lib/services/NamespaceService';
-import { getUnresolvedIdsFromSymbolTransactions, transactionFromSymbol } from 'src/utils/transaction-from-symbol';
-import { promiseAllSettled } from 'src/utils';
-import { TransactionAnnounceGroup, TransactionGroup } from 'src/constants';
+import { makeRequest } from '@/app/utils/network';
+import { symbolTransactionFromPayload } from '@/app/utils/transaction';
+import { getUnresolvedIdsFromTransactionDTOs, isAggregateTransactionDTO, transactionFromDTO } from '@/app/utils/transaction-from-dto';
+import { MosaicService } from '@/app/lib/services/MosaicService';
+import { NamespaceService } from '@/app/lib/services/NamespaceService';
+import { getUnresolvedIdsFromSymbolTransactions, transactionFromSymbol } from '@/app/utils/transaction-from-symbol';
+import { promiseAllSettled } from '@/app/utils';
+import { TransactionAnnounceGroup, TransactionGroup } from '@/app/constants';
 
 export class TransactionService {
     static async fetchAccountTransactions(

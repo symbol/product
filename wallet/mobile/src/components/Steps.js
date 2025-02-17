@@ -1,6 +1,6 @@
 import React, { Fragment } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { colors, spacings } from 'src/styles';
+import { colors, spacings } from '@/app/styles';
 
 export const Steps = (props) => {
     const { stepsCount, currentStep } = props;

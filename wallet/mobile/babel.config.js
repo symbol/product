@@ -1,10 +1,7 @@
 const createAlias = () => {
     const alias = {
-        config: './src/config',
-        src: './src',
-        '@': './src',
-        'symbol-sdk/symbol': './node_modules/symbol-sdk-v3/src/symbol/index.js',
-        'symbol-sdk-v3/symbol': './node_modules/symbol-sdk-v3/src/symbol/index.js',
+        '@/app': './src',
+        'symbol-sdk/symbol': './node_modules/symbol-sdk/src/symbol/index.js',
     };
 
     if (process.env.NODE_ENV !== 'test') alias['symbol-crypto-wasm-node'] = './node_modules/symbol-crypto-wasm-web/symbol_crypto_wasm.js';

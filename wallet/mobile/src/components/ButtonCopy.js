@@ -2,7 +2,7 @@ import React from 'react';
 import { Image, StyleSheet, View } from 'react-native';
 import { TouchableOpacity } from 'react-native';
 import { showMessage } from 'react-native-flash-message';
-import { copyToClipboard } from 'src/utils';
+import { copyToClipboard } from '@/app/utils';
 
 export const ButtonCopy = (props) => {
     const { content, style, size } = props;
@@ -23,7 +23,7 @@ export const ButtonCopy = (props) => {
     return (
         <View style={style} onTouchEnd={stopPropagation}>
             <TouchableOpacity onPress={handlePress} hitSlop={10}>
-                <Image source={require('src/assets/images/icon-copy.png')} style={styleIcon} />
+                <Image source={require('@/app/assets/images/icon-copy.png')} style={styleIcon} />
             </TouchableOpacity>
         </View>
     );

@@ -1,19 +1,19 @@
 import React from 'react';
 import { Image, StyleSheet, View } from 'react-native';
-import { borders, colors, spacings } from 'src/styles';
-import { StyledText } from 'src/components';
+import { borders, colors, spacings } from '@/app/styles';
+import { StyledText } from '@/app/components';
 
 export const Alert = (props) => {
     const { type, title, body } = props;
 
     const typeAlertMap = {
         warning: {
-            icon: require('src/assets/images/icon-warning-alert.png'),
+            icon: require('@/app/assets/images/icon-warning-alert.png'),
             titleStyle: styles.warningText,
             bodyStyle: styles.warningText,
         },
         danger: {
-            icon: require('src/assets/images/icon-danger-alert.png'),
+            icon: require('@/app/assets/images/icon-danger-alert.png'),
             titleStyle: styles.dangerText,
             bodyStyle: styles.dangerText,
         },

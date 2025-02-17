@@ -3,15 +3,15 @@ import React, { useEffect } from 'react';
 import { Image, StyleSheet, View } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
-import { $t } from 'src/localization';
-import { Router } from 'src/Router';
-import { borders, colors, layout, spacings } from 'src/styles';
-import { handleError, isTransactionAwaitingSignatureByAccount, useDataManager, usePasscode } from 'src/utils';
+import { $t } from '@/app/localization';
+import { Router } from '@/app/Router';
+import { borders, colors, layout, spacings } from '@/app/styles';
+import { handleError, isTransactionAwaitingSignatureByAccount, useDataManager, usePasscode } from '@/app/utils';
 import { Button } from './Button';
 import { ButtonPlain } from './ButtonPlain';
 import { LoadingIndicator } from './LoadingIndicator';
 import { StyledText } from './StyledText';
-import WalletController from 'src/lib/controller/MobileWalletController';
+import WalletController from '@/app/lib/controller/MobileWalletController';
 import { observer } from 'mobx-react-lite';
 
 export const TransactionCosignatureForm = observer(function TransactionCosignatureForm(props) {
@@ -66,7 +66,7 @@ export const TransactionCosignatureForm = observer(function TransactionCosignatu
         blocked_signer_initial: (
             <>
                 <View style={styles.content}>
-                    <Image style={styles.icon} source={require('src/assets/images/icon-danger-alert.png')} />
+                    <Image style={styles.icon} source={require('@/app/assets/images/icon-danger-alert.png')} />
                     <StyledText type="subtitle">{$t('s_transactionDetails_cosignatureForm_title')}</StyledText>
                     <StyledText type="body">{$t('s_transactionDetails_cosignatureForm_blocked_description')}</StyledText>
                 </View>
@@ -76,7 +76,7 @@ export const TransactionCosignatureForm = observer(function TransactionCosignatu
         trusted_signer_initial: (
             <>
                 <View style={styles.content}>
-                    <Image style={styles.icon} source={require('src/assets/images/icon-status-partial-1.png')} />
+                    <Image style={styles.icon} source={require('@/app/assets/images/icon-status-partial-1.png')} />
                     <StyledText type="subtitle">{$t('s_transactionDetails_cosignatureForm_title')}</StyledText>
                     <StyledText type="body">{$t('s_transactionDetails_cosignatureForm_trusted_description')}</StyledText>
                 </View>
@@ -86,7 +86,7 @@ export const TransactionCosignatureForm = observer(function TransactionCosignatu
         unknown_signer_initial: (
             <>
                 <View style={styles.content}>
-                    <Image style={styles.icon} source={require('src/assets/images/icon-warning-alert.png')} />
+                    <Image style={styles.icon} source={require('@/app/assets/images/icon-warning-alert.png')} />
                     <StyledText type="subtitle">{$t('s_transactionDetails_cosignatureForm_title')}</StyledText>
                     <StyledText type="body">{$t('s_transactionDetails_cosignatureForm_unknown_description')}</StyledText>
                 </View>

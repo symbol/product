@@ -1,7 +1,7 @@
 import React from 'react';
 import { Image, StyleSheet, View } from 'react-native';
-import { colors, spacings } from 'src/styles';
-import { TouchableNative } from 'src/components';
+import { colors, spacings } from '@/app/styles';
+import { TouchableNative } from '@/app/components';
 
 const SIZE = 56;
 

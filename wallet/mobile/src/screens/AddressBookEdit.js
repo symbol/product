@@ -1,8 +1,8 @@
 import React from 'react';
 import { ScrollView } from 'react-native-gesture-handler';
-import { Button, Dropdown, FormItem, Screen, StyledText, TextBox } from 'src/components';
-import { $t } from 'src/localization';
-import { Router } from 'src/Router';
+import { Button, Dropdown, FormItem, Screen, StyledText, TextBox } from '@/app/components';
+import { $t } from '@/app/localization';
+import { Router } from '@/app/Router';
 import {
     handleError,
     useDataManager,
@@ -12,8 +12,8 @@ import {
     validateAddress,
     validateExisted,
     validateRequired,
-} from 'src/utils';
-import WalletController from 'src/lib/controller/MobileWalletController';
+} from '@/app/utils';
+import WalletController from '@/app/lib/controller/MobileWalletController';
 import { observer } from 'mobx-react-lite';
 
 export const AddressBookEdit = observer(function AddressBookEdit(props) {

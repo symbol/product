@@ -1,7 +1,7 @@
 import React from 'react';
 import { DefaultTheme, NavigationContainer, createNavigationContainerRef } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import * as screens from 'src/screens';
+import * as screens from '@/app/screens';
 import { $t } from './localization';
 import { colors, fonts } from './styles';
 

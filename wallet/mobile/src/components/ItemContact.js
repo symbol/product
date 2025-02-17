@@ -1,8 +1,8 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { colors, fonts, spacings } from 'src/styles';
-import { trunc } from 'src/utils';
-import { AccountAvatar, ItemBase } from 'src/components';
+import { colors, fonts, spacings } from '@/app/styles';
+import { trunc } from '@/app/utils';
+import { AccountAvatar, ItemBase } from '@/app/components';
 
 export function ItemContact(props) {
     const { contact, onPress } = props;

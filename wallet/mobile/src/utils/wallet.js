@@ -4,12 +4,12 @@ import { SymbolPaperWallet } from 'symbol-wallets-lib';
 import RNFetchBlob from 'rn-fetch-blob';
 import { Buffer } from 'buffer';
 import { networkIdentifierToNetworkType } from './network';
-import { optInWhiteList } from 'src/config';
+import { optInWhiteList } from '@/app/config';
 import { createWalletStorageAccount, publicAccountFromPrivateKey } from './account';
-import { Bip32 } from 'symbol-sdk-v3';
-import { SymbolFacade } from 'symbol-sdk-v3/symbol';
-import { DEFAULT_ACCOUNT_NAME, MAX_SEED_ACCOUNTS_PER_NETWORK, NetworkIdentifier, WalletAccountType } from 'src/constants';
-import { createNetworkMap } from 'src/utils/helper';
+import { Bip32 } from 'symbol-sdk';
+import { SymbolFacade } from 'symbol-sdk/symbol';
+import { DEFAULT_ACCOUNT_NAME, MAX_SEED_ACCOUNTS_PER_NETWORK, NetworkIdentifier, WalletAccountType } from '@/app/constants';
+import { createNetworkMap } from '@/app/utils/helper';
 
 export const generateMnemonic = () => {
     const bip = new Bip32();

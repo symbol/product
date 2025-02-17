@@ -1,13 +1,13 @@
 import React from 'react';
 import { StyleSheet } from 'react-native';
 import { FlatList, TouchableOpacity } from 'react-native-gesture-handler';
-import { Dropdown, FormItem, Screen, StyledText } from 'src/components';
-import { $t } from 'src/localization';
-import { borders, colors, spacings } from 'src/styles';
-import { handleError, useDataManager, useProp } from 'src/utils';
-import WalletController from 'src/lib/controller/MobileWalletController';
+import { Dropdown, FormItem, Screen, StyledText } from '@/app/components';
+import { $t } from '@/app/localization';
+import { borders, colors, spacings } from '@/app/styles';
+import { handleError, useDataManager, useProp } from '@/app/utils';
+import WalletController from '@/app/lib/controller/MobileWalletController';
 import { observer } from 'mobx-react-lite';
-import { NetworkIdentifier } from 'src/constants';
+import { NetworkIdentifier } from '@/app/constants';
 
 export const SettingsNetwork = observer(function SettingsNetwork() {
     const { networkProperties, nodeUrls, networkIdentifier } = WalletController;

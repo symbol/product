@@ -17,10 +17,10 @@ import {
     OperationRestrictionFlag,
     OperationRestrictionFlagMessage,
     TransactionType,
-} from 'src/constants';
+} from '@/app/constants';
 import { ChronoUnit, Instant } from '@js-joda/core';
 import _ from 'lodash';
-import { SymbolFacade, models } from 'symbol-sdk-v3/symbol';
+import { SymbolFacade, models } from 'symbol-sdk/symbol';
 
 const createSymbolTransaction = (transactionDescriptor, networkProperties, isEmbedded, cousignatures) => {
     const facade = new SymbolFacade(networkProperties.networkIdentifier);

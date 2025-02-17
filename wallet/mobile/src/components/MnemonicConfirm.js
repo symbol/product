@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { borders, colors, fonts, spacings } from 'src/styles';
-import { ButtonPlain, MnemonicView } from 'src/components';
+import { borders, colors, fonts, spacings } from '@/app/styles';
+import { ButtonPlain, MnemonicView } from '@/app/components';
 
 export const MnemonicConfirm = (props) => {
     const { mnemonic, onChange } = props;

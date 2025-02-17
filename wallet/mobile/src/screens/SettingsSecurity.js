@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { deleteUserPinCode, hasUserSetPinCode } from '@haskkor/react-native-pincode';
-import { Checkbox, FormItem, MnemonicView, Screen, StyledText } from 'src/components';
-import { handleError, useDataManager, usePasscode } from 'src/utils';
-import { $t } from 'src/localization';
-import { Router } from 'src/Router';
-import WalletController from 'src/lib/controller/MobileWalletController';
+import { Checkbox, FormItem, MnemonicView, Screen, StyledText } from '@/app/components';
+import { handleError, useDataManager, usePasscode } from '@/app/utils';
+import { $t } from '@/app/localization';
+import { Router } from '@/app/Router';
+import WalletController from '@/app/lib/controller/MobileWalletController';
 
 export function SettingsSecurity() {
     const [isPasscodeEnabled, setIsPasscodeEnabled] = useState(false);

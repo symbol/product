@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { Modal, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { StyledText, TextBox } from 'src/components';
-import { $t } from 'src/localization';
-import { borders, colors, fonts, spacings } from 'src/styles';
-import { useValidation } from 'src/utils';
+import { StyledText, TextBox } from '@/app/components';
+import { $t } from '@/app/localization';
+import { borders, colors, fonts, spacings } from '@/app/styles';
+import { useValidation } from '@/app/utils';
 
 export const DialogBox = (props) => {
     const { isVisible, type, title, text, body, promptValidators, onSuccess, onCancel, style, contentContainerStyle } = props;

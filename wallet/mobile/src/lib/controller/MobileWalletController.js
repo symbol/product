@@ -1,9 +1,9 @@
-import { AddressBookModule } from 'src/lib/controller/modules/AddressBookModule';
-import { HarvestingModule } from 'src/lib/controller/modules/HarvestingModule';
-import { MarketModule } from 'src/lib/controller/modules/MarketModule';
-import { TransferModule } from 'src/lib/controller/modules/TransferModule';
-import { WalletController } from 'src/lib/controller/WalletController';
-import { PersistentStorage, SecureStorage } from 'src/lib/storage';
+import { AddressBookModule } from '@/app/lib/controller/modules/AddressBookModule';
+import { HarvestingModule } from '@/app/lib/controller/modules/HarvestingModule';
+import { MarketModule } from '@/app/lib/controller/modules/MarketModule';
+import { TransferModule } from '@/app/lib/controller/modules/TransferModule';
+import { WalletController } from '@/app/lib/controller/WalletController';
+import { PersistentStorage, SecureStorage } from '@/app/lib/storage';
 
 const MobileWalletController = new WalletController({
     persistentStorage: PersistentStorage,

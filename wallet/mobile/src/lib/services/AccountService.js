@@ -1,7 +1,7 @@
-import { addressFromRaw } from '@/utils/account';
-import { makeRequest } from '@/utils/network';
-import { MosaicService } from 'src/lib/services/MosaicService';
-import { getMosaicsWithRelativeAmounts } from 'src/utils';
+import { addressFromRaw } from '@/app/utils/account';
+import { makeRequest } from '@/app/utils/network';
+import { MosaicService } from '@/app/lib/services/MosaicService';
+import { getMosaicsWithRelativeAmounts } from '@/app/utils';
 
 export class AccountService {
     static async fetchAccountInfo(networkProperties, address) {

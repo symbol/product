@@ -13,13 +13,13 @@ import {
     TabNavigator,
     TitleBar,
     Widget,
-} from 'src/components';
-import { $t } from 'src/localization';
-import { Router } from 'src/Router';
-import { colors, spacings } from 'src/styles';
-import { filterAllowedTransactions, filterBlacklistedTransactions, handleError, useDataManager, useInit, useProp } from 'src/utils';
-import { TransactionGroup, TransactionType } from 'src/constants';
-import WalletController from 'src/lib/controller/MobileWalletController';
+} from '@/app/components';
+import { $t } from '@/app/localization';
+import { Router } from '@/app/Router';
+import { colors, spacings } from '@/app/styles';
+import { filterAllowedTransactions, filterBlacklistedTransactions, handleError, useDataManager, useInit, useProp } from '@/app/utils';
+import { TransactionGroup, TransactionType } from '@/app/constants';
+import WalletController from '@/app/lib/controller/MobileWalletController';
 import { observer } from 'mobx-react-lite';
 import { uniqBy } from 'lodash';
 

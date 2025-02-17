@@ -1,4 +1,4 @@
-import { MosaicFlags } from 'src/constants';
+import { MosaicFlags } from '@/app/constants';
 
 export const getNativeMosaicAmount = (mosaicList, nativeMosaicId) => {
     if (!mosaicList || !nativeMosaicId) {

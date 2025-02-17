@@ -1,7 +1,7 @@
 import { cloneDeep } from 'lodash';
 import { makeAutoObservable, runInAction } from 'mobx';
-import { config } from 'src/config';
-import { MarketService } from 'src/lib/services';
+import { config } from '@/app/config';
+import { MarketService } from '@/app/lib/services';
 
 const defaultState = {
     userCurrency: null, // user preferred currency to convert XYM amounts,

@@ -13,7 +13,7 @@ import {
     StyledText,
     TextBox,
     WalletCreationAnimation,
-} from 'src/components';
+} from '@/app/components';
 import {
     createPrivateKeysFromMnemonic,
     downloadPaperWallet,
@@ -26,11 +26,11 @@ import {
     useValidation,
     validateAccountName,
     validateRequired,
-} from 'src/utils';
-import { config } from 'src/config';
-import { Router } from 'src/Router';
-import { $t } from 'src/localization';
-import WalletController from 'src/lib/controller/MobileWalletController';
+} from '@/app/utils';
+import { config } from '@/app/config';
+import { Router } from '@/app/Router';
+import { $t } from '@/app/localization';
+import WalletController from '@/app/lib/controller/MobileWalletController';
 
 export const CreateWallet = () => {
     const stepsCount = 2;
@@ -104,7 +104,7 @@ export const CreateWallet = () => {
                 <ButtonClose type="cancel" style={styles.buttonCancel} onPress={Router.goBack} />
             </FormItem>
             <FormItem>
-                <Image source={require('src/assets/images/logo-symbol-full.png')} style={styles.logo} />
+                <Image source={require('@/app/assets/images/logo-symbol-full.png')} style={styles.logo} />
             </FormItem>
             <FormItem>
                 <Steps stepsCount={stepsCount} currentStep={step} />

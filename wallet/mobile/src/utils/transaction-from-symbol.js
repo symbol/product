@@ -11,7 +11,7 @@ import {
     NamespaceRegistrationTypeMessage,
     OperationRestrictionFlagMessage,
     TransactionType,
-} from 'src/constants';
+} from '@/app/constants';
 import { addressFromPublicKey } from './account';
 import {
     getMosaicRelativeAmount,
@@ -23,7 +23,7 @@ import {
     isTransferableFlag,
 } from './mosaic';
 import { decodePlainMessage, getUnresolvedIdsFromTransactions, isIncomingTransaction, isOutgoingTransaction } from './transaction';
-import { Address } from 'symbol-sdk-v3/symbol';
+import { Address } from 'symbol-sdk/symbol';
 
 const mapMosaic = (mosaic) => ({
     id: mosaic.mosaicId.toString().replace('0x', ''),

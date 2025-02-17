@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { config } from '@/config';
-import { createNetworkMap } from '@/utils/helper';
+import { config } from '@/app/config';
+import { createNetworkMap } from '@/app/utils/helper';
 import _ from 'lodash';
 
 export class PersistentStorage {

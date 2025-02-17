@@ -1,14 +1,14 @@
 import _ from 'lodash';
 import { NamespaceService } from './';
-import { addressFromRaw } from '@/utils/account';
-import { makeRequest } from '@/utils/network';
+import { addressFromRaw } from '@/app/utils/account';
+import { makeRequest } from '@/app/utils/network';
 import {
     getMosaicRelativeAmountString,
     isRestrictableFlag,
     isRevokableFlag,
     isSupplyMutableFlag,
     isTransferableFlag,
-} from '@/utils/mosaic';
+} from '@/app/utils/mosaic';
 
 export class MosaicService {
     static async fetchMosaicInfo(networkProperties, mosaicId) {

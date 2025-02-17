@@ -15,10 +15,10 @@ import {
     StyledText,
     TableView,
     TextBox,
-} from 'src/components';
-import { $t } from 'src/localization';
-import { Router } from 'src/Router';
-import { AccountService } from 'src/lib/services';
+} from '@/app/components';
+import { $t } from '@/app/localization';
+import { Router } from '@/app/Router';
+import { AccountService } from '@/app/lib/services';
 import {
     createMultisigTransferTransactionStub,
     createSingleTransferTransactionStub,
@@ -29,10 +29,10 @@ import {
     usePasscode,
     useProp,
     useToggle,
-} from 'src/utils';
-import { useTransactionFees } from '@/utils/hooks';
-import { MessageType, TransactionType } from 'src/constants';
-import WalletController from 'src/lib/controller/MobileWalletController';
+} from '@/app/utils';
+import { useTransactionFees } from '@/app/utils/hooks';
+import { MessageType, TransactionType } from '@/app/constants';
+import WalletController from '@/app/lib/controller/MobileWalletController';
 import { observer } from 'mobx-react-lite';
 
 export const Send = observer(function Send(props) {

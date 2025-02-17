@@ -2,14 +2,14 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import Slider from 'react-native-smooth-slider';
-import { $t } from 'src/localization';
-import { borders, colors, fonts, spacings } from 'src/styles';
-import { useToggle } from 'src/utils';
+import { $t } from '@/app/localization';
+import { borders, colors, fonts, spacings } from '@/app/styles';
+import { useToggle } from '@/app/utils';
 
 const images = [
-    require('src/assets/images/fees-slow-3.png'),
-    require('src/assets/images/fees-medium-3.png'),
-    require('src/assets/images/fees-fast-3.png'),
+    require('@/app/assets/images/fees-slow-3.png'),
+    require('@/app/assets/images/fees-medium-3.png'),
+    require('@/app/assets/images/fees-fast-3.png'),
 ];
 
 export const FeeSelector = (props) => {

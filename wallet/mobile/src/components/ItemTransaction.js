@@ -1,8 +1,8 @@
 import React from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
-import { FormItem, ItemBase } from 'src/components';
-import { $t } from 'src/localization';
-import { colors, fonts, spacings } from 'src/styles';
+import { FormItem, ItemBase } from '@/app/components';
+import { $t } from '@/app/localization';
+import { colors, fonts, spacings } from '@/app/styles';
 import {
     formatDate,
     getAddressName,
@@ -13,9 +13,9 @@ import {
     isOutgoingTransaction,
     isTransactionAwaitingSignatureByAccount,
     trunc,
-} from 'src/utils';
-import { TransactionGroup, TransactionType } from 'src/constants';
-import WalletController from 'src/lib/controller/MobileWalletController';
+} from '@/app/utils';
+import { TransactionGroup, TransactionType } from '@/app/constants';
+import WalletController from '@/app/lib/controller/MobileWalletController';
 import { observer } from 'mobx-react-lite';
 
 export const ItemTransaction = observer(function ItemTransaction(props) {
@@ -49,20 +49,20 @@ export const ItemTransaction = observer(function ItemTransaction(props) {
         const addressText = isAddressName ? address : trunc(address, 'address');
         action = $t(`transactionDescriptor_${type}_outgoing`);
         description = $t('transactionDescriptionShort_transferTo', { address: addressText });
-        iconSrc = require('src/assets/images/icon-tx-transfer.png');
+        iconSrc = require('@/app/assets/images/icon-tx-transfer.png');
     } else if (type === TransactionType.TRANSFER && isIncomingTransaction(transaction, currentAccount)) {
         const address = getAddressName(signerAddress, currentAccount, accounts, addressBook);
         const isAddressName = address !== signerAddress;
         const addressText = isAddressName ? address : trunc(address, 'address');
         action = $t(`transactionDescriptor_${type}_incoming`);
         description = $t('transactionDescriptionShort_transferFrom', { address: addressText });
-        iconSrc = require('src/assets/images/icon-tx-transfer.png');
+        iconSrc = require('@/app/assets/images/icon-tx-transfer.png');
     } else if (type === TransactionType.TRANSFER) {
         const address = getAddressName(signerAddress, currentAccount, accounts, addressBook);
         const isAddressName = address !== signerAddress;
         const addressText = isAddressName ? address : trunc(address, 'address');
         description = $t('transactionDescriptionShort_transferFrom', { address: addressText });
-        iconSrc = require('src/assets/images/icon-tx-transfer.png');
+        iconSrc = require('@/app/assets/images/icon-tx-transfer.png');
     } else if (isAggregateTransaction(transaction)) {
         const firstTransactionType = transaction.innerTransactions[0]?.type;
         const type = firstTransactionType ? $t(`transactionDescriptor_${firstTransactionType}`) : '';
@@ -77,14 +77,14 @@ export const ItemTransaction = observer(function ItemTransaction(props) {
         const isPartialSignedByAccount = isPartial && !isTransactionAwaitingSignatureByAccount(transaction, currentAccount);
         isAwaitingAccountSignature = isPartial && !isPartialSignedByAccount;
         iconSrc = isPartialSignedByAccount
-            ? require('src/assets/images/icon-tx-aggregate-signed.png')
+            ? require('@/app/assets/images/icon-tx-aggregate-signed.png')
             : isAwaitingAccountSignature
-            ? require('src/assets/images/icon-tx-aggregate-awaiting.png')
-            : require('src/assets/images/icon-tx-aggregate.png');
+            ? require('@/app/assets/images/icon-tx-aggregate-awaiting.png')
+            : require('@/app/assets/images/icon-tx-aggregate.png');
     } else if (type === TransactionType.NAMESPACE_REGISTRATION) {
         const name = transaction.namespaceName;
         description = $t('transactionDescriptionShort_namespaceRegistration', { name });
-        iconSrc = require('src/assets/images/icon-tx-namespace.png');
+        iconSrc = require('@/app/assets/images/icon-tx-namespace.png');
     } else if (type === TransactionType.ADDRESS_ALIAS) {
         const address = getAddressName(transaction.address, currentAccount, accounts, addressBook);
         const isAddressName = address !== transaction.address;
@@ -92,12 +92,12 @@ export const ItemTransaction = observer(function ItemTransaction(props) {
         const target = addressText;
         const name = transaction.namespaceName;
         description = $t('transactionDescriptionShort_alias', { target, name });
-        iconSrc = require('src/assets/images/icon-tx-namespace.png');
+        iconSrc = require('@/app/assets/images/icon-tx-namespace.png');
     } else if (type === TransactionType.MOSAIC_ALIAS) {
         const target = trunc(transaction.mosaicId, 'address');
         const name = transaction.namespaceName;
         description = $t('transactionDescriptionShort_alias', { target, name });
-        iconSrc = require('src/assets/images/icon-tx-namespace.png');
+        iconSrc = require('@/app/assets/images/icon-tx-namespace.png');
     } else if (
         type === TransactionType.MOSAIC_DEFINITION ||
         type === TransactionType.MOSAIC_SUPPLY_CHANGE ||
@@ -105,7 +105,7 @@ export const ItemTransaction = observer(function ItemTransaction(props) {
     ) {
         const id = transaction.mosaicId;
         description = $t('transactionDescriptionShort_mosaic', { id });
-        iconSrc = require('src/assets/images/icon-tx-mosaic.png');
+        iconSrc = require('@/app/assets/images/icon-tx-mosaic.png');
     } else if (
         type === TransactionType.ACCOUNT_MOSAIC_RESTRICTION ||
         type === TransactionType.ACCOUNT_ADDRESS_RESTRICTION ||
@@ -113,11 +113,11 @@ export const ItemTransaction = observer(function ItemTransaction(props) {
     ) {
         const restrictionType = transaction.restrictionType;
         description = $t(`data_${restrictionType}`);
-        iconSrc = require('src/assets/images/icon-tx-restriction.png');
+        iconSrc = require('@/app/assets/images/icon-tx-restriction.png');
     } else if (type === TransactionType.MOSAIC_GLOBAL_RESTRICTION || type === TransactionType.MOSAIC_ADDRESS_RESTRICTION) {
         const id = transaction.mosaicId || transaction.referenceMosaicId;
         description = $t('transactionDescriptionShort_mosaicRestriction', { id });
-        iconSrc = require('src/assets/images/icon-tx-restriction.png');
+        iconSrc = require('@/app/assets/images/icon-tx-restriction.png');
     } else if (
         type === TransactionType.VRF_KEY_LINK ||
         type === TransactionType.NODE_KEY_LINK ||
@@ -126,18 +126,18 @@ export const ItemTransaction = observer(function ItemTransaction(props) {
     ) {
         const linkAction = transaction.linkAction;
         description = $t(`data_${linkAction}`);
-        iconSrc = require('src/assets/images/icon-tx-key.png');
+        iconSrc = require('@/app/assets/images/icon-tx-key.png');
     } else if (type === TransactionType.HASH_LOCK) {
         const duration = transaction.duration;
         description = $t('transactionDescriptionShort_hashLock', { duration });
-        iconSrc = require('src/assets/images/icon-tx-lock.png');
+        iconSrc = require('@/app/assets/images/icon-tx-lock.png');
     } else if (type === TransactionType.SECRET_LOCK || type === TransactionType.SECRET_PROOF) {
         description = trunc(transaction.secret, 'hash');
-        iconSrc = require('src/assets/images/icon-tx-lock.png');
+        iconSrc = require('@/app/assets/images/icon-tx-lock.png');
     }
 
     if (group === TransactionGroup.UNCONFIRMED) {
-        iconSrc = require('src/assets/images/icon-tx-unconfirmed.png');
+        iconSrc = require('@/app/assets/images/icon-tx-unconfirmed.png');
         styleRoot.push(styles.rootUnconfirmed);
     } else if (group === TransactionGroup.PARTIAL) {
         styleRoot.push(styles.rootPartial);

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Image, StyleSheet, View } from 'react-native';
-import { borders, colors, spacings } from 'src/styles';
-import { StyledText, TouchableNative } from 'src/components';
+import { borders, colors, spacings } from '@/app/styles';
+import { StyledText, TouchableNative } from '@/app/components';
 
 export const Widget = (props) => {
     const { children, title, color, onHeaderPress } = props;
@@ -12,7 +12,7 @@ export const Widget = (props) => {
             {!!title && (
                 <TouchableNative style={styles.widgetHeader} onPress={onHeaderPress}>
                     <StyledText type="label">{title}</StyledText>
-                    <Image source={require('src/assets/images/icon-expand.png')} style={styles.icon} />
+                    <Image source={require('@/app/assets/images/icon-expand.png')} style={styles.icon} />
                 </TouchableNative>
             )}
             {children}

@@ -1,5 +1,5 @@
 import { generateNamespaceId } from 'symbol-sdk/symbol';
-import { utils } from 'symbol-sdk-v3';
+import { utils } from 'symbol-sdk';
 
 const { hexToUint8, uint8ToHex } = utils;
 

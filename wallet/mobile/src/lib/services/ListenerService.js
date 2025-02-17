@@ -1,4 +1,4 @@
-import { TransactionService } from 'src/lib/services/TransactionService';
+import { TransactionService } from '@/app/lib/services/TransactionService';
 
 const ListenerChannelName = {
     block: 'block',

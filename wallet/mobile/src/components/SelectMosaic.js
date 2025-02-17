@@ -1,7 +1,7 @@
 import React from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
-import { Dropdown } from 'src/components';
-import { colors, fonts, spacings } from 'src/styles';
+import { Dropdown } from '@/app/components';
+import { colors, fonts, spacings } from '@/app/styles';
 
 export const SelectMosaic = (props) => {
     const { testID, title, value, list, chainHeight, onChange } = props;
@@ -10,8 +10,8 @@ export const SelectMosaic = (props) => {
 
     const getImageSrc = (item) =>
         item.mosaicInfo.name === 'symbol.xym'
-            ? require('src/assets/images/icon-select-mosaic-native.png')
-            : require('src/assets/images/icon-select-mosaic-custom.png');
+            ? require('@/app/assets/images/icon-select-mosaic-native.png')
+            : require('@/app/assets/images/icon-select-mosaic-custom.png');
 
     return (
         <Dropdown

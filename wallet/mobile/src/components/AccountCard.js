@@ -1,21 +1,21 @@
 import React from 'react';
 import { ActivityIndicator, Image, StyleSheet, Text, View } from 'react-native';
-import { borders, colors, fonts, layout, spacings } from 'src/styles';
-import { getCharPercentage } from 'src/utils';
-import { AccountAvatar } from 'src/components';
+import { borders, colors, fonts, layout, spacings } from '@/app/styles';
+import { getCharPercentage } from '@/app/utils';
+import { AccountAvatar } from '@/app/components';
 import { TouchableOpacity } from 'react-native-gesture-handler';
-import { $t } from 'src/localization';
+import { $t } from '@/app/localization';
 
 const imagesPattern = [
-    require('src/assets/images/Geometric-02.png'),
-    require('src/assets/images/Geometric-03.png'),
-    require('src/assets/images/Geometric-08.png'),
-    require('src/assets/images/Geometric-10.png'),
-    require('src/assets/images/Geometric-12.png'),
-    require('src/assets/images/Geometric-04.png'),
-    require('src/assets/images/Geometric-14.png'),
-    require('src/assets/images/Geometric-16.png'),
-    require('src/assets/images/Geometric-05.png'),
+    require('@/app/assets/images/Geometric-02.png'),
+    require('@/app/assets/images/Geometric-03.png'),
+    require('@/app/assets/images/Geometric-08.png'),
+    require('@/app/assets/images/Geometric-10.png'),
+    require('@/app/assets/images/Geometric-12.png'),
+    require('@/app/assets/images/Geometric-04.png'),
+    require('@/app/assets/images/Geometric-14.png'),
+    require('@/app/assets/images/Geometric-16.png'),
+    require('@/app/assets/images/Geometric-05.png'),
 ];
 
 export const AccountCard = (props) => {
@@ -24,7 +24,7 @@ export const AccountCard = (props) => {
     const stylesRoot = [stylesRootActive, styles.clearMarginTop];
     const stylesContent = [styles.content, styles.clearMarginTop];
     const stylesPattern = [styles.pattern];
-    const removeIconSrc = type === 'seed' ? require('src/assets/images/icon-hide.png') : require('src/assets/images/icon-delete.png');
+    const removeIconSrc = type === 'seed' ? require('@/app/assets/images/icon-hide.png') : require('@/app/assets/images/icon-delete.png');
 
     let imagePattern;
 

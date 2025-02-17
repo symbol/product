@@ -1,4 +1,4 @@
-import symbolSdk from 'symbol-sdk-v3';
+import symbolSdk from 'symbol-sdk';
 
 const { symbol } = symbolSdk;
 

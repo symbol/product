@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { Image, StyleSheet, View } from 'react-native';
 import { FlatList, TouchableWithoutFeedback } from 'react-native-gesture-handler';
-import { AccountAvatar, ButtonCircle, FormItem, ItemContact, Screen, StyledText, TabView, Widget } from 'src/components';
-import { Router } from 'src/Router';
-import { colors, layout, spacings } from 'src/styles';
-import { trunc } from 'src/utils';
-import { $t } from 'src/localization';
-import WalletController from 'src/lib/controller/MobileWalletController';
+import { AccountAvatar, ButtonCircle, FormItem, ItemContact, Screen, StyledText, TabView, Widget } from '@/app/components';
+import { Router } from '@/app/Router';
+import { colors, layout, spacings } from '@/app/styles';
+import { trunc } from '@/app/utils';
+import { $t } from '@/app/localization';
+import WalletController from '@/app/lib/controller/MobileWalletController';
 import { observer } from 'mobx-react-lite';
 
 export const AddressBookList = observer(function AddressBookList() {
@@ -43,7 +43,7 @@ export const AddressBookList = observer(function AddressBookList() {
         <Screen>
             <TabView tabs={tabs} onChange={setList} />
             <ButtonCircle
-                source={require('src/assets/images/icon-dark-account-add.png')}
+                source={require('@/app/assets/images/icon-dark-account-add.png')}
                 onPress={() => Router.goToAddressBookEdit({ list })}
             />
         </Screen>
@@ -83,7 +83,7 @@ export const AddressBookListWidget = observer(function AddressBookListWidget() {
                     ListFooterComponent={
                         <TouchableWithoutFeedback style={styles.addressBookItem} onPress={handleAddPress}>
                             <View style={styles.addressBookCircle}>
-                                <Image source={require('src/assets/images/icon-account-add.png')} style={styles.addressBookAddIcon} />
+                                <Image source={require('@/app/assets/images/icon-account-add.png')} style={styles.addressBookAddIcon} />
                             </View>
                             <StyledText type="body">{$t('button_addContact')}</StyledText>
                         </TouchableWithoutFeedback>

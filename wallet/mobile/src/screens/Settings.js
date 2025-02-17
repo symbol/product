@@ -2,13 +2,13 @@ import React from 'react';
 import { Image, StyleSheet, View } from 'react-native';
 import { FlatList } from 'react-native-gesture-handler';
 import Animated, { FadeInRight } from 'react-native-reanimated';
-import { DialogBox, DropdownModal, FormItem, Screen, StyledText, TouchableNative } from 'src/components';
-import { config } from 'src/config';
-import WalletController from 'src/lib/controller/MobileWalletController';
-import { $t, getLanguages, initLocalization, setCurrentLanguage } from 'src/localization';
-import { Router } from 'src/Router';
-import { borders, colors, fonts, layout, spacings } from 'src/styles';
-import { usePasscode, useToggle } from 'src/utils';
+import { DialogBox, DropdownModal, FormItem, Screen, StyledText, TouchableNative } from '@/app/components';
+import { config } from '@/app/config';
+import WalletController from '@/app/lib/controller/MobileWalletController';
+import { $t, getLanguages, initLocalization, setCurrentLanguage } from '@/app/localization';
+import { Router } from '@/app/Router';
+import { borders, colors, fonts, layout, spacings } from '@/app/styles';
+import { usePasscode, useToggle } from '@/app/utils';
 import { observer } from 'mobx-react-lite';
 
 export const Settings = observer(function Settings() {
@@ -22,37 +22,37 @@ export const Settings = observer(function Settings() {
         {
             title: $t('s_settings_item_network_title'),
             description: $t('s_settings_item_network_description'),
-            icon: require('src/assets/images/icon-settings-network.png'),
+            icon: require('@/app/assets/images/icon-settings-network.png'),
             handler: Router.goToSettingsNetwork,
         },
         {
             title: $t('s_settings_item_language_title'),
             description: $t('s_settings_item_language_description'),
-            icon: require('src/assets/images/icon-settings-language.png'),
+            icon: require('@/app/assets/images/icon-settings-language.png'),
             handler: toggleLanguageSelector,
         },
         {
             title: $t('s_settings_item_security_title'),
             description: $t('s_settings_item_security_description'),
-            icon: require('src/assets/images/icon-settings-security.png'),
+            icon: require('@/app/assets/images/icon-settings-security.png'),
             handler: Router.goToSettingsSecurity,
         },
         {
             title: $t('s_settings_item_currency_title'),
             description: $t('s_settings_item_currency_description'),
-            icon: require('src/assets/images/icon-settings-currency.png'),
+            icon: require('@/app/assets/images/icon-settings-currency.png'),
             handler: toggleUserCurrencySelector,
         },
         {
             title: $t('s_settings_item_about_title'),
             description: $t('s_settings_item_about_description'),
-            icon: require('src/assets/images/icon-settings-about.png'),
+            icon: require('@/app/assets/images/icon-settings-about.png'),
             handler: Router.goToSettingsAbout,
         },
         {
             title: $t('s_settings_item_logout_title'),
             description: $t('s_settings_item_logout_description'),
-            icon: require('src/assets/images/icon-settings-logout.png'),
+            icon: require('@/app/assets/images/icon-settings-logout.png'),
             handler: toggleLogoutConfirm,
         },
     ];

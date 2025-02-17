@@ -1,11 +1,11 @@
 import React from 'react';
 import { Image, ScrollView, StyleSheet } from 'react-native';
-import { Button, ButtonPlain, DialogBox, FormItem, Screen, StyledText } from 'src/components';
-import { termsAndPrivacy } from 'src/config';
-import { $t } from 'src/localization';
-import { Router } from 'src/Router';
-import { colors, fonts, layout, spacings } from 'src/styles';
-import { useToggle } from 'src/utils';
+import { Button, ButtonPlain, DialogBox, FormItem, Screen, StyledText } from '@/app/components';
+import { termsAndPrivacy } from '@/app/config';
+import { $t } from '@/app/localization';
+import { Router } from '@/app/Router';
+import { colors, fonts, layout, spacings } from '@/app/styles';
+import { useToggle } from '@/app/utils';
 
 export const Welcome = () => {
     const [isTermsAndPrivacyShown, toggleTermsAndPrivacy] = useToggle(true);
@@ -15,7 +15,7 @@ export const Welcome = () => {
 
     return (
         <Screen
-            titleBar={<Image source={require('src/assets/images/art-welcome-bg-5.png')} style={styles.backgroundArt} />}
+            titleBar={<Image source={require('@/app/assets/images/art-welcome-bg-5.png')} style={styles.backgroundArt} />}
             bottomComponent={
                 <>
                     <FormItem>
@@ -29,7 +29,7 @@ export const Welcome = () => {
         >
             <ScrollView>
                 <FormItem>
-                    <Image source={require('src/assets/images/logo-symbol-full.png')} style={styles.logo} />
+                    <Image source={require('@/app/assets/images/logo-symbol-full.png')} style={styles.logo} />
                 </FormItem>
                 <FormItem>
                     <StyledText type="title" style={styles.title}>

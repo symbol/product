@@ -1,5 +1,5 @@
-import { config } from '@/config';
-import { makeRequest } from '@/utils/network';
+import { config } from '@/app/config';
+import { makeRequest } from '@/app/utils/network';
 
 export class MarketService {
     static async fetchPrices() {

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { DeviceEventEmitter } from 'react-native';
-import { Router } from 'src/Router';
-import { getTransactionFees } from 'src/utils/transaction';
+import { Router } from '@/app/Router';
+import { getTransactionFees } from '@/app/utils/transaction';
 
 export const usePasscode = (type, onSuccess, onCancel) => {
     const successState = '.s';

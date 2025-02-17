@@ -1,10 +1,10 @@
 import React from 'react';
 import { ActivityIndicator, Image, StyleSheet, Text, View } from 'react-native';
-import { borders, colors, fonts, layout, spacings } from 'src/styles';
-import { ButtonCopy, DialogBox, TouchableNative } from 'src/components';
+import { borders, colors, fonts, layout, spacings } from '@/app/styles';
+import { ButtonCopy, DialogBox, TouchableNative } from '@/app/components';
 import { TouchableOpacity } from 'react-native-gesture-handler';
-import { getUserCurrencyAmountText, useToggle, validateAccountName, validateRequired } from 'src/utils';
-import { $t } from 'src/localization';
+import { getUserCurrencyAmountText, useToggle, validateAccountName, validateRequired } from '@/app/utils';
+import { $t } from '@/app/localization';
 
 export const AccountCardWidget = (props) => {
     const {
@@ -32,14 +32,14 @@ export const AccountCardWidget = (props) => {
 
     return (
         <View style={styles.root}>
-            <Image source={require('src/assets/images/art-passport.png')} style={styles.art} />
+            <Image source={require('@/app/assets/images/art-passport.png')} style={styles.art} />
             {isLoading && <ActivityIndicator color={colors.primary} style={styles.loadingIndicator} />}
             <View style={styles.content}>
                 <Text style={styles.textTitle}>{$t('c_accountCard_title_account')}</Text>
                 <View style={layout.row}>
                     <Text style={styles.textName}>{name}</Text>
                     <TouchableOpacity hitSlop={5} onPress={toggleNameEdit}>
-                        <Image source={require('src/assets/images/icon-edit.png')} style={styles.editIcon} />
+                        <Image source={require('@/app/assets/images/icon-edit.png')} style={styles.editIcon} />
                     </TouchableOpacity>
                 </View>
                 <Text style={styles.textTitle}>{$t('c_accountCard_title_balance')}</Text>
@@ -57,19 +57,19 @@ export const AccountCardWidget = (props) => {
             <View style={styles.controls}>
                 <View style={styles.button}>
                     <TouchableNative color={touchableBackground} onPress={onDetailsPress} style={styles.buttonPressable}>
-                        <Image source={require('src/assets/images/icon-wallet.png')} style={styles.icon} />
+                        <Image source={require('@/app/assets/images/icon-wallet.png')} style={styles.icon} />
                         <Text style={styles.textButton}>{$t('c_accountCard_button_accountDetails')}</Text>
                     </TouchableNative>
                 </View>
                 <View style={styles.button}>
                     <TouchableNative color={touchableBackground} onPress={onSendPress} style={styles.buttonPressable}>
-                        <Image source={require('src/assets/images/icon-send.png')} style={styles.icon} />
+                        <Image source={require('@/app/assets/images/icon-send.png')} style={styles.icon} />
                         <Text style={styles.textButton}>{$t('c_accountCard_button_send')}</Text>
                     </TouchableNative>
                 </View>
                 <View style={[styles.button, styles.clearBorderRight]}>
                     <TouchableNative color={touchableBackground} onPress={onReceivePress} style={styles.buttonPressable}>
-                        <Image source={require('src/assets/images/icon-receive.png')} style={styles.icon} />
+                        <Image source={require('@/app/assets/images/icon-receive.png')} style={styles.icon} />
                         <Text style={styles.textButton}>{$t('c_accountCard_button_receive')}</Text>
                     </TouchableNative>
                 </View>

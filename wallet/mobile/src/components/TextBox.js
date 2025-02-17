@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, TextInput, View } from 'react-native';
 import Animated, { interpolateColor, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
-import { borders, colors, fonts, spacings, timings } from 'src/styles';
+import { borders, colors, fonts, spacings, timings } from '@/app/styles';
 
 const MULTILINE_NUMBER_OF_LINES = 7;
 

@@ -3,11 +3,11 @@ import { useMemo } from 'react';
 import { useEffect } from 'react';
 import { useState } from 'react';
 import { ScrollView } from 'react-native-gesture-handler';
-import { Alert, Button, Checkbox, DialogBox, FeeSelector, FormItem, Screen, StyledText, TableView, TextBox, Widget } from 'src/components';
-import { $t } from 'src/localization';
-import { Router } from 'src/Router';
-import { NetworkService, TransactionService } from 'src/lib/services';
-import { layout } from 'src/styles';
+import { Alert, Button, Checkbox, DialogBox, FeeSelector, FormItem, Screen, StyledText, TableView, TextBox, Widget } from '@/app/components';
+import { $t } from '@/app/localization';
+import { Router } from '@/app/Router';
+import { NetworkService, TransactionService } from '@/app/lib/services';
+import { layout } from '@/app/styles';
 import {
     generateMosaicId,
     generateNonce,
@@ -22,8 +22,8 @@ import {
     validateMosaicDuration,
     validateMosaicSupply,
     validateRequired,
-} from 'src/utils';
-import WalletController from 'src/lib/controller/MobileWalletController';
+} from '@/app/utils';
+import WalletController from '@/app/lib/controller/MobileWalletController';
 import { observer } from 'mobx-react-lite';
 
 export const MosaicCreation = observer(function MosaicCreation() {

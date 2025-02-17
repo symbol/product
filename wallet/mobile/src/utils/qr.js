@@ -1,6 +1,6 @@
-import { networkIdentifierToNetworkType, networkTypeToIdentifier } from 'src/utils/network';
+import { networkIdentifierToNetworkType, networkTypeToIdentifier } from '@/app/utils/network';
 import * as QRCodeCanvas from 'qrcode/lib/server';
-import { addressFromPublicKey, publicAccountFromPrivateKey } from 'src/utils/account';
+import { addressFromPublicKey, publicAccountFromPrivateKey } from '@/app/utils/account';
 
 const SYMBOL_QR_CODE_VERSION = 3;
 

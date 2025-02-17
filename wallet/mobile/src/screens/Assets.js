@@ -1,12 +1,12 @@
 import React, { useMemo, useState } from 'react';
 import { SectionList } from 'react-native';
 import { RefreshControl } from 'react-native-gesture-handler';
-import { Filter, FormItem, ItemAsset, Screen, StyledText, TabNavigator, TitleBar } from 'src/components';
-import { $t } from 'src/localization';
-import { Router } from 'src/Router';
-import { colors } from 'src/styles';
-import { handleError, useDataManager, useInit } from 'src/utils';
-import WalletController from 'src/lib/controller/MobileWalletController';
+import { Filter, FormItem, ItemAsset, Screen, StyledText, TabNavigator, TitleBar } from '@/app/components';
+import { $t } from '@/app/localization';
+import { Router } from '@/app/Router';
+import { colors } from '@/app/styles';
+import { handleError, useDataManager, useInit } from '@/app/utils';
+import WalletController from '@/app/lib/controller/MobileWalletController';
 import { observer } from 'mobx-react-lite';
 
 export const Assets = observer(function Assets() {

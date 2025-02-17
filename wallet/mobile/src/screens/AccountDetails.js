@@ -1,12 +1,12 @@
 import React, { useMemo, useState } from 'react';
 import { Linking } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
-import { ButtonPlain, DialogBox, FormItem, QRCode, Screen, TableView, Widget } from 'src/components';
-import { config } from 'src/config';
-import { $t } from 'src/localization';
-import { layout } from 'src/styles';
-import { usePasscode, useToggle } from 'src/utils';
-import WalletController from 'src/lib/controller/MobileWalletController';
+import { ButtonPlain, DialogBox, FormItem, QRCode, Screen, TableView, Widget } from '@/app/components';
+import { config } from '@/app/config';
+import { $t } from '@/app/localization';
+import { layout } from '@/app/styles';
+import { usePasscode, useToggle } from '@/app/utils';
+import WalletController from '@/app/lib/controller/MobileWalletController';
 import { observer } from 'mobx-react-lite';
 
 export const AccountDetails = observer(function AccountDetails() {
@@ -46,7 +46,7 @@ export const AccountDetails = observer(function AccountDetails() {
                     {isTestnet && (
                         <FormItem>
                             <ButtonPlain
-                                icon={require('src/assets/images/icon-primary-faucet.png')}
+                                icon={require('@/app/assets/images/icon-primary-faucet.png')}
                                 title={$t('button_faucet')}
                                 onPress={openFaucet}
                             />
@@ -54,14 +54,14 @@ export const AccountDetails = observer(function AccountDetails() {
                     )}
                     <FormItem>
                         <ButtonPlain
-                            icon={require('src/assets/images/icon-primary-explorer.png')}
+                            icon={require('@/app/assets/images/icon-primary-explorer.png')}
                             title={$t('button_openTransactionInExplorer')}
                             onPress={openBlockExplorer}
                         />
                     </FormItem>
                     <FormItem>
                         <ButtonPlain
-                            icon={require('src/assets/images/icon-primary-key.png')}
+                            icon={require('@/app/assets/images/icon-primary-key.png')}
                             title={$t('button_revealPrivateKey')}
                             onPress={confirmPrivateKeyReveal}
                         />

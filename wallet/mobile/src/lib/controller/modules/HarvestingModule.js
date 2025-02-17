@@ -1,8 +1,8 @@
 import { cloneDeep, shuffle } from 'lodash';
 import { makeAutoObservable } from 'mobx';
-import { LinkAction, LinkActionMessage, MessageType, TransactionType } from 'src/constants';
-import { HarvestingService } from 'src/lib/services';
-import { addressFromPublicKey, encodeDelegatedHarvestingMessage, generateKeyPair } from 'src/utils';
+import { LinkAction, LinkActionMessage, MessageType, TransactionType } from '@/app/constants';
+import { HarvestingService } from '@/app/lib/services';
+import { addressFromPublicKey, encodeDelegatedHarvestingMessage, generateKeyPair } from '@/app/utils';
 
 const defaultState = {};
 

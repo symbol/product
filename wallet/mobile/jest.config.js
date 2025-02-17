@@ -3,7 +3,6 @@ const transformIgnoreModules = [
     'react-native',
     'symbol-sdk',
     'symbol-address-book',
-    'symbol-sdk-v3',
     'symbol-crypto-wasm-web',
     'symbol-crypto-wasm-node',
     'react-native-reanimated',
@@ -19,9 +18,7 @@ module.exports = {
     testMatch: ['<rootDir>/__tests__/**/*.test.js'],
     modulePaths: ['<rootDir>'],
     moduleNameMapper: {
-        '^@/(.*)$': '<rootDir>/src/$1',
-        '^src/(.*)$': '<rootDir>/src/$1',
-        '^@/config': '<rootDir>/config/index.js',
+        '^@/app/(.*)$': '<rootDir>/src/$1',
         '^__fixtures__/(.*)$': '<rootDir>/__fixtures__/$1',
         '^symbol-crypto-wasm-web': '<rootDir>node_modules/symbol-crypto-wasm-node/symbol_crypto_wasm.js',
         '\\.(jpg|jpeg|png|gif|eot|otf|webp|svg|ttf|woff|woff2|mp4|webm|wav|mp3|m4a|aac|oga)$': '<rootDir>/jestAssetTransormer.js',

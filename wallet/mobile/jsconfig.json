@@ -2,9 +2,7 @@
     "compilerOptions": {
         "baseUrl": ".",
         "paths": {
-            "config/*": ["config/*"],
-            "src/*": ["src/*"],
-            "@/*": ["src/*"],
+            "@/app/*": ["src/*"],
             "__fixtures__/*": ["__fixtures__/*"]
         }
     },

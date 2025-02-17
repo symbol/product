@@ -1,9 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Dimensions, StyleSheet, View } from 'react-native';
 import Animated, { interpolate, useAnimatedScrollHandler, useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
-import { borders, colors, spacings } from 'src/styles';
-import { StyledText, TouchableNative } from 'src/components';
-import { interleave } from 'src/utils';
+import { borders, colors, spacings } from '@/app/styles';
+import { StyledText, TouchableNative } from '@/app/components';
+import { interleave } from '@/app/utils';
 
 const SCREEN_WIDTH = Dimensions.get('screen').width;
 

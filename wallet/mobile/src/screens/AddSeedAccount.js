@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { FlatList } from 'react-native-gesture-handler';
-import { AccountCard, ButtonPlain, FormItem, Screen, StyledText, TextBox, TouchableNative } from 'src/components';
-import { $t } from 'src/localization';
-import { Router } from 'src/Router';
-import { colors } from 'src/styles';
-import { handleError, useDataManager, usePromises, useValidation, validateAccountName } from 'src/utils';
-import WalletController from 'src/lib/controller/MobileWalletController';
+import { AccountCard, ButtonPlain, FormItem, Screen, StyledText, TextBox, TouchableNative } from '@/app/components';
+import { $t } from '@/app/localization';
+import { Router } from '@/app/Router';
+import { colors } from '@/app/styles';
+import { handleError, useDataManager, usePromises, useValidation, validateAccountName } from '@/app/utils';
+import WalletController from '@/app/lib/controller/MobileWalletController';
 import { observer } from 'mobx-react-lite';
-import { WalletAccountType } from 'src/constants';
+import { WalletAccountType } from '@/app/constants';
 
 export const AddSeedAccount = observer(function AddSeedAccount() {
     const { accounts, accountInfos, seedAddresses, networkIdentifier, ticker } = WalletController;
@@ -63,7 +63,7 @@ export const AddSeedAccount = observer(function AddSeedAccount() {
             <FormItem>
                 <StyledText type="body">{$t('s_addAccount_seed_description')}</StyledText>
                 <ButtonPlain
-                    icon={require('src/assets/images/icon-primary-key.png')}
+                    icon={require('@/app/assets/images/icon-primary-key.png')}
                     title={$t('button_addExternalAccount')}
                     onPress={() => Router.goToAddExternalAccount()}
                 />

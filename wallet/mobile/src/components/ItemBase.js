@@ -3,8 +3,8 @@ import React, { useState } from 'react';
 import { useEffect } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
-import { borders, colors, spacings } from 'src/styles';
-import { FormItem, TouchableNative } from 'src/components';
+import { borders, colors, spacings } from '@/app/styles';
+import { FormItem, TouchableNative } from '@/app/components';
 
 const MIN_SCALE = 1;
 const MAX_SCALE = 1.2;

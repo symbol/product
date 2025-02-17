@@ -1,9 +1,9 @@
 import React from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
-import { $t } from 'src/localization';
-import { borders, colors, fonts, spacings } from 'src/styles';
-import { blockDurationToDaysLeft, trunc } from 'src/utils';
-import { ItemBase } from 'src/components';
+import { $t } from '@/app/localization';
+import { borders, colors, fonts, spacings } from '@/app/styles';
+import { blockDurationToDaysLeft, trunc } from '@/app/utils';
+import { ItemBase } from '@/app/components';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useEffect } from 'react';
 
@@ -19,13 +19,13 @@ export function ItemAsset(props) {
         description = $t('s_assets_item_id', { id });
         iconSrc =
             id === nativeMosaicId
-                ? require('src/assets/images/icon-mosaic-native.png')
-                : require('src/assets/images/icon-mosaic-custom.png');
+                ? require('@/app/assets/images/icon-mosaic-native.png')
+                : require('@/app/assets/images/icon-mosaic-custom.png');
         endHeight = asset.startHeight + asset.duration;
     } else if (group === 'namespace') {
         const linkedId = asset.linkedMosaicId || asset.linkedAddress;
         description = linkedId ? $t('s_assets_item_linkedTo', { id: trunc(linkedId, 'address') }) : $t('s_assets_item_notLinked');
-        iconSrc = require('src/assets/images/icon-namespace.png');
+        iconSrc = require('@/app/assets/images/icon-namespace.png');
         endHeight = asset.endHeight;
     }
 

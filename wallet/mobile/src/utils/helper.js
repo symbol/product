@@ -4,9 +4,9 @@ import moment from 'moment';
 import { Duration, Instant, LocalDateTime, ZoneId } from '@js-joda/core';
 import { Clipboard, Platform, Vibration } from 'react-native';
 import { showMessage as rnFlashMessage } from 'react-native-flash-message';
-import { $t } from 'src/localization';
-import { config } from 'src/config';
-import { NetworkIdentifier } from 'src/constants';
+import { $t } from '@/app/localization';
+import { config } from '@/app/config';
+import { NetworkIdentifier } from '@/app/constants';
 
 export const showMessage = ({ message, type }) => rnFlashMessage({ message, type });
 

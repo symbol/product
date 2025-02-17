@@ -1,8 +1,8 @@
 import React from 'react';
 import { Image, StyleSheet } from 'react-native';
 import { TouchableOpacity } from 'react-native';
-import { StyledText } from 'src/components';
-import { colors, spacings } from 'src/styles';
+import { StyledText } from '@/app/components';
+import { colors, spacings } from '@/app/styles';
 
 export const ButtonPlain = (props) => {
     const { isDisabled, title, style, icon, isCentered, onPress } = props;
