@@ -1,20 +1,18 @@
 import React from 'react';
-import { DeviceEventEmitter, Image, StyleSheet, View } from 'react-native';
+import { Image, StyleSheet, View } from 'react-native';
 import { FlatList } from 'react-native-gesture-handler';
 import Animated, { FadeInRight } from 'react-native-reanimated';
 import { DialogBox, DropdownModal, FormItem, Screen, StyledText, TouchableNative } from 'src/components';
 import { config } from 'src/config';
-import { ControllerEventName } from 'src/constants';
+import WalletController from 'src/lib/controller/MobileWalletController';
 import { $t, getLanguages, initLocalization, setCurrentLanguage } from 'src/localization';
 import { Router } from 'src/Router';
-import store, { connect } from 'src/store';
 import { borders, colors, fonts, layout, spacings } from 'src/styles';
-import { clearCache, usePasscode, useToggle } from 'src/utils';
+import { usePasscode, useToggle } from 'src/utils';
+import { observer } from 'mobx-react-lite'
 
-export const Settings = connect((state) => ({
-    userCurrency: state.market.userCurrency,
-}))(function Settings(props) {
-    const { userCurrency } = props;
+export const Settings = observer(function Settings() {
+    const userCurrency = WalletController.modules.market.price.currency;
     const [isLogoutConfirmVisible, toggleLogoutConfirm] = useToggle(false);
     const [isLanguageSelectorVisible, toggleLanguageSelector] = useToggle(false);
     const [isUserCurrencySelectorVisible, toggleUserCurrencySelector] = useToggle(false);
@@ -64,14 +62,11 @@ export const Settings = connect((state) => ({
         Router.goToHome();
     };
     const changeUserCurrency = (userCurrency) => {
-        store.dispatchAction({ type: 'market/changeUserCurrency', payload: userCurrency });
+        WalletController.modules.market.selectUserCurrency(userCurrency);
     };
     const logoutConfirm = async () => {
-        clearCache();
+        WalletController.logoutAndClearStorage();
         initLocalization();
-        await store.dispatchAction({ type: 'wallet/loadAll' });
-        store.dispatchAction({ type: 'network/connect' });
-        DeviceEventEmitter.emit(ControllerEventName.LOGOUT);
     };
     const showLogoutPasscode = usePasscode('enter', logoutConfirm);
     const handleLogoutPress = () => {

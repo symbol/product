@@ -3,14 +3,12 @@ import { Image, StyleSheet, View } from 'react-native';
 import { FormItem, ItemBase, Screen, StyledText, TabNavigator, TitleBar } from 'src/components';
 import { $t } from 'src/localization';
 import { Router } from 'src/Router';
-import { connect } from 'src/store';
 import { spacings } from 'src/styles';
+import WalletController from 'src/lib/controller/MobileWalletController';
+import { observer } from 'mobx-react-lite';
 
-export const Actions = connect((state) => ({
-    currentAccount: state.account.current,
-    isWalletReady: state.wallet.isReady,
-}))(function Actions(props) {
-    const { currentAccount, isWalletReady } = props;
+export const Actions = observer(function Actions() {
+    const { currentAccount, isWalletReady } = WalletController;
 
     const list = [
         {

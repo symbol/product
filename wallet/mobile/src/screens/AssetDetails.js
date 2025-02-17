@@ -6,15 +6,13 @@ import { ButtonPlain, FormItem, Screen, StyledText, TableView, Widget } from 'sr
 import { config } from 'src/config';
 import { $t } from 'src/localization';
 import { Router } from 'src/Router';
-import { connect } from 'src/store';
 import { isMosaicRevokable } from 'src/utils';
+import WalletController from 'src/lib/controller/MobileWalletController';
+import { observer } from 'mobx-react-lite';
 
-export const AssetDetails = connect((state) => ({
-    currentAccount: state.account.current,
-    chainHeight: state.network.chainHeight,
-    networkIdentifier: state.network.networkIdentifier,
-}))(function AssetDetails(props) {
-    const { route, currentAccount, chainHeight, networkIdentifier } = props;
+export const AssetDetails = observer(function AssetDetails(props) {
+    const { route } = props;
+    const { currentAccount, chainHeight, networkIdentifier } = WalletController;
     const { asset, group } = route.params;
     let title = '';
     let tableData = {};

@@ -2,20 +2,19 @@ import React, { useEffect } from 'react';
 import { useMemo } from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
 import { TouchableOpacity } from 'react-native-gesture-handler';
-import { connect } from 'src/store';
 import { AccountAvatar, DropdownModal, TextBox } from 'src/components';
 import { $t } from 'src/localization';
 import { colors, fonts, spacings } from 'src/styles';
 import { trunc, useToggle, useValidation, validateRequired, validateUnresolvedAddress } from 'src/utils';
+import WalletController from 'src/lib/controller/MobileWalletController';
+import { observer } from 'mobx-react-lite'
 
-export const InputAddressDropdown = connect((state) => ({
-    addressBookWhiteList: state.addressBook.whiteList,
-    accounts: state.wallet.accounts,
-    networkIdentifier: state.network.networkIdentifier,
-}))(function InputAddressDropdown(props) {
-    const { addressBookWhiteList, accounts, networkIdentifier, title, value, onChange, isOpen, onClose } = props;
+export const InputAddressDropdown = observer(function InputAddressDropdown(props) {
+    const { title, value, onChange, isOpen, onClose } = props;
+    const { accounts, networkIdentifier } = WalletController
+    const { addressBook } = WalletController.modules;
     const networkAccounts = accounts[networkIdentifier];
-    const contacts = [...networkAccounts, ...addressBookWhiteList];
+    const contacts = [...networkAccounts, ...addressBook.whiteList];
     const contactList = useMemo(
         () =>
             contacts?.map((contact) => ({

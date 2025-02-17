@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, SectionList, StyleSheet, View } from 'react-native';
 import { RefreshControl } from 'react-native-gesture-handler';
 import Animated, { FadeInDown, FadeOutUp } from 'react-native-reanimated';
@@ -16,62 +16,126 @@ import {
 } from 'src/components';
 import { $t } from 'src/localization';
 import { Router } from 'src/Router';
-import { HarvestingService } from 'src/services';
-import store, { connect } from 'src/store';
 import { colors, spacings } from 'src/styles';
-import { handleError, useDataManager, useInit } from 'src/utils';
-import { TransactionType } from 'src/constants';
+import { filterAllowedTransactions, filterBlacklistedTransactions, handleError, useDataManager, useInit, useProp } from 'src/utils';
+import { TransactionGroup, TransactionType } from 'src/constants';
+import WalletController from 'src/lib/controller/MobileWalletController';
+import { observer } from 'mobx-react-lite';
+import { uniqBy } from 'lodash';
 
-export const History = connect((state) => ({
-    isWalletReady: state.wallet.isReady,
-    currentAccount: state.account.current,
-    partial: state.transaction.partial,
-    unconfirmed: state.transaction.unconfirmed,
-    confirmed: state.transaction.confirmed,
-    isLastPage: state.transaction.isLastPage,
-    blackList: state.addressBook.blackList,
-    networkProperties: state.network.networkProperties,
-}))(function History(props) {
-    const { isWalletReady, isLastPage, currentAccount, partial, unconfirmed, confirmed, blackList, networkProperties } = props;
+export const History = observer(function History() {
+    const { isWalletReady, currentAccount, currentAccountLatestTransactions } = WalletController;
+    const requestedAccountPublicKey = useRef(null);
+    const blackList = useMemo(() => [], []);
+    const [confirmed, setConfirmed] = useProp(currentAccountLatestTransactions);
+    const [unconfirmed, setUnconfirmed] = useState([]);
+    const [partial, setPartial] = useState([]);
     const [harvested, setHarvested] = useState([]);
     const [pageNumber, setPageNumber] = useState(1);
+    const [isLastPage, setIsLastPage] = useState(false);
     const [isNextPageRequested, setIsNextPageRequested] = useState(false);
     const [filter, setFilter] = useState({});
-    const [fetchTransactions, isLoading] = useDataManager(
+
+    const fetchTransactions = async (pageNumber) => {
+        const pageSize = 15;
+        const confirmedSearchCriteria = {
+            pageNumber,
+            pageSize,
+            group: TransactionGroup.CONFIRMED,
+            filter,
+        };
+
+        // Always fetch confirmed transactions
+        const confirmed = await WalletController.fetchAccountTransactions(confirmedSearchCriteria);
+
+        // Filter transactions using address book
+        const blackList = WalletController.modules.addressBook.blackList;
+        const filteredConfirmed = filter.blocked
+            ? filterBlacklistedTransactions(confirmed.data, blackList)
+            : filterAllowedTransactions(confirmed.data, blackList);
+        let filteredUnconfirmed;
+        let filteredPartial;
+
+        // Fetch unconfirmed and partial transactions only on the first page
+        if (pageNumber === 1) {
+            const unconfirmed = await WalletController.fetchAccountTransactions({ group: TransactionGroup.UNCONFIRMED });
+            const partial = await WalletController.fetchAccountTransactions({ group: TransactionGroup.PARTIAL });
+
+            // Filter transactions using address book
+            filteredUnconfirmed = filter.blocked
+                ? filterBlacklistedTransactions(unconfirmed.data, blackList)
+                : filterAllowedTransactions(unconfirmed.data, blackList);
+            filteredPartial = filter.blocked
+                ? filterBlacklistedTransactions(partial.data, blackList)
+                : filterAllowedTransactions(partial.data, blackList);
+        }
+
+        // Escape if account has changed
+        if (requestedAccountPublicKey.current !== currentAccount.publicKey)
+            return;
+
+        // Update state
+        if (pageNumber === 1) {
+            setConfirmed(filteredConfirmed);
+            setUnconfirmed(filteredUnconfirmed);
+            setPartial(filteredPartial);
+        }
+        else {
+            setConfirmed(previousConfirmed =>
+                uniqBy([...previousConfirmed, ...filteredConfirmed], 'hash')
+            );
+        }
+
+        const isLastPage = confirmed.data.length < pageSize;
+        setIsLastPage(isLastPage);
+        setPageNumber(pageNumber);
+    };
+    const fetchHarvestedBlocks = async (pageNumber) => {
+        const harvestedPage = await WalletController.modules.harvesting.fetchAccountHarvestedBlocks({ pageNumber });
+
+        if (requestedAccountPublicKey.current !== currentAccount.publicKey)
+            return;
+
+        setHarvested((harvested) => [...harvested, ...harvestedPage]);
+        setPageNumber(pageNumber);
+    }
+
+    const [fetchInitialData, isLoading] = useDataManager(
         async () => {
-            setPageNumber(1);
-            if (filter.harvested) {
-                const harvestedPage = await HarvestingService.fetchHarvestedBlocks(networkProperties, currentAccount.address, {
-                    pageNumber: 1,
-                });
-                setHarvested(harvestedPage);
-            } else {
-                await store.dispatchAction({ type: 'transaction/fetchData', payload: { filter } });
-            }
+            const pageNumber = 1;
+            if (filter.harvested)
+                await fetchHarvestedBlocks(pageNumber);
+            else
+                await fetchTransactions(pageNumber);
         },
         null,
         handleError
     );
     const [fetchNextPage, isPageLoading] = useDataManager(
-        async () => {
+        async (pageNumber) => {
             const nextPageNumber = pageNumber + 1;
-            if (filter.harvested) {
-                const harvestedPage = await HarvestingService.fetchHarvestedBlocks(networkProperties, currentAccount.address, {
-                    pageNumber: nextPageNumber,
-                });
-                setHarvested((harvested) => [...harvested, ...harvestedPage]);
-            } else {
-                await store.dispatchAction({ type: 'transaction/fetchPage', payload: { pageNumber: nextPageNumber, filter } });
-            }
-            setPageNumber(nextPageNumber);
+            if (filter.harvested)
+                await fetchHarvestedBlocks(nextPageNumber);
+            else
+                await fetchTransactions(nextPageNumber);
         },
         null,
         handleError
     );
-    useInit(fetchTransactions, isWalletReady, [currentAccount, blackList, filter]);
+    const refresh = () => {
+        requestedAccountPublicKey.current = currentAccount.publicKey;
+        setConfirmed(currentAccountLatestTransactions);
+        setUnconfirmed([]);
+        setPartial([]);
+        setHarvested([]);
+        setPageNumber(1);
+        setIsLastPage(false);
+        fetchInitialData();
+    }
+    useInit(refresh, isWalletReady, [currentAccount, blackList, filter]);
 
     const onEndReached = () => !isLastPage && setIsNextPageRequested(true);
-    const isPlaceholderShown = (group) => group === 'confirmed' && !isLastPage;
+    const isPlaceholderShown = (group) => group === TransactionGroup.CONFIRMED && !isLastPage;
 
     const isHarvestedShown = !!harvested.length && filter.harvested;
     const isPartialShown = !!partial?.length && !filter.harvested;
@@ -83,7 +147,7 @@ export const History = connect((state) => ({
         sections.push({
             title: $t('transactionGroup_partial'),
             style: styles.titlePartial,
-            group: 'partial',
+            group: TransactionGroup.PARTIAL,
             data: partial,
         });
     }
@@ -91,7 +155,7 @@ export const History = connect((state) => ({
         sections.push({
             title: $t('transactionGroup_unconfirmed'),
             style: styles.titleUnconfirmed,
-            group: 'unconfirmed',
+            group: TransactionGroup.UNCONFIRMED,
             data: unconfirmed,
         });
     }
@@ -99,7 +163,7 @@ export const History = connect((state) => ({
         sections.push({
             title: $t('transactionGroup_confirmed'),
             style: null,
-            group: 'confirmed',
+            group: TransactionGroup.CONFIRMED,
             data: confirmed,
         });
     }
@@ -156,15 +220,16 @@ export const History = connect((state) => ({
 
     useEffect(() => {
         if (!isLoading && !isPageLoading && isNextPageRequested) {
-            fetchNextPage();
+            fetchNextPage(pageNumber);
             setIsNextPageRequested(false);
         }
-    }, [isLoading, isPageLoading, isNextPageRequested]);
+    }, [isLoading, isPageLoading, isNextPageRequested, pageNumber]);
 
     return (
         <Screen titleBar={<TitleBar accountSelector settings currentAccount={currentAccount} />} navigator={<TabNavigator />}>
             <SectionList
-                refreshControl={<RefreshControl tintColor={colors.primary} refreshing={isLoading} onRefresh={fetchTransactions} />}
+                key={currentAccount.publicKey}
+                refreshControl={<RefreshControl tintColor={colors.primary} refreshing={isLoading} onRefresh={refresh} />}
                 onEndReached={onEndReached}
                 onEndReachedThreshold={1}
                 stickySectionHeadersEnabled={false}
@@ -215,14 +280,11 @@ export const History = connect((state) => ({
     );
 });
 
-export const HistoryWidget = connect((state) => ({
-    partial: state.transaction.partial,
-    unconfirmed: state.transaction.unconfirmed,
-}))(function HistoryWidget(props) {
+export const HistoryWidget = (props) => {
     const { partial, unconfirmed } = props;
     const transactions = [
-        ...partial.map((tx) => ({ ...tx, group: 'partial' })),
-        ...unconfirmed.map((tx) => ({ ...tx, group: 'unconfirmed' })),
+        ...partial.map((tx) => ({ ...tx, group: TransactionGroup.PARTIAL })),
+        ...unconfirmed.map((tx) => ({ ...tx, group: TransactionGroup.UNCONFIRMED })),
     ];
     const isWidgetShown = transactions.length > 0;
 
@@ -246,7 +308,7 @@ export const HistoryWidget = connect((state) => ({
             </Animated.View>
         )
     );
-});
+};
 
 const styles = StyleSheet.create({
     listContainer: {

@@ -17,8 +17,7 @@ import {
 import { config } from 'src/config';
 import { $t } from 'src/localization';
 import { Router } from 'src/Router';
-import { TransactionService } from 'src/services';
-import { connect } from 'src/store';
+import { TransactionService } from 'src/lib/services';
 import { borders, colors, fonts, spacings } from 'src/styles';
 import {
     formatDate,
@@ -31,28 +30,30 @@ import {
     useDataManager,
     useInit,
 } from 'src/utils';
-import { TransactionType } from 'src/constants';
+import { MessageType, TransactionGroup, TransactionType } from 'src/constants';
+import WalletController from 'src/lib/controller/MobileWalletController';
+import { observer } from 'mobx-react-lite'
 
 const SCREEN_HEIGHT = Dimensions.get('screen').height;
 const COSIGNATURE_FORM_HEIGHT = SCREEN_HEIGHT / 4;
 
-export const TransactionDetails = connect((state) => ({
-    isWalletReady: state.wallet.isReady,
-    addressBook: state.addressBook.addressBook,
-    chainHeight: state.network.chainHeight,
-    walletAccounts: state.wallet.accounts,
-    currentAccount: state.account.current,
-    ticker: state.network.ticker,
-    networkIdentifier: state.network.networkIdentifier,
-    networkProperties: state.network.networkProperties,
-}))(function TransactionDetails(props) {
-    const { isWalletReady, addressBook, chainHeight, walletAccounts, currentAccount, ticker, networkIdentifier, networkProperties } = props;
+export const TransactionDetails = observer(function TransactionDetails(props) {
+    const { 
+        isWalletReady, 
+        chainHeight, 
+        accounts, 
+        currentAccount, 
+        ticker, 
+        networkIdentifier, 
+        networkProperties 
+    } = WalletController;
+    const { addressBook } = WalletController.modules;
     const { transaction } = props.route.params;
-    const accounts = walletAccounts[networkIdentifier];
+    const walletAccounts = accounts[networkIdentifier];
     const [fetchPartialInfo, isPartialInfoLoading, partialInfo] = useDataManager(() => {
         if (transaction.type === TransactionType.AGGREGATE_BONDED) {
             const transactionOptions = {
-                group: 'partial',
+                group: TransactionGroup.PARTIAL,
                 currentAccount, 
                 networkProperties
             }
@@ -65,19 +66,23 @@ export const TransactionDetails = connect((state) => ({
     const [fetchStatus, isStatusLoading, status] = useDataManager(() => {
         return TransactionService.fetchStatus(transaction.hash || transaction.id, networkProperties);
     }, null);
-    const [decryptMessage, isMessageLoading, decryptedMessageText] = useDataManager(
+    const [getMessage, isMessageLoading, decryptedMessageText] = useDataManager(
         () => {
-            if (!transaction.message) {
-                return null;
+            if (transaction.message?.type === MessageType.EncryptedText) {
+                return WalletController.modules.transfer.getDecryptedMessageText(transaction);
             }
-            return TransactionService.decryptMessage(transaction, currentAccount, networkProperties);
+            else if (transaction.message?.type === MessageType.PlainText) {
+                return transaction.message.text;
+            }
+    
+            return null;
         },
         null,
         handleError
     );
     useInit(fetchPartialInfo, isWalletReady);
     useInit(fetchStatus, isWalletReady);
-    useInit(decryptMessage, isWalletReady);
+    useInit(getMessage, isWalletReady);
     const isLoading = isPartialInfoLoading || isStatusLoading || isMessageLoading;
 
     const isAggregate = isAggregateTransaction(transaction);
@@ -92,19 +97,19 @@ export const TransactionDetails = connect((state) => ({
     let isRevokeButtonVisible = false;
 
     switch (status?.group) {
-        case 'unconfirmed':
+        case TransactionGroup.UNCONFIRMED:
             statusTextStyle.push(styles.statusTextUnconfirmed);
             statusIconSrc = require('src/assets/images/icon-status-unconfirmed.png');
             break;
-        case 'partial':
+        case TransactionGroup.PARTIAL:
             statusTextStyle.push(styles.statusTextPartial);
             statusIconSrc = require('src/assets/images/icon-status-partial-1.png');
             break;
-        case 'confirmed':
+        case TransactionGroup.CONFIRMED:
             statusTextStyle.push(styles.statusTextConfirmed);
             statusIconSrc = require('src/assets/images/icon-status-confirmed.png');
             break;
-        case 'failed':
+        case TransactionGroup.FAILED:
             statusTextStyle.push(styles.statusTextFailed);
             statusIconSrc = require('src/assets/images/icon-status-failed.png');
             break;
@@ -112,16 +117,16 @@ export const TransactionDetails = connect((state) => ({
 
     if (transaction.type === TransactionType.TRANSFER && isOutgoingTransaction(transaction, currentAccount)) {
         action = $t(`transactionDescriptor_${transaction.type}_outgoing`);
-        isAddRecipientContactButtonShown = !isAddressKnown(transaction.recipientAddress, accounts, addressBook);
+        isAddRecipientContactButtonShown = !isAddressKnown(transaction.recipientAddress, walletAccounts, addressBook);
         transaction.mosaics.forEach((mosaic) => {
             if (isMosaicRevokable(mosaic, chainHeight, currentAccount.address)) {
                 revokableMosaics.push(mosaic);
             }
         });
-        isRevokeButtonVisible = status?.group === 'confirmed' && !!revokableMosaics.length;
+        isRevokeButtonVisible = status?.group === TransactionGroup.CONFIRMED && !!revokableMosaics.length;
     } else if (transaction.type === TransactionType.TRANSFER && isIncomingTransaction(transaction, currentAccount)) {
         action = $t(`transactionDescriptor_${transaction.type}_incoming`);
-        isAddSignerContactButtonShown = !isAddressKnown(transaction.signerAddress, accounts, addressBook);
+        isAddSignerContactButtonShown = !isAddressKnown(transaction.signerAddress, walletAccounts, addressBook);
     }
 
     if (transaction.amount < 0) {

@@ -4,24 +4,17 @@ import { RefreshControl } from 'react-native-gesture-handler';
 import { Filter, FormItem, ItemAsset, Screen, StyledText, TabNavigator, TitleBar } from 'src/components';
 import { $t } from 'src/localization';
 import { Router } from 'src/Router';
-import store, { connect } from 'src/store';
 import { colors } from 'src/styles';
 import { handleError, useDataManager, useInit } from 'src/utils';
+import WalletController from 'src/lib/controller/MobileWalletController';
+import { observer } from 'mobx-react-lite'
 
-export const Assets = connect((state) => ({
-    isWalletReady: state.wallet.isReady,
-    chainHeight: state.network.chainHeight,
-    currentAccount: state.account.current,
-    mosaics: state.account.mosaics,
-    namespaces: state.account.namespaces,
-    networkProperties: state.network.networkProperties,
-}))(function Assets(props) {
-    const { isWalletReady, chainHeight, currentAccount, mosaics, namespaces, networkProperties } = props;
+export const Assets = observer(function Assets() {
+    const { isWalletReady, chainHeight, currentAccount, currentAccountInfo, networkProperties } = WalletController;
+    const { mosaics, namespaces } = currentAccountInfo;
     const [filter, setFilter] = useState({});
     const [fetchData, isLoading] = useDataManager(
-        async () => {
-            await store.dispatchAction({ type: 'account/fetchData' });
-        },
+        WalletController.fetchAccountInfo,
         null,
         handleError
     );

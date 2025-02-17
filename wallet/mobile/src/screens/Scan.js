@@ -15,11 +15,12 @@ import {
 } from 'src/components';
 import { $t } from 'src/localization';
 import { Router } from 'src/Router';
-import { connect } from 'src/store';
 import { symbolTransactionFromPayload, useToggle } from 'src/utils';
 import { layout } from 'src/styles';
 import { TransactionType } from 'src/constants';
-import { TransactionService } from 'src/services';
+import { TransactionService } from 'src/lib/services';
+import WalletController from 'src/lib/controller/MobileWalletController';
+import { observer } from 'mobx-react-lite';
 
 const renderEmptyComponent = () => () => null;
 const AccountCard = ({ address }) => (
@@ -47,14 +48,9 @@ const TransactionCard = ({ recipientAddress, signerAddress, amount, price }) => 
     />
 );
 
-export const Scan = connect((state) => ({
-    currentAccount: state.account.current,
-    networkIdentifier: state.network.networkIdentifier,
-    networkProperties: state.network.networkProperties,
-    price: state.market.price,
-    isWalletReady: state.wallet.isReady,
-}))(function Scan(props) {
-    const { currentAccount, networkIdentifier, networkProperties, price } = props;
+export const Scan = observer(function Scan() {
+    const { currentAccount, networkIdentifier, networkProperties } = WalletController;
+    const { price } = WalletController.modules.market;
     const [isScannerVisible, toggleScanner] = useToggle(true);
     const [response, setResponse] = useState(null);
     const [description, setDescription] = useState(null);

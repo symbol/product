@@ -2,7 +2,6 @@ import React from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
 import { FormItem, ItemBase } from 'src/components';
 import { $t } from 'src/localization';
-import { connect } from 'src/store';
 import { colors, fonts, spacings } from 'src/styles';
 import {
     formatDate,
@@ -15,20 +14,18 @@ import {
     isTransactionAwaitingSignatureByAccount,
     trunc,
 } from 'src/utils';
-import { TransactionType } from 'src/constants';
+import { TransactionGroup, TransactionType } from 'src/constants';
+import WalletController from 'src/lib/controller/MobileWalletController';
+import { observer } from 'mobx-react-lite';
 
-export const ItemTransaction = connect((state) => ({
-    currentAccount: state.account.current,
-    walletAccounts: state.wallet.accounts,
-    networkIdentifier: state.network.networkIdentifier,
-    addressBook: state.addressBook.addressBook,
-    ticker: state.network.ticker,
-}))(function ItemTransaction(props) {
-    const { currentAccount, walletAccounts, networkIdentifier, addressBook, group, transaction, ticker, price, isDateHidden, onPress } =
-        props;
+export const ItemTransaction = observer(function ItemTransaction(props) {
+    const { currentAccount, accounts: walletAccounts, networkIdentifier, ticker, price } =
+    WalletController;
+    const { addressBook } = WalletController.modules;
+    const { group, transaction, isDateHidden, onPress } = props;
     const accounts = walletAccounts[networkIdentifier];
     const { type, deadline, timestamp, amount, signerAddress, recipientAddress } = transaction;
-    const dateTextPrefix = group !== 'confirmed' ? '🕑' : '';
+    const dateTextPrefix = group !== TransactionGroup.CONFIRMED ? '🕑' : '';
     const dateText = !isDateHidden 
         ? `${dateTextPrefix} ${formatDate(timestamp || deadline, $t, true)}` 
         : '';
@@ -79,7 +76,7 @@ export const ItemTransaction = connect((state) => ({
             ? $t('transactionDescriptionShort_aggregateMultiple', { type, count })
             : type;
 
-        const isPartial = group === 'partial';
+        const isPartial = group === TransactionGroup.PARTIAL;
         const isPartialSignedByAccount = isPartial && !isTransactionAwaitingSignatureByAccount(transaction, currentAccount);
         isAwaitingAccountSignature = isPartial && !isPartialSignedByAccount;
         iconSrc = isPartialSignedByAccount 
@@ -142,10 +139,10 @@ export const ItemTransaction = connect((state) => ({
         iconSrc = require('src/assets/images/icon-tx-lock.png');
     }
 
-    if (group === 'unconfirmed') {
+    if (group === TransactionGroup.UNCONFIRMED) {
         iconSrc = require('src/assets/images/icon-tx-unconfirmed.png');
         styleRoot.push(styles.rootUnconfirmed);
-    } else if (group === 'partial') {
+    } else if (group === TransactionGroup.PARTIAL) {
         styleRoot.push(styles.rootPartial);
     }
 

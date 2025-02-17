@@ -3,7 +3,6 @@ import { ScrollView } from 'react-native-gesture-handler';
 import { Button, Dropdown, FormItem, Screen, StyledText, TextBox } from 'src/components';
 import { $t } from 'src/localization';
 import { Router } from 'src/Router';
-import store, { connect } from 'src/store';
 import {
     handleError,
     useDataManager,
@@ -14,15 +13,14 @@ import {
     validateExisted,
     validateRequired,
 } from 'src/utils';
+import WalletController from 'src/lib/controller/MobileWalletController';
+import { observer } from 'mobx-react-lite';
 
-export const AddressBookEdit = connect((state) => ({
-    accounts: state.wallet.accounts,
-    addressBookWhiteList: state.addressBook.whiteList,
-    addressBookBlackList: state.addressBook.blackList,
-    networkIdentifier: state.network.networkIdentifier,
-}))(function AddressBookEdit(props) {
-    const { accounts, addressBookWhiteList, addressBookBlackList, networkIdentifier, route } = props;
-    const allContacts = [...addressBookWhiteList, ...addressBookBlackList, ...accounts[networkIdentifier]];
+export const AddressBookEdit = observer(function AddressBookEdit(props) {
+    const { route } = props;
+    const { accounts, networkIdentifier } = WalletController;
+    const { addressBook } = WalletController.modules;
+    const allContacts = [...addressBook.contacts, ...accounts[networkIdentifier]];
     const isEdit = route.params?.type === 'edit';
     const [list, setList] = useProp(route.params?.list, 'whitelist');
     const [name, setName] = useProp(route.params?.name, '');
@@ -55,18 +53,18 @@ export const AddressBookEdit = connect((state) => ({
 
     const [saveContact, isLoading] = useDataManager(
         async () => {
-            const action = isEdit ? 'addressBook/updateContact' : 'addressBook/addContact';
-            const updatedName = name ? name : $t('s_addressBook_account_blacklist_defaultName');
-            await store.dispatchAction({
-                type: action,
-                payload: {
-                    id: route.params?.id,
-                    name: updatedName,
-                    address,
-                    notes,
-                    isBlackListed: list === 'blacklist',
-                },
-            });
+            const newContact = {
+                id: route.params?.id,
+                name: name ? name : $t('s_addressBook_account_blacklist_defaultName'),
+                address,
+                notes,
+                isBlackListed: list === 'blacklist',
+            }
+
+            if (isEdit)
+                await addressBook.updateContact(newContact);
+            else
+                await addressBook.addContact(newContact);
             Router.goBack();
         },
         null,

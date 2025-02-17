@@ -1,54 +1,75 @@
-import React from 'react';
+import React, { useCallback, useEffect, useMemo } from 'react';
 import { ScrollView } from 'react-native';
 import { RefreshControl } from 'react-native-gesture-handler';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { AccountCardWidget, Alert, FormItem, Screen, StyledText, TabNavigator, TitleBar } from 'src/components';
 import { $t } from 'src/localization';
 import { Router } from 'src/Router';
-import store, { connect } from 'src/store';
 import { colors } from 'src/styles';
 import { handleError, useDataManager, useInit } from 'src/utils';
 import { AddressBookListWidget } from './AddressBookList';
 import { HistoryWidget } from './History';
+import WalletController from 'src/lib/controller/MobileWalletController';
+import { observer } from 'mobx-react-lite';
+import { ControllerEventName, TransactionGroup } from 'src/constants';
 
-export const Home = connect((state) => ({
-    balances: state.wallet.balances,
-    isMultisigAccount: state.account.isMultisig,
-    currentAccount: state.account.current,
-    networkIdentifier: state.network.networkIdentifier,
-    ticker: state.network.ticker,
-    price: state.market.price,
-    isWalletReady: state.wallet.isReady,
-}))(function Home(props) {
-    const { balances, currentAccount, isMultisigAccount, networkIdentifier, ticker, price, isWalletReady } = props;
-    const [loadState, isLoading] = useDataManager(
+export const Home = observer(function Home() {
+    const {
+        isWalletReady,
+        currentAccount,
+        currentAccountInfo,
+        networkIdentifier,
+        ticker,
+        price,
+    } = WalletController;
+    const defaultUnconfirmedTransactions = useMemo(() => [], []);
+    const [fetchUnconfirmedTransactions, isUnconfirmedTransactionsLoading, unconfirmedTransactions] = useDataManager(
         async () => {
-            await store.dispatchAction({ type: 'wallet/fetchAll' });
+            const transactions = await WalletController.fetchAccountTransactions({ group: TransactionGroup.UNCONFIRMED });
+            return transactions.data;
         },
-        null,
+        defaultUnconfirmedTransactions,
+        handleError
+    );
+    const [fetchPartialTransactions, isPartialTransactionsLoading, partialTransactions] = useDataManager(
+        async () => {
+            const transactions = await WalletController.fetchAccountTransactions({ group: TransactionGroup.PARTIAL });
+            return transactions.data;
+        },
+        defaultUnconfirmedTransactions,
         handleError
     );
     const [renameAccount] = useDataManager(
-        async (name) => {
-            await store.dispatchAction({
-                type: 'wallet/renameAccount',
-                payload: {
-                    privateKey: currentAccount.privateKey,
-                    networkIdentifier,
-                    name,
-                },
-            });
-            store.dispatchAction({ type: 'account/loadState' });
-        },
+        (name) => WalletController.renameAccount({
+            publicKey: currentAccount.publicKey,
+            name,
+            networkIdentifier
+        }),
         null,
         handleError
     );
+    const loadState = useCallback(() => {
+        WalletController.fetchAccountInfo();
+        fetchUnconfirmedTransactions();
+        fetchPartialTransactions();
+    }, []);
     useInit(loadState, isWalletReady, [currentAccount]);
 
-    const accountBalance = currentAccount ? balances[currentAccount.address] : '-';
+    useEffect(() => {
+        WalletController.on(ControllerEventName.NEW_TRANSACTION_UNCONFIRMED, loadState);
+        WalletController.on(ControllerEventName.NEW_TRANSACTION_CONFIRMED, loadState);
+
+        return () => {
+            WalletController.removeListener(ControllerEventName.NEW_TRANSACTION_UNCONFIRMED, loadState);
+            WalletController.removeListener(ControllerEventName.NEW_TRANSACTION_CONFIRMED, loadState);
+        };
+    }, []);
+
+    const accountBalance = currentAccountInfo.balance;
     const accountName = currentAccount?.name || '-';
     const accountAddress = currentAccount?.address || '-';
 
+    const isLoading = isUnconfirmedTransactionsLoading || isPartialTransactionsLoading;
     return (
         <Screen titleBar={<TitleBar accountSelector settings currentAccount={currentAccount} />} navigator={<TabNavigator />}>
             <ScrollView refreshControl={<RefreshControl tintColor={colors.primary} refreshing={isLoading} onRefresh={loadState} />}>
@@ -68,7 +89,7 @@ export const Home = connect((state) => ({
                         />
                     </FormItem>
                 </Animated.View>
-                {isMultisigAccount && (
+                {currentAccountInfo?.isMultisigAccount && (
                     <Animated.View entering={FadeInUp}>
                         <FormItem>
                             <Alert type="warning" title={$t('warning_multisig_title')} body={$t('warning_multisig_body')} />
@@ -78,7 +99,7 @@ export const Home = connect((state) => ({
                 <FormItem type="group" clear="bottom">
                     <StyledText type="title">{$t('s_home_widgets')}</StyledText>
                 </FormItem>
-                <HistoryWidget />
+                <HistoryWidget unconfirmed={unconfirmedTransactions} partial={partialTransactions} />
                 <Animated.View entering={FadeInDown.delay(125)}>
                     <AddressBookListWidget />
                 </Animated.View>

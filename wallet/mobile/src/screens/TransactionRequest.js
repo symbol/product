@@ -22,20 +22,20 @@ import {
 import { TransactionType } from 'src/constants';
 import { $t } from 'src/localization';
 import { Router } from 'src/Router';
-import { TransactionService } from 'src/services';
-import store, { connect } from 'src/store';
+import { TransactionService } from 'src/lib/services';
 import { colors, fonts, layout } from 'src/styles';
 import {
     getTransactionFees,
     getUserCurrencyAmountText,
     handleError,
     isAggregateTransaction,
-    publicAccountFromPrivateKey,
     useDataManager,
     useInit,
     usePasscode,
     useToggle,
 } from 'src/utils';
+import WalletController from 'src/lib/controller/MobileWalletController';
+import { observer } from 'mobx-react-lite';
 
 const SUPPORTED_TRANSACTION_TYPES = [
     TransactionType.AGGREGATE_BONDED,
@@ -56,21 +56,12 @@ const SUPPORTED_TRANSACTION_TYPES = [
     TransactionType.MOSAIC_METADATA,
 ];
 
-export const TransactionRequest = connect((state) => ({
-    currentAccount: state.account.current,
-    cosignatories: state.account.cosignatories,
-    isMultisigAccount: state.account.isMultisig,
-    isAccountReady: state.account.isReady,
-    isWalletReady: state.wallet.isReady,
-    networkProperties: state.network.networkProperties,
-    ticker: state.network.ticker,
-    price: state.market.price,
-}))(function TransactionRequest(props) {
-    const { currentAccount, cosignatories, isMultisigAccount, isAccountReady, isWalletReady, networkProperties, ticker, price, route } =
-        props;
+export const TransactionRequest = observer(function TransactionRequest(props) {
+    const { route } = props;
+    const { currentAccount, currentAccountInfo, isWalletReady, networkProperties, ticker } = WalletController;
+    const { price } = WalletController.modules.market;
     const { params } = route;
     const [transaction, setTransaction] = useState(null);
-    const [payload, setPayload] = useState('');
     const [styleAmount, setStyleAmount] = useState(null);
     const [userCurrencyAmountText, setUserCurrencyAmountText] = useState('');
     const [speed, setSpeed] = useState('medium');
@@ -80,12 +71,12 @@ export const TransactionRequest = connect((state) => ({
     const [isSuccessAlertVisible, toggleSuccessAlert] = useToggle(false);
     const [isErrorAlertVisible, toggleErrorAlert] = useToggle(false);
     const isTransactionLoaded = !!transaction;
-    const cosignatoryList = { cosignatories };
+    const cosignatoryList = { cosignatories: currentAccountInfo.cosignatories };
     const isAggregate = !!transaction?.innerTransactions;
 
     const transactionFees = useMemo(
-        () => (payload ? getTransactionFees(transaction, networkProperties, payload.length || 0) : {}),
-        [payload]
+        () => (transaction ? getTransactionFees(transaction, networkProperties) : {}),
+        [transaction]
     );
 
     const getTransactionPreviewTable = (data, isEmbedded) =>
@@ -101,7 +92,7 @@ export const TransactionRequest = connect((state) => ({
         ]);
     const [loadTransaction, isTransactionLoading] = useDataManager(
         async (payload, generationHash) => {
-            const fillSignerPublickey = publicAccountFromPrivateKey(currentAccount.privateKey, networkProperties.networkIdentifier).publicKey;
+            const fillSignerPublickey = currentAccount.publicKey;
             const transaction = await TransactionService.transactionFromPayload(payload, networkProperties, currentAccount, fillSignerPublickey);
 
             const styleAmount = [styles.textAmount];
@@ -127,7 +118,6 @@ export const TransactionRequest = connect((state) => ({
                 networkProperties.networkIdentifier
             );
 
-            setPayload(payload);
             setTransaction(transaction);
             setIsTypeSupported(isTypeSupported);
             setIsNetworkSupported(generationHash === networkProperties.generationHash);
@@ -141,8 +131,8 @@ export const TransactionRequest = connect((state) => ({
         }
     );
     const [send, isSending] = useDataManager(
-        async () => {
-            await TransactionService.signAndAnnounce(transaction, currentAccount, networkProperties);
+        async (password) => {
+            await WalletController.signAndAnnounceTransaction(transaction, true, password);
             toggleSuccessAlert();
         },
         null,
@@ -165,20 +155,18 @@ export const TransactionRequest = connect((state) => ({
     }, [transactionFees, speed, transaction]);
 
     useEffect(() => {
-        if (isAccountReady) loadTransaction(params.data, params.generationHash);
-    }, [params, currentAccount, isAccountReady]);
+        if (isWalletReady) loadTransaction(params.data, params.generationHash);
+    }, [params, currentAccount, isWalletReady]);
 
     const [loadState, isStateLoading] = useDataManager(
-        async () => {
-            await store.dispatchAction({ type: 'wallet/fetchAll' });
-        },
+        WalletController.fetchAccountInfo,
         null,
         handleError
     );
     useInit(loadState, isWalletReady, [currentAccount]);
 
-    const isButtonDisabled = !isTransactionLoaded || !isTypeSupported || !isNetworkSupported || isMultisigAccount;
-    const isLoading = !isAccountReady || isTransactionLoading || isSending || isStateLoading;
+    const isButtonDisabled = !isTransactionLoaded || !isTypeSupported || !isNetworkSupported || currentAccountInfo.isMultisig;
+    const isLoading = !isWalletReady || isTransactionLoading || isSending || isStateLoading;
 
     return (
         <Screen titleBar={<TitleBar accountSelector settings currentAccount={currentAccount} />} isLoading={isLoading}>
@@ -187,7 +175,7 @@ export const TransactionRequest = connect((state) => ({
                     <StyledText type="title">{$t('s_transactionRequest_title')}</StyledText>
                     <StyledText type="body">{$t('s_transactionRequest_description')}</StyledText>
                 </FormItem>
-                {isMultisigAccount && (
+                {currentAccountInfo.isMultisig && (
                     <>
                         <FormItem>
                             <Alert type="warning" title={$t('warning_multisig_title')} body={$t('warning_multisig_body')} />

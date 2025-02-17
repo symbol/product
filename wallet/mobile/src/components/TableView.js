@@ -1,10 +1,12 @@
 import React from 'react';
 import { Image, StyleSheet, View } from 'react-native';
-import { connect } from 'src/store';
 import { spacings } from 'src/styles';
 import { AccountAvatar, ButtonCopy, FormItem, StyledText } from 'src/components';
 import { $t } from 'src/localization';
 import { getAddressName, isSymbolAddress } from 'src/utils';
+import WalletController from 'src/lib/controller/MobileWalletController';
+import { observer } from 'mobx-react-lite'
+import { MessageType } from 'src/constants';
 
 const renderTypeMap = {
     address: [
@@ -73,15 +75,11 @@ const getMosaicIconSrc = (mosaic) =>
         : require('src/assets/images/icon-select-mosaic-custom.png');
 const getMosaicStyle = (index) => (index === 0 ? [styles.mosaic, { marginTop: 0 }] : styles.mosaic);
 
-export const TableView = connect((state) => ({
-    currentAccount: state.account.current,
-    walletAccounts: state.wallet.accounts,
-    networkIdentifier: state.network.networkIdentifier,
-    addressBook: state.addressBook.addressBook,
-    ticker: state.network.ticker,
-}))(function TableView(props) {
-    const { currentAccount, walletAccounts, networkIdentifier, addressBook, data, ticker, style, showEmptyArrays, rawAddresses } = props;
-    const accounts = walletAccounts[networkIdentifier];
+export const TableView = observer(function TableView(props) {
+    const { data, style, showEmptyArrays, rawAddresses } = props;
+    const { currentAccount, accounts, networkIdentifier, ticker } = WalletController;
+    const { addressBook } = WalletController.modules;
+    const walletAccounts = accounts[networkIdentifier];
 
     if (!data || typeof data !== 'object') {
         return null;
@@ -137,7 +135,7 @@ export const TableView = connect((state) => ({
                                 <View style={styles.account}>
                                     <AccountAvatar address={item.value} style={styles.avatar} size="sm" />
                                     <StyledText type="body" style={styles.copyText}>
-                                        {getAddressName(item.value, currentAccount, accounts, addressBook)}
+                                        {getAddressName(item.value, currentAccount, walletAccounts, addressBook)}
                                     </StyledText>
                                     <ButtonCopy content={item.value} style={styles.button} />
                                 </View>
@@ -188,13 +186,13 @@ export const TableView = connect((state) => ({
                     case 'message':
                         ItemTemplate = (
                             <View style={styles.message}>
-                                {item.value.isEncrypted && (
+                                {item.value.type === MessageType.EncryptedText && (
                                     <Image source={require('src/assets/images/icon-tx-lock.png')} style={styles.messageTypeIcon} />
                                 )}
-                                {item.value.isRaw && (
+                                {!item.value.text && (
                                     <Image source={require('src/assets/images/icon-tx-data.png')} style={styles.messageTypeIcon} />
                                 )}
-                                {!item.value.isRaw && <StyledText type="body">{item.value.text}</StyledText>}
+                                {item.value.text && <StyledText type="body">{item.value.text}</StyledText>}
                             </View>
                         );
                         break;
