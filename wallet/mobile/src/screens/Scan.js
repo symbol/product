@@ -61,9 +61,8 @@ export const Scan = observer(function Scan() {
 
     // Validators
     const validateNetwork = (data) => data.networkIdentifier === networkIdentifier;
-    const validateTransactionTransfersOnlyNativeMosaic = (data) => 
-        data.transaction.mosaics?.length === 1 &&
-        data.transaction.mosaics[0].id === networkProperties.networkCurrency.mosaicId;
+    const validateTransactionTransfersOnlyNativeMosaic = (data) =>
+        data.transaction.mosaics?.length === 1 && data.transaction.mosaics[0].id === networkProperties.networkCurrency.mosaicId;
 
     // Action buttons
     const createAddToAddressBookHandler = () => ({
@@ -101,31 +100,21 @@ export const Scan = observer(function Scan() {
             invalidDescription: $t('s_scan_account_wrongNetwork_description'),
             validate: validateNetwork,
             renderComponent: (data) => <AccountCard address={data.address} />,
-            actions: [
-                createAddExternalAccountHandler(),
-                createAddToAddressBookHandler(),
-                createSendTransferToAddressHandler(),
-            ],
+            actions: [createAddExternalAccountHandler(), createAddToAddressBookHandler(), createSendTransferToAddressHandler()],
         },
         contact: {
             description: $t('s_scan_address_description'),
             invalidDescription: $t('s_scan_address_wrongNetwork_description'),
             validate: validateNetwork,
             renderComponent: (data) => <AccountCard address={data.address} />,
-            actions: [
-                createAddToAddressBookHandler(),
-                createSendTransferToAddressHandler(),
-            ],
+            actions: [createAddToAddressBookHandler(), createSendTransferToAddressHandler()],
         },
         address: {
             description: $t('s_scan_address_description'),
             invalidDescription: $t('s_scan_address_wrongNetwork_description'),
             validate: validateNetwork,
             renderComponent: (data) => <AccountCard address={data.address} />,
-            actions: [
-                createAddToAddressBookHandler(),
-                createSendTransferToAddressHandler(),
-            ],
+            actions: [createAddToAddressBookHandler(), createSendTransferToAddressHandler()],
         },
         transaction: {
             description: $t('s_scan_transaction_description'),
@@ -135,8 +124,15 @@ export const Scan = observer(function Scan() {
                 const symbolTransaction = symbolTransactionFromPayload(data.transactionPayload);
                 const mapperOptions = {
                     fillSignerPublickey: currentAccount.publicKey,
-                }
-                const transaction = (await TransactionService.resolveSymbolTransactions([symbolTransaction], networkProperties, currentAccount, mapperOptions))[0];
+                };
+                const transaction = (
+                    await TransactionService.resolveSymbolTransactions(
+                        [symbolTransaction],
+                        networkProperties,
+                        currentAccount,
+                        mapperOptions
+                    )
+                )[0];
 
                 return { ...data, transaction };
             },
@@ -149,9 +145,7 @@ export const Scan = observer(function Scan() {
                     price={price}
                 />
             ),
-            actions: [
-                createSendTransactionHandler(),
-            ],
+            actions: [createSendTransactionHandler()],
         },
     };
 
@@ -170,9 +164,7 @@ export const Scan = observer(function Scan() {
             clear();
         }
 
-        const formattedData = responseOption.format
-            ? await responseOption.format(response.data)
-            : response.data;
+        const formattedData = responseOption.format ? await responseOption.format(response.data) : response.data;
 
         const isValid = responseOption.validate(formattedData);
         if (isValid) {
@@ -203,7 +195,11 @@ export const Scan = observer(function Scan() {
     }, [isFocused]);
 
     return (
-        <Screen titleBar={<TitleBar accountSelector settings currentAccount={currentAccount} />} navigator={<TabNavigator />} isLoading={!props.isWalletReady}>
+        <Screen
+            titleBar={<TitleBar accountSelector settings currentAccount={currentAccount} />}
+            navigator={<TabNavigator />}
+            isLoading={!props.isWalletReady}
+        >
             <FormItem>
                 <StyledText type="title">{$t('s_scan_title')}</StyledText>
                 <StyledText type="body">{description}</StyledText>

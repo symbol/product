@@ -21,31 +21,31 @@ export const NetworkConnectionStatus = {
     NO_INTERNET: 'offline',
     FAILED_CURRENT_NODE: 'failed-current',
     FAILED_AUTO_SELECTION: 'failed-auto',
-}
+};
 
 export const WalletAccountType = {
     SEED: 'seed',
-    EXTERNAL: 'external'
-}
+    EXTERNAL: 'external',
+};
 
 export const TransactionGroup = {
     CONFIRMED: 'confirmed',
     UNCONFIRMED: 'unconfirmed',
     PARTIAL: 'partial',
     FAILED: 'failed',
-}
+};
 
 export const TransactionAnnounceGroup = {
     DEFAULT: 'default',
     PARTIAL: 'partial',
     COSIGNATURE: 'cosignature',
-}
+};
 
 export const MessageType = {
     PlainText: 0,
     EncryptedText: 1,
     DelegatedHarvesting: 254,
-}
+};
 
 export const TransactionType = {
     RESERVED: 0,
@@ -104,8 +104,8 @@ export const Message = {
 
 export const MosaicSupplyChangeAction = {
     Decrease: 0,
-    Increase: 1
-}
+    Increase: 1,
+};
 
 export const MosaicSupplyChangeActionMessage = {
     [MosaicSupplyChangeAction.Increase]: 'v_increase',
@@ -114,8 +114,8 @@ export const MosaicSupplyChangeActionMessage = {
 
 export const NamespaceRegistrationType = {
     RootNamespace: 0,
-    SubNamespace: 1
-}
+    SubNamespace: 1,
+};
 
 export const NamespaceRegistrationTypeMessage = {
     [NamespaceRegistrationType.RootNamespace]: 'v_rootNamespace',
@@ -124,8 +124,8 @@ export const NamespaceRegistrationTypeMessage = {
 
 export const AliasAction = {
     Link: 1,
-    Unlink: 0
-}
+    Unlink: 0,
+};
 
 export const AliasActionMessage = {
     [AliasAction.Link]: 'v_link',
@@ -134,8 +134,8 @@ export const AliasActionMessage = {
 
 export const LinkAction = {
     Link: 1,
-    Unlink: 0
-}
+    Unlink: 0,
+};
 
 export const LinkActionMessage = {
     [LinkAction.Link]: 'v_link',
@@ -145,8 +145,8 @@ export const LinkActionMessage = {
 export const LockHashAlgorithm = {
     Op_Sha3_256: 0,
     Op_Hash_160: 1,
-    Op_Hash_256: 2
-}
+    Op_Hash_256: 2,
+};
 
 export const LockHashAlgorithmMessage = {
     [LockHashAlgorithm.Op_Sha3_256]: 'Sha3 256',
@@ -157,8 +157,8 @@ export const LockHashAlgorithmMessage = {
 export const MetadataType = {
     Account: 0,
     Mosaic: 1,
-    Namespace: 2
-}
+    Namespace: 2,
+};
 
 export const MetadataTypeMessage = {
     [MetadataType.Account]: 'Account',
@@ -170,8 +170,8 @@ export const AddressRestrictionFlag = {
     AllowIncomingAddress: 1,
     AllowOutgoingAddress: 16385,
     BlockIncomingAddress: 32769,
-    BlockOutgoingAddress: 49153
-}
+    BlockOutgoingAddress: 49153,
+};
 
 export const AddressRestrictionFlagMessage = {
     [AddressRestrictionFlag.AllowIncomingAddress]: 'v_AllowIncomingAddresses',
@@ -182,8 +182,8 @@ export const AddressRestrictionFlagMessage = {
 
 export const MosaicRestrictionFlag = {
     AllowMosaic: 2,
-    BlockMosaic: 32770
-}
+    BlockMosaic: 32770,
+};
 
 export const MosaicRestrictionFlagMessage = {
     [MosaicRestrictionFlag.AllowMosaic]: 'v_AllowMosaics',
@@ -192,8 +192,8 @@ export const MosaicRestrictionFlagMessage = {
 
 export const OperationRestrictionFlag = {
     AllowOutgoingTransactionType: 16388,
-    BlockOutgoingTransactionType: 49156
-}
+    BlockOutgoingTransactionType: 49156,
+};
 
 export const OperationRestrictionFlagMessage = {
     [OperationRestrictionFlag.AllowOutgoingTransactionType]: 'v_AllowOutgoingTransactions',
@@ -202,8 +202,8 @@ export const OperationRestrictionFlagMessage = {
 
 export const MosaicRestrictionEntryType = {
     ADDRESS: 0,
-    GLOBAL: 1
-}
+    GLOBAL: 1,
+};
 
 export const MosaicRestrictionEntryTypeMessage = {
     [MosaicRestrictionEntryType.ADDRESS]: 'v_MosaicAddressRestriction',
@@ -217,8 +217,8 @@ export const MosaicRestrictionType = {
     LT: 3,
     LE: 4,
     GT: 5,
-    GE: 6
-}
+    GE: 6,
+};
 
 export const MosaicRestrictionTypeMessage = {
     [MosaicRestrictionType.EQ]: 'v_mosaicRestrictionTypeEQ',

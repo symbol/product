@@ -2,7 +2,7 @@ import { LinkAction, MessageType, TransactionType } from '@/constants';
 import { getMosaicRelativeAmount } from './mosaic';
 import { toFixedNumber } from './helper';
 import { Hash256, PrivateKey, PublicKey, utils } from 'symbol-sdk-v3';
-import { SymbolFacade, MessageEncoder, models } from 'symbol-sdk-v3/symbol';
+import { MessageEncoder, SymbolFacade, models } from 'symbol-sdk-v3/symbol';
 import { transactionToSymbol } from './transaction-to-symbol';
 import { addressFromPublicKey, generateKeyPair } from 'src/utils/account';
 const { TransactionFactory } = models;
@@ -59,14 +59,14 @@ export const transactionToPayload = (transaction, networkProperties) => {
 
 export const createTransactionURI = (transactionPayload, generationHash) => {
     return `web+symbol://transaction?data=${transactionPayload}&generationHash=${generationHash}`;
-}
+};
 
 export const isOutgoingTransaction = (transaction, currentAccount) => transaction.signerAddress === currentAccount.address;
 
 export const isIncomingTransaction = (transaction, currentAccount) => transaction.recipientAddress === currentAccount.address;
 
 export const encodePlainMessage = (messageText) => {
-    const bytes = new TextEncoder().encode(messageText)
+    const bytes = new TextEncoder().encode(messageText);
 
     return Buffer.from([MessageType.PlainText, ...bytes]).toString('hex');
 };
@@ -82,14 +82,10 @@ export const encodeDelegatedHarvestingMessage = (privateKey, nodePublicKey, remo
     const messageEncoder = new MessageEncoder(keyPair);
     const remoteKeyPair = new SymbolFacade.KeyPair(new PrivateKey(remotePrivateKey));
     const vrfKeyPair = new SymbolFacade.KeyPair(new PrivateKey(vrfPrivateKey));
-    const encodedBytes = messageEncoder.encodePersistentHarvestingDelegation(
-        new PublicKey(nodePublicKey),
-        remoteKeyPair,
-        vrfKeyPair
-    );
+    const encodedBytes = messageEncoder.encodePersistentHarvestingDelegation(new PublicKey(nodePublicKey), remoteKeyPair, vrfKeyPair);
 
     return Buffer.from(encodedBytes).toString('hex');
-}
+};
 
 export const encryptMessage = (messageText, recipientPublicKey, privateKey) => {
     const _privateKey = new PrivateKey(privateKey);
@@ -100,7 +96,7 @@ export const encryptMessage = (messageText, recipientPublicKey, privateKey) => {
     const encodedBytes = messageEncoder.encodeDeprecated(_recipientPublicKey, messageBytes);
 
     return Buffer.from(encodedBytes).toString('hex');
-}
+};
 
 export const decryptMessage = (encryptedMessageHex, recipientPublicKey, privateKey) => {
     const _privateKey = new PrivateKey(privateKey);
@@ -122,7 +118,7 @@ export const isTransactionAwaitingSignatureByAccount = (transaction, account) =>
     }
 
     const isSignedByAccount = transaction.signerPublicKey === account.publicKey;
-    const hasAccountCosignature = transaction.cosignatures.some(cosignature => cosignature.signerPublicKey === account.publicKey);
+    const hasAccountCosignature = transaction.cosignatures.some((cosignature) => cosignature.signerPublicKey === account.publicKey);
 
     return !isSignedByAccount && !hasAccountCosignature;
 };
@@ -193,8 +189,8 @@ export const signTransaction = (networkProperties, transaction, privateKey) => {
 
     return {
         dto: JSON.parse(jsonString),
-        hash
-    }
+        hash,
+    };
 };
 
 export const cosignTransaction = (networkProperties, transaction, privateKey) => {
@@ -206,20 +202,13 @@ export const cosignTransaction = (networkProperties, transaction, privateKey) =>
 
     return {
         dto: signature.toJson(),
-        hash: transaction.hash
-    }
+        hash: transaction.hash,
+    };
 };
 
 export const getUnresolvedIdsFromTransactions = (transactions, config) => {
-    const {
-        fieldsMap,
-        mapNamespaceId,
-        mapMosaicId,
-        mapTransactionType,
-        getBodyFromTransaction,
-        getHeightFromTransaction,
-        verifyAddress
-    } = config;
+    const { fieldsMap, mapNamespaceId, mapMosaicId, mapTransactionType, getBodyFromTransaction, getHeightFromTransaction, verifyAddress } =
+        config;
     const mosaicIds = [];
     const namespaceIds = [];
     const addresses = [];
@@ -247,18 +236,15 @@ export const getUnresolvedIdsFromTransactions = (transactions, config) => {
 
                 const processors = {
                     address: (value) => {
-                        if (verifyAddress(value))
-                            return;
+                        if (verifyAddress(value)) return;
 
                         addresses.push({
                             namespaceId: mapNamespaceId(value),
                             height: getHeightFromTransaction(item),
                         });
-
                     },
                     addressArray: (value) => {
-                        if (!Array.isArray(value))
-                            return;
+                        if (!Array.isArray(value)) return;
 
                         value
                             .filter((address) => !verifyAddress(address))
@@ -274,18 +260,17 @@ export const getUnresolvedIdsFromTransactions = (transactions, config) => {
                         mosaicIds.push(mapMosaicId(mosaicId));
                     },
                     mosaicArray: (value) => {
-                        if (!Array.isArray(value))
-                            return;
+                        if (!Array.isArray(value)) return;
 
                         value.forEach((mosaic) => {
                             const mosaicId = mosaic?.mosaicId ?? mosaic?.id ?? mosaic;
-                            mosaicIds.push(mapMosaicId(mosaicId))
+                            mosaicIds.push(mapMosaicId(mosaicId));
                         });
                     },
                     namespace: (value) => {
                         namespaceIds.push(mapNamespaceId(value));
                     },
-                }
+                };
 
                 processors[mode](value);
             });
@@ -307,11 +292,10 @@ export const createSingleTransferTransactionStub = ({ messageText, isMessageEncr
         type: TransactionType.TRANSFER,
         signerPublicKey: STUB_KEY_1,
         recipientAddress: STUB_ADDRESS,
-        mosaics
+        mosaics,
     };
 
-    if (!messageText)
-        return transaction;
+    if (!messageText) return transaction;
 
     if (isMessageEncrypted) {
         messagePayloadHex = encryptMessage(messageText, STUB_KEY_2, STUB_KEY_1);
@@ -328,7 +312,7 @@ export const createSingleTransferTransactionStub = ({ messageText, isMessageEncr
     };
 
     return transaction;
-}
+};
 
 export const createMultisigTransferTransactionStub = ({ messageText, isMessageEncrypted, mosaics = [] }) => {
     const transferTransaction = createSingleTransferTransactionStub({ messageText, isMessageEncrypted, mosaics });
@@ -340,7 +324,7 @@ export const createMultisigTransferTransactionStub = ({ messageText, isMessageEn
     };
 
     return transaction;
-}
+};
 
 export const createHarvestingTransactionStub = ({ networkIdentifier, linkedKeys, type = 'start' }) => {
     const account = generateKeyPair();
@@ -407,9 +391,9 @@ export const createHarvestingTransactionStub = ({ networkIdentifier, linkedKeys,
                     account.privateKey,
                     nodePublicKey,
                     remoteAccount.privateKey,
-                    vrfAccount.privateKey,
+                    vrfAccount.privateKey
                 ),
-                text: ''
+                text: '',
             },
             remoteAccountPrivateKey: remoteAccount.privateKey,
             vrfPrivateKey: vrfAccount.privateKey,
@@ -427,4 +411,4 @@ export const createHarvestingTransactionStub = ({ networkIdentifier, linkedKeys,
     };
 
     return aggregateTransaction;
-}
+};

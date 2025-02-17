@@ -70,7 +70,6 @@ export class PersistentStorage {
         return this.set(this.CURRENT_ACCOUNT_PUBLIC_KEY, payload);
     };
 
-
     // Selected Language
     static getSelectedLanguage = () => {
         return this.get(this.SELECTED_LANGUAGE_KEY);
@@ -131,7 +130,7 @@ export class PersistentStorage {
     // Address Book
     static async getAddressBook() {
         const rawAddressBook = await this.get(this.ADDRESS_BOOK_KEY);
-        const defaultAddressBook = createNetworkMap(() => ([]));
+        const defaultAddressBook = createNetworkMap(() => []);
 
         try {
             return JSON.parse(rawAddressBook) || defaultAddressBook;

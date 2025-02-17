@@ -1,5 +1,4 @@
 import React from 'react';
-import { useMemo } from 'react';
 import { useEffect } from 'react';
 import { useState } from 'react';
 import { ScrollView } from 'react-native-gesture-handler';
@@ -18,7 +17,7 @@ import {
 } from 'src/components';
 import { $t } from 'src/localization';
 import { Router } from 'src/Router';
-import { AccountService, MosaicService, TransactionService } from 'src/lib/services';
+import { AccountService, MosaicService } from 'src/lib/services';
 import { getMosaicWithRelativeAmount, handleError, useDataManager, usePasscode, useProp, useToggle, useTransactionFees } from 'src/utils';
 import { TransactionType } from 'src/constants';
 import WalletController from 'src/lib/controller/MobileWalletController';

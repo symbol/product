@@ -3,7 +3,6 @@ import { MosaicService } from './MosaicService';
 import { makeRequest, networkTypeToIdentifier } from '@/utils/network';
 import { getMosaicRelativeAmount } from '@/utils/mosaic';
 
-const nodeProbeTimeout = 5000;
 export class NetworkService {
     static async getDefaultNodeList(networkIdentifier) {
         return config.defaultNodes[networkIdentifier];

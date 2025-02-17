@@ -2,7 +2,15 @@ import { cloneDeep, omit } from 'lodash';
 import SafeEventEmitter from '@metamask/safe-event-emitter';
 import { makeAutoObservable, runInAction } from 'mobx';
 import { config } from '@/config';
-import { ControllerEventName, NetworkConnectionStatus, NetworkIdentifier, TransactionAnnounceGroup, TransactionGroup, TransactionType, WalletAccountType } from '@/constants';
+import {
+    ControllerEventName,
+    NetworkConnectionStatus,
+    NetworkIdentifier,
+    TransactionAnnounceGroup,
+    TransactionGroup,
+    TransactionType,
+    WalletAccountType,
+} from '@/constants';
 import { AccountService, ListenerService, NamespaceService, NetworkService, TransactionService } from '@/lib/services';
 import { addressFromPublicKey, createWalletAccount, createWalletStorageAccount, publicAccountFromPublicKey } from '@/utils/account';
 import { createNetworkMap } from '@/utils/helper';
@@ -19,7 +27,8 @@ const defaultNetworkProperties = {
         minFeeMultiplier: null,
         averageFeeMultiplier: null,
     },
-    networkCurrency: { // network currency mosaic. By default is "symbol.xym"
+    networkCurrency: {
+        // network currency mosaic. By default is "symbol.xym"
         mosaicId: null,
         divisibility: null,
     },
@@ -39,7 +48,7 @@ const defaultAccountInfo = {
         nodePublicKey: null,
         vrfPublicKey: null,
     },
-}
+};
 
 const defaultState = {
     isCacheLoaded: false, // whether cached data is loaded from the persistent storage
@@ -63,14 +72,13 @@ const defaultState = {
 
     // transactions (confirmed)
     latestTransactions: createNetworkMap(() => ({})),
-}
+};
 
 export class WalletController {
     constructor({ persistentStorage, secureStorage, isObservable, modules = [] }) {
         this._state = cloneDeep(defaultState);
 
-        if (isObservable)
-            makeAutoObservable(this);
+        if (isObservable) makeAutoObservable(this);
 
         this._notificationChannel = new SafeEventEmitter();
         this._persistentStorage = persistentStorage;
@@ -116,14 +124,14 @@ export class WalletController {
     }
 
     get networkIdentifier() {
-        return this._state.networkIdentifier
+        return this._state.networkIdentifier;
     }
 
     get networkProperties() {
         const { networkProperties, nodeUrls } = this._state;
         return {
             ...networkProperties,
-            nodeUrls: nodeUrls[networkProperties.networkIdentifier]
+            nodeUrls: nodeUrls[networkProperties.networkIdentifier],
         };
     }
 
@@ -161,7 +169,7 @@ export class WalletController {
      */
     isWalletCreated = async () => {
         return await this._secureStorage.isAccountsValueSet();
-    }
+    };
 
     /**
      * Initialize the wallet controller and load the cache from the storage
@@ -169,21 +177,15 @@ export class WalletController {
      * @returns {Promise<void>}
      */
     loadCache = async (password) => {
-        const [
-            accountInfos,
-            seedAddresses,
-            currentAccountPublicKey,
-            networkIdentifier,
-            networkProperties,
-            latestTransactions
-        ] = await Promise.all([
-            this._persistentStorage.getAccountInfos(),
-            this._persistentStorage.getSeedAddresses(),
-            this._persistentStorage.getCurrentAccountPublicKey(),
-            this._persistentStorage.getNetworkIdentifier(),
-            this._persistentStorage.getNetworkProperties(),
-            this._persistentStorage.getLatestTransactions()
-        ]);
+        const [accountInfos, seedAddresses, currentAccountPublicKey, networkIdentifier, networkProperties, latestTransactions] =
+            await Promise.all([
+                this._persistentStorage.getAccountInfos(),
+                this._persistentStorage.getSeedAddresses(),
+                this._persistentStorage.getCurrentAccountPublicKey(),
+                this._persistentStorage.getNetworkIdentifier(),
+                this._persistentStorage.getNetworkProperties(),
+                this._persistentStorage.getLatestTransactions(),
+            ]);
 
         this.clearState();
         await this._loadAccounts(password);
@@ -197,15 +199,14 @@ export class WalletController {
             this._state.isCacheLoaded = true;
         });
 
-        if (currentAccountPublicKey)
-            this._setCurrentAccount(currentAccountPublicKey);
+        if (currentAccountPublicKey) this._setCurrentAccount(currentAccountPublicKey);
 
         await Promise.all(
             Object.values(this.modules)
-                .filter(module => module.loadCache)
-                .map(module => module.loadCache())
+                .filter((module) => module.loadCache)
+                .map((module) => module.loadCache())
         );
-    }
+    };
 
     /**
      * Load accounts from the secure storage to the state
@@ -215,20 +216,16 @@ export class WalletController {
      */
     _loadAccounts = async (password) => {
         const accounts = await this._secureStorage.getAccounts(password);
-        const walletAccounts = createNetworkMap((networkIdentifier) => accounts[networkIdentifier]
-            .map(account => createWalletAccount(
-                account.privateKey,
-                account.networkIdentifier,
-                account.name,
-                account.accountType,
-                account.index
-            ))
+        const walletAccounts = createNetworkMap((networkIdentifier) =>
+            accounts[networkIdentifier].map((account) =>
+                createWalletAccount(account.privateKey, account.networkIdentifier, account.name, account.accountType, account.index)
+            )
         );
 
         runInAction(() => {
             this._state.walletAccounts = walletAccounts;
         });
-    }
+    };
 
     /**
      * Setup a new wallet. Save the mnemonic, generate accounts and select the first account
@@ -251,17 +248,19 @@ export class WalletController {
         const addresses = {};
 
         for (const networkIdentifier of Object.keys(accounts)) {
-            addresses[networkIdentifier] = accounts[networkIdentifier]
-                .map(account => omit(account, 'privateKey'));
+            addresses[networkIdentifier] = accounts[networkIdentifier].map((account) => omit(account, 'privateKey'));
             const account = accounts[networkIdentifier][0];
 
-            await this.addAccount({
-                accountType: WalletAccountType.SEED,
-                privateKey: account.privateKey,
-                name,
-                networkIdentifier,
-                index: account.index,
-            }, password);
+            await this.addAccount(
+                {
+                    accountType: WalletAccountType.SEED,
+                    privateKey: account.privateKey,
+                    name,
+                    networkIdentifier,
+                    index: account.index,
+                },
+                password
+            );
         }
 
         await this._persistentStorage.setSeedAddresses(addresses, password);
@@ -269,7 +268,7 @@ export class WalletController {
         // Select first account of the default network
         const defaultAccount = accounts[config.defaultNetworkIdentifier][0];
         await this.selectAccount(defaultAccount.publicKey);
-    }
+    };
 
     /**
      * Generate a new seed account from mnemonic and add it to the wallet
@@ -284,14 +283,17 @@ export class WalletController {
         const mnemonic = await this._secureStorage.getMnemonic(password);
         const privateKey = createPrivateKeysFromMnemonic(mnemonic, [index], networkIdentifier)[0];
 
-        await this.addAccount({
-            accountType: WalletAccountType.SEED,
-            privateKey,
-            name,
-            networkIdentifier,
-            index
-        }, password);
-    }
+        await this.addAccount(
+            {
+                accountType: WalletAccountType.SEED,
+                privateKey,
+                name,
+                networkIdentifier,
+                index,
+            },
+            password
+        );
+    };
 
     /**
      * Add a new account to the wallet
@@ -305,13 +307,7 @@ export class WalletController {
      * @returns {Promise<void>}
      */
     addAccount = async ({ accountType, privateKey, name, networkIdentifier, index }, password) => {
-        const account = createWalletStorageAccount(
-            privateKey,
-            networkIdentifier,
-            name,
-            accountType,
-            index,
-        );
+        const account = createWalletStorageAccount(privateKey, networkIdentifier, name, accountType, index);
         const accounts = await this._secureStorage.getAccounts(password);
         const networkAccounts = accounts[networkIdentifier];
         const isAccountAlreadyExists = networkAccounts.find((account) => account.privateKey === privateKey);
@@ -323,7 +319,7 @@ export class WalletController {
         networkAccounts.push(account);
         await this._secureStorage.setAccounts(accounts, password);
         await this._loadAccounts(password);
-    }
+    };
 
     /**
      * Rename wallet account
@@ -342,7 +338,7 @@ export class WalletController {
         await this._secureStorage.setAccounts(accounts, password);
         await this._loadAccounts(password);
         this._setCurrentAccount(this._state.currentAccountPublicKey);
-    }
+    };
 
     /**
      * Remove account from the wallet
@@ -362,7 +358,7 @@ export class WalletController {
         if (this._state.currentAccountPublicKey === publicKey) {
             await this.selectAccount(this.walletAccounts[networkIdentifier][0].publicKey);
         }
-    }
+    };
 
     /**
      * Change accounts order
@@ -372,7 +368,7 @@ export class WalletController {
      * @returns {Promise<void>}
      */
     changeAccountsOrder = async (networkIdentifier, accountsOrder, password) => {
-        const accountsPublicKeys = accountsOrder.map(account => account.publicKey);
+        const accountsPublicKeys = accountsOrder.map((account) => account.publicKey);
         const accounts = await this._secureStorage.getAccounts(password);
         accounts[networkIdentifier] = accounts[networkIdentifier].sort((a, b) => {
             return accountsPublicKeys.indexOf(a.publicKey) - accountsPublicKeys.indexOf(b.publicKey);
@@ -380,7 +376,7 @@ export class WalletController {
 
         await this._secureStorage.setAccounts(accounts, password);
         await this._loadAccounts(password);
-    }
+    };
 
     /**
      * Select wallet account
@@ -395,9 +391,9 @@ export class WalletController {
             this._state.currentAccountPublicKey = publicKey;
         });
         this._emit(ControllerEventName.ACCOUNT_CHANGE);
-    }
+    };
 
-    /** 
+    /**
      * Set current account object
      * @param {string} publicKey - account public key
      * @returns {void}
@@ -415,7 +411,7 @@ export class WalletController {
         runInAction(() => {
             this._state.currentAccount = currentAccount;
         });
-    }
+    };
 
     /**
      * Fetch account info
@@ -450,7 +446,7 @@ export class WalletController {
             isMultisig = false;
         }
 
-        const balance = getNativeMosaicAmount(baseAccountInfo.mosaics, networkProperties.networkCurrency.mosaicId)
+        const balance = getNativeMosaicAmount(baseAccountInfo.mosaics, networkProperties.networkCurrency.mosaicId);
         const namespaces = await NamespaceService.fetchAccountNamespaces(address, networkProperties);
 
         const accountInfo = {
@@ -465,7 +461,7 @@ export class WalletController {
             namespaces,
             isMultisig,
             cosignatories,
-            multisigAddresses
+            multisigAddresses,
         };
 
         const accountInfos = await this._persistentStorage.getAccountInfos();
@@ -477,7 +473,7 @@ export class WalletController {
         });
 
         return accountInfo;
-    }
+    };
 
     /**
      * Fetch account transactions
@@ -495,7 +491,12 @@ export class WalletController {
         const account = publicAccountFromPublicKey(publicKey, networkIdentifier);
 
         // Fetch transactions from chain
-        const transactions = await TransactionService.fetchAccountTransactions(account, networkProperties, { group, filter, pageNumber, pageSize });
+        const transactions = await TransactionService.fetchAccountTransactions(account, networkProperties, {
+            group,
+            filter,
+            pageNumber,
+            pageSize,
+        });
 
         // Cache transactions for current account
         const isFilterActivated = filter && Object.keys(filter).length > 0;
@@ -512,9 +513,9 @@ export class WalletController {
         // Return transactions
         return {
             data: transactions,
-            pageNumber
-        }
-    }
+            pageNumber,
+        };
+    };
 
     /**
      * Return wallet mnemonic passphrase from the secure storage
@@ -523,7 +524,7 @@ export class WalletController {
      */
     getMnemonic = async (password) => {
         return this._secureStorage.getMnemonic(password);
-    }
+    };
 
     /**
      * Return current account private key from the secure storage
@@ -534,10 +535,10 @@ export class WalletController {
         const { currentAccountPublicKey, networkIdentifier } = this._state;
         const accounts = await this._secureStorage.getAccounts(password);
         const networkAccounts = accounts[networkIdentifier];
-        const privateAccount = networkAccounts.find(account => account.publicKey === currentAccountPublicKey);
+        const privateAccount = networkAccounts.find((account) => account.publicKey === currentAccountPublicKey);
 
         return privateAccount.privateKey;
-    }
+    };
 
     /**
      * Sign transaction with the current account private key
@@ -549,7 +550,7 @@ export class WalletController {
         const privateKey = await this.getCurrentAccountPrivateKey(password);
 
         return signTransaction(this.networkProperties, transaction, privateKey);
-    }
+    };
 
     /**
      * Add current account signature to partial transaction
@@ -558,13 +559,12 @@ export class WalletController {
      * @returns {Promise<Object>} - cosigned transaction object
      */
     cosignTransaction = async (transaction, password) => {
-        if (transaction.type !== TransactionType.AGGREGATE_BONDED)
-            throw Error('error_failed_cosign_transaction_invalid_type');
+        if (transaction.type !== TransactionType.AGGREGATE_BONDED) throw Error('error_failed_cosign_transaction_invalid_type');
 
         const privateKey = await this.getCurrentAccountPrivateKey(password);
 
         return cosignTransaction(this.networkProperties, transaction, privateKey);
-    }
+    };
 
     /**
      * Announce signed transaction
@@ -573,12 +573,8 @@ export class WalletController {
      * @returns {Promise<Object>} - transaction announce result
      */
     announceSignedTransaction = async (signedTransaction, group) => {
-        return TransactionService.announceBatchNode(
-            signedTransaction.dto, 
-            this.networkProperties,
-            group
-        );
-    }
+        return TransactionService.announceBatchNode(signedTransaction.dto, this.networkProperties, group);
+    };
 
     /**
      * Sign transaction with the current account private key and announce it
@@ -605,7 +601,7 @@ export class WalletController {
                 lockedAmount: 10,
                 fee: 0.1,
                 duration: 1000,
-                aggregateHash: signedTransaction.hash
+                aggregateHash: signedTransaction.hash,
             };
             const signedHashLockTransaction = await this.signTransaction(hashLockTransaction, password);
 
@@ -617,12 +613,12 @@ export class WalletController {
                     listener.close();
                     return resolve(this.announceSignedTransaction(signedTransaction, TransactionAnnounceGroup.PARTIAL));
                 }
-            })
+            });
 
             // Announce hash lock transaction
             await this.announceSignedTransaction(signedHashLockTransaction);
-        })
-    }
+        });
+    };
 
     /**
      * Cosign partial transaction with the current account private key and announce it
@@ -634,7 +630,7 @@ export class WalletController {
         const cosignedTransaction = await this.cosignTransaction(transaction, password);
 
         return this.announceSignedTransaction(cosignedTransaction, TransactionAnnounceGroup.COSIGNATURE);
-    }
+    };
 
     /**
      * Encrypt message with recipient public key and current account private key
@@ -647,7 +643,7 @@ export class WalletController {
         const privateKey = await this.getCurrentAccountPrivateKey(password);
 
         return encryptMessage(messageText, recipientPublicKey, privateKey);
-    }
+    };
 
     /**
      * Decrypt message with sender (or recipient) public key and current account private key
@@ -660,7 +656,7 @@ export class WalletController {
         const privateKey = await this.getCurrentAccountPrivateKey(password);
 
         return decryptMessage(encryptedMessage, publicKey, privateKey);
-    }
+    };
 
     /**
      * Complete wallet creation process
@@ -668,7 +664,7 @@ export class WalletController {
      */
     notifyLoginCompleted = () => {
         this._emit(ControllerEventName.LOGIN);
-    }
+    };
 
     /**
      * Logout and clear all the data from the storage
@@ -679,13 +675,13 @@ export class WalletController {
         await this._persistentStorage.removeAll();
         this.clearState();
         this._emit(ControllerEventName.LOGOUT);
-    }
+    };
 
     clearState = () => {
         this._state = cloneDeep(defaultState);
 
-        Object.values(this.modules).forEach(module => module.clearState?.());
-    }
+        Object.values(this.modules).forEach((module) => module.clearState?.());
+    };
 
     fetchNodeList = async () => {
         const { networkIdentifier, nodeUrls } = this._state;
@@ -695,7 +691,7 @@ export class WalletController {
         runInAction(() => {
             this._state.nodeUrls = updatedNodeUrls;
         });
-    }
+    };
 
     /**
      * Fetch network properties from the node
@@ -715,7 +711,7 @@ export class WalletController {
             this._state.networkProperties = networkProperties;
             this._state.chainHeight = networkProperties.chainHeight;
         });
-    }
+    };
 
     /**
      * Select network and node
@@ -738,7 +734,7 @@ export class WalletController {
         this._emit(ControllerEventName.NETWORK_CHANGE);
 
         await this.selectAccount(accounts[0].publicKey);
-    }
+    };
 
     /**
      * Start the network connection job. Try to connect to the node and fetch the network properties with the interval
@@ -747,10 +743,7 @@ export class WalletController {
     runConnectionJob = async () => {
         const { networkConnectionTimer, networkIdentifier, networkStatus } = this._state;
         const runAgain = () => {
-            const newConnectionTimer = setTimeout(
-                () => this.runConnectionJob(),
-                config.connectionInterval
-            );
+            const newConnectionTimer = setTimeout(() => this.runConnectionJob(), config.connectionInterval);
             this._state.networkConnectionTimer = newConnectionTimer;
         };
 
@@ -801,7 +794,7 @@ export class WalletController {
                 });
                 runAgain();
                 return;
-            } catch { }
+            } catch {}
         }
 
         runInAction(() => {
@@ -809,7 +802,7 @@ export class WalletController {
         });
         runAgain();
         return;
-    }
+    };
 
     /**
      * Subscribe to the chain listener
@@ -824,16 +817,16 @@ export class WalletController {
             await newListener.open();
             newListener.listenTransactions(TransactionGroup.CONFIRMED, (transaction) => {
                 this._emit(ControllerEventName.NEW_TRANSACTION_CONFIRMED, transaction);
-            })
+            });
             newListener.listenTransactions(TransactionGroup.UNCONFIRMED, (transaction) => {
                 this._emit(ControllerEventName.NEW_TRANSACTION_UNCONFIRMED, transaction);
-            })
+            });
             newListener.listenTransactionError((error) => {
                 this._emit(ControllerEventName.TRANSACTION_ERROR, error);
-            })
+            });
             this._state.chainListener = newListener;
-        } catch { }
-    }
+        } catch {}
+    };
 
     /**
      * Unsubscribe from the chain listener
@@ -846,7 +839,7 @@ export class WalletController {
         if (chainListener) {
             chainListener.close();
         }
-    }
+    };
 
     /**
      * Subscribe to the controller events
@@ -856,7 +849,7 @@ export class WalletController {
      */
     on = (eventName, listener) => {
         this._notificationChannel.on(eventName, listener);
-    }
+    };
 
     /**
      * Unsubscribe from the controller events
@@ -866,7 +859,7 @@ export class WalletController {
      */
     removeListener = (eventName, listener) => {
         this._notificationChannel.removeListener(eventName, listener);
-    }
+    };
 
     /**
      * Emit controller event
@@ -877,7 +870,7 @@ export class WalletController {
      */
     _emit = (eventName, payload) => {
         this._notificationChannel.emit(eventName, payload);
-    }
+    };
 
     /**
      * Throw error and emit it
@@ -889,5 +882,5 @@ export class WalletController {
         this._emit(ControllerEventName.ERROR, errorType);
         console.error('Error:', errorType);
         throw new Error(errorType);
-    }
+    };
 }

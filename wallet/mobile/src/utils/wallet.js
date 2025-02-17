@@ -35,7 +35,7 @@ export const createPrivateKeysFromMnemonic = (mnemonic, indexes, networkIdentifi
     });
 
     return privateKeys;
-}
+};
 
 export const downloadPaperWallet = async (mnemonic, rootAccount, networkIdentifier) => {
     const hdRootAccount = {
@@ -111,13 +111,8 @@ export const generateSeedAccounts = async (mnemonic) => {
     const seedIndexes = [...Array(MAX_SEED_ACCOUNTS_PER_NETWORK).keys()];
 
     return createNetworkMap((networkIdentifier) =>
-        createPrivateKeysFromMnemonic(mnemonic, seedIndexes, networkIdentifier)
-            .map((privateKey, index) => createWalletStorageAccount(
-                privateKey,
-                networkIdentifier,
-                `${DEFAULT_ACCOUNT_NAME} ${index + 1}`,
-                WalletAccountType.SEED,
-                index
-            ))
+        createPrivateKeysFromMnemonic(mnemonic, seedIndexes, networkIdentifier).map((privateKey, index) =>
+            createWalletStorageAccount(privateKey, networkIdentifier, `${DEFAULT_ACCOUNT_NAME} ${index + 1}`, WalletAccountType.SEED, index)
+        )
     );
-}
+};

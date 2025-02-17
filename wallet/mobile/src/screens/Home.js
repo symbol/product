@@ -14,14 +14,7 @@ import { observer } from 'mobx-react-lite';
 import { ControllerEventName, TransactionGroup } from 'src/constants';
 
 export const Home = observer(function Home() {
-    const {
-        isWalletReady,
-        currentAccount,
-        currentAccountInfo,
-        networkIdentifier,
-        ticker,
-        price,
-    } = WalletController;
+    const { isWalletReady, currentAccount, currentAccountInfo, networkIdentifier, ticker, price } = WalletController;
     const defaultUnconfirmedTransactions = useMemo(() => [], []);
     const [fetchUnconfirmedTransactions, isUnconfirmedTransactionsLoading, unconfirmedTransactions] = useDataManager(
         async () => {
@@ -40,11 +33,12 @@ export const Home = observer(function Home() {
         handleError
     );
     const [renameAccount] = useDataManager(
-        (name) => WalletController.renameAccount({
-            publicKey: currentAccount.publicKey,
-            name,
-            networkIdentifier
-        }),
+        (name) =>
+            WalletController.renameAccount({
+                publicKey: currentAccount.publicKey,
+                name,
+                networkIdentifier,
+            }),
         null,
         handleError
     );

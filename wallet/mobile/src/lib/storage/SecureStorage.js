@@ -46,7 +46,7 @@ export class SecureStorage {
         } catch {
             return null;
         }
-    };
+    }
 
     static set = (key, value) => {
         return EncryptedStorage.setItem(key, value);

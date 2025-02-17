@@ -9,15 +9,18 @@ import { usePasscode, useToggle } from 'src/utils';
 import WalletController from 'src/lib/controller/MobileWalletController';
 import { observer } from 'mobx-react-lite';
 
-export const AccountDetails = observer(function AccountDetails(props) {
+export const AccountDetails = observer(function AccountDetails() {
     const { currentAccount, accountInfo, networkProperties, networkIdentifier } = WalletController;
     const [privateKey, setPrivateKey] = useState('');
     const { index, ...restAccountInfo } = currentAccount;
     const [isPrivateKeyDialogShown, togglePrivateKeyDialog] = useToggle(false);
-    const qrData = useMemo(() => ({
-        address: currentAccount.address,
-        name: 'Account',
-    }), [currentAccount]);
+    const qrData = useMemo(
+        () => ({
+            address: currentAccount.address,
+            name: 'Account',
+        }),
+        [currentAccount]
+    );
     const tableData = {
         ...restAccountInfo,
         seedIndex: index,
@@ -33,7 +36,7 @@ export const AccountDetails = observer(function AccountDetails(props) {
         const privateKey = await WalletController.getCurrentAccountPrivateKey();
         setPrivateKey(privateKey);
         togglePrivateKeyDialog();
-    }
+    };
     const confirmPrivateKeyReveal = usePasscode('enter', revealPrivateKey);
 
     return (

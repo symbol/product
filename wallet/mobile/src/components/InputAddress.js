@@ -7,11 +7,11 @@ import { $t } from 'src/localization';
 import { colors, fonts, spacings } from 'src/styles';
 import { trunc, useToggle, useValidation, validateRequired, validateUnresolvedAddress } from 'src/utils';
 import WalletController from 'src/lib/controller/MobileWalletController';
-import { observer } from 'mobx-react-lite'
+import { observer } from 'mobx-react-lite';
 
 export const InputAddressDropdown = observer(function InputAddressDropdown(props) {
     const { title, value, onChange, isOpen, onClose } = props;
-    const { accounts, networkIdentifier } = WalletController
+    const { accounts, networkIdentifier } = WalletController;
     const { addressBook } = WalletController.modules;
     const networkAccounts = accounts[networkIdentifier];
     const contacts = [...networkAccounts, ...addressBook.whiteList];

@@ -71,19 +71,15 @@ export const History = observer(function History() {
         }
 
         // Escape if account has changed
-        if (requestedAccountPublicKey.current !== currentAccount.publicKey)
-            return;
+        if (requestedAccountPublicKey.current !== currentAccount.publicKey) return;
 
         // Update state
         if (pageNumber === 1) {
             setConfirmed(filteredConfirmed);
             setUnconfirmed(filteredUnconfirmed);
             setPartial(filteredPartial);
-        }
-        else {
-            setConfirmed(previousConfirmed =>
-                uniqBy([...previousConfirmed, ...filteredConfirmed], 'hash')
-            );
+        } else {
+            setConfirmed((previousConfirmed) => uniqBy([...previousConfirmed, ...filteredConfirmed], 'hash'));
         }
 
         const isLastPage = confirmed.data.length < pageSize;
@@ -93,20 +89,17 @@ export const History = observer(function History() {
     const fetchHarvestedBlocks = async (pageNumber) => {
         const harvestedPage = await WalletController.modules.harvesting.fetchAccountHarvestedBlocks({ pageNumber });
 
-        if (requestedAccountPublicKey.current !== currentAccount.publicKey)
-            return;
+        if (requestedAccountPublicKey.current !== currentAccount.publicKey) return;
 
         setHarvested((harvested) => [...harvested, ...harvestedPage]);
         setPageNumber(pageNumber);
-    }
+    };
 
     const [fetchInitialData, isLoading] = useDataManager(
         async () => {
             const pageNumber = 1;
-            if (filter.harvested)
-                await fetchHarvestedBlocks(pageNumber);
-            else
-                await fetchTransactions(pageNumber);
+            if (filter.harvested) await fetchHarvestedBlocks(pageNumber);
+            else await fetchTransactions(pageNumber);
         },
         null,
         handleError
@@ -114,10 +107,8 @@ export const History = observer(function History() {
     const [fetchNextPage, isPageLoading] = useDataManager(
         async (pageNumber) => {
             const nextPageNumber = pageNumber + 1;
-            if (filter.harvested)
-                await fetchHarvestedBlocks(nextPageNumber);
-            else
-                await fetchTransactions(nextPageNumber);
+            if (filter.harvested) await fetchHarvestedBlocks(nextPageNumber);
+            else await fetchTransactions(nextPageNumber);
         },
         null,
         handleError
@@ -131,7 +122,7 @@ export const History = observer(function History() {
         setPageNumber(1);
         setIsLastPage(false);
         fetchInitialData();
-    }
+    };
     useInit(refresh, isWalletReady, [currentAccount, blackList, filter]);
 
     const onEndReached = () => !isLastPage && setIsNextPageRequested(true);
@@ -340,5 +331,5 @@ const styles = StyleSheet.create({
     },
     widgetList: {
         paddingTop: spacings.margin,
-    }
+    },
 });

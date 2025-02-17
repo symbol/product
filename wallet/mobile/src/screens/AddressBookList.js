@@ -50,7 +50,7 @@ export const AddressBookList = observer(function AddressBookList() {
     );
 });
 
-export const AddressBookListWidget = observer(function AddressBookListWidget(props) {
+export const AddressBookListWidget = observer(function AddressBookListWidget() {
     const { addressBook } = WalletController.modules;
 
     const getFormattedName = (contact) => trunc(contact.name, null, 12);

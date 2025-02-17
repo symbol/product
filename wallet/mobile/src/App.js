@@ -35,7 +35,7 @@ const App = () => {
         setIsUnlocked(true);
     };
     const init = async () => {
-        setIsWalletStored(false)
+        setIsWalletStored(false);
         setIsWalletLoaded(false);
         await StorageMigration.migrate();
         await initLocalization();
@@ -49,10 +49,10 @@ const App = () => {
     const load = async () => {
         const isWalletStored = await WalletController.isWalletCreated();
         setIsWalletStored(isWalletStored);
-        
+
         await WalletController.loadCache();
         setIsWalletLoaded(true);
-        
+
         WalletController.runConnectionJob();
         WalletController.modules.market.fetchData();
     };
@@ -83,8 +83,7 @@ const App = () => {
             WalletController.removeListener(ControllerEventName.LOGIN, handleLoginStateChange);
             WalletController.removeListener(ControllerEventName.LOGOUT, handleLogout);
             WalletController.removeListener(ControllerEventName.ACCOUNT_CHANGE, handleAccountChange);
-
-        }
+        };
     }, []);
 
     return (
@@ -101,9 +100,7 @@ const App = () => {
                             style={flashMessageStyle}
                         />
                         <RouterView isActive={isMainContainerShown} isLoggedIn={isWalletStored} />
-                        {isPasscodeShown && (
-                            <Passcode hideCancelButton keepListener keepNavigation route={{ params: passcodeParams }} />
-                        )}
+                        {isPasscodeShown && <Passcode hideCancelButton keepListener keepNavigation route={{ params: passcodeParams }} />}
                     </View>
                 </SafeAreaView>
             </GestureHandlerRootView>

@@ -7,17 +7,13 @@ import { Router } from 'src/Router';
 import { colors } from 'src/styles';
 import { handleError, useDataManager, useInit } from 'src/utils';
 import WalletController from 'src/lib/controller/MobileWalletController';
-import { observer } from 'mobx-react-lite'
+import { observer } from 'mobx-react-lite';
 
 export const Assets = observer(function Assets() {
     const { isWalletReady, chainHeight, currentAccount, currentAccountInfo, networkProperties } = WalletController;
     const { mosaics, namespaces } = currentAccountInfo;
     const [filter, setFilter] = useState({});
-    const [fetchData, isLoading] = useDataManager(
-        WalletController.fetchAccountInfo,
-        null,
-        handleError
-    );
+    const [fetchData, isLoading] = useDataManager(WalletController.fetchAccountInfo, null, handleError);
     useInit(fetchData, isWalletReady, [currentAccount]);
 
     const sections = [];

@@ -32,21 +32,13 @@ import {
 } from 'src/utils';
 import { MessageType, TransactionGroup, TransactionType } from 'src/constants';
 import WalletController from 'src/lib/controller/MobileWalletController';
-import { observer } from 'mobx-react-lite'
+import { observer } from 'mobx-react-lite';
 
 const SCREEN_HEIGHT = Dimensions.get('screen').height;
 const COSIGNATURE_FORM_HEIGHT = SCREEN_HEIGHT / 4;
 
 export const TransactionDetails = observer(function TransactionDetails(props) {
-    const { 
-        isWalletReady, 
-        chainHeight, 
-        accounts, 
-        currentAccount, 
-        ticker, 
-        networkIdentifier, 
-        networkProperties 
-    } = WalletController;
+    const { isWalletReady, chainHeight, accounts, currentAccount, ticker, networkIdentifier, networkProperties } = WalletController;
     const { addressBook } = WalletController.modules;
     const { transaction } = props.route.params;
     const walletAccounts = accounts[networkIdentifier];
@@ -54,15 +46,13 @@ export const TransactionDetails = observer(function TransactionDetails(props) {
         if (transaction.type === TransactionType.AGGREGATE_BONDED) {
             const transactionOptions = {
                 group: TransactionGroup.PARTIAL,
-                currentAccount, 
-                networkProperties
-            }
+                currentAccount,
+                networkProperties,
+            };
             return TransactionService.fetchTransactionInfo(transaction.hash, transactionOptions);
         }
     });
-    const date = transaction.timestamp 
-        ? formatDate(transaction.timestamp, $t, true)
-        : null;
+    const date = transaction.timestamp ? formatDate(transaction.timestamp, $t, true) : null;
     const [fetchStatus, isStatusLoading, status] = useDataManager(() => {
         return TransactionService.fetchStatus(transaction.hash || transaction.id, networkProperties);
     }, null);
@@ -70,11 +60,10 @@ export const TransactionDetails = observer(function TransactionDetails(props) {
         () => {
             if (transaction.message?.type === MessageType.EncryptedText) {
                 return WalletController.modules.transfer.getDecryptedMessageText(transaction);
-            }
-            else if (transaction.message?.type === MessageType.PlainText) {
+            } else if (transaction.message?.type === MessageType.PlainText) {
                 return transaction.message.text;
             }
-    
+
             return null;
         },
         null,

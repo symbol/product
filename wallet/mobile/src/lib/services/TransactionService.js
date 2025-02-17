@@ -9,7 +9,11 @@ import { promiseAllSettled } from 'src/utils';
 import { TransactionAnnounceGroup, TransactionGroup } from 'src/constants';
 
 export class TransactionService {
-    static async fetchAccountTransactions(account, networkProperties, { pageNumber = 1, pageSize = 15, group = TransactionGroup.CONFIRMED, filter = {} }) {
+    static async fetchAccountTransactions(
+        account,
+        networkProperties,
+        { pageNumber = 1, pageSize = 15, group = TransactionGroup.CONFIRMED, filter = {} }
+    ) {
         const baseUrl = `${networkProperties.nodeUrl}/transactions/${group}`;
         const baseSearchCriteria = {
             pageNumber,
@@ -23,7 +27,6 @@ export class TransactionService {
             const fromAccount = await AccountService.fetchAccountInfo(networkProperties, filter.from);
             baseSearchCriteria.signerPublicKey = fromAccount.publicKey;
             baseSearchCriteria.recipientAddress = account.address;
-
         } else if (filter.to) {
             baseSearchCriteria.signerPublicKey = account.publicKey;
             baseSearchCriteria.recipientAddress = filter.to;
@@ -40,9 +43,7 @@ export class TransactionService {
         const transactions = transactionPage.data;
 
         // Aggregate transactions info is limited. We need to fetch details for each aggregate transaction and include them in the list
-        const aggregateTransactionHashes = transactions
-            .filter(isAggregateTransactionDTO)
-            .map((transactionDTO) => transactionDTO.meta.hash);
+        const aggregateTransactionHashes = transactions.filter(isAggregateTransactionDTO).map((transactionDTO) => transactionDTO.meta.hash);
         let aggregateDetailedDTOs = [];
         if (aggregateTransactionHashes.length) {
             const transactionDetailsUrl = `${networkProperties.nodeUrl}/transactions/${group}`;
@@ -77,7 +78,7 @@ export class TransactionService {
     static async announceBatchNode(dto, networkProperties, type) {
         const randomNodes = networkProperties.nodeUrls.sort(() => Math.random() - 0.5).slice(0, 3);
         const nodeUrls = [networkProperties.nodeUrl, ...randomNodes];
-        const promises = nodeUrls.map((nodeUrl => this.announce(dto, nodeUrl, type)));
+        const promises = nodeUrls.map((nodeUrl) => this.announce(dto, nodeUrl, type));
 
         const results = await promiseAllSettled(promises);
         const hasSuccessfulResult = results.some((r) => r.status === 'fulfilled');
@@ -93,7 +94,7 @@ export class TransactionService {
             [TransactionAnnounceGroup.DEFAULT]: '/transactions',
             [TransactionAnnounceGroup.PARTIAL]: '/transactions/partial',
             [TransactionAnnounceGroup.COSIGNATURE]: '/transactions/cosignature',
-        }
+        };
         const endpoint = `${nodeUrl}${typeEndpointMap[type]}`;
 
         return makeRequest(endpoint, {
@@ -116,7 +117,7 @@ export class TransactionService {
 
     static async resolveTransactions(transactionDTOs, networkProperties, currentAccount, config) {
         const { unresolvedExtractor, transactionMapper, mapperConfig = {} } = config;
-        
+
         // Resolve addresses, mosaics and namespaces
         const { addresses, mosaicIds, namespaceIds } = unresolvedExtractor(transactionDTOs);
         const mosaicInfos = await MosaicService.fetchMosaicInfos(networkProperties, mosaicIds);
@@ -140,7 +141,7 @@ export class TransactionService {
         const config = {
             unresolvedExtractor: getUnresolvedIdsFromTransactionDTOs,
             transactionMapper: transactionFromDTO,
-            mapperConfig
+            mapperConfig,
         };
 
         return TransactionService.resolveTransactions(transactionDTOs, networkProperties, currentAccount, config);
@@ -160,6 +161,8 @@ export class TransactionService {
         const symbolTransaction = symbolTransactionFromPayload(payload);
         const mapperConfig = { fillSignerPublickey };
 
-        return (await TransactionService.resolveSymbolTransactions([symbolTransaction], networkProperties, currentAccount, mapperConfig))[0];
+        return (
+            await TransactionService.resolveSymbolTransactions([symbolTransaction], networkProperties, currentAccount, mapperConfig)
+        )[0];
     }
 }

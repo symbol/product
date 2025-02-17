@@ -1,6 +1,5 @@
-import _ from 'lodash';
-import React, { useEffect, useMemo, useState } from 'react';
-import { DeviceEventEmitter, Image, StyleSheet, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { Image, StyleSheet, View } from 'react-native';
 import { RefreshControl, ScrollView } from 'react-native-gesture-handler';
 import Animated, { FadeIn, FadeInDown, FadeOut } from 'react-native-reanimated';
 import { Button, DialogBox, FeeSelector, FormItem, Screen, StyledText, TableView, TextBox, Widget } from 'src/components';
@@ -8,22 +7,30 @@ import { ControllerEventName } from 'src/constants';
 import { $t } from 'src/localization';
 import { HarvestingService } from 'src/lib/services';
 import { colors, fonts, layout, spacings } from 'src/styles';
-import { createHarvestingTransactionStub, formatDate, handleError, useDataManager, usePasscode, useToggle, useTransactionFees } from 'src/utils';
+import {
+    createHarvestingTransactionStub,
+    formatDate,
+    handleError,
+    useDataManager,
+    usePasscode,
+    useToggle,
+    useTransactionFees,
+} from 'src/utils';
 import WalletController from 'src/lib/controller/MobileWalletController';
-import { observer } from 'mobx-react-lite'
+import { observer } from 'mobx-react-lite';
 
 export const Harvesting = observer(function Harvesting() {
     const { currentAccountInfo, isWalletReady, networkIdentifier, networkProperties, ticker } = WalletController;
     const isAccountReady = WalletController.currentAccountInfo.isLoaded;
     const { linkedKeys, importance, balance } = currentAccountInfo;
-    
+
     const [isActionMade, setIsActionMade] = useState(false);
     const [nodeUrl, setNodeUrl] = useState('');
     const [isStartConfirmVisible, toggleStartConfirm] = useToggle(false);
     const [isStopConfirmVisible, toggleStopConfirm] = useToggle(false);
     const [fee, setFee] = useState(0);
     const [speed, setSpeed] = useState('medium');
-      
+
     const confirmStartTableData = { nodeUrl, fee };
     const confirmStopTableData = { fee };
 
@@ -195,7 +202,7 @@ export const Harvesting = observer(function Harvesting() {
     }, [isAccountReady, isWalletReady]);
 
     // Calculate transaction fee
-    const transaction = createHarvestingTransactionStub({ networkIdentifier, linkedKeys});
+    const transaction = createHarvestingTransactionStub({ networkIdentifier, linkedKeys });
     const transactionFees = useTransactionFees(transaction, networkProperties);
     useEffect(() => {
         if (transactionFees.medium) {

@@ -1,12 +1,6 @@
 import _ from 'lodash';
 import { config } from 'src/config';
-import {
-    addressFromRaw,
-    getMosaicRelativeAmount,
-    makeRequest,
-    networkTypeToIdentifier,
-    timestampToLocalDate,
-} from 'src/utils';
+import { addressFromRaw, getMosaicRelativeAmount, makeRequest, networkTypeToIdentifier, timestampToLocalDate } from 'src/utils';
 import { NetworkService } from 'src/lib/services/NetworkService';
 const HarvestingStatus = {
     inactive: 'inactive',
@@ -87,7 +81,7 @@ export class HarvestingService {
 
         let latestBlockDate = null;
         if (harvestedBlocks.length) {
-            const height = harvestedBlocks[0].height
+            const height = harvestedBlocks[0].height;
             const endpoint = `${networkProperties.nodeUrl}/blocks/${height}`;
             const { block } = await makeRequest(endpoint);
             const timestamp = parseInt(block.timestamp);

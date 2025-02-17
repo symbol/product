@@ -8,22 +8,16 @@ import { currentAccount } from '__fixtures__/local/wallet';
 describe('utils/transaction-to-symbol', () => {
     it('maps transactions to symbol object', () => {
         // Arrange:
-        const expectedSymbolTransactions = payloads.map(item => symbolTransactionFromPayload(item.payload));
+        const expectedSymbolTransactions = payloads.map((item) => symbolTransactionFromPayload(item.payload));
         const transactionOptions = {
             networkProperties,
-            currentAccount
+            currentAccount,
         };
 
         // Act:
-        const result = walletTransactions.map(transaction => transactionToSymbol(
-            transaction,
-            transactionOptions
-        ));
+        const result = walletTransactions.map((transaction) => transactionToSymbol(transaction, transactionOptions));
 
         // Assert:
-        result.map((transaction, index) => 
-            expect(transaction.toJson())
-            .toStrictEqual(expectedSymbolTransactions[index].toJson())
-        );
-    })
-})
+        result.map((transaction, index) => expect(transaction.toJson()).toStrictEqual(expectedSymbolTransactions[index].toJson()));
+    });
+});

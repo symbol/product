@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import { DeviceEventEmitter } from 'react-native';
-import { TransactionType } from 'src/constants';
 import { Router } from 'src/Router';
 import { getTransactionFees } from 'src/utils/transaction';
 
@@ -126,19 +125,16 @@ export const useTransactionFees = (transaction, networkProperties) => {
     const defaultTransactionFees = {
         fast: 0,
         medium: 0,
-        slow: 0
+        slow: 0,
     };
     const memoDeps = [
         networkProperties.transactionFees.minFeeMultiplier,
         networkProperties.transactionFees.averageFeeMultiplier,
-        transaction
+        transaction,
     ];
 
-    return useMemo(() => 
-        networkProperties.networkIdentifier 
-            ? getTransactionFees(transaction, networkProperties) 
-            : defaultTransactionFees, 
+    return useMemo(
+        () => (networkProperties.networkIdentifier ? getTransactionFees(transaction, networkProperties) : defaultTransactionFees),
         memoDeps
     );
-}
-
+};

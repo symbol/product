@@ -80,7 +80,7 @@ export const generateNonce = () => {
 //     return MosaicId.createFromNonce(MosaicNonce.createFromHex(nonce), Address.createFromRawAddress(ownerAddress)).toHex();
 // };
 
-export const isSupplyMutableFlag = flags => (flags & MosaicFlags.SUPPLY_MUTABLE) !== 0;
-export const isTransferableFlag = flags => (flags & MosaicFlags.TRANSFERABLE) !== 0;
-export const isRestrictableFlag = flags => (flags & MosaicFlags.RESTRICTABLE) !== 0;
-export const isRevokableFlag = flags => (flags & MosaicFlags.REVOKABLE) !== 0;
+export const isSupplyMutableFlag = (flags) => (flags & MosaicFlags.SUPPLY_MUTABLE) !== 0;
+export const isTransferableFlag = (flags) => (flags & MosaicFlags.TRANSFERABLE) !== 0;
+export const isRestrictableFlag = (flags) => (flags & MosaicFlags.RESTRICTABLE) !== 0;
+export const isRevokableFlag = (flags) => (flags & MosaicFlags.REVOKABLE) !== 0;

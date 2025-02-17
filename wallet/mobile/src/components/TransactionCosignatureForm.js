@@ -12,12 +12,12 @@ import { ButtonPlain } from './ButtonPlain';
 import { LoadingIndicator } from './LoadingIndicator';
 import { StyledText } from './StyledText';
 import WalletController from 'src/lib/controller/MobileWalletController';
-import { observer } from 'mobx-react-lite'
+import { observer } from 'mobx-react-lite';
 
 export const TransactionCosignatureForm = observer(function TransactionCosignatureForm(props) {
     const { style, height, transaction } = props;
     const { signerAddress } = transaction;
-    const { currentAccount, currentAccountInfo, networkIdentifier, accounts } = WalletController; 
+    const { currentAccount, currentAccountInfo, networkIdentifier, accounts } = WalletController;
     const { isMultisig } = currentAccountInfo;
     const { addressBook } = WalletController.modules;
     const networkWalletAccounts = accounts[networkIdentifier];

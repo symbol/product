@@ -11,7 +11,7 @@ const createContact = (contact) => {
         notes: contact.notes || '',
         isBlackListed: contact.isBlackListed || false,
     };
-}
+};
 
 const defaultState = {
     addressBook: createNetworkMap(() => []),
@@ -22,8 +22,7 @@ export class AddressBookModule {
         this.name = 'addressBook';
         this._state = cloneDeep(defaultState);
 
-        if (isObservable)
-            makeAutoObservable(this);
+        if (isObservable) makeAutoObservable(this);
 
         this._root = root;
     }
@@ -36,33 +35,33 @@ export class AddressBookModule {
         runInAction(() => {
             this._state.addressBook = addressBook;
         });
-    }
+    };
 
     clearState = () => {
         this._state = cloneDeep(defaultState);
-    }
+    };
 
     get contacts() {
         return this._state.addressBook[this._root.networkIdentifier];
     }
 
     get blackList() {
-        return this.contacts.filter(contact => contact.isBlackListed);;
+        return this.contacts.filter((contact) => contact.isBlackListed);
     }
 
     get whiteList() {
-        return this.contacts.filter(contact => !contact.isBlackListed);
+        return this.contacts.filter((contact) => !contact.isBlackListed);
     }
 
     getContactById = (id) => {
-        return this.contacts.find(contact => contact.id === id) || null;
-    }
+        return this.contacts.find((contact) => contact.id === id) || null;
+    };
 
     getContactByAddress = (address) => {
-        return this.contacts.find(contact => contact.address === address) || null;
-    }
+        return this.contacts.find((contact) => contact.address === address) || null;
+    };
 
-    addContact = async (newContact) =>{
+    addContact = async (newContact) => {
         const addressBook = await this._root._persistentStorage.getAddressBook();
         const networkContacts = addressBook[this._root.networkIdentifier];
         const isContactAlreadyExists = networkContacts.find((contact) => contact.address === newContact.address);
@@ -77,7 +76,7 @@ export class AddressBookModule {
         runInAction(() => {
             this._state.addressBook = addressBook;
         });
-    }
+    };
 
     removeContact = async (id) => {
         const addressBook = await this._root._persistentStorage.getAddressBook();
@@ -94,7 +93,7 @@ export class AddressBookModule {
         runInAction(() => {
             this._state.addressBook = addressBook;
         });
-    }
+    };
 
     updateContact = async (newContact) => {
         const addressBook = await this._root._persistentStorage.getAddressBook();
@@ -111,7 +110,7 @@ export class AddressBookModule {
         runInAction(() => {
             this._state.addressBook = addressBook;
         });
-    }
+    };
 
     _setAddressBook = async (addressBook) => {
         await this._root._persistentStorage.setAddressBook(addressBook);
@@ -119,5 +118,5 @@ export class AddressBookModule {
         runInAction(() => {
             this._state.addressBook = addressBook;
         });
-    }
+    };
 }

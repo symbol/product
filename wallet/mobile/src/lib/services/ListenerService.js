@@ -11,7 +11,7 @@ const ListenerChannelName = {
     modifyMultisigAccount: 'modifyMultisigAccount',
     status: 'status',
     finalizedBlock: 'finalizedBlock',
-}
+};
 
 export class ListenerService {
     constructor(networkProperties, currentAccount) {
@@ -143,7 +143,7 @@ export class ListenerService {
         const channelMap = {
             confirmed: ListenerChannelName.confirmedAdded,
             unconfirmed: ListenerChannelName.unconfirmedAdded,
-            partial: ListenerChannelName.partialAdded
+            partial: ListenerChannelName.partialAdded,
         };
         const channel = channelMap[group];
         this.subscribeTo(`${channel}/${this.currentAccount.address}`);

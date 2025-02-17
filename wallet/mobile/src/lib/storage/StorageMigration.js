@@ -122,7 +122,13 @@ export class StorageMigration {
             }
             // Format privateKey and optIn accounts
             else if (account.type !== 'hd') {
-                const walletAccount = createWalletAccount(account.privateKey, account.network, account.name, WalletAccountType.EXTERNAL, null);
+                const walletAccount = createWalletAccount(
+                    account.privateKey,
+                    account.network,
+                    account.name,
+                    WalletAccountType.EXTERNAL,
+                    null
+                );
                 networkAccounts[account.network].push(walletAccount);
             }
         });
