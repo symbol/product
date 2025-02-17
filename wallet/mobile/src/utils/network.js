@@ -1,14 +1,14 @@
-import { NetworkType } from 'src/constants';
+import { NetworkIdentifier, NetworkType } from 'src/constants';
 
 export const networkTypeToIdentifier = (networkType) => {
-    if (networkType === NetworkType.MAIN_NET) return 'mainnet';
-    if (networkType === NetworkType.TEST_NET) return 'testnet';
+    if (networkType === NetworkType.MAIN_NET) return NetworkIdentifier.MAIN_NET;
+    if (networkType === NetworkType.TEST_NET) return NetworkIdentifier.TEST_NET;
     return 'custom';
 };
 
 export const networkIdentifierToNetworkType = (networkIdentifier) => {
-    if (networkIdentifier === 'mainnet') return NetworkType.MAIN_NET;
-    if (networkIdentifier === 'testnet') return NetworkType.TEST_NET;
+    if (networkIdentifier === NetworkIdentifier.MAIN_NET) return NetworkType.MAIN_NET;
+    if (networkIdentifier === NetworkIdentifier.TEST_NET) return NetworkType.TEST_NET;
     return 0;
 };
 

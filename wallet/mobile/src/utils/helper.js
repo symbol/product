@@ -1,8 +1,31 @@
 import moment from 'moment';
+// import Clipboard from '@react-native-community/clipboard';
+// Remove after fix https://github.com/react-native-clipboard/clipboard/issues/71
 import { Duration, Instant, LocalDateTime, ZoneId } from '@js-joda/core';
-import { Platform, Vibration } from 'react-native';
-import { showMessage } from 'react-native-flash-message';
+import { Clipboard, Platform, Vibration } from 'react-native';
+import { showMessage as rnFlashMessage } from 'react-native-flash-message';
 import { $t } from 'src/localization';
+import { config } from 'src/config';
+import { NetworkIdentifier } from 'src/constants';
+
+export const showMessage = ({ message, type }) => rnFlashMessage({ message, type });
+
+export const handleError = (error) => {
+    const message = $t(error.message, { defaultValue: error.message });
+    showMessage({ message, type: 'danger' });
+    console.error(error);
+};
+
+export const copyToClipboard = (str) => {
+    Clipboard.setString(str);
+};
+
+export const createNetworkMap = (callback) => {
+    const networkIdentifiers = [...config.networkIdentifiers];
+    const maps = networkIdentifiers.map((networkIdentifier) => [networkIdentifier, callback(networkIdentifier)]);
+
+    return Object.fromEntries(maps);
+}
 
 export const trunc = (str, type, length = 5) => {
     const trunc = (text, cut, lengthFirst, lengthSecond) => {
@@ -43,12 +66,6 @@ export const trunc = (str, type, length = 5) => {
         default:
             return trunc(str, 'end', length);
     }
-};
-
-export const handleError = (error) => {
-    const message = $t(error.message, { defaultValue: error.message });
-    showMessage({ message, type: 'danger' });
-    console.error(error);
 };
 
 export const getCharPercentage = (char) => {
@@ -292,9 +309,20 @@ export const blockDurationToDaysLeft = (duration, blockGenerationTargetTime) => 
 };
 
 export const getUserCurrencyAmountText = (amount, price, networkIdentifier) => {
-    if (networkIdentifier !== 'mainnet' || !price) {
+    if (networkIdentifier !== NetworkIdentifier.MAIN_NET || !price) {
         return '';
     }
 
     return `~${(price.value * amount).toFixed(2)} ${price.currency}`;
 };
+
+export const promiseAllSettled = (promises) => Promise.all(
+    promises.map(p => p.then(value => ({
+        status: "fulfilled",
+        value
+    }))
+        .catch(reason => ({
+            status: "rejected",
+            reason
+        })))
+);
