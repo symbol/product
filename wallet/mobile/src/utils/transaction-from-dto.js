@@ -1,10 +1,8 @@
-import { AddressRestrictionFlag, AddressRestrictionFlagMessage, AliasAction, AliasActionMessage, LinkAction, LinkActionMessage, LockHashAlgorithmMessage, Message, MosaicRestrictionFlag, MosaicRestrictionFlagMessage, MosaicRestrictionType, MosaicRestrictionTypeMessage, MosaicSupplyChangeAction, MosaicSupplyChangeActionMessage, NamespaceRegistrationType, NamespaceRegistrationTypeMessage, OperationRestrictionFlag, OperationRestrictionFlagMessage, TransactionType } from 'src/constants';
+import { AddressRestrictionFlagMessage, AliasActionMessage, LinkActionMessage, LockHashAlgorithmMessage, Message, MessageType, MosaicRestrictionFlagMessage, MosaicRestrictionTypeMessage, MosaicSupplyChangeActionMessage, NamespaceRegistrationTypeMessage, OperationRestrictionFlagMessage, TransactionType } from 'src/constants';
 import _ from 'lodash';
-import { SymbolFacade } from 'symbol-sdk-v3/symbol';
-import { encryptMessage, getUnresolvedIdsFromTransactions, isAggregateTransaction } from './transaction';
-import { transactionToSymbol } from 'src/utils/transaction-to-symbol';
+import { decodePlainMessage, getUnresolvedIdsFromTransactions, isAggregateTransaction } from './transaction';
 import { networkTypeToIdentifier } from 'src/utils/network';
-import { addressFromPublicKey, addressFromRaw, isSymbolAddress } from 'src/utils/account';
+import { addressFromPublicKey, addressFromRaw } from 'src/utils/account';
 import { getMosaicRelativeAmount, getMosaicsWithRelativeAmounts, getNativeMosaicAmount, isRestrictableFlag, isRevokableFlag, isSupplyMutableFlag, isTransferableFlag } from './mosaic';
 import { isIncomingTransaction, isOutgoingTransaction } from './transaction';
 
@@ -159,7 +157,7 @@ export const transferTransactionFromDTO = (transactionDTO, config) => {
     const { transaction } = transactionDTO;
     const { networkProperties, mosaicInfos, currentAccount, resolvedAddresses } = config;
     const baseTransaction = baseTransactionFromDTO(transactionDTO, config);
-    const mosaics = transaction.mosaics.map(mosaicFromDTO);
+    const mosaics = transaction.mosaics?.map(mosaicFromDTO) || [];
     const formattedMosaics = getMosaicsWithRelativeAmounts(mosaics, mosaicInfos);
     const nativeMosaicAmount = getNativeMosaicAmount(formattedMosaics, networkProperties.networkCurrency.mosaicId);
     const transactionBody = {
@@ -178,33 +176,14 @@ export const transferTransactionFromDTO = (transactionDTO, config) => {
     if (transaction.message) {
         const messageBytes = Buffer.from(transaction.message, 'hex');
         const messageType = messageBytes[0];
-        const isMessagePlain = messageType === 0;
-        const isMessageEncrypted = messageType === 1;
-        const isDelegatedHarvestingMessage = messageType === 254;
-        const isMessageRaw = messageType === !isMessagePlain && !isMessageEncrypted && !isDelegatedHarvestingMessage;
-        let messagePayload = null;
-
-        switch (true) {
-            case isMessagePlain:
-                messagePayload = Buffer.from(messageBytes.subarray(1)).toString();
-                break;
-            case isMessageEncrypted:
-                messagePayload = transaction.message;
-                break;
-            case isDelegatedHarvestingMessage:
-            case isMessageRaw:
-                messagePayload = transaction.message;
-                break;
-        }
-
+        const messageText = messageType === MessageType.PlainText
+            ? decodePlainMessage(transaction.message)
+            : null;
 
         transactionBody.message = {
-            encryptedText: isMessageEncrypted ? messagePayload : null,
-            text: isMessagePlain ? messagePayload : null,
-            payload: (isDelegatedHarvestingMessage || isMessageRaw) ? messagePayload : null,
-            isRaw: isMessageRaw,
-            isEncrypted: isMessageEncrypted,
-            isDelegatedHarvestingMessage,
+            type: messageType,
+            text: messageText,
+            payload: transaction.message,
         };
     }
 

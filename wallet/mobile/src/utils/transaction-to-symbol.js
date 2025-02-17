@@ -2,8 +2,6 @@ import { AddressRestrictionFlag, AddressRestrictionFlagMessage, AliasAction, Ali
 import { ChronoUnit, Instant } from '@js-joda/core';
 import _ from 'lodash';
 import { models, SymbolFacade } from 'symbol-sdk-v3/symbol';
-import { encryptMessage } from './transaction';
-import { PublicKey, Signature } from 'symbol-sdk-v3';
 
 const createSymbolTransaction = (transactionDescriptor, networkProperties, isEmbedded, cousignatures) => {
     const facade = new SymbolFacade(networkProperties.networkIdentifier);
@@ -57,7 +55,6 @@ const createDeadline = (transaction, networkProperties, hours = 2) => {
  * @param {object} transaction - The transaction to convert.
  * @param {object} config - The configuration object.
  * @param {object} config.networkProperties - The network properties.
- * @param {object} config.currentAccount - The current account.
  * @param {boolean} config.isEmbedded - A flag indicating if the transaction is embedded.
  * @returns {object} The Symbol transaction.
  */
@@ -161,7 +158,7 @@ export const aggregateTransactionToSymbol = (transaction, config) => {
 };
 
 export const transferTransactionToSymbol = (transaction, config) => {
-    const { networkProperties, isEmbedded, currentAccount } = config;
+    const { networkProperties, isEmbedded } = config;
     const descriptor = {
         type: 'transfer_transaction_v1',
         signerPublicKey: createSignerPublicKey(transaction),
@@ -171,20 +168,8 @@ export const transferTransactionToSymbol = (transaction, config) => {
         mosaics: transaction.mosaics.map(mosaic => createMosaic(mosaic)),
     };
 
-    if (transaction.message?.isRaw || transaction.message?.isDelegatedHarvestingMessage) {
+    if (transaction.message?.payload) {
         descriptor.message = Buffer.from(transaction.message.payload, 'hex');
-    } else if (transaction.message?.isEncrypted) {
-        const encryptedText = transaction.message.text
-            ? encryptMessage(
-                transaction.message.text,
-                transaction.recipientPublicKey,
-                currentAccount.privateKey
-            )
-            : transaction.message.encryptedText;
-        descriptor.message = Buffer.from(encryptedText, 'hex');
-    } else if (transaction.message?.text) {
-        const bytes = new TextEncoder().encode(transaction.message.text)
-        descriptor.message = new Uint8Array([0, ...bytes]);
     }
 
     return createSymbolTransaction(descriptor, networkProperties, isEmbedded);

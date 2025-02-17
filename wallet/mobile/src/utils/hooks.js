@@ -128,12 +128,17 @@ export const useTransactionFees = (transaction, networkProperties) => {
         medium: 0,
         slow: 0
     };
-    const deps = [networkProperties];
+    const memoDeps = [
+        networkProperties.transactionFees.minFeeMultiplier,
+        networkProperties.transactionFees.averageFeeMultiplier,
+        transaction
+    ];
 
-    if (transaction.type === TransactionType.TRANSFER) {
-        deps.push(...[transaction.message?.text, transaction.messageEncrypted])
-    }
-
-    return useMemo(() => networkProperties.networkIdentifier ? getTransactionFees(transaction, networkProperties) : defaultTransactionFees, deps);
+    return useMemo(() => 
+        networkProperties.networkIdentifier 
+            ? getTransactionFees(transaction, networkProperties) 
+            : defaultTransactionFees, 
+        memoDeps
+    );
 }
 

@@ -1,38 +1,30 @@
-import { TransactionType } from '@/constants';
+import { LinkAction, MessageType, TransactionType } from '@/constants';
 import { getMosaicRelativeAmount } from './mosaic';
 import { toFixedNumber } from './helper';
 import { Hash256, PrivateKey, PublicKey, utils } from 'symbol-sdk-v3';
 import { SymbolFacade, MessageEncoder, models } from 'symbol-sdk-v3/symbol';
 import { transactionToSymbol } from './transaction-to-symbol';
+import { addressFromPublicKey, generateKeyPair } from 'src/utils/account';
 const { TransactionFactory } = models;
 
+const STUB_KEY_1 = 'BE0B4CF546B7B4F4BBFCFF9F574FDA527C07A53D3FC76F8BB7DB746F8E8E0A9F';
+const STUB_KEY_2 = 'F312748473BFB2D61689F680AE5C6E4003FA7EE2B0EC407ADF82D15A1144CF4F';
+const STUB_ADDRESS = 'TB3KUBHATFCPV7UZQLWAQ2EUR6SIHBSBEOEDDDF';
+
 export const isAggregateTransaction = (transaction) => {
-    const type = transaction.type || transaction.type.value;
-    
+    const type = transaction.type || transaction.type?.value;
+
     return type === TransactionType.AGGREGATE_BONDED || type === TransactionType.AGGREGATE_COMPLETE;
 };
 
 export const getTransactionFees = (transaction, networkProperties) => {
-    const stubKeySigner = 'BE0B4CF546B7B4F4BBFCFF9F574FDA527C07A53D3FC76F8BB7DB746F8E8E0A9F';
-    const stubKeyRecipient = 'F312748473BFB2D61689F680AE5C6E4003FA7EE2B0EC407ADF82D15A1144CF4F';
-    const stubAddress = 'TB3KUBHATFCPV7UZQLWAQ2EUR6SIHBSBEOEDDDF';
-    const {
-        transactionFees,
-        networkCurrency: { divisibility },
-    } = networkProperties;
+    const { transactionFees } = networkProperties;
+    const { divisibility } = networkProperties.networkCurrency;
     const stubTransaction = {
         ...transaction,
-        signerPublicKey: stubKeySigner,
-        recipientPublicKey: stubKeyRecipient,
-        recipientAddress: stubAddress,
-    };
-    const stubCurrentAccount = {
-        privateKey: stubKeySigner,
-        publicKey: stubKeySigner,
     };
     const transactionOptions = {
         networkProperties,
-        currentAccount: stubCurrentAccount,
     };
     const size = transactionToSymbol(stubTransaction, transactionOptions).size;
 
@@ -60,7 +52,7 @@ export const symbolTransactionToPayload = (symbolTransaction) => {
 };
 
 export const transactionToPayload = (transaction, networkProperties) => {
-    const symbolTransaction = transactionToSymbol(transaction, { networkProperties});
+    const symbolTransaction = transactionToSymbol(transaction, { networkProperties });
 
     return symbolTransactionToPayload(symbolTransaction);
 };
@@ -72,6 +64,32 @@ export const createTransactionURI = (transactionPayload, generationHash) => {
 export const isOutgoingTransaction = (transaction, currentAccount) => transaction.signerAddress === currentAccount.address;
 
 export const isIncomingTransaction = (transaction, currentAccount) => transaction.recipientAddress === currentAccount.address;
+
+export const encodePlainMessage = (messageText) => {
+    const bytes = new TextEncoder().encode(messageText)
+
+    return Buffer.from([MessageType.PlainText, ...bytes]).toString('hex');
+};
+
+export const decodePlainMessage = (messagePayloadHex) => {
+    const messageBytes = Buffer.from(messagePayloadHex, 'hex');
+
+    return Buffer.from(messageBytes.subarray(1)).toString();
+};
+
+export const encodeDelegatedHarvestingMessage = (privateKey, nodePublicKey, remotePrivateKey, vrfPrivateKey) => {
+    const keyPair = new SymbolFacade.KeyPair(new PrivateKey(privateKey));
+    const messageEncoder = new MessageEncoder(keyPair);
+    const remoteKeyPair = new SymbolFacade.KeyPair(new PrivateKey(remotePrivateKey));
+    const vrfKeyPair = new SymbolFacade.KeyPair(new PrivateKey(vrfPrivateKey));
+    const encodedBytes = messageEncoder.encodePersistentHarvestingDelegation(
+        new PublicKey(nodePublicKey),
+        remoteKeyPair,
+        vrfKeyPair
+    );
+
+    return Buffer.from(encodedBytes).toString('hex');
+}
 
 export const encryptMessage = (messageText, recipientPublicKey, privateKey) => {
     const _privateKey = new PrivateKey(privateKey);
@@ -157,18 +175,16 @@ export const isHarvestingServiceTransaction = (transaction) => {
     return true;
 };
 
-export const signTransaction = async (networkProperties, transaction, privateAccount) => {
+export const signTransaction = (networkProperties, transaction, privateKey) => {
     // Map transaction
     const transactionOptions = {
         networkProperties,
-        currentAccount: privateAccount,
     };
     const transactionObject = transactionToSymbol(transaction, transactionOptions);
 
     // Get signature
     const facade = new SymbolFacade(networkProperties.networkIdentifier);
-    const privateKey = new PrivateKey(privateAccount.privateKey);
-    const keyPair = new SymbolFacade.KeyPair(privateKey);
+    const keyPair = new SymbolFacade.KeyPair(new PrivateKey(privateKey));
     const signature = facade.signTransaction(keyPair, transactionObject);
 
     // Attach signature
@@ -181,11 +197,10 @@ export const signTransaction = async (networkProperties, transaction, privateAcc
     }
 };
 
-export const cosignTransaction = async (networkProperties, transaction, privateAccount) => {
+export const cosignTransaction = (networkProperties, transaction, privateKey) => {
     // Get signature
     const facade = new SymbolFacade(networkProperties.networkIdentifier);
-    const privateKey = new PrivateKey(privateAccount.privateKey);
-    const keyPair = new SymbolFacade.KeyPair(privateKey);
+    const keyPair = new SymbolFacade.KeyPair(new PrivateKey(privateKey));
     const hash256 = new Hash256(transaction.hash);
     const signature = facade.static.cosignTransactionHash(keyPair, hash256, true);
 
@@ -196,14 +211,14 @@ export const cosignTransaction = async (networkProperties, transaction, privateA
 };
 
 export const getUnresolvedIdsFromTransactions = (transactions, config) => {
-    const { 
-        fieldsMap, 
-        mapNamespaceId, 
-        mapMosaicId, 
-        mapTransactionType, 
-        getBodyFromTransaction, 
-        getHeightFromTransaction, 
-        verifyAddress 
+    const {
+        fieldsMap,
+        mapNamespaceId,
+        mapMosaicId,
+        mapTransactionType,
+        getBodyFromTransaction,
+        getHeightFromTransaction,
+        verifyAddress
     } = config;
     const mosaicIds = [];
     const namespaceIds = [];
@@ -239,7 +254,7 @@ export const getUnresolvedIdsFromTransactions = (transactions, config) => {
                             namespaceId: mapNamespaceId(value),
                             height: getHeightFromTransaction(item),
                         });
-                        
+
                     },
                     addressArray: (value) => {
                         if (!Array.isArray(value))
@@ -283,3 +298,133 @@ export const getUnresolvedIdsFromTransactions = (transactions, config) => {
         addresses: [...new Set(addresses.flat())],
     };
 };
+
+export const createSingleTransferTransactionStub = ({ messageText, isMessageEncrypted, mosaics = [] }) => {
+    let messagePayloadHex;
+    let messageType;
+
+    const transaction = {
+        type: TransactionType.TRANSFER,
+        signerPublicKey: STUB_KEY_1,
+        recipientAddress: STUB_ADDRESS,
+        mosaics
+    };
+
+    if (!messageText)
+        return transaction;
+
+    if (isMessageEncrypted) {
+        messagePayloadHex = encryptMessage(messageText, STUB_KEY_2, STUB_KEY_1);
+        messageType = MessageType.EncryptedMessage;
+    } else {
+        messagePayloadHex = encodePlainMessage(messageText);
+        messageType = MessageType.PlainMessage;
+    }
+
+    transaction.message = {
+        text: messageText,
+        payload: messagePayloadHex,
+        type: messageType,
+    };
+
+    return transaction;
+}
+
+export const createMultisigTransferTransactionStub = ({ messageText, isMessageEncrypted, mosaics = [] }) => {
+    const transferTransaction = createSingleTransferTransactionStub({ messageText, isMessageEncrypted, mosaics });
+
+    const transaction = {
+        type: TransactionType.AGGREGATE_BONDED,
+        signerPublicKey: STUB_KEY_1,
+        innerTransactions: [transferTransaction],
+    };
+
+    return transaction;
+}
+
+export const createHarvestingTransactionStub = ({ networkIdentifier, linkedKeys, type = 'start' }) => {
+    const account = generateKeyPair();
+    const nodePublicKey = generateKeyPair().publicKey;
+    const nodeAddress = addressFromPublicKey(nodePublicKey, networkIdentifier);
+    const vrfAccount = generateKeyPair();
+    const remoteAccount = generateKeyPair();
+    const transactions = [];
+
+    const isVrfKeyLinked = !!linkedKeys.vrfPublicKey;
+    const isRemoteKeyLinked = !!linkedKeys.linkedPublicKey;
+    const isNodeKeyLinked = !!linkedKeys.nodePublicKey;
+
+    if ((type === 'start' && isVrfKeyLinked) || type === 'stop') {
+        transactions.push({
+            type: TransactionType.VRF_KEY_LINK,
+            linkAction: LinkAction[LinkAction.Unlink],
+            linkedPublicKey: linkedKeys.vrfPublicKey,
+            signerPublicKey: account.publicKey,
+        });
+    }
+    if ((type === 'start' && isRemoteKeyLinked) || type === 'stop') {
+        transactions.push({
+            type: TransactionType.ACCOUNT_KEY_LINK,
+            linkAction: LinkAction[LinkAction.Unlink],
+            linkedPublicKey: linkedKeys.linkedPublicKey,
+            signerPublicKey: account.publicKey,
+        });
+    }
+    if ((type === 'start' && isNodeKeyLinked) || type === 'stop') {
+        transactions.push({
+            type: TransactionType.NODE_KEY_LINK,
+            linkAction: LinkAction[LinkAction.Unlink],
+            linkedPublicKey: linkedKeys.nodePublicKey,
+            signerPublicKey: account.publicKey,
+        });
+    }
+
+    if (type === 'start') {
+        transactions.push({
+            type: TransactionType.VRF_KEY_LINK,
+            linkAction: LinkAction[LinkAction.Link],
+            linkedPublicKey: vrfAccount.publicKey,
+            signerPublicKey: account.publicKey,
+        });
+        transactions.push({
+            type: TransactionType.ACCOUNT_KEY_LINK,
+            linkAction: LinkAction[LinkAction.Link],
+            linkedPublicKey: remoteAccount.publicKey,
+            signerPublicKey: account.publicKey,
+        });
+        transactions.push({
+            type: TransactionType.NODE_KEY_LINK,
+            linkAction: LinkAction[LinkAction.Link],
+            linkedPublicKey: nodePublicKey,
+            signerPublicKey: account.publicKey,
+        });
+        transactions.push({
+            type: TransactionType.TRANSFER,
+            mosaics: [],
+            message: {
+                type: MessageType.DelegatedHarvesting,
+                payload: encodeDelegatedHarvestingMessage(
+                    account.privateKey,
+                    nodePublicKey,
+                    remoteAccount.privateKey,
+                    vrfAccount.privateKey,
+                ),
+                text: ''
+            },
+            remoteAccountPrivateKey: remoteAccount.privateKey,
+            vrfPrivateKey: vrfAccount.privateKey,
+            nodePublicKey: nodePublicKey,
+            signerPublicKey: account.publicKey,
+            recipientAddress: nodeAddress,
+        });
+    }
+
+    const aggregateTransaction = {
+        type: TransactionType.AGGREGATE_COMPLETE,
+        innerTransactions: transactions,
+        signerPublicKey: account.publicKey,
+        fee: 0,
+    };
+
+    return aggregateTransaction;
+}
