@@ -19,11 +19,7 @@ export const ConnectionStatus = observer(function ConnectionStatus() {
     const statusColors = [colors.info, colors.warning, colors.danger];
     const isShown = useSharedValue(true);
     const color = useDerivedValue(() => {
-        const value = NetworkConnectionStatus.FAILED_CURRENT_NODE 
-            ? 2 
-            : NetworkConnectionStatus.CONNECTED 
-            ? 0 
-            : 1;
+        const value = NetworkConnectionStatus.FAILED_CURRENT_NODE ? 2 : NetworkConnectionStatus.CONNECTED ? 0 : 1;
         return withTiming(value);
     });
     let statusText = $t('c_connectionStatus_connecting');

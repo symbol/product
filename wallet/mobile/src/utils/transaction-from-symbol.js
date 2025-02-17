@@ -1,6 +1,27 @@
-import { AddressRestrictionFlagMessage, AliasActionMessage, LinkActionMessage, LockHashAlgorithmMessage, Message, MessageType, MosaicRestrictionFlagMessage, MosaicRestrictionTypeMessage, MosaicSupplyChangeActionMessage, NamespaceRegistrationTypeMessage, OperationRestrictionFlagMessage, TransactionType } from 'src/constants';
+import {
+    AddressRestrictionFlagMessage,
+    AliasActionMessage,
+    LinkActionMessage,
+    LockHashAlgorithmMessage,
+    Message,
+    MessageType,
+    MosaicRestrictionFlagMessage,
+    MosaicRestrictionTypeMessage,
+    MosaicSupplyChangeActionMessage,
+    NamespaceRegistrationTypeMessage,
+    OperationRestrictionFlagMessage,
+    TransactionType,
+} from 'src/constants';
 import { addressFromPublicKey } from './account';
-import { getMosaicRelativeAmount, getMosaicsWithRelativeAmounts, getNativeMosaicAmount, isRestrictableFlag, isRevokableFlag, isSupplyMutableFlag, isTransferableFlag } from './mosaic';
+import {
+    getMosaicRelativeAmount,
+    getMosaicsWithRelativeAmounts,
+    getNativeMosaicAmount,
+    isRestrictableFlag,
+    isRevokableFlag,
+    isSupplyMutableFlag,
+    isTransferableFlag,
+} from './mosaic';
 import { decodePlainMessage, getUnresolvedIdsFromTransactions, isIncomingTransaction, isOutgoingTransaction } from './transaction';
 import { Address } from 'symbol-sdk-v3/symbol';
 
@@ -9,8 +30,7 @@ const mapMosaic = (mosaic) => ({
     amount: parseInt(mosaic.amount.toString()),
 });
 
-const mapAddress = (address) =>
-    new Address(address.bytes).toString();
+const mapAddress = (address) => new Address(address.bytes).toString();
 
 const mapId = (id) => id.toString().replace('0x', '');
 
@@ -79,13 +99,10 @@ export const transactionFromSymbol = (transaction, config) => {
 };
 
 export const baseTransactionFromSymbol = (transaction, config) => {
-    const isSignerPublicKeyProvided = transaction.signerPublicKey?.toString() !== '0000000000000000000000000000000000000000000000000000000000000000';
-    const signerPublicKey = isSignerPublicKeyProvided
-        ? transaction.signerPublicKey.toString()
-        : config.fillSignerPublickey;
-    const signerAddress = signerPublicKey
-        ? addressFromPublicKey(signerPublicKey, config.networkProperties.networkIdentifier)
-        : null;
+    const isSignerPublicKeyProvided =
+        transaction.signerPublicKey?.toString() !== '0000000000000000000000000000000000000000000000000000000000000000';
+    const signerPublicKey = isSignerPublicKeyProvided ? transaction.signerPublicKey.toString() : config.fillSignerPublickey;
+    const signerAddress = signerPublicKey ? addressFromPublicKey(signerPublicKey, config.networkProperties.networkIdentifier) : null;
     const type = transaction.type.value;
 
     if (config.isEmbedded) {
@@ -93,14 +110,14 @@ export const baseTransactionFromSymbol = (transaction, config) => {
             type,
             signerAddress,
             signerPublicKey,
-        }
+        };
     }
 
     return {
         type,
         deadline: Number(transaction.deadline.value) + config.networkProperties.epochAdjustment * 1000,
-        fee: transaction.fee 
-            ? getMosaicRelativeAmount(Number(transaction.fee.value), config.networkProperties.networkCurrency.divisibility) 
+        fee: transaction.fee
+            ? getMosaicRelativeAmount(Number(transaction.fee.value), config.networkProperties.networkCurrency.divisibility)
             : null,
         signerAddress,
         signerPublicKey,
@@ -109,7 +126,9 @@ export const baseTransactionFromSymbol = (transaction, config) => {
 
 export const aggregateTransactionFromSymbol = (transaction, config) => {
     const baseTransaction = baseTransactionFromSymbol(transaction, config);
-    const innerTransactions = transaction.transactions.map((innerTransaction) => transactionFromSymbol(innerTransaction, { ...config, isEmbedded: true }));
+    const innerTransactions = transaction.transactions.map((innerTransaction) =>
+        transactionFromSymbol(innerTransaction, { ...config, isEmbedded: true })
+    );
     const resultAmount = innerTransactions.reduce((accumulator, transaction) => accumulator + (transaction.amount || 0), 0);
 
     const info = {
@@ -121,7 +140,9 @@ export const aggregateTransactionFromSymbol = (transaction, config) => {
             signature: cosignature.signature.toString(),
             version: Number(cosignature.version),
         })),
-        receivedCosignatures: transaction.cosignatures.map((cosignature) => addressFromPublicKey(cosignature.signerPublicKey.toString(), config.networkProperties.networkIdentifier)),
+        receivedCosignatures: transaction.cosignatures.map((cosignature) =>
+            addressFromPublicKey(cosignature.signerPublicKey.toString(), config.networkProperties.networkIdentifier)
+        ),
     };
 
     return info;
@@ -140,18 +161,14 @@ export const transferTransactionFromSymbol = (transaction, config) => {
     let resultAmount = 0;
 
     const isIncoming = isIncomingTransaction(transactionBody, currentAccount);
-    const isOutgoing = isOutgoingTransaction(transactionBody, currentAccount)
-    if (isIncoming && !isOutgoing)
-        resultAmount = nativeMosaicAmount;
-    else if (!isIncoming && isOutgoing)
-        resultAmount = -nativeMosaicAmount;
+    const isOutgoing = isOutgoingTransaction(transactionBody, currentAccount);
+    if (isIncoming && !isOutgoing) resultAmount = nativeMosaicAmount;
+    else if (!isIncoming && isOutgoing) resultAmount = -nativeMosaicAmount;
 
     if (transaction.message?.length) {
         const messageType = transaction.message ? transaction.message[0] : null;
-        const messagePayload = Buffer.from(transaction.message).toString('hex').toUpperCase()
-        const messageText = messageType === MessageType.PlainText
-            ? decodePlainMessage(messagePayload)
-            : null;
+        const messagePayload = Buffer.from(transaction.message).toString('hex').toUpperCase();
+        const messageText = messageType === MessageType.PlainText ? decodePlainMessage(messagePayload) : null;
 
         transactionBody.message = {
             type: messageType,
@@ -169,7 +186,7 @@ export const transferTransactionFromSymbol = (transaction, config) => {
 
 export const namespaceRegistrationTransactionFromSymbol = (transaction, config) => {
     const baseTransaction = baseTransactionFromSymbol(transaction, config);
-    const parentId = !!transaction.parentId ? mapId(transaction.parentId) : ''
+    const parentId = !!transaction.parentId ? mapId(transaction.parentId) : '';
 
     return {
         ...baseTransaction,
@@ -273,7 +290,7 @@ export const hashLockTransactionFromSymbol = (transaction, config) => {
         duration: Number(transaction.duration),
         mosaic: formattedMosaic,
         lockedAmount: lockedAmount === -0 ? 0 : lockedAmount,
-        aggregateHash: transaction.hash.toString('hex')
+        aggregateHash: transaction.hash.toString('hex'),
     };
 };
 
@@ -531,12 +548,12 @@ export const getUnresolvedIdsFromSymbolTransactions = (transactions) => {
 
     const config = {
         fieldsMap,
-        mapNamespaceId: id => mapId(id),
-        mapMosaicId: id => mapId(id),
-        mapTransactionType: type => type.value,
-        getBodyFromTransaction: transaction => transaction,
-        getHeightFromTransaction: transaction => transaction.height,
-        verifyAddress: address => address.toString().length === 48,
+        mapNamespaceId: (id) => mapId(id),
+        mapMosaicId: (id) => mapId(id),
+        mapTransactionType: (type) => type.value,
+        getBodyFromTransaction: (transaction) => transaction,
+        getHeightFromTransaction: (transaction) => transaction.height,
+        verifyAddress: (address) => address.toString().length === 48,
     };
 
     return getUnresolvedIdsFromTransactions(transactions, config);

@@ -3,13 +3,11 @@ import { Provider } from 'react-redux';
 import { render } from '@testing-library/react-native';
 import '@testing-library/jest-native/extend-expect';
 
-jest.mock('@react-native-async-storage/async-storage', () =>
-    require('@react-native-async-storage/async-storage/jest/async-storage-mock')
-);
+jest.mock('@react-native-async-storage/async-storage', () => require('@react-native-async-storage/async-storage/jest/async-storage-mock'));
 jest.mock('rn-fetch-blob', () => {
     return {
-        DocumentDir: () => { },
-        polyfill: () => { },
+        DocumentDir: () => {},
+        polyfill: () => {},
     };
 });
 jest.mock('@haskkor/react-native-pincode', () => {
@@ -17,7 +15,7 @@ jest.mock('@haskkor/react-native-pincode', () => {
         hasUserSetPinCode: false,
     };
 });
-jest.mock('react-native-qrcode-scanner', () => { });
+jest.mock('react-native-qrcode-scanner', () => {});
 jest.mock('i18n-js', () => {
     return jest.requireActual('i18n-js/dist/require/index');
 });

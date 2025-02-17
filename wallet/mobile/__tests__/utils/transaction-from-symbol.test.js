@@ -19,22 +19,15 @@ describe('utils/transaction-from-symbol', () => {
             resolvedAddresses: {},
             fillSignerPublickey: currentAccount.publicKey,
         };
-        const expectedResults = walletTransactions.map(transaction => 
-            _.omit(transaction, ['hash', 'height', 'timestamp'])
-        );
+        const expectedResults = walletTransactions.map((transaction) => _.omit(transaction, ['hash', 'height', 'timestamp']));
 
         // Act:
-        const symbolTransactions = payloads.map(item => symbolTransactionFromPayload(item.payload));;
-        const result = symbolTransactions.map(symbolTransaction => transactionFromSymbol(
-            symbolTransaction,
-            transactionOptions,
-            currentAccount.address
-        ));
+        const symbolTransactions = payloads.map((item) => symbolTransactionFromPayload(item.payload));
+        const result = symbolTransactions.map((symbolTransaction) =>
+            transactionFromSymbol(symbolTransaction, transactionOptions, currentAccount.address)
+        );
 
         // Assert:
-        result.map((transaction, index) => 
-            expect(transaction)
-            .toStrictEqual(expectedResults[index])
-        );
-    })
-})
+        result.map((transaction, index) => expect(transaction).toStrictEqual(expectedResults[index]));
+    });
+});

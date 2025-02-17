@@ -1,5 +1,5 @@
 import { PrivateKey, PublicKey } from 'symbol-sdk-v3';
-import { SymbolFacade, Address } from 'symbol-sdk-v3/symbol';
+import { Address, SymbolFacade } from 'symbol-sdk-v3/symbol';
 
 export const generateKeyPair = () => {
     const privateKey = PrivateKey.random();
@@ -27,8 +27,8 @@ export const publicAccountFromPublicKey = (publicKey, networkIdentifier) => {
     return {
         address: address.toString(),
         publicKey,
-    }
-}
+    };
+};
 
 export const publicAccountFromPrivateKey = (privateKey, networkIdentifier) => {
     const facade = new SymbolFacade(networkIdentifier);
@@ -39,7 +39,7 @@ export const publicAccountFromPrivateKey = (privateKey, networkIdentifier) => {
     return {
         address: address.toString(),
         publicKey: keyPair.publicKey.toString(),
-    }
+    };
 };
 
 export const createWalletAccount = (privateKey, networkIdentifier, name, accountType, index) => {
@@ -58,7 +58,7 @@ export const createWalletAccount = (privateKey, networkIdentifier, name, account
 export const createWalletStorageAccount = (privateKey, networkIdentifier, name, accountType, index) => {
     return {
         ...createWalletAccount(privateKey, networkIdentifier, name, accountType, index),
-        privateKey
+        privateKey,
     };
 };
 
@@ -85,5 +85,5 @@ export const isSymbolAddress = (address) => {
 };
 
 export const addressFromRaw = (rawAddress) => {
-    return new Address(Buffer.from(rawAddress, 'hex')).toString()
+    return new Address(Buffer.from(rawAddress, 'hex')).toString();
 };

@@ -1,7 +1,26 @@
-import { AddressRestrictionFlag, AddressRestrictionFlagMessage, AliasAction, AliasActionMessage, LinkAction, LinkActionMessage, Message, MosaicRestrictionFlag, MosaicRestrictionFlagMessage, MosaicRestrictionType, MosaicRestrictionTypeMessage, MosaicSupplyChangeAction, MosaicSupplyChangeActionMessage, NamespaceRegistrationType, NamespaceRegistrationTypeMessage, OperationRestrictionFlag, OperationRestrictionFlagMessage, TransactionType } from 'src/constants';
+import {
+    AddressRestrictionFlag,
+    AddressRestrictionFlagMessage,
+    AliasAction,
+    AliasActionMessage,
+    LinkAction,
+    LinkActionMessage,
+    Message,
+    MosaicRestrictionFlag,
+    MosaicRestrictionFlagMessage,
+    MosaicRestrictionType,
+    MosaicRestrictionTypeMessage,
+    MosaicSupplyChangeAction,
+    MosaicSupplyChangeActionMessage,
+    NamespaceRegistrationType,
+    NamespaceRegistrationTypeMessage,
+    OperationRestrictionFlag,
+    OperationRestrictionFlagMessage,
+    TransactionType,
+} from 'src/constants';
 import { ChronoUnit, Instant } from '@js-joda/core';
 import _ from 'lodash';
-import { models, SymbolFacade } from 'symbol-sdk-v3/symbol';
+import { SymbolFacade, models } from 'symbol-sdk-v3/symbol';
 
 const createSymbolTransaction = (transactionDescriptor, networkProperties, isEmbedded, cousignatures) => {
     const facade = new SymbolFacade(networkProperties.networkIdentifier);
@@ -12,18 +31,16 @@ const createSymbolTransaction = (transactionDescriptor, networkProperties, isEmb
 
     const transaction = facade.transactionFactory.create(transactionDescriptor);
 
-    if (cousignatures?.length)
-        transaction.cosignatures = cousignatures;
+    if (cousignatures?.length) transaction.cosignatures = cousignatures;
 
     return transaction;
-}
+};
 
 const createSignerPublicKey = (transaction) =>
     transaction.signerPublicKey || '0000000000000000000000000000000000000000000000000000000000000000';
 
 const createFee = (transaction, networkProperties) => {
-    if (!transaction.fee)
-        return 0n;
+    if (!transaction.fee) return 0n;
 
     const { divisibility } = networkProperties.networkCurrency;
     return BigInt(Math.round(Math.pow(10, divisibility) * transaction.fee));
@@ -33,22 +50,21 @@ const createMetadataKey = (key) => BigInt(`0x${key}`);
 
 const createRestrictionKey = (key) => BigInt(`0x${key}`);
 
-const createId = id => BigInt(`0x${id}`);
+const createId = (id) => BigInt(`0x${id}`);
 
 const createMosaic = (mosaic) => ({
     mosaicId: createId(mosaic.id),
-    amount: BigInt(Math.pow(10, mosaic.divisibility) * mosaic.amount)
+    amount: BigInt(Math.pow(10, mosaic.divisibility) * mosaic.amount),
 });
 
 const createDeadline = (transaction, networkProperties, hours = 2) => {
-    if (transaction.deadline)
-        return BigInt(transaction.deadline - networkProperties.epochAdjustment * 1000)
+    if (transaction.deadline) return BigInt(transaction.deadline - networkProperties.epochAdjustment * 1000);
 
     const deadlineDateTime = Instant.now().plus(hours, ChronoUnit.HOURS);
     const deadline = deadlineDateTime.minusSeconds(networkProperties.epochAdjustment).toEpochMilli();
 
     return BigInt(deadline);
-}
+};
 
 /**
  * Converts a transaction to a Symbol transaction.
@@ -114,7 +130,6 @@ export const transactionToSymbol = (transaction, config) => {
     return null;
 };
 
-
 export const aggregateTransactionToSymbol = (transaction, config) => {
     const { networkProperties } = config;
     const facade = new SymbolFacade(networkProperties.networkIdentifier);
@@ -122,15 +137,15 @@ export const aggregateTransactionToSymbol = (transaction, config) => {
         transactionToSymbol(innerTransaction, { ...config, isEmbedded: true })
     );
     const merkleHash = facade.constructor.hashEmbeddedTransactions(innerTransactions);
-    const cosignatures = transaction.cosignatures?.map(rawCosignature => {
-        const cosignature = new models.Cosignature();
-        cosignature.version = 0n;
-        cosignature.signerPublicKey = new models.PublicKey(rawCosignature.signerPublicKey);
-        cosignature.signature = new models.Signature(rawCosignature.signature);
+    const cosignatures =
+        transaction.cosignatures?.map((rawCosignature) => {
+            const cosignature = new models.Cosignature();
+            cosignature.version = 0n;
+            cosignature.signerPublicKey = new models.PublicKey(rawCosignature.signerPublicKey);
+            cosignature.signature = new models.Signature(rawCosignature.signature);
 
-        return cosignature;
-    }) || [];
-
+            return cosignature;
+        }) || [];
 
     let descriptor;
     if (transaction.type === TransactionType.AGGREGATE_BONDED) {
@@ -142,8 +157,7 @@ export const aggregateTransactionToSymbol = (transaction, config) => {
             transactionsHash: merkleHash,
             transactions: innerTransactions,
         };
-    }
-    else {
+    } else {
         descriptor = {
             type: 'aggregate_complete_transaction_v2',
             signerPublicKey: createSignerPublicKey(transaction),
@@ -165,7 +179,7 @@ export const transferTransactionToSymbol = (transaction, config) => {
         fee: createFee(transaction, networkProperties),
         deadline: createDeadline(transaction, networkProperties),
         recipientAddress: transaction.recipientAddress,
-        mosaics: transaction.mosaics.map(mosaic => createMosaic(mosaic)),
+        mosaics: transaction.mosaics.map((mosaic) => createMosaic(mosaic)),
     };
 
     if (transaction.message?.payload) {
@@ -214,7 +228,7 @@ export const addressAliasTransactionToSymbol = (transaction, config) => {
         deadline: createDeadline(transaction, networkProperties),
         namespaceId: createId(transaction.namespaceId),
         address: transaction.address,
-        aliasAction: transaction.aliasAction === AliasActionMessage[AliasAction.Link] ? 'link' : 'unlink'
+        aliasAction: transaction.aliasAction === AliasActionMessage[AliasAction.Link] ? 'link' : 'unlink',
     };
 
     return createSymbolTransaction(descriptor, networkProperties, isEmbedded);
@@ -229,7 +243,7 @@ export const mosaicAliasTransactionToSymbol = (transaction, config) => {
         deadline: createDeadline(transaction, networkProperties),
         namespaceId: createId(transaction.namespaceId),
         mosaicId: createId(transaction.mosaicId),
-        aliasAction: AliasActionMessage[AliasAction.Link] === transaction.aliasAction ? AliasAction.Link : AliasAction.Unlink
+        aliasAction: AliasActionMessage[AliasAction.Link] === transaction.aliasAction ? AliasAction.Link : AliasAction.Unlink,
     };
 
     return createSymbolTransaction(descriptor, networkProperties, isEmbedded);
@@ -251,7 +265,7 @@ export const mosaicDefinitionTransactionToSymbol = (transaction, config) => {
         duration: BigInt(transaction.duration),
         flags: flags.join(' '),
         nonce: transaction.nonce,
-        divisibility: transaction.divisibility
+        divisibility: transaction.divisibility,
     };
 
     return createSymbolTransaction(descriptor, networkProperties, isEmbedded);
@@ -285,7 +299,7 @@ export const mosaicSupplyRevocationTransactionToSymbol = (transaction, config) =
         fee: createFee(transaction, networkProperties),
         deadline: createDeadline(transaction, networkProperties),
         mosaic: createMosaic(transaction.mosaic),
-        sourceAddress: transaction.sourceAddress
+        sourceAddress: transaction.sourceAddress,
     };
 
     return createSymbolTransaction(descriptor, networkProperties, isEmbedded);
@@ -304,7 +318,7 @@ export const hashLockTransactionToSymbol = (transaction, config) => {
             amount: Math.abs(transaction.lockedAmount),
         }),
         duration: BigInt(transaction.duration),
-        hash: Buffer.from(transaction.aggregateHash, 'hex')
+        hash: Buffer.from(transaction.aggregateHash, 'hex'),
     };
 
     return createSymbolTransaction(descriptor, networkProperties, isEmbedded);
@@ -321,7 +335,7 @@ export const secretLockTransactionToSymbol = (transaction, config) => {
         duration: BigInt(transaction.duration),
         recipientAddress: transaction.recipientAddress,
         secret: transaction.secret,
-        hashAlgorithm: transaction.hashAlgorithm.toLowerCase().replace(/ /g, '_')
+        hashAlgorithm: transaction.hashAlgorithm.toLowerCase().replace(/ /g, '_'),
     };
 
     return createSymbolTransaction(descriptor, networkProperties, isEmbedded);
@@ -337,7 +351,7 @@ export const secretProofTransactionToSymbol = (transaction, config) => {
         recipientAddress: transaction.recipientAddress,
         secret: transaction.secret,
         hashAlgorithm: transaction.hashAlgorithm.toLowerCase().replace(/ /g, '_'),
-        proof: Buffer.from(transaction.proof, 'hex')
+        proof: Buffer.from(transaction.proof, 'hex'),
     };
 
     return createSymbolTransaction(descriptor, networkProperties, isEmbedded);
@@ -395,7 +409,7 @@ export const votingKeyLinkTransactionToSymbol = (transaction, config) => {
         linkedPublicKey: transaction.linkedPublicKey,
         linkAction: transaction.linkAction === LinkActionMessage[LinkAction.Link] ? 'link' : 'unlink',
         startEpoch: transaction.startEpoch,
-        endEpoch: transaction.endEpoch
+        endEpoch: transaction.endEpoch,
     };
 
     return createSymbolTransaction(descriptor, networkProperties, isEmbedded);
@@ -424,7 +438,7 @@ export const mosaicGlobalRestrictionTransactionToSymbol = (transaction, config) 
         previousRestrictionValue: BigInt(transaction.previousRestrictionValue),
         newRestrictionValue: BigInt(transaction.newRestrictionValue),
         previousRestrictionType: restrictionTypeMap[transaction.previousRestrictionType],
-        newRestrictionType: restrictionTypeMap[transaction.newRestrictionType]
+        newRestrictionType: restrictionTypeMap[transaction.newRestrictionType],
     };
 
     return createSymbolTransaction(descriptor, networkProperties, isEmbedded);
@@ -449,8 +463,10 @@ export const mosaicAddressRestrictionTransactionToSymbol = (transaction, config)
 
 export const accountOperationRestrictionTransactionToSymbol = (transaction, config) => {
     const restrictionFlagsMap = {
-        [OperationRestrictionFlagMessage[OperationRestrictionFlag.AllowOutgoingTransactionType]]: OperationRestrictionFlag.AllowOutgoingTransactionType,
-        [OperationRestrictionFlagMessage[OperationRestrictionFlag.BlockOutgoingTransactionType]]: OperationRestrictionFlag.BlockOutgoingTransactionType,
+        [OperationRestrictionFlagMessage[OperationRestrictionFlag.AllowOutgoingTransactionType]]:
+            OperationRestrictionFlag.AllowOutgoingTransactionType,
+        [OperationRestrictionFlagMessage[OperationRestrictionFlag.BlockOutgoingTransactionType]]:
+            OperationRestrictionFlag.BlockOutgoingTransactionType,
     };
 
     const { networkProperties, isEmbedded } = config;
@@ -461,7 +477,7 @@ export const accountOperationRestrictionTransactionToSymbol = (transaction, conf
         deadline: createDeadline(transaction, networkProperties),
         restrictionFlags: restrictionFlagsMap[transaction.restrictionType],
         restrictionAdditions: transaction.restrictionOperationAdditions,
-        restrictionDeletions: transaction.restrictionOperationDeletions
+        restrictionDeletions: transaction.restrictionOperationDeletions,
     };
 
     return createSymbolTransaction(descriptor, networkProperties, isEmbedded);
@@ -473,7 +489,7 @@ export const accountAddressRestrictionTransactionToSymbol = (transaction, config
         [AddressRestrictionFlagMessage[AddressRestrictionFlag.AllowOutgoingAddress]]: AddressRestrictionFlag.AllowOutgoingAddress,
         [AddressRestrictionFlagMessage[AddressRestrictionFlag.BlockIncomingAddress]]: AddressRestrictionFlag.BlockIncomingAddress,
         [AddressRestrictionFlagMessage[AddressRestrictionFlag.BlockOutgoingAddress]]: AddressRestrictionFlag.BlockOutgoingAddress,
-    }
+    };
     const { networkProperties, isEmbedded } = config;
     const descriptor = {
         type: 'account_address_restriction_transaction_v1',
@@ -489,7 +505,8 @@ export const accountAddressRestrictionTransactionToSymbol = (transaction, config
 };
 
 export const accountMosaicRestrictionTransactionToSymbol = (transaction, config) => {
-    const restrictionFlag = MosaicRestrictionFlagMessage[MosaicRestrictionFlag.AllowMosaic] === transaction.restrictionType ? 'allow' : 'block';
+    const restrictionFlag =
+        MosaicRestrictionFlagMessage[MosaicRestrictionFlag.AllowMosaic] === transaction.restrictionType ? 'allow' : 'block';
 
     const { networkProperties, isEmbedded } = config;
     const descriptor = {
@@ -531,7 +548,7 @@ export const accountMetadataTransactionToSymbol = (transaction, config) => {
         targetAddress: transaction.targetAddress,
         scopedMetadataKey: createMetadataKey(transaction.scopedMetadataKey),
         valueSizeDelta: transaction.valueSizeDelta,
-        value: transaction.metadataValue //Buffer.from(transaction.metadataValue, 'hex')
+        value: transaction.metadataValue, //Buffer.from(transaction.metadataValue, 'hex')
     };
 
     return createSymbolTransaction(descriptor, networkProperties, isEmbedded);
@@ -548,7 +565,7 @@ export const mosaicMetadataTransactionToSymbol = (transaction, config) => {
         scopedMetadataKey: createMetadataKey(transaction.scopedMetadataKey),
         targetMosaicId: createId(transaction.targetMosaicId),
         valueSizeDelta: transaction.valueSizeDelta,
-        value: transaction.metadataValue //Buffer.from(transaction.metadataValue, 'hex')
+        value: transaction.metadataValue, //Buffer.from(transaction.metadataValue, 'hex')
     };
 
     return createSymbolTransaction(descriptor, networkProperties, isEmbedded);
@@ -565,7 +582,7 @@ export const namespaceMetadataTransactionToSymbol = (transaction, config) => {
         scopedMetadataKey: createMetadataKey(transaction.scopedMetadataKey),
         targetNamespaceId: createId(transaction.targetNamespaceId),
         valueSizeDelta: transaction.valueSizeDelta,
-        value: transaction.metadataValue //Buffer.from(transaction.metadataValue, 'hex')
+        value: transaction.metadataValue, //Buffer.from(transaction.metadataValue, 'hex')
     };
 
     return createSymbolTransaction(descriptor, networkProperties, isEmbedded);

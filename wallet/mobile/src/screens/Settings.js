@@ -9,7 +9,7 @@ import { $t, getLanguages, initLocalization, setCurrentLanguage } from 'src/loca
 import { Router } from 'src/Router';
 import { borders, colors, fonts, layout, spacings } from 'src/styles';
 import { usePasscode, useToggle } from 'src/utils';
-import { observer } from 'mobx-react-lite'
+import { observer } from 'mobx-react-lite';
 
 export const Settings = observer(function Settings() {
     const userCurrency = WalletController.modules.market.price.currency;

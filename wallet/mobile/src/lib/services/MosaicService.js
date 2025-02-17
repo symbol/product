@@ -2,7 +2,13 @@ import _ from 'lodash';
 import { NamespaceService } from './';
 import { addressFromRaw } from '@/utils/account';
 import { makeRequest } from '@/utils/network';
-import { getMosaicRelativeAmountString, isRestrictableFlag, isRevokableFlag, isSupplyMutableFlag, isTransferableFlag } from '@/utils/mosaic';
+import {
+    getMosaicRelativeAmountString,
+    isRestrictableFlag,
+    isRevokableFlag,
+    isSupplyMutableFlag,
+    isTransferableFlag,
+} from '@/utils/mosaic';
 
 export class MosaicService {
     static async fetchMosaicInfo(networkProperties, mosaicId) {

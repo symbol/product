@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { DeviceEventEmitter, Image, StyleSheet } from 'react-native';
+import { Image, StyleSheet } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import { showMessage } from 'react-native-flash-message';
 import {

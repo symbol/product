@@ -5,7 +5,7 @@ import QRCodeScanner from 'react-native-qrcode-scanner';
 import { ButtonClose, StyledText } from 'src/components';
 import { colors, spacings } from 'src/styles';
 import { $t } from 'src/localization';
-import { parseSymbolQR, SymbolQRCodeType } from 'src/utils/qr';
+import { SymbolQRCodeType, parseSymbolQR } from 'src/utils/qr';
 
 export const QRScanner = (props) => {
     const { isVisible, type, onSuccess, onClose } = props;
@@ -14,7 +14,7 @@ export const QRScanner = (props) => {
         showMessage({ message: $t(errorMessage), type: 'danger' });
         onClose();
     };
-    
+
     const handleScan = (response) => {
         // Parse the QR code string
         let data;
@@ -33,17 +33,16 @@ export const QRScanner = (props) => {
         }
 
         // Check if the parsed data type matches the expected type (if set)
-        if (type && parsedData.type !== type)
-            return handleParseError('error_qr_expected_type');
+        if (type && parsedData.type !== type) return handleParseError('error_qr_expected_type');
 
-        // Handle the parsed data. Deliver to the parent component 
+        // Handle the parsed data. Deliver to the parent component
         const handlers = {
-            [SymbolQRCodeType.Contact]: data => onSuccess(data, 'contact'),
-            [SymbolQRCodeType.Account]: data => onSuccess(data, 'account'),
-            [SymbolQRCodeType.Transaction]: data => onSuccess(data, 'transaction'),
+            [SymbolQRCodeType.Contact]: (data) => onSuccess(data, 'contact'),
+            [SymbolQRCodeType.Account]: (data) => onSuccess(data, 'account'),
+            [SymbolQRCodeType.Transaction]: (data) => onSuccess(data, 'transaction'),
             [SymbolQRCodeType.Mnemonic]: (data) => onSuccess(data.mnemonicPlainText, 'mnemonic'),
             [SymbolQRCodeType.Address]: (data) => onSuccess(data, 'address'),
-        }
+        };
         handlers[parsedData.type](parsedData);
         onClose();
     };

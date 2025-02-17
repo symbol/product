@@ -1,5 +1,5 @@
 import 'react-native-gesture-handler';
-import { TextEncoder, TextDecoder } from '@sinonjs/text-encoding';
+import { TextDecoder, TextEncoder } from '@sinonjs/text-encoding';
 import { AppRegistry } from 'react-native';
 import App from './src/App';
 import { name as appName } from './app.json';

@@ -74,10 +74,7 @@ export const TransactionRequest = observer(function TransactionRequest(props) {
     const cosignatoryList = { cosignatories: currentAccountInfo.cosignatories };
     const isAggregate = !!transaction?.innerTransactions;
 
-    const transactionFees = useMemo(
-        () => (transaction ? getTransactionFees(transaction, networkProperties) : {}),
-        [transaction]
-    );
+    const transactionFees = useMemo(() => (transaction ? getTransactionFees(transaction, networkProperties) : {}), [transaction]);
 
     const getTransactionPreviewTable = (data, isEmbedded) =>
         _.omit(data, [
@@ -93,7 +90,12 @@ export const TransactionRequest = observer(function TransactionRequest(props) {
     const [loadTransaction, isTransactionLoading] = useDataManager(
         async (payload, generationHash) => {
             const fillSignerPublickey = currentAccount.publicKey;
-            const transaction = await TransactionService.transactionFromPayload(payload, networkProperties, currentAccount, fillSignerPublickey);
+            const transaction = await TransactionService.transactionFromPayload(
+                payload,
+                networkProperties,
+                currentAccount,
+                fillSignerPublickey
+            );
 
             const styleAmount = [styles.textAmount];
             if (transaction.amount < 0) {
@@ -158,11 +160,7 @@ export const TransactionRequest = observer(function TransactionRequest(props) {
         if (isWalletReady) loadTransaction(params.data, params.generationHash);
     }, [params, currentAccount, isWalletReady]);
 
-    const [loadState, isStateLoading] = useDataManager(
-        WalletController.fetchAccountInfo,
-        null,
-        handleError
-    );
+    const [loadState, isStateLoading] = useDataManager(WalletController.fetchAccountInfo, null, handleError);
     useInit(loadState, isWalletReady, [currentAccount]);
 
     const isButtonDisabled = !isTransactionLoaded || !isTypeSupported || !isNetworkSupported || currentAccountInfo.isMultisig;

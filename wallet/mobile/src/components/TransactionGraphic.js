@@ -10,19 +10,13 @@ import { borders, colors, fonts, spacings } from 'src/styles';
 import { filterCustomMosaics, getAddressName, getColorFromHash, getNativeMosaicAmount, trunc } from 'src/utils';
 import { TransactionType } from 'src/constants';
 import WalletController from 'src/lib/controller/MobileWalletController';
-import { observer } from 'mobx-react-lite'
+import { observer } from 'mobx-react-lite';
 
 const TABLE_MAX_HEIGHT = 500;
 
 export const TransactionGraphic = observer(function TransactionGraphic(props) {
     const { transaction } = props;
-    const { 
-        ticker,
-        currentAccount, 
-        networkIdentifier, 
-        networkProperties, 
-        accounts 
-    } = WalletController;
+    const { ticker, currentAccount, networkIdentifier, networkProperties, accounts } = WalletController;
     const { addressBook } = WalletController.modules;
     const [isExpanded, setIsExpanded] = useState(false);
     const [hasBeenExpanded, setHasBeenExpanded] = useState(props.isExpanded);
@@ -243,7 +237,7 @@ export const TransactionGraphic = observer(function TransactionGraphic(props) {
             'signerAddress',
             'recipientAddress',
             'sourceAddress',
-            'timestamp',
+            'timestamp'
         );
     const handlePress = () => {
         if (!hasBeenExpanded) {

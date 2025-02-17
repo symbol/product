@@ -16,7 +16,7 @@ import {
 import { createOptInPrivateKeyFromMnemonic, handleError, useDataManager, usePasscode } from 'src/utils';
 import { Router } from 'src/Router';
 import { $t } from 'src/localization';
-import { ControllerEventName, NetworkIdentifier, WalletAccountType } from 'src/constants';
+import { NetworkIdentifier, WalletAccountType } from 'src/constants';
 import WalletController from 'src/lib/controller/MobileWalletController';
 
 export const ImportWallet = () => {

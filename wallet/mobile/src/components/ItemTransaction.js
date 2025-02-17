@@ -19,16 +19,13 @@ import WalletController from 'src/lib/controller/MobileWalletController';
 import { observer } from 'mobx-react-lite';
 
 export const ItemTransaction = observer(function ItemTransaction(props) {
-    const { currentAccount, accounts: walletAccounts, networkIdentifier, ticker, price } =
-    WalletController;
+    const { currentAccount, accounts: walletAccounts, networkIdentifier, ticker, price } = WalletController;
     const { addressBook } = WalletController.modules;
     const { group, transaction, isDateHidden, onPress } = props;
     const accounts = walletAccounts[networkIdentifier];
     const { type, deadline, timestamp, amount, signerAddress, recipientAddress } = transaction;
     const dateTextPrefix = group !== TransactionGroup.CONFIRMED ? '🕑' : '';
-    const dateText = !isDateHidden 
-        ? `${dateTextPrefix} ${formatDate(timestamp || deadline, $t, true)}` 
-        : '';
+    const dateText = !isDateHidden ? `${dateTextPrefix} ${formatDate(timestamp || deadline, $t, true)}` : '';
     let iconSrc;
     let action = $t(`transactionDescriptor_${type}`);
     let description = '';
@@ -79,7 +76,7 @@ export const ItemTransaction = observer(function ItemTransaction(props) {
         const isPartial = group === TransactionGroup.PARTIAL;
         const isPartialSignedByAccount = isPartial && !isTransactionAwaitingSignatureByAccount(transaction, currentAccount);
         isAwaitingAccountSignature = isPartial && !isPartialSignedByAccount;
-        iconSrc = isPartialSignedByAccount 
+        iconSrc = isPartialSignedByAccount
             ? require('src/assets/images/icon-tx-aggregate-signed.png')
             : isAwaitingAccountSignature
             ? require('src/assets/images/icon-tx-aggregate-awaiting.png')
@@ -147,7 +144,7 @@ export const ItemTransaction = observer(function ItemTransaction(props) {
     }
 
     const borderColor = isAwaitingAccountSignature ? colors.info : null;
-    
+
     return (
         <ItemBase contentContainerStyle={styleRoot} onPress={onPress} borderColor={borderColor}>
             <View style={styles.sectionIcon}>

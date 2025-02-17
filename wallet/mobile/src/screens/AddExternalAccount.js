@@ -8,7 +8,7 @@ import { WalletAccountType } from 'src/constants';
 import WalletController from 'src/lib/controller/MobileWalletController';
 
 export const AddExternalAccount = observer(function AddExternalAccount(props) {
-    const { networkIdentifier } = WalletController
+    const { networkIdentifier } = WalletController;
     const { route } = props;
     const [accountName, setAccountName] = useState('');
     const [privateKey, setPrivateKey] = useProp(route.params?.privateKey, '');
@@ -20,9 +20,9 @@ export const AddExternalAccount = observer(function AddExternalAccount(props) {
             const name = accountName;
             await WalletController.addAccount({
                 accountType: WalletAccountType.EXTERNAL,
-                privateKey, 
-                name, 
-                networkIdentifier, 
+                privateKey,
+                name,
+                networkIdentifier,
             });
             Router.goToHome();
         },

@@ -26,10 +26,10 @@ export const AddSeedAccount = observer(function AddSeedAccount() {
             const name = (!nameErrorMessage && accountName) || getDefaultAccountName(account.index);
             await WalletController.addSeedAccount({
                 accountType: WalletAccountType.SEED,
-                name, 
-                networkIdentifier, 
-                index: account.index
-            })
+                name,
+                networkIdentifier,
+                index: account.index,
+            });
             Router.goBack();
         },
         null,
@@ -38,8 +38,7 @@ export const AddSeedAccount = observer(function AddSeedAccount() {
     const fetchBalances = async () => {
         const updatedAccountBalanceStateMap = {};
         for (const account of networkSeedAccounts) {
-            updatedAccountBalanceStateMap[account.publicKey] = () =>
-                WalletController.fetchAccountInfo(account.publicKey);
+            updatedAccountBalanceStateMap[account.publicKey] = () => WalletController.fetchAccountInfo(account.publicKey);
         }
         setAccountBalanceStateMap(updatedAccountBalanceStateMap);
     };

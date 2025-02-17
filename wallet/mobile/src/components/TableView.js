@@ -5,7 +5,7 @@ import { AccountAvatar, ButtonCopy, FormItem, StyledText } from 'src/components'
 import { $t } from 'src/localization';
 import { getAddressName, isSymbolAddress } from 'src/utils';
 import WalletController from 'src/lib/controller/MobileWalletController';
-import { observer } from 'mobx-react-lite'
+import { observer } from 'mobx-react-lite';
 import { MessageType } from 'src/constants';
 
 const renderTypeMap = {

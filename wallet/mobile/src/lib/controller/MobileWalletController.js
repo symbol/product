@@ -9,12 +9,7 @@ const MobileWalletController = new WalletController({
     persistentStorage: PersistentStorage,
     secureStorage: SecureStorage,
     isObservable: true,
-    modules: [
-        AddressBookModule,
-        HarvestingModule,
-        MarketModule,
-        TransferModule,
-    ],
+    modules: [AddressBookModule, HarvestingModule, MarketModule, TransferModule],
 });
 
 export default MobileWalletController;

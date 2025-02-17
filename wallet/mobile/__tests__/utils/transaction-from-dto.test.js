@@ -18,15 +18,9 @@ describe('utils/transaction-from-dto', () => {
         };
 
         // Act:
-        const result = transactionPageResponse.map(transactionDTO => transactionFromDTO(
-            transactionDTO,
-            transactionOptions,
-        ));
+        const result = transactionPageResponse.map((transactionDTO) => transactionFromDTO(transactionDTO, transactionOptions));
 
         // Assert:
-        result.map((transaction, index) => 
-            expect(transaction)
-            .toStrictEqual(walletTransactions[index])
-        );
-    })
-})
+        result.map((transaction, index) => expect(transaction).toStrictEqual(walletTransactions[index]));
+    });
+});

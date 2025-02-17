@@ -3,7 +3,7 @@ import { Image, StyleSheet, View } from 'react-native';
 import { LoadingIndicator } from 'src/components';
 import { borders, colors } from 'src/styles';
 import { handleError, useDataManager } from 'src/utils';
-import { convertQRToBase64, createSymbolQR, SymbolQRCodeType } from 'src/utils/qr';
+import { SymbolQRCodeType, convertQRToBase64, createSymbolQR } from 'src/utils/qr';
 
 export const QRCode = (props) => {
     const { type, data, networkProperties } = props;

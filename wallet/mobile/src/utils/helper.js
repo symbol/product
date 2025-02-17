@@ -25,7 +25,7 @@ export const createNetworkMap = (callback) => {
     const maps = networkIdentifiers.map((networkIdentifier) => [networkIdentifier, callback(networkIdentifier)]);
 
     return Object.fromEntries(maps);
-}
+};
 
 export const trunc = (str, type, length = 5) => {
     const trunc = (text, cut, lengthFirst, lengthSecond) => {
@@ -316,13 +316,17 @@ export const getUserCurrencyAmountText = (amount, price, networkIdentifier) => {
     return `~${(price.value * amount).toFixed(2)} ${price.currency}`;
 };
 
-export const promiseAllSettled = (promises) => Promise.all(
-    promises.map(p => p.then(value => ({
-        status: "fulfilled",
-        value
-    }))
-        .catch(reason => ({
-            status: "rejected",
-            reason
-        })))
-);
+export const promiseAllSettled = (promises) =>
+    Promise.all(
+        promises.map((p) =>
+            p
+                .then((value) => ({
+                    status: 'fulfilled',
+                    value,
+                }))
+                .catch((reason) => ({
+                    status: 'rejected',
+                    reason,
+                }))
+        )
+    );

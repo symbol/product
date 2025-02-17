@@ -1,4 +1,3 @@
-import _ from 'lodash';
 import React, { useEffect, useState } from 'react';
 import { ScrollView } from 'react-native-gesture-handler';
 import {
@@ -21,9 +20,9 @@ import { $t } from 'src/localization';
 import { Router } from 'src/Router';
 import { AccountService } from 'src/lib/services';
 import {
-    getAddressName,
     createMultisigTransferTransactionStub,
     createSingleTransferTransactionStub,
+    getAddressName,
     handleError,
     toFixedNumber,
     useDataManager,
@@ -34,7 +33,7 @@ import {
 import { useTransactionFees } from '@/utils/hooks';
 import { MessageType, TransactionType } from 'src/constants';
 import WalletController from 'src/lib/controller/MobileWalletController';
-import { observer } from 'mobx-react-lite'
+import { observer } from 'mobx-react-lite';
 
 export const Send = observer(function Send(props) {
     const {
@@ -57,7 +56,7 @@ export const Send = observer(function Send(props) {
     // UI
     const [isConfirmVisible, toggleConfirm] = useToggle(false);
     const [isSuccessAlertVisible, toggleSuccessAlert] = useToggle(false);
-    const [senderOptions, setSenderOptions] = useState([])
+    const [senderOptions, setSenderOptions] = useState([]);
     const [senderMosaicList, setSenderMosaicList] = useState([]);
     const senderMosaicOptions = senderMosaicList.map((mosaic) => ({
         label: mosaic.name,
@@ -83,20 +82,15 @@ export const Send = observer(function Send(props) {
 
     // Fields
     const [senderPublicKey, setSenderPublicKey] = useProp(currentAccount.publicKey);
-    const selectedMosaic = senderMosaicList
-        .find((mosaic) => mosaic.id === selectedMosaicId)
-        || senderMosaicList[0];
-    const mosaics = selectedMosaic
-        ? [{ ...selectedMosaic, amount: Number(amount) }]
-        : [];
+    const selectedMosaic = senderMosaicList.find((mosaic) => mosaic.id === selectedMosaicId) || senderMosaicList[0];
+    const mosaics = selectedMosaic ? [{ ...selectedMosaic, amount: Number(amount) }] : [];
     const [maxFee, setMaxFee] = useState(0);
     const [transaction, setTransaction] = useState(null);
     const isMessageEncrypted = isMultisigTransfer ? false : isMessageEncryptedCheckboxValue;
 
     // Methods
     const getTransactionPreviewTable = (data) => {
-        if (!data)
-            return null;
+        if (!data) return null;
 
         const transfer = data.type === TransactionType.TRANSFER ? data : data.innerTransactions[0];
 
@@ -106,10 +100,8 @@ export const Send = observer(function Send(props) {
             recipientAddress: transfer.recipientAddress,
             mosaics: transfer.mosaics,
             message: transfer.message,
-            messageEncrypted: transfer.message?.type
-                ? transfer.message.type === MessageType.EncryptedText
-                : null,
-            fee: data.fee
+            messageEncrypted: transfer.message?.type ? transfer.message.type === MessageType.EncryptedText : null,
+            fee: data.fee,
         };
     };
     const getAvailableBalance = () => {
@@ -203,7 +195,7 @@ export const Send = observer(function Send(props) {
         } else {
             fetchSenderInfo(senderAddress);
         }
-    }, [currentAccount, currentAccountInfo.mosaics, senderAddress])
+    }, [currentAccount, currentAccountInfo.mosaics, senderAddress]);
 
     const isLoading = !isWalletReady || isSenderInfoLoading || isSending || isTransactionPreparing;
     const isButtonDisabled = !isNetworkConnectionReady || !isRecipientValid || !isAmountValid || !mosaics.length;

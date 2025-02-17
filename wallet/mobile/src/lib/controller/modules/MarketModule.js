@@ -16,8 +16,7 @@ export class MarketModule {
         this.name = 'market';
         this._state = cloneDeep(defaultState);
 
-        if (isObservable)
-            makeAutoObservable(this);
+        if (isObservable) makeAutoObservable(this);
 
         this._root = root;
     }
@@ -39,11 +38,11 @@ export class MarketModule {
         runInAction(() => {
             this._state.userCurrency = userCurrency;
         });
-    }
+    };
 
     clearState = () => {
         this._state = cloneDeep(defaultState);
-    }
+    };
 
     selectUserCurrency = async (userCurrency) => {
         await this._root._persistentStorage.setUserCurrency(userCurrency);
@@ -51,7 +50,7 @@ export class MarketModule {
         runInAction(() => {
             this._state.userCurrency = userCurrency;
         });
-    }
+    };
 
     fetchData = async () => {
         const { marketData } = this._state;
@@ -72,5 +71,5 @@ export class MarketModule {
                 prices,
             };
         });
-    }
+    };
 }

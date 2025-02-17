@@ -11,8 +11,7 @@ export class HarvestingModule {
         this.name = 'harvesting';
         this._state = cloneDeep(defaultState);
 
-        if (isObservable)
-            makeAutoObservable(this);
+        if (isObservable) makeAutoObservable(this);
 
         this._root = root;
     }
@@ -22,7 +21,7 @@ export class HarvestingModule {
         const { linkedKeys } = currentAccountInfo;
 
         return HarvestingService.fetchStatus(networkProperties, currentAccount, linkedKeys);
-    }
+    };
 
     fetchAccountHarvestedBlocks = async (searchCriteria = {}) => {
         const { pageNumber = 1, pageSize = 15 } = searchCriteria;
@@ -30,21 +29,21 @@ export class HarvestingModule {
         const { address } = currentAccount;
 
         return HarvestingService.fetchHarvestedBlocks(networkProperties, address, { pageNumber, pageSize });
-    }
+    };
 
     fetchNodeList = async () => {
         const { networkIdentifier } = this._root;
         const nodeList = await HarvestingService.fetchNodeList(networkIdentifier);
 
         return shuffle(nodeList);
-    }
+    };
 
     fetchSummary = async () => {
         const { currentAccount, networkProperties } = this._root;
         const { address } = currentAccount;
 
         return HarvestingService.fetchSummary(networkProperties, address);
-    }
+    };
 
     createStartHarvestingTransaction = async (nodePublicKey, password) => {
         const currentAccountPrivateKey = await this._root.getCurrentAccountPrivateKey(password);
@@ -114,9 +113,9 @@ export class HarvestingModule {
                     currentAccountPrivateKey,
                     nodePublicKey,
                     remoteAccount.privateKey,
-                    vrfAccount.privateKey,
+                    vrfAccount.privateKey
                 ),
-                text: ''
+                text: '',
             },
             signerPublicKey: accountPublicKey,
             recipientAddress: nodeAddress,
@@ -129,7 +128,7 @@ export class HarvestingModule {
             signerPublicKey: accountPublicKey,
             fee,
         };
-    }
+    };
 
     createStopHarvestingTransaction = () => {
         const { currentAccount, currentAccountInfo } = this._root;
@@ -165,15 +164,14 @@ export class HarvestingModule {
         }
 
         // If nothing to unlink, then just escape
-        if (transactions.length === 0)
-            throw new Error('error_harvesting_no_keys_to_unlink');
+        if (transactions.length === 0) throw new Error('error_harvesting_no_keys_to_unlink');
 
         // Prepare aggregate transaction
-        return aggregateTransaction = {
+        return (aggregateTransaction = {
             type: TransactionType.AGGREGATE_COMPLETE,
             innerTransactions: transactions,
             signerPublicKey: accountPublicKey,
             fee,
-        };
-    }
+        });
+    };
 }

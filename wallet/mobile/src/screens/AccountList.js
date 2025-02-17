@@ -95,8 +95,7 @@ export const AccountList = observer(function AccountList() {
     const fetchBalances = async () => {
         const updatedAccountBalanceStateMap = {};
         for (const account of networkAccounts) {
-            updatedAccountBalanceStateMap[account.publicKey] = () =>
-                WalletController.fetchAccountInfo(account.publicKey);
+            updatedAccountBalanceStateMap[account.publicKey] = () => WalletController.fetchAccountInfo(account.publicKey);
         }
         setAccountBalanceStateMap(updatedAccountBalanceStateMap);
     };

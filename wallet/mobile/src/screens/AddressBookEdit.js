@@ -59,12 +59,10 @@ export const AddressBookEdit = observer(function AddressBookEdit(props) {
                 address,
                 notes,
                 isBlackListed: list === 'blacklist',
-            }
+            };
 
-            if (isEdit)
-                await addressBook.updateContact(newContact);
-            else
-                await addressBook.addContact(newContact);
+            if (isEdit) await addressBook.updateContact(newContact);
+            else await addressBook.addContact(newContact);
             Router.goBack();
         },
         null,
