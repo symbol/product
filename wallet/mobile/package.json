@@ -18,6 +18,7 @@
   "dependencies": {
     "@haskkor/react-native-pincode": "^1.22.6",
     "@js-joda/core": "^5.5.1",
+    "@metamask/safe-event-emitter": "^3.1.2",
     "@react-native-async-storage/async-storage": "^1.17.10",
     "@react-navigation/native": "^6.0.13",
     "@react-navigation/native-stack": "^6.9.1",
@@ -26,6 +27,8 @@
     "events": "^3.3.0",
     "i18n-js": "^4.2.1",
     "lodash": "^4.17.21",
+    "mobx": "^6.13.5",
+    "mobx-react-lite": "^4.1.0",
     "moment": "^2.29.4",
     "qrcode": "^1.5.4",
     "react": "18.1.0",
@@ -58,7 +61,8 @@
     "symbol-qr-library": "^0.14.2",
     "symbol-sdk": "^2.0.5",
     "symbol-sdk-v3": "npm:symbol-sdk@3.2.3",
-    "symbol-wallets-lib": "^0.1.0"
+    "symbol-wallets-lib": "^0.1.0",
+    "uuid": "^11.0.5"
   },
   "devDependencies": {
     "@babel/core": "^7.12.9",
