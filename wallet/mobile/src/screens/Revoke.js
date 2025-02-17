@@ -18,21 +18,15 @@ import {
 } from 'src/components';
 import { $t } from 'src/localization';
 import { Router } from 'src/Router';
-import { AccountService, MosaicService, TransactionService } from 'src/services';
-import { connect } from 'src/store';
-import { getMosaicWithRelativeAmount, getTransactionFees, handleError, useDataManager, usePasscode, useProp, useToggle } from 'src/utils';
+import { AccountService, MosaicService, TransactionService } from 'src/lib/services';
+import { getMosaicWithRelativeAmount, handleError, useDataManager, usePasscode, useProp, useToggle, useTransactionFees } from 'src/utils';
 import { TransactionType } from 'src/constants';
+import WalletController from 'src/lib/controller/MobileWalletController';
+import { observer } from 'mobx-react-lite';
 
-export const Revoke = connect((state) => ({
-    currentAccount: state.account.current,
-    cosignatories: state.account.cosignatories,
-    isMultisigAccount: state.account.isMultisig,
-    isAccountReady: state.account.isReady,
-    networkProperties: state.network.networkProperties,
-    ticker: state.network.ticker,
-    chainHeight: state.network.chainHeight,
-}))(function Revoke(props) {
-    const { currentAccount, cosignatories, isMultisigAccount, isAccountReady, networkProperties, ticker, chainHeight, route } = props;
+export const Revoke = observer(function Revoke(props) {
+    const { route } = props;
+    const { currentAccount, currentAccountInfo, isWalletReady, networkProperties, ticker, chainHeight } = WalletController;
     const { mosaics } = route.params;
     const [sourceAddress, setSourceAddress] = useProp(route.params.sourceAddress || '');
     const [mosaicId, setMosaicId] = useProp(mosaics[0].id);
@@ -62,8 +56,8 @@ export const Revoke = connect((state) => ({
         },
         fee: maxFee,
     };
-    const cosignatoryList = { cosignatories };
-    const transactionFees = useMemo(() => getTransactionFees({}, networkProperties, 168), []);
+    const cosignatoryList = { cosignatories: currentAccountInfo.cosignatories };
+    const transactionFees = useTransactionFees(transaction, networkProperties);
 
     const [fetchSourceAddressMosaicBalance, isBalanceLoading] = useDataManager(
         async () => {
@@ -86,8 +80,8 @@ export const Revoke = connect((state) => ({
         }
     );
     const [send] = useDataManager(
-        async () => {
-            await TransactionService.signAndAnnounce(transaction, currentAccount, networkProperties);
+        async (password) => {
+            await WalletController.signAndAnnounceTransaction(transaction, true, password);
             toggleSuccessAlert();
         },
         null,
@@ -116,7 +110,7 @@ export const Revoke = connect((state) => ({
 
     return (
         <Screen
-            isLoading={!isAccountReady || isBalanceLoading}
+            isLoading={!isWalletReady || isBalanceLoading}
             bottomComponent={
                 <FormItem>
                     <Button title={$t('button_revoke')} isDisabled={isButtonDisabled} onPress={toggleConfirm} />
@@ -124,7 +118,7 @@ export const Revoke = connect((state) => ({
             }
         >
             <ScrollView>
-                {isMultisigAccount && (
+                {currentAccountInfo.isMultisig && (
                     <>
                         <FormItem>
                             <Alert type="warning" title={$t('warning_multisig_title')} body={$t('warning_multisig_body')} />
@@ -134,7 +128,7 @@ export const Revoke = connect((state) => ({
                         </FormItem>
                     </>
                 )}
-                {!isMultisigAccount && (
+                {!currentAccountInfo.isMultisig && (
                     <>
                         <FormItem>
                             <StyledText type="body">{$t('s_revoke_description')}</StyledText>

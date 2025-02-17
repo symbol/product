@@ -1,6 +1,6 @@
+import { observer } from 'mobx-react-lite';
 import React, { useEffect } from 'react';
 import { StyleSheet, Text } from 'react-native';
-import { connect } from 'src/store';
 import { colors, fonts, timings } from 'src/styles';
 import Animated, {
     interpolate,
@@ -11,30 +11,34 @@ import Animated, {
     withTiming,
 } from 'react-native-reanimated';
 import { $t } from 'src/localization';
+import WalletController from 'src/lib/controller/MobileWalletController';
+import { NetworkConnectionStatus } from 'src/constants';
 
-export const ConnectionStatus = connect((state) => ({
-    status: state.network.status,
-}))(function ConnectionStatus(props) {
-    const { status } = props;
+export const ConnectionStatus = observer(function ConnectionStatus() {
+    const { networkStatus } = WalletController;
     const statusColors = [colors.info, colors.warning, colors.danger];
     const isShown = useSharedValue(true);
     const color = useDerivedValue(() => {
-        const value = status === 'failed-custom' ? 2 : status === 'connected' ? 0 : 1;
+        const value = NetworkConnectionStatus.FAILED_CURRENT_NODE 
+            ? 2 
+            : NetworkConnectionStatus.CONNECTED 
+            ? 0 
+            : 1;
         return withTiming(value);
     });
     let statusText = $t('c_connectionStatus_connecting');
 
     const updateValue = () => {
-        switch (status) {
-            case 'offline':
+        switch (networkStatus) {
+            case NetworkConnectionStatus.NO_INTERNET:
                 statusText = $t('c_connectionStatus_offline');
                 isShown.value = withTiming(true, timings.press);
                 break;
-            case 'failed-custom':
+            case NetworkConnectionStatus.FAILED_CURRENT_NODE:
                 statusText = $t('c_connectionStatus_nodeDown');
                 isShown.value = withTiming(true, timings.press);
                 break;
-            case 'connected':
+            case NetworkConnectionStatus.CONNECTED:
                 statusText = $t('c_connectionStatus_connected');
                 isShown.value = withTiming(false, timings.press);
                 break;
@@ -50,7 +54,7 @@ export const ConnectionStatus = connect((state) => ({
 
     useEffect(() => {
         updateValue();
-    }, [status]);
+    }, [networkStatus]);
 
     return (
         <Animated.View style={[styles.root, animatedContainer]}>

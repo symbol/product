@@ -3,64 +3,52 @@ import { FlatList } from 'react-native-gesture-handler';
 import { AccountCard, ButtonPlain, FormItem, Screen, StyledText, TextBox, TouchableNative } from 'src/components';
 import { $t } from 'src/localization';
 import { Router } from 'src/Router';
-import store, { connect } from 'src/store';
 import { colors } from 'src/styles';
 import { handleError, useDataManager, usePromises, useValidation, validateAccountName } from 'src/utils';
+import WalletController from 'src/lib/controller/MobileWalletController';
+import { observer } from 'mobx-react-lite';
+import { WalletAccountType } from 'src/constants';
 
-export const AddSeedAccount = connect((state) => ({
-    accounts: state.wallet.accounts,
-    seedAddresses: state.wallet.seedAddresses,
-    balances: state.wallet.balances,
-    networkIdentifier: state.network.networkIdentifier,
-    ticker: state.network.ticker,
-}))(function AddSeedAccount(props) {
-    const { accounts, seedAddresses, balances, networkIdentifier, ticker } = props;
+export const AddSeedAccount = observer(function AddSeedAccount() {
+    const { accounts, accountInfos, seedAddresses, networkIdentifier, ticker } = WalletController;
     const [accountName, setAccountName] = useState('');
     const nameErrorMessage = useValidation(accountName, [validateAccountName()], $t);
     const [accountBalanceStateMap, setAccountBalanceStateMap] = usePromises({});
     const networkAccounts = accounts[networkIdentifier];
-    const networkSeedAddressed = seedAddresses[networkIdentifier];
-    const networkSeedAccounts = networkSeedAddressed.map((address, index) => ({ address, index }));
+    const networkSeedAccounts = seedAddresses[networkIdentifier];
     const remainedSeedAccounts = networkSeedAccounts.filter(
         (seedAccount) => !networkAccounts.some((account) => account.address === seedAccount.address)
     );
 
     const getDefaultAccountName = (index) => $t('s_addAccount_seed_name_default', { index });
     const [addAccount, isAddAccountLoading] = useDataManager(
-        async (index) => {
-            const name = (!nameErrorMessage && accountName) || getDefaultAccountName(index);
-            await store.dispatchAction({ type: 'wallet/addSeedAccount', payload: { index, name, networkIdentifier } });
-            await store.dispatchAction({ type: 'wallet/loadAll' });
-            await store.dispatchAction({ type: 'account/fetchData' });
+        async (account) => {
+            const name = (!nameErrorMessage && accountName) || getDefaultAccountName(account.index);
+            await WalletController.addSeedAccount({
+                accountType: WalletAccountType.SEED,
+                name, 
+                networkIdentifier, 
+                index: account.index
+            })
             Router.goBack();
-        },
-        null,
-        handleError
-    );
-    const [loadSeedAddresses, isSeedAddressesLoading] = useDataManager(
-        async () => {
-            await store.dispatchAction({ type: 'wallet/generateSeedAddresses' });
         },
         null,
         handleError
     );
     const fetchBalances = async () => {
         const updatedAccountBalanceStateMap = {};
-        for (const account of remainedSeedAccounts) {
-            updatedAccountBalanceStateMap[account.address] = () =>
-                store.dispatchAction({ type: 'wallet/fetchBalance', payload: account.address });
+        for (const account of networkSeedAccounts) {
+            updatedAccountBalanceStateMap[account.publicKey] = () =>
+                WalletController.fetchAccountInfo(account.publicKey);
         }
         setAccountBalanceStateMap(updatedAccountBalanceStateMap);
     };
 
     useEffect(() => {
-        if (!networkSeedAccounts.length) {
-            loadSeedAddresses();
-        }
         fetchBalances();
-    }, [networkSeedAddressed]);
+    }, [networkSeedAccounts]);
 
-    const isLoading = isAddAccountLoading || isSeedAddressesLoading;
+    const isLoading = isAddAccountLoading;
 
     return (
         <Screen isLoading={isLoading}>
@@ -85,16 +73,16 @@ export const AddSeedAccount = connect((state) => ({
                 <StyledText type="title">{$t('s_addAccount_select_title')}</StyledText>
                 <FlatList
                     data={remainedSeedAccounts}
-                    keyExtractor={(_, index) => 'seed' + index}
+                    keyExtractor={(item) => item.index}
                     renderItem={({ item }) => (
                         <FormItem type="list">
-                            <TouchableNative onPress={() => addAccount(item.index)} color={colors.bgGray}>
+                            <TouchableNative onPress={() => addAccount(item)} color={colors.bgGray}>
                                 <AccountCard
                                     name={getDefaultAccountName(item.index)}
                                     address={item.address}
-                                    balance={balances[item.address]}
+                                    balance={accountInfos[networkIdentifier][item.publicKey]?.balance || 0}
                                     ticker={ticker}
-                                    isLoading={accountBalanceStateMap[item.address]}
+                                    isLoading={accountBalanceStateMap[item.publicKey]}
                                     isActive={false}
                                     isSimplified
                                 />

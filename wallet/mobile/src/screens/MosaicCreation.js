@@ -6,8 +6,7 @@ import { ScrollView } from 'react-native-gesture-handler';
 import { Alert, Button, Checkbox, DialogBox, FeeSelector, FormItem, Screen, StyledText, TableView, TextBox, Widget } from 'src/components';
 import { $t } from 'src/localization';
 import { Router } from 'src/Router';
-import { NetworkService, TransactionService } from 'src/services';
-import { connect } from 'src/store';
+import { NetworkService, TransactionService } from 'src/lib/services';
 import { layout } from 'src/styles';
 import {
     generateMosaicId,
@@ -24,16 +23,12 @@ import {
     validateMosaicSupply,
     validateRequired,
 } from 'src/utils';
+import WalletController from 'src/lib/controller/MobileWalletController';
+import { observer } from 'mobx-react-lite';
 
-export const MosaicCreation = connect((state) => ({
-    currentAccount: state.account.current,
-    isMultisigAccount: state.account.isMultisig,
-    isAccountReady: state.account.isReady,
-    networkProperties: state.network.networkProperties,
-    ticker: state.network.ticker,
-    chainHeight: state.network.chainHeight,
-}))(function MosaicCreation(props) {
-    const { currentAccount, isMultisigAccount, isAccountReady, networkProperties, ticker } = props;
+export const MosaicCreation = observer(function MosaicCreation() {
+    const { currentAccount, currentAccountInfo, isWalletReady, networkProperties, ticker } = WalletController;
+    const isMultisigAccount = currentAccountInfo.isMultisig;
     const [nonce, setNonce] = useState('');
     const [mosaicId, setMosaicId] = useState('');
     const [isSupplyMutable, toggleIsSupplyMutable] = useToggle(false);
@@ -108,11 +103,11 @@ export const MosaicCreation = connect((state) => ({
         setNonce(nonce);
         setMosaicId(mosaicId);
         fetchRentalFee();
-    }, isAccountReady);
+    }, isWalletReady);
 
     return (
         <Screen
-            isLoading={!isAccountReady}
+            isLoading={!isWalletReady}
             bottomComponent={
                 <FormItem>
                     <Button title={$t('button_send')} isDisabled={isButtonDisabled} onPress={toggleConfirm} />

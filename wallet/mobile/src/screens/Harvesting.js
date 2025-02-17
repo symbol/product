@@ -6,70 +6,68 @@ import Animated, { FadeIn, FadeInDown, FadeOut } from 'react-native-reanimated';
 import { Button, DialogBox, FeeSelector, FormItem, Screen, StyledText, TableView, TextBox, Widget } from 'src/components';
 import { ControllerEventName } from 'src/constants';
 import { $t } from 'src/localization';
-import { AccountService, HarvestingService } from 'src/services';
-import { connect } from 'src/store';
+import { HarvestingService } from 'src/lib/services';
 import { colors, fonts, layout, spacings } from 'src/styles';
-import { formatDate, getTransactionFees, handleError, useDataManager, usePasscode, useToggle } from 'src/utils';
+import { createHarvestingTransactionStub, formatDate, handleError, useDataManager, usePasscode, useToggle, useTransactionFees } from 'src/utils';
+import WalletController from 'src/lib/controller/MobileWalletController';
+import { observer } from 'mobx-react-lite'
 
-export const Harvesting = connect((state) => ({
-    balances: state.wallet.balances,
-    currentAccount: state.account.current,
-    isAccountReady: state.account.isReady,
-    isWalletReady: state.wallet.isReady,
-    networkIdentifier: state.network.networkIdentifier,
-    networkProperties: state.network.networkProperties,
-    chainHeight: state.network.chainHeight,
-    nodeUrls: state.network.nodeUrls,
-    ticker: state.network.ticker,
-}))(function Harvesting(props) {
-    const { balances, currentAccount, isAccountReady, isWalletReady, networkIdentifier, networkProperties, chainHeight, ticker } = props;
-    const accountBalance = currentAccount ? balances[currentAccount.address] : 0;
+export const Harvesting = observer(function Harvesting() {
+    const { currentAccountInfo, isWalletReady, networkIdentifier, networkProperties, ticker } = WalletController;
+    const isAccountReady = WalletController.currentAccountInfo.isLoaded;
+    const { linkedKeys, importance, balance } = currentAccountInfo;
+    
     const [isActionMade, setIsActionMade] = useState(false);
     const [nodeUrl, setNodeUrl] = useState('');
     const [isStartConfirmVisible, toggleStartConfirm] = useToggle(false);
     const [isStopConfirmVisible, toggleStopConfirm] = useToggle(false);
     const [fee, setFee] = useState(0);
     const [speed, setSpeed] = useState('medium');
-    const transactionSize = 700;
-    const transactionFees = useMemo(() => getTransactionFees({}, networkProperties, transactionSize), []);
+      
     const confirmStartTableData = { nodeUrl, fee };
     const confirmStopTableData = { fee };
 
+    // Harvesting status and node url
     const [fetchStatus, isStatusLoading, status] = useDataManager(
-        async () => {
-            const { linkedKeys, importance } = await AccountService.fetchAccountInfo(networkProperties, currentAccount.address);
-            const status = await HarvestingService.fetchStatus(networkProperties, currentAccount, linkedKeys);
-            setIsActionMade(false);
-
-            return { ...status, linkedKeys, importance };
-        },
+        async () => WalletController.modules.harvesting.fetchStatus(),
         {},
         handleError
     );
-    const { linkedKeys, importance } = status;
+
+    // Summary
+    const defaultSummary = {
+        latestAmount: 0,
+        latestHeight: null,
+        latestDate: null,
+        amountPer30Days: 0,
+        blocksHarvestedPer30Days: 0,
+    };
     const [fetchHarvestedBlocks, isSummaryLoading, summary] = useDataManager(
-        () => HarvestingService.fetchSummary(networkProperties, currentAccount.address, chainHeight),
-        {
-            latestAmount: 0,
-            latestHeight: null,
-            latestDate: null,
-            amountPer30Days: 0,
-            blocksHarvestedPer30Days: 0,
-        },
+        () => WalletController.modules.harvesting.fetchSummary(),
+        defaultSummary,
         handleError
     );
-    const [fetchNodeList, isNodeListLoading, nodeList] = useDataManager(
-        async () => {
-            const nodes = await HarvestingService.fetchNodeList(networkIdentifier);
 
-            return _.shuffle(nodes);
-        },
+    // Node list to choose from
+    const [fetchNodeList, isNodeListLoading, nodeList] = useDataManager(
+        async () => WalletController.modules.harvesting.fetchNodeList(),
         [],
         handleError
     );
+
+    // Start and stop requests
     const [start, isStarting] = useDataManager(
         async () => {
-            await HarvestingService.start(networkProperties, currentAccount, nodeUrl, linkedKeys, fee);
+            const { nodePublicKey, networkIdentifier: nodeNetworkIdentifier } = await HarvestingService.fetchNodeInfo(nodeUrl);
+
+            if (nodeNetworkIdentifier !== networkIdentifier) {
+                throw Error('error_failed_harvesting_wrong_node_network');
+            }
+
+            const transaction = await WalletController.modules.harvesting.createStartHarvestingTransaction(nodePublicKey);
+            transaction.fee = fee;
+            await WalletController.signAndAnnounceTransaction(transaction);
+
             setIsActionMade(true);
         },
         null,
@@ -77,7 +75,10 @@ export const Harvesting = connect((state) => ({
     );
     const [stop, isStopping] = useDataManager(
         async () => {
-            await HarvestingService.stop(networkProperties, currentAccount, linkedKeys, fee);
+            const transaction = WalletController.modules.harvesting.createStopHarvestingTransaction();
+            transaction.fee = fee;
+            await WalletController.signAndAnnounceTransaction(transaction);
+
             setIsActionMade(true);
         },
         null,
@@ -85,6 +86,7 @@ export const Harvesting = connect((state) => ({
     );
     const loadData = () => {
         if (isWalletReady) {
+            WalletController.fetchAccountInfo();
             fetchStatus();
             fetchHarvestedBlocks();
             fetchNodeList();
@@ -101,12 +103,13 @@ export const Harvesting = connect((state) => ({
         confirmStop();
     };
 
+    // UI
     const latestAmountText = summary.latestAmount ? `+ ${summary.latestAmount} ${ticker}` : `0 ${ticker}`;
     const latestHeightText = summary.latestHeight ? `#${summary.latestHeight}` : $t('s_harvesting_harvested_nothing_to_show');
     const latestDateText = summary.latestDate ? formatDate(summary.latestDate, $t, true) : ' ';
     const amountPer30DaysText = summary.amountPer30Days ? `+ ${summary.amountPer30Days} ${ticker}` : `0 ${ticker}`;
     const blocksHarvestedPer30DaysText = $t('s_harvesting_harvested_blocks', { count: summary.blocksHarvestedPer30Days });
-    const isEnoughBalance = accountBalance > 10000;
+    const isEnoughBalance = balance > 10000;
     const isEnoughImportance = importance > 0;
     const isAccountEligibleForHarvesting = isEnoughBalance && isEnoughImportance;
     let warningText;
@@ -181,21 +184,26 @@ export const Harvesting = connect((state) => ({
     const isBlockedLoading = isStarting || isStopping;
     const isLoading = isStatusLoading || isSummaryLoading || isNodeListLoading;
 
+    // Load data on mount and on new transaction (possible status change)
     useEffect(() => {
-        DeviceEventEmitter.addListener(ControllerEventName.CONFIRMED_TRANSACTION, loadData);
+        WalletController.on(ControllerEventName.NEW_TRANSACTION_CONFIRMED, loadData);
         loadData();
 
-        () => {
-            DeviceEventEmitter.removeAllListeners(ControllerEventName.CONFIRMED_TRANSACTION);
+        return () => {
+            WalletController.removeListener(ControllerEventName.NEW_TRANSACTION_CONFIRMED, loadData);
         };
     }, [isAccountReady, isWalletReady]);
 
+    // Calculate transaction fee
+    const transaction = createHarvestingTransactionStub({ networkIdentifier, linkedKeys});
+    const transactionFees = useTransactionFees(transaction, networkProperties);
     useEffect(() => {
         if (transactionFees.medium) {
             setFee(transactionFees[speed]);
         }
     }, [transactionFees, speed]);
 
+    // Set default node url when node list is loaded
     useEffect(() => {
         if (nodeList.length) {
             setNodeUrl(nodeList[0]);

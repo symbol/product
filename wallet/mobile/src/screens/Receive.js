@@ -4,16 +4,13 @@ import { ScrollView } from 'react-native-gesture-handler';
 import { FormItem, InputAmount, QRCode, Screen, TableView, TextBox, Widget } from 'src/components';
 import { TransactionType } from 'src/constants';
 import { $t } from 'src/localization';
-import { connect } from 'src/store';
 import { layout } from 'src/styles';
 import { transactionToPayload } from 'src/utils';
+import WalletController from 'src/lib/controller/MobileWalletController';
+import { observer } from 'mobx-react-lite';
 
-export const Receive = connect((state) => ({
-    currentAccount: state.account.current,
-    isAccountReady: state.account.isReady,
-    networkProperties: state.network.networkProperties,
-}))(function Receive(props) {
-    const { currentAccount, isAccountReady, networkProperties } = props;
+export const Receive = observer(function Receive() {
+    const { currentAccount, isWalletReady, networkProperties } = WalletController;
     const [amount, setAmount] = useState('0');
     const [message, setMessage] = useState('');
 
@@ -41,7 +38,7 @@ export const Receive = connect((state) => ({
     };
 
     return (
-        <Screen isLoading={!isAccountReady}>
+        <Screen isLoading={!isWalletReady}>
             <ScrollView>
                 <FormItem>
                     <Widget>

@@ -2,13 +2,14 @@ import React, { useState } from 'react';
 import { Button, FormItem, Screen, StyledText, TextBox } from 'src/components';
 import { $t } from 'src/localization';
 import { Router } from 'src/Router';
-import store, { connect } from 'src/store';
 import { handleError, useDataManager, useProp, useValidation, validateAccountName, validateKey, validateRequired } from 'src/utils';
+import { observer } from 'mobx-react-lite';
+import { WalletAccountType } from 'src/constants';
+import WalletController from 'src/lib/controller/MobileWalletController';
 
-export const AddExternalAccount = connect((state) => ({
-    networkIdentifier: state.network.networkIdentifier,
-}))(function AddExternalAccount(props) {
-    const { networkIdentifier, route } = props;
+export const AddExternalAccount = observer(function AddExternalAccount(props) {
+    const { networkIdentifier } = WalletController
+    const { route } = props;
     const [accountName, setAccountName] = useState('');
     const [privateKey, setPrivateKey] = useProp(route.params?.privateKey, '');
     const nameErrorMessage = useValidation(accountName, [validateRequired(), validateAccountName()], $t);
@@ -17,9 +18,12 @@ export const AddExternalAccount = connect((state) => ({
     const [addAccount, isAddAccountLoading] = useDataManager(
         async () => {
             const name = accountName;
-            await store.dispatchAction({ type: 'wallet/addExternalAccount', payload: { privateKey, name, networkIdentifier } });
-            await store.dispatchAction({ type: 'wallet/loadAll' });
-            await store.dispatchAction({ type: 'account/fetchData' });
+            await WalletController.addAccount({
+                accountType: WalletAccountType.EXTERNAL,
+                privateKey, 
+                name, 
+                networkIdentifier, 
+            });
             Router.goToHome();
         },
         null,

@@ -14,7 +14,6 @@ import {
     TextBox,
     WalletCreationAnimation,
 } from 'src/components';
-import store from 'src/store';
 import {
     createPrivateKeysFromMnemonic,
     downloadPaperWallet,
@@ -31,7 +30,7 @@ import {
 import { config } from 'src/config';
 import { Router } from 'src/Router';
 import { $t } from 'src/localization';
-import { ControllerEventName } from 'src/constants';
+import WalletController from 'src/lib/controller/MobileWalletController';
 
 export const CreateWallet = () => {
     const stepsCount = 2;
@@ -70,17 +69,11 @@ export const CreateWallet = () => {
         setTimeout(saveMnemonic, 1500);
     };
     const completeLoading = async () => {
-        DeviceEventEmitter.emit(ControllerEventName.LOGIN);
+        WalletController.notifyLoginCompleted();
     };
     const [saveMnemonic] = useDataManager(
         async () => {
-            await store.dispatchAction({
-                type: 'wallet/saveMnemonic',
-                payload: {
-                    mnemonic,
-                    name,
-                },
-            });
+            await WalletController.saveMnemonicAndGenerateAccounts({ mnemonic, name });
             setLoadingStep(4);
             setTimeout(completeLoading, 500);
         },

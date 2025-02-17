@@ -2,27 +2,22 @@ import { useNavigation } from '@react-navigation/native';
 import React, { useEffect } from 'react';
 import DraggableFlatList from 'react-native-draggable-flatlist';
 import { AccountCard, ButtonCircle, DialogBox, FormItem, Screen, TouchableNative } from 'src/components';
-import store, { connect } from 'src/store';
 import { handleError, useDataManager, usePromises, useProp, useToggle, vibrate } from 'src/utils';
 import Animated, { interpolate, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { colors, layout, timings } from 'src/styles';
 import { Router } from 'src/Router';
 import { $t } from 'src/localization';
 import { useState } from 'react';
+import { observer } from 'mobx-react-lite';
+import WalletController from 'src/lib/controller/MobileWalletController';
 
-export const AccountList = connect((state) => ({
-    currentAccount: state.account.current,
-    accounts: state.wallet.accounts,
-    balances: state.wallet.balances,
-    networkIdentifier: state.network.networkIdentifier,
-    ticker: state.network.ticker,
-}))(function AccountList(props) {
-    const { currentAccount, accounts, balances, networkIdentifier, ticker } = props;
+export const AccountList = observer(function AccountList() {
+    const { currentAccount, accounts, accountInfos, networkIdentifier, ticker } = WalletController;
     const [isRemoveConfirmVisible, toggleRemoveConfirm] = useToggle(false);
     const [accountToBeRemoved, setAccountToBeRemoved] = useState(null);
     const isPressed = useSharedValue(0);
     const [accountBalanceStateMap, setAccountBalanceStateMap] = usePromises({});
-    const selectedPrivateKey = currentAccount?.privateKey || null;
+    const selectedPublicKey = currentAccount?.publicKey || null;
     const networkAccounts = accounts[networkIdentifier];
     const [updatedNetworkAccounts, setUpdatedNetworkAccounts] = useProp(networkAccounts);
     const navigation = useNavigation();
@@ -37,8 +32,7 @@ export const AccountList = connect((state) => ({
 
     const [selectAccount, isSelectAccountLoading] = useDataManager(
         async (account) => {
-            await store.dispatchAction({ type: 'wallet/selectAccount', payload: account.privateKey });
-            await store.dispatchAction({ type: 'wallet/loadAll' });
+            await WalletController.selectAccount(account.publicKey);
             navigation.goBack();
         },
         null,
@@ -46,28 +40,18 @@ export const AccountList = connect((state) => ({
     );
     const [saveAccounts] = useDataManager(
         async (data) => {
-            await store.dispatchAction({
-                type: 'wallet/saveAccounts',
-                payload: {
-                    accounts: data,
-                    networkIdentifier,
-                },
-            });
+            await WalletController.changeAccountsOrder(networkIdentifier, data);
         },
         null,
         handleError
     );
     const [removeAccount] = useDataManager(
         async (account) => {
-            const { privateKey } = account;
-            await store.dispatchAction({
-                type: 'wallet/removeAccount',
-                payload: {
-                    privateKey,
-                    networkIdentifier,
-                },
+            await WalletController.removeAccount({
+                publicKey: account.publicKey,
+                networkIdentifier,
             });
-            if (selectedPrivateKey === privateKey) {
+            if (selectedPublicKey === account.publicKey) {
                 await selectAccount(networkAccounts[0]);
             }
         },
@@ -77,7 +61,7 @@ export const AccountList = connect((state) => ({
 
     const isLoading = isSelectAccountLoading;
 
-    const isAccountSelected = (account) => account.privateKey === selectedPrivateKey;
+    const isAccountSelected = (account) => account.publicKey === selectedPublicKey;
     const handleLongPress = (drag) => {
         drag();
         handlePressIn();
@@ -111,8 +95,8 @@ export const AccountList = connect((state) => ({
     const fetchBalances = async () => {
         const updatedAccountBalanceStateMap = {};
         for (const account of networkAccounts) {
-            updatedAccountBalanceStateMap[account.address] = () =>
-                store.dispatchAction({ type: 'wallet/fetchBalance', payload: account.address });
+            updatedAccountBalanceStateMap[account.publicKey] = () =>
+                WalletController.fetchAccountInfo(account.publicKey);
         }
         setAccountBalanceStateMap(updatedAccountBalanceStateMap);
     };
@@ -129,7 +113,7 @@ export const AccountList = connect((state) => ({
                     onDragEnd={onDragEnd}
                     containerStyle={layout.fill}
                     data={updatedNetworkAccounts}
-                    keyExtractor={(item, index) => 'al' + item.name + index}
+                    keyExtractor={(item) => item.publicKey}
                     renderItem={({ item, drag, isActive }) => (
                         <FormItem type="list">
                             <TouchableNative
@@ -143,10 +127,10 @@ export const AccountList = connect((state) => ({
                                     <AccountCard
                                         name={item.name}
                                         address={item.address}
-                                        balance={balances[item.address]}
+                                        balance={accountInfos[networkIdentifier][item.publicKey]?.balance || 0}
                                         ticker={ticker}
                                         type={item.accountType}
-                                        isLoading={accountBalanceStateMap[item.address]}
+                                        isLoading={accountBalanceStateMap[item.publicKey]}
                                         isActive={isAccountSelected(item)}
                                         onRemove={item.index === 0 ? null : () => handleRemovePress(item)}
                                         isSimplified

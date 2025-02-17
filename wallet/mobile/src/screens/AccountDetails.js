@@ -1,39 +1,40 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { Linking } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import { ButtonPlain, DialogBox, FormItem, QRCode, Screen, TableView, Widget } from 'src/components';
 import { config } from 'src/config';
 import { $t } from 'src/localization';
-import { connect } from 'src/store';
 import { layout } from 'src/styles';
-import { publicAccountFromPrivateKey, usePasscode, useToggle } from 'src/utils';
+import { usePasscode, useToggle } from 'src/utils';
+import WalletController from 'src/lib/controller/MobileWalletController';
+import { observer } from 'mobx-react-lite';
 
-export const AccountDetails = connect((state) => ({
-    currentAccount: state.account.current,
-    multisigAddresses: state.account.multisigAddresses,
-    networkProperties: state.network.networkProperties,
-    networkIdentifier: state.network.networkIdentifier,
-}))(function AccountDetails(props) {
-    const { currentAccount, multisigAddresses, networkProperties, networkIdentifier } = props;
-    const { privateKey, index, ...restAccountInfo } = currentAccount;
+export const AccountDetails = observer(function AccountDetails(props) {
+    const { currentAccount, accountInfo, networkProperties, networkIdentifier } = WalletController;
+    const [privateKey, setPrivateKey] = useState('');
+    const { index, ...restAccountInfo } = currentAccount;
     const [isPrivateKeyDialogShown, togglePrivateKeyDialog] = useToggle(false);
-    const qrData = {
+    const qrData = useMemo(() => ({
         address: currentAccount.address,
         name: 'Account',
-    };
+    }), [currentAccount]);
     const tableData = {
         ...restAccountInfo,
-        publicKey: publicAccountFromPrivateKey(privateKey, networkIdentifier).publicKey,
         seedIndex: index,
     };
-    if (multisigAddresses.length) {
-        tableData.multisigAddresses = multisigAddresses;
+    if (accountInfo?.multisigAddresses.length) {
+        tableData.multisigAddresses = accountInfo.multisigAddresses;
     }
     const isTestnet = networkIdentifier === 'testnet';
 
     const openBlockExplorer = () => Linking.openURL(config.explorerURL[networkIdentifier] + '/accounts/' + currentAccount.address);
     const openFaucet = () => Linking.openURL(config.faucetURL + '/?recipient=' + currentAccount.address);
-    const revealPrivateKey = usePasscode('enter', togglePrivateKeyDialog);
+    const revealPrivateKey = async () => {
+        const privateKey = await WalletController.getCurrentAccountPrivateKey();
+        setPrivateKey(privateKey);
+        togglePrivateKeyDialog();
+    }
+    const confirmPrivateKeyReveal = usePasscode('enter', revealPrivateKey);
 
     return (
         <Screen
@@ -59,7 +60,7 @@ export const AccountDetails = connect((state) => ({
                         <ButtonPlain
                             icon={require('src/assets/images/icon-primary-key.png')}
                             title={$t('button_revealPrivateKey')}
-                            onPress={revealPrivateKey}
+                            onPress={confirmPrivateKeyReveal}
                         />
                     </FormItem>
                 </>

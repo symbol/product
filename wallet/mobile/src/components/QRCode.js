@@ -24,7 +24,7 @@ export const QRCode = (props) => {
             generateImage(data);
             setPrevData(data);
         }
-    }, [data, isImageLoading, prevData]);
+    }, [data, isImageLoading, prevData, networkProperties.generationHash]);
 
     return (
         <View style={styles.root}>

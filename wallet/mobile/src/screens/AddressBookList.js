@@ -2,17 +2,15 @@ import React, { useState } from 'react';
 import { Image, StyleSheet, View } from 'react-native';
 import { FlatList, TouchableWithoutFeedback } from 'react-native-gesture-handler';
 import { AccountAvatar, ButtonCircle, FormItem, ItemContact, Screen, StyledText, TabView, Widget } from 'src/components';
-import { connect } from 'src/store';
 import { Router } from 'src/Router';
 import { colors, layout, spacings } from 'src/styles';
 import { trunc } from 'src/utils';
 import { $t } from 'src/localization';
+import WalletController from 'src/lib/controller/MobileWalletController';
+import { observer } from 'mobx-react-lite';
 
-export const AddressBookList = connect((state) => ({
-    addressBookWhiteList: state.addressBook.whiteList,
-    addressBookBlackList: state.addressBook.blackList,
-}))(function AddressBookList(props) {
-    const { addressBookWhiteList, addressBookBlackList } = props;
+export const AddressBookList = observer(function AddressBookList() {
+    const { addressBook } = WalletController.modules;
     const [list, setList] = useState('whitelist');
     const tabs = [
         {
@@ -21,8 +19,8 @@ export const AddressBookList = connect((state) => ({
             content: (
                 <FlatList
                     contentContainerStyle={layout.listContainer}
-                    data={addressBookWhiteList}
-                    keyExtractor={(item) => 'contact' + item.id}
+                    data={addressBook.whiteList}
+                    keyExtractor={(item) => 'contact' + item.address}
                     renderItem={({ item }) => <ItemContact contact={item} onPress={() => Router.goToAddressBookContact(item)} />}
                 />
             ),
@@ -33,8 +31,8 @@ export const AddressBookList = connect((state) => ({
             content: (
                 <FlatList
                     contentContainerStyle={layout.listContainer}
-                    data={addressBookBlackList}
-                    keyExtractor={(item) => 'contact' + item.id}
+                    data={addressBook.blackList}
+                    keyExtractor={(item) => 'contact' + item.address}
                     renderItem={({ item }) => <ItemContact contact={item} onPress={() => Router.goToAddressBookContact(item)} />}
                 />
             ),
@@ -52,10 +50,8 @@ export const AddressBookList = connect((state) => ({
     );
 });
 
-export const AddressBookListWidget = connect((state) => ({
-    addressBookWhiteList: state.addressBook.whiteList,
-}))(function AddressBookListWidget(props) {
-    const { addressBookWhiteList } = props;
+export const AddressBookListWidget = observer(function AddressBookListWidget(props) {
+    const { addressBook } = WalletController.modules;
 
     const getFormattedName = (contact) => trunc(contact.name, null, 12);
     const handleHeaderPress = () => {
@@ -74,7 +70,7 @@ export const AddressBookListWidget = connect((state) => ({
                 <FlatList
                     horizontal
                     contentContainerStyle={styles.addressBookList}
-                    data={addressBookWhiteList}
+                    data={addressBook.whiteList}
                     keyExtractor={(_, index) => 'contact' + index}
                     renderItem={({ item }) => (
                         <TouchableWithoutFeedback style={styles.addressBookItem} onPress={() => handleContactPress(item)}>

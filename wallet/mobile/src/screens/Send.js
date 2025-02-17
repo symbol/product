@@ -1,5 +1,5 @@
 import _ from 'lodash';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ScrollView } from 'react-native-gesture-handler';
 import {
     Alert,
@@ -19,11 +19,11 @@ import {
 } from 'src/components';
 import { $t } from 'src/localization';
 import { Router } from 'src/Router';
-import { AccountService, MosaicService, TransactionService } from 'src/services';
-import store, { connect } from 'src/store';
+import { AccountService } from 'src/lib/services';
 import {
     getAddressName,
-    getMosaicsWithRelativeAmounts,
+    createMultisigTransferTransactionStub,
+    createSingleTransferTransactionStub,
     handleError,
     toFixedNumber,
     useDataManager,
@@ -32,131 +32,102 @@ import {
     useToggle,
 } from 'src/utils';
 import { useTransactionFees } from '@/utils/hooks';
-import { TransactionType } from 'src/constants';
+import { MessageType, TransactionType } from 'src/constants';
+import WalletController from 'src/lib/controller/MobileWalletController';
+import { observer } from 'mobx-react-lite'
 
-export const Send = connect((state) => ({
-    walletAccounts: state.wallet.accounts,
-    addressBook: state.addressBook.addressBook,
-    currentAccount: state.account.current,
-    cosignatories: state.account.cosignatories,
-    multisigAddresses: state.account.multisigAddresses,
-    isMultisigAccount: state.account.isMultisig,
-    isAccountReady: state.account.isReady,
-    currentAccountMosaics: state.account.mosaics,
-    mosaicInfos: state.wallet.mosaicInfos,
-    networkProperties: state.network.networkProperties,
-    networkIdentifier: state.network.networkIdentifier,
-    ticker: state.network.ticker,
-    chainHeight: state.network.chainHeight,
-    price: state.market.price,
-}))(function Send(props) {
+export const Send = observer(function Send(props) {
     const {
-        walletAccounts,
+        accounts,
         addressBook,
         currentAccount,
-        cosignatories,
-        multisigAddresses,
-        isMultisigAccount,
-        isAccountReady,
-        currentAccountMosaics,
+        currentAccountInfo,
+        isStateReady,
+        isWalletReady,
+        isNetworkConnectionReady,
         networkProperties,
         networkIdentifier,
         ticker,
         chainHeight,
         price,
-        route,
-    } = props;
-    const accounts = walletAccounts[networkIdentifier];
-    const [senderList, setSenderList] = useState([]);
-    const [sender, setSender] = useProp(currentAccount?.address);
-    const [recipient, setRecipient] = useProp(route.params?.recipientAddress || '');
-    const [mosaics, setMosaics] = useProp(currentAccountMosaics);
-    const [mosaicId, setMosaicId] = useProp(route.params?.mosaicId, mosaics[0]?.id);
-    const [amount, setAmount] = useProp(route.params?.amount, '0');
-    const [message, setMessage] = useProp(route.params?.message?.text, '');
-    const [isEncrypted, toggleEncrypted] = useToggle(false);
-    const [maxFee, setMaxFee] = useState(0);
-    const [speed, setSpeed] = useState('medium');
+    } = WalletController;
+    const { route } = props;
+    const walletAccounts = accounts[networkIdentifier];
+
+    // UI
     const [isConfirmVisible, toggleConfirm] = useToggle(false);
     const [isSuccessAlertVisible, toggleSuccessAlert] = useToggle(false);
-    const [isAmountValid, setAmountValid] = useState(false);
-    const [isRecipientValid, setRecipientValid] = useState(false);
-
-    const mosaicOptions = mosaics.map((mosaic) => ({
+    const [senderOptions, setSenderOptions] = useState([])
+    const [senderMosaicList, setSenderMosaicList] = useState([]);
+    const senderMosaicOptions = senderMosaicList.map((mosaic) => ({
         label: mosaic.name,
         value: mosaic.id,
         mosaicInfo: mosaic,
     }));
-    const selectedMosaic = mosaics.find((mosaic) => mosaic.id === mosaicId);
-    const isButtonDisabled = !isRecipientValid || !isAmountValid || !selectedMosaic;
-    const isAccountCosignatoryOfMultisig = !!multisigAddresses?.length;
-    const isMultisig = sender !== currentAccount?.address;
-    const transaction = {
-        type: TransactionType.TRANSFER,
-        signerAddress: currentAccount.address,
-        sender: isMultisig ? sender : null,
-        recipient,
-        mosaics: selectedMosaic
-            ? [
-                  {
-                      ...selectedMosaic,
-                      amount: parseFloat(amount || 0),
-                  },
-              ]
-            : [],
-        message: message
-            ? {
-                  text: message,
-                  isEncrypted: !isMultisig ? isEncrypted : false,
-              }
-            : null,
-        fee: maxFee,
-    };
-    const cosignatoryList = { cosignatories };
+    const [isAmountValid, setAmountValid] = useState(false);
+    const [isRecipientValid, setRecipientValid] = useState(false);
 
-    const transactionFees = useTransactionFees(transaction, networkProperties);
+    // Inputs
+    const [senderAddress, setSenderAddress] = useProp(currentAccount.address);
+    const [recipientAddressOrAlias, setRecipientAddressOrAlias] = useProp(route.params?.recipientAddress, '');
+    const [selectedMosaicId, setSelectedMosaicId] = useProp(route.params?.mosaicId, null);
+    const [amount, setAmount] = useProp(route.params?.amount, '0');
+    const [messageText, setMessageText] = useProp(route.params?.message?.text, '');
+    const [isMessageEncryptedCheckboxValue, toggleMessageEncrypted] = useToggle(false);
+    const [speed, setSpeed] = useState('medium');
 
+    // Other properties
+    const isAccountCosignatoryOfMultisig = currentAccountInfo.multisigAddresses.length > 0;
+    const cosignatoryListTable = { cosignatories: currentAccountInfo.cosignatories };
+    const isMultisigTransfer = senderAddress !== currentAccount.address;
+
+    // Fields
+    const [senderPublicKey, setSenderPublicKey] = useProp(currentAccount.publicKey);
+    const selectedMosaic = senderMosaicList
+        .find((mosaic) => mosaic.id === selectedMosaicId)
+        || senderMosaicList[0];
+    const mosaics = selectedMosaic
+        ? [{ ...selectedMosaic, amount: Number(amount) }]
+        : [];
+    const [maxFee, setMaxFee] = useState(0);
+    const [transaction, setTransaction] = useState(null);
+    const isMessageEncrypted = isMultisigTransfer ? false : isMessageEncryptedCheckboxValue;
+
+    // Methods
     const getTransactionPreviewTable = (data) => {
-        const transactionWithoutType =  _.omit(data, ['type']);
+        if (!data)
+            return null;
+
+        const transfer = data.type === TransactionType.TRANSFER ? data : data.innerTransactions[0];
 
         return {
-            ...transactionWithoutType,
-            messageEncrypted: transactionWithoutType.message ? transactionWithoutType.message.isEncrypted : null,
-            fee: transactionWithoutType.fee,
-        }
+            type: data.type,
+            sender: senderAddress,
+            recipientAddress: transfer.recipientAddress,
+            mosaics: transfer.mosaics,
+            message: transfer.message,
+            messageEncrypted: transfer.message?.type
+                ? transfer.message.type === MessageType.EncryptedText
+                : null,
+            fee: data.fee
+        };
     };
     const getAvailableBalance = () => {
         const selectedMosaicBalance = selectedMosaic?.amount || 0;
         const selectedMosaicDivisibility = selectedMosaic?.divisibility || 0;
-        const isSelectedNativeMosaic = mosaicId === networkProperties.networkCurrency.mosaicId;
+        const isSelectedNativeMosaic = selectedMosaic?.id === networkProperties.networkCurrency.mosaicId;
         const mosaicAmountSubtractFee = isSelectedNativeMosaic ? parseFloat(maxFee) : 0;
 
         return Math.max(0, toFixedNumber(selectedMosaicBalance - mosaicAmountSubtractFee, selectedMosaicDivisibility));
     };
     const getMosaicPrice = () => {
-        const isSelectedNativeMosaic = mosaicId === networkProperties.networkCurrency.mosaicId;
+        const isSelectedNativeMosaic = selectedMosaicId === networkProperties.networkCurrency.mosaicId;
 
         return isSelectedNativeMosaic ? price : null;
     };
-    const [fetchAccountMosaics, isMosaicsLoading] = useDataManager(
-        async (sender) => {
-            const { mosaics } = await AccountService.fetchAccountInfo(networkProperties, sender);
-            const mosaicIds = mosaics.map((mosaic) => mosaic.id);
-            const mosaicInfos = await MosaicService.fetchMosaicInfos(networkProperties, mosaicIds);
-            const formattedMosaics = getMosaicsWithRelativeAmounts(mosaics, mosaicInfos);
-            setMosaicId(formattedMosaics[0].id);
-            setMosaics(formattedMosaics);
-        },
-        null,
-        (e) => {
-            handleError(e);
-            setMosaicId(null);
-            setMosaics([]);
-        }
-    );
     const [send, isSending] = useDataManager(
         async () => {
-            await store.dispatchAction({ type: 'transaction/sendTransferTransaction', payload: { transaction } });
+            await WalletController.signAndAnnounceTransaction(transaction, true);
             toggleSuccessAlert();
         },
         null,
@@ -167,59 +138,97 @@ export const Send = connect((state) => ({
         toggleConfirm();
         confirmSend();
     };
+    const [handleSendButtonPress, isTransactionPreparing] = useDataManager(
+        async () => {
+            const transaction = await WalletController.modules.transfer.createTransaction({
+                senderPublicKey,
+                recipientAddressOrAlias,
+                mosaics,
+                messageText,
+                isMessageEncrypted,
+            });
+            transaction.fee = maxFee;
+
+            setTransaction(transaction);
+            toggleConfirm();
+        },
+        null,
+        handleError
+    );
 
     // Update transaction maxFee value when speed is changed or fees recalculated
+    const transactionStub = isMultisigTransfer
+        ? createMultisigTransferTransactionStub({ messageText, isMessageEncrypted, mosaics })
+        : createSingleTransferTransactionStub({ messageText, isMessageEncrypted, mosaics });
+    const transactionFees = useTransactionFees(transactionStub, networkProperties);
     useEffect(() => {
         if (transactionFees.medium) {
             setMaxFee(transactionFees[speed]);
         }
     }, [transactionFees, speed]);
 
-    // Update properties when account data is loaded
+    // Handle the sender address list after the wallet is ready
     useEffect(() => {
-        if (!mosaicId) {
-            setMosaicId(mosaics[0]?.id);
-        }
-        if (multisigAddresses?.length) {
-            const list = [currentAccount.address, ...multisigAddresses].map((address) => ({
+        if (currentAccountInfo.multisigAddresses.length) {
+            const senderAddresses = [currentAccount.address, ...currentAccountInfo.multisigAddresses];
+            const senderAddressOptions = senderAddresses.map((address) => ({
                 value: address,
-                label: getAddressName(address, currentAccount, accounts, addressBook),
+                label: getAddressName(address, currentAccount, walletAccounts, addressBook),
             }));
-            setSenderList(list);
+            setSenderOptions(senderAddressOptions);
         }
-        setSender(currentAccount.address);
-    }, [isAccountReady, mosaicId, currentAccount, multisigAddresses]);
+    }, [isStateReady, currentAccount, currentAccountInfo.multisigAddresses]);
 
-    // Update mosaic list when sender address is changed
-    useEffect(() => {
-        if (sender === currentAccount.address) {
-            setMosaics(currentAccountMosaics);
-        } else {
-            fetchAccountMosaics(sender);
+    // Update the mosaic list and sender public key after sender's address changed
+    const updateSenderInfo = (mosaics, publicKey) => {
+        setSenderMosaicList(mosaics);
+        setSelectedMosaicId(mosaics[0]?.id || null);
+        setSenderPublicKey(publicKey);
+    };
+    const [fetchSenderInfo, isSenderInfoLoading] = useDataManager(
+        async (sender) => {
+            const { mosaics, publicKey } = await AccountService.fetchAccountInfo(networkProperties, sender);
+            updateSenderInfo(mosaics, publicKey);
+        },
+        null,
+        (e) => {
+            handleError(e);
+            updateSenderInfo([], '');
         }
-    }, [sender, currentAccount, currentAccountMosaics]);
+    );
+    useEffect(() => {
+        setSelectedMosaicId(null);
+        if (currentAccount.address === senderAddress) {
+            updateSenderInfo(currentAccountInfo.mosaics, currentAccount.publicKey);
+        } else {
+            fetchSenderInfo(senderAddress);
+        }
+    }, [currentAccount, currentAccountInfo.mosaics, senderAddress])
+
+    const isLoading = !isWalletReady || isSenderInfoLoading || isSending || isTransactionPreparing;
+    const isButtonDisabled = !isNetworkConnectionReady || !isRecipientValid || !isAmountValid || !mosaics.length;
 
     return (
         <Screen
-            isLoading={!isAccountReady || isMosaicsLoading || isSending}
+            isLoading={isLoading}
             bottomComponent={
                 <FormItem>
-                    <Button title={$t('button_send')} isDisabled={isButtonDisabled} onPress={toggleConfirm} />
+                    <Button title={$t('button_send')} isDisabled={isButtonDisabled} onPress={handleSendButtonPress} />
                 </FormItem>
             }
         >
             <ScrollView>
-                {isMultisigAccount && (
+                {currentAccountInfo.isMultisigAccount && (
                     <>
                         <FormItem>
                             <Alert type="warning" title={$t('warning_multisig_title')} body={$t('warning_multisig_body')} />
                         </FormItem>
                         <FormItem>
-                            <TableView data={cosignatoryList} />
+                            <TableView data={cosignatoryListTable} />
                         </FormItem>
                     </>
                 )}
-                {!isMultisigAccount && (
+                {!currentAccountInfo.isMultisigAccount && (
                     <>
                         <FormItem>
                             <StyledText type="title">{$t('form_transfer_title')}</StyledText>
@@ -232,24 +241,29 @@ export const Send = connect((state) => ({
                         )}
                         {isAccountCosignatoryOfMultisig && (
                             <FormItem>
-                                <Dropdown title={$t('input_sender')} value={sender} list={senderList} onChange={setSender} />
+                                <Dropdown
+                                    title={$t('input_sender')}
+                                    value={senderAddress}
+                                    list={senderOptions}
+                                    onChange={setSenderAddress}
+                                />
                             </FormItem>
                         )}
                         <FormItem>
                             <InputAddress
                                 title={$t('form_transfer_input_recipient')}
-                                value={recipient}
-                                onChange={setRecipient}
+                                value={recipientAddressOrAlias}
+                                onChange={setRecipientAddressOrAlias}
                                 onValidityChange={setRecipientValid}
                             />
                         </FormItem>
                         <FormItem>
                             <SelectMosaic
                                 title={$t('form_transfer_input_mosaic')}
-                                value={mosaicId}
-                                list={mosaicOptions}
+                                value={selectedMosaicId}
+                                list={senderMosaicOptions}
                                 chainHeight={chainHeight}
-                                onChange={setMosaicId}
+                                onChange={setSelectedMosaicId}
                             />
                         </FormItem>
                         <FormItem>
@@ -264,11 +278,15 @@ export const Send = connect((state) => ({
                             />
                         </FormItem>
                         <FormItem>
-                            <TextBox title={$t('form_transfer_input_message')} value={message} onChange={setMessage} />
+                            <TextBox title={$t('form_transfer_input_message')} value={messageText} onChange={setMessageText} />
                         </FormItem>
-                        {!isMultisig && (
+                        {!isMultisigTransfer && (
                             <FormItem>
-                                <Checkbox title={$t('form_transfer_input_encrypted')} value={isEncrypted} onChange={toggleEncrypted} />
+                                <Checkbox
+                                    title={$t('form_transfer_input_encrypted')}
+                                    value={isMessageEncrypted}
+                                    onChange={toggleMessageEncrypted}
+                                />
                             </FormItem>
                         )}
                         <FormItem>

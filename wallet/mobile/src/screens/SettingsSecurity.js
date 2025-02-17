@@ -2,9 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { deleteUserPinCode, hasUserSetPinCode } from '@haskkor/react-native-pincode';
 import { Checkbox, FormItem, MnemonicView, Screen, StyledText } from 'src/components';
 import { handleError, useDataManager, usePasscode } from 'src/utils';
-import { SecureStorage } from 'src/storage';
 import { $t } from 'src/localization';
 import { Router } from 'src/Router';
+import WalletController from 'src/lib/controller/MobileWalletController';
 
 export function SettingsSecurity() {
     const [isPasscodeEnabled, setIsPasscodeEnabled] = useState(false);
@@ -13,7 +13,7 @@ export function SettingsSecurity() {
     const [loadData, isDataLoading] = useDataManager(
         async () => {
             const isPasscodeEnabled = await hasUserSetPinCode();
-            const mnemonic = await SecureStorage.getMnemonic();
+            const mnemonic = await WalletController.getMnemonic();
 
             setIsPasscodeEnabled(isPasscodeEnabled);
             setMnemonic(mnemonic);

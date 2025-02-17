@@ -2,14 +2,14 @@ import React from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
 import { ItemBase } from 'src/components';
 import { $t } from 'src/localization';
-import { connect } from 'src/store';
 import { colors, fonts, spacings } from 'src/styles';
 import { formatDate } from 'src/utils';
+import WalletController from 'src/lib/controller/MobileWalletController';
+import { observer } from 'mobx-react-lite'
 
-export const ItemReceipt = connect((state) => ({
-    ticker: state.network.ticker,
-}))(function ItemReceipt(props) {
-    const { receipt, ticker, onPress } = props;
+export const ItemReceipt = observer(function ItemReceipt(props) {
+    const { receipt, onPress } = props;
+    const { ticker } = WalletController;
     const { amount, date, height } = receipt;
     const dateText = formatDate(date, $t);
     const description = `Block #${height}`;

@@ -5,28 +5,21 @@ import { AccountAvatar, ButtonPlain, DialogBox, FormItem, Screen, TableView, Wid
 import { config } from 'src/config';
 import { $t } from 'src/localization';
 import { Router } from 'src/Router';
-import store, { connect } from 'src/store';
 import { layout } from 'src/styles';
 import { useDataManager, useToggle } from 'src/utils';
+import WalletController from 'src/lib/controller/MobileWalletController';
+import { observer } from 'mobx-react-lite';
 
-export const AddressBookContact = connect((state) => ({
-    networkIdentifier: state.network.networkIdentifier,
-    addressBookWhiteList: state.addressBook.whiteList,
-    addressBookBlackList: state.addressBook.blackList,
-}))(function AddressBookContact(props) {
-    const { route, networkIdentifier, addressBookWhiteList, addressBookBlackList } = props;
-    const contact =
-        addressBookWhiteList.find((el) => el.id === route.params.id) || addressBookBlackList.find((el) => el.id === route.params.id);
-    const { name, address, isBlackListed, notes, id } = contact;
+export const AddressBookContact = observer(function AddressBookContact(props) {
+    const { route } = props;
+    const { networkIdentifier } = WalletController;
+    const { addressBook } = WalletController.modules;
+    const contact = addressBook.getContactById(route.params.id);
+    const { name, address, isBlackListed, notes } = contact;
     const [isRemoveConfirmVisible, toggleRemoveConfirm] = useToggle(false);
     const [removeContact] = useDataManager(() => {
         Router.goBack();
-        store.dispatchAction({
-            type: 'addressBook/removeContact',
-            payload: {
-                id,
-            },
-        });
+        addressBook.removeContact(address);
     });
 
     const tableData = {
@@ -37,15 +30,7 @@ export const AddressBookContact = connect((state) => ({
     };
 
     const handleSendPress = () => Router.goToSend({ recipientAddress: address });
-    const handleEditPress = () =>
-        Router.goToAddressBookEdit({
-            type: 'edit',
-            id,
-            name,
-            address,
-            notes,
-            list: isBlackListed ? 'blacklist' : 'whitelist',
-        });
+    const handleEditPress = () => Router.goToAddressBookEdit({ ...contact, type: 'edit' });
     const handleOpenBlockExplorer = () => Linking.openURL(config.explorerURL[networkIdentifier] + '/accounts/' + address);
 
     return (

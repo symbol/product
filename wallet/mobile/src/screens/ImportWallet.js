@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { DeviceEventEmitter, Image, StyleSheet } from 'react-native';
+import { Image, StyleSheet } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import {
     Button,
@@ -13,11 +13,11 @@ import {
     StyledText,
     WalletCreationAnimation,
 } from 'src/components';
-import store from 'src/store';
 import { createOptInPrivateKeyFromMnemonic, handleError, useDataManager, usePasscode } from 'src/utils';
 import { Router } from 'src/Router';
 import { $t } from 'src/localization';
-import { ControllerEventName } from 'src/constants';
+import { ControllerEventName, NetworkIdentifier, WalletAccountType } from 'src/constants';
+import WalletController from 'src/lib/controller/MobileWalletController';
 
 export const ImportWallet = () => {
     const [name] = useState($t('s_importWallet_defaultAccountName'));
@@ -48,14 +48,18 @@ export const ImportWallet = () => {
     );
     const [saveMnemonic] = useDataManager(
         async (optInPrivateKey) => {
-            await store.dispatchAction({
-                type: 'wallet/saveMnemonic',
-                payload: {
-                    mnemonic: mnemonic.trim(),
-                    name,
-                    optInPrivateKey,
-                },
+            await WalletController.saveMnemonicAndGenerateAccounts({
+                mnemonic: mnemonic.trim(),
+                name,
             });
+            if (optInPrivateKey) {
+                await WalletController.addAccount({
+                    accountType: WalletAccountType.EXTERNAL,
+                    privateKey: optInPrivateKey,
+                    name: 'Opt-in Account',
+                    networkIdentifier: NetworkIdentifier.MAIN_NET,
+                });
+            }
             setLoadingStep(5);
             setTimeout(completeLoading, 500);
         },
@@ -69,7 +73,7 @@ export const ImportWallet = () => {
         setTimeout(checkOptInAccounts, 1500);
     };
     const completeLoading = async () => {
-        DeviceEventEmitter.emit(ControllerEventName.LOGIN);
+        WalletController.notifyLoginCompleted();
     };
     const createPasscode = usePasscode('choose', startLoading);
 

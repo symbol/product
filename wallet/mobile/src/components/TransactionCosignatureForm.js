@@ -5,27 +5,22 @@ import { ScrollView } from 'react-native-gesture-handler';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { $t } from 'src/localization';
 import { Router } from 'src/Router';
-import { TransactionService } from 'src/services';
-import { connect } from 'src/store';
 import { borders, colors, layout, spacings } from 'src/styles';
 import { handleError, isTransactionAwaitingSignatureByAccount, useDataManager, usePasscode } from 'src/utils';
 import { Button } from './Button';
 import { ButtonPlain } from './ButtonPlain';
 import { LoadingIndicator } from './LoadingIndicator';
 import { StyledText } from './StyledText';
+import WalletController from 'src/lib/controller/MobileWalletController';
+import { observer } from 'mobx-react-lite'
 
-export const TransactionCosignatureForm = connect((state) => ({
-    addressBook: state.addressBook.addressBook,
-    walletAccounts: state.wallet.accounts,
-    currentAccount: state.account.current,
-    isMultisig: state.account.isMultisig,
-    networkIdentifier: state.network.networkIdentifier,
-    networkProperties: state.network.networkProperties,
-}))(function TransactionCosignatureForm(props) {
-    const { style, height, transaction, addressBook, currentAccount, isMultisig, networkIdentifier, networkProperties, walletAccounts } =
-        props;
+export const TransactionCosignatureForm = observer(function TransactionCosignatureForm(props) {
+    const { style, height, transaction } = props;
     const { signerAddress } = transaction;
-    const networkWalletAccounts = walletAccounts[networkIdentifier];
+    const { currentAccount, currentAccountInfo, networkIdentifier, accounts } = WalletController; 
+    const { isMultisig } = currentAccountInfo;
+    const { addressBook } = WalletController.modules;
+    const networkWalletAccounts = accounts[networkIdentifier];
     const animatedHeight = useSharedValue(0);
     const animatedStyle = useAnimatedStyle(() => ({
         maxHeight: animatedHeight.value,
@@ -51,7 +46,7 @@ export const TransactionCosignatureForm = connect((state) => ({
 
     const [sign, isLoading] = useDataManager(
         async () => {
-            await TransactionService.cosignTransaction(transaction, currentAccount, networkProperties);
+            await WalletController.cosignAndAnnounceTransaction(transaction);
             Router.goToHistory();
         },
         null,
