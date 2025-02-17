@@ -16,11 +16,19 @@ export const addressFromPrivateKey = (privateKey, networkIdentifier) => {
 };
 
 export const addressFromPublicKey = (publicKey, networkIdentifier) => {
+    return publicAccountFromPublicKey(publicKey, networkIdentifier).address;
+};
+
+export const publicAccountFromPublicKey = (publicKey, networkIdentifier) => {
     const facade = new SymbolFacade(networkIdentifier);
     const _publicKey = new PublicKey(publicKey);
+    const address = facade.network.publicKeyToAddress(_publicKey);
 
-    return facade.network.publicKeyToAddress(_publicKey).toString();
-};
+    return {
+        address: address.toString(),
+        publicKey,
+    }
+}
 
 export const publicAccountFromPrivateKey = (privateKey, networkIdentifier) => {
     const facade = new SymbolFacade(networkIdentifier);
@@ -35,13 +43,22 @@ export const publicAccountFromPrivateKey = (privateKey, networkIdentifier) => {
 };
 
 export const createWalletAccount = (privateKey, networkIdentifier, name, accountType, index) => {
+    const publicAccount = publicAccountFromPrivateKey(privateKey, networkIdentifier);
+
     return {
-        address: addressFromPrivateKey(privateKey, networkIdentifier),
+        address: publicAccount.address,
+        publicKey: publicAccount.publicKey,
         name,
-        privateKey,
         networkIdentifier,
         accountType,
         index: index === null || index === undefined ? null : index,
+    };
+};
+
+export const createWalletStorageAccount = (privateKey, networkIdentifier, name, accountType, index) => {
+    return {
+        ...createWalletAccount(privateKey, networkIdentifier, name, accountType, index),
+        privateKey
     };
 };
 
@@ -70,10 +87,3 @@ export const isSymbolAddress = (address) => {
 export const addressFromRaw = (rawAddress) => {
     return new Address(Buffer.from(rawAddress, 'hex')).toString()
 };
-
-// export const namespaceIdFromRaw = (rawNamespaceId) => {
-//     const relevantPart = rawNamespaceId.substr(2, 16);
-//     const encodedNamespaceId = Convert.uint8ToHex(Convert.hexToUint8Reverse(relevantPart));
-
-//     return encodedNamespaceId;
-// };
