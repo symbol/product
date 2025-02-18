@@ -2,7 +2,7 @@ import { useNavigation } from '@react-navigation/native';
 import React, { useEffect } from 'react';
 import DraggableFlatList from 'react-native-draggable-flatlist';
 import { AccountCard, ButtonCircle, DialogBox, FormItem, Screen, TouchableNative } from '@/app/components';
-import { handleError, useDataManager, usePromises, useProp, useToggle, vibrate } from '@/app/utils';
+import { handleError, useDataManager, usePromises, useProp, useToggle } from '@/app/utils';
 import Animated, { interpolate, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { colors, layout, timings } from '@/app/styles';
 import { Router } from '@/app/Router';
@@ -10,6 +10,7 @@ import { $t } from '@/app/localization';
 import { useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import WalletController from '@/app/lib/controller/MobileWalletController';
+import { PlatformUtils } from '@/app/lib/platform/PlatformUtils';
 
 export const AccountList = observer(function AccountList() {
     const { currentAccount, accounts, accountInfos, networkIdentifier, ticker } = WalletController;
@@ -69,12 +70,12 @@ export const AccountList = observer(function AccountList() {
     const onDragEnd = ({ data }) => {
         setUpdatedNetworkAccounts(data);
         isPressed.value = 0;
-        vibrate().short();
+        PlatformUtils.vibrate();
         saveAccounts(data);
     };
     const handlePressIn = () => {
         isPressed.value = withTiming(1, timings.press);
-        vibrate().short();
+        PlatformUtils.vibrate();
     };
     const handlePressOut = () => {
         isPressed.value = withTiming(0, timings.press);

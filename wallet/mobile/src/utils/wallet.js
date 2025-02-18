@@ -1,7 +1,4 @@
-// import Clipboard from '@react-native-community/clipboard';
-import { PermissionsAndroid, Platform } from 'react-native'; // Remove after fix https://github.com/react-native-clipboard/clipboard/issues/71
 import { SymbolPaperWallet } from 'symbol-wallets-lib';
-import RNFetchBlob from 'rn-fetch-blob';
 import { Buffer } from 'buffer';
 import { networkIdentifierToNetworkType } from './network';
 import { optInWhiteList } from '@/app/config';
@@ -37,7 +34,7 @@ export const createPrivateKeysFromMnemonic = (mnemonic, indexes, networkIdentifi
     return privateKeys;
 };
 
-export const downloadPaperWallet = async (mnemonic, rootAccount, networkIdentifier) => {
+export const createPaperWallet = async (mnemonic, rootAccount, networkIdentifier) => {
     const hdRootAccount = {
         mnemonic: mnemonic,
         rootAccountPublicKey: rootAccount.publicKey,
@@ -48,55 +45,8 @@ export const downloadPaperWallet = async (mnemonic, rootAccount, networkIdentifi
 
     const paperWalletPdf = await paperWallet.toPdf();
     const paperWalletBase64 = Buffer.from(paperWalletPdf).toString('base64');
-    const uniqueValue = new Date().getTime().toString().slice(9);
-    const filename = `symbol-wallet-${uniqueValue}.pdf`;
-    await writeFile(paperWalletBase64, filename, 'base64');
-};
 
-export const requestAndroidWritePermission = async () => {
-    const permission = PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE;
-    const isPermissionAlreadyGranted = await PermissionsAndroid.check(permission);
-
-    if (isPermissionAlreadyGranted) {
-        return true;
-    }
-
-    let isPermissionGranted;
-
-    try {
-        const result = await PermissionsAndroid.request(permission);
-        isPermissionGranted = result === PermissionsAndroid.RESULTS.GRANTED;
-    } catch {
-        isPermissionGranted = false;
-    }
-
-    if (!isPermissionGranted) {
-        throw Error('error_permission_denied_write_storage');
-    }
-
-    return true;
-};
-
-export const writeFile = async (data, filename, encoding) => {
-    const { dirs } = RNFetchBlob.fs;
-    const destinationDirectory = Platform.OS === 'ios' ? dirs.DocumentDir : dirs.DownloadDir;
-    const path = `${destinationDirectory}/${filename}`;
-
-    if (Platform.OS === 'android') {
-        await requestAndroidWritePermission();
-    }
-
-    try {
-        await RNFetchBlob.fs.writeFile(path, data, encoding);
-
-        if (Platform.OS === 'ios') {
-            RNFetchBlob.ios.previewDocument(path);
-        }
-    } catch (e) {
-        throw Error('error_failed_write_file');
-    }
-
-    return true;
+    return paperWalletBase64;
 };
 
 export const createOptInPrivateKeyFromMnemonic = (mnemonic) => {
