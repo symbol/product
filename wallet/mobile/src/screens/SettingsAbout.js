@@ -33,7 +33,11 @@ export function SettingsAbout() {
                         <Image style={styles.image} source={require('@/app/assets/images/badge-discord.png')} />
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.badge} containerStyle={styles.badge} onPress={onGithubPress}>
-                        <Image style={styles.image} containerStyle={styles.badge} source={require('@/app/assets/images/badge-github.png')} />
+                        <Image
+                            style={styles.image}
+                            containerStyle={styles.badge}
+                            source={require('@/app/assets/images/badge-github.png')}
+                        />
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.badge} containerStyle={styles.badge} onPress={onTwitterPress}>
                         <Image style={styles.image} source={require('@/app/assets/images/badge-twitter.png')} />

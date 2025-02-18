@@ -15,8 +15,8 @@ import {
     WalletCreationAnimation,
 } from '@/app/components';
 import {
+    createPaperWallet,
     createPrivateKeysFromMnemonic,
-    downloadPaperWallet,
     generateMnemonic,
     handleError,
     publicAccountFromPrivateKey,
@@ -31,6 +31,7 @@ import { config } from '@/app/config';
 import { Router } from '@/app/Router';
 import { $t } from '@/app/localization';
 import WalletController from '@/app/lib/controller/MobileWalletController';
+import { PlatformUtils } from '@/app/lib/platform/PlatformUtils';
 
 export const CreateWallet = () => {
     const stepsCount = 2;
@@ -55,7 +56,10 @@ export const CreateWallet = () => {
             const networkIdentifier = config.defaultNetworkIdentifier;
             const [privateKey] = createPrivateKeysFromMnemonic(mnemonic, [0], networkIdentifier);
             const account = publicAccountFromPrivateKey(privateKey, networkIdentifier);
-            await downloadPaperWallet(mnemonic, account, networkIdentifier);
+            const paperWalletBase64 = await createPaperWallet(mnemonic, account, networkIdentifier);
+            const uniqueValue = new Date().getTime().toString().slice(9);
+            const filename = `symbol-wallet-${uniqueValue}.pdf`;
+            await PlatformUtils.writeFile(paperWalletBase64, filename, 'base64');
             showMessage({ message: $t('message_downloaded'), type: 'success' });
         },
         null,

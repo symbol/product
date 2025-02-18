@@ -1,8 +1,5 @@
 import moment from 'moment';
-// import Clipboard from '@react-native-community/clipboard';
-// Remove after fix https://github.com/react-native-clipboard/clipboard/issues/71
 import { Duration, Instant, LocalDateTime, ZoneId } from '@js-joda/core';
-import { Clipboard, Platform, Vibration } from 'react-native';
 import { showMessage as rnFlashMessage } from 'react-native-flash-message';
 import { $t } from '@/app/localization';
 import { config } from '@/app/config';
@@ -14,10 +11,6 @@ export const handleError = (error) => {
     const message = $t(error.message, { defaultValue: error.message });
     showMessage({ message, type: 'danger' });
     console.error(error);
-};
-
-export const copyToClipboard = (str) => {
-    Clipboard.setString(str);
 };
 
 export const createNetworkMap = (callback) => {
@@ -110,16 +103,6 @@ export const getCharPercentage = (char) => {
     const index = charset.indexOf(char.toLowerCase());
 
     return index / (charset.length - 1);
-};
-
-export const vibrate = () => {
-    return {
-        short() {
-            if (Platform.OS === 'android') {
-                Vibration.vibrate(2);
-            }
-        },
-    };
 };
 
 export const toFixedNumber = (num, digits) => {

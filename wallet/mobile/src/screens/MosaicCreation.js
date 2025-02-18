@@ -3,7 +3,19 @@ import { useMemo } from 'react';
 import { useEffect } from 'react';
 import { useState } from 'react';
 import { ScrollView } from 'react-native-gesture-handler';
-import { Alert, Button, Checkbox, DialogBox, FeeSelector, FormItem, Screen, StyledText, TableView, TextBox, Widget } from '@/app/components';
+import {
+    Alert,
+    Button,
+    Checkbox,
+    DialogBox,
+    FeeSelector,
+    FormItem,
+    Screen,
+    StyledText,
+    TableView,
+    TextBox,
+    Widget,
+} from '@/app/components';
 import { $t } from '@/app/localization';
 import { Router } from '@/app/Router';
 import { NetworkService, TransactionService } from '@/app/lib/services';

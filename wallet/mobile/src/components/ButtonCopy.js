@@ -2,7 +2,7 @@ import React from 'react';
 import { Image, StyleSheet, View } from 'react-native';
 import { TouchableOpacity } from 'react-native';
 import { showMessage } from 'react-native-flash-message';
-import { copyToClipboard } from '@/app/utils';
+import { PlatformUtils } from '@/app/lib/platform/PlatformUtils';
 
 export const ButtonCopy = (props) => {
     const { content, style, size } = props;
@@ -10,7 +10,7 @@ export const ButtonCopy = (props) => {
 
     const handlePress = () => {
         try {
-            copyToClipboard(content);
+            PlatformUtils.copyToClipboard(content);
             showMessage({ message: content, type: 'info' });
         } catch (error) {
             showMessage({ message: error.message, type: 'danger' });
