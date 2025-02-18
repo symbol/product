@@ -13,7 +13,8 @@ import {
     StyledText,
     WalletCreationAnimation,
 } from '@/app/components';
-import { createOptInPrivateKeyFromMnemonic, handleError, useDataManager, usePasscode } from '@/app/utils';
+import { createOptInPrivateKeyFromMnemonic, handleError } from '@/app/utils';
+import { useDataManager, usePasscode } from '@/app/hooks';
 import { Router } from '@/app/Router';
 import { $t } from '@/app/localization';
 import { NetworkIdentifier, WalletAccountType } from '@/app/constants';

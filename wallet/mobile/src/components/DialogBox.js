@@ -3,7 +3,7 @@ import { Modal, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'r
 import { StyledText, TextBox } from '@/app/components';
 import { $t } from '@/app/localization';
 import { borders, colors, fonts, spacings } from '@/app/styles';
-import { useValidation } from '@/app/utils';
+import { useValidation } from '@/app/hooks';
 
 export const DialogBox = (props) => {
     const { isVisible, type, title, text, body, promptValidators, onSuccess, onCancel, style, contentContainerStyle } = props;

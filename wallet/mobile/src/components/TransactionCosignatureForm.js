@@ -6,7 +6,8 @@ import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-na
 import { $t } from '@/app/localization';
 import { Router } from '@/app/Router';
 import { borders, colors, layout, spacings } from '@/app/styles';
-import { handleError, isTransactionAwaitingSignatureByAccount, useDataManager, usePasscode } from '@/app/utils';
+import { handleError, isTransactionAwaitingSignatureByAccount } from '@/app/utils';
+import { useDataManager, usePasscode } from '@/app/hooks';
 import { Button } from './Button';
 import { ButtonPlain } from './ButtonPlain';
 import { LoadingIndicator } from './LoadingIndicator';

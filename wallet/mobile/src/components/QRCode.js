@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { Image, StyleSheet, View } from 'react-native';
 import { LoadingIndicator } from '@/app/components';
 import { borders, colors } from '@/app/styles';
-import { handleError, useDataManager } from '@/app/utils';
+import { handleError } from '@/app/utils';
+import { useDataManager } from '@/app/hooks';
 import { SymbolQRCodeType, convertQRToBase64, createSymbolQR } from '@/app/utils/qr';
 
 export const QRCode = (props) => {

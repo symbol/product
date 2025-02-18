@@ -4,7 +4,8 @@ import { AccountCard, ButtonPlain, FormItem, Screen, StyledText, TextBox, Toucha
 import { $t } from '@/app/localization';
 import { Router } from '@/app/Router';
 import { colors } from '@/app/styles';
-import { handleError, useDataManager, usePromises, useValidation, validateAccountName } from '@/app/utils';
+import { handleError, validateAccountName } from '@/app/utils';
+import { useDataManager, usePromises, useValidation } from '@/app/hooks';
 import WalletController from '@/app/lib/controller/MobileWalletController';
 import { observer } from 'mobx-react-lite';
 import { WalletAccountType } from '@/app/constants';

@@ -5,7 +5,8 @@ import { Filter, FormItem, ItemAsset, Screen, StyledText, TabNavigator, TitleBar
 import { $t } from '@/app/localization';
 import { Router } from '@/app/Router';
 import { colors } from '@/app/styles';
-import { handleError, useDataManager, useInit } from '@/app/utils';
+import { handleError } from '@/app/utils';
+import { useDataManager, useInit } from '@/app/hooks';
 import WalletController from '@/app/lib/controller/MobileWalletController';
 import { observer } from 'mobx-react-lite';
 

@@ -5,7 +5,7 @@ import { ButtonPlain, DialogBox, FormItem, QRCode, Screen, TableView, Widget } f
 import { config } from '@/app/config';
 import { $t } from '@/app/localization';
 import { layout } from '@/app/styles';
-import { usePasscode, useToggle } from '@/app/utils';
+import { usePasscode, useToggle } from '@/app/hooks';
 import WalletController from '@/app/lib/controller/MobileWalletController';
 import { observer } from 'mobx-react-lite';
 

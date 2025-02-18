@@ -18,7 +18,8 @@ import {
 import { $t } from '@/app/localization';
 import { Router } from '@/app/Router';
 import { AccountService, MosaicService } from '@/app/lib/services';
-import { getMosaicWithRelativeAmount, handleError, useDataManager, usePasscode, useProp, useToggle, useTransactionFees } from '@/app/utils';
+import { getMosaicWithRelativeAmount, handleError } from '@/app/utils';
+import { useDataManager, usePasscode, useProp, useToggle, useTransactionFees } from '@/app/hooks';
 import { TransactionType } from '@/app/constants';
 import WalletController from '@/app/lib/controller/MobileWalletController';
 import { observer } from 'mobx-react-lite';
