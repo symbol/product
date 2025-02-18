@@ -1,6 +1,6 @@
 import { cloneDeep } from 'lodash';
 import { makeAutoObservable, runInAction } from 'mobx';
-import { createNetworkMap } from '@/app/utils/helper';
+import { createNetworkMap } from '@/app/utils/network';
 import { v4 as uuidv4 } from 'uuid';
 
 const createContact = (contact) => {

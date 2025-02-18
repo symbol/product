@@ -2,7 +2,6 @@ import moment from 'moment';
 import { Duration, Instant, LocalDateTime, ZoneId } from '@js-joda/core';
 import { showMessage as rnFlashMessage } from 'react-native-flash-message';
 import { $t } from '@/app/localization';
-import { config } from '@/app/config';
 import { NetworkIdentifier } from '@/app/constants';
 
 export const showMessage = ({ message, type }) => rnFlashMessage({ message, type });
@@ -11,13 +10,6 @@ export const handleError = (error) => {
     const message = $t(error.message, { defaultValue: error.message });
     showMessage({ message, type: 'danger' });
     console.error(error);
-};
-
-export const createNetworkMap = (callback) => {
-    const networkIdentifiers = [...config.networkIdentifiers];
-    const maps = networkIdentifiers.map((networkIdentifier) => [networkIdentifier, callback(networkIdentifier)]);
-
-    return Object.fromEntries(maps);
 };
 
 export const trunc = (str, type, length = 5) => {

@@ -1,4 +1,5 @@
 import { NetworkIdentifier, NetworkType } from '@/app/constants';
+import { config } from '@/app/config';
 
 export const networkTypeToIdentifier = (networkType) => {
     if (networkType === NetworkType.MAIN_NET) return NetworkIdentifier.MAIN_NET;
@@ -36,4 +37,11 @@ export const makeRequest = async (url, options) => {
     }
 
     return response.json();
+};
+
+export const createNetworkMap = (callback) => {
+    const networkIdentifiers = [...config.networkIdentifiers];
+    const maps = networkIdentifiers.map((networkIdentifier) => [networkIdentifier, callback(networkIdentifier)]);
+
+    return Object.fromEntries(maps);
 };
