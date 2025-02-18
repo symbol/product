@@ -7,15 +7,8 @@ import { ControllerEventName } from '@/app/constants';
 import { $t } from '@/app/localization';
 import { HarvestingService } from '@/app/lib/services';
 import { colors, fonts, layout, spacings } from '@/app/styles';
-import {
-    createHarvestingTransactionStub,
-    formatDate,
-    handleError,
-    useDataManager,
-    usePasscode,
-    useToggle,
-    useTransactionFees,
-} from '@/app/utils';
+import { createHarvestingTransactionStub, formatDate, handleError } from '@/app/utils';
+import { useDataManager, usePasscode, useToggle, useTransactionFees } from '@/app/hooks';
 import WalletController from '@/app/lib/controller/MobileWalletController';
 import { observer } from 'mobx-react-lite';
 

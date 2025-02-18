@@ -27,9 +27,8 @@ import {
     isIncomingTransaction,
     isMosaicRevokable,
     isOutgoingTransaction,
-    useDataManager,
-    useInit,
 } from '@/app/utils';
+import { useDataManager, useInit } from '@/app/hooks';
 import { MessageType, TransactionGroup, TransactionType } from '@/app/constants';
 import WalletController from '@/app/lib/controller/MobileWalletController';
 import { observer } from 'mobx-react-lite';

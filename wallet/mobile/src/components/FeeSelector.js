@@ -4,7 +4,7 @@ import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-na
 import Slider from 'react-native-smooth-slider';
 import { $t } from '@/app/localization';
 import { borders, colors, fonts, spacings } from '@/app/styles';
-import { useToggle } from '@/app/utils';
+import { useToggle } from '@/app/hooks';
 
 const images = [
     require('@/app/assets/images/fees-slow-3.png'),

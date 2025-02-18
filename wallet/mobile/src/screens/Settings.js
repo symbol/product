@@ -8,7 +8,7 @@ import WalletController from '@/app/lib/controller/MobileWalletController';
 import { $t, getLanguages, initLocalization, setCurrentLanguage } from '@/app/localization';
 import { Router } from '@/app/Router';
 import { borders, colors, fonts, layout, spacings } from '@/app/styles';
-import { usePasscode, useToggle } from '@/app/utils';
+import { usePasscode, useToggle } from '@/app/hooks';
 import { observer } from 'mobx-react-lite';
 
 export const Settings = observer(function Settings() {

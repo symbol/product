@@ -25,12 +25,9 @@ import {
     getAddressName,
     handleError,
     toFixedNumber,
-    useDataManager,
-    usePasscode,
-    useProp,
-    useToggle,
 } from '@/app/utils';
-import { useTransactionFees } from '@/app/utils/hooks';
+import { useDataManager, usePasscode, useProp, useToggle } from '@/app/hooks';
+import { useTransactionFees } from '@/app/hooks';
 import { MessageType, TransactionType } from '@/app/constants';
 import WalletController from '@/app/lib/controller/MobileWalletController';
 import { observer } from 'mobx-react-lite';

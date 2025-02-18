@@ -5,7 +5,7 @@ import { termsAndPrivacy } from '@/app/config';
 import { $t } from '@/app/localization';
 import { Router } from '@/app/Router';
 import { colors, fonts, layout, spacings } from '@/app/styles';
-import { useToggle } from '@/app/utils';
+import { useToggle } from '@/app/hooks';
 
 export const Welcome = () => {
     const [isTermsAndPrivacyShown, toggleTermsAndPrivacy] = useToggle(true);

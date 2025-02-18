@@ -25,16 +25,12 @@ import {
     generateNonce,
     getTransactionFees,
     handleError,
-    useDataManager,
-    useInit,
-    usePasscode,
-    useToggle,
-    useValidation,
     validateMosaicDivisibility,
     validateMosaicDuration,
     validateMosaicSupply,
     validateRequired,
 } from '@/app/utils';
+import { useDataManager, useInit, usePasscode, useToggle, useValidation } from '@/app/hooks';
 import WalletController from '@/app/lib/controller/MobileWalletController';
 import { observer } from 'mobx-react-lite';
 

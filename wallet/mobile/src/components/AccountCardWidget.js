@@ -3,7 +3,8 @@ import { ActivityIndicator, Image, StyleSheet, Text, View } from 'react-native';
 import { borders, colors, fonts, layout, spacings } from '@/app/styles';
 import { ButtonCopy, DialogBox, TouchableNative } from '@/app/components';
 import { TouchableOpacity } from 'react-native-gesture-handler';
-import { getUserCurrencyAmountText, useToggle, validateAccountName, validateRequired } from '@/app/utils';
+import { getUserCurrencyAmountText, validateAccountName, validateRequired } from '@/app/utils';
+import { useToggle } from '@/app/hooks';
 import { $t } from '@/app/localization';
 
 export const AccountCardWidget = (props) => {

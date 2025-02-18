@@ -24,16 +24,8 @@ import { $t } from '@/app/localization';
 import { Router } from '@/app/Router';
 import { TransactionService } from '@/app/lib/services';
 import { colors, fonts, layout } from '@/app/styles';
-import {
-    getTransactionFees,
-    getUserCurrencyAmountText,
-    handleError,
-    isAggregateTransaction,
-    useDataManager,
-    useInit,
-    usePasscode,
-    useToggle,
-} from '@/app/utils';
+import { getTransactionFees, getUserCurrencyAmountText, handleError, isAggregateTransaction } from '@/app/utils';
+import { useDataManager, useInit, usePasscode, useToggle } from '@/app/hooks';
 import WalletController from '@/app/lib/controller/MobileWalletController';
 import { observer } from 'mobx-react-lite';
 

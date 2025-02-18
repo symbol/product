@@ -4,12 +4,12 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { deleteUserPinCode, hasUserSetPinCode } from '@haskkor/react-native-pincode';
 import SplashScreen from 'react-native-splash-screen';
 import FlashMessage from 'react-native-flash-message';
-import { ConnectionStatus } from './components';
-import { Passcode } from './screens';
+import { ConnectionStatus } from '@/app/components';
+import { Passcode } from '@/app/screens';
 import { StorageMigration } from '@/app/lib/storage';
-import { initLocalization } from './localization';
-import { Router, RouterView } from './Router';
-import { colors, fonts, layout } from './styles';
+import { initLocalization } from '@/app/localization';
+import { Router, RouterView } from '@/app/Router';
+import { colors, fonts, layout } from '@/app/styles';
 import { ControllerEventName } from '@/app/constants';
 import WalletController from '@/app/lib/controller/MobileWalletController';
 

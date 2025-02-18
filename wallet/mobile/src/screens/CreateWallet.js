@@ -20,13 +20,10 @@ import {
     generateMnemonic,
     handleError,
     publicAccountFromPrivateKey,
-    useDataManager,
-    usePasscode,
-    useToggle,
-    useValidation,
     validateAccountName,
     validateRequired,
 } from '@/app/utils';
+import { useDataManager, usePasscode, useToggle, useValidation } from '@/app/hooks';
 import { config } from '@/app/config';
 import { Router } from '@/app/Router';
 import { $t } from '@/app/localization';

@@ -15,7 +15,8 @@ import {
 } from '@/app/components';
 import { $t } from '@/app/localization';
 import { Router } from '@/app/Router';
-import { symbolTransactionFromPayload, useToggle } from '@/app/utils';
+import { symbolTransactionFromPayload } from '@/app/utils';
+import { useToggle } from '@/app/hooks';
 import { layout } from '@/app/styles';
 import { TransactionType } from '@/app/constants';
 import { TransactionService } from '@/app/lib/services';

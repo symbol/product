@@ -17,7 +17,8 @@ import {
 import { $t } from '@/app/localization';
 import { Router } from '@/app/Router';
 import { colors, spacings } from '@/app/styles';
-import { filterAllowedTransactions, filterBlacklistedTransactions, handleError, useDataManager, useInit, useProp } from '@/app/utils';
+import { filterAllowedTransactions, filterBlacklistedTransactions, handleError } from '@/app/utils';
+import { useDataManager, useInit, useProp } from '@/app/hooks';
 import { TransactionGroup, TransactionType } from '@/app/constants';
 import WalletController from '@/app/lib/controller/MobileWalletController';
 import { observer } from 'mobx-react-lite';

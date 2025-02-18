@@ -5,7 +5,8 @@ import { FlatList } from 'react-native-gesture-handler';
 import { StyledText, TextBox, TouchableNative } from '@/app/components';
 import { $t } from '@/app/localization';
 import { borders, colors, fonts, spacings } from '@/app/styles';
-import { useValidation, validateMnemonic, validateRequired } from '@/app/utils';
+import { validateMnemonic, validateRequired } from '@/app/utils';
+import { useValidation } from '@/app/hooks';
 import _ from 'lodash';
 
 export const MnemonicInput = (props) => {

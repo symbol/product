@@ -5,7 +5,8 @@ import { TouchableOpacity } from 'react-native-gesture-handler';
 import { AccountAvatar, DropdownModal, TextBox } from '@/app/components';
 import { $t } from '@/app/localization';
 import { colors, fonts, spacings } from '@/app/styles';
-import { trunc, useToggle, useValidation, validateRequired, validateUnresolvedAddress } from '@/app/utils';
+import { trunc, validateRequired, validateUnresolvedAddress } from '@/app/utils';
+import { useToggle, useValidation } from '@/app/hooks';
 import WalletController from '@/app/lib/controller/MobileWalletController';
 import { observer } from 'mobx-react-lite';
 

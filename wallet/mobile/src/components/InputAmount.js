@@ -4,7 +4,8 @@ import { TouchableOpacity } from 'react-native-gesture-handler';
 import { DialogBox, TextBox } from '@/app/components';
 import { $t } from '@/app/localization';
 import { colors, fonts } from '@/app/styles';
-import { getUserCurrencyAmountText, useToggle, useValidation, validateAmount } from '@/app/utils';
+import { getUserCurrencyAmountText, validateAmount } from '@/app/utils';
+import { useToggle, useValidation } from '@/app/hooks';
 
 export const InputAmount = (props) => {
     const { title, value, price, networkIdentifier, availableBalance, onChange, onValidityChange } = props;

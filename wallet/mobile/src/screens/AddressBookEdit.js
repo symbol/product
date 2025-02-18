@@ -3,16 +3,8 @@ import { ScrollView } from 'react-native-gesture-handler';
 import { Button, Dropdown, FormItem, Screen, StyledText, TextBox } from '@/app/components';
 import { $t } from '@/app/localization';
 import { Router } from '@/app/Router';
-import {
-    handleError,
-    useDataManager,
-    useProp,
-    useValidation,
-    validateAccountName,
-    validateAddress,
-    validateExisted,
-    validateRequired,
-} from '@/app/utils';
+import { handleError, validateAccountName, validateAddress, validateExisted, validateRequired } from '@/app/utils';
+import { useDataManager, useProp, useValidation } from '@/app/hooks';
 import WalletController from '@/app/lib/controller/MobileWalletController';
 import { observer } from 'mobx-react-lite';
 

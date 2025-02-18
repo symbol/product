@@ -6,7 +6,7 @@ import { config } from '@/app/config';
 import { $t } from '@/app/localization';
 import { Router } from '@/app/Router';
 import { layout } from '@/app/styles';
-import { useDataManager, useToggle } from '@/app/utils';
+import { useDataManager, useToggle } from '@/app/hooks';
 import WalletController from '@/app/lib/controller/MobileWalletController';
 import { observer } from 'mobx-react-lite';
 
