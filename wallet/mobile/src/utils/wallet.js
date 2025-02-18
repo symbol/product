@@ -6,7 +6,7 @@ import { createWalletStorageAccount, publicAccountFromPrivateKey } from './accou
 import { Bip32 } from 'symbol-sdk';
 import { SymbolFacade } from 'symbol-sdk/symbol';
 import { DEFAULT_ACCOUNT_NAME, MAX_SEED_ACCOUNTS_PER_NETWORK, NetworkIdentifier, WalletAccountType } from '@/app/constants';
-import { createNetworkMap } from '@/app/utils/helper';
+import { createNetworkMap } from '@/app/utils/network';
 
 export const generateMnemonic = () => {
     const bip = new Bip32();

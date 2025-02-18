@@ -13,7 +13,7 @@ import {
 } from '@/app/constants';
 import { AccountService, ListenerService, NamespaceService, NetworkService, TransactionService } from '@/app/lib/services';
 import { addressFromPublicKey, createWalletAccount, createWalletStorageAccount, publicAccountFromPublicKey } from '@/app/utils/account';
-import { createNetworkMap } from '@/app/utils/helper';
+import { createNetworkMap } from '@/app/utils/network';
 import { getNativeMosaicAmount } from '@/app/utils/mosaic';
 import { createPrivateKeysFromMnemonic, generateSeedAccounts } from '@/app/utils/wallet';
 import { cosignTransaction, decryptMessage, encryptMessage, signTransaction } from '@/app/utils';
