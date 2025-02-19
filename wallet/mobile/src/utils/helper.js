@@ -4,14 +4,35 @@ import { showMessage as rnFlashMessage } from 'react-native-flash-message';
 import { $t } from '@/app/localization';
 import { NetworkIdentifier } from '@/app/constants';
 
+const CHARSET = '0123456789abcdefghijklmnopqrstuvwxyz';
+
+/**
+ * Shows a flash message.
+ * @param {object} options - The message options.
+ * @param {string} options.message - The message.
+ * @param {string} options.type - The message type.
+ * @returns {void}
+ */
 export const showMessage = ({ message, type }) => rnFlashMessage({ message, type });
 
+/**
+ * Handles an error by showing a flash message and logging the error.
+ * @param {Error} error - The error.
+ * @returns {void}
+ */
 export const handleError = (error) => {
     const message = $t(error.message, { defaultValue: error.message });
     showMessage({ message, type: 'danger' });
     console.error(error);
 };
 
+/**
+ * Truncates a string.
+ * @param {string} str - The string to be truncated.
+ * @param {string} type - The truncation preset.
+ * @param {number} [length] - The length of the truncated string if type = 'custom'.
+ * @returns {string} The truncated string.
+ */
 export const trunc = (str, type, length = 5) => {
     const trunc = (text, cut, lengthFirst, lengthSecond) => {
         if (cut === 'start' && lengthFirst < text.length) {
@@ -53,50 +74,23 @@ export const trunc = (str, type, length = 5) => {
     }
 };
 
+/**
+ * Calculates the percentage of a character in the charset.
+ * @param {string} char - The character.
+ * @returns {number} The percentage.
+ */
 export const getCharPercentage = (char) => {
-    const charset = [
-        '0',
-        '1',
-        '2',
-        '3',
-        '4',
-        '5',
-        '6',
-        '7',
-        '8',
-        '9',
-        'a',
-        'b',
-        'c',
-        'd',
-        'e',
-        'f',
-        'g',
-        'h',
-        'i',
-        'j',
-        'k',
-        'l',
-        'm',
-        'n',
-        'o',
-        'p',
-        'q',
-        'r',
-        's',
-        't',
-        'u',
-        'v',
-        'w',
-        'x',
-        'y',
-        'z',
-    ];
-    const index = charset.indexOf(char.toLowerCase());
+    const index = CHARSET.indexOf(char.toLowerCase());
 
-    return index / (charset.length - 1);
+    return index / (CHARSET.length - 1);
 };
 
+/**
+ * Formats a number to a fixed number of digits.
+ * @param {number} num - The number.
+ * @param {number} digits - The number of digits.
+ * @returns {number} The formatted number.
+ */
 export const toFixedNumber = (num, digits) => {
     const power = Math.pow(10, digits);
 
@@ -158,48 +152,10 @@ export const getColorFromHash = (hash) => {
     const spread = 100;
     const saturation = 0.9;
     const lightness = 0.8;
-    const charset = [
-        '0',
-        '1',
-        '2',
-        '3',
-        '4',
-        '5',
-        '6',
-        '7',
-        '8',
-        '9',
-        'a',
-        'b',
-        'c',
-        'd',
-        'e',
-        'f',
-        'g',
-        'h',
-        'i',
-        'j',
-        'k',
-        'l',
-        'm',
-        'n',
-        'o',
-        'p',
-        'q',
-        'r',
-        's',
-        't',
-        'u',
-        'v',
-        'w',
-        'x',
-        'y',
-        'z',
-    ];
 
     let totalValue = 0;
 
-    for (const char of hash) totalValue += charset.indexOf(char.toLowerCase());
+    for (const char of hash) totalValue += CHARSET.indexOf(char.toLowerCase());
 
     const k = Math.trunc(totalValue / spread);
     const offsetValue = totalValue - spread * k;
@@ -210,6 +166,13 @@ export const getColorFromHash = (hash) => {
     return `rgb(${color.R}, ${color.G}, ${color.B})`;
 };
 
+/**
+ * Checks if an address is known. An address is known if it is in the address book or wallet accounts.
+ * @param {string} address - The address.
+ * @param {Array} accounts - Wallet accounts.
+ * @param {object} addressBook - The address book.
+ * @returns {boolean} True if the address is known, false otherwise.
+ */
 export const isAddressKnown = (address, accounts, addressBook) => {
     if (!address) {
         return false;
@@ -228,6 +191,14 @@ export const isAddressKnown = (address, accounts, addressBook) => {
     return false;
 };
 
+/**
+ * Get the name of an address from the address book or wallet accounts.
+ * @param {string} address - The address.
+ * @param {object} currentAccount - The current account.
+ * @param {Array} accounts - Wallet accounts.
+ * @param {object} addressBook - The address book.
+ * @returns {string} The name or an address if the name is not found.
+ */
 export const getAddressName = (address, currentAccount, accounts, addressBook) => {
     if (!address) {
         return '?';
@@ -250,10 +221,23 @@ export const getAddressName = (address, currentAccount, accounts, addressBook) =
     return address;
 };
 
+/**
+ * Converts a chain timestamp to a local date.
+ * @param {number} timestamp - The chain timestamp.
+ * @param {number} epochAdjustment - The epoch adjustment.
+ * @returns {LocalDateTime} The local date.
+ */
 export const timestampToLocalDate = (timestamp, epochAdjustment) =>
     LocalDateTime.ofInstant(Instant.ofEpochMilli(timestamp).plusMillis(Duration.ofSeconds(epochAdjustment).toMillis()), ZoneId.SYSTEM);
 
-export const formatDate = (dateStr, translate, showTime = false, showSeconds = false) => {
+/**
+ * Formats a date string to a readable format.
+ * @param {string} dateStr - The date string.
+ * @param {Function} translate - The translation function.
+ * @param {boolean} [showTime] - Whether to show the time.
+ * @returns {string} The formatted date string.
+ */
+export const formatDate = (dateStr, translate, showTime = false) => {
     const months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
 
     const addZero = (num) => {
@@ -261,7 +245,6 @@ export const formatDate = (dateStr, translate, showTime = false, showSeconds = f
     };
 
     const dateObj = new Date(dateStr);
-    const seconds = addZero(dateObj.getSeconds());
     const minutes = addZero(dateObj.getMinutes());
     const hour = addZero(dateObj.getHours());
     const month = 'function' === typeof translate ? translate('month_' + months[dateObj.getMonth()]) : months[dateObj.getMonth()];
@@ -269,20 +252,40 @@ export const formatDate = (dateStr, translate, showTime = false, showSeconds = f
     const year = dateObj.getFullYear();
 
     let formattedDate = `${month} ${day}, ${year}`;
-
     formattedDate += showTime ? ` ${hour}:${minutes}` : '';
-    formattedDate += showTime && showSeconds ? `:${seconds}` : '';
 
     return formattedDate;
 };
 
+/**
+ * Interleaves an array with values produced by a callback function.
+ * Inserts the callback result between each element of the array.
+ * @param {Array} arr - The array to be interleaved.
+ * @param {Function} callback - The callback function.
+ * @returns {Array} The interleaved array.
+ */
 export const interleave = (arr, callback) => arr.flatMap((el, index) => [el, callback(el, index)]).slice(0, -1);
 
+/**
+ * Converts a duration to days left from now.
+ * @param {number} duration - The duration in blocks left.
+ * @param {number} blockGenerationTargetTime - The block generation time.
+ * @returns {string} The days left.
+ */
 export const blockDurationToDaysLeft = (duration, blockGenerationTargetTime) => {
     const seconds = duration * blockGenerationTargetTime;
     return moment.utc().add(seconds, 's').fromNow();
 };
 
+/**
+ * Returns the amount in network currency text.
+ * @param {number} amount - Mosaic amount.
+ * @param {object} price - The price object.
+ * @param {number} price.value - The current price value.
+ * @param {string} price.currency - The currency ticker.
+ * @param {string} networkIdentifier - Network identifier.
+ * @returns {string} The network currency amount text.
+ */
 export const getUserCurrencyAmountText = (amount, price, networkIdentifier) => {
     if (networkIdentifier !== NetworkIdentifier.MAIN_NET || !price) {
         return '';
@@ -291,6 +294,12 @@ export const getUserCurrencyAmountText = (amount, price, networkIdentifier) => {
     return `~${(price.value * amount).toFixed(2)} ${price.currency}`;
 };
 
+/**
+ * Returns a promise that resolves when all promises are settled.
+ * Polyfill for Promise.allSettled.
+ * @param {Array} promises - The array of promises.
+ * @returns {Promise} The promise that resolves when all promises are settled.
+ */
 export const promiseAllSettled = (promises) =>
     Promise.all(
         promises.map((p) =>
