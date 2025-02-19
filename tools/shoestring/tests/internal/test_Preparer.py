@@ -749,8 +749,8 @@ class PreparerTest(unittest.TestCase):
 
 				# - check compose file
 				expected_image_map = {
-					'db': 'mongo:6.0.14',
-					'initiate': 'mongo:6.0.14',
+					'db': 'mongo:7.0.16',
+					'initiate': 'mongo:7.0.16',
 					'client': 'symbolplatform/symbol-server:gcc-a.b.c.d',
 					'broker': 'symbolplatform/symbol-server:gcc-a.b.c.d',
 					'rest-api': 'symbolplatform/symbol-rest:a.b.c',
