@@ -79,7 +79,7 @@ class BasicRoutesFacade:
 			filter(role_filter, self.repository.node_descriptors)))
 
 	def json_node(self, filter_field, public_key):
-		"""Returns a node with matching public key."""
+		"""Returns a node with matching main or node public key."""
 
 		try:
 			matching_items = [item for item in self.repository.node_descriptors if str(getattr(item, filter_field)) == public_key]
