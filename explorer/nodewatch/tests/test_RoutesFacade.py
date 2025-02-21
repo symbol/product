@@ -442,6 +442,17 @@ class SymbolRoutesFacadeTest(unittest.TestCase):
 		# Assert:
 		self.assertIsNone(node_descriptors)
 
+	def test_json_node_with_invalid_field(self):  # pylint: disable=invalid-name
+		# Arrange:
+		facade = SymbolRoutesFacade(SymbolNetwork.MAINNET, '<symbol_explorer>')
+		facade.reload_all(Path('tests/resources'), True)
+
+		# Act:
+		node_descriptors = facade.json_node(filter_field='invalid_field', public_key='invalidKey')
+
+		# Assert:
+		self.assertIsNone(node_descriptors)
+
 	def test_can_generate_height_chart_json(self):
 		# Arrange:
 		facade = SymbolRoutesFacade(SymbolNetwork.MAINNET, '<symbol_explorer>', 1)

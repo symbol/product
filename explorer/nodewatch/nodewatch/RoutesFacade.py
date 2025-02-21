@@ -81,9 +81,11 @@ class BasicRoutesFacade:
 	def json_node(self, filter_field, public_key):
 		"""Returns a node with matching public key."""
 
-		matching_items = [item for item in self.repository.node_descriptors if str(getattr(item, filter_field)) == public_key]
-
-		return next((item.to_json() for item in matching_items), None)
+		try:
+			matching_items = [item for item in self.repository.node_descriptors if str(getattr(item, filter_field)) == public_key]
+			return next((item.to_json() for item in matching_items), None)
+		except AttributeError:
+			return None
 
 	def json_height_chart(self):
 		"""Builds a JSON height chart."""
