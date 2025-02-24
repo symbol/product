@@ -21,6 +21,9 @@ import {
 import { ChronoUnit, Instant } from '@js-joda/core';
 import _ from 'lodash';
 import { SymbolFacade, models } from 'symbol-sdk/symbol';
+import * as NetworkTypes from '@/app/types/Network';
+import * as TransactionTypes from '@/app/types/Transaction';
+const { Transaction: SymbolTransaction } = models;
 
 const createSymbolTransaction = (transactionDescriptor, networkProperties, isEmbedded, cousignatures) => {
     const facade = new SymbolFacade(networkProperties.networkIdentifier);
@@ -67,12 +70,12 @@ const createDeadline = (transaction, networkProperties, hours = 2) => {
 };
 
 /**
- * Converts a transaction to a Symbol transaction.
- * @param {object} transaction - The transaction to convert.
+ * Converts a transaction to the symbol-sdk format.
+ * @param {TransactionTypes.Transaction} transaction - The transaction to convert.
  * @param {object} config - The configuration object.
- * @param {object} config.networkProperties - The network properties.
- * @param {boolean} config.isEmbedded - A flag indicating if the transaction is embedded.
- * @returns {object} The Symbol transaction.
+ * @param {NetworkTypes.NetworkProperties} config.networkProperties - The network properties
+ * @param {boolean} [config.isEmbedded] - A flag indicating if the transaction is embedded.
+ * @returns {SymbolTransaction} The symbol-sdk format transaction.
  */
 export const transactionToSymbol = (transaction, config) => {
     switch (transaction.type) {

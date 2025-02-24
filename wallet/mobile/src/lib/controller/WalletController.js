@@ -14,7 +14,6 @@ import {
 import { AccountService, ListenerService, NamespaceService, NetworkService, TransactionService } from '@/app/lib/services';
 import { addressFromPublicKey, createWalletAccount, createWalletStorageAccount, publicAccountFromPublicKey } from '@/app/utils/account';
 import { createNetworkMap } from '@/app/utils/network';
-import { getNativeMosaicAmount } from '@/app/utils/mosaic';
 import { createPrivateKeysFromMnemonic, generateSeedAccounts } from '@/app/utils/wallet';
 import { cosignTransaction, decryptMessage, encryptMessage, signTransaction } from '@/app/utils';
 
@@ -75,6 +74,20 @@ const defaultState = {
 };
 
 export class WalletController {
+    modules = {};
+
+    /** @type {SafeEventEmitter} */
+    _notificationChannel;
+
+    /** @type {Object} */
+    _persistentStorage;
+
+    /** @type {Object} */
+    _secureStorage;
+
+    /** @type {defaultState} */
+    _state;
+
     constructor({ persistentStorage, secureStorage, isObservable, modules = [] }) {
         this._state = cloneDeep(defaultState);
 
@@ -414,13 +427,12 @@ export class WalletController {
     };
 
     /**
-     * Fetch account info
-     * @param {string} [accountPublicKey] - account public key (if not provided, current account will be used)
+     * Fetch current account info
      * @returns {Promise<Object>} - account info
      */
-    fetchAccountInfo = async (accountPublicKey) => {
+    fetchAccountInfo = async () => {
         const { networkIdentifier, networkProperties, currentAccountPublicKey } = this._state;
-        const publicKey = accountPublicKey || currentAccountPublicKey;
+        const publicKey = currentAccountPublicKey;
         const address = addressFromPublicKey(publicKey, networkIdentifier);
 
         let baseAccountInfo = {};
@@ -446,18 +458,16 @@ export class WalletController {
             isMultisig = false;
         }
 
-        const balance = getNativeMosaicAmount(baseAccountInfo.mosaics, networkProperties.networkCurrency.mosaicId);
         const namespaces = await NamespaceService.fetchAccountNamespaces(address, networkProperties);
 
         const accountInfo = {
-            ...defaultAccountInfo,
             isLoaded: true,
             address: baseAccountInfo.address,
             publicKey: baseAccountInfo.publicKey,
             importance: baseAccountInfo.importance,
             linkedKeys: baseAccountInfo.linkedKeys,
-            balance,
             mosaics: baseAccountInfo.mosaics,
+            balance: baseAccountInfo.balance,
             namespaces,
             isMultisig,
             cosignatories,
@@ -476,18 +486,17 @@ export class WalletController {
     };
 
     /**
-     * Fetch account transactions
+     * Fetch current account transactions
      * @param {Object} options
      * @param {string} options.group - 'confirmed', 'unconfirmed' or 'partial'
      * @param {number} options.pageNumber - page number
      * @param {number} options.pageSize - page size
      * @param {Object} options.filter - filter object
-     * @param {string} accountPublicKey - account public key (if not provided, current account will be used)
      */
-    fetchAccountTransactions = async (options = {}, accountPublicKey) => {
+    fetchAccountTransactions = async (options = {}) => {
         const { group = TransactionGroup.CONFIRMED, pageNumber = 1, pageSize = 15, filter } = options;
         const { networkIdentifier, networkProperties } = this._state;
-        const publicKey = accountPublicKey || this.currentAccount.publicKey;
+        const publicKey = this.currentAccount.publicKey;
         const account = publicAccountFromPublicKey(publicKey, networkIdentifier);
 
         // Fetch transactions from chain
@@ -573,7 +582,7 @@ export class WalletController {
      * @returns {Promise<Object>} - transaction announce result
      */
     announceSignedTransaction = async (signedTransaction, group) => {
-        return TransactionService.announceBatchNode(signedTransaction.dto, this.networkProperties, group);
+        return TransactionService.announceTransaction(signedTransaction.dto, this.networkProperties, group);
     };
 
     /**
@@ -608,7 +617,7 @@ export class WalletController {
             // Announce main transaction after hash lock transaction is confirmed
             const listener = new ListenerService(this.networkProperties, this.currentAccount);
             await listener.open();
-            listener.listenTransactions(TransactionGroup.CONFIRMED, (transaction) => {
+            listener.listenAddedTransactions(TransactionGroup.CONFIRMED, (transaction) => {
                 if (transaction.hash === signedHashLockTransaction.hash) {
                     listener.close();
                     return resolve(this.announceSignedTransaction(signedTransaction, TransactionAnnounceGroup.PARTIAL));
@@ -815,11 +824,14 @@ export class WalletController {
         try {
             const newListener = new ListenerService(this.networkProperties, this.currentAccount);
             await newListener.open();
-            newListener.listenTransactions(TransactionGroup.CONFIRMED, (transaction) => {
+            newListener.listenAddedTransactions(TransactionGroup.CONFIRMED, (transaction) => {
                 this._emit(ControllerEventName.NEW_TRANSACTION_CONFIRMED, transaction);
             });
-            newListener.listenTransactions(TransactionGroup.UNCONFIRMED, (transaction) => {
+            newListener.listenAddedTransactions(TransactionGroup.UNCONFIRMED, (transaction) => {
                 this._emit(ControllerEventName.NEW_TRANSACTION_UNCONFIRMED, transaction);
+            });
+            newListener.listenAddedTransactions(TransactionGroup.PARTIAL, (transaction) => {
+                this._emit(ControllerEventName.NEW_TRANSACTION_PARTIAL, transaction);
             });
             newListener.listenTransactionError((error) => {
                 this._emit(ControllerEventName.TRANSACTION_ERROR, error);
