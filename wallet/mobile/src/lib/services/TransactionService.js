@@ -7,19 +7,28 @@ import { NamespaceService } from '@/app/lib/services/NamespaceService';
 import { getUnresolvedIdsFromSymbolTransactions, transactionFromSymbol } from '@/app/utils/transaction-from-symbol';
 import { promiseAllSettled } from '@/app/utils';
 import { TransactionAnnounceGroup, TransactionGroup } from '@/app/constants';
+import * as AccountTypes from '@/app/types/Account';
+import * as MosaicTypes from '@/app/types/Mosaic';
+import * as NetworkTypes from '@/app/types/Network';
+import * as SearchCriteriaTypes from '@/app/types/SearchCriteria';
+import * as TransactionTypes from '@/app/types/Transaction';
 
 export class TransactionService {
-    static async fetchAccountTransactions(
-        account,
-        networkProperties,
-        { pageNumber = 1, pageSize = 15, group = TransactionGroup.CONFIRMED, filter = {} }
-    ) {
+    /**
+     * Fetches transactions of an account.
+     * @param {AccountTypes.PublicAccount} account - Requested account.
+     * @param {NetworkTypes.NetworkProperties} networkProperties - Network properties.
+     * @param {SearchCriteriaTypes.TransactionSearchCriteria} searchCriteria - Search criteria.
+     * @returns {Promise<TransactionTypes.Transaction[]>} - The account transactions.
+     */
+    static async fetchAccountTransactions(account, networkProperties, searchCriteria) {
+        const { pageNumber = 1, pageSize = 15, group = TransactionGroup.CONFIRMED, order = 'desc', filter = {} } = searchCriteria;
         const baseUrl = `${networkProperties.nodeUrl}/transactions/${group}`;
         const baseSearchCriteria = {
             pageNumber,
             pageSize,
             group,
-            order: 'desc',
+            order,
         };
 
         // Set search criteria filters
@@ -66,6 +75,15 @@ export class TransactionService {
         return TransactionService.resolveTransactionDTOs(transactionsWithAggregate, networkProperties, account);
     }
 
+    /**
+     * Fetches transaction info by hash.
+     * @param {string} hash - Requested transaction hash.
+     * @param {Object} config - Config.
+     * @param {NetworkTypes.NetworkProperties} config.networkProperties - Network properties.
+     * @param {AccountTypes.PublicAccount} config.currentAccount - Current account.
+     * @param {string} config.group - Transaction group.
+     * @returns {Promise<TransactionTypes.Transaction>} - The transaction info.
+     */
     static async fetchTransactionInfo(hash, config) {
         const { group = TransactionGroup.CONFIRMED, currentAccount, networkProperties } = config;
         const transactionUrl = `${networkProperties.nodeUrl}/transactions/${group}/${hash}`;
@@ -75,10 +93,18 @@ export class TransactionService {
         return transactions[0];
     }
 
-    static async announceBatchNode(dto, networkProperties, type) {
+    /**
+     * Send transaction to the network.
+     * @param {TransactionTypes.SignedTransactionDTO} dto - The signed transaction DTO.
+     * @param {NetworkTypes.NetworkProperties} networkProperties - Network properties.
+     * @param {string} type - Transaction announce group.
+     * @returns {Promise<void>} - A promise that resolves when the transaction is announced.
+     * @throws {Error} - If the transaction is not accepted by any node.
+     */
+    static async announceTransaction(dto, networkProperties, type) {
         const randomNodes = networkProperties.nodeUrls.sort(() => Math.random() - 0.5).slice(0, 3);
         const nodeUrls = [networkProperties.nodeUrl, ...randomNodes];
-        const promises = nodeUrls.map((nodeUrl) => this.announce(dto, nodeUrl, type));
+        const promises = nodeUrls.map((nodeUrl) => this.announceTransactionToNode(dto, nodeUrl, type));
 
         const results = await promiseAllSettled(promises);
         const hasSuccessfulResult = results.some((r) => r.status === 'fulfilled');
@@ -89,7 +115,15 @@ export class TransactionService {
         }
     }
 
-    static async announce(dto, nodeUrl, type = TransactionAnnounceGroup.DEFAULT) {
+    /**
+     * Announce transaction to a single node.
+     * @param {TransactionTypes.SignedTransactionDTO} dto - The signed transaction DTO.
+     * @param {string} nodeUrl - The node URL.
+     * @param {string} type - Transaction announce group.
+     * @returns {Promise<void>} - A promise that resolves when the transaction is announced.
+     * @throws {Error} - If the transaction is not accepted by the node.
+     */
+    static async announceTransactionToNode(dto, nodeUrl, type = TransactionAnnounceGroup.DEFAULT) {
         const typeEndpointMap = {
             [TransactionAnnounceGroup.DEFAULT]: '/transactions',
             [TransactionAnnounceGroup.PARTIAL]: '/transactions/partial',
@@ -115,54 +149,66 @@ export class TransactionService {
         };
     }
 
-    static async resolveTransactions(transactionDTOs, networkProperties, currentAccount, config) {
-        const { unresolvedExtractor, transactionMapper, mapperConfig = {} } = config;
-
+    /**
+     * Resolves addresses, mosaics and namespaces for transaction DTOs.
+     * @param {Object} data - The transaction data, containing unresolved ids.
+     * @param {string[]} data.addresses - The namespace ids of the unresolved addresses aliases.
+     * @param {string[]} data.mosaicIds - The ids of the unresolved mosaics.
+     * @param {string[]} data.namespaceIds - The ids of the unresolved namespaces.
+     * @param {NetworkTypes.NetworkProperties} networkProperties - Network properties.
+     * @returns {Promise<{ mosaicInfos: Object.<string, MosaicTypes.MosaicInfo>, namespaceNames: Object.<string, string>, resolvedAddresses: Object.<string, string> }>} - The resolved data.
+     */
+    static async resolveTransactionData(data, networkProperties) {
         // Resolve addresses, mosaics and namespaces
-        const { addresses, mosaicIds, namespaceIds } = unresolvedExtractor(transactionDTOs);
+        const { addresses, mosaicIds, namespaceIds } = data;
         const mosaicInfos = await MosaicService.fetchMosaicInfos(networkProperties, mosaicIds);
         const namespaceNames = await NamespaceService.fetchNamespaceNames(networkProperties, namespaceIds);
-        const resolvedAddresses = await NamespaceService.resolveAddresses(networkProperties, addresses);
+        const resolvedAddresses = await NamespaceService.resolveAddressesAtHeight(networkProperties, addresses);
 
-        // Format transactions
-        const transactionOptions = {
-            networkProperties,
-            currentAccount,
+        return {
             mosaicInfos,
             namespaceNames,
             resolvedAddresses,
-            ...mapperConfig,
         };
-
-        return transactionDTOs.map((transactionDTO) => transactionMapper(transactionDTO, transactionOptions));
     }
 
-    static async resolveTransactionDTOs(transactionDTOs, networkProperties, currentAccount, mapperConfig) {
+    /**
+     * Resolves transactions DTO. Fetches additional information for unresolved ids. Maps transactionDTOs to the transaction objects.
+     * @param {Object[]} transactionDTOs - The transaction DTOs.
+     * @param {NetworkTypes.NetworkProperties} networkProperties - Network properties.
+     * @param {AccountTypes.PublicAccount} currentAccount - Current account.
+     * @returns {Promise<TransactionTypes.Transaction[]>} - The resolved transactions
+     */
+    static async resolveTransactionDTOs(transactionDTOs, networkProperties, currentAccount) {
+        const unresolvedTransactionData = getUnresolvedIdsFromTransactionDTOs(transactionDTOs);
+        const resolvedTransactionData = await TransactionService.resolveTransactionData(unresolvedTransactionData, networkProperties);
         const config = {
-            unresolvedExtractor: getUnresolvedIdsFromTransactionDTOs,
-            transactionMapper: transactionFromDTO,
-            mapperConfig,
+            ...resolvedTransactionData,
+            currentAccount,
+            networkProperties,
         };
-
-        return TransactionService.resolveTransactions(transactionDTOs, networkProperties, currentAccount, config);
+        return transactionDTOs.map((transactionDTO) => transactionFromDTO(transactionDTO, config));
     }
 
-    static resolveSymbolTransactions(transactions, networkProperties, currentAccount, mapperConfig) {
-        const config = {
-            unresolvedExtractor: getUnresolvedIdsFromSymbolTransactions,
-            transactionMapper: transactionFromSymbol,
-            mapperConfig,
-        };
-
-        return TransactionService.resolveTransactions(transactions, networkProperties, currentAccount, config);
-    }
-
-    static async transactionFromPayload(payload, networkProperties, currentAccount, fillSignerPublickey) {
+    /**
+     * Creates a transaction object from a payload. Resolves amounts and ids.
+     * @param {string} payload - The transaction payload.
+     * @param {NetworkTypes.NetworkProperties} networkProperties - Network properties.
+     * @param {AccountTypes.PublicAccount} currentAccount - Current account.
+     * @param {string} [fillSignerPublickey] - The public key to fill the signer if field is empty.
+     * @returns {Promise<TransactionTypes.Transaction>} - The transaction object.
+     */
+    static async resolveTransactionFromPayload(payload, networkProperties, currentAccount, fillSignerPublickey) {
         const symbolTransaction = symbolTransactionFromPayload(payload);
-        const mapperConfig = { fillSignerPublickey };
+        const unresolvedTransactionData = getUnresolvedIdsFromSymbolTransactions([symbolTransaction]);
+        const resolvedTransactionData = await TransactionService.resolveTransactionData(unresolvedTransactionData, networkProperties);
+        const config = {
+            ...resolvedTransactionData,
+            currentAccount,
+            networkProperties,
+            fillSignerPublickey,
+        };
 
-        return (
-            await TransactionService.resolveSymbolTransactions([symbolTransaction], networkProperties, currentAccount, mapperConfig)
-        )[0];
+        return transactionFromSymbol(symbolTransaction, config);
     }
 }
