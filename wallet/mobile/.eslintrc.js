@@ -1,6 +1,6 @@
 module.exports = {
     extends: ['plugin:react/recommended', 'plugin:prettier/recommended'],
-    plugins: ['react'],
+    plugins: ['react', 'jsdoc'],
     parser: '@babel/eslint-parser',
     parserOptions: {
         ecmaFeatures: {
@@ -22,5 +22,6 @@ module.exports = {
         ],
         'no-unused-vars': 'error',
         'react/prop-types': 'off',
+        'jsdoc/no-undefined-types': 1,
     },
 };
