@@ -47,23 +47,29 @@ yarn run build:android:prod
 https://reactnative.dev/docs/running-on-device
 
 ## Folder structure
-- `src`: This folder is the main container of all the code inside the application.
-  - `assets`: Asset folder to store all images, fonts, etc.
-  - `components`: Folder to store any common component that is used through the app.
-  - `config`:
-    - `config.json`: Main configuration file of the app. Contains all endpoints.
-    - `constants.js`: Stores any kind of constant.
-    - `knownAccounts.json`: Contains the list of known accounts (exchanges, orgs, etc.).
-    - `optInWhiteList.json`: Contains the list of public keys generated with the Symbol Pre-launch Opt-in Mobile Wallet.
-    - `termsAndPrivacy.json`: Contains the Terms and Conditions and Privacy Policy text.
-  - `localization`: Contains localization module.
-    - `locales`: Folder to store the languages files.
-  - `screens`: Folder that contains all your application screens/features.
-  - `services`: Folder that contains modules which communicate with an API.
-  - `storage`: Folder that contains the storage interface (the app cache interface).
-  - `store`: Folder that contains redux store and logic (in-memory store).
-  - `styles`: Folder to store all the styling concerns related to the application theme.
-  - `utils`: Folder to store all the helper functions and hooks.
-  - `App.js`: Main component that starts the whole app.
-  - `Router.js`: Navigation configuration.
-- `index.js`: Entry point.
+```
+/
+│── src/                        # Main source folder
+│   ├── assets/                 # Stores images, fonts, and other assets
+│   ├── hooks/                  # Custom React hooks
+│   ├── components/             # Reusable React components
+│   ├── constants/              # Stores constants used across the app
+│   ├── config/                 # Configuration files
+│   │   ├── config.json         # Main configuration file
+│   │   ├── knownAccounts.json  # List of known accounts (exchanges, orgs, etc.)
+│   │   ├── optInWhiteList.json # List of public keys for Symbol Pre-launch Opt-in
+│   │   ├── termsAndPrivacy.json # Terms & Conditions and Privacy Policy
+│   ├── localization/           # Localization module
+│   │   ├── locales/            # Stores language files
+│   ├── screens/                # React Native screens (views)
+│   ├── lib/                    # Core application logic
+│   │   ├── services/           # Modules for HTTP communication with API nodes and external API
+│   │   ├── storage/            # Persistent & encrypted device storage
+│   │   ├── controller/         # WalletController and related modules
+│   │   ├── platform/           # Platform-specific utilities
+│   ├── styles/                 # Application-wide styling and theming
+│   ├── utils/                  # Helper functions
+│   ├── App.js                  # Main app component
+│   ├── Router.js               # Navigation configuration
+│── index.js                    # Application entry point
+```
