@@ -24,7 +24,7 @@ import { $t } from '@/app/localization';
 import { Router } from '@/app/Router';
 import { TransactionService } from '@/app/lib/services';
 import { colors, fonts, layout } from '@/app/styles';
-import { getTransactionFees, getUserCurrencyAmountText, handleError, isAggregateTransaction } from '@/app/utils';
+import { calculateTransactionFees, getUserCurrencyAmountText, handleError, isAggregateTransaction } from '@/app/utils';
 import { useDataManager, useInit, usePasscode, useToggle } from '@/app/hooks';
 import WalletController from '@/app/lib/controller/MobileWalletController';
 import { observer } from 'mobx-react-lite';
@@ -66,7 +66,7 @@ export const TransactionRequest = observer(function TransactionRequest(props) {
     const cosignatoryList = { cosignatories: currentAccountInfo.cosignatories };
     const isAggregate = !!transaction?.innerTransactions;
 
-    const transactionFees = useMemo(() => (transaction ? getTransactionFees(transaction, networkProperties) : {}), [transaction]);
+    const transactionFees = useMemo(() => (transaction ? calculateTransactionFees(transaction, networkProperties) : {}), [transaction]);
 
     const getTransactionPreviewTable = (data, isEmbedded) =>
         _.omit(data, [
@@ -82,7 +82,7 @@ export const TransactionRequest = observer(function TransactionRequest(props) {
     const [loadTransaction, isTransactionLoading] = useDataManager(
         async (payload, generationHash) => {
             const fillSignerPublickey = currentAccount.publicKey;
-            const transaction = await TransactionService.transactionFromPayload(
+            const transaction = await TransactionService.resolveTransactionFromPayload(
                 payload,
                 networkProperties,
                 currentAccount,

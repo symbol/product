@@ -23,7 +23,7 @@ import { layout } from '@/app/styles';
 import {
     generateMosaicId,
     generateNonce,
-    getTransactionFees,
+    calculateTransactionFees,
     handleError,
     validateMosaicDivisibility,
     validateMosaicDuration,
@@ -77,7 +77,7 @@ export const MosaicCreation = observer(function MosaicCreation() {
     };
 
     const transactionSize = 700;
-    const transactionFees = useMemo(() => getTransactionFees({}, networkProperties, transactionSize), []);
+    const transactionFees = useMemo(() => calculateTransactionFees({}, networkProperties, transactionSize), []);
 
     const [send] = useDataManager(
         async () => {

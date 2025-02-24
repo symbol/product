@@ -7,7 +7,7 @@ import Animated, { interpolate, useAnimatedStyle, useSharedValue, withTiming } f
 import { AccountAvatar, TableView, TouchableNative } from '@/app/components';
 import { $t } from '@/app/localization';
 import { borders, colors, fonts, spacings } from '@/app/styles';
-import { filterCustomMosaics, getAddressName, getColorFromHash, getNativeMosaicAmount, trunc } from '@/app/utils';
+import { filterCustomMosaics, getAddressName, getColorFromHash, getMosaicAmount, trunc } from '@/app/utils';
 import { TransactionType } from '@/app/constants';
 import WalletController from '@/app/lib/controller/MobileWalletController';
 import { observer } from 'mobx-react-lite';
@@ -28,7 +28,7 @@ export const TransactionGraphic = observer(function TransactionGraphic(props) {
     const signerNameStyle = [styles.signerName, signerNameColorStyle];
     const targetNameStyle = [styles.targetName];
 
-    const truncText = (str) => trunc(str, '', 24);
+    const truncText = (str) => trunc(str, 'custom', 24);
     let actionTypeText = truncText($t(`transactionDescriptor_${transaction.type}`));
     let Target = () => <View />;
     let targetName = '';
@@ -57,7 +57,7 @@ export const TransactionGraphic = observer(function TransactionGraphic(props) {
             targetNameStyle.push({
                 color: getColorFromHash(transaction.recipientAddress),
             });
-            const transferredAmount = getNativeMosaicAmount(transaction.mosaics, networkProperties.networkCurrency.mosaicId);
+            const transferredAmount = getMosaicAmount(transaction.mosaics, networkProperties.networkCurrency.mosaicId);
             const hasMessage = !!transaction.message;
             const hasCustomMosaic = !!filterCustomMosaics(transaction.mosaics, networkProperties.networkCurrency.mosaicId).length;
 

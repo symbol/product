@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { getTransactionFees } from '@/app/utils/transaction';
+import { calculateTransactionFees } from '@/app/utils/transaction';
 
 export const useTransactionFees = (transaction, networkProperties) => {
     const defaultTransactionFees = {
@@ -14,7 +14,7 @@ export const useTransactionFees = (transaction, networkProperties) => {
     ];
 
     return useMemo(
-        () => (networkProperties.networkIdentifier ? getTransactionFees(transaction, networkProperties) : defaultTransactionFees),
+        () => (networkProperties.networkIdentifier ? calculateTransactionFees(transaction, networkProperties) : defaultTransactionFees),
         memoDeps
     );
 };

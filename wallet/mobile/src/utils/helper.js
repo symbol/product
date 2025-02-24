@@ -98,6 +98,21 @@ export const toFixedNumber = (num, digits) => {
 };
 
 /**
+ * Formats a number to a fixed numeric string. Ensures correct decimal placement and zero-padding.
+ * @param {number} num - The number.
+ * @param {number} divisibility - The divisibility.
+ * @returns {string} The formatted numeric string.
+ */
+export const toFixedNumericString = (num, divisibility) => {
+    if (divisibility === 0) {
+        return num.toString();
+    }
+
+    const numString = num.toFixed(divisibility);
+    return numString;
+};
+
+/**
  * Converts an HSL color value to RGB. Conversion formula
  * adapted from http://en.wikipedia.org/wiki/HSL_color_space.
  * Assumes h, s, and l are contained in the set [0, 1] and
