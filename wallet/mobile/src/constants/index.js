@@ -77,6 +77,14 @@ export const TransactionType = {
     PERSISTENT_DELEGATION_REQUEST: 'PERSISTENT_DELEGATION_REQUEST',
 };
 
+export const HarvestingStatus = {
+    INACTIVE: 'inactive',
+    ACTIVE: 'active',
+    PENDING: 'pending',
+    OPERATOR: 'operator',
+    NODE_UNKNOWN: 'node_unknown',
+};
+
 export const NetworkType = {
     MAIN_NET: 104,
     TEST_NET: 152,

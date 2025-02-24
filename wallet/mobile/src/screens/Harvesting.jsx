@@ -3,7 +3,7 @@ import { Image, StyleSheet, View } from 'react-native';
 import { RefreshControl, ScrollView } from 'react-native-gesture-handler';
 import Animated, { FadeIn, FadeInDown, FadeOut } from 'react-native-reanimated';
 import { Button, DialogBox, FeeSelector, FormItem, Screen, StyledText, TableView, TextBox, Widget } from '@/app/components';
-import { ControllerEventName } from '@/app/constants';
+import { ControllerEventName, HarvestingStatus } from '@/app/constants';
 import { $t } from '@/app/localization';
 import { HarvestingService } from '@/app/lib/services';
 import { colors, fonts, layout, spacings } from '@/app/styles';
@@ -29,7 +29,7 @@ export const Harvesting = observer(function Harvesting() {
 
     // Harvesting status and node url
     const [fetchStatus, isStatusLoading, status] = useDataManager(
-        async () => WalletController.modules.harvesting.fetchStatus(),
+        WalletController.modules.harvesting.fetchStatus,
         {},
         handleError
     );
@@ -43,14 +43,14 @@ export const Harvesting = observer(function Harvesting() {
         blocksHarvestedPer30Days: 0,
     };
     const [fetchHarvestedBlocks, isSummaryLoading, summary] = useDataManager(
-        () => WalletController.modules.harvesting.fetchSummary(),
+        WalletController.modules.harvesting.fetchSummary,
         defaultSummary,
         handleError
     );
 
     // Node list to choose from
     const [fetchNodeList, isNodeListLoading, nodeList] = useDataManager(
-        async () => WalletController.modules.harvesting.fetchNodeList(),
+        WalletController.modules.harvesting.fetchNodeList,
         [],
         handleError
     );
@@ -84,12 +84,12 @@ export const Harvesting = observer(function Harvesting() {
         null,
         handleError
     );
-    const loadData = () => {
+    const loadData = async () => {
         if (isWalletReady) {
             WalletController.fetchAccountInfo();
-            fetchStatus();
             fetchHarvestedBlocks();
             fetchNodeList();
+            await fetchStatus();
             setIsActionMade(false);
         }
     };
@@ -123,7 +123,8 @@ export const Harvesting = observer(function Harvesting() {
     let statusColor;
 
     switch (status.status) {
-        case 'inactive':
+        case HarvestingStatus.NODE_UNKNOWN:
+        case HarvestingStatus.INACTIVE:
             statusIconSrc = require('@/app/assets/images/icon-dark-inactive.png');
             statusText = $t('s_harvesting_status_inactive');
             isNodeSelectorVisible = isAccountEligibleForHarvesting;
@@ -132,7 +133,7 @@ export const Harvesting = observer(function Harvesting() {
             buttonText = $t('button_start');
             statusColor = colors.neutral;
             break;
-        case 'pending':
+        case HarvestingStatus.PENDING:
             statusIconSrc = require('@/app/assets/images/icon-dark-pending.png');
             statusText = $t('s_harvesting_status_pending');
             isNodeSelectorVisible = false;
@@ -141,7 +142,7 @@ export const Harvesting = observer(function Harvesting() {
             buttonText = $t('button_stop');
             statusColor = colors.warning;
             break;
-        case 'active':
+        case HarvestingStatus.ACTIVE:
             statusIconSrc = require('@/app/assets/images/icon-dark-success.png');
             statusText = $t('s_harvesting_status_active');
             isNodeSelectorVisible = false;
@@ -150,7 +151,7 @@ export const Harvesting = observer(function Harvesting() {
             buttonText = $t('button_stop');
             statusColor = colors.success;
             break;
-        case 'operator':
+        case HarvestingStatus.OPERATOR:
             statusIconSrc = require('@/app/assets/images/icon-dark-success.png');
             statusText = $t('s_harvesting_status_operator');
             isNodeSelectorVisible = false;
@@ -173,11 +174,11 @@ export const Harvesting = observer(function Harvesting() {
         statusColor = colors.warning;
     }
 
-    if (status.status === 'inactive' && !isEnoughBalance) {
+    if (status.status === HarvestingStatus.INACTIVE && !isEnoughBalance) {
         warningText = $t('s_harvesting_warning_balance');
-    } else if (status.status === 'inactive' && !isEnoughImportance) {
+    } else if (status.status === HarvestingStatus.INACTIVE && !isEnoughImportance) {
         warningText = $t('s_harvesting_warning_importance');
-    } else if (status.status === 'inactive' && linkedKeys.nodePublicKey) {
+    } else if (status.status === HarvestingStatus.NODE_UNKNOWN) {
         warningText = $t('s_harvesting_warning_node_down');
     }
 
@@ -239,7 +240,7 @@ export const Harvesting = observer(function Harvesting() {
                                 </FormItem>
                             </Animated.View>
                         )}
-                        {!!warningText && (
+                        {!isActionMade && !!warningText && (
                             <Animated.View entering={FadeIn} exiting={FadeOut}>
                                 <FormItem clear="top">
                                     <StyledText type="body" style={styles.statusTextColor}>
