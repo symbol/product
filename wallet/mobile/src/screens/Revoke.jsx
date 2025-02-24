@@ -18,7 +18,7 @@ import {
 import { $t } from '@/app/localization';
 import { Router } from '@/app/Router';
 import { AccountService, MosaicService } from '@/app/lib/services';
-import { getMosaicWithRelativeAmount, handleError } from '@/app/utils';
+import { mosaicFromRaw, handleError } from '@/app/utils';
 import { useDataManager, usePasscode, useProp, useToggle, useTransactionFees } from '@/app/hooks';
 import { TransactionType } from '@/app/constants';
 import WalletController from '@/app/lib/controller/MobileWalletController';
@@ -70,7 +70,7 @@ export const Revoke = observer(function Revoke(props) {
             }
 
             const mosaicInfo = await MosaicService.fetchMosaicInfo(networkProperties, mosaicId);
-            const formattedMosaic = getMosaicWithRelativeAmount(mosaic, mosaicInfo);
+            const formattedMosaic = mosaicFromRaw(mosaic, mosaicInfo);
             setSelectedMosaic(formattedMosaic);
         },
         null,

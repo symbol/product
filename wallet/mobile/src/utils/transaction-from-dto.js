@@ -16,15 +16,19 @@ import { decodePlainMessage, getUnresolvedIdsFromTransactions, isAggregateTransa
 import { networkTypeToIdentifier } from '@/app/utils/network';
 import { addressFromPublicKey, addressFromRaw } from '@/app/utils/account';
 import {
-    getMosaicRelativeAmount,
-    getMosaicsWithRelativeAmounts,
-    getNativeMosaicAmount,
+    absoluteToRelativeAmount,
+    getMosaicAmount,
     isRestrictableFlag,
     isRevokableFlag,
     isSupplyMutableFlag,
     isTransferableFlag,
+    mosaicListFromRaw,
 } from './mosaic';
 import { isIncomingTransaction, isOutgoingTransaction } from './transaction';
+import * as AccountTypes from '@/app/types/Account';
+import * as MosaicTypes from '@/app/types/Mosaic';
+import * as NetworkTypes from '@/app/types/Network';
+import * as TransactionTypes from '@/app/types/Transaction';
 
 export const isAggregateTransactionDTO = (transactionDTO) => {
     const { transaction } = transactionDTO;
@@ -46,13 +50,16 @@ const addressFromDTO = (rawAddress, resolvedAddresses) => {
 };
 
 /**
- * Converts a transaction to a Symbol transaction.
- * @param {object} transaction - The transaction to convert.
+ * Converts a transaction DTO to a transaction object.
+ * @param {object} transactionDTO - The transaction to convert.
  * @param {object} config - The configuration object.
- * @param {object} config.networkProperties - The network properties.
- * @param {object} config.currentAccount - The current account.
- * @param {boolean} config.isEmbedded - A flag indicating if the transaction is embedded.
- * @returns {object} The Symbol transaction.
+ * @param {NetworkTypes.NetworkProperties} config.networkProperties - The network properties.
+ * @param {AccountTypes.PublicAccount} config.currentAccount - The current account.
+ * @param {Object.<string, string>} config.resolvedAddresses - The namespace id to account address map.
+ * @param {Object.<string, string>} config.namespaceNames - The namespace id to namespace name map.
+ * @param {Object.<string, MosaicTypes.Mosaic>} config.mosaicInfos - The mosaic id to info map.
+ * @param {boolean} [config.isEmbedded] - A flag indicating if the transaction is embedded.
+ * @returns {TransactionTypes.Transaction} The transaction object.
  */
 export const transactionFromDTO = (transactionDTO, config) => {
     const baseTransaction = baseTransactionFromDTO(transactionDTO, config);
@@ -136,7 +143,9 @@ export const baseTransactionFromDTO = (transactionDTO, config) => {
         timestamp: Number(meta.timestamp) + config.networkProperties.epochAdjustment * 1000,
         height: Number(meta.height),
         hash: meta.hash,
-        fee: transaction.maxFee ? getMosaicRelativeAmount(transaction.maxFee, config.networkProperties.networkCurrency.divisibility) : null,
+        fee: transaction.maxFee
+            ? absoluteToRelativeAmount(transaction.maxFee, config.networkProperties.networkCurrency.divisibility)
+            : null,
         signerAddress: signerPublicKey ? addressFromPublicKey(signerPublicKey, config.networkProperties.networkIdentifier) : null,
         signerPublicKey,
     };
@@ -173,8 +182,8 @@ export const transferTransactionFromDTO = (transactionDTO, config) => {
     const { networkProperties, mosaicInfos, currentAccount, resolvedAddresses } = config;
     const baseTransaction = baseTransactionFromDTO(transactionDTO, config);
     const mosaics = transaction.mosaics?.map(mosaicFromDTO) || [];
-    const formattedMosaics = getMosaicsWithRelativeAmounts(mosaics, mosaicInfos);
-    const nativeMosaicAmount = getNativeMosaicAmount(formattedMosaics, networkProperties.networkCurrency.mosaicId);
+    const formattedMosaics = mosaicListFromRaw(mosaics, mosaicInfos);
+    const nativeMosaicAmount = getMosaicAmount(formattedMosaics, networkProperties.networkCurrency.mosaicId);
     const transactionBody = {
         ...baseTransaction,
         recipientAddress: addressFromDTO(transaction.recipientAddress, resolvedAddresses),
@@ -280,7 +289,7 @@ export const mosaicSupplyRevocationTransactionFromDTO = (transactionDTO, config)
     const { transaction } = transactionDTO;
     const baseTransaction = baseTransactionFromDTO(transactionDTO, config);
     const mosaic = createMosaic(transaction.mosaicId, transaction.amount);
-    const formattedMosaics = getMosaicsWithRelativeAmounts([mosaic], config.mosaicInfos);
+    const formattedMosaics = mosaicListFromRaw([mosaic], config.mosaicInfos);
     const sourceAddress = addressFromDTO(transaction.sourceAddress, config.resolvedAddresses);
 
     return {
@@ -310,7 +319,7 @@ export const hashLockTransactionFromDTO = (transactionDTO, config) => {
     const { transaction } = transactionDTO;
     const baseTransaction = baseTransactionFromDTO(transactionDTO, config);
     const mosaic = createMosaic(transaction.mosaicId, transaction.amount);
-    const [formattedMosaic] = getMosaicsWithRelativeAmounts([mosaic], config.mosaicInfos);
+    const [formattedMosaic] = mosaicListFromRaw([mosaic], config.mosaicInfos);
     const lockedAmount = -formattedMosaic.amount;
 
     return {
@@ -326,7 +335,7 @@ export const secretLockTransactionFromDTO = (transactionDTO, config) => {
     const { transaction } = transactionDTO;
     const baseTransaction = baseTransactionFromDTO(transactionDTO, config);
     const mosaic = createMosaic(transaction.mosaicId, transaction.amount);
-    const formattedMosaics = getMosaicsWithRelativeAmounts([mosaic], config.mosaicInfos);
+    const formattedMosaics = mosaicListFromRaw([mosaic], config.mosaicInfos);
     const resolvedAddress = addressFromDTO(transaction.recipientAddress, config.resolvedAddresses);
 
     return {

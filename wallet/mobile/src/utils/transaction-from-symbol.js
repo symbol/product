@@ -14,16 +14,21 @@ import {
 } from '@/app/constants';
 import { addressFromPublicKey } from './account';
 import {
-    getMosaicRelativeAmount,
-    getMosaicsWithRelativeAmounts,
-    getNativeMosaicAmount,
+    absoluteToRelativeAmount,
+    getMosaicAmount,
     isRestrictableFlag,
     isRevokableFlag,
     isSupplyMutableFlag,
     isTransferableFlag,
+    mosaicListFromRaw,
 } from './mosaic';
 import { decodePlainMessage, getUnresolvedIdsFromTransactions, isIncomingTransaction, isOutgoingTransaction } from './transaction';
-import { Address } from 'symbol-sdk/symbol';
+import { Address, models } from 'symbol-sdk/symbol';
+import * as AccountTypes from '@/app/types/Account';
+import * as MosaicTypes from '@/app/types/Mosaic';
+import * as NetworkTypes from '@/app/types/Network';
+import * as TransactionTypes from '@/app/types/Transaction';
+const { Transaction: SymbolTransaction } = models;
 
 const mapMosaic = (mosaic) => ({
     id: mosaic.mosaicId.toString().replace('0x', ''),
@@ -40,6 +45,19 @@ const mapMetadataKey = (key) => key.toString(16).toUpperCase();
 
 const mapRestrictionKey = (key) => ('0000000000000000' + key.toString(16).toUpperCase()).slice(-16);
 
+/**
+ * Converts a transaction from the symbol-sdk format to the transaction object.
+ * @param {SymbolTransaction} transaction - The transaction object from the symbol-sdk.
+ * @param {object} config - The configuration object.
+ * @param {NetworkTypes.NetworkProperties} config.networkProperties - The network properties.
+ * @param {AccountTypes.PublicAccount} config.currentAccount - The current account.
+ * @param {Object.<string, string>} config.resolvedAddresses - The namespace id to account address map.
+ * @param {Object.<string, string>} config.namespaceNames - The namespace id to namespace name map.
+ * @param {Object.<string, MosaicTypes.Mosaic>} config.mosaicInfos - The mosaic id to info map.
+ * @param {string} [config.fillSignerPublickey] - The public key value, which is used if the signerPublicKey is empty.
+ * @param {boolean} [config.isEmbedded] - A flag indicating if the transaction is embedded.
+ * @returns {TransactionTypes.Transaction} The transaction object.
+ */
 export const transactionFromSymbol = (transaction, config) => {
     const baseTransaction = baseTransactionFromSymbol(transaction, config);
 
@@ -117,7 +135,7 @@ export const baseTransactionFromSymbol = (transaction, config) => {
         type,
         deadline: Number(transaction.deadline.value) + config.networkProperties.epochAdjustment * 1000,
         fee: transaction.fee
-            ? getMosaicRelativeAmount(Number(transaction.fee.value), config.networkProperties.networkCurrency.divisibility)
+            ? absoluteToRelativeAmount(Number(transaction.fee.value), config.networkProperties.networkCurrency.divisibility)
             : null,
         signerAddress,
         signerPublicKey,
@@ -152,8 +170,8 @@ export const transferTransactionFromSymbol = (transaction, config) => {
     const { networkProperties, mosaicInfos, currentAccount, resolvedAddresses } = config;
     const baseTransaction = baseTransactionFromSymbol(transaction, config);
     const mosaics = transaction.mosaics.map(mapMosaic);
-    const formattedMosaics = getMosaicsWithRelativeAmounts(mosaics, mosaicInfos);
-    const nativeMosaicAmount = getNativeMosaicAmount(formattedMosaics, networkProperties.networkCurrency.mosaicId);
+    const formattedMosaics = mosaicListFromRaw(mosaics, mosaicInfos);
+    const nativeMosaicAmount = getMosaicAmount(formattedMosaics, networkProperties.networkCurrency.mosaicId);
     const transactionBody = {
         ...baseTransaction,
         recipientAddress: mapAddress(transaction.recipientAddress, resolvedAddresses),
@@ -254,7 +272,7 @@ export const mosaicSupplyChangeTransactionFromSymbol = (transaction, config) => 
 export const mosaicSupplyRevocationTransactionFromSymbol = (transaction, config) => {
     const baseTransaction = baseTransactionFromSymbol(transaction, config);
     const mosaic = mapMosaic(transaction.mosaic);
-    const formattedMosaics = getMosaicsWithRelativeAmounts([mosaic], config.mosaicInfos);
+    const formattedMosaics = mosaicListFromRaw([mosaic], config.mosaicInfos);
     const sourceAddress = mapAddress(transaction.sourceAddress, config.resolvedAddresses);
 
     return {
@@ -282,7 +300,7 @@ export const multisigAccountModificationTransactionFromSymbol = (transaction, co
 export const hashLockTransactionFromSymbol = (transaction, config) => {
     const baseTransaction = baseTransactionFromSymbol(transaction, config);
     const mosaic = mapMosaic(transaction.mosaic);
-    const [formattedMosaic] = getMosaicsWithRelativeAmounts([mosaic], config.mosaicInfos);
+    const [formattedMosaic] = mosaicListFromRaw([mosaic], config.mosaicInfos);
     const lockedAmount = -formattedMosaic.amount;
 
     return {
@@ -297,7 +315,7 @@ export const hashLockTransactionFromSymbol = (transaction, config) => {
 export const secretLockTransactionFromSymbol = (transaction, config) => {
     const baseTransaction = baseTransactionFromSymbol(transaction, config);
     const mosaic = mapMosaic(transaction.mosaic);
-    const formattedMosaics = getMosaicsWithRelativeAmounts([mosaic], config.mosaicInfos);
+    const formattedMosaics = mosaicListFromRaw([mosaic], config.mosaicInfos);
     const resolvedAddress = mapAddress(transaction.recipientAddress, config.resolvedAddresses);
 
     return {

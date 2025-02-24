@@ -122,18 +122,11 @@ export const Scan = observer(function Scan() {
             invalidDescription: $t('s_scan_transaction_wrongTransaction_description'),
             format: async (data) => {
                 // Convert transaction from payload and resolve it
-                const symbolTransaction = symbolTransactionFromPayload(data.transactionPayload);
-                const mapperOptions = {
-                    fillSignerPublickey: currentAccount.publicKey,
-                };
-                const transaction = (
-                    await TransactionService.resolveSymbolTransactions(
-                        [symbolTransaction],
-                        networkProperties,
-                        currentAccount,
-                        mapperOptions
-                    )
-                )[0];
+                const transaction = await TransactionService.resolveTransactionFromPayload(
+                    data.transactionPayload,
+                    networkProperties,
+                    currentAccount,
+                );
 
                 return { ...data, transaction };
             },
