@@ -25,7 +25,8 @@ export class TransferModule {
         let recipientAddress;
         if (isSymbolAddress(recipientAddressOrAlias)) recipientAddress = recipientAddressOrAlias;
         else {
-            recipientAddress = await NamespaceService.namespaceNameToAddress(networkProperties, recipientAddressOrAlias.toLowerCase());
+            const namespaceId = namespaceIdFromName(recipientAddressOrAlias.toLowerCase());
+            recipientAddress = await NamespaceService.resolveAddress(networkProperties, namespaceId);
         }
 
         if (!recipientAddress) {
