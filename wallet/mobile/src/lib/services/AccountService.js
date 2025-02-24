@@ -1,9 +1,16 @@
 import { addressFromRaw } from '@/app/utils/account';
 import { makeRequest } from '@/app/utils/network';
 import { MosaicService } from '@/app/lib/services/MosaicService';
-import { getMosaicsWithRelativeAmounts } from '@/app/utils';
-
+import { absoluteToRelativeAmount, getMosaicAmount, mosaicListFromRaw } from '@/app/utils';
+import * as AccountTypes from '@/app/types/Account';
+import * as NetworkTypes from '@/app/types/Network';
 export class AccountService {
+    /**
+     * Fetches account information from the node.
+     * @param {NetworkTypes.NetworkProperties} networkProperties - Network properties.
+     * @param {string} address - Requested account address.
+     * @returns {Promise<AccountTypes.BaseAccountInfo>} - The account information.
+     */
     static async fetchAccountInfo(networkProperties, address) {
         const url = `${networkProperties.nodeUrl}/accounts/${address}`;
         const { account } = await makeRequest(url);
@@ -11,12 +18,14 @@ export class AccountService {
 
         const mosaicIds = account.mosaics.map((mosaic) => mosaic.id);
         const mosaicInfos = await MosaicService.fetchMosaicInfos(networkProperties, mosaicIds);
-        const formattedMosaics = getMosaicsWithRelativeAmounts(account.mosaics, mosaicInfos);
+        const formattedMosaics = mosaicListFromRaw(account.mosaics, mosaicInfos);
+        const balance = getMosaicAmount(formattedMosaics, networkProperties.networkCurrency.mosaicId);
 
         return {
             address,
             publicKey: account.publicKey || null,
             mosaics: formattedMosaics,
+            balance,
             importance: parseInt(account.importance),
             linkedKeys: {
                 linkedPublicKey: linked ? linked.publicKey : null,
@@ -26,6 +35,28 @@ export class AccountService {
         };
     }
 
+    /**
+     * Fetches the native currency balance of an account from the node.
+     * @param {NetworkTypes.NetworkProperties} networkProperties - Network properties.
+     * @param {string} address - Requested account address.
+     * @returns {Promise<number>} - The account balance.
+     */
+    static async fetchAccountBalance(networkProperties, address) {
+        const url = `${networkProperties.nodeUrl}/accounts/${address}`;
+        const { account } = await makeRequest(url);
+
+        const nativeCurrencyAbsoluteBalance = getMosaicAmount(account.mosaics, networkProperties.networkCurrency.mosaicId);
+        const balance = absoluteToRelativeAmount(nativeCurrencyAbsoluteBalance, networkProperties.networkCurrency.divisibility);
+
+        return balance;
+    }
+
+    /**
+     * Fetches multisig info of an account from the node.
+     * @param {NetworkTypes.NetworkProperties} networkProperties - Network properties.
+     * @param {string} address - Requested account address.
+     * @returns {Promise<AccountTypes.MultisigAccountInfo>} - The account multisig information.
+     */
     static async fetchMultisigInfo(networkProperties, address) {
         const url = `${networkProperties.nodeUrl}/account/${address}/multisig`;
         const accountInfo = await makeRequest(url);
