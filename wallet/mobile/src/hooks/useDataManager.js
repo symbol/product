@@ -5,17 +5,21 @@ export const useDataManager = (callback, defaultData, onError) => {
     const [data, setData] = useState(defaultData);
 
     const call = (...args) => {
-        setIsLoading(true);
-        setTimeout(async () => {
-            try {
-                const data = await callback(...args);
-                setData(data);
-            } catch (error) {
-                if (onError) {
-                    onError(error);
+        return new Promise((resolve, reject) => {
+            setIsLoading(true);
+            setTimeout(async () => {
+                try {
+                    const data = await callback(...args);
+                    setData(data);
+                    resolve(data);
+                } catch (error) {
+                    if (onError) {
+                        onError(error);
+                    }
+                    reject(error);
                 }
-            }
-            setIsLoading(false);
+                setIsLoading(false);
+            });
         });
     };
 
