@@ -401,3 +401,22 @@ cd symbol-product-directory/tools/shoestring
 python3 -m pip install -r requirements.txt
 PYTHONPATH=. python3 -m shoestring --help
 ```
+
+# Troubleshooting
+
+## Server or Broker failed to start due to lock files
+
+The docker-compose-recovery.yaml file is used to recover your node when there is a `server.lock` or `broker.lock` 
+present in the `data` folder after stopping your node.
+
+```sh
+docker compose -f docker-compose-recovery.yaml up --abort-on-container-exit
+```
+
+## Need to resync your node
+
+If recovery failed, get the latest copy for the mainnet node data for linux OS:
+dual: https://catapultmainnetdata.s3.us-west-2.amazonaws.com/weekly/catapult_dual_data.tar.gz
+peer: https://catapultmainnetdata.s3.us-west-2.amazonaws.com/weekly/catapult_peer_data.tar.gz
+
+Note: keep a copy of your node's `harvesters.dat` from the data.

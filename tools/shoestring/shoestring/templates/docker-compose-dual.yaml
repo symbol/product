@@ -33,7 +33,11 @@ services:
       options:
         max-size: 25M
         max-file: '10'
+{%- if recovery %}
+    command: /bin/bash /startup/wait.sh /data/startup/mongo-initialized /startup/startRecovery.sh
+{%- else %}
     command: /bin/bash /startup/wait.sh /data/startup/mongo-initialized /startup/startServer.sh
+{%- endif %}
     environment:
       - LD_LIBRARY_PATH=/usr/catapult/lib:/usr/catapult/deps
     stop_signal: SIGINT
@@ -50,6 +54,7 @@ services:
       - ./logs:/logs
       - ./keys/voting:/votingkeys
 
+{%- if not recovery %}
   broker:
     image: '{{ catapult_client_image }}'
     user: '{{ user }}'
@@ -107,6 +112,7 @@ services:
     volumes:
       - ./https-proxy:/var/lib/https-portal
       - ./https-proxy/nginx.conf.erb:/var/lib/nginx-conf/{{ domainname }}.conf.erb:ro
+{% endif %}
 {% endif %}
 networks:
   default:

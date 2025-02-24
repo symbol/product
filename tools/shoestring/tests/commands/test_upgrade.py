@@ -34,6 +34,7 @@ def server(event_loop, aiohttp_client):
 # region changed files
 
 PEER_CHANGED_FILES = [
+	'docker-compose-recovery.yaml',
 	'docker-compose.yaml',
 	'userconfig',
 	'userconfig/resources',
@@ -72,6 +73,7 @@ API_CHANGED_FILES = [
 	'startup/delayrestapi.sh',
 	'startup/mongors.sh',
 	'startup/startBroker.sh',
+	'startup/startRecovery.sh',
 	'startup/startServer.sh',
 	'startup/wait.sh',
 	'userconfig/resources/config-database.properties',
