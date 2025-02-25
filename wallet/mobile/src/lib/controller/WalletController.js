@@ -16,6 +16,7 @@ import { addressFromPublicKey, createWalletAccount, createWalletStorageAccount, 
 import { createNetworkMap } from '@/app/utils/network';
 import { createPrivateKeysFromMnemonic, generateSeedAccounts } from '@/app/utils/wallet';
 import { cosignTransaction, decryptMessage, encryptMessage, signTransaction } from '@/app/utils';
+import { AppError } from '@/app/lib/error';
 
 const defaultNetworkProperties = {
     nodeUrl: null, // currently connected node url. Used for fetching the data
@@ -253,7 +254,7 @@ export class WalletController {
         await this._secureStorage.setMnemonic(mnemonic, password);
         const savedMnemonic = await this._secureStorage.getMnemonic(password);
         if (mnemonic !== savedMnemonic) {
-            this._throwError('error_mnemonic_does_not_match');
+            throw new AppError('error_mnemonic_does_not_match', 'Mnemonic does not match the saved mnemonic');
         }
 
         // Generate and save seed accounts
@@ -326,7 +327,10 @@ export class WalletController {
         const isAccountAlreadyExists = networkAccounts.find((account) => account.privateKey === privateKey);
 
         if (isAccountAlreadyExists) {
-            this._throwError('error_failed_add_account_already_exists');
+            throw new AppError(
+                'error_failed_add_account_already_exists',
+                'Failed to add account. Account with provided private key already exists'
+            );
         }
 
         networkAccounts.push(account);
@@ -417,8 +421,7 @@ export class WalletController {
         const currentAccount = walletAccounts[networkIdentifier].find((account) => account.publicKey === publicKey);
 
         if (!currentAccount) {
-            this._throwError('error_wallet_selected_account_missing');
-            return;
+            throw new AppError('error_wallet_selected_account_missing', 'Selected account is missing in the wallet');
         }
 
         runInAction(() => {
@@ -440,7 +443,7 @@ export class WalletController {
             baseAccountInfo = await AccountService.fetchAccountInfo(networkProperties, address);
         } catch (error) {
             if (error.message !== 'error_fetch_not_found') {
-                this._throwError('error_fetch_account_info');
+                throw new AppError('error_fetch_account_info', error.message);
             }
 
             return null;
@@ -568,7 +571,12 @@ export class WalletController {
      * @returns {Promise<Object>} - cosigned transaction object
      */
     cosignTransaction = async (transaction, password) => {
-        if (transaction.type !== TransactionType.AGGREGATE_BONDED) throw Error('error_failed_cosign_transaction_invalid_type');
+        if (transaction.type !== TransactionType.AGGREGATE_BONDED) {
+            throw new AppError(
+                'error_failed_cosign_transaction_invalid_type',
+                `Failed to cosign transaction. Invalid transaction type "${transaction.type}". Expected type "${TransactionType.AGGREGATE_BONDED}"`
+            );
+        }
 
         const privateKey = await this.getCurrentAccountPrivateKey(password);
 
@@ -711,7 +719,10 @@ export class WalletController {
         const networkProperties = await NetworkService.fetchNetworkProperties(nodeUrl);
 
         if (networkProperties.networkIdentifier !== this.networkIdentifier) {
-            throw Error('Requested node is from wrong network');
+            throw new AppError(
+                'error_fetch_network_properties_wrong_network',
+                `Failed to fetch network properties. Wrong network identifier. Expected "${this.networkIdentifier}", got "${networkProperties.networkIdentifier}"`
+            );
         }
 
         await this._persistentStorage.setNetworkProperties(networkProperties);
@@ -882,17 +893,5 @@ export class WalletController {
      */
     _emit = (eventName, payload) => {
         this._notificationChannel.emit(eventName, payload);
-    };
-
-    /**
-     * Throw error and emit it
-     * @param {string} errorType - error type
-     * @returns {void}
-     * @private
-     */
-    _throwError = (errorType) => {
-        this._emit(ControllerEventName.ERROR, errorType);
-        console.error('Error:', errorType);
-        throw new Error(errorType);
     };
 }

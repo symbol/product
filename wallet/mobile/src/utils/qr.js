@@ -1,6 +1,7 @@
 import { networkIdentifierToNetworkType, networkTypeToIdentifier } from '@/app/utils/network';
 import * as QRCodeCanvas from 'qrcode/lib/server';
 import { addressFromPublicKey, publicAccountFromPrivateKey } from '@/app/utils/account';
+import { AppError } from '@/app/lib/error';
 
 const SYMBOL_QR_CODE_VERSION = 3;
 
@@ -77,7 +78,7 @@ export const createSymbolQR = (type, data, networkProperties) => {
         case SymbolQRCodeType.Address:
             return createAddressSymbolQR(data.name, data.address, networkProperties);
         default:
-            throw new Error('error_qr_unsupported');
+            throw new AppError('error_qr_unsupported', `Failed to create QR code. Type "${type}" is not supported`);
     }
 };
 
@@ -93,10 +94,8 @@ export const convertQRToBase64 = (qrData) => {
 
 const parseBaseSymbolQR = (qrData) => {
     const isValidVersion = qrData.v === SYMBOL_QR_CODE_VERSION;
-    const supportedTypes = Object.values(SymbolQRCodeType);
-    const isSupportedType = supportedTypes.includes(qrData.type);
 
-    if (!isValidVersion || !isSupportedType) throw new Error('error_qr_unsupported');
+    if (!isValidVersion) throw new AppError('error_qr_unsupported', `Failed to parse QR code. Version "${qrData.v}" is not supported`);
 
     return {
         type: qrData.type,
@@ -192,6 +191,6 @@ export const parseSymbolQR = (qrData) => {
         case SymbolQRCodeType.Address:
             return parseAddressSymbolQR(qrData);
         default:
-            throw new Error('error_qr_unsupported');
+            throw new AppError('error_qr_unsupported', `Failed to parse QR code. Type "${type}" is not supported`);
     }
 };

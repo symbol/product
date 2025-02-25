@@ -3,6 +3,7 @@ import { makeAutoObservable } from 'mobx';
 import { LinkAction, LinkActionMessage, MessageType, TransactionType } from '@/app/constants';
 import { HarvestingService } from '@/app/lib/services';
 import { addressFromPublicKey, encodeDelegatedHarvestingMessage, generateKeyPair } from '@/app/utils';
+import { AppError } from '@/app/lib/error';
 
 const defaultState = {};
 
@@ -164,7 +165,9 @@ export class HarvestingModule {
         }
 
         // If nothing to unlink, then just escape
-        if (transactions.length === 0) throw new Error('error_harvesting_no_keys_to_unlink');
+        if (transactions.length === 0) {
+            throw new AppError('error_harvesting_no_keys_to_unlink', 'Failed to create stop harvesting transaction. No keys to unlink.');
+        }
 
         // Prepare aggregate transaction
         return (aggregateTransaction = {

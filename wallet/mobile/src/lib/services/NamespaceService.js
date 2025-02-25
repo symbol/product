@@ -4,6 +4,7 @@ import { makeRequest } from '@/app/utils/network';
 import _ from 'lodash';
 import * as NamespaceTypes from '@/app/types/Namespace';
 import * as NetworkTypes from '@/app/types/Network';
+import { AppError } from '@/app/lib/error';
 
 export class NamespaceService {
     /**
@@ -163,14 +164,20 @@ export class NamespaceService {
             namespace = await NamespaceService.fetchNamespaceInfo(networkProperties, namespaceId);
         } catch (error) {
             if (e.message === 'error_fetch_not_found') {
-                throw new Error('error_unknown_account_name');
+                throw new AppError(
+                    'error_unknown_account_name',
+                    `Linked address for namespace ${namespaceId} not found. Namespace does not exist.`
+                );
             } else {
                 throw error;
             }
         }
 
         if (!namespace.alias.address) {
-            throw new Error('error_unknown_account_name');
+            throw new AppError(
+                'error_unknown_account_name',
+                `Linked address for namespace ${namespaceId} not found. No address alias found.`
+            );
         }
 
         return addressFromRaw(namespace.alias.address);

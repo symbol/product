@@ -2,6 +2,7 @@ import { cloneDeep } from 'lodash';
 import { makeAutoObservable, runInAction } from 'mobx';
 import { createNetworkMap } from '@/app/utils/network';
 import { v4 as uuidv4 } from 'uuid';
+import { AppError } from '@/app/lib/error';
 
 const createContact = (contact) => {
     return {
@@ -67,7 +68,10 @@ export class AddressBookModule {
         const isContactAlreadyExists = networkContacts.find((contact) => contact.address === newContact.address);
 
         if (isContactAlreadyExists) {
-            this._throwError('error_failed_add_contact_already_exists');
+            throw new AppError(
+                'error_failed_add_contact_already_exists',
+                `Failed to add contact. Contact with address "${newContact.address}" already exists`
+            );
         }
 
         networkContacts.push(createContact(newContact));
@@ -84,7 +88,7 @@ export class AddressBookModule {
         const updatedNetworkContacts = networkContacts.filter((contact) => contact.id !== id);
 
         if (networkContacts.length === updatedNetworkContacts.length) {
-            this._throwError('error_failed_remove_contact_not_found');
+            throw new AppError('error_failed_remove_contact_not_found', `Failed to remove contact. Contact with id "${id}" not found`);
         }
 
         addressBook[this._root.networkIdentifier] = updatedNetworkContacts;
@@ -101,7 +105,10 @@ export class AddressBookModule {
         const contactToUpdate = networkContacts.find((contact) => contact.id === newContact.id);
 
         if (!contactToUpdate) {
-            this._throwError('error_failed_update_contact_not_found');
+            throw new AppError(
+                'error_failed_update_contact_not_found',
+                `Failed to update contact. Contact with id "${newContact.id}" not found`
+            );
         }
 
         Object.assign(contactToUpdate, createContact(newContact));

@@ -3,6 +3,7 @@ import { makeAutoObservable } from 'mobx';
 import { MessageType, TransactionType } from '@/app/constants';
 import { AccountService, NamespaceService } from '@/app/lib/services';
 import { encodePlainMessage, isIncomingTransaction, isOutgoingTransaction, isSymbolAddress } from '@/app/utils';
+import { AppError } from '@/app/lib/error';
 
 const defaultState = {};
 
@@ -30,7 +31,10 @@ export class TransferModule {
         }
 
         if (!recipientAddress) {
-            throw new Error('error_transfer_unknown_recipient');
+            throw new AppError(
+                'error_transfer_unknown_recipient',
+                `Failed to create transfer transaction. Recipient address not found for provided alias "${recipientAddressOrAlias}"`
+            );
         }
 
         // If message is encrypted, fetch recipient publicKey
@@ -80,7 +84,12 @@ export class TransferModule {
     getDecryptedMessageText = async (transaction, password) => {
         const { currentAccount, networkProperties } = this._root;
 
-        if (transaction.type !== TransactionType.TRANSFER) throw Error('error_failed_decrypt_message_invalid_transaction_type');
+        if (transaction.type !== TransactionType.TRANSFER) {
+            throw new AppError(
+                'error_failed_decrypt_message_invalid_transaction_type',
+                `Failed to decrypt message. Transaction type "${transaction.type}" is not supported. Expected type "${TransactionType.TRANSFER}"`
+            );
+        }
 
         const { message, recipientAddress, signerPublicKey } = transaction;
 
@@ -95,6 +104,9 @@ export class TransferModule {
             return this._root.decryptMessage(message.payload, recipientAccount.publicKey, password);
         }
 
-        throw Error('error_failed_decrypt_message_not_related');
+        throw new AppError(
+            'error_failed_decrypt_message_not_related',
+            'Failed to decrypt message. Transaction is not related to current account'
+        );
     };
 }
