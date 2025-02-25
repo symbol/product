@@ -7,6 +7,7 @@ const transformIgnoreModules = [
     'symbol-crypto-wasm-node',
     'react-native-reanimated',
     'react-native-smooth-slider',
+    'mobx-react-lite',
 ];
 
 module.exports = {
@@ -21,6 +22,7 @@ module.exports = {
         '^@/app/(.*)$': '<rootDir>/src/$1',
         '^__fixtures__/(.*)$': '<rootDir>/__fixtures__/$1',
         '^symbol-crypto-wasm-web': '<rootDir>node_modules/symbol-crypto-wasm-node/symbol_crypto_wasm.js',
+        '^mobx-react-lite$': '<rootDir>/node_modules/mobx-react-lite/es/index.js',
         '\\.(jpg|jpeg|png|gif|eot|otf|webp|svg|ttf|woff|woff2|mp4|webm|wav|mp3|m4a|aac|oga)$': '<rootDir>/jestAssetTransormer.js',
         '\\.(css|less)$': '<rootDir>/jestAssetTransormer.js',
     },
