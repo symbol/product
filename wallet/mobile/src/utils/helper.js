@@ -21,7 +21,8 @@ export const showMessage = ({ message, type }) => rnFlashMessage({ message, type
  * @returns {void}
  */
 export const handleError = (error) => {
-    const message = $t(error.message, { defaultValue: error.message });
+    const translationKey = error.code || error.message;
+    const message = $t(translationKey, { defaultValue: translationKey });
     showMessage({ message, type: 'danger' });
     console.error(error);
 };

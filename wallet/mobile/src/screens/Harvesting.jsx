@@ -11,6 +11,7 @@ import { createHarvestingTransactionStub, formatDate, handleError } from '@/app/
 import { useDataManager, usePasscode, useToggle, useTransactionFees } from '@/app/hooks';
 import WalletController from '@/app/lib/controller/MobileWalletController';
 import { observer } from 'mobx-react-lite';
+import { AppError } from '@/app/lib/error';
 
 export const Harvesting = observer(function Harvesting() {
     const { currentAccountInfo, isWalletReady, networkIdentifier, networkProperties, ticker } = WalletController;
@@ -61,7 +62,7 @@ export const Harvesting = observer(function Harvesting() {
             const { nodePublicKey, networkIdentifier: nodeNetworkIdentifier } = await HarvestingService.fetchNodeInfo(nodeUrl);
 
             if (nodeNetworkIdentifier !== networkIdentifier) {
-                throw Error('error_failed_harvesting_wrong_node_network');
+                throw new AppError('error_failed_harvesting_wrong_node_network', `Node network identifier "${nodeNetworkIdentifier}" does not match the current network identifier "${networkIdentifier}"`);
             }
 
             const transaction = await WalletController.modules.harvesting.createStartHarvestingTransaction(nodePublicKey);

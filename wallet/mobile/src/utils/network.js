@@ -1,5 +1,6 @@
 import { NetworkIdentifier, NetworkType } from '@/app/constants';
 import { config } from '@/app/config';
+import { NetworkRequestError } from '@/app/lib/error';
 
 /**
  * Converts a network type to a network identifier.
@@ -32,27 +33,32 @@ export const networkIdentifierToNetworkType = (networkIdentifier) => {
 export const makeRequest = async (url, options) => {
     const response = await fetch(url, options);
 
-    if (response.status === 400 || response.status === 409) {
-        throw Error('error_fetch_invalid_request');
+    if (response.ok) {
+        return response.json();
     }
 
-    if (response.status === 404) {
-        throw Error('error_fetch_not_found');
+    let errorMessageText;
+    try {
+        const errorMessage = await response.json();
+        errorMessageText = errorMessage.message;
+    } catch {
+        errorMessageText = response.statusText;
     }
 
-    if (response.status === 429) {
-        throw Error('error_fetch_rate_limit');
+    switch (response.status) {
+        case 400:
+        case 409:
+            throw new NetworkRequestError(response.status, 'error_fetch_invalid_request', errorMessageText);
+        case 404:
+            throw new NetworkRequestError(response.status, 'error_fetch_not_found', errorMessageText);
+        case 429:
+            throw new NetworkRequestError(response.status, 'error_fetch_rate_limit', errorMessageText);
+        case 500:
+        case 502:
+            throw new NetworkRequestError(response.status, 'error_fetch_server_error', errorMessageText);
+        default:
+            throw new NetworkRequestError(response.status, 'error_network_request_error', errorMessageText);
     }
-
-    if (response.status === 500) {
-        throw Error('error_fetch_server_error');
-    }
-
-    if (response.status === 502) {
-        throw Error('error_fetch_server_error');
-    }
-
-    return response.json();
 };
 
 /**
