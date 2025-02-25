@@ -31,16 +31,13 @@ export const walletTransactions = [
                 signerPublicKey: '967D0A5315CA4F832082CA50FAE3B050D33D91292CF3A53BF324C231809D59B2',
                 recipientAddress: 'TBEPKB6SS3LSMQWGFVIXFNRZL6MGYX2UJKA2ZXY',
                 message: {
-                    encryptedText:
-                        '01313630363434464537303845353544413945393531463332313731313345313842323139383435303242393631304445323043413245313834443135453136343841383741363937453236383633464632393737433933354132',
+                    type: 1,
                     text: null,
-                    payload: null,
-                    isRaw: false,
-                    isEncrypted: true,
-                    isDelegatedHarvestingMessage: false,
+                    payload:
+                        '01313630363434464537303845353544413945393531463332313731313345313842323139383435303242393631304445323043413245313834443135453136343841383741363937453236383633464632393737433933354132',
                 },
                 mosaics: [],
-                amount: 0,
+                amount: null,
             },
             {
                 type: 16724,
@@ -48,13 +45,10 @@ export const walletTransactions = [
                 signerPublicKey: '967D0A5315CA4F832082CA50FAE3B050D33D91292CF3A53BF324C231809D59B2',
                 recipientAddress: 'TD7TOGIBCITKDRXRVVVVTNZ7H5B72CZRJAPBBQY',
                 message: {
-                    encryptedText:
-                        '01343636313830384631373145393234333435423037333634333839364446343541343936423935383534374637304232343943324130433643464542313746394646444235373530424135393533303638433446333938393643',
+                    type: 1,
                     text: null,
-                    payload: null,
-                    isRaw: false,
-                    isEncrypted: true,
-                    isDelegatedHarvestingMessage: false,
+                    payload:
+                        '01343636313830384631373145393234333435423037333634333839364446343541343936423935383534374637304232343943324130433643464542313746394646444235373530424135393533303638433446333938393643',
                 },
                 mosaics: [],
                 amount: 0,
@@ -65,13 +59,10 @@ export const walletTransactions = [
                 signerPublicKey: '967D0A5315CA4F832082CA50FAE3B050D33D91292CF3A53BF324C231809D59B2',
                 recipientAddress: 'TCSFD7TYOFAWXJ2IB7RTR4ELZVWX22Y5QPQLNKA',
                 message: {
-                    encryptedText:
-                        '01463246344634464130304441463831454137443835383035363536463244433536314436323131454539324443453334343541304435363841424345394142344634354239304541373636363844363236413738333842334437',
+                    type: 1,
                     text: null,
-                    payload: null,
-                    isRaw: false,
-                    isEncrypted: true,
-                    isDelegatedHarvestingMessage: false,
+                    payload:
+                        '01463246344634464130304441463831454137443835383035363536463244433536314436323131454539324443453334343541304435363841424345394142344634354239304541373636363844363236413738333842334437',
                 },
                 mosaics: [],
                 amount: 0,
@@ -82,13 +73,10 @@ export const walletTransactions = [
                 signerPublicKey: '967D0A5315CA4F832082CA50FAE3B050D33D91292CF3A53BF324C231809D59B2',
                 recipientAddress: 'TANWG4F32RMJT6UEKA2COQPJERCDLHB34RIGBII',
                 message: {
-                    encryptedText:
-                        '01443942433942314536394533443146363642374439333738463334433736433434313630384634453834394638353232324438464143354336454438394645334346313633443430453245463735343531353233423238424532',
+                    type: 1,
                     text: null,
-                    payload: null,
-                    isRaw: false,
-                    isEncrypted: true,
-                    isDelegatedHarvestingMessage: false,
+                    payload:
+                        '01443942433942314536394533443146363642374439333738463334433736433434313630384634453834394638353232324438464143354336454438394645334346313633443430453245463735343531353233423238424532',
                 },
                 mosaics: [],
                 amount: 0,
@@ -114,16 +102,13 @@ export const walletTransactions = [
                 signerPublicKey: '967D0A5315CA4F832082CA50FAE3B050D33D91292CF3A53BF324C231809D59B2',
                 recipientAddress: 'TBEPKB6SS3LSMQWGFVIXFNRZL6MGYX2UJKA2ZXY',
                 message: {
-                    encryptedText:
-                        '01333241464234423935303130334539304446414342374434364643364545383346373243464632414142393041383332313031424331313934304239413633434141433332353633',
+                    type: 1,
                     text: null,
-                    payload: null,
-                    isRaw: false,
-                    isEncrypted: true,
-                    isDelegatedHarvestingMessage: false,
+                    payload:
+                        '01333241464234423935303130334539304446414342374434364643364545383346373243464632414142393041383332313031424331313934304239413633434141433332353633',
                 },
                 mosaics: [],
-                amount: 0,
+                amount: null,
             },
             {
                 type: 16724,
@@ -131,13 +116,10 @@ export const walletTransactions = [
                 signerPublicKey: '967D0A5315CA4F832082CA50FAE3B050D33D91292CF3A53BF324C231809D59B2',
                 recipientAddress: 'TD7TOGIBCITKDRXRVVVVTNZ7H5B72CZRJAPBBQY',
                 message: {
-                    encryptedText:
-                        '01374644464446334436363932384141353933454537313842323336424531353345444142323530384546463230424436314641353939333942383533393436334336334139414438',
+                    type: 1,
                     text: null,
-                    payload: null,
-                    isRaw: false,
-                    isEncrypted: true,
-                    isDelegatedHarvestingMessage: false,
+                    payload:
+                        '01374644464446334436363932384141353933454537313842323336424531353345444142323530384546463230424436314641353939333942383533393436334336334139414438',
                 },
                 mosaics: [],
                 amount: 0,
@@ -148,13 +130,10 @@ export const walletTransactions = [
                 signerPublicKey: '967D0A5315CA4F832082CA50FAE3B050D33D91292CF3A53BF324C231809D59B2',
                 recipientAddress: 'TCSFD7TYOFAWXJ2IB7RTR4ELZVWX22Y5QPQLNKA',
                 message: {
-                    encryptedText:
-                        '01323936344442463637334639414545413138454645363138424232454136384539343146464541364242313937423643453142354642424639443431314438453734414133433137',
+                    type: 1,
                     text: null,
-                    payload: null,
-                    isRaw: false,
-                    isEncrypted: true,
-                    isDelegatedHarvestingMessage: false,
+                    payload:
+                        '01323936344442463637334639414545413138454645363138424232454136384539343146464541364242313937423643453142354642424639443431314438453734414133433137',
                 },
                 mosaics: [],
                 amount: 0,
@@ -246,13 +225,10 @@ export const walletTransactions = [
                 signerPublicKey: 'D30D28F20172CC57081749FD468CA097795156F647CCB4324849DDF477076802',
                 recipientAddress: 'TC2CIMN5PBJM7HRL64OWDT7MPKJBN73D6BX62YQ',
                 message: {
-                    encryptedText: null,
+                    type: 254,
                     text: null,
                     payload:
                         'FE2A8061577301E207BC32BEAA0E64F814D0CD91CFA53C43429706CB80AFAB0A2431D6EC13E5F1F4DA67A4C8A8D3125AF264A6DA290428963376BDE16D5CAB4582A033DBA4E6625B43A8DCB6830DFEB33266B4341F62FE10EB0028697C0E63218150DE4DF15458AA199FB75654327DCA52CB05C5FFEA814F2F2C40BC026AD0D9B27DAAA3',
-                    isRaw: false,
-                    isEncrypted: false,
-                    isDelegatedHarvestingMessage: true,
                 },
                 mosaics: [],
                 amount: 0,
@@ -362,13 +338,10 @@ export const walletTransactions = [
                 signerPublicKey: 'D30D28F20172CC57081749FD468CA097795156F647CCB4324849DDF477076802',
                 recipientAddress: 'TBVRVOKIFVTWYLSF3C5QLETNSSU7WXNQHIP4XTI',
                 message: {
-                    encryptedText: null,
+                    type: 254,
                     text: null,
                     payload:
                         'FE2A8061577301E2F0A78389F51A7DEE97B3533EF9C2AE5D8D9390A04420B85FAD66EF697B95DF46F9AAFF91A5D78467779346AE676DA947D2E9EB1055A29A22615252C068E0C4086BB0B194C0209A724E339C92C6C2BECD0DBEBFF44C86BD046E2E208705A86D18AF251F8341E155E076873F7EDEB941E634C92B297620F51298D83A28',
-                    isRaw: false,
-                    isEncrypted: false,
-                    isDelegatedHarvestingMessage: true,
                 },
                 mosaics: [],
                 amount: 0,
@@ -457,13 +430,10 @@ export const walletTransactions = [
                 signerPublicKey: 'D30D28F20172CC57081749FD468CA097795156F647CCB4324849DDF477076802',
                 recipientAddress: 'TBZMREQRM4F3W7OG3EYDRHP5RDUTNSZLJQADQJA',
                 message: {
-                    encryptedText: null,
+                    type: 254,
                     text: null,
                     payload:
                         'FE2A8061577301E2ED5A6366815420AE0D5B65BAE1ABB7119164FF76B44A1243BAEF66E662E35488C7179A2BDC0FFF08E9AE3E823A91E29D0FC5FBB7B1B6F19D723B1731E1779B8F908E39D9121C91BA305CDD8C6FE1ADD7B60AA581B90E34AB6F0BF69AED601D667946F89DC7F3EA2A406E803C52078671EEE3CBB839EA1F2459525B67',
-                    isRaw: false,
-                    isEncrypted: false,
-                    isDelegatedHarvestingMessage: true,
                 },
                 mosaics: [],
                 amount: 0,
@@ -483,12 +453,9 @@ export const walletTransactions = [
         signerPublicKey: '0AA27C605B0C357C94C1678D830F25424EC3922155E553DF3B2066442EF6C0C3',
         recipientAddress: 'TBEPKB6SS3LSMQWGFVIXFNRZL6MGYX2UJKA2ZXY',
         message: {
-            encryptedText: null,
+            type: 0,
             text: 'message 2',
-            payload: null,
-            isRaw: false,
-            isEncrypted: false,
-            isDelegatedHarvestingMessage: false,
+            payload: '006D6573736167652032',
         },
         mosaics: [
             {
@@ -512,13 +479,10 @@ export const walletTransactions = [
         signerPublicKey: '0AA27C605B0C357C94C1678D830F25424EC3922155E553DF3B2066442EF6C0C3',
         recipientAddress: 'TBEPKB6SS3LSMQWGFVIXFNRZL6MGYX2UJKA2ZXY',
         message: {
-            encryptedText:
-                '0131323736413044464444333045373941303835453835413337324337344342373538353631314230303637374338454638303246334432443133364445453341373741454242',
+            type: 1,
             text: null,
-            payload: null,
-            isRaw: false,
-            isEncrypted: true,
-            isDelegatedHarvestingMessage: false,
+            payload:
+                '0131323736413044464444333045373941303835453835413337324337344342373538353631314230303637374338454638303246334432443133364445453341373741454242',
         },
         mosaics: [
             {
@@ -581,13 +545,10 @@ export const walletTransactions = [
         signerPublicKey: 'D30D28F20172CC57081749FD468CA097795156F647CCB4324849DDF477076802',
         recipientAddress: 'TBDXWNDRWG6QUJPMPCDZ5OOBCPMSIOUD2MQSHDA',
         message: {
-            encryptedText: null,
+            type: 254,
             text: null,
             payload:
                 'FE2A8061577301E2A27DFE7CE2B4FC6C8F034C608F7443890DC203D371F29437D1D91DF2B63FBC3E9C5A568B0654326984FC7800BBFC3A70BDFAA9BA2E33C6B10C21EC53B63C45CF6862D04A81188971E4DBB7CC190F8571B9AA7EA708120B3376775C04BEF3293A02D58AD140FA3133B600B75FE53DD5E2CFACD42F71DDAE935805EE2C',
-            isRaw: false,
-            isEncrypted: false,
-            isDelegatedHarvestingMessage: true,
         },
         mosaics: [],
         amount: 0,
@@ -863,13 +824,10 @@ export const walletTransactions = [
                 signerPublicKey: 'D30D28F20172CC57081749FD468CA097795156F647CCB4324849DDF477076802',
                 recipientAddress: 'TBVRVOKIFVTWYLSF3C5QLETNSSU7WXNQHIP4XTI',
                 message: {
-                    encryptedText: null,
+                    type: 254,
                     text: null,
                     payload:
                         'FE2A8061577301E2F0AB3BBB574AB48E1A9FBF03FEFF9E8AEA105401AD0BC3454E3C3AA0CB326788CF7D61C3B97C706334C4CFB1D76076B96051EF5FDDCCFB4665735499B1DAF957C020225B14A395FF0929BCC204138A1C39B67548DDD4B023B1C16D849EDCB83D266D1E012295638D20EDF78B6444B2F6105405B21E4E285E7DB23D8F',
-                    isRaw: false,
-                    isEncrypted: false,
-                    isDelegatedHarvestingMessage: true,
                 },
                 mosaics: [],
                 amount: 0,
@@ -974,13 +932,10 @@ export const walletTransactions = [
                 signerPublicKey: 'D30D28F20172CC57081749FD468CA097795156F647CCB4324849DDF477076802',
                 recipientAddress: 'TBVRVOKIFVTWYLSF3C5QLETNSSU7WXNQHIP4XTI',
                 message: {
-                    encryptedText: null,
+                    type: 254,
                     text: null,
                     payload:
                         'FE2A8061577301E286DB3FFF4C7C6F85CDAE5AFF456C4DA41C15F41397FDF972B0F312151FCE2B530DAB00DAA61517AF7D630677C739B22F57A63BC133398F0DADEBCEE1EDCDE69C6ECC76C1B7CAF45828AEE1C25EAE04D7F6B5FC01A9C97013ECB16BBAD63468E836398E84CA5D7D3017D16AF70D8DFE7340978FACA6B5EDC6BE9EFF3E',
-                    isRaw: false,
-                    isEncrypted: false,
-                    isDelegatedHarvestingMessage: true,
                 },
                 mosaics: [],
                 amount: 0,
@@ -1059,13 +1014,10 @@ export const walletTransactions = [
                 signerPublicKey: 'D30D28F20172CC57081749FD468CA097795156F647CCB4324849DDF477076802',
                 recipientAddress: 'TBVRVOKIFVTWYLSF3C5QLETNSSU7WXNQHIP4XTI',
                 message: {
-                    encryptedText: null,
+                    type: 254,
                     text: null,
                     payload:
                         'FE2A8061577301E249BD3265CC1988246D8C9055A011626117C107F6384342C7B5DD16A1C0FD111E27B2F5F5D4923A8249F4DF44D844D223B3855026AE479A26634EA0629760C2DB466DEB96AA4A1481CA26E799DE7864269A8595AD88A0042A507E151EBCC490AFCACA9927BF1560E53FE59EF46938586A9C119E4348D9C6200C077639',
-                    isRaw: false,
-                    isEncrypted: false,
-                    isDelegatedHarvestingMessage: true,
                 },
                 mosaics: [],
                 amount: 0,
@@ -1128,13 +1080,10 @@ export const walletTransactions = [
                 signerPublicKey: 'D30D28F20172CC57081749FD468CA097795156F647CCB4324849DDF477076802',
                 recipientAddress: 'TBVRVOKIFVTWYLSF3C5QLETNSSU7WXNQHIP4XTI',
                 message: {
-                    encryptedText: null,
+                    type: 254,
                     text: null,
                     payload:
                         'FE2A8061577301E21BA3D067CFF1B4F49A89E91C406061466161EC00911914696288C0C50A3F61331EC29D58D21349FE0629A55C0BFC8F58F540B5639237100AB5CF766228D3B5DCECADB804C19DE217DD3E21843877440FDC7B268D864288EB2C5D5F944B46005E0B73975B08170735B2BA9CDB5DE90E7BB35B815CB4D2983757FC127D',
-                    isRaw: false,
-                    isEncrypted: false,
-                    isDelegatedHarvestingMessage: true,
                 },
                 mosaics: [],
                 amount: 0,
@@ -1223,13 +1172,10 @@ export const walletTransactions = [
                 signerPublicKey: 'D30D28F20172CC57081749FD468CA097795156F647CCB4324849DDF477076802',
                 recipientAddress: 'TAK437V47WTRNNTUADPPHRWGCUJP3BLR34IH73Q',
                 message: {
-                    encryptedText: null,
+                    type: 254,
                     text: null,
                     payload:
                         'FE2A8061577301E22186549123F86A54F2F619386ACB73C9F2FAB084A3EE30275B774AB819E7423F05667531D2635E296206AE2DCD95F0A6819D2E0EF79D1A24AD9A864EE5EE330684DFA5E71B94BDA0CA9B7733141C161A54188EB8D1F4240C9CC289B841118A857A472C27D8C95D17E205B0789C57568309F05DDEFA6B5026ECC9D5CB',
-                    isRaw: false,
-                    isEncrypted: false,
-                    isDelegatedHarvestingMessage: true,
                 },
                 mosaics: [],
                 amount: 0,
@@ -1318,13 +1264,10 @@ export const walletTransactions = [
                 signerPublicKey: 'D30D28F20172CC57081749FD468CA097795156F647CCB4324849DDF477076802',
                 recipientAddress: 'TC2CIMN5PBJM7HRL64OWDT7MPKJBN73D6BX62YQ',
                 message: {
-                    encryptedText: null,
+                    type: 254,
                     text: null,
                     payload:
                         'FE2A8061577301E2E6BFAC20841636E1F2FDEB79120D4AC3DF0347D84F8261EBB062B24DD70BDD87523998BF12A054F2270FF615DF015EF6FEC5A8ED4B88F12389186CC3A9CF03E6071B1A9ECC0849CE15C5C4D1756DB183CBACA5356A4FBC77F42FC46BAA999C16E01F245BDF80452C4C2C5B832F0E39B2D77CF76764E7CB585CA2B9BE',
-                    isRaw: false,
-                    isEncrypted: false,
-                    isDelegatedHarvestingMessage: true,
                 },
                 mosaics: [],
                 amount: 0,
@@ -1413,13 +1356,10 @@ export const walletTransactions = [
                 signerPublicKey: 'D30D28F20172CC57081749FD468CA097795156F647CCB4324849DDF477076802',
                 recipientAddress: 'TBVQDG4B5I3FVQEC7LFDTQCOXDXY7XXC7O63XZI',
                 message: {
-                    encryptedText: null,
+                    type: 254,
                     text: null,
                     payload:
                         'FE2A8061577301E2596332C5FB8736F5F4E1F80C98189E79DB24E7E7574F5C79FD69CD3D658864B0517719F54DE23E695A314A4FBCF11C95A6FE7CF4373EF3C4BA26FA8E87340CDAD1BE97A618D0DC65278E1820AF4853484446CD17A3166D713B11686CBDBAC9306A5061BC86FE745ED458F9E1CE7519510638AA0C23DC9CCFCE7B197A',
-                    isRaw: false,
-                    isEncrypted: false,
-                    isDelegatedHarvestingMessage: true,
                 },
                 mosaics: [],
                 amount: 0,
@@ -1532,13 +1472,10 @@ export const walletTransactions = [
                 signerPublicKey: 'D30D28F20172CC57081749FD468CA097795156F647CCB4324849DDF477076802',
                 recipientAddress: 'TCAJQFBSDKRNCIFC34NLDVVSTH5RRYMXJ32KPTY',
                 message: {
-                    encryptedText: null,
+                    type: 254,
                     text: null,
                     payload:
                         'FE2A8061577301E269CD002BCF6C76FD7F19352C4C114EC66493AB0BF79EF95020486474858ED24DD587EBADF072623B8A45D5242A8527FE9BF1BD9EFED526CD23C6C6C03D2B69087A50EF5C9162ED350A4FEF4E595791D3BA9844A74636B05F07E84BA8E261331CF180BF6E1EAD4A3B3580FC9277EA5FCA27F5065F75EEE62E74779AAF',
-                    isRaw: false,
-                    isEncrypted: false,
-                    isDelegatedHarvestingMessage: true,
                 },
                 mosaics: [],
                 amount: 0,
@@ -1558,12 +1495,9 @@ export const walletTransactions = [
         signerPublicKey: 'D30D28F20172CC57081749FD468CA097795156F647CCB4324849DDF477076802',
         recipientAddress: 'TBEPKB6SS3LSMQWGFVIXFNRZL6MGYX2UJKA2ZXY',
         message: {
-            encryptedText: null,
+            type: 0,
             text: 'test',
-            payload: null,
-            isRaw: false,
-            isEncrypted: false,
-            isDelegatedHarvestingMessage: false,
+            payload: '0074657374',
         },
         mosaics: [
             {
@@ -1716,13 +1650,10 @@ export const walletTransactions = [
         signerPublicKey: 'D30D28F20172CC57081749FD468CA097795156F647CCB4324849DDF477076802',
         recipientAddress: 'TDG6QTPI722QLHXSUXJNFO4JD6IIVHH2FSIGWGQ',
         message: {
-            encryptedText: null,
+            type: 254,
             text: null,
             payload:
                 'FE2A8061577301E2B45895BCFE5CEEFD184FC7771922F472B7CFCABB76F6FD37B20D0925633D6B3E4C90316FF5FD9CA4E791167E937BF56274F58C1B51F1166D2E9F4C220F04AB020A34E3688B8F8D2839D7984F04D795983AE68EED37D9DEAB8B74FDA6C1C60FBFF539F14064F27DDCA5315D7AF8DED563F7D0AE7FAC87F6AC1B5EF2C7',
-            isRaw: false,
-            isEncrypted: false,
-            isDelegatedHarvestingMessage: true,
         },
         mosaics: [],
         amount: 0,
@@ -2640,12 +2571,9 @@ export const walletTransactions = [
         signerPublicKey: 'D30D28F20172CC57081749FD468CA097795156F647CCB4324849DDF477076802',
         recipientAddress: 'TD7TOGIBCITKDRXRVVVVTNZ7H5B72CZRJAPBBQY',
         message: {
-            encryptedText: null,
+            type: 0,
             text: 'test',
-            payload: null,
-            isRaw: false,
-            isEncrypted: false,
-            isDelegatedHarvestingMessage: false,
+            payload: '0074657374',
         },
         mosaics: [
             {
@@ -3292,13 +3220,10 @@ export const walletTransactions = [
         signerPublicKey: 'D30D28F20172CC57081749FD468CA097795156F647CCB4324849DDF477076802',
         recipientAddress: 'TD7TOGIBCITKDRXRVVVVTNZ7H5B72CZRJAPBBQY',
         message: {
-            encryptedText:
-                '0131423538383146324332413633324641344234463131454642424632323641384444453731373538333333463133303642443238443138303233344246384342413546433941303039453445343438364332334343334445',
+            type: 1,
             text: null,
-            payload: null,
-            isRaw: false,
-            isEncrypted: true,
-            isDelegatedHarvestingMessage: false,
+            payload:
+                '0131423538383146324332413633324641344234463131454642424632323641384444453731373538333333463133303642443238443138303233344246384342413546433941303039453445343438364332334343334445',
         },
         mosaics: [
             {
@@ -3322,12 +3247,9 @@ export const walletTransactions = [
         signerPublicKey: 'D30D28F20172CC57081749FD468CA097795156F647CCB4324849DDF477076802',
         recipientAddress: 'TD7TOGIBCITKDRXRVVVVTNZ7H5B72CZRJAPBBQY',
         message: {
-            encryptedText: null,
+            type: 0,
             text: 'Plain message text 2',
-            payload: null,
-            isRaw: false,
-            isEncrypted: false,
-            isDelegatedHarvestingMessage: false,
+            payload: '00506C61696E206D65737361676520746578742032',
         },
         mosaics: [
             {
@@ -3351,13 +3273,10 @@ export const walletTransactions = [
         signerPublicKey: '8856CBA6D68526CB70F182B313B4E53C6413DA5044F96197888F255E794F3159',
         recipientAddress: 'TBEPKB6SS3LSMQWGFVIXFNRZL6MGYX2UJKA2ZXY',
         message: {
-            encryptedText:
-                '01323432393941344330423535463034323533394339303231413637464636413036383143394138423936463541463236443639453243453045344238324231413146463444303632453532313831433543343544',
+            type: 1,
             text: null,
-            payload: null,
-            isRaw: false,
-            isEncrypted: true,
-            isDelegatedHarvestingMessage: false,
+            payload:
+                '01323432393941344330423535463034323533394339303231413637464636413036383143394138423936463541463236443639453243453045344238324231413146463444303632453532313831433543343544',
         },
         mosaics: [
             {
@@ -3381,12 +3300,9 @@ export const walletTransactions = [
         signerPublicKey: '8856CBA6D68526CB70F182B313B4E53C6413DA5044F96197888F255E794F3159',
         recipientAddress: 'TBEPKB6SS3LSMQWGFVIXFNRZL6MGYX2UJKA2ZXY',
         message: {
-            encryptedText: null,
+            type: 0,
             text: 'Plain message text',
-            payload: null,
-            isRaw: false,
-            isEncrypted: false,
-            isDelegatedHarvestingMessage: false,
+            payload: '00506C61696E206D6573736167652074657874',
         },
         mosaics: [
             {
