@@ -4,6 +4,6 @@ prompt_toolkit~=3.0.39
 PyYAML~=6.0.1
 requests~=2.32.2
 symbol-lightapi~=0.0.6
-symbol-sdk-python~=3.2.2
+symbol-sdk-python~=3.2.3
 websockets~=15.0
 zenlog~=1.1
