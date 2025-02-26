@@ -4,6 +4,8 @@ import { makeAutoObservable, runInAction } from 'mobx';
 import { config } from '@/app/config';
 import {
     ControllerEventName,
+    DEFAULT_ACCOUNT_NAME,
+    MAX_SEED_ACCOUNTS_PER_NETWORK,
     NetworkConnectionStatus,
     NetworkIdentifier,
     TransactionAnnounceGroup,
@@ -14,7 +16,7 @@ import {
 import { AccountService, ListenerService, NamespaceService, NetworkService, TransactionService } from '@/app/lib/services';
 import { addressFromPublicKey, createWalletAccount, createWalletStorageAccount, publicAccountFromPublicKey } from '@/app/utils/account';
 import { createNetworkMap } from '@/app/utils/network';
-import { createPrivateKeysFromMnemonic, generateSeedAccounts } from '@/app/utils/wallet';
+import { createPrivateKeysFromMnemonic } from '@/app/utils/wallet';
 import { cosignTransaction, decryptMessage, encryptMessage, signTransaction } from '@/app/utils';
 import { AppError } from '@/app/lib/error';
 
@@ -258,7 +260,18 @@ export class WalletController {
         }
 
         // Generate and save seed accounts
-        const accounts = await generateSeedAccounts(mnemonic);
+        const seedIndexes = [...Array(MAX_SEED_ACCOUNTS_PER_NETWORK).keys()];
+        const accounts = createNetworkMap((networkIdentifier) =>
+            createPrivateKeysFromMnemonic(mnemonic, seedIndexes, networkIdentifier).map((privateKey, index) =>
+                createWalletStorageAccount(
+                    privateKey,
+                    networkIdentifier,
+                    `${DEFAULT_ACCOUNT_NAME} ${index + 1}`,
+                    WalletAccountType.SEED,
+                    index
+                )
+            )
+        );
         const addresses = {};
 
         for (const networkIdentifier of Object.keys(accounts)) {
