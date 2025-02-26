@@ -2,7 +2,7 @@
 version: '2'
 services:
   db:
-    image: mongo:7.0.16
+    image: '{{ mongo_image }}'
     user: '{{ user }}'
     command: mongod --dbpath=/dbdata
     stop_signal: SIGINT
@@ -13,7 +13,7 @@ services:
       - ./dbdata:/data:rw
 
   initiate:
-    image: mongo:7.0.16
+    image: '{{ mongo_image }}'
     user: '{{ user }}'
     command: /bin/bash /startup/mongors.sh /real_data/startup/mongo-initialized
     volumes:

@@ -726,8 +726,8 @@ class PreparerTest(unittest.TestCase):
 		def _assert_can_configure_service(docker_compose_filepath, expected_names):
 			# - check compose file
 			expected_image_map = {
-				'db': 'mongo:7.0.16',
-				'initiate': 'mongo:7.0.16',
+				'db': 'mongo:a.b.c',
+				'initiate': 'mongo:a.b.c',
 				'client': 'symbolplatform/symbol-server:gcc-a.b.c.d',
 				'broker': 'symbolplatform/symbol-server:gcc-a.b.c.d',
 				'rest-api': 'symbolplatform/symbol-rest:a.b.c',
@@ -755,6 +755,7 @@ class PreparerTest(unittest.TestCase):
 				preparer.configure_docker({
 					'catapult_client_image': 'symbolplatform/symbol-server:gcc-a.b.c.d',
 					'catapult_rest_image': 'symbolplatform/symbol-rest:a.b.c',
+					'mongo_image': 'mongo:a.b.c',
 					'user': '2222:3333',
 					'api_https': config.node.api_https,
 					'light_api': NodeFeatures.API in config.node.features and not config.node.full_api,

@@ -31,7 +31,8 @@ class ShoestringConfigurationTest(unittest.TestCase):
 
 	VALID_IMAGES_CONFIGURATION = {
 		'client': 'symbolplatform/symbol-server:gcc-0.0.0.0',
-		'rest': 'symbolplatform/symbol-rest:1.1.1'
+		'rest': 'symbolplatform/symbol-rest:1.1.1',
+		'mongo': 'mongo:2.2.2'
 	}
 
 	VALID_SERVICES_CONFIGURATION = {
@@ -115,6 +116,7 @@ class ShoestringConfigurationTest(unittest.TestCase):
 		# Assert:
 		self.assertEqual('symbolplatform/symbol-server:gcc-0.0.0.0', images_config.client)
 		self.assertEqual('symbolplatform/symbol-rest:1.1.1', images_config.rest)
+		self.assertEqual('mongo:2.2.2', images_config.mongo)
 
 	def test_cannot_parse_images_configuration_incomplete(self):
 		# Arrange:

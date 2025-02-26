@@ -7,7 +7,7 @@ from symbolchain.symbol.Network import Network
 
 from .NodeFeatures import NodeFeatures
 
-ImagesConfiguration = namedtuple('ImagesConfiguration', ['client', 'rest'])
+ImagesConfiguration = namedtuple('ImagesConfiguration', ['client', 'rest', 'mongo'])
 ServicesConfiguration = namedtuple('ServicesConfiguration', ['nodewatch'])
 TransactionConfiguration = namedtuple('TransactionConfiguration', [
 	'fee_multiplier', 'timeout_hours', 'min_cosignatures_count', 'hash_lock_duration', 'currency_mosaic_id', 'locked_funds_per_aggregate'
@@ -32,7 +32,7 @@ def parse_network_configuration(config):
 def parse_images_configuration(config):
 	"""Parses images configuration."""
 
-	return ImagesConfiguration(config['client'], config['rest'])
+	return ImagesConfiguration(config['client'], config['rest'], config['mongo'])
 
 
 def parse_services_configuration(config):

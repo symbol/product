@@ -119,6 +119,7 @@ async def run_main(args):
 		preparer.configure_docker({
 			'catapult_client_image': config.images.client,
 			'catapult_rest_image': config.images.rest,
+			'mongo_image': config.images.mongo,
 			'user': f'{config.node.user_id}:{config.node.group_id}',
 			'api_https': config.node.api_https,
 			'light_api': NodeFeatures.API in config.node.features and not config.node.full_api,
