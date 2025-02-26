@@ -50,6 +50,7 @@ export const publicAccountFromPublicKey = (publicKey, networkIdentifier) => {
     return {
         address: address.toString(),
         publicKey,
+        networkIdentifier,
     };
 };
 
