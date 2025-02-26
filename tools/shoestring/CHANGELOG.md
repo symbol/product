@@ -8,16 +8,16 @@ The changelog format is based on [Keep a Changelog](https://keepachangelog.com/e
 ## [0.2.0] - 25 Feb-2025
 
 ### Added
-- add `docker-compose-recovery.yaml` which allows recovery from lock files in the data folder
-- add setup which allow deployment of a light node.
-- add support for advanced customization of rest.json
+- add `docker-compose-recovery.yaml` which allows recovery from lock files in the data folder.
+- add setup which allows deployment of a light node.
+- add support for advanced customization of `rest.json`.
 
 ### Changed
-- upgrade Symbol node's to MongoDB 7
-- allow the user to retain their node's key when migrating from Bootstrap or on cert renewal
+- upgrade Symbol nodes to MongoDB 7.
+- allow the user to retain their node's key when migrating from Bootstrap or on cert renewal.
 
 ### Fixed
-- renew certs generates a new ca cert be default.
+- renew certs generates a new CA cert by default.
 
 ## [0.1.3] - 20 June-2024
 
