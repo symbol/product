@@ -4,32 +4,32 @@ export const mosaicInfos = {
         names: ['symbol.xym'],
         divisibility: 6,
     },
-    '30E90770163F5822': {
-        id: '30E90770163F5822',
+    '0E2B031D9C83906D': {
+        id: '0E2B031D9C83906D',
         names: ['custom', 'another'],
         divisibility: 0,
     },
-    '26B011FCD27583B5': {
-        id: '26B011FCD27583B5',
+    '78C3CDF0896248DB': {
+        id: '78C3CDF0896248DB',
         divisibility: 2,
     },
-    '32ED04D2992CC751': {
-        id: '26B011FCD27583B5',
+    '3FE10802C3B2DD8C': {
+        id: '78C3CDF0896248DB',
         names: [],
         divisibility: 2,
     },
-    '5B98A0BECA9B4637': {
-        id: '5B98A0BECA9B4637',
+    '699E9532708D2FB8': {
+        id: '699E9532708D2FB8',
         names: ['pppplllll'],
         divisibility: 6,
     },
-    '177EC6469D353CCE': {
-        id: '177EC6469D353CCE',
+    '1213766D49458631': {
+        id: '1213766D49458631',
         names: ['custom-3'],
         divisibility: 6,
     },
-    '5B98A0BECA9B4637': {
-        id: '5B98A0BECA9B4637',
+    '699E9532708D2FB8': {
+        id: '699E9532708D2FB8',
         names: ['custom-4'],
         divisibility: 6,
     },
