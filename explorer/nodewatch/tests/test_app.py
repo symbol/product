@@ -215,20 +215,8 @@ def test_get_api_symbol_network_height_chart(client):  # pylint: disable=redefin
 	assert re.match(r'\d\d:\d\d', response_json['lastRefreshTime'])
 
 
-def test_get_api_symbol_node_with_invalid_main_public_key(client):  # pylint: disable=redefined-outer-name
+def _assert_api_symbol_node_with_public_key_not_found(response):
 	# Act:
-	response = client.get('/api/symbol/nodes/mainPublicKey/invalid')
-	response_json = json.loads(response.data)
-
-	# Assert:
-	assert 400 == response.status_code
-	assert 'application/json' == response.headers['Content-Type']
-	assert response_json == {'message': 'Bad request', 'status': 400}
-
-
-def test_get_api_symbol_node_with_main_public_key_not_found(client):  # pylint: disable=redefined-outer-name
-	# Act:
-	response = client.get('/api/symbol/nodes/mainPublicKey/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')
 	response_json = json.loads(response.data)
 
 	# Assert:
@@ -237,14 +225,58 @@ def test_get_api_symbol_node_with_main_public_key_not_found(client):  # pylint: 
 	assert response_json == {'message': 'Resource not found', 'status': 404}
 
 
-def test_get_api_symbol_node_with_main_public_key(client):  # pylint: disable=redefined-outer-name
+def _assert_api_symbol_node_with_invalid_public_key(response):
 	# Act:
-	response = client.get('/api/symbol/nodes/mainPublicKey/A0AA48B6417BDB1845EB55FB0B1E13255EA8BD0D8FA29AD2D8A906E220571F21')
+	response_json = json.loads(response.data)
+
+	# Assert:
+	assert 400 == response.status_code
+	assert 'application/json' == response.headers['Content-Type']
+	assert response_json == {'message': 'Bad request', 'status': 400}
+
+
+def _assert_api_symbol_node_with_public_key_found(response, expected_name):
+	# Act:
 	response_json = json.loads(response.data)
 
 	# Assert: spot check names
 	assert 200 == response.status_code
 	assert 'application/json' == response.headers['Content-Type']
-	assert 'Allnodes250' == response_json['name']
+	assert expected_name == response_json['name']
+
+
+def test_get_api_symbol_node_with_invalid_main_public_key(client):  # pylint: disable=redefined-outer-name
+	_assert_api_symbol_node_with_invalid_public_key(client.get('/api/symbol/nodes/mainPublicKey/invalid'))
+
+
+def test_get_api_symbol_node_with_invalid_node_public_key(client):  # pylint: disable=redefined-outer-name
+	_assert_api_symbol_node_with_invalid_public_key(client.get('/api/symbol/nodes/nodePublicKey/invalid'))
+
+
+def test_get_api_symbol_node_with_main_public_key_not_found(client):  # pylint: disable=redefined-outer-name
+	_assert_api_symbol_node_with_public_key_not_found(
+		client.get('/api/symbol/nodes/mainPublicKey/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')
+	)
+
+
+def test_get_api_symbol_node_with_node_public_key_not_found(client):  # pylint: disable=redefined-outer-name
+	_assert_api_symbol_node_with_public_key_not_found(
+		client.get('/api/symbol/nodes/nodePublicKey/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')
+	)
+
+
+def test_get_api_symbol_node_with_main_public_key(client):  # pylint: disable=redefined-outer-name
+	_assert_api_symbol_node_with_public_key_found(
+		client.get('/api/symbol/nodes/mainPublicKey/A0AA48B6417BDB1845EB55FB0B1E13255EA8BD0D8FA29AD2D8A906E220571F21'),
+		'Allnodes250'
+	)
+
+
+def test_get_api_symbol_node_with_node_public_key(client):  # pylint: disable=redefined-outer-name
+	_assert_api_symbol_node_with_public_key_found(
+		client.get('/api/symbol/nodes/nodePublicKey/FBEAFCB15D2674ECB8DC1CD2C028C4AC0D463489069FDD415F30BB71EAE69864'),
+		'Apple'
+	)
+
 
 # endregion

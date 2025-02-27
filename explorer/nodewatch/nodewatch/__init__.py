@@ -119,6 +119,14 @@ def create_app():
 
 		return _get_json_node(result)
 
+	@app.route('/api/symbol/nodes/nodePublicKey/<node_public_key>')
+	def api_symbol_nodes_get_node_public_key(node_public_key):  # pylint: disable=unused-variable
+		_validate_public_key(node_public_key)
+
+		result = symbol_routes_facade.json_node(filter_field='node_public_key', public_key=node_public_key)
+
+		return _get_json_node(result)
+
 	@app.route('/api/symbol/chart/height')
 	def api_symbol_chart_height():  # pylint: disable=unused-variable
 		return jsonify(symbol_routes_facade.json_height_chart_with_metadata())
