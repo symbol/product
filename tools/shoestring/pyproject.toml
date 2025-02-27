@@ -24,4 +24,4 @@ classifiers = [
 include = ['shoestring/lang/*/LC_MESSAGES/messages.mo']
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = "^3.9.2"
