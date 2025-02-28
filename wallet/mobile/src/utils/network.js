@@ -25,6 +25,19 @@ export const networkIdentifierToNetworkType = (networkIdentifier) => {
 };
 
 /**
+ * Creates a network map. The network map is an object with network identifiers as keys and values returned by the callback function.
+ * @template CallbackReturnType
+ * @param {function(string): CallbackReturnType} callback - The callback function.
+ * @returns {{ [key: string]: CallbackReturnType }} The network map.
+ */
+export const createNetworkMap = (callback) => {
+    const networkIdentifiers = [...config.networkIdentifiers];
+    const maps = networkIdentifiers.map((networkIdentifier) => [networkIdentifier, callback(networkIdentifier)]);
+
+    return Object.fromEntries(maps);
+};
+
+/**
  * Makes an HTTP request.
  * @param {string} url - The request URL.
  * @param {Object} options - The request options.
@@ -59,17 +72,4 @@ export const makeRequest = async (url, options) => {
         default:
             throw new NetworkRequestError(response.status, 'error_network_request_error', errorMessageText);
     }
-};
-
-/**
- * Creates a network map. The network map is an object with network identifiers as keys and values returned by the callback function.
- * @template CallbackReturnType
- * @param {function(string): CallbackReturnType} callback - The callback function.
- * @returns {{ [key: string]: CallbackReturnType }} The network map.
- */
-export const createNetworkMap = (callback) => {
-    const networkIdentifiers = [...config.networkIdentifiers];
-    const maps = networkIdentifiers.map((networkIdentifier) => [networkIdentifier, callback(networkIdentifier)]);
-
-    return Object.fromEntries(maps);
 };
