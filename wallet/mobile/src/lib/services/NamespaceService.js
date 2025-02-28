@@ -1,5 +1,5 @@
 import { addressFromRaw } from '@/app/utils/account';
-import { namespaceFromRaw, namespaceIdFromRaw } from '@/app/utils/namespace';
+import { namespaceFromDTO, namespaceIdFromRaw } from '@/app/utils/namespace';
 import { makeRequest } from '@/app/utils/network';
 import _ from 'lodash';
 import * as NamespaceTypes from '@/app/types/Namespace';
@@ -23,7 +23,7 @@ export class NamespaceService {
             .filter((namespaceId) => !!namespaceId);
         const namespaceNames = await NamespaceService.fetchNamespaceNames(networkProperties, namespaceIds);
 
-        return namespaces.map((namespaceDTO) => namespaceFromRaw(namespaceDTO, namespaceNames));
+        return data.map((namespaceDTO) => namespaceFromDTO(namespaceDTO, namespaceNames));
     }
 
     /**
@@ -83,11 +83,11 @@ export class NamespaceService {
             namespaceIds.map(async (namespaceId) => {
                 try {
                     const endpoint = `${networkProperties.nodeUrl}/namespaces/${namespaceId}`;
-                    const { namespace } = await makeRequest(endpoint);
+                    const namespaceDTO = await makeRequest(endpoint);
 
                     return {
                         namespaceId,
-                        value: namespaceFromRaw(namespace, namespaceNames),
+                        value: namespaceFromDTO(namespaceDTO, namespaceNames),
                     };
                 } catch {
                     return;
@@ -106,10 +106,10 @@ export class NamespaceService {
      */
     static async fetchNamespaceInfo(networkProperties, namespaceId) {
         const endpoint = `${networkProperties.nodeUrl}/namespaces/${namespaceId}`;
-        const { namespace } = await makeRequest(endpoint);
+        const namespaceDTO = await makeRequest(endpoint);
         const namespaceNames = await NamespaceService.fetchNamespaceNames(networkProperties, [namespaceId]);
 
-        return namespaceFromRaw(namespace, namespaceNames);
+        return namespaceFromDTO(namespaceDTO, namespaceNames);
     }
 
     /**
