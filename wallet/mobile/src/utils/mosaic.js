@@ -1,5 +1,6 @@
 import { MosaicFlags } from '@/app/constants';
 import * as MosaicTypes from '@/app/types/Mosaic';
+import * as Crypto from 'crypto';
 
 /**
  * Gets the mosaic amount from a mosaic list.
