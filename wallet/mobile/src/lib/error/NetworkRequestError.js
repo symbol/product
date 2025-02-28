@@ -1,4 +1,4 @@
-import { AppError } from '@/app/lib/error';
+import { AppError } from './AppError';
 
 export class NetworkRequestError extends AppError {
     constructor(status, code, message) {
