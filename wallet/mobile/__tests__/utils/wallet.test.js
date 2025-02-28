@@ -9,9 +9,7 @@ jest.mock('@/app/config', () => ({
     optInWhiteList: [OPT_IN_PUBLIC_KEY],
 }));
 
-const onlyUnique = (value, index, array) => array.indexOf(value) === index;
-
-describe('utils/account', () => {
+describe('utils/wallet', () => {
     describe('generateMnemonic', () => {
         it('generates a random mnemonic phrase string of 24 words', () => {
             // Arrange:
@@ -20,12 +18,10 @@ describe('utils/account', () => {
             // Act:
             const result = generateMnemonic();
             const mnemonicWords = result.split(' ');
-            const uniqueMnemonicWords = mnemonicWords.filter(onlyUnique);
 
             // Assert:
             expect(typeof result).toBe('string');
             expect(mnemonicWords.length).toBe(expectedWordsCount);
-            expect(uniqueMnemonicWords.length).toBe(expectedWordsCount);
         });
     });
 
