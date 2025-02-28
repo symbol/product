@@ -11,7 +11,12 @@ const { hexToUint8, uint8ToHex } = utils;
  * @returns {string} The namespace id
  */
 export const namespaceIdFromName = (namespaceName) => {
-    return generateNamespaceId(namespaceName).toString(16);
+    const namespaceLevels = namespaceName.split('.');
+
+    return namespaceLevels
+        .reduce((parentNamespaceId, namespaceLevelName) => generateNamespaceId(namespaceLevelName, parentNamespaceId), 0n)
+        .toString(16)
+        .toUpperCase();
 };
 
 /**
@@ -32,22 +37,23 @@ export const namespaceIdFromRaw = (rawNamespaceId) => {
  * @param {Object.<string, string>} namespaceNames - The namespace names map.
  * @returns {NamespaceTypes.Namespace} The namespace object.
  */
-export const namespaceFromRaw = (namespaceDTO, namespaceNames) => {
-    const creator = addressFromRaw(namespaceDTO.ownerAddress);
-    const aliasAddress = namespaceDTO.alias.address ? addressFromRaw(namespaceDTO.alias.address) : null;
-    const aliasType = namespaceDTO.alias.type === 1 ? 'mosaic' : namespaceDTO.alias.type === 2 ? 'address' : 'none';
+export const namespaceFromDTO = (namespaceDTO, namespaceNames) => {
+    const { namespace } = namespaceDTO;
+    const creator = addressFromRaw(namespace.ownerAddress);
+    const aliasAddress = namespace.alias.address ? addressFromRaw(namespace.alias.address) : null;
+    const aliasType = namespace.alias.type === 1 ? 'mosaic' : namespace.alias.type === 2 ? 'address' : 'none';
 
     return {
-        id: namespaceDTO.level2 || namespaceDTO.level1 || namespaceDTO.level0,
+        id: namespace.level2 || namespace.level1 || namespace.level0,
         name:
-            namespaceNames[namespaceDTO.level0] +
-            (namespaceDTO.level1 ? `.${namespaceNames[namespaceDTO.level1]}` : '') +
-            (namespaceDTO.level2 ? `.${namespaceNames[namespaceDTO.level2]}` : ''),
+            namespaceNames[namespace.level0] +
+            (namespace.level1 ? `.${namespaceNames[namespace.level1]}` : '') +
+            (namespace.level2 ? `.${namespaceNames[namespace.level2]}` : ''),
         aliasType,
-        linkedMosaicId: aliasType === 'mosaic' ? namespaceDTO.alias.mosaicId : null,
+        linkedMosaicId: aliasType === 'mosaic' ? namespace.alias.mosaicId : null,
         linkedAddress: aliasType === 'address' ? aliasAddress : null,
-        startHeight: parseInt(namespaceDTO.startHeight),
-        endHeight: parseInt(namespaceDTO.endHeight),
+        startHeight: parseInt(namespace.startHeight),
+        endHeight: parseInt(namespace.endHeight),
         creator,
     };
 };
