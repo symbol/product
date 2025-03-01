@@ -27,6 +27,7 @@ class SymbolPeerConnector:
 		self.node_public_key = None
 
 		self.ssl_context = ssl.create_default_context()
+		self.ssl_context.verify_flags &= ~ssl.VERIFY_X509_STRICT
 		self.ssl_context.check_hostname = False
 		self.ssl_context.load_cert_chain(
 			certificate_directory / 'node.full.crt.pem',
