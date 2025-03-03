@@ -406,6 +406,53 @@ class SymbolRoutesFacadeTest(unittest.TestCase):
 			[2],
 			list(map(lambda descriptor: descriptor['roles'], node_descriptors)))
 
+	def test_can_find_known_node_by_main_public_key(self):  # pylint: disable=invalid-name
+		# Arrange:
+		facade = SymbolRoutesFacade(SymbolNetwork.MAINNET, '<symbol_explorer>')
+		facade.reload_all(Path('tests/resources'), True)
+
+		# Act: select a node match with main public key
+		node_descriptors = facade.json_node(
+			filter_field='main_public_key',
+			public_key='A0AA48B6417BDB1845EB55FB0B1E13255EA8BD0D8FA29AD2D8A906E220571F21'
+		)
+		expected_node = {
+			'mainPublicKey': 'A0AA48B6417BDB1845EB55FB0B1E13255EA8BD0D8FA29AD2D8A906E220571F21',
+			'nodePublicKey': '403D890915B68E290B3F519A602A13B17C58499A077D77DB7CCC6327761C84DC',
+			'endpoint': '',
+			'name': 'Allnodes250',
+			'version': '1.0.3.4',
+			'height': 1486762,
+			'finalizedHeight': 1486740,
+			'balance': 3155632.471994,
+			'roles': 2
+		}
+
+		# Assert:
+		self.assertEqual(node_descriptors, expected_node)
+
+	def test_cannot_find_unknown_node_by_main_public_key(self):  # pylint: disable=invalid-name
+		# Arrange:
+		facade = SymbolRoutesFacade(SymbolNetwork.MAINNET, '<symbol_explorer>')
+		facade.reload_all(Path('tests/resources'), True)
+
+		# Act:
+		node_descriptors = facade.json_node(filter_field='main_public_key', public_key='invalidKey')
+
+		# Assert:
+		self.assertIsNone(node_descriptors)
+
+	def test_json_node_with_invalid_field(self):  # pylint: disable=invalid-name
+		# Arrange:
+		facade = SymbolRoutesFacade(SymbolNetwork.MAINNET, '<symbol_explorer>')
+		facade.reload_all(Path('tests/resources'), True)
+
+		# Act:
+		node_descriptors = facade.json_node(filter_field='invalid_field', public_key='invalidKey')
+
+		# Assert:
+		self.assertIsNone(node_descriptors)
+
 	def test_can_generate_height_chart_json(self):
 		# Arrange:
 		facade = SymbolRoutesFacade(SymbolNetwork.MAINNET, '<symbol_explorer>', 1)
