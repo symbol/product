@@ -214,4 +214,37 @@ def test_get_api_symbol_network_height_chart(client):  # pylint: disable=redefin
 	assert 4 == len(chart_json['data'])
 	assert re.match(r'\d\d:\d\d', response_json['lastRefreshTime'])
 
+
+def test_get_api_symbol_node_with_invalid_main_public_key(client):  # pylint: disable=redefined-outer-name
+	# Act:
+	response = client.get('/api/symbol/nodes/mainPublicKey/invalid')
+	response_json = json.loads(response.data)
+
+	# Assert:
+	assert 400 == response.status_code
+	assert 'application/json' == response.headers['Content-Type']
+	assert response_json == {'message': 'Bad request', 'status': 400}
+
+
+def test_get_api_symbol_node_with_main_public_key_not_found(client):  # pylint: disable=redefined-outer-name
+	# Act:
+	response = client.get('/api/symbol/nodes/mainPublicKey/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')
+	response_json = json.loads(response.data)
+
+	# Assert:
+	assert 404 == response.status_code
+	assert 'application/json' == response.headers['Content-Type']
+	assert response_json == {'message': 'Resource not found', 'status': 404}
+
+
+def test_get_api_symbol_node_with_main_public_key(client):  # pylint: disable=redefined-outer-name
+	# Act:
+	response = client.get('/api/symbol/nodes/mainPublicKey/A0AA48B6417BDB1845EB55FB0B1E13255EA8BD0D8FA29AD2D8A906E220571F21')
+	response_json = json.loads(response.data)
+
+	# Assert: spot check names
+	assert 200 == response.status_code
+	assert 'application/json' == response.headers['Content-Type']
+	assert 'Allnodes250' == response_json['name']
+
 # endregion

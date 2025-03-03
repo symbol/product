@@ -78,6 +78,15 @@ class BasicRoutesFacade:
 			lambda descriptor: descriptor.to_json(),
 			filter(role_filter, self.repository.node_descriptors)))
 
+	def json_node(self, filter_field, public_key):
+		"""Returns a node with matching main or node public key."""
+
+		try:
+			matching_items = [item for item in self.repository.node_descriptors if str(getattr(item, filter_field)) == public_key]
+			return next((item.to_json() for item in matching_items), None)
+		except AttributeError:
+			return None
+
 	def json_height_chart(self):
 		"""Builds a JSON height chart."""
 
