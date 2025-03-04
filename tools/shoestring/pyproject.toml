@@ -1,6 +1,6 @@
 [tool.poetry]
 name = 'symbol-shoestring'
-version = '0.1.3'
+version = '0.2.0'
 description = 'Symbol Shoestring Deployment Tool'
 authors = ['Symbol Contributors <contributors@symbol.dev>']
 maintainers = ['Symbol Contributors <contributors@symbol.dev>']
@@ -24,4 +24,4 @@ classifiers = [
 include = ['shoestring/lang/*/LC_MESSAGES/messages.mo']
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = "^3.9.2"
