@@ -12,7 +12,7 @@ from .RoutesFacade import MIN_HEIGHT_CLUSTER_SIZE, TIMESTAMP_FORMAT, NemRoutesFa
 
 
 def create_app():
-	# pylint: disable=too-many-locals
+	# pylint: disable=too-many-locals,too-many-statements
 
 	app = Flask(__name__)
 	app.config.from_envvar('NODEWATCH_SETTINGS')
