@@ -1,8 +1,7 @@
 const i18nConfig = require('./next-i18next.config.js'); // eslint-disable-line import/extensions
-const webpack = require('webpack');
 
 module.exports = {
-	distDir: 'build',
+	output: 'standalone',
 	reactStrictMode: true,
 	experimental: {
 		scrollRestoration: true

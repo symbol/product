@@ -168,7 +168,7 @@ docker build -t symbolplatform/explorer-frontend .
 
 Run the Docker container:
 ```bash
-docker run -p 3000:3000 -v $(pwd)/accounts:/app/public/accounts symbolplatform/explorer-frontend
+docker run -p 3000:3000 -v $(pwd)/public/accounts:/app/public/accounts symbolplatform/explorer-frontend
 ```
 
 This command will start the container and expose the application on port 3000.
