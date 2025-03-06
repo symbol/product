@@ -12,7 +12,7 @@ from .RoutesFacade import MIN_HEIGHT_CLUSTER_SIZE, TIMESTAMP_FORMAT, NemRoutesFa
 
 
 def create_app():
-	# pylint: disable=too-many-locals
+	# pylint: disable=too-many-locals,too-many-statements
 
 	app = Flask(__name__)
 	app.config.from_envvar('NODEWATCH_SETTINGS')
@@ -116,6 +116,14 @@ def create_app():
 		_validate_public_key(main_public_key)
 
 		result = symbol_routes_facade.json_node(filter_field='main_public_key', public_key=main_public_key)
+
+		return _get_json_node(result)
+
+	@app.route('/api/symbol/nodes/nodePublicKey/<node_public_key>')
+	def api_symbol_nodes_get_node_public_key(node_public_key):  # pylint: disable=unused-variable
+		_validate_public_key(node_public_key)
+
+		result = symbol_routes_facade.json_node(filter_field='node_public_key', public_key=node_public_key)
 
 		return _get_json_node(result)
 
