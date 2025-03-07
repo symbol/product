@@ -5,4 +5,4 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - ./accounts:/app/public/accounts
+      - ./public/accounts:/app/public/accounts
