@@ -23,6 +23,9 @@ class NodeDescriptor:
 		height=0,
 		finalized_height=0,
 		balance=0,
+		is_healthy=None,
+		is_ssl_enabled=None,
+		rest_version=None,
 		roles=0xFF):
 		"""Creates a descriptor."""
 
@@ -37,6 +40,9 @@ class NodeDescriptor:
 		self.height = height
 		self.finalized_height = finalized_height
 		self.balance = balance
+		self.is_healthy = is_healthy
+		self.is_ssl_enabled = is_ssl_enabled
+		self.rest_version = rest_version
 		self.roles = roles
 
 	@property
@@ -57,6 +63,9 @@ class NodeDescriptor:
 			'height': self.height,
 			'finalizedHeight': self.finalized_height,
 			'balance': self.balance,
+			'isHealthy': self.is_healthy,
+			'isSslEnabled': self.is_ssl_enabled,
+			'restVersion': self.rest_version,
 			'roles': self.roles
 		}
 
@@ -192,6 +201,14 @@ class NetworkRepository:
 		if self._network.generation_hash_seed != Hash256(json_node['networkGenerationHashSeed']):
 			return None
 
+		api_node_info_data = (None, None, None)
+		if 'apiNodeInfo' in json_node:
+			json_api_node_info_data = json_node['apiNodeInfo']
+			api_node_info_data = (
+				json_api_node_info_data.get('isHealth', None),
+				json_api_node_info_data.get('isSSL', None),
+				json_api_node_info_data.get('restVersion', None))
+
 		main_public_key = PublicKey(json_node['publicKey'])
 		node_public_key = PublicKey(json_node['nodePublicKey']) if 'nodePublicKey' in json_node else None
 		return NodeDescriptor(
@@ -202,6 +219,7 @@ class NetworkRepository:
 			json_node['friendlyName'],
 			self._format_symbol_version(json_node['version']),
 			*extra_data,
+			*api_node_info_data,
 			roles)
 
 	@staticmethod
