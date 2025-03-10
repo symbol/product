@@ -159,37 +159,31 @@ class NetworkRepository:
 		# sort by name
 		self.node_descriptors.sort(key=lambda descriptor: descriptor.name)
 
-	def _create_descriptor_from_json(self, json_node):
-		# network crawler extracts as much extra data as possible, but it might not always be available for all nodes
-		extra_data = (0, 0, 0)
-		if 'extraData' in json_node:
-			json_extra_data = json_node['extraData']
-			extra_data = (json_extra_data.get('height', 0), json_extra_data.get('finalizedHeight', 0), json_extra_data.get('balance', 0))
+	def _handle_nem_node(self, json_node, extra_data):
+		network_identifier = json_node['metaData']['networkId']
+		if network_identifier < 0:
+			network_identifier += 0x100
 
-		if self.is_nem:
-			network_identifier = json_node['metaData']['networkId']
-			if network_identifier < 0:
-				network_identifier += 0x100
+		if self._network.identifier != network_identifier:
+			return None
 
-			if self._network.identifier != network_identifier:
-				return None
+		node_protocol = json_node['endpoint']['protocol']
+		node_host = json_node['endpoint']['host']
+		node_port = json_node['endpoint']['port']
 
-			node_protocol = json_node['endpoint']['protocol']
-			node_host = json_node['endpoint']['host']
-			node_port = json_node['endpoint']['port']
+		json_identity = json_node['identity']
+		main_public_key = PublicKey(json_identity['public-key'])
+		node_public_key = PublicKey(json_identity['node-public-key']) if 'node-public-key' in json_identity else None
+		return NodeDescriptor(
+			self._network.public_key_to_address(main_public_key),
+			main_public_key,
+			node_public_key,
+			f'{node_protocol}://{node_host}:{node_port}',
+			json_identity['name'],
+			json_node['metaData']['version'],
+			*extra_data)
 
-			json_identity = json_node['identity']
-			main_public_key = PublicKey(json_identity['public-key'])
-			node_public_key = PublicKey(json_identity['node-public-key']) if 'node-public-key' in json_identity else None
-			return NodeDescriptor(
-				self._network.public_key_to_address(main_public_key),
-				main_public_key,
-				node_public_key,
-				f'{node_protocol}://{node_host}:{node_port}',
-				json_identity['name'],
-				json_node['metaData']['version'],
-				*extra_data)
-
+	def _handle_symbol_node(self, json_node, extra_data):
 		symbol_endpoint = ''
 		roles = json_node['roles']
 		has_api = bool(roles & 2)
@@ -221,6 +215,18 @@ class NetworkRepository:
 			*extra_data,
 			*api_node_info_data,
 			roles)
+
+	def _create_descriptor_from_json(self, json_node):
+		# network crawler extracts as much extra data as possible, but it might not always be available for all nodes
+		extra_data = (0, 0, 0)
+		if 'extraData' in json_node:
+			json_extra_data = json_node['extraData']
+			extra_data = (json_extra_data.get('height', 0), json_extra_data.get('finalizedHeight', 0), json_extra_data.get('balance', 0))
+
+		if self.is_nem:
+			return self._handle_nem_node(json_node, extra_data)
+
+		return self._handle_symbol_node(json_node, extra_data)
 
 	@staticmethod
 	def _format_symbol_version(version):
