@@ -85,16 +85,6 @@ export const transactionToPayload = (transaction, networkProperties) => {
 };
 
 /**
- * Creates a transaction URI.
- * @param {string} transactionPayload - The transaction payload.
- * @param {string} generationHash - The network generation hash.
- * @returns {string} The transaction URI.
- */
-export const createTransactionURI = (transactionPayload, generationHash) => {
-    return `web+symbol://transaction?data=${transactionPayload}&generationHash=${generationHash}`;
-};
-
-/**
  * Checks if a transaction is an outgoing transaction.
  * @param {TransactionTypes.Transaction} transaction - Transaction.
  * @param {AccountTypes.PublicAccount} currentAccount - Current account.

@@ -8,6 +8,7 @@ import { layout } from '@/app/styles';
 import { transactionToPayload } from '@/app/utils';
 import WalletController from '@/app/lib/controller/MobileWalletController';
 import { observer } from 'mobx-react-lite';
+import { SymbolQR } from '@/app/lib/features/SymbolQR';
 
 export const Receive = observer(function Receive() {
     const { currentAccount, isWalletReady, networkProperties } = WalletController;
@@ -34,7 +35,7 @@ export const Receive = observer(function Receive() {
     };
     const tableData = _.pick(transaction, 'recipientAddress');
     const qrData = {
-        transactionPayload: transactionToPayload(transaction, networkProperties),
+        payload: transactionToPayload(transaction, networkProperties),
     };
 
     return (
@@ -43,7 +44,7 @@ export const Receive = observer(function Receive() {
                 <FormItem>
                     <Widget>
                         <FormItem style={layout.alignCenter}>
-                            <QRCode data={qrData} type={QRCode.QRTypes.Transaction} networkProperties={networkProperties} />
+                            <QRCode data={qrData} type={SymbolQR.TYPE.Transaction} networkProperties={networkProperties} />
                             <TableView data={tableData} rawAddresses />
                         </FormItem>
                     </Widget>
