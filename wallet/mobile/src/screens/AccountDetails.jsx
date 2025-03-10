@@ -8,6 +8,7 @@ import { layout } from '@/app/styles';
 import { usePasscode, useToggle } from '@/app/hooks';
 import WalletController from '@/app/lib/controller/MobileWalletController';
 import { observer } from 'mobx-react-lite';
+import { SymbolQR } from '@/app/lib/features/SymbolQR';
 
 export const AccountDetails = observer(function AccountDetails() {
     const { currentAccount, accountInfo, networkProperties, networkIdentifier } = WalletController;
@@ -73,7 +74,7 @@ export const AccountDetails = observer(function AccountDetails() {
                 <FormItem>
                     <Widget>
                         <FormItem style={layout.alignCenter}>
-                            <QRCode data={qrData} type={QRCode.QRTypes.Address} networkProperties={networkProperties} />
+                            <QRCode data={qrData} type={SymbolQR.TYPE.Address} networkProperties={networkProperties} />
                         </FormItem>
                         <FormItem>
                             <TableView data={tableData} rawAddresses />

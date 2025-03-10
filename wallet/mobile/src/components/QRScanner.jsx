@@ -5,7 +5,8 @@ import QRCodeScanner from 'react-native-qrcode-scanner';
 import { ButtonClose, StyledText } from '@/app/components';
 import { colors, spacings } from '@/app/styles';
 import { $t } from '@/app/localization';
-import { SymbolQRCodeType, parseSymbolQR } from '@/app/utils/qr';
+import { SymbolQR } from '@/app/lib/features/SymbolQR';
+import { extractAccountSymbolQR, extractAddressSymbolQR, extractContactSymbolQR, extractMnemonicSymbolQR } from '@/app/utils/qr';
 
 export const QRScanner = (props) => {
     const { isVisible, type, onSuccess, onClose } = props;
@@ -17,33 +18,27 @@ export const QRScanner = (props) => {
 
     const handleScan = (response) => {
         // Parse the QR code string
-        let data;
+        let symbolQR;
         try {
-            data = JSON.parse(response.data);
+            symbolQR = SymbolQR.fromTransportString(response.data);
         } catch {
             return handleParseError('error_qr_failed_parse');
         }
 
-        // Parse the Symbol QR code data
-        let parsedData;
-        try {
-            parsedData = parseSymbolQR(data);
-        } catch (error) {
-            return handleParseError(error.message);
-        }
-
         // Check if the parsed data type matches the expected type (if set)
-        if (type && parsedData.type !== type) return handleParseError('error_qr_expected_type');
+        if (type && symbolQR.type !== type) return handleParseError('error_qr_expected_type');
+
+        const parsedData = symbolQR.toJSON();
 
         // Handle the parsed data. Deliver to the parent component
         const handlers = {
-            [SymbolQRCodeType.Contact]: (data) => onSuccess(data, 'contact'),
-            [SymbolQRCodeType.Account]: (data) => onSuccess(data, 'account'),
-            [SymbolQRCodeType.Transaction]: (data) => onSuccess(data, 'transaction'),
-            [SymbolQRCodeType.Mnemonic]: (data) => onSuccess(data.mnemonicPlainText, 'mnemonic'),
-            [SymbolQRCodeType.Address]: (data) => onSuccess(data, 'address'),
+            [SymbolQR.TYPE.Contact]: (data) => onSuccess(extractContactSymbolQR(data), 'contact'),
+            [SymbolQR.TYPE.Account]: (data) => onSuccess(extractAccountSymbolQR(data), 'account'),
+            [SymbolQR.TYPE.Transaction]: (data) => onSuccess(data, 'transaction'),
+            [SymbolQR.TYPE.Mnemonic]: (data) => onSuccess(extractMnemonicSymbolQR(data), 'mnemonic'),
+            [SymbolQR.TYPE.Address]: (data) => onSuccess(extractAddressSymbolQR(data), 'address'),
         };
-        handlers[parsedData.type](parsedData);
+        handlers[symbolQR.type](parsedData);
         onClose();
     };
 

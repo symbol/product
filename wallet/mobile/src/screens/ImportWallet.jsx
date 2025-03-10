@@ -7,7 +7,6 @@ import {
     ButtonPlain,
     FormItem,
     MnemonicInput,
-    QRCode,
     QRScanner,
     Screen,
     StyledText,
@@ -19,6 +18,7 @@ import { Router } from '@/app/Router';
 import { $t } from '@/app/localization';
 import { NetworkIdentifier, WalletAccountType } from '@/app/constants';
 import WalletController from '@/app/lib/controller/MobileWalletController';
+import { SymbolQR } from '@/app/lib/features/SymbolQR';
 
 export const ImportWallet = () => {
     const [name] = useState($t('s_importWallet_defaultAccountName'));
@@ -36,6 +36,7 @@ export const ImportWallet = () => {
         $t('s_importWallet_loading_step5'),
     ];
 
+    const handleMnemonicScan = (data) => setMnemonic(data.mnemonic);
     const toggleQRScanner = () => setIsQRScannerVisible(!isQRScannerVisible);
     const next = () => createPasscode();
     const [checkOptInAccounts] = useDataManager(
@@ -106,10 +107,10 @@ export const ImportWallet = () => {
                 <FormItem>
                     <ButtonPlain title={$t('button_scanQR')} onPress={toggleQRScanner} />
                     <QRScanner
-                        type={QRCode.QRTypes.mnemonic}
+                        type={SymbolQR.TYPE.Mnemonic}
                         isVisible={isQRScannerVisible}
                         onClose={toggleQRScanner}
-                        onSuccess={setMnemonic}
+                        onSuccess={handleMnemonicScan}
                     />
                 </FormItem>
             </ScrollView>

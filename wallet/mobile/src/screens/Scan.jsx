@@ -15,7 +15,6 @@ import {
 } from '@/app/components';
 import { $t } from '@/app/localization';
 import { Router } from '@/app/Router';
-import { symbolTransactionFromPayload } from '@/app/utils';
 import { useToggle } from '@/app/hooks';
 import { layout } from '@/app/styles';
 import { TransactionType } from '@/app/constants';
@@ -123,7 +122,7 @@ export const Scan = observer(function Scan() {
             format: async (data) => {
                 // Convert transaction from payload and resolve it
                 const transaction = await TransactionService.resolveTransactionFromPayload(
-                    data.transactionPayload,
+                    data.payload,
                     networkProperties,
                     currentAccount,
                 );

@@ -4,18 +4,14 @@ import { LoadingIndicator } from '@/app/components';
 import { borders, colors } from '@/app/styles';
 import { handleError } from '@/app/utils';
 import { useDataManager } from '@/app/hooks';
-import { SymbolQRCodeType, convertQRToBase64, createSymbolQR } from '@/app/utils/qr';
+import { SymbolQR } from '@/app/lib/features/SymbolQR';
 
 export const QRCode = (props) => {
     const { type, data, networkProperties } = props;
     const [prevData, setPrevData] = useState(false);
 
     const [generateImage, isImageLoading, image] = useDataManager(
-        (data) => {
-            const qrData = createSymbolQR(type, data, networkProperties);
-
-            return convertQRToBase64(qrData);
-        },
+        (data) => new SymbolQR(type, data, networkProperties).toBase64(),
         null,
         handleError
     );
@@ -34,8 +30,6 @@ export const QRCode = (props) => {
         </View>
     );
 };
-
-QRCode.QRTypes = SymbolQRCodeType;
 
 const styles = StyleSheet.create({
     root: {
