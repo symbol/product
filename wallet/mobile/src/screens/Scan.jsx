@@ -122,7 +122,7 @@ export const Scan = observer(function Scan() {
             format: async (data) => {
                 // Convert transaction from payload and resolve it
                 const transaction = await TransactionService.resolveTransactionFromPayload(
-                    data.payload,
+                    data.transactionPayload,
                     networkProperties,
                     currentAccount,
                 );
