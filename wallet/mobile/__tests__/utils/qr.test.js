@@ -1,207 +1,114 @@
-import { createSymbolQR, parseSymbolQR } from '@/app/utils/qr';
+import {
+    extractAccountSymbolQR,
+    extractAddressSymbolQR,
+    extractContactSymbolQR,
+    extractMnemonicSymbolQR,
+    extractTransactionSymbolQR,
+} from '@/app/utils/qr';
 import { currentNetworkIdentifier, walletStorageAccounts } from '__fixtures__/local/wallet';
 import { networkProperties } from '__fixtures__/local/network';
 
 describe('utils/qr', () => {
-    describe('createSymbolQR', () => {
-        const runCreateSymbolQRTest = (type, data, expectedResult) => {
-            // Act:
-            const result = createSymbolQR(type, data, networkProperties);
-
-            // Assert:
-            expect(result).toStrictEqual(expectedResult);
-        };
-        const baseResult = {
-            chain_id: '49D6E1CE276A85B70EAFE52349AACCA389302E7A9754BCF1221E79494FC665A4',
-            network_id: 152,
+    const runExtractQRTest = (functionToTest, data, expectedResult) => {
+        // Arrange:
+        const qrData = {
+            generationHash: networkProperties.generationHash,
+            networkIdentifier: networkProperties.networkIdentifier,
             v: 3,
+            type: 99,
+            data,
+        };
+        const extendedExpectedResult = {
+            generationHash: networkProperties.generationHash,
+            networkIdentifier: networkProperties.networkIdentifier,
+            type: 99,
+            ...expectedResult,
         };
 
-        it('creates contact QR code', () => {
+        // Act:
+        const result = functionToTest(qrData);
+
+        // Assert:
+        expect(result).toStrictEqual(extendedExpectedResult);
+    };
+
+    describe('extractContactSymbolQR', () => {
+        it('extracts data from contact QR code', () => {
             // Arrange:
-            const type = 1;
             const data = {
                 name: 'Alice',
                 publicKey: walletStorageAccounts[currentNetworkIdentifier][0].publicKey,
             };
             const expectedResult = {
-                ...baseResult,
-                type,
-                data,
-            };
-
-            // Act & Assert:
-            runCreateSymbolQRTest(type, data, expectedResult);
-        });
-
-        it('creates account QR code', () => {
-            // Arrange:
-            const type = 2;
-            const data = {
-                privateKey: walletStorageAccounts[currentNetworkIdentifier][0].privateKey,
-            };
-            const expectedResult = {
-                ...baseResult,
-                type,
-                data,
-            };
-
-            // Act & Assert:
-            runCreateSymbolQRTest(type, data, expectedResult);
-        });
-
-        it('creates transaction QR code', () => {
-            // Arrange:
-            const type = 3;
-            const data = {
-                payload: 'payload',
-            };
-            const expectedResult = {
-                ...baseResult,
-                type,
-                data,
-            };
-
-            // Act & Assert:
-            runCreateSymbolQRTest(type, data, expectedResult);
-        });
-
-        it('creates mnemonic QR code', () => {
-            // Arrange:
-            const type = 5;
-            const data = {
-                mnemonic: 'mnemonic',
-            };
-            const expectedResult = {
-                ...baseResult,
-                type,
-                data,
-            };
-
-            // Act & Assert:
-            runCreateSymbolQRTest(type, data, expectedResult);
-        });
-
-        it('creates address QR code', () => {
-            // Arrange:
-            const type = 7;
-            const data = {
-                name: 'Alice',
+                ...data,
                 address: walletStorageAccounts[currentNetworkIdentifier][0].address,
             };
-            const expectedResult = {
-                ...baseResult,
-                type,
-                data,
-            };
 
             // Act & Assert:
-            runCreateSymbolQRTest(type, data, expectedResult);
+            runExtractQRTest(extractContactSymbolQR, data, expectedResult);
         });
     });
 
-    describe('parseSymbolQR', () => {
-        const runParseSymbolQRTest = (type, data, expectedResult) => {
-            // Act:
-            const result = parseSymbolQR({
-                v: 3,
-                type,
-                network_id: 152,
-                chain_id: '49D6E1CE276A85B70EAFE52349AACCA389302E7A9754BCF1221E79494FC665A4',
-                data,
-            });
-
-            // Assert:
-            expect(result).toStrictEqual(expectedResult);
-        };
-
-        const baseResult = {
-            generationHash: '49D6E1CE276A85B70EAFE52349AACCA389302E7A9754BCF1221E79494FC665A4',
-            networkIdentifier: currentNetworkIdentifier,
-        };
-
-        it('parses contact QR code', () => {
+    describe('extractAccountSymbolQR', () => {
+        it('extracts data from account QR code', () => {
             // Arrange:
-            const type = 1;
-            const data = {
-                name: 'Alice',
-                publicKey: walletStorageAccounts[currentNetworkIdentifier][0].publicKey,
-            };
-            const expectedResult = {
-                ...baseResult,
-                type,
-                name: 'Alice',
-                publicKey: walletStorageAccounts[currentNetworkIdentifier][0].publicKey,
-            };
-
-            // Act & Assert:
-            runParseSymbolQRTest(type, data, expectedResult);
-        });
-
-        it('parses account QR code', () => {
-            // Arrange:
-            const type = 2;
             const data = {
                 privateKey: walletStorageAccounts[currentNetworkIdentifier][0].privateKey,
             };
             const expectedResult = {
-                ...baseResult,
-                type,
-                privateKey: walletStorageAccounts[currentNetworkIdentifier][0].privateKey,
+                ...data,
+                publicKey: walletStorageAccounts[currentNetworkIdentifier][0].publicKey,
+                address: walletStorageAccounts[currentNetworkIdentifier][0].address,
             };
 
             // Act & Assert:
-            runParseSymbolQRTest(type, data, expectedResult);
+            runExtractQRTest(extractAccountSymbolQR, data, expectedResult);
         });
+    });
 
-        it('parses transaction QR code', () => {
+    describe('extractTransactionSymbolQR', () => {
+        it('extracts data from transaction QR code', () => {
             // Arrange:
-            const type = 3;
             const data = {
-                payload: 'payload',
+                payload: 'some-payload',
             };
             const expectedResult = {
-                ...baseResult,
-                type,
-                payload: 'payload',
+                transactionPayload: data.payload,
             };
 
             // Act & Assert:
-            runParseSymbolQRTest(type, data, expectedResult);
+            runExtractQRTest(extractTransactionSymbolQR, data, expectedResult);
         });
+    });
 
-        it('parses mnemonic QR code', () => {
+    describe('extractMnemonicSymbolQR', () => {
+        it('extracts data from mnemonic QR code', () => {
             // Arrange:
-            const type = 5;
             const data = {
-                mnemonic: 'mnemonic',
+                plainMnemonic: 'some mnemonic',
             };
             const expectedResult = {
-                ...baseResult,
-                type,
-                mnemonic: 'mnemonic',
+                mnemonic: data.plainMnemonic,
             };
 
             // Act & Assert:
-            runParseSymbolQRTest(type, data, expectedResult);
+            runExtractQRTest(extractMnemonicSymbolQR, data, expectedResult);
         });
+    });
 
-        it('parses address QR code', () => {
+    describe('extractAddressSymbolQR', () => {
+        it('extracts data from address QR code', () => {
             // Arrange:
-            const type = 7;
             const data = {
                 name: 'Alice',
                 address: walletStorageAccounts[currentNetworkIdentifier][0].address,
             };
             const expectedResult = {
-                ...baseResult,
-                type,
-                name: 'Alice',
-                address: walletStorageAccounts[currentNetworkIdentifier][0].address,
+                ...data,
             };
 
             // Act & Assert:
-            runParseSymbolQRTest(type, data, expectedResult);
+            runExtractQRTest(extractAddressSymbolQR, data, expectedResult);
         });
     });
 });

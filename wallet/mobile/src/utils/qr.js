@@ -36,7 +36,7 @@ export const extractTransactionSymbolQR = (qrData) => {
         type,
         generationHash,
         networkIdentifier,
-        data: data.payload,
+        transactionPayload: data.payload,
     };
 };
 
