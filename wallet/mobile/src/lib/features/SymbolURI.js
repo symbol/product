@@ -8,7 +8,7 @@ const SCHEMAS = {
 };
 
 export class SymbolURI {
-    constructor(action, params = {}) {
+    constructor(action, params) {
         if (!SCHEMAS[action]) {
             throw new Error(`Unsupported Symbol URI action: "${action}"`);
         }
@@ -47,7 +47,7 @@ export class SymbolURI {
      * Converts the SymbolURI object into a URI string.
      * @returns {string} The constructed URI.
      */
-    toURI() {
+    toTransportString() {
         const queryString = new URLSearchParams(this.params).toString();
         return `${this.scheme}://${this.action}?${queryString}`;
     }
@@ -69,15 +69,11 @@ export class SymbolURI {
      * @param {string} uri - The Symbol URI string.
      * @returns {SymbolURI} An instance of SymbolURI with validated data.
      */
-    static fromURI(uri) {
-        try {
-            const url = new URL(uri);
-            const action = url.hostname;
-            const params = Object.fromEntries(new URLSearchParams(url.search));
+    static fromTransportString(uri) {
+        const url = new URL(uri);
+        const action = url.hostname;
+        const params = Object.fromEntries(new URLSearchParams(url.search));
 
-            return new SymbolURI(action, params);
-        } catch (error) {
-            throw new Error(`Invalid Symbol URI: ${uri}`);
-        }
+        return new SymbolURI(action, params);
     }
 }
