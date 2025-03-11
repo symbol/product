@@ -29,20 +29,39 @@ const requestAndroidWritePermission = async () => {
 };
 
 export class PlatformUtils {
+    /**
+     * Copies the given string to the clipboard.
+     * @param {string} str - The string to be copied to the clipboard.
+     */
     static copyToClipboard(str) {
         Clipboard.setString(str);
     }
 
+    /**
+     * Retrieves the operating system of the platform.
+     * @returns {'android' | 'ios'} The operating system id.
+     */
     static getOS() {
         return Platform.OS;
     }
 
+    /**
+     * Triggers a vibration on the device.
+     * Only works on Android.
+     */
     static vibrate() {
         if (PlatformUtils.getOS() === 'android') {
             Vibration.vibrate(2);
         }
     }
 
+    /**
+     * Writes the given data to a file.
+     * @param {string} data - The data to be written to the file.
+     * @param {string} filename - The name of the file.
+     * @param {string} encoding - The encoding of the file.
+     * @returns {Promise<boolean>} A promise that resolves to true if the file was written successfully.
+     */
     static async writeFile(data, filename, encoding) {
         const { dirs } = RNFetchBlob.fs;
         const destinationDirectory = PlatformUtils.getOS === 'ios' ? dirs.DocumentDir : dirs.DownloadDir;
@@ -63,6 +82,10 @@ export class PlatformUtils {
         return true;
     }
 
+    /**
+     * Requests the necessary permissions to write to the device storage.
+     * @returns {Promise<boolean>} A promise that resolves to true if the permission was granted.
+     */
     static async requestWritePermission() {
         if (Platform.OS === 'android') {
             return requestAndroidWritePermission();
