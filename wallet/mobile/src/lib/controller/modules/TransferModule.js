@@ -4,6 +4,7 @@ import { MessageType, TransactionType } from '@/app/constants';
 import { AccountService, NamespaceService } from '@/app/lib/services';
 import { encodePlainMessage, isIncomingTransaction, isOutgoingTransaction, isSymbolAddress } from '@/app/utils';
 import { AppError } from '@/app/lib/error';
+import * as TransactionTypes from '@/app/types/Transaction';
 
 const defaultState = {};
 
@@ -17,6 +18,17 @@ export class TransferModule {
         this._root = root;
     }
 
+    /**
+     * Prepares a transfer transaction.
+     * @param {object} options - The transfer options.
+     * @param {string} options.senderPublicKey - The sender public key.
+     * @param {string} options.recipientAddressOrAlias - The recipient address or alias.
+     * @param {object[]} options.mosaics - The mosaics to transfer.
+     * @param {string} options.messageText - The message text.
+     * @param {boolean} options.isMessageEncrypted - The message encryption flag.
+     * @param {string} [password] - The wallet password.
+     * @returns {TransactionTypes.Transaction} The transfer transaction.
+     */
     createTransaction = async (options, password) => {
         const { senderPublicKey, recipientAddressOrAlias, mosaics, messageText, isMessageEncrypted } = options;
         const { currentAccount, networkProperties } = this._root;
@@ -81,6 +93,12 @@ export class TransferModule {
         return transferTransaction;
     };
 
+    /**
+     * Decrypts the message payload of a transaction.
+     * @param {TransactionTypes.Transaction} transaction - The transaction.
+     * @param {string} [password] - The wallet password.
+     * @returns {string} The decrypted message text.
+     */
     getDecryptedMessageText = async (transaction, password) => {
         const { currentAccount, networkProperties } = this._root;
 
