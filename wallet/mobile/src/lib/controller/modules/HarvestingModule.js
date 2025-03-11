@@ -4,6 +4,9 @@ import { LinkAction, LinkActionMessage, MessageType, TransactionType } from '@/a
 import { HarvestingService } from '@/app/lib/services';
 import { addressFromPublicKey, encodeDelegatedHarvestingMessage, generateKeyPair } from '@/app/utils';
 import { AppError } from '@/app/lib/error';
+import * as HarvestingTypes from '@/app/types/Harvesting';
+import * as TransactionTypes from '@/app/types/Transaction';
+import * as SearchCriteriaTypes from '@/app/types/SearchCriteria';
 
 const defaultState = {};
 
@@ -17,6 +20,10 @@ export class HarvestingModule {
         this._root = root;
     }
 
+    /**
+     * Fetches the harvesting status of the current account.
+     * @returns {Promise<{ status: string, nodeUrl?: string }>} - The harvesting status.
+     */
     fetchStatus = async () => {
         const { currentAccount, currentAccountInfo, networkProperties } = this._root;
         const { linkedKeys } = currentAccountInfo;
@@ -24,6 +31,11 @@ export class HarvestingModule {
         return HarvestingService.fetchStatus(networkProperties, currentAccount, linkedKeys);
     };
 
+    /**
+     * Fetches harvested blocks by current account.
+     * @param {SearchCriteriaTypes.HarvestedBlockSearchCriteria} searchCriteria - Pagination params.
+     * @returns {Promise<HarvestingTypes.HarvestedBlock[]>} - The harvested blocks.
+     */
     fetchAccountHarvestedBlocks = async (searchCriteria = {}) => {
         const { pageNumber = 1, pageSize = 15 } = searchCriteria;
         const { currentAccount, networkProperties } = this._root;
@@ -32,6 +44,10 @@ export class HarvestingModule {
         return HarvestingService.fetchHarvestedBlocks(networkProperties, address, { pageNumber, pageSize });
     };
 
+    /**
+     * Fetches the node list (API and dual nodes) that are suggested for harvesting.
+     * @returns {Promise<string[]>} - The node list.
+     */
     fetchNodeList = async () => {
         const { networkIdentifier } = this._root;
         const nodeList = await HarvestingService.fetchNodeList(networkIdentifier);
@@ -39,6 +55,10 @@ export class HarvestingModule {
         return shuffle(nodeList);
     };
 
+    /**
+     * Fetches the harvesting summary of current account.
+     * @returns {Promise<HarvestingTypes.HarvestingSummary>} - The harvesting summary.
+     */
     fetchSummary = async () => {
         const { currentAccount, networkProperties } = this._root;
         const { address } = currentAccount;
@@ -46,6 +66,14 @@ export class HarvestingModule {
         return HarvestingService.fetchSummary(networkProperties, address);
     };
 
+    /**
+     * Prepares the transaction to start harvesting for the current account.
+     * Aggregate transaction includes linking the VRF and remote keys, and sending a request to the node.
+     * If the keys are already linked, they will be unlinked first.
+     * @param {string} nodePublicKey - The public key of the node.
+     * @param {string} [password] - The wallet password.
+     * @returns {Promise<TransactionTypes.Transaction>} - The transaction to start harvesting.
+     */
     createStartHarvestingTransaction = async (nodePublicKey, password) => {
         const currentAccountPrivateKey = await this._root.getCurrentAccountPrivateKey(password);
         const { currentAccount, currentAccountInfo, networkIdentifier } = this._root;
@@ -131,6 +159,11 @@ export class HarvestingModule {
         };
     };
 
+    /**
+     * Prepares the transaction to stop harvesting for the current account.
+     * Aggregate transaction includes unlinking the VRF and remote keys.
+     * @returns {TransactionTypes.Transaction} - The transaction to stop harvesting.
+     */
     createStopHarvestingTransaction = () => {
         const { currentAccount, currentAccountInfo } = this._root;
         const accountPublicKey = currentAccount.publicKey;
