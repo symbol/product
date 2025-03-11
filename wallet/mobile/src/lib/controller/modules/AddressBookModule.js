@@ -169,18 +169,4 @@ export class AddressBookModule {
             this._state.addressBook = addressBook;
         });
     };
-
-    /**
-     * Sets the address book.
-     * @param {AddressBookTypes.AddressBook} addressBook - The address book.
-     * @returns {Promise} A promise that resolves when the address book is set.
-     * @private
-     */
-    _setAddressBook = async (addressBook) => {
-        await this._root._persistentStorage.setAddressBook(addressBook);
-
-        runInAction(() => {
-            this._state.addressBook = addressBook;
-        });
-    };
 }
