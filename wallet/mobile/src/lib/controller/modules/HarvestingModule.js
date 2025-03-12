@@ -175,7 +175,7 @@ export class HarvestingModule {
         if (linkedKeys.vrfPublicKey) {
             transactions.push({
                 type: TransactionType.VRF_KEY_LINK,
-                linkAction: LinkAction[LinkAction.Unlink],
+                linkAction: LinkActionMessage[LinkAction.Unlink],
                 linkedPublicKey: linkedKeys.vrfPublicKey,
                 signerPublicKey: accountPublicKey,
             });
@@ -183,7 +183,7 @@ export class HarvestingModule {
         if (linkedKeys.linkedPublicKey) {
             transactions.push({
                 type: TransactionType.ACCOUNT_KEY_LINK,
-                linkAction: LinkAction[LinkAction.Unlink],
+                linkAction: LinkActionMessage[LinkAction.Unlink],
                 linkedPublicKey: linkedKeys.linkedPublicKey,
                 signerPublicKey: accountPublicKey,
             });
@@ -191,7 +191,7 @@ export class HarvestingModule {
         if (linkedKeys.nodePublicKey) {
             transactions.push({
                 type: TransactionType.NODE_KEY_LINK,
-                linkAction: LinkAction[LinkAction.Unlink],
+                linkAction: LinkActionMessage[LinkAction.Unlink],
                 linkedPublicKey: linkedKeys.nodePublicKey,
                 signerPublicKey: accountPublicKey,
             });
