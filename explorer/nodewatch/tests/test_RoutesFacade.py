@@ -212,7 +212,7 @@ class NemRoutesFacadeTest(unittest.TestCase):
 	# endregion
 
 
-class SymbolRoutesFacadeTest(unittest.TestCase):
+class SymbolRoutesFacadeTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
 	# region reload / refresh
 
 	def test_can_reload_all(self):
