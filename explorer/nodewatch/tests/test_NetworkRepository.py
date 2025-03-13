@@ -214,6 +214,9 @@ class NetworkRepositoryTest(unittest.TestCase):
 			'finalizedHeight': 1486742,
 			'version': '1.0.3.5',
 			'balance': 28083310.571743,
+			'isHealthy': None,
+			'isSslEnabled': None,
+			'restVersion': None,
 			'roles': 5,
 		}, json_object)
 
@@ -236,6 +239,9 @@ class NetworkRepositoryTest(unittest.TestCase):
 			'version': '1.0.3.5',
 			'balance': 82375.554976,
 			'roles': 3,
+			'isHealthy': True,
+			'isSslEnabled': True,
+			'restVersion': '2.4.4',
 		}, json_object)
 
 	# endregion

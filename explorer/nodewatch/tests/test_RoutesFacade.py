@@ -425,6 +425,9 @@ class SymbolRoutesFacadeTest(unittest.TestCase):
 			'height': 1486762,
 			'finalizedHeight': 1486740,
 			'balance': 3155632.471994,
+			'isHealthy': True,
+			'isSslEnabled': True,
+			'restVersion': '2.4.4',
 			'roles': 2
 		}
 

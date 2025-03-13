@@ -5,6 +5,11 @@
       "finalizedHeight": 1486740,
       "height": 1486760
     },
+    "apiNodeInfo": {
+      "isHealth": true,
+      "isSSL": true,
+      "restVersion": "2.4.4"
+    },
     "friendlyName": "ibone74",
     "host": "symbol.shizuilab.com",
     "networkGenerationHashSeed": "57F7DA205008026C776CB6AED843393F04CD458E0AA2D9F1D5F31A402072B2D6",
@@ -32,6 +37,7 @@
       "finalizedHeight": 1486742,
       "height": 1486761
     },
+    "apiNodeInfo": {},
     "friendlyName": "jaguar",
     "host": "jaguar.catapult.ninja",
     "networkGenerationHashSeed": "57F7DA205008026C776CB6AED843393F04CD458E0AA2D9F1D5F31A402072B2D6",
@@ -59,6 +65,11 @@
       "balance": 3155632.471994,
       "finalizedHeight": 1486740,
       "height": 1486762
+    },
+    "apiNodeInfo": {
+      "isHealth": true,
+      "isSSL": true,
+      "restVersion": "2.4.4"
     },
     "friendlyName": "Allnodes250",
     "host": "",
