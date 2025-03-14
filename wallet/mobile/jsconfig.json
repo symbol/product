@@ -3,7 +3,8 @@
         "baseUrl": ".",
         "paths": {
             "@/app/*": ["src/*"],
-            "__fixtures__/*": ["__fixtures__/*"]
+            "__fixtures__/*": ["__fixtures__/*"],
+            "symbol-sdk/symbol": ["node_modules/symbol-sdk/src/symbol/index.js"]
         }
     },
     "exclude": ["**/node_modules/*", "**/build/*", "**/scripts/*"]
