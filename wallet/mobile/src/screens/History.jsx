@@ -17,7 +17,7 @@ import {
 import { $t } from '@/app/localization';
 import { Router } from '@/app/Router';
 import { colors, spacings } from '@/app/styles';
-import { filterAllowedTransactions, filterBlacklistedTransactions, handleError } from '@/app/utils';
+import { removeBlockedTransactions, removeAllowedTransactions, handleError } from '@/app/utils';
 import { useDataManager, useInit, useProp } from '@/app/hooks';
 import { TransactionGroup, TransactionType } from '@/app/constants';
 import WalletController from '@/app/lib/controller/MobileWalletController';
@@ -52,8 +52,8 @@ export const History = observer(function History() {
         // Filter transactions using address book
         const blackList = WalletController.modules.addressBook.blackList;
         const filteredConfirmed = filter.blocked
-            ? filterBlacklistedTransactions(confirmed.data, blackList)
-            : filterAllowedTransactions(confirmed.data, blackList);
+            ? removeAllowedTransactions(confirmed.data, blackList)
+            : removeBlockedTransactions(confirmed.data, blackList);
         let filteredUnconfirmed;
         let filteredPartial;
 
@@ -64,11 +64,11 @@ export const History = observer(function History() {
 
             // Filter transactions using address book
             filteredUnconfirmed = filter.blocked
-                ? filterBlacklistedTransactions(unconfirmed.data, blackList)
-                : filterAllowedTransactions(unconfirmed.data, blackList);
+                ? removeAllowedTransactions(unconfirmed.data, blackList)
+                : removeBlockedTransactions(unconfirmed.data, blackList);
             filteredPartial = filter.blocked
-                ? filterBlacklistedTransactions(partial.data, blackList)
-                : filterAllowedTransactions(partial.data, blackList);
+                ? removeAllowedTransactions(partial.data, blackList)
+                : removeBlockedTransactions(partial.data, blackList);
         }
 
         // Escape if account has changed

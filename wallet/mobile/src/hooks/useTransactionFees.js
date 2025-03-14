@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { calculateTransactionFees } from '@/app/utils/transaction';
+import { calculateTransactionFees } from '@/app/utils';
 
 export const useTransactionFees = (transaction, networkProperties) => {
     const defaultTransactionFees = {
