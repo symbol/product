@@ -6,7 +6,7 @@ import { ButtonClose, StyledText } from '@/app/components';
 import { colors, spacings } from '@/app/styles';
 import { $t } from '@/app/localization';
 import { SymbolQR } from '@/app/lib/features/SymbolQR';
-import { extractAccountSymbolQR, extractAddressSymbolQR, extractContactSymbolQR, extractMnemonicSymbolQR } from '@/app/utils/qr';
+import { extractAccountSymbolQR, extractAddressSymbolQR, extractContactSymbolQR, extractMnemonicSymbolQR } from '@/app/utils';
 
 export const QRScanner = (props) => {
     const { isVisible, type, onSuccess, onClose } = props;
