@@ -80,15 +80,12 @@ class BasicRoutesFacade:
 		order = kwargs.get('order')
 
 		def custom_filter(descriptor):
-			role_condition = True
-
 			if role is not None:
 				role_condition = role == descriptor.roles if exact_match else role == (role & descriptor.roles)
+				if not role_condition:
+					return False
 
-			if only_ssl:
-				return role_condition and descriptor.is_ssl_enabled
-
-			return role_condition
+			return descriptor.is_ssl_enabled if only_ssl else True
 
 		nodes = list(map(
 			lambda descriptor: descriptor.to_json(),
