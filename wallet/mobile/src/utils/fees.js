@@ -4,6 +4,7 @@ import { toFixedNumber } from './helper';
 import { transactionToSymbol } from './transaction-to-symbol';
 import { addressFromPrivateKey, addressFromPublicKey, generateKeyPair } from '@/app/utils/account';
 import * as AccountTypes from '@/app/types/Account';
+import * as MosaicTypes from '@/app/types/Mosaic';
 import * as NetworkTypes from '@/app/types/Network';
 import * as TransactionTypes from '@/app/types/Transaction';
 import { encodeDelegatedHarvestingMessage, encodePlainMessage, encryptMessage } from '@/app/utils/transaction';
@@ -40,7 +41,7 @@ export const calculateTransactionFees = (transaction, networkProperties) => {
  * @param {string} options.networkIdentifier - The network identifier.
  * @param {string} options.messageText - The message text.
  * @param {boolean} options.isMessageEncrypted - The message encryption flag.
- * @param {array} options.mosaics - The mosaics.
+ * @param {MosaicTypes.Mosaic} options.mosaics - The mosaics.
  * @returns {TransactionTypes.Transaction} The transaction object.
  */
 export const createSingleTransferTransactionStub = ({ networkIdentifier, messageText, isMessageEncrypted, mosaics = [] }) => {
@@ -81,7 +82,7 @@ export const createSingleTransferTransactionStub = ({ networkIdentifier, message
  * @param {string} options.networkIdentifier - The network identifier.
  * @param {string} options.messageText - The message text.
  * @param {boolean} options.isMessageEncrypted - The message encryption flag.
- * @param {array} options.mosaics - The mosaics.
+ * @param {MosaicTypes.Mosaic} options.mosaics - The mosaics.
  * @returns {TransactionTypes.Transaction} The transaction object.
  */
 export const createMultisigTransferTransactionStub = (options) => {

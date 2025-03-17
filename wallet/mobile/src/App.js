@@ -60,7 +60,7 @@ const App = () => {
         WalletController.runConnectionJob();
         WalletController.modules.market.fetchData();
     };
-    
+
     const handleLogout = async () => {
         await deleteUserPinCode();
         handleLoginStateChange();
