@@ -1,9 +1,9 @@
 # Symbol Mobile Wallet
 
 ## Getting Started
-- [Install Node.js](https://nodejs.org) (v12.1.0 or above)
+- [Install Node.js](https://nodejs.org) (v20.11.0 or above)
 - [Install Yarn package manager](https://yarnpkg.com/getting-started/install)
-- [Set up the React Native development environment](https://reactnative.dev/docs/environment-setup) (choose tab **React Native CLI Quickstart**).
+- [Set up the React Native development environment](https://reactnative.dev/docs/set-up-your-environment).
 
 ## Installation
 1. Install dependencies:
@@ -49,27 +49,48 @@ https://reactnative.dev/docs/running-on-device
 ## Folder structure
 ```
 /
-│── src/                        # Main source folder
-│   ├── assets/                 # Stores images, fonts, and other assets
-│   ├── hooks/                  # Custom React hooks
-│   ├── components/             # Reusable React components
-│   ├── constants/              # Stores constants used across the app
-│   ├── config/                 # Configuration files
-│   │   ├── config.json         # Main configuration file
-│   │   ├── knownAccounts.json  # List of known accounts (exchanges, orgs, etc.)
-│   │   ├── optInWhiteList.json # List of public keys for Symbol Pre-launch Opt-in
-│   │   ├── termsAndPrivacy.json # Terms & Conditions and Privacy Policy
-│   ├── localization/           # Localization module
-│   │   ├── locales/            # Stores language files
-│   ├── screens/                # React Native screens (views)
-│   ├── lib/                    # Core application logic
-│   │   ├── services/           # Modules for HTTP communication with API nodes and external API
-│   │   ├── storage/            # Persistent & encrypted device storage
-│   │   ├── controller/         # WalletController and related modules
-│   │   ├── platform/           # Platform-specific utilities
-│   ├── styles/                 # Application-wide styling and theming
-│   ├── utils/                  # Helper functions
-│   ├── App.js                  # Main app component
-│   ├── Router.js               # Navigation configuration
-│── index.js                    # Application entry point
+│── src/                          # Main source folder
+│   ├── assets/                   # Stores images, fonts, and other assets
+│   ├── hooks/                    # Custom React hooks
+│   ├── components/               # Reusable React components
+│   ├── constants/                # Stores constants used across the app
+│   ├── config/                   # Configuration files
+│   │   ├── config.json           # Main app configuration file
+│   │   ├── knownAccounts.json    # List of known accounts (exchanges, orgs, etc.)
+│   │   ├── optInWhiteList.json   # List of public keys for Symbol Pre-launch Opt-in
+│   │   ├── termsAndPrivacy.json  # Terms & Conditions and Privacy Policy
+│   ├── localization/             # Localization module
+│   │   ├── locales/              # Language files
+│   ├── screens/                  # React Native screens (views)
+│   ├── styles/                   # Application-wide styles and themes
+│   ├── utils/                    # Utility/helper functions
+│   ├── lib/                      # Core application logic
+│   │   ├── services/             # Modules handling API requests and network communication
+│   │   │   ├── AccountService.js      # Fetches account data
+│   │   │   ├── ListenerService.js     # WebSocket listener for blockchain events
+│   │   │   ├── MosaicService.js       # Fetches mosaics (tokens) data
+│   │   │   ├── NetworkService.js      # Fetches blockchain network properties
+│   │   │   ├── HarvestingService.js   # Fetches harvesting status, summary and harvested blocks
+│   │   │   ├── MarketService.js       # Fetches market data
+│   │   │   ├── NamespaceService.js    # Fetches namespace data
+│   │   │   ├── TransactionService.js  # Handles transaction preparation and broadcasting
+│   │   ├── controller/           # App state management with MobX
+│   │   │   ├── WalletController.js        # Main logic class handling wallet operations and caching
+│   │   │   ├── MobileWalletController.js  #  Export of the WalletController instance initialized with storage and controller modules
+│   │   │   ├── modules/          # Additional controller modules
+│   │   │   │   ├── AddressBookModule.js   # Manages address book contacts
+│   │   │   │   ├── HarvestingModule.js    # Prepares harvesting start and stop transactions, fetches and cache harvesting status
+│   │   │   │   ├── MarketModule.js        # Fetches and stores market data, cache user currency preferences
+│   │   │   │   ├── TransferModule.js      # Prepares transfer transactions (multisig and single)
+│   │   ├── features/             # Application feature modules
+│   │   │   ├── SymbolQR.js       # Symbol QR code handler (create, parse, encode)
+│   │   │   ├── SymbolURI.js      # Symbol URI handler (create, parse URIs)
+│   │   ├── error/                # Custom application errors
+│   │   ├── storage/              # Persistent and secure storage management
+│   │   │   ├── PersistentStorage.js   # Device storage for caching non-sensitive data
+│   │   │   ├── SecureStorage.js       # Encrypted device storage for sensitive data
+│   │   │   ├── StorageMigration.js    # Manages storage versioning and migrations
+│   ├── App.js                    # Main application component
+│   ├── Router.js                 # Navigation and routing configuration
+│── index.js                      # Application entry point
 ```
