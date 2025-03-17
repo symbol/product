@@ -510,13 +510,13 @@ class SymbolRoutesFacadeTest(unittest.TestCase):  # pylint: disable=too-many-pub
 			'restVersion': '2.4.4',
 			'roles': 3,
 			'geoLocation': {
-				"continent": "Asia",
-				"country": "Japan",
-				"region": "13",
-				"city": "Chiyoda",
-				"lat": 12.0,
-				"lon": 15.0,
-				"isp": "Internet Inc."
+				'continent': 'Asia',
+				'country': 'Japan',
+				'region': '13',
+				'city': 'Chiyoda',
+				'lat': 12.0,
+				'lon': 15.0,
+				'isp': 'Internet Inc.'
 			}
 		}
 
