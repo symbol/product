@@ -1,7 +1,7 @@
 import React from 'react';
 import { Image, Linking, StyleSheet, View } from 'react-native';
 import { TouchableOpacity } from 'react-native-gesture-handler';
-import { FormItem, Screen, StyledText, TableView } from '@/app/components';
+import { FormItem, Screen, StyledText, TableView, Widget } from '@/app/components';
 import { config } from '@/app/config';
 import { $t } from '@/app/localization';
 import packageJSON from '../../package.json';
@@ -21,7 +21,11 @@ export function SettingsAbout() {
         <Screen>
             <FormItem>
                 <StyledText type="title">{$t('settings_about_version_title')}</StyledText>
-                <TableView data={tableData} />
+                <Widget>
+                    <FormItem>
+                        <TableView data={tableData} />
+                    </FormItem>
+                </Widget>
             </FormItem>
             <FormItem>
                 <StyledText type="title">{$t('settings_about_symbol_title')}</StyledText>
