@@ -1,9 +1,9 @@
 import React from 'react';
-import { StyleSheet } from 'react-native';
-import { FlatList, TouchableOpacity } from 'react-native-gesture-handler';
-import { Dropdown, FormItem, Screen, StyledText } from '@/app/components';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { ScrollView } from 'react-native-gesture-handler';
+import { Dropdown, FormItem, Screen, StyledText, TableView, Widget } from '@/app/components';
 import { $t } from '@/app/localization';
-import { borders, colors, spacings } from '@/app/styles';
+import { colors } from '@/app/styles';
 import { handleError } from '@/app/utils';
 import { useDataManager, useProp } from '@/app/hooks';
 import WalletController from '@/app/lib/controller/MobileWalletController';
@@ -11,11 +11,20 @@ import { observer } from 'mobx-react-lite';
 import { NetworkIdentifier } from '@/app/constants';
 
 export const SettingsNetwork = observer(function SettingsNetwork() {
-    const { networkProperties, nodeUrls, networkIdentifier } = WalletController;
-    const { nodeUrl } = networkProperties;
+    const { networkProperties, nodeUrls, networkIdentifier, selectedNodeUrl, isNetworkConnectionReady } = WalletController;
     const [selectedNetworkIdentifier, setSelectedNetworkIdentifier] = useProp(networkIdentifier, networkIdentifier);
-    const [selectedNodeUrl, setSelectedNodeUrl] = useProp(nodeUrl, nodeUrl);
-    const networkIdentifiers = [
+    const isConnectingToNode = !isNetworkConnectionReady;
+
+    const getTableValueNullable = (value) => value === null ? '-' : value;
+    const networkInfoTable = {
+        network: getTableValueNullable(networkProperties.networkIdentifier),
+        nodeUrl: getTableValueNullable(networkProperties.nodeUrl),
+        chainHeight: getTableValueNullable(networkProperties.chainHeight),
+        minFeeMultiplier: getTableValueNullable(networkProperties.transactionFees.minFeeMultiplier),
+    };
+    const tableStyle = isConnectingToNode ? { opacity: 0.25 } : null;
+
+    const networkIdentifierOptions = [
         {
             label: $t('s_settings_networkType_mainnet'),
             value: NetworkIdentifier.MAIN_NET,
@@ -25,11 +34,18 @@ export const SettingsNetwork = observer(function SettingsNetwork() {
             value: NetworkIdentifier.TEST_NET,
         },
     ];
-    const networkNodes = [null, ...nodeUrls[selectedNetworkIdentifier]];
+    const nodeOptions = [
+        {
+            label: $t('s_settings_node_automatically'),
+            value: null,
+        },
+        ...nodeUrls[selectedNetworkIdentifier].map((nodeUrl) => ({
+            label: nodeUrl,
+            value: nodeUrl,
+        })),
+    ]
 
-    const getNodeTitle = (nodeUrl) => (nodeUrl === null ? $t('s_settings_node_automatically') : nodeUrl);
-    const getNodeStyle = (nodeUrl) => (nodeUrl === selectedNodeUrl ? [styles.item, styles.itemSelected] : styles.item);
-    const [saveChanges, isLoading] = useDataManager(
+    const [saveChanges, isSavingChanges] = useDataManager(
         async (networkIdentifier, nodeUrl) => {
             await WalletController.selectNetwork(networkIdentifier, nodeUrl);
             WalletController.runConnectionJob();
@@ -39,50 +55,58 @@ export const SettingsNetwork = observer(function SettingsNetwork() {
     );
     const selectNetwork = async (networkIdentifier) => {
         setSelectedNetworkIdentifier(networkIdentifier);
-        setSelectedNodeUrl(null);
         saveChanges(networkIdentifier, null);
     };
     const selectNode = async (nodeUrl) => {
-        setSelectedNodeUrl(nodeUrl);
         saveChanges(networkIdentifier, nodeUrl);
     };
 
     return (
-        <Screen isLoading={isLoading}>
-            <FormItem>
-                <StyledText type="title">{$t('s_settings_network_select_title')}</StyledText>
-                <Dropdown
-                    value={selectedNetworkIdentifier}
-                    list={networkIdentifiers}
-                    title={$t('s_settings_networkType_modal_title')}
-                    onChange={selectNetwork}
-                />
-            </FormItem>
-            <FormItem clear="bottom" fill>
-                <StyledText type="title">{$t('s_settings_node_select_title')}</StyledText>
-                <FlatList
-                    data={networkNodes}
-                    keyExtractor={(item, index) => 'nl' + item + index}
-                    renderItem={({ item }) => (
-                        <FormItem type="list">
-                            <TouchableOpacity style={getNodeStyle(item)} onPress={() => selectNode(item)}>
-                                <StyledText type="body">{getNodeTitle(item)}</StyledText>
-                            </TouchableOpacity>
+        <Screen isLoading={isSavingChanges}>
+            <ScrollView>
+                <FormItem>
+                    <StyledText type="title">{$t('s_settings_network_select_title')}</StyledText>
+                    <Dropdown
+                        value={selectedNetworkIdentifier}
+                        list={networkIdentifierOptions}
+                        title={$t('s_settings_networkType_modal_title')}
+                        onChange={selectNetwork}
+                    />
+                </FormItem>
+                <FormItem>
+                    <Dropdown
+                        value={selectedNodeUrl}
+                        list={nodeOptions}
+                        title={$t('s_settings_node_select_title')}
+                        onChange={selectNode}
+                    />
+                </FormItem>
+                <FormItem>
+                    <StyledText type="title">{$t('s_settings_node_info_title')}</StyledText>
+                    <Widget>
+                        <FormItem>
+                            <TableView data={networkInfoTable} style={tableStyle} />
+                            {isConnectingToNode && (
+                                <View style={styles.tableLoadingContainer}>
+                                    <ActivityIndicator color={colors.primary} size="large" />
+                                </View>
+                            )}
                         </FormItem>
-                    )}
-                />
-            </FormItem>
+                    </Widget>
+                </FormItem>
+            </ScrollView>
         </Screen>
     );
 });
 
 const styles = StyleSheet.create({
-    item: {
-        borderRadius: borders.borderRadius,
-        backgroundColor: colors.bgCard,
-        padding: spacings.padding,
-    },
-    itemSelected: {
-        backgroundColor: colors.accentLightForm,
+    tableLoadingContainer: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: '100%',
+        justifyContent: 'center',
+        alignItems: 'center',
     },
 });
