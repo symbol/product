@@ -26,6 +26,7 @@ class NodeDescriptor:
 		is_healthy=None,
 		is_ssl_enabled=None,
 		rest_version=None,
+		geo_location=None,
 		roles=0xFF):
 		"""Creates a descriptor."""
 
@@ -43,6 +44,7 @@ class NodeDescriptor:
 		self.is_healthy = is_healthy
 		self.is_ssl_enabled = is_ssl_enabled
 		self.rest_version = rest_version
+		self.geo_location = geo_location
 		self.roles = roles
 
 	@property
@@ -66,6 +68,7 @@ class NodeDescriptor:
 			'isHealthy': self.is_healthy,
 			'isSslEnabled': self.is_ssl_enabled,
 			'restVersion': self.rest_version,
+			'geoLocation': self.geo_location.to_json() if self.geo_location else None,
 			'roles': self.roles
 		}
 
@@ -243,6 +246,7 @@ class NetworkRepository:
 			self._format_symbol_version(json_node['version']),
 			*extra_data,
 			*api_node_info_data,
+			self.geo_location_map.get(json_node['host'], None),
 			roles)
 
 	def _create_descriptor_from_json(self, json_node):
