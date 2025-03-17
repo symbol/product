@@ -229,6 +229,7 @@ class SymbolRoutesFacadeTest(unittest.TestCase):  # pylint: disable=too-many-pub
 		self.assertEqual(6, len(facade.repository.node_descriptors))
 		self.assertEqual(4, len(facade.repository.harvester_descriptors))
 		self.assertEqual(4, len(facade.repository.voter_descriptors))
+		self.assertEqual(1, len(facade.repository.geo_location_map))
 
 	def test_can_skip_reload_when_noop(self):
 		# Arrange:

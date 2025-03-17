@@ -107,6 +107,34 @@ class SymbolAccountDescriptor:
 		self.version = account_dict['version']
 
 
+class GeoLocationDescriptor:
+	"""Geo location descriptor."""
+
+	def __init__(self, geo_location_dict):
+		"""Creates a descriptor."""
+
+		self.continent = geo_location_dict['continent']
+		self.country = geo_location_dict['country']
+		self.region = geo_location_dict['region']
+		self.city = geo_location_dict['city']
+		self.lat = geo_location_dict['lat']
+		self.lon = geo_location_dict['lon']
+		self.isp = geo_location_dict['isp']
+
+	def to_json(self):
+		"""Formats the geo location descriptor as json."""
+
+		return {
+			'continent': self.continent,
+			'country': self.country,
+			'region': self.region,
+			'city': self.city,
+			'lat': self.lat,
+			'lon': self.lon,
+			'isp': self.isp
+		}
+
+
 class NetworkRepository:
 	"""Network respository managing access to NEM or Symbol node information."""
 
@@ -119,6 +147,7 @@ class NetworkRepository:
 		self.node_descriptors = []
 		self.harvester_descriptors = []
 		self.voter_descriptors = []
+		self.geo_location_map = {}
 
 	@property
 	def is_nem(self):
@@ -266,3 +295,15 @@ class NetworkRepository:
 
 		# sort by balance (highest to lowest)
 		self.voter_descriptors.sort(key=lambda descriptor: descriptor.balance, reverse=True)
+
+	def load_geo_location_descriptors(self, geo_locations_data_filepath):
+		"""Loads geo location info and convert to map."""
+
+		log.info(f'loading geo locations from {geo_locations_data_filepath}')
+
+		with open(geo_locations_data_filepath, 'rt', encoding='utf8') as infile:
+			geo_locations_json = json.load(infile)
+
+			for entry in geo_locations_json:
+				if 'host' in entry and 'geolocation' in entry:
+					self.geo_location_map[entry['host']] = GeoLocationDescriptor(entry['geolocation'])
