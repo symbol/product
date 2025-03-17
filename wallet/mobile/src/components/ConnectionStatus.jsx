@@ -1,5 +1,5 @@
 import { observer } from 'mobx-react-lite';
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text } from 'react-native';
 import { colors, fonts, timings } from '@/app/styles';
 import Animated, {
@@ -16,6 +16,7 @@ import { NetworkConnectionStatus } from '@/app/constants';
 
 export const ConnectionStatus = observer(function ConnectionStatus() {
     const { networkStatus } = WalletController;
+    const [statusText, setStatusText] = useState($t('c_connectionStatus_connecting'));
     const statusColors = [colors.info, colors.warning, colors.danger];
     const isShown = useSharedValue(true);
     const color = useDerivedValue(() => {
@@ -23,20 +24,19 @@ export const ConnectionStatus = observer(function ConnectionStatus() {
             networkStatus === NetworkConnectionStatus.FAILED_CURRENT_NODE ? 2 : networkStatus === NetworkConnectionStatus.CONNECTED ? 0 : 1;
         return withTiming(value);
     });
-    let statusText = $t('c_connectionStatus_connecting');
 
     const updateValue = () => {
         switch (networkStatus) {
             case NetworkConnectionStatus.NO_INTERNET:
-                statusText = $t('c_connectionStatus_offline');
+                setStatusText($t('c_connectionStatus_offline'));
                 isShown.value = withTiming(true, timings.press);
                 break;
             case NetworkConnectionStatus.FAILED_CURRENT_NODE:
-                statusText = $t('c_connectionStatus_nodeDown');
+                setStatusText($t('c_connectionStatus_nodeDown'));
                 isShown.value = withTiming(true, timings.press);
                 break;
             case NetworkConnectionStatus.CONNECTED:
-                statusText = $t('c_connectionStatus_connected');
+                setStatusText($t('c_connectionStatus_connected'));
                 isShown.value = withTiming(false, timings.press);
                 break;
             default:
@@ -50,7 +50,7 @@ export const ConnectionStatus = observer(function ConnectionStatus() {
     }));
 
     useEffect(() => {
-        updateValue();
+        updateValue(networkStatus);
     }, [networkStatus]);
 
     return (
