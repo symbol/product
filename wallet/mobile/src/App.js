@@ -34,6 +34,8 @@ const App = () => {
     const unlock = () => {
         setIsUnlocked(true);
     };
+
+    // Initialize the app. Migrate storage, initialize localization, passcode and load the wallet
     const init = async () => {
         setIsWalletStored(false);
         setIsWalletLoaded(false);
@@ -46,6 +48,8 @@ const App = () => {
         await load();
         SplashScreen.hide();
     };
+
+    // Load the wallet and data from cache. Connect to network and fetch data
     const load = async () => {
         const isWalletStored = await WalletController.isWalletCreated();
         setIsWalletStored(isWalletStored);
@@ -56,6 +60,7 @@ const App = () => {
         WalletController.runConnectionJob();
         WalletController.modules.market.fetchData();
     };
+    
     const handleLogout = async () => {
         await deleteUserPinCode();
         handleLoginStateChange();
