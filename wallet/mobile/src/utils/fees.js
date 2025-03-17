@@ -3,6 +3,7 @@ import { absoluteToRelativeAmount } from './mosaic';
 import { toFixedNumber } from './helper';
 import { transactionToSymbol } from './transaction-to-symbol';
 import { addressFromPrivateKey, addressFromPublicKey, generateKeyPair } from '@/app/utils/account';
+import * as AccountTypes from '@/app/types/Account';
 import * as NetworkTypes from '@/app/types/Network';
 import * as TransactionTypes from '@/app/types/Transaction';
 import { encodeDelegatedHarvestingMessage, encodePlainMessage, encryptMessage } from '@/app/utils/transaction';
@@ -32,6 +33,16 @@ export const calculateTransactionFees = (transaction, networkProperties) => {
     };
 };
 
+/**
+ * Creates a stub transfer transaction object with the given options.
+ * Used for calculating transaction size and fees.
+ * @param {object} options - The transaction options.
+ * @param {string} options.networkIdentifier - The network identifier.
+ * @param {string} options.messageText - The message text.
+ * @param {boolean} options.isMessageEncrypted - The message encryption flag.
+ * @param {array} options.mosaics - The mosaics.
+ * @returns {TransactionTypes.Transaction} The transaction object.
+ */
 export const createSingleTransferTransactionStub = ({ networkIdentifier, messageText, isMessageEncrypted, mosaics = [] }) => {
     let messagePayloadHex;
     let messageType;
@@ -63,6 +74,16 @@ export const createSingleTransferTransactionStub = ({ networkIdentifier, message
     return transaction;
 };
 
+/**
+ * Creates a stub aggregate bonded transaction object with the given options.
+ * Used for calculating transaction size and fees.
+ * @param {object} options - The transaction options.
+ * @param {string} options.networkIdentifier - The network identifier.
+ * @param {string} options.messageText - The message text.
+ * @param {boolean} options.isMessageEncrypted - The message encryption flag.
+ * @param {array} options.mosaics - The mosaics.
+ * @returns {TransactionTypes.Transaction} The transaction object.
+ */
 export const createMultisigTransferTransactionStub = (options) => {
     const signerKeyPair = generateKeyPair();
     const transferTransaction = createSingleTransferTransactionStub(options);
@@ -75,6 +96,15 @@ export const createMultisigTransferTransactionStub = (options) => {
     return transaction;
 };
 
+/**
+ * Creates a stub aggregate complete transaction object with the given options.
+ * Used for calculating transaction size and fees.
+ * @param {object} options - The transaction options.
+ * @param {string} options.networkIdentifier - The network identifier.
+ * @param {AccountTypes.LinkedKeys} options.linkedKeys - Current account linked keys.
+ * @param {'start' | 'stop'} options.type - The harvesting action type.
+ * @returns {TransactionTypes.Transaction} The transaction object.
+ */
 export const createHarvestingTransactionStub = ({ networkIdentifier, linkedKeys, type = 'start' }) => {
     const account = generateKeyPair();
     const nodePublicKey = generateKeyPair().publicKey;
