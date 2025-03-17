@@ -34,6 +34,7 @@ const defaultNetworkProperties = {
         mosaicId: null,
         divisibility: null,
     },
+    chainHeight: null, // node chain height
 };
 
 const defaultAccountInfo = {
@@ -63,6 +64,7 @@ const defaultState = {
     networkProperties: cloneDeep(defaultNetworkProperties), // network and chain info fetched from currently connected node
     networkStatus: NetworkConnectionStatus.INITIAL, // 'offline' 'failed-auto' 'failed-current' 'connected'
     nodeUrls: createNetworkMap(() => []), // node urls available for each network
+    selectedNodeUrl: null, // preferred node url, selected by the user
 
     // wallet
     accountInfos: createNetworkMap(() => ({})), // account related information. See "defaultAccountInfo"
@@ -134,15 +136,18 @@ export class WalletController {
         return accountInfos[networkIdentifier][currentAccountPublicKey] || defaultAccountInfo;
     }
 
+    // the list of latest transactions for the currently selected account
     get currentAccountLatestTransactions() {
         const { latestTransactions, currentAccountPublicKey, networkIdentifier } = this._state;
         return latestTransactions[networkIdentifier][currentAccountPublicKey] || [];
     }
 
+    // network identifier of the selected network
     get networkIdentifier() {
         return this._state.networkIdentifier;
     }
 
+    // network and chain info fetched from currently connected node
     get networkProperties() {
         const { networkProperties, nodeUrls } = this._state;
         return {
@@ -151,30 +156,42 @@ export class WalletController {
         };
     }
 
+    // current chain height
     get chainHeight() {
         return this._state.chainHeight;
     }
 
+    // node urls available for each network
     get nodeUrls() {
         return this._state.nodeUrls;
     }
 
+    // preferred node url, selected by the user
+    get selectedNodeUrl() {
+        return this._state.selectedNodeUrl;
+    }
+
+    // network connection is ready for making requests
     get isNetworkConnectionReady() {
         return this.networkStatus === NetworkConnectionStatus.CONNECTED && !!this.networkProperties.nodeUrl;
     }
 
+    // wallet cache is loaded from the storage
     get isStateReady() {
         return this._state.isCacheLoaded;
     }
 
+    // wallet cache is loaded and network connection is ready
     get isWalletReady() {
         return this._state.isCacheLoaded && this.isNetworkConnectionReady;
     }
 
+    // network connection status
     get networkStatus() {
         return this._state.networkStatus;
     }
 
+    // native currency symbol
     get ticker() {
         return config.ticker;
     }
@@ -193,15 +210,23 @@ export class WalletController {
      * @returns {Promise<void>}
      */
     loadCache = async (password) => {
-        const [accountInfos, seedAddresses, currentAccountPublicKey, networkIdentifier, networkProperties, latestTransactions] =
-            await Promise.all([
-                this._persistentStorage.getAccountInfos(),
-                this._persistentStorage.getSeedAddresses(),
-                this._persistentStorage.getCurrentAccountPublicKey(),
-                this._persistentStorage.getNetworkIdentifier(),
-                this._persistentStorage.getNetworkProperties(),
-                this._persistentStorage.getLatestTransactions(),
-            ]);
+        const [
+            accountInfos,
+            seedAddresses,
+            currentAccountPublicKey,
+            networkIdentifier,
+            networkProperties,
+            latestTransactions,
+            selectedNodeUrl,
+        ] = await Promise.all([
+            this._persistentStorage.getAccountInfos(),
+            this._persistentStorage.getSeedAddresses(),
+            this._persistentStorage.getCurrentAccountPublicKey(),
+            this._persistentStorage.getNetworkIdentifier(),
+            this._persistentStorage.getNetworkProperties(),
+            this._persistentStorage.getLatestTransactions(),
+            this._persistentStorage.getSelectedNode(),
+        ]);
 
         this.clearState();
         await this._loadAccounts(password);
@@ -212,6 +237,7 @@ export class WalletController {
             this._state.networkIdentifier = networkIdentifier;
             this._state.networkProperties = networkProperties;
             this._state.latestTransactions = latestTransactions;
+            this._state.selectedNodeUrl = selectedNodeUrl;
             this._state.isCacheLoaded = true;
         });
 
@@ -754,13 +780,15 @@ export class WalletController {
      */
     selectNetwork = async (networkIdentifier, nodeUrl) => {
         const accounts = this._state.walletAccounts[networkIdentifier];
+        await this._persistentStorage.setNetworkProperties(defaultNetworkProperties);
         await this._persistentStorage.setNetworkIdentifier(networkIdentifier);
-        await this._persistentStorage.setSelectedNode(nodeUrl || '');
+        await this._persistentStorage.setSelectedNode(nodeUrl || null);
 
         runInAction(() => {
             this._state.nodeUrls = cloneDeep(defaultState.nodeUrls);
             this._state.networkIdentifier = networkIdentifier;
             this._state.networkProperties = defaultNetworkProperties;
+            this._state.selectedNodeUrl = nodeUrl;
             this._state.chainHeight = 0;
             this._state.networkStatus = NetworkConnectionStatus.INITIAL;
         });
@@ -787,9 +815,10 @@ export class WalletController {
         }
 
         // Try to connect to current node
-        if (this.networkProperties.nodeUrl) {
+        const currentNode = this.networkProperties.nodeUrl || this.selectedNodeUrl;
+        if (currentNode) {
             try {
-                await this.fetchNetworkProperties(this.networkProperties.nodeUrl);
+                await this.fetchNetworkProperties(currentNode);
                 // Node is good.
                 runInAction(() => {
                     this._state.networkStatus = NetworkConnectionStatus.CONNECTED;
@@ -812,6 +841,12 @@ export class WalletController {
             runInAction(() => {
                 this._state.networkStatus = NetworkConnectionStatus.NO_INTERNET;
             });
+            runAgain();
+            return;
+        }
+
+        // If there is a selected node by user, skip auto selection
+        if (this.selectedNodeUrl) {
             runAgain();
             return;
         }
