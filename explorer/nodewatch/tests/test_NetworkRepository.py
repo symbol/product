@@ -436,6 +436,7 @@ class NetworkRepositoryTest(unittest.TestCase):
 
 	# region load geo location mappings
 
+	# pylint: disable=duplicate-code
 	EXPECTED_GEO_VALUES = {
 		'continent': 'Asia',
 		'country': 'Japan',
