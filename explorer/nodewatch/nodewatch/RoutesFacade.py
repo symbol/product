@@ -73,19 +73,16 @@ class BasicRoutesFacade:
 		"""Returns all nodes with condition."""
 
 		role = kwargs.get('role')
-		exact_match = kwargs.get('exact_match')
+		exact_match = kwargs.get('exact_match', False)
 
 		limit = kwargs.get('limit')
 		only_ssl = kwargs.get('only_ssl')
 		order = kwargs.get('order')
 
 		def custom_filter(descriptor):
-			if role is not None:
-				role_condition = role == descriptor.roles if exact_match else role == (role & descriptor.roles)
-				if not role_condition:
-					return False
+			role_condition = role == descriptor.roles if exact_match else role == (role & descriptor.roles)
 
-			return descriptor.is_ssl_enabled if only_ssl else True
+			return role_condition and (descriptor.is_ssl_enabled if only_ssl else True)
 
 		nodes = list(map(
 			lambda descriptor: descriptor.to_json(),
