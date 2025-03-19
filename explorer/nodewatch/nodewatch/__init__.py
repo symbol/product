@@ -61,7 +61,7 @@ def create_app():
 
 	@app.route('/api/nem/nodes')
 	def api_nem_nodes():  # pylint: disable=unused-variable
-		return jsonify(nem_routes_facade.json_nodes(role=1))
+		return jsonify(nem_routes_facade.json_nodes(1))
 
 	@app.route('/api/nem/chart/height')
 	def api_nem_chart_height():  # pylint: disable=unused-variable
@@ -98,7 +98,7 @@ def create_app():
 
 		limit = int(request_args.get('limit', 0))
 
-		return jsonify(symbol_routes_facade.json_nodes(role=role, exact_match=exact_match, only_ssl=only_ssl, limit=limit, order=order))
+		return jsonify(symbol_routes_facade.json_nodes(role, exact_match=exact_match, only_ssl=only_ssl, limit=limit, order=order))
 
 	def _get_json_node(result):
 		if not result:

@@ -69,10 +69,9 @@ class BasicRoutesFacade:
 			'explorer_endpoint': self.explorer_endpoint
 		})
 
-	def json_nodes(self, **kwargs):
+	def json_nodes(self, role, **kwargs):
 		"""Returns all nodes with condition."""
 
-		role = kwargs.get('role')
 		exact_match = kwargs.get('exact_match', False)
 
 		limit = kwargs.get('limit')

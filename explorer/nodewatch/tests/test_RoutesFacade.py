@@ -150,7 +150,7 @@ class NemRoutesFacadeTest(unittest.TestCase):
 		facade.reload_all(Path('tests/resources'), True)
 
 		# Act:
-		node_descriptors = facade.json_nodes(role=1)
+		node_descriptors = facade.json_nodes(1)
 
 		# Assert: spot check names and roles
 		self.assertEqual(4, len(node_descriptors))
@@ -361,7 +361,7 @@ class SymbolRoutesFacadeTest(unittest.TestCase):  # pylint: disable=too-many-pub
 		facade.reload_all(Path('tests/resources'), True)
 
 		# Act:
-		node_descriptors = facade.json_nodes(role=1)
+		node_descriptors = facade.json_nodes(1)
 
 		# Assert: spot check names and roles
 		self.assertEqual(5, len(node_descriptors))
@@ -378,7 +378,7 @@ class SymbolRoutesFacadeTest(unittest.TestCase):  # pylint: disable=too-many-pub
 		facade.reload_all(Path('tests/resources'), True)
 
 		# Act: select nodes with api role (role 2)
-		node_descriptors = facade.json_nodes(role=2)
+		node_descriptors = facade.json_nodes(2)
 
 		# Assert: spot check names and roles
 		self.assertEqual(5, len(node_descriptors))
@@ -395,7 +395,7 @@ class SymbolRoutesFacadeTest(unittest.TestCase):  # pylint: disable=too-many-pub
 		facade.reload_all(Path('tests/resources'), True)
 
 		# Act: select nodes with only api role (role 2)
-		node_descriptors = facade.json_nodes(role=2, exact_match=True)
+		node_descriptors = facade.json_nodes(2, exact_match=True)
 
 		# Assert: spot check names and roles
 		self.assertEqual(1, len(node_descriptors))
@@ -412,7 +412,7 @@ class SymbolRoutesFacadeTest(unittest.TestCase):  # pylint: disable=too-many-pub
 		facade.reload_all(Path('tests/resources'), True)
 
 		# Act: select nodes with only ssl enabled
-		node_descriptors = facade.json_nodes(role=2, only_ssl=True)
+		node_descriptors = facade.json_nodes(2, only_ssl=True)
 
 		# Assert: spot check names and roles
 		self.assertEqual(2, len(node_descriptors))
@@ -426,10 +426,10 @@ class SymbolRoutesFacadeTest(unittest.TestCase):  # pylint: disable=too-many-pub
 		facade.reload_all(Path('tests/resources'), True)
 
 		# Act: select 2 nodes with order random
-		node_descriptors = facade.json_nodes(role=2, limit=2)
+		node_descriptors = facade.json_nodes(2, limit=2)
 
 		# Assert:
-		all_node_descriptors = facade.json_nodes(role=2)
+		all_node_descriptors = facade.json_nodes(2)
 
 		full_node_names = list(map(lambda descriptor: descriptor['name'], all_node_descriptors))
 		random_node_names = list(map(lambda descriptor: descriptor['name'], node_descriptors))
@@ -445,7 +445,7 @@ class SymbolRoutesFacadeTest(unittest.TestCase):  # pylint: disable=too-many-pub
 		facade.reload_all(Path('tests/resources'), True)
 
 		# Act:
-		node_descriptors = facade.json_nodes(role=2, limit=5)
+		node_descriptors = facade.json_nodes(2, limit=5)
 
 		# Assert: spot check names
 		self.assertEqual(5, len(node_descriptors))
