@@ -91,9 +91,6 @@ export const AccountList = observer(function AccountList() {
                 publicKey: account.publicKey,
                 networkIdentifier,
             });
-            if (selectedPublicKey === account.publicKey) {
-                await selectAccount(networkAccounts[0]);
-            }
         },
         null,
         handleError
