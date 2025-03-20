@@ -203,7 +203,7 @@ export class PersistentStorage {
     // Network Properties
     static async getNetworkProperties() {
         const value = await this.get(this.NETWORK_PROPERTIES_KEY);
-        const defaultValue = {};
+        const defaultValue = null;
 
         try {
             return JSON.parse(value) || defaultValue;
