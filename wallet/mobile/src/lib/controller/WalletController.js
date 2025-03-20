@@ -235,7 +235,7 @@ export class WalletController {
             this._state.seedAddresses = seedAddresses;
             this._state.currentAccountPublicKey = currentAccountPublicKey;
             this._state.networkIdentifier = networkIdentifier;
-            this._state.networkProperties = networkProperties;
+            this._state.networkProperties = networkProperties || defaultNetworkProperties;
             this._state.latestTransactions = latestTransactions;
             this._state.selectedNodeUrl = selectedNodeUrl;
             this._state.isCacheLoaded = true;
@@ -481,7 +481,7 @@ export class WalletController {
         try {
             baseAccountInfo = await AccountService.fetchAccountInfo(networkProperties, address);
         } catch (error) {
-            if (error.message !== 'error_fetch_not_found') {
+            if (error.code !== 'error_fetch_not_found') {
                 throw new AppError('error_fetch_account_info', error.message);
             }
 
@@ -727,8 +727,8 @@ export class WalletController {
      * @returns {Promise<void>}
      */
     logoutAndClearStorage = async () => {
-        await this._secureStorage.removeAll();
         await this._persistentStorage.removeAll();
+        await this._secureStorage.removeAll();
         this.clearState();
         this._emit(ControllerEventName.LOGOUT);
     };
@@ -802,17 +802,13 @@ export class WalletController {
      * @returns {void}
      */
     runConnectionJob = async () => {
-        const { networkConnectionTimer, networkIdentifier, networkStatus } = this._state;
+        const { networkConnectionTimer, networkIdentifier } = this._state;
         const runAgain = () => {
             const newConnectionTimer = setTimeout(() => this.runConnectionJob(), config.connectionInterval);
             this._state.networkConnectionTimer = newConnectionTimer;
         };
 
         clearTimeout(networkConnectionTimer);
-
-        if (networkStatus === NetworkConnectionStatus.INITIAL) {
-            this.fetchNodeList();
-        }
 
         // Try to connect to current node
         const currentNode = this.networkProperties.nodeUrl || this.selectedNodeUrl;
