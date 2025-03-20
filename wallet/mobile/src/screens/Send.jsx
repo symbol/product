@@ -31,6 +31,7 @@ import { useTransactionFees } from '@/app/hooks';
 import { MessageType, TransactionType } from '@/app/constants';
 import WalletController from '@/app/lib/controller/MobileWalletController';
 import { observer } from 'mobx-react-lite';
+import Animated, { FadeInDown, FadeOut } from 'react-native-reanimated';
 
 export const Send = observer(function Send(props) {
     const {
@@ -278,15 +279,17 @@ export const Send = observer(function Send(props) {
                                 />
                             </FormItem>
                         )}
-                        <FormItem>
-                            <FeeSelector
-                                title={$t('form_transfer_input_fee')}
-                                value={speed}
-                                fees={transactionFees}
-                                ticker={ticker}
-                                onChange={setSpeed}
-                            />
-                        </FormItem>
+                        <Animated.View entering={FadeInDown} exiting={FadeOut}>
+                            <FormItem>
+                                <FeeSelector
+                                    title={$t('form_transfer_input_fee')}
+                                    value={speed}
+                                    fees={transactionFees}
+                                    ticker={ticker}
+                                    onChange={setSpeed}
+                                />
+                            </FormItem>
+                        </Animated.View>
                     </>
                 )}
             </ScrollView>
