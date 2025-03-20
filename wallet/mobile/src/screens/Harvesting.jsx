@@ -7,7 +7,7 @@ import { ControllerEventName, HarvestingStatus } from '@/app/constants';
 import { $t } from '@/app/localization';
 import { HarvestingService } from '@/app/lib/services';
 import { colors, fonts, layout, spacings } from '@/app/styles';
-import { createHarvestingTransactionStub, formatDate, handleError } from '@/app/utils';
+import { createHarvestingTransactionStub, formatDate, handleError, promiseAllSettled } from '@/app/utils';
 import { useDataManager, usePasscode, useToggle, useTransactionFees } from '@/app/hooks';
 import WalletController from '@/app/lib/controller/MobileWalletController';
 import { observer } from 'mobx-react-lite';
@@ -19,6 +19,8 @@ export const Harvesting = observer(function Harvesting() {
     const { linkedKeys, importance, balance } = currentAccountInfo;
 
     const [isActionMade, setIsActionMade] = useState(false);
+    const [isFirstLoading, setIsFirstLoading] = useState(true);
+
     const [nodeUrl, setNodeUrl] = useState('');
     const [isStartConfirmVisible, toggleStartConfirm] = useToggle(false);
     const [isStopConfirmVisible, toggleStopConfirm] = useToggle(false);
@@ -32,7 +34,7 @@ export const Harvesting = observer(function Harvesting() {
     const [fetchStatus, isStatusLoading, status] = useDataManager(
         WalletController.modules.harvesting.fetchStatus,
         {},
-        handleError
+        handleError,
     );
 
     // Summary
@@ -86,13 +88,18 @@ export const Harvesting = observer(function Harvesting() {
         handleError
     );
     const loadData = async () => {
-        if (isWalletReady) {
-            WalletController.fetchAccountInfo();
-            fetchHarvestedBlocks();
-            fetchNodeList();
-            await fetchStatus();
-            setIsActionMade(false);
+        if (!isWalletReady) {
+            return;
         }
+
+        await promiseAllSettled([
+            WalletController.fetchAccountInfo(),
+            fetchHarvestedBlocks(),
+            fetchNodeList(),
+            fetchStatus()
+        ]);
+        setIsActionMade(false);
+        setIsFirstLoading(false);
     };
     const confirmStart = usePasscode('enter', start);
     const confirmStop = usePasscode('enter', stop);
@@ -215,7 +222,7 @@ export const Harvesting = observer(function Harvesting() {
 
     return (
         <Screen isLoading={isBlockedLoading}>
-            <ScrollView refreshControl={<RefreshControl tintColor={colors.primary} refreshing={isLoading} onRefresh={loadData} />}>
+            <ScrollView refreshControl={<RefreshControl tintColor={colors.primary} refreshing={isLoading && !isFirstLoading} onRefresh={loadData} />}>
                 <FormItem>
                     <StyledText type="title">{$t('s_harvesting_title')}</StyledText>
                     <StyledText type="body">{$t('s_harvesting_description')}</StyledText>
