@@ -405,15 +405,18 @@ export class WalletController {
      * @returns {Promise<void>}
      */
     removeAccount = async ({ networkIdentifier, publicKey }, password) => {
+        // To prevent removing the currently selected account, select root account before removing
+        if (this._state.currentAccountPublicKey === publicKey) {
+            await this.selectAccount(this.accounts[networkIdentifier][0].publicKey);
+        }
+
+        // Load accounts from storage and remove the account
         const accounts = await this._secureStorage.getAccounts(password);
         accounts[networkIdentifier] = accounts[networkIdentifier].filter((account) => account.publicKey !== publicKey);
 
+        // Update the accounts in the storage and load them to the state
         await this._secureStorage.setAccounts(accounts, password);
         await this._loadAccounts(password);
-
-        if (this._state.currentAccountPublicKey === publicKey) {
-            await this.selectAccount(this.walletAccounts[networkIdentifier][0].publicKey);
-        }
     };
 
     /**
