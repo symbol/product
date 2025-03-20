@@ -53,7 +53,7 @@ export class TransferModule {
         let messagePayloadHex = null;
         if (messageText && isMessageEncrypted) {
             const recipientAccount = await AccountService.fetchAccountInfo(networkProperties, recipientAddress);
-            messagePayloadHex = this._root.encryptMessage(messageText, recipientAccount.publicKey, password);
+            messagePayloadHex = await this._root.encryptMessage(messageText, recipientAccount.publicKey, password);
         }
         // If message is not encrypted, encode plain message
         else if (messageText && !isMessageEncrypted) {
