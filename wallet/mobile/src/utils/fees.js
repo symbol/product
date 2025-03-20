@@ -2,12 +2,31 @@ import { LinkAction, MessageType, TransactionType } from '@/app/constants';
 import { absoluteToRelativeAmount } from './mosaic';
 import { toFixedNumber } from './helper';
 import { transactionToSymbol } from './transaction-to-symbol';
-import { addressFromPrivateKey, addressFromPublicKey, generateKeyPair } from '@/app/utils/account';
 import * as AccountTypes from '@/app/types/Account';
 import * as MosaicTypes from '@/app/types/Mosaic';
 import * as NetworkTypes from '@/app/types/Network';
 import * as TransactionTypes from '@/app/types/Transaction';
-import { encodeDelegatedHarvestingMessage, encodePlainMessage, encryptMessage } from '@/app/utils/transaction';
+import { encodePlainMessage, encryptMessage } from '@/app/utils/transaction';
+
+const KEY_PAIR_STUB_1 = {
+    publicKey: 'A55C641506CE1A9E097A551DF9B6FC5C58AC9C22E6B0368EBAED0184CD9ADDAB',
+    privateKey: '1793A85E07C164F8C48D33B291F50FA140DC50114BBEADBC8F48143D4AE08764',
+};
+const KEY_PAIR_STUB_2 = {
+    publicKey: 'F94C017383A5FE74B5AB56B9EA09534E9C7F4DF299A80428C883B8124B60B710',
+    privateKey: '88BD0C5BDFD361FB4D8CB3D78FECE2ACFEACF7A820F6C78A2F2D62EF83DE68D3',
+};
+const KEY_PAIR_STUB_3 = {
+    publicKey: '103054F3037D759E52DCD6D61440846D57B1FAFEB10B5D7EF8F9D3EF85D82178',
+    privateKey: '013117504BD8D5CEF95E0FE26FF2E7F4680E73F6C6C6B7428DBF28E2E0567D75',
+};
+const KEY_PAIR_STUB_4 = {
+    publicKey: 'A0780ABAD74684FA00EAAF8A5000DBC31051FCAB701C37954D392DDB8FD99BF1',
+    privateKey: '1D06ECB21234BF332A8A13D7E1FAE546D1DCD1DBF6BAACCE7D0822E86D70671B',
+};
+const ADDRESS_STUB = 'NALSBRWZTK3WQEGZ25NO4YH2MOU4SXYY6AVY72I';
+const DELEGATED_HARVESTING_MESSAGE_STUB =
+    'fe2a8061577301e261f0271414e15f79fb8feaefe2abcfaefc0642bd5714848aebe3a9c52344f0db0dbf9b86eb0004091fbf67d1994781a6d60bc79a98586adc797965b91eb6f96eb2b15d09690e03a99de607c3cc753e6f4efe76c181504a606fb40a120b732f20a67b0707be2f4155bebbf13238dc524ecbf753c07efe65aace62b960';
 
 /**
  * Calculates the transaction fees for a given transaction.
@@ -38,21 +57,20 @@ export const calculateTransactionFees = (transaction, networkProperties) => {
  * Creates a stub transfer transaction object with the given options.
  * Used for calculating transaction size and fees.
  * @param {object} options - The transaction options.
- * @param {string} options.networkIdentifier - The network identifier.
  * @param {string} options.messageText - The message text.
  * @param {boolean} options.isMessageEncrypted - The message encryption flag.
  * @param {MosaicTypes.Mosaic} options.mosaics - The mosaics.
  * @returns {TransactionTypes.Transaction} The transaction object.
  */
-export const createSingleTransferTransactionStub = ({ networkIdentifier, messageText, isMessageEncrypted, mosaics = [] }) => {
+export const createSingleTransferTransactionStub = ({ messageText, isMessageEncrypted, mosaics = [] }) => {
     let messagePayloadHex;
     let messageType;
-    const signerKeyPair = generateKeyPair();
-    const recipientKeyPair = generateKeyPair();
+    const signerKeyPair = KEY_PAIR_STUB_1;
+    const recipientKeyPair = KEY_PAIR_STUB_2;
     const transaction = {
         type: TransactionType.TRANSFER,
         signerPublicKey: signerKeyPair.publicKey,
-        recipientAddress: addressFromPrivateKey(recipientKeyPair.privateKey, networkIdentifier),
+        recipientAddress: ADDRESS_STUB,
         mosaics,
     };
 
@@ -79,14 +97,13 @@ export const createSingleTransferTransactionStub = ({ networkIdentifier, message
  * Creates a stub aggregate bonded transaction object with the given options.
  * Used for calculating transaction size and fees.
  * @param {object} options - The transaction options.
- * @param {string} options.networkIdentifier - The network identifier.
  * @param {string} options.messageText - The message text.
  * @param {boolean} options.isMessageEncrypted - The message encryption flag.
  * @param {MosaicTypes.Mosaic} options.mosaics - The mosaics.
  * @returns {TransactionTypes.Transaction} The transaction object.
  */
 export const createMultisigTransferTransactionStub = (options) => {
-    const signerKeyPair = generateKeyPair();
+    const signerKeyPair = KEY_PAIR_STUB_1;
     const transferTransaction = createSingleTransferTransactionStub(options);
     const transaction = {
         type: TransactionType.AGGREGATE_BONDED,
@@ -101,17 +118,16 @@ export const createMultisigTransferTransactionStub = (options) => {
  * Creates a stub aggregate complete transaction object with the given options.
  * Used for calculating transaction size and fees.
  * @param {object} options - The transaction options.
- * @param {string} options.networkIdentifier - The network identifier.
  * @param {AccountTypes.LinkedKeys} options.linkedKeys - Current account linked keys.
  * @param {'start' | 'stop'} options.type - The harvesting action type.
  * @returns {TransactionTypes.Transaction} The transaction object.
  */
-export const createHarvestingTransactionStub = ({ networkIdentifier, linkedKeys, type = 'start' }) => {
-    const account = generateKeyPair();
-    const nodePublicKey = generateKeyPair().publicKey;
-    const nodeAddress = addressFromPublicKey(nodePublicKey, networkIdentifier);
-    const vrfAccount = generateKeyPair();
-    const remoteAccount = generateKeyPair();
+export const createHarvestingTransactionStub = ({ linkedKeys, type = 'start' }) => {
+    const account = KEY_PAIR_STUB_1;
+    const nodePublicKey = KEY_PAIR_STUB_2.publicKey;
+    const nodeAddress = ADDRESS_STUB;
+    const vrfAccount = KEY_PAIR_STUB_3;
+    const remoteAccount = KEY_PAIR_STUB_4;
     const transactions = [];
 
     const isVrfKeyLinked = !!linkedKeys.vrfPublicKey;
@@ -167,12 +183,7 @@ export const createHarvestingTransactionStub = ({ networkIdentifier, linkedKeys,
             mosaics: [],
             message: {
                 type: MessageType.DelegatedHarvesting,
-                payload: encodeDelegatedHarvestingMessage(
-                    account.privateKey,
-                    nodePublicKey,
-                    remoteAccount.privateKey,
-                    vrfAccount.privateKey
-                ),
+                payload: DELEGATED_HARVESTING_MESSAGE_STUB,
                 text: '',
             },
             remoteAccountPrivateKey: remoteAccount.privateKey,
