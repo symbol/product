@@ -7,11 +7,12 @@ import FlashMessage from 'react-native-flash-message';
 import { ConnectionStatus } from '@/app/components';
 import { Passcode } from '@/app/screens';
 import { StorageMigration } from '@/app/lib/storage';
-import { initLocalization } from '@/app/localization';
+import { $t, initLocalization } from '@/app/localization';
 import { Router, RouterView } from '@/app/Router';
 import { colors, fonts, layout } from '@/app/styles';
 import { ControllerEventName } from '@/app/constants';
 import WalletController from '@/app/lib/controller/MobileWalletController';
+import { showMessage } from '@/app/utils';
 
 const unsafeAreaStyle = { ...layout.fill, backgroundColor: colors.bgStatusbar };
 const safeAreaStyle = { ...layout.fill, backgroundColor: colors.bgGray };
@@ -72,6 +73,11 @@ const App = () => {
     const handleAccountChange = () => {
         WalletController.fetchAccountInfo();
     };
+    const handleNewConfirmedTransaction = () => {
+        showMessage({ message: $t('message_transactionConfirmed'), type: 'info' });
+        WalletController.fetchAccountTransactions();
+        WalletController.fetchAccountInfo();
+    };
 
     useEffect(() => {
         // Initialize wallet and load data from cache
@@ -83,6 +89,7 @@ const App = () => {
         WalletController.on(ControllerEventName.LOGIN, handleLoginStateChange);
         WalletController.on(ControllerEventName.LOGOUT, handleLogout);
         WalletController.on(ControllerEventName.ACCOUNT_CHANGE, handleAccountChange);
+        WalletController.on(ControllerEventName.NEW_TRANSACTION_CONFIRMED, handleNewConfirmedTransaction);
 
         return () => {
             WalletController.removeListener(ControllerEventName.LOGIN, handleLoginStateChange);
@@ -97,7 +104,7 @@ const App = () => {
                 <SafeAreaView style={unsafeAreaStyle}>
                     <View style={safeAreaStyle}>
                         <StatusBar backgroundColor={colors.bgStatusbar} barStyle="light-content" />
-                        {isMainContainerShown && <ConnectionStatus />}
+                        {isWalletStored && <ConnectionStatus />}
                         <FlashMessage
                             statusBarHeight={8}
                             animationDuration={200}
