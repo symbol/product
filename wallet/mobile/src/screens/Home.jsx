@@ -47,7 +47,7 @@ export const Home = observer(function Home() {
         WalletController.fetchAccountInfo();
         fetchUnconfirmedTransactions();
         fetchPartialTransactions();
-    }, []);
+    }, [currentAccount]);
     useInit(loadState, isWalletReady, [currentAccount]);
 
     useEffect(() => {
