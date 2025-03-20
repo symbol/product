@@ -5,6 +5,7 @@ import { getCharPercentage } from '@/app/utils';
 import { AccountAvatar } from '@/app/components';
 import { TouchableOpacity } from 'react-native-gesture-handler';
 import { $t } from '@/app/localization';
+import Animated, { FadeIn, FadeOut, ZoomIn, ZoomOut } from 'react-native-reanimated';
 
 const imagesPattern = [
     require('@/app/assets/images/Geometric-02.png'),
@@ -19,7 +20,7 @@ const imagesPattern = [
 ];
 
 export const AccountCard = (props) => {
-    const { address, balance, name, ticker, isLoading, isActive, type, onRemove } = props;
+    const { address, balance, balanceChange, name, ticker, isLoading, isActive, type, onRemove } = props;
     const stylesRootActive = isActive ? [styles.root, styles.rootSimplifiedActive] : [styles.root, styles.rootSimplifiedInactive];
     const stylesRoot = [stylesRootActive, styles.clearMarginTop];
     const stylesContent = [styles.content, styles.clearMarginTop];
@@ -58,11 +59,25 @@ export const AccountCard = (props) => {
             <View style={stylesContent}>
                 <Text style={styles.textTitle}>{$t('c_accountCard_title_account')}</Text>
                 <Text style={styles.textName}>{name}</Text>
-                <Text style={styles.textTitle}>{$t('c_accountCard_title_balance')}</Text>
-                <View style={[layout.row, layout.alignEnd]}>
-                    <Text style={styles.textBalance}>{balance}</Text>
-                    <Text style={styles.textTicker}>{' ' + ticker}</Text>
+                <View>
+                    <Text style={styles.textTitle}>{$t('c_accountCard_title_balance')}</Text>
+                    {balanceChange && (
+                        <Animated.View
+                            style={styles.balanceChangeBadge}
+                            entering={ZoomIn}
+                            exiting={ZoomOut}
+                            key={balanceChange}
+                        >
+                            <Text style={styles.textBalanceChange}>{balanceChange + ' ' + ticker}</Text>
+                        </Animated.View>
+                    )}
                 </View>
+                <Animated.View entering={FadeIn} exiting={FadeOut} key={balance}>
+                    <View style={[layout.row, layout.alignEnd]}>
+                        <Text style={styles.textBalance}>{balance}</Text>
+                        <Text style={styles.textTicker}>{' ' + ticker}</Text>
+                    </View>
+                </Animated.View>
                 <Text style={styles.textTitle}>{$t('c_accountCard_title_address')}</Text>
                 <View style={layout.row}>
                     <Text style={styles.textAddress}>{address}</Text>
@@ -152,5 +167,17 @@ const styles = StyleSheet.create({
         ...fonts.body,
         color: colors.textForm,
         marginRight: spacings.margin / 2,
+    },
+    balanceChangeBadge: {
+        backgroundColor: colors.danger,
+        borderRadius: borders.borderRadiusForm,
+        position: 'absolute',
+        bottom: 0,
+        right: 0,
+        paddingHorizontal: spacings.paddingSm
+    },
+    textBalanceChange: {
+        ...fonts.label,
+        color: colors.bgForm,
     },
 });

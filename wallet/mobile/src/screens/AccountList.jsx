@@ -1,9 +1,9 @@
 import { useNavigation } from '@react-navigation/native';
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import DraggableFlatList from 'react-native-draggable-flatlist';
 import { AccountCard, ButtonCircle, DialogBox, FormItem, Screen, TouchableNative } from '@/app/components';
-import { handleError } from '@/app/utils';
-import { useDataManager, usePromises, useProp, useToggle } from '@/app/hooks';
+import { handleError, toFixedNumber } from '@/app/utils';
+import { useDataManager, usePromiseMap, useProp, useToggle } from '@/app/hooks';
 import Animated, { interpolate, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { colors, layout, timings } from '@/app/styles';
 import { Router } from '@/app/Router';
@@ -12,17 +12,55 @@ import { useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import WalletController from '@/app/lib/controller/MobileWalletController';
 import { PlatformUtils } from '@/app/lib/platform/PlatformUtils';
+import { AccountService } from '@/app/lib/services';
 
 export const AccountList = observer(function AccountList() {
-    const { currentAccount, accounts, accountInfos, networkIdentifier, ticker } = WalletController;
+    const { currentAccount, accounts, accountInfos, networkIdentifier, networkProperties, ticker } = WalletController;
     const [isRemoveConfirmVisible, toggleRemoveConfirm] = useToggle(false);
     const [accountToBeRemoved, setAccountToBeRemoved] = useState(null);
     const isPressed = useSharedValue(0);
-    const [accountBalanceStateMap, setAccountBalanceStateMap] = usePromises({});
+    const [accountBalanceStateMap, fetchAccountBalances] = usePromiseMap();
     const selectedPublicKey = currentAccount?.publicKey || null;
     const networkAccounts = accounts[networkIdentifier];
     const [updatedNetworkAccounts, setUpdatedNetworkAccounts] = useProp(networkAccounts);
     const navigation = useNavigation();
+    const accountBalances = useMemo(() => {
+        const balances = {};
+        networkAccounts.forEach((account) => {
+            const isCached = accountInfos[networkIdentifier][account.publicKey]?.isLoaded;
+            const cachedBalance = isCached
+                ? accountInfos[networkIdentifier][account.publicKey].balance
+                : null;
+            const isCurrentAvailable = accountBalanceStateMap[account.publicKey]?.status === 'fulfilled';
+            const currentBalance = isCurrentAvailable
+                ? accountBalanceStateMap[account.publicKey].value
+                : null;
+
+            let balanceChange = 0;
+            if (isCached && isCurrentAvailable) {
+                balanceChange = toFixedNumber(currentBalance - cachedBalance, networkProperties.networkCurrency.divisibility);
+            }
+
+            let balanceChangeText = '';
+            if (balanceChange > 0) {
+                balanceChangeText = `+${balanceChange}`;
+            } else if (balanceChange < 0) {
+                balanceChangeText = `${balanceChange}`;
+            }
+
+            const balanceText = isCurrentAvailable 
+                ? currentBalance
+                : isCached
+                    ? cachedBalance
+                    : '..';
+            balances[account.publicKey] = {
+                balanceText,
+                balanceChangeText,
+            };
+        });
+
+        return balances;
+    }, [accountBalanceStateMap, accountInfos]);
 
     const animatedItem = useAnimatedStyle(() => ({
         transform: [
@@ -95,16 +133,16 @@ export const AccountList = observer(function AccountList() {
     };
 
     const fetchBalances = async () => {
-        const updatedAccountBalanceStateMap = {};
-        for (const account of networkAccounts) {
-            updatedAccountBalanceStateMap[account.publicKey] = () => WalletController.fetchAccountInfo(account.publicKey);
-        }
-        setAccountBalanceStateMap(updatedAccountBalanceStateMap);
+        const accountBalanceFetchMap = {};
+        networkAccounts.forEach((account) => {
+            accountBalanceFetchMap[account.publicKey] = AccountService.fetchAccountBalance(networkProperties, account.address);
+        });
+        fetchAccountBalances(accountBalanceFetchMap);
     };
 
     useEffect(() => {
         fetchBalances();
-    }, []);
+    }, [networkAccounts, accountInfos]);
 
     return (
         <Screen isLoading={isLoading}>
@@ -128,10 +166,11 @@ export const AccountList = observer(function AccountList() {
                                     <AccountCard
                                         name={item.name}
                                         address={item.address}
-                                        balance={accountInfos[networkIdentifier][item.publicKey]?.balance || 0}
+                                        balance={accountBalances[item.publicKey].balanceText}
+                                        balanceChange={accountBalances[item.publicKey].balanceChangeText}
                                         ticker={ticker}
                                         type={item.accountType}
-                                        isLoading={accountBalanceStateMap[item.publicKey]}
+                                        isLoading={!accountBalanceStateMap[item.publicKey]}
                                         isActive={isAccountSelected(item)}
                                         onRemove={item.index === 0 ? null : () => handleRemovePress(item)}
                                         isSimplified
