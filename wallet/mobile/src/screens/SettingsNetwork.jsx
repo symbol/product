@@ -9,6 +9,7 @@ import { useDataManager, useProp } from '@/app/hooks';
 import WalletController from '@/app/lib/controller/MobileWalletController';
 import { observer } from 'mobx-react-lite';
 import { NetworkIdentifier } from '@/app/constants';
+import Animated, { FadeIn } from 'react-native-reanimated';
 
 export const SettingsNetwork = observer(function SettingsNetwork() {
     const { networkProperties, nodeUrls, networkIdentifier, selectedNodeUrl, isNetworkConnectionReady } = WalletController;
@@ -85,7 +86,9 @@ export const SettingsNetwork = observer(function SettingsNetwork() {
                     <StyledText type="title">{$t('s_settings_node_info_title')}</StyledText>
                     <Widget>
                         <FormItem>
-                            <TableView data={networkInfoTable} style={tableStyle} />
+                            <Animated.View entering={FadeIn} key={networkInfoTable.nodeUrl}>
+                                <TableView data={networkInfoTable} style={tableStyle} />
+                            </Animated.View>
                             {isConnectingToNode && (
                                 <View style={styles.tableLoadingContainer}>
                                     <ActivityIndicator color={colors.primary} size="large" />
