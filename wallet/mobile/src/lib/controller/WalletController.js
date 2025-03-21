@@ -38,7 +38,7 @@ const defaultNetworkProperties = {
 };
 
 const defaultAccountInfo = {
-    isLoaded: false,
+    fetchedAt: 0,
     isMultisig: false, // wether account is multisig
     cosignatories: [], // if an account is multisig, contains the list of its cosigners
     multisigAddresses: [], // list of multisig addresses which the account is cosignatory of
@@ -488,7 +488,10 @@ export class WalletController {
                 throw new AppError('error_fetch_account_info', error.message);
             }
 
-            return null;
+            baseAccountInfo = {
+                ...defaultAccountInfo,
+                fetchedAt: Date.now(),
+            };
         }
 
         let isMultisig;
@@ -506,7 +509,7 @@ export class WalletController {
         const namespaces = await NamespaceService.fetchAccountNamespaces(address, networkProperties);
 
         const accountInfo = {
-            isLoaded: true,
+            fetchedAt: Date.now(),
             address: baseAccountInfo.address,
             publicKey: baseAccountInfo.publicKey,
             importance: baseAccountInfo.importance,

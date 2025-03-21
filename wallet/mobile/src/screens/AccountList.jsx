@@ -27,7 +27,7 @@ export const AccountList = observer(function AccountList() {
     const accountBalances = useMemo(() => {
         const balances = {};
         networkAccounts.forEach((account) => {
-            const isCached = accountInfos[networkIdentifier][account.publicKey]?.isLoaded;
+            const isCached = !!accountInfos[networkIdentifier][account.publicKey]?.fetchedAt;
             const cachedBalance = isCached
                 ? accountInfos[networkIdentifier][account.publicKey].balance
                 : null;
