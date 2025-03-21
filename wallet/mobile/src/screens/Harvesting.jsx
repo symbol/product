@@ -15,7 +15,7 @@ import { AppError } from '@/app/lib/error';
 
 export const Harvesting = observer(function Harvesting() {
     const { currentAccountInfo, isWalletReady, networkIdentifier, networkProperties, ticker } = WalletController;
-    const isAccountReady = WalletController.currentAccountInfo.isLoaded;
+    const isAccountReady = !!WalletController.currentAccountInfo.fetchedAt;
     const { linkedKeys, importance, balance } = currentAccountInfo;
 
     const [isActionMade, setIsActionMade] = useState(false);
