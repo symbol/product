@@ -119,8 +119,7 @@ describe('HarvestingModule', () => {
             expect(result).toEqual(expectedStatus);
             expect(HarvestingService.fetchStatus).toHaveBeenCalledWith(
                 mockRoot.networkProperties,
-                mockRoot.currentAccount,
-                mockRoot.currentAccountInfo.linkedKeys
+                mockRoot.currentAccount
             );
         });
     });
