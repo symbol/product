@@ -92,7 +92,10 @@ def create_app():
 		return render_template(template_name, **context)
 
 	def _get_json_nodes(role, exact_match, request_args):
-		only_ssl = True if 'only_ssl' in request_args else None
+		only_ssl = request_args.get('only_ssl')
+
+		if only_ssl is not None:
+			only_ssl = only_ssl == '' or only_ssl.lower() == 'true'
 
 		order = request_args.get('order', None)
 
