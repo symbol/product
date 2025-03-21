@@ -34,8 +34,8 @@ export class StorageMigration {
 
     static async migrateUnknown() {
         try {
-            await SecureStorage.removeAll();
             await PersistentStorage.removeAll();
+            await SecureStorage.removeAll();
         } catch (e) {
             console.error('[StorageMigration] Error: failed to clear storage', e);
         }
@@ -52,8 +52,8 @@ export class StorageMigration {
 
         // Escape if mnemonic does not exist in the storage
         if (!mnemonic?.length) {
-            SecureStorage.removeAll();
             PersistentStorage.removeAll();
+            SecureStorage.removeAll();
             return;
         }
 
