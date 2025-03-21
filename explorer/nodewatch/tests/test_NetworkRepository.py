@@ -457,18 +457,7 @@ class NetworkRepositoryTest(unittest.TestCase):
 		# Assert:
 		self.assertEqual(1, len(repository.geo_location_map))
 		for property_name, expected_value in self.EXPECTED_GEO_VALUES.items():
-			self.assertEqual(expected_value, getattr(repository.geo_location_map['symbol.shizuilab.com'], property_name))
-
-	def test_can_format_geo_location_descriptor_as_json(self):
-		# Arrange:
-		repository = NetworkRepository(SymbolNetwork.MAINNET, 'symbol')
-		repository.load_geo_location_descriptors('tests/resources/symbol_geo_location.json')
-
-		# Act:
-		json_object = repository.geo_location_map['symbol.shizuilab.com'].to_json()
-
-		# Assert:
-		self.assertEqual(self.EXPECTED_GEO_VALUES, json_object)
+			self.assertEqual(expected_value, repository.geo_location_map['symbol.shizuilab.com'][property_name])
 
 	def test_node_includes_geo_location_in_json_when_available(self):
 		# Arrange:

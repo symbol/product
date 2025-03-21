@@ -68,7 +68,7 @@ class NodeDescriptor:
 			'isHealthy': self.is_healthy,
 			'isSslEnabled': self.is_ssl_enabled,
 			'restVersion': self.rest_version,
-			'geoLocation': self.geo_location.to_json() if self.geo_location else None,
+			'geoLocation': self.geo_location if self.geo_location else None,
 			'roles': self.roles
 		}
 
@@ -108,34 +108,6 @@ class SymbolAccountDescriptor:
 		self.height = int(account_dict['height'])
 		self.finalized_height = int(account_dict['finalized_height'])
 		self.version = account_dict['version']
-
-
-class GeoLocationDescriptor:
-	"""Geo location descriptor."""
-
-	def __init__(self, geo_location_dict):
-		"""Creates a descriptor."""
-
-		self.continent = geo_location_dict['continent']
-		self.country = geo_location_dict['country']
-		self.region = geo_location_dict['region']
-		self.city = geo_location_dict['city']
-		self.lat = geo_location_dict['lat']
-		self.lon = geo_location_dict['lon']
-		self.isp = geo_location_dict['isp']
-
-	def to_json(self):
-		"""Formats the geo location descriptor as json."""
-
-		return {
-			'continent': self.continent,
-			'country': self.country,
-			'region': self.region,
-			'city': self.city,
-			'lat': self.lat,
-			'lon': self.lon,
-			'isp': self.isp
-		}
 
 
 class NetworkRepository:
@@ -310,4 +282,7 @@ class NetworkRepository:
 
 			for entry in geo_locations_json:
 				if 'host' in entry and 'geolocation' in entry:
-					self.geo_location_map[entry['host']] = GeoLocationDescriptor(entry['geolocation'])
+					if 'query' in entry['geolocation']:
+						del entry['geolocation']['query']
+
+					self.geo_location_map[entry['host']] =  entry['geolocation']
