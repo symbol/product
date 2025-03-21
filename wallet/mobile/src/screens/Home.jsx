@@ -84,7 +84,7 @@ export const Home = observer(function Home() {
                         />
                     </FormItem>
                 </Animated.View>
-                {currentAccountInfo?.isMultisigAccount && (
+                {currentAccountInfo?.isMultisig && (
                     <Animated.View entering={FadeInUp}>
                         <FormItem>
                             <Alert type="warning" title={$t('warning_multisig_title')} body={$t('warning_multisig_body')} />
