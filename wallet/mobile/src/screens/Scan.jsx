@@ -71,7 +71,7 @@ export const Scan = observer(function Scan() {
     });
     const createAddExternalAccountHandler = () => ({
         title: $t('button_addToWallet'),
-        handler: (data) => Router.goToAddExternalAccount({ privateKey: data.accountPrivateKey }),
+        handler: (data) => Router.goToAddExternalAccount({ privateKey: data.privateKey }),
     });
     const createSendTransferToAddressHandler = () => ({
         title: $t('button_sendTransactionToThisAccount'),
