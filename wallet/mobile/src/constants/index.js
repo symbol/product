@@ -18,9 +18,9 @@ export const ControllerEventName = {
 export const NetworkConnectionStatus = {
     INITIAL: 'initial',
     CONNECTED: 'connected',
-    NO_INTERNET: 'offline',
-    FAILED_CURRENT_NODE: 'failed-current',
-    FAILED_AUTO_SELECTION: 'failed-auto',
+    NO_INTERNET: 'no-internet',
+    FAILED_CUSTOM_NODE: 'failed-custom-node',
+    CONNECTING: 'connecting',
 };
 
 export const WalletAccountType = {
