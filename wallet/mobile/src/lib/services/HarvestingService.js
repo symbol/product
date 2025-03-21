@@ -21,9 +21,18 @@ export class HarvestingService {
 
         // Fetch account linked keys
         const url = `${networkProperties.nodeUrl}/accounts/${account.address}`;
-        const {
-            account: { supplementalPublicKeys },
-        } = await makeRequest(url);
+        let supplementalPublicKeys;
+        try {
+            const { account } = await makeRequest(url);
+            supplementalPublicKeys = account.supplementalPublicKeys;
+        } catch (error) {
+            if (error.status === 404) {
+                supplementalPublicKeys = {};
+            } else {
+                throw error;
+            }
+        }
+
         const linkedPublicKey = supplementalPublicKeys.linked?.publicKey || null;
         const nodePublicKey = supplementalPublicKeys.node?.publicKey || null;
         const vrfPublicKey = supplementalPublicKeys.vrf?.publicKey || null;
