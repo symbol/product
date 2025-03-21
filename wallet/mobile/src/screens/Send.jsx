@@ -208,7 +208,7 @@ export const Send = observer(function Send(props) {
             }
         >
             <ScrollView>
-                {currentAccountInfo.isMultisigAccount && (
+                {currentAccountInfo.isMultisig && (
                     <>
                         <FormItem>
                             <Alert type="warning" title={$t('warning_multisig_title')} body={$t('warning_multisig_body')} />
@@ -218,7 +218,7 @@ export const Send = observer(function Send(props) {
                         </FormItem>
                     </>
                 )}
-                {!currentAccountInfo.isMultisigAccount && (
+                {!currentAccountInfo.isMultisig && (
                     <>
                         <FormItem>
                             <StyledText type="title">{$t('form_transfer_title')}</StyledText>
