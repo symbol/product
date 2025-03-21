@@ -25,10 +25,9 @@ export class HarvestingModule {
      * @returns {Promise<{ status: string, nodeUrl?: string }>} - The harvesting status.
      */
     fetchStatus = async () => {
-        const { currentAccount, currentAccountInfo, networkProperties } = this._root;
-        const { linkedKeys } = currentAccountInfo;
+        const { currentAccount, networkProperties } = this._root;
 
-        return HarvestingService.fetchStatus(networkProperties, currentAccount, linkedKeys);
+        return HarvestingService.fetchStatus(networkProperties, currentAccount);
     };
 
     /**
