@@ -816,6 +816,11 @@ export class WalletController {
 
         clearTimeout(networkConnectionTimer);
 
+        // Initial node list fetch
+        if (this._state.networkStatus === NetworkConnectionStatus.INITIAL) {
+            this.fetchNodeList();
+        }
+
         // Try to connect to current node
         const currentNode = this.networkProperties.nodeUrl || this.selectedNodeUrl;
         if (currentNode) {
@@ -828,11 +833,19 @@ export class WalletController {
                 this._startChainListener();
                 runAgain();
                 return;
-            } catch {
-                runInAction(() => {
-                    this._state.networkStatus = NetworkConnectionStatus.FAILED_CURRENT_NODE;
-                });
-            }
+            } catch {}
+        }
+
+        // If the user selected node failed for the second time, set the status to failed
+        // Otherwise set the status to connecting
+        if (this.selectedNodeUrl && this._state.networkStatus === NetworkConnectionStatus.CONNECTING) {
+            runInAction(() => {
+                this._state.networkStatus = NetworkConnectionStatus.FAILED_CUSTOM_NODE;
+            });
+        } else {
+            runInAction(() => {
+                this._state.networkStatus = NetworkConnectionStatus.CONNECTING;
+            });
         }
 
         // Try to fetch the node list to verify if it is not the internet connection issue
@@ -868,7 +881,7 @@ export class WalletController {
         }
 
         runInAction(() => {
-            this._state.networkStatus = NetworkConnectionStatus.FAILED_AUTO_SELECTION;
+            this._state.networkStatus = NetworkConnectionStatus.CONNECTING;
         });
         runAgain();
         return;
