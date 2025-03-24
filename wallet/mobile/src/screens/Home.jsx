@@ -7,7 +7,7 @@ import { $t } from '@/app/localization';
 import { Router } from '@/app/Router';
 import { colors } from '@/app/styles';
 import { handleError } from '@/app/utils';
-import { useDataManager, useInit } from '@/app/hooks';
+import { useDataManager, useInit, useLoading } from '@/app/hooks';
 import { AddressBookListWidget } from './AddressBookList';
 import { HistoryWidget } from './History';
 import WalletController from '@/app/lib/controller/MobileWalletController';
@@ -33,6 +33,11 @@ export const Home = observer(function Home() {
         defaultUnconfirmedTransactions,
         handleError
     );
+    const [fetchAccountInfo, isAccountInfoLoading] = useDataManager(
+        WalletController.fetchAccountInfo,
+        null,
+        handleError
+    );
     const [renameAccount] = useDataManager(
         (name) =>
             WalletController.renameAccount({
@@ -44,7 +49,7 @@ export const Home = observer(function Home() {
         handleError
     );
     const loadState = useCallback(() => {
-        WalletController.fetchAccountInfo();
+        fetchAccountInfo();
         fetchUnconfirmedTransactions();
         fetchPartialTransactions();
     }, [currentAccount]);
@@ -64,10 +69,11 @@ export const Home = observer(function Home() {
     const accountName = currentAccount?.name || '-';
     const accountAddress = currentAccount?.address || '-';
 
-    const isLoading = isUnconfirmedTransactionsLoading || isPartialTransactionsLoading;
+    const [isLoading, isRefreshing] = useLoading(isUnconfirmedTransactionsLoading || isPartialTransactionsLoading || isAccountInfoLoading);
+
     return (
-        <Screen titleBar={<TitleBar accountSelector settings currentAccount={currentAccount} />} navigator={<TabNavigator />}>
-            <ScrollView refreshControl={<RefreshControl tintColor={colors.primary} refreshing={isLoading} onRefresh={loadState} />}>
+        <Screen titleBar={<TitleBar accountSelector settings isLoading={isLoading} currentAccount={currentAccount} />} navigator={<TabNavigator />}>
+            <ScrollView refreshControl={<RefreshControl tintColor={colors.primary} refreshing={isRefreshing} onRefresh={loadState} />}>
                 <Animated.View entering={FadeInUp}>
                     <FormItem>
                         <AccountCardWidget
