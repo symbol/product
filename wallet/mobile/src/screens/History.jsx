@@ -18,7 +18,7 @@ import { $t } from '@/app/localization';
 import { Router } from '@/app/Router';
 import { colors, spacings } from '@/app/styles';
 import { removeBlockedTransactions, removeAllowedTransactions, handleError } from '@/app/utils';
-import { useDataManager, useInit, useProp } from '@/app/hooks';
+import { useDataManager, useInit, useLoading, useProp } from '@/app/hooks';
 import { TransactionGroup, TransactionType } from '@/app/constants';
 import WalletController from '@/app/lib/controller/MobileWalletController';
 import { observer } from 'mobx-react-lite';
@@ -96,7 +96,7 @@ export const History = observer(function History() {
         setPageNumber(pageNumber);
     };
 
-    const [fetchInitialData, isLoading] = useDataManager(
+    const [fetchInitialData, isDataFetching] = useDataManager(
         async () => {
             const pageNumber = 1;
             if (filter.harvested) await fetchHarvestedBlocks(pageNumber);
@@ -211,24 +211,26 @@ export const History = observer(function History() {
     ];
 
     useEffect(() => {
-        if (!isLoading && !isPageLoading && isNextPageRequested) {
+        if (!isDataFetching && !isPageLoading && isNextPageRequested) {
             fetchNextPage(pageNumber);
             setIsNextPageRequested(false);
         }
-    }, [isLoading, isPageLoading, isNextPageRequested, pageNumber]);
+    }, [isDataFetching, isPageLoading, isNextPageRequested, pageNumber]);
+
+    const [isLoading, isRefreshing] = useLoading(isDataFetching);
 
     return (
-        <Screen titleBar={<TitleBar accountSelector settings currentAccount={currentAccount} />} navigator={<TabNavigator />}>
+        <Screen titleBar={<TitleBar accountSelector settings isLoading={isLoading} currentAccount={currentAccount} />} navigator={<TabNavigator />}>
             <SectionList
                 key={currentAccount.publicKey}
-                refreshControl={<RefreshControl tintColor={colors.primary} refreshing={isLoading} onRefresh={refresh} />}
+                refreshControl={<RefreshControl tintColor={colors.primary} refreshing={isRefreshing} onRefresh={refresh} />}
                 onEndReached={onEndReached}
                 onEndReachedThreshold={1}
                 stickySectionHeadersEnabled={false}
                 contentContainerStyle={styles.listContainer}
                 sections={sections}
                 ListEmptyComponent={
-                    !isLoading && (
+                    !isDataFetching && (
                         <View style={styles.emptyList}>
                             <StyledText type="label" style={styles.emptyListText}>
                                 {$t('message_emptyList')}
@@ -236,7 +238,7 @@ export const History = observer(function History() {
                         </View>
                     )
                 }
-                ListHeaderComponent={<Filter data={filterConfig} isDisabled={isLoading} value={filter} onChange={setFilter} />}
+                ListHeaderComponent={<Filter data={filterConfig} isDisabled={isDataFetching} value={filter} onChange={setFilter} />}
                 keyExtractor={(item, index) => index + (item.hash || item.id || item.height)}
                 renderItem={({ item, section }) =>
                     section.group === 'receipt' ? (

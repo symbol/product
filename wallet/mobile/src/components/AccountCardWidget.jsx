@@ -6,6 +6,7 @@ import { TouchableOpacity } from 'react-native-gesture-handler';
 import { getUserCurrencyAmountText, validateAccountName, validateRequired } from '@/app/utils';
 import { useToggle } from '@/app/hooks';
 import { $t } from '@/app/localization';
+import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 
 export const AccountCardWidget = (props) => {
     const {
@@ -44,10 +45,12 @@ export const AccountCardWidget = (props) => {
                     </TouchableOpacity>
                 </View>
                 <Text style={styles.textTitle}>{$t('c_accountCard_title_balance')}</Text>
-                <View style={[layout.row, layout.alignEnd]}>
-                    <Text style={styles.textBalance}>{balance}</Text>
-                    <Text style={styles.textTicker}>{' ' + ticker}</Text>
-                </View>
+                <Animated.View entering={FadeIn} exiting={FadeOut} key={balance}>
+                    <View style={[layout.row, layout.alignEnd]}>
+                        <Text style={styles.textBalance}>{balance}</Text>
+                        <Text style={styles.textTicker}>{' ' + ticker}</Text>
+                    </View>
+                </Animated.View>
                 {!!userCurrencyBalanceText && <Text style={styles.textUserCurrencyBalance}>{userCurrencyBalanceText}</Text>}
                 <Text style={styles.textTitle}>{$t('c_accountCard_title_address')}</Text>
                 <View style={layout.row}>

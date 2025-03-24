@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Image, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Image, StyleSheet, View } from 'react-native';
 import { RefreshControl, ScrollView } from 'react-native-gesture-handler';
 import Animated, { FadeIn, FadeInDown, FadeOut } from 'react-native-reanimated';
 import { Button, DialogBox, FeeSelector, FormItem, Screen, StyledText, TableView, TextBox, Widget } from '@/app/components';
@@ -8,7 +8,7 @@ import { $t } from '@/app/localization';
 import { HarvestingService } from '@/app/lib/services';
 import { colors, fonts, layout, spacings } from '@/app/styles';
 import { createHarvestingTransactionStub, formatDate, handleError, promiseAllSettled } from '@/app/utils';
-import { useDataManager, usePasscode, useToggle, useTransactionFees } from '@/app/hooks';
+import { useDataManager, useLoading, usePasscode, useToggle, useTransactionFees } from '@/app/hooks';
 import WalletController from '@/app/lib/controller/MobileWalletController';
 import { observer } from 'mobx-react-lite';
 import { AppError } from '@/app/lib/error';
@@ -19,7 +19,6 @@ export const Harvesting = observer(function Harvesting() {
     const { linkedKeys, importance, balance } = currentAccountInfo;
 
     const [isActionMade, setIsActionMade] = useState(false);
-    const [isFirstLoading, setIsFirstLoading] = useState(true);
 
     const [nodeUrl, setNodeUrl] = useState('');
     const [isStartConfirmVisible, toggleStartConfirm] = useToggle(false);
@@ -99,7 +98,6 @@ export const Harvesting = observer(function Harvesting() {
             fetchStatus()
         ]);
         setIsActionMade(false);
-        setIsFirstLoading(false);
     };
     const confirmStart = usePasscode('enter', start);
     const confirmStop = usePasscode('enter', stop);
@@ -192,7 +190,6 @@ export const Harvesting = observer(function Harvesting() {
 
     const isManageSectionVisible = isNodeSelectorVisible || isButtonVisible;
     const isBlockedLoading = isStarting || isStopping;
-    const isLoading = isStatusLoading || isSummaryLoading || isNodeListLoading;
 
     // Load data on mount and on new transaction (possible status change)
     useEffect(() => {
@@ -220,9 +217,11 @@ export const Harvesting = observer(function Harvesting() {
         }
     }, [nodeList]);
 
+    const [isLoading, isRefreshing] = useLoading(isStatusLoading || isSummaryLoading);
+
     return (
         <Screen isLoading={isBlockedLoading}>
-            <ScrollView refreshControl={<RefreshControl tintColor={colors.primary} refreshing={isLoading && !isFirstLoading} onRefresh={loadData} />}>
+            <ScrollView refreshControl={<RefreshControl tintColor={colors.primary} refreshing={isRefreshing} onRefresh={loadData} />}>
                 <FormItem>
                     <StyledText type="title">{$t('s_harvesting_title')}</StyledText>
                     <StyledText type="body">{$t('s_harvesting_description')}</StyledText>
@@ -231,7 +230,8 @@ export const Harvesting = observer(function Harvesting() {
                     <StyledText type="title">{$t('data_status')}</StyledText>
                     <Widget color={statusColor}>
                         <FormItem style={[layout.row, layout.alignCenter]}>
-                            <Image source={statusIconSrc} style={styles.statusIcon} />
+                            {!isLoading && <Image source={statusIconSrc} style={styles.statusIcon} />}
+                            {isLoading && <ActivityIndicator style={styles.statusIcon} size="small" color={colors.bgForm} />}
                             <StyledText type="body" style={[styles.statusTextColor, styles.statusTextLabel]}>
                                 {statusText}
                             </StyledText>

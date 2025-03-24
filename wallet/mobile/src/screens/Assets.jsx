@@ -6,7 +6,7 @@ import { $t } from '@/app/localization';
 import { Router } from '@/app/Router';
 import { colors } from '@/app/styles';
 import { handleError } from '@/app/utils';
-import { useDataManager, useInit } from '@/app/hooks';
+import { useDataManager, useInit, useLoading } from '@/app/hooks';
 import WalletController from '@/app/lib/controller/MobileWalletController';
 import { observer } from 'mobx-react-lite';
 
@@ -14,7 +14,7 @@ export const Assets = observer(function Assets() {
     const { isWalletReady, chainHeight, currentAccount, currentAccountInfo, networkProperties } = WalletController;
     const { mosaics, namespaces } = currentAccountInfo;
     const [filter, setFilter] = useState({});
-    const [fetchData, isLoading] = useDataManager(WalletController.fetchAccountInfo, null, handleError);
+    const [fetchData, isDataFetching] = useDataManager(WalletController.fetchAccountInfo, null, handleError);
     useInit(fetchData, isWalletReady, [currentAccount]);
 
     const sections = [];
@@ -58,10 +58,12 @@ export const Assets = observer(function Assets() {
         },
     ];
 
+    const [isLoading, isRefreshing] = useLoading(isDataFetching);
+
     return (
-        <Screen titleBar={<TitleBar accountSelector settings currentAccount={currentAccount} />} navigator={<TabNavigator />}>
+        <Screen titleBar={<TitleBar accountSelector settings isLoading={isLoading} currentAccount={currentAccount} />} navigator={<TabNavigator />}>
             <SectionList
-                refreshControl={<RefreshControl tintColor={colors.primary} refreshing={isLoading} onRefresh={fetchData} />}
+                refreshControl={<RefreshControl tintColor={colors.primary} refreshing={isRefreshing} onRefresh={fetchData} />}
                 ListHeaderComponent={<Filter data={filterConfig} value={filter} onChange={setFilter} />}
                 stickySectionHeadersEnabled={false}
                 sections={sections}
