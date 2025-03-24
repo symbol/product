@@ -58,7 +58,7 @@ async def run_main(args):
 	if NodeFeatures.HARVESTER in config.node.features:
 		harvesting_properties_filepath = directories.resources / 'config-harvesting.properties'
 		harvesting_properties_filepath.chmod(0o600)
-		config_manager.patch(harvesting_properties_filepath, harvester_config_patches)
+		config_manager.patch(harvesting_properties_filepath.name, harvester_config_patches)
 		harvesting_properties_filepath.chmod(0o400)
 
 
