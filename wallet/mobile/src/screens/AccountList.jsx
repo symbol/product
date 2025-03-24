@@ -87,6 +87,10 @@ export const AccountList = observer(function AccountList() {
     );
     const [removeAccount] = useDataManager(
         async (account) => {
+            if (account.publicKey === selectedPublicKey) {
+                const rootAccount = networkAccounts[0];
+                await WalletController.selectAccount(rootAccount.publicKey);
+            }
             await WalletController.removeAccount({
                 publicKey: account.publicKey,
                 networkIdentifier,

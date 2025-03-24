@@ -405,9 +405,9 @@ export class WalletController {
      * @returns {Promise<void>}
      */
     removeAccount = async ({ networkIdentifier, publicKey }, password) => {
-        // To prevent removing the currently selected account, select root account before removing
+        // Prevent removing the currently selected account
         if (this._state.currentAccountPublicKey === publicKey) {
-            await this.selectAccount(this.accounts[networkIdentifier][0].publicKey);
+            throw new AppError('error_wallet_remove_current_account', 'Cannot remove the currently selected account');
         }
 
         // Load accounts from storage and remove the account
