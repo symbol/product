@@ -1,5 +1,6 @@
 export * from './useDataManager';
 export * from './useInit';
+export * from './useLoading';
 export * from './usePasscode';
 export * from './usePromiseMap';
 export * from './useProp';
