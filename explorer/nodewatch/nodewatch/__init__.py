@@ -91,6 +91,15 @@ def create_app():
 		template_name, context = symbol_routes_facade.html_summary()
 		return render_template(template_name, **context)
 
+	def _get_json_nodes(role, exact_match, request_args):
+		only_ssl = request_args.get('only_ssl', 'false').lower() in ('', 'true')
+
+		order = request_args.get('order', None)
+
+		limit = int(request_args.get('limit', 0))
+
+		return jsonify(symbol_routes_facade.json_nodes(role, exact_match=exact_match, only_ssl=only_ssl, limit=limit, order=order))
+
 	def _get_json_node(result):
 		if not result:
 			abort(404)
@@ -105,11 +114,11 @@ def create_app():
 
 	@app.route('/api/symbol/nodes/api')
 	def api_symbol_nodes_api():  # pylint: disable=unused-variable
-		return jsonify(symbol_routes_facade.json_nodes(2, exact_match=True))
+		return _get_json_nodes(2, True, request.args)
 
 	@app.route('/api/symbol/nodes/peer')
 	def api_symbol_nodes_peer():  # pylint: disable=unused-variable
-		return jsonify(symbol_routes_facade.json_nodes(1))
+		return _get_json_nodes(1, False, request.args)
 
 	@app.route('/api/symbol/nodes/mainPublicKey/<main_public_key>')
 	def api_symbol_nodes_get_main_public_key(main_public_key):  # pylint: disable=unused-variable
