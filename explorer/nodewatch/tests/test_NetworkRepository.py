@@ -218,6 +218,7 @@ class NetworkRepositoryTest(unittest.TestCase):
 			'isSslEnabled': None,
 			'restVersion': None,
 			'roles': 5,
+			'geoLocation': None,
 		}, json_object)
 
 	def test_can_format_node_descriptor_with_node_public_key_as_json(self):
@@ -242,6 +243,7 @@ class NetworkRepositoryTest(unittest.TestCase):
 			'isHealthy': True,
 			'isSslEnabled': True,
 			'restVersion': '2.4.4',
+			'geoLocation': None,
 		}, json_object)
 
 	# endregion
@@ -429,5 +431,58 @@ class NetworkRepositoryTest(unittest.TestCase):
 			height=1486131,
 			finalized_height=1486112,
 			version='1.0.3.4')
+
+	# endregion
+
+	# region load geo location mappings
+
+	# pylint: disable=duplicate-code
+	EXPECTED_GEO_VALUES = {
+		'continent': 'Asia',
+		'country': 'Japan',
+		'region': '13',
+		'city': 'Chiyoda',
+		'lat': 12.0,
+		'lon': 15.0,
+		'isp': 'Internet Inc.'
+	}
+
+	def test_can_load_geo_location_descriptors(self):
+		# Arrange:
+		repository = NetworkRepository(SymbolNetwork.MAINNET, 'symbol')
+
+		# Act:
+		repository.load_geo_location_descriptors('tests/resources/symbol_geo_location.json')
+
+		# Assert:
+		self.assertEqual(1, len(repository.geo_location_map))
+		for property_name, expected_value in self.EXPECTED_GEO_VALUES.items():
+			self.assertEqual(expected_value, repository.geo_location_map['symbol.shizuilab.com'][property_name])
+
+	def test_node_includes_geo_location_in_json_when_available(self):
+		# Arrange:
+		repository = NetworkRepository(SymbolNetwork.MAINNET, 'symbol')
+		repository.load_geo_location_descriptors('tests/resources/symbol_geo_location.json')
+		repository.load_node_descriptors('tests/resources/symbol_nodes.json')
+
+		# Act:
+		json_object = repository.node_descriptors[3].to_json()
+
+		print(json_object)
+
+		# Assert:
+		self.assertEqual(self.EXPECTED_GEO_VALUES, json_object['geoLocation'])
+
+	def test_node_has_null_geo_location_in_json_when_not_available(self):
+		# Arrange:
+		repository = NetworkRepository(SymbolNetwork.MAINNET, 'symbol')
+		repository.load_geo_location_descriptors('tests/resources/symbol_geo_location.json')
+		repository.load_node_descriptors('tests/resources/symbol_nodes.json')
+
+		# Act:
+		json_object = repository.node_descriptors[4].to_json()
+
+		# Assert:
+		self.assertEqual(None, json_object['geoLocation'])
 
 	# endregion

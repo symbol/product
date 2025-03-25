@@ -132,7 +132,8 @@ class BasicRoutesFacade:
 		nodes_filepath = resources_path / f'{self.blockchain_name}_nodes.json'
 		harvesters_filepath = resources_path / f'{self.blockchain_name}_harvesters.csv'
 		voters_filepath = resources_path / f'{self.blockchain_name}_richlist.csv'
-		all_filepaths = [nodes_filepath, harvesters_filepath, voters_filepath]
+		geo_locations_filepath = resources_path / f'{self.blockchain_name}_geo_location.json'
+		all_filepaths = [nodes_filepath, harvesters_filepath, voters_filepath, geo_locations_filepath]
 
 		# nodes.json is produced first by the network crawl, all other files are derived from it
 		last_crawl_timestamp = nodes_filepath.stat().st_mtime
@@ -148,6 +149,9 @@ class BasicRoutesFacade:
 			return False
 
 		log.info(f'reloading files with crawl data from {last_crawl_time} (previous reload {self.last_reload_time})')
+
+		# Load geo locations first, as they are used by the node descriptors
+		self.repository.load_geo_location_descriptors(geo_locations_filepath)
 
 		self.repository.load_node_descriptors(nodes_filepath)
 		self.repository.load_harvester_descriptors(harvesters_filepath)
