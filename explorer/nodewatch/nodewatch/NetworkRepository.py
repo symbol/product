@@ -285,4 +285,4 @@ class NetworkRepository:
 					if 'query' in entry['geolocation']:
 						del entry['geolocation']['query']
 
-					self.geo_location_map[entry['host']] =  entry['geolocation']
+					self.geo_location_map[entry['host']] = entry['geolocation']
