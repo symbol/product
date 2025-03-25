@@ -26,6 +26,7 @@ class NodeDescriptor:
 		is_healthy=None,
 		is_ssl_enabled=None,
 		rest_version=None,
+		geo_location=None,
 		roles=0xFF):
 		"""Creates a descriptor."""
 
@@ -43,6 +44,7 @@ class NodeDescriptor:
 		self.is_healthy = is_healthy
 		self.is_ssl_enabled = is_ssl_enabled
 		self.rest_version = rest_version
+		self.geo_location = geo_location
 		self.roles = roles
 
 	@property
@@ -66,6 +68,7 @@ class NodeDescriptor:
 			'isHealthy': self.is_healthy,
 			'isSslEnabled': self.is_ssl_enabled,
 			'restVersion': self.rest_version,
+			'geoLocation': self.geo_location if self.geo_location else None,
 			'roles': self.roles
 		}
 
@@ -119,6 +122,7 @@ class NetworkRepository:
 		self.node_descriptors = []
 		self.harvester_descriptors = []
 		self.voter_descriptors = []
+		self.geo_location_map = {}
 
 	@property
 	def is_nem(self):
@@ -214,6 +218,7 @@ class NetworkRepository:
 			self._format_symbol_version(json_node['version']),
 			*extra_data,
 			*api_node_info_data,
+			self.geo_location_map.get(json_node['host'], None),
 			roles)
 
 	def _create_descriptor_from_json(self, json_node):
@@ -266,3 +271,18 @@ class NetworkRepository:
 
 		# sort by balance (highest to lowest)
 		self.voter_descriptors.sort(key=lambda descriptor: descriptor.balance, reverse=True)
+
+	def load_geo_location_descriptors(self, geo_locations_data_filepath):
+		"""Loads geo location info and convert to map."""
+
+		log.info(f'loading geo locations from {geo_locations_data_filepath}')
+
+		with open(geo_locations_data_filepath, 'rt', encoding='utf8') as infile:
+			geo_locations_json = json.load(infile)
+
+			for entry in geo_locations_json:
+				if 'host' in entry and 'geolocation' in entry:
+					if 'query' in entry['geolocation']:
+						del entry['geolocation']['query']
+
+					self.geo_location_map[entry['host']] = entry['geolocation']

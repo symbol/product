@@ -229,6 +229,7 @@ class SymbolRoutesFacadeTest(unittest.TestCase):  # pylint: disable=too-many-pub
 		self.assertEqual(6, len(facade.repository.node_descriptors))
 		self.assertEqual(4, len(facade.repository.harvester_descriptors))
 		self.assertEqual(4, len(facade.repository.voter_descriptors))
+		self.assertEqual(1, len(facade.repository.geo_location_map))
 
 	def test_can_skip_reload_when_noop(self):
 		# Arrange:
@@ -478,7 +479,45 @@ class SymbolRoutesFacadeTest(unittest.TestCase):  # pylint: disable=too-many-pub
 			'isHealthy': True,
 			'isSslEnabled': True,
 			'restVersion': '2.4.4',
-			'roles': 2
+			'roles': 2,
+			'geoLocation': None
+		}
+
+		# Assert:
+		self.assertEqual(node_descriptors, expected_node)
+
+	def test_can_find_known_node_with_geo_location_by_main_public_key(self):  # pylint: disable=invalid-name
+		# Arrange:
+		facade = SymbolRoutesFacade(SymbolNetwork.MAINNET, '<symbol_explorer>')
+		facade.reload_all(Path('tests/resources'), True)
+
+		# Act: select a node match with main public key
+		node_descriptors = facade.json_node(
+			filter_field='main_public_key',
+			public_key='7DFB0D690BFFA4A4979C7466C7B669AE8FBAFD419DAA10DE948604CD9BE65F0B'
+		)
+		expected_node = {
+			'mainPublicKey': '7DFB0D690BFFA4A4979C7466C7B669AE8FBAFD419DAA10DE948604CD9BE65F0B',
+			'nodePublicKey': 'D561824BD4E3053C39A8D5A4AB00583A4D99302C541F046D3A1E6FF023006D7C',
+			'endpoint': 'http://symbol.shizuilab.com:3000',
+			'name': 'ibone74',
+			'version': '1.0.3.5',
+			'height': 1486760,
+			'finalizedHeight': 1486740,
+			'balance': 82375.554976,
+			'isHealthy': True,
+			'isSslEnabled': True,
+			'restVersion': '2.4.4',
+			'roles': 3,
+			'geoLocation': {
+				'continent': 'Asia',
+				'country': 'Japan',
+				'region': '13',
+				'city': 'Chiyoda',
+				'lat': 12.0,
+				'lon': 15.0,
+				'isp': 'Internet Inc.'
+			}
 		}
 
 		# Assert:
