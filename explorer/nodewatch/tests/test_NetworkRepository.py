@@ -486,3 +486,43 @@ class NetworkRepositoryTest(unittest.TestCase):
 		self.assertEqual(None, json_object['geoLocation'])
 
 	# endregion
+
+	# region load time series nodes count
+
+	def test_can_load_time_series_nodes_count(self):
+		# Arrange:
+		repository = NetworkRepository(SymbolNetwork.MAINNET, 'symbol')
+
+		# Act:
+		repository.load_time_series_nodes_count('tests/resources/symbol_time_series_nodes_count.json')
+
+		# Assert:
+		self.assertEqual([
+			{
+				'date': '2025-03-26',
+				'values': {
+					'1': 1,
+					'2': 0,
+					'3': 98,
+					'4': 0,
+					'5': 2,
+					'6': 0,
+					'7': 34,
+					'total': 135
+				}
+			},
+			{
+				'date': '2025-03-27',
+				'values': {
+					'1': 0,
+					'2': 0,
+					'3': 98,
+					'4': 0,
+					'5': 2,
+					'6': 0,
+					'7': 34,
+					'total': 134
+				}
+			}], repository.time_series_nodes_count)
+
+	# endregion

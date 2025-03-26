@@ -123,6 +123,7 @@ class NetworkRepository:
 		self.harvester_descriptors = []
 		self.voter_descriptors = []
 		self.geo_location_map = {}
+		self.time_series_nodes_count = []
 
 	@property
 	def is_nem(self):
@@ -286,3 +287,11 @@ class NetworkRepository:
 						del entry['geolocation']['query']
 
 					self.geo_location_map[entry['host']] = entry['geolocation']
+
+	def load_time_series_nodes_count(self, time_series_nodes_count_filepath):
+		"""Loads time series node count data."""
+
+		log.info(f'loading time series node count from {time_series_nodes_count_filepath}')
+
+		with open(time_series_nodes_count_filepath, 'rt', encoding='utf8') as infile:
+			self.time_series_nodes_count = json.load(infile)

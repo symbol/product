@@ -133,7 +133,8 @@ class BasicRoutesFacade:
 		harvesters_filepath = resources_path / f'{self.blockchain_name}_harvesters.csv'
 		voters_filepath = resources_path / f'{self.blockchain_name}_richlist.csv'
 		geo_locations_filepath = resources_path / f'{self.blockchain_name}_geo_location.json'
-		all_filepaths = [nodes_filepath, harvesters_filepath, voters_filepath, geo_locations_filepath]
+		time_series_node_counts_filepath = resources_path / f'{self.blockchain_name}_time_series_nodes_count.json'
+		all_filepaths = [nodes_filepath, harvesters_filepath, voters_filepath, geo_locations_filepath, time_series_node_counts_filepath]
 
 		# nodes.json is produced first by the network crawl, all other files are derived from it
 		last_crawl_timestamp = nodes_filepath.stat().st_mtime
@@ -155,6 +156,7 @@ class BasicRoutesFacade:
 
 		self.repository.load_node_descriptors(nodes_filepath)
 		self.repository.load_harvester_descriptors(harvesters_filepath)
+		self.repository.load_time_series_nodes_count(time_series_node_counts_filepath)
 		if voters_filepath.exists():
 			self.repository.load_voter_descriptors(voters_filepath)
 
@@ -271,3 +273,8 @@ class SymbolRoutesFacade(BasicRoutesFacade):
 			tag = 'success'
 
 		return tag
+
+	def json_time_series_nodes_count(self):
+		"""Returns the number of nodes."""
+
+		return self.repository.time_series_nodes_count

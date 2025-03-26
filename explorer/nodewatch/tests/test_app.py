@@ -288,4 +288,15 @@ def test_get_api_symbol_node_with_node_public_key(client):  # pylint: disable=re
 	)
 
 
+def test_get_api_symbol_nodes_count(client):  # pylint: disable=redefined-outer-name
+	# Act:
+	response = client.get('/api/symbol/nodes/count')
+	response_json = json.loads(response.data)
+
+	# Assert:
+	assert 200 == response.status_code
+	assert 'application/json' == response.headers['Content-Type']
+	assert 2 == len(response_json)
+
+
 # endregion

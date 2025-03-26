@@ -230,6 +230,7 @@ class SymbolRoutesFacadeTest(unittest.TestCase):  # pylint: disable=too-many-pub
 		self.assertEqual(4, len(facade.repository.harvester_descriptors))
 		self.assertEqual(4, len(facade.repository.voter_descriptors))
 		self.assertEqual(1, len(facade.repository.geo_location_map))
+		self.assertEqual(2, len(facade.repository.time_series_nodes_count))
 
 	def test_can_skip_reload_when_noop(self):
 		# Arrange:
@@ -582,6 +583,18 @@ class SymbolRoutesFacadeTest(unittest.TestCase):  # pylint: disable=too-many-pub
 		self.assertEqual(2, len(height_json))
 		self.assertEqual(1486760, height_json['height'])
 		self.assertEqual(1486740, height_json['finalizedHeight'])
+
+	def test_can_retrieve_time_series_nodes_count_json(self):
+		# Arrange:
+		facade = SymbolRoutesFacade(SymbolNetwork.MAINNET, '<symbol_explorer>')
+		facade.reload_all(Path('tests/resources'), True)
+
+		# Act:
+		time_series_nodes_count = facade.json_time_series_nodes_count()
+
+		# Assert:
+		self.assertEqual(2, len(time_series_nodes_count))
+		self.assertEqual(['2025-03-26', '2025-03-27'], list(map(lambda time_series_node: time_series_node['date'], time_series_nodes_count)))
 
 	# endregion
 
