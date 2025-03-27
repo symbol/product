@@ -47,20 +47,17 @@ export const History = observer(function History() {
         };
 
         // Always fetch confirmed transactions
-        const confirmed = await WalletController.fetchAccountTransactions(confirmedSearchCriteria);
-
-        // Filter transactions using address book
-        const blackList = WalletController.modules.addressBook.blackList;
-        const filteredConfirmed = filter.blocked
-            ? removeAllowedTransactions(confirmed.data, blackList)
-            : removeBlockedTransactions(confirmed.data, blackList);
-        let filteredUnconfirmed;
-        let filteredPartial;
+        const confirmedPromise = WalletController.fetchAccountTransactions(confirmedSearchCriteria);
+        let confirmed;
 
         // Fetch unconfirmed and partial transactions only on the first page
         if (pageNumber === 1) {
-            const unconfirmed = await WalletController.fetchAccountTransactions({ group: TransactionGroup.UNCONFIRMED });
-            const partial = await WalletController.fetchAccountTransactions({ group: TransactionGroup.PARTIAL });
+            const [confirmedData, unconfirmed, partial] = await Promise.all([
+                confirmedPromise,
+                WalletController.fetchAccountTransactions({ group: TransactionGroup.UNCONFIRMED }),
+                WalletController.fetchAccountTransactions({ group: TransactionGroup.PARTIAL })
+            ]);
+            confirmed = confirmedData;
 
             // Filter transactions using address book
             filteredUnconfirmed = filter.blocked
@@ -70,6 +67,17 @@ export const History = observer(function History() {
                 ? removeAllowedTransactions(partial.data, blackList)
                 : removeBlockedTransactions(partial.data, blackList);
         }
+        else {
+            confirmed = await confirmedPromise;
+        }
+
+        // Filter transactions using address book
+        const blackList = WalletController.modules.addressBook.blackList;
+        const filteredConfirmed = filter.blocked
+            ? removeAllowedTransactions(confirmed.data, blackList)
+            : removeBlockedTransactions(confirmed.data, blackList);
+        let filteredUnconfirmed;
+        let filteredPartial;
 
         // Escape if account has changed
         if (requestedAccountPublicKey.current !== currentAccount.publicKey) return;
