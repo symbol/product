@@ -22,19 +22,21 @@ export const useDataManager = (callback, defaultData, onError) => {
 
     const call = (...args) => {
         setIsLoading(true);
-        return new Promise(async (resolve, reject) => {
-            try {
-                const data = await callback(...args);
-                setData(data);
-                setIsLoading(false);
-                resolve(data);
-            } catch (error) {
-                setIsLoading(false);
-                if (onError) {
-                    onError(error);
+        return new Promise((resolve, reject) => {
+            setTimeout(async () => {
+                try {
+                    const data = await callback(...args);
+                    setData(data);
+                    setIsLoading(false);
+                    resolve(data);
+                } catch (error) {
+                    setIsLoading(false);
+                    if (onError) {
+                        onError(error);
+                    }
+                    reject(error);
                 }
-                reject(error);
-            }
+            }, 0);
         });
     };
 
