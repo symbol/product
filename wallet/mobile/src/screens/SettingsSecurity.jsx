@@ -43,7 +43,9 @@ export function SettingsSecurity() {
     };
     const confirmShowMnemonic = usePasscode('enter', showMnemonic);
 
-    useEffect(loadData, []);
+    useEffect(() => {
+        loadData()
+    }, []);
 
     const isLoading = isDataLoading || isSetPasscodeLoading;
 
