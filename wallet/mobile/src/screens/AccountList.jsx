@@ -13,6 +13,7 @@ import { observer } from 'mobx-react-lite';
 import WalletController from '@/app/lib/controller/MobileWalletController';
 import { PlatformUtils } from '@/app/lib/platform/PlatformUtils';
 import { AccountService } from '@/app/lib/services';
+import { toJS } from 'mobx';
 
 export const AccountList = observer(function AccountList() {
     const { currentAccount, accounts, accountInfos, networkIdentifier, networkProperties, ticker } = WalletController;
@@ -21,7 +22,7 @@ export const AccountList = observer(function AccountList() {
     const isPressed = useSharedValue(0);
     const [accountBalanceStateMap, fetchAccountBalances] = usePromiseMap();
     const selectedPublicKey = currentAccount?.publicKey || null;
-    const networkAccounts = accounts[networkIdentifier];
+    const networkAccounts = useMemo(() => toJS(accounts[networkIdentifier]), [accounts[networkIdentifier]]);
     const [updatedNetworkAccounts, setUpdatedNetworkAccounts] = useProp(networkAccounts);
     const navigation = useNavigation();
     const accountBalances = useMemo(() => {
