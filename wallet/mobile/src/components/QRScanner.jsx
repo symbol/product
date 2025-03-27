@@ -59,7 +59,7 @@ export const QRScanner = (props) => {
     }, [isVisible, hasPermission]);
 
     return (
-        <Modal animationType="fade" visible={isVisible} onRequestClose={onClose}>
+        <Modal animationType="fade" visible={isVisible} onRequestClose={onClose} transparent>
             {isVisible && (
                 <SafeAreaView style={styles.container}>
                     <View style={styles.container}>
