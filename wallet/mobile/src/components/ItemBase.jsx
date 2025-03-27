@@ -52,7 +52,7 @@ export function ItemBase(props) {
     }, [isFocused, isExpanded]);
 
     useEffect(() => {
-        setTimeout(() => (opacity.value = withTiming(1)), 150);
+        setTimeout(() => (opacity.value = withTiming(1)), 0);
     }, []);
 
     return (

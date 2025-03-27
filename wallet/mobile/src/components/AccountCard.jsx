@@ -5,7 +5,7 @@ import { getCharPercentage } from '@/app/utils';
 import { AccountAvatar } from '@/app/components';
 import { TouchableOpacity } from 'react-native-gesture-handler';
 import { $t } from '@/app/localization';
-import Animated, { FadeIn, FadeOut, ZoomIn, ZoomOut } from 'react-native-reanimated';
+import Animated, { FadeIn, ZoomIn } from 'react-native-reanimated';
 
 const imagesPattern = [
     require('@/app/assets/images/Geometric-02.png'),
@@ -65,14 +65,13 @@ export const AccountCard = (props) => {
                         <Animated.View
                             style={styles.balanceChangeBadge}
                             entering={ZoomIn}
-                            exiting={ZoomOut}
                             key={balanceChange}
                         >
                             <Text style={styles.textBalanceChange}>{balanceChange + ' ' + ticker}</Text>
                         </Animated.View>
                     )}
                 </View>
-                <Animated.View entering={FadeIn} exiting={FadeOut} key={balance}>
+                <Animated.View entering={FadeIn} key={balance}>
                     <View style={[layout.row, layout.alignEnd]}>
                         <Text style={styles.textBalance}>{balance}</Text>
                         <Text style={styles.textTicker}>{' ' + ticker}</Text>
