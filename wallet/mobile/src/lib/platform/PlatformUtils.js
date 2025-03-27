@@ -21,11 +21,7 @@ const requestAndroidWritePermission = async () => {
         isPermissionGranted = false;
     }
 
-    if (!isPermissionGranted) {
-        throw new AppError('error_permission_denied_write_storage', 'Permission denied to write to device storage');
-    }
-
-    return true;
+    return isPermissionGranted;
 };
 
 export class PlatformUtils {
