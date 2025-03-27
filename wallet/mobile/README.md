@@ -1,52 +1,124 @@
 # Symbol Mobile Wallet
 
+Symbol Mobile Wallet is a React Native application designed for managing Symbol blockchain accounts. It allows to generate and store keypairs, create, sign, cosign, and announce transactions, browse transaction history, and manage Delegated Harvesting. The app supports both Android and iOS platforms.
+
 ## Getting Started
-- [Install Node.js](https://nodejs.org) (v20.11.0 or above)
-- [Install Yarn package manager](https://yarnpkg.com/getting-started/install)
-- [Set up the React Native development environment](https://reactnative.dev/docs/set-up-your-environment).
+
+### Prerequisites
+- [Install Node.js](https://nodejs.org) (v20.11.0 or later)
+- [Set up the React Native development environment](https://reactnative.dev/docs/set-up-your-environment)
 
 ## Installation
-1. Install dependencies:
-```sh
-yarn install
-```
-2. Set up configuration in the `src/config/config.json`.
 
-### Android (development)
-To run the development mode, start the emulator or connect your device via USB. For the first time run the following commands (that will install the app on the device):
-```sh
-yarn run connect
-yarn run build:android:dev
-```
+1. Install JavaScript dependencies:
+   ```sh
+   npm install
+   ```
+2. Configure the application in `src/config/config.json`.
 
-If the application already installed on your emulator/device, use following commands instead:
-```sh
-yarn run connect
-yarn run dev
-```
+## Building the Application
 
-### Android (production)
-1. Set up signing key `release.keystore` to `android/app`.
+### Android
 
-2. Specify key properties in the `android/app/key.properties`:
-```
-storeFile=release.keystore
-storePassword=***
-keyAlias=***
-keyPassword=***
-```
-
-3. Generate production APK, by running following command:
-```sh
-yarn run build:android:prod
-```
-
-4. Artifact can be found here: `android/app/build/outputs/apk/release/app-release.apk`.
+1. Place the signing key (`release.keystore`) in `android/app`.
+2. Define the key properties in `android/app/key.properties`:
+   ```properties
+   storeFile=release.keystore
+   storePassword=***
+   keyAlias=***
+   keyPassword=***
+   ```
+3. Build the production APK using:
+   ```sh
+   npm run build:android:prod
+   ```
+4. The generated APK can be found at:
+   ```sh
+   android/app/build/generated/outputs/apk/release/app-release.apk
+   ```
+5. Distribute the app as needed.
 
 ### iOS
-https://reactnative.dev/docs/running-on-device
 
-## Folder structure
+1. Navigate to the `ios` folder and install dependencies:
+   ```sh
+   cd ios
+   bundle install
+   bundle exec pod install
+   ```
+2. Open Xcode and set up signing certificates.
+3. Use Xcode to build, archive, and distribute the app.
+
+## Running the Application
+
+### Android
+
+1. Start an emulator or connect a physical device via USB.
+
+2. Run the app:
+
+   a. For the first time install the app using:
+   ```sh
+   npm run connect:android
+   npm run build:android:dev
+   ```
+
+   b. If the app is already installed, you can start it using:
+   ```sh
+   npm run connect:android
+   npm run dev
+   ```
+
+   **Note:** If there are changes in `/android` or new dependencies are added, reinstall using step **a** instead.
+
+3. Launch the app from the emulator or connected device.
+
+### iOS
+
+1. Start an emulator or connect a physical device via USB.
+
+2. Run the app:
+
+   a. Open Xcode, select the run destination, and click **Start the active scheme** (the play button).
+
+   b. Alternatively, install and run the app using:
+   ```sh
+   npm run ios
+   ```
+
+   c. If the app is already installed, start it using:
+   ```sh
+   npm run dev
+   ```
+
+   **Note:** If there are changes in `/ios` or new dependencies are added, reinstall using step **a** or **b** instead.
+
+3. Launch the app from the emulator or connected device.
+
+## Linting
+
+Run the linter:
+```sh
+npm run lint
+```
+Fix linting errors:
+```sh
+npm run lint:fix
+```
+
+## Testing
+
+Run tests:
+```sh
+npm run test
+```
+Generate a test coverage report:
+```sh
+npm run test:cov
+```
+
+## Folder Structure
+
 ```
 /
 │── src/                          # Main source folder
