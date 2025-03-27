@@ -1,12 +1,12 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Modal, SafeAreaView, StyleSheet, View } from 'react-native';
 import { showMessage } from 'react-native-flash-message';
-import QRCodeScanner from 'react-native-qrcode-scanner';
 import { ButtonClose, StyledText } from '@/app/components';
 import { colors, spacings } from '@/app/styles';
 import { $t } from '@/app/localization';
 import { SymbolQR } from '@/app/lib/features/SymbolQR';
 import { extractAccountSymbolQR, extractAddressSymbolQR, extractContactSymbolQR, extractMnemonicSymbolQR } from '@/app/utils';
+import { Camera, useCameraDevice, useCameraPermission, useCodeScanner } from 'react-native-vision-camera';
 
 export const QRScanner = (props) => {
     const { isVisible, type, onSuccess, onClose } = props;
@@ -16,11 +16,13 @@ export const QRScanner = (props) => {
         onClose();
     };
 
-    const handleScan = (response) => {
+    const handleScan = (codes) => {
+        const data = codes[0].value;
+        
         // Parse the QR code string
         let symbolQR;
         try {
-            symbolQR = SymbolQR.fromTransportString(response.data);
+            symbolQR = SymbolQR.fromTransportString(data);
         } catch {
             return handleParseError('error_qr_failed_parse');
         }
@@ -42,17 +44,28 @@ export const QRScanner = (props) => {
         onClose();
     };
 
+    // Setups for the camera
+    const { hasPermission, requestPermission } = useCameraPermission();
+    const codeScanner = useCodeScanner({
+        codeTypes: ['qr'],
+        onCodeScanned: handleScan
+    });
+    const device = useCameraDevice('back');
+
+    useEffect(() => {
+        if (isVisible && !hasPermission) {
+            requestPermission();
+        }
+    }, [isVisible, hasPermission]);
+
     return (
         <Modal animationType="fade" visible={isVisible} onRequestClose={onClose}>
             {isVisible && (
                 <SafeAreaView style={styles.container}>
                     <View style={styles.container}>
-                        <QRCodeScanner
-                            checkAndroid6Permissions
-                            showMarker
-                            onRead={handleScan}
-                            topContent={<StyledText type="title">{$t('c_scanner_title')}</StyledText>}
-                        />
+                        {hasPermission && <Camera style={{flex: 1}} isActive device={device} codeScanner={codeScanner} />}
+                        <StyledText style={styles.title} type="title">{$t('c_scanner_title')}</StyledText>
+                        {!hasPermission && <StyledText style={styles.permission}>No Permission</StyledText>}
                         <ButtonClose type="cancel" style={styles.buttonCancel} onPress={onClose} />
                     </View>
                 </SafeAreaView>
@@ -71,5 +84,17 @@ const styles = StyleSheet.create({
         position: 'absolute',
         right: spacings.margin,
         top: spacings.margin,
+    },
+    title: {
+        position: 'absolute',
+        top: spacings.margin * 8,
+        width: '100%',
+        textAlign: 'center',
+    },
+    permission: {
+        position: 'absolute',
+        top: spacings.margin * 16,
+        width: '100%',
+        textAlign: 'center',
     },
 });

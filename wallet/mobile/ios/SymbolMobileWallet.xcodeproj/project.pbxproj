@@ -599,7 +599,7 @@
 				DEVELOPMENT_TEAM = W594P93ZB8;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = SymbolMobileWallet/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 11.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -631,7 +631,7 @@
 				CURRENT_PROJECT_VERSION = 2311.14.2200;
 				DEVELOPMENT_TEAM = W594P93ZB8;
 				INFOPLIST_FILE = SymbolMobileWallet/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 11.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",

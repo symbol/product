@@ -12,7 +12,6 @@ jest.mock('@haskkor/react-native-pincode', () => {
         hasUserSetPinCode: false,
     };
 });
-jest.mock('react-native-qrcode-scanner', () => {});
 jest.mock('i18n-js', () => {
     return jest.requireActual('i18n-js/dist/require/index');
 });
