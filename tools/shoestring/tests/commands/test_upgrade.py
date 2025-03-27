@@ -143,8 +143,9 @@ async def _assert_can_upgrade_node(
 	expected_output_files,
 	expected_changed_files,
 	api_https=False,
-	light_api=False
-):  # pylint: disable=too-many-arguments,too-many-positional-arguments
+	light_api=False,
+	files_to_remove=None
+):  # pylint: disable=too-many-arguments,too-many-positional-arguments,too-many-locals
 	# Arrange:
 	with tempfile.TemporaryDirectory() as output_directory:
 		with tempfile.TemporaryDirectory() as package_directory:
@@ -172,6 +173,10 @@ async def _assert_can_upgrade_node(
 				config_manager = ConfigurationManager(Path(output_directory) / 'userconfig' / 'resources')
 				if NodeFeatures.HARVESTER in node_features:
 					setup_harvester_private_keys = _read_harvester_private_keys(config_manager)
+
+				if isinstance(files_to_remove, list):
+					for filename in files_to_remove:
+						(Path(output_directory) / filename).unlink()
 
 				# Sanity:
 				assert 'name from setup' == _read_friendly_name(config_manager)
@@ -248,5 +253,17 @@ async def test_can_upgrade_full_node(server):  # pylint: disable=redefined-outer
 	}
 	expected_changed_files = sorted(PEER_CHANGED_FILES + API_CHANGED_FILES + HARVESTER_CHANGED_FILES)
 	await _assert_can_upgrade_node(server, node_features, expected_output_files, expected_changed_files)
+
+
+async def test_can_upgrade_node_without_docker_recovery_file(server):  # pylint: disable=redefined-outer-name
+	expected_output_files = {**PEER_OUTPUT_FILES, **API_OUTPUT_FILES}
+	expected_changed_files = sorted(PEER_CHANGED_FILES + API_CHANGED_FILES)
+	await _assert_can_upgrade_node(
+		server,
+		NodeFeatures.API,
+		expected_output_files,
+		expected_changed_files,
+		files_to_remove=['docker-compose-recovery.yaml']
+	)
 
 # endregion
