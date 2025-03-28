@@ -17,7 +17,7 @@ import { useState } from 'react';
  */
 
 /**
- * @typedef {Object<string, Promise} PromiseRequestMap
+ * @typedef {Object<string, Promise>} PromiseRequestMap
  */
 
 /**
@@ -25,38 +25,35 @@ import { useState } from 'react';
  * Promises should be provided as a map with keys.
  * Results are stored in a map with the specified key.
  *
- * @returns {[PromiseResultMap, (promiseMap: PromiseRequestMap) => void]} - Promise result map and runPromises function.
+ * @returns {[PromiseResultMap, function(PromiseRequestMap): void]} - Promise result map and runPromises function.
  */
 export const usePromiseMap = () => {
-    const [promiseMap, setPromiseMap] = useState({});
+	const [promiseMap, setPromiseMap] = useState({});
 
-    const handleFulfilled = (key, value) => {
-        setPromiseMap((prev) => ({
-            ...prev,
-            [key]: {
-                status: 'fulfilled',
-                value,
-            },
-        }));
-    };
-    const handleRejected = (key, reason) => {
-        setPromiseMap((prev) => ({
-            ...prev,
-            [key]: {
-                status: 'rejected',
-                reason,
-            },
-        }));
-    };
+	const handleFulfilled = (key, value) => {
+		setPromiseMap(prev => ({
+			...prev,
+			[key]: {
+				status: 'fulfilled',
+				value
+			}
+		}));
+	};
+	const handleRejected = (key, reason) => {
+		setPromiseMap(prev => ({
+			...prev,
+			[key]: {
+				status: 'rejected',
+				reason
+			}
+		}));
+	};
 
-    const runPromises = (promiseMapRequest) => {
-        setPromiseMap({});
-        Promise.all(
-            Object.entries(promiseMapRequest).map(([key, promise]) =>
-                promise.then((value) => handleFulfilled(key, value)).catch((reason) => handleRejected(key, reason))
-            )
-        );
-    };
+	const runPromises = promiseMapRequest => {
+		setPromiseMap({});
+		Promise.all(Object.entries(promiseMapRequest).map(([key, promise]) =>
+			promise.then(value => handleFulfilled(key, value)).catch(reason => handleRejected(key, reason))));
+	};
 
-    return [promiseMap, runPromises];
+	return [promiseMap, runPromises];
 };

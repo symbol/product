@@ -1,71 +1,75 @@
+import { LinkAction, LinkActionMessage, MessageType, TransactionType } from '@/app/constants';
+import { AppError } from '@/app/lib/error';
+import { HarvestingService } from '@/app/lib/services';
+import * as HarvestingTypes from '@/app/types/Harvesting';
+import * as SearchCriteriaTypes from '@/app/types/SearchCriteria';
+import * as TransactionTypes from '@/app/types/Transaction';
+import { addressFromPublicKey, encodeDelegatedHarvestingMessage, generateKeyPair } from '@/app/utils';
 import { cloneDeep, shuffle } from 'lodash';
 import { makeAutoObservable } from 'mobx';
-import { LinkAction, LinkActionMessage, MessageType, TransactionType } from '@/app/constants';
-import { HarvestingService } from '@/app/lib/services';
-import { addressFromPublicKey, encodeDelegatedHarvestingMessage, generateKeyPair } from '@/app/utils';
-import { AppError } from '@/app/lib/error';
-import * as HarvestingTypes from '@/app/types/Harvesting';
-import * as TransactionTypes from '@/app/types/Transaction';
-import * as SearchCriteriaTypes from '@/app/types/SearchCriteria';
 
 const defaultState = {};
 
 export class HarvestingModule {
-    constructor({ root, isObservable }) {
-        this.name = 'harvesting';
-        this._state = cloneDeep(defaultState);
+	constructor({ root, isObservable }) {
+		this.name = 'harvesting';
+		this._state = cloneDeep(defaultState);
 
-        if (isObservable) makeAutoObservable(this);
+		if (isObservable) 
+			makeAutoObservable(this);
 
-        this._root = root;
-    }
+		this._root = root;
+	}
 
-    /**
-     * Fetches the harvesting status of the current account.
-     * @returns {Promise<{ status: string, nodeUrl?: string }>} - The harvesting status.
-     */
-    fetchStatus = async () => {
-        const { currentAccount, networkProperties } = this._root;
+	/**
+	 * Fetches the harvesting status of the current account.
+	 * @typedef {object} HarvestingStatus
+	 * @property {string} status - The harvesting status.
+	 * @property {string} [nodeUrl] - The node URL (optional).
+	 * @returns {Promise<HarvestingStatus>} - The harvesting status.
+	 */
+	fetchStatus = async () => {
+		const { currentAccount, networkProperties } = this._root;
 
-        return HarvestingService.fetchStatus(networkProperties, currentAccount);
-    };
+		return HarvestingService.fetchStatus(networkProperties, currentAccount);
+	};
 
-    /**
+	/**
      * Fetches harvested blocks by current account.
      * @param {SearchCriteriaTypes.HarvestedBlockSearchCriteria} searchCriteria - Pagination params.
      * @returns {Promise<HarvestingTypes.HarvestedBlock[]>} - The harvested blocks.
      */
-    fetchAccountHarvestedBlocks = async (searchCriteria = {}) => {
-        const { pageNumber = 1, pageSize = 15 } = searchCriteria;
-        const { currentAccount, networkProperties } = this._root;
-        const { address } = currentAccount;
+	fetchAccountHarvestedBlocks = async (searchCriteria = {}) => {
+		const { pageNumber = 1, pageSize = 15 } = searchCriteria;
+		const { currentAccount, networkProperties } = this._root;
+		const { address } = currentAccount;
 
-        return HarvestingService.fetchHarvestedBlocks(networkProperties, address, { pageNumber, pageSize });
-    };
+		return HarvestingService.fetchHarvestedBlocks(networkProperties, address, { pageNumber, pageSize });
+	};
 
-    /**
+	/**
      * Fetches the node list (API and dual nodes) that are suggested for harvesting.
      * @returns {Promise<string[]>} - The node list.
      */
-    fetchNodeList = async () => {
-        const { networkIdentifier } = this._root;
-        const nodeList = await HarvestingService.fetchNodeList(networkIdentifier);
+	fetchNodeList = async () => {
+		const { networkIdentifier } = this._root;
+		const nodeList = await HarvestingService.fetchNodeList(networkIdentifier);
 
-        return shuffle(nodeList);
-    };
+		return shuffle(nodeList);
+	};
 
-    /**
+	/**
      * Fetches the harvesting summary of current account.
      * @returns {Promise<HarvestingTypes.HarvestingSummary>} - The harvesting summary.
      */
-    fetchSummary = async () => {
-        const { currentAccount, networkProperties } = this._root;
-        const { address } = currentAccount;
+	fetchSummary = async () => {
+		const { currentAccount, networkProperties } = this._root;
+		const { address } = currentAccount;
 
-        return HarvestingService.fetchSummary(networkProperties, address);
-    };
+		return HarvestingService.fetchSummary(networkProperties, address);
+	};
 
-    /**
+	/**
      * Prepares the transaction to start harvesting for the current account.
      * Aggregate transaction includes linking the VRF and remote keys, and sending a request to the node.
      * If the keys are already linked, they will be unlinked first.
@@ -73,140 +77,140 @@ export class HarvestingModule {
      * @param {string} [password] - The wallet password.
      * @returns {Promise<TransactionTypes.Transaction>} - The transaction to start harvesting.
      */
-    createStartHarvestingTransaction = async (nodePublicKey, password) => {
-        const currentAccountPrivateKey = await this._root.getCurrentAccountPrivateKey(password);
-        const { currentAccount, currentAccountInfo, networkIdentifier } = this._root;
-        const accountPublicKey = currentAccount.publicKey;
-        const { linkedKeys } = currentAccountInfo;
-        const nodeAddress = addressFromPublicKey(nodePublicKey, networkIdentifier);
-        const fee = 0;
+	createStartHarvestingTransaction = async (nodePublicKey, password) => {
+		const currentAccountPrivateKey = await this._root.getCurrentAccountPrivateKey(password);
+		const { currentAccount, currentAccountInfo, networkIdentifier } = this._root;
+		const accountPublicKey = currentAccount.publicKey;
+		const { linkedKeys } = currentAccountInfo;
+		const nodeAddress = addressFromPublicKey(nodePublicKey, networkIdentifier);
+		const fee = 0;
 
-        const vrfAccount = generateKeyPair(networkIdentifier);
-        const remoteAccount = generateKeyPair(networkIdentifier);
-        const transactions = [];
+		const vrfAccount = generateKeyPair(networkIdentifier);
+		const remoteAccount = generateKeyPair(networkIdentifier);
+		const transactions = [];
 
-        // If the keys is already linked to account, unlink them first
-        if (linkedKeys.vrfPublicKey) {
-            transactions.push({
-                type: TransactionType.VRF_KEY_LINK,
-                linkAction: LinkActionMessage[LinkAction.Unlink],
-                linkedPublicKey: linkedKeys.vrfPublicKey,
-                signerPublicKey: accountPublicKey,
-            });
-        }
-        if (linkedKeys.linkedPublicKey) {
-            transactions.push({
-                type: TransactionType.ACCOUNT_KEY_LINK,
-                linkAction: LinkActionMessage[LinkAction.Unlink],
-                linkedPublicKey: linkedKeys.linkedPublicKey,
-                signerPublicKey: accountPublicKey,
-            });
-        }
-        if (linkedKeys.nodePublicKey) {
-            transactions.push({
-                type: TransactionType.NODE_KEY_LINK,
-                linkAction: LinkActionMessage[LinkAction.Unlink],
-                linkedPublicKey: linkedKeys.nodePublicKey,
-                signerPublicKey: accountPublicKey,
-            });
-        }
+		// If the keys is already linked to account, unlink them first
+		if (linkedKeys.vrfPublicKey) {
+			transactions.push({
+				type: TransactionType.VRF_KEY_LINK,
+				linkAction: LinkActionMessage[LinkAction.Unlink],
+				linkedPublicKey: linkedKeys.vrfPublicKey,
+				signerPublicKey: accountPublicKey
+			});
+		}
+		if (linkedKeys.linkedPublicKey) {
+			transactions.push({
+				type: TransactionType.ACCOUNT_KEY_LINK,
+				linkAction: LinkActionMessage[LinkAction.Unlink],
+				linkedPublicKey: linkedKeys.linkedPublicKey,
+				signerPublicKey: accountPublicKey
+			});
+		}
+		if (linkedKeys.nodePublicKey) {
+			transactions.push({
+				type: TransactionType.NODE_KEY_LINK,
+				linkAction: LinkActionMessage[LinkAction.Unlink],
+				linkedPublicKey: linkedKeys.nodePublicKey,
+				signerPublicKey: accountPublicKey
+			});
+		}
 
-        // Then link the new ones
-        transactions.push({
-            type: TransactionType.VRF_KEY_LINK,
-            linkAction: LinkActionMessage[LinkAction.Link],
-            linkedPublicKey: vrfAccount.publicKey,
-            signerPublicKey: accountPublicKey,
-        });
-        transactions.push({
-            type: TransactionType.ACCOUNT_KEY_LINK,
-            linkAction: LinkActionMessage[LinkAction.Link],
-            linkedPublicKey: remoteAccount.publicKey,
-            signerPublicKey: accountPublicKey,
-        });
-        transactions.push({
-            type: TransactionType.NODE_KEY_LINK,
-            linkAction: LinkActionMessage[LinkAction.Link],
-            linkedPublicKey: nodePublicKey,
-            signerPublicKey: accountPublicKey,
-        });
+		// Then link the new ones
+		transactions.push({
+			type: TransactionType.VRF_KEY_LINK,
+			linkAction: LinkActionMessage[LinkAction.Link],
+			linkedPublicKey: vrfAccount.publicKey,
+			signerPublicKey: accountPublicKey
+		});
+		transactions.push({
+			type: TransactionType.ACCOUNT_KEY_LINK,
+			linkAction: LinkActionMessage[LinkAction.Link],
+			linkedPublicKey: remoteAccount.publicKey,
+			signerPublicKey: accountPublicKey
+		});
+		transactions.push({
+			type: TransactionType.NODE_KEY_LINK,
+			linkAction: LinkActionMessage[LinkAction.Link],
+			linkedPublicKey: nodePublicKey,
+			signerPublicKey: accountPublicKey
+		});
 
-        // Request node for harvesting
-        transactions.push({
-            type: TransactionType.TRANSFER,
-            mosaics: [],
-            message: {
-                type: MessageType.DelegatedHarvesting,
-                payload: encodeDelegatedHarvestingMessage(
-                    currentAccountPrivateKey,
-                    nodePublicKey,
-                    remoteAccount.privateKey,
-                    vrfAccount.privateKey
-                ),
-                text: '',
-            },
-            signerPublicKey: accountPublicKey,
-            recipientAddress: nodeAddress,
-        });
+		// Request node for harvesting
+		transactions.push({
+			type: TransactionType.TRANSFER,
+			mosaics: [],
+			message: {
+				type: MessageType.DelegatedHarvesting,
+				payload: encodeDelegatedHarvestingMessage(
+					currentAccountPrivateKey,
+					nodePublicKey,
+					remoteAccount.privateKey,
+					vrfAccount.privateKey
+				),
+				text: ''
+			},
+			signerPublicKey: accountPublicKey,
+			recipientAddress: nodeAddress
+		});
 
-        // Prepare aggregate transaction
-        return {
-            type: TransactionType.AGGREGATE_COMPLETE,
-            innerTransactions: transactions,
-            signerPublicKey: accountPublicKey,
-            fee,
-        };
-    };
+		// Prepare aggregate transaction
+		return {
+			type: TransactionType.AGGREGATE_COMPLETE,
+			innerTransactions: transactions,
+			signerPublicKey: accountPublicKey,
+			fee
+		};
+	};
 
-    /**
+	/**
      * Prepares the transaction to stop harvesting for the current account.
      * Aggregate transaction includes unlinking the VRF and remote keys.
      * @returns {TransactionTypes.Transaction} - The transaction to stop harvesting.
      */
-    createStopHarvestingTransaction = () => {
-        const { currentAccount, currentAccountInfo } = this._root;
-        const accountPublicKey = currentAccount.publicKey;
-        const { linkedKeys } = currentAccountInfo;
-        const fee = 0;
-        const transactions = [];
+	createStopHarvestingTransaction = () => {
+		const { currentAccount, currentAccountInfo } = this._root;
+		const accountPublicKey = currentAccount.publicKey;
+		const { linkedKeys } = currentAccountInfo;
+		const fee = 0;
+		const transactions = [];
 
-        // Unlink supplemental key
-        if (linkedKeys.vrfPublicKey) {
-            transactions.push({
-                type: TransactionType.VRF_KEY_LINK,
-                linkAction: LinkActionMessage[LinkAction.Unlink],
-                linkedPublicKey: linkedKeys.vrfPublicKey,
-                signerPublicKey: accountPublicKey,
-            });
-        }
-        if (linkedKeys.linkedPublicKey) {
-            transactions.push({
-                type: TransactionType.ACCOUNT_KEY_LINK,
-                linkAction: LinkActionMessage[LinkAction.Unlink],
-                linkedPublicKey: linkedKeys.linkedPublicKey,
-                signerPublicKey: accountPublicKey,
-            });
-        }
-        if (linkedKeys.nodePublicKey) {
-            transactions.push({
-                type: TransactionType.NODE_KEY_LINK,
-                linkAction: LinkActionMessage[LinkAction.Unlink],
-                linkedPublicKey: linkedKeys.nodePublicKey,
-                signerPublicKey: accountPublicKey,
-            });
-        }
+		// Unlink supplemental key
+		if (linkedKeys.vrfPublicKey) {
+			transactions.push({
+				type: TransactionType.VRF_KEY_LINK,
+				linkAction: LinkActionMessage[LinkAction.Unlink],
+				linkedPublicKey: linkedKeys.vrfPublicKey,
+				signerPublicKey: accountPublicKey
+			});
+		}
+		if (linkedKeys.linkedPublicKey) {
+			transactions.push({
+				type: TransactionType.ACCOUNT_KEY_LINK,
+				linkAction: LinkActionMessage[LinkAction.Unlink],
+				linkedPublicKey: linkedKeys.linkedPublicKey,
+				signerPublicKey: accountPublicKey
+			});
+		}
+		if (linkedKeys.nodePublicKey) {
+			transactions.push({
+				type: TransactionType.NODE_KEY_LINK,
+				linkAction: LinkActionMessage[LinkAction.Unlink],
+				linkedPublicKey: linkedKeys.nodePublicKey,
+				signerPublicKey: accountPublicKey
+			});
+		}
 
-        // If nothing to unlink, then just escape
-        if (transactions.length === 0) {
-            throw new AppError('error_harvesting_no_keys_to_unlink', 'Failed to create stop harvesting transaction. No keys to unlink.');
-        }
+		// If nothing to unlink, then just escape
+		if (transactions.length === 0) 
+			throw new AppError('error_harvesting_no_keys_to_unlink', 'Failed to create stop harvesting transaction. No keys to unlink.');
+        
 
-        // Prepare aggregate transaction
-        return (aggregateTransaction = {
-            type: TransactionType.AGGREGATE_COMPLETE,
-            innerTransactions: transactions,
-            signerPublicKey: accountPublicKey,
-            fee,
-        });
-    };
+		// Prepare aggregate transaction
+		return (aggregateTransaction = {
+			type: TransactionType.AGGREGATE_COMPLETE,
+			innerTransactions: transactions,
+			signerPublicKey: accountPublicKey,
+			fee
+		});
+	};
 }

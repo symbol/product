@@ -9,12 +9,12 @@ import * as Crypto from 'crypto';
  * @returns {number|null} The mosaic amount or null if the mosaic is not found.
  */
 export const getMosaicAmount = (mosaicList, nativeMosaicId) => {
-    if (!mosaicList || !nativeMosaicId) {
-        throw new Error('Failed to get mosaic amount. Missing required parameters.');
-    }
-    const nativeMosaic = mosaicList.find((mosaic) => mosaic.id === nativeMosaicId);
+	if (!mosaicList || !nativeMosaicId) 
+		throw new Error('Failed to get mosaic amount. Missing required parameters.');
+    
+	const nativeMosaic = mosaicList.find(mosaic => mosaic.id === nativeMosaicId);
 
-    return nativeMosaic ? nativeMosaic.amount : null;
+	return nativeMosaic ? nativeMosaic.amount : null;
 };
 
 /**
@@ -24,7 +24,7 @@ export const getMosaicAmount = (mosaicList, nativeMosaicId) => {
  * @returns {number} The mosaic relative amount.
  */
 export const absoluteToRelativeAmount = (absoluteAmount, divisibility) => {
-    return absoluteAmount / Math.pow(10, divisibility);
+	return absoluteAmount / Math.pow(10, divisibility);
 };
 
 /**
@@ -34,7 +34,7 @@ export const absoluteToRelativeAmount = (absoluteAmount, divisibility) => {
  * @returns {number} The mosaic absolute amount.
  */
 export const relativeToAbsoluteAmount = (relativeAmount, divisibility) => {
-    return relativeAmount * Math.pow(10, divisibility);
+	return relativeAmount * Math.pow(10, divisibility);
 };
 
 /**
@@ -44,21 +44,20 @@ export const relativeToAbsoluteAmount = (relativeAmount, divisibility) => {
  * @returns {Array.<MosaicTypes.Mosaic | MosaicTypes.RawMosaic>} The mosaic list.
  */
 export const mosaicListFromRaw = (mosaics, mosaicInfos) => {
-    if (!mosaics || !mosaicInfos) {
-        throw new Error('Failed to format mosaics. Missing required parameters.');
-    }
+	if (!mosaics || !mosaicInfos) 
+		throw new Error('Failed to format mosaics. Missing required parameters.');
+    
+	return mosaics.map(mosaic => {
+		if (mosaic && mosaicInfos[mosaic.id]) 
+			return mosaicFromRaw(mosaic, mosaicInfos[mosaic.id]);
+        
 
-    return mosaics.map((mosaic) => {
-        if (mosaic && mosaicInfos[mosaic.id]) {
-            return mosaicFromRaw(mosaic, mosaicInfos[mosaic.id]);
-        }
-
-        return {
-            amount: null,
-            name: mosaic.id,
-            id: mosaic.id,
-        };
-    });
+		return {
+			amount: null,
+			name: mosaic.id,
+			id: mosaic.id
+		};
+	});
 };
 
 /**
@@ -68,17 +67,16 @@ export const mosaicListFromRaw = (mosaics, mosaicInfos) => {
  * @returns {MosaicTypes.Mosaic} The formatted mosaic data.
  */
 export const mosaicFromRaw = (mosaic, mosaicInfo) => {
-    if (!mosaic || !mosaicInfo) {
-        throw new Error('Failed to format mosaic. Missing required parameters.');
-    }
+	if (!mosaic || !mosaicInfo) 
+		throw new Error('Failed to format mosaic. Missing required parameters.');
 
-    return {
-        ...mosaicInfo,
-        amount: mosaic.amount / Math.pow(10, mosaicInfo.divisibility),
-        name: mosaicInfo.names?.[0] || mosaic.id,
-        divisibility: mosaicInfo.divisibility,
-        id: mosaic.id,
-    };
+	return {
+		...mosaicInfo,
+		amount: mosaic.amount / Math.pow(10, mosaicInfo.divisibility),
+		name: mosaicInfo.names?.[0] || mosaic.id,
+		divisibility: mosaicInfo.divisibility,
+		id: mosaic.id
+	};
 };
 
 /**
@@ -88,7 +86,7 @@ export const mosaicFromRaw = (mosaic, mosaicInfo) => {
  * @returns {MosaicTypes.Mosaic[]} The filtered mosaic list, excluding the native mosaic.
  */
 export const filterCustomMosaics = (mosaicList, nativeMosaicId) => {
-    return mosaicList.filter((mosaic) => mosaic.id !== nativeMosaicId);
+	return mosaicList.filter(mosaic => mosaic.id !== nativeMosaicId);
 };
 
 /**
@@ -100,13 +98,13 @@ export const filterCustomMosaics = (mosaicList, nativeMosaicId) => {
  * @returns {boolean} True if the mosaic can be revoked, false otherwise.
  */
 export const isMosaicRevokable = (mosaic, chainHeight, currentAddress, sourceAddress) => {
-    const hasRevokableFlag = mosaic.isRevokable;
-    const isCreatorCurrentAccount = mosaic.creator === currentAddress;
-    const isSelfRevocation = sourceAddress === currentAddress;
-    const isMosaicExpired = mosaic.endHeight - chainHeight <= 0;
-    const isMosaicActive = !isMosaicExpired || mosaic.isUnlimitedDuration;
+	const hasRevokableFlag = mosaic.isRevokable;
+	const isCreatorCurrentAccount = mosaic.creator === currentAddress;
+	const isSelfRevocation = sourceAddress === currentAddress;
+	const isMosaicExpired = mosaic.endHeight - chainHeight <= 0;
+	const isMosaicActive = !isMosaicExpired || mosaic.isUnlimitedDuration;
 
-    return hasRevokableFlag && isCreatorCurrentAccount && !isSelfRevocation && isMosaicActive;
+	return hasRevokableFlag && isCreatorCurrentAccount && !isSelfRevocation && isMosaicActive;
 };
 
 /**
@@ -114,10 +112,10 @@ export const isMosaicRevokable = (mosaic, chainHeight, currentAddress, sourceAdd
  * @returns {number} The nonce.
  */
 export const generateNonce = () => {
-    const bytes = Crypto.randomBytes(4);
-    const nonce = new Uint8Array(bytes);
+	const bytes = Crypto.randomBytes(4);
+	const nonce = new Uint8Array(bytes);
 
-    return new Uint32Array(nonce.buffer)[0];
+	return new Uint32Array(nonce.buffer)[0];
 };
 
 // export const generateMosaicId = (nonce, ownerAddress) => {
@@ -129,25 +127,25 @@ export const generateNonce = () => {
  * @param {number} flags - The mosaic flags.
  * @returns {boolean} True if the flag is supply mutable, false otherwise.
  */
-export const isSupplyMutableFlag = (flags) => (flags & MosaicFlags.SUPPLY_MUTABLE) !== 0;
+export const isSupplyMutableFlag = flags => (flags & MosaicFlags.SUPPLY_MUTABLE) !== 0;
 
 /**
  * Checks if a mosaic flag is transferable.
  * @param {number} flags - The mosaic flags.
  * @returns {boolean} True if the flag is transferable, false otherwise.
  */
-export const isTransferableFlag = (flags) => (flags & MosaicFlags.TRANSFERABLE) !== 0;
+export const isTransferableFlag = flags => (flags & MosaicFlags.TRANSFERABLE) !== 0;
 
 /**
  * Checks if a mosaic flag is restrictable.
  * @param {number} flags - The mosaic flags.
  * @returns {boolean} True if the flag is restrictable, false otherwise.
  */
-export const isRestrictableFlag = (flags) => (flags & MosaicFlags.RESTRICTABLE) !== 0;
+export const isRestrictableFlag = flags => (flags & MosaicFlags.RESTRICTABLE) !== 0;
 
 /**
  * Checks if a mosaic flag is revokable.
  * @param {number} flags - The mosaic flags.
  * @returns {boolean} True if the flag is revokable, false otherwise.
  */
-export const isRevokableFlag = (flags) => (flags & MosaicFlags.REVOKABLE) !== 0;
+export const isRevokableFlag = flags => (flags & MosaicFlags.REVOKABLE) !== 0;

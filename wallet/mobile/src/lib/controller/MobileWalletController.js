@@ -1,8 +1,8 @@
+import { WalletController } from '@/app/lib/controller/WalletController';
 import { AddressBookModule } from '@/app/lib/controller/modules/AddressBookModule';
 import { HarvestingModule } from '@/app/lib/controller/modules/HarvestingModule';
 import { MarketModule } from '@/app/lib/controller/modules/MarketModule';
 import { TransferModule } from '@/app/lib/controller/modules/TransferModule';
-import { WalletController } from '@/app/lib/controller/WalletController';
 import { PersistentStorage, SecureStorage } from '@/app/lib/storage';
 
 /**
@@ -19,12 +19,12 @@ const modules = [AddressBookModule, HarvestingModule, MarketModule, TransferModu
  * @type {WalletController & { modules: MobileWalletControllerModules }}
  */
 const MobileWalletController = /** @type {any} */ (
-    new WalletController({
-        persistentStorage: PersistentStorage,
-        secureStorage: SecureStorage,
-        isObservable: true,
-        modules,
-    })
+	new WalletController({
+		persistentStorage: PersistentStorage,
+		secureStorage: SecureStorage,
+		isObservable: true,
+		modules
+	})
 );
 
 export default MobileWalletController;

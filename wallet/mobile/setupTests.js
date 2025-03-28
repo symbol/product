@@ -1,15 +1,15 @@
 jest.mock('@react-native-async-storage/async-storage', () => require('@react-native-async-storage/async-storage/jest/async-storage-mock'));
 jest.mock('rn-fetch-blob', () => {
-    return {
-        DocumentDir: () => {},
-        polyfill: () => {},
-    };
+	return {
+		DocumentDir: () => {},
+		polyfill: () => {}
+	};
 });
 jest.mock('@haskkor/react-native-pincode', () => {
-    return {
-        hasUserSetPinCode: false,
-    };
+	return {
+		hasUserSetPinCode: false
+	};
 });
 jest.mock('i18n-js', () => {
-    return jest.requireActual('i18n-js/dist/require/index');
+	return jest.requireActual('i18n-js/dist/require/index');
 });

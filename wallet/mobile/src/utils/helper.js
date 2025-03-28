@@ -1,8 +1,8 @@
-import moment from 'moment';
-import { Duration, Instant, LocalDateTime, ZoneId } from '@js-joda/core';
-import { showMessage as rnFlashMessage } from 'react-native-flash-message';
-import { $t } from '@/app/localization';
 import { NetworkIdentifier } from '@/app/constants';
+import { $t } from '@/app/localization';
+import { Duration, Instant, LocalDateTime, ZoneId } from '@js-joda/core';
+import moment from 'moment';
+import { showMessage as rnFlashMessage } from 'react-native-flash-message';
 
 const CHARSET = '0123456789abcdefghijklmnopqrstuvwxyz';
 
@@ -20,11 +20,15 @@ export const showMessage = ({ message, type }) => rnFlashMessage({ message, type
  * @param {Error} error - The error.
  * @returns {void}
  */
-export const handleError = (error) => {
-    const translationKey = error.code || error.message;
-    const message = $t(translationKey, { defaultValue: translationKey });
-    showMessage({ message, type: 'danger' });
-    console.error(error);
+export const handleError = error => {
+	const translationKey = error.code || error.message;
+	const message = $t(translationKey, { defaultValue: translationKey });
+	showMessage({ message, type: 'danger' });
+	
+	if (__DEV__) {
+		// eslint-disable-next-line no-console
+		console.error(error);
+	}
 };
 
 /**
@@ -35,44 +39,44 @@ export const handleError = (error) => {
  * @returns {string} The truncated string.
  */
 export const trunc = (str, type, length = 5) => {
-    const trunc = (text, cut, lengthFirst, lengthSecond) => {
-        if (cut === 'start' && lengthFirst < text.length) {
-            return '...' + text.substring(text.length - lengthFirst, text.length);
-        }
-        if (cut === 'middle' && lengthFirst + lengthSecond < text.length) {
-            return text.substring(0, lengthFirst) + '...' + text.substring(text.length - lengthSecond, text.length);
-        }
-        if (cut === 'end' && lengthFirst < text.length) {
-            return text.substring(0, lengthFirst) + '...';
-        }
+	const trunc = (text, cut, lengthFirst, lengthSecond) => {
+		if (cut === 'start' && lengthFirst < text.length) 
+			return '...' + text.substring(text.length - lengthFirst, text.length);
+        
+		if (cut === 'middle' && lengthFirst + lengthSecond < text.length) 
+			return text.substring(0, lengthFirst) + '...' + text.substring(text.length - lengthSecond, text.length);
+        
+		if (cut === 'end' && lengthFirst < text.length) 
+			return text.substring(0, lengthFirst) + '...';
+        
 
-        return text;
-    };
+		return text;
+	};
 
-    if (typeof str !== 'string') {
-        return '';
-    }
+	if (typeof str !== 'string') 
+		return '';
+    
 
-    switch (type) {
-        case 'address':
-            return trunc(str, 'middle', 6, 3);
-        case 'address-short':
-            return trunc(str, 'start', 3);
-        case 'address-long':
-            return trunc(str, 'middle', 12, 12);
-        case 'contact':
-            return trunc(str, 'end', 18);
-        case 'contact-short':
-            return trunc(str, 'end', 12);
-        case 'hash':
-            return trunc(str, 'middle', 12, 12);
-        case 'mosaicId':
-            return trunc(str, 'middle', 6, 6);
-        case 'namespaceName':
-            return trunc(str, 'middle', 10, 10);
-        default:
-            return trunc(str, 'end', length);
-    }
+	switch (type) {
+	case 'address':
+		return trunc(str, 'middle', 6, 3);
+	case 'address-short':
+		return trunc(str, 'start', 3);
+	case 'address-long':
+		return trunc(str, 'middle', 12, 12);
+	case 'contact':
+		return trunc(str, 'end', 18);
+	case 'contact-short':
+		return trunc(str, 'end', 12);
+	case 'hash':
+		return trunc(str, 'middle', 12, 12);
+	case 'mosaicId':
+		return trunc(str, 'middle', 6, 6);
+	case 'namespaceName':
+		return trunc(str, 'middle', 10, 10);
+	default:
+		return trunc(str, 'end', length);
+	}
 };
 
 /**
@@ -80,10 +84,10 @@ export const trunc = (str, type, length = 5) => {
  * @param {string} char - The character.
  * @returns {number} The percentage.
  */
-export const getCharPercentage = (char) => {
-    const index = CHARSET.indexOf(char.toLowerCase());
+export const getCharPercentage = char => {
+	const index = CHARSET.indexOf(char.toLowerCase());
 
-    return index / (CHARSET.length - 1);
+	return index / (CHARSET.length - 1);
 };
 
 /**
@@ -93,9 +97,9 @@ export const getCharPercentage = (char) => {
  * @returns {number} The formatted number.
  */
 export const toFixedNumber = (num, digits) => {
-    const power = Math.pow(10, digits);
+	const power = Math.pow(10, digits);
 
-    return Math.round(num * power) / power;
+	return Math.round(num * power) / power;
 };
 
 /**
@@ -105,12 +109,11 @@ export const toFixedNumber = (num, digits) => {
  * @returns {string} The formatted numeric string.
  */
 export const toFixedNumericString = (num, divisibility) => {
-    if (divisibility === 0) {
-        return num.toString();
-    }
+	if (divisibility === 0) 
+		return num.toString();
 
-    const numString = num.toFixed(divisibility);
-    return numString;
+	const numString = num.toFixed(divisibility);
+	return numString;
 };
 
 /**
@@ -125,33 +128,40 @@ export const toFixedNumericString = (num, divisibility) => {
  * @returns {object} {R: Number, G: Number, B: Number}
  */
 export const hslToRgb = (h, s, l) => {
-    let r, g, b;
+	let r, g, b;
 
-    const hue2rgb = (_p, _q, _t) => {
-        if (0 > _t) _t += 1;
-        if (1 < _t) _t -= 1;
-        if (_t < 1 / 6) return _p + (_q - _p) * (6 * _t);
-        if (_t < 1 / 2) return _q;
-        if (_t < 2 / 3) return _p + (_q - _p) * ((2 / 3 - _t) * 6);
-        return _p;
-    };
+	const hue2rgb = (p, q, _t) => {
+		let t = _t;
 
-    if (0 === s) {
-        r = g = b = l; // achromatic
-    } else {
-        const q = 0.5 > l ? l * (1 + s) : l + s - l * s;
-        const p = 2 * l - q;
+		if (0 > t) 
+			t += 1;
+		if (1 < t) 
+			t -= 1;
+		if (t < 1 / 6) 
+			return p + ((q - p) * 6 * t);
+		if (t < 1 / 2) 
+			return q;
+		if (t < 2 / 3) 
+			return p + ((q - p) * (((2 / 3) - t) * 6));
+		return p;
+	};
 
-        r = hue2rgb(p, q, h + 1 / 3);
-        g = hue2rgb(p, q, h);
-        b = hue2rgb(p, q, h - 1 / 3);
-    }
+	if (0 === s) {
+		r = g = b = l; // achromatic
+	} else {
+		const q = 0.5 > l ? l * (1 + s) : l + s - (l * s);
+		const p = (2 * l) - q;
 
-    return {
-        R: Math.round(r * 255),
-        G: Math.round(g * 255),
-        B: Math.round(b * 255),
-    };
+		r = hue2rgb(p, q, h + (1 / 3));
+		g = hue2rgb(p, q, h);
+		b = hue2rgb(p, q, h - (1 / 3));
+	}
+
+	return {
+		R: Math.round(r * 255),
+		G: Math.round(g * 255),
+		B: Math.round(b * 255)
+	};
 };
 
 /**
@@ -160,26 +170,26 @@ export const hslToRgb = (h, s, l) => {
  * @param {boolean} isHex - default true
  * @returns {object} { R: Number, G: Number, B: Number }
  */
-export const getColorFromHash = (hash) => {
-    if (!hash) {
-        return '#fff';
-    }
+export const getColorFromHash = hash => {
+	if (!hash) 
+		return '#fff';
+    
+	const spread = 100;
+	const saturation = 0.9;
+	const lightness = 0.8;
 
-    const spread = 100;
-    const saturation = 0.9;
-    const lightness = 0.8;
+	let totalValue = 0;
 
-    let totalValue = 0;
+	for (const char of hash) 
+		totalValue += CHARSET.indexOf(char.toLowerCase());
 
-    for (const char of hash) totalValue += CHARSET.indexOf(char.toLowerCase());
+	const k = Math.trunc(totalValue / spread);
+	const offsetValue = totalValue - (spread * k);
+	const hue = offsetValue / 100;
 
-    const k = Math.trunc(totalValue / spread);
-    const offsetValue = totalValue - spread * k;
-    const hue = offsetValue / 100;
+	const color = hslToRgb(hue, saturation, lightness);
 
-    const color = hslToRgb(hue, saturation, lightness);
-
-    return `rgb(${color.R}, ${color.G}, ${color.B})`;
+	return `rgb(${color.R}, ${color.G}, ${color.B})`;
 };
 
 /**
@@ -190,21 +200,18 @@ export const getColorFromHash = (hash) => {
  * @returns {boolean} True if the address is known, false otherwise.
  */
 export const isAddressKnown = (address, accounts, addressBook) => {
-    if (!address) {
-        return false;
-    }
-
-    const walletAccount = accounts.find((account) => address === account.address);
-    if (walletAccount) {
-        return true;
-    }
-
-    const contact = addressBook.getContactByAddress(address);
-    if (contact) {
-        return true;
-    }
-
-    return false;
+	if (!address) 
+		return false;
+    
+	const walletAccount = accounts.find(account => address === account.address);
+	if (walletAccount) 
+		return true;
+    
+	const contact = addressBook.getContactByAddress(address);
+	if (contact) 
+		return true;
+    
+	return false;
 };
 
 /**
@@ -216,25 +223,22 @@ export const isAddressKnown = (address, accounts, addressBook) => {
  * @returns {string} The name or an address if the name is not found.
  */
 export const getAddressName = (address, currentAccount, accounts, addressBook) => {
-    if (!address) {
-        return '?';
-    }
+	if (!address) 
+		return '';
 
-    if (address === currentAccount.address) {
-        return currentAccount.name;
-    }
-    const walletAccount = accounts.find((account) => address === account.address);
+	if (address === currentAccount.address) 
+		return currentAccount.name;
+    
+	const walletAccount = accounts.find(account => address === account.address);
 
-    if (walletAccount) {
-        return walletAccount.name;
-    }
-
-    const contact = addressBook.getContactByAddress(address);
-    if (contact) {
-        return contact.name;
-    }
-
-    return address;
+	if (walletAccount) 
+		return walletAccount.name;
+    
+	const contact = addressBook.getContactByAddress(address);
+	if (contact) 
+		return contact.name;
+    
+	return address;
 };
 
 /**
@@ -244,7 +248,7 @@ export const getAddressName = (address, currentAccount, accounts, addressBook) =
  * @returns {LocalDateTime} The local date.
  */
 export const timestampToLocalDate = (timestamp, epochAdjustment) =>
-    LocalDateTime.ofInstant(Instant.ofEpochMilli(timestamp).plusMillis(Duration.ofSeconds(epochAdjustment).toMillis()), ZoneId.SYSTEM);
+	LocalDateTime.ofInstant(Instant.ofEpochMilli(timestamp).plusMillis(Duration.ofSeconds(epochAdjustment).toMillis()), ZoneId.SYSTEM);
 
 /**
  * Formats a date string to a readable format.
@@ -254,23 +258,23 @@ export const timestampToLocalDate = (timestamp, epochAdjustment) =>
  * @returns {string} The formatted date string.
  */
 export const formatDate = (dateStr, translate, showTime = false) => {
-    const months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+	const months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
 
-    const addZero = (num) => {
-        return 0 <= num && 10 > num ? '0' + num : num + '';
-    };
+	const addZero = num => {
+		return 0 <= num && 10 > num ? '0' + num : num + '';
+	};
 
-    const dateObj = new Date(dateStr);
-    const minutes = addZero(dateObj.getMinutes());
-    const hour = addZero(dateObj.getHours());
-    const month = 'function' === typeof translate ? translate('month_' + months[dateObj.getMonth()]) : months[dateObj.getMonth()];
-    const day = dateObj.getDate();
-    const year = dateObj.getFullYear();
+	const dateObj = new Date(dateStr);
+	const minutes = addZero(dateObj.getMinutes());
+	const hour = addZero(dateObj.getHours());
+	const month = 'function' === typeof translate ? translate('month_' + months[dateObj.getMonth()]) : months[dateObj.getMonth()];
+	const day = dateObj.getDate();
+	const year = dateObj.getFullYear();
 
-    let formattedDate = `${month} ${day}, ${year}`;
-    formattedDate += showTime ? ` ${hour}:${minutes}` : '';
+	let formattedDate = `${month} ${day}, ${year}`;
+	formattedDate += showTime ? ` ${hour}:${minutes}` : '';
 
-    return formattedDate;
+	return formattedDate;
 };
 
 /**
@@ -289,8 +293,8 @@ export const interleave = (arr, callback) => arr.flatMap((el, index) => [el, cal
  * @returns {string} The days left.
  */
 export const blockDurationToDaysLeft = (duration, blockGenerationTargetTime) => {
-    const seconds = duration * blockGenerationTargetTime;
-    return moment.utc().add(seconds, 's').fromNow();
+	const seconds = duration * blockGenerationTargetTime;
+	return moment.utc().add(seconds, 's').fromNow();
 };
 
 /**
@@ -303,11 +307,10 @@ export const blockDurationToDaysLeft = (duration, blockGenerationTargetTime) => 
  * @returns {string} The network currency amount text.
  */
 export const getUserCurrencyAmountText = (amount, price, networkIdentifier) => {
-    if (networkIdentifier !== NetworkIdentifier.MAIN_NET || !price) {
-        return '';
-    }
+	if (networkIdentifier !== NetworkIdentifier.MAIN_NET || !price) 
+		return '';
 
-    return `~${(price.value * amount).toFixed(2)} ${price.currency}`;
+	return `~${(price.value * amount).toFixed(2)} ${price.currency}`;
 };
 
 /**
@@ -316,17 +319,14 @@ export const getUserCurrencyAmountText = (amount, price, networkIdentifier) => {
  * @param {Array} promises - The array of promises.
  * @returns {Promise} The promise that resolves when all promises are settled.
  */
-export const promiseAllSettled = (promises) =>
-    Promise.all(
-        promises.map((p) =>
-            p
-                .then((value) => ({
-                    status: 'fulfilled',
-                    value,
-                }))
-                .catch((reason) => ({
-                    status: 'rejected',
-                    reason,
-                }))
-        )
-    );
+export const promiseAllSettled = promises =>
+	Promise.all(promises.map(p =>
+		p
+			.then(value => ({
+				status: 'fulfilled',
+				value
+			}))
+			.catch(reason => ({
+				status: 'rejected',
+				reason
+			}))));

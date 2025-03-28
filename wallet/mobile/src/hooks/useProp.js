@@ -6,16 +6,15 @@ import { useEffect, useState } from 'react';
  *
  * @param {any} prop - The prop value to sync with state. If `undefined`, the state is initialized with `initValue`.
  * @param {any} initValue - The initial value to use if `prop` is `undefined`.
- * @returns {[any, (value: any) => void]} - A tuple containing the current state value and a setter function.
+ * @returns {[any, function(any): void]} - A tuple containing the current state value and a setter function.
  */
 export const useProp = (prop, initValue) => {
-    const [value, setValue] = useState(prop === undefined ? initValue : prop);
+	const [value, setValue] = useState(prop === undefined ? initValue : prop);
 
-    useEffect(() => {
-        if (prop !== undefined) {
-            setValue(prop);
-        }
-    }, [prop]);
+	useEffect(() => {
+		if (prop !== undefined) 
+			setValue(prop);
+	}, [prop]);
 
-    return [value, setValue];
+	return [value, setValue];
 };

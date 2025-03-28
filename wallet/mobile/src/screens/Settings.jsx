@@ -1,142 +1,142 @@
+import { Router } from '@/app/Router';
+import { DialogBox, DropdownModal, FormItem, Screen, StyledText, TouchableNative } from '@/app/components';
+import { config } from '@/app/config';
+import { usePasscode, useToggle } from '@/app/hooks';
+import WalletController from '@/app/lib/controller/MobileWalletController';
+import { $t, getLanguages, initLocalization, setCurrentLanguage } from '@/app/localization';
+import { borders, colors, fonts, layout, spacings } from '@/app/styles';
+import { observer } from 'mobx-react-lite';
 import React from 'react';
 import { Image, StyleSheet, View } from 'react-native';
 import { FlatList } from 'react-native-gesture-handler';
 import Animated, { FadeInRight } from 'react-native-reanimated';
-import { DialogBox, DropdownModal, FormItem, Screen, StyledText, TouchableNative } from '@/app/components';
-import { config } from '@/app/config';
-import WalletController from '@/app/lib/controller/MobileWalletController';
-import { $t, getLanguages, initLocalization, setCurrentLanguage } from '@/app/localization';
-import { Router } from '@/app/Router';
-import { borders, colors, fonts, layout, spacings } from '@/app/styles';
-import { usePasscode, useToggle } from '@/app/hooks';
-import { observer } from 'mobx-react-lite';
 
-export const Settings = observer(function Settings() {
-    const userCurrency = WalletController.modules.market.price.currency;
-    const [isLogoutConfirmVisible, toggleLogoutConfirm] = useToggle(false);
-    const [isLanguageSelectorVisible, toggleLanguageSelector] = useToggle(false);
-    const [isUserCurrencySelectorVisible, toggleUserCurrencySelector] = useToggle(false);
-    const languageList = Object.entries(getLanguages()).map(([value, label]) => ({ value, label }));
-    const currencyList = config.marketCurrencies.map((currency) => ({ value: currency, label: currency }));
-    const settingsList = [
-        {
-            title: $t('s_settings_item_network_title'),
-            description: $t('s_settings_item_network_description'),
-            icon: require('@/app/assets/images/icon-settings-network.png'),
-            handler: Router.goToSettingsNetwork,
-        },
-        {
-            title: $t('s_settings_item_language_title'),
-            description: $t('s_settings_item_language_description'),
-            icon: require('@/app/assets/images/icon-settings-language.png'),
-            handler: toggleLanguageSelector,
-        },
-        {
-            title: $t('s_settings_item_security_title'),
-            description: $t('s_settings_item_security_description'),
-            icon: require('@/app/assets/images/icon-settings-security.png'),
-            handler: Router.goToSettingsSecurity,
-        },
-        {
-            title: $t('s_settings_item_currency_title'),
-            description: $t('s_settings_item_currency_description'),
-            icon: require('@/app/assets/images/icon-settings-currency.png'),
-            handler: toggleUserCurrencySelector,
-        },
-        {
-            title: $t('s_settings_item_about_title'),
-            description: $t('s_settings_item_about_description'),
-            icon: require('@/app/assets/images/icon-settings-about.png'),
-            handler: Router.goToSettingsAbout,
-        },
-        {
-            title: $t('s_settings_item_logout_title'),
-            description: $t('s_settings_item_logout_description'),
-            icon: require('@/app/assets/images/icon-settings-logout.png'),
-            handler: toggleLogoutConfirm,
-        },
-    ];
+export const Settings = observer(() => {
+	const userCurrency = WalletController.modules.market.price.currency;
+	const [isLogoutConfirmVisible, toggleLogoutConfirm] = useToggle(false);
+	const [isLanguageSelectorVisible, toggleLanguageSelector] = useToggle(false);
+	const [isUserCurrencySelectorVisible, toggleUserCurrencySelector] = useToggle(false);
+	const languageList = Object.entries(getLanguages()).map(([value, label]) => ({ value, label }));
+	const currencyList = config.marketCurrencies.map(currency => ({ value: currency, label: currency }));
+	const settingsList = [
+		{
+			title: $t('s_settings_item_network_title'),
+			description: $t('s_settings_item_network_description'),
+			icon: require('@/app/assets/images/icon-settings-network.png'),
+			handler: Router.goToSettingsNetwork
+		},
+		{
+			title: $t('s_settings_item_language_title'),
+			description: $t('s_settings_item_language_description'),
+			icon: require('@/app/assets/images/icon-settings-language.png'),
+			handler: toggleLanguageSelector
+		},
+		{
+			title: $t('s_settings_item_security_title'),
+			description: $t('s_settings_item_security_description'),
+			icon: require('@/app/assets/images/icon-settings-security.png'),
+			handler: Router.goToSettingsSecurity
+		},
+		{
+			title: $t('s_settings_item_currency_title'),
+			description: $t('s_settings_item_currency_description'),
+			icon: require('@/app/assets/images/icon-settings-currency.png'),
+			handler: toggleUserCurrencySelector
+		},
+		{
+			title: $t('s_settings_item_about_title'),
+			description: $t('s_settings_item_about_description'),
+			icon: require('@/app/assets/images/icon-settings-about.png'),
+			handler: Router.goToSettingsAbout
+		},
+		{
+			title: $t('s_settings_item_logout_title'),
+			description: $t('s_settings_item_logout_description'),
+			icon: require('@/app/assets/images/icon-settings-logout.png'),
+			handler: toggleLogoutConfirm
+		}
+	];
 
-    const changeLanguage = (language) => {
-        setCurrentLanguage(language);
-        Router.goToHome();
-    };
-    const changeUserCurrency = (userCurrency) => {
-        WalletController.modules.market.selectUserCurrency(userCurrency);
-    };
-    const logoutConfirm = async () => {
-        WalletController.logoutAndClearStorage();
-        initLocalization();
-    };
-    const showLogoutPasscode = usePasscode('enter', logoutConfirm);
-    const handleLogoutPress = () => {
-        toggleLogoutConfirm();
-        showLogoutPasscode();
-    };
+	const changeLanguage = language => {
+		setCurrentLanguage(language);
+		Router.goToHome();
+	};
+	const changeUserCurrency = userCurrency => {
+		WalletController.modules.market.selectUserCurrency(userCurrency);
+	};
+	const logoutConfirm = async () => {
+		WalletController.logoutAndClearStorage();
+		initLocalization();
+	};
+	const showLogoutPasscode = usePasscode('enter', logoutConfirm);
+	const handleLogoutPress = () => {
+		toggleLogoutConfirm();
+		showLogoutPasscode();
+	};
 
-    return (
-        <Screen>
-            <FormItem clear="vertical">
-                <FlatList
-                    contentContainerStyle={layout.listContainer}
-                    data={settingsList}
-                    keyExtractor={(_, index) => 'settings' + index}
-                    renderItem={({ item, index }) => (
-                        <Animated.View entering={FadeInRight.delay(index * 50)}>
-                            <FormItem type="list">
-                                <TouchableNative style={styles.item} onPress={item.handler}>
-                                    <Image source={item.icon} style={styles.itemIcon} />
-                                    <View style={styles.itemContent}>
-                                        <StyledText type="subtitle">{item.title}</StyledText>
-                                        <StyledText type="body">{item.description}</StyledText>
-                                    </View>
-                                </TouchableNative>
-                            </FormItem>
-                        </Animated.View>
-                    )}
-                />
-            </FormItem>
-            <DropdownModal
-                title={$t('s_settings_item_language_title')}
-                list={languageList}
-                isOpen={isLanguageSelectorVisible}
-                onChange={changeLanguage}
-                onClose={toggleLanguageSelector}
-            />
-            <DropdownModal
-                title={$t('s_settings_item_currency_title')}
-                list={currencyList}
-                value={userCurrency}
-                isOpen={isUserCurrencySelectorVisible}
-                onChange={changeUserCurrency}
-                onClose={toggleUserCurrencySelector}
-            />
-            <DialogBox
-                type="confirm"
-                title={$t('settings_logout_confirm_title')}
-                text={$t('settings_logout_confirm_text')}
-                isVisible={isLogoutConfirmVisible}
-                onSuccess={handleLogoutPress}
-                onCancel={toggleLogoutConfirm}
-            />
-        </Screen>
-    );
+	return (
+		<Screen>
+			<FormItem clear="vertical">
+				<FlatList
+					contentContainerStyle={layout.listContainer}
+					data={settingsList}
+					keyExtractor={(_, index) => 'settings' + index}
+					renderItem={({ item, index }) => (
+						<Animated.View entering={FadeInRight.delay(index * 50)}>
+							<FormItem type="list">
+								<TouchableNative style={styles.item} onPress={item.handler}>
+									<Image source={item.icon} style={styles.itemIcon} />
+									<View style={styles.itemContent}>
+										<StyledText type="subtitle">{item.title}</StyledText>
+										<StyledText type="body">{item.description}</StyledText>
+									</View>
+								</TouchableNative>
+							</FormItem>
+						</Animated.View>
+					)}
+				/>
+			</FormItem>
+			<DropdownModal
+				title={$t('s_settings_item_language_title')}
+				list={languageList}
+				isOpen={isLanguageSelectorVisible}
+				onChange={changeLanguage}
+				onClose={toggleLanguageSelector}
+			/>
+			<DropdownModal
+				title={$t('s_settings_item_currency_title')}
+				list={currencyList}
+				value={userCurrency}
+				isOpen={isUserCurrencySelectorVisible}
+				onChange={changeUserCurrency}
+				onClose={toggleUserCurrencySelector}
+			/>
+			<DialogBox
+				type="confirm"
+				title={$t('settings_logout_confirm_title')}
+				text={$t('settings_logout_confirm_text')}
+				isVisible={isLogoutConfirmVisible}
+				onSuccess={handleLogoutPress}
+				onCancel={toggleLogoutConfirm}
+			/>
+		</Screen>
+	);
 });
 
 const styles = StyleSheet.create({
-    item: {
-        flexDirection: 'row',
-        minHeight: fonts.body.fontSize * 4 + spacings.padding * 2,
-        borderRadius: borders.borderRadius,
-        backgroundColor: colors.bgCard,
-        padding: spacings.padding,
-    },
-    itemContent: {
-        flex: 1,
-        paddingLeft: spacings.padding,
-    },
-    itemIcon: {
-        width: 32,
-        height: 32,
-    },
+	item: {
+		flexDirection: 'row',
+		minHeight: (fonts.body.fontSize * 4) + (spacings.padding * 2),
+		borderRadius: borders.borderRadius,
+		backgroundColor: colors.bgCard,
+		padding: spacings.padding
+	},
+	itemContent: {
+		flex: 1,
+		paddingLeft: spacings.padding
+	},
+	itemIcon: {
+		width: 32,
+		height: 32
+	}
 });
