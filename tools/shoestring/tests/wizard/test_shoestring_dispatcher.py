@@ -2,6 +2,7 @@ import tempfile
 from collections import namedtuple
 from pathlib import Path
 
+from shoestring.internal.ConfigurationManager import load_shoestring_patches_from_file
 from shoestring.wizard.shoestring_dispatcher import dispatch_shoestring_command
 from shoestring.wizard.ShoestringOperation import ShoestringOperation
 
@@ -111,20 +112,55 @@ async def test_can_dispatch_setup_command_with_custom_rest_overrides():
 			assert (shoestring_directory / 'rest_overrides.json').exists()
 
 
+def _prepare_shoestring_file(output_filename):
+	with open(output_filename, 'wt', encoding='utf8') as outfile:
+		outfile.write('\n'.join([
+			'[network]',
+			'ubuntuCore = 24.04',
+			'',
+			'[imports]',
+			'rest = symbol-rest:2.4.0',
+			'',
+			'[transaction]',
+			'fee = 20',
+			'',
+			'[node]',
+			'apiHttps = false',
+			'caCommonName = upgrade',
+			'nodeCommonName = node.upgrade',
+			'features = API'
+		]))
+
+
 async def test_can_dispatch_upgrade_command():
 	# Act:
+	expected_keys = [
+		('node', 'apiHttps', 'false'),
+		('node', 'caCommonName', 'upgrade'),
+		('node', 'nodeCommonName', 'node.upgrade'),
+		('node', 'features', 'API')
+	]
 	dispatched_args = []
-	await dispatch_shoestring_command({
-		'obligatory': ObligatoryScreen('/path/to/symbol', '/path/to/ca.pem'),
-		'network-type': SingleValueScreen('sai'),
-		'welcome': WelcomeScreen(ShoestringOperation.UPGRADE)
-	}, _create_executor(dispatched_args))
+	with tempfile.TemporaryDirectory() as package_directory:
+		shoestring_directory = Path(package_directory) / 'shoestring'
+		shoestring_directory.mkdir()
+		shoestring_filepath = shoestring_directory / 'shoestring.ini'
+		_prepare_shoestring_file(shoestring_filepath)
+		await dispatch_shoestring_command({
+			'obligatory': ObligatoryScreen(package_directory, str(Path(package_directory) / 'ca.pem')),
+			'network-type': SingleValueScreen('sai'),
+			'welcome': WelcomeScreen(ShoestringOperation.UPGRADE)
+		}, _create_executor(dispatched_args))
 
-	# Assert:
-	assert [
-		'upgrade',
-		'--config', '/path/to/symbol/shoestring/shoestring.ini',
-		'--directory', '/path/to/symbol',
-		'--overrides', '/path/to/symbol/shoestring/overrides.ini',
-		'--package', 'sai'
-	] == dispatched_args
+		# Assert:
+		assert [
+			'upgrade',
+			'--config', f'{shoestring_directory}/shoestring.ini',
+			'--directory', package_directory,
+			'--overrides', f'{shoestring_directory}/overrides.ini',
+			'--package', 'sai'
+		] == dispatched_args
+
+		node_patches = load_shoestring_patches_from_file(shoestring_filepath, ['node'])
+		for key in expected_keys:
+			assert key in node_patches

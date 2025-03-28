@@ -2,10 +2,15 @@ import tempfile
 from collections import namedtuple
 from pathlib import Path
 
-from shoestring.internal.ConfigurationManager import ConfigurationManager
+from shoestring.internal.ConfigurationManager import ConfigurationManager, load_shoestring_patches_from_file
 from shoestring.internal.NodeFeatures import NodeFeatures
 from shoestring.internal.ShoestringConfiguration import parse_shoestring_configuration
-from shoestring.wizard.setup_file_generator import prepare_overrides_file, prepare_shoestring_files, try_prepare_rest_overrides_file
+from shoestring.wizard.setup_file_generator import (
+	patch_shoestring_config,
+	prepare_overrides_file,
+	prepare_shoestring_files,
+	try_prepare_rest_overrides_file
+)
 
 from ..test.TestPackager import prepare_testnet_package
 
@@ -247,5 +252,136 @@ async def test_can_prepare_shoestring_files_light():
 		'is_harvesting_active': True,
 		'is_voting_active': True
 	})
+
+# endregion
+
+
+# region patch_shoestring_config
+
+def write_text_file(filepath, text):
+	with open(filepath, 'wt', encoding='utf8') as outfile:
+		outfile.write(text)
+
+
+async def _assert_can_patch_shoestring_file(new_content, expected_patches):
+	# Arrange:
+	with tempfile.TemporaryDirectory() as temp_directory:
+		shoestring_path = Path(temp_directory)
+		shoestring_filepath = shoestring_path / 'shoe.ini'
+		write_text_file(shoestring_filepath, '\n'.join([
+			'[network]',
+			'ubuntuCore = 22.04',
+			'',
+			'[images]',
+			'rest = symbolplatform/symbol-rest:2.4.0',
+			'',
+			'[transaction]',
+			'fee = 20',
+			'',
+			'[imports]',
+			'node_key = 1233455222222222',
+			'',
+			'[node]',
+			'caCommonName = CA test',
+			'nodeCommonName = test 127.0.0.1'
+		]))
+		new_shoestring_filepath = shoestring_path / 'shoe_new.ini'
+		write_text_file(new_shoestring_filepath, new_content)
+
+		# Act:
+		await patch_shoestring_config(shoestring_filepath, new_shoestring_filepath)
+
+		# Assert:
+		patches = load_shoestring_patches_from_file(shoestring_filepath)
+		for expected_patch in expected_patches:
+			assert expected_patch in patches
+
+
+async def test_can_patch_shoestring_file():
+	await _assert_can_patch_shoestring_file('\n'.join([
+		'[network]',
+		'ubuntuCore = 22.04',
+		'',
+		'[images]',
+		'rest = symbolplatform/symbol-rest:2.4.0',
+		'',
+		'[imports]',
+		'node_key ='
+		'',
+		'[node]',
+		'caCommonName =',
+		'nodeCommonName ='
+	]),
+		[
+			('imports', 'node_key', '1233455222222222'),
+			('node', 'caCommonName', 'CA test'),
+			('node', 'nodeCommonName', 'test 127.0.0.1')
+	])
+
+
+async def test_can_patch_shoestring_file_overwrite():
+	await _assert_can_patch_shoestring_file('\n'.join([
+		'[network]',
+		'ubuntuCore = 22.04',
+		'',
+		'[images]',
+		'rest = symbolplatform/symbol-rest:2.4.0',
+		'',
+		'[imports]',
+		'node_key = 1111111111111'
+		'',
+		'[node]',
+		'caCommonName = test',
+		'nodeCommonName = 127.0.0.1'
+	]),
+		[
+			('imports', 'node_key', '1233455222222222'),
+			('node', 'caCommonName', 'CA test'),
+			('node', 'nodeCommonName', 'test 127.0.0.1')
+	])
+
+
+async def test_can_patch_shoestring_file_remove_old_property():
+	await _assert_can_patch_shoestring_file('\n'.join([
+		'[network]',
+		'ubuntuCore = 22.04',
+		'',
+		'[images]',
+		'rest = symbolplatform/symbol-rest:2.4.0',
+		'',
+		'[imports]',
+		'node_key = 1111111111111'
+		'',
+		'[node]',
+		'caCommonName = test',
+	]),
+		[
+			('imports', 'node_key', '1233455222222222'),
+			('node', 'caCommonName', 'CA test')
+	])
+
+
+async def test_can_patch_shoestring_file_new_property():
+	await _assert_can_patch_shoestring_file('\n'.join([
+		'[network]',
+		'ubuntuCore = 22.04',
+		'',
+		'[images]',
+		'rest = symbolplatform/symbol-rest:2.4.0',
+		'',
+		'[imports]',
+		'node_key = 1111111111111'
+		'',
+		'[node]',
+		'caCommonName = test',
+		'nodeCommonName = 127.0.0.1',
+		'new_property = added'
+	]),
+		[
+		('imports', 'node_key', '1233455222222222'),
+		('node', 'caCommonName', 'CA test'),
+		('node', 'nodeCommonName', 'test 127.0.0.1'),
+		('node', 'new_property', 'added'),
+	])
 
 # endregion

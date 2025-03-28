@@ -2,7 +2,13 @@ import shutil
 import tempfile
 from pathlib import Path
 
-from shoestring.wizard.setup_file_generator import prepare_overrides_file, prepare_shoestring_files, try_prepare_rest_overrides_file
+from shoestring.wizard.setup_file_generator import (
+	patch_shoestring_config,
+	prepare_overrides_file,
+	prepare_shoestring_config,
+	prepare_shoestring_files,
+	try_prepare_rest_overrides_file
+)
 from shoestring.wizard.ShoestringOperation import ShoestringOperation, build_shoestring_command
 
 
@@ -37,6 +43,12 @@ async def dispatch_shoestring_command(screens, executor):
 				if source_path.exists():
 					shutil.copy(source_path, shoestring_directory)
 	else:
+		if ShoestringOperation.UPGRADE == operation:
+			with tempfile.TemporaryDirectory() as temp_directory:
+				config_filepath = Path(temp_directory) / 'shoestring.ini'
+				await prepare_shoestring_config(screens.get('network-type').current_value, config_filepath)
+				await patch_shoestring_config(shoestring_directory / 'shoestring.ini', config_filepath)
+
 		shoestring_args = build_shoestring_command(
 			operation,
 			destination_directory,

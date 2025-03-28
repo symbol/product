@@ -90,6 +90,21 @@ def load_patches_from_file(filename):
 	return patches
 
 
+def load_shoestring_patches_from_file(filename, only_sections=None):
+	"""Loads patch information from ini file."""
+
+	parser = configparser.ConfigParser()
+	parser.optionxform = str  # configure case-sensitive keys
+	parser.read(filename)
+
+	sections = parser.sections() if only_sections is None else only_sections
+	patches = []
+	for section in sections:
+		patches.extend([(section, key, parser[section][key]) for key in parser[section]])
+
+	return patches
+
+
 def parse_time_span(str_value):
 	"""Parses a time span configuration value."""
 

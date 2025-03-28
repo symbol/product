@@ -2,10 +2,18 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from shoestring.internal.ConfigurationManager import ConfigurationManager, load_patches_from_file, merge_json_configuration, parse_time_span
+from shoestring.internal.ConfigurationManager import (
+	ConfigurationManager,
+	load_patches_from_file,
+	load_shoestring_patches_from_file,
+	merge_json_configuration,
+	parse_time_span
+)
 
 
 class ConfigurationManagerTest(unittest.TestCase):
+	# pylint: disable=too-many-public-methods
+
 	# region test constants
 
 	CONFIG_LINES_WITH_DISTINCT_KEYS = [
@@ -241,6 +249,106 @@ class ConfigurationManagerTest(unittest.TestCase):
 			'debian = 11.4',
 			'',
 			'[build.build_tools.cpp]',
+			'boost = 80'
+		])
+
+	# endregion
+
+	# region load_shoestring_patches_from_file
+
+	def _assert_cannot_load_shoestring_patches_from_file(self, lines, only_sections=None):
+		# Arrange:
+		with tempfile.TemporaryDirectory() as temp_directory:
+			shoestring_filepath = Path(temp_directory) / 'shoe_not.ini'
+			with open(shoestring_filepath, 'wt', encoding='utf8') as outfile:
+				outfile.write('\n'.join(lines))
+
+			# Act + Assert:
+			with self.assertRaises(Exception):
+				load_shoestring_patches_from_file(shoestring_filepath, only_sections)
+
+	def _assert__can_load_shoestring_patches_from_file(self, expected_patches, only_sections=None):
+		# Arrange:
+		with tempfile.TemporaryDirectory() as temp_directory:
+			shoestring_filepath = Path(temp_directory) / 'shoe.ini'
+			with open(shoestring_filepath, 'wt', encoding='utf8') as outfile:
+				outfile.write('\n'.join([
+					'[network]',
+					'ubuntuCore = 22.04',
+					'fedora = 36',
+					'debian = 11.4',
+					'',
+					'[images]',
+					'rest = symbolplatform/symbol-rest:2.4.4',
+					'',
+					'[node]',
+					'caCommonName = CA test',
+					'nodeCommonName = test 127.0.0.1'
+				]))
+
+			# Act:
+			patches = load_shoestring_patches_from_file(shoestring_filepath, only_sections)
+
+			# Assert:
+			self.assertEqual(expected_patches, patches)
+
+	def test_can_load_shoestring_patches_from_file_well_formed(self):
+		self._assert__can_load_shoestring_patches_from_file([
+			('network', 'ubuntuCore', '22.04'),
+			('network', 'fedora', '36'),
+			('network', 'debian', '11.4'),
+			('images', 'rest', 'symbolplatform/symbol-rest:2.4.4'),
+			('node', 'caCommonName', 'CA test'),
+			('node', 'nodeCommonName', 'test 127.0.0.1')
+		])
+
+	def test_can_load_shoestring_patches_from_file_include_one_section(self):
+		self._assert__can_load_shoestring_patches_from_file([
+			('images', 'rest', 'symbolplatform/symbol-rest:2.4.4')
+		],
+			['images']
+		)
+
+	def test_can_load_shoestring_patches_from_file_include_two_sections(self):
+		self._assert__can_load_shoestring_patches_from_file([
+			('images', 'rest', 'symbolplatform/symbol-rest:2.4.4'),
+			('node', 'caCommonName', 'CA test'),
+			('node', 'nodeCommonName', 'test 127.0.0.1')
+		],
+			['images', 'node']
+		)
+
+	def test_cannot_load_shoestring_patches_from_file_when_include_section_not_found(self):
+		self._assert_cannot_load_shoestring_patches_from_file([
+			'[node]',
+			'ubuntuCore = 22.04',
+			'fedora = 36',
+			'debian = 11.4',
+			'',
+			'[test]',
+			'boost = 80'
+		],
+			['images']
+		)
+
+	def test_cannot_load_shoestring_patches_from_file_malformed_ini(self):
+		self._assert_cannot_load_shoestring_patches_from_file([
+			'ubuntuCore = 22.04',
+			'fedora = 36',
+			'debian = 11.4',
+			'',
+			'[test]',
+			'boost = 80'
+		])
+
+	def test_cannot_load_shoestring_patches_from_file_malformed_section_header(self):
+		self._assert_cannot_load_shoestring_patches_from_file([
+			'[]',
+			'ubuntuCore = 22.04',
+			'fedora = 36',
+			'debian = 11.4',
+			'',
+			'[lang]',
 			'boost = 80'
 		])
 
