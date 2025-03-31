@@ -16,7 +16,7 @@ Symbol Mobile Wallet is a React Native application designed for managing Symbol 
    ```
 2. Configure the application in `src/config/config.json`.
 
-## Building the Application
+## Building for Release
 
 ### Android
 
@@ -49,7 +49,7 @@ Symbol Mobile Wallet is a React Native application designed for managing Symbol 
 2. Open Xcode and set up signing certificates.
 3. Use Xcode to build, archive, and distribute the app.
 
-## Running the Application
+## Running in Debug Mode
 
 ### Android
 
@@ -83,7 +83,7 @@ Symbol Mobile Wallet is a React Native application designed for managing Symbol 
 
    b. Alternatively, install and run the app using:
    ```sh
-   npm run ios
+   npm run build:ios:dev
    ```
 
    c. If the app is already installed, start it using:

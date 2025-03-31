@@ -3,11 +3,11 @@
   "version": "2.0.0",
   "private": true,
   "scripts": {
-    "android": "react-native run-android",
-    "ios": "react-native run-ios",
     "dev": "react-native start",
+    "build:js": "react-native bundle --entry-file index.js --bundle-output ./bundle.js",
     "build:android:dev": "react-native run-android",
     "build:android:prod": "cd ./android && ./gradlew assembleRelease",
+    "build:ios:dev": "react-native run-ios",
     "connect:android": "adb reverse tcp:8081 tcp:8081",
     "test": "jest",
     "test:cov": "npx c8 jest --reporter=lcov",

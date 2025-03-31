@@ -21,6 +21,7 @@ node_modules/
 npm-*.log*
 _data/
 .next/
+bundle.js
 
 # python
 .python-version
