@@ -38,6 +38,7 @@ export const History = observer(() => {
 	const [filter, setFilter] = useState({});
 
 	const fetchTransactions = async pageNumber => {
+		const { blackList } = WalletController.modules.addressBook;
 		const pageSize = 15;
 		const confirmedSearchCriteria = {
 			pageNumber,
@@ -72,7 +73,6 @@ export const History = observer(() => {
 		}
 
 		// Filter transactions using address book
-		const { blackList } = WalletController.modules.addressBook;
 		const filteredConfirmed = filter.blocked
 			? removeAllowedTransactions(confirmed.data, blackList)
 			: removeBlockedTransactions(confirmed.data, blackList);
