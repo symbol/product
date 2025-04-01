@@ -68,7 +68,7 @@ export const AccountList = observer(() => {
 		]
 	}));
 
-	const [selectAccount, isSelectAccountLoading] = useDataManager(
+	const [selectAccount] = useDataManager(
 		async account => {
 			await WalletController.selectAccount(account.publicKey);
 			navigation.goBack();
@@ -97,8 +97,6 @@ export const AccountList = observer(() => {
 		null,
 		handleError
 	);
-
-	const isLoading = isSelectAccountLoading;
 
 	const isAccountSelected = account => account.publicKey === selectedPublicKey;
 	const handleLongPress = drag => {
@@ -144,7 +142,7 @@ export const AccountList = observer(() => {
 	}, [networkAccounts, accountInfos]);
 
 	return (
-		<Screen isLoading={isLoading}>
+		<Screen>
 			<FormItem clear="vertical" fill>
 				<DraggableFlatList
 					contentContainerStyle={layout.listContainer}

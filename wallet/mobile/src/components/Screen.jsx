@@ -7,9 +7,7 @@ export const Screen = props => {
 	const { children, style, titleBar, bottomComponent, bottomComponent2, navigator, isLoading } = props;
 	const isKeyboardAvoidingViewEnabled = Platform.OS === 'ios' ? true : false;
 
-	return isLoading ? (
-		<LoadingIndicator fill />
-	) : (
+	return (
 		<View style={[styles.root, style]}>
 			{titleBar}
 			<KeyboardAvoidingView style={styles.content} enabled={isKeyboardAvoidingViewEnabled} behavior="padding">
@@ -18,6 +16,11 @@ export const Screen = props => {
 			{bottomComponent2}
 			{!!bottomComponent && <View style={styles.bottom}>{bottomComponent}</View>}
 			{navigator}
+			{isLoading && (
+				<View style={styles.loadingIndicator}>
+					<LoadingIndicator fill />
+				</View>
+			)}
 		</View>
 	);
 };
@@ -36,5 +39,14 @@ const styles = StyleSheet.create({
 	},
 	bottom: {
 		marginBottom: spacings.margin
+	},
+	loadingIndicator: {
+		position: 'absolute',
+		top: 0,
+		left: 0,
+		width: '100%',
+		height: '100%',
+		backgroundColor: colors.bgGray,
+		zIndex: 9999
 	}
 });
