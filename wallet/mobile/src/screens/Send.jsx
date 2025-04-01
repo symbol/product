@@ -80,7 +80,12 @@ export const Send = observer(props => {
 	// Fields
 	const [senderPublicKey, setSenderPublicKey] = useProp(currentAccount.publicKey);
 	const selectedMosaic = senderMosaicList.find(mosaic => mosaic.id === selectedMosaicId) || senderMosaicList[0];
-	const mosaics = selectedMosaic ? [{ ...selectedMosaic, amount: Number(amount) }] : [];
+	const mosaics = selectedMosaic 
+		? [{ 
+			...selectedMosaic, 
+			amount: toFixedNumber(amount, selectedMosaic.divisibility) 
+		}] 
+		: [];
 	const [maxFee, setMaxFee] = useState(0);
 	const [transaction, setTransaction] = useState(null);
 	const isMessageEncrypted = isMultisigTransfer ? false : isMessageEncryptedCheckboxValue;

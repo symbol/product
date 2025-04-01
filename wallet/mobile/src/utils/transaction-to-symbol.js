@@ -20,6 +20,7 @@ import {
 } from '@/app/constants';
 import * as NetworkTypes from '@/app/types/Network';
 import * as TransactionTypes from '@/app/types/Transaction';
+import { relativeToAbsoluteAmount } from '@/app/utils/mosaic';
 import { ChronoUnit, Instant } from '@js-joda/core';
 import _ from 'lodash';
 import { SymbolFacade, models } from 'symbol-sdk/symbol';
@@ -58,7 +59,7 @@ const createId = id => BigInt(`0x${id}`);
 
 const createMosaic = mosaic => ({
 	mosaicId: createId(mosaic.id),
-	amount: BigInt(Math.pow(10, mosaic.divisibility) * mosaic.amount)
+	amount: BigInt(relativeToAbsoluteAmount(mosaic.amount, mosaic.divisibility))
 });
 
 const createDeadline = (transaction, networkProperties, hours = 2) => {
