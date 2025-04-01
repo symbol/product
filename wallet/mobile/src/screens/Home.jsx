@@ -12,7 +12,23 @@ import { observer } from 'mobx-react-lite';
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { ScrollView } from 'react-native';
 import { RefreshControl } from 'react-native-gesture-handler';
-import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
+import Animated, { FadeInDown, FadeInUp, withDelay, withTiming } from 'react-native-reanimated';
+
+const CustomLayout = values => {
+	'worklet';
+	const isMovingUp = values.currentOriginY < values.targetOriginY;
+
+	return {
+		animations: {
+			originY: isMovingUp
+				? withTiming(values.targetOriginY, { duration: 300 })
+				: withDelay(300, withTiming(values.targetOriginY, { duration: 300 }))
+		},
+		initialValues: {
+			originY: values.currentOriginY
+		}
+	};
+};
 
 export const Home = observer(() => {
 	const { isWalletReady, currentAccount, currentAccountInfo, networkIdentifier, ticker, price } = WalletController;
@@ -72,8 +88,8 @@ export const Home = observer(() => {
 	const [isLoading, isRefreshing] = useLoading(isUnconfirmedTransactionsLoading || isPartialTransactionsLoading || isAccountInfoLoading);
 
 	return (
-		<Screen 
-			titleBar={<TitleBar accountSelector settings isLoading={isLoading} currentAccount={currentAccount} />} 
+		<Screen
+			titleBar={<TitleBar accountSelector settings isLoading={isLoading} currentAccount={currentAccount} />}
 			navigator={<TabNavigator />}
 		>
 			<ScrollView refreshControl={<RefreshControl tintColor={colors.primary} refreshing={isRefreshing} onRefresh={loadState} />}>
@@ -104,7 +120,7 @@ export const Home = observer(() => {
 					<StyledText type="title">{$t('s_home_widgets')}</StyledText>
 				</FormItem>
 				<HistoryWidget unconfirmed={unconfirmedTransactions} partial={partialTransactions} />
-				<Animated.View entering={FadeInDown.delay(125)}>
+				<Animated.View entering={FadeInDown.delay(125)} layout={CustomLayout}>
 					<AddressBookListWidget />
 				</Animated.View>
 			</ScrollView>
