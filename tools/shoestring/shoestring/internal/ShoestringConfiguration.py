@@ -63,7 +63,8 @@ def parse_transaction_configuration(config):
 def parse_imports_configuration(config):
 	"""Parses imports configuration."""
 
-	return ImportsConfiguration(config['harvester'], config['voter'], config['node_key'])
+	node_key = config['nodeKey']
+	return ImportsConfiguration(config['harvester'], config['voter'], node_key)
 
 
 def parse_node_configuration(config):

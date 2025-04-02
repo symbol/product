@@ -57,7 +57,7 @@ async def _run_test(enabled_imports, expected_imports):
 			imports = ConfigurationManager(output_directory).lookup(config_filepath.name, [
 				('imports', 'harvester'),
 				('imports', 'voter'),
-				('imports', 'node_key')
+				('imports', 'nodeKey')
 			])
 
 			assert [
