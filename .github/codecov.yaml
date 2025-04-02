@@ -54,6 +54,12 @@ coverage:
         flags:
           - tools-vanity
 
+      mobile-wallet:
+        target: auto
+        threshold: 1%
+        flags:
+          - mobile-wallet
+
 # New root YAML section = `flags:`
 # This is where you would define every flag from your
 # uploader, and update when new Flags added
@@ -104,4 +110,9 @@ flags:
   tools-vanity:
     paths:
       - tools/vanity
+    carryforward: true
+
+  mobile-wallet:
+    paths:
+      - wallet/mobile
     carryforward: true
