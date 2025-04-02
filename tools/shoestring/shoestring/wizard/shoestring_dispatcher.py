@@ -47,7 +47,7 @@ async def dispatch_shoestring_command(screens, executor):
 			with tempfile.TemporaryDirectory() as temp_directory:
 				config_filepath = Path(temp_directory) / 'shoestring.ini'
 				await prepare_shoestring_config(screens.get('network-type').current_value, config_filepath)
-				await patch_shoestring_config(shoestring_directory / 'shoestring.ini', config_filepath)
+				patch_shoestring_config(shoestring_directory / 'shoestring.ini', config_filepath)
 
 		shoestring_args = build_shoestring_command(
 			operation,

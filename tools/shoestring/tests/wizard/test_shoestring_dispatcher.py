@@ -133,7 +133,7 @@ def _prepare_shoestring_file(output_filename):
 
 
 async def test_can_dispatch_upgrade_command():
-	# Act:
+	# Arrange:
 	expected_keys = [
 		('node', 'apiHttps', 'false'),
 		('node', 'caCommonName', 'upgrade'),
@@ -146,6 +146,8 @@ async def test_can_dispatch_upgrade_command():
 		shoestring_directory.mkdir()
 		shoestring_filepath = shoestring_directory / 'shoestring.ini'
 		_prepare_shoestring_file(shoestring_filepath)
+
+		# Act:
 		await dispatch_shoestring_command({
 			'obligatory': ObligatoryScreen(package_directory, str(Path(package_directory) / 'ca.pem')),
 			'network-type': SingleValueScreen('sai'),
@@ -161,6 +163,7 @@ async def test_can_dispatch_upgrade_command():
 			'--package', 'sai'
 		] == dispatched_args
 
+		# node_patches is a superset of expected_keys
 		node_patches = load_shoestring_patches_from_file(shoestring_filepath, ['node'])
 		for key in expected_keys:
 			assert key in node_patches

@@ -122,8 +122,10 @@ async def prepare_shoestring_files(screens, directory):
 	ConfigurationManager(config_filepath.parent).patch(config_filepath.name, replacements)
 
 
-async def patch_shoestring_config(shoestring_filepath, new_config_filepath):
+def patch_shoestring_config(shoestring_filepath, package_config_filepath):
+	"""Patches shoestring configuration files."""
+
 	config_patches = load_shoestring_patches_from_file(shoestring_filepath, ['transaction', 'imports', 'node'])
-	new_config_manager = ConfigurationManager(new_config_filepath.parent)
-	new_config_manager.patch(new_config_filepath.name, config_patches)
-	shutil.copy(new_config_filepath, shoestring_filepath)
+	new_config_manager = ConfigurationManager(package_config_filepath.parent)
+	new_config_manager.patch(package_config_filepath.name, config_patches)
+	shutil.copy(package_config_filepath, shoestring_filepath)

@@ -279,7 +279,7 @@ async def _assert_can_patch_shoestring_file(new_content, expected_patches):
 			'fee = 20',
 			'',
 			'[imports]',
-			'node_key = 1233455222222222',
+			'nodeKey = 1233455222222222',
 			'',
 			'[node]',
 			'caCommonName = CA test',
@@ -289,10 +289,12 @@ async def _assert_can_patch_shoestring_file(new_content, expected_patches):
 		write_text_file(new_shoestring_filepath, new_content)
 
 		# Act:
-		await patch_shoestring_config(shoestring_filepath, new_shoestring_filepath)
+		patch_shoestring_config(shoestring_filepath, new_shoestring_filepath)
 
 		# Assert:
 		patches = load_shoestring_patches_from_file(shoestring_filepath)
+
+		# patches is a superset of expected_patches
 		for expected_patch in expected_patches:
 			assert expected_patch in patches
 
@@ -306,14 +308,14 @@ async def test_can_patch_shoestring_file():
 		'rest = symbolplatform/symbol-rest:2.4.0',
 		'',
 		'[imports]',
-		'node_key ='
+		'nodeKey ='
 		'',
 		'[node]',
 		'caCommonName =',
 		'nodeCommonName ='
 	]),
 		[
-			('imports', 'node_key', '1233455222222222'),
+			('imports', 'nodeKey', '1233455222222222'),
 			('node', 'caCommonName', 'CA test'),
 			('node', 'nodeCommonName', 'test 127.0.0.1')
 	])
@@ -328,14 +330,14 @@ async def test_can_patch_shoestring_file_overwrite():
 		'rest = symbolplatform/symbol-rest:2.4.0',
 		'',
 		'[imports]',
-		'node_key = 1111111111111'
+		'nodeKey = 1111111111111'
 		'',
 		'[node]',
 		'caCommonName = test',
 		'nodeCommonName = 127.0.0.1'
 	]),
 		[
-			('imports', 'node_key', '1233455222222222'),
+			('imports', 'nodeKey', '1233455222222222'),
 			('node', 'caCommonName', 'CA test'),
 			('node', 'nodeCommonName', 'test 127.0.0.1')
 	])
@@ -350,13 +352,13 @@ async def test_can_patch_shoestring_file_remove_old_property():
 		'rest = symbolplatform/symbol-rest:2.4.0',
 		'',
 		'[imports]',
-		'node_key = 1111111111111'
+		'nodeKey = 1111111111111'
 		'',
 		'[node]',
 		'caCommonName = test',
 	]),
 		[
-			('imports', 'node_key', '1233455222222222'),
+			('imports', 'nodeKey', '1233455222222222'),
 			('node', 'caCommonName', 'CA test')
 	])
 
@@ -370,18 +372,18 @@ async def test_can_patch_shoestring_file_new_property():
 		'rest = symbolplatform/symbol-rest:2.4.0',
 		'',
 		'[imports]',
-		'node_key = 1111111111111'
+		'nodeKey = 1111111111111'
 		'',
 		'[node]',
 		'caCommonName = test',
 		'nodeCommonName = 127.0.0.1',
-		'new_property = added'
+		'newProperty = added'
 	]),
 		[
-		('imports', 'node_key', '1233455222222222'),
+		('imports', 'nodeKey', '1233455222222222'),
 		('node', 'caCommonName', 'CA test'),
 		('node', 'nodeCommonName', 'test 127.0.0.1'),
-		('node', 'new_property', 'added'),
+		('node', 'newProperty', 'added'),
 	])
 
 # endregion
