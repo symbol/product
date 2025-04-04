@@ -2,11 +2,9 @@
 
 set -ex
 
+
 export TWINE_USERNAME='__token__'
 export TWINE_PASSWORD="${PYPI_TOKEN}"
+export TWINE_REPOSITORY="${PYPI_URL}"
 
-if [ "$(git rev-parse --abbrev-ref HEAD)" == "main" ]; then
-	twine upload dist/*
-else
-	twine upload --repository testpypi dist/*
-fi
+python3 -m twine upload dist/*
