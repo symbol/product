@@ -22,3 +22,17 @@ class NemRestFacade:
 		blocks = self.nem_db.get_blocks(limit, offset, min_height, sort)
 
 		return [block.to_dict() for block in blocks]
+
+	def get_namespace(self, name):
+		"""Gets namespace by root namespace name."""
+
+		namespace = self.nem_db.get_namespace(name)
+
+		return namespace.to_dict() if namespace else None
+
+	def get_namespaces(self, limit, offset, sort):
+		"""Gets namespaces pagination."""
+
+		namespaces = self.nem_db.get_namespaces(limit, offset, sort)
+
+		return [namespace.to_dict() for namespace in namespaces]
