@@ -2,9 +2,11 @@
 
 set -ex
 
-
-export TWINE_USERNAME='__token__'
 export TWINE_PASSWORD="${PYPI_TOKEN}"
-export TWINE_REPOSITORY="${PYPI_URL}"
-
-python3 -m twine upload dist/*
+if [ -z "${USERNAME}" ]; then
+  export TWINE_USERNAME='__token__'
+  python3 -m twine upload dist/*
+else
+  export TWINE_USERNAME="${USERNAME}"
+  python3 -m twine upload --repository-url="${PYPI_URL}" dist/*
+fi
