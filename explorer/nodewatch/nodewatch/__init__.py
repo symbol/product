@@ -144,6 +144,10 @@ def create_app():
 	def api_symbol_height():  # pylint: disable=unused-variable
 		return jsonify(symbol_routes_facade.json_height())
 
+	@app.route('/api/symbol/nodes/count')
+	def api_symbol_time_series_nodes_count():  # pylint: disable=unused-variable
+		return jsonify(symbol_routes_facade.json_time_series_nodes_count())
+
 	@app.context_processor
 	def inject_timestamps():  # pylint: disable=unused-variable
 		routes_facade = nem_routes_facade if request.path.startswith('/nem') else symbol_routes_facade
