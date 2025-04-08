@@ -5,7 +5,7 @@ The changelog format is based on [Keep a Changelog](https://keepachangelog.com/e
 
 ## next
 
-## [0.2.0] - 25 Feb-2025
+## [0.2.1] - 08 Apr-2025
 
 ### Added
 - add `docker-compose-recovery.yaml` which allows recovery from lock files in the data folder.
@@ -28,5 +28,5 @@ The changelog format is based on [Keep a Changelog](https://keepachangelog.com/e
 - fix openssl generating x509 v3 certificates by explicitly specify x509_extensions
 - health check was failing nodes with https REST due to accessing wrong property from context.  the health agent node using domain name when available.
 
-[0.2.0]: https://github.com/symbol/product/releases/tag/tools%2Fshoestring%2Fv0.1.3...tools%2Fshoestring%2Fv0.2.0
+[0.2.1]: https://github.com/symbol/product/releases/tag/tools%2Fshoestring%2Fv0.1.3...tools%2Fshoestring%2Fv0.2.1
 [0.1.3]: https://github.com/symbol/product/releases/tag/tools%2Fshoestring%2Fv0.1.3
