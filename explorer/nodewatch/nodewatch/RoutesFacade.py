@@ -184,7 +184,7 @@ class NemRoutesFacade(BasicRoutesFacade):
 		tag = 'danger'
 		if not version:
 			tag = 'warning'
-		if version.startswith('0.6.10') and not '0.6.100' in version:
+		if version.startswith('0.6.10') and '0.6.100' not in version:
 			tag = 'success'
 
 		return tag
