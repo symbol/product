@@ -156,8 +156,8 @@ class NemRoutesFacade(BasicRoutesFacade):
 		super().__init__(network, explorer_endpoint, 'nem', 'NEM', self._version_to_css_class, {
 			'0.6.102': (COMPATIBLE_VERSION_COLORS[0], 9),
 			'0.6.101': (COMPATIBLE_VERSION_COLORS[1], 8),
-			'delegating / updating': (AMBIGUOUS_COLORS[0], 6),
-			'0.6.100': (INCOMPATIBLE_VERSION_COLORS[0], 7),
+			'delegating / updating': (AMBIGUOUS_COLORS[0], 7),
+			'0.6.100': (INCOMPATIBLE_VERSION_COLORS[0], 6),
 			'0.6.99': (INCOMPATIBLE_VERSION_COLORS[-1], 5),
 			'0.6.98': (INCOMPATIBLE_VERSION_COLORS[-2], 4),
 			'0.6.97-BETA': (INCOMPATIBLE_VERSION_COLORS[-3], 3),
