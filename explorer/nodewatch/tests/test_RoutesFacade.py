@@ -204,7 +204,7 @@ class NemRoutesFacadeTest(unittest.TestCase):
 	# region utils
 
 	def test_can_map_version_to_css_class(self):
-		self.assertEqual('success', _map_version_to_css_class(NemRoutesFacade, '0.6.101'))
+		self.assertEqual('success', _map_version_to_css_class(NemRoutesFacade, '0.6.102'))
 		self.assertEqual('warning', _map_version_to_css_class(NemRoutesFacade, ''))
 		for version in ['0.6.100', '0.6.99', '0.6.98', '0.6.97-BETA', '0.6.96-BETA', '0.6.95-BETA']:
 			self.assertEqual('danger', _map_version_to_css_class(NemRoutesFacade, version))
@@ -449,7 +449,7 @@ class SymbolRoutesFacadeTest(unittest.TestCase):
 	# region utils
 
 	def test_can_map_version_to_css_class(self):
-		for version in ['1.0.3.7']:
+		for version in ['1.0.3.7', '1.0.3.8']:
 			self.assertEqual('success', _map_version_to_css_class(SymbolRoutesFacade, version))
 
 		self.assertEqual('warning', _map_version_to_css_class(SymbolRoutesFacade, ''))
