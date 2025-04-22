@@ -47,7 +47,6 @@ async def _run_test(enabled_imports, expected_imports):
 				with open(bootstrap_node_key_path / 'node.key.pem', 'wt', encoding='utf8') as outfile:
 					outfile.write('node key')
 
-
 			# Act:
 			await main([
 				'import-bootstrap',
