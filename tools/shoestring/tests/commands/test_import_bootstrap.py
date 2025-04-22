@@ -16,9 +16,9 @@ EnabledImports = namedtuple('ImportsExpected', ['has_harvester', 'has_voter', 'h
 
 def build_expected_imports(enabled_imports):
 	return ImportsConfiguration(
-		'{bootstrap_root}/nodes/node/server-config/resources/config-harvesting.properties' if enabled_imports.has_harvester else '',
-		'{bootstrap_root}/nodes/node/votingkeys' if enabled_imports.has_voter else '',
-		'{bootstrap_root}/nodes/node/cert/node.key.pem' if enabled_imports.has_node_key else ''
+		'{config_path}/bootstrap-import/config-harvesting.properties' if enabled_imports.has_harvester else '',
+		'{config_path}/bootstrap-import/votingkeys' if enabled_imports.has_voter else '',
+		'{config_path}/bootstrap-import/node.key.pem' if enabled_imports.has_node_key else ''
 	)
 
 
@@ -42,8 +42,11 @@ async def _run_test(enabled_imports, expected_imports):
 				bootstrap_voting_keys_path.mkdir(parents=True)
 
 			if enabled_imports.has_node_key:
-				bootstrap_node_key_path = bootstrap_node_path / 'cert/node.key.pem'
+				bootstrap_node_key_path = bootstrap_node_path / 'cert'
 				bootstrap_node_key_path.mkdir(parents=True)
+				with open(bootstrap_node_key_path / 'node.key.pem', 'wt', encoding='utf8') as outfile:
+					outfile.write('node key')
+
 
 			# Act:
 			await main([
@@ -61,10 +64,13 @@ async def _run_test(enabled_imports, expected_imports):
 			])
 
 			assert [
-				expected_imports.harvester.format(bootstrap_root=bootstrap_directory),
-				expected_imports.voter.format(bootstrap_root=bootstrap_directory),
-				expected_imports.node_key.format(bootstrap_root=bootstrap_directory)
+				expected_imports.harvester.format(config_path=config_filepath.parent),
+				expected_imports.voter.format(config_path=config_filepath.parent),
+				expected_imports.node_key.format(config_path=config_filepath.parent),
 			] == imports
+
+			for file_path in imports:
+				assert Path(file_path).exists()
 
 
 # pylint: disable=invalid-name
