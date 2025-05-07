@@ -170,6 +170,8 @@
 	"message_nothingFound": "何も見つかりませんでした。",
 	"message_404": "お探しのリソースが見つかりません。",
 	"message_500": "内部サーバーエラー。",
+	"message_healthGenericError": "一時的なサーバーの中断です。",
+	"message_healthSyncError": "データが古くなっている可能性があります。ノードとの同期は {{lastSyncedAt}} に停止しました。ライブデータの更新は間もなく再開されます。",
 	"month_apr": "4月",
 	"month_aug": "8月",
 	"month_dec": "12月",

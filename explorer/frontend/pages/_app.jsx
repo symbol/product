@@ -1,3 +1,4 @@
+import { fetchBackendHealthStatus } from '@/api/health';
 import Footer from '@/components/Footer';
 import Header from '@/components/Header';
 import PageLoadingIndicator from '@/components/PageLoadingIndicator';
@@ -14,7 +15,7 @@ import zh from 'javascript-time-ago/locale/zh.json';
 import App from 'next/app';
 import { useRouter } from 'next/router';
 import { appWithTranslation } from 'next-i18next';
-import { memo, useEffect, useRef } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import '@/styles/globals.scss';
@@ -44,10 +45,22 @@ const AppComponent = ({ Component, pageProps, appConfig }) => {
 			router.push(router.asPath, null, { locale: userLanguage });
 	}, [userLanguage, router.locale]);
 
+
+	// Fetch backend status
+	const [backendStatus, setBackendStatus] = useState(null);
+	const fetchBackendStatus = async () => {
+		const backendStatus = await fetchBackendHealthStatus();
+		setBackendStatus(backendStatus);
+	};
+	useEffect(() => {
+		fetchBackendStatus();
+	}, []);
+
+
 	return (
 		<div className={styles.wrapper}>
 			<script dangerouslySetInnerHTML={{ __html: `window.appConfig = ${JSON.stringify(appConfig)};` }} />
-			<Header />
+			<Header backendStatus={backendStatus} />
 			<ToastContainer autoClose={2000} className="toast-container" hideProgressBar pauseOnHover />
 			<PageLoadingIndicator />
 			<ConfigProvider>
