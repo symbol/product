@@ -476,7 +476,7 @@ msgstr "target directory"
 
 #: shoestring/wizard/screens/bootstrap.py:41
 msgid "wizard-bootstrap-token-include-node-key"
-msgstr "retain node key"
+msgstr "include node key"
 
 #: shoestring/wizard/__main__.py:99 shoestring/wizard/buttons.py:34
 msgid "wizard-button-finish"
