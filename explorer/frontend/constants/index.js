@@ -53,3 +53,7 @@ export const TRANSACTION_CHART_TYPE = {
 	DAILY: 'daily',
 	MONTHLY: 'monthly'
 };
+
+export const BACKEND_HEALTH_ERROR = {
+	SYNCHRONIZATION: 'synchronization'
+};

@@ -1,3 +1,4 @@
+import { fetchBackendHealthStatus } from '@/api/health';
 import Footer from '@/components/Footer';
 import Header from '@/components/Header';
 import PageLoadingIndicator from '@/components/PageLoadingIndicator';
@@ -12,7 +13,7 @@ import uk from 'javascript-time-ago/locale/uk.json';
 import zh from 'javascript-time-ago/locale/zh.json';
 import { useRouter } from 'next/router';
 import { appWithTranslation } from 'next-i18next';
-import { memo, useEffect, useRef } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import '@/styles/globals.scss';
@@ -23,6 +24,7 @@ TimeAgo.addLocale(zh);
 TimeAgo.addLocale(ja);
 
 const ROUTES_TO_RETAIN = ['/accounts', '/blocks', '/mosaics', '/namespaces', '/transactions'];
+
 
 const App = ({ Component, pageProps }) => {
 	const [userLanguage] = useStorage(STORAGE_KEY.USER_LANGUAGE);
@@ -42,9 +44,21 @@ const App = ({ Component, pageProps }) => {
 			router.push(router.asPath, null, { locale: userLanguage });
 	}, [userLanguage, router.locale]);
 
+
+	// Fetch backend status
+	const [backendStatus, setBackendStatus] = useState(null);
+	const fetchBackendStatus = async () => {
+		const backendStatus = await fetchBackendHealthStatus();
+		setBackendStatus(backendStatus);
+	};
+	useEffect(() => {
+		fetchBackendStatus();
+	}, []);
+
+
 	return (
 		<div className={styles.wrapper}>
-			<Header />
+			<Header backendStatus={backendStatus} />
 			<ToastContainer autoClose={2000} className="toast-container" hideProgressBar pauseOnHover />
 			<PageLoadingIndicator />
 			<ConfigProvider>
