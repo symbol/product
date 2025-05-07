@@ -212,5 +212,6 @@ def create(screens):
 		]),
 
 		accessor=settings,
-		is_valid=is_valid
+		is_valid=is_valid,
+		should_show=lambda: not screens.get('bootstrap').active if screens is not None else True
 	)

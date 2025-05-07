@@ -5,7 +5,7 @@ from shoestring.wizard.ShoestringOperation import ShoestringOperation
 
 ALL_SCREEN_IDS = [
 	'welcome', 'root-check',
-	'obligatory', 'network-type', 'node-type',
+	'obligatory', 'bootstrap', 'network-type', 'node-type',
 	'harvesting',
 	'voting',
 	'node-settings',
