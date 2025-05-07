@@ -26,7 +26,7 @@ msgid "argument-help-ca-key-path"
 msgstr "path to main private key PEM file"
 
 #: shoestring/commands/announce_transaction.py:35
-#: shoestring/commands/health.py:74 shoestring/commands/import_bootstrap.py:42
+#: shoestring/commands/health.py:74 shoestring/commands/import_bootstrap.py:49
 #: shoestring/commands/import_harvesters.py:97 shoestring/commands/init.py:29
 #: shoestring/commands/min_cosignatures_count.py:34
 #: shoestring/commands/renew_certificates.py:34
@@ -43,11 +43,11 @@ msgstr "path to shoestring configuration file"
 msgid "argument-help-directory"
 msgstr "installation directory (default: {default_path})"
 
-#: shoestring/commands/import_bootstrap.py:43
+#: shoestring/commands/import_bootstrap.py:50
 msgid "argument-help-import-bootstrap-bootstrap"
 msgstr "path to bootstrap target directory"
 
-#: shoestring/commands/import_bootstrap.py:44
+#: shoestring/commands/import_bootstrap.py:51
 msgid "argument-help-import-bootstrap-include-node-key"
 msgstr "include node key"
 
@@ -254,23 +254,23 @@ msgstr ""
 "timeout when waiting for a block, this might indicate a problem between "
 "broker <-> REST"
 
-#: shoestring/commands/import_bootstrap.py:19
+#: shoestring/commands/import_bootstrap.py:23
 msgid "import-bootstrap-importing-harvester"
 msgstr "importing harvesting keys from bootstrap ({path})"
 
-#: shoestring/commands/import_bootstrap.py:30
+#: shoestring/commands/import_bootstrap.py:37
 msgid "import-bootstrap-importing-node-key"
 msgstr "importing node key from bootstrap ({path})"
 
-#: shoestring/commands/import_bootstrap.py:33
+#: shoestring/commands/import_bootstrap.py:41
 msgid "import-bootstrap-importing-node-key-not-found"
 msgstr "importing node key from bootstrap failed. File not found ({path})"
 
-#: shoestring/commands/import_bootstrap.py:24
+#: shoestring/commands/import_bootstrap.py:29
 msgid "import-bootstrap-importing-voter"
 msgstr "importing voting keys from bootstrap ({path})"
 
-#: shoestring/commands/import_bootstrap.py:14
+#: shoestring/commands/import_bootstrap.py:18
 msgid "import-bootstrap-invalid-directory"
 msgstr ""
 "bootstrap directory provided ({directory}) does not look like bootstrap's"
@@ -446,35 +446,35 @@ msgstr "purging DIRECTORY {directory}"
 msgid "upgrade-recreating-directory"
 msgstr "recreating DIRECTORY {directory}"
 
-#: shoestring/wizard/screens/bootstrap.py:59
+#: shoestring/wizard/screens/bootstrap.py:57
 msgid "wizard-bootstrap-active"
 msgstr "would you like to import from bootstrap?"
 
-#: shoestring/wizard/screens/bootstrap.py:94
+#: shoestring/wizard/screens/bootstrap.py:91
 msgid "wizard-bootstrap-bootstrap-path-error-text"
 msgstr "bootstrap directory provided does not point to target folder"
 
-#: shoestring/wizard/screens/bootstrap.py:91
+#: shoestring/wizard/screens/bootstrap.py:89
 msgid "wizard-bootstrap-bootstrap-path-label"
 msgstr "bootstrap target directory"
 
-#: shoestring/wizard/screens/bootstrap.py:63
+#: shoestring/wizard/screens/bootstrap.py:61
 msgid "wizard-bootstrap-node-key"
 msgstr "would you like to retain your node key?"
 
-#: shoestring/wizard/screens/bootstrap.py:108
+#: shoestring/wizard/screens/bootstrap.py:105
 msgid "wizard-bootstrap-title"
 msgstr "Import Bootstrap settings"
 
-#: shoestring/wizard/screens/bootstrap.py:40
+#: shoestring/wizard/screens/bootstrap.py:38
 msgid "wizard-bootstrap-token-active"
 msgstr "bootstrap import"
 
-#: shoestring/wizard/screens/bootstrap.py:44
+#: shoestring/wizard/screens/bootstrap.py:42
 msgid "wizard-bootstrap-token-bootstrap-path"
 msgstr "target directory"
 
-#: shoestring/wizard/screens/bootstrap.py:43
+#: shoestring/wizard/screens/bootstrap.py:41
 msgid "wizard-bootstrap-token-include-node-key"
 msgstr "retain node key"
 

@@ -74,7 +74,7 @@ async def prepare_shoestring_config(network_type, config_filepath):
 		await run_init(InitArgs(network_type, config_filepath))
 
 
-async def prepare_shoestring_files(screens, directory, shoestring_directory):
+async def prepare_shoestring_files(screens, directory, shoestring_directory):  # pylint: disable=too-many-locals
 	"""Prepares shoestring configuration files based on screens."""
 
 	network_type = screens.get('network-type').current_value
@@ -91,9 +91,9 @@ async def prepare_shoestring_files(screens, directory, shoestring_directory):
 	if bootstrap_import.active:
 		await patch_bootstrap_shoestring_config(bootstrap_import.bootstrap_path, config_filepath, bootstrap_import.include_node_key)
 
-		def is_feature_enabled(extension, property):
+		def is_feature_enabled(extension, config_property):
 			bootstrap_configuration_manager = ConfigurationManager(Path(bootstrap_import.bootstrap_path) / 'nodes/node/server-config/resources')
-			return 'true' == bootstrap_configuration_manager.lookup(f'config-{extension}.properties', [property])[0]
+			return 'true' == bootstrap_configuration_manager.lookup(f'config-{extension}.properties', [config_property])[0]
 
 		if is_feature_enabled('harvesting', ('harvesting', 'enableAutoHarvesting')):
 			node_features |= NodeFeatures.HARVESTER

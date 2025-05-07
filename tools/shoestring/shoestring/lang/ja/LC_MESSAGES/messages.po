@@ -24,7 +24,7 @@ msgid "argument-help-ca-key-path"
 msgstr ""
 
 #: shoestring/commands/announce_transaction.py:35
-#: shoestring/commands/health.py:74 shoestring/commands/import_bootstrap.py:42
+#: shoestring/commands/health.py:74 shoestring/commands/import_bootstrap.py:49
 #: shoestring/commands/import_harvesters.py:97 shoestring/commands/init.py:29
 #: shoestring/commands/min_cosignatures_count.py:34
 #: shoestring/commands/renew_certificates.py:34
@@ -41,11 +41,11 @@ msgstr ""
 msgid "argument-help-directory"
 msgstr ""
 
-#: shoestring/commands/import_bootstrap.py:43
+#: shoestring/commands/import_bootstrap.py:50
 msgid "argument-help-import-bootstrap-bootstrap"
 msgstr ""
 
-#: shoestring/commands/import_bootstrap.py:44
+#: shoestring/commands/import_bootstrap.py:51
 msgid "argument-help-import-bootstrap-include-node-key"
 msgstr ""
 
@@ -246,23 +246,23 @@ msgstr ""
 msgid "health-websockets-timed-out"
 msgstr ""
 
-#: shoestring/commands/import_bootstrap.py:19
+#: shoestring/commands/import_bootstrap.py:23
 msgid "import-bootstrap-importing-harvester"
 msgstr ""
 
-#: shoestring/commands/import_bootstrap.py:30
+#: shoestring/commands/import_bootstrap.py:37
 msgid "import-bootstrap-importing-node-key"
 msgstr ""
 
-#: shoestring/commands/import_bootstrap.py:33
+#: shoestring/commands/import_bootstrap.py:41
 msgid "import-bootstrap-importing-node-key-not-found"
 msgstr ""
 
-#: shoestring/commands/import_bootstrap.py:24
+#: shoestring/commands/import_bootstrap.py:29
 msgid "import-bootstrap-importing-voter"
 msgstr ""
 
-#: shoestring/commands/import_bootstrap.py:14
+#: shoestring/commands/import_bootstrap.py:18
 msgid "import-bootstrap-invalid-directory"
 msgstr ""
 
@@ -430,35 +430,35 @@ msgstr ""
 msgid "upgrade-recreating-directory"
 msgstr ""
 
-#: shoestring/wizard/screens/bootstrap.py:59
+#: shoestring/wizard/screens/bootstrap.py:57
 msgid "wizard-bootstrap-active"
 msgstr ""
 
-#: shoestring/wizard/screens/bootstrap.py:94
+#: shoestring/wizard/screens/bootstrap.py:91
 msgid "wizard-bootstrap-bootstrap-path-error-text"
 msgstr ""
 
-#: shoestring/wizard/screens/bootstrap.py:91
+#: shoestring/wizard/screens/bootstrap.py:89
 msgid "wizard-bootstrap-bootstrap-path-label"
 msgstr ""
 
-#: shoestring/wizard/screens/bootstrap.py:63
+#: shoestring/wizard/screens/bootstrap.py:61
 msgid "wizard-bootstrap-node-key"
 msgstr ""
 
-#: shoestring/wizard/screens/bootstrap.py:108
+#: shoestring/wizard/screens/bootstrap.py:105
 msgid "wizard-bootstrap-title"
 msgstr ""
 
-#: shoestring/wizard/screens/bootstrap.py:40
+#: shoestring/wizard/screens/bootstrap.py:38
 msgid "wizard-bootstrap-token-active"
 msgstr ""
 
-#: shoestring/wizard/screens/bootstrap.py:44
+#: shoestring/wizard/screens/bootstrap.py:42
 msgid "wizard-bootstrap-token-bootstrap-path"
 msgstr ""
 
-#: shoestring/wizard/screens/bootstrap.py:43
+#: shoestring/wizard/screens/bootstrap.py:41
 msgid "wizard-bootstrap-token-include-node-key"
 msgstr ""
 
