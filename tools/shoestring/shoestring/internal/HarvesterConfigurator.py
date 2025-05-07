@@ -40,8 +40,8 @@ class HarvesterConfigurator:
 				('harvesting', 'enableAutoHarvesting', 'true'),
 				('harvesting', 'harvesterSigningPrivateKey', self.remote_key_pair.private_key),
 				('harvesting', 'harvesterVrfPrivateKey', self.vrf_key_pair.private_key),
-				*([('harvesting', 'beneficiaryAddress', str(self.beneficiary_address))] if hasattr(self, 'beneficiary_address')  else [])
-		])
+				*([('harvesting', 'beneficiaryAddress', str(self.beneficiary_address))] if hasattr(self, 'beneficiary_address') else [])
+			])
 		else:
 			self.config_manager.patch('config-harvesting.properties', [
 				('harvesting', 'enableAutoHarvesting', 'false')

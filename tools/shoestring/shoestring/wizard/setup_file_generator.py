@@ -146,6 +146,7 @@ def patch_shoestring_config(shoestring_filepath, package_config_filepath):
 	new_config_manager.patch(package_config_filepath.name, config_patches)
 	shutil.copy(package_config_filepath, shoestring_filepath)
 
+
 async def patch_bootstrap_shoestring_config(bootstrap_target_path, config_filepath, include_node_key=False):
 	with DisableLogger():
 		await run_import_bootstrap(ImportBootstrapArgs(config_filepath, bootstrap_target_path, include_node_key))

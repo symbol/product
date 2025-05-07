@@ -30,7 +30,15 @@ def _strip_folder(path):
 	return Path(path).name
 
 
-def _create_setup_screens(package_directory, output_directory, node_type, node_metadata, bootstrap_enabled=False, include_node_key=True, bootstrap_path=''):
+def _create_setup_screens(
+	package_directory,
+	output_directory,
+	node_type,
+	node_metadata,
+	bootstrap_enabled=False,
+	include_node_key=True,
+	bootstrap_path=''
+):
 	return {
 		'obligatory': ObligatoryScreen(output_directory, Path(package_directory) / 'ca.pem'),
 		'node-settings': NodeSettingsScreen('symbol.fyi', 'node explorer', False, node_metadata),
@@ -116,7 +124,12 @@ async def test_can_dispatch_setup_command_with_custom_rest_overrides():
 			assert (shoestring_directory / 'rest_overrides.json').exists()
 
 
-async def _assert_can_dispatch_setup_command_with_bootstrap(harvesting_enabled=False, voting_enabled=False, include_node_key=True, expected_features=None):
+async def _assert_can_dispatch_setup_command_with_bootstrap(
+	harvesting_enabled=False,
+	voting_enabled=False,
+	include_node_key=True,
+	expected_features=None
+):
 	# Arrange:
 	dispatched_args = []
 	with tempfile.TemporaryDirectory() as package_directory:
@@ -148,12 +161,12 @@ async def _assert_can_dispatch_setup_command_with_bootstrap(harvesting_enabled=F
 				outfile.write('\n'.join(content))
 
 		_create_bootstrap_file('harvesting', [
-				'[harvesting]',
-				'harvesterSigningPrivateKey = 089C662614A68C49F62F6C0B54F3F66D2D5DB0AFCD62BD69BF7A16312A83B746',
-				'harvesterVrfPrivateKey = 87E1184A136E92C62981848680AEA78D0BF098911B658295454B94EDBEE25808',
-				f'enableAutoHarvesting = {str(harvesting_enabled).lower()}',
-				'beneficiaryAddress = TC7HURP6562IXITM25FQFAOZ3DDTM35GMVZBG3Q',
-			])
+			'[harvesting]',
+			'harvesterSigningPrivateKey = 089C662614A68C49F62F6C0B54F3F66D2D5DB0AFCD62BD69BF7A16312A83B746',
+			'harvesterVrfPrivateKey = 87E1184A136E92C62981848680AEA78D0BF098911B658295454B94EDBEE25808',
+			f'enableAutoHarvesting = {str(harvesting_enabled).lower()}',
+			'beneficiaryAddress = TC7HURP6562IXITM25FQFAOZ3DDTM35GMVZBG3Q',
+		])
 		_create_bootstrap_file('finalization', [
 			'[finalization]',
 			f'enableVoting = {str(voting_enabled).lower()}'
