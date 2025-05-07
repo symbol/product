@@ -29,6 +29,7 @@ HarvestingScreen = namedtuple('HarvestingScreen', [
 NodeSettingsScreen = namedtuple('NodeSettingsScreen', ['domain_name', 'friendly_name', 'api_https', 'metadata_info'])
 SingleValueScreen = namedtuple('SingleValueScreen', ['current_value'])
 VotingScreen = namedtuple('VotingScreen', ['active'])
+BootstrapScreen = namedtuple('BootstrapScreen', ['active', 'bootstrap_path', 'include_node_key'])
 
 
 # pylint: disable=invalid-name
@@ -173,8 +174,9 @@ async def _assert_can_prepare_shoestring_files(expected_node_features, node_type
 					None,
 					None),
 				'voting': VotingScreen(kwargs.get('is_voting_active', False)),
-				'node-settings': NodeSettingsScreen('san.symbol.ninja', 'Symbol San', kwargs.get('api_https', False), None)
-			}, Path(output_directory))
+				'node-settings': NodeSettingsScreen('san.symbol.ninja', 'Symbol San', kwargs.get('api_https', False), None),
+				'bootstrap': BootstrapScreen(False, None, False),
+			}, Path(output_directory), Path(output_directory))
 
 			# Assert:
 			config = parse_shoestring_configuration(Path(output_directory) / 'shoestring.ini')

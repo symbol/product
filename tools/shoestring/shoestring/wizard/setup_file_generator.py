@@ -1,12 +1,15 @@
 import logging
 import shutil
 from collections import namedtuple
+from pathlib import Path
 
+from shoestring.commands.import_bootstrap import run_main as run_import_bootstrap
 from shoestring.commands.init import run_main as run_init
 from shoestring.internal.ConfigurationManager import ConfigurationManager, load_shoestring_patches_from_file
 from shoestring.internal.NodeFeatures import NodeFeatures
 
 InitArgs = namedtuple('InitArgs', ['package', 'config'])
+ImportBootstrapArgs = namedtuple('ImportBootstrapArgs', ['config', 'bootstrap', 'include_node_key'])
 
 
 class DisableLogger:
@@ -71,7 +74,7 @@ async def prepare_shoestring_config(network_type, config_filepath):
 		await run_init(InitArgs(network_type, config_filepath))
 
 
-async def prepare_shoestring_files(screens, directory):
+async def prepare_shoestring_files(screens, directory, shoestring_directory):
 	"""Prepares shoestring configuration files based on screens."""
 
 	network_type = screens.get('network-type').current_value
@@ -80,11 +83,24 @@ async def prepare_shoestring_files(screens, directory):
 	harvesting = screens.get('harvesting')
 	voting = screens.get('voting')
 	node_settings = screens.get('node-settings')
+	bootstrap_import = screens.get('bootstrap')
 
-	config_filepath = directory / 'shoestring.ini'
+	config_filepath = shoestring_directory / 'shoestring.ini'
 	await prepare_shoestring_config(network_type, config_filepath)
-
 	node_features = NodeFeatures.PEER
+	if bootstrap_import.active:
+		await patch_bootstrap_shoestring_config(bootstrap_import.bootstrap_path, config_filepath, bootstrap_import.include_node_key)
+
+		def is_feature_enabled(extension, property):
+			bootstrap_configuration_manager = ConfigurationManager(Path(bootstrap_import.bootstrap_path) / 'nodes/node/server-config/resources')
+			return 'true' == bootstrap_configuration_manager.lookup(f'config-{extension}.properties', [property])[0]
+
+		if is_feature_enabled('harvesting', ('harvesting', 'enableAutoHarvesting')):
+			node_features |= NodeFeatures.HARVESTER
+
+		if is_feature_enabled('finalization', ('finalization', 'enableVoting')):
+			node_features |= NodeFeatures.VOTER
+
 	if node_type in ['dual', 'light']:
 		node_features = node_features | NodeFeatures.API
 
@@ -102,7 +118,7 @@ async def prepare_shoestring_files(screens, directory):
 		('node', 'lightApi', 'light' == node_type)
 	]
 
-	if harvesting.active:
+	if harvesting.active and not bootstrap_import.active:
 		config_harvesting_filepath = None
 		if not harvesting.auto_harvest:
 			config_harvesting_filepath = 'none'
@@ -129,3 +145,7 @@ def patch_shoestring_config(shoestring_filepath, package_config_filepath):
 	new_config_manager = ConfigurationManager(package_config_filepath.parent)
 	new_config_manager.patch(package_config_filepath.name, config_patches)
 	shutil.copy(package_config_filepath, shoestring_filepath)
+
+async def patch_bootstrap_shoestring_config(bootstrap_target_path, config_filepath, include_node_key=False):
+	with DisableLogger():
+		await run_import_bootstrap(ImportBootstrapArgs(config_filepath, bootstrap_target_path, include_node_key))

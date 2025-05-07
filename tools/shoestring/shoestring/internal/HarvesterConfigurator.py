@@ -3,6 +3,7 @@ from pathlib import Path
 from symbolchain.CryptoTypes import PrivateKey
 from symbolchain.PrivateKeyStorage import PrivateKeyStorage
 from symbolchain.symbol.KeyPair import KeyPair
+from symbolchain.symbol.Network import Address
 
 from .ConfigurationManager import ConfigurationManager
 
@@ -24,10 +25,12 @@ class HarvesterConfigurator:
 			import_source = Path(import_source)
 			imported_private_keys = ConfigurationManager(import_source.parent).lookup(import_source.name, [
 				('harvesting', 'harvesterSigningPrivateKey'),
-				('harvesting', 'harvesterVrfPrivateKey')
+				('harvesting', 'harvesterVrfPrivateKey'),
+				('harvesting', 'beneficiaryAddress')
 			])
 			self.remote_key_pair = KeyPair(PrivateKey(imported_private_keys[0]))
 			self.vrf_key_pair = KeyPair(PrivateKey(imported_private_keys[1]))
+			self.beneficiary_address = Address(imported_private_keys[2]) if imported_private_keys[2] else None
 
 	def patch_configuration(self):
 		"""Patches harvesting settings."""
@@ -36,8 +39,9 @@ class HarvesterConfigurator:
 			self.config_manager.patch('config-harvesting.properties', [
 				('harvesting', 'enableAutoHarvesting', 'true'),
 				('harvesting', 'harvesterSigningPrivateKey', self.remote_key_pair.private_key),
-				('harvesting', 'harvesterVrfPrivateKey', self.vrf_key_pair.private_key)
-			])
+				('harvesting', 'harvesterVrfPrivateKey', self.vrf_key_pair.private_key),
+				*([('harvesting', 'beneficiaryAddress', str(self.beneficiary_address))] if hasattr(self, 'beneficiary_address')  else [])
+		])
 		else:
 			self.config_manager.patch('config-harvesting.properties', [
 				('harvesting', 'enableAutoHarvesting', 'false')
