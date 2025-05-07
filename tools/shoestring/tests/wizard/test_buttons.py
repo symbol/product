@@ -47,6 +47,7 @@ class SkippedScreen:
 	def tokens(self):
 		return [('skipped-token-1', 256), ('skipped-token-2', 'def')]
 
+
 class DisabledScreen:
 	def __init__(self):
 		self.screen_id = 'disabled'

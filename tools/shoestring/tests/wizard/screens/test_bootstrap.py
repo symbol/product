@@ -8,6 +8,7 @@ from shoestring.wizard.screens.voting import create as create_voting
 
 # pylint: disable=invalid-name
 
+
 def test_can_create_screen():
 	# Act:
 	screen = create(None)
