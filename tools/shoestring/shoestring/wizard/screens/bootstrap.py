@@ -48,7 +48,7 @@ class BootstrapImportSettings:
 		return (
 			f'(active={self.active}, '
 			f'include_node_key={self.include_node_key}, '
-			f'bootstrap_path=\'{self.bootstrap_path}\',)'
+			f'bootstrap_path=\'{self.bootstrap_path}\')'
 		)
 
 
