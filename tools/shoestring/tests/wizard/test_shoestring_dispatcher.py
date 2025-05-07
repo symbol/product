@@ -38,7 +38,7 @@ def _create_setup_screens(
 	bootstrap_enabled=False,
 	include_node_key=True,
 	bootstrap_path=''
-):
+):  # pylint: disable=too-many-arguments,too-many-positional-arguments
 	return {
 		'obligatory': ObligatoryScreen(output_directory, Path(package_directory) / 'ca.pem'),
 		'node-settings': NodeSettingsScreen('symbol.fyi', 'node explorer', False, node_metadata),
@@ -129,7 +129,7 @@ async def _assert_can_dispatch_setup_command_with_bootstrap(
 	voting_enabled=False,
 	include_node_key=True,
 	expected_features=None
-):
+):  # pylint: disable=too-many-locals
 	# Arrange:
 	dispatched_args = []
 	with tempfile.TemporaryDirectory() as package_directory:
@@ -144,10 +144,10 @@ async def _assert_can_dispatch_setup_command_with_bootstrap(
 		if voting_enabled:
 			bootstrap_voting_keys_path.mkdir(parents=True)
 
-		def _create_private_key(filepath):
+		def _create_private_key(filename):
 			OpensslExecutor(os.environ.get('OPENSSL_EXECUTABLE', 'openssl')).dispatch([
 				'genpkey',
-				'-out', filepath,
+				'-out', filename,
 				'-outform', 'PEM',
 				'-algorithm', 'ed25519'
 			])

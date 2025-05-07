@@ -4,7 +4,7 @@ from prompt_toolkit.filters import Condition
 from prompt_toolkit.layout.containers import ConditionalContainer, HSplit, VSplit
 from prompt_toolkit.widgets import CheckboxList
 
-from shoestring.internal.ConfigurationManager import ConfigurationManager, load_shoestring_patches_from_file
+from shoestring.internal.ConfigurationManager import ConfigurationManager
 from shoestring.wizard.Screen import ScreenDialog
 from shoestring.wizard.styles import to_enabled_string
 from shoestring.wizard.ValidatingTextBox import ValidatingTextBox
@@ -71,8 +71,8 @@ def create(screens):
 			values = bootstrap_configuration_manager.lookup('config-node.properties', [
 				('localnode', key) for key in ['host', 'friendlyName']
 			])
-			node_settings._domain_name.input.text = values[0]
-			node_settings._friendly_name.text = values[1]
+			node_settings._domain_name.input.text = values[0]  # pylint: disable=protected-access
+			node_settings._friendly_name.text = values[1]  # pylint: disable=protected-access
 
 	def bootstrap_path_validator(value):
 		if not value:
