@@ -450,17 +450,17 @@ msgstr "recreating DIRECTORY {directory}"
 msgid "wizard-bootstrap-active"
 msgstr "would you like to import from bootstrap?"
 
-#: shoestring/wizard/screens/bootstrap.py:91
-msgid "wizard-bootstrap-bootstrap-path-error-text"
-msgstr "bootstrap directory provided does not point to target folder"
-
-#: shoestring/wizard/screens/bootstrap.py:89
-msgid "wizard-bootstrap-bootstrap-path-label"
-msgstr "bootstrap target directory"
-
 #: shoestring/wizard/screens/bootstrap.py:61
 msgid "wizard-bootstrap-node-key"
 msgstr "would you like to retain your node key?"
+
+#: shoestring/wizard/screens/bootstrap.py:91
+msgid "wizard-bootstrap-path-error-text"
+msgstr "bootstrap directory provided does not point to target folder"
+
+#: shoestring/wizard/screens/bootstrap.py:89
+msgid "wizard-bootstrap-path-label"
+msgstr "bootstrap target directory"
 
 #: shoestring/wizard/screens/bootstrap.py:105
 msgid "wizard-bootstrap-title"

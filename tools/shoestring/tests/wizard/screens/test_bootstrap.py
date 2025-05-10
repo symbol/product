@@ -20,7 +20,7 @@ def test_can_create_screen():
 	# - check defaults
 	assert not screen.accessor.active
 	assert screen.accessor.include_node_key
-	assert '' == screen.accessor.bootstrap_path
+	assert '' == screen.accessor.path
 
 	# - defaults are valid
 	assert screen.is_valid()
@@ -36,7 +36,7 @@ async def test_can_enable_bootstrap_import():
 	# Assert: check entered values
 	assert screen.accessor.active
 	assert screen.accessor.include_node_key
-	assert '' == screen.accessor.bootstrap_path
+	assert '' == screen.accessor.path
 
 	# - Bootstrap path is invalid.
 	assert not screen.is_valid()
@@ -50,13 +50,13 @@ async def test_can_enter_valid_input_bootstrap_path():
 
 		# Act:
 		screen.accessor._flag.current_values = [()]  # pylint: disable=protected-access
-		screen.accessor._bootstrap_path.input.text = bootstrap_path  # pylint: disable=protected-access
-		screen.accessor._bootstrap_path.input.buffer.validate()  # pylint: disable=protected-access
+		screen.accessor._path.input.text = bootstrap_path  # pylint: disable=protected-access
+		screen.accessor._path.input.buffer.validate()  # pylint: disable=protected-access
 
 		# Assert: check entered values
 		assert screen.accessor.active
 		assert screen.accessor.include_node_key
-		assert bootstrap_path == screen.accessor.bootstrap_path
+		assert bootstrap_path == screen.accessor.path
 
 		# - inputs are valid
 		assert screen.is_valid()
@@ -73,7 +73,7 @@ async def test_can_disable_include_node_key():
 	# Assert: check entered values
 	assert screen.accessor.active
 	assert not screen.accessor.include_node_key
-	assert '' == screen.accessor.bootstrap_path
+	assert '' == screen.accessor.path
 
 	# - empty path is not valid
 	assert not screen.is_valid()
@@ -89,13 +89,13 @@ async def test_fails_validation_when_entered_bootstrap_path_is_invalid():
 
 		# Act:
 		screen.accessor._flag.current_values = [()]  # pylint: disable=protected-access
-		screen.accessor._bootstrap_path.input.text = invalid_input_path  # pylint: disable=protected-access
-		screen.accessor._bootstrap_path.input.buffer.validate()  # pylint: disable=protected-access
+		screen.accessor._path.input.text = invalid_input_path  # pylint: disable=protected-access
+		screen.accessor._path.input.buffer.validate()
 
 		# Assert: check entered values
 		assert screen.accessor.active
 		assert screen.accessor.include_node_key
-		assert invalid_input_path == screen.accessor.bootstrap_path
+		assert invalid_input_path == screen.accessor.path
 
 		# - path is not valid
 		assert not screen.is_valid()
@@ -138,8 +138,8 @@ async def test_can_update_node_settings_screen():
 		# Act:
 		screen = screens.get_screen('bootstrap')
 		screen.accessor._flag.current_values = [()]  # pylint: disable=protected-access
-		screen.accessor._bootstrap_path.input.text = bootstrap_path  # pylint: disable=protected-access
-		screen.accessor._bootstrap_path.input.buffer.validate()  # pylint: disable=protected-access
+		screen.accessor._path.input.text = bootstrap_path  # pylint: disable=protected-access
+		screen.accessor._path.input.buffer.validate()  # pylint: disable=protected-access
 
 		# Assert: check entered values
 		node_settings = screens.get('node-settings')
@@ -152,12 +152,12 @@ async def test_can_generate_diagnostic_accessor_representation_bootstrap_disable
 	screen = create(None)
 	screen.accessor._flag.current_values = []  # pylint: disable=protected-access
 	screen.accessor._include_node_key_flag.current_values = [()]  # pylint: disable=protected-access
-	screen.accessor._bootstrap_path.input.text = ''  # pylint: disable=protected-access
-	screen.accessor._bootstrap_path.input.buffer.validate()  # pylint: disable=protected-access
+	screen.accessor._path.input.text = ''  # pylint: disable=protected-access
+	screen.accessor._path.input.buffer.validate()  # pylint: disable=protected-access
 
 	# Assert: check entered values
 	assert (
-		'(active=False, include_node_key=True, bootstrap_path=\'\')'
+		'(active=False, include_node_key=True, path=\'\')'
 	) == repr(screen.accessor)
 	assert [
 		('bootstrap import', 'disabled')
@@ -172,12 +172,12 @@ async def test_can_generate_diagnostic_accessor_representation_bootstrap_enabled
 		screen = create(None)
 		screen.accessor._flag.current_values = [()]  # pylint: disable=protected-access
 		screen.accessor._include_node_key_flag.current_values = [()]  # pylint: disable=protected-access
-		screen.accessor._bootstrap_path.input.text = bootstrap_path  # pylint: disable=protected-access
-		screen.accessor._bootstrap_path.input.buffer.validate()  # pylint: disable=protected-access
+		screen.accessor._path.input.text = bootstrap_path  # pylint: disable=protected-access
+		screen.accessor._path.input.buffer.validate()  # pylint: disable=protected-access
 
 		# Assert: check entered values
 		assert (
-			f'(active=True, include_node_key=True, bootstrap_path=\'{bootstrap_path}\')'
+			f'(active=True, include_node_key=True, path=\'{bootstrap_path}\')'
 		) == repr(screen.accessor)
 		assert [
 			('bootstrap import', 'enabled'),
@@ -194,12 +194,12 @@ async def test_can_generate_diagnostic_accessor_representation_bootstrap_enabled
 		screen = create(None)
 		screen.accessor._flag.current_values = [()]  # pylint: disable=protected-access
 		screen.accessor._include_node_key_flag.current_values = []  # pylint: disable=protected-access
-		screen.accessor._bootstrap_path.input.text = bootstrap_path  # pylint: disable=protected-access
-		screen.accessor._bootstrap_path.input.buffer.validate()  # pylint: disable=protected-access
+		screen.accessor._path.input.text = bootstrap_path  # pylint: disable=protected-access
+		screen.accessor._path.input.buffer.validate()  # pylint: disable=protected-access
 
 		# Assert: check entered values
 		assert (
-			f'(active=True, include_node_key=False, bootstrap_path=\'{bootstrap_path}\')'
+			f'(active=True, include_node_key=False, path=\'{bootstrap_path}\')'
 		) == repr(screen.accessor)
 		assert [
 			('bootstrap import', 'enabled'),
