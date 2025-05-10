@@ -90,7 +90,7 @@ async def test_fails_validation_when_entered_bootstrap_path_is_invalid():
 		# Act:
 		screen.accessor._flag.current_values = [()]  # pylint: disable=protected-access
 		screen.accessor._path.input.text = invalid_input_path  # pylint: disable=protected-access
-		screen.accessor._path.input.buffer.validate()
+		screen.accessor._path.input.buffer.validate()  # pylint: disable=protected-access
 
 		# Assert: check entered values
 		assert screen.accessor.active
