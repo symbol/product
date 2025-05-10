@@ -427,16 +427,16 @@ msgstr ""
 msgid "wizard-bootstrap-active"
 msgstr ""
 
+#: shoestring/wizard/screens/bootstrap.py:61
+msgid "wizard-bootstrap-node-key"
+msgstr ""
+
 #: shoestring/wizard/screens/bootstrap.py:91
-msgid "wizard-bootstrap-bootstrap-path-error-text"
+msgid "wizard-bootstrap-path-error-text"
 msgstr ""
 
 #: shoestring/wizard/screens/bootstrap.py:89
-msgid "wizard-bootstrap-bootstrap-path-label"
-msgstr ""
-
-#: shoestring/wizard/screens/bootstrap.py:61
-msgid "wizard-bootstrap-node-key"
+msgid "wizard-bootstrap-path-label"
 msgstr ""
 
 #: shoestring/wizard/screens/bootstrap.py:105

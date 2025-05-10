@@ -29,7 +29,7 @@ HarvestingScreen = namedtuple('HarvestingScreen', [
 NodeSettingsScreen = namedtuple('NodeSettingsScreen', ['domain_name', 'friendly_name', 'api_https', 'metadata_info'])
 SingleValueScreen = namedtuple('SingleValueScreen', ['current_value'])
 VotingScreen = namedtuple('VotingScreen', ['active'])
-BootstrapScreen = namedtuple('BootstrapScreen', ['active', 'bootstrap_path', 'include_node_key'])
+BootstrapScreen = namedtuple('BootstrapScreen', ['active', 'include_node_key', 'path'])
 
 
 # pylint: disable=invalid-name

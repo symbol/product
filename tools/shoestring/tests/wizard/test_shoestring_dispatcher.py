@@ -16,7 +16,7 @@ ObligatoryScreen = namedtuple('ObligatoryScreen', ['destination_directory', 'ca_
 SingleValueScreen = namedtuple('SingleValueScreen', ['current_value'])
 ToggleScreen = namedtuple('ToggleScreen', ['active'])
 WelcomeScreen = namedtuple('WelcomeScreen', ['operation'])
-BootstrapSettingsScreen = namedtuple('BootstrapSettingsScreen', ['active', 'include_node_key', 'bootstrap_path'])
+BootstrapSettingsScreen = namedtuple('BootstrapSettingsScreen', ['active', 'include_node_key', 'path'])
 
 
 def _create_executor(dispatched_args):
@@ -37,7 +37,7 @@ def _create_setup_screens(
 	node_metadata,
 	bootstrap_enabled=False,
 	include_node_key=True,
-	bootstrap_path=''
+	path=''
 ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
 	return {
 		'obligatory': ObligatoryScreen(output_directory, Path(package_directory) / 'ca.pem'),
@@ -48,7 +48,7 @@ def _create_setup_screens(
 		'voting': ToggleScreen(False),
 		'certificates': CertificatesScreen('ca', 'peer'),
 		'welcome': WelcomeScreen(ShoestringOperation.SETUP),
-		'bootstrap': BootstrapSettingsScreen(bootstrap_enabled, include_node_key, bootstrap_path)
+		'bootstrap': BootstrapSettingsScreen(bootstrap_enabled, include_node_key, path)
 	}
 
 

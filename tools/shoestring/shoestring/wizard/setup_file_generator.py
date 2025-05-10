@@ -70,11 +70,13 @@ def prepare_overrides_file(screens, output_filename):
 
 
 async def prepare_shoestring_config(network_type, config_filepath):
+	"""Run shoestring init command."""
+
 	with DisableLogger():
 		await run_init(InitArgs(network_type, config_filepath))
 
 
-async def prepare_shoestring_files(screens, directory, shoestring_directory):  # pylint: disable=too-many-locals
+async def prepare_shoestring_files(screens, temp_directory, shoestring_directory):  # pylint: disable=too-many-locals
 	"""Prepares shoestring configuration files based on screens."""
 
 	network_type = screens.get('network-type').current_value
@@ -89,10 +91,10 @@ async def prepare_shoestring_files(screens, directory, shoestring_directory):  #
 	await prepare_shoestring_config(network_type, config_filepath)
 	node_features = NodeFeatures.PEER
 	if bootstrap_import.active:
-		await patch_bootstrap_shoestring_config(bootstrap_import.bootstrap_path, config_filepath, bootstrap_import.include_node_key)
+		await patch_bootstrap_shoestring_config(bootstrap_import.path, config_filepath, bootstrap_import.include_node_key)
 
 		def is_feature_enabled(extension, config_property):
-			bootstrap_configuration_manager = ConfigurationManager(Path(bootstrap_import.bootstrap_path) / 'nodes/node/server-config/resources')
+			bootstrap_configuration_manager = ConfigurationManager(Path(bootstrap_import.path) / 'nodes/node/server-config/resources')
 			return 'true' == bootstrap_configuration_manager.lookup(f'config-{extension}.properties', [config_property])[0]
 
 		if is_feature_enabled('harvesting', ('harvesting', 'enableAutoHarvesting')):
@@ -124,7 +126,7 @@ async def prepare_shoestring_files(screens, directory, shoestring_directory):  #
 			config_harvesting_filepath = 'none'
 		elif not harvesting.generate_keys:
 			# create a .properties file with harvesting keys
-			config_harvesting_filepath = directory / 'config-harvesting.properties'
+			config_harvesting_filepath = temp_directory / 'config-harvesting.properties'
 			with open(config_harvesting_filepath, 'wt', encoding='utf8') as outfile:
 				outfile.write('\n'.join([
 					'[harvesting]',
@@ -148,5 +150,7 @@ def patch_shoestring_config(shoestring_filepath, package_config_filepath):
 
 
 async def patch_bootstrap_shoestring_config(bootstrap_target_path, config_filepath, include_node_key=False):
+	"""Run shoestring import bootstrap command."""
+
 	with DisableLogger():
 		await run_import_bootstrap(ImportBootstrapArgs(config_filepath, bootstrap_target_path, include_node_key))
