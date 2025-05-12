@@ -11,7 +11,7 @@ def load_screens(screens):
 
 	screen_setup = [
 		ScreenGroup(_('wizard-screen-group-welcome'), ['welcome', 'root_check']),
-		ScreenGroup(_('wizard-screen-group-obligatory'), ['obligatory', 'network_type', 'node_type']),
+		ScreenGroup(_('wizard-screen-group-obligatory'), ['obligatory', 'bootstrap', 'network_type', 'node_type']),
 
 		ScreenGroup(_('wizard-screen-group-harvesting'), ['harvesting']),
 		ScreenGroup(_('wizard-screen-group-voting'), ['voting']),
