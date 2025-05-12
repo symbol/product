@@ -3,7 +3,7 @@ export const healthSyncErrorResponse = {
 	errors: [
 		{
 			type: 'synchronization',
-			message: 'Node is no responding',
+			message: 'Node is not responding',
 			details: {
 				lastSyncedAt: '2025-05-07 14:17:11',
 				lastBlockHeight: 456545654
