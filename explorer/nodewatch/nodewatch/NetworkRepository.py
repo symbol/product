@@ -10,7 +10,7 @@ from zenlog import log
 class NodeDescriptor:
 	"""Node descriptor."""
 
-	# pylint: disable=too-many-instance-attributes,too-many-positional-arguments
+	# pylint: disable=too-many-instance-attributes,too-many-positional-arguments,too-many-locals
 
 	def __init__(
 		self,
