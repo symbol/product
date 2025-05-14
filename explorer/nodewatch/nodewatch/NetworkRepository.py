@@ -23,6 +23,9 @@ class NodeDescriptor:
 		height=0,
 		finalized_height=0,
 		balance=0,
+		finalized_epoch=0,
+		finalized_hash=None,
+		finalized_point=0,
 		is_healthy=None,
 		is_ssl_enabled=None,
 		rest_version=None,
@@ -41,6 +44,9 @@ class NodeDescriptor:
 		self.height = height
 		self.finalized_height = finalized_height
 		self.balance = balance
+		self.finalized_epoch = finalized_epoch
+		self.finalized_hash = finalized_hash
+		self.finalized_point = finalized_point
 		self.is_healthy = is_healthy
 		self.is_ssl_enabled = is_ssl_enabled
 		self.rest_version = rest_version
@@ -65,6 +71,9 @@ class NodeDescriptor:
 			'height': self.height,
 			'finalizedHeight': self.finalized_height,
 			'balance': self.balance,
+			'finalizedEpoch': self.finalized_epoch,
+			'finalizedHash': self.finalized_hash,
+			'finalizedPoint': self.finalized_point,
 			'isHealthy': self.is_healthy,
 			'isSslEnabled': self.is_ssl_enabled,
 			'restVersion': self.rest_version,
@@ -224,10 +233,17 @@ class NetworkRepository:
 
 	def _create_descriptor_from_json(self, json_node):
 		# network crawler extracts as much extra data as possible, but it might not always be available for all nodes
-		extra_data = (0, 0, 0)
+		extra_data = (0, 0, 0, 0, None, 0)
 		if 'extraData' in json_node:
 			json_extra_data = json_node['extraData']
-			extra_data = (json_extra_data.get('height', 0), json_extra_data.get('finalizedHeight', 0), json_extra_data.get('balance', 0))
+			extra_data = (
+				json_extra_data.get('height', 0),
+				json_extra_data.get('finalizedHeight', 0),
+				json_extra_data.get('balance', 0),
+				json_extra_data.get('finalizedEpoch', 0),
+				json_extra_data.get('finalizedHash', None),
+				json_extra_data.get('finalizedPoint', 0)
+			)
 
 		if self.is_nem:
 			return self._handle_nem_node(json_node, extra_data)
