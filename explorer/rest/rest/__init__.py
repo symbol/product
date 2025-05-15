@@ -333,6 +333,11 @@ def setup_nem_routes(app, nem_api_facade):
 	def api_get_nem_account_statistics():
 		return jsonify(nem_api_facade.get_account_statistics())
 
+	@app.route('/api/nem/health')
+	async def api_get_nem_health():
+		health = await nem_api_facade.get_health()
+
+		return jsonify(health)
 
 def setup_error_handlers(app):
 	@app.errorhandler(404)
