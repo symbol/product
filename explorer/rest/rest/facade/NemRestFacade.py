@@ -338,7 +338,7 @@ class NemRestFacade:
 			is_healthy = False
 			errors.append({
 				"type": "synchronization",
-				"message": "Node is no responding"
+				"message": "Node is not responding"
 			})
 
 		return {
