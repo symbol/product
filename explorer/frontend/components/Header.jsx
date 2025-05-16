@@ -144,22 +144,22 @@ const Header = ({ backendStatus }) => {
 	};
 
 	// Backend health warning
-	const isBackendWarningShown = backendStatus?.isOk === false;
+	const isBackendWarningShown = backendStatus?.isHealthy === false;
 	const getBackendErrorStatusText = () => {
-		const backendSyncError = backendStatus?.errors.find(error => error.type === BACKEND_HEALTH_ERROR.SYNCHRONIZATION);
+		const backendSyncError = backendStatus.errors.find(error => error.type === BACKEND_HEALTH_ERROR.SYNCHRONIZATION);
 
 		// If error is not a sync error, return a generic error message
 		if (!backendSyncError)
 			return t('message_healthGenericError');
 
-		const lastSyncedAtDateText = formatDate(backendSyncError.details.lastSyncedAt, t, {
+		const lastSyncedAtDateText = formatDate(backendStatus.lastSyncedAt, t, {
 			hasTime: true,
 			hasSeconds: true
 		});
 
 		return t('message_healthSyncError', {
 			lastSyncedAt: lastSyncedAtDateText,
-			lastBlockHeight: backendSyncError.details.lastBlockHeight
+			lastBlockHeight: backendStatus.lastBlockHeight
 		});
 	};
 
