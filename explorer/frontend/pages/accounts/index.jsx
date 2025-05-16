@@ -1,6 +1,4 @@
-import { fetchAccountPage } from '@/api/accounts';
-import { search } from '@/api/search';
-import { fetchAccountStats } from '@/api/stats';
+import api from '@/api';
 import ButtonCSV from '@/components/ButtonCSV';
 import ChartDonut from '@/components/ChartDonut';
 import Field from '@/components/Field';
@@ -18,8 +16,8 @@ import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 
 export const getServerSideProps = async ({ locale }) => {
-	const page = await fetchAccountPage();
-	const stats = await fetchAccountStats();
+	const page = await api.fetchAccountPage();
+	const stats = await api.fetchAccountStats();
 
 	return {
 		props: {
@@ -32,7 +30,10 @@ export const getServerSideProps = async ({ locale }) => {
 
 const Accounts = ({ preloadedData, stats }) => {
 	const { t } = useTranslation();
-	const { requestNextPage, data, isLoading, isError, isLastPage, filter, changeFilter } = usePagination(fetchAccountPage, preloadedData);
+	const { requestNextPage, data, isLoading, isError, isLastPage, filter, changeFilter } = usePagination(
+		api.fetchAccountPage, 
+		preloadedData
+	);
 
 	const tableColumns = [
 		{
@@ -98,7 +99,7 @@ const Accounts = ({ preloadedData, stats }) => {
 			<Section>
 				<div className="layout-flex-col">
 					<div className="layout-flex-row-mobile-col">
-						<Filter data={filterConfig} value={filter} isDisabled={isLoading} onChange={changeFilter} search={search} />
+						<Filter data={filterConfig} value={filter} isDisabled={isLoading} onChange={changeFilter} search={api.search} />
 						<ButtonCSV data={data} fileName="accounts" format={row => formatAccountCSV(row, t)} />
 					</div>
 					<Table

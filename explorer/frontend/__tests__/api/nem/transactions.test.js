@@ -1,4 +1,4 @@
-import { runAPITest } from '../test-utils/api';
+import { runAPITest } from '../../test-utils/api';
 import {
 	transactionAccountPageResult,
 	transactionInfoResponse,
@@ -9,8 +9,8 @@ import {
 	transactionUnconfirmedPageResult,
 	unsupportedTransactionInfoResponse,
 	unsupportedTransactionInfoResult
-} from '../test-utils/transactions';
-import { fetchTransactionInfo, fetchTransactionPage } from '@/api/transactions';
+} from '../../test-utils/transactions';
+import { fetchTransactionInfo, fetchTransactionPage } from '@/api/nem/transactions';
 
 jest.mock('@/utils/server', () => {
 	return {

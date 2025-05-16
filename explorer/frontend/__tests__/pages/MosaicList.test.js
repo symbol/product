@@ -1,21 +1,21 @@
 import '@testing-library/jest-dom';
 import { setDevice } from '../test-utils/device';
 import { mosaicPageResult } from '../test-utils/mosaics';
-import * as MosaicService from '@/api/mosaics';
+import * as MosaicService from '@/api/nem/mosaics';
 import MosaicList, { getServerSideProps } from '@/pages/mosaics/index';
 import { render, screen } from '@testing-library/react';
 
-jest.mock('@/api/mosaics', () => {
+jest.mock('@/api/nem/mosaics', () => {
 	return {
 		__esModule: true,
-		...jest.requireActual('@/api/mosaics')
+		...jest.requireActual('@/api/nem/mosaics')
 	};
 });
 
-jest.mock('@/api/stats', () => {
+jest.mock('@/api/nem/stats', () => {
 	return {
 		__esModule: true,
-		...jest.requireActual('@/api/stats')
+		...jest.requireActual('@/api/nem/stats')
 	};
 });
 

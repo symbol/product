@@ -2,22 +2,22 @@ import '@testing-library/jest-dom';
 import { accountPageResult } from '../test-utils/accounts';
 import { setDevice } from '../test-utils/device';
 import { accountStatisticsResult } from '../test-utils/stats';
-import * as AccountService from '@/api/accounts';
-import * as StatsService from '@/api/stats';
+import * as AccountService from '@/api/nem/accounts';
+import * as StatsService from '@/api/nem/stats';
 import AccountList, { getServerSideProps } from '@/pages/accounts/index';
 import { render, screen } from '@testing-library/react';
 
-jest.mock('@/api/accounts', () => {
+jest.mock('@/api/nem/accounts', () => {
 	return {
 		__esModule: true,
-		...jest.requireActual('@/api/accounts')
+		...jest.requireActual('@/api/nem/accounts')
 	};
 });
 
-jest.mock('@/api/stats', () => {
+jest.mock('@/api/nem/stats', () => {
 	return {
 		__esModule: true,
-		...jest.requireActual('@/api/stats')
+		...jest.requireActual('@/api/nem/stats')
 	};
 });
 

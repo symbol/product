@@ -1,5 +1,4 @@
-import { fetchChainHight } from '@/api/blocks';
-import { fetchMosaicPage } from '@/api/mosaics';
+import api from '@/api';
 import FieldTimestamp from '@/components/FieldTimestamp';
 import ItemMosaicMobile from '@/components/ItemMosaicMobile';
 import Section from '@/components/Section';
@@ -16,7 +15,7 @@ import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 
 export const getServerSideProps = async ({ locale }) => {
-	const mosaicPage = await fetchMosaicPage();
+	const mosaicPage = await api.fetchMosaicPage();
 
 	return {
 		props: {
@@ -28,8 +27,8 @@ export const getServerSideProps = async ({ locale }) => {
 
 const Mosaics = ({ mosaics }) => {
 	const { t } = useTranslation();
-	const { requestNextPage, data, isLoading, isLastPage, isError } = usePagination(fetchMosaicPage, mosaics);
-	const chainHeight = useAsyncCall(fetchChainHight, 0);
+	const { requestNextPage, data, isLoading, isLastPage, isError } = usePagination(api.fetchMosaicPage, mosaics);
+	const chainHeight = useAsyncCall(api.fetchChainHight, 0);
 
 	const tableColumns = [
 		{

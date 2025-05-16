@@ -1,10 +1,10 @@
-import { accountInfoResponse, accountInfoResult } from '../test-utils/accounts';
-import { error404Response } from '../test-utils/api';
-import { blockInfoResponse, blockInfoResult } from '../test-utils/blocks';
-import { mosaicInfoResponse, mosaicInfoResult } from '../test-utils/mosaics';
-import { namespaceInfoResponse, namespaceInfoResult } from '../test-utils/namespaces';
-import { transactionInfoResponse, transactionInfoResult } from '../test-utils/transactions';
-import { search } from '@/api/search';
+import { accountInfoResponse, accountInfoResult } from '../../test-utils/accounts';
+import { error404Response } from '../../test-utils/api';
+import { blockInfoResponse, blockInfoResult } from '../../test-utils/blocks';
+import { mosaicInfoResponse, mosaicInfoResult } from '../../test-utils/mosaics';
+import { namespaceInfoResponse, namespaceInfoResult } from '../../test-utils/namespaces';
+import { transactionInfoResponse, transactionInfoResult } from '../../test-utils/transactions';
+import { search } from '@/api/nem/search';
 import * as utils from '@/utils/server';
 
 jest.mock('@/utils/server', () => {

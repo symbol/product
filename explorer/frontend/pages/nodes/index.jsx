@@ -1,4 +1,4 @@
-import { fetchNodeList } from '@/api/nodes';
+import api from '@/api';
 import ItemNodeMobile from '@/components/ItemNodeMobile';
 import Section from '@/components/Section';
 import Table from '@/components/Table';
@@ -10,7 +10,7 @@ import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 
 export const getServerSideProps = async ({ locale }) => {
-	const nodeList = await fetchNodeList();
+	const nodeList = await api.fetchNodeList();
 
 	return {
 		props: {

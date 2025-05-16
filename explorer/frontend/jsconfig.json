@@ -2,6 +2,7 @@
 	"compilerOptions": {
 		"baseUrl": ".",
 		"paths": {
+			"@/api": ["api"],
 			"@/api/*": ["api/*"],
 			"@/components/*": ["components/*"],
 			"@/config": ["config/index.js"],

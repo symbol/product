@@ -1,5 +1,4 @@
-import { fetchBlockInfo, fetchChainHight } from '@/api/blocks';
-import { fetchTransactionPage } from '@/api/transactions';
+import api from '@/api';
 import Field from '@/components/Field';
 import FieldTimestamp from '@/components/FieldTimestamp';
 import ItemTransactionMobile from '@/components/ItemTransactionMobile';
@@ -22,7 +21,7 @@ import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 import { useEffect } from 'react';
 
 export const getServerSideProps = async ({ locale, params }) => {
-	const blockInfo = await fetchBlockInfo(params.height);
+	const blockInfo = await api.fetchBlockInfo(params.height);
 
 	if (!blockInfo) {
 		return {
@@ -41,11 +40,11 @@ export const getServerSideProps = async ({ locale, params }) => {
 const BlockInfo = ({ blockInfo }) => {
 	const { t } = useTranslation();
 	const transactionInitialPagination = usePagination(
-		async () => await fetchTransactionPage({ pageSize: blockInfo.transactionCount, height: blockInfo.height }),
+		async () => await api.fetchTransactionPage({ pageSize: blockInfo.transactionCount, height: blockInfo.height }),
 		[]
 	);
 	const transactionPagination = useClientSidePagination(transactionInitialPagination.data);
-	const chainHeight = useAsyncCall(fetchChainHight, 0);
+	const chainHeight = useAsyncCall(api.fetchChainHight, 0);
 	const isSafeBlock = chainHeight > 0 && chainHeight - blockInfo.height > config.BLOCKCHAIN_UNWIND_LIMIT;
 
 	const tableColumns = [

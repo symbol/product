@@ -1,6 +1,6 @@
-import { accountPageResponse } from '../test-utils/accounts';
-import { error404Response } from '../test-utils/api';
-import { blockPageResponse } from '../test-utils/blocks';
+import { accountPageResponse } from '../../test-utils/accounts';
+import { error404Response } from '../../test-utils/api';
+import { blockPageResponse } from '../../test-utils/blocks';
 import {
 	accountStatisticsResponse,
 	accountStatisticsResult,
@@ -17,7 +17,7 @@ import {
 	supernodeStatisticsResponse,
 	transactionStatisticsResponse,
 	transactionStatisticsResult
-} from '../test-utils/stats';
+} from '../../test-utils/stats';
 import {
 	fetchAccountStats,
 	fetchBlockStats,
@@ -26,7 +26,7 @@ import {
 	fetchPriceByDate,
 	fetchTransactionChart,
 	fetchTransactionStats
-} from '@/api/stats';
+} from '@/api/nem/stats';
 import * as utils from '@/utils/server';
 
 jest.mock('@/utils/server', () => {

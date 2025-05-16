@@ -1,5 +1,4 @@
-import { fetchChainHight } from '@/api/blocks';
-import { fetchNamespacePage } from '@/api/namespaces';
+import api from '@/api';
 import ItemNamespaceMobile from '@/components/ItemNamespaceMobile';
 import Section from '@/components/Section';
 import Table from '@/components/Table';
@@ -14,7 +13,7 @@ import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 
 export const getServerSideProps = async ({ locale }) => {
-	const namespacePage = await fetchNamespacePage();
+	const namespacePage = await api.fetchNamespacePage();
 
 	return {
 		props: {
@@ -26,8 +25,8 @@ export const getServerSideProps = async ({ locale }) => {
 
 const Blocks = ({ namespaces }) => {
 	const { t } = useTranslation();
-	const { requestNextPage, data, isLoading, pageNumber, isLastPage, isError } = usePagination(fetchNamespacePage, namespaces);
-	const chainHeight = useAsyncCall(fetchChainHight, 0);
+	const { requestNextPage, data, isLoading, pageNumber, isLastPage, isError } = usePagination(api.fetchNamespacePage, namespaces);
+	const chainHeight = useAsyncCall(api.fetchChainHight, 0);
 
 	const tableColumns = [
 		{

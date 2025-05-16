@@ -1,6 +1,6 @@
 import '@testing-library/jest-dom';
 import { transactionInfoResult, transactionPageResult } from '../test-utils/transactions';
-import * as TransactionService from '@/api/transactions';
+import * as TransactionService from '@/api/nem/transactions';
 import TransactionInfo, { getServerSideProps } from '@/pages/transactions/[hash]';
 import * as utils from '@/utils';
 import { render, screen } from '@testing-library/react';
@@ -12,17 +12,17 @@ jest.mock('@/utils', () => {
 	};
 });
 
-jest.mock('@/api/transactions', () => {
+jest.mock('@/api/nem/transactions', () => {
 	return {
 		__esModule: true,
-		...jest.requireActual('@/api/transactions')
+		...jest.requireActual('@/api/nem/transactions')
 	};
 });
 
-jest.mock('@/api/transactions', () => {
+jest.mock('@/api/nem/transactions', () => {
 	return {
 		__esModule: true,
-		...jest.requireActual('@/api/transactions')
+		...jest.requireActual('@/api/nem/transactions')
 	};
 });
 

@@ -1,4 +1,4 @@
-import { fetchNodeList } from '@/api/nodes';
+import api from '@/api';
 import Avatar from '@/components/Avatar';
 import Field from '@/components/Field';
 import Section from '@/components/Section';
@@ -10,7 +10,7 @@ import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 
 export const getServerSideProps = async ({ locale, params }) => {
-	const nodeList = await fetchNodeList();
+	const nodeList = await api.fetchNodeList();
 	const nodeInfo = nodeList.find(node => node.mainPublicKey === params.publicKey);
 
 	if (!nodeInfo) {

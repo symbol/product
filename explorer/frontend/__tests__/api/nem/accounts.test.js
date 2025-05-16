@@ -5,9 +5,9 @@ import {
 	accountPageMosaicFilterResult,
 	accountPageResponse,
 	accountPageResult
-} from '../test-utils/accounts';
-import { runAPITest } from '../test-utils/api';
-import { fetchAccountInfo, fetchAccountInfoByPublicKey, fetchAccountPage } from '@/api/accounts';
+} from '../../test-utils/accounts';
+import { runAPITest } from '../../test-utils/api';
+import { fetchAccountInfo, fetchAccountInfoByPublicKey, fetchAccountPage } from '@/api/nem/accounts';
 
 jest.mock('@/utils/server', () => {
 	return {

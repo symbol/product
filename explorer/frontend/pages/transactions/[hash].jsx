@@ -1,5 +1,4 @@
-import { fetchPriceByDate } from '@/api/stats';
-import { fetchTransactionInfo } from '@/api/transactions';
+import api from '@/api';
 import Avatar from '@/components/Avatar';
 import Field from '@/components/Field';
 import FieldTimestamp from '@/components/FieldTimestamp';
@@ -20,7 +19,7 @@ import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 
 export const getServerSideProps = async ({ locale, params }) => {
-	const transactionInfo = await fetchTransactionInfo(params.hash);
+	const transactionInfo = await api.fetchTransactionInfo(params.hash);
 
 	if (!transactionInfo) {
 		return {
@@ -39,7 +38,12 @@ export const getServerSideProps = async ({ locale, params }) => {
 const TransactionInfo = ({ transactionInfo }) => {
 	const { t } = useTranslation();
 	const [userCurrency] = useStorage(STORAGE_KEY.USER_CURRENCY, 'USD');
-	const amountInUserCurrency = useUserCurrencyAmount(fetchPriceByDate, transactionInfo.amount, userCurrency, transactionInfo.timestamp);
+	const amountInUserCurrency = useUserCurrencyAmount(
+		api.fetchPriceByDate, 
+		transactionInfo.amount, 
+		userCurrency, 
+		transactionInfo.timestamp
+	);
 	const amountInUserCurrencyText = numberToShortString(truncateDecimals(amountInUserCurrency, 2));
 	const isAccountStateChangeSectionShown =
 		transactionInfo.type === TRANSACTION_TYPE.TRANSFER || transactionInfo.type === TRANSACTION_TYPE.MULTISIG;

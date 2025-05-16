@@ -1,5 +1,4 @@
-import { fetchChainHight } from '@/api/blocks';
-import { fetchNamespaceInfo } from '@/api/namespaces';
+import api from '@/api';
 import Avatar from '@/components/Avatar';
 import Field from '@/components/Field';
 import FieldTimestamp from '@/components/FieldTimestamp';
@@ -21,7 +20,7 @@ import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 import { useEffect, useState } from 'react';
 
 export const getServerSideProps = async ({ locale, params }) => {
-	const namespaceInfo = await fetchNamespaceInfo(params.id);
+	const namespaceInfo = await api.fetchNamespaceInfo(params.id);
 
 	if (!namespaceInfo) {
 		return {
@@ -69,7 +68,7 @@ const NamespaceInfo = ({ namespaceInfo }) => {
 
 	useEffect(() => {
 		const fetchChainHeight = async () => {
-			const chainHeight = await fetchChainHight();
+			const chainHeight = await api.fetchChainHight();
 			const expireIn = namespaceInfo.expirationHeight - chainHeight;
 			const isExpired = expireIn < 0;
 			const expirationText = namespaceInfo.isUnlimitedDuration

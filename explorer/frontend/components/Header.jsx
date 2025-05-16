@@ -5,7 +5,7 @@ import Modal from './Modal';
 import SearchBar from './SearchBar';
 import TextBox from './TextBox';
 import ValueAccount from './ValueAccount';
-import { search } from '@/api/search';
+import api from '@/api';
 import { STORAGE_KEY } from '@/constants';
 import styles from '@/styles/components/Header.module.scss';
 import { createPageHref, useStorage, useToggle } from '@/utils';
@@ -152,7 +152,7 @@ const Header = () => {
 
 				<div className={styles.headerRightSection}>
 					<div className={styles.headerMenu}>{renderMenu()}</div>
-					<SearchBar className={styles.searchBar} modalClassName={styles.modal} onSearchRequest={search} />
+					<SearchBar className={styles.searchBar} modalClassName={styles.modal} onSearchRequest={api.search} />
 					<CustomImage className={styles.profileIcon} src="/images/icon-profile.svg" alt="profile" onClick={toggleProfile} />
 				</div>
 				<Modal className={`${styles.modal} ${styles.modalProfile}`} isVisible={isProfileOpen} onClose={toggleProfile}>

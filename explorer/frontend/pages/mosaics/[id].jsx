@@ -1,7 +1,4 @@
-import { fetchAccountPage } from '@/api/accounts';
-import { fetchChainHight } from '@/api/blocks';
-import { fetchMosaicInfo } from '@/api/mosaics';
-import { fetchTransactionPage } from '@/api/transactions';
+import api from '@/api';
 import Avatar from '@/components/Avatar';
 import Field from '@/components/Field';
 import FieldTimestamp from '@/components/FieldTimestamp';
@@ -26,7 +23,7 @@ import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 import { useEffect, useState } from 'react';
 
 export const getServerSideProps = async ({ locale, params }) => {
-	const mosaicInfo = await fetchMosaicInfo(params.id);
+	const mosaicInfo = await api.fetchMosaicInfo(params.id);
 
 	if (!mosaicInfo) {
 		return {
@@ -47,8 +44,8 @@ export const getServerSideProps = async ({ locale, params }) => {
 const MosaicInfo = ({ mosaicInfo, preloadedTransactions, preloadedAccounts }) => {
 	const { levy } = mosaicInfo;
 	const { t } = useTranslation();
-	const accountPagination = usePagination(fetchAccountPage, preloadedAccounts, { mosaic: mosaicInfo.id });
-	const transactionPagination = usePagination(fetchTransactionPage, preloadedTransactions, { mosaic: mosaicInfo.id });
+	const accountPagination = usePagination(api.fetchAccountPage, preloadedAccounts, { mosaic: mosaicInfo.id });
+	const transactionPagination = usePagination(api.fetchTransactionPage, preloadedTransactions, { mosaic: mosaicInfo.id });
 	const [chainHeight, setChainHeight] = useState(0);
 	const [expirationText, setExpirationText] = useState(null);
 	const [progressType, setProgressType] = useState('');
@@ -117,7 +114,7 @@ const MosaicInfo = ({ mosaicInfo, preloadedTransactions, preloadedAccounts }) =>
 
 	useEffect(() => {
 		const fetchChainHeight = async () => {
-			const chainHeight = await fetchChainHight();
+			const chainHeight = await api.fetchChainHight();
 			const expireIn = mosaicInfo.namespaceExpirationHeight - chainHeight;
 			const isExpired = expireIn < 0;
 			const expirationText = mosaicInfo.isUnlimitedDuration

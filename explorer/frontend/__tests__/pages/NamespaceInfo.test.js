@@ -1,21 +1,21 @@
 import '@testing-library/jest-dom';
 import { namespaceInfoResult } from '../test-utils/namespaces';
-import * as BlockService from '@/api/blocks';
-import * as NamespaceService from '@/api/namespaces';
+import * as BlockService from '@/api/nem/blocks';
+import * as NamespaceService from '@/api/nem/namespaces';
 import NamespaceInfo, { getServerSideProps } from '@/pages/namespaces/[id]';
 import { render, screen, waitFor } from '@testing-library/react';
 
-jest.mock('@/api/blocks', () => {
+jest.mock('@/api/nem/blocks', () => {
 	return {
 		__esModule: true,
-		...jest.requireActual('@/api/blocks')
+		...jest.requireActual('@/api/nem/blocks')
 	};
 });
 
-jest.mock('@/api/namespaces', () => {
+jest.mock('@/api/nem/namespaces', () => {
 	return {
 		__esModule: true,
-		...jest.requireActual('@/api/namespaces')
+		...jest.requireActual('@/api/nem/namespaces')
 	};
 });
 

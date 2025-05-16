@@ -1,5 +1,4 @@
-import { fetchBlockPage } from '@/api/blocks';
-import { fetchBlockStats } from '@/api/stats';
+import api from '@/api';
 import ChartLine from '@/components/ChartLine';
 import Field from '@/components/Field';
 import FieldTimestamp from '@/components/FieldTimestamp';
@@ -18,8 +17,8 @@ import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 
 export const getServerSideProps = async ({ locale }) => {
-	const blocksPage = await fetchBlockPage();
-	const stats = await fetchBlockStats();
+	const blocksPage = await api.fetchBlockPage();
+	const stats = await api.fetchBlockStats();
 
 	return {
 		props: {
@@ -32,7 +31,7 @@ export const getServerSideProps = async ({ locale }) => {
 
 const Blocks = ({ blocks, stats }) => {
 	const { t } = useTranslation();
-	const { requestNextPage, data, isLoading, isError, pageNumber, isLastPage } = usePagination(fetchBlockPage, blocks);
+	const { requestNextPage, data, isLoading, isError, pageNumber, isLastPage } = usePagination(api.fetchBlockPage, blocks);
 
 	const tableColumns = [
 		{

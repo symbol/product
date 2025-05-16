@@ -1,6 +1,6 @@
 import '@testing-library/jest-dom';
 import { blockInfoResult } from '../test-utils/blocks';
-import * as BlockService from '@/api/blocks';
+import * as BlockService from '@/api/nem/blocks';
 import BlockInfo, { getServerSideProps } from '@/pages/blocks/[height]';
 import * as utils from '@/utils';
 import { render, screen } from '@testing-library/react';
@@ -12,10 +12,10 @@ jest.mock('@/utils', () => {
 	};
 });
 
-jest.mock('@/api/blocks', () => {
+jest.mock('@/api/nem/blocks', () => {
 	return {
 		__esModule: true,
-		...jest.requireActual('@/api/blocks')
+		...jest.requireActual('@/api/nem/blocks')
 	};
 });
 

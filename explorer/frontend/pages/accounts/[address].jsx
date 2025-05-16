@@ -1,7 +1,4 @@
-import { fetchAccountInfo } from '@/api/accounts';
-import { search } from '@/api/search';
-import { fetchPriceByDate } from '@/api/stats';
-import { fetchTransactionPage } from '@/api/transactions';
+import api from '@/api';
 import AccountMultisigTree from '@/components/AccountMultisigTree';
 import Avatar from '@/components/Avatar';
 import ButtonCSV from '@/components/ButtonCSV';
@@ -31,8 +28,8 @@ import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 
 export const getServerSideProps = async ({ locale, params }) => {
-	const accountInfo = await fetchAccountInfo(params.address);
-	const transactionsPage = await fetchTransactionPage({ address: params.address });
+	const accountInfo = await api.fetchAccountInfo(params.address);
+	const transactionsPage = await api.fetchTransactionPage({ address: params.address });
 
 	if (!accountInfo) {
 		return {
@@ -53,9 +50,9 @@ const AccountInfo = ({ accountInfo, preloadedTransactions }) => {
 	const { address } = accountInfo;
 	const [userCurrency] = useStorage(STORAGE_KEY.USER_CURRENCY, 'USD');
 	const [contacts] = useStorage(STORAGE_KEY.ADDRESS_BOOK, []);
-	const balanceInUserCurrency = useUserCurrencyAmount(fetchPriceByDate, accountInfo.balance, userCurrency);
+	const balanceInUserCurrency = useUserCurrencyAmount(api.fetchPriceByDate, accountInfo.balance, userCurrency);
 	const { t } = useTranslation();
-	const transactionPagination = usePagination(fetchTransactionPage, preloadedTransactions, { address });
+	const transactionPagination = usePagination(api.fetchTransactionPage, preloadedTransactions, { address });
 	const mosaics = useClientSideFilter(accountInfo.mosaics);
 	const isMultisigSectionShown = accountInfo.isMultisig || accountInfo.cosignatoryOf.length > 0;
 
@@ -206,7 +203,7 @@ const AccountInfo = ({ accountInfo, preloadedTransactions }) => {
 							data={mosaicFilterConfig}
 							value={mosaics.filter}
 							onChange={mosaics.changeFilter}
-							search={search}
+							search={api.search}
 						/>
 						<ButtonCSV data={mosaics.data} fileName={`mosaics-${address}`} format={row => formatMosaicCSV(row, t)} />
 					</div>
@@ -270,7 +267,7 @@ const AccountInfo = ({ accountInfo, preloadedTransactions }) => {
 							value={transactionPagination.filter}
 							onChange={transactionPagination.changeFilter}
 							onClear={transactionPagination.clearFilter}
-							search={search}
+							search={api.search}
 						/>
 						<ButtonCSV data={transactionPagination.data} fileName={`transactions-${address}`} format={formatTransactionCSV} />
 					</div>

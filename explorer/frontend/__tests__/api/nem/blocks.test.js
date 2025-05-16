@@ -1,6 +1,6 @@
-import { runAPITest } from '../test-utils/api';
-import { blockInfoResponse, blockInfoResult, blockPageResponse, blockPageResult } from '../test-utils/blocks';
-import { fetchBlockInfo, fetchBlockPage, fetchChainHight } from '@/api/blocks';
+import { runAPITest } from '../../test-utils/api';
+import { blockInfoResponse, blockInfoResult, blockPageResponse, blockPageResult } from '../../test-utils/blocks';
+import { fetchBlockInfo, fetchBlockPage, fetchChainHight } from '@/api/nem/blocks';
 
 jest.mock('@/utils/server', () => {
 	return {

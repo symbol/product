@@ -1,6 +1,4 @@
-import { search } from '@/api/search';
-import { fetchTransactionChart, fetchTransactionStats } from '@/api/stats';
-import { fetchTransactionPage } from '@/api/transactions';
+import api from '@/api';
 import ButtonCSV from '@/components/ButtonCSV';
 import ChartColumns from '@/components/ChartColumns';
 import Field from '@/components/Field';
@@ -31,8 +29,8 @@ import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 
 export const getServerSideProps = async ({ locale }) => {
-	const transactionsPage = await fetchTransactionPage();
-	const stats = await fetchTransactionStats();
+	const transactionsPage = await api.fetchTransactionPage();
+	const stats = await api.fetchTransactionStats();
 
 	return {
 		props: {
@@ -47,10 +45,10 @@ const TransactionInfo = ({ preloadedData, stats }) => {
 	const { t } = useTranslation();
 	const [contacts] = useStorage(STORAGE_KEY.ADDRESS_BOOK, []);
 	const { requestNextPage, data, isLoading, isLastPage, isError, filter, changeFilter } = usePagination(
-		fetchTransactionPage,
+		api.fetchTransactionPage,
 		preloadedData
 	);
-	const chart = useFilter(fetchTransactionChart, [], true);
+	const chart = useFilter(api.fetchTransactionChart, [], true);
 	const chartType = transactionChartFilterToType(chart.filter);
 	const formattedChartData = formatTransactionChart(chart.data, chartType, t);
 
@@ -193,7 +191,7 @@ const TransactionInfo = ({ preloadedData, stats }) => {
 							isDisabled={chart.isLoading}
 							value={chart.filter}
 							onChange={chart.changeFilter}
-							search={search}
+							search={api.search}
 						/>
 						<ChartColumns data={formattedChartData} name={t('field_transactions')} />
 					</div>
@@ -208,7 +206,7 @@ const TransactionInfo = ({ preloadedData, stats }) => {
 							isDisabled={isLoading}
 							value={filter}
 							onChange={changeFilter}
-							search={search}
+							search={api.search}
 						/>
 						<ButtonCSV data={data} fileName="transactions" format={row => formatTransactionCSV(row, t)} />
 					</div>

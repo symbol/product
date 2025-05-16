@@ -1,6 +1,4 @@
-import { fetchBlockPage } from '@/api/blocks';
-import { fetchBlockStats, fetchMarketData, fetchNodeStats, fetchTransactionChart, fetchTransactionStats } from '@/api/stats';
-import { fetchTransactionPage } from '@/api/transactions';
+import api from '@/api';
 import ChartLine from '@/components/ChartLine';
 import CustomImage from '@/components/CustomImage';
 import Field from '@/components/Field';
@@ -22,17 +20,17 @@ const DATA_REFRESH_INTERVAL = 60000;
 
 export const getServerSideProps = async ({ locale }) => {
 	const [blocksPage, latestTransactionsPage, pendingTransactionsPage] = await Promise.all([
-		fetchBlockPage({ pageSize: 50 }),
-		fetchTransactionPage({ pageSize: 5 }),
-		fetchTransactionPage({ pageSize: 5, group: 'unconfirmed' })
+		api.fetchBlockPage({ pageSize: 50 }),
+		api.fetchTransactionPage({ pageSize: 5 }),
+		api.fetchTransactionPage({ pageSize: 5, group: 'unconfirmed' })
 	]);
 	const [marketDataPromise, transactionStatsPromise, nodeStatsPromise, transactionChartPromise, blockStatsPromise] =
 		await Promise.allSettled([
-			fetchMarketData(),
-			fetchTransactionStats(),
-			fetchNodeStats(),
-			fetchTransactionChart({ isPerDay: true }),
-			fetchBlockStats()
+			api.fetchMarketData(),
+			api.fetchTransactionStats(),
+			api.fetchNodeStats(),
+			api.fetchTransactionChart({ isPerDay: true }),
+			api.fetchBlockStats()
 		]);
 
 	return {
@@ -63,18 +61,18 @@ const Home = ({
 	const { t } = useTranslation();
 	const formattedTransactionChart = formatTransactionChart(transactionChart, TRANSACTION_CHART_TYPE.DAILY, t).slice(-14);
 	const latestTransactions = useAsyncCall(
-		() => fetchTransactionPage({ pageSize: 5 }),
+		() => api.fetchTransactionPage({ pageSize: 5 }),
 		preloadedLatestTransactions,
 		DATA_REFRESH_INTERVAL
 	);
 	const pendingTransactions = useAsyncCall(
-		() => fetchTransactionPage({ pageSize: 5, group: 'unconfirmed' }),
+		() => api.fetchTransactionPage({ pageSize: 5, group: 'unconfirmed' }),
 		preloadedPendingTransactions,
 		DATA_REFRESH_INTERVAL
 	);
-	const blocks = useAsyncCall(fetchBlockPage, preloadedBlocks, DATA_REFRESH_INTERVAL);
+	const blocks = useAsyncCall(api.fetchBlockPage, preloadedBlocks, DATA_REFRESH_INTERVAL);
 
-	const fetchBlockTransactions = useCallback(height => fetchTransactionPage({ pageSize: 160, height }), [fetchTransactionPage]);
+	const fetchBlockTransactions = useCallback(height => api.fetchTransactionPage({ pageSize: 160, height }), [api.fetchTransactionPage]);
 
 	return (
 		<div className={styles.wrapper}>

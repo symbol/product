@@ -2,39 +2,39 @@ import '@testing-library/jest-dom';
 import { accountPageResult } from '../test-utils/accounts';
 import { mosaicInfoResult } from '../test-utils/mosaics';
 import { transactionPageResult } from '../test-utils/transactions';
-import * as AccountService from '@/api/accounts';
-import * as BlockService from '@/api/blocks';
-import * as MosaicService from '@/api/mosaics';
-import * as TransactionService from '@/api/transactions';
+import * as AccountService from '@/api/nem/accounts';
+import * as BlockService from '@/api/nem/blocks';
+import * as MosaicService from '@/api/nem/mosaics';
+import * as TransactionService from '@/api/nem/transactions';
 import MosaicInfo, { getServerSideProps } from '@/pages/mosaics/[id]';
 import * as utils from '@/utils';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 
-jest.mock('@/api/accounts', () => {
+jest.mock('@/api/nem/accounts', () => {
 	return {
 		__esModule: true,
-		...jest.requireActual('@/api/accounts')
+		...jest.requireActual('@/api/nem/accounts')
 	};
 });
 
-jest.mock('@/api/blocks', () => {
+jest.mock('@/api/nem/blocks', () => {
 	return {
 		__esModule: true,
-		...jest.requireActual('@/api/blocks')
+		...jest.requireActual('@/api/nem/blocks')
 	};
 });
 
-jest.mock('@/api/mosaics', () => {
+jest.mock('@/api/nem/mosaics', () => {
 	return {
 		__esModule: true,
-		...jest.requireActual('@/api/mosaics')
+		...jest.requireActual('@/api/nem/mosaics')
 	};
 });
 
-jest.mock('@/api/transactions', () => {
+jest.mock('@/api/nem/transactions', () => {
 	return {
 		__esModule: true,
-		...jest.requireActual('@/api/transactions')
+		...jest.requireActual('@/api/nem/transactions')
 	};
 });
 
