@@ -170,6 +170,8 @@
 	"message_nothingFound": "Nothing found.",
 	"message_404": "We can't seem to find the resource you're looking for.",
 	"message_500": "Internal Server Error.",
+	"message_healthGenericError": "Temporary Server Disruption.",
+	"message_healthSyncError": "Data may be outdated. Sync with the node stopped at {{lastSyncedAt}}. Live data updates will resume soon.",
 	"month_apr": "Apr",
 	"month_aug": "Aug",
 	"month_dec": "Dec",
