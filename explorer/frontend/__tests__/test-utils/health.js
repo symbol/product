@@ -1,13 +1,11 @@
 export const healthSyncErrorResponse = {
-	isOk: false,
 	errors: [
 		{
-			type: 'synchronization',
 			message: 'Node is not responding',
-			details: {
-				lastSyncedAt: '2025-05-07 14:17:11',
-				lastBlockHeight: 456545654
-			}
+			type: 'synchronization'
 		}
-	]
+	],
+	isHealthy: false,
+	lastBlockHeight: 94539,
+	lastSyncedAt: '2025-05-15 19:53:27'
 };
