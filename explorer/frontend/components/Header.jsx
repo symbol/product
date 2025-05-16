@@ -153,6 +153,7 @@ const Header = ({ backendStatus }) => {
 			return t('message_healthGenericError');
 
 		const lastSyncedAtDateText = formatDate(backendStatus.lastSyncedAt, t, {
+			type: 'local',
 			hasTime: true,
 			hasSeconds: true
 		});
