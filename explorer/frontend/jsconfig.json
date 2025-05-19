@@ -10,6 +10,7 @@
 			"@/contexts/*": ["contexts/*"],
 			"@/pages/*": ["pages/*"],
 			"@/public/*": ["public/*"],
+			"@/styles": ["styles"],
 			"@/styles/*": ["styles/*"],
 			"@/utils": ["utils"],
 			"@/utils/*": ["utils/*"]

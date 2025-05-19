@@ -1,4 +1,6 @@
-// Colors
+@import 'fonts';
+
+// Colors - General
 $color-background-main: #eef5f9;
 $color-background-card: #fff;
 $color-background-header: #f5f9fbee;
@@ -11,14 +13,14 @@ $color-primary: #50b9ad;
 $color-primary-light: rgba(79, 185, 172, 12%);
 $color-secondary: #fab700;
 $color-text-body: #0b0118;
+$color-text-title: #0b0118;
+$color-text-table-title: #0b0118;
 $color-text-footer: #fff;
 $color-text-link: #0d155c;
 $color-text-link-hover: #0d155c;
 $color-text-tooltip: #fff;
-$color-text-textbox-placeholder: #a8a6a6;
-$color-text-button: #fff;
-$color-tab-active: #0b0118;
-$color-tab-inactive: #a8a6a6;
+$color-text-empty-table: #0b0118aa;
+$color-modal-overlay: #0001;
 $color-filter-active: #fff;
 $color-filter-inactive: #50b9ad;
 $color-info: #66b7e7;
@@ -27,9 +29,37 @@ $color-warning: #fab700;
 $color-danger: #b94f4f;
 $color-amount-incoming: rgba(79, 185, 172, 12%);
 $color-amount-outgoing: rgba(185, 79, 79, 12%);
+$color-separator-line-neutral: #f3f4f7;
+$color-separator-line-accent: #fab700;
+
+// Colors - Components
+$color-block-cube-front: #50b9ad;
+$color-block-cube-top: #038c7c;
+$color-block-cube-right: #016a5e;
+$color-block-cube-text: #fff;
 $color-textbox-border: #50b9ad;
-$color-textbox-bg: #fff;
-$color-button-bg: #50b9ad;
+$color-textbox-background: #fff;
+$color-textbox-text: #0b0118;
+$color-text-textbox-placeholder: #a8a6a6;
+$color-button-background: #50b9ad;
+$color-button-text: #fff;
+$color-tab-line-active: #fab700;
+$color-tab-line-inactive: transparent;
+$color-tab-text-active: #0b0118;
+$color-tab-text-inactive: #a8a6a6;
+$color-navigation-text-active: #50b9ad;
+$color-navigation-text-inactive: #a8a6a6;
+
+// Spacings General
+$spacing-base: calc(1rem / 3 * 2);
+$spacing-padding: $spacing-base * 3;
+$spacing-fields: $spacing-base * 2;
+$spacing-card-gap: $spacing-base * 3;
+$spacing-section-gap: $spacing-base * 4;
+$spacing-header-height: $spacing-base * 8;
+$spacing-navigation-height: $spacing-base * 8;
+$spacing-heading-margin: $spacing-base;
+$spacing-textbox-height: $spacing-base * 4.75;
 
 // Borders
 $border-radius-card: 1rem;
@@ -39,6 +69,7 @@ $border-radius-chip: 0.5rem;
 $border-radius-filter: 1.5rem;
 $border-radius-button: 0.083rem;
 $border-width-textbox: 0.083rem;
+$border-width-tab: $spacing-base / 2;
 
 // Typography
 $font-body: 400 1rem / 133.33% 'Nunito Sans', sans-serif;
@@ -55,17 +86,11 @@ $font-nav: 700 1rem / 133.33% 'Nunito Sans', sans-serif;
 $font-input-placeholder: 700 1rem / 133.33% 'Nunito Sans', sans-serif;
 $font-input-text: 400 1rem / 133.33% 'Nunito Sans', sans-serif;
 $font-button: 700 1rem / 133.33% 'Nunito Sans', sans-serif;
-
-// Spacings General
-$spacing-base: calc(1rem / 3 * 2);
-$spacing-padding: $spacing-base * 3;
-$spacing-fields: $spacing-base * 2;
-$spacing-card-gap: $spacing-base * 3;
-$spacing-section-gap: $spacing-base * 4;
-$spacing-header-height: $spacing-base * 8;
-$spacing-navigation-height: $spacing-base * 8;
-$spacing-heading-margin: $spacing-base;
-$spacing-textbox-height: $spacing-base * 4.75;
+$text-transform-h1: unset;
+$text-transform-h2: unset;
+$text-transform-h3: unset;
+$text-transform-h4: unset;
+$text-transform-title: unset;
 
 // Spacings Large
 $spacing-content-container-width-large: $spacing-base * 152;

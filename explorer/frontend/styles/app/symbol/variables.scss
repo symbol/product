@@ -1,0 +1,119 @@
+@import 'fonts';
+
+// Colors
+$color-background-main: #1b0a29;
+$color-background-card: #221c31;
+$color-background-header: #1A1A1A;
+$color-background-navigation: #1A1A1A;
+$color-border-navigation: #1A1A1A;
+$color-background-footer: #000;
+$color-background-mosaic: rgba(241, 243, 244, 15%);
+$color-background-tooltip: #0b0118;
+$color-primary: #26c3f2;
+$color-primary-light: #26c2f227;
+$color-secondary: #b429fa;
+$color-text-body: #fff;
+$color-text-title: #858585;
+$color-text-table-title: #858585;
+$color-text-footer: #fff;
+$color-text-link: #a7e2f4;
+$color-text-link-hover: #26c3f2;
+$color-text-tooltip: #fff;
+$color-text-empty-table: rgba(241, 243, 244, 45%);
+$color-modal-overlay: rgba(0, 0, 0, 70%);
+$color-filter-active: #221c31;
+$color-filter-inactive: #26c3f2;
+$color-info: #66b7e7;
+$color-success: #4cc773;
+$color-warning: #fab700;
+$color-danger: #b94f4f;
+$color-amount-incoming: #b3e6b3;
+$color-amount-outgoing: #f99;
+$color-separator-line-neutral: #413c4f;
+$color-separator-line-accent: #413c4f;
+
+// Colors - Components
+$color-block-cube-front: #b429fa;
+$color-block-cube-top: #7413a4;
+$color-block-cube-right: #590e7f;
+$color-block-cube-text: #ffffffa6;
+$color-textbox-border: #b429fa;
+$color-textbox-background: #1b0a29;
+$color-textbox-text: #fff;
+$color-textbox-placeholder: #858585;
+$color-button-background: #26c3f2;
+$color-button-text: #221c31;
+$color-tab-line-active: #26c3f2;
+$color-tab-line-inactive: transparent;
+$color-tab-text-active: #26c3f2;
+$color-tab-text-inactive: #858585;
+$color-navigation-text-active: #26c3f2;
+$color-navigation-text-inactive: #858585;
+
+// Spacings General
+$spacing-base: calc(1rem / 3 * 2);
+$spacing-padding: $spacing-base * 3;
+$spacing-fields: $spacing-base * 2;
+$spacing-card-gap: $spacing-base * 3;
+$spacing-section-gap: $spacing-base * 4;
+$spacing-header-height: $spacing-base * 8;
+$spacing-navigation-height: $spacing-base * 8;
+$spacing-heading-margin: $spacing-base;
+$spacing-textbox-height: $spacing-base * 4.75;
+
+// Borders
+$border-radius-card: 1rem;
+$border-radius-label: 1rem;
+$border-radius-input: 0.33rem;
+$border-radius-chip: 0.5rem;
+$border-radius-filter: 1.5rem;
+$border-radius-button: 0.083rem;
+$border-width-textbox: $spacing-base / 4;
+$border-width-tab: $spacing-base / 4;
+
+// Typography
+$font-body: 400 1rem / 133.33% 'Protipo-Regular', sans-serif;
+$font-body-bold: 700 1rem / 133.33% 'Protipo-Bold', sans-serif;
+$font-body-monospace: 700 1rem / 133.33% 'Carbon-Bold', 'JetBrainsMono-Bold', monospace;
+$font-h1: 800 / 4.66rem 'SofiaSansCondensed-ExtraBold', sans-serif;
+$font-h2: 800 3.25rem / 4rem 'SofiaSansCondensed-ExtraBold', sans-serif;
+$font-h3: 800 2.66rem / 3.33rem 'SofiaSansCondensed-ExtraBold', sans-serif;
+$font-h4: 800 1.5rem / 1.7rem 'SofiaSansCondensed-ExtraBold', sans-serif;
+$font-title: 800 1rem / 133.33% 'Carbon-Bold', 'JetBrainsMono-Bold', monospace;
+$font-highlighted: 800 2.08rem / 2rem 'SofiaSansCondensed-ExtraBold', sans-serif;
+$font-tab: 700 1rem / 133.33% 'Carbon-Bold', 'JetBrainsMono-Bold', monospace;
+$font-nav: 700 1rem / 133.33% 'Carbon-Bold', 'JetBrainsMono-Bold', monospace;
+$font-input-placeholder: 700 1rem / 133.33% 'Carbon-Bold', 'JetBrainsMono-Bold', monospace;
+$font-input-text: 400 1rem / 133.33% 'Protipo-Regular', sans-serif;
+$font-button: 800 1rem / 133.33% 'SofiaSansCondensed-ExtraBold', sans-serif;
+$text-transform-h1: unset;
+$text-transform-h2: unset;
+$text-transform-h3: unset;
+$text-transform-h4: unset;
+$text-transform-title: uppercase;
+
+// Spacings Large
+$spacing-content-container-width-large: $spacing-base * 152;
+$spacing-content-container-margin-large: $spacing-base * 3;
+$multiplier-font-large: 14px;
+
+// Spacings Desktop
+$spacing-content-container-width-desktop: $spacing-base * 152;
+$spacing-content-container-margin-desktop: $spacing-base * 3;
+$multiplier-font-desktop: 0.833vw;
+
+// Spacings Laptop
+$spacing-content-container-width-laptop: $spacing-base * 152;
+$spacing-content-container-margin-laptop: $spacing-base * 3;
+$multiplier-font-laptop: 0.95vw;
+
+// Spacings Mobile
+$spacing-content-container-width-mobile: 100%;
+$spacing-content-container-margin-mobile: $spacing-base * 2;
+$multiplier-font-mobile: 10px;
+
+// Breakpoints
+$screen-large: '(min-width: 2000px)';
+$screen-desktop: '(max-width: 1999.8px) and (min-width: 1440px)';
+$screen-laptop: '(max-width: 1439.8px) and (min-width: 768px)';
+$screen-mobile: '(max-width: 767.8px)';

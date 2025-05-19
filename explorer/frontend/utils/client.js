@@ -1,3 +1,5 @@
+import config from '@/config';
+
 /**
  * Handles copying a text string to clipboard.
  * @param {string} text - text to copy
@@ -51,6 +53,8 @@ export const createPageHref = (pageName, parameter) => {
 
 	return route;
 };
+
+export const createAssetURL = url => `/${config.PLATFORM}${url}`;
 
 /**
  * Handles navigation item click. Prevents navigation if disabled.

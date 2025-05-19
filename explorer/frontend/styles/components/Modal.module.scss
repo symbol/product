@@ -1,5 +1,3 @@
-@import '../variables';
-
 .overlay {
 	position: fixed;
 	top: 0;
@@ -10,7 +8,7 @@
 	justify-content: center;
 	width: 100%;
 	height: 100vh;
-	background-color: #0001;
+	background-color: $color-modal-overlay;
 	animation-name: fade-in;
 	animation-duration: 250ms;
 	animation-timing-function: linear;

@@ -1,5 +1,3 @@
-@import '../variables';
-
 .headerWrapper {
 	height: $spacing-header-height;
 }
@@ -49,7 +47,7 @@
 .menuItem {
 	margin-left: 1rem;
 	padding: 0.625rem;
-	color: $color-tab-inactive;
+	color: $color-navigation-text-inactive;
 	font: $font-nav;
 	text-transform: uppercase;
 	cursor: pointer;
@@ -58,7 +56,7 @@
 }
 
 .menuItem__active {
-	color: $color-tab-active;
+	color: $color-navigation-text-active;
 }
 
 .menuIcon {
@@ -115,7 +113,7 @@
 	justify-content: center;
 	width: $spacing-base * 4;
 	height: $spacing-base * 4;
-	background-color: $color-button-bg;
+	background-color: $color-button-background;
 	border-radius: 50%;
 	cursor: pointer;
 }
@@ -132,8 +130,8 @@
 	align-self: flex-end;
 	justify-content: center;
 	padding: $spacing-base;
-	color: $color-text-button;
-	background-color: $color-button-bg;
+	color: $color-button-text;
+	background-color: $color-button-background;
 	border-radius: 0.2rem;
 	cursor: pointer;
 }
@@ -205,7 +203,7 @@
 		align-items: center;
 		justify-content: center;
 		width: $spacing-base * 8;
-		color: $color-tab-active;
+		color: $color-navigation-text-active;
 		opacity: 0.3;
 
 		.menuIcon {

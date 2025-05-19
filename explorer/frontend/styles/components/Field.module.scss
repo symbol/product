@@ -1,8 +1,8 @@
-@import '../variables';
-
 .field {
 	.title {
+		color: $color-text-title;
 		font: $font-title;
+		text-transform: $text-transform-title;
 
 		.icon {
 			display: inline-block;

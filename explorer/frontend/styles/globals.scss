@@ -1,5 +1,3 @@
-@import './variables';
-
 %clear-root {
 	margin: 0;
 	padding: 0;
@@ -45,22 +43,26 @@ body {
 h1 {
 	font: $font-h1;
 	margin-block: 0;
+	text-transform: $text-transform-h1;
 }
 
 h2 {
 	font: $font-h2;
 	margin-block: 0;
+	text-transform: $text-transform-h2;
 }
 
 h3 {
 	font: $font-h3;
 	margin-block: 0;
+	text-transform: $text-transform-h3;
 }
 
 h4 {
 	margin: 0;
 	font: $font-h4;
 	margin-block: 0;
+	text-transform: $text-transform-h4;
 }
 
 a {
@@ -144,11 +146,11 @@ a {
 }
 
 .stripes {
-	& > *:nth-child(even) {
+	&>*:nth-child(even) {
 		background-color: #fcfcfc;
 	}
 
-	& > *:hover {
+	&>*:hover {
 		background-color: #fafafa;
 		transition: color 250ms;
 	}
@@ -167,6 +169,17 @@ a {
 	--toastify-toast-background: #fff;
 	--toastify-toast-min-height: 2rem;
 	--toastify-toast-max-height: 5rem;
+}
+
+.apexcharts-tooltip {
+	color: #fff;
+	background: rgba(0, 0, 0, 96%) !important;
+	border: none !important;
+}
+
+.apexcharts-tooltip.apexcharts-theme-light .apexcharts-tooltip-title {
+	color: #fff;
+	background: rgba(0, 0, 0, 96%) !important;
 }
 
 .disable-scroll {
@@ -233,11 +246,9 @@ a {
 }
 
 .grid {
-	background: repeating-linear-gradient(
-		to bottom,
-		#e5120355 0,
-		#e5120355 $spacing-base / 2,
-		#fff0 $spacing-base / 2,
-		#fff0 $spacing-base
-	);
+	background: repeating-linear-gradient(to bottom,
+			#e5120355 0,
+			#e5120355 $spacing-base / 2,
+			#fff0 $spacing-base / 2,
+			#fff0 $spacing-base);
 }

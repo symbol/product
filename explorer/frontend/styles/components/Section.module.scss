@@ -1,5 +1,3 @@
-@import '../variables';
-
 .section {
 	width: 100%;
 	min-width: 0;
@@ -22,19 +20,19 @@
 
 .tab {
 	padding-bottom: $spacing-base / 2;
-	color: $color-tab-inactive;
+	color: $color-tab-text-inactive;
 	font: $font-tab;
 	text-transform: uppercase;
-	border-bottom: $spacing-base / 2 solid transparent;
+	border-bottom: $border-width-tab solid $color-tab-line-inactive;
 	cursor: pointer;
 	transition: color 500ms;
 	user-select: none;
 }
 
 .tab__active {
-	color: $color-tab-active;
+	color: $color-tab-text-active;
 	font: $font-tab;
 	text-transform: uppercase;
-	border-bottom-color: $color-secondary;
+	border-bottom-color: $color-tab-line-active;
 	cursor: pointer;
 }

@@ -1,0 +1,10 @@
+.wrapper {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	width: 100%;
+	min-height: 100%;
+	background-size: cover;
+	background-blend-mode: color-burn;
+	transition: width 0.25s ease-in-out, opacity 0.25s ease-in-out;
+}
