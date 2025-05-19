@@ -1,7 +1,7 @@
 aiohttp==3.11.18
-Flask==3.1.0
+Flask==3.1.1
 psycopg2-binary==2.9.10
 symbol-sdk-python==3.2.3
 zenlog==1.1
 Path==17.1.0
-flask_cors==5.0.1
+flask_cors==6.0.0
