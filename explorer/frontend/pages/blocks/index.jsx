@@ -15,6 +15,7 @@ import { usePagination } from '@/utils';
 import Head from 'next/head';
 import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
+import config from '@/config';
 
 export const getServerSideProps = async ({ locale }) => {
 	const blocksPage = await api.fetchBlockPage();
@@ -79,9 +80,11 @@ const Blocks = ({ blocks, stats }) => {
 					<Separator className="no-mobile" />
 					<div className="layout-grid-row layout-flex-fill">
 						<div className="layout-flex-col layout-flex-fill">
-							<Field title={t('field_averageFee')}>{t('value_averageFee', { value: stats.blockFee })}</Field>
+							<Field title={t('field_averageFee')}>
+								{t('value_averageFee', { value: stats.blockFee, ticker: config.NATIVE_MOSAIC_TICKER })}
+							</Field>
 						</div>
-						<ChartLine data={stats.blockFeeChart} name={t('chart_series_fee')} />
+						<ChartLine data={stats.blockFeeChart} name={t('chart_series_fee', { value: stats.blockFee, ticker: config.NATIVE_MOSAIC_TICKER })} />
 					</div>
 					<Separator className="no-mobile" />
 					<div className="layout-grid-row layout-flex-fill">

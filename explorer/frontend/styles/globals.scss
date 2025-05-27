@@ -44,18 +44,21 @@ h1 {
 	font: $font-h1;
 	margin-block: 0;
 	text-transform: $text-transform-h1;
+	color: $color-text-h1;
 }
 
 h2 {
 	font: $font-h2;
 	margin-block: 0;
 	text-transform: $text-transform-h2;
+	color: $color-text-h2;
 }
 
 h3 {
 	font: $font-h3;
 	margin-block: 0;
 	text-transform: $text-transform-h3;
+	color: $color-text-h3;
 }
 
 h4 {
@@ -63,6 +66,7 @@ h4 {
 	font: $font-h4;
 	margin-block: 0;
 	text-transform: $text-transform-h4;
+	color: $color-text-h4;
 }
 
 a {

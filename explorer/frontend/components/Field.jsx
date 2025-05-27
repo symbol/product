@@ -1,3 +1,4 @@
+import { createAssetURL } from '@/utils';
 import CustomImage from './CustomImage';
 import styles from '@/styles/components/Field.module.scss';
 
@@ -14,7 +15,7 @@ const Field = ({ className, titleClassName, title, description, children, textAl
 				{title}
 				{!!description && (
 					<div className={styles.tooltip}>
-						<CustomImage src="/images/icon-question.svg" className={styles.tooltipIcon} alt="Help" />
+						<CustomImage src={createAssetURL('/images/icon-question.svg')} className={styles.tooltipIcon} alt="Help" />
 						<div className={styles.tooltipContent}>{description}</div>
 					</div>
 				)}

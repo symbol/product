@@ -1,3 +1,4 @@
+import { createAssetURL } from '@/utils';
 import CustomImage from './CustomImage';
 import IconTransactionType from './IconTransactionType';
 import ValueAge from './ValueAge';
@@ -15,7 +16,7 @@ const TransactionPreview = ({ type, group, signer, hash, timestamp, amount, bloc
 
 	return (
 		<div className={styles.transactionPreview} title={title}>
-			{isUnconfirmed && <CustomImage src="/images/transaction/pending.svg" alt="Unconfirmed" className={styles.icon} />}
+			{isUnconfirmed && <CustomImage src={createAssetURL('/images/transaction/pending.svg')} alt="Unconfirmed" className={styles.icon} />}
 			{!isUnconfirmed && <IconTransactionType value={type} />}
 			<div className={styles.info}>
 				<div className={styles.type}>{typeText}</div>

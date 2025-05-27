@@ -15,6 +15,7 @@ import Head from 'next/head';
 import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 import { useCallback } from 'react';
+import config from '@/config';
 
 const DATA_REFRESH_INTERVAL = 60000;
 
@@ -106,7 +107,7 @@ const Home = ({
 						</div>
 						<div className="layout-flex-col layout-flex-fill">
 							<Field title={t('field_circulatingSupply')} textAlign="right">
-								{numberToString(marketData.circulatingSupply)} XEM
+								{numberToString(marketData.circulatingSupply)} {config.NATIVE_MOSAIC_TICKER}
 							</Field>
 							<Field title={t('field_marketCap')} textAlign="right">
 								${numberToShortString(marketData.marketCap)}

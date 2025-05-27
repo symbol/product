@@ -6,7 +6,7 @@
 	"button_backHome": "ホームに戻る",
 	"chart_series_blockTime": "秒",
 	"chart_series_difficulty": "難易度, %",
-	"chart_series_fee": "手数料, XEM",
+	"chart_series_fee": "手数料, {{ticker",
 	"chart_series_transactions": "取引",
 	"chart_label_block": "ブロック: {{height}}",
 	"field_averageFee": "平均手数料",
@@ -265,7 +265,7 @@
 	"transactionType_ACCOUNT_KEY_LINK": "アカウントキーリンク",
 	"transactionType_MULTISIG": "マルチシグ",
 
-	"value_averageFee": "{{value}} XEM",
+	"value_averageFee": "{{value}} {{ticker",
 	"value_blockGenerationTime": "{{value}}秒",
 	"value_expiration": "{{value}}ブロック後に期限切れ",
 	"value_expired": "0ブロック後に期限切れ（期限切れ）",

@@ -7,7 +7,7 @@ import ValueLabel from './ValueLabel';
 import ValueMosaic from './ValueMosaic';
 import ValueTransactionSquares from './ValueTransactionSquares';
 import styles from '@/styles/components/BlockPreview.module.scss';
-import { createPageHref } from '@/utils';
+import { createAssetURL, createPageHref } from '@/utils';
 import Link from 'next/link';
 import { useTranslation } from 'next-i18next';
 import { useEffect, useState } from 'react';
@@ -21,7 +21,7 @@ const BlockExpanded = ({ data, transactions, isNext, isTransactionSquaresRendere
 		<div className="layout-flex-col-fields">
 			<ButtonClose className={styles.buttonClose} onClick={onClose} />
 			<Link href={href} className={styles.buttonMore} target="_blank">
-				<CustomImage className={styles.buttonMoreIcon} src="/images/icon-circle-more.png" alt="More" />
+				<CustomImage className={styles.buttonMoreIcon} src={createAssetURL('/images/icon-circle-more.png')} alt="More" />
 			</Link>
 			<Field title={t('field_height')}>
 				<div className="value-highlighted">{height}</div>
@@ -71,7 +71,7 @@ const BlockPreview = ({ data, transactions, isNext, isSelected, onClose, onSelec
 	const [expandedStyle, setExpandedStyle] = useState('');
 	const cubeClassName = isNext ? styles.blockCubeNext : styles.blockCube;
 	const containerClassName = isSelected ? styles.blockCard : cubeClassName;
-	const iconChainSrc = isNext ? '/images/icon-chain-pending.svg' : '/images/icon-chain.svg';
+	const iconChainSrc = isNext ? createAssetURL('/images/icon-chain-pending.svg') : createAssetURL('/images/icon-chain.svg');
 
 	const handleClick = () => {
 		if (!isSelected) 

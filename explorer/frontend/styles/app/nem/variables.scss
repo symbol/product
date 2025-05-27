@@ -1,8 +1,7 @@
-@import 'fonts';
-
 // Colors - General
 $color-background-main: #eef5f9;
 $color-background-card: #fff;
+$color-background-card-accent: #fff;
 $color-background-header: #f5f9fbee;
 $color-background-navigation: #f5f9fbee;
 $color-border-navigation: #eef5f9;
@@ -12,6 +11,10 @@ $color-background-tooltip: #0b0118;
 $color-primary: #50b9ad;
 $color-primary-light: rgba(79, 185, 172, 12%);
 $color-secondary: #fab700;
+$color-text-h1: #0b0118;
+$color-text-h2: #0b0118;
+$color-text-h3: #0b0118;
+$color-text-h4: #0b0118;
 $color-text-body: #0b0118;
 $color-text-title: #0b0118;
 $color-text-table-title: #0b0118;
@@ -40,7 +43,7 @@ $color-block-cube-text: #fff;
 $color-textbox-border: #50b9ad;
 $color-textbox-background: #fff;
 $color-textbox-text: #0b0118;
-$color-text-textbox-placeholder: #a8a6a6;
+$color-textbox-placeholder: #a8a6a6;
 $color-button-background: #50b9ad;
 $color-button-text: #fff;
 $color-tab-line-active: #fab700;
@@ -86,6 +89,8 @@ $font-nav: 700 1rem / 133.33% 'Nunito Sans', sans-serif;
 $font-input-placeholder: 700 1rem / 133.33% 'Nunito Sans', sans-serif;
 $font-input-text: 400 1rem / 133.33% 'Nunito Sans', sans-serif;
 $font-button: 700 1rem / 133.33% 'Nunito Sans', sans-serif;
+$font-mosaic-amount: 700 1rem / 133.33% 'Nunito Sans', sans-serif;
+$font-label: 700 1rem / 133.33% 'Nunito Sans', sans-serif;
 $text-transform-h1: unset;
 $text-transform-h2: unset;
 $text-transform-h3: unset;

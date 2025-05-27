@@ -1,17 +1,18 @@
+import { createAssetURL } from '@/utils';
 import CustomImage from './CustomImage';
 import styles from '@/styles/components/ValueLabel.module.scss';
 
 const iconsMap = {
-	created: '/images/icon-label-true.svg',
-	safe: '/images/icon-label-confirmed.svg',
-	confirmed: '/images/icon-label-confirmed.svg',
-	true: '/images/icon-label-true.svg',
-	active: '/images/icon-label-true.svg',
-	pending: '/images/icon-label-pending.svg',
-	false: '/images/icon-label-false.svg',
-	inactive: '/images/icon-label-false.svg',
-	harvesting: '/images/icon-label-harvesting.svg',
-	multisig: '/images/icon-label-multisig.svg'
+	created: createAssetURL('/images/icon-label-true.svg'),
+	safe: createAssetURL('/images/icon-label-confirmed.svg'),
+	confirmed: createAssetURL('/images/icon-label-confirmed.svg'),
+	true: createAssetURL('/images/icon-label-true.svg'),
+	active: createAssetURL('/images/icon-label-true.svg'),
+	pending: createAssetURL('/images/icon-label-pending.svg'),
+	false: createAssetURL('/images/icon-label-false.svg'),
+	inactive: createAssetURL('/images/icon-label-false.svg'),
+	harvesting: createAssetURL('/images/icon-label-harvesting.svg'),
+	multisig: createAssetURL('/images/icon-label-multisig.svg')
 };
 const styleMap = {
 	created: styles.success,

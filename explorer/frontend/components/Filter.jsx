@@ -9,7 +9,7 @@ import ValueBlockHeight from './ValueBlockHeight';
 import ValueMosaic from './ValueMosaic';
 import ValueTransactionType from './ValueTransactionType';
 import styles from '@/styles/components/Filter.module.scss';
-import { useDataManager, useDebounce } from '@/utils';
+import { createAssetURL, useDataManager, useDebounce } from '@/utils';
 import { useTranslation } from 'next-i18next';
 import { useEffect, useState } from 'react';
 
@@ -100,7 +100,7 @@ const FilterModal = ({ isVisible, title, type, isSearchEnabled, options, onSearc
 			{isSearchEnabled && (
 				<TextBox
 					role="searchbox"
-					iconSrc="/images/icon-search.svg"
+					iconSrc={createAssetURL('/images/icon-search.svg')}
 					placeholder={type}
 					value={text}
 					onChange={handleSearchTextChange}
@@ -196,7 +196,7 @@ const Filter = ({ isSelectedItemsShown, data, value, search, isDisabled, onChang
 		<div className={styles.filter}>
 			<div className={styles.list}>
 				<div className={styles.button} onClick={clear} role="button">
-					<CustomImage src={'/images/icon-chip-clear.png?d=1'} className={styles.icon} alt="Clear" />
+					<CustomImage src={createAssetURL('/images/icon-chip-clear.png?d=1')} className={styles.icon} alt="Clear" />
 					<div className={styles.text}>{t('button_clear')}</div>
 				</div>
 				{data.map((item, index) => (
@@ -218,7 +218,7 @@ const Filter = ({ isSelectedItemsShown, data, value, search, isDisabled, onChang
 						selectedItems[item.name] && (
 							<div className={styles.selectedItem} key={index} onClick={() => removeFilter(item)}>
 								{renderItem(selectedItems[item.name], item.type, () => removeFilter(item))}
-								<CustomImage src="/images/icon-close.svg" alt="Remove" className={styles.iconRemoveItem} />
+								<CustomImage src={createAssetURL('/images/icon-close.svg')} alt="Remove" className={styles.iconRemoveItem} />
 							</div>
 						))
 				}

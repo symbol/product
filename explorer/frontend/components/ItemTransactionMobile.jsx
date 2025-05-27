@@ -6,7 +6,7 @@ import ValueMosaic from './ValueMosaic';
 import ValueTimestamp from './ValueTimestamp';
 import ValueTransactionHash from './ValueTransactionHash';
 import styles from '@/styles/components/ItemTransactionMobile.module.scss';
-import { createPageHref } from '@/utils';
+import { createAssetURL, createPageHref } from '@/utils';
 import Link from 'next/link';
 import { useTranslation } from 'next-i18next';
 
@@ -46,7 +46,7 @@ const ItemTransactionMobile = ({ data, isTimestampShown }) => {
 					<div className={styles.row}>
 						<CustomImage
 							className={styles.iconDirection}
-							src="/images/icon-transaction-direction.svg"
+							src={createAssetURL('/images/icon-transaction-direction.svg')}
 							alt="Transaction direction"
 						/>
 						<ValueAccount address={recipient} size="sm" />

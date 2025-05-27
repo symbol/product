@@ -9,6 +9,7 @@ import ValueNamespace from '@/components/ValueNamespace';
 import ValueTransactionType from '@/components/ValueTransactionType';
 import { KEY_LINK_ACTION, SUPPLY_CHANGE_ACTION, TRANSACTION_TYPE } from '@/constants';
 import styles from '@/styles/components/TransactionGraphic.module.scss';
+import { createAssetURL } from '@/utils';
 import { useTranslation } from 'next-i18next';
 
 const TransactionGraphic = ({ transactions }) => {
@@ -39,7 +40,7 @@ const TransactionGraphic = ({ transactions }) => {
 							<div>{getTargetText(item.type)}</div>
 						</div>
 						<ValueAccount className={styles.accountLeft} address={item.sender} size="md" position="left" />
-						<CustomImage src="/images/transaction-arrow.svg" className={styles.arrow} alt="Transaction direction" />
+						<CustomImage src={createAssetURL('/images/transaction-arrow.svg')} className={styles.arrow} alt="Transaction direction" />
 						<ValueTransactionType hideIcon className={styles.transactionType} value={item.type} />
 						{!!item.recipient && (
 							<ValueAccount className={styles.accountRight} address={item.recipient} size="md" position="right" />

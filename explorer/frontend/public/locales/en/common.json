@@ -6,7 +6,7 @@
 	"button_backHome": "Back To Home",
 	"chart_series_blockTime": "Seconds",
 	"chart_series_difficulty": "Difficulty, %",
-	"chart_series_fee": "Fee, XEM",
+	"chart_series_fee": "Fee, {{ticker",
 	"chart_series_transactions": "Transactions",
 	"chart_label_block": "Block: {{height}}",
 	"field_averageFee": "Average Fee",
@@ -265,7 +265,7 @@
 	"transactionType_ACCOUNT_KEY_LINK": "Account Key Link",
 	"transactionType_MULTISIG": "Multisig",
 
-	"value_averageFee": "{{value}} XEM",
+	"value_averageFee": "{{value}} {{ticker}}",
 	"value_blockGenerationTime": "{{value}} seconds",
 	"value_expiration": "In {{value}} blocks",
 	"value_expired": "In 0 blocks (Expired)",
