@@ -23,51 +23,51 @@ Detailed version can be seen on [codecov.io][product-cov-link].
 [product-cov]: https://codecov.io/gh/symbol/product/branch/dev/graphs/tree.svg
 [product-cov-link]: https://codecov.io/gh/symbol/product/tree/dev
 
-[explorer-nodewatch-job]: https://jenkins.symboldev.com/blue/organizations/jenkins/Symbol%2Fgenerated%2Fproduct%2Fexplorer-nodewatch/activity?branch=dev
-[explorer-nodewatch-lint]: https://jenkins.symboldev.com/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Fexplorer-nodewatch%2Fdev%2F&config=explorer-nodewatch-lint
-[explorer-nodewatch-test]: https://jenkins.symboldev.com/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Fexplorer-nodewatch%2Fdev%2F&config=explorer-nodewatch-test
+[explorer-nodewatch-job]: https://jenkins.symbolsyndicate.us/blue/organizations/jenkins/Symbol%2Fgenerated%2Fproduct%2Fexplorer-nodewatch/activity?branch=dev
+[explorer-nodewatch-lint]: https://jenkins.symbolsyndicate.us/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Fexplorer-nodewatch%2Fdev%2F&config=explorer-nodewatch-lint
+[explorer-nodewatch-test]: https://jenkins.symbolsyndicate.us/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Fexplorer-nodewatch%2Fdev%2F&config=explorer-nodewatch-test
 [explorer-nodewatch-cov]: https://codecov.io/gh/symbol/product/branch/dev/graph/badge.svg?token=SSYYBMK0M7&flag=explorer-nodewatch
 [explorer-nodewatch-cov-link]: https://codecov.io/gh/symbol/product/tree/dev/explorer/nodewatch
 
-[explorer-rest-job]: https://jenkins.symboldev.com/blue/organizations/jenkins/Symbol%2Fgenerated%2Fproduct%2Fexplorer-rest/activity?branch=dev
-[explorer-rest-lint]: https://jenkins.symboldev.com/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Fexplorer-rest%2Fdev%2F&config=explorer-rest-lint
-[explorer-rest-test]: https://jenkins.symboldev.com/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Fexplorer-rest%2Fdev%2F&config=explorer-rest-test
+[explorer-rest-job]: https://jenkins.symbolsyndicate.us/blue/organizations/jenkins/Symbol%2Fgenerated%2Fproduct%2Fexplorer-rest/activity?branch=dev
+[explorer-rest-lint]: https://jenkins.symbolsyndicate.us/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Fexplorer-rest%2Fdev%2F&config=explorer-rest-lint
+[explorer-rest-test]: https://jenkins.symbolsyndicate.us/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Fexplorer-rest%2Fdev%2F&config=explorer-rest-test
 [explorer-rest-cov]: https://codecov.io/gh/symbol/product/branch/dev/graph/badge.svg?token=SSYYBMK0M7&flag=explorer-rest
 [explorer-rest-cov-link]: https://codecov.io/gh/symbol/product/tree/dev/explorer/rest
 
-[faucet-authenticator-job]: https://jenkins.symboldev.com/blue/organizations/jenkins/Symbol%2Fgenerated%2Fproduct%2Ffaucet-authenticator/activity?branch=dev
-[faucet-authenticator-lint]: https://jenkins.symboldev.com/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Ffaucet-authenticator%2Fdev%2F&config=faucet-authenticator-lint
-[faucet-authenticator-test]: https://jenkins.symboldev.com/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Ffaucet-authenticator%2Fdev%2F&config=faucet-authenticator-test
+[faucet-authenticator-job]: https://jenkins.symbolsyndicate.us/blue/organizations/jenkins/Symbol%2Fgenerated%2Fproduct%2Ffaucet-authenticator/activity?branch=dev
+[faucet-authenticator-lint]: https://jenkins.symbolsyndicate.us/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Ffaucet-authenticator%2Fdev%2F&config=faucet-authenticator-lint
+[faucet-authenticator-test]: https://jenkins.symbolsyndicate.us/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Ffaucet-authenticator%2Fdev%2F&config=faucet-authenticator-test
 [faucet-authenticator-cov]: https://codecov.io/gh/symbol/product/branch/dev/graph/badge.svg?token=SSYYBMK0M7&flag=faucet-authenticator
 [faucet-authenticator-cov-link]: https://codecov.io/gh/symbol/product/tree/dev/faucet/authenticator
 
-[faucet-backend-job]: https://jenkins.symboldev.com/blue/organizations/jenkins/Symbol%2Fgenerated%2Fproduct%2Ffaucet-backend/activity?branch=dev
-[faucet-backend-lint]: https://jenkins.symboldev.com/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Ffaucet-backend%2Fdev%2F&config=faucet-backend-lint
-[faucet-backend-test]: https://jenkins.symboldev.com/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Ffaucet-backend%2Fdev%2F&config=faucet-backend-test
+[faucet-backend-job]: https://jenkins.symbolsyndicate.us/blue/organizations/jenkins/Symbol%2Fgenerated%2Fproduct%2Ffaucet-backend/activity?branch=dev
+[faucet-backend-lint]: https://jenkins.symbolsyndicate.us/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Ffaucet-backend%2Fdev%2F&config=faucet-backend-lint
+[faucet-backend-test]: https://jenkins.symbolsyndicate.us/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Ffaucet-backend%2Fdev%2F&config=faucet-backend-test
 [faucet-backend-cov]: https://codecov.io/gh/symbol/product/branch/dev/graph/badge.svg?token=SSYYBMK0M7&flag=faucet-backend
 [faucet-backend-cov-link]: https://codecov.io/gh/symbol/product/tree/dev/faucet/backend
 
-[faucet-frontend-job]: https://jenkins.symboldev.com/blue/organizations/jenkins/Symbol%2Fgenerated%2Fproduct%2Ffaucet-frontend/activity?branch=dev
-[faucet-frontend-lint]: https://jenkins.symboldev.com/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Ffaucet-frontend%2Fdev%2F&config=faucet-frontend-lint
-[faucet-frontend-build]: https://jenkins.symboldev.com/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Ffaucet-frontend%2Fdev%2F&config=faucet-frontend-build
-[faucet-frontend-test]: https://jenkins.symboldev.com/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Ffaucet-frontend%2Fdev%2F&config=faucet-frontend-test
+[faucet-frontend-job]: https://jenkins.symbolsyndicate.us/blue/organizations/jenkins/Symbol%2Fgenerated%2Fproduct%2Ffaucet-frontend/activity?branch=dev
+[faucet-frontend-lint]: https://jenkins.symbolsyndicate.us/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Ffaucet-frontend%2Fdev%2F&config=faucet-frontend-lint
+[faucet-frontend-build]: https://jenkins.symbolsyndicate.us/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Ffaucet-frontend%2Fdev%2F&config=faucet-frontend-build
+[faucet-frontend-test]: https://jenkins.symbolsyndicate.us/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Ffaucet-frontend%2Fdev%2F&config=faucet-frontend-test
 [faucet-frontend-cov]: https://codecov.io/gh/symbol/product/branch/dev/graph/badge.svg?token=SSYYBMK0M7&flag=faucet-frontend
 [faucet-frontend-cov-link]: https://codecov.io/gh/symbol/product/tree/dev/faucet/frontend
 
-[lightapi-python-job]: https://jenkins.symboldev.com/blue/organizations/jenkins/Symbol%2Fgenerated%2Fproduct%2Flightapi-python/activity?branch=dev
-[lightapi-python-lint]: https://jenkins.symboldev.com/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Flightapi-python%2Fdev%2F&config=lightapi-python-lint
-[lightapi-python-test]: https://jenkins.symboldev.com/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Flightapi-python%2Fdev%2F&config=lightapi-python-test
+[lightapi-python-job]: https://jenkins.symbolsyndicate.us/blue/organizations/jenkins/Symbol%2Fgenerated%2Fproduct%2Flightapi-python/activity?branch=dev
+[lightapi-python-lint]: https://jenkins.symbolsyndicate.us/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Flightapi-python%2Fdev%2F&config=lightapi-python-lint
+[lightapi-python-test]: https://jenkins.symbolsyndicate.us/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Flightapi-python%2Fdev%2F&config=lightapi-python-test
 [lightapi-python-cov]: https://codecov.io/gh/symbol/product/branch/dev/graph/badge.svg?token=SSYYBMK0M7&flag=lightapi-python
 [lightapi-python-cov-link]: https://codecov.io/gh/symbol/product/tree/dev/lightapi/python
 
-[tools-shoestring-job]: https://jenkins.symboldev.com/blue/organizations/jenkins/Symbol%2Fgenerated%2Fproduct%2Ftools-shoestring/activity?branch=dev
-[tools-shoestring-lint]: https://jenkins.symboldev.com/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Ftools-shoestring%2Fdev%2F&config=tools-shoestring-lint
-[tools-shoestring-test]: https://jenkins.symboldev.com/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Ftools-shoestring%2Fdev%2F&config=tools-shoestring-test
+[tools-shoestring-job]: https://jenkins.symbolsyndicate.us/blue/organizations/jenkins/Symbol%2Fgenerated%2Fproduct%2Ftools-shoestring/activity?branch=dev
+[tools-shoestring-lint]: https://jenkins.symbolsyndicate.us/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Ftools-shoestring%2Fdev%2F&config=tools-shoestring-lint
+[tools-shoestring-test]: https://jenkins.symbolsyndicate.us/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Ftools-shoestring%2Fdev%2F&config=tools-shoestring-test
 [tools-shoestring-cov]: https://codecov.io/gh/symbol/product/branch/dev/graph/badge.svg?token=SSYYBMK0M7&flag=tools-shoestring
 [tools-shoestring-cov-link]: https://codecov.io/gh/symbol/product/tree/dev/tools/shoestring
 
-[tools-vanity-job]: https://jenkins.symboldev.com/blue/organizations/jenkins/Symbol%2Fgenerated%2Fproduct%2Ftools-vanity/activity?branch=dev
-[tools-vanity-lint]: https://jenkins.symboldev.com/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Ftools-vanity%2Fdev%2F&config=tools-vanity-lint
-[tools-vanity-test]: https://jenkins.symboldev.com/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Ftools-vanity%2Fdev%2F&config=tools-vanity-test
+[tools-vanity-job]: https://jenkins.symbolsyndicate.us/blue/organizations/jenkins/Symbol%2Fgenerated%2Fproduct%2Ftools-vanity/activity?branch=dev
+[tools-vanity-lint]: https://jenkins.symbolsyndicate.us/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Ftools-vanity%2Fdev%2F&config=tools-vanity-lint
+[tools-vanity-test]: https://jenkins.symbolsyndicate.us/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Ftools-vanity%2Fdev%2F&config=tools-vanity-test
 [tools-vanity-cov]: https://codecov.io/gh/symbol/product/branch/dev/graph/badge.svg?token=SSYYBMK0M7&flag=tools-vanity
 [tools-vanity-cov-link]: https://codecov.io/gh/symbol/product/tree/dev/tools/vanity
