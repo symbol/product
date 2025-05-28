@@ -1,6 +1,8 @@
 from prompt_toolkit.filters import Condition
 from prompt_toolkit.layout.containers import ConditionalContainer, VSplit
-from prompt_toolkit.widgets import Box, Button, Shadow
+from prompt_toolkit.widgets import Box, Shadow
+
+from shoestring.wizard.ButtonMb import ButtonMb
 
 
 class Navigation:
@@ -14,7 +16,7 @@ class Navigation:
 		self.next = next_button
 
 
-class ExtendedButton(Button):
+class ExtendedButton(ButtonMb):
 	"""Extended button that enabling and disabling."""
 
 	def __init__(self, text):
@@ -48,7 +50,7 @@ class ExtendedButton(Button):
 def initialize():
 	navigation = Navigation(
 		None,
-		Button(text=_('wizard-button-prev')),
+		ButtonMb(text=_('wizard-button-prev')),
 		ExtendedButton(text=_('wizard-button-next')),
 	)
 

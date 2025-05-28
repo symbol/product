@@ -474,11 +474,11 @@ msgstr "include node key"
 msgid "wizard-button-finish"
 msgstr "Finish!"
 
-#: shoestring/wizard/buttons.py:51 shoestring/wizard/navigation.py:52
+#: shoestring/wizard/buttons.py:51 shoestring/wizard/navigation.py:54
 msgid "wizard-button-next"
 msgstr "Next"
 
-#: shoestring/wizard/navigation.py:51
+#: shoestring/wizard/navigation.py:53
 msgid "wizard-button-prev"
 msgstr "Back"
 
@@ -506,19 +506,19 @@ msgstr "Cert Peer name"
 msgid "wizard-certificates-title"
 msgstr "CA name + node cert name"
 
-#: shoestring/wizard/screens/obligatory.py:83
+#: shoestring/wizard/screens/obligatory.py:85
 msgid "wizard-dialog-message-generation-text"
 msgstr "Key generated and saved to file."
 
-#: shoestring/wizard/screens/obligatory.py:82
+#: shoestring/wizard/screens/obligatory.py:84
 msgid "wizard-dialog-message-generation-title"
 msgstr "Key generation"
 
-#: shoestring/wizard/screens/obligatory.py:99
+#: shoestring/wizard/screens/obligatory.py:101
 msgid "wizard-dialog-message-import-text"
 msgstr "Private key imported and saved to file."
 
-#: shoestring/wizard/screens/obligatory.py:98
+#: shoestring/wizard/screens/obligatory.py:100
 msgid "wizard-dialog-message-import-title"
 msgstr "Key import"
 
@@ -614,7 +614,7 @@ msgstr "vrf private key must be a valid hex private key string"
 msgid "wizard-harvesting-vrf-key-label"
 msgstr "harvester vrf key"
 
-#: shoestring/wizard/__main__.py:104
+#: shoestring/wizard/__main__.py:105
 msgid "wizard-main-done"
 msgstr "Done 👋"
 
@@ -708,79 +708,79 @@ msgstr "Choose node type"
 msgid "wizard-node-type-token"
 msgstr "node type"
 
-#: shoestring/wizard/screens/obligatory.py:120
-#: shoestring/wizard/screens/obligatory.py:128
+#: shoestring/wizard/screens/obligatory.py:122
+#: shoestring/wizard/screens/obligatory.py:130
 msgid "wizard-obligatory-ca-pem-path-error-text"
 msgstr "ca pem file path must be a valid file"
 
-#: shoestring/wizard/screens/obligatory.py:121
-#: shoestring/wizard/screens/obligatory.py:122
+#: shoestring/wizard/screens/obligatory.py:123
+#: shoestring/wizard/screens/obligatory.py:124
 msgid "wizard-obligatory-ca-pem-path-error-text-not-exist"
 msgstr ""
 "ca pem path needs to point to non-existing file in existing directory and"
 " must have .pem extension"
 
-#: shoestring/wizard/screens/obligatory.py:126
+#: shoestring/wizard/screens/obligatory.py:128
 msgid "wizard-obligatory-ca-pem-path-label"
 msgstr "CA PEM file path (main account)"
 
-#: shoestring/wizard/screens/obligatory.py:107
+#: shoestring/wizard/screens/obligatory.py:109
 msgid "wizard-obligatory-destination-directory-error-text"
 msgstr "destination directory must be a valid directory"
 
-#: shoestring/wizard/screens/obligatory.py:105
+#: shoestring/wizard/screens/obligatory.py:107
 msgid "wizard-obligatory-destination-directory-label"
 msgstr "Configuration destination directory"
 
-#: shoestring/wizard/screens/obligatory.py:140
+#: shoestring/wizard/screens/obligatory.py:142
 msgid "wizard-obligatory-generate-button"
 msgstr "Generate!"
 
-#: shoestring/wizard/screens/obligatory.py:139
+#: shoestring/wizard/screens/obligatory.py:141
 msgid "wizard-obligatory-import-button"
 msgstr "Import!"
 
-#: shoestring/wizard/screens/obligatory.py:111
+#: shoestring/wizard/screens/obligatory.py:113
 msgid "wizard-obligatory-priv-ca"
 msgstr "CA PEM file"
 
-#: shoestring/wizard/screens/obligatory.py:113
+#: shoestring/wizard/screens/obligatory.py:115
 msgid "wizard-obligatory-priv-generate-new"
 msgstr "Generate random private key"
 
-#: shoestring/wizard/screens/obligatory.py:112
+#: shoestring/wizard/screens/obligatory.py:114
 msgid "wizard-obligatory-priv-import-hex"
 msgstr "Import main private key in hex"
 
-#: shoestring/wizard/screens/obligatory.py:144
+#: shoestring/wizard/screens/obligatory.py:146
 msgid "wizard-obligatory-private-key-ca-pem-path-description"
 msgstr "Specify input location of private key PEM file above."
 
-#: shoestring/wizard/screens/obligatory.py:155
+#: shoestring/wizard/screens/obligatory.py:157
 msgid "wizard-obligatory-private-key-generate-description"
 msgstr "Specify output location of private key PEM file above."
 
-#: shoestring/wizard/screens/obligatory.py:147
+#: shoestring/wizard/screens/obligatory.py:149
 msgid "wizard-obligatory-private-key-hex-description"
 msgstr "Specify output location of private key PEM file above."
 
-#: shoestring/wizard/screens/obligatory.py:134
+#: shoestring/wizard/screens/obligatory.py:136
 msgid "wizard-obligatory-private-key-hex-error-text"
 msgstr "must be private key in hex format"
 
-#: shoestring/wizard/screens/obligatory.py:132
+#: shoestring/wizard/screens/obligatory.py:134
 msgid "wizard-obligatory-private-key-hex-label"
 msgstr "Enter private key"
 
-#: shoestring/wizard/screens/obligatory.py:175
+#: shoestring/wizard/screens/obligatory.py:177
 msgid "wizard-obligatory-title"
 msgstr "Obligatory settings"
 
-#: shoestring/wizard/screens/obligatory.py:41
+#: shoestring/wizard/screens/obligatory.py:43
 msgid "wizard-obligatory-token-ca-pem-path"
 msgstr "ca pem path"
 
-#: shoestring/wizard/screens/obligatory.py:39
+#: shoestring/wizard/screens/obligatory.py:41
 msgid "wizard-obligatory-token-destination-directory"
 msgstr "destination directory"
 
@@ -831,6 +831,10 @@ msgstr "disabled"
 msgid "wizard-toggle-enabled"
 msgstr "enabled"
 
+#: shoestring/wizard/__main__.py:56
+msgid "wizard-validation-error-text"
+msgstr "one or more inputs have errors that need fixing"
+
 #: shoestring/wizard/screens/voting.py:26
 msgid "wizard-voting-active"
 msgstr "would you like to enable voting?"
@@ -843,7 +847,7 @@ msgstr "Voter settings"
 msgid "wizard-voting-token-active"
 msgstr "voter role"
 
-#: shoestring/wizard/screens/welcome.py:27
+#: shoestring/wizard/screens/welcome.py:29
 msgid "wizard-welcome-command-token"
 msgstr "command"
 
@@ -863,7 +867,7 @@ msgstr "renew voting keys"
 msgid "wizard-welcome-reset-data"
 msgstr "reset data"
 
-#: shoestring/wizard/screens/welcome.py:35
+#: shoestring/wizard/screens/welcome.py:37
 msgid "wizard-welcome-setup"
 msgstr "setup"
 
