@@ -27,5 +27,7 @@ class ButtonMb(Button):
 					new_fragments.append((style, text, handler))
 				else:
 					new_fragments.append((style, frag_text, handler))
+			else:
+				new_fragments.append(frag)
 
 		return new_fragments
