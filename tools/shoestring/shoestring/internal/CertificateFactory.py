@@ -96,6 +96,11 @@ class CertificateFactory:
 				'basicConstraints = critical,CA:TRUE',
 				'subjectKeyIdentifier = hash',
 				'authorityKeyIdentifier = keyid:always,issuer'
+				'',
+				'[x509_v3_node]',
+				'basicConstraints = CA:FALSE',
+				'subjectKeyIdentifier = hash',
+				'authorityKeyIdentifier = keyid,issuer'
 			]))
 
 		# create new certs directory
@@ -143,15 +148,9 @@ class CertificateFactory:
 				'[req]',
 				'prompt = no',
 				'distinguished_name = dn',
-				'x509_extensions = x509_v3',
 				'',
 				'[dn]',
 				f'CN = {node_cn}',
-				'',
-				'[x509_v3]',
-				'basicConstraints = CA:FALSE',
-				'subjectKeyIdentifier = hash',
-				'authorityKeyIdentifier = keyid,issuer'
 			]))
 
 		# prepare node certificate signing request
@@ -177,7 +176,8 @@ class CertificateFactory:
 			'-notext',
 			'-batch',
 			'-in', 'node.csr.pem',
-			'-out', 'node.crt.pem'
+			'-out', 'node.crt.pem',
+			'-extensions', 'x509_v3_node'
 		] + ([] if not start_date else ['-startdate', start_date.strftime('%y%m%d%H%M%SZ')])))
 
 	@staticmethod
