@@ -23,7 +23,7 @@ def _assert_node_descriptor(descriptor, height, finalized_height=0):
 # region server fixture
 
 @pytest.fixture
-def server(event_loop, aiohttp_client):
+async def server(aiohttp_client):
 	class MockNemServer:
 		def __init__(self):
 			self.urls = []
@@ -58,7 +58,7 @@ def server(event_loop, aiohttp_client):
 	app = web.Application()
 	app.router.add_get(r'/{height}/chain/height', mock_server.nem_height)
 	app.router.add_get(r'/{height}/{finalized_height}/chain/info', mock_server.symbol_height)
-	server = event_loop.run_until_complete(aiohttp_client(app))  # pylint: disable=redefined-outer-name
+	server = await aiohttp_client(app)  # pylint: disable=redefined-outer-name
 
 	server.mock = mock_server
 	return server
