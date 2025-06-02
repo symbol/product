@@ -10,7 +10,7 @@ from symbollightapi.connector.BasicConnector import BasicConnector, NodeExceptio
 
 
 @pytest.fixture
-def server(event_loop, aiohttp_client):
+async def server(aiohttp_client):
 	class MockHttpServer:
 		def __init__(self):
 			self.urls = []
@@ -64,7 +64,7 @@ def server(event_loop, aiohttp_client):
 	app.router.add_get('/node/info', mock_server.node_info)
 	app.router.add_put('/echo/put', mock_server.echo_put)
 	app.router.add_get(r'/status/{status_code}', mock_server.status_code)
-	server = event_loop.run_until_complete(aiohttp_client(app))  # pylint: disable=redefined-outer-name
+	server = await aiohttp_client(app)  # pylint: disable=redefined-outer-name
 
 	server.mock = mock_server
 	return server
