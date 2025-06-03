@@ -59,13 +59,13 @@ def test_can_dispatch_openssl_command_with_additional_command_input(capfd):
 	executor = _create_executor()
 
 	# Act:
-	output_lines = executor.dispatch(['s_client', '-connect', 'jenkins.symboldev.com:443'], command_input='Q')
+	output_lines = executor.dispatch(['s_client', '-connect', 'jenkins.symbolsyndicate.us:443'], command_input='Q')
 	standard_output, standard_error = capfd.readouterr()
 	subject_line = next(line for line in output_lines if line.startswith('subject='))
 
 	# Assert:
 	assert 0 != len(output_lines)
-	assert re.fullmatch(r'subject=CN ?= ?jenkins\.symboldev\.com\n', subject_line)
+	assert re.fullmatch(r'subject=CN ?= ?jenkins\.symbolsyndicate\.us\n', subject_line)
 	assert standard_output
 	assert not standard_error
 

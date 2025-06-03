@@ -80,7 +80,7 @@ NODEWATCH_API_NODES = [
 ]
 
 
-def setup_mock_nodewatch_server(event_loop, aiohttp_client, redirect_network_requests=False):
+async def setup_mock_nodewatch_server(aiohttp_client, redirect_network_requests=False):
 	class MockNodewatchServer:
 		def __init__(self):
 			self.urls = []
@@ -172,7 +172,7 @@ def setup_mock_nodewatch_server(event_loop, aiohttp_client, redirect_network_req
 		app.router.add_put('/transactions', mock_server.announce_transaction)
 		app.router.add_put('/transactions/partial', mock_server.announce_transaction)
 
-	server = event_loop.run_until_complete(aiohttp_client(app))  # pylint: disable=redefined-outer-name
+	server = await aiohttp_client(app)  # pylint: disable=redefined-outer-name
 
 	mock_server.endpoint = server.make_url('')
 	server.mock = mock_server

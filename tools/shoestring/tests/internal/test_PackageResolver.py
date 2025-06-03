@@ -14,7 +14,7 @@ from ..test.TestPackager import prepare_testnet_package
 
 
 @pytest.fixture
-def server(event_loop, aiohttp_client):
+async def server(aiohttp_client):
 	class MockReleasesServer:
 		def __init__(self):
 			self.urls = []
@@ -59,7 +59,7 @@ def server(event_loop, aiohttp_client):
 	# create an app using the server
 	app = web.Application()
 	app.router.add_get('/releases', mock_server.api_symbol_height)
-	server = event_loop.run_until_complete(aiohttp_client(app))  # pylint: disable=redefined-outer-name
+	server = await aiohttp_client(app)  # pylint: disable=redefined-outer-name
 
 	server.mock = mock_server
 	return server
@@ -162,7 +162,7 @@ async def test_testnet_resolution_can_resolve_custom_testnet(server):  # pylint:
 # region download_and_extract_package
 
 @pytest.fixture
-def package_server(event_loop, aiohttp_client):
+async def package_server(aiohttp_client):
 	class MockPackageServer:
 		def __init__(self):
 			self.urls = []
@@ -181,7 +181,7 @@ def package_server(event_loop, aiohttp_client):
 	# create an app using the server
 	app = web.Application()
 	app.router.add_get('/package.zip', mock_server.package)
-	server = event_loop.run_until_complete(aiohttp_client(app))  # pylint: disable=redefined-outer-name
+	server = await aiohttp_client(app)  # pylint: disable=redefined-outer-name
 
 	server.mock = mock_server
 	return server
