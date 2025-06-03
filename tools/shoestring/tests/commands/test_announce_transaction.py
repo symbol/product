@@ -17,8 +17,8 @@ from ..test.MockNodewatchServer import setup_mock_nodewatch_server
 
 
 @pytest.fixture
-def server(event_loop, aiohttp_client):
-	return setup_mock_nodewatch_server(event_loop, aiohttp_client, True)
+async def server(aiohttp_client):
+	return await setup_mock_nodewatch_server(aiohttp_client, True)
 
 # endregion
 

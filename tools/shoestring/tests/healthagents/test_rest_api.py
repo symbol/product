@@ -13,8 +13,7 @@ from ..test.LogTestUtils import LogLevel, assert_max_log_level, assert_message_i
 # region (REST) server fixture
 
 
-@pytest.fixture
-def server(event_loop, aiohttp_client):
+async def server_impl(aiohttp_client):
 	class MockSymbolServer:
 		async def chain_info(self, request):
 			return await self._process(request, {
@@ -40,10 +39,15 @@ def server(event_loop, aiohttp_client):
 	app = web.Application()
 	app.router.add_get('/chain/info', mock_server.chain_info)
 	server_kwargs = {}
-	server = event_loop.run_until_complete(aiohttp_client(app, server_kwargs=server_kwargs))  # pylint: disable=redefined-outer-name
+	server = await aiohttp_client(app, server_kwargs=server_kwargs)  # pylint: disable=redefined-outer-name
 
 	server.mock = mock_server
 	return server
+
+
+@pytest.fixture
+async def server(aiohttp_client):
+	return await server_impl(aiohttp_client)
 
 # endregion
 
