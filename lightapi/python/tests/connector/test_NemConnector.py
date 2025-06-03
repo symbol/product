@@ -172,7 +172,7 @@ ACCOUNT_INFO_4 = {
 # region server fixture
 
 @pytest.fixture
-def server(event_loop, aiohttp_client):
+async def server(aiohttp_client):
 	class MockNemServer:
 		def __init__(self):
 			self.urls = []
@@ -215,7 +215,7 @@ def server(event_loop, aiohttp_client):
 	app.router.add_get('/node/peer-list/reachable', mock_server.node_peers_reachable)
 	app.router.add_get('/account/get', mock_server.account_info)
 	app.router.add_get('/account/get/forwarded', mock_server.account_info_forwarded)
-	server = event_loop.run_until_complete(aiohttp_client(app))  # pylint: disable=redefined-outer-name
+	server = await aiohttp_client(app)  # pylint: disable=redefined-outer-name
 
 	server.mock = mock_server
 	return server

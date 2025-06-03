@@ -73,7 +73,7 @@ MULTISIG_INFO_1 = {
 # region server fixture
 
 @pytest.fixture
-def server(event_loop, aiohttp_client):
+async def server(aiohttp_client):
 	class MockSymbolServer:
 		def __init__(self):
 			self.urls = []
@@ -180,7 +180,7 @@ def server(event_loop, aiohttp_client):
 	app.router.add_get(r'/account/{address}/multisig', mock_server.account_multisig)
 	app.router.add_put('/transactions', mock_server.announce_transaction)
 	app.router.add_put('/transactions/partial', mock_server.announce_transaction)
-	server = event_loop.run_until_complete(aiohttp_client(app))  # pylint: disable=redefined-outer-name
+	server = await aiohttp_client(app)  # pylint: disable=redefined-outer-name
 
 	server.mock = mock_server
 	return server
