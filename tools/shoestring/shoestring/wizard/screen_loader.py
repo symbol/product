@@ -29,7 +29,7 @@ def load_screens(screens):
 			screens.add(group.group_name, screen)
 
 
-def lookup_screens_list_for_operation(screens, operation):
+def lookup_screens_list_for_operation(operation):
 	"""Looks up the required screens for the specified operation."""
 
 	operation_screens = {

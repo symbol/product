@@ -22,7 +22,7 @@ class ScreenContainer:
 		self.ordered.append(descriptor)
 
 	def get(self, screen_id):
-		"""Gets the screen data with the specified id."""
+		"""Gets the screen with the specified id."""
 
 		index = [screen.screen_id for screen in self.ordered].index(screen_id)
 		return self.ordered[index].accessor

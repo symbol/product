@@ -408,7 +408,7 @@ def _assert_can_prepare_rest_overrides_file_from_bootstrap(node_type, node_metad
 			rest_json_filepath.parent.mkdir(parents=True)
 			with open(rest_json_filepath, 'wt', encoding='utf8') as infile:
 				if node_metadata:
-					infile.write(json.dumps({"nodeMetadata": node_metadata}))
+					infile.write(json.dumps({'nodeMetadata': node_metadata}))
 				else:
 					infile.write('{}')
 
@@ -428,11 +428,11 @@ def _assert_can_prepare_rest_overrides_file_from_bootstrap(node_type, node_metad
 
 
 def test_can_prepare_rest_overrides_file_from_bootstrap_when_dual_mode_and_metadata():
-	_assert_can_prepare_rest_overrides_file_from_bootstrap('dual', {"animal": "wolf"}, True)
+	_assert_can_prepare_rest_overrides_file_from_bootstrap('dual', {'animal': 'wolf'}, True)
 
 
 def test_cannot_prepare_rest_overrides_file_from_bootstrap_when_peer_mode_and_metadata():
-	_assert_can_prepare_rest_overrides_file_from_bootstrap('peer', {"animal": "wolf"}, False)
+	_assert_can_prepare_rest_overrides_file_from_bootstrap('peer', {'animal': 'wolf'}, False)
 
 
 def test_cannot_prepare_rest_overrides_file_from_bootstrap_when_dual_mode_and_no_metadata_specified():
@@ -508,11 +508,11 @@ async def _assert_can_prepare_shoestring_files_from_bootstrap(expected_node_feat
 
 				host_name = kwargs.get('host_name', '127.0.0.1')
 
-				_create_resource_file(resource_path,'harvesting', [
+				_create_resource_file(resource_path, 'harvesting', [
 					'[harvesting]',
 					f'enableAutoHarvesting = {str(kwargs.get('harvesting_enabled', False)).lower()}',
 				])
-				_create_resource_file(resource_path,'finalization', [
+				_create_resource_file(resource_path, 'finalization', [
 					'[finalization]',
 					f'enableVoting = {str(kwargs.get('voting_enabled', False)).lower()}'
 				])
@@ -532,7 +532,7 @@ async def _assert_can_prepare_shoestring_files_from_bootstrap(expected_node_feat
 				# Assert:
 				config = parse_shoestring_configuration(Path(shoestring_directory) / 'shoestring.ini')
 				assert kwargs.get('expected_api_https', False) == config.node.api_https
-				assert f'CA test' == config.node.ca_common_name
+				assert 'CA test' == config.node.ca_common_name
 				assert f'test {host_name}' == config.node.node_common_name
 				assert expected_node_features == config.node.features
 				assert ('dual' == node_type) == config.node.full_api
@@ -549,29 +549,29 @@ async def test_can_prepare_shoestring_files_peer_from_bootstrap():
 
 async def test_can_prepare_shoestring_files_api_with_https_from_bootstrap():
 	await _assert_can_prepare_shoestring_files_from_bootstrap(NodeFeatures.API, 'dual', **{
-		'host_name':'localhost',
-		'expected_api_https':True
+		'host_name': 'localhost',
+		'expected_api_https': True
 	})
 
 
 async def test_can_prepare_shoestring_files_api_without_https_from_bootstrap():
 	await _assert_can_prepare_shoestring_files_from_bootstrap(NodeFeatures.API, 'dual', **{
-		'host_name':'127.0.0.1',
-		'expected_api_https':False
+		'host_name': '127.0.0.1',
+		'expected_api_https': False
 	})
 
 
 async def test_can_prepare_shoestring_files_light_api_with_https_from_bootstrap():
 	await _assert_can_prepare_shoestring_files_from_bootstrap(NodeFeatures.API, 'light', **{
-		'host_name':'localhost',
-		'expected_api_https':True
+		'host_name': 'localhost',
+		'expected_api_https': True
 	})
 
 
 async def test_can_prepare_shoestring_files_light_api_without_https_from_bootstrap():
-	await _assert_can_prepare_shoestring_files_from_bootstrap(NodeFeatures.API, 'light',**{
-		'host_name':'127.0.0.1',
-		'expected_api_https':False
+	await _assert_can_prepare_shoestring_files_from_bootstrap(NodeFeatures.API, 'light', **{
+		'host_name': '127.0.0.1',
+		'expected_api_https': False
 	})
 
 

@@ -47,10 +47,6 @@ class SkippedScreen:
 	def tokens(self):
 		return [('skipped-token-1', 256), ('skipped-token-2', 'def')]
 
-	@property
-	def tokens(self):
-		return [('disabled-token-1', 111), ('disabled-token-2', 'zyx')]
-
 
 class MidScreen:
 	def __init__(self):
@@ -182,7 +178,7 @@ def test_can_move_to_end_screen():
 	assert context.next_handler == context.next_button.handler
 	assert 'Finish!' == context.next_button.text
 
-	# - notice skipped and disabled tokens are excluded
+	# - notice skipped tokens are excluded
 	assert [
 		'clear',
 		('mid-token-1', 123),

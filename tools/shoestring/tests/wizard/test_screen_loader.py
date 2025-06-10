@@ -35,7 +35,7 @@ def _assert_operation_screens(operation, expected_screen_list):
 	load_screens(screens)
 
 	# Act:
-	screen_list = lookup_screens_list_for_operation(screens, operation)
+	screen_list = lookup_screens_list_for_operation(operation)
 
 	# Assert:
 	assert expected_screen_list == screen_list

@@ -44,7 +44,7 @@ def _create_setup_screens(
 		'harvesting': ToggleScreen(False),
 		'voting': ToggleScreen(False),
 		'certificates': CertificatesScreen('ca', 'peer'),
-		'welcome': WelcomeScreen(ShoestringOperation.SETUP),
+		'welcome': WelcomeScreen(ShoestringOperation.SETUP)
 	}
 
 
@@ -322,14 +322,14 @@ async def test_can_dispatch_setup_command_import_bootstrap_with_harvesting():
 
 
 async def test_can_dispatch_setup_command_import_bootstrap_with_voter():
-	await _assert_can_dispatch_setup_from_bootstrap_command('peer',False, True, expected_features='VOTER')
+	await _assert_can_dispatch_setup_from_bootstrap_command('peer', False, True, expected_features='VOTER')
 
 
 async def test_can_dispatch_setup_command_import_bootstrap_with_harvesting_and_voter():
-	await _assert_can_dispatch_setup_from_bootstrap_command('dual',True, True, expected_features='API|HARVESTER|VOTER')
+	await _assert_can_dispatch_setup_from_bootstrap_command('dual', True, True, expected_features='API|HARVESTER|VOTER')
 
 
 async def test_can_dispatch_setup_command_import_bootstrap_with_include_node_key_disabled():
-	await _assert_can_dispatch_setup_from_bootstrap_command('dual',False, True, False, 'API|VOTER')
+	await _assert_can_dispatch_setup_from_bootstrap_command('dual', False, True, False, 'API|VOTER')
 
 # endregion

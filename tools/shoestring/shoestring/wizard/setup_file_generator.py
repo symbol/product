@@ -145,7 +145,7 @@ async def patch_bootstrap_shoestring_config(bootstrap_target_path, config_filepa
 		await run_import_bootstrap(ImportBootstrapArgs(config_filepath, bootstrap_target_path, include_node_key))
 
 
-def try_prepare_rest_overrides_file_from_bootstrap(screens, output_filename):
+def try_prepare_rest_overrides_file_from_bootstrap(screens, output_filename):  # pylint: disable=invalid-name
 	"""Prepares a REST overrides file based on the current rest.json."""
 
 	node_type = screens.get('node-type').current_value
@@ -170,7 +170,7 @@ def _get_resources_configuration_value(bootstrap_path, extension, search_identif
 	return bootstrap_configuration_manager.lookup(f'config-{extension}.properties', search_identifiers)
 
 
-def prepare_overrides_file_from_bootstrap(screens, output_filename):
+def prepare_overrides_file_from_bootstrap(screens, output_filename):  # pylint: disable=invalid-name
 	"""Prepares an override file based on current settings."""
 
 	bootstrap = screens.get('bootstrap')
@@ -190,7 +190,7 @@ def prepare_overrides_file_from_bootstrap(screens, output_filename):
 		]))
 
 
-async def prepare_shoestring_files_from_bootstrap(screens, shoestring_directory):
+async def prepare_shoestring_files_from_bootstrap(screens, shoestring_directory):  # pylint: disable=invalid-name
 	"""Prepares shoestring configuration files based on bootstrap settings."""
 
 	network_type = screens.get('network-type').current_value

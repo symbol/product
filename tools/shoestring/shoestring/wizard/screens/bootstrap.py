@@ -1,10 +1,8 @@
 from pathlib import Path
 
-from prompt_toolkit.filters import Condition
-from prompt_toolkit.layout.containers import ConditionalContainer, HSplit, VSplit
+from prompt_toolkit.layout.containers import HSplit, VSplit
 from prompt_toolkit.widgets import CheckboxList
 
-from shoestring.internal.ConfigurationManager import ConfigurationManager
 from shoestring.wizard.Screen import ScreenDialog
 from shoestring.wizard.styles import to_enabled_string
 from shoestring.wizard.ValidatingTextBox import ValidatingTextBox
@@ -37,7 +35,7 @@ class BootstrapImportSettings:
 		)
 
 
-def create(screens):
+def create(_screens):
 	include_node_key_flag = CheckboxList(values=[
 		('bootstrap-node-key-bool', _('wizard-bootstrap-node-key'))
 	], default_values=['bootstrap-node-key-bool'])
