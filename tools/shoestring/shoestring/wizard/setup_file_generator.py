@@ -158,7 +158,7 @@ def try_prepare_rest_overrides_file_from_bootstrap(screens, output_filename):  #
 		data = json.load(file)
 		if 'nodeMetadata' in data:
 			with open(output_filename, 'wt', encoding='utf8') as outfile:
-				outfile.write(f'{{"nodeMetadata":{json.dumps(data['nodeMetadata'])}}}')
+				json.dump({'nodeMetadata': data['nodeMetadata']}, outfile, indent=2)
 
 			return True
 

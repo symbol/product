@@ -37,7 +37,7 @@ class HarvesterConfiguratorTest(unittest.TestCase):
 					'[harvesting]',
 					'harvesterSigningPrivateKey = 089C662614A68C49F62F6C0B54F3F66D2D5DB0AFCD62BD69BF7A16312A83B746',
 					'harvesterVrfPrivateKey = 87E1184A136E92C62981848680AEA78D0BF098911B658295454B94EDBEE25808',
-					f'beneficiaryAddress = {beneficiary_address if beneficiary_address else ''}',
+					f'beneficiaryAddress = {beneficiary_address if beneficiary_address else ""}',
 					'maxUnlockedAccounts = 10',
 				]))
 

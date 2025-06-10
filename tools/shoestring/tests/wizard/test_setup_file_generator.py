@@ -406,11 +406,9 @@ def _assert_can_prepare_rest_overrides_file_from_bootstrap(node_type, node_metad
 		with tempfile.TemporaryDirectory() as bootstrap_directory:
 			rest_json_filepath = Path(bootstrap_directory) / 'gateways/rest-gateway/rest.json'
 			rest_json_filepath.parent.mkdir(parents=True)
-			with open(rest_json_filepath, 'wt', encoding='utf8') as infile:
-				if node_metadata:
-					infile.write(json.dumps({'nodeMetadata': node_metadata}))
-				else:
-					infile.write('{}')
+			with open(rest_json_filepath, 'wt', encoding='utf8') as outfile:
+				data = {'nodeMetadata': node_metadata} if node_metadata else {}
+				json.dump(data, outfile, indent=2)
 
 			# Act:
 			try_prepare_rest_overrides_file_from_bootstrap({
@@ -424,7 +422,7 @@ def _assert_can_prepare_rest_overrides_file_from_bootstrap(node_type, node_metad
 			if should_create:
 				with open(rest_overrides_filepath, 'rt', encoding='utf8') as infile:
 					metadata_contents = infile.read()
-					assert '{"nodeMetadata":{"animal": "wolf"}}' == metadata_contents
+					assert json.dumps({'nodeMetadata': {'animal': 'wolf'}}, indent=2) == metadata_contents
 
 
 def test_can_prepare_rest_overrides_file_from_bootstrap_when_dual_mode_and_metadata():
@@ -510,11 +508,11 @@ async def _assert_can_prepare_shoestring_files_from_bootstrap(expected_node_feat
 
 				_create_resource_file(resource_path, 'harvesting', [
 					'[harvesting]',
-					f'enableAutoHarvesting = {str(kwargs.get('harvesting_enabled', False)).lower()}',
+					f'enableAutoHarvesting = {str(kwargs.get("harvesting_enabled", False)).lower()}',
 				])
 				_create_resource_file(resource_path, 'finalization', [
 					'[finalization]',
-					f'enableVoting = {str(kwargs.get('voting_enabled', False)).lower()}'
+					f'enableVoting = {str(kwargs.get("voting_enabled", False)).lower()}'
 				])
 				_create_resource_file(resource_path, 'node', [
 					'[localnode]',

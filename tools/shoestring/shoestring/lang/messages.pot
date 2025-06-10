@@ -423,27 +423,27 @@ msgstr ""
 msgid "upgrade-recreating-directory"
 msgstr ""
 
-#: shoestring/wizard/screens/bootstrap.py:42
+#: shoestring/wizard/screens/bootstrap.py:40
 msgid "wizard-bootstrap-node-key"
 msgstr ""
 
-#: shoestring/wizard/screens/bootstrap.py:55
+#: shoestring/wizard/screens/bootstrap.py:53
 msgid "wizard-bootstrap-path-error-text"
 msgstr ""
 
-#: shoestring/wizard/screens/bootstrap.py:53
+#: shoestring/wizard/screens/bootstrap.py:51
 msgid "wizard-bootstrap-path-label"
 msgstr ""
 
-#: shoestring/wizard/screens/bootstrap.py:68
+#: shoestring/wizard/screens/bootstrap.py:66
 msgid "wizard-bootstrap-title"
 msgstr ""
 
-#: shoestring/wizard/screens/bootstrap.py:30
+#: shoestring/wizard/screens/bootstrap.py:28
 msgid "wizard-bootstrap-token-bootstrap-path"
 msgstr ""
 
-#: shoestring/wizard/screens/bootstrap.py:29
+#: shoestring/wizard/screens/bootstrap.py:27
 msgid "wizard-bootstrap-token-include-node-key"
 msgstr ""
 
