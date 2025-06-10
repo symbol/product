@@ -21,7 +21,7 @@ class VotingSettings:
 		return f'(active={self.active})'
 
 
-def create(screens):
+def create(_screens):
 	node_voter_flag = CheckboxList(values=[
 		('node-voter-bool', _('wizard-voting-active'))
 	])
@@ -33,6 +33,5 @@ def create(screens):
 			node_voter_flag
 		]),
 
-		accessor=VotingSettings(node_voter_flag),
-		should_show=lambda: not screens.get('bootstrap').active if screens is not None else True
+		accessor=VotingSettings(node_voter_flag)
 	)

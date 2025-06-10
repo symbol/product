@@ -1,6 +1,9 @@
+import json
 import tempfile
 from collections import namedtuple
 from pathlib import Path
+
+import pytest
 
 from shoestring.internal.ConfigurationManager import ConfigurationManager, load_shoestring_patches_from_file
 from shoestring.internal.NodeFeatures import NodeFeatures
@@ -8,8 +11,11 @@ from shoestring.internal.ShoestringConfiguration import parse_shoestring_configu
 from shoestring.wizard.setup_file_generator import (
 	patch_shoestring_config,
 	prepare_overrides_file,
+	prepare_overrides_file_from_bootstrap,
 	prepare_shoestring_files,
-	try_prepare_rest_overrides_file
+	prepare_shoestring_files_from_bootstrap,
+	try_prepare_rest_overrides_file,
+	try_prepare_rest_overrides_file_from_bootstrap
 )
 
 from ..test.TestPackager import prepare_testnet_package
@@ -29,7 +35,7 @@ HarvestingScreen = namedtuple('HarvestingScreen', [
 NodeSettingsScreen = namedtuple('NodeSettingsScreen', ['domain_name', 'friendly_name', 'api_https', 'metadata_info'])
 SingleValueScreen = namedtuple('SingleValueScreen', ['current_value'])
 VotingScreen = namedtuple('VotingScreen', ['active'])
-BootstrapScreen = namedtuple('BootstrapScreen', ['active', 'include_node_key', 'path'])
+BootstrapScreen = namedtuple('BootstrapScreen', ['include_node_key', 'path'])
 
 
 # pylint: disable=invalid-name
@@ -174,9 +180,8 @@ async def _assert_can_prepare_shoestring_files(expected_node_features, node_type
 					None,
 					None),
 				'voting': VotingScreen(kwargs.get('is_voting_active', False)),
-				'node-settings': NodeSettingsScreen('san.symbol.ninja', 'Symbol San', kwargs.get('api_https', False), None),
-				'bootstrap': BootstrapScreen(False, None, False),
-			}, Path(output_directory), Path(output_directory))
+				'node-settings': NodeSettingsScreen('san.symbol.ninja', 'Symbol San', kwargs.get('api_https', False), None)
+			}, Path(output_directory))
 
 			# Assert:
 			config = parse_shoestring_configuration(Path(output_directory) / 'shoestring.ini')
@@ -387,5 +392,250 @@ async def test_can_patch_shoestring_file_new_property():
 		('node', 'nodeCommonName', 'test 127.0.0.1'),
 		('node', 'newProperty', 'added'),
 	])
+
+# endregion
+
+
+# region try_prepare_rest_overrides_file_from_bootstrap
+
+def _assert_can_prepare_rest_overrides_file_from_bootstrap(node_type, node_metadata, should_create):
+	# Arrange:
+	with tempfile.TemporaryDirectory() as output_directory:
+		rest_overrides_filepath = Path(output_directory) / 'metadata.json'
+
+		with tempfile.TemporaryDirectory() as bootstrap_directory:
+			rest_json_filepath = Path(bootstrap_directory) / 'gateways/rest-gateway/rest.json'
+			rest_json_filepath.parent.mkdir(parents=True)
+			with open(rest_json_filepath, 'wt', encoding='utf8') as infile:
+				if node_metadata:
+					infile.write(json.dumps({"nodeMetadata": node_metadata}))
+				else:
+					infile.write('{}')
+
+			# Act:
+			try_prepare_rest_overrides_file_from_bootstrap({
+				'bootstrap': BootstrapScreen(True, bootstrap_directory),
+				'node-type': SingleValueScreen(node_type)
+			}, rest_overrides_filepath)
+
+			# Assert:
+			assert should_create == rest_overrides_filepath.exists()
+
+			if should_create:
+				with open(rest_overrides_filepath, 'rt', encoding='utf8') as infile:
+					metadata_contents = infile.read()
+					assert '{"nodeMetadata":{"animal": "wolf"}}' == metadata_contents
+
+
+def test_can_prepare_rest_overrides_file_from_bootstrap_when_dual_mode_and_metadata():
+	_assert_can_prepare_rest_overrides_file_from_bootstrap('dual', {"animal": "wolf"}, True)
+
+
+def test_cannot_prepare_rest_overrides_file_from_bootstrap_when_peer_mode_and_metadata():
+	_assert_can_prepare_rest_overrides_file_from_bootstrap('peer', {"animal": "wolf"}, False)
+
+
+def test_cannot_prepare_rest_overrides_file_from_bootstrap_when_dual_mode_and_no_metadata_specified():
+	_assert_can_prepare_rest_overrides_file_from_bootstrap('dual', None, False)
+
+
+def test_cannot_prepare_rest_overrides_file_from_bootstrap_when_light_mode():
+	_assert_can_prepare_rest_overrides_file_from_bootstrap('light', None, False)
+
+# endregion
+
+
+# region prepare_overrides_file_from_bootstrap
+
+def test_can_prepare_overrides_file_from_bootstrap():
+	# Arrange:
+	with tempfile.TemporaryDirectory() as output_directory:
+		overrides_filepath = Path(output_directory) / 'overrides.ini'
+
+		with tempfile.TemporaryDirectory() as bootstrap_directory:
+			node_config_filepath = Path(bootstrap_directory) / 'nodes/node/server-config/resources/config-node.properties'
+			node_config_filepath.parent.mkdir(parents=True)
+
+			with open(node_config_filepath, 'wt', encoding='utf8') as outfile:
+				outfile.write('\n'.join([
+					'[node]',
+					'minFeeMultiplier = 111',
+					'',
+					'[localnode]',
+					'host = san.symbol.ninja',
+					'friendlyName = Symbol San'
+				]))
+
+			# Act:
+			prepare_overrides_file_from_bootstrap({
+				'bootstrap': BootstrapScreen(True, bootstrap_directory),
+			}, overrides_filepath)
+
+			# Assert:
+			with open(overrides_filepath, 'rt', encoding='utf8') as infile:
+				overrides_contents = infile.read()
+				assert '\n'.join([
+					'[node.node]',
+					'minFeeMultiplier = 111',
+					'',
+					'[node.localnode]',
+					'host = san.symbol.ninja',
+					'friendlyName = Symbol San'
+				]) == overrides_contents
+
+# endregion
+
+
+# region prepare_shoestring_files_from_bootstrap
+
+
+def _create_resource_file(resource_path, extension, content):
+	with open(resource_path / f'config-{extension}.properties', 'wt', encoding='utf8') as outfile:
+		outfile.write('\n'.join(content))
+
+
+async def _assert_can_prepare_shoestring_files_from_bootstrap(expected_node_features, node_type, **kwargs):
+	# Arrange:
+	with tempfile.TemporaryDirectory() as package_directory:
+		prepare_testnet_package(package_directory, 'resources.zip')
+
+		with tempfile.TemporaryDirectory() as shoestring_directory:
+			harvesting_properties_filepath = Path(shoestring_directory) / 'shoestring.ini'
+
+			with tempfile.TemporaryDirectory() as bootstrap_directory:
+				resource_path = Path(bootstrap_directory) / 'nodes/node/server-config/resources'
+				resource_path.mkdir(parents=True)
+
+				host_name = kwargs.get('host_name', '127.0.0.1')
+
+				_create_resource_file(resource_path,'harvesting', [
+					'[harvesting]',
+					f'enableAutoHarvesting = {str(kwargs.get('harvesting_enabled', False)).lower()}',
+				])
+				_create_resource_file(resource_path,'finalization', [
+					'[finalization]',
+					f'enableVoting = {str(kwargs.get('voting_enabled', False)).lower()}'
+				])
+				_create_resource_file(resource_path, 'node', [
+					'[localnode]',
+					f'host = {host_name}',
+					'friendlyName = test'
+				])
+
+				# Act:
+				await prepare_shoestring_files_from_bootstrap({
+					'network-type': SingleValueScreen(f'file://{Path(package_directory) / "resources.zip"}'),
+					'bootstrap': BootstrapScreen(False, bootstrap_directory),
+					'node-type': SingleValueScreen(node_type)
+				}, Path(shoestring_directory))
+
+				# Assert:
+				config = parse_shoestring_configuration(Path(shoestring_directory) / 'shoestring.ini')
+				assert kwargs.get('expected_api_https', False) == config.node.api_https
+				assert f'CA test' == config.node.ca_common_name
+				assert f'test {host_name}' == config.node.node_common_name
+				assert expected_node_features == config.node.features
+				assert ('dual' == node_type) == config.node.full_api
+
+				harvesting_properties_filepath = Path(shoestring_directory) / 'bootstrap-import/config-harvesting.properties'
+				assert str(harvesting_properties_filepath) == config.imports.harvester
+
+				assert harvesting_properties_filepath.exists()
+
+
+async def test_can_prepare_shoestring_files_peer_from_bootstrap():
+	await _assert_can_prepare_shoestring_files_from_bootstrap(NodeFeatures.PEER, 'peer')
+
+
+async def test_can_prepare_shoestring_files_api_with_https_from_bootstrap():
+	await _assert_can_prepare_shoestring_files_from_bootstrap(NodeFeatures.API, 'dual', **{
+		'host_name':'localhost',
+		'expected_api_https':True
+	})
+
+
+async def test_can_prepare_shoestring_files_api_without_https_from_bootstrap():
+	await _assert_can_prepare_shoestring_files_from_bootstrap(NodeFeatures.API, 'dual', **{
+		'host_name':'127.0.0.1',
+		'expected_api_https':False
+	})
+
+
+async def test_can_prepare_shoestring_files_light_api_with_https_from_bootstrap():
+	await _assert_can_prepare_shoestring_files_from_bootstrap(NodeFeatures.API, 'light', **{
+		'host_name':'localhost',
+		'expected_api_https':True
+	})
+
+
+async def test_can_prepare_shoestring_files_light_api_without_https_from_bootstrap():
+	await _assert_can_prepare_shoestring_files_from_bootstrap(NodeFeatures.API, 'light',**{
+		'host_name':'127.0.0.1',
+		'expected_api_https':False
+	})
+
+
+async def test_can_prepare_shoestring_files_harvester_from_bootstrap():
+	await _assert_can_prepare_shoestring_files_from_bootstrap(NodeFeatures.HARVESTER, 'peer', harvesting_enabled=True)
+
+
+async def test_can_prepare_shoestring_files_voter_from_bootstrap():
+	await _assert_can_prepare_shoestring_files_from_bootstrap(NodeFeatures.VOTER, 'peer', voting_enabled=True)
+
+
+async def test_can_prepare_shoestring_files_full_api_from_bootstrap():
+	await _assert_can_prepare_shoestring_files_from_bootstrap(NodeFeatures.API | NodeFeatures.HARVESTER | NodeFeatures.VOTER, 'dual', **{
+		'harvesting_enabled': True,
+		'voting_enabled': True
+	})
+
+
+async def test_can_prepare_shoestring_files_light_api_from_bootstrap():
+	await _assert_can_prepare_shoestring_files_from_bootstrap(NodeFeatures.API | NodeFeatures.HARVESTER | NodeFeatures.VOTER, 'light', **{
+		'harvesting_enabled': True,
+		'voting_enabled': True
+	})
+
+
+async def _assert_cannot_prepare_shoestring_files_from_bootstrap_invalid_host_name(host_name):
+	# Arrange:
+	with tempfile.TemporaryDirectory() as package_directory:
+		prepare_testnet_package(package_directory, 'resources.zip')
+
+		with tempfile.TemporaryDirectory() as shoestring_directory:
+
+			with tempfile.TemporaryDirectory() as bootstrap_directory:
+				resource_path = Path(bootstrap_directory) / 'nodes/node/server-config/resources'
+				resource_path.mkdir(parents=True)
+
+				_create_resource_file(resource_path, 'harvesting', [
+					'[harvesting]',
+					'enableAutoHarvesting = true',
+				])
+				_create_resource_file(resource_path, 'finalization', [
+					'[finalization]',
+					'enableVoting = false'
+				])
+				_create_resource_file(resource_path, 'node', [
+					'[localnode]',
+					f'host = {host_name}',
+					'friendlyName = test'
+				])
+
+				# Act + Assert:
+				with pytest.raises(ValueError):
+					await prepare_shoestring_files_from_bootstrap({
+						'network-type': SingleValueScreen(f'file://{Path(package_directory) / "resources.zip"}'),
+						'bootstrap': BootstrapScreen(False, bootstrap_directory),
+						'node-type': SingleValueScreen('dual')
+					}, Path(shoestring_directory))
+
+
+async def test_cannot_prepare_shoestring_files_from_bootstrap_empty_host():
+	await _assert_cannot_prepare_shoestring_files_from_bootstrap_invalid_host_name('')
+
+
+async def test_cannot_prepare_shoestring_files_from_bootstrap_invalid_host():
+	await _assert_cannot_prepare_shoestring_files_from_bootstrap_invalid_host_name('not@host')
 
 # endregion

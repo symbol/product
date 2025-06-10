@@ -47,13 +47,6 @@ class SkippedScreen:
 	def tokens(self):
 		return [('skipped-token-1', 256), ('skipped-token-2', 'def')]
 
-
-class DisabledScreen:
-	def __init__(self):
-		self.screen_id = 'disabled'
-		self.accessor = self
-		self.should_show = lambda: False
-
 	@property
 	def tokens(self):
 		return [('disabled-token-1', 111), ('disabled-token-2', 'zyx')]
@@ -109,7 +102,6 @@ class ButtonTestContext:
 		screens.add('start', StartScreen())
 		screens.add('skipped', SkippedScreen())
 		screens.add('middle', MidScreen())
-		screens.add('disabled', DisabledScreen())
 		screens.add('end', EndScreen())
 		return screens
 
@@ -139,7 +131,7 @@ def test_can_move_to_next_screen_without_reset():
 
 	# Assert:
 	assert 'skipped' == context.activated_screen.screen_id
-	assert 'HTML(\'start -&gt; <b>skipped</b> -&gt; middle -&gt; disabled -&gt; end\')' == str(context.title_bar.text)
+	assert 'HTML(\'start -&gt; <b>skipped</b> -&gt; middle -&gt; end\')' == str(context.title_bar.text)
 	assert not context.next_button.handler
 	assert not context.next_button.text
 
@@ -161,7 +153,7 @@ def test_can_move_to_next_screen_with_reset():
 
 	# Assert:
 	assert 'obligatory' == context.activated_screen.screen_id
-	assert 'HTML(\'start -&gt; skipped -&gt; <b>middle</b> -&gt; disabled -&gt; end\')' == str(context.title_bar.text)
+	assert 'HTML(\'start -&gt; skipped -&gt; <b>middle</b> -&gt; end\')' == str(context.title_bar.text)
 	assert not context.next_button.handler
 	assert not context.next_button.text
 
@@ -186,11 +178,11 @@ def test_can_move_to_end_screen():
 
 	# Assert:
 	assert 'end-screen' == context.activated_screen.screen_id
-	assert 'HTML(\'start -&gt; skipped -&gt; middle -&gt; disabled -&gt; <b>end</b>\')' == str(context.title_bar.text)
+	assert 'HTML(\'start -&gt; skipped -&gt; middle -&gt; <b>end</b>\')' == str(context.title_bar.text)
 	assert context.next_handler == context.next_button.handler
 	assert 'Finish!' == context.next_button.text
 
-	# - notice skipped and disable tokens are excluded
+	# - notice skipped and disabled tokens are excluded
 	assert [
 		'clear',
 		('mid-token-1', 123),
@@ -219,7 +211,7 @@ def test_can_move_to_previous_screen_when_previous_screen_exists():
 
 	# Assert:
 	assert 'welcome' == context.activated_screen.screen_id
-	assert 'HTML(\'<b>start</b> -&gt; skipped -&gt; middle -&gt; disabled -&gt; end\')' == str(context.title_bar.text)
+	assert 'HTML(\'<b>start</b> -&gt; skipped -&gt; middle -&gt; end\')' == str(context.title_bar.text)
 	assert context.next_handler == context.next_button.handler
 	assert 'Next' == context.next_button.text
 
@@ -268,7 +260,10 @@ def test_can_select_operation_requiring_main_public_key():
 	handler()
 
 	# Assert:
-	assert ['welcome', 'skipped', 'obligatory', 'disabled', 'end-screen'] == context.screens.allowed_list
+	assert (
+		['welcome', 'root_check', 'obligatory', 'network-type', 'node-type',
+			'harvesting', 'voting', 'node-settings', 'certificates', 'end-screen'] == context.screens.allowed_list
+	)
 	assert 1 == context.next_call_count
 	assert [context.button] == context.screens.get('welcome').selected_buttons
 

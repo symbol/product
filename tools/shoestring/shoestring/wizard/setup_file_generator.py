@@ -1,3 +1,4 @@
+import json
 import logging
 import shutil
 from collections import namedtuple
@@ -7,6 +8,7 @@ from shoestring.commands.import_bootstrap import run_main as run_import_bootstra
 from shoestring.commands.init import run_main as run_init
 from shoestring.internal.ConfigurationManager import ConfigurationManager, load_shoestring_patches_from_file
 from shoestring.internal.NodeFeatures import NodeFeatures
+from shoestring.wizard.ValidatingTextBox import is_hostname, is_ip_address
 
 InitArgs = namedtuple('InitArgs', ['package', 'config'])
 ImportBootstrapArgs = namedtuple('ImportBootstrapArgs', ['config', 'bootstrap', 'include_node_key'])
@@ -76,7 +78,7 @@ async def prepare_shoestring_config(network_type, config_filepath):
 		await run_init(InitArgs(network_type, config_filepath))
 
 
-async def prepare_shoestring_files(screens, temp_directory, shoestring_directory):  # pylint: disable=too-many-locals
+async def prepare_shoestring_files(screens, directory):
 	"""Prepares shoestring configuration files based on screens."""
 
 	network_type = screens.get('network-type').current_value
@@ -85,24 +87,11 @@ async def prepare_shoestring_files(screens, temp_directory, shoestring_directory
 	harvesting = screens.get('harvesting')
 	voting = screens.get('voting')
 	node_settings = screens.get('node-settings')
-	bootstrap_import = screens.get('bootstrap')
 
-	config_filepath = shoestring_directory / 'shoestring.ini'
+	config_filepath = directory / 'shoestring.ini'
 	await prepare_shoestring_config(network_type, config_filepath)
+
 	node_features = NodeFeatures.PEER
-	if bootstrap_import.active:
-		await patch_bootstrap_shoestring_config(bootstrap_import.path, config_filepath, bootstrap_import.include_node_key)
-
-		def is_feature_enabled(extension, config_property):
-			bootstrap_configuration_manager = ConfigurationManager(Path(bootstrap_import.path) / 'nodes/node/server-config/resources')
-			return 'true' == bootstrap_configuration_manager.lookup(f'config-{extension}.properties', [config_property])[0]
-
-		if is_feature_enabled('harvesting', ('harvesting', 'enableAutoHarvesting')):
-			node_features |= NodeFeatures.HARVESTER
-
-		if is_feature_enabled('finalization', ('finalization', 'enableVoting')):
-			node_features |= NodeFeatures.VOTER
-
 	if node_type in ['dual', 'light']:
 		node_features = node_features | NodeFeatures.API
 
@@ -120,13 +109,13 @@ async def prepare_shoestring_files(screens, temp_directory, shoestring_directory
 		('node', 'lightApi', 'light' == node_type)
 	]
 
-	if harvesting.active and not bootstrap_import.active:
+	if harvesting.active:
 		config_harvesting_filepath = None
 		if not harvesting.auto_harvest:
 			config_harvesting_filepath = 'none'
 		elif not harvesting.generate_keys:
 			# create a .properties file with harvesting keys
-			config_harvesting_filepath = temp_directory / 'config-harvesting.properties'
+			config_harvesting_filepath = directory / 'config-harvesting.properties'
 			with open(config_harvesting_filepath, 'wt', encoding='utf8') as outfile:
 				outfile.write('\n'.join([
 					'[harvesting]',
@@ -154,3 +143,93 @@ async def patch_bootstrap_shoestring_config(bootstrap_target_path, config_filepa
 
 	with DisableLogger():
 		await run_import_bootstrap(ImportBootstrapArgs(config_filepath, bootstrap_target_path, include_node_key))
+
+
+def try_prepare_rest_overrides_file_from_bootstrap(screens, output_filename):
+	"""Prepares a REST overrides file based on the current rest.json."""
+
+	node_type = screens.get('node-type').current_value
+	bootstrap = screens.get('bootstrap')
+
+	if 'dual' != node_type:
+		return False
+
+	with open(Path(bootstrap.path) / 'gateways/rest-gateway/rest.json', 'rt', encoding='utf8') as file:
+		data = json.load(file)
+		if 'nodeMetadata' in data:
+			with open(output_filename, 'wt', encoding='utf8') as outfile:
+				outfile.write(f'{{"nodeMetadata":{json.dumps(data['nodeMetadata'])}}}')
+
+			return True
+
+	return False
+
+
+def _get_resources_configuration_value(bootstrap_path, extension, search_identifiers):
+	bootstrap_configuration_manager = ConfigurationManager(Path(bootstrap_path) / 'nodes/node/server-config/resources')
+	return bootstrap_configuration_manager.lookup(f'config-{extension}.properties', search_identifiers)
+
+
+def prepare_overrides_file_from_bootstrap(screens, output_filename):
+	"""Prepares an override file based on current settings."""
+
+	bootstrap = screens.get('bootstrap')
+	values = _get_resources_configuration_value(bootstrap.path, 'node', [
+		('node', 'minFeeMultiplier'),
+		('localnode', 'host'),
+		('localnode', 'friendlyName')
+	])
+	with open(output_filename, 'wt', encoding='utf8') as outfile:
+		outfile.write('\n'.join([
+			'[node.node]',
+			f'minFeeMultiplier = {values[0]}',
+			'',
+			'[node.localnode]',
+			f'host = {values[1]}',
+			f'friendlyName = {values[2]}',
+		]))
+
+
+async def prepare_shoestring_files_from_bootstrap(screens, shoestring_directory):
+	"""Prepares shoestring configuration files based on bootstrap settings."""
+
+	network_type = screens.get('network-type').current_value
+	node_type = screens.get('node-type').current_value
+	bootstrap = screens.get('bootstrap')
+
+	config_filepath = shoestring_directory / 'shoestring.ini'
+	await prepare_shoestring_config(network_type, config_filepath)
+
+	node_features = NodeFeatures.PEER
+	if node_type in ['dual', 'light']:
+		node_features |= NodeFeatures.API
+	await patch_bootstrap_shoestring_config(bootstrap.path, config_filepath, bootstrap.include_node_key)
+
+	resources_path = Path(bootstrap.path) / 'nodes/node/server-config/resources'
+
+	def is_feature_enabled(extension, config_property):
+		bootstrap_configuration_manager = ConfigurationManager(resources_path)
+		return 'true' == bootstrap_configuration_manager.lookup(f'config-{extension}.properties', [config_property])[0]
+
+	if is_feature_enabled('harvesting', ('harvesting', 'enableAutoHarvesting')):
+		node_features |= NodeFeatures.HARVESTER
+
+	if is_feature_enabled('finalization', ('finalization', 'enableVoting')):
+		node_features |= NodeFeatures.VOTER
+
+	values = _get_resources_configuration_value(bootstrap.path, 'node', [
+		('localnode', 'host'),
+		('localnode', 'friendlyName')
+	])
+	if not is_hostname(values[0]) and not is_ip_address(values[0]):
+		raise ValueError(f'Shoestring requires valid IP address or domain name. host: {values[0]}.')
+
+	api_https = not is_ip_address(values[0]) and is_hostname(values[0])
+	replacements = [
+		('node', 'apiHttps', _to_bool_string(api_https)),
+		('node', 'caCommonName', f'CA {values[1]}'),
+		('node', 'nodeCommonName', f'{values[1]} {values[0]}'),
+		('node', 'features', node_features.to_formatted_string()),
+		('node', 'lightApi', 'light' == node_type)
+	]
+	ConfigurationManager(config_filepath.parent).patch(config_filepath.name, replacements)

@@ -32,22 +32,6 @@ def test_can_add_screen_groups():
 	assert 3 == screens.get('end_screen')
 
 
-def test_can_get_screen():
-	# Arrange:
-	screens = ScreenContainer(None)
-
-	# Act:
-	screens.add('start', ChildScreen('start_screen', 1))
-	screens.add('middle', ChildScreen('mid_screen', 2))
-	screens.add('end', ChildScreen('end_screen', 3))
-
-	# Assert:
-	start_screen = screens.get_screen('start_screen')
-	assert 1 == start_screen.accessor
-	assert start_screen.should_show()
-	assert 'start_screen' == start_screen.screen_id
-
-
 def test_can_get_ordered_screen_group_names():
 	# Arrange:
 	screens = ScreenContainer(None)

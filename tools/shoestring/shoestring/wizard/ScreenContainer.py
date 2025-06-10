@@ -21,16 +21,11 @@ class ScreenContainer:
 		self.group_name.append(screen_group_name)
 		self.ordered.append(descriptor)
 
-	def get_screen(self, screen_id):
-		"""Gets the screen dialog with the specified id."""
-
-		index = [screen.screen_id for screen in self.ordered].index(screen_id)
-		return self.ordered[index]
-
 	def get(self, screen_id):
 		"""Gets the screen data with the specified id."""
 
-		return self.get_screen(screen_id).accessor
+		index = [screen.screen_id for screen in self.ordered].index(screen_id)
+		return self.ordered[index].accessor
 
 	@property
 	def ordered_group_names(self):

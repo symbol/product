@@ -23,14 +23,16 @@ class HarvesterConfigurator:
 			self.vrf_key_pair = KeyPair(PrivateKey.random())
 		elif self.is_enabled:
 			import_source = Path(import_source)
-			imported_private_keys = ConfigurationManager(import_source.parent).lookup(import_source.name, [
+			imported_properties = ConfigurationManager(import_source.parent).lookup(import_source.name, [
 				('harvesting', 'harvesterSigningPrivateKey'),
 				('harvesting', 'harvesterVrfPrivateKey'),
-				('harvesting', 'beneficiaryAddress')
+				('harvesting', 'beneficiaryAddress'),
+				('harvesting', 'maxUnlockedAccounts')
 			])
-			self.remote_key_pair = KeyPair(PrivateKey(imported_private_keys[0]))
-			self.vrf_key_pair = KeyPair(PrivateKey(imported_private_keys[1]))
-			self.beneficiary_address = Address(imported_private_keys[2]) if imported_private_keys[2] else None
+			self.remote_key_pair = KeyPair(PrivateKey(imported_properties[0]))
+			self.vrf_key_pair = KeyPair(PrivateKey(imported_properties[1]))
+			self.beneficiary_address = Address(imported_properties[2]) if imported_properties[2] else None
+			self.max_unlocked_accounts = imported_properties[3]
 
 	def patch_configuration(self):
 		"""Patches harvesting settings."""
@@ -40,7 +42,8 @@ class HarvesterConfigurator:
 				('harvesting', 'enableAutoHarvesting', 'true'),
 				('harvesting', 'harvesterSigningPrivateKey', self.remote_key_pair.private_key),
 				('harvesting', 'harvesterVrfPrivateKey', self.vrf_key_pair.private_key),
-				*([('harvesting', 'beneficiaryAddress', str(self.beneficiary_address))] if hasattr(self, 'beneficiary_address') else [])
+				*([('harvesting', 'beneficiaryAddress', str(self.beneficiary_address))] if hasattr(self, 'beneficiary_address') else []),
+				*([('harvesting', 'maxUnlockedAccounts', str(self.max_unlocked_accounts))] if hasattr(self, 'max_unlocked_accounts') else [])
 			])
 		else:
 			self.config_manager.patch('config-harvesting.properties', [

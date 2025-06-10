@@ -33,11 +33,14 @@ def lookup_screens_list_for_operation(screens, operation):
 	"""Looks up the required screens for the specified operation."""
 
 	operation_screens = {
+		ShoestringOperation.SETUP:
+			['welcome', 'root_check', 'obligatory', 'network-type', 'node-type',
+				'harvesting', 'voting', 'node-settings', 'certificates', 'end-screen'],
 		ShoestringOperation.UPGRADE: ['welcome', 'obligatory', 'network-type', 'end-screen'],
 		ShoestringOperation.RESET_DATA: ['welcome', 'obligatory', 'end-screen'],
 		ShoestringOperation.RENEW_CERTIFICATES: ['welcome', 'obligatory', 'end-screen'],
-		ShoestringOperation.RENEW_VOTING_KEYS: ['welcome', 'obligatory', 'end-screen']
+		ShoestringOperation.RENEW_VOTING_KEYS: ['welcome', 'obligatory', 'end-screen'],
+		ShoestringOperation.IMPORT_BOOTSTRAP: ['welcome', 'obligatory', 'bootstrap', 'network-type', 'node-type', 'end-screen']
 	}
 
-	default_screens = [screen.screen_id for screen in screens.ordered]
-	return operation_screens.get(operation, default_screens)
+	return operation_screens.get(operation)

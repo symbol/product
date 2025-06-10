@@ -18,12 +18,7 @@ def create_next_clicked_handler(screens, activate_screen, title_bar, next_button
 
 			tokens = []
 			for screen_id in allowed_screens_list:
-
-				dialog = screens.get_screen(screen_id)
-				if not dialog.should_show():
-					continue
-
-				screen = dialog.accessor
+				screen = screens.get(screen_id)
 				if hasattr(screen, 'tokens'):
 					tokens.extend(screen.tokens)
 
