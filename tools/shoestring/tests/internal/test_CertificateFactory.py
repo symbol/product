@@ -142,6 +142,9 @@ class CertificateFactoryTest(unittest.TestCase):
 
 		self.assertEqual(expected_days, (cert_end_time - cert_start_time).days)
 
+	def _assert_certificate_is_x509v3(self, x509_output):
+		self.assertIn('X509v3 extensions', x509_output)
+
 	def _assert_can_generate_ca_certificate(self, additional_args, expected_duration_days):
 		# Arrange: certificate has second resolution, so clear microseconds for assert below to work
 		test_start_time = datetime.datetime.utcnow().replace(microsecond=0)
@@ -173,6 +176,9 @@ class CertificateFactoryTest(unittest.TestCase):
 
 					# - verify certificate is properly self signed
 					self._create_executor().dispatch(['verify', '-CAfile', ca_certificate_path, ca_certificate_path])
+
+					# - check certificate is x509v3
+					self._assert_certificate_is_x509v3(x509_output)
 
 	def test_can_generate_ca_certificate(self):
 		self._assert_can_generate_ca_certificate({}, 20 * 365)
@@ -234,6 +240,9 @@ class CertificateFactoryTest(unittest.TestCase):
 					# - verify certificate is properly signed by CA (only if node start date is not in future)
 					if not future_start_delay_days:
 						self._create_executor().dispatch(['verify', '-CAfile', ca_certificate_path, node_certificate_path])
+
+					# - check certificate is x509v3
+					self._assert_certificate_is_x509v3(x509_output)
 
 	def test_can_generate_node_certificate(self):
 		self._assert_can_generate_node_certificate(False, {}, {})
