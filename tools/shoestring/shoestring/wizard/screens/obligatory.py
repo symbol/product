@@ -10,7 +10,7 @@ from prompt_toolkit.widgets import Box, Label
 from symbolchain.CryptoTypes import PrivateKey
 from symbolchain.PrivateKeyStorage import PrivateKeyStorage
 
-from shoestring.wizard.ButtonMb import ButtonMb
+from shoestring.wizard.MultibyteButton import MultibyteButton as Button
 from shoestring.wizard.Screen import ScreenDialog
 from shoestring.wizard.TabbedView import TabList, Tabs
 from shoestring.wizard.ValidatingTextBox import (
@@ -139,9 +139,9 @@ def create(screens):
 	show_private_key_tabs = Condition(Always())
 
 	button_import_text = _('wizard-obligatory-import-button')
-	button_import = ButtonMb(button_import_text, width=get_cwidth(button_import_text) + 4)
+	button_import = Button(button_import_text, width=get_cwidth(button_import_text) + 4)
 	button_generate_text = _('wizard-obligatory-generate-button')
-	button_generate = ButtonMb(button_generate_text, width=get_cwidth(button_generate_text) + 4)
+	button_generate = Button(button_generate_text, width=get_cwidth(button_generate_text) + 4)
 
 	main_private_key_tabs = Tabs(ca_key_tab_list, [
 		HSplit([

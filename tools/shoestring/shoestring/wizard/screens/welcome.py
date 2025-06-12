@@ -3,12 +3,12 @@ from prompt_toolkit.layout.containers import HSplit, Window, WindowAlign
 from prompt_toolkit.utils import get_cwidth
 from prompt_toolkit.widgets import Box, Shadow
 
-from shoestring.wizard.ButtonMb import ButtonMb
+from shoestring.wizard.MultibyteButton import MultibyteButton as Button
 from shoestring.wizard.Screen import Screen
 from shoestring.wizard.ShoestringOperation import ShoestringOperation
 
 
-class ButtonWithOperation(ButtonMb):
+class ButtonWithOperation(Button):
 	def __init__(self, operation, label, width=12):
 		super().__init__(label, width=width)
 		self.operation = operation

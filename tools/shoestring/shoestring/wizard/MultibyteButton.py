@@ -3,7 +3,7 @@ from prompt_toolkit.utils import get_cwidth
 from prompt_toolkit.widgets import Button
 
 
-class ButtonMb(Button):
+class MultibyteButton(Button):
 	"""Button for multibyte character strings"""
 
 	def _get_text_fragments(self) -> StyleAndTextTuples:
@@ -23,7 +23,7 @@ class ButtonMb(Button):
 		for frag in super_fragments:
 			if len(frag) == 3:
 				style, frag_text, handler = frag
-				if style == "class:button.text":
+				if style == 'class:button.text':
 					new_fragments.append((style, text, handler))
 				else:
 					new_fragments.append((style, frag_text, handler))
