@@ -499,7 +499,7 @@ msgstr ""
 msgid "wizard-dialog-message-import-title"
 msgstr ""
 
-#: shoestring/wizard/screens/end_screen.py:19
+#: shoestring/wizard/screens/end_screen.py:20
 msgid "wizard-end-title"
 msgstr ""
 
@@ -591,7 +591,7 @@ msgstr ""
 msgid "wizard-harvesting-vrf-key-label"
 msgstr ""
 
-#: shoestring/wizard/__main__.py:105
+#: shoestring/wizard/__main__.py:104
 msgid "wizard-main-done"
 msgstr ""
 
@@ -705,7 +705,7 @@ msgstr ""
 msgid "wizard-obligatory-destination-directory-label"
 msgstr ""
 
-#: shoestring/wizard/screens/obligatory.py:142
+#: shoestring/wizard/screens/obligatory.py:143
 msgid "wizard-obligatory-generate-button"
 msgstr ""
 
@@ -725,15 +725,15 @@ msgstr ""
 msgid "wizard-obligatory-priv-import-hex"
 msgstr ""
 
-#: shoestring/wizard/screens/obligatory.py:146
+#: shoestring/wizard/screens/obligatory.py:148
 msgid "wizard-obligatory-private-key-ca-pem-path-description"
 msgstr ""
 
-#: shoestring/wizard/screens/obligatory.py:157
+#: shoestring/wizard/screens/obligatory.py:159
 msgid "wizard-obligatory-private-key-generate-description"
 msgstr ""
 
-#: shoestring/wizard/screens/obligatory.py:149
+#: shoestring/wizard/screens/obligatory.py:151
 msgid "wizard-obligatory-private-key-hex-description"
 msgstr ""
 
@@ -745,7 +745,7 @@ msgstr ""
 msgid "wizard-obligatory-private-key-hex-label"
 msgstr ""
 
-#: shoestring/wizard/screens/obligatory.py:177
+#: shoestring/wizard/screens/obligatory.py:179
 msgid "wizard-obligatory-title"
 msgstr ""
 
@@ -801,7 +801,7 @@ msgstr ""
 msgid "wizard-toggle-enabled"
 msgstr ""
 
-#: shoestring/wizard/__main__.py:56
+#: shoestring/wizard/__main__.py:55
 msgid "wizard-validation-error-text"
 msgstr ""
 

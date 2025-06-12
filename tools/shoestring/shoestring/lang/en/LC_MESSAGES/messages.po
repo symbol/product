@@ -522,7 +522,7 @@ msgstr "Private key imported and saved to file."
 msgid "wizard-dialog-message-import-title"
 msgstr "Key import"
 
-#: shoestring/wizard/screens/end_screen.py:19
+#: shoestring/wizard/screens/end_screen.py:20
 msgid "wizard-end-title"
 msgstr "writing configuration"
 
@@ -614,7 +614,7 @@ msgstr "vrf private key must be a valid hex private key string"
 msgid "wizard-harvesting-vrf-key-label"
 msgstr "harvester vrf key"
 
-#: shoestring/wizard/__main__.py:105
+#: shoestring/wizard/__main__.py:104
 msgid "wizard-main-done"
 msgstr "Done 👋"
 
@@ -732,7 +732,7 @@ msgstr "destination directory must be a valid directory"
 msgid "wizard-obligatory-destination-directory-label"
 msgstr "Configuration destination directory"
 
-#: shoestring/wizard/screens/obligatory.py:142
+#: shoestring/wizard/screens/obligatory.py:143
 msgid "wizard-obligatory-generate-button"
 msgstr "Generate!"
 
@@ -752,15 +752,15 @@ msgstr "Generate random private key"
 msgid "wizard-obligatory-priv-import-hex"
 msgstr "Import main private key in hex"
 
-#: shoestring/wizard/screens/obligatory.py:146
+#: shoestring/wizard/screens/obligatory.py:148
 msgid "wizard-obligatory-private-key-ca-pem-path-description"
 msgstr "Specify input location of private key PEM file above."
 
-#: shoestring/wizard/screens/obligatory.py:157
+#: shoestring/wizard/screens/obligatory.py:159
 msgid "wizard-obligatory-private-key-generate-description"
 msgstr "Specify output location of private key PEM file above."
 
-#: shoestring/wizard/screens/obligatory.py:149
+#: shoestring/wizard/screens/obligatory.py:151
 msgid "wizard-obligatory-private-key-hex-description"
 msgstr "Specify output location of private key PEM file above."
 
@@ -772,7 +772,7 @@ msgstr "must be private key in hex format"
 msgid "wizard-obligatory-private-key-hex-label"
 msgstr "Enter private key"
 
-#: shoestring/wizard/screens/obligatory.py:177
+#: shoestring/wizard/screens/obligatory.py:179
 msgid "wizard-obligatory-title"
 msgstr "Obligatory settings"
 
@@ -831,7 +831,7 @@ msgstr "disabled"
 msgid "wizard-toggle-enabled"
 msgstr "enabled"
 
-#: shoestring/wizard/__main__.py:56
+#: shoestring/wizard/__main__.py:55
 msgid "wizard-validation-error-text"
 msgstr "one or more inputs have errors that need fixing"
 

@@ -458,7 +458,7 @@ msgstr ""
 msgid "wizard-bootstrap-token-include-node-key"
 msgstr ""
 
-#: shoestring/wizard/__main__.py:100 shoestring/wizard/buttons.py:29
+#: shoestring/wizard/__main__.py:99 shoestring/wizard/buttons.py:29
 msgid "wizard-button-finish"
 msgstr "完了!"
 
@@ -510,7 +510,7 @@ msgstr "秘密鍵がインポートされ、ファイルに保存されました
 msgid "wizard-dialog-message-import-title"
 msgstr "鍵のインポート"
 
-#: shoestring/wizard/screens/end_screen.py:19
+#: shoestring/wizard/screens/end_screen.py:20
 msgid "wizard-end-title"
 msgstr "設定を書き込み中"
 
@@ -602,7 +602,7 @@ msgstr "VRF秘密鍵は有効な16進数の秘密鍵文字列である必要が�
 msgid "wizard-harvesting-vrf-key-label"
 msgstr "ハーベスターVRFキー"
 
-#: shoestring/wizard/__main__.py:105
+#: shoestring/wizard/__main__.py:104
 msgid "wizard-main-done"
 msgstr "完了しました 👋"
 
@@ -716,7 +716,7 @@ msgstr "宛先ディレクトリは有効なディレクトリである必要が
 msgid "wizard-obligatory-destination-directory-label"
 msgstr "設定宛先ディレクトリ"
 
-#: shoestring/wizard/screens/obligatory.py:142
+#: shoestring/wizard/screens/obligatory.py:143
 msgid "wizard-obligatory-generate-button"
 msgstr "生成!"
 
@@ -736,15 +736,15 @@ msgstr "ランダムな秘密鍵を生成"
 msgid "wizard-obligatory-priv-import-hex"
 msgstr "16進数でメイン秘密鍵をインポート"
 
-#: shoestring/wizard/screens/obligatory.py:146
+#: shoestring/wizard/screens/obligatory.py:148
 msgid "wizard-obligatory-private-key-ca-pem-path-description"
 msgstr "上記の秘密鍵PEMファイルの入力場所を指定してください。"
 
-#: shoestring/wizard/screens/obligatory.py:157
+#: shoestring/wizard/screens/obligatory.py:159
 msgid "wizard-obligatory-private-key-generate-description"
 msgstr "上記の秘密鍵PEMファイルの出力場所を指定してください。"
 
-#: shoestring/wizard/screens/obligatory.py:149
+#: shoestring/wizard/screens/obligatory.py:151
 msgid "wizard-obligatory-private-key-hex-description"
 msgstr "上記の秘密鍵PEMファイルの出力場所を指定してください。"
 
@@ -756,7 +756,7 @@ msgstr "16進数形式の秘密鍵である必要があります"
 msgid "wizard-obligatory-private-key-hex-label"
 msgstr "秘密鍵を入力"
 
-#: shoestring/wizard/screens/obligatory.py:177
+#: shoestring/wizard/screens/obligatory.py:179
 msgid "wizard-obligatory-title"
 msgstr "必須設定"
 
@@ -814,7 +814,7 @@ msgstr "無効"
 msgid "wizard-toggle-enabled"
 msgstr "有効"
 
-#: shoestring/wizard/__main__.py:56
+#: shoestring/wizard/__main__.py:55
 msgid "wizard-validation-error-text"
 msgstr "1つ以上の入力に修正が必要なエラーがあります"
 
