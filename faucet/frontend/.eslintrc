@@ -10,5 +10,6 @@ rules:
     - json: always
       js: never
       jsx: never
+      ts: never
 globals:
   $t: false

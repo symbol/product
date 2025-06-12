@@ -14,8 +14,7 @@ SHA3_HASH_ABC = (
 # region server fixture
 
 
-@pytest.fixture
-def server(event_loop, aiohttp_client):
+async def server_impl(aiohttp_client):
 	class MockFileServer:
 		def __init__(self):
 			self.urls = []
@@ -33,10 +32,15 @@ def server(event_loop, aiohttp_client):
 	# create an app using the server
 	app = web.Application()
 	app.router.add_get('/known/file', mock_server.known_file)
-	server = event_loop.run_until_complete(aiohttp_client(app))  # pylint: disable=redefined-outer-name
+	server = await aiohttp_client(app)  # pylint: disable=redefined-outer-name
 
 	server.mock = mock_server
 	return server
+
+
+@pytest.fixture
+async def server(aiohttp_client):
+	return await server_impl(aiohttp_client)
 
 # endregion
 
