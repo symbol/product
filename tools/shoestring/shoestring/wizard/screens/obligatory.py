@@ -138,10 +138,8 @@ def create(screens):
 	# note: deliberately wrapped in condition to allow swap later
 	show_private_key_tabs = Condition(Always())
 
-	button_import_text = _('wizard-obligatory-import-button')
-	button_import = Button(button_import_text, width=get_cwidth(button_import_text) + 4)
-	button_generate_text = _('wizard-obligatory-generate-button')
-	button_generate = Button(button_generate_text, width=get_cwidth(button_generate_text) + 4)
+	button_import = Button(_('wizard-obligatory-import-button'), width=get_cwidth(_('wizard-obligatory-import-button')) + 4)
+	button_generate = Button(_('wizard-obligatory-generate-button'), width=get_cwidth(_('wizard-obligatory-generate-button')) + 4)
 
 	main_private_key_tabs = Tabs(ca_key_tab_list, [
 		HSplit([
