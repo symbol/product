@@ -421,8 +421,8 @@ def _assert_can_prepare_rest_overrides_file_from_bootstrap(node_type, node_metad
 
 			if should_create:
 				with open(rest_overrides_filepath, 'rt', encoding='utf8') as infile:
-					metadata_contents = infile.read()
-					assert json.dumps({'nodeMetadata': {'animal': 'wolf'}}, indent=2) == metadata_contents
+					node_metadata = infile.read()
+					assert json.dumps({'nodeMetadata': {'animal': 'wolf'}}, indent=2) == node_metadata
 
 
 def test_can_prepare_rest_overrides_file_from_bootstrap_when_dual_mode_and_metadata():

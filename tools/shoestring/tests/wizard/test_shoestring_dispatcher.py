@@ -10,14 +10,13 @@ from shoestring.wizard.ShoestringOperation import ShoestringOperation
 
 from ..test.TestPackager import prepare_testnet_package
 
+BootstrapSettingsScreen = namedtuple('BootstrapSettingsScreen', ['include_node_key', 'path'])
 CertificatesScreen = namedtuple('CertificatesScreen', ['ca_common_name', 'node_common_name'])
 NodeSettingsScreen = namedtuple('NodeSettingsScreen', ['domain_name', 'friendly_name', 'api_https', 'metadata_info'])
 ObligatoryScreen = namedtuple('ObligatoryScreen', ['destination_directory', 'ca_pem_path'])
 SingleValueScreen = namedtuple('SingleValueScreen', ['current_value'])
 ToggleScreen = namedtuple('ToggleScreen', ['active'])
 WelcomeScreen = namedtuple('WelcomeScreen', ['operation'])
-BootstrapSettingsScreen = namedtuple('BootstrapSettingsScreen', ['include_node_key', 'path'])
-
 
 def _create_executor(dispatched_args):
 	async def executor(args):

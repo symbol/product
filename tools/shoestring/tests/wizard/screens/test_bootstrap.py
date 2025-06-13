@@ -75,41 +75,27 @@ async def test_fails_validation_when_entered_bootstrap_path_is_invalid():
 		assert not screen.is_valid()
 
 
-async def test_can_generate_diagnostic_accessor_representation_when_include_node_key_enabled():
+async def _assert_can_generate_diagnostic_accessor_representation_when_include_node_key(enabled):
 	# Arrange:
 	with tempfile.TemporaryDirectory() as bootstrap_path:
 		(Path(bootstrap_path) / 'nodes/node').mkdir(parents=True)
 
 		screen = create(None)
-		screen.accessor._include_node_key_flag.current_values = [()]  # pylint: disable=protected-access
+		screen.accessor._include_node_key_flag.current_values = [()] if enabled else []  # pylint: disable=protected-access
 		screen.accessor._path.input.text = bootstrap_path  # pylint: disable=protected-access
 		screen.accessor._path.input.buffer.validate()  # pylint: disable=protected-access
 
 		# Assert: check entered values
 		assert (
-			f'(include_node_key=True, path=\'{bootstrap_path}\')'
+			f'(include_node_key={"True" if enabled else "False"}, path=\'{bootstrap_path}\')'
 		) == repr(screen.accessor)
 		assert [
-			('include node key', 'enabled'),
+			('include node key', 'enabled' if enabled else 'disabled'),
 			('bootstrap target directory', bootstrap_path)
 		] == screen.accessor.tokens
 
+async def test_can_generate_diagnostic_accessor_representation_when_include_node_key_enabled():
+	await _assert_can_generate_diagnostic_accessor_representation_when_include_node_key(True)
 
 async def test_can_generate_diagnostic_accessor_representation_when_include_node_key_disabled():
-	# Arrange:
-	with tempfile.TemporaryDirectory() as bootstrap_path:
-		(Path(bootstrap_path) / 'nodes/node').mkdir(parents=True)
-
-		screen = create(None)
-		screen.accessor._include_node_key_flag.current_values = []  # pylint: disable=protected-access
-		screen.accessor._path.input.text = bootstrap_path  # pylint: disable=protected-access
-		screen.accessor._path.input.buffer.validate()  # pylint: disable=protected-access
-
-		# Assert: check entered values
-		assert (
-			f'(include_node_key=False, path=\'{bootstrap_path}\')'
-		) == repr(screen.accessor)
-		assert [
-			('include node key', 'disabled'),
-			('bootstrap target directory', bootstrap_path)
-		] == screen.accessor.tokens
+	await _assert_can_generate_diagnostic_accessor_representation_when_include_node_key(False)

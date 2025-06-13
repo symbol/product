@@ -138,7 +138,7 @@ def patch_shoestring_config(shoestring_filepath, package_config_filepath):
 	shutil.copy(package_config_filepath, shoestring_filepath)
 
 
-async def patch_bootstrap_shoestring_config(bootstrap_target_path, config_filepath, include_node_key=False):
+async def apply_bootstrap_to_shoestring_config(bootstrap_target_path, config_filepath, include_node_key=False):
 	"""Run shoestring import bootstrap command."""
 
 	with DisableLogger():
@@ -203,7 +203,7 @@ async def prepare_shoestring_files_from_bootstrap(screens, shoestring_directory)
 	node_features = NodeFeatures.PEER
 	if node_type in ['dual', 'light']:
 		node_features |= NodeFeatures.API
-	await patch_bootstrap_shoestring_config(bootstrap.path, config_filepath, bootstrap.include_node_key)
+	await apply_bootstrap_to_shoestring_config(bootstrap.path, config_filepath, bootstrap.include_node_key)
 
 	resources_path = Path(bootstrap.path) / 'nodes/node/server-config/resources'
 

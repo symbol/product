@@ -40,7 +40,7 @@ def lookup_screens_list_for_operation(operation):
 		ShoestringOperation.RESET_DATA: ['welcome', 'obligatory', 'end-screen'],
 		ShoestringOperation.RENEW_CERTIFICATES: ['welcome', 'obligatory', 'end-screen'],
 		ShoestringOperation.RENEW_VOTING_KEYS: ['welcome', 'obligatory', 'end-screen'],
-		ShoestringOperation.IMPORT_BOOTSTRAP: ['welcome', 'obligatory', 'bootstrap', 'network-type', 'node-type', 'end-screen']
+		ShoestringOperation.IMPORT_BOOTSTRAP: ['welcome', 'root_check', 'obligatory', 'bootstrap', 'network-type', 'node-type', 'end-screen']
 	}
 
 	return operation_screens.get(operation)
