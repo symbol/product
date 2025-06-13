@@ -18,6 +18,7 @@ SingleValueScreen = namedtuple('SingleValueScreen', ['current_value'])
 ToggleScreen = namedtuple('ToggleScreen', ['active'])
 WelcomeScreen = namedtuple('WelcomeScreen', ['operation'])
 
+
 def _create_executor(dispatched_args):
 	async def executor(args):
 		dispatched_args.extend(args)

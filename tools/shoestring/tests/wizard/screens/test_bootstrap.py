@@ -94,8 +94,10 @@ async def _assert_can_generate_diagnostic_accessor_representation_when_include_n
 			('bootstrap target directory', bootstrap_path)
 		] == screen.accessor.tokens
 
+
 async def test_can_generate_diagnostic_accessor_representation_when_include_node_key_enabled():
 	await _assert_can_generate_diagnostic_accessor_representation_when_include_node_key(True)
+
 
 async def test_can_generate_diagnostic_accessor_representation_when_include_node_key_disabled():
 	await _assert_can_generate_diagnostic_accessor_representation_when_include_node_key(False)

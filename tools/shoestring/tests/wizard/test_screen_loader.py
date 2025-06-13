@@ -64,6 +64,7 @@ def test_can_lookup_screens_list_for_operation_renew_certificates():
 def test_can_lookup_screens_list_for_operation_renew_voting_keys():
 	_assert_operation_screens(ShoestringOperation.RENEW_VOTING_KEYS, ['welcome', 'obligatory', 'end-screen'])
 
+
 def test_can_lookup_screens_list_for_operation_import_bootstrap():
 	_assert_operation_screens(
 		ShoestringOperation.IMPORT_BOOTSTRAP,
