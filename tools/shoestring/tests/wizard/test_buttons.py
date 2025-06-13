@@ -257,7 +257,7 @@ def test_can_select_operation_requiring_main_public_key():
 
 	# Assert:
 	assert (
-		['welcome', 'root_check', 'obligatory', 'network-type', 'node-type',
+		['welcome', 'root-check', 'obligatory', 'network-type', 'node-type',
 			'harvesting', 'voting', 'node-settings', 'certificates', 'end-screen'] == context.screens.allowed_list
 	)
 	assert 1 == context.next_call_count

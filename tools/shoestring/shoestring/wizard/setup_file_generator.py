@@ -1,4 +1,3 @@
-import json
 import logging
 import shutil
 from collections import namedtuple
@@ -8,7 +7,6 @@ from shoestring.commands.import_bootstrap import run_main as run_import_bootstra
 from shoestring.commands.init import run_main as run_init
 from shoestring.internal.ConfigurationManager import ConfigurationManager, load_shoestring_patches_from_file
 from shoestring.internal.NodeFeatures import NodeFeatures
-from shoestring.wizard.ValidatingTextBox import is_hostname, is_ip_address
 
 InitArgs = namedtuple('InitArgs', ['package', 'config'])
 ImportBootstrapArgs = namedtuple('ImportBootstrapArgs', ['config', 'bootstrap', 'include_node_key'])
@@ -145,26 +143,6 @@ async def apply_bootstrap_to_shoestring_config(bootstrap_target_path, config_fil
 		await run_import_bootstrap(ImportBootstrapArgs(config_filepath, bootstrap_target_path, include_node_key))
 
 
-def try_prepare_rest_overrides_file_from_bootstrap(screens, output_filename):  # pylint: disable=invalid-name
-	"""Prepares a REST overrides file based on the current rest.json."""
-
-	node_type = screens.get('node-type').current_value
-	bootstrap = screens.get('bootstrap')
-
-	if 'dual' != node_type:
-		return False
-
-	with open(Path(bootstrap.path) / 'gateways/rest-gateway/rest.json', 'rt', encoding='utf8') as file:
-		data = json.load(file)
-		if 'nodeMetadata' in data:
-			with open(output_filename, 'wt', encoding='utf8') as outfile:
-				json.dump({'nodeMetadata': data['nodeMetadata']}, outfile, indent=2)
-
-			return True
-
-	return False
-
-
 def _get_resources_configuration_value(bootstrap_path, extension, search_identifiers):
 	bootstrap_configuration_manager = ConfigurationManager(Path(bootstrap_path) / 'nodes/node/server-config/resources')
 	return bootstrap_configuration_manager.lookup(f'config-{extension}.properties', search_identifiers)
@@ -174,10 +152,9 @@ def prepare_overrides_file_from_bootstrap(screens, output_filename):  # pylint: 
 	"""Prepares an override file based on current settings."""
 
 	bootstrap = screens.get('bootstrap')
+	node_settings = screens.get('node-settings')
 	values = _get_resources_configuration_value(bootstrap.path, 'node', [
 		('node', 'minFeeMultiplier'),
-		('localnode', 'host'),
-		('localnode', 'friendlyName')
 	])
 	with open(output_filename, 'wt', encoding='utf8') as outfile:
 		outfile.write('\n'.join([
@@ -185,8 +162,8 @@ def prepare_overrides_file_from_bootstrap(screens, output_filename):  # pylint: 
 			f'minFeeMultiplier = {values[0]}',
 			'',
 			'[node.localnode]',
-			f'host = {values[1]}',
-			f'friendlyName = {values[2]}',
+			f'host = {node_settings.domain_name}',
+			f'friendlyName = {node_settings.friendly_name}',
 		]))
 
 
@@ -196,6 +173,7 @@ async def prepare_shoestring_files_from_bootstrap(screens, shoestring_directory)
 	network_type = screens.get('network-type').current_value
 	node_type = screens.get('node-type').current_value
 	bootstrap = screens.get('bootstrap')
+	node_settings = screens.get('node-settings')
 
 	config_filepath = shoestring_directory / 'shoestring.ini'
 	await prepare_shoestring_config(network_type, config_filepath)
@@ -217,18 +195,10 @@ async def prepare_shoestring_files_from_bootstrap(screens, shoestring_directory)
 	if is_feature_enabled('finalization', ('finalization', 'enableVoting')):
 		node_features |= NodeFeatures.VOTER
 
-	values = _get_resources_configuration_value(bootstrap.path, 'node', [
-		('localnode', 'host'),
-		('localnode', 'friendlyName')
-	])
-	if not is_hostname(values[0]) and not is_ip_address(values[0]):
-		raise ValueError(f'Shoestring requires valid IP address or domain name. host: {values[0]}.')
-
-	api_https = not is_ip_address(values[0]) and is_hostname(values[0])
 	replacements = [
-		('node', 'apiHttps', _to_bool_string(api_https)),
-		('node', 'caCommonName', f'CA {values[1]}'),
-		('node', 'nodeCommonName', f'{values[1]} {values[0]}'),
+		('node', 'apiHttps', _to_bool_string(node_settings.api_https)),
+		('node', 'caCommonName', f'CA {node_settings.friendly_name}'),
+		('node', 'nodeCommonName', f'{node_settings.friendly_name} {node_settings.domain_name}'),
 		('node', 'features', node_features.to_formatted_string()),
 		('node', 'lightApi', 'light' == node_type)
 	]

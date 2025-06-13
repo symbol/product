@@ -34,13 +34,14 @@ def lookup_screens_list_for_operation(operation):
 
 	operation_screens = {
 		ShoestringOperation.SETUP:
-			['welcome', 'root_check', 'obligatory', 'network-type', 'node-type',
+			['welcome', 'root-check', 'obligatory', 'network-type', 'node-type',
 				'harvesting', 'voting', 'node-settings', 'certificates', 'end-screen'],
 		ShoestringOperation.UPGRADE: ['welcome', 'obligatory', 'network-type', 'end-screen'],
 		ShoestringOperation.RESET_DATA: ['welcome', 'obligatory', 'end-screen'],
 		ShoestringOperation.RENEW_CERTIFICATES: ['welcome', 'obligatory', 'end-screen'],
 		ShoestringOperation.RENEW_VOTING_KEYS: ['welcome', 'obligatory', 'end-screen'],
-		ShoestringOperation.IMPORT_BOOTSTRAP: ['welcome', 'root_check', 'obligatory', 'bootstrap', 'network-type', 'node-type', 'end-screen']
+		ShoestringOperation.IMPORT_BOOTSTRAP:
+			['welcome', 'root-check', 'obligatory', 'bootstrap', 'network-type', 'node-type', 'node-settings', 'end-screen']
 	}
 
 	return operation_screens.get(operation)

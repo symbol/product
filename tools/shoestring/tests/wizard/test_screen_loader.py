@@ -44,7 +44,7 @@ def _assert_operation_screens(operation, expected_screen_list):
 def test_can_lookup_screens_list_for_operation_setup():
 	_assert_operation_screens(
 		ShoestringOperation.SETUP,
-		['welcome', 'root_check', 'obligatory', 'network-type', 'node-type',
+		['welcome', 'root-check', 'obligatory', 'network-type', 'node-type',
 			'harvesting', 'voting', 'node-settings', 'certificates', 'end-screen']
 	)
 
@@ -68,5 +68,5 @@ def test_can_lookup_screens_list_for_operation_renew_voting_keys():
 def test_can_lookup_screens_list_for_operation_import_bootstrap():
 	_assert_operation_screens(
 		ShoestringOperation.IMPORT_BOOTSTRAP,
-		['welcome', 'root_check', 'obligatory', 'bootstrap', 'network-type', 'node-type', 'end-screen']
+		['welcome', 'root-check', 'obligatory', 'bootstrap', 'network-type', 'node-type', 'node-settings', 'end-screen']
 	)

@@ -10,7 +10,7 @@ from shoestring.wizard.ShoestringOperation import ShoestringOperation
 
 from ..test.TestPackager import prepare_testnet_package
 
-BootstrapSettingsScreen = namedtuple('BootstrapSettingsScreen', ['include_node_key', 'path'])
+BootstrapScreen = namedtuple('BootstrapScreen', ['include_node_key', 'path'])
 CertificatesScreen = namedtuple('CertificatesScreen', ['ca_common_name', 'node_common_name'])
 NodeSettingsScreen = namedtuple('NodeSettingsScreen', ['domain_name', 'friendly_name', 'api_https', 'metadata_info'])
 ObligatoryScreen = namedtuple('ObligatoryScreen', ['destination_directory', 'ca_pem_path'])
@@ -189,10 +189,11 @@ def _create_setup_from_bootstrap_screens(
 ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
 	return {
 		'obligatory': ObligatoryScreen(output_directory, Path(package_directory) / 'ca.pem'),
+		'node-settings': NodeSettingsScreen('symbol.fyi', 'node explorer', False, '{"animal": "wolf"}'),
 		'network-type': SingleValueScreen(f'file://{Path(package_directory) / "resources.zip"}'),
 		'node-type': SingleValueScreen(node_type),
 		'welcome': WelcomeScreen(ShoestringOperation.IMPORT_BOOTSTRAP),
-		'bootstrap': BootstrapSettingsScreen(include_node_key, path)
+		'bootstrap': BootstrapScreen(include_node_key, path)
 	}
 
 

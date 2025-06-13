@@ -9,8 +9,7 @@ from shoestring.wizard.setup_file_generator import (
 	prepare_shoestring_config,
 	prepare_shoestring_files,
 	prepare_shoestring_files_from_bootstrap,
-	try_prepare_rest_overrides_file,
-	try_prepare_rest_overrides_file_from_bootstrap
+	try_prepare_rest_overrides_file
 )
 from shoestring.wizard.ShoestringOperation import ShoestringOperation, build_shoestring_command
 
@@ -47,7 +46,7 @@ async def dispatch_shoestring_command(screens, executor):
 					shutil.copy(source_path, shoestring_directory)
 	elif ShoestringOperation.IMPORT_BOOTSTRAP == operation:
 		shoestring_directory.mkdir()
-		has_custom_rest_overrides = try_prepare_rest_overrides_file_from_bootstrap(screens, shoestring_directory / 'rest_overrides.json')
+		has_custom_rest_overrides = try_prepare_rest_overrides_file(screens, shoestring_directory / 'rest_overrides.json')
 		prepare_overrides_file_from_bootstrap(screens, shoestring_directory / 'overrides.ini')
 		await prepare_shoestring_files_from_bootstrap(screens, shoestring_directory)
 

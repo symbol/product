@@ -28,7 +28,7 @@ class HarvesterConfiguratorTest(unittest.TestCase):
 			configurator2.vrf_key_pair.public_key
 		])))
 
-	def _assert_configurator_can_import_harvesting_properties(self, beneficiary_address):
+	def _assert_configurator_can_import_harvesting_properties(self, beneficiary_address, include_maxunlockedaccounts=True):
 		# Arrange:
 		with tempfile.TemporaryDirectory() as temp_directory:
 			import_filepath = Path(temp_directory) / 'import.properties'
@@ -38,7 +38,7 @@ class HarvesterConfiguratorTest(unittest.TestCase):
 					'harvesterSigningPrivateKey = 089C662614A68C49F62F6C0B54F3F66D2D5DB0AFCD62BD69BF7A16312A83B746',
 					'harvesterVrfPrivateKey = 87E1184A136E92C62981848680AEA78D0BF098911B658295454B94EDBEE25808',
 					f'beneficiaryAddress = {beneficiary_address if beneficiary_address else ""}',
-					'maxUnlockedAccounts = 10',
+					*(['maxUnlockedAccounts = 10'] if include_maxunlockedaccounts else []),
 				]))
 
 			# Act:
@@ -56,13 +56,17 @@ class HarvesterConfiguratorTest(unittest.TestCase):
 			self.assertEqual(
 				Address(beneficiary_address) if beneficiary_address is not None else beneficiary_address,
 				configurator.beneficiary_address)
-			self.assertEqual('10', configurator.max_unlocked_accounts)
+			if include_maxunlockedaccounts:
+				self.assertEqual('10', configurator.max_unlocked_accounts)
 
 	def test_configurator_can_import_harvesting_properties(self):
 		self._assert_configurator_can_import_harvesting_properties('TCJABNL77ZQAJR6PLL6Q6V34576QC3LNSUM73UI')
 
 	def test_configurator_can_import_harvesting_properties_no_beneficiary(self):
 		self._assert_configurator_can_import_harvesting_properties(None)
+
+	def test_configurator_can_import_harvesting_properties_no_maxunlockedaccounts(self):
+		self._assert_configurator_can_import_harvesting_properties('TCJABNL77ZQAJR6PLL6Q6V34576QC3LNSUM73UI', include_maxunlockedaccounts=False)
 
 	def _assert_can_patch_configuration(self, import_filepath, expected_values_accessor):
 		# Arrange:
