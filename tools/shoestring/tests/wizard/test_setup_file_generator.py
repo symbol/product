@@ -16,6 +16,7 @@ from shoestring.wizard.setup_file_generator import (
 
 from ..test.TestPackager import prepare_testnet_package
 
+BootstrapScreen = namedtuple('BootstrapScreen', ['include_node_key', 'path'])
 CertificatesScreen = namedtuple('CertificatesScreen', ['ca_common_name', 'node_common_name'])
 HarvestingScreen = namedtuple('HarvestingScreen', [
 	'active',
@@ -31,7 +32,6 @@ HarvestingScreen = namedtuple('HarvestingScreen', [
 NodeSettingsScreen = namedtuple('NodeSettingsScreen', ['domain_name', 'friendly_name', 'api_https', 'metadata_info'])
 SingleValueScreen = namedtuple('SingleValueScreen', ['current_value'])
 VotingScreen = namedtuple('VotingScreen', ['active'])
-BootstrapScreen = namedtuple('BootstrapScreen', ['include_node_key', 'path'])
 
 
 # pylint: disable=invalid-name
