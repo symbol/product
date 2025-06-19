@@ -1,7 +1,11 @@
-from symbolchain.CryptoTypes import PublicKey
-from symbolchain.nem.Network import Address
+from binascii import hexlify
+
+from symbolchain.CryptoTypes import PublicKey, Signature
+from symbolchain.facade.NemFacade import NemFacade
+from symbolchain.nem.Network import Address, NetworkTimestamp
 
 from ..model.Endpoint import Endpoint
+from ..model.Exceptions import NodeException
 from ..model.NodeInfo import NodeInfo
 from .BasicConnector import BasicConnector
 
@@ -39,6 +43,12 @@ class NemConnector(BasicConnector):
 
 		chain_height = await self.get('chain/height', 'height')
 		return int(chain_height)
+
+	async def network_time(self):
+		"""Gets network time."""
+
+		send_timestamp = await self.get('time-sync/network-time', 'sendTimeStamp')
+		return NetworkTimestamp(int(send_timestamp // 1000))
 
 	async def node_info(self):
 		"""Gets node information."""
@@ -91,3 +101,27 @@ class NemConnector(BasicConnector):
 			node_dict['identity']['name'],
 			node_dict['metaData']['version'],
 			NodeInfo.API_ROLE_FLAG)
+
+	async def _announce_transaction(self, transaction_payload, url_path):
+		"""Announces a transaction to the network."""
+
+		if hasattr(transaction_payload, 'serialize'):
+			transaction = transaction_payload
+			signature = transaction.signature
+			signing_payload = NemFacade.extract_signing_payload(transaction)
+		else:
+			# assume signature is prepended to signing_payload
+			signature = Signature(transaction_payload[:Signature.SIZE])
+			signing_payload = transaction_payload[Signature.SIZE:]
+
+		return await self.post(url_path, {
+			'data': hexlify(signing_payload).decode('utf8').upper(),
+			'signature': str(signature)
+		})
+
+	async def announce_transaction(self, transaction_payload):
+		"""Announces a transaction to the network."""
+
+		response = await self._announce_transaction(transaction_payload, 'transaction/announce')
+		if 'SUCCESS' != response['message']:
+			raise NodeException(f'announce transaction failed {response}')
