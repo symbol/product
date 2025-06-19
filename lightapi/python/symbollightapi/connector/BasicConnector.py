@@ -45,6 +45,16 @@ class BasicConnector:
 
 		return await self._dispatch('get', url_path, property_name)
 
+	async def post(self, url_path, request_payload, property_name=None):
+		"""
+		Initiates a POST to the specified path and returns the desired property.
+		Raises NodeException on connection or content failure.
+		"""
+
+		return await self._dispatch('post', url_path, property_name, data=json.dumps(request_payload), headers={
+			'Content-Type': 'application/json'
+		})
+
 	async def put(self, url_path, request_payload, property_name=None):
 		"""
 		Initiates a PUT to the specified path and returns the desired property.
