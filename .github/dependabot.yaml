@@ -18,6 +18,24 @@ updates:
           - patch
 
   - package-ecosystem: pip
+    directory: /bridge
+    schedule:
+      interval: weekly
+      day: sunday
+    target-branch: dev
+    labels: [Bridge]
+    versioning-strategy: increase-if-necessary
+    commit-message:
+      prefix: '[dependency]'
+    groups:
+      bridge-dependencies:
+        patterns:
+          - '*'
+        update-types:
+          - minor
+          - patch
+
+  - package-ecosystem: pip
     directory: /explorer/nodewatch
     schedule:
       interval: weekly
