@@ -1,0 +1,11 @@
+defaultCiPipeline {
+	operatingSystem = ['ubuntu']
+	instanceSize = 'medium'
+
+	ciBuildDockerfile = 'python.Dockerfile'
+
+	packageId = 'bridge'
+
+	codeCoverageTool = 'coverage'
+	minimumCodeCoverage = 95
+}
