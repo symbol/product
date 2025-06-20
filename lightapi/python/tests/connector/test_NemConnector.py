@@ -13,6 +13,8 @@ from symbollightapi.model.Endpoint import Endpoint
 from symbollightapi.model.Exceptions import NodeException
 from symbollightapi.model.NodeInfo import NodeInfo
 
+from ..test.LightApiTestUtils import NEM_ADDRESSES, PUBLIC_KEYS
+
 # region test data
 
 
@@ -191,6 +193,21 @@ async def server(aiohttp_client):
 		async def network_time(self, request):
 			return await self._process(request, {'sendTimeStamp': 322666792999, 'receiveTimeStamp': 322666799999})
 
+		async def block_at(self, request):
+			request_json = json.loads(await request.text())
+			block = {
+				'type': 1,
+				'signer': PUBLIC_KEYS[0],
+				'timeStamp': 200000 + request_json['height'],
+				'transactions': []
+			}
+
+			# make returned data invalid
+			if 0xDEAD == request_json['height']:
+				del block['transactions']
+
+			return await self._process(request, block)
+
 		async def node_info(self, request):
 			return await self._process(request, self.node_info_payload)
 
@@ -210,6 +227,15 @@ async def server(aiohttp_client):
 				account_info = ACCOUNT_INFO_4
 
 			return await self._process(request, account_info)
+
+		async def transfers(self, request):
+			address = Address(request.rel_url.query['address'])
+
+			data = []
+			if Address(NEM_ADDRESSES[0]) == address:
+				data = [{'transaction': {'name': name}} for name in ['alpha', 'beta', 'zeta']]
+
+			return await self._process(request, {'data': data})
 
 		async def announce_transaction(self, request):
 			request_json = await request.json()
@@ -242,6 +268,8 @@ async def server(aiohttp_client):
 	app.router.add_get('/node/peer-list/reachable', mock_server.node_peers_reachable)
 	app.router.add_get('/account/get', mock_server.account_info)
 	app.router.add_get('/account/get/forwarded', mock_server.account_info_forwarded)
+	app.router.add_get('/account/transfers/incoming', mock_server.transfers)
+	app.router.add_post('/block/at/public', mock_server.block_at)
 	app.router.add_post('/transaction/announce', mock_server.announce_transaction)
 	server = await aiohttp_client(app)  # pylint: disable=redefined-outer-name
 
@@ -253,7 +281,22 @@ async def server(aiohttp_client):
 # pylint: disable=invalid-name
 
 
-# region GET (chain_height)
+# region extract_transaction_id
+
+def test_can_extract_transaction_id():
+	# Act:
+	transaction_id = NemConnector.extract_transaction_id({
+		'id': 1234,
+		'meta': {'id': 5577}
+	})
+
+	# Assert:
+	assert 5577 == transaction_id
+
+# endregion
+
+
+# region GET (chain_height, finalized_chain_height, network_time)
 
 async def test_can_query_chain_height(server):  # pylint: disable=redefined-outer-name
 	# Arrange:
@@ -266,10 +309,18 @@ async def test_can_query_chain_height(server):  # pylint: disable=redefined-oute
 	assert [f'{server.make_url("")}/chain/height'] == server.mock.urls
 	assert 1234 == height
 
-# endregion
 
+async def test_can_query_finalized_chain_height(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	connector = NemConnector(server.make_url(''))
 
-# region GET (network_time)
+	# Act:
+	height = await connector.finalized_chain_height()
+
+	# Assert:
+	assert [f'{server.make_url("")}/chain/height'] == server.mock.urls
+	assert 874 == height
+
 
 async def test_can_query_network_time(server):  # pylint: disable=redefined-outer-name
 	# Arrange:
@@ -281,6 +332,31 @@ async def test_can_query_network_time(server):  # pylint: disable=redefined-oute
 	# Assert:
 	assert [f'{server.make_url("")}/time-sync/network-time'] == server.mock.urls
 	assert 322666792 == timestamp.timestamp
+
+# endregion
+
+
+# region POST (block_headers)
+
+async def test_can_get_block_headers(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	connector = NemConnector(server.make_url(''))
+
+	# Act:
+	headers = await connector.block_headers(1000)
+
+	# Assert:
+	assert {'type': 1, 'signer': PUBLIC_KEYS[0], 'timeStamp': 201000} == headers
+	assert [f'{server.make_url("")}/block/at/public'] == server.mock.urls
+
+
+async def test_cannot_get_block_headers_when_server_returns_invalid_data(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	connector = NemConnector(server.make_url(''))
+
+	# Act + Assert:
+	with pytest.raises(RuntimeError):
+		await connector.block_headers(0xDEAD)
 
 # endregion
 
@@ -423,6 +499,34 @@ async def test_can_query_account_info_without_public_key(server):  # pylint: dis
 	assert 0.00022692560084412516 == account_info.importance
 	assert 0 == account_info.harvested_blocks
 	assert 'INACTIVE' == account_info.remote_status
+
+# endregion
+
+
+# region GET (incoming_transactions)
+
+async def test_can_query_incoming_transactions_from_beginning(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	connector = NemConnector(server.make_url(''))
+
+	# Act:
+	transactions = await connector.incoming_transactions(NEM_ADDRESSES[0])
+
+	# Assert:
+	assert [f'{server.make_url("")}/account/transfers/incoming?address={NEM_ADDRESSES[0]}'] == server.mock.urls
+	assert [{'transaction': {'name': 'alpha'}}, {'transaction': {'name': 'beta'}}, {'transaction': {'name': 'zeta'}}] == transactions
+
+
+async def test_can_query_incoming_transactions_with_custom_start_id(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	connector = NemConnector(server.make_url(''))
+
+	# Act:
+	transactions = await connector.incoming_transactions(NEM_ADDRESSES[0], 98765)
+
+	# Assert:
+	assert [f'{server.make_url("")}/account/transfers/incoming?address={NEM_ADDRESSES[0]}&id=98765'] == server.mock.urls
+	assert [{'transaction': {'name': 'alpha'}}, {'transaction': {'name': 'beta'}}, {'transaction': {'name': 'zeta'}}] == transactions
 
 # endregion
 
