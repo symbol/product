@@ -18,6 +18,8 @@ def _is_not_found(json_response):
 	return 'code' in json_response and 'ResourceNotFound' == json_response['code']
 
 
+# region LinkedPublicKeys
+
 class LinkedPublicKeys:
 	"""Collection of public keys linked to an account."""
 
@@ -25,6 +27,8 @@ class LinkedPublicKeys:
 		self.linked_public_key = None
 		self.vrf_public_key = None
 		self.voting_public_keys = []
+
+# endregion
 
 
 class SymbolConnector(BasicConnector):
@@ -36,6 +40,18 @@ class SymbolConnector(BasicConnector):
 		super().__init__(endpoint)
 		self._network_properties = None
 
+	# region extract_transaction_id
+
+	@staticmethod
+	def extract_transaction_id(transaction):
+		"""Extracts the transaction id from a REST transaction JSON object."""
+
+		return transaction['id']
+
+	# endregion
+
+	# region GET (currency_mosaic_id)
+
 	async def currency_mosaic_id(self):
 		"""Gets the currency mosaic id from the network."""
 
@@ -44,6 +60,10 @@ class SymbolConnector(BasicConnector):
 
 		formatted_currency_mosaic_id = self._network_properties['chain']['currencyMosaicId']
 		return int(formatted_currency_mosaic_id.replace('\'', ''), 16)
+
+	# endregion
+
+	# region GET (chain_height, chain_statistics, finalized_chain_height, finalization_statistics, network_time)
 
 	async def chain_height(self):
 		"""Gets chain height."""
@@ -56,6 +76,12 @@ class SymbolConnector(BasicConnector):
 
 		chain_statistics = await self.get('chain/info')
 		return ChainStatistics(*(int(chain_statistics[key]) for key in ('height', 'scoreHigh', 'scoreLow')))
+
+	async def finalized_chain_height(self):
+		"""Gets finalized chain height."""
+
+		finalization_statistics = await self.finalization_statistics()
+		return finalization_statistics.height
 
 	async def finalization_statistics(self):
 		"""Gets finalization statistics."""
@@ -71,17 +97,15 @@ class SymbolConnector(BasicConnector):
 		timestamps = await self.get('node/time')
 		return NetworkTimestamp(int(timestamps['communicationTimestamps']['sendTimestamp']))
 
+	# endregion
+
+	# region GET (node_info)
+
 	async def node_info(self):
 		"""Gets node information."""
 
 		node_dict = await self.get('node/info')
 		return self._map_to_node_info(node_dict)
-
-	async def peers(self):
-		"""Gets peer nodes information."""
-
-		nodes_dict = await self.get('node/peers')
-		return [self._map_to_node_info(node_dict) for node_dict in nodes_dict]
 
 	@staticmethod
 	def _map_to_node_info(node_dict):
@@ -102,6 +126,20 @@ class SymbolConnector(BasicConnector):
 	def _format_symbol_version(version):
 		version_parts = [(version >> 24) & 0xFF, (version >> 16) & 0xFF, (version >> 8) & 0xFF, version & 0xFF]
 		return '.'.join(str(version_part) for version_part in version_parts)
+
+	# endregion
+
+	# region GET (peers)
+
+	async def peers(self):
+		"""Gets peer nodes information."""
+
+		nodes_dict = await self.get('node/peers')
+		return [self._map_to_node_info(node_dict) for node_dict in nodes_dict]
+
+	# endregion
+
+	# region GET (account_links)
 
 	async def account_links(self, account_id):
 		"""Gets account links for a specified account."""
@@ -132,6 +170,10 @@ class SymbolConnector(BasicConnector):
 
 		return links
 
+	# endregion
+
+	# region GET (account_multisig)
+
 	async def account_multisig(self, address):
 		"""Gets multisig information about an account."""
 
@@ -149,6 +191,37 @@ class SymbolConnector(BasicConnector):
 	@staticmethod
 	def _decoded_string_to_address(decoded_address):
 		return Address(unhexlify(decoded_address))
+
+	# endregion
+
+	# region POST (transaction_statuses)
+
+	async def transaction_statuses(self, transaction_hashes):
+		"""Gets the statuses of the specified transactions."""
+
+		request = {'hashes': [str(transaction_hash) for transaction_hash in transaction_hashes]}
+		return await self.post('transactionStatus', request)
+
+	# endregion
+
+	# region GET (incoming_transactions)
+
+	async def incoming_transactions(self, address, start_id=None):
+		"""Gets incoming transactions for the specified account."""
+
+		return await self._transactions(f'recipientAddress={address}', start_id)
+
+	async def _transactions(self, query_filter, start_id=None):
+		url_path = f'transactions/confirmed?{query_filter}&embedded=true&fromHeight=2&pageSize=100'
+		if start_id:
+			url_path += f'&offset={start_id}'
+
+		transactions = await self.get(url_path, 'data')
+		return transactions
+
+	# endregion
+
+	# region PUT (announce_transaction, announce_partial_transaction)
 
 	async def _announce_transaction(self, transaction_payload, url_path):
 		"""Announces a transaction to the network."""
@@ -172,3 +245,5 @@ class SymbolConnector(BasicConnector):
 		"""Announces a partial transaction to the network."""
 
 		await self._announce_transaction(transaction_payload, 'transactions/partial')
+
+	# endregion
