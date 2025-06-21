@@ -33,6 +33,7 @@ class WelcomeSettings:
 def create(_screens):
 	values = [
 		(ShoestringOperation.SETUP, _('wizard-welcome-setup')),
+		(ShoestringOperation.IMPORT_BOOTSTRAP, _('wizard-welcome-import-bootstrap')),
 		(ShoestringOperation.UPGRADE, _('wizard-welcome-upgrade')),
 		(ShoestringOperation.RESET_DATA, _('wizard-welcome-reset-data')),
 		(ShoestringOperation.RENEW_CERTIFICATES, _('wizard-welcome-renew-certificates')),

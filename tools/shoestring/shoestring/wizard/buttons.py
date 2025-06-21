@@ -14,7 +14,7 @@ def create_next_clicked_handler(screens, activate_screen, title_bar, next_button
 				next_screen.reset()
 		else:
 			operation = screens.get('welcome').operation
-			allowed_screens_list = lookup_screens_list_for_operation(screens, operation)
+			allowed_screens_list = lookup_screens_list_for_operation(operation)
 
 			tokens = []
 			for screen_id in allowed_screens_list:
@@ -57,7 +57,7 @@ def create_operation_button_handler(screens, button, next_clicked):
 	"""Selects an shoestring operation."""
 
 	def handler():
-		allowed_screens_list = lookup_screens_list_for_operation(screens, button.operation)
+		allowed_screens_list = lookup_screens_list_for_operation(button.operation)
 		screens.set_list(allowed_screens_list)
 		next_clicked()
 

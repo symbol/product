@@ -1,12 +1,15 @@
 import logging
 import shutil
 from collections import namedtuple
+from pathlib import Path
 
+from shoestring.commands.import_bootstrap import run_main as run_import_bootstrap
 from shoestring.commands.init import run_main as run_init
 from shoestring.internal.ConfigurationManager import ConfigurationManager, load_shoestring_patches_from_file
 from shoestring.internal.NodeFeatures import NodeFeatures
 
 InitArgs = namedtuple('InitArgs', ['package', 'config'])
+ImportBootstrapArgs = namedtuple('ImportBootstrapArgs', ['config', 'bootstrap', 'include_node_key'])
 
 
 class DisableLogger:
@@ -67,6 +70,8 @@ def prepare_overrides_file(screens, output_filename):
 
 
 async def prepare_shoestring_config(network_type, config_filepath):
+	"""Run shoestring init command."""
+
 	with DisableLogger():
 		await run_init(InitArgs(network_type, config_filepath))
 
@@ -129,3 +134,72 @@ def patch_shoestring_config(shoestring_filepath, package_config_filepath):
 	new_config_manager = ConfigurationManager(package_config_filepath.parent)
 	new_config_manager.patch(package_config_filepath.name, config_patches)
 	shutil.copy(package_config_filepath, shoestring_filepath)
+
+
+async def apply_bootstrap_to_shoestring_config(bootstrap_target_path, config_filepath, include_node_key=False):
+	"""Run shoestring import bootstrap command."""
+
+	with DisableLogger():
+		await run_import_bootstrap(ImportBootstrapArgs(config_filepath, bootstrap_target_path, include_node_key))
+
+
+def _get_resources_configuration_value(bootstrap_path, extension, search_identifiers):
+	bootstrap_configuration_manager = ConfigurationManager(Path(bootstrap_path) / 'nodes/node/server-config/resources')
+	return bootstrap_configuration_manager.lookup(f'config-{extension}.properties', search_identifiers)
+
+
+def prepare_overrides_file_from_bootstrap(screens, output_filename):  # pylint: disable=invalid-name
+	"""Prepares an override file based on current settings."""
+
+	bootstrap = screens.get('bootstrap')
+	node_settings = screens.get('node-settings')
+	values = _get_resources_configuration_value(bootstrap.path, 'node', [
+		('node', 'minFeeMultiplier'),
+	])
+	with open(output_filename, 'wt', encoding='utf8') as outfile:
+		outfile.write('\n'.join([
+			'[node.node]',
+			f'minFeeMultiplier = {values[0]}',
+			'',
+			'[node.localnode]',
+			f'host = {node_settings.domain_name}',
+			f'friendlyName = {node_settings.friendly_name}',
+		]))
+
+
+async def prepare_shoestring_files_from_bootstrap(screens, shoestring_directory):  # pylint: disable=invalid-name
+	"""Prepares shoestring configuration files based on bootstrap settings."""
+
+	network_type = screens.get('network-type').current_value
+	node_type = screens.get('node-type').current_value
+	bootstrap = screens.get('bootstrap')
+	node_settings = screens.get('node-settings')
+
+	config_filepath = shoestring_directory / 'shoestring.ini'
+	await prepare_shoestring_config(network_type, config_filepath)
+
+	node_features = NodeFeatures.PEER
+	if node_type in ['dual', 'light']:
+		node_features |= NodeFeatures.API
+	await apply_bootstrap_to_shoestring_config(bootstrap.path, config_filepath, bootstrap.include_node_key)
+
+	resources_path = Path(bootstrap.path) / 'nodes/node/server-config/resources'
+
+	def is_feature_enabled(extension, config_property):
+		bootstrap_configuration_manager = ConfigurationManager(resources_path)
+		return 'true' == bootstrap_configuration_manager.lookup(f'config-{extension}.properties', [config_property])[0]
+
+	if is_feature_enabled('harvesting', ('harvesting', 'enableAutoHarvesting')):
+		node_features |= NodeFeatures.HARVESTER
+
+	if is_feature_enabled('finalization', ('finalization', 'enableVoting')):
+		node_features |= NodeFeatures.VOTER
+
+	replacements = [
+		('node', 'apiHttps', _to_bool_string(node_settings.api_https)),
+		('node', 'caCommonName', f'CA {node_settings.friendly_name}'),
+		('node', 'nodeCommonName', f'{node_settings.friendly_name} {node_settings.domain_name}'),
+		('node', 'features', node_features.to_formatted_string()),
+		('node', 'lightApi', 'light' == node_type)
+	]
+	ConfigurationManager(config_filepath.parent).patch(config_filepath.name, replacements)

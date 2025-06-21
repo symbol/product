@@ -5,8 +5,10 @@ from pathlib import Path
 from shoestring.wizard.setup_file_generator import (
 	patch_shoestring_config,
 	prepare_overrides_file,
+	prepare_overrides_file_from_bootstrap,
 	prepare_shoestring_config,
 	prepare_shoestring_files,
+	prepare_shoestring_files_from_bootstrap,
 	try_prepare_rest_overrides_file
 )
 from shoestring.wizard.ShoestringOperation import ShoestringOperation, build_shoestring_command
@@ -42,6 +44,20 @@ async def dispatch_shoestring_command(screens, executor):
 				source_path = Path(temp_directory) / filename
 				if source_path.exists():
 					shutil.copy(source_path, shoestring_directory)
+	elif ShoestringOperation.IMPORT_BOOTSTRAP == operation:
+		shoestring_directory.mkdir()
+		has_custom_rest_overrides = try_prepare_rest_overrides_file(screens, shoestring_directory / 'rest_overrides.json')
+		prepare_overrides_file_from_bootstrap(screens, shoestring_directory / 'overrides.ini')
+		await prepare_shoestring_files_from_bootstrap(screens, shoestring_directory)
+
+		shoestring_args = build_shoestring_command(
+			ShoestringOperation.SETUP,
+			destination_directory,
+			shoestring_directory,
+			obligatory_settings.ca_pem_path,
+			package,
+			has_custom_rest_overrides)
+		await executor(shoestring_args)
 	else:
 		if ShoestringOperation.UPGRADE == operation:
 			with tempfile.TemporaryDirectory() as temp_directory:

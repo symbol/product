@@ -256,7 +256,10 @@ def test_can_select_operation_requiring_main_public_key():
 	handler()
 
 	# Assert:
-	assert ['welcome', 'skipped', 'obligatory', 'end-screen'] == context.screens.allowed_list
+	assert (
+		['welcome', 'root-check', 'obligatory', 'network-type', 'node-type',
+			'harvesting', 'voting', 'node-settings', 'certificates', 'end-screen'] == context.screens.allowed_list
+	)
 	assert 1 == context.next_call_count
 	assert [context.button] == context.screens.get('welcome').selected_buttons
 
