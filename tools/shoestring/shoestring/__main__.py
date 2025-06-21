@@ -50,5 +50,9 @@ async def main(args):
 		await possible_task
 
 
-if '__main__' == __name__:
+def entry_point():
 	asyncio.run(main(sys.argv[1:]))
+
+
+if __name__ == '__main__':
+	entry_point()
