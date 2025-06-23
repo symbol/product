@@ -144,7 +144,7 @@ class SymbolConnector(BasicConnector):
 	async def account_links(self, account_id):
 		"""Gets account links for a specified account."""
 
-		json_response = await self.get(f'accounts/{account_id}')
+		json_response = await self.get(f'accounts/{account_id}', not_found_as_error=False)
 		if _is_not_found(json_response):
 			return LinkedPublicKeys()
 
@@ -177,7 +177,7 @@ class SymbolConnector(BasicConnector):
 	async def account_multisig(self, address):
 		"""Gets multisig information about an account."""
 
-		json_response = await self.get(f'account/{address}/multisig')
+		json_response = await self.get(f'account/{address}/multisig', not_found_as_error=False)
 		if _is_not_found(json_response):
 			return MultisigInfo(0, 0, [], [])
 
