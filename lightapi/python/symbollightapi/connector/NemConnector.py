@@ -80,9 +80,6 @@ class NemConnector(BasicConnector):
 
 		url_path = 'block/at/public'
 		block = await self.post(url_path, {'height': height})
-		if 'transactions' not in block:
-			raise RuntimeError(f'node returned invalid data: {block}')
-
 		del block['transactions']
 		return block
 
