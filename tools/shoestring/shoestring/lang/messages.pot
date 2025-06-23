@@ -705,7 +705,7 @@ msgstr ""
 msgid "wizard-obligatory-destination-directory-label"
 msgstr ""
 
-#: shoestring/wizard/screens/obligatory.py:143
+#: shoestring/wizard/screens/obligatory.py:142
 msgid "wizard-obligatory-generate-button"
 msgstr ""
 
@@ -725,15 +725,15 @@ msgstr ""
 msgid "wizard-obligatory-priv-import-hex"
 msgstr ""
 
-#: shoestring/wizard/screens/obligatory.py:148
+#: shoestring/wizard/screens/obligatory.py:146
 msgid "wizard-obligatory-private-key-ca-pem-path-description"
 msgstr ""
 
-#: shoestring/wizard/screens/obligatory.py:159
+#: shoestring/wizard/screens/obligatory.py:157
 msgid "wizard-obligatory-private-key-generate-description"
 msgstr ""
 
-#: shoestring/wizard/screens/obligatory.py:151
+#: shoestring/wizard/screens/obligatory.py:149
 msgid "wizard-obligatory-private-key-hex-description"
 msgstr ""
 
@@ -745,7 +745,7 @@ msgstr ""
 msgid "wizard-obligatory-private-key-hex-label"
 msgstr ""
 
-#: shoestring/wizard/screens/obligatory.py:179
+#: shoestring/wizard/screens/obligatory.py:177
 msgid "wizard-obligatory-title"
 msgstr ""
 
@@ -821,19 +821,19 @@ msgstr ""
 msgid "wizard-welcome-command-token"
 msgstr ""
 
-#: shoestring/wizard/screens/welcome.py:36
+#: shoestring/wizard/screens/welcome.py:38
 msgid "wizard-welcome-import-bootstrap"
 msgstr ""
 
-#: shoestring/wizard/screens/welcome.py:39
+#: shoestring/wizard/screens/welcome.py:41
 msgid "wizard-welcome-renew-certificates"
 msgstr ""
 
-#: shoestring/wizard/screens/welcome.py:40
+#: shoestring/wizard/screens/welcome.py:42
 msgid "wizard-welcome-renew-voting-keys"
 msgstr ""
 
-#: shoestring/wizard/screens/welcome.py:38
+#: shoestring/wizard/screens/welcome.py:40
 msgid "wizard-welcome-reset-data"
 msgstr ""
 
@@ -841,11 +841,11 @@ msgstr ""
 msgid "wizard-welcome-setup"
 msgstr ""
 
-#: shoestring/wizard/screens/welcome.py:55
+#: shoestring/wizard/screens/welcome.py:57
 msgid "wizard-welcome-title"
 msgstr ""
 
-#: shoestring/wizard/screens/welcome.py:37
+#: shoestring/wizard/screens/welcome.py:39
 msgid "wizard-welcome-upgrade"
 msgstr ""
 
