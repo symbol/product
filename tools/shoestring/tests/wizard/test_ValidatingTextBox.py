@@ -77,6 +77,7 @@ def test_is_hostname_returns_true_only_for_valid_hostname():
 	assert is_hostname('localhost')
 	assert not is_hostname('foo')
 	assert not is_hostname('')
+	assert not is_hostname('.')
 
 
 def test_is_json_returns_true_only_for_valid_json():

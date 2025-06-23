@@ -72,6 +72,8 @@ def is_hostname(value):
 		return True
 	except socket.gaierror:
 		return False
+	except ValueError:
+		return False
 
 
 def is_json(value):
