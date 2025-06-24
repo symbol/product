@@ -212,7 +212,7 @@ class SymbolConnector(BasicConnector):
 		return await self._transactions(f'recipientAddress={address}', start_id)
 
 	async def _transactions(self, query_filter, start_id=None):
-		url_path = f'transactions/confirmed?{query_filter}&embedded=true&fromHeight=2&pageSize=100'
+		url_path = f'transactions/confirmed?{query_filter}&embedded=true&pageSize=100&order=desc'
 		if start_id:
 			url_path += f'&offset={start_id}'
 
