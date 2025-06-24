@@ -428,7 +428,7 @@ class SymbolRoutesFacadeTest(unittest.TestCase):  # pylint: disable=too-many-pub
 		facade.reload_all(Path('tests/resources'), True)
 
 		# Act: select 2 nodes with order random
-		node_descriptors = facade.json_nodes(2, limit=2)
+		node_descriptors = facade.json_nodes(2, limit=2, order='random')
 
 		# Assert:
 		all_node_descriptors = facade.json_nodes(2)
@@ -436,6 +436,7 @@ class SymbolRoutesFacadeTest(unittest.TestCase):  # pylint: disable=too-many-pub
 		full_node_names = list(map(lambda descriptor: descriptor['name'], all_node_descriptors))
 		random_node_names = list(map(lambda descriptor: descriptor['name'], node_descriptors))
 
+		self.assertEqual(5, len(all_node_descriptors))
 		self.assertEqual(2, len(node_descriptors))
 		self.assertEqual(2, len(set(random_node_names)))
 		for name in random_node_names:
