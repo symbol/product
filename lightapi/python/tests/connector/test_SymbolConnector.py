@@ -589,7 +589,7 @@ async def test_incoming_transactions(server):  # pylint: disable=redefined-outer
 
 	# Assert:
 	assert [
-		f'{server.make_url("")}/transactions/confirmed?recipientAddress={Address(SYMBOL_ADDRESSES[0])}&embedded=true&fromHeight=2&pageSize=100'
+		f'{server.make_url("")}/transactions/confirmed?recipientAddress={Address(SYMBOL_ADDRESSES[0])}&embedded=true&pageSize=100&order=desc'
 	] == server.mock.urls
 	assert 4 == len(transactions)
 
