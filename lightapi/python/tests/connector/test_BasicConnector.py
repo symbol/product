@@ -32,11 +32,24 @@ async def server(aiohttp_client):
 
 		async def status_code(self, request):
 			status_code = int(request.match_info['status_code'])
+			return await self._handle_status_code_request(request, status_code, 'get')
 
+		async def status_code_post(self, request):
+			request_json = await request.json()
+			status_code = request_json['status_code']
+			return await self._handle_status_code_request(request, status_code, 'post')
+
+		async def status_code_put(self, request):
+			request_json = await request.json()
+			status_code = request_json['status_code']
+			return await self._handle_status_code_request(request, status_code, 'put')
+
+		async def _handle_status_code_request(self, request, status_code, action):
 			response_json = {
 				'code': 'SomeCode',
 				'message': 'some message',
-				'status': status_code
+				'status': status_code,
+				'action': action
 			}
 
 			if self.omit_error_description:
@@ -69,6 +82,8 @@ async def server(aiohttp_client):
 	app.router.add_post('/echo/post', mock_server.echo_post)
 	app.router.add_put('/echo/put', mock_server.echo_put)
 	app.router.add_get(r'/status/{status_code}', mock_server.status_code)
+	app.router.add_post(r'/status', mock_server.status_code_post)
+	app.router.add_put(r'/status', mock_server.status_code_put)
 	server = await aiohttp_client(app)  # pylint: disable=redefined-outer-name
 
 	server.mock = mock_server
@@ -250,7 +265,7 @@ async def test_can_handle_stopped_node_put():
 # endregion
 
 
-# region error handling - HTTP error code
+# region error handling - HTTP error code (general)
 
 async def _assert_can_propagate_status_code_result(server, status_code):  # pylint: disable=redefined-outer-name
 	# Arrange:
@@ -260,7 +275,7 @@ async def _assert_can_propagate_status_code_result(server, status_code):  # pyli
 	response_json = await connector.get(f'status/{status_code}')
 
 	# Assert:
-	assert {'code': 'SomeCode', 'message': 'some message', 'status': status_code} == response_json
+	assert {'code': 'SomeCode', 'message': 'some message', 'status': status_code, 'action': 'get'} == response_json
 
 
 async def _assert_can_propagate_status_code_failure_result(server, status_code):  # pylint: disable=redefined-outer-name
@@ -284,17 +299,88 @@ async def _assert_can_propagate_status_code_failure_result_with_message(server, 
 
 
 async def test_can_propagate_http_success_results(server):  # pylint: disable=redefined-outer-name
-	for status_code in (200, 202, 300, 404):
+	for status_code in (200, 202, 300):
 		await _assert_can_propagate_status_code_result(server, status_code)
 
 
 async def test_can_propagate_http_failure_results(server):  # pylint: disable=redefined-outer-name
-	for status_code in (400, 401, 500, 501):
+	for status_code in (400, 401, 404, 500, 501):
 		await _assert_can_propagate_status_code_failure_result(server, status_code)
 
 
 async def test_can_propagate_http_failure_results_with_message(server):  # pylint: disable=redefined-outer-name
 	for status_code in (400, 401, 500, 501):
 		await _assert_can_propagate_status_code_failure_result_with_message(server, status_code)
+
+# endregion
+
+
+# region error handling - HTTP error code (404)
+
+async def _assert_can_handle_http_failure_404_as_error_by_default(server, action, url_path, **kwargs):
+	# pylint: disable=redefined-outer-name
+	# Arrange:
+	connector = BasicConnector(server.make_url(''))
+
+	# Act + Assert:
+	with pytest.raises(NodeException, match='HTTP request failed with code 404\nSomeCode\nsome message'):
+		await getattr(connector, action)(url_path, **kwargs)
+
+
+async def _assert_can_handle_http_failure_404_as_explicit_error(server, action, url_path, **kwargs):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	connector = BasicConnector(server.make_url(''))
+
+	# Act + Assert:
+	with pytest.raises(NodeException, match='HTTP request failed with code 404\nSomeCode\nsome message'):
+		await getattr(connector, action)(url_path, not_found_as_error=True, **kwargs)
+
+
+async def _assert_can_handle_http_failure_404_as_explicit_non_error(server, action, url_path, **kwargs):
+	# pylint: disable=redefined-outer-name
+	# Arrange:
+	connector = BasicConnector(server.make_url(''))
+
+	# Act:
+	response_json = await getattr(connector, action)(url_path, not_found_as_error=False, **kwargs)
+
+	# Assert:
+	assert {'code': 'SomeCode', 'message': 'some message', 'status': 404, 'action': action} == response_json
+
+
+async def test_can_handle_http_failure_404_as_error_by_default_get(server):  # pylint: disable=redefined-outer-name
+	await _assert_can_handle_http_failure_404_as_error_by_default(server, 'get', 'status/404')
+
+
+async def test_can_handle_http_failure_404_as_error_by_default_post(server):  # pylint: disable=redefined-outer-name
+	await _assert_can_handle_http_failure_404_as_error_by_default(server, 'post', 'status', request_payload={'status_code': 404})
+
+
+async def test_can_handle_http_failure_404_as_error_by_default_put(server):  # pylint: disable=redefined-outer-name
+	await _assert_can_handle_http_failure_404_as_error_by_default(server, 'put', 'status', request_payload={'status_code': 404})
+
+
+async def test_can_handle_http_failure_404_as_explicit_error_get(server):  # pylint: disable=redefined-outer-name
+	await _assert_can_handle_http_failure_404_as_explicit_error(server, 'get', 'status/404')
+
+
+async def test_can_handle_http_failure_404_as_explicit_error_post(server):  # pylint: disable=redefined-outer-name
+	await _assert_can_handle_http_failure_404_as_explicit_error(server, 'post', 'status', request_payload={'status_code': 404})
+
+
+async def test_can_handle_http_failure_404_as_explicit_error_put(server):  # pylint: disable=redefined-outer-name
+	await _assert_can_handle_http_failure_404_as_explicit_error(server, 'put', 'status', request_payload={'status_code': 404})
+
+
+async def test_can_handle_http_failure_404_as_explicit_non_error_get(server):  # pylint: disable=redefined-outer-name
+	await _assert_can_handle_http_failure_404_as_explicit_non_error(server, 'get', 'status/404')
+
+
+async def test_can_handle_http_failure_404_as_explicit_non_error_post(server):  # pylint: disable=redefined-outer-name
+	await _assert_can_handle_http_failure_404_as_explicit_non_error(server, 'post', 'status', request_payload={'status_code': 404})
+
+
+async def test_can_handle_http_failure_404_as_explicit_non_error_put(server):  # pylint: disable=redefined-outer-name
+	await _assert_can_handle_http_failure_404_as_explicit_non_error(server, 'put', 'status', request_payload={'status_code': 404})
 
 # endregion

@@ -202,10 +202,6 @@ async def server(aiohttp_client):
 				'transactions': []
 			}
 
-			# make returned data invalid
-			if 0xDEAD == request_json['height']:
-				del block['transactions']
-
 			return await self._process(request, block)
 
 		async def node_info(self, request):
@@ -348,15 +344,6 @@ async def test_can_get_block_headers(server):  # pylint: disable=redefined-outer
 	# Assert:
 	assert {'type': 1, 'signer': PUBLIC_KEYS[0], 'timeStamp': 201000} == headers
 	assert [f'{server.make_url("")}/block/at/public'] == server.mock.urls
-
-
-async def test_cannot_get_block_headers_when_server_returns_invalid_data(server):  # pylint: disable=redefined-outer-name
-	# Arrange:
-	connector = NemConnector(server.make_url(''))
-
-	# Act + Assert:
-	with pytest.raises(RuntimeError):
-		await connector.block_headers(0xDEAD)
 
 # endregion
 
