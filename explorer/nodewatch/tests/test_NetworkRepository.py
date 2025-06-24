@@ -326,6 +326,7 @@ class NetworkRepositoryTest(unittest.TestCase):
 
 	# endregion
 
+
 	# region load harvester descriptors
 
 	def _assert_harvestor_descriptor(self, descriptor, **kwargs):
@@ -437,6 +438,7 @@ class NetworkRepositoryTest(unittest.TestCase):
 
 	# endregion
 
+
 	# region load voter descriptors
 
 	def _assert_voter_descriptor(self, descriptor, **kwargs):
@@ -512,6 +514,7 @@ class NetworkRepositoryTest(unittest.TestCase):
 
 	# endregion
 
+
 	# region load geo location mappings
 
 	# pylint: disable=duplicate-code
@@ -546,8 +549,6 @@ class NetworkRepositoryTest(unittest.TestCase):
 		# Act:
 		json_object = repository.node_descriptors[3].to_json()
 
-		print(json_object)
-
 		# Assert:
 		self.assertEqual(self.EXPECTED_GEO_VALUES, json_object['geoLocation'])
 
@@ -564,6 +565,7 @@ class NetworkRepositoryTest(unittest.TestCase):
 		self.assertEqual(None, json_object['geoLocation'])
 
 	# endregion
+
 
 	# region load time series nodes count
 
