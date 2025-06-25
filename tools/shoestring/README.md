@@ -402,6 +402,29 @@ python3 -m pip install -r requirements.txt
 PYTHONPATH=. python3 -m shoestring --help
 ```
 
+# Shell Auto-completion
+
+The shoestring supports shell auto-completion using `argcomplete`. This feature provides tab completion for commands, options, and arguments.
+
+## Supported Shells
+
+- bash
+- zsh
+
+## Enabling Auto-completion
+
+Add the following to your `~/.bashrc` or `~/.zshrc`:
+
+```sh
+eval "$(register-python-argcomplete shoestring)"
+```
+
+After editing your shell configuration, restart your shell for changes to take effect:
+
+```sh
+exec $SHELL -l
+```
+
 # Troubleshooting
 
 ## Server or Broker failed to start due to lock files
