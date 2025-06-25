@@ -1,10 +1,13 @@
 import csv
 import json
+from collections import namedtuple
 
 from symbolchain.CryptoTypes import Hash256, PublicKey
 from symbolchain.nem.Network import Address as NemAddress
 from symbolchain.symbol.Network import Address as SymbolAddress
 from zenlog import log
+
+FinalizedInfo = namedtuple('FinalizedInfo', ['height', 'epoch', 'hash', 'point'])
 
 
 class NodeDescriptor:
@@ -21,11 +24,8 @@ class NodeDescriptor:
 		name=None,
 		version=None,
 		height=0,
-		finalized_height=0,
 		balance=0,
-		finalized_epoch=0,
-		finalized_hash=None,
-		finalized_point=0,
+		finalized_info=None,
 		is_healthy=None,
 		is_ssl_enabled=None,
 		rest_version=None,
@@ -42,11 +42,8 @@ class NodeDescriptor:
 		self.name = name
 		self.version = version
 		self.height = height
-		self.finalized_height = finalized_height
 		self.balance = balance
-		self.finalized_epoch = finalized_epoch
-		self.finalized_hash = finalized_hash
-		self.finalized_point = finalized_point
+		self.finalized_info = finalized_info if finalized_info else FinalizedInfo(0, 0, None, 0)
 		self.is_healthy = is_healthy
 		self.is_ssl_enabled = is_ssl_enabled
 		self.rest_version = rest_version
@@ -69,11 +66,11 @@ class NodeDescriptor:
 			'name': self.name,
 			'version': self.version,
 			'height': self.height,
-			'finalizedHeight': self.finalized_height,
+			'finalizedHeight': self.finalized_info.height,
 			'balance': self.balance,
-			'finalizedEpoch': self.finalized_epoch,
-			'finalizedHash': self.finalized_hash,
-			'finalizedPoint': self.finalized_point,
+			'finalizedEpoch': self.finalized_info.epoch,
+			'finalizedHash': self.finalized_info.hash,
+			'finalizedPoint': self.finalized_info.point,
 			'isHealthy': self.is_healthy,
 			'isSslEnabled': self.is_ssl_enabled,
 			'restVersion': self.rest_version,
@@ -156,7 +153,7 @@ class NetworkRepository:
 		if self.is_nem:
 			return max(1, self.estimate_height() - 360)
 
-		heights = [descriptor.finalized_height for descriptor in self.node_descriptors if descriptor.finalized_height]
+		heights = [descriptor.finalized_info.height for descriptor in self.node_descriptors if descriptor.finalized_info.height]
 		heights.sort()
 		return 1 if not heights else heights[len(heights) // 2]
 
@@ -233,16 +230,21 @@ class NetworkRepository:
 
 	def _create_descriptor_from_json(self, json_node):
 		# network crawler extracts as much extra data as possible, but it might not always be available for all nodes
-		extra_data = (0, 0, 0, 0, None, 0)
+		extra_data = (0, 0, FinalizedInfo(0, 0, None, 0))
 		if 'extraData' in json_node:
 			json_extra_data = json_node['extraData']
-			extra_data = (
-				json_extra_data.get('height', 0),
+
+			finalized_info = FinalizedInfo(
 				json_extra_data.get('finalizedHeight', 0),
-				json_extra_data.get('balance', 0),
 				json_extra_data.get('finalizedEpoch', 0),
 				json_extra_data.get('finalizedHash', None),
 				json_extra_data.get('finalizedPoint', 0)
+			)
+
+			extra_data = (
+				json_extra_data.get('height', 0),
+				json_extra_data.get('balance', 0),
+				finalized_info
 			)
 
 		if self.is_nem:

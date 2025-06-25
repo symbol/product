@@ -1,4 +1,5 @@
 import unittest
+from collections import namedtuple
 
 from symbolchain.CryptoTypes import PublicKey
 from symbolchain.nem.Network import Address as NemAddress
@@ -8,6 +9,8 @@ from symbolchain.symbol.Network import Network as SymbolNetwork
 
 from nodewatch.NetworkRepository import NetworkRepository
 
+FinalizedInfo = namedtuple('FinalizedInfo', ['height', 'epoch', 'hash', 'point'])
+
 
 class NetworkRepositoryTest(unittest.TestCase):
 	# region load node descriptors
@@ -15,8 +18,7 @@ class NetworkRepositoryTest(unittest.TestCase):
 	def _assert_node_descriptor(self, descriptor, **kwargs):
 		property_names = [
 			'main_address', 'main_public_key', 'node_public_key',
-			'endpoint', 'name', 'height', 'finalized_height', 'finalized_epoch',
-			'finalized_point', 'finalized_hash', 'is_healthy', 'is_ssl_enabled',
+			'endpoint', 'name', 'height', 'finalized_info', 'is_healthy', 'is_ssl_enabled',
 			'rest_version', 'geo_location', 'version', 'balance', 'roles', 'has_api'
 		]
 		for name in property_names:
@@ -52,10 +54,7 @@ class NetworkRepositoryTest(unittest.TestCase):
 			endpoint='http://51.79.73.50:7890',
 			name='August',
 			height=3850057,
-			finalized_height=0,
-			finalized_epoch=0,
-			finalized_point=0,
-			finalized_hash=None,
+			finalized_info=FinalizedInfo(0, 0, None, 0),
 			is_healthy=None,
 			is_ssl_enabled=None,
 			rest_version=None,
@@ -72,10 +71,7 @@ class NetworkRepositoryTest(unittest.TestCase):
 			endpoint='http://jusan.nem.ninja:7890',
 			name='[c=#e9c086]jusan[/c]',
 			height=3850058,
-			finalized_height=0,
-			finalized_epoch=0,
-			finalized_point=0,
-			finalized_hash=None,
+			finalized_info=FinalizedInfo(0, 0, None, 0),
 			is_healthy=None,
 			is_ssl_enabled=None,
 			rest_version=None,
@@ -92,10 +88,7 @@ class NetworkRepositoryTest(unittest.TestCase):
 			endpoint='http://45.76.22.139:7890',
 			name='cobalt',
 			height=0,
-			finalized_height=0,
-			finalized_epoch=0,
-			finalized_point=0,
-			finalized_hash=None,
+			finalized_info=FinalizedInfo(0, 0, None, 0),
 			is_healthy=None,
 			is_ssl_enabled=None,
 			rest_version=None,
@@ -112,10 +105,7 @@ class NetworkRepositoryTest(unittest.TestCase):
 			endpoint='http://45.32.131.118:7890',
 			name='silicon',
 			height=0,
-			finalized_height=0,
-			finalized_epoch=0,
-			finalized_point=0,
-			finalized_hash=None,
+			finalized_info=FinalizedInfo(0, 0, None, 0),
 			is_healthy=None,
 			is_ssl_enabled=None,
 			rest_version=None,
@@ -155,10 +145,7 @@ class NetworkRepositoryTest(unittest.TestCase):
 			endpoint='',
 			name='Allnodes250',
 			height=1486762,
-			finalized_height=1486740,
-			finalized_epoch=3020,
-			finalized_point=4,
-			finalized_hash='E29E5695EB269B7DD1D76DBF05FDA1731AB24F561D2032248434FA36A27AFB4C',
+			finalized_info=FinalizedInfo(1486740, 3020, 'E29E5695EB269B7DD1D76DBF05FDA1731AB24F561D2032248434FA36A27AFB4C', 4),
 			is_healthy=True,
 			is_ssl_enabled=True,
 			rest_version='2.4.4',
@@ -175,10 +162,7 @@ class NetworkRepositoryTest(unittest.TestCase):
 			endpoint='http://02.symbol-node.net:3000',
 			name='Apple',
 			height=0,
-			finalized_height=0,
-			finalized_epoch=0,
-			finalized_point=0,
-			finalized_hash=None,
+			finalized_info=FinalizedInfo(0, 0, None, 0),
 			is_healthy=None,
 			is_ssl_enabled=None,
 			rest_version=None,
@@ -195,10 +179,7 @@ class NetworkRepositoryTest(unittest.TestCase):
 			endpoint='http://00fabf14.xym.stir-hosyu.com:3000',
 			name='Shin-Kuma-Node',
 			height=0,
-			finalized_height=0,
-			finalized_epoch=0,
-			finalized_point=0,
-			finalized_hash=None,
+			finalized_info=FinalizedInfo(0, 0, None, 0),
 			is_healthy=None,
 			is_ssl_enabled=None,
 			rest_version=None,
@@ -215,10 +196,7 @@ class NetworkRepositoryTest(unittest.TestCase):
 			endpoint='http://symbol.shizuilab.com:3000',
 			name='ibone74',
 			height=1486760,
-			finalized_height=1486740,
-			finalized_epoch=3020,
-			finalized_point=4,
-			finalized_hash='E29E5695EB269B7DD1D76DBF05FDA1731AB24F561D2032248434FA36A27AFB4C',
+			finalized_info=FinalizedInfo(1486740, 3020, 'E29E5695EB269B7DD1D76DBF05FDA1731AB24F561D2032248434FA36A27AFB4C', 4),
 			is_healthy=True,
 			is_ssl_enabled=True,
 			rest_version='2.4.4',
@@ -235,10 +213,7 @@ class NetworkRepositoryTest(unittest.TestCase):
 			endpoint='http://jaguar.catapult.ninja:7900',
 			name='jaguar',
 			height=1486761,
-			finalized_height=1486742,
-			finalized_epoch=3020,
-			finalized_point=4,
-			finalized_hash='E29E5695EB269B7DD1D76DBF05FDA1731AB24F561D2032248434FA36A27AFB4C',
+			finalized_info=FinalizedInfo(1486742, 3020, 'E29E5695EB269B7DD1D76DBF05FDA1731AB24F561D2032248434FA36A27AFB4C', 4),
 			is_healthy=None,
 			is_ssl_enabled=None,
 			rest_version=None,
@@ -255,10 +230,7 @@ class NetworkRepositoryTest(unittest.TestCase):
 			endpoint='http://symbol.ooo:3000',
 			name='symbol.ooo maxUnlockedAccounts:100',
 			height=0,
-			finalized_height=0,
-			finalized_epoch=0,
-			finalized_point=0,
-			finalized_hash=None,
+			finalized_info=FinalizedInfo(0, 0, None, 0),
 			is_healthy=None,
 			is_ssl_enabled=None,
 			rest_version=None,
@@ -325,7 +297,6 @@ class NetworkRepositoryTest(unittest.TestCase):
 		}, json_object)
 
 	# endregion
-
 
 	# region load harvester descriptors
 
@@ -438,7 +409,6 @@ class NetworkRepositoryTest(unittest.TestCase):
 
 	# endregion
 
-
 	# region load voter descriptors
 
 	def _assert_voter_descriptor(self, descriptor, **kwargs):
@@ -514,7 +484,6 @@ class NetworkRepositoryTest(unittest.TestCase):
 
 	# endregion
 
-
 	# region load geo location mappings
 
 	# pylint: disable=duplicate-code
@@ -565,7 +534,6 @@ class NetworkRepositoryTest(unittest.TestCase):
 		self.assertEqual(None, json_object['geoLocation'])
 
 	# endregion
-
 
 	# region load time series nodes count
 
