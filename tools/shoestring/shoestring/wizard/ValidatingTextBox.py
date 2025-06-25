@@ -70,7 +70,7 @@ def is_hostname(value):
 	try:
 		socket.getaddrinfo(value, 7890)
 		return True
-	except socket.gaierror:
+	except (socket.gaierror, ValueError):
 		return False
 
 
