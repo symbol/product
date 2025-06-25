@@ -58,8 +58,13 @@ class VersionAggregator:
 			if count_field:
 				setattr(data_point, count_field, getattr(data_point, count_field) + 1)
 
+	def _get_nested_attr(self, obj, attr_path):
+		for attr in attr_path.split('.'):
+			obj = getattr(obj, attr)
+		return obj
+
 	def _get_key(self, descriptor):
 		if not self.secondary_key:
 			return descriptor.version
 
-		return f'{descriptor.version}@{getattr(descriptor, self.secondary_key)}'
+		return f'{descriptor.version}@{self._get_nested_attr(descriptor, self.secondary_key)}'
