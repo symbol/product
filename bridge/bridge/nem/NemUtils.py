@@ -1,17 +1,13 @@
 from binascii import unhexlify
-from collections import namedtuple
 
 from symbolchain.CryptoTypes import Hash256, PublicKey
 from symbolchain.nc import MessageType, TransactionType
 from web3 import Web3
 
-TransactionIdentifier = namedtuple('TransactionIdentifier', ['transaction_height', 'transaction_hash', 'signer_public_key'])
-WrapRequest = namedtuple('WrapRequest', ['transaction_identifier', 'amount', 'target_address_eth'])
-WrapError = namedtuple('WrapError', ['transaction_identifier', 'message'])
-WrapRequestResult = namedtuple('WrapRequestResult', ['is_error', 'request', 'error'])
-
+from ..models.WrapRequest import TransactionIdentifier, WrapError, WrapRequest, WrapRequestResult
 
 # region calculate_transfer_transaction_fee
+
 
 def calculate_transfer_transaction_fee(xem_amount, message=None):
 	"""Calculates a transfer transaction fee given the amount of XEM (whole units) and message to send."""
@@ -25,19 +21,30 @@ def calculate_transfer_transaction_fee(xem_amount, message=None):
 
 # region extract_wrap_address_from_transaction
 
-def _make_wrap_request_result(*args):
-	return WrapRequestResult(False, WrapRequest(*args), None)
+def _make_wrap_request_result(transaction_identifier, *args):
+	request = WrapRequest(
+		transaction_identifier.transaction_height,
+		transaction_identifier.transaction_hash,
+		transaction_identifier.sender_address,
+		*args)
+	return WrapRequestResult(False, request, None)
 
 
-def _make_wrap_error_result(*args):
-	return WrapRequestResult(True, None, WrapError(*args))
+def _make_wrap_error_result(transaction_identifier, *args):
+	error = WrapError(
+		transaction_identifier.transaction_height,
+		transaction_identifier.transaction_hash,
+		transaction_identifier.sender_address,
+		*args)
+	return WrapRequestResult(True, None, error)
 
 
 def _process_transfer_transaction(transaction_identifier, transaction_with_meta_json):
 	transaction_json = transaction_with_meta_json['transaction']
 
 	amount = 0
-	if 1 == transaction_json['version'] or 0 == len(transaction_json['mosaics']):
+	transaction_version = transaction_json['version'] & 0x00FFFFFF
+	if 1 == transaction_version or 0 == len(transaction_json['mosaics']):
 		amount = transaction_json['amount']
 	else:
 		# search for nem:xem; if not present, amount will be zero
@@ -45,32 +52,37 @@ def _process_transfer_transaction(transaction_identifier, transaction_with_meta_
 			if 'nem' == mosaic_json['mosaicId']['namespaceId'] and 'xem' == mosaic_json['mosaicId']['name']:
 				amount = transaction_json['amount'] * mosaic_json['quantity'] // 1_000000
 
+	if 0 == len(transaction_json['message']):
+		return _make_wrap_error_result(transaction_identifier, 'required message is missing')
+
 	if MessageType.PLAIN.value != transaction_json['message']['type']:
 		error_message = f'message type {transaction_json["message"]["type"]} is not supported'
 		return _make_wrap_error_result(transaction_identifier, error_message)
 
-	target_address_eth = unhexlify(transaction_json['message']['payload']).decode('utf8')
-	if not Web3.is_address(target_address_eth):
-		error_message = f'target ethereum address {target_address_eth} is invalid'
+	destination_address = unhexlify(transaction_json['message']['payload']).decode('utf8')
+	if not Web3.is_address(destination_address):
+		error_message = f'target ethereum address {destination_address} is invalid'
 		return _make_wrap_error_result(transaction_identifier, error_message)
 
-	return _make_wrap_request_result(transaction_identifier, amount, target_address_eth)
+	return _make_wrap_request_result(transaction_identifier, amount, destination_address)
 
 
-def extract_wrap_request_from_transaction(transaction_with_meta_json):  # pylint: disable=invalid-name
+def extract_wrap_request_from_transaction(network, transaction_with_meta_json):  # pylint: disable=invalid-name
+	"""Extracts a wrap request (or error) from a transaction given a network."""
+
 	transaction_type = transaction_with_meta_json['transaction']['type']
 
 	transaction_identifier = TransactionIdentifier(
 		transaction_with_meta_json['meta']['height'],
 		Hash256(transaction_with_meta_json['meta']['hash']['data']),
-		PublicKey(transaction_with_meta_json['transaction']['signer'])
+		network.public_key_to_address(PublicKey(transaction_with_meta_json['transaction']['signer']))
 	)
 
 	if TransactionType.MULTISIG.value == transaction_type:
 		transaction_identifier = TransactionIdentifier(
 			transaction_identifier.transaction_height,
 			transaction_identifier.transaction_hash,
-			PublicKey(transaction_with_meta_json['transaction']['otherTrans']['signer'])
+			network.public_key_to_address(PublicKey(transaction_with_meta_json['transaction']['otherTrans']['signer']))
 		)
 
 		inner_transaction_type = transaction_with_meta_json['transaction']['otherTrans']['type']
