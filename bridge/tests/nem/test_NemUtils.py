@@ -1,16 +1,12 @@
 import unittest
 from binascii import hexlify
 
-from symbolchain.CryptoTypes import Hash256, PublicKey
-from symbolchain.nc import MessageType, TransactionType, TransferTransactionV1, TransferTransactionV2
+from symbolchain.CryptoTypes import Hash256
+from symbolchain.nc import MessageType, NetworkType, TransactionType, TransferTransactionV1, TransferTransactionV2
+from symbolchain.nem.Network import Address, Network
 
-from bridge.nem.NemUtils import (
-	TransactionIdentifier,
-	WrapError,
-	WrapRequest,
-	calculate_transfer_transaction_fee,
-	extract_wrap_request_from_transaction
-)
+from bridge.models.WrapRequest import WrapError, WrapRequest
+from bridge.nem.NemUtils import calculate_transfer_transaction_fee, extract_wrap_request_from_transaction
 
 
 class NemUtilsTest(unittest.TestCase):
@@ -40,35 +36,41 @@ class NemUtilsTest(unittest.TestCase):
 	@staticmethod
 	def _create_simple_wrap_request():
 		return WrapRequest(
-			TransactionIdentifier(
-				1234,
-				Hash256('C0B52BE17C2F41539E50857855A226A24AFE8B23B51E42F3186FBC725EA63550'),
-				PublicKey('3917578FF27A88B20E137D9D2E54E775163F9C493A193A64F96748EBF8B21F3C')),
+			1234,
+			Hash256('C0B52BE17C2F41539E50857855A226A24AFE8B23B51E42F3186FBC725EA63550'),
+			Address('TCQKTUUNUOPQGDQIDQT2CCJGQZ4QNAAGBZRV5YJJ'),
 			9999_000000,
 			'0x4838b106fce9647bdf1e7877bf73ce8b0bad5f97')
 
 	@staticmethod
 	def _create_transfer_json(request, **kwargs):
+		# workaround to create a transaction from a request
+		# use a reverse lookup because request includes address but transaction requires public key
+		signer_address_to_public_key_mapping = {
+			Address('TCQKTUUNUOPQGDQIDQT2CCJGQZ4QNAAGBZRV5YJJ'): '3917578FF27A88B20E137D9D2E54E775163F9C493A193A64F96748EBF8B21F3C'
+		}
+
+		transaction_version = kwargs.get('transaction_version', TransferTransactionV1.TRANSACTION_VERSION)
 		transaction_meta_json = {
 			'meta': {
-				'height': request.transaction_identifier.transaction_height,
+				'height': request.transaction_height,
 				'hash': {
-					'data': str(request.transaction_identifier.transaction_hash)
+					'data': str(request.transaction_hash)
 				},
 			},
 			'transaction': {
 				'type': kwargs.get('transaction_type', TransferTransactionV1.TRANSACTION_TYPE.value),
-				'version': kwargs.get('transaction_version', TransferTransactionV1.TRANSACTION_VERSION),
+				'version': (NetworkType.TESTNET.value << 24) | transaction_version,
 				'amount': request.amount,
-				'signer': str(request.transaction_identifier.signer_public_key),
+				'signer': signer_address_to_public_key_mapping[request.sender_address],
 				'message': {
 					'type': kwargs.get('message_type', MessageType.PLAIN.value),
-					'payload': hexlify(request.target_address_eth.encode('utf8')).decode('utf8')
+					'payload': hexlify(request.destination_address.encode('utf8')).decode('utf8')
 				}
 			}
 		}
 
-		if 1 < transaction_meta_json['transaction']['version']:
+		if 1 < transaction_version:
 			transaction_meta_json['transaction']['mosaics'] = []
 
 		return transaction_meta_json
@@ -89,7 +91,7 @@ class NemUtilsTest(unittest.TestCase):
 		transaction_meta_json = self._create_transfer_json(request, **kwargs)
 
 		# Act:
-		result = extract_wrap_request_from_transaction(transaction_meta_json)
+		result = extract_wrap_request_from_transaction(Network.TESTNET, transaction_meta_json)
 
 		# Assert:
 		self._assert_wrap_request_success(result, request)
@@ -115,7 +117,12 @@ class NemUtilsTest(unittest.TestCase):
 
 	@staticmethod
 	def _change_request_amount(request, new_amount):
-		return WrapRequest(request.transaction_identifier, new_amount, request.target_address_eth)
+		return WrapRequest(
+			request.transaction_height,
+			request.transaction_hash,
+			request.sender_address,
+			new_amount,
+			request.destination_address)
 
 	def _assert_can_create_wrap_request_from_single_xem_mosaic_in_bag(self, amount, mosaic_amount, expected_amount):
 		# Arrange:
@@ -123,7 +130,7 @@ class NemUtilsTest(unittest.TestCase):
 		transaction_meta_json = self._create_transfer_json_with_single_bag(request, amount, mosaic_amount)
 
 		# Act:
-		result = extract_wrap_request_from_transaction(transaction_meta_json)
+		result = extract_wrap_request_from_transaction(Network.TESTNET, transaction_meta_json)
 
 		# Assert:
 		self._assert_wrap_request_success(result, self._change_request_amount(request, expected_amount))
@@ -162,7 +169,7 @@ class NemUtilsTest(unittest.TestCase):
 		]
 
 		# Act:
-		result = extract_wrap_request_from_transaction(transaction_meta_json)
+		result = extract_wrap_request_from_transaction(Network.TESTNET, transaction_meta_json)
 
 		# Assert:
 		self._assert_wrap_request_success(result, self._change_request_amount(request, 2222_000000))
@@ -184,7 +191,7 @@ class NemUtilsTest(unittest.TestCase):
 		]
 
 		# Act:
-		result = extract_wrap_request_from_transaction(transaction_meta_json)
+		result = extract_wrap_request_from_transaction(Network.TESTNET, transaction_meta_json)
 
 		# Assert:
 		self._assert_wrap_request_success(result, self._change_request_amount(request, 0))
@@ -193,21 +200,37 @@ class NemUtilsTest(unittest.TestCase):
 
 	# region extract_wrap_request_from_transaction - transfer (failure)
 
+	@staticmethod
+	def _make_wrap_error_from_request(request, message):
+		return WrapError(
+			request.transaction_height,
+			request.transaction_hash,
+			request.sender_address,
+			message)
+
 	def _assert_cannot_create_wrap_request_from_simple_transfer(self, expected_error_message, **kwargs):
 		# Arrange:
 		request = self._create_simple_wrap_request()
 		transaction_meta_json = self._create_transfer_json(request, **kwargs)
 
+		if kwargs.get('clear_message', False):
+			transaction_meta_json['transaction']['message'] = {}
+
 		# Act:
-		result = extract_wrap_request_from_transaction(transaction_meta_json)
+		result = extract_wrap_request_from_transaction(Network.TESTNET, transaction_meta_json)
 
 		# Assert:
-		self._assert_wrap_request_failure(result, WrapError(request.transaction_identifier, expected_error_message))
+		self._assert_wrap_request_failure(result, self._make_wrap_error_from_request(request, expected_error_message))
 
 	def test_cannot_create_wrap_request_from_simple_transfer_with_invalid_message_type(self):
 		self._assert_cannot_create_wrap_request_from_simple_transfer(
 			'message type 2 is not supported',
 			message_type=MessageType.ENCRYPTED.value)
+
+	def test_cannot_create_wrap_request_from_simple_transfer_without_message(self):
+		self._assert_cannot_create_wrap_request_from_simple_transfer(
+			'required message is missing',
+			clear_message=True)
 
 	def test_cannot_create_wrap_request_from_other_transaction(self):
 		self._assert_cannot_create_wrap_request_from_simple_transfer(
@@ -218,17 +241,19 @@ class NemUtilsTest(unittest.TestCase):
 		# Arrange:
 		request = self._create_simple_wrap_request()
 		request = WrapRequest(
-			request.transaction_identifier,
+			request.transaction_height,
+			request.transaction_hash,
+			request.sender_address,
 			request.amount,
 			'0x4838b106fce9647bdf1e7877bf73ce8b0bad5f')  # too short
 		transaction_meta_json = self._create_transfer_json(request)
 
 		# Act:
-		result = extract_wrap_request_from_transaction(transaction_meta_json)
+		result = extract_wrap_request_from_transaction(Network.TESTNET, transaction_meta_json)
 
 		# Assert:
 		expected_error_message = 'target ethereum address 0x4838b106fce9647bdf1e7877bf73ce8b0bad5f is invalid'
-		self._assert_wrap_request_failure(result, WrapError(request.transaction_identifier, expected_error_message))
+		self._assert_wrap_request_failure(result, self._make_wrap_error_from_request(request, expected_error_message))
 
 	# endregion
 
@@ -250,7 +275,7 @@ class NemUtilsTest(unittest.TestCase):
 		}
 
 		# Act:
-		result = extract_wrap_request_from_transaction(transaction_meta_json)
+		result = extract_wrap_request_from_transaction(Network.TESTNET, transaction_meta_json)
 
 		# Assert:
 		self._assert_wrap_request_success(result, request)
@@ -277,11 +302,10 @@ class NemUtilsTest(unittest.TestCase):
 		}
 
 		# Act:
-		result = extract_wrap_request_from_transaction(transaction_meta_json)
+		result = extract_wrap_request_from_transaction(Network.TESTNET, transaction_meta_json)
 
 		# Assert:
-		self._assert_wrap_request_failure(
-			result,
-			WrapError(request.transaction_identifier, 'inner transaction type 8193 is not supported'))
+		expected_error_message = 'inner transaction type 8193 is not supported'
+		self._assert_wrap_request_failure(result, self._make_wrap_error_from_request(request, expected_error_message))
 
 	# endregion
