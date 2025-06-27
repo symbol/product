@@ -20,7 +20,7 @@ async def main():
 	config = parse_bridge_configuration(args.config)
 	logging.basicConfig(filename=config.machine.log_filename, level=logging.DEBUG)
 
-	network_facade = load_network_facade(config.native_network.blockchain, config.native_network.network)
+	network_facade = await load_network_facade(config.native_network)
 	connector = network_facade.create_connector(config.native_network.endpoint)
 
 	finalized_chain_height = await connector.finalized_chain_height()
@@ -38,15 +38,14 @@ async def main():
 		count = 0
 		error_count = 0
 		async for transaction in get_incoming_transactions_from(connector, bridge_address, start_height):
-			result = network_facade.extract_wrap_request_from_transaction(transaction)
+			for result in network_facade.extract_wrap_request_from_transaction(transaction):
+				if result.is_error:
+					databases.wrap_request.add_error(result.error)
+					error_count += 1
+				else:
+					databases.wrap_request.add_request(result.request)
 
-			if result.is_error:
-				databases.wrap_request.add_error(result.error)
-				error_count += 1
-			else:
-				databases.wrap_request.add_request(result.request)
-
-			count += 1
+				count += 1
 
 		print('*** *** ***')
 		print(f'==> last processed transaction height: {databases.wrap_request.max_processed_height()}')
