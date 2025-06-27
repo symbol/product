@@ -58,7 +58,8 @@ class VersionAggregator:
 			if count_field:
 				setattr(data_point, count_field, getattr(data_point, count_field) + 1)
 
-	def _get_nested_attr(self, obj, attr_path):
+	@staticmethod
+	def _get_nested_attr(obj, attr_path):
 		for attr in attr_path.split('.'):
 			obj = getattr(obj, attr)
 		return obj
