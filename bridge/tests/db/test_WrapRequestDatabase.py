@@ -21,14 +21,14 @@ def make_request_error_tuple(index, message, **kwargs):
 def make_request_tuple(index, **kwargs):
 	address = Address(NEM_ADDRESSES[kwargs.get('address_index', index)])
 	hash_index = kwargs.get('hash_index', index)
-	destination_public_key = PublicKey(PUBLIC_KEYS[kwargs.get('destination_public_key_index', index)])
+	destination_address = PublicKey(PUBLIC_KEYS[kwargs.get('destination_address_index', index)])
 
 	return (
 		HEIGHTS[index],
 		Hash256(HASHES[hash_index]).bytes,
 		address.bytes,
 		HEIGHTS[index] % 1000,
-		f'0x{destination_public_key}',
+		f'0x{destination_address}',
 		kwargs.get('status_id', 0))
 
 # endregion

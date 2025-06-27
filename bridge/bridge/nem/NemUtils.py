@@ -59,12 +59,12 @@ def _process_transfer_transaction(transaction_identifier, transaction_with_meta_
 		error_message = f'message type {transaction_json["message"]["type"]} is not supported'
 		return _make_wrap_error_result(transaction_identifier, error_message)
 
-	target_address_eth = unhexlify(transaction_json['message']['payload']).decode('utf8')
-	if not Web3.is_address(target_address_eth):
-		error_message = f'target ethereum address {target_address_eth} is invalid'
+	destination_address = unhexlify(transaction_json['message']['payload']).decode('utf8')
+	if not Web3.is_address(destination_address):
+		error_message = f'target ethereum address {destination_address} is invalid'
 		return _make_wrap_error_result(transaction_identifier, error_message)
 
-	return _make_wrap_request_result(transaction_identifier, amount, target_address_eth)
+	return _make_wrap_request_result(transaction_identifier, amount, destination_address)
 
 
 def extract_wrap_request_from_transaction(network, transaction_with_meta_json):  # pylint: disable=invalid-name

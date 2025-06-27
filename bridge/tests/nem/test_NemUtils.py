@@ -65,7 +65,7 @@ class NemUtilsTest(unittest.TestCase):
 				'signer': signer_address_to_public_key_mapping[request.sender_address],
 				'message': {
 					'type': kwargs.get('message_type', MessageType.PLAIN.value),
-					'payload': hexlify(request.target_address_eth.encode('utf8')).decode('utf8')
+					'payload': hexlify(request.destination_address.encode('utf8')).decode('utf8')
 				}
 			}
 		}
@@ -122,7 +122,7 @@ class NemUtilsTest(unittest.TestCase):
 			request.transaction_hash,
 			request.sender_address,
 			new_amount,
-			request.target_address_eth)
+			request.destination_address)
 
 	def _assert_can_create_wrap_request_from_single_xem_mosaic_in_bag(self, amount, mosaic_amount, expected_amount):
 		# Arrange:

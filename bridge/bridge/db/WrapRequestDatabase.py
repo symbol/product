@@ -37,7 +37,7 @@ class WrapRequestDatabase:
 			wrap_transaction_hash blob UNIQUE,
 			address blob,
 			amount integer,
-			destination_public_key blob,
+			destination_address blob,
 			wrap_status integer
 		)''')
 
@@ -69,7 +69,7 @@ class WrapRequestDatabase:
 			request.transaction_hash.bytes,
 			request.sender_address.bytes,
 			request.amount,
-			request.target_address_eth,
+			request.destination_address,
 			WrapRequestStatus.UNPROCESSED.value))
 		self.connection.commit()
 

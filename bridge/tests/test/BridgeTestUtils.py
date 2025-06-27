@@ -44,8 +44,8 @@ def make_request(index, **kwargs):
 	address = Address(NEM_ADDRESSES[kwargs.get('address_index', index)])
 	height = kwargs.get('height', None) or HEIGHTS[index]
 	transaction_hash = Hash256(HASHES[kwargs.get('hash_index', index)])
-	destination_public_key = PublicKey(PUBLIC_KEYS[kwargs.get('destination_public_key_index', index)])
-	return WrapRequest(height, transaction_hash, address, height % 1000, f'0x{destination_public_key}')
+	destination_address = PublicKey(PUBLIC_KEYS[kwargs.get('destination_address_index', index)])
+	return WrapRequest(height, transaction_hash, address, height % 1000, f'0x{destination_address}')
 
 
 def assert_equal_request(asserter, expected, actual):
@@ -53,4 +53,4 @@ def assert_equal_request(asserter, expected, actual):
 	asserter.assertEqual(expected.transaction_hash, actual.transaction_hash)
 	asserter.assertEqual(expected.sender_address, actual.sender_address)
 	asserter.assertEqual(expected.amount, actual.amount)
-	asserter.assertEqual(expected.target_address_eth, actual.target_address_eth)
+	asserter.assertEqual(expected.destination_address, actual.destination_address)
