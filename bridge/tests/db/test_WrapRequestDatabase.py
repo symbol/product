@@ -15,17 +15,25 @@ from ..test.MockNetworkFacade import MockNetworkFacade
 
 def make_request_error_tuple(index, message, **kwargs):
 	address = Address(NEM_ADDRESSES[kwargs.get('address_index', index)])
-	return (HEIGHTS[index], Hash256(HASHES[index]).bytes, address.bytes, message)
+	hash_index = kwargs.get('hash_index', index)
+
+	return (
+		HEIGHTS[index],
+		Hash256(HASHES[hash_index]).bytes,
+		kwargs.get('transaction_subindex', 0),
+		address.bytes,
+		message)
 
 
 def make_request_tuple(index, **kwargs):
-	address = Address(NEM_ADDRESSES[kwargs.get('address_index', index)])
 	hash_index = kwargs.get('hash_index', index)
+	address = Address(NEM_ADDRESSES[kwargs.get('address_index', index)])
 	destination_address = PublicKey(PUBLIC_KEYS[kwargs.get('destination_address_index', index)])
 
 	return (
 		HEIGHTS[index],
 		Hash256(HASHES[hash_index]).bytes,
+		kwargs.get('transaction_subindex', 0),
 		address.bytes,
 		HEIGHTS[index] % 1000,
 		f'0x{destination_address}',
@@ -41,12 +49,12 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 
 	@staticmethod
 	def _query_all_errors(cursor):
-		cursor.execute('''SELECT * FROM wrap_error ORDER BY wrap_transaction_hash DESC''')
+		cursor.execute('''SELECT * FROM wrap_error ORDER BY wrap_transaction_hash DESC, wrap_transaction_subindex ASC''')
 		return cursor.fetchall()
 
 	@staticmethod
 	def _query_all_requests(cursor):
-		cursor.execute('''SELECT * FROM wrap_request ORDER BY wrap_transaction_hash DESC''')
+		cursor.execute('''SELECT * FROM wrap_request ORDER BY wrap_transaction_hash DESC, wrap_transaction_subindex ASC''')
 		return cursor.fetchall()
 
 	def _assert_can_insert_rows(self, seed, expected, post_insert_action):
@@ -108,18 +116,18 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 			make_request_error_tuple(2, 'error message')
 		])
 
-	def test_can_add_multiple_errors_with_same_address(self):
+	def test_can_add_multiple_errors_with_same_transaction_hash(self):
 		self._assert_can_insert_errors([
 			make_request_error(0, 'this is an error message'),
 			make_request_error(1, 'this is another error message'),
-			make_request_error(2, 'error message', address_index=0)
+			make_request_error(2, 'error message', hash_index=0, transaction_subindex=2)
 		], [
 			make_request_error_tuple(0, 'this is an error message'),
-			make_request_error_tuple(1, 'this is another error message'),
-			make_request_error_tuple(2, 'error message', address_index=0)
+			make_request_error_tuple(2, 'error message', hash_index=0, transaction_subindex=2),
+			make_request_error_tuple(1, 'this is another error message')
 		])
 
-	def test_cannot_add_multiple_errors_with_same_transaction_hash(self):
+	def test_cannot_add_multiple_errors_with_same_transaction_hash_and_subindex(self):
 		# Arrange:
 		with sqlite3.connect(':memory:') as connection:
 			database = WrapRequestDatabase(connection, MockNetworkFacade())
@@ -132,7 +140,7 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 			with self.assertRaises(sqlite3.IntegrityError):
 				database.add_error(make_request_error(2, 'error message', hash_index=0))
 
-	def test_cannot_add_multiple_errors_with_same_transaction_hash_simulate_file_access(self):
+	def test_cannot_add_multiple_errors_with_same_transaction_hash_and_subindex_simulate_file_access(self):
 		# Arrange:
 		with sqlite3.connect('file:mem1?mode=memory&cache=shared', uri=True) as connection:
 			database = WrapRequestDatabase(connection, MockNetworkFacade())
@@ -144,7 +152,7 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 			with sqlite3.connect('file:mem1?mode=memory&cache=shared', uri=True) as connection2:
 				with self.assertRaises(sqlite3.IntegrityError):
 					database2 = WrapRequestDatabase(connection2, MockNetworkFacade())
-					database2.add_error(make_request_error(0, 'this is different error message'))
+					database2.add_error(make_request_error(1, 'this is different error message', hash_index=0))
 
 	# endregion
 
@@ -155,7 +163,18 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 			[make_request(index) for index in [0, 1, 2]],
 			[make_request_tuple(index) for index in [0, 1, 2]])
 
-	def test_cannot_add_multiple_requests_with_same_transaction_hash(self):
+	def test_can_add_multiple_requests_with_same_transaction_hash(self):
+		self._assert_can_insert_requests([
+			make_request(0),
+			make_request(1),
+			make_request(2, hash_index=0, transaction_subindex=2)
+		], [
+			make_request_tuple(0),
+			make_request_tuple(2, hash_index=0, transaction_subindex=2),
+			make_request_tuple(1)
+		])
+
+	def test_cannot_add_multiple_requests_with_same_transaction_hash_and_subindex(self):
 		# Arrange:
 		with sqlite3.connect(':memory:') as connection:
 			database = WrapRequestDatabase(connection, MockNetworkFacade())
@@ -167,6 +186,20 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 			# Act + Assert:
 			with self.assertRaises(sqlite3.IntegrityError):
 				database.add_request(make_request(2, hash_index=0))
+
+	def test_cannot_add_multiple_requests_with_same_transaction_hash_and_subindex_simulate_file_access(self):
+		# Arrange:
+		with sqlite3.connect('file:mem1?mode=memory&cache=shared', uri=True) as connection:
+			database = WrapRequestDatabase(connection, MockNetworkFacade())
+			database.create_tables()
+
+			database.add_request(make_request(0))
+
+			# Act + Assert:
+			with sqlite3.connect('file:mem1?mode=memory&cache=shared', uri=True) as connection2:
+				with self.assertRaises(sqlite3.IntegrityError):
+					database2 = WrapRequestDatabase(connection2, MockNetworkFacade())
+					database2.add_request(make_request(1, hash_index=0))
 
 	# endregion
 
@@ -269,6 +302,20 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 			make_request_tuple(0),
 			make_request_tuple(1, status_id=1),  # should reflect status change from post_insert_action
 			make_request_tuple(2)
+		], post_insert_action=post_insert_action)
+
+	def test_can_update_single_request_status_scoped_to_subindex(self):
+		# Arrange:
+		seed_requests = [make_request(index, hash_index=0, transaction_subindex=index) for index in range(0, 3)]
+
+		def post_insert_action(database):
+			database.set_request_status(seed_requests[1], WrapRequestStatus.SENT)
+
+		# Act + Assert:
+		self._assert_can_insert_requests(seed_requests, [
+			make_request_tuple(0, hash_index=0),
+			make_request_tuple(1, hash_index=0, transaction_subindex=1, status_id=1),  # should reflect status change from post_insert_action
+			make_request_tuple(2, hash_index=0, transaction_subindex=2)
 		], post_insert_action=post_insert_action)
 
 	# endregion

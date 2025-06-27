@@ -1,10 +1,16 @@
 from .nem.NemNetworkFacade import NemNetworkFacade
+from .symbol.SymbolNetworkFacade import SymbolNetworkFacade
 
 
-def load_network_facade(blockchain, network_name):
+async def load_network_facade(config):
 	"""Loads a network facade for the specified blockchain."""
 
-	if 'nem' == blockchain:
-		return NemNetworkFacade(network_name)
+	if 'nem' == config.blockchain:
+		return NemNetworkFacade(config.network)
 
-	raise ValueError(f'blockchain "{blockchain}" is unsupported')
+	if 'symbol' == config.blockchain:
+		facade = SymbolNetworkFacade(config.network)
+		await facade.load_currency_mosaic_ids(config.endpoint)
+		return facade
+
+	raise ValueError(f'blockchain "{config.blockchain}" is unsupported')

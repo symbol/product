@@ -9,6 +9,8 @@ from symbollightapi.connector.NemConnector import NemConnector
 from bridge.models.WrapRequest import WrapRequest
 from bridge.nem.NemNetworkFacade import NemNetworkFacade
 
+from ..test.BridgeTestUtils import assert_wrap_request_success
+
 
 class NemNetworkFacadeTest(unittest.TestCase):
 	def test_can_create_facade(self):
@@ -45,7 +47,7 @@ class NemNetworkFacadeTest(unittest.TestCase):
 		facade = NemNetworkFacade('testnet')
 
 		# Act:
-		result = facade.extract_wrap_request_from_transaction({
+		results = facade.extract_wrap_request_from_transaction({
 			'meta': {
 				'height': 1234,
 				'hash': {
@@ -65,13 +67,13 @@ class NemNetworkFacadeTest(unittest.TestCase):
 		})
 
 		# Assert:
+		self.assertEqual(1, len(results))
+
 		expected_request = WrapRequest(
 			1234,
 			Hash256('FA650B75CC01187E004FCF547796930CC95D9CF55E6E6188FC7D413526A840FA'),
+			-1,
 			Address('TCQKTUUNUOPQGDQIDQT2CCJGQZ4QNAAGBZRV5YJJ'),
 			8888,
 			'0x4838b106fce9647bdf1e7877bf73ce8b0bad5f97')
-
-		self.assertEqual(False, result.is_error)
-		self.assertEqual(expected_request, result.request)
-		self.assertEqual(None, result.error)
+		assert_wrap_request_success(self, results[0], expected_request)

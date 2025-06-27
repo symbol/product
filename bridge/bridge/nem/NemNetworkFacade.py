@@ -28,4 +28,4 @@ class NemNetworkFacade:
 	def extract_wrap_request_from_transaction(self, transaction_with_meta_json):  # pylint: disable=invalid-name
 		"""Extracts a wrap request (or error) from a transaction ."""
 
-		return extract_wrap_request_from_transaction(self.network, transaction_with_meta_json)
+		return [extract_wrap_request_from_transaction(self.network, transaction_with_meta_json)]
