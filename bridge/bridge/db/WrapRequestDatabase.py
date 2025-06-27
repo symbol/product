@@ -28,17 +28,21 @@ class WrapRequestDatabase:
 		cursor = self.connection.cursor()
 		cursor.execute('''CREATE TABLE IF NOT EXISTS wrap_error (
 			wrap_transaction_height integer,
-			wrap_transaction_hash blob UNIQUE,
+			wrap_transaction_hash blob,
+			wrap_transaction_subindex integer,
 			address blob,
-			message text
+			message text,
+			PRIMARY KEY (wrap_transaction_hash, wrap_transaction_subindex)
 		)''')
 		cursor.execute('''CREATE TABLE IF NOT EXISTS wrap_request (
 			wrap_transaction_height integer,
-			wrap_transaction_hash blob UNIQUE,
+			wrap_transaction_hash blob,
+			wrap_transaction_subindex integer,
 			address blob,
 			amount integer,
 			destination_address blob,
-			wrap_status integer
+			wrap_status integer,
+			PRIMARY KEY (wrap_transaction_hash, wrap_transaction_subindex)
 		)''')
 
 		cursor.execute('CREATE INDEX IF NOT EXISTS wrap_error_wrap_transaction_height_idx on wrap_error(wrap_transaction_height)')
@@ -53,9 +57,10 @@ class WrapRequestDatabase:
 		"""Adds an error to the error table."""
 
 		cursor = self.connection.cursor()
-		cursor.execute('''INSERT INTO wrap_error VALUES (?, ?, ?, ?)''', (
+		cursor.execute('''INSERT INTO wrap_error VALUES (?, ?, ?, ?, ?)''', (
 			error.transaction_height,
 			error.transaction_hash.bytes,
+			error.transaction_subindex,
 			error.sender_address.bytes,
 			error.message))
 		self.connection.commit()
@@ -64,9 +69,10 @@ class WrapRequestDatabase:
 		"""Adds a request to the request table."""
 
 		cursor = self.connection.cursor()
-		cursor.execute('''INSERT INTO wrap_request VALUES (?, ?, ?, ?, ?, ?)''', (
+		cursor.execute('''INSERT INTO wrap_request VALUES (?, ?, ?, ?, ?, ?, ?)''', (
 			request.transaction_height,
 			request.transaction_hash.bytes,
+			request.transaction_subindex,
 			request.sender_address.bytes,
 			request.amount,
 			request.destination_address,
@@ -77,9 +83,10 @@ class WrapRequestDatabase:
 		return WrapRequest(
 			request_tuple[0],
 			Hash256(request_tuple[1]),
-			self.network_facade.make_address(request_tuple[2]),
-			request_tuple[3],
-			request_tuple[4])
+			request_tuple[2],
+			self.network_facade.make_address(request_tuple[3]),
+			request_tuple[4],
+			request_tuple[5])
 
 	def requests(self):
 		"""Returns requests."""
@@ -105,10 +112,11 @@ class WrapRequestDatabase:
 
 		cursor = self.connection.cursor()
 		cursor.execute(
-			'''UPDATE wrap_request SET wrap_status = ? WHERE wrap_transaction_hash IS ?''',
+			'''UPDATE wrap_request SET wrap_status = ? WHERE wrap_transaction_hash IS ? AND wrap_transaction_subindex is ?''',
 			(
 				new_status.value,
-				request.transaction_hash.bytes
+				request.transaction_hash.bytes,
+				request.transaction_subindex
 			))
 
 		self.connection.commit()
