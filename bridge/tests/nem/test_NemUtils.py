@@ -5,8 +5,16 @@ from symbolchain.CryptoTypes import Hash256
 from symbolchain.nc import MessageType, NetworkType, TransactionType, TransferTransactionV1, TransferTransactionV2
 from symbolchain.nem.Network import Address, Network
 
-from bridge.models.WrapRequest import WrapError, WrapRequest
+from bridge.models.WrapRequest import WrapRequest
 from bridge.nem.NemUtils import calculate_transfer_transaction_fee, extract_wrap_request_from_transaction
+
+from ..test.BridgeTestUtils import (
+	assert_wrap_request_failure,
+	assert_wrap_request_success,
+	change_request_amount,
+	change_request_destination_address,
+	make_wrap_error_from_request
+)
 
 
 class NemUtilsTest(unittest.TestCase):
@@ -34,10 +42,11 @@ class NemUtilsTest(unittest.TestCase):
 	# region extract_wrap_request_from_transaction - transfer (success)
 
 	@staticmethod
-	def _create_simple_wrap_request():
+	def _create_simple_wrap_request(transaction_subindex=-1):
 		return WrapRequest(
 			1234,
 			Hash256('C0B52BE17C2F41539E50857855A226A24AFE8B23B51E42F3186FBC725EA63550'),
+			transaction_subindex,
 			Address('TCQKTUUNUOPQGDQIDQT2CCJGQZ4QNAAGBZRV5YJJ'),
 			9999_000000,
 			'0x4838b106fce9647bdf1e7877bf73ce8b0bad5f97')
@@ -75,16 +84,6 @@ class NemUtilsTest(unittest.TestCase):
 
 		return transaction_meta_json
 
-	def _assert_wrap_request_success(self, result, expected_request):
-		self.assertEqual(False, result.is_error)
-		self.assertEqual(expected_request, result.request)
-		self.assertEqual(None, result.error)
-
-	def _assert_wrap_request_failure(self, result, expected_error):
-		self.assertEqual(True, result.is_error)
-		self.assertEqual(None, result.request)
-		self.assertEqual(expected_error, result.error)
-
 	def _assert_can_create_wrap_request_from_simple_transfer(self, **kwargs):
 		# Arrange:
 		request = self._create_simple_wrap_request()
@@ -94,7 +93,7 @@ class NemUtilsTest(unittest.TestCase):
 		result = extract_wrap_request_from_transaction(Network.TESTNET, transaction_meta_json)
 
 		# Assert:
-		self._assert_wrap_request_success(result, request)
+		assert_wrap_request_success(self, result, request)
 
 	def test_can_create_wrap_request_from_simple_transfer_v1(self):
 		self._assert_can_create_wrap_request_from_simple_transfer(transaction_version=TransferTransactionV1.TRANSACTION_VERSION)
@@ -115,15 +114,6 @@ class NemUtilsTest(unittest.TestCase):
 
 		return transaction_meta_json
 
-	@staticmethod
-	def _change_request_amount(request, new_amount):
-		return WrapRequest(
-			request.transaction_height,
-			request.transaction_hash,
-			request.sender_address,
-			new_amount,
-			request.destination_address)
-
 	def _assert_can_create_wrap_request_from_single_xem_mosaic_in_bag(self, amount, mosaic_amount, expected_amount):
 		# Arrange:
 		request = self._create_simple_wrap_request()
@@ -133,7 +123,7 @@ class NemUtilsTest(unittest.TestCase):
 		result = extract_wrap_request_from_transaction(Network.TESTNET, transaction_meta_json)
 
 		# Assert:
-		self._assert_wrap_request_success(result, self._change_request_amount(request, expected_amount))
+		assert_wrap_request_success(self, result, change_request_amount(request, expected_amount))
 
 	def test_can_create_wrap_request_from_single_bag_transfer_v2(self):
 		self._assert_can_create_wrap_request_from_single_xem_mosaic_in_bag(2_000000, 12345_000000, 24690_000000)
@@ -172,7 +162,7 @@ class NemUtilsTest(unittest.TestCase):
 		result = extract_wrap_request_from_transaction(Network.TESTNET, transaction_meta_json)
 
 		# Assert:
-		self._assert_wrap_request_success(result, self._change_request_amount(request, 2222_000000))
+		assert_wrap_request_success(self, result, change_request_amount(request, 2222_000000))
 
 	def test_can_create_wrap_request_from_multi_bag_transfer_v2_without_xem(self):
 		# Arrange:
@@ -194,19 +184,11 @@ class NemUtilsTest(unittest.TestCase):
 		result = extract_wrap_request_from_transaction(Network.TESTNET, transaction_meta_json)
 
 		# Assert:
-		self._assert_wrap_request_success(result, self._change_request_amount(request, 0))
+		assert_wrap_request_success(self, result, change_request_amount(request, 0))
 
 	# endregion
 
 	# region extract_wrap_request_from_transaction - transfer (failure)
-
-	@staticmethod
-	def _make_wrap_error_from_request(request, message):
-		return WrapError(
-			request.transaction_height,
-			request.transaction_hash,
-			request.sender_address,
-			message)
 
 	def _assert_cannot_create_wrap_request_from_simple_transfer(self, expected_error_message, **kwargs):
 		# Arrange:
@@ -220,7 +202,7 @@ class NemUtilsTest(unittest.TestCase):
 		result = extract_wrap_request_from_transaction(Network.TESTNET, transaction_meta_json)
 
 		# Assert:
-		self._assert_wrap_request_failure(result, self._make_wrap_error_from_request(request, expected_error_message))
+		assert_wrap_request_failure(self, result, make_wrap_error_from_request(request, expected_error_message))
 
 	def test_cannot_create_wrap_request_from_simple_transfer_with_invalid_message_type(self):
 		self._assert_cannot_create_wrap_request_from_simple_transfer(
@@ -240,20 +222,15 @@ class NemUtilsTest(unittest.TestCase):
 	def test_cannot_create_wrap_request_from_transfer_with_invalid_message(self):
 		# Arrange:
 		request = self._create_simple_wrap_request()
-		request = WrapRequest(
-			request.transaction_height,
-			request.transaction_hash,
-			request.sender_address,
-			request.amount,
-			'0x4838b106fce9647bdf1e7877bf73ce8b0bad5f')  # too short
+		request = change_request_destination_address(request, '0x4838b106fce9647bdf1e7877bf73ce8b0bad5f')  # too short
 		transaction_meta_json = self._create_transfer_json(request)
 
 		# Act:
 		result = extract_wrap_request_from_transaction(Network.TESTNET, transaction_meta_json)
 
 		# Assert:
-		expected_error_message = 'target ethereum address 0x4838b106fce9647bdf1e7877bf73ce8b0bad5f is invalid'
-		self._assert_wrap_request_failure(result, self._make_wrap_error_from_request(request, expected_error_message))
+		expected_error_message = 'destination ethereum address 0x4838b106fce9647bdf1e7877bf73ce8b0bad5f is invalid'
+		assert_wrap_request_failure(self, result, make_wrap_error_from_request(request, expected_error_message))
 
 	# endregion
 
@@ -261,7 +238,7 @@ class NemUtilsTest(unittest.TestCase):
 
 	def test_can_create_wrap_request_from_aggregate_with_transfer(self):
 		# Arrange:
-		request = self._create_simple_wrap_request()
+		request = self._create_simple_wrap_request(transaction_subindex=0)
 		transaction_meta_json = self._create_transfer_json(request)
 		transaction_meta_json = {
 			'meta': self._create_transfer_json(request)['meta'],
@@ -278,7 +255,7 @@ class NemUtilsTest(unittest.TestCase):
 		result = extract_wrap_request_from_transaction(Network.TESTNET, transaction_meta_json)
 
 		# Assert:
-		self._assert_wrap_request_success(result, request)
+		assert_wrap_request_success(self, result, request)
 
 	# endregion
 
@@ -286,7 +263,7 @@ class NemUtilsTest(unittest.TestCase):
 
 	def test_can_create_wrap_request_from_aggregate_with_other_transaction(self):
 		# Arrange:
-		request = self._create_simple_wrap_request()
+		request = self._create_simple_wrap_request(transaction_subindex=0)
 		transaction_meta_json = self._create_transfer_json(request)
 		transaction_meta_json = {
 			'meta': self._create_transfer_json(request)['meta'],
@@ -306,6 +283,6 @@ class NemUtilsTest(unittest.TestCase):
 
 		# Assert:
 		expected_error_message = 'inner transaction type 8193 is not supported'
-		self._assert_wrap_request_failure(result, self._make_wrap_error_from_request(request, expected_error_message))
+		assert_wrap_request_failure(self, result, make_wrap_error_from_request(request, expected_error_message))
 
 	# endregion
