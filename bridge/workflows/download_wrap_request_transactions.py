@@ -24,6 +24,7 @@ async def main():
 	connector = network_facade.create_connector(config.native_network.endpoint)
 
 	finalized_chain_height = await connector.finalized_chain_height()
+	end_height = finalized_chain_height + 1
 
 	bridge_address = network_facade.make_address(config.native_network.bridge_address)
 	with Databases(config.machine.database_directory, network_facade) as databases:
@@ -32,7 +33,7 @@ async def main():
 		database_height = databases.wrap_request.max_processed_height()
 		start_height = database_height + 1
 
-		print(f'searching address {bridge_address} for deposits in range [{start_height}, {finalized_chain_height})...')
+		print(f'searching address {bridge_address} for deposits in range [{start_height}, {end_height})...')
 
 		count = 0
 		error_count = 0
