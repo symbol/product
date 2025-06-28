@@ -44,7 +44,7 @@ def build_shoestring_command(
 	shoestring_args = [
 		command_name,
 		'--config', str(Path(shoestring_directory) / 'shoestring.ini'),
-		'--directory', str(destination_directory)
+		'--directory', str(Path(destination_directory) / 'node')
 	]
 
 	if requires_ca_key_path(operation):
@@ -53,13 +53,14 @@ def build_shoestring_command(
 	if operation in (ShoestringOperation.SETUP, ShoestringOperation.UPGRADE):
 		shoestring_args.extend([
 			'--overrides', str(Path(shoestring_directory) / 'overrides.ini'),
+			'--rest-overrides', str(Path(shoestring_directory) / 'rest_overrides.json'),
 			'--package', package
 		])
 
 	if ShoestringOperation.SETUP == operation:
 		shoestring_args.extend(['--security', 'insecure'])
 
-		if has_custom_rest_overrides:
-			shoestring_args.extend(['--rest-overrides', str(Path(shoestring_directory) / 'rest_overrides.json')])
+	if operation == ShoestringOperation.SETUP:
+            Path(destination_directory, "node").mkdir(parents=True, exist_ok=True)
 
 	return shoestring_args
