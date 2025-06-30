@@ -434,7 +434,19 @@ async def test_can_query_peers(server):  # pylint: disable=redefined-outer-name
 # endregion
 
 
-# region GET (account_info)
+# region GET (balance, account_info)
+
+async def test_can_query_balance(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	connector = NemConnector(server.make_url(''))
+
+	# Act:
+	balance = await connector.balance(Address('NCXIQA4FF5JB6AMQ53NQ3ZMRD3X3PJEWDJJJIGHT'))
+
+	# Assert:
+	assert [f'{server.make_url("")}/account/get?address=NCXIQA4FF5JB6AMQ53NQ3ZMRD3X3PJEWDJJJIGHT'] == server.mock.urls
+	assert 20612823_531967 == balance
+
 
 def _assert_account_info_1(account_info):
 	assert Address('NCXIQA4FF5JB6AMQ53NQ3ZMRD3X3PJEWDJJJIGHT') == account_info.address
