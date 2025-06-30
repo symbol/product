@@ -158,7 +158,13 @@ async def server(aiohttp_client):
 
 			return await self._process(request, {
 				'account': {
-					'supplementalPublicKeys': json_supplemental_public_keys
+					'supplementalPublicKeys': json_supplemental_public_keys,
+
+					'mosaics': [
+						{'id': '00BBCCFF00112244', 'amount': '11223344'},
+						{'id': 'DEADDEADDEADDEAD', 'amount': '9988776655'},
+						{'id': 'FFBBCCFF00112244', 'amount': '123'}
+					]
 				}
 			})
 
@@ -398,6 +404,32 @@ async def test_can_query_peers(server):  # pylint: disable=redefined-outer-name
 		'tiger',
 		'1.0.3.5',
 		5) == peers[1]
+
+# endregion
+
+
+# region GET (balance)
+
+async def _assert_can_query_balance(server, mosaic_id, expected_balance, call_count=1):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	connector = SymbolConnector(server.make_url(''))
+
+	# Act:
+	balance = await connector.balance(Address(SYMBOL_ADDRESSES[0]), mosaic_id)
+
+	# Assert:
+	assert [f'{server.make_url("")}/accounts/{SYMBOL_ADDRESSES[0]}'] * call_count == server.mock.urls
+	assert expected_balance == balance
+
+
+async def test_can_query_balance_for_owned_mosaic(server):  # pylint: disable=redefined-outer-name
+	await _assert_can_query_balance(server, '00BBCCFF00112244', 11223344)
+	await _assert_can_query_balance(server, 'DEADDEADDEADDEAD', 9988776655, 2)
+	await _assert_can_query_balance(server, 'FFBBCCFF00112244', 123, 3)
+
+
+async def test_can_query_balance_for_not_owned_mosaic(server):  # pylint: disable=redefined-outer-name
+	await _assert_can_query_balance(server, 'AABBCCFF00112244', 0)
 
 # endregion
 

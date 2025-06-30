@@ -129,7 +129,13 @@ class NemConnector(BasicConnector):
 
 	# endregion
 
-	# region GET (account_info)
+	# region GET (balance, account_info)
+
+	async def balance(self, address):
+		"""Gets account balance for specified mosaic."""
+
+		response_json = await self.get(f'account/get?address={address}')
+		return response_json['account']['balance']
 
 	async def account_info(self, address, forwarded=False):
 		subpath = '/forwarded' if forwarded else ''
