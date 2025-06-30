@@ -95,7 +95,8 @@ async def server():  # pylint: disable=too-many-statements
 			packet_header = PacketHeader.deserialize_from_buffer(header)
 
 			if server.simulate_long_operation:
-				await asyncio.sleep(0.25)
+				server.sleep_task = asyncio.create_task(asyncio.sleep(0.25))
+				await server.sleep_task
 
 			response_header = PacketHeader()
 			response_buffer_writer = BufferWriter()
@@ -143,9 +144,13 @@ async def server():  # pylint: disable=too-many-statements
 	server.simulate_long_operation = False
 	server.simulate_corrupt_packet = False
 	server.simulate_corrupt_packet_type = False
+	server.sleep_task = None
 	server.host = '127.0.0.1'
 	server.port = 8888
 	yield server
+
+	if server.sleep_task:
+		server.sleep_task.cancel()
 
 	server.close()
 
