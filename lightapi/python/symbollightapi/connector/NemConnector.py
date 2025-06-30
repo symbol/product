@@ -90,8 +90,8 @@ class NemConnector(BasicConnector):
 	async def node_info(self):
 		"""Gets node information."""
 
-		node_dict = await self.get('node/info')
-		node_info = self._map_to_node_info(node_dict)
+		node_json = await self.get('node/info')
+		node_info = self._map_to_node_info(node_json)
 
 		# lookup main account public key
 		node_address = self.network.public_key_to_address(node_info.node_public_key)
@@ -105,16 +105,16 @@ class NemConnector(BasicConnector):
 		return node_info
 
 	@staticmethod
-	def _map_to_node_info(node_dict):
-		endpoint_dict = node_dict['endpoint']
+	def _map_to_node_info(node_json):
+		endpoint_json = node_json['endpoint']
 		return NodeInfo(
-			node_dict['metaData']['networkId'],
+			node_json['metaData']['networkId'],
 			None,  # NEM does not have network generation hash seed
 			None,
-			PublicKey(node_dict['identity']['public-key']),
-			Endpoint(endpoint_dict['protocol'], endpoint_dict['host'], endpoint_dict['port']),
-			node_dict['identity']['name'],
-			node_dict['metaData']['version'],
+			PublicKey(node_json['identity']['public-key']),
+			Endpoint(endpoint_json['protocol'], endpoint_json['host'], endpoint_json['port']),
+			node_json['identity']['name'],
+			node_json['metaData']['version'],
 			NodeInfo.API_ROLE_FLAG)
 
 	# endregion
@@ -124,8 +124,8 @@ class NemConnector(BasicConnector):
 	async def peers(self):
 		"""Gets peer nodes information."""
 
-		nodes_dict = await self.get('node/peer-list/reachable', 'data')
-		return [self._map_to_node_info(node_dict) for node_dict in nodes_dict]
+		nodes_json = await self.get('node/peer-list/reachable', 'data')
+		return [self._map_to_node_info(node_json) for node_json in nodes_json]
 
 	# endregion
 
@@ -133,18 +133,18 @@ class NemConnector(BasicConnector):
 
 	async def account_info(self, address, forwarded=False):
 		subpath = '/forwarded' if forwarded else ''
-		response_dict = await self.get(f'account/get{subpath}?address={address}')
+		response_json = await self.get(f'account/get{subpath}?address={address}')
 
-		account_dict = response_dict['account']
-		account_info = NemAccountInfo(Address(account_dict['address']))
-		account_info.vested_balance = account_dict['vestedBalance'] / MICROXEM_PER_XEM
-		account_info.balance = account_dict['balance'] / MICROXEM_PER_XEM
-		account_info.public_key = PublicKey(account_dict['publicKey']) if account_dict['publicKey'] else None
-		account_info.importance = account_dict['importance']
-		account_info.harvested_blocks = account_dict['harvestedBlocks']
+		account_json = response_json['account']
+		account_info = NemAccountInfo(Address(account_json['address']))
+		account_info.vested_balance = account_json['vestedBalance'] / MICROXEM_PER_XEM
+		account_info.balance = account_json['balance'] / MICROXEM_PER_XEM
+		account_info.public_key = PublicKey(account_json['publicKey']) if account_json['publicKey'] else None
+		account_info.importance = account_json['importance']
+		account_info.harvested_blocks = account_json['harvestedBlocks']
 
-		meta_dict = response_dict['meta']
-		account_info.remote_status = meta_dict['remoteStatus']
+		meta_json = response_json['meta']
+		account_info.remote_status = meta_json['remoteStatus']
 		return account_info
 
 	# endregion
