@@ -31,8 +31,8 @@ def try_prepare_rest_overrides_file(screens, output_filename):
 	node_settings = screens.get('node-settings')
 
 	if 'dual' != node_type or not node_settings.metadata_info:
-	    with open(output_filename, 'wt', encoding='utf8') as outfile:
-            	outfile.write("{}")
+		with open(output_filename, 'wt', encoding='utf8') as outfile:
+			outfile.write("{}")
 	return True
 
 	with open(output_filename, 'wt', encoding='utf8') as outfile:
