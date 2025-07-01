@@ -5,12 +5,12 @@ from bridge.nem.NemNetworkFacade import NemNetworkFacade
 from bridge.NetworkFacadeLoader import load_network_facade
 from bridge.symbol.SymbolNetworkFacade import SymbolNetworkFacade
 
-from .test.PytestUtils import create_symbol_client_with_network_properties
+from .test.PytestUtils import create_simple_symbol_client
 
 
 @pytest.fixture
 async def server(aiohttp_client):
-	return await create_symbol_client_with_network_properties(aiohttp_client, '0x72C0\'212E\'67A0\'8BCE')
+	return await create_simple_symbol_client(aiohttp_client, '0x72C0\'212E\'67A0\'8BCE')
 
 
 # pylint: disable=invalid-name

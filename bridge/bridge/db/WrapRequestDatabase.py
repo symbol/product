@@ -107,6 +107,14 @@ class WrapRequestDatabase:
 		max_request_height = cursor.fetchone()[0]
 		return max(max_error_height or 0, max_request_height or 0)
 
+	def total_wrapped_amount(self):
+		"""Gets sum of all valid wrap request amounts."""
+
+		cursor = self.connection.cursor()
+		cursor.execute('''SELECT SUM(amount) FROM wrap_request''')
+		sum_amount = cursor.fetchone()[0]
+		return sum_amount or 0
+
 	def set_request_status(self, request, new_status):
 		"""Sets the status for a request."""
 

@@ -10,12 +10,14 @@ from bridge.models.WrapRequest import WrapRequest
 from bridge.symbol.SymbolNetworkFacade import SymbolNetworkFacade
 
 from ..test.BridgeTestUtils import assert_wrap_request_success
-from ..test.PytestUtils import PytestAsserter, create_symbol_client_with_network_properties
+from ..test.PytestUtils import PytestAsserter, create_simple_symbol_client
 
 
 @pytest.fixture
 async def server(aiohttp_client):
-	return await create_symbol_client_with_network_properties(aiohttp_client, '0x72C0\'212E\'67A0\'8BCE')
+	return await create_simple_symbol_client(aiohttp_client, '0x72C0\'212E\'67A0\'8BCE', {
+		'TA6MYQRFJI24C2Y2WPX7QKAPMUDIS5FWZOBIBEA': 9988776655
+	})
 
 
 # pylint: disable=invalid-name
@@ -98,3 +100,17 @@ async def test_can_extract_wrap_request_from_transaction(server):  # pylint: dis
 		8888,
 		'0x4838b106fce9647bdf1e7877bf73ce8b0bad5f97')
 	assert_wrap_request_success(PytestAsserter(), results[0], expected_request)
+
+
+async def test_can_lookup_account_balance(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	facade = SymbolNetworkFacade('testnet')
+	await facade.load_currency_mosaic_ids(server.make_url(''))
+
+	connector = facade.create_connector(server.make_url(''))
+
+	# Act:
+	balance = await facade.lookup_account_balance(connector, Address('TA6MYQRFJI24C2Y2WPX7QKAPMUDIS5FWZOBIBEA'))
+
+	# Assert:
+	assert 9988776655 == balance

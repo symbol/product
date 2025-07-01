@@ -288,6 +288,38 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 
 	# endregion
 
+	# region total_wrapped_amount
+
+	def test_total_wrapped_amount_amount_is_zero_when_empty(self):
+		# Arrange:
+		with sqlite3.connect(':memory:') as connection:
+			database = WrapRequestDatabase(connection, MockNetworkFacade())
+			database.create_tables()
+
+			# Act:
+			total_wrapped_amount = database.total_wrapped_amount()
+
+			# Assert:
+			self.assertEqual(0, total_wrapped_amount)
+
+	def test_total_wrapped_amount_is_calculated_correctly_when_requests_present(self):
+		# Arrange:
+		with sqlite3.connect(':memory:') as connection:
+			database = WrapRequestDatabase(connection, MockNetworkFacade())
+			database.create_tables()
+
+			database.add_request(make_request(1, amount=1000))
+			database.add_request(make_request(2, amount=3333))
+			database.add_request(make_request(3, amount=2020))
+
+			# Act:
+			total_wrapped_amount = database.total_wrapped_amount()
+
+			# Assert:
+			self.assertEqual(6353, total_wrapped_amount)
+
+	# endregion
+
 	# region set_request_status
 
 	def test_can_update_single_request_status(self):

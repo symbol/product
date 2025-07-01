@@ -29,3 +29,9 @@ class NemNetworkFacade:
 		"""Extracts a wrap request (or error) from a transaction ."""
 
 		return [extract_wrap_request_from_transaction(self.network, transaction_with_meta_json)]
+
+	@staticmethod
+	async def lookup_account_balance(connector, address):
+		"""Gets account balance for network currency."""
+
+		return await connector.balance(address)
