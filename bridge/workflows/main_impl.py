@@ -18,7 +18,7 @@ async def main_bootstrapper(program_description, main_impl):
 	logging.basicConfig(filename=config.machine.log_filename, level=logging.DEBUG)
 
 	network_facade = await load_network_facade(config.native_network)
-	connector = network_facade.create_connector(config.native_network.endpoint)
+	connector = network_facade.create_connector()
 
 	bridge_address = network_facade.make_address(config.native_network.bridge_address)
 	with Databases(config.machine.database_directory, network_facade) as databases:
