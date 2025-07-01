@@ -47,3 +47,9 @@ class SymbolNetworkFacade:
 		"""Extracts a wrap request (or error) from a transaction ."""
 
 		return extract_wrap_request_from_transaction(self.network, self.is_currency_mosaic_id, transaction_with_meta_json)
+
+	async def lookup_account_balance(self, connector, address):
+		"""Gets account balance for network currency."""
+
+		formatted_currency_mosaic_id = hex(self.currency_mosaic_ids[0])[2:].upper()
+		return await connector.balance(address, formatted_currency_mosaic_id)
