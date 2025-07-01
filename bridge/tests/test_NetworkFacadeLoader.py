@@ -16,9 +16,13 @@ async def server(aiohttp_client):
 # pylint: disable=invalid-name
 
 
+def _create_config(blockchain, server):  # pylint: disable=redefined-outer-name
+	return NetworkConfiguration(blockchain, 'testnet', server.make_url(''), None, {})
+
+
 async def test_can_load_nem_network_facade(server):  # pylint: disable=redefined-outer-name
 	# Act:
-	facade = await load_network_facade(NetworkConfiguration('nem', 'testnet', server.make_url(''), ''))
+	facade = await load_network_facade(_create_config('nem', server))
 
 	# Assert:
 	assert isinstance(facade, NemNetworkFacade)
@@ -27,7 +31,7 @@ async def test_can_load_nem_network_facade(server):  # pylint: disable=redefined
 
 async def test_can_load_symbol_network_facade(server):  # pylint: disable=redefined-outer-name
 	# Act:
-	facade = await load_network_facade(NetworkConfiguration('symbol', 'testnet', server.make_url(''), ''))
+	facade = await load_network_facade(_create_config('symbol', server))
 
 	# Assert:
 	assert isinstance(facade, SymbolNetworkFacade)
@@ -40,4 +44,4 @@ async def test_can_load_symbol_network_facade(server):  # pylint: disable=redefi
 
 async def test_cannot_load_unknown_network_facade(server):  # pylint: disable=redefined-outer-name
 	with pytest.raises(ValueError, match='blockchain "foo" is unsupported'):
-		await load_network_facade(NetworkConfiguration('foo', 'testnet', server.make_url(''), ''))
+		await load_network_facade(_create_config('foo', server))

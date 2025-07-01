@@ -69,6 +69,25 @@ class BridgeConfigurationTest(unittest.TestCase):
 		self.assertEqual('bar', network_config.network)
 		self.assertEqual('http://foo.bar.net:1234', network_config.endpoint)
 		self.assertEqual('MY_CUSTOM_ADDRESS', network_config.bridge_address)
+		self.assertEqual({}, network_config.extensions)
+
+	def test_can_parse_valid_network_configuration_with_custom_extensions(self):
+		# Act:
+		network_config = parse_network_configuration({
+			**self.VALID_NETWORK_CONFIGURATION,
+			'alpha': 'custom variable',
+			'betaGamma': 'another custom variable'
+		})
+
+		# Assert:
+		self.assertEqual('foo', network_config.blockchain)
+		self.assertEqual('bar', network_config.network)
+		self.assertEqual('http://foo.bar.net:1234', network_config.endpoint)
+		self.assertEqual('MY_CUSTOM_ADDRESS', network_config.bridge_address)
+		self.assertEqual({
+			'alpha': 'custom variable',
+			'beta_gamma': 'another custom variable'
+		}, network_config.extensions)
 
 	def test_cannot_parse_network_configuration_incomplete(self):
 		self._assert_cannot_parse_incomplete_configuration(parse_network_configuration, self.VALID_NETWORK_CONFIGURATION)
@@ -104,6 +123,7 @@ class BridgeConfigurationTest(unittest.TestCase):
 			self.assertEqual('bar', config.native_network.network)
 			self.assertEqual('http://foo.bar.net:1234', config.native_network.endpoint)
 			self.assertEqual('MY_CUSTOM_ADDRESS', config.native_network.bridge_address)
+			self.assertEqual({}, config.native_network.extensions)
 
 			self.assertEqual('cat', config.wrapped_network.blockchain)
 			self.assertEqual('baz', config.wrapped_network.network)
