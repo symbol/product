@@ -30,20 +30,22 @@ SYMBOL_ADDRESSES = [
 
 
 def make_request_error(index, message, **kwargs):
-	address = Address(NEM_ADDRESSES[kwargs.get('address_index', index)])
 	height = kwargs.get('height', None) or HEIGHTS[index]
 	transaction_hash = Hash256(HASHES[kwargs.get('hash_index', index)])
 	transaction_subindex = kwargs.get('transaction_subindex', 0)
+	address = Address(NEM_ADDRESSES[kwargs.get('address_index', index)])
 	return WrapError(height, transaction_hash, transaction_subindex, address, message)
 
 
 def make_request(index, **kwargs):
-	address = Address(NEM_ADDRESSES[kwargs.get('address_index', index)])
 	height = kwargs.get('height', None) or HEIGHTS[index]
 	transaction_hash = Hash256(HASHES[kwargs.get('hash_index', index)])
 	transaction_subindex = kwargs.get('transaction_subindex', 0)
+	address = Address(NEM_ADDRESSES[kwargs.get('address_index', index)])
+
+	amount = kwargs.get('amount', height % 1000)
 	destination_address = PublicKey(PUBLIC_KEYS[kwargs.get('destination_address_index', index)])
-	return WrapRequest(height, transaction_hash, transaction_subindex, address, height % 1000, f'0x{destination_address}')
+	return WrapRequest(height, transaction_hash, transaction_subindex, address, amount, f'0x{destination_address}')
 
 
 def make_wrap_error_from_request(request, message):
