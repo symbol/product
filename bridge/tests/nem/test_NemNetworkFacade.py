@@ -191,8 +191,8 @@ def test_can_create_transfer_transaction_version_two_without_message():
 	assert 1 == len(transaction.mosaics)
 
 	mosaic = transaction.mosaics[0].mosaic
-	assert 'nem' == mosaic.mosaic_id.namespace_id.name
-	assert 'xem' == mosaic.mosaic_id.name
+	assert b'nem' == mosaic.mosaic_id.namespace_id.name
+	assert b'xem' == mosaic.mosaic_id.name
 	assert nc.Amount(88888_000000) == mosaic.amount
 
 	assert transaction.message is None
@@ -216,8 +216,8 @@ def test_can_create_transfer_transaction_version_two_with_message():
 	assert 1 == len(transaction.mosaics)
 
 	mosaic = transaction.mosaics[0].mosaic
-	assert 'nem' == mosaic.mosaic_id.namespace_id.name
-	assert 'xem' == mosaic.mosaic_id.name
+	assert b'nem' == mosaic.mosaic_id.namespace_id.name
+	assert b'xem' == mosaic.mosaic_id.name
 	assert nc.Amount(88888_000000) == mosaic.amount
 
 	assert nc.MessageType.PLAIN == transaction.message.message_type

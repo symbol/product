@@ -69,7 +69,7 @@ class NemNetworkFacade:
 				'mosaics': [
 					{
 						'mosaic': {
-							'mosaic_id': {'namespace_id': {'name': 'nem'}, 'name': 'xem'},
+							'mosaic_id': {'namespace_id': {'name': 'nem'.encode('utf8')}, 'name': 'xem'.encode('utf8')},
 							'amount': balance_transfer.amount
 						}
 					}
