@@ -38,7 +38,7 @@ def try_prepare_rest_overrides_file(screens, output_filename):
 	with open(output_filename, 'wt', encoding='utf8') as outfile:
 		outfile.write(f'{{"nodeMetadata":{node_settings.metadata_info}}}')
 
-	return True
+		return True
 
 
 def prepare_overrides_file(screens, output_filename):
