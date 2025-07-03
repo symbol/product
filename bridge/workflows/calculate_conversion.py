@@ -5,8 +5,8 @@ from bridge.db.WrapRequestDatabase import WrapRequestStatus
 from .main_impl import main_bootstrapper
 
 
-async def main_impl(databases, network_facade, _connector, bridge_address):
-	bridge_balance = await network_facade.lookup_account_balance(bridge_address)
+async def main_impl(databases, native_network, _wrapped_network):
+	bridge_balance = await native_network.facade.lookup_account_balance(native_network.bridge_address)
 
 	total_wrapped_amount = databases.wrap_request.total_wrapped_amount()
 

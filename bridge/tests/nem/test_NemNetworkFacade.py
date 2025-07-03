@@ -7,11 +7,11 @@ from symbolchain.nem.Network import Address, NetworkTimestamp
 from symbollightapi.connector.NemConnector import NemConnector
 
 from bridge.models.BridgeConfiguration import NetworkConfiguration
-from bridge.models.WrapRequest import WrapRequest
+from bridge.models.WrapRequest import WrapError, WrapRequest
 from bridge.nem.NemNetworkFacade import NemNetworkFacade
 from bridge.NetworkUtils import BalanceTransfer
 
-from ..test.BridgeTestUtils import assert_wrap_request_success
+from ..test.BridgeTestUtils import assert_wrap_request_failure, assert_wrap_request_success
 from ..test.PytestUtils import PytestAsserter, create_simple_nem_client
 
 
@@ -25,7 +25,7 @@ async def server(aiohttp_client):
 # pylint: disable=invalid-name
 
 
-# region constructor, create_connector, make_address
+# region constructor, create_connector, make_address, is_valid_address_string
 
 def _create_config(server=None):  # pylint: disable=redefined-outer-name
 	return NetworkConfiguration('nem', 'testnet', server.make_url('') if server else 'http://foo.bar:1234', None, {})
@@ -62,17 +62,28 @@ def test_can_make_address():
 	assert Address('TAHTNAEQNDJOBDHHRON7SKU7PO6GAWXAJZ4CB2QG') == address_from_string
 	assert Address('TAHTNAEQNDJOBDHHRON7SKU7PO6GAWXAJZ4CB2QG') == address_from_bytes
 
+
+def test_is_valid_address_string_only_returns_true_for_valid_addresses_on_network():
+	# Arrange:
+	facade = NemNetworkFacade(_create_config())
+
+	# Act + Assert:
+	assert facade.is_valid_address_string('TAHTNAEQNDJOBDHHRON7SKU7PO6GAWXAJZ4CB2QG')        # nem testnet
+	assert not facade.is_valid_address_string('NCHESTYVD2P6P646AMY7WSNG73PCPZDUQNSD6JAK')    # nem mainnet
+	assert not facade.is_valid_address_string('0x4838b106fce9647bdf1e7877bf73ce8b0bad5f97')  # ethereum
+	assert not facade.is_valid_address_string('TAUPP4BRGNQP5KG2QY53FNYZVZ7SDXQVS5BG2IQ')     # symbol testnet
+
 # endregion
 
 
 # region extract_wrap_request_from_transaction
 
-async def test_can_extract_wrap_request_from_transaction():
+async def _assert_can_extract_wrap_request_from_transaction(is_valid_address, expected_request_or_error, assert_wrap_request):
 	# Arrange:
 	facade = NemNetworkFacade(_create_config())
 
 	# Act:
-	results = facade.extract_wrap_request_from_transaction({
+	results = facade.extract_wrap_request_from_transaction(lambda _address: is_valid_address, {
 		'meta': {
 			'height': 1234,
 			'hash': {
@@ -86,22 +97,37 @@ async def test_can_extract_wrap_request_from_transaction():
 			'signer': '3917578FF27A88B20E137D9D2E54E775163F9C493A193A64F96748EBF8B21F3C',
 			'message': {
 				'type': nc.MessageType.PLAIN.value,
-				'payload': hexlify('0x4838b106fce9647bdf1e7877bf73ce8b0bad5f97'.encode('utf8')).decode('utf8')
+				'payload': hexlify('0x4838b106fce9647bdf1e7877bf73ce8b0bad5f98'.encode('utf8')).decode('utf8')
 			}
 		}
 	})
 
 	# Assert:
 	assert 1 == len(results)
+	assert_wrap_request(PytestAsserter(), results[0], expected_request_or_error)
 
+
+async def test_can_extract_wrap_request_from_transaction_is_valid_address():
 	expected_request = WrapRequest(
 		1234,
 		Hash256('FA650B75CC01187E004FCF547796930CC95D9CF55E6E6188FC7D413526A840FA'),
 		-1,
 		Address('TCQKTUUNUOPQGDQIDQT2CCJGQZ4QNAAGBZRV5YJJ'),
 		8888,
-		'0x4838b106fce9647bdf1e7877bf73ce8b0bad5f97')
-	assert_wrap_request_success(PytestAsserter(), results[0], expected_request)
+		'0x4838b106fce9647bdf1e7877bf73ce8b0bad5f98')
+
+	await _assert_can_extract_wrap_request_from_transaction(True, expected_request, assert_wrap_request_success)
+
+
+async def test_can_extract_wrap_request_from_transaction_not_is_valid_address():
+	expected_error = WrapError(
+		1234,
+		Hash256('FA650B75CC01187E004FCF547796930CC95D9CF55E6E6188FC7D413526A840FA'),
+		-1,
+		Address('TCQKTUUNUOPQGDQIDQT2CCJGQZ4QNAAGBZRV5YJJ'),
+		'destination address 0x4838b106fce9647bdf1e7877bf73ce8b0bad5f98 is invalid')
+
+	await _assert_can_extract_wrap_request_from_transaction(False, expected_error, assert_wrap_request_failure)
 
 # endregion
 

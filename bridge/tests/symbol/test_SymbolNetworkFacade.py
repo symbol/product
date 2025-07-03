@@ -7,11 +7,11 @@ from symbolchain.symbol.Network import Address, NetworkTimestamp
 from symbollightapi.connector.SymbolConnector import SymbolConnector
 
 from bridge.models.BridgeConfiguration import NetworkConfiguration
-from bridge.models.WrapRequest import WrapRequest
+from bridge.models.WrapRequest import WrapError, WrapRequest
 from bridge.NetworkUtils import BalanceTransfer
 from bridge.symbol.SymbolNetworkFacade import SymbolNetworkFacade
 
-from ..test.BridgeTestUtils import assert_wrap_request_success
+from ..test.BridgeTestUtils import assert_wrap_request_failure, assert_wrap_request_success
 from ..test.PytestUtils import PytestAsserter, create_simple_symbol_client
 
 
@@ -25,7 +25,7 @@ async def server(aiohttp_client):
 # pylint: disable=invalid-name
 
 
-# region constructor, create_connector, make_address
+# region constructor, create_connector, make_address, is_valid_address_string
 
 def _create_config(server=None):  # pylint: disable=redefined-outer-name
 	return NetworkConfiguration('symbol', 'testnet', server.make_url('') if server else 'http://foo.bar:1234', None, {
@@ -64,10 +64,21 @@ def test_can_make_address():
 	assert Address('TAUPP4BRGNQP5KG2QY53FNYZVZ7SDXQVS5BG2IQ') == address_from_string
 	assert Address('TAUPP4BRGNQP5KG2QY53FNYZVZ7SDXQVS5BG2IQ') == address_from_bytes
 
+
+def test_is_valid_address_string_only_returns_true_for_valid_addresses_on_network():
+	# Arrange:
+	facade = SymbolNetworkFacade(_create_config())
+
+	# Act + Assert:
+	assert facade.is_valid_address_string('TAUPP4BRGNQP5KG2QY53FNYZVZ7SDXQVS5BG2IQ')         # symbol testnet
+	assert not facade.is_valid_address_string('NCHEST3QRQS4JZGOO64TH7NFJ2A63YA7TPM5PXI')     # symbol mainnet
+	assert not facade.is_valid_address_string('0x4838b106fce9647bdf1e7877bf73ce8b0bad5f97')  # ethereum
+	assert not facade.is_valid_address_string('TAHTNAEQNDJOBDHHRON7SKU7PO6GAWXAJZ4CB2QG')    # nem testnet
+
 # endregion
 
 
-# region extract_wrap_request_from_transaction
+# region load_currency_mosaic_ids
 
 async def test_can_load_currency_mosaic_ids(server):  # pylint: disable=redefined-outer-name
 	# Arrange:
@@ -81,14 +92,19 @@ async def test_can_load_currency_mosaic_ids(server):  # pylint: disable=redefine
 	assert facade.is_currency_mosaic_id(0xE74B99BA41F4AFEE)  # alias symbol.xym
 	assert not facade.is_currency_mosaic_id(0x6BED913FA20223F8)  # mainnet
 
+# endregion
 
-async def test_can_extract_wrap_request_from_transaction(server):  # pylint: disable=redefined-outer-name
+
+# region extract_wrap_request_from_transaction
+
+async def _assert_can_extract_wrap_request_from_transaction(server, is_valid_address, expected_request_or_error, assert_wrap_request):
+	# pylint: disable=redefined-outer-name
 	# Arrange:
 	facade = SymbolNetworkFacade(_create_config(server))
 	await facade.load_currency_mosaic_ids()
 
 	# Act:
-	results = facade.extract_wrap_request_from_transaction({
+	results = facade.extract_wrap_request_from_transaction(lambda _address: is_valid_address, {
 		'meta': {
 			'height': '23456',
 			'hash': 'FA650B75CC01187E004FCF547796930CC95D9CF55E6E6188FC7D413526A840FA'
@@ -105,7 +121,10 @@ async def test_can_extract_wrap_request_from_transaction(server):  # pylint: dis
 
 	# Assert:
 	assert 1 == len(results)
+	assert_wrap_request(PytestAsserter(), results[0], expected_request_or_error)
 
+
+async def test_can_extract_wrap_request_from_transaction_is_valid_address(server):  # pylint: disable=redefined-outer-name
 	expected_request = WrapRequest(
 		23456,
 		Hash256('FA650B75CC01187E004FCF547796930CC95D9CF55E6E6188FC7D413526A840FA'),
@@ -113,7 +132,20 @@ async def test_can_extract_wrap_request_from_transaction(server):  # pylint: dis
 		Address('TA6MYQRFJI24C2Y2WPX7QKAPMUDIS5FWZOBIBEA'),
 		8888,
 		'0x4838b106fce9647bdf1e7877bf73ce8b0bad5f97')
-	assert_wrap_request_success(PytestAsserter(), results[0], expected_request)
+
+	await _assert_can_extract_wrap_request_from_transaction(server, True, expected_request, assert_wrap_request_success)
+
+
+async def test_can_extract_wrap_request_from_transaction_not_is_valid_address(server):  # pylint: disable=redefined-outer-name
+	expected_error = WrapError(
+		23456,
+		Hash256('FA650B75CC01187E004FCF547796930CC95D9CF55E6E6188FC7D413526A840FA'),
+		-1,
+		Address('TA6MYQRFJI24C2Y2WPX7QKAPMUDIS5FWZOBIBEA'),
+		'destination address 0x4838b106fce9647bdf1e7877bf73ce8b0bad5f97 is invalid')
+
+	await _assert_can_extract_wrap_request_from_transaction(server, False, expected_error, assert_wrap_request_failure)
+
 
 # endregion
 
