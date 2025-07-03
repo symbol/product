@@ -1,7 +1,5 @@
 from collections import namedtuple
 
-from web3 import Web3
-
 _TRANSACTION_IDENTIFIER_PROPERTY_NAMES = ['transaction_height', 'transaction_hash', 'transaction_subindex', 'sender_address']
 
 TransactionIdentifier = namedtuple('TransactionIdentifier', _TRANSACTION_IDENTIFIER_PROPERTY_NAMES)
@@ -38,13 +36,13 @@ def make_wrap_error_result(transaction_identifier, *args):
 # endregion
 
 
-# region check_ethereum_address_and_make_wrap_result
+# region check_address_and_make_wrap_result
 
-def check_ethereum_address_and_make_wrap_result(transaction_identifier, amount, destination_address):  # pylint: disable=invalid-name
-	"""Checks the ethereum destination address and returns an appropriate wrap request result based on its validity."""
+def check_address_and_make_wrap_result(is_valid_address, transaction_identifier, amount, destination_address):
+	"""Checks the destination address and returns an appropriate wrap request result based on its validity."""
 
-	if not Web3.is_address(destination_address):
-		error_message = f'destination ethereum address {destination_address} is invalid'
+	if not is_valid_address(destination_address):
+		error_message = f'destination address {destination_address} is invalid'
 		return make_wrap_error_result(transaction_identifier, error_message)
 
 	return make_wrap_request_result(transaction_identifier, amount, destination_address)

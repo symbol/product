@@ -45,10 +45,15 @@ class SymbolNetworkFacade:
 
 		return Address(raw_address)
 
-	def extract_wrap_request_from_transaction(self, transaction_with_meta_json):  # pylint: disable=invalid-name
+	def is_valid_address_string(self, address_string):
+		"""Checks if an address string is valid and belongs to this network."""
+
+		return self.network.is_valid_address_string(address_string)
+
+	def extract_wrap_request_from_transaction(self, is_valid_address, transaction_with_meta_json):  # pylint: disable=invalid-name
 		"""Extracts a wrap request (or error) from a transaction ."""
 
-		return extract_wrap_request_from_transaction(self.network, self.is_currency_mosaic_id, transaction_with_meta_json)
+		return extract_wrap_request_from_transaction(self.network, is_valid_address, self.is_currency_mosaic_id, transaction_with_meta_json)
 
 	async def lookup_account_balance(self, address):
 		"""Gets account balance for network currency."""

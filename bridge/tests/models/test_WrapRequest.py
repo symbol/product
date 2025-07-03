@@ -7,7 +7,7 @@ from bridge.models.WrapRequest import (
 	TransactionIdentifier,
 	WrapError,
 	WrapRequest,
-	check_ethereum_address_and_make_wrap_result,
+	check_address_and_make_wrap_result,
 	make_wrap_error_result,
 	make_wrap_request_result
 )
@@ -60,14 +60,21 @@ class WrapRequestTest(unittest.TestCase):
 
 	# endregion
 
-	# region check_ethereum_address_and_make_wrap_result
+	# region check_address_and_make_wrap_result
 
-	def test_can_check_ethereum_address_and_make_wrap_result_when_address_is_valid(self):
+	@staticmethod
+	def _check_address_and_make_wrap_result(transaction_identifier, amount, destination_address):
+		def is_valid_address(address):
+			return '0x4838b106fce9647bdf1e7877bf73ce8b0bad5f97' == address
+
+		return check_address_and_make_wrap_result(is_valid_address, transaction_identifier, amount, destination_address)
+
+	def test_can_check_address_and_make_wrap_result_when_address_is_valid(self):
 		# Arrange:
 		transaction_identifier = TransactionIdentifier(*self._create_test_transaction_identifier_arguments())
 
 		# Act:
-		result = check_ethereum_address_and_make_wrap_result(transaction_identifier, 4444, '0x4838b106fce9647bdf1e7877bf73ce8b0bad5f97')
+		result = self._check_address_and_make_wrap_result(transaction_identifier, 4444, '0x4838b106fce9647bdf1e7877bf73ce8b0bad5f97')
 
 		# Assert:
 		expected_request = WrapRequest(
@@ -76,17 +83,17 @@ class WrapRequestTest(unittest.TestCase):
 			'0x4838b106fce9647bdf1e7877bf73ce8b0bad5f97')
 		assert_wrap_request_success(self, result, expected_request)
 
-	def test_can_check_ethereum_address_and_make_wrap_result_when_address_is_invalid(self):
+	def test_can_check_address_and_make_wrap_result_when_address_is_invalid(self):
 		# Arrange:
 		transaction_identifier = TransactionIdentifier(*self._create_test_transaction_identifier_arguments())
 
 		# Act:
-		result = check_ethereum_address_and_make_wrap_result(transaction_identifier, 4444, '0x4838b106fce9647bdf1e7877bf73ce8b0bad')
+		result = self._check_address_and_make_wrap_result(transaction_identifier, 4444, '0x4838b106fce9647bdf1e7877bf73ce8b0bad')
 
 		# Assert:
 		expected_error = WrapError(
 			*self._create_test_transaction_identifier_arguments(),
-			'destination ethereum address 0x4838b106fce9647bdf1e7877bf73ce8b0bad is invalid')
+			'destination address 0x4838b106fce9647bdf1e7877bf73ce8b0bad is invalid')
 		assert_wrap_request_failure(self, result, expected_error)
 
 	# endregion
