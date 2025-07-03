@@ -22,8 +22,14 @@ class SymbolUtilsTest(unittest.TestCase):
 	# region extract_wrap_request_from_transaction - transfer (success)
 
 	@staticmethod
-	def _is_currency_mosaic_id(mosaic_id):
-		return 0xFAF0EBED913FA202 == mosaic_id
+	def _extract_wrap_request_from_transaction(transaction_with_meta_json):
+		def is_valid_address(address):
+			return '0x4838b106fce9647bdf1e7877bf73ce8b0bad5f' == address[:-2] and address[-2:] in ('97', '90', 'a0', 'b0')
+
+		def is_currency_mosaic_id(mosaic_id):
+			return 0xFAF0EBED913FA202 == mosaic_id
+
+		return extract_wrap_request_from_transaction(Network.TESTNET, is_valid_address, is_currency_mosaic_id, transaction_with_meta_json)
 
 	@staticmethod
 	def _create_simple_wrap_request(transaction_subindex=-1):
@@ -64,7 +70,7 @@ class SymbolUtilsTest(unittest.TestCase):
 		transaction_meta_json = self._create_transfer_json(request, mosaics, **kwargs)
 
 		# Act:
-		results = extract_wrap_request_from_transaction(Network.TESTNET, self._is_currency_mosaic_id, transaction_meta_json)
+		results = self._extract_wrap_request_from_transaction(transaction_meta_json)
 
 		# Assert:
 		self.assertEqual(1, len(results))
@@ -91,7 +97,7 @@ class SymbolUtilsTest(unittest.TestCase):
 		])
 
 		# Act:
-		results = extract_wrap_request_from_transaction(Network.TESTNET, self._is_currency_mosaic_id, transaction_meta_json)
+		results = self._extract_wrap_request_from_transaction(transaction_meta_json)
 
 		# Assert:
 		self.assertEqual(1, len(results))
@@ -112,7 +118,7 @@ class SymbolUtilsTest(unittest.TestCase):
 			del transaction_meta_json['transaction']['message']
 
 		# Act:
-		results = extract_wrap_request_from_transaction(Network.TESTNET, self._is_currency_mosaic_id, transaction_meta_json)
+		results = self._extract_wrap_request_from_transaction(transaction_meta_json)
 
 		# Assert:
 		self.assertEqual(1, len(results))
@@ -137,12 +143,12 @@ class SymbolUtilsTest(unittest.TestCase):
 		])
 
 		# Act:
-		results = extract_wrap_request_from_transaction(Network.TESTNET, self._is_currency_mosaic_id, transaction_meta_json)
+		results = self._extract_wrap_request_from_transaction(transaction_meta_json)
 
 		# Assert:
 		self.assertEqual(1, len(results))
 
-		expected_error_message = 'destination ethereum address 0x4838b106fce9647bdf1e7877bf73ce8b0bad5f is invalid'
+		expected_error_message = 'destination address 0x4838b106fce9647bdf1e7877bf73ce8b0bad5f is invalid'
 		assert_wrap_request_failure(self, results[0], make_wrap_error_from_request(request, expected_error_message))
 
 	# endregion
@@ -191,7 +197,7 @@ class SymbolUtilsTest(unittest.TestCase):
 		])
 
 		# Act:
-		results = extract_wrap_request_from_transaction(Network.TESTNET, self._is_currency_mosaic_id, transaction_meta_json)
+		results = self._extract_wrap_request_from_transaction(transaction_meta_json)
 
 		# Assert:
 		self.assertEqual(1, len(results))
@@ -221,7 +227,7 @@ class SymbolUtilsTest(unittest.TestCase):
 		])
 
 		# Act:
-		results = extract_wrap_request_from_transaction(Network.TESTNET, self._is_currency_mosaic_id, transaction_meta_json)
+		results = self._extract_wrap_request_from_transaction(transaction_meta_json)
 
 		# Assert:
 		self.assertEqual(3, len(results))
@@ -256,7 +262,7 @@ class SymbolUtilsTest(unittest.TestCase):
 		])
 
 		# Act:
-		results = extract_wrap_request_from_transaction(Network.TESTNET, self._is_currency_mosaic_id, transaction_meta_json)
+		results = self._extract_wrap_request_from_transaction(transaction_meta_json)
 
 		# Assert:
 		self.assertEqual(4, len(results))
@@ -294,7 +300,7 @@ class SymbolUtilsTest(unittest.TestCase):
 		])
 
 		# Act:
-		results = extract_wrap_request_from_transaction(Network.TESTNET, self._is_currency_mosaic_id, transaction_meta_json)
+		results = self._extract_wrap_request_from_transaction(transaction_meta_json)
 
 		# Assert:
 		self.assertEqual(2, len(results))
