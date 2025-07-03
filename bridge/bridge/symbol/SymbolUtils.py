@@ -1,37 +1,44 @@
 from binascii import unhexlify
+from collections import namedtuple
 
 from symbolchain.CryptoTypes import Hash256, PublicKey
 from symbolchain.sc import TransactionType
 
-from ..models.WrapRequest import TransactionIdentifier, check_ethereum_address_and_make_wrap_result, make_wrap_error_result
+from ..models.WrapRequest import TransactionIdentifier, check_address_and_make_wrap_result, make_wrap_error_result
+
+Predicates = namedtuple('Predicates', ['is_valid_address', 'is_currency_mosaic_id'])
+
 
 # region extract_wrap_address_from_transaction
 
 
-def _process_transfer_transaction(is_currency_mosaic_id, transaction_identifier, transaction_json):
+def _process_transfer_transaction(predicates, transaction_identifier, transaction_json):
 	amount = 0
 	for mosaic_json in transaction_json['mosaics']:
-		if is_currency_mosaic_id(int(mosaic_json['id'], 16)):
+		if predicates.is_currency_mosaic_id(int(mosaic_json['id'], 16)):
 			amount = int(mosaic_json['amount'])
 
 	if 'message' not in transaction_json:
 		return make_wrap_error_result(transaction_identifier, 'required message is missing')
 
 	destination_address = unhexlify(transaction_json['message']).decode('utf8')
-	return check_ethereum_address_and_make_wrap_result(transaction_identifier, amount, destination_address)
+	return check_address_and_make_wrap_result(predicates.is_valid_address, transaction_identifier, amount, destination_address)
 
 
-def _process_transaction(is_currency_mosaic_id, transaction_identifier, transaction_json):
+def _process_transaction(predicates, transaction_identifier, transaction_json):
 	transaction_type = transaction_json['type']
 	if TransactionType.TRANSFER.value == transaction_type:
-		return _process_transfer_transaction(is_currency_mosaic_id, transaction_identifier, transaction_json)
+		return _process_transfer_transaction(predicates, transaction_identifier, transaction_json)
 
 	error_message = f'transaction type {transaction_type} is not supported'
 	return make_wrap_error_result(transaction_identifier, error_message)
 
 
-def extract_wrap_request_from_transaction(network, is_currency_mosaic_id, transaction_with_meta_json):  # pylint: disable=invalid-name
+def extract_wrap_request_from_transaction(network, is_valid_address, is_currency_mosaic_id, transaction_with_meta_json):
+	# pylint: disable=invalid-name
 	"""Extracts a wrap request (or error) from a transaction given a network."""
+
+	predicates = Predicates(is_valid_address, is_currency_mosaic_id)
 
 	transaction_json = transaction_with_meta_json['transaction']
 	transaction_type = transaction_json['type']
@@ -55,8 +62,8 @@ def extract_wrap_request_from_transaction(network, is_currency_mosaic_id, transa
 				network.public_key_to_address(PublicKey(embedded_transaction_json['signerPublicKey']))
 			)
 
-			embedded_results.append(_process_transaction(is_currency_mosaic_id, transaction_identifier, embedded_transaction_json))
+			embedded_results.append(_process_transaction(predicates, transaction_identifier, embedded_transaction_json))
 
 		return embedded_results
 
-	return [_process_transaction(is_currency_mosaic_id, transaction_identifier, transaction_json)]
+	return [_process_transaction(predicates, transaction_identifier, transaction_json)]
