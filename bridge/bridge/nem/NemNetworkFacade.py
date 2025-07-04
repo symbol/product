@@ -14,6 +14,7 @@ class NemNetworkFacade:
 
 		self.config = config
 		self.network = NetworkLocator.find_by_name(Network.NETWORKS, config.network)
+		self.sdk_facade = NemFacade(self.network)
 
 	def create_connector(self):
 		"""Creates a connector to the network."""
@@ -81,5 +82,4 @@ class NemNetworkFacade:
 				]
 			}
 
-		facade = NemFacade(self.network)
-		return facade.transaction_factory.create(transfer_json)
+		return self.sdk_facade.transaction_factory.create(transfer_json)
