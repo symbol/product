@@ -29,7 +29,7 @@ async def server(aiohttp_client):
 
 def _create_config(server=None):  # pylint: disable=redefined-outer-name
 	return NetworkConfiguration('symbol', 'testnet', server.make_url('') if server else 'http://foo.bar:1234', None, {
-		'transaction_fee_multiplier': 50
+		'transaction_fee_multiplier': '50'
 	})
 
 
@@ -39,6 +39,7 @@ def test_can_create_facade():
 
 	# Assert:
 	assert 'testnet' == facade.network.name
+	assert facade.network == facade.sdk_facade.network
 
 
 def test_can_create_connector():
@@ -227,5 +228,28 @@ def test_can_create_transfer_transaction_with_message():
 	assert sc.Amount(88888_000000) == mosaic.amount
 
 	assert b'this is a medium sized message!!!' == transaction.message
+
+
+def test_can_create_transfer_transaction_with_custom_mosaic_id():
+	# Arrange:
+	facade = SymbolNetworkFacade(_create_config())
+
+	# Act:
+	transaction = facade.create_transfer_transaction(
+		NetworkTimestamp(12341234),
+		_create_sample_balance_transfer(''),
+		mosaic_id=0xABCD12349876FEDC)
+
+	# Assert:
+	_assert_sample_balance_transfer_common(transaction)
+	assert sc.Amount(176 * 50) == transaction.fee
+
+	assert 1 == len(transaction.mosaics)
+
+	mosaic = transaction.mosaics[0]
+	assert sc.UnresolvedMosaicId(0xABCD12349876FEDC) == mosaic.mosaic_id
+	assert sc.Amount(88888_000000) == mosaic.amount
+
+	assert b'' == transaction.message
 
 # endregion

@@ -16,6 +16,7 @@ class SymbolNetworkFacade:
 
 		self.config = config
 		self.network = NetworkLocator.find_by_name(Network.NETWORKS, config.network)
+		self.sdk_facade = SymbolFacade(self.network)
 		self.currency_mosaic_ids = []
 
 	def is_currency_mosaic_id(self, mosaic_id):
@@ -62,7 +63,7 @@ class SymbolNetworkFacade:
 		formatted_currency_mosaic_id = hex(self.currency_mosaic_ids[0])[2:].upper()
 		return await connector.balance(address, formatted_currency_mosaic_id)
 
-	def create_transfer_transaction(self, timestamp, balance_transfer):
+	def create_transfer_transaction(self, timestamp, balance_transfer, mosaic_id=None):
 		"""Creates a transfer transaction."""
 
 		transfer_json = {
@@ -71,15 +72,13 @@ class SymbolNetworkFacade:
 			'recipient_address': balance_transfer.recipient_address,
 			'deadline': timestamp.add_hours(1).timestamp,
 			'mosaics': [
-				{'mosaic_id': generate_mosaic_alias_id('symbol.xym'), 'amount': balance_transfer.amount}
+				{'mosaic_id': mosaic_id if mosaic_id else generate_mosaic_alias_id('symbol.xym'), 'amount': balance_transfer.amount}
 			]
 		}
 
 		if balance_transfer.message:
 			transfer_json['message'] = balance_transfer.message
 
-		facade = SymbolFacade(self.network)
-		transaction = facade.transaction_factory.create(transfer_json)
-
-		transaction.fee = Amount(self.config.extensions['transaction_fee_multiplier'] * transaction.size)
+		transaction = self.sdk_facade.transaction_factory.create(transfer_json)
+		transaction.fee = Amount(int(self.config.extensions['transaction_fee_multiplier']) * transaction.size)
 		return transaction
