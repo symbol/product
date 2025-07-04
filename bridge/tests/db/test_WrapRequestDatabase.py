@@ -1,8 +1,9 @@
+import datetime
 import sqlite3
 import unittest
 
 from symbolchain.CryptoTypes import Hash256, PublicKey
-from symbolchain.nem.Network import Address
+from symbolchain.nem.Network import Address, NetworkTimestamp
 
 from bridge.db.WrapRequestDatabase import WrapRequestDatabase, WrapRequestStatus
 
@@ -37,7 +38,8 @@ def make_request_tuple(index, **kwargs):
 		address.bytes,
 		HEIGHTS[index] % 1000,
 		f'0x{destination_address}',
-		kwargs.get('status_id', 0))
+		kwargs.get('status_id', 0),
+		kwargs.get('payout_transaction_hash', None))
 
 # endregion
 
@@ -48,13 +50,22 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 	# region shared test utils
 
 	@staticmethod
+	def _nem_to_unix_timestamp(timestamp):
+		return int(datetime.datetime(2015, 3, 29, 0, 6, 25, tzinfo=datetime.timezone.utc).timestamp()) + timestamp
+
+	@staticmethod
 	def _query_all_errors(cursor):
-		cursor.execute('''SELECT * FROM wrap_error ORDER BY wrap_transaction_hash DESC, wrap_transaction_subindex ASC''')
+		cursor.execute('''SELECT * FROM wrap_error ORDER BY request_transaction_hash DESC, request_transaction_subindex ASC''')
 		return cursor.fetchall()
 
 	@staticmethod
 	def _query_all_requests(cursor):
-		cursor.execute('''SELECT * FROM wrap_request ORDER BY wrap_transaction_hash DESC, wrap_transaction_subindex ASC''')
+		cursor.execute('''SELECT * FROM wrap_request ORDER BY request_transaction_hash DESC, request_transaction_subindex ASC''')
+		return cursor.fetchall()
+
+	@staticmethod
+	def _query_all_payout_transactions(cursor):
+		cursor.execute('''SELECT * FROM payout_transaction ORDER BY transaction_hash DESC''')
 		return cursor.fetchall()
 
 	def _assert_can_insert_rows(self, seed, expected, post_insert_action):
@@ -81,13 +92,17 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 			self.assertEqual(expected['errors'], actual_errors)
 			self.assertEqual(expected['requests'], actual_requests)
 
+			if expected.get('payout_transactions', None) is not None:
+				actual_payout_transactions = self._query_all_payout_transactions(cursor)
+				self.assertEqual(expected['payout_transactions'], actual_payout_transactions)
+
 	def _assert_can_insert_errors(self, seed_errors, expected_errors):
 		self._assert_can_insert_rows({'errors': seed_errors, 'requests': []}, {'errors': expected_errors, 'requests': []}, None)
 
-	def _assert_can_insert_requests(self, seed_requests, expected_requests, post_insert_action=None):
+	def _assert_can_insert_requests(self, seed_requests, expected_requests, expected_payout_transactions=None, post_insert_action=None):
 		self._assert_can_insert_rows(
 			{'errors': [], 'requests': seed_requests},
-			{'errors': [], 'requests': expected_requests},
+			{'errors': [], 'requests': expected_requests, 'payout_transactions': expected_payout_transactions},
 			post_insert_action)
 
 	# endregion
@@ -99,7 +114,7 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 		table_names = get_all_table_names(WrapRequestDatabase, MockNetworkFacade())
 
 		# Assert:
-		self.assertEqual(set(['wrap_error', 'wrap_request']), table_names)
+		self.assertEqual(set(['wrap_error', 'wrap_request', 'payout_transaction']), table_names)
 
 	# endregion
 
@@ -350,6 +365,44 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 			make_request_tuple(2, hash_index=0, transaction_subindex=2)
 		], post_insert_action=post_insert_action)
 
+	def test_can_update_single_request_status_with_payout_transaction_hash(self):
+		# Arrange:
+		payout_transaction_hash = Hash256('ACFF5E24733CD040504448A3A75F1CE32E90557E5FBA02E107624242F4FA251D')
+		seed_requests = [make_request(index, hash_index=0, transaction_subindex=index) for index in range(0, 3)]
+
+		def post_insert_action(database):
+			database.set_request_status(seed_requests[1], WrapRequestStatus.SENT, payout_transaction_hash)
+
+		# Act + Assert:
+		self._assert_can_insert_requests(seed_requests, [
+			make_request_tuple(0, hash_index=0),
+			# should reflect status change from post_insert_action
+			make_request_tuple(1, hash_index=0, transaction_subindex=1, status_id=1, payout_transaction_hash=payout_transaction_hash.bytes),
+			make_request_tuple(2, hash_index=0, transaction_subindex=2)
+		], expected_payout_transactions=[
+			(payout_transaction_hash.bytes, 0, 0)
+		], post_insert_action=post_insert_action)
+
+	def test_can_update_single_request_status_with_payout_transaction_hash_preserves_metadata(self):
+		# Arrange:
+		payout_transaction_hash = Hash256('ACFF5E24733CD040504448A3A75F1CE32E90557E5FBA02E107624242F4FA251D')
+		seed_requests = [make_request(index, hash_index=0, transaction_subindex=index) for index in range(0, 3)]
+
+		def post_insert_action(database):
+			database.set_request_status(seed_requests[1], WrapRequestStatus.SENT, payout_transaction_hash)
+			database.set_payout_transaction_metadata(payout_transaction_hash, 123, NetworkTimestamp(987))
+			database.set_request_status(seed_requests[1], WrapRequestStatus.COMPLETED, payout_transaction_hash)
+
+		# Act + Assert:
+		self._assert_can_insert_requests(seed_requests, [
+			make_request_tuple(0, hash_index=0),
+			# should reflect status change from post_insert_action
+			make_request_tuple(1, hash_index=0, transaction_subindex=1, status_id=2, payout_transaction_hash=payout_transaction_hash.bytes),
+			make_request_tuple(2, hash_index=0, transaction_subindex=2)
+		], expected_payout_transactions=[
+			(payout_transaction_hash.bytes, 123, self._nem_to_unix_timestamp(987))
+		], post_insert_action=post_insert_action)
+
 	# endregion
 
 	# region requests_by_status
@@ -364,16 +417,21 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 		for request in seed_requests:
 			database.add_request(request)
 
-		database.set_request_status(seed_requests[0], WrapRequestStatus.SENT)       # *8905
-		database.set_request_status(seed_requests[1], WrapRequestStatus.COMPLETED)
-		database.set_request_status(seed_requests[3], WrapRequestStatus.SENT)       # *8902
+		payout_transaction_hashes = [
+			Hash256('ACFF5E24733CD040504448A3A75F1CE32E90557E5FBA02E107624242F4FA251D'),
+			Hash256('7B055CD0A0A6C0F8BA9677076288A15F2BC6BEF42CEB5A6789EF9E4A8146E79F'),
+			Hash256('DFB984176817C3C2F001F6DEF3E46096EC52C33A1A63759A8FB9E1B46859C098')
+		]
+		database.set_request_status(seed_requests[0], WrapRequestStatus.SENT, payout_transaction_hashes[0])       # *8905
+		database.set_request_status(seed_requests[1], WrapRequestStatus.COMPLETED, payout_transaction_hashes[1])
+		database.set_request_status(seed_requests[3], WrapRequestStatus.SENT, payout_transaction_hashes[2])       # *8902
 
-		return (database, seed_requests)
+		return (database, seed_requests, payout_transaction_hashes)
 
 	def test_can_get_all_requests_with_specified_status(self):
 		# Arrange:
 		with sqlite3.connect(':memory:') as connection:
-			(database, seed_requests) = self._prepare_database_for_grouping_tests(connection)
+			(database, seed_requests, _) = self._prepare_database_for_grouping_tests(connection)
 
 			# Act:
 			requests = database.requests_by_status(WrapRequestStatus.SENT)
@@ -382,5 +440,54 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 			self.assertEqual(2, len(requests))
 			assert_equal_request(self, seed_requests[0], requests[0])
 			assert_equal_request(self, seed_requests[3], requests[1])
+
+	# endregion
+
+	# region unconfirmed_payout_transaction_hashes
+
+	def test_can_get_unconfirmed_payout_transaction_hashes(self):
+		# Arrange:
+		with sqlite3.connect(':memory:') as connection:
+			(database, _, payout_transaction_hashes) = self._prepare_database_for_grouping_tests(connection)
+
+			# Act:
+			hashes = database.unconfirmed_payout_transaction_hashes()
+
+			# Assert:
+			self.assertEqual([payout_transaction_hashes[i] for i in (1, 0, 2)], hashes)
+
+	def test_can_get_unconfirmed_payout_transaction_hashes_excluding_confirmed_transactions(self):
+		# Arrange:
+		with sqlite3.connect(':memory:') as connection:
+			(database, _, payout_transaction_hashes) = self._prepare_database_for_grouping_tests(connection)
+			database.set_payout_transaction_metadata(payout_transaction_hashes[0], 123, NetworkTimestamp(0))
+
+			# Act:
+			hashes = database.unconfirmed_payout_transaction_hashes()
+
+			# Assert:
+			self.assertEqual([payout_transaction_hashes[i] for i in (1, 2)], hashes)
+
+	# endregion
+
+	# region set_payout_transaction_metadata
+
+	def test_can_set_payout_transaction_metadata(self):
+		# Arrange:
+		with sqlite3.connect(':memory:') as connection:
+			(database, _, payout_transaction_hashes) = self._prepare_database_for_grouping_tests(connection)
+
+			# Act:
+			database.set_payout_transaction_metadata(payout_transaction_hashes[0], 123, NetworkTimestamp(987))
+			database.set_payout_transaction_metadata(payout_transaction_hashes[2], 888, NetworkTimestamp(333))
+
+			# Assert:
+			actual_payout_transactions = self._query_all_payout_transactions(connection.cursor())
+
+			self.assertEqual([
+				(payout_transaction_hashes[2].bytes, 888, self._nem_to_unix_timestamp(333)),
+				(payout_transaction_hashes[0].bytes, 123, self._nem_to_unix_timestamp(987)),
+				(payout_transaction_hashes[1].bytes, 0, 0)
+			], actual_payout_transactions)
 
 	# endregion
