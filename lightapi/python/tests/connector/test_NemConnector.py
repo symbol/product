@@ -3,7 +3,7 @@ from binascii import unhexlify
 
 import pytest
 from aiohttp import web
-from symbolchain.CryptoTypes import PublicKey
+from symbolchain.CryptoTypes import Hash256, PublicKey
 from symbolchain.facade.NemFacade import NemFacade
 from symbolchain.nc import Signature
 from symbolchain.nem.Network import Address, Network
@@ -13,7 +13,7 @@ from symbollightapi.model.Endpoint import Endpoint
 from symbollightapi.model.Exceptions import NodeException
 from symbollightapi.model.NodeInfo import NodeInfo
 
-from ..test.LightApiTestUtils import NEM_ADDRESSES, PUBLIC_KEYS
+from ..test.LightApiTestUtils import HASHES, NEM_ADDRESSES, PUBLIC_KEYS
 
 # region test data
 
@@ -224,6 +224,9 @@ async def server(aiohttp_client):
 
 			return await self._process(request, account_info)
 
+		async def transaction_confirmed(self, request):
+			return await self._process(request, {'meta': {'height': 1234}, 'transaction': {'message': 'foo'}})
+
 		async def transfers(self, request):
 			address = Address(request.rel_url.query['address'])
 
@@ -264,6 +267,7 @@ async def server(aiohttp_client):
 	app.router.add_get('/node/peer-list/reachable', mock_server.node_peers_reachable)
 	app.router.add_get('/account/get', mock_server.account_info)
 	app.router.add_get('/account/get/forwarded', mock_server.account_info_forwarded)
+	app.router.add_get('/transaction/get', mock_server.transaction_confirmed)
 	app.router.add_get('/account/transfers/incoming', mock_server.transfers)
 	app.router.add_post('/block/at/public', mock_server.block_at)
 	app.router.add_post('/transaction/announce', mock_server.announce_transaction)
@@ -498,6 +502,22 @@ async def test_can_query_account_info_without_public_key(server):  # pylint: dis
 	assert 0.00022692560084412516 == account_info.importance
 	assert 0 == account_info.harvested_blocks
 	assert 'INACTIVE' == account_info.remote_status
+
+# endregion
+
+
+# region GET (transaction_confirmed)
+
+async def test_transaction_confirmed(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	connector = NemConnector(server.make_url(''))
+
+	# Act:
+	transaction = await connector.transaction_confirmed(Hash256(HASHES[0]))
+
+	# Assert:
+	assert [f'{server.make_url("")}/transaction/get?hash={HASHES[0]}'] == server.mock.urls
+	assert {'meta': {'height': 1234}, 'transaction': {'message': 'foo'}} == transaction
 
 # endregion
 
