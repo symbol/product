@@ -179,12 +179,11 @@ async def server(aiohttp_client):
 			request_json = json.loads(await request.text())
 			return await self._process(request, generate_transaction_statuses(self.status_start_height, request_json['hashes']))
 
+		async def transaction_confirmed(self, request):
+			return await self._process(request, {'meta': {'height': 1234}, 'transaction': {'message': 'foo'}})
+
 		async def transactions_confirmed(self, request):
-			messages = [
-				'\0{ "nisAddress": "NA3IMF22S2GAHQQCL7FJKA2XWDQLK3FXFHR5SVXV" }',
-				'\0{ "nisAddress": "NAEBRWDBDHWRDPEV4YGTF2YFA4DSDQTWKNXUCZWX" }',
-				'\0{ "nisAddress": "NDMK7CQLJYRXGJNQXELM4OG2NTZAC2C4YFFGWDIS" }'
-			]
+			messages = ['sigma', 'beta', 'gamma']
 			return await self._process(request, {
 				'data': [
 					{
@@ -222,6 +221,7 @@ async def server(aiohttp_client):
 	app.router.add_get('/node/peers', mock_server.node_peers)
 	app.router.add_get(r'/accounts/{account_id}', mock_server.accounts_by_id)
 	app.router.add_get(r'/account/{address}/multisig', mock_server.account_multisig)
+	app.router.add_get(f'/transactions/confirmed/{HASHES[0]}', mock_server.transaction_confirmed)
 	app.router.add_get('/transactions/confirmed', mock_server.transactions_confirmed)
 	app.router.add_post('/transactionStatus', mock_server.transaction_statuses)
 	app.router.add_put('/transactions', mock_server.announce_transaction)
@@ -606,10 +606,26 @@ async def test_can_query_transaction_statuses(server):  # pylint: disable=redefi
 # endregion
 
 
+# region GET (transaction_confirmed)
+
+async def test_transaction_confirmed(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	connector = SymbolConnector(server.make_url(''))
+
+	# Act:
+	transaction = await connector.transaction_confirmed(Hash256(HASHES[0]))
+
+	# Assert:
+	assert [f'{server.make_url("")}/transactions/confirmed/{HASHES[0]}'] == server.mock.urls
+	assert {'meta': {'height': 1234}, 'transaction': {'message': 'foo'}} == transaction
+
+# endregion
+
+
 # region GET (incoming_transactions)
 
 def assert_message(message, transaction):
-	assert message == transaction['transaction']['message']
+	assert hexlify(message.encode('utf8')).decode('utf8') == transaction['transaction']['message']
 
 
 async def test_incoming_transactions(server):  # pylint: disable=redefined-outer-name
@@ -625,11 +641,10 @@ async def test_incoming_transactions(server):  # pylint: disable=redefined-outer
 	] == server.mock.urls
 	assert 4 == len(transactions)
 
-	prefix = '007b20226e697341646472657373223a20224e'
-	assert_message(f'{prefix}4133494d46323253324741485151434c37464a4b4132585744514c4b334658464852355356585622207d', transactions[0])
-	assert_message(f'{prefix}414542525744424448575244504556345947544632594641344453445154574b4e5855435a575822207d', transactions[1])
-	assert_message(f'{prefix}444d4b3743514c4a595258474a4e5158454c4d344f47324e545a4143324334594646475744495322207d', transactions[2])
-	assert_message(f'{prefix}4133494d46323253324741485151434c37464a4b4132585744514c4b334658464852355356585622207d', transactions[0])
+	assert_message('sigma', transactions[0])
+	assert_message('beta', transactions[1])
+	assert_message('gamma', transactions[2])
+	assert_message('sigma', transactions[3])
 
 # endregion
 

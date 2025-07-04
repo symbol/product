@@ -155,6 +155,16 @@ class NemConnector(BasicConnector):
 
 	# endregion
 
+	# region GET (transaction_confirmed)
+
+	async def transaction_confirmed(self, transaction_hash):
+		"""Gets a confirmed transaction by hash."""
+
+		url_path = f'transaction/get?hash={transaction_hash}'
+		return await self.get(url_path, None)
+
+	# endregion
+
 	# region GET (incoming_transactions)
 
 	async def incoming_transactions(self, address, start_id=None):
