@@ -37,6 +37,7 @@ def test_can_create_facade():
 
 	# Assert:
 	assert 'testnet' == facade.network.name
+	assert facade.network == facade.sdk_facade.network
 
 
 def test_can_create_connector():

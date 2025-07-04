@@ -18,7 +18,7 @@ class PytestAsserter:
 # region create_simple_symbol_client
 
 async def create_simple_symbol_client(aiohttp_client, currency_mosaic_id, address_to_balance_map=None):  # pylint: disable=invalid-name
-	"""Creates a symbol client with support for looking up a network currency and account balances ."""
+	"""Creates a symbol client with support for basic operations ."""
 
 	class MockSymbolServer:
 		@staticmethod
@@ -64,9 +64,16 @@ async def create_simple_symbol_client(aiohttp_client, currency_mosaic_id, addres
 # region create_simple_nem_client
 
 async def create_simple_nem_client(aiohttp_client, address_to_balance_map=None):  # pylint: disable=invalid-name
-	"""Creates a nem client with support for looking up account balances ."""
+	"""Creates a nem client with support for basic operations ."""
 
 	class MockNemServer:
+		def __init__(self):
+			self.request_json_payloads = []
+
+		@staticmethod
+		async def network_time(request):
+			return await MockNemServer._process(request, {'sendTimeStamp': 322666792999, 'receiveTimeStamp': 322666799999})
+
 		@staticmethod
 		async def account_info(request):
 			balance = 0
@@ -81,6 +88,11 @@ async def create_simple_nem_client(aiohttp_client, address_to_balance_map=None):
 				}
 			})
 
+		async def announce_transaction(self, request):
+			request_json = await request.json()
+			self.request_json_payloads.append(request_json)
+			return await self._process(request, {'code': 1, 'type': 1, 'message': 'SUCCESS'})
+
 		@staticmethod
 		async def _process(_request, response_body, status_code=200):
 			return web.Response(body=json.dumps(response_body), headers={'Content-Type': 'application/json'}, status=status_code)
@@ -90,7 +102,9 @@ async def create_simple_nem_client(aiohttp_client, address_to_balance_map=None):
 
 	# create an app using the server
 	app = web.Application()
+	app.router.add_get('/time-sync/network-time', mock_server.network_time)
 	app.router.add_get('/account/get', mock_server.account_info)
+	app.router.add_post('/transaction/announce', mock_server.announce_transaction)
 	server = await aiohttp_client(app)  # pylint: disable=redefined-outer-name
 
 	server.mock = mock_server
