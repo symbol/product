@@ -1,0 +1,753 @@
+import { EventController } from './EventController';
+import { NetworkManager } from './NetworkManager';
+import { 
+	ControllerEventName, 
+	MAX_SEED_ACCOUNTS_PER_NETWORK, 
+	NetworkConnectionStatus, 
+	TransactionGroup, 
+	WalletAccountType 
+} from '../../constants';
+import { AppError } from '../../error/AppError';
+import * as AccountTypes from '../../types/Account';
+import * as NetworkTypes from '../../types/Network';
+import { cloneNetworkArrayMap, cloneNetworkObjectMap, createNetworkMap } from '../../utils/network';
+import { PersistentStorageRepository } from '../storage/PersistentStorageRepository';
+
+const STORAGE_ROOT_SCOPE = 'wallet';
+
+const createDefaultState = (networkIdentifiers, createDefaultNetworkProperties) => ({
+	isCacheLoaded: false, // whether cached data is loaded from the persistent storage
+
+	// network
+	networkIdentifier: networkIdentifiers[0], // selected network
+	networkProperties: createDefaultNetworkProperties(networkIdentifiers[0]), // network properties for the selected network
+	networkStatus: NetworkConnectionStatus.INITIAL, // 'offline' 'failed-auto' 'failed-current' 'connected'
+	nodeUrls: createNetworkMap(() => [], networkIdentifiers), // node urls available for each network
+	selectedNodeUrl: null, // preferred node url, selected by the user
+
+	// wallet
+	walletAccounts: createNetworkMap(() => [], networkIdentifiers), // all user accounts in the wallet without private keys
+	accountInfos: createNetworkMap(() => ({}), networkIdentifiers), // account related information. See "defaultAccountInfo"
+	currentAccountPublicKey: null, // selected user account public key. Used as an ID
+	seedAddresses: createNetworkMap(() => [], networkIdentifiers), // list of seed addresses generated from mnemonic
+
+	// transactions (confirmed)
+	latestTransactions: createNetworkMap(() => ({}), networkIdentifiers)
+});
+
+
+export class WalletController extends EventController {
+	#createDefaultNetworkProperties;
+	#setStateProcessor;
+	_api;
+	_networkManager;
+	_persistentStorageRepository;
+	_state;
+	_keystores;
+	modules;
+	networkIdentifiers;
+
+	/**
+	 * Constructs a new WalletController instance.
+	 *
+	 * @param {object} params - The parameters for the WalletController.
+	 * @param {object} params.api - The API instance used for network communication.
+	 * @param {object} params.sdk - The SDK instance for blockchain interactions.
+	 * @param {object} params.persistentStorageInterface - The persistent storage provider.
+	 * @param {object} params.secureStorageInterface - The encrypted storage provider.
+	 * @param {Array} params.keystores - An array of keystore instances.
+	 * @param {Array} params.modules - An array of module constructors to be initialized.
+	 * @param {string[]} params.networkIdentifiers - Network identifiers for multi-network support.
+	 * @param {number} params.networkPollingInterval - Interval for network polling.
+	 * @param {function(string): Object} params.createDefaultNetworkProperties - Function to create default network properties.
+	 * @param {function(function): void} [params.setStateProcessor] - Optional function to process state changes.
+	 */
+	constructor({ 
+		api, 
+		sdk, 
+		persistentStorageInterface, 
+		secureStorageInterface, 
+		keystores, 
+		modules, 
+		networkIdentifiers, 
+		networkPollingInterval, 
+		createDefaultNetworkProperties,
+		setStateProcessor
+	}) {
+		super();
+
+		this._api = api;
+		this.networkIdentifiers = networkIdentifiers;
+		this.#createDefaultNetworkProperties = createDefaultNetworkProperties;
+		this.#setStateProcessor = setStateProcessor;
+
+		const scopedPersistentStorageInterface = persistentStorageInterface.createScope(STORAGE_ROOT_SCOPE);
+		const scopedSecureStorageInterface = secureStorageInterface.createScope(STORAGE_ROOT_SCOPE);
+		this._persistentStorageRepository = new PersistentStorageRepository(scopedPersistentStorageInterface);
+
+		this.modules = Object.fromEntries(modules.map(Module => {
+			const moduleInstance = new Module({
+				persistentStorageInterface: scopedPersistentStorageInterface.createScope(Module.name),
+				secureStorageInterface: scopedSecureStorageInterface.createScope(Module.name),
+				api,
+				sdk
+			});
+
+			return [moduleInstance.constructor.name, moduleInstance];
+		}));
+		this._keystores = Object.fromEntries(keystores.map(Keystore => {
+			const keystoreInstance = new Keystore({
+				networkIdentifiers,
+				secureStorageInterface: scopedSecureStorageInterface.createScope(Keystore.type),
+				sdk
+			});
+
+			return [keystoreInstance.constructor.type, keystoreInstance];
+		}));
+		this._networkManager = new NetworkManager({
+			api,
+			networkIdentifiers,
+			pollingInterval: networkPollingInterval,
+			createDefaultNetworkProperties,
+			onConnectionStatusChange: this.#handleNetworkConnectionStatusChange,
+			onPropertiesUpdate: this.#handleNetworkPropertiesUpdate,
+			onChainEvent: this.#handleChainEvent
+		});
+
+		this.resetState();
+	}
+
+	// all user accounts in the wallet. Grouped by network
+	get accounts() {
+		return this._state.walletAccounts;
+	}
+
+	// account infos of all the user accounts in the wallet. Grouped by network
+	get accountInfos() {
+		return this._state.accountInfos;
+	}
+
+	// seed addresses generated from mnemonic. Grouped by network
+	get seedAddresses() {
+		return this._state.seedAddresses;
+	}
+
+	// currently selected user account
+	get currentAccount() {
+		const { currentAccountPublicKey, walletAccounts, networkIdentifier } = this._state;
+		const currentAccount = walletAccounts[networkIdentifier].find(account => account.publicKey === currentAccountPublicKey);
+
+		return currentAccount || null;
+	}
+
+	// currently selected user account information
+	get currentAccountInfo() {
+		const { accountInfos, currentAccountPublicKey, networkIdentifier } = this._state;
+		return accountInfos[networkIdentifier][currentAccountPublicKey] || defaultAccountInfo;
+	}
+
+	// the list of latest transactions for the currently selected account
+	get currentAccountLatestTransactions() {
+		const { latestTransactions, currentAccountPublicKey, networkIdentifier } = this._state;
+		return latestTransactions[networkIdentifier][currentAccountPublicKey] || [];
+	}
+
+	// network identifier of the selected network
+	get networkIdentifier() {
+		return this._state.networkIdentifier;
+	}
+
+	// network and chain info fetched from currently connected node
+	get networkProperties() {
+		return this._state.networkProperties;
+	}
+
+	// preferred node url, selected by the user
+	get selectedNodeUrl() {
+		return this._state.selectedNodeUrl;
+	}
+
+	// network connection status
+	get networkStatus() {
+		return this._state.networkStatus;
+	}
+
+	// network connection is ready for making requests
+	get isNetworkConnectionReady() {
+		return this.networkStatus === NetworkConnectionStatus.CONNECTED ;
+	}
+
+	// wallet cache is loaded from the storage
+	get isStateReady() {
+		return this._state.isCacheLoaded;
+	}
+
+	#accessKeystore = type => {
+		const keystore = this._keystores[type];
+
+		if (!keystore) {
+			throw new AppError(
+				'error_failed_access_keystore',
+				`Failed to access keystore. "${type}" keystore is not available.`
+			);
+		}
+
+		return keystore;
+	};
+
+	/**
+	 * Initialize the wallet controller and load the cache from the storage
+	 * @param {string} [password] - wallet password
+	 * @returns {Promise<void>} - a promise that resolves when the cache is loaded
+	 */
+	loadCache = async password => {
+		const [
+			walletAccounts,
+			accountInfos,
+			seedAddresses,
+			currentAccountPublicKey,
+			networkIdentifier,
+			networkProperties,
+			latestTransactions,
+			selectedNodeUrl
+		] = await Promise.all([
+			this._persistentStorageRepository.getAccounts(),
+			this._persistentStorageRepository.getAccountInfos(),
+			this._persistentStorageRepository.getSeedAddresses(),
+			this._persistentStorageRepository.getCurrentAccountPublicKey(),
+			this._persistentStorageRepository.getNetworkIdentifier(),
+			this._persistentStorageRepository.getNetworkProperties(),
+			this._persistentStorageRepository.getLatestTransactions(),
+			this._persistentStorageRepository.getSelectedNode()
+		]);
+
+		this.resetState();
+		const defaultState = createDefaultState(this.networkIdentifiers, this.#createDefaultNetworkProperties);
+		const finalNetworkIdentifier = networkIdentifier || this.networkIdentifiers[0];
+		const finalNetworkProperties = networkProperties || defaultState.networkProperties;
+		const finalSelectedNodeUrl = selectedNodeUrl || defaultState.selectedNodeUrl;
+		this.#setState(() => {
+			this._state.walletAccounts = cloneNetworkArrayMap(
+				walletAccounts, 
+				this.networkIdentifiers, 
+				defaultState.walletAccounts
+			);
+			this._state.accountInfos = cloneNetworkObjectMap(
+				accountInfos, 
+				this.networkIdentifiers, 
+				defaultState.accountInfos
+			);
+			this._state.seedAddresses = cloneNetworkArrayMap(
+				seedAddresses, 
+				this.networkIdentifiers, 
+				defaultState.seedAddresses
+			);
+			this._state.currentAccountPublicKey = currentAccountPublicKey;
+			this._state.networkIdentifier = finalNetworkIdentifier;
+			this._state.networkProperties = finalNetworkProperties;
+			this._state.latestTransactions = cloneNetworkObjectMap(
+				latestTransactions, 
+				this.networkIdentifiers, 
+				defaultState.latestTransactions
+			);
+			this._state.selectedNodeUrl = finalSelectedNodeUrl;
+			this._state.isCacheLoaded = true;
+		});
+
+		this._networkManager.init(finalNetworkIdentifier, finalNetworkProperties, finalSelectedNodeUrl);
+
+		await Promise.all(Object.values(this._keystores)
+			.filter(keystore => keystore.loadCache)
+			.map(keystore => keystore.loadCache(password)));
+
+		await Promise.all(Object.values(this.modules)
+			.filter(module => module.loadCache)
+			.map(module => module.loadCache()));
+	};
+
+	/**
+	 * Select wallet account
+	 * @param {string} publicKey - account public key
+	 * @returns {Promise<AccountTypes.WalletAccount>} - a promise that resolves when the account is selected
+	 */
+	selectAccount = async publicKey => {
+		const { walletAccounts, networkIdentifier } = this._state;
+		const accountToSelect = walletAccounts[networkIdentifier].find(account => account.publicKey === publicKey);
+
+		if (!accountToSelect)
+			throw new AppError('error_wallet_selected_account_missing', 'Failed to select account. Account is missing in the wallet');
+		// this._setCurrentAccount(publicKey);
+
+		await this._persistentStorageRepository.setCurrentAccountPublicKey(publicKey);
+		this.#setState(() => {
+			this._state.currentAccountPublicKey = publicKey;
+		});
+
+		this._emit(ControllerEventName.ACCOUNT_CHANGE);
+
+		return accountToSelect;
+	};
+
+	/**
+	 * Setup a new wallet. Save the mnemonic, generate accounts and select the first account
+	 * @param {object} options - wallet setup options
+	 * @param {string} options.mnemonic - mnemonic phrase
+	 * @param {string} options.name - first account name
+	 * @param {number} options.accountPerNetworkCount - number of accounts to generate per network
+	 * @param {string} [password] - wallet password
+	 * @returns {Promise<AccountTypes.WalletAccount>} - a promise that resolves when the wallet is created to the selected account
+	 */
+	saveMnemonicAndGenerateAccounts = async ({ mnemonic, name, accountPerNetworkCount = MAX_SEED_ACCOUNTS_PER_NETWORK }, password) => {
+		// Create wallet in mnemonic keystore and get seed accounts
+		const mnemonicKeystore = this.#accessKeystore(WalletAccountType.MNEMONIC);
+		await mnemonicKeystore.createWallet(mnemonic, accountPerNetworkCount, password);
+		const seedAccounts = await mnemonicKeystore.getAccounts();
+		const walletAccounts = createNetworkMap(
+			networkIdentifier =>
+				[{ ...seedAccounts[networkIdentifier][0], name }],
+			this.networkIdentifiers
+		);
+
+		// Save accounts (without private keys) to persistent storage
+		await this.#setAccounts(walletAccounts);
+		await this._persistentStorageRepository.setSeedAddresses(seedAccounts);
+		this.#setState(() => {
+			this._state.seedAddresses = seedAccounts;
+		});
+
+		// Select first account
+		const currentAccount = walletAccounts[this._state.networkIdentifier][0];
+
+		return this.selectAccount(currentAccount.publicKey);
+	};
+
+	/**
+	 * Add seed account from mnemonic or hardware wallet
+	 * @param {object} options - account options
+	 * @param {string} options.name - account name
+	 * @param {string} options.networkIdentifier - network identifier
+	 * @param {number} options.index - account index
+	 * @param {string} options.type - account keystore type (e.g. 'mnemonic', 'hardware')
+	 * @returns {Promise<AccountTypes.WalletAccount>} - a promise that resolves to the added account object
+	 */
+	addSeedAccount = async ({ name, networkIdentifier, index, type = WalletAccountType.MNEMONIC }) => {
+		// Add account FROM keystore (by index)
+		const keystore = this.#accessKeystore(type);
+		const account = await keystore.getSeedAccount({ networkIdentifier, index });
+		account.name = name;
+
+		// Add account to the wallet
+		return this.#addAccount(account);
+	};
+
+	/**
+	 * Add a new account to the wallet
+	 * @param {object} options - account options
+	 * @param {string} options.privateKey - account private key
+	 * @param {string} options.name - account name
+	 * @param {string} options.networkIdentifier - network identifier of the account
+	 * @param {string} [password] - wallet password
+	 * @returns {Promise<AccountTypes.WalletAccount>} - a promise that resolves when the account is added
+	 */
+	addExternalAccount = async ({ privateKey, name, networkIdentifier }, password) => {
+		// Add account TO keystore (by private key)
+		const keystore = this.#accessKeystore(WalletAccountType.EXTERNAL);
+		const account = await keystore.addAccount(privateKey, networkIdentifier, password);
+		account.name = name;
+
+		// Add account to the wallet
+		return this.#addAccount(account);
+	};
+
+	/**
+	 * Add an account to the wallet. Used internally by addSeedAccount and addExternalAccount methods.
+	 * @param {AccountTypes.WalletAccount} account - account object to add
+	 * @returns {Promise<AccountTypes.WalletAccount>} - a promise that resolves when the account is added
+	 * @throws {AppError} - if the account already exists in the wallet
+	 */
+	#addAccount = async account => {
+		// Load existing accounts from persistent storage
+		const accounts = await this._persistentStorageRepository.getAccounts();
+		const networkAccounts = accounts[account.networkIdentifier];
+
+		// Check if the account already in the wallet
+		const isAccountAlreadyExists = networkAccounts.find(acc => account.publicKey === acc.publicKey);
+
+		if (isAccountAlreadyExists) {
+			throw new AppError(
+				'error_failed_add_account_already_exists',
+				'Failed to add account. Account already exists in the wallet.'
+			);
+		}
+
+		// Add account to the existing accounts
+		networkAccounts.push(account);
+		await this.#setAccounts(accounts);
+
+		return account;
+	};
+
+	/**
+	 * Rename wallet account
+	 * @param {object} options - account options
+	 * @param {string} options.networkIdentifier - network identifier of the account
+	 * @param {string} options.publicKey - account public key
+	 * @param {string} options.name - new account name
+	 * @returns {Promise<void>} - a promise that resolves when the account is renamed
+	 */
+	renameAccount = async ({ networkIdentifier, publicKey, name }) => {
+		const account = this.#getAccount(networkIdentifier, publicKey);
+		account.name = name;
+		const accounts = await this._persistentStorageRepository.getAccounts();
+
+		const updatedAccounts = createNetworkMap(currentNetworkIdentifier => {
+			if (currentNetworkIdentifier === networkIdentifier) {
+				return accounts[currentNetworkIdentifier].map(acc =>
+					acc.publicKey === publicKey ? account : acc);
+			}
+			return accounts[currentNetworkIdentifier];
+		}, this.networkIdentifiers);
+
+		await this.#setAccounts(updatedAccounts);
+	};
+
+	/**
+	 * Remove account from the wallet
+	 * @param {object} options - account options
+	 * @param {string} options.networkIdentifier - network identifier of the account
+	 * @param {string} options.publicKey - account public key
+	 * @param {string} [password] - wallet password
+	 * @returns {Promise<void>} - a promise that resolves when the account is removed
+	 */
+	removeAccount = async ({ networkIdentifier, publicKey }, password) => {
+		// Prevent removing the currently selected account
+		if (this._state.currentAccountPublicKey === publicKey)
+			throw new AppError('error_wallet_remove_current_account', 'Cannot remove the currently selected account');
+
+		// Load accounts from storage and remove the account
+		const account = this.#getAccount(networkIdentifier, publicKey);
+		const isExternalAccount = account.accountType === WalletAccountType.EXTERNAL;
+
+		if (isExternalAccount) {
+			// Remove account from the keystore
+			const keystore = this.#accessKeystore(WalletAccountType.EXTERNAL);
+			await keystore.removeAccount(networkIdentifier, publicKey, password);
+		}
+
+		// Load existing accounts from persistent storage
+		const accounts = await this._persistentStorageRepository.getAccounts();
+		const updatedAccounts = createNetworkMap(currentNetworkIdentifier => {
+			if (currentNetworkIdentifier === networkIdentifier) {
+				return accounts[currentNetworkIdentifier].filter(acc =>
+					acc.publicKey !== publicKey);
+			}
+			return accounts[currentNetworkIdentifier];
+		}, this.networkIdentifiers);
+
+		// Update the accounts in the storage and load them to the state
+		await this.#setAccounts(updatedAccounts);
+	};
+
+	#getAccount = (networkIdentifier, publicKey) => {
+		const { walletAccounts } = this._state;
+		const accounts = walletAccounts[networkIdentifier];
+
+		if (!accounts) {
+			throw new AppError(
+				'error_wallet_account_not_found',
+				`Failed to get account. Network "${networkIdentifier}" is not supported by the wallet.`
+			);
+		}
+
+		const account = accounts.find(account => account.publicKey === publicKey);
+
+		if (!account) {
+			throw new AppError(
+				'error_wallet_account_not_found',
+				`Failed to get account. Account with public key "${publicKey}" is not found in the wallet.`
+			);
+		}
+
+		return { ...account };
+	};
+
+	/**
+	 * Change accounts order
+	 * @param {string} networkIdentifier - network identifier
+	 * @param {Array} accountsOrder - array of account objects with public key
+	 * @returns {Promise<void>} - a promise that resolves when the accounts order is changed
+	 */
+	changeAccountsOrder = async (networkIdentifier, accountsOrder) => {
+		const accountsPublicKeys = accountsOrder.map(account => account.publicKey);
+		const accounts = await this._persistentStorageRepository.getAccounts();
+		accounts[networkIdentifier] = accounts[networkIdentifier].sort((a, b) => {
+			return accountsPublicKeys.indexOf(a.publicKey) - accountsPublicKeys.indexOf(b.publicKey);
+		});
+
+		await this.#setAccounts(accounts);
+	};
+
+	/**
+	 * Set accounts in the state and persistent storage
+	 * @param {NetworkTypes.NetworkArrayMap<AccountTypes.WalletAccount>} accounts - array of accounts to set
+	 * @returns {Promise<void>} - a promise that resolves when the accounts are set
+	 */
+	#setAccounts = async accounts => {
+		await this._persistentStorageRepository.setAccounts(accounts);
+		this.#setState(() => {
+			this._state.walletAccounts = accounts;
+		});
+	};
+
+	/**
+	 * Fetch current account info
+	 * @returns {Promise<object>} - account info
+	 */
+	fetchAccountInfo = async () => {
+		const { networkIdentifier, networkProperties, currentAccountPublicKey: publicKey } = this._state;
+
+		const baseAccountInfo = await this._api.fetchAccountInfo(networkProperties, publicKey);
+		const fetchedAt = Date.now();
+		let accountInfo;
+
+		if (baseAccountInfo)
+			accountInfo = { ...baseAccountInfo, fetchedAt };
+		else
+			accountInfo = { fetchedAt };
+
+		const accountInfosOrNull = await this._persistentStorageRepository.getAccountInfos();
+		const accountInfos = cloneNetworkObjectMap(accountInfosOrNull, this.networkIdentifiers, this._state.accountInfos);
+		accountInfos[networkIdentifier][publicKey] = accountInfo;
+
+		await this._persistentStorageRepository.setAccountInfos(accountInfos);
+		this.#setState(() => {
+			this._state.accountInfos = accountInfos;
+		});
+
+		return accountInfo;
+	};
+
+	/**
+	 * Fetch current account transactions
+	 * @param {object} options - fetch options
+	 * @param {string} options.group - 'confirmed', 'unconfirmed' or 'partial'
+	 * @param {number} options.pageNumber - page number
+	 * @param {number} options.pageSize - page size
+	 * @param {object} options.filter - filter object
+	 * @returns {Promise<Array>} - a promise that resolves to the list of transactions
+	 */
+	fetchAccountTransactions = async (options = {}) => {
+		const { group = TransactionGroup.CONFIRMED, pageNumber = 1, pageSize = 15, filter = {} } = options;
+		const { networkIdentifier, networkProperties } = this._state;
+		const { publicKey } = this.currentAccount;
+
+		// Fetch transactions from chain
+		const transactions = await this._api.fetchAccountTransactions(networkProperties, this.currentAccount, {
+			group,
+			filter,
+			pageNumber,
+			pageSize
+		});
+
+		// Cache transactions for current account
+		const isFilterActivated = filter && Object.keys(filter).length > 0;
+		if (!isFilterActivated && group === TransactionGroup.CONFIRMED && pageNumber === 1) {
+			const latestTransactions = await this._persistentStorageRepository.getLatestTransactions();
+			latestTransactions[networkIdentifier][publicKey] = transactions;
+
+			await this._persistentStorageRepository.setLatestTransactions(latestTransactions);
+			this.#setState(() => {
+				this._state.latestTransactions = latestTransactions;
+			});
+		}
+
+		return transactions;
+	};
+
+	/**
+	 * Return wallet mnemonic passphrase from the secure storage
+	 * @returns {Promise<string>} - mnemonic passphrase
+	 */
+	getMnemonic = async () => {
+		const mnemonicKeystore = this.#accessKeystore(WalletAccountType.MNEMONIC);
+
+		return mnemonicKeystore.getMnemonic();
+	};
+
+	/**
+	 * Return current account private key from the secure storage
+	 * @returns {Promise<string>} - account private key
+	 */
+	getCurrentAccountPrivateKey = async () => {
+		const keystore = this.#accessKeystore(this.currentAccount.accountType);
+
+		return keystore.getPrivateKey(this.currentAccount);
+	};
+
+	/**
+	 * Sign transaction with the current account private key
+	 * @param {object} transaction - transaction
+	 * @returns {Promise<object>} - signed transaction object
+	 */
+	signTransaction = async transaction => {
+		const keystore = this.#accessKeystore(this.currentAccount.accountType);
+
+		return keystore.signTransaction(this.networkProperties, transaction, this.currentAccount);
+	};
+
+	/**
+	 * Add current account signature to partial transaction
+	 * @param {object} transaction - partial transaction
+	 * @returns {Promise<object>} - cosigned transaction object
+	 */
+	cosignTransaction = async transaction => {
+		const keystore = this.#accessKeystore(this.currentAccount.accountType);
+
+		return keystore.cosignTransaction(this.networkProperties, transaction, this.currentAccount);
+	};
+
+	/**
+	 * Announce signed transaction
+	 * @param {object} signedTransaction - signed transaction object
+	 * @param {string} [group] - transaction group ('default', 'partial' or 'cosignature')
+	 * @returns {Promise<object>} - transaction announce result
+	 */
+	announceSignedTransaction = async (signedTransaction, group) => {
+		return this._api.announceTransaction(this.networkProperties, signedTransaction.dto, group);
+	};
+
+	/**
+	 * Encrypt message with recipient public key and current account private key
+	 * @param {string} messageText - message text to encrypt
+	 * @param {string} publicKey - second party (sender or recipient) public key
+	 * @returns {Promise<string>} - encrypted message HEX payload
+	 */
+	encryptMessage = async (messageText, publicKey) => {
+		const keystore = this.#accessKeystore(this.currentAccount.accountType);
+
+		return keystore.encryptMessage(messageText, publicKey, this.currentAccount);
+	};
+
+	/**
+	 * Decrypt message with sender (or recipient) public key and current account private key
+	 * @param {string} encryptedMessage - encrypted message HEX payload
+	 * @param {string} publicKey - second party (sender or recipient) public key
+	 * @returns {Promise<string>} - decrypted message text
+	 */
+	decryptMessage = async (encryptedMessage, publicKey) => {
+		const keystore = this.#accessKeystore(this.currentAccount.accountType);
+
+		return keystore.decryptMessage(encryptedMessage, publicKey, this.currentAccount);
+	};
+
+	/**
+	 * Clear all the data from the state, storage and remove all accounts
+	 * @param {string} [password] - wallet storage password
+	 * @returns {Promise<void>} - a promise that resolves when the clear is completed
+	 */
+	clear = async password => {
+		// Clear all persistent and secure storages
+		await this._persistentStorageRepository.clear();
+		await Promise.all(Object.values(this._keystores)
+			.filter(keystore => keystore.clear)
+			.map(keystore => keystore.clear(password)));
+		await Promise.all(Object.values(this.modules)
+			.filter(module => module.clear)
+			.map(module => module.clear()));
+
+		this.resetState();
+		this._emit(ControllerEventName.WALLET_CLEAR);
+	};
+
+	/**
+	 * Connect to the network and start polling for network properties
+	 * @returns {Promise<void>} - a promise that resolves when the connection run is completed
+	 */
+	connectToNetwork = async () => {
+		await this._networkManager.runConnectionJob();
+	};
+
+	/**
+	 * Select network and node
+	 * @param {string} networkIdentifier - network identifier
+	 * @param {string} [nodeUrl] - node url
+	 * @returns {Promise<void>} - a promise that resolves when the network is selected
+	 */
+	selectNetwork = async (networkIdentifier, nodeUrl = null) => {
+		if (!this.networkIdentifiers.includes(networkIdentifier)) {
+			throw new AppError(
+				'error_change_network_not_supported',
+				`Failed to select network. Network "${networkIdentifier}" is not supported by the wallet.`
+			);
+		}
+
+		const accounts = this._state.walletAccounts[networkIdentifier];
+		const defaultNetworkProperties = this.#createDefaultNetworkProperties(networkIdentifier);
+		
+		await this._persistentStorageRepository.setNetworkProperties(defaultNetworkProperties);
+		await this._persistentStorageRepository.setNetworkIdentifier(networkIdentifier);
+		await this._persistentStorageRepository.setSelectedNode(nodeUrl);
+		this.#setState(() => {
+			this._state.networkIdentifier = networkIdentifier;
+			this._state.networkProperties = defaultNetworkProperties;
+			this._state.selectedNodeUrl = nodeUrl;
+			this._state.networkStatus = NetworkConnectionStatus.INITIAL;
+		});
+		
+		this._networkManager.selectNetwork(networkIdentifier, nodeUrl);
+		this._emit(ControllerEventName.NETWORK_CHANGE);
+
+		await this.selectAccount(accounts[0].publicKey);
+	};
+
+	/**
+	 * Callback handler for network connection status change
+	 * @param {NetworkConnectionStatus} networkConnectionStatus - new network connection status
+	 * @private
+	 */
+	#handleNetworkConnectionStatusChange = networkConnectionStatus => {
+		this.#setState(() => {
+			this._state.networkStatus = networkConnectionStatus;
+		});
+	};
+
+	/**
+	 * Callback handler for network properties update
+	 * @param {NetworkTypes.NetworkProperties} networkProperties - new network properties
+	 * @private
+	 */
+	#handleNetworkPropertiesUpdate = async networkProperties => {
+		await this._persistentStorageRepository.setNetworkProperties(networkProperties);
+		this.#setState(() => {
+			this._state.networkProperties = networkProperties;
+		});
+	};
+
+	/**
+	 * Callback handler for chain events
+	 * @param {string} eventName - name of the event
+	 * @param {object} payload - event payload
+	 * @private
+	 */
+	#handleChainEvent = async (eventName, payload) => {
+		this._emit(eventName, payload);
+	};
+
+	/**
+	 * Reset the wallet state to the default values
+	 */
+	resetState = () => {
+		this._state = createDefaultState(this.networkIdentifiers, this.#createDefaultNetworkProperties);
+
+		Object.values(this.modules).forEach(module => module.resetState?.());
+	};
+
+	#setState = callback => {
+		if (this.#setStateProcessor) {
+			this.#setStateProcessor(callback);
+		} else {
+			callback.bind(this);
+			callback();
+		}
+	};
+}
