@@ -152,8 +152,8 @@ const controller = new WalletController({
 import { StorageInterface } from '@wallet/common-core';
 
 const persistentStorageInterface = new StorageInterface({
-  getItem: localStorage.getItem
-  setItem: localStorage.setItem
+  getItem: localStorage.getItem,
+  setItem: localStorage.setItem,
   removeItem: localStorage.removeItem
 });
 ```
