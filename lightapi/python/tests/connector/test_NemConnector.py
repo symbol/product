@@ -300,7 +300,7 @@ async def server(aiohttp_client):
 # pylint: disable=invalid-name
 
 
-# region extract_transaction_id
+# region extract_transaction_id, extract_block_timestamp
 
 def test_can_extract_transaction_id():
 	# Act:
@@ -311,6 +311,17 @@ def test_can_extract_transaction_id():
 
 	# Assert:
 	assert 5577 == transaction_id
+
+
+def test_can_extract_block_timestamp():
+	# Act:
+	timestamp = NemConnector.extract_block_timestamp({
+		'timeStamp': 1234,
+		'meta': {'timeStamp': 5577}
+	})
+
+	# Assert:
+	assert 1234 == timestamp
 
 # endregion
 
@@ -365,8 +376,8 @@ async def test_can_get_block_headers(server):  # pylint: disable=redefined-outer
 	headers = await connector.block_headers(1000)
 
 	# Assert:
-	assert {'type': 1, 'signer': PUBLIC_KEYS[0], 'timeStamp': 201000} == headers
 	assert [f'{server.make_url("")}/block/at/public'] == server.mock.urls
+	assert {'type': 1, 'signer': PUBLIC_KEYS[0], 'timeStamp': 201000} == headers
 
 # endregion
 

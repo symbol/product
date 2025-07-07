@@ -2,7 +2,11 @@ import asyncio
 
 from symbolchain.CryptoTypes import Hash256
 
-from symbollightapi.connector.ConnectorExtensions import filter_finalized_transactions, get_incoming_transactions_from
+from symbollightapi.connector.ConnectorExtensions import (
+	filter_finalized_transactions,
+	get_incoming_transactions_from,
+	query_block_timestamps
+)
 
 from ..test.LightApiTestUtils import HASHES
 
@@ -19,17 +23,29 @@ class MockConnector:
 	def extract_transaction_id(transaction):
 		return transaction['meta']['id']
 
+	@staticmethod
+	def extract_block_timestamp(block):
+		return int(block['_timestamp'])
+
 	async def finalized_chain_height(self):
-		await asyncio.sleep(0.01)
+		await self._pause()
 		return self._finalized_chain_height
 
+	async def block_headers(self, height):
+		await self._pause()
+		return {'_timestamp': str(height * height)}
+
 	async def incoming_transactions(self, address, start_id=None):
-		await asyncio.sleep(0.01)
+		await self._pause()
 		return self._incoming_transactions_map[(address, start_id)]
 
 	async def filter_confirmed_transactions(self, transaction_hashes):
-		await asyncio.sleep(0.01)
+		await self._pause()
 		return [(transaction_hash, self._status_start_height + i) for i, transaction_hash in enumerate(transaction_hashes)]
+
+	@staticmethod
+	async def _pause():
+		await asyncio.sleep(0.01)
 
 # endregion
 
@@ -184,5 +200,37 @@ async def test_filter_finalized_transactions_can_return_all():
 	assert (Hash256(HASHES[0]), 9998) == transaction_hashes[0]
 	assert (Hash256(HASHES[2]), 9999) == transaction_hashes[1]
 	assert (Hash256(HASHES[1]), 10000) == transaction_hashes[2]
+
+# endregion
+
+
+# region query_block_timestamps
+
+async def test_query_block_timestamps_can_query_none():
+	# Arrange:
+	connector = MockConnector()
+
+	# Act:
+	height_timestamp_pairs = await query_block_timestamps(connector, [])
+
+	# Assert:
+	assert [] == height_timestamp_pairs
+
+
+async def test_query_block_timestamps_can_query_multiple():
+	# Arrange:
+	connector = MockConnector()
+
+	# Act:
+	height_timestamp_pairs = await query_block_timestamps(connector, [4, 5, 1, 3, 2])
+
+	# Assert:
+	assert [
+		(4, 16),
+		(5, 25),
+		(1, 1),
+		(3, 9),
+		(2, 4)
+	] == height_timestamp_pairs
 
 # endregion
