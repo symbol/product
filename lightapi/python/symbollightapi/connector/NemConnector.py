@@ -1,9 +1,12 @@
+import asyncio
 from binascii import hexlify
 
-from symbolchain.CryptoTypes import PublicKey, Signature
+from aiolimiter import AsyncLimiter
+from symbolchain.CryptoTypes import Hash256, PublicKey, Signature
 from symbolchain.facade.NemFacade import NemFacade
 from symbolchain.nem.Network import Address, NetworkTimestamp
 
+from ..model.Constants import DEFAULT_ASYNC_LIMITER_ARGUMENTS
 from ..model.Endpoint import Endpoint
 from ..model.Exceptions import NodeException
 from ..model.NodeInfo import NodeInfo
@@ -152,6 +155,34 @@ class NemConnector(BasicConnector):
 		meta_json = response_json['meta']
 		account_info.remote_status = meta_json['remoteStatus']
 		return account_info
+
+	# endregion
+
+	# region GET (filter_confirmed_transactions)
+
+	async def filter_confirmed_transactions(self, transaction_hashes, async_limiter_arguments=DEFAULT_ASYNC_LIMITER_ARGUMENTS):
+		"""Filters transaction hashes and returns only confirmed ones with (confirmed) heights."""
+
+		limiter = AsyncLimiter(*async_limiter_arguments)
+
+		async def get_transaction_hash_height_pair(transaction_hash):
+			async with limiter:
+				try:
+					transaction_meta_json = await self.transaction_confirmed(transaction_hash)
+					meta_json = transaction_meta_json['meta']
+					return (Hash256(meta_json['hash']['data']), meta_json['height'])
+				except NodeException:
+					# not found is mapped to 400, so need to catch (and ignore) error
+					return (None, 0)
+
+		tasks = [get_transaction_hash_height_pair(transaction_hash) for transaction_hash in transaction_hashes]
+		transaction_hash_height_pairs = await asyncio.gather(*tasks)
+
+		return [
+			transaction_hash_height_pair
+			for transaction_hash_height_pair in transaction_hash_height_pairs
+			if transaction_hash_height_pair[0]
+		]
 
 	# endregion
 

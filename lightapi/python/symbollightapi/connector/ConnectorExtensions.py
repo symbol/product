@@ -1,3 +1,5 @@
+# region get_incoming_transactions_from
+
 async def get_incoming_transactions_from(connector, address, start_height=None, end_height=None):
 	"""Uses the specified connector to retrieve all transactions sent to an account in the range [start_height, end_height)."""
 
@@ -18,3 +20,19 @@ async def get_incoming_transactions_from(connector, address, start_height=None, 
 			yield transaction_json
 
 		start_id = connector.extract_transaction_id(transactions_json[-1])
+
+# endregion
+
+
+# region filter_finalized_transactions
+
+async def filter_finalized_transactions(connector, transaction_hashes):
+	"""Filters transaction hashes and returns only finalized ones with heights."""
+
+	finalized_chain_height = await connector.finalized_chain_height()
+	transaction_hash_height_pairs = await connector.filter_confirmed_transactions(transaction_hashes)
+	return list(filter(
+		lambda transaction_hash_height_pair: transaction_hash_height_pair[1] <= finalized_chain_height,
+		transaction_hash_height_pairs))
+
+# endregion

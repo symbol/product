@@ -1,19 +1,37 @@
 import asyncio
 
-from symbollightapi.connector.ConnectorExtensions import get_incoming_transactions_from
+from symbolchain.CryptoTypes import Hash256
+
+from symbollightapi.connector.ConnectorExtensions import filter_finalized_transactions, get_incoming_transactions_from
+
+from ..test.LightApiTestUtils import HASHES
+
+# region MockConnector
 
 
 class MockConnector:
-	def __init__(self, incoming_transactions_map):
-		self.incoming_transactions_map = incoming_transactions_map
+	def __init__(self, incoming_transactions_map=None, finalized_chain_height=None, status_start_height=None):
+		self._incoming_transactions_map = incoming_transactions_map
+		self._finalized_chain_height = finalized_chain_height
+		self._status_start_height = status_start_height
 
 	@staticmethod
 	def extract_transaction_id(transaction):
 		return transaction['meta']['id']
 
+	async def finalized_chain_height(self):
+		await asyncio.sleep(0.01)
+		return self._finalized_chain_height
+
 	async def incoming_transactions(self, address, start_id=None):
 		await asyncio.sleep(0.01)
-		return self.incoming_transactions_map[(address, start_id)]
+		return self._incoming_transactions_map[(address, start_id)]
+
+	async def filter_confirmed_transactions(self, transaction_hashes):
+		await asyncio.sleep(0.01)
+		return [(transaction_hash, self._status_start_height + i) for i, transaction_hash in enumerate(transaction_hashes)]
+
+# endregion
 
 
 # pylint: disable=invalid-name
@@ -124,5 +142,47 @@ async def test_get_incoming_transactions_from_supports_string_heights_and_ids():
 
 	# Assert:
 	assert [_make_transaction_template_from_height_str(height) for height in [176, 130, 125, 101, 100, 99, 75]] == transactions
+
+# endregion
+
+
+# region filter_finalized_transactions
+
+async def test_filter_finalized_transactions_can_return_none():
+	# Arrange: no confirmed transactions are finalized
+	connector = MockConnector(finalized_chain_height=10000, status_start_height=10100)
+
+	# Act:
+	transaction_hashes = await filter_finalized_transactions(connector, [Hash256(HASHES[i]) for i in (0, 2, 1)])
+
+	# Assert:
+	assert [] == transaction_hashes
+
+
+async def test_filter_finalized_transactions_can_return_some():
+	# Arrange: some confirmed transactions are finalized
+	connector = MockConnector(finalized_chain_height=10000, status_start_height=9999)
+
+	# Act:
+	transaction_hashes = await filter_finalized_transactions(connector, [Hash256(HASHES[i]) for i in (0, 2, 1)])
+
+	# Assert:
+	assert 2 == len(transaction_hashes)
+	assert (Hash256(HASHES[0]), 9999) == transaction_hashes[0]
+	assert (Hash256(HASHES[2]), 10000) == transaction_hashes[1]
+
+
+async def test_filter_finalized_transactions_can_return_all():
+	# Arrange: all confirmed transactions are finalized
+	connector = MockConnector(finalized_chain_height=10000, status_start_height=9998)
+
+	# Act:
+	transaction_hashes = await filter_finalized_transactions(connector, [Hash256(HASHES[i]) for i in (0, 2, 1)])
+
+	# Assert:
+	assert 3 == len(transaction_hashes)
+	assert (Hash256(HASHES[0]), 9998) == transaction_hashes[0]
+	assert (Hash256(HASHES[2]), 9999) == transaction_hashes[1]
+	assert (Hash256(HASHES[1]), 10000) == transaction_hashes[2]
 
 # endregion

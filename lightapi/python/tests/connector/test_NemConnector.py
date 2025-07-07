@@ -225,7 +225,26 @@ async def server(aiohttp_client):
 			return await self._process(request, account_info)
 
 		async def transaction_confirmed(self, request):
-			return await self._process(request, {'meta': {'height': 1234}, 'transaction': {'message': 'foo'}})
+			transaction_hash_str = request.rel_url.query['hash']
+			transaction_hash_to_height_mapping = {
+				HASHES[0]: 10001,
+				HASHES[1]: 10003
+			}
+
+			height = transaction_hash_to_height_mapping.get(transaction_hash_str)
+			if not height:
+				self.urls.append(str(request.url))
+
+				# simulate 400 not found
+				raise NodeException('not found')
+
+			return await self._process(request, {
+				'meta': {
+					'hash': {'data': transaction_hash_str},
+					'height': height
+				},
+				'transaction': {'message': 'foo'}
+			})
 
 		async def transfers(self, request):
 			address = Address(request.rel_url.query['address'])
@@ -506,6 +525,29 @@ async def test_can_query_account_info_without_public_key(server):  # pylint: dis
 # endregion
 
 
+# region GET (filter_confirmed_transactions)
+
+async def test_can_filter_confirmed_transactions(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	connector = NemConnector(server.make_url(''))
+
+	# Act:
+	transaction_hash_height_pairs = await connector.filter_confirmed_transactions([HASHES[0], HASHES[2], HASHES[1]])
+
+	# Assert:
+	assert [
+		f'{server.make_url("")}/transaction/get?hash={HASHES[0]}',
+		f'{server.make_url("")}/transaction/get?hash={HASHES[2]}',
+		f'{server.make_url("")}/transaction/get?hash={HASHES[1]}'
+	] == server.mock.urls
+	assert 2 == len(transaction_hash_height_pairs)
+
+	assert (Hash256(HASHES[0]), 10001) == transaction_hash_height_pairs[0]
+	assert (Hash256(HASHES[1]), 10003) == transaction_hash_height_pairs[1]
+
+# endregion
+
+
 # region GET (transaction_confirmed)
 
 async def test_transaction_confirmed(server):  # pylint: disable=redefined-outer-name
@@ -517,7 +559,13 @@ async def test_transaction_confirmed(server):  # pylint: disable=redefined-outer
 
 	# Assert:
 	assert [f'{server.make_url("")}/transaction/get?hash={HASHES[0]}'] == server.mock.urls
-	assert {'meta': {'height': 1234}, 'transaction': {'message': 'foo'}} == transaction
+	assert {
+		'meta': {
+			'hash': {'data': HASHES[0]},
+			'height': 10001
+		},
+		'transaction': {'message': 'foo'}
+	} == transaction
 
 # endregion
 

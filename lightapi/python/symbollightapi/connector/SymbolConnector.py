@@ -205,13 +205,23 @@ class SymbolConnector(BasicConnector):
 
 	# endregion
 
-	# region POST (transaction_statuses)
+	# region POST (transaction_statuses, filter_confirmed_transactions)
 
 	async def transaction_statuses(self, transaction_hashes):
 		"""Gets the statuses of the specified transactions."""
 
 		request = {'hashes': [str(transaction_hash) for transaction_hash in transaction_hashes]}
 		return await self.post('transactionStatus', request)
+
+	async def filter_confirmed_transactions(self, transaction_hashes):
+		"""Filters transaction hashes and returns only confirmed ones with (confirmed) heights."""
+
+		transaction_statuses = await self.transaction_statuses(transaction_hashes)
+		return [
+			(Hash256(transaction_status['hash']), int(transaction_status['height']))
+			for transaction_status in transaction_statuses
+			if 'confirmed' == transaction_status['group']
+		]
 
 	# endregion
 
