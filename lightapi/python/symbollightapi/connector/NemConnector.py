@@ -45,13 +45,19 @@ class NemConnector(BasicConnector):
 		super().__init__(endpoint)
 		self.network = network
 
-	# region extract_transaction_id
+	# region extract_transaction_id, extract_block_timestamp
 
 	@staticmethod
 	def extract_transaction_id(transaction):
 		"""Extracts the transaction id from a REST transaction JSON object."""
 
 		return transaction['meta']['id']
+
+	@staticmethod
+	def extract_block_timestamp(block):
+		"""Extracts the block timestamp from a REST block header JSON object."""
+
+		return block['timeStamp']
 
 	# endregion
 

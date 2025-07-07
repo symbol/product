@@ -40,13 +40,19 @@ class SymbolConnector(BasicConnector):
 		super().__init__(endpoint)
 		self._network_properties = None
 
-	# region extract_transaction_id
+	# region extract_transaction_id, extract_block_timestamp
 
 	@staticmethod
 	def extract_transaction_id(transaction):
 		"""Extracts the transaction id from a REST transaction JSON object."""
 
 		return transaction['id']
+
+	@staticmethod
+	def extract_block_timestamp(block):
+		"""Extracts the block timestamp from a REST block header JSON object."""
+
+		return int(block['block']['timestamp'])
 
 	# endregion
 
@@ -96,6 +102,16 @@ class SymbolConnector(BasicConnector):
 
 		timestamps = await self.get('node/time')
 		return NetworkTimestamp(int(timestamps['communicationTimestamps']['sendTimestamp']))
+
+	# endregion
+
+	# region GET (block_headers)
+
+	async def block_headers(self, height):
+		"""Gets block headers."""
+
+		block = await self.get(f'blocks/{height}')
+		return block
 
 	# endregion
 
