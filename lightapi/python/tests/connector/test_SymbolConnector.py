@@ -1,5 +1,5 @@
 import json
-from binascii import unhexlify
+from binascii import hexlify, unhexlify
 
 import pytest
 from aiohttp import web
@@ -10,6 +10,8 @@ from symbollightapi.connector.SymbolConnector import SymbolConnector
 from symbollightapi.model.Endpoint import Endpoint
 from symbollightapi.model.Exceptions import NodeException
 from symbollightapi.model.NodeInfo import NodeInfo
+
+from ..test.LightApiTestUtils import HASHES, SYMBOL_ADDRESSES
 
 # region test data
 
@@ -67,6 +69,18 @@ MULTISIG_INFO_1 = {
 	}
 }
 
+
+def generate_transaction_statuses(status_start_height, transaction_hashes):
+	return [
+		{
+			'group': 'confirmed' if 0 == i % 2 else 'unconfirmed',
+			'code': 'Success',
+			'hash': str(transaction_hash),
+			'height': str(status_start_height + i)
+		}
+		for i, transaction_hash in enumerate(transaction_hashes)
+	]
+
 # endregion
 
 
@@ -77,6 +91,8 @@ async def server(aiohttp_client):
 	class MockSymbolServer:
 		def __init__(self):
 			self.urls = []
+			self.status_start_height = 111001
+
 			self.request_json_payloads = []
 			self.simulate_error = False
 
@@ -153,6 +169,28 @@ async def server(aiohttp_client):
 
 			return await self._process(request, {'code': 'ResourceNotFound', 'message': 'no resource exists with id'}, 404)
 
+		async def transaction_statuses(self, request):
+			request_json = json.loads(await request.text())
+			return await self._process(request, generate_transaction_statuses(self.status_start_height, request_json['hashes']))
+
+		async def transactions_confirmed(self, request):
+			messages = [
+				'\0{ "nisAddress": "NA3IMF22S2GAHQQCL7FJKA2XWDQLK3FXFHR5SVXV" }',
+				'\0{ "nisAddress": "NAEBRWDBDHWRDPEV4YGTF2YFA4DSDQTWKNXUCZWX" }',
+				'\0{ "nisAddress": "NDMK7CQLJYRXGJNQXELM4OG2NTZAC2C4YFFGWDIS" }'
+			]
+			return await self._process(request, {
+				'data': [
+					{
+						'meta': {'hash': HASHES[i]},
+						'transaction': {'message': hexlify(message.encode('utf8')).decode('utf8')}
+					} for i, message in enumerate(messages)
+				] + [{
+					'meta': {'aggregateHash': HASHES[3]},
+					'transaction': {'message': hexlify(messages[0].encode('utf8')).decode('utf8')}
+				}]
+			})
+
 		async def announce_transaction(self, request):
 			request_json = await request.json()
 			self.request_json_payloads.append(request_json)
@@ -178,6 +216,8 @@ async def server(aiohttp_client):
 	app.router.add_get('/node/peers', mock_server.node_peers)
 	app.router.add_get(r'/accounts/{account_id}', mock_server.accounts_by_id)
 	app.router.add_get(r'/account/{address}/multisig', mock_server.account_multisig)
+	app.router.add_get('/transactions/confirmed', mock_server.transactions_confirmed)
+	app.router.add_post('/transactionStatus', mock_server.transaction_statuses)
 	app.router.add_put('/transactions', mock_server.announce_transaction)
 	app.router.add_put('/transactions/partial', mock_server.announce_transaction)
 	server = await aiohttp_client(app)  # pylint: disable=redefined-outer-name
@@ -188,6 +228,21 @@ async def server(aiohttp_client):
 # endregion
 
 # pylint: disable=invalid-name
+
+
+# region extract_transaction_id
+
+def test_can_extract_transaction_id():
+	# Act:
+	transaction_id = SymbolConnector.extract_transaction_id({
+		'id': 1234,
+		'meta': {'id': 5577}
+	})
+
+	# Assert:
+	assert 1234 == transaction_id
+
+# endregion
 
 
 # region GET (currency_mosaic_id)
@@ -220,7 +275,7 @@ async def test_can_cache_currency_mosaic_id(server):  # pylint: disable=redefine
 # endregion
 
 
-# region GET (chain_height, chain_statistics, finalization_statistics, network_time)
+# region GET (chain_height, chain_statistics, finalized_chain_height, finalization_statistics, network_time)
 
 async def test_can_query_chain_height(server):  # pylint: disable=redefined-outer-name
 	# Arrange:
@@ -246,6 +301,18 @@ async def test_can_query_chain_statistics(server):  # pylint: disable=redefined-
 	assert 1234 == chain_statistics.height
 	assert 888999 == chain_statistics.score_high
 	assert 222111 == chain_statistics.score_low
+
+
+async def test_can_query_finalized_chain_height(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	connector = SymbolConnector(server.make_url(''))
+
+	# Act:
+	height = await connector.finalized_chain_height()
+
+	# Assert:
+	assert [f'{server.make_url("")}/chain/info'] == server.mock.urls
+	assert 1198 == height
 
 
 async def test_can_query_finalization_statistics(server):  # pylint: disable=redefined-outer-name
@@ -472,6 +539,65 @@ async def test_can_query_account_multisig_information_for_known_account(server):
 		Address('TDJVZT3GHVQ4MTTLBA6ARMKUJQ6ZKOHLAE3JESA'),
 		Address('TCMW6PBD3XSCLDU5HYHQXZF25VEDODFG5XL52LA')
 	] == multisig_info.multisig_addresses
+
+# endregion
+
+
+# region POST (transaction_statuses)
+
+async def test_can_query_transaction_statuses(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	connector = SymbolConnector(server.make_url(''))
+
+	# Act:
+	transaction_statuses = await connector.transaction_statuses([HASHES[0], HASHES[2], HASHES[1]])
+
+	# Assert:
+	assert [f'{server.make_url("")}/transactionStatus'] == server.mock.urls
+	assert 3 == len(transaction_statuses)
+
+	assert 'confirmed' == transaction_statuses[0]['group']
+	assert 'Success' == transaction_statuses[0]['code']
+	assert str(HASHES[0]) == transaction_statuses[0]['hash']
+	assert '111001' == transaction_statuses[0]['height']
+
+	assert 'unconfirmed' == transaction_statuses[1]['group']
+	assert 'Success' == transaction_statuses[1]['code']
+	assert str(HASHES[2]) == transaction_statuses[1]['hash']
+	assert '111002' == transaction_statuses[1]['height']
+
+	assert 'confirmed' == transaction_statuses[2]['group']
+	assert 'Success' == transaction_statuses[2]['code']
+	assert str(HASHES[1]) == transaction_statuses[2]['hash']
+	assert '111003' == transaction_statuses[2]['height']
+
+# endregion
+
+
+# region GET (incoming_transactions)
+
+def assert_message(message, transaction):
+	assert message == transaction['transaction']['message']
+
+
+async def test_incoming_transactions(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	connector = SymbolConnector(server.make_url(''))
+
+	# Act:
+	transactions = await connector.incoming_transactions(Address(SYMBOL_ADDRESSES[0]))
+
+	# Assert:
+	assert [
+		f'{server.make_url("")}/transactions/confirmed?recipientAddress={Address(SYMBOL_ADDRESSES[0])}&embedded=true&pageSize=100&order=desc'
+	] == server.mock.urls
+	assert 4 == len(transactions)
+
+	prefix = '007b20226e697341646472657373223a20224e'
+	assert_message(f'{prefix}4133494d46323253324741485151434c37464a4b4132585744514c4b334658464852355356585622207d', transactions[0])
+	assert_message(f'{prefix}414542525744424448575244504556345947544632594641344453445154574b4e5855435a575822207d', transactions[1])
+	assert_message(f'{prefix}444d4b3743514c4a595258474a4e5158454c4d344f47324e545a4143324334594646475744495322207d', transactions[2])
+	assert_message(f'{prefix}4133494d46323253324741485151434c37464a4b4132585744514c4b334658464852355356585622207d', transactions[0])
 
 # endregion
 
