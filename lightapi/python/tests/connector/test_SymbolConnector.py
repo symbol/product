@@ -575,7 +575,7 @@ async def test_can_query_account_multisig_information_for_known_account(server):
 # endregion
 
 
-# region POST (transaction_statuses)
+# region POST (transaction_statuses, filter_confirmed_transactions)
 
 async def test_can_query_transaction_statuses(server):  # pylint: disable=redefined-outer-name
 	# Arrange:
@@ -602,6 +602,21 @@ async def test_can_query_transaction_statuses(server):  # pylint: disable=redefi
 	assert 'Success' == transaction_statuses[2]['code']
 	assert str(HASHES[1]) == transaction_statuses[2]['hash']
 	assert '111003' == transaction_statuses[2]['height']
+
+
+async def test_can_filter_confirmed_transactions(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	connector = SymbolConnector(server.make_url(''))
+
+	# Act:
+	transaction_hash_height_pairs = await connector.filter_confirmed_transactions([HASHES[0], HASHES[2], HASHES[1]])
+
+	# Assert:
+	assert [f'{server.make_url("")}/transactionStatus'] == server.mock.urls
+	assert 2 == len(transaction_hash_height_pairs)
+
+	assert (Hash256(HASHES[0]), 111001) == transaction_hash_height_pairs[0]
+	assert (Hash256(HASHES[1]), 111003) == transaction_hash_height_pairs[1]
 
 # endregion
 
