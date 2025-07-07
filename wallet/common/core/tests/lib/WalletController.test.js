@@ -495,12 +495,14 @@ describe('WalletController', () => {
 	describe('fetchAccountInfo()', () => {
 		it('returns empty account info when API returns null', async () => {
 			// Arrange:
+			const expectedFetchedTimestamp = 123456;
 			const networkIdentifier = 'testnet';
 			const expectedAccountInfo = {
-				fetchedAt: Date.now()
+				fetchedAt: expectedFetchedTimestamp
 			};
 			walletController._state = cloneDeep(filledState);
 			jest.spyOn(walletController._api, 'fetchAccountInfo').mockResolvedValue(null);
+			jest.spyOn(Date, 'now').mockReturnValue(expectedFetchedTimestamp);
 
 			// Act:
 			const accountInfo = await walletController.fetchAccountInfo(networkIdentifier);
