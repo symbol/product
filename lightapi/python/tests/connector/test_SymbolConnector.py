@@ -122,6 +122,16 @@ async def server(aiohttp_client):
 				}
 			})
 
+		async def blocks(self, request):
+			height = request.match_info['height']
+			return await self._process(request, {
+				'meta': {'hash': HASHES[0]},
+				'block': {
+					'height': str(height),
+					'timestamp': '85426407',
+				}
+			})
+
 		async def node_info(self, request):
 			return await self._process(request, NODE_INFO_1)
 
@@ -217,6 +227,7 @@ async def server(aiohttp_client):
 	app.router.add_get('/network/properties', mock_server.network_properties)
 	app.router.add_get('/chain/info', mock_server.chain_info)
 	app.router.add_get('/node/time', mock_server.node_time)
+	app.router.add_get(r'/blocks/{height}', mock_server.blocks)
 	app.router.add_get('/node/info', mock_server.node_info)
 	app.router.add_get('/node/peers', mock_server.node_peers)
 	app.router.add_get(r'/accounts/{account_id}', mock_server.accounts_by_id)
@@ -236,17 +247,29 @@ async def server(aiohttp_client):
 # pylint: disable=invalid-name
 
 
-# region extract_transaction_id
+# region extract_transaction_id, extract_block_timestamp
 
 def test_can_extract_transaction_id():
 	# Act:
 	transaction_id = SymbolConnector.extract_transaction_id({
-		'id': 1234,
-		'meta': {'id': 5577}
+		'id': '1234',
+		'meta': {'id': '5577'}
 	})
 
 	# Assert:
-	assert 1234 == transaction_id
+	assert '1234' == transaction_id
+
+
+def test_can_extract_block_timestamp():
+	# Act:
+	timestamp = SymbolConnector.extract_block_timestamp({
+		'timestamp': '1234',
+		'meta': {'timestamp': '5577'},
+		'block': {'timestamp': '8901'},
+	})
+
+	# Assert:
+	assert 8901 == timestamp
 
 # endregion
 
@@ -346,6 +369,28 @@ async def test_can_query_network_time(server):  # pylint: disable=redefined-oute
 	# Assert:
 	assert [f'{server.make_url("")}/node/time'] == server.mock.urls
 	assert 68414660756 == timestamp.timestamp
+
+# endregion
+
+
+# region GET (block_headers)
+
+async def test_can_get_block_headers(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	connector = SymbolConnector(server.make_url(''))
+
+	# Act:
+	headers = await connector.block_headers(1001)
+
+	# Assert:
+	assert [f'{server.make_url("")}/blocks/1001'] == server.mock.urls
+	assert {
+		'meta': {'hash': HASHES[0]},
+		'block': {
+			'height': '1001',
+			'timestamp': '85426407',
+		}
+	} == headers
 
 # endregion
 
