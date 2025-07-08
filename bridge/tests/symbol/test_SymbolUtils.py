@@ -26,10 +26,10 @@ class SymbolUtilsTest(unittest.TestCase):
 		def is_valid_address(address):
 			return '0x4838b106fce9647bdf1e7877bf73ce8b0bad5f' == address[:-2] and address[-2:] in ('97', '90', 'a0', 'b0')
 
-		def is_currency_mosaic_id(mosaic_id):
+		def is_matching_mosaic_id(mosaic_id):
 			return 0xFAF0EBED913FA202 == mosaic_id
 
-		return extract_wrap_request_from_transaction(Network.TESTNET, is_valid_address, is_currency_mosaic_id, transaction_with_meta_json)
+		return extract_wrap_request_from_transaction(Network.TESTNET, is_valid_address, is_matching_mosaic_id, transaction_with_meta_json)
 
 	@staticmethod
 	def _create_simple_wrap_request(transaction_subindex=-1):
@@ -102,6 +102,25 @@ class SymbolUtilsTest(unittest.TestCase):
 		# Assert:
 		self.assertEqual(1, len(results))
 		assert_wrap_request_success(self, results[0], change_request_amount(request, 0))
+
+	def test_can_extract_wrap_request_from_transfer_matching_custom_mosaic(self):
+		# Arrange:
+		request = self._create_simple_wrap_request()
+		transaction_with_meta_json = self._create_transfer_json(request, [
+			{'id': 'F9F0EBED913FA202', 'amount': '5555000000'},
+			{'id': 'FBF0EBED913FA202', 'amount': '8888000000'},
+		])
+
+		# Act: extract transfers of a custom mosaic (not the currency mosaic)
+		results = extract_wrap_request_from_transaction(
+			Network.TESTNET,
+			lambda _: True,
+			lambda mosaic_id: 0xFBF0EBED913FA202 == mosaic_id,
+			transaction_with_meta_json)
+
+		# Assert:
+		self.assertEqual(1, len(results))
+		assert_wrap_request_success(self, results[0], change_request_amount(request, 8888000000))
 
 	# endregion
 

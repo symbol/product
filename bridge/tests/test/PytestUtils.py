@@ -29,16 +29,15 @@ async def create_simple_symbol_client(aiohttp_client, currency_mosaic_id, addres
 
 		@staticmethod
 		async def accounts_by_id(request):
-			balance = 0
+			balances = []
 			if address_to_balance_map:
 				account_id = request.match_info['account_id']
-				balance = address_to_balance_map.get(account_id, 0)
+				for mosaic_id, amount in address_to_balance_map.get(account_id, []):
+					balances.append((currency_mosaic_id[2:].replace('\'', '') if 'currency' == mosaic_id else mosaic_id, amount))
 
 			return await MockSymbolServer._process(request, {
 				'account': {
-					'mosaics': [
-						{'id': currency_mosaic_id[2:].replace('\'', ''), 'amount': str(balance)},
-					]
+					'mosaics': [{'id': mosaic_id, 'amount': amount} for mosaic_id, amount in balances]
 				}
 			})
 
@@ -88,6 +87,21 @@ async def create_simple_nem_client(aiohttp_client, address_to_balance_map=None):
 				}
 			})
 
+		@staticmethod
+		async def account_mosaic_owned(request):
+			balance = 0
+			if address_to_balance_map:
+				address = request.url.query['address']
+				balance = address_to_balance_map.get(address, 0)
+
+			return await MockNemServer._process(request, {
+				'data': [
+					{'quantity': 1 * balance, 'mosaicId': {'namespaceId': 'nem', 'name': 'xem'}},
+					{'quantity': 2 * balance, 'mosaicId': {'namespaceId': 'foo', 'name': 'bar'}},
+					{'quantity': 3 * balance, 'mosaicId': {'namespaceId': 'foo', 'name': 'baz'}}
+				]
+			})
+
 		async def announce_transaction(self, request):
 			request_json = await request.json()
 			self.request_json_payloads.append(request_json)
@@ -104,6 +118,7 @@ async def create_simple_nem_client(aiohttp_client, address_to_balance_map=None):
 	app = web.Application()
 	app.router.add_get('/time-sync/network-time', mock_server.network_time)
 	app.router.add_get('/account/get', mock_server.account_info)
+	app.router.add_get('/account/mosaic/owned', mock_server.account_mosaic_owned)
 	app.router.add_post('/transaction/announce', mock_server.announce_transaction)
 	server = await aiohttp_client(app)  # pylint: disable=redefined-outer-name
 

@@ -6,7 +6,7 @@ from symbolchain.sc import TransactionType
 
 from ..models.WrapRequest import TransactionIdentifier, check_address_and_make_wrap_result, make_wrap_error_result
 
-Predicates = namedtuple('Predicates', ['is_valid_address', 'is_currency_mosaic_id'])
+Predicates = namedtuple('Predicates', ['is_valid_address', 'is_matching_mosaic_id'])
 
 
 # region extract_wrap_address_from_transaction
@@ -15,7 +15,7 @@ Predicates = namedtuple('Predicates', ['is_valid_address', 'is_currency_mosaic_i
 def _process_transfer_transaction(predicates, transaction_identifier, transaction_json):
 	amount = 0
 	for mosaic_json in transaction_json['mosaics']:
-		if predicates.is_currency_mosaic_id(int(mosaic_json['id'], 16)):
+		if predicates.is_matching_mosaic_id(int(mosaic_json['id'], 16)):
 			amount = int(mosaic_json['amount'])
 
 	if 'message' not in transaction_json:
@@ -34,11 +34,11 @@ def _process_transaction(predicates, transaction_identifier, transaction_json):
 	return make_wrap_error_result(transaction_identifier, error_message)
 
 
-def extract_wrap_request_from_transaction(network, is_valid_address, is_currency_mosaic_id, transaction_with_meta_json):
+def extract_wrap_request_from_transaction(network, is_valid_address, is_matching_mosaic_id, transaction_with_meta_json):
 	# pylint: disable=invalid-name
 	"""Extracts a wrap request (or error) from a transaction given a network."""
 
-	predicates = Predicates(is_valid_address, is_currency_mosaic_id)
+	predicates = Predicates(is_valid_address, is_matching_mosaic_id)
 
 	transaction_json = transaction_with_meta_json['transaction']
 	transaction_type = transaction_json['type']
