@@ -140,11 +140,19 @@ class NemConnector(BasicConnector):
 
 	# region GET (balance, account_info)
 
-	async def balance(self, address):
+	async def balance(self, address, mosaic_id=None):
 		"""Gets account balance for specified mosaic."""
 
-		response_json = await self.get(f'account/get?address={address}')
-		return response_json['account']['balance']
+		if not mosaic_id:
+			response_json = await self.get(f'account/get?address={address}')
+			return response_json['account']['balance']
+
+		mosaics_json = await self.get(f'account/mosaic/owned?address={address}', 'data')
+		mosaic_json = next((
+			mosaic_json for mosaic_json in mosaics_json
+			if (mosaic_json['mosaicId']['namespaceId'], mosaic_json['mosaicId']['name']) == mosaic_id
+		), None)
+		return mosaic_json['quantity'] if mosaic_json else 0
 
 	async def account_info(self, address, forwarded=False):
 		subpath = '/forwarded' if forwarded else ''

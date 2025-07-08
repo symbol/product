@@ -160,9 +160,9 @@ class SymbolConnector(BasicConnector):
 	async def balance(self, account_id, mosaic_id):
 		"""Gets account balance for specified mosaic."""
 
-		json_account = await self.get(f'accounts/{account_id}', 'account')
-		json_mosaic = next((json_mosaic for json_mosaic in json_account['mosaics'] if json_mosaic['id'] == mosaic_id), None)
-		return int(json_mosaic['amount']) if json_mosaic else 0
+		account_json = await self.get(f'accounts/{account_id}', 'account')
+		mosaic_json = next((mosaic_json for mosaic_json in account_json['mosaics'] if mosaic_json['id'] == mosaic_id), None)
+		return int(mosaic_json['amount']) if mosaic_json else 0
 
 	# endregion
 
