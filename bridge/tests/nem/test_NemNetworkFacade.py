@@ -79,11 +79,17 @@ def test_is_valid_address_string_only_returns_true_for_valid_addresses_on_networ
 
 # region extract_wrap_request_from_transaction
 
-async def _assert_can_extract_wrap_request_from_transaction(is_valid_address, expected_request_or_error, assert_wrap_request):
+async def _assert_can_extract_wrap_request_from_transaction(
+	is_valid_address,
+	expected_request_or_error,
+	assert_wrap_request,
+	mosaic_id=None
+):
 	# Arrange:
 	facade = NemNetworkFacade(_create_config())
 
 	# Act:
+	mosaic_id = mosaic_id or ('nem', 'xem')
 	results = facade.extract_wrap_request_from_transaction(lambda _address: is_valid_address, {
 		'meta': {
 			'height': 1234,
@@ -92,16 +98,22 @@ async def _assert_can_extract_wrap_request_from_transaction(is_valid_address, ex
 			},
 		},
 		'transaction': {
-			'type': nc.TransferTransactionV1.TRANSACTION_TYPE.value,
-			'version': (nc.NetworkType.TESTNET.value << 24) | nc.TransferTransactionV1.TRANSACTION_VERSION,
-			'amount': 8888,
+			'type': nc.TransferTransactionV2.TRANSACTION_TYPE.value,
+			'version': (nc.NetworkType.TESTNET.value << 24) | nc.TransferTransactionV2.TRANSACTION_VERSION,
+			'amount': 1_000000,
 			'signer': '3917578FF27A88B20E137D9D2E54E775163F9C493A193A64F96748EBF8B21F3C',
+			'mosaics': [
+				{
+					'mosaicId': {'namespaceId': mosaic_id[0], 'name': mosaic_id[1]},
+					'quantity': 8888
+				}
+			],
 			'message': {
 				'type': nc.MessageType.PLAIN.value,
 				'payload': hexlify('0x4838b106fce9647bdf1e7877bf73ce8b0bad5f98'.encode('utf8')).decode('utf8')
 			}
 		}
-	})
+	}, mosaic_id)
 
 	# Assert:
 	assert 1 == len(results)
@@ -120,7 +132,7 @@ async def test_can_extract_wrap_request_from_transaction_is_valid_address():
 	await _assert_can_extract_wrap_request_from_transaction(True, expected_request, assert_wrap_request_success)
 
 
-async def test_can_extract_wrap_request_from_transaction_not_is_valid_address():
+async def test_cannot_extract_wrap_request_from_transaction_not_is_valid_address():
 	expected_error = WrapError(
 		1234,
 		Hash256('FA650B75CC01187E004FCF547796930CC95D9CF55E6E6188FC7D413526A840FA'),
@@ -130,12 +142,24 @@ async def test_can_extract_wrap_request_from_transaction_not_is_valid_address():
 
 	await _assert_can_extract_wrap_request_from_transaction(False, expected_error, assert_wrap_request_failure)
 
+
+async def test_can_extract_wrap_request_from_transaction_matching_custom_mosaic():
+	expected_request = WrapRequest(
+		1234,
+		Hash256('FA650B75CC01187E004FCF547796930CC95D9CF55E6E6188FC7D413526A840FA'),
+		-1,
+		Address('TCQKTUUNUOPQGDQIDQT2CCJGQZ4QNAAGBZRV5YJJ'),
+		8888,
+		'0x4838b106fce9647bdf1e7877bf73ce8b0bad5f98')
+
+	await _assert_can_extract_wrap_request_from_transaction(True, expected_request, assert_wrap_request_success, ('foo', 'bar'))
+
 # endregion
 
 
 # region lookup_account_balance
 
-async def test_can_lookup_account_balance(server):  # pylint: disable=redefined-outer-name
+async def test_can_lookup_account_balance_currency_mosaic(server):  # pylint: disable=redefined-outer-name
 	# Arrange:
 	facade = NemNetworkFacade(_create_config(server))
 
@@ -144,6 +168,17 @@ async def test_can_lookup_account_balance(server):  # pylint: disable=redefined-
 
 	# Assert:
 	assert 9988776655 == balance
+
+
+async def test_can_lookup_account_balance_other_mosaic(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	facade = NemNetworkFacade(_create_config(server))
+
+	# Act:
+	balance = await facade.lookup_account_balance(Address('TCQKTUUNUOPQGDQIDQT2CCJGQZ4QNAAGBZRV5YJJ'), ('foo', 'bar'))
+
+	# Assert:
+	assert 2 * 9988776655 == balance
 
 # endregion
 
@@ -203,6 +238,18 @@ def test_can_create_transfer_transaction_version_one_with_message():
 	assert b'this is a medium sized message!!!' == transaction.message.message
 
 
+def test_cannot_create_transfer_transaction_version_one_with_custom_mosaic():
+	# Arrange:
+	facade = NemNetworkFacade(_create_config())
+
+	# Act + Assert:
+	with pytest.raises(ValueError, match='version one does not support custom mosaics'):
+		facade.create_transfer_transaction(
+			NetworkTimestamp(12341234),
+			_create_sample_balance_transfer(''),
+			mosaic_id=('foo', 'bar'))
+
+
 def test_can_create_transfer_transaction_version_two_without_message():
 	# Arrange:
 	facade = NemNetworkFacade(_create_config())
@@ -249,5 +296,31 @@ def test_can_create_transfer_transaction_version_two_with_message():
 
 	assert nc.MessageType.PLAIN == transaction.message.message_type
 	assert b'this is a medium sized message!!!' == transaction.message.message
+
+
+def test_can_create_transfer_transaction_version_two_with_custom_mosaic():
+	# Arrange:
+	facade = NemNetworkFacade(_create_config())
+
+	# Act + Assert:
+	transaction = facade.create_transfer_transaction(
+		NetworkTimestamp(12341234),
+		_create_sample_balance_transfer(''),
+		False,
+		mosaic_id=('foo', 'bar'))
+
+	# Assert:
+	_assert_sample_balance_transfer_common(transaction, nc.TransferTransactionV2)
+	assert nc.Amount(400_000) == transaction.fee
+	assert nc.Amount(1_000000) == transaction.amount
+
+	assert 1 == len(transaction.mosaics)
+
+	mosaic = transaction.mosaics[0].mosaic
+	assert b'foo' == mosaic.mosaic_id.namespace_id.name
+	assert b'bar' == mosaic.mosaic_id.name
+	assert nc.Amount(88888_000000) == mosaic.amount
+
+	assert transaction.message is None
 
 # endregion

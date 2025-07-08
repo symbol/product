@@ -42,11 +42,11 @@ class NemUtilsTest(unittest.TestCase):
 	# region extract_wrap_request_from_transaction - transfer (success)
 
 	@staticmethod
-	def _extract_wrap_request_from_transaction(transaction_with_meta_json):
+	def _extract_wrap_request_from_transaction(transaction_with_meta_json, mosaic_id=None):
 		def is_valid_address(address):
 			return '0x4838b106fce9647bdf1e7877bf73ce8b0bad5f97' == address
 
-		return extract_wrap_request_from_transaction(Network.TESTNET, is_valid_address, transaction_with_meta_json)
+		return extract_wrap_request_from_transaction(Network.TESTNET, is_valid_address, mosaic_id, transaction_with_meta_json)
 
 	@staticmethod
 	def _create_simple_wrap_request(transaction_subindex=-1):
@@ -193,6 +193,28 @@ class NemUtilsTest(unittest.TestCase):
 		# Assert:
 		assert_wrap_request_success(self, result, change_request_amount(request, 0))
 
+	def test_can_extract_wrap_request_from_transfer_v2_matching_custom_mosaic(self):
+		# Arrange:
+		request = self._create_simple_wrap_request()
+		transaction_with_meta_json = self._create_transfer_json(request, transaction_version=TransferTransactionV2.TRANSACTION_VERSION)
+		transaction_with_meta_json['transaction']['amount'] = 2_000000
+		transaction_with_meta_json['transaction']['mosaics'] = [
+			{
+				'mosaicId': {'namespaceId': 'baz', 'name': 'baz'},
+				'quantity': 7733_000000
+			},
+			{
+				'mosaicId': {'namespaceId': 'foo', 'name': 'bar'},
+				'quantity': 2244_000000
+			}
+		]
+
+		# Act:
+		result = self._extract_wrap_request_from_transaction(transaction_with_meta_json, ('foo', 'bar'))
+
+		# Assert:
+		assert_wrap_request_success(self, result, change_request_amount(request, 4488_000000))
+
 	# endregion
 
 	# region extract_wrap_request_from_transaction - transfer (failure)
@@ -237,6 +259,18 @@ class NemUtilsTest(unittest.TestCase):
 
 		# Assert:
 		expected_error_message = 'destination address 0x4838b106fce9647bdf1e7877bf73ce8b0bad5f is invalid'
+		assert_wrap_request_failure(self, result, make_wrap_error_from_request(request, expected_error_message))
+
+	def test_cannot_extract_wrap_request_from_transfer_v1_matching_custom_mosaic(self):
+		# Arrange:
+		request = self._create_simple_wrap_request()
+		transaction_with_meta_json = self._create_transfer_json(request)
+
+		# Act:
+		result = self._extract_wrap_request_from_transaction(transaction_with_meta_json, ('foo', 'bar'))
+
+		# Assert:
+		expected_error_message = 'nem:xem is not supported, expected mosaic foo:bar'
 		assert_wrap_request_failure(self, result, make_wrap_error_from_request(request, expected_error_message))
 
 	# endregion
