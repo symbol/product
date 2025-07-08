@@ -43,22 +43,26 @@ class WrapRequestDatabase:
 			amount integer,
 			destination_address blob,
 			payout_status integer,
-			payout_transaction_hash blob,
+			payout_transaction_hash blob UNIQUE,
 			PRIMARY KEY (request_transaction_hash, request_transaction_subindex)
 		)''')
 		cursor.execute('''CREATE TABLE IF NOT EXISTS payout_transaction (
 			transaction_hash blob UNIQUE PRIMARY KEY,
-			height integer,
-			timestamp integer
+			height integer
+		)''')
+		cursor.execute('''CREATE TABLE IF NOT EXISTS block_metadata (
+			height integer UNIQUE PRIMARY KEY,
+			timestamp timestamp
 		)''')
 
-		cursor.execute('CREATE INDEX IF NOT EXISTS wrap_error_request_transaction_height_idx on wrap_error(request_transaction_height)')
-		cursor.execute('CREATE INDEX IF NOT EXISTS wrap_error_address_idx on wrap_error(address)')
+		cursor.execute('CREATE INDEX IF NOT EXISTS wrap_error_request_transaction_height_idx ON wrap_error(request_transaction_height)')
+		cursor.execute('CREATE INDEX IF NOT EXISTS wrap_error_address_idx ON wrap_error(address)')
 
-		cursor.execute('CREATE INDEX IF NOT EXISTS wrap_request_request_transaction_height_idx on wrap_request(request_transaction_height)')
-		cursor.execute('CREATE INDEX IF NOT EXISTS wrap_request_request_transaction_hash_idx on wrap_request(request_transaction_hash)')
-		cursor.execute('CREATE INDEX IF NOT EXISTS wrap_request_address_idx on wrap_request(address)')
-		cursor.execute('CREATE INDEX IF NOT EXISTS wrap_request_status_idx on wrap_request(payout_status)')
+		cursor.execute('CREATE INDEX IF NOT EXISTS wrap_request_request_transaction_height_idx ON wrap_request(request_transaction_height)')
+		cursor.execute('CREATE INDEX IF NOT EXISTS wrap_request_request_transaction_hash_idx ON wrap_request(request_transaction_hash)')
+		cursor.execute('CREATE INDEX IF NOT EXISTS wrap_request_destination_address_idx ON wrap_request(destination_address)')
+		cursor.execute('CREATE INDEX IF NOT EXISTS wrap_request_payout_status_idx ON wrap_request(payout_status)')
+		cursor.execute('CREATE INDEX IF NOT EXISTS wrap_request_payout_transaction_hash_idx ON wrap_request(payout_transaction_hash)')
 
 	def add_error(self, error):
 		"""Adds an error to the error table."""
@@ -123,29 +127,62 @@ class WrapRequestDatabase:
 		sum_amount = cursor.fetchone()[0]
 		return sum_amount or 0
 
-	def set_request_status(self, request, new_status, payout_transaction_hash=None):
-		"""Sets the status for a request."""
+	def mark_payout_sent(self, request, payout_transaction_hash):
+		"""Marks a payout as sent with the transaction hash of the payout."""
 
 		cursor = self.connection.cursor()
-		payout_transaction_hash_bytes = payout_transaction_hash.bytes if payout_transaction_hash else None
 		cursor.execute(
 			'''
 				UPDATE wrap_request
 				SET payout_status = ?, payout_transaction_hash = ?
-				WHERE request_transaction_hash IS ? AND request_transaction_subindex is ?
+				WHERE request_transaction_hash IS ? AND request_transaction_subindex IS ?
 			''',
 			(
-				new_status.value,
-				payout_transaction_hash_bytes,
+				WrapRequestStatus.SENT.value,
+				payout_transaction_hash.bytes,
 				request.transaction_hash.bytes,
 				request.transaction_subindex
 			))
 
-		if payout_transaction_hash_bytes:
-			cursor.execute(
-				'''INSERT OR IGNORE INTO payout_transaction VALUES (?, ?, ?)''',
-				(payout_transaction_hash_bytes, 0, 0))
+		cursor.execute(
+			'''INSERT INTO payout_transaction VALUES (?, ?)''',
+			(payout_transaction_hash.bytes, 0))
 
+		self.connection.commit()
+
+	def mark_payout_completed(self, payout_transaction_hash, height):
+		"""Marks a payout complete at a height."""
+
+		cursor = self.connection.cursor()
+		cursor.execute(
+			'''UPDATE wrap_request SET payout_status = ? WHERE payout_transaction_hash IS ?''',
+			(WrapRequestStatus.COMPLETED.value, payout_transaction_hash.bytes))
+
+		cursor.execute(
+			'''UPDATE payout_transaction SET height = ? WHERE transaction_hash IS ?''',
+			(height, payout_transaction_hash.bytes))
+
+		cursor.execute(
+			'''INSERT OR IGNORE INTO block_metadata VALUES (?, ?)''',
+			(height, 0))
+
+		self.connection.commit()
+
+	def set_block_timestamp(self, height, raw_timestamp):
+		"""Sets a block timestamp."""
+
+		unix_timestamp = self.network_facade.network.to_datetime(
+			self.network_facade.network.network_timestamp_class(raw_timestamp)
+		).timestamp()
+
+		cursor = self.connection.cursor()
+		cursor.execute(
+			'''
+				INSERT INTO block_metadata VALUES (?, ?)
+				ON CONFLICT(height)
+				DO UPDATE SET timestamp=?
+			''',
+			(height, unix_timestamp, unix_timestamp))
 		self.connection.commit()
 
 	def requests_by_status(self, status):
@@ -163,15 +200,3 @@ class WrapRequestDatabase:
 		cursor = self.connection.cursor()
 		rows = cursor.execute('''SELECT transaction_hash FROM payout_transaction WHERE height = ? ORDER BY transaction_hash''', (0,))
 		return [Hash256(row[0]) for row in rows]
-
-	def set_payout_transaction_metadata(self, payout_transaction_hash, height, timestamp):
-		"""Sets metadata associated with a payout transaction."""
-
-		unix_timestamp = self.network_facade.network.to_datetime(timestamp).timestamp()
-
-		cursor = self.connection.cursor()
-		cursor.execute(
-			'''UPDATE payout_transaction SET height = ?, timestamp = ?
-				WHERE transaction_hash = ?''',
-			(height, unix_timestamp, payout_transaction_hash.bytes))
-		self.connection.commit()
