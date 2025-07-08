@@ -11,7 +11,10 @@ import { AppError } from '../../error/AppError';
 import * as AccountTypes from '../../types/Account';
 import * as NetworkTypes from '../../types/Network';
 import { cloneNetworkArrayMap, cloneNetworkObjectMap, createNetworkMap } from '../../utils/network';
+import { ProtocolApi } from '../ProtocolApi';
+import { ProtocolSdk } from '../ProtocolSdk';
 import { PersistentStorageRepository } from '../storage/PersistentStorageRepository';
+import { StorageInterface } from '../storage/StorageInterface';
 
 const STORAGE_ROOT_SCOPE = 'wallet';
 
@@ -37,26 +40,42 @@ const createDefaultState = (networkIdentifiers, createDefaultNetworkProperties) 
 
 
 export class WalletController extends EventController {
-	#createDefaultNetworkProperties;
-	#setStateProcessor;
-	_api;
-	_networkManager;
-	_persistentStorageRepository;
-	_state;
-	_keystores;
-	modules;
+	modules = {};
+
+	/** @type {string[]} */
 	networkIdentifiers;
+
+	/** @type {function(string): Object} */
+	#createDefaultNetworkProperties;
+
+	/** @type {function(function): void} */
+	#setStateProcessor;
+
+	/** @type {ProtocolApi} */
+	_api;
+
+	/** @type {NetworkManager} */
+	_networkManager;
+
+	/** @type {PersistentStorageRepository} */
+	_persistentStorageRepository;
+
+	/** @type {Object} */
+	_state;
+
+	/** @type {Object} */
+	_keystores;
 
 	/**
 	 * Constructs a new WalletController instance.
 	 *
 	 * @param {object} params - The parameters for the WalletController.
-	 * @param {object} params.api - The API instance used for network communication.
-	 * @param {object} params.sdk - The SDK instance for blockchain interactions.
-	 * @param {object} params.persistentStorageInterface - The persistent storage provider.
-	 * @param {object} params.secureStorageInterface - The encrypted storage provider.
-	 * @param {Array} params.keystores - An array of keystore instances.
-	 * @param {Array} params.modules - An array of module constructors to be initialized.
+	 * @param {ProtocolApi} params.api - The API instance used for network communication.
+	 * @param {ProtocolSdk} params.sdk - The SDK instance for blockchain interactions.
+	 * @param {StorageInterface} params.persistentStorageInterface - The persistent storage provider.
+	 * @param {StorageInterface} params.secureStorageInterface - The encrypted storage provider.
+	 * @param {object[]} params.keystores - An array of keystore instances.
+	 * @param {object[]} params.modules - An array of module constructors to be initialized.
 	 * @param {string[]} params.networkIdentifiers - Network identifiers for multi-network support.
 	 * @param {number} params.networkPollingInterval - Interval for network polling.
 	 * @param {function(string): Object} params.createDefaultNetworkProperties - Function to create default network properties.

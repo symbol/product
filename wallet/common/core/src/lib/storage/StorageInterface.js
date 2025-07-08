@@ -1,14 +1,15 @@
-/**
- * @typedef {Object} StorageOptions
- * @property {(key: string) => Promise<any>} getItem - Function to get an item by key.
- * @property {(key: string, value: any) => Promise<void>} setItem - Function to set an item by key.
- * @property {(key: string) => Promise<void>} removeItem - Function to remove an item by key.
- */
+import * as StorageTypes from '../../types/Storage';
+import { validateFields } from '../../utils/helper';
+
+const requiredMethods = [
+	'getItem',
+	'setItem',
+	'removeItem'
+];
 
 /**
- * @constructor StorageInterface
- * @classdesc Storage class for managing key-value pairs.
- * @param {StorageOptions} options - The storage functions.
+ * @description This class provides a generic interface for storage operations.
+ * It abstracts the underlying storage mechanism, allowing for retrieval, storage, and removal of items.
  */
 export class StorageInterface {
 	/**
@@ -25,14 +26,16 @@ export class StorageInterface {
 	 * @type {(key: string) => Promise<void>}
 	 */
 	removeItem;
-	
+
 	/**
-	 * @param {StorageOptions} options - The storage functions.
+	 * @param {StorageTypes.StorageOptions} options - The storage functions.
 	 */
-	constructor({ getItem, setItem, removeItem }) {
-		this.getItem = getItem;
-		this.setItem = setItem;
-		this.removeItem = removeItem;
+	constructor(options) {
+		validateFields(options, requiredMethods.map(method => ({ key: method, type: 'function' })));
+		const _this = this;
+		requiredMethods.forEach(method => {
+			_this[method] = options[method];
+		});
 	}
 
 	/**

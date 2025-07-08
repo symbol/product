@@ -52,8 +52,8 @@ export class PersistentStorageRepository {
 
 	/**
 	 * Get the accounts stored in persistent storage.
-	 * @returns {Promise<NetworkTypes.NetworkArrayMap<AccountTypes.WalletAccount>|null>} A promise that resolves 
-	 * to an array of wallet accounts or null if no accounts are stored.
+	 * @returns {Promise<NetworkTypes.NetworkArrayMap<AccountTypes.WalletAccount>|null>} A promise that resolves
+	 * to a network map of wallet account arrays or null if no accounts are stored.
 	 */
 	getAccounts = async () => {
 		const json = await this.storage.getItem(PersistentStorageRepository.STORAGE_KEYS.ACCOUNTS);
@@ -87,102 +87,179 @@ export class PersistentStorageRepository {
 		return this.storage.setItem(PersistentStorageRepository.STORAGE_KEYS.NETWORK_IDENTIFIER, payload);
 	};
 
-	// Selected Node
+	/**
+	 * Get the selected node URL.
+	 * @returns {Promise<string|null>} A promise that resolves to the selected node URL or null if not set.
+	 */
 	getSelectedNode = async () => {
 		const nodeUrl = await this.storage.getItem(PersistentStorageRepository.STORAGE_KEYS.SELECTED_NODE);
 
 		return decodeNullableString(nodeUrl);
 	};
 
+	/**
+	 * Set the selected node URL.
+	 * @param {string|null} payload - The node URL to set.
+	 * @returns {Promise<void>} A promise that resolves when the node URL is set.
+	 */
 	setSelectedNode = async payload => {
 		const encoded = encodeNullableString(payload);
 
 		return this.storage.setItem(PersistentStorageRepository.STORAGE_KEYS.SELECTED_NODE, encoded);
 	};
 
-	// Current Account Public Key
+	/**
+	 * Get the public key of the current account.
+	 * @returns {Promise<string|null>} A promise that resolves to the public key or null if not set.
+	 */
 	getCurrentAccountPublicKey = async () => {
 		return this.storage.getItem(PersistentStorageRepository.STORAGE_KEYS.CURRENT_ACCOUNT_PUBLIC_KEY);
 	};
 
+	/**
+	 * Set the public key of the current account.
+	 * @param {string} payload - The public key to set.
+	 * @returns {Promise<void>} A promise that resolves when the public key is set.
+	 */
 	setCurrentAccountPublicKey = async payload => {
 		return this.storage.setItem(PersistentStorageRepository.STORAGE_KEYS.CURRENT_ACCOUNT_PUBLIC_KEY, payload);
 	};
 
-	// Selected Language
+	/**
+	 * Get the selected language.
+	 * @returns {Promise<string|null>} A promise that resolves to the selected language code or null if not set.
+	 */
 	getSelectedLanguage = async () => {
 		return this.storage.getItem(PersistentStorageRepository.STORAGE_KEYS.SELECTED_LANGUAGE);
 	};
 
+	/**
+	 * Set the selected language.
+	 * @param {string} payload - The language code to set.
+	 * @returns {Promise<void>} A promise that resolves when the language is set.
+	 */
 	setSelectedLanguage = async payload => {
 		return this.storage.setItem(PersistentStorageRepository.STORAGE_KEYS.SELECTED_LANGUAGE, payload);
 	};
 
-	// Seed Addresses
+	/**
+	 * Get the seed addresses.
+	 * @returns {Promise<NetworkTypes.NetworkArrayMap<AccountTypes.WalletAccount>|null>} A promise that resolves 
+	 * to the seed addresses network array map or null if not set.
+	 */
 	getSeedAddresses = async () => {
 		const json = await this.storage.getItem(PersistentStorageRepository.STORAGE_KEYS.SEED_ADDRESSES);
 
 		return decodeJson(json);
 	};
 
+	/**
+	 * Set the seed addresses.
+	 * @param {NetworkTypes.NetworkArrayMap<AccountTypes.WalletAccount>} payload - The seed addresses object to set.
+	 * @returns {Promise<void>} A promise that resolves when the seed addresses are set.
+	 */
 	setSeedAddresses = async payload => {
 		return this.storage.setItem(PersistentStorageRepository.STORAGE_KEYS.SEED_ADDRESSES, JSON.stringify(payload));
 	};
 
-	// Transactions
+	/**
+	 * Get the latest transactions.
+	 * @returns {Promise<NetworkTypes.NetworkObjectMap|null>} A promise that resolves to the latest transactions object or null if not set.
+	 */
 	getLatestTransactions = async () => {
 		const json = await this.storage.getItem(PersistentStorageRepository.STORAGE_KEYS.LATEST_TRANSACTIONS);
-		
+
 		return decodeJson(json);
 	};
 
+	/**
+	 * Set the latest transactions.
+	 * @param {NetworkTypes.NetworkObjectMap} payload - The latest transactions object to set.
+	 * @returns {Promise<void>} A promise that resolves when the transactions are set.
+	 */
 	setLatestTransactions = async payload => {
 		return this.storage.setItem(PersistentStorageRepository.STORAGE_KEYS.LATEST_TRANSACTIONS, JSON.stringify(payload));
 	};
 
-	// Account Infos
+	/**
+	 * Get the account information.
+	 * @returns {Promise<NetworkTypes.NetworkObjectMap|null>} A promise that resolves to the account information object or null if not set.
+	 */
 	getAccountInfos = async () => {
 		const json = await this.storage.getItem(PersistentStorageRepository.STORAGE_KEYS.ACCOUNT_INFOS);
 
 		return decodeJson(json);
 	};
 
+	/**
+	 * Set the account information.
+	 * @param {NetworkTypes.NetworkObjectMap} payload - The account information object to set.
+	 * @returns {Promise<void>} A promise that resolves when the account information is set.
+	 */
 	setAccountInfos = async payload => {
 		return this.storage.setItem(PersistentStorageRepository.STORAGE_KEYS.ACCOUNT_INFOS, JSON.stringify(payload));
 	};
 
-	// Address Book
+	/**
+	 * Get the address book.
+	 * @returns {Promise<NetworkTypes.NetworkArrayMap|null>} A promise that resolves to the address book object or null if not set.
+	 */
 	getAddressBook = async () => {
 		const json = await this.storage.getItem(PersistentStorageRepository.STORAGE_KEYS.ADDRESS_BOOK);
 
 		return decodeJson(json);
 	};
 
+	/**
+	 * Set the address book.
+	 * @param {NetworkTypes.NetworkArrayMap} payload - The address book object to set.
+	 * @returns {Promise<void>} A promise that resolves when the address book is set.
+	 */
 	setAddressBook = async payload => {
 		return this.storage.setItem(PersistentStorageRepository.STORAGE_KEYS.ADDRESS_BOOK, JSON.stringify(payload));
 	};
 
-	// User Currency
+	/**
+	 * Get the user's preferred currency.
+	 * @returns {Promise<string|null>} A promise that resolves to the user currency string or null if not set.
+	 */
 	getUserCurrency = async () => {
 		return this.storage.getItem(PersistentStorageRepository.STORAGE_KEYS.USER_CURRENCY);
 	};
 
+	/**
+	 * Set the user's preferred currency.
+	 * @param {string} payload - The user currency string to set.
+	 * @returns {Promise<void>} A promise that resolves when the user currency is set.
+	 */
 	setUserCurrency = async payload => {
 		return this.storage.setItem(PersistentStorageRepository.STORAGE_KEYS.USER_CURRENCY, payload);
 	};
 
-	// Network Properties
+	/**
+	 * Get the network properties.
+	 * @returns {Promise<object|null>} A promise that resolves to the network properties object or null if not set.
+	 */
 	getNetworkProperties = async () => {
 		const value = await this.storage.getItem(PersistentStorageRepository.STORAGE_KEYS.NETWORK_PROPERTIES);
-		
+
 		return decodeJson(value);
 	};
 
+	/**
+	 * Set the network properties.
+	 * @param {object} payload - The network properties object to set.
+	 * @returns {Promise<void>} A promise that resolves when the network properties are set.
+	 */
 	setNetworkProperties = async payload => {
 		return this.storage.setItem(PersistentStorageRepository.STORAGE_KEYS.NETWORK_PROPERTIES, JSON.stringify(payload));
 	};
 
+	/**
+	 * Clears all data managed by this repository from storage.
+	 * @returns {Promise<void>} A promise that resolves when all items have been removed.
+	 */
 	clear = async () => {
-		return Promise.all(Object.values(PersistentStorageRepository.STORAGE_KEYS).map(key => this.storage.removeItem(key))); 
+		await Promise.all(Object.values(PersistentStorageRepository.STORAGE_KEYS).map(key => this.storage.removeItem(key)));
 	};
 }
