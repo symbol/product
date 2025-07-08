@@ -55,11 +55,6 @@ This project is part of a Product monorepo. Follow the steps below to set up and
    npm install
    ```
 
-5. Setup environment variables (or create `.env` file in `frontend/` root directory).
-
-6. Add the known
-
-
 ## Running Tests
 
 To run tests, use:
