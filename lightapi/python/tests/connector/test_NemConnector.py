@@ -224,6 +224,15 @@ async def server(aiohttp_client):
 
 			return await self._process(request, account_info)
 
+		async def account_mosaic_owned(self, request):
+			return await self._process(request, {
+				'data': [
+					{'quantity': 51890200000, 'mosaicId': {'namespaceId': 'nem', 'name': 'xem'}},
+					{'quantity': 99887766000, 'mosaicId': {'namespaceId': 'foo', 'name': 'bar'}},
+					{'quantity': 800000000000, 'mosaicId': {'namespaceId': 'foo', 'name': 'baz'}}
+				]
+			})
+
 		async def transaction_confirmed(self, request):
 			transaction_hash_str = request.rel_url.query['hash']
 			transaction_hash_to_height_mapping = {
@@ -286,6 +295,7 @@ async def server(aiohttp_client):
 	app.router.add_get('/node/peer-list/reachable', mock_server.node_peers_reachable)
 	app.router.add_get('/account/get', mock_server.account_info)
 	app.router.add_get('/account/get/forwarded', mock_server.account_info_forwarded)
+	app.router.add_get('/account/mosaic/owned', mock_server.account_mosaic_owned)
 	app.router.add_get('/transaction/get', mock_server.transaction_confirmed)
 	app.router.add_get('/account/transfers/incoming', mock_server.transfers)
 	app.router.add_post('/block/at/public', mock_server.block_at)
@@ -480,6 +490,30 @@ async def test_can_query_balance(server):  # pylint: disable=redefined-outer-nam
 	# Assert:
 	assert [f'{server.make_url("")}/account/get?address=NCXIQA4FF5JB6AMQ53NQ3ZMRD3X3PJEWDJJJIGHT'] == server.mock.urls
 	assert 20612823_531967 == balance
+
+
+async def test_can_query_balance_custom_mosaic_with_balance(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	connector = NemConnector(server.make_url(''))
+
+	# Act:
+	balance = await connector.balance(Address('NCXIQA4FF5JB6AMQ53NQ3ZMRD3X3PJEWDJJJIGHT'), ('foo', 'bar'))
+
+	# Assert:
+	assert [f'{server.make_url("")}/account/mosaic/owned?address=NCXIQA4FF5JB6AMQ53NQ3ZMRD3X3PJEWDJJJIGHT'] == server.mock.urls
+	assert 99887766000 == balance
+
+
+async def test_can_query_balance_custom_mosaic_with_zero_balance(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	connector = NemConnector(server.make_url(''))
+
+	# Act:
+	balance = await connector.balance(Address('NCXIQA4FF5JB6AMQ53NQ3ZMRD3X3PJEWDJJJIGHT'), ('bar', 'foo'))
+
+	# Assert:
+	assert [f'{server.make_url("")}/account/mosaic/owned?address=NCXIQA4FF5JB6AMQ53NQ3ZMRD3X3PJEWDJJJIGHT'] == server.mock.urls
+	assert 0 == balance
 
 
 def _assert_account_info_1(account_info):
