@@ -32,19 +32,23 @@ class NemNetworkFacade:
 
 		return self.network.is_valid_address_string(address_string)
 
-	def extract_wrap_request_from_transaction(self, is_valid_address, transaction_with_meta_json):  # pylint: disable=invalid-name
+	def extract_wrap_request_from_transaction(self, is_valid_address, transaction_with_meta_json, mosaic_id=None):
+		# pylint: disable=invalid-name
 		"""Extracts a wrap request (or error) from a transaction ."""
 
-		return [extract_wrap_request_from_transaction(self.network, is_valid_address, transaction_with_meta_json)]
+		return [extract_wrap_request_from_transaction(self.network, is_valid_address, mosaic_id, transaction_with_meta_json)]
 
-	async def lookup_account_balance(self, address):
+	async def lookup_account_balance(self, address, mosaic_id=None):
 		"""Gets account balance for network currency."""
 
 		connector = self.create_connector()
-		return await connector.balance(address)
+		return await connector.balance(address, mosaic_id)
 
-	def create_transfer_transaction(self, timestamp, balance_transfer, use_version_one=True):
+	def create_transfer_transaction(self, timestamp, balance_transfer, use_version_one=True, mosaic_id=None):
 		"""Creates a transfer transaction."""
+
+		if use_version_one and mosaic_id:
+			raise ValueError('version one does not support custom mosaics')
 
 		fee = calculate_transfer_transaction_fee(balance_transfer.amount // 1_000000, balance_transfer.message)
 		transfer_json = {
@@ -68,6 +72,7 @@ class NemNetworkFacade:
 				'amount': balance_transfer.amount
 			}
 		else:
+			mosaic_id = mosaic_id or ('nem', 'xem')
 			transfer_json = {
 				**transfer_json,
 				'type': 'transfer_transaction_v2',
@@ -75,7 +80,7 @@ class NemNetworkFacade:
 				'mosaics': [
 					{
 						'mosaic': {
-							'mosaic_id': {'namespace_id': {'name': 'nem'.encode('utf8')}, 'name': 'xem'.encode('utf8')},
+							'mosaic_id': {'namespace_id': {'name': mosaic_id[0].encode('utf8')}, 'name': mosaic_id[1].encode('utf8')},
 							'amount': balance_transfer.amount
 						}
 					}

@@ -51,16 +51,24 @@ class SymbolNetworkFacade:
 
 		return self.network.is_valid_address_string(address_string)
 
-	def extract_wrap_request_from_transaction(self, is_valid_address, transaction_with_meta_json):  # pylint: disable=invalid-name
+	def extract_wrap_request_from_transaction(self, is_valid_address, transaction_with_meta_json, mosaic_id=None):
+		# pylint: disable=invalid-name
 		"""Extracts a wrap request (or error) from a transaction ."""
 
-		return extract_wrap_request_from_transaction(self.network, is_valid_address, self.is_currency_mosaic_id, transaction_with_meta_json)
+		is_matching_mosaic_id = self.is_currency_mosaic_id
+		if mosaic_id:
+			def is_custom_mosaic_id(test_mosaic_id):
+				return mosaic_id == test_mosaic_id
 
-	async def lookup_account_balance(self, address):
+			is_matching_mosaic_id = is_custom_mosaic_id
+
+		return extract_wrap_request_from_transaction(self.network, is_valid_address, is_matching_mosaic_id, transaction_with_meta_json)
+
+	async def lookup_account_balance(self, address, mosaic_id=None):
 		"""Gets account balance for network currency."""
 
 		connector = self.create_connector()
-		formatted_currency_mosaic_id = hex(self.currency_mosaic_ids[0])[2:].upper()
+		formatted_currency_mosaic_id = hex(mosaic_id or self.currency_mosaic_ids[0])[2:].upper()
 		return await connector.balance(address, formatted_currency_mosaic_id)
 
 	def create_transfer_transaction(self, timestamp, balance_transfer, mosaic_id=None):

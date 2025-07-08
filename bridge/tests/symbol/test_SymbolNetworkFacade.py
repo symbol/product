@@ -18,7 +18,10 @@ from ..test.PytestUtils import PytestAsserter, create_simple_symbol_client
 @pytest.fixture
 async def server(aiohttp_client):
 	return await create_simple_symbol_client(aiohttp_client, '0x72C0\'212E\'67A0\'8BCE', {
-		'TA6MYQRFJI24C2Y2WPX7QKAPMUDIS5FWZOBIBEA': 9988776655
+		'TA6MYQRFJI24C2Y2WPX7QKAPMUDIS5FWZOBIBEA': [
+			('currency', 9988776655),
+			('FAF0EBED913FA202', 1122334455)
+		]
 	})
 
 
@@ -98,7 +101,13 @@ async def test_can_load_currency_mosaic_ids(server):  # pylint: disable=redefine
 
 # region extract_wrap_request_from_transaction
 
-async def _assert_can_extract_wrap_request_from_transaction(server, is_valid_address, expected_request_or_error, assert_wrap_request):
+async def _assert_can_extract_wrap_request_from_transaction(
+	server,
+	is_valid_address,
+	expected_request_or_error,
+	assert_wrap_request,
+	mosaic_id=None
+):
 	# pylint: disable=redefined-outer-name
 	# Arrange:
 	facade = SymbolNetworkFacade(_create_config(server))
@@ -114,11 +123,11 @@ async def _assert_can_extract_wrap_request_from_transaction(server, is_valid_add
 			'type': sc.TransferTransactionV1.TRANSACTION_TYPE.value,
 			'signerPublicKey': '4B7E7A084005D2149B44F6A782D9E597C0FABE56F4FEEC1738FE5152C69D55C3',
 			'mosaics': [
-				{'id': '0x72C0212E67A08BCE', 'amount': '8888'}
+				{'id': mosaic_id or '72C0212E67A08BCE', 'amount': '8888'}
 			],
 			'message': hexlify('0x4838b106fce9647bdf1e7877bf73ce8b0bad5f97'.encode('utf8')).decode('utf8')
 		}
-	})
+	}, int(mosaic_id, 16) if mosaic_id else None)
 
 	# Assert:
 	assert 1 == len(results)
@@ -137,7 +146,7 @@ async def test_can_extract_wrap_request_from_transaction_is_valid_address(server
 	await _assert_can_extract_wrap_request_from_transaction(server, True, expected_request, assert_wrap_request_success)
 
 
-async def test_can_extract_wrap_request_from_transaction_not_is_valid_address(server):  # pylint: disable=redefined-outer-name
+async def test_cannot_extract_wrap_request_from_transaction_not_is_valid_address(server):  # pylint: disable=redefined-outer-name
 	expected_error = WrapError(
 		23456,
 		Hash256('FA650B75CC01187E004FCF547796930CC95D9CF55E6E6188FC7D413526A840FA'),
@@ -148,12 +157,23 @@ async def test_can_extract_wrap_request_from_transaction_not_is_valid_address(se
 	await _assert_can_extract_wrap_request_from_transaction(server, False, expected_error, assert_wrap_request_failure)
 
 
+async def test_can_extract_wrap_request_from_transaction_matching_custom_mosaic(server):  # pylint: disable=redefined-outer-name
+	expected_request = WrapRequest(
+		23456,
+		Hash256('FA650B75CC01187E004FCF547796930CC95D9CF55E6E6188FC7D413526A840FA'),
+		-1,
+		Address('TA6MYQRFJI24C2Y2WPX7QKAPMUDIS5FWZOBIBEA'),
+		8888,
+		'0x4838b106fce9647bdf1e7877bf73ce8b0bad5f97')
+
+	await _assert_can_extract_wrap_request_from_transaction(server, True, expected_request, assert_wrap_request_success, 'AABBCCDD112233')
+
 # endregion
 
 
 # region lookup_account_balance
 
-async def test_can_lookup_account_balance(server):  # pylint: disable=redefined-outer-name
+async def test_can_lookup_account_balance_currency_mosaic(server):  # pylint: disable=redefined-outer-name
 	# Arrange:
 	facade = SymbolNetworkFacade(_create_config(server))
 	await facade.load_currency_mosaic_ids()
@@ -163,6 +183,18 @@ async def test_can_lookup_account_balance(server):  # pylint: disable=redefined-
 
 	# Assert:
 	assert 9988776655 == balance
+
+
+async def test_can_lookup_account_balance_other_mosaic(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	facade = SymbolNetworkFacade(_create_config(server))
+	await facade.load_currency_mosaic_ids()
+
+	# Act:
+	balance = await facade.lookup_account_balance(Address('TA6MYQRFJI24C2Y2WPX7QKAPMUDIS5FWZOBIBEA'), 0xFAF0EBED913FA202)
+
+	# Assert:
+	assert 1122334455 == balance
 
 # endregion
 
@@ -230,7 +262,7 @@ def test_can_create_transfer_transaction_with_message():
 	assert b'this is a medium sized message!!!' == transaction.message
 
 
-def test_can_create_transfer_transaction_with_custom_mosaic_id():
+def test_can_create_transfer_transaction_with_custom_mosaic():
 	# Arrange:
 	facade = SymbolNetworkFacade(_create_config())
 
