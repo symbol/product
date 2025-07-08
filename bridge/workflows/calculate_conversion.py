@@ -29,10 +29,9 @@ async def main_impl(databases, native_network, wrapped_network):
 	print(f'{len(wrap_requests_to_send)} requests need to be sent')
 
 	for wrap_request in wrap_requests_to_send:
-		transaction_hash = await send_wrapped_tokens(wrapped_network.facade, wrap_request, conversion_rate)
-		databases.wrap_request.set_request_status(wrap_request, WrapRequestStatus.SENT, transaction_hash)
-		print(f'sent transaction with hash: {transaction_hash}')
-		break  # temporarily only send a single transaction for easier testing
+		payout_transaction_hash = await send_wrapped_tokens(wrapped_network.facade, wrap_request, conversion_rate)
+		databases.wrap_request.mark_payout_sent(wrap_request, payout_transaction_hash)
+		print(f'sent transaction with hash: {payout_transaction_hash}')
 
 	wrap_requests_sent = databases.wrap_request.requests_by_status(WrapRequestStatus.SENT)
 	print(f'{len(wrap_requests_sent)} requests have been sent')
