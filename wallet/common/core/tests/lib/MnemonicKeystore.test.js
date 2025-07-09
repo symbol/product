@@ -1,6 +1,6 @@
 import { MnemonicKeystore } from '../../src/lib/keystore/MnemonicKeystore';
 import { mnemonic, mnemonicKeystoreAccounts, networkIdentifiers } from '../fixtures/wallet';
-import { runBaseSoftwareKeystoreTest } from '../test-utils/keysore';
+import { runBaseSoftwareKeystoreTest } from '../test-utils/keystore';
 import { createStorageMock } from '../test-utils/storage';
 import { jest } from '@jest/globals';
 

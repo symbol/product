@@ -1,6 +1,6 @@
 import { ExternalAccountKeystore } from '../../src/lib/keystore/ExternalAccountKeystore';
 import { externalKeystoreAccounts, networkIdentifiers } from '../fixtures/wallet';
-import { runBaseSoftwareKeystoreTest } from '../test-utils/keysore';
+import { runBaseSoftwareKeystoreTest } from '../test-utils/keystore';
 import { createStorageMock } from '../test-utils/storage';
 import { jest } from '@jest/globals';
 
