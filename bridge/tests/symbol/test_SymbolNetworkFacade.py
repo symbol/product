@@ -42,6 +42,7 @@ def test_can_create_facade():
 
 	# Assert:
 	assert 'testnet' == facade.network.name
+	assert ('Symbol', 'testnet') == facade.rosetta_network_id
 	assert facade.network == facade.sdk_facade.network
 
 

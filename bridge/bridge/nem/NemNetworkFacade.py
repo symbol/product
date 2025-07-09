@@ -14,6 +14,7 @@ class NemNetworkFacade:
 
 		self.config = config
 		self.network = NetworkLocator.find_by_name(Network.NETWORKS, config.network)
+		self.rosetta_network_id = ('NEM', self.network.name)
 		self.sdk_facade = NemFacade(self.network)
 
 	def create_connector(self):
