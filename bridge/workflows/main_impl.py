@@ -31,6 +31,7 @@ async def main_bootstrapper(program_description, main_impl):
 	wrapped_network = await load_network(config.wrapped_network)
 
 	with Databases(config.machine.database_directory, native_network.facade) as databases:
+		databases.balance_change.create_tables()
 		databases.wrap_request.create_tables()
 
 		await main_impl(databases, native_network, wrapped_network)

@@ -8,7 +8,7 @@ from symbolchain.nem.Network import Network, NetworkTimestamp
 
 from bridge.models.BridgeConfiguration import NetworkConfiguration
 from bridge.nem.NemNetworkFacade import NemNetworkFacade
-from bridge.NetworkUtils import TransactionSender
+from bridge.NetworkUtils import BalanceChange, TransactionSender, download_rosetta_block_balance_changes
 
 from .test.PytestUtils import create_simple_nem_client
 
@@ -148,5 +148,197 @@ async def test_can_send_transaction(server):  # pylint: disable=redefined-outer-
 	assert _make_nc_address('TAMESPACEWH4MKFMBCVFERDPOOP4FK7MTDJEYP35') == transaction.rental_fee_sink
 	assert nc.Amount(50000_000000) == transaction.rental_fee
 	assert b'roger' == transaction.name
+
+# endregion
+
+
+# region download_rosetta_block_balance_changes
+
+class MockRosettaConnector:
+	def __init__(self):
+		self.post_requests = []
+		self.post_response = {}
+
+	async def post(self, url_path, request_payload):
+		self.post_requests.append((url_path, request_payload))
+		return self.post_response
+
+
+def _make_operation_json(address, currency_name, amount, **kwargs):
+	operation_json = {
+		'type': kwargs.get('type', 'transfer'),
+		'status': kwargs.get('status', 'success'),
+		'account': {'address': address},
+		'amount': {
+			'value': str(amount),
+			'currency': {
+				'symbol': currency_name
+			}
+		}
+	}
+
+	currency_id = kwargs.get('currency_id', None)
+	if currency_id:
+		operation_json['amount']['currency']['metadata'] = {'id': currency_id}
+
+	return operation_json
+
+
+def _make_single_transaction_block_from_operations(operations):
+	return {
+		'block': {
+			'transactions': [
+				{
+					'operations': operations
+				}
+			]
+		}
+	}
+
+
+def _assert_single_post_request(connector):
+	assert [
+		('block', {
+			'network_identifier': {'blockchain': 'foo', 'network': 'barnet'},
+			'block_identifier': {'index': '1001'}
+		})
+	] == connector.post_requests
+
+
+async def _assert_can_download_rosetta_block_balance_changes_from_block_with_no_balance_changes(post_response):
+	# Arrange:
+	connector = MockRosettaConnector()
+	connector.post_response = post_response
+
+	# Act:
+	balance_changes = await download_rosetta_block_balance_changes(connector, 'foo', 'barnet', 1001)
+
+	# Assert;
+	_assert_single_post_request(connector)
+	assert 0 == len(balance_changes)
+
+
+async def test_can_download_rosetta_block_balance_changes_from_block_with_no_transactions():
+	await _assert_can_download_rosetta_block_balance_changes_from_block_with_no_balance_changes({'block': {'transactions': []}})
+
+
+async def test_can_download_rosetta_block_balance_changes_from_block_with_no_operations():
+	await _assert_can_download_rosetta_block_balance_changes_from_block_with_no_balance_changes(
+		_make_single_transaction_block_from_operations([]))
+
+
+async def test_can_download_rosetta_block_balance_changes_from_block_with_multiple_operations_in_single_transaction():
+	# Arrange:
+	connector = MockRosettaConnector()
+	connector.post_response = _make_single_transaction_block_from_operations([
+		_make_operation_json('alpha', 'baz.token', 12345),
+		_make_operation_json('beta', 'foo.token', 22222),
+		_make_operation_json('beta', 'baz.token', 44444)
+	])
+
+	# Act:
+	balance_changes = await download_rosetta_block_balance_changes(connector, 'foo', 'barnet', 1001)
+
+	# Assert;
+	_assert_single_post_request(connector)
+	assert [
+		BalanceChange('alpha', 'baz.token', 12345),
+		BalanceChange('beta', 'foo.token', 22222),
+		BalanceChange('beta', 'baz.token', 44444)
+	] == balance_changes
+
+
+async def test_can_download_rosetta_block_balance_changes_from_block_with_multiple_operations_in_multiple_transactions():
+	# Arrange:
+	connector = MockRosettaConnector()
+	connector.post_response = {
+		'block': {
+			'transactions': [
+				{
+					'operations': [
+						_make_operation_json('zeta', 'z.coupons', 1732),
+						_make_operation_json('omega', 'z.coupons', 2233)
+					]
+				},
+				{
+					'operations': [
+						_make_operation_json('alpha', 'baz.token', 12345),
+						_make_operation_json('beta', 'foo.token', 22222),
+						_make_operation_json('beta', 'baz.token', 44444)
+					]
+				},
+				{
+					'operations': [
+						_make_operation_json('gamma', 'bar.coin', 9988),
+						_make_operation_json('alpha', 'foo.token', 222)
+					]
+				},
+			]
+		}
+	}
+
+	# Act:
+	balance_changes = await download_rosetta_block_balance_changes(connector, 'foo', 'barnet', 1001)
+
+	# Assert;
+	_assert_single_post_request(connector)
+	assert [
+		BalanceChange('zeta', 'z.coupons', 1732),
+		BalanceChange('omega', 'z.coupons', 2233),
+		BalanceChange('alpha', 'baz.token', 12345),
+		BalanceChange('beta', 'foo.token', 22222),
+		BalanceChange('beta', 'baz.token', 44444),
+		BalanceChange('gamma', 'bar.coin', 9988),
+		BalanceChange('alpha', 'foo.token', 222)
+	] == balance_changes
+
+
+async def _assert_single_skipped_operation(**kwargs):
+	# Arrange:
+	connector = MockRosettaConnector()
+	connector.post_response = _make_single_transaction_block_from_operations([
+		_make_operation_json('alpha', 'baz.token', 12345),
+		_make_operation_json('beta', 'foo.token', 22222, **kwargs),
+		_make_operation_json('beta', 'baz.token', 44444)
+	])
+
+	# Act:
+	balance_changes = await download_rosetta_block_balance_changes(connector, 'foo', 'barnet', 1001)
+
+	# Assert;
+	_assert_single_post_request(connector)
+	assert [
+		BalanceChange('alpha', 'baz.token', 12345),
+		BalanceChange('beta', 'baz.token', 44444)
+	] == balance_changes
+
+
+async def test_can_download_rosetta_block_balance_changes_from_block_skips_non_transfers():
+	await _assert_single_skipped_operation(type='other')
+
+
+async def test_can_download_rosetta_block_balance_changes_from_block_skips_non_successes():
+	await _assert_single_skipped_operation(status='error')
+
+
+async def test_can_download_rosetta_block_balance_changes_prefers_currency_id_when_present():
+	# Arrange:
+	connector = MockRosettaConnector()
+	connector.post_response = _make_single_transaction_block_from_operations([
+		_make_operation_json('alpha', 'baz.token', 12345),
+		_make_operation_json('beta', 'foo.token', 22222, currency_id='777'),
+		_make_operation_json('beta', 'baz.token', 44444)
+	])
+
+	# Act:
+	balance_changes = await download_rosetta_block_balance_changes(connector, 'foo', 'barnet', 1001)
+
+	# Assert;
+	_assert_single_post_request(connector)
+	assert [
+		BalanceChange('alpha', 'baz.token', 12345),
+		BalanceChange('beta', '777', 22222),
+		BalanceChange('beta', 'baz.token', 44444)
+	] == balance_changes
 
 # endregion
