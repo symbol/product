@@ -295,7 +295,6 @@ export class WalletController extends EventController {
 
 		if (!accountToSelect)
 			throw new AppError('error_wallet_selected_account_missing', 'Failed to select account. Account is missing in the wallet');
-		// this._setCurrentAccount(publicKey);
 
 		await this._persistentStorageRepository.setCurrentAccountPublicKey(publicKey);
 		this.#setState(() => {
