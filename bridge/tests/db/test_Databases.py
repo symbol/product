@@ -14,6 +14,7 @@ class DatabasesTest(unittest.TestCase):
 			databases = Databases(temp_directory, MockNetworkFacade())
 
 			# Assert:
+			self.assertIsNone(databases.balance_change)
 			self.assertIsNone(databases.wrap_request)
 
 	def test_can_connect(self):
@@ -22,4 +23,5 @@ class DatabasesTest(unittest.TestCase):
 			# Act:
 			with Databases(temp_directory, MockNetworkFacade()) as databases:
 				# Assert:
+				self.assertIsNotNone(databases.balance_change)
 				self.assertIsNotNone(databases.wrap_request)

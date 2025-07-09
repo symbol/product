@@ -16,6 +16,7 @@ class SymbolNetworkFacade:
 
 		self.config = config
 		self.network = NetworkLocator.find_by_name(Network.NETWORKS, config.network)
+		self.rosetta_network_id = ('Symbol', self.network.name)
 		self.sdk_facade = SymbolFacade(self.network)
 		self.currency_mosaic_ids = []
 

@@ -34,4 +34,4 @@ async def main_impl(databases, native_network, wrapped_network):
 
 
 if '__main__' == __name__:
-	asyncio.run(main_bootstrapper('calculate wrap conversion rate', main_impl))
+	asyncio.run(main_bootstrapper('download wrap request transactions', main_impl))

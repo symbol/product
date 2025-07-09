@@ -2,7 +2,10 @@ from collections import namedtuple
 
 from symbolchain.CryptoTypes import PrivateKey
 
+BalanceChange = namedtuple('BalanceChange', ['address', 'currency_id', 'amount'])
 BalanceTransfer = namedtuple('BalanceTransfer', ['signer_public_key', 'recipient_address', 'amount', 'message'])
+
+# region TransactionSender
 
 
 class TransactionSender:
@@ -51,3 +54,34 @@ class TransactionSender:
 		transaction_hash = facade.hash_transaction(transaction)
 		await connector.announce_transaction(transaction)
 		return transaction_hash
+
+# endregion
+
+
+# region download_rosetta_block_balance_changes
+
+async def download_rosetta_block_balance_changes(connector, blockchain, network, height):  # pylint: disable=invalid-name
+	"""Downloads balance changes from a rosetta block."""
+
+	def _extract_currency_id(currency_json):
+		has_id = 'metadata' in currency_json and 'id' in currency_json['metadata']
+		return currency_json['metadata']['id'] if has_id else currency_json['symbol']
+
+	response_json = await connector.post('block', {
+		'network_identifier': {'blockchain': blockchain, 'network': network},
+		'block_identifier': {'index': str(height)}
+	})
+
+	balance_changes = []
+	for transaction_json in response_json['block']['transactions']:
+		for operation_json in transaction_json['operations']:
+			if 'transfer' == operation_json['type'] and 'success' == operation_json['status']:
+				balance_change = BalanceChange(
+					operation_json['account']['address'],
+					_extract_currency_id(operation_json['amount']['currency']),
+					int(operation_json['amount']['value']))
+				balance_changes.append(balance_change)
+
+	return balance_changes
+
+# endregion
