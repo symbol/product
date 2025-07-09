@@ -1,14 +1,13 @@
 /**
  * Safely decodes a JSON string.
- * @param {string} json The JSON string to decode.
+ * @param {string | null} json The JSON string to decode.
  * @returns {object | Array | null} The decoded object, or null if decoding fails.
  */
 export const decodeJson = json => {
-	try {
-		return JSON.parse(json);
-	} catch {
+	if (json === null)
 		return null;
-	}
+
+	return JSON.parse(json);
 };
 
 /**
@@ -22,7 +21,7 @@ export const encodeNullableString = value => {
 
 /**
  * Decodes a nullable string value by converting the string 'null' back to null.
- * @param {string} value The value to decode.
+ * @param {string | null} value The value to decode.
  * @returns {string | null} The decoded value. Returns null if the input is 'null', otherwise returns the original value.
  */
 export const decodeNullableString = value => {
