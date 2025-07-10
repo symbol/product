@@ -7,7 +7,8 @@ export default {
 	coverageProvider: 'v8',
 	coveragePathIgnorePatterns: [
 		'<rootDir>/tests/',
-		'<rootDir>/coverage/'
+		'<rootDir>/coverage/',
+		'<rootDir>/src/types/'
 	],
 	transform: {} // Required for native ESM, even if empty
 };
