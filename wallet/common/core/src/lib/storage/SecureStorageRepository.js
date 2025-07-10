@@ -1,7 +1,8 @@
-import * as AccountTypes from '../../types/Account';
-import * as NetworkTypes from '../../types/Network';
-import * as StorageTypes from '../../types/Storage';
 import { decodeJson } from '../../utils/storage';
+
+/** @typedef {import('../../types/Account').PrivateAccount} PrivateAccount */
+/** @typedef {import('../../types/Network').NetworkArrayMap} NetworkArrayMap */
+/** @typedef {import('../../types/Storage').StorageInterface} StorageInterface */
 
 /**
  * Class representing secure storage for wallet mnemonics and accounts.
@@ -14,7 +15,7 @@ export class SecureStorageRepository {
 
 	/**
 	 * Create a SecureStorageRepository instance.
-	 * @param {StorageTypes.StorageInterface} storage - The storage backend implementing get, set, and removeItem methods.
+	 * @param {StorageInterface} storage - The storage backend implementing get, set, and removeItem methods.
 	 */
 	constructor(storage) {
 		this.storage = storage;
@@ -39,7 +40,7 @@ export class SecureStorageRepository {
 
 	/**
 	 * Retrieve the stored accounts.
-	 * @returns {Promise<NetworkTypes.NetworkArrayMap<AccountTypes.PrivateAccount>>} The accounts mapped by network.
+	 * @returns {Promise<NetworkArrayMap<PrivateAccount>>} The accounts mapped by network.
 	 */
 	getAccounts = async () => {
 		const accounts = await this.storage.getItem(SecureStorageRepository.STORAGE_KEYS.ACCOUNTS);
@@ -49,7 +50,7 @@ export class SecureStorageRepository {
 
 	/**
 	 * Store the accounts.
-	 * @param {NetworkTypes.NetworkArrayMap<AccountTypes.PrivateAccount>} payload - The accounts to store.
+	 * @param {NetworkArrayMap<PrivateAccount>} payload - The accounts to store.
 	 * @returns {Promise<void>} - Promise resolving when the accounts are stored.
 	 */
 	setAccounts = async payload => {

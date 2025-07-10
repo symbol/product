@@ -1,7 +1,10 @@
-import * as AccountTypes from '../../types/Account';
-import * as NetworkTypes from '../../types/Network';
-import * as StorageTypes from '../../types/Storage';
 import { decodeJson, decodeNullableString, encodeNullableString } from '../../utils/storage';
+
+/** @typedef {import('../../types/Account').WalletAccount} WalletAccount */
+/** @typedef {import('../../types/Network').NetworkArrayMap} NetworkArrayMap */
+/** @typedef {import('../../types/Network').NetworkObjectMap} NetworkObjectMap */
+/** @typedef {import('../../types/Network').NetworkProperties} NetworkProperties */
+/** @typedef {import('../../types/Storage').StorageInterface} StorageInterface */
 
 /* eslint-disable-next-line valid-jsdoc */
 /**
@@ -25,7 +28,7 @@ export class PersistentStorageRepository {
 
 	/**
 	 * Create a PersistentStorageRepository instance.
-	 * @param {StorageTypes.StorageInterface} storage - The storage backend implementing get, set, and removeItem methods.
+	 * @param {StorageInterface} storage - The storage backend implementing get, set, and removeItem methods.
 	 */
 	constructor(storage) {
 		this.storage = storage;
@@ -52,7 +55,7 @@ export class PersistentStorageRepository {
 
 	/**
 	 * Get the accounts stored in persistent storage.
-	 * @returns {Promise<NetworkTypes.NetworkArrayMap<AccountTypes.WalletAccount>|null>} A promise that resolves
+	 * @returns {Promise<NetworkArrayMap<WalletAccount>|null>} A promise that resolves
 	 * to a network map of wallet account arrays or null if no accounts are stored.
 	 */
 	getAccounts = async () => {
@@ -63,7 +66,7 @@ export class PersistentStorageRepository {
 
 	/**
 	 * Set the accounts in persistent storage.
-	 * @param {NetworkTypes.NetworkArrayMap<AccountTypes.WalletAccount>} payload - The accounts to set.
+	 * @param {NetworkArrayMap<WalletAccount>} payload - The accounts to set.
 	 * @returns {Promise<void>} A promise that resolves when the accounts are set.
 	 */
 	setAccounts = async payload => {
@@ -144,7 +147,7 @@ export class PersistentStorageRepository {
 
 	/**
 	 * Get the seed addresses.
-	 * @returns {Promise<NetworkTypes.NetworkArrayMap<AccountTypes.WalletAccount>|null>} A promise that resolves 
+	 * @returns {Promise<NetworkArrayMap<WalletAccount>|null>} A promise that resolves 
 	 * to the seed addresses network array map or null if not set.
 	 */
 	getSeedAddresses = async () => {
@@ -155,7 +158,7 @@ export class PersistentStorageRepository {
 
 	/**
 	 * Set the seed addresses.
-	 * @param {NetworkTypes.NetworkArrayMap<AccountTypes.WalletAccount>} payload - The seed addresses object to set.
+	 * @param {NetworkArrayMap<WalletAccount>} payload - The seed addresses object to set.
 	 * @returns {Promise<void>} A promise that resolves when the seed addresses are set.
 	 */
 	setSeedAddresses = async payload => {
@@ -164,7 +167,7 @@ export class PersistentStorageRepository {
 
 	/**
 	 * Get the latest transactions.
-	 * @returns {Promise<NetworkTypes.NetworkObjectMap|null>} A promise that resolves to the latest transactions object or null if not set.
+	 * @returns {Promise<NetworkObjectMap|null>} A promise that resolves to the latest transactions object or null if not set.
 	 */
 	getLatestTransactions = async () => {
 		const json = await this.storage.getItem(PersistentStorageRepository.STORAGE_KEYS.LATEST_TRANSACTIONS);
@@ -174,7 +177,7 @@ export class PersistentStorageRepository {
 
 	/**
 	 * Set the latest transactions.
-	 * @param {NetworkTypes.NetworkObjectMap} payload - The latest transactions object to set.
+	 * @param {NetworkObjectMap} payload - The latest transactions object to set.
 	 * @returns {Promise<void>} A promise that resolves when the transactions are set.
 	 */
 	setLatestTransactions = async payload => {
@@ -183,7 +186,7 @@ export class PersistentStorageRepository {
 
 	/**
 	 * Get the account information.
-	 * @returns {Promise<NetworkTypes.NetworkObjectMap|null>} A promise that resolves to the account information object or null if not set.
+	 * @returns {Promise<NetworkObjectMap|null>} A promise that resolves to the account information object or null if not set.
 	 */
 	getAccountInfos = async () => {
 		const json = await this.storage.getItem(PersistentStorageRepository.STORAGE_KEYS.ACCOUNT_INFOS);
@@ -193,7 +196,7 @@ export class PersistentStorageRepository {
 
 	/**
 	 * Set the account information.
-	 * @param {NetworkTypes.NetworkObjectMap} payload - The account information object to set.
+	 * @param {NetworkObjectMap} payload - The account information object to set.
 	 * @returns {Promise<void>} A promise that resolves when the account information is set.
 	 */
 	setAccountInfos = async payload => {
@@ -202,7 +205,7 @@ export class PersistentStorageRepository {
 
 	/**
 	 * Get the address book.
-	 * @returns {Promise<NetworkTypes.NetworkArrayMap|null>} A promise that resolves to the address book object or null if not set.
+	 * @returns {Promise<NetworkArrayMap|null>} A promise that resolves to the address book object or null if not set.
 	 */
 	getAddressBook = async () => {
 		const json = await this.storage.getItem(PersistentStorageRepository.STORAGE_KEYS.ADDRESS_BOOK);
@@ -212,7 +215,7 @@ export class PersistentStorageRepository {
 
 	/**
 	 * Set the address book.
-	 * @param {NetworkTypes.NetworkArrayMap} payload - The address book object to set.
+	 * @param {NetworkArrayMap} payload - The address book object to set.
 	 * @returns {Promise<void>} A promise that resolves when the address book is set.
 	 */
 	setAddressBook = async payload => {

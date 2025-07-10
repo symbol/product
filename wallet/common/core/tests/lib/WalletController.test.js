@@ -16,11 +16,11 @@ const createDefaultNetworkProperties = networkIdentifier => ({
 const defaultParameters = {
 	api: new ProtocolApi({
 		fetchAccountInfo: jest.fn().mockResolvedValue(null),
-		fetchNetworkProperties: jest.fn().mockResolvedValue({}),
 		fetchAccountTransactions: jest.fn().mockResolvedValue([]),
 		pingNode: jest.fn().mockResolvedValue(true),
 		fetchNetworkProperties: jest.fn().mockResolvedValue({}),
-		fetchNodeList: jest.fn().mockResolvedValue([])
+		fetchNodeList: jest.fn().mockResolvedValue([]),
+		announceTransaction: jest.fn().mockResolvedValue()
 	}),
 	sdk: new ProtocolSdk({
 		signTransaction: jest.fn().mockResolvedValue({}),

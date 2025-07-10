@@ -8,13 +8,15 @@ import {
 	WalletAccountType 
 } from '../../constants';
 import { AppError } from '../../error/AppError';
-import * as AccountTypes from '../../types/Account';
-import * as NetworkTypes from '../../types/Network';
 import { cloneNetworkArrayMap, cloneNetworkObjectMap, createNetworkMap } from '../../utils/network';
 import { ProtocolApi } from '../ProtocolApi';
 import { ProtocolSdk } from '../ProtocolSdk';
 import { PersistentStorageRepository } from '../storage/PersistentStorageRepository';
 import { StorageInterface } from '../storage/StorageInterface';
+
+/** @typedef {import('../../types/Account').WalletAccount} WalletAccount */
+/** @typedef {import('../../types/Network').NetworkArrayMap} NetworkArrayMap */
+/** @typedef {import('../../types/Network').NetworkProperties} NetworkProperties */
 
 const STORAGE_ROOT_SCOPE = 'wallet';
 
@@ -287,7 +289,7 @@ export class WalletController extends EventController {
 	/**
 	 * Select wallet account
 	 * @param {string} publicKey - account public key
-	 * @returns {Promise<AccountTypes.WalletAccount>} - a promise that resolves when the account is selected
+	 * @returns {Promise<WalletAccount>} - a promise that resolves when the account is selected
 	 */
 	selectAccount = async publicKey => {
 		const { walletAccounts, networkIdentifier } = this._state;
@@ -313,7 +315,7 @@ export class WalletController extends EventController {
 	 * @param {string} options.name - first account name
 	 * @param {number} options.accountPerNetworkCount - number of accounts to generate per network
 	 * @param {string} [password] - wallet password
-	 * @returns {Promise<AccountTypes.WalletAccount>} - a promise that resolves when the wallet is created to the selected account
+	 * @returns {Promise<WalletAccount>} - a promise that resolves when the wallet is created to the selected account
 	 */
 	saveMnemonicAndGenerateAccounts = async ({ mnemonic, name, accountPerNetworkCount = MAX_SEED_ACCOUNTS_PER_NETWORK }, password) => {
 		// Create wallet in mnemonic keystore and get seed accounts
@@ -346,7 +348,7 @@ export class WalletController extends EventController {
 	 * @param {string} options.networkIdentifier - network identifier
 	 * @param {number} options.index - account index
 	 * @param {string} options.type - account keystore type (e.g. 'mnemonic', 'hardware')
-	 * @returns {Promise<AccountTypes.WalletAccount>} - a promise that resolves to the added account object
+	 * @returns {Promise<WalletAccount>} - a promise that resolves to the added account object
 	 */
 	addSeedAccount = async ({ name, networkIdentifier, index, type = WalletAccountType.MNEMONIC }) => {
 		// Add account FROM keystore (by index)
@@ -365,7 +367,7 @@ export class WalletController extends EventController {
 	 * @param {string} options.name - account name
 	 * @param {string} options.networkIdentifier - network identifier of the account
 	 * @param {string} [password] - wallet password
-	 * @returns {Promise<AccountTypes.WalletAccount>} - a promise that resolves when the account is added
+	 * @returns {Promise<WalletAccount>} - a promise that resolves when the account is added
 	 */
 	addExternalAccount = async ({ privateKey, name, networkIdentifier }, password) => {
 		// Add account TO keystore (by private key)
@@ -379,8 +381,8 @@ export class WalletController extends EventController {
 
 	/**
 	 * Add an account to the wallet. Used internally by addSeedAccount and addExternalAccount methods.
-	 * @param {AccountTypes.WalletAccount} account - account object to add
-	 * @returns {Promise<AccountTypes.WalletAccount>} - a promise that resolves when the account is added
+	 * @param {WalletAccount} account - account object to add
+	 * @returns {Promise<WalletAccount>} - a promise that resolves when the account is added
 	 * @throws {AppError} - if the account already exists in the wallet
 	 */
 	#addAccount = async account => {
@@ -507,7 +509,7 @@ export class WalletController extends EventController {
 
 	/**
 	 * Set accounts in the state and persistent storage
-	 * @param {NetworkTypes.NetworkArrayMap<AccountTypes.WalletAccount>} accounts - array of accounts to set
+	 * @param {NetworkArrayMap<WalletAccount>} accounts - array of accounts to set
 	 * @returns {Promise<void>} - a promise that resolves when the accounts are set
 	 */
 	#setAccounts = async accounts => {
@@ -731,7 +733,7 @@ export class WalletController extends EventController {
 
 	/**
 	 * Callback handler for network properties update
-	 * @param {NetworkTypes.NetworkProperties} networkProperties - new network properties
+	 * @param {NetworkProperties} networkProperties - new network properties
 	 * @private
 	 */
 	#handleNetworkPropertiesUpdate = async networkProperties => {

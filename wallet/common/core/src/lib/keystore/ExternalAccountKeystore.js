@@ -1,8 +1,9 @@
 import { BaseSoftwareKeystore } from './BaseSoftwareKeystore';
 import { WalletAccountType } from '../../constants';
-import * as AccountTypes from '../../types/Account';
 import { getAccountWithoutPrivateKey } from '../../utils/account';
 import { cloneNetworkArrayMap, createNetworkMap } from '../../utils/network';
+
+/** @typedef {import('../types/Account').PublicAccount} PublicAccount */
 
 const createDefaultState = networkIdentifiers => ({
 	privateAccounts: createNetworkMap(() => ([]), networkIdentifiers)
@@ -36,7 +37,7 @@ export class ExternalAccountKeystore extends BaseSoftwareKeystore {
 	 * @param {string} privateKey - The private key of the new account.
 	 * @param {string} networkIdentifier - The network identifier for the new account.
 	 * @param {string} [password] - The password to access secure storage.
-	 * @returns {Promise<AccountTypes.WalletAccount>} A promise that resolves to the newly added account without the private key.
+	 * @returns {Promise<PublicAccount>} A promise that resolves to the newly added account without the private key.
 	 * @throws {Error} If the network is not supported or if the account already exists.
 	 */
 	addAccount = async (privateKey, networkIdentifier, password) => {

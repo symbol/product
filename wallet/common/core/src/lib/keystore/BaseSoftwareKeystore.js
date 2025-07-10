@@ -1,8 +1,10 @@
-import * as AccountTypes from '../../types/Account';
-import * as NetworkTypes from '../../types/Network';
 import { getAccountWithoutPrivateKey } from '../../utils/account';
 import { createNetworkMap } from '../../utils/network';
 import { SecureStorageRepository } from '../storage/SecureStorageRepository';
+
+/** @typedef {import('../../types/Account').PublicAccount} PublicAccount */
+/** @typedef {import('../../types/Network').NetworkArrayMap} NetworkArrayMap */
+/** @typedef {import('../../types/Network').NetworkProperties} NetworkProperties */
 
 /**
  * @constructor BaseSoftwareKeystore
@@ -28,7 +30,7 @@ export class BaseSoftwareKeystore {
 	/**
 	 * Retrieves all accounts managed by the keystore, grouped by network.
 	 * The private keys are omitted from the returned account objects for security.
-	 * @returns {Promise<NetworkTypes.NetworkArrayMap<AccountTypes.WalletAccount>>} 
+	 * @returns {Promise<NetworkArrayMap<PublicAccount>>} 
 	 * A promise that resolves to a map where keys are network identifiers
 	 * and values are arrays of account objects (without private keys).
 	 */
@@ -46,7 +48,7 @@ export class BaseSoftwareKeystore {
 
 	/**
 	 * Retrieves the private key for a specific account.
-	 * @param {AccountTypes.WalletAccount} account - The account for which to retrieve the private key.
+	 * @param {PublicAccount} account - The account for which to retrieve the private key.
 	 * @throws {Error} If the account is not found in the keystore.
 	 * @returns {Promise<string>} A promise that resolves to the account's private key.
 	 */
@@ -65,9 +67,9 @@ export class BaseSoftwareKeystore {
 
 	/**
 	 * Signs a transaction using the private key of the specified account.
-	 * @param {object} networkProperties - The network properties required for signing.
+	 * @param {NetworkProperties} networkProperties - The network properties required for signing.
 	 * @param {object} transaction - The transaction object to be signed.
-	 * @param {AccountTypes.WalletAccount} account - The account to use for signing.
+	 * @param {PublicAccount} account - The account to use for signing.
 	 * @returns {Promise<object>} A promise that resolves to the signed transaction payload.
 	 */
 	signTransaction = async (networkProperties, transaction, account) => {
@@ -78,9 +80,9 @@ export class BaseSoftwareKeystore {
 
 	/**
 	 * Cosigns partial transaction.
-	 * @param {object} networkProperties - The network properties required for cosigning.
+	 * @param {NetworkProperties} networkProperties - The network properties required for cosigning.
 	 * @param {object} transaction - Partial transaction to cosign.
-	 * @param {AccountTypes.WalletAccount} account - The account to use for cosigning.
+	 * @param {PublicAccount} account - The account to use for cosigning.
 	 * @returns {Promise<object>} A promise that resolves to the cosignature object.
 	 */
 	cosignTransaction = async (networkProperties, transaction, account) => {
@@ -93,7 +95,7 @@ export class BaseSoftwareKeystore {
 	 * Encrypts a plain text message for a recipient.
 	 * @param {string} messageText - The plain text message to encrypt.
 	 * @param {string} recipientPublicKey - The public key of the message recipient.
-	 * @param {AccountTypes.WalletAccount} account - The sender's account to use for encryption.
+	 * @param {PublicAccount} account - The sender's account to use for encryption.
 	 * @returns {Promise<string>} A promise that resolves to the encrypted message in hexadecimal format.
 	 */
 	encryptMessage = async (messageText, recipientPublicKey, account) => {
@@ -106,7 +108,7 @@ export class BaseSoftwareKeystore {
 	 * Decrypts an encrypted message.
 	 * @param {string} encryptedMessageHex - The encrypted message in hexadecimal format.
 	 * @param {string} senderOrRecipientPublicKey - The public key of the other party (either sender or recipient).
-	 * @param {AccountTypes.WalletAccount} account - The account to use for decryption.
+	 * @param {PublicAccount} account - The account to use for decryption.
 	 * @returns {Promise<string>} A promise that resolves to the decrypted plain text message.
 	 */
 	decryptMessage = async (encryptedMessageHex, senderOrRecipientPublicKey, account) => {

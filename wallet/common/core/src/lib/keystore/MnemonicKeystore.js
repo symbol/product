@@ -1,7 +1,8 @@
 import { BaseSoftwareKeystore } from './BaseSoftwareKeystore';
 import { WalletAccountType } from '../../constants';
-import * as AccountTypes from '../../types/Account';
 import { cloneNetworkArrayMap, createNetworkMap } from '../../utils/network';
+
+/** @typedef {import('../../types/Account').PublicAccount} PublicAccount */
 
 const createDefaultState = networkIdentifiers => ({
 	mnemonic: null,
@@ -86,7 +87,7 @@ export class MnemonicKeystore extends BaseSoftwareKeystore {
 	 * Retrieves the seed account for a specific network and index.
 	 * @param {string} networkIdentifier - The network identifier.
 	 * @param {number} index - The index of the account.
-	 * @returns {Promise<AccountTypes.WalletAccount>} A promise that resolves to the seed account.
+	 * @returns {Promise<PublicAccount>} A promise that resolves to the seed account.
 	 * @throws {Error} If the network is not supported or if the account does not exist.
 	 */
 	getSeedAccount = async (networkIdentifier, index) => {

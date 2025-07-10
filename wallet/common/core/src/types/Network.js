@@ -22,7 +22,6 @@
  * @property {string} nodeUrl - API node URL.
  * @property {string} networkIdentifier - Network identifier.
  * @property {number} chainHeight - Chain height at the time of the request.
-
  */
 
 export default {};
