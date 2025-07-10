@@ -13,7 +13,7 @@
 /**
  * @typedef {Object} TransactionMessage
  * @property {string} payload - The message payload HEX.
- * @property {number} type - The message type. The first byte of the payload.
+ * @property {number} type - The message type.
  * @property {string} text - Utf-8 decoded payload.
  */
 
