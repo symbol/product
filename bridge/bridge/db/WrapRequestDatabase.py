@@ -2,7 +2,7 @@ from enum import Enum
 
 from symbolchain.CryptoTypes import Hash256
 
-from ..models.WrapRequest import WrapRequest
+from ..models.WrapRequest import WrapRequest, make_wrap_error_result
 
 
 class WrapRequestStatus(Enum):
@@ -11,7 +11,7 @@ class WrapRequestStatus(Enum):
 	UNPROCESSED = 0
 	SENT = 1
 	COMPLETED = 2
-	ERROR = 3
+	FAILED = 3
 
 
 class WrapRequestDatabase:
@@ -64,16 +64,20 @@ class WrapRequestDatabase:
 		cursor.execute('CREATE INDEX IF NOT EXISTS wrap_request_payout_status_idx ON wrap_request(payout_status)')
 		cursor.execute('CREATE INDEX IF NOT EXISTS wrap_request_payout_transaction_hash_idx ON wrap_request(payout_transaction_hash)')
 
-	def add_error(self, error):
-		"""Adds an error to the error table."""
-
-		cursor = self.connection.cursor()
+	@staticmethod
+	def _add_error_with_cursor(cursor, error):
 		cursor.execute('''INSERT INTO wrap_error VALUES (?, ?, ?, ?, ?)''', (
 			error.transaction_height,
 			error.transaction_hash.bytes,
 			error.transaction_subindex,
 			error.sender_address.bytes,
 			error.message))
+
+	def add_error(self, error):
+		"""Adds an error to the error table."""
+
+		cursor = self.connection.cursor()
+		self._add_error_with_cursor(cursor, error)
 		self.connection.commit()
 
 	def add_request(self, request):
@@ -119,11 +123,16 @@ class WrapRequestDatabase:
 		max_request_height = cursor.fetchone()[0]
 		return max(max_error_height or 0, max_request_height or 0)
 
-	def total_wrapped_amount(self):
-		"""Gets sum of all valid wrap request amounts."""
+	def cumulative_wrapped_amount_at(self, timestamp):
+		"""Gets cumulative amount of wrapped tokens issued at or before timestamp."""
 
 		cursor = self.connection.cursor()
-		cursor.execute('''SELECT SUM(amount) FROM wrap_request''')
+		cursor.execute('''
+			SELECT SUM(wrap_request.amount)
+			FROM wrap_request
+			LEFT JOIN block_metadata ON wrap_request.request_transaction_height = block_metadata.height
+			WHERE block_metadata.timestamp <= ?
+		''', (timestamp,))
 		sum_amount = cursor.fetchone()[0]
 		return sum_amount or 0
 
@@ -148,6 +157,25 @@ class WrapRequestDatabase:
 			'''INSERT INTO payout_transaction VALUES (?, ?)''',
 			(payout_transaction_hash.bytes, 0))
 
+		self.connection.commit()
+
+	def mark_payout_failed(self, request, message):
+		"""Marks a payout as failed with a message."""
+
+		cursor = self.connection.cursor()
+		cursor.execute(
+			'''
+				UPDATE wrap_request
+				SET payout_status = ?
+				WHERE request_transaction_hash IS ? AND request_transaction_subindex IS ?
+			''',
+			(
+				WrapRequestStatus.FAILED.value,
+				request.transaction_hash.bytes,
+				request.transaction_subindex
+			))
+
+		self._add_error_with_cursor(cursor, make_wrap_error_result(request, message).error)
 		self.connection.commit()
 
 	def mark_payout_completed(self, payout_transaction_hash, height):
@@ -184,6 +212,25 @@ class WrapRequestDatabase:
 			''',
 			(height, unix_timestamp, unix_timestamp))
 		self.connection.commit()
+
+	def lookup_block_timestamp(self, height):
+		"""Looks up the timestamp of a block height."""
+
+		cursor = self.connection.cursor()
+		cursor.execute(
+			'''SELECT timestamp FROM block_metadata WHERE height = ?''',
+			(height,))
+		fetch_result = cursor.fetchone()
+		return fetch_result[0] if fetch_result else None
+
+	def lookup_block_height(self, timestamp):
+		"""Looks up the height of the last block with a timestamp no greater than provided."""
+
+		cursor = self.connection.cursor()
+		cursor.execute(
+			'''SELECT max(height) FROM block_metadata WHERE timestamp <= ?''',
+			(timestamp,))
+		return cursor.fetchone()[0] or 0
 
 	def requests_by_status(self, status):
 		"""Gets all requests with the desired status."""
