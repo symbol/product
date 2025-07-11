@@ -18,6 +18,7 @@ class SymbolNetworkFacade:
 		self.network = NetworkLocator.find_by_name(Network.NETWORKS, config.network)
 		self.rosetta_network_id = ('Symbol', self.network.name)
 		self.sdk_facade = SymbolFacade(self.network)
+		self.bridge_address = Address(config.bridge_address)
 		self.currency_mosaic_ids = []
 
 	def is_currency_mosaic_id(self, mosaic_id):
@@ -36,7 +37,7 @@ class SymbolNetworkFacade:
 			generate_mosaic_alias_id('symbol.xym')
 		]
 
-	def create_connector(self):
+	def create_connector(self, **_kwargs):
 		"""Creates a connector to the network."""
 
 		return SymbolConnector(self.config.endpoint)
@@ -64,13 +65,6 @@ class SymbolNetworkFacade:
 			is_matching_mosaic_id = is_custom_mosaic_id
 
 		return extract_wrap_request_from_transaction(self.network, is_valid_address, is_matching_mosaic_id, transaction_with_meta_json)
-
-	async def lookup_account_balance(self, address, mosaic_id=None):
-		"""Gets account balance for network currency."""
-
-		connector = self.create_connector()
-		formatted_currency_mosaic_id = hex(mosaic_id or self.currency_mosaic_ids[0])[2:].upper()
-		return await connector.balance(address, formatted_currency_mosaic_id)
 
 	def create_transfer_transaction(self, timestamp, balance_transfer, mosaic_id=None):
 		"""Creates a transfer transaction."""

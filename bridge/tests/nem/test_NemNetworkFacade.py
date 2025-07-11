@@ -28,7 +28,8 @@ async def server(aiohttp_client):
 # region constructor, create_connector, make_address, is_valid_address_string
 
 def _create_config(server=None):  # pylint: disable=redefined-outer-name
-	return NetworkConfiguration('nem', 'testnet', server.make_url('') if server else 'http://foo.bar:1234', None, {})
+	endpoint = server.make_url('') if server else 'http://foo.bar:1234'
+	return NetworkConfiguration('nem', 'testnet', endpoint, 'TCYIHED7HZQ3IPBY5WRDPDLV5CCMMOOVSOMSPD6B', {})
 
 
 def test_can_create_facade():
@@ -39,17 +40,35 @@ def test_can_create_facade():
 	assert 'testnet' == facade.network.name
 	assert ('NEM', 'testnet') == facade.rosetta_network_id
 	assert facade.network == facade.sdk_facade.network
+	assert Address('TCYIHED7HZQ3IPBY5WRDPDLV5CCMMOOVSOMSPD6B') == facade.bridge_address
 
 
 def test_can_create_connector():
 	# Arrange:
-	facade = NemNetworkFacade(_create_config())
+	config = _create_config()
+	config.extensions['rosetta_endpoint'] = 'http://rosetta.api:9988'
+	facade = NemNetworkFacade(config)
 
 	# Act:
 	connector = facade.create_connector()
 
 	# Assert:
 	assert isinstance(connector, NemConnector)
+	assert 'http://foo.bar:1234' == connector.endpoint
+
+
+def test_can_create_connector_rosetta():
+	# Arrange:
+	config = _create_config()
+	config.extensions['rosetta_endpoint'] = 'http://rosetta.api:9988'
+	facade = NemNetworkFacade(config)
+
+	# Act:
+	connector = facade.create_connector(require_rosetta=True)
+
+	# Assert:
+	assert isinstance(connector, NemConnector)
+	assert 'http://rosetta.api:9988' == connector.endpoint
 
 
 def test_can_make_address():
@@ -74,6 +93,21 @@ def test_is_valid_address_string_only_returns_true_for_valid_addresses_on_networ
 	assert not facade.is_valid_address_string('NCHESTYVD2P6P646AMY7WSNG73PCPZDUQNSD6JAK')    # nem mainnet
 	assert not facade.is_valid_address_string('0x4838b106fce9647bdf1e7877bf73ce8b0bad5f97')  # ethereum
 	assert not facade.is_valid_address_string('TAUPP4BRGNQP5KG2QY53FNYZVZ7SDXQVS5BG2IQ')     # symbol testnet
+
+# endregion
+
+
+# region is_currency_mosaic_id
+
+async def test_can_detect_currency_mosaic_id():
+	# Arrange:
+	facade = NemNetworkFacade(_create_config())
+
+	# Act + Assert:
+	assert facade.is_currency_mosaic_id(('nem', 'xem'))
+	assert not facade.is_currency_mosaic_id(('foo', 'xem'))
+	assert not facade.is_currency_mosaic_id(('nem', 'bar'))
+	assert not facade.is_currency_mosaic_id(('foo', 'bar'))
 
 # endregion
 
@@ -154,32 +188,6 @@ async def test_can_extract_wrap_request_from_transaction_matching_custom_mosaic(
 		'0x4838b106fce9647bdf1e7877bf73ce8b0bad5f98')
 
 	await _assert_can_extract_wrap_request_from_transaction(True, expected_request, assert_wrap_request_success, ('foo', 'bar'))
-
-# endregion
-
-
-# region lookup_account_balance
-
-async def test_can_lookup_account_balance_currency_mosaic(server):  # pylint: disable=redefined-outer-name
-	# Arrange:
-	facade = NemNetworkFacade(_create_config(server))
-
-	# Act:
-	balance = await facade.lookup_account_balance(Address('TCQKTUUNUOPQGDQIDQT2CCJGQZ4QNAAGBZRV5YJJ'))
-
-	# Assert:
-	assert 9988776655 == balance
-
-
-async def test_can_lookup_account_balance_other_mosaic(server):  # pylint: disable=redefined-outer-name
-	# Arrange:
-	facade = NemNetworkFacade(_create_config(server))
-
-	# Act:
-	balance = await facade.lookup_account_balance(Address('TCQKTUUNUOPQGDQIDQT2CCJGQZ4QNAAGBZRV5YJJ'), ('foo', 'bar'))
-
-	# Assert:
-	assert 2 * 9988776655 == balance
 
 # endregion
 
