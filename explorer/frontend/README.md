@@ -22,6 +22,8 @@ All environment variables listed below are required for both development and pro
 
 ### Public Environment Variables
 
+These variables are exposed to the browser, meaning they can be accessed both on the server and in the client-side code
+
 - **`NATIVE_MOSAIC_ID`**: Native mosaic ID. Example: `nem.xem`.
 
 - **`NATIVE_MOSAIC_TICKER`**: Native mosaic ticker. Example: `XEM`.
