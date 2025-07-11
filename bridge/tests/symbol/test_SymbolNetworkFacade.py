@@ -31,7 +31,8 @@ async def server(aiohttp_client):
 # region constructor, create_connector, make_address, is_valid_address_string
 
 def _create_config(server=None):  # pylint: disable=redefined-outer-name
-	return NetworkConfiguration('symbol', 'testnet', server.make_url('') if server else 'http://foo.bar:1234', None, {
+	endpoint = server.make_url('') if server else 'http://foo.bar:1234'
+	return NetworkConfiguration('symbol', 'testnet', endpoint, 'TDDRDLK5QL2LJPZOF26QFXB24TJ5HGB4NDTF6SI', {
 		'transaction_fee_multiplier': '50'
 	})
 
@@ -44,17 +45,35 @@ def test_can_create_facade():
 	assert 'testnet' == facade.network.name
 	assert ('Symbol', 'testnet') == facade.rosetta_network_id
 	assert facade.network == facade.sdk_facade.network
+	assert Address('TDDRDLK5QL2LJPZOF26QFXB24TJ5HGB4NDTF6SI') == facade.bridge_address
 
 
 def test_can_create_connector():
 	# Arrange:
-	facade = SymbolNetworkFacade(_create_config())
+	config = _create_config()
+	config.extensions['rosetta_endpoint'] = 'http://rosetta.api:9988'
+	facade = SymbolNetworkFacade(config)
 
 	# Act:
 	connector = facade.create_connector()
 
 	# Assert:
 	assert isinstance(connector, SymbolConnector)
+	assert 'http://foo.bar:1234' == connector.endpoint
+
+
+def test_can_create_connector_rosetta():
+	# Arrange:
+	config = _create_config()
+	config.extensions['rosetta_endpoint'] = 'http://rosetta.api:9988'
+	facade = SymbolNetworkFacade(config)
+
+	# Act:
+	connector = facade.create_connector(require_rosetta=True)
+
+	# Assert:
+	assert isinstance(connector, SymbolConnector)
+	assert 'http://foo.bar:1234' == connector.endpoint
 
 
 def test_can_make_address():
@@ -83,9 +102,9 @@ def test_is_valid_address_string_only_returns_true_for_valid_addresses_on_networ
 # endregion
 
 
-# region load_currency_mosaic_ids
+# region is_currency_mosaic_id / load_currency_mosaic_ids
 
-async def test_can_load_currency_mosaic_ids(server):  # pylint: disable=redefined-outer-name
+async def test_can_detect_currency_mosaic_id(server):  # pylint: disable=redefined-outer-name
 	# Arrange:
 	facade = SymbolNetworkFacade(_create_config(server))
 
@@ -168,34 +187,6 @@ async def test_can_extract_wrap_request_from_transaction_matching_custom_mosaic(
 		'0x4838b106fce9647bdf1e7877bf73ce8b0bad5f97')
 
 	await _assert_can_extract_wrap_request_from_transaction(server, True, expected_request, assert_wrap_request_success, 'AABBCCDD112233')
-
-# endregion
-
-
-# region lookup_account_balance
-
-async def test_can_lookup_account_balance_currency_mosaic(server):  # pylint: disable=redefined-outer-name
-	# Arrange:
-	facade = SymbolNetworkFacade(_create_config(server))
-	await facade.load_currency_mosaic_ids()
-
-	# Act:
-	balance = await facade.lookup_account_balance(Address('TA6MYQRFJI24C2Y2WPX7QKAPMUDIS5FWZOBIBEA'))
-
-	# Assert:
-	assert 9988776655 == balance
-
-
-async def test_can_lookup_account_balance_other_mosaic(server):  # pylint: disable=redefined-outer-name
-	# Arrange:
-	facade = SymbolNetworkFacade(_create_config(server))
-	await facade.load_currency_mosaic_ids()
-
-	# Act:
-	balance = await facade.lookup_account_balance(Address('TA6MYQRFJI24C2Y2WPX7QKAPMUDIS5FWZOBIBEA'), 0xFAF0EBED913FA202)
-
-	# Assert:
-	assert 1122334455 == balance
 
 # endregion
 
