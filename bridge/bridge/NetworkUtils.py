@@ -1,4 +1,5 @@
 from collections import namedtuple
+from decimal import ROUND_UP, Decimal
 
 from symbolchain.CryptoTypes import PrivateKey
 
@@ -23,6 +24,7 @@ class TransactionSender:
 		self.sender_key_pair = self._load_key_pair(self.network_facade)
 		self.send_arguments = send_arguments or []
 
+		self.percentage_conversion_fee = Decimal(network_facade.config.extensions.get('percentage_conversion_fee', 0))
 		self.timestamp = None
 
 	async def init(self):
@@ -31,16 +33,26 @@ class TransactionSender:
 		connector = self.network_facade.create_connector()
 		self.timestamp = await connector.network_time()
 
-	async def send_transfer(self, destination_address, amount, messsage):
+	async def try_send_transfer(self, destination_address, amount, messsage=None):
 		"""Sends a transfer to the network."""
 
-		transaction = self.network_facade.create_transfer_transaction(
-			self.timestamp,
-			BalanceTransfer(self.sender_key_pair.public_key, destination_address, amount, messsage),
-			*(self.send_arguments)
-		)
+		def make_create_arguments(amount):
+			return [
+				self.timestamp,
+				BalanceTransfer(self.sender_key_pair.public_key, destination_address, amount, messsage),
+				*(self.send_arguments)
+			]
 
-		return await self.send_transaction(transaction)
+		transaction_fee = self.network_facade.create_transfer_transaction(*make_create_arguments(amount)).fee.value
+		conversion_fee = int((self.percentage_conversion_fee * amount).quantize(1, rounding=ROUND_UP))
+
+		total_fee = transaction_fee + conversion_fee
+		if amount < total_fee:
+			return (False, f'total fee (transaction {transaction_fee} + conversion {conversion_fee}) exceeds transfer amount {amount}')
+
+		transaction = self.network_facade.create_transfer_transaction(*make_create_arguments(amount - total_fee))
+		transaction_hash = await self.send_transaction(transaction)
+		return (True, transaction_hash)
 
 	async def send_transaction(self, transaction):
 		"""Sends a transaction to the network."""

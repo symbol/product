@@ -14,7 +14,8 @@ async def send_wrapped_tokens(network_facade, wrap_request, conversion_rate):
 	message = f'issuing {wrap_token_amount} wrapped tokens for deposit of {wrap_request.amount} native tokens'
 
 	await sender.init()
-	return await sender.send_transfer(wrap_request.destination_address, wrap_token_amount, message)
+	(_is_success, transaction_hash) = await sender.try_send_transfer(wrap_request.destination_address, wrap_token_amount, message)
+	return transaction_hash
 
 
 async def main_impl(databases, native_network, wrapped_network):
