@@ -53,7 +53,7 @@ async def test_can_initialize_transaction_sender(server):  # pylint: disable=red
 # endregion
 
 
-# region TransactionSender - send_transfer, send_transaction
+# region TransactionSender - try_send_transfer, send_transaction
 
 def _make_nc_address(address_str):
 	return nc.Address(hexlify(address_str.encode('utf8')).decode('utf8'))
@@ -71,57 +71,126 @@ def _decode_and_check_announce_payload(payload, expected_transaction_hash):
 	return (transaction, signature)
 
 
-async def test_can_send_transfer(server):  # pylint: disable=redefined-outer-name
-	# Arrange:
-	sender = TransactionSender(NemNetworkFacade(_create_config(server)))
-	await sender.init()
-
-	# Act:
-	transaction_hash = await sender.send_transfer('NADP63FUUAOS2LDXY75SJ4TOLW4S7YXEAGT25IXG', 12345000, 'test nem transfer')
-
-	# Assert:
-	assert 1 == len(server.mock.request_json_payloads)
-
-	(transaction, _) = _decode_and_check_announce_payload(server.mock.request_json_payloads[0], transaction_hash)
-
-	assert nc.TransferTransactionV1.TRANSACTION_TYPE == transaction.type_
-	assert nc.TransferTransactionV1.TRANSACTION_VERSION == transaction.version
+def _assert_sample_balance_transfer_common(transaction, expected_transaction_type):
+	assert expected_transaction_type.TRANSACTION_TYPE == transaction.type_
+	assert expected_transaction_type.TRANSACTION_VERSION == transaction.version
 
 	assert nc.Timestamp(322666792) == transaction.timestamp
 	assert nc.PublicKey('8F3E37D0E2AAD0132FE1395DC53C9B867A0333299E278B76DF95E252C2335F06') == transaction.signer_public_key
 	assert _make_nc_address('NADP63FUUAOS2LDXY75SJ4TOLW4S7YXEAGT25IXG') == transaction.recipient_address
-	assert nc.Amount(12345000) == transaction.amount
-	assert b'test nem transfer' == transaction.message.message
 
 
-async def test_can_send_transfer_with_custom_send_arguments(server):  # pylint: disable=redefined-outer-name
+async def _create_transaction_sender(server, update_config):  # pylint: disable=redefined-outer-name
+	config = _create_config(server)
+	if update_config:
+		update_config(config)
+
+	sender = TransactionSender(NemNetworkFacade(config))
+	await sender.init()
+	return sender
+
+
+async def _assert_try_send_transfer_success(server, amount, message, expected_fee, update_config=None):
+	# pylint: disable=redefined-outer-name
 	# Arrange:
+	sender = await _create_transaction_sender(server, update_config)
+
+	# Act:
+	(is_success, transaction_hash) = await sender.try_send_transfer('NADP63FUUAOS2LDXY75SJ4TOLW4S7YXEAGT25IXG', amount, message)
+
+	# Assert:
+	assert is_success
+	assert 1 == len(server.mock.request_json_payloads)
+
+	(transaction, _) = _decode_and_check_announce_payload(server.mock.request_json_payloads[0], transaction_hash)
+
+	_assert_sample_balance_transfer_common(transaction, nc.TransferTransactionV1)
+
+	assert nc.Amount(amount - expected_fee) == transaction.amount
+	if message:
+		assert message.encode('utf8') == transaction.message.message
+	else:
+		assert transaction.message is None
+
+
+async def _assert_try_send_transfer_failure(server, amount, expected_error_message, update_config=None):
+	# pylint: disable=redefined-outer-name
+	# Arrange:
+	sender = await _create_transaction_sender(server, update_config)
+
+	# Act:
+	(is_success, error_message) = await sender.try_send_transfer('NADP63FUUAOS2LDXY75SJ4TOLW4S7YXEAGT25IXG', amount)
+
+	# Assert:
+	assert not is_success
+	assert expected_error_message == error_message
+
+
+async def test_try_send_transfer_succeeds_without_message(server):  # pylint: disable=redefined-outer-name
+	await _assert_try_send_transfer_success(server, 12345000, None, 50000)
+
+
+async def test_try_send_transfer_succeeds_with_message(server):  # pylint: disable=redefined-outer-name
+	await _assert_try_send_transfer_success(server, 12345000, 'test message 1', 100000)
+
+
+async def test_try_send_transfer_succeeds_when_transfer_amount_is_exactly_fee(server):  # pylint: disable=redefined-outer-name
+	await _assert_try_send_transfer_success(server, 50000, None, 50000)
+
+
+async def test_try_send_transfer_fails_when_transfer_amount_is_less_than_transaction_fee(server):  # pylint: disable=redefined-outer-name
+	await _assert_try_send_transfer_failure(
+		server,
+		50000 - 1,
+		'total fee (transaction 50000 + conversion 0) exceeds transfer amount 49999')
+
+
+async def test_try_send_transfer_succeeds_when_conversion_fee_is_enabled(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	def set_conversion_fee(config):
+		config.extensions['percentage_conversion_fee'] = '0.007'
+
+	# Act + Assert: conversion fee: ceil(12345011 * .007 == 86415.077)
+	await _assert_try_send_transfer_success(server, 12345011, None, 86416 + 50000, update_config=set_conversion_fee)
+
+
+async def test_try_send_transfer_fails_when_transfer_amount_is_less_than_total_fee(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	def set_conversion_fee(config):
+		config.extensions['percentage_conversion_fee'] = '0.1'
+
+	# Act + Assert: conversion fee: ceil(54000 * .1 == 5400)
+	await _assert_try_send_transfer_failure(
+		server,
+		54000,
+		'total fee (transaction 50000 + conversion 5400) exceeds transfer amount 54000',
+		update_config=set_conversion_fee)
+
+
+async def test_try_send_transfer_succeeds_with_custom_send_arguments(server):  # pylint: disable=redefined-outer-name
+	# Arrange: False should be passed to NemNetworkFacade.create_transfer_transaction and result in V2 transaction
 	sender = TransactionSender(NemNetworkFacade(_create_config(server)), [False])
 	await sender.init()
 
 	# Act:
-	transaction_hash = await sender.send_transfer('NADP63FUUAOS2LDXY75SJ4TOLW4S7YXEAGT25IXG', 12345000, 'test nem transfer')
+	(is_success, transaction_hash) = await sender.try_send_transfer('NADP63FUUAOS2LDXY75SJ4TOLW4S7YXEAGT25IXG', 12345000, 'test message 2')
 
 	# Assert:
+	assert is_success
 	assert 1 == len(server.mock.request_json_payloads)
 
 	(transaction, _) = _decode_and_check_announce_payload(server.mock.request_json_payloads[0], transaction_hash)
 
-	assert nc.TransferTransactionV2.TRANSACTION_TYPE == transaction.type_
-	assert nc.TransferTransactionV2.TRANSACTION_VERSION == transaction.version
-
-	assert nc.Timestamp(322666792) == transaction.timestamp
-	assert nc.PublicKey('8F3E37D0E2AAD0132FE1395DC53C9B867A0333299E278B76DF95E252C2335F06') == transaction.signer_public_key
-	assert _make_nc_address('NADP63FUUAOS2LDXY75SJ4TOLW4S7YXEAGT25IXG') == transaction.recipient_address
+	_assert_sample_balance_transfer_common(transaction, nc.TransferTransactionV2)
 
 	assert 1 == len(transaction.mosaics)
 
 	mosaic = transaction.mosaics[0].mosaic
 	assert b'nem' == mosaic.mosaic_id.namespace_id.name
 	assert b'xem' == mosaic.mosaic_id.name
-	assert nc.Amount(12345000) == mosaic.amount
+	assert nc.Amount(12345000 - 100000) == mosaic.amount
 
-	assert b'test nem transfer' == transaction.message.message
+	assert b'test message 2' == transaction.message.message
 
 
 async def test_can_send_transaction(server):  # pylint: disable=redefined-outer-name
