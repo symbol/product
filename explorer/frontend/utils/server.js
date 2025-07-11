@@ -65,13 +65,14 @@ export const createTryFetchInfoFunction =
 
 // Makes HTTP requests.
 export const makeRequest = async (url, options = {}) => {
-	const { timeout = config.REQUEST_TIMEOUT, method = 'get' } = options;
+	const { timeout = config.REQUEST_TIMEOUT, headers, method = 'get' } = options;
 
 	const response = await axios({
 		method,
 		url,
 		data: options.data || options.body,
-		timeout
+		timeout,
+		headers
 	});
 
 	return response.data;

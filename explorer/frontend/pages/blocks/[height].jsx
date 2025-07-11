@@ -45,7 +45,7 @@ const BlockInfo = ({ blockInfo }) => {
 	);
 	const transactionPagination = useClientSidePagination(transactionInitialPagination.data);
 	const chainHeight = useAsyncCall(api.fetchChainHight, 0);
-	const isSafeBlock = chainHeight > 0 && chainHeight - blockInfo.height > config.BLOCKCHAIN_UNWIND_LIMIT;
+	const isSafeBlock = chainHeight > 0 && chainHeight - blockInfo.height > config.NEM_BLOCKCHAIN_UNWIND_LIMIT;
 
 	const tableColumns = [
 		{

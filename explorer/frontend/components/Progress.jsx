@@ -1,17 +1,26 @@
+import { styleVariables } from '@/styles';
 import Field from './Field';
 import styles from '@/styles/components/Progress.module.scss';
 
 const colorMap = {
-	default: '#50B9AD',
-	danger: '#B94F4F'
+	default: styleVariables.colorProgressDefault,
+	danger: styleVariables.colorProgressDanger,
 };
 
-const Progress = ({ titleLeft, titleRight, valueLeft, valueRight, value, className, onClick, type }) => {
-	const progressPercentage = ((value - valueLeft) * 100) / (valueRight - valueLeft);
+const sizeMap = {
+	small: styles.size__small,
+	medium: styles.size__medium,
+	large: styles.size__large,
+}
+
+const Progress = ({ titleLeft, titleRight, valueLeft, valueRight, value, progress, className, onClick, type, size }) => {
+	const progressPercentage = progress || (((value - valueLeft) * 100) / (valueRight - valueLeft));
 	const progressStyle = {
 		width: `${progressPercentage < 0 ? 0 : progressPercentage}%`,
 		backgroundColor: colorMap[type] || colorMap.default
 	};
+	const sizeClass = sizeMap[size] || styles.large;
+	const progressContainerClassNames = `${styles.progress} ${sizeClass}`;
 
 	return (
 		<div className={className} onClick={onClick}>
@@ -21,7 +30,7 @@ const Progress = ({ titleLeft, titleRight, valueLeft, valueRight, value, classNa
 					{valueRight}
 				</Field>
 			</div>
-			<div className={styles.progress}>
+			<div className={progressContainerClassNames}>
 				<div className={styles.progressInner} style={progressStyle} />
 			</div>
 		</div>

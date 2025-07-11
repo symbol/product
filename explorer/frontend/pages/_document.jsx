@@ -1,11 +1,17 @@
-import config from '@/config';
-import nemDocument from '@/pages/_app/nem/_document';
-import symbolDocument from '@/pages/_app/symbol/_document';
+/* eslint-disable @next/next/no-document-import-in-page */
+import { Head, Html, Main, NextScript } from 'next/document';
+import { DocumentHead } from '@/_variants';
 
-const listOfDocuments = {
-	nem: nemDocument,
-	symbol: symbolDocument
-};
-const DocumentComponent = listOfDocuments[config.PLATFORM];
-
-export default DocumentComponent;
+export default function Document() {
+	return (
+		<Html>
+			<Head>
+				<DocumentHead />
+			</Head>
+			<body>
+				<Main />
+				<NextScript />
+			</body>
+		</Html>
+	);
+}

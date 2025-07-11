@@ -13,7 +13,9 @@
 			"@/styles": ["styles"],
 			"@/styles/*": ["styles/*"],
 			"@/utils": ["utils"],
-			"@/utils/*": ["utils/*"]
+			"@/utils/*": ["utils/*"],
+			"@/_variants": ["variants"],
+			"@/_variants/*": ["variants/*"]
 		}
 	},
 	"exclude": ["**/node_modules/*", "**/build/*", "**/scripts/*"]

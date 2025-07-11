@@ -16,8 +16,11 @@ import { useTranslation } from 'next-i18next';
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
 import { useCallback } from 'react';
 import config from '@/config';
+import { pageConfig } from '@/_variants';
+import { AdditionalSections } from '@/components/AdditionalSections';
 
-const DATA_REFRESH_INTERVAL = 60000;
+
+const DATA_REFRESH_INTERVAL = 15000;
 
 export const getServerSideProps = async ({ locale }) => {
 	const [blocksPage, latestTransactionsPage, pendingTransactionsPage] = await Promise.all([
@@ -81,6 +84,7 @@ const Home = ({
 				<title>Home</title>
 			</Head>
 			<RecentBlocks data={blocks.data} onTransactionListRequest={fetchBlockTransactions} />
+			<AdditionalSections sections={pageConfig.home.additionalSections} />
 			<Section>
 				<div className="layout-flex-row-mobile-col">
 					<div className="layout-grid-row layout-flex-fill">
@@ -118,11 +122,14 @@ const Home = ({
 					<div className="layout-grid-row layout-flex-fill">
 						<div className="layout-flex-col layout-flex-fill">
 							<Field title={t('field_totalNodes')}>{nodeStats.total}</Field>
-							<Field title={t('field_supernodes')}>{nodeStats.supernodes}</Field>
+							{pageConfig.home.showSupernodeCount && (
+								<Field title={t('field_supernodes')}>{nodeStats.supernodes}</Field>
+							)}
 						</div>
 					</div>
 				</div>
 			</Section>
+			
 			<div className="layout-section-row">
 				<Section title={t('section_latestTransactions')}>
 					<RecentTransactions data={latestTransactions.data} />

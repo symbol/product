@@ -1,11 +1,9 @@
 import Footer from '@/components/Footer';
 import Header from '@/components/Header';
 import PageLoadingIndicator from '@/components/PageLoadingIndicator';
-import config from '@/config';
 import { STORAGE_KEY } from '@/constants';
 import { ConfigProvider } from '@/contexts/ConfigContext';
-import nemStyles from '@/styles/app/nem/Layout.module.scss';
-import symbolStyles from '@/styles/app/symbol/Layout.module.scss';
+import { layoutStyles as customLayoutStyles } from '@/styles';
 import layoutStyles from '@/styles/pages/Layout.module.scss';
 import { useStorage } from '@/utils';
 import TimeAgo from 'javascript-time-ago';
@@ -19,12 +17,6 @@ import { memo, useEffect, useRef } from 'react';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import '@/styles/globals.scss';
-
-const listOfStyles = {
-	nem: nemStyles,
-	symbol: symbolStyles
-};
-const styles = listOfStyles[config.PLATFORM];
 
 TimeAgo.addDefaultLocale(en);
 TimeAgo.addLocale(uk);
@@ -52,7 +44,7 @@ const App = ({ Component, pageProps }) => {
 	}, [userLanguage, router.locale]);
 
 	return (
-		<div className={styles.wrapper}>
+		<div className={customLayoutStyles.wrapper}>
 			<Header />
 			<ToastContainer autoClose={2000} className="toast-container" hideProgressBar pauseOnHover />
 			<PageLoadingIndicator />

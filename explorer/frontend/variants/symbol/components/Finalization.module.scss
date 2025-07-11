@@ -1,0 +1,20 @@
+.sectionHeight {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    flex: 0.4666;
+}
+
+.sectionEpoch {
+    position: relative;
+    flex: 1;
+}
+
+.eta {
+    color: $color-text-title;
+    float: right;
+    font-style: italic;
+    position: absolute;
+    right: 0;
+    top: 0;
+}

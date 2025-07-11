@@ -3,5 +3,7 @@
     "colorChartDonutMain": "#26c3f2",
     "colorChartDonutBackground": "#413c4f",
     "colorChartDonutStroke": "#221c31",
-    "colorChartColumns": "#26c3f2"
+    "colorChartColumns": "#26c3f2",
+    "colorProgressDefault": "#26c3f2",
+    "colorProgressDanger": "#ff9999"
 }

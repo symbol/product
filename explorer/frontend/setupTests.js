@@ -19,13 +19,13 @@ const envMock = {
 	NEXT_PUBLIC_NATIVE_MOSAIC_ID: 'nem.xem',
 	NEXT_PUBLIC_NATIVE_MOSAIC_TICKER: 'XEM',
 	NEXT_PUBLIC_NATIVE_MOSAIC_DIVISIBILITY: 6,
-	NEXT_PUBLIC_BLOCKCHAIN_UNWIND_LIMIT: 360,
+	NEXT_PUBLIC_NEM_BLOCKCHAIN_UNWIND_LIMIT: 360,
 	NEXT_PUBLIC_REQUEST_TIMEOUT: 5000,
 	NEXT_PUBLIC_API_BASE_URL: 'https://explorer.backend',
-	NEXT_PUBLIC_SUPERNODE_API_URL: 'https://supernode.backend',
-	NEXT_PUBLIC_NODELIST_URL: 'https://node.list',
-	NEXT_PUBLIC_MARKET_DATA_URL: 'https://market.data',
-	NEXT_PUBLIC_HISTORICAL_PRICE_URL: 'https://historical.price'
+	NEXT_PUBLIC_NEM_SUPERNODE_API_URL: 'https://supernode.backend',
+	NEXT_PUBLIC_NEM_NODELIST_URL: 'https://node.list',
+	NEXT_PUBLIC_NEM_MARKET_DATA_URL: 'https://market.data',
+	NEXT_PUBLIC_NEM_HISTORICAL_PRICE_URL: 'https://historical.price'
 };
 process.env = {
 	...originalEnv,

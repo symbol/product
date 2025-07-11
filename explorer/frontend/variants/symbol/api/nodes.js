@@ -12,7 +12,7 @@ import { makeRequest } from '@/utils/server';
  * @returns {Promise<Array>} node list
  */
 export const fetchNodeList = async () => {
-	const url = config.NODELIST_URL;
+	const url = config.SYMBOL_NODELIST_URL;
 	const nodes = await makeRequest(url);
 
 	return nodes.map(nodeInfoFromDTO);

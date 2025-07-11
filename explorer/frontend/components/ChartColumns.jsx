@@ -1,4 +1,4 @@
-import { getStyleVariables } from '@/styles';
+import { styleVariables } from '@/styles';
 import styles from '@/styles/components/Chart.module.scss';
 import dynamic from 'next/dynamic';
 
@@ -36,7 +36,7 @@ const ChartColumns = ({ data, name }) => {
 		dataLabels: {
 			enabled: false
 		},
-		colors: [getStyleVariables().colorChartColumns],
+		colors: [styleVariables.colorChartColumns],
 		stroke: {
 			curve: 'smooth',
 			width: 1

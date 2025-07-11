@@ -98,7 +98,7 @@ export const fetchBlockStats = async () => {
 export const fetchNodeStats = async () => {
 	const [nodewatchResponse, supernodeResponse] = await Promise.all([
 		fetchNodeList(),
-		makeRequest(`${config.SUPERNODE_API_URL}/statistics`)
+		makeRequest(`${config.NEM_SUPERNODE_API_URL}/statistics`)
 	]);
 
 	return {
@@ -108,7 +108,7 @@ export const fetchNodeStats = async () => {
 };
 
 export const fetchMarketData = async () => {
-	const response = await makeRequest(config.MARKET_DATA_URL);
+	const response = await makeRequest(config.NEM_MARKET_DATA_URL);
 	const data = response.RAW.XEM.USD;
 
 	return {
@@ -133,7 +133,7 @@ export const fetchPriceByDate = async (timestamp, currency) => {
 		mm = '0' + mm;
 
 	const formattedDate = dd + '-' + mm + '-' + yyyy;
-	const response = await makeRequest(`${config.HISTORICAL_PRICE_URL}?date=${formattedDate}`);
+	const response = await makeRequest(`${config.NEM_HISTORICAL_PRICE_URL}?date=${formattedDate}`);
 
 	return response?.market_data?.current_price[currency.toLowerCase()] || null;
 };

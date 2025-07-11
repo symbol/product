@@ -301,8 +301,7 @@ export const useAsyncCall = (callback, defaultData, pollingInterval) => {
 
 		if (pollingInterval)
 			setInterval(() => call(), pollingInterval);
-		else
-			call();
+		call();
 	}, []);
 
 	return data;

@@ -1,0 +1,8 @@
+{
+    "showSupernodeCount": false,
+    "additionalSections": [
+        {
+            "component": "Finalization"
+        }
+    ]
+}

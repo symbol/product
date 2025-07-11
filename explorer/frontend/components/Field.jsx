@@ -12,7 +12,7 @@ const Field = ({ className, titleClassName, title, description, children, textAl
 	return (
 		<div className={`${styles.field} ${textAlignStyle} ${className}`}>
 			<div className={`${styles.title} ${titleClassName}`} onClick={onTitleClick}>
-				{title}
+				{title ? title : <div>&nbsp;</div>}
 				{!!description && (
 					<div className={styles.tooltip}>
 						<CustomImage src={createAssetURL('/images/icon-question.svg')} className={styles.tooltipIcon} alt="Help" />

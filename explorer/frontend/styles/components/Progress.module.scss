@@ -17,3 +17,15 @@
 	background-color: $color-primary;
 	transition: width 1s ease;
 }
+
+.size__small {
+	height: $spacing-base * 0.125;
+}
+
+.size__medium {
+	height: $spacing-base;
+}
+
+.size__large {
+	height: $spacing-base * 2;
+}
