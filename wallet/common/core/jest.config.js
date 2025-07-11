@@ -2,9 +2,10 @@ export default {
 	clearMocks: true,
 	testMatch: ['<rootDir>/tests/**/*.test.js'],
 	modulePaths: ['<rootDir>'],
-	collectCoverageFrom: ['src/**/*.{js}'],
+	collectCoverageFrom: ['<rootDir>/src/**/*.js'],
 	coverageDirectory: 'coverage',
 	coverageProvider: 'v8',
+	coverageReporters: ['lcov'],
 	coveragePathIgnorePatterns: [
 		'<rootDir>/tests/',
 		'<rootDir>/coverage/',
