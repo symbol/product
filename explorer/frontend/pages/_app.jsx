@@ -1,6 +1,7 @@
 import Footer from '@/components/Footer';
 import Header from '@/components/Header';
 import PageLoadingIndicator from '@/components/PageLoadingIndicator';
+import config from '@/config';
 import { STORAGE_KEY } from '@/constants';
 import { ConfigProvider } from '@/contexts/ConfigContext';
 import styles from '@/styles/pages/Layout.module.scss';
@@ -10,6 +11,7 @@ import en from 'javascript-time-ago/locale/en.json';
 import ja from 'javascript-time-ago/locale/ja.json';
 import uk from 'javascript-time-ago/locale/uk.json';
 import zh from 'javascript-time-ago/locale/zh.json';
+import App from 'next/app';
 import { useRouter } from 'next/router';
 import { appWithTranslation } from 'next-i18next';
 import { memo, useEffect, useRef } from 'react';
@@ -24,7 +26,7 @@ TimeAgo.addLocale(ja);
 
 const ROUTES_TO_RETAIN = ['/accounts', '/blocks', '/mosaics', '/namespaces', '/transactions'];
 
-const App = ({ Component, pageProps }) => {
+const AppComponent = ({ Component, pageProps, appConfig }) => {
 	const [userLanguage] = useStorage(STORAGE_KEY.USER_LANGUAGE);
 	const router = useRouter();
 	const retainedComponents = useRef({});
@@ -44,6 +46,7 @@ const App = ({ Component, pageProps }) => {
 
 	return (
 		<div className={styles.wrapper}>
+			<script dangerouslySetInnerHTML={{ __html: `window.appConfig = ${JSON.stringify(appConfig)};` }} />
 			<Header />
 			<ToastContainer autoClose={2000} className="toast-container" hideProgressBar pauseOnHover />
 			<PageLoadingIndicator />
@@ -66,4 +69,10 @@ const App = ({ Component, pageProps }) => {
 	);
 };
 
-export default appWithTranslation(App);
+AppComponent.getInitialProps = async appContext => {
+	const appProps = await App.getInitialProps(appContext);
+
+	return { ...appProps, appConfig: config };
+};
+
+export default appWithTranslation(AppComponent);

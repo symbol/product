@@ -22,41 +22,39 @@ All environment variables listed below are required for both development and pro
 
 ### Public Environment Variables
 
-These variables are prefixed with `NEXT_PUBLIC_` and are exposed to the browser, meaning they can be accessed both on the server and in the client-side code.
+- **`NATIVE_MOSAIC_ID`**: Native mosaic ID. Example: `nem.xem`.
 
-- **`NEXT_PUBLIC_NATIVE_MOSAIC_ID`**: Native mosaic ID. Example: `nem.xem`.
+- **`NATIVE_MOSAIC_TICKER`**: Native mosaic ticker. Example: `XEM`.
 
-- **`NEXT_PUBLIC_NATIVE_MOSAIC_TICKER`**: Native mosaic ticker. Example: `XEM`.
+- **`NATIVE_MOSAIC_DIVISIBILITY`**: Native mosaic divisibility. Example: `6`.
 
-- **`NEXT_PUBLIC_NATIVE_MOSAIC_DIVISIBILITY`**: Native mosaic divisibility. Example: `6`.
+- **`BLOCKCHAIN_UNWIND_LIMIT`**: Blockchain unwind limit. Example: `360`.
 
-- **`NEXT_PUBLIC_BLOCKCHAIN_UNWIND_LIMIT`**: Blockchain unwind limit. Example: `360`.
+- **`REQUEST_TIMEOUT`**: The timeout duration (in milliseconds) for network requests made by the application. Example: `15000` (15 seconds).
 
-- **`NEXT_PUBLIC_REQUEST_TIMEOUT`**: The timeout duration (in milliseconds) for network requests made by the application. Example: `15000` (15 seconds).
+- **`API_BASE_URL`**: Explorer REST API endpoint. Example: `http://explorer-backend.com:4000/api/nem`.
 
-- **`NEXT_PUBLIC_API_BASE_URL`**: Explorer REST API endpoint. Example: `http://explorer-backend.com:4000/api/nem`.
+- **`SUPERNODE_API_URL`**: Supernodes API endpoint. Example: `https://nem.io/supernode/api`.
 
-- **`NEXT_PUBLIC_SUPERNODE_API_URL`**: Supernodes API endpoint. Example: `https://nem.io/supernode/api`.
+- **`NODELIST_URL`**: Node list endpoint. Example: `https://nodewatch.symbol.tools/api/nem/nodes`.
 
-- **`NEXT_PUBLIC_NODELIST_URL`**: Node list endpoint. Example: `https://nodewatch.symbol.tools/api/nem/nodes`.
+- **`MARKET_DATA_URL`**: Market data endpoint. Example: `https://marketdata.com/data/data?sym1=XEM&sym2=USD`.
 
-- **`NEXT_PUBLIC_MARKET_DATA_URL`**: Market data endpoint. Example: `https://marketdata.com/data/data?sym1=XEM&sym2=USD`.
+- **`HISTORICAL_PRICE_URL`**: Historical coin price endpoint. Example: `https://marketdata.com/history/data?sym1=XEM`.
 
-- **`NEXT_PUBLIC_HISTORICAL_PRICE_URL`**: Historical coin price endpoint. Example: `https://marketdata.com/history/data?sym1=XEM`.
+- **`SOCIAL_URL_TWITTER`**: The URL for the company's Twitter/X social profile. This can be used to display social media links in the application. Example: `https://twitter.com/company`.
 
-- **`NEXT_PUBLIC_SOCIAL_URL_TWITTER`**: The URL for the company's Twitter/X social profile. This can be used to display social media links in the application. Example: `https://twitter.com/company`.
+- **`SOCIAL_URL_GITHUB`**: The URL for the company's GitHub organization. This can be used to display social media links in the application. Example: `https://github.com/company`.
 
-- **`NEXT_PUBLIC_SOCIAL_URL_GITHUB`**: The URL for the company's GitHub organization. This can be used to display social media links in the application. Example: `https://github.com/company`.
+- **`SOCIAL_URL_DISCORD`**: The URL for the company's Discord server. This can be used to display social media links in the application. Example: `https://discord.com/company`.
 
-- **`NEXT_PUBLIC_SOCIAL_URL_DISCORD`**: The URL for the company's Discord server. This can be used to display social media links in the application. Example: `https://discord.com/company`.
+- **`FOOTER_URL_DOCS`**: The URL for the NEM documentation. Example: `https://website.com`.
 
-- **`NEXT_PUBLIC_FOOTER_URL_DOCS`**: The URL for the NEM documentation. Example: `https://website.com`.
+- **`FOOTER_URL_TECHNICAL_REFERENCE`**: The URL for the NEM technical reference. Example: `https://website.com`.
 
-- **`NEXT_PUBLIC_FOOTER_URL_TECHNICAL_REFERENCE`**: The URL for the NEM technical reference. Example: `https://website.com`.
+- **`FOOTER_URL_FAUCET`**: The URL for the XEM Faucet. Example: `https://website.com`.
 
-- **`NEXT_PUBLIC_FOOTER_URL_FAUCET`**: The URL for the XEM Faucet. Example: `https://website.com`.
-
-- **`NEXT_PUBLIC_FOOTER_URL_SUPERNODE_PROGRAM`**: The URL for the NEM Supernode Program. Example: `https://website.com`.
+- **`FOOTER_URL_SUPERNODE_PROGRAM`**: The URL for the NEM Supernode Program. Example: `https://website.com`.
 
 ### Known Accounts
 
@@ -113,7 +111,7 @@ This project is part of a Product monorepo. Follow the steps below to set up and
 
 5. Setup environment variables (or create `.env` file in `frontend/` root directory).
 
-6. Add the known
+6. Add the known accounts config
 
 ## Building the Project
 
