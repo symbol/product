@@ -15,8 +15,8 @@ from ..test.MockNetworkFacade import MockNetworkFacade
 
 
 def make_request_error_tuple(index, message, **kwargs):
-	address = Address(NEM_ADDRESSES[kwargs.get('address_index', index)])
 	hash_index = kwargs.get('hash_index', index)
+	address = Address(NEM_ADDRESSES[kwargs.get('address_index', index)])
 
 	return (
 		HEIGHTS[index],
@@ -113,7 +113,7 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 		self._assert_can_insert_rows(
 			{'errors': [], 'requests': seed_requests},
 			{
-				'errors': [],
+				'errors': kwargs.get('expected_errors', []),
 				'requests': expected_requests,
 				'payout_transactions': kwargs.get('expected_payout_transactions'),
 				'block_metadatas': kwargs.get('expected_block_metadatas'),
@@ -321,35 +321,56 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 
 	# endregion
 
-	# region total_wrapped_amount
+	# region cumulative_wrapped_amount_at
 
-	def test_total_wrapped_amount_amount_is_zero_when_empty(self):
+	def test_cumulative_wrapped_amount_at_is_zero_when_empty(self):
 		# Arrange:
 		with sqlite3.connect(':memory:') as connection:
 			database = WrapRequestDatabase(connection, MockNetworkFacade())
 			database.create_tables()
 
 			# Act:
-			total_wrapped_amount = database.total_wrapped_amount()
+			amount = database.cumulative_wrapped_amount_at(10000)
 
 			# Assert:
-			self.assertEqual(0, total_wrapped_amount)
+			self.assertEqual(0, amount)
 
-	def test_total_wrapped_amount_is_calculated_correctly_when_requests_present(self):
+	def _assert_cumulative_wrapped_amount_at_is_calculated_correctly_at_timestamps(self, timestamp_amount_pairs):
 		# Arrange:
 		with sqlite3.connect(':memory:') as connection:
 			database = WrapRequestDatabase(connection, MockNetworkFacade())
 			database.create_tables()
 
-			database.add_request(make_request(1, amount=1000))
-			database.add_request(make_request(2, amount=3333))
-			database.add_request(make_request(3, amount=2020))
+			database.add_request(make_request(0, amount=1000, height=111))
+			database.add_request(make_request(1, amount=3333, height=333))
+			database.add_request(make_request(2, amount=2020, height=222))
+			database.add_request(make_request(3, amount=1, height=222))
 
-			# Act:
-			total_wrapped_amount = database.total_wrapped_amount()
+			database.set_block_timestamp(111, 1000)
+			database.set_block_timestamp(222, 2000)
+			database.set_block_timestamp(333, 4000)
 
-			# Assert:
-			self.assertEqual(6353, total_wrapped_amount)
+			for (timestamp, expected_amount) in timestamp_amount_pairs:
+				# Act:
+				amount = database.cumulative_wrapped_amount_at(self._nem_to_unix_timestamp(timestamp))
+
+				# Assert:
+				self.assertEqual(expected_amount, amount, f'at timestamp {timestamp}')
+
+	def test_cumulative_wrapped_amount_at_is_calculated_correctly_when_requests_present(self):
+		self._assert_cumulative_wrapped_amount_at_is_calculated_correctly_at_timestamps([
+			(999, 0),
+			(1000, 1000),
+			(1001, 1000),
+
+			(1999, 1000),
+			(2000, 3021),
+			(2001, 3021),
+
+			(3999, 3021),
+			(4000, 6354),
+			(4001, 6354)
+		])
 
 	# endregion
 
@@ -408,6 +429,44 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 			# Act + Assert:
 			with self.assertRaises(sqlite3.IntegrityError):
 				database.mark_payout_sent(make_request(2), payout_transaction_hash)
+
+	# endregion
+
+	# region mark_payout_failed
+
+	def test_can_mark_payout_failed_single(self):
+		# Arrange:
+		seed_requests = [make_request(index) for index in range(0, 3)]
+
+		def post_insert_action(database):
+			database.mark_payout_failed(seed_requests[1], 'failed to send payout')
+
+		# Act + Assert:
+		self._assert_can_insert_requests(seed_requests, [
+			make_request_tuple(0),
+			# should reflect status change from post_insert_action
+			make_request_tuple(1, status_id=3),
+			make_request_tuple(2),
+		], expected_errors=[
+			make_request_error_tuple(1, 'failed to send payout')
+		], post_insert_action=post_insert_action)
+
+	def test_can_mark_payout_failed_single_scoped_to_sub_index(self):
+		# Arrange:
+		seed_requests = [make_request(index, hash_index=0, transaction_subindex=index) for index in range(0, 3)]
+
+		def post_insert_action(database):
+			database.mark_payout_failed(seed_requests[1], 'failed to send payout')
+
+		# Act + Assert:
+		self._assert_can_insert_requests(seed_requests, [
+			make_request_tuple(0, hash_index=0),
+			# should reflect status change from post_insert_action
+			make_request_tuple(1, hash_index=0, transaction_subindex=1, status_id=3),
+			make_request_tuple(2, hash_index=0, transaction_subindex=2)
+		], expected_errors=[
+			make_request_error_tuple(1, 'failed to send payout', hash_index=0, transaction_subindex=1)
+		], post_insert_action=post_insert_action)
 
 	# endregion
 
@@ -480,7 +539,7 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 
 	# endregion
 
-	# region set_block_timestamp
+	# region set_block_timestamp / lookup_block_timestamp / lookup_block_height
 
 	def test_can_set_block_timestamp(self):
 		# Arrange:
@@ -502,6 +561,63 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 		self._assert_can_insert_requests([], [], expected_block_metadatas=[
 			(1122, self._nem_to_unix_timestamp(77553))
 		], post_insert_action=post_insert_action)
+
+	@staticmethod
+	def _create_database_for_block_metadata_lookup_tests(connection):
+		database = WrapRequestDatabase(connection, MockNetworkFacade())
+		database.create_tables()
+
+		database.set_block_timestamp(111, 1000)
+		database.set_block_timestamp(222, 2000)
+		database.set_block_timestamp(333, 4000)
+		return database
+
+	def _assert_lookup_block_timestamp(self, height, expected_timestamp):
+		# Arrange:
+		with sqlite3.connect(':memory:') as connection:
+			database = self._create_database_for_block_metadata_lookup_tests(connection)
+
+			# Act:
+			timestamp = database.lookup_block_timestamp(height)
+
+			# Assert:
+			self.assertEqual(expected_timestamp, timestamp)
+
+	def test_cannot_lookup_block_timestamp_when_not_present(self):
+		self._assert_lookup_block_timestamp(300, None)
+
+	def test_can_lookup_block_timestamp_when_present(self):
+		self._assert_lookup_block_timestamp(222, self._nem_to_unix_timestamp(2000))
+
+	def _assert_lookup_block_heights(self, timestamp_height_pairs):
+		# Arrange:
+		with sqlite3.connect(':memory:') as connection:
+			database = self._create_database_for_block_metadata_lookup_tests(connection)
+
+			for (timestamp, expected_height) in timestamp_height_pairs:
+				# Act:
+				height = database.lookup_block_height(self._nem_to_unix_timestamp(timestamp))
+
+				# Assert:
+				self.assertEqual(expected_height, height, f'at timestamp {timestamp}')
+
+	def test_cannot_lookup_block_height_when_no_matching_block_present(self):
+		self._assert_lookup_block_heights([(900, 0)])
+
+	def test_can_lookup_block_height_when_present(self):
+		self._assert_lookup_block_heights([
+			(999, 0),
+			(1000, 111),
+			(1001, 111),
+
+			(1999, 111),
+			(2000, 222),
+			(2001, 222),
+
+			(3999, 222),
+			(4000, 333),
+			(4001, 333)
+		])
 
 	# endregion
 
