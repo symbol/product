@@ -17,7 +17,8 @@ async def server(aiohttp_client):
 
 
 def _create_config(blockchain, server):  # pylint: disable=redefined-outer-name
-	return NetworkConfiguration(blockchain, 'testnet', server.make_url(''), None, {})
+	bridge_address = 'TCYIHED7HZQ3IPBY5WRDPDLV5CCMMOOVSOMSPD6B' if 'nem' == blockchain else 'TDDRDLK5QL2LJPZOF26QFXB24TJ5HGB4NDTF6SI'
+	return NetworkConfiguration(blockchain, 'testnet', server.make_url(''), bridge_address, {})
 
 
 async def test_can_load_nem_network_facade(server):  # pylint: disable=redefined-outer-name

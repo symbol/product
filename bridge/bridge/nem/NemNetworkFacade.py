@@ -16,9 +16,19 @@ class NemNetworkFacade:
 		self.network = NetworkLocator.find_by_name(Network.NETWORKS, config.network)
 		self.rosetta_network_id = ('NEM', self.network.name)
 		self.sdk_facade = NemFacade(self.network)
+		self.bridge_address = Address(config.bridge_address)
 
-	def create_connector(self):
+	@staticmethod
+	def is_currency_mosaic_id(mosaic_id):
+		"""Determines if a mosaic id represents the network currency mosaic id."""
+
+		return ('nem', 'xem') == mosaic_id
+
+	def create_connector(self, **kwargs):
 		"""Creates a connector to the network."""
+
+		if kwargs.get('require_rosetta', False):
+			return NemConnector(self.config.extensions['rosetta_endpoint'])
 
 		return NemConnector(self.config.endpoint)
 
@@ -38,12 +48,6 @@ class NemNetworkFacade:
 		"""Extracts a wrap request (or error) from a transaction ."""
 
 		return [extract_wrap_request_from_transaction(self.network, is_valid_address, mosaic_id, transaction_with_meta_json)]
-
-	async def lookup_account_balance(self, address, mosaic_id=None):
-		"""Gets account balance for network currency."""
-
-		connector = self.create_connector()
-		return await connector.balance(address, mosaic_id)
 
 	def create_transfer_transaction(self, timestamp, balance_transfer, use_version_one=True, mosaic_id=None):
 		"""Creates a transfer transaction."""
