@@ -148,7 +148,7 @@ const formatBaseTransaction = (data, filter) => {
 		direction: isOutgoing ? TRANSACTION_DIRECTION.OUTGOING : isIncoming ? TRANSACTION_DIRECTION.INCOMING : null,
 		height: data.height || null,
 		signature: data.signature,
-		fee: data.fee,
+		fee: data.fee || 0,
 		amount: 0,
 		value: [],
 		body: [
@@ -336,8 +336,8 @@ const formatMultisigTransaction = (data, filter) => {
 	const formattedEmbeddedTransaction = transactionFromDTO(rawEmbeddedTransaction, filter.address);
 
 	// Fees breakdown
-	const multisigFee = truncateDecimals(formattedTransaction.fee || 0, config.NATIVE_MOSAIC_DIVISIBILITY);
-	const embeddedTransactionsFee = truncateDecimals(formattedEmbeddedTransaction.fee || 0, config.NATIVE_MOSAIC_DIVISIBILITY);
+	const multisigFee = truncateDecimals(formattedTransaction.fee, config.NATIVE_MOSAIC_DIVISIBILITY);
+	const embeddedTransactionsFee = truncateDecimals(formattedEmbeddedTransaction.fee, config.NATIVE_MOSAIC_DIVISIBILITY);
 	const signaturesFee = truncateDecimals(
 		data.embeddedTransactions[0].signatures.reduce((total, signature) => total + (signature.fee || 0), 0),
 		config.NATIVE_MOSAIC_DIVISIBILITY
