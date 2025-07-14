@@ -1,7 +1,7 @@
-aiohttp==3.12.13
+aiohttp==3.12.14
 APScheduler==3.11.0
 Flask==3.1.1
-pandas==2.3.0
+pandas==2.3.1
 plotly==5.24.1
 symbol-sdk-python==3.2.3
 zenlog==1.1
