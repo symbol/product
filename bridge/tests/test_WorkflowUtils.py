@@ -116,40 +116,45 @@ class MockDatabase:
 		return self._max_processed_height
 
 
-async def test_calculate_search_range_returns_correct_range_using_default_chain_height():
+async def _assert_calculate_search_range_returns_correct_range(expected_range, config_extensions, start_height_override_property_name):
 	# Arrange:
 	connector = MockConnector(2000, 1982)
 	database = MockDatabase(777)
 
 	# Act:
-	height_range = await calculate_search_range(connector, database)
+	search_range = await calculate_search_range(connector, database, config_extensions, start_height_override_property_name)
 
 	# Assert:
-	assert (778, 1983) == height_range
+	assert expected_range == search_range
 
 
-async def test_calculate_search_range_returns_correct_range_using_finalized_chain_height():
-	# Arrange:
-	connector = MockConnector(2000, 1982)
-	database = MockDatabase(777)
-
-	# Act:
-	height_range = await calculate_search_range(connector, database, True)
-
-	# Assert:
-	assert (778, 1983) == height_range
+async def test_calculate_search_range_returns_correct_range_with_no_adjustments():
+	await _assert_calculate_search_range_returns_correct_range((778, 1983), {}, None)
 
 
-async def test_calculate_search_range_returns_correct_range_using_chain_height():
-	# Arrange:
-	connector = MockConnector(2000, 1982)
-	database = MockDatabase(777)
+async def test_calculate_search_range_returns_correct_range_with_start_height_adjustments():
+	# Assert: calculated start height used because it is higher
+	await _assert_calculate_search_range_returns_correct_range((778, 1983), {
+		'start_height_override': 345
+	}, 'start_height_override')
 
-	# Act:
-	height_range = await calculate_search_range(connector, database, False)
+	# Assert: override start height used because it is higher
+	await _assert_calculate_search_range_returns_correct_range((997, 1983), {
+		'start_height_override': 997
+	}, 'start_height_override')
 
-	# Assert:
-	assert (778, 2001) == height_range
+
+async def test_calculate_search_range_returns_correct_range_with_end_height_adjustments():
+	await _assert_calculate_search_range_returns_correct_range((778, 2033), {
+		'finalization_lookahead': 50
+	}, None)
+
+
+async def test_calculate_search_range_returns_correct_range_with_start_height_and_end_height_adjustments():
+	await _assert_calculate_search_range_returns_correct_range((997, 2033), {
+		'finalization_lookahead': 50,
+		'start_height_override': 997
+	}, 'start_height_override')
 
 # endregion
 

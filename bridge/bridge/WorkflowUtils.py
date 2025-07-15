@@ -28,17 +28,20 @@ def extract_mosaic_id(config, is_currency_mosaic_id=None):
 	return PrintableMosaicId(mosaic_id_parts, config_mosaic_id)
 
 
-async def calculate_search_range(connector, database, use_finalized_chain_height=True):
+async def calculate_search_range(connector, database, config_extensions, start_height_override_property_name=None):
 	"""
 	Calculates a search range of blocks given a connector and a database.
 	Start height is inclusive but end height is exclusive.
 	"""
 
-	chain_height = await (connector.finalized_chain_height if use_finalized_chain_height else connector.chain_height)()
-	end_height = chain_height + 1
+	chain_height = await connector.finalized_chain_height()
+	end_height = chain_height + 1 + int(config_extensions.get('finalization_lookahead', 0))
 
 	database_height = database.max_processed_height()
 	start_height = database_height + 1
+
+	if start_height_override_property_name:
+		start_height = max(start_height, int(config_extensions.get(start_height_override_property_name, 0)))
 
 	return (start_height, end_height)
 

@@ -9,7 +9,7 @@ from .main_impl import main_bootstrapper, print_banner
 
 
 async def _download_requests(database, connector, network, is_valid_address):
-	(start_height, end_height) = await calculate_search_range(connector, database)
+	(start_height, end_height) = await calculate_search_range(connector, database, network.config.extensions)
 	mosaic_id = extract_mosaic_id(network.config, network.is_currency_mosaic_id)
 
 	print(f'searching address {network.bridge_address} for {mosaic_id.formatted} deposits in range [{start_height}, {end_height})...')
