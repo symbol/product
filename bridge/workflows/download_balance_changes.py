@@ -46,8 +46,8 @@ class BalanceChangesDownloader:
 
 async def download_balance_changes(database, network):
 	connector = network.create_connector()
-	(start_height, end_height) = await calculate_search_range(connector, database)
-	start_height = max(start_height, int(network.config.extensions.get('balance_change_scan_start_height') or 1))
+	config_extensions = network.config.extensions
+	(start_height, end_height) = await calculate_search_range(connector, database, config_extensions, 'balance_change_scan_start_height')
 
 	print(f'searching blockchain for balance changes to {network.bridge_address} in range [{start_height}, {end_height})...')
 
