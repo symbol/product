@@ -214,6 +214,14 @@ def _assert_sample_balance_transfer_common(transaction, expected_transaction_typ
 	assert nc.Timestamp(12341234 + 60 * 60) == transaction.deadline
 
 
+def _assert_transfer_transaction_version_one_without_message(transaction):
+	_assert_sample_balance_transfer_common(transaction, nc.TransferTransactionV1)
+	assert nc.Amount(400_000) == transaction.fee
+	assert nc.Amount(88888_000000) == transaction.amount
+
+	assert transaction.message is None
+
+
 def test_can_create_transfer_transaction_version_one_without_message():
 	# Arrange:
 	facade = NemNetworkFacade(_create_config())
@@ -222,11 +230,21 @@ def test_can_create_transfer_transaction_version_one_without_message():
 	transaction = facade.create_transfer_transaction(NetworkTimestamp(12341234), _create_sample_balance_transfer(''))
 
 	# Assert:
-	_assert_sample_balance_transfer_common(transaction, nc.TransferTransactionV1)
-	assert nc.Amount(400_000) == transaction.fee
-	assert nc.Amount(88888_000000) == transaction.amount
+	_assert_transfer_transaction_version_one_without_message(transaction)
 
-	assert transaction.message is None
+
+def test_can_create_transfer_transaction_version_one_without_message_with_explicit_currency_mosaic_id():
+	# Arrange:
+	facade = NemNetworkFacade(_create_config())
+
+	# Act:
+	transaction = facade.create_transfer_transaction(
+		NetworkTimestamp(12341234),
+		_create_sample_balance_transfer(''),
+		mosaic_id=('nem', 'xem'))
+
+	# Assert:
+	_assert_transfer_transaction_version_one_without_message(transaction)
 
 
 def test_can_create_transfer_transaction_version_one_with_message():
@@ -245,18 +263,6 @@ def test_can_create_transfer_transaction_version_one_with_message():
 
 	assert nc.MessageType.PLAIN == transaction.message.message_type
 	assert b'this is a medium sized message!!!' == transaction.message.message
-
-
-def test_cannot_create_transfer_transaction_version_one_with_custom_mosaic():
-	# Arrange:
-	facade = NemNetworkFacade(_create_config())
-
-	# Act + Assert:
-	with pytest.raises(ValueError, match='version one does not support custom mosaics'):
-		facade.create_transfer_transaction(
-			NetworkTimestamp(12341234),
-			_create_sample_balance_transfer(''),
-			mosaic_id=('foo', 'bar'))
 
 
 def test_can_create_transfer_transaction_version_two_without_message():
@@ -307,18 +313,7 @@ def test_can_create_transfer_transaction_version_two_with_message():
 	assert b'this is a medium sized message!!!' == transaction.message.message
 
 
-def test_can_create_transfer_transaction_version_two_with_custom_mosaic():
-	# Arrange:
-	facade = NemNetworkFacade(_create_config())
-
-	# Act + Assert:
-	transaction = facade.create_transfer_transaction(
-		NetworkTimestamp(12341234),
-		_create_sample_balance_transfer(''),
-		False,
-		mosaic_id=('foo', 'bar'))
-
-	# Assert:
+def _assert_transfer_transaction_version_two_with_custom_mosaic(transaction):
 	_assert_sample_balance_transfer_common(transaction, nc.TransferTransactionV2)
 	assert nc.Amount(400_000) == transaction.fee
 	assert nc.Amount(1_000000) == transaction.amount
@@ -331,5 +326,34 @@ def test_can_create_transfer_transaction_version_two_with_custom_mosaic():
 	assert nc.Amount(88888_000000) == mosaic.amount
 
 	assert transaction.message is None
+
+
+def test_cannot_create_transfer_transaction_version_one_with_custom_mosaic():
+	# Arrange:
+	facade = NemNetworkFacade(_create_config())
+
+	# Act:
+	transaction = facade.create_transfer_transaction(
+		NetworkTimestamp(12341234),
+		_create_sample_balance_transfer(''),
+		mosaic_id=('foo', 'bar'))
+
+	# Assert: version two transaction is returned even though version one is preferred because version one doesn't support custom mosaics
+	_assert_transfer_transaction_version_two_with_custom_mosaic(transaction)
+
+
+def test_can_create_transfer_transaction_version_two_with_custom_mosaic():
+	# Arrange:
+	facade = NemNetworkFacade(_create_config())
+
+	# Act + Assert:
+	transaction = facade.create_transfer_transaction(
+		NetworkTimestamp(12341234),
+		_create_sample_balance_transfer(''),
+		('foo', 'bar'),
+		False)
+
+	# Assert:
+	_assert_transfer_transaction_version_two_with_custom_mosaic(transaction)
 
 # endregion
