@@ -41,6 +41,7 @@ def make_wrap_error_result(transaction_identifier, *args):
 def check_address_and_make_wrap_result(is_valid_address, transaction_identifier, amount, destination_address):
 	"""Checks the destination address and returns an appropriate wrap request result based on its validity."""
 
+	destination_address = destination_address.strip('\0\n\t ')
 	if not is_valid_address(destination_address):
 		error_message = f'destination address {destination_address} is invalid'
 		return make_wrap_error_result(transaction_identifier, error_message)
