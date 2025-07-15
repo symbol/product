@@ -62,38 +62,49 @@ class WrapRequestTest(unittest.TestCase):
 
 	# region check_address_and_make_wrap_result
 
+	VALID_ADDRESS = '0x4838b106fce9647bdf1e7877bf73ce8b0bad5f97'
+
 	@staticmethod
 	def _check_address_and_make_wrap_result(transaction_identifier, amount, destination_address):
 		def is_valid_address(address):
-			return '0x4838b106fce9647bdf1e7877bf73ce8b0bad5f97' == address
+			return WrapRequestTest.VALID_ADDRESS == address
 
 		return check_address_and_make_wrap_result(is_valid_address, transaction_identifier, amount, destination_address)
 
-	def test_can_check_address_and_make_wrap_result_when_address_is_valid(self):
+	def _assert_can_check_address_and_make_wrap_result_when_address_is_valid(self, destination_address):
 		# Arrange:
 		transaction_identifier = TransactionIdentifier(*self._create_test_transaction_identifier_arguments())
 
 		# Act:
-		result = self._check_address_and_make_wrap_result(transaction_identifier, 4444, '0x4838b106fce9647bdf1e7877bf73ce8b0bad5f97')
+		result = self._check_address_and_make_wrap_result(transaction_identifier, 4444, destination_address)
 
 		# Assert:
-		expected_request = WrapRequest(
-			*self._create_test_transaction_identifier_arguments(),
-			4444,
-			'0x4838b106fce9647bdf1e7877bf73ce8b0bad5f97')
+		expected_request = WrapRequest(*self._create_test_transaction_identifier_arguments(), 4444, self.VALID_ADDRESS)
 		assert_wrap_request_success(self, result, expected_request)
 
-	def test_can_check_address_and_make_wrap_result_when_address_is_invalid(self):
+	def test_can_check_address_and_make_wrap_result_when_address_is_valid(self):
+		self._assert_can_check_address_and_make_wrap_result_when_address_is_valid(self.VALID_ADDRESS)
+
+	def test_can_check_address_and_make_wrap_result_when_address_is_valid_ignores_whitespace(self):
+		self._assert_can_check_address_and_make_wrap_result_when_address_is_valid(f'\0\n\t {self.VALID_ADDRESS}\0\n\t ')
+
+	def _assert_can_check_address_and_make_wrap_result_when_address_is_invalid(self, destination_address):
 		# Arrange:
 		transaction_identifier = TransactionIdentifier(*self._create_test_transaction_identifier_arguments())
 
 		# Act:
-		result = self._check_address_and_make_wrap_result(transaction_identifier, 4444, '0x4838b106fce9647bdf1e7877bf73ce8b0bad')
+		result = self._check_address_and_make_wrap_result(transaction_identifier, 4444, destination_address)
 
 		# Assert:
 		expected_error = WrapError(
 			*self._create_test_transaction_identifier_arguments(),
 			'destination address 0x4838b106fce9647bdf1e7877bf73ce8b0bad is invalid')
 		assert_wrap_request_failure(self, result, expected_error)
+
+	def test_can_check_address_and_make_wrap_result_when_address_is_invalid(self):
+		self._assert_can_check_address_and_make_wrap_result_when_address_is_invalid(self.VALID_ADDRESS[:-4])
+
+	def test_can_check_address_and_make_wrap_result_when_address_is_invalid_ignores_whitespace(self):
+		self._assert_can_check_address_and_make_wrap_result_when_address_is_invalid(f'\0\n\t {self.VALID_ADDRESS[:-4]}\0\n\t ')
 
 	# endregion
