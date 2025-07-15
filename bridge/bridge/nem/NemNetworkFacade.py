@@ -49,11 +49,10 @@ class NemNetworkFacade:
 
 		return [extract_wrap_request_from_transaction(self.network, is_valid_address, mosaic_id, transaction_with_meta_json)]
 
-	def create_transfer_transaction(self, timestamp, balance_transfer, use_version_one=True, mosaic_id=None):
+	def create_transfer_transaction(self, timestamp, balance_transfer, mosaic_id=None, prefer_version_one=True):
 		"""Creates a transfer transaction."""
 
-		if use_version_one and mosaic_id:
-			raise ValueError('version one does not support custom mosaics')
+		use_version_one = prefer_version_one and (mosaic_id is None or self.is_currency_mosaic_id(mosaic_id))
 
 		fee = calculate_transfer_transaction_fee(balance_transfer.amount // 1_000000, balance_transfer.message)
 		transfer_json = {
