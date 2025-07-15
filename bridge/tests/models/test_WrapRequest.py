@@ -8,6 +8,7 @@ from bridge.models.WrapRequest import (
 	WrapError,
 	WrapRequest,
 	check_address_and_make_wrap_result,
+	coerce_zero_balance_wrap_request_to_error,
 	make_wrap_error_result,
 	make_wrap_request_result
 )
@@ -16,6 +17,8 @@ from ..test.BridgeTestUtils import assert_wrap_request_failure, assert_wrap_requ
 
 
 class WrapRequestTest(unittest.TestCase):
+	VALID_ADDRESS = '0x4838b106fce9647bdf1e7877bf73ce8b0bad5f97'
+
 	# region test utils
 
 	@staticmethod
@@ -36,13 +39,10 @@ class WrapRequestTest(unittest.TestCase):
 		transaction_identifier = TransactionIdentifier(*self._create_test_transaction_identifier_arguments())
 
 		# Act:
-		result = make_wrap_request_result(transaction_identifier, 8888_000000, '0x4838b106fce9647bdf1e7877bf73ce8b0bad5f97')
+		result = make_wrap_request_result(transaction_identifier, 8888_000000, self.VALID_ADDRESS)
 
 		# Assert:
-		expected_request = WrapRequest(
-			*self._create_test_transaction_identifier_arguments(),
-			8888_000000,
-			'0x4838b106fce9647bdf1e7877bf73ce8b0bad5f97')
+		expected_request = WrapRequest(*self._create_test_transaction_identifier_arguments(), 8888_000000, self.VALID_ADDRESS)
 		assert_wrap_request_success(self, result, expected_request)
 
 	def test_can_make_wrap_error_result(self):
@@ -53,16 +53,45 @@ class WrapRequestTest(unittest.TestCase):
 		result = make_wrap_error_result(transaction_identifier, 'this is an error message')
 
 		# Assert:
-		expected_error = WrapError(
-			*self._create_test_transaction_identifier_arguments(),
-			'this is an error message')
+		expected_error = WrapError(*self._create_test_transaction_identifier_arguments(), 'this is an error message')
+		assert_wrap_request_failure(self, result, expected_error)
+
+	# endregion
+
+	# region coerce_zero_balance_wrap_request_to_error
+
+	def test_coerce_zero_balance_wrap_request_to_error_does_not_change_nonzero_wrap_request(self):
+		# Arrange:
+		transaction_identifier = TransactionIdentifier(*self._create_test_transaction_identifier_arguments())
+		result = coerce_zero_balance_wrap_request_to_error(make_wrap_request_result(transaction_identifier, 8888_000000, self.VALID_ADDRESS))
+
+		# Assert:
+		expected_request = WrapRequest(*self._create_test_transaction_identifier_arguments(), 8888_000000, self.VALID_ADDRESS)
+		assert_wrap_request_success(self, result, expected_request)
+
+	def test_coerce_zero_balance_wrap_request_to_error_does_not_change_error(self):
+		# Arrange:
+		transaction_identifier = TransactionIdentifier(*self._create_test_transaction_identifier_arguments())
+
+		# Act:
+		result = coerce_zero_balance_wrap_request_to_error(make_wrap_error_result(transaction_identifier, 'this is an error message'))
+
+		# Assert:
+		expected_error = WrapError(*self._create_test_transaction_identifier_arguments(), 'this is an error message')
+		assert_wrap_request_failure(self, result, expected_error)
+
+	def test_coerce_zero_balance_wrap_request_to_error_changes_zero_wrap_request_to_error(self):
+		# Arrange:
+		transaction_identifier = TransactionIdentifier(*self._create_test_transaction_identifier_arguments())
+		result = coerce_zero_balance_wrap_request_to_error(make_wrap_request_result(transaction_identifier, 0, self.VALID_ADDRESS))
+
+		# Assert:
+		expected_error = WrapError(*self._create_test_transaction_identifier_arguments(), 'wrap request must have nonzero amount')
 		assert_wrap_request_failure(self, result, expected_error)
 
 	# endregion
 
 	# region check_address_and_make_wrap_result
-
-	VALID_ADDRESS = '0x4838b106fce9647bdf1e7877bf73ce8b0bad5f97'
 
 	@staticmethod
 	def _check_address_and_make_wrap_result(transaction_identifier, amount, destination_address):
