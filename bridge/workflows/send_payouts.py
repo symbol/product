@@ -33,7 +33,7 @@ class ConversionRateManager:
 
 async def _send_payout(network, request, conversion_rate_calculator):
 	mosaic_id = extract_mosaic_id(network.config, network.is_currency_mosaic_id)
-	sender = TransactionSender(network, mosaic_id.args)
+	sender = TransactionSender(network, mosaic_id.id)
 	transfer_amount = conversion_rate_calculator(request.amount)
 
 	print(

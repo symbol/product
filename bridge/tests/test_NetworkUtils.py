@@ -31,12 +31,12 @@ def _create_config(server=None):  # pylint: disable=redefined-outer-name
 
 def test_can_create_transaction_sender():
 	# Act:
-	sender = TransactionSender(NemNetworkFacade(_create_config()), [True, 123])
+	sender = TransactionSender(NemNetworkFacade(_create_config()), ('foo', 'bar'))
 
 	# Assert:
 	assert 'testnet' == sender.network_facade.network.name
 	assert PrivateKey('F490900201CD6365A89FDD41B7B2CC71E9537455E8AB626A47EBFA0681E5BE62') == sender.sender_key_pair.private_key
-	assert [True, 123] == sender.send_arguments
+	assert ('foo', 'bar') == sender.mosaic_id
 	assert sender.timestamp is None
 
 
@@ -167,9 +167,9 @@ async def test_try_send_transfer_fails_when_transfer_amount_is_less_than_total_f
 		update_config=set_conversion_fee)
 
 
-async def test_try_send_transfer_succeeds_with_custom_send_arguments(server):  # pylint: disable=redefined-outer-name
-	# Arrange: False should be passed to NemNetworkFacade.create_transfer_transaction and result in V2 transaction
-	sender = TransactionSender(NemNetworkFacade(_create_config(server)), [False])
+async def test_try_send_transfer_succeeds_with_custom_mosaic_id(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	sender = TransactionSender(NemNetworkFacade(_create_config(server)), ('foo', 'bar'))
 	await sender.init()
 
 	# Act:
@@ -186,8 +186,8 @@ async def test_try_send_transfer_succeeds_with_custom_send_arguments(server):  #
 	assert 1 == len(transaction.mosaics)
 
 	mosaic = transaction.mosaics[0].mosaic
-	assert b'nem' == mosaic.mosaic_id.namespace_id.name
-	assert b'xem' == mosaic.mosaic_id.name
+	assert b'foo' == mosaic.mosaic_id.namespace_id.name
+	assert b'bar' == mosaic.mosaic_id.name
 	assert nc.Amount(12345000 - 100000) == mosaic.amount
 
 	assert b'test message 2' == transaction.message.message
