@@ -18,7 +18,7 @@ async def _download_requests(database, connector, network, is_valid_address):
 	error_count = 0
 	heights = set()
 	async for transaction in get_incoming_transactions_from(connector, network.bridge_address, start_height, end_height):
-		results = network.extract_wrap_request_from_transaction(is_valid_address, transaction, *mosaic_id.args)
+		results = network.extract_wrap_request_from_transaction(is_valid_address, transaction, mosaic_id.id)
 		for result in results:
 			result = coerce_zero_balance_wrap_request_to_error(result)
 			if result.is_error:

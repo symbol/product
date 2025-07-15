@@ -16,7 +16,7 @@ def test_extract_mosaic_id_can_parse_default():
 	mosaic_id = extract_mosaic_id(config)
 
 	# Assert:
-	assert () == mosaic_id.args
+	assert mosaic_id.id is None
 	assert 'currency' == mosaic_id.formatted
 
 
@@ -28,7 +28,7 @@ def test_extract_mosaic_id_can_parse_symbol_style_mosaic_id():
 	mosaic_id = extract_mosaic_id(config)
 
 	# Assert:
-	assert (0x5D6CFC64A20E86E6,) == mosaic_id.args
+	assert 0x5D6CFC64A20E86E6 == mosaic_id.id
 	assert '5D6CFC64A20E86E6' == mosaic_id.formatted
 
 
@@ -40,7 +40,7 @@ def test_extract_mosaic_id_can_parse_symbol_style_mosaic_id_with_currency_predic
 	mosaic_id = extract_mosaic_id(config, lambda mosaic_id: 0x5D6CFC64A20E86E6 == mosaic_id)
 
 	# Assert:
-	assert () == mosaic_id.args
+	assert mosaic_id.id is None
 	assert '5D6CFC64A20E86E6' == mosaic_id.formatted
 
 
@@ -52,7 +52,7 @@ def test_extract_mosaic_id_can_parse_symbol_style_mosaic_id_with_currency_predic
 	mosaic_id = extract_mosaic_id(config, lambda mosaic_id: 0x5D6CFC64A20E86E6 != mosaic_id)
 
 	# Assert:
-	assert (0x5D6CFC64A20E86E6,) == mosaic_id.args
+	assert 0x5D6CFC64A20E86E6 == mosaic_id.id
 	assert '5D6CFC64A20E86E6' == mosaic_id.formatted
 
 
@@ -64,7 +64,7 @@ def test_extract_mosaic_id_can_parse_nem_style_mosaic_id():
 	mosaic_id = extract_mosaic_id(config)
 
 	# Assert:
-	assert ('foo', 'bar') == mosaic_id.args
+	assert ('foo', 'bar') == mosaic_id.id
 	assert 'foo:bar' == mosaic_id.formatted
 
 
@@ -76,7 +76,7 @@ def test_extract_mosaic_id_can_parse_nem_style_mosaic_id_with_currency_predicate
 	mosaic_id = extract_mosaic_id(config, lambda mosaic_id: ('foo', 'bar') == mosaic_id)
 
 	# Assert:
-	assert () == mosaic_id.args
+	assert mosaic_id.id is None
 	assert 'foo:bar' == mosaic_id.formatted
 
 
@@ -88,7 +88,7 @@ def test_extract_mosaic_id_can_parse_nem_style_mosaic_id_with_currency_predicate
 	mosaic_id = extract_mosaic_id(config, lambda mosaic_id: ('foo', 'bar') != mosaic_id)
 
 	# Assert:
-	assert ('foo', 'bar') == mosaic_id.args
+	assert ('foo', 'bar') == mosaic_id.id
 	assert 'foo:bar' == mosaic_id.formatted
 
 # endregion

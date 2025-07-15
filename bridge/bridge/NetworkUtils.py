@@ -17,12 +17,12 @@ class TransactionSender:
 		private_key = PrivateKey(network_facade.config.extensions['signing_private_key'])
 		return network_facade.sdk_facade.KeyPair(private_key)
 
-	def __init__(self, network_facade, send_arguments=None):
+	def __init__(self, network_facade, mosaic_id=None):
 		"""Creates a sender."""
 
 		self.network_facade = network_facade
 		self.sender_key_pair = self._load_key_pair(self.network_facade)
-		self.send_arguments = send_arguments or []
+		self.mosaic_id = mosaic_id
 
 		self.percentage_conversion_fee = Decimal(network_facade.config.extensions.get('percentage_conversion_fee', 0))
 		self.timestamp = None
@@ -40,7 +40,7 @@ class TransactionSender:
 			return [
 				self.timestamp,
 				BalanceTransfer(self.sender_key_pair.public_key, destination_address, amount, messsage),
-				*(self.send_arguments)
+				self.mosaic_id
 			]
 
 		transaction_fee = self.network_facade.create_transfer_transaction(*make_create_arguments(amount)).fee.value
