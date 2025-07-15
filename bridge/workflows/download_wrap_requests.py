@@ -2,6 +2,7 @@ import asyncio
 
 from symbollightapi.connector.ConnectorExtensions import get_incoming_transactions_from, query_block_timestamps
 
+from bridge.models.WrapRequest import coerce_zero_balance_wrap_request_to_error
 from bridge.WorkflowUtils import calculate_search_range, extract_mosaic_id
 
 from .main_impl import main_bootstrapper, print_banner
@@ -19,6 +20,7 @@ async def _download_requests(database, connector, network, is_valid_address):
 	async for transaction in get_incoming_transactions_from(connector, network.bridge_address, start_height, end_height):
 		results = network.extract_wrap_request_from_transaction(is_valid_address, transaction, *mosaic_id.args)
 		for result in results:
+			result = coerce_zero_balance_wrap_request_to_error(result)
 			if result.is_error:
 				database.add_error(result.error)
 				error_count += 1
