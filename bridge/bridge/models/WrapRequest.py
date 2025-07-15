@@ -36,6 +36,19 @@ def make_wrap_error_result(transaction_identifier, *args):
 # endregion
 
 
+# region coerce_zero_balance_wrap_request_to_error
+
+def coerce_zero_balance_wrap_request_to_error(result):  # pylint: disable=invalid-name
+	"""Coerces a zero balance wrap request into an error."""
+
+	if not result.is_error and 0 == result.request.amount:
+		return make_wrap_error_result(result.request, 'wrap request must have nonzero amount')
+
+	return result
+
+# endregion
+
+
 # region check_address_and_make_wrap_result
 
 def check_address_and_make_wrap_result(is_valid_address, transaction_identifier, amount, destination_address):
