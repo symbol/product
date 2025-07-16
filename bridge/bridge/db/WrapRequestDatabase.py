@@ -125,12 +125,29 @@ class WrapRequestDatabase:
 		max_request_height = cursor.fetchone()[0]
 		return max(max_error_height or 0, max_request_height or 0)
 
-	def cumulative_wrapped_amount_at(self, timestamp):
+	def cumulative_wrapped_amount_at(self, timestamp, relative_block_adjustment=0):
 		"""Gets cumulative amount of wrapped tokens issued at or before timestamp."""
+
+		if relative_block_adjustment:
+			height = self.lookup_block_height(timestamp)
+			timestamp = self._lookup_block_timestamp_closest(height + relative_block_adjustment)
 
 		cursor = self.connection.cursor()
 		cursor.execute('''
 			SELECT SUM(wrap_request.amount)
+			FROM wrap_request
+			LEFT JOIN block_metadata ON wrap_request.request_transaction_height = block_metadata.height
+			WHERE block_metadata.timestamp <= ?
+		''', (timestamp,))
+		sum_amount = cursor.fetchone()[0]
+		return sum_amount or 0
+
+	def cumulative_fees_paid_at(self, timestamp):
+		"""Gets cumulative amount of fees paid at or before timestamp."""
+
+		cursor = self.connection.cursor()
+		cursor.execute('''
+			SELECT SUM(wrap_request.payout_total_fee)
 			FROM wrap_request
 			LEFT JOIN block_metadata ON wrap_request.request_transaction_height = block_metadata.height
 			WHERE block_metadata.timestamp <= ?
@@ -222,6 +239,14 @@ class WrapRequestDatabase:
 		cursor = self.connection.cursor()
 		cursor.execute(
 			'''SELECT timestamp FROM block_metadata WHERE height = ?''',
+			(height,))
+		fetch_result = cursor.fetchone()
+		return fetch_result[0] if fetch_result else None
+
+	def _lookup_block_timestamp_closest(self, height):
+		cursor = self.connection.cursor()
+		cursor.execute(
+			'''SELECT MAX(timestamp) FROM block_metadata WHERE height <= ?''',
 			(height,))
 		fetch_result = cursor.fetchone()
 		return fetch_result[0] if fetch_result else None
