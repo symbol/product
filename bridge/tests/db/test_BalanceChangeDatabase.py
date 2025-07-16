@@ -144,22 +144,28 @@ class BalanceChangeDatabaseTest(unittest.TestCase):
 
 	# region balance_at
 
+	@staticmethod
+	def _create_database_for_balance_at_tests(connection):
+		database = BalanceChangeDatabase(connection)
+		database.create_tables()
+
+		transfers = [
+			make_transfer_tuple(1111, 'foo.bar', 111),
+			make_transfer_tuple(7777, 'alpha.beta', 222),
+			make_transfer_tuple(2345, 'foo.bar', 333),
+			make_transfer_tuple(5555, 'alpha.beta', 123),
+			make_transfer_tuple(3330, 'foo.bar', -100)
+		]
+
+		for transfer in transfers:
+			database.add_transfer(*transfer)
+
+		return database
+
 	def _assert_balance_at(self, currency, height, expected_balance):
 		# Arrange:
 		with sqlite3.connect(':memory:') as connection:
-			database = BalanceChangeDatabase(connection)
-			database.create_tables()
-
-			transfers = [
-				make_transfer_tuple(1111, 'foo.bar', 111),
-				make_transfer_tuple(7777, 'alpha.beta', 222),
-				make_transfer_tuple(2345, 'foo.bar', 333),
-				make_transfer_tuple(5555, 'alpha.beta', 123),
-				make_transfer_tuple(3330, 'foo.bar', -100)
-			]
-
-			for transfer in transfers:
-				database.add_transfer(*transfer)
+			database = self._create_database_for_balance_at_tests(connection)
 
 			# Act:
 			balance = database.balance_at(height, currency)
@@ -167,8 +173,15 @@ class BalanceChangeDatabaseTest(unittest.TestCase):
 			# Assert:
 			self.assertEqual(expected_balance, balance)
 
-	def test_balance_at_returns_zero_when_no_matching_currency_transfers(self):
-		self._assert_balance_at('foo.baz', 10000, 0)
+	def test_balance_at_fails_when_empty(self):
+		# Arrange:
+		with sqlite3.connect(':memory:') as connection:
+			database = BalanceChangeDatabase(connection)
+			database.create_tables()
+
+			# Act + Assert:
+			with self.assertRaisesRegex(ValueError, 'requested balance at 1000 beyond current database height 0'):
+				database.balance_at(1000, 'foo.bar')
 
 	def test_balance_at_returns_sum_of_amounts_less_than_equal_to_height(self):
 		self._assert_balance_at('foo.bar', 0, 0)
@@ -181,6 +194,15 @@ class BalanceChangeDatabaseTest(unittest.TestCase):
 
 		self._assert_balance_at('foo.bar', 3329, 444)
 		self._assert_balance_at('foo.bar', 3330, 344)
-		self._assert_balance_at('foo.bar', 10000, 344)
+		self._assert_balance_at('foo.bar', 7777, 344)
 
+	def test_balance_at_fails_for_queries_past_max_processed_height(self):
+		# Arrange:
+		for height in [7778, 10000]:
+			with sqlite3.connect(':memory:') as connection:
+				database = self._create_database_for_balance_at_tests(connection)
+
+				# Act + Assert:
+				with self.assertRaisesRegex(ValueError, f'requested balance at {height} beyond current database height 7777'):
+					database.balance_at(height, 'foo.bar')
 	# endregion
