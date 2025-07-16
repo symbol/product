@@ -336,7 +336,11 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 			# Assert:
 			self.assertEqual(0, amount)
 
-	def _assert_cumulative_wrapped_amount_at_is_calculated_correctly_at_timestamps(self, timestamp_amount_pairs):
+	def _assert_cumulative_wrapped_amount_at_is_calculated_correctly_at_timestamps(
+		self,
+		timestamp_amount_pairs,
+		relative_block_adjustment=0
+	):
 		# Arrange:
 		with sqlite3.connect(':memory:') as connection:
 			database = WrapRequestDatabase(connection, MockNetworkFacade())
@@ -353,7 +357,7 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 
 			for (timestamp, expected_amount) in timestamp_amount_pairs:
 				# Act:
-				amount = database.cumulative_wrapped_amount_at(self._nem_to_unix_timestamp(timestamp))
+				amount = database.cumulative_wrapped_amount_at(self._nem_to_unix_timestamp(timestamp), relative_block_adjustment)
 
 				# Assert:
 				self.assertEqual(expected_amount, amount, f'at timestamp {timestamp}')
@@ -371,6 +375,82 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 			(3999, 3021),
 			(4000, 6354),
 			(4001, 6354)
+		])
+
+	def test_cumulative_wrapped_amount_at_is_calculated_correctly_when_requests_present_with_block_adjustment(self):
+		self._assert_cumulative_wrapped_amount_at_is_calculated_correctly_at_timestamps([
+			(999, 0),
+			(1999, 0),
+
+			(2000, 1000),
+			(2001, 1000),
+
+			(3999, 1000),
+			(4000, 3021),
+			(4001, 3021)
+		], -1)
+
+	# endregion
+
+	# region cumulative_fees_paid_at
+
+	def test_cumulative_fees_paid_at_is_zero_when_empty(self):
+		# Arrange:
+		with sqlite3.connect(':memory:') as connection:
+			database = WrapRequestDatabase(connection, MockNetworkFacade())
+			database.create_tables()
+
+			# Act:
+			amount = database.cumulative_fees_paid_at(10000)
+
+			# Assert:
+			self.assertEqual(0, amount)
+
+	def _assert_cumulative_fees_paid_at_is_calculated_correctly_at_timestamps(self, timestamp_amount_pairs):
+		# Arrange:
+		with sqlite3.connect(':memory:') as connection:
+			database = WrapRequestDatabase(connection, MockNetworkFacade())
+			database.create_tables()
+
+			requests = [
+				make_request(0, amount=1000, height=111),
+				make_request(1, amount=3333, height=333),
+				make_request(2, amount=2020, height=222),
+				make_request(3, amount=1, height=222)
+			]
+
+			for request in requests:
+				database.add_request(request)
+
+			database.mark_payout_sent(requests[0], Hash256(HASHES[0]), 100)
+			database.mark_payout_sent(requests[1], Hash256(HASHES[1]), 300)
+			database.mark_payout_sent(requests[2], Hash256(HASHES[2]), 200)
+			database.mark_payout_sent(requests[3], Hash256(HASHES[3]), 400)
+
+			database.set_block_timestamp(111, 1000)
+			database.set_block_timestamp(222, 2000)
+			database.set_block_timestamp(333, 4000)
+
+			for (timestamp, expected_amount) in timestamp_amount_pairs:
+				# Act:
+				amount = database.cumulative_fees_paid_at(self._nem_to_unix_timestamp(timestamp))
+
+				# Assert:
+				self.assertEqual(expected_amount, amount, f'at timestamp {timestamp}')
+
+	def test_cumulative_fees_paid_at_is_calculated_correctly_when_requests_present(self):
+		self._assert_cumulative_fees_paid_at_is_calculated_correctly_at_timestamps([
+			(999, 0),
+			(1000, 100),
+			(1001, 100),
+
+			(1999, 100),
+			(2000, 700),
+			(2001, 700),
+
+			(3999, 700),
+			(4000, 1000),
+			(4001, 1000)
 		])
 
 	# endregion

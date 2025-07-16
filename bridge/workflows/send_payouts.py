@@ -25,7 +25,8 @@ class ConversionRateManager:
 
 		native_balance = self.databases.balance_change.balance_at(historical_native_height, self.mosaic_id)
 		wrapped_balance = self.databases.wrap_request.cumulative_wrapped_amount_at(timestamp)
-		unwrapped_balance = self.databases.unwrap_request.cumulative_wrapped_amount_at(timestamp)
+		wrapped_balance -= self.databases.wrap_request.cumulative_fees_paid_at(timestamp)
+		unwrapped_balance = self.databases.unwrap_request.cumulative_wrapped_amount_at(timestamp, -1)  # use unwrap total from previous block
 
 		calculator = ConversionRateCalculator(native_balance, wrapped_balance, unwrapped_balance)
 		return calculator.to_native_amount if self.is_unwrap_mode else calculator.to_wrapped_amount
