@@ -96,13 +96,15 @@ async def _assert_try_send_transfer_success(server, amount, message, expected_fe
 	sender = await _create_transaction_sender(server, update_config)
 
 	# Act:
-	(is_success, transaction_hash) = await sender.try_send_transfer('NADP63FUUAOS2LDXY75SJ4TOLW4S7YXEAGT25IXG', amount, message)
+	result = await sender.try_send_transfer('NADP63FUUAOS2LDXY75SJ4TOLW4S7YXEAGT25IXG', amount, message)
 
 	# Assert:
-	assert is_success
-	assert 1 == len(server.mock.request_json_payloads)
+	assert not result.is_error
+	assert expected_fee == result.total_fee
+	assert result.error_message is None
 
-	(transaction, _) = _decode_and_check_announce_payload(server.mock.request_json_payloads[0], transaction_hash)
+	assert 1 == len(server.mock.request_json_payloads)
+	(transaction, _) = _decode_and_check_announce_payload(server.mock.request_json_payloads[0], result.transaction_hash)
 
 	_assert_sample_balance_transfer_common(transaction, nc.TransferTransactionV1)
 
@@ -119,11 +121,13 @@ async def _assert_try_send_transfer_failure(server, amount, expected_error_messa
 	sender = await _create_transaction_sender(server, update_config)
 
 	# Act:
-	(is_success, error_message) = await sender.try_send_transfer('NADP63FUUAOS2LDXY75SJ4TOLW4S7YXEAGT25IXG', amount)
+	result = await sender.try_send_transfer('NADP63FUUAOS2LDXY75SJ4TOLW4S7YXEAGT25IXG', amount)
 
 	# Assert:
-	assert not is_success
-	assert expected_error_message == error_message
+	assert result.is_error
+	assert result.transaction_hash is None
+	assert result.total_fee is None
+	assert expected_error_message == result.error_message
 
 
 async def test_try_send_transfer_succeeds_without_message(server):  # pylint: disable=redefined-outer-name
@@ -173,13 +177,15 @@ async def test_try_send_transfer_succeeds_with_custom_mosaic_id(server):  # pyli
 	await sender.init()
 
 	# Act:
-	(is_success, transaction_hash) = await sender.try_send_transfer('NADP63FUUAOS2LDXY75SJ4TOLW4S7YXEAGT25IXG', 12345000, 'test message 2')
+	result = await sender.try_send_transfer('NADP63FUUAOS2LDXY75SJ4TOLW4S7YXEAGT25IXG', 12345000, 'test message 2')
 
 	# Assert:
-	assert is_success
-	assert 1 == len(server.mock.request_json_payloads)
+	assert not result.is_error
+	assert 100000 == result.total_fee
+	assert result.error_message is None
 
-	(transaction, _) = _decode_and_check_announce_payload(server.mock.request_json_payloads[0], transaction_hash)
+	assert 1 == len(server.mock.request_json_payloads)
+	(transaction, _) = _decode_and_check_announce_payload(server.mock.request_json_payloads[0], result.transaction_hash)
 
 	_assert_sample_balance_transfer_common(transaction, nc.TransferTransactionV2)
 

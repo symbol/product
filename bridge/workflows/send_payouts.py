@@ -53,15 +53,15 @@ async def send_payouts(conversion_rate_manager, database, network):
 	error_count = 0
 	for request in requests_to_send:
 		conversion_rate_calculator = await conversion_rate_manager.create_calculator(request.transaction_height)
-		(is_success, error_message_or_transaction_hash) = await _send_payout(network, request, conversion_rate_calculator)
-		if is_success:
-			database.mark_payout_sent(request, error_message_or_transaction_hash)
-			print(f'  sent transaction with hash: {error_message_or_transaction_hash}')
-			count += 1
-		else:
-			database.mark_payout_failed(request, error_message_or_transaction_hash)
-			print(f'  payout failed with error: {error_message_or_transaction_hash}')
+		send_result = await _send_payout(network, request, conversion_rate_calculator)
+		if send_result.is_error:
+			database.mark_payout_failed(request, send_result.error_message)
+			print(f'  payout failed with error: {send_result.error_message}')
 			error_count += 1
+		else:
+			database.mark_payout_sent(request, send_result.transaction_hash, send_result.total_fee)
+			print(f'  sent transaction with hash: {send_result.transaction_hash} ({send_result.total_fee} fee deducted)')
+			count += 1
 
 	print_banner([
 		f'==>      total payouts processed: {count}',

@@ -44,6 +44,7 @@ class WrapRequestDatabase:
 			destination_address blob,
 			payout_status integer,
 			payout_transaction_hash blob UNIQUE,
+			payout_total_fee integer,
 			PRIMARY KEY (request_transaction_hash, request_transaction_subindex)
 		)''')
 		cursor.execute('''CREATE TABLE IF NOT EXISTS payout_transaction (
@@ -84,7 +85,7 @@ class WrapRequestDatabase:
 		"""Adds a request to the request table."""
 
 		cursor = self.connection.cursor()
-		cursor.execute('''INSERT INTO wrap_request VALUES (?, ?, ?, ?, ?, ?, ?, ?)''', (
+		cursor.execute('''INSERT INTO wrap_request VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)''', (
 			request.transaction_height,
 			request.transaction_hash.bytes,
 			request.transaction_subindex,
@@ -92,6 +93,7 @@ class WrapRequestDatabase:
 			request.amount,
 			request.destination_address,
 			WrapRequestStatus.UNPROCESSED.value,
+			None,
 			None))
 		self.connection.commit()
 
@@ -136,19 +138,20 @@ class WrapRequestDatabase:
 		sum_amount = cursor.fetchone()[0]
 		return sum_amount or 0
 
-	def mark_payout_sent(self, request, payout_transaction_hash):
+	def mark_payout_sent(self, request, payout_transaction_hash, payout_total_fee):
 		"""Marks a payout as sent with the transaction hash of the payout."""
 
 		cursor = self.connection.cursor()
 		cursor.execute(
 			'''
 				UPDATE wrap_request
-				SET payout_status = ?, payout_transaction_hash = ?
+				SET payout_status = ?, payout_transaction_hash = ?, payout_total_fee = ?
 				WHERE request_transaction_hash IS ? AND request_transaction_subindex IS ?
 			''',
 			(
 				WrapRequestStatus.SENT.value,
 				payout_transaction_hash.bytes,
+				payout_total_fee,
 				request.transaction_hash.bytes,
 				request.transaction_subindex
 			))
