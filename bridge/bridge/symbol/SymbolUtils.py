@@ -41,29 +41,20 @@ def extract_wrap_request_from_transaction(network, is_valid_address, is_matching
 	predicates = Predicates(is_valid_address, is_matching_mosaic_id)
 
 	transaction_json = transaction_with_meta_json['transaction']
-	transaction_type = transaction_json['type']
+	meta_json = transaction_with_meta_json['meta']
+
+	if 'hash' in meta_json:
+		transaction_hash = Hash256(meta_json['hash'])
+		transaction_subindex = -1
+	else:
+		transaction_hash = Hash256(meta_json['aggregateHash'])
+		transaction_subindex = int(meta_json['index'])
 
 	transaction_identifier = TransactionIdentifier(
 		int(transaction_with_meta_json['meta']['height']),
-		Hash256(transaction_with_meta_json['meta']['hash']),
-		-1,
+		transaction_hash,
+		transaction_subindex,
 		network.public_key_to_address(PublicKey(transaction_json['signerPublicKey'])),
 	)
-
-	if transaction_type in (TransactionType.AGGREGATE_COMPLETE.value, TransactionType.AGGREGATE_BONDED.value):
-		embedded_results = []
-		for embedded_transaction_with_meta_json in transaction_json['transactions']:
-			embedded_transaction_json = embedded_transaction_with_meta_json['transaction']
-
-			transaction_identifier = TransactionIdentifier(
-				transaction_identifier.transaction_height,
-				transaction_identifier.transaction_hash,
-				embedded_transaction_with_meta_json['meta']['index'],
-				network.public_key_to_address(PublicKey(embedded_transaction_json['signerPublicKey']))
-			)
-
-			embedded_results.append(_process_transaction(predicates, transaction_identifier, embedded_transaction_json))
-
-		return embedded_results
 
 	return [_process_transaction(predicates, transaction_identifier, transaction_json)]
