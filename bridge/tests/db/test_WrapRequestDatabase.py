@@ -324,17 +324,20 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 
 	# region cumulative_wrapped_amount_at
 
-	def test_cumulative_wrapped_amount_at_is_zero_when_empty(self):
-		# Arrange:
-		with sqlite3.connect(':memory:') as connection:
-			database = WrapRequestDatabase(connection, MockNetworkFacade())
-			database.create_tables()
+	@staticmethod
+	def _create_database_for_cumulative_wrapped_amount_at_tests(connection):
+		database = WrapRequestDatabase(connection, MockNetworkFacade())
+		database.create_tables()
 
-			# Act:
-			amount = database.cumulative_wrapped_amount_at(10000)
+		database.add_request(make_request(0, amount=1000, height=111))
+		database.add_request(make_request(1, amount=3333, height=333))
+		database.add_request(make_request(2, amount=2020, height=222))
+		database.add_request(make_request(3, amount=1, height=222))
 
-			# Assert:
-			self.assertEqual(0, amount)
+		database.set_block_timestamp(111, 1000)
+		database.set_block_timestamp(222, 2000)
+		database.set_block_timestamp(333, 4000)
+		return database
 
 	def _assert_cumulative_wrapped_amount_at_is_calculated_correctly_at_timestamps(
 		self,
@@ -343,17 +346,7 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 	):
 		# Arrange:
 		with sqlite3.connect(':memory:') as connection:
-			database = WrapRequestDatabase(connection, MockNetworkFacade())
-			database.create_tables()
-
-			database.add_request(make_request(0, amount=1000, height=111))
-			database.add_request(make_request(1, amount=3333, height=333))
-			database.add_request(make_request(2, amount=2020, height=222))
-			database.add_request(make_request(3, amount=1, height=222))
-
-			database.set_block_timestamp(111, 1000)
-			database.set_block_timestamp(222, 2000)
-			database.set_block_timestamp(333, 4000)
+			database = self._create_database_for_cumulative_wrapped_amount_at_tests(connection)
 
 			for (timestamp, expected_amount) in timestamp_amount_pairs:
 				# Act:
@@ -361,6 +354,25 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 
 				# Assert:
 				self.assertEqual(expected_amount, amount, f'at timestamp {timestamp}')
+
+	def test_cumulative_wrapped_amount_at_fails_when_empty(self):
+		# Arrange:
+		with sqlite3.connect(':memory:') as connection:
+			database = WrapRequestDatabase(connection, MockNetworkFacade())
+			database.create_tables()
+
+			# Act + Assert:
+			with self.assertRaisesRegex(ValueError, 'requested wrapped amount at 2000 beyond current database timestamp 0'):
+				database.cumulative_wrapped_amount_at(2000)
+
+	def test_cumulative_wrapped_amount_at_fails_with_positive_block_adjustment(self):
+		# Arrange:
+		with sqlite3.connect(':memory:') as connection:
+			database = self._create_database_for_cumulative_wrapped_amount_at_tests(connection)
+
+			# Act + Assert:
+			with self.assertRaisesRegex(ValueError, 'relative_block_adjustment must not be positive'):
+				database.cumulative_wrapped_amount_at(2000, 1)
 
 	def test_cumulative_wrapped_amount_at_is_calculated_correctly_when_requests_present(self):
 		self._assert_cumulative_wrapped_amount_at_is_calculated_correctly_at_timestamps([
@@ -373,8 +385,7 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 			(2001, 3021),
 
 			(3999, 3021),
-			(4000, 6354),
-			(4001, 6354)
+			(4000, 6354)
 		])
 
 	def test_cumulative_wrapped_amount_at_is_calculated_correctly_when_requests_present_with_block_adjustment(self):
@@ -386,9 +397,28 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 			(2001, 1000),
 
 			(3999, 1000),
-			(4000, 3021),
-			(4001, 3021)
+			(4000, 3021)
 		], -1)
+
+	def _assert_cumulative_wrapped_amount_at_fails_for_queries_past_max_processed_height(self, relative_block_adjustment=0):
+		# Arrange:
+		for raw_timestamp in [4001, 10000]:
+			with sqlite3.connect(':memory:') as connection:
+				database = self._create_database_for_cumulative_wrapped_amount_at_tests(connection)
+
+				timestamp = self._nem_to_unix_timestamp(raw_timestamp)
+				max_timestamp = self._nem_to_unix_timestamp(4000)
+
+				# Act + Assert:
+				expected_error_message = f'requested wrapped amount at {timestamp} beyond current database timestamp {max_timestamp}'
+				with self.assertRaisesRegex(ValueError, expected_error_message):
+					database.cumulative_wrapped_amount_at(timestamp, relative_block_adjustment)
+
+	def test_cumulative_wrapped_amount_at_fails_for_queries_past_max_processed_height(self):
+		self._assert_cumulative_wrapped_amount_at_fails_for_queries_past_max_processed_height()
+
+	def test_cumulative_wrapped_amount_at_fails_for_queries_past_max_processed_height_with_block_adjustment(self):
+		self._assert_cumulative_wrapped_amount_at_fails_for_queries_past_max_processed_height(-1)
 
 	# endregion
 

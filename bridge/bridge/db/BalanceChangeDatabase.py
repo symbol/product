@@ -51,6 +51,10 @@ class BalanceChangeDatabase:
 	def balance_at(self, height, currency):
 		"""Calculates the balance for a currency at a height."""
 
+		max_processed_height = self.max_processed_height()
+		if height > max_processed_height:
+			raise ValueError(f'requested balance at {height} beyond current database height {max_processed_height}')
+
 		cursor = self.connection.cursor()
 		cursor.execute(
 			'''
