@@ -1,3 +1,4 @@
+import math
 from binascii import unhexlify
 
 from symbolchain.CryptoTypes import Hash256, PublicKey
@@ -8,12 +9,27 @@ from ..models.WrapRequest import TransactionIdentifier, check_address_and_make_w
 # region calculate_transfer_transaction_fee
 
 
-def calculate_transfer_transaction_fee(xem_amount, message=None):
-	"""Calculates a transfer transaction fee given the amount of XEM (whole units) and message to send."""
+def calculate_transfer_transaction_fee(mosaic_fee_information, mosaic_amount, message=None):
+	"""Calculates a transfer transaction fee given the amount of mosaic (atomic units) and message to send."""
+
+	divisor = 10 ** (6 if not mosaic_fee_information else mosaic_fee_information.divisibility)
+	mosaic_amount = mosaic_amount // divisor  # convert to whole units
+
+	if mosaic_fee_information:
+		nem_supply = 8999999999
+		mosaic_total_units = mosaic_fee_information.supply * (10 ** mosaic_fee_information.divisibility)
+
+		xem_equivalent_amount = int(nem_supply * mosaic_amount / mosaic_fee_information.supply)
+		supply_related_adjustment = int(0.8 * math.log(9_000_000_000_000_000 / mosaic_total_units))
+	else:
+		xem_equivalent_amount = mosaic_amount
+		supply_related_adjustment = 0
+
+	xem_transfer_fee = min(25, max(1, xem_equivalent_amount // 10_000))
+	transfer_fee = max(1, xem_transfer_fee - supply_related_adjustment)
 
 	message_fee = 0 if not message else len(message) // 32 + 1
-	transfer_fee = min(25, max(1, xem_amount // 10_000))
-	return 50_000 * (message_fee + transfer_fee)
+	return (message_fee + transfer_fee) * 50000
 
 # endregion
 

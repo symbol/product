@@ -4,6 +4,7 @@ from binascii import hexlify
 from symbolchain.CryptoTypes import Hash256
 from symbolchain.nc import MessageType, NetworkType, TransactionType, TransferTransactionV1, TransferTransactionV2
 from symbolchain.nem.Network import Address, Network
+from symbollightapi.connector.NemConnector import MosaicFeeInformation
 
 from bridge.models.WrapRequest import WrapRequest
 from bridge.nem.NemUtils import calculate_transfer_transaction_fee, extract_wrap_request_from_transaction
@@ -21,21 +22,57 @@ class NemUtilsTest(unittest.TestCase):
 	# region calculate_transfer_transaction_fee
 
 	def test_can_calculate_xem_transfer_fee_without_message(self):
-		self.assertEqual(50000 * 25, calculate_transfer_transaction_fee(500000))
-		self.assertEqual(50000 * 25, calculate_transfer_transaction_fee(250000))
-		self.assertEqual(50000 * 20, calculate_transfer_transaction_fee(200000))
-		self.assertEqual(50000 * 20, calculate_transfer_transaction_fee(201111))
-		self.assertEqual(50000 * 1, calculate_transfer_transaction_fee(10000))
-		self.assertEqual(50000 * 1, calculate_transfer_transaction_fee(1))
+		for fee_information in [None, MosaicFeeInformation(8999999999, 6)]:
+			self.assertEqual(25 * 50000, calculate_transfer_transaction_fee(fee_information, 500000 * 1000000))
+			self.assertEqual(25 * 50000, calculate_transfer_transaction_fee(fee_information, 250000 * 1000000))
+			self.assertEqual(20 * 50000, calculate_transfer_transaction_fee(fee_information, 200000 * 1000000))
+			self.assertEqual(20 * 50000, calculate_transfer_transaction_fee(fee_information, 201111 * 1000000))
+			self.assertEqual(1 * 50000, calculate_transfer_transaction_fee(fee_information, 10000 * 1000000))
+			self.assertEqual(1 * 50000, calculate_transfer_transaction_fee(fee_information, 1 * 1000000))
 
 	def test_can_calculate_xem_transfer_fee_with_message(self):
-		self.assertEqual(50000 * 20, calculate_transfer_transaction_fee(200000, b''))
-		self.assertEqual(50000 * 21, calculate_transfer_transaction_fee(200000, b'0' * 31))
-		self.assertEqual(50000 * 22, calculate_transfer_transaction_fee(200000, b'0' * 32))
-		self.assertEqual(50000 * 22, calculate_transfer_transaction_fee(200000, b'0' * 33))
-		self.assertEqual(50000 * 30, calculate_transfer_transaction_fee(200000, b'0' * 319))
-		self.assertEqual(50000 * 31, calculate_transfer_transaction_fee(200000, b'0' * 320))
-		self.assertEqual(50000 * 31, calculate_transfer_transaction_fee(200000, b'0' * 321))
+		for fee_information in [None, MosaicFeeInformation(8999999999, 6)]:
+			self.assertEqual(20 * 50000, calculate_transfer_transaction_fee(fee_information, 200000 * 1000000, b''))
+			self.assertEqual(21 * 50000, calculate_transfer_transaction_fee(fee_information, 200000 * 1000000, b'0' * 31))
+			self.assertEqual(22 * 50000, calculate_transfer_transaction_fee(fee_information, 200000 * 1000000, b'0' * 32))
+			self.assertEqual(22 * 50000, calculate_transfer_transaction_fee(fee_information, 200000 * 1000000, b'0' * 33))
+			self.assertEqual(30 * 50000, calculate_transfer_transaction_fee(fee_information, 200000 * 1000000, b'0' * 319))
+			self.assertEqual(31 * 50000, calculate_transfer_transaction_fee(fee_information, 200000 * 1000000, b'0' * 320))
+			self.assertEqual(31 * 50000, calculate_transfer_transaction_fee(fee_information, 200000 * 1000000, b'0' * 321))
+
+	def test_can_calculate_mosaic_transfer_fee_without_message(self):
+		fee_information = MosaicFeeInformation(100000000, 3)
+		self.assertEqual(1 * 50000, calculate_transfer_transaction_fee(fee_information, 12))
+		self.assertEqual(1 * 50000, calculate_transfer_transaction_fee(fee_information, 111 * 1000))
+
+		self.assertEqual(1 * 50000, calculate_transfer_transaction_fee(fee_information, 1222 * 1000))
+		self.assertEqual(2 * 50000, calculate_transfer_transaction_fee(fee_information, 1223 * 1000))
+		self.assertEqual(2 * 50000, calculate_transfer_transaction_fee(fee_information, 1224 * 1000))
+
+		self.assertEqual(2 * 50000, calculate_transfer_transaction_fee(fee_information, 1333 * 1000))
+		self.assertEqual(3 * 50000, calculate_transfer_transaction_fee(fee_information, 1334 * 1000))
+		self.assertEqual(3 * 50000, calculate_transfer_transaction_fee(fee_information, 1335 * 1000))
+
+		self.assertEqual(3 * 50000, calculate_transfer_transaction_fee(fee_information, 1444 * 1000))
+		self.assertEqual(4 * 50000, calculate_transfer_transaction_fee(fee_information, 1445 * 1000))
+		self.assertEqual(4 * 50000, calculate_transfer_transaction_fee(fee_information, 1446 * 1000))
+
+		self.assertEqual(10 * 50000, calculate_transfer_transaction_fee(fee_information, 2112 * 1000))
+		self.assertEqual(13 * 50000, calculate_transfer_transaction_fee(fee_information, 2445 * 1000))
+		self.assertEqual(16 * 50000, calculate_transfer_transaction_fee(fee_information, 2778 * 1000))
+		self.assertEqual(16 * 50000, calculate_transfer_transaction_fee(fee_information, 3000 * 1000))
+		self.assertEqual(16 * 50000, calculate_transfer_transaction_fee(fee_information, 10000 * 1000))
+		self.assertEqual(16 * 50000, calculate_transfer_transaction_fee(fee_information, 100000 * 1000))
+
+	def test_can_calculate_mosaic_transfer_fee_with_message(self):
+		fee_information = MosaicFeeInformation(100000000, 3)
+		self.assertEqual(13 * 50000, calculate_transfer_transaction_fee(fee_information, 2445 * 1000, b''))
+		self.assertEqual(14 * 50000, calculate_transfer_transaction_fee(fee_information, 2445 * 1000, b'0' * 31))
+		self.assertEqual(15 * 50000, calculate_transfer_transaction_fee(fee_information, 2445 * 1000, b'0' * 32))
+		self.assertEqual(15 * 50000, calculate_transfer_transaction_fee(fee_information, 2445 * 1000, b'0' * 33))
+		self.assertEqual(23 * 50000, calculate_transfer_transaction_fee(fee_information, 2445 * 1000, b'0' * 319))
+		self.assertEqual(24 * 50000, calculate_transfer_transaction_fee(fee_information, 2445 * 1000, b'0' * 320))
+		self.assertEqual(24 * 50000, calculate_transfer_transaction_fee(fee_information, 2445 * 1000, b'0' * 321))
 
 	# endregion
 
