@@ -19,15 +19,11 @@ class SymbolNetworkFacade:
 		self.rosetta_network_id = ('Symbol', self.network.name)
 		self.sdk_facade = SymbolFacade(self.network)
 		self.bridge_address = Address(config.bridge_address)
+
 		self.currency_mosaic_ids = []
 
-	def is_currency_mosaic_id(self, mosaic_id):
-		"""Determines if a mosaic id represents the network currency mosaic id."""
-
-		return mosaic_id in self.currency_mosaic_ids
-
-	async def load_currency_mosaic_ids(self):
-		"""Loads currency mosaic ids."""
+	async def init(self):
+		"""Downloads information from the network to initialize the facade."""
 
 		connector = self.create_connector()
 		currency_mosaic_id = await connector.currency_mosaic_id()
@@ -36,6 +32,11 @@ class SymbolNetworkFacade:
 			currency_mosaic_id,
 			generate_mosaic_alias_id('symbol.xym')
 		]
+
+	def is_currency_mosaic_id(self, mosaic_id):
+		"""Determines if a mosaic id represents the network currency mosaic id."""
+
+		return mosaic_id in self.currency_mosaic_ids
 
 	def create_connector(self, **_kwargs):
 		"""Creates a connector to the network."""

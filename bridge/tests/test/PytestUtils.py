@@ -102,6 +102,23 @@ async def create_simple_nem_client(aiohttp_client, address_to_balance_map=None):
 				]
 			})
 
+		async def mosaic_supply(self, request):
+			mosaic_id = request.rel_url.query['mosaicId']
+			return await self._process(request, {
+				'supply': 8999999999 if 'nem:xem' == mosaic_id else 123000000
+			})
+
+		async def mosaic_definition(self, request):
+			mosaic_id = request.rel_url.query['mosaicId']
+			return await self._process(request, {
+				'properties': [
+					{
+						'name': 'divisibility',
+						'value': '6' if 'nem:xem' == mosaic_id else '3'
+					}
+				]
+			})
+
 		async def announce_transaction(self, request):
 			request_json = await request.json()
 			self.request_json_payloads.append(request_json)
@@ -119,6 +136,8 @@ async def create_simple_nem_client(aiohttp_client, address_to_balance_map=None):
 	app.router.add_get('/time-sync/network-time', mock_server.network_time)
 	app.router.add_get('/account/get', mock_server.account_info)
 	app.router.add_get('/account/mosaic/owned', mock_server.account_mosaic_owned)
+	app.router.add_get('/mosaic/supply', mock_server.mosaic_supply)
+	app.router.add_get('/mosaic/definition', mock_server.mosaic_definition)
 	app.router.add_post('/transaction/announce', mock_server.announce_transaction)
 	server = await aiohttp_client(app)  # pylint: disable=redefined-outer-name
 

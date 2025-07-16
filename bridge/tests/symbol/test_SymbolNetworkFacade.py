@@ -28,7 +28,7 @@ async def server(aiohttp_client):
 # pylint: disable=invalid-name
 
 
-# region constructor, create_connector, make_address, is_valid_address_string
+# region constructor, init
 
 def _create_config(server=None):  # pylint: disable=redefined-outer-name
 	endpoint = server.make_url('') if server else 'http://foo.bar:1234'
@@ -47,6 +47,38 @@ def test_can_create_facade():
 	assert facade.network == facade.sdk_facade.network
 	assert Address('TDDRDLK5QL2LJPZOF26QFXB24TJ5HGB4NDTF6SI') == facade.bridge_address
 
+
+async def test_can_initialize_facade(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	facade = SymbolNetworkFacade(_create_config(server))
+
+	# Act:
+	await facade.init()
+
+	# Assert:
+	assert [0x72C0212E67A08BCE, 0xE74B99BA41F4AFEE] == facade.currency_mosaic_ids
+
+# endregion
+
+
+# region is_currency_mosaic_id
+
+async def test_can_detect_currency_mosaic_id(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	facade = SymbolNetworkFacade(_create_config(server))
+
+	# Act:
+	await facade.init()
+
+	# Assert:
+	assert facade.is_currency_mosaic_id(0x72C0212E67A08BCE)  # from /network/properties
+	assert facade.is_currency_mosaic_id(0xE74B99BA41F4AFEE)  # alias symbol.xym
+	assert not facade.is_currency_mosaic_id(0x6BED913FA20223F8)  # mainnet
+
+# endregion
+
+
+# region create_connector, make_address, is_valid_address_string
 
 def test_can_create_connector():
 	# Arrange:
@@ -102,23 +134,6 @@ def test_is_valid_address_string_only_returns_true_for_valid_addresses_on_networ
 # endregion
 
 
-# region is_currency_mosaic_id / load_currency_mosaic_ids
-
-async def test_can_detect_currency_mosaic_id(server):  # pylint: disable=redefined-outer-name
-	# Arrange:
-	facade = SymbolNetworkFacade(_create_config(server))
-
-	# Act:
-	await facade.load_currency_mosaic_ids()
-
-	# Assert:
-	assert facade.is_currency_mosaic_id(0x72C0212E67A08BCE)  # from /network/properties
-	assert facade.is_currency_mosaic_id(0xE74B99BA41F4AFEE)  # alias symbol.xym
-	assert not facade.is_currency_mosaic_id(0x6BED913FA20223F8)  # mainnet
-
-# endregion
-
-
 # region extract_wrap_request_from_transaction
 
 async def _assert_can_extract_wrap_request_from_transaction(
@@ -131,7 +146,7 @@ async def _assert_can_extract_wrap_request_from_transaction(
 	# pylint: disable=redefined-outer-name
 	# Arrange:
 	facade = SymbolNetworkFacade(_create_config(server))
-	await facade.load_currency_mosaic_ids()
+	await facade.init()
 
 	# Act:
 	results = facade.extract_wrap_request_from_transaction(lambda _address: is_valid_address, {

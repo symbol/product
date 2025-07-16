@@ -25,11 +25,11 @@ async def server(aiohttp_client):
 # pylint: disable=invalid-name
 
 
-# region constructor, create_connector, make_address, is_valid_address_string
+# region constructor, init
 
-def _create_config(server=None):  # pylint: disable=redefined-outer-name
+def _create_config(server=None, config_extensions=None):  # pylint: disable=redefined-outer-name
 	endpoint = server.make_url('') if server else 'http://foo.bar:1234'
-	return NetworkConfiguration('nem', 'testnet', endpoint, 'TCYIHED7HZQ3IPBY5WRDPDLV5CCMMOOVSOMSPD6B', {})
+	return NetworkConfiguration('nem', 'testnet', endpoint, 'TCYIHED7HZQ3IPBY5WRDPDLV5CCMMOOVSOMSPD6B', config_extensions or {})
 
 
 def test_can_create_facade():
@@ -42,6 +42,39 @@ def test_can_create_facade():
 	assert facade.network == facade.sdk_facade.network
 	assert Address('TCYIHED7HZQ3IPBY5WRDPDLV5CCMMOOVSOMSPD6B') == facade.bridge_address
 
+
+async def test_can_initialize_facade(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	facade = NemNetworkFacade(_create_config(server, {
+		'mosaic_id': 'foo:bar'
+	}))
+
+	# Act:
+	await facade.init()
+
+	# Assert:
+	assert 123000000 == facade.mosaic_fee_information.supply
+	assert 3 == facade.mosaic_fee_information.divisibility
+
+# endregion
+
+
+# region is_currency_mosaic_id
+
+async def test_can_detect_currency_mosaic_id():
+	# Arrange:
+	facade = NemNetworkFacade(_create_config())
+
+	# Act + Assert:
+	assert facade.is_currency_mosaic_id(('nem', 'xem'))
+	assert not facade.is_currency_mosaic_id(('foo', 'xem'))
+	assert not facade.is_currency_mosaic_id(('nem', 'bar'))
+	assert not facade.is_currency_mosaic_id(('foo', 'bar'))
+
+# endregion
+
+
+# region create_connector, make_address, is_valid_address_string
 
 def test_can_create_connector():
 	# Arrange:
@@ -93,21 +126,6 @@ def test_is_valid_address_string_only_returns_true_for_valid_addresses_on_networ
 	assert not facade.is_valid_address_string('NCHESTYVD2P6P646AMY7WSNG73PCPZDUQNSD6JAK')    # nem mainnet
 	assert not facade.is_valid_address_string('0x4838b106fce9647bdf1e7877bf73ce8b0bad5f97')  # ethereum
 	assert not facade.is_valid_address_string('TAUPP4BRGNQP5KG2QY53FNYZVZ7SDXQVS5BG2IQ')     # symbol testnet
-
-# endregion
-
-
-# region is_currency_mosaic_id
-
-async def test_can_detect_currency_mosaic_id():
-	# Arrange:
-	facade = NemNetworkFacade(_create_config())
-
-	# Act + Assert:
-	assert facade.is_currency_mosaic_id(('nem', 'xem'))
-	assert not facade.is_currency_mosaic_id(('foo', 'xem'))
-	assert not facade.is_currency_mosaic_id(('nem', 'bar'))
-	assert not facade.is_currency_mosaic_id(('foo', 'bar'))
 
 # endregion
 
@@ -194,11 +212,11 @@ async def test_can_extract_wrap_request_from_transaction_matching_custom_mosaic(
 
 # region create_transfer_transaction
 
-def _create_sample_balance_transfer(message):
+def _create_sample_balance_transfer(message, amount=88888_000000):
 	return BalanceTransfer(
 		PublicKey('3917578FF27A88B20E137D9D2E54E775163F9C493A193A64F96748EBF8B21F3C'),
 		Address('TCQKTUUNUOPQGDQIDQT2CCJGQZ4QNAAGBZRV5YJJ'),
-		88888_000000,
+		amount,
 		message)
 
 
@@ -315,7 +333,7 @@ def test_can_create_transfer_transaction_version_two_with_message():
 
 def _assert_transfer_transaction_version_two_with_custom_mosaic(transaction):
 	_assert_sample_balance_transfer_common(transaction, nc.TransferTransactionV2)
-	assert nc.Amount(400_000) == transaction.fee
+	assert nc.Amount(850_000) == transaction.fee
 	assert nc.Amount(1_000000) == transaction.amount
 
 	assert 1 == len(transaction.mosaics)
@@ -323,33 +341,35 @@ def _assert_transfer_transaction_version_two_with_custom_mosaic(transaction):
 	mosaic = transaction.mosaics[0].mosaic
 	assert b'foo' == mosaic.mosaic_id.namespace_id.name
 	assert b'bar' == mosaic.mosaic_id.name
-	assert nc.Amount(88888_000000) == mosaic.amount
+	assert nc.Amount(88887_000) == mosaic.amount
 
 	assert transaction.message is None
 
 
-def test_cannot_create_transfer_transaction_version_one_with_custom_mosaic():
+async def test_cannot_create_transfer_transaction_version_one_with_custom_mosaic(server):  # pylint: disable=redefined-outer-name
 	# Arrange:
-	facade = NemNetworkFacade(_create_config())
+	facade = NemNetworkFacade(_create_config(server, {'mosaic_id': 'foo:bar'}))
+	await facade.init()
 
 	# Act:
 	transaction = facade.create_transfer_transaction(
 		NetworkTimestamp(12341234),
-		_create_sample_balance_transfer(''),
+		_create_sample_balance_transfer('', amount=88887_000),
 		mosaic_id=('foo', 'bar'))
 
 	# Assert: version two transaction is returned even though version one is preferred because version one doesn't support custom mosaics
 	_assert_transfer_transaction_version_two_with_custom_mosaic(transaction)
 
 
-def test_can_create_transfer_transaction_version_two_with_custom_mosaic():
+async def test_can_create_transfer_transaction_version_two_with_custom_mosaic(server):  # pylint: disable=redefined-outer-name
 	# Arrange:
-	facade = NemNetworkFacade(_create_config())
+	facade = NemNetworkFacade(_create_config(server, {'mosaic_id': 'foo:bar'}))
+	await facade.init()
 
 	# Act + Assert:
 	transaction = facade.create_transfer_transaction(
 		NetworkTimestamp(12341234),
-		_create_sample_balance_transfer(''),
+		_create_sample_balance_transfer('', amount=88887_000),
 		('foo', 'bar'),
 		False)
 

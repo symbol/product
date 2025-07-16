@@ -18,6 +18,14 @@ class NemNetworkFacade:
 		self.sdk_facade = NemFacade(self.network)
 		self.bridge_address = Address(config.bridge_address)
 
+		self.mosaic_fee_information = None
+
+	async def init(self):
+		"""Downloads information from the network to initialize the facade."""
+
+		connector = self.create_connector()
+		self.mosaic_fee_information = await connector.mosaic_fee_information(self.config.extensions['mosaic_id'].split(':'))
+
 	@staticmethod
 	def is_currency_mosaic_id(mosaic_id):
 		"""Determines if a mosaic id represents the network currency mosaic id."""
@@ -54,7 +62,7 @@ class NemNetworkFacade:
 
 		use_version_one = prefer_version_one and (mosaic_id is None or self.is_currency_mosaic_id(mosaic_id))
 
-		fee = calculate_transfer_transaction_fee(balance_transfer.amount // 1_000000, balance_transfer.message)
+		fee = calculate_transfer_transaction_fee(self.mosaic_fee_information, balance_transfer.amount, balance_transfer.message)
 		transfer_json = {
 			'signer_public_key': balance_transfer.signer_public_key,
 			'recipient_address': balance_transfer.recipient_address,
