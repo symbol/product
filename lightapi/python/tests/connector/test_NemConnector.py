@@ -178,7 +178,7 @@ ACCOUNT_INFO_4 = {
 # region server fixture
 
 @pytest.fixture
-async def server(aiohttp_client):
+async def server(aiohttp_client):  # pylint: disable=too-many-statements
 	class MockNemServer:
 		def __init__(self):
 			self.urls = []
@@ -186,6 +186,7 @@ async def server(aiohttp_client):
 			self.request_json_payloads = []
 			self.simulate_network_error = False
 			self.simulate_validation_error = False
+			self.exclude_mosaic_divisibility_property = False
 
 		async def chain_height(self, request):
 			return await self._process(request, {'height': 1234})
@@ -230,6 +231,36 @@ async def server(aiohttp_client):
 					{'quantity': 51890200000, 'mosaicId': {'namespaceId': 'nem', 'name': 'xem'}},
 					{'quantity': 99887766000, 'mosaicId': {'namespaceId': 'foo', 'name': 'bar'}},
 					{'quantity': 800000000000, 'mosaicId': {'namespaceId': 'foo', 'name': 'baz'}}
+				]
+			})
+
+		async def mosaic_supply(self, request):
+			mosaic_id_parts = request.rel_url.query['mosaicId'].split(':')
+			return await self._process(request, {
+				'mosaicId': {'namespaceId': mosaic_id_parts[0], 'name': mosaic_id_parts[1]},
+				'supply': 1234_000000
+			})
+
+		async def mosaic_definition(self, request):
+			mosaic_id_parts = request.rel_url.query['mosaicId'].split(':')
+
+			mosaic_properties = [
+				('initialSupply', '1000'),
+				('divisibility', '3'),
+				('supplyMutable', 'true'),
+				('transferable', 'false')
+			]
+
+			if self.exclude_mosaic_divisibility_property:
+				mosaic_properties.remove(mosaic_properties[1])
+
+			return await self._process(request, {
+				'id': {'namespaceId': mosaic_id_parts[0], 'name': mosaic_id_parts[1]},
+				'properties': [
+					{
+						'name': mosaic_property[0],
+						'value': mosaic_property[1]
+					} for mosaic_property in mosaic_properties
 				]
 			})
 
@@ -296,6 +327,8 @@ async def server(aiohttp_client):
 	app.router.add_get('/account/get', mock_server.account_info)
 	app.router.add_get('/account/get/forwarded', mock_server.account_info_forwarded)
 	app.router.add_get('/account/mosaic/owned', mock_server.account_mosaic_owned)
+	app.router.add_get('/mosaic/supply', mock_server.mosaic_supply)
+	app.router.add_get('/mosaic/definition', mock_server.mosaic_definition)
 	app.router.add_get('/transaction/get', mock_server.transaction_confirmed)
 	app.router.add_get('/account/transfers/incoming', mock_server.transfers)
 	app.router.add_post('/block/at/public', mock_server.block_at)
@@ -566,6 +599,43 @@ async def test_can_query_account_info_without_public_key(server):  # pylint: dis
 	assert 0.00022692560084412516 == account_info.importance
 	assert 0 == account_info.harvested_blocks
 	assert 'INACTIVE' == account_info.remote_status
+
+# endregion
+
+
+# region GET (mosaic_fee_information)
+
+async def test_can_query_mosaic_fee_information_with_explicit_divisibility(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	connector = NemConnector(server.make_url(''))
+
+	# Act:
+	fee_information = await connector.mosaic_fee_information(('foo', 'bar'))
+
+	# Assert:
+	assert [
+		f'{server.make_url("")}/mosaic/supply?mosaicId=foo:bar',
+		f'{server.make_url("")}/mosaic/definition?mosaicId=foo:bar'
+	] == server.mock.urls
+	assert 1234_000000 == fee_information.supply
+	assert 3 == fee_information.divisibility
+
+
+async def test_can_query_mosaic_fee_information_without_divisibility(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	connector = NemConnector(server.make_url(''))
+	server.mock.exclude_mosaic_divisibility_property = True
+
+	# Act:
+	fee_information = await connector.mosaic_fee_information(('foo', 'bar'))
+
+	# Assert:
+	assert [
+		f'{server.make_url("")}/mosaic/supply?mosaicId=foo:bar',
+		f'{server.make_url("")}/mosaic/definition?mosaicId=foo:bar'
+	] == server.mock.urls
+	assert 1234_000000 == fee_information.supply
+	assert 0 == fee_information.divisibility  # default divisibility is zero
 
 # endregion
 

@@ -1,5 +1,6 @@
 import asyncio
 from binascii import hexlify
+from collections import namedtuple
 
 from aiolimiter import AsyncLimiter
 from symbolchain.CryptoTypes import Hash256, PublicKey, Signature
@@ -11,6 +12,8 @@ from ..model.Endpoint import Endpoint
 from ..model.Exceptions import NodeException
 from ..model.NodeInfo import NodeInfo
 from .BasicConnector import BasicConnector
+
+MosaicFeeInformation = namedtuple('MosaicFeeInformation', ['supply', 'divisibility'])
 
 MICROXEM_PER_XEM = 1000000
 
@@ -169,6 +172,24 @@ class NemConnector(BasicConnector):
 		meta_json = response_json['meta']
 		account_info.remote_status = meta_json['remoteStatus']
 		return account_info
+
+	# endregion
+
+	# region GET (mosaic_fee_information)
+
+	async def mosaic_fee_information(self, mosaic_id):
+		"""Gets the information required to calculate the fee of the specified mosaic."""
+
+		formatted_mosaic_id = f'{mosaic_id[0]}:{mosaic_id[1]}'
+		supply = await self.get(f'mosaic/supply?mosaicId={formatted_mosaic_id}', 'supply')
+
+		properties_json = await self.get(f'mosaic/definition?mosaicId={formatted_mosaic_id}', 'properties')
+		divisibility_property_json = next(
+			(property_json for property_json in properties_json if 'divisibility' == property_json['name']),
+			None)
+		divisibility = int(divisibility_property_json['value']) if divisibility_property_json else 0
+
+		return MosaicFeeInformation(supply, divisibility)
 
 	# endregion
 
