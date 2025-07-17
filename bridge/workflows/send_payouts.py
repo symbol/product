@@ -14,14 +14,21 @@ class ConversionRateManager:
 		self.is_unwrap_mode = is_unwrap_mode
 		self.mosaic_id = extract_mosaic_id(network.config, network.is_currency_mosaic_id).formatted
 
-	async def create_calculator(self, height):
-
+	async def try_create_calculator(self, height):
 		historical_native_height = height
 		if self.is_unwrap_mode:
 			timestamp = self.databases.unwrap_request.lookup_block_timestamp(height)
 			historical_native_height = self.databases.wrap_request.lookup_block_height(timestamp)
 		else:
 			timestamp = self.databases.wrap_request.lookup_block_timestamp(height)
+
+		required_conditions = [
+			self.databases.balance_change.is_synced_at_height(historical_native_height),
+			self.databases.wrap_request.is_synced_at_timestamp(timestamp),
+			self.databases.unwrap_request.is_synced_at_timestamp(timestamp)
+		]
+		if not all(required_conditions):
+			return None
 
 		native_balance = self.databases.balance_change.balance_at(historical_native_height, self.mosaic_id)
 		wrapped_balance = self.databases.wrap_request.cumulative_wrapped_amount_at(timestamp)
@@ -52,8 +59,15 @@ async def send_payouts(conversion_rate_manager, database, network):
 
 	count = 0
 	error_count = 0
+	skip_count = 0
 	for request in requests_to_send:
-		conversion_rate_calculator = await conversion_rate_manager.create_calculator(request.transaction_height)
+		conversion_rate_calculator = await conversion_rate_manager.try_create_calculator(request.transaction_height)
+		if not conversion_rate_calculator:
+			print(f'  payout skipped due to missing data: {request.transaction_hash}:{request.transaction_subindex}')
+			skip_count += 1
+			continue
+
+		print(f'  processing payout: {request.transaction_hash}:{request. transaction_subindex}')
 		send_result = await _send_payout(network, request, conversion_rate_calculator)
 		if send_result.is_error:
 			database.mark_payout_failed(request, send_result.error_message)
@@ -66,7 +80,8 @@ async def send_payouts(conversion_rate_manager, database, network):
 
 	print_banner([
 		f'==>      total payouts processed: {count}',
-		f'==>        total payouts errored: {error_count}'
+		f'==>        total payouts errored: {error_count}',
+		f'==>        total payouts skipped: {skip_count}'
 	])
 
 

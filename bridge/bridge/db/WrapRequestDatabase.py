@@ -118,17 +118,23 @@ class WrapRequestDatabase(MaxProcessedHeightMixin):
 		for row in cursor:
 			yield self._to_request(row)
 
+	def _max_processed_timestamp(self):
+		max_processed_height = self.max_processed_height()
+		return self._lookup_block_timestamp_closest(max_processed_height) or 0
+
+	def is_synced_at_timestamp(self, timestamp):
+		"""Determines if the database is synced through a timestamp."""
+
+		return timestamp <= self._max_processed_timestamp()
+
 	def cumulative_wrapped_amount_at(self, timestamp, relative_block_adjustment=0):
 		"""Gets cumulative amount of wrapped tokens issued at or before timestamp."""
 
 		if relative_block_adjustment > 0:
 			raise ValueError('relative_block_adjustment must not be positive')
 
-		max_processed_height = self.max_processed_height()
-		max_processed_timestamp = self._lookup_block_timestamp_closest(max_processed_height) or 0
-
-		if timestamp > max_processed_timestamp:
-			raise ValueError(f'requested wrapped amount at {timestamp} beyond current database timestamp {max_processed_timestamp}')
+		if not self.is_synced_at_timestamp(timestamp):
+			raise ValueError(f'requested wrapped amount at {timestamp} beyond current database timestamp {self._max_processed_timestamp()}')
 
 		if relative_block_adjustment:
 			height = self.lookup_block_height(timestamp)
