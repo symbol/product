@@ -3,6 +3,7 @@ from enum import Enum
 from symbolchain.CryptoTypes import Hash256
 
 from ..models.WrapRequest import WrapRequest, make_wrap_error_result
+from .MaxProcessedHeightMixin import MaxProcessedHeightMixin
 
 
 class WrapRequestStatus(Enum):
@@ -14,17 +15,20 @@ class WrapRequestStatus(Enum):
 	FAILED = 3
 
 
-class WrapRequestDatabase:
+class WrapRequestDatabase(MaxProcessedHeightMixin):
 	"""Database containing wrap requests and errors."""
 
 	def __init__(self, connection, network_facade):
 		"""Creates a wrap request database."""
 
-		self.connection = connection
+		super().__init__(connection)
+
 		self.network_facade = network_facade
 
 	def create_tables(self):
 		"""Creates wrap request database tables."""
+
+		super().create_tables()
 
 		cursor = self.connection.cursor()
 		cursor.execute('''CREATE TABLE IF NOT EXISTS wrap_error (
@@ -113,17 +117,6 @@ class WrapRequestDatabase:
 		cursor.execute('''SELECT * FROM wrap_request ORDER BY request_transaction_height''')
 		for row in cursor:
 			yield self._to_request(row)
-
-	def max_processed_height(self):
-		"""Gets maximum record height."""
-
-		cursor = self.connection.cursor()
-		cursor.execute('''SELECT MAX(request_transaction_height) FROM wrap_error''')
-		max_error_height = cursor.fetchone()[0]
-
-		cursor.execute('''SELECT MAX(request_transaction_height) FROM wrap_request''')
-		max_request_height = cursor.fetchone()[0]
-		return max(max_error_height or 0, max_request_height or 0)
 
 	def cumulative_wrapped_amount_at(self, timestamp, relative_block_adjustment=0):
 		"""Gets cumulative amount of wrapped tokens issued at or before timestamp."""
@@ -223,6 +216,26 @@ class WrapRequestDatabase:
 			'''INSERT OR IGNORE INTO block_metadata VALUES (?, ?)''',
 			(height, 0))
 
+		self.connection.commit()
+
+	def reset(self):
+		"""Deletes all request and error entries with request transaction heights above the max processed height."""
+
+		max_processed_height = self.max_processed_height()
+
+		cursor = self.connection.cursor()
+		cursor.execute(
+			'''
+				DELETE FROM wrap_request
+				WHERE request_transaction_height > ?
+			''',
+			(max_processed_height,))
+		cursor.execute(
+			'''
+				DELETE FROM wrap_error
+				WHERE request_transaction_height > ?
+			''',
+			(max_processed_height,))
 		self.connection.commit()
 
 	def set_block_timestamp(self, height, raw_timestamp):

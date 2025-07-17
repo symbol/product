@@ -51,13 +51,15 @@ async def download_balance_changes(database, network):
 
 	print(f'searching blockchain for balance changes to {network.bridge_address} in range [{start_height}, {end_height})...')
 
+	database.reset()
+
 	downloader = BalanceChangesDownloader(database, network)
 
 	tasks = [downloader.download(height) for height in range(start_height, end_height)]
 	counts = await asyncio.gather(*tasks)
 
 	# add marker in database to indicate last height processed
-	database.add_transfer(end_height - 1, '', 0)
+	database.set_max_processed_height(end_height - 1)
 
 	print()
 	print_banner([

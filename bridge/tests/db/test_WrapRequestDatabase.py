@@ -19,7 +19,7 @@ def make_request_error_tuple(index, message, **kwargs):
 	address = Address(NEM_ADDRESSES[kwargs.get('address_index', index)])
 
 	return (
-		HEIGHTS[index],
+		kwargs.get('height', HEIGHTS[index]),
 		Hash256(HASHES[hash_index]).bytes,
 		kwargs.get('transaction_subindex', 0),
 		address.bytes,
@@ -27,16 +27,17 @@ def make_request_error_tuple(index, message, **kwargs):
 
 
 def make_request_tuple(index, **kwargs):
+	height = kwargs.get('height', HEIGHTS[index])
 	hash_index = kwargs.get('hash_index', index)
 	address = Address(NEM_ADDRESSES[kwargs.get('address_index', index)])
 	destination_address = PublicKey(PUBLIC_KEYS[kwargs.get('destination_address_index', index)])
 
 	return (
-		HEIGHTS[index],
+		height,
 		Hash256(HASHES[hash_index]).bytes,
 		kwargs.get('transaction_subindex', 0),
 		address.bytes,
-		HEIGHTS[index] % 1000,
+		height % 1000,
 		f'0x{destination_address}',
 		kwargs.get('status_id', 0),
 		kwargs.get('payout_transaction_hash', None),
@@ -130,7 +131,7 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 		table_names = get_all_table_names(WrapRequestDatabase, MockNetworkFacade())
 
 		# Assert:
-		self.assertEqual(set(['wrap_error', 'wrap_request', 'payout_transaction', 'block_metadata']), table_names)
+		self.assertEqual(set(['wrap_error', 'wrap_request', 'payout_transaction', 'block_metadata', 'max_processed_height']), table_names)
 
 	# endregion
 
@@ -276,52 +277,6 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 
 	# endregion
 
-	# region max_processed_height
-
-	def test_max_processed_height_is_zero_when_empty(self):
-		# Arrange:
-		with sqlite3.connect(':memory:') as connection:
-			database = WrapRequestDatabase(connection, MockNetworkFacade())
-			database.create_tables()
-
-			# Act:
-			max_processed_height = database.max_processed_height()
-
-			# Assert:
-			self.assertEqual(0, max_processed_height)
-
-	def _assert_max_processed_height(self, max_error_height, max_request_height, expected_max_processed_height):
-		# Arrange:
-		with sqlite3.connect(':memory:') as connection:
-			database = WrapRequestDatabase(connection, MockNetworkFacade())
-			database.create_tables()
-
-			if max_error_height:
-				for (index, height) in [(0, 12345678902), (1, max_error_height), (2, 12345678904)]:
-					database.add_error(make_request_error(index, 'error message', height=height))
-
-			if max_request_height:
-				for (index, height) in [(0, 12345678903), (1, max_request_height), (2, 12345678902)]:
-					database.add_request(make_request(index, height=height))
-
-			# Act:
-			max_processed_height = database.max_processed_height()
-
-			# Assert:
-			self.assertEqual(expected_max_processed_height, max_processed_height)
-
-	def test_max_processed_height_is_max_error_height_when_only_errors_are_present(self):
-		self._assert_max_processed_height(12345678907, None, 12345678907)
-
-	def test_max_processed_height_is_max_request_height_when_only_requests_are_present(self):
-		self._assert_max_processed_height(None, 12345678907, 12345678907)
-
-	def test_max_processed_height_is_max_request_or_error_height_when_both_are_present(self):
-		self._assert_max_processed_height(12345678909, 12345678907, 12345678909)
-		self._assert_max_processed_height(12345678907, 12345678909, 12345678909)
-
-	# endregion
-
 	# region cumulative_wrapped_amount_at
 
 	@staticmethod
@@ -337,6 +292,8 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 		database.set_block_timestamp(111, 1000)
 		database.set_block_timestamp(222, 2000)
 		database.set_block_timestamp(333, 4000)
+
+		database.set_max_processed_height(333)
 		return database
 
 	def _assert_cumulative_wrapped_amount_at_is_calculated_correctly_at_timestamps(
@@ -665,6 +622,50 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 			# timestamp is not overwritten
 			(1122, self._nem_to_unix_timestamp(98765))
 		], post_insert_action=post_insert_action)
+
+	# endregion
+
+	# region reset
+
+	def _assert_reset(self, max_processed_height, expected_errors, expected_requests):
+		# Arrange:
+		with sqlite3.connect(':memory:') as connection:
+			database = WrapRequestDatabase(connection, MockNetworkFacade())
+			database.create_tables()
+
+			if expected_errors:
+				for (index, height) in [(0, 12345678902), (1, 12345678907), (2, 12345678904)]:
+					database.add_error(make_request_error(index, 'error message', height=height))
+
+			if expected_requests:
+				for (index, height) in [(0, 12345678903), (1, 12345678909), (2, 12345678902)]:
+					database.add_request(make_request(index, height=height))
+
+			database.set_max_processed_height(max_processed_height)
+
+			# Act:
+			database.reset()
+
+			# Assert:
+			cursor = connection.cursor()
+			actual_errors = self._query_all_errors(cursor)
+			actual_requests = self._query_all_requests(cursor)
+
+			self.assertEqual(
+				[make_request_error_tuple(index, 'error message', height=height) for (index, height) in expected_errors],
+				actual_errors)
+			self.assertEqual(
+				[make_request_tuple(index, height=height) for (index, height) in expected_requests],
+				actual_requests)
+
+	def test_reset_deletes_rows_when_errors_are_present(self):
+		self._assert_reset(12345678904, [(0, 12345678902), (2, 12345678904)], [])
+
+	def test_reset_deletes_rows_when_requests_are_present(self):
+		self._assert_reset(12345678903, [], [(0, 12345678903), (2, 12345678902)])
+
+	def test_reset_deletes_rows_when_errors_and_requests_are_present(self):
+		self._assert_reset(12345678903, [(0, 12345678902)], [(0, 12345678903), (2, 12345678902)])
 
 	# endregion
 

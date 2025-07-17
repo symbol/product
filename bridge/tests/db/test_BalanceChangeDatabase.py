@@ -35,8 +35,8 @@ class BalanceChangeDatabaseTest(unittest.TestCase):
 
 			# Assert:
 			cursor = connection.cursor()
-
 			actual_transfers = self._query_all_transfers(cursor)
+
 			self.assertEqual(expected, actual_transfers)
 
 	# endregion
@@ -48,7 +48,7 @@ class BalanceChangeDatabaseTest(unittest.TestCase):
 		table_names = get_all_table_names(BalanceChangeDatabase)
 
 		# Assert:
-		self.assertEqual(set(['transfer']), table_names)
+		self.assertEqual(set(['transfer', 'max_processed_height']), table_names)
 
 	# endregion
 
@@ -106,42 +106,6 @@ class BalanceChangeDatabaseTest(unittest.TestCase):
 
 	# endregion
 
-	# region max_processed_height
-
-	def test_max_processed_height_is_zero_when_empty(self):
-		# Arrange:
-		with sqlite3.connect(':memory:') as connection:
-			database = BalanceChangeDatabase(connection)
-			database.create_tables()
-
-			# Act:
-			max_processed_height = database.max_processed_height()
-
-			# Assert:
-			self.assertEqual(0, max_processed_height)
-
-	def test_max_processed_height_is_max_transfer_height(self):
-		# Arrange:
-		with sqlite3.connect(':memory:') as connection:
-			database = BalanceChangeDatabase(connection)
-			database.create_tables()
-
-			transfers = [
-				make_transfer_tuple(1111, 'foo.bar', 111),
-				make_transfer_tuple(7777, 'alpha.beta', 222),
-				make_transfer_tuple(2345, 'foo.bar', 333)
-			]
-			for transfer in transfers:
-				database.add_transfer(*transfer)
-
-			# Act:
-			max_processed_height = database.max_processed_height()
-
-			# Assert:
-			self.assertEqual(7777, max_processed_height)
-
-	# endregion
-
 	# region balance_at
 
 	@staticmethod
@@ -156,6 +120,8 @@ class BalanceChangeDatabaseTest(unittest.TestCase):
 			make_transfer_tuple(5555, 'alpha.beta', 123),
 			make_transfer_tuple(3330, 'foo.bar', -100)
 		]
+
+		database.set_max_processed_height(7777)
 
 		for transfer in transfers:
 			database.add_transfer(*transfer)
@@ -205,4 +171,28 @@ class BalanceChangeDatabaseTest(unittest.TestCase):
 				# Act + Assert:
 				with self.assertRaisesRegex(ValueError, f'requested balance at {height} beyond current database height 7777'):
 					database.balance_at(height, 'foo.bar')
+	# endregion
+
+	# region reset
+
+	def test_reset_deletes_rows(self):
+		# Arrange:
+		with sqlite3.connect(':memory:') as connection:
+			database = BalanceChangeDatabase(connection)
+			database.create_tables()
+
+			for delta in [2, 7, 4, 3, 9]:
+				database.add_transfer(12345678900 + delta, 'foo.bar', delta)
+
+			database.set_max_processed_height(12345678904)
+
+			# Act:
+			database.reset()
+
+			# Assert:
+			cursor = connection.cursor()
+			actual_transfers = self._query_all_transfers(cursor)
+
+			self.assertEqual([(12345678900 + delta, 'foo.bar', delta) for delta in (4, 3, 2)], actual_transfers)
+
 	# endregion

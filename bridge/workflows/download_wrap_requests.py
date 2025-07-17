@@ -14,6 +14,8 @@ async def _download_requests(database, connector, network, is_valid_address):
 
 	print(f'searching address {network.bridge_address} for {mosaic_id.formatted} deposits in range [{start_height}, {end_height})...')
 
+	database.reset()
+
 	count = 0
 	error_count = 0
 	heights = set()
@@ -28,6 +30,10 @@ async def _download_requests(database, connector, network, is_valid_address):
 				database.add_request(result.request)
 				heights.add(result.request.transaction_height)
 				count += 1
+
+	# add marker in database to indicate last height processed
+	database.set_max_processed_height(end_height - 1)
+	heights.add(end_height - 1)
 
 	print_banner([
 		f'==> last processed transaction height: {database.max_processed_height()}',
