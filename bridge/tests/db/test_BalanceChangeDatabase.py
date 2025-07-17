@@ -106,7 +106,7 @@ class BalanceChangeDatabaseTest(unittest.TestCase):
 
 	# endregion
 
-	# region balance_at
+	# region is_synced_at_height / balance_at
 
 	@staticmethod
 	def _create_database_for_balance_at_tests(connection):
@@ -121,12 +121,26 @@ class BalanceChangeDatabaseTest(unittest.TestCase):
 			make_transfer_tuple(3330, 'foo.bar', -100)
 		]
 
-		database.set_max_processed_height(7777)
+		database.set_max_processed_height(8888)
 
 		for transfer in transfers:
 			database.add_transfer(*transfer)
 
 		return database
+
+	def test_is_synced_at_height_is_only_true_when_height_is_not_greater_than_max_processed_height(self):
+		# Arrange:
+		with sqlite3.connect(':memory:') as connection:
+			database = self._create_database_for_balance_at_tests(connection)
+
+			# Act + Assert:
+			self.assertTrue(database.is_synced_at_height(0))
+			self.assertTrue(database.is_synced_at_height(5000))
+			self.assertTrue(database.is_synced_at_height(8887))
+			self.assertTrue(database.is_synced_at_height(8888))
+
+			self.assertFalse(database.is_synced_at_height(8889))
+			self.assertFalse(database.is_synced_at_height(10000))
 
 	def _assert_balance_at(self, currency, height, expected_balance):
 		# Arrange:
@@ -161,15 +175,16 @@ class BalanceChangeDatabaseTest(unittest.TestCase):
 		self._assert_balance_at('foo.bar', 3329, 444)
 		self._assert_balance_at('foo.bar', 3330, 344)
 		self._assert_balance_at('foo.bar', 7777, 344)
+		self._assert_balance_at('foo.bar', 8888, 344)
 
 	def test_balance_at_fails_for_queries_past_max_processed_height(self):
 		# Arrange:
-		for height in [7778, 10000]:
+		for height in [8889, 10000]:
 			with sqlite3.connect(':memory:') as connection:
 				database = self._create_database_for_balance_at_tests(connection)
 
 				# Act + Assert:
-				with self.assertRaisesRegex(ValueError, f'requested balance at {height} beyond current database height 7777'):
+				with self.assertRaisesRegex(ValueError, f'requested balance at {height} beyond current database height 8888'):
 					database.balance_at(height, 'foo.bar')
 	# endregion
 

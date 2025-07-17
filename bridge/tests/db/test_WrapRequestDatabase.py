@@ -277,7 +277,7 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 
 	# endregion
 
-	# region cumulative_wrapped_amount_at
+	# region is_synced_at_timestamp / cumulative_wrapped_amount_at
 
 	@staticmethod
 	def _create_database_for_cumulative_wrapped_amount_at_tests(connection):
@@ -292,9 +292,24 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 		database.set_block_timestamp(111, 1000)
 		database.set_block_timestamp(222, 2000)
 		database.set_block_timestamp(333, 4000)
+		database.set_block_timestamp(444, 5000)
 
-		database.set_max_processed_height(333)
+		database.set_max_processed_height(444)
 		return database
+
+	def test_is_synced_at_timestamp_is_only_true_when_timestamp_is_not_greater_than_max_processed_timestamp(self):
+		# Arrange:
+		with sqlite3.connect(':memory:') as connection:
+			database = self._create_database_for_cumulative_wrapped_amount_at_tests(connection)
+
+			# Act + Assert:
+			self.assertTrue(database.is_synced_at_timestamp(self._nem_to_unix_timestamp(0)))
+			self.assertTrue(database.is_synced_at_timestamp(self._nem_to_unix_timestamp(2500)))
+			self.assertTrue(database.is_synced_at_timestamp(self._nem_to_unix_timestamp(4999)))
+			self.assertTrue(database.is_synced_at_timestamp(self._nem_to_unix_timestamp(5000)))
+
+			self.assertFalse(database.is_synced_at_timestamp(self._nem_to_unix_timestamp(5001)))
+			self.assertFalse(database.is_synced_at_timestamp(self._nem_to_unix_timestamp(10000)))
 
 	def _assert_cumulative_wrapped_amount_at_is_calculated_correctly_at_timestamps(
 		self,
@@ -342,7 +357,8 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 			(2001, 3021),
 
 			(3999, 3021),
-			(4000, 6354)
+			(4000, 6354),
+			(5000, 6354)
 		])
 
 	def test_cumulative_wrapped_amount_at_is_calculated_correctly_when_requests_present_with_block_adjustment(self):
@@ -354,17 +370,20 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 			(2001, 1000),
 
 			(3999, 1000),
-			(4000, 3021)
+			(4000, 3021),
+			(4999, 3021),
+
+			(5000, 6354)
 		], -1)
 
 	def _assert_cumulative_wrapped_amount_at_fails_for_queries_past_max_processed_height(self, relative_block_adjustment=0):
 		# Arrange:
-		for raw_timestamp in [4001, 10000]:
+		for raw_timestamp in [5001, 10000]:
 			with sqlite3.connect(':memory:') as connection:
 				database = self._create_database_for_cumulative_wrapped_amount_at_tests(connection)
 
 				timestamp = self._nem_to_unix_timestamp(raw_timestamp)
-				max_timestamp = self._nem_to_unix_timestamp(4000)
+				max_timestamp = self._nem_to_unix_timestamp(5000)
 
 				# Act + Assert:
 				expected_error_message = f'requested wrapped amount at {timestamp} beyond current database timestamp {max_timestamp}'
