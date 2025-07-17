@@ -1,13 +1,13 @@
-class BalanceChangeDatabase:
+from .MaxProcessedHeightMixin import MaxProcessedHeightMixin
+
+
+class BalanceChangeDatabase(MaxProcessedHeightMixin):
 	"""Database containing balance changes."""
-
-	def __init__(self, connection):
-		"""Creates a balance change database."""
-
-		self.connection = connection
 
 	def create_tables(self):
 		"""Creates balance change database tables."""
+
+		super().create_tables()
 
 		cursor = self.connection.cursor()
 		cursor.execute('''CREATE TABLE IF NOT EXISTS transfer (
@@ -40,14 +40,6 @@ class BalanceChangeDatabase:
 		self.connection.commit()
 		return count
 
-	def max_processed_height(self):
-		"""Gets maximum transfer height."""
-
-		cursor = self.connection.cursor()
-		cursor.execute('''SELECT MAX(height) FROM transfer''')
-		max_height = cursor.fetchone()[0]
-		return max_height or 0
-
 	def balance_at(self, height, currency):
 		"""Calculates the balance for a currency at a height."""
 
@@ -66,3 +58,17 @@ class BalanceChangeDatabase:
 
 		sum_amount = cursor.fetchone()[0]
 		return sum_amount or 0
+
+	def reset(self):
+		"""Deletes all transfer entries with heights above the max processed height."""
+
+		max_processed_height = self.max_processed_height()
+
+		cursor = self.connection.cursor()
+		cursor.execute(
+			'''
+				DELETE FROM transfer
+				WHERE height > ?
+			''',
+			(max_processed_height,))
+		self.connection.commit()
