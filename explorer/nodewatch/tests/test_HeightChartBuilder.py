@@ -16,7 +16,9 @@ class HeightChartBuilderTest(unittest.TestCase):
 		}), min_cluster_size)
 
 		HeightDescriptor = namedtuple('HeightDescriptor', ['version', 'height', 'balance'])
-		FinalizedHeightDescriptor = namedtuple('FinalizedHeightDescriptor', ['version', 'finalized_height', 'balance'])
+		FinalizedHeightDescriptor = namedtuple('FinalizedHeightDescriptor', ['version', 'finalized_info', 'balance'])
+		FinalizedInfo = namedtuple('FinalizedInfo', ['height', 'epoch', 'hash', 'point'])
+
 
 		# note: last tuple value is used to check rounding to M in the text descriptions
 		height_builder.add_heights([
@@ -33,12 +35,12 @@ class HeightChartBuilderTest(unittest.TestCase):
 		])
 		height_builder.add_finalized_heights([
 			FinalizedHeightDescriptor(tuple[0], tuple[1], tuple[2] * 1000000 + tuple[3]) for tuple in [
-				('0.0.2.0', 12345, 200, -1),
-				('0.0.3.1', 12350, 200, -2),
-				('0.0.3.3', 12345, 400, 3),
-				('0.0.3.3', 12345, 800, 1),
-				('0.0.3.1', 12345, 1600, -1),
-				('0.0.3.1', 0, 3200, 0)  # simulate a node with an unknown height (should be ignored)
+				('0.0.2.0', FinalizedInfo(12345, 0, '0', 0), 200, -1),
+				('0.0.3.1', FinalizedInfo(12350, 0, '0', 0), 200, -2),
+				('0.0.3.3', FinalizedInfo(12345, 0, '0', 0), 400, 3),
+				('0.0.3.3', FinalizedInfo(12345, 0, '0', 0), 800, 1),
+				('0.0.3.1', FinalizedInfo(12345, 0, '0', 0), 1600, -1),
+				('0.0.3.1', FinalizedInfo(0, 0, '0', 0), 3200, 0)  # simulate a node with an unknown height (should be ignored)
 			]
 		])
 		return json.loads(height_builder.create_chart())
