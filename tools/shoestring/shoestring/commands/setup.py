@@ -147,14 +147,6 @@ def add_arguments(parser, is_initial_setup=True):
 	if is_initial_setup:
 		parser.add_argument('--security', help=_('argument-help-setup-security'), choices=SECURITY_MODES, default='default')
 		parser.add_argument('--ca-key-path', help=_('argument-help-ca-key-path').format(default_path='ca.key.pem'), default='ca.key.pem')
-
-	arg_summary = [
-		f"--{arg.dest} (デフォルト: {arg.default if arg.default is not None else 'なし'}{', 選択肢: ' + ', '.join(arg.choices) if arg.choices else ''})"
-		for arg in parser._actions if arg.dest != 'help'
-	]
-	log.info(f"設定された引数: {', '.join(arg_summary)}")
-
-	if is_initial_setup:
 		parser.set_defaults(func=run_main)
 
 
