@@ -1,42 +1,11 @@
 import asyncio
 
+from bridge.ConversionRateCalculatorFactory import ConversionRateCalculatorFactory
 from bridge.db.WrapRequestDatabase import PayoutDetails, WrapRequestStatus
 from bridge.NetworkUtils import TransactionSender
-from bridge.WorkflowUtils import ConversionRateCalculator, extract_mosaic_id
+from bridge.WorkflowUtils import extract_mosaic_id
 
 from .main_impl import main_bootstrapper, print_banner
-
-
-class ConversionRateManager:
-	def __init__(self, databases, network, is_unwrap_mode):
-		self.databases = databases
-		self.network = network
-		self.is_unwrap_mode = is_unwrap_mode
-		self.mosaic_id = extract_mosaic_id(network.config, network.is_currency_mosaic_id).formatted
-
-	async def try_create_calculator(self, height):
-		historical_native_height = height
-		if self.is_unwrap_mode:
-			timestamp = self.databases.unwrap_request.lookup_block_timestamp(height)
-			historical_native_height = self.databases.wrap_request.lookup_block_height(timestamp)
-		else:
-			timestamp = self.databases.wrap_request.lookup_block_timestamp(height)
-
-		required_conditions = [
-			self.databases.balance_change.is_synced_at_height(historical_native_height),
-			self.databases.wrap_request.is_synced_at_timestamp(timestamp),
-			self.databases.unwrap_request.is_synced_at_timestamp(timestamp)
-		]
-		if not all(required_conditions):
-			return None
-
-		native_balance = self.databases.balance_change.balance_at(historical_native_height, self.mosaic_id)
-		wrapped_balance = self.databases.wrap_request.cumulative_wrapped_amount_at(timestamp)
-		wrapped_balance -= self.databases.wrap_request.cumulative_fees_paid_at(timestamp)
-		unwrapped_balance = self.databases.unwrap_request.cumulative_wrapped_amount_at(timestamp, -1)  # use unwrap total from previous block
-
-		calculator = ConversionRateCalculator(native_balance, wrapped_balance, unwrapped_balance)
-		return calculator.to_native_amount if self.is_unwrap_mode else calculator.to_wrapped_amount
 
 
 async def _send_payout(network, request, conversion_rate_calculator):
@@ -53,7 +22,7 @@ async def _send_payout(network, request, conversion_rate_calculator):
 	return await sender.try_send_transfer(request.destination_address, transfer_amount)
 
 
-async def send_payouts(conversion_rate_manager, database, network):
+async def send_payouts(conversion_rate_calculator_factory, database, network):
 	requests_to_send = database.requests_by_status(WrapRequestStatus.UNPROCESSED)
 	print(f'{len(requests_to_send)} requests need to be sent')
 
@@ -61,7 +30,7 @@ async def send_payouts(conversion_rate_manager, database, network):
 	error_count = 0
 	skip_count = 0
 	for request in requests_to_send:
-		conversion_rate_calculator = await conversion_rate_manager.try_create_calculator(request.transaction_height)
+		conversion_rate_calculator = conversion_rate_calculator_factory.try_create_calculator(request.transaction_height)
 		if not conversion_rate_calculator:
 			print(f'  payout skipped due to missing data: {request.transaction_hash}:{request.transaction_subindex}')
 			skip_count += 1
@@ -95,11 +64,12 @@ async def send_payouts(conversion_rate_manager, database, network):
 
 
 async def main_impl(is_unwrap_mode, databases, native_facade, wrapped_facade):
-	conversion_rate_manager = ConversionRateManager(databases, native_facade, is_unwrap_mode)
+	native_mosaic_id = extract_mosaic_id(native_facade.config, native_facade.is_currency_mosaic_id)
+	conversion_rate_calculator_factory = ConversionRateCalculatorFactory(databases, native_mosaic_id.formatted, is_unwrap_mode)
 	if is_unwrap_mode:
-		await send_payouts(conversion_rate_manager, databases.unwrap_request, native_facade)
+		await send_payouts(conversion_rate_calculator_factory, databases.unwrap_request, native_facade)
 	else:
-		await send_payouts(conversion_rate_manager, databases.wrap_request, wrapped_facade)
+		await send_payouts(conversion_rate_calculator_factory, databases.wrap_request, wrapped_facade)
 
 
 if '__main__' == __name__:

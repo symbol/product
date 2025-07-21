@@ -43,8 +43,8 @@ def make_request_tuple(index, **kwargs):
 		kwargs.get('payout_transaction_hash', None))
 
 
-def _make_payout_details(transaction_hash, total_fee=0):
-	return PayoutDetails(transaction_hash, 0, total_fee, 0)
+def _make_payout_details(transaction_hash, net_amount=0, total_fee=0):
+	return PayoutDetails(transaction_hash, net_amount, total_fee, 0)
 
 # endregion
 
@@ -401,6 +401,69 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 
 	# endregion
 
+	# region cumulative_net_amount_at
+
+	def test_cumulative_net_amount_at_is_zero_when_empty(self):
+		# Arrange:
+		with sqlite3.connect(':memory:') as connection:
+			database = WrapRequestDatabase(connection, MockNetworkFacade())
+			database.create_tables()
+
+			# Act:
+			amount = database.cumulative_net_amount_at(10000)
+
+			# Assert:
+			self.assertEqual(0, amount)
+
+	def _assert_cumulative_net_amount_at_is_calculated_correctly_at_timestamps(self, timestamp_amount_pairs):
+		# Arrange:
+		with sqlite3.connect(':memory:') as connection:
+			database = WrapRequestDatabase(connection, MockNetworkFacade())
+			database.create_tables()
+
+			requests = [
+				make_request(0, amount=1000, height=111),
+				make_request(1, amount=3333, height=333),
+				make_request(2, amount=2020, height=222),
+				make_request(3, amount=1, height=222)
+			]
+
+			for request in requests:
+				database.add_request(request)
+
+			database.mark_payout_sent(requests[0], _make_payout_details(Hash256(HASHES[0]), net_amount=100))
+			database.mark_payout_sent(requests[1], _make_payout_details(Hash256(HASHES[1]), net_amount=300))
+			database.mark_payout_sent(requests[2], _make_payout_details(Hash256(HASHES[2]), net_amount=200))
+			database.mark_payout_sent(requests[3], _make_payout_details(Hash256(HASHES[3]), net_amount=400))
+
+			database.set_block_timestamp(111, 1000)
+			database.set_block_timestamp(222, 2000)
+			database.set_block_timestamp(333, 4000)
+
+			for (timestamp, expected_amount) in timestamp_amount_pairs:
+				# Act:
+				amount = database.cumulative_net_amount_at(self._nem_to_unix_timestamp(timestamp))
+
+				# Assert:
+				self.assertEqual(expected_amount, amount, f'at timestamp {timestamp}')
+
+	def test_cumulative_net_amount_at_is_calculated_correctly_when_requests_present(self):
+		self._assert_cumulative_net_amount_at_is_calculated_correctly_at_timestamps([
+			(999, 0),
+			(1000, 100),
+			(1001, 100),
+
+			(1999, 100),
+			(2000, 700),
+			(2001, 700),
+
+			(3999, 700),
+			(4000, 1000),
+			(4001, 1000)
+		])
+
+	# endregion
+
 	# region cumulative_fees_paid_at
 
 	def test_cumulative_fees_paid_at_is_zero_when_empty(self):
@@ -431,10 +494,10 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 			for request in requests:
 				database.add_request(request)
 
-			database.mark_payout_sent(requests[0], _make_payout_details(Hash256(HASHES[0]), 100))
-			database.mark_payout_sent(requests[1], _make_payout_details(Hash256(HASHES[1]), 300))
-			database.mark_payout_sent(requests[2], _make_payout_details(Hash256(HASHES[2]), 200))
-			database.mark_payout_sent(requests[3], _make_payout_details(Hash256(HASHES[3]), 400))
+			database.mark_payout_sent(requests[0], _make_payout_details(Hash256(HASHES[0]), total_fee=100))
+			database.mark_payout_sent(requests[1], _make_payout_details(Hash256(HASHES[1]), total_fee=300))
+			database.mark_payout_sent(requests[2], _make_payout_details(Hash256(HASHES[2]), total_fee=200))
+			database.mark_payout_sent(requests[3], _make_payout_details(Hash256(HASHES[3]), total_fee=400))
 
 			database.set_block_timestamp(111, 1000)
 			database.set_block_timestamp(222, 2000)
@@ -460,6 +523,126 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 			(3999, 700),
 			(4000, 1000),
 			(4001, 1000)
+		])
+
+	# endregion
+
+	# region payout_transaction_hashes_at
+
+	def test_payout_transaction_hashes_at_returns_empty_when_empty(self):
+		# Arrange:
+		with sqlite3.connect(':memory:') as connection:
+			database = WrapRequestDatabase(connection, MockNetworkFacade())
+			database.create_tables()
+
+			# Act:
+			transaction_hashes = list(database.payout_transaction_hashes_at(10000))
+
+			# Assert:
+			self.assertEqual([], transaction_hashes)
+
+	def _assert_payout_transaction_hashes_at_is_calculated_correctly_at_timestamps(self, timestamp_hash_indexes_pairs):
+		# Arrange:
+		with sqlite3.connect(':memory:') as connection:
+			database = WrapRequestDatabase(connection, MockNetworkFacade())
+			database.create_tables()
+
+			requests = [
+				make_request(0, amount=1000, height=111),
+				make_request(1, amount=3333, height=333),
+				make_request(2, amount=2020, height=222),
+				make_request(3, amount=1, height=222)
+			]
+
+			for request in requests:
+				database.add_request(request)
+
+			database.mark_payout_sent(requests[0], _make_payout_details(Hash256(HASHES[0])))
+			database.mark_payout_sent(requests[1], _make_payout_details(Hash256(HASHES[1])))
+			database.mark_payout_sent(requests[2], _make_payout_details(Hash256(HASHES[2])))
+			database.mark_payout_sent(requests[3], _make_payout_details(Hash256(HASHES[3])))
+
+			database.set_block_timestamp(111, 1000)
+			database.set_block_timestamp(222, 2000)
+			database.set_block_timestamp(333, 4000)
+
+			for (timestamp, expected_transaction_hash_indexes) in timestamp_hash_indexes_pairs:
+				# Act:
+				transaction_hashes = list(database.payout_transaction_hashes_at(self._nem_to_unix_timestamp(timestamp)))
+
+				# Assert:
+				expected_transaction_hashes = [Hash256(HASHES[i]) for i in expected_transaction_hash_indexes]
+				self.assertEqual(expected_transaction_hashes, transaction_hashes, f'at timestamp {timestamp}')
+
+	def test_payout_transaction_hashes_at_is_calculated_correctly_when_requests_present(self):
+		self._assert_payout_transaction_hashes_at_is_calculated_correctly_at_timestamps([
+			(999, []),
+			(1000, [0]),
+			(1001, [0]),
+
+			(1999, [0]),
+			(2000, [0, 2, 3]),
+			(2001, [0, 2, 3]),
+
+			(3999, [0, 2, 3]),
+			(4000, [0, 1, 2, 3]),
+			(4001, [0, 1, 2, 3])
+		])
+
+	# endregion
+
+	# region sum_payout_transaction_amounts
+
+	def test_sum_payout_transaction_amounts_returns_zero_when_empty(self):
+		# Arrange:
+		with sqlite3.connect(':memory:') as connection:
+			database = WrapRequestDatabase(connection, MockNetworkFacade())
+			database.create_tables()
+
+			# Act:
+			amount = database.sum_payout_transaction_amounts([Hash256(HASHES[i]) for i in range(len(HASHES))])
+
+			# Assert:
+			self.assertEqual(0, amount)
+
+	def _assert_sum_payout_transaction_amounts_is_calculated_correctly(self, hash_indexes_amount_pairs):
+		# Arrange:
+		with sqlite3.connect(':memory:') as connection:
+			database = WrapRequestDatabase(connection, MockNetworkFacade())
+			database.create_tables()
+
+			requests = [
+				make_request(0, amount=1000, height=111),
+				make_request(1, amount=3333, height=333),
+				make_request(2, amount=2020, height=222),
+				make_request(3, amount=1, height=222)
+			]
+
+			for request in requests:
+				database.add_request(request)
+
+			database.mark_payout_sent(requests[0], _make_payout_details(Hash256(HASHES[0])))
+			database.mark_payout_sent(requests[1], _make_payout_details(Hash256(HASHES[1])))
+			database.mark_payout_sent(requests[2], _make_payout_details(Hash256(HASHES[2])))
+			database.mark_payout_sent(requests[3], _make_payout_details(Hash256(HASHES[3])))
+
+			database.set_block_timestamp(111, 1000)
+			database.set_block_timestamp(222, 2000)
+			database.set_block_timestamp(333, 4000)
+
+			for (hash_indexes, expected_amount) in hash_indexes_amount_pairs:
+				# Act:
+				amount = database.sum_payout_transaction_amounts([Hash256(HASHES[i]) for i in hash_indexes])
+
+				# Assert:
+				self.assertEqual(expected_amount, amount)
+
+	def test_sum_payout_transaction_amounts_is_calculated_correctly(self):
+		self._assert_sum_payout_transaction_amounts_is_calculated_correctly([
+			([], 0),
+			([0], 1000),
+			([0, 2, 3], 3021),
+			([0, 1, 2, 3], 6354)
 		])
 
 	# endregion
@@ -787,10 +970,10 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 			# Act:
 			requests = database.requests_by_status(WrapRequestStatus.SENT)
 
-			# Assert: height sorted (descending)
+			# Assert: height sorted (ascending)
 			self.assertEqual(2, len(requests))
-			assert_equal_request(self, seed_requests[0], requests[0])
-			assert_equal_request(self, seed_requests[3], requests[1])
+			assert_equal_request(self, seed_requests[3], requests[0])
+			assert_equal_request(self, seed_requests[0], requests[1])
 
 	# endregion
 

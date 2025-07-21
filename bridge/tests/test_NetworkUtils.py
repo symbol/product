@@ -2,7 +2,7 @@ from binascii import hexlify, unhexlify
 
 import pytest
 from symbolchain import nc
-from symbolchain.CryptoTypes import PrivateKey
+from symbolchain.CryptoTypes import Hash256, PrivateKey
 from symbolchain.facade.NemFacade import NemFacade
 from symbolchain.nem.Network import Network, NetworkTimestamp
 
@@ -10,6 +10,7 @@ from bridge.models.BridgeConfiguration import NetworkConfiguration
 from bridge.nem.NemNetworkFacade import NemNetworkFacade
 from bridge.NetworkUtils import BalanceChange, TransactionSender, download_rosetta_block_balance_changes
 
+from .test.BridgeTestUtils import HASHES
 from .test.PytestUtils import create_simple_nem_client
 
 
@@ -268,6 +269,7 @@ def _make_single_transaction_block_from_operations(operations):
 		'block': {
 			'transactions': [
 				{
+					'transaction_identifier': {'hash': HASHES[0]},
 					'operations': operations
 				}
 			]
@@ -321,9 +323,9 @@ async def test_can_download_rosetta_block_balance_changes_from_block_with_multip
 	# Assert;
 	_assert_single_post_request(connector)
 	assert [
-		BalanceChange('alpha', 'baz.token', 12345),
-		BalanceChange('beta', 'foo.token', 22222),
-		BalanceChange('beta', 'baz.token', 44444)
+		BalanceChange('alpha', 'baz.token', 12345, Hash256(HASHES[0])),
+		BalanceChange('beta', 'foo.token', 22222, Hash256(HASHES[0])),
+		BalanceChange('beta', 'baz.token', 44444, Hash256(HASHES[0]))
 	] == balance_changes
 
 
@@ -334,12 +336,14 @@ async def test_can_download_rosetta_block_balance_changes_from_block_with_multip
 		'block': {
 			'transactions': [
 				{
+					'transaction_identifier': {'hash': HASHES[0]},
 					'operations': [
 						_make_operation_json('zeta', 'z.coupons', 1732),
 						_make_operation_json('omega', 'z.coupons', 2233)
 					]
 				},
 				{
+					'transaction_identifier': {'hash': HASHES[2]},
 					'operations': [
 						_make_operation_json('alpha', 'baz.token', 12345),
 						_make_operation_json('beta', 'foo.token', 22222),
@@ -347,6 +351,7 @@ async def test_can_download_rosetta_block_balance_changes_from_block_with_multip
 					]
 				},
 				{
+					'transaction_identifier': {'hash': HASHES[1]},
 					'operations': [
 						_make_operation_json('gamma', 'bar.coin', 9988),
 						_make_operation_json('alpha', 'foo.token', 222)
@@ -362,13 +367,13 @@ async def test_can_download_rosetta_block_balance_changes_from_block_with_multip
 	# Assert;
 	_assert_single_post_request(connector)
 	assert [
-		BalanceChange('zeta', 'z.coupons', 1732),
-		BalanceChange('omega', 'z.coupons', 2233),
-		BalanceChange('alpha', 'baz.token', 12345),
-		BalanceChange('beta', 'foo.token', 22222),
-		BalanceChange('beta', 'baz.token', 44444),
-		BalanceChange('gamma', 'bar.coin', 9988),
-		BalanceChange('alpha', 'foo.token', 222)
+		BalanceChange('zeta', 'z.coupons', 1732, Hash256(HASHES[0])),
+		BalanceChange('omega', 'z.coupons', 2233, Hash256(HASHES[0])),
+		BalanceChange('alpha', 'baz.token', 12345, Hash256(HASHES[2])),
+		BalanceChange('beta', 'foo.token', 22222, Hash256(HASHES[2])),
+		BalanceChange('beta', 'baz.token', 44444, Hash256(HASHES[2])),
+		BalanceChange('gamma', 'bar.coin', 9988, Hash256(HASHES[1])),
+		BalanceChange('alpha', 'foo.token', 222, Hash256(HASHES[1]))
 	] == balance_changes
 
 
@@ -387,8 +392,8 @@ async def _assert_single_skipped_operation(**kwargs):
 	# Assert;
 	_assert_single_post_request(connector)
 	assert [
-		BalanceChange('alpha', 'baz.token', 12345),
-		BalanceChange('beta', 'baz.token', 44444)
+		BalanceChange('alpha', 'baz.token', 12345, Hash256(HASHES[0])),
+		BalanceChange('beta', 'baz.token', 44444, Hash256(HASHES[0]))
 	] == balance_changes
 
 
@@ -415,9 +420,9 @@ async def test_can_download_rosetta_block_balance_changes_prefers_currency_id_wh
 	# Assert;
 	_assert_single_post_request(connector)
 	assert [
-		BalanceChange('alpha', 'baz.token', 12345),
-		BalanceChange('beta', '777', 22222),
-		BalanceChange('beta', 'baz.token', 44444)
+		BalanceChange('alpha', 'baz.token', 12345, Hash256(HASHES[0])),
+		BalanceChange('beta', '777', 22222, Hash256(HASHES[0])),
+		BalanceChange('beta', 'baz.token', 44444, Hash256(HASHES[0])),
 	] == balance_changes
 
 # endregion
