@@ -19,7 +19,6 @@ class HeightChartBuilderTest(unittest.TestCase):
 		FinalizedHeightDescriptor = namedtuple('FinalizedHeightDescriptor', ['version', 'finalized_info', 'balance'])
 		FinalizedInfo = namedtuple('FinalizedInfo', ['height', 'epoch', 'hash', 'point'])
 
-
 		# note: last tuple value is used to check rounding to M in the text descriptions
 		height_builder.add_heights([
 			HeightDescriptor(tuple[0], tuple[1], tuple[2] * 1000000 + tuple[3]) for tuple in [
