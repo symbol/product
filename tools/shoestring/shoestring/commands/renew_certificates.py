@@ -31,9 +31,9 @@ async def run_main(args):
 
 
 def add_arguments(parser):
-	parser.add_argument('--config', help=_('argument-help-config'), required=True)
-	parser.add_argument('--directory', help=_('argument-help-directory').format(default_path=Path.home()), default=str(Path.home()))
-	parser.add_argument('--ca-key-path', help=_('argument-help-ca-key-path'), required=True)
+	parser.add_argument('--config', help=_('argument-help-config'), default='shoestring/shoestring.ini')
+	parser.add_argument('--directory', help=_('argument-help-directory').format(default_path=Path.cwd() / 'node'), default=str(Path.cwd() / 'node'))
+	parser.add_argument('--ca-key-path', help=_('argument-help-ca-key-path'), default='ca.key.pem')
 	parser.add_argument('--renew-ca', help=_('argument-help-renew-certificates-renew-ca'), action='store_true')
-	parser.add_argument('--retain-node-key', help=_('argument-help-renew-certificates-retain-node-key'), action='store_true')
+	parser.add_argument('--retain-node-key', help=_('argument-help-renew-certificates-retain-node-key'), action='store_const', const=True, default=True)
 	parser.set_defaults(func=run_main)

@@ -44,7 +44,7 @@ def run_main(args):
 
 
 def add_arguments(parser):
-	parser.add_argument('--output', help=_('argument-help-pemtool-output'), required=True)
+	parser.add_argument('--output', help=_('argument-help-pemtool-output'), default='ca.key.pem')
 	parser.add_argument('--input', help=_('argument-help-pemtool-input'))
 	parser.add_argument('--ask-pass', help=_('argument-help-pemtool-ask-pass'), action='store_true')
 	parser.add_argument('--force', help=_('argument-help-pemtool-force'), action='store_true')

@@ -46,7 +46,7 @@ async def run_main(args):
 
 
 def add_arguments(parser):
-	parser.add_argument('--config', help=_('argument-help-config'), required=True)
+	parser.add_argument('--config', help=_('argument-help-config'), default='shoestring/shoestring.ini')
 	parser.add_argument('--bootstrap', help=_('argument-help-import-bootstrap-bootstrap'), required=True)
-	parser.add_argument('--include-node-key', help=_('argument-help-import-bootstrap-include-node-key'), action='store_true')
+	parser.add_argument('--include-node-key', help=_('argument-help-import-bootstrap-include-node-key'), action='store_const', const=True, default=True)
 	parser.set_defaults(func=run_main)

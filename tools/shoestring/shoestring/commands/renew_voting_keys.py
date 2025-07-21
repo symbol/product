@@ -109,6 +109,6 @@ async def run_main(args):
 
 
 def add_arguments(parser):
-	parser.add_argument('--config', help=_('argument-help-config'), required=True)
-	parser.add_argument('--directory', help=_('argument-help-directory').format(default_path=Path.home()), default=str(Path.home()))
+	parser.add_argument('--config', help=_('argument-help-config'), default='shoestring/shoestring.ini')
+	parser.add_argument('--directory', help=_('argument-help-directory').format(default_path=Path.cwd() / 'node'), default='node')
 	parser.set_defaults(func=run_main)

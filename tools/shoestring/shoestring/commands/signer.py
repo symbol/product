@@ -89,8 +89,8 @@ def run_main(args):
 
 
 def add_arguments(parser):
-	parser.add_argument('--config', help=_('argument-help-config'), required=True)
-	parser.add_argument('--ca-key-path', help=_('argument-help-ca-key-path'), required=True)
+	parser.add_argument('--config', help=_('argument-help-config'), default='shoestring/shoestring.ini')
+	parser.add_argument('--ca-key-path', help=_('argument-help-ca-key-path'), default='ca.key.pem')
 	parser.add_argument('--save', help=_('argument-help-signer-save'), action='store_true')
 	parser.add_argument('filename', help=_('argument-help-signer-filename'))
 	parser.set_defaults(func=run_main)
