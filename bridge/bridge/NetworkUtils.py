@@ -5,7 +5,7 @@ from symbolchain.CryptoTypes import PrivateKey
 
 BalanceChange = namedtuple('BalanceChange', ['address', 'currency_id', 'amount'])
 BalanceTransfer = namedtuple('BalanceTransfer', ['signer_public_key', 'recipient_address', 'amount', 'message'])
-TrySendResult = namedtuple('TrySendResult', ['is_error', 'transaction_hash', 'total_fee', 'error_message'])
+TrySendResult = namedtuple('TrySendResult', ['is_error', 'transaction_hash', 'net_amount', 'total_fee', 'error_message'])
 
 # region TransactionSender
 
@@ -50,11 +50,12 @@ class TransactionSender:
 		total_fee = transaction_fee + conversion_fee
 		if amount < total_fee:
 			error_message = f'total fee (transaction {transaction_fee} + conversion {conversion_fee}) exceeds transfer amount {amount}'
-			return TrySendResult(True, None, None, error_message)
+			return TrySendResult(True, None, None, None, error_message)
 
-		transaction = self.network_facade.create_transfer_transaction(*make_create_arguments(amount - total_fee))
+		net_amount = amount - total_fee
+		transaction = self.network_facade.create_transfer_transaction(*make_create_arguments(net_amount))
 		transaction_hash = await self.send_transaction(transaction)
-		return TrySendResult(False, transaction_hash, total_fee, None)
+		return TrySendResult(False, transaction_hash, net_amount, total_fee, None)
 
 	async def send_transaction(self, transaction):
 		"""Sends a transaction to the network."""

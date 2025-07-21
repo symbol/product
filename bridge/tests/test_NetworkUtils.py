@@ -100,6 +100,7 @@ async def _assert_try_send_transfer_success(server, amount, message, expected_fe
 
 	# Assert:
 	assert not result.is_error
+	assert amount - expected_fee == result.net_amount
 	assert expected_fee == result.total_fee
 	assert result.error_message is None
 
@@ -126,6 +127,7 @@ async def _assert_try_send_transfer_failure(server, amount, expected_error_messa
 	# Assert:
 	assert result.is_error
 	assert result.transaction_hash is None
+	assert result.net_amount is None
 	assert result.total_fee is None
 	assert expected_error_message == result.error_message
 
@@ -181,6 +183,7 @@ async def test_try_send_transfer_succeeds_with_custom_mosaic_id(server):  # pyli
 
 	# Assert:
 	assert not result.is_error
+	assert 12345000 - 100000 == result.net_amount
 	assert 100000 == result.total_fee
 	assert result.error_message is None
 

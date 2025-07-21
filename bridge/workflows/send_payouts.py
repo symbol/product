@@ -1,6 +1,6 @@
 import asyncio
 
-from bridge.db.WrapRequestDatabase import WrapRequestStatus
+from bridge.db.WrapRequestDatabase import PayoutDetails, WrapRequestStatus
 from bridge.NetworkUtils import TransactionSender
 from bridge.WorkflowUtils import ConversionRateCalculator, extract_mosaic_id
 
@@ -74,8 +74,17 @@ async def send_payouts(conversion_rate_manager, database, network):
 			print(f'  payout failed with error: {send_result.error_message}')
 			error_count += 1
 		else:
-			database.mark_payout_sent(request, send_result.transaction_hash, send_result.total_fee)
-			print(f'  sent transaction with hash: {send_result.transaction_hash} ({send_result.total_fee} fee deducted)')
+			conversion_rate = conversion_rate_calculator(1000000)
+			payout_details = PayoutDetails(
+				send_result.transaction_hash,
+				send_result.net_amount,
+				send_result.total_fee,
+				conversion_rate)
+			database.mark_payout_sent(request, payout_details)
+			print(
+				f'  sent transaction with hash: {payout_details.transaction_hash}'
+				f' {payout_details.net_amount} amount ({payout_details.total_fee} fee deducted)'
+				f' at conversion rate {payout_details.conversion_rate}')
 			count += 1
 
 	print_banner([
