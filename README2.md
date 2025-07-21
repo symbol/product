@@ -32,7 +32,7 @@ wizardでの setup時に、metadataを設定した場合でも、"_info": "repla
 2025_07_21
 ```
 以下の 9つの命令fileに ﾃﾞﾌｫﾙﾄ値を設定しました。
-commnds/
+commands/
 ①health.py
 ②reset_data.py
 ③renew-certificates.py
