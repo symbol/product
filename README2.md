@@ -94,3 +94,103 @@ python3 -m shoestring announce-transaction --transaction node/linking_transactio
 python -m shoestring min-cosignatures-count
 python -m shoestring min-cosignatures-count --update
 ```
+----------------------------------------------------------------------------------------------
+2025_07_16
+```
+`commands/setup.py`
+`wizard/ShoestringOperation.py`
+By replacing the above two files,
+
+① When running wizard setup, the node directory is created and the node body is stored in the node directory.
+
+② When running wizard upgrade, if shoestring/rest_overrides.json exists, `--rest-overrides shoestring/rest_overrides.json` is added as an argument to the command.
+
+③ In the command setup description, a default value is set for each argument.
+
+As a result, the arguments listed below can be omitted if the conditions are met.
+
+Also, if the location and name of the corresponding file are explicitly stated in the argument, the described argument will be applied.
+
+In the case of `--ca-key-path ca.key.pem`, the `--ca-key-path` argument can be omitted.
+If you use `--config shoestring/shoestring.ini`, you can omit the `--config` argument.
+If you use `--overrides shoestring/overrides.ini`, you can omit the `--overrides` argument.
+If you use `--directory node`, you can omit the `--directory` argument.
+*1 If you specify a directory that does not exist with the `--directory` argument, a new directory with the location and name specified in the argument will be created, and the node body will be stored there.
+If you use `--package mainnet`, you can omit the `--package` argument.
+If you use `--rest-overrides shoestring/rest_overrides.json`, you can omit the `--rest-overrides` argument.
+*2 If the `--rest-overrides` argument is omitted and `shoestring/rest_overrides.json` exists, `--rest-overrides shoestring/rest_overrides.json` will be applied as an argument.
+
+*3 If the `--rest-overrides` argument is omitted and `shoestring/rest_overrides.json` does not exist, the `--rest_overrides` argument will not be applied.
+
+```
+2025_07_20
+```
+wizard/setup_file_generator.py
+Even if you set metadata during setup in the wizard, "_info": "replace the body of this object with custom fields and objects to personalize your node" will be set in the metadata,
+but if metadata is set, this will be changed to "_info":"This is nodeMetaData".
+
+```
+
+2025_07_21
+```
+The following 9 command files have been set to default values.
+commands/
+①health.py
+②reset_data.py
+③renew-certificates.py
+④pemtool.py
+⑤renew_voting_keys.py
+⑥import_bootstrap.py
+⑦signer.py
+⑧announce_transaction.py
+⑨min_cosignatures_count.py
+
+The following are the changes
+
+①health.py
+--config default value shoestring/shoestring.ini
+--directory default value node
+
+②reset_data.py
+--config default value shoestring/shoestring.ini
+--directory default value node
+
+③renew-certificates.py
+--config default value shoestring/shoestring.ini
+--directory default value $(pwc)/node (must specify absolute path)
+--ca-key-path default value ca.key.pem
+--retain-node-key default value True (executes) whether retain-node-key is written or not
+*Planned to be fixed as soon as a fix is found for the issue where only absolute values can be written.
+
+④pemtool.py
+--output default value ca.key.pem
+Other arguments need to be optional, so no fixes.
+
+⑤renew_voting_keys.py
+--config default value shoestring/shoestring.ini
+--directory default value node
+
+*After fixing renew_voting_keys.py, fix setup.py so that the help displayed for --directory is an absolute path.
+
+⑥import_bootstrap.py
+--Set the default value of config to shoestring/shoestring.ini
+--include-node-key --True whether you write include-node-key or not (execute)
+
+⑦signer.py
+--Set the default value of config to shoestring/shoestring.ini
+--Set the default value of ca-key-path to ca.key.pem
+Example command:
+python3 -m shoestring signer --save node/linking_transaction.dat
+
+⑧announce_transaction.py
+--Set the default value of config to shoestring/shoestring.ini
+Example command:
+python3 -m shoestring announce-transaction --transaction node/linking_transaction.dat
+
+⑨min_cosignatures_count.py
+--Set the default value of config shoestring/shoestring.ini
+--ca-key-path default value ca.key.pem
+Example command:
+python -m shoestring min-cosignatures-count
+python -m shoestring min-cosignatures-count --update
+```
