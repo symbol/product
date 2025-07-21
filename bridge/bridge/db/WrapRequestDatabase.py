@@ -154,6 +154,20 @@ class WrapRequestDatabase(MaxProcessedHeightMixin):
 		sum_amount = cursor.fetchone()[0]
 		return sum_amount or 0
 
+	def cumulative_net_amount_at(self, timestamp):
+		"""Gets cumulative amount of wrapped tokens issued at or before timestamp."""
+
+		cursor = self.connection.cursor()
+		cursor.execute('''
+			SELECT SUM(payout_transaction.net_amount)
+			FROM wrap_request
+			LEFT JOIN block_metadata ON wrap_request.request_transaction_height = block_metadata.height
+			LEFT JOIN payout_transaction ON wrap_request.payout_transaction_hash = payout_transaction.transaction_hash
+			WHERE block_metadata.timestamp <= ?
+		''', (timestamp,))
+		sum_amount = cursor.fetchone()[0]
+		return sum_amount or 0
+
 	def cumulative_fees_paid_at(self, timestamp):
 		"""Gets cumulative amount of fees paid at or before timestamp."""
 
@@ -167,6 +181,45 @@ class WrapRequestDatabase(MaxProcessedHeightMixin):
 		''', (timestamp,))
 		sum_amount = cursor.fetchone()[0]
 		return sum_amount or 0
+
+	def payout_transaction_hashes_at(self, timestamp):
+		"""Gets all payout transaction hashes at or before timestamp."""
+
+		cursor = self.connection.cursor()
+		cursor.execute('''
+			SELECT payout_transaction.transaction_hash
+			FROM wrap_request
+			LEFT JOIN block_metadata ON wrap_request.request_transaction_height = block_metadata.height
+			LEFT JOIN payout_transaction ON wrap_request.payout_transaction_hash = payout_transaction.transaction_hash
+			WHERE block_metadata.timestamp <= ?
+		''', (timestamp,))
+		for row in cursor:
+			yield Hash256(row[0])
+
+	def sum_payout_transaction_amounts(self, payout_transaction_hashes, batch_size=100):
+		"""Sums the wrapped tokens affected by the specified payout transactions."""
+
+		balance = 0
+		cursor = self.connection.cursor()
+
+		start_index = 0
+		while start_index < len(payout_transaction_hashes):
+			transaction_hashes_batch = payout_transaction_hashes[start_index:start_index + batch_size]
+
+			in_query = ','.join(['?'] * len(transaction_hashes_batch))
+			cursor.execute(
+				f'''
+					SELECT SUM(amount)
+					FROM wrap_request
+					WHERE payout_transaction_hash IN ({in_query})
+				''',
+				tuple(transaction_hash.bytes for transaction_hash in transaction_hashes_batch))
+
+			sum_amount = cursor.fetchone()[0]
+			balance += sum_amount or 0
+			start_index += batch_size
+
+		return balance
 
 	def mark_payout_sent(self, request, payout_details):
 		"""Marks a payout as sent with the transaction hash of the payout."""
@@ -303,7 +356,7 @@ class WrapRequestDatabase(MaxProcessedHeightMixin):
 
 		cursor = self.connection.cursor()
 		cursor.execute(
-			'''SELECT * FROM wrap_request WHERE payout_status = ? ORDER BY request_transaction_height DESC''',
+			'''SELECT * FROM wrap_request WHERE payout_status = ? ORDER BY request_transaction_height ASC''',
 			(status.value,))
 		return list(map(self._to_request, cursor))
 

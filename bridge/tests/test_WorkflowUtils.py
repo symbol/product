@@ -226,4 +226,8 @@ def test_conversion_rate_calculator_works_with_wrap_discount_simulate_wrap():
 def test_conversion_rate_calculator_works_with_wrap_discount_simulate_unwrap():
 	_assert_conversion_rate_calculator_wrap_discount(10000 - 1000, 14000, 2000 + 1200)
 
+
+def test_conversion_rate_calculator_with_zero_native_balance_is_treated_as_unity():
+	_assert_conversion_rate_calculator_unity(0, 0, 0)
+
 # endregion

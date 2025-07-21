@@ -1,9 +1,9 @@
 from collections import namedtuple
 from decimal import ROUND_UP, Decimal
 
-from symbolchain.CryptoTypes import PrivateKey
+from symbolchain.CryptoTypes import Hash256, PrivateKey
 
-BalanceChange = namedtuple('BalanceChange', ['address', 'currency_id', 'amount'])
+BalanceChange = namedtuple('BalanceChange', ['address', 'currency_id', 'amount', 'transaction_hash'])
 BalanceTransfer = namedtuple('BalanceTransfer', ['signer_public_key', 'recipient_address', 'amount', 'message'])
 TrySendResult = namedtuple('TrySendResult', ['is_error', 'transaction_hash', 'net_amount', 'total_fee', 'error_message'])
 
@@ -89,12 +89,14 @@ async def download_rosetta_block_balance_changes(connector, blockchain, network,
 
 	balance_changes = []
 	for transaction_json in response_json['block']['transactions']:
+		transaction_hash = Hash256(transaction_json['transaction_identifier']['hash'])
 		for operation_json in transaction_json['operations']:
 			if 'transfer' == operation_json['type'] and 'success' == operation_json['status']:
 				balance_change = BalanceChange(
 					operation_json['account']['address'],
 					_extract_currency_id(operation_json['amount']['currency']),
-					int(operation_json['amount']['value']))
+					int(operation_json['amount']['value']),
+					transaction_hash)
 				balance_changes.append(balance_change)
 
 	return balance_changes
