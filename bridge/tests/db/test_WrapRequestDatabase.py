@@ -5,7 +5,7 @@ import unittest
 from symbolchain.CryptoTypes import Hash256, PublicKey
 from symbolchain.nem.Network import Address
 
-from bridge.db.WrapRequestDatabase import WrapRequestDatabase, WrapRequestStatus
+from bridge.db.WrapRequestDatabase import PayoutDetails, WrapRequestDatabase, WrapRequestStatus
 
 from ..test.BridgeTestUtils import HASHES, HEIGHTS, NEM_ADDRESSES, PUBLIC_KEYS, assert_equal_request, make_request, make_request_error
 from ..test.DatabaseTestUtils import get_all_table_names
@@ -40,8 +40,11 @@ def make_request_tuple(index, **kwargs):
 		height % 1000,
 		f'0x{destination_address}',
 		kwargs.get('status_id', 0),
-		kwargs.get('payout_transaction_hash', None),
-		kwargs.get('payout_total_fee', None))
+		kwargs.get('payout_transaction_hash', None))
+
+
+def _make_payout_details(transaction_hash, total_fee=0):
+	return PayoutDetails(transaction_hash, 0, total_fee, 0)
 
 # endregion
 
@@ -249,10 +252,10 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 		for request in [normal_request_1, completed_request_1, normal_request_2, completed_request_2]:
 			database.add_request(request)
 
-		database.mark_payout_sent(completed_request_1, Hash256(HASHES[0]), 200)
+		database.mark_payout_sent(completed_request_1, _make_payout_details(Hash256(HASHES[0])))
 		database.mark_payout_completed(Hash256(HASHES[0]), 1234)
 
-		database.mark_payout_sent(completed_request_2, Hash256(HASHES[1]), 300)
+		database.mark_payout_sent(completed_request_2, _make_payout_details(Hash256(HASHES[1])))
 		database.mark_payout_completed(Hash256(HASHES[1]), 1234)
 
 		return (normal_request_1, completed_request_1, normal_request_2, completed_request_2)
@@ -428,10 +431,10 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 			for request in requests:
 				database.add_request(request)
 
-			database.mark_payout_sent(requests[0], Hash256(HASHES[0]), 100)
-			database.mark_payout_sent(requests[1], Hash256(HASHES[1]), 300)
-			database.mark_payout_sent(requests[2], Hash256(HASHES[2]), 200)
-			database.mark_payout_sent(requests[3], Hash256(HASHES[3]), 400)
+			database.mark_payout_sent(requests[0], _make_payout_details(Hash256(HASHES[0]), 100))
+			database.mark_payout_sent(requests[1], _make_payout_details(Hash256(HASHES[1]), 300))
+			database.mark_payout_sent(requests[2], _make_payout_details(Hash256(HASHES[2]), 200))
+			database.mark_payout_sent(requests[3], _make_payout_details(Hash256(HASHES[3]), 400))
 
 			database.set_block_timestamp(111, 1000)
 			database.set_block_timestamp(222, 2000)
@@ -469,16 +472,16 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 		seed_requests = [make_request(index) for index in range(0, 3)]
 
 		def post_insert_action(database):
-			database.mark_payout_sent(seed_requests[1], payout_transaction_hash, 300)
+			database.mark_payout_sent(seed_requests[1], PayoutDetails(payout_transaction_hash, 1100, 300, 12))
 
 		# Act + Assert:
 		self._assert_can_insert_requests(seed_requests, [
 			make_request_tuple(0),
 			# should reflect status change from post_insert_action
-			make_request_tuple(1, status_id=1, payout_transaction_hash=payout_transaction_hash.bytes, payout_total_fee=300),
+			make_request_tuple(1, status_id=1, payout_transaction_hash=payout_transaction_hash.bytes),
 			make_request_tuple(2),
 		], expected_payout_transactions=[
-			(payout_transaction_hash.bytes, 0)
+			(payout_transaction_hash.bytes, 1100, 300, 12, 0)
 		], post_insert_action=post_insert_action)
 
 	def test_can_mark_payout_sent_single_scoped_to_sub_index(self):
@@ -487,22 +490,16 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 		seed_requests = [make_request(index, hash_index=0, transaction_subindex=index) for index in range(0, 3)]
 
 		def post_insert_action(database):
-			database.mark_payout_sent(seed_requests[1], payout_transaction_hash, 300)
+			database.mark_payout_sent(seed_requests[1], PayoutDetails(payout_transaction_hash, 1100, 300, 12))
 
 		# Act + Assert:
 		self._assert_can_insert_requests(seed_requests, [
 			make_request_tuple(0, hash_index=0),
 			# should reflect status change from post_insert_action
-			make_request_tuple(
-				1,
-				hash_index=0,
-				transaction_subindex=1,
-				status_id=1,
-				payout_transaction_hash=payout_transaction_hash.bytes,
-				payout_total_fee=300),
+			make_request_tuple(1, hash_index=0, transaction_subindex=1, status_id=1, payout_transaction_hash=payout_transaction_hash.bytes),
 			make_request_tuple(2, hash_index=0, transaction_subindex=2)
 		], expected_payout_transactions=[
-			(payout_transaction_hash.bytes, 0)
+			(payout_transaction_hash.bytes, 1100, 300, 12, 0)
 		], post_insert_action=post_insert_action)
 
 	def test_cannot_mark_payout_sent_multiple_with_same_payout_transaction_hash(self):
@@ -517,11 +514,11 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 			for seed_request in seed_requests:
 				database.add_request(seed_request)
 
-			database.mark_payout_sent(make_request(0), payout_transaction_hash, 300)
+			database.mark_payout_sent(make_request(0), _make_payout_details(payout_transaction_hash))
 
 			# Act + Assert:
 			with self.assertRaises(sqlite3.IntegrityError):
-				database.mark_payout_sent(make_request(2), payout_transaction_hash, 300)
+				database.mark_payout_sent(make_request(2), _make_payout_details(payout_transaction_hash))
 
 	# endregion
 
@@ -571,17 +568,17 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 		seed_requests = [make_request(index) for index in range(0, 3)]
 
 		def post_insert_action(database):
-			database.mark_payout_sent(seed_requests[1], payout_transaction_hash, 300)
+			database.mark_payout_sent(seed_requests[1], PayoutDetails(payout_transaction_hash, 1100, 300, 12))
 			database.mark_payout_completed(payout_transaction_hash, 1122)
 
 		# Act + Assert:
 		self._assert_can_insert_requests(seed_requests, [
 			make_request_tuple(0),
 			# should reflect status change from post_insert_action
-			make_request_tuple(1, status_id=2, payout_transaction_hash=payout_transaction_hash.bytes, payout_total_fee=300),
+			make_request_tuple(1, status_id=2, payout_transaction_hash=payout_transaction_hash.bytes),
 			make_request_tuple(2),
 		], expected_payout_transactions=[
-			(payout_transaction_hash.bytes, 1122)
+			(payout_transaction_hash.bytes, 1100, 300, 12, 1122)
 		], expected_block_metadatas=[
 			(1122, 0)
 		], post_insert_action=post_insert_action)
@@ -592,23 +589,17 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 		seed_requests = [make_request(index, hash_index=0, transaction_subindex=index) for index in range(0, 3)]
 
 		def post_insert_action(database):
-			database.mark_payout_sent(seed_requests[1], payout_transaction_hash, 300)
+			database.mark_payout_sent(seed_requests[1], PayoutDetails(payout_transaction_hash, 1100, 300, 1.2))
 			database.mark_payout_completed(payout_transaction_hash, 1122)
 
 		# Act + Assert:
 		self._assert_can_insert_requests(seed_requests, [
 			make_request_tuple(0, hash_index=0),
 			# should reflect status change from post_insert_action
-			make_request_tuple(
-				1,
-				hash_index=0,
-				transaction_subindex=1,
-				status_id=2,
-				payout_transaction_hash=payout_transaction_hash.bytes,
-				payout_total_fee=300),
+			make_request_tuple(1, hash_index=0, transaction_subindex=1, status_id=2, payout_transaction_hash=payout_transaction_hash.bytes),
 			make_request_tuple(2, hash_index=0, transaction_subindex=2)
 		], expected_payout_transactions=[
-			(payout_transaction_hash.bytes, 1122)
+			(payout_transaction_hash.bytes, 1100, 300, 1.2, 1122)
 		], expected_block_metadatas=[
 			(1122, 0)
 		], post_insert_action=post_insert_action)
@@ -620,23 +611,17 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 
 		def post_insert_action(database):
 			database.set_block_timestamp(1122, 98765)
-			database.mark_payout_sent(seed_requests[1], payout_transaction_hash, 300)
+			database.mark_payout_sent(seed_requests[1], PayoutDetails(payout_transaction_hash, 1100, 300, 12))
 			database.mark_payout_completed(payout_transaction_hash, 1122)
 
 		# Act + Assert:
 		self._assert_can_insert_requests(seed_requests, [
 			make_request_tuple(0, hash_index=0),
 			# should reflect status change from post_insert_action
-			make_request_tuple(
-				1,
-				hash_index=0,
-				transaction_subindex=1,
-				status_id=2,
-				payout_transaction_hash=payout_transaction_hash.bytes,
-				payout_total_fee=300),
+			make_request_tuple(1, hash_index=0, transaction_subindex=1, status_id=2, payout_transaction_hash=payout_transaction_hash.bytes),
 			make_request_tuple(2, hash_index=0, transaction_subindex=2)
 		], expected_payout_transactions=[
-			(payout_transaction_hash.bytes, 1122)
+			(payout_transaction_hash.bytes, 1100, 300, 12, 1122)
 		], expected_block_metadatas=[
 			# timestamp is not overwritten
 			(1122, self._nem_to_unix_timestamp(98765))
@@ -787,10 +772,10 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 			Hash256('7B055CD0A0A6C0F8BA9677076288A15F2BC6BEF42CEB5A6789EF9E4A8146E79F'),
 			Hash256('DFB984176817C3C2F001F6DEF3E46096EC52C33A1A63759A8FB9E1B46859C098')
 		]
-		database.mark_payout_sent(seed_requests[0], payout_transaction_hashes[0], 100)  # *8905
-		database.mark_payout_sent(seed_requests[1], payout_transaction_hashes[1], 200)  # *8901
+		database.mark_payout_sent(seed_requests[0], _make_payout_details(payout_transaction_hashes[0]))  # *8905
+		database.mark_payout_sent(seed_requests[1], _make_payout_details(payout_transaction_hashes[1]))  # *8901
 		database.mark_payout_completed(payout_transaction_hashes[1], 1234)
-		database.mark_payout_sent(seed_requests[3], payout_transaction_hashes[2], 150)  # *8902
+		database.mark_payout_sent(seed_requests[3], _make_payout_details(payout_transaction_hashes[2]))  # *8902
 
 		return (database, seed_requests, payout_transaction_hashes)
 

@@ -1,9 +1,12 @@
+from collections import namedtuple
 from enum import Enum
 
 from symbolchain.CryptoTypes import Hash256
 
 from ..models.WrapRequest import WrapRequest, make_wrap_error_result
 from .MaxProcessedHeightMixin import MaxProcessedHeightMixin
+
+PayoutDetails = namedtuple('PayoutDetails', ['transaction_hash', 'net_amount', 'total_fee', 'conversion_rate'])
 
 
 class WrapRequestStatus(Enum):
@@ -48,11 +51,13 @@ class WrapRequestDatabase(MaxProcessedHeightMixin):
 			destination_address blob,
 			payout_status integer,
 			payout_transaction_hash blob UNIQUE,
-			payout_total_fee integer,
 			PRIMARY KEY (request_transaction_hash, request_transaction_subindex)
 		)''')
 		cursor.execute('''CREATE TABLE IF NOT EXISTS payout_transaction (
 			transaction_hash blob UNIQUE PRIMARY KEY,
+			net_amount integer,
+			total_fee integer,
+			conversion_rate integer,
 			height integer
 		)''')
 		cursor.execute('''CREATE TABLE IF NOT EXISTS block_metadata (
@@ -89,7 +94,7 @@ class WrapRequestDatabase(MaxProcessedHeightMixin):
 		"""Adds a request to the request table."""
 
 		cursor = self.connection.cursor()
-		cursor.execute('''INSERT INTO wrap_request VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)''', (
+		cursor.execute('''INSERT INTO wrap_request VALUES (?, ?, ?, ?, ?, ?, ?, ?)''', (
 			request.transaction_height,
 			request.transaction_hash.bytes,
 			request.transaction_subindex,
@@ -97,7 +102,6 @@ class WrapRequestDatabase(MaxProcessedHeightMixin):
 			request.amount,
 			request.destination_address,
 			WrapRequestStatus.UNPROCESSED.value,
-			None,
 			None))
 		self.connection.commit()
 
@@ -155,35 +159,41 @@ class WrapRequestDatabase(MaxProcessedHeightMixin):
 
 		cursor = self.connection.cursor()
 		cursor.execute('''
-			SELECT SUM(wrap_request.payout_total_fee)
+			SELECT SUM(payout_transaction.total_fee)
 			FROM wrap_request
 			LEFT JOIN block_metadata ON wrap_request.request_transaction_height = block_metadata.height
+			LEFT JOIN payout_transaction ON wrap_request.payout_transaction_hash = payout_transaction.transaction_hash
 			WHERE block_metadata.timestamp <= ?
 		''', (timestamp,))
 		sum_amount = cursor.fetchone()[0]
 		return sum_amount or 0
 
-	def mark_payout_sent(self, request, payout_transaction_hash, payout_total_fee):
+	def mark_payout_sent(self, request, payout_details):
 		"""Marks a payout as sent with the transaction hash of the payout."""
 
 		cursor = self.connection.cursor()
 		cursor.execute(
 			'''
 				UPDATE wrap_request
-				SET payout_status = ?, payout_transaction_hash = ?, payout_total_fee = ?
+				SET payout_status = ?, payout_transaction_hash = ?
 				WHERE request_transaction_hash IS ? AND request_transaction_subindex IS ?
 			''',
 			(
 				WrapRequestStatus.SENT.value,
-				payout_transaction_hash.bytes,
-				payout_total_fee,
+				payout_details.transaction_hash.bytes,
 				request.transaction_hash.bytes,
 				request.transaction_subindex
 			))
 
 		cursor.execute(
-			'''INSERT INTO payout_transaction VALUES (?, ?)''',
-			(payout_transaction_hash.bytes, 0))
+			'''INSERT INTO payout_transaction VALUES (?, ?, ?, ?, ?)''',
+			(
+				payout_details.transaction_hash.bytes,
+				payout_details.net_amount,
+				payout_details.total_fee,
+				payout_details.conversion_rate,
+				0
+			))
 
 		self.connection.commit()
 
