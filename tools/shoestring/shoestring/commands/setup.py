@@ -137,7 +137,7 @@ async def run_main(args):
 def add_arguments(parser, is_initial_setup=True):
 	parser.add_argument('--config', help=_('argument-help-config').format(default_path='shoestring.shoestring.ini'), default='shoestring/shoestring.ini')
 	parser.add_argument('--package', help=_('argument-help-setup-package'), default='mainnet')
-	parser.add_argument('--directory', help=_('argument-help-directory').format(default_path='node'), default='node')
+	parser.add_argument('--directory', help=_('argument-help-directory').format(default_path=Path.cwd() / 'node'), default='node')
 	parser.add_argument('--overrides', help=_('argument-help-setup-overrides'), default='shoestring/overrides.ini')
 	if Path('shoestring/rest_overrides.json').exists():
 		parser.add_argument('--rest-overrides', help=_('argument-help-setup-rest-overrides'), default='shoestring/rest_overrides.json')
