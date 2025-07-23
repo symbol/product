@@ -17,12 +17,10 @@ src/
 │ │ ├── BaseSoftwareKeystore.js
 │ │ ├── ExternalAccountKeystore.js
 │ │ └── MnemonicKeystore.js
-│ ├── storage/
+│ └── storage/
 │ │ ├── PersistentStorageRepository.js
 │ │ ├── SecureStorageRepository.js
 │ │ └── StorageInterface.js
-│ ├── ProtocolApi.js
-│ └── ProtocolSdk.js
 ├── types/ # Type definitions
 └── utils/ # Utility functions
 ```
@@ -120,10 +118,8 @@ import {
   WalletController,
   MnemonicKeystore,
   ExternalAccountKeystore,
-  ProtocolApi,
-  ProtocolSdk,
   StorageInterface
-} from '@wallet/common-core';
+} from 'wallet-common-core';
 
 const controller = new WalletController({
   api: protocolApi, // ProtocolApi instance. Wraps network data fetching
@@ -144,7 +140,7 @@ const controller = new WalletController({
 **Example usage:**
 
 ```js
-import { StorageInterface } from '@wallet/common-core';
+import { StorageInterface } from 'wallet-common-core';
 
 const persistentStorageInterface = new StorageInterface({
   getItem: localStorage.getItem,

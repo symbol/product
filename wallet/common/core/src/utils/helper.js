@@ -45,9 +45,41 @@ export const cloneDeep = value => {
 export const validateFields = (obj, fields) => {
 	for (const { key, type } of fields) {
 		if (!Object.prototype.hasOwnProperty.call(obj, key))
-			throw new Error(`Missing required field: ${key}`);
+			throw new Error(`Missing required field: "${key}"`);
 
 		if (typeof obj[key] !== type)
-			throw new Error(`Invalid type for field ${key}: expected ${type}, got ${typeof obj[key]}`);
+			throw new Error(`Invalid type for field "${key}": expected ${type}, got "${typeof obj[key]}"`);
 	}
+};
+
+/**
+ * Validates that an object has the required methods.
+ * @param {object} obj - The object to validate.
+ * @param {string[]} methods - An array of method names that must exist on the object.
+ * @throws {Error} If any required methods are missing.
+ */
+export const validateFacade = (obj, methods) => {
+	methods.forEach(method => {
+		if (!obj[method] || typeof obj[method] !== 'function')
+			throw new Error(`Missing required method: "${method}"`);
+	});
+};
+
+/**
+ * Validates that an object has the required methods.
+ * @param {object} obj - The object to validate.
+ * @param {string[]} methodPaths - An array of method paths in the format 'namespace.method'.
+ * @throws {Error} If any required methods are missing.
+ */
+export const validateNamespacedFacade = (obj, methodPaths) => {
+	methodPaths.forEach(path => {
+		const [namespaceName, methodName] = path.split('.');
+		const namespace = obj[namespaceName];
+
+		if (!namespace || typeof namespace !== 'object')
+			throw new Error(`Missing namespace: "${namespaceName}"`);
+
+		if (!namespace[methodName] || typeof namespace[methodName] !== 'function')
+			throw new Error(`Missing required method: "${path}" in namespace "${namespaceName}"`);
+	});
 };

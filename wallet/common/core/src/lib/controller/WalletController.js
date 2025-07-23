@@ -4,19 +4,22 @@ import {
 	ControllerEventName, 
 	MAX_SEED_ACCOUNTS_PER_NETWORK, 
 	NetworkConnectionStatus, 
+	REQUIRED_API_METHODS, 
+	REQUIRED_SDK_METHODS, 
 	TransactionGroup, 
 	WalletAccountType 
 } from '../../constants';
 import { AppError } from '../../error/AppError';
+import { validateFacade, validateNamespacedFacade } from '../../utils/helper';
 import { cloneNetworkArrayMap, cloneNetworkObjectMap, createNetworkMap } from '../../utils/network';
-import { ProtocolApi } from '../ProtocolApi';
-import { ProtocolSdk } from '../ProtocolSdk';
 import { PersistentStorageRepository } from '../storage/PersistentStorageRepository';
 import { StorageInterface } from '../storage/StorageInterface';
 
 /** @typedef {import('../../types/Account').WalletAccount} WalletAccount */
 /** @typedef {import('../../types/Network').NetworkArrayMap} NetworkArrayMap */
 /** @typedef {import('../../types/Network').NetworkProperties} NetworkProperties */
+/** @typedef {import('../../types/ProtocolApi').ProtocolApi} ProtocolApi */
+/** @typedef {import('../../types/ProtocolSdk').ProtocolSdk} ProtocolSdk */
 
 const STORAGE_ROOT_SCOPE = 'wallet';
 
@@ -41,7 +44,7 @@ const createDefaultState = (networkIdentifiers, createDefaultNetworkProperties) 
 });
 
 
-export class WalletController extends EventController {
+export class WalletController {
 	modules = {};
 
 	/** @type {string[]} */
@@ -52,6 +55,8 @@ export class WalletController extends EventController {
 
 	/** @type {function(function): void} */
 	#setStateProcessor;
+
+	#notificationChannel;
 
 	/** @type {ProtocolApi} */
 	_api;
@@ -95,12 +100,14 @@ export class WalletController extends EventController {
 		createDefaultNetworkProperties,
 		setStateProcessor
 	}) {
-		super();
+		validateNamespacedFacade(api, REQUIRED_API_METHODS);
+		validateFacade(sdk, REQUIRED_SDK_METHODS);
 
 		this._api = api;
 		this.networkIdentifiers = networkIdentifiers;
 		this.#createDefaultNetworkProperties = createDefaultNetworkProperties;
 		this.#setStateProcessor = setStateProcessor;
+		this.#notificationChannel = new EventController();
 
 		const scopedPersistentStorageInterface = persistentStorageInterface.createScope(STORAGE_ROOT_SCOPE);
 		const scopedSecureStorageInterface = secureStorageInterface.createScope(STORAGE_ROOT_SCOPE);
@@ -130,12 +137,23 @@ export class WalletController extends EventController {
 			networkIdentifiers,
 			pollingInterval: networkPollingInterval,
 			createDefaultNetworkProperties,
-			onConnectionStatusChange: this.#handleNetworkConnectionStatusChange,
-			onPropertiesUpdate: this.#handleNetworkPropertiesUpdate,
-			onChainEvent: this.#handleChainEvent
+			onConnectionStatusChange: this._handleNetworkConnectionStatusChange,
+			onPropertiesUpdate: this._handleNetworkPropertiesUpdate,
+			onChainEvent: this._handleChainEvent
 		});
 
 		this.resetState();
+	}
+
+	get hasAccounts() {
+		let hasAccounts = false;
+
+		Object.values(this._state.walletAccounts).forEach(networkAccounts => {
+			if (networkAccounts.length > 0)
+				hasAccounts = true;
+		});
+
+		return hasAccounts;
 	}
 
 	// all user accounts in the wallet. Grouped by network
@@ -164,7 +182,7 @@ export class WalletController extends EventController {
 	// currently selected user account information
 	get currentAccountInfo() {
 		const { accountInfos, currentAccountPublicKey, networkIdentifier } = this._state;
-		return accountInfos[networkIdentifier][currentAccountPublicKey] || defaultAccountInfo;
+		return accountInfos[networkIdentifier][currentAccountPublicKey] || null;
 	}
 
 	// the list of latest transactions for the currently selected account
@@ -201,6 +219,11 @@ export class WalletController extends EventController {
 	// wallet cache is loaded from the storage
 	get isStateReady() {
 		return this._state.isCacheLoaded;
+	}
+
+	// wallet cache is loaded and network connection is ready
+	get isWalletReady() {
+		return this.isStateReady && this.isNetworkConnectionReady;
 	}
 
 	#accessKeystore = type => {
@@ -526,7 +549,7 @@ export class WalletController extends EventController {
 	fetchAccountInfo = async () => {
 		const { networkIdentifier, networkProperties, currentAccountPublicKey: publicKey } = this._state;
 
-		const baseAccountInfo = await this._api.fetchAccountInfo(networkProperties, publicKey);
+		const baseAccountInfo = await this._api.account.fetchAccountInfo(networkProperties, this.currentAccount.address);
 		const fetchedAt = Date.now();
 		let accountInfo;
 
@@ -562,7 +585,7 @@ export class WalletController extends EventController {
 		const { publicKey } = this.currentAccount;
 
 		// Fetch transactions from chain
-		const transactions = await this._api.fetchAccountTransactions(networkProperties, this.currentAccount, {
+		const transactions = await this._api.transaction.fetchAccountTransactions(networkProperties, this.currentAccount, {
 			group,
 			filter,
 			pageNumber,
@@ -623,7 +646,7 @@ export class WalletController extends EventController {
 	cosignTransaction = async transaction => {
 		const keystore = this.#accessKeystore(this.currentAccount.accountType);
 
-		return keystore.cosignTransaction(this.networkProperties, transaction, this.currentAccount);
+		return keystore.cosignTransaction(transaction, this.currentAccount);
 	};
 
 	/**
@@ -633,7 +656,7 @@ export class WalletController extends EventController {
 	 * @returns {Promise<object>} - transaction announce result
 	 */
 	announceSignedTransaction = async (signedTransaction, group) => {
-		return this._api.announceTransaction(this.networkProperties, signedTransaction.dto, group);
+		return this._api.transaction.announceTransaction(this.networkProperties, signedTransaction.dto, group);
 	};
 
 	/**
@@ -725,7 +748,7 @@ export class WalletController extends EventController {
 	 * @param {NetworkConnectionStatus} networkConnectionStatus - new network connection status
 	 * @private
 	 */
-	#handleNetworkConnectionStatusChange = networkConnectionStatus => {
+	_handleNetworkConnectionStatusChange = networkConnectionStatus => {
 		this.#setState(() => {
 			this._state.networkStatus = networkConnectionStatus;
 		});
@@ -736,7 +759,7 @@ export class WalletController extends EventController {
 	 * @param {NetworkProperties} networkProperties - new network properties
 	 * @private
 	 */
-	#handleNetworkPropertiesUpdate = async networkProperties => {
+	_handleNetworkPropertiesUpdate = async networkProperties => {
 		await this._persistentStorageRepository.setNetworkProperties(networkProperties);
 		this.#setState(() => {
 			this._state.networkProperties = networkProperties;
@@ -749,7 +772,7 @@ export class WalletController extends EventController {
 	 * @param {object} payload - event payload
 	 * @private
 	 */
-	#handleChainEvent = async (eventName, payload) => {
+	_handleChainEvent = async (eventName, payload) => {
 		this._emit(eventName, payload);
 	};
 
@@ -769,5 +792,38 @@ export class WalletController extends EventController {
 			callback.bind(this);
 			callback();
 		}
+
+		this._emit(ControllerEventName.STATE_CHANGE);
+	};
+
+	/**
+     * Subscribe to the controller events
+     * @param {string} eventName - event name
+     * @param {Function} listener - callback function
+     * @returns {void}
+     */
+	on = (eventName, listener) => {
+		this.#notificationChannel.on(eventName, listener);
+	};
+
+	/**
+     * Unsubscribe from the controller events
+     * @param {string} eventName - event name
+     * @param {Function} listener - callback function
+     * @returns {void}
+     */
+	removeListener = (eventName, listener) => {
+		this.#notificationChannel.removeListener(eventName, listener);
+	};
+
+	/**
+     * Emit controller event
+     * @param {string} eventName - event name
+     * @param {object} payload - event payload
+     * @returns {void}
+     * @private
+     */
+	_emit = (eventName, payload) => {
+		this.#notificationChannel.emit(eventName, payload);
 	};
 }

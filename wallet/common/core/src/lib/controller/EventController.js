@@ -1,4 +1,4 @@
-import EventEmitter from 'node:events';
+import { EventEmitter } from 'events';
 
 export class EventController {
 	/**
@@ -36,7 +36,7 @@ export class EventController {
 	 * @returns {void}
 	 * @private
 	 */
-	_emit = (eventName, payload) => {
+	emit = (eventName, payload) => {
 		this._notificationChannel.emit(eventName, payload);
 	};
 }

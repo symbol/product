@@ -4,6 +4,7 @@ export const MAX_SEED_ACCOUNTS_PER_NETWORK = 10;
 
 export const ControllerEventName = {
 	ERROR: 'wc:error',
+	STATE_CHANGE: 'wc:state.change',
 	WALLET_CLEAR: 'wc:wallet.logout',
 	WALLET_CREATE: 'wc:wallet.login',
 	NEW_TRANSACTION_CONFIRMED: 'wc:transaction.add.confirmed',
@@ -12,7 +13,8 @@ export const ControllerEventName = {
 	REMOVE_TRANSACTION_UNCONFIRMED: 'wc:transaction.remove.unconfirmed',
 	TRANSACTION_ERROR: 'wc:transaction.error',
 	ACCOUNT_CHANGE: 'wc:account.change',
-	NETWORK_CHANGE: 'wc:network.change'
+	NETWORK_CHANGE: 'wc:network.change',
+	NETWORK_STATUS_CHANGE: 'wc:network.status.change'
 };
 
 export const NetworkConnectionStatus = {
@@ -36,3 +38,22 @@ export const TransactionGroup = {
 	PARTIAL: 'partial',
 	FAILED: 'failed'
 };
+
+export const REQUIRED_API_METHODS = [
+	'account.fetchAccountInfo',
+	'transaction.fetchAccountTransactions',
+	'transaction.announceTransaction',
+	'network.fetchNetworkProperties',
+	'network.pingNode',
+	'network.fetchNodeList',
+	'listener.createListener'
+];
+
+export const REQUIRED_SDK_METHODS = [
+	'signTransaction',
+	'cosignTransaction',
+	'encryptMessage',
+	'decryptMessage',
+	'createPrivateAccount',
+	'createPrivateKeysFromMnemonic'
+];
