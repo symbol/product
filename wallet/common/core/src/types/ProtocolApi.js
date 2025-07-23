@@ -77,7 +77,7 @@
  */
 
 /** @typedef {object} ListenerApi
- * @property {(networkProperties: NetworkProperties, account: PublicAccount) => Listener} createListener
+ * @property {(networkProperties: NetworkProperties, accountAddress: string) => Listener} createListener
  */
 
 /** @typedef {{

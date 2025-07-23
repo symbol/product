@@ -2,6 +2,8 @@ import { NetworkConnectionStatus, TransactionGroup } from '../../constants';
 import { AppError } from '../../error/AppError';
 import { createNetworkMap } from '../../utils/network';
 
+/** @typedef {import('../../types/Logger').Logger} Logger */
+
 const createDefaultState = (networkIdentifiers, createDefaultNetworkProperties) => ({
 	chainListener: null, // listener instance
 	networkConnectionTimer: null,
@@ -13,18 +15,19 @@ const createDefaultState = (networkIdentifiers, createDefaultNetworkProperties) 
 });
 
 export class NetworkManager {
-	state;
+	_state;
+	_logger;
 	api;
 	createDefaultNetworkProperties;
 	onConnectionStatusChange;
 	onPropertiesUpdate;
 	onChainEvent;
-
 	connectionTimer;
 
 	/**
 	 * Creates an instance of NetworkManager.
 	 * @param {object} options - The constructor options.
+	 * @param {Logger} options.logger - Logger instance for logging.
 	 * @param {string[]} options.networkIdentifiers - An array of network identifiers supported by the manager.
 	 * @param {function} options.createDefaultNetworkProperties - A function that creates default network properties
 	 * for a given network identifier.
@@ -35,7 +38,8 @@ export class NetworkManager {
 	 * @param {function} options.onChainEvent - Callback function to handle chain events.
 	 */
 	constructor(options) {
-		this.state = createDefaultState(options.networkIdentifiers, options.createDefaultNetworkProperties);
+		this._state = createDefaultState(options.networkIdentifiers, options.createDefaultNetworkProperties);
+		this._logger = options.logger;
 		this.networkIdentifiers = options.networkIdentifiers;
 		this.api = options.api;
 		this.pollingInterval = options.pollingInterval;
@@ -47,15 +51,15 @@ export class NetworkManager {
 	}
 
 	get nodeUrls() {
-		return this.state.nodeUrls;
+		return this._state.nodeUrls;
 	}
 
 	get networkProperties() {
-		return this.state.networkProperties;
+		return this._state.networkProperties;
 	}
 
 	get networkConnectionStatus() {
-		return this.state.networkConnectionStatus;
+		return this._state.networkConnectionStatus;
 	}
 
 	/**
@@ -66,9 +70,9 @@ export class NetworkManager {
 	 * @returns {void}
 	 */
 	init = (initialNetworkIdentifier, initialNetworkProperties, initialNodeUrl) => {
-		this.state.networkIdentifier = initialNetworkIdentifier;
-		this.state.networkProperties = initialNetworkProperties || this.createDefaultNetworkProperties(networkIdentifier);
-		this.state.selectedNodeUrl = initialNodeUrl || null;
+		this._state.networkIdentifier = initialNetworkIdentifier;
+		this._state.networkProperties = initialNetworkProperties || this.createDefaultNetworkProperties(initialNetworkIdentifier);
+		this._state.selectedNodeUrl = initialNodeUrl || null;
 		this.#setStatus(NetworkConnectionStatus.INITIAL);
 	};
 
@@ -79,8 +83,8 @@ export class NetworkManager {
 	 * @returns {void}
 	 */
 	selectNetwork = async (networkIdentifier, nodeUrl = null) => {
-		this.state.networkIdentifier = networkIdentifier;
-		this.state.selectedNodeUrl = nodeUrl;
+		this._state.networkIdentifier = networkIdentifier;
+		this._state.selectedNodeUrl = nodeUrl;
 		this.#setNetworkProperties(this.createDefaultNetworkProperties(networkIdentifier));
 		this.#setStatus(NetworkConnectionStatus.INITIAL);
 	};
@@ -90,11 +94,11 @@ export class NetworkManager {
 	 * @returns {Promise<string[]>} - A promise that resolves to an array of network node URLs.
 	 */
 	fetchNodeList = async () => {
-		const { networkIdentifier } = this.state;
-		const updatedList = await this.api.fetchNodeList(networkIdentifier);
+		const { networkIdentifier } = this._state;
+		const updatedList = await this.api.network.fetchNodeList(networkIdentifier);
 
-		this.state.nodeUrls = {
-			...this.state.nodeUrls,
+		this._state.nodeUrls = {
+			...this._state.nodeUrls,
 			[networkIdentifier]: updatedList
 		};
 
@@ -108,13 +112,13 @@ export class NetworkManager {
 	 * @throws {AppError} - If the fetched network identifier does not match the expected network identifier.
 	 */
 	fetchNetworkProperties = async nodeUrl => {
-		const properties = await this.api.fetchNetworkProperties(nodeUrl);
+		const properties = await this.api.network.fetchNetworkProperties(nodeUrl);
 
-		if (properties.networkIdentifier !== this.state.networkIdentifier) {
+		if (properties.networkIdentifier !== this._state.networkIdentifier) {
 			throw new AppError(
 				'error_fetch_network_properties_wrong_network',
 				'Failed to fetch network properties. Wrong network identifier. ' 
-				+ `Expected "${this.state.networkIdentifier}", got "${properties.networkIdentifier}"`
+				+ `Expected "${this._state.networkIdentifier}", got "${properties.networkIdentifier}"`
 			);
 		}
 
@@ -132,15 +136,17 @@ export class NetworkManager {
 		this.#clearConnectionTimer();
 
 		// Try to connect to current or user selected node
-		const currentNodeUrl = this.state.networkProperties?.nodeUrl ?? this.state.selectedNodeUrl;
+		const currentNodeUrl = this._state.networkProperties?.nodeUrl ?? this._state.selectedNodeUrl;
 
 		if (currentNodeUrl) {
 			try {
 				await this.fetchNetworkProperties(currentNodeUrl);
 				await this.startChainListener();
 				this.#scheduleNextRun();
-				return this.state.networkConnectionStatus;
-			} catch { }
+				return this._state.networkConnectionStatus;
+			} catch (error) { 
+				this._logger.error(`[NetworkManager] Failed to connect to the current node: ${currentNodeUrl}`, error.message);
+			}
 		}
 
 		// Fetch node list to get the latest available nodes
@@ -148,55 +154,57 @@ export class NetworkManager {
 		// consider it as no internet connection
 		try {
 			await this.fetchNodeList();
-		} catch {
+		} catch (error) {
+			this._logger.error('[NetworkManager] Failed to fetch node list.', error.message);
 			this.#setStatus(NetworkConnectionStatus.NO_INTERNET);
 			this.#scheduleNextRun();
-			return this.state.networkConnectionStatus;
+			return this._state.networkConnectionStatus;
 		}
 
 		// If the user selected node failed for the second time, set the status to failed
 		// Otherwise set the status to connecting
-		const isPreviousNetworkStatusConnecting = this.state.networkConnectionStatus === NetworkConnectionStatus.CONNECTING;
+		const isPreviousNetworkStatusConnecting = this._state.networkConnectionStatus === NetworkConnectionStatus.CONNECTING;
 
-		if (this.state.selectedNodeUrl && isPreviousNetworkStatusConnecting)
+		if (this._state.selectedNodeUrl && isPreviousNetworkStatusConnecting)
 			this.#setStatus(NetworkConnectionStatus.FAILED_CUSTOM_NODE);
 		else
 			this.#setStatus(NetworkConnectionStatus.CONNECTING);
 
 		// If there is a selected node by user, skip auto selection
-		if (this.state.selectedNodeUrl) {
+		if (this._state.selectedNodeUrl) {
 			this.#scheduleNextRun();
-			return this.state.networkConnectionStatus;
+			return this._state.networkConnectionStatus;
 		}
 
 		// Auto select the node. Try to connect to the node one by one from the list
-		const candidates = this.state.nodeUrls[this.state.networkIdentifier] ?? [];
+		const candidates = this._state.nodeUrls[this._state.networkIdentifier] ?? [];
 		for (const nodeUrl of candidates) {
 			try {
-				await this.api.pingNode(nodeUrl);
+				await this.api.network.pingNode(nodeUrl);
 				await this.fetchNetworkProperties(nodeUrl);
 				await this.startChainListener();
 				this.#scheduleNextRun();
-				return this.state.networkConnectionStatus;
-			} catch {
-				// try next
+				return this._state.networkConnectionStatus;
+			} catch (error) {
+				this._logger.warn(`[NetworkManager] Failed to connect to node: ${nodeUrl}`, error.message);
 			}
 		}
 
 		this.#setStatus(NetworkConnectionStatus.CONNECTING);
 		this.#scheduleNextRun();
-		return this.state.networkConnectionStatus;
+		return this._state.networkConnectionStatus;
 	};
 
 	/**
 	 * Starts the chain listener to listen for blockchain events.
+	 * @param {string} accountAddress - The address of the account to listen for events.
 	 * @returns {Promise<void>} - A promise that resolves when the listener is successfully started.
 	 */
-	startChainListener = async () => {
+	startChainListener = async accountAddress => {
 		this.stopChainListener();
 
 		try {
-			const newListener = this.api.createListener(this.networkProperties, this.currentAccount);
+			const newListener = this.api.listener.createListener(this.networkProperties, accountAddress);
 			await newListener.open();
 			newListener.listenAddedTransactions(TransactionGroup.CONFIRMED, payload => {
 				this.#handleChainEvent(ControllerEventName.NEW_TRANSACTION_CONFIRMED, payload);
@@ -211,7 +219,10 @@ export class NetworkManager {
 				this.#handleChainEvent(ControllerEventName.TRANSACTION_ERROR, payload);
 			});
 			this._state.chainListener = newListener;
-		} catch { }
+		} catch (error) {
+			this._logger.error('[NetworkManager] Failed to start chain listener.', error.message);
+			throw new AppError('error_chain_listener_start', 'Failed to start chain listener.');
+		}
 	};
 
 	/**
@@ -219,8 +230,8 @@ export class NetworkManager {
 	 * @returns {void}
 	 */
 	stopChainListener = () => {
-		this.state.chainListener?.close();
-		this.state.chainListener = null;
+		this._state.chainListener?.close();
+		this._state.chainListener = null;
 	};
 
 	#handleChainEvent = (eventName, payload) => {
@@ -228,12 +239,12 @@ export class NetworkManager {
 	};
 
 	#setStatus = status => {
-		this.state.networkConnectionStatus = status;
+		this._state.networkConnectionStatus = status;
 		this.onConnectionStatusChange?.(status);
 	};
 
 	#setNetworkProperties = networkProperties => {
-		this.state.networkProperties = networkProperties;
+		this._state.networkProperties = networkProperties;
 		this.onPropertiesUpdate?.(networkProperties);
 	};
 

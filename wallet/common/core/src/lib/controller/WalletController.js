@@ -11,6 +11,7 @@ import {
 } from '../../constants';
 import { AppError } from '../../error/AppError';
 import { validateFacade, validateNamespacedFacade } from '../../utils/helper';
+import { createLogger } from '../../utils/logger';
 import { cloneNetworkArrayMap, cloneNetworkObjectMap, createNetworkMap } from '../../utils/network';
 import { PersistentStorageRepository } from '../storage/PersistentStorageRepository';
 import { StorageInterface } from '../storage/StorageInterface';
@@ -20,6 +21,7 @@ import { StorageInterface } from '../storage/StorageInterface';
 /** @typedef {import('../../types/Network').NetworkProperties} NetworkProperties */
 /** @typedef {import('../../types/ProtocolApi').ProtocolApi} ProtocolApi */
 /** @typedef {import('../../types/ProtocolSdk').ProtocolSdk} ProtocolSdk */
+/** @typedef {import('../../types/Logger').Logger} Logger */
 
 const STORAGE_ROOT_SCOPE = 'wallet';
 
@@ -86,6 +88,7 @@ export class WalletController {
 	 * @param {string[]} params.networkIdentifiers - Network identifiers for multi-network support.
 	 * @param {number} params.networkPollingInterval - Interval for network polling.
 	 * @param {function(string): Object} params.createDefaultNetworkProperties - Function to create default network properties.
+	 * @param {Logger} [params.logger] - Logger instance for logging.
 	 * @param {function(function): void} [params.setStateProcessor] - Optional function to process state changes.
 	 */
 	constructor({ 
@@ -96,7 +99,8 @@ export class WalletController {
 		keystores, 
 		modules, 
 		networkIdentifiers, 
-		networkPollingInterval, 
+		networkPollingInterval,
+		logger,
 		createDefaultNetworkProperties,
 		setStateProcessor
 	}) {
@@ -133,6 +137,7 @@ export class WalletController {
 			return [keystoreInstance.constructor.type, keystoreInstance];
 		}));
 		this._networkManager = new NetworkManager({
+			logger: createLogger(logger),
 			api,
 			networkIdentifiers,
 			pollingInterval: networkPollingInterval,
@@ -752,6 +757,7 @@ export class WalletController {
 		this.#setState(() => {
 			this._state.networkStatus = networkConnectionStatus;
 		});
+		this._emit(ControllerEventName.NETWORK_STATUS_CHANGE, networkConnectionStatus);
 	};
 
 	/**
