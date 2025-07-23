@@ -1,4 +1,4 @@
-import { ExternalAccountKeystore, MnemonicKeystore, ProtocolApi, ProtocolSdk, WalletController } from '../../src';
+import { ExternalAccountKeystore, MnemonicKeystore, WalletController } from '../../src';
 import { cloneDeep } from '../../src/utils/helper';
 import { externalAccounts, externalKeystoreAccounts, networkIdentifiers, seedAccounts, walletAccounts } from '../fixtures/wallet';
 import { defaultState, filledState } from '../fixtures/wallet-controller-state';
@@ -14,22 +14,31 @@ const createDefaultNetworkProperties = networkIdentifier => ({
 });
 
 const defaultParameters = {
-	api: new ProtocolApi({
-		fetchAccountInfo: jest.fn().mockResolvedValue(null),
-		fetchAccountTransactions: jest.fn().mockResolvedValue([]),
-		pingNode: jest.fn().mockResolvedValue(true),
-		fetchNetworkProperties: jest.fn().mockResolvedValue({}),
-		fetchNodeList: jest.fn().mockResolvedValue([]),
-		announceTransaction: jest.fn().mockResolvedValue()
-	}),
-	sdk: new ProtocolSdk({
+	api: {
+		account: {
+			fetchAccountInfo: jest.fn().mockResolvedValue(null)
+		},
+		transaction: {
+			fetchAccountTransactions: jest.fn().mockResolvedValue([]),
+			announceTransaction: jest.fn().mockResolvedValue()
+		},
+		network: {
+			pingNode: jest.fn().mockResolvedValue(true),
+			fetchNetworkProperties: jest.fn().mockResolvedValue({}),
+			fetchNodeList: jest.fn().mockResolvedValue([])
+		},
+		listener: {
+			createListener: jest.fn().mockReturnValue({})
+		}
+	},
+	sdk: {
 		signTransaction: jest.fn().mockResolvedValue({}),
 		cosignTransaction: jest.fn().mockResolvedValue({}),
 		encryptMessage: jest.fn().mockResolvedValue(''),
 		decryptMessage: jest.fn().mockResolvedValue(''),
 		createPrivateAccount: jest.fn().mockResolvedValue(),
 		createPrivateKeysFromMnemonic: jest.fn().mockResolvedValue([])
-	}),
+	},
 	persistentStorageInterface: createStorageMock({}),
 	secureStorageInterface: createStorageMock({}),
 	keystores: [MnemonicKeystore, ExternalAccountKeystore],
@@ -210,9 +219,9 @@ describe('WalletController', () => {
 
 			// Act:
 			const returnedAccount = await walletController.saveMnemonicAndGenerateAccounts({
-				mnemonic, 
-				accountPerNetworkCount, 
-				name 
+				mnemonic,
+				accountPerNetworkCount,
+				name
 			}, password);
 
 			// Assert:
@@ -381,9 +390,9 @@ describe('WalletController', () => {
 
 	describe('removeAccount()', () => {
 		const runRemoveAccountTest = async (
-			accountToRemove, 
-			expectedWalletAccounts, 
-			shouldRemoveFromExternalKeystore, 
+			accountToRemove,
+			expectedWalletAccounts,
+			shouldRemoveFromExternalKeystore,
 			shouldThrowError
 		) => {
 			// Arrange:
@@ -501,7 +510,7 @@ describe('WalletController', () => {
 				fetchedAt: expectedFetchedTimestamp
 			};
 			walletController._state = cloneDeep(filledState);
-			jest.spyOn(walletController._api, 'fetchAccountInfo').mockResolvedValue(null);
+			jest.spyOn(walletController._api.account, 'fetchAccountInfo').mockResolvedValue(null);
 			jest.spyOn(Date, 'now').mockReturnValue(expectedFetchedTimestamp);
 
 			// Act:
@@ -510,8 +519,8 @@ describe('WalletController', () => {
 			// Assert:
 			expect(walletController.currentAccountInfo).toStrictEqual(expectedAccountInfo);
 			expect(accountInfo).toStrictEqual(expectedAccountInfo);
-			expect(walletController._api.fetchAccountInfo)
-				.toHaveBeenCalledWith(walletController._state.networkProperties, walletController.currentAccount.publicKey);
+			expect(walletController._api.account.fetchAccountInfo)
+				.toHaveBeenCalledWith(walletController._state.networkProperties, walletController.currentAccount.address);
 		});
 
 		it('returns fetched account info and stores it in the cache', async () => {
@@ -527,7 +536,7 @@ describe('WalletController', () => {
 				fetchedAt: Date.now()
 			};
 			walletController._state = cloneDeep(filledState);
-			jest.spyOn(walletController._api, 'fetchAccountInfo').mockResolvedValue(baseAccountInfo);
+			jest.spyOn(walletController._api.account, 'fetchAccountInfo').mockResolvedValue(baseAccountInfo);
 
 			// Act:
 			const accountInfo = await walletController.fetchAccountInfo(networkIdentifier);
@@ -535,8 +544,8 @@ describe('WalletController', () => {
 			// Assert:
 			expect(walletController.currentAccountInfo).toStrictEqual(expectedAccountInfo);
 			expect(accountInfo).toStrictEqual(expectedAccountInfo);
-			expect(walletController._api.fetchAccountInfo)
-				.toHaveBeenCalledWith(walletController._state.networkProperties, walletController.currentAccount.publicKey);
+			expect(walletController._api.account.fetchAccountInfo)
+				.toHaveBeenCalledWith(walletController._state.networkProperties, walletController.currentAccount.address);
 		});
 	});
 
@@ -577,7 +586,7 @@ describe('WalletController', () => {
 				.mockResolvedValue(walletController._state.latestTransactions);
 			jest.spyOn(walletController._persistentStorageRepository, 'setLatestTransactions')
 				.mockResolvedValue();
-			jest.spyOn(walletController._api, 'fetchAccountTransactions')
+			jest.spyOn(walletController._api.transaction, 'fetchAccountTransactions')
 				.mockResolvedValue(expectedReturnedTransactionsByApi);
 
 			// Act:
@@ -597,7 +606,7 @@ describe('WalletController', () => {
 				expect(returnedTransactions).toStrictEqual(updatedAccountTransactions);
 			}
 
-			expect(walletController._api.fetchAccountTransactions)
+			expect(walletController._api.transaction.fetchAccountTransactions)
 				.toHaveBeenCalledWith(walletController._state.networkProperties, walletController.currentAccount, expectedConfig);
 		};
 
@@ -685,28 +694,28 @@ describe('WalletController', () => {
 				controllerMethodName: 'signTransaction',
 				controllerMethodArguments: ['transaction'],
 				keystoreMethodName: 'signTransaction',
-				createKeystoreMethodArgs: walletController => 
+				createKeystoreMethodArgs: walletController =>
 					[walletController.networkProperties, 'transaction', walletController.currentAccount]
 			},
 			{
 				controllerMethodName: 'cosignTransaction',
 				controllerMethodArguments: ['transaction'],
 				keystoreMethodName: 'cosignTransaction',
-				createKeystoreMethodArgs: walletController => 
-					[walletController.networkProperties, 'transaction', walletController.currentAccount]
+				createKeystoreMethodArgs: walletController =>
+					['transaction', walletController.currentAccount]
 			},
 			{
 				controllerMethodName: 'encryptMessage',
 				controllerMethodArguments: ['messageText', 'recipientPublicKey'],
 				keystoreMethodName: 'encryptMessage',
-				createKeystoreMethodArgs: walletController => 
+				createKeystoreMethodArgs: walletController =>
 					['messageText', 'recipientPublicKey', walletController.currentAccount]
 			},
 			{
 				controllerMethodName: 'decryptMessage',
 				controllerMethodArguments: ['encryptedMessage', 'recipientPublicKey'],
 				keystoreMethodName: 'decryptMessage',
-				createKeystoreMethodArgs: walletController => 
+				createKeystoreMethodArgs: walletController =>
 					['encryptedMessage', 'recipientPublicKey', walletController.currentAccount]
 			}
 		];
@@ -736,9 +745,9 @@ describe('WalletController', () => {
 
 		keystoreMethodsTestConfig.forEach(conf => {
 			runKeystoreMethodTests(
-				conf.controllerMethodName, 
-				conf.controllerMethodArguments, 
-				conf.keystoreMethodName, 
+				conf.controllerMethodName,
+				conf.controllerMethodArguments,
+				conf.keystoreMethodName,
 				conf.createKeystoreMethodArgs
 			);
 		});

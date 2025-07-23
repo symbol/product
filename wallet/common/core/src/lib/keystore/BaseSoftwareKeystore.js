@@ -80,15 +80,14 @@ export class BaseSoftwareKeystore {
 
 	/**
 	 * Cosigns partial transaction.
-	 * @param {NetworkProperties} networkProperties - The network properties required for cosigning.
 	 * @param {object} transaction - Partial transaction to cosign.
 	 * @param {PublicAccount} account - The account to use for cosigning.
 	 * @returns {Promise<object>} A promise that resolves to the cosignature object.
 	 */
-	cosignTransaction = async (networkProperties, transaction, account) => {
+	cosignTransaction = async (transaction, account) => {
 		const privateKey = await this.getPrivateKey(account);
 
-		return this.sdk.cosignTransaction(networkProperties, transaction, privateKey);
+		return this.sdk.cosignTransaction(transaction, privateKey);
 	};
 
 	/**

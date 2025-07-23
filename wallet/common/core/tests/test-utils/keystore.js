@@ -1,5 +1,4 @@
 import { createStorageMock } from './storage';
-import { ProtocolSdk } from '../../src/lib/ProtocolSdk';
 import { externalKeystoreAccounts, mnemonic, networkIdentifiers } from '../fixtures/wallet';
 import { jest } from '@jest/globals';
 
@@ -9,14 +8,14 @@ export const runBaseSoftwareKeystoreTest = Keystore => {
 
 	beforeEach(() => {
 		const secureStorageInterface = createStorageMock({});
-		sdk = new ProtocolSdk({
+		sdk = {
 			signTransaction: jest.fn().mockResolvedValue('signed-transaction'),
 			cosignTransaction: jest.fn().mockResolvedValue('cosigned-transaction'),
 			encryptMessage: jest.fn().mockResolvedValue('encrypted-message'),
 			decryptMessage: jest.fn().mockResolvedValue('decrypted-message'),
 			createPrivateAccount: jest.fn().mockResolvedValue('private-account'),
 			createPrivateKeysFromMnemonic: jest.fn().mockResolvedValue(['private-key'])
-		});
+		};
 		keystore = new Keystore({ secureStorageInterface, sdk, networkIdentifiers });
 		keystore._state = {
 			mnemonic,
@@ -93,9 +92,9 @@ export const runBaseSoftwareKeystoreTest = Keystore => {
 		},
 		{
 			methodName: 'cosignTransaction',
-			args: ['networkProperties', 'transaction', 'account'],
+			args: ['transaction', 'account'],
 			expectedSdkMethodName: 'cosignTransaction',
-			expectedSdkMethodArgs: ['networkProperties', 'transaction'],
+			expectedSdkMethodArgs: ['transaction'],
 			expectedResult: 'cosigned-transaction'
 		},
 		{
