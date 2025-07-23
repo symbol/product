@@ -48,10 +48,6 @@ export class MnemonicKeystore extends BaseSoftwareKeystore {
 	createWallet = async (mnemonic, accountPerNetworkCount, password) => {
 		// Save the mnemonic securely
 		await this.secureStorageRepository.setMnemonic(mnemonic, password);
-		const savedMnemonic = await this.secureStorageRepository.getMnemonic(password);
-
-		if (mnemonic !== savedMnemonic)
-			throw new Error('Failed to save mnemonic');
 
 		// Generate accounts from the mnemonic
 		const seedIndexes = [...Array(accountPerNetworkCount).keys()];
@@ -69,10 +65,6 @@ export class MnemonicKeystore extends BaseSoftwareKeystore {
 
 		// Save the accounts securely
 		await this.secureStorageRepository.setAccounts(privateAccounts, password);
-		const savedAccounts = await this.secureStorageRepository.getAccounts(password);
-
-		if (JSON.stringify(privateAccounts) !== JSON.stringify(savedAccounts))
-			throw new Error('Failed to save accounts');
 	};
 
 	/**
