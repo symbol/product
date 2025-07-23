@@ -9,7 +9,7 @@
  * @property {string} address - Account address.
  * @property {string} publicKey - Account public key.
  * @property {string} networkIdentifier - Network identifier the account belongs to.
- * @property {string} accountType - Account type 'mnemonic' or 'external'
+ * @property {string} [accountType] - Account type 'mnemonic' or 'external'
  * @property {number} [index] - Seed account index
  */
 
@@ -21,6 +21,7 @@
 /**
  * @typedef {PublicAccount} WalletAccount
  * @property {string} name - Account name.
+ * @property {string} accountType - Account type 'mnemonic' or 'external'
  */
 
 export default {};
