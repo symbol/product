@@ -1,6 +1,8 @@
-import { cloneNetworkArrayMap, createNetworkMap } from '../../utils/network';
 import { AppError } from '../../error/AppError';
+import { cloneNetworkArrayMap, createNetworkMap } from '../../utils/network';
 import { PersistentStorageRepository } from '../storage/PersistentStorageRepository';
+
+/** @typedef {import('../../types/AddressBook').Contact} Contact */
 
 const createContact = contact => {
 	return {
@@ -12,13 +14,10 @@ const createContact = contact => {
 	};
 };
 
-const createDefaultState = (networkIdentifiers) => ({
+const createDefaultState = networkIdentifiers => ({
 	addressBook: createNetworkMap(() => [], networkIdentifiers)
 });
 
-/**
- * A module that manages the address book.
- */
 export class AddressBookModule {
 	static name = 'addressBook';
 
@@ -69,7 +68,7 @@ export class AddressBookModule {
 
 	/**
 	 * Gets the contacts from the address book for the current network.
-	 * @returns {AddressBookTypes.Contact[]} The contacts.
+	 * @returns {Contact[]} The contacts.
 	 */
 	get contacts() {
 		return this._state.addressBook[this.#root.networkIdentifier];
@@ -77,7 +76,7 @@ export class AddressBookModule {
 
 	/**
 	 * Gets the blacklisted contacts from the address book for the current network.
-	 * @returns {AddressBookTypes.Contact[]} The blacklisted contacts.
+	 * @returns {Contact[]} The blacklisted contacts.
 	 */
 	get blackList() {
 		return this.contacts.filter(contact => contact.isBlackListed);
@@ -85,7 +84,7 @@ export class AddressBookModule {
 
 	/**
 	 * Gets the whitelisted contacts from the address book for the current network.
-	 * @returns {AddressBookTypes.Contact[]} The whitelisted contacts
+	 * @returns {Contact[]} The whitelisted contacts
 	 */
 	get whiteList() {
 		return this.contacts.filter(contact => !contact.isBlackListed);
@@ -94,7 +93,7 @@ export class AddressBookModule {
 	/**
 	 * Gets a contact by its id.
 	 * @param {string} id - The id of the contact.
-	 * @returns {AddressBookTypes.Contact} The contact.
+	 * @returns {Contact} The contact.
 	 */
 	getContactById = id => {
 		return this.contacts.find(contact => contact.id === id) || null;
@@ -103,7 +102,7 @@ export class AddressBookModule {
 	/**
 	 * Gets a contact by its address.
 	 * @param {string} address - The address of the contact.
-	 * @returns {AddressBookTypes.Contact} The contact.
+	 * @returns {Contact} The contact.
 	 */
 	getContactByAddress = address => {
 		return this.contacts.find(contact => contact.address === address) || null;
@@ -111,7 +110,7 @@ export class AddressBookModule {
 
 	/**
 	 * Adds a contact to the address book.
-	 * @param {AddressBookTypes.Contact} newContact - The contact to add.
+	 * @param {Contact} newContact - The contact to add.
 	 * @returns {Promise} A promise that resolves when the contact is
 	 * added to the address book.
 	 */
@@ -160,7 +159,7 @@ export class AddressBookModule {
 
 	/**
 	 * Updates a contact in the address book.
-	 * @param {AddressBookTypes.Contact} newContact - The updated contact.
+	 * @param {Contact} newContact - The updated contact.
 	 * @returns {Promise} A promise that resolves when the contact is
 	 * updated in the address book.
 	 */
