@@ -2,6 +2,8 @@ from collections import namedtuple
 from decimal import ROUND_UP, Decimal
 
 from symbolchain.CryptoTypes import Hash256, PrivateKey
+from symbollightapi.model.Constants import TimeoutSettings, TransactionStatus
+from symbollightapi.model.Exceptions import NodeException
 
 BalanceChange = namedtuple('BalanceChange', ['address', 'currency_id', 'amount', 'transaction_hash'])
 BalanceTransfer = namedtuple('BalanceTransfer', ['signer_public_key', 'recipient_address', 'amount', 'message'])
@@ -26,6 +28,7 @@ class TransactionSender:
 		self.mosaic_id = mosaic_id
 
 		self.percentage_conversion_fee = Decimal(network_facade.config.extensions.get('percentage_conversion_fee', 0))
+		self.unconfirmed_wait_time_seconds = network_facade.config.extensions.get('unconfirmed_wait_time_seconds', 60)
 		self.timestamp = None
 
 	async def init(self):
@@ -68,6 +71,15 @@ class TransactionSender:
 
 		transaction_hash = facade.hash_transaction(transaction)
 		await connector.announce_transaction(transaction)
+
+		is_unconfirmed = await connector.try_wait_for_announced_transaction(
+			transaction_hash,
+			TransactionStatus.UNCONFIRMED,
+			TimeoutSettings(self.unconfirmed_wait_time_seconds, 1))
+
+		if not is_unconfirmed:
+			raise NodeException(f'aborting because transaction {transaction_hash} did not transition to unconfirmed status')
+
 		return transaction_hash
 
 # endregion
