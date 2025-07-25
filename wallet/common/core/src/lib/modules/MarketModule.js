@@ -4,7 +4,7 @@ const ALLOWED_MARKET_DATA_CALL_INTERVAL = 60000;
 const DEFAULT_CURRENCY = 'USD';
 
 const createDefaultState = () => ({
-	userCurrency: null, // user preferred currency to convert XYM amounts,
+	userCurrency: null, // user preferred currency to convert token amounts,
 	marketData: {
 		fetchedAt: 0, // timestamp when the market data is fetched
 		prices: {} // market prices for each currency
@@ -25,6 +25,10 @@ export class MarketModule {
 		this.#onStateChange = options.onStateChange;
 	}
 
+	/**
+	 * Current token price in user currency.
+	 * @returns {{ value: number, currency: string }} - The current token price in user currency.
+	 */
 	get price() {
 		const { marketData, userCurrency } = this._state;
 
@@ -49,8 +53,8 @@ export class MarketModule {
 	};
 
 	/**
-		 * Clears the module state.
-		 */
+	 * Clears the module state.
+	 */
 	resetState = () => {
 		this._state = createDefaultState();
 	};
