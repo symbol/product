@@ -65,6 +65,7 @@ export class MnemonicKeystore extends BaseSoftwareKeystore {
 
 		// Save the accounts securely
 		await this.secureStorageRepository.setAccounts(privateAccounts, password);
+		await this.loadCache(password);
 	};
 
 	/**
