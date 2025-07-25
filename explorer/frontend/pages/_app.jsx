@@ -60,10 +60,11 @@ const AppComponent = ({ Component, pageProps, appConfig }) => {
 	return (
 		<div className={styles.wrapper}>
 			<script dangerouslySetInnerHTML={{ __html: `window.appConfig = ${JSON.stringify(appConfig)};` }} />
-			<Header backendStatus={backendStatus} />
-			<ToastContainer autoClose={2000} className="toast-container" hideProgressBar pauseOnHover />
-			<PageLoadingIndicator />
 			<ConfigProvider>
+				<Header backendStatus={backendStatus} />
+				<ToastContainer autoClose={2000} className="toast-container" hideProgressBar pauseOnHover />
+				<PageLoadingIndicator />
+
 				<div className={styles.contentContainer}>
 					<main className={styles.contentContainerInner}>
 						<div style={getDisplayStyle(isRetainableRoute)}>
