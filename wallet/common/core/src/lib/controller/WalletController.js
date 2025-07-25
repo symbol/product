@@ -16,11 +16,13 @@ import { cloneNetworkArrayMap, cloneNetworkObjectMap, createNetworkMap } from '.
 import { PersistentStorageRepository } from '../storage/PersistentStorageRepository';
 import { StorageInterface } from '../storage/StorageInterface';
 
+/** @typedef {import('../../types/Account').PublicAccount} PublicAccount */
 /** @typedef {import('../../types/Account').WalletAccount} WalletAccount */
 /** @typedef {import('../../types/Network').NetworkArrayMap} NetworkArrayMap */
 /** @typedef {import('../../types/Network').NetworkProperties} NetworkProperties */
 /** @typedef {import('../../types/ProtocolApi').ProtocolApi} ProtocolApi */
 /** @typedef {import('../../types/ProtocolSdk').ProtocolSdk} ProtocolSdk */
+/** @typedef {import('../../types/Transaction').Transaction} Transaction */
 /** @typedef {import('../../types/Logger').Logger} Logger */
 
 const STORAGE_ROOT_SCOPE = 'wallet';
@@ -119,10 +121,13 @@ export class WalletController {
 
 		this.modules = Object.fromEntries(modules.map(Module => {
 			const moduleInstance = new Module({
+				networkIdentifiers,
 				persistentStorageInterface: scopedPersistentStorageInterface.createScope(Module.name),
 				secureStorageInterface: scopedSecureStorageInterface.createScope(Module.name),
 				api,
-				sdk
+				sdk,
+				root: this,
+				onStateChange: this._handleModuleStateChange
 			});
 
 			return [moduleInstance.constructor.name, moduleInstance];
@@ -150,6 +155,10 @@ export class WalletController {
 		this.resetState();
 	}
 
+	/**
+	 * Returns true if wallet contains at least one account.
+	 * @returns {boolean} - true if wallet has accounts, false otherwise.
+	 */
 	get hasAccounts() {
 		let hasAccounts = false;
 
@@ -161,22 +170,34 @@ export class WalletController {
 		return hasAccounts;
 	}
 
-	// all user accounts in the wallet. Grouped by network
+	/**
+	 * Returns all user accounts in the wallet.
+	 * @returns {NetworkArrayMap<WalletAccount>} - All user accounts grouped by network.
+	 */
 	get accounts() {
 		return this._state.walletAccounts;
 	}
 
-	// account infos of all the user accounts in the wallet. Grouped by network
+	/**
+	 * Returns account infos of all the user accounts in the wallet.
+	 * @returns {NetworkArrayMap<object>} - Account infos grouped by network.
+	 */
 	get accountInfos() {
 		return this._state.accountInfos;
 	}
 
-	// seed addresses generated from mnemonic. Grouped by network
+	/**
+	 * Returns seed addresses generated from mnemonic.
+	 * @returns {NetworkArrayMap<PublicAccount>} - Seed accounts grouped by network.
+	 */
 	get seedAddresses() {
 		return this._state.seedAddresses;
 	}
 
-	// currently selected user account
+	/**
+	 * Returns the currently selected user account.
+	 * @returns {WalletAccount|null} - The currently selected user account or null if not selected.
+	 */
 	get currentAccount() {
 		const { currentAccountPublicKey, walletAccounts, networkIdentifier } = this._state;
 		const currentAccount = walletAccounts[networkIdentifier].find(account => account.publicKey === currentAccountPublicKey);
@@ -184,49 +205,76 @@ export class WalletController {
 		return currentAccount || null;
 	}
 
-	// currently selected user account information
+	/**
+	 * Returns the currently selected user account information.
+	 * @returns {object|null} - The currently selected user account information or null if not loaded.
+	 */
 	get currentAccountInfo() {
 		const { accountInfos, currentAccountPublicKey, networkIdentifier } = this._state;
 		return accountInfos[networkIdentifier][currentAccountPublicKey] || null;
 	}
 
-	// the list of latest transactions for the currently selected account
+	/**
+	 * Returns the list of latest transactions for the currently selected user account.
+	 * @returns {Array<Transaction>} - The list of latest transactions or an empty array if not loaded.
+	 */
 	get currentAccountLatestTransactions() {
 		const { latestTransactions, currentAccountPublicKey, networkIdentifier } = this._state;
 		return latestTransactions[networkIdentifier][currentAccountPublicKey] || [];
 	}
 
-	// network identifier of the selected network
+	/**
+	 * Returns the network identifier of the selected network.
+	 * @returns {string} - The network identifier.
+	 */
 	get networkIdentifier() {
 		return this._state.networkIdentifier;
 	}
 
-	// network and chain info fetched from currently connected node
+	/**
+	 * Returns the network properties of the selected network.
+	 * @returns {object} - The network properties.
+	 */
 	get networkProperties() {
 		return this._state.networkProperties;
 	}
 
-	// preferred node url, selected by the user
+	/**
+	 * Returns the selected node URL.
+	 * @returns {string} - The selected node URL.
+	 */
 	get selectedNodeUrl() {
 		return this._state.selectedNodeUrl;
 	}
 
-	// network connection status
+	/**
+	 * Returns the network status.
+	 * @returns {string} - The network status.
+	 */
 	get networkStatus() {
 		return this._state.networkStatus;
 	}
 
-	// network connection is ready for making requests
+	/**
+	 * Returns true if network connection is ready for making requests.
+	 * @returns {boolean} - True if network connection is ready, false otherwise.
+	 */
 	get isNetworkConnectionReady() {
 		return this.networkStatus === NetworkConnectionStatus.CONNECTED ;
 	}
 
-	// wallet cache is loaded from the storage
+	/**
+	 * Returns true if wallet state is loaded from cache.
+	 * @returns {boolean} - True if wallet state is ready, false otherwise.
+	 */
 	get isStateReady() {
 		return this._state.isCacheLoaded;
 	}
 
-	// wallet cache is loaded and network connection is ready
+	/**
+	 * Returns true if wallet state is loaded from cache and network connection is ready.
+	 * @returns {boolean} - True if wallet is ready, false otherwise.
+	 */
 	get isWalletReady() {
 		return this.isStateReady && this.isNetworkConnectionReady;
 	}
@@ -571,6 +619,7 @@ export class WalletController {
 		this.#setState(() => {
 			this._state.accountInfos = accountInfos;
 		});
+		this._emit(ControllerEventName.ACCOUNT_INFO_CHANGE, accountInfo);
 
 		return accountInfo;
 	};
@@ -770,6 +819,8 @@ export class WalletController {
 		this.#setState(() => {
 			this._state.networkProperties = networkProperties;
 		});
+
+		this._emit(ControllerEventName.NETWORK_PROPERTIES_CHANGE, networkProperties);
 	};
 
 	/**
@@ -780,6 +831,10 @@ export class WalletController {
 	 */
 	_handleChainEvent = async (eventName, payload) => {
 		this._emit(eventName, payload);
+	};
+
+	_handleModuleStateChange = () => {
+		this._emit(ControllerEventName.STATE_CHANGE);
 	};
 
 	/**
