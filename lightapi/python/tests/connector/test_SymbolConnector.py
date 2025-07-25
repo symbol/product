@@ -70,11 +70,11 @@ MULTISIG_INFO_1 = {
 }
 
 
-def generate_transaction_statuses(status_start_height, transaction_hashes):
+def generate_transaction_statuses(status_start_height, status_groups, transaction_hashes):
 	return [
 		{
-			'group': 'confirmed' if 0 == i % 2 else 'unconfirmed',
-			'code': 'Success',
+			'group': status_groups[i % len(status_groups)],
+			'code': f'Failure{i}' if 'failed' == status_groups[i % len(status_groups)] else 'Success',
 			'hash': str(transaction_hash),
 			'height': str(status_start_height + i)
 		}
@@ -92,6 +92,7 @@ async def server(aiohttp_client):
 		def __init__(self):
 			self.urls = []
 			self.status_start_height = 111001
+			self.status_groups = ('confirmed', 'unconfirmed')
 
 			self.request_json_payloads = []
 			self.simulate_error = False
@@ -187,7 +188,10 @@ async def server(aiohttp_client):
 
 		async def transaction_statuses(self, request):
 			request_json = json.loads(await request.text())
-			return await self._process(request, generate_transaction_statuses(self.status_start_height, request_json['hashes']))
+			return await self._process(request, generate_transaction_statuses(
+				self.status_start_height,
+				self.status_groups,
+				request_json['hashes']))
 
 		async def transaction_confirmed(self, request):
 			return await self._process(request, {'meta': {'height': 1234}, 'transaction': {'message': 'foo'}})
@@ -620,7 +624,7 @@ async def test_can_query_account_multisig_information_for_known_account(server):
 # endregion
 
 
-# region POST (transaction_statuses, filter_confirmed_transactions)
+# region POST (transaction_statuses, filter_confirmed_transactions, filter_failed_transactions)
 
 async def test_can_query_transaction_statuses(server):  # pylint: disable=redefined-outer-name
 	# Arrange:
@@ -662,6 +666,23 @@ async def test_can_filter_confirmed_transactions(server):  # pylint: disable=red
 
 	assert (Hash256(HASHES[0]), 111001) == transaction_hash_height_pairs[0]
 	assert (Hash256(HASHES[1]), 111003) == transaction_hash_height_pairs[1]
+
+
+async def test_can_filter_failed_transactions(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	server.mock.status_groups = ('failed', 'confirmed')
+
+	connector = SymbolConnector(server.make_url(''))
+
+	# Act:
+	transaction_hash_error_pairs = await connector.filter_failed_transactions([HASHES[0], HASHES[2], HASHES[1]])
+
+	# Assert:
+	assert [f'{server.make_url("")}/transactionStatus'] == server.mock.urls
+	assert 2 == len(transaction_hash_error_pairs)
+
+	assert (Hash256(HASHES[0]), 'Failure0') == transaction_hash_error_pairs[0]
+	assert (Hash256(HASHES[1]), 'Failure2') == transaction_hash_error_pairs[1]
 
 # endregion
 

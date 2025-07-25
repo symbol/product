@@ -31,7 +31,7 @@ class LinkedPublicKeys:
 # endregion
 
 
-class SymbolConnector(BasicConnector):
+class SymbolConnector(BasicConnector):  # pylint: disable=too-many-public-methods
 	"""Async connector for interacting with a Symbol node."""
 
 	def __init__(self, endpoint):
@@ -237,6 +237,16 @@ class SymbolConnector(BasicConnector):
 			(Hash256(transaction_status['hash']), int(transaction_status['height']))
 			for transaction_status in transaction_statuses
 			if 'confirmed' == transaction_status['group']
+		]
+
+	async def filter_failed_transactions(self, transaction_hashes):
+		"""Filters transaction hashes and returns only failed ones with error codes."""
+
+		transaction_statuses = await self.transaction_statuses(transaction_hashes)
+		return [
+			(Hash256(transaction_status['hash']), transaction_status['code'])
+			for transaction_status in transaction_statuses
+			if 'failed' == transaction_status['group']
 		]
 
 	# endregion
