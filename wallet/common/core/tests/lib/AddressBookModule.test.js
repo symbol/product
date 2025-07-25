@@ -117,7 +117,10 @@ describe('AddressBookModule', () => {
 
 			// Act & Assert:
 			await expect(addressBookModule.addContact(contact1))
-				.rejects.toThrow(new AppError('error_failed_add_contact_already_exists', `Failed to add contact. Contact with address "${contact1.address}" already exists`));
+				.rejects.toThrow(new AppError(
+					'error_failed_add_contact_already_exists',
+					`Failed to add contact. Contact with address "${contact1.address}" already exists`
+				));
 		});
 	});
 
@@ -145,7 +148,10 @@ describe('AddressBookModule', () => {
 
 			// Act & Assert:
 			await expect(addressBookModule.removeContact(contact1.id))
-				.rejects.toThrow(new AppError('error_failed_remove_contact_not_found', `Failed to remove contact. Contact with id "${contact1.id}" not found`));
+				.rejects.toThrow(new AppError(
+					'error_failed_remove_contact_not_found',
+					`Failed to remove contact. Contact with id "${contact1.id}" not found`
+				));
 		});
 	});
 
@@ -174,7 +180,10 @@ describe('AddressBookModule', () => {
 
 			// Act & Assert:
 			await expect(addressBookModule.updateContact(contact1))
-				.rejects.toThrow(new AppError('error_failed_update_contact_not_found', `Failed to update contact. Contact with id "${contact1.id}" not found`));
+				.rejects.toThrow(new AppError(
+					'error_failed_update_contact_not_found',
+					`Failed to update contact. Contact with id "${contact1.id}" not found`
+				));
 		});
 	});
 
