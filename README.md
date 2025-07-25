@@ -77,4 +77,4 @@ Detailed version can be seen on [codecov.io][product-cov-link].
 [wallet-common-core-lint]: https://jenkins.symbolsyndicate.us/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Fwallet-common-core%2Fdev%2F&config=wallet-common-core-lint
 [wallet-common-core-test]: https://jenkins.symbolsyndicate.us/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Fwallet-common-core%2Fdev%2F&config=wallet-common-core-test
 [wallet-common-core-cov]: https://codecov.io/gh/symbol/product/branch/dev/graph/badge.svg?token=SSYYBMK0M7&flag=wallet-common-core
-[wallet-common-core-cov-link]: https://codecov.io/gh/symbol/product/tree/dev/tools/vanity
+[wallet-common-core-cov-link]: https://codecov.io/gh/symbol/product/tree/dev/wallet/common/core
