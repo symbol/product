@@ -1,10 +1,13 @@
+import asyncio
 from binascii import hexlify, unhexlify
 from collections import namedtuple
 
 from symbolchain.CryptoTypes import Hash256, PublicKey
 from symbolchain.symbol.Network import Address, NetworkTimestamp
 
+from ..model.Constants import TransactionStatus
 from ..model.Endpoint import Endpoint
+from ..model.Exceptions import NodeException
 from ..model.NodeInfo import NodeInfo
 from .BasicConnector import BasicConnector
 
@@ -302,5 +305,33 @@ class SymbolConnector(BasicConnector):  # pylint: disable=too-many-public-method
 		"""Announces a partial transaction to the network."""
 
 		await self._announce_transaction(transaction_payload, 'transactions/partial')
+
+	# endregion
+
+	# region try_wait_for_announced_transaction
+
+	async def try_wait_for_announced_transaction(self, transaction_hash, desired_status, timeout_settings):
+		"""Tries to wait for a previously announced transaction to transition to a desired status."""
+
+		desired_status_strings = ['confirmed']
+		if TransactionStatus.UNCONFIRMED == desired_status:
+			desired_status_strings.append('unconfirmed')
+
+		for _ in range(timeout_settings.retry_count):
+			response_json = await self.get(f'transactionStatus/{transaction_hash}', not_found_as_error=False)
+
+			if 'group' not in response_json:  # not found
+				continue
+
+			status = response_json['group']
+			if status in desired_status_strings:
+				return True
+
+			if 'failed' == status:
+				raise NodeException(f'transaction was rejected with error {response_json["code"]}')
+
+			await asyncio.sleep(timeout_settings.interval)
+
+		return False
 
 	# endregion
