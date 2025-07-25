@@ -463,7 +463,7 @@ export class WalletController {
 	 */
 	#addAccount = async account => {
 		// Load existing accounts from persistent storage
-		const accounts = await this._persistentStorageRepository.getAccounts();
+		const accounts = await this.#loadAccounts();
 		const networkAccounts = accounts[account.networkIdentifier];
 
 		// Check if the account already in the wallet
@@ -494,7 +494,7 @@ export class WalletController {
 	renameAccount = async ({ networkIdentifier, publicKey, name }) => {
 		const account = this.#getAccount(networkIdentifier, publicKey);
 		account.name = name;
-		const accounts = await this._persistentStorageRepository.getAccounts();
+		const accounts = await this.#loadAccounts();
 
 		const updatedAccounts = createNetworkMap(currentNetworkIdentifier => {
 			if (currentNetworkIdentifier === networkIdentifier) {
@@ -531,7 +531,7 @@ export class WalletController {
 		}
 
 		// Load existing accounts from persistent storage
-		const accounts = await this._persistentStorageRepository.getAccounts();
+		const accounts = await this.#loadAccounts();
 		const updatedAccounts = createNetworkMap(currentNetworkIdentifier => {
 			if (currentNetworkIdentifier === networkIdentifier) {
 				return accounts[currentNetworkIdentifier].filter(acc =>
@@ -575,7 +575,7 @@ export class WalletController {
 	 */
 	changeAccountsOrder = async (networkIdentifier, accountsOrder) => {
 		const accountsPublicKeys = accountsOrder.map(account => account.publicKey);
-		const accounts = await this._persistentStorageRepository.getAccounts();
+		const accounts = await this.#loadAccounts();
 		accounts[networkIdentifier] = accounts[networkIdentifier].sort((a, b) => {
 			return accountsPublicKeys.indexOf(a.publicKey) - accountsPublicKeys.indexOf(b.publicKey);
 		});
@@ -593,6 +593,17 @@ export class WalletController {
 		this.#setState(() => {
 			this._state.walletAccounts = accounts;
 		});
+	};
+
+	/**
+	 * Loads accounts from the persistent storage and returns them safely handled empty values.
+	 * @returns {Promise<NetworkArrayMap<WalletAccount>>} - a promise that resolves to the accounts array map
+	 */
+	#loadAccounts = async () => {
+		const accounts = await this._persistentStorageRepository.getAccounts();
+		const defaultState = createDefaultState(this.networkIdentifiers, this.#createDefaultNetworkProperties);
+		
+		return cloneNetworkArrayMap(accounts, this.networkIdentifiers, defaultState.walletAccounts);
 	};
 
 	/**
@@ -649,7 +660,13 @@ export class WalletController {
 		// Cache transactions for current account
 		const isFilterActivated = filter && Object.keys(filter).length > 0;
 		if (!isFilterActivated && group === TransactionGroup.CONFIRMED && pageNumber === 1) {
-			const latestTransactions = await this._persistentStorageRepository.getLatestTransactions();
+			const latestTransactionsOrNull = await this._persistentStorageRepository.getLatestTransactions();
+			const defaultState = createDefaultState(this.networkIdentifiers, this.#createDefaultNetworkProperties);
+			const latestTransactions = cloneNetworkObjectMap(
+				latestTransactionsOrNull, 
+				this.networkIdentifiers, 
+				defaultState.latestTransactions
+			);
 			latestTransactions[networkIdentifier][publicKey] = transactions;
 
 			await this._persistentStorageRepository.setLatestTransactions(latestTransactions);
@@ -844,6 +861,8 @@ export class WalletController {
 		this._state = createDefaultState(this.networkIdentifiers, this.#createDefaultNetworkProperties);
 
 		Object.values(this.modules).forEach(module => module.resetState?.());
+
+		this._emit(ControllerEventName.STATE_CHANGE);
 	};
 
 	#setState = callback => {
