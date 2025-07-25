@@ -148,7 +148,7 @@ const formatBaseTransaction = (data, filter) => {
 		direction: isOutgoing ? TRANSACTION_DIRECTION.OUTGOING : isIncoming ? TRANSACTION_DIRECTION.INCOMING : null,
 		height: data.height || null,
 		signature: data.signature,
-		fee: data.fee || 0,
+		fee: data.fee,
 		amount: 0,
 		value: [],
 		body: [
