@@ -13,8 +13,10 @@ export const ControllerEventName = {
 	REMOVE_TRANSACTION_UNCONFIRMED: 'wc:transaction.remove.unconfirmed',
 	TRANSACTION_ERROR: 'wc:transaction.error',
 	ACCOUNT_CHANGE: 'wc:account.change',
+	ACCOUNT_INFO_CHANGE: 'wc:account.info.change',
 	NETWORK_CHANGE: 'wc:network.change',
-	NETWORK_STATUS_CHANGE: 'wc:network.status.change'
+	NETWORK_STATUS_CHANGE: 'wc:network.status.change',
+	NETWORK_PROPERTIES_CHANGE: 'wc:network.properties.change'
 };
 
 export const NetworkConnectionStatus = {
