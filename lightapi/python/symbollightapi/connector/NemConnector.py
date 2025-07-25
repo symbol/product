@@ -7,7 +7,7 @@ from symbolchain.CryptoTypes import Hash256, PublicKey, Signature
 from symbolchain.facade.NemFacade import NemFacade
 from symbolchain.nem.Network import Address, NetworkTimestamp
 
-from ..model.Constants import DEFAULT_ASYNC_LIMITER_ARGUMENTS
+from ..model.Constants import DEFAULT_ASYNC_LIMITER_ARGUMENTS, TransactionStatus
 from ..model.Endpoint import Endpoint
 from ..model.Exceptions import NodeException
 from ..model.NodeInfo import NodeInfo
@@ -272,5 +272,26 @@ class NemConnector(BasicConnector):
 		response = await self._announce_transaction(transaction_payload, 'transaction/announce')
 		if 'SUCCESS' != response['message']:
 			raise NodeException(f'announce transaction failed {response}')
+
+	# endregion
+
+	# region try_wait_for_announced_transaction
+
+	async def try_wait_for_announced_transaction(self, transaction_hash, desired_status, timeout_settings):
+		"""Tries to wait for a previously announced transaction to transition to a desired status."""
+
+		if TransactionStatus.UNCONFIRMED == desired_status:
+			# announce would fail if a transaction is not unconfirmed
+			return True
+
+		for _ in range(timeout_settings.retry_count):
+			try:
+				await self.transaction_confirmed(transaction_hash)
+				return True
+			except NodeException:
+				# ignore 400 not found errors (not_found_as_error will not work because these are not 404)
+				await asyncio.sleep(timeout_settings.interval)
+
+		return False
 
 	# endregion

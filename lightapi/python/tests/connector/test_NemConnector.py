@@ -9,6 +9,7 @@ from symbolchain.nc import Signature
 from symbolchain.nem.Network import Address, Network
 
 from symbollightapi.connector.NemConnector import NemConnector
+from symbollightapi.model.Constants import TimeoutSettings, TransactionStatus
 from symbollightapi.model.Endpoint import Endpoint
 from symbollightapi.model.Exceptions import NodeException
 from symbollightapi.model.NodeInfo import NodeInfo
@@ -796,5 +797,44 @@ async def test_cannot_announce_transaction_with_validation_error(server):  # pyl
 	with pytest.raises(NodeException, match='announce transaction failed'):
 		await connector.announce_transaction(_create_example_transfer_transaction())
 
+# endregion
+
+
+# region try_wait_for_announced_transaction
+
+async def test_can_try_wait_for_announced_transaction_unconfirmed_success(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	connector = NemConnector(server.make_url(''))
+
+	# Act:
+	result = await connector.try_wait_for_announced_transaction(Hash256(HASHES[0]), TransactionStatus.UNCONFIRMED, TimeoutSettings(5, 0.001))
+
+	# Assert:
+	assert [] == server.mock.urls
+	assert result
+
+
+async def test_can_try_wait_for_announced_transaction_confirmed_success(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	connector = NemConnector(server.make_url(''))
+
+	# Act:
+	result = await connector.try_wait_for_announced_transaction(Hash256(HASHES[0]), TransactionStatus.CONFIRMED, TimeoutSettings(5, 0.001))
+
+	# Assert:
+	assert [f'{server.make_url("")}/transaction/get?hash={HASHES[0]}'] == server.mock.urls
+	assert result
+
+
+async def test_can_try_wait_for_announced_transaction_confirmed_timeout(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	connector = NemConnector(server.make_url(''))
+
+	# Act:
+	result = await connector.try_wait_for_announced_transaction(Hash256(HASHES[2]), TransactionStatus.CONFIRMED, TimeoutSettings(5, 0.001))
+
+	# Assert:
+	assert [f'{server.make_url("")}/transaction/get?hash={HASHES[2]}'] * 5 == server.mock.urls
+	assert not result
 
 # endregion

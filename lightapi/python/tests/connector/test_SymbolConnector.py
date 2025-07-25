@@ -7,6 +7,7 @@ from symbolchain.CryptoTypes import Hash256, PublicKey
 from symbolchain.symbol.Network import Address
 
 from symbollightapi.connector.SymbolConnector import SymbolConnector
+from symbollightapi.model.Constants import TimeoutSettings, TransactionStatus
 from symbollightapi.model.Endpoint import Endpoint
 from symbollightapi.model.Exceptions import NodeException
 from symbollightapi.model.NodeInfo import NodeInfo
@@ -186,6 +187,24 @@ async def server(aiohttp_client):
 
 			return await self._process(request, {'code': 'ResourceNotFound', 'message': 'no resource exists with id'}, 404)
 
+		async def transaction_status(self, request):
+			transaction_hash = Hash256(request.match_info['transaction_hash'])
+
+			if Hash256(HASHES[0]) == transaction_hash:
+				return await self._process(request, {'hash': str(transaction_hash), 'code': 'Success', 'group': 'confirmed'})
+
+			if Hash256(HASHES[1]) == transaction_hash:
+				return await self._process(request, {'hash': str(transaction_hash), 'code': 'Success', 'group': 'unconfirmed'})
+
+			if Hash256(HASHES[2]) == transaction_hash:
+				return await self._process(request, {
+					'hash': str(transaction_hash),
+					'code': 'Failure_Core_Insufficient_Balance',
+					'group': 'failed'
+				})
+
+			return await self._process(request, {'code': 'ResourceNotFound', 'message': 'no resource exists with id'}, 404)
+
 		async def transaction_statuses(self, request):
 			request_json = json.loads(await request.text())
 			return await self._process(request, generate_transaction_statuses(
@@ -238,6 +257,7 @@ async def server(aiohttp_client):
 	app.router.add_get(r'/account/{address}/multisig', mock_server.account_multisig)
 	app.router.add_get(f'/transactions/confirmed/{HASHES[0]}', mock_server.transaction_confirmed)
 	app.router.add_get('/transactions/confirmed', mock_server.transactions_confirmed)
+	app.router.add_get(r'/transactionStatus/{transaction_hash}', mock_server.transaction_status)
 	app.router.add_post('/transactionStatus', mock_server.transaction_statuses)
 	app.router.add_put('/transactions', mock_server.announce_transaction)
 	app.router.add_put('/transactions/partial', mock_server.announce_transaction)
@@ -795,5 +815,76 @@ async def test_cannot_announce_transaction_with_error(server):  # pylint: disabl
 
 async def test_cannot_announce_transaction_with_error_partial(server):  # pylint: disable=redefined-outer-name
 	await _assert_cannot_announce_transaction_with_error(server, 'announce_partial_transaction')
+
+# endregion
+
+
+# region try_wait_for_announced_transaction
+
+async def _assert_can_try_wait_for_announced_transaction_success(server, transaction_hash, status):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	connector = SymbolConnector(server.make_url(''))
+
+	# Act:
+	result = await connector.try_wait_for_announced_transaction(transaction_hash, status, TimeoutSettings(5, 0.001))
+
+	# Assert:
+	assert [f'{server.make_url("")}/transactionStatus/{transaction_hash}'] == server.mock.urls
+	assert result
+
+
+async def _assert_can_try_wait_for_announced_transaction_failure(server, transaction_hash, status):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	connector = SymbolConnector(server.make_url(''))
+
+	# Act + Assert:
+	with pytest.raises(NodeException, match='transaction was rejected with error'):
+		await connector.try_wait_for_announced_transaction(transaction_hash, status, TimeoutSettings(5, 0.001))
+
+	assert [f'{server.make_url("")}/transactionStatus/{transaction_hash}'] == server.mock.urls
+
+
+async def _assert_can_try_wait_for_announced_transaction_timeout(server, transaction_hash, status):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	connector = SymbolConnector(server.make_url(''))
+
+	# Act:
+	result = await connector.try_wait_for_announced_transaction(transaction_hash, status, TimeoutSettings(5, 0.001))
+
+	# Assert:
+	assert [f'{server.make_url("")}/transactionStatus/{transaction_hash}'] * 5 == server.mock.urls
+	assert not result
+
+
+async def test_can_try_wait_for_announced_transaction_unconfirmed_success_confirmed(server):  # pylint: disable=redefined-outer-name
+	await _assert_can_try_wait_for_announced_transaction_success(server, Hash256(HASHES[0]), TransactionStatus.UNCONFIRMED)
+
+
+async def test_can_try_wait_for_announced_transaction_unconfirmed_success_unconfirmed(server):  # pylint: disable=redefined-outer-name
+	await _assert_can_try_wait_for_announced_transaction_success(server, Hash256(HASHES[1]), TransactionStatus.UNCONFIRMED)
+
+
+async def test_can_try_wait_for_announced_transaction_unconfirmed_timeout(server):  # pylint: disable=redefined-outer-name
+	await _assert_can_try_wait_for_announced_transaction_timeout(server, Hash256(HASHES[3]), TransactionStatus.UNCONFIRMED)
+
+
+async def test_can_try_wait_for_announced_transaction_unconfirmed_failure(server):  # pylint: disable=redefined-outer-name
+	await _assert_can_try_wait_for_announced_transaction_failure(server, Hash256(HASHES[2]), TransactionStatus.UNCONFIRMED)
+
+
+async def test_can_try_wait_for_announced_transaction_confirmed_success(server):  # pylint: disable=redefined-outer-name
+	await _assert_can_try_wait_for_announced_transaction_success(server, Hash256(HASHES[0]), TransactionStatus.CONFIRMED)
+
+
+async def test_can_try_wait_for_announced_transaction_confirmed_timeout_unconfirmed(server):  # pylint: disable=redefined-outer-name
+	await _assert_can_try_wait_for_announced_transaction_timeout(server, Hash256(HASHES[1]), TransactionStatus.CONFIRMED)
+
+
+async def test_can_try_wait_for_announced_transaction_confirmed_timeout_unknown(server):  # pylint: disable=redefined-outer-name
+	await _assert_can_try_wait_for_announced_transaction_timeout(server, Hash256(HASHES[3]), TransactionStatus.CONFIRMED)
+
+
+async def test_can_try_wait_for_announced_transaction_confirmed_failure(server):  # pylint: disable=redefined-outer-name
+	await _assert_can_try_wait_for_announced_transaction_failure(server, Hash256(HASHES[2]), TransactionStatus.CONFIRMED)
 
 # endregion
