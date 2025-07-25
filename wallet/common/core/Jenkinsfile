@@ -7,4 +7,5 @@ defaultCiPipeline {
 	packageId = 'wallet-common-core'
 
 	codeCoverageTool = 'c8'
+	minimumCodeCoverage = 95
 }
