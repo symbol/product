@@ -21,7 +21,7 @@ const createDefaultState = networkIdentifiers => ({
 export class AddressBookModule {
 	static name = 'addressBook';
 
-	#persistentStorageRepository;
+	_persistentStorageRepository;
 	#root;
 	#networkIdentifiers;
 	#onStateChange;
@@ -29,7 +29,7 @@ export class AddressBookModule {
 	constructor(options) {
 		this._state = createDefaultState(options.networkIdentifiers);
 		this.#root = options.root;
-		this.#persistentStorageRepository = new PersistentStorageRepository(options.persistentStorageInterface);
+		this._persistentStorageRepository = new PersistentStorageRepository(options.persistentStorageInterface);
 		this.#onStateChange = options.onStateChange;
 		this.#networkIdentifiers = options.networkIdentifiers;
 	}
@@ -127,7 +127,7 @@ export class AddressBookModule {
 		}
 
 		networkContacts.push(createContact(newContact));
-		await this.#persistentStorageRepository.setAddressBook(addressBook);
+		await this._persistentStorageRepository.setAddressBook(addressBook);
 
 		this.#setState(() => {
 			this._state.addressBook = addressBook;
@@ -150,7 +150,7 @@ export class AddressBookModule {
 
 
 		addressBook[this.#root.networkIdentifier] = updatedNetworkContacts;
-		await this.#persistentStorageRepository.setAddressBook(addressBook);
+		await this._persistentStorageRepository.setAddressBook(addressBook);
 
 		this.#setState(() => {
 			this._state.addressBook = addressBook;
@@ -176,7 +176,7 @@ export class AddressBookModule {
 		}
 
 		Object.assign(contactToUpdate, createContact(newContact));
-		await this.#persistentStorageRepository.setAddressBook(addressBook);
+		await this._persistentStorageRepository.setAddressBook(addressBook);
 
 		this.#setState(() => {
 			this._state.addressBook = addressBook;
@@ -184,7 +184,7 @@ export class AddressBookModule {
 	};
 
 	#loadAddressBook = async () => {
-		const addressBook = await this.#persistentStorageRepository.getAddressBook();
+		const addressBook = await this._persistentStorageRepository.getAddressBook();
 		const defaultState = createDefaultState(this.#networkIdentifiers);
 
 		return cloneNetworkArrayMap(

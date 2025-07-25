@@ -14,13 +14,13 @@ const createDefaultState = () => ({
 export class MarketModule {
 	static name = 'market';
 
-	#persistentStorageRepository;
+	_persistentStorageRepository;
 	#api;
 	#onStateChange;
 
 	constructor(options) {
 		this._state = createDefaultState();
-		this.#persistentStorageRepository = new PersistentStorageRepository(options.persistentStorageInterface);
+		this._persistentStorageRepository = new PersistentStorageRepository(options.persistentStorageInterface);
 		this.#api = options.api;
 		this.#onStateChange = options.onStateChange;
 	}
@@ -43,7 +43,7 @@ export class MarketModule {
 	 * @returns {Promise<void>} A promise that resolves when the module is initialized.
 	 */
 	loadCache = async () => {
-		const userCurrency = await this.#persistentStorageRepository.getUserCurrency();
+		const userCurrency = await this._persistentStorageRepository.getUserCurrency();
 
 		this.resetState();
 
@@ -75,7 +75,7 @@ export class MarketModule {
 	 * @param {string} userCurrency - The user currency.
 	 */
 	selectUserCurrency = async userCurrency => {
-		await this.#persistentStorageRepository.setUserCurrency(userCurrency);
+		await this._persistentStorageRepository.setUserCurrency(userCurrency);
 
 		this.#setState(() => {
 			this._state.userCurrency = userCurrency;
