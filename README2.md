@@ -94,6 +94,26 @@ python3 -m shoestring announce-transaction --transaction node/linking_transactio
 python -m shoestring min-cosignatures-count
 python -m shoestring min-cosignatures-count --update
 ```
+
+2025_07_26
+```
+configﾌｧｲﾙを生成する、init命令(commands/init.py)を修正、拡張した init-all命令(commands/init-all.py)を新設。
+init-all命令では、configﾌｧｲﾙ名とその場所の指定は不可、命令の引数は、--packageのみとなる。
+
+init-all命令で行われる事：
+①shoestringﾃﾞｨﾚｸﾄﾘを作成
+②通常の、shoestring/shoestring.iniを生成。
+③wizardに準拠した書式で、shoestring/overrides.iniを生成。
+④内容が'{}'の、shoestring/rest_overrides.jsonを生成。
+
+init-all命令の実行後に、
+shoestring.iniと、
+overrides.iniの編集後、
+(任意で、rest_overrides.jsonの編集、pemtool命令、import-bootstrap命令)
+setup命令の実行で、nodeが完成する。
+
+init-all命令の新設に伴い、__main__.pyをこれに対応させた。
+```
 ----------------------------------------------------------------------------------------------
 2025_07_16
 ```
@@ -193,4 +213,23 @@ python3 -m shoestring announce-transaction --transaction node/linking_transactio
 Example command:
 python -m shoestring min-cosignatures-count
 python -m shoestring min-cosignatures-count --update
+```
+
+2025_07_26
+```
+The init command (commands/init.py) that generates a config file has been modified and expanded to create a new init-all command (commands/init-all.py).
+The init-all command does not allow you to specify the config file name or location, and the only argument to the command is --package.
+
+What the init-all command does:
+①Creates a shoestring directory
+②Generates the normal shoestring/shoestring.ini.
+③Generates shoestring/overrides.ini in a format that conforms to the wizard.
+④Generates shoestring/rest_overrides.json with the contents '{}'.
+
+After executing the init-all command,
+after editing shoestring.ini and
+overrides.ini (optionally, edit rest_overrides.json, use the pemtool command, and the import-bootstrap command),
+the node is completed by executing the setup command.
+
+With the introduction of the new init-all command, __main__.py has been updated to comply with it.
 ```
