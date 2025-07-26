@@ -1,0 +1,55 @@
+import argparse
+import asyncio
+import gettext
+import importlib
+import os
+import sys
+from pathlib import Path
+
+
+def register_subcommand(subparsers, name, help_text):
+	parser = subparsers.add_parser(name, help=help_text)
+	module = importlib.import_module(f'shoestring.commands.{name.replace("-", "_")}')
+	module.add_arguments(parser)
+
+
+def parse_args(args):
+	parser = argparse.ArgumentParser(description=_('main-title'))
+	subparsers = parser.add_subparsers(title='subcommands', help=_('main-subcommands-help'))
+
+	register_subcommand(subparsers, 'announce-transaction', _('main-announce-transaction-help'))
+	register_subcommand(subparsers, 'health', _('main-health-help'))
+	register_subcommand(subparsers, 'import-bootstrap', _('main-import-bootstrap-help'))
+	register_subcommand(subparsers, 'import-harvesters', _('main-import-harvesters-help'))
+	register_subcommand(subparsers, 'init', _('main-init-help'))
+	register_subcommand(subparsers, 'min-cosignatures-count', _('main-min-cosignatures-count-help'))
+	register_subcommand(subparsers, 'pemtool', _('main-pemtool-help'))
+	register_subcommand(subparsers, 'renew-certificates', _('main-renew-certificates-help'))
+	register_subcommand(subparsers, 'renew-voting-keys', _('main-renew-voting-keys-help'))
+	register_subcommand(subparsers, 'reset-data', _('main-reset-data-help'))
+	register_subcommand(subparsers, 'setup', _('main-setup-help'))
+	register_subcommand(subparsers, 'signer', _('main-signer-help'))
+	register_subcommand(subparsers, 'upgrade', _('main-upgrade-help'))
+	register_subcommand(subparsers, 'init-all', _('main-init-help'))
+
+	args = parser.parse_args(args)
+	if not hasattr(args, 'func'):
+		parser.print_help()
+		raise SystemExit()
+
+	return args
+
+
+async def main(args):
+	lang_directory = Path(__file__).resolve().parent / 'lang'
+	lang = gettext.translation('messages', localedir=lang_directory, languages=(os.environ.get('LC_MESSAGES', 'en'), 'en'))
+	lang.install()
+
+	args = parse_args(args)
+	possible_task = args.func(args)
+	if possible_task:
+		await possible_task
+
+
+if '__main__' == __name__:
+	asyncio.run(main(sys.argv[1:]))
