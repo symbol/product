@@ -115,7 +115,7 @@ setup命令の実行で、nodeが完成する。
 init-all命令の新設に伴い、__main__.pyをこれに対応させた。
 ```
 
-2025_07_07
+2025_07_27
 ```
 commands/init_all.py
 
@@ -265,7 +265,7 @@ the node is completed by executing the setup command.
 With the introduction of the new init-all command, __main__.py has been updated to comply with it.
 ```
 
-025_07_07
+2025_07_07
 ```
 commands/init_all.py
 
