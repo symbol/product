@@ -114,6 +114,37 @@ setup命令の実行で、nodeが完成する。
 
 init-all命令の新設に伴い、__main__.pyをこれに対応させた。
 ```
+
+2025_07_07
+```
+commands/init_all.py
+
+shoestring.iniを生成した後
+すぐ使える記述に変更するかを聞いて、
+yの場合は、shoestring/shoestring.iniにすぐ使用出来る様に変更を加えます。
+
+[node]
+features = API | HARVESTER | VOTER
+apiHttps = true
+caCommonName =
+nodeCommonName =
+を
+
+features = API | HARVESTER
+apiHttps = false
+caCommonName = CA myShoestringNode
+nodeCommonName = myShoestringNode
+に変更する。
+
+また、同時に生成される shoestring/overrides.iniでは
+
+[node.localnode]
+host = localhost
+friendlyName = myShoestringNode
+上記の通り、設定を予め記述してある。
+
+この次の命令 setupで、基本的な dualnodeが完成する。
+```
 ----------------------------------------------------------------------------------------------
 2025_07_16
 ```
@@ -232,4 +263,35 @@ overrides.ini (optionally, edit rest_overrides.json, use the pemtool command, an
 the node is completed by executing the setup command.
 
 With the introduction of the new init-all command, __main__.py has been updated to comply with it.
+```
+
+025_07_07
+```
+commands/init_all.py
+
+After shoestring.ini is generated,
+you are asked whether you want to change it to a ready-to-use description.
+If you answer y, make changes to shoestring/shoestring.ini so that it can be used immediately.
+
+[node]
+features = API | HARVESTER | VOTER
+apiHttps = true
+caCommonName =
+nodeCommonName =
+change to
+
+features = API | HARVESTER
+apiHttps = false
+caCommonName = CA myShoestringNode
+nodeCommonName = myShoestringNode
+.
+
+In shoestring/overrides.ini, which is generated at the same time,
+
+[node.localnode]
+host = localhost
+friendlyName = myShoestringNode
+the settings are written in advance as shown above.
+
+The next command, setup, completes the basic dualnode.
 ```
