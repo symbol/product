@@ -265,7 +265,7 @@ the node is completed by executing the setup command.
 With the introduction of the new init-all command, __main__.py has been updated to comply with it.
 ```
 
-2025_07_07
+2025_07_27
 ```
 commands/init_all.py
 
