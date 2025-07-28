@@ -37,3 +37,10 @@ customBuilds:
     triggers:
       - type: cron
         schedule: '@weekly'
+
+  - name: Update Submodule
+    jobName: updateSubmoduleJob
+    scriptPath: .github/jenkinsfile/updateSubmodule.groovy
+    triggers:
+      - type: cron
+        schedule: H H(3-7) * * 2
