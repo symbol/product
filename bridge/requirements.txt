@@ -1,0 +1,4 @@
+aiolimiter~=1.2.1 # remove when updating lightapi
+symbol-lightapi~=0.0.7
+symbol-sdk-python==3.2.3
+web3==7.12.0
