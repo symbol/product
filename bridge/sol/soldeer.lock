@@ -1,0 +1,12 @@
+[[dependencies]]
+name = "@openzeppelin-contracts"
+version = "3.4.2"
+url = "https://soldeer-revisions.s3.amazonaws.com/@openzeppelin-contracts/3_4_2_22-01-2024_13:13:07_contracts.zip"
+checksum = "c3e91cd93e0a426a5d4e37095d6e7f73791b0fcf28074194bd00f3eb879ff4ca"
+integrity = "1aa108bd1b99f27e371035c5fc1f6d9c1b0b74e9f2c54a4d7a16c613966dc72b"
+
+[[dependencies]]
+name = "stablecoin-evm"
+version = "1.0.0"
+git = "https://github.com/circlefin/stablecoin-evm.git"
+rev = "c8c31b249341bf3ffb2e8dbff41977c392a260c5"
