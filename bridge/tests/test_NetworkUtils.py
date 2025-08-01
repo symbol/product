@@ -12,7 +12,7 @@ from bridge.NetworkUtils import BalanceChange, TransactionSender, download_roset
 from bridge.symbol.SymbolNetworkFacade import SymbolNetworkFacade
 
 from .test.BridgeTestUtils import HASHES
-from .test.PytestUtils import create_simple_symbol_client
+from .test.MockSymbolServer import create_simple_symbol_client
 
 
 @pytest.fixture
