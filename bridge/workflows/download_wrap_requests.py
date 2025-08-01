@@ -64,9 +64,9 @@ async def _download_all(database, network, is_valid_address):
 
 async def main_impl(is_unwrap_mode, databases, native_facade, wrapped_facade):
 	if is_unwrap_mode:
-		await _download_all(databases.unwrap_request, wrapped_facade, native_facade.is_valid_address_string)
+		await _download_all(databases.unwrap_request, wrapped_facade, native_facade.is_valid_address)
 	else:
-		await _download_all(databases.wrap_request, native_facade, wrapped_facade.is_valid_address_string)
+		await _download_all(databases.wrap_request, native_facade, wrapped_facade.is_valid_address)
 
 
 if '__main__' == __name__:
