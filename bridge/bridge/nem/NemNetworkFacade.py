@@ -18,6 +18,7 @@ class NemNetworkFacade:
 		self.rosetta_network_id = ('NEM', self.network.name)
 		self.sdk_facade = NemFacade(self.network)
 		self.bridge_address = Address(config.bridge_address)
+		self.transaction_search_address = self.bridge_address
 
 		self.mosaic_fee_information = None
 

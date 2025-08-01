@@ -42,6 +42,7 @@ def test_can_create_facade():
 	assert ('NEM', 'testnet') == facade.rosetta_network_id
 	assert facade.network == facade.sdk_facade.network
 	assert Address('TCYIHED7HZQ3IPBY5WRDPDLV5CCMMOOVSOMSPD6B') == facade.bridge_address
+	assert Address('TCYIHED7HZQ3IPBY5WRDPDLV5CCMMOOVSOMSPD6B') == facade.transaction_search_address
 
 
 async def test_can_initialize_facade(server):  # pylint: disable=redefined-outer-name

@@ -12,14 +12,18 @@ async def _download_requests(database, connector, network, is_valid_address):
 	(start_height, end_height) = await calculate_search_range(connector, database, network.config.extensions)
 	mosaic_id = network.extract_mosaic_id()
 
-	print(f'searching address {network.bridge_address} for {mosaic_id.formatted} deposits in range [{start_height}, {end_height})...')
+	print('\n'.join([
+		f'searching address {network.transaction_search_address}',
+		f'  for {mosaic_id.formatted} deposits',
+		f'  in range [{start_height}, {end_height})...'
+	]))
 
 	database.reset()
 
 	count = 0
 	error_count = 0
 	heights = set()
-	async for transaction in get_incoming_transactions_from(connector, network.bridge_address, start_height, end_height):
+	async for transaction in get_incoming_transactions_from(connector, network.transaction_search_address, start_height, end_height):
 		results = network.extract_wrap_request_from_transaction(is_valid_address, transaction, mosaic_id.id)
 		for result in results:
 			result = coerce_zero_balance_wrap_request_to_error(result)
