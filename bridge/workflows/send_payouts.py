@@ -3,13 +3,12 @@ import asyncio
 from bridge.ConversionRateCalculatorFactory import ConversionRateCalculatorFactory
 from bridge.db.WrapRequestDatabase import PayoutDetails, WrapRequestStatus
 from bridge.NetworkUtils import TransactionSender
-from bridge.WorkflowUtils import extract_mosaic_id
 
 from .main_impl import main_bootstrapper, print_banner
 
 
 async def _send_payout(network, request, conversion_rate_calculator):
-	mosaic_id = extract_mosaic_id(network.config, network.is_currency_mosaic_id)
+	mosaic_id = network.extract_mosaic_id()
 	sender = TransactionSender(network, mosaic_id.id)
 	transfer_amount = conversion_rate_calculator(request.amount)
 
@@ -64,7 +63,7 @@ async def send_payouts(conversion_rate_calculator_factory, database, network):
 
 
 async def main_impl(is_unwrap_mode, databases, native_facade, wrapped_facade):
-	native_mosaic_id = extract_mosaic_id(native_facade.config, native_facade.is_currency_mosaic_id)
+	native_mosaic_id = native_facade.extract_mosaic_id()
 	conversion_rate_calculator_factory = ConversionRateCalculatorFactory(databases, native_mosaic_id.formatted, is_unwrap_mode)
 	if is_unwrap_mode:
 		await send_payouts(conversion_rate_calculator_factory, databases.unwrap_request, native_facade)

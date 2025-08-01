@@ -3,6 +3,7 @@ from symbolchain.nem.Network import Address, Network
 from symbolchain.Network import NetworkLocator
 from symbollightapi.connector.NemConnector import NemConnector
 
+from ..models.Constants import PrintableMosaicId
 from .NemUtils import calculate_transfer_transaction_fee, extract_wrap_request_from_transaction
 
 
@@ -31,6 +32,20 @@ class NemNetworkFacade:
 		"""Determines if a mosaic id represents the network currency mosaic id."""
 
 		return ('nem', 'xem') == mosaic_id
+
+	def extract_mosaic_id(self):
+		"""
+		Extracts the wrapped mosaic id from config and converts it into both a printable version
+		and a version that can be passed to network facades as arguments.
+		"""
+
+		config_mosaic_id = self.config.extensions['mosaic_id']
+		mosaic_id_parts = tuple(config_mosaic_id.split(':'))
+
+		if self.is_currency_mosaic_id(mosaic_id_parts):
+			mosaic_id_parts = None
+
+		return PrintableMosaicId(mosaic_id_parts, config_mosaic_id)
 
 	def create_connector(self, **kwargs):
 		"""Creates a connector to the network."""

@@ -3,14 +3,14 @@ import asyncio
 from symbollightapi.connector.ConnectorExtensions import get_incoming_transactions_from, query_block_timestamps
 
 from bridge.models.WrapRequest import coerce_zero_balance_wrap_request_to_error
-from bridge.WorkflowUtils import calculate_search_range, extract_mosaic_id
+from bridge.WorkflowUtils import calculate_search_range
 
 from .main_impl import main_bootstrapper, print_banner
 
 
 async def _download_requests(database, connector, network, is_valid_address):
 	(start_height, end_height) = await calculate_search_range(connector, database, network.config.extensions)
-	mosaic_id = extract_mosaic_id(network.config, network.is_currency_mosaic_id)
+	mosaic_id = network.extract_mosaic_id()
 
 	print(f'searching address {network.bridge_address} for {mosaic_id.formatted} deposits in range [{start_height}, {end_height})...')
 

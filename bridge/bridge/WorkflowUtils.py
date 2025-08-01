@@ -1,31 +1,4 @@
-from collections import namedtuple
 from decimal import ROUND_DOWN, Decimal
-
-PrintableMosaicId = namedtuple('PrintableMosaicId', ['id', 'formatted'])
-
-
-def extract_mosaic_id(config, is_currency_mosaic_id=None):
-	"""
-	Extracts the wrapped mosaic id from config and converts it into both a printable version
-	and a version that can be passed to network facades as arguments.
-	"""
-
-	config_mosaic_id = config.extensions.get('mosaic_id', None)
-	if not config_mosaic_id:
-		return PrintableMosaicId(None, 'currency')
-
-	mosaic_id_parts = tuple(config_mosaic_id.split(':'))
-	if 'id' == mosaic_id_parts[0]:
-		mosaic_id = int(mosaic_id_parts[1], 16)
-		if is_currency_mosaic_id and is_currency_mosaic_id(mosaic_id):
-			mosaic_id = None
-
-		return PrintableMosaicId(mosaic_id, mosaic_id_parts[1])
-
-	if is_currency_mosaic_id and is_currency_mosaic_id(mosaic_id_parts):
-		mosaic_id_parts = None
-
-	return PrintableMosaicId(mosaic_id_parts, config_mosaic_id)
 
 
 async def calculate_search_range(connector, database, config_extensions, start_height_override_property_name=None):
