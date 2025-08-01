@@ -5,6 +5,7 @@ from symbolchain.symbol.IdGenerator import generate_mosaic_alias_id
 from symbolchain.symbol.Network import Address, Network
 from symbollightapi.connector.SymbolConnector import SymbolConnector
 
+from ..models.AddressValidator import try_convert_network_address_to_string
 from ..models.Constants import PrintableMosaicId
 from .SymbolUtils import extract_wrap_request_from_transaction
 
@@ -66,10 +67,11 @@ class SymbolNetworkFacade:
 
 		return Address(raw_address)
 
-	def is_valid_address_string(self, address_string):
-		"""Checks if an address string is valid and belongs to this network."""
+	def is_valid_address(self, raw_address):
+		"""Checks if an address is valid and belongs to this network."""
 
-		return self.network.is_valid_address_string(address_string)
+		address_str = try_convert_network_address_to_string(self.network, raw_address)
+		return (address_str is not None, address_str)
 
 	def extract_wrap_request_from_transaction(self, is_valid_address, transaction_with_meta_json, mosaic_id=None):
 		# pylint: disable=invalid-name

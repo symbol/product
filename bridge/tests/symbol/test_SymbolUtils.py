@@ -23,7 +23,7 @@ class SymbolUtilsTest(unittest.TestCase):
 	@staticmethod
 	def _extract_wrap_request_from_transaction(transaction_with_meta_json):
 		def is_valid_address(address):
-			return '0x4838b106fce9647bdf1e7877bf73ce8b0bad5f' == address[:-2] and address[-2:] in ('97', '90', 'a0', 'b0')
+			return ('0x4838b106fce9647bdf1e7877bf73ce8b0bad5f' == address[:-2] and address[-2:] in ('97', '90', 'a0', 'b0'), address)
 
 		def is_matching_mosaic_id(mosaic_id):
 			return 0xFAF0EBED913FA202 == mosaic_id
@@ -113,7 +113,7 @@ class SymbolUtilsTest(unittest.TestCase):
 		# Act: extract transfers of a custom mosaic (not the currency mosaic)
 		results = extract_wrap_request_from_transaction(
 			Network.TESTNET,
-			lambda _: True,
+			lambda address: (True, address),
 			lambda mosaic_id: 0xFBF0EBED913FA202 == mosaic_id,
 			transaction_with_meta_json)
 
@@ -247,7 +247,7 @@ class SymbolUtilsTest(unittest.TestCase):
 		# Act: extract transfers of a custom mosaic (not the currency mosaic)
 		results = extract_wrap_request_from_transaction(
 			Network.TESTNET,
-			lambda _: True,
+			lambda address: (True, address),
 			lambda mosaic_id: 0xFBF0EBED913FA202 == mosaic_id,
 			transaction_with_meta_json)
 

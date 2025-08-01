@@ -1,3 +1,4 @@
+from binascii import hexlify
 from collections import namedtuple
 
 _TRANSACTION_IDENTIFIER_PROPERTY_NAMES = ['transaction_height', 'transaction_hash', 'transaction_subindex', 'sender_address']
@@ -54,11 +55,18 @@ def coerce_zero_balance_wrap_request_to_error(result):  # pylint: disable=invali
 def check_address_and_make_wrap_result(is_valid_address, transaction_identifier, amount, destination_address):
 	"""Checks the destination address and returns an appropriate wrap request result based on its validity."""
 
-	destination_address = destination_address.strip('\0\n\t ')
-	if not is_valid_address(destination_address):
+	if isinstance(destination_address, str):
+		destination_address = destination_address.strip('\0\n\t ')
+
+	(is_valid, formatted_destination_address) = is_valid_address(destination_address)
+
+	if not is_valid:
+		if isinstance(destination_address, bytes):
+			destination_address = hexlify(destination_address).decode('utf8').upper()
+
 		error_message = f'destination address {destination_address} is invalid'
 		return make_wrap_error_result(transaction_identifier, error_message)
 
-	return make_wrap_request_result(transaction_identifier, amount, destination_address)
+	return make_wrap_request_result(transaction_identifier, amount, formatted_destination_address)
 
 # endregion

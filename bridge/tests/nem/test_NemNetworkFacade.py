@@ -108,7 +108,7 @@ def test_can_extract_mosaic_id_other():
 # endregion
 
 
-# region create_connector, make_address, is_valid_address_string
+# region create_connector
 
 def test_can_create_connector():
 	# Arrange:
@@ -137,6 +137,10 @@ def test_can_create_connector_rosetta():
 	assert isinstance(connector, NemConnector)
 	assert 'http://rosetta.api:9988' == connector.endpoint
 
+# endregion
+
+
+# region make_address
 
 def test_can_make_address():
 	# Arrange:
@@ -150,16 +154,37 @@ def test_can_make_address():
 	assert Address('TAHTNAEQNDJOBDHHRON7SKU7PO6GAWXAJZ4CB2QG') == address_from_string
 	assert Address('TAHTNAEQNDJOBDHHRON7SKU7PO6GAWXAJZ4CB2QG') == address_from_bytes
 
+# endregion
 
-def test_is_valid_address_string_only_returns_true_for_valid_addresses_on_network():
+
+# region is_valid_address
+
+def _assert_is_valid_address(address, expected_formatted_address):
 	# Arrange:
 	facade = NemNetworkFacade(_create_config())
 
 	# Act + Assert:
-	assert facade.is_valid_address_string('TAHTNAEQNDJOBDHHRON7SKU7PO6GAWXAJZ4CB2QG')        # nem testnet
-	assert not facade.is_valid_address_string('NCHESTYVD2P6P646AMY7WSNG73PCPZDUQNSD6JAK')    # nem mainnet
-	assert not facade.is_valid_address_string('0x4838b106fce9647bdf1e7877bf73ce8b0bad5f97')  # ethereum
-	assert not facade.is_valid_address_string('TAUPP4BRGNQP5KG2QY53FNYZVZ7SDXQVS5BG2IQ')     # symbol testnet
+	assert (True, expected_formatted_address) == facade.is_valid_address(address)
+
+
+def _assert_is_invalid_address(address):
+	# Arrange:
+	facade = NemNetworkFacade(_create_config())
+
+	# Act + Assert:
+	assert (False, None) == facade.is_valid_address(address)
+
+
+def test_is_valid_address_detects_matching_addresses():
+	# nem testnet
+	_assert_is_valid_address('TAHTNAEQNDJOBDHHRON7SKU7PO6GAWXAJZ4CB2QG', 'TAHTNAEQNDJOBDHHRON7SKU7PO6GAWXAJZ4CB2QG')
+	_assert_is_valid_address(
+		b'\x98\x0f6\x80\x90h\xd2\xe0\x8c\xe7\x8b\x9b\xf9*\x9f{\xbc`Z\xe0Nx \xea\x06',
+		'TAHTNAEQNDJOBDHHRON7SKU7PO6GAWXAJZ4CB2QG')
+
+	# nem mainnet
+	_assert_is_invalid_address('NCHESTYVD2P6P646AMY7WSNG73PCPZDUQNSD6JAK')
+	_assert_is_invalid_address(b'\x68\x0f6\x80\x90h\xd2\xe0\x8c\xe7\x8b\x9b\xf9*\x9f{\xbc`Z\xe0Nx \xea\x06')
 
 # endregion
 
@@ -177,7 +202,7 @@ async def _assert_can_extract_wrap_request_from_transaction(
 
 	# Act:
 	mosaic_id = mosaic_id or ('nem', 'xem')
-	results = facade.extract_wrap_request_from_transaction(lambda _address: is_valid_address, {
+	results = facade.extract_wrap_request_from_transaction(lambda address: (is_valid_address, address), {
 		'meta': {
 			'height': 1234,
 			'hash': {
