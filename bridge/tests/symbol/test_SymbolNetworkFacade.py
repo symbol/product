@@ -12,7 +12,8 @@ from bridge.NetworkUtils import BalanceTransfer
 from bridge.symbol.SymbolNetworkFacade import SymbolNetworkFacade
 
 from ..test.BridgeTestUtils import assert_wrap_request_failure, assert_wrap_request_success
-from ..test.PytestUtils import PytestAsserter, create_simple_symbol_client
+from ..test.MockSymbolServer import create_simple_symbol_client
+from ..test.PytestUtils import PytestAsserter
 
 
 @pytest.fixture

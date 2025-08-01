@@ -5,7 +5,8 @@ from bridge.nem.NemNetworkFacade import NemNetworkFacade
 from bridge.NetworkFacadeLoader import load_network_facade
 from bridge.symbol.SymbolNetworkFacade import SymbolNetworkFacade
 
-from .test.PytestUtils import create_simple_nem_client, create_simple_symbol_client
+from .test.MockNemServer import create_simple_nem_client
+from .test.MockSymbolServer import create_simple_symbol_client
 
 
 @pytest.fixture
