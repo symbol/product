@@ -5,6 +5,7 @@ from symbolchain.symbol.IdGenerator import generate_mosaic_alias_id
 from symbolchain.symbol.Network import Address, Network
 from symbollightapi.connector.SymbolConnector import SymbolConnector
 
+from ..models.Constants import PrintableMosaicId
 from .SymbolUtils import extract_wrap_request_from_transaction
 
 
@@ -37,6 +38,21 @@ class SymbolNetworkFacade:
 		"""Determines if a mosaic id represents the network currency mosaic id."""
 
 		return mosaic_id in self.currency_mosaic_ids
+
+	def extract_mosaic_id(self):
+		"""
+		Extracts the wrapped mosaic id from config and converts it into both a printable version
+		and a version that can be passed to network facades as arguments.
+		"""
+
+		config_mosaic_id = self.config.extensions['mosaic_id']
+		mosaic_id_parts = tuple(config_mosaic_id.split(':'))
+
+		mosaic_id = int(mosaic_id_parts[1], 16)
+		if self.is_currency_mosaic_id(mosaic_id):
+			mosaic_id = None
+
+		return PrintableMosaicId(mosaic_id, mosaic_id_parts[1])
 
 	def create_connector(self, **_kwargs):
 		"""Creates a connector to the network."""

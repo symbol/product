@@ -31,10 +31,11 @@ async def server(aiohttp_client):
 
 # region constructor, init
 
-def _create_config(server=None):  # pylint: disable=redefined-outer-name
+def _create_config(server=None, config_extensions=None):  # pylint: disable=redefined-outer-name
 	endpoint = server.make_url('') if server else 'http://foo.bar:1234'
 	return NetworkConfiguration('symbol', 'testnet', endpoint, 'TDDRDLK5QL2LJPZOF26QFXB24TJ5HGB4NDTF6SI', {
-		'transaction_fee_multiplier': '50'
+		'transaction_fee_multiplier': '50',
+		**(config_extensions or {})
 	})
 
 
@@ -75,6 +76,40 @@ async def test_can_detect_currency_mosaic_id(server):  # pylint: disable=redefin
 	assert facade.is_currency_mosaic_id(0x72C0212E67A08BCE)  # from /network/properties
 	assert facade.is_currency_mosaic_id(0xE74B99BA41F4AFEE)  # alias symbol.xym
 	assert not facade.is_currency_mosaic_id(0x6BED913FA20223F8)  # mainnet
+
+# endregion
+
+
+# region extract_mosaic_id
+
+async def test_can_extract_mosaic_id_currency(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	facade = SymbolNetworkFacade(_create_config(server, {
+		'mosaic_id': 'id:E74B99BA41F4AFEE'
+	}))
+	await facade.init()
+
+	# Act:
+	mosaic_id = facade.extract_mosaic_id()
+
+	# Assert:
+	assert mosaic_id.id is None
+	assert 'E74B99BA41F4AFEE' == mosaic_id.formatted
+
+
+async def test_can_extract_mosaic_id_other(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	facade = SymbolNetworkFacade(_create_config(server, {
+		'mosaic_id': 'id:5D6CFC64A20E86E6'
+	}))
+	await facade.init()
+
+	# Act:
+	mosaic_id = facade.extract_mosaic_id()
+
+	# Assert:
+	assert 0x5D6CFC64A20E86E6 == mosaic_id.id
+	assert '5D6CFC64A20E86E6' == mosaic_id.formatted
 
 # endregion
 

@@ -75,6 +75,38 @@ async def test_can_detect_currency_mosaic_id():
 # endregion
 
 
+# region extract_mosaic_id
+
+def test_can_extract_mosaic_id_currency():
+	# Arrange:
+	facade = NemNetworkFacade(_create_config(config_extensions={
+		'mosaic_id': 'nem:xem'
+	}))
+
+	# Act:
+	mosaic_id = facade.extract_mosaic_id()
+
+	# Assert:
+	assert mosaic_id.id is None
+	assert 'nem:xem' == mosaic_id.formatted
+
+
+def test_can_extract_mosaic_id_other():
+	# Arrange:
+	facade = NemNetworkFacade(_create_config(config_extensions={
+		'mosaic_id': 'foo:bar'
+	}))
+
+	# Act:
+	mosaic_id = facade.extract_mosaic_id()
+
+	# Assert:
+	assert ('foo', 'bar') == mosaic_id.id
+	assert 'foo:bar' == mosaic_id.formatted
+
+# endregion
+
+
 # region create_connector, make_address, is_valid_address_string
 
 def test_can_create_connector():
