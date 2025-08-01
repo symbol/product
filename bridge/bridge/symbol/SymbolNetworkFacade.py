@@ -20,6 +20,7 @@ class SymbolNetworkFacade:
 		self.rosetta_network_id = ('Symbol', self.network.name)
 		self.sdk_facade = SymbolFacade(self.network)
 		self.bridge_address = Address(config.bridge_address)
+		self.transaction_search_address = self.bridge_address
 
 		self.currency_mosaic_ids = []
 
