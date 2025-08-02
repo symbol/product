@@ -40,14 +40,10 @@ class TransactionSender:
 	async def try_send_transfer(self, destination_address, amount, messsage=None):
 		"""Sends a transfer to the network."""
 
-		def make_create_arguments(amount):
-			return [
-				self.timestamp,
-				BalanceTransfer(self.sender_key_pair.public_key, destination_address, amount, messsage),
-				self.mosaic_id
-			]
+		def make_balance_transfer(amount):
+			return BalanceTransfer(self.sender_key_pair.public_key, destination_address, amount, messsage)
 
-		transaction_fee = self.network_facade.create_transfer_transaction(*make_create_arguments(amount)).fee.value
+		transaction_fee = self.network_facade.calculate_transfer_transaction_fee(make_balance_transfer(amount))
 		conversion_fee = int((self.percentage_conversion_fee * amount).quantize(1, rounding=ROUND_UP))
 
 		total_fee = transaction_fee + conversion_fee
@@ -56,7 +52,7 @@ class TransactionSender:
 			return TrySendResult(True, None, None, None, error_message)
 
 		net_amount = amount - total_fee
-		transaction = self.network_facade.create_transfer_transaction(*make_create_arguments(net_amount))
+		transaction = self.network_facade.create_transfer_transaction(self.timestamp, make_balance_transfer(net_amount), self.mosaic_id)
 		transaction_hash = await self.send_transaction(transaction)
 		return TrySendResult(False, transaction_hash, net_amount, total_fee, None)
 

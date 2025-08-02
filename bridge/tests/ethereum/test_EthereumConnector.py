@@ -1,10 +1,19 @@
+from collections import namedtuple
+
 import pytest
+from hexbytes import HexBytes
+from symbolchain.CryptoTypes import Hash256
+from symbollightapi.model.Constants import TimeoutSettings, TransactionStatus
+from symbollightapi.model.Exceptions import NodeException
 
 from bridge.ethereum.EthereumAdapters import EthereumAddress
 from bridge.ethereum.EthereumConnector import EthereumConnector
 from bridge.ethereum.RpcUtils import make_rpc_request_json
 
+from ..test.BridgeTestUtils import HASHES
 from ..test.MockEthereumServer import create_simple_ethereum_client
+
+SignedTransaction = namedtuple('SignedTransaction', ['raw_transaction'])
 
 
 @pytest.fixture
@@ -214,6 +223,31 @@ async def test_can_query_token_precision_with_custom_block_identifier(server):  
 # endregion
 
 
+# region filter_confirmed_transactions
+
+async def test_can_filter_confirmed_transactions(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	connector = EthereumConnector(server.make_url(''))
+	transaction_hashes = [Hash256(HASHES[i]) for i in (0, 3, 1, 2)]
+
+	# Act:
+	transaction_hash_height_pairs = await connector.filter_confirmed_transactions(transaction_hashes)
+
+	# Assert:
+	assert [f'{server.make_url("")}/'] * 4 == server.mock.urls
+	assert [
+		make_rpc_request_json('eth_getTransactionByHash', [f'0x{transaction_hash}'])
+		for transaction_hash in transaction_hashes
+	] == server.mock.request_json_payloads
+
+	assert 2 == len(transaction_hash_height_pairs)
+
+	assert (Hash256(HASHES[0]), 0xAF) == transaction_hash_height_pairs[0]
+	assert (Hash256(HASHES[2]), 0xA8) == transaction_hash_height_pairs[1]
+
+# endregion
+
+
 # region incoming_transactions
 
 async def _assert_can_query_incoming_transactions(server, start_id, expected_start_id):  # pylint: disable=redefined-outer-name
@@ -243,5 +277,102 @@ async def test_can_query_incoming_transactions_from_beginning(server):  # pylint
 
 async def test_can_query_incoming_transactions_with_custom_start_id(server):  # pylint: disable=redefined-outer-name
 	await _assert_can_query_incoming_transactions(server, 98765, 98765)
+
+# endregion
+
+
+# region announce_transaction
+
+EXAMPLE_TRANSACTION_SIGNING_PAYLOAD_HEX = ''.join([
+	'F86C8086D55698372431831E848094F0109FC8DF283027B6285CC889F5AA624E',
+	'AC1F55843B9ACA0080820A95A06FF308663C63A472CC873D34D27BF78626122C',
+	'7715B87E5AC2E1042D4DDDA494A064508194FA59205819F37C7F05A0A24667BD',
+	'22BE77EE7A2EC14F33001CA3DDB4'
+])
+
+
+async def test_can_announce_transaction_success(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	connector = EthereumConnector(server.make_url(''))
+	transaction = {'signature': SignedTransaction(HexBytes(EXAMPLE_TRANSACTION_SIGNING_PAYLOAD_HEX))}
+
+	# Act:
+	await connector.announce_transaction(transaction)
+
+	# Assert:
+	assert [f'{server.make_url("")}/'] == server.mock.urls
+	assert [
+		make_rpc_request_json('eth_sendRawTransaction', [f'0x{EXAMPLE_TRANSACTION_SIGNING_PAYLOAD_HEX.lower()}'])
+	] == server.mock.request_json_payloads
+
+
+async def test_cannot_announce_transaction_with_error(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	server.mock.simulate_announce_error = True
+
+	connector = EthereumConnector(server.make_url(''))
+	transaction = {'signature': SignedTransaction(HexBytes(EXAMPLE_TRANSACTION_SIGNING_PAYLOAD_HEX))}
+
+	# Act + Assert:
+	with pytest.raises(NodeException, match='announce transaction failed'):
+		await connector.announce_transaction(transaction)
+
+# endregion
+
+
+# region try_wait_for_announced_transaction
+
+async def _assert_can_try_wait_for_announced_transaction_success(server, transaction_hash, status):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	connector = EthereumConnector(server.make_url(''))
+
+	# Act:
+	result = await connector.try_wait_for_announced_transaction(transaction_hash, status, TimeoutSettings(5, 0.001))
+
+	# Assert:
+	assert [f'{server.make_url("")}/'] == server.mock.urls
+	assert [
+		make_rpc_request_json('eth_getTransactionByHash', [f'0x{transaction_hash}'])
+	] == server.mock.request_json_payloads
+	assert result
+
+
+async def _assert_can_try_wait_for_announced_transaction_timeout(server, transaction_hash, status):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	connector = EthereumConnector(server.make_url(''))
+
+	# Act:
+	result = await connector.try_wait_for_announced_transaction(transaction_hash, status, TimeoutSettings(5, 0.001))
+
+	# Assert:
+	assert [f'{server.make_url("")}/'] * 5 == server.mock.urls
+	assert [
+		make_rpc_request_json('eth_getTransactionByHash', [f'0x{transaction_hash}'])
+	] * 5 == server.mock.request_json_payloads
+	assert not result
+
+
+async def test_can_try_wait_for_announced_transaction_unconfirmed_success_confirmed(server):  # pylint: disable=redefined-outer-name
+	await _assert_can_try_wait_for_announced_transaction_success(server, Hash256(HASHES[0]), TransactionStatus.UNCONFIRMED)
+
+
+async def test_can_try_wait_for_announced_transaction_unconfirmed_success_unconfirmed(server):  # pylint: disable=redefined-outer-name
+	await _assert_can_try_wait_for_announced_transaction_success(server, Hash256(HASHES[1]), TransactionStatus.UNCONFIRMED)
+
+
+async def test_can_try_wait_for_announced_transaction_unconfirmed_timeout(server):  # pylint: disable=redefined-outer-name
+	await _assert_can_try_wait_for_announced_transaction_timeout(server, Hash256(HASHES[3]), TransactionStatus.UNCONFIRMED)
+
+
+async def test_can_try_wait_for_announced_transaction_confirmed_success(server):  # pylint: disable=redefined-outer-name
+	await _assert_can_try_wait_for_announced_transaction_success(server, Hash256(HASHES[0]), TransactionStatus.CONFIRMED)
+
+
+async def test_can_try_wait_for_announced_transaction_confirmed_timeout_unconfirmed(server):  # pylint: disable=redefined-outer-name
+	await _assert_can_try_wait_for_announced_transaction_timeout(server, Hash256(HASHES[1]), TransactionStatus.CONFIRMED)
+
+
+async def test_can_try_wait_for_announced_transaction_confirmed_timeout_unknown(server):  # pylint: disable=redefined-outer-name
+	await _assert_can_try_wait_for_announced_transaction_timeout(server, Hash256(HASHES[3]), TransactionStatus.CONFIRMED)
 
 # endregion

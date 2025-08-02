@@ -2,6 +2,8 @@ import json
 
 from aiohttp import web
 
+from .BridgeTestUtils import HASHES
+
 
 async def create_simple_ethereum_client(aiohttp_client):
 	"""Creates an Ethereum client with support for basic operations ."""
@@ -11,7 +13,9 @@ async def create_simple_ethereum_client(aiohttp_client):
 			self.urls = []
 			self.request_json_payloads = []
 
-		async def rpc_main(self, request):
+			self.simulate_announce_error = False
+
+		async def rpc_main(self, request):  # pylint: disable = too-many-return-statements
 			request_json = await request.json()
 			self.request_json_payloads.append(request_json)
 
@@ -22,8 +26,14 @@ async def create_simple_ethereum_client(aiohttp_client):
 			if 'eth_getBlockByNumber' == method:
 				return await self._handle_eth_get_block_by_number(request, request_json['params'][0])
 
+			if 'eth_getTransactionByHash' == method:
+				return await self._handle_eth_get_transaction_by_hash(request, request_json['params'][0])
+
 			if 'eth_getTransactionCount' == method:
 				return await self._handle_eth_get_transaction_count(request)
+
+			if 'eth_sendRawTransaction' == method:
+				return await self._handle_eth_send_raw_transaction(request)
 
 			if 'eth_call' == method:
 				return await self._handle_eth_call(request, request_json['params'][0]['data'])
@@ -49,9 +59,32 @@ async def create_simple_ethereum_client(aiohttp_client):
 
 			return await self._process(request, {'result': result_json})
 
+		async def _handle_eth_get_transaction_by_hash(self, request, transaction_hash):
+			hash_to_height_map = {
+				HASHES[0]: '0xAF',  # confirmed
+				HASHES[2]: '0xA8',
+
+				HASHES[1]: None,  # unconfirmed
+			}
+
+			if transaction_hash[2:] in hash_to_height_map:
+				return await self._process(request, {'result': {'blockNumber': hash_to_height_map[transaction_hash[2:]]}})
+
+			return await self._process(request, {'result': None})  # unknown
+
 		async def _handle_eth_get_transaction_count(self, request):
 			return await self._process(request, {
 				'result': '0xB'
+			})
+
+		async def _handle_eth_send_raw_transaction(self, request):
+			if self.simulate_announce_error:
+				return await self._process(request, {
+					'error': {'code': -32000, 'message': 'INTERNAL_ERROR: IntrinsicGas'}
+				})
+
+			return await self._process(request, {
+				'result': '0xe1f3095770633ab2b18081658bad475439f6a08c902d0915903bafff06e6febf'
 			})
 
 		async def _handle_eth_call(self, request, data):

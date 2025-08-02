@@ -3,11 +3,12 @@ from binascii import hexlify
 import pytest
 from symbolchain.CryptoTypes import Hash256
 
-from bridge.ethereum.EthereumAdapters import EthereumAddress
+from bridge.ethereum.EthereumAdapters import EthereumAddress, EthereumPublicKey
 from bridge.ethereum.EthereumConnector import EthereumConnector
 from bridge.ethereum.EthereumNetworkFacade import EthereumNetworkFacade
 from bridge.models.BridgeConfiguration import NetworkConfiguration
 from bridge.models.WrapRequest import WrapError, WrapRequest
+from bridge.NetworkUtils import BalanceTransfer
 
 from ..test.BridgeTestUtils import assert_wrap_request_failure, assert_wrap_request_success
 from ..test.MockEthereumServer import create_simple_ethereum_client
@@ -27,7 +28,9 @@ async def server(aiohttp_client):
 def _create_config(server=None, config_extensions=None):  # pylint: disable=redefined-outer-name
 	endpoint = server.make_url('') if server else 'http://foo.bar:1234'
 	return NetworkConfiguration('ethereum', 'testnet', endpoint, '0x67b1d87101671b127f5f8714789C7192f7ad340e', {
+		'chain_id': '8876',
 		'mosaic_id': '0x0D8775F648430679A709E98d2b0Cb6250d2887EF',
+		'signing_private_key': '0999a20d4fdda8d7273e8a24f70e1105f9dcfcae2fba55e9a08f6e752411ed7a',
 		**(config_extensions or {})
 	})
 
@@ -42,6 +45,7 @@ def test_can_create_facade():
 	assert facade.network == facade.sdk_facade.network
 	assert EthereumAddress('0x67b1d87101671b127f5f8714789C7192f7ad340e') == facade.bridge_address
 	assert EthereumAddress('0x0D8775F648430679A709E98d2b0Cb6250d2887EF') == facade.transaction_search_address
+	assert 8876 == facade.chain_id
 
 
 async def test_can_initialize_facade(server):  # pylint: disable=redefined-outer-name
@@ -53,6 +57,7 @@ async def test_can_initialize_facade(server):  # pylint: disable=redefined-outer
 
 	# Assert:
 	assert 3 == facade.token_precision
+	assert {EthereumAddress('0xb5368c39Efb0DbA28C082733FE3F9463A215CC3D'): 11} == facade.address_to_nonce_map
 
 # endregion
 
@@ -205,5 +210,105 @@ def test_cannot_extract_wrap_request_from_transaction_mismatched_recipient():
 
 	# Assert:
 	assert 0 == len(results)
+
+# endregion
+
+
+# region create_transfer_transaction
+
+def _create_sample_balance_transfer(signer_public_key=None):
+	default_signer_public_key = ''.join([
+		'0x',
+		'B2B454118618A6D3E79FEDE753F60824C4D7E5EA15B4282D847801C8246A5A7C',
+		'AB017D4EFA17D1EB61DA79E3632D33B5123E158135C94CA741BB05566FFFA757'
+	])
+
+	return BalanceTransfer(
+		EthereumPublicKey(signer_public_key or default_signer_public_key),
+		EthereumAddress('0xF0109fC8DF283027b6285cc889F5aA624EaC1F55'),
+		88888_000000,
+		None)
+
+
+async def test_cannot_create_transfer_transaction_from_account_with_unknown_nonce(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	facade = EthereumNetworkFacade(_create_config(server))
+	await facade.init()
+
+	# Act + Assert:
+	signer_address = '0xC3B280FA8E521B3263BD6DB705ACE0B309306A73'
+	signer_public_key = ''.join([
+		'0x',
+		'B2B454118618A6D3E79FEDE753F60824C4D7E5EA15B4282D847801C8246A5A7C',
+		'E29BD9A71871F0CAE8D14BF54A24652670111E6D13EBA155E6648554322AB301'
+	])
+	with pytest.raises(ValueError, match=f'unable to create transaction for sender {signer_address} with unknown nonce'):
+		facade.create_transfer_transaction(
+			None,
+			_create_sample_balance_transfer(signer_public_key),
+			'0x67b1d87101671b127f5f8714789C7192f7ad340e')
+
+
+async def test_can_create_transfer_transaction(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	facade = EthereumNetworkFacade(_create_config(server))
+	await facade.init()
+
+	# Act:
+	transaction = facade.create_transfer_transaction(
+		None,
+		_create_sample_balance_transfer(),
+		'0x67b1d87101671b127f5f8714789C7192f7ad340e')
+
+	# Assert:
+	assert {
+		'from': '0xB5368C39EFB0DBA28C082733FE3F9463A215CC3D',
+		'to': '0x67b1d87101671b127f5f8714789C7192f7ad340e',
+		'data': ''.join([
+			'0x',
+			'a9059cbb000000000000000000000000',
+			'F0109FC8DF283027B6285CC889F5AA624EAC1F55',
+			hexlify(int(88888_000000).to_bytes(32, 'big')).decode('utf8')
+		]),
+		'nonce': 11,
+		'chainId': 8876,
+
+		'gas': 210000,
+		'maxFeePerGas': 250_000000000,
+		'maxPriorityFeePerGas': 2_000000000
+	} == transaction
+
+
+async def test_can_create_multiple_transfer_transactions_with_autoincrementing_nonce(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	facade = EthereumNetworkFacade(_create_config(server))
+	await facade.init()
+
+	# Act:
+	transactions = [
+		facade.create_transfer_transaction(
+			None,
+			_create_sample_balance_transfer(),
+			'0x67b1d87101671b127f5f8714789C7192f7ad340e')
+		for _ in range(0, 4)
+	]
+
+	# Assert:
+	assert [11, 12, 13, 14] == [transaction['nonce'] for transaction in transactions]
+
+# endregion
+
+
+# region calculate_transfer_transaction_fee
+
+def test_can_calculate_transfer_transaction_fee():
+	# Arrange:
+	facade = EthereumNetworkFacade(_create_config())
+
+	# Act:
+	transaction_fee = facade.calculate_transfer_transaction_fee(_create_sample_balance_transfer(''))
+
+	# Assert:
+	assert 210000 == transaction_fee
 
 # endregion
