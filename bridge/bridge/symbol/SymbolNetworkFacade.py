@@ -2,7 +2,7 @@ from symbolchain.facade.SymbolFacade import SymbolFacade
 from symbolchain.Network import NetworkLocator
 from symbolchain.sc import Amount
 from symbolchain.symbol.IdGenerator import generate_mosaic_alias_id
-from symbolchain.symbol.Network import Address, Network
+from symbolchain.symbol.Network import Address, Network, NetworkTimestamp
 from symbollightapi.connector.SymbolConnector import SymbolConnector
 
 from ..models.AddressValidator import try_convert_network_address_to_string
@@ -105,3 +105,8 @@ class SymbolNetworkFacade:
 		transaction = self.sdk_facade.transaction_factory.create(transfer_json)
 		transaction.fee = Amount(int(self.config.extensions['transaction_fee_multiplier']) * transaction.size)
 		return transaction
+
+	def calculate_transfer_transaction_fee(self, balance_transfer):
+		"""Calculates a transfer transaction fee."""
+
+		return self.create_transfer_transaction(NetworkTimestamp(0), balance_transfer).fee.value

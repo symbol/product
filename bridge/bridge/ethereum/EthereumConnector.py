@@ -1,7 +1,11 @@
+import asyncio
 from binascii import hexlify
 
 import sha3
+from aiolimiter import AsyncLimiter
 from symbollightapi.connector.BasicConnector import BasicConnector
+from symbollightapi.model.Constants import DEFAULT_ASYNC_LIMITER_ARGUMENTS, TransactionStatus
+from symbollightapi.model.Exceptions import NodeException
 
 from .EthereumAdapters import EthereumNetworkTimestamp
 from .RpcUtils import make_rpc_request_json, parse_rpc_response_hex_value
@@ -131,6 +135,42 @@ class EthereumConnector(BasicConnector):
 
 	# endregion
 
+	# region filter_confirmed_transactions
+
+	async def _transaction_status_and_height_by_hash(self, transaction_hash):
+		request_json = make_rpc_request_json('eth_getTransactionByHash', [f'0x{transaction_hash}'])
+		result_json = await self.post('', request_json)
+		transaction_json = result_json['result']
+		if not transaction_json:
+			return (None, 0)
+
+		block_number = transaction_json.get('blockNumber', None)
+		if block_number is None:
+			return (TransactionStatus.UNCONFIRMED, None)
+
+		return (TransactionStatus.CONFIRMED, parse_rpc_response_hex_value(block_number))
+
+	async def filter_confirmed_transactions(self, transaction_hashes, async_limiter_arguments=DEFAULT_ASYNC_LIMITER_ARGUMENTS):
+		"""Filters transaction hashes and returns only confirmed ones with (confirmed) heights."""
+
+		limiter = AsyncLimiter(*async_limiter_arguments)
+
+		async def get_transaction_hash_height_pair(transaction_hash):
+			async with limiter:
+				(status, height) = await self._transaction_status_and_height_by_hash(transaction_hash)
+				return (transaction_hash if TransactionStatus.CONFIRMED == status else None, height)
+
+		tasks = [get_transaction_hash_height_pair(transaction_hash) for transaction_hash in transaction_hashes]
+		transaction_hash_height_pairs = await asyncio.gather(*tasks)
+
+		return [
+			transaction_hash_height_pair
+			for transaction_hash_height_pair in transaction_hash_height_pairs
+			if transaction_hash_height_pair[0]
+		]
+
+	# endregion
+
 	# region incoming_transactions
 
 	async def incoming_transactions(self, account_address, start_id=None):
@@ -144,5 +184,36 @@ class EthereumConnector(BasicConnector):
 				'transaction': transaction_json
 			} for transaction_json in result_json['result']['txs']
 		]
+
+	# endregion
+
+	# region announce_transaction
+
+	async def announce_transaction(self, transaction_payload):
+		"""Announces a transaction to the network."""
+
+		raw_transaction_hex = hexlify(transaction_payload['signature'].raw_transaction).decode('utf8')
+		request_json = make_rpc_request_json('eth_sendRawTransaction', [f'0x{raw_transaction_hex}'])
+		result_json = await self.post('', request_json)
+		if 'error' in result_json:
+			raise NodeException(f'announce transaction failed {result_json["error"]["message"]}')
+
+	# endregion
+
+	# region try_wait_for_announced_transaction
+
+	async def try_wait_for_announced_transaction(self, transaction_hash, desired_status, timeout_settings):
+		"""Tries to wait for a previously announced transaction to transition to a desired status."""
+
+		for _ in range(timeout_settings.retry_count):
+			try:
+				(status, _) = await self._transaction_status_and_height_by_hash(transaction_hash)
+				if status and status.value >= desired_status.value:
+					return True
+			except NodeException:
+				# ignore 400 not found errors (not_found_as_error will not work because these are not 404)
+				await asyncio.sleep(timeout_settings.interval)
+
+		return False
 
 	# endregion

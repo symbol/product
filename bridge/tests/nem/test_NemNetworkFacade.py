@@ -436,3 +436,41 @@ async def test_can_create_transfer_transaction_version_two_with_custom_mosaic(se
 	_assert_transfer_transaction_version_two_with_custom_mosaic(transaction)
 
 # endregion
+
+
+# region calculate_transfer_transaction_fee
+
+def test_can_calculate_transfer_transaction_fee_without_message():
+	# Arrange:
+	facade = NemNetworkFacade(_create_config())
+
+	# Act:
+	transaction_fee = facade.calculate_transfer_transaction_fee(_create_sample_balance_transfer(''))
+
+	# Assert:
+	assert 400_000 == transaction_fee
+
+
+def test_can_calculate_transfer_transaction_fee_with_message():
+	# Arrange:
+	facade = NemNetworkFacade(_create_config())
+
+	# Act:
+	transaction_fee = facade.calculate_transfer_transaction_fee(_create_sample_balance_transfer('this is a medium sized message!!!'))
+
+	# Assert:
+	assert 500_000 == transaction_fee
+
+
+async def test_can_calculate_transfer_transaction_fee_without_message_custom_mosaic(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	facade = NemNetworkFacade(_create_config(server, {'mosaic_id': 'foo:bar'}))
+	await facade.init()
+
+	# Act:
+	transaction_fee = facade.calculate_transfer_transaction_fee(_create_sample_balance_transfer('', amount=88887_000))
+
+	# Assert:
+	assert 850_000 == transaction_fee
+
+# endregion

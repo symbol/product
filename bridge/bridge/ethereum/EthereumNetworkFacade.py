@@ -1,16 +1,15 @@
-from collections import namedtuple
+from binascii import hexlify
 
+from symbolchain.CryptoTypes import PrivateKey
 from web3 import Web3
 
 from ..models.Constants import PrintableMosaicId
-from .EthereumAdapters import EthereumAddress, EthereumNetwork
+from .EthereumAdapters import EthereumAddress, EthereumNetwork, EthereumSdkFacade
 from .EthereumConnector import EthereumConnector
 from .EthereumUtils import extract_wrap_request_from_transaction
 
-EthereumSdkFacade = namedtuple('EthereumSdkFacade', ['network'])
 
-
-class EthereumNetworkFacade:
+class EthereumNetworkFacade:  # pylint: disable=too-many-instance-attributes
 	"""Ethereum network facade."""
 
 	def __init__(self, config):
@@ -22,14 +21,20 @@ class EthereumNetworkFacade:
 		self.sdk_facade = EthereumSdkFacade(self.network)
 		self.bridge_address = EthereumAddress(config.bridge_address)
 		self.transaction_search_address = EthereumAddress(self.config.extensions['mosaic_id'])  # search the contract address
+		self.chain_id = int(self.config.extensions['chain_id'])
 
 		self.token_precision = None
+		self.address_to_nonce_map = {}
 
 	async def init(self):
 		"""Downloads information from the network to initialize the facade."""
 
 		connector = self.create_connector()
 		self.token_precision = await connector.token_precision(self.config.extensions['mosaic_id'])
+
+		signer_public_key = EthereumSdkFacade.KeyPair(PrivateKey(self.config.extensions['signing_private_key'])).public_key
+		signer_address = signer_public_key.address
+		self.address_to_nonce_map[signer_address] = await connector.nonce(signer_address)
 
 	def extract_mosaic_id(self):
 		"""
@@ -65,3 +70,39 @@ class EthereumNetworkFacade:
 
 		wrap_request = extract_wrap_request_from_transaction(is_valid_address, self.bridge_address, transaction_with_meta_json)
 		return [wrap_request] if wrap_request else []
+
+	def create_transfer_transaction(self, _timestamp, balance_transfer, mosaic_id):
+		"""Creates a transfer transaction."""
+
+		signer_address = balance_transfer.signer_public_key.address
+		nonce = self.address_to_nonce_map.get(signer_address, None)
+		if nonce is None:
+			raise ValueError(f'unable to create transaction for sender {signer_address} with unknown nonce')
+
+		input_data = ''.join([
+			'0x',
+			'a9059cbb000000000000000000000000',
+			str(balance_transfer.recipient_address)[2:],
+			hexlify(balance_transfer.amount.to_bytes(32, 'big')).decode('utf8')
+		])
+
+		transaction = {
+			'from': str(signer_address),
+			'to': mosaic_id,
+			'data': input_data,
+			'nonce': nonce,
+			'chainId': self.chain_id,
+
+			'gas': 210000,
+			'maxFeePerGas': Web3.to_wei(250, 'gwei'),
+			'maxPriorityFeePerGas': Web3.to_wei(2, 'gwei'),
+		}
+
+		self.address_to_nonce_map[signer_address] += 1
+		return transaction
+
+	@staticmethod
+	def calculate_transfer_transaction_fee(_balance_transfer):
+		"""Calculates a transfer transaction fee."""
+
+		return 210000

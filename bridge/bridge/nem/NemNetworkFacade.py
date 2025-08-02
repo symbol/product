@@ -118,3 +118,8 @@ class NemNetworkFacade:
 			}
 
 		return self.sdk_facade.transaction_factory.create(transfer_json)
+
+	def calculate_transfer_transaction_fee(self, balance_transfer):
+		"""Calculates a transfer transaction fee."""
+
+		return calculate_transfer_transaction_fee(self.mosaic_fee_information, balance_transfer.amount, balance_transfer.message)

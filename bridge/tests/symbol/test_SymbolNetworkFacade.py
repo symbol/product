@@ -354,3 +354,29 @@ def test_can_create_transfer_transaction_with_custom_mosaic():
 	assert b'' == transaction.message
 
 # endregion
+
+
+# region calculate_transfer_transaction_fee
+
+def test_can_calculate_transfer_transaction_fee_without_message():
+	# Arrange:
+	facade = SymbolNetworkFacade(_create_config())
+
+	# Act:
+	transaction_fee = facade.calculate_transfer_transaction_fee(_create_sample_balance_transfer(''))
+
+	# Assert:
+	assert 176 * 50 == transaction_fee
+
+
+def test_can_calculate_transfer_transaction_fee_with_message():
+	# Arrange:
+	facade = SymbolNetworkFacade(_create_config())
+
+	# Act:
+	transaction_fee = facade.calculate_transfer_transaction_fee(_create_sample_balance_transfer('this is a medium sized message!!!'))
+
+	# Assert:
+	assert 209 * 50 == transaction_fee
+
+# endregion
