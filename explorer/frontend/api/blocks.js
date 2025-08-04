@@ -1,6 +1,6 @@
 import config from '@/config';
 import { truncateDecimals } from '@/utils/common';
-import { createAPIURL, createPage, createSearchCriteria, createSearchURL, createTryFetchInfoFunction, makeRequest } from '@/utils/server';
+import { createApiUrl, createPage, createSearchCriteria, createSearchURL, createTryFetchInfoFunction, makeRequest } from '@/utils/server';
 
 /**
  * @typedef Page
@@ -15,7 +15,7 @@ import { createAPIURL, createPage, createSearchCriteria, createSearchURL, create
  */
 export const fetchBlockPage = async searchParams => {
 	const searchCriteria = createSearchCriteria(searchParams);
-	const url = createSearchURL(createAPIURL('blocks'), searchCriteria);
+	const url = createSearchURL(createApiUrl('blocks'), searchCriteria);
 	const blocks = await makeRequest(url);
 
 	return createPage(blocks, searchCriteria.pageNumber, blockInfoFromDTO);
@@ -37,7 +37,7 @@ export const fetchChainHight = async () => {
  * @returns {Promise<Object>} block info
  */
 export const fetchBlockInfo = createTryFetchInfoFunction(async height => {
-	const block = await makeRequest(createAPIURL(`block/${height}`));
+	const block = await makeRequest(createApiUrl(`block/${height}`));
 
 	return blockInfoFromDTO(block);
 });

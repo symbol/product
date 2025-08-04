@@ -1,7 +1,7 @@
 import { makeRequest } from '@/utils/server';
 import { createContext, useContext, useEffect, useState } from 'react';
 
-const ConfigContext = createContext(null);
+const ConfigContext = createContext({});
 
 export const ConfigProvider = ({ children }) => {
 	const [config, setConfig] = useState({});
