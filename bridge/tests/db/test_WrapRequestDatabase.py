@@ -403,6 +403,29 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 
 	# region cumulative_net_amount_at
 
+	@staticmethod
+	def _prepare_database_for_batch_tests(connection, payout_descriptor_tuples):
+		database = WrapRequestDatabase(connection, MockNetworkFacade())
+		database.create_tables()
+
+		requests = [
+			make_request(0, amount=1000, height=111),
+			make_request(1, amount=3333, height=333),
+			make_request(2, amount=2020, height=222),
+			make_request(3, amount=1, height=222)
+		]
+
+		for request in requests:
+			database.add_request(request)
+
+		for index, extra_params in payout_descriptor_tuples:
+			database.mark_payout_sent(requests[index], _make_payout_details(Hash256(HASHES[index]), **extra_params))
+
+		database.set_block_timestamp(111, 1000)
+		database.set_block_timestamp(222, 2000)
+		database.set_block_timestamp(333, 4000)
+		return database
+
 	def test_cumulative_net_amount_at_is_zero_when_empty(self):
 		# Arrange:
 		with sqlite3.connect(':memory:') as connection:
@@ -418,27 +441,12 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 	def _assert_cumulative_net_amount_at_is_calculated_correctly_at_timestamps(self, timestamp_amount_pairs):
 		# Arrange:
 		with sqlite3.connect(':memory:') as connection:
-			database = WrapRequestDatabase(connection, MockNetworkFacade())
-			database.create_tables()
-
-			requests = [
-				make_request(0, amount=1000, height=111),
-				make_request(1, amount=3333, height=333),
-				make_request(2, amount=2020, height=222),
-				make_request(3, amount=1, height=222)
-			]
-
-			for request in requests:
-				database.add_request(request)
-
-			database.mark_payout_sent(requests[0], _make_payout_details(Hash256(HASHES[0]), net_amount=100))
-			database.mark_payout_sent(requests[1], _make_payout_details(Hash256(HASHES[1]), net_amount=300))
-			database.mark_payout_sent(requests[2], _make_payout_details(Hash256(HASHES[2]), net_amount=200))
-			database.mark_payout_sent(requests[3], _make_payout_details(Hash256(HASHES[3]), net_amount=400))
-
-			database.set_block_timestamp(111, 1000)
-			database.set_block_timestamp(222, 2000)
-			database.set_block_timestamp(333, 4000)
+			database = self._prepare_database_for_batch_tests(connection, [
+				(0, {'net_amount': 100}),
+				(1, {'net_amount': 300}),
+				(2, {'net_amount': 200}),
+				(3, {'net_amount': 400})
+			])
 
 			for (timestamp, expected_amount) in timestamp_amount_pairs:
 				# Act:
@@ -481,27 +489,12 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 	def _assert_cumulative_fees_paid_at_is_calculated_correctly_at_timestamps(self, timestamp_amount_pairs):
 		# Arrange:
 		with sqlite3.connect(':memory:') as connection:
-			database = WrapRequestDatabase(connection, MockNetworkFacade())
-			database.create_tables()
-
-			requests = [
-				make_request(0, amount=1000, height=111),
-				make_request(1, amount=3333, height=333),
-				make_request(2, amount=2020, height=222),
-				make_request(3, amount=1, height=222)
-			]
-
-			for request in requests:
-				database.add_request(request)
-
-			database.mark_payout_sent(requests[0], _make_payout_details(Hash256(HASHES[0]), total_fee=100))
-			database.mark_payout_sent(requests[1], _make_payout_details(Hash256(HASHES[1]), total_fee=300))
-			database.mark_payout_sent(requests[2], _make_payout_details(Hash256(HASHES[2]), total_fee=200))
-			database.mark_payout_sent(requests[3], _make_payout_details(Hash256(HASHES[3]), total_fee=400))
-
-			database.set_block_timestamp(111, 1000)
-			database.set_block_timestamp(222, 2000)
-			database.set_block_timestamp(333, 4000)
+			database = self._prepare_database_for_batch_tests(connection, [
+				(0, {'total_fee': 100}),
+				(1, {'total_fee': 300}),
+				(2, {'total_fee': 200}),
+				(3, {'total_fee': 400})
+			])
 
 			for (timestamp, expected_amount) in timestamp_amount_pairs:
 				# Act:
@@ -544,27 +537,7 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 	def _assert_payout_transaction_hashes_at_is_calculated_correctly_at_timestamps(self, timestamp_hash_indexes_pairs):
 		# Arrange:
 		with sqlite3.connect(':memory:') as connection:
-			database = WrapRequestDatabase(connection, MockNetworkFacade())
-			database.create_tables()
-
-			requests = [
-				make_request(0, amount=1000, height=111),
-				make_request(1, amount=3333, height=333),
-				make_request(2, amount=2020, height=222),
-				make_request(3, amount=1, height=222)
-			]
-
-			for request in requests:
-				database.add_request(request)
-
-			database.mark_payout_sent(requests[0], _make_payout_details(Hash256(HASHES[0])))
-			database.mark_payout_sent(requests[1], _make_payout_details(Hash256(HASHES[1])))
-			database.mark_payout_sent(requests[2], _make_payout_details(Hash256(HASHES[2])))
-			database.mark_payout_sent(requests[3], _make_payout_details(Hash256(HASHES[3])))
-
-			database.set_block_timestamp(111, 1000)
-			database.set_block_timestamp(222, 2000)
-			database.set_block_timestamp(333, 4000)
+			database = self._prepare_database_for_batch_tests(connection, [(index, {}) for index in range(4)])
 
 			for (timestamp, expected_transaction_hash_indexes) in timestamp_hash_indexes_pairs:
 				# Act:
@@ -589,6 +562,17 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 			(4001, [0, 1, 2, 3])
 		])
 
+	def test_payout_transaction_hashes_at_skips_requests_without_payouts(self):
+		# Arrange:
+		with sqlite3.connect(':memory:') as connection:
+			database = self._prepare_database_for_batch_tests(connection, [(index, {}) for index in (0, 1, 3)])
+
+			# Act:
+			transaction_hashes = list(database.payout_transaction_hashes_at(self._nem_to_unix_timestamp(4001)))
+
+			# Assert: even though transaction 2 is <= timestamp, it's ignored because it doesn't have a payout transaction
+			self.assertEqual([Hash256(HASHES[i]) for i in (0, 1, 3)], transaction_hashes)
+
 	# endregion
 
 	# region sum_payout_transaction_amounts
@@ -608,27 +592,7 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 	def _assert_sum_payout_transaction_amounts_is_calculated_correctly(self, hash_indexes_amount_pairs):
 		# Arrange:
 		with sqlite3.connect(':memory:') as connection:
-			database = WrapRequestDatabase(connection, MockNetworkFacade())
-			database.create_tables()
-
-			requests = [
-				make_request(0, amount=1000, height=111),
-				make_request(1, amount=3333, height=333),
-				make_request(2, amount=2020, height=222),
-				make_request(3, amount=1, height=222)
-			]
-
-			for request in requests:
-				database.add_request(request)
-
-			database.mark_payout_sent(requests[0], _make_payout_details(Hash256(HASHES[0])))
-			database.mark_payout_sent(requests[1], _make_payout_details(Hash256(HASHES[1])))
-			database.mark_payout_sent(requests[2], _make_payout_details(Hash256(HASHES[2])))
-			database.mark_payout_sent(requests[3], _make_payout_details(Hash256(HASHES[3])))
-
-			database.set_block_timestamp(111, 1000)
-			database.set_block_timestamp(222, 2000)
-			database.set_block_timestamp(333, 4000)
+			database = self._prepare_database_for_batch_tests(connection, [(index, {}) for index in range(4)])
 
 			for (hash_indexes, expected_amount) in hash_indexes_amount_pairs:
 				# Act:

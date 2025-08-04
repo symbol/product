@@ -192,6 +192,7 @@ class WrapRequestDatabase(MaxProcessedHeightMixin):
 			LEFT JOIN block_metadata ON wrap_request.request_transaction_height = block_metadata.height
 			LEFT JOIN payout_transaction ON wrap_request.payout_transaction_hash = payout_transaction.transaction_hash
 			WHERE block_metadata.timestamp <= ?
+			AND wrap_request.payout_transaction_hash IS NOT NULL
 		''', (timestamp,))
 		for row in cursor:
 			yield Hash256(row[0])
