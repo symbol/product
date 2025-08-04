@@ -676,9 +676,10 @@ async def test_can_query_transaction_statuses(server):  # pylint: disable=redefi
 async def test_can_filter_confirmed_transactions(server):  # pylint: disable=redefined-outer-name
 	# Arrange:
 	connector = SymbolConnector(server.make_url(''))
+	transaction_hashes = [Hash256(HASHES[i]) for i in (0, 2, 1)]
 
 	# Act:
-	transaction_hash_height_pairs = await connector.filter_confirmed_transactions([HASHES[0], HASHES[2], HASHES[1]])
+	transaction_hash_height_pairs = await connector.filter_confirmed_transactions(transaction_hashes)
 
 	# Assert:
 	assert [f'{server.make_url("")}/transactionStatus'] == server.mock.urls
@@ -693,9 +694,10 @@ async def test_can_filter_failed_transactions(server):  # pylint: disable=redefi
 	server.mock.status_groups = ('failed', 'confirmed')
 
 	connector = SymbolConnector(server.make_url(''))
+	transaction_hashes = [Hash256(HASHES[i]) for i in (0, 2, 1)]
 
 	# Act:
-	transaction_hash_error_pairs = await connector.filter_failed_transactions([HASHES[0], HASHES[2], HASHES[1]])
+	transaction_hash_error_pairs = await connector.filter_failed_transactions(transaction_hashes)
 
 	# Assert:
 	assert [f'{server.make_url("")}/transactionStatus'] == server.mock.urls
