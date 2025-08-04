@@ -6,7 +6,7 @@ import {
 	accountPageResponse,
 	accountPageResult
 } from '../test-utils/accounts';
-import { runAPITest } from '../test-utils/api';
+import { runApiTest } from '../test-utils/api';
 import { fetchAccountInfo, fetchAccountInfoByPublicKey, fetchAccountPage } from '@/api/accounts';
 
 jest.mock('@/utils/server', () => {
@@ -28,7 +28,7 @@ describe('api/accounts', () => {
 			const expectedResult = accountPageResult;
 
 			// Act + Assert:
-			await runAPITest(fetchAccountPage, searchCriteria, accountPageResponse, expectedURL, expectedResult);
+			await runApiTest(fetchAccountPage, searchCriteria, accountPageResponse, expectedURL, expectedResult);
 		});
 
 		it('fetch account page with mosaic filter', async () => {
@@ -42,7 +42,7 @@ describe('api/accounts', () => {
 			const expectedResult = accountPageMosaicFilterResult;
 
 			// Act + Assert:
-			await runAPITest(fetchAccountPage, searchCriteria, accountPageMosaicFilterResponse, expectedURL, expectedResult);
+			await runApiTest(fetchAccountPage, searchCriteria, accountPageMosaicFilterResponse, expectedURL, expectedResult);
 		});
 	});
 
@@ -54,7 +54,7 @@ describe('api/accounts', () => {
 			const expectedResult = accountInfoResult;
 
 			// Act + Assert:
-			await runAPITest(fetchAccountInfo, params, accountInfoResponse, expectedURL, expectedResult);
+			await runApiTest(fetchAccountInfo, params, accountInfoResponse, expectedURL, expectedResult);
 		});
 	});
 
@@ -67,7 +67,7 @@ describe('api/accounts', () => {
 			const expectedResult = accountInfoResult;
 
 			// Act + Assert:
-			await runAPITest(fetchAccountInfoByPublicKey, params, accountInfoResponse, expectedURL, expectedResult);
+			await runApiTest(fetchAccountInfoByPublicKey, params, accountInfoResponse, expectedURL, expectedResult);
 		});
 
 		describe('fetchAccountPage with specific filters', () => {
@@ -82,7 +82,7 @@ describe('api/accounts', () => {
 				const expectedResult = accountPageResult;
 
 				// Act + Assert:
-				await runAPITest(fetchAccountPage, searchCriteria, accountPageResponse, expectedURL, expectedResult);
+				await runApiTest(fetchAccountPage, searchCriteria, accountPageResponse, expectedURL, expectedResult);
 			});
 
 			it('fetch account page with isActiveHarvesting filter', async () => {
@@ -96,7 +96,7 @@ describe('api/accounts', () => {
 				const expectedResult = accountPageResult;
 
 				// Act + Assert:
-				await runAPITest(fetchAccountPage, searchCriteria, accountPageResponse, expectedURL, expectedResult);
+				await runApiTest(fetchAccountPage, searchCriteria, accountPageResponse, expectedURL, expectedResult);
 			});
 		});
 	});

@@ -3,10 +3,10 @@ import { fetchBlockPage } from './blocks';
 import { fetchNodeList } from './nodes';
 import config from '@/config';
 import { transactionChartFilterToType, truncateDecimals } from '@/utils/common';
-import { createAPIURL, makeRequest } from '@/utils/server';
+import { createApiUrl, makeRequest } from '@/utils/server';
 
 export const fetchAccountStats = async () => {
-	const stats = await makeRequest(createAPIURL('account/statistics'));
+	const stats = await makeRequest(createApiUrl('account/statistics'));
 	const accounts = (await fetchAccountPage({ pageNumber: 1, pageSize: 10 })).data;
 	const top10AccountsImportance = accounts.reduce((partialSum, account) => partialSum + account.importance, 0);
 	const restAccountsImportance = 100 - top10AccountsImportance;
@@ -39,7 +39,7 @@ export const fetchTransactionChart = async filter => {
 		const startDate = new Date();
 		startDate.setDate(startDate.getDate() - 90);
 		const startDateString = startDate.toISOString().slice(0, 10);
-		const response = await makeRequest(createAPIURL(`transaction/daily?startDate=${startDateString}&endDate=${endDateString}`));
+		const response = await makeRequest(createApiUrl(`transaction/daily?startDate=${startDateString}&endDate=${endDateString}`));
 
 		return response.map(item => [item.date, item.totalTransactions]);
 	}
@@ -47,7 +47,7 @@ export const fetchTransactionChart = async filter => {
 		const startDate = new Date();
 		startDate.setMonth(startDate.getMonth() - 48);
 		const startDateString = startDate.toISOString().slice(0, 10);
-		const response = await makeRequest(createAPIURL(`transaction/monthly?startDate=${startDateString}&endDate=${endDateString}`));
+		const response = await makeRequest(createApiUrl(`transaction/monthly?startDate=${startDateString}&endDate=${endDateString}`));
 
 		return response.map(item => [`${item.month}-01`, item.totalTransactions]);
 	}
@@ -57,7 +57,7 @@ export const fetchTransactionChart = async filter => {
 };
 
 export const fetchTransactionStats = async () => {
-	const stats = await makeRequest(createAPIURL('transaction/statistics'));
+	const stats = await makeRequest(createApiUrl('transaction/statistics'));
 	const blocks = (await fetchBlockPage({ pageSize: 240 })).data;
 	const total240Blocks = blocks.reduce((partialSum, block) => partialSum + block.transactionCount, 0);
 	const averagePerBlock = Math.ceil(total240Blocks / blocks.length);

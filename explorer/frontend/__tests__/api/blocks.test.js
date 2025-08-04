@@ -1,4 +1,4 @@
-import { runAPITest } from '../test-utils/api';
+import { runApiTest } from '../test-utils/api';
 import { blockInfoResponse, blockInfoResult, blockPageResponse, blockPageResult } from '../test-utils/blocks';
 import { fetchBlockInfo, fetchBlockPage, fetchChainHight } from '@/api/blocks';
 
@@ -21,7 +21,7 @@ describe('api/blocks', () => {
 			const expectedResult = blockPageResult;
 
 			// Act + Assert:
-			await runAPITest(fetchBlockPage, searchCriteria, blockPageResponse, expectedURL, expectedResult);
+			await runApiTest(fetchBlockPage, searchCriteria, blockPageResponse, expectedURL, expectedResult);
 		});
 	});
 
@@ -33,7 +33,7 @@ describe('api/blocks', () => {
 			const expectedResult = blockInfoResult;
 
 			// Act + Assert:
-			await runAPITest(fetchBlockInfo, params, blockInfoResponse, expectedURL, expectedResult);
+			await runApiTest(fetchBlockInfo, params, blockInfoResponse, expectedURL, expectedResult);
 		});
 	});
 
@@ -45,7 +45,7 @@ describe('api/blocks', () => {
 			const expectedResult = 4695085;
 
 			// Act + Assert:
-			await runAPITest(fetchChainHight, params, blockPageResponse, expectedURL, expectedResult);
+			await runApiTest(fetchChainHight, params, blockPageResponse, expectedURL, expectedResult);
 		});
 	});
 });

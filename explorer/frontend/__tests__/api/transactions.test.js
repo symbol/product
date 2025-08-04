@@ -1,4 +1,4 @@
-import { runAPITest } from '../test-utils/api';
+import { runApiTest } from '../test-utils/api';
 import {
 	transactionAccountPageResult,
 	transactionInfoResponse,
@@ -36,7 +36,7 @@ describe('api/transactions', () => {
 			const expectedResult = transactionPageResult;
 
 			// Act + Assert:
-			await runAPITest(fetchTransactionPage, searchCriteria, transactionPageResponse, expectedURL, expectedResult);
+			await runApiTest(fetchTransactionPage, searchCriteria, transactionPageResponse, expectedURL, expectedResult);
 		});
 
 		it('fetch transaction page with "unconfirmed" filter', async () => {
@@ -50,7 +50,7 @@ describe('api/transactions', () => {
 			const expectedResult = transactionUnconfirmedPageResult;
 
 			// Act + Assert:
-			await runAPITest(fetchTransactionPage, searchCriteria, transactionUnconfirmedPageResponse, expectedURL, expectedResult);
+			await runApiTest(fetchTransactionPage, searchCriteria, transactionUnconfirmedPageResponse, expectedURL, expectedResult);
 		});
 
 		it('fetch transaction page with "from" and "to" filters', async () => {
@@ -65,7 +65,7 @@ describe('api/transactions', () => {
 			const expectedResult = transactionPageResult;
 
 			// Act + Assert:
-			await runAPITest(fetchTransactionPage, searchCriteria, transactionPageResponse, expectedURL, expectedResult);
+			await runApiTest(fetchTransactionPage, searchCriteria, transactionPageResponse, expectedURL, expectedResult);
 		});
 
 		it('fetch transaction page for specific account with "to" filter', async () => {
@@ -78,7 +78,7 @@ describe('api/transactions', () => {
 			const expectedResult = transactionAccountPageResult;
 
 			// Act + Assert:
-			await runAPITest(fetchTransactionPage, searchCriteria, transactionPageResponse, expectedURL, expectedResult);
+			await runApiTest(fetchTransactionPage, searchCriteria, transactionPageResponse, expectedURL, expectedResult);
 		});
 
 		it('fetch transaction page for specific account with "from" filter', async () => {
@@ -93,7 +93,7 @@ describe('api/transactions', () => {
 			const expectedResult = transactionAccountPageResult;
 
 			// Act + Assert:
-			await runAPITest(fetchTransactionPage, searchCriteria, transactionPageResponse, expectedURL, expectedResult);
+			await runApiTest(fetchTransactionPage, searchCriteria, transactionPageResponse, expectedURL, expectedResult);
 		});
 
 		it('fetch transaction page for specific account with "to" filter', async () => {
@@ -108,7 +108,7 @@ describe('api/transactions', () => {
 			const expectedResult = transactionAccountPageResult;
 
 			// Act + Assert:
-			await runAPITest(fetchTransactionPage, searchCriteria, transactionPageResponse, expectedURL, expectedResult);
+			await runApiTest(fetchTransactionPage, searchCriteria, transactionPageResponse, expectedURL, expectedResult);
 		});
 	});
 
@@ -120,7 +120,7 @@ describe('api/transactions', () => {
 			const expectedResult = transactionInfoResult;
 
 			// Act + Assert:
-			await runAPITest(fetchTransactionInfo, params, transactionInfoResponse, expectedURL, expectedResult);
+			await runApiTest(fetchTransactionInfo, params, transactionInfoResponse, expectedURL, expectedResult);
 		});
 
 		it('fetch unsupported transaction info by hash', async () => {
@@ -130,7 +130,7 @@ describe('api/transactions', () => {
 			const expectedResult = unsupportedTransactionInfoResult;
 
 			// Act + Assert:
-			await runAPITest(fetchTransactionInfo, params, unsupportedTransactionInfoResponse, expectedURL, expectedResult);
+			await runApiTest(fetchTransactionInfo, params, unsupportedTransactionInfoResponse, expectedURL, expectedResult);
 		});
 	});
 });
