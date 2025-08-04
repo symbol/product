@@ -646,9 +646,10 @@ async def test_can_query_mosaic_fee_information_without_divisibility(server):  #
 async def test_can_filter_confirmed_transactions(server):  # pylint: disable=redefined-outer-name
 	# Arrange:
 	connector = NemConnector(server.make_url(''))
+	transaction_hashes = [Hash256(HASHES[i]) for i in (0, 2, 1)]
 
 	# Act:
-	transaction_hash_height_pairs = await connector.filter_confirmed_transactions([HASHES[0], HASHES[2], HASHES[1]])
+	transaction_hash_height_pairs = await connector.filter_confirmed_transactions(transaction_hashes)
 
 	# Assert:
 	assert [
