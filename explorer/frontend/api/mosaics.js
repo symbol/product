@@ -1,5 +1,5 @@
 import { createMosaicName, getRootNamespaceName } from '@/utils/common';
-import { createAPIURL, createPage, createSearchCriteria, createSearchURL, createTryFetchInfoFunction, makeRequest } from '@/utils/server';
+import { createApiUrl, createPage, createSearchCriteria, createSearchURL, createTryFetchInfoFunction, makeRequest } from '@/utils/server';
 
 /**
  * @typedef Page
@@ -14,7 +14,7 @@ import { createAPIURL, createPage, createSearchCriteria, createSearchURL, create
  */
 export const fetchMosaicPage = async searchParams => {
 	const searchCriteria = createSearchCriteria(searchParams);
-	const url = createSearchURL(createAPIURL('mosaics'), searchCriteria);
+	const url = createSearchURL(createApiUrl('mosaics'), searchCriteria);
 	const mosaics = await makeRequest(url);
 
 	return createPage(mosaics, searchCriteria.pageNumber, mosaicInfoFromDTO);
@@ -26,7 +26,7 @@ export const fetchMosaicPage = async searchParams => {
  * @returns {Promise<Object>} mosaic info
  */
 export const fetchMosaicInfo = createTryFetchInfoFunction(async id => {
-	const mosaic = await makeRequest(createAPIURL(`mosaic/${id}`));
+	const mosaic = await makeRequest(createApiUrl(`mosaic/${id}`));
 
 	return mosaicInfoFromDTO(mosaic);
 });

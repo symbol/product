@@ -16,7 +16,7 @@ export const createSearchCriteria = (searchParams = {}) => {
 };
 
 // Creates an API URL.
-export const createAPIURL = path => `${config.API_BASE_URL}/${path}`;
+export const createApiUrl = path => `${config.API_BASE_URL}/${path}`;
 
 // Creates a search URL, which uses in fetching paged data.
 export const createSearchURL = (baseURL, searchCriteria) => {

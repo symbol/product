@@ -1,4 +1,4 @@
-import { createAPIURL, createPage, createSearchCriteria, createSearchURL, createTryFetchInfoFunction, makeRequest } from '@/utils/server';
+import { createApiUrl, createPage, createSearchCriteria, createSearchURL, createTryFetchInfoFunction, makeRequest } from '@/utils/server';
 
 /**
  * @typedef Page
@@ -26,9 +26,9 @@ export const fetchAccountPage = async searchParams => {
 
 	if (searchCriteria.filter.mosaic) {
 		searchCriteria.filter = { namespaceName: searchCriteria.filter.mosaic };
-		url = createSearchURL(createAPIURL('mosaic/rich/list'), searchCriteria);
+		url = createSearchURL(createApiUrl('mosaic/rich/list'), searchCriteria);
 	} else {
-		url = createSearchURL(createAPIURL('accounts'), searchCriteria);
+		url = createSearchURL(createApiUrl('accounts'), searchCriteria);
 	}
 	const accounts = await makeRequest(url);
 
@@ -41,7 +41,7 @@ export const fetchAccountPage = async searchParams => {
  * @returns {Promise<Object>} account info
  */
 export const fetchAccountInfo = createTryFetchInfoFunction(async address => {
-	const accountInfo = await makeRequest(createAPIURL(`account?address=${address}`));
+	const accountInfo = await makeRequest(createApiUrl(`account?address=${address}`));
 
 	return accountInfoFromDTO(accountInfo);
 });
@@ -52,7 +52,7 @@ export const fetchAccountInfo = createTryFetchInfoFunction(async address => {
  * @returns {Promise<Object>} account info
  */
 export const fetchAccountInfoByPublicKey = createTryFetchInfoFunction(async publicKey => {
-	const accountInfo = await makeRequest(createAPIURL(`account?publicKey=${publicKey}`));
+	const accountInfo = await makeRequest(createApiUrl(`account?publicKey=${publicKey}`));
 
 	return accountInfoFromDTO(accountInfo);
 });

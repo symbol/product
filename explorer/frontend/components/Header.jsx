@@ -6,9 +6,9 @@ import SearchBar from './SearchBar';
 import TextBox from './TextBox';
 import ValueAccount from './ValueAccount';
 import { search } from '@/api/search';
-import { STORAGE_KEY } from '@/constants';
+import { BACKEND_HEALTH_ERROR, STORAGE_KEY } from '@/constants';
 import styles from '@/styles/components/Header.module.scss';
-import { createPageHref, useStorage, useToggle } from '@/utils';
+import { createPageHref, formatDate, useStorage, useToggle } from '@/utils';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
@@ -16,7 +16,7 @@ import { useTranslation } from 'next-i18next';
 import { useState } from 'react';
 import { toast } from 'react-toastify';
 
-const Header = () => {
+const Header = ({ backendStatus }) => {
 	const router = useRouter();
 	const { t } = useTranslation();
 	const [contacts, setContacts] = useStorage(STORAGE_KEY.ADDRESS_BOOK, []);
@@ -143,6 +143,27 @@ const Header = () => {
 		toggleProfile();
 	};
 
+	// Backend health warning
+	const isBackendWarningShown = backendStatus?.isHealthy === false;
+	const getBackendErrorStatusText = () => {
+		const backendSyncError = backendStatus.errors.find(error => error.type === BACKEND_HEALTH_ERROR.SYNCHRONIZATION);
+
+		// If error is not a sync error, return a generic error message
+		if (!backendSyncError)
+			return t('message_healthGenericError');
+
+		const lastSyncedAtDateText = formatDate(backendStatus.lastSyncedAt, t, {
+			type: 'local',
+			hasTime: true,
+			hasSeconds: true
+		});
+
+		return t('message_healthSyncError', {
+			lastSyncedAt: lastSyncedAtDateText,
+			lastBlockHeight: backendStatus.lastBlockHeight
+		});
+	};
+
 	return (
 		<div className={styles.headerWrapper}>
 			<header className={styles.header}>
@@ -218,6 +239,13 @@ const Header = () => {
 						{renderMenu()}
 					</div>
 				</Modal>
+				{isBackendWarningShown && (
+					<div className={styles.backendStatus}>
+						<div className={styles.backendStatusText}>
+							{getBackendErrorStatusText()}
+						</div>
+					</div>
+				)}
 			</header>
 			<nav className={styles.mobileMenu}>{renderMenu()}</nav>
 		</div>

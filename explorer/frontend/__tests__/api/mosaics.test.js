@@ -1,4 +1,4 @@
-import { runAPITest } from '../test-utils/api';
+import { runApiTest } from '../test-utils/api';
 import { mosaicInfoResponse, mosaicInfoResult, mosaicPageResponse, mosaicPageResult } from '../test-utils/mosaics';
 import { fetchMosaicInfo, fetchMosaicPage } from '@/api/mosaics';
 
@@ -21,7 +21,7 @@ describe('api/mosaics', () => {
 			const expectedResult = mosaicPageResult;
 
 			// Act + Assert:
-			await runAPITest(fetchMosaicPage, searchCriteria, mosaicPageResponse, expectedURL, expectedResult);
+			await runApiTest(fetchMosaicPage, searchCriteria, mosaicPageResponse, expectedURL, expectedResult);
 		});
 	});
 
@@ -33,7 +33,7 @@ describe('api/mosaics', () => {
 			const expectedResult = mosaicInfoResult;
 
 			// Act + Assert:
-			await runAPITest(fetchMosaicInfo, params, mosaicInfoResponse, expectedURL, expectedResult);
+			await runApiTest(fetchMosaicInfo, params, mosaicInfoResponse, expectedURL, expectedResult);
 		});
 	});
 });
