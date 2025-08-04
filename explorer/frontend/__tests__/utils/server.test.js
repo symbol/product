@@ -1,5 +1,5 @@
 import { error404Response } from '../test-utils/api';
-import { createAPIURL, createPage, createSearchCriteria, createSearchURL, createTryFetchInfoFunction, makeRequest } from '@/utils/server';
+import { createApiUrl, createPage, createSearchCriteria, createSearchURL, createTryFetchInfoFunction, makeRequest } from '@/utils/server';
 import mockAxios from 'jest-mock-axios';
 
 afterEach(() => {
@@ -172,14 +172,14 @@ describe('utils/server', () => {
 		});
 	});
 
-	describe('createAPIURL', () => {
+	describe('createApiUrl', () => {
 		it('returns API URL from path', () => {
 			// Arrange:
 			const path = 'blocks';
 			const expectedResult = 'https://explorer.backend/blocks';
 
 			// Act:
-			const result = createAPIURL(path);
+			const result = createApiUrl(path);
 
 			// Assert:
 			expect(result).toBe(expectedResult);

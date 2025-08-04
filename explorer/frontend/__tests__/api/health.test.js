@@ -1,4 +1,4 @@
-import { runAPITest } from '../test-utils/api';
+import { runApiTest } from '../test-utils/api';
 import { healthSyncErrorResponse } from '../test-utils/health';
 import { fetchBackendHealthStatus } from '@/api/health';
 
@@ -19,7 +19,7 @@ describe('api/health', () => {
 			const expectedResult = healthSyncErrorResponse;
 
 			// Act + Assert:
-			await runAPITest(fetchBackendHealthStatus, params, healthSyncErrorResponse, expectedURL, expectedResult);
+			await runApiTest(fetchBackendHealthStatus, params, healthSyncErrorResponse, expectedURL, expectedResult);
 		});
 	});
 });

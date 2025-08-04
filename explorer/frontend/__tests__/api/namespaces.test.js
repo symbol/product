@@ -1,4 +1,4 @@
-import { runAPITest } from '../test-utils/api';
+import { runApiTest } from '../test-utils/api';
 import { namespaceInfoResponse, namespaceInfoResult, namespacePageResponse, namespacePageResult } from '../test-utils/namespaces';
 import { fetchNamespaceInfo, fetchNamespacePage } from '@/api/namespaces';
 
@@ -21,7 +21,7 @@ describe('api/namespaces', () => {
 			const expectedResult = namespacePageResult;
 
 			// Act + Assert:
-			await runAPITest(fetchNamespacePage, searchCriteria, namespacePageResponse, expectedURL, expectedResult);
+			await runApiTest(fetchNamespacePage, searchCriteria, namespacePageResponse, expectedURL, expectedResult);
 		});
 	});
 
@@ -33,7 +33,7 @@ describe('api/namespaces', () => {
 			const expectedResult = namespaceInfoResult;
 
 			// Act + Assert:
-			await runAPITest(fetchNamespaceInfo, params, namespaceInfoResponse, expectedURL, expectedResult);
+			await runApiTest(fetchNamespaceInfo, params, namespaceInfoResponse, expectedURL, expectedResult);
 		});
 	});
 });
