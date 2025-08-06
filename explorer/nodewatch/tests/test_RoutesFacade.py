@@ -212,7 +212,7 @@ class NemRoutesFacadeTest(unittest.TestCase):
 	# endregion
 
 
-class SymbolRoutesFacadeTest(unittest.TestCase):
+class SymbolRoutesFacadeTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
 	# region reload / refresh
 
 	def test_can_reload_all(self):
@@ -229,6 +229,8 @@ class SymbolRoutesFacadeTest(unittest.TestCase):
 		self.assertEqual(6, len(facade.repository.node_descriptors))
 		self.assertEqual(4, len(facade.repository.harvester_descriptors))
 		self.assertEqual(4, len(facade.repository.voter_descriptors))
+		self.assertEqual(1, len(facade.repository.geo_location_map))
+		self.assertEqual(2, len(facade.repository.time_series_nodes_count))
 
 	def test_can_skip_reload_when_noop(self):
 		# Arrange:
@@ -395,7 +397,7 @@ class SymbolRoutesFacadeTest(unittest.TestCase):
 		facade.reload_all(Path('tests/resources'), True)
 
 		# Act: select nodes with only api role (role 2)
-		node_descriptors = facade.json_nodes(2, True)
+		node_descriptors = facade.json_nodes(2, exact_match=True)
 
 		# Assert: spot check names and roles
 		self.assertEqual(1, len(node_descriptors))
@@ -405,6 +407,151 @@ class SymbolRoutesFacadeTest(unittest.TestCase):
 		self.assertEqual(
 			[2],
 			list(map(lambda descriptor: descriptor['roles'], node_descriptors)))
+
+	def test_can_generate_nodes_json_filtered_only_ssl(self):
+		# Arrange:
+		facade = SymbolRoutesFacade(SymbolNetwork.MAINNET, '<symbol_explorer>')
+		facade.reload_all(Path('tests/resources'), True)
+
+		# Act: select nodes with only ssl enabled
+		node_descriptors = facade.json_nodes(2, only_ssl=True)
+
+		# Assert: spot check names and roles
+		self.assertEqual(2, len(node_descriptors))
+		self.assertEqual(
+			['Allnodes250', 'ibone74'],
+			list(map(lambda descriptor: descriptor['name'], node_descriptors)))
+
+	def test_can_generate_nodes_json_filtered_order_random_subset(self):
+		# Arrange:
+		facade = SymbolRoutesFacade(SymbolNetwork.MAINNET, '<symbol_explorer>')
+		facade.reload_all(Path('tests/resources'), True)
+
+		# Act: select 2 nodes with order random
+		node_descriptors = facade.json_nodes(2, limit=2, order='random')
+
+		# Assert:
+		all_node_descriptors = facade.json_nodes(2)
+
+		full_node_names = list(map(lambda descriptor: descriptor['name'], all_node_descriptors))
+		random_node_names = list(map(lambda descriptor: descriptor['name'], node_descriptors))
+
+		self.assertEqual(5, len(all_node_descriptors))
+		self.assertEqual(2, len(node_descriptors))
+		self.assertEqual(2, len(set(random_node_names)))
+		for name in random_node_names:
+			self.assertIn(name, full_node_names)
+
+	def test_can_generate_nodes_json_filtered_limit_5(self):
+		# Arrange:
+		facade = SymbolRoutesFacade(SymbolNetwork.MAINNET, '<symbol_explorer>')
+		facade.reload_all(Path('tests/resources'), True)
+
+		# Act:
+		node_descriptors = facade.json_nodes(2, limit=5)
+
+		# Assert: spot check names
+		self.assertEqual(5, len(node_descriptors))
+		self.assertEqual(
+			['Allnodes250', 'Apple', 'Shin-Kuma-Node', 'ibone74', 'symbol.ooo maxUnlockedAccounts:100'],
+			list(map(lambda descriptor: descriptor['name'], node_descriptors)))
+		self.assertEqual(
+			[2, 7, 3, 3, 3],
+			list(map(lambda descriptor: descriptor['roles'], node_descriptors)))
+
+	def test_can_find_known_node_by_main_public_key(self):  # pylint: disable=invalid-name
+		# Arrange:
+		facade = SymbolRoutesFacade(SymbolNetwork.MAINNET, '<symbol_explorer>')
+		facade.reload_all(Path('tests/resources'), True)
+
+		# Act: select a node match with main public key
+		node_descriptors = facade.json_node(
+			filter_field='main_public_key',
+			public_key='A0AA48B6417BDB1845EB55FB0B1E13255EA8BD0D8FA29AD2D8A906E220571F21'
+		)
+		expected_node = {
+			'mainPublicKey': 'A0AA48B6417BDB1845EB55FB0B1E13255EA8BD0D8FA29AD2D8A906E220571F21',
+			'nodePublicKey': '403D890915B68E290B3F519A602A13B17C58499A077D77DB7CCC6327761C84DC',
+			'endpoint': '',
+			'name': 'Allnodes250',
+			'version': '1.0.3.4',
+			'height': 1486762,
+			'finalizedEpoch': 3020,
+			'finalizedHash': 'E29E5695EB269B7DD1D76DBF05FDA1731AB24F561D2032248434FA36A27AFB4C',
+			'finalizedHeight': 1486740,
+			'finalizedPoint': 4,
+			'balance': 3155632.471994,
+			'isHealthy': True,
+			'isSslEnabled': True,
+			'restVersion': '2.4.4',
+			'roles': 2,
+			'geoLocation': None
+		}
+
+		# Assert:
+		self.assertEqual(node_descriptors, expected_node)
+
+	def test_can_find_known_node_with_geo_location_by_main_public_key(self):  # pylint: disable=invalid-name
+		# Arrange:
+		facade = SymbolRoutesFacade(SymbolNetwork.MAINNET, '<symbol_explorer>')
+		facade.reload_all(Path('tests/resources'), True)
+
+		# Act: select a node match with main public key
+		node_descriptors = facade.json_node(
+			filter_field='main_public_key',
+			public_key='7DFB0D690BFFA4A4979C7466C7B669AE8FBAFD419DAA10DE948604CD9BE65F0B'
+		)
+		expected_node = {
+			'mainPublicKey': '7DFB0D690BFFA4A4979C7466C7B669AE8FBAFD419DAA10DE948604CD9BE65F0B',
+			'nodePublicKey': 'D561824BD4E3053C39A8D5A4AB00583A4D99302C541F046D3A1E6FF023006D7C',
+			'endpoint': 'http://symbol.shizuilab.com:3000',
+			'name': 'ibone74',
+			'version': '1.0.3.5',
+			'height': 1486760,
+			'finalizedEpoch': 3020,
+			'finalizedPoint': 4,
+			'finalizedHash': 'E29E5695EB269B7DD1D76DBF05FDA1731AB24F561D2032248434FA36A27AFB4C',
+			'finalizedHeight': 1486740,
+			'balance': 82375.554976,
+			'isHealthy': True,
+			'isSslEnabled': True,
+			'restVersion': '2.4.4',
+			'roles': 3,
+			'geoLocation': {
+				'continent': 'Asia',
+				'country': 'Japan',
+				'region': '13',
+				'city': 'Chiyoda',
+				'lat': 12.0,
+				'lon': 15.0,
+				'isp': 'Internet Inc.'
+			}
+		}
+
+		# Assert:
+		self.assertEqual(node_descriptors, expected_node)
+
+	def test_cannot_find_unknown_node_by_main_public_key(self):  # pylint: disable=invalid-name
+		# Arrange:
+		facade = SymbolRoutesFacade(SymbolNetwork.MAINNET, '<symbol_explorer>')
+		facade.reload_all(Path('tests/resources'), True)
+
+		# Act:
+		node_descriptors = facade.json_node(filter_field='main_public_key', public_key='invalidKey')
+
+		# Assert:
+		self.assertIsNone(node_descriptors)
+
+	def test_json_node_with_invalid_field(self):  # pylint: disable=invalid-name
+		# Arrange:
+		facade = SymbolRoutesFacade(SymbolNetwork.MAINNET, '<symbol_explorer>')
+		facade.reload_all(Path('tests/resources'), True)
+
+		# Act:
+		node_descriptors = facade.json_node(filter_field='invalid_field', public_key='invalidKey')
+
+		# Assert:
+		self.assertIsNone(node_descriptors)
 
 	def test_can_generate_height_chart_json(self):
 		# Arrange:
@@ -443,6 +590,18 @@ class SymbolRoutesFacadeTest(unittest.TestCase):
 		self.assertEqual(2, len(height_json))
 		self.assertEqual(1486760, height_json['height'])
 		self.assertEqual(1486740, height_json['finalizedHeight'])
+
+	def test_can_retrieve_time_series_nodes_count_json(self):
+		# Arrange:
+		facade = SymbolRoutesFacade(SymbolNetwork.MAINNET, '<symbol_explorer>')
+		facade.reload_all(Path('tests/resources'), True)
+
+		# Act:
+		time_series_nodes_count = facade.json_time_series_nodes_count()
+
+		# Assert:
+		self.assertEqual(2, len(time_series_nodes_count))
+		self.assertEqual(['2025-03-26', '2025-03-27'], list(map(lambda time_series_node: time_series_node['date'], time_series_nodes_count)))
 
 	# endregion
 

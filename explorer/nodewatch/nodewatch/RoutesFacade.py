@@ -1,5 +1,6 @@
 import asyncio
 import datetime
+import random
 
 from zenlog import log
 
@@ -68,15 +69,37 @@ class BasicRoutesFacade:
 			'explorer_endpoint': self.explorer_endpoint
 		})
 
-	def json_nodes(self, role, exact_match=False):
-		"""Returns all nodes with matching role."""
+	def json_nodes(self, role, **kwargs):
+		"""Returns all nodes with condition."""
 
-		def role_filter(descriptor):
-			return role == descriptor.roles if exact_match else role == (role & descriptor.roles)
+		exact_match = kwargs.get('exact_match', False)
 
-		return list(map(
+		limit = kwargs.get('limit')
+		only_ssl = kwargs.get('only_ssl')
+		order = kwargs.get('order')
+
+		def custom_filter(descriptor):
+			role_condition = role == descriptor.roles if exact_match else role == (role & descriptor.roles)
+
+			return role_condition and (descriptor.is_ssl_enabled if only_ssl else True)
+
+		nodes = list(map(
 			lambda descriptor: descriptor.to_json(),
-			filter(role_filter, self.repository.node_descriptors)))
+			filter(custom_filter, self.repository.node_descriptors)))
+
+		if order == 'random':
+			random.shuffle(nodes)
+
+		return nodes if limit == 0 else nodes[:limit]
+
+	def json_node(self, filter_field, public_key):
+		"""Returns a node with matching main or node public key."""
+
+		try:
+			matching_items = [item for item in self.repository.node_descriptors if str(getattr(item, filter_field)) == public_key]
+			return next((item.to_json() for item in matching_items), None)
+		except AttributeError:
+			return None
 
 	def json_height_chart(self):
 		"""Builds a JSON height chart."""
@@ -109,7 +132,9 @@ class BasicRoutesFacade:
 		nodes_filepath = resources_path / f'{self.blockchain_name}_nodes.json'
 		harvesters_filepath = resources_path / f'{self.blockchain_name}_harvesters.csv'
 		voters_filepath = resources_path / f'{self.blockchain_name}_richlist.csv'
-		all_filepaths = [nodes_filepath, harvesters_filepath, voters_filepath]
+		geo_locations_filepath = resources_path / f'{self.blockchain_name}_geo_location.json'
+		time_series_node_counts_filepath = resources_path / f'{self.blockchain_name}_time_series_nodes_count.json'
+		all_filepaths = [nodes_filepath, harvesters_filepath, voters_filepath, geo_locations_filepath, time_series_node_counts_filepath]
 
 		# nodes.json is produced first by the network crawl, all other files are derived from it
 		last_crawl_timestamp = nodes_filepath.stat().st_mtime
@@ -126,8 +151,12 @@ class BasicRoutesFacade:
 
 		log.info(f'reloading files with crawl data from {last_crawl_time} (previous reload {self.last_reload_time})')
 
+		# Load geo locations first, as they are used by the node descriptors
+		self.repository.load_geo_location_descriptors(geo_locations_filepath)
+
 		self.repository.load_node_descriptors(nodes_filepath)
 		self.repository.load_harvester_descriptors(harvesters_filepath)
+		self.repository.load_time_series_nodes_count(time_series_node_counts_filepath)
 		if voters_filepath.exists():
 			self.repository.load_voter_descriptors(voters_filepath)
 
@@ -246,3 +275,8 @@ class SymbolRoutesFacade(BasicRoutesFacade):
 			tag = 'success'
 
 		return tag
+
+	def json_time_series_nodes_count(self):
+		"""Returns the number of nodes."""
+
+		return self.repository.time_series_nodes_count
