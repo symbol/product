@@ -57,7 +57,7 @@ commands/
 
 ③renew-certificates.py
 --configのﾃﾞﾌｫﾙﾄ値を           shoestring/shoestring.ini
---directoryのﾃﾞﾌｫﾙﾄ値を        $(pwc)/node（指定する場合は、絶対pathの記述が必要）
+--directoryのﾃﾞﾌｫﾙﾄ値を        $(pwd)/node（指定する場合は、絶対pathの記述が必要）
 --ca-key-pathのﾃﾞﾌｫﾙﾄ値を      ca.key.pem
 --retain-node-keyのﾃﾞﾌｫﾙﾄ値を  --retain-node-keyを書いても書かなくても True（実行する）
 ※修正方法が判明し次第、修正予定。
