@@ -145,6 +145,14 @@ friendlyName = myShoestringNode
 
 この次の命令 setupで、基本的な dualnodeが完成する。
 ```
+
+2025_08_06
+```
+wizard/screens/obligatory.py
+
+wizardの setupﾒﾆｭｰで、最初に表示される ｲﾝｽﾄｰﾙ先 ﾃﾞｨﾚｸﾄﾘ指定の欄の初期表示を、
+$HOME/symbolから、ｶﾚﾝﾄﾃﾞｨﾚｸﾄﾘに変更。
+```
 ----------------------------------------------------------------------------------------------
 2025_07_16
 ```
@@ -294,4 +302,11 @@ friendlyName = myShoestringNode
 the settings are written in advance as shown above.
 
 The next command, setup, completes the basic dualnode.
+```
+
+2025_08_06
+```
+wizard/screens/obligatory.py
+
+In the wizard setup menu, the initial display for the installation directory field has been changed from $HOME/symbol to the current directory.
 ```
