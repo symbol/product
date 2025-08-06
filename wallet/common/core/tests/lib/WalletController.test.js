@@ -260,7 +260,7 @@ describe('WalletController', () => {
 			// Act & Assert:
 			await expect(walletController.addSeedAccount({ name, index, networkIdentifier }, password))
 				.rejects.toThrow('Failed to add account. Account already exists in the wallet.');
-			expect(walletController._keystores.mnemonic.getSeedAccount).toHaveBeenCalledWith({ index, networkIdentifier });
+			expect(walletController._keystores.mnemonic.getSeedAccount).toHaveBeenCalledWith(networkIdentifier, index);
 			expect(walletController._persistentStorageRepository.setAccounts).not.toHaveBeenCalled();
 		});
 
@@ -289,7 +289,7 @@ describe('WalletController', () => {
 			// Assert:
 			expect(returnedAccount).toStrictEqual(expectedAddedAccount);
 			expect(walletController._keystores.mnemonic.getSeedAccount)
-				.toHaveBeenCalledWith({ index, networkIdentifier });
+				.toHaveBeenCalledWith(networkIdentifier, index);
 			expect(walletController._persistentStorageRepository.setAccounts)
 				.toHaveBeenCalledWith(expectedWalletAccounts);
 		});

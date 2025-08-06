@@ -429,7 +429,7 @@ export class WalletController {
 	addSeedAccount = async ({ name, networkIdentifier, index, type = WalletAccountType.MNEMONIC }) => {
 		// Add account FROM keystore (by index)
 		const keystore = this.#accessKeystore(type);
-		const account = await keystore.getSeedAccount({ networkIdentifier, index });
+		const account = await keystore.getSeedAccount(networkIdentifier, index);
 		account.name = name;
 
 		// Add account to the wallet
