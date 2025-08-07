@@ -1,5 +1,6 @@
 import { BaseSoftwareKeystore } from './BaseSoftwareKeystore';
 import { WalletAccountType } from '../../constants';
+import { KeystoreError } from '../../error/KeystoreError';
 import { getAccountWithoutPrivateKey } from '../../utils/account';
 import { cloneNetworkArrayMap, createNetworkMap } from '../../utils/network';
 
@@ -38,14 +39,14 @@ export class ExternalAccountKeystore extends BaseSoftwareKeystore {
 	 * @param {string} networkIdentifier - The network identifier for the new account.
 	 * @param {string} [password] - The password to access secure storage.
 	 * @returns {Promise<PublicAccount>} A promise that resolves to the newly added account without the private key.
-	 * @throws {Error} If the network is not supported or if the account already exists.
+	 * @throws {KeystoreError} If the network is not supported or if the account already exists.
 	 */
 	addAccount = async (privateKey, networkIdentifier, password) => {
 		// Check if the network is supported
 		const isNetworkSupported = this.networkIdentifiers.includes(networkIdentifier);
 
 		if (!isNetworkSupported)
-			throw new Error(`Failed to add account. Network "${networkIdentifier}" is not supported by this keystore.`);
+			throw new KeystoreError(`Failed to add account. Network "${networkIdentifier}" is not supported by this keystore.`);
 
 		// Create a new private account
 		const newAccount = this.sdk.createPrivateAccount(
@@ -59,7 +60,7 @@ export class ExternalAccountKeystore extends BaseSoftwareKeystore {
 		const { privateAccounts } = this._state;
 
 		if (privateAccounts[networkIdentifier].some(acc => acc.publicKey === newAccount.publicKey))
-			throw new Error('Failed to add account. Account already exists in the keystore.');
+			throw new KeystoreError('Failed to add account. Account already exists in the keystore.');
 
 		privateAccounts[networkIdentifier].push(newAccount);
 		
@@ -76,14 +77,14 @@ export class ExternalAccountKeystore extends BaseSoftwareKeystore {
 	 * @param {string} networkIdentifier - The network identifier of the account to remove.
 	 * @param {string} [password] - The password to access secure storage.
 	 * @returns {Promise<void>} A promise that resolves when the account is removed.
-	 * @throws {Error} If the network is not supported or if the account does not exist.
+	 * @throws {KeystoreError} If the network is not supported or if the account does not exist.
 	 */
 	removeAccount = async (publicKey, networkIdentifier, password) => {
 		// Check if the network is supported
 		const isNetworkSupported = this.networkIdentifiers.includes(networkIdentifier);
 
 		if (!isNetworkSupported)
-			throw new Error(`Failed to remove account. Network "${networkIdentifier}" is not supported by this keystore.`);
+			throw new KeystoreError(`Failed to remove account. Network "${networkIdentifier}" is not supported by this keystore.`);
 
 
 		// Load existing accounts from secure storage and find the account to remove

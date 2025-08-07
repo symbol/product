@@ -19,6 +19,30 @@ export const ControllerEventName = {
 	NETWORK_PROPERTIES_CHANGE: 'wc:network.properties.change'
 };
 
+export const ErrorCode = {
+	FAILED_ACCESS_KEYSTORE: 'error_failed_access_keystore',
+	WALLET_SELECTED_ACCOUNT_MISSING: 'error_wallet_selected_account_missing',
+	WALLET_ADD_ACCOUNT_ALREADY_EXISTS: 'error_failed_add_account_already_exists',
+	WALLET_REMOVE_CURRENT_ACCOUNT: 'error_wallet_remove_current_account',
+	WALLET_ACCOUNT_NOT_FOUND: 'error_wallet_account_not_found',
+	WALLET_NETWORK_NOT_SUPPORTED: 'error_change_network_not_supported',
+	FETCH_INVALID_REQUEST: 'error_fetch_invalid_request',
+	FETCH_UNAUTHORIZED: 'error_fetch_unauthorized',
+	FETCH_NOT_FOUND: 'error_fetch_not_found',
+	FETCH_RATE_LIMIT: 'error_fetch_rate_limit',
+	FETCH_SERVER_ERROR: 'error_fetch_server_error',
+	NETWORK_REQUEST_ERROR: 'error_network_request_error',
+	NETWORK_LISTENER_START_ERROR: 'error_chain_listener_start',
+	NETWORK_PROPERTIES_WRONG_NETWORK: 'error_fetch_network_properties_wrong_network',
+	ADDRESS_BOOK_ADD_CONTACT_ALREADY_EXISTS: 'error_failed_add_contact_already_exists',
+	ADDRESS_BOOK_REMOVE_CONTACT_NOT_FOUND: 'error_failed_remove_contact_not_found',
+	ADDRESS_BOOK_UPDATE_CONTACT_NOT_FOUND: 'error_failed_update_contact_not_found',
+	KEYSTORE_ERROR: 'error_keystore',
+	API_ERROR: 'error_api',
+	SDK_ERROR: 'error_sdk',
+	CONTROLLER_ERROR: 'error_controller'
+};
+
 export const NetworkConnectionStatus = {
 	INITIAL: 'initial',
 	CONNECTED: 'connected',

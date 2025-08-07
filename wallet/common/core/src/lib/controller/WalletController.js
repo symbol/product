@@ -1,15 +1,16 @@
 import { EventController } from './EventController';
 import { NetworkManager } from './NetworkManager';
-import { 
-	ControllerEventName, 
-	MAX_SEED_ACCOUNTS_PER_NETWORK, 
-	NetworkConnectionStatus, 
-	REQUIRED_API_METHODS, 
-	REQUIRED_SDK_METHODS, 
-	TransactionGroup, 
-	WalletAccountType 
+import {
+	ControllerEventName,
+	ErrorCode,
+	MAX_SEED_ACCOUNTS_PER_NETWORK,
+	NetworkConnectionStatus,
+	REQUIRED_API_METHODS,
+	REQUIRED_SDK_METHODS,
+	TransactionGroup,
+	WalletAccountType
 } from '../../constants';
-import { AppError } from '../../error/AppError';
+import { ControllerError } from '../../error/ControllerError';
 import { validateFacade, validateNamespacedFacade } from '../../utils/helper';
 import { createLogger } from '../../utils/logger';
 import { cloneNetworkArrayMap, cloneNetworkObjectMap, createNetworkMap } from '../../utils/network';
@@ -93,14 +94,14 @@ export class WalletController {
 	 * @param {Logger} [params.logger] - Logger instance for logging.
 	 * @param {function(function): void} [params.setStateProcessor] - Optional function to process state changes.
 	 */
-	constructor({ 
-		api, 
-		sdk, 
-		persistentStorageInterface, 
-		secureStorageInterface, 
-		keystores, 
-		modules, 
-		networkIdentifiers, 
+	constructor({
+		api,
+		sdk,
+		persistentStorageInterface,
+		secureStorageInterface,
+		keystores,
+		modules,
+		networkIdentifiers,
 		networkPollingInterval,
 		logger,
 		createDefaultNetworkProperties,
@@ -260,7 +261,7 @@ export class WalletController {
 	 * @returns {boolean} - True if network connection is ready, false otherwise.
 	 */
 	get isNetworkConnectionReady() {
-		return this.networkStatus === NetworkConnectionStatus.CONNECTED ;
+		return this.networkStatus === NetworkConnectionStatus.CONNECTED;
 	}
 
 	/**
@@ -283,9 +284,9 @@ export class WalletController {
 		const keystore = this._keystores[type];
 
 		if (!keystore) {
-			throw new AppError(
-				'error_failed_access_keystore',
-				`Failed to access keystore. "${type}" keystore is not available.`
+			throw new ControllerError(
+				`Failed to access keystore. "${type}" keystore is not available.`,
+				ErrorCode.FAILED_ACCESS_KEYSTORE
 			);
 		}
 
@@ -325,26 +326,26 @@ export class WalletController {
 		const finalSelectedNodeUrl = selectedNodeUrl || defaultState.selectedNodeUrl;
 		this.#setState(() => {
 			this._state.walletAccounts = cloneNetworkArrayMap(
-				walletAccounts, 
-				this.networkIdentifiers, 
+				walletAccounts,
+				this.networkIdentifiers,
 				defaultState.walletAccounts
 			);
 			this._state.accountInfos = cloneNetworkObjectMap(
-				accountInfos, 
-				this.networkIdentifiers, 
+				accountInfos,
+				this.networkIdentifiers,
 				defaultState.accountInfos
 			);
 			this._state.seedAddresses = cloneNetworkArrayMap(
-				seedAddresses, 
-				this.networkIdentifiers, 
+				seedAddresses,
+				this.networkIdentifiers,
 				defaultState.seedAddresses
 			);
 			this._state.currentAccountPublicKey = currentAccountPublicKey;
 			this._state.networkIdentifier = finalNetworkIdentifier;
 			this._state.networkProperties = finalNetworkProperties;
 			this._state.latestTransactions = cloneNetworkObjectMap(
-				latestTransactions, 
-				this.networkIdentifiers, 
+				latestTransactions,
+				this.networkIdentifiers,
 				defaultState.latestTransactions
 			);
 			this._state.selectedNodeUrl = finalSelectedNodeUrl;
@@ -371,8 +372,12 @@ export class WalletController {
 		const { walletAccounts, networkIdentifier } = this._state;
 		const accountToSelect = walletAccounts[networkIdentifier].find(account => account.publicKey === publicKey);
 
-		if (!accountToSelect)
-			throw new AppError('error_wallet_selected_account_missing', 'Failed to select account. Account is missing in the wallet');
+		if (!accountToSelect) {
+			throw new ControllerError(
+				'Failed to select account. Account is missing in the wallet',
+				ErrorCode.WALLET_SELECTED_ACCOUNT_MISSING
+			);
+		}
 
 		await this._persistentStorageRepository.setCurrentAccountPublicKey(publicKey);
 		this.#setState(() => {
@@ -459,7 +464,7 @@ export class WalletController {
 	 * Add an account to the wallet. Used internally by addSeedAccount and addExternalAccount methods.
 	 * @param {WalletAccount} account - account object to add
 	 * @returns {Promise<WalletAccount>} - a promise that resolves when the account is added
-	 * @throws {AppError} - if the account already exists in the wallet
+	 * @throws {ControllerError} - if the account already exists in the wallet
 	 */
 	#addAccount = async account => {
 		// Load existing accounts from persistent storage
@@ -470,9 +475,9 @@ export class WalletController {
 		const isAccountAlreadyExists = networkAccounts.find(acc => account.publicKey === acc.publicKey);
 
 		if (isAccountAlreadyExists) {
-			throw new AppError(
-				'error_failed_add_account_already_exists',
-				'Failed to add account. Account already exists in the wallet.'
+			throw new ControllerError(
+				'Failed to add account. Account already exists in the wallet.',
+				ErrorCode.WALLET_ADD_ACCOUNT_ALREADY_EXISTS
 			);
 		}
 
@@ -517,8 +522,12 @@ export class WalletController {
 	 */
 	removeAccount = async ({ networkIdentifier, publicKey }, password) => {
 		// Prevent removing the currently selected account
-		if (this._state.currentAccountPublicKey === publicKey)
-			throw new AppError('error_wallet_remove_current_account', 'Cannot remove the currently selected account');
+		if (this._state.currentAccountPublicKey === publicKey) {
+			throw new ControllerError(
+				'Cannot remove the currently selected account',
+				ErrorCode.WALLET_REMOVE_CURRENT_ACCOUNT
+			);
+		}
 
 		// Load accounts from storage and remove the account
 		const account = this.#getAccount(networkIdentifier, publicKey);
@@ -549,18 +558,18 @@ export class WalletController {
 		const accounts = walletAccounts[networkIdentifier];
 
 		if (!accounts) {
-			throw new AppError(
-				'error_wallet_account_not_found',
-				`Failed to get account. Network "${networkIdentifier}" is not supported by the wallet.`
+			throw new ControllerError(
+				`Failed to get account. Network "${networkIdentifier}" is not supported by the wallet.`,
+				ErrorCode.WALLET_ACCOUNT_NOT_FOUND
 			);
 		}
 
 		const account = accounts.find(account => account.publicKey === publicKey);
 
 		if (!account) {
-			throw new AppError(
-				'error_wallet_account_not_found',
-				`Failed to get account. Account with public key "${publicKey}" is not found in the wallet.`
+			throw new ControllerError(
+				`Failed to get account. Account with public key "${publicKey}" is not found in the wallet.`,
+				ErrorCode.WALLET_ACCOUNT_NOT_FOUND
 			);
 		}
 
@@ -602,7 +611,7 @@ export class WalletController {
 	#loadAccounts = async () => {
 		const accounts = await this._persistentStorageRepository.getAccounts();
 		const defaultState = createDefaultState(this.networkIdentifiers, this.#createDefaultNetworkProperties);
-		
+
 		return cloneNetworkArrayMap(accounts, this.networkIdentifiers, defaultState.walletAccounts);
 	};
 
@@ -663,8 +672,8 @@ export class WalletController {
 			const latestTransactionsOrNull = await this._persistentStorageRepository.getLatestTransactions();
 			const defaultState = createDefaultState(this.networkIdentifiers, this.#createDefaultNetworkProperties);
 			const latestTransactions = cloneNetworkObjectMap(
-				latestTransactionsOrNull, 
-				this.networkIdentifiers, 
+				latestTransactionsOrNull,
+				this.networkIdentifiers,
 				defaultState.latestTransactions
 			);
 			latestTransactions[networkIdentifier][publicKey] = transactions;
@@ -789,15 +798,15 @@ export class WalletController {
 	 */
 	selectNetwork = async (networkIdentifier, nodeUrl = null) => {
 		if (!this.networkIdentifiers.includes(networkIdentifier)) {
-			throw new AppError(
-				'error_change_network_not_supported',
-				`Failed to select network. Network "${networkIdentifier}" is not supported by the wallet.`
+			throw new ControllerError(
+				`Failed to select network. Network "${networkIdentifier}" is not supported by the wallet.`,
+				ErrorCode.WALLET_NETWORK_NOT_SUPPORTED
 			);
 		}
 
 		const accounts = this._state.walletAccounts[networkIdentifier];
 		const defaultNetworkProperties = this.#createDefaultNetworkProperties(networkIdentifier);
-		
+
 		await this._persistentStorageRepository.setNetworkProperties(defaultNetworkProperties);
 		await this._persistentStorageRepository.setNetworkIdentifier(networkIdentifier);
 		await this._persistentStorageRepository.setSelectedNode(nodeUrl);
@@ -807,7 +816,7 @@ export class WalletController {
 			this._state.selectedNodeUrl = nodeUrl;
 			this._state.networkStatus = NetworkConnectionStatus.INITIAL;
 		});
-		
+
 		this._networkManager.selectNetwork(networkIdentifier, nodeUrl);
 		this._emit(ControllerEventName.NETWORK_CHANGE);
 
@@ -877,32 +886,32 @@ export class WalletController {
 	};
 
 	/**
-     * Subscribe to the controller events
-     * @param {string} eventName - event name
-     * @param {Function} listener - callback function
-     * @returns {void}
-     */
+	 * Subscribe to the controller events
+	 * @param {string} eventName - event name
+	 * @param {Function} listener - callback function
+	 * @returns {void}
+	 */
 	on = (eventName, listener) => {
 		this.#notificationChannel.on(eventName, listener);
 	};
 
 	/**
-     * Unsubscribe from the controller events
-     * @param {string} eventName - event name
-     * @param {Function} listener - callback function
-     * @returns {void}
-     */
+	 * Unsubscribe from the controller events
+	 * @param {string} eventName - event name
+	 * @param {Function} listener - callback function
+	 * @returns {void}
+	 */
 	removeListener = (eventName, listener) => {
 		this.#notificationChannel.removeListener(eventName, listener);
 	};
 
 	/**
-     * Emit controller event
-     * @param {string} eventName - event name
-     * @param {object} payload - event payload
-     * @returns {void}
-     * @private
-     */
+	 * Emit controller event
+	 * @param {string} eventName - event name
+	 * @param {object} payload - event payload
+	 * @returns {void}
+	 * @private
+	 */
 	_emit = (eventName, payload) => {
 		this.#notificationChannel.emit(eventName, payload);
 	};

@@ -1,3 +1,4 @@
+import { KeystoreError } from '../../error/KeystoreError';
 import { getAccountWithoutPrivateKey } from '../../utils/account';
 import { createNetworkMap } from '../../utils/network';
 import { SecureStorageRepository } from '../storage/SecureStorageRepository';
@@ -49,7 +50,7 @@ export class BaseSoftwareKeystore {
 	/**
 	 * Retrieves the private key for a specific account.
 	 * @param {PublicAccount} account - The account for which to retrieve the private key.
-	 * @throws {Error} If the account is not found in the keystore.
+	 * @throws {KeystoreError} If the account is not found in the keystore.
 	 * @returns {Promise<string>} A promise that resolves to the account's private key.
 	 */
 	getPrivateKey = async account => {
@@ -60,7 +61,7 @@ export class BaseSoftwareKeystore {
 		const privateAccount = networkAccounts.find(acc => acc.publicKey === publicKey);
 
 		if (!privateAccount)
-			throw new Error('Failed to get account private key. Account is missing in the keystore.');
+			throw new KeystoreError('Failed to get account private key. Account is missing in the keystore.');
 
 		return privateAccount.privateKey;
 	};

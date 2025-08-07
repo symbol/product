@@ -1,4 +1,4 @@
-import { AppError } from '../../src/error/AppError';
+import { ControllerError } from '../../src/error/ControllerError';
 import { AddressBookModule } from '../../src/lib/modules/AddressBookModule';
 import { networkIdentifiers } from '../fixtures/wallet';
 import { createStorageMock } from '../test-utils/storage';
@@ -117,9 +117,9 @@ describe('AddressBookModule', () => {
 
 			// Act & Assert:
 			await expect(addressBookModule.addContact(contact1))
-				.rejects.toThrow(new AppError(
-					'error_failed_add_contact_already_exists',
-					`Failed to add contact. Contact with address "${contact1.address}" already exists`
+				.rejects.toThrow(new ControllerError(
+					`Failed to add contact. Contact with address "${contact1.address}" already exists`,
+					'error_failed_add_contact_already_exists'
 				));
 		});
 	});
@@ -148,9 +148,9 @@ describe('AddressBookModule', () => {
 
 			// Act & Assert:
 			await expect(addressBookModule.removeContact(contact1.id))
-				.rejects.toThrow(new AppError(
-					'error_failed_remove_contact_not_found',
-					`Failed to remove contact. Contact with id "${contact1.id}" not found`
+				.rejects.toThrow(new ControllerError(
+					`Failed to remove contact. Contact with id "${contact1.id}" not found`,
+					'error_failed_remove_contact_not_found'
 				));
 		});
 	});
@@ -180,9 +180,9 @@ describe('AddressBookModule', () => {
 
 			// Act & Assert:
 			await expect(addressBookModule.updateContact(contact1))
-				.rejects.toThrow(new AppError(
-					'error_failed_update_contact_not_found',
-					`Failed to update contact. Contact with id "${contact1.id}" not found`
+				.rejects.toThrow(new ControllerError(
+					`Failed to update contact. Contact with id "${contact1.id}" not found`,
+					'error_failed_update_contact_not_found'
 				));
 		});
 	});

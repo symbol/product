@@ -13,6 +13,21 @@ import { MarketModule } from './lib/modules/MarketModule';
 import { createNetworkMap } from './utils/network';
 // Constants
 import * as constants from './constants';
+// Errors
+import { ApiError } from './error/ApiError';
+import { ControllerError } from './error/ControllerError';
+import { KeystoreError } from './error/KeystoreError';
+import {
+	InternalServerError,
+	InvalidRequestError,
+	NetworkError,
+	NetworkRequestError,
+	NotFoundError,
+	RateLimitError,
+	UnauthorizedError
+} from './error/NetworkError';
+import { SdkError } from './error/SdkError';
+import { WalletError } from './error/WalletError';
 
 
 export {
@@ -23,5 +38,18 @@ export {
 	createNetworkMap,
 	constants,
 	AddressBookModule,
-	MarketModule
+	MarketModule,
+
+	ApiError,
+	ControllerError,
+	KeystoreError,
+	NetworkError,
+	InvalidRequestError,
+	UnauthorizedError,
+	NotFoundError,
+	RateLimitError,
+	InternalServerError,
+	NetworkRequestError,
+	SdkError,
+	WalletError
 };

@@ -1,4 +1,5 @@
-import { AppError } from '../../error/AppError';
+import { ErrorCode } from '../../constants';
+import { ControllerError } from '../../error/ControllerError';
 import { cloneNetworkArrayMap, createNetworkMap } from '../../utils/network';
 import { PersistentStorageRepository } from '../storage/PersistentStorageRepository';
 
@@ -120,9 +121,9 @@ export class AddressBookModule {
 		const isContactAlreadyExists = networkContacts.find(contact => contact.address === newContact.address);
 
 		if (isContactAlreadyExists) {
-			throw new AppError(
-				'error_failed_add_contact_already_exists',
-				`Failed to add contact. Contact with address "${newContact.address}" already exists`
+			throw new ControllerError(
+				`Failed to add contact. Contact with address "${newContact.address}" already exists`,
+				ErrorCode.ADDRESS_BOOK_ADD_CONTACT_ALREADY_EXISTS
 			);
 		}
 
@@ -145,9 +146,12 @@ export class AddressBookModule {
 		const networkContacts = addressBook[this.#root.networkIdentifier];
 		const updatedNetworkContacts = networkContacts.filter(contact => contact.id !== id);
 
-		if (networkContacts.length === updatedNetworkContacts.length)
-			throw new AppError('error_failed_remove_contact_not_found', `Failed to remove contact. Contact with id "${id}" not found`);
-
+		if (networkContacts.length === updatedNetworkContacts.length) {
+			throw new ControllerError(
+				`Failed to remove contact. Contact with id "${id}" not found`,
+				ErrorCode.ADDRESS_BOOK_REMOVE_CONTACT_NOT_FOUND
+			);
+		}
 
 		addressBook[this.#root.networkIdentifier] = updatedNetworkContacts;
 		await this._persistentStorageRepository.setAddressBook(addressBook);
@@ -169,9 +173,9 @@ export class AddressBookModule {
 		const contactToUpdate = networkContacts.find(contact => contact.id === newContact.id);
 
 		if (!contactToUpdate) {
-			throw new AppError(
-				'error_failed_update_contact_not_found',
-				`Failed to update contact. Contact with id "${newContact.id}" not found`
+			throw new ControllerError(
+				`Failed to update contact. Contact with id "${newContact.id}" not found`,
+				ErrorCode.ADDRESS_BOOK_UPDATE_CONTACT_NOT_FOUND
 			);
 		}
 

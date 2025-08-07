@@ -1,5 +1,5 @@
-import { NetworkConnectionStatus, TransactionGroup } from '../../constants';
-import { AppError } from '../../error/AppError';
+import { ErrorCode, NetworkConnectionStatus, TransactionGroup } from '../../constants';
+import { ControllerError } from '../../error/ControllerError';
 import { createNetworkMap } from '../../utils/network';
 
 /** @typedef {import('../../types/Logger').Logger} Logger */
@@ -109,16 +109,16 @@ export class NetworkManager {
 	 * Fetches network properties from the node.
 	 * @param {string} nodeUrl - The URL of the node to connect to.
 	 * @returns {Promise<object>} - A promise that resolves to the network properties.
-	 * @throws {AppError} - If the fetched network identifier does not match the expected network identifier.
+	 * @throws {ControllerError} - If the fetched network identifier does not match the expected network identifier.
 	 */
 	fetchNetworkProperties = async nodeUrl => {
 		const properties = await this.api.network.fetchNetworkProperties(nodeUrl);
 
 		if (properties.networkIdentifier !== this._state.networkIdentifier) {
-			throw new AppError(
-				'error_fetch_network_properties_wrong_network',
+			throw new ControllerError(
 				'Failed to fetch network properties. Wrong network identifier. ' 
-				+ `Expected "${this._state.networkIdentifier}", got "${properties.networkIdentifier}"`
+				+ `Expected "${this._state.networkIdentifier}", got "${properties.networkIdentifier}"`,
+				ErrorCode.NETWORK_PROPERTIES_WRONG_NETWORK
 			);
 		}
 
@@ -221,7 +221,10 @@ export class NetworkManager {
 			this._state.chainListener = newListener;
 		} catch (error) {
 			this._logger.error('[NetworkManager] Failed to start chain listener.', error.message);
-			throw new AppError('error_chain_listener_start', 'Failed to start chain listener.');
+			throw new ControllerError(
+				'Failed to start chain listener.',
+				ErrorCode.NETWORK_LISTENER_START_ERROR
+			);
 		}
 	};
 

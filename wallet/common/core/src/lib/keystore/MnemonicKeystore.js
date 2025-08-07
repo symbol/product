@@ -1,5 +1,6 @@
 import { BaseSoftwareKeystore } from './BaseSoftwareKeystore';
 import { WalletAccountType } from '../../constants';
+import { KeystoreError } from '../../error/KeystoreError';
 import { cloneNetworkArrayMap, createNetworkMap } from '../../utils/network';
 
 /** @typedef {import('../../types/Account').PublicAccount} PublicAccount */
@@ -81,18 +82,18 @@ export class MnemonicKeystore extends BaseSoftwareKeystore {
 	 * @param {string} networkIdentifier - The network identifier.
 	 * @param {number} index - The index of the account.
 	 * @returns {Promise<PublicAccount>} A promise that resolves to the seed account.
-	 * @throws {Error} If the network is not supported or if the account does not exist.
+	 * @throws {KeystoreError} If the network is not supported or if the account does not exist.
 	 */
 	getSeedAccount = async (networkIdentifier, index) => {
 		const { privateAccounts } = this._state;
 
 		if (!privateAccounts[networkIdentifier])
-			throw new Error(`Failed to get seed account. Network "${networkIdentifier}" is not supported by this keystore.`);
+			throw new KeystoreError(`Failed to get seed account. Network "${networkIdentifier}" is not supported by this keystore.`);
 
 		const account = privateAccounts[networkIdentifier][index];
 
 		if (!account) {
-			throw new Error('Failed to get seed account. ' 
+			throw new KeystoreError('Failed to get seed account. ' 
 				+ `Account with index ${index} in network "${networkIdentifier}" does not exist in this keystore.`);
 		}
 

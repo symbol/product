@@ -1,5 +1,5 @@
 import { NetworkConnectionStatus } from '../../src/constants';
-import { AppError } from '../../src/error/AppError';
+import { ControllerError } from '../../src/error/ControllerError';
 import { NetworkManager } from '../../src/lib/controller/NetworkManager';
 import { networkIdentifiers } from '../fixtures/wallet';
 import { jest } from '@jest/globals';
@@ -148,7 +148,7 @@ describe('NetworkManager', () => {
 			manager.init(testNetworkIdentifier);
 
 			// Act & Assert:
-			await expect(manager.fetchNetworkProperties(nodeUrl1)).rejects.toThrow(AppError);
+			await expect(manager.fetchNetworkProperties(nodeUrl1)).rejects.toThrow(ControllerError);
 		});
 	});
 
