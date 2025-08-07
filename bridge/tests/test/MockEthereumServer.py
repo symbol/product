@@ -89,7 +89,7 @@ async def create_simple_ethereum_client(aiohttp_client):
 
 		async def _handle_eth_call(self, request, data):
 			# balanceOf(address) [d8dA6BF26964aF9D7eEd9e03E53415D37aA96045]
-			if '0x70a08231000000000000000000000000D8DA6BF26964AF9D7EED9E03E53415D37AA96045' == data:
+			if '0x70a08231000000000000000000000000d8dA6BF26964aF9D7eEd9e03E53415D37aA96045' == data:
 				return await self._process(request, {'result': '0x123456'})
 
 			# decimals()

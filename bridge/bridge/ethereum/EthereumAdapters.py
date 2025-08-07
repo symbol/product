@@ -3,6 +3,7 @@ from collections import namedtuple
 
 from eth_account import Account
 from eth_keys import keys
+from eth_utils.address import to_checksum_address
 from symbolchain.ByteArray import ByteArray
 from symbolchain.CryptoTypes import Hash256
 
@@ -27,7 +28,8 @@ class EthereumAddress(ByteArray):
 		super().__init__(self.SIZE, raw_bytes, EthereumAddress)
 
 	def __str__(self):
-		return f'0x{super().__str__()}'
+		# render checksum address representation
+		return str(to_checksum_address(self.bytes))
 
 
 class EthereumPublicKey(ByteArray):

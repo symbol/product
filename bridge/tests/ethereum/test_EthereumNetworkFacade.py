@@ -236,7 +236,7 @@ async def test_cannot_create_transfer_transaction_from_account_with_unknown_nonc
 	await facade.init()
 
 	# Act + Assert:
-	signer_address = '0xC3B280FA8E521B3263BD6DB705ACE0B309306A73'
+	signer_address = '0xC3B280FA8E521B3263bD6db705ACe0B309306A73'
 	signer_public_key = ''.join([
 		'0x',
 		'B2B454118618A6D3E79FEDE753F60824C4D7E5EA15B4282D847801C8246A5A7C',
@@ -262,12 +262,12 @@ async def test_can_create_transfer_transaction(server):  # pylint: disable=redef
 
 	# Assert:
 	assert {
-		'from': '0xB5368C39EFB0DBA28C082733FE3F9463A215CC3D',
+		'from': '0xb5368c39Efb0DbA28C082733FE3F9463A215CC3D',
 		'to': '0x67b1d87101671b127f5f8714789C7192f7ad340e',
 		'data': ''.join([
 			'0x',
 			'a9059cbb000000000000000000000000',
-			'F0109FC8DF283027B6285CC889F5AA624EAC1F55',
+			'F0109fC8DF283027b6285cc889F5aA624EaC1F55',
 			hexlify(int(88888_000000).to_bytes(32, 'big')).decode('utf8')
 		]),
 		'nonce': 11,

@@ -27,7 +27,7 @@ class EthereumAdaptersTest(unittest.TestCase):
 
 		# Assert:
 		self.assertEqual(unhexlify('0FF070994DD3FDB1441433C219A42286EF85290F'), address.bytes)
-		self.assertEqual('0x0FF070994DD3FDB1441433C219A42286EF85290F', str(address))
+		self.assertEqual('0x0ff070994dd3fdB1441433c219A42286ef85290f', str(address))
 
 	def test_can_create_ethereum_address_from_bytes(self):
 		# Act:
@@ -35,7 +35,7 @@ class EthereumAdaptersTest(unittest.TestCase):
 
 		# Assert:
 		self.assertEqual(unhexlify('0FF070994DD3FDB1441433C219A42286EF85290F'), address.bytes)
-		self.assertEqual('0x0FF070994DD3FDB1441433C219A42286EF85290F', str(address))
+		self.assertEqual('0x0ff070994dd3fdB1441433c219A42286ef85290f', str(address))
 
 	def test_ethereum_address_supports_comparisons(self):
 		# Arrange:
@@ -123,8 +123,9 @@ class EthereumAdaptersTest(unittest.TestCase):
 		self.assertEqual(network, facade.network)
 
 	@staticmethod
-	def _create_test_transaction_descriptor():
+	def _create_test_transaction_descriptor(public_key):
 		return {
+			'from': str(public_key.address),
 			'to': '0xF0109fC8DF283027b6285cc889F5aA624EaC1F55',
 			'value': 1000000000,
 			'gas': 2000000,
@@ -140,7 +141,7 @@ class EthereumAdaptersTest(unittest.TestCase):
 		key_pair = EthereumSdkFacade.KeyPair(private_key)
 
 		# Act:
-		signed_transaction = facade.sign_transaction(key_pair, self._create_test_transaction_descriptor())
+		signed_transaction = facade.sign_transaction(key_pair, self._create_test_transaction_descriptor(key_pair.public_key))
 
 		# Assert:
 		self.assertEqual(unhexlify(''.join([
@@ -156,7 +157,7 @@ class EthereumAdaptersTest(unittest.TestCase):
 		private_key = PrivateKey('0999a20d4fdda8d7273e8a24f70e1105f9dcfcae2fba55e9a08f6e752411ed7a')
 		key_pair = EthereumSdkFacade.KeyPair(private_key)
 
-		transaction = self._create_test_transaction_descriptor()
+		transaction = self._create_test_transaction_descriptor(key_pair.public_key)
 		signed_transaction = facade.sign_transaction(key_pair, transaction)
 
 		# Act:
@@ -171,7 +172,7 @@ class EthereumAdaptersTest(unittest.TestCase):
 		private_key = PrivateKey('0999a20d4fdda8d7273e8a24f70e1105f9dcfcae2fba55e9a08f6e752411ed7a')
 		key_pair = EthereumSdkFacade.KeyPair(private_key)
 
-		transaction = self._create_test_transaction_descriptor()
+		transaction = self._create_test_transaction_descriptor(key_pair.public_key)
 		signed_transaction = facade.sign_transaction(key_pair, transaction)
 		facade.transaction_factory.attach_signature(transaction, signed_transaction)
 
