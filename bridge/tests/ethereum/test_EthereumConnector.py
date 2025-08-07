@@ -140,7 +140,7 @@ async def _assert_can_query_balance(server, block_identifier, expected_block_ide
 	assert [
 		make_rpc_request_json('eth_call', [
 			{
-				'data': '0x70a08231000000000000000000000000D8DA6BF26964AF9D7EED9E03E53415D37AA96045',
+				'data': '0x70a08231000000000000000000000000d8dA6BF26964aF9D7eEd9e03E53415D37aA96045',
 				'to': '0x0D8775F648430679A709E98d2b0Cb6250d2887EF'
 			},
 			expected_block_identifier
@@ -173,7 +173,7 @@ async def _assert_can_query_nonce(server, block_identifier, expected_block_ident
 	# Assert:
 	assert [f'{server.make_url("")}/'] == server.mock.urls
 	assert [
-		make_rpc_request_json('eth_getTransactionCount', ['0xD8DA6BF26964AF9D7EED9E03E53415D37AA96045', expected_block_identifier])
+		make_rpc_request_json('eth_getTransactionCount', ['0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045', expected_block_identifier])
 	] == server.mock.request_json_payloads
 	assert 11 == nonce
 
@@ -262,7 +262,7 @@ async def _assert_can_query_incoming_transactions(server, start_id, expected_sta
 	# Assert:
 	assert [f'{server.make_url("")}/'] == server.mock.urls
 	assert [
-		make_rpc_request_json('ots_searchTransactionsBefore', ['0xB668A7CDC62108FAC00F65E1690591B67A1EF7C9', expected_start_id, 25])
+		make_rpc_request_json('ots_searchTransactionsBefore', ['0xB668a7Cdc62108fAC00F65E1690591B67A1eF7c9', expected_start_id, 25])
 	] == server.mock.request_json_payloads
 	assert [
 		{'meta': {'height': 29}, 'transaction': {'blockNumber': '0x1d', 'nonce': '0x2'}},
