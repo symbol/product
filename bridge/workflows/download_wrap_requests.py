@@ -52,8 +52,8 @@ async def _download_block_timestamps(database, connector, heights):
 	print(f'detected transactions in {len(heights)} blocks, looking up timestamps...')
 	block_height_timestamp_pairs = await query_block_timestamps(connector, heights)
 	for height_timestamp_pair in block_height_timestamp_pairs:
-		database.set_block_timestamp(*height_timestamp_pair)
 		print(f'> saving block {height_timestamp_pair[0]} with timestamp {height_timestamp_pair[1]}')
+		database.set_block_timestamp(*height_timestamp_pair)
 
 
 async def _download_all(database, network, is_valid_address):

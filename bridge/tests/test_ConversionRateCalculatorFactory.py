@@ -9,13 +9,15 @@ from bridge.db.WrapRequestDatabase import PayoutDetails
 from bridge.models.WrapRequest import WrapRequest
 
 from .test.BridgeTestUtils import HASHES
-from .test.MockNetworkFacade import MockNetworkFacade
+from .test.MockNetworkFacade import MockNemNetworkFacade
 
 # region test helpers
 
 
 def _create_databases(database_directory):
-	return Databases(database_directory, MockNetworkFacade(), MockNetworkFacade())
+	# use same native and wrapped networks to make tests eaiser to follow
+	# with same network, network timestamps can be used directly without needing to be normalized to different network epohchs
+	return Databases(database_directory, MockNemNetworkFacade(), MockNemNetworkFacade())
 
 
 def _add_requests_wrap(database, request_tuples):
