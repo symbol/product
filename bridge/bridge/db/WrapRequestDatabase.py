@@ -21,12 +21,13 @@ class WrapRequestStatus(Enum):
 class WrapRequestDatabase(MaxProcessedHeightMixin):
 	"""Database containing wrap requests and errors."""
 
-	def __init__(self, connection, network_facade):
+	def __init__(self, connection, network_facade, payout_network_facade):
 		"""Creates a wrap request database."""
 
 		super().__init__(connection)
 
 		self.network_facade = network_facade
+		self.payout_network_facade = payout_network_facade
 
 	def create_tables(self):
 		"""Creates wrap request database tables."""
@@ -61,6 +62,10 @@ class WrapRequestDatabase(MaxProcessedHeightMixin):
 			height integer
 		)''')
 		cursor.execute('''CREATE TABLE IF NOT EXISTS block_metadata (
+			height integer UNIQUE PRIMARY KEY,
+			timestamp timestamp
+		)''')
+		cursor.execute('''CREATE TABLE IF NOT EXISTS payout_block_metadata (
 			height integer UNIQUE PRIMARY KEY,
 			timestamp timestamp
 		)''')
@@ -283,7 +288,7 @@ class WrapRequestDatabase(MaxProcessedHeightMixin):
 			(height, payout_transaction_hash.bytes))
 
 		cursor.execute(
-			'''INSERT OR IGNORE INTO block_metadata VALUES (?, ?)''',
+			'''INSERT OR IGNORE INTO payout_block_metadata VALUES (?, ?)''',
 			(height, 0))
 
 		self.connection.commit()
@@ -308,22 +313,30 @@ class WrapRequestDatabase(MaxProcessedHeightMixin):
 			(max_processed_height,))
 		self.connection.commit()
 
-	def set_block_timestamp(self, height, raw_timestamp):
-		"""Sets a block timestamp."""
-
-		unix_timestamp = self.network_facade.network.to_datetime(
-			self.network_facade.network.network_timestamp_class(raw_timestamp)
+	def _set_block_timestamp(self, height, raw_timestamp, network_facade, table_name):
+		unix_timestamp = network_facade.network.to_datetime(
+			network_facade.network.network_timestamp_class(raw_timestamp)
 		).timestamp()
 
 		cursor = self.connection.cursor()
 		cursor.execute(
-			'''
-				INSERT INTO block_metadata VALUES (?, ?)
+			f'''
+				INSERT INTO {table_name} VALUES (?, ?)
 				ON CONFLICT(height)
 				DO UPDATE SET timestamp=?
 			''',
 			(height, unix_timestamp, unix_timestamp))
 		self.connection.commit()
+
+	def set_block_timestamp(self, height, raw_timestamp):
+		"""Sets a block timestamp."""
+
+		self._set_block_timestamp(height, raw_timestamp, self.network_facade, 'block_metadata')
+
+	def set_payout_block_timestamp(self, height, raw_timestamp):
+		"""Sets a payout block timestamp."""
+
+		self._set_block_timestamp(height, raw_timestamp, self.payout_network_facade, 'payout_block_metadata')
 
 	def lookup_block_timestamp(self, height):
 		"""Looks up the timestamp of a block height."""

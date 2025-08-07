@@ -31,8 +31,8 @@ class Databases:  # pylint: disable=too-many-instance-attributes
 		self._wrap_request_connection = sqlite3.connect(self._database_directory / 'wrap_request.db')
 
 		self.balance_change = BalanceChangeDatabase(self._balance_change_connection)
-		self.unwrap_request = WrapRequestDatabase(self._unwrap_request_connection, self._wrapped_network)
-		self.wrap_request = WrapRequestDatabase(self._wrap_request_connection, self._native_network)
+		self.unwrap_request = WrapRequestDatabase(self._unwrap_request_connection, self._wrapped_network, self._native_network)
+		self.wrap_request = WrapRequestDatabase(self._wrap_request_connection, self._native_network, self._wrapped_network)
 		return self
 
 	def __exit__(self, exc_type, exc_value, traceback):

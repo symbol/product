@@ -3,13 +3,13 @@ import unittest
 
 from bridge.db.Databases import Databases
 
-from ..test.MockNetworkFacade import MockNetworkFacade
+from ..test.MockNetworkFacade import MockNemNetworkFacade, MockSymbolNetworkFacade
 
 
 class DatabasesTest(unittest.TestCase):
 	@staticmethod
 	def _create_databases(database_directory):
-		return Databases(database_directory, MockNetworkFacade(), MockNetworkFacade())
+		return Databases(database_directory, MockNemNetworkFacade(), MockSymbolNetworkFacade())
 
 	def test_can_create(self):
 		# Arrange:
