@@ -29,6 +29,7 @@ async def _download_requests(database, connector, network, is_valid_address):
 			result = coerce_zero_balance_wrap_request_to_error(result)
 			if result.is_error:
 				database.add_error(result.error)
+				heights.add(result.error.transaction_height)
 				error_count += 1
 			else:
 				database.add_request(result.request)
