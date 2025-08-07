@@ -8,4 +8,11 @@ export class WalletError extends Error {
 		this.name = this.constructor.name;
 		this.code = code;
 	}
+
+	/**
+	 * @returns {string} String representation of the error.
+	 */
+	toString() {
+		return `${this.name}: ${this.message}${this.code ? ` (code: ${this.code})` : ''}`;
+	}
 }
