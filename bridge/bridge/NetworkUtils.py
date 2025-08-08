@@ -28,11 +28,12 @@ class TransactionSender:
 		private_key = PrivateKey(network_facade.config.extensions['signing_private_key'])
 		return network_facade.sdk_facade.KeyPair(private_key)
 
-	def __init__(self, network_facade, mosaic_id=None):
+	def __init__(self, network_facade, fee_multiplier=Decimal(1), mosaic_id=None):
 		"""Creates a sender."""
 
 		self.network_facade = network_facade
 		self.sender_key_pair = self._load_key_pair(self.network_facade)
+		self.fee_multiplier = fee_multiplier
 		self.mosaic_id = mosaic_id
 
 		self.percentage_conversion_fee = Decimal(network_facade.config.extensions.get('percentage_conversion_fee', 0))
@@ -54,11 +55,17 @@ class TransactionSender:
 		transaction_fee = await _await_if_awaitable(self.network_facade.calculate_transfer_transaction_fee(
 			make_balance_transfer(amount),
 			self.mosaic_id))
-		conversion_fee = int((self.percentage_conversion_fee * amount).quantize(1, rounding=ROUND_UP))
+		conversion_fee = self.percentage_conversion_fee * amount
 
-		total_fee = transaction_fee + conversion_fee
+		transaction_fee *= self.fee_multiplier
+		conversion_fee *= self.fee_multiplier
+
+		total_fee = int((transaction_fee + conversion_fee).quantize(1, rounding=ROUND_UP))
 		if amount < total_fee:
-			error_message = f'total fee (transaction {transaction_fee} + conversion {conversion_fee}) exceeds transfer amount {amount}'
+			error_message = ''.join([
+				f'total fee (transaction {transaction_fee:.0f} + conversion {conversion_fee:.0f})'
+				f' exceeds transfer amount {amount}'
+			])
 			return TrySendResult(True, None, None, None, error_message)
 
 		net_amount = amount - total_fee

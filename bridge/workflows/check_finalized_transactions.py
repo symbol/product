@@ -26,7 +26,7 @@ async def _check_finalized_transactions(database, network):
 		database.set_payout_block_timestamp(*height_timestamp_pair)
 
 
-async def main_impl(is_unwrap_mode, databases, native_facade, wrapped_facade):
+async def main_impl(is_unwrap_mode, databases, native_facade, wrapped_facade, _price_oracle):
 	if is_unwrap_mode:
 		await _check_finalized_transactions(databases.unwrap_request, native_facade)
 	else:

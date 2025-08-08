@@ -2,7 +2,12 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from bridge.models.BridgeConfiguration import parse_bridge_configuration, parse_machine_configuration, parse_network_configuration
+from bridge.models.BridgeConfiguration import (
+	parse_bridge_configuration,
+	parse_machine_configuration,
+	parse_network_configuration,
+	parse_price_oracle_configuration
+)
 
 
 class BridgeConfigurationTest(unittest.TestCase):
@@ -11,6 +16,10 @@ class BridgeConfigurationTest(unittest.TestCase):
 	VALID_MACHINE_CONFIGURATION = {
 		'databaseDirectory': '_temp',
 		'logFilename': 'alpha.log',
+	}
+
+	VALID_PRICE_ORACLE_CONFIGURATION = {
+		'url': 'https:/oracle.foo/price/v3',
 	}
 
 	VALID_NETWORK_CONFIGURATION = {
@@ -55,6 +64,20 @@ class BridgeConfigurationTest(unittest.TestCase):
 
 	def test_cannot_parse_machine_configuration_incomplete(self):
 		self._assert_cannot_parse_incomplete_configuration(parse_machine_configuration, self.VALID_MACHINE_CONFIGURATION)
+
+	# endregion
+
+	# region price oracle configuration
+
+	def test_can_parse_valid_price_oracle_configuration(self):
+		# Act:
+		price_oracle_config = parse_price_oracle_configuration(self.VALID_PRICE_ORACLE_CONFIGURATION)
+
+		# Assert:
+		self.assertEqual('https:/oracle.foo/price/v3', price_oracle_config.url)
+
+	def test_cannot_parse_price_oracle_configuration_incomplete(self):
+		self._assert_cannot_parse_incomplete_configuration(parse_price_oracle_configuration, self.VALID_PRICE_ORACLE_CONFIGURATION)
 
 	# endregion
 
@@ -109,6 +132,7 @@ class BridgeConfigurationTest(unittest.TestCase):
 
 			with open(configuration_file, 'wt', encoding='utf8') as outfile:
 				self._write_section(outfile, '[machine]', self.VALID_MACHINE_CONFIGURATION)
+				self._write_section(outfile, '\n[price_oracle]', self.VALID_PRICE_ORACLE_CONFIGURATION)
 				self._write_section(outfile, '\n[native_network]', self.VALID_NETWORK_CONFIGURATION)
 				self._write_section(outfile, '\n[wrapped_network]', self.VALID_NETWORK_CONFIGURATION_2)
 
@@ -118,6 +142,8 @@ class BridgeConfigurationTest(unittest.TestCase):
 			# Assert:
 			self.assertEqual('_temp', config.machine.database_directory)
 			self.assertEqual('alpha.log', config.machine.log_filename)
+
+			self.assertEqual('https:/oracle.foo/price/v3', config.price_oracle.url)
 
 			self.assertEqual('foo', config.native_network.blockchain)
 			self.assertEqual('bar', config.native_network.network)
