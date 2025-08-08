@@ -31,7 +31,7 @@ describe('NetworkManager', () => {
 		mockApi = {
 			network: {
 				fetchNodeList: jest.fn(),
-				fetchNetworkProperties: jest.fn(),
+				fetchNetworkInfo: jest.fn(),
 				pingNode: jest.fn()
 			},
 			listener: {
@@ -125,26 +125,29 @@ describe('NetworkManager', () => {
 	describe('fetchNetworkProperties', () => {
 		it('fetches and sets network properties on success', async () => {
 			// Arrange:
-			const properties = { networkIdentifier: testNetworkIdentifier, nodeUrl: nodeUrl1 };
-			mockApi.network.fetchNetworkProperties.mockResolvedValue(properties);
+			const nodeUrls = [nodeUrl1, nodeUrl2];
+			const networkInfo = { networkIdentifier: testNetworkIdentifier, nodeUrl: nodeUrl1 };
+			const networkProperties = { ...networkInfo, nodeUrls };
+			mockApi.network.fetchNetworkInfo.mockResolvedValue(networkInfo);
+			mockApi.network.fetchNodeList.mockResolvedValue(nodeUrls);
 			manager.init(testNetworkIdentifier);
 
 			// Act:
 			const result = await manager.fetchNetworkProperties(nodeUrl1);
 
 			// Assert:
-			expect(mockApi.network.fetchNetworkProperties).toHaveBeenCalledWith(nodeUrl1);
-			expect(result).toEqual(properties);
-			expect(manager.networkProperties).toEqual(properties);
+			expect(mockApi.network.fetchNetworkInfo).toHaveBeenCalledWith(nodeUrl1);
+			expect(result).toEqual(networkProperties);
+			expect(manager.networkProperties).toEqual(networkProperties);
 			expect(manager.networkConnectionStatus).toBe(NetworkConnectionStatus.CONNECTED);
-			expect(mockOnPropertiesUpdate).toHaveBeenCalledWith(properties);
+			expect(mockOnPropertiesUpdate).toHaveBeenCalledWith(networkProperties);
 			expect(mockOnConnectionStatusChange).toHaveBeenCalledWith(NetworkConnectionStatus.CONNECTED);
 		});
 
 		it('throws an error if fetched network identifier does not match', async () => {
 			// Arrange:
 			const properties = { networkIdentifier: anotherTestNetworkIdentifier, nodeUrl: nodeUrl1 };
-			mockApi.network.fetchNetworkProperties.mockResolvedValue(properties);
+			mockApi.network.fetchNetworkInfo.mockResolvedValue(properties);
 			manager.init(testNetworkIdentifier);
 
 			// Act & Assert:
@@ -164,7 +167,7 @@ describe('NetworkManager', () => {
 		it('connects to a user-selected node successfully', async () => {
 			// Arrange:
 			const properties = { networkIdentifier: testNetworkIdentifier, nodeUrl: nodeUrl1 };
-			mockApi.network.fetchNetworkProperties.mockResolvedValue(properties);
+			mockApi.network.fetchNetworkInfo.mockResolvedValue(properties);
 			manager.init(testNetworkIdentifier, null, nodeUrl1);
 
 			// Act:
@@ -178,7 +181,7 @@ describe('NetworkManager', () => {
 
 		it('fails to connect to a user-selected node and sets status to FAILED_CUSTOM_NODE', async () => {
 			// Arrange:
-			mockApi.network.fetchNetworkProperties.mockRejectedValue(new Error('Connection failed'));
+			mockApi.network.fetchNetworkInfo.mockRejectedValue(new Error('Connection failed'));
 			manager.init(testNetworkIdentifier, null, nodeUrl1);
 			// Simulate a previous connection attempt
 			manager._state.networkConnectionStatus = NetworkConnectionStatus.CONNECTING;
@@ -195,11 +198,12 @@ describe('NetworkManager', () => {
 		it('auto-selects a node and connects successfully', async () => {
 			// Arrange:
 			const nodeList = [nodeUrl1, nodeUrl2];
-			const properties = { networkIdentifier: testNetworkIdentifier, nodeUrl: nodeUrl2 };
+			const networkInfo = { networkIdentifier: testNetworkIdentifier, nodeUrl: nodeUrl2 };
+			const networkProperties = { ...networkInfo, nodeUrls: nodeList };
 			mockApi.network.fetchNodeList.mockResolvedValue(nodeList);
 			mockApi.network.pingNode.mockRejectedValueOnce(new Error('Ping failed')); // node1 fails
 			mockApi.network.pingNode.mockResolvedValueOnce(undefined); // node2 succeeds
-			mockApi.network.fetchNetworkProperties.mockResolvedValue(properties);
+			mockApi.network.fetchNetworkInfo.mockResolvedValue(networkProperties);
 			manager.init(testNetworkIdentifier);
 
 			// Act:
@@ -209,7 +213,7 @@ describe('NetworkManager', () => {
 			expect(mockApi.network.pingNode).toHaveBeenCalledWith(nodeUrl1);
 			expect(mockApi.network.pingNode).toHaveBeenCalledWith(nodeUrl2);
 			expect(manager.networkConnectionStatus).toBe(NetworkConnectionStatus.CONNECTED);
-			expect(manager.networkProperties).toEqual(properties);
+			expect(manager.networkProperties).toEqual(networkProperties);
 			expect(setTimeout).toHaveBeenCalledWith(expect.any(Function), pollingInterval);
 		});
 

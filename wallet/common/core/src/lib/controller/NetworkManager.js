@@ -112,16 +112,26 @@ export class NetworkManager {
 	 * @throws {ControllerError} - If the fetched network identifier does not match the expected network identifier.
 	 */
 	fetchNetworkProperties = async nodeUrl => {
-		const properties = await this.api.network.fetchNetworkProperties(nodeUrl);
+		const { networkIdentifier } = this._state;
 
-		if (properties.networkIdentifier !== this._state.networkIdentifier) {
+		if (!this.nodeUrls[networkIdentifier].length)
+			await this.fetchNodeList();
+
+		const nodeUrls = this._state.nodeUrls[networkIdentifier];
+		const networkInfo = await this.api.network.fetchNetworkInfo(nodeUrl);
+
+		if (networkInfo.networkIdentifier !== networkIdentifier) {
 			throw new ControllerError(
 				'Failed to fetch network properties. Wrong network identifier. ' 
-				+ `Expected "${this._state.networkIdentifier}", got "${properties.networkIdentifier}"`,
+				+ `Expected "${networkIdentifier}", got "${networkInfo.networkIdentifier}"`,
 				ErrorCode.NETWORK_PROPERTIES_WRONG_NETWORK
 			);
 		}
 
+		const properties = {
+			...networkInfo,
+			nodeUrls
+		};
 		this.#setNetworkProperties(properties);
 		this.#setStatus(NetworkConnectionStatus.CONNECTED);
 

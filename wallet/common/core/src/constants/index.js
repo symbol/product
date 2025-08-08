@@ -69,7 +69,7 @@ export const REQUIRED_API_METHODS = [
 	'account.fetchAccountInfo',
 	'transaction.fetchAccountTransactions',
 	'transaction.announceTransaction',
-	'network.fetchNetworkProperties',
+	'network.fetchNetworkInfo',
 	'network.pingNode',
 	'network.fetchNodeList',
 	'listener.createListener'

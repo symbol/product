@@ -24,7 +24,7 @@ const defaultParameters = {
 		},
 		network: {
 			pingNode: jest.fn().mockResolvedValue(true),
-			fetchNetworkProperties: jest.fn().mockResolvedValue({}),
+			fetchNetworkInfo: jest.fn().mockResolvedValue({}),
 			fetchNodeList: jest.fn().mockResolvedValue([])
 		},
 		listener: {
