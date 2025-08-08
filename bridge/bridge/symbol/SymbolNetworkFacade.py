@@ -106,7 +106,7 @@ class SymbolNetworkFacade:
 		transaction.fee = Amount(int(self.config.extensions['transaction_fee_multiplier']) * transaction.size)
 		return transaction
 
-	def calculate_transfer_transaction_fee(self, balance_transfer):
+	def calculate_transfer_transaction_fee(self, balance_transfer, mosaic_id=None):
 		"""Calculates a transfer transaction fee."""
 
-		return self.create_transfer_transaction(NetworkTimestamp(0), balance_transfer).fee.value
+		return self.create_transfer_transaction(NetworkTimestamp(0), balance_transfer, mosaic_id).fee.value

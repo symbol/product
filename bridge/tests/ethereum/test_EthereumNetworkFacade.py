@@ -1,4 +1,6 @@
+import asyncio
 from binascii import hexlify
+from decimal import Decimal
 
 import pytest
 from symbolchain.CryptoTypes import Hash256
@@ -235,27 +237,28 @@ async def test_cannot_create_transfer_transaction_from_account_with_unknown_nonc
 	facade = EthereumNetworkFacade(_create_config(server))
 	await facade.init()
 
-	# Act + Assert:
 	signer_address = '0xC3B280FA8E521B3263bD6db705ACe0B309306A73'
 	signer_public_key = ''.join([
 		'0x',
 		'B2B454118618A6D3E79FEDE753F60824C4D7E5EA15B4282D847801C8246A5A7C',
 		'E29BD9A71871F0CAE8D14BF54A24652670111E6D13EBA155E6648554322AB301'
 	])
+
+	# Act + Assert:
 	with pytest.raises(ValueError, match=f'unable to create transaction for sender {signer_address} with unknown nonce'):
-		facade.create_transfer_transaction(
+		await facade.create_transfer_transaction(
 			None,
 			_create_sample_balance_transfer(signer_public_key),
 			'0x67b1d87101671b127f5f8714789C7192f7ad340e')
 
 
-async def test_can_create_transfer_transaction(server):  # pylint: disable=redefined-outer-name
-	# Arrange:
-	facade = EthereumNetworkFacade(_create_config(server))
+async def _assert_can_create_transfer_transaction(server, config_extensions, expected_values):
+	# pylint: disable=redefined-outer-name
+	facade = EthereumNetworkFacade(_create_config(server, config_extensions))
 	await facade.init()
 
 	# Act:
-	transaction = facade.create_transfer_transaction(
+	transaction = await facade.create_transfer_transaction(
 		None,
 		_create_sample_balance_transfer(),
 		'0x67b1d87101671b127f5f8714789C7192f7ad340e')
@@ -273,10 +276,54 @@ async def test_can_create_transfer_transaction(server):  # pylint: disable=redef
 		'nonce': 14,
 		'chainId': 8876,
 
-		'gas': 210000,
-		'maxFeePerGas': 250_000000000,
-		'maxPriorityFeePerGas': 2_000000000
+		'gas': expected_values['gas'],
+		'maxFeePerGas': expected_values['max_fee_per_gas'],
+		'maxPriorityFeePerGas': expected_values['max_priority_fee_per_gas']
 	} == transaction
+
+
+async def test_can_create_transfer_transaction(server):  # pylint: disable=redefined-outer-name
+	await _assert_can_create_transfer_transaction(server, None, {
+		'gas': 24150,  # ceil(21000 * 1.15 == 24150)
+		'max_fee_per_gas': 9659999847 + 2000000000,  # ceil(8049999872 * 1.2 == 9659999846.4) + 2000000000
+		'max_priority_fee_per_gas': 2000000000
+	})
+
+
+async def test_can_create_transfer_transaction_with_custom_gas_multiple(server):  # pylint: disable=redefined-outer-name
+	await _assert_can_create_transfer_transaction(server, {'gas_multiple': '1.1111'}, {
+		'gas': 23334,  # ceil(21000 * 1.1111 == 23333.1)
+		'max_fee_per_gas': 9659999847 + 2000000000,  # ceil(8049999872 * 1.2 == 9659999846.4) + 2000000000
+		'max_priority_fee_per_gas': 2000000000
+	})
+
+
+async def test_can_create_transfer_transaction_with_custom_gas_price_multiple(server):  # pylint: disable=redefined-outer-name
+	await _assert_can_create_transfer_transaction(server, {'gas_price_multiple': '1.1'}, {
+		'gas': 24150,  # ceil(21000 * 1.15 == 24150)
+		'max_fee_per_gas': 8854999860 + 2000000000,  # ceil(8049999872 * 1.1 == 8854999859.2) + 2000000000
+		'max_priority_fee_per_gas': 2000000000
+	})
+
+
+async def test_can_create_transfer_transaction_with_custom_priority_fee(server):  # pylint: disable=redefined-outer-name
+	await _assert_can_create_transfer_transaction(server, {'max_priority_fee_per_gas': '8111222333'}, {
+		'gas': 24150,  # ceil(21000 * 1.15 == 24150)
+		'max_fee_per_gas': 9659999847 + 8111222333,  # ceil(8049999872 * 1.2 == 9659999846.4) + 8111222333
+		'max_priority_fee_per_gas': 8111222333
+	})
+
+
+async def test_can_create_transfer_transaction_with_multiple_custom_properties(server):  # pylint: disable=redefined-outer-name
+	await _assert_can_create_transfer_transaction(server, {
+		'gas_multiple': '1.1111',
+		'gas_price_multiple': '1.1',
+		'max_priority_fee_per_gas': '8111222333'
+	}, {
+		'gas': 23334,  # ceil(21000 * 1.1111 == 23333.1)
+		'max_fee_per_gas': 8854999860 + 8111222333,  # ceil(8049999872 * 1.1 == 8854999859.2) + 8111222333
+		'max_priority_fee_per_gas': 8111222333
+	})
 
 
 async def test_can_create_multiple_transfer_transactions_with_autoincrementing_nonce(server):  # pylint: disable=redefined-outer-name
@@ -285,13 +332,13 @@ async def test_can_create_multiple_transfer_transactions_with_autoincrementing_n
 	await facade.init()
 
 	# Act:
-	transactions = [
+	transactions = await asyncio.gather(*[
 		facade.create_transfer_transaction(
 			None,
 			_create_sample_balance_transfer(),
 			'0x67b1d87101671b127f5f8714789C7192f7ad340e')
 		for _ in range(0, 4)
-	]
+	])
 
 	# Assert:
 	assert [14, 15, 16, 17] == [transaction['nonce'] for transaction in transactions]
@@ -301,14 +348,79 @@ async def test_can_create_multiple_transfer_transactions_with_autoincrementing_n
 
 # region calculate_transfer_transaction_fee
 
-def test_can_calculate_transfer_transaction_fee():
+async def _assert_can_calculate_transfer_transaction_fee(server, config_extensions, expected_transaction_fee):
+	# pylint: disable=redefined-outer-name
 	# Arrange:
-	facade = EthereumNetworkFacade(_create_config())
+	facade = EthereumNetworkFacade(_create_config(server, config_extensions))
+	await facade.init()
 
 	# Act:
-	transaction_fee = facade.calculate_transfer_transaction_fee(_create_sample_balance_transfer(''))
+	transaction_fee = await facade.calculate_transfer_transaction_fee(
+		_create_sample_balance_transfer(),
+		'0x67b1d87101671b127f5f8714789C7192f7ad340e')
 
 	# Assert:
-	assert 210000 == transaction_fee
+	assert expected_transaction_fee == transaction_fee
+
+
+async def test_can_calculate_transfer_transaction_fee(server):  # pylint: disable=redefined-outer-name
+	# Assert: gas_price => ceil(8049999872 * 1.2 == 9659999846.4) + 2000000000
+	#               gas => ceil(21000 * 1.15 == 24150)
+	await _assert_can_calculate_transfer_transaction_fee(server, None, Decimal((9659999847 + 2000000000) * 24150) / Decimal(10 ** 18))
+
+
+async def test_can_calculate_transfer_transaction_fee_with_custom_gas_multiple(server):  # pylint: disable=redefined-outer-name
+	# Assert: gas_price => ceil(8049999872 * 1.2 == 9659999846.4) + 2000000000
+	#               gas => ceil(21000 * 1.1111 == 23333.1)
+	await _assert_can_calculate_transfer_transaction_fee(server, {
+		'gas_multiple': '1.1111'
+	}, Decimal((9659999847 + 2000000000) * 23334) / Decimal(10 ** 18))
+
+
+async def test_can_calculate_transfer_transaction_fee_with_custom_gas_price_multiple(server):  # pylint: disable=redefined-outer-name
+	# Assert: gas_price => ceil(8049999872 * 1.1 == 8854999859.2) + 2000000000
+	#               gas => ceil(21000 * 1.15 == 24150)
+	await _assert_can_calculate_transfer_transaction_fee(server, {
+		'gas_price_multiple': '1.1'
+	}, Decimal((8854999860 + 2000000000) * 24150) / Decimal(10 ** 18))
+
+
+async def test_can_calculate_transfer_transaction_fee_with_custom_priority_fee(server):  # pylint: disable=redefined-outer-name
+	# Assert: gas_price => ceil(8049999872 * 1.2 == 9659999846.4) + 8111222333
+	#               gas => ceil(21000 * 1.15 == 24150)
+	await _assert_can_calculate_transfer_transaction_fee(server, {
+		'max_priority_fee_per_gas': '8111222333'
+	}, Decimal((9659999847 + 8111222333) * 24150) / Decimal(10 ** 18))
+
+
+async def test_can_calculate_transfer_transaction_fee_with_multiple_custom_properties(server):  # pylint: disable=redefined-outer-name
+	# Assert: gas_price => ceil(8049999872 * 1.1 == 8854999859.2) + 8111222333
+	#               gas => ceil(21000 * 1.1111 == 23333.1)
+	await _assert_can_calculate_transfer_transaction_fee(server, {
+		'gas_multiple': '1.1111',
+		'gas_price_multiple': '1.1',
+		'max_priority_fee_per_gas': '8111222333'
+	}, Decimal((8854999860 + 8111222333) * 23334) / Decimal(10 ** 18))
+
+
+async def test_can_calculate_transfer_transaction_fee_for_account_with_unknown_nonce(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	facade = EthereumNetworkFacade(_create_config(server))
+	await facade.init()
+
+	signer_public_key = ''.join([
+		'0x',
+		'B2B454118618A6D3E79FEDE753F60824C4D7E5EA15B4282D847801C8246A5A7C',
+		'E29BD9A71871F0CAE8D14BF54A24652670111E6D13EBA155E6648554322AB301'
+	])
+
+	# Act:
+	transaction_fee = await facade.calculate_transfer_transaction_fee(
+		_create_sample_balance_transfer(signer_public_key),
+		'0x67b1d87101671b127f5f8714789C7192f7ad340e')
+
+	# Assert: gas_price => ceil(8049999872 * 1.2 == 9659999846.4) + 2000000000
+	#               gas => ceil(21000 * 1.15 == 24150)
+	assert Decimal((9659999847 + 2000000000) * 24150) / Decimal(10 ** 18) == transaction_fee
 
 # endregion

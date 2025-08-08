@@ -135,6 +135,24 @@ class EthereumConnector(BasicConnector):
 
 	# endregion
 
+	# region gas_price, estimate_gas
+
+	async def gas_price(self):
+		"""Gets the current estimated gas price."""
+
+		request_json = make_rpc_request_json('eth_gasPrice', [])
+		result_json = await self.post('', request_json)
+		return parse_rpc_response_hex_value(result_json['result'])
+
+	async def estimate_gas(self, transaction_object):
+		"""Gets the current estimated amount of gas for the specified transaction."""
+
+		request_json = make_rpc_request_json('eth_estimateGas', [transaction_object])
+		result_json = await self.post('', request_json)
+		return parse_rpc_response_hex_value(result_json['result'])
+
+	# endregion
+
 	# region filter_confirmed_transactions
 
 	async def _transaction_status_and_height_by_hash(self, transaction_hash):

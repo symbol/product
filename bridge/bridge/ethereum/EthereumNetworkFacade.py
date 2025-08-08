@@ -1,4 +1,5 @@
 from binascii import hexlify
+from decimal import ROUND_UP, Decimal
 
 from symbolchain.CryptoTypes import PrivateKey
 from web3 import Web3
@@ -71,14 +72,8 @@ class EthereumNetworkFacade:  # pylint: disable=too-many-instance-attributes
 		wrap_request = extract_wrap_request_from_transaction(is_valid_address, self.bridge_address, transaction_with_meta_json)
 		return [wrap_request] if wrap_request else []
 
-	def create_transfer_transaction(self, _timestamp, balance_transfer, mosaic_id):
-		"""Creates a transfer transaction."""
-
-		signer_address = balance_transfer.signer_public_key.address
-		nonce = self.address_to_nonce_map.get(signer_address, None)
-		if nonce is None:
-			raise ValueError(f'unable to create transaction for sender {signer_address} with unknown nonce')
-
+	@staticmethod
+	def _make_simple_transaction_object(balance_transfer, mosaic_id):
 		input_data = ''.join([
 			'0x',
 			'a9059cbb000000000000000000000000',
@@ -87,22 +82,54 @@ class EthereumNetworkFacade:  # pylint: disable=too-many-instance-attributes
 		])
 
 		transaction = {
-			'from': str(signer_address),
+			'from': str(balance_transfer.signer_public_key.address),
 			'to': mosaic_id,
-			'data': input_data,
+			'data': input_data
+		}
+		return transaction
+
+	async def _calculate_gas(self, transaction):
+		connector = self.create_connector()
+
+		gas = await connector.estimate_gas(transaction)
+		gas_multiple = Decimal(self.config.extensions.get('gas_multiple', '1.15'))
+		gas = int((Decimal(gas) * gas_multiple).quantize(1, rounding=ROUND_UP))
+
+		gas_price = await connector.gas_price()
+		gas_price_multiple = Decimal(self.config.extensions.get('gas_price_multiple', '1.2'))
+		gas_price = int((Decimal(gas_price) * gas_price_multiple).quantize(1, rounding=ROUND_UP))
+
+		max_priority_fee_per_gas = int(self.config.extensions.get('max_priority_fee_per_gas', Web3.to_wei(2, 'gwei')))
+
+		return (gas, gas_price + max_priority_fee_per_gas, max_priority_fee_per_gas)
+
+	async def create_transfer_transaction(self, _timestamp, balance_transfer, mosaic_id):
+		"""Creates a transfer transaction."""
+
+		transaction = self._make_simple_transaction_object(balance_transfer, mosaic_id)
+
+		signer_address = balance_transfer.signer_public_key.address
+		nonce = self.address_to_nonce_map.get(signer_address, None)
+		if nonce is None:
+			raise ValueError(f'unable to create transaction for sender {signer_address} with unknown nonce')
+
+		self.address_to_nonce_map[balance_transfer.signer_public_key.address] += 1
+
+		(gas, max_fee_per_gas, max_priority_fee_per_gas) = await self._calculate_gas(transaction)
+		transaction.update({
 			'nonce': nonce,
 			'chainId': self.chain_id,
 
-			'gas': 210000,
-			'maxFeePerGas': Web3.to_wei(250, 'gwei'),
-			'maxPriorityFeePerGas': Web3.to_wei(2, 'gwei'),
-		}
+			'gas': gas,
+			'maxFeePerGas': max_fee_per_gas,
+			'maxPriorityFeePerGas': max_priority_fee_per_gas
+		})
 
-		self.address_to_nonce_map[signer_address] += 1
 		return transaction
 
-	@staticmethod
-	def calculate_transfer_transaction_fee(_balance_transfer):
+	async def calculate_transfer_transaction_fee(self, balance_transfer, mosaic_id):
 		"""Calculates a transfer transaction fee."""
 
-		return 210000
+		transaction = self._make_simple_transaction_object(balance_transfer, mosaic_id)
+		(gas, max_fee_per_gas, _) = await self._calculate_gas(transaction)
+		return Web3.from_wei(gas * max_fee_per_gas, 'ether')

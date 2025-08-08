@@ -224,6 +224,44 @@ async def test_can_query_token_precision_with_custom_block_identifier(server):  
 # endregion
 
 
+# region gas_price, estimate_gas
+
+async def test_can_query_gas_price(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	connector = EthereumConnector(server.make_url(''))
+
+	# Act:
+	gas_price = await connector.gas_price()
+
+	# Assert:
+	assert [f'{server.make_url("")}/'] == server.mock.urls
+	assert [make_rpc_request_json('eth_gasPrice', [])] == server.mock.request_json_payloads
+	assert 0x1DFD14000 == gas_price
+
+
+async def test_can_estimate_gas(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	connector = EthereumConnector(server.make_url(''))
+
+	# Act:
+	gas = await connector.estimate_gas({
+		'from': '0x4838b106fce9647bdf1e7877bf73ce8b0bad5f97',
+		'to': '0xb5368c39Efb0DbA28C082733FE3F9463A215CC3D'
+	})
+
+	# Assert:
+	assert [f'{server.make_url("")}/'] == server.mock.urls
+	assert [make_rpc_request_json('eth_estimateGas', [
+		{
+			'from': '0x4838b106fce9647bdf1e7877bf73ce8b0bad5f97',
+			'to': '0xb5368c39Efb0DbA28C082733FE3F9463A215CC3D'
+		}
+	])] == server.mock.request_json_payloads
+	assert 0x5208 == gas
+
+# endregion
+
+
 # region filter_confirmed_transactions
 
 async def test_can_filter_confirmed_transactions(server):  # pylint: disable=redefined-outer-name
