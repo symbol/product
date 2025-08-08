@@ -26,14 +26,16 @@ class BridgeConfigurationTest(unittest.TestCase):
 		'blockchain': 'foo',
 		'network': 'bar',
 		'endpoint': 'http://foo.bar.net:1234',
-		'bridgeAddress': 'MY_CUSTOM_ADDRESS'
+		'bridgeAddress': 'MY_CUSTOM_ADDRESS',
+		'mosaicId': 'cool coupons'
 	}
 
 	VALID_NETWORK_CONFIGURATION_2 = {
 		'blockchain': 'cat',
 		'network': 'baz',
 		'endpoint': 'https://cat.baz:8888',
-		'bridgeAddress': 'cat_baz_address'
+		'bridgeAddress': 'cat_baz_address',
+		'mosaicId': 'zbaz tokens'
 	}
 
 	# endregion
@@ -92,6 +94,7 @@ class BridgeConfigurationTest(unittest.TestCase):
 		self.assertEqual('bar', network_config.network)
 		self.assertEqual('http://foo.bar.net:1234', network_config.endpoint)
 		self.assertEqual('MY_CUSTOM_ADDRESS', network_config.bridge_address)
+		self.assertEqual('cool coupons', network_config.mosaic_id)
 		self.assertEqual({}, network_config.extensions)
 
 	def test_can_parse_valid_network_configuration_with_custom_extensions(self):
@@ -107,6 +110,7 @@ class BridgeConfigurationTest(unittest.TestCase):
 		self.assertEqual('bar', network_config.network)
 		self.assertEqual('http://foo.bar.net:1234', network_config.endpoint)
 		self.assertEqual('MY_CUSTOM_ADDRESS', network_config.bridge_address)
+		self.assertEqual('cool coupons', network_config.mosaic_id)
 		self.assertEqual({
 			'alpha': 'custom variable',
 			'beta_gamma': 'another custom variable'
@@ -149,12 +153,14 @@ class BridgeConfigurationTest(unittest.TestCase):
 			self.assertEqual('bar', config.native_network.network)
 			self.assertEqual('http://foo.bar.net:1234', config.native_network.endpoint)
 			self.assertEqual('MY_CUSTOM_ADDRESS', config.native_network.bridge_address)
+			self.assertEqual('cool coupons', config.native_network.mosaic_id)
 			self.assertEqual({}, config.native_network.extensions)
 
 			self.assertEqual('cat', config.wrapped_network.blockchain)
 			self.assertEqual('baz', config.wrapped_network.network)
 			self.assertEqual('https://cat.baz:8888', config.wrapped_network.endpoint)
 			self.assertEqual('cat_baz_address', config.wrapped_network.bridge_address)
+			self.assertEqual('zbaz tokens', config.wrapped_network.mosaic_id)
 
 	def test_cannot_parse_bridge_configuration_incomplete(self):
 		# Arrange:

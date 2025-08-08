@@ -27,11 +27,11 @@ async def server(aiohttp_client):
 
 # region constructor, init
 
-def _create_config(server=None, config_extensions=None):  # pylint: disable=redefined-outer-name
+def _create_config(server=None, mosaic_id=None, config_extensions=None):  # pylint: disable=redefined-outer-name
 	endpoint = server.make_url('') if server else 'http://foo.bar:1234'
-	return NetworkConfiguration('ethereum', 'testnet', endpoint, '0x67b1d87101671b127f5f8714789C7192f7ad340e', {
+	mosaic_id = mosaic_id or '0x0D8775F648430679A709E98d2b0Cb6250d2887EF'
+	return NetworkConfiguration('ethereum', 'testnet', endpoint, '0x67b1d87101671b127f5f8714789C7192f7ad340e', mosaic_id, {
 		'chain_id': '8876',
-		'mosaic_id': '0x0D8775F648430679A709E98d2b0Cb6250d2887EF',
 		'signing_private_key': '0999a20d4fdda8d7273e8a24f70e1105f9dcfcae2fba55e9a08f6e752411ed7a',
 		**(config_extensions or {})
 	})
@@ -68,9 +68,7 @@ async def test_can_initialize_facade(server):  # pylint: disable=redefined-outer
 
 def test_can_extract_mosaic_id():
 	# Arrange:
-	facade = EthereumNetworkFacade(_create_config(config_extensions={
-		'mosaic_id': '0x0ff070994dd3fdB1441433c219A42286ef85290f'
-	}))
+	facade = EthereumNetworkFacade(_create_config(mosaic_id='0x0ff070994dd3fdB1441433c219A42286ef85290f'))
 
 	# Act:
 	mosaic_id = facade.extract_mosaic_id()
@@ -254,7 +252,7 @@ async def test_cannot_create_transfer_transaction_from_account_with_unknown_nonc
 
 async def _assert_can_create_transfer_transaction(server, config_extensions, expected_values):
 	# pylint: disable=redefined-outer-name
-	facade = EthereumNetworkFacade(_create_config(server, config_extensions))
+	facade = EthereumNetworkFacade(_create_config(server, config_extensions=config_extensions))
 	await facade.init()
 
 	# Act:
@@ -351,7 +349,7 @@ async def test_can_create_multiple_transfer_transactions_with_autoincrementing_n
 async def _assert_can_calculate_transfer_transaction_fee(server, config_extensions, expected_transaction_fee):
 	# pylint: disable=redefined-outer-name
 	# Arrange:
-	facade = EthereumNetworkFacade(_create_config(server, config_extensions))
+	facade = EthereumNetworkFacade(_create_config(server, config_extensions=config_extensions))
 	await facade.init()
 
 	# Act:

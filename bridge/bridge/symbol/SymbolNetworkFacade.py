@@ -47,7 +47,7 @@ class SymbolNetworkFacade:
 		and a version that can be passed to network facades as arguments.
 		"""
 
-		config_mosaic_id = self.config.extensions['mosaic_id']
+		config_mosaic_id = self.config.mosaic_id
 		mosaic_id_parts = tuple(config_mosaic_id.split(':'))
 
 		mosaic_id = int(mosaic_id_parts[1], 16)

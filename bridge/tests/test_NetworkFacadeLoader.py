@@ -39,9 +39,8 @@ def _create_config(blockchain, server):  # pylint: disable=redefined-outer-name
 	}
 
 	(bridge_address, mosaic_id) = blockchain_tuple_map.get(blockchain, blockchain_tuple_map['symbol'])
-	return NetworkConfiguration(blockchain, 'testnet', server.make_url(''), bridge_address, {
+	return NetworkConfiguration(blockchain, 'testnet', server.make_url(''), bridge_address, mosaic_id, {
 		'chain_id': '1234',
-		'mosaic_id': mosaic_id,
 		'signing_private_key': 'CDAAEF4C1EC606C7E8B72472803D84EF24AF8150D338C0B1A150812E4BC41DAF'
 	})
 
