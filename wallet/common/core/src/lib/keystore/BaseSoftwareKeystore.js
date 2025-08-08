@@ -76,7 +76,7 @@ export class BaseSoftwareKeystore {
 	signTransaction = async (networkProperties, transaction, account) => {
 		const privateKey = await this.getPrivateKey(account);
 
-		return this.sdk.signTransaction(networkProperties, transaction, privateKey);
+		return this.sdk.signTransaction(networkProperties.networkIdentifier, transaction, privateKey);
 	};
 
 	/**

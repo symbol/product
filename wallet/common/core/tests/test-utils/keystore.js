@@ -85,9 +85,9 @@ export const runBaseSoftwareKeystoreTest = Keystore => {
 	const signatureMethodsTestConfig = [
 		{
 			methodName: 'signTransaction',
-			args: ['networkProperties', 'transaction', 'account'],
+			args: [{ networkIdentifier: 'testnet' }, 'transaction', 'account'],
 			expectedSdkMethodName: 'signTransaction',
-			expectedSdkMethodArgs: ['networkProperties', 'transaction'],
+			expectedSdkMethodArgs: ['testnet', 'transaction'],
 			expectedResult: 'signed-transaction'
 		},
 		{

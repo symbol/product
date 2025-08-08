@@ -6,7 +6,7 @@
 
 /**
  * @callback SignTransactionFn
- * @param {NetworkProperties} networkProperties - The network properties.
+ * @param {string} networkIdentifier - The network identifier.
  * @param {Transaction} transaction - The transaction object.
  * @param {string} privateKey - The signer account private key.
  * @returns {SignedTransaction} The signed transaction.
