@@ -118,16 +118,17 @@ import {
   WalletController,
   MnemonicKeystore,
   ExternalAccountKeystore,
-  StorageInterface
+  StorageInterface,
+  AddressBookModule
 } from 'wallet-common-core';
 
 const controller = new WalletController({
-  api: protocolApi, // ProtocolApi instance. Wraps network data fetching
-  sdk: protocolSdk, // ProtocolSdk instance. Wraps cryptographic operations
+  api: protocolNetworkApi, // ProtocolNetworkApi instance. Wraps network data fetching
+  sdk: protocolWalletSdk, // ProtocolWalletSdk instance. Wraps cryptographic operations
   persistentStorageInterface: persistentStorageInterface, // StorageInterface instance. Wraps persistent storage
   secureStorageInterface: secureStorageInterface, // StorageInterface instance. Wraps secure storage
   keystores: [MnemonicKeystore, ExternalAccountKeystore], // Keystores (classes)
-  modules: [AddressBook], // Additional functionality modules (classes)
+  modules: [new AddressBookModule()], // Additional functionality modules
   networkIdentifiers: ['testnet', 'mainnet'], // The list of supported network identifiers
   createDefaultNetworkProperties: createDefaultNetworkProperties, // The network properties factory function. network identifier as an argument
   networkPollingInterval: 5000 // Network polling interval

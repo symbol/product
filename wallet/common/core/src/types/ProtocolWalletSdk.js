@@ -59,7 +59,7 @@
  *   decryptMessage: DecryptMessageFn,
  *   createPrivateAccount: CreatePrivateAccountFn,
  *   createPrivateKeysFromMnemonic: CreatePrivateKeysFromMnemonicFn
- * }} ProtocolSdk
+ * }} ProtocolWalletSdk
  */
 
 export default {};

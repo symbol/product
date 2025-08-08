@@ -85,7 +85,7 @@
  *   transaction: TransactionApi,
  *   network: NetworkApi,
  *   listener: ListenerApi
- * }} ProtocolApi
+ * }} ProtocolNetworkApi
  */
 
 export default {};

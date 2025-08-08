@@ -21,8 +21,8 @@ import { StorageInterface } from '../storage/StorageInterface';
 /** @typedef {import('../../types/Account').WalletAccount} WalletAccount */
 /** @typedef {import('../../types/Network').NetworkArrayMap} NetworkArrayMap */
 /** @typedef {import('../../types/Network').NetworkProperties} NetworkProperties */
-/** @typedef {import('../../types/ProtocolApi').ProtocolApi} ProtocolApi */
-/** @typedef {import('../../types/ProtocolSdk').ProtocolSdk} ProtocolSdk */
+/** @typedef {import('../../types/ProtocolNetworkApi').ProtocolNetworkApi} ProtocolNetworkApi */
+/** @typedef {import('../../types/ProtocolWalletSdk').ProtocolWalletSdk} ProtocolWalletSdk */
 /** @typedef {import('../../types/Transaction').Transaction} Transaction */
 /** @typedef {import('../../types/Logger').Logger} Logger */
 
@@ -63,7 +63,7 @@ export class WalletController {
 
 	#notificationChannel;
 
-	/** @type {ProtocolApi} */
+	/** @type {ProtocolNetworkApi} */
 	_api;
 
 	/** @type {NetworkManager} */
@@ -82,8 +82,8 @@ export class WalletController {
 	 * Constructs a new WalletController instance.
 	 *
 	 * @param {object} params - The parameters for the WalletController.
-	 * @param {ProtocolApi} params.api - The API instance used for network communication.
-	 * @param {ProtocolSdk} params.sdk - The SDK instance for blockchain interactions.
+	 * @param {ProtocolNetworkApi} params.api - The API instance used for network communication.
+	 * @param {ProtocolWalletSdk} params.sdk - The SDK instance for blockchain interactions.
 	 * @param {StorageInterface} params.persistentStorageInterface - The persistent storage provider.
 	 * @param {StorageInterface} params.secureStorageInterface - The encrypted storage provider.
 	 * @param {object[]} params.keystores - An array of keystore instances.
