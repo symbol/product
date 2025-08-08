@@ -30,7 +30,7 @@ async def create_simple_ethereum_client(aiohttp_client):
 				return await self._handle_eth_get_transaction_by_hash(request, request_json['params'][0])
 
 			if 'eth_getTransactionCount' == method:
-				return await self._handle_eth_get_transaction_count(request)
+				return await self._handle_eth_get_transaction_count(request, request_json['params'][1])
 
 			if 'eth_sendRawTransaction' == method:
 				return await self._handle_eth_send_raw_transaction(request)
@@ -72,9 +72,15 @@ async def create_simple_ethereum_client(aiohttp_client):
 
 			return await self._process(request, {'result': None})  # unknown
 
-		async def _handle_eth_get_transaction_count(self, request):
+		async def _handle_eth_get_transaction_count(self, request, block_identifier):
+			block_identifier_to_count_map = {
+				'0xAABBCC': '0x9',
+				'latest': '0xB',
+				'pending': '0xE'
+			}
+
 			return await self._process(request, {
-				'result': '0xB'
+				'result': block_identifier_to_count_map[block_identifier]
 			})
 
 		async def _handle_eth_send_raw_transaction(self, request):
