@@ -1,3 +1,4 @@
+import inspect
 from collections import namedtuple
 from decimal import ROUND_UP, Decimal
 
@@ -10,6 +11,13 @@ BalanceTransfer = namedtuple('BalanceTransfer', ['signer_public_key', 'recipient
 TrySendResult = namedtuple('TrySendResult', ['is_error', 'transaction_hash', 'net_amount', 'total_fee', 'error_message'])
 
 # region TransactionSender
+
+
+async def _await_if_awaitable(value):
+	if inspect.isawaitable(value):
+		return await value
+
+	return value
 
 
 class TransactionSender:
@@ -43,7 +51,9 @@ class TransactionSender:
 		def make_balance_transfer(amount):
 			return BalanceTransfer(self.sender_key_pair.public_key, destination_address, amount, messsage)
 
-		transaction_fee = self.network_facade.calculate_transfer_transaction_fee(make_balance_transfer(amount))
+		transaction_fee = await _await_if_awaitable(self.network_facade.calculate_transfer_transaction_fee(
+			make_balance_transfer(amount),
+			self.mosaic_id))
 		conversion_fee = int((self.percentage_conversion_fee * amount).quantize(1, rounding=ROUND_UP))
 
 		total_fee = transaction_fee + conversion_fee
@@ -52,7 +62,10 @@ class TransactionSender:
 			return TrySendResult(True, None, None, None, error_message)
 
 		net_amount = amount - total_fee
-		transaction = self.network_facade.create_transfer_transaction(self.timestamp, make_balance_transfer(net_amount), self.mosaic_id)
+		transaction = await _await_if_awaitable(self.network_facade.create_transfer_transaction(
+			self.timestamp,
+			make_balance_transfer(net_amount),
+			self.mosaic_id))
 		transaction_hash = await self.send_transaction(transaction)
 		return TrySendResult(False, transaction_hash, net_amount, total_fee, None)
 

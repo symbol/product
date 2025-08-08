@@ -54,8 +54,7 @@ async def test_can_load_nem_network_facade(nem_server):  # pylint: disable=redef
 	assert isinstance(facade, NemNetworkFacade)
 	assert 'testnet' == facade.network.name
 
-	assert 123000000 == facade.mosaic_fee_information.supply
-	assert 3 == facade.mosaic_fee_information.divisibility
+	assert 1 == len(facade.mosaic_id_to_fee_information_map)
 
 
 async def test_can_load_symbol_network_facade(symbol_server):  # pylint: disable=redefined-outer-name

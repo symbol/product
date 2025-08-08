@@ -4,7 +4,7 @@ import pytest
 from symbolchain import nc
 from symbolchain.CryptoTypes import Hash256, PublicKey
 from symbolchain.nem.Network import Address, NetworkTimestamp
-from symbollightapi.connector.NemConnector import NemConnector
+from symbollightapi.connector.NemConnector import MosaicFeeInformation, NemConnector
 
 from bridge.models.BridgeConfiguration import NetworkConfiguration
 from bridge.models.WrapRequest import WrapError, WrapRequest
@@ -55,8 +55,7 @@ async def test_can_initialize_facade(server):  # pylint: disable=redefined-outer
 	await facade.init()
 
 	# Assert:
-	assert 123000000 == facade.mosaic_fee_information.supply
-	assert 3 == facade.mosaic_fee_information.divisibility
+	assert {'foo:bar': MosaicFeeInformation(123000000, 3)} == facade.mosaic_id_to_fee_information_map
 
 # endregion
 
@@ -299,9 +298,10 @@ def _assert_transfer_transaction_version_one_without_message(transaction):
 	assert transaction.message is None
 
 
-def test_can_create_transfer_transaction_version_one_without_message():
+async def test_can_create_transfer_transaction_version_one_without_message(server):  # pylint: disable=redefined-outer-name
 	# Arrange:
-	facade = NemNetworkFacade(_create_config())
+	facade = NemNetworkFacade(_create_config(server, {'mosaic_id': 'nem:xem'}))
+	await facade.init()
 
 	# Act:
 	transaction = facade.create_transfer_transaction(NetworkTimestamp(12341234), _create_sample_balance_transfer(''))
@@ -310,9 +310,11 @@ def test_can_create_transfer_transaction_version_one_without_message():
 	_assert_transfer_transaction_version_one_without_message(transaction)
 
 
-def test_can_create_transfer_transaction_version_one_without_message_with_explicit_currency_mosaic_id():
+async def test_can_create_transfer_transaction_version_one_without_message_with_explicit_currency_mosaic_id(server):
+	# pylint: disable=redefined-outer-name
 	# Arrange:
-	facade = NemNetworkFacade(_create_config())
+	facade = NemNetworkFacade(_create_config(server, {'mosaic_id': 'nem:xem'}))
+	await facade.init()
 
 	# Act:
 	transaction = facade.create_transfer_transaction(
@@ -324,9 +326,10 @@ def test_can_create_transfer_transaction_version_one_without_message_with_explic
 	_assert_transfer_transaction_version_one_without_message(transaction)
 
 
-def test_can_create_transfer_transaction_version_one_with_message():
+async def test_can_create_transfer_transaction_version_one_with_message(server):  # pylint: disable=redefined-outer-name
 	# Arrange:
-	facade = NemNetworkFacade(_create_config())
+	facade = NemNetworkFacade(_create_config(server, {'mosaic_id': 'nem:xem'}))
+	await facade.init()
 
 	# Act:
 	transaction = facade.create_transfer_transaction(
@@ -342,9 +345,10 @@ def test_can_create_transfer_transaction_version_one_with_message():
 	assert b'this is a medium sized message!!!' == transaction.message.message
 
 
-def test_can_create_transfer_transaction_version_two_without_message():
+async def test_can_create_transfer_transaction_version_two_without_message(server):  # pylint: disable=redefined-outer-name
 	# Arrange:
-	facade = NemNetworkFacade(_create_config())
+	facade = NemNetworkFacade(_create_config(server, {'mosaic_id': 'nem:xem'}))
+	await facade.init()
 
 	# Act:
 	transaction = facade.create_transfer_transaction(NetworkTimestamp(12341234), _create_sample_balance_transfer(''), False)
@@ -364,9 +368,10 @@ def test_can_create_transfer_transaction_version_two_without_message():
 	assert transaction.message is None
 
 
-def test_can_create_transfer_transaction_version_two_with_message():
+async def test_can_create_transfer_transaction_version_two_with_message(server):  # pylint: disable=redefined-outer-name
 	# Arrange:
-	facade = NemNetworkFacade(_create_config())
+	facade = NemNetworkFacade(_create_config(server, {'mosaic_id': 'nem:xem'}))
+	await facade.init()
 
 	# Act:
 	transaction = facade.create_transfer_transaction(
@@ -435,14 +440,30 @@ async def test_can_create_transfer_transaction_version_two_with_custom_mosaic(se
 	# Assert:
 	_assert_transfer_transaction_version_two_with_custom_mosaic(transaction)
 
+
+async def test_canot_create_transfer_transaction_version_two_with_custom_mosaic_without_mosaic_fee_information(server):
+	# pylint: disable=redefined-outer-name
+	# Arrange:
+	facade = NemNetworkFacade(_create_config(server, {'mosaic_id': 'foo:bar'}))
+	await facade.init()
+
+	# Act:
+	with pytest.raises(ValueError, match='unable to create transaction for mosaic foo:baz with unknown fee information'):
+		facade.create_transfer_transaction(
+			NetworkTimestamp(12341234),
+			_create_sample_balance_transfer('', amount=88887_000),
+			('foo', 'baz'),
+			False)
+
 # endregion
 
 
 # region calculate_transfer_transaction_fee
 
-def test_can_calculate_transfer_transaction_fee_without_message():
+async def test_can_calculate_transfer_transaction_fee_without_message(server):  # pylint: disable=redefined-outer-name
 	# Arrange:
-	facade = NemNetworkFacade(_create_config())
+	facade = NemNetworkFacade(_create_config(server, {'mosaic_id': 'nem:xem'}))
+	await facade.init()
 
 	# Act:
 	transaction_fee = facade.calculate_transfer_transaction_fee(_create_sample_balance_transfer(''))
@@ -451,9 +472,10 @@ def test_can_calculate_transfer_transaction_fee_without_message():
 	assert 400_000 == transaction_fee
 
 
-def test_can_calculate_transfer_transaction_fee_with_message():
+async def test_can_calculate_transfer_transaction_fee_with_message(server):  # pylint: disable=redefined-outer-name
 	# Arrange:
-	facade = NemNetworkFacade(_create_config())
+	facade = NemNetworkFacade(_create_config(server, {'mosaic_id': 'nem:xem'}))
+	await facade.init()
 
 	# Act:
 	transaction_fee = facade.calculate_transfer_transaction_fee(_create_sample_balance_transfer('this is a medium sized message!!!'))
@@ -468,9 +490,19 @@ async def test_can_calculate_transfer_transaction_fee_without_message_custom_mos
 	await facade.init()
 
 	# Act:
-	transaction_fee = facade.calculate_transfer_transaction_fee(_create_sample_balance_transfer('', amount=88887_000))
+	transaction_fee = facade.calculate_transfer_transaction_fee(_create_sample_balance_transfer('', amount=88887_000), ('foo', 'bar'))
 
 	# Assert:
 	assert 850_000 == transaction_fee
+
+
+async def test_cannot_calculate_transfer_transaction_fee_without_mosaic_fee_information(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	facade = NemNetworkFacade(_create_config(server, {'mosaic_id': 'foo:bar'}))
+	await facade.init()
+
+	# Act:
+	with pytest.raises(ValueError, match='unable to create transaction for mosaic foo:baz with unknown fee information'):
+		facade.calculate_transfer_transaction_fee(_create_sample_balance_transfer('', amount=88887_000), ('foo', 'baz'))
 
 # endregion

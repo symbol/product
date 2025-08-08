@@ -21,13 +21,15 @@ class NemNetworkFacade:
 		self.bridge_address = Address(config.bridge_address)
 		self.transaction_search_address = self.bridge_address
 
-		self.mosaic_fee_information = None
+		self.mosaic_id_to_fee_information_map = {}
 
 	async def init(self):
 		"""Downloads information from the network to initialize the facade."""
 
 		connector = self.create_connector()
-		self.mosaic_fee_information = await connector.mosaic_fee_information(self.config.extensions['mosaic_id'].split(':'))
+
+		formatted_mosaic_id = self.config.extensions['mosaic_id']
+		self.mosaic_id_to_fee_information_map[formatted_mosaic_id] = await connector.mosaic_fee_information(formatted_mosaic_id.split(':'))
 
 	@staticmethod
 	def is_currency_mosaic_id(mosaic_id):
@@ -80,7 +82,7 @@ class NemNetworkFacade:
 
 		use_version_one = prefer_version_one and (mosaic_id is None or self.is_currency_mosaic_id(mosaic_id))
 
-		fee = calculate_transfer_transaction_fee(self.mosaic_fee_information, balance_transfer.amount, balance_transfer.message)
+		fee = self.calculate_transfer_transaction_fee(balance_transfer, mosaic_id)
 		transfer_json = {
 			'signer_public_key': balance_transfer.signer_public_key,
 			'recipient_address': balance_transfer.recipient_address,
@@ -119,7 +121,12 @@ class NemNetworkFacade:
 
 		return self.sdk_facade.transaction_factory.create(transfer_json)
 
-	def calculate_transfer_transaction_fee(self, balance_transfer):
+	def calculate_transfer_transaction_fee(self, balance_transfer, mosaic_id=None):
 		"""Calculates a transfer transaction fee."""
 
-		return calculate_transfer_transaction_fee(self.mosaic_fee_information, balance_transfer.amount, balance_transfer.message)
+		formatted_mosaic_id = ':'.join(mosaic_id or ('nem', 'xem'))
+		mosaic_fee_information = self.mosaic_id_to_fee_information_map.get(formatted_mosaic_id, None)
+		if mosaic_fee_information is None:
+			raise ValueError(f'unable to create transaction for mosaic {formatted_mosaic_id} with unknown fee information')
+
+		return calculate_transfer_transaction_fee(mosaic_fee_information, balance_transfer.amount, balance_transfer.message)

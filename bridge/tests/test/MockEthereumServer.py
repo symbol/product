@@ -23,6 +23,12 @@ async def create_simple_ethereum_client(aiohttp_client):
 			if 'eth_blockNumber' == method:
 				return await self._handle_eth_block_number(request)
 
+			if 'eth_estimateGas' == method:
+				return await self._handle_eth_estimate_gas(request)
+
+			if 'eth_gasPrice' == method:
+				return await self._handle_eth_gas_price(request)
+
 			if 'eth_getBlockByNumber' == method:
 				return await self._handle_eth_get_block_by_number(request, request_json['params'][0])
 
@@ -46,6 +52,16 @@ async def create_simple_ethereum_client(aiohttp_client):
 		async def _handle_eth_block_number(self, request):
 			return await self._process(request, {
 				'result': '0xAB123'
+			})
+
+		async def _handle_eth_estimate_gas(self, request):
+			return await self._process(request, {
+				'result': '0x5208'
+			})
+
+		async def _handle_eth_gas_price(self, request):
+			return await self._process(request, {
+				'result': '0x1DFD14000'
 			})
 
 		async def _handle_eth_get_block_by_number(self, request, block_identifier):
