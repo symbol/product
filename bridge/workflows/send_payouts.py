@@ -1,4 +1,5 @@
 import asyncio
+from decimal import Decimal
 
 from bridge.ConversionRateCalculatorFactory import ConversionRateCalculatorFactory
 from bridge.db.WrapRequestDatabase import PayoutDetails, WrapRequestStatus
@@ -7,9 +8,9 @@ from bridge.NetworkUtils import TransactionSender
 from .main_impl import main_bootstrapper, print_banner
 
 
-async def _send_payout(network, request, conversion_rate_calculator):
+async def _send_payout(network, request, conversion_rate_calculator, fee_multiplier):
 	mosaic_id = network.extract_mosaic_id()
-	sender = TransactionSender(network, mosaic_id.id)
+	sender = TransactionSender(network, fee_multiplier, mosaic_id.id)
 	transfer_amount = conversion_rate_calculator(request.amount)
 
 	print(
@@ -21,7 +22,7 @@ async def _send_payout(network, request, conversion_rate_calculator):
 	return await sender.try_send_transfer(request.destination_address, transfer_amount)
 
 
-async def send_payouts(conversion_rate_calculator_factory, database, network):
+async def send_payouts(conversion_rate_calculator_factory, database, network, fee_multiplier=Decimal(1)):
 	requests_to_send = database.requests_by_status(WrapRequestStatus.UNPROCESSED)
 	print(f'{len(requests_to_send)} requests need to be sent')
 
@@ -36,7 +37,7 @@ async def send_payouts(conversion_rate_calculator_factory, database, network):
 			continue
 
 		print(f'  processing payout: {request.transaction_hash}:{request. transaction_subindex}')
-		send_result = await _send_payout(network, request, conversion_rate_calculator)
+		send_result = await _send_payout(network, request, conversion_rate_calculator, fee_multiplier)
 		if send_result.is_error:
 			database.mark_payout_failed(request, send_result.error_message)
 			print(f'  payout failed with error: {send_result.error_message}')
@@ -62,13 +63,16 @@ async def send_payouts(conversion_rate_calculator_factory, database, network):
 	])
 
 
-async def main_impl(is_unwrap_mode, databases, native_facade, wrapped_facade):
+async def main_impl(is_unwrap_mode, databases, native_facade, wrapped_facade, price_oracle):
 	native_mosaic_id = native_facade.extract_mosaic_id()
 	conversion_rate_calculator_factory = ConversionRateCalculatorFactory(databases, native_mosaic_id.formatted, is_unwrap_mode)
 	if is_unwrap_mode:
 		await send_payouts(conversion_rate_calculator_factory, databases.unwrap_request, native_facade)
 	else:
-		await send_payouts(conversion_rate_calculator_factory, databases.wrap_request, wrapped_facade)
+		fee_multiplier = await price_oracle.conversion_rate(wrapped_facade.config.blockchain, native_facade.config.blockchain)
+		print(f'calculated fee_multiplier as {fee_multiplier:0.4f} ({wrapped_facade.config.blockchain}/{native_facade.config.blockchain})')
+
+		await send_payouts(conversion_rate_calculator_factory, databases.wrap_request, wrapped_facade, fee_multiplier)
 
 
 if '__main__' == __name__:
