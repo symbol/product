@@ -28,9 +28,9 @@ async def server(aiohttp_client):
 
 # region constructor, init
 
-def _create_config(server=None, config_extensions=None):  # pylint: disable=redefined-outer-name
+def _create_config(server=None, mosaic_id='nem:xem', config_extensions=None):  # pylint: disable=redefined-outer-name
 	endpoint = server.make_url('') if server else 'http://foo.bar:1234'
-	return NetworkConfiguration('nem', 'testnet', endpoint, 'TCYIHED7HZQ3IPBY5WRDPDLV5CCMMOOVSOMSPD6B', config_extensions or {})
+	return NetworkConfiguration('nem', 'testnet', endpoint, 'TCYIHED7HZQ3IPBY5WRDPDLV5CCMMOOVSOMSPD6B', mosaic_id, config_extensions or {})
 
 
 def test_can_create_facade():
@@ -47,9 +47,7 @@ def test_can_create_facade():
 
 async def test_can_initialize_facade(server):  # pylint: disable=redefined-outer-name
 	# Arrange:
-	facade = NemNetworkFacade(_create_config(server, {
-		'mosaic_id': 'foo:bar'
-	}))
+	facade = NemNetworkFacade(_create_config(server, mosaic_id='foo:bar'))
 
 	# Act:
 	await facade.init()
@@ -79,9 +77,7 @@ async def test_can_detect_currency_mosaic_id():
 
 def test_can_extract_mosaic_id_currency():
 	# Arrange:
-	facade = NemNetworkFacade(_create_config(config_extensions={
-		'mosaic_id': 'nem:xem'
-	}))
+	facade = NemNetworkFacade(_create_config())
 
 	# Act:
 	mosaic_id = facade.extract_mosaic_id()
@@ -93,9 +89,7 @@ def test_can_extract_mosaic_id_currency():
 
 def test_can_extract_mosaic_id_other():
 	# Arrange:
-	facade = NemNetworkFacade(_create_config(config_extensions={
-		'mosaic_id': 'foo:bar'
-	}))
+	facade = NemNetworkFacade(_create_config(mosaic_id='foo:bar'))
 
 	# Act:
 	mosaic_id = facade.extract_mosaic_id()
@@ -300,7 +294,7 @@ def _assert_transfer_transaction_version_one_without_message(transaction):
 
 async def test_can_create_transfer_transaction_version_one_without_message(server):  # pylint: disable=redefined-outer-name
 	# Arrange:
-	facade = NemNetworkFacade(_create_config(server, {'mosaic_id': 'nem:xem'}))
+	facade = NemNetworkFacade(_create_config(server))
 	await facade.init()
 
 	# Act:
@@ -313,7 +307,7 @@ async def test_can_create_transfer_transaction_version_one_without_message(serve
 async def test_can_create_transfer_transaction_version_one_without_message_with_explicit_currency_mosaic_id(server):
 	# pylint: disable=redefined-outer-name
 	# Arrange:
-	facade = NemNetworkFacade(_create_config(server, {'mosaic_id': 'nem:xem'}))
+	facade = NemNetworkFacade(_create_config(server))
 	await facade.init()
 
 	# Act:
@@ -328,7 +322,7 @@ async def test_can_create_transfer_transaction_version_one_without_message_with_
 
 async def test_can_create_transfer_transaction_version_one_with_message(server):  # pylint: disable=redefined-outer-name
 	# Arrange:
-	facade = NemNetworkFacade(_create_config(server, {'mosaic_id': 'nem:xem'}))
+	facade = NemNetworkFacade(_create_config(server))
 	await facade.init()
 
 	# Act:
@@ -347,7 +341,7 @@ async def test_can_create_transfer_transaction_version_one_with_message(server):
 
 async def test_can_create_transfer_transaction_version_two_without_message(server):  # pylint: disable=redefined-outer-name
 	# Arrange:
-	facade = NemNetworkFacade(_create_config(server, {'mosaic_id': 'nem:xem'}))
+	facade = NemNetworkFacade(_create_config(server))
 	await facade.init()
 
 	# Act:
@@ -370,7 +364,7 @@ async def test_can_create_transfer_transaction_version_two_without_message(serve
 
 async def test_can_create_transfer_transaction_version_two_with_message(server):  # pylint: disable=redefined-outer-name
 	# Arrange:
-	facade = NemNetworkFacade(_create_config(server, {'mosaic_id': 'nem:xem'}))
+	facade = NemNetworkFacade(_create_config(server))
 	await facade.init()
 
 	# Act:
@@ -412,7 +406,7 @@ def _assert_transfer_transaction_version_two_with_custom_mosaic(transaction):
 
 async def test_cannot_create_transfer_transaction_version_one_with_custom_mosaic(server):  # pylint: disable=redefined-outer-name
 	# Arrange:
-	facade = NemNetworkFacade(_create_config(server, {'mosaic_id': 'foo:bar'}))
+	facade = NemNetworkFacade(_create_config(server, mosaic_id='foo:bar'))
 	await facade.init()
 
 	# Act:
@@ -427,7 +421,7 @@ async def test_cannot_create_transfer_transaction_version_one_with_custom_mosaic
 
 async def test_can_create_transfer_transaction_version_two_with_custom_mosaic(server):  # pylint: disable=redefined-outer-name
 	# Arrange:
-	facade = NemNetworkFacade(_create_config(server, {'mosaic_id': 'foo:bar'}))
+	facade = NemNetworkFacade(_create_config(server, mosaic_id='foo:bar'))
 	await facade.init()
 
 	# Act + Assert:
@@ -444,7 +438,7 @@ async def test_can_create_transfer_transaction_version_two_with_custom_mosaic(se
 async def test_canot_create_transfer_transaction_version_two_with_custom_mosaic_without_mosaic_fee_information(server):
 	# pylint: disable=redefined-outer-name
 	# Arrange:
-	facade = NemNetworkFacade(_create_config(server, {'mosaic_id': 'foo:bar'}))
+	facade = NemNetworkFacade(_create_config(server, mosaic_id='foo:bar'))
 	await facade.init()
 
 	# Act:
@@ -462,7 +456,7 @@ async def test_canot_create_transfer_transaction_version_two_with_custom_mosaic_
 
 async def test_can_calculate_transfer_transaction_fee_without_message(server):  # pylint: disable=redefined-outer-name
 	# Arrange:
-	facade = NemNetworkFacade(_create_config(server, {'mosaic_id': 'nem:xem'}))
+	facade = NemNetworkFacade(_create_config(server))
 	await facade.init()
 
 	# Act:
@@ -474,7 +468,7 @@ async def test_can_calculate_transfer_transaction_fee_without_message(server):  
 
 async def test_can_calculate_transfer_transaction_fee_with_message(server):  # pylint: disable=redefined-outer-name
 	# Arrange:
-	facade = NemNetworkFacade(_create_config(server, {'mosaic_id': 'nem:xem'}))
+	facade = NemNetworkFacade(_create_config(server))
 	await facade.init()
 
 	# Act:
@@ -486,7 +480,7 @@ async def test_can_calculate_transfer_transaction_fee_with_message(server):  # p
 
 async def test_can_calculate_transfer_transaction_fee_without_message_custom_mosaic(server):  # pylint: disable=redefined-outer-name
 	# Arrange:
-	facade = NemNetworkFacade(_create_config(server, {'mosaic_id': 'foo:bar'}))
+	facade = NemNetworkFacade(_create_config(server, mosaic_id='foo:bar'))
 	await facade.init()
 
 	# Act:
@@ -498,7 +492,7 @@ async def test_can_calculate_transfer_transaction_fee_without_message_custom_mos
 
 async def test_cannot_calculate_transfer_transaction_fee_without_mosaic_fee_information(server):  # pylint: disable=redefined-outer-name
 	# Arrange:
-	facade = NemNetworkFacade(_create_config(server, {'mosaic_id': 'foo:bar'}))
+	facade = NemNetworkFacade(_create_config(server, mosaic_id='foo:bar'))
 	await facade.init()
 
 	# Act:

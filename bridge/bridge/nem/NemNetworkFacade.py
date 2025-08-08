@@ -28,7 +28,7 @@ class NemNetworkFacade:
 
 		connector = self.create_connector()
 
-		formatted_mosaic_id = self.config.extensions['mosaic_id']
+		formatted_mosaic_id = self.config.mosaic_id
 		self.mosaic_id_to_fee_information_map[formatted_mosaic_id] = await connector.mosaic_fee_information(formatted_mosaic_id.split(':'))
 
 	@staticmethod
@@ -43,7 +43,7 @@ class NemNetworkFacade:
 		and a version that can be passed to network facades as arguments.
 		"""
 
-		config_mosaic_id = self.config.extensions['mosaic_id']
+		config_mosaic_id = self.config.mosaic_id
 		mosaic_id_parts = tuple(config_mosaic_id.split(':'))
 
 		if self.is_currency_mosaic_id(mosaic_id_parts):

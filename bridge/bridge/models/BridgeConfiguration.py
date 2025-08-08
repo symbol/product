@@ -3,7 +3,9 @@ from collections import namedtuple
 
 MachineConfiguration = namedtuple('MachineConfiguration', ['database_directory', 'log_filename'])
 PriceOracleConfiguration = namedtuple('PriceOracle', ['url'])
-NetworkConfiguration = namedtuple('NetworkConfiguration', ['blockchain', 'network', 'endpoint', 'bridge_address', 'extensions'])
+NetworkConfiguration = namedtuple('NetworkConfiguration', [
+	'blockchain', 'network', 'endpoint', 'bridge_address', 'mosaic_id', 'extensions'
+])
 BridgeConfiguration = namedtuple('BridgeConfiguration', ['machine', 'price_oracle', 'native_network', 'wrapped_network'])
 
 
@@ -33,7 +35,7 @@ def parse_price_oracle_configuration(config):
 def parse_network_configuration(config):
 	"""Parses network configuration."""
 
-	required_config_properties = ['blockchain', 'network', 'endpoint', 'bridgeAddress']
+	required_config_properties = ['blockchain', 'network', 'endpoint', 'bridgeAddress', 'mosaicId']
 	extensions = {}
 
 	for (key, value) in config.items():

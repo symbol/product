@@ -21,7 +21,7 @@ class EthereumNetworkFacade:  # pylint: disable=too-many-instance-attributes
 		self.rosetta_network_id = None
 		self.sdk_facade = EthereumSdkFacade(self.network)
 		self.bridge_address = EthereumAddress(config.bridge_address)
-		self.transaction_search_address = EthereumAddress(self.config.extensions['mosaic_id'])  # search the contract address
+		self.transaction_search_address = EthereumAddress(self.config.mosaic_id)  # search the contract address
 		self.chain_id = int(self.config.extensions['chain_id'])
 
 		self.token_precision = None
@@ -31,7 +31,7 @@ class EthereumNetworkFacade:  # pylint: disable=too-many-instance-attributes
 		"""Downloads information from the network to initialize the facade."""
 
 		connector = self.create_connector()
-		self.token_precision = await connector.token_precision(self.config.extensions['mosaic_id'])
+		self.token_precision = await connector.token_precision(self.config.mosaic_id)
 
 		signer_public_key = EthereumSdkFacade.KeyPair(PrivateKey(self.config.extensions['signing_private_key'])).public_key
 		signer_address = signer_public_key.address
@@ -43,7 +43,7 @@ class EthereumNetworkFacade:  # pylint: disable=too-many-instance-attributes
 		and a version that can be passed to network facades as arguments.
 		"""
 
-		config_mosaic_id = self.config.extensions['mosaic_id']
+		config_mosaic_id = self.config.mosaic_id
 		return PrintableMosaicId(config_mosaic_id, config_mosaic_id)
 
 	def create_connector(self, **_kwargs):
