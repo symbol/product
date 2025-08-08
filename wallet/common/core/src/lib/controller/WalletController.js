@@ -120,18 +120,19 @@ export class WalletController {
 		const scopedSecureStorageInterface = secureStorageInterface.createScope(STORAGE_ROOT_SCOPE);
 		this._persistentStorageRepository = new PersistentStorageRepository(scopedPersistentStorageInterface);
 
-		this.modules = Object.fromEntries(modules.map(Module => {
-			const moduleInstance = new Module({
+		this.modules = Object.fromEntries(modules.map(module => {
+			const moduleName = module.constructor.name;
+			module.init({
 				networkIdentifiers,
-				persistentStorageInterface: scopedPersistentStorageInterface.createScope(Module.name),
-				secureStorageInterface: scopedSecureStorageInterface.createScope(Module.name),
+				persistentStorageInterface: scopedPersistentStorageInterface.createScope(moduleName),
+				secureStorageInterface: scopedSecureStorageInterface.createScope(moduleName),
 				api,
 				sdk,
 				root: this,
 				onStateChange: this._handleModuleStateChange
 			});
 
-			return [moduleInstance.constructor.name, moduleInstance];
+			return [moduleName, module];
 		}));
 		this._keystores = Object.fromEntries(keystores.map(Keystore => {
 			const keystoreInstance = new Keystore({

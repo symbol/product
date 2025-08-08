@@ -30,11 +30,12 @@ describe('AddressBookModule', () => {
 		root = { networkIdentifier: 'testnet' };
 		onStateChange = jest.fn();
 
-		addressBookModule = new AddressBookModule({
+		addressBookModule = new AddressBookModule();
+		addressBookModule.init({
 			persistentStorageInterface,
+			onStateChange,
 			root,
-			networkIdentifiers,
-			onStateChange
+			networkIdentifiers
 		});
 		addressBookModule._persistentStorageRepository.getAddressBook = jest.fn();
 		addressBookModule._persistentStorageRepository.setAddressBook = jest.fn();

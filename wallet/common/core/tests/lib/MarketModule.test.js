@@ -24,8 +24,10 @@ describe('MarketModule', () => {
 		onStateChange = jest.fn();
 
 		marketModule = new MarketModule({
+			marketApi: api.market
+		});
+		marketModule.init({
 			persistentStorageInterface,
-			api,
 			onStateChange
 		});
 

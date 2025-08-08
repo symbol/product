@@ -27,13 +27,15 @@ export class AddressBookModule {
 	#networkIdentifiers;
 	#onStateChange;
 
-	constructor(options) {
+	constructor() {}
+
+	init = options => {
 		this._state = createDefaultState(options.networkIdentifiers);
 		this.#root = options.root;
 		this._persistentStorageRepository = new PersistentStorageRepository(options.persistentStorageInterface);
 		this.#onStateChange = options.onStateChange;
 		this.#networkIdentifiers = options.networkIdentifiers;
-	}
+	};
 
 	/**
 	 * Initializes the module. Loads the address book from the persistent storage.

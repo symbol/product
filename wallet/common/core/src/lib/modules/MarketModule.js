@@ -15,15 +15,18 @@ export class MarketModule {
 	static name = 'market';
 
 	_persistentStorageRepository;
-	#api;
+	#marketApi;
 	#onStateChange;
 
 	constructor(options) {
+		this.#marketApi = options.marketApi;
+	}
+
+	init = options => {
 		this._state = createDefaultState();
 		this._persistentStorageRepository = new PersistentStorageRepository(options.persistentStorageInterface);
-		this.#api = options.api;
 		this.#onStateChange = options.onStateChange;
-	}
+	};
 
 	/**
 	 * Current token price in user currency.
@@ -96,7 +99,7 @@ export class MarketModule {
 		if (!isOldMarketDataOutdated)
 			return marketData;
 
-		const prices = await this.#api.market.fetchPrices();
+		const prices = await this.#marketApi.fetchPrices();
 
 
 		this.#setState(() => {
