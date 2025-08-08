@@ -161,7 +161,8 @@ async def test_can_query_balance_with_custom_block_identifier(server):  # pylint
 
 # region nonce
 
-async def _assert_can_query_nonce(server, block_identifier, expected_block_identifier):  # pylint: disable=redefined-outer-name
+async def _assert_can_query_nonce(server, block_identifier, expected_block_identifier, expected_nonce):
+	# pylint: disable=redefined-outer-name
 	# Arrange:
 	connector = EthereumConnector(server.make_url(''))
 
@@ -175,15 +176,15 @@ async def _assert_can_query_nonce(server, block_identifier, expected_block_ident
 	assert [
 		make_rpc_request_json('eth_getTransactionCount', ['0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045', expected_block_identifier])
 	] == server.mock.request_json_payloads
-	assert 11 == nonce
+	assert expected_nonce == nonce
 
 
 async def test_can_query_nonce(server):  # pylint: disable=redefined-outer-name
-	await _assert_can_query_nonce(server, None, 'latest')
+	await _assert_can_query_nonce(server, None, 'latest', 11)
 
 
 async def test_can_query_nonce_with_custom_block_identifier(server):  # pylint: disable=redefined-outer-name
-	await _assert_can_query_nonce(server, 0xAABBCC, '0xAABBCC')
+	await _assert_can_query_nonce(server, 0xAABBCC, '0xAABBCC', 9)
 
 # endregion
 

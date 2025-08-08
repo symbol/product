@@ -57,7 +57,7 @@ async def test_can_initialize_facade(server):  # pylint: disable=redefined-outer
 
 	# Assert:
 	assert 3 == facade.token_precision
-	assert {EthereumAddress('0xb5368c39Efb0DbA28C082733FE3F9463A215CC3D'): 11} == facade.address_to_nonce_map
+	assert {EthereumAddress('0xb5368c39Efb0DbA28C082733FE3F9463A215CC3D'): 14} == facade.address_to_nonce_map
 
 # endregion
 
@@ -270,7 +270,7 @@ async def test_can_create_transfer_transaction(server):  # pylint: disable=redef
 			'F0109fC8DF283027b6285cc889F5aA624EaC1F55',
 			hexlify(int(88888_000000).to_bytes(32, 'big')).decode('utf8')
 		]),
-		'nonce': 11,
+		'nonce': 14,
 		'chainId': 8876,
 
 		'gas': 210000,
@@ -294,7 +294,7 @@ async def test_can_create_multiple_transfer_transactions_with_autoincrementing_n
 	]
 
 	# Assert:
-	assert [11, 12, 13, 14] == [transaction['nonce'] for transaction in transactions]
+	assert [14, 15, 16, 17] == [transaction['nonce'] for transaction in transactions]
 
 # endregion
 
