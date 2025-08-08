@@ -11,6 +11,7 @@ export const ControllerEventName = {
 	NEW_TRANSACTION_UNCONFIRMED: 'wc:transaction.add.unconfirmed',
 	NEW_TRANSACTION_PARTIAL: 'wc:transaction.add.partial',
 	REMOVE_TRANSACTION_UNCONFIRMED: 'wc:transaction.remove.unconfirmed',
+	REMOVE_TRANSACTION_PARTIAL: 'wc:transaction.remove.partial',
 	TRANSACTION_ERROR: 'wc:transaction.error',
 	ACCOUNT_CHANGE: 'wc:account.change',
 	ACCOUNT_INFO_CHANGE: 'wc:account.info.change',

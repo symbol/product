@@ -39,6 +39,7 @@ describe('NetworkManager', () => {
 					open: jest.fn().mockResolvedValue(undefined),
 					close: jest.fn(),
 					listenAddedTransactions: jest.fn(),
+					listenRemovedTransactions: jest.fn(),
 					listenTransactionError: jest.fn()
 				})
 			}
@@ -238,9 +239,10 @@ describe('NetworkManager', () => {
 			const accountAddress = 'TCF3372B2Y5NFO2NXI7ZEOB625YJ63J6B5R5QYQ';
 			const properties = { networkIdentifier: testNetworkIdentifier, nodeUrl: nodeUrl1 };
 			manager.init(testNetworkIdentifier, properties);
-
+			
 			// Act:
-			await manager.startChainListener(accountAddress);
+			manager.setListenAddress(accountAddress);
+			await manager.restartChainListener();
 
 			// Assert:
 			expect(mockApi.listener.createListener).toHaveBeenCalledWith(properties, accountAddress);

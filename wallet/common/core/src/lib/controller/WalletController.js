@@ -362,6 +362,9 @@ export class WalletController {
 		await Promise.all(Object.values(this.modules)
 			.filter(module => module.loadCache)
 			.map(module => module.loadCache()));
+
+		if (currentAccountPublicKey)
+			this.selectAccount(currentAccountPublicKey);
 	};
 
 	/**
@@ -386,6 +389,8 @@ export class WalletController {
 		});
 
 		this._emit(ControllerEventName.ACCOUNT_CHANGE);
+
+		this._networkManager.setListenAddress(accountToSelect.address);
 
 		return accountToSelect;
 	};

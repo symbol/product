@@ -1,4 +1,4 @@
-import { ErrorCode, NetworkConnectionStatus, TransactionGroup } from '../../constants';
+import { ControllerEventName, ErrorCode, NetworkConnectionStatus, TransactionGroup } from '../../constants';
 import { ControllerError } from '../../error/ControllerError';
 import { createNetworkMap } from '../../utils/network';
 
@@ -11,7 +11,8 @@ const createDefaultState = (networkIdentifiers, createDefaultNetworkProperties) 
 	networkProperties: createDefaultNetworkProperties(networkIdentifiers[0]), // network properties for the selected network
 	networkConnectionStatus: NetworkConnectionStatus.INITIAL, // 'offline' 'failed-auto' 'failed-current' 'connected'
 	nodeUrls: createNetworkMap(() => [], networkIdentifiers), // node urls available for each network
-	selectedNodeUrl: null // preferred node url, selected by the user
+	selectedNodeUrl: null, // preferred node url, selected by the user
+	listenAddress: null // account address to listen for transactions
 });
 
 export class NetworkManager {
@@ -74,6 +75,13 @@ export class NetworkManager {
 		this._state.networkProperties = initialNetworkProperties || this.createDefaultNetworkProperties(initialNetworkIdentifier);
 		this._state.selectedNodeUrl = initialNodeUrl || null;
 		this.#setStatus(NetworkConnectionStatus.INITIAL);
+	};
+
+	setListenAddress = address => {
+		this._state.listenAddress = address;
+		
+		if (this._state.chainListener)
+			this.restartChainListener();
 	};
 
 	/**
@@ -151,7 +159,7 @@ export class NetworkManager {
 		if (currentNodeUrl) {
 			try {
 				await this.fetchNetworkProperties(currentNodeUrl);
-				await this.startChainListener();
+				await this.restartChainListener();
 				this.#scheduleNextRun();
 				return this._state.networkConnectionStatus;
 			} catch (error) { 
@@ -192,7 +200,7 @@ export class NetworkManager {
 			try {
 				await this.api.network.pingNode(nodeUrl);
 				await this.fetchNetworkProperties(nodeUrl);
-				await this.startChainListener();
+				await this.restartChainListener();
 				this.#scheduleNextRun();
 				return this._state.networkConnectionStatus;
 			} catch (error) {
@@ -207,14 +215,14 @@ export class NetworkManager {
 
 	/**
 	 * Starts the chain listener to listen for blockchain events.
-	 * @param {string} accountAddress - The address of the account to listen for events.
+	 * If the listener is already running, it will be restarted.
 	 * @returns {Promise<void>} - A promise that resolves when the listener is successfully started.
 	 */
-	startChainListener = async accountAddress => {
+	restartChainListener = async () => {
 		this.stopChainListener();
 
 		try {
-			const newListener = this.api.listener.createListener(this.networkProperties, accountAddress);
+			const newListener = this.api.listener.createListener(this.networkProperties, this._state.listenAddress);
 			await newListener.open();
 			newListener.listenAddedTransactions(TransactionGroup.CONFIRMED, payload => {
 				this.#handleChainEvent(ControllerEventName.NEW_TRANSACTION_CONFIRMED, payload);
@@ -224,6 +232,12 @@ export class NetworkManager {
 			});
 			newListener.listenAddedTransactions(TransactionGroup.PARTIAL, payload => {
 				this.#handleChainEvent(ControllerEventName.NEW_TRANSACTION_PARTIAL, payload);
+			});
+			newListener.listenRemovedTransactions(TransactionGroup.UNCONFIRMED, payload => {
+				this.#handleChainEvent(ControllerEventName.REMOVE_TRANSACTION_UNCONFIRMED, payload);
+			});
+			newListener.listenRemovedTransactions(TransactionGroup.PARTIAL, payload => {
+				this.#handleChainEvent(ControllerEventName.REMOVE_TRANSACTION_PARTIAL, payload);
 			});
 			newListener.listenTransactionError(payload => {
 				this.#handleChainEvent(ControllerEventName.TRANSACTION_ERROR, payload);
