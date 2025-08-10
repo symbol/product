@@ -537,7 +537,7 @@ class NetworkRepositoryTest(unittest.TestCase):
 
 	# region load time series nodes count
 
-	def test_can_load_time_series_nodes_count(self):
+	def test_can_load_symbol_time_series_nodes_count(self):
 		# Arrange:
 		repository = NetworkRepository(SymbolNetwork.MAINNET, 'symbol')
 
@@ -570,6 +570,28 @@ class NetworkRepositoryTest(unittest.TestCase):
 					'6': 0,
 					'7': 34,
 					'total': 134
+				}
+			}], repository.time_series_nodes_count)
+
+	def test_can_load_nem_time_series_nodes_count(self):
+		# Arrange:
+		repository = NetworkRepository(NemNetwork.MAINNET, 'nem')
+
+		# Act:
+		repository.load_time_series_nodes_count('tests/resources/nem_time_series_nodes_count.json')
+
+		# Assert:
+		self.assertEqual([
+			{
+				'date': '2025-08-08',
+				'values': {
+					'total': 575
+				}
+			},
+			{
+				'date': '2025-08-09',
+				'values': {
+					'total': 575
 				}
 			}], repository.time_series_nodes_count)
 

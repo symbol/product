@@ -126,6 +126,11 @@ class BasicRoutesFacade:
 			'finalizedHeight': self.repository.estimate_finalized_height()
 		}
 
+	def json_time_series_nodes_count(self):
+		"""Returns the number of nodes."""
+
+		return self.repository.time_series_nodes_count
+
 	def reload_all(self, resources_path, force=False):
 		"""Reloads all descriptor files."""
 
@@ -275,8 +280,3 @@ class SymbolRoutesFacade(BasicRoutesFacade):
 			tag = 'success'
 
 		return tag
-
-	def json_time_series_nodes_count(self):
-		"""Returns the number of nodes."""
-
-		return self.repository.time_series_nodes_count

@@ -162,6 +162,20 @@ def test_get_api_nem_network_height_chart(client):  # pylint: disable=redefined-
 	assert re.match(r'\d\d:\d\d', response_json['lastRefreshTime'])
 
 
+def _assert_get_nodes_count(response, expected_count):
+	# Act:
+	response_json = json.loads(response.data)
+
+	# Assert:
+	assert 200 == response.status_code
+	assert 'application/json' == response.headers['Content-Type']
+	assert expected_count == len(response_json)
+
+
+def test_get_api_nem_nodes_count(client):  # pylint: disable=redefined-outer-name
+	_assert_get_nodes_count(client.get('/api/nem/nodes/count'), 2)
+
+
 def _assert_get_api_nodes(response, expected_node_names):
 	# Act:
 	response_json = json.loads(response.data)
@@ -289,14 +303,7 @@ def test_get_api_symbol_node_with_node_public_key(client):  # pylint: disable=re
 
 
 def test_get_api_symbol_nodes_count(client):  # pylint: disable=redefined-outer-name
-	# Act:
-	response = client.get('/api/symbol/nodes/count')
-	response_json = json.loads(response.data)
-
-	# Assert:
-	assert 200 == response.status_code
-	assert 'application/json' == response.headers['Content-Type']
-	assert 2 == len(response_json)
+	_assert_get_nodes_count(client.get('/api/symbol/nodes/count'), 2)
 
 
 # endregion
