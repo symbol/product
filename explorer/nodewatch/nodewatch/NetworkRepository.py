@@ -192,7 +192,8 @@ class NetworkRepository:
 			f'{node_protocol}://{node_host}:{node_port}',
 			json_identity['name'],
 			json_node['metaData']['version'],
-			*extra_data)
+			*extra_data,
+			geo_location=self.geo_location_map.get(node_host, None))
 
 	def _handle_symbol_node(self, json_node, extra_data):
 		symbol_endpoint = ''

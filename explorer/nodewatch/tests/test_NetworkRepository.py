@@ -13,6 +13,27 @@ FinalizedInfo = namedtuple('FinalizedInfo', ['height', 'epoch', 'hash', 'point']
 
 
 class NetworkRepositoryTest(unittest.TestCase):
+	# pylint: disable=duplicate-code
+	EXPECTED_SYMBOL_GEO_VALUES = {
+		'continent': 'Asia',
+		'country': 'Japan',
+		'region': '13',
+		'city': 'Chiyoda',
+		'lat': 12.0,
+		'lon': 15.0,
+		'isp': 'Internet Inc.'
+	}
+
+	EXPECTED_NEM_GEO_VALUES = {
+		'continent': 'Europe',
+		'country': 'Germany',
+		'region': 'NW',
+		'city': 'Düsseldorf',
+		'lat': 50.0,
+		'lon': 6.0,
+		'isp': 'Contabo GmbH'
+	}
+
 	# region load node descriptors
 
 	def _assert_node_descriptor(self, descriptor, **kwargs):
@@ -37,6 +58,8 @@ class NetworkRepositoryTest(unittest.TestCase):
 	def test_can_load_nem_node_descriptors(self):
 		# Arrange:
 		repository = NetworkRepository(NemNetwork.MAINNET, 'nem')
+
+		repository.load_geo_location_descriptors('tests/resources/nem_geo_location.json')
 
 		# Act:
 		repository.load_node_descriptors('tests/resources/nem_nodes.json')
@@ -75,7 +98,7 @@ class NetworkRepositoryTest(unittest.TestCase):
 			is_healthy=None,
 			is_ssl_enabled=None,
 			rest_version=None,
-			geo_location=None,
+			geo_location=self.EXPECTED_NEM_GEO_VALUES,
 			version='0.6.100',
 			balance=20612359.516967,
 			roles=0xFF,
@@ -128,6 +151,8 @@ class NetworkRepositoryTest(unittest.TestCase):
 	def test_can_load_symbol_node_descriptors(self):
 		# Arrange:
 		repository = NetworkRepository(SymbolNetwork.MAINNET, 'symbol')
+
+		repository.load_geo_location_descriptors('tests/resources/symbol_geo_location.json')
 
 		# Act:
 		repository.load_node_descriptors('tests/resources/symbol_nodes.json')
@@ -200,7 +225,7 @@ class NetworkRepositoryTest(unittest.TestCase):
 			is_healthy=True,
 			is_ssl_enabled=True,
 			rest_version='2.4.4',
-			geo_location=None,
+			geo_location=self.EXPECTED_SYMBOL_GEO_VALUES,
 			version='1.0.3.5',
 			balance=82375.554976,
 			roles=3,
@@ -486,52 +511,67 @@ class NetworkRepositoryTest(unittest.TestCase):
 
 	# region load geo location mappings
 
-	# pylint: disable=duplicate-code
-	EXPECTED_GEO_VALUES = {
-		'continent': 'Asia',
-		'country': 'Japan',
-		'region': '13',
-		'city': 'Chiyoda',
-		'lat': 12.0,
-		'lon': 15.0,
-		'isp': 'Internet Inc.'
-	}
-
-	def test_can_load_geo_location_descriptors(self):
+	def _assert_geo_location_descriptors(self, blockchain_name, expected_host):
 		# Arrange:
-		repository = NetworkRepository(SymbolNetwork.MAINNET, 'symbol')
+		network = SymbolNetwork if blockchain_name == 'symbol' else NemNetwork
+		repository = NetworkRepository(network.MAINNET, blockchain_name)
 
 		# Act:
-		repository.load_geo_location_descriptors('tests/resources/symbol_geo_location.json')
+		repository.load_geo_location_descriptors(f'tests/resources/{blockchain_name}_geo_location.json')
 
 		# Assert:
+		expected_geo_values = self.EXPECTED_SYMBOL_GEO_VALUES if blockchain_name == 'symbol' else self.EXPECTED_NEM_GEO_VALUES
+
 		self.assertEqual(1, len(repository.geo_location_map))
-		for property_name, expected_value in self.EXPECTED_GEO_VALUES.items():
-			self.assertEqual(expected_value, repository.geo_location_map['symbol.shizuilab.com'][property_name])
+		for property_name, expected_value in expected_geo_values.items():
+			self.assertEqual(expected_value, repository.geo_location_map[expected_host][property_name])
 
-	def test_node_includes_geo_location_in_json_when_available(self):
+	def _assert_node_includes_geo_location(self, blockchain_name, index):
 		# Arrange:
-		repository = NetworkRepository(SymbolNetwork.MAINNET, 'symbol')
-		repository.load_geo_location_descriptors('tests/resources/symbol_geo_location.json')
-		repository.load_node_descriptors('tests/resources/symbol_nodes.json')
+		network = SymbolNetwork if blockchain_name == 'symbol' else NemNetwork
+
+		repository = NetworkRepository(network.MAINNET, blockchain_name)
+		repository.load_geo_location_descriptors(f'tests/resources/{blockchain_name}_geo_location.json')
+		repository.load_node_descriptors(f'tests/resources/{blockchain_name}_nodes.json')
 
 		# Act:
-		json_object = repository.node_descriptors[3].to_json()
+		json_object = repository.node_descriptors[index].to_json()
 
 		# Assert:
-		self.assertEqual(self.EXPECTED_GEO_VALUES, json_object['geoLocation'])
+		expected_geo_values = self.EXPECTED_SYMBOL_GEO_VALUES if blockchain_name == 'symbol' else self.EXPECTED_NEM_GEO_VALUES
+		self.assertEqual(expected_geo_values, json_object['geoLocation'])
 
-	def test_node_has_null_geo_location_in_json_when_not_available(self):
+	def _assert_node_has_null_geo_location(self, blockchain_name, index):
 		# Arrange:
-		repository = NetworkRepository(SymbolNetwork.MAINNET, 'symbol')
-		repository.load_geo_location_descriptors('tests/resources/symbol_geo_location.json')
-		repository.load_node_descriptors('tests/resources/symbol_nodes.json')
+		network = SymbolNetwork if blockchain_name == 'symbol' else NemNetwork
+
+		repository = NetworkRepository(network.MAINNET, blockchain_name)
+		repository.load_geo_location_descriptors(f'tests/resources/{blockchain_name}_geo_location.json')
+		repository.load_node_descriptors(f'tests/resources/{blockchain_name}_nodes.json')
 
 		# Act:
-		json_object = repository.node_descriptors[4].to_json()
+		json_object = repository.node_descriptors[index].to_json()
 
 		# Assert:
 		self.assertEqual(None, json_object['geoLocation'])
+
+	def test_can_load_symbol_geo_location_descriptors(self):
+		self._assert_geo_location_descriptors('symbol', 'symbol.shizuilab.com')
+
+	def test_node_includes_symbol_geo_location_in_json_when_available(self):
+		self._assert_node_includes_geo_location('symbol', 3)
+
+	def test_node_has_null_symbol_geo_location_in_json_when_not_available(self):
+		self._assert_node_has_null_geo_location('symbol', 1)
+
+	def test_can_load_nem_geo_location_descriptors(self):
+		self._assert_geo_location_descriptors('nem', 'jusan.nem.ninja')
+
+	def test_node_includes_nem_geo_location_in_json_when_available(self):
+		self._assert_node_includes_geo_location('nem', 1)
+
+	def test_node_has_null_nem_geo_location_in_json_when_not_available(self):
+		self._assert_node_has_null_geo_location('nem', 0)
 
 	# endregion
 

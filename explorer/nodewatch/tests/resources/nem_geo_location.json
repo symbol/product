@@ -1,1 +1,16 @@
-[]
+    [
+        {
+            "host": "jusan.nem.ninja",
+            "ip": "161.97.147.72",
+            "geolocation": {
+                "continent": "Europe",
+                "country": "Germany",
+                "region": "NW",
+                "city": "Düsseldorf",
+                "lat": 50.0,
+                "lon": 6.0,
+                "isp": "Contabo GmbH",
+                "query": "161.97.147.72"
+        }
+    }
+]
