@@ -10,7 +10,7 @@ from .main_impl import main_bootstrapper, print_banner
 
 async def _send_payout(network, request, conversion_rate_calculator, fee_multiplier):
 	mosaic_id = network.extract_mosaic_id()
-	sender = TransactionSender(network, fee_multiplier, mosaic_id.id)
+	sender = TransactionSender(network, fee_multiplier)
 	transfer_amount = conversion_rate_calculator(request.amount)
 
 	print(
