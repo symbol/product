@@ -5,11 +5,28 @@ import unittest
 
 from symbolchain.CryptoTypes import Hash256, PublicKey
 from symbolchain.nem.Network import Address
+from symbolchain.symbol.Network import Address as SymbolAddress
 
-from bridge.db.WrapRequestDatabase import PayoutDetails, WrapRequestDatabase, WrapRequestStatus
+from bridge.db.WrapRequestDatabase import PayoutDetails, WrapRequestDatabase, WrapRequestErrorView, WrapRequestStatus, WrapRequestView
 
-from ..test.BridgeTestUtils import HASHES, HEIGHTS, NEM_ADDRESSES, PUBLIC_KEYS, assert_equal_request, make_request, make_request_error
-from ..test.DatabaseTestUtils import get_all_table_names
+from ..test.BridgeTestUtils import (
+	HASHES,
+	HEIGHTS,
+	NEM_ADDRESSES,
+	PUBLIC_KEYS,
+	SYMBOL_ADDRESSES,
+	assert_equal_request,
+	make_request,
+	make_request_error
+)
+from ..test.DatabaseTestUtils import (
+	get_all_table_names,
+	get_default_filtering_test_parameters,
+	seed_database_with_many_errors,
+	seed_database_with_many_requests,
+	seed_database_with_simple_errors,
+	seed_database_with_simple_requests
+)
 from ..test.MockNetworkFacade import MockNemNetworkFacade, MockSymbolNetworkFacade
 
 # region factories
@@ -998,5 +1015,195 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 
 			# Assert:
 			self.assertEqual([payout_transaction_hashes[i] for i in (0, 2)], hashes)
+
+	# endregion
+
+	# region find_errors
+
+	def _assert_can_find_errors_simple(self, address, expected_view):
+		# Arrange:
+		with sqlite3.connect(':memory:') as connection:
+			database = self._create_database(connection)
+			database.create_tables()
+			seed_database_with_simple_errors(database)
+
+			# Act:
+			views = list(database.find_errors(address))
+
+			# Assert:
+			if not expected_view:
+				self.assertEqual(0, len(views))
+			else:
+				self.assertEqual(1, len(views))
+				self.assertEqual(expected_view, views[0])
+
+	def test_can_find_error_by_address(self):
+		expected_view = WrapRequestErrorView(
+			222,
+			Hash256(HASHES[1]),
+			0,
+			Address(NEM_ADDRESSES[1]),
+			'this is another error message',
+			self._nem_to_unix_timestamp(3040))
+		self._assert_can_find_errors_simple(Address(NEM_ADDRESSES[1]), expected_view)
+
+	def test_cannot_find_error_by_address_with_no_matches(self):
+		self._assert_can_find_errors_simple(Address(NEM_ADDRESSES[4]), None)
+
+	def _assert_can_find_errors_filtering(self, find_errors_params, expected_heights):
+		# Arrange:
+		with sqlite3.connect(':memory:') as connection:
+			database = self._create_database(connection)
+			database.create_tables()
+			seed_database_with_many_errors(database)
+
+			# Act:
+			views = list(database.find_errors(*find_errors_params))
+			heights = [view.request_transaction_height for view in views]
+
+			# Assert:
+			self.assertEqual(expected_heights, heights)
+
+	def test_can_find_errors_by_address(self):
+		test_params = get_default_filtering_test_parameters()
+		self._assert_can_find_errors_filtering([Address(NEM_ADDRESSES[test_params.address_index])], test_params.expected_all)
+
+	def test_can_find_errors_by_address_and_transaction_hash(self):
+		test_params = get_default_filtering_test_parameters()
+		self._assert_can_find_errors_filtering([
+			Address(NEM_ADDRESSES[test_params.address_index]),
+			Hash256(HASHES[test_params.hash_index])
+		], test_params.expected_hash_filter)
+
+	def test_can_find_errors_with_custom_offset_and_limit(self):
+		test_params = get_default_filtering_test_parameters()
+		self._assert_can_find_errors_filtering([
+			Address(NEM_ADDRESSES[test_params.address_index]),
+			None,
+			test_params.offset,
+			test_params.limit
+		], test_params.expected_custom_offset_and_limit)
+
+	# endregion
+
+	# region find_requests
+
+	def _assert_can_find_requests_simple(self, address, expected_view):
+		# Arrange:
+		with sqlite3.connect(':memory:') as connection:
+			database = self._create_database(connection)
+			database.create_tables()
+			seed_database_with_simple_requests(database)
+
+			# Act:
+			views = list(database.find_requests(address))
+
+			# Assert:
+			if not expected_view:
+				self.assertEqual(0, len(views))
+			else:
+				self.assertEqual(1, len(views))
+				self.assertEqual(expected_view, views[0])
+
+	def test_can_find_request_by_hash_exists_unprocessed(self):
+		expected_view = WrapRequestView(
+			111,
+			Hash256(HASHES[0]),
+			0,
+			Address(NEM_ADDRESSES[0]),
+			5554,
+			SymbolAddress(SYMBOL_ADDRESSES[0]),
+			0,
+			None,
+			self._nem_to_unix_timestamp(1020),
+			*([None] * 5))
+		self._assert_can_find_requests_simple(Address(NEM_ADDRESSES[0]), expected_view)
+
+	def test_can_find_request_by_hash_exists_sent(self):
+		expected_view = WrapRequestView(
+			222,
+			Hash256(HASHES[1]),
+			0,
+			Address(NEM_ADDRESSES[1]),
+			8865,
+			SymbolAddress(SYMBOL_ADDRESSES[1]),
+			1,
+			Hash256('066E5BF4B539230E12DD736D44CEFB5274FACBABC22735F2264A40F72AFB0124'),
+			self._nem_to_unix_timestamp(3040),
+			0,
+			2200,
+			450,
+			156,
+			None)
+		self._assert_can_find_requests_simple(Address(NEM_ADDRESSES[1]), expected_view)
+
+	def test_can_find_request_by_hash_exists_completed(self):
+		expected_view = WrapRequestView(
+			333,
+			Hash256(HASHES[2]),
+			0,
+			Address(NEM_ADDRESSES[2]),
+			8889,
+			SymbolAddress(SYMBOL_ADDRESSES[2]),
+			2,
+			Hash256('ACFF5E24733CD040504448A3A75F1CE32E90557E5FBA02E107624242F4FA251D'),
+			self._nem_to_unix_timestamp(4050),
+			1122,
+			1100,
+			300,
+			121,
+			self._symbol_to_unix_timestamp(3333),)
+		self._assert_can_find_requests_simple(Address(NEM_ADDRESSES[2]), expected_view)
+
+	def test_can_find_request_by_hash_exists_failed(self):
+		expected_view = WrapRequestView(
+			444,
+			Hash256(HASHES[3]),
+			0,
+			Address(NEM_ADDRESSES[3]),
+			1234,
+			SymbolAddress(SYMBOL_ADDRESSES[3]),
+			3,
+			None,
+			self._nem_to_unix_timestamp(5060),
+			*([None] * 5))
+		self._assert_can_find_requests_simple(Address(NEM_ADDRESSES[3]), expected_view)
+
+	def test_cannot_find_request_by_address_with_no_matches(self):
+		self._assert_can_find_requests_simple(Address(NEM_ADDRESSES[4]), None)
+
+	def _assert_can_find_requests_filtering(self, find_requests_params, expected_heights):
+		# Arrange:
+		with sqlite3.connect(':memory:') as connection:
+			database = self._create_database(connection)
+			database.create_tables()
+			seed_database_with_many_requests(database)
+
+			# Act:
+			views = list(database.find_requests(*find_requests_params))
+			heights = [view.request_transaction_height for view in views]
+
+			# Assert:
+			self.assertEqual(expected_heights, heights)
+
+	def test_can_find_requests_by_address(self):
+		test_params = get_default_filtering_test_parameters()
+		self._assert_can_find_requests_filtering([Address(NEM_ADDRESSES[test_params.address_index])], test_params.expected_all)
+
+	def test_can_find_requests_by_address_and_transaction_hash(self):
+		test_params = get_default_filtering_test_parameters()
+		self._assert_can_find_requests_filtering([
+			Address(NEM_ADDRESSES[test_params.address_index]),
+			Hash256(HASHES[test_params.hash_index])
+		], test_params.expected_hash_filter)
+
+	def test_can_find_requests_with_custom_offset_and_limit(self):
+		test_params = get_default_filtering_test_parameters()
+		self._assert_can_find_requests_filtering([
+			Address(NEM_ADDRESSES[test_params.address_index]),
+			None,
+			test_params.offset,
+			test_params.limit
+		], test_params.expected_custom_offset_and_limit)
 
 	# endregion

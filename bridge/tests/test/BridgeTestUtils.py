@@ -25,8 +25,8 @@ NEM_ADDRESSES = [
 ]
 
 SYMBOL_ADDRESSES = [
-	'NCU36L7K7B4I5JP5HHROFVFZYSCKKXWQI6PDT6I', 'NCLAZCJ36LUDVHNYZPWN67NI4V5E6VZJNZ666XY', 'NBLVHBI6VOMCI4QV53ZCKV5IRM7ZKCAYZYBECXQ',
-	'NCRCD5QSQYXPOFGJS7KJFUKROMHJZLX3JWUEOLY'
+	'TA2C4L5FMQF6DPD2RNKDAU62TXZJSMTBN7G25ZA', 'TCMC3M2NP6EGY55SFVXAGILE2N6WLVPEQQDDYOA', 'TCCMDF6VL6YJUZWPTDY6VEBOXCS7GB344BKSGOI',
+	'TDURL6ONOACEPE2E762XVDMRRPZQSAX7ZQAE22Q', 'TCKRDEYTT4ORA5WQD7S64CZFFLQBPEK4RBJMCWQ'
 ]
 
 
@@ -45,8 +45,12 @@ def make_request(index, **kwargs):
 	address = Address(NEM_ADDRESSES[kwargs.get('address_index', index)])
 
 	amount = kwargs.get('amount', height % 1000)
-	destination_address = PublicKey(PUBLIC_KEYS[kwargs.get('destination_address_index', index)])
-	return WrapRequest(height, transaction_hash, transaction_subindex, address, amount, f'0x{destination_address}')
+	if kwargs.get('destination_address'):
+		destination_address = kwargs['destination_address']
+	else:
+		destination_public_key = PublicKey(PUBLIC_KEYS[kwargs.get('destination_address_index', index)])
+		destination_address = f'0x{destination_public_key}'
+	return WrapRequest(height, transaction_hash, transaction_subindex, address, amount, destination_address)
 
 
 def make_wrap_error_from_request(request, message):
