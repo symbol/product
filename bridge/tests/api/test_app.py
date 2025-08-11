@@ -48,7 +48,7 @@ async def coingecko_server(aiohttp_client):
 
 
 @pytest.fixture
-async def app(nem_server, symbol_server, coingecko_server):  # pylint: disable=redefined-outer-name
+def app(nem_server, symbol_server, coingecko_server):  # pylint: disable=redefined-outer-name
 	with tempfile.TemporaryDirectory() as temp_directory:
 		database_directory = Path(temp_directory) / 'db'  # pylint: disable=redefined-outer-name
 		database_directory.mkdir()
@@ -83,7 +83,7 @@ async def app(nem_server, symbol_server, coingecko_server):  # pylint: disable=r
 
 			temp_file_path = config_filename.resolve()
 			os.environ['BRIDGE_API_SETTINGS'] = str(temp_file_path)
-			app = await create_app()  # pylint: disable=redefined-outer-name
+			app = create_app()  # pylint: disable=redefined-outer-name
 			app.database_directory = database_directory
 			yield app
 
@@ -197,261 +197,294 @@ def test_root(client):  # pylint: disable=redefined-outer-name
 
 # region shared filtering tests
 
-def _assert_can_filter_by_address_empty(client, database_directory, base_path, is_unwrap):  # pylint: disable=redefined-outer-name
-	# Arrange:
-	address_filter = (SYMBOL_ADDRESSES if is_unwrap else NEM_ADDRESSES)[4]
-	_seed_multiple_requests(database_directory, is_unwrap)
+async def _assert_can_filter_by_address_empty(client, database_directory, base_path, is_unwrap):  # pylint: disable=redefined-outer-name
+	def test_impl():
+		# Arrange:
+		address_filter = (SYMBOL_ADDRESSES if is_unwrap else NEM_ADDRESSES)[4]
+		_seed_multiple_requests(database_directory, is_unwrap)
 
-	# Act:
-	response = client.get(f'{base_path}{address_filter}')
-	response_json = json.loads(response.data)
+		# Act:
+		response = client.get(f'{base_path}{address_filter}')
+		response_json = json.loads(response.data)
 
-	# Assert:
-	_assert_json_response_success(response)
-	assert [] == [view_json['requestTransactionHeight'] for view_json in response_json]
+		# Assert:
+		_assert_json_response_success(response)
+		assert [] == [view_json['requestTransactionHeight'] for view_json in response_json]
 
-
-def _assert_can_filter_by_address(client, database_directory, base_path, is_unwrap):  # pylint: disable=redefined-outer-name
-	# Arrange:
-	test_params = get_default_filtering_test_parameters()
-	address_filter = (SYMBOL_ADDRESSES if is_unwrap else NEM_ADDRESSES)[test_params.address_index]
-	_seed_multiple_requests(database_directory, is_unwrap)
-
-	# Act:
-	response = client.get(f'{base_path}{address_filter}')
-	response_json = json.loads(response.data)
-
-	# Assert:
-	_assert_json_response_success(response)
-	assert test_params.expected_all == [view_json['requestTransactionHeight'] for view_json in response_json]
+	loop = asyncio.get_running_loop()
+	await loop.run_in_executor(None, test_impl)
 
 
-def _assert_can_filter_by_address_and_transaction_hash(client, database_directory, base_path, is_unwrap):
+async def _assert_can_filter_by_address(client, database_directory, base_path, is_unwrap):  # pylint: disable=redefined-outer-name
+	def test_impl():
+		# Arrange:
+		test_params = get_default_filtering_test_parameters()
+		address_filter = (SYMBOL_ADDRESSES if is_unwrap else NEM_ADDRESSES)[test_params.address_index]
+		_seed_multiple_requests(database_directory, is_unwrap)
+
+		# Act:
+		response = client.get(f'{base_path}{address_filter}')
+		response_json = json.loads(response.data)
+
+		# Assert:
+		_assert_json_response_success(response)
+		assert test_params.expected_all == [view_json['requestTransactionHeight'] for view_json in response_json]
+
+	loop = asyncio.get_running_loop()
+	await loop.run_in_executor(None, test_impl)
+
+
+async def _assert_can_filter_by_address_and_transaction_hash(client, database_directory, base_path, is_unwrap):
 	# pylint: disable=redefined-outer-name
-	# Arrange:
-	test_params = get_default_filtering_test_parameters()
-	address_filter = (SYMBOL_ADDRESSES if is_unwrap else NEM_ADDRESSES)[test_params.address_index]
-	_seed_multiple_requests(database_directory, is_unwrap)
+	def test_impl():
+		# Arrange:
+		test_params = get_default_filtering_test_parameters()
+		address_filter = (SYMBOL_ADDRESSES if is_unwrap else NEM_ADDRESSES)[test_params.address_index]
+		_seed_multiple_requests(database_directory, is_unwrap)
 
-	# Act:
-	response = client.get(f'{base_path}{address_filter}/{HASHES[test_params.hash_index]}')
-	response_json = json.loads(response.data)
+		# Act:
+		response = client.get(f'{base_path}{address_filter}/{HASHES[test_params.hash_index]}')
+		response_json = json.loads(response.data)
 
-	# Assert:
-	_assert_json_response_success(response)
-	assert test_params.expected_hash_filter == [view_json['requestTransactionHeight'] for view_json in response_json]
+		# Assert:
+		_assert_json_response_success(response)
+		assert test_params.expected_hash_filter == [view_json['requestTransactionHeight'] for view_json in response_json]
+
+	loop = asyncio.get_running_loop()
+	await loop.run_in_executor(None, test_impl)
 
 
-def _assert_can_filter_by_address_with_custom_offset_and_limit(client, database_directory, base_path, is_unwrap):
+async def _assert_can_filter_by_address_with_custom_offset_and_limit(client, database_directory, base_path, is_unwrap):
 	# pylint: disable=redefined-outer-name
-	# Arrange:
-	test_params = get_default_filtering_test_parameters()
-	address_filter = (SYMBOL_ADDRESSES if is_unwrap else NEM_ADDRESSES)[test_params.address_index]
-	_seed_multiple_requests(database_directory, is_unwrap)
+	def test_impl():
+		# Arrange:
+		test_params = get_default_filtering_test_parameters()
+		address_filter = (SYMBOL_ADDRESSES if is_unwrap else NEM_ADDRESSES)[test_params.address_index]
+		_seed_multiple_requests(database_directory, is_unwrap)
 
-	# Act:
-	response = client.get(f'{base_path}{address_filter}?offset={test_params.offset}&limit={test_params.limit}')
-	response_json = json.loads(response.data)
+		# Act:
+		response = client.get(f'{base_path}{address_filter}?offset={test_params.offset}&limit={test_params.limit}')
+		response_json = json.loads(response.data)
 
-	# Assert:
-	_assert_json_response_success(response)
-	assert test_params.expected_custom_offset_and_limit == [view_json['requestTransactionHeight'] for view_json in response_json]
+		# Assert:
+		_assert_json_response_success(response)
+		assert test_params.expected_custom_offset_and_limit == [view_json['requestTransactionHeight'] for view_json in response_json]
+
+	loop = asyncio.get_running_loop()
+	await loop.run_in_executor(None, test_impl)
 
 # endregion
 
 
 # region /wrap/requests
 
-def test_can_query_wrap_requests_with_single_match(client, database_directory):  # pylint: disable=redefined-outer-name
-	# Arrange:
-	_seed_completed_request(database_directory, False)
+async def test_can_query_wrap_requests_with_single_match(client, database_directory):  # pylint: disable=redefined-outer-name
+	def test_impl():
+		# Arrange:
+		_seed_completed_request(database_directory, False)
 
-	# Act:
-	response = client.get(f'/wrap/requests/{NEM_ADDRESSES[2]}')
-	response_json = json.loads(response.data)
+		# Act:
+		response = client.get(f'/wrap/requests/{NEM_ADDRESSES[2]}')
+		response_json = json.loads(response.data)
 
-	# Assert:
-	_assert_json_response_success(response)
-	assert [
-		{
-			'requestTransactionHeight': 333,
-			'requestTransactionHash': HASHES[2],
-			'requestTransactionSubindex': 0,
-			'senderAddress': NEM_ADDRESSES[2],
+		# Assert:
+		_assert_json_response_success(response)
+		assert [
+			{
+				'requestTransactionHeight': 333,
+				'requestTransactionHash': HASHES[2],
+				'requestTransactionSubindex': 0,
+				'senderAddress': NEM_ADDRESSES[2],
 
-			'requestAmount': 8889,
-			'destinationAddress': SYMBOL_ADDRESSES[2],
-			'payoutStatus': 2,
-			'payoutTransactionHash': 'ACFF5E24733CD040504448A3A75F1CE32E90557E5FBA02E107624242F4FA251D',
+				'requestAmount': 8889,
+				'destinationAddress': SYMBOL_ADDRESSES[2],
+				'payoutStatus': 2,
+				'payoutTransactionHash': 'ACFF5E24733CD040504448A3A75F1CE32E90557E5FBA02E107624242F4FA251D',
 
-			'requestTimestamp': 1427591635,
+				'requestTimestamp': 1427591635,
 
-			'payoutTransactionHeight': 1122,
-			'payoutNetAmount': 1100,
-			'payoutTotalFee': 300,
-			'payoutConversionRate': 121,
+				'payoutTransactionHeight': 1122,
+				'payoutNetAmount': 1100,
+				'payoutTotalFee': 300,
+				'payoutConversionRate': 121,
 
-			'payoutTimestamp': 1667250470.333
-		}
-	] == response_json
+				'payoutTimestamp': 1667250470.333
+			}
+		] == response_json
 
-
-def test_can_query_wrap_requests_with_no_matches(client, database_directory):  # pylint: disable=redefined-outer-name
-	_assert_can_filter_by_address_empty(client, database_directory, '/wrap/requests/', False)
-
-
-def test_can_query_wrap_requests_by_address(client, database_directory):  # pylint: disable=redefined-outer-name
-	_assert_can_filter_by_address(client, database_directory, '/wrap/requests/', False)
+	loop = asyncio.get_running_loop()
+	await loop.run_in_executor(None, test_impl)
 
 
-def test_can_query_wrap_requests_by_address_and_transaction_hash(client, database_directory):  # pylint: disable=redefined-outer-name
-	_assert_can_filter_by_address_and_transaction_hash(client, database_directory, '/wrap/requests/', False)
+async def test_can_query_wrap_requests_with_no_matches(client, database_directory):  # pylint: disable=redefined-outer-name
+	await _assert_can_filter_by_address_empty(client, database_directory, '/wrap/requests/', False)
 
 
-def test_can_query_wrap_requests_with_custom_offset_and_limit(client, database_directory):  # pylint: disable=redefined-outer-name
-	_assert_can_filter_by_address_with_custom_offset_and_limit(client, database_directory, '/wrap/requests/', False)
+async def test_can_query_wrap_requests_by_address(client, database_directory):  # pylint: disable=redefined-outer-name
+	await _assert_can_filter_by_address(client, database_directory, '/wrap/requests/', False)
+
+
+async def test_can_query_wrap_requests_by_address_and_transaction_hash(client, database_directory):  # pylint: disable=redefined-outer-name
+	await _assert_can_filter_by_address_and_transaction_hash(client, database_directory, '/wrap/requests/', False)
+
+
+async def test_can_query_wrap_requests_with_custom_offset_and_limit(client, database_directory):  # pylint: disable=redefined-outer-name
+	await _assert_can_filter_by_address_with_custom_offset_and_limit(client, database_directory, '/wrap/requests/', False)
 
 # endregion
 
 
 # region /unwrap/requests
 
-def test_can_query_unwrap_requests_with_single_match(client, database_directory):  # pylint: disable=redefined-outer-name
-	# Arrange:
-	_seed_completed_request(database_directory, True)
+async def test_can_query_unwrap_requests_with_single_match(client, database_directory):  # pylint: disable=redefined-outer-name
+	def test_impl():
+		# Arrange:
+		_seed_completed_request(database_directory, True)
 
-	# Act:
-	response = client.get(f'/unwrap/requests/{SYMBOL_ADDRESSES[2]}')
-	response_json = json.loads(response.data)
+		# Act:
+		response = client.get(f'/unwrap/requests/{SYMBOL_ADDRESSES[2]}')
+		response_json = json.loads(response.data)
 
-	# Assert:
-	_assert_json_response_success(response)
-	assert [
-		{
-			'requestTransactionHeight': 333,
-			'requestTransactionHash': HASHES[2],
-			'requestTransactionSubindex': 0,
-			'senderAddress': SYMBOL_ADDRESSES[2],
+		# Assert:
+		_assert_json_response_success(response)
+		assert [
+			{
+				'requestTransactionHeight': 333,
+				'requestTransactionHash': HASHES[2],
+				'requestTransactionSubindex': 0,
+				'senderAddress': SYMBOL_ADDRESSES[2],
 
-			'requestAmount': 8889,
-			'destinationAddress': NEM_ADDRESSES[2],
-			'payoutStatus': 2,
-			'payoutTransactionHash': 'ACFF5E24733CD040504448A3A75F1CE32E90557E5FBA02E107624242F4FA251D',
+				'requestAmount': 8889,
+				'destinationAddress': NEM_ADDRESSES[2],
+				'payoutStatus': 2,
+				'payoutTransactionHash': 'ACFF5E24733CD040504448A3A75F1CE32E90557E5FBA02E107624242F4FA251D',
 
-			'requestTimestamp': 1667250471.05,
+				'requestTimestamp': 1667250471.05,
 
-			'payoutTransactionHeight': 1122,
-			'payoutNetAmount': 1100,
-			'payoutTotalFee': 300,
-			'payoutConversionRate': 121,
+				'payoutTransactionHeight': 1122,
+				'payoutNetAmount': 1100,
+				'payoutTotalFee': 300,
+				'payoutConversionRate': 121,
 
-			'payoutTimestamp': 1427590918
-		}
-	] == response_json
+				'payoutTimestamp': 1427590918
+			}
+		] == response_json
 
-
-def test_can_query_unwrap_requests_with_no_matches(client, database_directory):  # pylint: disable=redefined-outer-name
-	_assert_can_filter_by_address_empty(client, database_directory, '/unwrap/requests/', True)
-
-
-def test_can_query_unwrap_requests_by_address(client, database_directory):  # pylint: disable=redefined-outer-name
-	_assert_can_filter_by_address(client, database_directory, '/unwrap/requests/', True)
+	loop = asyncio.get_running_loop()
+	await loop.run_in_executor(None, test_impl)
 
 
-def test_can_query_unwrap_requests_by_address_and_transaction_hash(client, database_directory):  # pylint: disable=redefined-outer-name
-	_assert_can_filter_by_address_and_transaction_hash(client, database_directory, '/unwrap/requests/', True)
+async def test_can_query_unwrap_requests_with_no_matches(client, database_directory):  # pylint: disable=redefined-outer-name
+	await _assert_can_filter_by_address_empty(client, database_directory, '/unwrap/requests/', True)
 
 
-def test_can_query_unwrap_requests_with_custom_offset_and_limit(client, database_directory):  # pylint: disable=redefined-outer-name
-	_assert_can_filter_by_address_with_custom_offset_and_limit(client, database_directory, '/unwrap/requests/', True)
+async def test_can_query_unwrap_requests_by_address(client, database_directory):  # pylint: disable=redefined-outer-name
+	await _assert_can_filter_by_address(client, database_directory, '/unwrap/requests/', True)
+
+
+async def test_can_query_unwrap_requests_by_address_and_transaction_hash(client, database_directory):
+	# pylint: disable=redefined-outer-name
+	await _assert_can_filter_by_address_and_transaction_hash(client, database_directory, '/unwrap/requests/', True)
+
+
+async def test_can_query_unwrap_requests_with_custom_offset_and_limit(client, database_directory):  # pylint: disable=redefined-outer-name
+	await _assert_can_filter_by_address_with_custom_offset_and_limit(client, database_directory, '/unwrap/requests/', True)
 
 # endregion
 
 
 # region /wrap/errors
 
-def test_can_query_wrap_errors_with_single_match(client, database_directory):  # pylint: disable=redefined-outer-name
-	# Arrange:
-	_seed_simple_error(database_directory, False)
+async def test_can_query_wrap_errors_with_single_match(client, database_directory):  # pylint: disable=redefined-outer-name
+	def test_impl():
+		# Arrange:
+		_seed_simple_error(database_directory, False)
 
-	# Act:
-	response = client.get(f'/wrap/errors/{NEM_ADDRESSES[2]}')
-	response_json = json.loads(response.data)
+		# Act:
+		response = client.get(f'/wrap/errors/{NEM_ADDRESSES[2]}')
+		response_json = json.loads(response.data)
 
-	# Assert:
-	_assert_json_response_success(response)
-	assert [
-		{
-			'requestTransactionHeight': 333,
-			'requestTransactionHash': HASHES[2],
-			'requestTransactionSubindex': 0,
-			'senderAddress': NEM_ADDRESSES[2],
+		# Assert:
+		_assert_json_response_success(response)
+		assert [
+			{
+				'requestTransactionHeight': 333,
+				'requestTransactionHash': HASHES[2],
+				'requestTransactionSubindex': 0,
+				'senderAddress': NEM_ADDRESSES[2],
 
-			'errorMessage': 'error message',
+				'errorMessage': 'error message',
 
-			'requestTimestamp': 1427591635
-		}
-	] == response_json
+				'requestTimestamp': 1427591635
+			}
+		] == response_json
 
-
-def test_can_query_wrap_errors_with_no_matches(client, database_directory):  # pylint: disable=redefined-outer-name
-	_assert_can_filter_by_address_empty(client, database_directory, '/wrap/errors/', False)
-
-
-def test_can_query_wrap_errors_by_address(client, database_directory):  # pylint: disable=redefined-outer-name
-	_assert_can_filter_by_address(client, database_directory, '/wrap/errors/', False)
+	loop = asyncio.get_running_loop()
+	await loop.run_in_executor(None, test_impl)
 
 
-def test_can_query_wrap_errors_by_address_and_transaction_hash(client, database_directory):  # pylint: disable=redefined-outer-name
-	_assert_can_filter_by_address_and_transaction_hash(client, database_directory, '/wrap/errors/', False)
+async def test_can_query_wrap_errors_with_no_matches(client, database_directory):  # pylint: disable=redefined-outer-name
+	await _assert_can_filter_by_address_empty(client, database_directory, '/wrap/errors/', False)
 
 
-def test_can_query_wrap_errors_with_custom_offset_and_limit(client, database_directory):  # pylint: disable=redefined-outer-name
-	_assert_can_filter_by_address_with_custom_offset_and_limit(client, database_directory, '/wrap/errors/', False)
+async def test_can_query_wrap_errors_by_address(client, database_directory):  # pylint: disable=redefined-outer-name
+	await _assert_can_filter_by_address(client, database_directory, '/wrap/errors/', False)
+
+
+async def test_can_query_wrap_errors_by_address_and_transaction_hash(client, database_directory):  # pylint: disable=redefined-outer-name
+	await _assert_can_filter_by_address_and_transaction_hash(client, database_directory, '/wrap/errors/', False)
+
+
+async def test_can_query_wrap_errors_with_custom_offset_and_limit(client, database_directory):  # pylint: disable=redefined-outer-name
+	await _assert_can_filter_by_address_with_custom_offset_and_limit(client, database_directory, '/wrap/errors/', False)
 
 # endregion
 
 
 # region /unwrap/errors
 
-def test_can_query_unwrap_errors_with_single_match(client, database_directory):  # pylint: disable=redefined-outer-name
-	# Arrange:
-	_seed_simple_error(database_directory, True)
+async def test_can_query_unwrap_errors_with_single_match(client, database_directory):  # pylint: disable=redefined-outer-name
+	def test_impl():
+		# Arrange:
+		_seed_simple_error(database_directory, True)
 
-	# Act:
-	response = client.get(f'/unwrap/errors/{SYMBOL_ADDRESSES[2]}')
-	response_json = json.loads(response.data)
+		# Act:
+		response = client.get(f'/unwrap/errors/{SYMBOL_ADDRESSES[2]}')
+		response_json = json.loads(response.data)
 
-	# Assert:
-	_assert_json_response_success(response)
-	assert [
-		{
-			'requestTransactionHeight': 333,
-			'requestTransactionHash': HASHES[2],
-			'requestTransactionSubindex': 0,
-			'senderAddress': SYMBOL_ADDRESSES[2],
+		# Assert:
+		_assert_json_response_success(response)
+		assert [
+			{
+				'requestTransactionHeight': 333,
+				'requestTransactionHash': HASHES[2],
+				'requestTransactionSubindex': 0,
+				'senderAddress': SYMBOL_ADDRESSES[2],
 
-			'errorMessage': 'error message',
+				'errorMessage': 'error message',
 
-			'requestTimestamp': 1667250471.05
-		}
-	] == response_json
+				'requestTimestamp': 1667250471.05
+			}
+		] == response_json
 
-
-def test_can_query_unwrap_errors_with_no_matches(client, database_directory):  # pylint: disable=redefined-outer-name
-	_assert_can_filter_by_address_empty(client, database_directory, '/unwrap/errors/', True)
-
-
-def test_can_query_unwrap_errors_by_address(client, database_directory):  # pylint: disable=redefined-outer-name
-	_assert_can_filter_by_address(client, database_directory, '/unwrap/errors/', True)
+	loop = asyncio.get_running_loop()
+	await loop.run_in_executor(None, test_impl)
 
 
-def test_can_query_unwrap_errors_by_address_and_transaction_hash(client, database_directory):  # pylint: disable=redefined-outer-name
-	_assert_can_filter_by_address_and_transaction_hash(client, database_directory, '/unwrap/errors/', True)
+async def test_can_query_unwrap_errors_with_no_matches(client, database_directory):  # pylint: disable=redefined-outer-name
+	await _assert_can_filter_by_address_empty(client, database_directory, '/unwrap/errors/', True)
 
 
-def test_can_query_unwrap_errors_with_custom_offset_and_limit(client, database_directory):  # pylint: disable=redefined-outer-name
-	_assert_can_filter_by_address_with_custom_offset_and_limit(client, database_directory, '/unwrap/errors/', True)
+async def test_can_query_unwrap_errors_by_address(client, database_directory):  # pylint: disable=redefined-outer-name
+	await _assert_can_filter_by_address(client, database_directory, '/unwrap/errors/', True)
+
+
+async def test_can_query_unwrap_errors_by_address_and_transaction_hash(client, database_directory):  # pylint: disable=redefined-outer-name
+	await _assert_can_filter_by_address_and_transaction_hash(client, database_directory, '/unwrap/errors/', True)
+
+
+async def test_can_query_unwrap_errors_with_custom_offset_and_limit(client, database_directory):  # pylint: disable=redefined-outer-name
+	await _assert_can_filter_by_address_with_custom_offset_and_limit(client, database_directory, '/unwrap/errors/', True)
 
 # endregion
 
