@@ -13,12 +13,14 @@ class ValidatorsTest(unittest.TestCase):
 		# Act + Assert:
 		self.assertTrue(is_valid_address_string(network_facade, 'TB7GF436SYPM4UQF2YYI563QIETUO5NZR6EREKPI'))
 
+		self.assertFalse(is_valid_address_string(network_facade, None))
 		self.assertFalse(is_valid_address_string(network_facade, 'TB7GF436SYPM4UQF2YYI563QIETUO5NZR6EREKPZ'))
 
 	def test_is_valid_hash_string_returns_true_when_string_is_hash(self):
 		self.assertTrue(is_valid_hash_string(4 * '0123456789ABCDEF'))
 		self.assertTrue(is_valid_hash_string(32 * '00'))
 
+		self.assertFalse(is_valid_hash_string(None))
 		self.assertFalse(is_valid_hash_string(31 * '00'))  # too short
 		self.assertFalse(is_valid_hash_string(33 * '00'))  # too long
 		self.assertFalse(is_valid_hash_string(f'{15 * "00"}0G{16 * "01"}'))  # invalid character
@@ -29,4 +31,7 @@ class ValidatorsTest(unittest.TestCase):
 		self.assertTrue(is_valid_decimal_string('1'))
 		self.assertTrue(is_valid_decimal_string('0'))
 
+		self.assertTrue(is_valid_decimal_string(9012345678))  # allow native integer to pass validation too if it is parsed upstream
+
+		self.assertFalse(is_valid_decimal_string(None))
 		self.assertFalse(is_valid_decimal_string('12G45'))  # invalid character
