@@ -8,6 +8,7 @@ import { MnemonicKeystore } from './lib/keystore/MnemonicKeystore';
 import { StorageInterface } from './lib/storage/StorageInterface';
 // Modules
 import { AddressBookModule } from './lib/modules/AddressBookModule';
+import { LocalizationModule } from './lib/modules/LocalizationModule';
 import { MarketModule } from './lib/modules/MarketModule';
 // Utils
 import { createNetworkMap } from './utils/network';
@@ -38,6 +39,7 @@ export {
 	createNetworkMap,
 	constants,
 	AddressBookModule,
+	LocalizationModule,
 	MarketModule,
 
 	ApiError,

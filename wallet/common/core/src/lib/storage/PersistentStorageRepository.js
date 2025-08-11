@@ -23,7 +23,8 @@ export class PersistentStorageRepository {
 		ACCOUNT_INFOS: 'ACCOUNT_INFOS',
 		ADDRESS_BOOK: 'ADDRESS_BOOK',
 		USER_CURRENCY: 'USER_CURRENCY',
-		NETWORK_PROPERTIES: 'NETWORK_PROPERTIES'
+		NETWORK_PROPERTIES: 'NETWORK_PROPERTIES',
+		SELECTED_LANGUAGE: 'SELECTED_LANGUAGE'
 	};
 
 	/**
@@ -256,6 +257,23 @@ export class PersistentStorageRepository {
 	 */
 	setNetworkProperties = async payload => {
 		return this.storage.setItem(PersistentStorageRepository.STORAGE_KEYS.NETWORK_PROPERTIES, JSON.stringify(payload));
+	};
+
+	/**
+	 * Get the selected language.
+	 * @returns {Promise<string|null>} A promise that resolves to the selected language string or null if not set.
+	 */
+	getSelectedLanguage = async () => {
+		return this.storage.getItem(PersistentStorageRepository.STORAGE_KEYS.SELECTED_LANGUAGE);
+	};
+
+	/**
+	 * Set the selected language.
+	 * @param {string} payload - The selected language string to set.
+	 * @returns {Promise<void>} A promise that resolves when the selected language is set.
+	 */
+	setSelectedLanguage = async payload => {
+		return this.storage.setItem(PersistentStorageRepository.STORAGE_KEYS.SELECTED_LANGUAGE, payload);
 	};
 
 	/**
