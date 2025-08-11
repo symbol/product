@@ -26,18 +26,18 @@ class ConversionRateCalculator:
 		"""Creates a conversion rate calculator."""
 
 		if native_balance:
-			self._native_balance = Decimal(native_balance)
-			self._wrapped_balance = Decimal(wrapped_balance)
-			self._unwrapped_balance = Decimal(unwrapped_balance)
+			self.native_balance = Decimal(native_balance)
+			self.wrapped_balance = Decimal(wrapped_balance)
+			self.unwrapped_balance = Decimal(unwrapped_balance)
 		else:
-			self._native_balance = 1
-			self._wrapped_balance = 1
-			self._unwrapped_balance = 0
+			self.native_balance = 1
+			self.wrapped_balance = 1
+			self.unwrapped_balance = 0
 
 	def conversion_rate(self):
 		"""Gets the conversion rate."""
 
-		return (Decimal(self._wrapped_balance) - Decimal(self._unwrapped_balance)) / Decimal(self._native_balance)
+		return (Decimal(self.wrapped_balance) - Decimal(self.unwrapped_balance)) / Decimal(self.native_balance)
 
 	def to_wrapped_amount(self, amount):
 		"""Calculates the number of wrapped tokens corresponding to specified number of native tokens."""

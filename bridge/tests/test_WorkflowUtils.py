@@ -72,6 +72,7 @@ async def test_calculate_search_range_returns_correct_range_with_start_height_an
 
 # region ConversionRateCalculator
 
+
 def _assert_conversion_rate_calculator_unity(native_balance, wrapped_balance, unwrapped_balance):
 	# Arrange:
 	calculator = ConversionRateCalculator(native_balance, wrapped_balance, unwrapped_balance)
@@ -80,6 +81,10 @@ def _assert_conversion_rate_calculator_unity(native_balance, wrapped_balance, un
 	assert Decimal(1) == calculator.conversion_rate()
 	assert 1000 == calculator.to_native_amount(1000)
 	assert 1000 == calculator.to_wrapped_amount(1000)
+
+	assert native_balance == calculator.native_balance
+	assert wrapped_balance == calculator.wrapped_balance
+	assert unwrapped_balance == calculator.unwrapped_balance
 
 
 def test_conversion_rate_calculator_works_with_unity():
@@ -103,6 +108,10 @@ def _assert_conversion_rate_calculator_wrap_premium(native_balance, wrapped_bala
 	assert 1200 == calculator.to_native_amount(1000)
 	assert 1000 == calculator.to_wrapped_amount(1200)
 
+	assert native_balance == calculator.native_balance
+	assert wrapped_balance == calculator.wrapped_balance
+	assert unwrapped_balance == calculator.unwrapped_balance
+
 
 def test_conversion_rate_calculator_works_with_wrap_premium():
 	_assert_conversion_rate_calculator_wrap_premium(12000, 12000, 2000)
@@ -125,6 +134,10 @@ def _assert_conversion_rate_calculator_wrap_discount(native_balance, wrapped_bal
 	assert 1000 == calculator.to_native_amount(1200)
 	assert 1200 == calculator.to_wrapped_amount(1000)
 
+	assert native_balance == calculator.native_balance
+	assert wrapped_balance == calculator.wrapped_balance
+	assert unwrapped_balance == calculator.unwrapped_balance
+
 
 def test_conversion_rate_calculator_works_with_wrap_discount():
 	_assert_conversion_rate_calculator_wrap_discount(10000, 14000, 2000)
@@ -139,6 +152,16 @@ def test_conversion_rate_calculator_works_with_wrap_discount_simulate_unwrap():
 
 
 def test_conversion_rate_calculator_with_zero_native_balance_is_treated_as_unity():
-	_assert_conversion_rate_calculator_unity(0, 0, 0)
+	# Arrange:
+	calculator = ConversionRateCalculator(0, 0, 0)
+
+	# Assert: wrapped token is equally valuable as native token
+	assert Decimal(1) == calculator.conversion_rate()
+	assert 1000 == calculator.to_native_amount(1000)
+	assert 1000 == calculator.to_wrapped_amount(1000)
+
+	assert 1 == calculator.native_balance
+	assert 1 == calculator.wrapped_balance
+	assert 0 == calculator.unwrapped_balance
 
 # endregion

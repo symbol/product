@@ -34,9 +34,7 @@ class ConversionRateCalculatorFactory:
 		amount = self._databases.unwrap_request.sum_payout_transaction_amounts(filtered_transaction_hashes)
 		return amount
 
-	def try_create_calculator(self, height):
-		"""Tries to create a conversion rate calculator at a specified height."""
-
+	def _try_create_calculator(self, height):
 		native_height = height
 		if self._is_unwrap_mode:
 			# height is from wrapped blockchain: (1) get wrapped block timestamp, (2) find last native block prior to timestamp
@@ -60,7 +58,40 @@ class ConversionRateCalculatorFactory:
 		wrapped_balance = self._lookup_wrapped_balance(timestamp)
 		unwrapped_balance = self._lookup_unwrapped_balance(native_height, timestamp)
 
-		print(f'height {height}: native_balance {native_balance}, wrapped_balance {wrapped_balance}, unwrapped_balance {unwrapped_balance}')
+		return ConversionRateCalculator(native_balance, wrapped_balance, unwrapped_balance)
 
-		calculator = ConversionRateCalculator(native_balance, wrapped_balance, unwrapped_balance)
+	def try_create_calculator(self, height):
+		"""Tries to create a conversion rate calculator at a specified height."""
+
+		calculator = self._try_create_calculator(height)
+		if not calculator:
+			return None
+
+		print(''.join([
+			f'height {height}:',
+			f' native_balance {calculator.native_balance},',
+			f' wrapped_balance {calculator.wrapped_balance},',
+			f' unwrapped_balance {calculator.unwrapped_balance}'
+		]))
+
 		return calculator.to_native_amount if self._is_unwrap_mode else calculator.to_wrapped_amount
+
+	def create_best_calculator(self):
+		"""Creates a conversion rate calculator based on latest information."""
+
+		if self._is_unwrap_mode:
+			max_processed_height = self._databases.unwrap_request.max_processed_height()
+		else:
+			max_processed_height = self._databases.wrap_request.max_processed_height()
+
+		while max_processed_height:
+			calculator = self._try_create_calculator(max_processed_height)
+			if calculator:
+				calculator.height = max_processed_height
+				return calculator
+
+			max_processed_height -= 1
+
+		calculator = ConversionRateCalculator(0, 0, 0)
+		calculator.height = 0
+		return calculator
