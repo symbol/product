@@ -71,6 +71,10 @@ def create_app():
 	def api_nem_height():  # pylint: disable=unused-variable
 		return jsonify(nem_routes_facade.json_height())
 
+	@app.route('/api/nem/nodes/count')
+	def api_nem_time_series_nodes_count():  # pylint: disable=unused-variable
+		return jsonify(nem_routes_facade.json_time_series_nodes_count())
+
 	@app.route('/symbol/voters')
 	def symbol_voters():  # pylint: disable=unused-variable
 		template_name, context = symbol_routes_facade.html_voters()
