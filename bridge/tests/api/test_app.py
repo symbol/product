@@ -162,6 +162,11 @@ def _assert_json_response_success(response):
 	assert 200 == response.status_code
 	assert 'application/json' == response.headers['Content-Type']
 
+
+def _assert_json_response_bad_request(response):
+	assert 400 == response.status_code
+	assert 'application/json' == response.headers['Content-Type']
+
 # endregion
 
 
@@ -194,6 +199,45 @@ def test_root(client, nem_server, symbol_server):  # pylint: disable=redefined-o
 		},
 		'enabled': True
 	} == response_json
+
+# endregion
+
+
+# region shared validation tests
+
+async def _assert_is_bad_request_get(client, path, expected_response_json):  # pylint: disable=redefined-outer-name
+	def test_impl():
+		# Act:
+		response = client.get(path)
+		response_json = json.loads(response.data)
+
+		# Assert:
+		_assert_json_response_bad_request(response)
+		assert expected_response_json == response_json
+
+	loop = asyncio.get_running_loop()
+	await loop.run_in_executor(None, test_impl)
+
+
+async def _assert_filtering_route_validates_parameters(client, database_directory, is_unwrap, base_path):
+	# pylint: disable=redefined-outer-name
+	# Arrange:
+	_seed_multiple_requests(database_directory, is_unwrap)
+
+	# Act + Assert:
+	sample_address = (SYMBOL_ADDRESSES if is_unwrap else NEM_ADDRESSES)[2]
+	await _assert_is_bad_request_get(client, f'{base_path}/{sample_address[:-1]}', {
+		'error': 'address parameter is invalid'
+	})
+	await _assert_is_bad_request_get(client, f'{base_path}/{sample_address}/{HASHES[0][:-1]}', {
+		'error': 'transaction_hash parameter is invalid'
+	})
+	await _assert_is_bad_request_get(client, f'{base_path}/{sample_address}?offset=s&limit=7', {
+		'error': 'offset parameter is invalid'
+	})
+	await _assert_is_bad_request_get(client, f'{base_path}/{sample_address}?offset=5&limit=s', {
+		'error': 'limit parameter is invalid'
+	})
 
 # endregion
 
@@ -281,6 +325,10 @@ async def _assert_can_filter_by_address_with_custom_offset_and_limit(client, dat
 
 # region /wrap/requests
 
+async def test_wrap_requests_returns_bad_request_for_invalid_parameters(client, database_directory):  # pylint: disable=redefined-outer-name
+	await _assert_filtering_route_validates_parameters(client, database_directory, False, '/wrap/requests')
+
+
 async def test_can_query_wrap_requests_with_single_match(client, database_directory):  # pylint: disable=redefined-outer-name
 	def test_impl():
 		# Arrange:
@@ -338,6 +386,11 @@ async def test_can_query_wrap_requests_with_custom_offset_and_limit(client, data
 
 
 # region /unwrap/requests
+
+async def test_unwrap_requests_returns_bad_request_for_invalid_parameters(client, database_directory):
+	# pylint: disable=redefined-outer-name
+	await _assert_filtering_route_validates_parameters(client, database_directory, True, '/unwrap/requests')
+
 
 async def test_can_query_unwrap_requests_with_single_match(client, database_directory):  # pylint: disable=redefined-outer-name
 	def test_impl():
@@ -398,6 +451,10 @@ async def test_can_query_unwrap_requests_with_custom_offset_and_limit(client, da
 
 # region /wrap/errors
 
+async def test_wrap_errors_returns_bad_request_for_invalid_parameters(client, database_directory):  # pylint: disable=redefined-outer-name
+	await _assert_filtering_route_validates_parameters(client, database_directory, False, '/wrap/errors')
+
+
 async def test_can_query_wrap_errors_with_single_match(client, database_directory):  # pylint: disable=redefined-outer-name
 	def test_impl():
 		# Arrange:
@@ -445,6 +502,10 @@ async def test_can_query_wrap_errors_with_custom_offset_and_limit(client, databa
 
 
 # region /unwrap/errors
+
+async def test_unwrap_errors_returns_bad_request_for_invalid_parameters(client, database_directory):  # pylint: disable=redefined-outer-name
+	await _assert_filtering_route_validates_parameters(client, database_directory, True, '/unwrap/errors')
+
 
 async def test_can_query_unwrap_errors_with_single_match(client, database_directory):  # pylint: disable=redefined-outer-name
 	def test_impl():

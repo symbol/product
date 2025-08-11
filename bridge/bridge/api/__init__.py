@@ -1,5 +1,6 @@
 import asyncio
 import configparser
+from collections import namedtuple
 from decimal import Decimal
 from pathlib import Path
 
@@ -12,6 +13,9 @@ from ..db.Databases import Databases
 from ..models.BridgeConfiguration import parse_bridge_configuration
 from ..NetworkFacadeLoader import load_network_facade
 from ..NetworkUtils import BalanceTransfer, estimate_balance_transfer_fees
+from .Validators import is_valid_address_string, is_valid_decimal_string, is_valid_hash_string
+
+FilterOptions = namedtuple('FilterOptions', ['address', 'transaction_hash', 'offset', 'limit'])
 
 # region handler implementations
 
@@ -26,16 +30,41 @@ def _network_config_to_dict(config):
 	}
 
 
-def _handle_wrap_requests(address, transaction_hash, database_params, database_name):
-	offset = request.args.get('offset', 0)
-	limit = request.args.get('limit', 25)
+def _parse_filter_parameters(network_facade, address, transaction_hash):
+	offset = request.args.get('offset', '0')
+	limit = request.args.get('limit', '25')
+
+	if not is_valid_address_string(network_facade, address):
+		return (None, 'address')
+
+	address = network_facade.make_address(address)
+
+	if transaction_hash:
+		if not is_valid_hash_string(transaction_hash):
+			return (None, 'transaction_hash')
+
+		transaction_hash = Hash256(transaction_hash)
+
+	if not is_valid_decimal_string(offset):
+		return (None, 'offset')
+
+	offset = int(offset)
+
+	if not is_valid_decimal_string(limit):
+		return (None, 'limit')
+
+	limit = int(limit)
+
+	return (FilterOptions(address, transaction_hash, offset, limit), None)
+
+
+def _handle_wrap_requests(network_facade, address, transaction_hash, database_params, database_name):
+	(filter_options, parse_failure_identifier) = _parse_filter_parameters(network_facade, address, transaction_hash)
+	if parse_failure_identifier:
+		return jsonify({'error': f'{parse_failure_identifier} parameter is invalid'}), 400
 
 	with Databases(*database_params) as databases:
-		views = getattr(databases, database_name).find_requests(
-			address,
-			Hash256(transaction_hash) if transaction_hash else None,
-			offset,
-			limit)
+		views = getattr(databases, database_name).find_requests(*filter_options)
 		return jsonify([
 			{
 				'requestTransactionHeight': view.request_transaction_height,
@@ -60,16 +89,13 @@ def _handle_wrap_requests(address, transaction_hash, database_params, database_n
 		])
 
 
-def _handle_wrap_errors(address, transaction_hash, database_params, database_name):
-	offset = request.args.get('offset', 0)
-	limit = request.args.get('limit', 25)
+def _handle_wrap_errors(network_facade, address, transaction_hash, database_params, database_name):
+	(filter_options, parse_failure_identifier) = _parse_filter_parameters(network_facade, address, transaction_hash)
+	if parse_failure_identifier:
+		return jsonify({'error': f'{parse_failure_identifier} parameter is invalid'}), 400
 
 	with Databases(*database_params) as databases:
-		views = getattr(databases, database_name).find_errors(
-			address,
-			Hash256(transaction_hash) if transaction_hash else None,
-			offset,
-			limit)
+		views = getattr(databases, database_name).find_errors(*filter_options)
 		return jsonify([
 			{
 				'requestTransactionHeight': view.request_transaction_height,
@@ -173,32 +199,28 @@ def create_app():
 	async def wrap_requests(address, transaction_hash=None):  # pylint: disable=unused-variable
 		await context.load()
 
-		typed_address = context.native_facade.make_address(address)
-		return _handle_wrap_requests(typed_address, transaction_hash, context.database_params, 'wrap_request')
+		return _handle_wrap_requests(context.native_facade, address, transaction_hash, context.database_params, 'wrap_request')
 
 	@app.route('/unwrap/requests/<address>')
 	@app.route('/unwrap/requests/<address>/<transaction_hash>')
 	async def unwrap_requests(address, transaction_hash=None):  # pylint: disable=unused-variable
 		await context.load()
 
-		typed_address = context.wrapped_facade.make_address(address)
-		return _handle_wrap_requests(typed_address, transaction_hash, context.database_params, 'unwrap_request')
+		return _handle_wrap_requests(context.wrapped_facade, address, transaction_hash, context.database_params, 'unwrap_request')
 
 	@app.route('/wrap/errors/<address>')
 	@app.route('/wrap/errors/<address>/<transaction_hash>')
 	async def wrap_errors(address, transaction_hash=None):  # pylint: disable=unused-variable
 		await context.load()
 
-		typed_address = context.native_facade.make_address(address)
-		return _handle_wrap_errors(typed_address, transaction_hash, context.database_params, 'wrap_request')
+		return _handle_wrap_errors(context.native_facade, address, transaction_hash, context.database_params, 'wrap_request')
 
 	@app.route('/unwrap/errors/<address>')
 	@app.route('/unwrap/errors/<address>/<transaction_hash>')
 	async def unwrap_errors(address, transaction_hash=None):  # pylint: disable=unused-variable
 		await context.load()
 
-		typed_address = context.wrapped_facade.make_address(address)
-		return _handle_wrap_errors(typed_address, transaction_hash, context.database_params, 'unwrap_request')
+		return _handle_wrap_errors(context.wrapped_facade, address, transaction_hash, context.database_params, 'unwrap_request')
 
 	@app.route('/wrap/prepare', methods=['POST'])
 	async def wrap_prepare():
