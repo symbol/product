@@ -219,6 +219,20 @@ async def _assert_is_bad_request_get(client, path, expected_response_json):  # p
 	await loop.run_in_executor(None, test_impl)
 
 
+async def _assert_is_bad_request_post(client, path, request_json, expected_response_json):  # pylint: disable=redefined-outer-name
+	def test_impl():
+		# Act:
+		response = client.post(path, json=request_json)
+		response_json = json.loads(response.data)
+
+		# Assert:
+		_assert_json_response_bad_request(response)
+		assert expected_response_json == response_json
+
+	loop = asyncio.get_running_loop()
+	await loop.run_in_executor(None, test_impl)
+
+
 async def _assert_filtering_route_validates_parameters(client, database_directory, is_unwrap, base_path):
 	# pylint: disable=redefined-outer-name
 	# Arrange:
@@ -237,6 +251,19 @@ async def _assert_filtering_route_validates_parameters(client, database_director
 	})
 	await _assert_is_bad_request_get(client, f'{base_path}/{sample_address}?offset=5&limit=s', {
 		'error': 'limit parameter is invalid'
+	})
+
+
+async def _assert_prepare_route_validates_parameters(client, database_directory, base_path):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	_seed_database_for_prepare_tests(database_directory)
+
+	# Act + Assert:
+	await _assert_is_bad_request_post(client, base_path, {}, {
+		'error': 'amount parameter is invalid'
+	})
+	await _assert_is_bad_request_post(client, base_path, {'amount': 's'}, {
+		'error': 'amount parameter is invalid'
 	})
 
 # endregion
@@ -553,7 +580,11 @@ async def test_can_query_unwrap_errors_with_custom_offset_and_limit(client, data
 # endregion
 
 
-# region wrap_prepare
+# region /wrap/prepare
+
+async def test_prepare_wrap_returns_bad_request_for_invalid_parameters(client, database_directory):  # pylint: disable=redefined-outer-name
+	await _assert_prepare_route_validates_parameters(client, database_directory, '/wrap/prepare')
+
 
 async def test_can_prepare_wrap(client, database_directory):  # pylint: disable=redefined-outer-name
 	def test_impl():
@@ -561,10 +592,7 @@ async def test_can_prepare_wrap(client, database_directory):  # pylint: disable=
 		_seed_database_for_prepare_tests(database_directory)
 
 		# Act:
-		response = client.post('/wrap/prepare', json={
-			'amount': 1234000000,
-			'recipientAddress': 'TCYIHED7HZQ3IPBY5WRDPDLV5CCMMOOVSOMSPD6B'
-		})
+		response = client.post('/wrap/prepare', json={'amount': 1234000000})
 		response_json = json.loads(response.data)
 
 		# Assert:
@@ -590,7 +618,12 @@ async def test_can_prepare_wrap(client, database_directory):  # pylint: disable=
 # endregion
 
 
-# region unwrap_prepare
+# region /unwrap/prepare
+
+async def test_prepare_unwrap_returns_bad_request_for_invalid_parameters(client, database_directory):
+	# pylint: disable=redefined-outer-name
+	await _assert_prepare_route_validates_parameters(client, database_directory, '/unwrap/prepare')
+
 
 async def test_can_prepare_unwrap(client, database_directory):  # pylint: disable=redefined-outer-name
 	def test_impl():
@@ -598,10 +631,7 @@ async def test_can_prepare_unwrap(client, database_directory):  # pylint: disabl
 		_seed_database_for_prepare_tests(database_directory)
 
 		# Act:
-		response = client.post('/unwrap/prepare', json={
-			'amount': 1234000000,
-			'recipientAddress': 'TCKRDEYTT4ORA5WQD7S64CZFFLQBPEK4RBJMCWQ'
-		})
+		response = client.post('/unwrap/prepare', json={'amount': 1234000000})
 		response_json = json.loads(response.data)
 
 		# Assert:

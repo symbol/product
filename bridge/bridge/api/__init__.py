@@ -58,10 +58,14 @@ def _parse_filter_parameters(network_facade, address, transaction_hash):
 	return (FilterOptions(address, transaction_hash, offset, limit), None)
 
 
+def _make_bad_request_response(parse_failure_identifier):
+	return jsonify({'error': f'{parse_failure_identifier} parameter is invalid'}), 400
+
+
 def _handle_wrap_requests(network_facade, address, transaction_hash, database_params, database_name):
 	(filter_options, parse_failure_identifier) = _parse_filter_parameters(network_facade, address, transaction_hash)
 	if parse_failure_identifier:
-		return jsonify({'error': f'{parse_failure_identifier} parameter is invalid'}), 400
+		return _make_bad_request_response(parse_failure_identifier)
 
 	with Databases(*database_params) as databases:
 		views = getattr(databases, database_name).find_requests(*filter_options)
@@ -92,7 +96,7 @@ def _handle_wrap_requests(network_facade, address, transaction_hash, database_pa
 def _handle_wrap_errors(network_facade, address, transaction_hash, database_params, database_name):
 	(filter_options, parse_failure_identifier) = _parse_filter_parameters(network_facade, address, transaction_hash)
 	if parse_failure_identifier:
-		return jsonify({'error': f'{parse_failure_identifier} parameter is invalid'}), 400
+		return _make_bad_request_response(parse_failure_identifier)
 
 	with Databases(*database_params) as databases:
 		views = getattr(databases, database_name).find_errors(*filter_options)
@@ -112,18 +116,22 @@ def _handle_wrap_errors(network_facade, address, transaction_hash, database_para
 
 async def _handle_wrap_prepare(network_facade, database_params, native_mosaic_id, fee_multiplier):
 	request_json = request.get_json()
-	amount = int(request_json['amount'])
-	recipient_address = network_facade.make_address(request_json['recipientAddress'])
+
+	request_amount = request_json.get('amount', None)
+	if not is_valid_decimal_string(request_amount):
+		return _make_bad_request_response('amount')
+
+	request_amount = int(request_amount)
 
 	is_unwrap = fee_multiplier is None
 	with Databases(*database_params) as databases:
 		conversion_rate_calculator_factory = ConversionRateCalculatorFactory(databases, native_mosaic_id.formatted, is_unwrap)
 		calculator = conversion_rate_calculator_factory.create_best_calculator()
-		gross_amount = (calculator.to_native_amount if is_unwrap else calculator.to_wrapped_amount)(amount)
+		gross_amount = (calculator.to_native_amount if is_unwrap else calculator.to_wrapped_amount)(request_amount)
 
 		balance_transfer = BalanceTransfer(
 			network_facade.make_public_key(network_facade.config.extensions['signer_public_key']),
-			recipient_address,
+			network_facade.bridge_address,
 			gross_amount,
 			None)
 		fee_information = await estimate_balance_transfer_fees(network_facade, balance_transfer, fee_multiplier or Decimal('1'))
