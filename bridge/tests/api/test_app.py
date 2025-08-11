@@ -170,7 +170,7 @@ def _assert_json_response_success(response):
 
 # region root (/)
 
-def test_root(client):  # pylint: disable=redefined-outer-name
+def test_root(client, nem_server, symbol_server):  # pylint: disable=redefined-outer-name
 	# Act:
 	response = client.get('/')
 	response_json = json.loads(response.data)
@@ -182,14 +182,17 @@ def test_root(client):  # pylint: disable=redefined-outer-name
 			'blockchain': 'nem',
 			'network': 'testnet',
 			'bridgeAddress': 'TBINJOHFNWMNUOJ2KW3DWJTLRVNAOGQCE6FECSQJ',
-			'tokenId': 'nem:xem'
+			'tokenId': 'nem:xem',
+			'defaultNodeUrl': str(nem_server.make_url(''))
 		},
 		'wrapped_network': {
 			'blockchain': 'symbol',
 			'network': 'testnet',
 			'bridgeAddress': 'TCRZANFBD6O6EGYCBAH6ICTLAMH6OGBV6CEH7UY',
-			'tokenId': 'id:5D6CFC64A20E86E6'
-		}
+			'tokenId': 'id:5D6CFC64A20E86E6',
+			'defaultNodeUrl': str(symbol_server.make_url(''))
+		},
+		'enabled': True
 	} == response_json
 
 # endregion
