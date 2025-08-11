@@ -114,7 +114,6 @@
 	"field_sink": "Sink",
 	"field_targetMosaic": "Target Mosaic",
 	"field_targetAccount": "Target Account",
-
 	"field_mosaic_names_description": "Names or namespaces are human-readable text strings that can be used in place of an mosaic ID",
 	"field_mosaic_namespace_description": "Linked namespace name",
 	"field_supply_description": "The number of mosaics that currently exists",
@@ -125,7 +124,6 @@
 	"field_levyMosaic_description": "Mosaic that used as a levy",
 	"field_levyRecipient_description": "This levy is sent to an account",
 	"field_namespaceExpiration_description": "The number of confirmed blocks the namespace is available",
-
 	"field_balance": "Balance",
 	"field_address": "Address",
 	"field_account_names": "Names",
@@ -143,7 +141,6 @@
 	"chart_name_importance_breakdown": "Top 10 Account\nImportance Breakdown",
 	"chart_name_harvesting_importance": "Total Harvesting\nAccount Importance",
 	"chart_name_total_harvesting": "Total Harvesting\nAccounts",
-
 	"filter_latest": "Latest",
 	"filter_activeHarvesting": "Active Harvesting",
 	"filter_service": "Service",
@@ -156,7 +153,6 @@
 	"filter_perDay": "Per Day",
 	"filter_perMonth": "Per Month",
 	"filter_block": "Block",
-
 	"menu_home": "Home",
 	"menu_blocks": "Blocks",
 	"menu_accounts": "Accounts",
@@ -266,7 +262,6 @@
 	"transactionType_MULTISIG_ACCOUNT_MODIFICATION": "Multisig Account Modification",
 	"transactionType_ACCOUNT_KEY_LINK": "Account Key Link",
 	"transactionType_MULTISIG": "Multisig",
-
 	"value_averageFee": "{{value}} XEM",
 	"value_blockGenerationTime": "{{value}} seconds",
 	"value_expiration": "In {{value}} blocks",
@@ -295,7 +290,6 @@
 	"label_none": "None",
 	"label_active": "Active",
 	"label_expired": "Expired",
-
 	"footer_title_section_1": "Resources",
 	"footer_title_section_2": "Products",
 	"footer_link_techRef": "Technical Reference",

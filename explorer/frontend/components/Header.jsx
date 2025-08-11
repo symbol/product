@@ -74,8 +74,8 @@ const Header = ({ backendStatus }) => {
 			label: '日本語'
 		},
 		{
-			value: 'uk',
-			label: 'Українська'
+			value: 'isv',
+			label: 'Medžuslovjansky'
 		}
 	];
 	const currencies = [
