@@ -14,7 +14,6 @@ class ConversionRateCalculatorFactory:
 		# when calculating rate at height H, timestamp T, use sums from height H-1, timestamp T-1
 		# only the lookups for the network corresponding to `height` should be adjusted
 		self._native_adjustment = 0 if self._is_unwrap_mode else -1
-		self._wrapped_adjustment = -1 if self._is_unwrap_mode else 0
 
 	def _lookup_native_balance(self, native_height):
 		return self._databases.balance_change.balance_at(native_height + self._native_adjustment, self._mosaic_id)
@@ -27,7 +26,7 @@ class ConversionRateCalculatorFactory:
 		))
 
 	def _lookup_unwrapped_balance(self, native_height, timestamp):
-		transaction_hashes = list(self._databases.unwrap_request.payout_transaction_hashes_at(timestamp + self._wrapped_adjustment))
+		transaction_hashes = list(self._databases.unwrap_request.payout_transaction_hashes_at(timestamp))
 		filtered_transaction_hashes = list(self._databases.balance_change.filter_transactions_if_present(
 			native_height + self._native_adjustment,
 			self._mosaic_id,
