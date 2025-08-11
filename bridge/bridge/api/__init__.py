@@ -1,3 +1,4 @@
+import asyncio
 import configparser
 from decimal import Decimal
 from pathlib import Path
@@ -11,6 +12,8 @@ from ..db.Databases import Databases
 from ..models.BridgeConfiguration import parse_bridge_configuration
 from ..NetworkFacadeLoader import load_network_facade
 from ..NetworkUtils import BalanceTransfer, estimate_balance_transfer_fees
+
+# region handler implementations
 
 
 def _network_config_to_dict(config):
@@ -113,21 +116,48 @@ async def _handle_wrap_prepare(network_facade, database_params, native_mosaic_id
 			}
 		})
 
+# endregion
 
-async def create_app():
+
+# region BridgeContext
+
+class BridgeContext:
+	def __init__(self, config):
+		self._config = config
+		self._semaphore = asyncio.Semaphore(1)
+		self._is_loaded = False
+
+		self.native_facade = None
+		self.wrapped_facade = None
+		self.database_params = None
+		self.native_mosaic_id = None
+
+	async def load(self):
+		if not self._is_loaded:
+			async with self._semaphore:
+				if not self._is_loaded:
+					await self._load()
+
+	async def _load(self):
+		self.native_facade = await load_network_facade(self._config.native_network)
+		self.wrapped_facade = await load_network_facade(self._config.wrapped_network)
+		self.database_params = [self._config.machine.database_directory, self.native_facade, self.wrapped_facade, True]
+		self.native_mosaic_id = self.native_facade.extract_mosaic_id()
+
+		self._is_loaded = True
+
+# endregion
+
+
+def create_app():
 	app = Flask(__name__)
 	app.config.from_envvar('BRIDGE_API_SETTINGS')
 
 	config_path = Path(app.config.get('CONFIG_PATH'))
-
 	config = parse_bridge_configuration(config_path)
-	native_facade = await load_network_facade(config.native_network)
-	wrapped_facade = await load_network_facade(config.wrapped_network)
+	context = BridgeContext(config)
 
 	price_oracle = CoinGeckoConnector(config.price_oracle.url)
-	database_params = [config.machine.database_directory, native_facade, wrapped_facade, True]
-
-	native_mosaic_id = native_facade.extract_mosaic_id()
 
 	@app.route('/')
 	def root():  # pylint: disable=unused-variable
@@ -138,32 +168,54 @@ async def create_app():
 
 	@app.route('/wrap/requests/<address>')
 	@app.route('/wrap/requests/<address>/<transaction_hash>')
-	def wrap_requests(address, transaction_hash=None):  # pylint: disable=unused-variable
-		return _handle_wrap_requests(native_facade.make_address(address), transaction_hash, database_params, 'wrap_request')
+	async def wrap_requests(address, transaction_hash=None):  # pylint: disable=unused-variable
+		await context.load()
+
+		typed_address = context.native_facade.make_address(address)
+		return _handle_wrap_requests(typed_address, transaction_hash, context.database_params, 'wrap_request')
 
 	@app.route('/unwrap/requests/<address>')
 	@app.route('/unwrap/requests/<address>/<transaction_hash>')
-	def unwrap_requests(address, transaction_hash=None):  # pylint: disable=unused-variable
-		return _handle_wrap_requests(wrapped_facade.make_address(address), transaction_hash, database_params, 'unwrap_request')
+	async def unwrap_requests(address, transaction_hash=None):  # pylint: disable=unused-variable
+		await context.load()
+
+		typed_address = context.wrapped_facade.make_address(address)
+		return _handle_wrap_requests(typed_address, transaction_hash, context.database_params, 'unwrap_request')
 
 	@app.route('/wrap/errors/<address>')
 	@app.route('/wrap/errors/<address>/<transaction_hash>')
-	def wrap_errors(address, transaction_hash=None):  # pylint: disable=unused-variable
-		return _handle_wrap_errors(native_facade.make_address(address), transaction_hash, database_params, 'wrap_request')
+	async def wrap_errors(address, transaction_hash=None):  # pylint: disable=unused-variable
+		await context.load()
+
+		typed_address = context.native_facade.make_address(address)
+		return _handle_wrap_errors(typed_address, transaction_hash, context.database_params, 'wrap_request')
 
 	@app.route('/unwrap/errors/<address>')
 	@app.route('/unwrap/errors/<address>/<transaction_hash>')
-	def unwrap_errors(address, transaction_hash=None):  # pylint: disable=unused-variable
-		return _handle_wrap_errors(wrapped_facade.make_address(address), transaction_hash, database_params, 'unwrap_request')
+	async def unwrap_errors(address, transaction_hash=None):  # pylint: disable=unused-variable
+		await context.load()
+
+		typed_address = context.wrapped_facade.make_address(address)
+		return _handle_wrap_errors(typed_address, transaction_hash, context.database_params, 'unwrap_request')
 
 	@app.route('/wrap/prepare', methods=['POST'])
 	async def wrap_prepare():
-		unit_multiplier = Decimal(native_facade.config.extensions.get('unit_multiplier', '1'))
-		fee_multiplier = await price_oracle.conversion_rate(wrapped_facade.config.blockchain, native_facade.config.blockchain)
-		return await _handle_wrap_prepare(native_facade, database_params, native_mosaic_id, fee_multiplier * unit_multiplier)
+		await context.load()
+
+		unit_multiplier = Decimal(context.native_facade.config.extensions.get('unit_multiplier', '1'))
+		fee_multiplier = await price_oracle.conversion_rate(
+			context.wrapped_facade.config.blockchain,
+			context.native_facade.config.blockchain)
+		return await _handle_wrap_prepare(
+			context.native_facade,
+			context.database_params,
+			context.native_mosaic_id,
+			fee_multiplier * unit_multiplier)
 
 	@app.route('/unwrap/prepare', methods=['POST'])
 	async def unwrap_prepare():
-		return await _handle_wrap_prepare(wrapped_facade, database_params, native_mosaic_id, None)
+		await context.load()
+
+		return await _handle_wrap_prepare(context.wrapped_facade, context.database_params, context.native_mosaic_id, None)
 
 	return app
