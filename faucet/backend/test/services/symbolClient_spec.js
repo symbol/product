@@ -2,7 +2,7 @@ import { config } from '../../src/config/index.js';
 import createSymbolClient from '../../src/services/symbolClient.js';
 import testConfigurationFactory from '../testConfigurationFactory.js';
 import MockAdapter from 'axios-mock-adapter';
-import chai from 'chai';
+import * as chai from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 
 chai.use(chaiAsPromised);

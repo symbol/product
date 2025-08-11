@@ -1,6 +1,6 @@
 import symbolFacade from '../../src/facade/symbolFacade.js';
 import testConfigurationFactory from '../testConfigurationFactory.js';
-import chai from 'chai';
+import * as chai from 'chai';
 import { restore, stub } from 'sinon';
 import sinonChai from 'sinon-chai';
 
