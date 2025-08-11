@@ -1,4 +1,6 @@
+import asyncio
 import configparser
+import datetime
 import json
 import os
 import tempfile
@@ -11,12 +13,16 @@ from bridge.db.Databases import Databases
 
 from ..test.BridgeTestUtils import HASHES, NEM_ADDRESSES, SYMBOL_ADDRESSES
 from ..test.DatabaseTestUtils import (
+	add_requests_unwrap,
+	add_requests_wrap,
+	add_transfers,
 	get_default_filtering_test_parameters,
 	seed_database_with_many_errors,
 	seed_database_with_many_requests,
 	seed_database_with_simple_errors,
 	seed_database_with_simple_requests
 )
+from ..test.MockCoinGeckoServer import create_simple_coingecko_client
 from ..test.MockNemServer import create_simple_nem_client
 from ..test.MockNetworkFacade import MockNemNetworkFacade, MockSymbolNetworkFacade
 from ..test.MockSymbolServer import create_simple_symbol_client
@@ -37,7 +43,12 @@ async def symbol_server(aiohttp_client):
 
 
 @pytest.fixture
-async def app(nem_server, symbol_server):  # pylint: disable=redefined-outer-name
+async def coingecko_server(aiohttp_client):
+	return await create_simple_coingecko_client(aiohttp_client)
+
+
+@pytest.fixture
+async def app(nem_server, symbol_server, coingecko_server):  # pylint: disable=redefined-outer-name
 	with tempfile.TemporaryDirectory() as temp_directory:
 		database_directory = Path(temp_directory) / 'db'  # pylint: disable=redefined-outer-name
 		database_directory.mkdir()
@@ -48,8 +59,15 @@ async def app(nem_server, symbol_server):  # pylint: disable=redefined-outer-nam
 		parser.optionxform = str
 		parser.read(sample_config_filename)
 		parser['machine']['databaseDirectory'] = str(database_directory)
+		parser['price_oracle']['url'] = str(coingecko_server.make_url(''))
 		parser['native_network']['endpoint'] = str(nem_server.make_url(''))
+		parser['native_network']['signerPublicKey'] = '47D5025EC5E5892668FFB1BE2891D09C4D6DC507EDA474B439B33EF0C94F0AA9'
+		parser['native_network']['percentageConversionFee'] = '0.002'
+		parser['native_network']['unitMultiplier'] = '100'
 		parser['wrapped_network']['endpoint'] = str(symbol_server.make_url(''))
+		parser['wrapped_network']['signerPublicKey'] = 'FDA024AD1FA204242F5FE579419491A76E467EAF6C36E29EA8FC4BF0734B3E81'
+		parser['wrapped_network']['transactionFeeMultiplier'] = '100'
+		parser['wrapped_network']['percentageConversionFee'] = '0.003'
 
 		bridge_propererties_filename = Path(temp_directory) / 'bridge.test.properties'
 		with open(bridge_propererties_filename, 'wt', encoding='utf8') as properties_file:
@@ -101,6 +119,39 @@ def _seed_simple_error(database_directory, is_unwrap):  # pylint: disable=redefi
 	with Databases(database_directory, MockNemNetworkFacade(), MockSymbolNetworkFacade()) as databases:
 		databases.create_tables()
 		seed_database_with_simple_errors(databases.unwrap_request if is_unwrap else databases.wrap_request, is_unwrap)
+
+
+def _seed_database_for_prepare_tests(database_directory):  # pylint: disable=redefined-outer-name
+	with Databases(database_directory, MockNemNetworkFacade(), MockSymbolNetworkFacade()) as databases:
+		databases.create_tables()
+
+		add_transfers(databases.balance_change, [
+			(1111, 200, None),
+			(2220, 1000, None),
+			(3330, 300, None),
+			(4444, -1200, HASHES[0])
+		], 'nem:xem')
+		databases.balance_change.set_max_processed_height(4444)
+
+		add_requests_wrap(databases.wrap_request, [
+			(1111, 196, 4),
+			(3330, 49, 1)
+		])
+
+		nem_epoch = datetime.datetime(2015, 3, 29, 0, 6, 25, tzinfo=datetime.timezone.utc)
+		symbol_epoch = datetime.datetime(2022, 10, 31, 21, 7, 47, tzinfo=datetime.timezone.utc)
+		difference_seconds = int((symbol_epoch - nem_epoch).total_seconds())
+
+		databases.wrap_request.set_max_processed_height(4444)
+		for (height, timestamp) in [(1111, 8000), (2220, 9000), (3330, 10000), (4444, 12000)]:
+			databases.wrap_request.set_block_timestamp(height, difference_seconds + timestamp)
+
+		add_requests_unwrap(databases.unwrap_request, [
+			(900, 200, HASHES[0])
+		])
+		databases.unwrap_request.set_max_processed_height(1000)
+		for (height, timestamp) in [(800, 10500), (900, 11500), (1000, 12000)]:
+			databases.unwrap_request.set_block_timestamp(height, timestamp * 1000)  # to seconds
 
 # endregion
 
@@ -401,5 +452,80 @@ def test_can_query_unwrap_errors_by_address_and_transaction_hash(client, databas
 
 def test_can_query_unwrap_errors_with_custom_offset_and_limit(client, database_directory):  # pylint: disable=redefined-outer-name
 	_assert_can_filter_by_address_with_custom_offset_and_limit(client, database_directory, '/unwrap/errors/', True)
+
+# endregion
+
+
+# region wrap_prepare
+
+async def test_can_prepare_wrap(client, database_directory):  # pylint: disable=redefined-outer-name
+	def test_impl():
+		# Arrange:
+		_seed_database_for_prepare_tests(database_directory)
+
+		# Act:
+		response = client.post('/wrap/prepare', json={
+			'amount': 1234000000,
+			'recipientAddress': 'TCYIHED7HZQ3IPBY5WRDPDLV5CCMMOOVSOMSPD6B'
+		})
+		response_json = json.loads(response.data)
+
+		# Assert:
+		_assert_json_response_success(response)
+		assert {
+			'grossAmount': 205666666,  # floor(1234000000 / 6),
+			'conversionFee': '181276046.3136',  # grossAmount * config(percentageConversionFee) * feeMultiplier
+			'transactionFee': '22035175.8794',  # 50000 * feeMultiplier
+			'totalFee': 203311223,  # ceil(conversionFee + transactionFee)
+			'netAmount': 2355443,  # grossAmount - totalFee
+
+			'diagnostics': {
+				'height': 4444,
+				'nativeBalance': '1500',
+				'wrappedBalance': '250',
+				'unwrappedBalance': '0'
+			}
+		} == response_json
+
+	loop = asyncio.get_running_loop()
+	await loop.run_in_executor(None, test_impl)
+
+# endregion
+
+
+# region unwrap_prepare
+
+async def test_can_prepare_unwrap(client, database_directory):  # pylint: disable=redefined-outer-name
+	def test_impl():
+		# Arrange:
+		_seed_database_for_prepare_tests(database_directory)
+
+		# Act:
+		response = client.post('/unwrap/prepare', json={
+			'amount': 1234000000,
+			'recipientAddress': 'TCKRDEYTT4ORA5WQD7S64CZFFLQBPEK4RBJMCWQ'
+		})
+		response_json = json.loads(response.data)
+
+		# Assert:
+		_assert_json_response_success(response)
+
+		assert {
+			'grossAmount': 7403999999,  # floor(1234000000 * 6),
+			'conversionFee': '22211999.9970',  # grossAmount * config(percentageConversionFee) * feeMultiplier
+			'transactionFee': '17600.0000',  # 176 * config(transactionFeeMultiplier)
+			'totalFee': 22229600,  # ceil(conversionFee + transactionFee)
+			'netAmount': 7381770399,  # grossAmount - totalFee
+
+			'diagnostics': {
+				'height': 1000,
+				'nativeBalance': '300',
+				'wrappedBalance': '250',
+				'unwrappedBalance': '200'
+			}
+		} == response_json
+
+	loop = asyncio.get_running_loop()
+	await loop.run_in_executor(None, test_impl)
 
 # endregion
