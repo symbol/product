@@ -21,7 +21,8 @@ def _network_config_to_dict(config):
 		'blockchain': config.blockchain,
 		'network': config.network,
 		'bridgeAddress': config.bridge_address,
-		'tokenId': config.mosaic_id
+		'tokenId': config.mosaic_id,
+		'defaultNodeUrl': config.endpoint
 	}
 
 
@@ -163,7 +164,8 @@ def create_app():
 	def root():  # pylint: disable=unused-variable
 		return jsonify({
 			'native_network': _network_config_to_dict(config.native_network),
-			'wrapped_network': _network_config_to_dict(config.wrapped_network)
+			'wrapped_network': _network_config_to_dict(config.wrapped_network),
+			'enabled': True
 		})
 
 	@app.route('/wrap/requests/<address>')
