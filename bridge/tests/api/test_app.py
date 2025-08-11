@@ -66,7 +66,7 @@ def app(nem_server, symbol_server, coingecko_server):  # pylint: disable=redefin
 		parser['native_network']['unitMultiplier'] = '100'
 		parser['wrapped_network']['endpoint'] = str(symbol_server.make_url(''))
 		parser['wrapped_network']['signerPublicKey'] = 'FDA024AD1FA204242F5FE579419491A76E467EAF6C36E29EA8FC4BF0734B3E81'
-		parser['wrapped_network']['transactionFeeMultiplier'] = '100'
+		parser['wrapped_network']['transactionFeeMultiplier'] = '50'
 		parser['wrapped_network']['percentageConversionFee'] = '0.003'
 
 		bridge_propererties_filename = Path(temp_directory) / 'bridge.test.properties'
@@ -595,14 +595,14 @@ async def test_can_prepare_wrap(client, database_directory):  # pylint: disable=
 		response = client.post('/wrap/prepare', json={'amount': 1234000000})
 		response_json = json.loads(response.data)
 
-		# Assert:
+		# Assert: fee_multiplier => 0.0877 / 0.0199 * 100
 		_assert_json_response_success(response)
 		assert {
 			'grossAmount': 205666666,  # floor(1234000000 / 6),
-			'conversionFee': '181276046.3136',  # grossAmount * config(percentageConversionFee) * feeMultiplier
-			'transactionFee': '22035175.8794',  # 50000 * feeMultiplier
-			'totalFee': 203311223,  # ceil(conversionFee + transactionFee)
-			'netAmount': 2355443,  # grossAmount - totalFee
+			'conversionFee': '271914069.4704',  # grossAmount * config(percentageConversionFee) * feeMultiplier
+			'transactionFee': '3878190.9548',  # 176 * config(transactionFeeMultiplier) * feeMultiplier
+			'totalFee': 275792261,  # ceil(conversionFee + transactionFee)
+			'netAmount': -70125595,  # grossAmount - totalFee
 
 			'diagnostics': {
 				'height': 4444,
@@ -639,10 +639,10 @@ async def test_can_prepare_unwrap(client, database_directory):  # pylint: disabl
 
 		assert {
 			'grossAmount': 7403999999,  # floor(1234000000 * 6),
-			'conversionFee': '22211999.9970',  # grossAmount * config(percentageConversionFee) * feeMultiplier
-			'transactionFee': '17600.0000',  # 176 * config(transactionFeeMultiplier)
-			'totalFee': 22229600,  # ceil(conversionFee + transactionFee)
-			'netAmount': 7381770399,  # grossAmount - totalFee
+			'conversionFee': '14807999.9980',  # grossAmount * config(percentageConversionFee)
+			'transactionFee': '50000.0000',  # 50000
+			'totalFee': 14858000,  # ceil(conversionFee + transactionFee)
+			'netAmount': 7389141999,  # grossAmount - totalFee
 
 			'diagnostics': {
 				'height': 1000,
