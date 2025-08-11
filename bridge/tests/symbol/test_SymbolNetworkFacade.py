@@ -1,4 +1,4 @@
-from binascii import hexlify
+from binascii import hexlify, unhexlify
 
 import pytest
 from symbolchain import sc
@@ -143,7 +143,7 @@ def test_can_create_connector_rosetta():
 # endregion
 
 
-# region make_address
+# region make_address, make_public_key
 
 def test_can_make_address():
 	# Arrange:
@@ -156,6 +156,19 @@ def test_can_make_address():
 	# Assert:
 	assert Address('TAUPP4BRGNQP5KG2QY53FNYZVZ7SDXQVS5BG2IQ') == address_from_string
 	assert Address('TAUPP4BRGNQP5KG2QY53FNYZVZ7SDXQVS5BG2IQ') == address_from_bytes
+
+
+def test_can_make_public_key():
+	# Arrange:
+	facade = SymbolNetworkFacade(_create_config())
+
+	# Act:
+	public_key_from_string = facade.make_public_key('3BB0E477B1675D780DFB78C62CCEE0D43191B04115A4BEA8A1E6959367509983')
+	public_key_from_bytes = facade.make_public_key(unhexlify('3BB0E477B1675D780DFB78C62CCEE0D43191B04115A4BEA8A1E6959367509983'))
+
+	# Assert:
+	assert PublicKey('3BB0E477B1675D780DFB78C62CCEE0D43191B04115A4BEA8A1E6959367509983') == public_key_from_string
+	assert PublicKey('3BB0E477B1675D780DFB78C62CCEE0D43191B04115A4BEA8A1E6959367509983') == public_key_from_bytes
 
 # endregion
 

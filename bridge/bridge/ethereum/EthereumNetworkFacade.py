@@ -5,7 +5,7 @@ from symbolchain.CryptoTypes import PrivateKey
 from web3 import Web3
 
 from ..models.Constants import PrintableMosaicId
-from .EthereumAdapters import EthereumAddress, EthereumNetwork, EthereumSdkFacade
+from .EthereumAdapters import EthereumAddress, EthereumNetwork, EthereumPublicKey, EthereumSdkFacade
 from .EthereumConnector import EthereumConnector
 from .EthereumUtils import extract_wrap_request_from_transaction
 
@@ -54,9 +54,15 @@ class EthereumNetworkFacade:  # pylint: disable=too-many-instance-attributes
 
 	@staticmethod
 	def make_address(raw_address):
-		"""Wraps a raw address into a typed address """
+		"""Wraps a raw address into a typed address."""
 
 		return EthereumAddress(raw_address)
+
+	@staticmethod
+	def make_public_key(raw_public_key):
+		"""Wraps a raw public key into a typed public key."""
+
+		return EthereumPublicKey(raw_public_key)
 
 	@staticmethod
 	def is_valid_address(raw_address):

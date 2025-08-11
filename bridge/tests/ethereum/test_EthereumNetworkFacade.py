@@ -1,5 +1,5 @@
 import asyncio
-from binascii import hexlify
+from binascii import hexlify, unhexlify
 from decimal import Decimal
 
 import pytest
@@ -112,7 +112,7 @@ def test_can_create_connector_with_finalization_disabled():
 # endregion
 
 
-# region make_address
+# region make_address, make_public_key
 
 def test_can_make_address():
 	# Arrange:
@@ -120,9 +120,29 @@ def test_can_make_address():
 
 	# Act:
 	address_from_string = facade.make_address('0xa94f5374Fce5edBC8E2a8697C15331677e6EbF0B')
+	address_from_bytes = facade.make_address(unhexlify('A94F5374FCE5EDBC8E2A8697C15331677E6EBF0B'))
 
 	# Assert:
 	assert EthereumAddress('0xa94f5374Fce5edBC8E2a8697C15331677e6EbF0B') == address_from_string
+	assert EthereumAddress('0xa94f5374Fce5edBC8E2a8697C15331677e6EbF0B') == address_from_bytes
+
+
+def test_can_make_public_key():
+	# Arrange:
+	ETHEREUM_PUBLIC_KEY_HEX = ''.join([
+		'B2B454118618A6D3E79FEDE753F60824C4D7E5EA15B4282D847801C8246A5A7C',
+		'AB017D4EFA17D1EB61DA79E3632D33B5123E158135C94CA741BB05566FFFA757'
+	])
+
+	facade = EthereumNetworkFacade(_create_config())
+
+	# Act:
+	public_key_from_string = facade.make_public_key(f'0x{ETHEREUM_PUBLIC_KEY_HEX}')
+	public_key_from_bytes = facade.make_public_key(unhexlify(ETHEREUM_PUBLIC_KEY_HEX))
+
+	# Assert:
+	assert EthereumPublicKey(f'0x{ETHEREUM_PUBLIC_KEY_HEX}') == public_key_from_string
+	assert EthereumPublicKey(f'0x{ETHEREUM_PUBLIC_KEY_HEX}') == public_key_from_bytes
 
 # endregion
 
