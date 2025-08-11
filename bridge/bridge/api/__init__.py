@@ -239,7 +239,7 @@ def create_app():
 			context.wrapped_facade.config.blockchain,
 			context.native_facade.config.blockchain)
 		return await _handle_wrap_prepare(
-			context.native_facade,
+			context.wrapped_facade,
 			context.database_params,
 			context.native_mosaic_id,
 			fee_multiplier * unit_multiplier)
@@ -248,6 +248,6 @@ def create_app():
 	async def unwrap_prepare():
 		await context.load()
 
-		return await _handle_wrap_prepare(context.wrapped_facade, context.database_params, context.native_mosaic_id, None)
+		return await _handle_wrap_prepare(context.native_facade, context.database_params, context.native_mosaic_id, None)
 
 	return app
