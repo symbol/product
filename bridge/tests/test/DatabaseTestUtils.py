@@ -1,7 +1,7 @@
 import sqlite3
 from collections import namedtuple
 
-from symbolchain.CryptoTypes import Hash256
+from symbolchain.CryptoTypes import Hash256, PrivateKey
 from symbolchain.symbol.Network import Address
 
 from bridge.db.WrapRequestDatabase import PayoutDetails
@@ -14,6 +14,8 @@ FilteringTestParameters = namedtuple('FilteringTestParameters', [
 	'expected_all', 'expected_hash_filter', 'expected_custom_offset_and_limit'
 ])
 
+
+# region get_all_table_names
 
 def get_all_table_names(database_class, *args):
 	# Arrange:
@@ -32,6 +34,47 @@ def get_all_table_names(database_class, *args):
 		table_names = set(tuple[0] for tuple in tables)
 		return table_names
 
+# endregion
+
+
+# region bespoke seeding
+
+def add_requests_wrap(database, request_tuples):
+	"""Add wrap requests to database."""
+
+	for (height, amount, fee) in request_tuples:
+		transaction_hash = Hash256(PrivateKey.random().bytes)
+		request = WrapRequest(height, transaction_hash, -1, transaction_hash, 0, 'tbd')
+		database.add_request(request)
+
+		payout_transaction_hash = Hash256(PrivateKey.random().bytes)
+		database.mark_payout_sent(request, PayoutDetails(payout_transaction_hash, amount, fee, 0))
+
+
+def add_requests_unwrap(database, request_tuples):
+	"""Add unwrap requests to database."""
+
+	for (height, amount, raw_payout_transaction_hash) in request_tuples:
+		transaction_hash = Hash256(PrivateKey.random().bytes)
+		request = WrapRequest(height, transaction_hash, -1, transaction_hash, amount, 'tbd')
+		database.add_request(request)
+
+		if raw_payout_transaction_hash:
+			database.mark_payout_sent(request, PayoutDetails(Hash256(raw_payout_transaction_hash), 0, 0, 0))
+
+
+def add_transfers(database, transfer_tuples, formatted_mosaic_id='foo:bar'):
+	"""Add transfers to database."""
+
+	for (height, amount, raw_transaction_hash) in transfer_tuples:
+		transaction_hash = Hash256(raw_transaction_hash) if raw_transaction_hash else Hash256.zero()
+		database.add_transfer(height, formatted_mosaic_id, amount, transaction_hash)
+		database.add_transfer(height, 'foo:other', 2 * amount, transaction_hash)  # should be ignored by mosaic filtering
+
+# endregion
+
+
+# region filtering
 
 def get_default_filtering_test_parameters():  # pylint: disable=invalid-name
 	"""Gets parameters and expected heights for default filtering tests."""
@@ -168,3 +211,5 @@ def seed_database_with_many_requests(database, is_unwrap=False):
 		for request in seed_requests:
 			database.add_request(request)
 			database.set_block_timestamp(request.transaction_height, 2 * request.transaction_height)
+
+# endregion
