@@ -1,3 +1,4 @@
+from symbolchain.CryptoTypes import PublicKey
 from symbolchain.facade.SymbolFacade import SymbolFacade
 from symbolchain.Network import NetworkLocator
 from symbolchain.sc import Amount
@@ -63,9 +64,15 @@ class SymbolNetworkFacade:
 
 	@staticmethod
 	def make_address(raw_address):
-		"""Wraps a raw address into a typed address """
+		"""Wraps a raw address into a typed address."""
 
 		return Address(raw_address)
+
+	@staticmethod
+	def make_public_key(raw_public_key):
+		"""Wraps a raw public key into a typed public key."""
+
+		return PublicKey(raw_public_key)
 
 	def is_valid_address(self, raw_address):
 		"""Checks if an address is valid and belongs to this network."""

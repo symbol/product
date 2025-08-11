@@ -3,7 +3,7 @@ from decimal import Decimal
 from pathlib import Path
 
 from flask import Flask, jsonify, request
-from symbolchain.CryptoTypes import Hash256, PublicKey
+from symbolchain.CryptoTypes import Hash256
 
 from ..CoinGeckoConnector import CoinGeckoConnector
 from ..ConversionRateCalculatorFactory import ConversionRateCalculatorFactory
@@ -92,7 +92,7 @@ async def _handle_wrap_prepare(network_facade, database_params, native_mosaic_id
 		gross_amount = (calculator.to_native_amount if is_unwrap else calculator.to_wrapped_amount)(amount)
 
 		balance_transfer = BalanceTransfer(
-			PublicKey(network_facade.config.extensions['signer_public_key']),
+			network_facade.make_public_key(network_facade.config.extensions['signer_public_key']),
 			recipient_address,
 			gross_amount,
 			None)
