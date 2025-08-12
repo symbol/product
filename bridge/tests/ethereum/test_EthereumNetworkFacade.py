@@ -32,7 +32,7 @@ def _create_config(server=None, mosaic_id=None, config_extensions=None):  # pyli
 	mosaic_id = mosaic_id or '0x0D8775F648430679A709E98d2b0Cb6250d2887EF'
 	return NetworkConfiguration('ethereum', 'testnet', endpoint, '0x67b1d87101671b127f5f8714789C7192f7ad340e', mosaic_id, {
 		'chain_id': '8876',
-		'signing_private_key': '0999a20d4fdda8d7273e8a24f70e1105f9dcfcae2fba55e9a08f6e752411ed7a',
+		'signer_private_key': '0999a20d4fdda8d7273e8a24f70e1105f9dcfcae2fba55e9a08f6e752411ed7a',
 		**(config_extensions or {})
 	})
 
