@@ -64,10 +64,12 @@ def app(nem_server, symbol_server, coingecko_server):  # pylint: disable=redefin
 		parser['native_network']['signerPublicKey'] = '47D5025EC5E5892668FFB1BE2891D09C4D6DC507EDA474B439B33EF0C94F0AA9'
 		parser['native_network']['percentageConversionFee'] = '0.002'
 		parser['native_network']['unitMultiplier'] = '100'
+		parser['native_network']['explorerEndpoint'] = '<nem explorer endpoint>'
 		parser['wrapped_network']['endpoint'] = str(symbol_server.make_url(''))
 		parser['wrapped_network']['signerPublicKey'] = 'FDA024AD1FA204242F5FE579419491A76E467EAF6C36E29EA8FC4BF0734B3E81'
 		parser['wrapped_network']['transactionFeeMultiplier'] = '50'
 		parser['wrapped_network']['percentageConversionFee'] = '0.003'
+		parser['wrapped_network']['explorerEndpoint'] = '<symbol explorer endpoint>'
 
 		bridge_propererties_filename = Path(temp_directory) / 'bridge.test.properties'
 		with open(bridge_propererties_filename, 'wt', encoding='utf8') as properties_file:
@@ -183,19 +185,21 @@ def test_root(client, nem_server, symbol_server):  # pylint: disable=redefined-o
 	# Assert:
 	_assert_json_response_success(response)
 	assert {
-		'native_network': {
+		'nativeNetwork': {
 			'blockchain': 'nem',
 			'network': 'testnet',
 			'bridgeAddress': 'TBINJOHFNWMNUOJ2KW3DWJTLRVNAOGQCE6FECSQJ',
 			'tokenId': 'nem:xem',
-			'defaultNodeUrl': str(nem_server.make_url(''))
+			'defaultNodeUrl': str(nem_server.make_url('')),
+			'explorerUrl': '<nem explorer endpoint>'
 		},
-		'wrapped_network': {
+		'wrappedNetwork': {
 			'blockchain': 'symbol',
 			'network': 'testnet',
 			'bridgeAddress': 'TCRZANFBD6O6EGYCBAH6ICTLAMH6OGBV6CEH7UY',
 			'tokenId': 'id:5D6CFC64A20E86E6',
-			'defaultNodeUrl': str(symbol_server.make_url(''))
+			'defaultNodeUrl': str(symbol_server.make_url('')),
+			'explorerUrl': '<symbol explorer endpoint>'
 		},
 		'enabled': True
 	} == response_json

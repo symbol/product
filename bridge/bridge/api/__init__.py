@@ -26,7 +26,8 @@ def _network_config_to_dict(config):
 		'network': config.network,
 		'bridgeAddress': config.bridge_address,
 		'tokenId': config.mosaic_id,
-		'defaultNodeUrl': config.endpoint
+		'defaultNodeUrl': config.endpoint,
+		'explorerUrl': config.extensions['explorer_endpoint']
 	}
 
 
@@ -197,8 +198,8 @@ def create_app():
 	@app.route('/')
 	def root():  # pylint: disable=unused-variable
 		return jsonify({
-			'native_network': _network_config_to_dict(config.native_network),
-			'wrapped_network': _network_config_to_dict(config.wrapped_network),
+			'nativeNetwork': _network_config_to_dict(config.native_network),
+			'wrappedNetwork': _network_config_to_dict(config.wrapped_network),
 			'enabled': True
 		})
 
