@@ -60,6 +60,7 @@ async def test_can_initialize_facade(server):  # pylint: disable=redefined-outer
 	# Assert:
 	assert 3 == facade.token_precision
 	assert {EthereumAddress('0xb5368c39Efb0DbA28C082733FE3F9463A215CC3D'): 14} == facade.address_to_nonce_map
+	assert Decimal(0x5208) == facade.gas_estimate
 
 # endregion
 
@@ -301,46 +302,42 @@ async def _assert_can_create_transfer_transaction(server, config_extensions, exp
 
 
 async def test_can_create_transfer_transaction(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	server.mock.gas_price_override = 1000
+
+	# Act + Assert:
 	await _assert_can_create_transfer_transaction(server, None, {
 		'gas': 24150,  # ceil(21000 * 1.15 == 24150)
-		'max_fee_per_gas': 9659999847 + 2000000000,  # ceil(8049999872 * 1.2 == 9659999846.4) + 2000000000
-		'max_priority_fee_per_gas': 2000000000
-	})
-
-
-async def test_can_create_transfer_transaction_with_custom_gas_multiple(server):  # pylint: disable=redefined-outer-name
-	await _assert_can_create_transfer_transaction(server, {'gas_multiple': '1.1111'}, {
-		'gas': 23334,  # ceil(21000 * 1.1111 == 23333.1)
-		'max_fee_per_gas': 9659999847 + 2000000000,  # ceil(8049999872 * 1.2 == 9659999846.4) + 2000000000
-		'max_priority_fee_per_gas': 2000000000
-	})
-
-
-async def test_can_create_transfer_transaction_with_custom_gas_price_multiple(server):  # pylint: disable=redefined-outer-name
-	await _assert_can_create_transfer_transaction(server, {'gas_price_multiple': '1.1'}, {
-		'gas': 24150,  # ceil(21000 * 1.15 == 24150)
-		'max_fee_per_gas': 8854999860 + 2000000000,  # ceil(8049999872 * 1.1 == 8854999859.2) + 2000000000
-		'max_priority_fee_per_gas': 2000000000
-	})
-
-
-async def test_can_create_transfer_transaction_with_custom_priority_fee(server):  # pylint: disable=redefined-outer-name
-	await _assert_can_create_transfer_transaction(server, {'max_priority_fee_per_gas': '8111222333'}, {
-		'gas': 24150,  # ceil(21000 * 1.15 == 24150)
-		'max_fee_per_gas': 9659999847 + 8111222333,  # ceil(8049999872 * 1.2 == 9659999846.4) + 8111222333
-		'max_priority_fee_per_gas': 8111222333
+		'max_fee_per_gas': 2983960434 + 654360002,  # ceil(2486633695 * 1.2 == 2983960434) + ceil(623200001 * 1.05 == 654360001.05)
+		'max_priority_fee_per_gas': 654360002  # ceil(623200001 * 1.05 == 654360001.05)
 	})
 
 
 async def test_can_create_transfer_transaction_with_multiple_custom_properties(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	server.mock.gas_price_override = 1000
+
+	# Act + Assert:
 	await _assert_can_create_transfer_transaction(server, {
 		'gas_multiple': '1.1111',
 		'gas_price_multiple': '1.1',
-		'max_priority_fee_per_gas': '8111222333'
+		'priority_fee_multiple': '1.11'
 	}, {
 		'gas': 23334,  # ceil(21000 * 1.1111 == 23333.1)
-		'max_fee_per_gas': 8854999860 + 8111222333,  # ceil(8049999872 * 1.1 == 8854999859.2) + 8111222333
-		'max_priority_fee_per_gas': 8111222333
+		'max_fee_per_gas': 2735297065 + 691752002,  # ceil(2486633695 * 1.1 == 2735297064.5) + ceil(623200001 * 1.11 == 691752001.11)
+		'max_priority_fee_per_gas': 691752002  # ceil(623200001 * 1.11 == 691752001.11)
+	})
+
+
+async def test_can_create_transfer_transaction_with_gas_price_fallback(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	server.mock.gas_price_override = 2983960434 + 654360002 + 1000000  # 3639320436
+
+	# Act + Assert:
+	await _assert_can_create_transfer_transaction(server, None, {
+		'gas': 24150,  # ceil(21000 * 1.15 == 24150)
+		'max_fee_per_gas': 4367184524,  # ceil(3639320436 * 1.2 == 4367184523.2)
+		'max_priority_fee_per_gas': 4367184524 - 2983960434  # ceil(3639320436 * 1.2 == 4367184523.2) - ceil(2486633695 * 1.2 == 2983960434)
 	})
 
 
@@ -382,47 +379,49 @@ async def _assert_can_calculate_transfer_transaction_fee(server, config_extensio
 
 
 async def test_can_calculate_transfer_transaction_fee(server):  # pylint: disable=redefined-outer-name
-	# Assert: gas_price => ceil(8049999872 * 1.2 == 9659999846.4) + 2000000000
-	#               gas => ceil(21000 * 1.15 == 24150)
-	await _assert_can_calculate_transfer_transaction_fee(server, None, Decimal((9659999847 + 2000000000) * 24150) / Decimal(10 ** 18))
+	# Arrange:
+	server.mock.gas_price_override = 1000
 
-
-async def test_can_calculate_transfer_transaction_fee_with_custom_gas_multiple(server):  # pylint: disable=redefined-outer-name
-	# Assert: gas_price => ceil(8049999872 * 1.2 == 9659999846.4) + 2000000000
-	#               gas => ceil(21000 * 1.1111 == 23333.1)
-	await _assert_can_calculate_transfer_transaction_fee(server, {
-		'gas_multiple': '1.1111'
-	}, Decimal((9659999847 + 2000000000) * 23334) / Decimal(10 ** 18))
-
-
-async def test_can_calculate_transfer_transaction_fee_with_custom_gas_price_multiple(server):  # pylint: disable=redefined-outer-name
-	# Assert: gas_price => ceil(8049999872 * 1.1 == 8854999859.2) + 2000000000
-	#               gas => ceil(21000 * 1.15 == 24150)
-	await _assert_can_calculate_transfer_transaction_fee(server, {
-		'gas_price_multiple': '1.1'
-	}, Decimal((8854999860 + 2000000000) * 24150) / Decimal(10 ** 18))
-
-
-async def test_can_calculate_transfer_transaction_fee_with_custom_priority_fee(server):  # pylint: disable=redefined-outer-name
-	# Assert: gas_price => ceil(8049999872 * 1.2 == 9659999846.4) + 8111222333
-	#               gas => ceil(21000 * 1.15 == 24150)
-	await _assert_can_calculate_transfer_transaction_fee(server, {
-		'max_priority_fee_per_gas': '8111222333'
-	}, Decimal((9659999847 + 8111222333) * 24150) / Decimal(10 ** 18))
+	# Act + Assert:
+	# - gas          => ceil(21000 * 1.15 == 24150)
+	# - gas_price    => ceil(8049999872 * 1.2 == 9659999846.4)
+	# - base_fee     => ceil(2486633695 * 1.2 == 2983960434)
+	# - priority_fee => ceil(623200001 * 1.05 == 654360001.05)
+	await _assert_can_calculate_transfer_transaction_fee(server, None, Decimal(24150 * (2983960434 + 654360002)) / Decimal(10 ** 18))
 
 
 async def test_can_calculate_transfer_transaction_fee_with_multiple_custom_properties(server):  # pylint: disable=redefined-outer-name
-	# Assert: gas_price => ceil(8049999872 * 1.1 == 8854999859.2) + 8111222333
-	#               gas => ceil(21000 * 1.1111 == 23333.1)
+	# Arrange:
+	server.mock.gas_price_override = 1000
+
+	# Act + Assert:
+	# - gas          => ceil(21000 * 1.1111 == 23333.1)
+	# - gas_price    => ceil(8049999872 * 1.1 == 8854999859.2)
+	# - base_fee     => ceil(2486633695 * 1.1 == 2735297064.5
+	# - priority_fee => ceil(623200001 * 1.11 == 691752001.11)
 	await _assert_can_calculate_transfer_transaction_fee(server, {
 		'gas_multiple': '1.1111',
 		'gas_price_multiple': '1.1',
-		'max_priority_fee_per_gas': '8111222333'
-	}, Decimal((8854999860 + 8111222333) * 23334) / Decimal(10 ** 18))
+		'priority_fee_multiple': '1.11'
+	}, Decimal(23334 * (2735297065 + 691752002)) / Decimal(10 ** 18))
+
+
+async def test_can_calculate_transfer_transaction_fee_gas_price_fallback(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	server.mock.gas_price_override = 2983960434 + 654360002 + 1000000  # 3639320436
+
+	# Act + Assert:
+	# - gas          => ceil(21000 * 1.15 == 24150)
+	# - gas_price    => ceil(3639320436 * 1.2 == 4367184523.2)
+	# - base_fee     => ceil(2486633695 * 1.2 == 2983960434)
+	# - priority_fee => ceil(623200001 * 1.05 == 654360001.05)
+	await _assert_can_calculate_transfer_transaction_fee(server, None, Decimal(24150 * 4367184524) / Decimal(10 ** 18))
 
 
 async def test_can_calculate_transfer_transaction_fee_for_account_with_unknown_nonce(server):  # pylint: disable=redefined-outer-name
 	# Arrange:
+	server.mock.gas_price_override = 1000
+
 	facade = EthereumNetworkFacade(_create_config(server))
 	await facade.init()
 
@@ -437,8 +436,11 @@ async def test_can_calculate_transfer_transaction_fee_for_account_with_unknown_n
 		_create_sample_balance_transfer(signer_public_key),
 		'0x67b1d87101671b127f5f8714789C7192f7ad340e')
 
-	# Assert: gas_price => ceil(8049999872 * 1.2 == 9659999846.4) + 2000000000
-	#               gas => ceil(21000 * 1.15 == 24150)
-	assert Decimal((9659999847 + 2000000000) * 24150) / Decimal(10 ** 18) == transaction_fee
+	# Act + Assert:
+	# - gas          => ceil(21000 * 1.15 == 24150)
+	# - gas_price    => ceil(8049999872 * 1.2 == 9659999846.4)
+	# - base_fee     => ceil(2486633695 * 1.2 == 2983960434)
+	# - priority_fee => ceil(623200001 * 1.05 == 654360001.05)
+	assert Decimal(24150 * (2983960434 + 654360002)) / Decimal(10 ** 18) == transaction_fee
 
 # endregion
