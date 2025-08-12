@@ -77,7 +77,6 @@ async def test_can_load_ethereum_network_facade(ethereum_server):  # pylint: dis
 	assert isinstance(facade, EthereumNetworkFacade)
 	assert 'testnet' == facade.network.name
 
-	assert 3 == facade.token_precision
 	assert 1 == len(facade.address_to_nonce_map)
 
 

@@ -24,23 +24,26 @@ class EthereumNetworkFacade:  # pylint: disable=too-many-instance-attributes
 		"""Creates an Ethereum network facade."""
 
 		self.config = config
-		self.network = EthereumNetwork(config.network)
+		self.network = EthereumNetwork(self.config.network)
 		self.rosetta_network_id = None
 		self.sdk_facade = EthereumSdkFacade(self.network)
-		self.bridge_address = EthereumAddress(config.bridge_address)
-		self.transaction_search_address = EthereumAddress(self.config.mosaic_id)  # search the contract address
-		self.chain_id = int(self.config.extensions['chain_id'])
+		self.bridge_address = EthereumAddress(self.config.bridge_address)
 
-		self.token_precision = None
+		# for ERC tokens search contract address
+		self.transaction_search_address = EthereumAddress(self.config.mosaic_id or self.config.bridge_address)
+		self.chain_id = int(self.config.extensions['chain_id'])
+		self.native_token_precision = 18
+
 		self.address_to_nonce_map = {}
 		self.gas_estimate = None
+
+	def _is_currency_mosaic_id(self):
+		return not self.config.mosaic_id
 
 	async def init(self):
 		"""Downloads information from the network to initialize the facade."""
 
 		connector = self.create_connector()
-		self.token_precision = await connector.token_precision(self.config.mosaic_id)
-
 		signer_public_key = EthereumSdkFacade.KeyPair(PrivateKey(self.config.extensions['signer_private_key'])).public_key
 		signer_address = signer_public_key.address
 		self.address_to_nonce_map[signer_address] = await connector.nonce(signer_address, 'pending')
@@ -56,7 +59,7 @@ class EthereumNetworkFacade:  # pylint: disable=too-many-instance-attributes
 		"""
 
 		config_mosaic_id = self.config.mosaic_id
-		return PrintableMosaicId(config_mosaic_id, config_mosaic_id)
+		return PrintableMosaicId(config_mosaic_id, 'ETH' if self._is_currency_mosaic_id() else config_mosaic_id)
 
 	def create_connector(self, **_kwargs):
 		"""Creates a connector to the network."""
@@ -92,6 +95,17 @@ class EthereumNetworkFacade:  # pylint: disable=too-many-instance-attributes
 
 	@staticmethod
 	def _make_simple_transaction_object(balance_transfer, mosaic_id):
+		recipient_address = balance_transfer.recipient_address
+		if not isinstance(balance_transfer.recipient_address, EthereumAddress):
+			recipient_address = EthereumAddress(balance_transfer.recipient_address)
+
+		if not mosaic_id:
+			return {
+				'from': str(balance_transfer.signer_public_key.address),
+				'to': str(recipient_address),
+				'value': hex(balance_transfer.amount)
+			}
+
 		input_data = ''.join([
 			'0x',
 			'a9059cbb000000000000000000000000',
@@ -159,4 +173,4 @@ class EthereumNetworkFacade:  # pylint: disable=too-many-instance-attributes
 		"""Calculates a transfer transaction fee."""
 
 		(gas, max_fee_per_gas, _) = await self._calculate_gas()
-		return Web3.from_wei(gas * max_fee_per_gas, 'ether')
+		return gas * max_fee_per_gas

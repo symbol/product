@@ -25,7 +25,7 @@ async def create_simple_ethereum_client(aiohttp_client):
 				return await self._handle_eth_block_number(request)
 
 			if 'eth_estimateGas' == method:
-				return await self._handle_eth_estimate_gas(request)
+				return await self._handle_eth_estimate_gas(request, request_json['params'][0])
 
 			if 'eth_feeHistory' == method:
 				return await self._handle_eth_fee_history(request)
@@ -58,9 +58,9 @@ async def create_simple_ethereum_client(aiohttp_client):
 				'result': '0xAB123'
 			})
 
-		async def _handle_eth_estimate_gas(self, request):
+		async def _handle_eth_estimate_gas(self, request, transaction_object):
 			return await self._process(request, {
-				'result': '0x5208'
+				'result': '0x5208' if 'data' in transaction_object else '0x4201'
 			})
 
 		async def _handle_eth_fee_history(self, request):

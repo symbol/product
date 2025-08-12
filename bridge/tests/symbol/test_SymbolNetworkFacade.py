@@ -49,6 +49,7 @@ def test_can_create_facade():
 	assert facade.network == facade.sdk_facade.network
 	assert Address('TDDRDLK5QL2LJPZOF26QFXB24TJ5HGB4NDTF6SI') == facade.bridge_address
 	assert Address('TDDRDLK5QL2LJPZOF26QFXB24TJ5HGB4NDTF6SI') == facade.transaction_search_address
+	assert 6 == facade.native_token_precision
 
 
 async def test_can_initialize_facade(server):  # pylint: disable=redefined-outer-name
