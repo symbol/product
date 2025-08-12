@@ -13,6 +13,7 @@ It includes our optin manager.
 | [@lightapi/python](lightapi/python) | [![lint][lightapi-python-lint]][lightapi-python-job] | | [![test][lightapi-python-test]][lightapi-python-job] | [![][lightapi-python-cov]][lightapi-python-cov-link]
 | [@tools/shoestring](tools/shoestring) | [![lint][tools-shoestring-lint]][tools-shoestring-job] | | [![test][tools-shoestring-test]][tools-shoestring-job]| [![][tools-shoestring-cov]][tools-shoestring-cov-link] |
 | [@tools/vanity](tools/vanity) | [![lint][tools-vanity-lint]][tools-vanity-job] | | [![test][tools-vanity-test]][tools-vanity-job]| [![][tools-vanity-cov]][tools-vanity-cov-link] |
+| [@wallet/common-core](wallet/common/core) | [![lint][wallet-common-core-lint]][wallet-common-core-job] | | [![test][wallet-common-core-test]][wallet-common-core-job]| [![][wallet-common-core-cov]][wallet-common-core-cov-link] |
 
 ## Full Coverage Report
 
@@ -71,3 +72,9 @@ Detailed version can be seen on [codecov.io][product-cov-link].
 [tools-vanity-test]: https://jenkins.symbolsyndicate.us/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Ftools-vanity%2Fdev%2F&config=tools-vanity-test
 [tools-vanity-cov]: https://codecov.io/gh/symbol/product/branch/dev/graph/badge.svg?token=SSYYBMK0M7&flag=tools-vanity
 [tools-vanity-cov-link]: https://codecov.io/gh/symbol/product/tree/dev/tools/vanity
+
+[wallet-common-core-job]: https://jenkins.symbolsyndicate.us/blue/organizations/jenkins/Symbol%2Fgenerated%2Fproduct%2Fwallet-common-core/activity?branch=dev
+[wallet-common-core-lint]: https://jenkins.symbolsyndicate.us/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Fwallet-common-core%2Fdev%2F&config=wallet-common-core-lint
+[wallet-common-core-test]: https://jenkins.symbolsyndicate.us/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Fwallet-common-core%2Fdev%2F&config=wallet-common-core-test
+[wallet-common-core-cov]: https://codecov.io/gh/symbol/product/branch/dev/graph/badge.svg?token=SSYYBMK0M7&flag=wallet-common-core
+[wallet-common-core-cov-link]: https://codecov.io/gh/symbol/product/tree/dev/wallet/common/core

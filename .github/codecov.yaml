@@ -60,6 +60,12 @@ coverage:
         flags:
           - tools-vanity
 
+      wallet-common-core:
+        target: auto
+        threshold: 1%
+        flags:
+          - wallet-common-core
+
 # New root YAML section = `flags:`
 # This is where you would define every flag from your
 # uploader, and update when new Flags added
@@ -115,4 +121,9 @@ flags:
   tools-vanity:
     paths:
       - tools/vanity
+    carryforward: true
+
+  wallet-common-core:
+    paths:
+      - wallet/common/core
     carryforward: true

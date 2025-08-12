@@ -26,6 +26,9 @@ builds:
   - name: Vanity Address Generator
     path: tools/vanity
 
+  - name: Wallet Common Core
+    path: wallet/common/core
+
 customBuilds:
   - name: Nightly Job
     jobName: nightlyJob
