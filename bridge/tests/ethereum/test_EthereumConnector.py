@@ -257,7 +257,7 @@ async def test_can_estimate_gas(server):  # pylint: disable=redefined-outer-name
 			'to': '0xb5368c39Efb0DbA28C082733FE3F9463A215CC3D'
 		}
 	])] == server.mock.request_json_payloads
-	assert 0x5208 == gas
+	assert 0x4201 == gas
 
 
 async def test_can_estimate_fees_from_history(server):  # pylint: disable=redefined-outer-name

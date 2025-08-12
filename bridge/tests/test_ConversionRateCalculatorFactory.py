@@ -1,7 +1,8 @@
 import tempfile
 import unittest
+from decimal import Decimal
 
-from bridge.ConversionRateCalculatorFactory import ConversionRateCalculatorFactory
+from bridge.ConversionRateCalculatorFactory import ConversionRateCalculator, ConversionRateCalculatorFactory
 from bridge.db.Databases import Databases
 
 from .test.BridgeTestUtils import HASHES
@@ -16,6 +17,89 @@ def _create_databases(database_directory):
 
 
 class ConversionRateCalculatorFactoryTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
+	# region ConversionRateCalculator
+
+	def _assert_conversion_rate_calculator_unity(self, native_balance, wrapped_balance, unwrapped_balance):
+		# Arrange:
+		calculator = ConversionRateCalculator(native_balance, wrapped_balance, unwrapped_balance)
+
+		# Assert: wrapped token is equally valuable as native token
+		self.assertEqual(Decimal(1), calculator.conversion_rate())
+		self.assertEqual(1000, calculator.to_native_amount(1000))
+		self.assertEqual(1000, calculator.to_wrapped_amount(1000))
+
+		self.assertEqual(native_balance, calculator.native_balance)
+		self.assertEqual(wrapped_balance, calculator.wrapped_balance)
+		self.assertEqual(unwrapped_balance, calculator.unwrapped_balance)
+
+	def test_conversion_rate_calculator_works_with_unity(self):
+		self._assert_conversion_rate_calculator_unity(10000, 12000, 2000)
+
+	def test_conversion_rate_calculator_works_with_unity_simulate_wrap(self):
+		self._assert_conversion_rate_calculator_unity(10000 + 1000, 12000 + 1000, 2000)
+
+	def test_conversion_rate_calculator_works_with_unity_simulate_unwrap(self):
+		self._assert_conversion_rate_calculator_unity(10000 - 1000, 12000, 2000 + 1000)
+
+	def _assert_conversion_rate_calculator_wrap_premium(self, native_balance, wrapped_balance, unwrapped_balance):
+		# Arrange:
+		calculator = ConversionRateCalculator(native_balance, wrapped_balance, unwrapped_balance)
+
+		# Assert: wrapped token is more valuable than native token
+		self.assertEqual(Decimal(5) / Decimal(6), calculator.conversion_rate())
+		self.assertEqual(1200, calculator.to_native_amount(1000))
+		self.assertEqual(1000, calculator.to_wrapped_amount(1200))
+
+		self.assertEqual(native_balance, calculator.native_balance)
+		self.assertEqual(wrapped_balance, calculator.wrapped_balance)
+		self.assertEqual(unwrapped_balance, calculator.unwrapped_balance)
+
+	def test_conversion_rate_calculator_works_with_wrap_premium(self):
+		self._assert_conversion_rate_calculator_wrap_premium(12000, 12000, 2000)
+
+	def test_conversion_rate_calculator_works_with_wrap_premium_simulate_wrap(self):
+		self._assert_conversion_rate_calculator_wrap_premium(12000 + 1200, 12000 + 1000, 2000)
+
+	def test_conversion_rate_calculator_works_with_wrap_premium_simulate_unwrap(self):
+		self._assert_conversion_rate_calculator_wrap_premium(12000 - 1200, 12000, 2000 + 1000)
+
+	def _assert_conversion_rate_calculator_wrap_discount(self, native_balance, wrapped_balance, unwrapped_balance):
+		# Arrange:
+		calculator = ConversionRateCalculator(native_balance, wrapped_balance, unwrapped_balance)
+
+		# Assert: wrapped token is less valuable than native token
+		self.assertEqual(Decimal(6) / Decimal(5), calculator.conversion_rate())
+		self.assertEqual(1000, calculator.to_native_amount(1200))
+		self.assertEqual(1200, calculator.to_wrapped_amount(1000))
+
+		self.assertEqual(native_balance, calculator.native_balance)
+		self.assertEqual(wrapped_balance, calculator.wrapped_balance)
+		self.assertEqual(unwrapped_balance, calculator.unwrapped_balance)
+
+	def test_conversion_rate_calculator_works_with_wrap_discount(self):
+		self._assert_conversion_rate_calculator_wrap_discount(10000, 14000, 2000)
+
+	def test_conversion_rate_calculator_works_with_wrap_discount_simulate_wrap(self):
+		self._assert_conversion_rate_calculator_wrap_discount(10000 + 1000, 14000 + 1200, 2000)
+
+	def test_conversion_rate_calculator_works_with_wrap_discount_simulate_unwrap(self):
+		self._assert_conversion_rate_calculator_wrap_discount(10000 - 1000, 14000, 2000 + 1200)
+
+	def test_conversion_rate_calculator_with_zero_native_balance_is_treated_as_unity(self):
+		# Arrange:
+		calculator = ConversionRateCalculator(0, 0, 0)
+
+		# Assert: wrapped token is equally valuable as native token
+		self.assertEqual(Decimal(1), calculator.conversion_rate())
+		self.assertEqual(1000, calculator.to_native_amount(1000))
+		self.assertEqual(1000, calculator.to_wrapped_amount(1000))
+
+		self.assertEqual(1, calculator.native_balance)
+		self.assertEqual(1, calculator.wrapped_balance)
+		self.assertEqual(0, calculator.unwrapped_balance)
+
+	# endregion
+
 	# region try_create_calculator - empty
 
 	def _assert_cannot_create_calculator_when_databases_are_empty(self, is_unwrap_mode):

@@ -29,7 +29,7 @@ async def server(aiohttp_client):
 
 def _create_config(server=None, mosaic_id=None, config_extensions=None):  # pylint: disable=redefined-outer-name
 	endpoint = server.make_url('') if server else 'http://foo.bar:1234'
-	mosaic_id = mosaic_id or '0x0D8775F648430679A709E98d2b0Cb6250d2887EF'
+	mosaic_id = '0x0D8775F648430679A709E98d2b0Cb6250d2887EF' if mosaic_id is None else mosaic_id
 	return NetworkConfiguration('ethereum', 'testnet', endpoint, '0x67b1d87101671b127f5f8714789C7192f7ad340e', mosaic_id, {
 		'chain_id': '8876',
 		'signer_private_key': '0999a20d4fdda8d7273e8a24f70e1105f9dcfcae2fba55e9a08f6e752411ed7a',
@@ -48,6 +48,21 @@ def test_can_create_facade():
 	assert EthereumAddress('0x67b1d87101671b127f5f8714789C7192f7ad340e') == facade.bridge_address
 	assert EthereumAddress('0x0D8775F648430679A709E98d2b0Cb6250d2887EF') == facade.transaction_search_address
 	assert 8876 == facade.chain_id
+	assert 18 == facade.native_token_precision
+
+
+def test_can_create_facade_for_native_eth():
+	# Act:
+	facade = EthereumNetworkFacade(_create_config(mosaic_id=''))
+
+	# Assert:
+	assert 'testnet' == facade.network.name
+	assert facade.rosetta_network_id is None
+	assert facade.network == facade.sdk_facade.network
+	assert EthereumAddress('0x67b1d87101671b127f5f8714789C7192f7ad340e') == facade.bridge_address
+	assert EthereumAddress('0x67b1d87101671b127f5f8714789C7192f7ad340e') == facade.transaction_search_address
+	assert 8876 == facade.chain_id
+	assert 18 == facade.native_token_precision
 
 
 async def test_can_initialize_facade(server):  # pylint: disable=redefined-outer-name
@@ -58,9 +73,20 @@ async def test_can_initialize_facade(server):  # pylint: disable=redefined-outer
 	await facade.init()
 
 	# Assert:
-	assert 3 == facade.token_precision
 	assert {EthereumAddress('0xb5368c39Efb0DbA28C082733FE3F9463A215CC3D'): 14} == facade.address_to_nonce_map
 	assert Decimal(0x5208) == facade.gas_estimate
+
+
+async def test_can_initialize_facade_for_native_eth(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	facade = EthereumNetworkFacade(_create_config(server, mosaic_id=''))
+
+	# Act:
+	await facade.init()
+
+	# Assert:
+	assert {EthereumAddress('0xb5368c39Efb0DbA28C082733FE3F9463A215CC3D'): 14} == facade.address_to_nonce_map
+	assert Decimal(0x4201) == facade.gas_estimate
 
 # endregion
 
@@ -77,6 +103,18 @@ def test_can_extract_mosaic_id():
 	# Assert:
 	assert '0x0ff070994dd3fdB1441433c219A42286ef85290f' == mosaic_id.id
 	assert '0x0ff070994dd3fdB1441433c219A42286ef85290f' == mosaic_id.formatted
+
+
+def test_can_extract_mosaic_id_for_native_eth():
+	# Arrange:
+	facade = EthereumNetworkFacade(_create_config(mosaic_id=''))
+
+	# Act:
+	mosaic_id = facade.extract_mosaic_id()
+
+	# Assert:
+	assert '' == mosaic_id.id
+	assert 'ETH' == mosaic_id.formatted
 
 # endregion
 
@@ -358,6 +396,69 @@ async def test_can_create_multiple_transfer_transactions_with_autoincrementing_n
 	# Assert:
 	assert [14, 15, 16, 17] == [transaction['nonce'] for transaction in transactions]
 
+
+async def _assert_can_create_transfer_transaction_native(server, config_extensions, expected_values):
+	# pylint: disable=redefined-outer-name
+	facade = EthereumNetworkFacade(_create_config(server, mosaic_id='', config_extensions=config_extensions))
+	await facade.init()
+
+	# Act:
+	transaction = await facade.create_transfer_transaction(None, _create_sample_balance_transfer(), '')
+
+	# Assert:
+	assert {
+		'from': '0xb5368c39Efb0DbA28C082733FE3F9463A215CC3D',
+		'to': '0xF0109fC8DF283027b6285cc889F5aA624EaC1F55',
+		'value': hex(88888_000000),
+		'nonce': 14,
+		'chainId': 8876,
+
+		'gas': expected_values['gas'],
+		'maxFeePerGas': expected_values['max_fee_per_gas'],
+		'maxPriorityFeePerGas': expected_values['max_priority_fee_per_gas']
+	} == transaction
+
+
+async def test_can_create_transfer_transaction_native(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	server.mock.gas_price_override = 1000
+
+	# Act + Assert:
+	await _assert_can_create_transfer_transaction_native(server, None, {
+		'gas': 19432,  # ceil(16897 * 1.15 == 19431.55)
+		'max_fee_per_gas': 2983960434 + 654360002,  # ceil(2486633695 * 1.2 == 2983960434) + ceil(623200001 * 1.05 == 654360001.05)
+		'max_priority_fee_per_gas': 654360002  # ceil(623200001 * 1.05 == 654360001.05)
+	})
+
+
+async def test_can_create_transfer_transaction_native_with_multiple_custom_properties(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	server.mock.gas_price_override = 1000
+
+	# Act + Assert:
+	await _assert_can_create_transfer_transaction_native(server, {
+		'gas_multiple': '1.1111',
+		'gas_price_multiple': '1.1',
+		'priority_fee_multiple': '1.11'
+	}, {
+		'gas': 18775,  # ceil(16897 * 1.1111 == 18774.2567)
+		'max_fee_per_gas': 2735297065 + 691752002,  # ceil(2486633695 * 1.1 == 2735297064.5) + ceil(623200001 * 1.11 == 691752001.11)
+		'max_priority_fee_per_gas': 691752002  # ceil(623200001 * 1.11 == 691752001.11)
+	})
+
+
+async def test_can_create_transfer_transaction_native_with_gas_price_fallback(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	server.mock.gas_price_override = 2983960434 + 654360002 + 1000000  # 3639320436
+
+	# Act + Assert:
+	await _assert_can_create_transfer_transaction_native(server, None, {
+		'gas': 19432,  # ceil(16897 * 1.15 == 19431.55)
+		'max_fee_per_gas': 4367184524,  # ceil(3639320436 * 1.2 == 4367184523.2)
+		'max_priority_fee_per_gas': 4367184524 - 2983960434  # ceil(3639320436 * 1.2 == 4367184523.2) - ceil(2486633695 * 1.2 == 2983960434)
+	})
+
+
 # endregion
 
 
@@ -387,7 +488,7 @@ async def test_can_calculate_transfer_transaction_fee(server):  # pylint: disabl
 	# - gas_price    => ceil(8049999872 * 1.2 == 9659999846.4)
 	# - base_fee     => ceil(2486633695 * 1.2 == 2983960434)
 	# - priority_fee => ceil(623200001 * 1.05 == 654360001.05)
-	await _assert_can_calculate_transfer_transaction_fee(server, None, Decimal(24150 * (2983960434 + 654360002)) / Decimal(10 ** 18))
+	await _assert_can_calculate_transfer_transaction_fee(server, None, Decimal(24150 * (2983960434 + 654360002)))
 
 
 async def test_can_calculate_transfer_transaction_fee_with_multiple_custom_properties(server):  # pylint: disable=redefined-outer-name
@@ -403,7 +504,7 @@ async def test_can_calculate_transfer_transaction_fee_with_multiple_custom_prope
 		'gas_multiple': '1.1111',
 		'gas_price_multiple': '1.1',
 		'priority_fee_multiple': '1.11'
-	}, Decimal(23334 * (2735297065 + 691752002)) / Decimal(10 ** 18))
+	}, Decimal(23334 * (2735297065 + 691752002)))
 
 
 async def test_can_calculate_transfer_transaction_fee_gas_price_fallback(server):  # pylint: disable=redefined-outer-name
@@ -415,7 +516,7 @@ async def test_can_calculate_transfer_transaction_fee_gas_price_fallback(server)
 	# - gas_price    => ceil(3639320436 * 1.2 == 4367184523.2)
 	# - base_fee     => ceil(2486633695 * 1.2 == 2983960434)
 	# - priority_fee => ceil(623200001 * 1.05 == 654360001.05)
-	await _assert_can_calculate_transfer_transaction_fee(server, None, Decimal(24150 * 4367184524) / Decimal(10 ** 18))
+	await _assert_can_calculate_transfer_transaction_fee(server, None, Decimal(24150 * 4367184524))
 
 
 async def test_can_calculate_transfer_transaction_fee_for_account_with_unknown_nonce(server):  # pylint: disable=redefined-outer-name
@@ -441,6 +542,6 @@ async def test_can_calculate_transfer_transaction_fee_for_account_with_unknown_n
 	# - gas_price    => ceil(8049999872 * 1.2 == 9659999846.4)
 	# - base_fee     => ceil(2486633695 * 1.2 == 2983960434)
 	# - priority_fee => ceil(623200001 * 1.05 == 654360001.05)
-	assert Decimal(24150 * (2983960434 + 654360002)) / Decimal(10 ** 18) == transaction_fee
+	assert Decimal(24150 * (2983960434 + 654360002)) == transaction_fee
 
 # endregion

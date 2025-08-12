@@ -23,6 +23,7 @@ class SymbolNetworkFacade:
 		self.sdk_facade = SymbolFacade(self.network)
 		self.bridge_address = Address(config.bridge_address)
 		self.transaction_search_address = self.bridge_address
+		self.native_token_precision = 6
 
 		self.currency_mosaic_ids = []
 

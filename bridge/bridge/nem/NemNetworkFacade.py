@@ -21,6 +21,7 @@ class NemNetworkFacade:
 		self.sdk_facade = NemFacade(self.network)
 		self.bridge_address = Address(config.bridge_address)
 		self.transaction_search_address = self.bridge_address
+		self.native_token_precision = 6
 
 		self.mosaic_id_to_fee_information_map = {}
 
