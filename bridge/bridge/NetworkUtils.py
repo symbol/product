@@ -47,7 +47,7 @@ class TransactionSender:
 
 	@staticmethod
 	def _load_key_pair(network_facade):
-		private_key = PrivateKey(network_facade.config.extensions['signing_private_key'])
+		private_key = PrivateKey(network_facade.config.extensions['signer_private_key'])
 		return network_facade.sdk_facade.KeyPair(private_key)
 
 	def __init__(self, network_facade, fee_multiplier=Decimal(1)):

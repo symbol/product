@@ -33,7 +33,7 @@ class EthereumNetworkFacade:  # pylint: disable=too-many-instance-attributes
 		connector = self.create_connector()
 		self.token_precision = await connector.token_precision(self.config.mosaic_id)
 
-		signer_public_key = EthereumSdkFacade.KeyPair(PrivateKey(self.config.extensions['signing_private_key'])).public_key
+		signer_public_key = EthereumSdkFacade.KeyPair(PrivateKey(self.config.extensions['signer_private_key'])).public_key
 		signer_address = signer_public_key.address
 		self.address_to_nonce_map[signer_address] = await connector.nonce(signer_address, 'pending')
 

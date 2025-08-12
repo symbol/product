@@ -74,7 +74,7 @@ async def test_can_estimate_balance_transfer_fees_when_conversion_fee_is_nonzero
 def _create_config(server=None, mosaic_id='id:E74B99BA41F4AFEE', config_extensions=None):  # pylint: disable=redefined-outer-name
 	endpoint = server.make_url('') if server else 'http://foo.bar:1234'
 	return NetworkConfiguration('symbol', 'testnet', endpoint, 'TDDRDLK5QL2LJPZOF26QFXB24TJ5HGB4NDTF6SI', mosaic_id, {
-		'signing_private_key': 'F490900201CD6365A89FDD41B7B2CC71E9537455E8AB626A47EBFA0681E5BE62',
+		'signer_private_key': 'F490900201CD6365A89FDD41B7B2CC71E9537455E8AB626A47EBFA0681E5BE62',
 		'transaction_fee_multiplier': '100',
 		**(config_extensions or {})
 	})
