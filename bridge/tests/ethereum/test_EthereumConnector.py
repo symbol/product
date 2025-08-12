@@ -224,7 +224,7 @@ async def test_can_query_token_precision_with_custom_block_identifier(server):  
 # endregion
 
 
-# region gas_price, estimate_gas
+# region gas_price, estimate_gas, estimate_fees_from_history
 
 async def test_can_query_gas_price(server):  # pylint: disable=redefined-outer-name
 	# Arrange:
@@ -258,6 +258,20 @@ async def test_can_estimate_gas(server):  # pylint: disable=redefined-outer-name
 		}
 	])] == server.mock.request_json_payloads
 	assert 0x5208 == gas
+
+
+async def test_can_estimate_fees_from_history(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	connector = EthereumConnector(server.make_url(''))
+
+	# Act:
+	fee_information = await connector.estimate_fees_from_history(10)
+
+	# Assert:
+	assert [f'{server.make_url("")}/'] == server.mock.urls
+	assert [make_rpc_request_json('eth_feeHistory', [10, 'latest', [50]])] == server.mock.request_json_payloads
+	assert 0x943704DF == fee_information.base_fee
+	assert 0x25254701 == fee_information.priority_fee
 
 # endregion
 

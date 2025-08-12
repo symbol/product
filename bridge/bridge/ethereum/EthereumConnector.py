@@ -1,5 +1,7 @@
 import asyncio
 from binascii import hexlify
+from collections import namedtuple
+from statistics import median_high
 
 import sha3
 from aiolimiter import AsyncLimiter
@@ -9,6 +11,8 @@ from symbollightapi.model.Exceptions import NodeException
 
 from .EthereumAdapters import EthereumNetworkTimestamp
 from .RpcUtils import make_rpc_request_json, parse_rpc_response_hex_value
+
+FeeInformation = namedtuple('FeeInformation', ['base_fee', 'priority_fee'])
 
 
 class EthereumConnector(BasicConnector):
@@ -135,7 +139,7 @@ class EthereumConnector(BasicConnector):
 
 	# endregion
 
-	# region gas_price, estimate_gas
+	# region gas_price, estimate_gas, estimate_fees_from_history
 
 	async def gas_price(self):
 		"""Gets the current estimated gas price."""
@@ -150,6 +154,19 @@ class EthereumConnector(BasicConnector):
 		request_json = make_rpc_request_json('eth_estimateGas', [transaction_object])
 		result_json = await self.post('', request_json)
 		return parse_rpc_response_hex_value(result_json['result'])
+
+	async def estimate_fees_from_history(self, blocks_count):
+		"""Gets the estimated gas prices from history."""
+
+		request_json = make_rpc_request_json('eth_feeHistory', [blocks_count, 'latest', [50]])
+		result_json = await self.post('', request_json, 'result')
+
+		median_priority_fees = [parse_rpc_response_hex_value(reward[0]) for reward in result_json['reward']]
+		median_priority_fee = median_high(median_priority_fees)
+
+		next_base_fee = parse_rpc_response_hex_value(result_json['baseFeePerGas'][-1])
+
+		return FeeInformation(next_base_fee, median_priority_fee)
 
 	# endregion
 

@@ -14,6 +14,7 @@ async def create_simple_ethereum_client(aiohttp_client):
 			self.request_json_payloads = []
 
 			self.simulate_announce_error = False
+			self.gas_price_override = None
 
 		async def rpc_main(self, request):  # pylint: disable = too-many-return-statements
 			request_json = await request.json()
@@ -25,6 +26,9 @@ async def create_simple_ethereum_client(aiohttp_client):
 
 			if 'eth_estimateGas' == method:
 				return await self._handle_eth_estimate_gas(request)
+
+			if 'eth_feeHistory' == method:
+				return await self._handle_eth_fee_history(request)
 
 			if 'eth_gasPrice' == method:
 				return await self._handle_eth_gas_price(request)
@@ -59,9 +63,40 @@ async def create_simple_ethereum_client(aiohttp_client):
 				'result': '0x5208'
 			})
 
+		async def _handle_eth_fee_history(self, request):
+			return await self._process(request, {
+				'result': {
+					'reward': [
+						['0x1ef87780'],
+						['0x3b9aca00'],
+						['0x239dbca0'],
+						['0x29dbf809'],
+						['0x2e21aecc'],
+						['0x5f5e100'],
+						['0x15c2e491'],
+						['0x25254701'],
+						['0xbebc200'],
+						['0x2c9ffe7f']
+					],
+					'baseFeePerGas': [
+						'0x9f37f0b8',
+						'0xa0cb1a45',
+						'0xa13892b9',
+						'0x9af4a66e',
+						'0x9ca43336',
+						'0x9e0223ab',
+						'0x8f85c1d3',
+						'0x9dbe2da3',
+						'0x96f72b02',
+						'0x97b52923',
+						'0x943704df'
+					]
+				}
+			})
+
 		async def _handle_eth_gas_price(self, request):
 			return await self._process(request, {
-				'result': '0x1DFD14000'
+				'result': hex(self.gas_price_override) if self.gas_price_override else '0x1DFD14000'
 			})
 
 		async def _handle_eth_get_block_by_number(self, request, block_identifier):
