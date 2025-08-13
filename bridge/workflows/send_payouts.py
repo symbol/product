@@ -2,7 +2,7 @@ import asyncio
 from decimal import Decimal
 
 from bridge.db.WrapRequestDatabase import PayoutDetails, WrapRequestStatus
-from bridge.NetworkUtils import TransactionSender
+from bridge.NetworkUtils import TransactionSender, TrySendResult
 from bridge.WorkflowUtils import create_conversion_rate_calculator_factory, is_native_to_native_conversion
 
 from .main_impl import main_bootstrapper, print_banner
@@ -17,6 +17,11 @@ async def _send_payout(network, request, conversion_rate_calculator, fee_multipl
 
 	sender = TransactionSender(network, fee_multiplier)
 	transfer_amount = conversion_rate_calculator(request.amount)
+
+	max_transfer_amount = int(network.config.extensions.get('max_transfer_amount', 0))
+	if max_transfer_amount and transfer_amount > max_transfer_amount:
+		error_message = f'gross transfer amount {transfer_amount} exceeds max transfer amount {max_transfer_amount}'
+		return TrySendResult(True, None, None, None, error_message)
 
 	print(
 		f'> issuing {transfer_amount} [{mosaic_id.formatted}] tokens (gross) to {request.destination_address}'
