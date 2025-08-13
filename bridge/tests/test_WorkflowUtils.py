@@ -126,6 +126,54 @@ def test_can_create_native_calculator_when_max_processed_height_is_at_least_targ
 	_assert_can_create_native_calculator_at_height(1001)
 	_assert_can_create_native_calculator_at_height(1002)
 
+
+def _assert_is_native_calculator_best_calculator(calculator, expected_height):
+	assert 400000 == calculator.to_wrapped_amount(1000000)
+
+	assert expected_height == calculator.height
+	assert Decimal('2.5') == calculator.native_balance
+	assert 1 == calculator.wrapped_balance
+	assert 0 == calculator.unwrapped_balance
+
+
+def test_can_create_native_calculator_best_calculator_empty():
+	# Arrange:
+	with tempfile.TemporaryDirectory() as temp_directory:
+		with _create_databases(temp_directory) as databases:
+			databases.create_tables()
+
+			factory = NativeConversionRateCalculatorFactory(databases, Decimal('2.5'))
+
+			# Act:
+			calculator = factory.create_best_calculator()
+
+			# Assert:
+			_assert_is_native_calculator_best_calculator(calculator, 0)
+
+			# Sanity:
+			assert not factory.try_create_calculator(1)
+			assert factory.try_create_calculator(0)
+
+
+def test_can_create_native_calculator_best_calculator_not_empty():
+	# Arrange:
+	with tempfile.TemporaryDirectory() as temp_directory:
+		with _create_databases(temp_directory) as databases:
+			databases.create_tables()
+			databases.wrap_request.set_max_processed_height(1002)
+
+			factory = NativeConversionRateCalculatorFactory(databases, Decimal('2.5'))
+
+			# Act:
+			calculator = factory.create_best_calculator()
+
+			# Assert:
+			_assert_is_native_calculator_best_calculator(calculator, 1002)
+
+			# Sanity:
+			assert not factory.try_create_calculator(1003)
+			assert factory.try_create_calculator(1002)
+
 # endregion
 
 

@@ -13,6 +13,7 @@ from ..db.Databases import Databases
 from ..models.BridgeConfiguration import parse_bridge_configuration
 from ..NetworkFacadeLoader import load_network_facade
 from ..NetworkUtils import BalanceTransfer, estimate_balance_transfer_fees
+from ..WorkflowUtils import create_conversion_rate_calculator_factory, is_native_to_native_conversion
 from .Validators import is_valid_address_string, is_valid_decimal_string, is_valid_hash_string
 
 FilterOptions = namedtuple('FilterOptions', ['address', 'transaction_hash', 'offset', 'limit'])
@@ -115,7 +116,7 @@ def _handle_wrap_errors(network_facade, address, transaction_hash, database_para
 		])
 
 
-async def _handle_wrap_prepare(network_facade, database_params, native_mosaic_id, fee_multiplier):
+async def _handle_wrap_prepare(is_unwrap_mode, context, fee_multiplier):
 	request_json = request.get_json()
 
 	request_amount = request_json.get('amount', None)
@@ -124,20 +125,33 @@ async def _handle_wrap_prepare(network_facade, database_params, native_mosaic_id
 
 	request_amount = int(request_amount)
 
-	is_unwrap = fee_multiplier is None
-	with Databases(*database_params) as databases:
-		conversion_rate_calculator_factory = ConversionRateCalculatorFactory(databases, native_mosaic_id.formatted, is_unwrap)
+	with Databases(*context.database_params) as databases:
+		conversion_rate_calculator_factory = create_conversion_rate_calculator_factory(
+			is_unwrap_mode,
+			databases,
+			context.native_facade,
+			context.wrapped_facade,
+			fee_multiplier)
 		calculator = conversion_rate_calculator_factory.create_best_calculator()
-		gross_amount = (calculator.to_native_amount if is_unwrap else calculator.to_wrapped_amount)(request_amount)
+		calculator_func = calculator.to_native_amount if is_unwrap_mode else calculator.to_wrapped_amount
+		gross_amount = calculator_func(request_amount)
 
+		if fee_multiplier:
+			fee_multiplier *= Decimal(calculator_func(10 ** 12)) / Decimal(10 ** 12)
+
+		network_facade = context.native_facade if is_unwrap_mode else context.wrapped_facade
 		balance_transfer = BalanceTransfer(
 			network_facade.make_public_key(network_facade.config.extensions['signer_public_key']),
 			network_facade.bridge_address,
 			gross_amount,
 			None)
+
+		if is_native_to_native_conversion(context.wrapped_facade):
+			fee_multiplier = None
+
 		fee_information = await estimate_balance_transfer_fees(network_facade, balance_transfer, fee_multiplier or Decimal('1'))
 
-		return jsonify({
+		result = {
 			'grossAmount': gross_amount,
 			'transactionFee': fee_information.transaction.quantize(Decimal('0.0001')),
 			'conversionFee': fee_information.conversion.quantize(Decimal('0.0001')),
@@ -150,7 +164,13 @@ async def _handle_wrap_prepare(network_facade, database_params, native_mosaic_id
 				'wrappedBalance': calculator.wrapped_balance,
 				'unwrappedBalance': calculator.unwrapped_balance,
 			}
-		})
+		}
+
+		if is_native_to_native_conversion(context.wrapped_facade):
+			# clear other diagnostic calculator properties because they're not relevant
+			result['diagnostics'] = {'height': calculator.height}
+
+		return jsonify(result)
 
 # endregion
 
@@ -185,6 +205,55 @@ class BridgeContext:
 # endregion
 
 
+def add_wrap_routes(app, context, price_oracle):
+	@app.route('/wrap/requests/<address>')
+	@app.route('/wrap/requests/<address>/<transaction_hash>')
+	async def wrap_requests(address, transaction_hash=None):  # pylint: disable=unused-variable
+		await context.load()
+
+		return _handle_wrap_requests(context.native_facade, address, transaction_hash, context.database_params, 'wrap_request')
+
+	@app.route('/wrap/errors/<address>')
+	@app.route('/wrap/errors/<address>/<transaction_hash>')
+	async def wrap_errors(address, transaction_hash=None):  # pylint: disable=unused-variable
+		await context.load()
+
+		return _handle_wrap_errors(context.native_facade, address, transaction_hash, context.database_params, 'wrap_request')
+
+	@app.route('/wrap/prepare', methods=['POST'])
+	async def wrap_prepare():
+		await context.load()
+
+		fee_multiplier = await price_oracle.conversion_rate(
+			context.wrapped_facade.config.blockchain,
+			context.native_facade.config.blockchain)
+		fee_multiplier *= Decimal(10 ** context.native_facade.native_token_precision)
+		fee_multiplier /= Decimal(10 ** context.wrapped_facade.native_token_precision)
+		return await _handle_wrap_prepare(False, context, fee_multiplier)
+
+
+def add_unwrap_routes(app, context):
+	@app.route('/unwrap/requests/<address>')
+	@app.route('/unwrap/requests/<address>/<transaction_hash>')
+	async def unwrap_requests(address, transaction_hash=None):  # pylint: disable=unused-variable
+		await context.load()
+
+		return _handle_wrap_requests(context.wrapped_facade, address, transaction_hash, context.database_params, 'unwrap_request')
+
+	@app.route('/unwrap/errors/<address>')
+	@app.route('/unwrap/errors/<address>/<transaction_hash>')
+	async def unwrap_errors(address, transaction_hash=None):  # pylint: disable=unused-variable
+		await context.load()
+
+		return _handle_wrap_errors(context.wrapped_facade, address, transaction_hash, context.database_params, 'unwrap_request')
+
+	@app.route('/unwrap/prepare', methods=['POST'])
+	async def unwrap_prepare():
+		await context.load()
+
+		return await _handle_wrap_prepare(True, context, None)
+
+
 def create_app():
 	app = Flask(__name__)
 	app.config.from_envvar('BRIDGE_API_SETTINGS')
@@ -203,52 +272,8 @@ def create_app():
 			'enabled': True
 		})
 
-	@app.route('/wrap/requests/<address>')
-	@app.route('/wrap/requests/<address>/<transaction_hash>')
-	async def wrap_requests(address, transaction_hash=None):  # pylint: disable=unused-variable
-		await context.load()
-
-		return _handle_wrap_requests(context.native_facade, address, transaction_hash, context.database_params, 'wrap_request')
-
-	@app.route('/unwrap/requests/<address>')
-	@app.route('/unwrap/requests/<address>/<transaction_hash>')
-	async def unwrap_requests(address, transaction_hash=None):  # pylint: disable=unused-variable
-		await context.load()
-
-		return _handle_wrap_requests(context.wrapped_facade, address, transaction_hash, context.database_params, 'unwrap_request')
-
-	@app.route('/wrap/errors/<address>')
-	@app.route('/wrap/errors/<address>/<transaction_hash>')
-	async def wrap_errors(address, transaction_hash=None):  # pylint: disable=unused-variable
-		await context.load()
-
-		return _handle_wrap_errors(context.native_facade, address, transaction_hash, context.database_params, 'wrap_request')
-
-	@app.route('/unwrap/errors/<address>')
-	@app.route('/unwrap/errors/<address>/<transaction_hash>')
-	async def unwrap_errors(address, transaction_hash=None):  # pylint: disable=unused-variable
-		await context.load()
-
-		return _handle_wrap_errors(context.wrapped_facade, address, transaction_hash, context.database_params, 'unwrap_request')
-
-	@app.route('/wrap/prepare', methods=['POST'])
-	async def wrap_prepare():
-		await context.load()
-
-		unit_multiplier = Decimal(context.native_facade.config.extensions.get('unit_multiplier', '1'))
-		fee_multiplier = await price_oracle.conversion_rate(
-			context.wrapped_facade.config.blockchain,
-			context.native_facade.config.blockchain)
-		return await _handle_wrap_prepare(
-			context.wrapped_facade,
-			context.database_params,
-			context.native_mosaic_id,
-			fee_multiplier * unit_multiplier)
-
-	@app.route('/unwrap/prepare', methods=['POST'])
-	async def unwrap_prepare():
-		await context.load()
-
-		return await _handle_wrap_prepare(context.native_facade, context.database_params, context.native_mosaic_id, None)
+	add_wrap_routes(app, context, price_oracle)
+	if config.wrapped_network.mosaic_id:  # not native to native conversion
+		add_unwrap_routes(app, context)
 
 	return app

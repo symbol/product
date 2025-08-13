@@ -1,5 +1,7 @@
 import pytest
+from symbolchain.CryptoTypes import PrivateKey
 
+from bridge.ethereum.EthereumAdapters import EthereumSdkFacade
 from bridge.ethereum.EthereumNetworkFacade import EthereumNetworkFacade
 from bridge.models.BridgeConfiguration import NetworkConfiguration
 from bridge.nem.NemNetworkFacade import NemNetworkFacade
@@ -38,11 +40,16 @@ def _create_config(blockchain, server):  # pylint: disable=redefined-outer-name
 		'symbol': ('TDDRDLK5QL2LJPZOF26QFXB24TJ5HGB4NDTF6SI', 'foo:bar')
 	}
 
+	extensions = {}
+	if 'ethereum' == blockchain:
+		signer_key_pair = EthereumSdkFacade.KeyPair(PrivateKey('0999A20D4FDDA8D7273E8A24F70E1105F9DCFCAE2FBA55E9A08F6E752411ED7A'))
+		extensions = {
+			'chain_id': '1234',
+			'signer_public_key': f'0x{signer_key_pair.public_key}'
+		}
+
 	(bridge_address, mosaic_id) = blockchain_tuple_map.get(blockchain, blockchain_tuple_map['symbol'])
-	return NetworkConfiguration(blockchain, 'testnet', server.make_url(''), bridge_address, mosaic_id, {
-		'chain_id': '1234',
-		'signer_private_key': 'CDAAEF4C1EC606C7E8B72472803D84EF24AF8150D338C0B1A150812E4BC41DAF'
-	})
+	return NetworkConfiguration(blockchain, 'testnet', server.make_url(''), bridge_address, mosaic_id, extensions)
 
 
 async def test_can_load_nem_network_facade(nem_server):  # pylint: disable=redefined-outer-name

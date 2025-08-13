@@ -23,11 +23,17 @@ from ..test.DatabaseTestUtils import (
 	seed_database_with_simple_requests
 )
 from ..test.MockCoinGeckoServer import create_simple_coingecko_client
+from ..test.MockEthereumServer import create_simple_ethereum_client
 from ..test.MockNemServer import create_simple_nem_client
 from ..test.MockNetworkFacade import MockNemNetworkFacade, MockSymbolNetworkFacade
 from ..test.MockSymbolServer import create_simple_symbol_client
 
-# region fixtures
+# region external server fixtures
+
+
+@pytest.fixture
+async def ethereum_server(aiohttp_client):
+	return await create_simple_ethereum_client(aiohttp_client)
 
 
 @pytest.fixture
@@ -46,58 +52,95 @@ async def symbol_server(aiohttp_client):
 async def coingecko_server(aiohttp_client):
 	return await create_simple_coingecko_client(aiohttp_client)
 
+# endregion
+
+
+# region apps
+
+def _configure_app_directory(directory, native_server, wrapped_server, coingecko_server, update_wrapped_config):
+	# pylint: disable=redefined-outer-name
+	database_directory = Path(directory) / 'db'
+	database_directory.mkdir()
+
+	# create db tables
+	with Databases(database_directory, MockNemNetworkFacade(), MockSymbolNetworkFacade()) as databases:
+		databases.create_tables()
+
+	# create bridge properties from sample
+	sample_config_filename = 'tests/resources/sample.config.properties'
+	parser = configparser.ConfigParser()
+	parser.optionxform = str
+	parser.read(sample_config_filename)
+	parser['machine']['databaseDirectory'] = str(database_directory)
+	parser['price_oracle']['url'] = str(coingecko_server.make_url(''))
+	parser['native_network']['endpoint'] = str(native_server.make_url(''))
+	parser['native_network']['signerPublicKey'] = '47D5025EC5E5892668FFB1BE2891D09C4D6DC507EDA474B439B33EF0C94F0AA9'
+	parser['native_network']['percentageConversionFee'] = '0.002'
+	parser['native_network']['explorerEndpoint'] = '<native explorer endpoint>'
+	parser['wrapped_network']['endpoint'] = str(wrapped_server.make_url(''))
+	parser['wrapped_network']['signerPublicKey'] = 'FDA024AD1FA204242F5FE579419491A76E467EAF6C36E29EA8FC4BF0734B3E81'
+	parser['wrapped_network']['percentageConversionFee'] = '0.003'
+	parser['wrapped_network']['explorerEndpoint'] = '<wrapped explorer endpoint>'
+	update_wrapped_config(parser['wrapped_network'])
+
+	bridge_propererties_filename = Path(directory) / 'bridge.test.properties'
+	with open(bridge_propererties_filename, 'wt', encoding='utf8') as properties_file:
+		parser.write(properties_file)
+
+	# create Flask server config file
+	config_filename = Path(directory) / 'config'
+	with open(config_filename, 'wt', encoding='utf8') as config_file:
+		print(f'creating config file {config_filename}...')
+
+		config_file.write(f'CONFIG_PATH="{bridge_propererties_filename}"\n')
+		config_file.flush()
+
+		temp_file_path = config_filename.resolve()
+		os.environ['BRIDGE_API_SETTINGS'] = str(temp_file_path)
+
+	return database_directory
+
 
 @pytest.fixture
 def app(nem_server, symbol_server, coingecko_server):  # pylint: disable=redefined-outer-name
+	def update_wrapped_config(config):
+		config['transactionFeeMultiplier'] = '50'
+
 	with tempfile.TemporaryDirectory() as temp_directory:
-		database_directory = Path(temp_directory) / 'db'  # pylint: disable=redefined-outer-name
-		database_directory.mkdir()
+		database_directory = _configure_app_directory(temp_directory, nem_server, symbol_server, coingecko_server, update_wrapped_config)
+		app = create_app()  # pylint: disable=redefined-outer-name
+		app.database_directory = database_directory
+		yield app
 
-		# create bridge properties from sample
-		sample_config_filename = 'tests/resources/sample.config.properties'
-		parser = configparser.ConfigParser()
-		parser.optionxform = str
-		parser.read(sample_config_filename)
-		parser['machine']['databaseDirectory'] = str(database_directory)
-		parser['price_oracle']['url'] = str(coingecko_server.make_url(''))
-		parser['native_network']['endpoint'] = str(nem_server.make_url(''))
-		parser['native_network']['signerPublicKey'] = '47D5025EC5E5892668FFB1BE2891D09C4D6DC507EDA474B439B33EF0C94F0AA9'
-		parser['native_network']['percentageConversionFee'] = '0.002'
-		parser['native_network']['unitMultiplier'] = '100'
-		parser['native_network']['explorerEndpoint'] = '<nem explorer endpoint>'
-		parser['wrapped_network']['endpoint'] = str(symbol_server.make_url(''))
-		parser['wrapped_network']['signerPublicKey'] = 'FDA024AD1FA204242F5FE579419491A76E467EAF6C36E29EA8FC4BF0734B3E81'
-		parser['wrapped_network']['transactionFeeMultiplier'] = '50'
-		parser['wrapped_network']['percentageConversionFee'] = '0.003'
-		parser['wrapped_network']['explorerEndpoint'] = '<symbol explorer endpoint>'
 
-		bridge_propererties_filename = Path(temp_directory) / 'bridge.test.properties'
-		with open(bridge_propererties_filename, 'wt', encoding='utf8') as properties_file:
-			parser.write(properties_file)
+@pytest.fixture
+def app_n2n(nem_server, ethereum_server, coingecko_server):  # pylint: disable=redefined-outer-name
+	def update_wrapped_config(config):
+		config['blockchain'] = 'ethereum'
+		config['bridgeAddress'] = '0x0ff070994dd3fdB1441433c219A42286ef85290f'
+		config['signerPublicKey'] = f'0x{2 * config["signerPublicKey"]}'
+		config['mosaicId'] = ''
+		config['chainId'] = '1337'
 
-		# create Flask server config file
-		config_filename = Path(temp_directory) / 'config'
-		with open(config_filename, 'wt', encoding='utf8') as config_file:
-			print(f'creating config file {config_filename}...')
-
-			config_file.write(f'CONFIG_PATH="{bridge_propererties_filename}"\n')
-			config_file.flush()
-
-			temp_file_path = config_filename.resolve()
-			os.environ['BRIDGE_API_SETTINGS'] = str(temp_file_path)
-			app = create_app()  # pylint: disable=redefined-outer-name
-			app.database_directory = database_directory
-			yield app
+	with tempfile.TemporaryDirectory() as temp_directory:
+		database_directory = _configure_app_directory(temp_directory, nem_server, ethereum_server, coingecko_server, update_wrapped_config)
+		app = create_app()  # pylint: disable=redefined-outer-name
+		app.database_directory = database_directory
+		yield app
 
 
 @pytest.fixture
 def client(app):  # pylint: disable=redefined-outer-name
-	return app.test_client()
+	test_client = app.test_client()
+	test_client.database_directory = app.database_directory
+	return test_client
 
 
 @pytest.fixture
-def database_directory(app):  # pylint: disable=redefined-outer-name
-	return app.database_directory
+def client_n2n(app_n2n):  # pylint: disable=redefined-outer-name
+	test_client = app_n2n.test_client()
+	test_client.database_directory = app_n2n.database_directory
+	return test_client
 
 # endregion
 
@@ -169,6 +212,11 @@ def _assert_json_response_bad_request(response):
 	assert 400 == response.status_code
 	assert 'application/json' == response.headers['Content-Type']
 
+
+def _assert_json_response_not_found(response):
+	assert 404 == response.status_code
+	assert 'text/html; charset=utf-8' == response.headers['Content-Type']
+
 # endregion
 
 
@@ -191,7 +239,7 @@ def test_root(client, nem_server, symbol_server):  # pylint: disable=redefined-o
 			'bridgeAddress': 'TBINJOHFNWMNUOJ2KW3DWJTLRVNAOGQCE6FECSQJ',
 			'tokenId': 'nem:xem',
 			'defaultNodeUrl': str(nem_server.make_url('')),
-			'explorerUrl': '<nem explorer endpoint>'
+			'explorerUrl': '<native explorer endpoint>'
 		},
 		'wrappedNetwork': {
 			'blockchain': 'symbol',
@@ -199,7 +247,35 @@ def test_root(client, nem_server, symbol_server):  # pylint: disable=redefined-o
 			'bridgeAddress': 'TCRZANFBD6O6EGYCBAH6ICTLAMH6OGBV6CEH7UY',
 			'tokenId': 'id:5D6CFC64A20E86E6',
 			'defaultNodeUrl': str(symbol_server.make_url('')),
-			'explorerUrl': '<symbol explorer endpoint>'
+			'explorerUrl': '<wrapped explorer endpoint>'
+		},
+		'enabled': True
+	} == response_json
+
+
+def test_root_n2n(client_n2n, nem_server, ethereum_server):  # pylint: disable=redefined-outer-name
+	# Act:
+	response = client_n2n.get('/')
+	response_json = json.loads(response.data)
+
+	# Assert:
+	_assert_json_response_success(response)
+	assert {
+		'nativeNetwork': {
+			'blockchain': 'nem',
+			'network': 'testnet',
+			'bridgeAddress': 'TBINJOHFNWMNUOJ2KW3DWJTLRVNAOGQCE6FECSQJ',
+			'tokenId': 'nem:xem',
+			'defaultNodeUrl': str(nem_server.make_url('')),
+			'explorerUrl': '<native explorer endpoint>'
+		},
+		'wrappedNetwork': {
+			'blockchain': 'ethereum',
+			'network': 'testnet',
+			'bridgeAddress': '0x0ff070994dd3fdB1441433c219A42286ef85290f',
+			'tokenId': '',
+			'defaultNodeUrl': str(ethereum_server.make_url('')),
+			'explorerUrl': '<wrapped explorer endpoint>'
 		},
 		'enabled': True
 	} == response_json
@@ -237,10 +313,10 @@ async def _assert_is_bad_request_post(client, path, request_json, expected_respo
 	await loop.run_in_executor(None, test_impl)
 
 
-async def _assert_filtering_route_validates_parameters(client, database_directory, is_unwrap, base_path):
+async def _assert_filtering_route_validates_parameters(client, is_unwrap, base_path):
 	# pylint: disable=redefined-outer-name
 	# Arrange:
-	_seed_multiple_requests(database_directory, is_unwrap)
+	_seed_multiple_requests(client.database_directory, is_unwrap)
 
 	# Act + Assert:
 	sample_address = (SYMBOL_ADDRESSES if is_unwrap else NEM_ADDRESSES)[2]
@@ -258,9 +334,9 @@ async def _assert_filtering_route_validates_parameters(client, database_director
 	})
 
 
-async def _assert_prepare_route_validates_parameters(client, database_directory, base_path):  # pylint: disable=redefined-outer-name
+async def _assert_prepare_route_validates_parameters(client, base_path):  # pylint: disable=redefined-outer-name
 	# Arrange:
-	_seed_database_for_prepare_tests(database_directory)
+	_seed_database_for_prepare_tests(client.database_directory)
 
 	# Act + Assert:
 	await _assert_is_bad_request_post(client, base_path, {}, {
@@ -270,16 +346,52 @@ async def _assert_prepare_route_validates_parameters(client, database_directory,
 		'error': 'amount parameter is invalid'
 	})
 
+
+async def _assert_is_route_accessible_get(client, path):  # pylint: disable=redefined-outer-name
+	def test_impl():
+		# Act:
+		response = client.get(path)
+
+		# Assert:
+		_assert_json_response_success(response)
+
+	loop = asyncio.get_running_loop()
+	await loop.run_in_executor(None, test_impl)
+
+
+async def _assert_not_is_route_accessible_get(client, path):  # pylint: disable=redefined-outer-name
+	def test_impl():
+		# Act:
+		response = client.get(path)
+
+		# Assert:
+		_assert_json_response_not_found(response)
+
+	loop = asyncio.get_running_loop()
+	await loop.run_in_executor(None, test_impl)
+
+
+async def _assert_not_is_route_accessible_post(client, path, request_json):  # pylint: disable=redefined-outer-name
+	def test_impl():
+		# Act:
+		response = client.post(path, json=request_json)
+
+		# Assert:
+		_assert_json_response_not_found(response)
+
+	loop = asyncio.get_running_loop()
+	await loop.run_in_executor(None, test_impl)
+
 # endregion
 
 
 # region shared filtering tests
 
-async def _assert_can_filter_by_address_empty(client, database_directory, base_path, is_unwrap):  # pylint: disable=redefined-outer-name
+async def _assert_can_filter_by_address_empty(client, base_path, is_unwrap):  # pylint: disable=redefined-outer-name
 	def test_impl():
 		# Arrange:
 		address_filter = (SYMBOL_ADDRESSES if is_unwrap else NEM_ADDRESSES)[4]
-		_seed_multiple_requests(database_directory, is_unwrap)
+		_seed_multiple_requests(client.database_directory, is_unwrap)
 
 		# Act:
 		response = client.get(f'{base_path}{address_filter}')
@@ -293,12 +405,12 @@ async def _assert_can_filter_by_address_empty(client, database_directory, base_p
 	await loop.run_in_executor(None, test_impl)
 
 
-async def _assert_can_filter_by_address(client, database_directory, base_path, is_unwrap):  # pylint: disable=redefined-outer-name
+async def _assert_can_filter_by_address(client, base_path, is_unwrap):  # pylint: disable=redefined-outer-name
 	def test_impl():
 		# Arrange:
 		test_params = get_default_filtering_test_parameters()
 		address_filter = (SYMBOL_ADDRESSES if is_unwrap else NEM_ADDRESSES)[test_params.address_index]
-		_seed_multiple_requests(database_directory, is_unwrap)
+		_seed_multiple_requests(client.database_directory, is_unwrap)
 
 		# Act:
 		response = client.get(f'{base_path}{address_filter}')
@@ -312,13 +424,13 @@ async def _assert_can_filter_by_address(client, database_directory, base_path, i
 	await loop.run_in_executor(None, test_impl)
 
 
-async def _assert_can_filter_by_address_and_transaction_hash(client, database_directory, base_path, is_unwrap):
+async def _assert_can_filter_by_address_and_transaction_hash(client, base_path, is_unwrap):
 	# pylint: disable=redefined-outer-name
 	def test_impl():
 		# Arrange:
 		test_params = get_default_filtering_test_parameters()
 		address_filter = (SYMBOL_ADDRESSES if is_unwrap else NEM_ADDRESSES)[test_params.address_index]
-		_seed_multiple_requests(database_directory, is_unwrap)
+		_seed_multiple_requests(client.database_directory, is_unwrap)
 
 		# Act:
 		response = client.get(f'{base_path}{address_filter}/{HASHES[test_params.hash_index]}')
@@ -332,13 +444,13 @@ async def _assert_can_filter_by_address_and_transaction_hash(client, database_di
 	await loop.run_in_executor(None, test_impl)
 
 
-async def _assert_can_filter_by_address_with_custom_offset_and_limit(client, database_directory, base_path, is_unwrap):
+async def _assert_can_filter_by_address_with_custom_offset_and_limit(client, base_path, is_unwrap):
 	# pylint: disable=redefined-outer-name
 	def test_impl():
 		# Arrange:
 		test_params = get_default_filtering_test_parameters()
 		address_filter = (SYMBOL_ADDRESSES if is_unwrap else NEM_ADDRESSES)[test_params.address_index]
-		_seed_multiple_requests(database_directory, is_unwrap)
+		_seed_multiple_requests(client.database_directory, is_unwrap)
 
 		# Act:
 		response = client.get(f'{base_path}{address_filter}?offset={test_params.offset}&limit={test_params.limit}')
@@ -356,14 +468,14 @@ async def _assert_can_filter_by_address_with_custom_offset_and_limit(client, dat
 
 # region /wrap/requests
 
-async def test_wrap_requests_returns_bad_request_for_invalid_parameters(client, database_directory):  # pylint: disable=redefined-outer-name
-	await _assert_filtering_route_validates_parameters(client, database_directory, False, '/wrap/requests')
+async def test_wrap_requests_returns_bad_request_for_invalid_parameters(client):  # pylint: disable=redefined-outer-name
+	await _assert_filtering_route_validates_parameters(client, False, '/wrap/requests')
 
 
-async def test_can_query_wrap_requests_with_single_match(client, database_directory):  # pylint: disable=redefined-outer-name
+async def test_can_query_wrap_requests_with_single_match(client):  # pylint: disable=redefined-outer-name
 	def test_impl():
 		# Arrange:
-		_seed_completed_request(database_directory, False)
+		_seed_completed_request(client.database_directory, False)
 
 		# Act:
 		response = client.get(f'/wrap/requests/{NEM_ADDRESSES[2]}')
@@ -398,10 +510,10 @@ async def test_can_query_wrap_requests_with_single_match(client, database_direct
 	await loop.run_in_executor(None, test_impl)
 
 
-async def test_can_query_wrap_requests_with_single_match_unprocessed(client, database_directory):  # pylint: disable=redefined-outer-name
+async def test_can_query_wrap_requests_with_single_match_unprocessed(client):  # pylint: disable=redefined-outer-name
 	def test_impl():
 		# Arrange:
-		_seed_completed_request(database_directory, False)
+		_seed_completed_request(client.database_directory, False)
 
 		# Act:
 		response = client.get(f'/wrap/requests/{NEM_ADDRESSES[0]}')
@@ -436,35 +548,39 @@ async def test_can_query_wrap_requests_with_single_match_unprocessed(client, dat
 	await loop.run_in_executor(None, test_impl)
 
 
-async def test_can_query_wrap_requests_with_no_matches(client, database_directory):  # pylint: disable=redefined-outer-name
-	await _assert_can_filter_by_address_empty(client, database_directory, '/wrap/requests/', False)
+async def test_can_query_wrap_requests_with_no_matches(client):  # pylint: disable=redefined-outer-name
+	await _assert_can_filter_by_address_empty(client, '/wrap/requests/', False)
 
 
-async def test_can_query_wrap_requests_by_address(client, database_directory):  # pylint: disable=redefined-outer-name
-	await _assert_can_filter_by_address(client, database_directory, '/wrap/requests/', False)
+async def test_can_query_wrap_requests_by_address(client):  # pylint: disable=redefined-outer-name
+	await _assert_can_filter_by_address(client, '/wrap/requests/', False)
 
 
-async def test_can_query_wrap_requests_by_address_and_transaction_hash(client, database_directory):  # pylint: disable=redefined-outer-name
-	await _assert_can_filter_by_address_and_transaction_hash(client, database_directory, '/wrap/requests/', False)
+async def test_can_query_wrap_requests_by_address_and_transaction_hash(client):  # pylint: disable=redefined-outer-name
+	await _assert_can_filter_by_address_and_transaction_hash(client, '/wrap/requests/', False)
 
 
-async def test_can_query_wrap_requests_with_custom_offset_and_limit(client, database_directory):  # pylint: disable=redefined-outer-name
-	await _assert_can_filter_by_address_with_custom_offset_and_limit(client, database_directory, '/wrap/requests/', False)
+async def test_can_query_wrap_requests_with_custom_offset_and_limit(client):  # pylint: disable=redefined-outer-name
+	await _assert_can_filter_by_address_with_custom_offset_and_limit(client, '/wrap/requests/', False)
+
+
+async def test_can_query_wrap_requests_n2n(client_n2n):  # pylint: disable=redefined-outer-name
+	await _assert_is_route_accessible_get(client_n2n, f'/wrap/requests/{NEM_ADDRESSES[2]}')
 
 # endregion
 
 
 # region /unwrap/requests
 
-async def test_unwrap_requests_returns_bad_request_for_invalid_parameters(client, database_directory):
+async def test_unwrap_requests_returns_bad_request_for_invalid_parameters(client):
 	# pylint: disable=redefined-outer-name
-	await _assert_filtering_route_validates_parameters(client, database_directory, True, '/unwrap/requests')
+	await _assert_filtering_route_validates_parameters(client, True, '/unwrap/requests')
 
 
-async def test_can_query_unwrap_requests_with_single_match(client, database_directory):  # pylint: disable=redefined-outer-name
+async def test_can_query_unwrap_requests_with_single_match(client):  # pylint: disable=redefined-outer-name
 	def test_impl():
 		# Arrange:
-		_seed_completed_request(database_directory, True)
+		_seed_completed_request(client.database_directory, True)
 
 		# Act:
 		response = client.get(f'/unwrap/requests/{SYMBOL_ADDRESSES[2]}')
@@ -499,35 +615,39 @@ async def test_can_query_unwrap_requests_with_single_match(client, database_dire
 	await loop.run_in_executor(None, test_impl)
 
 
-async def test_can_query_unwrap_requests_with_no_matches(client, database_directory):  # pylint: disable=redefined-outer-name
-	await _assert_can_filter_by_address_empty(client, database_directory, '/unwrap/requests/', True)
+async def test_can_query_unwrap_requests_with_no_matches(client):  # pylint: disable=redefined-outer-name
+	await _assert_can_filter_by_address_empty(client, '/unwrap/requests/', True)
 
 
-async def test_can_query_unwrap_requests_by_address(client, database_directory):  # pylint: disable=redefined-outer-name
-	await _assert_can_filter_by_address(client, database_directory, '/unwrap/requests/', True)
+async def test_can_query_unwrap_requests_by_address(client):  # pylint: disable=redefined-outer-name
+	await _assert_can_filter_by_address(client, '/unwrap/requests/', True)
 
 
-async def test_can_query_unwrap_requests_by_address_and_transaction_hash(client, database_directory):
+async def test_can_query_unwrap_requests_by_address_and_transaction_hash(client):
 	# pylint: disable=redefined-outer-name
-	await _assert_can_filter_by_address_and_transaction_hash(client, database_directory, '/unwrap/requests/', True)
+	await _assert_can_filter_by_address_and_transaction_hash(client, '/unwrap/requests/', True)
 
 
-async def test_can_query_unwrap_requests_with_custom_offset_and_limit(client, database_directory):  # pylint: disable=redefined-outer-name
-	await _assert_can_filter_by_address_with_custom_offset_and_limit(client, database_directory, '/unwrap/requests/', True)
+async def test_can_query_unwrap_requests_with_custom_offset_and_limit(client):  # pylint: disable=redefined-outer-name
+	await _assert_can_filter_by_address_with_custom_offset_and_limit(client, '/unwrap/requests/', True)
+
+
+async def test_cannot_query_unwrap_requests_n2n(client_n2n):  # pylint: disable=redefined-outer-name
+	await _assert_not_is_route_accessible_get(client_n2n, '/unwrap/requests/0x4838b106fce9647bdf1e7877bf73ce8b0bad5f97')
 
 # endregion
 
 
 # region /wrap/errors
 
-async def test_wrap_errors_returns_bad_request_for_invalid_parameters(client, database_directory):  # pylint: disable=redefined-outer-name
-	await _assert_filtering_route_validates_parameters(client, database_directory, False, '/wrap/errors')
+async def test_wrap_errors_returns_bad_request_for_invalid_parameters(client):  # pylint: disable=redefined-outer-name
+	await _assert_filtering_route_validates_parameters(client, False, '/wrap/errors')
 
 
-async def test_can_query_wrap_errors_with_single_match(client, database_directory):  # pylint: disable=redefined-outer-name
+async def test_can_query_wrap_errors_with_single_match(client):  # pylint: disable=redefined-outer-name
 	def test_impl():
 		# Arrange:
-		_seed_simple_error(database_directory, False)
+		_seed_simple_error(client.database_directory, False)
 
 		# Act:
 		response = client.get(f'/wrap/errors/{NEM_ADDRESSES[2]}')
@@ -552,34 +672,38 @@ async def test_can_query_wrap_errors_with_single_match(client, database_director
 	await loop.run_in_executor(None, test_impl)
 
 
-async def test_can_query_wrap_errors_with_no_matches(client, database_directory):  # pylint: disable=redefined-outer-name
-	await _assert_can_filter_by_address_empty(client, database_directory, '/wrap/errors/', False)
+async def test_can_query_wrap_errors_with_no_matches(client):  # pylint: disable=redefined-outer-name
+	await _assert_can_filter_by_address_empty(client, '/wrap/errors/', False)
 
 
-async def test_can_query_wrap_errors_by_address(client, database_directory):  # pylint: disable=redefined-outer-name
-	await _assert_can_filter_by_address(client, database_directory, '/wrap/errors/', False)
+async def test_can_query_wrap_errors_by_address(client):  # pylint: disable=redefined-outer-name
+	await _assert_can_filter_by_address(client, '/wrap/errors/', False)
 
 
-async def test_can_query_wrap_errors_by_address_and_transaction_hash(client, database_directory):  # pylint: disable=redefined-outer-name
-	await _assert_can_filter_by_address_and_transaction_hash(client, database_directory, '/wrap/errors/', False)
+async def test_can_query_wrap_errors_by_address_and_transaction_hash(client):  # pylint: disable=redefined-outer-name
+	await _assert_can_filter_by_address_and_transaction_hash(client, '/wrap/errors/', False)
 
 
-async def test_can_query_wrap_errors_with_custom_offset_and_limit(client, database_directory):  # pylint: disable=redefined-outer-name
-	await _assert_can_filter_by_address_with_custom_offset_and_limit(client, database_directory, '/wrap/errors/', False)
+async def test_can_query_wrap_errors_with_custom_offset_and_limit(client):  # pylint: disable=redefined-outer-name
+	await _assert_can_filter_by_address_with_custom_offset_and_limit(client, '/wrap/errors/', False)
+
+
+async def test_can_query_wrap_errors_n2n(client_n2n):  # pylint: disable=redefined-outer-name
+	await _assert_is_route_accessible_get(client_n2n, f'/wrap/errors/{NEM_ADDRESSES[2]}')
 
 # endregion
 
 
 # region /unwrap/errors
 
-async def test_unwrap_errors_returns_bad_request_for_invalid_parameters(client, database_directory):  # pylint: disable=redefined-outer-name
-	await _assert_filtering_route_validates_parameters(client, database_directory, True, '/unwrap/errors')
+async def test_unwrap_errors_returns_bad_request_for_invalid_parameters(client):  # pylint: disable=redefined-outer-name
+	await _assert_filtering_route_validates_parameters(client, True, '/unwrap/errors')
 
 
-async def test_can_query_unwrap_errors_with_single_match(client, database_directory):  # pylint: disable=redefined-outer-name
+async def test_can_query_unwrap_errors_with_single_match(client):  # pylint: disable=redefined-outer-name
 	def test_impl():
 		# Arrange:
-		_seed_simple_error(database_directory, True)
+		_seed_simple_error(client.database_directory, True)
 
 		# Act:
 		response = client.get(f'/unwrap/errors/{SYMBOL_ADDRESSES[2]}')
@@ -604,47 +728,51 @@ async def test_can_query_unwrap_errors_with_single_match(client, database_direct
 	await loop.run_in_executor(None, test_impl)
 
 
-async def test_can_query_unwrap_errors_with_no_matches(client, database_directory):  # pylint: disable=redefined-outer-name
-	await _assert_can_filter_by_address_empty(client, database_directory, '/unwrap/errors/', True)
+async def test_can_query_unwrap_errors_with_no_matches(client):  # pylint: disable=redefined-outer-name
+	await _assert_can_filter_by_address_empty(client, '/unwrap/errors/', True)
 
 
-async def test_can_query_unwrap_errors_by_address(client, database_directory):  # pylint: disable=redefined-outer-name
-	await _assert_can_filter_by_address(client, database_directory, '/unwrap/errors/', True)
+async def test_can_query_unwrap_errors_by_address(client):  # pylint: disable=redefined-outer-name
+	await _assert_can_filter_by_address(client, '/unwrap/errors/', True)
 
 
-async def test_can_query_unwrap_errors_by_address_and_transaction_hash(client, database_directory):  # pylint: disable=redefined-outer-name
-	await _assert_can_filter_by_address_and_transaction_hash(client, database_directory, '/unwrap/errors/', True)
+async def test_can_query_unwrap_errors_by_address_and_transaction_hash(client):  # pylint: disable=redefined-outer-name
+	await _assert_can_filter_by_address_and_transaction_hash(client, '/unwrap/errors/', True)
 
 
-async def test_can_query_unwrap_errors_with_custom_offset_and_limit(client, database_directory):  # pylint: disable=redefined-outer-name
-	await _assert_can_filter_by_address_with_custom_offset_and_limit(client, database_directory, '/unwrap/errors/', True)
+async def test_can_query_unwrap_errors_with_custom_offset_and_limit(client):  # pylint: disable=redefined-outer-name
+	await _assert_can_filter_by_address_with_custom_offset_and_limit(client, '/unwrap/errors/', True)
+
+
+async def test_cannot_query_unwrap_errors_n2n(client_n2n):  # pylint: disable=redefined-outer-name
+	await _assert_not_is_route_accessible_get(client_n2n, '/unwrap/errors/0x4838b106fce9647bdf1e7877bf73ce8b0bad5f97')
 
 # endregion
 
 
 # region /wrap/prepare
 
-async def test_prepare_wrap_returns_bad_request_for_invalid_parameters(client, database_directory):  # pylint: disable=redefined-outer-name
-	await _assert_prepare_route_validates_parameters(client, database_directory, '/wrap/prepare')
+async def test_prepare_wrap_returns_bad_request_for_invalid_parameters(client):  # pylint: disable=redefined-outer-name
+	await _assert_prepare_route_validates_parameters(client, '/wrap/prepare')
 
 
-async def test_can_prepare_wrap(client, database_directory):  # pylint: disable=redefined-outer-name
+async def test_can_prepare_wrap(client):  # pylint: disable=redefined-outer-name
 	def test_impl():
 		# Arrange:
-		_seed_database_for_prepare_tests(database_directory)
+		_seed_database_for_prepare_tests(client.database_directory)
 
 		# Act:
 		response = client.post('/wrap/prepare', json={'amount': 1234000000})
 		response_json = json.loads(response.data)
 
-		# Assert: fee_multiplier => 0.0877 / 0.0199 * 100
+		# Assert: fee_multiplier => 0.0877 / 0.0199 / 6
 		_assert_json_response_success(response)
 		assert {
 			'grossAmount': 205666666,  # floor(1234000000 / 6),
-			'conversionFee': '271914069.4704',  # grossAmount * config(percentageConversionFee) * feeMultiplier
-			'transactionFee': '3878190.9548',  # 176 * config(transactionFeeMultiplier) * feeMultiplier
-			'totalFee': 275792261,  # ceil(conversionFee + transactionFee)
-			'netAmount': -70125595,  # grossAmount - totalFee
+			'conversionFee': '453190.1158',  # grossAmount * config(percentageConversionFee)[0.003] * feeMultiplier
+			'transactionFee': '6463.6516',  # 176 * config(transactionFeeMultiplier)[50] * feeMultiplier
+			'totalFee': 459654,  # ceil(conversionFee + transactionFee)
+			'netAmount': 205207012,  # grossAmount - totalFee
 
 			'diagnostics': {
 				'height': 4444,
@@ -657,20 +785,47 @@ async def test_can_prepare_wrap(client, database_directory):  # pylint: disable=
 	loop = asyncio.get_running_loop()
 	await loop.run_in_executor(None, test_impl)
 
+
+async def test_can_prepare_wrap_n2n(client_n2n):  # pylint: disable=redefined-outer-name
+	def test_impl():
+		# Arrange:
+		_seed_database_for_prepare_tests(client_n2n.database_directory)
+
+		# Act:
+		response = client_n2n.post('/wrap/prepare', json={'amount': 1234000000})
+		response_json = json.loads(response.data)
+
+		# Assert: fee_multiplier => 0.0199 / 4500 * 10^6 / 10^18
+		_assert_json_response_success(response)
+		assert {
+			'grossAmount': 5457022222222222,  # floor(1234000000 * feeMultiplier)
+			'conversionFee': '16371066666666.6660',  # grossAmount * config(percentageConversionFee)[0.003]
+			'transactionFee': '187713117026904.0000',  # gas[19432] * maxFeePerGas[9659999847]
+			'totalFee': 204084183693571,  # ceil(conversionFee + transactionFee)
+			'netAmount': 5252938038528651,  # grossAmount - totalFee
+
+			'diagnostics': {
+				'height': 4444
+			}
+		} == response_json
+
+	loop = asyncio.get_running_loop()
+	await loop.run_in_executor(None, test_impl)
+
 # endregion
 
 
 # region /unwrap/prepare
 
-async def test_prepare_unwrap_returns_bad_request_for_invalid_parameters(client, database_directory):
+async def test_prepare_unwrap_returns_bad_request_for_invalid_parameters(client):
 	# pylint: disable=redefined-outer-name
-	await _assert_prepare_route_validates_parameters(client, database_directory, '/unwrap/prepare')
+	await _assert_prepare_route_validates_parameters(client, '/unwrap/prepare')
 
 
-async def test_can_prepare_unwrap(client, database_directory):  # pylint: disable=redefined-outer-name
+async def test_can_prepare_unwrap(client):  # pylint: disable=redefined-outer-name
 	def test_impl():
 		# Arrange:
-		_seed_database_for_prepare_tests(database_directory)
+		_seed_database_for_prepare_tests(client.database_directory)
 
 		# Act:
 		response = client.post('/unwrap/prepare', json={'amount': 1234000000})
@@ -681,7 +836,7 @@ async def test_can_prepare_unwrap(client, database_directory):  # pylint: disabl
 
 		assert {
 			'grossAmount': 7403999999,  # floor(1234000000 * 6),
-			'conversionFee': '14807999.9980',  # grossAmount * config(percentageConversionFee)
+			'conversionFee': '14807999.9980',  # grossAmount * config(percentageConversionFee)[0.002]
 			'transactionFee': '50000.0000',  # 50000
 			'totalFee': 14858000,  # ceil(conversionFee + transactionFee)
 			'netAmount': 7389141999,  # grossAmount - totalFee
@@ -696,5 +851,9 @@ async def test_can_prepare_unwrap(client, database_directory):  # pylint: disabl
 
 	loop = asyncio.get_running_loop()
 	await loop.run_in_executor(None, test_impl)
+
+
+async def test_cannot_prepare_unwrap_n2n(client_n2n):  # pylint: disable=redefined-outer-name
+	await _assert_not_is_route_accessible_post(client_n2n, '/unwrap/prepare', {'amount': 1234000000})
 
 # endregion
