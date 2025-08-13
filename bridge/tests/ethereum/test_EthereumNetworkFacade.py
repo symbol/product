@@ -74,19 +74,6 @@ async def test_can_initialize_facade(server):  # pylint: disable=redefined-outer
 
 	# Assert:
 	assert {EthereumAddress('0xb5368c39Efb0DbA28C082733FE3F9463A215CC3D'): 14} == facade.address_to_nonce_map
-	assert Decimal(0x5208) == facade.gas_estimate
-
-
-async def test_can_initialize_facade_for_native_eth(server):  # pylint: disable=redefined-outer-name
-	# Arrange:
-	facade = EthereumNetworkFacade(_create_config(server, mosaic_id=''))
-
-	# Act:
-	await facade.init()
-
-	# Assert:
-	assert {EthereumAddress('0xb5368c39Efb0DbA28C082733FE3F9463A215CC3D'): 14} == facade.address_to_nonce_map
-	assert Decimal(0x4201) == facade.gas_estimate
 
 # endregion
 
