@@ -5,7 +5,6 @@ from symbolchain.CryptoTypes import PrivateKey
 from web3 import Web3
 
 from ..models.Constants import PrintableMosaicId
-from ..NetworkUtils import BalanceTransfer
 from .EthereumAdapters import EthereumAddress, EthereumNetwork, EthereumPublicKey, EthereumSdkFacade
 from .EthereumConnector import EthereumConnector
 from .EthereumUtils import extract_wrap_request_from_transaction
@@ -35,7 +34,6 @@ class EthereumNetworkFacade:  # pylint: disable=too-many-instance-attributes
 		self.native_token_precision = 18
 
 		self.address_to_nonce_map = {}
-		self.gas_estimate = None
 
 	def _is_currency_mosaic_id(self):
 		return not self.config.mosaic_id
@@ -47,10 +45,6 @@ class EthereumNetworkFacade:  # pylint: disable=too-many-instance-attributes
 		signer_public_key = EthereumSdkFacade.KeyPair(PrivateKey(self.config.extensions['signer_private_key'])).public_key
 		signer_address = signer_public_key.address
 		self.address_to_nonce_map[signer_address] = await connector.nonce(signer_address, 'pending')
-
-		sample_balance_transfer = BalanceTransfer(signer_public_key, signer_address, 1, None)
-		transaction = self._make_simple_transaction_object(sample_balance_transfer, self.config.mosaic_id)
-		self.gas_estimate = Decimal(await connector.estimate_gas(transaction))
 
 	def extract_mosaic_id(self):
 		"""
@@ -124,10 +118,11 @@ class EthereumNetworkFacade:  # pylint: disable=too-many-instance-attributes
 		multiple = Decimal(self.config.extensions.get(multiple_key, DEFAULT_MULTIPLES[multiple_key]))
 		return int((Decimal(value) * multiple).quantize(1, rounding=ROUND_UP))
 
-	async def _calculate_gas(self):
+	async def _calculate_gas(self, transaction):
 		connector = self.create_connector()
 
-		gas_estimate = self._apply_multiple(self.gas_estimate, 'gas_multiple')
+		gas_estimate = Decimal(await connector.estimate_gas(transaction))
+		gas_estimate = self._apply_multiple(gas_estimate, 'gas_multiple')
 
 		gas_price = await connector.gas_price()
 		gas_price = self._apply_multiple(gas_price, 'gas_price_multiple')
@@ -148,8 +143,6 @@ class EthereumNetworkFacade:  # pylint: disable=too-many-instance-attributes
 	async def create_transfer_transaction(self, _timestamp, balance_transfer, mosaic_id):
 		"""Creates a transfer transaction."""
 
-		transaction = self._make_simple_transaction_object(balance_transfer, mosaic_id)
-
 		signer_address = balance_transfer.signer_public_key.address
 		nonce = self.address_to_nonce_map.get(signer_address, None)
 		if nonce is None:
@@ -157,7 +150,8 @@ class EthereumNetworkFacade:  # pylint: disable=too-many-instance-attributes
 
 		self.address_to_nonce_map[balance_transfer.signer_public_key.address] += 1
 
-		(gas, max_fee_per_gas, max_priority_fee_per_gas) = await self._calculate_gas()
+		transaction = self._make_simple_transaction_object(balance_transfer, mosaic_id)
+		(gas, max_fee_per_gas, max_priority_fee_per_gas) = await self._calculate_gas(transaction)
 		transaction.update({
 			'nonce': nonce,
 			'chainId': self.chain_id,
@@ -169,8 +163,9 @@ class EthereumNetworkFacade:  # pylint: disable=too-many-instance-attributes
 
 		return transaction
 
-	async def calculate_transfer_transaction_fee(self, _balance_transfer, _mosaic_id):
+	async def calculate_transfer_transaction_fee(self, balance_transfer, mosaic_id):
 		"""Calculates a transfer transaction fee."""
 
-		(gas, max_fee_per_gas, _) = await self._calculate_gas()
+		transaction = self._make_simple_transaction_object(balance_transfer, mosaic_id)
+		(gas, max_fee_per_gas, _) = await self._calculate_gas(transaction)
 		return gas * max_fee_per_gas
