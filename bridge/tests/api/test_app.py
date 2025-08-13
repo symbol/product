@@ -398,6 +398,44 @@ async def test_can_query_wrap_requests_with_single_match(client, database_direct
 	await loop.run_in_executor(None, test_impl)
 
 
+async def test_can_query_wrap_requests_with_single_match_unprocessed(client, database_directory):  # pylint: disable=redefined-outer-name
+	def test_impl():
+		# Arrange:
+		_seed_completed_request(database_directory, False)
+
+		# Act:
+		response = client.get(f'/wrap/requests/{NEM_ADDRESSES[0]}')
+		response_json = json.loads(response.data)
+
+		# Assert:
+		_assert_json_response_success(response)
+		assert [
+			{
+				'requestTransactionHeight': 111,
+				'requestTransactionHash': HASHES[0],
+				'requestTransactionSubindex': 0,
+				'senderAddress': NEM_ADDRESSES[0],
+
+				'requestAmount': 5554,
+				'destinationAddress': SYMBOL_ADDRESSES[0],
+				'payoutStatus': 0,
+				'payoutTransactionHash': None,
+
+				'requestTimestamp': 1427588605,
+
+				'payoutTransactionHeight': None,
+				'payoutNetAmount': None,
+				'payoutTotalFee': None,
+				'payoutConversionRate': None,
+
+				'payoutTimestamp': None
+			}
+		] == response_json
+
+	loop = asyncio.get_running_loop()
+	await loop.run_in_executor(None, test_impl)
+
+
 async def test_can_query_wrap_requests_with_no_matches(client, database_directory):  # pylint: disable=redefined-outer-name
 	await _assert_can_filter_by_address_empty(client, database_directory, '/wrap/requests/', False)
 
