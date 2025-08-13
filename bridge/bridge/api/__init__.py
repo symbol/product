@@ -80,7 +80,7 @@ def _handle_wrap_requests(network_facade, address, transaction_hash, database_pa
 				'requestAmount': view.request_amount,
 				'destinationAddress': str(view.destination_address),
 				'payoutStatus': view.payout_status,
-				'payoutTransactionHash': str(view.payout_transaction_hash),
+				'payoutTransactionHash': str(view.payout_transaction_hash) if view.payout_transaction_hash else None,
 
 				'requestTimestamp': view.request_timestamp,
 
