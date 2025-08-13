@@ -12,9 +12,9 @@ class ConversionRateCalculator:
 			self.wrapped_balance = Decimal(wrapped_balance)
 			self.unwrapped_balance = Decimal(unwrapped_balance)
 		else:
-			self.native_balance = 1
-			self.wrapped_balance = 1
-			self.unwrapped_balance = 0
+			self.native_balance = Decimal(1)
+			self.wrapped_balance = Decimal(1)
+			self.unwrapped_balance = Decimal(0)
 
 	def conversion_rate(self):
 		"""Gets the conversion rate."""

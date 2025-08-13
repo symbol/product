@@ -15,7 +15,8 @@ async def create_simple_coingecko_client(aiohttp_client):
 
 			price = {
 				'symbol': 0.0877,
-				'nem': 0.0199
+				'nem': 0.0199,
+				'ethereum': 4500
 			}[ticker]
 
 			return await self._process(request, {ticker: {'usd': price}})

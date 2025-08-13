@@ -3,9 +3,9 @@ from binascii import hexlify, unhexlify
 from decimal import Decimal
 
 import pytest
-from symbolchain.CryptoTypes import Hash256
+from symbolchain.CryptoTypes import Hash256, PrivateKey
 
-from bridge.ethereum.EthereumAdapters import EthereumAddress, EthereumPublicKey
+from bridge.ethereum.EthereumAdapters import EthereumAddress, EthereumPublicKey, EthereumSdkFacade
 from bridge.ethereum.EthereumConnector import EthereumConnector
 from bridge.ethereum.EthereumNetworkFacade import EthereumNetworkFacade
 from bridge.models.BridgeConfiguration import NetworkConfiguration
@@ -30,9 +30,10 @@ async def server(aiohttp_client):
 def _create_config(server=None, mosaic_id=None, config_extensions=None):  # pylint: disable=redefined-outer-name
 	endpoint = server.make_url('') if server else 'http://foo.bar:1234'
 	mosaic_id = '0x0D8775F648430679A709E98d2b0Cb6250d2887EF' if mosaic_id is None else mosaic_id
+	signer_key_pair = EthereumSdkFacade.KeyPair(PrivateKey('0999A20D4FDDA8D7273E8A24F70E1105F9DCFCAE2FBA55E9A08F6E752411ED7A'))
 	return NetworkConfiguration('ethereum', 'testnet', endpoint, '0x67b1d87101671b127f5f8714789C7192f7ad340e', mosaic_id, {
 		'chain_id': '8876',
-		'signer_private_key': '0999a20d4fdda8d7273e8a24f70e1105f9dcfcae2fba55e9a08f6e752411ed7a',
+		'signer_public_key': f'0x{signer_key_pair.public_key}',
 		**(config_extensions or {})
 	})
 

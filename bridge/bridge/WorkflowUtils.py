@@ -36,14 +36,28 @@ class NativeConversionRateCalculatorFactory:
 		self._databases = databases
 		self._fee_multiplier = fee_multiplier
 
-	def try_create_calculator(self, height):
-		"""Tries to create a conversion rate calculator at a specified height."""
-
+	def _try_create_calculator(self, height):
 		if height > self._databases.wrap_request.max_processed_height():
 			return None
 
-		calculator = ConversionRateCalculator(self._fee_multiplier, Decimal(1), 0)
+		return ConversionRateCalculator(self._fee_multiplier, Decimal(1), 0)
+
+	def try_create_calculator(self, height):
+		"""Tries to create a conversion rate calculator at a specified height."""
+
+		calculator = self._try_create_calculator(height)
+		if not calculator:
+			return None
+
 		return calculator.to_wrapped_amount
+
+	def create_best_calculator(self):
+		"""Creates a conversion rate calculator based on latest information."""
+
+		height = self._databases.wrap_request.max_processed_height()
+		calculator = self._try_create_calculator(height)
+		calculator.height = height
+		return calculator
 
 # endregion
 

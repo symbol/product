@@ -1,7 +1,6 @@
 from binascii import hexlify
 from decimal import ROUND_UP, Decimal
 
-from symbolchain.CryptoTypes import PrivateKey
 from web3 import Web3
 
 from ..models.Constants import PrintableMosaicId
@@ -42,7 +41,7 @@ class EthereumNetworkFacade:  # pylint: disable=too-many-instance-attributes
 		"""Downloads information from the network to initialize the facade."""
 
 		connector = self.create_connector()
-		signer_public_key = EthereumSdkFacade.KeyPair(PrivateKey(self.config.extensions['signer_private_key'])).public_key
+		signer_public_key = EthereumPublicKey(self.config.extensions['signer_public_key'])
 		signer_address = signer_public_key.address
 		self.address_to_nonce_map[signer_address] = await connector.nonce(signer_address, 'pending')
 
