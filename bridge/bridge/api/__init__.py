@@ -6,6 +6,7 @@ from pathlib import Path
 
 from flask import Flask, jsonify, request
 from symbolchain.CryptoTypes import Hash256
+from symbollightapi.model.Exceptions import NodeException
 
 from ..CoinGeckoConnector import CoinGeckoConnector
 from ..ConversionRateCalculatorFactory import ConversionRateCalculatorFactory
@@ -17,6 +18,7 @@ from ..WorkflowUtils import create_conversion_rate_calculator_factory, is_native
 from .Validators import is_valid_address_string, is_valid_decimal_string, is_valid_hash_string
 
 FilterOptions = namedtuple('FilterOptions', ['address', 'transaction_hash', 'offset', 'limit'])
+PrepareOptions = namedtuple('PrepareOptions', ['recipient_address', 'amount'])
 
 # region handler implementations
 
@@ -116,14 +118,29 @@ def _handle_wrap_errors(network_facade, address, transaction_hash, database_para
 		])
 
 
-async def _handle_wrap_prepare(is_unwrap_mode, context, fee_multiplier):
+def _parse_prepare_parameters(network_facade, request_json):
+	recipient_address = request_json.get('recipientAddress', None)
+	if not is_valid_address_string(network_facade, recipient_address):
+		return (None, 'recipientAddress')
+
+	recipient_address = network_facade.make_address(recipient_address)
+
+	amount = request_json.get('amount', None)
+	if not is_valid_decimal_string(amount):
+		return (None, 'amount')
+
+	amount = int(amount)
+
+	return (PrepareOptions(recipient_address, amount), None)
+
+
+async def _handle_wrap_prepare(is_unwrap_mode, context, fee_multiplier):  # pylint: disable=too-many-locals
+	network_facade = context.native_facade if is_unwrap_mode else context.wrapped_facade
+
 	request_json = request.get_json()
-
-	request_amount = request_json.get('amount', None)
-	if not is_valid_decimal_string(request_amount):
-		return _make_bad_request_response('amount')
-
-	request_amount = int(request_amount)
+	(prepare_options, parse_failure_identifier) = _parse_prepare_parameters(network_facade, request_json)
+	if parse_failure_identifier:
+		return _make_bad_request_response(parse_failure_identifier)
 
 	with Databases(*context.database_params) as databases:
 		conversion_rate_calculator_factory = create_conversion_rate_calculator_factory(
@@ -134,22 +151,24 @@ async def _handle_wrap_prepare(is_unwrap_mode, context, fee_multiplier):
 			fee_multiplier)
 		calculator = conversion_rate_calculator_factory.create_best_calculator()
 		calculator_func = calculator.to_native_amount if is_unwrap_mode else calculator.to_wrapped_amount
-		gross_amount = calculator_func(request_amount)
+		gross_amount = calculator_func(prepare_options.amount)
 
 		if fee_multiplier:
 			fee_multiplier *= Decimal(calculator_func(10 ** 12)) / Decimal(10 ** 12)
 
-		network_facade = context.native_facade if is_unwrap_mode else context.wrapped_facade
 		balance_transfer = BalanceTransfer(
 			network_facade.make_public_key(network_facade.config.extensions['signer_public_key']),
-			network_facade.bridge_address,
+			prepare_options.recipient_address,
 			gross_amount,
 			None)
 
 		if is_native_to_native_conversion(context.wrapped_facade):
 			fee_multiplier = None
 
-		fee_information = await estimate_balance_transfer_fees(network_facade, balance_transfer, fee_multiplier or Decimal('1'))
+		try:
+			fee_information = await estimate_balance_transfer_fees(network_facade, balance_transfer, fee_multiplier or Decimal('1'))
+		except NodeException as ex:
+			return jsonify({'error': str(ex)}), 500
 
 		result = {
 			'grossAmount': gross_amount,

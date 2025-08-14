@@ -14,6 +14,7 @@ async def create_simple_ethereum_client(aiohttp_client):
 			self.request_json_payloads = []
 
 			self.simulate_announce_error = False
+			self.simulate_estimate_gas_error = False
 			self.gas_price_override = None
 
 		async def rpc_main(self, request):  # pylint: disable = too-many-return-statements
@@ -59,6 +60,11 @@ async def create_simple_ethereum_client(aiohttp_client):
 			})
 
 		async def _handle_eth_estimate_gas(self, request, transaction_object):
+			if self.simulate_estimate_gas_error:
+				return await self._process(request, {
+					'error': {'code': 3, 'message': 'execution reverted: ERC20: transfer amount exceeds balance'}
+				})
+
 			return await self._process(request, {
 				'result': '0x5208' if 'data' in transaction_object else '0x4201'
 			})

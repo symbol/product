@@ -217,6 +217,11 @@ def _assert_json_response_not_found(response):
 	assert 404 == response.status_code
 	assert 'text/html; charset=utf-8' == response.headers['Content-Type']
 
+
+def _assert_json_response_internal_server_error(response):
+	assert 500 == response.status_code
+	assert 'application/json' == response.headers['Content-Type']
+
 # endregion
 
 
@@ -334,15 +339,27 @@ async def _assert_filtering_route_validates_parameters(client, is_unwrap, base_p
 	})
 
 
-async def _assert_prepare_route_validates_parameters(client, base_path):  # pylint: disable=redefined-outer-name
+async def _assert_prepare_route_validates_parameters(client, is_unwrap, base_path):  # pylint: disable=redefined-outer-name
 	# Arrange:
 	_seed_database_for_prepare_tests(client.database_directory)
 
 	# Act + Assert:
+	sample_address = (SYMBOL_ADDRESSES if not is_unwrap else NEM_ADDRESSES)[2]
 	await _assert_is_bad_request_post(client, base_path, {}, {
+		'error': 'recipientAddress parameter is invalid'
+	})
+
+	await _assert_is_bad_request_post(client, base_path, {'amount': '1234'}, {
+		'error': 'recipientAddress parameter is invalid'
+	})
+	await _assert_is_bad_request_post(client, base_path, {'recipientAddress': sample_address}, {
 		'error': 'amount parameter is invalid'
 	})
-	await _assert_is_bad_request_post(client, base_path, {'amount': 's'}, {
+
+	await _assert_is_bad_request_post(client, base_path, {'amount': '1234', 'recipientAddress': sample_address[:-1]}, {
+		'error': 'recipientAddress parameter is invalid'
+	})
+	await _assert_is_bad_request_post(client, base_path, {'amount': 's', 'recipientAddress': sample_address}, {
 		'error': 'amount parameter is invalid'
 	})
 
@@ -753,7 +770,30 @@ async def test_cannot_query_unwrap_errors_n2n(client_n2n):  # pylint: disable=re
 # region /wrap/prepare
 
 async def test_prepare_wrap_returns_bad_request_for_invalid_parameters(client):  # pylint: disable=redefined-outer-name
-	await _assert_prepare_route_validates_parameters(client, '/wrap/prepare')
+	await _assert_prepare_route_validates_parameters(client, False, '/wrap/prepare')
+
+
+async def test_prepare_wrap_returns_internal_server_errors_gracefully(client_n2n, ethereum_server):  # pylint: disable=redefined-outer-name
+	def test_impl():
+		# Arrange: this test is using client_n2n because only ethereum makes network calls during prepare
+		ethereum_server.mock.simulate_estimate_gas_error = True
+
+		_seed_database_for_prepare_tests(client_n2n.database_directory)
+
+		response = client_n2n.post('/wrap/prepare', json={
+			'amount': 1234000000,
+			'recipientAddress': '0x4838b106fce9647bdf1e7877bf73ce8b0bad5f97'
+		})
+		response_json = json.loads(response.data)
+
+		# Assert:
+		_assert_json_response_internal_server_error(response)
+		assert {
+			'error': 'eth_estimateGas RPC call failed: execution reverted: ERC20: transfer amount exceeds balance'
+		} == response_json
+
+	loop = asyncio.get_running_loop()
+	await loop.run_in_executor(None, test_impl)
 
 
 async def test_can_prepare_wrap(client):  # pylint: disable=redefined-outer-name
@@ -762,7 +802,7 @@ async def test_can_prepare_wrap(client):  # pylint: disable=redefined-outer-name
 		_seed_database_for_prepare_tests(client.database_directory)
 
 		# Act:
-		response = client.post('/wrap/prepare', json={'amount': 1234000000})
+		response = client.post('/wrap/prepare', json={'amount': 1234000000, 'recipientAddress': SYMBOL_ADDRESSES[2]})
 		response_json = json.loads(response.data)
 
 		# Assert: fee_multiplier => 0.0877 / 0.0199 / 6
@@ -792,7 +832,10 @@ async def test_can_prepare_wrap_n2n(client_n2n):  # pylint: disable=redefined-ou
 		_seed_database_for_prepare_tests(client_n2n.database_directory)
 
 		# Act:
-		response = client_n2n.post('/wrap/prepare', json={'amount': 1234000000})
+		response = client_n2n.post('/wrap/prepare', json={
+			'amount': 1234000000,
+			'recipientAddress': '0x4838b106fce9647bdf1e7877bf73ce8b0bad5f97'
+		})
 		response_json = json.loads(response.data)
 
 		# Assert: fee_multiplier => 0.0199 / 4500 * 10^6 / 10^18
@@ -819,7 +862,7 @@ async def test_can_prepare_wrap_n2n(client_n2n):  # pylint: disable=redefined-ou
 
 async def test_prepare_unwrap_returns_bad_request_for_invalid_parameters(client):
 	# pylint: disable=redefined-outer-name
-	await _assert_prepare_route_validates_parameters(client, '/unwrap/prepare')
+	await _assert_prepare_route_validates_parameters(client, True, '/unwrap/prepare')
 
 
 async def test_can_prepare_unwrap(client):  # pylint: disable=redefined-outer-name
@@ -828,7 +871,7 @@ async def test_can_prepare_unwrap(client):  # pylint: disable=redefined-outer-na
 		_seed_database_for_prepare_tests(client.database_directory)
 
 		# Act:
-		response = client.post('/unwrap/prepare', json={'amount': 1234000000})
+		response = client.post('/unwrap/prepare', json={'amount': 1234000000, 'recipientAddress': NEM_ADDRESSES[2]})
 		response_json = json.loads(response.data)
 
 		# Assert:

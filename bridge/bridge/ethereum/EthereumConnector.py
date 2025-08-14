@@ -41,7 +41,14 @@ class EthereumConnector(BasicConnector):
 
 	# endregion
 
-	# region _format_block_identifier, _make_eth_call
+	# region utils
+
+	async def _post_rpc(self, request_json):
+		response_json = await self.post('', request_json)
+		if 'error' in response_json:
+			raise NodeException(f'{request_json["method"]} RPC call failed: {response_json["error"]["message"]}')
+
+		return response_json['result']
 
 	@staticmethod
 	def _format_block_identifier(block_identifier):
@@ -62,8 +69,8 @@ class EthereumConnector(BasicConnector):
 			self._format_block_identifier(block_identifier)
 		])
 
-		result_json = await self.post('', request_json)
-		return parse_rpc_response_hex_value(result_json['result'])
+		result_json = await self._post_rpc(request_json)
+		return parse_rpc_response_hex_value(result_json)
 
 	# endregion
 
@@ -73,23 +80,23 @@ class EthereumConnector(BasicConnector):
 		"""Gets chain height."""
 
 		request_json = make_rpc_request_json('eth_blockNumber', [])
-		result_json = await self.post('', request_json)
-		return parse_rpc_response_hex_value(result_json['result'])
+		result_json = await self._post_rpc(request_json)
+		return parse_rpc_response_hex_value(result_json)
 
 	async def finalized_chain_height(self):
 		"""Gets finalized chain height."""
 
 		block_identifier = 'finalized' if self.is_finalization_supported else 'latest'
 		request_json = make_rpc_request_json('eth_getBlockByNumber', [block_identifier, False])
-		result_json = await self.post('', request_json)
-		return parse_rpc_response_hex_value(result_json['result']['number'])
+		result_json = await self._post_rpc(request_json)
+		return parse_rpc_response_hex_value(result_json['number'])
 
 	async def network_time(self):
 		"""Gets network time."""
 
 		request_json = make_rpc_request_json('eth_getBlockByNumber', ['latest', False])
-		result_json = await self.post('', request_json)
-		timestamp = parse_rpc_response_hex_value(result_json['result']['timestamp'])
+		result_json = await self._post_rpc(request_json)
+		timestamp = parse_rpc_response_hex_value(result_json['timestamp'])
 		return EthereumNetworkTimestamp(timestamp)
 
 	# endregion
@@ -100,8 +107,8 @@ class EthereumConnector(BasicConnector):
 		"""Gets block headers."""
 
 		request_json = make_rpc_request_json('eth_getBlockByNumber', [hex(height), False])
-		result_json = await self.post('', request_json)
-		return result_json['result']
+		result_json = await self._post_rpc(request_json)
+		return result_json
 
 	# endregion
 
@@ -124,8 +131,8 @@ class EthereumConnector(BasicConnector):
 			str(account_address),
 			self._format_block_identifier(block_identifier)
 		])
-		result_json = await self.post('', request_json)
-		return parse_rpc_response_hex_value(result_json['result'])
+		result_json = await self._post_rpc(request_json)
+		return parse_rpc_response_hex_value(result_json)
 
 	# endregion
 
@@ -145,21 +152,21 @@ class EthereumConnector(BasicConnector):
 		"""Gets the current estimated gas price."""
 
 		request_json = make_rpc_request_json('eth_gasPrice', [])
-		result_json = await self.post('', request_json)
-		return parse_rpc_response_hex_value(result_json['result'])
+		result_json = await self._post_rpc(request_json)
+		return parse_rpc_response_hex_value(result_json)
 
 	async def estimate_gas(self, transaction_object):
 		"""Gets the current estimated amount of gas for the specified transaction."""
 
 		request_json = make_rpc_request_json('eth_estimateGas', [transaction_object])
-		result_json = await self.post('', request_json)
-		return parse_rpc_response_hex_value(result_json['result'])
+		result_json = await self._post_rpc(request_json)
+		return parse_rpc_response_hex_value(result_json)
 
 	async def estimate_fees_from_history(self, blocks_count):
 		"""Gets the estimated gas prices from history."""
 
 		request_json = make_rpc_request_json('eth_feeHistory', [blocks_count, 'latest', [50]])
-		result_json = await self.post('', request_json, 'result')
+		result_json = await self._post_rpc(request_json)
 
 		median_priority_fees = [parse_rpc_response_hex_value(reward[0]) for reward in result_json['reward']]
 		median_priority_fee = median_high(median_priority_fees)
@@ -174,8 +181,7 @@ class EthereumConnector(BasicConnector):
 
 	async def _transaction_status_and_height_by_hash(self, transaction_hash):
 		request_json = make_rpc_request_json('eth_getTransactionByHash', [f'0x{transaction_hash}'])
-		result_json = await self.post('', request_json)
-		transaction_json = result_json['result']
+		transaction_json = await self._post_rpc(request_json)
 		if not transaction_json:
 			return (None, 0)
 
@@ -212,12 +218,12 @@ class EthereumConnector(BasicConnector):
 		"""Gets incoming transactions for the specified account."""
 
 		request_json = make_rpc_request_json('ots_searchTransactionsBefore', [str(account_address), start_id or 0, 25])
-		result_json = await self.post('', request_json)
+		result_json = await self._post_rpc(request_json)
 		return [
 			{
 				'meta': {'height': parse_rpc_response_hex_value(transaction_json['blockNumber'])},
 				'transaction': transaction_json
-			} for transaction_json in result_json['result']['txs']
+			} for transaction_json in result_json['txs']
 		]
 
 	# endregion
@@ -229,9 +235,7 @@ class EthereumConnector(BasicConnector):
 
 		raw_transaction_hex = hexlify(transaction_payload['signature'].raw_transaction).decode('utf8')
 		request_json = make_rpc_request_json('eth_sendRawTransaction', [f'0x{raw_transaction_hex}'])
-		result_json = await self.post('', request_json)
-		if 'error' in result_json:
-			raise NodeException(f'announce transaction failed {result_json["error"]["message"]}')
+		await self._post_rpc(request_json)
 
 	# endregion
 
