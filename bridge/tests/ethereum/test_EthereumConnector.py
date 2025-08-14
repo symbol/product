@@ -367,7 +367,7 @@ async def test_cannot_announce_transaction_with_error(server):  # pylint: disabl
 	transaction = {'signature': SignedTransaction(HexBytes(EXAMPLE_TRANSACTION_SIGNING_PAYLOAD_HEX))}
 
 	# Act + Assert:
-	with pytest.raises(NodeException, match='announce transaction failed'):
+	with pytest.raises(NodeException, match='eth_sendRawTransaction RPC call failed: INTERNAL_ERROR: IntrinsicGas'):
 		await connector.announce_transaction(transaction)
 
 # endregion
