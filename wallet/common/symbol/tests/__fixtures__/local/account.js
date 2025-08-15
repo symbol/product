@@ -1,0 +1,94 @@
+import { mosaicInfos } from './mosaic';
+
+const mosaics = [
+	{
+		...mosaicInfos['72C0212E67A08BCE'],
+		name: mosaicInfos['72C0212E67A08BCE'].names[0],
+		'amount': 7270485345.948776
+	},
+	{
+		...mosaicInfos['0E2B031D9C83906D'],
+		name: mosaicInfos['0E2B031D9C83906D'].names[0],
+		'amount': 4
+	},
+	{
+		...mosaicInfos['78C3CDF0896248DB'],
+		name: '78C3CDF0896248DB',
+		'amount': 0.54
+	}
+];
+
+export const accountInfoNonMultisig = {
+	'address': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
+	'publicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
+	mosaics,
+	'balance': 7270485345.948776,
+	'importance': 6580746036116728,
+	'linkedKeys': {
+		'linkedPublicKey': '67599EEC06BE291E8608E3475D36E4C520389D6C853EA223CF9D744B47A4F630',
+		'nodePublicKey': 'E4EAF960E8C4291AF1810F706E16750E3790237FDCF8887B4B0C1854603AD0FF',
+		'vrfPublicKey': '7A79C5CAEFDBCC0C98971312357740E8F300F2E012F97AB75FA2F2DDD2C3F627'
+	},
+	'namespaces': [],
+	'isMultisig': false,
+	'cosignatories': [],
+	'multisigAddresses': []
+};
+
+export const accountInfoMultisig = {
+	'address': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
+	'publicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
+	mosaics,
+	'balance': 7270485345.948776,
+	'importance': 6580746036116728,
+	'linkedKeys': {
+		'linkedPublicKey': '67599EEC06BE291E8608E3475D36E4C520389D6C853EA223CF9D744B47A4F630',
+		'nodePublicKey': 'E4EAF960E8C4291AF1810F706E16750E3790237FDCF8887B4B0C1854603AD0FF',
+		'vrfPublicKey': '7A79C5CAEFDBCC0C98971312357740E8F300F2E012F97AB75FA2F2DDD2C3F627'
+	},
+	'namespaces': [],
+	'isMultisig': true,
+	'cosignatories': [
+		'TAKECYAYMTEZFI34GGQ3H2ERHMGH5VK6YNV7UMA',
+		'TCIJPF5OR3VGANQNOYMPEVQJ622UORYPAYODVJA'
+	],
+	'multisigAddresses': []
+};
+
+export const accountInfoCosigner = {
+	'address': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
+	'publicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
+	mosaics,
+	'balance': 7270485345.948776,
+	'importance': 6580746036116728,
+	'linkedKeys': {
+		'linkedPublicKey': '67599EEC06BE291E8608E3475D36E4C520389D6C853EA223CF9D744B47A4F630',
+		'nodePublicKey': 'E4EAF960E8C4291AF1810F706E16750E3790237FDCF8887B4B0C1854603AD0FF',
+		'vrfPublicKey': '7A79C5CAEFDBCC0C98971312357740E8F300F2E012F97AB75FA2F2DDD2C3F627'
+	},
+	'namespaces': [],
+	'isMultisig': false,
+	'cosignatories': [],
+	'multisigAddresses': [
+		'TAMYTGVH3UEVZRQSD64LGSMPKNTKMASOIDNYROI'
+	]
+};
+
+export const multisigInfo = {
+	'multisigAddresses': [],
+	'cosignatories': [
+		'TAKECYAYMTEZFI34GGQ3H2ERHMGH5VK6YNV7UMA',
+		'TCIJPF5OR3VGANQNOYMPEVQJ622UORYPAYODVJA'
+	],
+	'minApproval': 1,
+	'minRemoval': 2
+};
+
+export const multisigInfoCosigner = {
+	'multisigAddresses': [
+		'TAMYTGVH3UEVZRQSD64LGSMPKNTKMASOIDNYROI'
+	],
+	'cosignatories': [],
+	'minApproval': 0,
+	'minRemoval': 0
+};
