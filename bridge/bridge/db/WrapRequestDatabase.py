@@ -7,6 +7,18 @@ from ..models.WrapRequest import WrapRequest, make_wrap_error_result
 from .MaxProcessedHeightMixin import MaxProcessedHeightMixin
 
 PayoutDetails = namedtuple('PayoutDetails', ['transaction_hash', 'net_amount', 'total_fee', 'conversion_rate'])
+WrapRequestErrorView = namedtuple('WrapErrorView', [
+	'request_transaction_height', 'request_transaction_hash', 'request_transaction_subindex', 'sender_address',
+	'error_message',
+	'request_timestamp'
+])
+WrapRequestView = namedtuple('WrapRequestView', [
+	'request_transaction_height', 'request_transaction_hash', 'request_transaction_subindex', 'sender_address',
+	'request_amount', 'destination_address', 'payout_status', 'payout_transaction_hash',
+	'request_timestamp',
+	'payout_transaction_height', 'payout_net_amount', 'payout_total_fee', 'payout_conversion_rate',
+	'payout_timestamp'
+])
 
 
 class WrapRequestStatus(Enum):
@@ -18,15 +30,18 @@ class WrapRequestStatus(Enum):
 	FAILED = 3
 
 
-class WrapRequestDatabase(MaxProcessedHeightMixin):
+class WrapRequestDatabase(MaxProcessedHeightMixin):  # pylint: disable=too-many-public-methods
 	"""Database containing wrap requests and errors."""
 
-	def __init__(self, connection, network_facade):
+	def __init__(self, connection, network_facade, payout_network_facade):
 		"""Creates a wrap request database."""
 
 		super().__init__(connection)
 
 		self.network_facade = network_facade
+		self.payout_network_facade = payout_network_facade
+
+	# region create_tables
 
 	def create_tables(self):
 		"""Creates wrap request database tables."""
@@ -64,8 +79,13 @@ class WrapRequestDatabase(MaxProcessedHeightMixin):
 			height integer UNIQUE PRIMARY KEY,
 			timestamp timestamp
 		)''')
+		cursor.execute('''CREATE TABLE IF NOT EXISTS payout_block_metadata (
+			height integer UNIQUE PRIMARY KEY,
+			timestamp timestamp
+		)''')
 
 		cursor.execute('CREATE INDEX IF NOT EXISTS wrap_error_request_transaction_height_idx ON wrap_error(request_transaction_height)')
+		cursor.execute('CREATE INDEX IF NOT EXISTS wrap_error_request_transaction_hash_idx ON wrap_error(request_transaction_hash)')
 		cursor.execute('CREATE INDEX IF NOT EXISTS wrap_error_address_idx ON wrap_error(address)')
 
 		cursor.execute('CREATE INDEX IF NOT EXISTS wrap_request_request_transaction_height_idx ON wrap_request(request_transaction_height)')
@@ -73,6 +93,10 @@ class WrapRequestDatabase(MaxProcessedHeightMixin):
 		cursor.execute('CREATE INDEX IF NOT EXISTS wrap_request_destination_address_idx ON wrap_request(destination_address)')
 		cursor.execute('CREATE INDEX IF NOT EXISTS wrap_request_payout_status_idx ON wrap_request(payout_status)')
 		cursor.execute('CREATE INDEX IF NOT EXISTS wrap_request_payout_transaction_hash_idx ON wrap_request(payout_transaction_hash)')
+
+	# endregion
+
+	# region add_error, add_request
 
 	@staticmethod
 	def _add_error_with_cursor(cursor, error):
@@ -105,6 +129,10 @@ class WrapRequestDatabase(MaxProcessedHeightMixin):
 			None))
 		self.connection.commit()
 
+	# endregion
+
+	# region requests
+
 	def _to_request(self, request_tuple):
 		return WrapRequest(
 			request_tuple[0],
@@ -122,6 +150,10 @@ class WrapRequestDatabase(MaxProcessedHeightMixin):
 		for row in cursor:
 			yield self._to_request(row)
 
+	# endregion
+
+	# region is_synced_at_timestamp
+
 	def _max_processed_timestamp(self):
 		max_processed_height = self.max_processed_height()
 		return self._lookup_block_timestamp_closest(max_processed_height) or 0
@@ -130,6 +162,10 @@ class WrapRequestDatabase(MaxProcessedHeightMixin):
 		"""Determines if the database is synced through a timestamp."""
 
 		return timestamp <= self._max_processed_timestamp()
+
+	# endregion
+
+	# region cumulative_wrapped_amount_at, cumulative_net_amount_at, cumulative_fees_paid_at, payout_transaction_hashes_at
 
 	def cumulative_wrapped_amount_at(self, timestamp, relative_block_adjustment=0):
 		"""Gets cumulative amount of wrapped tokens issued at or before timestamp."""
@@ -192,9 +228,14 @@ class WrapRequestDatabase(MaxProcessedHeightMixin):
 			LEFT JOIN block_metadata ON wrap_request.request_transaction_height = block_metadata.height
 			LEFT JOIN payout_transaction ON wrap_request.payout_transaction_hash = payout_transaction.transaction_hash
 			WHERE block_metadata.timestamp <= ?
+			AND wrap_request.payout_transaction_hash IS NOT NULL
 		''', (timestamp,))
 		for row in cursor:
 			yield Hash256(row[0])
+
+	# endregion
+
+	# region sum_payout_transaction_amounts
 
 	def sum_payout_transaction_amounts(self, payout_transaction_hashes, batch_size=100):
 		"""Sums the wrapped tokens affected by the specified payout transactions."""
@@ -220,6 +261,10 @@ class WrapRequestDatabase(MaxProcessedHeightMixin):
 			start_index += batch_size
 
 		return balance
+
+	# endregion
+
+	# region mark_payout_*
 
 	def mark_payout_sent(self, request, payout_details):
 		"""Marks a payout as sent with the transaction hash of the payout."""
@@ -282,10 +327,14 @@ class WrapRequestDatabase(MaxProcessedHeightMixin):
 			(height, payout_transaction_hash.bytes))
 
 		cursor.execute(
-			'''INSERT OR IGNORE INTO block_metadata VALUES (?, ?)''',
+			'''INSERT OR IGNORE INTO payout_block_metadata VALUES (?, ?)''',
 			(height, 0))
 
 		self.connection.commit()
+
+	# endregion
+
+	# region reset
 
 	def reset(self):
 		"""Deletes all request and error entries with request transaction heights above the max processed height."""
@@ -307,22 +356,38 @@ class WrapRequestDatabase(MaxProcessedHeightMixin):
 			(max_processed_height,))
 		self.connection.commit()
 
-	def set_block_timestamp(self, height, raw_timestamp):
-		"""Sets a block timestamp."""
+	# endregion
 
-		unix_timestamp = self.network_facade.network.to_datetime(
-			self.network_facade.network.network_timestamp_class(raw_timestamp)
+	# region set_block_timestamp, set_payout_block_timestamp
+
+	def _set_block_timestamp(self, height, raw_timestamp, network_facade, table_name):
+		unix_timestamp = network_facade.network.to_datetime(
+			network_facade.network.network_timestamp_class(raw_timestamp)
 		).timestamp()
 
 		cursor = self.connection.cursor()
 		cursor.execute(
-			'''
-				INSERT INTO block_metadata VALUES (?, ?)
+			f'''
+				INSERT INTO {table_name} VALUES (?, ?)
 				ON CONFLICT(height)
 				DO UPDATE SET timestamp=?
 			''',
 			(height, unix_timestamp, unix_timestamp))
 		self.connection.commit()
+
+	def set_block_timestamp(self, height, raw_timestamp):
+		"""Sets a block timestamp."""
+
+		self._set_block_timestamp(height, raw_timestamp, self.network_facade, 'block_metadata')
+
+	def set_payout_block_timestamp(self, height, raw_timestamp):
+		"""Sets a payout block timestamp."""
+
+		self._set_block_timestamp(height, raw_timestamp, self.payout_network_facade, 'payout_block_metadata')
+
+	# endregion
+
+	# region lookup_block_timestamp, lookup_block_height
 
 	def lookup_block_timestamp(self, height):
 		"""Looks up the timestamp of a block height."""
@@ -351,6 +416,10 @@ class WrapRequestDatabase(MaxProcessedHeightMixin):
 			(timestamp,))
 		return cursor.fetchone()[0] or 0
 
+	# endregion
+
+	# region requests_by_status, unconfirmed_payout_transaction_hashes
+
 	def requests_by_status(self, status):
 		"""Gets all requests with the desired status."""
 
@@ -366,3 +435,76 @@ class WrapRequestDatabase(MaxProcessedHeightMixin):
 		cursor = self.connection.cursor()
 		rows = cursor.execute('''SELECT transaction_hash FROM payout_transaction WHERE height = ? ORDER BY transaction_hash''', (0,))
 		return [Hash256(row[0]) for row in rows]
+
+	# endregion
+
+	# region find_errors, find_requests
+
+	def find_errors(self, address, transaction_hash=None, offset=0, limit=25):
+		"""Finds all errors for an address, optionally filtered by hash."""
+
+		cursor = self.connection.cursor()
+		cursor.execute(
+			'''
+				SELECT
+					wrap_error.request_transaction_height,
+					wrap_error.request_transaction_hash,
+					wrap_error.request_transaction_subindex,
+					wrap_error.address,
+					wrap_error.message,
+					block_metadata.timestamp
+				FROM wrap_error
+				LEFT JOIN block_metadata ON wrap_error.request_transaction_height = block_metadata.height
+				WHERE wrap_error.address = ? AND (?2 IS NULL OR wrap_error.request_transaction_hash = ?2)
+				ORDER BY wrap_error.request_transaction_height
+				LIMIT ? OFFSET ?
+			''',
+			(address.bytes, transaction_hash.bytes if transaction_hash else None, limit, offset))
+
+		for row in cursor:
+			yield WrapRequestErrorView(row[0], Hash256(row[1]), row[2], self.network_facade.make_address(row[3]), row[4], row[5])
+
+	def find_requests(self, address, transaction_hash=None, offset=0, limit=25):
+		"""Finds all requests for an address, optionally filtered by hash."""
+
+		cursor = self.connection.cursor()
+		cursor.execute(
+			'''
+				SELECT
+					wrap_request.request_transaction_height,
+					wrap_request.request_transaction_hash,
+					wrap_request.request_transaction_subindex,
+					wrap_request.address,
+					wrap_request.amount,
+					wrap_request.destination_address,
+					wrap_request.payout_status,
+					wrap_request.payout_transaction_hash,
+					block_metadata.timestamp,
+					payout_transaction.height,
+					payout_transaction.net_amount,
+					payout_transaction.total_fee,
+					payout_transaction.conversion_rate,
+					payout_block_metadata.timestamp
+				FROM wrap_request
+				LEFT JOIN block_metadata ON wrap_request.request_transaction_height = block_metadata.height
+				LEFT JOIN payout_transaction ON wrap_request.payout_transaction_hash = payout_transaction.transaction_hash
+				LEFT JOIN payout_block_metadata ON payout_transaction.height = payout_block_metadata.height
+				WHERE wrap_request.address = ? AND (?2 IS NULL OR wrap_request.request_transaction_hash = ?2)
+				ORDER BY wrap_request.request_transaction_height
+				LIMIT ? OFFSET ?
+			''',
+			(address.bytes, transaction_hash.bytes if transaction_hash else None, limit, offset))
+
+		for row in cursor:
+			yield WrapRequestView(
+				row[0],
+				Hash256(row[1]),
+				row[2],
+				self.network_facade.make_address(row[3]),
+				row[4],
+				self.payout_network_facade.make_address(row[5]),
+				row[6],
+				Hash256(row[7]) if row[7] else None,
+				*row[8:])
+
+	# endregion

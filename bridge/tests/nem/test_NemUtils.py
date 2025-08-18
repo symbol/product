@@ -81,7 +81,7 @@ class NemUtilsTest(unittest.TestCase):
 	@staticmethod
 	def _extract_wrap_request_from_transaction(transaction_with_meta_json, mosaic_id=None):
 		def is_valid_address(address):
-			return '0x4838b106fce9647bdf1e7877bf73ce8b0bad5f97' == address
+			return ('0x4838b106fce9647bdf1e7877bf73ce8b0bad5f97' == address, address)
 
 		return extract_wrap_request_from_transaction(Network.TESTNET, is_valid_address, mosaic_id, transaction_with_meta_json)
 

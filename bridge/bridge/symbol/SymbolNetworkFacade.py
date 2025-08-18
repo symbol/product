@@ -1,10 +1,13 @@
+from symbolchain.CryptoTypes import PublicKey
 from symbolchain.facade.SymbolFacade import SymbolFacade
 from symbolchain.Network import NetworkLocator
 from symbolchain.sc import Amount
 from symbolchain.symbol.IdGenerator import generate_mosaic_alias_id
-from symbolchain.symbol.Network import Address, Network
+from symbolchain.symbol.Network import Address, Network, NetworkTimestamp
 from symbollightapi.connector.SymbolConnector import SymbolConnector
 
+from ..models.AddressValidator import try_convert_network_address_to_string
+from ..models.Constants import PrintableMosaicId
 from .SymbolUtils import extract_wrap_request_from_transaction
 
 
@@ -19,6 +22,8 @@ class SymbolNetworkFacade:
 		self.rosetta_network_id = ('Symbol', self.network.name)
 		self.sdk_facade = SymbolFacade(self.network)
 		self.bridge_address = Address(config.bridge_address)
+		self.transaction_search_address = self.bridge_address
+		self.native_token_precision = 6
 
 		self.currency_mosaic_ids = []
 
@@ -38,6 +43,21 @@ class SymbolNetworkFacade:
 
 		return mosaic_id in self.currency_mosaic_ids
 
+	def extract_mosaic_id(self):
+		"""
+		Extracts the wrapped mosaic id from config and converts it into both a printable version
+		and a version that can be passed to network facades as arguments.
+		"""
+
+		config_mosaic_id = self.config.mosaic_id
+		mosaic_id_parts = tuple(config_mosaic_id.split(':'))
+
+		mosaic_id = int(mosaic_id_parts[1], 16)
+		if self.is_currency_mosaic_id(mosaic_id):
+			mosaic_id = None
+
+		return PrintableMosaicId(mosaic_id, mosaic_id_parts[1])
+
 	def create_connector(self, **_kwargs):
 		"""Creates a connector to the network."""
 
@@ -45,14 +65,21 @@ class SymbolNetworkFacade:
 
 	@staticmethod
 	def make_address(raw_address):
-		"""Wraps a raw address into a typed address """
+		"""Wraps a raw address into a typed address."""
 
 		return Address(raw_address)
 
-	def is_valid_address_string(self, address_string):
-		"""Checks if an address string is valid and belongs to this network."""
+	@staticmethod
+	def make_public_key(raw_public_key):
+		"""Wraps a raw public key into a typed public key."""
 
-		return self.network.is_valid_address_string(address_string)
+		return PublicKey(raw_public_key)
+
+	def is_valid_address(self, raw_address):
+		"""Checks if an address is valid and belongs to this network."""
+
+		address_str = try_convert_network_address_to_string(self.network, raw_address)
+		return (address_str is not None, address_str)
 
 	def extract_wrap_request_from_transaction(self, is_valid_address, transaction_with_meta_json, mosaic_id=None):
 		# pylint: disable=invalid-name
@@ -86,3 +113,8 @@ class SymbolNetworkFacade:
 		transaction = self.sdk_facade.transaction_factory.create(transfer_json)
 		transaction.fee = Amount(int(self.config.extensions['transaction_fee_multiplier']) * transaction.size)
 		return transaction
+
+	def calculate_transfer_transaction_fee(self, balance_transfer, mosaic_id=None):
+		"""Calculates a transfer transaction fee."""
+
+		return self.create_transfer_transaction(NetworkTimestamp(0), balance_transfer, mosaic_id).fee.value

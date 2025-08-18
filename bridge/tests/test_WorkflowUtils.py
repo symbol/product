@@ -1,97 +1,22 @@
+import tempfile
 from decimal import Decimal
 
-from bridge.models.BridgeConfiguration import NetworkConfiguration
-from bridge.WorkflowUtils import ConversionRateCalculator, calculate_search_range, extract_mosaic_id
+import pytest
+from symbolchain.nem.Network import Network
+
+from bridge.ConversionRateCalculatorFactory import ConversionRateCalculatorFactory
+from bridge.db.Databases import Databases
+from bridge.models.Constants import PrintableMosaicId
+from bridge.WorkflowUtils import (
+	NativeConversionRateCalculatorFactory,
+	calculate_search_range,
+	create_conversion_rate_calculator_factory,
+	is_native_to_native_conversion
+)
+
+from .test.MockNetworkFacade import MockNemNetworkFacade
 
 # pylint: disable=invalid-name
-
-# region extract_mosaic_id
-
-
-def test_extract_mosaic_id_can_parse_default():
-	# Arrange:
-	config = NetworkConfiguration(*([None] * 4), {})
-
-	# Act:
-	mosaic_id = extract_mosaic_id(config)
-
-	# Assert:
-	assert mosaic_id.id is None
-	assert 'currency' == mosaic_id.formatted
-
-
-def test_extract_mosaic_id_can_parse_symbol_style_mosaic_id():
-	# Arrange:
-	config = NetworkConfiguration(*([None] * 4), {'mosaic_id': 'id:5D6CFC64A20E86E6'})
-
-	# Act:
-	mosaic_id = extract_mosaic_id(config)
-
-	# Assert:
-	assert 0x5D6CFC64A20E86E6 == mosaic_id.id
-	assert '5D6CFC64A20E86E6' == mosaic_id.formatted
-
-
-def test_extract_mosaic_id_can_parse_symbol_style_mosaic_id_with_currency_predicate_true():
-	# Arrange:
-	config = NetworkConfiguration(*([None] * 4), {'mosaic_id': 'id:5D6CFC64A20E86E6'})
-
-	# Act:
-	mosaic_id = extract_mosaic_id(config, lambda mosaic_id: 0x5D6CFC64A20E86E6 == mosaic_id)
-
-	# Assert:
-	assert mosaic_id.id is None
-	assert '5D6CFC64A20E86E6' == mosaic_id.formatted
-
-
-def test_extract_mosaic_id_can_parse_symbol_style_mosaic_id_with_currency_predicate_false():
-	# Arrange:
-	config = NetworkConfiguration(*([None] * 4), {'mosaic_id': 'id:5D6CFC64A20E86E6'})
-
-	# Act:
-	mosaic_id = extract_mosaic_id(config, lambda mosaic_id: 0x5D6CFC64A20E86E6 != mosaic_id)
-
-	# Assert:
-	assert 0x5D6CFC64A20E86E6 == mosaic_id.id
-	assert '5D6CFC64A20E86E6' == mosaic_id.formatted
-
-
-def test_extract_mosaic_id_can_parse_nem_style_mosaic_id():
-	# Arrange:
-	config = NetworkConfiguration(*([None] * 4), {'mosaic_id': 'foo:bar'})
-
-	# Act:
-	mosaic_id = extract_mosaic_id(config)
-
-	# Assert:
-	assert ('foo', 'bar') == mosaic_id.id
-	assert 'foo:bar' == mosaic_id.formatted
-
-
-def test_extract_mosaic_id_can_parse_nem_style_mosaic_id_with_currency_predicate_true():
-	# Arrange:
-	config = NetworkConfiguration(*([None] * 4), {'mosaic_id': 'foo:bar'})
-
-	# Act:
-	mosaic_id = extract_mosaic_id(config, lambda mosaic_id: ('foo', 'bar') == mosaic_id)
-
-	# Assert:
-	assert mosaic_id.id is None
-	assert 'foo:bar' == mosaic_id.formatted
-
-
-def test_extract_mosaic_id_can_parse_nem_style_mosaic_id_with_currency_predicate_false():
-	# Arrange:
-	config = NetworkConfiguration(*([None] * 4), {'mosaic_id': 'foo:bar'})
-
-	# Act:
-	mosaic_id = extract_mosaic_id(config, lambda mosaic_id: ('foo', 'bar') != mosaic_id)
-
-	# Assert:
-	assert ('foo', 'bar') == mosaic_id.id
-	assert 'foo:bar' == mosaic_id.formatted
-
-# endregion
 
 
 # region calculate_search_range
@@ -159,75 +84,199 @@ async def test_calculate_search_range_returns_correct_range_with_start_height_an
 # endregion
 
 
-# region ConversionRateCalculator
+# region NativeConversionRateCalculatorFactory
 
-def _assert_conversion_rate_calculator_unity(native_balance, wrapped_balance, unwrapped_balance):
+def _create_databases(database_directory):
+	# only wrap_request database is used or checked, so facades can be the same without any loss of generality
+	return Databases(database_directory, MockNemNetworkFacade(), MockNemNetworkFacade())
+
+
+def test_cannot_create_native_calculator_when_max_processed_height_is_less_than_target_height():
 	# Arrange:
-	calculator = ConversionRateCalculator(native_balance, wrapped_balance, unwrapped_balance)
+	with tempfile.TemporaryDirectory() as temp_directory:
+		with _create_databases(temp_directory) as databases:
+			databases.create_tables()
+			databases.wrap_request.set_max_processed_height(1002)
 
-	# Assert: wrapped token is equally valuable as native token
-	assert Decimal(1) == calculator.conversion_rate()
-	assert 1000 == calculator.to_native_amount(1000)
-	assert 1000 == calculator.to_wrapped_amount(1000)
+			factory = NativeConversionRateCalculatorFactory(databases, Decimal('2.5'))
 
-
-def test_conversion_rate_calculator_works_with_unity():
-	_assert_conversion_rate_calculator_unity(10000, 12000, 2000)
-
-
-def test_conversion_rate_calculator_works_with_unity_simulate_wrap():
-	_assert_conversion_rate_calculator_unity(10000 + 1000, 12000 + 1000, 2000)
+			# Act + Assert:
+			assert factory.try_create_calculator(1003) is None
+			assert factory.try_create_calculator(2000) is None
 
 
-def test_conversion_rate_calculator_works_with_unity_simulate_unwrap():
-	_assert_conversion_rate_calculator_unity(10000 - 1000, 12000, 2000 + 1000)
-
-
-def _assert_conversion_rate_calculator_wrap_premium(native_balance, wrapped_balance, unwrapped_balance):
+def _assert_can_create_native_calculator_at_height(height):
 	# Arrange:
-	calculator = ConversionRateCalculator(native_balance, wrapped_balance, unwrapped_balance)
+	with tempfile.TemporaryDirectory() as temp_directory:
+		with _create_databases(temp_directory) as databases:
+			databases.create_tables()
+			databases.wrap_request.set_max_processed_height(1002)
 
-	# Assert: wrapped token is more valuable than native token
-	assert Decimal(5) / Decimal(6) == calculator.conversion_rate()
-	assert 1200 == calculator.to_native_amount(1000)
-	assert 1000 == calculator.to_wrapped_amount(1200)
+			factory = NativeConversionRateCalculatorFactory(databases, Decimal('2.5'))
 
+			# Act:
+			calculator = factory.try_create_calculator(height)
 
-def test_conversion_rate_calculator_works_with_wrap_premium():
-	_assert_conversion_rate_calculator_wrap_premium(12000, 12000, 2000)
+			# Assert:
+			assert 400000 == calculator.to_wrapped_amount(1000000)
 
-
-def test_conversion_rate_calculator_works_with_wrap_premium_simulate_wrap():
-	_assert_conversion_rate_calculator_wrap_premium(12000 + 1200, 12000 + 1000, 2000)
-
-
-def test_conversion_rate_calculator_works_with_wrap_premium_simulate_unwrap():
-	_assert_conversion_rate_calculator_wrap_premium(12000 - 1200, 12000, 2000 + 1000)
+			assert Decimal('2.5') == calculator.native_balance
+			assert 1 == calculator.wrapped_balance
+			assert 0 == calculator.unwrapped_balance
 
 
-def _assert_conversion_rate_calculator_wrap_discount(native_balance, wrapped_balance, unwrapped_balance):
+def test_can_create_native_calculator_when_max_processed_height_is_at_least_target_height():
+	_assert_can_create_native_calculator_at_height(1)
+	_assert_can_create_native_calculator_at_height(1001)
+	_assert_can_create_native_calculator_at_height(1002)
+
+
+def _assert_is_native_calculator_best_calculator(calculator, expected_height):
+	assert 400000 == calculator.to_wrapped_amount(1000000)
+
+	assert expected_height == calculator.height
+	assert Decimal('2.5') == calculator.native_balance
+	assert 1 == calculator.wrapped_balance
+	assert 0 == calculator.unwrapped_balance
+
+
+def test_can_create_native_calculator_best_calculator_empty():
 	# Arrange:
-	calculator = ConversionRateCalculator(native_balance, wrapped_balance, unwrapped_balance)
+	with tempfile.TemporaryDirectory() as temp_directory:
+		with _create_databases(temp_directory) as databases:
+			databases.create_tables()
 
-	# Assert: wrapped token is less valuable than native token
-	assert Decimal(6) / Decimal(5) == calculator.conversion_rate()
-	assert 1000 == calculator.to_native_amount(1200)
-	assert 1200 == calculator.to_wrapped_amount(1000)
+			factory = NativeConversionRateCalculatorFactory(databases, Decimal('2.5'))
 
+			# Act:
+			calculator = factory.create_best_calculator()
 
-def test_conversion_rate_calculator_works_with_wrap_discount():
-	_assert_conversion_rate_calculator_wrap_discount(10000, 14000, 2000)
+			# Assert:
+			_assert_is_native_calculator_best_calculator(calculator, 0)
 
-
-def test_conversion_rate_calculator_works_with_wrap_discount_simulate_wrap():
-	_assert_conversion_rate_calculator_wrap_discount(10000 + 1000, 14000 + 1200, 2000)
-
-
-def test_conversion_rate_calculator_works_with_wrap_discount_simulate_unwrap():
-	_assert_conversion_rate_calculator_wrap_discount(10000 - 1000, 14000, 2000 + 1200)
+			# Sanity:
+			assert not factory.try_create_calculator(1)
+			assert factory.try_create_calculator(0)
 
 
-def test_conversion_rate_calculator_with_zero_native_balance_is_treated_as_unity():
-	_assert_conversion_rate_calculator_unity(0, 0, 0)
+def test_can_create_native_calculator_best_calculator_not_empty():
+	# Arrange:
+	with tempfile.TemporaryDirectory() as temp_directory:
+		with _create_databases(temp_directory) as databases:
+			databases.create_tables()
+			databases.wrap_request.set_max_processed_height(1002)
+
+			factory = NativeConversionRateCalculatorFactory(databases, Decimal('2.5'))
+
+			# Act:
+			calculator = factory.create_best_calculator()
+
+			# Assert:
+			_assert_is_native_calculator_best_calculator(calculator, 1002)
+
+			# Sanity:
+			assert not factory.try_create_calculator(1003)
+			assert factory.try_create_calculator(1002)
+
+# endregion
+
+
+# region is_native_to_native_conversion, create_conversion_rate_calculator_factory
+
+class MockNetworkFacade:
+	def __init__(self, mosaic_id):
+		self._mosaic_id = mosaic_id
+
+		self.network = Network.TESTNET
+
+	def extract_mosaic_id(self):
+		return PrintableMosaicId(self._mosaic_id, self._mosaic_id)
+
+
+def test_is_native_to_native_conversion_when_network_facade_uses_currency_mosaic():
+	assert is_native_to_native_conversion(MockNetworkFacade(''))
+
+
+def test_is_not_native_to_native_conversion_when_network_facade_does_not_use_currency_mosaic():
+	assert not is_native_to_native_conversion(MockNetworkFacade('alpha'))
+
+
+def _set_max_processed_height(databases, height):
+	databases.balance_change.set_max_processed_height(height)
+
+	databases.wrap_request.set_max_processed_height(height)
+	databases.wrap_request.set_block_timestamp(height, 2222)
+
+	databases.unwrap_request.set_max_processed_height(height)
+	databases.unwrap_request.set_block_timestamp(height, 2222)
+
+
+def _assert_can_create_default_calculator_factory_when_wrapped_facade_does_not_use_currency_mosaic(is_unwrap_mode):
+	# Arrange:
+	with tempfile.TemporaryDirectory() as temp_directory:
+		with _create_databases(temp_directory) as databases:
+			databases.create_tables()
+			_set_max_processed_height(databases, 1000)
+
+			# Act:
+			factory = create_conversion_rate_calculator_factory(
+				is_unwrap_mode,
+				databases,
+				MockNetworkFacade('alpha'),
+				MockNetworkFacade('beta'),
+				Decimal('2.5'))
+
+			# Assert:
+			assert isinstance(factory, ConversionRateCalculatorFactory)
+			assert 'alpha' == factory._mosaic_id  # pylint: disable=protected-access
+			assert is_unwrap_mode == factory._is_unwrap_mode  # pylint: disable=protected-access
+
+			assert 1000000 == factory.try_create_calculator(1000).to_wrapped_amount(1000000)
+
+
+def test_can_create_default_calculator_factory_when_wrapped_facade_does_not_use_currency_mosaic_wrap_mode():
+	_assert_can_create_default_calculator_factory_when_wrapped_facade_does_not_use_currency_mosaic(False)
+
+
+def test_can_create_default_calculator_factory_when_wrapped_facade_does_not_use_currency_mosaic_unwrap_mode():
+	_assert_can_create_default_calculator_factory_when_wrapped_facade_does_not_use_currency_mosaic(True)
+
+
+def test_can_create_native_calculator_factory_when_wrapped_facade_uses_currency_mosaic():
+	# Arrange:
+	with tempfile.TemporaryDirectory() as temp_directory:
+		with _create_databases(temp_directory) as databases:
+			databases.create_tables()
+			_set_max_processed_height(databases, 1000)
+
+			# Act:
+			factory = create_conversion_rate_calculator_factory(
+				False,
+				databases,
+				MockNetworkFacade('alpha'),
+				MockNetworkFacade(''),
+				Decimal('2.5'))
+
+			# Assert:
+			assert isinstance(factory, NativeConversionRateCalculatorFactory)
+			assert Decimal('2.5') == factory._fee_multiplier  # pylint: disable=protected-access
+
+			assert 400000 == factory.try_create_calculator(1000).to_wrapped_amount(1000000)
+
+
+def test_cannot_create_native_calculator_factory_when_wrapped_facade_uses_currency_mosaic_unwrap_mode():
+	# Arrange:
+	with tempfile.TemporaryDirectory() as temp_directory:
+		with _create_databases(temp_directory) as databases:
+			databases.create_tables()
+
+			# Act + Assert:
+			with pytest.raises(ValueError, match='native to native conversions do not support unwrap mode'):
+				create_conversion_rate_calculator_factory(
+					True,
+					databases,
+					MockNetworkFacade('alpha'),
+					MockNetworkFacade(''),
+					Decimal('2.5'))
 
 # endregion

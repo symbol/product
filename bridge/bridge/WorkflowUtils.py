@@ -1,31 +1,8 @@
-from collections import namedtuple
-from decimal import ROUND_DOWN, Decimal
+from decimal import Decimal
 
-PrintableMosaicId = namedtuple('PrintableMosaicId', ['id', 'formatted'])
+from .ConversionRateCalculatorFactory import ConversionRateCalculator, ConversionRateCalculatorFactory
 
-
-def extract_mosaic_id(config, is_currency_mosaic_id=None):
-	"""
-	Extracts the wrapped mosaic id from config and converts it into both a printable version
-	and a version that can be passed to network facades as arguments.
-	"""
-
-	config_mosaic_id = config.extensions.get('mosaic_id', None)
-	if not config_mosaic_id:
-		return PrintableMosaicId(None, 'currency')
-
-	mosaic_id_parts = tuple(config_mosaic_id.split(':'))
-	if 'id' == mosaic_id_parts[0]:
-		mosaic_id = int(mosaic_id_parts[1], 16)
-		if is_currency_mosaic_id and is_currency_mosaic_id(mosaic_id):
-			mosaic_id = None
-
-		return PrintableMosaicId(mosaic_id, mosaic_id_parts[1])
-
-	if is_currency_mosaic_id and is_currency_mosaic_id(mosaic_id_parts):
-		mosaic_id_parts = None
-
-	return PrintableMosaicId(mosaic_id_parts, config_mosaic_id)
+# region calculate_search_range
 
 
 async def calculate_search_range(connector, database, config_extensions, start_height_override_property_name=None):
@@ -45,33 +22,64 @@ async def calculate_search_range(connector, database, config_extensions, start_h
 
 	return (start_height, end_height)
 
+# endregion
 
-class ConversionRateCalculator:
-	"""Calculates and applies a token conversion rate."""
 
-	def __init__(self, native_balance, wrapped_balance, unwrapped_balance):
-		"""Creates a conversion rate calculator."""
+# region NativeConversionRateCalculatorFactory
 
-		if native_balance:
-			self._native_balance = Decimal(native_balance)
-			self._wrapped_balance = Decimal(wrapped_balance)
-			self._unwrapped_balance = Decimal(unwrapped_balance)
-		else:
-			self._native_balance = 1
-			self._wrapped_balance = 1
-			self._unwrapped_balance = 0
+class NativeConversionRateCalculatorFactory:
+	"""Factory for creating native to native conversion rate calculators."""
 
-	def conversion_rate(self):
-		"""Gets the conversion rate."""
+	def __init__(self, databases, fee_multiplier):
+		"""Creates a conversion rate calculator factory."""
 
-		return (Decimal(self._wrapped_balance) - Decimal(self._unwrapped_balance)) / Decimal(self._native_balance)
+		self._databases = databases
+		self._fee_multiplier = fee_multiplier
 
-	def to_wrapped_amount(self, amount):
-		"""Calculates the number of wrapped tokens corresponding to specified number of native tokens."""
+	def _try_create_calculator(self, height):
+		if height > self._databases.wrap_request.max_processed_height():
+			return None
 
-		return int((Decimal(amount) * self.conversion_rate()).quantize(1, rounding=ROUND_DOWN))
+		return ConversionRateCalculator(self._fee_multiplier, Decimal(1), 0)
 
-	def to_native_amount(self, amount):
-		"""Calculates the number of native tokens corresponding to specified number of wrapped tokens."""
+	def try_create_calculator(self, height):
+		"""Tries to create a conversion rate calculator at a specified height."""
 
-		return int((Decimal(amount) / self.conversion_rate()).quantize(1, rounding=ROUND_DOWN))
+		calculator = self._try_create_calculator(height)
+		if not calculator:
+			return None
+
+		return calculator
+
+	def create_best_calculator(self):
+		"""Creates a conversion rate calculator based on latest information."""
+
+		height = self._databases.wrap_request.max_processed_height()
+		calculator = self._try_create_calculator(height)
+		calculator.height = height
+		return calculator
+
+# endregion
+
+
+# region is_native_to_native_conversion, create_conversion_rate_calculator_factory
+
+def is_native_to_native_conversion(wrapped_facade):
+	"""Determines if a native to native conversion is configured."""
+
+	return not wrapped_facade.extract_mosaic_id().id
+
+
+def create_conversion_rate_calculator_factory(is_unwrap_mode, databases, native_facade, wrapped_facade, fee_multiplier):
+	# pylint: disable=invalid-name
+	"""Creates an appropriate conversion rate calculator factory."""
+
+	if is_native_to_native_conversion(wrapped_facade):
+		if is_unwrap_mode:
+			raise ValueError('native to native conversions do not support unwrap mode')
+
+		return NativeConversionRateCalculatorFactory(databases, fee_multiplier)
+
+	return ConversionRateCalculatorFactory(databases, native_facade.extract_mosaic_id().formatted, is_unwrap_mode)
+
+# endregion

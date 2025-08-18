@@ -1,4 +1,4 @@
-from binascii import hexlify
+from binascii import hexlify, unhexlify
 
 import pytest
 from symbolchain import sc
@@ -12,7 +12,8 @@ from bridge.NetworkUtils import BalanceTransfer
 from bridge.symbol.SymbolNetworkFacade import SymbolNetworkFacade
 
 from ..test.BridgeTestUtils import assert_wrap_request_failure, assert_wrap_request_success
-from ..test.PytestUtils import PytestAsserter, create_simple_symbol_client
+from ..test.MockSymbolServer import create_simple_symbol_client
+from ..test.PytestUtils import PytestAsserter
 
 
 @pytest.fixture
@@ -30,10 +31,11 @@ async def server(aiohttp_client):
 
 # region constructor, init
 
-def _create_config(server=None):  # pylint: disable=redefined-outer-name
+def _create_config(server=None, mosaic_id=None, config_extensions=None):  # pylint: disable=redefined-outer-name
 	endpoint = server.make_url('') if server else 'http://foo.bar:1234'
-	return NetworkConfiguration('symbol', 'testnet', endpoint, 'TDDRDLK5QL2LJPZOF26QFXB24TJ5HGB4NDTF6SI', {
-		'transaction_fee_multiplier': '50'
+	return NetworkConfiguration('symbol', 'testnet', endpoint, 'TDDRDLK5QL2LJPZOF26QFXB24TJ5HGB4NDTF6SI', mosaic_id, {
+		'transaction_fee_multiplier': '50',
+		**(config_extensions or {})
 	})
 
 
@@ -46,6 +48,8 @@ def test_can_create_facade():
 	assert ('Symbol', 'testnet') == facade.rosetta_network_id
 	assert facade.network == facade.sdk_facade.network
 	assert Address('TDDRDLK5QL2LJPZOF26QFXB24TJ5HGB4NDTF6SI') == facade.bridge_address
+	assert Address('TDDRDLK5QL2LJPZOF26QFXB24TJ5HGB4NDTF6SI') == facade.transaction_search_address
+	assert 6 == facade.native_token_precision
 
 
 async def test_can_initialize_facade(server):  # pylint: disable=redefined-outer-name
@@ -78,7 +82,37 @@ async def test_can_detect_currency_mosaic_id(server):  # pylint: disable=redefin
 # endregion
 
 
-# region create_connector, make_address, is_valid_address_string
+# region extract_mosaic_id
+
+async def test_can_extract_mosaic_id_currency(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	facade = SymbolNetworkFacade(_create_config(server, mosaic_id='id:E74B99BA41F4AFEE'))
+	await facade.init()
+
+	# Act:
+	mosaic_id = facade.extract_mosaic_id()
+
+	# Assert:
+	assert mosaic_id.id is None
+	assert 'E74B99BA41F4AFEE' == mosaic_id.formatted
+
+
+async def test_can_extract_mosaic_id_other(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	facade = SymbolNetworkFacade(_create_config(server, mosaic_id='id:5D6CFC64A20E86E6'))
+	await facade.init()
+
+	# Act:
+	mosaic_id = facade.extract_mosaic_id()
+
+	# Assert:
+	assert 0x5D6CFC64A20E86E6 == mosaic_id.id
+	assert '5D6CFC64A20E86E6' == mosaic_id.formatted
+
+# endregion
+
+
+# region create_connector
 
 def test_can_create_connector():
 	# Arrange:
@@ -107,6 +141,10 @@ def test_can_create_connector_rosetta():
 	assert isinstance(connector, SymbolConnector)
 	assert 'http://foo.bar:1234' == connector.endpoint
 
+# endregion
+
+
+# region make_address, make_public_key
 
 def test_can_make_address():
 	# Arrange:
@@ -121,15 +159,49 @@ def test_can_make_address():
 	assert Address('TAUPP4BRGNQP5KG2QY53FNYZVZ7SDXQVS5BG2IQ') == address_from_bytes
 
 
-def test_is_valid_address_string_only_returns_true_for_valid_addresses_on_network():
+def test_can_make_public_key():
+	# Arrange:
+	facade = SymbolNetworkFacade(_create_config())
+
+	# Act:
+	public_key_from_string = facade.make_public_key('3BB0E477B1675D780DFB78C62CCEE0D43191B04115A4BEA8A1E6959367509983')
+	public_key_from_bytes = facade.make_public_key(unhexlify('3BB0E477B1675D780DFB78C62CCEE0D43191B04115A4BEA8A1E6959367509983'))
+
+	# Assert:
+	assert PublicKey('3BB0E477B1675D780DFB78C62CCEE0D43191B04115A4BEA8A1E6959367509983') == public_key_from_string
+	assert PublicKey('3BB0E477B1675D780DFB78C62CCEE0D43191B04115A4BEA8A1E6959367509983') == public_key_from_bytes
+
+# endregion
+
+
+# region is_valid_address
+
+def _assert_is_valid_address(address, expected_formatted_address):
 	# Arrange:
 	facade = SymbolNetworkFacade(_create_config())
 
 	# Act + Assert:
-	assert facade.is_valid_address_string('TAUPP4BRGNQP5KG2QY53FNYZVZ7SDXQVS5BG2IQ')         # symbol testnet
-	assert not facade.is_valid_address_string('NCHEST3QRQS4JZGOO64TH7NFJ2A63YA7TPM5PXI')     # symbol mainnet
-	assert not facade.is_valid_address_string('0x4838b106fce9647bdf1e7877bf73ce8b0bad5f97')  # ethereum
-	assert not facade.is_valid_address_string('TAHTNAEQNDJOBDHHRON7SKU7PO6GAWXAJZ4CB2QG')    # nem testnet
+	assert (True, expected_formatted_address) == facade.is_valid_address(address)
+
+
+def _assert_is_invalid_address(address):
+	# Arrange:
+	facade = SymbolNetworkFacade(_create_config())
+
+	# Act + Assert:
+	assert (False, None) == facade.is_valid_address(address)
+
+
+def test_is_valid_address_detects_matching_addresses():
+	# symbol testnet
+	_assert_is_valid_address('TAUPP4BRGNQP5KG2QY53FNYZVZ7SDXQVS5BG2IQ', 'TAUPP4BRGNQP5KG2QY53FNYZVZ7SDXQVS5BG2IQ')
+	_assert_is_valid_address(
+		b'\x98(\xf7\xf013`\xfe\xa8\xda\x86;\xb2\xb7\x19\xae\x7f!\xde\x15\x97Bm"',
+		'TAUPP4BRGNQP5KG2QY53FNYZVZ7SDXQVS5BG2IQ')
+
+	# symbol mainnet
+	_assert_is_invalid_address('NCHEST3QRQS4JZGOO64TH7NFJ2A63YA7TPM5PXI')
+	_assert_is_invalid_address(b'\x68(\xf7\xf013`\xfe\xa8\xda\x86;\xb2\xb7\x19\xae\x7f!\xde\x15\x97Bm"')
 
 # endregion
 
@@ -149,7 +221,7 @@ async def _assert_can_extract_wrap_request_from_transaction(
 	await facade.init()
 
 	# Act:
-	results = facade.extract_wrap_request_from_transaction(lambda _address: is_valid_address, {
+	results = facade.extract_wrap_request_from_transaction(lambda address: (is_valid_address, address), {
 		'meta': {
 			'height': '23456',
 			'hash': 'FA650B75CC01187E004FCF547796930CC95D9CF55E6E6188FC7D413526A840FA'
@@ -290,5 +362,31 @@ def test_can_create_transfer_transaction_with_custom_mosaic():
 	assert sc.Amount(88888_000000) == mosaic.amount
 
 	assert b'' == transaction.message
+
+# endregion
+
+
+# region calculate_transfer_transaction_fee
+
+def test_can_calculate_transfer_transaction_fee_without_message():
+	# Arrange:
+	facade = SymbolNetworkFacade(_create_config())
+
+	# Act:
+	transaction_fee = facade.calculate_transfer_transaction_fee(_create_sample_balance_transfer(''))
+
+	# Assert:
+	assert 176 * 50 == transaction_fee
+
+
+def test_can_calculate_transfer_transaction_fee_with_message():
+	# Arrange:
+	facade = SymbolNetworkFacade(_create_config())
+
+	# Act:
+	transaction_fee = facade.calculate_transfer_transaction_fee(_create_sample_balance_transfer('this is a medium sized message!!!'))
+
+	# Assert:
+	assert 209 * 50 == transaction_fee
 
 # endregion

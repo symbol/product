@@ -1,18 +1,26 @@
 from binascii import unhexlify
+from decimal import Decimal
 
 import pytest
 from symbolchain import sc
-from symbolchain.CryptoTypes import Hash256, PrivateKey
+from symbolchain.CryptoTypes import Hash256, PrivateKey, PublicKey
 from symbolchain.facade.SymbolFacade import SymbolFacade
-from symbolchain.symbol.Network import Network, NetworkTimestamp
+from symbolchain.symbol.Network import Address, Network, NetworkTimestamp
 from symbollightapi.model.Exceptions import NodeException
 
 from bridge.models.BridgeConfiguration import NetworkConfiguration
-from bridge.NetworkUtils import BalanceChange, TransactionSender, download_rosetta_block_balance_changes
+from bridge.NetworkUtils import (
+	BalanceChange,
+	BalanceTransfer,
+	FeeInformation,
+	TransactionSender,
+	download_rosetta_block_balance_changes,
+	estimate_balance_transfer_fees
+)
 from bridge.symbol.SymbolNetworkFacade import SymbolNetworkFacade
 
 from .test.BridgeTestUtils import HASHES
-from .test.PytestUtils import create_simple_symbol_client
+from .test.MockSymbolServer import create_simple_symbol_client
 
 
 @pytest.fixture
@@ -22,24 +30,65 @@ async def server(aiohttp_client):
 
 # pylint: disable=invalid-name
 
+
+# region estimate_balance_transfer_fees
+
+async def test_can_estimate_balance_transfer_fees_when_conversion_fee_is_zero(server):   # pylint: disable=redefined-outer-name
+	# Arrange:
+	network_facade = SymbolNetworkFacade(_create_config(server))
+	balance_transfer = BalanceTransfer(
+		PublicKey('237AA9D393924F2310C3F502B8FFB5DFBFFCE7CA982EEB5719D3BD96B234B41C'),
+		Address('TC5EONJRZWHUWX4JOLHYGDGS2RQDDTLI5PES3WI'),
+		12345000,
+		None)
+
+	# Act:
+	fee_information = await estimate_balance_transfer_fees(network_facade, balance_transfer, Decimal('1.234'))
+
+	# Assert: ceil(17600 * 1.234) = ceil(21718.4)
+	assert FeeInformation(Decimal('21718.4'), Decimal('0'), 21719) == fee_information
+
+
+async def test_can_estimate_balance_transfer_fees_when_conversion_fee_is_nonzero(server):   # pylint: disable=redefined-outer-name
+	# Arrange:
+	network_facade = SymbolNetworkFacade(_create_config(server, config_extensions={
+		'percentage_conversion_fee': '0.077'
+	}))
+	balance_transfer = BalanceTransfer(
+		PublicKey('237AA9D393924F2310C3F502B8FFB5DFBFFCE7CA982EEB5719D3BD96B234B41C'),
+		Address('TC5EONJRZWHUWX4JOLHYGDGS2RQDDTLI5PES3WI'),
+		12345000,
+		None)
+
+	# Act:
+	fee_information = await estimate_balance_transfer_fees(network_facade, balance_transfer, Decimal('1.234'))
+
+	# Assert: ceil(17600 * 1.234 + 12345000 * 0.077 * 1.234) = ceil(21718.4 + 1172997.21) = ceil(1194715.61)
+	assert FeeInformation(Decimal('21718.4'), Decimal('1172997.21'), 1194716) == fee_information
+
+# endregion
+
+
 # region TransactionSender - constructor, init
 
-def _create_config(server=None):  # pylint: disable=redefined-outer-name
+def _create_config(server=None, mosaic_id='id:E74B99BA41F4AFEE', config_extensions=None):  # pylint: disable=redefined-outer-name
 	endpoint = server.make_url('') if server else 'http://foo.bar:1234'
-	return NetworkConfiguration('symbol', 'testnet', endpoint, 'TDDRDLK5QL2LJPZOF26QFXB24TJ5HGB4NDTF6SI', {
-		'signing_private_key': 'F490900201CD6365A89FDD41B7B2CC71E9537455E8AB626A47EBFA0681E5BE62',
-		'transaction_fee_multiplier': '100'
+	return NetworkConfiguration('symbol', 'testnet', endpoint, 'TDDRDLK5QL2LJPZOF26QFXB24TJ5HGB4NDTF6SI', mosaic_id, {
+		'signer_private_key': 'F490900201CD6365A89FDD41B7B2CC71E9537455E8AB626A47EBFA0681E5BE62',
+		'transaction_fee_multiplier': '100',
+		**(config_extensions or {})
 	})
 
 
 def test_can_create_transaction_sender():
 	# Act:
-	sender = TransactionSender(SymbolNetworkFacade(_create_config()), ('foo', 'bar'))
+	sender = TransactionSender(SymbolNetworkFacade(_create_config()), Decimal(1.2))
 
 	# Assert:
 	assert 'testnet' == sender.network_facade.network.name
 	assert PrivateKey('F490900201CD6365A89FDD41B7B2CC71E9537455E8AB626A47EBFA0681E5BE62') == sender.sender_key_pair.private_key
-	assert ('foo', 'bar') == sender.mosaic_id
+	assert Decimal(1.2) == sender.fee_multiplier
+	assert 0xE74B99BA41F4AFEE == sender.mosaic_id
 	assert sender.timestamp is None
 
 
@@ -56,7 +105,7 @@ async def test_can_initialize_transaction_sender(server):  # pylint: disable=red
 # endregion
 
 
-# region TransactionSender - try_send_transfer, send_transaction
+# region TransactionSender - try_send_transfer
 
 def _make_sc_address(address_str):
 	return sc.UnresolvedAddress(SymbolFacade.Address(address_str).bytes)
@@ -82,20 +131,20 @@ def _assert_sample_balance_transfer_common(transaction, expected_transaction_typ
 	assert _make_sc_address('TD3KYLTDR7PP4ZWGXCSCCTQ7NRCMPCCD3WPKK7Y') == transaction.recipient_address
 
 
-async def _create_transaction_sender(server, update_config):  # pylint: disable=redefined-outer-name
+async def _create_transaction_sender(server, fee_multiplier, update_config):  # pylint: disable=redefined-outer-name
 	config = _create_config(server)
 	if update_config:
 		update_config(config)
 
-	sender = TransactionSender(SymbolNetworkFacade(config))
+	sender = TransactionSender(SymbolNetworkFacade(config), fee_multiplier)
 	await sender.init()
 	return sender
 
 
-async def _assert_try_send_transfer_success(server, amount, message, expected_fee, update_config=None):
-	# pylint: disable=redefined-outer-name
+async def _assert_try_send_transfer_success(server, amount, message, expected_fee, fee_multiplier=Decimal(1), update_config=None):
+	# pylint: disable=redefined-outer-name,too-many-arguments,too-many-positional-arguments
 	# Arrange:
-	sender = await _create_transaction_sender(server, update_config)
+	sender = await _create_transaction_sender(server, fee_multiplier, update_config)
 
 	# Act:
 	result = await sender.try_send_transfer('TD3KYLTDR7PP4ZWGXCSCCTQ7NRCMPCCD3WPKK7Y', amount, message)
@@ -121,7 +170,7 @@ async def _assert_try_send_transfer_success(server, amount, message, expected_fe
 async def _assert_try_send_transfer_failure(server, amount, expected_error_message, update_config=None):
 	# pylint: disable=redefined-outer-name
 	# Arrange:
-	sender = await _create_transaction_sender(server, update_config)
+	sender = await _create_transaction_sender(server, Decimal(1), update_config)
 
 	# Act:
 	result = await sender.try_send_transfer('TD3KYLTDR7PP4ZWGXCSCCTQ7NRCMPCCD3WPKK7Y', amount)
@@ -158,7 +207,7 @@ async def test_try_send_transfer_succeeds_when_conversion_fee_is_enabled(server)
 	def set_conversion_fee(config):
 		config.extensions['percentage_conversion_fee'] = '0.007'
 
-	# Act + Assert: conversion fee: ceil(12345011 * .007 == 86415.077)
+	# Act + Assert: conversion fee => ceil(12345011 * .007 == 86415.077)
 	await _assert_try_send_transfer_success(server, 12345011, None, 86416 + 17600, update_config=set_conversion_fee)
 
 
@@ -167,7 +216,7 @@ async def test_try_send_transfer_fails_when_transfer_amount_is_less_than_total_f
 	def set_conversion_fee(config):
 		config.extensions['percentage_conversion_fee'] = '0.1'
 
-	# Act + Assert: conversion fee: ceil(19000 * .1 == 1900)
+	# Act + Assert: conversion fee => ceil(19000 * .1 == 1900)
 	await _assert_try_send_transfer_failure(
 		server,
 		19000,
@@ -175,9 +224,30 @@ async def test_try_send_transfer_fails_when_transfer_amount_is_less_than_total_f
 		update_config=set_conversion_fee)
 
 
+async def test_try_send_transfer_applies_fee_multipler_to_transaction_fee(server):  # pylint: disable=redefined-outer-name
+	# Assert: transaction fee => ceil(17600 * .777 == 13675.2) < 17600
+	await _assert_try_send_transfer_success(server, 17600 - 1, None, 13676, fee_multiplier=Decimal(0.777))
+
+
+async def test_try_send_transfer_applies_fee_multipler_to_conversion_fee(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	def set_conversion_fee(config):
+		config.extensions['percentage_conversion_fee'] = '0.007'
+
+	# Act + Assert: conversion fee => ceil(12345011 * .007 *.777 == 67144.514829)
+	#               transaction fee => ceil(17600 * .777 == 13675.2)
+	await _assert_try_send_transfer_success(
+		server,
+		12345011,
+		None,
+		67144 + 13675 + 1,
+		fee_multiplier=Decimal(0.777),
+		update_config=set_conversion_fee)
+
+
 async def test_try_send_transfer_succeeds_with_custom_mosaic_id(server):  # pylint: disable=redefined-outer-name
 	# Arrange:
-	sender = TransactionSender(SymbolNetworkFacade(_create_config(server)), 0xABCD12349876FEDC)
+	sender = TransactionSender(SymbolNetworkFacade(_create_config(server, 'id:0xABCD12349876FEDC')))
 	await sender.init()
 
 	# Act:
@@ -200,6 +270,10 @@ async def test_try_send_transfer_succeeds_with_custom_mosaic_id(server):  # pyli
 
 	assert b'test message 2' == transaction.message
 
+# endregion
+
+
+# region TransactionSender - send_transaction
 
 async def test_can_send_transaction(server):  # pylint: disable=redefined-outer-name
 	# Arrange:

@@ -8,12 +8,13 @@ from .WrapRequestDatabase import WrapRequestDatabase
 class Databases:  # pylint: disable=too-many-instance-attributes
 	"""Container of all databases."""
 
-	def __init__(self, database_directory, native_network, wrapped_network):
+	def __init__(self, database_directory, native_network, wrapped_network, is_read_only=False):
 		"""Creates a databases object."""
 
 		self._database_directory = Path(database_directory)
 		self._native_network = native_network
 		self._wrapped_network = wrapped_network
+		self._is_read_only = is_read_only
 
 		self._balance_change_connection = None
 		self._unwrap_request_connection = None
@@ -23,16 +24,20 @@ class Databases:  # pylint: disable=too-many-instance-attributes
 		self.unwrap_request = None
 		self.wrap_request = None
 
+	def _connect(self, database_name):
+		connection_string = f'file:{self._database_directory / database_name}.db{"?mode=ro" if self._is_read_only else ""}'
+		return sqlite3.connect(connection_string, uri=True)
+
 	def __enter__(self):
 		"""Connects to databases."""
 
-		self._balance_change_connection = sqlite3.connect(self._database_directory / 'balance_change.db')
-		self._unwrap_request_connection = sqlite3.connect(self._database_directory / 'unwrap_request.db')
-		self._wrap_request_connection = sqlite3.connect(self._database_directory / 'wrap_request.db')
+		self._balance_change_connection = self._connect('balance_change')
+		self._unwrap_request_connection = self._connect('unwrap_request')
+		self._wrap_request_connection = self._connect('wrap_request')
 
 		self.balance_change = BalanceChangeDatabase(self._balance_change_connection)
-		self.unwrap_request = WrapRequestDatabase(self._unwrap_request_connection, self._wrapped_network)
-		self.wrap_request = WrapRequestDatabase(self._wrap_request_connection, self._native_network)
+		self.unwrap_request = WrapRequestDatabase(self._unwrap_request_connection, self._wrapped_network, self._native_network)
+		self.wrap_request = WrapRequestDatabase(self._wrap_request_connection, self._native_network, self._wrapped_network)
 		return self
 
 	def __exit__(self, exc_type, exc_value, traceback):

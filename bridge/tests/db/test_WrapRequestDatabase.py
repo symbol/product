@@ -1,15 +1,33 @@
+# pylint: disable=too-many-lines
 import datetime
 import sqlite3
 import unittest
 
 from symbolchain.CryptoTypes import Hash256, PublicKey
 from symbolchain.nem.Network import Address
+from symbolchain.symbol.Network import Address as SymbolAddress
 
-from bridge.db.WrapRequestDatabase import PayoutDetails, WrapRequestDatabase, WrapRequestStatus
+from bridge.db.WrapRequestDatabase import PayoutDetails, WrapRequestDatabase, WrapRequestErrorView, WrapRequestStatus, WrapRequestView
 
-from ..test.BridgeTestUtils import HASHES, HEIGHTS, NEM_ADDRESSES, PUBLIC_KEYS, assert_equal_request, make_request, make_request_error
-from ..test.DatabaseTestUtils import get_all_table_names
-from ..test.MockNetworkFacade import MockNetworkFacade
+from ..test.BridgeTestUtils import (
+	HASHES,
+	HEIGHTS,
+	NEM_ADDRESSES,
+	PUBLIC_KEYS,
+	SYMBOL_ADDRESSES,
+	assert_equal_request,
+	make_request,
+	make_request_error
+)
+from ..test.DatabaseTestUtils import (
+	get_all_table_names,
+	get_default_filtering_test_parameters,
+	seed_database_with_many_errors,
+	seed_database_with_many_requests,
+	seed_database_with_simple_errors,
+	seed_database_with_simple_requests
+)
+from ..test.MockNetworkFacade import MockNemNetworkFacade, MockSymbolNetworkFacade
 
 # region factories
 
@@ -55,8 +73,16 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 	# region shared test utils
 
 	@staticmethod
+	def _create_database(connection):
+		return WrapRequestDatabase(connection, MockNemNetworkFacade(), MockSymbolNetworkFacade())
+
+	@staticmethod
 	def _nem_to_unix_timestamp(timestamp):
 		return int(datetime.datetime(2015, 3, 29, 0, 6, 25, tzinfo=datetime.timezone.utc).timestamp()) + timestamp
+
+	@staticmethod
+	def _symbol_to_unix_timestamp(timestamp):
+		return datetime.datetime(2022, 10, 31, 21, 7, 47, tzinfo=datetime.timezone.utc).timestamp() + timestamp / 1000
 
 	@staticmethod
 	def _query_all_errors(cursor):
@@ -78,10 +104,15 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 		cursor.execute('''SELECT * FROM block_metadata ORDER BY height DESC''')
 		return cursor.fetchall()
 
+	@staticmethod
+	def _query_all_payout_block_metadatas(cursor):
+		cursor.execute('''SELECT * FROM payout_block_metadata ORDER BY height DESC''')
+		return cursor.fetchall()
+
 	def _assert_can_insert_rows(self, seed, expected, post_insert_action):
 		# Arrange:
 		with sqlite3.connect(':memory:') as connection:
-			database = WrapRequestDatabase(connection, MockNetworkFacade())
+			database = self._create_database(connection)
 			database.create_tables()
 
 			# Act:
@@ -108,6 +139,9 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 			actual_block_metadatas = self._query_all_block_metadatas(cursor)
 			self.assertEqual(expected.get('block_metadatas') or [], actual_block_metadatas)
 
+			actual_payout_block_metadatas = self._query_all_payout_block_metadatas(cursor)
+			self.assertEqual(expected.get('payout_block_metadatas') or [], actual_payout_block_metadatas)
+
 	def _assert_can_insert_errors(self, seed_errors, expected_errors):
 		self._assert_can_insert_rows(
 			{'errors': seed_errors, 'requests': []},
@@ -122,6 +156,7 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 				'requests': expected_requests,
 				'payout_transactions': kwargs.get('expected_payout_transactions'),
 				'block_metadatas': kwargs.get('expected_block_metadatas'),
+				'payout_block_metadatas': kwargs.get('expected_payout_block_metadatas')
 			},
 			kwargs.get('post_insert_action'))
 
@@ -131,10 +166,12 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 
 	def test_can_create_tables(self):
 		# Act:
-		table_names = get_all_table_names(WrapRequestDatabase, MockNetworkFacade())
+		table_names = get_all_table_names(WrapRequestDatabase, MockNemNetworkFacade(), MockSymbolNetworkFacade())
 
 		# Assert:
-		self.assertEqual(set(['wrap_error', 'wrap_request', 'payout_transaction', 'block_metadata', 'max_processed_height']), table_names)
+		self.assertEqual(set([
+			'wrap_error', 'wrap_request', 'payout_transaction', 'block_metadata', 'payout_block_metadata', 'max_processed_height'
+		]), table_names)
 
 	# endregion
 
@@ -165,7 +202,7 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 	def test_cannot_add_multiple_errors_with_same_transaction_hash_and_subindex(self):
 		# Arrange:
 		with sqlite3.connect(':memory:') as connection:
-			database = WrapRequestDatabase(connection, MockNetworkFacade())
+			database = self._create_database(connection)
 			database.create_tables()
 
 			database.add_error(make_request_error(0, 'this is an error message'))
@@ -178,7 +215,7 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 	def test_cannot_add_multiple_errors_with_same_transaction_hash_and_subindex_simulate_file_access(self):
 		# Arrange:
 		with sqlite3.connect('file:mem1?mode=memory&cache=shared', uri=True) as connection:
-			database = WrapRequestDatabase(connection, MockNetworkFacade())
+			database = self._create_database(connection)
 			database.create_tables()
 
 			database.add_error(make_request_error(0, 'this is an error message'))
@@ -186,7 +223,7 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 			# Act + Assert:
 			with sqlite3.connect('file:mem1?mode=memory&cache=shared', uri=True) as connection2:
 				with self.assertRaises(sqlite3.IntegrityError):
-					database2 = WrapRequestDatabase(connection2, MockNetworkFacade())
+					database2 = self._create_database(connection2)
 					database2.add_error(make_request_error(1, 'this is different error message', hash_index=0))
 
 	# endregion
@@ -212,7 +249,7 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 	def test_cannot_add_multiple_requests_with_same_transaction_hash_and_subindex(self):
 		# Arrange:
 		with sqlite3.connect(':memory:') as connection:
-			database = WrapRequestDatabase(connection, MockNetworkFacade())
+			database = self._create_database(connection)
 			database.create_tables()
 
 			database.add_request(make_request(0))
@@ -225,7 +262,7 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 	def test_cannot_add_multiple_requests_with_same_transaction_hash_and_subindex_simulate_file_access(self):
 		# Arrange:
 		with sqlite3.connect('file:mem1?mode=memory&cache=shared', uri=True) as connection:
-			database = WrapRequestDatabase(connection, MockNetworkFacade())
+			database = self._create_database(connection)
 			database.create_tables()
 
 			database.add_request(make_request(0))
@@ -233,7 +270,7 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 			# Act + Assert:
 			with sqlite3.connect('file:mem1?mode=memory&cache=shared', uri=True) as connection2:
 				with self.assertRaises(sqlite3.IntegrityError):
-					database2 = WrapRequestDatabase(connection2, MockNetworkFacade())
+					database2 = self._create_database(connection2)
 					database2.add_request(make_request(1, hash_index=0))
 
 	# endregion
@@ -263,7 +300,7 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 	def test_can_retrieve_requests(self):
 		# Arrange:
 		with sqlite3.connect(':memory:') as connection:
-			database = WrapRequestDatabase(connection, MockNetworkFacade())
+			database = self._create_database(connection)
 			(
 				normal_request_1, completed_request_1, normal_request_2, completed_request_2
 			) = self._prepare_database_for_requests_test(database)
@@ -284,7 +321,7 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 
 	@staticmethod
 	def _create_database_for_cumulative_wrapped_amount_at_tests(connection):
-		database = WrapRequestDatabase(connection, MockNetworkFacade())
+		database = WrapRequestDatabaseTest._create_database(connection)
 		database.create_tables()
 
 		database.add_request(make_request(0, amount=1000, height=111))
@@ -333,7 +370,7 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 	def test_cumulative_wrapped_amount_at_fails_when_empty(self):
 		# Arrange:
 		with sqlite3.connect(':memory:') as connection:
-			database = WrapRequestDatabase(connection, MockNetworkFacade())
+			database = self._create_database(connection)
 			database.create_tables()
 
 			# Act + Assert:
@@ -403,10 +440,33 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 
 	# region cumulative_net_amount_at
 
+	@staticmethod
+	def _prepare_database_for_batch_tests(connection, payout_descriptor_tuples):
+		database = WrapRequestDatabaseTest._create_database(connection)
+		database.create_tables()
+
+		requests = [
+			make_request(0, amount=1000, height=111),
+			make_request(1, amount=3333, height=333),
+			make_request(2, amount=2020, height=222),
+			make_request(3, amount=1, height=222)
+		]
+
+		for request in requests:
+			database.add_request(request)
+
+		for index, extra_params in payout_descriptor_tuples:
+			database.mark_payout_sent(requests[index], _make_payout_details(Hash256(HASHES[index]), **extra_params))
+
+		database.set_block_timestamp(111, 1000)
+		database.set_block_timestamp(222, 2000)
+		database.set_block_timestamp(333, 4000)
+		return database
+
 	def test_cumulative_net_amount_at_is_zero_when_empty(self):
 		# Arrange:
 		with sqlite3.connect(':memory:') as connection:
-			database = WrapRequestDatabase(connection, MockNetworkFacade())
+			database = self._create_database(connection)
 			database.create_tables()
 
 			# Act:
@@ -418,27 +478,12 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 	def _assert_cumulative_net_amount_at_is_calculated_correctly_at_timestamps(self, timestamp_amount_pairs):
 		# Arrange:
 		with sqlite3.connect(':memory:') as connection:
-			database = WrapRequestDatabase(connection, MockNetworkFacade())
-			database.create_tables()
-
-			requests = [
-				make_request(0, amount=1000, height=111),
-				make_request(1, amount=3333, height=333),
-				make_request(2, amount=2020, height=222),
-				make_request(3, amount=1, height=222)
-			]
-
-			for request in requests:
-				database.add_request(request)
-
-			database.mark_payout_sent(requests[0], _make_payout_details(Hash256(HASHES[0]), net_amount=100))
-			database.mark_payout_sent(requests[1], _make_payout_details(Hash256(HASHES[1]), net_amount=300))
-			database.mark_payout_sent(requests[2], _make_payout_details(Hash256(HASHES[2]), net_amount=200))
-			database.mark_payout_sent(requests[3], _make_payout_details(Hash256(HASHES[3]), net_amount=400))
-
-			database.set_block_timestamp(111, 1000)
-			database.set_block_timestamp(222, 2000)
-			database.set_block_timestamp(333, 4000)
+			database = self._prepare_database_for_batch_tests(connection, [
+				(0, {'net_amount': 100}),
+				(1, {'net_amount': 300}),
+				(2, {'net_amount': 200}),
+				(3, {'net_amount': 400})
+			])
 
 			for (timestamp, expected_amount) in timestamp_amount_pairs:
 				# Act:
@@ -469,7 +514,7 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 	def test_cumulative_fees_paid_at_is_zero_when_empty(self):
 		# Arrange:
 		with sqlite3.connect(':memory:') as connection:
-			database = WrapRequestDatabase(connection, MockNetworkFacade())
+			database = self._create_database(connection)
 			database.create_tables()
 
 			# Act:
@@ -481,27 +526,12 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 	def _assert_cumulative_fees_paid_at_is_calculated_correctly_at_timestamps(self, timestamp_amount_pairs):
 		# Arrange:
 		with sqlite3.connect(':memory:') as connection:
-			database = WrapRequestDatabase(connection, MockNetworkFacade())
-			database.create_tables()
-
-			requests = [
-				make_request(0, amount=1000, height=111),
-				make_request(1, amount=3333, height=333),
-				make_request(2, amount=2020, height=222),
-				make_request(3, amount=1, height=222)
-			]
-
-			for request in requests:
-				database.add_request(request)
-
-			database.mark_payout_sent(requests[0], _make_payout_details(Hash256(HASHES[0]), total_fee=100))
-			database.mark_payout_sent(requests[1], _make_payout_details(Hash256(HASHES[1]), total_fee=300))
-			database.mark_payout_sent(requests[2], _make_payout_details(Hash256(HASHES[2]), total_fee=200))
-			database.mark_payout_sent(requests[3], _make_payout_details(Hash256(HASHES[3]), total_fee=400))
-
-			database.set_block_timestamp(111, 1000)
-			database.set_block_timestamp(222, 2000)
-			database.set_block_timestamp(333, 4000)
+			database = self._prepare_database_for_batch_tests(connection, [
+				(0, {'total_fee': 100}),
+				(1, {'total_fee': 300}),
+				(2, {'total_fee': 200}),
+				(3, {'total_fee': 400})
+			])
 
 			for (timestamp, expected_amount) in timestamp_amount_pairs:
 				# Act:
@@ -532,7 +562,7 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 	def test_payout_transaction_hashes_at_returns_empty_when_empty(self):
 		# Arrange:
 		with sqlite3.connect(':memory:') as connection:
-			database = WrapRequestDatabase(connection, MockNetworkFacade())
+			database = self._create_database(connection)
 			database.create_tables()
 
 			# Act:
@@ -544,27 +574,7 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 	def _assert_payout_transaction_hashes_at_is_calculated_correctly_at_timestamps(self, timestamp_hash_indexes_pairs):
 		# Arrange:
 		with sqlite3.connect(':memory:') as connection:
-			database = WrapRequestDatabase(connection, MockNetworkFacade())
-			database.create_tables()
-
-			requests = [
-				make_request(0, amount=1000, height=111),
-				make_request(1, amount=3333, height=333),
-				make_request(2, amount=2020, height=222),
-				make_request(3, amount=1, height=222)
-			]
-
-			for request in requests:
-				database.add_request(request)
-
-			database.mark_payout_sent(requests[0], _make_payout_details(Hash256(HASHES[0])))
-			database.mark_payout_sent(requests[1], _make_payout_details(Hash256(HASHES[1])))
-			database.mark_payout_sent(requests[2], _make_payout_details(Hash256(HASHES[2])))
-			database.mark_payout_sent(requests[3], _make_payout_details(Hash256(HASHES[3])))
-
-			database.set_block_timestamp(111, 1000)
-			database.set_block_timestamp(222, 2000)
-			database.set_block_timestamp(333, 4000)
+			database = self._prepare_database_for_batch_tests(connection, [(index, {}) for index in range(4)])
 
 			for (timestamp, expected_transaction_hash_indexes) in timestamp_hash_indexes_pairs:
 				# Act:
@@ -589,6 +599,17 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 			(4001, [0, 1, 2, 3])
 		])
 
+	def test_payout_transaction_hashes_at_skips_requests_without_payouts(self):
+		# Arrange:
+		with sqlite3.connect(':memory:') as connection:
+			database = self._prepare_database_for_batch_tests(connection, [(index, {}) for index in (0, 1, 3)])
+
+			# Act:
+			transaction_hashes = list(database.payout_transaction_hashes_at(self._nem_to_unix_timestamp(4001)))
+
+			# Assert: even though transaction 2 is <= timestamp, it's ignored because it doesn't have a payout transaction
+			self.assertEqual([Hash256(HASHES[i]) for i in (0, 1, 3)], transaction_hashes)
+
 	# endregion
 
 	# region sum_payout_transaction_amounts
@@ -596,7 +617,7 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 	def test_sum_payout_transaction_amounts_returns_zero_when_empty(self):
 		# Arrange:
 		with sqlite3.connect(':memory:') as connection:
-			database = WrapRequestDatabase(connection, MockNetworkFacade())
+			database = self._create_database(connection)
 			database.create_tables()
 
 			# Act:
@@ -608,27 +629,7 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 	def _assert_sum_payout_transaction_amounts_is_calculated_correctly(self, hash_indexes_amount_pairs):
 		# Arrange:
 		with sqlite3.connect(':memory:') as connection:
-			database = WrapRequestDatabase(connection, MockNetworkFacade())
-			database.create_tables()
-
-			requests = [
-				make_request(0, amount=1000, height=111),
-				make_request(1, amount=3333, height=333),
-				make_request(2, amount=2020, height=222),
-				make_request(3, amount=1, height=222)
-			]
-
-			for request in requests:
-				database.add_request(request)
-
-			database.mark_payout_sent(requests[0], _make_payout_details(Hash256(HASHES[0])))
-			database.mark_payout_sent(requests[1], _make_payout_details(Hash256(HASHES[1])))
-			database.mark_payout_sent(requests[2], _make_payout_details(Hash256(HASHES[2])))
-			database.mark_payout_sent(requests[3], _make_payout_details(Hash256(HASHES[3])))
-
-			database.set_block_timestamp(111, 1000)
-			database.set_block_timestamp(222, 2000)
-			database.set_block_timestamp(333, 4000)
+			database = self._prepare_database_for_batch_tests(connection, [(index, {}) for index in range(4)])
 
 			for (hash_indexes, expected_amount) in hash_indexes_amount_pairs:
 				# Act:
@@ -691,7 +692,7 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 		seed_requests = [make_request(index) for index in range(0, 3)]
 
 		with sqlite3.connect(':memory:') as connection:
-			database = WrapRequestDatabase(connection, MockNetworkFacade())
+			database = self._create_database(connection)
 			database.create_tables()
 
 			for seed_request in seed_requests:
@@ -762,7 +763,7 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 			make_request_tuple(2),
 		], expected_payout_transactions=[
 			(payout_transaction_hash.bytes, 1100, 300, 12, 1122)
-		], expected_block_metadatas=[
+		], expected_payout_block_metadatas=[
 			(1122, 0)
 		], post_insert_action=post_insert_action)
 
@@ -783,7 +784,7 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 			make_request_tuple(2, hash_index=0, transaction_subindex=2)
 		], expected_payout_transactions=[
 			(payout_transaction_hash.bytes, 1100, 300, 1.2, 1122)
-		], expected_block_metadatas=[
+		], expected_payout_block_metadatas=[
 			(1122, 0)
 		], post_insert_action=post_insert_action)
 
@@ -793,7 +794,7 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 		seed_requests = [make_request(index, hash_index=0, transaction_subindex=index) for index in range(0, 3)]
 
 		def post_insert_action(database):
-			database.set_block_timestamp(1122, 98765)
+			database.set_payout_block_timestamp(1122, 98765)
 			database.mark_payout_sent(seed_requests[1], PayoutDetails(payout_transaction_hash, 1100, 300, 12))
 			database.mark_payout_completed(payout_transaction_hash, 1122)
 
@@ -805,9 +806,9 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 			make_request_tuple(2, hash_index=0, transaction_subindex=2)
 		], expected_payout_transactions=[
 			(payout_transaction_hash.bytes, 1100, 300, 12, 1122)
-		], expected_block_metadatas=[
+		], expected_payout_block_metadatas=[
 			# timestamp is not overwritten
-			(1122, self._nem_to_unix_timestamp(98765))
+			(1122, self._symbol_to_unix_timestamp(98765))
 		], post_insert_action=post_insert_action)
 
 	# endregion
@@ -817,7 +818,7 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 	def _assert_reset(self, max_processed_height, expected_errors, expected_requests):
 		# Arrange:
 		with sqlite3.connect(':memory:') as connection:
-			database = WrapRequestDatabase(connection, MockNetworkFacade())
+			database = self._create_database(connection)
 			database.create_tables()
 
 			if expected_errors:
@@ -881,7 +882,7 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 
 	@staticmethod
 	def _create_database_for_block_metadata_lookup_tests(connection):
-		database = WrapRequestDatabase(connection, MockNetworkFacade())
+		database = WrapRequestDatabaseTest._create_database(connection)
 		database.create_tables()
 
 		database.set_block_timestamp(111, 1000)
@@ -938,11 +939,36 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 
 	# endregion
 
+	# region set_payout_block_metadata
+
+	def test_can_set_payout_block_timestamp(self):
+		# Arrange:
+		def post_insert_action(database):
+			database.set_payout_block_timestamp(1122, 98765)
+
+		# Act + Assert:
+		self._assert_can_insert_requests([], [], expected_payout_block_metadatas=[
+			(1122, self._symbol_to_unix_timestamp(98765))
+		], post_insert_action=post_insert_action)
+
+	def test_can_overrwrite_payout_block_timestamp(self):
+		# Arrange:
+		def post_insert_action(database):
+			database.set_payout_block_timestamp(1122, 98765)
+			database.set_payout_block_timestamp(1122, 77553)
+
+		# Act + Assert:
+		self._assert_can_insert_requests([], [], expected_payout_block_metadatas=[
+			(1122, self._symbol_to_unix_timestamp(77553))
+		], post_insert_action=post_insert_action)
+
+	# endregion
+
 	# region requests_by_status
 
 	@staticmethod
 	def _prepare_database_for_grouping_tests(connection):
-		database = WrapRequestDatabase(connection, MockNetworkFacade())
+		database = WrapRequestDatabaseTest._create_database(connection)
 		database.create_tables()
 
 		seed_requests = [make_request(index) for index in range(0, 4)]
@@ -989,5 +1015,195 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 
 			# Assert:
 			self.assertEqual([payout_transaction_hashes[i] for i in (0, 2)], hashes)
+
+	# endregion
+
+	# region find_errors
+
+	def _assert_can_find_errors_simple(self, address, expected_view):
+		# Arrange:
+		with sqlite3.connect(':memory:') as connection:
+			database = self._create_database(connection)
+			database.create_tables()
+			seed_database_with_simple_errors(database)
+
+			# Act:
+			views = list(database.find_errors(address))
+
+			# Assert:
+			if not expected_view:
+				self.assertEqual(0, len(views))
+			else:
+				self.assertEqual(1, len(views))
+				self.assertEqual(expected_view, views[0])
+
+	def test_can_find_error_by_address(self):
+		expected_view = WrapRequestErrorView(
+			222,
+			Hash256(HASHES[1]),
+			0,
+			Address(NEM_ADDRESSES[1]),
+			'this is another error message',
+			self._nem_to_unix_timestamp(3040))
+		self._assert_can_find_errors_simple(Address(NEM_ADDRESSES[1]), expected_view)
+
+	def test_cannot_find_error_by_address_with_no_matches(self):
+		self._assert_can_find_errors_simple(Address(NEM_ADDRESSES[4]), None)
+
+	def _assert_can_find_errors_filtering(self, find_errors_params, expected_heights):
+		# Arrange:
+		with sqlite3.connect(':memory:') as connection:
+			database = self._create_database(connection)
+			database.create_tables()
+			seed_database_with_many_errors(database)
+
+			# Act:
+			views = list(database.find_errors(*find_errors_params))
+			heights = [view.request_transaction_height for view in views]
+
+			# Assert:
+			self.assertEqual(expected_heights, heights)
+
+	def test_can_find_errors_by_address(self):
+		test_params = get_default_filtering_test_parameters()
+		self._assert_can_find_errors_filtering([Address(NEM_ADDRESSES[test_params.address_index])], test_params.expected_all)
+
+	def test_can_find_errors_by_address_and_transaction_hash(self):
+		test_params = get_default_filtering_test_parameters()
+		self._assert_can_find_errors_filtering([
+			Address(NEM_ADDRESSES[test_params.address_index]),
+			Hash256(HASHES[test_params.hash_index])
+		], test_params.expected_hash_filter)
+
+	def test_can_find_errors_with_custom_offset_and_limit(self):
+		test_params = get_default_filtering_test_parameters()
+		self._assert_can_find_errors_filtering([
+			Address(NEM_ADDRESSES[test_params.address_index]),
+			None,
+			test_params.offset,
+			test_params.limit
+		], test_params.expected_custom_offset_and_limit)
+
+	# endregion
+
+	# region find_requests
+
+	def _assert_can_find_requests_simple(self, address, expected_view):
+		# Arrange:
+		with sqlite3.connect(':memory:') as connection:
+			database = self._create_database(connection)
+			database.create_tables()
+			seed_database_with_simple_requests(database)
+
+			# Act:
+			views = list(database.find_requests(address))
+
+			# Assert:
+			if not expected_view:
+				self.assertEqual(0, len(views))
+			else:
+				self.assertEqual(1, len(views))
+				self.assertEqual(expected_view, views[0])
+
+	def test_can_find_request_by_hash_exists_unprocessed(self):
+		expected_view = WrapRequestView(
+			111,
+			Hash256(HASHES[0]),
+			0,
+			Address(NEM_ADDRESSES[0]),
+			5554,
+			SymbolAddress(SYMBOL_ADDRESSES[0]),
+			0,
+			None,
+			self._nem_to_unix_timestamp(1020),
+			*([None] * 5))
+		self._assert_can_find_requests_simple(Address(NEM_ADDRESSES[0]), expected_view)
+
+	def test_can_find_request_by_hash_exists_sent(self):
+		expected_view = WrapRequestView(
+			222,
+			Hash256(HASHES[1]),
+			0,
+			Address(NEM_ADDRESSES[1]),
+			8865,
+			SymbolAddress(SYMBOL_ADDRESSES[1]),
+			1,
+			Hash256('066E5BF4B539230E12DD736D44CEFB5274FACBABC22735F2264A40F72AFB0124'),
+			self._nem_to_unix_timestamp(3040),
+			0,
+			2200,
+			450,
+			156,
+			None)
+		self._assert_can_find_requests_simple(Address(NEM_ADDRESSES[1]), expected_view)
+
+	def test_can_find_request_by_hash_exists_completed(self):
+		expected_view = WrapRequestView(
+			333,
+			Hash256(HASHES[2]),
+			0,
+			Address(NEM_ADDRESSES[2]),
+			8889,
+			SymbolAddress(SYMBOL_ADDRESSES[2]),
+			2,
+			Hash256('ACFF5E24733CD040504448A3A75F1CE32E90557E5FBA02E107624242F4FA251D'),
+			self._nem_to_unix_timestamp(4050),
+			1122,
+			1100,
+			300,
+			121,
+			self._symbol_to_unix_timestamp(3333),)
+		self._assert_can_find_requests_simple(Address(NEM_ADDRESSES[2]), expected_view)
+
+	def test_can_find_request_by_hash_exists_failed(self):
+		expected_view = WrapRequestView(
+			444,
+			Hash256(HASHES[3]),
+			0,
+			Address(NEM_ADDRESSES[3]),
+			1234,
+			SymbolAddress(SYMBOL_ADDRESSES[3]),
+			3,
+			None,
+			self._nem_to_unix_timestamp(5060),
+			*([None] * 5))
+		self._assert_can_find_requests_simple(Address(NEM_ADDRESSES[3]), expected_view)
+
+	def test_cannot_find_request_by_address_with_no_matches(self):
+		self._assert_can_find_requests_simple(Address(NEM_ADDRESSES[4]), None)
+
+	def _assert_can_find_requests_filtering(self, find_requests_params, expected_heights):
+		# Arrange:
+		with sqlite3.connect(':memory:') as connection:
+			database = self._create_database(connection)
+			database.create_tables()
+			seed_database_with_many_requests(database)
+
+			# Act:
+			views = list(database.find_requests(*find_requests_params))
+			heights = [view.request_transaction_height for view in views]
+
+			# Assert:
+			self.assertEqual(expected_heights, heights)
+
+	def test_can_find_requests_by_address(self):
+		test_params = get_default_filtering_test_parameters()
+		self._assert_can_find_requests_filtering([Address(NEM_ADDRESSES[test_params.address_index])], test_params.expected_all)
+
+	def test_can_find_requests_by_address_and_transaction_hash(self):
+		test_params = get_default_filtering_test_parameters()
+		self._assert_can_find_requests_filtering([
+			Address(NEM_ADDRESSES[test_params.address_index]),
+			Hash256(HASHES[test_params.hash_index])
+		], test_params.expected_hash_filter)
+
+	def test_can_find_requests_with_custom_offset_and_limit(self):
+		test_params = get_default_filtering_test_parameters()
+		self._assert_can_find_requests_filtering([
+			Address(NEM_ADDRESSES[test_params.address_index]),
+			None,
+			test_params.offset,
+			test_params.limit
+		], test_params.expected_custom_offset_and_limit)
 
 	# endregion
