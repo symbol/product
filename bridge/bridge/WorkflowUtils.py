@@ -49,7 +49,7 @@ class NativeConversionRateCalculatorFactory:
 		if not calculator:
 			return None
 
-		return calculator.to_wrapped_amount
+		return calculator
 
 	def create_best_calculator(self):
 		"""Creates a conversion rate calculator based on latest information."""

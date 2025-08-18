@@ -118,7 +118,11 @@ def _assert_can_create_native_calculator_at_height(height):
 			calculator = factory.try_create_calculator(height)
 
 			# Assert:
-			assert 400000 == calculator(1000000)
+			assert 400000 == calculator.to_wrapped_amount(1000000)
+
+			assert Decimal('2.5') == calculator.native_balance
+			assert 1 == calculator.wrapped_balance
+			assert 0 == calculator.unwrapped_balance
 
 
 def test_can_create_native_calculator_when_max_processed_height_is_at_least_target_height():
@@ -227,7 +231,7 @@ def _assert_can_create_default_calculator_factory_when_wrapped_facade_does_not_u
 			assert 'alpha' == factory._mosaic_id  # pylint: disable=protected-access
 			assert is_unwrap_mode == factory._is_unwrap_mode  # pylint: disable=protected-access
 
-			assert 1000000 == factory.try_create_calculator(1000)(1000000)
+			assert 1000000 == factory.try_create_calculator(1000).to_wrapped_amount(1000000)
 
 
 def test_can_create_default_calculator_factory_when_wrapped_facade_does_not_use_currency_mosaic_wrap_mode():
@@ -257,7 +261,7 @@ def test_can_create_native_calculator_factory_when_wrapped_facade_uses_currency_
 			assert isinstance(factory, NativeConversionRateCalculatorFactory)
 			assert Decimal('2.5') == factory._fee_multiplier  # pylint: disable=protected-access
 
-			assert 400000 == factory.try_create_calculator(1000)(1000000)
+			assert 400000 == factory.try_create_calculator(1000).to_wrapped_amount(1000000)
 
 
 def test_cannot_create_native_calculator_factory_when_wrapped_facade_uses_currency_mosaic_unwrap_mode():
