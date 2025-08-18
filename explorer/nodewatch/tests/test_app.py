@@ -125,14 +125,18 @@ def test_get_symbol_summary(client):  # pylint: disable=redefined-outer-name
 
 # region api [json]
 
+def _assert_response_status_code_and_headers(response, expected_status_code):
+	assert expected_status_code == response.status_code
+	assert 'application/json' == response.headers['Content-Type']
+	assert response.headers['Access-Control-Allow-Origin'] == '*'
+
 def test_get_api_nem_nodes(client):  # pylint: disable=redefined-outer-name
 	# Act:
 	response = client.get('/api/nem/nodes')
 	response_json = json.loads(response.data)
 
 	# Assert: spot check names
-	assert 200 == response.status_code
-	assert 'application/json' == response.headers['Content-Type']
+	_assert_response_status_code_and_headers(response, 200)
 	assert 4 == len(response_json)
 	assert ['August', '[c=#e9c086]jusan[/c]', 'cobalt', 'silicon'] == list(map(lambda descriptor: descriptor['name'], response_json))
 
@@ -143,8 +147,7 @@ def test_get_api_nem_network_height(client):  # pylint: disable=redefined-outer-
 	response_json = json.loads(response.data)
 
 	# Assert:
-	assert 200 == response.status_code
-	assert 'application/json' == response.headers['Content-Type']
+	_assert_response_status_code_and_headers(response, 200)
 	assert {'height': 3850057, 'finalizedHeight': 3850057 - 360} == response_json
 
 
@@ -155,8 +158,7 @@ def test_get_api_nem_network_height_chart(client):  # pylint: disable=redefined-
 	chart_json = json.loads(response_json['chartJson'])
 
 	# Assert:
-	assert 200 == response.status_code
-	assert 'application/json' == response.headers['Content-Type']
+	_assert_response_status_code_and_headers(response, 200)
 	assert 2 == len(response_json)
 	assert 1 == len(chart_json['data'])
 	assert re.match(r'\d\d:\d\d', response_json['lastRefreshTime'])
@@ -167,8 +169,7 @@ def _assert_get_nodes_count(response, expected_count):
 	response_json = json.loads(response.data)
 
 	# Assert:
-	assert 200 == response.status_code
-	assert 'application/json' == response.headers['Content-Type']
+	_assert_response_status_code_and_headers(response, 200)
 	assert expected_count == len(response_json)
 
 
@@ -181,8 +182,7 @@ def _assert_get_api_nodes(response, expected_node_names):
 	response_json = json.loads(response.data)
 
 	# Assert: spot check names
-	assert 200 == response.status_code
-	assert 'application/json' == response.headers['Content-Type']
+	_assert_response_status_code_and_headers(response, 200)
 	assert len(expected_node_names) == len(response_json)
 	assert expected_node_names == list(map(lambda descriptor: descriptor['name'], response_json))
 
@@ -219,8 +219,7 @@ def test_get_api_symbol_network_height(client):  # pylint: disable=redefined-out
 	response_json = json.loads(response.data)
 
 	# Assert:
-	assert 200 == response.status_code
-	assert 'application/json' == response.headers['Content-Type']
+	_assert_response_status_code_and_headers(response, 200)
 	assert {'height': 1486760, 'finalizedHeight': 1486740} == response_json
 
 
@@ -231,8 +230,7 @@ def test_get_api_symbol_network_height_chart(client):  # pylint: disable=redefin
 	chart_json = json.loads(response_json['chartJson'])
 
 	# Assert:
-	assert 200 == response.status_code
-	assert 'application/json' == response.headers['Content-Type']
+	_assert_response_status_code_and_headers(response, 200)
 	assert 2 == len(response_json)
 	assert 4 == len(chart_json['data'])
 	assert re.match(r'\d\d:\d\d', response_json['lastRefreshTime'])
@@ -243,8 +241,7 @@ def _assert_api_symbol_node_with_public_key_not_found(response):
 	response_json = json.loads(response.data)
 
 	# Assert:
-	assert 404 == response.status_code
-	assert 'application/json' == response.headers['Content-Type']
+	_assert_response_status_code_and_headers(response, 404)
 	assert response_json == {'message': 'Resource not found', 'status': 404}
 
 
@@ -253,8 +250,7 @@ def _assert_api_symbol_node_with_invalid_public_key(response):
 	response_json = json.loads(response.data)
 
 	# Assert:
-	assert 400 == response.status_code
-	assert 'application/json' == response.headers['Content-Type']
+	_assert_response_status_code_and_headers(response, 400)
 	assert response_json == {'message': 'Bad request', 'status': 400}
 
 
@@ -263,8 +259,7 @@ def _assert_api_symbol_node_with_public_key_found(response, expected_name):
 	response_json = json.loads(response.data)
 
 	# Assert: spot check names
-	assert 200 == response.status_code
-	assert 'application/json' == response.headers['Content-Type']
+	_assert_response_status_code_and_headers(response, 200)
 	assert expected_name == response_json['name']
 
 
