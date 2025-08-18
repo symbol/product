@@ -2,6 +2,7 @@ from pathlib import Path
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from flask import Flask, abort, jsonify, redirect, render_template, request, url_for
+from flask_cors import CORS
 from symbolchain.CryptoTypes import Hash256, PublicKey
 from symbolchain.nem.Network import Network as NemNetwork
 from symbolchain.Network import NetworkLocator
@@ -15,6 +16,7 @@ def create_app():
 	# pylint: disable=too-many-locals,too-many-statements
 
 	app = Flask(__name__)
+	CORS(app)
 	app.config.from_envvar('NODEWATCH_SETTINGS')
 
 	resources_path = Path(app.config.get('RESOURCES_PATH'))
