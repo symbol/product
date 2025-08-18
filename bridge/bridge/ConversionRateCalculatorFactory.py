@@ -31,6 +31,11 @@ class ConversionRateCalculator:
 
 		return int((Decimal(amount) / self.conversion_rate()).quantize(1, rounding=ROUND_DOWN))
 
+	def to_conversion_function(self, is_unwrap_mode):
+		"""Returns the appropriate conversion function for the specified unwrap mode."""
+
+		return self.to_native_amount if is_unwrap_mode else self.to_wrapped_amount
+
 
 class ConversionRateCalculatorFactory:
 	"""Factory for creating conversion rate calculators."""
@@ -105,7 +110,7 @@ class ConversionRateCalculatorFactory:
 			f' unwrapped_balance {calculator.unwrapped_balance}'
 		]))
 
-		return calculator.to_native_amount if self._is_unwrap_mode else calculator.to_wrapped_amount
+		return calculator
 
 	def create_best_calculator(self):
 		"""Creates a conversion rate calculator based on latest information."""

@@ -17,6 +17,11 @@ def _create_databases(database_directory):
 
 
 class ConversionRateCalculatorFactoryTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
+	@staticmethod
+	def _calculate(calculator, amount, is_unwrap_mode):
+		calculator_func = calculator.to_conversion_function(is_unwrap_mode)
+		return calculator_func(amount)
+
 	# region ConversionRateCalculator
 
 	def _assert_conversion_rate_calculator_unity(self, native_balance, wrapped_balance, unwrapped_balance):
@@ -27,6 +32,9 @@ class ConversionRateCalculatorFactoryTest(unittest.TestCase):  # pylint: disable
 		self.assertEqual(Decimal(1), calculator.conversion_rate())
 		self.assertEqual(1000, calculator.to_native_amount(1000))
 		self.assertEqual(1000, calculator.to_wrapped_amount(1000))
+
+		self.assertEqual(1000, calculator.to_conversion_function(True)(1000))
+		self.assertEqual(1000, calculator.to_conversion_function(False)(1000))
 
 		self.assertEqual(native_balance, calculator.native_balance)
 		self.assertEqual(wrapped_balance, calculator.wrapped_balance)
@@ -50,6 +58,9 @@ class ConversionRateCalculatorFactoryTest(unittest.TestCase):  # pylint: disable
 		self.assertEqual(1200, calculator.to_native_amount(1000))
 		self.assertEqual(1000, calculator.to_wrapped_amount(1200))
 
+		self.assertEqual(1200, calculator.to_conversion_function(True)(1000))
+		self.assertEqual(1000, calculator.to_conversion_function(False)(1200))
+
 		self.assertEqual(native_balance, calculator.native_balance)
 		self.assertEqual(wrapped_balance, calculator.wrapped_balance)
 		self.assertEqual(unwrapped_balance, calculator.unwrapped_balance)
@@ -72,6 +83,9 @@ class ConversionRateCalculatorFactoryTest(unittest.TestCase):  # pylint: disable
 		self.assertEqual(1000, calculator.to_native_amount(1200))
 		self.assertEqual(1200, calculator.to_wrapped_amount(1000))
 
+		self.assertEqual(1000, calculator.to_conversion_function(True)(1200))
+		self.assertEqual(1200, calculator.to_conversion_function(False)(1000))
+
 		self.assertEqual(native_balance, calculator.native_balance)
 		self.assertEqual(wrapped_balance, calculator.wrapped_balance)
 		self.assertEqual(unwrapped_balance, calculator.unwrapped_balance)
@@ -93,6 +107,9 @@ class ConversionRateCalculatorFactoryTest(unittest.TestCase):  # pylint: disable
 		self.assertEqual(Decimal(1), calculator.conversion_rate())
 		self.assertEqual(1000, calculator.to_native_amount(1000))
 		self.assertEqual(1000, calculator.to_wrapped_amount(1000))
+
+		self.assertEqual(1000, calculator.to_conversion_function(True)(1000))
+		self.assertEqual(1000, calculator.to_conversion_function(False)(1000))
 
 		self.assertEqual(1, calculator.native_balance)
 		self.assertEqual(1, calculator.wrapped_balance)
@@ -235,7 +252,11 @@ class ConversionRateCalculatorFactoryTest(unittest.TestCase):  # pylint: disable
 				calculator = factory.try_create_calculator(1111)
 
 				# Assert:
-				self.assertEqual(1000000, calculator(1000000))
+				self.assertEqual(1000000, self._calculate(calculator, 1000000, False))
+
+				self.assertEqual(1, calculator.native_balance)
+				self.assertEqual(1, calculator.wrapped_balance)
+				self.assertEqual(0, calculator.unwrapped_balance)
 
 	def test_can_create_calculator_for_multiple_wraps(self):
 		# Arrange:
@@ -269,7 +290,11 @@ class ConversionRateCalculatorFactoryTest(unittest.TestCase):  # pylint: disable
 				calculator = factory.try_create_calculator(2222)
 
 				# Assert:
-				self.assertEqual(1000000, calculator(1000000))
+				self.assertEqual(1000000, self._calculate(calculator, 1000000, False))
+
+				self.assertEqual(500, calculator.native_balance)
+				self.assertEqual(500, calculator.wrapped_balance)
+				self.assertEqual(0, calculator.unwrapped_balance)
 
 	def test_can_create_calculator_for_wrap_after_donation(self):
 		# Arrange:
@@ -301,8 +326,12 @@ class ConversionRateCalculatorFactoryTest(unittest.TestCase):  # pylint: disable
 				calculator = factory.try_create_calculator(3333)
 
 				# Assert:
-				self.assertEqual(166666, calculator(1000000))
-				self.assertEqual(200, calculator(1200))
+				self.assertEqual(166666, self._calculate(calculator, 1000000, False))
+				self.assertEqual(200, self._calculate(calculator, 1200, False))
+
+				self.assertEqual(1200, calculator.native_balance)
+				self.assertEqual(200, calculator.wrapped_balance)
+				self.assertEqual(0, calculator.unwrapped_balance)
 
 	# endregion
 
@@ -339,7 +368,11 @@ class ConversionRateCalculatorFactoryTest(unittest.TestCase):  # pylint: disable
 				calculator = factory.try_create_calculator(800)
 
 				# Assert:
-				self.assertEqual(1000000, calculator(1000000))
+				self.assertEqual(1000000, self._calculate(calculator, 1000000, True))
+
+				self.assertEqual(300, calculator.native_balance)
+				self.assertEqual(300, calculator.wrapped_balance)
+				self.assertEqual(0, calculator.unwrapped_balance)
 
 	def test_can_create_calculator_for_multiple_unwraps(self):
 		# Arrange:
@@ -384,7 +417,11 @@ class ConversionRateCalculatorFactoryTest(unittest.TestCase):  # pylint: disable
 				calculator = factory.try_create_calculator(900)
 
 				# Assert:
-				self.assertEqual(1000000, calculator(1000000))
+				self.assertEqual(1000000, self._calculate(calculator, 1000000, True))
+
+				self.assertEqual(500, calculator.native_balance)
+				self.assertEqual(800, calculator.wrapped_balance)
+				self.assertEqual(300, calculator.unwrapped_balance)
 
 	def test_can_create_calculator_for_unwrap_after_donation(self):
 		# Arrange:
@@ -421,17 +458,16 @@ class ConversionRateCalculatorFactoryTest(unittest.TestCase):  # pylint: disable
 				calculator = factory.try_create_calculator(900)
 
 				# Assert:
-				self.assertEqual(5000000, calculator(1000000))
-				self.assertEqual(1500, calculator(300))
+				self.assertEqual(5000000, self._calculate(calculator, 1000000, True))
+				self.assertEqual(1500, self._calculate(calculator, 300, True))
+
+				self.assertEqual(1500, calculator.native_balance)
+				self.assertEqual(300, calculator.wrapped_balance)
+				self.assertEqual(0, calculator.unwrapped_balance)
 
 	# endregion
 
 	# region create_best_calculator - empty
-
-	@staticmethod
-	def _calculate(calculator, amount, is_unwrap_mode):
-		calculator_func = calculator.to_native_amount if is_unwrap_mode else calculator.to_wrapped_amount
-		return calculator_func(amount)
 
 	def _assert_can_create_best_calculator_when_databases_are_empty(self, is_unwrap_mode):
 		# Arrange:
@@ -605,7 +641,7 @@ class ConversionRateCalculatorFactoryTest(unittest.TestCase):  # pylint: disable
 					calculator = factory.try_create_calculator(try_create_height)
 
 					# Assert:
-					self.assertEqual(expected_rate, calculator(1000000))
+					self.assertEqual(expected_rate, self._calculate(calculator, 1000000, is_unwrap_mode))
 
 		test_case_tuples = [
 			(False, 2559077, 1000000),  # 0 == native_balance
@@ -658,7 +694,7 @@ class ConversionRateCalculatorFactoryTest(unittest.TestCase):  # pylint: disable
 					calculator = factory.try_create_calculator(try_create_height)
 
 					# Assert:
-					self.assertEqual(expected_rate, calculator(1000000))
+					self.assertEqual(expected_rate, self._calculate(calculator, 1000000, is_unwrap_mode))
 
 		test_case_tuples = [
 			(False, 2564052, 1000000),  # 0 == native_balance
@@ -710,7 +746,7 @@ class ConversionRateCalculatorFactoryTest(unittest.TestCase):  # pylint: disable
 					calculator = factory.try_create_calculator(try_create_height)
 
 					# Assert:
-					self.assertEqual(expected_rate, calculator(1000000))
+					self.assertEqual(expected_rate, self._calculate(calculator, 1000000, is_unwrap_mode))
 
 		test_case_tuples = [
 			(False, 2566248, 1000000),  # 0 == native_balance
@@ -763,7 +799,7 @@ class ConversionRateCalculatorFactoryTest(unittest.TestCase):  # pylint: disable
 					calculator = factory.try_create_calculator(try_create_height)
 
 					# Assert:
-					self.assertEqual(expected_rate, calculator(1000000))
+					self.assertEqual(expected_rate, self._calculate(calculator, 1000000, is_unwrap_mode))
 
 		test_case_tuples = [
 			(False, 1111, 1000000),

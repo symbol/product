@@ -8,15 +8,15 @@ from bridge.WorkflowUtils import create_conversion_rate_calculator_factory, is_n
 from .main_impl import main_bootstrapper, print_banner
 
 
-async def _send_payout(network, request, conversion_rate_calculator, fee_multiplier):
+async def _send_payout(network, request, conversion_function, fee_multiplier):
 	mosaic_id = network.extract_mosaic_id()
 	if not fee_multiplier:
 		fee_multiplier = Decimal('1')
 	else:
-		fee_multiplier *= Decimal(conversion_rate_calculator(10 ** 12)) / Decimal(10 ** 12)
+		fee_multiplier *= Decimal(conversion_function(10 ** 12)) / Decimal(10 ** 12)
 
 	sender = TransactionSender(network, fee_multiplier)
-	transfer_amount = conversion_rate_calculator(request.amount)
+	transfer_amount = conversion_function(request.amount)
 
 	max_transfer_amount = int(network.config.extensions.get('max_transfer_amount', 0))
 	if max_transfer_amount and transfer_amount > max_transfer_amount:
@@ -32,7 +32,7 @@ async def _send_payout(network, request, conversion_rate_calculator, fee_multipl
 	return await sender.try_send_transfer(request.destination_address, transfer_amount)
 
 
-async def send_payouts(conversion_rate_calculator_factory, database, network, fee_multiplier=None):
+async def send_payouts(conversion_rate_calculator_factory, is_unwrap_mode, database, network, fee_multiplier=None):
 	requests_to_send = database.requests_by_status(WrapRequestStatus.UNPROCESSED)
 	print(f'{len(requests_to_send)} requests need to be sent')
 
@@ -47,13 +47,14 @@ async def send_payouts(conversion_rate_calculator_factory, database, network, fe
 			continue
 
 		print(f'  processing payout: {request.transaction_hash}:{request. transaction_subindex}')
-		send_result = await _send_payout(network, request, conversion_rate_calculator, fee_multiplier)
+		conversion_function = conversion_rate_calculator.to_conversion_function(is_unwrap_mode)
+		send_result = await _send_payout(network, request, conversion_function, fee_multiplier)
 		if send_result.is_error:
 			database.mark_payout_failed(request, send_result.error_message)
 			print(f'  payout failed with error: {send_result.error_message}')
 			error_count += 1
 		else:
-			conversion_rate = conversion_rate_calculator(1000000)
+			conversion_rate = conversion_function(1000000)
 			payout_details = PayoutDetails(
 				send_result.transaction_hash,
 				send_result.net_amount,
@@ -81,7 +82,7 @@ async def main_impl(is_unwrap_mode, databases, native_facade, wrapped_facade, pr
 	conversion_rate_calculator_factory = create_calculator_factory(is_unwrap_mode, databases, native_facade, wrapped_facade, fee_multiplier)
 
 	if is_unwrap_mode:
-		await send_payouts(conversion_rate_calculator_factory, databases.unwrap_request, native_facade)
+		await send_payouts(conversion_rate_calculator_factory, is_unwrap_mode, databases.unwrap_request, native_facade)
 	else:
 		print(f'calculated fee_multiplier as {fee_multiplier:0.4f} ({wrapped_facade.config.blockchain}/{native_facade.config.blockchain})')
 
@@ -89,7 +90,7 @@ async def main_impl(is_unwrap_mode, databases, native_facade, wrapped_facade, pr
 		if not is_native_to_native_conversion(wrapped_facade):
 			send_payouts_params.append(fee_multiplier)
 
-		await send_payouts(conversion_rate_calculator_factory, *send_payouts_params)
+		await send_payouts(conversion_rate_calculator_factory, is_unwrap_mode, *send_payouts_params)
 
 
 if '__main__' == __name__:
