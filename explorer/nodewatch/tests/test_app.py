@@ -130,6 +130,7 @@ def _assert_response_status_code_and_headers(response, expected_status_code):
 	assert 'application/json' == response.headers['Content-Type']
 	assert response.headers['Access-Control-Allow-Origin'] == '*'
 
+
 def test_get_api_nem_nodes(client):  # pylint: disable=redefined-outer-name
 	# Act:
 	response = client.get('/api/nem/nodes')
