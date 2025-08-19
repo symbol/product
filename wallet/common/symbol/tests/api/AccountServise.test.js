@@ -102,7 +102,7 @@ describe('AccountService', () => {
 	describe('fetchAccountBalance', () => {
 		it('fetches and formats account balance', async () => {
 			// Arrange:
-			const expectedBalance = 7270485345.948776;
+			const expectedBalance = '7270485345.948776';
 			mockMakeRequest.mockResolvedValueOnce(accountInfoResponse);
 
 			// Act:
