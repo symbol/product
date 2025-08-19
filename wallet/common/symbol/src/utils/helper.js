@@ -32,7 +32,7 @@ export const toFixedNumericString = (num, divisibility) => {
  * @returns {string} The converted timestamp in milliseconds.
  */
 export const networkTimestampToUnix = (timestamp, epochAdjustment) =>
-	timestamp + (epochAdjustment * 1000);
+	Number(timestamp) + (epochAdjustment * 1000);
 
 /**
  * Returns a promise that resolves when all promises are settled.
