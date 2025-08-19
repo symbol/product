@@ -8,10 +8,10 @@ import {
 describe('utils/helper', () => {
 	describe('toFixedNumber', () => {
 		const runToFixedNumberTest = (num, digits, expected) => {
-			// Act
+			// Act:
 			const result = toFixedNumber(num, digits);
 
-			// Assert
+			// Assert:
 			expect(result).toBe(expected);
 		};
 
@@ -34,10 +34,10 @@ describe('utils/helper', () => {
 
 	describe('toFixedNumericString', () => {
 		const runToFixedNumericStringTest = (num, divisibility, expected) => {
-			// Act
+			// Act:
 			const result = toFixedNumericString(num, divisibility);
 
-			// Assert
+			// Assert:
 			expect(result).toBe(expected);
 		};
 
@@ -63,10 +63,10 @@ describe('utils/helper', () => {
 
 	describe('networkTimestampToUnix', () => {
 		const runTimestampToLocalDateTest = (timestamp, epochAdjustment, expected) => {
-			// Act
+			// Act:
 			const result = networkTimestampToUnix(timestamp, epochAdjustment);
 
-			// Assert
+			// Assert:
 			expect(result).toEqual(expected);
 		};
 

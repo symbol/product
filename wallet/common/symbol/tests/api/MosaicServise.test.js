@@ -25,14 +25,14 @@ describe('MosaicService', () => {
 
 	describe('fetchMosaicInfo', () => {
 		it('fetches a single mosaic info by calling fetchMosaicInfos', async () => {
-			// Arrange
+			// Arrange:
 			const mosaicId = '72C0212E67A08BCE';
 			mosaicService.fetchMosaicInfos = jest.fn().mockResolvedValue(mosaicInfos);
 
-			// Act
+			// Act:
 			const result = await mosaicService.fetchMosaicInfo(networkProperties, mosaicId);
 
-			// Assert
+			// Assert:
 			expect(mosaicService.fetchMosaicInfos).toHaveBeenCalledWith(networkProperties, [mosaicId]);
 			expect(result).toStrictEqual(mosaicInfos[mosaicId]);
 		});
@@ -40,7 +40,7 @@ describe('MosaicService', () => {
 
 	describe('fetchMosaicInfos', () => {
 		it('fetches mosaic infos for a list of ids', async () => {
-			// Arrange
+			// Arrange:
 			const mosaicIds = Object.keys(mosaicInfos);
 			mockMakeRequest.mockResolvedValueOnce(mosaicInfosResponse);
 			mockApi.namespace.fetchNamespaceInfos.mockResolvedValueOnce({});
@@ -56,10 +56,10 @@ describe('MosaicService', () => {
 				}
 			};
 
-			// Act
+			// Act:
 			const result = await mosaicService.fetchMosaicInfos(networkProperties, mosaicIds);
 
-			// Assert
+			// Assert:
 			expect(mockMakeRequest).toHaveBeenCalledWith(`${networkProperties.nodeUrl}/mosaics`, expectedRequestConfig);
 			expect(result).toStrictEqual(expectedResult);
 		});
