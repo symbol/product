@@ -271,6 +271,13 @@ class SymbolRoutesFacade(BasicRoutesFacade):
 			'node_count_chart_json': version_builder.create_chart('node_count')
 		})
 
+	def json_epoch(self):
+		"""Gets the finalized epoch."""
+
+		return {
+			'epoch': self.repository.finalized_epoch()
+		}
+		
 	@staticmethod
 	def _version_to_css_class(version):
 		tag = 'danger'
