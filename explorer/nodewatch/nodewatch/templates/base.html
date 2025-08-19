@@ -34,11 +34,22 @@
           <div class="badge badge-pill badge-success my-0 float-right">
             Symbol Height&nbsp;
             <span id="symbol-block-height">...</span>
+            | Finalized&nbsp;
+            <span id="symbol-finalization-height">...</span>
+            (Cyprus)
+          </div>
+          <br/>
+          <div class="badge badge-pill badge-success my-0 float-right">
+            Epoch&nbsp;
+            <span id="symbol-finalization-epoch">...</span>
           </div>
           <br/>
           <div class="badge badge-pill badge-warning my-0 float-right">
             NEM Height&nbsp;
             <span id="nem-block-height">...</span>
+            | Finalized&nbsp;
+            <span id="nem-finalization-height">...</span>
+            (Harlock)
           </div>
         </div>
       </div>
@@ -70,7 +81,9 @@
         .then(response => response.json())
         .then(response => {
           const height = response['height'];
-          $('#nem-block-height').text(`${height} (Harlock)`);
+          const finalizedHeight = response['finalizedHeight'];
+          $('#nem-block-height').text(`${height}`);
+          $('#nem-finalization-height').text(`${finalizedHeight}`);
           setTimeout(update_nem_height, 30000);
         });
     };
@@ -80,13 +93,26 @@
         .then(response => response.json())
         .then(response => {
           const height = response['height'];
-          $('#symbol-block-height').text(`${height} (Cyprus)`);
+          const finalizedHeight = response['finalizedHeight'];
+          $('#symbol-block-height').text(`${height}`);
+          $('#symbol-finalization-height').text(`${finalizedHeight}`);
           setTimeout(update_symbol_height, 15000);
+        });
+    };
+
+    function update_symbol_epoch() {
+      fetch('{{ url_for("api_symbol_epoch") }}', {headers: {'Content-Type': 'application/json'} })
+        .then(response => response.json())
+        .then(response => {
+          const epoch = response['epoch'];
+          $('#symbol-finalization-epoch').text(`${epoch}`);
+          setTimeout(update_symbol_epoch, 15000);
         });
     };
 
     update_nem_height();
     update_symbol_height();
+    update_symbol_epoch();
   </script>
 
   {% block scripts %}{% endblock %}
