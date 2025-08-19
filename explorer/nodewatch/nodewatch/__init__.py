@@ -158,6 +158,10 @@ def create_app():
 	def api_symbol_time_series_nodes_count():  # pylint: disable=unused-variable
 		return jsonify(symbol_routes_facade.json_time_series_nodes_count())
 
+	@app.route('/api/symbol/epoch')
+	def api_symbol_epoch():  # pylint: disable=unused-variable
+		return jsonify(symbol_routes_facade.json_epoch())
+
 	@app.context_processor
 	def inject_timestamps():  # pylint: disable=unused-variable
 		routes_facade = nem_routes_facade if request.path.startswith('/nem') else symbol_routes_facade

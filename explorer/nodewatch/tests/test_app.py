@@ -314,4 +314,14 @@ def test_get_api_symbol_nodes_count(client):  # pylint: disable=redefined-outer-
 	_assert_get_nodes_count(client.get('/api/symbol/nodes/count'), 2)
 
 
+def test_get_api_symbol_epoch(client):  # pylint: disable=redefined-outer-name
+	# Act:
+	response = client.get('/api/symbol/epoch')
+	response_json = json.loads(response.data)
+
+	# Assert:
+	_assert_response_status_code_and_headers(response, 200)
+	assert 1 == len(response_json)
+
+
 # endregion
