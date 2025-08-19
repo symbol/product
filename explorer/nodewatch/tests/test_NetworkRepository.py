@@ -147,6 +147,7 @@ class NetworkRepositoryTest(unittest.TestCase):
 		self.assertEqual(0, len(repository.node_descriptors))
 		self.assertEqual(1, repository.estimate_height())
 		self.assertEqual(1, repository.estimate_finalized_height())
+		self.assertEqual(0, repository.finalized_epoch())
 
 	def test_can_load_symbol_node_descriptors(self):
 		# Arrange:
@@ -162,6 +163,7 @@ class NetworkRepositoryTest(unittest.TestCase):
 		self.assertEqual(6, len(repository.node_descriptors))
 		self.assertEqual(1486760, repository.estimate_height())  # median
 		self.assertEqual(1486740, repository.estimate_finalized_height())  # median (nonzero)
+		self.assertEqual(3020, repository.finalized_epoch())
 		self._assert_node_descriptor(
 			repository.node_descriptors[0],
 			main_address=SymbolAddress('NDZOZPTDVCFFLDCNJL7NZGDQDNBB7TY3V6SZNGI'),
@@ -434,7 +436,7 @@ class NetworkRepositoryTest(unittest.TestCase):
 
 	# endregion
 
-	# region load voter descriptors
+	# region load voter descriptorsestimate_finalized_height
 
 	def _assert_voter_descriptor(self, descriptor, **kwargs):
 		property_names = [
