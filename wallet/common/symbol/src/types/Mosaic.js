@@ -2,7 +2,7 @@
  * @typedef {Object} MosaicDTO
  * @property {string} id - The mosaic id.
  * @property {string} name - The mosaic name.
- * @property {number} amount - The mosaic amount.
+ * @property {string} amount - The mosaic amount.
  */
 
 /**
@@ -10,14 +10,14 @@
  * @property {string} id - The mosaic id.
  * @property {string} name - The mosaic id is used as the name.
  * @property {null} amount - The mosaic relative amount is unavailable in raw data.
- * @property {number} absoluteAmount - The mosaic absolute amount.
+ * @property {string} absoluteAmount - The mosaic absolute amount.
  */
 
 /**
  * @typedef {Object} BaseMosaic
  * @property {string} id - The mosaic id.
  * @property {string} name - Mosaic linked namespace name or id.
- * @property {number} amount - The mosaic relative amount.
+ * @property {string} amount - The mosaic relative amount.
  * @property {number} divisibility - Mosaic divisibility.
  */
 
@@ -40,7 +40,7 @@
 
 /**
  * @typedef {MosaicInfo} Mosaic
- * @property {number} amount - The mosaic relative amount.
+ * @property {string} amount - The mosaic relative amount.
  * @property {string} name - Mosaic linked namespace name or id.
  */
 

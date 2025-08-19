@@ -1,9 +1,8 @@
-import { toFixedNumber } from './helper';
-import { absoluteToRelativeAmount } from './mosaic';
 import { transactionToSymbol } from './transaction-to-symbol';
 import { MessageType, TransactionType } from '../constants';
 import { Hash256, PrivateKey, PublicKey, utils } from 'symbol-sdk';
 import { MessageEncoder, SymbolFacade, models } from 'symbol-sdk/symbol';
+import { absoluteToRelativeAmount } from 'wallet-common-core';
 
 /** @typedef {import('../types/Account').PublicAccount} PublicAccount */
 /** @typedef {import('../types/Mosaic').BaseMosaic} BaseMosaic */
@@ -341,9 +340,9 @@ export const calculateTransactionFees = (networkProperties, size) => {
 	const slow = (transactionFees.minFeeMultiplier + (transactionFees.averageFeeMultiplier * 0.35)) * size;
 
 	return {
-		fast: toFixedNumber(absoluteToRelativeAmount(fast, divisibility), divisibility),
-		medium: toFixedNumber(absoluteToRelativeAmount(medium, divisibility), divisibility),
-		slow: toFixedNumber(absoluteToRelativeAmount(slow, divisibility), divisibility)
+		fast: absoluteToRelativeAmount(fast, divisibility),
+		medium: absoluteToRelativeAmount(medium, divisibility),
+		slow: absoluteToRelativeAmount(slow, divisibility)
 	};
 };
 
@@ -362,11 +361,29 @@ export const calculateTransactionFees = (networkProperties, size) => {
  * @returns {{ mosaicIds: string[], namespaceIds: string[], addresses: string[] }} The unresolved ids.
  */
 export const getUnresolvedIdsFromTransactions = (transactions, config) => {
-	const { fieldsMap, mapNamespaceId, mapMosaicId, mapTransactionType, getBodyFromTransaction, getHeightFromTransaction, verifyAddress } =
-		config;
+	const {
+		fieldsMap,
+		mapNamespaceId,
+		mapMosaicId,
+		mapTransactionType,
+		getBodyFromTransaction,
+		getHeightFromTransaction,
+		verifyAddress
+	} = config;
+
 	const mosaicIds = [];
 	const namespaceIds = [];
 	const addresses = [];
+	const addressKeys = new Set();
+
+	const pushAddress = (namespaceId, height) => {
+		const key = `${namespaceId}:${height}`;
+		if (addressKeys.has(key))
+			return;
+
+		addressKeys.add(key);
+		addresses.push({ namespaceId, height });
+	};
 
 	transactions.forEach(item => {
 		const transaction = getBodyFromTransaction(item);
@@ -376,7 +393,7 @@ export const getUnresolvedIdsFromTransactions = (transactions, config) => {
 			const unresolved = getUnresolvedIdsFromTransactions(transaction.transactions, config);
 			mosaicIds.push(...unresolved.mosaicIds);
 			namespaceIds.push(...unresolved.namespaceIds);
-			addresses.push(...unresolved.addresses);
+			unresolved.addresses.forEach(a => pushAddress(a.namespaceId, a.height));
 		}
 
 		if (!transactionFieldsToResolve)
@@ -393,10 +410,7 @@ export const getUnresolvedIdsFromTransactions = (transactions, config) => {
 						if (verifyAddress(value))
 							return;
 
-						addresses.push({
-							namespaceId: mapNamespaceId(value),
-							height: getHeightFromTransaction(item)
-						});
+						pushAddress(mapNamespaceId(value), getHeightFromTransaction(item));
 					},
 					addressArray: value => {
 						if (!Array.isArray(value))
@@ -404,11 +418,7 @@ export const getUnresolvedIdsFromTransactions = (transactions, config) => {
 
 						value
 							.filter(address => !verifyAddress(address))
-							.forEach(address =>
-								addresses.push({
-									namespaceId: mapNamespaceId(address),
-									height: getHeightFromTransaction(transaction)
-								}));
+							.forEach(address => pushAddress(mapNamespaceId(address), getHeightFromTransaction(item)));
 					},
 					mosaic: value => {
 						const mosaicId = value?.mosaicId ?? value?.id ?? value;
@@ -428,7 +438,9 @@ export const getUnresolvedIdsFromTransactions = (transactions, config) => {
 					}
 				};
 
-				processors[mode](value);
+				const handler = processors[mode];
+				if (handler)
+					handler(value);
 			});
 		});
 	});
@@ -436,6 +448,6 @@ export const getUnresolvedIdsFromTransactions = (transactions, config) => {
 	return {
 		mosaicIds: [...new Set(mosaicIds.flat())],
 		namespaceIds: [...new Set(namespaceIds.flat())],
-		addresses: [...new Set(addresses.flat())]
+		addresses
 	};
 };

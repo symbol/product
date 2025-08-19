@@ -1,5 +1,5 @@
-import { absoluteToRelativeAmount, addressFromRaw, formatMosaicList, getMosaicAmount } from '../utils';
-import { NotFoundError } from 'wallet-common-core';
+import { addressFromRaw, formatMosaicList, getMosaicAmount } from '../utils';
+import { NotFoundError, absoluteToRelativeAmount } from 'wallet-common-core';
 
 /** @typedef {import('../types/Account').AccountInfo} AccountInfo */
 /** @typedef {import('../types/Account').MultisigAccountInfo} MultisigAccountInfo */

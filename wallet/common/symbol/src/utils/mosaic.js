@@ -1,5 +1,5 @@
 import { MosaicFlags } from '../constants';
-import { ApiError } from 'wallet-common-core';
+import { ApiError, absoluteToRelativeAmount } from 'wallet-common-core';
 import * as Crypto from 'crypto';
 
 /** @typedef {import('../types/Mosaic').Mosaic} Mosaic */
@@ -19,30 +19,10 @@ export const generateNonce = () => {
 };
 
 /**
- * Gets the mosaic relative amount.
- * @param {number} absoluteAmount - The mosaic absolute amount.
- * @param {number} divisibility - The mosaic divisibility.
- * @returns {number} The mosaic relative amount.
- */
-export const absoluteToRelativeAmount = (absoluteAmount, divisibility) => {
-	return absoluteAmount / Math.pow(10, divisibility);
-};
-
-/**
- * Gets the mosaic absolute amount.
- * @param {number} relativeAmount - The mosaic relative amount.
- * @param {number} divisibility - The mosaic divisibility.
- * @returns {number} The mosaic absolute amount.
- */
-export const relativeToAbsoluteAmount = (relativeAmount, divisibility) => {
-	return Math.trunc(relativeAmount * Math.pow(10, divisibility));
-};
-
-/**
  * Gets the mosaic amount from a mosaic list.
  * @param {Mosaic[]} mosaicList - The list of mosaics.
  * @param {string} mosaicId - The mosaic id.
- * @returns {number|null} The mosaic amount or null if the mosaic is not found.
+ * @returns {string} The mosaic amount or '0' if the mosaic is not found.
  */
 export const getMosaicAmount = (mosaicList, mosaicId) => {
 	if (!mosaicList || !mosaicId) 
@@ -50,7 +30,7 @@ export const getMosaicAmount = (mosaicList, mosaicId) => {
     
 	const nativeMosaic = mosaicList.find(mosaic => mosaic.id === mosaicId);
 
-	return nativeMosaic ? nativeMosaic.amount : null;
+	return nativeMosaic ? nativeMosaic.amount : '0';
 };
 
 /**

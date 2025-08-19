@@ -1,13 +1,11 @@
 import {
-	absoluteToRelativeAmount,
 	formatMosaicList,
 	getMosaicAmount,
 	isMosaicRevokable,
 	isRestrictableFlag,
 	isRevokableFlag,
 	isSupplyMutableFlag,
-	isTransferableFlag,
-	relativeToAbsoluteAmount
+	isTransferableFlag
 } from '../../src/utils';
 import { generateBitCombinations } from '../test-utils';
 
@@ -21,8 +19,8 @@ describe('utils/mosaic', () => {
 		const runGetMosaicAmountTest = (mosaicId, expectedAmount) => {
 			// Act:
 			const mosaicList = [
-				{ id: 'mosaic1', amount: 100 },
-				{ id: 'mosaic2', amount: 200 }
+				{ id: 'mosaic1', amount: '100' },
+				{ id: 'mosaic2', amount: '200' }
 			];
 			const result = getMosaicAmount(mosaicList, mosaicId);
 
@@ -32,7 +30,7 @@ describe('utils/mosaic', () => {
 		it('returns the mosaic amount by mosaic id', () => {
 			// Arrange:
 			const mosaicId = 'mosaic1';
-			const expectedAmount = 100;
+			const expectedAmount = '100';
 
 			// Act & Assert:
 			runGetMosaicAmountTest(mosaicId, expectedAmount);
@@ -41,7 +39,7 @@ describe('utils/mosaic', () => {
 		it('returns null if the mosaic is not found', () => {
 			// Arrange:
 			const mosaicId = 'mosaic3';
-			const expectedAmount = null;
+			const expectedAmount = '0';
 
 			// Act & Assert:
 			runGetMosaicAmountTest(mosaicId, expectedAmount);
@@ -68,8 +66,8 @@ describe('utils/mosaic', () => {
 			// Arrange:
 			const mosaicId = null;
 			const mosaicList = [
-				{ id: 'mosaic1', amount: 100 },
-				{ id: 'mosaic2', amount: 200 }
+				{ id: 'mosaic1', amount: '100' },
+				{ id: 'mosaic2', amount: '200' }
 			];
 
 			// Act & Assert:
@@ -86,52 +84,22 @@ describe('utils/mosaic', () => {
 		});
 	});
 
-	describe('absoluteToRelativeAmount', () => {
-		it('returns the relative amount', () => {
-			// Arrange:
-			const absoluteAmount = 123456789;
-			const divisibility = 6;
-			const expectedRelativeAmount = 123.456789;
-
-			// Act:
-			const result = absoluteToRelativeAmount(absoluteAmount, divisibility);
-
-			// Assert:
-			expect(result).toBe(expectedRelativeAmount);
-		});
-	});
-
-	describe('relativeToAbsoluteAmount', () => {
-		it('returns the absolute amount', () => {
-			// Arrange:
-			const relativeAmount = 123.456789;
-			const divisibility = 6;
-			const expectedAbsoluteAmount = 123456789;
-
-			// Act:
-			const result = relativeToAbsoluteAmount(relativeAmount, divisibility);
-
-			// Assert:
-			expect(result).toBe(expectedAbsoluteAmount);
-		});
-	});
-
 	describe('formatMosaicList', () => {
 		it('returns the formatted mosaic list', () => {
 			// Arrange:
 			const rawMosaics = [
-				{ id: 'mosaic1', amount: 100 },
-				{ id: 'mosaic2', amount: 200 },
-				{ id: 'mosaic3', amount: 300 }
+				{ id: 'mosaic1', amount: '100' },
+				{ id: 'mosaic2', amount: '200' },
+				{ id: 'mosaic3', amount: '300' }
 			];
 			const mosaicInfos = {
 				mosaic1: { name: 'mosaic1', divisibility: 1 },
 				mosaic2: { name: 'mosaic2', divisibility: 3 }
 			};
 			const expectedMosaicList = [
-				{ id: 'mosaic1', name: 'mosaic1', amount: 10, divisibility: 1 },
-				{ id: 'mosaic2', name: 'mosaic2', amount: 0.2, divisibility: 3 },
-				{ id: 'mosaic3', name: 'mosaic3', amount: null, absoluteAmount: 300 }
+				{ id: 'mosaic1', name: 'mosaic1', amount: '10', divisibility: 1 },
+				{ id: 'mosaic2', name: 'mosaic2', amount: '0.2', divisibility: 3 },
+				{ id: 'mosaic3', name: 'mosaic3', amount: null, absoluteAmount: '300' }
 			];
 
 			// Act:
@@ -164,8 +132,8 @@ describe('utils/mosaic', () => {
 		it('throws an error if the mosaic infos are not provided', () => {
 			// Arrange:
 			const rawMosaics = [
-				{ id: 'mosaic1', amount: 100 },
-				{ id: 'mosaic2', amount: 200 }
+				{ id: 'mosaic1', amount: '100' },
+				{ id: 'mosaic2', amount: '200' }
 			];
 			const mosaicInfos = null;
 
@@ -190,7 +158,7 @@ describe('utils/mosaic', () => {
 			const sourceAddress = 'sourceAddress';
 			const mosaic = {
 				id: 'mosaic1',
-				amount: 100,
+				amount: '100',
 				endHeight: 200,
 				isUnlimitedDuration: false,
 				isRevokable: true,
@@ -209,7 +177,7 @@ describe('utils/mosaic', () => {
 			const sourceAddress = 'sourceAddress';
 			const mosaic = {
 				id: 'mosaic1',
-				amount: 100,
+				amount: '100',
 				endHeight: 200,
 				isUnlimitedDuration: true,
 				isRevokable: true,
@@ -228,7 +196,7 @@ describe('utils/mosaic', () => {
 			const sourceAddress = 'sourceAddress';
 			const mosaic = {
 				id: 'mosaic1',
-				amount: 100,
+				amount: '100',
 				endHeight: 200,
 				isUnlimitedDuration: false,
 				isRevokable: false,
@@ -247,7 +215,7 @@ describe('utils/mosaic', () => {
 			const sourceAddress = 'sourceAddress';
 			const mosaic = {
 				id: 'mosaic1',
-				amount: 100,
+				amount: '100',
 				endHeight: 200,
 				isUnlimitedDuration: false,
 				isRevokable: true,
@@ -261,7 +229,7 @@ describe('utils/mosaic', () => {
 
 		it('returns false if the source address is the current address', () => {
 			// Arrange:
-			const chainHeight = 100;
+			const chainHeight = '100';
 			const currentAddress = 'currentAddress';
 			const sourceAddress = currentAddress;
 			const mosaic = {
@@ -285,7 +253,7 @@ describe('utils/mosaic', () => {
 			const sourceAddress = 'sourceAddress';
 			const mosaic = {
 				id: 'mosaic1',
-				amount: 100,
+				amount: '100',
 				endHeight: 200,
 				isUnlimitedDuration: false,
 				isRevokable: true,

@@ -1,4 +1,3 @@
-import { relativeToAbsoluteAmount } from './mosaic';
 import {
 	AddressRestrictionFlag,
 	AddressRestrictionFlagMessage,
@@ -21,6 +20,7 @@ import {
 } from '../constants';
 import _ from 'lodash';
 import { SymbolFacade, models } from 'symbol-sdk/symbol';
+import { relativeToAbsoluteAmount } from 'wallet-common-core';
 const { Transaction: SymbolTransaction } = models;
 
 /** @typedef {import('../types/Transaction').Transaction} Transaction */

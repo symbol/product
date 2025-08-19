@@ -1,10 +1,10 @@
 /**
  * @typedef {Object} TransactionFeeMultipliers
- * @property {number} averageFeeMultiplier - Average fee multiplier.
- * @property {number} medianFeeMultiplier - Median fee multiplier.
- * @property {number} highestFeeMultiplier - Highest fee multiplier.
- * @property {number} lowestFeeMultiplier - Lowest fee multiplier.
- * @property {number} minFeeMultiplier - Minimum fee multiplier.
+ * @property {string} averageFeeMultiplier - Average fee multiplier.
+ * @property {string} medianFeeMultiplier - Median fee multiplier.
+ * @property {string} highestFeeMultiplier - Highest fee multiplier.
+ * @property {string} lowestFeeMultiplier - Lowest fee multiplier.
+ * @property {string} minFeeMultiplier - Minimum fee multiplier.
  */
 
 /**

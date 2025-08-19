@@ -1,5 +1,4 @@
 import { 
-	absoluteToRelativeAmount, 
 	addressFromRaw, 
 	isRestrictableFlag, 
 	isRevokableFlag, 
@@ -7,6 +6,7 @@ import {
 	isTransferableFlag 
 } from '../utils';
 import _ from 'lodash';
+import { absoluteToRelativeAmount } from 'wallet-common-core';
 
 /** @typedef {import('../types/Mosaic').Mosaic} Mosaic */
 /** @typedef {import('../types/Network').NetworkProperties} NetworkProperties */

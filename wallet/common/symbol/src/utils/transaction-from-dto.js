@@ -1,7 +1,6 @@
 import { addressFromPublicKey, addressFromRaw } from './account';
 import { networkTimestampToUnix } from './helper';
 import {
-	absoluteToRelativeAmount,
 	formatMosaicList,
 	getMosaicAmount,
 	isRestrictableFlag,
@@ -32,7 +31,7 @@ import {
 	OperationRestrictionFlagMessage,
 	TransactionType
 } from '../constants';
-import { SdkError } from 'wallet-common-core';
+import { SdkError, absoluteToRelativeAmount, safeOperationWithRelativeAmounts } from 'wallet-common-core';
 
 /** @typedef {import('../types/Account').PublicAccount} PublicAccount */
 /** @typedef {import('../types/Mosaic').Mosaic} Mosaic */
@@ -49,7 +48,7 @@ const createMosaic = (id, amount) => mosaicFromDTO({ id, amount });
 
 const mosaicFromDTO = mosaic => ({
 	id: mosaic.id,
-	amount: Number(mosaic.amount)
+	amount: mosaic.amount
 });
 
 const formatAddress = (rawAddress, resolvedAddresses) => {
@@ -171,7 +170,16 @@ export const aggregateTransactionFromDTO = (transactionDTO, config) => {
 	const innerTransactions =
 		transaction.transactions?.map(innerTransactionDTO => transactionFromDTO(innerTransactionDTO, { ...config, isEmbedded: true })) ||
 		[];
-	const resultAmount = innerTransactions.reduce((accumulator, transaction) => accumulator + (transaction.amount || 0), 0);
+
+	// Calculate the total transferred amount of all inner transactions
+	const innerTransactionAmounts = innerTransactions.map(transaction => transaction.amount || 0n);
+	const addAmounts = (...amounts) => amounts.reduce((accumulator, amount) => accumulator + amount, 0n);
+	const totalAmount = safeOperationWithRelativeAmounts(
+		config.networkProperties.networkCurrency.divisibility,
+		innerTransactionAmounts,
+		addAmounts
+	);
+
 	const cosignatures =
 		transaction.cosignatures?.map(cosignature => ({
 			signerPublicKey: cosignature.signerPublicKey,
@@ -180,7 +188,7 @@ export const aggregateTransactionFromDTO = (transactionDTO, config) => {
 		})) || [];
 	const info = {
 		...baseTransaction,
-		amount: resultAmount === -0 ? 0 : resultAmount,
+		amount: totalAmount,
 		innerTransactions,
 		cosignatures,
 		receivedCosignatures: cosignatures.map(cosignature =>
@@ -201,15 +209,17 @@ export const transferTransactionFromDTO = (transactionDTO, config) => {
 		...baseTransaction,
 		recipientAddress: formatAddress(transaction.recipientAddress, resolvedAddresses)
 	};
-	let resultAmount = 0;
+	let resultAmount;
 
 	const isIncoming = isIncomingTransaction(transactionBody, currentAccount);
 	const isOutgoing = isOutgoingTransaction(transactionBody, currentAccount);
 
-	if (isIncoming && !isOutgoing)
-		resultAmount = nativeMosaicAmount;
+	if (nativeMosaicAmount === '0' || (!isIncoming && !isOutgoing) || (isIncoming && isOutgoing))
+		resultAmount = '0';
+	else if (isIncoming && !isOutgoing)
+		resultAmount = `${nativeMosaicAmount}`;
 	else if (!isIncoming && isOutgoing)
-		resultAmount = -nativeMosaicAmount;
+		resultAmount = `${-nativeMosaicAmount}`;
 
 	if (transaction.message) {
 		const messageBytes = Buffer.from(transaction.message, 'hex');
@@ -226,7 +236,7 @@ export const transferTransactionFromDTO = (transactionDTO, config) => {
 	return {
 		...transactionBody,
 		mosaics: formattedMosaics,
-		amount: resultAmount === -0 ? 0 : resultAmount
+		amount: resultAmount
 	};
 };
 
@@ -336,13 +346,12 @@ export const hashLockTransactionFromDTO = (transactionDTO, config) => {
 	const baseTransaction = baseTransactionFromDTO(transactionDTO, config);
 	const mosaic = createMosaic(transaction.mosaicId, transaction.amount);
 	const [formattedMosaic] = formatMosaicList([mosaic], config.mosaicInfos);
-	const lockedAmount = -formattedMosaic.amount;
 
 	return {
 		...baseTransaction,
 		duration: Number(transaction.duration),
 		mosaic: formattedMosaic,
-		lockedAmount: lockedAmount === -0 ? 0 : lockedAmount,
+		lockedAmount: formattedMosaic.amount,
 		aggregateHash: transaction.hash
 	};
 };

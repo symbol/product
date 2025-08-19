@@ -1,4 +1,5 @@
-import { absoluteToRelativeAmount, networkTypeToIdentifier } from '../utils';
+import { networkTypeToIdentifier } from '../utils';
+import { absoluteToRelativeAmount } from 'wallet-common-core';
 
 /** @typedef {import('../types/Network').NetworkInfo} NetworkInfo */
 /** @typedef {import('../types/Network').NetworkProperties} NetworkProperties */

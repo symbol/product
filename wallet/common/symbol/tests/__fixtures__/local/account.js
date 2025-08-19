@@ -4,17 +4,17 @@ const mosaics = [
 	{
 		...mosaicInfos['72C0212E67A08BCE'],
 		name: mosaicInfos['72C0212E67A08BCE'].names[0],
-		'amount': 7270485345.948776
+		'amount': '7270485345.948776'
 	},
 	{
 		...mosaicInfos['0E2B031D9C83906D'],
 		name: mosaicInfos['0E2B031D9C83906D'].names[0],
-		'amount': 4
+		'amount': '4'
 	},
 	{
 		...mosaicInfos['78C3CDF0896248DB'],
 		name: '78C3CDF0896248DB',
-		'amount': 0.54
+		'amount': '0.54'
 	}
 ];
 
@@ -22,7 +22,7 @@ export const accountInfoNonMultisig = {
 	'address': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 	'publicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
 	mosaics,
-	'balance': 7270485345.948776,
+	'balance': '7270485345.948776',
 	'importance': 6580746036116728,
 	'linkedKeys': {
 		'linkedPublicKey': '67599EEC06BE291E8608E3475D36E4C520389D6C853EA223CF9D744B47A4F630',
@@ -39,7 +39,7 @@ export const accountInfoMultisig = {
 	'address': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 	'publicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
 	mosaics,
-	'balance': 7270485345.948776,
+	'balance': '7270485345.948776',
 	'importance': 6580746036116728,
 	'linkedKeys': {
 		'linkedPublicKey': '67599EEC06BE291E8608E3475D36E4C520389D6C853EA223CF9D744B47A4F630',
@@ -59,7 +59,7 @@ export const accountInfoCosigner = {
 	'address': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 	'publicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
 	mosaics,
-	'balance': 7270485345.948776,
+	'balance': '7270485345.948776',
 	'importance': 6580746036116728,
 	'linkedKeys': {
 		'linkedPublicKey': '67599EEC06BE291E8608E3475D36E4C520389D6C853EA223CF9D744B47A4F630',

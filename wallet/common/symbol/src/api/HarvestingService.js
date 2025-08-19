@@ -1,7 +1,7 @@
 import { HarvestingStatus } from '../constants';
-import { absoluteToRelativeAmount, addressFromRaw, createSearchUrl, networkTimestampToUnix, networkTypeToIdentifier } from '../utils';
+import { addressFromRaw, createSearchUrl, networkTimestampToUnix, networkTypeToIdentifier } from '../utils';
 import _ from 'lodash';
-import { NotFoundError } from 'wallet-common-core';
+import { NotFoundError, absoluteToRelativeAmount } from 'wallet-common-core';
 
 /** @typedef {import('../types/Account').PublicAccount} PublicAccount */
 /** @typedef {import('../types/Harvesting').HarvestingStatus} HarvestingStatus */
@@ -157,10 +157,10 @@ export class HarvestingService {
 
 		return response.data.map(el => ({
 			height: el.statement.height,
-			date: networkTimestampToUnix(el.meta.timestamp, networkProperties.epochAdjustment),
+			timestamp: networkTimestampToUnix(el.meta.timestamp, networkProperties.epochAdjustment),
 			amount: absoluteToRelativeAmount(
 				el.statement.receipts.find(receipt => receipt.type === receiptType && addressFromRaw(receipt.targetAddress) === address)
-					?.amount || 0,
+					?.amount || '0',
 				divisibility
 			)
 		}));
