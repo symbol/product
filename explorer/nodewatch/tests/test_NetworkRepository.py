@@ -436,7 +436,7 @@ class NetworkRepositoryTest(unittest.TestCase):
 
 	# endregion
 
-	# region load voter descriptorsestimate_finalized_height
+	# region load voter descriptors
 
 	def _assert_voter_descriptor(self, descriptor, **kwargs):
 		property_names = [
