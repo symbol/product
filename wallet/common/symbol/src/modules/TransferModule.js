@@ -1,5 +1,13 @@
 import { MessageType, TransactionType } from '../constants';
-import { createDeadline, createFee, encodePlainMessage, isIncomingTransaction, isOutgoingTransaction, isSymbolAddress } from '../utils';
+import { 
+	createDeadline, 
+	createFee, 
+	encodePlainMessage, 
+	isIncomingTransaction, 
+	isOutgoingTransaction, 
+	isSymbolAddress, 
+	namespaceIdFromName 
+} from '../utils';
 import { ControllerError } from 'wallet-common-core';
 
 /** @typedef {import('../types/Transaction').Transaction} Transaction */
@@ -35,8 +43,9 @@ export class TransferModule {
      * @returns {Transaction} The transfer transaction.
      */
 	createTransaction = async (options, password) => {
-		const { senderPublicKey, recipientAddressOrAlias, mosaics, messageText, isMessageEncrypted, fee = 0 } = options;
+		const { recipientAddressOrAlias, mosaics, messageText, isMessageEncrypted, fee = 0 } = options;
 		const { currentAccount, networkProperties } = this.#root;
+		const senderPublicKey = options.senderPublicKey || currentAccount.publicKey;
 
 		// Resolve recipient address
 		let recipientAddress;
@@ -68,7 +77,7 @@ export class TransferModule {
 		// Prepare transfer transaction
 		const transferTransaction = {
 			type: TransactionType.TRANSFER,
-			signerPublicKey: senderPublicKey || currentAccount.publicKey,
+			signerPublicKey: senderPublicKey,
 			recipientAddress,
 			mosaics,
 			deadline: createDeadline(2, networkProperties.epochAdjustment)
