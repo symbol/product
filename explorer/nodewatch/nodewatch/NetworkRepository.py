@@ -1,8 +1,7 @@
 import csv
 import json
-from collections import namedtuple
+from collections import Counter, namedtuple
 
-from collections import Counter
 from symbolchain.CryptoTypes import Hash256, PublicKey
 from symbolchain.nem.Network import Address as NemAddress
 from symbolchain.symbol.Network import Address as SymbolAddress

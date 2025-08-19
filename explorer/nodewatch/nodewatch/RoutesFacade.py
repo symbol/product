@@ -277,7 +277,7 @@ class SymbolRoutesFacade(BasicRoutesFacade):
 		return {
 			'epoch': self.repository.finalized_epoch()
 		}
-		
+
 	@staticmethod
 	def _version_to_css_class(version):
 		tag = 'danger'
