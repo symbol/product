@@ -11,6 +11,7 @@ import { AddressBookModule } from './lib/modules/AddressBookModule';
 import { LocalizationModule } from './lib/modules/LocalizationModule';
 import { MarketModule } from './lib/modules/MarketModule';
 // Utils
+import { absoluteToRelativeAmount, relativeToAbsoluteAmount, safeOperationWithRelativeAmounts } from './utils/convert';
 import { createNetworkMap } from './utils/network';
 // Constants
 import * as constants from './constants';
@@ -36,6 +37,9 @@ export {
 	MnemonicKeystore,
 	ExternalAccountKeystore,
 	StorageInterface,
+	absoluteToRelativeAmount,
+	relativeToAbsoluteAmount,
+	safeOperationWithRelativeAmounts,
 	createNetworkMap,
 	constants,
 	AddressBookModule,
