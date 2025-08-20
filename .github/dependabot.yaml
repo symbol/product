@@ -196,3 +196,21 @@ updates:
         update-types:
           - minor
           - patch
+
+  - package-ecosystem: npm
+    directory: /wallet/common/symbol
+    schedule:
+      interval: weekly
+      day: sunday
+    target-branch: dev
+    labels: [Wallet Common Symbol]
+    versioning-strategy: increase-if-necessary
+    commit-message:
+      prefix: '[dependency]'
+    groups:
+      wallet-common-symbol-dependencies:
+        patterns:
+          - '*'
+        update-types:
+          - minor
+          - patch

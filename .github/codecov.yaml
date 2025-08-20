@@ -66,6 +66,12 @@ coverage:
         flags:
           - wallet-common-core
 
+      wallet-common-symbol:
+        target: auto
+        threshold: 1%
+        flags:
+          - wallet-common-symbol
+
 # New root YAML section = `flags:`
 # This is where you would define every flag from your
 # uploader, and update when new Flags added
@@ -126,4 +132,9 @@ flags:
   wallet-common-core:
     paths:
       - wallet/common/core
+    carryforward: true
+
+  wallet-common-symbol:
+    paths:
+      - wallet/common/symbol
     carryforward: true
