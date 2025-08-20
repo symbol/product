@@ -4,7 +4,7 @@ defaultCiPipeline {
 
 	environment = 'javascript'
 
-	packageId = 'wallet-common-core'
+	packageId = 'wallet-common-symbol'
 
 	codeCoverageTool = 'c8'
 	minimumCodeCoverage = 95
