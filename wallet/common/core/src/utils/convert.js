@@ -1,3 +1,5 @@
+const ZERO = '0'.charCodeAt(0);
+
 /**
  * Convert an absolute token amount (integer-like) to a relative amount (decimal-like).
  * Examples:
@@ -16,7 +18,7 @@ export const absoluteToRelativeAmount = (absoluteAmount, divisibility) => {
 
 	// Divisibility 0: identity (normalized to remove leading zeros)
 	if (divisibility === 0) {
-		const normalized = absoluteString.replace(/^0+/, '');
+		const normalized = trimLeadingZeros(absoluteString);
         
 		return normalized || '0';
 	}
@@ -31,7 +33,7 @@ export const absoluteToRelativeAmount = (absoluteAmount, divisibility) => {
 	const fractionalPartRaw = divisibility > 0 ? padded.slice(-divisibility) : '';
 
 	// Remove insignificant trailing zeros from the fractional part
-	const fractionalPart = fractionalPartRaw.replace(/0+$/, '');
+	const fractionalPart = trimTrailingZeros(fractionalPartRaw);
 
 	return fractionalPart ? `${integerPart}.${fractionalPart}` : integerPart;
 };
@@ -61,7 +63,7 @@ export const relativeToAbsoluteAmount = (relativeAmount, divisibility) => {
 
 	// Concatenate and remove leading zeros, but keep at least a single "0"
 	const absoluteString = integerPart + fractionalPart;
-	const trimmed = absoluteString.replace(/^0+/, '');
+	const trimmed = trimLeadingZeros(absoluteString);
 
 	return trimmed || '0';
 };
@@ -87,4 +89,22 @@ export const safeOperationWithRelativeAmounts = (divisibility, values, callback)
 	const relativeResult = absoluteToRelativeAmount(result, divisibility);
 	
 	return relativeResult;
+};
+
+const trimLeadingZeros = s => {
+	let i = 0;
+	
+	while (i < s.length && s.charCodeAt(i) === ZERO) 
+		i++;
+	
+	return i === s.length ? '0' : s.slice(i);
+};
+
+const trimTrailingZeros = s => {
+	let i = s.length - 1;
+
+	while (i >= 0 && s.charCodeAt(i) === ZERO) 
+		i--;
+	
+	return s.slice(0, i + 1);
 };
