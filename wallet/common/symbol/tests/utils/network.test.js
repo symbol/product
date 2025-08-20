@@ -7,7 +7,8 @@ describe('utils/network', () => {
 			// Arrange:
 			const networkTypesAndExpectedIdentifiers = [
 				{ networkType: 104, expectedIdentifier: 'mainnet' },
-				{ networkType: 152, expectedIdentifier: 'testnet' }
+				{ networkType: 152, expectedIdentifier: 'testnet' },
+				{ networkType: 0, expectedIdentifier: 'custom' }
 			];
 
 			networkTypesAndExpectedIdentifiers.map(({ networkType, expectedIdentifier }) => {
@@ -25,7 +26,8 @@ describe('utils/network', () => {
 			// Arrange:
 			const networkIdentifiersAndExpectedTypes = [
 				{ networkIdentifier: 'mainnet', expectedType: 104 },
-				{ networkIdentifier: 'testnet', expectedType: 152 }
+				{ networkIdentifier: 'testnet', expectedType: 152 },
+				{ networkIdentifier: 'custom', expectedType: 0 }
 			];
 
 			networkIdentifiersAndExpectedTypes.map(({ networkIdentifier, expectedType }) => {

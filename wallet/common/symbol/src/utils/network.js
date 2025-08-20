@@ -12,7 +12,7 @@ export const networkTypeToIdentifier = networkType => {
 	if (networkType === NetworkType.TEST_NET) 
 		return NetworkIdentifier.TEST_NET;
 
-	return 'custom';
+	return NetworkIdentifier.CUSTOM;
 };
 
 /**
@@ -27,7 +27,7 @@ export const networkIdentifierToNetworkType = networkIdentifier => {
 	if (networkIdentifier === NetworkIdentifier.TEST_NET) 
 		return NetworkType.TEST_NET;
 
-	return 0;
+	return NetworkType.CUSTOM;
 };
 
 
