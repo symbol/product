@@ -81,38 +81,44 @@ export class Listener {
 		
 		const [channelName, channelParam] = message.topic.split('/');
 
-		if (!this.handlers[channelName]) 
+		// Ignore if no handler registered for this channel
+		const handler = this.handlers[channelName];
+		if (!handler || typeof handler !== 'function')
 			return;
+
+		let payload;
 
 		switch (channelName) {
 		case ListenerChannelName.CONFIRMED_ADDED:
 		case ListenerChannelName.UNCONFIRMED_ADDED:
 		case ListenerChannelName.PARTIAL_ADDED:
-			this.handlers[channelName]({ hash: message.data.meta.hash });
+			payload = { hash: message.data.meta.hash };
 			break;
 		case ListenerChannelName.BLOCK:
-			this.handlers[channelName](message.data);
+			payload = message.data;
 			break;
 		case ListenerChannelName.STATUS:
-			this.handlers[channelName]({
+			payload = {
 				type: 'TransactionStatusError',
 				rawAddress: channelParam,
 				...message.data
-			});
+			};
 			break;
 		case ListenerChannelName.COSIGNATURE:
-			this.handlers[channelName]({ type: 'CosignatureSignedTransaction', ...message.data });
+			payload = { type: 'CosignatureSignedTransaction', ...message.data };
 			break;
 		case ListenerChannelName.PARTIAL_REMOVED:
 		case ListenerChannelName.UNCONFIRMED_REMOVED:
-			this.handlers[channelName]({ hash: message.data.meta.hash });
+			payload = { hash: message.data.meta.hash };
 			break;
 		case ListenerChannelName.FINALIZED_BLOCK:
-			this.handlers[channelName]({ type: 'FinalizedBlock', ...message.data });
+			payload = { type: 'FinalizedBlock', ...message.data };
 			break;
 		default:
 			throw new ApiError(`Channel: ${channelName} is not supported.`);
 		}
+
+		handler(payload);
 	}
 
 	/**
