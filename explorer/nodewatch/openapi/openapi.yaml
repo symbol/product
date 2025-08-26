@@ -250,6 +250,7 @@ components:
           description: Node public key of the node
           pattern: '^[0-9A-Fa-f]{64}$'
           example: E3FC28889BDE31406465167F1D9D6A16DCA1FF67A3BABFA5E5A8596478848FCC
+          nullable: true
         endpoint:
           type: string
           format: uri
@@ -276,11 +277,11 @@ components:
           description: Current blockchain finalized height
           example: 2643592
         balance:
-          type: integer
-          format: int64
+          type: number
+          format: float
           minimum: 0
-          description: Current balance of node account in micro units (1 = 1,000,000 micro units)
-          example: 2000000
+          description: Current balance of node account
+          example: 1.761056
         finalizedEpoch:
           type: integer
           minimum: 1
@@ -291,6 +292,7 @@ components:
           pattern: '^[0-9A-Fa-f]{64}$'
           description: Hash of the finalized block
           example: 6C4B9C101C803FE7DCFB77531F78D32BE68C17995A8005CD2F74F1BC6228CD86
+          nullable: true
         finalizedPoint:
           type: integer
           minimum: 1
@@ -298,16 +300,22 @@ components:
           example: 29
         isHealthy:
           type: boolean
-          description: Indicates whether the node is currently healthy
+          description: | 
+            Indicates the health status of an API node. 
+            For Symbol true if both the node and MongoDB are responsive, false if either is unresponsive, 
+            and null if the node is not an API or light node
           example: true
+          nullable: true
         isSslEnabled:
           type: boolean
           description: Specifies whether the node endpoint uses SSL
           example: true
+          nullable: true
         restVersion:
           type: string
           description: Version of the REST API running on the node
           example: 2.4.4
+          nullable: true
         geoLocation:
           type: object
           description: Node geolocation data
@@ -373,7 +381,7 @@ components:
       description: |
         List of node count records over time.
         The `values` object contains `total` and role-specific counts.  
-        Keys `1`–`7` correspond to role combinations as described in `Node.roles`.
+        Keys `1`–`7` correspond to role combinations as described in `Node.roles`, and apply only to Symbol nodes (not NEM nodes).
       items:
         type: object
         required:
