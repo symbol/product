@@ -25,6 +25,8 @@ def create_app():
 
 	symbol_explorer_endpoint = app.config.get('SYMBOL_EXPLORER_ENDPOINT')
 	symbol_generation_hash_seed = app.config.get('SYMBOL_GENERATION_HASH_SEED', None)
+	symbol_block_generation_target_time = app.config.get('SYMBOL_BLOCK_GENERATION_TARGET_TIME', 30)
+	symbol_voting_set_grouping = app.config.get('SYMBOL_VOTING_SET_GROUPING', 1440)
 	nem_explorer_endpoint = app.config.get('NEM_EXPLORER_ENDPOINT')
 
 	log.info(f'loading resources from {resources_path}')
@@ -32,10 +34,15 @@ def create_app():
 	log.info(f' configured with MIN_HEIGHT_CLUSTER_SIZE {min_cluster_size}')
 	log.info(f' configured with SYMBOL_EXPLORER_ENDPOINT {symbol_explorer_endpoint}')
 	log.info(f' configured with SYMBOL_GENERATION_HASH_SEED {symbol_generation_hash_seed}')
+	log.info(f' configured with SYMBOL_BLOCK_GENERATION_TARGET_TIME {symbol_block_generation_target_time}')
+	log.info(f' configured with SYMBOL_VOTING_SET_GROUPING {symbol_voting_set_grouping}')
 	log.info(f' configured with NEM_EXPLORER_ENDPOINT {nem_explorer_endpoint}')
 
 	nem_network = NetworkLocator.find_by_name(NemNetwork.NETWORKS, network_name)
 	symbol_network = NetworkLocator.find_by_name(SymbolNetwork.NETWORKS, network_name)
+	symbol_network.block_generation_target_time = symbol_block_generation_target_time
+	symbol_network.voting_set_grouping = symbol_voting_set_grouping
+
 	if symbol_generation_hash_seed:
 		symbol_network.generation_hash_seed = Hash256(symbol_generation_hash_seed)
 
@@ -161,6 +168,10 @@ def create_app():
 	@app.route('/api/symbol/epoch')
 	def api_symbol_epoch():  # pylint: disable=unused-variable
 		return jsonify(symbol_routes_facade.json_epoch())
+
+	@app.route('/api/symbol/network/config')
+	def api_symbol_network_config():  # pylint: disable=unused-variable
+		return jsonify(symbol_routes_facade.json_network_config())
 
 	@app.context_processor
 	def inject_timestamps():  # pylint: disable=unused-variable

@@ -79,10 +79,14 @@
 {% block scripts %}
   <script type="text/javascript">
     function update_voting_key_expiry() {
-      fetch('{{ url_for("api_symbol_epoch") }}', {headers: {'Content-Type': 'application/json'} })
-        .then(response => response.json())
-        .then(response => {
-          const currentEpoch = response['epoch'];
+      Promise.all([
+        fetch('{{ url_for("api_symbol_epoch") }}', {headers: {'Content-Type': 'application/json'} }).then(response => response.json()),
+        fetch('{{ url_for("api_symbol_network_config") }}', {headers: {'Content-Type': 'application/json'} }).then(response => response.json())
+      ])
+      .then(([epoch, network_config]) => {
+          const currentEpoch = epoch['epoch'];
+          const targetBlockGenerationTime = network_config['targetBlockGenerationTime'];
+          const votingSetGrouping = network_config['votingSetGrouping'];
 
           // Update each row's expiry days
           document.querySelectorAll('tbody tr').forEach(row => {
@@ -90,10 +94,9 @@
             const expiryCell = row.querySelector('.voting-expiry');
 
             if (votingEndEpoch && expiryCell) {
-              const blocksPerDay = 2880;
-              const blocksPerEpoch = 1440;
+              const blocksPerDay = 60 * 60 * 24 / targetBlockGenerationTime;
               const epochRemaining = votingEndEpoch - currentEpoch;
-              const daysRemaining = Math.floor((epochRemaining * blocksPerEpoch) / blocksPerDay);
+              const daysRemaining = Math.floor((epochRemaining * votingSetGrouping) / blocksPerDay);
 
               expiryCell.textContent = epochRemaining > 0 ? `${daysRemaining} days` : 'Expired';
             }

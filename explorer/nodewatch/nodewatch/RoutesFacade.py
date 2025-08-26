@@ -278,6 +278,14 @@ class SymbolRoutesFacade(BasicRoutesFacade):
 			'epoch': self.repository.finalized_epoch()
 		}
 
+	def json_network_config(self):
+		"""Gets the network configuration."""
+
+		return {
+			'targetBlockGenerationTime': self.repository._network.block_generation_target_time,  # pylint: disable=protected-access
+			'votingSetGrouping': self.repository._network.voting_set_grouping  # pylint: disable=protected-access
+		}
+
 	@staticmethod
 	def _version_to_css_class(version):
 		tag = 'danger'

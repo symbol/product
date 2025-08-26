@@ -324,4 +324,14 @@ def test_get_api_symbol_epoch(client):  # pylint: disable=redefined-outer-name
 	assert 1 == len(response_json)
 
 
+def test_get_api_symbol_voting_config(client):  # pylint: disable=redefined-outer-name
+	# Act:
+	response = client.get('/api/symbol/network/config')
+	response_json = json.loads(response.data)
+
+	# Assert:
+	_assert_response_status_code_and_headers(response, 200)
+	assert 2 == len(response_json)
+
+
 # endregion
