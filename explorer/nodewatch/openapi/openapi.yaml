@@ -1,0 +1,480 @@
+openapi: 3.0.3
+info:
+  title: NodeWatch API Documentation
+  description: |
+    API providing information about the NEM and Symbol blockchain networks, 
+    including node and network statistics and time-series.
+  version: 1.0.0
+
+servers:
+  - url: https://nodewatch.symbol.tools/testnet
+    description: Testnet server
+  - url: https://nodewatch.symbol.tools
+    description: Mainnet server
+
+tags:
+  - name: NEM nodes
+    description: Endpoints providing NEM node and network height information.
+  - name: Symbol nodes
+    description: Endpoints providing Symbol node and network height information, along with statistics.
+
+paths:
+  /api/nem/nodes:
+    get:
+      summary: Returns the list of known NEM nodes.
+      tags:
+        - NEM nodes
+      operationId: getNemNodes
+      responses:
+        200:
+          description: The list of known NEM nodes.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Node'
+
+  /api/nem/height:
+    get:
+      summary: Returns information about the NEM blockchain's heights.
+      tags:
+        - NEM nodes
+      operationId: getNemHeight
+      responses:
+        200:
+          description: |
+            The current and finalized heights, calculated as the median of the values returned by all known nodes.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HeightInfo'
+
+  /api/nem/nodes/count:
+    get:
+      summary: Returns NEM node count time series.
+      tags:
+        - NEM nodes
+      operationId: getNemNodesCount
+      responses:
+        200:
+          description: Time series of node counts.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TimeSeriesNodesCount'
+
+  /api/symbol/nodes/api:
+    get:
+      summary: Returns the list of known API-only Symbol nodes.
+      tags:
+        - Symbol nodes
+      operationId: getSymbolApiNodes
+      parameters:
+        - $ref: '#/components/parameters/OnlySsl'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Order'
+      responses:
+        200:
+          description: List of Symbol API-only nodes.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Node'
+
+  /api/symbol/nodes/peer:
+    get:
+      summary: Returns the list of known Peer Symbol nodes.
+      tags:
+        - Symbol nodes
+      operationId: getSymbolPeerNodes
+      parameters:
+        - $ref: '#/components/parameters/OnlySsl'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Order'
+      responses:
+        200:
+          description: List of Symbol peer nodes.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Node'
+
+  /api/symbol/nodes/mainPublicKey/{main_public_key}:
+    get:
+      summary: Returns information about the Symbol node with matching main public key.
+      tags:
+        - Symbol nodes
+      operationId: getSymbolNodeByMainPublicKey
+      parameters:
+        - name: main_public_key
+          in: path
+          description: The main public key of the Symbol node to retrieve.
+          required: true
+          schema:
+            type: string
+            pattern: '^[0-9A-Fa-f]{64}$'
+          example: E3FC28889BDE31406465167F1D9D6A16DCA1FF67A3BABFA5E5A8596478848F78
+      responses:
+        200:
+          description: The node information.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Node'
+        400:
+          description: |
+            Invalid main public key: The provided key must contain exactly 64 hexadecimal characters and nothing else.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        404:
+          description: There is no node with the requested main public key.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/symbol/nodes/nodePublicKey/{node_public_key}:
+    get:
+      summary: Returns information about the Symbol node with matching node public key.
+      tags:
+        - Symbol nodes
+      operationId: getSymbolNodeByNodePublicKey
+      parameters:
+        - name: node_public_key
+          in: path
+          description: The public key of the Symbol node to retrieve.
+          required: true
+          schema:
+            type: string
+            pattern: '^[0-9A-Fa-f]{64}$'
+          example: E3FC28889BDE31406465167F1D9D6A16DCA1FF67A3BABFA5E5A8596478848F78
+      responses:
+        200:
+          description: The node information.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Node'
+        400:
+          description: |
+            Invalid node public key: The provided key must contain exactly 64 hexadecimal characters and nothing else.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        404:
+          description: There is no node with the requested public key.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/symbol/height:
+    get:
+      summary: Returns information about the Symbol blockchain's heights.
+      tags:
+        - Symbol nodes
+      operationId: getSymbolHeight
+      responses:
+        200:
+          description: |
+            The current and finalized heights, calculated as the median of the values returned by all known nodes.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HeightInfo'
+
+  /api/symbol/nodes/count:
+    get:
+      summary: Returns Symbol node count time series.
+      tags:
+        - Symbol nodes
+      operationId: getSymbolNodesCount
+      responses:
+        200:
+          description: Time series of node counts.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TimeSeriesNodesCount'
+
+components:
+  parameters:
+    OnlySsl:
+      name: only_ssl
+      in: query
+      required: false
+      description: When `true`, only nodes that support HTTPS are returned.
+      schema:
+        type: boolean
+        default: false
+    Limit:
+      name: limit
+      required: false
+      in: query
+      description: Maximum number of nodes to return (0 means all items).
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+    Order:
+      name: order
+      required: false
+      in: query
+      description: |
+        Order of returned nodes. 
+        The only currently supported option is `random` which returns the nodes in a non-specified order.
+      schema:
+        type: string
+        enum: [random]
+
+  schemas:
+    Node:
+      type: object
+      description: Node information gathered from the chain by Nodewatch.
+      required:
+        - mainPublicKey
+        - endpoint
+        - name
+        - version
+        - height
+        - finalizedHeight
+        - balance
+      properties:
+        mainPublicKey:
+          type: string
+          description: Main public key of the node.
+          pattern: '^[0-9A-Fa-f]{64}$'
+          example: E3FC28889BDE31406465167F1D9D6A16DCA1FF67A3BABFA5E5A8596478848FCC
+        nodePublicKey:
+          type: string
+          description: Public key of the node.
+          pattern: '^[0-9A-Fa-f]{64}$'
+          example: E3FC28889BDE31406465167F1D9D6A16DCA1FF67A3BABFA5E5A8596478848FCC
+          nullable: true
+        endpoint:
+          type: string
+          format: uri
+          description: Endpoint of the node.
+          example: http://001-sai-dual.symboltest.net:3000
+        name:
+          type: string
+          description: User-friendly name of the node.
+          example: 201-sai-dual
+        version:
+          type: string
+          description: Version of the blockchain client run by the node.
+          example: 1.0.3.8
+        height:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Current blockchain height, as seen by the node.
+          example: 2645184
+        finalizedHeight:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Network-wide blockchain finalized height, agreed-upon by the majority of nodes.
+          example: 2643592
+        balance:
+          type: number
+          format: double
+          minimum: 0
+          description: Current balance of the node's main account.
+          example: 1.761056
+        finalizedEpoch:
+          type: integer
+          minimum: 1
+          description: Finalized epoch.
+          example: 3673
+        finalizedHash:
+          type: string
+          pattern: '^[0-9A-Fa-f]{64}$'
+          description: Hash of the latest finalized block.
+          example: 6C4B9C101C803FE7DCFB77531F78D32BE68C17995A8005CD2F74F1BC6228CD86
+          nullable: true
+        finalizedPoint:
+          type: integer
+          minimum: 1
+          description: Point of the latest finalized block.
+          example: 29
+        isHealthy:
+          type: boolean
+          description: |
+            Indicates the health status of an API node. For Symbol, `true` if both the node and MongoDB are responsive, 
+            `false` if either is unresponsive. `null` if the node is not an API or light node.
+          example: true
+          nullable: true
+        isSslEnabled:
+          type: boolean
+          description: Specifies whether the node endpoint uses SSL.
+          example: true
+          nullable: true
+        restVersion:
+          type: string
+          description: Version of the REST API running on the node.
+          example: 2.4.4
+          nullable: true
+        geoLocation:
+          type: object
+          description: Node geolocation data.
+          properties:
+            city:
+              type: string
+              description: The city where the IP address is estimated to be located.
+              example: Seattle
+            continent:
+              type: string
+              description: The continent where the IP address is located.
+              example: North America
+            country:
+              type: string
+              description: The country where the IP address is registered or detected.
+              example: United States
+            isp:
+              type: string
+              description: |
+                The Internet Service Provider (ISP) associated with the IP address.
+                For cloud-hosted servers, this may correspond to the hosting company rather than the end user.
+              example: Contabo Inc.
+            lat:
+              type: number
+              description: |
+                Latitude coordinate of the estimated IP location.
+                Expressed in decimal degrees within the range -90.0 to +90.0:
+                - Positive values indicate the Northern Hemisphere.
+                - Negative values indicate the Southern Hemisphere
+              format: double
+              minimum: -90.0
+              maximum: 90.0
+              example: 47.3066
+            lon:
+              type: number
+              description: |
+                Longitude coordinate of the estimated IP location.
+                Expressed in decimal degrees within the range -180.0 to +180.0:
+                - Positive values indicate the Eastern Hemisphere.
+                - Negative values indicate the Western Hemisphere.
+              format: double
+              minimum: -180.0
+              maximum: 180.0
+              example: -122.2619
+            region:
+              type: string
+              description: |
+                The primary administrative subdivision of the country where the IP address is located. 
+                Its meaning varies by country:
+                - United States, Canada, Australia: state or province code
+                - European Union: region code (e.g., federal state in Germany)
+                - Other countries: may represent province, prefecture, or equivalent
+              example: 'WA'
+        roles:
+          type: integer
+          description: |
+            For Symbol, number that defines the different roles the node provides. Possible roles are:
+            * 1 - Peer node.
+            * 2 - API node.
+            * 4 - Voting node.
+
+            The values are bitwise added together, for example:
+            1 = Only Peer.
+            2 = Only API.
+            3 = Both Peer and API node.
+            7 = Peer, API and Voting node.
+          example: 3
+
+    HeightInfo:
+      type: object
+      description: |
+        Node heights information, calculated as the median of the values returned by all known nodes.
+      required:
+        - height
+        - finalizedHeight
+      properties:
+        height:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Current blockchain height, as seen by the node.
+          example: 2645184
+        finalizedHeight:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Network-wide blockchain finalized height, agreed-upon by the majority of nodes.
+          example: 2645154
+
+    TimeSeriesNodesCount:
+      type: array
+      description: |
+        List of node count records over time.
+        The `values` object contains `total` and role-specific counts.  
+        Keys `1`–`7` correspond to role combinations as described in `Node.roles`, and apply only to Symbol nodes (not NEM nodes).
+      items:
+        type: object
+        required:
+          - date
+          - values
+        properties:
+          date:
+            type: string
+            format: date
+            example: 2025-08-11
+          values:
+            type: object
+            required:
+              - total
+            properties:
+              total:
+                type: integer
+                description: Total count of nodes.
+                example: 16
+              "1":
+                type: integer
+                description: Count of nodes with role = 1.
+                example: 3
+              "2":
+                type: integer
+                description: Count of nodes with role = 2.
+                example: 0
+              "3":
+                type: integer
+                description: Count of nodes with role = 3.
+                example: 7
+              "4":
+                type: integer
+                description: Count of nodes with role = 4.
+                example: 0
+              "5":
+                type: integer
+                description: Count of nodes with role = 5.
+                example: 1
+              "6":
+                type: integer
+                description: Count of nodes with role = 6.
+                example: 0
+              "7":
+                type: integer
+                description: Count of nodes with role = 7.
+                example: 5
+
+    ErrorResponse:
+      type: object
+      required:
+        - status
+        - message
+      properties:
+        status:
+          type: integer
+          description: HTTP error status code.
+        message:
+          type: string
+          description: Error message.
