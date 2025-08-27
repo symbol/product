@@ -43,7 +43,8 @@ paths:
       operationId: getNemHeight
       responses:
         200:
-          description: The current and finalized heights.
+          description: |
+            The current and finalized heights, calculated as the median of the values returned by all known nodes.
           content:
             application/json:
               schema:
@@ -183,7 +184,8 @@ paths:
       operationId: getSymbolHeight
       responses:
         200:
-          description: The current and finalized heights.
+          description: |
+            The current and finalized heights, calculated as the median of the values returned by all known nodes.
           content:
             application/json:
               schema:
@@ -306,7 +308,7 @@ components:
           example: 29
         isHealthy:
           type: boolean
-          description: | 
+          description: |
             Indicates the health status of an API node. For Symbol, `true` if both the node and MongoDB are responsive, 
             `false` if either is unresponsive. `null` if the node is not an API or light node.
           example: true
@@ -391,7 +393,8 @@ components:
 
     HeightInfo:
       type: object
-      description: Node heights information.
+      description: |
+        Node heights information, calculated as the median of the values returned by all known nodes.
       required:
         - height
         - finalizedHeight
