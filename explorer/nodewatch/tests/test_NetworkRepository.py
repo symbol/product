@@ -218,7 +218,7 @@ class NetworkRepositoryTest(unittest.TestCase):
 			main_address=SymbolAddress('NCPPDLXGYBHNPQAXQ6RTNS3T46A7FNTXDFBD43Y'),
 			main_public_key=PublicKey('7DFB0D690BFFA4A4979C7466C7B669AE8FBAFD419DAA10DE948604CD9BE65F0B'),
 			node_public_key=PublicKey('D561824BD4E3053C39A8D5A4AB00583A4D99302C541F046D3A1E6FF023006D7C'),
-			endpoint='http://symbol.shizuilab.com:3000',
+			endpoint='https://symbol.shizuilab.com:3001',
 			name='ibone74',
 			height=1486760,
 			finalized_info=FinalizedInfo(1486740, 3020, 'E29E5695EB269B7DD1D76DBF05FDA1731AB24F561D2032248434FA36A27AFB4C', 4),
@@ -305,7 +305,7 @@ class NetworkRepositoryTest(unittest.TestCase):
 		self.assertEqual({
 			'mainPublicKey': '7DFB0D690BFFA4A4979C7466C7B669AE8FBAFD419DAA10DE948604CD9BE65F0B',
 			'nodePublicKey': 'D561824BD4E3053C39A8D5A4AB00583A4D99302C541F046D3A1E6FF023006D7C',
-			'endpoint': 'http://symbol.shizuilab.com:3000',
+			'endpoint': 'https://symbol.shizuilab.com:3001',
 			'finalizedEpoch': 3020,
 			'finalizedHash': 'E29E5695EB269B7DD1D76DBF05FDA1731AB24F561D2032248434FA36A27AFB4C',
 			'finalizedPoint': 4,
