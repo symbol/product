@@ -198,7 +198,7 @@ class NetworkRepository:
 	def _handle_symbol_node(self, json_node, extra_data):
 		symbol_endpoint = ''
 		roles = json_node['roles']
-		has_api = bool(roles & 2)
+		has_api = json_node.get('apiNodeInfo', {}).get('restVersion', None)
 		is_ssl = json_node.get('apiNodeInfo', {}).get('isSSL', False)
 		if json_node['host']:
 			node_host = json_node['host']
