@@ -202,7 +202,7 @@ class NetworkRepository:
 		is_ssl = json_node.get('apiNodeInfo', {}).get('isSSL', False)
 		if json_node['host']:
 			node_host = json_node['host']
-			if has_api and is_ssl:
+			if is_ssl:
 				node_port = 3001
 			elif has_api:
 				node_port = 3000
