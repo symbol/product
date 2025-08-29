@@ -14,23 +14,19 @@ export const absoluteToRelativeAmount = (absoluteAmount, divisibility) => {
 	if (divisibility < 0)
 		throw new Error('Divisibility must be a non-negative integer');
 
-	const absoluteString = String(absoluteAmount);
+	const absoluteString = trimLeadingZeros(String(absoluteAmount));
 
-	// Divisibility 0: identity (normalized to remove leading zeros)
-	if (divisibility === 0) {
-		const normalized = trimLeadingZeros(absoluteString);
-        
-		return normalized || '0';
-	}
+	if (divisibility === 0)
+		return absoluteString;
 
 	// Ensure there are at least (divisibility + 1) digits to safely split integer/fractional parts
 	const padded = absoluteString.padStart(divisibility + 1, '0');
 
 	// Everything before the last "divisibility" digits is the integer part
-	const integerPart = padded.slice(0, -divisibility) || '0';
+	const integerPart = padded.slice(0, -divisibility);
 
-	// Last "divisibility" digits are the fractional part (none if divisibility is 0)
-	const fractionalPartRaw = divisibility > 0 ? padded.slice(-divisibility) : '';
+	// Last "divisibility" digits are the fractional part
+	const fractionalPartRaw = padded.slice(-divisibility);
 
 	// Remove insignificant trailing zeros from the fractional part
 	const fractionalPart = trimTrailingZeros(fractionalPartRaw);
@@ -57,15 +53,12 @@ export const relativeToAbsoluteAmount = (relativeAmount, divisibility) => {
 	// Normalize missing integer part like ".5" -> "0.5"
 	const integerPart = integerPartRaw || '0';
 
-	// Right-pad fractional part to exactly match divisibility, then cut extra digits
-	const fractionalPartPadded = fractionalPartRaw.padEnd(divisibility, '0');
-	const fractionalPart = fractionalPartPadded.slice(0, divisibility);
+	// Truncate extra fractional digits, then right-pad to exactly match divisibility
+	const fractionalPart = fractionalPartRaw.slice(0, divisibility).padEnd(divisibility, '0');
 
-	// Concatenate and remove leading zeros, but keep at least a single "0"
+	// Concatenate and remove leading zeros; helper returns "0" for all-zero
 	const absoluteString = integerPart + fractionalPart;
-	const trimmed = trimLeadingZeros(absoluteString);
-
-	return trimmed || '0';
+	return trimLeadingZeros(absoluteString);
 };
 
 /**
@@ -84,19 +77,19 @@ export const relativeToAbsoluteAmount = (relativeAmount, divisibility) => {
 export const safeOperationWithRelativeAmounts = (divisibility, values, callback) => {
 	const absoluteAmounts = values.map(value => relativeToAbsoluteAmount(value, divisibility));
 	const bigIntAmounts = absoluteAmounts.map(amount => BigInt(amount));
-	
+
 	const result = callback(...bigIntAmounts);
 	const relativeResult = absoluteToRelativeAmount(result, divisibility);
-	
+
 	return relativeResult;
 };
 
 const trimLeadingZeros = s => {
 	let i = 0;
-	
+
 	while (i < s.length && s.charCodeAt(i) === ZERO) 
 		i++;
-	
+
 	return i === s.length ? '0' : s.slice(i);
 };
 
@@ -105,6 +98,6 @@ const trimTrailingZeros = s => {
 
 	while (i >= 0 && s.charCodeAt(i) === ZERO) 
 		i--;
-	
+
 	return s.slice(0, i + 1);
 };

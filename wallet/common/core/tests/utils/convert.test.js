@@ -63,6 +63,18 @@ describe('utils/convert', () => {
 				absoluteAmount: '1000',
 				divisibility: 0,
 				expectedResult: '1000'
+			},
+			{
+				testName: 'handles leading zeros (0000123456, 6) -> "1.23456"',
+				absoluteAmount: '0000123456',
+				divisibility: 5,
+				expectedResult: '1.23456'
+			},
+			{
+				testName: 'handles leading zeros (0000123456, 0) -> "123456"',
+				absoluteAmount: '0000123456',
+				divisibility: 0,
+				expectedResult: '123456'
 			}
 		];
 
@@ -114,7 +126,7 @@ describe('utils/convert', () => {
 				expectedResult: '50'
 			},
 			{
-				testName: 'normalizes leading zeros ("0001.002300", 6) -> "1002300"',
+				testName: 'handles leading zeros ("0001.002300", 6) -> "1002300"',
 				relativeAmount: '0001.002300',
 				divisibility: 6,
 				expectedResult: '1002300'
@@ -148,6 +160,12 @@ describe('utils/convert', () => {
 				relativeAmount: '12345678901234567890.123456',
 				divisibility: 6,
 				expectedResult: '12345678901234567890123456'
+			},
+			{
+				testName: 'supports number input (1.23456 as number, 6) -> "1234560"',
+				relativeAmount: 1.23456,
+				divisibility: 6,
+				expectedResult: '1234560'
 			}
 		];
 
