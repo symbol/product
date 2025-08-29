@@ -103,8 +103,9 @@ export class HarvestingService {
 		const chainHeight = await this.#api.network.pingNode(networkProperties.nodeUrl);
 
 		const dayInSeconds = 86400;
-		const dayInBlocks = Math.round(dayInSeconds / networkProperties.blockGenerationTargetTime) * 30;
-		const heightDayAgo = chainHeight - dayInBlocks;
+		const dayInBlocks = Math.round(dayInSeconds / networkProperties.blockGenerationTargetTime);
+		const monthInBlocks = dayInBlocks * 30;
+		const heightMonthAgo = chainHeight - monthInBlocks;
 
 		let isLastPage = false;
 		let isEndBlockFound = false;
@@ -112,8 +113,11 @@ export class HarvestingService {
 		let harvestedBlocks = [];
 
 		while (!isLastPage && !isEndBlockFound) {
-			const harvestedBlocksPage = await this.fetchHarvestedBlocks(networkProperties, address, { pageNumber });
-			const filteredPerDayPage = harvestedBlocksPage.filter(block => block.height >= heightDayAgo);
+			const harvestedBlocksPage = await this.fetchHarvestedBlocks(networkProperties, address, { 
+				pageNumber,
+				pageSize: 100 
+			});
+			const filteredPerDayPage = harvestedBlocksPage.filter(block => block.height >= heightMonthAgo);
 			isLastPage = harvestedBlocksPage.length === 0;
 			isEndBlockFound = filteredPerDayPage.length !== harvestedBlocksPage.length;
 			harvestedBlocks.push(...filteredPerDayPage);
