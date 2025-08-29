@@ -221,6 +221,9 @@ export class NetworkManager {
 	restartChainListener = async () => {
 		this.stopChainListener();
 
+		if (this._state.networkConnectionStatus !== NetworkConnectionStatus.CONNECTED)
+			return;
+
 		try {
 			const newListener = this.api.listener.createListener(this.networkProperties, this._state.listenAddress);
 			await newListener.open();
