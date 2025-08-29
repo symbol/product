@@ -198,11 +198,17 @@ class NetworkRepository:
 	def _handle_symbol_node(self, json_node, extra_data):
 		symbol_endpoint = ''
 		roles = json_node['roles']
-		has_api = bool(roles & 2)
+		has_api = json_node.get('apiNodeInfo', {}).get('restVersion', None)
+		is_ssl = json_node.get('apiNodeInfo', {}).get('isSSL', False)
 		if json_node['host']:
 			node_host = json_node['host']
-			node_port = 3000 if has_api else json_node['port']
-			symbol_endpoint = f'http://{node_host}:{node_port}'
+			if is_ssl:
+				node_port = 3001
+			elif has_api:
+				node_port = 3000
+			else:
+				node_port = json_node['port']
+			symbol_endpoint = f'http{"s" if is_ssl else ""}://{node_host}:{node_port}'
 
 		if self._network.generation_hash_seed != Hash256(json_node['networkGenerationHashSeed']):
 			return None

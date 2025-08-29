@@ -504,7 +504,7 @@ class SymbolRoutesFacadeTest(unittest.TestCase):  # pylint: disable=too-many-pub
 		expected_node = {
 			'mainPublicKey': '7DFB0D690BFFA4A4979C7466C7B669AE8FBAFD419DAA10DE948604CD9BE65F0B',
 			'nodePublicKey': 'D561824BD4E3053C39A8D5A4AB00583A4D99302C541F046D3A1E6FF023006D7C',
-			'endpoint': 'http://symbol.shizuilab.com:3000',
+			'endpoint': 'https://symbol.shizuilab.com:3001',
 			'name': 'ibone74',
 			'version': '1.0.3.5',
 			'height': 1486760,
