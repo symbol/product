@@ -1,6 +1,6 @@
 import { HarvestingService } from '../../src/api/HarvestingService';
 import { HarvestingStatus } from '../../src/constants';
-import { createSearchUrl, networkTimestampToUnix, networkTypeToIdentifier } from '../../src/utils';
+import { createSearchUrl, networkTypeToIdentifier } from '../../src/utils';
 import { statementsTransactionHarvestingResponse } from '../__fixtures__/api/statements-transaction-harvesting-response';
 import { harvestedBlocks } from '../__fixtures__/local/harvesting';
 import { networkProperties } from '../__fixtures__/local/network';
@@ -170,23 +170,18 @@ describe('HarvestingService', () => {
 	describe('fetchSummary', () => {
 		const runFetchSummaryTest = async ({
 			chainHeight,
-			pages,
-			blockAtHeightResponse
+			pages
 		}, expectedResult) => {
 			// Arrange:
 			mockApi.network.pingNode.mockResolvedValueOnce(chainHeight);
 			const spyFetchHarvestedBlocks = jest
 				.spyOn(harvestingService, 'fetchHarvestedBlocks')
 				.mockImplementation(async (_np, _addr, { pageNumber }) => pages[pageNumber - 1] || []);
-			const blockUrl = `${networkProperties.nodeUrl}/blocks/${expectedResult.latestHeight}`;
-			const apiCalls = expectedResult.latestHeight
-				? [{ url: blockUrl, options: undefined, response: blockAtHeightResponse }]
-				: [];
 
 			const functionToTest = () => harvestingService.fetchSummary(networkProperties, address);
 
 			// Act & Assert:
-			await runApiTest(mockMakeRequest, functionToTest, apiCalls, expectedResult);
+			await runApiTest(mockMakeRequest, functionToTest, [], expectedResult);
 
 			// Also verify fetchHarvestedBlocks was invoked multiple times
 			expect(spyFetchHarvestedBlocks).toHaveBeenCalled();
@@ -195,17 +190,16 @@ describe('HarvestingService', () => {
 		it('computes summary from harvested blocks within last 30 days', async () => {
 			// Arrange:
 			const chainHeight = 100_000;
-			const recent1 = { height: 100_000, amount: 12.3456 };
-			const recent2 = { height: 99_999, amount: 3.3333 };
-			const older = { height: 13_000, amount: 10 };
+			const recent1 = { height: 100_000, amount: 12.3456, timestamp: 1000 };
+			const recent2 = { height: 99_999, amount: 3.3333, timestamp: 2000 };
+			const older = { height: 13_000, amount: 10, timestamp: 3000 };
 			const pages = [
 				[recent1, recent2],
 				[older]
 			];
-			const blockAtHeightResponse = { block: { timestamp: '0' } };
 			const latestAmount = recent1.amount.toFixed(2);
 			const latestHeight = recent1.height;
-			const latestDate = networkTimestampToUnix(0, networkProperties.epochAdjustment);
+			const latestDate = recent1.timestamp;
 			const amountPer30Days = (recent1.amount + recent2.amount).toFixed(2);
 			const blocksHarvestedPer30Days = 2;
 			const expectedResult = {
@@ -217,7 +211,7 @@ describe('HarvestingService', () => {
 			};
 
 			// Act & Assert:
-			await runFetchSummaryTest({ chainHeight, pages, blockAtHeightResponse }, expectedResult);
+			await runFetchSummaryTest({ chainHeight, pages }, expectedResult);
 		});
 
 		it('returns zeros when no harvested blocks in last 30 days', async () => {

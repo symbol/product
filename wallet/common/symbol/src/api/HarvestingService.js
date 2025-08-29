@@ -124,20 +124,10 @@ export class HarvestingService {
 			pageNumber++;
 		}
 
-		let latestBlockDate = null;
-		if (harvestedBlocks.length) {
-			const { height } = harvestedBlocks[0];
-			const endpoint = `${networkProperties.nodeUrl}/blocks/${height}`;
-			const { block } = await this.#makeRequest(endpoint);
-			const timestamp = parseInt(block.timestamp);
-
-			latestBlockDate = networkTimestampToUnix(timestamp, networkProperties.epochAdjustment);
-		}
-
 		return {
 			latestAmount: harvestedBlocks.length ? harvestedBlocks[0].amount.toFixed(2) : 0,
 			latestHeight: harvestedBlocks.length ? harvestedBlocks[0].height : null,
-			latestDate: latestBlockDate,
+			latestDate: harvestedBlocks.length ? harvestedBlocks[0].timestamp : null,
 			amountPer30Days: harvestedBlocks.length ? _.sumBy(harvestedBlocks, 'amount').toFixed(2) : 0,
 			blocksHarvestedPer30Days: harvestedBlocks.length
 		};
