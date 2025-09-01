@@ -1,6 +1,7 @@
 import {
 	createSearchUrl,
 	networkTimestampToUnix,
+	parseBlockGenerationTargetTime,
 	toFixedNumber,
 	toFixedNumericString
 } from '../../src/utils/helper';
@@ -142,6 +143,50 @@ describe('utils/helper', () => {
 				{ nodeUrl, path, searchCriteria, additionalParams },
 				expectedUrl
 			);
+		});
+	});
+
+	describe('parseBlockGenerationTargetTime', () => {
+		it('parses seconds correctly', () => {
+			expect(parseBlockGenerationTargetTime('15s')).toBe(15);
+			expect(parseBlockGenerationTargetTime('42 s')).toBe(42);
+			expect(parseBlockGenerationTargetTime('7S')).toBe(7);
+		});
+
+		it('parses milliseconds correctly', () => {
+			expect(parseBlockGenerationTargetTime('15000ms')).toBe(15);
+			expect(parseBlockGenerationTargetTime('1000 ms')).toBe(1);
+		});
+
+		it('parses minutes correctly', () => {
+			expect(parseBlockGenerationTargetTime('2m')).toBe(120);
+			expect(parseBlockGenerationTargetTime('0.5m')).toBe(30);
+		});
+
+		it('parses hours correctly', () => {
+			expect(parseBlockGenerationTargetTime('1h')).toBe(3600);
+			expect(parseBlockGenerationTargetTime('0.25h')).toBe(900);
+		});
+
+		it('parses days correctly', () => {
+			expect(parseBlockGenerationTargetTime('1d')).toBe(86400);
+			expect(parseBlockGenerationTargetTime('0.5d')).toBe(43200);
+		});
+
+		it('parses value with no unit as seconds', () => {
+			expect(parseBlockGenerationTargetTime('10')).toBe(10);
+			expect(parseBlockGenerationTargetTime('  20  ')).toBe(20);
+		});
+
+		it('parses decimal values', () => {
+			expect(parseBlockGenerationTargetTime('1.5m')).toBe(90);
+			expect(parseBlockGenerationTargetTime('0.1h')).toBe(360);
+		});
+
+		it('throws on invalid input', () => {
+			expect(() => parseBlockGenerationTargetTime('abc')).toThrow();
+			expect(() => parseBlockGenerationTargetTime('10xy')).toThrow();
+			expect(() => parseBlockGenerationTargetTime(123)).toThrow();
 		});
 	});
 });

@@ -78,3 +78,38 @@ export const createSearchUrl = (nodeUrl, path, searchCriteria = {}, additionalPa
 
 	return url;
 };
+
+/**
+ * Parses blockGenerationTargetTime and converts it to seconds.
+ * Supports units: ms, s, m, h, d (milliseconds, seconds, minutes, hours, days).
+ * Accepts optional whitespace and decimal values.
+ * @param {string} rawValue - The raw blockGenerationTargetTime value.
+ * @returns {number} The time in seconds.
+ */
+export const parseBlockGenerationTargetTime = rawValue => {
+	if (typeof rawValue !== 'string')
+		throw Error('Invalid blockGenerationTargetTime value. Must be a string.');
+
+	const textValue = String(rawValue).trim().toLowerCase();
+	const matchResult = textValue.match(/^(\d+(?:\.\d+)?)\s*(ms|s|m|h|d)?$/);
+
+	if (!matchResult) 
+		throw Error('Invalid blockGenerationTargetTime format.');
+
+	const numericAmount = Number.parseFloat(matchResult[1]);
+	const unitSuffix = matchResult[2];
+
+	switch (unitSuffix) {
+	case 'ms':
+		return numericAmount / 1000;
+	case 'm':
+		return numericAmount * 60;
+	case 'h':
+		return numericAmount * 60 * 60;
+	case 'd':
+		return numericAmount * 60 * 60 * 24;
+	case 's':
+	default:
+		return numericAmount;
+	}
+};

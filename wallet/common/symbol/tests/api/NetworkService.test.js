@@ -96,7 +96,7 @@ describe('NetworkService', () => {
 				networkIdentifier: expectedNetworkIdentifier,
 				generationHash: 'GEN_HASH',
 				chainHeight: 7654321,
-				blockGenerationTargetTime: '30',
+				blockGenerationTargetTime: 30,
 				epochAdjustment: 1234,
 				transactionFees: txFees,
 				networkCurrency: {

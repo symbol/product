@@ -1,4 +1,4 @@
-import { networkTypeToIdentifier } from '../utils';
+import { networkTypeToIdentifier, parseBlockGenerationTargetTime } from '../utils';
 import { absoluteToRelativeAmount } from 'wallet-common-core';
 
 /** @typedef {import('../types/Network').NetworkInfo} NetworkInfo */
@@ -55,7 +55,7 @@ export class NetworkService {
 			networkIdentifier: networkTypeToIdentifier(nodeInfo.networkIdentifier),
 			generationHash: nodeInfo.networkGenerationHashSeed,
 			chainHeight: parseInt(chainInfo.height),
-			blockGenerationTargetTime: networkProps.chain.blockGenerationTargetTime.replace(/s/g, ''),
+			blockGenerationTargetTime: parseBlockGenerationTargetTime(networkProps.chain.blockGenerationTargetTime),
 			epochAdjustment: parseInt(networkProps.network.epochAdjustment),
 			transactionFees,
 			networkCurrency: {
