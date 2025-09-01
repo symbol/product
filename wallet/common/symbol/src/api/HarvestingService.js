@@ -1,7 +1,6 @@
 import { HarvestingStatus } from '../constants';
 import { addressFromRaw, createSearchUrl, networkTimestampToUnix, networkTypeToIdentifier } from '../utils';
-import _ from 'lodash';
-import { NotFoundError, absoluteToRelativeAmount } from 'wallet-common-core';
+import { NotFoundError, absoluteToRelativeAmount, safeOperationWithRelativeAmounts } from 'wallet-common-core';
 
 /** @typedef {import('../types/Account').PublicAccount} PublicAccount */
 /** @typedef {import('../types/Harvesting').HarvestingStatus} HarvestingStatus */
@@ -124,11 +123,27 @@ export class HarvestingService {
 			pageNumber++;
 		}
 
+		if (!harvestedBlocks.length) {
+			return {
+				latestAmount: 0,
+				latestHeight: null,
+				latestDate: null,
+				amountPer30Days: 0,
+				blocksHarvestedPer30Days: 0
+			};
+		}
+
+		const amountPer30Days = safeOperationWithRelativeAmounts(
+			networkProperties.networkCurrency.divisibility,
+			harvestedBlocks.map(block => block.amount),
+			(...amounts) => amounts.reduce((a, b) => a + b, 0n)
+		);
+
 		return {
-			latestAmount: harvestedBlocks.length ? harvestedBlocks[0].amount.toFixed(2) : 0,
-			latestHeight: harvestedBlocks.length ? harvestedBlocks[0].height : null,
-			latestDate: harvestedBlocks.length ? harvestedBlocks[0].timestamp : null,
-			amountPer30Days: harvestedBlocks.length ? _.sumBy(harvestedBlocks, 'amount').toFixed(2) : 0,
+			latestAmount: harvestedBlocks[0].amount,
+			latestHeight: harvestedBlocks[0].height,
+			latestDate: harvestedBlocks[0].timestamp,
+			amountPer30Days,
 			blocksHarvestedPer30Days: harvestedBlocks.length
 		};
 	};
