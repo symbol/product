@@ -33,13 +33,6 @@ describe('NetworkService', () => {
 		jest.clearAllMocks();
 	});
 
-	describe('getDefaultNodeList', () => {
-		it('returns nodes from config', () => {
-			const result = networkService.getDefaultNodeList('testnet');
-			expect(result).toEqual(['https://node-1:3001', 'https://node-2:3001']);
-		});
-	});
-
 	describe('fetchNodeList', () => {
 		it('fetches suggested nodes and maps to restGatewayUrl', async () => {
 			const networkIdentifier = 'testnet';

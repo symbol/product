@@ -17,15 +17,6 @@ export class NetworkService {
 	}
 
 	/**
-	 * Gets the default node list.
-	 * @param {string} networkIdentifier - Network identifier.
-	 * @returns {string[]} Default node list.
-	 */
-	getDefaultNodeList = networkIdentifier => {
-		return this.#config.defaultNodes[networkIdentifier];
-	};
-
-	/**
 	 * Fetches the node list.
 	 * @param {string} networkIdentifier - Network identifier.
 	 * @returns {Promise<string[]>} The node list.
