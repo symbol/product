@@ -1,5 +1,5 @@
 import { PrivateKey, PublicKey } from 'symbol-sdk';
-import { Address, SymbolFacade } from 'symbol-sdk/symbol';
+import { Address, Network, SymbolFacade } from 'symbol-sdk/symbol';
 
 /** @typedef {import('../types/Account').KeyPair} KeyPair */
 /** @typedef {import('../types/Account').PublicAccount} PublicAccount */
@@ -137,16 +137,11 @@ export const isPublicOrPrivateKey = stringToTest => {
 export const isSymbolAddress = address => {
 	if (typeof address !== 'string') 
 		return false;
-    
-	const addressTrimAndUpperCase = address.trim().toUpperCase().replace(/-/g, '');
 
-	if (addressTrimAndUpperCase.length !== 39) 
-		return false;
-    
-	if (addressTrimAndUpperCase.charAt(0) !== 'T' && addressTrimAndUpperCase.charAt(0) !== 'N') 
-		return false;
+	const isValidMainnetAddress = Network.MAINNET.isValidAddressString(address);
+	const isValidTestnetAddress = Network.TESTNET.isValidAddressString(address);
 
-	return true;
+	return isValidMainnetAddress || isValidTestnetAddress;
 };
 
 /**
