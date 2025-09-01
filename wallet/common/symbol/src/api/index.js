@@ -6,12 +6,11 @@ import { MosaicService } from './MosaicService';
 import { NamespaceService } from './NamespaceService';
 import { NetworkService } from './NetworkService';
 import { TransactionService } from './TransactionService';
-
 /**
  * @typedef {Object} Config
- * @property {string} marketDataURL - The URL for market data.
+ * @property {Object.<string, string>} marketDataURL - Map of networkIdentifier (key) to market data URL (value).
  * @property {string[]} marketCurrencies - The list of currencies for market data.
- * @property {string} statisticsServiceURL - The URL for statistics service.
+ * @property {Object.<string, string>} nodewatchURL - Map of networkIdentifier (key) to node watch service URL (value).
  */
 
 export class Api {

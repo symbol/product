@@ -31,13 +31,14 @@ export class NetworkService {
 	 * @returns {Promise<string[]>} The node list.
 	 */
 	fetchNodeList = async networkIdentifier => {
-		const baseUrl = this.#config.statisticsServiceURL[networkIdentifier];
-		const filter = 'suggested';
+		const baseUrl = this.#config.nodewatchURL[networkIdentifier];
+		const isSslEnabled = true;
 		const limit = 30;
-		const endpoint = `${baseUrl}/nodes?filter=${filter}&limit=${limit}`;
+		const order = 'random';
+		const endpoint = `${baseUrl}/api/symbol/nodes/peer?only_ssl=${isSslEnabled}&limit=${limit}&order=${order}`;
 		const nodes = await this.#makeRequest(endpoint);
 
-		return nodes.map(node => node.apiStatus.restGatewayUrl);
+		return nodes.map(node => node.endpoint);
 	};
 
 	/**

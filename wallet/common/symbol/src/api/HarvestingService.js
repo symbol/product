@@ -28,7 +28,7 @@ export class HarvestingService {
 	 */
 	fetchStatus = async (networkProperties, account) => {
 		const { networkIdentifier } = networkProperties;
-		const statisticsServiceUrl = this.#config.statisticsServiceURL[networkIdentifier];
+		const nodewatchUrl = this.#config.nodewatchURL[networkIdentifier];
 
 		// Fetch account linked keys
 		const url = `${networkProperties.nodeUrl}/accounts/${account.address}`;
@@ -51,11 +51,11 @@ export class HarvestingService {
 		// If no keys linked, check if the account public key is a node's key (node operator)
 		if (!isAllKeysLinked) {
 			const accountPublicKey = account.publicKey;
-			const nodeInfoEndpoint = `${statisticsServiceUrl}/nodes/${accountPublicKey}`;
+			const nodeInfoEndpoint = `${nodewatchUrl}/api/symbol/nodes/mainPublicKey/${accountPublicKey}`;
 			try {
 				// Operator status if the account public key is a node's key
 				const nodeInfo = await this.#makeRequest(nodeInfoEndpoint);
-				const nodeUrl = nodeInfo.apiStatus.restGatewayUrl;
+				const nodeUrl = nodeInfo.endpoint;
 
 				return {
 					status: HarvestingStatus.OPERATOR,
@@ -71,9 +71,9 @@ export class HarvestingService {
 
 		// Fetch node info and its unlocked accounts.
 		try {
-			const nodeInfoEndpoint = `${statisticsServiceUrl}/nodes/nodePublicKey/${nodePublicKey}`;
+			const nodeInfoEndpoint = `${nodewatchUrl}/api/symbol/nodes/nodePublicKey/${nodePublicKey}`;
 			const nodeInfo = await this.#makeRequest(nodeInfoEndpoint);
-			const nodeUrl = nodeInfo.apiStatus.restGatewayUrl;
+			const nodeUrl = nodeInfo.endpoint;
 			const unlockedAccountsEndpoint = `${nodeUrl}/node/unlockedaccount`;
 			const { unlockedAccount } = await this.#makeRequest(unlockedAccountsEndpoint);
 			const isAccountUnlocked = unlockedAccount.find(publicKey => publicKey === linkedPublicKey);
@@ -181,12 +181,12 @@ export class HarvestingService {
 	 * @returns {Promise<string[]>} - The node list.
 	 */
 	fetchNodeList = async networkIdentifier => {
-		const baseUrl = this.#config.statisticsServiceURL[networkIdentifier];
-		const filter = 'suggested';
-		const endpoint = `${baseUrl}/nodes?filter=${filter}&ssl=true`;
+		const baseUrl = this.#config.nodewatchURL[networkIdentifier];
+		const isSslEnabled = true;
+		const endpoint = `${baseUrl}/api/symbol/nodes/peer?only_ssl=${isSslEnabled}`;
 		const nodes = await this.#makeRequest(endpoint);
 
-		return nodes.map(node => node.apiStatus.restGatewayUrl);
+		return nodes.map(node => node.endpoint);
 	};
 
 	/**
