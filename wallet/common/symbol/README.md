@@ -99,9 +99,9 @@ const symbolNetworkApi = new SymbolNetworkApi({
     config: {
         marketDataURL: 'https://fetch-symbol-price.com/api',
         marketCurrencies: ['USD', 'EUR', 'JPY'],
-        statisticsServiceURL: {
-            testnet: 'https://symbol.services',
-            mainnet: 'https://symbol.services'
+        nodewatchURL: {
+            testnet: 'https://nodewatch.symbol.tools/testnet',
+            mainnet: 'https://nodewatch.symbol.tools'
         }
     }
 });

@@ -8,7 +8,7 @@ import { NetworkService } from './NetworkService';
 import { TransactionService } from './TransactionService';
 /**
  * @typedef {Object} Config
- * @property {Object.<string, string>} marketDataURL - Map of networkIdentifier (key) to market data URL (value).
+ * @property {string} marketDataURL - The URL for fetching market data.
  * @property {string[]} marketCurrencies - The list of currencies for market data.
  * @property {Object.<string, string>} nodewatchURL - Map of networkIdentifier (key) to node watch service URL (value).
  */
