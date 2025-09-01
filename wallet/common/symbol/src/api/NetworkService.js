@@ -56,7 +56,7 @@ export class NetworkService {
 
 		const networkCurrencyMosaicId = networkProps.chain.currencyMosaicId.split('\'').join('').replace(/^(0x)/, '');
 		const mosaicInfo = await this.#api.mosaic.fetchMosaicInfo({ nodeUrl }, networkCurrencyMosaicId);
-		const wsUrl = nodeUrl.replace('http', 'ws') + '/ws';
+		const wsUrl = nodeUrl.replace(/^http/, 'ws') + '/ws';
 
 		return {
 			nodeUrl,
