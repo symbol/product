@@ -1,4 +1,4 @@
-import { addressFromRaw, formatMosaicList, getMosaicAmount } from '../utils';
+import { addressFromRaw, formatMosaicList, getMosaicAmount, promiseAllSettled } from '../utils';
 import { NotFoundError, absoluteToRelativeAmount } from 'wallet-common-core';
 
 /** @typedef {import('../types/Account').AccountInfo} AccountInfo */
@@ -22,6 +22,7 @@ export class AccountService {
 	 * @returns {Promise<AccountInfo>} - The account information.
 	 */
 	fetchAccountInfo = async (networkProperties, address) => {
+		// Fetch account info from the node
 		let response;
 		try {
 			const url = `${networkProperties.nodeUrl}/accounts/${address}`;
@@ -50,25 +51,19 @@ export class AccountService {
 		}
 		const { account } = response;
 		const { linked, node, vrf } = account.supplementalPublicKeys;
+		const accountOwnedMosaicIds = account.mosaics.map(mosaic => mosaic.id);
 
-		const mosaicIds = account.mosaics.map(mosaic => mosaic.id);
-		const mosaicInfos = await this.#api.mosaic.fetchMosaicInfos(networkProperties, mosaicIds);
-		const formattedMosaics = formatMosaicList(account.mosaics, mosaicInfos);
+		// Fetch mosaic infos, multisig info, and namespaces in parallel
+		const [mosaicInfos, multisigInfo, namespaces] = await promiseAllSettled([
+			this.#api.mosaic.fetchMosaicInfos(networkProperties, accountOwnedMosaicIds),
+			this.fetchMultisigInfo(networkProperties, address),
+			this.#api.namespace.fetchAccountNamespaces(networkProperties, address)
+		]);
+		const isMultisigRequestSucceeded = multisigInfo.status === 'fulfilled';
+
+		// Format mosaic list and calculate balance
+		const formattedMosaics = formatMosaicList(account.mosaics, mosaicInfos.value);
 		const balance = getMosaicAmount(formattedMosaics, networkProperties.networkCurrency.mosaicId);
-
-		let isMultisig;
-		let cosignatories = [];
-		let multisigAddresses = [];
-		try {
-			const multisigInfo = await this.fetchMultisigInfo(networkProperties, address);
-			cosignatories = multisigInfo.cosignatories;
-			multisigAddresses = multisigInfo.multisigAddresses;
-			isMultisig = cosignatories.length > 0;
-		} catch {
-			isMultisig = false;
-		}
-
-		const namespaces = await this.#api.namespace.fetchAccountNamespaces(networkProperties, address);
 
 		return {
 			address,
@@ -81,10 +76,10 @@ export class AccountService {
 				nodePublicKey: node ? node.publicKey : null,
 				vrfPublicKey: vrf ? vrf.publicKey : null
 			},
-			namespaces,
-			isMultisig,
-			cosignatories,
-			multisigAddresses
+			namespaces: namespaces.value,
+			isMultisig: isMultisigRequestSucceeded && multisigInfo.value.cosignatories.length > 0,
+			cosignatories: isMultisigRequestSucceeded ? multisigInfo.value.cosignatories : [],
+			multisigAddresses: isMultisigRequestSucceeded ? multisigInfo.value.multisigAddresses : []
 		};
 	};
 
