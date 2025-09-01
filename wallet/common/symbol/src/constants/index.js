@@ -56,14 +56,12 @@ export const HarvestingStatus = {
 
 export const NetworkType = {
 	MAIN_NET: 104,
-	TEST_NET: 152,
-	CUSTOM: 0
+	TEST_NET: 152
 };
 
 export const NetworkIdentifier = {
 	MAIN_NET: 'mainnet',
-	TEST_NET: 'testnet',
-	CUSTOM: 'custom'
+	TEST_NET: 'testnet'
 };
 
 export const Message = {

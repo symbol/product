@@ -7,8 +7,7 @@ describe('utils/network', () => {
 			// Arrange:
 			const networkTypesAndExpectedIdentifiers = [
 				{ networkType: 104, expectedIdentifier: 'mainnet' },
-				{ networkType: 152, expectedIdentifier: 'testnet' },
-				{ networkType: 0, expectedIdentifier: 'custom' }
+				{ networkType: 152, expectedIdentifier: 'testnet' }
 			];
 
 			networkTypesAndExpectedIdentifiers.map(({ networkType, expectedIdentifier }) => {
@@ -19,6 +18,11 @@ describe('utils/network', () => {
 				expect(result).toBe(expectedIdentifier);
 			});
 		});
+
+		it('throws for unsupported network type', () => {
+			expect(() => networkTypeToIdentifier(0)).toThrow('Unsupported network type');
+			expect(() => networkTypeToIdentifier(999)).toThrow('Unsupported network type');
+		});
 	});
 
 	describe('networkIdentifierToNetworkType', () => {
@@ -26,8 +30,7 @@ describe('utils/network', () => {
 			// Arrange:
 			const networkIdentifiersAndExpectedTypes = [
 				{ networkIdentifier: 'mainnet', expectedType: 104 },
-				{ networkIdentifier: 'testnet', expectedType: 152 },
-				{ networkIdentifier: 'custom', expectedType: 0 }
+				{ networkIdentifier: 'testnet', expectedType: 152 }
 			];
 
 			networkIdentifiersAndExpectedTypes.map(({ networkIdentifier, expectedType }) => {
@@ -37,6 +40,11 @@ describe('utils/network', () => {
 				// Assert:
 				expect(result).toBe(expectedType);
 			});
+		});
+
+		it('throws for unsupported network identifier', () => {
+			expect(() => networkIdentifierToNetworkType('custom')).toThrow('Unsupported network identifier');
+			expect(() => networkIdentifierToNetworkType('devnet')).toThrow('Unsupported network identifier');
 		});
 	});
 });
