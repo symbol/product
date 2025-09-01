@@ -10,11 +10,11 @@ describe('NetworkService', () => {
 	let mockApi;
 	const config = {
 		defaultNodes: {
-			testnet: ['http://node-1:3000', 'http://node-2:3000'],
-			mainnet: ['http://main-1:3000']
+			testnet: ['https://node-1:3001', 'https://node-2:3001'],
+			mainnet: ['https://main-1:3001']
 		},
-		statisticsServiceURL: {
-			testnet: 'http://stats.service'
+		nodewatchURL: {
+			testnet: 'https://nodewatch.net'
 		}
 	};
 
@@ -36,24 +36,24 @@ describe('NetworkService', () => {
 	describe('getDefaultNodeList', () => {
 		it('returns nodes from config', () => {
 			const result = networkService.getDefaultNodeList('testnet');
-			expect(result).toEqual(['http://node-1:3000', 'http://node-2:3000']);
+			expect(result).toEqual(['https://node-1:3001', 'https://node-2:3001']);
 		});
 	});
 
 	describe('fetchNodeList', () => {
 		it('fetches suggested nodes and maps to restGatewayUrl', async () => {
 			const networkIdentifier = 'testnet';
-			const endpoint = `${config.statisticsServiceURL[networkIdentifier]}/nodes?filter=suggested&limit=30`;
+			const endpoint = `${config.nodewatchURL[networkIdentifier]}/api/symbol/nodes/peer?only_ssl=true&limit=30&order=random`;
 			const nodesResponse = [
-				{ apiStatus: { restGatewayUrl: 'http://api-1:3000' } },
-				{ apiStatus: { restGatewayUrl: 'http://api-2:3000' } }
+				{ endpoint: 'https://api-1:3001' },
+				{ endpoint: 'https://api-2:3001' }
 			];
 
 			await runApiTest(
 				mockMakeRequest,
 				async () => {
 					const urls = await networkService.fetchNodeList(networkIdentifier);
-					expect(urls).toEqual(['http://api-1:3000', 'http://api-2:3000']);
+					expect(urls).toEqual(['https://api-1:3001', 'https://api-2:3001']);
 				},
 				[
 					{
@@ -67,7 +67,7 @@ describe('NetworkService', () => {
 
 	describe('fetchNetworkInfo', () => {
 		it('aggregates multiple endpoints and formats output', async () => {
-			const nodeUrl = 'http://api.symbol.node:3000';
+			const nodeUrl = 'https://api.symbol.node:3001';
 			const nodeInfo = {
 				networkIdentifier: 152,
 				networkGenerationHashSeed: 'GEN_HASH'
@@ -99,7 +99,7 @@ describe('NetworkService', () => {
 
 			expect(result).toEqual({
 				nodeUrl,
-				wsUrl: 'ws://api.symbol.node:3000/ws',
+				wsUrl: 'wss://api.symbol.node:3001/ws',
 				networkIdentifier: expectedNetworkIdentifier,
 				generationHash: 'GEN_HASH',
 				chainHeight: 7654321,
@@ -123,7 +123,7 @@ describe('NetworkService', () => {
 
 	describe('pingNode', () => {
 		it('returns parsed chain height', async () => {
-			const nodeUrl = 'http://api.symbol.node:3000';
+			const nodeUrl = 'https://api.symbol.node:3001';
 			mockMakeRequest.mockResolvedValueOnce({ height: '42' });
 
 			const height = await networkService.pingNode(nodeUrl);
@@ -136,7 +136,7 @@ describe('NetworkService', () => {
 	describe('fetchRentalFees', () => {
 		it('returns relative amounts using network currency divisibility', async () => {
 			const networkProperties = {
-				nodeUrl: 'http://api.symbol.node:3000',
+				nodeUrl: 'https://api.symbol.node:3001',
 				networkCurrency: { divisibility: 6 }
 			};
 			const feesResponse = {

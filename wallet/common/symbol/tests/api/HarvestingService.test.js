@@ -14,10 +14,10 @@ describe('HarvestingService', () => {
 	let mockApi;
 
 	const { address, publicKey } = currentAccount;
-	const statisticsServiceBaseUrl = 'http://stats.example.tld';
+	const nodewatchBaseUrl = 'https://nodewatch.net';
 	const baseConfig = {
-		statisticsServiceURL: {
-			[networkProperties.networkIdentifier]: statisticsServiceBaseUrl
+		nodewatchURL: {
+			[networkProperties.networkIdentifier]: nodewatchBaseUrl
 		}
 	};
 
@@ -41,7 +41,7 @@ describe('HarvestingService', () => {
 		const runFetchStatusTest = async ({ accountApiResponse, nodeOperatorResponse }, expectedResult) => {
 			// Arrange:
 			const accountUrl = `${networkProperties.nodeUrl}/accounts/${address}`;
-			const operatorUrl = `${statisticsServiceBaseUrl}/nodes/${publicKey}`;
+			const operatorUrl = `${nodewatchBaseUrl}/api/symbol/nodes/mainPublicKey/${publicKey}`;
 			const apiCalls = [
 				{ url: accountUrl, options: undefined, response: accountApiResponse }
 			];
@@ -62,8 +62,8 @@ describe('HarvestingService', () => {
 					supplementalPublicKeys: {}
 				}
 			};
-			const nodeUrl = 'http://node.operator:3000';
-			const nodeOperatorResponse = { apiStatus: { restGatewayUrl: nodeUrl } };
+			const nodeUrl = 'https://node.operator:3001';
+			const nodeOperatorResponse = { endpoint: nodeUrl };
 			const expectedResult = { status: HarvestingStatus.OPERATOR, nodeUrl };
 
 			// Act & Assert:
@@ -95,13 +95,25 @@ describe('HarvestingService', () => {
 					}
 				}
 			};
-			const nodeUrl = 'http://harvest.node:3000';
-			const nodeInfoUrl = `${statisticsServiceBaseUrl}/nodes/nodePublicKey/${nodePublicKey}`;
+			const nodeUrl = 'https://harvest.node:3001';
+			const nodeInfoUrl = `${nodewatchBaseUrl}/api/symbol/nodes/nodePublicKey/${nodePublicKey}`;
 			const unlockedUrl = `${nodeUrl}/node/unlockedaccount`;
 			const apiCalls = [
-				{ url: `${networkProperties.nodeUrl}/accounts/${address}`, options: undefined, response: accountApiResponse },
-				{ url: nodeInfoUrl, options: undefined, response: { apiStatus: { restGatewayUrl: nodeUrl } } },
-				{ url: unlockedUrl, options: undefined, response: { unlockedAccount: [linkedPublicKey] } }
+				{ 
+					url: `${networkProperties.nodeUrl}/accounts/${address}`, 
+					options: undefined, 
+					response: accountApiResponse 
+				},
+				{ 
+					url: nodeInfoUrl, 
+					options: undefined, 
+					response: { endpoint: nodeUrl } 
+				},
+				{ 
+					url: unlockedUrl, 
+					options: undefined, 
+					response: { unlockedAccount: [linkedPublicKey] } 
+				}
 			];
 
 			const functionToTest = () => harvestingService.fetchStatus(networkProperties, currentAccount);
@@ -125,14 +137,30 @@ describe('HarvestingService', () => {
 					}
 				}
 			};
-			const nodeUrl = 'http://harvest.node:3000';
-			const nodeInfoUrl = `${statisticsServiceBaseUrl}/nodes/nodePublicKey/${nodePublicKey}`;
+			const nodeUrl = 'https://harvest.node:3001';
+			const nodeInfoUrl = `${nodewatchBaseUrl}/api/symbol/nodes/nodePublicKey/${nodePublicKey}`;
 			const unlockedUrl = `${nodeUrl}/node/unlockedaccount`;
 
 			const apiCalls = [
-				{ url: `${networkProperties.nodeUrl}/accounts/${address}`, options: undefined, response: accountApiResponse },
-				{ url: nodeInfoUrl, options: undefined, response: { apiStatus: { restGatewayUrl: nodeUrl } } },
-				{ url: unlockedUrl, options: undefined, response: { unlockedAccount: ['OTHER_PK'] } }
+				{ 
+					url: `${networkProperties.nodeUrl}/accounts/${address}`, 
+					options: undefined, 
+					response: accountApiResponse 
+				},
+				{ 
+					url: nodeInfoUrl, 
+					options: undefined, 
+					response: { 
+						endpoint: nodeUrl
+					} 
+				},
+				{ 
+					url: unlockedUrl, 
+					options: undefined, 
+					response: { 
+						unlockedAccount: ['OTHER_PK'] 
+					} 
+				}
 			];
 			const functionToTest = () => harvestingService.fetchStatus(networkProperties, currentAccount);
 			const expectedResult = { status: HarvestingStatus.PENDING, nodeUrl };
@@ -190,24 +218,19 @@ describe('HarvestingService', () => {
 		it('computes summary from harvested blocks within last 30 days', async () => {
 			// Arrange:
 			const chainHeight = 100_000;
-			const recent1 = { height: 100_000, amount: 12.3456, timestamp: 1000 };
-			const recent2 = { height: 99_999, amount: 3.3333, timestamp: 2000 };
-			const older = { height: 13_000, amount: 10, timestamp: 3000 };
+			const recent1 = { height: 100_000, amount: '12.3456', timestamp: 1000 };
+			const recent2 = { height: 99_999, amount: '3.3333', timestamp: 2000 };
+			const older = { height: 13_000, amount: '10', timestamp: 3000 };
 			const pages = [
 				[recent1, recent2],
 				[older]
 			];
-			const latestAmount = recent1.amount.toFixed(2);
-			const latestHeight = recent1.height;
-			const latestDate = recent1.timestamp;
-			const amountPer30Days = (recent1.amount + recent2.amount).toFixed(2);
-			const blocksHarvestedPer30Days = 2;
 			const expectedResult = {
-				latestAmount,
-				latestHeight,
-				latestDate,
-				amountPer30Days,
-				blocksHarvestedPer30Days
+				latestAmount: recent1.amount,
+				latestHeight: recent1.height,
+				latestDate: recent1.timestamp,
+				amountPer30Days: '15.6789',
+				blocksHarvestedPer30Days: 2
 			};
 
 			// Act & Assert:
@@ -263,16 +286,16 @@ describe('HarvestingService', () => {
 	});
 
 	describe('fetchNodeList', () => {
-		it('fetches suggested nodes and maps to restGatewayUrl', async () => {
+		it('fetches nodes', async () => {
 			// Arrange:
 			const {networkIdentifier} = networkProperties;
-			const baseUrl = baseConfig.statisticsServiceURL[networkIdentifier];
-			const endpoint = `${baseUrl}/nodes?filter=suggested&ssl=true`;
+			const baseUrl = baseConfig.nodewatchURL[networkIdentifier];
+			const endpoint = `${baseUrl}/api/symbol/nodes/peer?only_ssl=true`;
 			const nodesResponse = [
-				{ apiStatus: { restGatewayUrl: 'http://dual-1:3000' } },
-				{ apiStatus: { restGatewayUrl: 'http://dual-2:3000' } }
+				{ endpoint: 'https://dual-1:3001' },
+				{ endpoint: 'https://dual-2:3001' }
 			];
-			const expectedResult = nodesResponse.map(n => n.apiStatus.restGatewayUrl);
+			const expectedResult = nodesResponse.map(n => n.endpoint);
 
 			const functionToTest = () => harvestingService.fetchNodeList(networkIdentifier);
 
@@ -289,7 +312,7 @@ describe('HarvestingService', () => {
 	describe('fetchNodeInfo', () => {
 		it('fetches node info and maps network type to identifier', async () => {
 			// Arrange:
-			const nodeUrl = 'http://node.info:3000';
+			const nodeUrl = 'https://node.info:3000';
 			const endpoint = `${nodeUrl}/node/info`;
 			const nodePublicKey = 'NODE_PUBLIC_KEY';
 			const rawNetworkType = 152;
