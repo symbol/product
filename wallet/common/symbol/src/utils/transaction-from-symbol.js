@@ -124,7 +124,7 @@ export const transactionFromSymbol = (transaction, config) => {
 	return baseTransaction;
 };
 
-export const baseTransactionFromSymbol = (transaction, config) => {
+const baseTransactionFromSymbol = (transaction, config) => {
 	const { networkProperties } = config;
 	const isSignerPublicKeyProvided =
 		transaction.signerPublicKey?.toString() !== '0000000000000000000000000000000000000000000000000000000000000000';
@@ -157,7 +157,7 @@ export const baseTransactionFromSymbol = (transaction, config) => {
 	};
 };
 
-export const aggregateTransactionFromSymbol = (transaction, config) => {
+const aggregateTransactionFromSymbol = (transaction, config) => {
 	const baseTransaction = baseTransactionFromSymbol(transaction, config);
 	const innerTransactions = transaction.transactions.map(innerTransaction =>
 		transactionFromSymbol(innerTransaction, { ...config, isEmbedded: true }));
@@ -187,7 +187,7 @@ export const aggregateTransactionFromSymbol = (transaction, config) => {
 	return info;
 };
 
-export const transferTransactionFromSymbol = (transaction, config) => {
+const transferTransactionFromSymbol = (transaction, config) => {
 	const { networkProperties, mosaicInfos, currentAccount, resolvedAddresses } = config;
 	const baseTransaction = baseTransactionFromSymbol(transaction, config);
 	const mosaics = transaction.mosaics.map(mapMosaic);
@@ -228,7 +228,7 @@ export const transferTransactionFromSymbol = (transaction, config) => {
 	};
 };
 
-export const namespaceRegistrationTransactionFromSymbol = (transaction, config) => {
+const namespaceRegistrationTransactionFromSymbol = (transaction, config) => {
 	const baseTransaction = baseTransactionFromSymbol(transaction, config);
 	const parentId = !!transaction.parentId ? mapId(transaction.parentId) : '';
 
@@ -242,7 +242,7 @@ export const namespaceRegistrationTransactionFromSymbol = (transaction, config) 
 	};
 };
 
-export const addressAliasTransactionFromSymbol = (transaction, config) => {
+const addressAliasTransactionFromSymbol = (transaction, config) => {
 	const baseTransaction = baseTransactionFromSymbol(transaction, config);
 	const namespaceName = config.namespaceNames[mapId(transaction.namespaceId)];
 
@@ -255,7 +255,7 @@ export const addressAliasTransactionFromSymbol = (transaction, config) => {
 	};
 };
 
-export const mosaicAliasTransactionFromSymbol = (transaction, config) => {
+const mosaicAliasTransactionFromSymbol = (transaction, config) => {
 	const baseTransaction = baseTransactionFromSymbol(transaction, config);
 	const namespaceName = config.namespaceNames[mapId(transaction.namespaceId)];
 
@@ -268,7 +268,7 @@ export const mosaicAliasTransactionFromSymbol = (transaction, config) => {
 	};
 };
 
-export const mosaicDefinitionTransactionFromSymbol = (transaction, config) => {
+const mosaicDefinitionTransactionFromSymbol = (transaction, config) => {
 	const baseTransaction = baseTransactionFromSymbol(transaction, config);
 
 	return {
@@ -284,7 +284,7 @@ export const mosaicDefinitionTransactionFromSymbol = (transaction, config) => {
 	};
 };
 
-export const mosaicSupplyChangeTransactionFromSymbol = (transaction, config) => {
+const mosaicSupplyChangeTransactionFromSymbol = (transaction, config) => {
 	const baseTransaction = baseTransactionFromSymbol(transaction, config);
 
 	return {
@@ -295,7 +295,7 @@ export const mosaicSupplyChangeTransactionFromSymbol = (transaction, config) => 
 	};
 };
 
-export const mosaicSupplyRevocationTransactionFromSymbol = (transaction, config) => {
+const mosaicSupplyRevocationTransactionFromSymbol = (transaction, config) => {
 	const baseTransaction = baseTransactionFromSymbol(transaction, config);
 	const mosaic = mapMosaic(transaction.mosaic);
 	const formattedMosaics = formatMosaicList([mosaic], config.mosaicInfos);
@@ -309,7 +309,7 @@ export const mosaicSupplyRevocationTransactionFromSymbol = (transaction, config)
 	};
 };
 
-export const multisigAccountModificationTransactionFromSymbol = (transaction, config) => {
+const multisigAccountModificationTransactionFromSymbol = (transaction, config) => {
 	const baseTransaction = baseTransactionFromSymbol(transaction, config);
 	const addressAdditions = transaction.addressAdditions.map(address => mapAddress(address, config.resolvedAddresses));
 	const addressDeletions = transaction.addressDeletions.map(address => mapAddress(address, config.resolvedAddresses));
@@ -323,7 +323,7 @@ export const multisigAccountModificationTransactionFromSymbol = (transaction, co
 	};
 };
 
-export const hashLockTransactionFromSymbol = (transaction, config) => {
+const hashLockTransactionFromSymbol = (transaction, config) => {
 	const baseTransaction = baseTransactionFromSymbol(transaction, config);
 	const mosaic = mapMosaic(transaction.mosaic);
 	const [formattedMosaic] = formatMosaicList([mosaic], config.mosaicInfos);
@@ -337,7 +337,7 @@ export const hashLockTransactionFromSymbol = (transaction, config) => {
 	};
 };
 
-export const secretLockTransactionFromSymbol = (transaction, config) => {
+const secretLockTransactionFromSymbol = (transaction, config) => {
 	const baseTransaction = baseTransactionFromSymbol(transaction, config);
 	const mosaic = mapMosaic(transaction.mosaic);
 	const formattedMosaics = formatMosaicList([mosaic], config.mosaicInfos);
@@ -353,7 +353,7 @@ export const secretLockTransactionFromSymbol = (transaction, config) => {
 	};
 };
 
-export const secretProofTransactionFromSymbol = (transaction, config) => {
+const secretProofTransactionFromSymbol = (transaction, config) => {
 	const baseTransaction = baseTransactionFromSymbol(transaction, config);
 	const resolvedAddress = mapAddress(transaction.recipientAddress, config.resolvedAddresses);
 
@@ -366,7 +366,7 @@ export const secretProofTransactionFromSymbol = (transaction, config) => {
 	};
 };
 
-export const accountAddressRestrictionTransactionFromSymbol = (transaction, config) => {
+const accountAddressRestrictionTransactionFromSymbol = (transaction, config) => {
 	const baseTransaction = baseTransactionFromSymbol(transaction, config);
 	const addressAdditions = transaction.restrictionAdditions.map(address => mapAddress(address, config.resolvedAddresses));
 	const addressDeletions = transaction.restrictionDeletions.map(address => mapAddress(address, config.resolvedAddresses));
@@ -379,7 +379,7 @@ export const accountAddressRestrictionTransactionFromSymbol = (transaction, conf
 	};
 };
 
-export const accountMosaicRestrictionTransactionFromSymbol = (transaction, config) => {
+const accountMosaicRestrictionTransactionFromSymbol = (transaction, config) => {
 	const baseTransaction = baseTransactionFromSymbol(transaction, config);
 
 	return {
@@ -390,7 +390,7 @@ export const accountMosaicRestrictionTransactionFromSymbol = (transaction, confi
 	};
 };
 
-export const accountOperationRestrictionTransactionFromSymbol = (transaction, config) => {
+const accountOperationRestrictionTransactionFromSymbol = (transaction, config) => {
 	const baseTransaction = baseTransactionFromSymbol(transaction, config);
 
 	return {
@@ -401,7 +401,7 @@ export const accountOperationRestrictionTransactionFromSymbol = (transaction, co
 	};
 };
 
-export const mosaicAddressRestrictionTransactionFromSymbol = (transaction, config) => {
+const mosaicAddressRestrictionTransactionFromSymbol = (transaction, config) => {
 	const baseTransaction = baseTransactionFromSymbol(transaction, config);
 	const mosaicId = mapId(transaction.mosaicId);
 	const mosaicName = config.mosaicInfos[mosaicId]?.name || null;
@@ -418,7 +418,7 @@ export const mosaicAddressRestrictionTransactionFromSymbol = (transaction, confi
 	};
 };
 
-export const mosaicGlobalRestrictionTransactionFromSymbol = (transaction, config) => {
+const mosaicGlobalRestrictionTransactionFromSymbol = (transaction, config) => {
 	const baseTransaction = baseTransactionFromSymbol(transaction, config);
 	const referenceMosaicId =
 		mapId(transaction.referenceMosaicId) === '0000000000000000' ? transaction.mosaicId : transaction.referenceMosaicId;
@@ -436,7 +436,7 @@ export const mosaicGlobalRestrictionTransactionFromSymbol = (transaction, config
 	};
 };
 
-export const accountMetadataTransactionFromSymbol = (transaction, config) => {
+const accountMetadataTransactionFromSymbol = (transaction, config) => {
 	const baseTransaction = baseTransactionFromSymbol(transaction, config);
 	const targetAddress = mapAddress(transaction.targetAddress, config.resolvedAddresses);
 
@@ -449,7 +449,7 @@ export const accountMetadataTransactionFromSymbol = (transaction, config) => {
 	};
 };
 
-export const mosaicMetadataTransactionFromSymbol = (transaction, config) => {
+const mosaicMetadataTransactionFromSymbol = (transaction, config) => {
 	const baseTransaction = baseTransactionFromSymbol(transaction, config);
 	const mosaicId = mapId(transaction.targetMosaicId);
 	const mosaicName = config.mosaicInfos[mosaicId]?.name || null;
@@ -466,7 +466,7 @@ export const mosaicMetadataTransactionFromSymbol = (transaction, config) => {
 	};
 };
 
-export const namespaceMetadataTransactionFromSymbol = (transaction, config) => {
+const namespaceMetadataTransactionFromSymbol = (transaction, config) => {
 	const baseTransaction = baseTransactionFromSymbol(transaction, config);
 	const targetAddress = mapAddress(transaction.targetAddress, config.resolvedAddresses);
 	const targetNamespaceId = mapId(transaction.targetNamespaceId);
@@ -483,7 +483,7 @@ export const namespaceMetadataTransactionFromSymbol = (transaction, config) => {
 	};
 };
 
-export const votingKeyLinkTransactionFromSymbol = (transaction, config) => {
+const votingKeyLinkTransactionFromSymbol = (transaction, config) => {
 	const baseTransaction = baseTransactionFromSymbol(transaction, config);
 	const linkedPublicKey = transaction.linkedPublicKey.toString();
 	const linkedAccountAddress = addressFromPublicKey(linkedPublicKey, config.networkProperties.networkIdentifier);
@@ -498,7 +498,7 @@ export const votingKeyLinkTransactionFromSymbol = (transaction, config) => {
 	};
 };
 
-export const vrfKeyLinkTransactionFromSymbol = (transaction, config) => {
+const vrfKeyLinkTransactionFromSymbol = (transaction, config) => {
 	const baseTransaction = baseTransactionFromSymbol(transaction, config);
 	const linkedPublicKey = transaction.linkedPublicKey.toString();
 	const linkedAccountAddress = addressFromPublicKey(linkedPublicKey, config.networkProperties.networkIdentifier);
@@ -511,7 +511,7 @@ export const vrfKeyLinkTransactionFromSymbol = (transaction, config) => {
 	};
 };
 
-export const nodeKeyLinkTransactionFromSymbol = (transaction, config) => {
+const nodeKeyLinkTransactionFromSymbol = (transaction, config) => {
 	const baseTransaction = baseTransactionFromSymbol(transaction, config);
 	const linkedPublicKey = transaction.linkedPublicKey.toString();
 	const linkedAccountAddress = addressFromPublicKey(linkedPublicKey, config.networkProperties.networkIdentifier);
@@ -524,7 +524,7 @@ export const nodeKeyLinkTransactionFromSymbol = (transaction, config) => {
 	};
 };
 
-export const accountKeyLinkTransactionFromSymbol = (transaction, config) => {
+const accountKeyLinkTransactionFromSymbol = (transaction, config) => {
 	const baseTransaction = baseTransactionFromSymbol(transaction, config);
 	const linkedPublicKey = transaction.linkedPublicKey.toString();
 	const linkedAccountAddress = addressFromPublicKey(linkedPublicKey, config.networkProperties.networkIdentifier);
@@ -537,6 +537,21 @@ export const accountKeyLinkTransactionFromSymbol = (transaction, config) => {
 	};
 };
 
+/**
+ * Extracts unresolved namespace IDs, mosaic IDs, and addresses from a list of symbol-sdk Transaction objects.
+ *
+ * For each Symbol transaction, it inspects specific fields (depending on the transaction type)
+ * that may contain unresolved references (namespace IDs instead of resolved addresses,
+ * or mosaic/namespace ids that require name resolution).
+ *
+ * Returns a unique set of referenced mosaic and namespace IDs, and a list of unresolved addresses
+ * identified by their namespace IDs with the block height at which they were observed.
+ *
+ * @param {Array<object>} transactions - Array of Symbol transactions (from symbol-sdk models).
+ * @returns {{ mosaicIds: string[], namespaceIds: string[], addresses: Array<{ namespaceId: string, height: number }> }}
+ * The unresolved identifiers aggregated from the provided Symbol transactions.
+ * @see getUnresolvedIdsFromTransactions
+ */
 export const getUnresolvedIdsFromSymbolTransactions = transactions => {
 	const fieldsMap = {
 		[TransactionType.TRANSFER]: {

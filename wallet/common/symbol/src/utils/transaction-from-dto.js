@@ -38,6 +38,11 @@ import { SdkError, absoluteToRelativeAmount, safeOperationWithRelativeAmounts } 
 /** @typedef {import('../types/Network').NetworkProperties} NetworkProperties */
 /** @typedef {import('../types/Transaction').Transaction} Transaction */
 
+/**
+ * Checks if a transaction DTO is an aggregate transaction.
+ * @param {object} transactionDTO - The transaction DTO.
+ * @returns {boolean} A boolean indicating whether the transaction is an aggregate transaction.
+ */
 export const isAggregateTransactionDTO = transactionDTO => {
 	const { transaction } = transactionDTO;
 
@@ -128,7 +133,7 @@ export const transactionFromDTO = (transactionDTO, config) => {
 	return baseTransaction;
 };
 
-export const baseTransactionFromDTO = (transactionDTO, config) => {
+const baseTransactionFromDTO = (transactionDTO, config) => {
 	const { networkProperties } = config;
 	const { transaction, meta } = transactionDTO;
 	const transactionNetworkIdentifier = networkTypeToIdentifier(transaction.network);
@@ -164,7 +169,7 @@ export const baseTransactionFromDTO = (transactionDTO, config) => {
 	};
 };
 
-export const aggregateTransactionFromDTO = (transactionDTO, config) => {
+const aggregateTransactionFromDTO = (transactionDTO, config) => {
 	const { transaction } = transactionDTO;
 	const baseTransaction = baseTransactionFromDTO(transactionDTO, config);
 	const innerTransactions =
@@ -198,7 +203,7 @@ export const aggregateTransactionFromDTO = (transactionDTO, config) => {
 	return info;
 };
 
-export const transferTransactionFromDTO = (transactionDTO, config) => {
+const transferTransactionFromDTO = (transactionDTO, config) => {
 	const { transaction } = transactionDTO;
 	const { networkProperties, mosaicInfos, currentAccount, resolvedAddresses } = config;
 	const baseTransaction = baseTransactionFromDTO(transactionDTO, config);
@@ -240,7 +245,7 @@ export const transferTransactionFromDTO = (transactionDTO, config) => {
 	};
 };
 
-export const namespaceRegistrationTransactionFromDTO = (transactionDTO, config) => {
+const namespaceRegistrationTransactionFromDTO = (transactionDTO, config) => {
 	const { transaction } = transactionDTO;
 	const baseTransaction = baseTransactionFromDTO(transactionDTO, config);
 	const isRootNamespace = !transaction.parentId || transaction.parentId === '0000000000000000';
@@ -256,7 +261,7 @@ export const namespaceRegistrationTransactionFromDTO = (transactionDTO, config) 
 	};
 };
 
-export const addressAliasTransactionFromDTO = (transactionDTO, config) => {
+const addressAliasTransactionFromDTO = (transactionDTO, config) => {
 	const { transaction } = transactionDTO;
 	const baseTransaction = baseTransactionFromDTO(transactionDTO, config);
 
@@ -269,7 +274,7 @@ export const addressAliasTransactionFromDTO = (transactionDTO, config) => {
 	};
 };
 
-export const mosaicAliasTransactionFromDTO = (transactionDTO, config) => {
+const mosaicAliasTransactionFromDTO = (transactionDTO, config) => {
 	const { transaction } = transactionDTO;
 	const baseTransaction = baseTransactionFromDTO(transactionDTO, config);
 
@@ -282,7 +287,7 @@ export const mosaicAliasTransactionFromDTO = (transactionDTO, config) => {
 	};
 };
 
-export const mosaicDefinitionTransactionFromDTO = (transactionDTO, config) => {
+const mosaicDefinitionTransactionFromDTO = (transactionDTO, config) => {
 	const { transaction } = transactionDTO;
 	const baseTransaction = baseTransactionFromDTO(transactionDTO, config);
 
@@ -299,7 +304,7 @@ export const mosaicDefinitionTransactionFromDTO = (transactionDTO, config) => {
 	};
 };
 
-export const mosaicSupplyChangeTransactionFromDTO = (transactionDTO, config) => {
+const mosaicSupplyChangeTransactionFromDTO = (transactionDTO, config) => {
 	const { transaction } = transactionDTO;
 	const baseTransaction = baseTransactionFromDTO(transactionDTO, config);
 
@@ -311,7 +316,7 @@ export const mosaicSupplyChangeTransactionFromDTO = (transactionDTO, config) => 
 	};
 };
 
-export const mosaicSupplyRevocationTransactionFromDTO = (transactionDTO, config) => {
+const mosaicSupplyRevocationTransactionFromDTO = (transactionDTO, config) => {
 	const { transaction } = transactionDTO;
 	const baseTransaction = baseTransactionFromDTO(transactionDTO, config);
 	const mosaic = createMosaic(transaction.mosaicId, transaction.amount);
@@ -326,7 +331,7 @@ export const mosaicSupplyRevocationTransactionFromDTO = (transactionDTO, config)
 	};
 };
 
-export const multisigAccountModificationTransactionFromDTO = (transactionDTO, config) => {
+const multisigAccountModificationTransactionFromDTO = (transactionDTO, config) => {
 	const { transaction } = transactionDTO;
 	const baseTransaction = baseTransactionFromDTO(transactionDTO, config);
 	const addressAdditions = transaction.addressAdditions.map(address => formatAddress(address, config.resolvedAddresses));
@@ -341,7 +346,7 @@ export const multisigAccountModificationTransactionFromDTO = (transactionDTO, co
 	};
 };
 
-export const hashLockTransactionFromDTO = (transactionDTO, config) => {
+const hashLockTransactionFromDTO = (transactionDTO, config) => {
 	const { transaction } = transactionDTO;
 	const baseTransaction = baseTransactionFromDTO(transactionDTO, config);
 	const mosaic = createMosaic(transaction.mosaicId, transaction.amount);
@@ -356,7 +361,7 @@ export const hashLockTransactionFromDTO = (transactionDTO, config) => {
 	};
 };
 
-export const secretLockTransactionFromDTO = (transactionDTO, config) => {
+const secretLockTransactionFromDTO = (transactionDTO, config) => {
 	const { transaction } = transactionDTO;
 	const baseTransaction = baseTransactionFromDTO(transactionDTO, config);
 	const mosaic = createMosaic(transaction.mosaicId, transaction.amount);
@@ -373,7 +378,7 @@ export const secretLockTransactionFromDTO = (transactionDTO, config) => {
 	};
 };
 
-export const secretProofTransactionFromDTO = (transactionDTO, config) => {
+const secretProofTransactionFromDTO = (transactionDTO, config) => {
 	const { transaction } = transactionDTO;
 	const baseTransaction = baseTransactionFromDTO(transactionDTO, config);
 	const resolvedAddress = formatAddress(transaction.recipientAddress, config.resolvedAddresses);
@@ -387,7 +392,7 @@ export const secretProofTransactionFromDTO = (transactionDTO, config) => {
 	};
 };
 
-export const accountAddressRestrictionTransactionFromDTO = (transactionDTO, config) => {
+const accountAddressRestrictionTransactionFromDTO = (transactionDTO, config) => {
 	const { transaction } = transactionDTO;
 	const baseTransaction = baseTransactionFromDTO(transactionDTO, config);
 	const addressAdditions = transaction.restrictionAdditions.map(address => formatAddress(address, config.resolvedAddresses));
@@ -401,7 +406,7 @@ export const accountAddressRestrictionTransactionFromDTO = (transactionDTO, conf
 	};
 };
 
-export const accountMosaicRestrictionTransactionFromDTO = (transactionDTO, config) => {
+const accountMosaicRestrictionTransactionFromDTO = (transactionDTO, config) => {
 	const { transaction } = transactionDTO;
 	const baseTransaction = baseTransactionFromDTO(transactionDTO, config);
 
@@ -413,7 +418,7 @@ export const accountMosaicRestrictionTransactionFromDTO = (transactionDTO, confi
 	};
 };
 
-export const accountOperationRestrictionTransactionFromDTO = (transactionDTO, config) => {
+const accountOperationRestrictionTransactionFromDTO = (transactionDTO, config) => {
 	const { transaction } = transactionDTO;
 	const baseTransaction = baseTransactionFromDTO(transactionDTO, config);
 
@@ -425,7 +430,7 @@ export const accountOperationRestrictionTransactionFromDTO = (transactionDTO, co
 	};
 };
 
-export const mosaicAddressRestrictionTransactionFromDTO = (transactionDTO, config) => {
+const mosaicAddressRestrictionTransactionFromDTO = (transactionDTO, config) => {
 	const { transaction } = transactionDTO;
 	const baseTransaction = baseTransactionFromDTO(transactionDTO, config);
 	const { mosaicId } = transaction;
@@ -443,7 +448,7 @@ export const mosaicAddressRestrictionTransactionFromDTO = (transactionDTO, confi
 	};
 };
 
-export const mosaicGlobalRestrictionTransactionFromDTO = (transactionDTO, config) => {
+const mosaicGlobalRestrictionTransactionFromDTO = (transactionDTO, config) => {
 	const { transaction } = transactionDTO;
 	const baseTransaction = baseTransactionFromDTO(transactionDTO, config);
 	const referenceMosaicId = transaction.referenceMosaicId === '0000000000000000' ? transaction.mosaicId : transaction.referenceMosaicId;
@@ -461,7 +466,7 @@ export const mosaicGlobalRestrictionTransactionFromDTO = (transactionDTO, config
 	};
 };
 
-export const accountMetadataTransactionFromDTO = (transactionDTO, config) => {
+const accountMetadataTransactionFromDTO = (transactionDTO, config) => {
 	const { transaction } = transactionDTO;
 	const baseTransaction = baseTransactionFromDTO(transactionDTO, config);
 	const targetAddress = formatAddress(transaction.targetAddress, config.resolvedAddresses);
@@ -475,7 +480,7 @@ export const accountMetadataTransactionFromDTO = (transactionDTO, config) => {
 	};
 };
 
-export const mosaicMetadataTransactionFromDTO = (transactionDTO, config) => {
+const mosaicMetadataTransactionFromDTO = (transactionDTO, config) => {
 	const { transaction } = transactionDTO;
 	const baseTransaction = baseTransactionFromDTO(transactionDTO, config);
 	const mosaicId = transaction.targetMosaicId;
@@ -493,7 +498,7 @@ export const mosaicMetadataTransactionFromDTO = (transactionDTO, config) => {
 	};
 };
 
-export const namespaceMetadataTransactionFromDTO = (transactionDTO, config) => {
+const namespaceMetadataTransactionFromDTO = (transactionDTO, config) => {
 	const { transaction } = transactionDTO;
 	const baseTransaction = baseTransactionFromDTO(transactionDTO, config);
 	const targetAddress = formatAddress(transaction.targetAddress, config.resolvedAddresses);
@@ -511,7 +516,7 @@ export const namespaceMetadataTransactionFromDTO = (transactionDTO, config) => {
 	};
 };
 
-export const votingKeyLinkTransactionFromDTO = (transactionDTO, config) => {
+const votingKeyLinkTransactionFromDTO = (transactionDTO, config) => {
 	const { transaction } = transactionDTO;
 	const baseTransaction = baseTransactionFromDTO(transactionDTO, config);
 	const { linkedPublicKey } = transaction;
@@ -527,7 +532,7 @@ export const votingKeyLinkTransactionFromDTO = (transactionDTO, config) => {
 	};
 };
 
-export const vrfKeyLinkTransactionFromDTO = (transactionDTO, config) => {
+const vrfKeyLinkTransactionFromDTO = (transactionDTO, config) => {
 	const { transaction } = transactionDTO;
 	const baseTransaction = baseTransactionFromDTO(transactionDTO, config);
 	const { linkedPublicKey } = transaction;
@@ -541,7 +546,7 @@ export const vrfKeyLinkTransactionFromDTO = (transactionDTO, config) => {
 	};
 };
 
-export const nodeKeyLinkTransactionFromDTO = (transactionDTO, config) => {
+const nodeKeyLinkTransactionFromDTO = (transactionDTO, config) => {
 	const { transaction } = transactionDTO;
 	const baseTransaction = baseTransactionFromDTO(transactionDTO, config);
 	const { linkedPublicKey } = transaction;
@@ -555,7 +560,7 @@ export const nodeKeyLinkTransactionFromDTO = (transactionDTO, config) => {
 	};
 };
 
-export const accountKeyLinkTransactionFromDTO = (transactionDTO, config) => {
+const accountKeyLinkTransactionFromDTO = (transactionDTO, config) => {
 	const { transaction } = transactionDTO;
 	const baseTransaction = baseTransactionFromDTO(transactionDTO, config);
 	const { linkedPublicKey } = transaction;
@@ -569,6 +574,21 @@ export const accountKeyLinkTransactionFromDTO = (transactionDTO, config) => {
 	};
 };
 
+/**
+ * Extracts unresolved namespace IDs, mosaic IDs, and addresses from a list of transaction DTOs returned by REST.
+ *
+ * For each transaction DTO, it inspects specific fields (depending on the transaction type)
+ * that may contain unresolved references (namespace IDs instead of resolved addresses,
+ * or mosaic/namespace ids that require name resolution).
+ *
+ * Returns a unique set of referenced mosaic and namespace IDs, and a list of unresolved addresses
+ * identified by their namespace IDs with the block height at which they were observed.
+ *
+ * @param {Array<object>} transactionDTOs - Array of transaction DTOs (with 'transaction' and 'meta').
+ * @returns {{ mosaicIds: string[], namespaceIds: string[], addresses: Array<{ namespaceId: string, height: number }> }}
+ * The unresolved identifiers aggregated from the provided DTOs.
+ * @see getUnresolvedIdsFromTransactions
+ */
 export const getUnresolvedIdsFromTransactionDTOs = transactionDTOs => {
 	const fieldsMap = {
 		[TransactionType.TRANSFER]: {

@@ -133,7 +133,7 @@ export const transactionToSymbol = (transaction, config) => {
 	return null;
 };
 
-export const aggregateTransactionToSymbol = (transaction, config) => {
+const aggregateTransactionToSymbol = (transaction, config) => {
 	const { networkIdentifier } = config;
 	const facade = new SymbolFacade(networkIdentifier);
 	const innerTransactions = transaction.innerTransactions.map(innerTransaction =>
@@ -173,7 +173,7 @@ export const aggregateTransactionToSymbol = (transaction, config) => {
 	return createSymbolTransaction(descriptor, networkIdentifier, false, cosignatures);
 };
 
-export const transferTransactionToSymbol = (transaction, config) => {
+const transferTransactionToSymbol = (transaction, config) => {
 	const { networkIdentifier, isEmbedded } = config;
 	const descriptor = {
 		type: 'transfer_transaction_v1',
@@ -190,7 +190,7 @@ export const transferTransactionToSymbol = (transaction, config) => {
 	return createSymbolTransaction(descriptor, networkIdentifier, isEmbedded);
 };
 
-export const namespaceRegistrationTransactionToSymbol = (transaction, config) => {
+const namespaceRegistrationTransactionToSymbol = (transaction, config) => {
 	let descriptor;
 	const { networkIdentifier, isEmbedded } = config;
 
@@ -220,7 +220,7 @@ export const namespaceRegistrationTransactionToSymbol = (transaction, config) =>
 	return createSymbolTransaction(descriptor, networkIdentifier, isEmbedded);
 };
 
-export const addressAliasTransactionToSymbol = (transaction, config) => {
+const addressAliasTransactionToSymbol = (transaction, config) => {
 	const { networkIdentifier, isEmbedded } = config;
 	const descriptor = {
 		type: 'address_alias_transaction_v1',
@@ -235,7 +235,7 @@ export const addressAliasTransactionToSymbol = (transaction, config) => {
 	return createSymbolTransaction(descriptor, networkIdentifier, isEmbedded);
 };
 
-export const mosaicAliasTransactionToSymbol = (transaction, config) => {
+const mosaicAliasTransactionToSymbol = (transaction, config) => {
 	const { networkIdentifier, isEmbedded } = config;
 	const descriptor = {
 		type: 'mosaic_alias_transaction_v1',
@@ -250,7 +250,7 @@ export const mosaicAliasTransactionToSymbol = (transaction, config) => {
 	return createSymbolTransaction(descriptor, networkIdentifier, isEmbedded);
 };
 
-export const mosaicDefinitionTransactionToSymbol = (transaction, config) => {
+const mosaicDefinitionTransactionToSymbol = (transaction, config) => {
 	const flags = [];
 	if (transaction.isTransferable) 
 		flags.push('transferable');
@@ -276,7 +276,7 @@ export const mosaicDefinitionTransactionToSymbol = (transaction, config) => {
 	return createSymbolTransaction(descriptor, networkIdentifier, isEmbedded);
 };
 
-export const mosaicSupplyChangeTransactionToSymbol = (transaction, config) => {
+const mosaicSupplyChangeTransactionToSymbol = (transaction, config) => {
 	const action =
         MosaicSupplyChangeActionMessage[MosaicSupplyChangeAction.Increase] === transaction.action
         	? MosaicSupplyChangeAction.Increase
@@ -296,7 +296,7 @@ export const mosaicSupplyChangeTransactionToSymbol = (transaction, config) => {
 	return createSymbolTransaction(descriptor, networkIdentifier, isEmbedded);
 };
 
-export const mosaicSupplyRevocationTransactionToSymbol = (transaction, config) => {
+const mosaicSupplyRevocationTransactionToSymbol = (transaction, config) => {
 	const { networkIdentifier, isEmbedded } = config;
 	const descriptor = {
 		type: 'mosaic_supply_revocation_transaction_v1',
@@ -310,7 +310,7 @@ export const mosaicSupplyRevocationTransactionToSymbol = (transaction, config) =
 	return createSymbolTransaction(descriptor, networkIdentifier, isEmbedded);
 };
 
-export const hashLockTransactionToSymbol = (transaction, config) => {
+const hashLockTransactionToSymbol = (transaction, config) => {
 	const { networkIdentifier, isEmbedded } = config;
 	const descriptor = {
 		type: 'hash_lock_transaction_v1',
@@ -325,7 +325,7 @@ export const hashLockTransactionToSymbol = (transaction, config) => {
 	return createSymbolTransaction(descriptor, networkIdentifier, isEmbedded);
 };
 
-export const secretLockTransactionToSymbol = (transaction, config) => {
+const secretLockTransactionToSymbol = (transaction, config) => {
 	const { networkIdentifier, isEmbedded } = config;
 	const descriptor = {
 		type: 'secret_lock_transaction_v1',
@@ -342,7 +342,7 @@ export const secretLockTransactionToSymbol = (transaction, config) => {
 	return createSymbolTransaction(descriptor, networkIdentifier, isEmbedded);
 };
 
-export const secretProofTransactionToSymbol = (transaction, config) => {
+const secretProofTransactionToSymbol = (transaction, config) => {
 	const { networkIdentifier, isEmbedded } = config;
 	const descriptor = {
 		type: 'secret_proof_transaction_v1',
@@ -358,7 +358,7 @@ export const secretProofTransactionToSymbol = (transaction, config) => {
 	return createSymbolTransaction(descriptor, networkIdentifier, isEmbedded);
 };
 
-export const vrfKeyLinkTransactionToSymbol = (transaction, config) => {
+const vrfKeyLinkTransactionToSymbol = (transaction, config) => {
 	const { networkIdentifier, isEmbedded } = config;
 	const descriptor = {
 		type: 'vrf_key_link_transaction_v1',
@@ -372,7 +372,7 @@ export const vrfKeyLinkTransactionToSymbol = (transaction, config) => {
 	return createSymbolTransaction(descriptor, networkIdentifier, isEmbedded);
 };
 
-export const accountKeyLinkTransactionToSymbol = (transaction, config) => {
+const accountKeyLinkTransactionToSymbol = (transaction, config) => {
 	const { networkIdentifier, isEmbedded } = config;
 	const descriptor = {
 		type: 'account_key_link_transaction_v1',
@@ -386,7 +386,7 @@ export const accountKeyLinkTransactionToSymbol = (transaction, config) => {
 	return createSymbolTransaction(descriptor, networkIdentifier, isEmbedded);
 };
 
-export const nodeKeyLinkTransactionToSymbol = (transaction, config) => {
+const nodeKeyLinkTransactionToSymbol = (transaction, config) => {
 	const { networkIdentifier, isEmbedded } = config;
 	const descriptor = {
 		type: 'node_key_link_transaction_v1',
@@ -400,7 +400,7 @@ export const nodeKeyLinkTransactionToSymbol = (transaction, config) => {
 	return createSymbolTransaction(descriptor, networkIdentifier, isEmbedded);
 };
 
-export const votingKeyLinkTransactionToSymbol = (transaction, config) => {
+const votingKeyLinkTransactionToSymbol = (transaction, config) => {
 	const { networkIdentifier, isEmbedded } = config;
 	const descriptor = {
 		type: 'voting_key_link_transaction_v1',
@@ -416,7 +416,7 @@ export const votingKeyLinkTransactionToSymbol = (transaction, config) => {
 	return createSymbolTransaction(descriptor, networkIdentifier, isEmbedded);
 };
 
-export const mosaicGlobalRestrictionTransactionToSymbol = (transaction, config) => {
+const mosaicGlobalRestrictionTransactionToSymbol = (transaction, config) => {
 	const restrictionTypeMap = {
 		[MosaicRestrictionTypeMessage[MosaicRestrictionType.EQ]]: MosaicRestrictionType.EQ,
 		[MosaicRestrictionTypeMessage[MosaicRestrictionType.GE]]: MosaicRestrictionType.GE,
@@ -445,7 +445,7 @@ export const mosaicGlobalRestrictionTransactionToSymbol = (transaction, config) 
 	return createSymbolTransaction(descriptor, networkIdentifier, isEmbedded);
 };
 
-export const mosaicAddressRestrictionTransactionToSymbol = (transaction, config) => {
+const mosaicAddressRestrictionTransactionToSymbol = (transaction, config) => {
 	const { networkIdentifier, isEmbedded } = config;
 	const descriptor = {
 		type: 'mosaic_address_restriction_transaction_v1',
@@ -462,7 +462,7 @@ export const mosaicAddressRestrictionTransactionToSymbol = (transaction, config)
 	return createSymbolTransaction(descriptor, networkIdentifier, isEmbedded);
 };
 
-export const accountOperationRestrictionTransactionToSymbol = (transaction, config) => {
+const accountOperationRestrictionTransactionToSymbol = (transaction, config) => {
 	const restrictionFlagsMap = {
 		[OperationRestrictionFlagMessage[OperationRestrictionFlag.AllowOutgoingTransactionType]]:
             OperationRestrictionFlag.AllowOutgoingTransactionType,
@@ -484,7 +484,7 @@ export const accountOperationRestrictionTransactionToSymbol = (transaction, conf
 	return createSymbolTransaction(descriptor, networkIdentifier, isEmbedded);
 };
 
-export const accountAddressRestrictionTransactionToSymbol = (transaction, config) => {
+const accountAddressRestrictionTransactionToSymbol = (transaction, config) => {
 	const restrictionFlagsMap = {
 		[AddressRestrictionFlagMessage[AddressRestrictionFlag.AllowIncomingAddress]]: AddressRestrictionFlag.AllowIncomingAddress,
 		[AddressRestrictionFlagMessage[AddressRestrictionFlag.AllowOutgoingAddress]]: AddressRestrictionFlag.AllowOutgoingAddress,
@@ -505,7 +505,7 @@ export const accountAddressRestrictionTransactionToSymbol = (transaction, config
 	return createSymbolTransaction(descriptor, networkIdentifier, isEmbedded);
 };
 
-export const accountMosaicRestrictionTransactionToSymbol = (transaction, config) => {
+const accountMosaicRestrictionTransactionToSymbol = (transaction, config) => {
 	const restrictionFlag =
         MosaicRestrictionFlagMessage[MosaicRestrictionFlag.AllowMosaic] === transaction.restrictionType ? 'allow' : 'block';
 
@@ -523,7 +523,7 @@ export const accountMosaicRestrictionTransactionToSymbol = (transaction, config)
 	return createSymbolTransaction(descriptor, networkIdentifier, isEmbedded);
 };
 
-export const multisigAccountModificationTransactionToSymbol = (transaction, config) => {
+const multisigAccountModificationTransactionToSymbol = (transaction, config) => {
 	const { networkIdentifier, isEmbedded } = config;
 	const descriptor = {
 		type: 'multisig_account_modification_transaction_v1',
@@ -539,7 +539,7 @@ export const multisigAccountModificationTransactionToSymbol = (transaction, conf
 	return createSymbolTransaction(descriptor, networkIdentifier, isEmbedded);
 };
 
-export const accountMetadataTransactionToSymbol = (transaction, config) => {
+const accountMetadataTransactionToSymbol = (transaction, config) => {
 	const { networkIdentifier, isEmbedded } = config;
 	const descriptor = {
 		type: 'account_metadata_transaction_v1',
@@ -555,7 +555,7 @@ export const accountMetadataTransactionToSymbol = (transaction, config) => {
 	return createSymbolTransaction(descriptor, networkIdentifier, isEmbedded);
 };
 
-export const mosaicMetadataTransactionToSymbol = (transaction, config) => {
+const mosaicMetadataTransactionToSymbol = (transaction, config) => {
 	const { networkIdentifier, isEmbedded } = config;
 	const descriptor = {
 		type: 'mosaic_metadata_transaction_v1',
@@ -572,7 +572,7 @@ export const mosaicMetadataTransactionToSymbol = (transaction, config) => {
 	return createSymbolTransaction(descriptor, networkIdentifier, isEmbedded);
 };
 
-export const namespaceMetadataTransactionToSymbol = (transaction, config) => {
+const namespaceMetadataTransactionToSymbol = (transaction, config) => {
 	const { networkIdentifier, isEmbedded } = config;
 	const descriptor = {
 		type: 'namespace_metadata_transaction_v1',
