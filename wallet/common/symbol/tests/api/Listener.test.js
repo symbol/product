@@ -1,7 +1,7 @@
 import { Listener } from '../../src/api/Listener';
 import { networkProperties } from '../__fixtures__/local/network';
 import { currentAccount } from '../__fixtures__/local/wallet';
-import { expect, jest } from '@jest/globals';
+import { describe, expect, jest } from '@jest/globals';
 import { ApiError } from 'wallet-common-core';
 
 class MockWebSocket {
@@ -22,7 +22,7 @@ class MockWebSocket {
 
 	open() {
 		this.readyState = MockWebSocket.OPEN;
-		if (this.onopen) 
+		if (this.onopen)
 			this.onopen();
 	}
 
@@ -31,18 +31,18 @@ class MockWebSocket {
 	}
 
 	emitMessage(message) {
-		if (this.onmessage) 
+		if (this.onmessage)
 			this.onmessage({ data: JSON.stringify(message) });
 	}
 
 	error(error) {
-		if (this.onerror) 
+		if (this.onerror)
 			this.onerror(error);
 	}
 
 	close(code = 1000, reason = '') {
 		this.readyState = MockWebSocket.CLOSED;
-		if (this.onclose) 
+		if (this.onclose)
 			this.onclose({ code, reason });
 	}
 }
@@ -145,63 +145,52 @@ describe('Listener', () => {
 		});
 	});
 
+	const runChannelTest = async ({ channel, subscribe, messageToEmit, expectedResult }) => {
+		// Arrange:
+		const listener = await openWithHandshake('u2');
+		const callback = jest.fn();
+		const expectedSubscribeRequest = {
+			uid: 'u2',
+			subscribe: channel
+		};
+
+		// Act:
+		subscribe(listener, callback);
+
+		// Assert:
+		expect(listener.webSocket.sentMessages).toHaveLength(1);
+		const subscribeRequestPayload = JSON.parse(listener.webSocket.sentMessages[0]);
+		expect(subscribeRequestPayload).toEqual(expectedSubscribeRequest);
+
+		// Act:
+		listener.webSocket.emitMessage({
+			topic: channel,
+			data: messageToEmit
+		});
+
+		// Assert:
+		expect(callback).toHaveBeenCalledWith(expectedResult);
+	};
+
 	describe('listenAddedTransactions', () => {
 		it('subscribes and invokes handler for confirmedAdded', async () => {
-			// Arrange:
-			const listener = await openWithHandshake('u2');
-			const callback = jest.fn();
-			const expectedSubscribeRequest = {
-				uid: 'u2',
-				subscribe: `confirmedAdded/${address}`
-			};
-			const confirmedAddedEventData = { meta: { hash: 'HASH1' } };
-
-			// Act:
-			listener.listenAddedTransactions('confirmed', callback);
-
-			// Assert:
-			expect(listener.webSocket.sentMessages).toHaveLength(1);
-			const subscribeRequestPayload = JSON.parse(listener.webSocket.sentMessages[0]);
-			expect(subscribeRequestPayload).toEqual(expectedSubscribeRequest);
-
-			// Act:
-			listener.webSocket.emitMessage({
-				topic: expectedSubscribeRequest.subscribe,
-				data: confirmedAddedEventData
+			await runChannelTest({
+				channel: `confirmedAdded/${address}`,
+				subscribe: (listener, cb) => listener.listenAddedTransactions('confirmed', cb),
+				messageToEmit: { meta: { hash: 'HASH1' } },
+				expectedResult: { hash: 'HASH1' }
 			});
-
-			// Assert:
-			expect(callback).toHaveBeenCalledWith({ hash: 'HASH1' });
 		});
 	});
 
 	describe('listenRemovedTransactions', () => {
 		it('subscribes and invokes handler for unconfirmedRemoved', async () => {
-			// Arrange:
-			const listener = await openWithHandshake('u3');
-			const callback = jest.fn();
-			const expectedSubscribeRequest = {
-				uid: 'u3',
-				subscribe: `unconfirmedRemoved/${address}`
-			};
-			const unconfirmedRemovedEventData = { meta: { hash: 'REM1' } };
-
-			// Act:
-			listener.listenRemovedTransactions('unconfirmed', callback);
-
-			// Assert:
-			expect(listener.webSocket.sentMessages).toHaveLength(1);
-			const subscribeRequestPayload = JSON.parse(listener.webSocket.sentMessages[0]);
-			expect(subscribeRequestPayload).toEqual(expectedSubscribeRequest);
-
-			// Act:
-			listener.webSocket.emitMessage({
-				topic: expectedSubscribeRequest.subscribe,
-				data: unconfirmedRemovedEventData
+			await runChannelTest({
+				channel: `unconfirmedRemoved/${address}`,
+				subscribe: (listener, cb) => listener.listenRemovedTransactions('unconfirmed', cb),
+				messageToEmit: { meta: { hash: 'REM1' } },
+				expectedResult: { hash: 'REM1' }
 			});
-
-			// Assert:
-			expect(callback).toHaveBeenCalledWith({ hash: 'REM1' });
 		});
 
 		it('throws ApiError for unsupported group "confirmed"', async () => {
@@ -216,107 +205,49 @@ describe('Listener', () => {
 
 	describe('listenNewBlock', () => {
 		it('subscribes and forwards raw block data', async () => {
-			// Arrange:
-			const listener = await openWithHandshake('u4');
-			const callback = jest.fn();
-			const expectedSubscribeRequest = {
-				uid: 'u4',
-				subscribe: 'block'
-			};
-			const newBlockData = { height: 123, hash: 'B0' };
-
-			// Act:
-			listener.listenNewBlock(callback);
-
-			// Assert:
-			expect(listener.webSocket.sentMessages).toHaveLength(1);
-			expect(JSON.parse(listener.webSocket.sentMessages[0])).toEqual(expectedSubscribeRequest);
-
-			// Act:
-			listener.webSocket.emitMessage({
-				topic: 'block',
-				data: newBlockData
+			await runChannelTest({
+				channel: 'block',
+				subscribe: (listener, cb) => listener.listenNewBlock(cb),
+				messageToEmit: { height: 123, hash: 'B0' },
+				expectedResult: { height: 123, hash: 'B0' }
 			});
+		});
+	});
 
-			// Assert:
-			expect(callback).toHaveBeenCalledWith(newBlockData);
+	describe('finalizedBlock', () => {
+		it('subscribes and forwards finalized block data', async () => {
+			await runChannelTest({
+				channel: 'finalizedBlock',
+				subscribe: (listener, cb) => listener.listenFinalizedBlock(cb),
+				messageToEmit: { height: 456, hash: 'FBH' },
+				expectedResult: { height: 456, hash: 'FBH' }
+			});
+		});
+	});
+
+	describe('listenTransactionCosignature', () => {
+		it('subscribes and forwards cosignature data', async () => {
+			await runChannelTest({
+				channel: 'cosignature',
+				subscribe: (listener, cb) => listener.listenTransactionCosignature(cb),
+				messageToEmit: { parentHash: 'PARENT', signature: 'SIG' },
+				expectedResult: { parentHash: 'PARENT', signature: 'SIG' }
+			});
 		});
 	});
 
 	describe('listenTransactionError', () => {
 		it('subscribes and maps status message', async () => {
-			// Arrange:
-			const listener = await openWithHandshake('u5');
-			const callback = jest.fn();
-			const expectedSubscribeRequest = {
-				uid: 'u5',
-				subscribe: `status/${address}`
-			};
-			const transactionStatusData = { hash: 'ERR_TX', code: 'Failure_Core_Test' };
-			const expectedCallbackPayload = {
-				type: 'TransactionStatusError',
-				rawAddress: address,
-				hash: 'ERR_TX',
-				code: 'Failure_Core_Test'
-			};
-
-			// Act:
-			listener.listenTransactionError(callback);
-
-			// Assert:
-			expect(listener.webSocket.sentMessages).toHaveLength(1);
-			expect(JSON.parse(listener.webSocket.sentMessages[0])).toEqual(expectedSubscribeRequest);
-
-			// Act:
-			listener.webSocket.emitMessage({
-				topic: expectedSubscribeRequest.subscribe,
-				data: transactionStatusData
+			await runChannelTest({
+				channel: `status/${address}`,
+				subscribe: (listener, cb) => listener.listenTransactionError(cb),
+				messageToEmit: { hash: 'ERR_TX', code: 'Failure_Core_Test' },
+				expectedResult: { hash: 'ERR_TX', code: 'Failure_Core_Test' }
 			});
-
-			// Assert:
-			expect(callback).toHaveBeenCalledWith(expectedCallbackPayload);
 		});
 	});
 
 	describe('handlers without dedicated subscribe methods', () => {
-		it('handles COSIGNATURE and FINALIZED_BLOCK mapping when handlers are set', async () => {
-			// Arrange:
-			const listener = await openWithHandshake('u6');
-
-			const cosignatureCallback = jest.fn();
-			const finalizedBlockCallback = jest.fn();
-
-			listener.handlers['cosignature'] = cosignatureCallback;
-			listener.handlers['finalizedBlock'] = finalizedBlockCallback;
-
-			const cosignatureData = { parentHash: 'PARENT', signature: 'SIG' };
-			const finalizedBlockData = { height: 456, hash: 'FBH' };
-
-			// Act:
-			listener.webSocket.emitMessage({
-				topic: 'cosignature',
-				data: cosignatureData
-			});
-
-			// Assert:
-			expect(cosignatureCallback).toHaveBeenCalledWith({
-				type: 'CosignatureSignedTransaction',
-				...cosignatureData
-			});
-
-			// Act:
-			listener.webSocket.emitMessage({
-				topic: 'finalizedBlock',
-				data: finalizedBlockData
-			});
-
-			// Assert:
-			expect(finalizedBlockCallback).toHaveBeenCalledWith({
-				type: 'FinalizedBlock',
-				...finalizedBlockData
-			});
-		});
-
 		it('throws ApiError for unsupported channel when handler exists', async () => {
 			// Arrange:
 			const listener = await openWithHandshake('u7');

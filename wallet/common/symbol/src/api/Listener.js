@@ -79,7 +79,7 @@ export class Listener {
 			return;
 		}
 		
-		const [channelName, channelParam] = message.topic.split('/');
+		const [channelName] = message.topic.split('/');
 
 		// Ignore if no handler registered for this channel
 		const handler = this.handlers[channelName];
@@ -92,27 +92,15 @@ export class Listener {
 		case ListenerChannelName.CONFIRMED_ADDED:
 		case ListenerChannelName.UNCONFIRMED_ADDED:
 		case ListenerChannelName.PARTIAL_ADDED:
-			payload = { hash: message.data.meta.hash };
-			break;
-		case ListenerChannelName.BLOCK:
-			payload = message.data;
-			break;
-		case ListenerChannelName.STATUS:
-			payload = {
-				type: 'TransactionStatusError',
-				rawAddress: channelParam,
-				...message.data
-			};
-			break;
-		case ListenerChannelName.COSIGNATURE:
-			payload = { type: 'CosignatureSignedTransaction', ...message.data };
-			break;
 		case ListenerChannelName.PARTIAL_REMOVED:
 		case ListenerChannelName.UNCONFIRMED_REMOVED:
 			payload = { hash: message.data.meta.hash };
 			break;
+		case ListenerChannelName.BLOCK:
 		case ListenerChannelName.FINALIZED_BLOCK:
-			payload = { type: 'FinalizedBlock', ...message.data };
+		case ListenerChannelName.STATUS:
+		case ListenerChannelName.COSIGNATURE:
+			payload = message.data;
 			break;
 		default:
 			throw new ApiError(`Channel: ${channelName} is not supported.`);
@@ -181,6 +169,24 @@ export class Listener {
 	listenNewBlock(callback) {
 		this.subscribeTo(ListenerChannelName.BLOCK);
 		this.handlers[ListenerChannelName.BLOCK] = callback;
+	}
+
+	/**
+     * Subscribe to finalized blocks.
+     * @param {function(Object): void} callback - The callback function.
+     */
+	listenFinalizedBlock(callback) {
+		this.subscribeTo(ListenerChannelName.FINALIZED_BLOCK);
+		this.handlers[ListenerChannelName.FINALIZED_BLOCK] = callback;
+	}
+
+	/**
+	 * Subscribe to transaction cosignatures.
+	 * @param {function(Object): void} callback - The callback function.
+	 */
+	listenTransactionCosignature(callback) {
+		this.subscribeTo(ListenerChannelName.COSIGNATURE);
+		this.handlers[ListenerChannelName.COSIGNATURE] = callback;
 	}
 
 	/**
