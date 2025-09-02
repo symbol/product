@@ -125,8 +125,17 @@ export const createWalletAccount = (privateKey, networkIdentifier, name, account
  * @param {string} stringToTest - The string to test.
  * @returns {boolean} A boolean indicating if the string is a valid private key.
  */
-export const isPublicOrPrivateKey = stringToTest => {
-	return typeof stringToTest === 'string' && stringToTest.length === 64;
+export const isPrivateKey = stringToTest => {
+	if (typeof stringToTest !== 'string')
+		return false;
+
+	try {
+		new PrivateKey(stringToTest);
+		
+		return true;
+	} catch {
+		return false;
+	}
 };
 
 /**

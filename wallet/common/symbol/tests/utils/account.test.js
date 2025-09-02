@@ -5,7 +5,7 @@ import {
 	createPrivateAccount,
 	createWalletAccount,
 	generateKeyPair,
-	isPublicOrPrivateKey,
+	isPrivateKey,
 	isSymbolAddress,
 	publicAccountFromPrivateKey,
 	publicAccountFromPublicKey
@@ -151,22 +151,22 @@ describe('utils/account', () => {
 		});
 	});
 
-	describe('isPublicOrPrivateKey', () => {
+	describe('isPrivateKey', () => {
 		const runIsPublicOrPrivateKeyTest = (input, expectedResult) => {
 			// Act:
-			const result = isPublicOrPrivateKey(input);
+			const result = isPrivateKey(input);
 
 			// Assert:
 			expect(result).toBe(expectedResult);
 		};
 
-		it('returns true if the input is a public or private key', () => {
+		it('returns true if the input is a private key', () => {
 			// Arrange:
-			const publicKey = 'F94C017383A5FE74B5AB56B9EA09534E9C7F4DF299A80428C883B8124B60B710';
+			const privateKey = 'F94C017383A5FE74B5AB56B9EA09534E9C7F4DF299A80428C883B8124B60B710';
 			const expectedResult = true;
 
 			// Act & Assert:
-			runIsPublicOrPrivateKeyTest(publicKey, expectedResult);
+			runIsPublicOrPrivateKeyTest(privateKey, expectedResult);
 		});
 
 		it('returns false if the input is not a string', () => {
@@ -178,7 +178,7 @@ describe('utils/account', () => {
 			inputs.forEach(input => runIsPublicOrPrivateKeyTest(input, expectedResult));
 		});
 
-		it('returns false if the input is not a public or private key', () => {
+		it('returns false if the input is not a private key', () => {
 			// Arrange:
 			const input = 'invalid';
 			const expectedResult = false;
