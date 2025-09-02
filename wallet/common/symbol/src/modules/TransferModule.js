@@ -70,7 +70,7 @@ export class TransferModule {
 			messagePayloadHex = await this.#root.encryptMessage(messageText, recipientAccount.publicKey, password);
 		}
 		// If message is not encrypted, encode plain message
-		else if (messageText && !isMessageEncrypted) {
+		else if (messageText) {
 			messagePayloadHex = encodePlainMessage(messageText);
 		}
 
