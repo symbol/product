@@ -50,6 +50,11 @@ def create_app():
 	def openapi():  # pylint: disable=unused-variable
 		return send_from_directory('static/openapi', 'index.html')
 
+	@app.route('/nem/harvesters')
+	def nem_harvesters():  # pylint: disable=unused-variable
+		template_name, context = nem_routes_facade.html_harvesters()
+		return render_template(template_name, **context)
+
 	@app.route('/nem/nodes')
 	def nem_nodes():  # pylint: disable=unused-variable
 		template_name, context = nem_routes_facade.html_nodes()
