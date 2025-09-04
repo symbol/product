@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from apscheduler.schedulers.background import BackgroundScheduler
-from flask import Flask, abort, jsonify, redirect, render_template, request, url_for, send_from_directory
+from flask import Flask, abort, jsonify, redirect, render_template, request, send_from_directory, url_for
 from flask_cors import CORS
 from symbolchain.CryptoTypes import Hash256, PublicKey
 from symbolchain.nem.Network import Network as NemNetwork
