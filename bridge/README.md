@@ -304,7 +304,7 @@ Properties for the wrapped chain network. Since Ethereum is supported only as a 
 - priorityFeeMultiple: Multiplier for the priority fee (tip) for EIP-1559 transactions (default: 1.05).
 - feeHistoryBlocksCount: Number of past blocks to consider when fetching fee history for EIP-1559 gas price estimation (default: 10).
 
-[price_oracle]
+### [price_oracle]
 - url: The URL of the price oracle API (e.g., CoinGecko) used to fetch real-time token prices, relevant when percentage conversion fees require cross-chain value lookups.
 
 # Troubleshooting
