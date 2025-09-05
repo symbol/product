@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from apscheduler.schedulers.background import BackgroundScheduler
-from flask import Flask, abort, jsonify, redirect, render_template, request, url_for
+from flask import Flask, abort, jsonify, redirect, render_template, request, send_from_directory, url_for
 from flask_cors import CORS
 from symbolchain.CryptoTypes import Hash256, PublicKey
 from symbolchain.nem.Network import Network as NemNetwork
@@ -45,6 +45,10 @@ def create_app():
 	@app.route('/')
 	def index():  # pylint: disable=unused-variable
 		return redirect(url_for('symbol_summary'))
+
+	@app.route('/api/openapi')
+	def openapi():  # pylint: disable=unused-variable
+		return send_from_directory('static/openapi', 'index.html')
 
 	@app.route('/nem/harvesters')
 	def nem_harvesters():  # pylint: disable=unused-variable
