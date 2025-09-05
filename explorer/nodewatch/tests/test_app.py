@@ -123,7 +123,19 @@ def test_get_symbol_summary(client):  # pylint: disable=redefined-outer-name
 # endregion
 
 
-# region api [json]
+# region api
+
+def test_get_api_openapi(client):  # pylint: disable=redefined-outer-name
+	# Act:
+	response = client.get('/api/openapi')
+	response_html = str(response.data)
+
+	# Assert: spot check names
+	assert 200 == response.status_code
+	assert 'text/html; charset=utf-8' == response.headers['Content-Type']
+	assert '<title>NodeWatch API Documentation</title>' in response_html
+	assert 'url: "/static/openapi/openapi.yaml"' in response_html
+
 
 def _assert_response_status_code_and_headers(response, expected_status_code):
 	assert expected_status_code == response.status_code
