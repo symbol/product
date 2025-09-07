@@ -49,7 +49,7 @@ def test_can_create_facade():
 	assert EthereumAddress('0x67b1d87101671b127f5f8714789C7192f7ad340e') == facade.bridge_address
 	assert EthereumAddress('0x0D8775F648430679A709E98d2b0Cb6250d2887EF') == facade.transaction_search_address
 	assert 8876 == facade.chain_id
-	assert 18 == facade.native_token_precision
+	assert 18 == facade.NativeTokenPrecision
 
 
 def test_can_create_facade_for_native_eth():
@@ -63,7 +63,7 @@ def test_can_create_facade_for_native_eth():
 	assert EthereumAddress('0x67b1d87101671b127f5f8714789C7192f7ad340e') == facade.bridge_address
 	assert EthereumAddress('0x67b1d87101671b127f5f8714789C7192f7ad340e') == facade.transaction_search_address
 	assert 8876 == facade.chain_id
-	assert 18 == facade.native_token_precision
+	assert 18 == facade.NativeTokenPrecision
 
 
 async def test_can_initialize_facade(server):  # pylint: disable=redefined-outer-name

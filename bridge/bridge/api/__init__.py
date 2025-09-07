@@ -244,10 +244,10 @@ def add_wrap_routes(app, context, price_oracle):
 		await context.load()
 
 		fee_multiplier = await price_oracle.conversion_rate(
-			context.wrapped_facade.native_token_ticker,
-			context.native_facade.native_token_ticker)
-		fee_multiplier *= Decimal(10 ** context.native_facade.native_token_precision)
-		fee_multiplier /= Decimal(10 ** context.wrapped_facade.native_token_precision)
+			context.wrapped_facade.NativeTokenTicker,
+			context.native_facade.NativeTokenTicker)
+		fee_multiplier *= Decimal(10 ** context.native_facade.NativeTokenPrecision)
+		fee_multiplier /= Decimal(10 ** context.wrapped_facade.NativeTokenPrecision)
 		return await _handle_wrap_prepare(False, context, fee_multiplier)
 
 

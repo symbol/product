@@ -18,8 +18,8 @@ DEFAULT_MULTIPLES = {
 class EthereumNetworkFacade:  # pylint: disable=too-many-instance-attributes
 	"""Ethereum network facade."""
 
-	native_token_precision = 18
-	native_token_ticker = 'ETH'
+	NativeTokenPrecision = 18
+	NativeTokenTicker = 'ETH'
 
 	def __init__(self, config):
 		"""Creates an Ethereum network facade."""

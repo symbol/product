@@ -12,8 +12,8 @@ from .NemUtils import calculate_transfer_transaction_fee, extract_wrap_request_f
 class NemNetworkFacade:
 	"""NEM network facade."""
 
-	native_token_precision = 6
-	native_token_ticker = 'XEM'
+	NativeTokenPrecision = 6
+	NativeTokenTicker = 'XEM'
 
 	def __init__(self, config):
 		"""Creates a NEM network facade."""

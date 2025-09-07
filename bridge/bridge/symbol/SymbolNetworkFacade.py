@@ -14,8 +14,8 @@ from .SymbolUtils import extract_wrap_request_from_transaction
 class SymbolNetworkFacade:
 	"""Symbol network facade."""
 
-	native_token_precision = 6
-	native_token_ticker = 'XYM'
+	NativeTokenPrecision = 6
+	NativeTokenTicker = 'XYM'
 
 	def __init__(self, config):
 		"""Creates a Symbol network facade."""
