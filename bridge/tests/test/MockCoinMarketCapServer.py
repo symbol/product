@@ -24,16 +24,16 @@ async def create_simple_coinmarketcap_client(aiohttp_client):
 			}[ticker]
 
 			return await self._process(request, {
-            	'data': {
-            		ticker: [{
-            		    'quote': {
-            		        'USD': {
-            		            'price': price
-            		        }
-            		    }
-            		}]
-            	}
-            })
+				'data': {
+					ticker: [{
+						'quote': {
+							'USD': {
+								'price': price
+							}
+						}
+					}]
+				}
+			})
 
 		async def _process(self, request, response_body, status_code=200):
 			self.urls.append(str(request.url))

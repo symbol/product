@@ -14,7 +14,9 @@ class CoinMarketCapConnector(BasicConnector):
 	async def price(self, ticker):
 		"""Gets spot USD price for ticker."""
 
-		result_json = await self.get(f'v2/cryptocurrency/quotes/latest?convert=USD&symbol={ticker}', headers = {"X-CMC_PRO_API_KEY": self.api_key})
+		result_json = await self.get(f'v2/cryptocurrency/quotes/latest?convert=USD&symbol={ticker}', headers={
+			"X-CMC_PRO_API_KEY": self.api_key}
+		)
 		try:
 			price = result_json["data"][ticker][0]["quote"]["USD"]["price"]
 			print(price)

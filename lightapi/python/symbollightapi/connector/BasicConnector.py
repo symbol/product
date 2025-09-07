@@ -51,7 +51,7 @@ class BasicConnector:
 		Raises NodeException on connection or content failure.
 		"""
 
-		return await self._dispatch('get', url_path, property_name, not_found_as_error, headers = headers or {})
+		return await self._dispatch('get', url_path, property_name, not_found_as_error, headers=headers or {})
 
 	async def post(self, url_path, request_payload, property_name=None, not_found_as_error=True, headers=None):
 		"""

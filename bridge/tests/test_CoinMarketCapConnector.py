@@ -26,20 +26,22 @@ async def test_can_query_price(server):  # pylint: disable=redefined-outer-name
 	assert [f'{server.make_url("")}/v2/cryptocurrency/quotes/latest?convert=USD&symbol=XYM'] == server.mock.urls
 	assert Decimal(0.0877) == price
 
+
 async def test_price_raises_if_ticker_missing(server):  # pylint: disable=redefined-outer-name
 	# Arrange:
 	connector = CoinMarketCapConnector(server.make_url(''), 'api-key')
 	server.mock.custom_response = {
 		'data': {
 			'UNEXPECTED_TICKER': [{
-                'quote': {'USD': {'price': 123}}
-            }]
-        }
-    }
+				'quote': {'USD': {'price': 123}}
+			}]
+		}
+	}
 
 	# Act + Assert:
 	with pytest.raises(ValueError, match="Price not available for ticker XYM"):
 		await connector.price("XYM")
+
 
 async def test_price_raises_if_ticker_price_list_empty(server):  # pylint: disable=redefined-outer-name
 	# Arrange:
@@ -54,6 +56,7 @@ async def test_price_raises_if_ticker_price_list_empty(server):  # pylint: disab
 	with pytest.raises(ValueError, match="Price not available for ticker XYM"):
 		await connector.price("XYM")
 
+
 async def test_price_raises_if_malformed_response(server):  # pylint: disable=redefined-outer-name
 	# Arrange:
 	connector = CoinMarketCapConnector(server.make_url(''), 'api-key')
@@ -66,6 +69,7 @@ async def test_price_raises_if_malformed_response(server):  # pylint: disable=re
 	# Act + Assert:
 	with pytest.raises(ValueError, match="Price not available for ticker XYM"):
 		await connector.price("XYM")
+
 
 async def test_can_query_conversion_rate(server):  # pylint: disable=redefined-outer-name
 	# Arrange:
