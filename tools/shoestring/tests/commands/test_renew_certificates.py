@@ -3,6 +3,9 @@ import tempfile
 from pathlib import Path
 
 import pytest
+from cryptography import x509
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import serialization
 from symbolchain.CryptoTypes import PrivateKey
 from symbolchain.PrivateKeyStorage import PrivateKeyStorage
 
@@ -39,6 +42,31 @@ def _assert_node_full_certificate(ca_certificate_filepath, node_certificate_file
 	node_crt_data = _load_binary_file_data(node_certificate_filepath)
 	ca_crt_data = _load_binary_file_data(ca_certificate_filepath)
 	assert node_full_crt_data == node_crt_data + ca_crt_data
+
+
+def _load_pem_public_key(filepath):
+	with open(filepath, 'rb') as f:
+		return serialization.load_pem_public_key(f.read(), default_backend())
+
+
+def _load_pem_x509_certificate(filepath):
+	with open(filepath, 'rb') as f:
+		return x509.load_pem_x509_certificate(f.read(), default_backend())
+
+
+def _get_public_key_bytes(public_key):
+	return public_key.public_bytes(
+		encoding=serialization.Encoding.PEM,
+		format=serialization.PublicFormat.SubjectPublicKeyInfo
+	)
+
+
+def _assert_ca_publickey_certificate(ca_certificate_filepath, certificates_path):
+	ca_pubkey = _load_pem_public_key(certificates_path / 'ca.pubkey.pem')
+	ca_pubkey_bytes = _get_public_key_bytes(ca_pubkey)
+	ca_crt_pem = _load_pem_x509_certificate(ca_certificate_filepath)
+	ca_public_key_bytes = _get_public_key_bytes(ca_crt_pem.public_key())
+	assert ca_pubkey_bytes == ca_public_key_bytes
 
 
 async def _assert_can_renew_node_certificate(ca_password=None, retain_key=False):
@@ -150,6 +178,11 @@ async def _assert_can_renew_ca_and_node_certificates(ca_password=None, use_relat
 			assert_certificate_properties(node_certificate_path, 'ORIGINAL CA CN', 'ORIGINAL NODE CN', 375)
 			assert_certificate_properties(ca_certificate_path, 'ORIGINAL CA CN', 'ORIGINAL CA CN', 20 * 365)
 
+			# - generate new CA private key pem file
+			ca_private_key = PrivateKey.random()
+			private_key_storage = PrivateKeyStorage(ca_directory, ca_password)
+			private_key_storage.save('ca.key', ca_private_key)
+
 			# Act:
 			await main([
 				'renew-certificates',
@@ -171,6 +204,9 @@ async def _assert_can_renew_ca_and_node_certificates(ca_password=None, use_relat
 
 			# verify that node.full == node.crt + ca.crt
 			_assert_node_full_certificate(ca_certificate_path, node_certificate_path, preparer.directories.certificates)
+
+			# Verify that ca.crt.pem and ca.pubkey.pem have the same content
+			_assert_ca_publickey_certificate(ca_certificate_path, preparer.directories.certificates)
 
 
 async def test_can_renew_ca_and_node_certificates():
