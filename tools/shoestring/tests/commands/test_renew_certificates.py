@@ -4,7 +4,6 @@ from pathlib import Path
 
 import pytest
 from cryptography import x509
-from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 from symbolchain.CryptoTypes import PrivateKey
 from symbolchain.PrivateKeyStorage import PrivateKeyStorage
@@ -46,12 +45,12 @@ def _assert_node_full_certificate(ca_certificate_filepath, node_certificate_file
 
 def _load_pem_public_key(filepath):
 	with open(filepath, 'rb') as f:
-		return serialization.load_pem_public_key(f.read(), default_backend())
+		return serialization.load_pem_public_key(f.read())
 
 
 def _load_pem_x509_certificate(filepath):
 	with open(filepath, 'rb') as f:
-		return x509.load_pem_x509_certificate(f.read(), default_backend())
+		return x509.load_pem_x509_certificate(f.read())
 
 
 def _get_public_key_bytes(public_key):
