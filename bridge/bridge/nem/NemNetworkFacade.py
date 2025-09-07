@@ -12,6 +12,9 @@ from .NemUtils import calculate_transfer_transaction_fee, extract_wrap_request_f
 class NemNetworkFacade:
 	"""NEM network facade."""
 
+	native_token_precision = 6
+	native_token_ticker = 'XEM'
+
 	def __init__(self, config):
 		"""Creates a NEM network facade."""
 
@@ -21,8 +24,6 @@ class NemNetworkFacade:
 		self.sdk_facade = NemFacade(self.network)
 		self.bridge_address = Address(config.bridge_address)
 		self.transaction_search_address = self.bridge_address
-		self.native_token_precision = 6
-		self.native_token_ticker = 'XEM'
 
 		self.mosaic_id_to_fee_information_map = {}
 

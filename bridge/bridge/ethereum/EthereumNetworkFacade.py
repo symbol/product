@@ -18,6 +18,9 @@ DEFAULT_MULTIPLES = {
 class EthereumNetworkFacade:  # pylint: disable=too-many-instance-attributes
 	"""Ethereum network facade."""
 
+	native_token_precision = 18
+	native_token_ticker = 'ETH'
+
 	def __init__(self, config):
 		"""Creates an Ethereum network facade."""
 
@@ -30,8 +33,6 @@ class EthereumNetworkFacade:  # pylint: disable=too-many-instance-attributes
 		# for ERC tokens search contract address
 		self.transaction_search_address = EthereumAddress(self.config.mosaic_id or self.config.bridge_address)
 		self.chain_id = int(self.config.extensions['chain_id'])
-		self.native_token_precision = 18
-		self.native_token_ticker = 'ETH'
 
 		self.address_to_nonce_map = {}
 

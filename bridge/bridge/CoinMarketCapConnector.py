@@ -18,11 +18,10 @@ class CoinMarketCapConnector(BasicConnector):
 			"X-CMC_PRO_API_KEY": self.api_key}
 		)
 		try:
-			price = result_json["data"][ticker][0]["quote"]["USD"]["price"]
-			print(price)
+			price = result_json['data'][ticker][0]['quote']['USD']['price']
 			return Decimal(price)
-		except (KeyError, IndexError, TypeError):
-			raise ValueError(f"Price not available for ticker {ticker}")
+		except (KeyError, IndexError, TypeError) as ex:
+			raise ValueError(f'Price not available for ticker {ticker}') from ex
 
 	async def conversion_rate(self, ticker1, ticker2):
 		"""Gets spot conversion rate between two tickers."""

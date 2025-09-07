@@ -37,7 +37,7 @@ async def main_bootstrapper(program_description, main_impl):
 	native_facade = await load_network_facade(config.native_network)
 	wrapped_facade = await load_network_facade(config.wrapped_network)
 
-	price_oracle = CoinMarketCap(config.price_oracle.url, config.price_oracle.access_tokens)
+	price_oracle = CoinMarketCapConnector(config.price_oracle.url, config.price_oracle.access_token)
 
 	with Databases(config.machine.database_directory, native_facade, wrapped_facade) as databases:
 		databases.create_tables()
