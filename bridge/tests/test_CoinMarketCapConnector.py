@@ -39,8 +39,8 @@ async def test_price_raises_if_ticker_missing(server):  # pylint: disable=redefi
 	}
 
 	# Act + Assert:
-	with pytest.raises(ValueError, match="Price not available for ticker XYM"):
-		await connector.price("XYM")
+	with pytest.raises(ValueError, match='Price not available for ticker XYM'):
+		await connector.price('XYM')
 
 
 async def test_price_raises_if_ticker_price_list_empty(server):  # pylint: disable=redefined-outer-name
@@ -53,8 +53,8 @@ async def test_price_raises_if_ticker_price_list_empty(server):  # pylint: disab
 	}
 
 	# Act + Assert:
-	with pytest.raises(ValueError, match="Price not available for ticker XYM"):
-		await connector.price("XYM")
+	with pytest.raises(ValueError, match='Price not available for ticker XYM'):
+		await connector.price('XYM')
 
 
 async def test_price_raises_if_malformed_response(server):  # pylint: disable=redefined-outer-name
@@ -67,8 +67,8 @@ async def test_price_raises_if_malformed_response(server):  # pylint: disable=re
 	}
 
 	# Act + Assert:
-	with pytest.raises(ValueError, match="Price not available for ticker XYM"):
-		await connector.price("XYM")
+	with pytest.raises(ValueError, match='Price not available for ticker XYM'):
+		await connector.price('XYM')
 
 
 async def test_can_query_conversion_rate(server):  # pylint: disable=redefined-outer-name
