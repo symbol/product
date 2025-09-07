@@ -20,6 +20,7 @@ class BridgeConfigurationTest(unittest.TestCase):
 
 	VALID_PRICE_ORACLE_CONFIGURATION = {
 		'url': 'https:/oracle.foo/price/v3',
+		'accessToken': 'cool-token',
 	}
 
 	VALID_NETWORK_CONFIGURATION = {
@@ -77,6 +78,7 @@ class BridgeConfigurationTest(unittest.TestCase):
 
 		# Assert:
 		self.assertEqual('https:/oracle.foo/price/v3', price_oracle_config.url)
+		self.assertEqual('cool-token', price_oracle_config.access_token)
 
 	def test_cannot_parse_price_oracle_configuration_incomplete(self):
 		self._assert_cannot_parse_incomplete_configuration(parse_price_oracle_configuration, self.VALID_PRICE_ORACLE_CONFIGURATION)

@@ -88,7 +88,7 @@ async def send_payouts(conversion_rate_calculator_factory, is_unwrap_mode, datab
 async def main_impl(is_unwrap_mode, databases, native_facade, wrapped_facade, price_oracle):
 	logger = logging.getLogger(__name__)
 
-	fee_multiplier = await price_oracle.conversion_rate(wrapped_facade.config.blockchain, native_facade.config.blockchain)
+	fee_multiplier = await price_oracle.conversion_rate(wrapped_facade.native_token_ticker, native_facade.native_token_ticker)
 	fee_multiplier *= Decimal(10 ** native_facade.native_token_precision) / Decimal(10 ** wrapped_facade.native_token_precision)
 
 	create_calculator_factory = create_conversion_rate_calculator_factory

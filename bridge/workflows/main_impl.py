@@ -3,7 +3,7 @@ import logging
 import sys
 from logging.handlers import TimedRotatingFileHandler
 
-from bridge.CoinGeckoConnector import CoinGeckoConnector
+from bridge.CoinMarketCapConnector import CoinMarketCapConnector
 from bridge.db.Databases import Databases
 from bridge.models.BridgeConfiguration import parse_bridge_configuration
 from bridge.NetworkFacadeLoader import load_network_facade
@@ -37,7 +37,7 @@ async def main_bootstrapper(program_description, main_impl):
 	native_facade = await load_network_facade(config.native_network)
 	wrapped_facade = await load_network_facade(config.wrapped_network)
 
-	price_oracle = CoinGeckoConnector(config.price_oracle.url)
+	price_oracle = CoinMarketCap(config.price_oracle.url, config.price_oracle.access_tokens)
 
 	with Databases(config.machine.database_directory, native_facade, wrapped_facade) as databases:
 		databases.create_tables()

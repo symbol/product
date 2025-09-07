@@ -8,7 +8,7 @@ from flask import Flask, jsonify, request
 from symbolchain.CryptoTypes import Hash256
 from symbollightapi.model.Exceptions import NodeException
 
-from ..CoinGeckoConnector import CoinGeckoConnector
+from ..CoinMarketCapConnector import CoinMarketCapConnector
 from ..ConversionRateCalculatorFactory import ConversionRateCalculatorFactory
 from ..db.Databases import Databases
 from ..models.BridgeConfiguration import parse_bridge_configuration
@@ -244,8 +244,8 @@ def add_wrap_routes(app, context, price_oracle):
 		await context.load()
 
 		fee_multiplier = await price_oracle.conversion_rate(
-			context.wrapped_facade.config.blockchain,
-			context.native_facade.config.blockchain)
+			context.wrapped_facade.native_token_ticker,
+			context.native_facade.native_token_ticker)
 		fee_multiplier *= Decimal(10 ** context.native_facade.native_token_precision)
 		fee_multiplier /= Decimal(10 ** context.wrapped_facade.native_token_precision)
 		return await _handle_wrap_prepare(False, context, fee_multiplier)
@@ -281,7 +281,7 @@ def create_app():
 	config = parse_bridge_configuration(config_path)
 	context = BridgeContext(config)
 
-	price_oracle = CoinGeckoConnector(config.price_oracle.url)
+	price_oracle = CoinMarketCapConnector(config.price_oracle.url, config.price_oracle.access_token)
 
 	@app.route('/')
 	def root():  # pylint: disable=unused-variable

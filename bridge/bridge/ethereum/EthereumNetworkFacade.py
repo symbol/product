@@ -31,6 +31,7 @@ class EthereumNetworkFacade:  # pylint: disable=too-many-instance-attributes
 		self.transaction_search_address = EthereumAddress(self.config.mosaic_id or self.config.bridge_address)
 		self.chain_id = int(self.config.extensions['chain_id'])
 		self.native_token_precision = 18
+		self.native_token_ticker = 'ETH'
 
 		self.address_to_nonce_map = {}
 

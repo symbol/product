@@ -15,6 +15,14 @@ class BasicConnector:
 		self.endpoint = endpoint
 		self.timeout_seconds = None
 
+	def _get_json_headers(self, headers):
+		"""Returns headers with Content-Type set to application/json if not already present."""
+
+		headers = headers or {}
+		if 'Content-Type' not in headers:
+			headers['Content-Type'] = 'application/json'
+		return headers
+
 	async def _dispatch(self, action, url_path, property_name, not_found_as_error, **kwargs):
 		try:
 			timeout = ClientTimeout(total=self.timeout_seconds)
@@ -37,30 +45,28 @@ class BasicConnector:
 		except (asyncio.TimeoutError, client_exceptions.ClientConnectorError) as ex:
 			raise NodeException from ex
 
-	async def get(self, url_path, property_name=None, not_found_as_error=True):
+	async def get(self, url_path, property_name=None, not_found_as_error=True, headers=None):
 		"""
 		Initiates a GET to the specified path and returns the desired property.
 		Raises NodeException on connection or content failure.
 		"""
 
-		return await self._dispatch('get', url_path, property_name, not_found_as_error)
+		return await self._dispatch('get', url_path, property_name, not_found_as_error, headers = headers or {})
 
-	async def post(self, url_path, request_payload, property_name=None, not_found_as_error=True):
+	async def post(self, url_path, request_payload, property_name=None, not_found_as_error=True, headers=None):
 		"""
 		Initiates a POST to the specified path and returns the desired property.
 		Raises NodeException on connection or content failure.
 		"""
 
-		return await self._dispatch('post', url_path, property_name, not_found_as_error, data=json.dumps(request_payload), headers={
-			'Content-Type': 'application/json'
-		})
+		json_headers = self._get_json_headers(headers)
+		return await self._dispatch('post', url_path, property_name, not_found_as_error, data=json.dumps(request_payload), headers=json_headers)
 
-	async def put(self, url_path, request_payload, property_name=None, not_found_as_error=True):
+	async def put(self, url_path, request_payload, property_name=None, not_found_as_error=True, headers=None):
 		"""
 		Initiates a PUT to the specified path and returns the desired property.
 		Raises NodeException on connection or content failure.
 		"""
 
-		return await self._dispatch('put', url_path, property_name, not_found_as_error, data=json.dumps(request_payload), headers={
-			'Content-Type': 'application/json'
-		})
+		json_headers = self._get_json_headers(headers)
+		return await self._dispatch('put', url_path, property_name, not_found_as_error, data=json.dumps(request_payload), headers=json_headers)

@@ -22,7 +22,7 @@ from ..test.DatabaseTestUtils import (
 	seed_database_with_simple_errors,
 	seed_database_with_simple_requests
 )
-from ..test.MockCoinGeckoServer import create_simple_coingecko_client
+from ..test.MockCoinMarketCapServer import create_simple_coinmarketcap_client
 from ..test.MockEthereumServer import create_simple_ethereum_client
 from ..test.MockNemServer import create_simple_nem_client
 from ..test.MockNetworkFacade import MockNemNetworkFacade, MockSymbolNetworkFacade
@@ -49,15 +49,15 @@ async def symbol_server(aiohttp_client):
 
 
 @pytest.fixture
-async def coingecko_server(aiohttp_client):
-	return await create_simple_coingecko_client(aiohttp_client)
+async def coinmarketcap_server(aiohttp_client):
+	return await create_simple_coinmarketcap_client(aiohttp_client)
 
 # endregion
 
 
 # region apps
 
-def _configure_app_directory(directory, native_server, wrapped_server, coingecko_server, update_wrapped_config):
+def _configure_app_directory(directory, native_server, wrapped_server, coinmarketcap_server, update_wrapped_config):
 	# pylint: disable=redefined-outer-name
 	database_directory = Path(directory) / 'db'
 	database_directory.mkdir()
@@ -72,7 +72,7 @@ def _configure_app_directory(directory, native_server, wrapped_server, coingecko
 	parser.optionxform = str
 	parser.read(sample_config_filename)
 	parser['machine']['databaseDirectory'] = str(database_directory)
-	parser['price_oracle']['url'] = str(coingecko_server.make_url(''))
+	parser['price_oracle']['url'] = str(coinmarketcap_server.make_url(''))
 	parser['native_network']['endpoint'] = str(native_server.make_url(''))
 	parser['native_network']['signerPublicKey'] = '47D5025EC5E5892668FFB1BE2891D09C4D6DC507EDA474B439B33EF0C94F0AA9'
 	parser['native_network']['percentageConversionFee'] = '0.002'
@@ -102,19 +102,19 @@ def _configure_app_directory(directory, native_server, wrapped_server, coingecko
 
 
 @pytest.fixture
-def app(nem_server, symbol_server, coingecko_server):  # pylint: disable=redefined-outer-name
+def app(nem_server, symbol_server, coinmarketcap_server):  # pylint: disable=redefined-outer-name
 	def update_wrapped_config(config):
 		config['transactionFeeMultiplier'] = '50'
 
 	with tempfile.TemporaryDirectory() as temp_directory:
-		database_directory = _configure_app_directory(temp_directory, nem_server, symbol_server, coingecko_server, update_wrapped_config)
+		database_directory = _configure_app_directory(temp_directory, nem_server, symbol_server, coinmarketcap_server, update_wrapped_config)
 		app = create_app()  # pylint: disable=redefined-outer-name
 		app.database_directory = database_directory
 		yield app
 
 
 @pytest.fixture
-def app_n2n(nem_server, ethereum_server, coingecko_server):  # pylint: disable=redefined-outer-name
+def app_n2n(nem_server, ethereum_server, coinmarketcap_server):  # pylint: disable=redefined-outer-name
 	def update_wrapped_config(config):
 		config['blockchain'] = 'ethereum'
 		config['bridgeAddress'] = '0x0ff070994dd3fdB1441433c219A42286ef85290f'
@@ -123,7 +123,7 @@ def app_n2n(nem_server, ethereum_server, coingecko_server):  # pylint: disable=r
 		config['chainId'] = '1337'
 
 	with tempfile.TemporaryDirectory() as temp_directory:
-		database_directory = _configure_app_directory(temp_directory, nem_server, ethereum_server, coingecko_server, update_wrapped_config)
+		database_directory = _configure_app_directory(temp_directory, nem_server, ethereum_server, coinmarketcap_server, update_wrapped_config)
 		app = create_app()  # pylint: disable=redefined-outer-name
 		app.database_directory = database_directory
 		yield app

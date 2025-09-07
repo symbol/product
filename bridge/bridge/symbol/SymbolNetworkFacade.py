@@ -24,6 +24,7 @@ class SymbolNetworkFacade:
 		self.bridge_address = Address(config.bridge_address)
 		self.transaction_search_address = self.bridge_address
 		self.native_token_precision = 6
+		self.native_token_ticker = 'XYM'
 
 		self.currency_mosaic_ids = []
 
