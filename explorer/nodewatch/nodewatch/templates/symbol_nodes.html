@@ -23,7 +23,7 @@
 
         {% if show_voting %}
         <th>voting end epoch</th>
-        <th>expired in (days)</th>
+        <th>expiration (days)</th>
         {% endif %}
       </tr>
     </thead>
@@ -98,7 +98,7 @@
               const epochRemaining = votingEndEpoch - currentEpoch;
               const daysRemaining = Math.floor((epochRemaining * votingSetGrouping) / blocksPerDay);
 
-              expiryCell.textContent = epochRemaining > 0 ? `${daysRemaining} days` : 'Expired';
+              expiryCell.textContent = epochRemaining > 0 ? `${daysRemaining}` : 'Expired';
             }
           });
 
