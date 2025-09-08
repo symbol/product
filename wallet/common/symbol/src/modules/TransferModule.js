@@ -14,13 +14,13 @@ import { ControllerError } from 'wallet-common-core';
 
 export class TransferModule {
 	static name = 'transfer';
-	#root;
+	#walletController;
 	#api;
 
 	constructor() {}
 
 	init = options => {
-		this.#root = options.root;
+		this.#walletController = options.walletController;
 		this.#api = options.api;
 	};
 
@@ -44,7 +44,7 @@ export class TransferModule {
      */
 	createTransaction = async (options, password) => {
 		const { recipientAddressOrAlias, mosaics, messageText, isMessageEncrypted, fee = 0 } = options;
-		const { currentAccount, networkProperties } = this.#root;
+		const { currentAccount, networkProperties } = this.#walletController;
 		const senderPublicKey = options.senderPublicKey || currentAccount.publicKey;
 
 		// Resolve recipient address
@@ -67,7 +67,7 @@ export class TransferModule {
 		let messagePayloadHex = null;
 		if (messageText && isMessageEncrypted) {
 			const recipientAccount = await this.#api.account.fetchAccountInfo(networkProperties, recipientAddress);
-			messagePayloadHex = await this.#root.encryptMessage(messageText, recipientAccount.publicKey, password);
+			messagePayloadHex = await this.#walletController.encryptMessage(messageText, recipientAccount.publicKey, password);
 		}
 		// If message is not encrypted, encode plain message
 		else if (messageText) {
@@ -116,7 +116,7 @@ export class TransferModule {
      * @returns {string} The decrypted message text.
      */
 	getDecryptedMessageText = async (transaction, password) => {
-		const { currentAccount, networkProperties } = this.#root;
+		const { currentAccount, networkProperties } = this.#walletController;
 
 		if (transaction.type !== TransactionType.TRANSFER) {
 			throw new ControllerError(
@@ -132,12 +132,12 @@ export class TransferModule {
 			return message.payload;
 
 		if (isIncomingTransaction(transaction, currentAccount))
-			return this.#root.decryptMessage(message.payload, signerPublicKey, password);
+			return this.#walletController.decryptMessage(message.payload, signerPublicKey, password);
 
 		if (isOutgoingTransaction(transaction, currentAccount)) {
 			const recipientAccount = await this.#api.account.fetchAccountInfo(networkProperties, recipientAddress);
 
-			return this.#root.decryptMessage(message.payload, recipientAccount.publicKey, password);
+			return this.#walletController.decryptMessage(message.payload, recipientAccount.publicKey, password);
 		}
 
 		throw new ControllerError(

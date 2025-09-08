@@ -11,13 +11,13 @@ import { ControllerError } from 'wallet-common-core';
 
 export class HarvestingModule {
 	static name = 'harvesting';
-	#root;
+	#walletController;
 	#api;
 
 	constructor() { }
 
 	init = options => {
-		this.#root = options.root;
+		this.#walletController = options.walletController;
 		this.#api = options.api;
 	};
 
@@ -32,7 +32,7 @@ export class HarvestingModule {
 	 * @returns {Promise<HarvestingStatus>} - The harvesting status.
 	 */
 	fetchStatus = async () => {
-		const { currentAccount, networkProperties } = this.#root;
+		const { currentAccount, networkProperties } = this.#walletController;
 
 		return this.#api.harvesting.fetchStatus(networkProperties, currentAccount);
 	};
@@ -43,7 +43,7 @@ export class HarvestingModule {
 	 * @returns {Promise<HarvestedBlock[]>} - The harvested blocks.
 	 */
 	fetchAccountHarvestedBlocks = async (searchCriteria = {}) => {
-		const { currentAccount, networkProperties } = this.#root;
+		const { currentAccount, networkProperties } = this.#walletController;
 		const { address } = currentAccount;
 
 		return this.#api.harvesting.fetchHarvestedBlocks(networkProperties, address, searchCriteria);
@@ -54,7 +54,7 @@ export class HarvestingModule {
 	 * @returns {Promise<string[]>} - The node list.
 	 */
 	fetchNodeList = async () => {
-		const { networkIdentifier } = this.#root;
+		const { networkIdentifier } = this.#walletController;
 		const nodeList = await this.#api.harvesting.fetchNodeList(networkIdentifier);
 
 		return shuffle(nodeList);
@@ -65,7 +65,7 @@ export class HarvestingModule {
 	 * @returns {Promise<HarvestingSummary>} - The harvesting summary.
 	 */
 	fetchSummary = async () => {
-		const { currentAccount, networkProperties } = this.#root;
+		const { currentAccount, networkProperties } = this.#walletController;
 		const { address } = currentAccount;
 
 		return this.#api.harvesting.fetchSummary(networkProperties, address);
@@ -83,8 +83,8 @@ export class HarvestingModule {
 	 */
 	createStartHarvestingTransaction = async (options, password) => {
 		const { nodePublicKey, fee = 0 } = options;
-		const currentAccountPrivateKey = await this.#root.getCurrentAccountPrivateKey(password);
-		const { currentAccount, currentAccountInfo, networkIdentifier, networkProperties } = this.#root;
+		const currentAccountPrivateKey = await this.#walletController.getCurrentAccountPrivateKey(password);
+		const { currentAccount, currentAccountInfo, networkIdentifier, networkProperties } = this.#walletController;
 		const accountPublicKey = currentAccount.publicKey;
 		const { linkedKeys } = currentAccountInfo;
 		const nodeAddress = addressFromPublicKey(nodePublicKey, networkIdentifier);
@@ -175,7 +175,7 @@ export class HarvestingModule {
 	 * @returns {Transaction} - The transaction to stop harvesting.
 	 */
 	createStopHarvestingTransaction = (options = {}) => {
-		const { currentAccount, currentAccountInfo, networkProperties } = this.#root;
+		const { currentAccount, currentAccountInfo, networkProperties } = this.#walletController;
 		const accountPublicKey = currentAccount.publicKey;
 		const { linkedKeys } = currentAccountInfo;
 		const { fee = 0 } = options;

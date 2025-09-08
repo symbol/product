@@ -54,7 +54,7 @@ describe('HarvestingModule', () => {
 
 		harvestingModule = new HarvestingModule();
 		harvestingModule.init({
-			root: {
+			walletController: {
 				currentAccount,
 				currentAccountInfo: {
 					linkedKeys: {}
@@ -163,7 +163,7 @@ describe('HarvestingModule', () => {
 				nodePublicKey: 'OLD_NODE'
 			};
 			harvestingModule.init({
-				root: {
+				walletController: {
 					currentAccount: { ...currentAccount, publicKey: accPK },
 					currentAccountInfo: { linkedKeys: oldLinkedKeys },
 					networkProperties,
@@ -262,7 +262,7 @@ describe('HarvestingModule', () => {
 		it('throws when no keys to unlink', () => {
 			// Arrange:
 			harvestingModule.init({
-				root: {
+				walletController: {
 					currentAccount,
 					currentAccountInfo: { linkedKeys: {} },
 					networkProperties,
@@ -284,7 +284,7 @@ describe('HarvestingModule', () => {
 				nodePublicKey: 'NODE_OLD'
 			};
 			harvestingModule.init({
-				root: {
+				walletController: {
 					currentAccount: { ...currentAccount, publicKey: accPK },
 					currentAccountInfo: { linkedKeys },
 					networkProperties,

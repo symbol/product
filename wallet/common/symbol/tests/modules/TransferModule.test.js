@@ -23,7 +23,7 @@ const utils = await import('../../src/utils');
 describe('TransferModule', () => {
 	let transferModule;
 	let api;
-	let root;
+	let walletController;
 
 	const currentAccount = { ...currentAccountFixture };
 	const networkProperties = {
@@ -41,7 +41,7 @@ describe('TransferModule', () => {
 			}
 		};
 
-		root = {
+		walletController = {
 			currentAccount,
 			networkProperties,
 			encryptMessage: jest.fn(async (text, pubKey) => `ENC(${text})-for-${pubKey}`),
@@ -49,7 +49,7 @@ describe('TransferModule', () => {
 		};
 
 		transferModule = new TransferModule();
-		transferModule.init({ root, api });
+		transferModule.init({ walletController, api });
 
 		jest.clearAllMocks();
 	});
@@ -141,7 +141,7 @@ describe('TransferModule', () => {
 
 			// Assert:
 			expect(api.account.fetchAccountInfo).toHaveBeenCalledWith(networkProperties, recipientAddress);
-			expect(root.encryptMessage).toHaveBeenCalledWith(messageText, 'RECIP_PUB', password);
+			expect(walletController.encryptMessage).toHaveBeenCalledWith(messageText, 'RECIP_PUB', password);
 
 			expect(tx.type).toBe(TransactionType.AGGREGATE_BONDED);
 			expect(tx.signerPublicKey).toBe(currentAccount.publicKey);
@@ -192,7 +192,7 @@ describe('TransferModule', () => {
 
 			// Assert:
 			expect(utils.isIncomingTransaction).toHaveBeenCalledWith(tx, currentAccount);
-			expect(root.decryptMessage).toHaveBeenCalledWith(payload, signerPublicKey, 'pwd');
+			expect(walletController.decryptMessage).toHaveBeenCalledWith(payload, signerPublicKey, 'pwd');
 			expect(result).toBe(`DEC(${payload})-with-${signerPublicKey}`);
 		});
 
@@ -218,7 +218,7 @@ describe('TransferModule', () => {
 			// Assert:
 			expect(utils.isOutgoingTransaction).toHaveBeenCalledWith(tx, currentAccount);
 			expect(api.account.fetchAccountInfo).toHaveBeenCalledWith(networkProperties, recipientAddress);
-			expect(root.decryptMessage).toHaveBeenCalledWith(payload, recipientPublicKey, 'pwd');
+			expect(walletController.decryptMessage).toHaveBeenCalledWith(payload, recipientPublicKey, 'pwd');
 			expect(result).toBe(`DEC(${payload})-with-${recipientPublicKey}`);
 		});
 
