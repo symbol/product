@@ -1,3 +1,4 @@
+import { NetworkIdentifier } from '../constants';
 import { PrivateKey, PublicKey } from 'symbol-sdk';
 import { Address, Network, SymbolFacade } from 'symbol-sdk/symbol';
 
@@ -141,11 +142,23 @@ export const isPrivateKey = stringToTest => {
 /**
  * Checks if a given string is a valid Symbol address.
  * @param {string} address - The address to test.
+ * @param {string} [networkIdentifier] - The network identifier (optional).
  * @returns {boolean} A boolean indicating if the string is a valid Symbol address.
  */
-export const isSymbolAddress = address => {
+export const isSymbolAddress = (address, networkIdentifier) => {
 	if (typeof address !== 'string') 
 		return false;
+
+	const networkMap = {
+		[NetworkIdentifier.MAIN_NET]: Network.MAINNET,
+		[NetworkIdentifier.TEST_NET]: Network.TESTNET
+	};
+	
+	if (networkIdentifier) {
+		const isValidNetworkAddress = networkMap[networkIdentifier]?.isValidAddressString(address);
+		
+		return isValidNetworkAddress || false;
+	}
 
 	const isValidMainnetAddress = Network.MAINNET.isValidAddressString(address);
 	const isValidTestnetAddress = Network.TESTNET.isValidAddressString(address);

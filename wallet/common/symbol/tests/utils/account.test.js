@@ -1,3 +1,4 @@
+import { NetworkIdentifier } from '../../src/constants';
 import {
 	addressFromPrivateKey,
 	addressFromPublicKey,
@@ -189,9 +190,9 @@ describe('utils/account', () => {
 	});
 
 	describe('isSymbolAddress', () => {
-		const runIsSymbolAddressTest = (input, expectedResult) => {
+		const runIsSymbolAddressTest = (input, expectedResult, networkIdentifier) => {
 			// Act:
-			const result = isSymbolAddress(input);
+			const result = isSymbolAddress(input, networkIdentifier);
 
 			// Assert:
 			expect(result).toBe(expectedResult);
@@ -222,6 +223,41 @@ describe('utils/account', () => {
 
 			// Act & Assert:
 			runIsSymbolAddressTest(input, expectedResult);
+		});
+
+		it('returns true for a valid address when the matching network is provided', () => {
+			forEachNetwork(walletStorageAccounts, (networkIdentifier, account) => {
+				// Arrange:
+				const expectedResult = true;
+
+				// Act & Assert:
+				runIsSymbolAddressTest(account.address, expectedResult, networkIdentifier);
+			});
+		});
+
+		it('returns false for a valid address when the wrong network is provided', () => {
+			forEachNetwork(walletStorageAccounts, (networkIdentifier, account) => {
+				// Arrange: flip the network identifier
+				const wrongNetwork =
+					networkIdentifier === NetworkIdentifier.MAIN_NET
+						? NetworkIdentifier.TEST_NET
+						: NetworkIdentifier.MAIN_NET;
+				const expectedResult = false;
+
+				// Act & Assert:
+				runIsSymbolAddressTest(account.address, expectedResult, wrongNetwork);
+			});
+		});
+
+		it('returns false when an unknown network identifier is provided', () => {
+			forEachNetwork(walletStorageAccounts, (networkIdentifier, account) => {
+				// Arrange:
+				const unknownNetwork = 'UNKNOWN_NETWORK';
+				const expectedResult = false;
+
+				// Act & Assert:
+				runIsSymbolAddressTest(account.address, expectedResult, unknownNetwork);
+			});
 		});
 	});
 
