@@ -181,9 +181,14 @@ export class TransactionService {
 	resolveTransactionData = async (networkProperties, data) => {
 		// Resolve addresses, mosaics and namespaces
 		const { addresses, mosaicIds, namespaceIds } = data;
-		const mosaicInfos = await this.#api.mosaic.fetchMosaicInfos(networkProperties, mosaicIds);
-		const namespaceNames = await this.#api.namespace.fetchNamespaceNames(networkProperties, namespaceIds);
-		const resolvedAddresses = await this.#api.namespace.resolveAddresses(networkProperties, addresses);
+		const mosaicInfosPromise = this.#api.mosaic.fetchMosaicInfos(networkProperties, mosaicIds);
+		const namespaceNamesPromise = this.#api.namespace.fetchNamespaceNames(networkProperties, namespaceIds);
+		const resolvedAddressesPromise = this.#api.namespace.resolveAddresses(networkProperties, addresses);
+		const [mosaicInfos, namespaceNames, resolvedAddresses] = await Promise.all([
+			mosaicInfosPromise,
+			namespaceNamesPromise,
+			resolvedAddressesPromise
+		]);
 
 		return {
 			mosaicInfos,

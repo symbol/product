@@ -48,14 +48,14 @@ export class HarvestingService {
 		const vrfPublicKey = supplementalPublicKeys.vrf?.publicKey || null;
 		const isAllKeysLinked = linkedPublicKey && nodePublicKey && vrfPublicKey;
 
-		// If no keys linked, check if the account public key is a node's key (node operator)
+		// If not all keys linked, check if the account public key is a node's key (node operator)
 		if (!isAllKeysLinked) {
 			const accountPublicKey = account.publicKey;
 			const nodeInfoEndpoint = `${nodewatchUrl}/api/symbol/nodes/mainPublicKey/${accountPublicKey}`;
 			try {
 				// Operator status if the account public key is a node's key
 				const nodeInfo = await this.#makeRequest(nodeInfoEndpoint);
-				const nodeUrl = nodeInfo.endpoint;
+				const nodeUrl = nodeInfo.endpoint.replace('http://', 'https://').replace(':3000', ':3001');
 
 				return {
 					status: HarvestingStatus.OPERATOR,
@@ -73,7 +73,7 @@ export class HarvestingService {
 		try {
 			const nodeInfoEndpoint = `${nodewatchUrl}/api/symbol/nodes/nodePublicKey/${nodePublicKey}`;
 			const nodeInfo = await this.#makeRequest(nodeInfoEndpoint);
-			const nodeUrl = nodeInfo.endpoint;
+			const nodeUrl = nodeInfo.endpoint.replace('http://', 'https://').replace(':3000', ':3001');
 			const unlockedAccountsEndpoint = `${nodeUrl}/node/unlockedaccount`;
 			const { unlockedAccount } = await this.#makeRequest(unlockedAccountsEndpoint);
 			const isAccountUnlocked = unlockedAccount.find(publicKey => publicKey === linkedPublicKey);
@@ -186,7 +186,7 @@ export class HarvestingService {
 		const endpoint = `${baseUrl}/api/symbol/nodes/peer?only_ssl=${isSslEnabled}`;
 		const nodes = await this.#makeRequest(endpoint);
 
-		return nodes.map(node => node.endpoint);
+		return nodes.map(node => node.endpoint.replace('http://', 'https://').replace(':3000', ':3001'));
 	};
 
 	/**
