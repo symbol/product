@@ -180,12 +180,10 @@ export class NamespaceService {
 				return addressFromRaw(resolutionEntry.resolved);
 		}
 
-		if (!resolutionStatement) {
-			throw new ApiError(
-				`Failed to resolve address. Statement for ${namespaceId} not found at height ${height}`,
-				'error_unknown_account_name'
-			);
-		}
+		throw new ApiError(
+			`Failed to resolve address. Statement for ${namespaceId} not found at height ${height}`,
+			'error_unknown_account_name'
+		);
 	};
 
 	/**
