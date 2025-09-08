@@ -32,6 +32,11 @@ def _load_harvester_configuration_patches(config_manager):
 
 
 async def run_main(args):
+	https_proxy_dir = Path(args.directory) / "https-proxy"
+	https_proxy_dir.mkdir(exist_ok=True)
+	nginx_conf_file = https_proxy_dir / "nginx.conf.erb"
+	nginx_conf_file.touch()
+
 	config = parse_shoestring_configuration(args.config)
 	directories = Preparer.DirectoryLocator(None, Path(args.directory))
 
