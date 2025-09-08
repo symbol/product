@@ -72,7 +72,7 @@ export const namespaceInfoWithMosaicAliasResponse = {
 		version: 1,
 		registrationType: 1,
 		depth: 1,
-		level0: 'D748B092093AA7A1',
+		level0: 'D47D7DC85A201C13',
 		alias: {
 			type: 1,
 			mosaicId: '699E9532708D2FB8'
@@ -82,5 +82,5 @@ export const namespaceInfoWithMosaicAliasResponse = {
 		startHeight: '2000',
 		endHeight: '4000'
 	},
-	id: '67B6FDDAF4ABCA49E66CBC85'
+	id: '67B6FDDAF4ABCA49E66CBC86'
 };

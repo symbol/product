@@ -57,7 +57,8 @@ describe('utils/namespace', () => {
 			// Arrange:
 			const namespaceNames = {
 				D748B092093AA7A1: 'foo',
-				DA664716F7672DD7: 'cat'
+				DA664716F7672DD7: 'cat',
+				D47D7DC85A201C13: 'pppplllll'
 			};
 
 			// Act:
@@ -108,6 +109,8 @@ describe('utils/namespace', () => {
 			const namespaceDTO = namespaceInfoWithMosaicAliasResponse;
 			const expectedResult = {
 				...baseResult,
+				id: 'D47D7DC85A201C13',
+				name: 'pppplllll',
 				aliasType: 'Mosaic',
 				linkedMosaicId: '699E9532708D2FB8'
 			};

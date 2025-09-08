@@ -34,6 +34,7 @@ import { absoluteToRelativeAmount, safeOperationWithRelativeAmounts } from 'wall
 const { Transaction: SymbolTransaction } = models;
 
 /** @typedef {import('../types/Account').PublicAccount} PublicAccount */
+/** @typedef {import('../types/Account').UnresolvedAddressWithLocation} UnresolvedAddressWithLocation */
 /** @typedef {import('../types/Mosaic').Mosaic} Mosaic */
 /** @typedef {import('../types/Network').NetworkProperties} NetworkProperties */
 /** @typedef {import('../types/Transaction').Transaction} Transaction */
@@ -545,10 +546,10 @@ const accountKeyLinkTransactionFromSymbol = (transaction, config) => {
  * or mosaic/namespace ids that require name resolution).
  *
  * Returns a unique set of referenced mosaic and namespace IDs, and a list of unresolved addresses
- * identified by their namespace IDs with the block height at which they were observed.
+ * identified by their namespace IDs with the transaction location at which they were observed.
  *
  * @param {Array<object>} transactions - Array of Symbol transactions (from symbol-sdk models).
- * @returns {{ mosaicIds: string[], namespaceIds: string[], addresses: Array<{ namespaceId: string, height: number }> }}
+ * @returns {{ mosaicIds: string[], namespaceIds: string[], addresses: UnresolvedAddressWithLocation[] }}
  * The unresolved identifiers aggregated from the provided Symbol transactions.
  * @see getUnresolvedIdsFromTransactions
  */
@@ -610,7 +611,7 @@ export const getUnresolvedIdsFromSymbolTransactions = transactions => {
 		mapMosaicId: id => mapId(id),
 		mapTransactionType: type => type.value,
 		getBodyFromTransaction: transaction => transaction,
-		getHeightFromTransaction: transaction => transaction.height,
+		getTransactionLocation: () => undefined,
 		verifyAddress: address => address.toString().length === 48
 	};
 

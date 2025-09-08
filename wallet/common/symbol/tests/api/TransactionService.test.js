@@ -65,7 +65,7 @@ describe('TransactionService', () => {
 			},
 			namespace: {
 				fetchNamespaceNames: jest.fn(),
-				resolveAddressesAtHeight: jest.fn()
+				resolveAddresses: jest.fn()
 			}
 		};
 
@@ -203,7 +203,7 @@ describe('TransactionService', () => {
 		// Use fixtures for resolvers
 		mockApi.mosaic.fetchMosaicInfos.mockResolvedValue(mosaicInfos);
 		mockApi.namespace.fetchNamespaceNames.mockResolvedValue(namespaceNames);
-		mockApi.namespace.resolveAddressesAtHeight.mockResolvedValue({});
+		mockApi.namespace.resolveAddresses.mockResolvedValue({});
 
 		// Act:
 		const result = await service.resolveTransactionDTOs(networkProperties, dtos, currentAccount);
@@ -220,7 +220,7 @@ describe('TransactionService', () => {
 		// Use fixtures for resolvers
 		mockApi.mosaic.fetchMosaicInfos.mockResolvedValue(mosaicInfos);
 		mockApi.namespace.fetchNamespaceNames.mockResolvedValue(namespaceNames);
-		mockApi.namespace.resolveAddressesAtHeight.mockResolvedValue({});
+		mockApi.namespace.resolveAddresses.mockResolvedValue({});
 
 		// Act:
 		const result = await service.resolveTransactionFromPayload(

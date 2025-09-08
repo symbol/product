@@ -5,6 +5,7 @@ import { MessageEncoder, SymbolFacade, models } from 'symbol-sdk/symbol';
 import { absoluteToRelativeAmount } from 'wallet-common-core';
 
 /** @typedef {import('../types/Account').PublicAccount} PublicAccount */
+/** @typedef {import('../types/Account').UnresolvedAddressWithLocation} UnresolvedAddressWithLocation */
 /** @typedef {import('../types/Mosaic').BaseMosaic} BaseMosaic */
 /** @typedef {import('../types/Network').NetworkProperties} NetworkProperties */
 /** @typedef {import('../types/Network').TransactionFees} TransactionFees */
@@ -321,7 +322,7 @@ export const createFee = (amount, networkProperties) => {
  */
 export const calculateTransactionSize = (networkIdentifier, transaction) => {
 	const symbolTransaction = transactionToSymbol(transaction, { networkIdentifier });
-	
+
 	return symbolTransaction.size;
 };
 
@@ -356,9 +357,9 @@ export const calculateTransactionFees = (networkProperties, size) => {
  * @param {Function} config.mapMosaicId - The mosaic id mapper function.
  * @param {Function} config.mapTransactionType - The transaction type mapper function.
  * @param {Function} config.getBodyFromTransaction - The function to get the transaction body.
- * @param {Function} config.getHeightFromTransaction - The function to get the transaction height.
+ * @param {Function} config.getTransactionLocation - The function to get the transaction location.
  * @param {Function} config.verifyAddress - The function to verify an address.
- * @returns {{ mosaicIds: string[], namespaceIds: string[], addresses: string[] }} The unresolved ids.
+ * @returns {{ mosaicIds: string[], namespaceIds: string[], addresses: UnresolvedAddressWithLocation[] }} The unresolved ids.
  */
 export const getUnresolvedIdsFromTransactions = (transactions, config) => {
 	const {
@@ -367,7 +368,7 @@ export const getUnresolvedIdsFromTransactions = (transactions, config) => {
 		mapMosaicId,
 		mapTransactionType,
 		getBodyFromTransaction,
-		getHeightFromTransaction,
+		getTransactionLocation,
 		verifyAddress
 	} = config;
 
@@ -376,13 +377,28 @@ export const getUnresolvedIdsFromTransactions = (transactions, config) => {
 	const addresses = [];
 	const addressKeys = new Set();
 
-	const pushAddress = (namespaceId, height) => {
-		const key = `${namespaceId}:${height}`;
+	const pushAddress = (namespaceId, transaction, innerTransactionLocation) => {
+		// Extract location from transaction. Populate location with the location of the inner transaction if provided.
+		const location = getTransactionLocation(transaction);
+
+		if (location && innerTransactionLocation)
+			location.secondaryId = innerTransactionLocation.primaryId;
+
+		// Create a unique key for the address with location to avoid duplicates.
+		const key = location
+			? `${namespaceId}:${location.height}:${location.primaryId}:${location.secondaryId}`
+			: namespaceId;
+
 		if (addressKeys.has(key))
 			return;
 
 		addressKeys.add(key);
-		addresses.push({ namespaceId, height });
+
+		// Push unresolved address (namespaceId) with or without location.
+		if (!location)
+			addresses.push({ namespaceId });
+		else
+			addresses.push({ namespaceId, location });
 	};
 
 	transactions.forEach(item => {
@@ -393,7 +409,7 @@ export const getUnresolvedIdsFromTransactions = (transactions, config) => {
 			const unresolved = getUnresolvedIdsFromTransactions(transaction.transactions, config);
 			mosaicIds.push(...unresolved.mosaicIds);
 			namespaceIds.push(...unresolved.namespaceIds);
-			unresolved.addresses.forEach(a => pushAddress(a.namespaceId, a.height));
+			unresolved.addresses.forEach(a => pushAddress(a.namespaceId, item, a.location));
 		}
 
 		if (!transactionFieldsToResolve)
@@ -410,7 +426,7 @@ export const getUnresolvedIdsFromTransactions = (transactions, config) => {
 						if (verifyAddress(value))
 							return;
 
-						pushAddress(mapNamespaceId(value), getHeightFromTransaction(item));
+						pushAddress(mapNamespaceId(value), item);
 					},
 					addressArray: value => {
 						if (!Array.isArray(value))
@@ -418,11 +434,13 @@ export const getUnresolvedIdsFromTransactions = (transactions, config) => {
 
 						value
 							.filter(address => !verifyAddress(address))
-							.forEach(address => pushAddress(mapNamespaceId(address), getHeightFromTransaction(item)));
+							.forEach(address => pushAddress(mapNamespaceId(address), item));
 					},
 					mosaic: value => {
 						const mosaicId = value?.mosaicId ?? value?.id ?? value;
-						mosaicIds.push(mapMosaicId(mosaicId));
+
+						if (mosaicId)
+							mosaicIds.push(mapMosaicId(mosaicId));
 					},
 					mosaicArray: value => {
 						if (!Array.isArray(value))
@@ -430,7 +448,9 @@ export const getUnresolvedIdsFromTransactions = (transactions, config) => {
 
 						value.forEach(mosaic => {
 							const mosaicId = mosaic?.mosaicId ?? mosaic?.id ?? mosaic;
-							mosaicIds.push(mapMosaicId(mosaicId));
+							
+							if (mosaicId)
+								mosaicIds.push(mapMosaicId(mosaicId));
 						});
 					},
 					namespace: value => {

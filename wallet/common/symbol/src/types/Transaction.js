@@ -42,4 +42,11 @@
  * @property {string} hash - The transaction hash.
  */
 
+/**
+ * @typedef {Object} TransactionLocation
+ * @property {string} height - The block height.
+ * @property {number} primaryId - The primary id (index) of the transaction in the block.
+ * @property {number} secondaryId - The secondary id of the inner / embedded transaction in the block. 0 for non-embedded transactions.
+ */
+
 export default {};

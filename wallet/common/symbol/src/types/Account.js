@@ -1,5 +1,6 @@
 /** @typedef {import('./Mosaic').Mosaic} Mosaic */
 /** @typedef {import('./Namespace').Namespace} Namespace */
+/** @typedef {import('./Transaction').TransactionLocation} TransactionLocation */
 
 /**
  * @typedef {Object} KeyPair
@@ -58,6 +59,12 @@
  * @property {string[]} cosignatories - List of cosignatories.
  * @property {string[]} multisigAddresses - List of multisig addresses.
  * @property {Namespace[]} namespaces - Account created namespaces.
+ */
+
+/**
+ * @typedef {Object} UnresolvedAddressWithLocation
+ * @property {string} namespaceId - The unresolved address (namespace id).
+ * @property {TransactionLocation} [location] - The transaction location where the unresolved address is found.
  */
 
 export default {};

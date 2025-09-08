@@ -485,7 +485,7 @@ describe('utils/transaction', () => {
 		it('returns Symbol transaction size for a mapped transaction', () => {
 			// Arrange:
 			const transaction = walletTransactions[0];
-			const {networkIdentifier} = networkProperties;
+			const { networkIdentifier } = networkProperties;
 			const expectedSize = 152;
 
 			// Act:
@@ -515,138 +515,240 @@ describe('utils/transaction', () => {
 	});
 
 	describe('getUnresolvedIdsFromTransactions', () => {
-		const runGetUnresolvedIdsTest = (items, config, expected) => {
+		const createBaseConfig = (overrides = {}) => ({
+			mapNamespaceId: id => `ns:${id}`,
+			mapMosaicId: id => `mosaic:${id}`,
+			mapTransactionType: type => type,
+			getBodyFromTransaction: tx => tx.transaction,
+			getTransactionLocation: tx =>
+				tx.meta?.height !== undefined
+					? { 
+						height: tx.meta.height, 
+						primaryId: (tx.meta.index ?? 0) + 1, 
+						secondaryId: 0 
+					}
+					: undefined,
+			verifyAddress: address => typeof address === 'string' && address.startsWith('ADDR-'),
+			fieldsMap: {},
+			...overrides
+		});
+		
+		const runUnresolvedIdsExtractionTests = (transactions, config, expected) => {
 			// Act:
-			const result = getUnresolvedIdsFromTransactions(items, config);
+			const result = getUnresolvedIdsFromTransactions(transactions, config);
 
 			// Assert:
-			expect(result).toEqual(expected);
+			expect(result).toStrictEqual(expected);
 		};
 
-		it('extracts unresolved ids from simple and aggregate transactions (all processors, dedup, heights)', () => {
+		it('extracts mosaicIds and avoids duplications', () => {
 			// Arrange:
-			const height1 = 123;
-			const height2 = 456;
-			const item1 = {
-				height: height1,
-				transaction: {
-					type: TransactionType.TRANSFER,
-					recipientAddress: 'alias.one',
-					recipientNamespaceId: 'root.child',
-					fee: { id: 'FEE' },
-					mosaics: [{ mosaicId: 'AAA' }, { id: 'BBB' }, 'CCC'],
-					cosignatoryAddresses: ['TVERIFIEDADDR', 'alias.two'],
-					height: height1
-				}
-			};
-			const item2 = {
-				height: height2,
-				transaction: {
-					type: TransactionType.AGGREGATE_COMPLETE,
-					transactions: [
-						{
-							type: TransactionType.TRANSFER,
-							recipientAddress: 'alias.three',
-							recipientNamespaceId: 'foo',
-							fee: { mosaicId: 'EEE' },
-							mosaics: ['DDD'],
-							cosignatoryAddresses: ['alias.four'],
-							height: height2
-						}
-					],
-					height: height2
-				}
-			};
-			const items = [item1, item2];
-			const config = {
-				fieldsMap: {
-					[TransactionType.TRANSFER]: {
-						address: ['recipientAddress'],
-						addressArray: ['cosignatoryAddresses'],
-						mosaic: ['fee'],
-						mosaicArray: ['mosaics'],
-						namespace: ['recipientNamespaceId']
+			const transactions = [
+				{
+					meta: { height: '10', index: 0 },
+					transaction: {
+						type: 16724,
+						fee: { mosaicId: 'AAA' },
+						mosaics: ['BBB', { id: 'CCC' }]
 					}
 				},
-				mapNamespaceId: value => `ns(${value})`,
-				mapMosaicId: value => `mos(${value})`,
-				mapTransactionType: type => type,
-				getBodyFromTransaction: item => item.transaction ?? item,
-				getHeightFromTransaction: obj => obj.height,
-				verifyAddress: value => typeof value === 'string' && value.startsWith('T')
-			};
+				{
+					meta: { height: '11', index: 0 },
+					transaction: {
+						type: 16724,
+						fee: { mosaicId: 'AAA' },
+						mosaics: [{ mosaicId: 'BBB' }, 'DDD'] 
+					}
+				},
+				{
+					meta: { height: '12', index: 0 },
+					transaction: {
+						type: 16724,
+						mosaics: ['DDD']
+					}
+				}
+			];
+			const config = createBaseConfig({
+				fieldsMap: {
+					16724: { 
+						mosaic: ['fee'], 
+						mosaicArray: ['mosaics'] 
+					}
+				}
+			});
 			const expected = {
-				mosaicIds: [
-					'mos(FEE)', 'mos(AAA)', 'mos(BBB)', 'mos(CCC)',
-					'mos(EEE)', 'mos(DDD)'
-				],
-				namespaceIds: [
-					'ns(root.child)', 'ns(foo)'
-				],
+				mosaicIds: ['mosaic:AAA', 'mosaic:BBB', 'mosaic:CCC', 'mosaic:DDD'],
+				namespaceIds: [],
+				addresses: []
+			};
+
+			// Act & Assert:
+			runUnresolvedIdsExtractionTests(transactions, config, expected);
+		});
+
+		it('extracts namespaceIds and avoids duplications', () => {
+			// Arrange:
+			const transactions = [
+				{
+					meta: { height: '20', index: 0 },
+					transaction: {
+						type: 16724,
+						recipientNamespaceId: 'ns1',
+						anotherNamespace: 'ns2'
+					}
+				},
+				{
+					meta: { height: '21', index: 0 },
+					transaction: {
+						type: 16724,
+						recipientNamespaceId: 'ns1',
+						anotherNamespace: 'ns3'
+					}
+				}
+			];
+			const config = createBaseConfig({
+				fieldsMap: {
+					16724: { namespace: ['recipientNamespaceId', 'anotherNamespace'] }
+				}
+			});
+			const expected = {
+				mosaicIds: [],
+				namespaceIds: ['ns:ns1', 'ns:ns2', 'ns:ns3'],
+				addresses: []
+			};
+
+			// Act & Assert:
+			runUnresolvedIdsExtractionTests(transactions, config, expected);
+		});
+
+		it('extracts unresolved addresses without location and avoids duplications', () => {
+			// Arrange:
+			const transactions = [
+				{
+					transaction: {
+						type: 16724,
+						recipientAddress: 'alias.one',
+						cosigners: ['ADDR-REAL-1', 'alias.two', 'alias.two'] 
+					}
+				},
+				{
+					transaction: {
+						type: 16724,
+						recipientAddress: 'alias.one',
+						cosigners: ['alias.two'] 
+					}
+				}
+			];
+			const config = createBaseConfig({
+				getTransactionLocation: () => undefined,
+				fieldsMap: {
+					16724: { 
+						address: ['recipientAddress'], 
+						addressArray: ['cosigners'] 
+					}
+				}
+			});
+			const expected = {
+				mosaicIds: [],
+				namespaceIds: [],
 				addresses: [
-					{ namespaceId: 'ns(alias.one)', height: height1 },
-					{ namespaceId: 'ns(alias.two)', height: height1 },
-					{ namespaceId: 'ns(alias.three)', height: height2 },
-					{ namespaceId: 'ns(alias.four)', height: height2 }
+					{ 
+						namespaceId: 'ns:alias.one' 
+					},
+					{ 
+						namespaceId: 'ns:alias.two' 
+					}
 				]
 			};
 
 			// Act & Assert:
-			runGetUnresolvedIdsTest(items, config, expected);
+			runUnresolvedIdsExtractionTests(transactions, config, expected);
 		});
 
-		it('skips transactions with no fields in fieldsMap and returns unique ids only', () => {
+		it('extracts unresolved addresses with location and avoids duplications (different and same height/ids)', () => {
 			// Arrange:
-			const item = {
-				height: 7,
+			const aggregateWithDuplicates = {
+				meta: { height: '100', index: 5 },
 				transaction: {
-					type: TransactionType.TRANSFER,
-					recipientAddress: 'alias.same',
-					recipientNamespaceId: 'dup.ns',
-					mosaics: ['X', 'X', 'Y'],
-					fee: { id: 'FEE' },
-					cosignatoryAddresses: ['alias.same', 'alias.same'],
-					height: 7
+					type: 16705,
+					transactions: [
+						{
+							meta: { height: '100', index: 1 },
+							transaction: { 
+								type: 16724, 
+								recipientAddress: 'alias.loc' 
+							}
+						},
+						{
+							meta: { height: '100', index: 1 },
+							transaction: { 
+								type: 16724, 
+								recipientAddress: 'alias.loc' 
+							}
+						},
+						{
+							meta: { height: '100', index: 2 },
+							transaction: { 
+								type: 16724, 
+								recipientAddress: 'alias.loc' 
+							}
+						}
+					]
 				}
 			};
-			const unrelated = {
-				height: 9,
-				transaction: {
-					type: 0xFFFF,
-					foo: 'bar',
-					height: 9
+			const sameComboDuplicate = {
+				meta: { height: '100', index: 5 },
+				transaction: { 
+					type: 16724, 
+					recipientAddress: 'alias.simple' 
 				}
 			};
-			const config = {
+			const sameComboDuplicate2 = {
+				meta: { height: '100', index: 5 },
+				transaction: { 
+					type: 16724, 
+					recipientAddress: 'alias.simple' 
+				}
+			};
+			const differentHeight = {
+				meta: { height: '101', index: 5 },
+				transaction: { 
+					type: 16724, 
+					recipientAddress: 'alias.simple' 
+				}
+			};
+			const transactions = [aggregateWithDuplicates, sameComboDuplicate, sameComboDuplicate2, differentHeight];
+
+			const config = createBaseConfig({
 				fieldsMap: {
-					[TransactionType.TRANSFER]: {
-						address: ['recipientAddress'],
-						addressArray: ['cosignatoryAddresses'],
-						mosaic: ['fee'],
-						mosaicArray: ['mosaics'],
-						namespace: ['recipientNamespaceId']
-					}
-				},
-				mapNamespaceId: value => `ns(${value})`,
-				mapMosaicId: value => `mos(${value})`,
-				mapTransactionType: type => type,
-				getBodyFromTransaction: item => item.transaction ?? item,
-				getHeightFromTransaction: o => o.height,
-				verifyAddress: () => false
-			};
+					16724: { address: ['recipientAddress'] }
+				}
+			});
 			const expected = {
-				mosaicIds: ['mos(FEE)', 'mos(X)', 'mos(Y)'],
-				namespaceIds: ['ns(dup.ns)'],
+				mosaicIds: [],
+				namespaceIds: [],
 				addresses: [
-					{ namespaceId: 'ns(alias.same)', height: 7 }
+					{ 
+						namespaceId: 'ns:alias.loc', 
+						location: { height: '100', primaryId: 6, secondaryId: 2 } 
+					},
+					{ 
+						namespaceId: 'ns:alias.loc', 
+						location: { height: '100', primaryId: 6, secondaryId: 3 } 
+					},
+					{ 
+						namespaceId: 'ns:alias.simple', 
+						location: { height: '100', primaryId: 6, secondaryId: 0 } 
+					},
+					{ 
+						namespaceId: 'ns:alias.simple', 
+						location: { height: '101', primaryId: 6, secondaryId: 0 } 
+					}
 				]
 			};
 
-			// Act:
-			const result = getUnresolvedIdsFromTransactions([item, unrelated], config);
-
-			// Assert:
-			expect(result).toEqual(expected);
+			// Act & Assert:
+			runUnresolvedIdsExtractionTests(transactions, config, expected);
 		});
 	});
 });

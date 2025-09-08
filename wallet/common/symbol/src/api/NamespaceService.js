@@ -2,6 +2,7 @@ import { addressFromRaw, createSearchUrl, namespaceFromDTO, namespaceIdFromRaw }
 import _ from 'lodash';
 import { ApiError } from 'wallet-common-core';
 
+/** @typedef {import('../types/Account').UnresolvedAddressWithLocation} UnresolvedAddressWithLocation */
 /** @typedef {import('../types/Namespace').Namespace} Namespace */
 /** @typedef {import('../types/Network').NetworkProperties} NetworkProperties */
 /** @typedef {import('../types/SearchCriteria').SearchCriteria} SearchCriteria */
@@ -120,20 +121,28 @@ export class NamespaceService {
 	};
 
 	/**
-	 * Fetches the address linked to a namespace id at a given height for a given list.
+	 * Fetches the address linked to a namespace id. If the unresolved address object contains transaction location where it was found,
+	 * the resolution is done at that height and transaction index. Otherwise, the current linked address is fetched.
 	 * @param {NetworkProperties} networkProperties - Network properties.
-	 * @param {{ namespaceId: string, height: number }[]} namespaceIdsWithHeight - Requested namespace ids with height.
+	 * @param {UnresolvedAddressWithLocation[]} unresolvedAddressWithLocation - The list of unresolved addresses with transaction location.
 	 * @returns {Promise<Record<string, string>>} - The resolved addresses map.
 	 */
-	resolveAddressesAtHeight = async (networkProperties, namespaceIdsWithHeight) => {
-		const namespaceInfos = await Promise.all(namespaceIdsWithHeight.map(async namespaceIdWithHeight => {
+	resolveAddresses = async (networkProperties, unresolvedAddressWithLocation) => {
+		const namespaceInfos = await Promise.all(unresolvedAddressWithLocation.map(async unresolvedAddress => {
 			try {
+				const resolvedAddress = unresolvedAddress.location
+					? await this.resolveAddressAtHeight(networkProperties, unresolvedAddress)
+					: await this.resolveAddress(networkProperties, unresolvedAddress.namespaceId);
+
 				return {
-					namespaceId: namespaceIdWithHeight.namespaceId,
-					value: await this.resolveAddressAtHeight(networkProperties, namespaceIdWithHeight)
+					namespaceId: unresolvedAddress.namespaceId,
+					value: resolvedAddress
 				};
 			} catch (error) {
-				return;
+				if (error.code === 'error_unknown_account_name') 
+					return;
+				else
+					throw error;
 			}
 		}));
 
@@ -143,21 +152,40 @@ export class NamespaceService {
 	/**
 	 * Fetches the address linked to a namespace id at a given height.
 	 * @param {NetworkProperties} networkProperties - Network properties.
-	 * @param {string} namespaceId - Requested namespace id.
-	 * @param {number} height - Requested height
+	 * @param {UnresolvedAddressWithLocation} unresolvedAddressWithLocation - The unresolved address with transaction location.
 	 * @returns {Promise<string>} - The resolved address.
 	 */
-	resolveAddressAtHeight = async (networkProperties, namespaceId, height) => {
+	resolveAddressAtHeight = async (networkProperties, unresolvedAddressWithLocation) => {
+		const { namespaceId, location: transactionLocation } = unresolvedAddressWithLocation;
+		const { height } = transactionLocation;
 		const endpoint = `${networkProperties.nodeUrl}/statements/resolutions/address?height=${height}&pageSize=100`;
 		const { data } = await this.#makeRequest(endpoint);
-		const statement = data.find(statement => namespaceIdFromRaw(statement.statement.unresolved) === namespaceId);
+		const resolutionStatement = data.find(statement => namespaceIdFromRaw(statement.statement.unresolved) === namespaceId);
 
-		if (!statement) 
-			throw new ApiError(`Failed to resolve address. Statement for ${namespaceId} not found at height ${height}`);
-		
-		const { resolved } = statement.statement.resolutionEntries[0];
+		if (!resolutionStatement) {
+			throw new ApiError(
+				`Failed to resolve address. Statement for ${namespaceId} not found at height ${height}`,
+				'error_unknown_account_name'
+			);
+		}
 
-		return addressFromRaw(resolved);
+		const isReceiptSourceLessThanEqual = (lhs, rhs) =>
+			lhs.primaryId < rhs.primaryId || (lhs.primaryId === rhs.primaryId && lhs.secondaryId <= rhs.secondaryId);
+
+		for (let i = resolutionStatement.statement.resolutionEntries.length - 1; 0 <= i; --i) {
+			const resolutionEntry = resolutionStatement.statement.resolutionEntries[i];
+			const { source } = resolutionEntry;
+
+			if (isReceiptSourceLessThanEqual(source, transactionLocation))
+				return addressFromRaw(resolutionEntry.resolved);
+		}
+
+		if (!resolutionStatement) {
+			throw new ApiError(
+				`Failed to resolve address. Statement for ${namespaceId} not found at height ${height}`,
+				'error_unknown_account_name'
+			);
+		}
 	};
 
 	/**
@@ -182,13 +210,13 @@ export class NamespaceService {
 			}
 		}
 
-		if (!namespace.alias.address) {
+		if (!namespace.linkedAddress) {
 			throw new ApiError(
 				`Linked address for namespace ${namespaceId} not found. No address alias found.`,
 				'error_unknown_account_name'
 			);
 		}
 
-		return addressFromRaw(namespace.alias.address);
+		return namespace.linkedAddress;
 	};
 }

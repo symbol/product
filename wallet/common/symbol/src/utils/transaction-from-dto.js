@@ -34,6 +34,7 @@ import {
 import { SdkError, absoluteToRelativeAmount, safeOperationWithRelativeAmounts } from 'wallet-common-core';
 
 /** @typedef {import('../types/Account').PublicAccount} PublicAccount */
+/** @typedef {import('../types/Account').UnresolvedAddressWithLocation} UnresolvedAddressWithLocation */
 /** @typedef {import('../types/Mosaic').Mosaic} Mosaic */
 /** @typedef {import('../types/Network').NetworkProperties} NetworkProperties */
 /** @typedef {import('../types/Transaction').Transaction} Transaction */
@@ -582,10 +583,10 @@ const accountKeyLinkTransactionFromDTO = (transactionDTO, config) => {
  * or mosaic/namespace ids that require name resolution).
  *
  * Returns a unique set of referenced mosaic and namespace IDs, and a list of unresolved addresses
- * identified by their namespace IDs with the block height at which they were observed.
+ * identified by their namespace IDs with the transaction location at which they were observed.
  *
  * @param {Array<object>} transactionDTOs - Array of transaction DTOs (with 'transaction' and 'meta').
- * @returns {{ mosaicIds: string[], namespaceIds: string[], addresses: Array<{ namespaceId: string, height: number }> }}
+ * @returns {{ mosaicIds: string[], namespaceIds: string[], addresses: UnresolvedAddressWithLocation[] }}
  * The unresolved identifiers aggregated from the provided DTOs.
  * @see getUnresolvedIdsFromTransactions
  */
@@ -647,7 +648,16 @@ export const getUnresolvedIdsFromTransactionDTOs = transactionDTOs => {
 		mapMosaicId: id => id,
 		mapTransactionType: type => type,
 		getBodyFromTransaction: transaction => transaction.transaction,
-		getHeightFromTransaction: transaction => transaction.meta.height,
+		getTransactionLocation: transaction => {
+			if (!transaction.meta.height || transaction.meta.height === '0')
+				return undefined;
+
+			return {
+				height: transaction.meta.height,
+				primaryId: transaction.meta.index + 1,
+				secondaryId: 0
+			};
+		},
 		verifyAddress: address => address.length === 48
 	};
 
