@@ -1,4 +1,5 @@
 import asyncio
+import logging
 
 from aiolimiter import AsyncLimiter
 from symbollightapi.model.Constants import DEFAULT_ASYNC_LIMITER_ARGUMENTS
@@ -45,11 +46,13 @@ class BalanceChangesDownloader:
 
 
 async def download_balance_changes(database, network):
+	logger = logging.getLogger(__name__)
+
 	connector = network.create_connector()
 	config_extensions = network.config.extensions
 	(start_height, end_height) = await calculate_search_range(connector, database, config_extensions, 'balance_change_scan_start_height')
 
-	print(f'searching blockchain for balance changes to {network.bridge_address} in range [{start_height}, {end_height})...')
+	logger.info('searching blockchain for balance changes to %s in range [%s, %s)...', network.bridge_address, start_height, end_height)
 
 	database.reset()
 
@@ -61,8 +64,8 @@ async def download_balance_changes(database, network):
 	# add marker in database to indicate last height processed
 	database.set_max_processed_height(end_height - 1)
 
-	print()
 	print_banner([
+		'\n',
 		f'==> last processed transaction height: {database.max_processed_height()}',
 		f'==>   total balance changes processed: {sum(counts)}'
 	])
