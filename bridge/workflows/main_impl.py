@@ -1,5 +1,7 @@
 import argparse
 import logging
+import sys
+from logging.handlers import TimedRotatingFileHandler
 
 from bridge.CoinGeckoConnector import CoinGeckoConnector
 from bridge.db.Databases import Databases
@@ -15,15 +17,22 @@ def parse_args(description):
 
 
 def print_banner(lines):
-	print('\n*** *** ***')
-	print('\n'.join(lines))
-	print('*** *** ***\n')
+	logger = logging.getLogger(__name__)
+	logger.info('\n'.join(['', '*** *** ***'] + lines + ['*** *** ***']))
 
 
 async def main_bootstrapper(program_description, main_impl):
 	args = parse_args(program_description)
 	config = parse_bridge_configuration(args.config)
-	logging.basicConfig(filename=config.machine.log_filename, level=logging.DEBUG)
+
+	logging.basicConfig(
+		level=logging.DEBUG,
+		format='%(asctime)s [%(levelname)s] %(module)s: %(message)s',
+		handlers=[
+			TimedRotatingFileHandler(filename=config.machine.log_filename, when='D'),
+			logging.StreamHandler(sys.stdout)
+		])
+	logger = logging.getLogger(__name__)
 
 	native_facade = await load_network_facade(config.native_network)
 	wrapped_facade = await load_network_facade(config.wrapped_network)
@@ -33,5 +42,5 @@ async def main_bootstrapper(program_description, main_impl):
 	with Databases(config.machine.database_directory, native_facade, wrapped_facade) as databases:
 		databases.create_tables()
 
-		print(f'running in unwrap mode? {args.unwrap}')
+		logger.info('running in unwrap mode? %s', args.unwrap)
 		await main_impl(args.unwrap, databases, native_facade, wrapped_facade, price_oracle)
