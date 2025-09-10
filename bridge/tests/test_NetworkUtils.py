@@ -71,7 +71,7 @@ async def test_can_estimate_balance_transfer_fees_when_conversion_fee_is_nonzero
 
 # region TransactionSender - constructor, init
 
-def _create_config(server=None, mosaic_id='id:E74B99BA41F4AFEE', config_extensions=None):  # pylint: disable=redefined-outer-name
+def _create_config(server=None, mosaic_id='E74B99BA41F4AFEE', config_extensions=None):  # pylint: disable=redefined-outer-name
 	endpoint = server.make_url('') if server else 'http://foo.bar:1234'
 	return NetworkConfiguration('symbol', 'testnet', endpoint, 'TDDRDLK5QL2LJPZOF26QFXB24TJ5HGB4NDTF6SI', mosaic_id, {
 		'signer_private_key': 'F490900201CD6365A89FDD41B7B2CC71E9537455E8AB626A47EBFA0681E5BE62',
@@ -247,7 +247,7 @@ async def test_try_send_transfer_applies_fee_multipler_to_conversion_fee(server)
 
 async def test_try_send_transfer_succeeds_with_custom_mosaic_id(server):  # pylint: disable=redefined-outer-name
 	# Arrange:
-	sender = TransactionSender(SymbolNetworkFacade(_create_config(server, 'id:0xABCD12349876FEDC')))
+	sender = TransactionSender(SymbolNetworkFacade(_create_config(server, 'ABCD12349876FEDC')))
 	await sender.init()
 
 	# Act:

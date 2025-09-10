@@ -250,7 +250,7 @@ def test_root(client, nem_server, symbol_server):  # pylint: disable=redefined-o
 			'blockchain': 'symbol',
 			'network': 'testnet',
 			'bridgeAddress': 'TCRZANFBD6O6EGYCBAH6ICTLAMH6OGBV6CEH7UY',
-			'tokenId': 'id:5D6CFC64A20E86E6',
+			'tokenId': '5D6CFC64A20E86E6',
 			'defaultNodeUrl': str(symbol_server.make_url('')),
 			'explorerUrl': '<wrapped explorer endpoint>'
 		},
