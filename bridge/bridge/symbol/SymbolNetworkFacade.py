@@ -49,14 +49,11 @@ class SymbolNetworkFacade:
 		and a version that can be passed to network facades as arguments.
 		"""
 
-		config_mosaic_id = self.config.mosaic_id
-		mosaic_id_parts = tuple(config_mosaic_id.split(':'))
-
-		mosaic_id = int(mosaic_id_parts[1], 16)
+		mosaic_id = int(self.config.mosaic_id, 16)
 		if self.is_currency_mosaic_id(mosaic_id):
 			mosaic_id = None
 
-		return PrintableMosaicId(mosaic_id, mosaic_id_parts[1])
+		return PrintableMosaicId(mosaic_id, self.config.mosaic_id)
 
 	def create_connector(self, **_kwargs):
 		"""Creates a connector to the network."""
