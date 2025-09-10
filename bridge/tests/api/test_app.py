@@ -435,7 +435,7 @@ async def _assert_can_filter_by_address(client, base_path, is_unwrap):  # pylint
 
 		# Assert:
 		_assert_json_response_success(response)
-		assert test_params.expected_all == [view_json['requestTransactionHeight'] for view_json in response_json]
+		assert test_params.expected_all == [int(view_json['requestTransactionHeight']) for view_json in response_json]
 
 	loop = asyncio.get_running_loop()
 	await loop.run_in_executor(None, test_impl)
@@ -455,7 +455,7 @@ async def _assert_can_filter_by_address_and_transaction_hash(client, base_path, 
 
 		# Assert:
 		_assert_json_response_success(response)
-		assert test_params.expected_hash_filter == [view_json['requestTransactionHeight'] for view_json in response_json]
+		assert test_params.expected_hash_filter == [int(view_json['requestTransactionHeight']) for view_json in response_json]
 
 	loop = asyncio.get_running_loop()
 	await loop.run_in_executor(None, test_impl)
@@ -475,7 +475,7 @@ async def _assert_can_filter_by_address_with_custom_offset_and_limit(client, bas
 
 		# Assert:
 		_assert_json_response_success(response)
-		assert test_params.expected_custom_offset_and_limit == [view_json['requestTransactionHeight'] for view_json in response_json]
+		assert test_params.expected_custom_offset_and_limit == [int(view_json['requestTransactionHeight']) for view_json in response_json]
 
 	loop = asyncio.get_running_loop()
 	await loop.run_in_executor(None, test_impl)
@@ -502,22 +502,22 @@ async def test_can_query_wrap_requests_with_single_match(client):  # pylint: dis
 		_assert_json_response_success(response)
 		assert [
 			{
-				'requestTransactionHeight': 333,
+				'requestTransactionHeight': '333',
 				'requestTransactionHash': HASHES[2],
 				'requestTransactionSubindex': 0,
 				'senderAddress': NEM_ADDRESSES[2],
 
-				'requestAmount': 8889,
+				'requestAmount': '8889',
 				'destinationAddress': SYMBOL_ADDRESSES[2],
 				'payoutStatus': 2,
 				'payoutTransactionHash': 'ACFF5E24733CD040504448A3A75F1CE32E90557E5FBA02E107624242F4FA251D',
 
 				'requestTimestamp': 1427591635,
 
-				'payoutTransactionHeight': 1122,
-				'payoutNetAmount': 1100,
-				'payoutTotalFee': 300,
-				'payoutConversionRate': 121,
+				'payoutTransactionHeight': '1122',
+				'payoutNetAmount': '1100',
+				'payoutTotalFee': '300',
+				'payoutConversionRate': '121',
 
 				'payoutTimestamp': 1667250470.333
 			}
@@ -540,12 +540,12 @@ async def test_can_query_wrap_requests_with_single_match_unprocessed(client):  #
 		_assert_json_response_success(response)
 		assert [
 			{
-				'requestTransactionHeight': 111,
+				'requestTransactionHeight': '111',
 				'requestTransactionHash': HASHES[0],
 				'requestTransactionSubindex': 0,
 				'senderAddress': NEM_ADDRESSES[0],
 
-				'requestAmount': 5554,
+				'requestAmount': '5554',
 				'destinationAddress': SYMBOL_ADDRESSES[0],
 				'payoutStatus': 0,
 				'payoutTransactionHash': None,
@@ -607,22 +607,22 @@ async def test_can_query_unwrap_requests_with_single_match(client):  # pylint: d
 		_assert_json_response_success(response)
 		assert [
 			{
-				'requestTransactionHeight': 333,
+				'requestTransactionHeight': '333',
 				'requestTransactionHash': HASHES[2],
 				'requestTransactionSubindex': 0,
 				'senderAddress': SYMBOL_ADDRESSES[2],
 
-				'requestAmount': 8889,
+				'requestAmount': '8889',
 				'destinationAddress': NEM_ADDRESSES[2],
 				'payoutStatus': 2,
 				'payoutTransactionHash': 'ACFF5E24733CD040504448A3A75F1CE32E90557E5FBA02E107624242F4FA251D',
 
 				'requestTimestamp': 1667250471.05,
 
-				'payoutTransactionHeight': 1122,
-				'payoutNetAmount': 1100,
-				'payoutTotalFee': 300,
-				'payoutConversionRate': 121,
+				'payoutTransactionHeight': '1122',
+				'payoutNetAmount': '1100',
+				'payoutTotalFee': '300',
+				'payoutConversionRate': '121',
 
 				'payoutTimestamp': 1427590918
 			}
@@ -674,7 +674,7 @@ async def test_can_query_wrap_errors_with_single_match(client):  # pylint: disab
 		_assert_json_response_success(response)
 		assert [
 			{
-				'requestTransactionHeight': 333,
+				'requestTransactionHeight': '333',
 				'requestTransactionHash': HASHES[2],
 				'requestTransactionSubindex': 0,
 				'senderAddress': NEM_ADDRESSES[2],
@@ -730,7 +730,7 @@ async def test_can_query_unwrap_errors_with_single_match(client):  # pylint: dis
 		_assert_json_response_success(response)
 		assert [
 			{
-				'requestTransactionHeight': 333,
+				'requestTransactionHeight': '333',
 				'requestTransactionHash': HASHES[2],
 				'requestTransactionSubindex': 0,
 				'senderAddress': SYMBOL_ADDRESSES[2],
@@ -815,7 +815,7 @@ async def test_can_prepare_wrap(client):  # pylint: disable=redefined-outer-name
 			'netAmount': 205207012,  # grossAmount - totalFee
 
 			'diagnostics': {
-				'height': 4444,
+				'height': '4444',
 				'nativeBalance': '1500',
 				'wrappedBalance': '250',
 				'unwrappedBalance': '0'
@@ -848,7 +848,7 @@ async def test_can_prepare_wrap_n2n(client_n2n):  # pylint: disable=redefined-ou
 			'netAmount': 5252938038528651,  # grossAmount - totalFee
 
 			'diagnostics': {
-				'height': 4444
+				'height': '4444'
 			}
 		} == response_json
 
@@ -885,7 +885,7 @@ async def test_can_prepare_unwrap(client):  # pylint: disable=redefined-outer-na
 			'netAmount': 7389141999,  # grossAmount - totalFee
 
 			'diagnostics': {
-				'height': 1000,
+				'height': '1000',
 				'nativeBalance': '300',
 				'wrappedBalance': '250',
 				'unwrappedBalance': '200'

@@ -62,7 +62,7 @@ class WrapRequestDatabase(MaxProcessedHeightMixin):  # pylint: disable=too-many-
 			request_transaction_hash blob,
 			request_transaction_subindex integer,
 			address blob,
-			amount integer,
+			amount real,
 			destination_address blob,
 			payout_status integer,
 			payout_transaction_hash blob UNIQUE,
@@ -70,9 +70,9 @@ class WrapRequestDatabase(MaxProcessedHeightMixin):  # pylint: disable=too-many-
 		)''')
 		cursor.execute('''CREATE TABLE IF NOT EXISTS payout_transaction (
 			transaction_hash blob UNIQUE PRIMARY KEY,
-			net_amount integer,
-			total_fee integer,
-			conversion_rate integer,
+			net_amount real,
+			total_fee real,
+			conversion_rate real,
 			height integer
 		)''')
 		cursor.execute('''CREATE TABLE IF NOT EXISTS block_metadata (
@@ -123,7 +123,7 @@ class WrapRequestDatabase(MaxProcessedHeightMixin):  # pylint: disable=too-many-
 			request.transaction_hash.bytes,
 			request.transaction_subindex,
 			request.sender_address.bytes,
-			request.amount,
+			float(request.amount),
 			request.destination_address,
 			WrapRequestStatus.UNPROCESSED.value,
 			None))
@@ -287,9 +287,9 @@ class WrapRequestDatabase(MaxProcessedHeightMixin):  # pylint: disable=too-many-
 			'''INSERT INTO payout_transaction VALUES (?, ?, ?, ?, ?)''',
 			(
 				payout_details.transaction_hash.bytes,
-				payout_details.net_amount,
-				payout_details.total_fee,
-				payout_details.conversion_rate,
+				float(payout_details.net_amount),
+				float(payout_details.total_fee),
+				float(payout_details.conversion_rate),
 				0
 			))
 
