@@ -75,22 +75,22 @@ def _handle_wrap_requests(network_facade, address, transaction_hash, database_pa
 		views = getattr(databases, database_name).find_requests(*filter_options)
 		return jsonify([
 			{
-				'requestTransactionHeight': view.request_transaction_height,
+				'requestTransactionHeight': str(view.request_transaction_height),
 				'requestTransactionHash': str(view.request_transaction_hash),
 				'requestTransactionSubindex': view.request_transaction_subindex,
 				'senderAddress': str(view.sender_address),
 
-				'requestAmount': view.request_amount,
+				'requestAmount': str(int(view.request_amount)),  # render real db values as integer strings
 				'destinationAddress': str(view.destination_address),
 				'payoutStatus': view.payout_status,
 				'payoutTransactionHash': str(view.payout_transaction_hash) if view.payout_transaction_hash else None,
 
 				'requestTimestamp': view.request_timestamp,
 
-				'payoutTransactionHeight': view.payout_transaction_height,
-				'payoutNetAmount': view.payout_net_amount,
-				'payoutTotalFee': view.payout_total_fee,
-				'payoutConversionRate': view.payout_conversion_rate,
+				'payoutTransactionHeight': str(view.payout_transaction_height) if view.payout_transaction_height else None,
+				'payoutNetAmount': str(int(view.payout_net_amount)) if view.payout_net_amount else None,
+				'payoutTotalFee': str(int(view.payout_total_fee)) if view.payout_total_fee else None,
+				'payoutConversionRate': str(int(view.payout_conversion_rate)) if view.payout_conversion_rate else None,
 
 				'payoutTimestamp': view.payout_timestamp
 			} for view in views
@@ -106,7 +106,7 @@ def _handle_wrap_errors(network_facade, address, transaction_hash, database_para
 		views = getattr(databases, database_name).find_errors(*filter_options)
 		return jsonify([
 			{
-				'requestTransactionHeight': view.request_transaction_height,
+				'requestTransactionHeight': str(view.request_transaction_height),
 				'requestTransactionHash': str(view.request_transaction_hash),
 				'requestTransactionSubindex': view.request_transaction_subindex,
 				'senderAddress': str(view.sender_address),
@@ -178,7 +178,7 @@ async def _handle_wrap_prepare(is_unwrap_mode, context, fee_multiplier):  # pyli
 			'netAmount': gross_amount - fee_information.total,
 
 			'diagnostics': {
-				'height': calculator.height,
+				'height': str(calculator.height),
 				'nativeBalance': calculator.native_balance,
 				'wrappedBalance': calculator.wrapped_balance,
 				'unwrappedBalance': calculator.unwrapped_balance,
@@ -187,7 +187,7 @@ async def _handle_wrap_prepare(is_unwrap_mode, context, fee_multiplier):  # pyli
 
 		if is_native_to_native_conversion(context.wrapped_facade):
 			# clear other diagnostic calculator properties because they're not relevant
-			result['diagnostics'] = {'height': calculator.height}
+			result['diagnostics'] = {'height': str(calculator.height)}
 
 		return jsonify(result)
 
