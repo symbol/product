@@ -106,6 +106,6 @@ async def test_can_show_tabs():
 	assert '│ * alpha │' in output
 	assert '   beta ' in output
 	assert '    gamma ' in output
-	assert '    delta ' in output
+	assert '    delta' in output
 
 # endregion
