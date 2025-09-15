@@ -171,11 +171,11 @@ async def _handle_wrap_prepare(is_unwrap_mode, context, fee_multiplier):  # pyli
 			return jsonify({'error': str(ex)}), 500
 
 		result = {
-			'grossAmount': gross_amount,
+			'grossAmount': str(gross_amount),
 			'transactionFee': fee_information.transaction.quantize(Decimal('0.0001')),
 			'conversionFee': fee_information.conversion.quantize(Decimal('0.0001')),
-			'totalFee': fee_information.total,
-			'netAmount': gross_amount - fee_information.total,
+			'totalFee': str(fee_information.total),
+			'netAmount': str(gross_amount - fee_information.total),
 
 			'diagnostics': {
 				'height': str(calculator.height),
