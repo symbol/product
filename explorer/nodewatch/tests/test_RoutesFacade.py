@@ -603,6 +603,34 @@ class SymbolRoutesFacadeTest(unittest.TestCase):  # pylint: disable=too-many-pub
 		self.assertEqual(2, len(time_series_nodes_count))
 		self.assertEqual(['2025-03-26', '2025-03-27'], list(map(lambda time_series_node: time_series_node['date'], time_series_nodes_count)))
 
+	def test_can_retrieve_finalized_epoch_json(self):
+		# Arrange:
+		facade = SymbolRoutesFacade(SymbolNetwork.MAINNET, '<symbol_explorer>')
+		facade.reload_all(Path('tests/resources'), True)
+
+		# Act:
+		finalized_epoch = facade.json_epoch()
+
+		# Assert:
+		self.assertEqual(3020, finalized_epoch['epoch'])
+
+	def test_can_retrieve_network_config_json(self):
+		# Arrange:
+		symbol_network = SymbolNetwork.MAINNET
+		symbol_network.block_generation_target_time = 30
+		symbol_network.voting_set_grouping = 720
+
+		facade = SymbolRoutesFacade(symbol_network, '<symbol_explorer>')
+		facade.reload_all(Path('tests/resources'), True)
+
+		# Act:
+		network_config = facade.json_network_config()
+
+		# Assert:
+		self.assertEqual(2, len(network_config))
+		self.assertEqual(30, network_config['targetBlockGenerationTime'])
+		self.assertEqual(720, network_config['votingSetGrouping'])
+
 	# endregion
 
 	# region utils
