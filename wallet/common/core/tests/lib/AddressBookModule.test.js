@@ -8,7 +8,7 @@ describe('AddressBookModule', () => {
 	let persistentStorageInterface;
 	let addressBookModule;
 	let onStateChange;
-	let root;
+	let walletController;
 
 	const contact1 = {
 		id: 'TCF3372B2Y5NFO2NXI7ZEOB625YJ63J6B5R5QYQ',
@@ -27,14 +27,14 @@ describe('AddressBookModule', () => {
 
 	beforeEach(() => {
 		persistentStorageInterface = createStorageMock({});
-		root = { networkIdentifier: 'testnet' };
+		walletController = { networkIdentifier: 'testnet' };
 		onStateChange = jest.fn();
 
 		addressBookModule = new AddressBookModule();
 		addressBookModule.init({
 			persistentStorageInterface,
 			onStateChange,
-			root,
+			walletController,
 			networkIdentifiers
 		});
 		addressBookModule._persistentStorageRepository.getAddressBook = jest.fn();
