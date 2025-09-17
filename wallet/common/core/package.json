@@ -7,7 +7,7 @@
 		"lint": "eslint .",
 		"lint:fix": "eslint . --fix --color",
 		"test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
-		"test:cov": "npx c8 npm run test"
+		"test:cov": "c8 --reporter=lcov --reporter=text --report-dir=coverage npm run test"
 	},
 	"dependencies": {},
 	"devDependencies": {

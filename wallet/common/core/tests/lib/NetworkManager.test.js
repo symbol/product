@@ -239,6 +239,7 @@ describe('NetworkManager', () => {
 			const accountAddress = 'TCF3372B2Y5NFO2NXI7ZEOB625YJ63J6B5R5QYQ';
 			const properties = { networkIdentifier: testNetworkIdentifier, nodeUrl: nodeUrl1 };
 			manager.init(testNetworkIdentifier, properties);
+			manager._state.networkConnectionStatus = NetworkConnectionStatus.CONNECTED;
 			
 			// Act:
 			manager.setListenAddress(accountAddress);
@@ -253,6 +254,20 @@ describe('NetworkManager', () => {
 			manager.stopChainListener();
 
 			// Assert:
+			expect(manager._state.chainListener).toBeNull();
+		});
+
+		it('stops the chain listener if not connected', async () => {
+			// Arrange:
+			const properties = { networkIdentifier: testNetworkIdentifier, nodeUrl: nodeUrl1 };
+			manager.init(testNetworkIdentifier, properties);
+			manager._state.networkConnectionStatus = NetworkConnectionStatus.CONNECTING;
+
+			// Act:
+			await manager.restartChainListener();
+
+			// Assert:
+			expect(mockApi.listener.createListener).not.toHaveBeenCalled();
 			expect(manager._state.chainListener).toBeNull();
 		});
 	});

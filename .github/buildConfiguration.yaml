@@ -29,6 +29,9 @@ builds:
   - name: Wallet Common Core
     path: wallet/common/core
 
+  - name: Wallet Common Symbol
+    path: wallet/common/symbol
+
 customBuilds:
   - name: Nightly Job
     jobName: nightlyJob
