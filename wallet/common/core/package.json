@@ -14,7 +14,7 @@
 		"c8": "~10.1.2",
 		"eslint": "~8.57.0",
 		"eslint-config-airbnb": "~19.0.4",
-		"eslint-plugin-jsdoc": "^54.1.0",
+		"eslint-plugin-jsdoc": "^57.0.8",
 		"jest": "^30.0.0"
 	}
 }
