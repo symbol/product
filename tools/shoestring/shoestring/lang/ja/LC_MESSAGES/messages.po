@@ -862,3 +862,6 @@ msgstr "ようこそ"
 msgid "wizard-welcome-upgrade"
 msgstr ""
 
+msgid "main-address-help"
+msgstr "アドレスおよびキー情報の表示と管理"
+
