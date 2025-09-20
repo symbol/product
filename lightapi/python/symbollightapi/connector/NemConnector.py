@@ -1,4 +1,5 @@
 import asyncio
+import json
 from binascii import hexlify
 from collections import namedtuple
 
@@ -304,18 +305,12 @@ class NemConnector(BasicConnector):
 
 	# endregion
 
-	# region POST (get_blocks_after, get_block, get_block_size)
+	# region POST (get_blocks_after, get_block)
 
 	async def get_blocks_after(self, height):
 		""""Gets Blocks data"""
 
 		blocks = await self.post('local/chain/blocks-after', {'height': height})
-
-		block_heights = [block['block']['height'] for block in blocks['data']]
-		block_sizes = await asyncio.gather(*[self.get_block_size(height) for height in block_heights])
-
-		for block, size in zip(blocks['data'], block_sizes):
-			block['size'] = size
 
 		return [self._map_to_block(block) for block in blocks['data']]
 
@@ -324,23 +319,14 @@ class NemConnector(BasicConnector):
 
 		block = await self.post('local/block/at', {'height': height})
 
-		block_sizes = await self.get_block_size(height)
-		block['size'] = block_sizes
-
 		return self._map_to_block(block)
-
-	async def get_block_size(self, height):
-		""""Gets Block size"""
-
-		block_size = await self.post('block/at/public', {'height': height}, response_type='binary')
-		return len(block_size)
 
 	def _map_to_block(self, block_dict):
 		block = block_dict['block']
 		difficulty = block_dict['difficulty']
 		block_hash = block_dict['hash']
 		transactions = block_dict['txes']
-		size = block_dict['size']
+		size = len(json.dumps(block_dict).encode('utf-8'))
 
 		return Block(
 			block['height'],
