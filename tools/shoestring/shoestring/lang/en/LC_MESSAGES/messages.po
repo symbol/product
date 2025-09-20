@@ -875,3 +875,5 @@ msgstr "Welcome"
 msgid "wizard-welcome-upgrade"
 msgstr "upgrade"
 
+msgid "main-address-help"
+msgstr "Display and manage address and key information"
