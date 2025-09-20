@@ -602,8 +602,6 @@ async def server(aiohttp_client):  # pylint: disable=too-many-statements
 	app.router.add_post('/local/block/at', mock_server.local_block_at)
 	server = await aiohttp_client(app)  # pylint: disable=redefined-outer-name
 
-	server = event_loop.run_until_complete(aiohttp_client(app))  # pylint: disable=redefined-outer-name
-
 	server.mock = mock_server
 	return server
 
@@ -875,6 +873,19 @@ async def test_can_query_account_info_without_public_key(server):  # pylint: dis
 # region GET (mosaic_fee_information)
 
 async def test_can_query_mosaic_fee_information_with_explicit_divisibility(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	connector = NemConnector(server.make_url(''))
+
+	# Act:
+	fee_information = await connector.mosaic_fee_information(('foo', 'bar'))
+
+	# Assert:
+	assert [
+		f'{server.make_url("")}/mosaic/supply?mosaicId=foo:bar',
+		f'{server.make_url("")}/mosaic/definition?mosaicId=foo:bar'
+	] == server.mock.urls
+	assert 1234_000000 == fee_information.supply
+	assert 3 == fee_information.divisibility
 
 
 async def test_can_query_mosaic_fee_information_without_divisibility(server):  # pylint: disable=redefined-outer-name
@@ -1244,8 +1255,6 @@ async def test_can_query_blocks_after(server):  # pylint: disable=redefined-oute
 	# Assert:
 	assert [
 		f'{server.make_url("")}/local/chain/blocks-after',
-		f'{server.make_url("")}/block/at/public',
-		f'{server.make_url("")}/block/at/public'
 	] == server.mock.urls
 	assert 2 == len(blocks)
 	assert EXPECTED_BLOCK_2 == blocks[0]
@@ -1260,7 +1269,7 @@ async def test_can_query_blocks_after(server):  # pylint: disable=redefined-oute
 			'919ae66a34119b49812b335827b357f86884ab08b628029fd6e8db3572faeb4f'
 			'323a7bf9488c76ef8faa5b513036bbcce2d949ba3e41086d95a54c0007403c0b'
 		),
-		5548
+		534
 	) == blocks[1]
 
 # endregion
@@ -1276,23 +1285,7 @@ async def test_can_query_block_at(server):  # pylint: disable=redefined-outer-na
 	block = await connector.get_block(2)
 
 	# Assert:
-	assert [f'{server.make_url("")}/local/block/at', f'{server.make_url("")}/block/at/public'] == server.mock.urls
+	assert [f'{server.make_url("")}/local/block/at'] == server.mock.urls
 	assert EXPECTED_BLOCK_2 == block
-
-# endregion
-
-
-# region POST (get_block_size)
-
-async def test_can_query_block_size(server):  # pylint: disable=redefined-outer-name
-	# Arrange:
-	connector = NemConnector(server.make_url(''))
-
-	# Act:
-	block_size = await connector.get_block_size(2)
-
-	# Assert:
-	assert [f'{server.make_url("")}/block/at/public'] == server.mock.urls
-	assert 5548 == block_size
 
 # endregion
