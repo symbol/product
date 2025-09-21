@@ -183,7 +183,8 @@ class MultisigTransaction(Transaction):
 		deadline,
 		signature,
 		signatures,
-		other_transaction
+		other_transaction,
+		inner_hash
 	):
 		"""Create MultisigTransaction model."""
 
@@ -202,12 +203,14 @@ class MultisigTransaction(Transaction):
 
 		self.signatures = signatures
 		self.other_transaction = other_transaction
+		self.inner_hash = inner_hash
 
 	def __eq__(self, other):
 		return isinstance(other, MultisigTransaction) and all([
 			super().__eq__(other),
 			self.signatures == other.signatures,
-			self.other_transaction == other.other_transaction
+			self.other_transaction == other.other_transaction,
+			self.inner_hash == other.inner_hash
 		])
 
 
