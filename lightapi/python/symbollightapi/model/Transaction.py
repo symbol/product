@@ -416,6 +416,7 @@ class TransactionHandler:
 		else:
 			message = None
 
+		mosaics = None
 		if 'mosaics' in tx_json:
 			mosaics = [
 				Mosaic(
@@ -442,7 +443,7 @@ class TransactionHandler:
 	@staticmethod
 	def _map_multisig_account_modification_args(tx_json):
 		return {
-			'min_cosignatories': tx_json['minCosignatories']['relativeChange'],
+			'min_cosignatories': tx_json.get('minCosignatories', {}).get('relativeChange', 0),
 			'modifications': [
 				Modification(
 					modification['modificationType'],
