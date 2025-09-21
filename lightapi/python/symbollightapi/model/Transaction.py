@@ -402,8 +402,8 @@ class TransactionHandler:
 		}
 
 	@staticmethod
-	def _map_transfer_args(tx_dict):
-		message = tx_dict['message']
+	def _map_transfer_args(tx_json):
+		message = tx_json['message']
 
 		if message:
 			message = Message(
@@ -413,44 +413,44 @@ class TransactionHandler:
 		else:
 			message = None
 
-		if 'mosaics' in tx_dict:
+		if 'mosaics' in tx_json:
 			mosaics = [
 				Mosaic(
 					f'{mosaic["mosaicId"]["namespaceId"]}.{mosaic["mosaicId"]["name"]}',
 					mosaic['quantity']
 				)
-				for mosaic in tx_dict['mosaics']
+				for mosaic in tx_json['mosaics']
 			]
 
 		return {
-			'amount': tx_dict['amount'],
-			'recipient': tx_dict['recipient'],
+			'amount': tx_json['amount'],
+			'recipient': tx_json['recipient'],
 			'message': message,
 			'mosaics': mosaics,
 		}
 
 	@staticmethod
-	def _map_account_key_link_args(tx_dict):
+	def _map_account_key_link_args(tx_json):
 		return {
-			'mode': tx_dict['mode'],
-			'remote_account': tx_dict['remoteAccount'],
+			'mode': tx_json['mode'],
+			'remote_account': tx_json['remoteAccount'],
 		}
 
 	@staticmethod
-	def _map_multisig_account_modification_args(tx_dict):
+	def _map_multisig_account_modification_args(tx_json):
 		return {
-			'min_cosignatories': tx_dict['minCosignatories']['relativeChange'],
+			'min_cosignatories': tx_json['minCosignatories']['relativeChange'],
 			'modifications': [
 				Modification(
 					modification['modificationType'],
 					modification['cosignatoryAccount'])
-				for modification in tx_dict['modifications']
+				for modification in tx_json['modifications']
 			]
 		}
 
-	def _map_multisig_transaction_args(self, tx_dict, inner_hash):
+	def _map_multisig_transaction_args(self, tx_json, inner_hash):
 
-		other_transaction = tx_dict['otherTrans']
+		other_transaction = tx_json['otherTrans']
 
 		specific_args = self.map[other_transaction['type']](other_transaction)
 
@@ -475,36 +475,36 @@ class TransactionHandler:
 					signature['deadline'],
 					signature['signature']
 				)
-				for signature in tx_dict['signatures']
+				for signature in tx_json['signatures']
 			],
 			'other_transaction': TransactionFactory.create_transaction(other_transaction['type'], common_args, specific_args),
 			'inner_hash': inner_hash,
 		}
 
 	@staticmethod
-	def _map_namespace_registration_args(tx_dict):
+	def _map_namespace_registration_args(tx_json):
 		return {
-			'rental_fee_sink': tx_dict['rentalFeeSink'],
-			'rental_fee': tx_dict['rentalFee'],
-			'parent': tx_dict['parent'],
-			'namespace': tx_dict['newPart'],
+			'rental_fee_sink': tx_json['rentalFeeSink'],
+			'rental_fee': tx_json['rentalFee'],
+			'parent': tx_json['parent'],
+			'namespace': tx_json['newPart'],
 		}
 
 	@staticmethod
-	def _map_mosaic_definition_args(tx_dict):
-		mosaic_definition = tx_dict['mosaicDefinition']
+	def _map_mosaic_definition_args(tx_json):
+		mosaic_definition = tx_json['mosaicDefinition']
 		mosaic_id = mosaic_definition['id']
 		mosaic_levy = mosaic_definition['levy']
-		mosaic_properties_dict = {
+		mosaic_properties_json = {
 			item['name']: item['value']
 			for item in mosaic_definition['properties']
 		}
 
 		mosaic_properties = MosaicProperties(
-			int(mosaic_properties_dict['divisibility']),
-			int(mosaic_properties_dict['initialSupply']),
-			mosaic_properties_dict['supplyMutable'] != 'false',
-			mosaic_properties_dict['transferable'] != 'false'
+			int(mosaic_properties_json['divisibility']),
+			int(mosaic_properties_json['initialSupply']),
+			mosaic_properties_json['supplyMutable'] != 'false',
+			mosaic_properties_json['transferable'] != 'false'
 		)
 
 		if mosaic_levy:
@@ -516,8 +516,8 @@ class TransactionHandler:
 			)
 
 		return {
-			'creation_fee': tx_dict['creationFee'],
-			'creation_fee_sink': tx_dict['creationFeeSink'],
+			'creation_fee': tx_json['creationFee'],
+			'creation_fee_sink': tx_json['creationFeeSink'],
 			'creator': mosaic_definition['creator'],
 			'description': mosaic_definition['description'],
 			'namespace_name': f'{mosaic_id["namespaceId"]}.{mosaic_id["name"] }',
@@ -526,11 +526,11 @@ class TransactionHandler:
 		}
 
 	@staticmethod
-	def _map_mosaic_supply_change_args(tx_dict):
-		mosaic_id = tx_dict['mosaicId']
+	def _map_mosaic_supply_change_args(tx_json):
+		mosaic_id = tx_json['mosaicId']
 		return {
-			'supply_type': tx_dict['supplyType'],
-			'delta': tx_dict['delta'],
+			'supply_type': tx_json['supplyType'],
+			'delta': tx_json['delta'],
 			'namespace_name': f'{mosaic_id["namespaceId"]}.{mosaic_id["name"] }',
 		}
 
