@@ -4,7 +4,7 @@ class Block:
 	def __init__(self, height, timestamp, transactions, difficulty, block_hash, signer, signature, size):
 		"""Create a Block model."""
 
-		# pylint: disable=too-many-arguments
+		# pylint: disable=too-many-arguments,too-many-positional-arguments
 
 		self.height = height
 		self.timestamp = timestamp
