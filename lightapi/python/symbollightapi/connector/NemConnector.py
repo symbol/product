@@ -316,12 +316,12 @@ class NemConnector(BasicConnector):
 
 		return self._map_to_block(block)
 
-	def _map_to_block(self, block_dict):
-		block = block_dict['block']
-		difficulty = block_dict['difficulty']
-		block_hash = block_dict['hash']
-		transactions = block_dict['txes']
-		size = len(json.dumps(block_dict).encode('utf-8'))
+	def _map_to_block(self, block_json):
+		block = block_json['block']
+		difficulty = block_json['difficulty']
+		block_hash = block_json['hash']
+		transactions = block_json['txes']
+		size = len(json.dumps(block_json).encode('utf-8'))
 
 		return Block(
 			block['height'],
@@ -339,28 +339,28 @@ class NemConnector(BasicConnector):
 
 	@staticmethod
 	def _map_to_transaction(transaction, block_height):
-		"""Maps a transaction dictionary to a transaction object."""
+		"""Maps a transaction to a object."""
 
-		tx_dict = transaction['tx']
-		tx_type = tx_dict['type']
+		tx_json = transaction['tx']
+		tx_type = tx_json['type']
 
 		# Define common arguments for all transactions
 		common_args = {
 			'transaction_hash': transaction['hash'],
 			'height': block_height,
-			'sender': tx_dict['signer'],
-			'fee': tx_dict['fee'],
-			'timestamp': tx_dict['timeStamp'],
-			'deadline': tx_dict['deadline'],
-			'signature': tx_dict['signature'],
+			'sender': tx_json['signer'],
+			'fee': tx_json['fee'],
+			'timestamp': tx_json['timeStamp'],
+			'deadline': tx_json['deadline'],
+			'signature': tx_json['signature'],
 		}
 
 		specific_args = {}
 
 		if TransactionType.MULTISIG.value == tx_type:
-			specific_args = TransactionHandler().map[tx_type](tx_dict, transaction['innerHash'])
+			specific_args = TransactionHandler().map[tx_type](tx_json, transaction['innerHash'])
 		else:
-			specific_args = TransactionHandler().map[tx_type](tx_dict)
+			specific_args = TransactionHandler().map[tx_type](tx_json)
 
 		return TransactionFactory.create_transaction(tx_type, common_args, specific_args)
 
