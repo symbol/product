@@ -395,7 +395,7 @@ class TransactionHandler:
 			TransactionType.TRANSFER.value: self._map_transfer_args,
 			TransactionType.ACCOUNT_KEY_LINK.value: self._map_account_key_link_args,
 			TransactionType.MULTISIG_ACCOUNT_MODIFICATION.value: self._map_multisig_account_modification_args,
-			TransactionType.MULTISIG_TRANSACTION.value: self._map_multisig_transaction_args,
+			TransactionType.MULTISIG.value: self._map_multisig_transaction_args,
 			TransactionType.NAMESPACE_REGISTRATION.value: self._map_namespace_registration_args,
 			TransactionType.MOSAIC_DEFINITION.value: self._map_mosaic_definition_args,
 			TransactionType.MOSAIC_SUPPLY_CHANGE.value: self._map_mosaic_supply_change_args,
