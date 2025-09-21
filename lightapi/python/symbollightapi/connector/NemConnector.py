@@ -6,13 +6,13 @@ from collections import namedtuple
 from aiolimiter import AsyncLimiter
 from symbolchain.CryptoTypes import Hash256, PublicKey, Signature
 from symbolchain.facade.NemFacade import NemFacade
-from symbolchain.nem.Network import Address, NetworkTimestamp
 from symbolchain.nc import TransactionType
+from symbolchain.nem.Network import Address, NetworkTimestamp
 
 from ..model.Block import Block
 from ..model.Constants import DEFAULT_ASYNC_LIMITER_ARGUMENTS, TransactionStatus
 from ..model.Endpoint import Endpoint
-from ..model.Exceptions import NodeException, UnknownTransactionType
+from ..model.Exceptions import NodeException
 from ..model.NodeInfo import NodeInfo
 from ..model.Transaction import TransactionFactory, TransactionHandler
 from .BasicConnector import BasicConnector

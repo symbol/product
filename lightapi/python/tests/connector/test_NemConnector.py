@@ -1,3 +1,4 @@
+# pylint: disable=too-many-lines
 import json
 from binascii import unhexlify
 

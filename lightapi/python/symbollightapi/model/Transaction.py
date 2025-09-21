@@ -25,7 +25,7 @@ class Transaction:
 	):
 		"""Create Transaction model."""
 
-		# pylint: disable=too-many-arguments
+		# pylint: disable=too-many-arguments,too-many-positional-arguments
 
 		self.transaction_hash = transaction_hash
 		self.height = height
@@ -66,7 +66,7 @@ class TransferTransaction(Transaction):
 	):
 		"""Create TransferTransaction model."""
 
-		# pylint: disable=too-many-arguments
+		# pylint: disable=too-many-arguments,too-many-positional-arguments
 
 		super().__init__(
 			transaction_hash,
@@ -109,7 +109,7 @@ class AccountKeyLinkTransaction(Transaction):
 	):
 		"""Create AccountKeyLinkTransaction model."""
 
-		# pylint: disable=too-many-arguments
+		# pylint: disable=too-many-arguments,too-many-positional-arguments
 
 		super().__init__(
 			transaction_hash,
@@ -148,7 +148,7 @@ class MultisigAccountModificationTransaction(Transaction):
 	):
 		"""Create MultisigAccountModificationTransaction model."""
 
-		# pylint: disable=too-many-arguments
+		# pylint: disable=too-many-arguments,too-many-positional-arguments
 
 		super().__init__(
 			transaction_hash,
@@ -188,7 +188,7 @@ class MultisigTransaction(Transaction):
 	):
 		"""Create MultisigTransaction model."""
 
-		# pylint: disable=too-many-arguments
+		# pylint: disable=too-many-arguments,too-many-positional-arguments
 
 		super().__init__(
 			transaction_hash,
@@ -227,7 +227,7 @@ class CosignSignatureTransaction():
 	):
 		"""Create CosignSignatureTransaction model."""
 
-		# pylint: disable=too-many-arguments
+		# pylint: disable=too-many-arguments,too-many-positional-arguments
 
 		self.transaction_type = TransactionType.MULTISIG_COSIGNATURE.value
 		self.timestamp = timestamp
@@ -267,7 +267,7 @@ class NamespaceRegistrationTransaction(Transaction):
 	):
 		"""Create NamespaceRegistration model."""
 
-		# pylint: disable=too-many-arguments
+		# pylint: disable=too-many-arguments,too-many-positional-arguments
 
 		super().__init__(
 			transaction_hash,
@@ -315,7 +315,7 @@ class MosaicDefinitionTransaction(Transaction):
 	):
 		"""Create MosaicDefinitionTransaction model."""
 
-		# pylint: disable=too-many-arguments
+		# pylint: disable=too-many-arguments,too-many-positional-arguments
 
 		super().__init__(
 			transaction_hash,
@@ -365,7 +365,7 @@ class MosaicSupplyChangeTransaction(Transaction):
 	):
 		"""Create MosaicSupplyChangeTransaction model."""
 
-		# pylint: disable=too-many-arguments
+		# pylint: disable=too-many-arguments,too-many-positional-arguments
 
 		super().__init__(
 			transaction_hash,
