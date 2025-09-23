@@ -5,6 +5,7 @@ It includes our optin manager.
 
 | component | lint | build | test | coverage | package |
 |-----------|------|-------|------|----------| ------- |
+| [@explorer/frontend](explorer/frontend) | [![lint][explorer-frontend-lint]][explorer-frontend-job] | | [![test][explorer-frontend-test]][explorer-frontend-job] | [![][explorer-frontend-cov]][explorer-frontend-cov-link]
 | [@explorer/nodewatch](explorer/nodewatch) | [![lint][explorer-nodewatch-lint]][explorer-nodewatch-job] | | [![test][explorer-nodewatch-test]][explorer-nodewatch-job] | [![][explorer-nodewatch-cov]][explorer-nodewatch-cov-link]
 | [@explorer/rest](explorer/rest) | [![lint][explorer-rest-lint]][explorer-rest-job] | | [![test][explorer-rest-test]][explorer-rest-job] | [![][explorer-rest-cov]][explorer-rest-cov-link]
 | [@faucet/authenticator](faucet/authenticator) | [![lint][faucet-authenticator-lint]][faucet-authenticator-job] | | [![test][faucet-authenticator-test]][faucet-authenticator-job]| [![][faucet-authenticator-cov]][faucet-authenticator-cov-link] |
@@ -24,6 +25,12 @@ Detailed version can be seen on [codecov.io][product-cov-link].
 
 [product-cov]: https://codecov.io/gh/symbol/product/branch/dev/graphs/tree.svg
 [product-cov-link]: https://codecov.io/gh/symbol/product/tree/dev
+
+[explorer-frontend-job]: https://jenkins.symbolsyndicate.us/blue/organizations/jenkins/Symbol%2Fgenerated%2Fproduct%2Fexplorer-frontend/activity?branch=dev
+[explorer-frontend-lint]: https://jenkins.symbolsyndicate.us/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Fexplorer-frontend%2Fdev%2F&config=explorer-frontend-lint
+[explorer-frontend-test]: https://jenkins.symbolsyndicate.us/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Fexplorer-frontend%2Fdev%2F&config=explorer-frontend-test
+[explorer-frontend-cov]: https://codecov.io/gh/symbol/product/branch/dev/graph/badge.svg?token=SSYYBMK0M7&flag=explorer-frontend
+[explorer-frontend-cov-link]: https://codecov.io/gh/symbol/product/tree/dev/explorer/frontend
 
 [explorer-nodewatch-job]: https://jenkins.symbolsyndicate.us/blue/organizations/jenkins/Symbol%2Fgenerated%2Fproduct%2Fexplorer-nodewatch/activity?branch=dev
 [explorer-nodewatch-lint]: https://jenkins.symbolsyndicate.us/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Fexplorer-nodewatch%2Fdev%2F&config=explorer-nodewatch-lint
