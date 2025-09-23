@@ -21,9 +21,9 @@ class DatabaseConnection:
 			)
 
 			return self
-		except Exception as e:
-			log.error(f"Failed to connect to database: {e}")
-			raise e
+		except Exception as error:
+			log.error(f'Failed to connect to database: {error}')
+			raise error
 
 	def __exit__(self, exc_type, exc_value, traceback):
 		"""Disconnects from databases."""

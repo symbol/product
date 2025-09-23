@@ -34,6 +34,7 @@ class DatabaseConnectionTest(unittest.TestCase):
 		with database_connection as connection:
 			# Assert:
 			self.assertEqual(connection.connection, database_connection.connection)
+			# pylint: disable=duplicate-code
 			mock_connect.assert_called_once_with(
 				database=self.db_config['database'],
 				user=self.db_config['user'],
