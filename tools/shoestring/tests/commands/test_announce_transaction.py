@@ -85,7 +85,7 @@ def _create_aggregate_transaction_descriptor(transaction_type):
 async def test_can_announce_aggregate_complete_transaction(server):  # pylint: disable=redefined-outer-name
 	# Arrange:
 	def create_transaction_descriptor():
-		return _create_aggregate_transaction_descriptor('aggregate_complete_transaction_v2')
+		return _create_aggregate_transaction_descriptor('aggregate_complete_transaction_v3')
 
 	# Act + Assert:
 	await _run_test(server, 'transactions', create_transaction_descriptor)
@@ -94,7 +94,7 @@ async def test_can_announce_aggregate_complete_transaction(server):  # pylint: d
 async def test_can_announce_aggregate_bonded_transaction(server):  # pylint: disable=redefined-outer-name
 	# Arrange:
 	def create_transaction_descriptor():
-		return _create_aggregate_transaction_descriptor('aggregate_bonded_transaction_v2')
+		return _create_aggregate_transaction_descriptor('aggregate_bonded_transaction_v3')
 
 	# Act + Assert:
 	await _run_test(server, 'transactions/partial', create_transaction_descriptor)
