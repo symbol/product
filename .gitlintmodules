@@ -1,1 +1,1 @@
-bridge|explorer/nodewatch|explorer/puller|explorer/rest|faucet/authenticator|faucet/backend|faucet/frontend|lightapi/python|monorepo|optin/puller|optin/reporting|optin/reporting/client|tools/shoestring|tools/vanity
+bridge|explorer/frontend|explorer/nodewatch|explorer/puller|explorer/rest|faucet/authenticator|faucet/backend|faucet/frontend|lightapi/python|monorepo|optin/puller|optin/reporting|optin/reporting/client|tools/shoestring|tools/vanity|wallet/common-core|wallet/common-ethereum|wallet/common-nem|wallet/common-symbol|wallet/nem-mobile|wallet/symbol-mobile
