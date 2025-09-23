@@ -3,6 +3,6 @@ APScheduler==3.11.0
 Flask==3.1.2
 pandas==2.3.2
 plotly==5.24.1
-symbol-sdk-python==3.2.3
+symbol-sdk-python==3.3.0
 zenlog==1.1
 flask_cors==6.0.1

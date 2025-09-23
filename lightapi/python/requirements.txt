@@ -1,4 +1,4 @@
 aiohttp~=3.12.6
 aiolimiter~=1.2.1
-symbol-sdk-python~=3.2.3
+symbol-sdk-python~=3.3.0
 zenlog~=1.1
