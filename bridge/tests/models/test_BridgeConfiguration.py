@@ -20,6 +20,7 @@ class BridgeConfigurationTest(unittest.TestCase):
 
 	VALID_PRICE_ORACLE_CONFIGURATION = {
 		'url': 'https:/oracle.foo/price/v3',
+		'accessToken': 'D864696403D4DED92F2C82C3BEE33C41E90304B521F86E6CD37A7C808C9BDF80'
 	}
 
 	VALID_NETWORK_CONFIGURATION = {
@@ -77,6 +78,7 @@ class BridgeConfigurationTest(unittest.TestCase):
 
 		# Assert:
 		self.assertEqual('https:/oracle.foo/price/v3', price_oracle_config.url)
+		self.assertEqual('D864696403D4DED92F2C82C3BEE33C41E90304B521F86E6CD37A7C808C9BDF80', price_oracle_config.access_token)
 
 	def test_cannot_parse_price_oracle_configuration_incomplete(self):
 		self._assert_cannot_parse_incomplete_configuration(parse_price_oracle_configuration, self.VALID_PRICE_ORACLE_CONFIGURATION)
@@ -148,6 +150,7 @@ class BridgeConfigurationTest(unittest.TestCase):
 			self.assertEqual('alpha.log', config.machine.log_filename)
 
 			self.assertEqual('https:/oracle.foo/price/v3', config.price_oracle.url)
+			self.assertEqual('D864696403D4DED92F2C82C3BEE33C41E90304B521F86E6CD37A7C808C9BDF80', config.price_oracle.access_token)
 
 			self.assertEqual('foo', config.native_network.blockchain)
 			self.assertEqual('bar', config.native_network.network)

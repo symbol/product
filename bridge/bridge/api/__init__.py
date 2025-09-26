@@ -8,12 +8,12 @@ from flask import Flask, jsonify, request
 from symbolchain.CryptoTypes import Hash256
 from symbollightapi.model.Exceptions import NodeException
 
-from ..CoinGeckoConnector import CoinGeckoConnector
 from ..ConversionRateCalculatorFactory import ConversionRateCalculatorFactory
 from ..db.Databases import Databases
 from ..models.BridgeConfiguration import parse_bridge_configuration
 from ..NetworkFacadeLoader import load_network_facade
 from ..NetworkUtils import BalanceTransfer, estimate_balance_transfer_fees
+from ..price_oracle.PriceOracleLoader import load_price_oracle
 from ..WorkflowUtils import create_conversion_rate_calculator_factory, is_native_to_native_conversion
 from .Validators import is_valid_address_string, is_valid_decimal_string, is_valid_hash_string
 
@@ -281,7 +281,7 @@ def create_app():
 	config = parse_bridge_configuration(config_path)
 	context = BridgeContext(config)
 
-	price_oracle = CoinGeckoConnector(config.price_oracle.url)
+	price_oracle = load_price_oracle(config.price_oracle)
 
 	@app.route('/')
 	def root():  # pylint: disable=unused-variable
