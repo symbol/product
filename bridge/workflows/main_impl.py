@@ -6,8 +6,10 @@ from traceback import format_exception
 
 from bridge.db.Databases import Databases
 from bridge.models.BridgeConfiguration import parse_bridge_configuration
+from bridge.models.Constants import ExecutionContext
 from bridge.NetworkFacadeLoader import load_network_facade
 from bridge.price_oracle.PriceOracleLoader import load_price_oracle
+from bridge.WorkflowUtils import validate_strategy_configuration
 
 
 def parse_args(description):
@@ -49,10 +51,14 @@ async def main_bootstrapper(program_description, main_impl):
 	native_facade = await load_network_facade(config.native_network)
 	wrapped_facade = await load_network_facade(config.wrapped_network)
 
+	validate_strategy_configuration(config.strategy, wrapped_facade)
+
 	price_oracle = load_price_oracle(config.price_oracle)
 
 	with Databases(config.machine.database_directory, native_facade, wrapped_facade) as databases:
 		databases.create_tables()
 
-		logger.info('running in unwrap mode? %s', args.unwrap)
-		await main_impl(args.unwrap, databases, native_facade, wrapped_facade, price_oracle)
+		execution_context = ExecutionContext(args.unwrap, config.strategy.mode)
+		logger.info('         strategy mode: %s', execution_context.strategy_mode)
+		logger.info('running in unwrap mode? %s', execution_context.is_unwrap_mode)
+		await main_impl(execution_context, databases, native_facade, wrapped_facade, price_oracle)

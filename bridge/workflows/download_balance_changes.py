@@ -71,8 +71,8 @@ async def download_balance_changes(database, network):
 	])
 
 
-async def main_impl(is_unwrap_mode, databases, native_facade, _wrapped_facade, _price_oracle):
-	if is_unwrap_mode:
+async def main_impl(execution_context, databases, native_facade, _wrapped_facade, _price_oracle):
+	if execution_context.is_unwrap_mode:
 		raise ValueError('this workflow is not compatible with unwrap mode')
 
 	await download_balance_changes(databases.balance_change, native_facade)

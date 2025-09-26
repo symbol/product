@@ -6,7 +6,8 @@ from bridge.models.BridgeConfiguration import (
 	parse_bridge_configuration,
 	parse_machine_configuration,
 	parse_network_configuration,
-	parse_price_oracle_configuration
+	parse_price_oracle_configuration,
+	parse_strategy_configuration
 )
 
 
@@ -23,6 +24,10 @@ class BridgeConfigurationTest(unittest.TestCase):
 	VALID_PRICE_ORACLE_CONFIGURATION = {
 		'url': 'https:/oracle.foo/price/v3',
 		'accessToken': 'D864696403D4DED92F2C82C3BEE33C41E90304B521F86E6CD37A7C808C9BDF80'
+	}
+
+	VALID_STRATEGY_CONFIGURATION = {
+		'mode': 'staked'
 	}
 
 	VALID_NETWORK_CONFIGURATION = {
@@ -89,6 +94,27 @@ class BridgeConfigurationTest(unittest.TestCase):
 
 	# endregion
 
+	# region strategy configuration
+
+	def test_can_parse_valid_strategy_configuration(self):
+		# Arrange:
+		for mode in ('staked', 'wrapped', 'native'):
+			# Act:
+			strategy_config = parse_strategy_configuration({'mode': mode})
+
+			# Assert:
+			self.assertEqual(mode, strategy_config.mode)
+
+	def test_cannot_parse_strategy_configuration_incomplete(self):
+		self._assert_cannot_parse_incomplete_configuration(parse_strategy_configuration, self.VALID_STRATEGY_CONFIGURATION)
+
+	def test_cannot_parse_strategy_configuration_invalid(self):
+		for mode in ('foo', 'bar'):
+			with self.assertRaisesRegex(ValueError, f'mode "{mode}" is not supported'):
+				parse_strategy_configuration({'mode': mode})
+
+	# endregion
+
 	# region network configuration
 
 	def test_can_parse_valid_network_configuration(self):
@@ -143,6 +169,7 @@ class BridgeConfigurationTest(unittest.TestCase):
 			with open(configuration_file, 'wt', encoding='utf8') as outfile:
 				self._write_section(outfile, '[machine]', self.VALID_MACHINE_CONFIGURATION)
 				self._write_section(outfile, '\n[price_oracle]', self.VALID_PRICE_ORACLE_CONFIGURATION)
+				self._write_section(outfile, '\n[strategy]', self.VALID_STRATEGY_CONFIGURATION)
 				self._write_section(outfile, '\n[native_network]', self.VALID_NETWORK_CONFIGURATION)
 				self._write_section(outfile, '\n[wrapped_network]', self.VALID_NETWORK_CONFIGURATION_2)
 
@@ -157,6 +184,8 @@ class BridgeConfigurationTest(unittest.TestCase):
 
 			self.assertEqual('https:/oracle.foo/price/v3', config.price_oracle.url)
 			self.assertEqual('D864696403D4DED92F2C82C3BEE33C41E90304B521F86E6CD37A7C808C9BDF80', config.price_oracle.access_token)
+
+			self.assertEqual('staked', config.strategy.mode)
 
 			self.assertEqual('foo', config.native_network.blockchain)
 			self.assertEqual('bar', config.native_network.network)
