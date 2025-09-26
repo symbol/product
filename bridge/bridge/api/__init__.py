@@ -11,6 +11,7 @@ from symbollightapi.model.Exceptions import NodeException
 from ..ConversionRateCalculatorFactory import ConversionRateCalculatorFactory
 from ..db.Databases import Databases
 from ..models.BridgeConfiguration import parse_bridge_configuration
+from ..models.Constants import ExecutionContext
 from ..NetworkFacadeLoader import load_network_facade
 from ..NetworkUtils import BalanceTransfer, estimate_balance_transfer_fees
 from ..price_oracle.PriceOracleLoader import load_price_oracle
@@ -172,7 +173,7 @@ async def _handle_wrap_prepare(is_unwrap_mode, context, fee_multiplier):  # pyli
 
 	with Databases(*context.database_params) as databases:
 		conversion_rate_calculator_factory = create_conversion_rate_calculator_factory(
-			is_unwrap_mode,
+			ExecutionContext(is_unwrap_mode, context.strategy_mode),
 			databases,
 			context.native_facade,
 			context.wrapped_facade,
@@ -231,6 +232,7 @@ class BridgeContext:  # pylint: disable=too-many-instance-attributes
 		self._semaphore = asyncio.Semaphore(1)
 		self._is_loaded = False
 
+		self.strategy_mode = self._config.strategy.mode
 		self.native_facade = None
 		self.wrapped_facade = None
 		self.database_params = None

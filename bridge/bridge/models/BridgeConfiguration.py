@@ -3,10 +3,11 @@ from collections import namedtuple
 
 MachineConfiguration = namedtuple('MachineConfiguration', ['database_directory', 'log_filename', 'log_backup_count', 'max_log_size'])
 PriceOracleConfiguration = namedtuple('PriceOracle', ['url', 'access_token'])
+StrategyConfiguration = namedtuple('StrategyConfiguration', ['mode'])
 NetworkConfiguration = namedtuple('NetworkConfiguration', [
 	'blockchain', 'network', 'endpoint', 'bridge_address', 'mosaic_id', 'extensions'
 ])
-BridgeConfiguration = namedtuple('BridgeConfiguration', ['machine', 'price_oracle', 'native_network', 'wrapped_network'])
+BridgeConfiguration = namedtuple('BridgeConfiguration', ['machine', 'price_oracle', 'strategy', 'native_network', 'wrapped_network'])
 
 
 def _camel_case_to_snake_case(value):
@@ -36,6 +37,16 @@ def parse_price_oracle_configuration(config):
 	return PriceOracleConfiguration(config['url'], config['accessToken'])
 
 
+def parse_strategy_configuration(config):
+	"""Parses strategy configuration."""
+
+	mode = config['mode']
+	if mode not in ('staked', 'wrapped', 'native'):
+		raise ValueError(f'mode "{mode}" is not supported')
+
+	return StrategyConfiguration(mode)
+
+
 def parse_network_configuration(config):
 	"""Parses network configuration."""
 
@@ -61,5 +72,6 @@ def parse_bridge_configuration(filename):
 	return BridgeConfiguration(
 		parse_machine_configuration(parser['machine']),
 		parse_price_oracle_configuration(parser['price_oracle']),
+		parse_strategy_configuration(parser['strategy']),
 		parse_network_configuration(parser['native_network']),
 		parse_network_configuration(parser['wrapped_network']))
