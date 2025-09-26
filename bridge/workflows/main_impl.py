@@ -1,7 +1,7 @@
 import argparse
 import logging
 import sys
-from logging.handlers import TimedRotatingFileHandler
+from logging.handlers import RotatingFileHandler
 
 from bridge.db.Databases import Databases
 from bridge.models.BridgeConfiguration import parse_bridge_configuration
@@ -29,7 +29,10 @@ async def main_bootstrapper(program_description, main_impl):
 		level=logging.DEBUG,
 		format='%(asctime)s [%(levelname)s] %(module)s: %(message)s',
 		handlers=[
-			TimedRotatingFileHandler(filename=config.machine.log_filename, when='D'),
+			RotatingFileHandler(
+				filename=config.machine.log_filename,
+				backupCount=config.machine.log_backup_count,
+				maxBytes=config.machine.max_log_size),
 			logging.StreamHandler(sys.stdout)
 		])
 	logger = logging.getLogger(__name__)

@@ -16,6 +16,8 @@ class BridgeConfigurationTest(unittest.TestCase):
 	VALID_MACHINE_CONFIGURATION = {
 		'databaseDirectory': '_temp',
 		'logFilename': 'alpha.log',
+		'logBackupCount': '7',
+		'maxLogSize': '12345'
 	}
 
 	VALID_PRICE_ORACLE_CONFIGURATION = {
@@ -64,6 +66,8 @@ class BridgeConfigurationTest(unittest.TestCase):
 		# Assert:
 		self.assertEqual('_temp', machine_config.database_directory)
 		self.assertEqual('alpha.log', machine_config.log_filename)
+		self.assertEqual(7, machine_config.log_backup_count)
+		self.assertEqual(12345, machine_config.max_log_size)
 
 	def test_cannot_parse_machine_configuration_incomplete(self):
 		self._assert_cannot_parse_incomplete_configuration(parse_machine_configuration, self.VALID_MACHINE_CONFIGURATION)
@@ -148,6 +152,8 @@ class BridgeConfigurationTest(unittest.TestCase):
 			# Assert:
 			self.assertEqual('_temp', config.machine.database_directory)
 			self.assertEqual('alpha.log', config.machine.log_filename)
+			self.assertEqual(7, config.machine.log_backup_count)
+			self.assertEqual(12345, config.machine.max_log_size)
 
 			self.assertEqual('https:/oracle.foo/price/v3', config.price_oracle.url)
 			self.assertEqual('D864696403D4DED92F2C82C3BEE33C41E90304B521F86E6CD37A7C808C9BDF80', config.price_oracle.access_token)

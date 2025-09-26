@@ -1,7 +1,7 @@
 import configparser
 from collections import namedtuple
 
-MachineConfiguration = namedtuple('MachineConfiguration', ['database_directory', 'log_filename'])
+MachineConfiguration = namedtuple('MachineConfiguration', ['database_directory', 'log_filename', 'log_backup_count', 'max_log_size'])
 PriceOracleConfiguration = namedtuple('PriceOracle', ['url', 'access_token'])
 NetworkConfiguration = namedtuple('NetworkConfiguration', [
 	'blockchain', 'network', 'endpoint', 'bridge_address', 'mosaic_id', 'extensions'
@@ -23,7 +23,11 @@ def _camel_case_to_snake_case(value):
 def parse_machine_configuration(config):
 	"""Parses machine configuration."""
 
-	return MachineConfiguration(config['databaseDirectory'], config['logFilename'])
+	return MachineConfiguration(
+		config['databaseDirectory'],
+		config['logFilename'],
+		int(config['logBackupCount']),
+		int(config['maxLogSize']))
 
 
 def parse_price_oracle_configuration(config):
