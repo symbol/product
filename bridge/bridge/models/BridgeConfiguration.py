@@ -2,7 +2,7 @@ import configparser
 from collections import namedtuple
 
 MachineConfiguration = namedtuple('MachineConfiguration', ['database_directory', 'log_filename'])
-PriceOracleConfiguration = namedtuple('PriceOracle', ['url'])
+PriceOracleConfiguration = namedtuple('PriceOracle', ['url', 'access_token'])
 NetworkConfiguration = namedtuple('NetworkConfiguration', [
 	'blockchain', 'network', 'endpoint', 'bridge_address', 'mosaic_id', 'extensions'
 ])
@@ -29,7 +29,7 @@ def parse_machine_configuration(config):
 def parse_price_oracle_configuration(config):
 	"""Parses price oracle configuration."""
 
-	return PriceOracleConfiguration(config['url'])
+	return PriceOracleConfiguration(config['url'], config['accessToken'])
 
 
 def parse_network_configuration(config):
