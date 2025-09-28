@@ -101,6 +101,12 @@ def _configure_app_directory(directory, native_server, wrapped_server, coingecko
 	return database_directory
 
 
+def make_app(database_directory):
+	app = create_app()  # pylint: disable=redefined-outer-name
+	app.database_directory = database_directory
+	return app
+
+
 @pytest.fixture
 def app(nem_server, symbol_server, coingecko_server):  # pylint: disable=redefined-outer-name
 	def update_wrapped_config(config):
@@ -108,9 +114,7 @@ def app(nem_server, symbol_server, coingecko_server):  # pylint: disable=redefin
 
 	with tempfile.TemporaryDirectory() as temp_directory:
 		database_directory = _configure_app_directory(temp_directory, nem_server, symbol_server, coingecko_server, update_wrapped_config)
-		app = create_app()  # pylint: disable=redefined-outer-name
-		app.database_directory = database_directory
-		yield app
+		yield make_app(database_directory)
 
 
 @pytest.fixture
@@ -124,23 +128,23 @@ def app_n2n(nem_server, ethereum_server, coingecko_server):  # pylint: disable=r
 
 	with tempfile.TemporaryDirectory() as temp_directory:
 		database_directory = _configure_app_directory(temp_directory, nem_server, ethereum_server, coingecko_server, update_wrapped_config)
-		app = create_app()  # pylint: disable=redefined-outer-name
-		app.database_directory = database_directory
-		yield app
+		yield make_app(database_directory)
 
 
-@pytest.fixture
-def client(app):  # pylint: disable=redefined-outer-name
+def make_test_client_from_app(app):  # pylint: disable=redefined-outer-name
 	test_client = app.test_client()
 	test_client.database_directory = app.database_directory
 	return test_client
 
 
 @pytest.fixture
+def client(app):  # pylint: disable=redefined-outer-name
+	return make_test_client_from_app(app)
+
+
+@pytest.fixture
 def client_n2n(app_n2n):  # pylint: disable=redefined-outer-name
-	test_client = app_n2n.test_client()
-	test_client.database_directory = app_n2n.database_directory
-	return test_client
+	return make_test_client_from_app(app_n2n)
 
 # endregion
 
@@ -809,10 +813,10 @@ async def test_can_prepare_wrap(client):  # pylint: disable=redefined-outer-name
 		_assert_json_response_success(response)
 		assert {
 			'grossAmount': 205666666,  # floor(1234000000 / 6),
-			'conversionFee': '453190.1158',  # grossAmount * config(percentageConversionFee)[0.003] * feeMultiplier
+			'conversionFee': '616999.9980',  # grossAmount * config(percentageConversionFee)[0.003]
 			'transactionFee': '6463.6516',  # 176 * config(transactionFeeMultiplier)[50] * feeMultiplier
-			'totalFee': 459654,  # ceil(conversionFee + transactionFee)
-			'netAmount': 205207012,  # grossAmount - totalFee
+			'totalFee': 623464,  # ceil(conversionFee + transactionFee)
+			'netAmount': 205043202,  # grossAmount - totalFee
 
 			'diagnostics': {
 				'height': '4444',

@@ -26,12 +26,10 @@ async def estimate_balance_transfer_fees(network_facade, balance_transfer, fee_m
 
 	mosaic_id = network_facade.extract_mosaic_id().id
 	transaction_fee = Decimal(await _await_if_awaitable(network_facade.calculate_transfer_transaction_fee(balance_transfer, mosaic_id)))
+	transaction_fee *= fee_multiplier  # convert fee to source network currency
 
 	percentage_conversion_fee = Decimal(network_facade.config.extensions.get('percentage_conversion_fee', 0))
 	conversion_fee = percentage_conversion_fee * Decimal(balance_transfer.amount)
-
-	transaction_fee *= fee_multiplier
-	conversion_fee *= fee_multiplier
 
 	total_fee = int((transaction_fee + conversion_fee).quantize(1, rounding=ROUND_UP))
 
