@@ -2,6 +2,7 @@ import argparse
 import logging
 import sys
 from logging.handlers import RotatingFileHandler
+from traceback import format_exception
 
 from bridge.db.Databases import Databases
 from bridge.models.BridgeConfiguration import parse_bridge_configuration
@@ -21,6 +22,12 @@ def print_banner(lines):
 	logger.info('\n'.join(['', '*** *** ***'] + lines + ['*** *** ***']))
 
 
+def unhandled_exception_handler(exc_type, exc_value, exc_traceback):
+	logger = logging.getLogger(__name__)
+	logger.fatal(''.join(format_exception(exc_type, exc_value, exc_traceback)))
+	sys.exit(1)
+
+
 async def main_bootstrapper(program_description, main_impl):
 	args = parse_args(program_description)
 	config = parse_bridge_configuration(args.config)
@@ -36,6 +43,8 @@ async def main_bootstrapper(program_description, main_impl):
 			logging.StreamHandler(sys.stdout)
 		])
 	logger = logging.getLogger(__name__)
+
+	sys.excepthook = unhandled_exception_handler
 
 	native_facade = await load_network_facade(config.native_network)
 	wrapped_facade = await load_network_facade(config.wrapped_network)
