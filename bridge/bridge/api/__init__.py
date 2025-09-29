@@ -17,7 +17,7 @@ from ..price_oracle.PriceOracleLoader import load_price_oracle
 from ..WorkflowUtils import create_conversion_rate_calculator_factory, is_native_to_native_conversion
 from .Validators import is_valid_address_string, is_valid_decimal_string, is_valid_hash_string
 
-FilterOptions = namedtuple('FilterOptions', ['address', 'transaction_hash', 'offset', 'limit'])
+FilterOptions = namedtuple('FilterOptions', ['address', 'transaction_hash', 'offset', 'limit', 'sort', 'payout_status'])
 PrepareOptions = namedtuple('PrepareOptions', ['recipient_address', 'amount'])
 
 # region handler implementations
@@ -34,14 +34,26 @@ def _network_config_to_dict(config):
 	}
 
 
-def _parse_filter_parameters(network_facade, address, transaction_hash):
+def _parse_filter_parameters(context, address, transaction_hash, is_unwrap_mode):
+	# pylint: disable=too-many-return-statements, too-many-branches
 	offset = request.args.get('offset', '0')
 	limit = request.args.get('limit', '25')
+	sort = request.args.get('sort', '1')
+	payout_status = request.args.get('payout_status', None)
 
-	if not is_valid_address_string(network_facade, address):
-		return (None, 'address')
+	if address:
+		if is_valid_address_string(context.native_facade, address):
+			address = context.native_facade.make_address(address)
 
-	address = network_facade.make_address(address)
+			if is_unwrap_mode:
+				address = str(address)  # destination addresses are stored as string
+		elif is_valid_address_string(context.wrapped_facade, address):
+			address = context.wrapped_facade.make_address(address)
+
+			if not is_unwrap_mode:
+				address = str(address)  # destination addresses are stored as string
+		else:
+			return (None, 'address')
 
 	if transaction_hash:
 		if not is_valid_hash_string(transaction_hash):
@@ -59,19 +71,31 @@ def _parse_filter_parameters(network_facade, address, transaction_hash):
 
 	limit = int(limit)
 
-	return (FilterOptions(address, transaction_hash, offset, limit), None)
+	if not is_valid_decimal_string(sort):
+		return (None, 'sort')
+
+	sort = int(sort)
+
+	if payout_status:
+		if not is_valid_decimal_string(payout_status):
+			return (None, 'payout_status')
+
+		payout_status = int(payout_status)
+
+	return (FilterOptions(address, transaction_hash, offset, limit, sort, payout_status), None)
 
 
 def _make_bad_request_response(parse_failure_identifier):
 	return jsonify({'error': f'{parse_failure_identifier} parameter is invalid'}), 400
 
 
-def _handle_wrap_requests(network_facade, address, transaction_hash, database_params, database_name):
-	(filter_options, parse_failure_identifier) = _parse_filter_parameters(network_facade, address, transaction_hash)
+def _handle_wrap_requests(context, address, transaction_hash, database_name):
+	is_unwrap_mode = 'unwrap_request' == database_name
+	(filter_options, parse_failure_identifier) = _parse_filter_parameters(context, address, transaction_hash, is_unwrap_mode)
 	if parse_failure_identifier:
 		return _make_bad_request_response(parse_failure_identifier)
 
-	with Databases(*database_params) as databases:
+	with Databases(*context.database_params) as databases:
 		views = getattr(databases, database_name).find_requests(*filter_options)
 		return jsonify([
 			{
@@ -92,18 +116,21 @@ def _handle_wrap_requests(network_facade, address, transaction_hash, database_pa
 				'payoutTotalFee': str(int(view.payout_total_fee)) if view.payout_total_fee else None,
 				'payoutConversionRate': str(int(view.payout_conversion_rate)) if view.payout_conversion_rate else None,
 
-				'payoutTimestamp': view.payout_timestamp
+				'payoutTimestamp': view.payout_timestamp,
+
+				'errorMessage': view.error_message
 			} for view in views
 		])
 
 
-def _handle_wrap_errors(network_facade, address, transaction_hash, database_params, database_name):
-	(filter_options, parse_failure_identifier) = _parse_filter_parameters(network_facade, address, transaction_hash)
+def _handle_wrap_errors(context, address, transaction_hash, database_name):
+	is_unwrap_mode = 'unwrap_request' == database_name
+	(filter_options, parse_failure_identifier) = _parse_filter_parameters(context, address, transaction_hash, is_unwrap_mode)
 	if parse_failure_identifier:
 		return _make_bad_request_response(parse_failure_identifier)
 
-	with Databases(*database_params) as databases:
-		views = getattr(databases, database_name).find_errors(*filter_options)
+	with Databases(*context.database_params) as databases:
+		views = getattr(databases, database_name).find_errors(*([*filter_options][:-1]))  # strip payout_status filter option
 		return jsonify([
 			{
 				'requestTransactionHeight': str(view.request_transaction_height),
@@ -225,19 +252,21 @@ class BridgeContext:
 
 
 def add_wrap_routes(app, context, price_oracle):
+	@app.route('/wrap/requests')
 	@app.route('/wrap/requests/<address>')
-	@app.route('/wrap/requests/<address>/<transaction_hash>')
-	async def wrap_requests(address, transaction_hash=None):  # pylint: disable=unused-variable
+	@app.route('/wrap/requests/hash/<transaction_hash>')
+	async def wrap_requests(address=None, transaction_hash=None):  # pylint: disable=unused-variable
 		await context.load()
 
-		return _handle_wrap_requests(context.native_facade, address, transaction_hash, context.database_params, 'wrap_request')
+		return _handle_wrap_requests(context, address, transaction_hash, 'wrap_request')
 
+	@app.route('/wrap/errors')
 	@app.route('/wrap/errors/<address>')
-	@app.route('/wrap/errors/<address>/<transaction_hash>')
-	async def wrap_errors(address, transaction_hash=None):  # pylint: disable=unused-variable
+	@app.route('/wrap/errors/hash/<transaction_hash>')
+	async def wrap_errors(address=None, transaction_hash=None):  # pylint: disable=unused-variable
 		await context.load()
 
-		return _handle_wrap_errors(context.native_facade, address, transaction_hash, context.database_params, 'wrap_request')
+		return _handle_wrap_errors(context, address, transaction_hash, 'wrap_request')
 
 	@app.route('/wrap/prepare', methods=['POST'])
 	async def wrap_prepare():
@@ -252,19 +281,21 @@ def add_wrap_routes(app, context, price_oracle):
 
 
 def add_unwrap_routes(app, context):
+	@app.route('/unwrap/requests')
 	@app.route('/unwrap/requests/<address>')
-	@app.route('/unwrap/requests/<address>/<transaction_hash>')
-	async def unwrap_requests(address, transaction_hash=None):  # pylint: disable=unused-variable
+	@app.route('/unwrap/requests/hash/<transaction_hash>')
+	async def unwrap_requests(address=None, transaction_hash=None):  # pylint: disable=unused-variable
 		await context.load()
 
-		return _handle_wrap_requests(context.wrapped_facade, address, transaction_hash, context.database_params, 'unwrap_request')
+		return _handle_wrap_requests(context, address, transaction_hash, 'unwrap_request')
 
+	@app.route('/unwrap/errors')
 	@app.route('/unwrap/errors/<address>')
-	@app.route('/unwrap/errors/<address>/<transaction_hash>')
-	async def unwrap_errors(address, transaction_hash=None):  # pylint: disable=unused-variable
+	@app.route('/unwrap/errors/hash/<transaction_hash>')
+	async def unwrap_errors(address=None, transaction_hash=None):  # pylint: disable=unused-variable
 		await context.load()
 
-		return _handle_wrap_errors(context.wrapped_facade, address, transaction_hash, context.database_params, 'unwrap_request')
+		return _handle_wrap_errors(context, address, transaction_hash, 'unwrap_request')
 
 	@app.route('/unwrap/prepare', methods=['POST'])
 	async def unwrap_prepare():
