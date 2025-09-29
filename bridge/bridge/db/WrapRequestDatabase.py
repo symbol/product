@@ -17,7 +17,8 @@ WrapRequestView = namedtuple('WrapRequestView', [
 	'request_amount', 'destination_address', 'payout_status', 'payout_transaction_hash',
 	'request_timestamp',
 	'payout_transaction_height', 'payout_net_amount', 'payout_total_fee', 'payout_conversion_rate',
-	'payout_timestamp'
+	'payout_timestamp',
+	'error_message'
 ])
 
 
@@ -440,12 +441,17 @@ class WrapRequestDatabase(MaxProcessedHeightMixin):  # pylint: disable=too-many-
 
 	# region find_errors, find_requests
 
-	def find_errors(self, address, transaction_hash=None, offset=0, limit=25):
+	@staticmethod
+	def _unwrap_search_parameter(value):
+		return value.bytes if hasattr(value, 'bytes') else value
+
+	def find_errors(self, address=None, transaction_hash=None, offset=0, limit=25, sort_ascending=True):
+		# pylint: disable=too-many-arguments,too-many-positional-arguments
 		"""Finds all errors for an address, optionally filtered by hash."""
 
 		cursor = self.connection.cursor()
 		cursor.execute(
-			'''
+			f'''
 				SELECT
 					wrap_error.request_transaction_height,
 					wrap_error.request_transaction_hash,
@@ -455,21 +461,22 @@ class WrapRequestDatabase(MaxProcessedHeightMixin):  # pylint: disable=too-many-
 					block_metadata.timestamp
 				FROM wrap_error
 				LEFT JOIN block_metadata ON wrap_error.request_transaction_height = block_metadata.height
-				WHERE wrap_error.address = ? AND (?2 IS NULL OR wrap_error.request_transaction_hash = ?2)
-				ORDER BY wrap_error.request_transaction_height
+				WHERE (?1 IS NULL OR wrap_error.address = ?1) AND (?2 IS NULL OR wrap_error.request_transaction_hash = ?2)
+				ORDER BY wrap_error.request_transaction_height {"ASC" if sort_ascending else "DESC"}
 				LIMIT ? OFFSET ?
 			''',
-			(address.bytes, transaction_hash.bytes if transaction_hash else None, limit, offset))
+			(self._unwrap_search_parameter(address), self._unwrap_search_parameter(transaction_hash), limit, offset))
 
 		for row in cursor:
 			yield WrapRequestErrorView(row[0], Hash256(row[1]), row[2], self.network_facade.make_address(row[3]), row[4], row[5])
 
-	def find_requests(self, address, transaction_hash=None, offset=0, limit=25):
+	def find_requests(self, address=None, transaction_hash=None, offset=0, limit=25, sort_ascending=True, payout_status=None):
+		# pylint: disable=too-many-arguments,too-many-positional-arguments
 		"""Finds all requests for an address, optionally filtered by hash."""
 
 		cursor = self.connection.cursor()
 		cursor.execute(
-			'''
+			f'''
 				SELECT
 					wrap_request.request_transaction_height,
 					wrap_request.request_transaction_hash,
@@ -484,16 +491,21 @@ class WrapRequestDatabase(MaxProcessedHeightMixin):  # pylint: disable=too-many-
 					payout_transaction.net_amount,
 					payout_transaction.total_fee,
 					payout_transaction.conversion_rate,
-					payout_block_metadata.timestamp
+					payout_block_metadata.timestamp,
+					wrap_error.message
 				FROM wrap_request
 				LEFT JOIN block_metadata ON wrap_request.request_transaction_height = block_metadata.height
 				LEFT JOIN payout_transaction ON wrap_request.payout_transaction_hash = payout_transaction.transaction_hash
 				LEFT JOIN payout_block_metadata ON payout_transaction.height = payout_block_metadata.height
-				WHERE wrap_request.address = ? AND (?2 IS NULL OR wrap_request.request_transaction_hash = ?2)
-				ORDER BY wrap_request.request_transaction_height
+				LEFT JOIN wrap_error ON wrap_request.request_transaction_hash = wrap_error.request_transaction_hash
+					AND wrap_request.request_transaction_subindex = wrap_error.request_transaction_subindex
+				WHERE (?1 IS NULL OR wrap_request.address = ?1 OR wrap_request.destination_address = ?1)
+					AND (?2 IS NULL OR wrap_request.request_transaction_hash = ?2 OR wrap_request.payout_transaction_hash = ?2)
+					AND (?3 IS NULL OR wrap_request.payout_status = ?3)
+				ORDER BY wrap_request.request_transaction_height {"ASC" if sort_ascending else "DESC"}
 				LIMIT ? OFFSET ?
 			''',
-			(address.bytes, transaction_hash.bytes if transaction_hash else None, limit, offset))
+			(self._unwrap_search_parameter(address), self._unwrap_search_parameter(transaction_hash), payout_status, limit, offset))
 
 		for row in cursor:
 			yield WrapRequestView(
