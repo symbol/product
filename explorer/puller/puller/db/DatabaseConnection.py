@@ -1,6 +1,6 @@
 import psycopg2
-
 from zenlog import log
+
 
 class DatabaseConnection:
 	def __init__(self, db_config, timeout_seconds=10):
