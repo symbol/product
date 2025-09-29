@@ -6,6 +6,7 @@ from aiohttp import web
 from nodewatch.NetworkConnector import NetworkConnector
 from nodewatch.NetworkRepository import FinalizedInfo
 
+
 class NodeDescriptor:
 	def __init__(self, endpoint, has_api=True):
 		self.endpoint = endpoint
