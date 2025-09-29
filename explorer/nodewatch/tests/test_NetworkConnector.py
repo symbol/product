@@ -4,7 +4,7 @@ import pytest
 from aiohttp import web
 
 from nodewatch.NetworkConnector import NetworkConnector
-
+from nodewatch.NetworkRepository import FinalizedInfo
 
 class NodeDescriptor:
 	def __init__(self, endpoint, has_api=True):
@@ -12,12 +12,12 @@ class NodeDescriptor:
 		self.name = endpoint
 		self.has_api = has_api
 		self.height = 0
-		self.finalized_height = 0
+		self.finalized_info = FinalizedInfo(0, 0, None, 0)
 
 
 def _assert_node_descriptor(descriptor, height, finalized_height=0):
 	assert height == descriptor.height
-	assert finalized_height == descriptor.finalized_height
+	assert finalized_height == descriptor.finalized_info.height
 
 
 # region server fixture
@@ -38,7 +38,7 @@ async def server(aiohttp_client):
 			finalized_height = request.match_info['finalized_height']
 			response_json = {'height': height}
 			if finalized_height:
-				response_json = {**response_json, 'finalized_height': finalized_height}
+				response_json = {**response_json, 'latestFinalizedBlock': {'height': finalized_height}}
 
 			return await self._process(request, response_json)
 
