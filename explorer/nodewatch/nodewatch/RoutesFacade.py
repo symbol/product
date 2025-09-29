@@ -48,6 +48,7 @@ class BasicRoutesFacade:
 		self.repository = NetworkRepository(network, self.blockchain_name)
 		self.last_reload_time = datetime.datetime(2021, 1, 1, tzinfo=datetime.timezone.utc)
 		self.last_refresh_time = None
+		self.last_daily_crawl_timestamp = 0
 
 	def html_harvesters(self):
 		"""Gets information for generating a harvesters HTML page."""
@@ -139,7 +140,7 @@ class BasicRoutesFacade:
 		voters_filepath = resources_path / f'{self.blockchain_name}_richlist.csv'
 		geo_locations_filepath = resources_path / f'{self.blockchain_name}_geo_location.json'
 		time_series_node_counts_filepath = resources_path / f'{self.blockchain_name}_time_series_nodes_count.json'
-		all_filepaths = [nodes_filepath, harvesters_filepath, voters_filepath, geo_locations_filepath, time_series_node_counts_filepath]
+		all_filepaths = [nodes_filepath, harvesters_filepath, voters_filepath]
 
 		# nodes.json is produced first by the network crawl, all other files are derived from it
 		last_crawl_timestamp = nodes_filepath.stat().st_mtime
@@ -156,12 +157,19 @@ class BasicRoutesFacade:
 
 		log.info(f'reloading files with crawl data from {last_crawl_time} (previous reload {self.last_reload_time})')
 
+		# geo_locations_filepath.json is first in the daily crawl
+		last_daily_crawl_timestamp = geo_locations_filepath.stat().st_mtime
+
 		# Load geo locations first, as they are used by the node descriptors
-		self.repository.load_geo_location_descriptors(geo_locations_filepath)
+		if (last_daily_crawl_timestamp > self.last_daily_crawl_timestamp and all(filepath.stat().st_mtime >= last_daily_crawl_timestamp
+					for filepath in [geo_locations_filepath, time_series_node_counts_filepath])):
+			log.info('reloading daily files with crawl data')
+			self.repository.load_geo_location_descriptors(geo_locations_filepath)
+			self.repository.load_time_series_nodes_count(time_series_node_counts_filepath)
+			self.last_daily_crawl_timestamp = last_daily_crawl_timestamp
 
 		self.repository.load_node_descriptors(nodes_filepath)
 		self.repository.load_harvester_descriptors(harvesters_filepath)
-		self.repository.load_time_series_nodes_count(time_series_node_counts_filepath)
 		if voters_filepath.exists():
 			self.repository.load_voter_descriptors(voters_filepath)
 
