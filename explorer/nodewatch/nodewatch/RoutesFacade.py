@@ -46,7 +46,7 @@ class BasicRoutesFacade:
 		self.min_cluster_size = min_cluster_size
 
 		self.repository = NetworkRepository(network, self.blockchain_name)
-		self.last_reload_time = datetime.datetime(2021, 1, 1)
+		self.last_reload_time = datetime.datetime(2021, 1, 1, tzinfo=datetime.timezone.utc)
 		self.last_refresh_time = None
 
 	def html_harvesters(self):
@@ -143,7 +143,7 @@ class BasicRoutesFacade:
 
 		# nodes.json is produced first by the network crawl, all other files are derived from it
 		last_crawl_timestamp = nodes_filepath.stat().st_mtime
-		last_crawl_time = datetime.datetime.utcfromtimestamp(last_crawl_timestamp)
+		last_crawl_time = datetime.datetime.fromtimestamp(last_crawl_timestamp, datetime.timezone.utc)
 		if self.last_reload_time >= last_crawl_time:
 			log.debug(f'skipping update because crawl ({last_crawl_time}) is not newer than reload ({self.last_reload_time})')
 			return False
@@ -178,7 +178,7 @@ class BasicRoutesFacade:
 	def reset_refresh_time(self):
 		"""Sets the last refresh time to now."""
 
-		self.last_refresh_time = datetime.datetime.utcnow()
+		self.last_refresh_time = datetime.datetime.now(datetime.timezone.utc)
 
 
 class NemRoutesFacade(BasicRoutesFacade):
