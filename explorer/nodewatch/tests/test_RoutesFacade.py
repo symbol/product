@@ -66,7 +66,7 @@ class NemRoutesFacadeTest(unittest.TestCase):
 		facade.reset_refresh_time()
 
 		# Assert:
-		now = datetime.datetime.utcnow()
+		now = datetime.datetime.now(datetime.timezone.utc)
 		self.assertGreaterEqual(1, (now - facade.last_refresh_time).seconds)
 
 	# endregion
@@ -258,7 +258,7 @@ class SymbolRoutesFacadeTest(unittest.TestCase):  # pylint: disable=too-many-pub
 		facade.reset_refresh_time()
 
 		# Assert:
-		now = datetime.datetime.utcnow()
+		now = datetime.datetime.now(datetime.timezone.utc)
 		self.assertGreaterEqual(1, (now - facade.last_refresh_time).seconds)
 
 	# endregion
