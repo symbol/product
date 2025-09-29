@@ -225,7 +225,7 @@ class SymbolRoutesFacadeTest(unittest.TestCase):  # pylint: disable=too-many-pub
 		# Assert:
 		self.assertEqual(True, result)
 		self.assertEqual(facade.last_reload_time, facade.last_refresh_time)
-		self.assertEqual(facade.last_daily_crawl_timestamp, Path('tests/resources/symbol_geo_location.json').stat().st_mtime)
+		self.assertEqual(Path('tests/resources/symbol_geo_location.json').stat().st_mtime, facade.last_daily_crawl_timestamp)
 
 		self.assertEqual(6, len(facade.repository.node_descriptors))
 		self.assertEqual(4, len(facade.repository.harvester_descriptors))
@@ -256,19 +256,16 @@ class SymbolRoutesFacadeTest(unittest.TestCase):  # pylint: disable=too-many-pub
 
 		# Act:
 		result1 = facade.reload_all(Path('tests/resources'), True)
-		# simulate last reload was a minute ago, so that daily crawl is not triggered
+
+		# simulate last reload was a minute ago, and the daily crawl time as not change so not triggered
 		facade.last_reload_time = facade.last_reload_time - datetime.timedelta(minutes=1)
-		facade.last_daily_crawl_timestamp += 1
 		result2 = facade.reload_all(Path('tests/resources'), True)
 
 		# Assert:
 		self.assertEqual([True, True], [result1, result2])
 		self.assertEqual(facade.last_reload_time, facade.last_refresh_time)
 		# daily crawl timestamp should not change
-		self.assertEqual(
-			Path('tests/resources/symbol_geo_location.json').stat().st_mtime + 1,
-			facade.last_daily_crawl_timestamp
-		)
+		self.assertEqual(Path('tests/resources/symbol_geo_location.json').stat().st_mtime, facade.last_daily_crawl_timestamp)
 
 	def test_can_reset_refresh_time(self):
 		# Arrange:

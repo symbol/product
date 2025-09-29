@@ -161,8 +161,7 @@ class BasicRoutesFacade:
 		last_daily_crawl_timestamp = geo_locations_filepath.stat().st_mtime
 
 		# Load geo locations first, as they are used by the node descriptors
-		if (last_daily_crawl_timestamp > self.last_daily_crawl_timestamp and all(filepath.stat().st_mtime >= last_daily_crawl_timestamp
-					for filepath in [geo_locations_filepath, time_series_node_counts_filepath])):
+		if self.last_daily_crawl_timestamp < last_daily_crawl_timestamp <= time_series_node_counts_filepath.stat().st_mtime:
 			log.info('reloading daily files with crawl data')
 			self.repository.load_geo_location_descriptors(geo_locations_filepath)
 			self.repository.load_time_series_nodes_count(time_series_node_counts_filepath)
