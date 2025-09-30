@@ -26,6 +26,7 @@ ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 # Create application directory
 WORKDIR /app
 COPY bridge/ /app/bridge
+
 # need the latest lightapi(remove when lightapi is published to pypi)
 COPY lightapi/python /app/lightapi
 
@@ -42,6 +43,8 @@ EXPOSE 5000
 ENV NUMBER_OF_WORKERS=4
 ENV PYTHONPATH=/app/bridge
 ENV INTERVAL_TIME_IN_SECONDS=300
+ENV CONFIG_PATH=/data/config/configuration.ini
+ENV BRIDGE_API_SETTINGS=/data/config/api_configuration.ini
 
 ENTRYPOINT ["/app/bridge/scripts/entrypoint.sh"]
 CMD ["api"]
