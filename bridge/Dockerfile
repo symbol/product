@@ -43,8 +43,7 @@ EXPOSE 5000
 ENV NUMBER_OF_WORKERS=4
 ENV PYTHONPATH=/app/bridge
 ENV INTERVAL_TIME_IN_SECONDS=300
-ENV CONFIG_PATH=/data/config/configuration.ini
-ENV BRIDGE_API_SETTINGS=/data/config/api_configuration.ini
+ENV BRIDGE_CONFIG_PATH=/data/config/configuration.ini
 
 ENTRYPOINT ["/app/bridge/scripts/entrypoint.sh"]
 CMD ["api"]

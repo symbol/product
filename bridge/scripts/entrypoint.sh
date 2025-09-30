@@ -15,16 +15,18 @@ run_workflow() {
 case "$1" in
 	"nativeflow")
 		echo -n "Running native flow"
-		run_workflow /app/bridge/scripts/nativeflow.sh "${CONFIG_PATH}"
+		run_workflow /app/bridge/scripts/nativeflow.sh "${BRIDGE_CONFIG_PATH}"
 		;;
 
 	 "wrappedflow")
 		echo -n "Running wrapped flow"
-		run_workflow /app/bridge/scripts/wrappedflow.sh "${CONFIG_PATH}"
+		run_workflow /app/bridge/scripts/wrappedflow.sh "${BRIDGE_CONFIG_PATH}"
 		;;
 
 	"api")
 		echo -n "Running API"
+		export BRIDGE_API_SETTINGS="/tmp/api_configuration.ini"
+		echo "CONFIG_PATH=\"${BRIDGE_CONFIG_PATH}\"" > "${BRIDGE_API_SETTINGS}"
 		gunicorn --workers "${NUMBER_OF_WORKERS}" --bind 0.0.0.0:5000 "bridge.api:create_app()"
 		;;
 
