@@ -39,7 +39,14 @@ async def server(aiohttp_client):
 			finalized_height = request.match_info['finalized_height']
 			response_json = {'height': height}
 			if finalized_height:
-				response_json = {**response_json, 'latestFinalizedBlock': {'height': finalized_height}}
+				response_json = {
+					**response_json,
+					'latestFinalizedBlock': {
+						'height': finalized_height, 'finalizedEpoch': 3,
+						'hash': 'E29E5695EB269B7DD1D76DBF05FDA1731AB24F561D2032248434FA36A27AFB4C',
+						'finalizedPoint': 2
+					}
+				}
 
 			return await self._process(request, response_json)
 
@@ -196,5 +203,24 @@ async def test_can_update_symbol_heights_with_some_errors(server):  # pylint: di
 	_assert_node_descriptor(node_descriptors[2], 0)  # not updated on failure
 	_assert_node_descriptor(node_descriptors[3], 0)  # not updated on failure
 	_assert_node_descriptor(node_descriptors[4], 1236, 1005)
+
+
+async def test_can_update_symbol_height_and_finalization_info(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	connector = NetworkConnector('symbol', 10)
+	node_descriptors = [
+		NodeDescriptor(f'{server.make_url("")}/1234/98765')
+	]
+
+	# Act:
+	await connector.update_heights(node_descriptors)
+
+	# Assert:
+	assert f'{server.make_url("")}/1234/98765/chain/info' in server.mock.urls
+	assert 1234 == node_descriptors[0].height
+	assert 98765 == node_descriptors[0].finalized_info.height
+	assert 'E29E5695EB269B7DD1D76DBF05FDA1731AB24F561D2032248434FA36A27AFB4C' == node_descriptors[0].finalized_info.hash
+	assert 3 == node_descriptors[0].finalized_info.epoch
+	assert 2 == node_descriptors[0].finalized_info.point
 
 # endregion

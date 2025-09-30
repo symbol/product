@@ -66,17 +66,19 @@ class NetworkConnector:
 					descriptor.height = int(response_json['height'])
 
 				if 'latestFinalizedBlock' in response_json:
+					latest_finalized_block = response_json['latestFinalizedBlock']
 					descriptor.finalized_info = FinalizedInfo(
-						int(response_json['latestFinalizedBlock'].get('height', 0)),
-						int(response_json['latestFinalizedBlock'].get('finalizedEpoch', 0)),
-						response_json['latestFinalizedBlock'].get('hash', None),
-						int(response_json['latestFinalizedBlock'].get('finalizedPoint', 0))
+						int(latest_finalized_block['height']),
+						int(latest_finalized_block['finalizedEpoch']),
+						latest_finalized_block['hash'],
+						int(latest_finalized_block['finalizedPoint'])
 					)
 		except (
 			aiohttp.client_exceptions.ClientConnectorError,
 			aiohttp.client_exceptions.ContentTypeError,
 			aiohttp.client_exceptions.ServerDisconnectedError,
-			asyncio.TimeoutError
+			asyncio.TimeoutError,
+			KeyError
 		) as ex:
 			log.warning(f'failed retrieving height from endpoint "{descriptor.endpoint}"\n{ex}')
 			return False
