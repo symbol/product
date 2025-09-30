@@ -13,7 +13,7 @@ This repository contains the implementation of a bridge with two modes of operat
 * In **native** mode, it converts `XEM` and `XYM` into Ethereum's native token, `ETH`,
     using an exchange rate from an online price provider.
     This mode is intended only to supply the target Ethereum account with enough `ETH` to cover gas fees.
-    It does not support large transfers or the reverse operation.
+    It does not support the reverse operation and the maximum transfer amount is limited by a configuration setting.
 
 Each bridge instance is configured with a specific mode and a defined set of source (NEM or Symbol)
 and target (NEM, Symbol, or Ethereum) networks.
@@ -28,7 +28,7 @@ The bridge operates through four core workflows, each implemented as a script th
 to maintain state and process transactions.
 These scripts are executed sequentially, in the order listed below:
 
-1. `download_balance_changes`: Retrieves balance updates to the bridge accounts.
+1. `download_balance_changes`: Retrieves balance updates to the bridge accounts on the source networks.
     It uses a [Mesh](https://docs.cdp.coinbase.com/mesh/product-overview/welcome) endpoint (formerly Rosetta) to compute
     historical balances at any block height.
 
@@ -76,7 +76,7 @@ python3 -m pip install -r requirements.txt
 The following scripts must be executed periodically from `symbol-product-directory/bridge`, in the order shown:
 
 ```sh
-. ../venv/bin/activate
+. ./venv/bin/activate
 PYTHONPATH=../. python3 -m workflows.download_balance_changes --config configuration.ini
 PYTHONPATH=../. python3 -m workflows.download_wrap_requests --config configuration.ini
 PYTHONPATH=../. python3 -m workflows.download_wrap_requests --config configuration.ini --unwrap
@@ -302,8 +302,9 @@ meaning that they can appear twice in the configuration file.
     * On Symbol: `id:{hex mosaic id}`
     * On Ethereum: Address of the ERC-20 contract.
 * `explorerEndpoint`: Block explorer URL.
-* `finalizationLookahead`: Blocks to advance conceptual finalization (default: 0). For example, NEM finalization takes 360 blocks.
-    Setting this property to 350, will assume finalization after 10 confirmations.
+* `finalizationLookahead`: Blocks to advance conceptual finalization (default: 0).
+    For example, NEM finalization takes 360 blocks.
+    Setting this property to 350, will assume finalization after 10 blocks.
 * `percentageConversionFee`: A percentage of every wrap and unwrap operation is kept at the bridge as a fee (default: 0).
     Must be a number between 0 and 1.
 * `unconfirmedWaitTimeSeconds`: Time (in seconds) the bridge waits for a transaction to be confirmed on the native network (default: 60).
