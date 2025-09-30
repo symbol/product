@@ -42,7 +42,8 @@ async def server(aiohttp_client):
 				response_json = {
 					**response_json,
 					'latestFinalizedBlock': {
-						'height': finalized_height, 'finalizedEpoch': 3,
+						'height': finalized_height,
+						'finalizedEpoch': 3,
 						'hash': 'E29E5695EB269B7DD1D76DBF05FDA1731AB24F561D2032248434FA36A27AFB4C',
 						'finalizedPoint': 2
 					}
@@ -218,9 +219,6 @@ async def test_can_update_symbol_height_and_finalization_info(server):  # pylint
 	# Assert:
 	assert f'{server.make_url("")}/1234/98765/chain/info' in server.mock.urls
 	assert 1234 == node_descriptors[0].height
-	assert 98765 == node_descriptors[0].finalized_info.height
-	assert 'E29E5695EB269B7DD1D76DBF05FDA1731AB24F561D2032248434FA36A27AFB4C' == node_descriptors[0].finalized_info.hash
-	assert 3 == node_descriptors[0].finalized_info.epoch
-	assert 2 == node_descriptors[0].finalized_info.point
+	assert FinalizedInfo(98765, 3, 'E29E5695EB269B7DD1D76DBF05FDA1731AB24F561D2032248434FA36A27AFB4C', 2) == node_descriptors[0].finalized_info
 
 # endregion
