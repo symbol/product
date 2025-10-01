@@ -62,7 +62,7 @@ class NativeConversionRateCalculatorFactory:
 # endregion
 
 
-# region is_native_to_native_conversion, create_conversion_rate_calculator_factory
+# region is_native_to_native_conversion, validate_strategy_configuration
 
 def is_native_to_native_conversion(wrapped_facade):
 	"""Determines if a native to native conversion is configured."""
@@ -70,16 +70,33 @@ def is_native_to_native_conversion(wrapped_facade):
 	return not wrapped_facade.extract_mosaic_id().id
 
 
-def create_conversion_rate_calculator_factory(is_unwrap_mode, databases, native_facade, wrapped_facade, fee_multiplier):
+def validate_strategy_configuration(strategy_config, wrapped_facade):
+	is_native_strategy = 'native' == strategy_config.mode
+	if is_native_to_native_conversion(wrapped_facade):
+		if not is_native_strategy:
+			raise ValueError('wrapped token is native but native mode is not selected')
+	else:
+		if is_native_strategy:
+			raise ValueError('wrapped token is not native but native mode is selected')
+
+# endregion
+
+
+# region create_conversion_rate_calculator_factory
+
+def create_conversion_rate_calculator_factory(execution_context, databases, native_facade, wrapped_facade, fee_multiplier):
 	# pylint: disable=invalid-name
 	"""Creates an appropriate conversion rate calculator factory."""
 
 	if is_native_to_native_conversion(wrapped_facade):
-		if is_unwrap_mode:
+		if execution_context.is_unwrap_mode:
 			raise ValueError('native to native conversions do not support unwrap mode')
 
 		return NativeConversionRateCalculatorFactory(databases, fee_multiplier)
 
-	return ConversionRateCalculatorFactory(databases, native_facade.extract_mosaic_id().formatted, is_unwrap_mode)
+	if 'wrapped' == execution_context.strategy_mode:
+		return NativeConversionRateCalculatorFactory(databases, Decimal(1))  # wrapped mode (1:1) uses fixed unity multiplier (1)
+
+	return ConversionRateCalculatorFactory(databases, native_facade.extract_mosaic_id().formatted, execution_context.is_unwrap_mode)
 
 # endregion

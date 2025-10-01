@@ -86,7 +86,7 @@ async def test_can_detect_currency_mosaic_id(server):  # pylint: disable=redefin
 
 async def test_can_extract_mosaic_id_currency(server):  # pylint: disable=redefined-outer-name
 	# Arrange:
-	facade = SymbolNetworkFacade(_create_config(server, mosaic_id='id:E74B99BA41F4AFEE'))
+	facade = SymbolNetworkFacade(_create_config(server, mosaic_id='E74B99BA41F4AFEE'))
 	await facade.init()
 
 	# Act:
@@ -99,7 +99,7 @@ async def test_can_extract_mosaic_id_currency(server):  # pylint: disable=redefi
 
 async def test_can_extract_mosaic_id_other(server):  # pylint: disable=redefined-outer-name
 	# Arrange:
-	facade = SymbolNetworkFacade(_create_config(server, mosaic_id='id:5D6CFC64A20E86E6'))
+	facade = SymbolNetworkFacade(_create_config(server, mosaic_id='5D6CFC64A20E86E6'))
 	await facade.init()
 
 	# Act:

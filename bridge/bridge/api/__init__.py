@@ -8,16 +8,18 @@ from flask import Flask, jsonify, request
 from symbolchain.CryptoTypes import Hash256
 from symbollightapi.model.Exceptions import NodeException
 
-from ..CoinGeckoConnector import CoinGeckoConnector
 from ..ConversionRateCalculatorFactory import ConversionRateCalculatorFactory
 from ..db.Databases import Databases
 from ..models.BridgeConfiguration import parse_bridge_configuration
+from ..models.Constants import ExecutionContext
 from ..NetworkFacadeLoader import load_network_facade
 from ..NetworkUtils import BalanceTransfer, estimate_balance_transfer_fees
+from ..price_oracle.PriceOracleLoader import load_price_oracle
+from ..price_oracle.PriceOracleThrottle import make_throttled_conversion_rate_lookup
 from ..WorkflowUtils import create_conversion_rate_calculator_factory, is_native_to_native_conversion
 from .Validators import is_valid_address_string, is_valid_decimal_string, is_valid_hash_string
 
-FilterOptions = namedtuple('FilterOptions', ['address', 'transaction_hash', 'offset', 'limit'])
+FilterOptions = namedtuple('FilterOptions', ['address', 'transaction_hash', 'offset', 'limit', 'sort', 'payout_status'])
 PrepareOptions = namedtuple('PrepareOptions', ['recipient_address', 'amount'])
 
 # region handler implementations
@@ -34,14 +36,26 @@ def _network_config_to_dict(config):
 	}
 
 
-def _parse_filter_parameters(network_facade, address, transaction_hash):
+def _parse_filter_parameters(context, address, transaction_hash, is_unwrap_mode):
+	# pylint: disable=too-many-return-statements, too-many-branches
 	offset = request.args.get('offset', '0')
 	limit = request.args.get('limit', '25')
+	sort = request.args.get('sort', '1')
+	payout_status = request.args.get('payout_status', None)
 
-	if not is_valid_address_string(network_facade, address):
-		return (None, 'address')
+	if address:
+		if is_valid_address_string(context.native_facade, address):
+			address = context.native_facade.make_address(address)
 
-	address = network_facade.make_address(address)
+			if is_unwrap_mode:
+				address = str(address)  # destination addresses are stored as string
+		elif is_valid_address_string(context.wrapped_facade, address):
+			address = context.wrapped_facade.make_address(address)
+
+			if not is_unwrap_mode:
+				address = str(address)  # destination addresses are stored as string
+		else:
+			return (None, 'address')
 
 	if transaction_hash:
 		if not is_valid_hash_string(transaction_hash):
@@ -59,54 +73,69 @@ def _parse_filter_parameters(network_facade, address, transaction_hash):
 
 	limit = int(limit)
 
-	return (FilterOptions(address, transaction_hash, offset, limit), None)
+	if not is_valid_decimal_string(sort):
+		return (None, 'sort')
+
+	sort = int(sort)
+
+	if payout_status:
+		if not is_valid_decimal_string(payout_status):
+			return (None, 'payout_status')
+
+		payout_status = int(payout_status)
+
+	return (FilterOptions(address, transaction_hash, offset, limit, sort, payout_status), None)
 
 
 def _make_bad_request_response(parse_failure_identifier):
 	return jsonify({'error': f'{parse_failure_identifier} parameter is invalid'}), 400
 
 
-def _handle_wrap_requests(network_facade, address, transaction_hash, database_params, database_name):
-	(filter_options, parse_failure_identifier) = _parse_filter_parameters(network_facade, address, transaction_hash)
+def _handle_wrap_requests(context, address, transaction_hash, database_name):
+	is_unwrap_mode = 'unwrap_request' == database_name
+	(filter_options, parse_failure_identifier) = _parse_filter_parameters(context, address, transaction_hash, is_unwrap_mode)
 	if parse_failure_identifier:
 		return _make_bad_request_response(parse_failure_identifier)
 
-	with Databases(*database_params) as databases:
+	with Databases(*context.database_params) as databases:
 		views = getattr(databases, database_name).find_requests(*filter_options)
 		return jsonify([
 			{
-				'requestTransactionHeight': view.request_transaction_height,
+				'requestTransactionHeight': str(view.request_transaction_height),
 				'requestTransactionHash': str(view.request_transaction_hash),
 				'requestTransactionSubindex': view.request_transaction_subindex,
 				'senderAddress': str(view.sender_address),
 
-				'requestAmount': view.request_amount,
+				'requestAmount': str(int(view.request_amount)),  # render real db values as integer strings
 				'destinationAddress': str(view.destination_address),
 				'payoutStatus': view.payout_status,
 				'payoutTransactionHash': str(view.payout_transaction_hash) if view.payout_transaction_hash else None,
 
 				'requestTimestamp': view.request_timestamp,
 
-				'payoutTransactionHeight': view.payout_transaction_height,
-				'payoutNetAmount': view.payout_net_amount,
-				'payoutTotalFee': view.payout_total_fee,
-				'payoutConversionRate': view.payout_conversion_rate,
+				'payoutTransactionHeight': str(view.payout_transaction_height) if view.payout_transaction_height else None,
+				'payoutNetAmount': str(int(view.payout_net_amount)) if view.payout_net_amount else None,
+				'payoutTotalFee': str(int(view.payout_total_fee)) if view.payout_total_fee else None,
+				'payoutConversionRate': str(int(view.payout_conversion_rate)) if view.payout_conversion_rate else None,
 
-				'payoutTimestamp': view.payout_timestamp
+				'payoutTimestamp': view.payout_timestamp,
+
+				'errorMessage': view.error_message
 			} for view in views
 		])
 
 
-def _handle_wrap_errors(network_facade, address, transaction_hash, database_params, database_name):
-	(filter_options, parse_failure_identifier) = _parse_filter_parameters(network_facade, address, transaction_hash)
+def _handle_wrap_errors(context, address, transaction_hash, database_name):
+	is_unwrap_mode = 'unwrap_request' == database_name
+	(filter_options, parse_failure_identifier) = _parse_filter_parameters(context, address, transaction_hash, is_unwrap_mode)
 	if parse_failure_identifier:
 		return _make_bad_request_response(parse_failure_identifier)
 
-	with Databases(*database_params) as databases:
-		views = getattr(databases, database_name).find_errors(*filter_options)
+	with Databases(*context.database_params) as databases:
+		views = getattr(databases, database_name).find_errors(*([*filter_options][:-1]))  # strip payout_status filter option
 		return jsonify([
 			{
-				'requestTransactionHeight': view.request_transaction_height,
+				'requestTransactionHeight': str(view.request_transaction_height),
 				'requestTransactionHash': str(view.request_transaction_hash),
 				'requestTransactionSubindex': view.request_transaction_subindex,
 				'senderAddress': str(view.sender_address),
@@ -144,7 +173,7 @@ async def _handle_wrap_prepare(is_unwrap_mode, context, fee_multiplier):  # pyli
 
 	with Databases(*context.database_params) as databases:
 		conversion_rate_calculator_factory = create_conversion_rate_calculator_factory(
-			is_unwrap_mode,
+			ExecutionContext(is_unwrap_mode, context.strategy_mode),
 			databases,
 			context.native_facade,
 			context.wrapped_facade,
@@ -171,14 +200,14 @@ async def _handle_wrap_prepare(is_unwrap_mode, context, fee_multiplier):  # pyli
 			return jsonify({'error': str(ex)}), 500
 
 		result = {
-			'grossAmount': gross_amount,
+			'grossAmount': str(gross_amount),
 			'transactionFee': fee_information.transaction.quantize(Decimal('0.0001')),
 			'conversionFee': fee_information.conversion.quantize(Decimal('0.0001')),
-			'totalFee': fee_information.total,
-			'netAmount': gross_amount - fee_information.total,
+			'totalFee': str(fee_information.total),
+			'netAmount': str(gross_amount - fee_information.total),
 
 			'diagnostics': {
-				'height': calculator.height,
+				'height': str(calculator.height),
 				'nativeBalance': calculator.native_balance,
 				'wrappedBalance': calculator.wrapped_balance,
 				'unwrappedBalance': calculator.unwrapped_balance,
@@ -187,7 +216,7 @@ async def _handle_wrap_prepare(is_unwrap_mode, context, fee_multiplier):  # pyli
 
 		if is_native_to_native_conversion(context.wrapped_facade):
 			# clear other diagnostic calculator properties because they're not relevant
-			result['diagnostics'] = {'height': calculator.height}
+			result['diagnostics'] = {'height': str(calculator.height)}
 
 		return jsonify(result)
 
@@ -196,16 +225,20 @@ async def _handle_wrap_prepare(is_unwrap_mode, context, fee_multiplier):  # pyli
 
 # region BridgeContext
 
-class BridgeContext:
-	def __init__(self, config):
+class BridgeContext:  # pylint: disable=too-many-instance-attributes
+	def __init__(self, config, refresh_rate_seconds):
 		self._config = config
+		self._refresh_rate_seconds = refresh_rate_seconds
 		self._semaphore = asyncio.Semaphore(1)
 		self._is_loaded = False
 
+		self.strategy_mode = self._config.strategy.mode
 		self.native_facade = None
 		self.wrapped_facade = None
 		self.database_params = None
 		self.native_mosaic_id = None
+
+		self.conversion_rate_lookup = None
 
 	async def load(self):
 		if not self._is_loaded:
@@ -219,52 +252,61 @@ class BridgeContext:
 		self.database_params = [self._config.machine.database_directory, self.native_facade, self.wrapped_facade, True]
 		self.native_mosaic_id = self.native_facade.extract_mosaic_id()
 
+		price_oracle = load_price_oracle(self._config.price_oracle)
+		self.conversion_rate_lookup = await make_throttled_conversion_rate_lookup(
+			price_oracle,
+			self._refresh_rate_seconds,
+			self._config.wrapped_network.blockchain,
+			self._config.native_network.blockchain)
+
 		self._is_loaded = True
 
 # endregion
 
 
-def add_wrap_routes(app, context, price_oracle):
+def add_wrap_routes(app, context):
+	@app.route('/wrap/requests')
 	@app.route('/wrap/requests/<address>')
-	@app.route('/wrap/requests/<address>/<transaction_hash>')
-	async def wrap_requests(address, transaction_hash=None):  # pylint: disable=unused-variable
+	@app.route('/wrap/requests/hash/<transaction_hash>')
+	async def wrap_requests(address=None, transaction_hash=None):  # pylint: disable=unused-variable
 		await context.load()
 
-		return _handle_wrap_requests(context.native_facade, address, transaction_hash, context.database_params, 'wrap_request')
+		return _handle_wrap_requests(context, address, transaction_hash, 'wrap_request')
 
+	@app.route('/wrap/errors')
 	@app.route('/wrap/errors/<address>')
-	@app.route('/wrap/errors/<address>/<transaction_hash>')
-	async def wrap_errors(address, transaction_hash=None):  # pylint: disable=unused-variable
+	@app.route('/wrap/errors/hash/<transaction_hash>')
+	async def wrap_errors(address=None, transaction_hash=None):  # pylint: disable=unused-variable
 		await context.load()
 
-		return _handle_wrap_errors(context.native_facade, address, transaction_hash, context.database_params, 'wrap_request')
+		return _handle_wrap_errors(context, address, transaction_hash, 'wrap_request')
 
 	@app.route('/wrap/prepare', methods=['POST'])
 	async def wrap_prepare():
 		await context.load()
 
-		fee_multiplier = await price_oracle.conversion_rate(
-			context.wrapped_facade.config.blockchain,
-			context.native_facade.config.blockchain)
+		fee_multiplier = await context.conversion_rate_lookup()
 		fee_multiplier *= Decimal(10 ** context.native_facade.native_token_precision)
 		fee_multiplier /= Decimal(10 ** context.wrapped_facade.native_token_precision)
 		return await _handle_wrap_prepare(False, context, fee_multiplier)
 
 
 def add_unwrap_routes(app, context):
+	@app.route('/unwrap/requests')
 	@app.route('/unwrap/requests/<address>')
-	@app.route('/unwrap/requests/<address>/<transaction_hash>')
-	async def unwrap_requests(address, transaction_hash=None):  # pylint: disable=unused-variable
+	@app.route('/unwrap/requests/hash/<transaction_hash>')
+	async def unwrap_requests(address=None, transaction_hash=None):  # pylint: disable=unused-variable
 		await context.load()
 
-		return _handle_wrap_requests(context.wrapped_facade, address, transaction_hash, context.database_params, 'unwrap_request')
+		return _handle_wrap_requests(context, address, transaction_hash, 'unwrap_request')
 
+	@app.route('/unwrap/errors')
 	@app.route('/unwrap/errors/<address>')
-	@app.route('/unwrap/errors/<address>/<transaction_hash>')
-	async def unwrap_errors(address, transaction_hash=None):  # pylint: disable=unused-variable
+	@app.route('/unwrap/errors/hash/<transaction_hash>')
+	async def unwrap_errors(address=None, transaction_hash=None):  # pylint: disable=unused-variable
 		await context.load()
 
-		return _handle_wrap_errors(context.wrapped_facade, address, transaction_hash, context.database_params, 'unwrap_request')
+		return _handle_wrap_errors(context, address, transaction_hash, 'unwrap_request')
 
 	@app.route('/unwrap/prepare', methods=['POST'])
 	async def unwrap_prepare():
@@ -278,10 +320,10 @@ def create_app():
 	app.config.from_envvar('BRIDGE_API_SETTINGS')
 
 	config_path = Path(app.config.get('CONFIG_PATH'))
-	config = parse_bridge_configuration(config_path)
-	context = BridgeContext(config)
+	refresh_rate_seconds = app.config.get('CONVERSION_RATE_REFRESH_SECONDS', 600)
 
-	price_oracle = CoinGeckoConnector(config.price_oracle.url)
+	config = parse_bridge_configuration(config_path)
+	context = BridgeContext(config, refresh_rate_seconds)
 
 	@app.route('/')
 	def root():  # pylint: disable=unused-variable
@@ -291,7 +333,7 @@ def create_app():
 			'enabled': True
 		})
 
-	add_wrap_routes(app, context, price_oracle)
+	add_wrap_routes(app, context)
 	if config.wrapped_network.mosaic_id:  # not native to native conversion
 		add_unwrap_routes(app, context)
 

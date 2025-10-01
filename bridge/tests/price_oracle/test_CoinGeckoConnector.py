@@ -2,9 +2,9 @@ from decimal import Decimal
 
 import pytest
 
-from bridge.CoinGeckoConnector import CoinGeckoConnector
+from bridge.price_oracle.CoinGeckoConnector import CoinGeckoConnector
 
-from .test.MockCoinGeckoServer import create_simple_coingecko_client
+from ..test.MockCoinGeckoServer import create_simple_coingecko_client
 
 
 @pytest.fixture
