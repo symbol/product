@@ -14,6 +14,7 @@ from ..models.BridgeConfiguration import parse_bridge_configuration
 from ..NetworkFacadeLoader import load_network_facade
 from ..NetworkUtils import BalanceTransfer, estimate_balance_transfer_fees
 from ..price_oracle.PriceOracleLoader import load_price_oracle
+from ..price_oracle.PriceOracleThrottle import make_throttled_conversion_rate_lookup
 from ..WorkflowUtils import create_conversion_rate_calculator_factory, is_native_to_native_conversion
 from .Validators import is_valid_address_string, is_valid_decimal_string, is_valid_hash_string
 
@@ -223,9 +224,10 @@ async def _handle_wrap_prepare(is_unwrap_mode, context, fee_multiplier):  # pyli
 
 # region BridgeContext
 
-class BridgeContext:
-	def __init__(self, config):
+class BridgeContext:  # pylint: disable=too-many-instance-attributes
+	def __init__(self, config, refresh_rate_seconds):
 		self._config = config
+		self._refresh_rate_seconds = refresh_rate_seconds
 		self._semaphore = asyncio.Semaphore(1)
 		self._is_loaded = False
 
@@ -233,6 +235,8 @@ class BridgeContext:
 		self.wrapped_facade = None
 		self.database_params = None
 		self.native_mosaic_id = None
+
+		self.conversion_rate_lookup = None
 
 	async def load(self):
 		if not self._is_loaded:
@@ -246,12 +250,19 @@ class BridgeContext:
 		self.database_params = [self._config.machine.database_directory, self.native_facade, self.wrapped_facade, True]
 		self.native_mosaic_id = self.native_facade.extract_mosaic_id()
 
+		price_oracle = load_price_oracle(self._config.price_oracle)
+		self.conversion_rate_lookup = await make_throttled_conversion_rate_lookup(
+			price_oracle,
+			self._refresh_rate_seconds,
+			self._config.wrapped_network.blockchain,
+			self._config.native_network.blockchain)
+
 		self._is_loaded = True
 
 # endregion
 
 
-def add_wrap_routes(app, context, price_oracle):
+def add_wrap_routes(app, context):
 	@app.route('/wrap/requests')
 	@app.route('/wrap/requests/<address>')
 	@app.route('/wrap/requests/hash/<transaction_hash>')
@@ -272,9 +283,7 @@ def add_wrap_routes(app, context, price_oracle):
 	async def wrap_prepare():
 		await context.load()
 
-		fee_multiplier = await price_oracle.conversion_rate(
-			context.wrapped_facade.config.blockchain,
-			context.native_facade.config.blockchain)
+		fee_multiplier = await context.conversion_rate_lookup()
 		fee_multiplier *= Decimal(10 ** context.native_facade.native_token_precision)
 		fee_multiplier /= Decimal(10 ** context.wrapped_facade.native_token_precision)
 		return await _handle_wrap_prepare(False, context, fee_multiplier)
@@ -309,10 +318,10 @@ def create_app():
 	app.config.from_envvar('BRIDGE_API_SETTINGS')
 
 	config_path = Path(app.config.get('CONFIG_PATH'))
-	config = parse_bridge_configuration(config_path)
-	context = BridgeContext(config)
+	refresh_rate_seconds = app.config.get('CONVERSION_RATE_REFRESH_SECONDS', 600)
 
-	price_oracle = load_price_oracle(config.price_oracle)
+	config = parse_bridge_configuration(config_path)
+	context = BridgeContext(config, refresh_rate_seconds)
 
 	@app.route('/')
 	def root():  # pylint: disable=unused-variable
@@ -322,7 +331,7 @@ def create_app():
 			'enabled': True
 		})
 
-	add_wrap_routes(app, context, price_oracle)
+	add_wrap_routes(app, context)
 	if config.wrapped_network.mosaic_id:  # not native to native conversion
 		add_unwrap_routes(app, context)
 
