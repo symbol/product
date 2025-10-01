@@ -13,7 +13,7 @@ This repository contains the implementation of a bridge with two modes of operat
 * In **native** mode, it converts `XEM` and `XYM` into Ethereum's native token, `ETH`,
     using an exchange rate from an online price provider.
     This mode is intended only to supply the target Ethereum account with enough `ETH` to cover gas fees.
-    It does not support the reverse operation and the maximum transfer amount is limited by a configuration setting.
+    It does not support the reverse operation and the maximum transfer amount can be limited by a configuration setting.
 
 Each bridge instance is configured with a specific mode and a defined set of source (NEM or Symbol)
 and target (NEM, Symbol, or Ethereum) networks.
@@ -77,13 +77,13 @@ The following scripts must be executed periodically from `symbol-product-directo
 
 ```sh
 . ./venv/bin/activate
-PYTHONPATH=../. python3 -m workflows.download_balance_changes --config configuration.ini
-PYTHONPATH=../. python3 -m workflows.download_wrap_requests --config configuration.ini
-PYTHONPATH=../. python3 -m workflows.download_wrap_requests --config configuration.ini --unwrap
-PYTHONPATH=../. python3 -m workflows.send_payouts --config configuration.ini
-PYTHONPATH=../. python3 -m workflows.send_payouts --config configuration.ini --unwrap
-PYTHONPATH=../. python3 -m workflows.check_finalized_transactions --config configuration.ini
-PYTHONPATH=../. python3 -m workflows.check_finalized_transactions --config configuration.ini --unwrap
+python3 -m workflows.download_balance_changes --config configuration.ini
+python3 -m workflows.download_wrap_requests --config configuration.ini
+python3 -m workflows.download_wrap_requests --config configuration.ini --unwrap
+python3 -m workflows.send_payouts --config configuration.ini
+python3 -m workflows.send_payouts --config configuration.ini --unwrap
+python3 -m workflows.check_finalized_transactions --config configuration.ini
+python3 -m workflows.check_finalized_transactions --config configuration.ini --unwrap
 ```
 
 If the bridge is configured in **native mode** (exchanging native XYM for native ETH),
