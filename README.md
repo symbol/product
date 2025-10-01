@@ -5,6 +5,7 @@ It includes our optin manager.
 
 | component | lint | build | test | coverage | package |
 |-----------|------|-------|------|----------| ------- |
+| [@bridge](bridge) | [![lint][bridge-lint]][bridge-job] | | [![test][bridge-test]][bridge-job] | [![][bridge-cov]][bridge-cov-link]
 | [@explorer/frontend](explorer/frontend) | [![lint][explorer-frontend-lint]][explorer-frontend-job] | | [![test][explorer-frontend-test]][explorer-frontend-job] | [![][explorer-frontend-cov]][explorer-frontend-cov-link]
 | [@explorer/nodewatch](explorer/nodewatch) | [![lint][explorer-nodewatch-lint]][explorer-nodewatch-job] | | [![test][explorer-nodewatch-test]][explorer-nodewatch-job] | [![][explorer-nodewatch-cov]][explorer-nodewatch-cov-link]
 | [@explorer/rest](explorer/rest) | [![lint][explorer-rest-lint]][explorer-rest-job] | | [![test][explorer-rest-test]][explorer-rest-job] | [![][explorer-rest-cov]][explorer-rest-cov-link]
@@ -25,6 +26,12 @@ Detailed version can be seen on [codecov.io][product-cov-link].
 
 [product-cov]: https://codecov.io/gh/symbol/product/branch/dev/graphs/tree.svg
 [product-cov-link]: https://codecov.io/gh/symbol/product/tree/dev
+
+[bridge-job]: https://jenkins.symbolsyndicate.us/blue/organizations/jenkins/Symbol%2Fgenerated%2Fproduct%2Fbridge/activity?branch=dev
+[bridge-lint]: https://jenkins.symbolsyndicate.us/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Fbridge%2Fdev%2F&config=bridge-lint
+[bridge-test]: https://jenkins.symbolsyndicate.us/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Fbridge%2Fdev%2F&config=bridge-test
+[bridge-cov]: https://codecov.io/gh/symbol/product/branch/dev/graph/badge.svg?token=SSYYBMK0M7&flag=bridge
+[bridge-cov-link]: https://codecov.io/gh/symbol/product/tree/dev/bridge
 
 [explorer-frontend-job]: https://jenkins.symbolsyndicate.us/blue/organizations/jenkins/Symbol%2Fgenerated%2Fproduct%2Fexplorer-frontend/activity?branch=dev
 [explorer-frontend-lint]: https://jenkins.symbolsyndicate.us/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Fexplorer-frontend%2Fdev%2F&config=explorer-frontend-lint
