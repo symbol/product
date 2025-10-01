@@ -785,7 +785,7 @@ async def test_prepare_wrap_returns_internal_server_errors_gracefully(client_n2n
 		_seed_database_for_prepare_tests(client_n2n.database_directory)
 
 		response = client_n2n.post('/wrap/prepare', json={
-			'amount': 1234000000,
+			'amount': '1234000000',
 			'recipientAddress': '0x4838b106fce9647bdf1e7877bf73ce8b0bad5f97'
 		})
 		response_json = json.loads(response.data)
@@ -806,17 +806,17 @@ async def test_can_prepare_wrap(client):  # pylint: disable=redefined-outer-name
 		_seed_database_for_prepare_tests(client.database_directory)
 
 		# Act:
-		response = client.post('/wrap/prepare', json={'amount': 1234000000, 'recipientAddress': SYMBOL_ADDRESSES[2]})
+		response = client.post('/wrap/prepare', json={'amount': '1234000000', 'recipientAddress': SYMBOL_ADDRESSES[2]})
 		response_json = json.loads(response.data)
 
 		# Assert: fee_multiplier => 0.0877 / 0.0199 / 6
 		_assert_json_response_success(response)
 		assert {
-			'grossAmount': 205666666,  # floor(1234000000 / 6),
+			'grossAmount': '205666666',  # floor(1234000000 / 6),
 			'conversionFee': '616999.9980',  # grossAmount * config(percentageConversionFee)[0.003]
 			'transactionFee': '6463.6516',  # 176 * config(transactionFeeMultiplier)[50] * feeMultiplier
-			'totalFee': 623464,  # ceil(conversionFee + transactionFee)
-			'netAmount': 205043202,  # grossAmount - totalFee
+			'totalFee': '623464',  # ceil(conversionFee + transactionFee)
+			'netAmount': '205043202',  # grossAmount - totalFee
 
 			'diagnostics': {
 				'height': '4444',
@@ -837,7 +837,7 @@ async def test_can_prepare_wrap_n2n(client_n2n):  # pylint: disable=redefined-ou
 
 		# Act:
 		response = client_n2n.post('/wrap/prepare', json={
-			'amount': 1234000000,
+			'amount': '1234000000',
 			'recipientAddress': '0x4838b106fce9647bdf1e7877bf73ce8b0bad5f97'
 		})
 		response_json = json.loads(response.data)
@@ -845,11 +845,11 @@ async def test_can_prepare_wrap_n2n(client_n2n):  # pylint: disable=redefined-ou
 		# Assert: fee_multiplier => 0.0199 / 4500 * 10^6 / 10^18
 		_assert_json_response_success(response)
 		assert {
-			'grossAmount': 5457022222222222,  # floor(1234000000 * feeMultiplier)
+			'grossAmount': '5457022222222222',  # floor(1234000000 * feeMultiplier)
 			'conversionFee': '16371066666666.6660',  # grossAmount * config(percentageConversionFee)[0.003]
 			'transactionFee': '187713117026904.0000',  # gas[19432] * maxFeePerGas[9659999847]
-			'totalFee': 204084183693571,  # ceil(conversionFee + transactionFee)
-			'netAmount': 5252938038528651,  # grossAmount - totalFee
+			'totalFee': '204084183693571',  # ceil(conversionFee + transactionFee)
+			'netAmount': '5252938038528651',  # grossAmount - totalFee
 
 			'diagnostics': {
 				'height': '4444'
@@ -875,18 +875,18 @@ async def test_can_prepare_unwrap(client):  # pylint: disable=redefined-outer-na
 		_seed_database_for_prepare_tests(client.database_directory)
 
 		# Act:
-		response = client.post('/unwrap/prepare', json={'amount': 1234000000, 'recipientAddress': NEM_ADDRESSES[2]})
+		response = client.post('/unwrap/prepare', json={'amount': '1234000000', 'recipientAddress': NEM_ADDRESSES[2]})
 		response_json = json.loads(response.data)
 
 		# Assert:
 		_assert_json_response_success(response)
 
 		assert {
-			'grossAmount': 7403999999,  # floor(1234000000 * 6),
+			'grossAmount': '7403999999',  # floor(1234000000 * 6),
 			'conversionFee': '14807999.9980',  # grossAmount * config(percentageConversionFee)[0.002]
 			'transactionFee': '50000.0000',  # 50000
-			'totalFee': 14858000,  # ceil(conversionFee + transactionFee)
-			'netAmount': 7389141999,  # grossAmount - totalFee
+			'totalFee': '14858000',  # ceil(conversionFee + transactionFee)
+			'netAmount': '7389141999',  # grossAmount - totalFee
 
 			'diagnostics': {
 				'height': '1000',
@@ -901,6 +901,6 @@ async def test_can_prepare_unwrap(client):  # pylint: disable=redefined-outer-na
 
 
 async def test_cannot_prepare_unwrap_n2n(client_n2n):  # pylint: disable=redefined-outer-name
-	await _assert_not_is_route_accessible_post(client_n2n, '/unwrap/prepare', {'amount': 1234000000})
+	await _assert_not_is_route_accessible_post(client_n2n, '/unwrap/prepare', {'amount': '1234000000'})
 
 # endregion
