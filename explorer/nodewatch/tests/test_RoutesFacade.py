@@ -264,6 +264,7 @@ class SymbolRoutesFacadeTest(unittest.TestCase):  # pylint: disable=too-many-pub
 		# Assert:
 		self.assertEqual([True, True], [result1, result2])
 		self.assertEqual(facade.last_reload_time, facade.last_refresh_time)
+
 		# daily crawl timestamp should not change
 		self.assertEqual(Path('tests/resources/symbol_geo_location.json').stat().st_mtime, facade.last_daily_crawl_timestamp)
 
