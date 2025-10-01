@@ -3,6 +3,8 @@ import asyncio
 import aiohttp
 from zenlog import log
 
+from .NetworkRepository import FinalizedInfo
+
 
 class NetworkConnector:
 	"""Connects to NEM or Symbol networks."""
@@ -63,9 +65,21 @@ class NetworkConnector:
 				if 'height' in response_json:
 					descriptor.height = int(response_json['height'])
 
-				if 'finalized_height' in response_json:
-					descriptor.finalized_height = int(response_json['finalized_height'])
-		except (aiohttp.client_exceptions.ClientConnectorError, aiohttp.client_exceptions.ContentTypeError, asyncio.TimeoutError) as ex:
+				if 'latestFinalizedBlock' in response_json:
+					latest_finalized_block = response_json['latestFinalizedBlock']
+					descriptor.finalized_info = FinalizedInfo(
+						int(latest_finalized_block['height']),
+						int(latest_finalized_block['finalizedEpoch']),
+						latest_finalized_block['hash'],
+						int(latest_finalized_block['finalizedPoint'])
+					)
+		except (
+			aiohttp.client_exceptions.ClientConnectorError,
+			aiohttp.client_exceptions.ContentTypeError,
+			aiohttp.client_exceptions.ServerDisconnectedError,
+			asyncio.TimeoutError,
+			KeyError
+		) as ex:
 			log.warning(f'failed retrieving height from endpoint "{descriptor.endpoint}"\n{ex}')
 			return False
 
