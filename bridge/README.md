@@ -125,7 +125,7 @@ CONFIG_PATH="<path_to_bridge_configuration.ini>"
 
 As an alternative to manually installing dependencies and running scripts, you can use Docker.
 
-### Build docker image
+### Build the Docker image
 
 ```sh
 docker build -t symbolplatform/bridge:1.1 -f Dockerfile --network host ..
@@ -137,14 +137,15 @@ docker build -t symbolplatform/bridge:1.1 -f Dockerfile --network host ..
 docker run -d -it --name xym_wxym_bridge --restart always -v $(pwd):/data symbolplatform/bridge:1.1 <mode>
 ```
 
-The `<mode>` must be one of the following:
-* `api` - Starts the API. You must also add `-p 5000:5000` to expose the API port.
-* `wrappedflow` - Runs the wrapped flow.
-* `nativeflow` - Runs the native flow and skips `--unwrap` operations.
+`<mode>` must be one of the following values:
+* `api`: Starts the API. You must also add `-p 5000:5000` to expose the API port.
+* `wrappedflow`: Runs the wrapped flow.
+* `nativeflow`: Runs the native flow and skips `--unwrap` operations.
 
 **Note**: `$(pwd):/data` mounts the current working directory from the host into the `/data` directory inside the container.
 
-By default, the bridge configuration file is located at `/data/config/configuration.ini`. You can override this path by setting the `BRIDGE_CONFIG_PATH` environment variable.
+By default, the bridge looks for its configuration file in `/data/config/configuration.ini`.
+You can override this path by setting the `BRIDGE_CONFIG_PATH` environment variable, for example: `BRIDGE_CONFIG_PATH="/data/configuration/custom_path_to_config.ini`.
 
 ```sh
 docker run -d -it --name xym_wxym_bridge --restart always -v $(pwd):/data -e BRIDGE_CONFIG_PATH=<path_to_config> symbolplatform/bridge:1.1 <mode>
@@ -244,7 +245,8 @@ The workflow:
 4. Sends tokens to recipient.
 5. Updates request status to `SENT` or `FAILED`, depending on status.
 
-Conversion rate calculation
+Conversion rate calculation:
+
 The conversion rate depends on the `strategy.mode` setting.
 
 1. `staked`:
@@ -273,7 +275,7 @@ The conversion rate depends on the `strategy.mode` setting.
 2. `wrapped`: Conversion rate is fixed at 1:1 (One wrapped network token equals one native network token).
 3. `native`: Conversion is determined dynamically using exchange rates from an **online price provider**.
 
-For wrap mode, conversion rates between native tokens on both chains are fetched from the price oracle to calculate fee deductions.
+In wrapped mode, conversion rates between native tokens on both chains are fetched from the price oracle to calculate fee deductions.
 
 ### Check Finalized Transactions
 
@@ -309,7 +311,7 @@ Example flow with Symbol (`XYM`) as native chain and Ethereum (`wXYM`) as wrappe
 
 ## Configuration
 
-The bridge uses an INI configuration file with four sections: `machine`, `native_network`, `wrapped_network`, `strategy`, `price_oracle`.
+The bridge uses an INI configuration file with five sections: `machine`, `native_network`, `wrapped_network`, `strategy`, `price_oracle`.
 
 ### `machine` section
 
@@ -368,7 +370,7 @@ Since Ethereum is supported only as a wrapped network, all Ethereum-specific pro
 
 ### `strategy` section
 
-* `mode`: Specifies the token conversion rate calculation strategy: (`staked`, `wrapped`, or `native`).
+* `mode`: Specifies the token conversion rate calculation strategy (`staked`, `wrapped`, or `native`).
 
 ### `price_oracle` section
 
