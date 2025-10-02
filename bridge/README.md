@@ -125,18 +125,29 @@ CONFIG_PATH="<path_to_bridge_configuration.ini>"
 
 As an alternative to manually installing dependencies and running scripts, you can use Docker.
 
+### Build docker image
+
+```sh
+docker build -t symbolplatform/bridge:1.1 -f Dockerfile --network host ..
+```
+
 ### Running the Bridge
 
 ```sh
-docker run -d -it --name xym_wxym_bridge --restart always -v $(pwd):$(pwd) symbolplatform/bridge:1.0 /home/ubuntu/product/bridge/xym_wxym_bridge/run-bridge-docker.sh
+docker run -d -it --name xym_wxym_bridge --restart always -v $(pwd):/data symbolplatform/bridge:1.1 <mode>
 ```
 
-**Note**: `$(pwd):$(pwd)` mounts the current working directory from the host into the same path in the container.
+The `<mode>` must be one of the following:
+* `api` - Starts the API. You must also add `-p 5000:5000` to expose the API port.
+* `wrappedflow` - Runs the wrapped flow.
+* `nativeflow` - Runs the native flow and skips `--unwrap` operations.
 
-### Exposing the API
+**Note**: `$(pwd):/data` mounts the current working directory from the host into the `/data` directory inside the container.
+
+By default, the bridge configuration file is located at `/data/config/configuration.ini`. You can override this path by setting the `BRIDGE_CONFIG_PATH` environment variable.
 
 ```sh
-docker run -d -it --name xym_wxym_bridge_api --restart always -e BRIDGE_API_SETTINGS=$(pwd)/api_configuration.ini -p 5000:5000 -v $(pwd):$(pwd) symbolplatform/bridge:1.0
+docker run -d -it --name xym_wxym_bridge --restart always -v $(pwd):/data -e BRIDGE_CONFIG_PATH=<path_to_config> symbolplatform/bridge:1.1 <mode>
 ```
 
 ## Workflows
@@ -228,22 +239,41 @@ This workflow operates in two modes:
 The workflow:
 
 1. Retrieves all `UNPROCESSED` requests from the `wrap_request` table.
-2. Calculates conversion rate at request height as `(cumulative_wrapped - cumulative_unwrapped) / native_balance` where:
-   * `native_balance` is the native token balance (e.g. `XEM` on NEM).
-   * `cumulative_wrapped` is the total amount of existing wrapped tokens (e.g. `wXEM`).
-   * `cumulative_unwrapped` is the total amount of wrapped tokens to be unwrapped.
+2. Calculates conversion rate at request block height (see below).
 3. Deducts network fees from payout amount.
 4. Sends tokens to recipient.
 5. Updates request status to `SENT` or `FAILED`, depending on status.
 
-For wrap mode, conversion rates between native tokens on both chains are fetched from the price oracle to calculate fee deductions.
-Once a bridge is deployed, the native balance is expected to exceed the net wrapped balance.
-This is primarily due to the accrual of harvesting rewards, but can also be affected by other transfers (or donations).
+Conversion rate calculation
+The conversion rate depends on the `strategy.mode` setting.
 
-As an example, consider 12000 native, 12000 wrapped and 2000 unwrapped.
-With these values, a wrapped token is worth 12000 / (12000 - 2000) = 6/5 native tokens.
-A depositor of 1200 native tokens will receive 1000 wrapped tokens.
-Conversely, a depositor of 1000 wrapped tokens will receive 1200 native tokens.
+1. `staked`:
+
+   The conversion rate is calculated as `(cumulative_wrapped - cumulative_unwrapped) / native_balance` where:
+    * `native_balance`: is the native token balance (e.g. `XEM` on NEM).
+    * `cumulative_wrapped`: is the total amount of existing wrapped tokens (e.g. `wXEM`).
+    * `cumulative_unwrapped`: is the total amount of wrapped tokens to be unwrapped.
+
+   Example:
+    * Native balance: 12000
+    * Wrapped tokens: 12000
+    * Unwrapped tokens: 2000
+   
+   Calculation:
+   ```
+   Conversion rate = 12000 / (12000 - 2000) = 6/5
+   ```
+   
+    * A depositor of **1200 native tokens** receives **1000 wrapped tokens**
+    * A depositor of **1000 wrapped tokens** receives **1200 native tokens**
+
+    Once a bridge is deployed, the native balance is expected to exceed the net wrapped balance.
+    This is primarily due to the accrual of harvesting rewards, but can also be affected by other transfers (or donations).
+
+2. `wrapped`: Conversion rate is fixed at 1:1 (One wrapped network token equals one native network token).
+3. `native`: Conversion is determined dynamically using exchange rates from an **online price provider**.
+
+For wrap mode, conversion rates between native tokens on both chains are fetched from the price oracle to calculate fee deductions.
 
 ### Check Finalized Transactions
 
@@ -279,12 +309,16 @@ Example flow with Symbol (`XYM`) as native chain and Ethereum (`wXYM`) as wrappe
 
 ## Configuration
 
-The bridge uses an INI configuration file with four sections: `machine`, `native_network`, `wrapped_network`, `price_oracle`.
+The bridge uses an INI configuration file with four sections: `machine`, `native_network`, `wrapped_network`, `strategy`, `price_oracle`.
 
 ### `machine` section
 
 * `logFilename`: The file path where bridge operational logs will be written.
 * `databaseDirectory`: The directory to store the bridge's internal database (e.g., for tracking requests and payout states).
+* `logBackupCount`: The maximum number of backup log files to retain. When the log file exceeds the specified size (maxLogSize), it is rotated. 
+    Older backups are deleted once the number of backup files exceeds this limit.
+* `maxLogSize`: The maximum size (in bytes) of a single log file before it is rotated. 
+    Once this size is reached, the current log is archived and a new log file is started.
 
 ### Properties common to `native_network` and `wrapped_network` sections
 
@@ -300,7 +334,7 @@ meaning that they can appear twice in the configuration file.
 * `mosaicId`: Token identifier format varies by blockchain:
     * On NEM: `{namespace name}:{mosaic name}`
     * On Symbol: `id:{hex mosaic id}`
-    * On Ethereum: Address of the ERC-20 contract.
+    * On Ethereum: Address of the ERC-20 contract. Leave empty for native token (ETH) conversions.
 * `explorerEndpoint`: Block explorer URL.
 * `finalizationLookahead`: Blocks to advance conceptual finalization (default: 0).
     For example, NEM finalization takes 360 blocks.
@@ -332,10 +366,15 @@ Since Ethereum is supported only as a wrapped network, all Ethereum-specific pro
 * `priorityFeeMultiple`: Multiplier for the priority fee (tip) for EIP-1559 transactions (default: 1.05).
 * `feeHistoryBlocksCount`: Number of past blocks to consider when fetching fee history for EIP-1559 gas price estimation (default: 10).
 
+### `strategy` section
+
+* `mode`: Specifies the token conversion rate calculation strategy: (`staked`, `wrapped`, or `native`).
+
 ### `price_oracle` section
 
-* `url`: The URL of the price oracle API (e.g., CoinGecko) used to fetch real-time token prices
-    when percentage conversion fees require cross-chain value lookups.
+* `url`: The URL of the price oracle API (e.g., CoinGecko, CoinMarketCap) used to fetch real-time token prices
+    when conversions require cross-chain value lookups.
+* `accessToken`: The access token for the price oracle API.
 
 ### Example configuration
 
@@ -343,6 +382,8 @@ Since Ethereum is supported only as a wrapped network, all Ethereum-specific pro
 [machine]
 databaseDirectory = /home/ubuntu/product/bridge/xym_wxym_bridge/storage/db
 logFilename = /home/ubuntu/product/bridge/xym_wxym_bridge/storage/log.log
+logBackupCount = 30
+maxLogSize = 26214400
 
 [native_network]
 blockchain = symbol
@@ -369,6 +410,9 @@ signerPublicKey = 044838021ee42c74bcf411ab008ce01bc89356a61cd6dddc78dfcce9cc97bf
 chainId = 3151908
 isFinalizationSupported = False
 explorerEndpoint = https://otterscan.symboltest.net
+
+[strategy]
+mode = staked
 
 [price_oracle]
 url=https://api.coingecko.com
