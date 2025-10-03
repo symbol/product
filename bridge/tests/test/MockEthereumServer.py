@@ -162,12 +162,21 @@ async def create_simple_ethereum_client(aiohttp_client):
 			raise ValueError(f'unknown eth_call data: {data}')
 
 		async def handle_ots_search_transaction_before(self, request):
+			hashes = [
+				'0x12dfb8047ec57ba5a34a4ce8b8206e5020da409e06cdcf4ad02cc1034aa178ed',
+				'0x7a184ca95fadc36f35bde72b4f042b281664c9db16e83a8d9ac10ee5b0491f77',
+				'0x6f246476cff6570f9153cd4a463d4a25e6bf9ef1a1fc7b740523362fb391a45c'
+			]
 			return await self._process(request, {
 				'result': {
 					'txs': [
-						{'blockNumber': '0x1d', 'nonce': '0x2'},
-						{'blockNumber': '0x1a', 'nonce': '0x3'},
-						{'blockNumber': '0x7', 'nonce': '0x1'}
+						{'blockNumber': '0x1d', 'nonce': '0x2', 'hash': hashes[0]},
+						{'blockNumber': '0x1a', 'nonce': '0x3', 'hash': hashes[1]},
+						{'blockNumber': '0x7', 'nonce': '0x1', 'hash': hashes[2]}
+					],
+					'receipts': [
+						{'transactionHash': hashes[1], 'status': '0x1'},
+						{'transactionHash': hashes[2], 'status': '0x0'}
 					]
 				}
 			})

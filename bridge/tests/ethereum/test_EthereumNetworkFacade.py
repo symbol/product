@@ -208,7 +208,8 @@ def _extract_wrap_request_from_transaction(is_valid_address, receipient_address)
 	# Act:
 	results = facade.extract_wrap_request_from_transaction(lambda address: (is_valid_address, hexlify(address).decode('utf8').upper()), {
 		'meta': {
-			'height': 1234
+			'height': 1234,
+			'isSuccess': True
 		},
 		'transaction': {
 			'from': '0x4838b106fce9647bdf1e7877bf73ce8b0bad5f97',
