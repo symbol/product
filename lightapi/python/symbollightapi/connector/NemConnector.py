@@ -318,9 +318,6 @@ class NemConnector(BasicConnector):
 
 	def _map_to_block(self, block_json):
 		block = block_json['block']
-		difficulty = block_json['difficulty']
-		block_hash = block_json['hash']
-		transactions = block_json['txes']
 		size = len(json.dumps(block_json).encode('utf-8'))
 
 		return Block(
@@ -328,10 +325,10 @@ class NemConnector(BasicConnector):
 			block['timeStamp'],
 			[
 				self._map_to_transaction(transaction, block['height'])
-				for transaction in transactions
+				for transaction in block_json['txes']
 			],
-			difficulty,
-			block_hash,
+			block_json['difficulty'],
+			block_json['hash'],
 			block['signer'],
 			block['signature'],
 			size
