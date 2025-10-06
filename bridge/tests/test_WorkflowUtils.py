@@ -6,14 +6,14 @@ from symbolchain.nem.Network import Network
 
 from bridge.ConversionRateCalculatorFactory import ConversionRateCalculatorFactory
 from bridge.db.Databases import Databases
-from bridge.models.BridgeConfiguration import StrategyConfiguration
+from bridge.models.BridgeConfiguration import GlobalConfiguration
 from bridge.models.Constants import ExecutionContext, PrintableMosaicId
 from bridge.WorkflowUtils import (
 	NativeConversionRateCalculatorFactory,
 	calculate_search_range,
 	create_conversion_rate_calculator_factory,
 	is_native_to_native_conversion,
-	validate_strategy_configuration
+	validate_global_configuration
 )
 
 from .test.MockNetworkFacade import MockNemNetworkFacade
@@ -183,7 +183,7 @@ def test_can_create_native_calculator_best_calculator_not_empty():
 # endregion
 
 
-# region is_native_to_native_conversion, validate_strategy_configuration
+# region is_native_to_native_conversion, validate_global_configuration
 
 class MockNetworkFacade:
 	def __init__(self, mosaic_id):
@@ -203,20 +203,20 @@ def test_is_not_native_to_native_conversion_when_network_facade_does_not_use_cur
 	assert not is_native_to_native_conversion(MockNetworkFacade('alpha'))
 
 
-def test_validate_strategy_configuration_validates_strategy_mode_against_wrapped_token():
-	# Assert: native mode and native wrapped token => allowed
-	validate_strategy_configuration(StrategyConfiguration('native'), MockNetworkFacade(None))
+def test_validate_global_configuration_validates_strategy_mode_against_wrapped_token():
+	# Assert: swap mode and native wrapped token   => allowed
+	validate_global_configuration(GlobalConfiguration('swap'), MockNetworkFacade(None))
 
 	# - other mode and not native wrapped token    => allowed
-	validate_strategy_configuration(StrategyConfiguration('staked'), MockNetworkFacade(12345))
+	validate_global_configuration(GlobalConfiguration('stake'), MockNetworkFacade(12345))
 
 	# native mode and not native wrapped token     => disallowed
-	with pytest.raises(ValueError, match='wrapped token is not native but native mode is selected'):
-		validate_strategy_configuration(StrategyConfiguration('native'), MockNetworkFacade(12345))
+	with pytest.raises(ValueError, match='wrapped token is not native but swap mode is selected'):
+		validate_global_configuration(GlobalConfiguration('swap'), MockNetworkFacade(12345))
 
 	# - other mode and native wrapped token        => disallowed
-	with pytest.raises(ValueError, match='wrapped token is native but native mode is not selected'):
-		validate_strategy_configuration(StrategyConfiguration('staked'), MockNetworkFacade(None))
+	with pytest.raises(ValueError, match='wrapped token is native but swap mode is not selected'):
+		validate_global_configuration(GlobalConfiguration('stake'), MockNetworkFacade(None))
 
 # endregion
 
@@ -242,7 +242,7 @@ def _assert_can_create_default_calculator_factory_when_wrapped_facade_does_not_u
 
 			# Act:
 			factory = create_conversion_rate_calculator_factory(
-				ExecutionContext(is_unwrap_mode, 'staked'),
+				ExecutionContext(is_unwrap_mode, 'stake'),
 				databases,
 				MockNetworkFacade('alpha'),
 				MockNetworkFacade('beta'),
@@ -273,7 +273,7 @@ def test_can_create_native_calculator_factory_when_wrapped_facade_uses_currency_
 
 			# Act:
 			factory = create_conversion_rate_calculator_factory(
-				ExecutionContext(False, 'staked'),
+				ExecutionContext(False, 'stake'),
 				databases,
 				MockNetworkFacade('alpha'),
 				MockNetworkFacade(''),
@@ -295,7 +295,7 @@ def test_cannot_create_native_calculator_factory_when_wrapped_facade_uses_curren
 			# Act + Assert:
 			with pytest.raises(ValueError, match='native to native conversions do not support unwrap mode'):
 				create_conversion_rate_calculator_factory(
-					ExecutionContext(True, 'staked'),
+					ExecutionContext(True, 'stake'),
 					databases,
 					MockNetworkFacade('alpha'),
 					MockNetworkFacade(''),
@@ -311,7 +311,7 @@ def _assert_can_create_native_calculator_factory_when_strategy_mode_wrapped(is_u
 
 			# Act:
 			factory = create_conversion_rate_calculator_factory(
-				ExecutionContext(is_unwrap_mode, 'wrapped'),
+				ExecutionContext(is_unwrap_mode, 'wrap'),
 				databases,
 				MockNetworkFacade('alpha'),
 				MockNetworkFacade('beta'),

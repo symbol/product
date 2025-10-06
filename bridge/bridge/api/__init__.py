@@ -232,7 +232,7 @@ class BridgeContext:  # pylint: disable=too-many-instance-attributes
 		self._semaphore = asyncio.Semaphore(1)
 		self._is_loaded = False
 
-		self.strategy_mode = self._config.strategy.mode
+		self.strategy_mode = self._config.global_.mode
 		self.native_facade = None
 		self.wrapped_facade = None
 		self.database_params = None

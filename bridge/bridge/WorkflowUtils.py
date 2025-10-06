@@ -62,7 +62,7 @@ class NativeConversionRateCalculatorFactory:
 # endregion
 
 
-# region is_native_to_native_conversion, validate_strategy_configuration
+# region is_native_to_native_conversion, validate_global_configuration
 
 def is_native_to_native_conversion(wrapped_facade):
 	"""Determines if a native to native conversion is configured."""
@@ -70,14 +70,14 @@ def is_native_to_native_conversion(wrapped_facade):
 	return not wrapped_facade.extract_mosaic_id().id
 
 
-def validate_strategy_configuration(strategy_config, wrapped_facade):
-	is_native_strategy = 'native' == strategy_config.mode
+def validate_global_configuration(global_config, wrapped_facade):
+	is_swap_strategy = 'swap' == global_config.mode
 	if is_native_to_native_conversion(wrapped_facade):
-		if not is_native_strategy:
-			raise ValueError('wrapped token is native but native mode is not selected')
+		if not is_swap_strategy:
+			raise ValueError('wrapped token is native but swap mode is not selected')
 	else:
-		if is_native_strategy:
-			raise ValueError('wrapped token is not native but native mode is selected')
+		if is_swap_strategy:
+			raise ValueError('wrapped token is not native but swap mode is selected')
 
 # endregion
 
@@ -94,7 +94,7 @@ def create_conversion_rate_calculator_factory(execution_context, databases, nati
 
 		return NativeConversionRateCalculatorFactory(databases, fee_multiplier)
 
-	if 'wrapped' == execution_context.strategy_mode:
+	if 'wrap' == execution_context.strategy_mode:
 		return NativeConversionRateCalculatorFactory(databases, Decimal(1))  # wrapped mode (1:1) uses fixed unity multiplier (1)
 
 	return ConversionRateCalculatorFactory(databases, native_facade.extract_mosaic_id().formatted, execution_context.is_unwrap_mode)
