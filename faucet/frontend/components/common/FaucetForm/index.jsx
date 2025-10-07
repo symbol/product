@@ -4,13 +4,13 @@ import TwitterSignIn from '../TwitterSignIn';
 import axios from 'axios';
 import jwt from 'jsonwebtoken';
 import PropTypes from 'prop-types';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ToastContainer, toast } from 'react-toastify';
 
 const FaucetForm = function ({ config, addressValidation }) {
 	const toastConfig = {
 		theme: config.theme,
-		bodyClassName: 'toast-body',
+		className: 'toast-body',
 		progressClassName: 'toast-progress'
 	};
 
