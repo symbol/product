@@ -61,7 +61,7 @@ to handle both directions of the bridge.
 > **NOTE:**
 > Stake mode is implemented as a variant of wrap mode.
 > The same scripts, parameters, and workflows apply to both, with the only difference being the conversion factor used.
-> Therefore, whenever this documentation refers to wrapping or unwrapping, it also applies to staking and unstaking.
+> Therefore, whenever this documentation refers to wrapping or unwrapping, it applies to both wrapped and staked tokens.
 
 ## Setup
 
@@ -274,7 +274,7 @@ The workflow:
 
 Conversion rate calculation:
 
-The conversion rate depends on the `global_settings.mode` configuration.
+The conversion rate depends on the `global.mode` configuration.
 
 1. `stake` mode:
 
@@ -347,7 +347,7 @@ Example stake flow with Symbol (`XYM`) as native chain and Ethereum (`wXYM`) as 
 ## Configuration
 
 The bridge uses an INI configuration file with five sections:
-`machine`, `global_settings`, `native_network`, `wrapped_network`, `price_oracle`.
+`machine`, `global`, `native_network`, `wrapped_network`, `price_oracle`.
 
 ### `machine` section
 
@@ -358,7 +358,7 @@ The bridge uses an INI configuration file with five sections:
 * `maxLogSize`: The maximum size (in bytes) of a single log file before it is rotated.
     Once this size is reached, the current log is archived and a new log file is started.
 
-### `global_settings` section
+### `global` section
 
 * `mode`: Specifies the bridge operation mode (`stake`, `wrap`, or `swap`).
 
@@ -375,7 +375,7 @@ meaning that they can appear twice in the configuration file.
 * `signerPublicKey`: The public key corresponding to `signerPrivateKey`.
 * `mosaicId`: Token identifier format varies by blockchain:
     * On NEM: `{namespace name}:{mosaic name}`
-    * On Symbol: `id:{hex mosaic id}`
+    * On Symbol: `{hex mosaic id}`
     * On Ethereum: Address of the ERC-20 contract of the wrapped token.
         Must be empty for native token (`ETH`) conversions (swap mode).
 * `explorerEndpoint`: Block explorer URL.
@@ -424,7 +424,7 @@ logFilename = /home/ubuntu/product/bridge/xym_wxym_bridge/storage/log.log
 logBackupCount = 30
 maxLogSize = 26214400
 
-[global_settings]
+[global]
 mode = stake
 
 [native_network]
@@ -434,7 +434,7 @@ endpoint = https://201-sai-dual.symboltest.net:3001
 bridgeAddress = TBQAAMLT4R6TPIZVWERYURELILHHMCERDWZ4FCQ
 explorerEndpoint = https://testnet.symbol.fyi
 
-mosaicId = id:72C0212E67A08BCE
+mosaicId = 72C0212E67A08BCE
 signerPrivateKey = <removed>
 signerPublicKey = BA3E3AD78C1B57604345845F7D8466F3270754B98203D8C72C75994292123AF5
 balanceChangeScanStartHeight = 2645824
