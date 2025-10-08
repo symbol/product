@@ -12,6 +12,9 @@ jest.mock('@/contexts/ConfigContext', () => ({
 	useConfig: jest.fn()
 }));
 
+// React 18 scheduler expects MessageChannel which jsdom environment lacks.
+window.MessageChannel = require('worker_threads').MessageChannel;
+
 global.$t = key => `translated_${key}`;
 
 const originalEnv = { ...process.env };
