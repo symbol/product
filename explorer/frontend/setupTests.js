@@ -13,7 +13,21 @@ jest.mock('@/contexts/ConfigContext', () => ({
 }));
 
 // React 18 scheduler expects MessageChannel which jsdom environment lacks.
-window.MessageChannel = require('worker_threads').MessageChannel;
+window.MessageChannel = jest.fn().mockImplementation(() => {
+	let onmessage;
+	return {
+		port1: {
+			set onmessage(cb) {
+				onmessage = cb;
+			}
+		},
+		port2: {
+			postMessage: data => {
+				onmessage?.({ data });
+			}
+		}
+	};
+});
 
 global.$t = key => `translated_${key}`;
 
@@ -43,8 +57,7 @@ const mockConfigContext = () => {
 	jest.spyOn(ConfigContext, 'useConfig').mockReturnValue({
 		knownAccounts: {}
 	});
-}
-
+};
 
 beforeEach(() => {
 	jest.spyOn(console, 'error').mockImplementation(jest.fn());
