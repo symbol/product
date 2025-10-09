@@ -93,7 +93,7 @@ describe('utils/jrpc', () => {
 			const provider = { kind: 'mockProvider' };
 
 			// Act:
-			const contract = createContract(abi, address, provider);
+			const contract = createContract(address,abi, provider);
 
 			// Assert:
 			expect(ContractMock).toHaveBeenCalledWith(address, abi, provider);

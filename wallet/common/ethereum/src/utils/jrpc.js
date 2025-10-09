@@ -58,9 +58,9 @@ export const createEthereumJrpcProvider = ({ nodeUrl, chainId }) => new ethers.J
 /**
  * Creates an ethers Contract instance bound to a provider/runner.
  *
- * @param {import('ethers').InterfaceAbi} abi - Contract ABI.
  * @param {string} address - Contract address.
+ * @param {import('ethers').InterfaceAbi} abi - Contract ABI.
  * @param {import('ethers').ContractRunner} provider - Provider or Signer to run contract calls.
  * @returns {import('ethers').Contract}
  */
-export const createContract = (abi, address, provider) => new ethers.Contract(address, abi, provider);
+export const createContract = (address, abi, provider) => new ethers.Contract(address, abi, provider);
