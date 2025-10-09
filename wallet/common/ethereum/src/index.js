@@ -9,3 +9,4 @@ export {
 };
 
 export * from './modules';
+export * from './bridge/BridgeHelper';
