@@ -4,44 +4,70 @@ Two-way bridge between NEM/Symbol and Ethereum.
 
 ## Overview
 
-This repository contains the implementation of a bridge with two modes of operation:
+This repository contains the implementation of a bridge that allows converting tokens from a source network
+(NEM or Symbol) into a target network (NEM, Symbol or Ethereum).
 
-* In **wrapped** mode, it converts native NEM (`XEM`) and Symbol (`XYM`) tokens into their wrapped counterparts
-    (e.g. `wXYM`) on NEM, Symbol, or Ethereum.
+The bridge supports three modes of operation:
+
+* **Wrap mode** converts native NEM (`XEM`) and Symbol (`XYM`) tokens into wrapped counterparts
+    on a different network (for example, `wXYM` on Ethereum).
+
+    The conversion factor is fixed at 1:1, so the number of obtained tokens always equals the number of tokens provided.
+
     The reverse operation, unwrapping, is also supported.
 
-* In **native** mode, it converts `XEM` and `XYM` into Ethereum's native token, `ETH`,
-    using an exchange rate from an online price provider.
-    This mode is intended only to supply the target Ethereum account with enough `ETH` to cover gas fees.
-    It does not support the reverse operation and the maximum transfer amount can be limited by a configuration setting.
+* **Stake mode** converts native NEM (`XEM`) and Symbol (`XYM`) tokens into staked counterparts
+    on a different network (for example, `sXYM` on Ethereum).
 
-Each bridge instance is configured with a specific mode and a defined set of source (NEM or Symbol)
+    Unlike wrap mode, the converted native tokens can earn rewards while not in use
+    (for example, from harvesting), and the staked tokens represent proportional ownership of those rewards.
+
+    As a result, the conversion factor is dynamic rather than fixed, as explained below.
+
+    The reverse operation, unstaking, is also supported and yields more native tokens than originally staked
+    when rewards have accrued.
+
+* **Swap mode** acts as an exchange, converting native NEM (`XEM`) and Symbol (`XYM`) tokens into Ethereum's native
+    token (`ETH`), using the rate provided by an online price source.
+
+    It does not support the reverse operation, and the maximum transfer amount can be limited by configuration.
+
+Each bridge instance is configured with a specific mode and a defined pair of source (NEM or Symbol)
 and target (NEM, Symbol, or Ethereum) networks.
+
 The bridge maintains accounts on both the source and target networks and monitors them for incoming requests.
 The account on the target network must be manually pre-funded and replenished as needed to ensure
-the bridge can continue processing requests.
+the bridge can continue processing requests, the source account is funded by user deposits.
 
-To use the bridge, a user simply transfers tokens to the bridge account on one network,
-including a message that specifies the destination address on the other network where the counterpart should be delivered.
+To use the bridge, users transfer tokens to the bridge account on one network and include a message specifying
+the destination address on the other network where the counterpart tokens should be delivered.
 
 The bridge operates through four core workflows, each implemented as a script that runs periodically
 to maintain state and process transactions.
 These scripts are executed sequentially, in the order listed below:
 
-1. `download_balance_changes`: Retrieves balance updates to the bridge accounts on the source networks.
+1. `download_balance_changes`: Retrieves balance updates for the bridge accounts on the source networks.
     It uses a [Mesh](https://docs.cdp.coinbase.com/mesh/product-overview/welcome) endpoint (formerly Rosetta) to compute
     historical balances at any block height.
 
-2. `download_wrap_requests`: Collects wrap and unwrap requests, validates them, and stores them for processing.
+2. `download_wrap_requests`: Detects wrap and unwrap requests, validates them, and stores them for processing.
 
-3. `send_payouts`: Executes payouts by sending wrapped or native tokens to the addresses specified in request messages.
+3. `send_payouts`: Executes payouts by sending wrapped or native tokens to the destination addresses specified in
+    request messages.
 
-4. `check_finalized_transactions`: Tracks outgoing transactions and marks them as complete once finalized.
+4. `check_finalized_transactions`: Monitors outgoing transactions and marks them as complete once finalized.
 
 Workflows 2 through 4 are executed twice, once with the `--unwrap` parameter and once without,
 to handle both directions of the bridge.
 
+> **NOTE:**
+> Stake mode is implemented as a variant of wrap mode.
+> The same scripts, parameters, and workflows apply to both, with the only difference being the conversion factor used.
+> Therefore, whenever this documentation refers to wrapping or unwrapping, it applies to both wrapped and staked tokens.
+
 ## Setup
+
+The following instructions assume a Linux installation.
 
 ### Prerequisites
 
@@ -86,8 +112,7 @@ python3 -m workflows.check_finalized_transactions --config configuration.ini
 python3 -m workflows.check_finalized_transactions --config configuration.ini --unwrap
 ```
 
-If the bridge is configured in **native mode** (exchanging native XYM for native ETH),
-all commands with the `--unwrap` parameter must be skipped.
+When operating in **swap mode** (exchanging native `XYM` for native `ETH`), skip all commands with the `--unwrap` parameter.
 In this mode, the bridge operates only in one direction.
 
 All commands require a configuration file, specified with the `--config` parameter.
@@ -125,18 +150,34 @@ CONFIG_PATH="<path_to_bridge_configuration.ini>"
 
 As an alternative to manually installing dependencies and running scripts, you can use Docker.
 
+### Build the Docker image
+
+```sh
+docker build -t symbolplatform/bridge:1.1 -f Dockerfile --network host ..
+```
+
 ### Running the Bridge
 
 ```sh
-docker run -d -it --name xym_wxym_bridge --restart always -v $(pwd):$(pwd) symbolplatform/bridge:1.0 /home/ubuntu/product/bridge/xym_wxym_bridge/run-bridge-docker.sh
+docker run -d -it --name xym_wxym_bridge --restart always -v $(pwd):/data symbolplatform/bridge:1.1 <command>
 ```
 
-**Note**: `$(pwd):$(pwd)` mounts the current working directory from the host into the same path in the container.
+`<command>` must be one of the following values:
 
-### Exposing the API
+* `wrappedflow`: Runs the wrap and unwrap flows. Use in wrap and stake modes.
+* `nativeflow`: Skips `--unwrap` operations. Use in swap mode.
+* `api`: Starts the API server. You must also add `-p 5000:5000` to expose the API port.
+    Must be run alongside one of the other two commands that actually start a bridge.
+
+> **NOTE:**
+> `$(pwd):/data` mounts the current working directory from the host into the `/data` directory inside the container.
+
+By default, the bridge looks for its configuration file in `/data/config/configuration.ini`.
+You can override this path by setting the `BRIDGE_CONFIG_PATH` environment variable, for example:
+`BRIDGE_CONFIG_PATH="/data/configuration/custom_path_to_config.ini`.
 
 ```sh
-docker run -d -it --name xym_wxym_bridge_api --restart always -e BRIDGE_API_SETTINGS=$(pwd)/api_configuration.ini -p 5000:5000 -v $(pwd):$(pwd) symbolplatform/bridge:1.0
+docker run -d -it --name xym_wxym_bridge --restart always -v $(pwd):/data -e BRIDGE_CONFIG_PATH=<path_to_config> symbolplatform/bridge:1.1 <command>
 ```
 
 ## Workflows
@@ -151,8 +192,8 @@ with the following information:
 * Currency (or mosaic ID)
 * Change amount (positive or negative)
 
-These records are used to track the amount native tokens in the bridge account at all times,
-which in turn determines the exchange rate for wrapped tokens.
+These records are used to track the amount of native tokens in the bridge account at all times,
+which in turn determines the exchange rate for staked tokens.
 
 For initial setup, use the `balanceChangeScanStartHeight` configuration property to skip blocks that were created
 before the bridge account existed.
@@ -162,7 +203,7 @@ with an empty currency and amount, to ensure the next execution does not reproce
 
 ### Download Wrap Requests
 
-This workflow operates in two modes:
+This workflow operates in two directions:
 
 * **wrap** (default): Detects request transactions on the native chain and stores them in the `wrap_request` database.
 * **unwrap**: Detects request transactions on the target chain and stores them in the `unwrap_request` database.
@@ -172,7 +213,7 @@ recorded request (or error) and continuing up to the latest finalized block.
 
 Valid requests are transactions that:
 
-* Transfer native tokens (wrap mode) or wrapped tokens (unwrap mode). Any other tokens are ignored.
+* Transfer native tokens (wrap direction) or wrapped tokens (unwrap direction). Any other tokens are ignored.
 * Include the destination address where the exchanged tokens should be delivered:
 
     * For NEM and Symbol transactions, the address must be provided in an unencrypted message field.
@@ -220,47 +261,92 @@ is retrieved. These timestamps are stored in the `block_metadata` table.
 
 ### Send Payouts
 
-This workflow operates in two modes:
+Again, this workflow operates in two directions:
 
 * **wrap** (default): Processes requests from the `wrap_request` database.
 * **unwrap**: Processes requests from the `unwrap_request` database.
 
 The workflow:
 
-1. Retrieves all `UNPROCESSED` requests from the `wrap_request` table.
-2. Calculates conversion rate at request height as `(cumulative_wrapped - cumulative_unwrapped) / native_balance` where:
-   * `native_balance` is the native token balance (e.g. `XEM` on NEM).
-   * `cumulative_wrapped` is the total amount of existing wrapped tokens (e.g. `wXEM`).
-   * `cumulative_unwrapped` is the total amount of wrapped tokens to be unwrapped.
+1. Retrieves all `UNPROCESSED` requests from the appropriate database.
+2. Calculates conversion rate at request block height (see below).
 3. Deducts network fees from payout amount.
 4. Sends tokens to recipient.
 5. Updates request status to `SENT` or `FAILED`, depending on status.
 
-For wrap mode, conversion rates between native tokens on both chains are fetched from the price oracle to calculate fee deductions.
-Once a bridge is deployed, the native balance is expected to exceed the net wrapped balance.
-This is primarily due to the accrual of harvesting rewards, but can also be affected by other transfers (or donations).
+Conversion rate calculation:
 
-As an example, consider 12000 native, 12000 wrapped and 2000 unwrapped.
-With these values, a wrapped token is worth 12000 / (12000 - 2000) = 6/5 native tokens.
-A depositor of 1200 native tokens will receive 1000 wrapped tokens.
-Conversely, a depositor of 1000 wrapped tokens will receive 1200 native tokens.
+The conversion rate depends on the `global.mode` configuration.
+
+1. `stake` mode:
+
+    The conversion rate is calculated as `(total_staked - total_unstaked) / native_balance` where:
+    * `total_staked` is the total amount of staked tokens that the bridge has produced since it started operating.
+        The bridge keeps track of this value internally.
+    * `total_unstaked` is the total amount of staked tokens that the bridge has converted back into native tokens
+        since it started operating.
+        The bridge keeps track of this value internally.
+    * `native_balance` is the current balance of the bridge account on the native network.
+
+    In the absence of rewards accruing on the bridge's native account,
+    its balance changes only as a result of stake and unstake operations.
+    In that case, `native_balance` always equals `total_staked - total_unstaked`, and the conversion factor remains 1.
+    Under these conditions, stake mode behaves exactly like wrap mode.
+
+    **Example**
+    * Native balance: 12 000
+    * Total staked tokens: 10 000
+    * Total unstaked tokens: 2 000
+
+    This means 8 000 staked tokens remain, entitling their owners to withdraw 12 000 native tokens.
+
+    The difference between the 8 000 staked tokens and the 12 000 native tokens held by bridge
+    represents accumulated rewards, such as harvesting income, donations, or invalid transfers.
+
+    These values yield a conversion rate of `(10 000 - 2 000) / 12 000 = 2/3 ≈ 67%`.
+
+    Therefore:
+    * A depositor of **1 200 native tokens** would receive **8 00 staked tokens**,
+        and the conversion rate would not change, because `(10 800 - 2 000) / 13 200` is still `2/3`.
+    * A depositor of **8 00 staked tokens** would receive **1 200 native tokens**,
+        and the conversion rate would not change, because `(10 000 - 2 800) / 10 800` is still `2/3`.
+    * The accrual of **4000 native tokens** in harvesting rewards would adjust the conversion rate to
+        `(10 000 - 2 000) / 16 000 = 50%`.
+
+        Now each staked token is worth more native tokens than it was before,
+        because it entitles its owner to a proportional share of the newly accrued rewards.
+
+        At the same time, deposited native tokens now result in a smaller amount of staked tokens,
+        because the increased native balance makes each staked token represent a larger share of value.
+
+2. `wrap` mode:
+
+    Conversion rate is fixed at 1: One wrapped network token always equals one native network token.
+
+3. `swap` mode:
+
+    Conversion is determined dynamically using exchange rates from an **online price provider**.
+
+> **NOTE:**
+> In wrap and stake modes, conversion rates between native tokens on both chains are still fetched from the price oracle
+> to calculate fee deductions.
 
 ### Check Finalized Transactions
 
 This workflow monitors unconfirmed payout transactions and updates their status once finalized on the network.
-It operates in both wrap and unwrap modes, processing the respective request databases.
+It operates in both wrap and unwrap directions, processing the respective request databases.
 
 ## Simplified Transaction Flow and Fee Handling
 
-Example flow with Symbol (`XYM`) as native chain and Ethereum (`wXYM`) as wrapped chain:
+Example stake flow with Symbol (`XYM`) as native chain and Ethereum (`wXYM`) as wrapped chain:
 
 1. Deposit
    * Alice sends 100 `XYM` to the bridge account on the native network (Symbol) in order to convert `XYM` to `wXYM`.
    * She pays the Symbol network transaction fee.
-   * Bridge does not initiate this transaction and pays no fees.
+   * The bridge does not initiate this transaction and pays no fees.
 2. Wrapped token payment
-   * The `send_payouts` script (in wrap mode) detects Alice's deposit.
-   * An Ethereum transaction is created sending (δ * 100 - μ) wXYM to the requested account.
+   * The `send_payouts` script (in wrap direction) detects Alice's deposit.
+   * An Ethereum transaction is created sending (δ * 100 - μ) `wXYM` to the requested account.
    * δ is the `wXYM:XYM` conversion rate.
    * μ is the Ethereum transaction fee.
       * This is paid in `ETH` but withheld in `wXYM`.
@@ -268,9 +354,9 @@ Example flow with Symbol (`XYM`) as native chain and Ethereum (`wXYM`) as wrappe
 3. Redemtion
    * Alice sends 99 `wXYM` to the bridge account on the wrapped network (Ethereum) in order to convert `wXYM` to `XYM`.
    * She pays the Ethereum network fee.
-   * Bridge does not initiate this transaction and pays no fees.
+   * The bridge does not initiate this transaction and pays no fees.
 4. Native token payment
-   * The `send_payouts` script (in unwrap mode) detects Alice's redemption request.
+   * The `send_payouts` script (in unwrap direction) detects Alice's redemption request.
    * A Symbol transaction is created sending (1/δ * 99 - μ) `XYM` to the requested Symbol account.
    * δ is the `wXYM:XYM` conversion rate.
    * μ is the native (Symbol) network transaction fee
@@ -279,12 +365,21 @@ Example flow with Symbol (`XYM`) as native chain and Ethereum (`wXYM`) as wrappe
 
 ## Configuration
 
-The bridge uses an INI configuration file with four sections: `machine`, `native_network`, `wrapped_network`, `price_oracle`.
+The bridge uses an INI configuration file with five sections:
+`machine`, `global`, `native_network`, `wrapped_network`, `price_oracle`.
 
 ### `machine` section
 
 * `logFilename`: The file path where bridge operational logs will be written.
 * `databaseDirectory`: The directory to store the bridge's internal database (e.g., for tracking requests and payout states).
+* `logBackupCount`: The maximum number of backup log files to retain. When the log file exceeds the specified size (maxLogSize), it is rotated.
+    Older backups are deleted once the number of backup files exceeds this limit.
+* `maxLogSize`: The maximum size (in bytes) of a single log file before it is rotated.
+    Once this size is reached, the current log is archived and a new log file is started.
+
+### `global` section
+
+* `mode`: Specifies the bridge operation mode (`stake`, `wrap`, or `swap`).
 
 ### Properties common to `native_network` and `wrapped_network` sections
 
@@ -299,8 +394,9 @@ meaning that they can appear twice in the configuration file.
 * `signerPublicKey`: The public key corresponding to `signerPrivateKey`.
 * `mosaicId`: Token identifier format varies by blockchain:
     * On NEM: `{namespace name}:{mosaic name}`
-    * On Symbol: `id:{hex mosaic id}`
-    * On Ethereum: Address of the ERC-20 contract.
+    * On Symbol: `{hex mosaic id}`
+    * On Ethereum: Address of the ERC-20 contract of the wrapped token.
+        Must be empty for native token (`ETH`) conversions (swap mode).
 * `explorerEndpoint`: Block explorer URL.
 * `finalizationLookahead`: Blocks to advance conceptual finalization (default: 0).
     For example, NEM finalization takes 360 blocks.
@@ -334,8 +430,9 @@ Since Ethereum is supported only as a wrapped network, all Ethereum-specific pro
 
 ### `price_oracle` section
 
-* `url`: The URL of the price oracle API (e.g., CoinGecko) used to fetch real-time token prices
-    when percentage conversion fees require cross-chain value lookups.
+* `url`: The URL of the price oracle API (e.g., CoinGecko, CoinMarketCap) used to fetch real-time token prices
+    when conversions require cross-chain value lookups.
+* `accessToken`: The access token for the price oracle API.
 
 ### Example configuration
 
@@ -343,6 +440,11 @@ Since Ethereum is supported only as a wrapped network, all Ethereum-specific pro
 [machine]
 databaseDirectory = /home/ubuntu/product/bridge/xym_wxym_bridge/storage/db
 logFilename = /home/ubuntu/product/bridge/xym_wxym_bridge/storage/log.log
+logBackupCount = 30
+maxLogSize = 26214400
+
+[global]
+mode = stake
 
 [native_network]
 blockchain = symbol
@@ -351,7 +453,7 @@ endpoint = https://201-sai-dual.symboltest.net:3001
 bridgeAddress = TBQAAMLT4R6TPIZVWERYURELILHHMCERDWZ4FCQ
 explorerEndpoint = https://testnet.symbol.fyi
 
-mosaicId = id:72C0212E67A08BCE
+mosaicId = 72C0212E67A08BCE
 signerPrivateKey = <removed>
 signerPublicKey = BA3E3AD78C1B57604345845F7D8466F3270754B98203D8C72C75994292123AF5
 balanceChangeScanStartHeight = 2645824
