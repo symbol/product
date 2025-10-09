@@ -1,21 +1,42 @@
-import { transactionToEthereum } from '../utils';
-import { ethers } from 'ethers';
+import { createEthereumJrpcProvider, getUnresolvedIdsFromTransactionDTOs, transactionFromDTO, transactionToEthereum } from '../utils';
 import { ApiError } from 'wallet-common-core';
 
 /** @typedef {import('../types/Account').PublicAccount} PublicAccount */
 /** @typedef {import('../types/Mosaic').MosaicInfo} MosaicInfo */
 /** @typedef {import('../types/Network').NetworkProperties} NetworkProperties */
-/** @typedef {import('../types/SearchCriteria').TransactionSearchCriteria} TransactionSearchCriteria */
 /** @typedef {import('../types/Transaction').Transaction} Transaction */
 /** @typedef {import('../types/Transaction').SignedTransactionDTO} SignedTransactionDTO */
 
 export class TransactionService {
-	constructor() { }
+	/** @type {import('../api').Api} */
+	#api;
 
-	fetchAccountTransactions = () => {
-		throw new ApiError('fetchAccountTransactions is not implemented for Ethereum');
+	#makeRequest;
+
+	constructor(options) {
+		this.#api = options.api;
+		this.#makeRequest = options.makeRequest;
+	}
+
+	/**
+	 * Fetches transactions of an account.
+	 * @param {NetworkProperties} networkProperties - Network properties.
+	 * @param {PublicAccount} account - Requested account.
+	 * @param {Object} [searchCriteria] - Search criteria.
+	 * @property {number} [searchCriteria.pageSize=15] - Number of transactions to return.
+	 * @returns {Promise<Transaction[]>} - The account transactions.
+	 */
+	fetchAccountTransactions = async (networkProperties, account, searchCriteria = {}) => {
+		const { pageSize = 15 } = searchCriteria;
+		const provider = createEthereumJrpcProvider(networkProperties);
+		const { txs: transactionDTOs } = await provider.send('ots_searchTransactionsBefore', [
+			account.address,
+			0,
+			pageSize
+		]);
+
+		return this.resolveTransactionDTOs(networkProperties, transactionDTOs, account);
 	};
-
 	/**
 	 * Send transaction to the network.
 	 * @param {NetworkProperties} networkProperties - Network properties.
@@ -24,8 +45,7 @@ export class TransactionService {
 	 * @throws {ApiError} - If the transaction is not accepted by any node.
 	 */
 	announceTransaction = async (networkProperties, dto) => {
-		const { nodeUrl } = networkProperties;
-		const provider = new ethers.JsonRpcProvider(nodeUrl);
+		const provider = createEthereumJrpcProvider(networkProperties);
 
 		try {
 			const response = await provider.broadcastTransaction(dto);
@@ -43,15 +63,14 @@ export class TransactionService {
 	 * @returns {Promise<string>} - The estimated gas limit amount.
 	 */
 	estimateTransactionGasLimit = async (networkProperties, transaction) => {
-		const { nodeUrl } = networkProperties;
-		const provider = new ethers.JsonRpcProvider(nodeUrl);
+		const provider = createEthereumJrpcProvider(networkProperties);
 		const ethereumTransaction = transactionToEthereum(transaction, {
-			networkIdentifier: networkProperties.networkIdentifier 
+			networkIdentifier: networkProperties.networkIdentifier
 		});
 
 		try {
 			const gasLimit = await provider.estimateGas(ethereumTransaction);
-			
+
 			return gasLimit.toString();
 		} catch (error) {
 			throw new ApiError(`Gas limit estimation failed: ${error.message}`);
@@ -65,15 +84,42 @@ export class TransactionService {
 	 * @returns {Promise<number>} - The transaction nonce.
 	 */
 	fetchTransactionNonce = async (networkProperties, address) => {
-		const { nodeUrl } = networkProperties;
-		const provider = new ethers.JsonRpcProvider(nodeUrl);
+		const provider = createEthereumJrpcProvider(networkProperties);
 
 		try {
 			const nonce = await provider.getTransactionCount(address, 'pending');
-			
+
 			return nonce;
 		} catch (error) {
 			throw new ApiError(`Nonce fetching failed: ${error.message}`);
 		}
+	};
+
+	/**
+     * Resolves transactions DTO. Fetches additional information for unresolved ids. Maps transactionDTOs to the transaction objects.
+	 * @param {NetworkProperties} networkProperties - Network properties.
+     * @param {object[]} transactionDTOs - The transaction DTOs.
+     * @param {PublicAccount} currentAccount - Current account.
+     * @returns {Promise<Transaction[]>} - The resolved transactions
+     */
+	resolveTransactionDTOs = async (networkProperties, transactionDTOs, currentAccount) => {
+		const unresolvedTransactionData = getUnresolvedIdsFromTransactionDTOs(transactionDTOs);
+
+		const { blockHeights, tokenContractAddresses } = unresolvedTransactionData;
+		const blockInfosPromise = this.#api.block.fetchBlockInfos(networkProperties, blockHeights);
+		const tokenInfosPromise = this.#api.token.fetchTokenInfos(networkProperties, tokenContractAddresses);
+		const [blocks, tokenInfos] = await Promise.all([
+			blockInfosPromise,
+			tokenInfosPromise
+		]);
+		
+		const config = {
+			blocks,
+			tokenInfos,
+			currentAccount,
+			networkProperties
+		};
+
+		return transactionDTOs.map(transactionDTO => transactionFromDTO(transactionDTO, config));
 	};
 }

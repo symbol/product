@@ -10,18 +10,19 @@ export const TransactionAnnounceGroup = {
 export const TransactionType = {
 	RESERVED: 0,
 	TRANSFER: 1,
-	ERC_20_TRANSFER: 2
+	ERC_20_TRANSFER: 2,
+	ERC_20_BRIDGE_TRANSFER: 3
 };
 
 export const ChainId = {
 	MAIN_NET: 1,
-	ERIGON_LOCAL: 3151908,
+	TESTNET: 3151908,
 	SEPOLIA: 11155111
 };
 
 export const NetworkIdentifier = {
 	MAIN_NET: 'mainnet',
-	ERIGON_LOCAL: 'erigon_local',
+	TESTNET: 'testnet',
 	SEPOLIA: 'sepolia'
 };
 

@@ -4,6 +4,7 @@ import {
 	isOutgoingTransaction,
 	signTransaction
 } from '../../src/utils';
+import { networkCurrency } from '../__fixtures__/local/network';
 import { signedTransactions, walletTransactions } from '../__fixtures__/local/transactions';
 import { currentNetworkIdentifier, walletStorageAccounts } from '../__fixtures__/local/wallet';
 
@@ -57,13 +58,16 @@ describe('utils/transaction', () => {
 			const feeMultiplier = { maxFeePerGas: '3', maxPriorityFeePerGas: '1' };
 			const gasLimit = '1000';
 
-			const fee = createFee(feeMultiplier, gasLimit);
+			const fee = createFee(feeMultiplier, gasLimit, networkCurrency);
 
 			expect(fee).toEqual({
 				gasLimit,
 				maxFeePerGas: '3',
 				maxPriorityFeePerGas: '1',
-				totalAmount: '3000'
+				token: {
+					...networkCurrency,
+					amount: '3000'
+				}
 			});
 		});
 	});

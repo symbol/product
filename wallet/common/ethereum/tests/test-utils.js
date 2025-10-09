@@ -29,7 +29,7 @@ export const forEachNetwork = (networkMap, testFunction) => {
  * Runs a test for a function that makes API calls.
  * @param {jest.Mock} mockFetch - The mocked fetch function.
  * @param {function} functionToTest - The function to test.
- * @param {Array<{url: string, options: object, response: any}>}expectedCalls - The expected API calls.
+ * @param {Array<{url: string, options: object, response: any}>} expectedCalls - The expected API calls.
  * @param {object} [expectedResult] - Optional checks if the result matches the expected calls; if an object, compares the result with it.
  */
 export const runApiTest = async (mockFetch, functionToTest, expectedCalls, expectedResult) => {

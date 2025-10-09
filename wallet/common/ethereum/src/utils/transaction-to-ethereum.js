@@ -18,6 +18,8 @@ export const transactionToEthereum = (transaction, config) => {
 		return transferTransactionToEthereum(transaction, config);
 	case TransactionType.ERC_20_TRANSFER:
 		return erc20TransferTransactionToEthereum(transaction, config);
+	case TransactionType.ERC_20_BRIDGE_TRANSFER:
+		return erc20BridgeTransferTransactionToEthereum(transaction, config);
 	}
 
 	return null;
@@ -70,5 +72,15 @@ const erc20TransferTransactionToEthereum = (transaction, config) => {
 			recipientAddress,
 			ethers.parseUnits(token.amount, token.divisibility)
 		])
+	};
+};
+
+const erc20BridgeTransferTransactionToEthereum = (transaction, config) => {
+	const erc20Transfer = erc20TransferTransactionToEthereum(transaction, config);
+	const erc20DataWithMessage = erc20Transfer.data + transaction.message.payload;
+
+	return {
+		...erc20Transfer,
+		data: erc20DataWithMessage
 	};
 };

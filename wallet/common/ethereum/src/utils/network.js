@@ -9,8 +9,8 @@ export const chainIdToNetworkIdentifier = chainId => {
 	if (chainId === ChainId.MAIN_NET) 
 		return NetworkIdentifier.MAIN_NET;
 
-	if (chainId === ChainId.ERIGON_LOCAL) 
-		return NetworkIdentifier.ERIGON_LOCAL;
+	if (chainId === ChainId.TESTNET) 
+		return NetworkIdentifier.TESTNET;
 
 	if (chainId === ChainId.SEPOLIA) 
 		return NetworkIdentifier.SEPOLIA;
@@ -27,8 +27,8 @@ export const networkIdentifierToChainId = networkIdentifier => {
 	if (networkIdentifier === NetworkIdentifier.MAIN_NET) 
 		return ChainId.MAIN_NET;
 
-	if (networkIdentifier === NetworkIdentifier.ERIGON_LOCAL) 
-		return ChainId.ERIGON_LOCAL;
+	if (networkIdentifier === NetworkIdentifier.TESTNET) 
+		return ChainId.TESTNET;
 
 	if (networkIdentifier === NetworkIdentifier.SEPOLIA) 
 		return ChainId.SEPOLIA;

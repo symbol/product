@@ -236,7 +236,7 @@ describe('utils/account', () => {
 
 		it('returns true if the input is a Ethereum address', () => {
 			// Arrange:
-			const address = '0xb1b2145b7d2ba5AB20Ee0Bcb0F7FAd08a1BfC7A4';
+			const address = '0xb1b2145b7d2ba5ab20ee0bcb0f7fad08a1bfc7a4';
 			const expectedResult = true;
 
 			// Act & Assert:

@@ -1,16 +1,18 @@
-import { NETWORK_CURRENCY_ID, TransactionType } from '../constants';
+import { TransactionType } from '../constants';
+import { createTransactionFeeTiers } from '../utils';
 
 /** @typedef {import('../types/Transaction').Transaction} Transaction */
+/** @typedef {import('../types/Transaction').TransactionFeeTires} TransactionFeeTires */
 
 export class TransferModule {
 	static name = 'transfer';
-	#root;
+	#walletController;
 	#api;
 
 	constructor() {}
 
 	init = options => {
-		this.#root = options.root;
+		this.#walletController = options.walletController;
 		this.#api = options.api;
 	};
 
@@ -31,12 +33,14 @@ export class TransferModule {
      */
 	createTransaction = async options => {
 		const { recipientAddress, tokens, fee } = options;
-		const { currentAccount, networkProperties } = this.#root;
+		const { currentAccount, networkProperties } = this.#walletController;
 
 		const nonce = await this.#api.transaction.fetchTransactionNonce(networkProperties, currentAccount.address);
 
 		const transaction = {
-			type: tokens[0].id === NETWORK_CURRENCY_ID ? TransactionType.TRANSFER : TransactionType.ERC_20_TRANSFER,
+			type: tokens[0].id === networkProperties.networkCurrency.id 
+				? TransactionType.TRANSFER 
+				: TransactionType.ERC_20_TRANSFER,
 			signerPublicKey: currentAccount.publicKey,
 			signerAddress: currentAccount.address,
 			recipientAddress,
@@ -46,5 +50,17 @@ export class TransferModule {
 		};
 
 		return transaction;
+	};
+
+	/**
+	 * Calculates the transaction fees for a given transaction.
+	 * @param {Transaction} transaction - The transaction.
+	 * @returns {TransactionFeeTires} The transaction fees.
+	 */
+	calculateTransactionFees = async transaction => {
+		const { networkProperties } = this.#walletController;
+		const gasLimit = await this.#api.transaction.estimateTransactionGasLimit(networkProperties, transaction);
+
+		return createTransactionFeeTiers(networkProperties, gasLimit);
 	};
 }

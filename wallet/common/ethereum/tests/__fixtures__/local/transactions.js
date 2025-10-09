@@ -5,10 +5,10 @@ const erc20Interface = new ethers.Interface([
 	'function transfer(address to, uint256 value) public returns (bool)'
 ]);
 const signerPublicKey = '0x04d180bfa90bb100d21df55b10cc535b392e87d595593afa9de219f4bd006bd2893d80827f43c47794029a8b4218699e65d837a6beb95b5b2f95a31b52f3e93b13';
-const signerAddress = '0xb1b2145b7d2ba5AB20Ee0Bcb0F7FAd08a1BfC7A4';
-const recipientAddress1 = '0xC5D9cF0eE687e357Aea5d26592F8bC9fe32aBAA2';
-const recipientAddress2 = '0xE61c8ba605B4A808dD8138c990e941feAe532307';
-const erc20ContractAddress = '0x6fE1f90116fd1225c4B713a6EFb3f87DCe77b445';
+const signerAddress = '0xb1b2145b7d2ba5ab20ee0bcb0f7fad08a1bfc7a4';
+const recipientAddress1 = '0xc5d9cf0ee687e357aea5d26592f8bc9fe32abaa2';
+const recipientAddress2 = '0xe61c8ba605b4a808dd8138c990e941feae532307';
+const erc20ContractAddress = '0x6fe1f90116fd1225c4b713a6efb3f87dce77b445';
 const chainId = 3151908;
 const baseFee = {
 	gasLimit: 21000,
@@ -86,3 +86,95 @@ export const signedTransactions = [
 		'hash': '0xd0c31e56e3e73cf88aab09a5ddff5f4536f7b907e81d7ad5a4f72a717dbc65ba'
 	}
 ];
+
+
+export const etherTransaction = {
+	'height': '251023',
+	'hash': '0x03adaec8595e907da0d19ad354ca4b67f94ddf79c79e40ad8b37a5ee3b1e7478',
+	'nonce': '19',
+	'signerAddress': signerAddress,
+	'fee': {
+		'gasLimit': '21000',
+		'maxFeePerGas': '0.00000000000000001',
+		'maxPriorityFeePerGas': '0',
+		'token': {
+			'amount': '0.00000000000021',
+			'id': 'ETH',
+			'name': 'ETH',
+			'divisibility': 18
+		}
+	},
+	'timestamp': 1759844024000,
+	'type': 1,
+	'tokens': [
+		{
+			'name': 'ETH',
+			'id': 'ETH',
+			'divisibility': 18,
+			'amount': '0.1979990999942376'
+		}
+	],
+	'recipientAddress': '0xcef7462dbdca4c19b66012c70d1541a33606e9ad'
+};
+
+export const erc20Transaction = {
+	'height': '251181',
+	'hash': '0xc778bb5dac6ab4b4c881cbe62941c152f39819ede4fe85517d237def2da0af3e',
+	'nonce': '20',
+	'signerAddress': signerAddress,
+	'fee': {
+		'gasLimit': '40069',
+		'maxFeePerGas': '0.000000000000000014',
+		'maxPriorityFeePerGas': '0',
+		'token': {
+			'amount': '0.000000000000560966',
+			'id': 'ETH',
+			'name': 'ETH',
+			'divisibility': 18
+		}
+	},
+	'timestamp': 1759845920000,
+	'type': 2,
+	'tokens': [
+		{
+			'id': '0x5e8343a455f03109b737b6d8b410e4ecce998cda',
+			'name': 'wXYM',
+			'divisibility': 6,
+			'amount': '12'
+		}
+	],
+	'recipientAddress': '0xcef7462dbdca4c19b66012c70d1541a33606e9ad'
+};
+
+export const bridgeTransaction = {
+	'height': '249648',
+	'hash': '0x3a99098a33bf68fcf41476dcf6adf58320700c7695d27fc4722b42d3bc118478',
+	'nonce': '18',
+	'signerAddress': signerAddress,
+	'fee': {
+		'gasLimit': '45908',
+		'maxFeePerGas': '0.00000000000000001',
+		'maxPriorityFeePerGas': '0',
+		'token': {
+			'amount': '0.00000000000045908',
+			'id': 'ETH',
+			'name': 'ETH',
+			'divisibility': 18
+		}
+	},
+	'timestamp': 1759827524000,
+	'type': 3,
+	'tokens': [
+		{
+			'id': '0x5e8343a455f03109b737b6d8b410e4ecce998cda',
+			'name': 'wXYM',
+			'divisibility': 6,
+			'amount': '0.02'
+		}
+	],
+	'recipientAddress': '0x9b5b717fec711af80050986d1306d5c8fb9fa953',
+	'message': {
+		'payload': '982C69A051A72BFBE31AEDA7250AC6C747B7570B3E9C00B6',
+		'text': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ'
+	}
+};

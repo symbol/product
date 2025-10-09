@@ -5,8 +5,15 @@
  * @property {string} gasLimit - The gas limit for the transaction. BigInt string.
  * @property {string} maxFeePerGas - The maximum fee per gas for the transaction. Relative amount string in Ethers.
  * @property {string} maxPriorityFeePerGas - The maximum priority fee per gas for the transaction. Relative amount string in Ethers.
- * @property {string} totalAmount - The total fee amount to pay for a transaction (maxFeePerGas * gasLimit).
+ * @property {Token} token - The total fee amount to pay for a transaction in the network currency token representation.
  * Relative amount string in Ethers.
+ */
+
+/**
+ * @typedef {Object} TransactionFeeTires
+ * @property {TransactionFee} slow - The slow fee tier.
+ * @property {TransactionFee} medium - The medium fee tier.
+ * @property {TransactionFee} fast - The fast fee tier.
  */
 
 /**

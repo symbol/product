@@ -9,11 +9,13 @@ Protocol-specific layer for Ethereum used by Wallet Common Core. It provides:
 
 ```
 src/
-├── api/            # Network service clients
-├── constants/      # Ethereum enums and constants
-├── sdk/            # Thin SDK facade
-├── types/          # Local JSDoc typedefs
-└── utils/          # Ethereum-specific utilities
+├── api/        # Network service clients (Account, Block, Listener, Network, Token, Transaction)
+├── bridge/     # BridgeHelper for cross-chain bridge workflows
+├── constants/  # Ethereum enums and constants (internal)
+├── modules/    # Transaction modules (e.g., TransferModule)
+├── sdk/        # Thin SDK facade (re-exports sign/account helpers)
+├── types/      # Local JSDoc typedefs
+└── utils/      # Utilities
 ```
 
 ## Requirements
@@ -91,7 +93,15 @@ import {
 } from 'wallet-common-ethereum';
 
 const ethereumNetworkApi = new EthereumNetworkApi({
-    makeRequest: async (url, options) => fetch(url, options)
+    makeRequest: async (url, options) => fetch(url, options),
+    config: {
+        erc20TokensAddresses: {
+            testnet: ['0xTokenAddress1', '0xTokenAddress2']
+        }
+    },
+    nodeList: {
+        testnet: ['https://rpc.sepolia.org']
+    }
 });
 
 const controller = new WalletController({

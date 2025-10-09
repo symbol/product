@@ -1,5 +1,4 @@
-import { NETWORK_CURRENCY_DIVISIBILITY, NETWORK_CURRENCY_ID, NETWORK_CURRENCY_NAME } from '../constants';
-import { ethers } from 'ethers';
+import { createContract, createEthereumJrpcProvider } from '../utils';
 import { absoluteToRelativeAmount } from 'wallet-common-core';
 
 /** @typedef {import('../types/Account').AccountInfo} AccountInfo */
@@ -19,7 +18,7 @@ export class AccountService {
      * @returns {Promise<AccountInfo>} - The account information.
      */
 	fetchAccountInfo = async (networkProperties, address) => {
-		const provider = new ethers.JsonRpcProvider(networkProperties.nodeUrl);
+		const provider = createEthereumJrpcProvider(networkProperties);
 		const erc20TokensAddresses = this.#config.erc20TokensAddresses[networkProperties.networkIdentifier] || [];
 		const erc20Abi = [
 			'function balanceOf(address) view returns (uint256)',
@@ -27,7 +26,7 @@ export class AccountService {
 			'function symbol() view returns (string)'
 		];
 		const erc20TokensFetches = erc20TokensAddresses.map(async tokenAddress => {
-			const contract = new ethers.Contract(tokenAddress, erc20Abi, provider);
+			const contract = createContract(tokenAddress, erc20Abi, provider);
 			const [balanceRaw, decimals, symbol] = await Promise.all([
 				contract.balanceOf(address),
 				contract.decimals(),
@@ -50,14 +49,14 @@ export class AccountService {
 		]);
 
 		return {
-			address,
+			address: address.toLowerCase(),
 			balance,
 			tokens: [
 				{
-					id: NETWORK_CURRENCY_ID,
-					name: NETWORK_CURRENCY_NAME,
-					amount: balance,
-					divisibility: NETWORK_CURRENCY_DIVISIBILITY
+					id: networkProperties.networkCurrency.id,
+					name: networkProperties.networkCurrency.name,
+					divisibility: networkProperties.networkCurrency.divisibility,
+					amount: balance
 				},
 				...tokens
 			]
@@ -71,9 +70,9 @@ export class AccountService {
      * @returns {Promise<number>} - The account balance.
      */
 	fetchAccountBalance = async (networkProperties, address) => {
-		const provider = new ethers.JsonRpcProvider(networkProperties.nodeUrl);
+		const provider = createEthereumJrpcProvider(networkProperties);
 		const balance = await provider.getBalance(address);
 
-		return absoluteToRelativeAmount(balance.toString(), NETWORK_CURRENCY_DIVISIBILITY);
+		return absoluteToRelativeAmount(balance.toString(), networkProperties.networkCurrency.divisibility);
 	};
 }

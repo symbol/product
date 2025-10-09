@@ -45,3 +45,24 @@ export const signTransaction = async (networkIdentifier, transaction, privateKey
 	};
 };
 
+/**
+ * Encodes a plain text message into a payload HEX string.
+ * @param {string} messageText - The message text.
+ * @returns {string} The resulting payload HEX string.
+ */
+export const encodePlainMessage = messageText => {
+	const bytes = new TextEncoder().encode(messageText);
+
+	return Buffer.from([...bytes]).toString('hex');
+};
+
+/**
+ * Decodes a plain text message from a payload HEX string.
+ * @param {string} messagePayloadHex - The message payload HEX string.
+ * @returns {string} The resulting message text.
+ */
+export const decodePlainMessage = messagePayloadHex => {
+	const messageBytes = Buffer.from(messagePayloadHex, 'hex');
+
+	return Buffer.from(messageBytes).toString();
+};

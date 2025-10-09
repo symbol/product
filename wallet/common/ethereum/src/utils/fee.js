@@ -1,10 +1,12 @@
-import { NETWORK_CURRENCY_DIVISIBILITY } from '../constants';
 import { ethers } from 'ethers';
 import { absoluteToRelativeAmount, safeOperationWithRelativeAmounts } from 'wallet-common-core';
 
+/** @typedef {import('../types/Network').NetworkProperties} NetworkProperties */
 /** @typedef {import('../types/Network').TransactionFeeMultiplier} TransactionFeeMultiplier */
 /** @typedef {import('../types/Network').TransactionFeeMultipliers} TransactionFeeMultipliers */
 /** @typedef {import('../types/Transaction').TransactionFee} TransactionFee */
+/** @typedef {import('../types/Transaction').TransactionFeeTires} TransactionFeeTires */
+/** @typedef {import('../types/Token').TokenInfo} TokenInfo */
 
 /**
  * Fixed fallback priority fee values (EIP-1559 tip) in wei.
@@ -105,20 +107,41 @@ export const createTransactionFeeMultipliers = (currencyDivisibility, feeHistory
  * Creates a fee object for transaction.
  * @param {TransactionFeeMultiplier} feeMultiplier - The fee multiplier object.
  * @param {string} gasLimit - The gas limit.
- * @param {number} [divisibility=18] - The currency divisibility.
+ * @param {TokenInfo} networkCurrency - The network currency token info.
  * @returns {TransactionFee} The fee object.
  */
-export const createFee = (feeMultiplier, gasLimit, divisibility = NETWORK_CURRENCY_DIVISIBILITY) => {
+export const createFee = (feeMultiplier, gasLimit, networkCurrency) => {
 	const { maxFeePerGas, maxPriorityFeePerGas } = feeMultiplier;
 
 	return {
 		gasLimit,
 		maxFeePerGas,
 		maxPriorityFeePerGas,
-		totalAmount: safeOperationWithRelativeAmounts(
-			divisibility,
-			[maxFeePerGas],
-			maxFeePerGas => maxFeePerGas * BigInt(gasLimit)
-		)
+		token: {
+			amount: safeOperationWithRelativeAmounts(
+				networkCurrency.divisibility,
+				[maxFeePerGas],
+				maxFeePerGas => maxFeePerGas * BigInt(gasLimit)
+			),
+			id: networkCurrency.id,
+			name: networkCurrency.name,
+			divisibility: networkCurrency.divisibility
+		}
+	};
+};
+
+/**
+ * Creates fee tiers (slow/medium/fast) for transaction.
+ * @param {NetworkProperties} networkProperties - The network properties.
+ * @param {string} gasLimit - The gas limit.
+ * @returns {TransactionFeeTires} The fee tiers.
+ */
+export const createTransactionFeeTiers = (networkProperties, gasLimit) => {
+	const { transactionFees, networkCurrency } = networkProperties;
+
+	return {
+		slow: createFee(transactionFees.slow, gasLimit, networkCurrency),
+		medium: createFee(transactionFees.medium, gasLimit, networkCurrency),
+		fast: createFee(transactionFees.fast, gasLimit, networkCurrency)
 	};
 };

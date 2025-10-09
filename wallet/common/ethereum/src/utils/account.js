@@ -5,7 +5,12 @@ import { SigningKey, Wallet, computeAddress, isAddress } from 'ethers';
 /** @typedef {import('../types/Account').PrivateAccount} PrivateAccount */
 /** @typedef {import('../types/Account').WalletAccount} WalletAccount */
 
-const to0x = hex => (typeof hex === 'string' && hex.startsWith('0x') ? hex : `0x${hex}`);
+/**
+ * Ensures a hex string starts with '0x'.
+ * @param {string} hex - The hex string.
+ * @returns {string} The hex string prefixed with '0x'.
+ */
+export const to0x = hex => (typeof hex === 'string' && hex.startsWith('0x') ? hex : `0x${hex}`);
 
 /**
  * Generates an Ethereum key pair consisting of a private key and a public key.
@@ -26,7 +31,10 @@ export const generateKeyPair = () => {
  * @returns {string} The account address.
  */
 export const addressFromPrivateKey = privateKey => {
-	return computeAddress(to0x(privateKey));
+	const sk = new SigningKey(to0x(privateKey));
+	const { publicKey } = sk;
+
+	return addressFromPublicKey(publicKey);
 };
 
 /**
@@ -35,7 +43,7 @@ export const addressFromPrivateKey = privateKey => {
  * @returns {string} The account address.
  */
 export const addressFromPublicKey = publicKey => {
-	return computeAddress(to0x(publicKey));
+	return computeAddress(to0x(publicKey)).toLowerCase();
 };
 
 /**
@@ -47,7 +55,7 @@ export const addressFromPublicKey = publicKey => {
  * @returns {PublicAccount} The public account.
  */
 export const publicAccountFromPublicKey = (publicKey, networkIdentifier, accountType, index) => {
-	const address = computeAddress(to0x(publicKey));
+	const address = addressFromPublicKey(publicKey);
 
 	const account = {
 		address,
@@ -74,7 +82,7 @@ export const publicAccountFromPublicKey = (publicKey, networkIdentifier, account
  */
 export const publicAccountFromPrivateKey = (privateKey, networkIdentifier, accountType, index) => {
 	const sk = new SigningKey(to0x(privateKey));
-	const {publicKey} = sk;
+	const { publicKey } = sk;
 
 	return publicAccountFromPublicKey(publicKey, networkIdentifier, accountType, index);
 };

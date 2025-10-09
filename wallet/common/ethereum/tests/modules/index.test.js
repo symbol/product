@@ -1,12 +1,5 @@
-import { expect, jest } from '@jest/globals';
-
-const mockShuffle = jest.fn(arr => arr);
-jest.unstable_mockModule('lodash', () => ({
-	shuffle: mockShuffle,
-	default: { shuffle: mockShuffle }
-}));
-
-const { TransferModule } = await import('../../src/modules');
+import { TransferModule } from '../../src/modules';
+import { expect } from '@jest/globals';
 
 describe('modules/index.js re-exports', () => {
 	it('re-exports TransferModule and HarvestingModule', () => {

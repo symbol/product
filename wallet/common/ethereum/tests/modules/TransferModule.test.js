@@ -1,4 +1,5 @@
 import { TransferModule } from '../../src/modules/TransferModule';
+import { networkCurrency } from '../__fixtures__/local/network';
 import { currentAccount as currentAccountFixture } from '../__fixtures__/local/wallet';
 import { expect, jest } from '@jest/globals';
 
@@ -7,10 +8,8 @@ const createFee = () => ({
 });
 
 const createEthereumToken = () => ({
-	id: 'ETH',
-	name: 'ETH',
-	amount: '1.0',
-	divisibility: 18
+	...networkCurrency,
+	amount: '1.0'
 });
 
 const createERC20Token = () => ({
@@ -22,16 +21,19 @@ const createERC20Token = () => ({
 
 describe('TransferModule', () => {
 	let transferModule;
-	let root;
+	let walletController;
 	let api;
 
 	const currentAccount = { ...currentAccountFixture };
 	const recipientAddress = '0xRecipientAddress';
 
 	beforeEach(() => {
-		root = {
+		walletController = {
 			currentAccount,
-			networkProperties: { networkIdentifier: 'erigon_local' }
+			networkProperties: { 
+				networkIdentifier: 'testnet',
+				networkCurrency: { ...networkCurrency }
+			}
 		};
 		api = {
 			transaction: {
@@ -39,7 +41,7 @@ describe('TransferModule', () => {
 			}
 		};
 		transferModule = new TransferModule();
-		transferModule.init({ root, api });
+		transferModule.init({ walletController, api });
 
 		jest.clearAllMocks();
 	});
@@ -64,7 +66,7 @@ describe('TransferModule', () => {
 			// Assert:
 			expect(result).toStrictEqual(expectedResult);
 			expect(api.transaction.fetchTransactionNonce).toHaveBeenCalledWith(
-				root.networkProperties,
+				walletController.networkProperties,
 				currentAccount.address
 			);
 		};
