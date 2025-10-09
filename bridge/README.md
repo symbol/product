@@ -4,17 +4,20 @@ Two-way bridge between NEM/Symbol and Ethereum.
 
 ## Overview
 
-This repository contains the implementation of a bridge that supports three modes of operation:
+This repository contains the implementation of a bridge that allows converting tokens from a source network
+(NEM or Symbol) into a target network (NEM, Symbol or Ethereum).
+
+The bridge supports three modes of operation:
 
 * **Wrap mode** converts native NEM (`XEM`) and Symbol (`XYM`) tokens into wrapped counterparts
-    (for example, `wXYM`) on NEM, Symbol, or Ethereum.
+    on a different network (for example, `wXYM` on Ethereum).
 
     The conversion factor is fixed at 1:1, so the number of obtained tokens always equals the number of tokens provided.
 
     The reverse operation, unwrapping, is also supported.
 
 * **Stake mode** converts native NEM (`XEM`) and Symbol (`XYM`) tokens into staked counterparts
-    (for example, `sXYM`) on NEM, Symbol, or Ethereum.
+    on a different network (for example, `sXYM` on Ethereum).
 
     Unlike wrap mode, the converted native tokens can earn rewards while not in use
     (for example, from harvesting), and the staked tokens represent proportional ownership of those rewards.
@@ -24,10 +27,9 @@ This repository contains the implementation of a bridge that supports three mode
     The reverse operation, unstaking, is also supported and yields more native tokens than originally staked
     when rewards have accrued.
 
-* **Swap mode** acts as an exchange, converting `XEM` and `XYM` into Ethereum's native token, `ETH`,
-    using the rate provided by an online price source.
+* **Swap mode** acts as an exchange, converting native NEM (`XEM`) and Symbol (`XYM`) tokens into Ethereum's native
+    token (`ETH`), using the rate provided by an online price source.
 
-    This mode is intended only to supply the target Ethereum account with enough `ETH` to cover gas fees.
     It does not support the reverse operation, and the maximum transfer amount can be limited by configuration.
 
 Each bridge instance is configured with a specific mode and a defined pair of source (NEM or Symbol)
@@ -278,31 +280,48 @@ The conversion rate depends on the `global.mode` configuration.
 
 1. `stake` mode:
 
-    The conversion rate is calculated as `(cumulative_wrapped - cumulative_unwrapped) / native_balance` where:
-    * `cumulative_wrapped`: is the total amount of existing wrapped tokens (e.g. `wXEM` or `sXYM`).
-    * `cumulative_unwrapped`: is the total amount of wrapped tokens to be unwrapped.
-    * `native_balance`: is the native token balance (e.g. `XEM` on NEM).
+    The conversion rate is calculated as `(total_staked - total_unstaked) / native_balance` where:
+    * `total_staked` is the total amount of staked tokens that the bridge has produced since it started operating.
+        The bridge keeps track of this value internally.
+    * `total_unstaked` is the total amount of staked tokens that the bridge has converted back into native tokens
+        since it started operating.
+        The bridge keeps track of this value internally.
+    * `native_balance` is the current balance of the bridge account on the native network.
 
-    Example:
-    * Native balance: 12000
-    * Wrapped tokens: 12000
-    * Unwrapped tokens: 2000
+    In the absence of rewards accruing on the bridge's native account,
+    its balance changes only as a result of stake and unstake operations.
+    In that case, `native_balance` always equals `total_staked - total_unstaked`, and the conversion factor remains 1.
+    Under these conditions, stake mode behaves exactly like wrap mode.
 
-    Calculation:
+    **Example**
+    * Native balance: 12 000
+    * Total staked tokens: 10 000
+    * Total unstaked tokens: 2 000
 
-    ```txt
-    Conversion rate = 12000 / (12000 - 2000) = 6/5
-    ```
+    This means 8 000 staked tokens remain, entitling their owners to withdraw 12 000 native tokens.
 
-    * A depositor of **1200 native tokens** receives **1000 wrapped tokens**
-    * A depositor of **1000 wrapped tokens** receives **1200 native tokens**
+    The difference between the 8 000 staked tokens and the 12 000 native tokens held by bridge
+    represents accumulated rewards, such as harvesting income, donations, or invalid transfers.
 
-    In this mode, once a bridge is deployed, the native balance is expected to exceed the total wrapped balance.
-    This is primarily due to the accrual of harvesting rewards, but can also be affected by other transfers (or donations).
+    These values yield a conversion rate of `(10 000 - 2 000) / 12 000 = 2/3 ≈ 67%`.
+
+    Therefore:
+    * A depositor of **1 200 native tokens** would receive **8 00 staked tokens**,
+        and the conversion rate would not change, because `(10 800 - 2 000) / 13 200` is still `2/3`.
+    * A depositor of **8 00 staked tokens** would receive **1 200 native tokens**,
+        and the conversion rate would not change, because `(10 000 - 2 800) / 10 800` is still `2/3`.
+    * The accrual of **4000 native tokens** in harvesting rewards would adjust the conversion rate to
+        `(10 000 - 2 000) / 16 000 = 50%`.
+
+        Now each staked token is worth more native tokens than it was before,
+        because it entitles its owner to a proportional share of the newly accrued rewards.
+
+        At the same time, deposited native tokens now result in a smaller amount of staked tokens,
+        because the increased native balance makes each staked token represent a larger share of value.
 
 2. `wrap` mode:
 
-    Conversion rate is fixed at 1: One wrapped network token equals one native network token.
+    Conversion rate is fixed at 1: One wrapped network token always equals one native network token.
 
 3. `swap` mode:
 
