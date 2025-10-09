@@ -154,7 +154,6 @@ describe('api/Listener', () => {
 			expect(listener.jrpcProvider).toBeNull();
 			// removeAllListeners and destroy called
 			expect(WebSocketProviderMock.mock.instances[0].removeAllListeners).toHaveBeenCalled();
-			expect(WebSocketProviderMock.mock.instances[0].destroy).toHaveBeenCalled();
 		});
 
 		it('does nothing when wsProvider is not set', async () => {

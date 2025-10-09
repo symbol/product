@@ -60,10 +60,6 @@ export class Listener {
 
 		await this.wsProvider.removeAllListeners();
 
-		try {
-			await this.wsProvider.destroy();
-		} catch {}
-
 		this.wsProvider = null;
 		this.jrpcProvider = null;
 	}
