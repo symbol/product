@@ -72,6 +72,12 @@ coverage:
         flags:
           - wallet-common-core
 
+      wallet-common-ethereum:
+        target: auto
+        threshold: 1%
+        flags:
+          - wallet-common-ethereum
+
       wallet-common-symbol:
         target: auto
         threshold: 1%
@@ -143,6 +149,11 @@ flags:
   wallet-common-core:
     paths:
       - wallet/common/core
+    carryforward: true
+
+  wallet-common-ethereum:
+    paths:
+      - wallet/common/ethereum
     carryforward: true
 
   wallet-common-symbol:
