@@ -37,8 +37,10 @@ export const networkIdentifierToChainId = networkIdentifier => {
 };
 
 /**
- * Creates a WebSocket URL from a given node URL.
- * Handled a node url with any port and replace it with default WebSocket port.
+ * Creates a WebSocket URL for a given node URL.
+ * @param {string} nodeUrl - The node URL.
+ * @param {number} port - The WebSocket port.
+ * @returns {string} The WebSocket URL.
  */
 export const createWebSocketUrl = (nodeUrl, port) => {
 	const url = new URL(nodeUrl);
