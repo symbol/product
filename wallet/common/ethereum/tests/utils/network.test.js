@@ -1,4 +1,4 @@
-import { chainIdToNetworkIdentifier, networkIdentifierToChainId } from '../../src/utils';
+import { chainIdToNetworkIdentifier, createWebSocketUrl, networkIdentifierToChainId } from '../../src/utils';
 
 
 describe('utils/network', () => {
@@ -49,6 +49,53 @@ describe('utils/network', () => {
 			expect(() => chainIdToNetworkIdentifier(999)).toThrow('Unsupported chain ID');
 		});
 	});
-});
 
-		
+	describe('createWebSocketUrl', () => {
+		it('creates a WebSocket URL from a given node URL', () => {
+			// Arrange:
+			const wsPort = 8546;
+			const nodeUrlsAndExpectedWsUrls = [
+				{
+					nodeUrl: 'http://node.url.com:8545',
+					expectedWsUrl: 'ws://node.url.com:8546/ws'
+				},
+				{
+					nodeUrl: 'http://node.url.com:8546',
+					expectedWsUrl: 'ws://node.url.com:8546/ws'
+				},
+				{
+					nodeUrl: 'https://node.url.com:8545',
+					expectedWsUrl: 'wss://node.url.com:8546/ws'
+				},
+				{
+					nodeUrl: 'https://node.url.com:8546',
+					expectedWsUrl: 'wss://node.url.com:8546/ws'
+				},
+				{
+					nodeUrl: 'http://node.url.com',
+					expectedWsUrl: 'ws://node.url.com:8546/ws'
+				},
+				{
+					nodeUrl: 'https://node.url.com',
+					expectedWsUrl: 'wss://node.url.com:8546/ws'
+				},
+				{
+					nodeUrl: 'http://node.url.com:80',
+					expectedWsUrl: 'ws://node.url.com:8546/ws'
+				},
+				{
+					nodeUrl: 'https://httphttps:443',
+					expectedWsUrl: 'wss://httphttps:8546/ws'
+				}
+			];
+
+			nodeUrlsAndExpectedWsUrls.forEach(({ nodeUrl, expectedWsUrl }) => {
+				// Act:
+				const result = createWebSocketUrl(nodeUrl, wsPort);
+
+				// Assert:
+				expect(result).toBe(expectedWsUrl);
+			});
+		});
+	});
+});

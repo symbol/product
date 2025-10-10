@@ -35,3 +35,16 @@ export const networkIdentifierToChainId = networkIdentifier => {
 
 	throw new Error(`Unsupported network identifier "${networkIdentifier}"`);
 };
+
+/**
+ * Creates a WebSocket URL from a given node URL.
+ * Handled a node url with any port and replace it with default WebSocket port.
+ */
+export const createWebSocketUrl = (nodeUrl, port) => {
+	const url = new URL(nodeUrl);
+	url.protocol = url.protocol.replace('http', 'ws');
+	url.port = port;
+	url.pathname = '/ws';
+
+	return url.toString();
+};

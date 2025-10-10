@@ -1,9 +1,11 @@
 import { NETWORK_CURRENCY_DIVISIBILITY, NETWORK_CURRENCY_ID, NETWORK_CURRENCY_NAME } from '../constants';
-import { chainIdToNetworkIdentifier, createTransactionFeeMultipliers, makeEthereumJrpcCall } from '../utils';
+import { chainIdToNetworkIdentifier, createTransactionFeeMultipliers, createWebSocketUrl, makeEthereumJrpcCall } from '../utils';
 
 /** @typedef {import('../types/Network').NetworkInfo} NetworkInfo */
 /** @typedef {import('../types/Network').NetworkProperties} NetworkProperties */
 /** @typedef {import('../types/Network').RentalFees} RentalFees */
+
+const DEFAULT_WEBSOCKET_PORT = 8546;
 
 export class NetworkService {
 	#config;
@@ -43,7 +45,7 @@ export class NetworkService {
 
 		return {
 			nodeUrl,
-			wsUrl: nodeUrl.replace(/^http/, 'ws').replace(':8545', ':8545') + '/ws',
+			wsUrl: createWebSocketUrl(nodeUrl, DEFAULT_WEBSOCKET_PORT),
 			chainId,
 			networkIdentifier: chainIdToNetworkIdentifier(chainId),
 			chainHeight: Number(BigInt(blockNumberHex)),
