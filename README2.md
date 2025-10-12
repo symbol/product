@@ -346,6 +346,7 @@ Displays nodeAccounts and votingKeys.
 2025_10_12
 ```
 commands/upgrade.py
-When running renew-voting-keys on a node that has been upgraded from non-voting to voting, the error FileNotFoundError: [Errno 2] No such file or directory: 'node/keys/voting/private_key_tree1.dat' occurs.
+When running renew-voting-keys on a node that has been upgraded from non-voting to voting, 
+the error FileNotFoundError: [Errno 2] No such file or directory: 'node/keys/voting/private_key_tree1.dat' occurs.
 To address this error, we've modified the upgrade.py so that a voting directory is created in the keys directory, regardless of whether the node is non-voting or voting.
 ```
