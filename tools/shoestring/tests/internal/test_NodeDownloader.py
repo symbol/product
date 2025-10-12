@@ -291,6 +291,7 @@ async def test_can_filter_selected_api_endpoints_by_min_balance(server):  # pyli
 	endpoints.sort()
 
 	# Assert:
+	# pylint: disable=duplicate-code
 	assert [
 		'http://ik1-432-48199.vs.sakura.ne.jp:3333',
 		'http://symbol.harvest-monitor.com:3000',

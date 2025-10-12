@@ -107,6 +107,7 @@ async def test_can_download_peers_for_api_node(nodewatch_server):  # pylint: dis
 				'D8F4FE47F1F5B1046748067E52725AEBAA1ED9F3CE45D02054011A39671DD9AA'
 			])
 
+		# pylint: disable=duplicate-code
 		assert [
 			'http://ik1-432-48199.vs.sakura.ne.jp:3333',
 			'http://symbol.harvest-monitor.com:3000',
