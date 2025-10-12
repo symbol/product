@@ -57,13 +57,15 @@ async def test_can_download_peers_for_peer_node(nodewatch_server):  # pylint: di
 			[
 				'3DC99526E1149E3D2581563B2C7A963908A1A0044509240F139A86331C986884',
 				'776B597C1C80782224A3DA9A19FD5D23A3281CF866B9F4720A4414568447A92A',
+				'C1773740461C97FF172E966213716E089A93DC43F10BE55DC27CC49CBA67E692',
 				'D8F4FE47F1F5B1046748067E52725AEBAA1ED9F3CE45D02054011A39671DD9AA'
 			])
 
 		# - check returned api endpoints
 		assert [
 			'http://ik1-432-48199.vs.sakura.ne.jp:3333',
-			'http://wolf.importance.jp:3000'
+			'http://wolf.importance.jp:3000',
+			'https://whydah.symbolmain.net:3001'
 		] == sorted(endpoints)
 
 
@@ -91,6 +93,7 @@ async def test_can_download_peers_for_api_node(nodewatch_server):  # pylint: dis
 			[
 				'3DC99526E1149E3D2581563B2C7A963908A1A0044509240F139A86331C986884',
 				'776B597C1C80782224A3DA9A19FD5D23A3281CF866B9F4720A4414568447A92A',
+				'C1773740461C97FF172E966213716E089A93DC43F10BE55DC27CC49CBA67E692',
 				'D8F4FE47F1F5B1046748067E52725AEBAA1ED9F3CE45D02054011A39671DD9AA'
 			])
 
@@ -100,13 +103,15 @@ async def test_can_download_peers_for_api_node(nodewatch_server):  # pylint: dis
 			[
 				'529BF60BB1011FCAE51C8D798E23224ACBA29D18B5054830F83E4E8E9A3BE526',
 				'776B597C1C80782224A3DA9A19FD5D23A3281CF866B9F4720A4414568447A92A',
+				'C1773740461C97FF172E966213716E089A93DC43F10BE55DC27CC49CBA67E692',
 				'D8F4FE47F1F5B1046748067E52725AEBAA1ED9F3CE45D02054011A39671DD9AA'
 			])
 
 		assert [
 			'http://ik1-432-48199.vs.sakura.ne.jp:3333',
 			'http://symbol.harvest-monitor.com:3000',
-			'http://wolf.importance.jp:3000'
+			'http://wolf.importance.jp:3000',
+			'https://whydah.symbolmain.net:3001'
 		] == sorted(endpoints)
 
 # endregion
@@ -126,7 +131,8 @@ async def test_can_load_api_endpoints_from_peer_file(nodewatch_server):  # pylin
 		# Assert:
 		assert [
 			'http://ik1-432-48199.vs.sakura.ne.jp:3333',
-			'http://wolf.importance.jp:3000'
+			'http://wolf.importance.jp:3000',
+			'https://whydah.symbolmain.net:3001'
 		] == sorted(api_endpoints)
 
 
@@ -143,7 +149,8 @@ async def test_can_load_api_endpoints_from_peer_and_api_files(nodewatch_server):
 		assert [
 			'http://ik1-432-48199.vs.sakura.ne.jp:3333',
 			'http://symbol.harvest-monitor.com:3000',
-			'http://wolf.importance.jp:3000'
+			'http://wolf.importance.jp:3000',
+			'https://whydah.symbolmain.net:3001'
 		] == sorted(api_endpoints)
 
 
@@ -175,6 +182,7 @@ async def test_can_load_api_endpoints_when_api_port_is_implicit(nodewatch_server
 		assert [
 			'http://ik1-432-48199.vs.sakura.ne.jp:3000',
 			'http://symbol.harvest-monitor.com:3000',
+			'http://whydah.symbolmain.net:3000',
 			'http://wolf.importance.jp:3000'
 		] == sorted(api_endpoints)
 
