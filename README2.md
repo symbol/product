@@ -173,6 +173,15 @@ FileNotFoundError: [Errno 2] No such file or directory: 'node/keys/voting/privat
 ｴﾗｰが発生する。
 この ｴﾗｰの対策として、upgrade時に non-voting、votingに関わらず keysﾃﾞｨﾚｸﾄﾘに votingﾃﾞｨﾚｸﾄﾘを作成する様に修正。
 ```
+
+2025_10_13
+```
+internal/PeerDownloader.py
+nodewatchの /api/symbol/nodes/peerの表記方法に変更あり。
+各nodeの endpointを port3000/3001を分けて表記する変更あり。
+この変更後に、setup/upgradeした votingNodeでは、renew-voting-keysに失敗する。
+これに対応した。
+```
 ----------------------------------------------------------------------------------------------
 2025_07_16
 ```
@@ -349,4 +358,13 @@ commands/upgrade.py
 When running renew-voting-keys on a node that has been upgraded from non-voting to voting, 
 the error FileNotFoundError: [Errno 2] No such file or directory: 'node/keys/voting/private_key_tree1.dat' occurs.
 To address this error, we've modified the upgrade.py so that a voting directory is created in the keys directory, regardless of whether the node is non-voting or voting.
+```
+
+2025_10_13
+```
+internal/PeerDownloader.py
+The notation for /api/symbol/nodes/peer in nodewatch has been changed.
+Each node's endpoint has been changed to be represented as separate ports 3000/3001.
+After this change, renew-voting-keys failed on voting nodes that were set up or upgraded.
+This has been addressed.
 ```
