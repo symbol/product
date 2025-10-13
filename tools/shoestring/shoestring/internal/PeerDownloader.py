@@ -49,7 +49,8 @@ def _is_api_node(node_json):
 def _extract_api_endpoint(node_json):
 	endpoint_json = node_json['endpoint']
 	port = int(endpoint_json['api_port'] if 'api_port' in endpoint_json else 3000)
-	return f'http://{endpoint_json["host"]}:{port}'
+	protocol = 'https' if port == 3001 else 'http'
+	return f'{protocol}://{endpoint_json["host"]}:{port}'
 
 
 def load_api_endpoints(resources_directory):
