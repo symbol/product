@@ -393,4 +393,13 @@ class ShoestringConfigurationTest(unittest.TestCase):
 				with self.assertRaises(KeyError):
 					parse_shoestring_configuration(configuration_file)
 
+	def test_cannot_parse_shoestring_configuration_file_not_found(self):
+		# Arrange:
+		with tempfile.TemporaryDirectory() as temp_directory:
+			configuration_file = Path(temp_directory) / 'file_not_found.properties'
+
+			# Act + Assert:
+			with self.assertRaises(FileNotFoundError):
+				parse_shoestring_configuration(configuration_file)
+
 	# endregion

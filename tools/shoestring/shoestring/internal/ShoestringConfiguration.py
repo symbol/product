@@ -86,7 +86,8 @@ def parse_shoestring_configuration(filename):
 	"""Parses a shoestring configuration file."""
 
 	parser = configparser.ConfigParser()
-	parser.read(filename)
+	with open(filename, 'rt', encoding='utf8') as infile:
+		parser.read_file(infile)
 
 	return ShoestringConfiguration(
 		parse_network_configuration(parser['network']),
