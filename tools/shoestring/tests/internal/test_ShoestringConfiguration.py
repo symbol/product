@@ -17,6 +17,7 @@ from shoestring.internal.ShoestringConfiguration import (
 )
 
 
+# pylint: disable=too-many-public-methods
 class ShoestringConfigurationTest(unittest.TestCase):
 	# region configuration templates
 
