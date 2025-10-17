@@ -35,7 +35,7 @@ async def _send_payout(network, request, conversion_function, fee_multiplier):
 	logger.info('  redeeming 1:%.6f', transfer_amount / request.amount)
 
 	await sender.init()
-	return await sender.try_send_transfer(request.destination_address, transfer_amount)
+	return await sender.try_send_transfer(request.destination_address, transfer_amount, request.transaction_hash.bytes)
 
 
 async def send_payouts(conversion_rate_calculator_factory, is_unwrap_mode, database, network, fee_multiplier=None):
