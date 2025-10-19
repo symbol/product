@@ -30,7 +30,7 @@
     "c8": "^10.1.2",
     "chai": "^6.0.1",
     "chai-as-promised": "^8.0.0",
-    "eslint": "^8.46.0",
+    "eslint": "^9.38.0",
     "eslint-config-airbnb": "^19.0.4",
     "mocha": "^11.0.1",
     "nodemon": "^3.0.1",
