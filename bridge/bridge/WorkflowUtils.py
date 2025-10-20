@@ -1,3 +1,4 @@
+import datetime
 from collections import namedtuple
 from decimal import Decimal
 
@@ -129,5 +130,22 @@ def prepare_send(network, request, conversion_function, fee_multiplier):
 		return make_error(f'gross transfer amount {transfer_amount} exceeds max transfer amount {max_transfer_amount}')
 
 	return PrepareSendResult(None, fee_multiplier, transfer_amount)
+
+# endregion
+
+
+# region check_expiry
+
+def check_expiry(config_extensions, database, request):
+	"""Determines if the specified request is expired (timed out)."""
+
+	request_lifetime_hours = int(config_extensions.get('request_lifetime_hours', 0))
+	if request_lifetime_hours:
+		request_timestamp = database.lookup_block_timestamp(request.transaction_height)
+		request_datetime = datetime.datetime.fromtimestamp(request_timestamp, datetime.timezone.utc)
+		if (datetime.datetime.now(datetime.timezone.utc) - request_datetime) > datetime.timedelta(hours=request_lifetime_hours):
+			return f'request timestamp {request_datetime} is more than {request_lifetime_hours} in the past'
+
+	return None
 
 # endregion
