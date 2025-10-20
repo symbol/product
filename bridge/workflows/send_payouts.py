@@ -4,7 +4,7 @@ from decimal import Decimal
 
 from bridge.db.WrapRequestDatabase import PayoutDetails, WrapRequestStatus
 from bridge.NetworkUtils import TransactionSender, TrySendResult
-from bridge.WorkflowUtils import create_conversion_rate_calculator_factory, is_native_to_native_conversion
+from bridge.WorkflowUtils import create_conversion_rate_calculator_factory, is_native_to_native_conversion, prepare_send
 
 from .main_impl import main_bootstrapper, print_banner
 
@@ -12,19 +12,13 @@ from .main_impl import main_bootstrapper, print_banner
 async def _send_payout(network, request, conversion_function, fee_multiplier):
 	logger = logging.getLogger(__name__)
 
+	prepare_send_result = prepare_send(network, request, conversion_function, fee_multiplier)
+	if prepare_send_result.error_message:
+		return TrySendResult(True, None, None, None, prepare_send_result.error_message)
+
+	sender = TransactionSender(network, prepare_send_result.fee_multiplier)
+	transfer_amount = prepare_send_result.transfer_amount
 	mosaic_id = network.extract_mosaic_id()
-	if not fee_multiplier:
-		fee_multiplier = Decimal('1')
-	else:
-		fee_multiplier *= Decimal(conversion_function(10 ** 12)) / Decimal(10 ** 12)
-
-	sender = TransactionSender(network, fee_multiplier)
-	transfer_amount = conversion_function(request.amount)
-
-	max_transfer_amount = int(network.config.extensions.get('max_transfer_amount', 0))
-	if max_transfer_amount and transfer_amount > max_transfer_amount:
-		error_message = f'gross transfer amount {transfer_amount} exceeds max transfer amount {max_transfer_amount}'
-		return TrySendResult(True, None, None, None, error_message)
 
 	logger.info(
 		'> issuing %s [%s] tokens (gross) to %s for deposit of %s tokens',

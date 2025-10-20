@@ -1,6 +1,10 @@
+from collections import namedtuple
 from decimal import Decimal
 
 from .ConversionRateCalculatorFactory import ConversionRateCalculator, ConversionRateCalculatorFactory
+
+PrepareSendResult = namedtuple('PrepareSendResult', ['error_message', 'fee_multiplier', 'transfer_amount'])
+
 
 # region calculate_search_range
 
@@ -98,5 +102,32 @@ def create_conversion_rate_calculator_factory(execution_context, databases, nati
 		return NativeConversionRateCalculatorFactory(databases, Decimal(1))  # wrapped mode (1:1) uses fixed unity multiplier (1)
 
 	return ConversionRateCalculatorFactory(databases, native_facade.extract_mosaic_id().formatted, execution_context.is_unwrap_mode)
+
+# endregion
+
+
+# region prepare_send
+
+def prepare_send(network, request, conversion_function, fee_multiplier):
+	"""Performs basic calculations and validation prior to sending a payout transaction."""
+
+	def make_error(error_message):
+		return PrepareSendResult(error_message, None, None)
+
+	if not fee_multiplier:
+		fee_multiplier = Decimal('1')
+	else:
+		if fee_multiplier < Decimal('0'):
+			raise ValueError('fee_multiplier must be non-negative')
+
+		fee_multiplier *= Decimal(conversion_function(10 ** 12)) / Decimal(10 ** 12)
+
+	transfer_amount = conversion_function(request.amount)
+
+	max_transfer_amount = int(network.config.extensions.get('max_transfer_amount', 0))
+	if max_transfer_amount and transfer_amount > max_transfer_amount:
+		return make_error(f'gross transfer amount {transfer_amount} exceeds max transfer amount {max_transfer_amount}')
+
+	return PrepareSendResult(None, fee_multiplier, transfer_amount)
 
 # endregion
