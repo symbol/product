@@ -1,3 +1,4 @@
+import datetime
 import tempfile
 from collections import namedtuple
 from decimal import Decimal
@@ -13,6 +14,7 @@ from bridge.models.WrapRequest import WrapRequest
 from bridge.WorkflowUtils import (
 	NativeConversionRateCalculatorFactory,
 	calculate_search_range,
+	check_expiry,
 	create_conversion_rate_calculator_factory,
 	is_native_to_native_conversion,
 	prepare_send,
@@ -398,5 +400,50 @@ def test_cannot_prepare_send_with_greater_than_max_transfer_amount():
 	assert 'gross transfer amount 1002001 exceeds max transfer amount 1000000' == result.error_message
 	assert not result.fee_multiplier
 	assert not result.transfer_amount
+
+# endregion
+
+
+# region check_expiry
+
+def run_check_expiry_test(config_extensions, block_timestamp):
+	class CheckExpiryMockDatabase:
+		@staticmethod
+		def lookup_block_timestamp(height):
+			return block_timestamp if 1234 == height else None
+
+	# Arrange:
+	database = CheckExpiryMockDatabase()
+	request = WrapRequest(1234, None, None, None, None, None)
+
+	# Act:
+	return check_expiry(config_extensions, database, request)
+
+
+def test_can_check_expiry_disabled():
+	# Act:
+	block_datetime = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=25))
+	error_message = run_check_expiry_test({}, block_timestamp=block_datetime.timestamp())
+
+	# Assert:
+	assert not error_message
+
+
+def test_can_check_expiry_not_expired():
+	# Act:
+	block_datetime = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=23))
+	error_message = run_check_expiry_test({'request_lifetime_hours': '24'}, block_timestamp=block_datetime.timestamp())
+
+	# Assert:
+	assert not error_message
+
+
+def test_can_check_expiry_expired():
+	# Act:
+	block_datetime = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=25))
+	error_message = run_check_expiry_test({'request_lifetime_hours': '24'}, block_timestamp=block_datetime.timestamp())
+
+	# Assert:
+	assert f'request timestamp {block_datetime} is more than 24 in the past' == error_message
 
 # endregion
