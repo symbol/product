@@ -1,4 +1,5 @@
 import tempfile
+from collections import namedtuple
 from decimal import Decimal
 
 import pytest
@@ -8,11 +9,13 @@ from bridge.ConversionRateCalculatorFactory import ConversionRateCalculatorFacto
 from bridge.db.Databases import Databases
 from bridge.models.BridgeConfiguration import GlobalConfiguration
 from bridge.models.Constants import ExecutionContext, PrintableMosaicId
+from bridge.models.WrapRequest import WrapRequest
 from bridge.WorkflowUtils import (
 	NativeConversionRateCalculatorFactory,
 	calculate_search_range,
 	create_conversion_rate_calculator_factory,
 	is_native_to_native_conversion,
+	prepare_send,
 	validate_global_configuration
 )
 
@@ -330,5 +333,70 @@ def test_can_create_native_calculator_factory_when_strategy_mode_wrapped_and_wra
 
 def test_can_create_native_calculator_factory_when_strategy_mode_wrapped_and_unwrap_mode():
 	_assert_can_create_native_calculator_factory_when_strategy_mode_wrapped(True)
+
+# endregion
+
+
+# region prepare_send
+
+def run_prepare_send_test(config_extensions, amount, fee_multiplier=None):
+	PrepareSendMockNetworkFacade = namedtuple('PrepareSendMockNetworkFacade', ['config'])
+	PrepareSendMockNetwork = namedtuple('PrepareSendMockNetwork', ['extensions'])
+
+	def conversion_function(amount):
+		return amount ** 2
+
+	# Arrange:
+	network = PrepareSendMockNetworkFacade(PrepareSendMockNetwork(config_extensions))
+	request = WrapRequest(None, None, None, None, amount, None)
+
+	# Act:
+	return prepare_send(network, request, conversion_function, fee_multiplier)
+
+
+def test_can_prepare_send_without_fee_multiplier():
+	# Act:
+	result = run_prepare_send_test({}, 88888888)
+
+	# Assert:
+	assert not result.error_message
+	assert Decimal('1') == result.fee_multiplier
+	assert Decimal('88888888') * Decimal('88888888') == result.transfer_amount
+
+
+def test_can_prepare_send_with_fee_multiplier():
+	# Act:
+	result = run_prepare_send_test({}, 88888888, Decimal('7.8'))
+
+	# Assert:
+	assert not result.error_message
+	assert Decimal('7.8') * Decimal(10 ** 12) == result.fee_multiplier
+	assert Decimal('88888888') * Decimal('88888888') == result.transfer_amount
+
+
+def test_cannot_prepare_send_with_negative_fee_multiplier():
+	# Act + Assert:
+	with pytest.raises(ValueError, match='fee_multiplier must be non-negative'):
+		run_prepare_send_test({}, 88888888, Decimal('-7.8'))
+
+
+def test_can_prepare_send_with_max_transfer_amount():
+	# Act:
+	result = run_prepare_send_test({'max_transfer_amount': '1000000'}, 1000)
+
+	# Assert:
+	assert not result.error_message
+	assert Decimal('1') == result.fee_multiplier
+	assert Decimal('1000000') == result.transfer_amount
+
+
+def test_cannot_prepare_send_with_greater_than_max_transfer_amount():
+	# Act:
+	result = run_prepare_send_test({'max_transfer_amount': '1000000'}, 1001)
+
+	# Assert:
+	assert 'gross transfer amount 1002001 exceeds max transfer amount 1000000' == result.error_message
+	assert not result.fee_multiplier
+	assert not result.transfer_amount
 
 # endregion
