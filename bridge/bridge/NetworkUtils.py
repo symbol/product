@@ -4,7 +4,7 @@ from decimal import ROUND_UP, Decimal
 
 from symbolchain.CryptoTypes import Hash256, PrivateKey
 from symbollightapi.model.Constants import TimeoutSettings, TransactionStatus
-from symbollightapi.model.Exceptions import NodeException
+from symbollightapi.model.Exceptions import HttpException, NodeException
 
 BalanceChange = namedtuple('BalanceChange', ['address', 'currency_id', 'amount', 'transaction_hash'])
 BalanceTransfer = namedtuple('BalanceTransfer', ['signer_public_key', 'recipient_address', 'amount', 'message'])
@@ -140,5 +140,21 @@ async def download_rosetta_block_balance_changes(connector, blockchain, network,
 				balance_changes.append(balance_change)
 
 	return balance_changes
+
+# endregion
+
+
+# region is_transient_error
+
+def is_transient_error(error):
+	"""Determines if an error is transient. If False, it should be considered permanent."""
+
+	if isinstance(error, HttpException):
+		# 408: request timeout
+		# 429: too many requests
+		# 503: service unavailable
+		return error.http_status_code in (408, 429, 503)
+
+	return False
 
 # endregion
