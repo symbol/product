@@ -301,7 +301,7 @@ class ConfigurationManagerTest(unittest.TestCase):
 			# Assert:
 			self.assertEqual(expected_patches, patches)
 
-	def test_cannot_load_shoestring_patches_from_file_deos_not_exist(self):
+	def test_cannot_load_shoestring_patches_from_file_does_not_exist(self):
 		# Arrange:
 		with tempfile.TemporaryDirectory() as temp_directory:
 			shoestring_filepath = Path(temp_directory) / 'shoestring_not_found.ini'
