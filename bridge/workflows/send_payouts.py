@@ -2,11 +2,20 @@ import asyncio
 import logging
 from decimal import Decimal
 
+from symbollightapi.model.Exceptions import NodeException
+
 from bridge.db.WrapRequestDatabase import PayoutDetails, WrapRequestStatus
-from bridge.NetworkUtils import TransactionSender, TrySendResult
+from bridge.NetworkUtils import TransactionSender, TrySendResult, is_transient_error
 from bridge.WorkflowUtils import create_conversion_rate_calculator_factory, is_native_to_native_conversion, prepare_send
 
 from .main_impl import main_bootstrapper, print_banner
+
+
+class SendCounts:
+	def __init__(self):
+		self.sent = 0
+		self.errored = 0
+		self.skipped = 0
 
 
 async def _send_payout(network, request, conversion_function, fee_multiplier):
@@ -39,23 +48,37 @@ async def send_payouts(conversion_rate_calculator_factory, is_unwrap_mode, datab
 	requests_to_send = database.requests_by_status(WrapRequestStatus.UNPROCESSED)
 	logger.info('%s requests need to be sent', len(requests_to_send))
 
-	count = 0
-	error_count = 0
-	skip_count = 0
+	counts = SendCounts()
+
+	def mark_skipped(request, skip_reason):
+		logger.info('  payout skipped due to %s: %s:%s', skip_reason, request.transaction_hash, request.transaction_subindex)
+		counts.skipped += 1
+
+	def mark_permanent_failure(request, error_message):
+		database.mark_payout_failed(request, error_message)
+		logger.info('  payout failed with error: %s', error_message)
+		counts.errored += 1
+
 	for request in requests_to_send:
 		conversion_rate_calculator = conversion_rate_calculator_factory.try_create_calculator(request.transaction_height)
 		if not conversion_rate_calculator:
-			logger.info('  payout skipped due to missing data: %s:%s', request.transaction_hash, request.transaction_subindex)
-			skip_count += 1
+			mark_skipped(request, 'missing data')
 			continue
 
 		logger.info('  processing payout: %s:%s', request.transaction_hash, request.transaction_subindex)
 		conversion_function = conversion_rate_calculator.to_conversion_function(is_unwrap_mode)
-		send_result = await _send_payout(network, request, conversion_function, fee_multiplier)
+		try:
+			send_result = await _send_payout(network, request, conversion_function, fee_multiplier)
+		except NodeException as ex:
+			if is_transient_error(ex):
+				mark_skipped(request, 'transient failure')
+			else:
+				mark_permanent_failure(request, str(ex))
+
+			continue
+
 		if send_result.is_error:
-			database.mark_payout_failed(request, send_result.error_message)
-			logger.info('  payout failed with error: %s', send_result.error_message)
-			error_count += 1
+			mark_permanent_failure(request, send_result.error_message)
 		else:
 			conversion_rate = conversion_function(1000000)
 			payout_details = PayoutDetails(
@@ -70,12 +93,12 @@ async def send_payouts(conversion_rate_calculator_factory, is_unwrap_mode, datab
 				payout_details.net_amount,
 				payout_details.total_fee,
 				payout_details.conversion_rate)
-			count += 1
+			counts.sent += 1
 
 	print_banner([
-		f'==>      total payouts processed: {count}',
-		f'==>        total payouts errored: {error_count}',
-		f'==>        total payouts skipped: {skip_count}'
+		f'==>      total payouts sent: {counts.sent}',
+		f'==>   total payouts errored: {counts.errored}',
+		f'==>   total payouts skipped: {counts.skipped}'
 	])
 
 
