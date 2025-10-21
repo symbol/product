@@ -6,7 +6,7 @@ from symbolchain import sc
 from symbolchain.CryptoTypes import Hash256, PrivateKey, PublicKey
 from symbolchain.facade.SymbolFacade import SymbolFacade
 from symbolchain.symbol.Network import Address, Network, NetworkTimestamp
-from symbollightapi.model.Exceptions import NodeException
+from symbollightapi.model.Exceptions import HttpException, NodeException
 
 from bridge.models.BridgeConfiguration import NetworkConfiguration
 from bridge.NetworkUtils import (
@@ -15,7 +15,8 @@ from bridge.NetworkUtils import (
 	FeeInformation,
 	TransactionSender,
 	download_rosetta_block_balance_changes,
-	estimate_balance_transfer_fees
+	estimate_balance_transfer_fees,
+	is_transient_error
 )
 from bridge.symbol.SymbolNetworkFacade import SymbolNetworkFacade
 
@@ -513,5 +514,25 @@ async def test_can_download_rosetta_block_balance_changes_prefers_currency_id_wh
 		BalanceChange('beta', '777', 22222, Hash256(HASHES[0])),
 		BalanceChange('beta', 'baz.token', 44444, Hash256(HASHES[0])),
 	] == balance_changes
+
+# endregion
+
+
+# region is_transient_error
+
+def test_is_transient_error_returns_true_for_transient_http_errors():
+	for status_code in (408, 429, 503):
+		assert is_transient_error(HttpException('some HTTP error', status_code)), f'status code: {status_code}'
+
+
+def test_is_transient_error_returns_false_for_non_transient_http_errors():
+	for status_code in (403, 404, 418, 500, 502):
+		assert not is_transient_error(HttpException('some HTTP error', status_code)), f'status code: {status_code}'
+
+
+def test_is_transient_error_returns_false_for_non_http_errors():
+	assert not is_transient_error(Exception('some error'))
+	assert not is_transient_error(ValueError('some error'))
+	assert not is_transient_error(NodeException('some error'))
 
 # endregion
