@@ -1,4 +1,3 @@
-
 from symbollightapi.connector.NemBlockCalculator import NemBlockCalculator
 
 transaction_base = {
@@ -20,10 +19,12 @@ cosignature_transaction = {
 	"version": -1744830463
 }
 
+# pylint: disable=invalid-name
+
 
 def test_can_calculate_transfer_transaction_v1():
 	# Arrange:
-	transfer_tx_json = {
+	tx_json = {
 		**transaction_base,
 		"amount": 100000,
 		"recipient": "TD3FGWIQR7GIOJSFG52JMCJYCVP2PC7ZNDZYDN4H",
@@ -33,7 +34,7 @@ def test_can_calculate_transfer_transaction_v1():
 	}
 
 	# Act:
-	transaction_size = NemBlockCalculator._calculate_transaction_size(transfer_tx_json)
+	transaction_size = NemBlockCalculator.calculate_transaction_size(tx_json)
 
 	# Assert:
 	assert 184 == transaction_size
@@ -41,7 +42,7 @@ def test_can_calculate_transfer_transaction_v1():
 
 def test_can_calculate_transfer_transaction_v2():
 	# Arrange:
-	transfer_tx_json = {
+	tx_json = {
 		**transaction_base,
 		"amount": 100000,
 		"recipient": "TDDRMIUIHSQIFPMIX4Z4FDBARSLVO5TASFV2UQSJ",
@@ -63,15 +64,15 @@ def test_can_calculate_transfer_transaction_v2():
 	}
 
 	# Act:
-	transaction_size = NemBlockCalculator._calculate_transaction_size(transfer_tx_json)
+	transaction_size = NemBlockCalculator.calculate_transaction_size(tx_json)
 
 	# Assert:
 	assert 235 == transaction_size
 
 
-def test_can_calculate_account_link_transaction_v1():
+def test_can_calculate_account_key_link_transaction_v1():
 	# Arrange:
-	account_key_link_tx_json = {
+	tx_json = {
 		**transaction_base,
 		"mode": 1,
 		"remoteAccount": "bb0e019d28df2d5241790c47a3ff99f39a1fc56017a1d291fb74fe6762d66aea",
@@ -80,7 +81,7 @@ def test_can_calculate_account_link_transaction_v1():
 	}
 
 	# Act:
-	transaction_size = NemBlockCalculator._calculate_transaction_size(account_key_link_tx_json)
+	transaction_size = NemBlockCalculator.calculate_transaction_size(tx_json)
 
 	# Assert:
 	assert 168 == transaction_size
@@ -88,7 +89,7 @@ def test_can_calculate_account_link_transaction_v1():
 
 def test_can_calculate_multisig_account_modification_transaction_v1():
 	# Arrange:
-	multisig_account_modification_tx_json = {
+	tx_json = {
 		**transaction_base,
 		"modifications": [
 			{
@@ -101,7 +102,7 @@ def test_can_calculate_multisig_account_modification_transaction_v1():
 	}
 
 	# Act:
-	transaction_size = NemBlockCalculator._calculate_transaction_size(multisig_account_modification_tx_json)
+	transaction_size = NemBlockCalculator.calculate_transaction_size(tx_json)
 
 	# Assert:
 	assert 176 == transaction_size
@@ -109,7 +110,7 @@ def test_can_calculate_multisig_account_modification_transaction_v1():
 
 def test_can_calculate_multisig_account_modification_transaction_v2():
 	# Arrange:
-	multisig_account_modification_tx_json = {
+	tx_json = {
 		**transaction_base,
 		"minCosignatories": {
 			"relativeChange": 2
@@ -125,7 +126,7 @@ def test_can_calculate_multisig_account_modification_transaction_v2():
 	}
 
 	# Act:
-	transaction_size = NemBlockCalculator._calculate_transaction_size(multisig_account_modification_tx_json)
+	transaction_size = NemBlockCalculator.calculate_transaction_size(tx_json)
 
 	# Assert:
 	assert 184 == transaction_size
@@ -133,7 +134,7 @@ def test_can_calculate_multisig_account_modification_transaction_v2():
 
 def test_can_calculate_namespace_registration_with_root_transaction_v1():
 	# Arrange:
-	namespace_registration_tx_json = {
+	tx_json = {
 		**transaction_base,
 		"parent": None,
 		"rentalFeeSink": "TD3FGWIQR7GIOJSFG52JMCJYCVP2PC7ZNDZYDN4H",
@@ -144,7 +145,7 @@ def test_can_calculate_namespace_registration_with_root_transaction_v1():
 	}
 
 	# Act:
-	transaction_size = NemBlockCalculator._calculate_transaction_size(namespace_registration_tx_json)
+	transaction_size = NemBlockCalculator.calculate_transaction_size(tx_json)
 
 	# Assert:
 	assert 202 == transaction_size
@@ -152,7 +153,7 @@ def test_can_calculate_namespace_registration_with_root_transaction_v1():
 
 def test_can_calculate_namespace_registration_with_sub_namespace_transaction_v1():
 	# Arrange:
-	namespace_registration_tx_json = {
+	tx_json = {
 		**transaction_base,
 		"parent": "root-namespace",
 		"rentalFeeSink": "TD3FGWIQR7GIOJSFG52JMCJYCVP2PC7ZNDZYDN4H",
@@ -163,7 +164,7 @@ def test_can_calculate_namespace_registration_with_sub_namespace_transaction_v1(
 	}
 
 	# Act:
-	transaction_size = NemBlockCalculator._calculate_transaction_size(namespace_registration_tx_json)
+	transaction_size = NemBlockCalculator.calculate_transaction_size(tx_json)
 
 	# Assert:
 	assert 215 == transaction_size
@@ -171,7 +172,7 @@ def test_can_calculate_namespace_registration_with_sub_namespace_transaction_v1(
 
 def test_can_calculate_mosaic_definition_without_properties_transaction_v1():
 	# Arrange:
-	mosaic_definition_tx_json = {
+	tx_json = {
 		**transaction_base,
 		"creationFeeSink": "TBMOSAICOD4F54EE5CDMR23CCBGOAM2XSJBR5OLC",
 		"creationFee": 100000000,
@@ -190,7 +191,7 @@ def test_can_calculate_mosaic_definition_without_properties_transaction_v1():
 	}
 
 	# Act:
-	transaction_size = NemBlockCalculator._calculate_transaction_size(mosaic_definition_tx_json)
+	transaction_size = NemBlockCalculator.calculate_transaction_size(tx_json)
 
 	# Assert:
 	assert 284 == transaction_size
@@ -198,7 +199,7 @@ def test_can_calculate_mosaic_definition_without_properties_transaction_v1():
 
 def test_can_calculate_mosaic_definition_transaction_v1():
 	# Arrange:
-	mosaic_definition_tx_json = {
+	tx_json = {
 		**transaction_base,
 		"creationFeeSink": "TBMOSAICOD4F54EE5CDMR23CCBGOAM2XSJBR5OLC",
 		"creationFee": 100000000,
@@ -242,7 +243,7 @@ def test_can_calculate_mosaic_definition_transaction_v1():
 	}
 
 	# Act:
-	transaction_size = NemBlockCalculator._calculate_transaction_size(mosaic_definition_tx_json)
+	transaction_size = NemBlockCalculator.calculate_transaction_size(tx_json)
 
 	# Assert:
 	assert 469 == transaction_size
@@ -250,7 +251,7 @@ def test_can_calculate_mosaic_definition_transaction_v1():
 
 def test_can_calculate_mosaic_supply_change_transaction_v1():
 	# Arrange:
-	mosaic_supply_change_tx_json = {
+	tx_json = {
 		**transaction_base,
 		"mosaicId": {
 			"namespaceId": "test_namespace_1",
@@ -263,7 +264,7 @@ def test_can_calculate_mosaic_supply_change_transaction_v1():
 	}
 
 	# Act:
-	transaction_size = NemBlockCalculator._calculate_transaction_size(mosaic_supply_change_tx_json)
+	transaction_size = NemBlockCalculator.calculate_transaction_size(tx_json)
 
 	# Assert:
 	assert 181 == transaction_size
@@ -271,10 +272,10 @@ def test_can_calculate_mosaic_supply_change_transaction_v1():
 
 def test_can_calculate_cosignature_transaction_v1():
 	# Arrange:
-	cosignature_tx_json = dict(cosignature_transaction)
+	tx_json = dict(cosignature_transaction)
 
 	# Act:
-	transaction_size = NemBlockCalculator._calculate_transaction_size(cosignature_tx_json)
+	transaction_size = NemBlockCalculator.calculate_transaction_size(tx_json)
 
 	# Assert:
 	assert 212 == transaction_size
@@ -282,9 +283,9 @@ def test_can_calculate_cosignature_transaction_v1():
 
 def test_can_calculate_multisig_transaction_v1():
 	# Arrange:
-	signature_tx_json = dict(cosignature_transaction)
+	sig_tx_json = dict(cosignature_transaction)
 
-	inner_transfer_tx_json = {
+	inner_tx_json = {
 		"timeStamp": 314820082,
 		"amount": 70000,
 		"fee": 50000,
@@ -297,18 +298,18 @@ def test_can_calculate_multisig_transaction_v1():
 		"signer": "0f83292a6f9b7882915df4f64f11bd20161eab4a56fb051678884e2400005df8"
 	}
 
-	multisig_tx_json = {
+	tx_json = {
 		**transaction_base,
-		"otherTrans": inner_transfer_tx_json,
+		"otherTrans": inner_tx_json,
 		"signatures": [
-			signature_tx_json
+			sig_tx_json
 		],
 		"type": 4100,
 		"version": -1744830463,
 	}
 
 	# Act:
-	transaction_size = NemBlockCalculator._calculate_transaction_size(multisig_tx_json)
+	transaction_size = NemBlockCalculator.calculate_transaction_size(tx_json)
 
 	# Assert:
 	assert 472 == transaction_size
