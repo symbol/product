@@ -37,14 +37,14 @@ class NemBlockCalculator:
 		block_size = 4 + 1 + 2 + 1 + 4 + 4 + 32 + 4 + 64 + 40 + 8 + 4
 
 		transactions_size = sum(
-			NemBlockCalculator._calculate_transaction_size(tx_entry['tx'])
+			NemBlockCalculator.calculate_transaction_size(tx_entry['tx'])
 			for tx_entry in block_json.get('txes', [])
 		)
 
 		return block_size + transactions_size
 
 	@staticmethod
-	def _calculate_transaction_size(tx_json):
+	def calculate_transaction_size(tx_json):
 		"""Calculates the serialized size of a transaction."""
 
 		try:
