@@ -1243,7 +1243,7 @@ EXPECTED_BLOCK_2 = Block(
 		'fdf6a9830e9320af79123f467fcb03d6beab735575ff50eab363d812c5581436'
 		'2ad7be0503db2ee70e60ac3408d83cdbcbd941067a6df703e0c21c7bf389f105'
 	),
-	5548
+	2052
 )
 
 
@@ -1271,7 +1271,7 @@ async def test_can_query_blocks_after(server):  # pylint: disable=redefined-oute
 			'919ae66a34119b49812b335827b357f86884ab08b628029fd6e8db3572faeb4f'
 			'323a7bf9488c76ef8faa5b513036bbcce2d949ba3e41086d95a54c0007403c0b'
 		),
-		534
+		168
 	) == blocks[1]
 
 # endregion

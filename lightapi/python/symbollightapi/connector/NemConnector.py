@@ -1,5 +1,4 @@
 import asyncio
-import json
 from binascii import hexlify
 from collections import namedtuple
 
@@ -16,6 +15,7 @@ from ..model.Exceptions import NodeException
 from ..model.NodeInfo import NodeInfo
 from ..model.Transaction import TransactionFactory, TransactionHandler
 from .BasicConnector import BasicConnector
+from .NemBlockCalculator import NemBlockCalculator
 
 MosaicFeeInformation = namedtuple('MosaicFeeInformation', ['supply', 'divisibility'])
 
@@ -318,7 +318,7 @@ class NemConnector(BasicConnector):
 
 	def _map_to_block(self, block_json):
 		block = block_json['block']
-		size = len(json.dumps(block_json).encode('utf-8'))
+		size = NemBlockCalculator.calculate_block_size(block_json)
 
 		return Block(
 			block['height'],
