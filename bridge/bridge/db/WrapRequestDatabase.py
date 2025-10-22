@@ -1,3 +1,4 @@
+import logging
 from collections import namedtuple
 from enum import Enum
 
@@ -41,6 +42,8 @@ class WrapRequestDatabase(MaxProcessedHeightMixin):  # pylint: disable=too-many-
 
 		self.network_facade = network_facade
 		self.payout_network_facade = payout_network_facade
+
+		self._logger = logging.getLogger(__name__)
 
 	# region create_tables
 
@@ -296,6 +299,15 @@ class WrapRequestDatabase(MaxProcessedHeightMixin):  # pylint: disable=too-many-
 
 		self.connection.commit()
 
+		self._logger.info(
+			'R[%s:%s] sent payout transaction with hash %s; %s amount (%s fee deducted) at conversion rate %s',
+			request.transaction_hash,
+			request.transaction_subindex,
+			payout_details.transaction_hash,
+			payout_details.net_amount,
+			payout_details.total_fee,
+			payout_details.conversion_rate)
+
 	def mark_payout_failed(self, request, message):
 		"""Marks a payout as failed with a message."""
 
@@ -315,6 +327,8 @@ class WrapRequestDatabase(MaxProcessedHeightMixin):  # pylint: disable=too-many-
 		self._add_error_with_cursor(cursor, make_wrap_error_result(request, message).error)
 		self.connection.commit()
 
+		self._logger.info('R[%s:%s] marking payout failed with error: %s', request.transaction_hash, request.transaction_subindex, message)
+
 	def mark_payout_completed(self, payout_transaction_hash, height):
 		"""Marks a payout complete at a height."""
 
@@ -332,6 +346,8 @@ class WrapRequestDatabase(MaxProcessedHeightMixin):  # pylint: disable=too-many-
 			(height, 0))
 
 		self.connection.commit()
+
+		self._logger.info('marking payout transaction %s complete at height %s', payout_transaction_hash, height)
 
 	# endregion
 
@@ -381,10 +397,14 @@ class WrapRequestDatabase(MaxProcessedHeightMixin):  # pylint: disable=too-many-
 
 		self._set_block_timestamp(height, raw_timestamp, self.network_facade, 'block_metadata')
 
+		self._logger.info('saving block %s with timestamp %s', height, raw_timestamp)
+
 	def set_payout_block_timestamp(self, height, raw_timestamp):
 		"""Sets a payout block timestamp."""
 
 		self._set_block_timestamp(height, raw_timestamp, self.payout_network_facade, 'payout_block_metadata')
+
+		self._logger.info('saving payout block %s with timestamp %s', height, raw_timestamp)
 
 	# endregion
 

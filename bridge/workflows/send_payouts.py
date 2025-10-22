@@ -51,12 +51,11 @@ async def send_payouts(conversion_rate_calculator_factory, is_unwrap_mode, datab
 	counts = SendCounts()
 
 	def mark_skipped(request, skip_reason):
-		logger.info('  payout skipped due to %s: %s:%s', skip_reason, request.transaction_hash, request.transaction_subindex)
+		logger.info('payout skipped due to %s: %s:%s', skip_reason, request.transaction_hash, request.transaction_subindex)
 		counts.skipped += 1
 
 	def mark_permanent_failure(request, error_message):
 		database.mark_payout_failed(request, error_message)
-		logger.info('  payout failed with error: %s', error_message)
 		counts.errored += 1
 
 	for request in requests_to_send:
@@ -65,13 +64,13 @@ async def send_payouts(conversion_rate_calculator_factory, is_unwrap_mode, datab
 			mark_skipped(request, 'missing data')
 			continue
 
-		logger.info('  processing payout: %s:%s', request.transaction_hash, request.transaction_subindex)
+		logger.info('processing payout: %s:%s', request.transaction_hash, request.transaction_subindex)
 		conversion_function = conversion_rate_calculator.to_conversion_function(is_unwrap_mode)
 		try:
 			send_result = await _send_payout(network, request, conversion_function, fee_multiplier)
 		except NodeException as ex:
 			if is_transient_error(ex):
-				mark_skipped(request, 'transient failure')
+				mark_skipped(request, f'transient failure {ex}')
 			else:
 				mark_permanent_failure(request, str(ex))
 
@@ -87,12 +86,6 @@ async def send_payouts(conversion_rate_calculator_factory, is_unwrap_mode, datab
 				send_result.total_fee,
 				conversion_rate)
 			database.mark_payout_sent(request, payout_details)
-			logger.info(
-				'  sent transaction with hash: %s %s amount (%s fee deducted) at conversion rate %s',
-				payout_details.transaction_hash,
-				payout_details.net_amount,
-				payout_details.total_fee,
-				payout_details.conversion_rate)
 			counts.sent += 1
 
 	print_banner([
