@@ -21,14 +21,12 @@ async def _check_finalized_transactions(database, payout_network, request_networ
 
 	heights = set()
 	for hash_height_pair in transaction_hash_height_pairs:
-		logger.info('> marking payout transaction %s complete at height %s', hash_height_pair[0], hash_height_pair[1])
 		database.mark_payout_completed(*hash_height_pair)
 		heights.add(hash_height_pair[1])
 
 	logger.info('detected transactions in %s blocks, looking up timestamps...', len(heights))
 	block_height_timestamp_pairs = await query_block_timestamps(connector, heights)
 	for height_timestamp_pair in block_height_timestamp_pairs:
-		logger.info('> saving block %s with timestamp %s', height_timestamp_pair[0], height_timestamp_pair[1])
 		database.set_payout_block_timestamp(*height_timestamp_pair)
 
 	logger.info('checking expired requests ...')
@@ -37,7 +35,6 @@ async def _check_finalized_transactions(database, payout_network, request_networ
 		error_message = check_expiry(request_network.config.extensions, database, request)
 		if error_message:
 			database.mark_payout_failed(request, error_message)
-			logger.info('  payout failed with error: %s', error_message)
 
 
 async def main_impl(execution_context, databases, native_facade, wrapped_facade, _price_oracle):
