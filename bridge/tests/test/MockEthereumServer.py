@@ -15,6 +15,7 @@ async def create_simple_ethereum_client(aiohttp_client):
 
 			self.simulate_announce_error = False
 			self.simulate_estimate_gas_error = False
+			self.simulate_sync = False
 			self.gas_price_override = None
 
 		async def rpc_main(self, request):  # pylint: disable = too-many-return-statements
@@ -45,6 +46,9 @@ async def create_simple_ethereum_client(aiohttp_client):
 
 			if 'eth_sendRawTransaction' == method:
 				return await self._handle_eth_send_raw_transaction(request)
+
+			if 'eth_syncing' == method:
+				return await self._handle_eth_syncing(request)
 
 			if 'eth_call' == method:
 				return await self._handle_eth_call(request, request_json['params'][0]['data'])
@@ -148,6 +152,19 @@ async def create_simple_ethereum_client(aiohttp_client):
 
 			return await self._process(request, {
 				'result': '0xe1f3095770633ab2b18081658bad475439f6a08c902d0915903bafff06e6febf'
+			})
+
+		async def _handle_eth_syncing(self, request):
+			if self.simulate_sync:
+				return await self._process(request, {
+					'result': {
+						'startingBlock': '0x0',
+						'currentBlock': '0x1518'
+					}
+				})
+
+			return await self._process(request, {
+				'result': False
 			})
 
 		async def _handle_eth_call(self, request, data):

@@ -7,7 +7,7 @@ import sha3
 from aiolimiter import AsyncLimiter
 from symbollightapi.connector.BasicConnector import BasicConnector
 from symbollightapi.model.Constants import DEFAULT_ASYNC_LIMITER_ARGUMENTS, TransactionStatus
-from symbollightapi.model.Exceptions import NodeException
+from symbollightapi.model.Exceptions import NodeException, NodeTransientException
 
 from .EthereumAdapters import EthereumNetworkTimestamp
 from .RpcUtils import make_rpc_request_json, parse_rpc_response_hex_value
@@ -239,8 +239,17 @@ class EthereumConnector(BasicConnector):
 
 	# region announce_transaction
 
+	async def _require_synced(self, action):
+		request_json = make_rpc_request_json('eth_syncing', [])
+		result_json = await self._post_rpc(request_json)
+
+		if result_json is not False:
+			raise NodeTransientException(f'node is syncing and cannot {action}')
+
 	async def announce_transaction(self, transaction_payload):
 		"""Announces a transaction to the network."""
+
+		await self._require_synced('accept transactions')
 
 		raw_transaction_hex = hexlify(transaction_payload['signature'].raw_transaction).decode('utf8')
 		request_json = make_rpc_request_json('eth_sendRawTransaction', [f'0x{raw_transaction_hex}'])
@@ -252,6 +261,8 @@ class EthereumConnector(BasicConnector):
 
 	async def try_wait_for_announced_transaction(self, transaction_hash, desired_status, timeout_settings):
 		"""Tries to wait for a previously announced transaction to transition to a desired status."""
+
+		await self._require_synced('check transaction status')
 
 		for _ in range(timeout_settings.retry_count):
 			try:
