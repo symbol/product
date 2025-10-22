@@ -4,7 +4,7 @@ from decimal import ROUND_UP, Decimal
 
 from symbolchain.CryptoTypes import Hash256, PrivateKey
 from symbollightapi.model.Constants import TimeoutSettings, TransactionStatus
-from symbollightapi.model.Exceptions import HttpException, NodeException
+from symbollightapi.model.Exceptions import HttpException, NodeException, NodeTransientException
 
 BalanceChange = namedtuple('BalanceChange', ['address', 'currency_id', 'amount', 'transaction_hash'])
 BalanceTransfer = namedtuple('BalanceTransfer', ['signer_public_key', 'recipient_address', 'amount', 'message'])
@@ -154,6 +154,9 @@ def is_transient_error(error):
 		# 429: too many requests
 		# 503: service unavailable
 		return error.http_status_code in (408, 429, 503)
+
+	if isinstance(error, NodeTransientException):
+		return True
 
 	return False
 
