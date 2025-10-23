@@ -7,7 +7,7 @@ import sha3
 from aiolimiter import AsyncLimiter
 from symbollightapi.connector.BasicConnector import BasicConnector
 from symbollightapi.model.Constants import DEFAULT_ASYNC_LIMITER_ARGUMENTS, TransactionStatus
-from symbollightapi.model.Exceptions import NodeException, NodeTransientException
+from symbollightapi.model.Exceptions import InsufficientBalanceException, NodeException, NodeTransientException
 
 from .EthereumAdapters import EthereumNetworkTimestamp
 from .RpcUtils import make_rpc_request_json, parse_rpc_response_hex_value
@@ -46,7 +46,11 @@ class EthereumConnector(BasicConnector):
 	async def _post_rpc(self, request_json):
 		response_json = await self.post('', request_json)
 		if 'error' in response_json:
-			raise NodeException(f'{request_json["method"]} RPC call failed: {response_json["error"]["message"]}')
+			error_message = f'{request_json["method"]} RPC call failed: {response_json["error"]["message"]}'
+			if 'transfer amount exceeds balance' in response_json['error']['message']:
+				raise InsufficientBalanceException(error_message)
+
+			raise NodeException(error_message)
 
 		return response_json['result']
 
