@@ -266,7 +266,7 @@ class NemBlockCalculator:
 		}
 
 		for sig_json in tx_json.get('signatures', []):
-			cosignature_descriptor = dict(self._build_transaction_descriptor(sig_json))
+			cosignature_descriptor = self._build_transaction_descriptor(sig_json)
 			cosignature_descriptor.pop('type', None)
 			transaction['cosignatures'].append({'cosignature': cosignature_descriptor})
 
