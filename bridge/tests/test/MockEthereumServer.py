@@ -146,8 +146,12 @@ async def create_simple_ethereum_client(aiohttp_client):
 
 		async def _handle_eth_send_raw_transaction(self, request):
 			if self.simulate_announce_error:
+				error_message = 'INTERNAL_ERROR: IntrinsicGas'
+				if isinstance(self.simulate_announce_error, str):
+					error_message = self.simulate_announce_error
+
 				return await self._process(request, {
-					'error': {'code': -32000, 'message': 'INTERNAL_ERROR: IntrinsicGas'}
+					'error': {'code': -32000, 'message': error_message}
 				})
 
 			return await self._process(request, {
