@@ -22,6 +22,15 @@ cosignature_transaction = {
 # pylint: disable=invalid-name
 
 
+def _assert_transaction_size(tx_json, expected_size):
+	# Act:
+	nem_calculator = NemBlockCalculator()
+	transaction_size = nem_calculator.calculate_transaction_size(tx_json)
+
+	# Assert:
+	assert expected_size == transaction_size
+
+
 def test_can_calculate_transfer_transaction_v1():
 	# Arrange:
 	tx_json = {
@@ -33,11 +42,7 @@ def test_can_calculate_transfer_transaction_v1():
 		"version": -1744830463,
 	}
 
-	# Act:
-	transaction_size = NemBlockCalculator.calculate_transaction_size(tx_json)
-
-	# Assert:
-	assert 184 == transaction_size
+	_assert_transaction_size(tx_json, 184)
 
 
 def test_can_calculate_transfer_transaction_v2():
@@ -63,11 +68,7 @@ def test_can_calculate_transfer_transaction_v2():
 		"version": -1744830462,
 	}
 
-	# Act:
-	transaction_size = NemBlockCalculator.calculate_transaction_size(tx_json)
-
-	# Assert:
-	assert 235 == transaction_size
+	_assert_transaction_size(tx_json, 235)
 
 
 def test_can_calculate_account_key_link_transaction_v1():
@@ -80,11 +81,7 @@ def test_can_calculate_account_key_link_transaction_v1():
 		"version": -1744830463,
 	}
 
-	# Act:
-	transaction_size = NemBlockCalculator.calculate_transaction_size(tx_json)
-
-	# Assert:
-	assert 168 == transaction_size
+	_assert_transaction_size(tx_json, 168)
 
 
 def test_can_calculate_multisig_account_modification_transaction_v1():
@@ -101,11 +98,7 @@ def test_can_calculate_multisig_account_modification_transaction_v1():
 		"version": -1744830463,
 	}
 
-	# Act:
-	transaction_size = NemBlockCalculator.calculate_transaction_size(tx_json)
-
-	# Assert:
-	assert 176 == transaction_size
+	_assert_transaction_size(tx_json, 176)
 
 
 def test_can_calculate_multisig_account_modification_transaction_v2():
@@ -125,11 +118,7 @@ def test_can_calculate_multisig_account_modification_transaction_v2():
 		"version": -1744830462,
 	}
 
-	# Act:
-	transaction_size = NemBlockCalculator.calculate_transaction_size(tx_json)
-
-	# Assert:
-	assert 184 == transaction_size
+	_assert_transaction_size(tx_json, 184)
 
 
 def test_can_calculate_namespace_registration_with_root_transaction_v1():
@@ -144,11 +133,7 @@ def test_can_calculate_namespace_registration_with_root_transaction_v1():
 		"version": -1744830463,
 	}
 
-	# Act:
-	transaction_size = NemBlockCalculator.calculate_transaction_size(tx_json)
-
-	# Assert:
-	assert 202 == transaction_size
+	_assert_transaction_size(tx_json, 202)
 
 
 def test_can_calculate_namespace_registration_with_sub_namespace_transaction_v1():
@@ -163,11 +148,7 @@ def test_can_calculate_namespace_registration_with_sub_namespace_transaction_v1(
 		"version": -1744830463,
 	}
 
-	# Act:
-	transaction_size = NemBlockCalculator.calculate_transaction_size(tx_json)
-
-	# Assert:
-	assert 215 == transaction_size
+	_assert_transaction_size(tx_json, 215)
 
 
 def test_can_calculate_mosaic_definition_without_properties_transaction_v1():
@@ -190,11 +171,7 @@ def test_can_calculate_mosaic_definition_without_properties_transaction_v1():
 		"version": -1744830463,
 	}
 
-	# Act:
-	transaction_size = NemBlockCalculator.calculate_transaction_size(tx_json)
-
-	# Assert:
-	assert 284 == transaction_size
+	_assert_transaction_size(tx_json, 284)
 
 
 def test_can_calculate_mosaic_definition_transaction_v1():
@@ -242,11 +219,7 @@ def test_can_calculate_mosaic_definition_transaction_v1():
 		"version": -1744830463,
 	}
 
-	# Act:
-	transaction_size = NemBlockCalculator.calculate_transaction_size(tx_json)
-
-	# Assert:
-	assert 469 == transaction_size
+	_assert_transaction_size(tx_json, 469)
 
 
 def test_can_calculate_mosaic_supply_change_transaction_v1():
@@ -263,19 +236,11 @@ def test_can_calculate_mosaic_supply_change_transaction_v1():
 		"version": -1744830463,
 	}
 
-	# Act:
-	transaction_size = NemBlockCalculator.calculate_transaction_size(tx_json)
-
-	# Assert:
-	assert 181 == transaction_size
+	_assert_transaction_size(tx_json, 181)
 
 
 def test_can_calculate_cosignature_transaction_v1():
-	# Arrange + Act:
-	transaction_size = NemBlockCalculator.calculate_transaction_size(cosignature_transaction)
-
-	# Assert:
-	assert 212 == transaction_size
+	_assert_transaction_size(cosignature_transaction, 212)
 
 
 def test_can_calculate_multisig_transaction_v1():
@@ -303,8 +268,4 @@ def test_can_calculate_multisig_transaction_v1():
 		"version": -1744830463,
 	}
 
-	# Act:
-	transaction_size = NemBlockCalculator.calculate_transaction_size(tx_json)
-
-	# Assert:
-	assert 472 == transaction_size
+	_assert_transaction_size(tx_json, 472)

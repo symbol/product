@@ -318,7 +318,8 @@ class NemConnector(BasicConnector):
 
 	def _map_to_block(self, block_json):
 		block = block_json['block']
-		size = NemBlockCalculator.calculate_block_size(block_json)
+		nem_calculator = NemBlockCalculator()
+		size = nem_calculator.calculate_block_size(block_json)
 
 		return Block(
 			block['height'],
