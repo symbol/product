@@ -1,12 +1,29 @@
 import asyncio
 import logging
 
+from aiolimiter import AsyncLimiter
 from symbollightapi.connector.ConnectorExtensions import filter_finalized_transactions, query_block_timestamps
+from symbollightapi.model.Constants import DEFAULT_ASYNC_LIMITER_ARGUMENTS, TimeoutSettings, TransactionStatus
 
 from bridge.db.WrapRequestDatabase import WrapRequestStatus
 from bridge.WorkflowUtils import check_expiry
 
 from .main_impl import main_bootstrapper
+
+
+async def _check_pending_sent_request(request, database, connector, request_network):
+	error_message = check_expiry(request_network.config.extensions, database, request)
+	if error_message:
+		database.mark_payout_failed(request, error_message)
+
+	payout_transaction_hash = database.payout_transaction_hash_for_request(request)
+	is_unconfirmed = await connector.try_wait_for_announced_transaction(
+		payout_transaction_hash,
+		TransactionStatus.UNCONFIRMED,
+		TimeoutSettings(1, 0))
+	if not is_unconfirmed:
+		# original request timestamp (derived from block timestamp) is used, so this will not repeat indefinitely
+		database.mark_payout_failed_transient(request, 'node dropped payout transaction')
 
 
 async def _check_finalized_transactions(database, payout_network, request_network):
@@ -29,12 +46,16 @@ async def _check_finalized_transactions(database, payout_network, request_networ
 	for height_timestamp_pair in block_height_timestamp_pairs:
 		database.set_payout_block_timestamp(*height_timestamp_pair)
 
-	logger.info('checking expired requests ...')
+	limiter = AsyncLimiter(*DEFAULT_ASYNC_LIMITER_ARGUMENTS)
+
+	async def check_pending_sent_request_limited(request):
+		async with limiter:
+			await _check_pending_sent_request(request, database, connector, request_network)
+
+	logger.info('checking active sent requests...')
 	sent_requests = database.requests_by_status(WrapRequestStatus.SENT)
-	for request in sent_requests:
-		error_message = check_expiry(request_network.config.extensions, database, request)
-		if error_message:
-			database.mark_payout_failed(request, error_message)
+	sent_request_tasks = [check_pending_sent_request_limited(request) for request in sent_requests]
+	await asyncio.gather(*sent_request_tasks)
 
 
 async def main_impl(execution_context, databases, native_facade, wrapped_facade, _price_oracle):
