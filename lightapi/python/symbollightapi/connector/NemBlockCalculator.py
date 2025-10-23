@@ -10,7 +10,12 @@ from ..model.Exceptions import NodeException
 
 
 class NemBlockCalculator:
-	"""Handles NEM block size calculations and transaction building."""
+	"""
+	Handles NEM block size calculations and transaction building.
+
+	Only populate variable-length fields for each descriptor, the SDK automatically fills in
+	and validates the fixed-width header fields.
+	"""
 
 	# Transaction type to builder method mapping
 	TRANSACTION_BUILDERS = {
@@ -28,13 +33,38 @@ class NemBlockCalculator:
 	def calculate_block_size(block_json):
 		"""Calculates the serialized size of a NEM block."""
 
-		# Block structure:
-		# Block type (4) + Version (1) + reserved padding (2) + network (1)
-		# Timestamp (4) + Signer Key size (4) + Signer public key (32)
-		# Signature size (4) + Signature (64) + Previous block hash (40)
-		# Height (8) + Transaction count (4)
+		# Block structure components:
+		block_type_size = 4
+		version_size = 1
+		reserved_padding_size = 2
+		network_size = 1
+		timestamp_size = 4
+		signer_key_size_field = 4
+		signer_public_key_size = 32
+		signature_size_field = 4
+		signature_size = 64
+		previous_block_hash_outer_size = 4
+		previous_block_hash_size = 4
+		previous_block_hash_value = 32
+		height_size = 8
+		transaction_count_size = 4
 
-		block_size = 4 + 1 + 2 + 1 + 4 + 4 + 32 + 4 + 64 + 40 + 8 + 4
+		block_size = sum([
+			block_type_size,
+			version_size,
+			reserved_padding_size,
+			network_size,
+			timestamp_size,
+			signer_key_size_field,
+			signer_public_key_size,
+			signature_size_field,
+			signature_size,
+			previous_block_hash_outer_size,
+			previous_block_hash_size,
+			previous_block_hash_value,
+			height_size,
+			transaction_count_size
+		])
 
 		transactions_size = sum(
 			NemBlockCalculator.calculate_transaction_size(tx_entry['tx'])
@@ -69,6 +99,7 @@ class NemBlockCalculator:
 	@staticmethod
 	def _build_transaction_descriptor(tx_json):
 		"""Builds a transaction descriptor suitable for the facade factory."""
+
 		builder_method_name = NemBlockCalculator.TRANSACTION_BUILDERS.get(tx_json['type'])
 		if not builder_method_name:
 			raise NodeException(f'Unsupported transaction type {tx_json.get("type", "unknown")}')
