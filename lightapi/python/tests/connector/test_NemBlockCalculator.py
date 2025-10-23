@@ -271,11 +271,8 @@ def test_can_calculate_mosaic_supply_change_transaction_v1():
 
 
 def test_can_calculate_cosignature_transaction_v1():
-	# Arrange:
-	tx_json = dict(cosignature_transaction)
-
-	# Act:
-	transaction_size = NemBlockCalculator.calculate_transaction_size(tx_json)
+	# Arrange + Act:
+	transaction_size = NemBlockCalculator.calculate_transaction_size(cosignature_transaction)
 
 	# Assert:
 	assert 212 == transaction_size
@@ -283,8 +280,6 @@ def test_can_calculate_cosignature_transaction_v1():
 
 def test_can_calculate_multisig_transaction_v1():
 	# Arrange:
-	sig_tx_json = dict(cosignature_transaction)
-
 	inner_tx_json = {
 		"timeStamp": 314820082,
 		"amount": 70000,
@@ -302,7 +297,7 @@ def test_can_calculate_multisig_transaction_v1():
 		**transaction_base,
 		"otherTrans": inner_tx_json,
 		"signatures": [
-			sig_tx_json
+			cosignature_transaction
 		],
 		"type": 4100,
 		"version": -1744830463,
