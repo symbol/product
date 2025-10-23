@@ -431,6 +431,54 @@ CHAIN_BLOCK_2 = {
 	'hash': '9708256e8a8dfb76eed41dcfa2e47f4af520b7b3286afb7f60dca02851f8a53e'
 }
 
+TRANSACTION_BASE = {
+	'timeStamp': 333602170,
+	'fee': 150000,
+	'deadline': 333605770,
+	'version': -1744830463,
+	'signer': '82095209c2caf4c66f8989996291bb8abc4b4e3d1c324f9e4c4d4a18dcde2f1f',
+}
+
+UNCONFIRMED_TRANSACTION = {
+	'signature': '1b81379847241e45da86b27911e5c9a9192ec04f644d98019657d32838b49c14',
+	'entity': {
+		'data': [
+			{
+				**TRANSACTION_BASE,
+				'signature': 'signature_hash',
+				'type': 4100,
+				'signatures': [],
+				'otherTrans': {
+					**TRANSACTION_BASE,
+					'amount': 0,
+					'recipient': 'TAUH32XJJXV4BW6Z5KX2GRLVCDDQU2UQVOFIRTX4',
+					'type': 257,
+					'message': {},
+				}
+			},
+			{
+				**TRANSACTION_BASE,
+				'amount': 0,
+				'signature': 'signature_hash',
+				'recipient': 'TBJPALQM42RUA3O6BZUTGLPVP3NSXFSEA2YXFELO',
+				'type': 257,
+				'message': {
+					'payload': '74657374333231',
+					'type': 1
+				}
+			},
+			{
+				**TRANSACTION_BASE,
+				'type': 4098,
+				'otherHash': {
+					'data': '44e4968e5aa35fe182d4def5958e23cf941c4bf809364afb4431ebbf6a18c039'
+				},
+				'otherAccount': 'TALICELCD3XPH4FFI5STGGNSNSWPOTG5E4DS2TOS'
+			}
+		]
+	}
+}
+
 
 # endregion
 
@@ -571,6 +619,9 @@ async def server(aiohttp_client):  # pylint: disable=too-many-statements
 
 			return await self._process(request, {'code': 1, 'type': 1, 'message': 'SUCCESS'})
 
+		async def unconfirmed_transaction(self, request):
+			return await self._process(request, UNCONFIRMED_TRANSACTION)
+
 		async def _process(self, request, response_body, status_code=200):
 			self.urls.append(str(request.url))
 			return web.Response(body=json.dumps(response_body), headers={'Content-Type': 'application/json'}, status=status_code)
@@ -601,6 +652,7 @@ async def server(aiohttp_client):  # pylint: disable=too-many-statements
 	app.router.add_post('/transaction/announce', mock_server.announce_transaction)
 	app.router.add_post('/local/chain/blocks-after', mock_server.local_chain_blocks_after)
 	app.router.add_post('/local/block/at', mock_server.local_block_at)
+	app.router.add_post('/transactions/unconfirmed', mock_server.unconfirmed_transaction)
 	server = await aiohttp_client(app)  # pylint: disable=redefined-outer-name
 
 	server.mock = mock_server
@@ -1289,5 +1341,59 @@ async def test_can_query_block_at(server):  # pylint: disable=redefined-outer-na
 	# Assert:
 	assert [f'{server.make_url("")}/local/block/at'] == server.mock.urls
 	assert EXPECTED_BLOCK_2 == block
+
+# endregion
+
+
+# region POST (unconfirmed_transaction)
+
+async def test_can_query_unconfirmed_transaction(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	connector = NemConnector(server.make_url(''))
+
+	# Act:
+	transactions = await connector.unconfirmed_transactions()
+
+	# Assert:
+	assert [f'{server.make_url("")}/transactions/unconfirmed'] == server.mock.urls
+	assert 2 == len(transactions)  # excluding cosignature transactions
+	assert [
+		MultisigTransaction(
+			None,
+			0,
+			'82095209c2caf4c66f8989996291bb8abc4b4e3d1c324f9e4c4d4a18dcde2f1f',
+			150000,
+			333602170,
+			333605770,
+			'a07bc2f4511e0d822731c807285fb9501b311ee08baf452c724f2ecc639afdd6ed66056d4cacabaebe49edf6fe74b5c86685d50c24bfc77b0d7f7cd3833c570a',
+			[],
+			TransferTransaction(
+				None,
+				None,
+				'82095209c2caf4c66f8989996291bb8abc4b4e3d1c324f9e4c4d4a18dcde2f1f',
+				150000,
+				333602170,
+				333605770,
+				None,
+				0,
+				'TAUH32XJJXV4BW6Z5KX2GRLVCDDQU2UQVOFIRTX4',
+				None,
+				None
+			),
+			None
+		),
+		TransferTransaction(
+			None,
+			0,
+			'82095209c2caf4c66f8989996291bb8abc4b4e3d1c324f9e4c4d4a18dcde2f1f',
+			150000,
+			333602170,
+			333605770,
+			'3458356a406ae39b203485e00bcdc5f7fbe9a11fc060531647dd1b7acc43ed6e2ff50ec49eb83eccfcf24f6a1e8150fa172e5d48c7b60f7c8866498e13523b0d',
+			0,
+			'TBJPALQM42RUA3O6BZUTGLPVP3NSXFSEA2YXFELO',
+			('74657374333231', 1),
+			None
+		)] == transactions
 
 # endregion

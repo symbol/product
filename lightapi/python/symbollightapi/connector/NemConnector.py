@@ -1,4 +1,5 @@
 import asyncio
+import random
 from binascii import hexlify
 from collections import namedtuple
 
@@ -234,6 +235,40 @@ class NemConnector(BasicConnector):
 		return await self.get(url_path, None)
 
 	# endregion
+
+	# region POST (unconfirmed_transactions)
+
+	async def unconfirmed_transactions(self):
+		"""Gets unconfirmed transactions, excluding cosignature transactions."""
+
+		unconfirmed_transactions = await self._unconfirmed_transactions()
+
+		return [
+			self._map_to_transaction({
+				'tx': tx,
+				'hash': None,
+				'innerHash': None
+			}, 0) for tx in unconfirmed_transactions['data'] if tx['type'] != TransactionType.MULTISIG_COSIGNATURE.value
+		]
+
+	async def _unconfirmed_transactions(self):
+		"""Gets unconfirmed transactions."""
+
+		characters = '0123456789abcdef'
+		random_hex = ''.join(random.choices(characters, k=64))
+
+		return await self.post(
+			'transactions/unconfirmed',
+			{
+				'entity': {
+					'hashShortIds': []
+				},
+				'challenge': {
+					'data': random_hex
+				}
+			},
+			property_name='entity'
+		)
 
 	# region GET (incoming_transactions)
 
