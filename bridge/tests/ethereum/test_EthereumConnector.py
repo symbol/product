@@ -4,7 +4,7 @@ import pytest
 from hexbytes import HexBytes
 from symbolchain.CryptoTypes import Hash256
 from symbollightapi.model.Constants import TimeoutSettings, TransactionStatus
-from symbollightapi.model.Exceptions import NodeException, NodeTransientException
+from symbollightapi.model.Exceptions import InsufficientBalanceException, NodeException, NodeTransientException
 
 from bridge.ethereum.EthereumAdapters import EthereumAddress
 from bridge.ethereum.EthereumConnector import EthereumConnector
@@ -375,6 +375,18 @@ async def test_cannot_announce_transaction_with_error(server):  # pylint: disabl
 
 	# Act + Assert:
 	with pytest.raises(NodeException, match='eth_sendRawTransaction RPC call failed: INTERNAL_ERROR: IntrinsicGas'):
+		await connector.announce_transaction(transaction)
+
+
+async def test_cannot_announce_transaction_with_error_insufficient_balance(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	server.mock.simulate_announce_error = 'execution reverted: ERC20: transfer amount exceeds balance'
+
+	connector = EthereumConnector(server.make_url(''))
+	transaction = {'signature': SignedTransaction(HexBytes(EXAMPLE_TRANSACTION_SIGNING_PAYLOAD_HEX))}
+
+	# Act + Assert:
+	with pytest.raises(InsufficientBalanceException, match=f'eth_sendRawTransaction RPC call failed: {server.mock.simulate_announce_error}'):
 		await connector.announce_transaction(transaction)
 
 

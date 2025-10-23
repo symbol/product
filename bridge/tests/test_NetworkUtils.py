@@ -6,7 +6,7 @@ from symbolchain import sc
 from symbolchain.CryptoTypes import Hash256, PrivateKey, PublicKey
 from symbolchain.facade.SymbolFacade import SymbolFacade
 from symbolchain.symbol.Network import Address, Network, NetworkTimestamp
-from symbollightapi.model.Exceptions import HttpException, NodeException, NodeTransientException
+from symbollightapi.model.Exceptions import HttpException, InsufficientBalanceException, NodeException, NodeTransientException
 
 from bridge.models.BridgeConfiguration import NetworkConfiguration
 from bridge.NetworkUtils import (
@@ -531,6 +531,7 @@ def test_is_transient_error_returns_false_for_non_transient_http_errors():
 
 
 def test_is_transient_error_returns_true_for_non_http_transient_errors():
+	assert is_transient_error(InsufficientBalanceException('some error'))
 	assert is_transient_error(NodeTransientException('some error'))
 
 
