@@ -11,7 +11,7 @@ from symbolchain.nem.Network import Address, NetworkTimestamp
 from ..model.Block import Block
 from ..model.Constants import DEFAULT_ASYNC_LIMITER_ARGUMENTS, TransactionStatus
 from ..model.Endpoint import Endpoint
-from ..model.Exceptions import NodeException
+from ..model.Exceptions import InsufficientBalanceException, NodeException
 from ..model.NodeInfo import NodeInfo
 from ..model.Transaction import TransactionFactory, TransactionHandler
 from .BasicConnector import BasicConnector
@@ -275,7 +275,11 @@ class NemConnector(BasicConnector):
 
 		response = await self._announce_transaction(transaction_payload, 'transaction/announce')
 		if 'SUCCESS' != response['message']:
-			raise NodeException(f'announce transaction failed {response}')
+			error_message = f'announce transaction failed with error {response["message"]}'
+			if 'FAILURE_INSUFFICIENT_BALANCE' == response['message']:
+				raise InsufficientBalanceException(error_message)
+
+			raise NodeException(error_message)
 
 	# endregion
 
