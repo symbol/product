@@ -10,6 +10,7 @@ const recipientAddress1 = '0xc5d9cf0ee687e357aea5d26592f8bc9fe32abaa2';
 const recipientAddress2 = '0xe61c8ba605b4a808dd8138c990e941feae532307';
 const erc20ContractAddress = '0x6fe1f90116fd1225c4b713a6efb3f87dce77b445';
 const chainId = 3151908;
+const bridgePayload = '982C69A051A72BFBE31AEDA7250AC6C747B7570B3E9C00B6';
 const baseFee = {
 	gasLimit: 21000,
 	maxFeePerGas: '3',
@@ -46,6 +47,24 @@ export const walletTransactions = [
 		],
 		nonce: 1,
 		fee: baseFee
+	},
+	{
+		type: 3,
+		signerPublicKey,
+		signerAddress,
+		recipientAddress: recipientAddress2,
+		tokens: [
+			{
+				id: erc20ContractAddress,
+				amount: '0.02',
+				divisibility: 6
+			}
+		],
+		message: {
+			payload: bridgePayload
+		},
+		nonce: 2,
+		fee: baseFee
 	}
 ];
 
@@ -73,6 +92,20 @@ export const ethereumTransactions = [
 		maxPriorityFeePerGas: 1000000000000000000n,
 		chainId,
 		nonce: 1
+	},
+	{
+		from: signerAddress,
+		to: erc20ContractAddress,
+		value: 0n,
+		data: erc20Interface.encodeFunctionData('transfer', [
+			recipientAddress2,
+			20000n
+		]) + bridgePayload,
+		gasLimit: 21000n,
+		maxFeePerGas: 3000000000000000000n,
+		maxPriorityFeePerGas: 1000000000000000000n,
+		chainId,
+		nonce: 2
 	}
 ];
 
@@ -84,6 +117,10 @@ export const signedTransactions = [
 	{
 		'dto': '0x02f8ba8330182401880de0b6b3a76400008829a2241af62c0000825208946fe1f90116fd1225c4b713a6efb3f87dce77b44580b844a9059cbb000000000000000000000000e61c8ba605b4a808dd8138c990e941feae5323070000000000000000000000000000000000000000000000000000000000989680c001a06d702fcdc50ae678e0e9017f1391fd3858d27c60d1b5bc45955d24c678f81989a05586df7919671215ac17c05b75f6a937fae826c5dbcc2d46b6d376d5427c667e',
 		'hash': '0xd0c31e56e3e73cf88aab09a5ddff5f4536f7b907e81d7ad5a4f72a717dbc65ba'
+	},
+	{
+		'dto': '0x02f8d28330182402880de0b6b3a76400008829a2241af62c0000825208946fe1f90116fd1225c4b713a6efb3f87dce77b44580b85ca9059cbb000000000000000000000000e61c8ba605b4a808dd8138c990e941feae5323070000000000000000000000000000000000000000000000000000000000004e20982c69a051a72bfbe31aeda7250ac6c747b7570b3e9c00b6c080a026fbcde77be5a1145c84b37a311aa5be7026f8003f98c0744ff70ae6da3c3e25a025b308a60d8f22522e91b651af687ff5ed6405222673565148ef20c1eed42a54',
+		'hash': '0x4d41bb7b5c27dd5b9df9dfd9b8a5fb2f54f7ba5bff8c118c5a30b4f89f65e2bb'
 	}
 ];
 
