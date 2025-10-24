@@ -4,6 +4,13 @@ import { ApiError } from 'wallet-common-core';
 /** @typedef {import('../types/Block').Block} Block */
 /** @typedef {import('../types/Network').NetworkProperties} NetworkProperties */
 
+
+const blockFromDto = blockDto => ({
+	height: blockDto.number.toString(),
+	hash: blockDto.hash,
+	timestamp: Number(blockDto.timestamp) * 1000
+});
+
 export class BlockService {
 	constructor() {}
 
@@ -22,11 +29,7 @@ export class BlockService {
 		if (!block)
 			throw new ApiError(`Block not found at height ${blockHeight}`);
 
-		return {
-			height: block.number.toString(),
-			hash: block.hash,
-			timestamp: Number(block.timestamp) * 1000
-		};
+		return blockFromDto(block);
 	};
 
 	/**
@@ -44,11 +47,7 @@ export class BlockService {
 			if (!block) 
 				return null;
 
-			return {
-				height: block.number.toString(),
-				hash: block.hash,
-				timestamp: Number(block.timestamp) * 1000
-			};
+			return blockFromDto(block);
 		}));
 
 		const blockMap = {};
