@@ -1,5 +1,4 @@
 export * from './account';
-export * from './convert';
 export * from './fee';
 export * from './jrpc';
 export * from './network';

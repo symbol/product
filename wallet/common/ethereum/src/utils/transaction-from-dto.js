@@ -1,8 +1,7 @@
 import { to0x } from './account';
-import { hexToBase32 } from './convert';
 import { createFee } from './fee';
 import { TransactionType } from '../constants';
-import { absoluteToRelativeAmount } from 'wallet-common-core';
+import { absoluteToRelativeAmount, hexToBase32 } from 'wallet-common-core';
 
 const ERC_20_TRANSFER_SIGNATURE = '0xa9059cbb';
 

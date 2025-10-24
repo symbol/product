@@ -1,7 +1,7 @@
 import { BridgeHelper } from '../../src/bridge/BridgeHelper';
 import { TransactionType } from '../../src/constants';
-import { base32ToHex } from '../../src/utils';
 import { jest } from '@jest/globals';
+import { base32ToHex } from 'wallet-common-core';
 
 // Reusable test data
 const networkProperties = {

@@ -7,7 +7,7 @@
 /** @typedef {import('../types/Transaction').TransactionFee} TransactionFee */
 
 import { TransactionType } from '../constants';
-import { base32ToHex } from '../utils';
+import { base32ToHex } from 'wallet-common-core';
 
 export class BridgeHelper {
 	/** @type {import('../api/TokenService').TokenService} */

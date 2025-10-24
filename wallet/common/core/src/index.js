@@ -11,7 +11,13 @@ import { AddressBookModule } from './lib/modules/AddressBookModule';
 import { LocalizationModule } from './lib/modules/LocalizationModule';
 import { MarketModule } from './lib/modules/MarketModule';
 // Utils
-import { absoluteToRelativeAmount, relativeToAbsoluteAmount, safeOperationWithRelativeAmounts } from './utils/convert';
+import { 
+	absoluteToRelativeAmount, 
+	base32ToHex, 
+	hexToBase32, 
+	relativeToAbsoluteAmount, 
+	safeOperationWithRelativeAmounts 
+} from './utils/convert';
 import { createNetworkMap } from './utils/network';
 // Constants
 import * as constants from './constants';
@@ -40,6 +46,8 @@ export {
 	absoluteToRelativeAmount,
 	relativeToAbsoluteAmount,
 	safeOperationWithRelativeAmounts,
+	base32ToHex, 
+	hexToBase32,
 	createNetworkMap,
 	constants,
 	AddressBookModule,
