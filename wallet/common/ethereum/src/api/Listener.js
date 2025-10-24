@@ -5,6 +5,13 @@ import { ApiError } from 'wallet-common-core';
 
 /** @typedef {import('../types/Network').NetworkProperties} NetworkProperties */
 
+const isAccountRelatedTransaction = (transaction, accountAddress) => {
+	const from = transaction.from?.toLowerCase();
+	const to = transaction.to?.toLowerCase();
+
+	return from === accountAddress || to === accountAddress;
+};
+
 export class Listener {
 	/**
 	 * Constructor Listener
@@ -64,8 +71,6 @@ export class Listener {
 		this.jrpcProvider = null;
 	}
 
-	subscribeTo() { }
-
 	/**
 	 * Subscribe to new transactions.
 	 * @param {'confirmed' | 'unconfirmed' | 'partial'} group - The transaction group.
@@ -85,10 +90,7 @@ export class Listener {
 			if (!transaction)
 				return;
 
-			const from = transaction.from?.toLowerCase();
-			const to = transaction.to?.toLowerCase();
-
-			if (from === this.accountAddress || to === this.accountAddress)
+			if (isAccountRelatedTransaction(transaction, this.accountAddress))
 				callback({ hash: transaction.hash });
 		});
 	}
@@ -101,16 +103,11 @@ export class Listener {
 				return;
 
 			block.prefetchedTransactions.forEach(transaction => {
-				const from = transaction.from?.toLowerCase();
-				const to = transaction.to?.toLowerCase();
-
-				if (from === this.accountAddress || to === this.accountAddress)
+				if (isAccountRelatedTransaction(transaction, this.accountAddress))
 					callback({ hash: transaction.hash });
 			});
 		});
 	}
-
-	listenRemovedTransactions() { }
 
 	/**
 	 * Subscribe to new blocks.
@@ -121,10 +118,4 @@ export class Listener {
 			callback({ height: blockHeight });
 		});
 	}
-
-	listenFinalizedBlock() { }
-
-	listenTransactionCosignature() { }
-
-	listenTransactionError() { }
 }
