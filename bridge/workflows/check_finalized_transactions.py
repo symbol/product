@@ -58,7 +58,7 @@ async def _check_finalized_transactions(database, payout_network, request_networ
 	await asyncio.gather(*sent_request_tasks)
 
 
-async def main_impl(execution_context, databases, native_facade, wrapped_facade, _price_oracle):
+async def main_impl(execution_context, databases, native_facade, wrapped_facade, _external_services):
 	if execution_context.is_unwrap_mode:
 		await _check_finalized_transactions(databases.unwrap_request, native_facade, wrapped_facade)
 	else:

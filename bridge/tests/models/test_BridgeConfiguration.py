@@ -30,6 +30,11 @@ class BridgeConfigurationTest(unittest.TestCase):
 		'accessToken': 'D864696403D4DED92F2C82C3BEE33C41E90304B521F86E6CD37A7C808C9BDF80'
 	}
 
+	VALID_VAULT_CONFIGURATION = {
+		'url': 'https:/vault.foo/abc',
+		'accessToken': '174C6318586A7069A9F8762BEBC13416C193BEE42459FD5041985814E40BE3C5'
+	}
+
 	VALID_NETWORK_CONFIGURATION = {
 		'blockchain': 'foo',
 		'network': 'bar',
@@ -170,6 +175,7 @@ class BridgeConfigurationTest(unittest.TestCase):
 				self._write_section(outfile, '[machine]', self.VALID_MACHINE_CONFIGURATION)
 				self._write_section(outfile, '\n[global]', self.VALID_GLOBAL_CONFIGURATION)
 				self._write_section(outfile, '\n[price_oracle]', self.VALID_PRICE_ORACLE_CONFIGURATION)
+				self._write_section(outfile, '\n[vault]', self.VALID_VAULT_CONFIGURATION)
 				self._write_section(outfile, '\n[native_network]', self.VALID_NETWORK_CONFIGURATION)
 				self._write_section(outfile, '\n[wrapped_network]', self.VALID_NETWORK_CONFIGURATION_2)
 
@@ -187,6 +193,9 @@ class BridgeConfigurationTest(unittest.TestCase):
 			self.assertEqual('https:/oracle.foo/price/v3', config.price_oracle.url)
 			self.assertEqual('D864696403D4DED92F2C82C3BEE33C41E90304B521F86E6CD37A7C808C9BDF80', config.price_oracle.access_token)
 
+			self.assertEqual('https:/vault.foo/abc', config.vault.url)
+			self.assertEqual('174C6318586A7069A9F8762BEBC13416C193BEE42459FD5041985814E40BE3C5', config.vault.access_token)
+
 			self.assertEqual('foo', config.native_network.blockchain)
 			self.assertEqual('bar', config.native_network.network)
 			self.assertEqual('http://foo.bar.net:1234', config.native_network.endpoint)
@@ -202,7 +211,7 @@ class BridgeConfigurationTest(unittest.TestCase):
 
 	def test_cannot_parse_bridge_configuration_incomplete(self):
 		# Arrange:
-		for section_id in range(5):
+		for section_id in range(6):
 			with tempfile.TemporaryDirectory() as temp_directory:
 				configuration_file = Path(temp_directory) / 'foo.properties'
 
@@ -217,9 +226,12 @@ class BridgeConfigurationTest(unittest.TestCase):
 						self._write_section(outfile, '\n[price_oracle]', self.VALID_PRICE_ORACLE_CONFIGURATION)
 
 					if 3 != section_id:
-						self._write_section(outfile, '\n[native_network]', self.VALID_NETWORK_CONFIGURATION)
+						self._write_section(outfile, '\n[vault]', self.VALID_PRICE_ORACLE_CONFIGURATION)
 
 					if 4 != section_id:
+						self._write_section(outfile, '\n[native_network]', self.VALID_NETWORK_CONFIGURATION)
+
+					if 5 != section_id:
 						self._write_section(outfile, '\n[wrapped_network]', self.VALID_NETWORK_CONFIGURATION_2)
 
 				# Act + Assert:

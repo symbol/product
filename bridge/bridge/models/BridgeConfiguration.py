@@ -7,7 +7,9 @@ GlobalConfiguration = namedtuple('GlobalConfiguration', ['mode'])
 NetworkConfiguration = namedtuple('NetworkConfiguration', [
 	'blockchain', 'network', 'endpoint', 'bridge_address', 'mosaic_id', 'extensions'
 ])
-BridgeConfiguration = namedtuple('BridgeConfiguration', ['machine', 'global_', 'price_oracle', 'native_network', 'wrapped_network'])
+BridgeConfiguration = namedtuple('BridgeConfiguration', [
+	'machine', 'global_', 'price_oracle', 'vault', 'native_network', 'wrapped_network'
+])
 
 
 def _camel_case_to_snake_case(value):
@@ -73,5 +75,6 @@ def parse_bridge_configuration(filename):
 		parse_machine_configuration(parser['machine']),
 		parse_global_configuration(parser['global']),
 		parse_price_oracle_configuration(parser['price_oracle']),
+		parse_price_oracle_configuration(parser['vault']),
 		parse_network_configuration(parser['native_network']),
 		parse_network_configuration(parser['wrapped_network']))

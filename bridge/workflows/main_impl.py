@@ -1,6 +1,7 @@
 import argparse
 import logging
 import sys
+from collections import namedtuple
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from traceback import format_exception
@@ -12,7 +13,10 @@ from bridge.models.BridgeConfiguration import parse_bridge_configuration
 from bridge.models.Constants import ExecutionContext
 from bridge.NetworkFacadeLoader import load_network_facade
 from bridge.price_oracle.PriceOracleLoader import load_price_oracle
+from bridge.VaultConnector import VaultConnector
 from bridge.WorkflowUtils import validate_global_configuration
+
+BridgeExternalServices = namedtuple('BridgeExternalServices', ['price_oracle', 'vault_connector'])
 
 
 def parse_args(description):
@@ -65,6 +69,8 @@ async def main_bootstrapper(program_description, main_impl):
 	validate_global_configuration(config.global_, wrapped_facade)
 
 	price_oracle = load_price_oracle(config.price_oracle)
+	vault_connector = VaultConnector(config.vault.url, config.vault.access_token)
+	external_services = BridgeExternalServices(price_oracle, vault_connector)
 
 	lock_filepath = Path(config.machine.database_directory) / 'bridge.db.lock'
 	try:
@@ -75,6 +81,6 @@ async def main_bootstrapper(program_description, main_impl):
 				execution_context = ExecutionContext(args.unwrap, config.global_.mode)
 				logger.info('         strategy mode: %s', execution_context.strategy_mode)
 				logger.info('running in unwrap mode? %s', execution_context.is_unwrap_mode)
-				await main_impl(execution_context, databases, native_facade, wrapped_facade, price_oracle)
+				await main_impl(execution_context, databases, native_facade, wrapped_facade, external_services)
 	except Timeout:
 		logger.fatal('could not acquire exclusive lock to %s', lock_filepath)
