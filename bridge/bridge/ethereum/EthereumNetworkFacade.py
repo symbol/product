@@ -138,20 +138,11 @@ class EthereumNetworkFacade:  # pylint: disable=too-many-instance-attributes
 		gas_estimate = Decimal(await connector.estimate_gas(transaction))
 		gas_estimate = self._apply_multiple(gas_estimate, 'gas_multiple')
 
-		gas_price = await connector.gas_price()
-		gas_price = self._apply_multiple(gas_price, 'gas_price_multiple')
-
 		fee_information = await connector.estimate_fees_from_history(int(self.config.extensions.get('fee_history_blocks_count', '10')))
 		base_fee = self._apply_multiple(fee_information.base_fee, 'gas_price_multiple')
 		priority_fee = self._apply_multiple(fee_information.priority_fee, 'priority_fee_multiple')
 
 		max_fee_per_gas = base_fee + priority_fee
-		if gas_price > max_fee_per_gas:
-			minimum_tip = gas_price - base_fee
-			if minimum_tip > priority_fee:
-				max_fee_per_gas += minimum_tip - priority_fee
-				priority_fee = minimum_tip
-
 		return (gas_estimate, max_fee_per_gas, priority_fee)
 
 	async def create_transfer_transaction(self, _timestamp, balance_transfer, mosaic_id):

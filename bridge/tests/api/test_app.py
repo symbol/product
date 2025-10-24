@@ -1058,9 +1058,12 @@ async def test_can_prepare_wrap_n2n(client_n2n):  # pylint: disable=redefined-ou
 		assert {
 			'grossAmount': '5457022222222222',  # floor(1234000000 * feeMultiplier)
 			'conversionFee': '16371066666666.6660',  # grossAmount * config(percentageConversionFee)[0.003]
-			'transactionFee': '187713117026904.0000',  # gas[19432] * maxFeePerGas[9659999847]
-			'totalFee': '204084183693571',  # ceil(conversionFee + transactionFee)
-			'netAmount': '5252938038528651',  # grossAmount - totalFee
+			'transactionFee': '70699842712352.0000',  # \=>
+			# gas[19432] * (ceil(baseFee[2486633695] * 1.2) + ceil(priorityFee[623200001] * 1.05))
+			# 19432 * (ceil(2983960434) + ceil(654360001.05))
+			# 19432 * (2983960434 + 654360002)
+			'totalFee': '87070909379019',  # ceil(conversionFee + transactionFee)
+			'netAmount': '5369951312843203',  # grossAmount - totalFee
 
 			'diagnostics': {
 				'height': '4444'
