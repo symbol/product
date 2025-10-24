@@ -18,14 +18,13 @@ class SendCounts:
 		self.skipped = 0
 
 
-async def _send_payout(network, request, conversion_function, fee_multiplier):
+async def _send_payout(sender, network, request, conversion_function, fee_multiplier):
 	logger = logging.getLogger(__name__)
 
 	prepare_send_result = prepare_send(network, request, conversion_function, fee_multiplier)
 	if prepare_send_result.error_message:
 		return TrySendResult(True, None, None, None, prepare_send_result.error_message)
 
-	sender = TransactionSender(network, prepare_send_result.fee_multiplier)
 	transfer_amount = prepare_send_result.transfer_amount
 	mosaic_id = network.extract_mosaic_id()
 
@@ -37,12 +36,15 @@ async def _send_payout(network, request, conversion_function, fee_multiplier):
 		request.amount)
 	logger.info('  redeeming 1:%.6f', transfer_amount / request.amount)
 
-	await sender.init()
-	return await sender.try_send_transfer(request.destination_address, transfer_amount, request.transaction_hash.bytes)
+	return await sender.try_send_transfer(
+		request.destination_address,
+		prepare_send_result.fee_multiplier,
+		transfer_amount,
+		request.transaction_hash.bytes)
 
 
-async def send_payouts(conversion_rate_calculator_factory, is_unwrap_mode, database, network, fee_multiplier=None):
-	# pylint: disable=too-many-locals
+async def send_payouts(conversion_rate_calculator_factory, is_unwrap_mode, vault_connector, database, network, fee_multiplier=None):
+	# pylint: disable=too-many-locals, too-many-arguments, too-many-positional-arguments
 	logger = logging.getLogger(__name__)
 
 	requests_to_send = database.requests_by_status(WrapRequestStatus.UNPROCESSED)
@@ -58,6 +60,9 @@ async def send_payouts(conversion_rate_calculator_factory, is_unwrap_mode, datab
 		database.mark_payout_failed(request, error_message)
 		counts.errored += 1
 
+	sender = TransactionSender(network)
+	await sender.init(vault_connector)
+
 	for request in requests_to_send:
 		conversion_rate_calculator = conversion_rate_calculator_factory.try_create_calculator(request.transaction_height)
 		if not conversion_rate_calculator:
@@ -67,7 +72,7 @@ async def send_payouts(conversion_rate_calculator_factory, is_unwrap_mode, datab
 		logger.info('processing payout: %s:%s', request.transaction_hash, request.transaction_subindex)
 		conversion_function = conversion_rate_calculator.to_conversion_function(is_unwrap_mode)
 		try:
-			send_result = await _send_payout(network, request, conversion_function, fee_multiplier)
+			send_result = await _send_payout(sender, network, request, conversion_function, fee_multiplier)
 		except NodeException as ex:
 			if is_transient_error(ex):
 				mark_skipped(request, f'transient failure {ex}')
@@ -95,10 +100,10 @@ async def send_payouts(conversion_rate_calculator_factory, is_unwrap_mode, datab
 	])
 
 
-async def main_impl(execution_context, databases, native_facade, wrapped_facade, price_oracle):
+async def main_impl(execution_context, databases, native_facade, wrapped_facade, external_services):
 	logger = logging.getLogger(__name__)
 
-	fee_multiplier = await price_oracle.conversion_rate(wrapped_facade.config.blockchain, native_facade.config.blockchain)
+	fee_multiplier = await external_services.price_oracle.conversion_rate(wrapped_facade.config.blockchain, native_facade.config.blockchain)
 	fee_multiplier *= Decimal(10 ** native_facade.native_token_precision) / Decimal(10 ** wrapped_facade.native_token_precision)
 
 	conversion_rate_calculator_factory = create_conversion_rate_calculator_factory(
@@ -108,8 +113,9 @@ async def main_impl(execution_context, databases, native_facade, wrapped_facade,
 		wrapped_facade,
 		fee_multiplier)
 
+	send_params_shared_params = [conversion_rate_calculator_factory, execution_context.is_unwrap_mode, external_services.vault_connector]
 	if execution_context.is_unwrap_mode:
-		await send_payouts(conversion_rate_calculator_factory, execution_context.is_unwrap_mode, databases.unwrap_request, native_facade)
+		await send_payouts(*send_params_shared_params, databases.unwrap_request, native_facade)
 	else:
 		logger.info(
 			'calculated fee_multiplier as %.8f (%s/%s)',
@@ -121,7 +127,7 @@ async def main_impl(execution_context, databases, native_facade, wrapped_facade,
 		if not is_native_to_native_conversion(wrapped_facade):
 			send_payouts_params.append(fee_multiplier)
 
-		await send_payouts(conversion_rate_calculator_factory, execution_context.is_unwrap_mode, *send_payouts_params)
+		await send_payouts(*send_params_shared_params, *send_payouts_params)
 
 
 if '__main__' == __name__:

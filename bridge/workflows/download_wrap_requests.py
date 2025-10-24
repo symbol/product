@@ -67,7 +67,7 @@ async def _download_all(database, network, is_valid_address):
 	await _download_block_timestamps(database, connector, heights)
 
 
-async def main_impl(execution_context, databases, native_facade, wrapped_facade, _price_oracle):
+async def main_impl(execution_context, databases, native_facade, wrapped_facade, _external_services):
 	if execution_context.is_unwrap_mode:
 		await _download_all(databases.unwrap_request, wrapped_facade, native_facade.is_valid_address)
 	else:
