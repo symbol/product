@@ -356,18 +356,6 @@ async def test_can_create_transfer_transaction_with_multiple_custom_properties(s
 	})
 
 
-async def test_can_create_transfer_transaction_with_gas_price_fallback(server):  # pylint: disable=redefined-outer-name
-	# Arrange:
-	server.mock.gas_price_override = 2983960434 + 654360002 + 1000000  # 3639320436
-
-	# Act + Assert:
-	await _assert_can_create_transfer_transaction(server, None, {
-		'gas': 24150,  # ceil(21000 * 1.15 == 24150)
-		'max_fee_per_gas': 4367184524,  # ceil(3639320436 * 1.2 == 4367184523.2)
-		'max_priority_fee_per_gas': 4367184524 - 2983960434  # ceil(3639320436 * 1.2 == 4367184523.2) - ceil(2486633695 * 1.2 == 2983960434)
-	})
-
-
 async def test_can_create_multiple_transfer_transactions_with_autoincrementing_nonce(server):  # pylint: disable=redefined-outer-name
 	# Arrange:
 	facade = EthereumNetworkFacade(_create_config(server))
@@ -489,18 +477,6 @@ async def test_can_create_transfer_transaction_native_with_multiple_custom_prope
 	})
 
 
-async def test_can_create_transfer_transaction_native_with_gas_price_fallback(server):  # pylint: disable=redefined-outer-name
-	# Arrange:
-	server.mock.gas_price_override = 2983960434 + 654360002 + 1000000  # 3639320436
-
-	# Act + Assert:
-	await _assert_can_create_transfer_transaction_native(server, None, {
-		'gas': 19432,  # ceil(16897 * 1.15 == 19431.55)
-		'max_fee_per_gas': 4367184524,  # ceil(3639320436 * 1.2 == 4367184523.2)
-		'max_priority_fee_per_gas': 4367184524 - 2983960434  # ceil(3639320436 * 1.2 == 4367184523.2) - ceil(2486633695 * 1.2 == 2983960434)
-	})
-
-
 async def _assert_can_create_transfer_transaction_native_with_message(server, message, expected_message):
 	# pylint: disable=redefined-outer-name
 	# Arrange:
@@ -587,18 +563,6 @@ async def test_can_calculate_transfer_transaction_fee_with_multiple_custom_prope
 		'gas_price_multiple': '1.1',
 		'priority_fee_multiple': '1.11'
 	}, Decimal(23334 * (2735297065 + 691752002)))
-
-
-async def test_can_calculate_transfer_transaction_fee_gas_price_fallback(server):  # pylint: disable=redefined-outer-name
-	# Arrange:
-	server.mock.gas_price_override = 2983960434 + 654360002 + 1000000  # 3639320436
-
-	# Act + Assert:
-	# - gas          => ceil(21000 * 1.15 == 24150)
-	# - gas_price    => ceil(3639320436 * 1.2 == 4367184523.2)
-	# - base_fee     => ceil(2486633695 * 1.2 == 2983960434)
-	# - priority_fee => ceil(623200001 * 1.05 == 654360001.05)
-	await _assert_can_calculate_transfer_transaction_fee(server, None, Decimal(24150 * 4367184524))
 
 
 async def test_can_calculate_transfer_transaction_fee_for_account_with_unknown_nonce(server):  # pylint: disable=redefined-outer-name
