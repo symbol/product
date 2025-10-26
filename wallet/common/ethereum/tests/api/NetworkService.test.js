@@ -81,7 +81,7 @@ describe('api/NetworkService', () => {
 			];
 			const expectedResult = {
 				nodeUrl,
-				wsUrl: 'ws://localhost:8546/ws',
+				wsUrl: 'ws://localhost:8546',
 				networkIdentifier: 'mainnet',
 				chainId: 1,
 				chainHeight: 7654321,

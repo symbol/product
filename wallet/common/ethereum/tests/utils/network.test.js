@@ -57,35 +57,35 @@ describe('utils/network', () => {
 			const nodeUrlsAndExpectedWsUrls = [
 				{
 					nodeUrl: 'http://node.url.com:8545',
-					expectedWsUrl: 'ws://node.url.com:8546/ws'
+					expectedWsUrl: 'ws://node.url.com:8546'
 				},
 				{
 					nodeUrl: 'http://node.url.com:8546',
-					expectedWsUrl: 'ws://node.url.com:8546/ws'
+					expectedWsUrl: 'ws://node.url.com:8546'
 				},
 				{
 					nodeUrl: 'https://node.url.com:8545',
-					expectedWsUrl: 'wss://node.url.com:8546/ws'
+					expectedWsUrl: 'wss://node.url.com:8546'
 				},
 				{
 					nodeUrl: 'https://node.url.com:8546',
-					expectedWsUrl: 'wss://node.url.com:8546/ws'
+					expectedWsUrl: 'wss://node.url.com:8546'
 				},
 				{
 					nodeUrl: 'http://node.url.com',
-					expectedWsUrl: 'ws://node.url.com:8546/ws'
+					expectedWsUrl: 'ws://node.url.com:8546'
 				},
 				{
 					nodeUrl: 'https://node.url.com',
-					expectedWsUrl: 'wss://node.url.com:8546/ws'
+					expectedWsUrl: 'wss://node.url.com:8546'
 				},
 				{
 					nodeUrl: 'http://node.url.com:80',
-					expectedWsUrl: 'ws://node.url.com:8546/ws'
+					expectedWsUrl: 'ws://node.url.com:8546'
 				},
 				{
 					nodeUrl: 'https://httphttps:443',
-					expectedWsUrl: 'wss://httphttps:8546/ws'
+					expectedWsUrl: 'wss://httphttps:8546'
 				}
 			];
 

@@ -46,7 +46,7 @@ export const createWebSocketUrl = (nodeUrl, port) => {
 	const url = new URL(nodeUrl);
 	url.protocol = url.protocol.replace('http', 'ws');
 	url.port = port;
-	url.pathname = '/ws';
+	url.pathname = '/';
 
-	return url.toString();
+	return url.toString().replace(/\/$/, '');
 };
