@@ -2,7 +2,11 @@ import datetime
 from collections import namedtuple
 from decimal import Decimal
 
+from symbollightapi.model.Constants import TimeoutSettings, TransactionStatus
+from symbollightapi.model.Exceptions import NodeException
+
 from .ConversionRateCalculatorFactory import ConversionRateCalculator, ConversionRateCalculatorFactory
+from .NetworkUtils import is_transient_error
 
 PrepareSendResult = namedtuple('PrepareSendResult', ['error_message', 'fee_multiplier', 'transfer_amount'])
 
@@ -134,7 +138,7 @@ def prepare_send(network, request, conversion_function, fee_multiplier):
 # endregion
 
 
-# region check_expiry
+# region check_expiry / check_pending_sent_request
 
 def check_expiry(config_extensions, database, request):
 	"""Determines if the specified request is expired (timed out)."""
@@ -147,5 +151,31 @@ def check_expiry(config_extensions, database, request):
 			return f'request timestamp {request_datetime} is more than {request_lifetime_hours} in the past'
 
 	return None
+
+
+async def check_pending_sent_request(request, database, connector, config_extensions):
+	"""Checks a pending sent request and updates database appropriately."""
+
+	payout_transaction_hash = database.payout_transaction_hash_for_request(request)
+	try:
+		is_unconfirmed = await connector.try_wait_for_announced_transaction(
+			payout_transaction_hash,
+			TransactionStatus.UNCONFIRMED,
+			TimeoutSettings(1, 0))
+	except NodeException as ex:
+		if not is_transient_error(ex):
+			database.mark_payout_failed(request, str(ex))
+
+		return
+
+	if is_unconfirmed:
+		return
+
+	error_message = check_expiry(config_extensions, database, request)
+	if error_message:
+		database.mark_payout_failed(request, error_message)
+	else:
+		# original request timestamp (derived from block timestamp) is used, so this will not repeat indefinitely
+		database.mark_payout_failed_transient(request, 'node dropped payout transaction')
 
 # endregion
