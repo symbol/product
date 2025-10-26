@@ -9,17 +9,6 @@ import { absoluteToRelativeAmount, safeOperationWithRelativeAmounts } from 'wall
 /** @typedef {import('../types/Token').TokenInfo} TokenInfo */
 
 /**
- * Fixed fallback priority fee values (EIP-1559 tip) in wei.
- * Chosen as 1, 2, 3 gwei — a safe baseline for low network load.
- * These are used only if `eth_feeHistory` data is unavailable.
- */
-const FALLBACK_PRIORITY_FEES_WEI = {
-	slow: 1_000_000_000n,  // 1 gwei
-	medium: 2_000_000_000n, // 2 gwei
-	fast: 3_000_000_000n    // 3 gwei
-};
-
-/**
  * Base fee multipliers for EIP-1559 headroom.
  * Covers several blocks of potential baseFee increases.
  */
@@ -30,13 +19,13 @@ const BASE_FEE_MULTIPLIERS = {
 };
 
 const parseHexToBigInt = hexString => {
-	if (!hexString) 
-		return 0n;
+	if (typeof hexString !== 'string') 
+		return null;
 
 	try {
 		return ethers.getBigInt(hexString);
 	} catch {
-		return 0n;
+		return null;
 	}
 };
 
@@ -55,27 +44,33 @@ const medianBigInt = values => {
 /**
  * Creates gas fee tiers (slow/medium/fast) using EIP-1559 rules.
  * @param {number} currencyDivisibility - e.g. 18 for ETH
- * @param {{ baseFeePerGas?: string[], reward?: string[][] }} feeHistory - from eth_feeHistory
+ * @param {{ baseFeePerGas: string[], reward: string[][] }} feeHistory - from eth_feeHistory
  * @returns {TransactionFeeMultipliers} The transaction fee multipliers.
  */
 export const createTransactionFeeMultipliers = (currencyDivisibility, feeHistory) => {
-	const baseFees = Array.isArray(feeHistory?.baseFeePerGas) ? feeHistory.baseFeePerGas : [];
-	const rewards = Array.isArray(feeHistory?.reward) ? feeHistory.reward : [];
+	const baseFees = feeHistory.baseFeePerGas;
+	const rewards = feeHistory.reward;
 
 	const nextBaseFee = baseFees.length
 		? parseHexToBigInt(baseFees[baseFees.length - 1])
 		: 0n;
 
 	// Percentiles → [slow, medium, fast]
-	const slowSamples = rewards.map(p => parseHexToBigInt(p?.[0]));
-	const mediumSamples = rewards.map(p => parseHexToBigInt(p?.[1]));
-	const fastSamples = rewards.map(p => parseHexToBigInt(p?.[2]));
+	const slowSamples = rewards
+		.map(p => parseHexToBigInt(p?.[0]))
+		.filter(value => value !== null);
+	const mediumSamples = rewards
+		.map(p => parseHexToBigInt(p?.[1]))
+		.filter(value => value !== null);
+	const fastSamples = rewards
+		.map(p => parseHexToBigInt(p?.[2]))
+		.filter(value => value !== null);
 
 	// Pick median or fallback
 	const priorityFeesWei = {
-		slow: slowSamples.length ? medianBigInt(slowSamples) : FALLBACK_PRIORITY_FEES_WEI.slow,
-		medium: mediumSamples.length ? medianBigInt(mediumSamples) : FALLBACK_PRIORITY_FEES_WEI.medium,
-		fast: fastSamples.length ? medianBigInt(fastSamples) : FALLBACK_PRIORITY_FEES_WEI.fast
+		slow: medianBigInt(slowSamples),
+		medium: medianBigInt(mediumSamples),
+		fast: medianBigInt(fastSamples)
 	};
 
 	// Ensure non-decreasing order

@@ -36,24 +36,6 @@ describe('utils/fee', () => {
 			};
 			expect(result).toStrictEqual(expected);
 		});
-
-		it('falls back to default priority fees when fee history is missing', () => {
-			// Arrange:
-			const currencyDivisibility = 18;
-			const feeHistory = {}; // no baseFeePerGas or reward
-
-			// Act:
-			const result = createTransactionFeeMultipliers(currencyDivisibility, feeHistory);
-
-			// Assert:
-			// Fallback priority fees: 1g / 2g / 3g; base fee unknown -> 0
-			const expected = {
-				slow:   { maxPriorityFeePerGas: '0.000000001', maxFeePerGas: '0.000000001' },
-				medium: { maxPriorityFeePerGas: '0.000000002', maxFeePerGas: '0.000000002' },
-				fast:   { maxPriorityFeePerGas: '0.000000003', maxFeePerGas: '0.000000003' }
-			};
-			expect(result).toStrictEqual(expected);
-		});
 	});
 
 	describe('createFee', () => {

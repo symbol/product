@@ -1,5 +1,6 @@
 import { NETWORK_CURRENCY_DIVISIBILITY, NETWORK_CURRENCY_ID, NETWORK_CURRENCY_NAME } from '../constants';
 import { chainIdToNetworkIdentifier, createTransactionFeeMultipliers, createWebSocketUrl, makeEthereumJrpcCall } from '../utils';
+import { ApiError } from 'wallet-common-core';
 
 /** @typedef {import('../types/Network').NetworkInfo} NetworkInfo */
 /** @typedef {import('../types/Network').NetworkProperties} NetworkProperties */
@@ -40,6 +41,10 @@ export class NetworkService {
 			]),
 			makeEthereumJrpcCall(this.#makeRequest, nodeUrl, 'eth_blockNumber', [])
 		]);
+		
+		// Validate fee history. Expect node that supports EIP-1559.
+		if (!feeHistory || !Array.isArray(feeHistory.baseFeePerGas) || !Array.isArray(feeHistory.reward)) 
+			throw new ApiError('Fee history data is missing in the node response.');
 
 		const chainId = Number(BigInt(chainIdHex));
 

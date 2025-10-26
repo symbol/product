@@ -106,8 +106,62 @@ describe('api/NetworkService', () => {
 				mockMakeRequest,
 				() => service.fetchNetworkInfo(nodeUrl),
 				expectedCalls,
-				expectedResult
+				{ expectedResult }
 			);
+		});
+
+		const runMissingFeeTest = async feeHistoryResult => {
+			// Arrange:
+			const nodeUrl = 'http://localhost:8545';
+			const mockMakeRequest = jest.fn();
+			const expectedCalls = [
+				createJrpcExpectedCall({
+					nodeUrl,
+					method: 'eth_chainId',
+					params: [],
+					result: '0x1'
+				}),
+				createJrpcExpectedCall({
+					nodeUrl,
+					method: 'eth_feeHistory',
+					params: ['0xa', 'latest', [25, 50, 75]],
+					result: feeHistoryResult
+				}),
+				createJrpcExpectedCall({
+					nodeUrl,
+					method: 'eth_blockNumber',
+					params: [],
+					result: '0x74cbb1'
+				})
+			];
+			const service = new NetworkService({
+				config: { nodeList: {} },
+				makeRequest: mockMakeRequest
+			});
+
+			// Act & Assert:
+			await runApiTest(
+				mockMakeRequest,
+				() => service.fetchNetworkInfo(nodeUrl),
+				expectedCalls,
+				{ expectedErrorMessage: 'Fee history data is missing in the node response.' }
+			);
+		};
+
+		it('throws ApiError when node does not support eth_feeHistory', async () => {
+			// Arrange:
+			const feeHistoryResult = null;
+
+			// Act & Assert:
+			await runMissingFeeTest(feeHistoryResult);
+		});
+
+		it('throws ApiError when node returns incomplete eth_feeHistory', async () => {
+			// Arrange:
+			const feeHistoryResult = {};
+
+			// Act & Assert:
+			await runMissingFeeTest(feeHistoryResult);
 		});
 	});
 
@@ -135,7 +189,7 @@ describe('api/NetworkService', () => {
 				mockMakeRequest,
 				() => service.pingNode(nodeUrl),
 				expectedCalls,
-				expectedResult
+				{ expectedResult }
 			);
 		});
 	});
