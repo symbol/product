@@ -3,27 +3,12 @@ import logging
 
 from aiolimiter import AsyncLimiter
 from symbollightapi.connector.ConnectorExtensions import filter_finalized_transactions, query_block_timestamps
-from symbollightapi.model.Constants import DEFAULT_ASYNC_LIMITER_ARGUMENTS, TimeoutSettings, TransactionStatus
+from symbollightapi.model.Constants import DEFAULT_ASYNC_LIMITER_ARGUMENTS
 
 from bridge.db.WrapRequestDatabase import WrapRequestStatus
-from bridge.WorkflowUtils import check_expiry
+from bridge.WorkflowUtils import check_pending_sent_request
 
 from .main_impl import main_bootstrapper
-
-
-async def _check_pending_sent_request(request, database, connector, request_network):
-	error_message = check_expiry(request_network.config.extensions, database, request)
-	if error_message:
-		database.mark_payout_failed(request, error_message)
-
-	payout_transaction_hash = database.payout_transaction_hash_for_request(request)
-	is_unconfirmed = await connector.try_wait_for_announced_transaction(
-		payout_transaction_hash,
-		TransactionStatus.UNCONFIRMED,
-		TimeoutSettings(1, 0))
-	if not is_unconfirmed:
-		# original request timestamp (derived from block timestamp) is used, so this will not repeat indefinitely
-		database.mark_payout_failed_transient(request, 'node dropped payout transaction')
 
 
 async def _check_finalized_transactions(database, payout_network, request_network):
@@ -50,7 +35,7 @@ async def _check_finalized_transactions(database, payout_network, request_networ
 
 	async def check_pending_sent_request_limited(request):
 		async with limiter:
-			await _check_pending_sent_request(request, database, connector, request_network)
+			await check_pending_sent_request(request, database, connector, request_network.config.extensions)
 
 	logger.info('checking active sent requests...')
 	sent_requests = database.requests_by_status(WrapRequestStatus.SENT)

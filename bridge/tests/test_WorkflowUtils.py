@@ -4,7 +4,10 @@ from collections import namedtuple
 from decimal import Decimal
 
 import pytest
+from symbolchain.CryptoTypes import Hash256
 from symbolchain.nem.Network import Network
+from symbollightapi.model.Constants import TimeoutSettings, TransactionStatus
+from symbollightapi.model.Exceptions import NodeException, NodeTransientException
 
 from bridge.ConversionRateCalculatorFactory import ConversionRateCalculatorFactory
 from bridge.db.Databases import Databases
@@ -15,6 +18,7 @@ from bridge.WorkflowUtils import (
 	NativeConversionRateCalculatorFactory,
 	calculate_search_range,
 	check_expiry,
+	check_pending_sent_request,
 	create_conversion_rate_calculator_factory,
 	is_native_to_native_conversion,
 	prepare_send,
@@ -445,5 +449,114 @@ def test_can_check_expiry_expired():
 
 	# Assert:
 	assert f'request timestamp {block_datetime} is more than 24 in the past' == error_message
+
+# endregion
+
+
+# region check_pending_sent_request
+
+async def run_check_pending_sent_request_test(block_timestamp, try_wait_result, asserter):
+	# Arrange:
+	payout_transaction_hash = Hash256('4D46C2CEC80FCAFCDA7F07C749E366416FC488FBEE448E4A5112916B49635661')
+
+	class CheckPendingSentRequestMockDatabase:
+		def __init__(self):
+			self.failed_payouts = []
+
+		@staticmethod
+		def lookup_block_timestamp(height):
+			return block_timestamp if 1234 == height else None
+
+		@staticmethod
+		def payout_transaction_hash_for_request(_request):
+			return payout_transaction_hash
+
+		def mark_payout_failed(self, request, message):
+			self.failed_payouts.append(('failed', request, message))
+
+		def mark_payout_failed_transient(self, request, message):
+			self.failed_payouts.append(('failed-transient', request, message))
+
+	class CheckPendingSentRequestMockConnector:
+		def __init__(self):
+			self.try_waits = []
+
+		async def try_wait_for_announced_transaction(self, transaction_hash, desired_status, timeout_settings):
+			self.try_waits.append((transaction_hash, desired_status, timeout_settings))
+			if isinstance(try_wait_result, NodeException):
+				raise try_wait_result
+
+			return try_wait_result
+
+	database = CheckPendingSentRequestMockDatabase()
+	connector = CheckPendingSentRequestMockConnector()
+	request = WrapRequest(1234, None, None, None, None, None)
+
+	# Act:
+	await check_pending_sent_request(request, database, connector, {'request_lifetime_hours': '24'})
+
+	# Assert:
+	assert [(payout_transaction_hash, TransactionStatus.UNCONFIRMED, TimeoutSettings(1, 0))] == connector.try_waits
+	asserter(request, database)
+
+
+async def test_check_pending_sent_request_not_marked_when_unconfirmed():
+	# Arrange:
+	block_datetime = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=23))
+
+	def asserter(_request, database):
+		# Assert:
+		assert [] == database.failed_payouts
+
+	# Act:
+	await run_check_pending_sent_request_test(block_datetime.timestamp(), True, asserter)
+
+
+async def test_check_pending_sent_request_mark_failed_when_non_transient_node_error():
+	# Arrange:
+	block_datetime = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=23))
+
+	def asserter(request, database):
+		# Assert:
+		assert [('failed', request, 'node failure')] == database.failed_payouts
+
+	# Act:
+	await run_check_pending_sent_request_test(block_datetime.timestamp(), NodeException('node failure'), asserter)
+
+
+async def test_check_pending_sent_request_not_marked_when_transient_node_error():
+	# Arrange:
+	block_datetime = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=23))
+
+	def asserter(_request, database):
+		# Assert:
+		assert [] == database.failed_payouts
+
+	# Act:
+	await run_check_pending_sent_request_test(block_datetime.timestamp(), NodeTransientException('transient node failure'), asserter)
+
+
+async def test_check_pending_sent_request_mark_failed_when_not_unconfirmed_and_expired():
+	# Arrange:
+	block_datetime = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=25))
+
+	def asserter(request, database):
+		# Assert:
+		assert [('failed', request, f'request timestamp {block_datetime} is more than 24 in the past')] == database.failed_payouts
+
+	# Act:
+	await run_check_pending_sent_request_test(block_datetime.timestamp(), False, asserter)
+
+
+async def test_check_pending_sent_request_mark_failed_transient_when_not_unconfirmed_and_not_expired():
+	# Arrange:
+	block_datetime = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=23))
+
+	def asserter(request, database):
+		# Assert:
+		assert [('failed-transient', request, 'node dropped payout transaction')] == database.failed_payouts
+
+	# Act:
+	await run_check_pending_sent_request_test(block_datetime.timestamp(), False, asserter)
 
 # endregion
