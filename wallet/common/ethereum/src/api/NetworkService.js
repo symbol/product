@@ -46,14 +46,14 @@ export class NetworkService {
 		if (!feeHistory || !Array.isArray(feeHistory.baseFeePerGas) || !Array.isArray(feeHistory.reward)) 
 			throw new ApiError('Fee history data is missing in the node response.');
 
-		const chainId = Number(BigInt(chainIdHex));
+		const chainId = Number(chainIdHex);
 
 		return {
 			nodeUrl,
 			wsUrl: createWebSocketUrl(nodeUrl, DEFAULT_WEBSOCKET_PORT),
 			chainId,
 			networkIdentifier: chainIdToNetworkIdentifier(chainId),
-			chainHeight: Number(BigInt(blockNumberHex)),
+			chainHeight: Number(blockNumberHex),
 			transactionFees: createTransactionFeeMultipliers(NETWORK_CURRENCY_DIVISIBILITY, feeHistory),
 			networkCurrency: {
 				name: NETWORK_CURRENCY_NAME,
@@ -71,6 +71,6 @@ export class NetworkService {
 	pingNode = async nodeUrl => {
 		const hexHeight = await makeEthereumJrpcCall(this.#makeRequest, nodeUrl, 'eth_blockNumber', []);
         
-		return Number(BigInt(hexHeight));
+		return Number(hexHeight);
 	};
 }
