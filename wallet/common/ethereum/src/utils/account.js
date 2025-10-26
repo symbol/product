@@ -6,11 +6,21 @@ import { SigningKey, Wallet, computeAddress, isAddress } from 'ethers';
 /** @typedef {import('../types/Account').WalletAccount} WalletAccount */
 
 /**
- * Ensures a hex string starts with '0x'.
+ * Ensures a hex string follows the '0x' lowercase convention.
  * @param {string} hex - The hex string.
- * @returns {string} The hex string prefixed with '0x'.
+ * @returns {string} The lowercase hex string prefixed with '0x'.
  */
-export const to0x = hex => (typeof hex === 'string' && hex.startsWith('0x') ? hex : `0x${hex}`);
+export const to0x = hex => {
+	if (typeof hex !== 'string')
+		throw new TypeError('Expected a string value');
+
+	const lowercaseHex = hex.toLowerCase();
+
+	if (lowercaseHex.startsWith('0x'))
+		return lowercaseHex;
+
+	return `0x${lowercaseHex}`;
+};
 
 /**
  * Generates an Ethereum key pair consisting of a private key and a public key.
