@@ -131,20 +131,12 @@ export const createWalletAccount = (privateKey, networkIdentifier, name, account
  * @returns {boolean} A boolean indicating if the string is a valid-looking key.
  */
 export const isPrivateKey = stringToTest => {
-	if (typeof stringToTest !== 'string') 
+	try {
+		new Wallet(stringToTest);
+		return true;
+	} catch {
 		return false;
-
-	const hex = stringToTest.startsWith('0x') ? stringToTest.slice(2) : stringToTest;
-	
-	if (!/^[0-9a-fA-F]+$/.test(hex)) 
-		return false;
-
-	const privateKeyLength = 32 * 2;
-	const acceptedLength = [
-		privateKeyLength
-	];
-
-	return acceptedLength.includes(hex.length);
+	}
 };
 
 /**
@@ -156,12 +148,12 @@ export const isPrivateKey = stringToTest => {
  * @returns {boolean} A boolean indicating if the string is a valid-looking key.
  */
 export const isPublicKey = stringToTest => {
-	if (typeof stringToTest !== 'string') 
+	if (typeof stringToTest !== 'string')
 		return false;
 
 	const hex = stringToTest.startsWith('0x') ? stringToTest.slice(2) : stringToTest;
-	
-	if (!/^[0-9a-fA-F]+$/.test(hex)) 
+
+	if (!/^[0-9a-fA-F]+$/.test(hex))
 		return false;
 
 	const publicKeyCompressedLength = 33 * 2;
