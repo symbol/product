@@ -17,13 +17,10 @@ async def calculate_search_range(connector, database, config_extensions, start_h
 	"""
 
 	chain_height = await connector.finalized_chain_height()
-	end_height = chain_height + 1 + int(config_extensions.get('finalization_lookahead', 0))
-
 	database_height = database.max_processed_height()
-	start_height = database_height + 1
-
-	if start_height_override_property_name:
-		start_height = max(start_height, int(config_extensions.get(start_height_override_property_name, 0)))
+	
+	start_height = max(database_height + 1, int(config_extensions.get(start_height_override_property_name, 0)))
+	end_height = chain_height + 1 + int(config_extensions.get('finalization_lookahead', 0))
 
 	return (start_height, end_height)
 
