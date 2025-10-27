@@ -8,6 +8,21 @@ from symbolchain.Network import NetworkLocator
 
 from ..model.Exceptions import NodeException
 
+BLOCK_TYPE_SIZE = 4
+VERSION_SIZE = 1
+RESERVED_PADDING_SIZE = 2
+NETWORK_SIZE = 1
+TIMESTAMP_SIZE = 4
+SIGNER_KEY_SIZE_FIELD = 4
+SIGNER_PUBLIC_KEY_SIZE = 32
+SIGNATURE_SIZE_FIELD = 4
+SIGNATURE_SIZE = 64
+PREVIOUS_BLOCK_HASH_OUTER_SIZE = 4
+PREVIOUS_BLOCK_HASH_SIZE = 4
+PREVIOUS_BLOCK_HASH_VALUE = 32
+HEIGHT_SIZE = 8
+TRANSACTION_COUNT_SIZE = 4
+
 
 class NemBlockCalculator:
 	"""
@@ -21,36 +36,21 @@ class NemBlockCalculator:
 		"""Calculates the serialized size of a NEM block."""
 
 		# Block structure components:
-		block_type_size = 4
-		version_size = 1
-		reserved_padding_size = 2
-		network_size = 1
-		timestamp_size = 4
-		signer_key_size_field = 4
-		signer_public_key_size = 32
-		signature_size_field = 4
-		signature_size = 64
-		previous_block_hash_outer_size = 4
-		previous_block_hash_size = 4
-		previous_block_hash_value = 32
-		height_size = 8
-		transaction_count_size = 4
-
 		block_size = sum([
-			block_type_size,
-			version_size,
-			reserved_padding_size,
-			network_size,
-			timestamp_size,
-			signer_key_size_field,
-			signer_public_key_size,
-			signature_size_field,
-			signature_size,
-			previous_block_hash_outer_size,
-			previous_block_hash_size,
-			previous_block_hash_value,
-			height_size,
-			transaction_count_size
+			BLOCK_TYPE_SIZE,
+			VERSION_SIZE,
+			RESERVED_PADDING_SIZE,
+			NETWORK_SIZE,
+			TIMESTAMP_SIZE,
+			SIGNER_KEY_SIZE_FIELD,
+			SIGNER_PUBLIC_KEY_SIZE,
+			SIGNATURE_SIZE_FIELD,
+			SIGNATURE_SIZE,
+			PREVIOUS_BLOCK_HASH_OUTER_SIZE,
+			PREVIOUS_BLOCK_HASH_SIZE,
+			PREVIOUS_BLOCK_HASH_VALUE,
+			HEIGHT_SIZE,
+			TRANSACTION_COUNT_SIZE
 		])
 
 		transactions_size = sum(
