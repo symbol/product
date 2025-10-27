@@ -23,9 +23,9 @@ class MaxProcessedHeightMixin:
 			'''
 				INSERT INTO max_processed_height VALUES (?, ?)
 				ON CONFLICT(marker)
-				DO UPDATE SET height=?
+				DO UPDATE SET height=excluded.height
 			''',
-			(height, 1, height))
+			(height, 1))
 		self.connection.commit()
 
 	def max_processed_height(self):
