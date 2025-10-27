@@ -6,6 +6,7 @@ from symbollightapi.model.Constants import TimeoutSettings, TransactionStatus
 from symbollightapi.model.Exceptions import NodeException
 
 from .ConversionRateCalculatorFactory import ConversionRateCalculator, ConversionRateCalculatorFactory
+from .ethereum.EthereumConnector import ConfirmedTransactionExecutionFailure
 from .NetworkUtils import is_transient_error
 
 PrepareSendResult = namedtuple('PrepareSendResult', ['error_message', 'fee_multiplier', 'transfer_amount'])
@@ -156,12 +157,16 @@ def check_expiry(config_extensions, database, request):
 async def check_pending_sent_request(request, database, connector, config_extensions):
 	"""Checks a pending sent request and updates database appropriately."""
 
+	transient_retry_message = 'node dropped payout transaction'
 	payout_transaction_hash = database.payout_transaction_hash_for_request(request)
 	try:
 		is_unconfirmed = await connector.try_wait_for_announced_transaction(
 			payout_transaction_hash,
 			TransactionStatus.UNCONFIRMED,
 			TimeoutSettings(1, 0))
+	except ConfirmedTransactionExecutionFailure as ex:
+		is_unconfirmed = False
+		transient_retry_message = str(ex)
 	except NodeException as ex:
 		if not is_transient_error(ex):
 			database.mark_payout_failed(request, str(ex))
@@ -176,6 +181,6 @@ async def check_pending_sent_request(request, database, connector, config_extens
 		database.mark_payout_failed(request, error_message)
 	else:
 		# original request timestamp (derived from block timestamp) is used, so this will not repeat indefinitely
-		database.mark_payout_failed_transient(request, 'node dropped payout transaction')
+		database.mark_payout_failed_transient(request, transient_retry_message)
 
 # endregion
