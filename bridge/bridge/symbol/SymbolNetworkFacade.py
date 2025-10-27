@@ -58,7 +58,15 @@ class SymbolNetworkFacade:
 	def create_connector(self, **_kwargs):
 		"""Creates a connector to the network."""
 
-		return SymbolConnector(self.config.endpoint)
+		is_finalization_supported = 'True' == self.config.extensions.get('is_finalization_supported', 'True')
+		if is_finalization_supported:
+			return SymbolConnector(self.config.endpoint)
+
+		class FinalizationDisabledSymbolConnector(SymbolConnector):
+			async def finalized_chain_height(self):
+				return await super().chain_height()
+
+		return FinalizationDisabledSymbolConnector(self.config.endpoint)
 
 	@staticmethod
 	def make_address(raw_address):
