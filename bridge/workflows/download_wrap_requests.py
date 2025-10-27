@@ -24,7 +24,7 @@ async def _download_requests(database, connector, network, is_valid_address):
     database.reset()
 
     if start_height >= end_height:
-        logger.info("no new blocks to process, maybe node resynced?. Exiting.")
+        logger.info("no new blocks to process, maybe node resyncing?. Exiting.")
         return
 
     count = 0
