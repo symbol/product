@@ -11,6 +11,7 @@ from symbollightapi.model.Exceptions import NodeException, NodeTransientExceptio
 
 from bridge.ConversionRateCalculatorFactory import ConversionRateCalculatorFactory
 from bridge.db.Databases import Databases
+from bridge.ethereum.EthereumConnector import ConfirmedTransactionExecutionFailure
 from bridge.models.BridgeConfiguration import GlobalConfiguration
 from bridge.models.Constants import ExecutionContext, PrintableMosaicId
 from bridge.models.WrapRequest import WrapRequest
@@ -558,5 +559,29 @@ async def test_check_pending_sent_request_mark_failed_transient_when_not_unconfi
 
 	# Act:
 	await run_check_pending_sent_request_test(block_datetime.timestamp(), False, asserter)
+
+
+async def test_check_pending_sent_request_mark_failed_when_execution_failure_and_expired():
+	# Arrange:
+	block_datetime = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=25))
+
+	def asserter(request, database):
+		# Assert:
+		assert [('failed', request, f'request timestamp {block_datetime} is more than 24 in the past')] == database.failed_payouts
+
+	# Act:
+	await run_check_pending_sent_request_test(block_datetime.timestamp(), ConfirmedTransactionExecutionFailure('exec failure'), asserter)
+
+
+async def test_check_pending_sent_request_mark_failed_transient_when_execution_failure_and_not_expired():
+	# Arrange:
+	block_datetime = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=23))
+
+	def asserter(request, database):
+		# Assert:
+		assert [('failed-transient', request, 'exec failure')] == database.failed_payouts
+
+	# Act:
+	await run_check_pending_sent_request_test(block_datetime.timestamp(), ConfirmedTransactionExecutionFailure('exec failure'), asserter)
 
 # endregion

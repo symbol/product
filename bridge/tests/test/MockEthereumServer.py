@@ -6,6 +6,8 @@ from .BridgeTestUtils import HASHES
 
 
 async def create_simple_ethereum_client(aiohttp_client):
+	# pylint: disable=too-many-statements
+
 	"""Creates an Ethereum client with support for basic operations ."""
 
 	class MockEthereumServer:
@@ -16,6 +18,7 @@ async def create_simple_ethereum_client(aiohttp_client):
 			self.simulate_announce_error = False
 			self.simulate_estimate_gas_error = False
 			self.simulate_sync = False
+			self.failed_transaction_execution_hash = None
 			self.gas_price_override = None
 
 		async def rpc_main(self, request):  # pylint: disable = too-many-return-statements
@@ -43,6 +46,9 @@ async def create_simple_ethereum_client(aiohttp_client):
 
 			if 'eth_getTransactionCount' == method:
 				return await self._handle_eth_get_transaction_count(request, request_json['params'][1])
+
+			if 'eth_getTransactionReceipt' == method:
+				return await self._handle_eth_get_transaction_receipt(request, request_json['params'][0])
 
 			if 'eth_sendRawTransaction' == method:
 				return await self._handle_eth_send_raw_transaction(request)
@@ -142,6 +148,12 @@ async def create_simple_ethereum_client(aiohttp_client):
 
 			return await self._process(request, {
 				'result': block_identifier_to_count_map[block_identifier]
+			})
+
+		async def _handle_eth_get_transaction_receipt(self, request, transaction_hash):
+			status = '0x0' if self.failed_transaction_execution_hash == transaction_hash else '0x1'
+			return await self._process(request, {
+				'result': {'status': status}
 			})
 
 		async def _handle_eth_send_raw_transaction(self, request):

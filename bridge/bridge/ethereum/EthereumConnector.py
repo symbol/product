@@ -15,6 +15,10 @@ from .RpcUtils import make_rpc_request_json, parse_rpc_response_hex_value
 FeeInformation = namedtuple('FeeInformation', ['base_fee', 'priority_fee'])
 
 
+class ConfirmedTransactionExecutionFailure(NodeException):
+	"""Exception raised when a transaction is confirmed but failed execution."""
+
+
 class EthereumConnector(BasicConnector):
 	"""Async connector for interacting with an Ethereum node."""
 
@@ -183,7 +187,12 @@ class EthereumConnector(BasicConnector):
 
 	# region filter_confirmed_transactions
 
-	async def _transaction_status_and_height_by_hash(self, transaction_hash):
+	async def _transaction_status_from_receipt(self, transaction_hash):
+		request_json = make_rpc_request_json('eth_getTransactionReceipt', [f'0x{transaction_hash}'])
+		transaction_json = await self._post_rpc(request_json)
+		return parse_rpc_response_hex_value(transaction_json['status'])
+
+	async def _transaction_status_and_height_by_hash(self, transaction_hash, raise_error_on_execution_failure=True):
 		request_json = make_rpc_request_json('eth_getTransactionByHash', [f'0x{transaction_hash}'])
 		transaction_json = await self._post_rpc(request_json)
 		if not transaction_json:
@@ -192,6 +201,14 @@ class EthereumConnector(BasicConnector):
 		block_number = transaction_json.get('blockNumber', None)
 		if block_number is None:
 			return (TransactionStatus.UNCONFIRMED, None)
+
+		is_success = await self._transaction_status_from_receipt(transaction_hash)
+		if not is_success:
+			if raise_error_on_execution_failure:
+				raise ConfirmedTransactionExecutionFailure('transaction confirmed on chain but failed execution')
+
+			# only called by filter_confirmed_transactions, so result can be anything except TransactionStatus.CONFIRMED
+			return (None, 0)
 
 		return (TransactionStatus.CONFIRMED, parse_rpc_response_hex_value(block_number))
 
@@ -202,7 +219,7 @@ class EthereumConnector(BasicConnector):
 
 		async def get_transaction_hash_height_pair(transaction_hash):
 			async with limiter:
-				(status, height) = await self._transaction_status_and_height_by_hash(transaction_hash)
+				(status, height) = await self._transaction_status_and_height_by_hash(transaction_hash, False)
 				return (transaction_hash if TransactionStatus.CONFIRMED == status else None, height)
 
 		tasks = [get_transaction_hash_height_pair(transaction_hash) for transaction_hash in transaction_hashes]
@@ -273,6 +290,8 @@ class EthereumConnector(BasicConnector):
 				(status, _) = await self._transaction_status_and_height_by_hash(transaction_hash)
 				if status and status.value >= desired_status.value:
 					return True
+			except (ConfirmedTransactionExecutionFailure, NodeTransientException):
+				raise
 			except NodeException:
 				# ignore 400 not found errors (not_found_as_error will not work because these are not 404)
 				await asyncio.sleep(timeout_settings.interval)
