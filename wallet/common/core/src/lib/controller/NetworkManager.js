@@ -227,24 +227,48 @@ export class NetworkManager {
 		try {
 			const newListener = this.api.listener.createListener(this.networkProperties, this._state.listenAddress);
 			await newListener.open();
-			newListener.listenAddedTransactions(TransactionGroup.CONFIRMED, payload => {
-				this.#handleChainEvent(ControllerEventName.NEW_TRANSACTION_CONFIRMED, payload);
+
+			const subscribeList = [
+				{ 
+					method: 'listenAddedTransactions',
+					params: [TransactionGroup.CONFIRMED],
+					event: ControllerEventName.NEW_TRANSACTION_CONFIRMED
+				},
+				{ 
+					method: 'listenAddedTransactions',
+					params: [TransactionGroup.UNCONFIRMED],
+					event: ControllerEventName.NEW_TRANSACTION_UNCONFIRMED
+				},
+				{
+					method: 'listenAddedTransactions',
+					params: [TransactionGroup.PARTIAL],
+					event: ControllerEventName.NEW_TRANSACTION_PARTIAL
+				},
+				{
+					method: 'listenRemovedTransactions',
+					params: [TransactionGroup.UNCONFIRMED],
+					event: ControllerEventName.REMOVE_TRANSACTION_UNCONFIRMED
+				},
+				{
+					method: 'listenRemovedTransactions',
+					params: [TransactionGroup.PARTIAL],
+					event: ControllerEventName.REMOVE_TRANSACTION_PARTIAL
+				},
+				{
+					method: 'listenTransactionError',
+					params: [],
+					event: ControllerEventName.TRANSACTION_ERROR
+				}
+			];
+			subscribeList.forEach(item => {
+				this.#tryListen(
+					newListener,
+					item.method,
+					item.params,
+					item.event
+				);
 			});
-			newListener.listenAddedTransactions(TransactionGroup.UNCONFIRMED, payload => {
-				this.#handleChainEvent(ControllerEventName.NEW_TRANSACTION_UNCONFIRMED, payload);
-			});
-			newListener.listenAddedTransactions(TransactionGroup.PARTIAL, payload => {
-				this.#handleChainEvent(ControllerEventName.NEW_TRANSACTION_PARTIAL, payload);
-			});
-			newListener.listenRemovedTransactions(TransactionGroup.UNCONFIRMED, payload => {
-				this.#handleChainEvent(ControllerEventName.REMOVE_TRANSACTION_UNCONFIRMED, payload);
-			});
-			newListener.listenRemovedTransactions(TransactionGroup.PARTIAL, payload => {
-				this.#handleChainEvent(ControllerEventName.REMOVE_TRANSACTION_PARTIAL, payload);
-			});
-			newListener.listenTransactionError(payload => {
-				this.#handleChainEvent(ControllerEventName.TRANSACTION_ERROR, payload);
-			});
+
 			this._state.chainListener = newListener;
 		} catch (error) {
 			this._logger.error('[NetworkManager] Failed to start chain listener.', error.message);
@@ -253,6 +277,15 @@ export class NetworkManager {
 				ErrorCode.NETWORK_LISTENER_START_ERROR
 			);
 		}
+	};
+
+	#tryListen = (listener, listenMethodName, params, controllerEventName) => {
+		if (typeof listener[listenMethodName] !== 'function')
+			return;
+
+		listener[listenMethodName](...params, payload => {
+			this.#handleChainEvent(controllerEventName, payload);
+		});
 	};
 
 	/**
