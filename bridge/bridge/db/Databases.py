@@ -35,10 +35,6 @@ class Databases:  # pylint: disable=too-many-instance-attributes
 		self._unwrap_request_connection = self._connect('unwrap_request')
 		self._wrap_request_connection = self._connect('wrap_request')
 
-		self._balance_change_connection.execute('PRAGMA foreign_keys = ON')
-		self._unwrap_request_connection.execute('PRAGMA foreign_keys = ON')
-		self._wrap_request_connection.execute('PRAGMA foreign_keys = ON')
-
 		self.balance_change = BalanceChangeDatabase(self._balance_change_connection)
 		self.unwrap_request = WrapRequestDatabase(self._unwrap_request_connection, self._wrapped_network, self._native_network)
 		self.wrap_request = WrapRequestDatabase(self._wrap_request_connection, self._native_network, self._wrapped_network)

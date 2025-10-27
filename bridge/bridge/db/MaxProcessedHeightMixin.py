@@ -5,6 +5,7 @@ class MaxProcessedHeightMixin:
 		"""Creates a max processed height mixin."""
 
 		self.connection = connection
+		self.connection.execute('PRAGMA foreign_keys = ON')
 
 	def create_tables(self):
 		"""Creates max processed height database tables."""
