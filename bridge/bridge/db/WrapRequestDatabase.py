@@ -80,20 +80,6 @@ class WrapRequestDatabase(
         super().create_tables()
         self.execscript(
             """
-                        
-CREATE TABLE IF NOT EXISTS wrap_error (
-	request_transaction_height INTEGER NOT NULL,
-	request_transaction_hash BLOB NOT NULL,
-	request_transaction_subindex INTEGER NOT NULL,
-	address BLOB,
-	message TEXT,
-	PRIMARY KEY (request_transaction_hash, request_transaction_subindex)
-);
-
-CREATE INDEX IF NOT EXISTS wrap_error_request_transaction_height_idx ON wrap_error(request_transaction_height);
-CREATE INDEX IF NOT EXISTS wrap_error_request_transaction_hash_idx ON wrap_error(request_transaction_hash);
-CREATE INDEX IF NOT EXISTS wrap_error_address_idx ON wrap_error(address);
-                            
 CREATE TABLE IF NOT EXISTS wrap_request (
     request_transaction_height INTEGER NOT NULL,
 	request_transaction_hash BLOB NOT NULL,
@@ -112,6 +98,20 @@ CREATE INDEX IF NOT EXISTS wrap_request_request_transaction_hash_idx ON wrap_req
 CREATE INDEX IF NOT EXISTS wrap_request_destination_address_idx ON wrap_request(destination_address)
 CREATE INDEX IF NOT EXISTS wrap_request_payout_status_idx ON wrap_request(payout_status)
 CREATE INDEX IF NOT EXISTS wrap_request_payout_transaction_hash_idx ON wrap_request(payout_transaction_hash)
+
+CREATE TABLE IF NOT EXISTS wrap_error (
+	request_transaction_height INTEGER NOT NULL,
+	request_transaction_hash BLOB NOT NULL,
+	request_transaction_subindex INTEGER NOT NULL,
+	address BLOB,
+	message TEXT,
+	PRIMARY KEY (request_transaction_hash, request_transaction_subindex)
+);
+
+CREATE INDEX IF NOT EXISTS wrap_error_request_transaction_height_idx ON wrap_error(request_transaction_height);
+CREATE INDEX IF NOT EXISTS wrap_error_request_transaction_hash_idx ON wrap_error(request_transaction_hash);
+CREATE INDEX IF NOT EXISTS wrap_error_address_idx ON wrap_error(address);
+
 
 CREATE TABLE IF NOT EXISTS payout_transaction (
 	transaction_hash BLOB NOT NULL UNIQUE PRIMARY KEY,
