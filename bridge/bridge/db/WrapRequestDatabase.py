@@ -106,6 +106,9 @@ CREATE TABLE IF NOT EXISTS wrap_error (
 	address BLOB,
 	message TEXT,
 	PRIMARY KEY (request_transaction_hash, request_transaction_subindex)
+    FOREIGN KEY (request_transaction_hash, request_transaction_subindex)
+        REFERENCES wrap_request(request_transaction_hash, request_transaction_subindex
+        ON DELETE CASCADE
 );
 
 CREATE INDEX IF NOT EXISTS wrap_error_request_transaction_height_idx ON wrap_error(request_transaction_height);
