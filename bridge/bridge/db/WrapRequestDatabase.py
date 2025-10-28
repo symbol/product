@@ -82,28 +82,30 @@ class WrapRequestDatabase(
             """
                         
 CREATE TABLE IF NOT EXISTS wrap_error (
-	request_transaction_height integer,
-	request_transaction_hash blob,
-	request_transaction_subindex integer,
-	address blob,
-	message text,
-	PRIMARY KEY (request_transaction_hash, request_transaction_subindex);
+	request_transaction_height INTEGER NOT NULL,
+	request_transaction_hash BLOB NOT NULL,
+	request_transaction_subindex INTEGER NOT NULL,
+	address BLOB,
+	message TEXT,
+	PRIMARY KEY (request_transaction_hash, request_transaction_subindex)
+);
 
 CREATE INDEX IF NOT EXISTS wrap_error_request_transaction_height_idx ON wrap_error(request_transaction_height);
 CREATE INDEX IF NOT EXISTS wrap_error_request_transaction_hash_idx ON wrap_error(request_transaction_hash);
 CREATE INDEX IF NOT EXISTS wrap_error_address_idx ON wrap_error(address);
                             
 CREATE TABLE IF NOT EXISTS wrap_request (
-    request_transaction_height integer,
-	request_transaction_hash blob,
-	request_transaction_subindex integer,
-	address blob,
-	amount real,
-	destination_address blob,
-	payout_status integer,
-	payout_transaction_hash blob UNIQUE,
-	is_retried integer,
-	PRIMARY KEY (request_transaction_hash, request_transaction_subindex);
+    request_transaction_height INTEGER NOT NULL,
+	request_transaction_hash BLOB NOT NULL,
+	request_transaction_subindex INTEGER NOT NULL,
+	address BLOB,
+	amount REAL NOT NULL,
+	destination_address BLOB,
+	payout_status INTEGER,
+	payout_transaction_hash BLOB UNIQUE,
+	is_retried INTEGER,
+	PRIMARY KEY (request_transaction_hash, request_transaction_subindex)
+);
 
 CREATE INDEX IF NOT EXISTS wrap_request_request_transaction_height_idx ON wrap_request(request_transaction_height);
 CREATE INDEX IF NOT EXISTS wrap_request_request_transaction_hash_idx ON wrap_request(request_transaction_hash)
@@ -112,19 +114,22 @@ CREATE INDEX IF NOT EXISTS wrap_request_payout_status_idx ON wrap_request(payout
 CREATE INDEX IF NOT EXISTS wrap_request_payout_transaction_hash_idx ON wrap_request(payout_transaction_hash)
 
 CREATE TABLE IF NOT EXISTS payout_transaction (
-	transaction_hash blob UNIQUE PRIMARY KEY,
-	net_amount real,
-	total_fee real,
-	conversion_rate real,
-	height integer;
+	transaction_hash BLOB NOT NULL UNIQUE PRIMARY KEY,
+	net_amount REAL,
+	total_fee REAL,
+	conversion_rate REAL,
+	height INTEGER
+);
 
 CREATE TABLE IF NOT EXISTS block_metadata (
-    height integer UNIQUE PRIMARY KEY,
-	timestamp timestamp;
+    height INTEGER NOT NULL UNIQUE PRIMARY KEY,
+	timestamp TIMESTAMP
+);
     
 CREATE TABLE IF NOT EXISTS payout_block_metadata (
-    height integer UNIQUE PRIMARY KEY,
-    timestamp timestamp;
+    height INTEGER NOT NULL UNIQUE PRIMARY KEY,
+    timestamp TIMESTAMP
+);
 """
         )
 
