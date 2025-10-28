@@ -448,12 +448,12 @@ CREATE TABLE IF NOT EXISTS payout_block_metadata (
 
     # region set_block_timestamp, set_payout_block_timestamp
 
-    def _set_block_timestamp(self, height, raw_timestamp, network_facade, table_name):
+    def _set_block_timestamp(self, height, raw_timestamp, network_facade, table_name) -> int:
         unix_timestamp = network_facade.network.to_datetime(
             network_facade.network.network_timestamp_class(raw_timestamp)
         ).timestamp()
 
-        self.exec(
+        res = self.exec(
             f"""
 				INSERT INTO {table_name} (height, timestamp) VALUES (?, ?)
 				ON CONFLICT(height)
@@ -462,26 +462,29 @@ CREATE TABLE IF NOT EXISTS payout_block_metadata (
             (height, unix_timestamp),
         )
         self.commit()
+        return res
 
-    def set_block_timestamp(self, height, raw_timestamp):
+    def set_block_timestamp(self, height, raw_timestamp) -> int:
         """Sets a block timestamp."""
 
-        self._set_block_timestamp(
+        res = self._set_block_timestamp(
             height, raw_timestamp, self.network_facade, "block_metadata"
         )
 
         self._logger.info("saving block %s with timestamp %s", height, raw_timestamp)
+        return res
 
-    def set_payout_block_timestamp(self, height, raw_timestamp):
+    def set_payout_block_timestamp(self, height, raw_timestamp) -> int:
         """Sets a payout block timestamp."""
 
-        self._set_block_timestamp(
+        res = self._set_block_timestamp(
             height, raw_timestamp, self.payout_network_facade, "payout_block_metadata"
         )
 
         self._logger.info(
             "saving payout block %s with timestamp %s", height, raw_timestamp
         )
+        return res
 
     # endregion
 
