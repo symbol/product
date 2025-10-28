@@ -21,11 +21,13 @@ from bridge.WorkflowUtils import (
 	check_expiry,
 	check_pending_sent_request,
 	create_conversion_rate_calculator_factory,
+	is_daily_limit_exceeded,
 	is_native_to_native_conversion,
 	prepare_send,
 	validate_global_configuration
 )
 
+from .test.BridgeTestUtils import assert_timestamp_within_last_second
 from .test.MockNetworkFacade import MockNemNetworkFacade
 
 # pylint: disable=invalid-name
@@ -346,15 +348,19 @@ def test_can_create_native_calculator_factory_when_strategy_mode_wrapped_and_unw
 
 # region prepare_send
 
-def run_prepare_send_test(config_extensions, amount, fee_multiplier=None):
+def _make_network_facade_from_config_extensions(config_extensions):
 	PrepareSendMockNetworkFacade = namedtuple('PrepareSendMockNetworkFacade', ['config'])
 	PrepareSendMockNetwork = namedtuple('PrepareSendMockNetwork', ['extensions'])
 
+	return PrepareSendMockNetworkFacade(PrepareSendMockNetwork(config_extensions))
+
+
+def run_prepare_send_test(config_extensions, amount, fee_multiplier=None):
 	def conversion_function(amount):
 		return amount ** 2
 
 	# Arrange:
-	network = PrepareSendMockNetworkFacade(PrepareSendMockNetwork(config_extensions))
+	network = _make_network_facade_from_config_extensions(config_extensions)
 	request = WrapRequest(None, None, None, None, amount, None)
 
 	# Act:
@@ -405,6 +411,50 @@ def test_cannot_prepare_send_with_greater_than_max_transfer_amount():
 	assert 'gross transfer amount 1002001 exceeds max transfer amount 1000000' == result.error_message
 	assert not result.fee_multiplier
 	assert not result.transfer_amount
+
+# endregion
+
+
+# region is_daily_limit_exceeded
+
+def run_is_daily_limit_exceeded_test(config_extensions, amount_from_database, transfer_amount):
+	# Arrange:
+	class MockDailyLimitDatabase:
+		def __init__(self):
+			self.timestamps = []
+
+		def cumulative_gross_amount_sent_since(self, timestamp):
+			self.timestamps.append(timestamp)
+			return amount_from_database
+
+	network = _make_network_facade_from_config_extensions(config_extensions)
+	database = MockDailyLimitDatabase()
+
+	# Act:
+	result = is_daily_limit_exceeded(network, database, transfer_amount)
+
+	# Assert:
+	for timestamp in database.timestamps:
+		timestamp_datetime = datetime.datetime.fromtimestamp(timestamp, tz=datetime.timezone.utc)
+		assert_timestamp_within_last_second((timestamp_datetime + datetime.timedelta(days=1)).timestamp())
+
+	return result
+
+
+def test_is_daily_limit_exceeded_false_when_not_configured():
+	assert (False, -1) == run_is_daily_limit_exceeded_test({}, 110, 100)
+
+
+def test_is_daily_limit_exceeded_false_when_cumulative_and_transfer_no_greater_than_configured_value():
+	assert (False, 90) == run_is_daily_limit_exceeded_test({'max_daily_transfer_amount': '200'}, 110, 80)
+	assert (False, 90) == run_is_daily_limit_exceeded_test({'max_daily_transfer_amount': '200'}, 110, 90)
+	assert (False, 0) == run_is_daily_limit_exceeded_test({'max_daily_transfer_amount': '200'}, 200, 0)
+
+
+def test_is_daily_limit_exceeded_true_when_cumulative_and_transfer_greater_than_configured_value():
+	assert (True, 90) == run_is_daily_limit_exceeded_test({'max_daily_transfer_amount': '200'}, 110, 91)
+	assert (True, 90) == run_is_daily_limit_exceeded_test({'max_daily_transfer_amount': '200'}, 110, 100)
+	assert (True, 0) == run_is_daily_limit_exceeded_test({'max_daily_transfer_amount': '200'}, 200, 1)
 
 # endregion
 

@@ -381,7 +381,7 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 	# region cumulative_gross_amount_at
 
 	@staticmethod
-	def _prepare_database_for_batch_tests(connection, payout_descriptor_tuples, retry_index=2):
+	def _prepare_database_for_batch_tests_requests_only(connection):
 		database = WrapRequestDatabaseTest._create_database(connection)
 		database.create_tables()
 
@@ -394,6 +394,12 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 
 		for request in requests:
 			database.add_request(request)
+
+		return (database, requests)
+
+	@staticmethod
+	def _prepare_database_for_batch_tests(connection, payout_descriptor_tuples, retry_index=2):
+		(database, requests) = WrapRequestDatabaseTest._prepare_database_for_batch_tests_requests_only(connection)
 
 		for index, extra_params in payout_descriptor_tuples:
 			database.mark_payout_sent(requests[index], _make_payout_details(Hash256(HASHES[index]), **extra_params))
@@ -452,6 +458,67 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 			(4000, 1000 + 106),
 			(4001, 1000 + 106)
 		])
+
+	# endregion
+
+	# region cumulative_gross_amount_sent_since
+
+	@staticmethod
+	def _prepare_database_for_sent_since_batch_tests(connection, payout_descriptor_tuples, retry_index=2):
+		(database, requests) = WrapRequestDatabaseTest._prepare_database_for_batch_tests_requests_only(connection)
+
+		datetime_markers = []
+
+		for index, extra_params in payout_descriptor_tuples:
+			datetime_markers.append(datetime.datetime.now(datetime.timezone.utc))
+
+			time.sleep(0.1)
+			database.mark_payout_sent(requests[index], _make_payout_details(Hash256(HASHES[index]), **extra_params))
+			time.sleep(0.1)
+
+			if index == retry_index:
+				database.mark_payout_failed_transient(requests[retry_index], 'transient failure, being retried')
+				database.mark_payout_sent(
+					make_next_retry_wrap_request(requests[retry_index]),
+					_make_payout_details(Hash256(HASHES[-1]), **extra_params))
+
+		return (database, datetime_markers)
+
+	def test_cumulative_gross_amount_sent_since_is_zero_when_empty(self):
+		# Arrange:
+		with sqlite3.connect(':memory:') as connection:
+			database = self._create_database(connection)
+			database.create_tables()
+
+			# Act:
+			amount = database.cumulative_gross_amount_sent_since(10000)
+
+			# Assert:
+			self.assertEqual(0, amount)
+
+	def test_cumulative_gross_amount_sent_since_is_calculated_correctly_when_requests_present(self):
+		# Arrange:
+		with sqlite3.connect(':memory:') as connection:
+			(database, datetime_markers) = self._prepare_database_for_sent_since_batch_tests(connection, [
+				(0, {'net_amount': 100, 'total_fee': 43}),
+				(1, {'net_amount': 300, 'total_fee': 21}),
+				(2, {'net_amount': 200, 'total_fee': 32}),
+				(3, {'net_amount': 400, 'total_fee': 10})
+			])
+
+			timestamp_amount_pairs = [
+				(datetime_markers[0], 1000 + 106),
+				(datetime_markers[1], 900 + 63),
+				(datetime_markers[2], 600 + 42),
+				(datetime_markers[3], 400 + 10),
+				(datetime.datetime.now(datetime.timezone.utc), 0)
+			]
+			for (timestamp_datetime, expected_amount) in timestamp_amount_pairs:
+				# Act:
+				amount = database.cumulative_gross_amount_sent_since(timestamp_datetime.timestamp())
+
+				# Assert:
+				self.assertEqual(expected_amount, amount, f'at timestamp {timestamp_datetime.timestamp()}')
 
 	# endregion
 

@@ -113,7 +113,7 @@ def create_conversion_rate_calculator_factory(execution_context, databases, nati
 # endregion
 
 
-# region prepare_send
+# region prepare_send / is_daily_limit_exceeded
 
 def prepare_send(network, request, conversion_function, fee_multiplier):
 	"""Performs basic calculations and validation prior to sending a payout transaction."""
@@ -136,6 +136,20 @@ def prepare_send(network, request, conversion_function, fee_multiplier):
 		return make_error(f'gross transfer amount {transfer_amount} exceeds max transfer amount {max_transfer_amount}')
 
 	return PrepareSendResult(None, fee_multiplier, transfer_amount)
+
+
+def is_daily_limit_exceeded(network, database, transfer_amount):
+	"""Checks if the specified transfer amount will fit within the rolling 24 hour gross transfer limit."""
+
+	max_daily_transfer_amount = int(network.config.extensions.get('max_daily_transfer_amount', 0))
+	if not max_daily_transfer_amount:
+		return (False, -1)
+
+	day_ago = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=1)
+	cumulative_amount = database.cumulative_gross_amount_sent_since(day_ago.timestamp())
+
+	available_amount = max_daily_transfer_amount - cumulative_amount
+	return (transfer_amount > available_amount, int(available_amount))
 
 # endregion
 

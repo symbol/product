@@ -16,7 +16,7 @@ from ..NetworkFacadeLoader import load_network_facade
 from ..NetworkUtils import BalanceTransfer, estimate_balance_transfer_fees
 from ..price_oracle.PriceOracleLoader import load_price_oracle
 from ..price_oracle.PriceOracleThrottle import make_throttled_conversion_rate_lookup
-from ..WorkflowUtils import create_conversion_rate_calculator_factory, is_native_to_native_conversion
+from ..WorkflowUtils import create_conversion_rate_calculator_factory, is_daily_limit_exceeded, is_native_to_native_conversion
 from .Validators import is_valid_address_string, is_valid_decimal_string, is_valid_hash_string
 
 FilterOptions = namedtuple('FilterOptions', ['address', 'transaction_hash', 'offset', 'limit', 'sort', 'payout_status'])
@@ -168,7 +168,21 @@ def _make_prepare_error(code, message):
 	return jsonify({'errorCode': code, 'error': message})
 
 
-async def _handle_wrap_prepare(is_unwrap_mode, context, fee_multiplier):  # pylint: disable=too-many-locals
+def _check_limits(gross_amount, network_facade, database):
+	max_transfer_amount = int(network_facade.config.extensions.get('max_transfer_amount', 0))
+	if max_transfer_amount and gross_amount > max_transfer_amount:
+		error_message = f'gross transfer amount {gross_amount} exceeds max transfer amount {max_transfer_amount}'
+		return _make_prepare_error('REQUEST_LIMIT_EXCEEDED', error_message), 400
+
+	(is_exceeded, amount_remaining) = is_daily_limit_exceeded(network_facade, database, gross_amount)
+	if is_exceeded:
+		error_message = f'daily transfer limit is exceeded ({amount_remaining} remaining), please try again later'
+		return _make_prepare_error('DAILY_LIMIT_EXCEEDED', error_message), 400
+
+	return None
+
+
+async def _handle_wrap_prepare(is_unwrap_mode, context, fee_multiplier, database_name):  # pylint: disable=too-many-locals
 	network_facade = context.native_facade if is_unwrap_mode else context.wrapped_facade
 
 	request_json = request.get_json()
@@ -187,10 +201,9 @@ async def _handle_wrap_prepare(is_unwrap_mode, context, fee_multiplier):  # pyli
 		calculator_func = calculator.to_native_amount if is_unwrap_mode else calculator.to_wrapped_amount
 		gross_amount = calculator_func(prepare_options.amount)
 
-		max_transfer_amount = int(network_facade.config.extensions.get('max_transfer_amount', 0))
-		if max_transfer_amount and gross_amount > max_transfer_amount:
-			error_message = f'gross transfer amount {gross_amount} exceeds max transfer amount {max_transfer_amount}'
-			return _make_prepare_error('REQUEST_LIMIT_EXCEEDED', error_message), 400
+		check_limits_result = _check_limits(gross_amount, network_facade, getattr(databases, database_name))
+		if check_limits_result:
+			return check_limits_result
 
 		if fee_multiplier:
 			fee_multiplier *= Decimal(calculator_func(10 ** 12)) / Decimal(10 ** 12)
@@ -298,7 +311,7 @@ def add_wrap_routes(app, context):
 		fee_multiplier = await context.conversion_rate_lookup()
 		fee_multiplier *= Decimal(10 ** context.native_facade.native_token_precision)
 		fee_multiplier /= Decimal(10 ** context.wrapped_facade.native_token_precision)
-		return await _handle_wrap_prepare(False, context, fee_multiplier)
+		return await _handle_wrap_prepare(False, context, fee_multiplier, 'wrap_request')
 
 
 def add_unwrap_routes(app, context):
@@ -322,7 +335,7 @@ def add_unwrap_routes(app, context):
 	async def unwrap_prepare():
 		await context.load()
 
-		return await _handle_wrap_prepare(True, context, None)
+		return await _handle_wrap_prepare(True, context, None, 'unwrap_request')
 
 
 def create_app():
