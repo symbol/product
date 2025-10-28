@@ -1018,7 +1018,7 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 
 	# endregion
 
-	# region find_errors
+	# region find_errors - single lookup
 
 	def _assert_can_find_errors_simple(self, address, expected_view):
 		# Arrange:
@@ -1050,6 +1050,10 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 	def test_cannot_find_error_by_address_with_no_matches(self):
 		self._assert_can_find_errors_simple(Address(NEM_ADDRESSES[4]), None)
 
+	# endregion
+
+	# region find_errors - filtering
+
 	def _assert_can_find_errors_filtering(self, find_errors_params, expected_heights):
 		# Arrange:
 		with sqlite3.connect(':memory:') as connection:
@@ -1064,9 +1068,20 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 			# Assert:
 			self.assertEqual(expected_heights, heights)
 
+	def test_can_find_all_errors(self):
+		test_params = get_default_filtering_test_parameters()
+		self._assert_can_find_errors_filtering([], test_params.expected_all)
+
 	def test_can_find_errors_by_address(self):
 		test_params = get_default_filtering_test_parameters()
-		self._assert_can_find_errors_filtering([Address(NEM_ADDRESSES[test_params.address_index])], test_params.expected_all)
+		self._assert_can_find_errors_filtering([Address(NEM_ADDRESSES[test_params.address_index])], test_params.expected_address_filter)
+
+	def test_can_find_errors_by_transaction_hash(self):
+		test_params = get_default_filtering_test_parameters()
+		self._assert_can_find_errors_filtering([
+			None,
+			Hash256(HASHES[test_params.hash_index])
+		], test_params.expected_hash_filter)
 
 	def test_can_find_errors_by_address_and_transaction_hash(self):
 		test_params = get_default_filtering_test_parameters()
@@ -1084,9 +1099,19 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 			test_params.limit
 		], test_params.expected_custom_offset_and_limit)
 
+	def test_can_find_errors_with_custom_offset_and_limit_and_custom_sort(self):
+		test_params = get_default_filtering_test_parameters()
+		self._assert_can_find_errors_filtering([
+			Address(NEM_ADDRESSES[test_params.address_index]),
+			None,
+			test_params.offset,
+			test_params.limit,
+			False
+		], test_params.expected_custom_offset_and_limit_desc)
+
 	# endregion
 
-	# region find_requests
+	# region find_requests - single lookup
 
 	def _assert_can_find_requests_simple(self, address, expected_view):
 		# Arrange:
@@ -1116,7 +1141,7 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 			0,
 			None,
 			self._nem_to_unix_timestamp(1020),
-			*([None] * 5))
+			*([None] * 6))
 		self._assert_can_find_requests_simple(Address(NEM_ADDRESSES[0]), expected_view)
 
 	def test_can_find_request_by_hash_exists_sent(self):
@@ -1134,6 +1159,7 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 			2200,
 			450,
 			156,
+			None,
 			None)
 		self._assert_can_find_requests_simple(Address(NEM_ADDRESSES[1]), expected_view)
 
@@ -1152,25 +1178,31 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 			1100,
 			300,
 			121,
-			self._symbol_to_unix_timestamp(3333),)
+			self._symbol_to_unix_timestamp(3333),
+			None)
 		self._assert_can_find_requests_simple(Address(NEM_ADDRESSES[2]), expected_view)
 
 	def test_can_find_request_by_hash_exists_failed(self):
 		expected_view = WrapRequestView(
 			444,
 			Hash256(HASHES[3]),
-			0,
+			2,
 			Address(NEM_ADDRESSES[3]),
 			1234,
 			SymbolAddress(SYMBOL_ADDRESSES[3]),
 			3,
 			None,
 			self._nem_to_unix_timestamp(5060),
-			*([None] * 5))
+			*([None] * 5),
+			'failed to send payout 2')
 		self._assert_can_find_requests_simple(Address(NEM_ADDRESSES[3]), expected_view)
 
 	def test_cannot_find_request_by_address_with_no_matches(self):
 		self._assert_can_find_requests_simple(Address(NEM_ADDRESSES[4]), None)
+
+	# endregion
+
+	# region find_requests - filtering
 
 	def _assert_can_find_requests_filtering(self, find_requests_params, expected_heights):
 		# Arrange:
@@ -1186,9 +1218,33 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 			# Assert:
 			self.assertEqual(expected_heights, heights)
 
+	def test_can_find_all_requests(self):
+		test_params = get_default_filtering_test_parameters()
+		self._assert_can_find_requests_filtering([], test_params.expected_all)
+
 	def test_can_find_requests_by_address(self):
 		test_params = get_default_filtering_test_parameters()
-		self._assert_can_find_requests_filtering([Address(NEM_ADDRESSES[test_params.address_index])], test_params.expected_all)
+		self._assert_can_find_requests_filtering([Address(NEM_ADDRESSES[test_params.address_index])], test_params.expected_address_filter)
+
+	def test_can_find_requests_by_address_destination(self):
+		test_params = get_default_filtering_test_parameters()
+		self._assert_can_find_requests_filtering([
+			SYMBOL_ADDRESSES[test_params.address_index]
+		], test_params.expected_destination_address_filter)
+
+	def test_can_find_requests_by_transaction_hash(self):
+		test_params = get_default_filtering_test_parameters()
+		self._assert_can_find_requests_filtering([
+			None,
+			Hash256(HASHES[test_params.hash_index])
+		], test_params.expected_hash_filter)
+
+	def test_can_find_requests_by_transaction_hash_payout(self):
+		test_params = get_default_filtering_test_parameters()
+		self._assert_can_find_requests_filtering([
+			None,
+			test_params.payout_transaction_hash,
+		], test_params.expected_payout_hash_filter)
 
 	def test_can_find_requests_by_address_and_transaction_hash(self):
 		test_params = get_default_filtering_test_parameters()
@@ -1196,6 +1252,17 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 			Address(NEM_ADDRESSES[test_params.address_index]),
 			Hash256(HASHES[test_params.hash_index])
 		], test_params.expected_hash_filter)
+
+	def test_can_find_requests_by_payout_status(self):
+		test_params = get_default_filtering_test_parameters()
+		self._assert_can_find_requests_filtering([
+			None,
+			None,
+			0,
+			25,
+			True,
+			test_params.payout_status
+		], test_params.expected_payout_status_filter)
 
 	def test_can_find_requests_with_custom_offset_and_limit(self):
 		test_params = get_default_filtering_test_parameters()
@@ -1205,5 +1272,15 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 			test_params.offset,
 			test_params.limit
 		], test_params.expected_custom_offset_and_limit)
+
+	def test_can_find_requests_with_custom_offset_and_limit_and_custom_sort(self):
+		test_params = get_default_filtering_test_parameters()
+		self._assert_can_find_requests_filtering([
+			Address(NEM_ADDRESSES[test_params.address_index]),
+			None,
+			test_params.offset,
+			test_params.limit,
+			False
+		], test_params.expected_custom_offset_and_limit_desc)
 
 	# endregion

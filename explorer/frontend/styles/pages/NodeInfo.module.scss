@@ -1,0 +1,35 @@
+@import '../variables';
+
+.wrapper {
+	height: 100%;
+}
+
+.firstSection {
+	max-width: 41.08rem;
+
+	.firstSectionCard {
+		height: 23rem;
+	}
+}
+
+.secondSectionCard {
+	height: 23rem;
+}
+
+.name {
+	word-break: break-all;
+}
+
+@media #{$screen-mobile} {
+	.firstSection {
+		max-width: 100%;
+
+		.firstSectionCard {
+			height: auto;
+		}
+	}
+
+	.secondSectionCard {
+		height: auto;
+	}
+}

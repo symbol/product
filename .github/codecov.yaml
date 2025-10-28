@@ -12,6 +12,12 @@ coverage:
         flags:
           - bridge
 
+      explorer-frontend:
+        target: auto
+        threshold: 1%
+        flags:
+          - explorer-frontend
+
       explorer-nodewatch:
         target: auto
         threshold: 1%
@@ -66,6 +72,18 @@ coverage:
         flags:
           - wallet-common-core
 
+      wallet-common-ethereum:
+        target: auto
+        threshold: 1%
+        flags:
+          - wallet-common-ethereum
+
+      wallet-common-symbol:
+        target: auto
+        threshold: 1%
+        flags:
+          - wallet-common-symbol
+
 # New root YAML section = `flags:`
 # This is where you would define every flag from your
 # uploader, and update when new Flags added
@@ -76,6 +94,11 @@ flags:
   bridge:
     paths:
       - bridge
+    carryforward: true
+
+  explorer-frontend:
+    paths:
+      - explorer/frontend
     carryforward: true
 
   explorer-nodewatch:
@@ -126,4 +149,14 @@ flags:
   wallet-common-core:
     paths:
       - wallet/common/core
+    carryforward: true
+
+  wallet-common-ethereum:
+    paths:
+      - wallet/common/ethereum
+    carryforward: true
+
+  wallet-common-symbol:
+    paths:
+      - wallet/common/symbol
     carryforward: true

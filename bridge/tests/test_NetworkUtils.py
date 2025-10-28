@@ -63,15 +63,15 @@ async def test_can_estimate_balance_transfer_fees_when_conversion_fee_is_nonzero
 	# Act:
 	fee_information = await estimate_balance_transfer_fees(network_facade, balance_transfer, Decimal('1.234'))
 
-	# Assert: ceil(17600 * 1.234 + 12345000 * 0.077 * 1.234) = ceil(21718.4 + 1172997.21) = ceil(1194715.61)
-	assert FeeInformation(Decimal('21718.4'), Decimal('1172997.21'), 1194716) == fee_information
+	# Assert: ceil(17600 * 1.234 + 12345000 * 0.077) = ceil(21718.4 + 950565) = ceil(972283.4)
+	assert FeeInformation(Decimal('21718.4'), Decimal('950565'), 972284) == fee_information
 
 # endregion
 
 
 # region TransactionSender - constructor, init
 
-def _create_config(server=None, mosaic_id='id:E74B99BA41F4AFEE', config_extensions=None):  # pylint: disable=redefined-outer-name
+def _create_config(server=None, mosaic_id='E74B99BA41F4AFEE', config_extensions=None):  # pylint: disable=redefined-outer-name
 	endpoint = server.make_url('') if server else 'http://foo.bar:1234'
 	return NetworkConfiguration('symbol', 'testnet', endpoint, 'TDDRDLK5QL2LJPZOF26QFXB24TJ5HGB4NDTF6SI', mosaic_id, {
 		'signer_private_key': 'F490900201CD6365A89FDD41B7B2CC71E9537455E8AB626A47EBFA0681E5BE62',
@@ -234,20 +234,20 @@ async def test_try_send_transfer_applies_fee_multipler_to_conversion_fee(server)
 	def set_conversion_fee(config):
 		config.extensions['percentage_conversion_fee'] = '0.007'
 
-	# Act + Assert: conversion fee => ceil(12345011 * .007 *.777 == 67144.514829)
+	# Act + Assert: conversion fee => ceil(12345011 * .007 == 86415.077)
 	#               transaction fee => ceil(17600 * .777 == 13675.2)
 	await _assert_try_send_transfer_success(
 		server,
 		12345011,
 		None,
-		67144 + 13675 + 1,
+		86415 + 13675 + 1,
 		fee_multiplier=Decimal(0.777),
 		update_config=set_conversion_fee)
 
 
 async def test_try_send_transfer_succeeds_with_custom_mosaic_id(server):  # pylint: disable=redefined-outer-name
 	# Arrange:
-	sender = TransactionSender(SymbolNetworkFacade(_create_config(server, 'id:0xABCD12349876FEDC')))
+	sender = TransactionSender(SymbolNetworkFacade(_create_config(server, 'ABCD12349876FEDC')))
 	await sender.init()
 
 	# Act:

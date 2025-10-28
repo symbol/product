@@ -317,10 +317,16 @@ async def _assert_can_query_incoming_transactions(server, start_id, expected_sta
 	assert [
 		make_rpc_request_json('ots_searchTransactionsBefore', ['0xB668a7Cdc62108fAC00F65E1690591B67A1eF7c9', expected_start_id, 25])
 	] == server.mock.request_json_payloads
+
+	hashes = [
+		'0x12dfb8047ec57ba5a34a4ce8b8206e5020da409e06cdcf4ad02cc1034aa178ed',
+		'0x7a184ca95fadc36f35bde72b4f042b281664c9db16e83a8d9ac10ee5b0491f77',
+		'0x6f246476cff6570f9153cd4a463d4a25e6bf9ef1a1fc7b740523362fb391a45c'
+	]
 	assert [
-		{'meta': {'height': 29}, 'transaction': {'blockNumber': '0x1d', 'nonce': '0x2'}},
-		{'meta': {'height': 26}, 'transaction': {'blockNumber': '0x1a', 'nonce': '0x3'}},
-		{'meta': {'height': 7}, 'transaction': {'blockNumber': '0x7', 'nonce': '0x1'}}
+		{'meta': {'height': 29, 'isSuccess': False}, 'transaction': {'blockNumber': '0x1d', 'nonce': '0x2', 'hash': hashes[0]}},
+		{'meta': {'height': 26, 'isSuccess': True}, 'transaction': {'blockNumber': '0x1a', 'nonce': '0x3', 'hash': hashes[1]}},
+		{'meta': {'height': 7, 'isSuccess': False}, 'transaction': {'blockNumber': '0x7', 'nonce': '0x1', 'hash': hashes[2]}}
 	] == transactions
 
 

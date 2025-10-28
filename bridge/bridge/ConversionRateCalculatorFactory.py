@@ -1,3 +1,4 @@
+import logging
 from decimal import ROUND_DOWN, Decimal
 
 
@@ -103,7 +104,8 @@ class ConversionRateCalculatorFactory:
 		if not calculator:
 			return None
 
-		print(''.join([
+		logger = logging.getLogger(__name__)
+		logger.debug(''.join([
 			f'height {height}:',
 			f' native_balance {calculator.native_balance},',
 			f' wrapped_balance {calculator.wrapped_balance},',

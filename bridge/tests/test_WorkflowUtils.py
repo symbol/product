@@ -6,12 +6,14 @@ from symbolchain.nem.Network import Network
 
 from bridge.ConversionRateCalculatorFactory import ConversionRateCalculatorFactory
 from bridge.db.Databases import Databases
-from bridge.models.Constants import PrintableMosaicId
+from bridge.models.BridgeConfiguration import GlobalConfiguration
+from bridge.models.Constants import ExecutionContext, PrintableMosaicId
 from bridge.WorkflowUtils import (
 	NativeConversionRateCalculatorFactory,
 	calculate_search_range,
 	create_conversion_rate_calculator_factory,
-	is_native_to_native_conversion
+	is_native_to_native_conversion,
+	validate_global_configuration
 )
 
 from .test.MockNetworkFacade import MockNemNetworkFacade
@@ -181,7 +183,7 @@ def test_can_create_native_calculator_best_calculator_not_empty():
 # endregion
 
 
-# region is_native_to_native_conversion, create_conversion_rate_calculator_factory
+# region is_native_to_native_conversion, validate_global_configuration
 
 class MockNetworkFacade:
 	def __init__(self, mosaic_id):
@@ -200,6 +202,26 @@ def test_is_native_to_native_conversion_when_network_facade_uses_currency_mosaic
 def test_is_not_native_to_native_conversion_when_network_facade_does_not_use_currency_mosaic():
 	assert not is_native_to_native_conversion(MockNetworkFacade('alpha'))
 
+
+def test_validate_global_configuration_validates_strategy_mode_against_wrapped_token():
+	# Assert: swap mode and native wrapped token   => allowed
+	validate_global_configuration(GlobalConfiguration('swap'), MockNetworkFacade(None))
+
+	# - other mode and not native wrapped token    => allowed
+	validate_global_configuration(GlobalConfiguration('stake'), MockNetworkFacade(12345))
+
+	# native mode and not native wrapped token     => disallowed
+	with pytest.raises(ValueError, match='wrapped token is not native but swap mode is selected'):
+		validate_global_configuration(GlobalConfiguration('swap'), MockNetworkFacade(12345))
+
+	# - other mode and native wrapped token        => disallowed
+	with pytest.raises(ValueError, match='wrapped token is native but swap mode is not selected'):
+		validate_global_configuration(GlobalConfiguration('stake'), MockNetworkFacade(None))
+
+# endregion
+
+
+# region create_conversion_rate_calculator_factory
 
 def _set_max_processed_height(databases, height):
 	databases.balance_change.set_max_processed_height(height)
@@ -220,7 +242,7 @@ def _assert_can_create_default_calculator_factory_when_wrapped_facade_does_not_u
 
 			# Act:
 			factory = create_conversion_rate_calculator_factory(
-				is_unwrap_mode,
+				ExecutionContext(is_unwrap_mode, 'stake'),
 				databases,
 				MockNetworkFacade('alpha'),
 				MockNetworkFacade('beta'),
@@ -251,7 +273,7 @@ def test_can_create_native_calculator_factory_when_wrapped_facade_uses_currency_
 
 			# Act:
 			factory = create_conversion_rate_calculator_factory(
-				False,
+				ExecutionContext(False, 'stake'),
 				databases,
 				MockNetworkFacade('alpha'),
 				MockNetworkFacade(''),
@@ -273,10 +295,40 @@ def test_cannot_create_native_calculator_factory_when_wrapped_facade_uses_curren
 			# Act + Assert:
 			with pytest.raises(ValueError, match='native to native conversions do not support unwrap mode'):
 				create_conversion_rate_calculator_factory(
-					True,
+					ExecutionContext(True, 'stake'),
 					databases,
 					MockNetworkFacade('alpha'),
 					MockNetworkFacade(''),
 					Decimal('2.5'))
+
+
+def _assert_can_create_native_calculator_factory_when_strategy_mode_wrapped(is_unwrap_mode):
+	# Arrange:
+	with tempfile.TemporaryDirectory() as temp_directory:
+		with _create_databases(temp_directory) as databases:
+			databases.create_tables()
+			_set_max_processed_height(databases, 1000)
+
+			# Act:
+			factory = create_conversion_rate_calculator_factory(
+				ExecutionContext(is_unwrap_mode, 'wrap'),
+				databases,
+				MockNetworkFacade('alpha'),
+				MockNetworkFacade('beta'),
+				Decimal('2.5'))
+
+			# Assert:
+			assert isinstance(factory, NativeConversionRateCalculatorFactory)
+			assert Decimal('1') == factory._fee_multiplier  # pylint: disable=protected-access
+
+			assert 1000000 == factory.try_create_calculator(1000).to_wrapped_amount(1000000)
+
+
+def test_can_create_native_calculator_factory_when_strategy_mode_wrapped_and_wrap_mode():
+	_assert_can_create_native_calculator_factory_when_strategy_mode_wrapped(False)
+
+
+def test_can_create_native_calculator_factory_when_strategy_mode_wrapped_and_unwrap_mode():
+	_assert_can_create_native_calculator_factory_when_strategy_mode_wrapped(True)
 
 # endregion

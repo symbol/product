@@ -66,7 +66,7 @@ class NemRoutesFacadeTest(unittest.TestCase):
 		facade.reset_refresh_time()
 
 		# Assert:
-		now = datetime.datetime.utcnow()
+		now = datetime.datetime.now(datetime.timezone.utc)
 		self.assertGreaterEqual(1, (now - facade.last_refresh_time).seconds)
 
 	# endregion
@@ -225,6 +225,7 @@ class SymbolRoutesFacadeTest(unittest.TestCase):  # pylint: disable=too-many-pub
 		# Assert:
 		self.assertEqual(True, result)
 		self.assertEqual(facade.last_reload_time, facade.last_refresh_time)
+		self.assertEqual(Path('tests/resources/symbol_geo_location.json').stat().st_mtime, facade.last_daily_crawl_timestamp)
 
 		self.assertEqual(6, len(facade.repository.node_descriptors))
 		self.assertEqual(4, len(facade.repository.harvester_descriptors))
@@ -249,6 +250,24 @@ class SymbolRoutesFacadeTest(unittest.TestCase):  # pylint: disable=too-many-pub
 		self.assertEqual(4, len(facade.repository.harvester_descriptors))
 		self.assertEqual(4, len(facade.repository.voter_descriptors))
 
+	def test_can_skip_daily_reload_when_noop(self):
+		# Arrange:
+		facade = SymbolRoutesFacade(SymbolNetwork.MAINNET, '<symbol_explorer>')
+
+		# Act:
+		result1 = facade.reload_all(Path('tests/resources'), True)
+
+		# simulate last reload was a minute ago, and the daily crawl time as not change so not triggered
+		facade.last_reload_time = facade.last_reload_time - datetime.timedelta(minutes=1)
+		result2 = facade.reload_all(Path('tests/resources'), True)
+
+		# Assert:
+		self.assertEqual([True, True], [result1, result2])
+		self.assertEqual(facade.last_reload_time, facade.last_refresh_time)
+
+		# daily crawl timestamp should not change
+		self.assertEqual(Path('tests/resources/symbol_geo_location.json').stat().st_mtime, facade.last_daily_crawl_timestamp)
+
 	def test_can_reset_refresh_time(self):
 		# Arrange:
 		facade = SymbolRoutesFacade(SymbolNetwork.MAINNET, '<symbol_explorer>')
@@ -258,7 +277,7 @@ class SymbolRoutesFacadeTest(unittest.TestCase):  # pylint: disable=too-many-pub
 		facade.reset_refresh_time()
 
 		# Assert:
-		now = datetime.datetime.utcnow()
+		now = datetime.datetime.now(datetime.timezone.utc)
 		self.assertGreaterEqual(1, (now - facade.last_refresh_time).seconds)
 
 	# endregion
@@ -603,17 +622,45 @@ class SymbolRoutesFacadeTest(unittest.TestCase):  # pylint: disable=too-many-pub
 		self.assertEqual(2, len(time_series_nodes_count))
 		self.assertEqual(['2025-03-26', '2025-03-27'], list(map(lambda time_series_node: time_series_node['date'], time_series_nodes_count)))
 
+	def test_can_retrieve_finalized_epoch_json(self):
+		# Arrange:
+		facade = SymbolRoutesFacade(SymbolNetwork.MAINNET, '<symbol_explorer>')
+		facade.reload_all(Path('tests/resources'), True)
+
+		# Act:
+		finalized_epoch = facade.json_epoch()
+
+		# Assert:
+		self.assertEqual(3020, finalized_epoch['epoch'])
+
+	def test_can_retrieve_network_config_json(self):
+		# Arrange:
+		symbol_network = SymbolNetwork.MAINNET
+		symbol_network.block_generation_target_time = 30
+		symbol_network.voting_set_grouping = 720
+
+		facade = SymbolRoutesFacade(symbol_network, '<symbol_explorer>')
+		facade.reload_all(Path('tests/resources'), True)
+
+		# Act:
+		network_config = facade.json_network_config()
+
+		# Assert:
+		self.assertEqual(2, len(network_config))
+		self.assertEqual(30, network_config['targetBlockGenerationTime'])
+		self.assertEqual(720, network_config['votingSetGrouping'])
+
 	# endregion
 
 	# region utils
 
 	def test_can_map_version_to_css_class(self):
-		for version in ['1.0.3.7', '1.0.3.8']:
+		for version in ['1.0.3.9']:
 			self.assertEqual('success', _map_version_to_css_class(SymbolRoutesFacade, version))
 
 		self.assertEqual('warning', _map_version_to_css_class(SymbolRoutesFacade, ''))
 
-		for version in ['1.0.3.6', '1.0.3.5', '1.0.3.4', '1.0.3.3', '1.0.3.1', '1.0.3.0', '1.0.2.0', '1.0.1.0', '0.0.0.0']:
+		for version in ['1.0.3.8', '1.0.3.7', '1.0.3.6', '1.0.3.5', '1.0.3.4', '1.0.3.3', '1.0.3.1', '1.0.3.0', '1.0.2.0', '1.0.1.0', '0.0.0.0']:
 			self.assertEqual('danger', _map_version_to_css_class(SymbolRoutesFacade, version))
 
 	# endregion

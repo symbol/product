@@ -1,6 +1,6 @@
 import csv
 import json
-from collections import namedtuple
+from collections import Counter, namedtuple
 
 from symbolchain.CryptoTypes import Hash256, PublicKey
 from symbolchain.nem.Network import Address as NemAddress
@@ -156,6 +156,17 @@ class NetworkRepository:
 		heights = [descriptor.finalized_info.height for descriptor in self.node_descriptors if descriptor.finalized_info.height]
 		heights.sort()
 		return 1 if not heights else heights[len(heights) // 2]
+
+	def finalized_epoch(self):
+		"""Returns most common finalized epoch of the network."""
+
+		epochs = [descriptor.finalized_info.epoch for descriptor in self.node_descriptors if descriptor.finalized_info.epoch]
+
+		if not epochs:
+			return 0
+
+		epoch_counts = Counter(epochs)
+		return epoch_counts.most_common(1)[0][0]
 
 	def load_node_descriptors(self, nodes_data_filepath):
 		"""Loads node descriptors."""

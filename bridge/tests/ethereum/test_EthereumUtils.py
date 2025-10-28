@@ -55,7 +55,8 @@ class EthereumUtilsTest(unittest.TestCase):
 
 		transaction_with_meta_json = {
 			'meta': {
-				'height': request.transaction_height
+				'height': request.transaction_height,
+				'isSuccess': True
 			},
 			'transaction': {
 				'from': str(request.sender_address),
@@ -150,6 +151,19 @@ class EthereumUtilsTest(unittest.TestCase):
 
 		# Assert:
 		expected_error_message = 'destination address 983678467BDE6B234D8DDE673914A407AAB7287F244835 is invalid'
+		assert_wrap_request_failure(self, result, make_wrap_error_from_request(request, expected_error_message))
+
+	def test_cannot_extract_wrap_request_from_transfer_with_failed_ethereum_transaction(self):
+		# Arrange:
+		request = self._create_simple_wrap_request()
+		transaction_with_meta_json = self._create_transfer_json(request)
+		transaction_with_meta_json['meta']['isSuccess'] = False
+
+		# Act:
+		result = self._extract_wrap_request_from_transaction(transaction_with_meta_json)
+
+		# Assert:
+		expected_error_message = 'ethereum transaction failed on ethereum blockchain'
 		assert_wrap_request_failure(self, result, make_wrap_error_from_request(request, expected_error_message))
 
 	# endregion

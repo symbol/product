@@ -219,9 +219,18 @@ class EthereumConnector(BasicConnector):
 
 		request_json = make_rpc_request_json('ots_searchTransactionsBefore', [str(account_address), start_id or 0, 25])
 		result_json = await self._post_rpc(request_json)
+
+		transaction_hash_to_status = {
+			receipt_json['transactionHash']: 1 == parse_rpc_response_hex_value(receipt_json['status'])
+			for receipt_json in result_json['receipts']
+		}
+
 		return [
 			{
-				'meta': {'height': parse_rpc_response_hex_value(transaction_json['blockNumber'])},
+				'meta': {
+					'height': parse_rpc_response_hex_value(transaction_json['blockNumber']),
+					'isSuccess': transaction_hash_to_status.get(transaction_json['hash'], False)  # map unknown hashes to failure
+				},
 				'transaction': transaction_json
 			} for transaction_json in result_json['txs']
 		]

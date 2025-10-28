@@ -1,0 +1,42 @@
+@import '../variables';
+
+.listColumn {
+	display: flex;
+	flex-direction: column;
+	gap: 0;
+	align-items: flex-start;
+}
+
+.listRow {
+	display: inline-block;
+}
+
+.buttonMore {
+	display: inline-block;
+	flex-grow: 0;
+	margin: 0 $spacing-base / 2;
+	padding: 0 $spacing-base / 2;
+	color: $color-primary;
+	background-color: $color-primary-light;
+	border-radius: $border-radius-chip;
+	cursor: pointer;
+}
+
+.modal {
+	display: flex;
+	flex-direction: column;
+	gap: $spacing-base * 2;
+}
+
+.modalContent {
+	display: flex;
+	flex-direction: column;
+	gap: $spacing-base;
+	overflow-y: auto;
+}
+
+.buttonClose {
+	position: absolute;
+	top: 2rem;
+	right: 2rem;
+}

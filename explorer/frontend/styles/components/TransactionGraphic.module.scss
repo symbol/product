@@ -1,0 +1,65 @@
+@import '../variables';
+
+.transactionGraphic {
+	display: flex;
+	flex-direction: column;
+	gap: $spacing-base * 3;
+	width: 100%;
+
+	.container {
+		.graphic {
+			position: relative;
+			display: flex;
+			flex-direction: row;
+			flex-grow: 1;
+			flex-shrink: 0;
+			align-items: center;
+			justify-content: space-between;
+			height: 10rem;
+
+			.titleRow {
+				position: absolute;
+				top: 0;
+				left: 0;
+				display: flex;
+				justify-content: space-between;
+				width: 100%;
+				font: $font-body-bold;
+			}
+
+			.transactionType {
+				position: absolute;
+				top: calc(50% + 1rem);
+				left: 50%;
+				font: $font-body-bold;
+				transform: translate(-50%, -100%);
+			}
+
+			.arrow {
+				position: absolute;
+				top: calc(50% + 1rem);
+				left: 50%;
+				width: 10rem;
+				height: 2rem;
+				transform: translate(-50%, -50%);
+			}
+
+			.accountLeft {
+				position: absolute;
+				top: 2rem;
+				left: 0;
+			}
+
+			.accountRight {
+				position: absolute;
+				right: 0;
+				bottom: 0;
+			}
+		}
+
+		.info {
+			flex: 1;
+			word-break: break-all;
+		}
+	}
+}

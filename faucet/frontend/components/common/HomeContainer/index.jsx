@@ -3,8 +3,7 @@ import Footer from '../../../components/common/Footer';
 import Header from '../../../components/common/Header';
 import { absoluteToRelativeAmount } from '../../../utils/helper';
 import axios from 'axios';
-import React, { useEffect, useState } from 'react';
-import 'react-toastify/dist/ReactToastify.css';
+import { useEffect, useState } from 'react';
 
 const HomeContainer = function (props) {
 	const { homeConfig, Config } = props;

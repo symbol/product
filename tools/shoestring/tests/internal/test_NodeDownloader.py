@@ -29,9 +29,9 @@ async def test_can_download_peer_nodes(server):  # pylint: disable=redefined-out
 
 	# Assert:
 	assert [f'{server.make_url("")}/api/symbol/nodes/peer'] == server.mock.urls
-	assert 5 == len(downloader.nodes)
+	assert 6 == len(downloader.nodes)
 	assert [
-		'', '! symplanet2', 'Thank you !', 'The Wolf Farm owned by Tresto(@TrendStream)', '! symplanet1'
+		'', '! symplanet2', 'Thank you !', 'The Wolf Farm owned by Tresto(@TrendStream)', '! symplanet1', 'voting node'
 	] == [node['name'] for node in downloader.nodes]
 
 
@@ -92,6 +92,11 @@ async def test_can_select_peer_nodes_with_endpoint(server):  # pylint: disable=r
 			'metadata': {'name': '', 'roles': 'Peer,Api'}
 		},
 		{
+			'publicKey': 'C1773740461C97FF172E966213716E089A93DC43F10BE55DC27CC49CBA67E692',
+			'endpoint': {'host': 'whydah.symbolmain.net', 'port': 7900, 'api_port': 3001},
+			'metadata': {'name': 'voting node', 'roles': 'Peer,Api,Voting'}
+		},
+		{
 			'publicKey': 'D8F4FE47F1F5B1046748067E52725AEBAA1ED9F3CE45D02054011A39671DD9AA',
 			'endpoint': {'host': 'wolf.importance.jp', 'port': 7900, 'api_port': 3000},
 			'metadata': {'name': 'The Wolf Farm owned by Tresto(@TrendStream)', 'roles': 'Peer,Api'}
@@ -125,6 +130,11 @@ async def test_can_select_api_nodes_with_endpoint(server):  # pylint: disable=re
 			'metadata': {'name': '', 'roles': 'Peer,Api'}
 		},
 		{
+			'publicKey': 'C1773740461C97FF172E966213716E089A93DC43F10BE55DC27CC49CBA67E692',
+			'endpoint': {'host': 'whydah.symbolmain.net', 'port': 7900, 'api_port': 3001},
+			'metadata': {'name': 'voting node', 'roles': 'Peer,Api,Voting'}
+		},
+		{
 			'publicKey': 'D8F4FE47F1F5B1046748067E52725AEBAA1ED9F3CE45D02054011A39671DD9AA',
 			'endpoint': {'host': 'wolf.importance.jp', 'port': 7900, 'api_port': 3000},
 			'metadata': {'name': 'The Wolf Farm owned by Tresto(@TrendStream)', 'roles': 'Peer,Api'}
@@ -152,6 +162,11 @@ async def test_can_filter_selected_peer_nodes_by_min_balance(server):  # pylint:
 			'publicKey': '776B597C1C80782224A3DA9A19FD5D23A3281CF866B9F4720A4414568447A92A',
 			'endpoint': {'host': 'ik1-432-48199.vs.sakura.ne.jp', 'port': 7900, 'api_port': 3333},
 			'metadata': {'name': '', 'roles': 'Peer,Api'}
+		},
+		{
+			'publicKey': 'C1773740461C97FF172E966213716E089A93DC43F10BE55DC27CC49CBA67E692',
+			'endpoint': {'host': 'whydah.symbolmain.net', 'port': 7900, 'api_port': 3001},
+			'metadata': {'name': 'voting node', 'roles': 'Peer,Api,Voting'}
 		},
 		{
 			'publicKey': 'D8F4FE47F1F5B1046748067E52725AEBAA1ED9F3CE45D02054011A39671DD9AA',
@@ -183,6 +198,11 @@ async def test_can_filter_selected_api_nodes_by_min_balance(server):  # pylint: 
 			'metadata': {'name': '', 'roles': 'Peer,Api'}
 		},
 		{
+			'publicKey': 'C1773740461C97FF172E966213716E089A93DC43F10BE55DC27CC49CBA67E692',
+			'endpoint': {'host': 'whydah.symbolmain.net', 'port': 7900, 'api_port': 3001},
+			'metadata': {'name': 'voting node', 'roles': 'Peer,Api,Voting'}
+		},
+		{
 			'publicKey': 'D8F4FE47F1F5B1046748067E52725AEBAA1ED9F3CE45D02054011A39671DD9AA',
 			'endpoint': {'host': 'wolf.importance.jp', 'port': 7900, 'api_port': 3000},
 			'metadata': {'name': 'The Wolf Farm owned by Tresto(@TrendStream)', 'roles': 'Peer,Api'}
@@ -205,7 +225,8 @@ async def test_can_limit_selected_peer_nodes(server):  # pylint: disable=redefin
 		'3DC99526E1149E3D2581563B2C7A963908A1A0044509240F139A86331C986884',
 		'50C16D3DAA2A708E3781ED201F15AEF23F0B3989584DF832284A67F14372B104',
 		'776B597C1C80782224A3DA9A19FD5D23A3281CF866B9F4720A4414568447A92A',
-		'D8F4FE47F1F5B1046748067E52725AEBAA1ED9F3CE45D02054011A39671DD9AA'
+		'D8F4FE47F1F5B1046748067E52725AEBAA1ED9F3CE45D02054011A39671DD9AA',
+		'C1773740461C97FF172E966213716E089A93DC43F10BE55DC27CC49CBA67E692'
 	]
 	matching_public_key_count = reduce(
 		lambda total, public_key: total + (1 if public_key in node_public_keys else 0),
@@ -229,7 +250,8 @@ async def test_can_limit_selected_api_nodes(server):  # pylint: disable=redefine
 		'50C16D3DAA2A708E3781ED201F15AEF23F0B3989584DF832284A67F14372B104',
 		'529BF60BB1011FCAE51C8D798E23224ACBA29D18B5054830F83E4E8E9A3BE526',
 		'776B597C1C80782224A3DA9A19FD5D23A3281CF866B9F4720A4414568447A92A',
-		'D8F4FE47F1F5B1046748067E52725AEBAA1ED9F3CE45D02054011A39671DD9AA'
+		'D8F4FE47F1F5B1046748067E52725AEBAA1ED9F3CE45D02054011A39671DD9AA',
+		'C1773740461C97FF172E966213716E089A93DC43F10BE55DC27CC49CBA67E692'
 	]
 	matching_public_key_count = reduce(
 		lambda total, public_key: total + (1 if public_key in node_public_keys else 0),
@@ -255,7 +277,8 @@ async def test_can_select_api_endpoints(server):  # pylint: disable=redefined-ou
 		'http://0-0-5symbol.open-nodes.com:3000',
 		'http://ik1-432-48199.vs.sakura.ne.jp:3333',
 		'http://symbol.harvest-monitor.com:3000',
-		'http://wolf.importance.jp:3000'
+		'http://wolf.importance.jp:3000',
+		'https://whydah.symbolmain.net:3001'
 	] == endpoints
 
 
@@ -269,10 +292,12 @@ async def test_can_filter_selected_api_endpoints_by_min_balance(server):  # pyli
 	endpoints.sort()
 
 	# Assert:
+	# pylint: disable=duplicate-code
 	assert [
 		'http://ik1-432-48199.vs.sakura.ne.jp:3333',
 		'http://symbol.harvest-monitor.com:3000',
-		'http://wolf.importance.jp:3000'
+		'http://wolf.importance.jp:3000',
+		'https://whydah.symbolmain.net:3001'
 	] == endpoints
 
 
@@ -281,7 +306,8 @@ def _assert_api_endpoints_subset(endpoints):
 		'http://0-0-5symbol.open-nodes.com:3000',
 		'http://ik1-432-48199.vs.sakura.ne.jp:3333',
 		'http://symbol.harvest-monitor.com:3000',
-		'http://wolf.importance.jp:3000'
+		'http://wolf.importance.jp:3000',
+		'https://whydah.symbolmain.net:3001'
 	]
 	matching_endpoint_count = reduce(
 		lambda total, endpoint: total + (1 if endpoint in endpoints else 0),

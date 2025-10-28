@@ -5,6 +5,13 @@ The changelog format is based on [Keep a Changelog](https://keepachangelog.com/e
 
 ## next
 
+## [0.2.2] - 23 Sept-2025
+
+### Added
+- add support for Catapult v1.0.3.9 release.
+- add support for REST v2.5.1 release.
+- add support for Aggregate transaction V3.
+
 ## [0.2.1] - 08 Apr-2025
 
 ### Added
@@ -28,5 +35,6 @@ The changelog format is based on [Keep a Changelog](https://keepachangelog.com/e
 - fix openssl generating x509 v3 certificates by explicitly specify x509_extensions
 - health check was failing nodes with https REST due to accessing wrong property from context.  the health agent node using domain name when available.
 
+[0.2.2]: https://github.com/symbol/product/releases/tag/tools%2Fshoestring%2Fv0.2.1...tools%2Fshoestring%2Fv0.2.2
 [0.2.1]: https://github.com/symbol/product/releases/tag/tools%2Fshoestring%2Fv0.1.3...tools%2Fshoestring%2Fv0.2.1
 [0.1.3]: https://github.com/symbol/product/releases/tag/tools%2Fshoestring%2Fv0.1.3

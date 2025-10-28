@@ -128,7 +128,7 @@ export class WalletController {
 				secureStorageInterface: scopedSecureStorageInterface.createScope(moduleName),
 				api,
 				sdk,
-				root: this,
+				walletController: this,
 				onStateChange: this._handleModuleStateChange
 			});
 

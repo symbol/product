@@ -2,6 +2,9 @@ builds:
   - name: Bridge
     path: bridge
 
+  - name: Explorer Frontend
+    path: explorer/frontend
+
   - name: Explorer Nodewatch
     path: explorer/nodewatch
 
@@ -28,6 +31,12 @@ builds:
 
   - name: Wallet Common Core
     path: wallet/common/core
+
+  - name: Wallet Common Ethereum
+    path: wallet/common/ethereum
+
+  - name: Wallet Common Symbol
+    path: wallet/common/symbol
 
 customBuilds:
   - name: Nightly Job

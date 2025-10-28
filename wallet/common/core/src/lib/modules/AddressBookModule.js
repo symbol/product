@@ -23,7 +23,7 @@ export class AddressBookModule {
 	static name = 'addressBook';
 
 	_persistentStorageRepository;
-	#root;
+	#walletController;
 	#networkIdentifiers;
 	#onStateChange;
 
@@ -31,7 +31,7 @@ export class AddressBookModule {
 
 	init = options => {
 		this._state = createDefaultState(options.networkIdentifiers);
-		this.#root = options.root;
+		this.#walletController = options.walletController;
 		this._persistentStorageRepository = new PersistentStorageRepository(options.persistentStorageInterface);
 		this.#onStateChange = options.onStateChange;
 		this.#networkIdentifiers = options.networkIdentifiers;
@@ -74,7 +74,7 @@ export class AddressBookModule {
 	 * @returns {Contact[]} The contacts.
 	 */
 	get contacts() {
-		return this._state.addressBook[this.#root.networkIdentifier];
+		return this._state.addressBook[this.#walletController.networkIdentifier];
 	}
 
 	/**
@@ -119,7 +119,7 @@ export class AddressBookModule {
 	 */
 	addContact = async newContact => {
 		const addressBook = await this.#loadAddressBook();
-		const networkContacts = addressBook[this.#root.networkIdentifier];
+		const networkContacts = addressBook[this.#walletController.networkIdentifier];
 		const isContactAlreadyExists = networkContacts.find(contact => contact.address === newContact.address);
 
 		if (isContactAlreadyExists) {
@@ -145,7 +145,7 @@ export class AddressBookModule {
 	 */
 	removeContact = async id => {
 		const addressBook = await this.#loadAddressBook();
-		const networkContacts = addressBook[this.#root.networkIdentifier];
+		const networkContacts = addressBook[this.#walletController.networkIdentifier];
 		const updatedNetworkContacts = networkContacts.filter(contact => contact.id !== id);
 
 		if (networkContacts.length === updatedNetworkContacts.length) {
@@ -155,7 +155,7 @@ export class AddressBookModule {
 			);
 		}
 
-		addressBook[this.#root.networkIdentifier] = updatedNetworkContacts;
+		addressBook[this.#walletController.networkIdentifier] = updatedNetworkContacts;
 		await this._persistentStorageRepository.setAddressBook(addressBook);
 
 		this.#setState(() => {
@@ -171,7 +171,7 @@ export class AddressBookModule {
 	 */
 	updateContact = async newContact => {
 		const addressBook = await this.#loadAddressBook();
-		const networkContacts = addressBook[this.#root.networkIdentifier];
+		const networkContacts = addressBook[this.#walletController.networkIdentifier];
 		const contactToUpdate = networkContacts.find(contact => contact.id === newContact.id);
 
 		if (!contactToUpdate) {
