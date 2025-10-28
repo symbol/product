@@ -43,7 +43,7 @@ class MaxProcessedHeightMixin:
     def set_max_processed_height(self, height):
         """Sets max processed height."""
 
-        self.exec(
+        res = self.exec(
             """
 				INSERT INTO max_processed_height VALUES (?, 1)
 				ON CONFLICT(marker)
@@ -52,6 +52,7 @@ class MaxProcessedHeightMixin:
             (height,),
         )
         self.commit()
+        return res
 
     def max_processed_height(self):
         """Gets max processed height."""
