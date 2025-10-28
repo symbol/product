@@ -143,7 +143,10 @@ CREATE TABLE IF NOT EXISTS payout_block_metadata (
         """Adds an error to the error table."""
 
         res = self.exec(
-            """INSERT INTO wrap_error VALUES (?, ?, ?, ?, ?)""",
+            """INSERT INTO wrap_error(
+                request_transaction_height, request_transaction_hash, 
+                request_transaction_subindex, address, message) 
+                VALUES (?, ?, ?, ?, ?)""",
             (
                 error.transaction_height,
                 error.transaction_hash.bytes,
@@ -159,7 +162,12 @@ CREATE TABLE IF NOT EXISTS payout_block_metadata (
         """Adds a request to the request table."""
 
         res = self.exec(
-            """INSERT INTO wrap_request VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            """INSERT INTO wrap_request(
+                request_transaction_height, request_transaction_hash, 
+                request_transaction_subindex, address, amount, 
+                destination_address, payout_status, 
+                payout_transaction_hash, is_retried) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (
                 request.transaction_height,
                 request.transaction_hash.bytes,
@@ -316,7 +324,11 @@ CREATE TABLE IF NOT EXISTS payout_block_metadata (
         )
 
         count += self.exec(
-            """INSERT INTO payout_transaction VALUES (?, ?, ?, ?, ?)""",
+            """INSERT INTO payout_transaction(
+                transaction_hash, net_amount, total_fee,
+                conversion_rate, height
+                ) 
+                VALUES (?, ?, ?, ?, ?)""",
             (
                 payout_details.transaction_hash.bytes,
                 float(payout_details.net_amount),
@@ -443,7 +455,7 @@ CREATE TABLE IF NOT EXISTS payout_block_metadata (
 
         self.exec(
             f"""
-				INSERT INTO {table_name} VALUES (?, ?)
+				INSERT INTO {table_name} (height, timestamp) VALUES (?, ?)
 				ON CONFLICT(height)
 				DO UPDATE SET timestamp=excluded.timestamp
 			""",
