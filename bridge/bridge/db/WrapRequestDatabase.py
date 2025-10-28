@@ -187,7 +187,7 @@ CREATE TABLE IF NOT EXISTS payout_block_metadata (
 
     # region requests
 
-    def _to_request(self, request_tuple):
+    def _to_request(self, request_tuple) -> WrapRequest:
         return WrapRequest(
             request_tuple[0],
             Hash256(request_tuple[1]),
@@ -197,7 +197,7 @@ CREATE TABLE IF NOT EXISTS payout_block_metadata (
             request_tuple[5],
         )
 
-    def requests(self):
+    def requests(self) -> Iterator[WrapRequest]:
         """Returns requests."""
 
         rows = self.exec(
