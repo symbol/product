@@ -1,6 +1,8 @@
 from prompt_toolkit.filters import Condition
 from prompt_toolkit.layout.containers import ConditionalContainer, VSplit
-from prompt_toolkit.widgets import Box, Button, Shadow
+from prompt_toolkit.widgets import Box, Shadow
+
+from shoestring.wizard.MultibyteButton import MultibyteButton as Button
 
 
 class Navigation:
