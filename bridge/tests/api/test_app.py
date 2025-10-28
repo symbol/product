@@ -135,8 +135,12 @@ def app_n2n(nem_server, ethereum_server, coingecko_server):  # pylint: disable=r
 @pytest.fixture
 def app_limited(nem_server, symbol_server, coingecko_server):  # pylint: disable=redefined-outer-name
 	def update_network_configs(native_network_config, wrapped_network_config):
-		native_network_config['maxTransferAmount'] = '50'
-		wrapped_network_config['maxTransferAmount'] = '21'
+		# not realistic for maxTransferAmount > maxDailyTransferAmount, but this allows both cases to be tested more easily
+		native_network_config['maxTransferAmount'] = '7000000000'
+		native_network_config['maxDailyTransferAmount'] = '300000000'
+
+		wrapped_network_config['maxTransferAmount'] = '105666660'
+		wrapped_network_config['maxDailyTransferAmount'] = '105666700'
 
 	with tempfile.TemporaryDirectory() as temp_directory:
 		database_directory = _configure_app_directory(temp_directory, nem_server, symbol_server, coingecko_server, update_network_configs)
@@ -1044,14 +1048,34 @@ async def test_prepare_wrap_returns_request_limit_exceeded_errors_gracefully(cli
 		_seed_database_for_prepare_tests(client_limited.database_directory)
 
 		# Act:
-		response = client_limited.post('/wrap/prepare', json={'amount': '1234000000', 'recipientAddress': SYMBOL_ADDRESSES[2]})
+		response = client_limited.post('/wrap/prepare', json={'amount': '634000000', 'recipientAddress': SYMBOL_ADDRESSES[2]})
 		response_json = json.loads(response.data)
 
 		# Assert:
 		_assert_json_response_bad_request(response)
 		assert {
 			'errorCode': 'REQUEST_LIMIT_EXCEEDED',
-			'error': 'gross transfer amount 205666666 exceeds max transfer amount 21'
+			'error': 'gross transfer amount 105666666 exceeds max transfer amount 105666660'
+		} == response_json
+
+	loop = asyncio.get_running_loop()
+	await loop.run_in_executor(None, test_impl)
+
+
+async def test_prepare_wrap_returns_daily_limit_exceeded_errors_gracefully(client_limited):  # pylint: disable=redefined-outer-name
+	def test_impl():
+		# Arrange:
+		_seed_database_for_prepare_tests(client_limited.database_directory)
+
+		# Act:
+		response = client_limited.post('/wrap/prepare', json={'amount': '633999900', 'recipientAddress': SYMBOL_ADDRESSES[2]})
+		response_json = json.loads(response.data)
+
+		# Assert:
+		_assert_json_response_bad_request(response)
+		assert {
+			'errorCode': 'DAILY_LIMIT_EXCEEDED',
+			'error': 'daily transfer limit is exceeded (105666450 remaining), please try again later'
 		} == response_json
 
 	loop = asyncio.get_running_loop()
@@ -1143,7 +1167,27 @@ async def test_prepare_unwrap_returns_request_limit_exceeded_errors_gracefully(c
 		_assert_json_response_bad_request(response)
 		assert {
 			'errorCode': 'REQUEST_LIMIT_EXCEEDED',
-			'error': 'gross transfer amount 7403999999 exceeds max transfer amount 50'
+			'error': 'gross transfer amount 7403999999 exceeds max transfer amount 7000000000'
+		} == response_json
+
+	loop = asyncio.get_running_loop()
+	await loop.run_in_executor(None, test_impl)
+
+
+async def test_prepare_unwrap_returns_daily_limit_exceeded_errors_gracefully(client_limited):  # pylint: disable=redefined-outer-name
+	def test_impl():
+		# Arrange:
+		_seed_database_for_prepare_tests(client_limited.database_directory)
+
+		# Act:
+		response = client_limited.post('/unwrap/prepare', json={'amount': '634000000', 'recipientAddress': NEM_ADDRESSES[2]})
+		response_json = json.loads(response.data)
+
+		# Assert:
+		_assert_json_response_bad_request(response)
+		assert {
+			'errorCode': 'DAILY_LIMIT_EXCEEDED',
+			'error': 'daily transfer limit is exceeded (300000000 remaining), please try again later'
 		} == response_json
 
 	loop = asyncio.get_running_loop()

@@ -194,6 +194,22 @@ class WrapRequestDatabase(MaxProcessedHeightMixin):  # pylint: disable=too-many-
 		sum_amounts = cursor.fetchone()
 		return sum(amount if amount else 0 for amount in sum_amounts)
 
+	def cumulative_gross_amount_sent_since(self, timestamp):
+		"""
+		Gets cumulative gross amount of wrapped tokens sent after timestamp.
+		Importantly, timestamp is relative to sent time, not request time.
+		"""
+
+		cursor = self.connection.cursor()
+		cursor.execute('''
+			SELECT SUM(payout_transaction.net_amount), SUM(payout_transaction.total_fee)
+			FROM wrap_request
+			LEFT JOIN payout_transaction ON wrap_request.payout_transaction_hash = payout_transaction.transaction_hash
+			WHERE wrap_request.payout_sent_timestamp > ? AND NOT wrap_request.is_retried
+		''', (timestamp,))
+		sum_amounts = cursor.fetchone()
+		return sum(amount if amount else 0 for amount in sum_amounts)
+
 	def payout_transaction_hashes_at(self, timestamp):
 		"""Gets all payout transaction hashes at or before timestamp."""
 
