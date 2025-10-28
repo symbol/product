@@ -8,6 +8,7 @@ It includes our optin manager.
 | [@bridge](bridge) | [![lint][bridge-lint]][bridge-job] | | [![test][bridge-test]][bridge-job] | [![][bridge-cov]][bridge-cov-link]
 | [@explorer/frontend](explorer/frontend) | [![lint][explorer-frontend-lint]][explorer-frontend-job] | | [![test][explorer-frontend-test]][explorer-frontend-job] | [![][explorer-frontend-cov]][explorer-frontend-cov-link]
 | [@explorer/nodewatch](explorer/nodewatch) | [![lint][explorer-nodewatch-lint]][explorer-nodewatch-job] | | [![test][explorer-nodewatch-test]][explorer-nodewatch-job] | [![][explorer-nodewatch-cov]][explorer-nodewatch-cov-link]
+| [@explorer/puller](explorer/puller) | [![lint][explorer-puller-lint]][explorer-puller-job] | | [![test][explorer-puller-test]][explorer-puller-job] | [![][explorer-puller-cov]][explorer-puller-cov-link]
 | [@explorer/rest](explorer/rest) | [![lint][explorer-rest-lint]][explorer-rest-job] | | [![test][explorer-rest-test]][explorer-rest-job] | [![][explorer-rest-cov]][explorer-rest-cov-link]
 | [@faucet/authenticator](faucet/authenticator) | [![lint][faucet-authenticator-lint]][faucet-authenticator-job] | | [![test][faucet-authenticator-test]][faucet-authenticator-job]| [![][faucet-authenticator-cov]][faucet-authenticator-cov-link] |
 | [@faucet/backend](faucet/backend) | [![lint][faucet-backend-lint]][faucet-backend-job] | | [![test][faucet-backend-test]][faucet-backend-job]| [![][faucet-backend-cov]][faucet-backend-cov-link] |
@@ -45,6 +46,12 @@ Detailed version can be seen on [codecov.io][product-cov-link].
 [explorer-nodewatch-test]: https://jenkins.symbolsyndicate.us/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Fexplorer-nodewatch%2Fdev%2F&config=explorer-nodewatch-test
 [explorer-nodewatch-cov]: https://codecov.io/gh/symbol/product/branch/dev/graph/badge.svg?token=SSYYBMK0M7&flag=explorer-nodewatch
 [explorer-nodewatch-cov-link]: https://codecov.io/gh/symbol/product/tree/dev/explorer/nodewatch
+
+[explorer-puller-job]: https://jenkins.symbolsyndicate.us/blue/organizations/jenkins/Symbol%2Fgenerated%2Fproduct%2Fexplorer-puller/activity?branch=dev
+[explorer-puller-lint]: https://jenkins.symbolsyndicate.us/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Fexplorer-puller%2Fdev%2F&config=explorer-puller-lint
+[explorer-puller-test]: https://jenkins.symbolsyndicate.us/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Fexplorer-puller%2Fdev%2F&config=explorer-puller-test
+[explorer-puller-cov]: https://codecov.io/gh/symbol/product/branch/dev/graph/badge.svg?token=SSYYBMK0M7&flag=explorer-puller
+[explorer-puller-cov-link]: https://codecov.io/gh/symbol/product/tree/dev/explorer/puller
 
 [explorer-rest-job]: https://jenkins.symbolsyndicate.us/blue/organizations/jenkins/Symbol%2Fgenerated%2Fproduct%2Fexplorer-rest/activity?branch=dev
 [explorer-rest-lint]: https://jenkins.symbolsyndicate.us/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Fexplorer-rest%2Fdev%2F&config=explorer-rest-lint
