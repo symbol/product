@@ -52,6 +52,12 @@ const createDefaultState = (networkIdentifiers, createDefaultNetworkProperties) 
 export class WalletController {
 	modules = {};
 
+	/** @type {string} */
+	#chainName;
+
+	/** @type {string} */
+	#ticker;
+
 	/** @type {string[]} */
 	networkIdentifiers;
 
@@ -82,6 +88,8 @@ export class WalletController {
 	 * Constructs a new WalletController instance.
 	 *
 	 * @param {object} params - The parameters for the WalletController.
+	 * @param {string} params.chainName - The the blockchain protocol name (e.g., 'symbol').
+	 * @param {string} params.ticker - The ticker symbol of the main network currency (e.g., 'XYM').
 	 * @param {ProtocolNetworkApi} params.api - The API instance used for network communication.
 	 * @param {ProtocolWalletSdk} params.sdk - The SDK instance for blockchain interactions.
 	 * @param {StorageInterface} params.persistentStorageInterface - The persistent storage provider.
@@ -95,6 +103,8 @@ export class WalletController {
 	 * @param {function(function): void} [params.setStateProcessor] - Optional function to process state changes.
 	 */
 	constructor({
+		chainName,
+		ticker,
 		api,
 		sdk,
 		persistentStorageInterface,
@@ -110,6 +120,8 @@ export class WalletController {
 		validateNamespacedFacade(api, REQUIRED_API_METHODS);
 		validateFacade(sdk, REQUIRED_SDK_METHODS);
 
+		this.#chainName = chainName;
+		this.#ticker = ticker;
 		this._api = api;
 		this.networkIdentifiers = networkIdentifiers;
 		this.#createDefaultNetworkProperties = createDefaultNetworkProperties;
@@ -155,6 +167,30 @@ export class WalletController {
 		});
 
 		this.resetState();
+	}
+
+	/**
+	 * Returns the blockchain protocol name.
+	 * @returns {string} - The blockchain protocol name.
+	 */
+	get chainName() {
+		return this.#chainName;
+	}
+
+	/**
+	 * Returns the network API instance.
+	 * @returns {ProtocolNetworkApi} - The network API instance.
+	 */
+	get networkApi() {
+		return this._api;
+	}
+
+	/**
+	 * Returns the ticker symbol of the main network currency.
+	 * @returns {string} - The ticker symbol of the main network currency.
+	 */
+	get ticker() {
+		return this.#ticker;
 	}
 
 	/**
