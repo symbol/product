@@ -1,10 +1,10 @@
-aiohttp~=3.12.6
+aiohttp~=3.13.0
 argcomplete~=3.6.2
 Jinja2~=3.1.2
 prompt_toolkit~=3.0.39
 PyYAML~=6.0.1
 requests~=2.32.2
 symbol-lightapi~=0.0.7
-symbol-sdk-python~=3.2.3
+symbol-sdk-python~=3.3.0
 websockets~=15.0
 zenlog~=1.1

@@ -52,7 +52,7 @@ async def main():  # pylint: disable=too-many-locals
 
 		ConditionalContainer(
 			Window(
-				FormattedTextControl('one or more inputs have errors that need fixing'),
+				FormattedTextControl(_('wizard-validation-error-text')),
 				height=1,
 				style='class:validation-toolbar'
 			),

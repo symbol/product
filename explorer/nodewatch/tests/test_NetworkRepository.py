@@ -1,4 +1,5 @@
 import unittest
+from collections import namedtuple
 
 from symbolchain.CryptoTypes import PublicKey
 from symbolchain.nem.Network import Address as NemAddress
@@ -8,14 +9,38 @@ from symbolchain.symbol.Network import Network as SymbolNetwork
 
 from nodewatch.NetworkRepository import NetworkRepository
 
+FinalizedInfo = namedtuple('FinalizedInfo', ['height', 'epoch', 'hash', 'point'])
+
 
 class NetworkRepositoryTest(unittest.TestCase):
+	# pylint: disable=duplicate-code
+	EXPECTED_SYMBOL_GEO_VALUES = {
+		'continent': 'Asia',
+		'country': 'Japan',
+		'region': '13',
+		'city': 'Chiyoda',
+		'lat': 12.0,
+		'lon': 15.0,
+		'isp': 'Internet Inc.'
+	}
+
+	EXPECTED_NEM_GEO_VALUES = {
+		'continent': 'Europe',
+		'country': 'Germany',
+		'region': 'NW',
+		'city': 'Düsseldorf',
+		'lat': 50.0,
+		'lon': 6.0,
+		'isp': 'Contabo GmbH'
+	}
+
 	# region load node descriptors
 
 	def _assert_node_descriptor(self, descriptor, **kwargs):
 		property_names = [
 			'main_address', 'main_public_key', 'node_public_key',
-			'endpoint', 'name', 'height', 'finalized_height', 'version', 'balance', 'roles', 'has_api'
+			'endpoint', 'name', 'height', 'finalized_info', 'is_healthy', 'is_ssl_enabled',
+			'rest_version', 'geo_location', 'version', 'balance', 'roles', 'has_api'
 		]
 		for name in property_names:
 			self.assertEqual(kwargs[name], getattr(descriptor, name))
@@ -34,6 +59,8 @@ class NetworkRepositoryTest(unittest.TestCase):
 		# Arrange:
 		repository = NetworkRepository(NemNetwork.MAINNET, 'nem')
 
+		repository.load_geo_location_descriptors('tests/resources/nem_geo_location.json')
+
 		# Act:
 		repository.load_node_descriptors('tests/resources/nem_nodes.json')
 
@@ -50,7 +77,11 @@ class NetworkRepositoryTest(unittest.TestCase):
 			endpoint='http://51.79.73.50:7890',
 			name='August',
 			height=3850057,
-			finalized_height=0,
+			finalized_info=FinalizedInfo(0, 0, None, 0),
+			is_healthy=None,
+			is_ssl_enabled=None,
+			rest_version=None,
+			geo_location=None,
 			version='0.6.100',
 			balance=3355922.652725,
 			roles=0xFF,
@@ -63,7 +94,11 @@ class NetworkRepositoryTest(unittest.TestCase):
 			endpoint='http://jusan.nem.ninja:7890',
 			name='[c=#e9c086]jusan[/c]',
 			height=3850058,
-			finalized_height=0,
+			finalized_info=FinalizedInfo(0, 0, None, 0),
+			is_healthy=None,
+			is_ssl_enabled=None,
+			rest_version=None,
+			geo_location=self.EXPECTED_NEM_GEO_VALUES,
 			version='0.6.100',
 			balance=20612359.516967,
 			roles=0xFF,
@@ -76,7 +111,11 @@ class NetworkRepositoryTest(unittest.TestCase):
 			endpoint='http://45.76.22.139:7890',
 			name='cobalt',
 			height=0,
-			finalized_height=0,
+			finalized_info=FinalizedInfo(0, 0, None, 0),
+			is_healthy=None,
+			is_ssl_enabled=None,
+			rest_version=None,
+			geo_location=None,
 			version='0.6.99',
 			balance=0,
 			roles=0xFF,
@@ -89,7 +128,11 @@ class NetworkRepositoryTest(unittest.TestCase):
 			endpoint='http://45.32.131.118:7890',
 			name='silicon',
 			height=0,
-			finalized_height=0,
+			finalized_info=FinalizedInfo(0, 0, None, 0),
+			is_healthy=None,
+			is_ssl_enabled=None,
+			rest_version=None,
+			geo_location=None,
 			version='0.6.100',
 			balance=0,
 			roles=0xFF,
@@ -104,10 +147,13 @@ class NetworkRepositoryTest(unittest.TestCase):
 		self.assertEqual(0, len(repository.node_descriptors))
 		self.assertEqual(1, repository.estimate_height())
 		self.assertEqual(1, repository.estimate_finalized_height())
+		self.assertEqual(0, repository.finalized_epoch())
 
 	def test_can_load_symbol_node_descriptors(self):
 		# Arrange:
 		repository = NetworkRepository(SymbolNetwork.MAINNET, 'symbol')
+
+		repository.load_geo_location_descriptors('tests/resources/symbol_geo_location.json')
 
 		# Act:
 		repository.load_node_descriptors('tests/resources/symbol_nodes.json')
@@ -117,6 +163,7 @@ class NetworkRepositoryTest(unittest.TestCase):
 		self.assertEqual(6, len(repository.node_descriptors))
 		self.assertEqual(1486760, repository.estimate_height())  # median
 		self.assertEqual(1486740, repository.estimate_finalized_height())  # median (nonzero)
+		self.assertEqual(3020, repository.finalized_epoch())
 		self._assert_node_descriptor(
 			repository.node_descriptors[0],
 			main_address=SymbolAddress('NDZOZPTDVCFFLDCNJL7NZGDQDNBB7TY3V6SZNGI'),
@@ -125,7 +172,11 @@ class NetworkRepositoryTest(unittest.TestCase):
 			endpoint='',
 			name='Allnodes250',
 			height=1486762,
-			finalized_height=1486740,
+			finalized_info=FinalizedInfo(1486740, 3020, 'E29E5695EB269B7DD1D76DBF05FDA1731AB24F561D2032248434FA36A27AFB4C', 4),
+			is_healthy=True,
+			is_ssl_enabled=True,
+			rest_version='2.4.4',
+			geo_location=None,
 			version='1.0.3.4',
 			balance=3155632.471994,
 			roles=2,
@@ -135,10 +186,14 @@ class NetworkRepositoryTest(unittest.TestCase):
 			main_address=SymbolAddress('NCFJP3DM65U22JI5XZ2P2TBK5BV5MLKAR7334LQ'),
 			main_public_key=PublicKey('A05329E4E5F068B323653F393CE0E3E6A1EB5056E122457354BA65158FFD33F4'),
 			node_public_key=PublicKey('FBEAFCB15D2674ECB8DC1CD2C028C4AC0D463489069FDD415F30BB71EAE69864'),
-			endpoint='http://02.symbol-node.net:3000',
+			endpoint='http://02.symbol-node.net:7900',
 			name='Apple',
 			height=0,
-			finalized_height=0,
+			finalized_info=FinalizedInfo(0, 0, None, 0),
+			is_healthy=None,
+			is_ssl_enabled=None,
+			rest_version=None,
+			geo_location=None,
 			version='1.0.3.3',
 			balance=0,
 			roles=7,
@@ -148,10 +203,14 @@ class NetworkRepositoryTest(unittest.TestCase):
 			main_address=SymbolAddress('NBPQMC4M2MMX2XOCOC3BCZ7N3ALUTRGLYPPQ56Q'),
 			main_public_key=PublicKey('2784FBE82D8A46C4082519012970CBB42EC3EC83D5DB93963B71FD6C5DA3B072'),
 			node_public_key=PublicKey('9CBE17EDFC8B333FE6BD3FF9B4D02914D55A9368F318D4CEF0AB4737BA5BB160'),
-			endpoint='http://00fabf14.xym.stir-hosyu.com:3000',
+			endpoint='http://00fabf14.xym.stir-hosyu.com:7900',
 			name='Shin-Kuma-Node',
 			height=0,
-			finalized_height=0,
+			finalized_info=FinalizedInfo(0, 0, None, 0),
+			is_healthy=None,
+			is_ssl_enabled=None,
+			rest_version=None,
+			geo_location=None,
 			version='1.0.3.5',
 			balance=0,
 			roles=3,
@@ -161,10 +220,14 @@ class NetworkRepositoryTest(unittest.TestCase):
 			main_address=SymbolAddress('NCPPDLXGYBHNPQAXQ6RTNS3T46A7FNTXDFBD43Y'),
 			main_public_key=PublicKey('7DFB0D690BFFA4A4979C7466C7B669AE8FBAFD419DAA10DE948604CD9BE65F0B'),
 			node_public_key=PublicKey('D561824BD4E3053C39A8D5A4AB00583A4D99302C541F046D3A1E6FF023006D7C'),
-			endpoint='http://symbol.shizuilab.com:3000',
+			endpoint='https://symbol.shizuilab.com:3001',
 			name='ibone74',
 			height=1486760,
-			finalized_height=1486740,
+			finalized_info=FinalizedInfo(1486740, 3020, 'E29E5695EB269B7DD1D76DBF05FDA1731AB24F561D2032248434FA36A27AFB4C', 4),
+			is_healthy=True,
+			is_ssl_enabled=True,
+			rest_version='2.4.4',
+			geo_location=self.EXPECTED_SYMBOL_GEO_VALUES,
 			version='1.0.3.5',
 			balance=82375.554976,
 			roles=3,
@@ -177,7 +240,11 @@ class NetworkRepositoryTest(unittest.TestCase):
 			endpoint='http://jaguar.catapult.ninja:7900',
 			name='jaguar',
 			height=1486761,
-			finalized_height=1486742,
+			finalized_info=FinalizedInfo(1486742, 3020, 'E29E5695EB269B7DD1D76DBF05FDA1731AB24F561D2032248434FA36A27AFB4C', 4),
+			is_healthy=None,
+			is_ssl_enabled=None,
+			rest_version=None,
+			geo_location=None,
 			version='1.0.3.5',
 			balance=28083310.571743,
 			roles=5,
@@ -187,10 +254,14 @@ class NetworkRepositoryTest(unittest.TestCase):
 			main_address=SymbolAddress('NDLLVJIUHAAV6F5PG5KYSSQXCZDCPXCY4WFA6TQ'),
 			main_public_key=PublicKey('71F953D3C3D0B7E70E29EC2DE761DD7339BA815C094B3BEE0917AEBD924B37EB'),
 			node_public_key=PublicKey('C71C7D5E6981DE5ED27908C6749207E49001A0B0F0DD404D07451636A64BEBEB'),
-			endpoint='http://symbol.ooo:3000',
+			endpoint='http://symbol.ooo:7900',
 			name='symbol.ooo maxUnlockedAccounts:100',
 			height=0,
-			finalized_height=0,
+			finalized_info=FinalizedInfo(0, 0, None, 0),
+			is_healthy=None,
+			is_ssl_enabled=None,
+			rest_version=None,
+			geo_location=None,
 			version='1.0.3.4',
 			balance=0,
 			roles=3,
@@ -209,12 +280,19 @@ class NetworkRepositoryTest(unittest.TestCase):
 			'mainPublicKey': 'B26D01FC006EAC09B740A3C8F12C1055AE24AFD3268F0364C92D51800FC07361',
 			'nodePublicKey': None,
 			'endpoint': 'http://jaguar.catapult.ninja:7900',
+			'finalizedEpoch': 3020,
+			'finalizedHash': 'E29E5695EB269B7DD1D76DBF05FDA1731AB24F561D2032248434FA36A27AFB4C',
+			'finalizedPoint': 4,
 			'name': 'jaguar',
 			'height': 1486761,
 			'finalizedHeight': 1486742,
 			'version': '1.0.3.5',
 			'balance': 28083310.571743,
+			'isHealthy': None,
+			'isSslEnabled': None,
+			'restVersion': None,
 			'roles': 5,
+			'geoLocation': None,
 		}, json_object)
 
 	def test_can_format_node_descriptor_with_node_public_key_as_json(self):
@@ -229,13 +307,20 @@ class NetworkRepositoryTest(unittest.TestCase):
 		self.assertEqual({
 			'mainPublicKey': '7DFB0D690BFFA4A4979C7466C7B669AE8FBAFD419DAA10DE948604CD9BE65F0B',
 			'nodePublicKey': 'D561824BD4E3053C39A8D5A4AB00583A4D99302C541F046D3A1E6FF023006D7C',
-			'endpoint': 'http://symbol.shizuilab.com:3000',
+			'endpoint': 'https://symbol.shizuilab.com:3001',
+			'finalizedEpoch': 3020,
+			'finalizedHash': 'E29E5695EB269B7DD1D76DBF05FDA1731AB24F561D2032248434FA36A27AFB4C',
+			'finalizedPoint': 4,
 			'name': 'ibone74',
 			'height': 1486760,
 			'finalizedHeight': 1486740,
 			'version': '1.0.3.5',
 			'balance': 82375.554976,
 			'roles': 3,
+			'isHealthy': True,
+			'isSslEnabled': True,
+			'restVersion': '2.4.4',
+			'geoLocation': None,
 		}, json_object)
 
 	# endregion
@@ -423,5 +508,133 @@ class NetworkRepositoryTest(unittest.TestCase):
 			height=1486131,
 			finalized_height=1486112,
 			version='1.0.3.4')
+
+	# endregion
+
+	# region load geo location mappings
+
+	def _assert_geo_location_descriptors(self, blockchain_name, expected_host):
+		# Arrange:
+		network = SymbolNetwork if blockchain_name == 'symbol' else NemNetwork
+		repository = NetworkRepository(network.MAINNET, blockchain_name)
+
+		# Act:
+		repository.load_geo_location_descriptors(f'tests/resources/{blockchain_name}_geo_location.json')
+
+		# Assert:
+		expected_geo_values = self.EXPECTED_SYMBOL_GEO_VALUES if blockchain_name == 'symbol' else self.EXPECTED_NEM_GEO_VALUES
+
+		self.assertEqual(1, len(repository.geo_location_map))
+		for property_name, expected_value in expected_geo_values.items():
+			self.assertEqual(expected_value, repository.geo_location_map[expected_host][property_name])
+
+	def _assert_node_includes_geo_location(self, blockchain_name, index):
+		# Arrange:
+		network = SymbolNetwork if blockchain_name == 'symbol' else NemNetwork
+
+		repository = NetworkRepository(network.MAINNET, blockchain_name)
+		repository.load_geo_location_descriptors(f'tests/resources/{blockchain_name}_geo_location.json')
+		repository.load_node_descriptors(f'tests/resources/{blockchain_name}_nodes.json')
+
+		# Act:
+		json_object = repository.node_descriptors[index].to_json()
+
+		# Assert:
+		expected_geo_values = self.EXPECTED_SYMBOL_GEO_VALUES if blockchain_name == 'symbol' else self.EXPECTED_NEM_GEO_VALUES
+		self.assertEqual(expected_geo_values, json_object['geoLocation'])
+
+	def _assert_node_has_null_geo_location(self, blockchain_name, index):
+		# Arrange:
+		network = SymbolNetwork if blockchain_name == 'symbol' else NemNetwork
+
+		repository = NetworkRepository(network.MAINNET, blockchain_name)
+		repository.load_geo_location_descriptors(f'tests/resources/{blockchain_name}_geo_location.json')
+		repository.load_node_descriptors(f'tests/resources/{blockchain_name}_nodes.json')
+
+		# Act:
+		json_object = repository.node_descriptors[index].to_json()
+
+		# Assert:
+		self.assertEqual(None, json_object['geoLocation'])
+
+	def test_can_load_symbol_geo_location_descriptors(self):
+		self._assert_geo_location_descriptors('symbol', 'symbol.shizuilab.com')
+
+	def test_node_includes_symbol_geo_location_in_json_when_available(self):
+		self._assert_node_includes_geo_location('symbol', 3)
+
+	def test_node_has_null_symbol_geo_location_in_json_when_not_available(self):
+		self._assert_node_has_null_geo_location('symbol', 1)
+
+	def test_can_load_nem_geo_location_descriptors(self):
+		self._assert_geo_location_descriptors('nem', 'jusan.nem.ninja')
+
+	def test_node_includes_nem_geo_location_in_json_when_available(self):
+		self._assert_node_includes_geo_location('nem', 1)
+
+	def test_node_has_null_nem_geo_location_in_json_when_not_available(self):
+		self._assert_node_has_null_geo_location('nem', 0)
+
+	# endregion
+
+	# region load time series nodes count
+
+	def test_can_load_symbol_time_series_nodes_count(self):
+		# Arrange:
+		repository = NetworkRepository(SymbolNetwork.MAINNET, 'symbol')
+
+		# Act:
+		repository.load_time_series_nodes_count('tests/resources/symbol_time_series_nodes_count.json')
+
+		# Assert:
+		self.assertEqual([
+			{
+				'date': '2025-03-26',
+				'values': {
+					'1': 1,
+					'2': 0,
+					'3': 98,
+					'4': 0,
+					'5': 2,
+					'6': 0,
+					'7': 34,
+					'total': 135
+				}
+			},
+			{
+				'date': '2025-03-27',
+				'values': {
+					'1': 0,
+					'2': 0,
+					'3': 98,
+					'4': 0,
+					'5': 2,
+					'6': 0,
+					'7': 34,
+					'total': 134
+				}
+			}], repository.time_series_nodes_count)
+
+	def test_can_load_nem_time_series_nodes_count(self):
+		# Arrange:
+		repository = NetworkRepository(NemNetwork.MAINNET, 'nem')
+
+		# Act:
+		repository.load_time_series_nodes_count('tests/resources/nem_time_series_nodes_count.json')
+
+		# Assert:
+		self.assertEqual([
+			{
+				'date': '2025-08-08',
+				'values': {
+					'total': 575
+				}
+			},
+			{
+				'date': '2025-08-09',
+				'values': {
+					'total': 575
+				}
+			}], repository.time_series_nodes_count)
 
 	# endregion

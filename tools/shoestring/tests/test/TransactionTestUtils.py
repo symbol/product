@@ -20,7 +20,7 @@ def assert_aggregate_transaction(asserter, transaction, expected_descriptor):  #
 
 	asserter.assertEqual(expected_descriptor.size, transaction.size)
 	asserter.assertEqual(expected_type, transaction.type_)
-	asserter.assertEqual(2, transaction.version)
+	asserter.assertEqual(3, transaction.version)
 	asserter.assertEqual(NetworkType.TESTNET, transaction.network)
 
 	asserter.assertEqual(expected_descriptor.signer_public_key, PublicKey(transaction.signer_public_key.bytes))

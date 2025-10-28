@@ -2,7 +2,7 @@ defaultCiPipeline {
 	operatingSystem = ['ubuntu']
 	instanceSize = 'medium'
 
-	ciBuildDockerfile = 'postgres.Dockerfile'
+	environment = 'postgres-python'
 
 	packageId = 'explorer-rest'
 

@@ -1,4 +1,10 @@
 builds:
+  - name: Bridge
+    path: bridge
+
+  - name: Explorer Frontend
+    path: explorer/frontend
+
   - name: Explorer Nodewatch
     path: explorer/nodewatch
 
@@ -23,6 +29,15 @@ builds:
   - name: Vanity Address Generator
     path: tools/vanity
 
+  - name: Wallet Common Core
+    path: wallet/common/core
+
+  - name: Wallet Common Ethereum
+    path: wallet/common/ethereum
+
+  - name: Wallet Common Symbol
+    path: wallet/common/symbol
+
 customBuilds:
   - name: Nightly Job
     jobName: nightlyJob
@@ -37,3 +52,10 @@ customBuilds:
     triggers:
       - type: cron
         schedule: '@weekly'
+
+  - name: Update Submodule
+    jobName: updateSubmoduleJob
+    scriptPath: .github/jenkinsfile/updateSubmodule.groovy
+    triggers:
+      - type: cron
+        schedule: H H(3-7) * * 2

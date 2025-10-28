@@ -74,7 +74,8 @@ def load_patches_from_file(filename):
 
 	parser = configparser.ConfigParser()
 	parser.optionxform = str  # configure case-sensitive keys
-	parser.read(filename)
+	with open(filename, 'rt', encoding='utf8') as infile:
+		parser.read_file(infile)
 
 	patches = {}
 	for section in parser.sections():
@@ -95,7 +96,8 @@ def load_shoestring_patches_from_file(filename, only_sections=None):
 
 	parser = configparser.ConfigParser()
 	parser.optionxform = str  # configure case-sensitive keys
-	parser.read(filename)
+	with open(filename, 'rt', encoding='utf8') as infile:
+		parser.read_file(infile)
 
 	sections = parser.sections() if only_sections is None else only_sections
 	patches = []

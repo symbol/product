@@ -1,7 +1,7 @@
 import { config } from '../../src/config/index.js';
 import createNemClient from '../../src/services/nemClient.js';
 import MockAdapter from 'axios-mock-adapter';
-import chai from 'chai';
+import * as chai from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 
 chai.use(chaiAsPromised);

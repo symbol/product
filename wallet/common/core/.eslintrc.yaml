@@ -1,0 +1,46 @@
+extends:
+  - ../../../linters/javascript/default.eslintrc
+  - plugin:import/recommended
+
+plugins:
+  - jsdoc
+
+parserOptions:
+  ecmaVersion: latest
+  sourceType: module
+  ecmaFeatures:
+    jsx: true
+
+env:
+  browser: true
+  es6: true
+  jest: true
+  node: true
+
+rules:
+  sort-imports:
+    - error
+    - ignoreDeclarationSort: true
+  no-unused-vars: error
+  yoda: off
+  react/prop-types: off
+  no-underscore-dangle: off
+  jsdoc/no-undefined-types: 1
+  import/named: off
+  import/namespace: off
+  prefer-destructuring:
+    - error
+    - VariableDeclarator:
+        array: false
+        object: true
+      AssignmentExpression:
+        array: false
+        object: false
+
+settings:
+  import/resolver:
+    node:
+      extensions:
+        - .js
+
+

@@ -53,6 +53,16 @@ NODEWATCH_PEER_NODES = [
 		'finalizedHeight': 2001776,
 		'balance': 22355876.766456,
 		'roles': 5
+	},
+	{
+		'mainPublicKey': 'C1773740461C97FF172E966213716E089A93DC43F10BE55DC27CC49CBA67E692',
+		'endpoint': 'https://whydah.symbolmain.net:3001',
+		'name': 'voting node',
+		'version': '1.0.3.9',
+		'height': 2001847,
+		'finalizedHeight': 2001776,
+		'balance': 198.995728,
+		'roles': 7
 	}
 ]
 

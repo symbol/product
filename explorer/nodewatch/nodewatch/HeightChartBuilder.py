@@ -10,7 +10,8 @@ ScatterPoint = namedtuple('ScatterPoint', ['version', 'height', 'count', 'power'
 HeightDescriptor = namedtuple('HeightDescriptor', ['field_name', 'label', 'power_field', 'count_field'])
 
 HEIGHT_DESCRIPTOR = HeightDescriptor('height', 'height', 'height_power', 'height_count')
-FINALIZED_HEIGHT_DESCRIPTOR = HeightDescriptor('finalized_height', 'finalized height', 'finalized_height_power', 'finalized_height_count')
+FINALIZED_HEIGHT_DESCRIPTOR = HeightDescriptor(
+	'finalized_info.height', 'finalized height', 'finalized_height_power', 'finalized_height_count')
 
 
 class DataPoint:

@@ -121,6 +121,38 @@ class ChartUtilsTest(unittest.TestCase):
 		self.assertEqual((444, 1), aggregate_map['2.0.0@B'].as_tuple())
 		self.assertEqual((777, 1), aggregate_map['3.0.0@B'].as_tuple())
 
+	def test_version_aggregator_can_build_with_nested_secondary_key(self):
+		# Arrange:
+		class DataPoint:
+			def __init__(self):
+				self.total_balance = 0
+				self.descriptor_count = 0
+
+			def as_tuple(self):
+				return (self.total_balance, self.descriptor_count)
+
+		Descriptor = namedtuple('Descriptor', ['version', 'secondary_version', 'balance'])
+		Nested = namedtuple('Nested', ['name'])
+
+		# Act:
+		aggregator = VersionAggregator(DataPoint, 'secondary_version.name')
+		aggregator.add([
+			Descriptor('0.0.0', Nested('A'), 111),
+			Descriptor('0.0.0', Nested('B'), 222),
+			Descriptor('2.0.0', Nested('A'), 333),
+			Descriptor('2.0.0', Nested('B'), 444),
+			Descriptor('2.0.0', Nested('A'), 555),
+			Descriptor('3.0.0', Nested('B'), 777)
+		], 'total_balance', 'descriptor_count')
+
+		# Assert:
+		self.assertEqual(5, len(aggregator.map))
+		self.assertEqual((111, 1), aggregator.map['0.0.0@A'].as_tuple())
+		self.assertEqual((222, 1), aggregator.map['0.0.0@B'].as_tuple())
+		self.assertEqual((888, 2), aggregator.map['2.0.0@A'].as_tuple())
+		self.assertEqual((444, 1), aggregator.map['2.0.0@B'].as_tuple())
+		self.assertEqual((777, 1), aggregator.map['3.0.0@B'].as_tuple())
+
 	def test_version_aggregator_can_build_while_only_aggregating_balance(self):
 		# Act:
 		aggregate_map = self._run_version_aggregator_test(None, 'total_balance', None)

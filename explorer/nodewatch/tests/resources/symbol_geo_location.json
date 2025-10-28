@@ -1,0 +1,16 @@
+[
+	{
+		"host": "symbol.shizuilab.com",
+		"ip": "123.45.678.9",
+		"geolocation": {
+			"continent": "Asia",
+			"country": "Japan",
+			"region": "13",
+			"city": "Chiyoda",
+			"lat": 12.0,
+			"lon": 15.0,
+			"isp": "Internet Inc.",
+			"query": "123.45.678.9"
+		}
+	}
+]

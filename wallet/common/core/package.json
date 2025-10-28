@@ -1,0 +1,20 @@
+{
+	"name": "wallet-common-core",
+	"version": "0.1.0",
+	"main": "./src/index.js",
+	"type": "module",
+	"scripts": {
+		"lint": "eslint .",
+		"lint:fix": "eslint . --fix --color",
+		"test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
+		"test:cov": "c8 --reporter=lcov --reporter=text --report-dir=coverage npm run test"
+	},
+	"dependencies": {},
+	"devDependencies": {
+		"c8": "~10.1.2",
+		"eslint": "~8.57.0",
+		"eslint-config-airbnb": "~19.0.4",
+		"eslint-plugin-jsdoc": "^61.1.1",
+		"jest": "^30.0.0"
+	}
+}

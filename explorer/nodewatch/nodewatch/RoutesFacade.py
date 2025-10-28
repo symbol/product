@@ -1,5 +1,6 @@
 import asyncio
 import datetime
+import random
 
 from zenlog import log
 
@@ -45,8 +46,9 @@ class BasicRoutesFacade:
 		self.min_cluster_size = min_cluster_size
 
 		self.repository = NetworkRepository(network, self.blockchain_name)
-		self.last_reload_time = datetime.datetime(2021, 1, 1)
+		self.last_reload_time = datetime.datetime(2021, 1, 1, tzinfo=datetime.timezone.utc)
 		self.last_refresh_time = None
+		self.last_daily_crawl_timestamp = 0
 
 	def html_harvesters(self):
 		"""Gets information for generating a harvesters HTML page."""
@@ -68,15 +70,37 @@ class BasicRoutesFacade:
 			'explorer_endpoint': self.explorer_endpoint
 		})
 
-	def json_nodes(self, role, exact_match=False):
-		"""Returns all nodes with matching role."""
+	def json_nodes(self, role, **kwargs):
+		"""Returns all nodes with condition."""
 
-		def role_filter(descriptor):
-			return role == descriptor.roles if exact_match else role == (role & descriptor.roles)
+		exact_match = kwargs.get('exact_match', False)
 
-		return list(map(
+		limit = kwargs.get('limit')
+		only_ssl = kwargs.get('only_ssl')
+		order = kwargs.get('order')
+
+		def custom_filter(descriptor):
+			role_condition = role == descriptor.roles if exact_match else role == (role & descriptor.roles)
+
+			return role_condition and (descriptor.is_ssl_enabled if only_ssl else True)
+
+		nodes = list(map(
 			lambda descriptor: descriptor.to_json(),
-			filter(role_filter, self.repository.node_descriptors)))
+			filter(custom_filter, self.repository.node_descriptors)))
+
+		if order == 'random':
+			random.shuffle(nodes)
+
+		return nodes if limit == 0 else nodes[:limit]
+
+	def json_node(self, filter_field, public_key):
+		"""Returns a node with matching main or node public key."""
+
+		try:
+			matching_items = [item for item in self.repository.node_descriptors if str(getattr(item, filter_field)) == public_key]
+			return next((item.to_json() for item in matching_items), None)
+		except AttributeError:
+			return None
 
 	def json_height_chart(self):
 		"""Builds a JSON height chart."""
@@ -103,17 +127,24 @@ class BasicRoutesFacade:
 			'finalizedHeight': self.repository.estimate_finalized_height()
 		}
 
+	def json_time_series_nodes_count(self):
+		"""Returns the number of nodes."""
+
+		return self.repository.time_series_nodes_count
+
 	def reload_all(self, resources_path, force=False):
 		"""Reloads all descriptor files."""
 
 		nodes_filepath = resources_path / f'{self.blockchain_name}_nodes.json'
 		harvesters_filepath = resources_path / f'{self.blockchain_name}_harvesters.csv'
 		voters_filepath = resources_path / f'{self.blockchain_name}_richlist.csv'
+		geo_locations_filepath = resources_path / f'{self.blockchain_name}_geo_location.json'
+		time_series_node_counts_filepath = resources_path / f'{self.blockchain_name}_time_series_nodes_count.json'
 		all_filepaths = [nodes_filepath, harvesters_filepath, voters_filepath]
 
 		# nodes.json is produced first by the network crawl, all other files are derived from it
 		last_crawl_timestamp = nodes_filepath.stat().st_mtime
-		last_crawl_time = datetime.datetime.utcfromtimestamp(last_crawl_timestamp)
+		last_crawl_time = datetime.datetime.fromtimestamp(last_crawl_timestamp, datetime.timezone.utc)
 		if self.last_reload_time >= last_crawl_time:
 			log.debug(f'skipping update because crawl ({last_crawl_time}) is not newer than reload ({self.last_reload_time})')
 			return False
@@ -125,6 +156,16 @@ class BasicRoutesFacade:
 			return False
 
 		log.info(f'reloading files with crawl data from {last_crawl_time} (previous reload {self.last_reload_time})')
+
+		# geo_locations_filepath.json is first in the daily crawl
+		last_daily_crawl_timestamp = geo_locations_filepath.stat().st_mtime
+
+		# Load geo locations first, as they are used by the node descriptors
+		if self.last_daily_crawl_timestamp < last_daily_crawl_timestamp <= time_series_node_counts_filepath.stat().st_mtime:
+			log.info('reloading daily files with crawl data')
+			self.repository.load_geo_location_descriptors(geo_locations_filepath)
+			self.repository.load_time_series_nodes_count(time_series_node_counts_filepath)
+			self.last_daily_crawl_timestamp = last_daily_crawl_timestamp
 
 		self.repository.load_node_descriptors(nodes_filepath)
 		self.repository.load_harvester_descriptors(harvesters_filepath)
@@ -144,7 +185,7 @@ class BasicRoutesFacade:
 	def reset_refresh_time(self):
 		"""Sets the last refresh time to now."""
 
-		self.last_refresh_time = datetime.datetime.utcnow()
+		self.last_refresh_time = datetime.datetime.now(datetime.timezone.utc)
 
 
 class NemRoutesFacade(BasicRoutesFacade):
@@ -197,9 +238,10 @@ class SymbolRoutesFacade(BasicRoutesFacade):
 		"""Creates a facade."""
 
 		super().__init__(network, explorer_endpoint, 'symbol', 'Symbol', self._version_to_css_class, {
-			'1.0.3.8': (COMPATIBLE_VERSION_COLORS[0], 11),
-			'1.0.3.7': (COMPATIBLE_VERSION_COLORS[1], 10),
-			'delegating / updating': (AMBIGUOUS_COLORS[0], 9),
+			'1.0.3.9': (COMPATIBLE_VERSION_COLORS[0], 12),
+			'delegating / updating': (AMBIGUOUS_COLORS[0], 11),
+			'1.0.3.8': (INCOMPATIBLE_VERSION_COLORS[1], 10),
+			'1.0.3.7': (INCOMPATIBLE_VERSION_COLORS[1], 9),
 			'1.0.3.6': (INCOMPATIBLE_VERSION_COLORS[1], 8),
 			'1.0.3.5': (INCOMPATIBLE_VERSION_COLORS[1], 7),
 			'1.0.3.4': (INCOMPATIBLE_VERSION_COLORS[1], 6),
@@ -237,12 +279,27 @@ class SymbolRoutesFacade(BasicRoutesFacade):
 			'node_count_chart_json': version_builder.create_chart('node_count')
 		})
 
+	def json_epoch(self):
+		"""Gets the finalized epoch."""
+
+		return {
+			'epoch': self.repository.finalized_epoch()
+		}
+
+	def json_network_config(self):
+		"""Gets the network configuration."""
+
+		return {
+			'targetBlockGenerationTime': self.repository._network.block_generation_target_time,  # pylint: disable=protected-access
+			'votingSetGrouping': self.repository._network.voting_set_grouping  # pylint: disable=protected-access
+		}
+
 	@staticmethod
 	def _version_to_css_class(version):
 		tag = 'danger'
 		if not version:
 			tag = 'warning'
-		if version.startswith('1.0.3.') and not any(version.endswith(f'.{build}') for build in range(7)):
+		if version.startswith('1.0.3.') and not any(version.endswith(f'.{build}') for build in range(9)):
 			tag = 'success'
 
 		return tag

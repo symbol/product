@@ -44,8 +44,8 @@ async def server(aiohttp_client):
 					]
 				},
 				{
-					'tag_name': 'client/catapult/v1.0.3.8',
-					'assets': [{'name': 'latest', 'browser_download_url': 'www.symbol.com/latest.zip', 'tag': 'client/catapult/v1.0.3.8'}]
+					'tag_name': 'client/catapult/v1.0.3.9',
+					'assets': [{'name': 'latest', 'browser_download_url': 'www.symbol.com/latest.zip', 'tag': 'client/catapult/v1.0.3.9'}]
 				}
 			])
 
@@ -110,8 +110,8 @@ async def test_mainnet_resolution_returns_official_hash_when_available(server): 
 		'name': 'configuration-package.zip',
 		'url': 'www.symbol.com/latest.zip',
 		'hash': (
-			'4C3B250788C1E3E60AED31046FF217567AC1D1C8ECFFB9486859BC1721716C82'
-			'7B61B8EE5F907FF2249251E288EDFDB7C4685565FF18A6809C5549046DD9C3C6'
+			'895AB5284768278BEBBEB8F40D3F15D20F78B464E705BA9AFCA444248F3C4EF2'
+			'335DEC40A5CCABFE18E6E9BBB9EA36EC495F10A77CBEDE6F30A29DEB621F97F2'
 		)
 	})
 
