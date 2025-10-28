@@ -826,7 +826,8 @@ export class WalletController {
 		this._networkManager.selectNetwork(networkIdentifier, nodeUrl);
 		this._emit(ControllerEventName.NETWORK_CHANGE);
 
-		await this.selectAccount(accounts[0].publicKey);
+		if (this.hasAccounts)
+			await this.selectAccount(accounts[0].publicKey);
 	};
 
 	/**
