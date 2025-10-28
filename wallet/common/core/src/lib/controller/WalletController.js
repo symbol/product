@@ -836,10 +836,18 @@ export class WalletController {
 	 * @private
 	 */
 	_handleNetworkConnectionStatusChange = networkConnectionStatus => {
+		const isStatusChanged = this._state.networkStatus !== networkConnectionStatus;
+
+		if (!isStatusChanged)
+			return;
+		
 		this.#setState(() => {
 			this._state.networkStatus = networkConnectionStatus;
 		});
 		this._emit(ControllerEventName.NETWORK_STATUS_CHANGE, networkConnectionStatus);
+
+		if (networkConnectionStatus === NetworkConnectionStatus.CONNECTED)
+			this._emit(ControllerEventName.NETWORK_CONNECTED);
 	};
 
 	/**

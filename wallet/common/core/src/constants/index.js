@@ -17,6 +17,7 @@ export const ControllerEventName = {
 	ACCOUNT_INFO_CHANGE: 'wc:account.info.change',
 	NETWORK_CHANGE: 'wc:network.change',
 	NETWORK_STATUS_CHANGE: 'wc:network.status.change',
+	NETWORK_CONNECTED: 'wc:network.connected',
 	NETWORK_PROPERTIES_CHANGE: 'wc:network.properties.change'
 };
 
