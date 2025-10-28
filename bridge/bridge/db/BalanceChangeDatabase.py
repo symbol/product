@@ -144,7 +144,7 @@ CREATE INDEX IF NOT EXISTS transfer_transaction_hash ON transfer(transaction_has
     def reset(self):
         """Deletes all transfer entries with heights above the max processed height."""
 
-        self.exec(
+        res = self.exec(
             """
 				DELETE FROM transfer
 				WHERE height > (
@@ -153,3 +153,4 @@ CREATE INDEX IF NOT EXISTS transfer_transaction_hash ON transfer(transaction_has
 			"""
         )
         self.commit()
+        return res
