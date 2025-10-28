@@ -21,7 +21,6 @@ CREATE TABLE IF NOT EXISTS transfer (
 
 CREATE INDEX IF NOT EXISTS transfer_height ON transfer(height);
 CREATE INDEX IF NOT EXISTS transfer_currency ON transfer(currency);
-CREATE INDEX IF NOT EXISTS transfer_transaction_hash ON transfer(transaction_hash);
 """
         )
 
