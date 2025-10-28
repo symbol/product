@@ -378,7 +378,7 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 
 	# endregion
 
-	# region cumulative_net_amount_at
+	# region cumulative_gross_amount_at
 
 	@staticmethod
 	def _prepare_database_for_batch_tests(connection, payout_descriptor_tuples, retry_index=2):
@@ -409,96 +409,48 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 		database.set_block_timestamp(333, 4000)
 		return database
 
-	def test_cumulative_net_amount_at_is_zero_when_empty(self):
+	def test_cumulative_gross_amount_at_is_zero_when_empty(self):
 		# Arrange:
 		with sqlite3.connect(':memory:') as connection:
 			database = self._create_database(connection)
 			database.create_tables()
 
 			# Act:
-			amount = database.cumulative_net_amount_at(10000)
+			amount = database.cumulative_gross_amount_at(10000)
 
 			# Assert:
 			self.assertEqual(0, amount)
 
-	def _assert_cumulative_net_amount_at_is_calculated_correctly_at_timestamps(self, timestamp_amount_pairs):
+	def _assert_cumulative_gross_amount_at_is_calculated_correctly_at_timestamps(self, timestamp_amount_pairs):
 		# Arrange:
 		with sqlite3.connect(':memory:') as connection:
 			database = self._prepare_database_for_batch_tests(connection, [
-				(0, {'net_amount': 100}),
-				(1, {'net_amount': 300}),
-				(2, {'net_amount': 200}),
-				(3, {'net_amount': 400})
+				(0, {'net_amount': 100, 'total_fee': 43}),
+				(1, {'net_amount': 300, 'total_fee': 21}),
+				(2, {'net_amount': 200, 'total_fee': 32}),
+				(3, {'net_amount': 400, 'total_fee': 10})
 			])
 
 			for (timestamp, expected_amount) in timestamp_amount_pairs:
 				# Act:
-				amount = database.cumulative_net_amount_at(self._nem_to_unix_timestamp(timestamp))
+				amount = database.cumulative_gross_amount_at(self._nem_to_unix_timestamp(timestamp))
 
 				# Assert:
 				self.assertEqual(expected_amount, amount, f'at timestamp {timestamp}')
 
-	def test_cumulative_net_amount_at_is_calculated_correctly_when_requests_present(self):
-		self._assert_cumulative_net_amount_at_is_calculated_correctly_at_timestamps([
+	def test_cumulative_gross_amount_at_is_calculated_correctly_when_requests_present(self):
+		self._assert_cumulative_gross_amount_at_is_calculated_correctly_at_timestamps([
 			(999, 0),
-			(1000, 100),
-			(1001, 100),
+			(1000, 100 + 43),
+			(1001, 100 + 43),
 
-			(1999, 100),
-			(2000, 700),
-			(2001, 700),
+			(1999, 100 + 43),
+			(2000, 700 + 85),
+			(2001, 700 + 85),
 
-			(3999, 700),
-			(4000, 1000),
-			(4001, 1000)
-		])
-
-	# endregion
-
-	# region cumulative_fees_paid_at
-
-	def test_cumulative_fees_paid_at_is_zero_when_empty(self):
-		# Arrange:
-		with sqlite3.connect(':memory:') as connection:
-			database = self._create_database(connection)
-			database.create_tables()
-
-			# Act:
-			amount = database.cumulative_fees_paid_at(10000)
-
-			# Assert:
-			self.assertEqual(0, amount)
-
-	def _assert_cumulative_fees_paid_at_is_calculated_correctly_at_timestamps(self, timestamp_amount_pairs):
-		# Arrange:
-		with sqlite3.connect(':memory:') as connection:
-			database = self._prepare_database_for_batch_tests(connection, [
-				(0, {'total_fee': 100}),
-				(1, {'total_fee': 300}),
-				(2, {'total_fee': 200}),
-				(3, {'total_fee': 400})
-			])
-
-			for (timestamp, expected_amount) in timestamp_amount_pairs:
-				# Act:
-				amount = database.cumulative_fees_paid_at(self._nem_to_unix_timestamp(timestamp))
-
-				# Assert:
-				self.assertEqual(expected_amount, amount, f'at timestamp {timestamp}')
-
-	def test_cumulative_fees_paid_at_is_calculated_correctly_when_requests_present(self):
-		self._assert_cumulative_fees_paid_at_is_calculated_correctly_at_timestamps([
-			(999, 0),
-			(1000, 100),
-			(1001, 100),
-
-			(1999, 100),
-			(2000, 700),
-			(2001, 700),
-
-			(3999, 700),
-			(4000, 1000),
-			(4001, 1000)
+			(3999, 700 + 85),
+			(4000, 1000 + 106),
+			(4001, 1000 + 106)
 		])
 
 	# endregion
