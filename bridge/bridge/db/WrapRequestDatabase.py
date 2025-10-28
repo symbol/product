@@ -1,6 +1,7 @@
 import logging
 from collections import namedtuple
 from enum import Enum
+from typing import Iterator
 
 from symbolchain.CryptoTypes import Hash256
 
@@ -131,10 +132,10 @@ CREATE TABLE IF NOT EXISTS payout_block_metadata (
 
     # region add_error, add_request
 
-    def add_error(self, error):
+    def add_error(self, error) -> int:
         """Adds an error to the error table."""
 
-        self.exec(
+        res = self.exec(
             """INSERT INTO wrap_error VALUES (?, ?, ?, ?, ?)""",
             (
                 error.transaction_height,
@@ -145,11 +146,12 @@ CREATE TABLE IF NOT EXISTS payout_block_metadata (
             ),
         )
         self.commit()
+        return res
 
-    def add_request(self, request):
+    def add_request(self, request) -> int:
         """Adds a request to the request table."""
 
-        self.exec(
+        res = self.exec(
             """INSERT INTO wrap_request VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (
                 request.transaction_height,
@@ -164,6 +166,7 @@ CREATE TABLE IF NOT EXISTS payout_block_metadata (
             ),
         )
         self.commit()
+        return res
 
     # endregion
 
@@ -196,7 +199,7 @@ CREATE TABLE IF NOT EXISTS payout_block_metadata (
         max_processed_height = self.max_processed_height()
         return self._lookup_block_timestamp_closest(max_processed_height) or 0
 
-    def is_synced_at_timestamp(self, timestamp):
+    def is_synced_at_timestamp(self, timestamp) -> bool:
         """Determines if the database is synced through a timestamp."""
 
         return timestamp <= self._max_processed_timestamp()
@@ -288,10 +291,10 @@ CREATE TABLE IF NOT EXISTS payout_block_metadata (
 
     # region mark_payout_*
 
-    def mark_payout_sent(self, request, payout_details):
+    def mark_payout_sent(self, request, payout_details) -> int:
         """Marks a payout as sent with the transaction hash of the payout."""
-
-        self.exec(
+        count = 0
+        count += self.exec(
             """
 				UPDATE wrap_request
 				SET payout_status = ?, payout_transaction_hash = ?
@@ -305,7 +308,7 @@ CREATE TABLE IF NOT EXISTS payout_block_metadata (
             ),
         )
 
-        self.exec(
+        count += self.exec(
             """INSERT INTO payout_transaction VALUES (?, ?, ?, ?, ?)""",
             (
                 payout_details.transaction_hash.bytes,
@@ -327,11 +330,13 @@ CREATE TABLE IF NOT EXISTS payout_block_metadata (
             payout_details.total_fee,
             payout_details.conversion_rate,
         )
+        return count
 
-    def _mark_payout_failed(self, request, message, is_retried):
+    def _mark_payout_failed(self, request, message, is_retried) -> int:
         payout_transaction_hash = self.payout_transaction_hash_for_request(request)
 
-        self.exec(
+        count = 0
+        count += self.exec(
             """
 				UPDATE wrap_request
 				SET payout_status = ?, is_retried = ?
@@ -346,12 +351,12 @@ CREATE TABLE IF NOT EXISTS payout_block_metadata (
         )
 
         if payout_transaction_hash:
-            self.exec(
+            count += self.exec(
                 """UPDATE payout_transaction SET height = ? WHERE transaction_hash IS ?""",
                 (-1, payout_transaction_hash.bytes),
             )
 
-        self.add_error(make_wrap_error_result(request, message).error)
+        count += self.add_error(make_wrap_error_result(request, message).error)
         self.commit()
 
         self._logger.info(
@@ -360,32 +365,36 @@ CREATE TABLE IF NOT EXISTS payout_block_metadata (
             request.transaction_subindex,
             message,
         )
+        return count
 
-    def mark_payout_failed(self, request, message):
+    def mark_payout_failed(self, request, message) -> int:
         """Marks a payout as failed with a message."""
 
-        self._mark_payout_failed(request, message, False)
+        return self._mark_payout_failed(request, message, False)
 
-    def mark_payout_failed_transient(self, request, message):
+    def mark_payout_failed_transient(self, request, message) -> int:
         """Marks a payout as a transient failure and resets it to unprocessed state."""
 
-        self._mark_payout_failed(request, message, True)
-        self.add_request(make_next_retry_wrap_request(request))
+        count = 0
+        count += self._mark_payout_failed(request, message, True)
+        count += self.add_request(make_next_retry_wrap_request(request))
+        return count
 
-    def mark_payout_completed(self, payout_transaction_hash, height):
+    def mark_payout_completed(self, payout_transaction_hash, height) -> int:
         """Marks a payout complete at a height."""
 
-        self.exec(
+        count = 0
+        count += self.exec(
             """UPDATE wrap_request SET payout_status = ? WHERE payout_transaction_hash IS ?""",
             (WrapRequestStatus.COMPLETED.value, payout_transaction_hash.bytes),
         )
 
-        self.exec(
+        count += self.exec(
             """UPDATE payout_transaction SET height = ? WHERE transaction_hash IS ?""",
             (height, payout_transaction_hash.bytes),
         )
 
-        self.exec(
+        count += self.exec(
             """INSERT OR IGNORE INTO payout_block_metadata VALUES (?, ?)""", (height, 0)
         )
 
@@ -396,6 +405,7 @@ CREATE TABLE IF NOT EXISTS payout_block_metadata (
             payout_transaction_hash,
             height,
         )
+        return count
 
     # endregion
 
@@ -492,7 +502,7 @@ CREATE TABLE IF NOT EXISTS payout_block_metadata (
 
     # region requests_by_status, unconfirmed_payout_transaction_hashes, payout_transaction_hash_for_request
 
-    def requests_by_status(self, status):
+    def requests_by_status(self, status) -> list[WrapRequest]:
         """Gets all requests with the desired status."""
 
         result = self.exec(
@@ -501,7 +511,7 @@ CREATE TABLE IF NOT EXISTS payout_block_metadata (
         )
         return list(map(self._to_request, result))
 
-    def unconfirmed_payout_transaction_hashes(self):  # pylint: disable=invalid-name
+    def unconfirmed_payout_transaction_hashes(self) -> list[Hash256]:
         """Gets hashes of all unconfirmed payout transactions."""
 
         result = self.exec(
@@ -510,7 +520,7 @@ CREATE TABLE IF NOT EXISTS payout_block_metadata (
         )
         return [Hash256(row[0]) for row in result]
 
-    def payout_transaction_hash_for_request(self, request):
+    def payout_transaction_hash_for_request(self, request) -> Hash256 | None:
         """Gets the payout transaction hash associated with a request."""
 
         result = self.exec(
@@ -521,8 +531,7 @@ CREATE TABLE IF NOT EXISTS payout_block_metadata (
 			""",
             (request.transaction_hash.bytes, request.transaction_subindex),
         )
-        fetch_result = result[0] if result else None
-        return Hash256(fetch_result) if fetch_result else None
+        return Hash256(result[0][0]) if result else None
 
     # endregion
 
@@ -539,7 +548,7 @@ CREATE TABLE IF NOT EXISTS payout_block_metadata (
         offset=0,
         limit=25,
         sort_ascending=True,
-    ):
+    ) -> Iterator[WrapRequestErrorView]:
         # pylint: disable=too-many-arguments,too-many-positional-arguments
         """Finds all errors for an address, optionally filtered by hash."""
 
@@ -584,7 +593,7 @@ CREATE TABLE IF NOT EXISTS payout_block_metadata (
         limit=25,
         sort_ascending=True,
         payout_status=None,
-    ):
+    ) -> Iterator[WrapRequestView]:
         # pylint: disable=too-many-arguments,too-many-positional-arguments
         """Finds all requests for an address, optionally filtered by hash."""
 
