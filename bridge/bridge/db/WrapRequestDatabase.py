@@ -115,7 +115,6 @@ CREATE INDEX IF NOT EXISTS wrap_error_request_transaction_height_idx ON wrap_err
 CREATE INDEX IF NOT EXISTS wrap_error_request_transaction_hash_idx ON wrap_error(request_transaction_hash);
 CREATE INDEX IF NOT EXISTS wrap_error_address_idx ON wrap_error(address);
 
-
 CREATE TABLE IF NOT EXISTS payout_transaction (
 	transaction_hash BLOB NOT NULL UNIQUE PRIMARY KEY,
 	net_amount REAL,
@@ -419,10 +418,10 @@ CREATE TABLE IF NOT EXISTS payout_block_metadata (
 
     # region reset
 
-    def reset(self):
+    def reset(self) -> int:
         """Deletes all request and error entries with request transaction heights above the max processed height."""
 
-        self.exec(
+        res = self.exec(
             """
 				DELETE FROM wrap_request
 				WHERE request_transaction_height > (
@@ -430,15 +429,8 @@ CREATE TABLE IF NOT EXISTS payout_block_metadata (
                 )
 			"""
         )
-        self.exec(
-            """
-				DELETE FROM wrap_error
-				WHERE request_transaction_height > (
-                    SELECT height FROM max_processed_height WHERE marker = 1
-                )
-			"""
-        )
         self.commit()
+        return res
 
     # endregion
 
