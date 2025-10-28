@@ -411,11 +411,11 @@ def test_cannot_prepare_send_with_greater_than_max_transfer_amount():
 
 # region check_expiry
 
-def run_check_expiry_test(config_extensions, block_timestamp):
+def run_check_expiry_test(config_extensions, request_timestamp):
 	class CheckExpiryMockDatabase:
 		@staticmethod
-		def lookup_block_timestamp(height):
-			return block_timestamp if 1234 == height else None
+		def payout_sent_timestamp_for_request(request):
+			return request_timestamp if 1234 == request.transaction_height else None
 
 	# Arrange:
 	database = CheckExpiryMockDatabase()
@@ -427,8 +427,8 @@ def run_check_expiry_test(config_extensions, block_timestamp):
 
 def test_can_check_expiry_disabled():
 	# Act:
-	block_datetime = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=25))
-	error_message = run_check_expiry_test({}, block_timestamp=block_datetime.timestamp())
+	request_datetime = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=25))
+	error_message = run_check_expiry_test({}, request_timestamp=request_datetime.timestamp())
 
 	# Assert:
 	assert not error_message
@@ -436,8 +436,8 @@ def test_can_check_expiry_disabled():
 
 def test_can_check_expiry_not_expired():
 	# Act:
-	block_datetime = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=23))
-	error_message = run_check_expiry_test({'request_lifetime_hours': '24'}, block_timestamp=block_datetime.timestamp())
+	request_datetime = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=23))
+	error_message = run_check_expiry_test({'request_lifetime_hours': '24'}, request_timestamp=request_datetime.timestamp())
 
 	# Assert:
 	assert not error_message
@@ -445,18 +445,18 @@ def test_can_check_expiry_not_expired():
 
 def test_can_check_expiry_expired():
 	# Act:
-	block_datetime = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=25))
-	error_message = run_check_expiry_test({'request_lifetime_hours': '24'}, block_timestamp=block_datetime.timestamp())
+	request_datetime = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=25))
+	error_message = run_check_expiry_test({'request_lifetime_hours': '24'}, request_timestamp=request_datetime.timestamp())
 
 	# Assert:
-	assert f'request timestamp {block_datetime} is more than 24 in the past' == error_message
+	assert f'request timestamp {request_datetime} is more than 24 in the past' == error_message
 
 # endregion
 
 
 # region check_pending_sent_request
 
-async def run_check_pending_sent_request_test(block_timestamp, try_wait_result, asserter):
+async def run_check_pending_sent_request_test(request_timestamp, try_wait_result, asserter):
 	# Arrange:
 	payout_transaction_hash = Hash256('4D46C2CEC80FCAFCDA7F07C749E366416FC488FBEE448E4A5112916B49635661')
 
@@ -465,8 +465,8 @@ async def run_check_pending_sent_request_test(block_timestamp, try_wait_result, 
 			self.failed_payouts = []
 
 		@staticmethod
-		def lookup_block_timestamp(height):
-			return block_timestamp if 1234 == height else None
+		def payout_sent_timestamp_for_request(request):
+			return request_timestamp if 1234 == request.transaction_height else None
 
 		@staticmethod
 		def payout_transaction_hash_for_request(_request):
@@ -503,85 +503,85 @@ async def run_check_pending_sent_request_test(block_timestamp, try_wait_result, 
 
 async def test_check_pending_sent_request_not_marked_when_unconfirmed():
 	# Arrange:
-	block_datetime = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=23))
+	request_datetime = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=23))
 
 	def asserter(_request, database):
 		# Assert:
 		assert [] == database.failed_payouts
 
 	# Act:
-	await run_check_pending_sent_request_test(block_datetime.timestamp(), True, asserter)
+	await run_check_pending_sent_request_test(request_datetime.timestamp(), True, asserter)
 
 
 async def test_check_pending_sent_request_mark_failed_when_non_transient_node_error():
 	# Arrange:
-	block_datetime = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=23))
+	request_datetime = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=23))
 
 	def asserter(request, database):
 		# Assert:
 		assert [('failed', request, 'node failure')] == database.failed_payouts
 
 	# Act:
-	await run_check_pending_sent_request_test(block_datetime.timestamp(), NodeException('node failure'), asserter)
+	await run_check_pending_sent_request_test(request_datetime.timestamp(), NodeException('node failure'), asserter)
 
 
 async def test_check_pending_sent_request_not_marked_when_transient_node_error():
 	# Arrange:
-	block_datetime = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=23))
+	request_datetime = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=23))
 
 	def asserter(_request, database):
 		# Assert:
 		assert [] == database.failed_payouts
 
 	# Act:
-	await run_check_pending_sent_request_test(block_datetime.timestamp(), NodeTransientException('transient node failure'), asserter)
+	await run_check_pending_sent_request_test(request_datetime.timestamp(), NodeTransientException('transient node failure'), asserter)
 
 
 async def test_check_pending_sent_request_mark_failed_when_not_unconfirmed_and_expired():
 	# Arrange:
-	block_datetime = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=25))
+	request_datetime = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=25))
 
 	def asserter(request, database):
 		# Assert:
-		assert [('failed', request, f'request timestamp {block_datetime} is more than 24 in the past')] == database.failed_payouts
+		assert [('failed', request, f'request timestamp {request_datetime} is more than 24 in the past')] == database.failed_payouts
 
 	# Act:
-	await run_check_pending_sent_request_test(block_datetime.timestamp(), False, asserter)
+	await run_check_pending_sent_request_test(request_datetime.timestamp(), False, asserter)
 
 
 async def test_check_pending_sent_request_mark_failed_transient_when_not_unconfirmed_and_not_expired():
 	# Arrange:
-	block_datetime = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=23))
+	request_datetime = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=23))
 
 	def asserter(request, database):
 		# Assert:
 		assert [('failed-transient', request, 'node dropped payout transaction')] == database.failed_payouts
 
 	# Act:
-	await run_check_pending_sent_request_test(block_datetime.timestamp(), False, asserter)
+	await run_check_pending_sent_request_test(request_datetime.timestamp(), False, asserter)
 
 
 async def test_check_pending_sent_request_mark_failed_when_execution_failure_and_expired():
 	# Arrange:
-	block_datetime = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=25))
+	request_datetime = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=25))
 
 	def asserter(request, database):
 		# Assert:
-		assert [('failed', request, f'request timestamp {block_datetime} is more than 24 in the past')] == database.failed_payouts
+		assert [('failed', request, f'request timestamp {request_datetime} is more than 24 in the past')] == database.failed_payouts
 
 	# Act:
-	await run_check_pending_sent_request_test(block_datetime.timestamp(), ConfirmedTransactionExecutionFailure('exec failure'), asserter)
+	await run_check_pending_sent_request_test(request_datetime.timestamp(), ConfirmedTransactionExecutionFailure('exec failure'), asserter)
 
 
 async def test_check_pending_sent_request_mark_failed_transient_when_execution_failure_and_not_expired():
 	# Arrange:
-	block_datetime = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=23))
+	request_datetime = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=23))
 
 	def asserter(request, database):
 		# Assert:
 		assert [('failed-transient', request, 'exec failure')] == database.failed_payouts
 
 	# Act:
-	await run_check_pending_sent_request_test(block_datetime.timestamp(), ConfirmedTransactionExecutionFailure('exec failure'), asserter)
+	await run_check_pending_sent_request_test(request_datetime.timestamp(), ConfirmedTransactionExecutionFailure('exec failure'), asserter)
 
 # endregion
