@@ -17,7 +17,7 @@ class MaxProcessedHeightMixin:
             return res.rowcount
         elif sql_type in ("CREATE", "DROP", "ALTER"):
             self.connection.commit()
-            return None
+            return res.rowcount
         else:
             return res
 
