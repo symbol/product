@@ -2,6 +2,7 @@ from symbolchain.CryptoTypes import Hash256
 
 from .MaxProcessedHeightMixin import MaxProcessedHeightMixin
 
+
 class BalanceChangeDatabase(MaxProcessedHeightMixin):
     """Database containing balance changes."""
 
@@ -12,10 +13,10 @@ class BalanceChangeDatabase(MaxProcessedHeightMixin):
         self.execscript(
             """
 CREATE TABLE IF NOT EXISTS transfer (
-	height integer,
-	currency text,
-	amount integer,
-	transaction_hash blob
+	height INTEGER NOT NULL,
+	currency TEXT NOT NULL,
+	amount INTEGER NOT NULL,
+	transaction_hash BLOB NOT NULL PRIMARY KEY
 );
 
 CREATE INDEX IF NOT EXISTS transfer_height ON transfer(height);
@@ -27,11 +28,12 @@ CREATE INDEX IF NOT EXISTS transfer_transaction_hash ON transfer(transaction_has
     def add_transfer(self, height, currency, amount, transaction_hash):
         """Adds a transfer to the transfer table."""
 
-        self.exec(
-            """INSERT INTO transfer VALUES (?, ?, ?, ?)""",
+        res = self.exec(
+            """INSERT INTO transfer(height, currency, amount, transaction_hash) VALUES (?, ?, ?, ?)""",
             (height, currency, amount, transaction_hash.bytes),
         )
         self.commit()
+        return res
 
     def add_transfers_filtered_by_address(
         self, height, balance_changes, target_address
@@ -41,14 +43,11 @@ CREATE INDEX IF NOT EXISTS transfer_transaction_hash ON transfer(transaction_has
         count = 0
         for balance_change in balance_changes:
             if str(target_address) == balance_change.address:
-                count += self.exec(
-                    """INSERT INTO transfer VALUES (?, ?, ?, ?)""",
-                    (
-                        height,
-                        balance_change.currency_id,
-                        balance_change.amount,
-                        balance_change.transaction_hash.bytes,
-                    ),
+                count += self.add_transfer(
+                    height,
+                    balance_change.currency_id,
+                    balance_change.amount,
+                    balance_change.transaction_hash.bytes,
                 )
 
         self.commit()
@@ -105,7 +104,7 @@ CREATE INDEX IF NOT EXISTS transfer_transaction_hash ON transfer(transaction_has
                 ),
             )
 
-            balance += res[0][0] if res[0][0] is not None else 0
+            balance += res[0][0] if res else 0
             start_index += batch_size
 
         return balance
