@@ -1,0 +1,11 @@
+defaultCiPipeline {
+	operatingSystem = ['ubuntu']
+	instanceSize = 'medium'
+
+	environment = 'javascript'
+
+	packageId = 'wallet-common-symbol'
+
+	codeCoverageTool = 'c8'
+	minimumCodeCoverage = 90
+}

@@ -1,5 +1,4 @@
-from prompt_toolkit.widgets import Button
-
+from shoestring.wizard.MultibyteButton import MultibyteButton as Button
 from shoestring.wizard.navigation import ExtendedButton, Navigation, initialize
 
 # pylint: disable=invalid-name

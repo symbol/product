@@ -141,7 +141,7 @@ def _create_aggregate_transaction_descriptor(transaction_type, signer_public_key
 async def test_can_sign_aggregate_complete_transaction():
 	# Arrange: signer public keys match CA key pair
 	def create_transaction_descriptor(signer_public_key):
-		return _create_aggregate_transaction_descriptor('aggregate_complete_transaction_v2', signer_public_key)
+		return _create_aggregate_transaction_descriptor('aggregate_complete_transaction_v3', signer_public_key)
 
 	# Act + Assert:
 	await _assert_can_sign_transaction(create_transaction_descriptor)
@@ -150,7 +150,7 @@ async def test_can_sign_aggregate_complete_transaction():
 async def test_can_sign_aggregate_complete_transaction_with_wrong_outer_public_key():
 	# Arrange: signer public keys do NOT match CA key pair, so aggregate signer public key will be updated to match
 	def create_transaction_descriptor(_):
-		return _create_aggregate_transaction_descriptor('aggregate_complete_transaction_v2', KeyPair(PrivateKey.random()).public_key)
+		return _create_aggregate_transaction_descriptor('aggregate_complete_transaction_v3', KeyPair(PrivateKey.random()).public_key)
 
 	# Act + Assert:
 	await _assert_can_sign_transaction(create_transaction_descriptor)
@@ -159,7 +159,7 @@ async def test_can_sign_aggregate_complete_transaction_with_wrong_outer_public_k
 async def test_can_sign_aggregate_bonded_transaction():
 	# Arrange: signer public keys match CA key pair
 	def create_transaction_descriptor(signer_public_key):
-		return _create_aggregate_transaction_descriptor('aggregate_bonded_transaction_v2', signer_public_key)
+		return _create_aggregate_transaction_descriptor('aggregate_bonded_transaction_v3', signer_public_key)
 
 	# Act + Assert:
 	await _assert_can_sign_transaction(create_transaction_descriptor, check_hash_lock=True)
@@ -168,7 +168,7 @@ async def test_can_sign_aggregate_bonded_transaction():
 async def test_can_sign_aggregate_bonded_transaction_with_wrong_outer_public_key():
 	# Arrange: signer public keys do NOT match CA key pair, so aggregate signer public key will be updated to match
 	def create_transaction_descriptor(_):
-		return _create_aggregate_transaction_descriptor('aggregate_bonded_transaction_v2', KeyPair(PrivateKey.random()).public_key)
+		return _create_aggregate_transaction_descriptor('aggregate_bonded_transaction_v3', KeyPair(PrivateKey.random()).public_key)
 
 	# Act + Assert:
 	await _assert_can_sign_transaction(create_transaction_descriptor, check_hash_lock=True)

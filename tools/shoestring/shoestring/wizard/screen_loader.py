@@ -11,7 +11,7 @@ def load_screens(screens):
 
 	screen_setup = [
 		ScreenGroup(_('wizard-screen-group-welcome'), ['welcome', 'root_check']),
-		ScreenGroup(_('wizard-screen-group-obligatory'), ['obligatory', 'network_type', 'node_type']),
+		ScreenGroup(_('wizard-screen-group-obligatory'), ['obligatory', 'bootstrap', 'network_type', 'node_type']),
 
 		ScreenGroup(_('wizard-screen-group-harvesting'), ['harvesting']),
 		ScreenGroup(_('wizard-screen-group-voting'), ['voting']),
@@ -29,15 +29,19 @@ def load_screens(screens):
 			screens.add(group.group_name, screen)
 
 
-def lookup_screens_list_for_operation(screens, operation):
+def lookup_screens_list_for_operation(operation):
 	"""Looks up the required screens for the specified operation."""
 
 	operation_screens = {
+		ShoestringOperation.SETUP:
+			['welcome', 'root-check', 'obligatory', 'network-type', 'node-type',
+				'harvesting', 'voting', 'node-settings', 'certificates', 'end-screen'],
 		ShoestringOperation.UPGRADE: ['welcome', 'obligatory', 'network-type', 'end-screen'],
 		ShoestringOperation.RESET_DATA: ['welcome', 'obligatory', 'end-screen'],
 		ShoestringOperation.RENEW_CERTIFICATES: ['welcome', 'obligatory', 'end-screen'],
-		ShoestringOperation.RENEW_VOTING_KEYS: ['welcome', 'obligatory', 'end-screen']
+		ShoestringOperation.RENEW_VOTING_KEYS: ['welcome', 'obligatory', 'end-screen'],
+		ShoestringOperation.IMPORT_BOOTSTRAP:
+			['welcome', 'root-check', 'obligatory', 'bootstrap', 'network-type', 'node-type', 'node-settings', 'end-screen']
 	}
 
-	default_screens = [screen.screen_id for screen in screens.ordered]
-	return operation_screens.get(operation, default_screens)
+	return operation_screens.get(operation)

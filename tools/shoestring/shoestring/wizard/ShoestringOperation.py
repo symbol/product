@@ -10,6 +10,7 @@ class ShoestringOperation(Enum):
 	RESET_DATA = 3
 	RENEW_CERTIFICATES = 4
 	RENEW_VOTING_KEYS = 5
+	IMPORT_BOOTSTRAP = 6
 
 
 def requires_ca_key_path(operation):

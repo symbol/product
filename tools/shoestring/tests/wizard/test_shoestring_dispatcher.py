@@ -1,13 +1,16 @@
+import os
 import tempfile
 from collections import namedtuple
 from pathlib import Path
 
 from shoestring.internal.ConfigurationManager import load_shoestring_patches_from_file
+from shoestring.internal.OpensslExecutor import OpensslExecutor
 from shoestring.wizard.shoestring_dispatcher import dispatch_shoestring_command
 from shoestring.wizard.ShoestringOperation import ShoestringOperation
 
 from ..test.TestPackager import prepare_testnet_package
 
+BootstrapScreen = namedtuple('BootstrapScreen', ['include_node_key', 'path'])
 CertificatesScreen = namedtuple('CertificatesScreen', ['ca_common_name', 'node_common_name'])
 NodeSettingsScreen = namedtuple('NodeSettingsScreen', ['domain_name', 'friendly_name', 'api_https', 'metadata_info'])
 ObligatoryScreen = namedtuple('ObligatoryScreen', ['destination_directory', 'ca_pem_path'])
@@ -27,7 +30,12 @@ def _strip_folder(path):
 	return Path(path).name
 
 
-def _create_setup_screens(package_directory, output_directory, node_type, node_metadata):
+def _create_setup_screens(
+	package_directory,
+	output_directory,
+	node_type,
+	node_metadata,
+):  # pylint: disable=too-many-arguments,too-many-positional-arguments
 	return {
 		'obligatory': ObligatoryScreen(output_directory, Path(package_directory) / 'ca.pem'),
 		'node-settings': NodeSettingsScreen('symbol.fyi', 'node explorer', False, node_metadata),
@@ -167,3 +175,162 @@ async def test_can_dispatch_upgrade_command():
 		node_patches = load_shoestring_patches_from_file(shoestring_filepath, ['node'])
 		for key in expected_keys:
 			assert key in node_patches
+
+
+# region bootstrap
+
+
+def _create_setup_from_bootstrap_screens(
+	package_directory,
+	output_directory,
+	node_type,
+	include_node_key=True,
+	path=''
+):  # pylint: disable=too-many-arguments,too-many-positional-arguments
+	return {
+		'obligatory': ObligatoryScreen(output_directory, Path(package_directory) / 'ca.pem'),
+		'node-settings': NodeSettingsScreen('symbol.fyi', 'node explorer', False, '{"animal": "wolf"}'),
+		'network-type': SingleValueScreen(f'file://{Path(package_directory) / "resources.zip"}'),
+		'node-type': SingleValueScreen(node_type),
+		'welcome': WelcomeScreen(ShoestringOperation.IMPORT_BOOTSTRAP),
+		'bootstrap': BootstrapScreen(include_node_key, path)
+	}
+
+
+async def _assert_can_dispatch_setup_from_bootstrap_command(
+	node_type,
+	harvesting_enabled=False,
+	voting_enabled=False,
+	include_node_key=True,
+	expected_features=None
+):  # pylint: disable=too-many-locals
+	# Arrange:
+	dispatched_args = []
+	with tempfile.TemporaryDirectory() as package_directory:
+		prepare_testnet_package(package_directory, 'resources.zip')
+
+		# setup bootstrap files
+		with tempfile.TemporaryDirectory() as bootstrap_directory:
+			bootstrap_node_path = Path(bootstrap_directory) / 'nodes/node'
+			bootstrap_node_path.mkdir(parents=True)
+			bootstrap_resources_path = bootstrap_node_path / 'server-config/resources'
+			bootstrap_resources_path.mkdir(parents=True)
+			bootstrap_voting_keys_path = bootstrap_node_path / 'votingkeys'
+			if voting_enabled:
+				bootstrap_voting_keys_path.mkdir(parents=True)
+
+			def _create_private_key(filename):
+				OpensslExecutor(os.environ.get('OPENSSL_EXECUTABLE', 'openssl')).dispatch([
+					'genpkey',
+					'-out', filename,
+					'-outform', 'PEM',
+					'-algorithm', 'ed25519'
+				])
+
+			bootstrap_node_key_path = bootstrap_node_path / 'cert'
+			bootstrap_node_key_path.mkdir(parents=True)
+			_create_private_key(bootstrap_node_key_path / 'node.key.pem')
+
+			if 'dual' == node_type:
+				rest_path = Path(bootstrap_directory) / 'gateways/rest-gateway'
+				rest_path.mkdir(parents=True)
+
+				with open(rest_path / 'rest.json', 'wt', encoding='utf8') as outfile:
+					outfile.write('{"nodeMetadata":{"test": "nodetest"}}')
+
+			def _create_resource_file(extension, content):
+				with open(bootstrap_resources_path / f'config-{extension}.properties', 'wt', encoding='utf8') as outfile:
+					outfile.write('\n'.join(content))
+
+			_create_resource_file('harvesting', [
+				'[harvesting]',
+				'harvesterSigningPrivateKey = 089C662614A68C49F62F6C0B54F3F66D2D5DB0AFCD62BD69BF7A16312A83B746',
+				'harvesterVrfPrivateKey = 87E1184A136E92C62981848680AEA78D0BF098911B658295454B94EDBEE25808',
+				f'enableAutoHarvesting = {str(harvesting_enabled).lower()}',
+				'beneficiaryAddress = TC7HURP6562IXITM25FQFAOZ3DDTM35GMVZBG3Q',
+			])
+			_create_resource_file('finalization', [
+				'[finalization]',
+				f'enableVoting = {str(voting_enabled).lower()}'
+			])
+			_create_resource_file('node', [
+				'[node]',
+				'minFeeMultiplier = 200',
+				'',
+				'[localnode]',
+				'host = 127.0.0.1',
+				'friendlyName = test'
+			])
+
+			with tempfile.TemporaryDirectory() as output_directory:
+				# Act:
+				await dispatch_shoestring_command(
+					_create_setup_from_bootstrap_screens(package_directory, output_directory, node_type, include_node_key, bootstrap_directory),
+					_create_executor(dispatched_args))
+
+				# Assert:
+				for i in (2, 8):
+					dispatched_args[i] = _strip_folder(dispatched_args[i])  # strip temporary folder used during setup
+
+				setup_command = [
+					'setup',
+					'--config', 'shoestring.ini',
+					'--directory', output_directory,
+					'--ca-key-path', str(Path(package_directory) / 'ca.pem'),
+					'--overrides', 'overrides.ini',
+					'--package', f'file://{Path(package_directory) / "resources.zip"}',
+					'--security', 'insecure'
+				]
+
+				if 'dual' == node_type:
+					setup_command.extend([
+						'--rest-overrides', str(Path(output_directory) / 'shoestring/rest_overrides.json')
+					])
+
+				assert setup_command == dispatched_args
+
+				# - shoestring configuration files were created
+				shoestring_directory = Path(output_directory) / 'shoestring'
+				assert shoestring_directory.exists()
+				assert (shoestring_directory / 'shoestring.ini').exists()
+				assert (shoestring_directory / 'overrides.ini').exists()
+				rest_overrides_exist = (shoestring_directory / 'rest_overrides.json').exists()
+				if 'dual' == node_type:
+					assert rest_overrides_exist
+				else:
+					assert not rest_overrides_exist
+
+				# - Bootstrap configuration was imported
+				shoestring_config = load_shoestring_patches_from_file(shoestring_directory / 'shoestring.ini', ['imports', 'node'])
+				bootstrap_import_path = shoestring_directory / 'bootstrap-import'
+				expected_imports = [
+					('imports', 'harvester', str(bootstrap_import_path / 'config-harvesting.properties')),
+					*([('imports', 'voter', str(bootstrap_import_path / 'votingkeys'))] if voting_enabled else []),
+					*([('imports', 'nodeKey', str(bootstrap_import_path / 'node.key.pem'))] if include_node_key else []),
+					('node', 'features', expected_features)
+				]
+
+				for key in expected_imports:
+					assert key in shoestring_config
+
+
+async def test_can_dispatch_setup_command_import_bootstrap_with_no_feature():
+	await _assert_can_dispatch_setup_from_bootstrap_command('peer', expected_features='PEER')
+
+
+async def test_can_dispatch_setup_command_import_bootstrap_with_harvesting():
+	await _assert_can_dispatch_setup_from_bootstrap_command('light', True, False, expected_features='API|HARVESTER')
+
+
+async def test_can_dispatch_setup_command_import_bootstrap_with_voter():
+	await _assert_can_dispatch_setup_from_bootstrap_command('peer', False, True, expected_features='VOTER')
+
+
+async def test_can_dispatch_setup_command_import_bootstrap_with_harvesting_and_voter():
+	await _assert_can_dispatch_setup_from_bootstrap_command('dual', True, True, expected_features='API|HARVESTER|VOTER')
+
+
+async def test_can_dispatch_setup_command_import_bootstrap_with_include_node_key_disabled():
+	await _assert_can_dispatch_setup_from_bootstrap_command('dual', False, True, False, 'API|VOTER')
+
+# endregion

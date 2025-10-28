@@ -1,5 +1,5 @@
 import json
-from binascii import unhexlify
+from binascii import hexlify, unhexlify
 
 import pytest
 from aiohttp import web
@@ -7,9 +7,12 @@ from symbolchain.CryptoTypes import Hash256, PublicKey
 from symbolchain.symbol.Network import Address
 
 from symbollightapi.connector.SymbolConnector import SymbolConnector
+from symbollightapi.model.Constants import TimeoutSettings, TransactionStatus
 from symbollightapi.model.Endpoint import Endpoint
 from symbollightapi.model.Exceptions import NodeException
 from symbollightapi.model.NodeInfo import NodeInfo
+
+from ..test.LightApiTestUtils import HASHES, SYMBOL_ADDRESSES
 
 # region test data
 
@@ -67,6 +70,18 @@ MULTISIG_INFO_1 = {
 	}
 }
 
+
+def generate_transaction_statuses(status_start_height, status_groups, transaction_hashes):
+	return [
+		{
+			'group': status_groups[i % len(status_groups)],
+			'code': f'Failure{i}' if 'failed' == status_groups[i % len(status_groups)] else 'Success',
+			'hash': str(transaction_hash),
+			'height': str(status_start_height + i)
+		}
+		for i, transaction_hash in enumerate(transaction_hashes)
+	]
+
 # endregion
 
 
@@ -77,6 +92,9 @@ async def server(aiohttp_client):
 	class MockSymbolServer:
 		def __init__(self):
 			self.urls = []
+			self.status_start_height = 111001
+			self.status_groups = ('confirmed', 'unconfirmed')
+
 			self.request_json_payloads = []
 			self.simulate_error = False
 
@@ -103,6 +121,16 @@ async def server(aiohttp_client):
 				'communicationTimestamps': {
 					'sendTimestamp': '68414660756',
 					'receiveTimestamp': '68414660780'
+				}
+			})
+
+		async def blocks(self, request):
+			height = request.match_info['height']
+			return await self._process(request, {
+				'meta': {'hash': HASHES[0]},
+				'block': {
+					'height': str(height),
+					'timestamp': '85426407',
 				}
 			})
 
@@ -142,7 +170,13 @@ async def server(aiohttp_client):
 
 			return await self._process(request, {
 				'account': {
-					'supplementalPublicKeys': json_supplemental_public_keys
+					'supplementalPublicKeys': json_supplemental_public_keys,
+
+					'mosaics': [
+						{'id': '00BBCCFF00112244', 'amount': '11223344'},
+						{'id': 'DEADDEADDEADDEAD', 'amount': '9988776655'},
+						{'id': 'FFBBCCFF00112244', 'amount': '123'}
+					]
 				}
 			})
 
@@ -152,6 +186,48 @@ async def server(aiohttp_client):
 				return await self._process(request, MULTISIG_INFO_1)
 
 			return await self._process(request, {'code': 'ResourceNotFound', 'message': 'no resource exists with id'}, 404)
+
+		async def transaction_status(self, request):
+			transaction_hash = Hash256(request.match_info['transaction_hash'])
+
+			if Hash256(HASHES[0]) == transaction_hash:
+				return await self._process(request, {'hash': str(transaction_hash), 'code': 'Success', 'group': 'confirmed'})
+
+			if Hash256(HASHES[1]) == transaction_hash:
+				return await self._process(request, {'hash': str(transaction_hash), 'code': 'Success', 'group': 'unconfirmed'})
+
+			if Hash256(HASHES[2]) == transaction_hash:
+				return await self._process(request, {
+					'hash': str(transaction_hash),
+					'code': 'Failure_Core_Insufficient_Balance',
+					'group': 'failed'
+				})
+
+			return await self._process(request, {'code': 'ResourceNotFound', 'message': 'no resource exists with id'}, 404)
+
+		async def transaction_statuses(self, request):
+			request_json = json.loads(await request.text())
+			return await self._process(request, generate_transaction_statuses(
+				self.status_start_height,
+				self.status_groups,
+				request_json['hashes']))
+
+		async def transaction_confirmed(self, request):
+			return await self._process(request, {'meta': {'height': 1234}, 'transaction': {'message': 'foo'}})
+
+		async def transactions_confirmed(self, request):
+			messages = ['sigma', 'beta', 'gamma']
+			return await self._process(request, {
+				'data': [
+					{
+						'meta': {'hash': HASHES[i]},
+						'transaction': {'message': hexlify(message.encode('utf8')).decode('utf8')}
+					} for i, message in enumerate(messages)
+				] + [{
+					'meta': {'aggregateHash': HASHES[3]},
+					'transaction': {'message': hexlify(messages[0].encode('utf8')).decode('utf8')}
+				}]
+			})
 
 		async def announce_transaction(self, request):
 			request_json = await request.json()
@@ -174,10 +250,15 @@ async def server(aiohttp_client):
 	app.router.add_get('/network/properties', mock_server.network_properties)
 	app.router.add_get('/chain/info', mock_server.chain_info)
 	app.router.add_get('/node/time', mock_server.node_time)
+	app.router.add_get(r'/blocks/{height}', mock_server.blocks)
 	app.router.add_get('/node/info', mock_server.node_info)
 	app.router.add_get('/node/peers', mock_server.node_peers)
 	app.router.add_get(r'/accounts/{account_id}', mock_server.accounts_by_id)
 	app.router.add_get(r'/account/{address}/multisig', mock_server.account_multisig)
+	app.router.add_get(f'/transactions/confirmed/{HASHES[0]}', mock_server.transaction_confirmed)
+	app.router.add_get('/transactions/confirmed', mock_server.transactions_confirmed)
+	app.router.add_get(r'/transactionStatus/{transaction_hash}', mock_server.transaction_status)
+	app.router.add_post('/transactionStatus', mock_server.transaction_statuses)
 	app.router.add_put('/transactions', mock_server.announce_transaction)
 	app.router.add_put('/transactions/partial', mock_server.announce_transaction)
 	server = await aiohttp_client(app)  # pylint: disable=redefined-outer-name
@@ -188,6 +269,33 @@ async def server(aiohttp_client):
 # endregion
 
 # pylint: disable=invalid-name
+
+
+# region extract_transaction_id, extract_block_timestamp
+
+def test_can_extract_transaction_id():
+	# Act:
+	transaction_id = SymbolConnector.extract_transaction_id({
+		'id': '1234',
+		'meta': {'id': '5577'}
+	})
+
+	# Assert:
+	assert '1234' == transaction_id
+
+
+def test_can_extract_block_timestamp():
+	# Act:
+	timestamp = SymbolConnector.extract_block_timestamp({
+		'timestamp': '1234',
+		'meta': {'timestamp': '5577'},
+		'block': {'timestamp': '8901'},
+	})
+
+	# Assert:
+	assert 8901 == timestamp
+
+# endregion
 
 
 # region GET (currency_mosaic_id)
@@ -220,7 +328,7 @@ async def test_can_cache_currency_mosaic_id(server):  # pylint: disable=redefine
 # endregion
 
 
-# region GET (chain_height, chain_statistics, finalization_statistics, network_time)
+# region GET (chain_height, chain_statistics, finalized_chain_height, finalization_statistics, network_time)
 
 async def test_can_query_chain_height(server):  # pylint: disable=redefined-outer-name
 	# Arrange:
@@ -248,6 +356,18 @@ async def test_can_query_chain_statistics(server):  # pylint: disable=redefined-
 	assert 222111 == chain_statistics.score_low
 
 
+async def test_can_query_finalized_chain_height(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	connector = SymbolConnector(server.make_url(''))
+
+	# Act:
+	height = await connector.finalized_chain_height()
+
+	# Assert:
+	assert [f'{server.make_url("")}/chain/info'] == server.mock.urls
+	assert 1198 == height
+
+
 async def test_can_query_finalization_statistics(server):  # pylint: disable=redefined-outer-name
 	# Arrange:
 	connector = SymbolConnector(server.make_url(''))
@@ -273,6 +393,28 @@ async def test_can_query_network_time(server):  # pylint: disable=redefined-oute
 	# Assert:
 	assert [f'{server.make_url("")}/node/time'] == server.mock.urls
 	assert 68414660756 == timestamp.timestamp
+
+# endregion
+
+
+# region GET (block_headers)
+
+async def test_can_get_block_headers(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	connector = SymbolConnector(server.make_url(''))
+
+	# Act:
+	headers = await connector.block_headers(1001)
+
+	# Assert:
+	assert [f'{server.make_url("")}/blocks/1001'] == server.mock.urls
+	assert {
+		'meta': {'hash': HASHES[0]},
+		'block': {
+			'height': '1001',
+			'timestamp': '85426407',
+		}
+	} == headers
 
 # endregion
 
@@ -331,6 +473,32 @@ async def test_can_query_peers(server):  # pylint: disable=redefined-outer-name
 		'tiger',
 		'1.0.3.5',
 		5) == peers[1]
+
+# endregion
+
+
+# region GET (balance)
+
+async def _assert_can_query_balance(server, mosaic_id, expected_balance, call_count=1):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	connector = SymbolConnector(server.make_url(''))
+
+	# Act:
+	balance = await connector.balance(Address(SYMBOL_ADDRESSES[0]), mosaic_id)
+
+	# Assert:
+	assert [f'{server.make_url("")}/accounts/{SYMBOL_ADDRESSES[0]}'] * call_count == server.mock.urls
+	assert expected_balance == balance
+
+
+async def test_can_query_balance_for_owned_mosaic(server):  # pylint: disable=redefined-outer-name
+	await _assert_can_query_balance(server, '00BBCCFF00112244', 11223344)
+	await _assert_can_query_balance(server, 'DEADDEADDEADDEAD', 9988776655, 2)
+	await _assert_can_query_balance(server, 'FFBBCCFF00112244', 123, 3)
+
+
+async def test_can_query_balance_for_not_owned_mosaic(server):  # pylint: disable=redefined-outer-name
+	await _assert_can_query_balance(server, 'AABBCCFF00112244', 0)
 
 # endregion
 
@@ -476,6 +644,114 @@ async def test_can_query_account_multisig_information_for_known_account(server):
 # endregion
 
 
+# region POST (transaction_statuses, filter_confirmed_transactions, filter_failed_transactions)
+
+async def test_can_query_transaction_statuses(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	connector = SymbolConnector(server.make_url(''))
+
+	# Act:
+	transaction_statuses = await connector.transaction_statuses([HASHES[0], HASHES[2], HASHES[1]])
+
+	# Assert:
+	assert [f'{server.make_url("")}/transactionStatus'] == server.mock.urls
+	assert 3 == len(transaction_statuses)
+
+	assert 'confirmed' == transaction_statuses[0]['group']
+	assert 'Success' == transaction_statuses[0]['code']
+	assert str(HASHES[0]) == transaction_statuses[0]['hash']
+	assert '111001' == transaction_statuses[0]['height']
+
+	assert 'unconfirmed' == transaction_statuses[1]['group']
+	assert 'Success' == transaction_statuses[1]['code']
+	assert str(HASHES[2]) == transaction_statuses[1]['hash']
+	assert '111002' == transaction_statuses[1]['height']
+
+	assert 'confirmed' == transaction_statuses[2]['group']
+	assert 'Success' == transaction_statuses[2]['code']
+	assert str(HASHES[1]) == transaction_statuses[2]['hash']
+	assert '111003' == transaction_statuses[2]['height']
+
+
+async def test_can_filter_confirmed_transactions(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	connector = SymbolConnector(server.make_url(''))
+	transaction_hashes = [Hash256(HASHES[i]) for i in (0, 2, 1)]
+
+	# Act:
+	transaction_hash_height_pairs = await connector.filter_confirmed_transactions(transaction_hashes)
+
+	# Assert:
+	assert [f'{server.make_url("")}/transactionStatus'] == server.mock.urls
+	assert 2 == len(transaction_hash_height_pairs)
+
+	assert (Hash256(HASHES[0]), 111001) == transaction_hash_height_pairs[0]
+	assert (Hash256(HASHES[1]), 111003) == transaction_hash_height_pairs[1]
+
+
+async def test_can_filter_failed_transactions(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	server.mock.status_groups = ('failed', 'confirmed')
+
+	connector = SymbolConnector(server.make_url(''))
+	transaction_hashes = [Hash256(HASHES[i]) for i in (0, 2, 1)]
+
+	# Act:
+	transaction_hash_error_pairs = await connector.filter_failed_transactions(transaction_hashes)
+
+	# Assert:
+	assert [f'{server.make_url("")}/transactionStatus'] == server.mock.urls
+	assert 2 == len(transaction_hash_error_pairs)
+
+	assert (Hash256(HASHES[0]), 'Failure0') == transaction_hash_error_pairs[0]
+	assert (Hash256(HASHES[1]), 'Failure2') == transaction_hash_error_pairs[1]
+
+# endregion
+
+
+# region GET (transaction_confirmed)
+
+async def test_transaction_confirmed(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	connector = SymbolConnector(server.make_url(''))
+
+	# Act:
+	transaction = await connector.transaction_confirmed(Hash256(HASHES[0]))
+
+	# Assert:
+	assert [f'{server.make_url("")}/transactions/confirmed/{HASHES[0]}'] == server.mock.urls
+	assert {'meta': {'height': 1234}, 'transaction': {'message': 'foo'}} == transaction
+
+# endregion
+
+
+# region GET (incoming_transactions)
+
+def assert_message(message, transaction):
+	assert hexlify(message.encode('utf8')).decode('utf8') == transaction['transaction']['message']
+
+
+async def test_incoming_transactions(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	connector = SymbolConnector(server.make_url(''))
+
+	# Act:
+	transactions = await connector.incoming_transactions(Address(SYMBOL_ADDRESSES[0]))
+
+	# Assert:
+	assert [
+		f'{server.make_url("")}/transactions/confirmed?recipientAddress={Address(SYMBOL_ADDRESSES[0])}&embedded=true&pageSize=100&order=desc'
+	] == server.mock.urls
+	assert 4 == len(transactions)
+
+	assert_message('sigma', transactions[0])
+	assert_message('beta', transactions[1])
+	assert_message('gamma', transactions[2])
+	assert_message('sigma', transactions[3])
+
+# endregion
+
+
 # region PUT (announce_transaction, announce_partial_transaction)
 
 async def _assert_can_announce_transaction(server, transaction_payload, connector_function_name, url_path):
@@ -541,5 +817,76 @@ async def test_cannot_announce_transaction_with_error(server):  # pylint: disabl
 
 async def test_cannot_announce_transaction_with_error_partial(server):  # pylint: disable=redefined-outer-name
 	await _assert_cannot_announce_transaction_with_error(server, 'announce_partial_transaction')
+
+# endregion
+
+
+# region try_wait_for_announced_transaction
+
+async def _assert_can_try_wait_for_announced_transaction_success(server, transaction_hash, status):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	connector = SymbolConnector(server.make_url(''))
+
+	# Act:
+	result = await connector.try_wait_for_announced_transaction(transaction_hash, status, TimeoutSettings(5, 0.001))
+
+	# Assert:
+	assert [f'{server.make_url("")}/transactionStatus/{transaction_hash}'] == server.mock.urls
+	assert result
+
+
+async def _assert_can_try_wait_for_announced_transaction_failure(server, transaction_hash, status):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	connector = SymbolConnector(server.make_url(''))
+
+	# Act + Assert:
+	with pytest.raises(NodeException, match='transaction was rejected with error'):
+		await connector.try_wait_for_announced_transaction(transaction_hash, status, TimeoutSettings(5, 0.001))
+
+	assert [f'{server.make_url("")}/transactionStatus/{transaction_hash}'] == server.mock.urls
+
+
+async def _assert_can_try_wait_for_announced_transaction_timeout(server, transaction_hash, status):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	connector = SymbolConnector(server.make_url(''))
+
+	# Act:
+	result = await connector.try_wait_for_announced_transaction(transaction_hash, status, TimeoutSettings(5, 0.001))
+
+	# Assert:
+	assert [f'{server.make_url("")}/transactionStatus/{transaction_hash}'] * 5 == server.mock.urls
+	assert not result
+
+
+async def test_can_try_wait_for_announced_transaction_unconfirmed_success_confirmed(server):  # pylint: disable=redefined-outer-name
+	await _assert_can_try_wait_for_announced_transaction_success(server, Hash256(HASHES[0]), TransactionStatus.UNCONFIRMED)
+
+
+async def test_can_try_wait_for_announced_transaction_unconfirmed_success_unconfirmed(server):  # pylint: disable=redefined-outer-name
+	await _assert_can_try_wait_for_announced_transaction_success(server, Hash256(HASHES[1]), TransactionStatus.UNCONFIRMED)
+
+
+async def test_can_try_wait_for_announced_transaction_unconfirmed_timeout(server):  # pylint: disable=redefined-outer-name
+	await _assert_can_try_wait_for_announced_transaction_timeout(server, Hash256(HASHES[3]), TransactionStatus.UNCONFIRMED)
+
+
+async def test_can_try_wait_for_announced_transaction_unconfirmed_failure(server):  # pylint: disable=redefined-outer-name
+	await _assert_can_try_wait_for_announced_transaction_failure(server, Hash256(HASHES[2]), TransactionStatus.UNCONFIRMED)
+
+
+async def test_can_try_wait_for_announced_transaction_confirmed_success(server):  # pylint: disable=redefined-outer-name
+	await _assert_can_try_wait_for_announced_transaction_success(server, Hash256(HASHES[0]), TransactionStatus.CONFIRMED)
+
+
+async def test_can_try_wait_for_announced_transaction_confirmed_timeout_unconfirmed(server):  # pylint: disable=redefined-outer-name
+	await _assert_can_try_wait_for_announced_transaction_timeout(server, Hash256(HASHES[1]), TransactionStatus.CONFIRMED)
+
+
+async def test_can_try_wait_for_announced_transaction_confirmed_timeout_unknown(server):  # pylint: disable=redefined-outer-name
+	await _assert_can_try_wait_for_announced_transaction_timeout(server, Hash256(HASHES[3]), TransactionStatus.CONFIRMED)
+
+
+async def test_can_try_wait_for_announced_transaction_confirmed_failure(server):  # pylint: disable=redefined-outer-name
+	await _assert_can_try_wait_for_announced_transaction_failure(server, Hash256(HASHES[2]), TransactionStatus.CONFIRMED)
 
 # endregion

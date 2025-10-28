@@ -1,7 +1,9 @@
 from prompt_toolkit.layout import FormattedTextControl
 from prompt_toolkit.layout.containers import HSplit, Window, WindowAlign
-from prompt_toolkit.widgets import Box, Button, Shadow
+from prompt_toolkit.utils import get_cwidth
+from prompt_toolkit.widgets import Box, Shadow
 
+from shoestring.wizard.MultibyteButton import MultibyteButton as Button
 from shoestring.wizard.Screen import Screen
 from shoestring.wizard.ShoestringOperation import ShoestringOperation
 
@@ -33,15 +35,16 @@ class WelcomeSettings:
 def create(_screens):
 	values = [
 		(ShoestringOperation.SETUP, _('wizard-welcome-setup')),
+		(ShoestringOperation.IMPORT_BOOTSTRAP, _('wizard-welcome-import-bootstrap')),
 		(ShoestringOperation.UPGRADE, _('wizard-welcome-upgrade')),
 		(ShoestringOperation.RESET_DATA, _('wizard-welcome-reset-data')),
 		(ShoestringOperation.RENEW_CERTIFICATES, _('wizard-welcome-renew-certificates')),
 		(ShoestringOperation.RENEW_VOTING_KEYS, _('wizard-welcome-renew-voting-keys'))
 	]
 
-	max_label = max(len(label) for (_, label) in values)
+	max_label = max(get_cwidth(label) for (_, label) in values)
 	buttons = [
-		ButtonWithOperation(operation, label, width=max_label + 3)
+		ButtonWithOperation(operation, label, width=max_label + 4)
 		for (operation, label) in values
 	]
 

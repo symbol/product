@@ -1,0 +1,14 @@
+defaultCiPipeline {
+	operatingSystem = ['ubuntu']
+	instanceSize = 'medium'
+
+	ciBuildDockerfile = 'python.Dockerfile'
+
+	packageId = 'bridge'
+
+	publisher = 'docker'
+	dockerImageName = 'symbolplatform/bridge'
+
+	codeCoverageTool = 'coverage'
+	minimumCodeCoverage = 95
+}

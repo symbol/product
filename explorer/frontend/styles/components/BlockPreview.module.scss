@@ -1,0 +1,157 @@
+@import '../variables';
+
+.blockPreview {
+	position: relative;
+	display: flex;
+	align-items: center;
+	min-height: 0;
+	transition: all 0.5s;
+
+	.bigBox {
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 32rem;
+		height: 2rem;
+	}
+
+	.smallBox {
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 1rem;
+		height: 2rem;
+	}
+}
+
+.blockPreview_expanded {
+	min-height: 32rem;
+}
+
+%block-cube-base {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
+	width: 15.33rem;
+	height: 15.33rem;
+	margin: 1.33rem 1.33rem 0 0;
+	padding: $spacing-base;
+	color: #fff;
+	cursor: pointer;
+	transition: all 0.25s;
+}
+
+%block-cube-base-before {
+	position: absolute;
+	top: -1.3rem;
+	left: 0.7rem;
+	display: inline-block;
+	width: 100%;
+	height: 1.33rem;
+	transform: skewX(-45deg);
+	content: '';
+}
+
+%block-cube-base-after {
+	position: absolute;
+	top: -0.7rem;
+	left: 100%;
+	display: inline-block;
+	width: 1.33rem;
+	height: 100%;
+	transform: skewY(-45deg);
+	content: '';
+}
+
+.blockCube {
+	@extend %block-cube-base;
+
+	background: #50b9ad;
+
+	&::before {
+		@extend %block-cube-base-before;
+
+		background: #038c7c;
+	}
+
+	&::after {
+		@extend %block-cube-base-after;
+
+		background: #016a5e;
+	}
+}
+
+.blockCubeNext {
+	@extend %block-cube-base;
+
+	background: #d1a11f;
+
+	&::before {
+		@extend %block-cube-base-before;
+
+		background: #a47e13;
+	}
+
+	&::after {
+		@extend %block-cube-base-after;
+
+		background: #6d5208;
+	}
+}
+
+.middle {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+}
+
+.height {
+	margin-top: 1.5rem;
+	font: $font-highlighted;
+}
+
+.age {
+	min-height: 1rem;
+}
+
+.fee {
+	& img {
+		filter: invert(1);
+	}
+}
+
+.blockCard {
+	position: relative;
+	width: 32rem;
+	height: 32rem;
+	padding: $spacing-padding;
+	background-color: $color-background-card;
+	border-radius: $border-radius-card;
+	transition: all 0.25s;
+
+	.buttonClose {
+		position: absolute;
+		top: 2rem;
+		right: 2rem;
+	}
+
+	.buttonMore {
+		position: absolute;
+		top: 2rem;
+		right: 4.5rem;
+	}
+
+	.buttonMoreIcon {
+		width: 2rem;
+		height: 2rem;
+		cursor: pointer;
+		user-select: none;
+	}
+}
+
+.iconChain {
+	width: 2rem;
+	height: 2rem;
+	margin: $spacing-base;
+}

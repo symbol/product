@@ -17,6 +17,42 @@ updates:
           - minor
           - patch
 
+  - package-ecosystem: npm
+    directory: /explorer/frontend
+    schedule:
+      interval: weekly
+      day: sunday
+    target-branch: dev
+    labels: [Explorer Frontend]
+    versioning-strategy: increase-if-necessary
+    commit-message:
+      prefix: '[dependency]'
+    groups:
+      explorer-frontend-dependencies:
+        patterns:
+          - '*'
+        update-types:
+          - minor
+          - patch
+
+  - package-ecosystem: pip
+    directory: /bridge
+    schedule:
+      interval: weekly
+      day: sunday
+    target-branch: dev
+    labels: [Bridge]
+    versioning-strategy: increase-if-necessary
+    commit-message:
+      prefix: '[dependency]'
+    groups:
+      bridge-dependencies:
+        patterns:
+          - '*'
+        update-types:
+          - minor
+          - patch
+
   - package-ecosystem: pip
     directory: /explorer/nodewatch
     schedule:
@@ -155,6 +191,60 @@ updates:
       prefix: '[dependency]'
     groups:
       tools-vanity-dependencies:
+        patterns:
+          - '*'
+        update-types:
+          - minor
+          - patch
+
+  - package-ecosystem: npm
+    directory: /wallet/common/core
+    schedule:
+      interval: weekly
+      day: sunday
+    target-branch: dev
+    labels: [Wallet Common Core]
+    versioning-strategy: increase-if-necessary
+    commit-message:
+      prefix: '[dependency]'
+    groups:
+      wallet-common-core-dependencies:
+        patterns:
+          - '*'
+        update-types:
+          - minor
+          - patch
+
+  - package-ecosystem: npm
+    directory: /wallet/common/ethereum
+    schedule:
+      interval: weekly
+      day: sunday
+    target-branch: dev
+    labels: [Wallet Common Ethereum]
+    versioning-strategy: increase-if-necessary
+    commit-message:
+      prefix: '[dependency]'
+    groups:
+      wallet-common-ethereum-dependencies:
+        patterns:
+          - '*'
+        update-types:
+          - minor
+          - patch
+
+  - package-ecosystem: npm
+    directory: /wallet/common/symbol
+    schedule:
+      interval: weekly
+      day: sunday
+    target-branch: dev
+    labels: [Wallet Common Symbol]
+    versioning-strategy: increase-if-necessary
+    commit-message:
+      prefix: '[dependency]'
+    groups:
+      wallet-common-symbol-dependencies:
         patterns:
           - '*'
         update-types:

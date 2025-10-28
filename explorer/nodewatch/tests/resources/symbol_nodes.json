@@ -2,8 +2,16 @@
   {
     "extraData": {
       "balance": 82375.554976,
+      "finalizedEpoch": 3020,
+      "finalizedHash": "E29E5695EB269B7DD1D76DBF05FDA1731AB24F561D2032248434FA36A27AFB4C",
       "finalizedHeight": 1486740,
+      "finalizedPoint": 4,
       "height": 1486760
+    },
+    "apiNodeInfo": {
+      "isHealth": true,
+      "isSSL": true,
+      "restVersion": "2.4.4"
     },
     "friendlyName": "ibone74",
     "host": "symbol.shizuilab.com",
@@ -29,9 +37,13 @@
   {
     "extraData": {
       "balance": 28083310.571743,
+      "finalizedEpoch": 3020,
+      "finalizedHash": "E29E5695EB269B7DD1D76DBF05FDA1731AB24F561D2032248434FA36A27AFB4C",
       "finalizedHeight": 1486742,
+      "finalizedPoint": 4,
       "height": 1486761
     },
+    "apiNodeInfo": {},
     "friendlyName": "jaguar",
     "host": "jaguar.catapult.ninja",
     "networkGenerationHashSeed": "57F7DA205008026C776CB6AED843393F04CD458E0AA2D9F1D5F31A402072B2D6",
@@ -57,8 +69,16 @@
   {
     "extraData": {
       "balance": 3155632.471994,
+      "finalizedEpoch": 3020,
+      "finalizedHash": "E29E5695EB269B7DD1D76DBF05FDA1731AB24F561D2032248434FA36A27AFB4C",
       "finalizedHeight": 1486740,
+      "finalizedPoint": 4,
       "height": 1486762
+    },
+    "apiNodeInfo": {
+      "isHealth": true,
+      "isSSL": true,
+      "restVersion": "2.4.4"
     },
     "friendlyName": "Allnodes250",
     "host": "",

@@ -123,7 +123,25 @@ def test_get_symbol_summary(client):  # pylint: disable=redefined-outer-name
 # endregion
 
 
-# region api [json]
+# region api
+
+def test_get_api_openapi(client):  # pylint: disable=redefined-outer-name
+	# Act:
+	response = client.get('/api/openapi')
+	response_html = str(response.data)
+
+	# Assert: spot check names
+	assert 200 == response.status_code
+	assert 'text/html; charset=utf-8' == response.headers['Content-Type']
+	assert '<title>NodeWatch API Documentation</title>' in response_html
+	assert 'url: "/static/openapi/openapi.yaml"' in response_html
+
+
+def _assert_response_status_code_and_headers(response, expected_status_code):
+	assert expected_status_code == response.status_code
+	assert 'application/json' == response.headers['Content-Type']
+	assert response.headers['Access-Control-Allow-Origin'] == '*'
+
 
 def test_get_api_nem_nodes(client):  # pylint: disable=redefined-outer-name
 	# Act:
@@ -131,8 +149,7 @@ def test_get_api_nem_nodes(client):  # pylint: disable=redefined-outer-name
 	response_json = json.loads(response.data)
 
 	# Assert: spot check names
-	assert 200 == response.status_code
-	assert 'application/json' == response.headers['Content-Type']
+	_assert_response_status_code_and_headers(response, 200)
 	assert 4 == len(response_json)
 	assert ['August', '[c=#e9c086]jusan[/c]', 'cobalt', 'silicon'] == list(map(lambda descriptor: descriptor['name'], response_json))
 
@@ -143,8 +160,7 @@ def test_get_api_nem_network_height(client):  # pylint: disable=redefined-outer-
 	response_json = json.loads(response.data)
 
 	# Assert:
-	assert 200 == response.status_code
-	assert 'application/json' == response.headers['Content-Type']
+	_assert_response_status_code_and_headers(response, 200)
 	assert {'height': 3850057, 'finalizedHeight': 3850057 - 360} == response_json
 
 
@@ -155,39 +171,59 @@ def test_get_api_nem_network_height_chart(client):  # pylint: disable=redefined-
 	chart_json = json.loads(response_json['chartJson'])
 
 	# Assert:
-	assert 200 == response.status_code
-	assert 'application/json' == response.headers['Content-Type']
+	_assert_response_status_code_and_headers(response, 200)
 	assert 2 == len(response_json)
 	assert 1 == len(chart_json['data'])
 	assert re.match(r'\d\d:\d\d', response_json['lastRefreshTime'])
 
 
-def test_get_api_symbol_nodes_api(client):  # pylint: disable=redefined-outer-name
+def _assert_get_nodes_count(response, expected_count):
 	# Act:
-	response = client.get('/api/symbol/nodes/api')
+	response_json = json.loads(response.data)
+
+	# Assert:
+	_assert_response_status_code_and_headers(response, 200)
+	assert expected_count == len(response_json)
+
+
+def test_get_api_nem_nodes_count(client):  # pylint: disable=redefined-outer-name
+	_assert_get_nodes_count(client.get('/api/nem/nodes/count'), 2)
+
+
+def _assert_get_api_nodes(response, expected_node_names):
+	# Act:
 	response_json = json.loads(response.data)
 
 	# Assert: spot check names
-	assert 200 == response.status_code
-	assert 'application/json' == response.headers['Content-Type']
-	assert 1 == len(response_json)
-	assert [
-		'Allnodes250'
-	] == list(map(lambda descriptor: descriptor['name'], response_json))
+	_assert_response_status_code_and_headers(response, 200)
+	assert len(expected_node_names) == len(response_json)
+	assert expected_node_names == list(map(lambda descriptor: descriptor['name'], response_json))
+
+
+def test_get_api_symbol_nodes_api(client):  # pylint: disable=redefined-outer-name
+	_assert_get_api_nodes(client.get('/api/symbol/nodes/api'), ['Allnodes250'])
 
 
 def test_get_api_symbol_nodes_peer(client):  # pylint: disable=redefined-outer-name
-	# Act:
-	response = client.get('/api/symbol/nodes/peer')
-	response_json = json.loads(response.data)
+	_assert_get_api_nodes(
+		client.get('/api/symbol/nodes/peer'),
+		['Apple', 'Shin-Kuma-Node', 'ibone74', 'jaguar', 'symbol.ooo maxUnlockedAccounts:100']
+	)
 
-	# Assert: spot check names
-	assert 200 == response.status_code
-	assert 'application/json' == response.headers['Content-Type']
-	assert 5 == len(response_json)
-	assert [
-		'Apple', 'Shin-Kuma-Node', 'ibone74', 'jaguar', 'symbol.ooo maxUnlockedAccounts:100'
-	] == list(map(lambda descriptor: descriptor['name'], response_json))
+
+def test_get_api_symbol_nodes_peer_with_only_ssl(client):  # pylint: disable=redefined-outer-name
+	_assert_get_api_nodes(client.get('/api/symbol/nodes/peer?only_ssl'), ['ibone74'])
+
+
+def test_get_api_symbol_nodes_peer_with_only_ssl_true(client):  # pylint: disable=redefined-outer-name
+	_assert_get_api_nodes(client.get('/api/symbol/nodes/peer?only_ssl=true'), ['ibone74'])
+
+
+def test_get_api_symbol_nodes_peer_with_only_ssl_false(client):  # pylint: disable=redefined-outer-name
+	_assert_get_api_nodes(
+		client.get('/api/symbol/nodes/peer?only_ssl=false'),
+		['Apple', 'Shin-Kuma-Node', 'ibone74', 'jaguar', 'symbol.ooo maxUnlockedAccounts:100']
+	)
 
 
 def test_get_api_symbol_network_height(client):  # pylint: disable=redefined-outer-name
@@ -196,8 +232,7 @@ def test_get_api_symbol_network_height(client):  # pylint: disable=redefined-out
 	response_json = json.loads(response.data)
 
 	# Assert:
-	assert 200 == response.status_code
-	assert 'application/json' == response.headers['Content-Type']
+	_assert_response_status_code_and_headers(response, 200)
 	assert {'height': 1486760, 'finalizedHeight': 1486740} == response_json
 
 
@@ -208,10 +243,95 @@ def test_get_api_symbol_network_height_chart(client):  # pylint: disable=redefin
 	chart_json = json.loads(response_json['chartJson'])
 
 	# Assert:
-	assert 200 == response.status_code
-	assert 'application/json' == response.headers['Content-Type']
+	_assert_response_status_code_and_headers(response, 200)
 	assert 2 == len(response_json)
 	assert 4 == len(chart_json['data'])
 	assert re.match(r'\d\d:\d\d', response_json['lastRefreshTime'])
+
+
+def _assert_api_symbol_node_with_public_key_not_found(response):
+	# Act:
+	response_json = json.loads(response.data)
+
+	# Assert:
+	_assert_response_status_code_and_headers(response, 404)
+	assert response_json == {'message': 'Resource not found', 'status': 404}
+
+
+def _assert_api_symbol_node_with_invalid_public_key(response):
+	# Act:
+	response_json = json.loads(response.data)
+
+	# Assert:
+	_assert_response_status_code_and_headers(response, 400)
+	assert response_json == {'message': 'Bad request', 'status': 400}
+
+
+def _assert_api_symbol_node_with_public_key_found(response, expected_name):
+	# Act:
+	response_json = json.loads(response.data)
+
+	# Assert: spot check names
+	_assert_response_status_code_and_headers(response, 200)
+	assert expected_name == response_json['name']
+
+
+def test_get_api_symbol_node_with_invalid_main_public_key(client):  # pylint: disable=redefined-outer-name
+	_assert_api_symbol_node_with_invalid_public_key(client.get('/api/symbol/nodes/mainPublicKey/invalid'))
+
+
+def test_get_api_symbol_node_with_invalid_node_public_key(client):  # pylint: disable=redefined-outer-name
+	_assert_api_symbol_node_with_invalid_public_key(client.get('/api/symbol/nodes/nodePublicKey/invalid'))
+
+
+def test_get_api_symbol_node_with_main_public_key_not_found(client):  # pylint: disable=redefined-outer-name
+	_assert_api_symbol_node_with_public_key_not_found(
+		client.get('/api/symbol/nodes/mainPublicKey/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')
+	)
+
+
+def test_get_api_symbol_node_with_node_public_key_not_found(client):  # pylint: disable=redefined-outer-name
+	_assert_api_symbol_node_with_public_key_not_found(
+		client.get('/api/symbol/nodes/nodePublicKey/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')
+	)
+
+
+def test_get_api_symbol_node_with_main_public_key(client):  # pylint: disable=redefined-outer-name
+	_assert_api_symbol_node_with_public_key_found(
+		client.get('/api/symbol/nodes/mainPublicKey/A0AA48B6417BDB1845EB55FB0B1E13255EA8BD0D8FA29AD2D8A906E220571F21'),
+		'Allnodes250'
+	)
+
+
+def test_get_api_symbol_node_with_node_public_key(client):  # pylint: disable=redefined-outer-name
+	_assert_api_symbol_node_with_public_key_found(
+		client.get('/api/symbol/nodes/nodePublicKey/FBEAFCB15D2674ECB8DC1CD2C028C4AC0D463489069FDD415F30BB71EAE69864'),
+		'Apple'
+	)
+
+
+def test_get_api_symbol_nodes_count(client):  # pylint: disable=redefined-outer-name
+	_assert_get_nodes_count(client.get('/api/symbol/nodes/count'), 2)
+
+
+def test_get_api_symbol_epoch(client):  # pylint: disable=redefined-outer-name
+	# Act:
+	response = client.get('/api/symbol/epoch')
+	response_json = json.loads(response.data)
+
+	# Assert:
+	_assert_response_status_code_and_headers(response, 200)
+	assert 1 == len(response_json)
+
+
+def test_get_api_symbol_voting_config(client):  # pylint: disable=redefined-outer-name
+	# Act:
+	response = client.get('/api/symbol/network/config')
+	response_json = json.loads(response.data)
+
+	# Assert:
+	_assert_response_status_code_and_headers(response, 200)
+	assert 2 == len(response_json)
+
 
 # endregion

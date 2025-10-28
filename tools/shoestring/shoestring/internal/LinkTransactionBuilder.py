@@ -66,7 +66,7 @@ class LinkTransactionBuilder:
 		aggregate_type = 'complete' if min_cosignatures_count <= 1 else 'bonded'
 
 		aggregate_transaction = self.facade.transaction_factory.create({
-			'type': f'aggregate_{aggregate_type}_transaction_v2',
+			'type': f'aggregate_{aggregate_type}_transaction_v3',
 			'signer_public_key': self.signer_public_key,  # if this is a multisig account, this will be updated during signing
 			'fee': 0,
 			'deadline': deadline.timestamp,

@@ -1,16 +1,19 @@
 import csv
 import json
+from collections import Counter, namedtuple
 
 from symbolchain.CryptoTypes import Hash256, PublicKey
 from symbolchain.nem.Network import Address as NemAddress
 from symbolchain.symbol.Network import Address as SymbolAddress
 from zenlog import log
 
+FinalizedInfo = namedtuple('FinalizedInfo', ['height', 'epoch', 'hash', 'point'])
+
 
 class NodeDescriptor:
 	"""Node descriptor."""
 
-	# pylint: disable=too-many-instance-attributes,too-many-positional-arguments
+	# pylint: disable=too-many-instance-attributes,too-many-positional-arguments,too-many-locals
 
 	def __init__(
 		self,
@@ -21,8 +24,12 @@ class NodeDescriptor:
 		name=None,
 		version=None,
 		height=0,
-		finalized_height=0,
 		balance=0,
+		finalized_info=None,
+		is_healthy=None,
+		is_ssl_enabled=None,
+		rest_version=None,
+		geo_location=None,
 		roles=0xFF):
 		"""Creates a descriptor."""
 
@@ -35,8 +42,12 @@ class NodeDescriptor:
 		self.name = name
 		self.version = version
 		self.height = height
-		self.finalized_height = finalized_height
 		self.balance = balance
+		self.finalized_info = finalized_info if finalized_info else FinalizedInfo(0, 0, None, 0)
+		self.is_healthy = is_healthy
+		self.is_ssl_enabled = is_ssl_enabled
+		self.rest_version = rest_version
+		self.geo_location = geo_location
 		self.roles = roles
 
 	@property
@@ -55,8 +66,15 @@ class NodeDescriptor:
 			'name': self.name,
 			'version': self.version,
 			'height': self.height,
-			'finalizedHeight': self.finalized_height,
+			'finalizedHeight': self.finalized_info.height,
 			'balance': self.balance,
+			'finalizedEpoch': self.finalized_info.epoch,
+			'finalizedHash': self.finalized_info.hash,
+			'finalizedPoint': self.finalized_info.point,
+			'isHealthy': self.is_healthy,
+			'isSslEnabled': self.is_ssl_enabled,
+			'restVersion': self.rest_version,
+			'geoLocation': self.geo_location if self.geo_location else None,
 			'roles': self.roles
 		}
 
@@ -110,6 +128,8 @@ class NetworkRepository:
 		self.node_descriptors = []
 		self.harvester_descriptors = []
 		self.voter_descriptors = []
+		self.geo_location_map = {}
+		self.time_series_nodes_count = []
 
 	@property
 	def is_nem(self):
@@ -133,9 +153,20 @@ class NetworkRepository:
 		if self.is_nem:
 			return max(1, self.estimate_height() - 360)
 
-		heights = [descriptor.finalized_height for descriptor in self.node_descriptors if descriptor.finalized_height]
+		heights = [descriptor.finalized_info.height for descriptor in self.node_descriptors if descriptor.finalized_info.height]
 		heights.sort()
 		return 1 if not heights else heights[len(heights) // 2]
+
+	def finalized_epoch(self):
+		"""Returns most common finalized epoch of the network."""
+
+		epochs = [descriptor.finalized_info.epoch for descriptor in self.node_descriptors if descriptor.finalized_info.epoch]
+
+		if not epochs:
+			return 0
+
+		epoch_counts = Counter(epochs)
+		return epoch_counts.most_common(1)[0][0]
 
 	def load_node_descriptors(self, nodes_data_filepath):
 		"""Loads node descriptors."""
@@ -150,47 +181,56 @@ class NetworkRepository:
 		# sort by name
 		self.node_descriptors.sort(key=lambda descriptor: descriptor.name)
 
-	def _create_descriptor_from_json(self, json_node):
-		# network crawler extracts as much extra data as possible, but it might not always be available for all nodes
-		extra_data = (0, 0, 0)
-		if 'extraData' in json_node:
-			json_extra_data = json_node['extraData']
-			extra_data = (json_extra_data.get('height', 0), json_extra_data.get('finalizedHeight', 0), json_extra_data.get('balance', 0))
+	def _handle_nem_node(self, json_node, extra_data):
+		network_identifier = json_node['metaData']['networkId']
+		if network_identifier < 0:
+			network_identifier += 0x100
 
-		if self.is_nem:
-			network_identifier = json_node['metaData']['networkId']
-			if network_identifier < 0:
-				network_identifier += 0x100
+		if self._network.identifier != network_identifier:
+			return None
 
-			if self._network.identifier != network_identifier:
-				return None
+		node_protocol = json_node['endpoint']['protocol']
+		node_host = json_node['endpoint']['host']
+		node_port = json_node['endpoint']['port']
 
-			node_protocol = json_node['endpoint']['protocol']
-			node_host = json_node['endpoint']['host']
-			node_port = json_node['endpoint']['port']
+		json_identity = json_node['identity']
+		main_public_key = PublicKey(json_identity['public-key'])
+		node_public_key = PublicKey(json_identity['node-public-key']) if 'node-public-key' in json_identity else None
+		return NodeDescriptor(
+			self._network.public_key_to_address(main_public_key),
+			main_public_key,
+			node_public_key,
+			f'{node_protocol}://{node_host}:{node_port}',
+			json_identity['name'],
+			json_node['metaData']['version'],
+			*extra_data,
+			geo_location=self.geo_location_map.get(node_host, None))
 
-			json_identity = json_node['identity']
-			main_public_key = PublicKey(json_identity['public-key'])
-			node_public_key = PublicKey(json_identity['node-public-key']) if 'node-public-key' in json_identity else None
-			return NodeDescriptor(
-				self._network.public_key_to_address(main_public_key),
-				main_public_key,
-				node_public_key,
-				f'{node_protocol}://{node_host}:{node_port}',
-				json_identity['name'],
-				json_node['metaData']['version'],
-				*extra_data)
-
+	def _handle_symbol_node(self, json_node, extra_data):
 		symbol_endpoint = ''
 		roles = json_node['roles']
-		has_api = bool(roles & 2)
+		has_api = json_node.get('apiNodeInfo', {}).get('restVersion', None)
+		is_ssl = json_node.get('apiNodeInfo', {}).get('isSSL', False)
 		if json_node['host']:
 			node_host = json_node['host']
-			node_port = 3000 if has_api else json_node['port']
-			symbol_endpoint = f'http://{node_host}:{node_port}'
+			if is_ssl:
+				node_port = 3001
+			elif has_api:
+				node_port = 3000
+			else:
+				node_port = json_node['port']
+			symbol_endpoint = f'http{"s" if is_ssl else ""}://{node_host}:{node_port}'
 
 		if self._network.generation_hash_seed != Hash256(json_node['networkGenerationHashSeed']):
 			return None
+
+		api_node_info_data = (None, None, None)
+		if 'apiNodeInfo' in json_node:
+			json_api_node_info_data = json_node['apiNodeInfo']
+			api_node_info_data = (
+				json_api_node_info_data.get('isHealth', None),
+				json_api_node_info_data.get('isSSL', None),
+				json_api_node_info_data.get('restVersion', None))
 
 		main_public_key = PublicKey(json_node['publicKey'])
 		node_public_key = PublicKey(json_node['nodePublicKey']) if 'nodePublicKey' in json_node else None
@@ -202,7 +242,33 @@ class NetworkRepository:
 			json_node['friendlyName'],
 			self._format_symbol_version(json_node['version']),
 			*extra_data,
+			*api_node_info_data,
+			self.geo_location_map.get(json_node['host'], None),
 			roles)
+
+	def _create_descriptor_from_json(self, json_node):
+		# network crawler extracts as much extra data as possible, but it might not always be available for all nodes
+		extra_data = (0, 0, FinalizedInfo(0, 0, None, 0))
+		if 'extraData' in json_node:
+			json_extra_data = json_node['extraData']
+
+			finalized_info = FinalizedInfo(
+				json_extra_data.get('finalizedHeight', 0),
+				json_extra_data.get('finalizedEpoch', 0),
+				json_extra_data.get('finalizedHash', None),
+				json_extra_data.get('finalizedPoint', 0)
+			)
+
+			extra_data = (
+				json_extra_data.get('height', 0),
+				json_extra_data.get('balance', 0),
+				finalized_info
+			)
+
+		if self.is_nem:
+			return self._handle_nem_node(json_node, extra_data)
+
+		return self._handle_symbol_node(json_node, extra_data)
 
 	@staticmethod
 	def _format_symbol_version(version):
@@ -242,3 +308,26 @@ class NetworkRepository:
 
 		# sort by balance (highest to lowest)
 		self.voter_descriptors.sort(key=lambda descriptor: descriptor.balance, reverse=True)
+
+	def load_geo_location_descriptors(self, geo_locations_data_filepath):
+		"""Loads geo location info and convert to map."""
+
+		log.info(f'loading geo locations from {geo_locations_data_filepath}')
+
+		with open(geo_locations_data_filepath, 'rt', encoding='utf8') as infile:
+			geo_locations_json = json.load(infile)
+
+			for entry in geo_locations_json:
+				if 'host' in entry and 'geolocation' in entry:
+					if 'query' in entry['geolocation']:
+						del entry['geolocation']['query']
+
+					self.geo_location_map[entry['host']] = entry['geolocation']
+
+	def load_time_series_nodes_count(self, time_series_nodes_count_filepath):
+		"""Loads time series node count data."""
+
+		log.info(f'loading time series node count from {time_series_nodes_count_filepath}')
+
+		with open(time_series_nodes_count_filepath, 'rt', encoding='utf8') as infile:
+			self.time_series_nodes_count = json.load(infile)

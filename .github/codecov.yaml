@@ -6,6 +6,18 @@ coverage:
       default:
         target: 95%  # overall project / repo coverage
 
+      bridge:
+        target: auto
+        threshold: 1%
+        flags:
+          - bridge
+
+      explorer-frontend:
+        target: auto
+        threshold: 1%
+        flags:
+          - explorer-frontend
+
       explorer-nodewatch:
         target: auto
         threshold: 1%
@@ -54,6 +66,24 @@ coverage:
         flags:
           - tools-vanity
 
+      wallet-common-core:
+        target: auto
+        threshold: 1%
+        flags:
+          - wallet-common-core
+
+      wallet-common-ethereum:
+        target: auto
+        threshold: 1%
+        flags:
+          - wallet-common-ethereum
+
+      wallet-common-symbol:
+        target: auto
+        threshold: 1%
+        flags:
+          - wallet-common-symbol
+
 # New root YAML section = `flags:`
 # This is where you would define every flag from your
 # uploader, and update when new Flags added
@@ -61,6 +91,16 @@ coverage:
 # monorepo.  This allows code coverage per package.
 
 flags:
+  bridge:
+    paths:
+      - bridge
+    carryforward: true
+
+  explorer-frontend:
+    paths:
+      - explorer/frontend
+    carryforward: true
+
   explorer-nodewatch:
     paths:
       - explorer/nodewatch
@@ -104,4 +144,19 @@ flags:
   tools-vanity:
     paths:
       - tools/vanity
+    carryforward: true
+
+  wallet-common-core:
+    paths:
+      - wallet/common/core
+    carryforward: true
+
+  wallet-common-ethereum:
+    paths:
+      - wallet/common/ethereum
+    carryforward: true
+
+  wallet-common-symbol:
+    paths:
+      - wallet/common/symbol
     carryforward: true

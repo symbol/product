@@ -5,6 +5,7 @@ from prompt_toolkit.formatted_text import to_formatted_text
 from prompt_toolkit.keys import Keys
 from prompt_toolkit.layout.containers import ConditionalContainer, HSplit, VSplit, Window
 from prompt_toolkit.mouse_events import MouseEventType
+from prompt_toolkit.utils import get_cwidth
 from prompt_toolkit.widgets import RadioList
 
 
@@ -133,7 +134,7 @@ class Tabs(HSplit):
 
 		frame_or_space = []
 		for index, item in enumerate(controller.values):
-			frame_or_space.extend(frame(len(item[1]) + 4, _create_condition(controller, index)))
+			frame_or_space.extend(frame(get_cwidth(item[1]) + 4, _create_condition(controller, index)))
 
 		tab_pages = []
 		for index, item in enumerate(items):
