@@ -1,3 +1,5 @@
+import datetime
+
 from symbolchain.CryptoTypes import Hash256, PublicKey
 from symbolchain.nem.Network import Address
 
@@ -80,6 +82,11 @@ def change_request_destination_address(request, destination_address):
 		request.sender_address,
 		request.amount,
 		destination_address)
+
+
+def assert_timestamp_within_last_second(timestamp):
+	now = datetime.datetime.now(datetime.timezone.utc)
+	assert (now - datetime.timedelta(seconds=1)).timestamp() <= timestamp <= now.timestamp()
 
 
 def assert_equal_request(asserter, expected, actual):

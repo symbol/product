@@ -146,7 +146,7 @@ def check_expiry(config_extensions, database, request):
 
 	request_lifetime_hours = int(config_extensions.get('request_lifetime_hours', 0))
 	if request_lifetime_hours:
-		request_timestamp = database.lookup_block_timestamp(request.transaction_height)
+		request_timestamp = database.payout_sent_timestamp_for_request(request)
 		request_datetime = datetime.datetime.fromtimestamp(request_timestamp, datetime.timezone.utc)
 		if (datetime.datetime.now(datetime.timezone.utc) - request_datetime) > datetime.timedelta(hours=request_lifetime_hours):
 			return f'request timestamp {request_datetime} is more than {request_lifetime_hours} in the past'

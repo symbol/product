@@ -12,7 +12,7 @@ import pytest
 from bridge.api import create_app
 from bridge.db.Databases import Databases
 
-from ..test.BridgeTestUtils import HASHES, NEM_ADDRESSES, SYMBOL_ADDRESSES
+from ..test.BridgeTestUtils import HASHES, NEM_ADDRESSES, SYMBOL_ADDRESSES, assert_timestamp_within_last_second
 from ..test.DatabaseTestUtils import (
 	add_requests_unwrap,
 	add_requests_wrap,
@@ -630,6 +630,9 @@ async def test_can_query_wrap_requests_with_single_match(client):  # pylint: dis
 
 		# Assert:
 		_assert_json_response_success(response)
+
+		payout_sent_timestamp = response_json[0]['payoutSentTimestamp']  # only validate timestamp is within range
+		assert_timestamp_within_last_second(payout_sent_timestamp)
 		assert [
 			{
 				'requestTransactionHeight': '333',
@@ -641,6 +644,7 @@ async def test_can_query_wrap_requests_with_single_match(client):  # pylint: dis
 				'destinationAddress': SYMBOL_ADDRESSES[2],
 				'payoutStatus': 2,
 				'payoutTransactionHash': 'ACFF5E24733CD040504448A3A75F1CE32E90557E5FBA02E107624242F4FA251D',
+				'payoutSentTimestamp': payout_sent_timestamp,
 
 				'requestTimestamp': 1427591635,
 
@@ -681,6 +685,7 @@ async def test_can_query_wrap_requests_with_single_match_unprocessed(client):  #
 				'destinationAddress': SYMBOL_ADDRESSES[0],
 				'payoutStatus': 0,
 				'payoutTransactionHash': None,
+				'payoutSentTimestamp': None,
 
 				'requestTimestamp': 1427588605,
 
@@ -721,6 +726,7 @@ async def test_can_query_wrap_requests_with_single_match_failed(client):  # pyli
 				'destinationAddress': SYMBOL_ADDRESSES[3],
 				'payoutStatus': 3,
 				'payoutTransactionHash': None,
+				'payoutSentTimestamp': None,
 
 				'requestTimestamp': 1427592645,
 
@@ -799,6 +805,9 @@ async def test_can_query_unwrap_requests_with_single_match(client):  # pylint: d
 
 		# Assert:
 		_assert_json_response_success(response)
+
+		payout_sent_timestamp = response_json[0]['payoutSentTimestamp']  # only validate timestamp is within range
+		assert_timestamp_within_last_second(payout_sent_timestamp)
 		assert [
 			{
 				'requestTransactionHeight': '333',
@@ -810,6 +819,7 @@ async def test_can_query_unwrap_requests_with_single_match(client):  # pylint: d
 				'destinationAddress': NEM_ADDRESSES[2],
 				'payoutStatus': 2,
 				'payoutTransactionHash': 'ACFF5E24733CD040504448A3A75F1CE32E90557E5FBA02E107624242F4FA251D',
+				'payoutSentTimestamp': payout_sent_timestamp,
 
 				'requestTimestamp': 1667250471.05,
 

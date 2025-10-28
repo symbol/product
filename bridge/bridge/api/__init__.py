@@ -117,6 +117,7 @@ def _handle_wrap_requests(context, address, transaction_hash, database_name):
 				'payoutNetAmount': str(int(view.payout_net_amount)) if view.payout_net_amount else None,
 				'payoutTotalFee': str(int(view.payout_total_fee)) if view.payout_total_fee else None,
 				'payoutConversionRate': str(int(view.payout_conversion_rate)) if view.payout_conversion_rate else None,
+				'payoutSentTimestamp': view.payout_sent_timestamp,
 
 				'payoutTimestamp': view.payout_timestamp,
 

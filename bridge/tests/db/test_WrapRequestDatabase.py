@@ -1,6 +1,7 @@
 # pylint: disable=too-many-lines
 import datetime
 import sqlite3
+import time
 import unittest
 
 from symbolchain.CryptoTypes import Hash256, PublicKey
@@ -17,6 +18,7 @@ from ..test.BridgeTestUtils import (
 	PUBLIC_KEYS,
 	SYMBOL_ADDRESSES,
 	assert_equal_request,
+	assert_timestamp_within_last_second,
 	make_request,
 	make_request_error
 )
@@ -60,7 +62,8 @@ def make_request_tuple(index, **kwargs):
 		f'0x{destination_address}',
 		kwargs.get('status_id', 0),
 		kwargs.get('payout_transaction_hash', None),
-		kwargs.get('is_retried', False))
+		kwargs.get('is_retried', False),
+		kwargs.get('payout_sent_timestamp', None))
 
 
 def _make_payout_details(transaction_hash, net_amount=0, total_fee=0):
@@ -111,6 +114,26 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 		cursor.execute('''SELECT * FROM payout_block_metadata ORDER BY height DESC''')
 		return cursor.fetchall()
 
+	def _assert_equal_requests(self, expected_requests, actual_requests):
+		self.assertEqual(len(expected_requests), len(actual_requests))
+
+		stripped_expected_requests = []
+		stripped_actual_requests = []
+		for i, expected_request in enumerate(expected_requests):
+			actual_request = actual_requests[i]
+			if expected_request[-1]:
+				if expected_request[-1] is True:
+					assert_timestamp_within_last_second(actual_request[8])
+				else:
+					self.assertEqual(expected_request[-1][0], actual_request[8])  # value is wrapped in list so it can be set by callbacks
+			else:
+				self.assertEqual(None, actual_request[8])
+
+			stripped_expected_requests.append(expected_request[:-1])
+			stripped_actual_requests.append((*actual_request[:8], *actual_request[9:]))
+
+		self.assertEqual(stripped_expected_requests, stripped_actual_requests)
+
 	def _assert_can_insert_rows(self, seed, expected, post_insert_action):
 		# Arrange:
 		with sqlite3.connect(':memory:') as connection:
@@ -133,7 +156,7 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 			actual_requests = self._query_all_requests(cursor)
 
 			self.assertEqual(expected['errors'], actual_errors)
-			self.assertEqual(expected['requests'], actual_requests)
+			self._assert_equal_requests(expected['requests'], actual_requests)
 
 			actual_payout_transactions = self._query_all_payout_transactions(cursor)
 			self.assertEqual(expected.get('payout_transactions') or [], actual_payout_transactions)
@@ -586,7 +609,7 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 		self._assert_can_insert_requests(seed_requests, [
 			make_request_tuple(0),
 			# should reflect status change from post_insert_action
-			make_request_tuple(1, status_id=1, payout_transaction_hash=payout_transaction_hash.bytes),
+			make_request_tuple(1, status_id=1, payout_transaction_hash=payout_transaction_hash.bytes, payout_sent_timestamp=True),
 			make_request_tuple(2),
 		], expected_payout_transactions=[
 			(payout_transaction_hash.bytes, 1100, 300, 12, 0)
@@ -604,7 +627,13 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 		self._assert_can_insert_requests(seed_requests, [
 			make_request_tuple(0, hash_index=0),
 			# should reflect status change from post_insert_action
-			make_request_tuple(1, hash_index=0, transaction_subindex=1, status_id=1, payout_transaction_hash=payout_transaction_hash.bytes),
+			make_request_tuple(
+				1,
+				hash_index=0,
+				transaction_subindex=1,
+				status_id=1,
+				payout_transaction_hash=payout_transaction_hash.bytes,
+				payout_sent_timestamp=True),
 			make_request_tuple(2, hash_index=0, transaction_subindex=2)
 		], expected_payout_transactions=[
 			(payout_transaction_hash.bytes, 1100, 300, 12, 0)
@@ -662,7 +691,7 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 		self._assert_can_insert_requests(seed_requests, [
 			make_request_tuple(0),
 			# should reflect status change from post_insert_action
-			make_request_tuple(1, status_id=3, payout_transaction_hash=payout_transaction_hash.bytes),
+			make_request_tuple(1, status_id=3, payout_transaction_hash=payout_transaction_hash.bytes, payout_sent_timestamp=True),
 			make_request_tuple(2),
 		], expected_errors=[
 			make_request_error_tuple(1, 'failed to send payout')
@@ -715,22 +744,78 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 		payout_transaction_hash = Hash256('ACFF5E24733CD040504448A3A75F1CE32E90557E5FBA02E107624242F4FA251D')
 		seed_requests = [make_request(index) for index in range(0, 3)]
 
+		original_payout_sent_timestamp = []  # wrap in a list so it can be set by callback
+
 		def post_insert_action(database):
 			database.mark_payout_sent(seed_requests[1], PayoutDetails(payout_transaction_hash, 1100, 300, 12))
+			original_payout_sent_timestamp.append(database.payout_sent_timestamp_for_request(seed_requests[1]))
+
+			time.sleep(0.25)  # simulate a delay before request is marked as failed (transient)
 			database.mark_payout_failed_transient(seed_requests[1], 'failed to send payout (transient)')
 
 		# Act + Assert:
 		self._assert_can_insert_requests(seed_requests, [
 			make_request_tuple(0),
 			# should reflect status change from post_insert_action
-			make_request_tuple(1, status_id=3, payout_transaction_hash=payout_transaction_hash.bytes, is_retried=True),
+			make_request_tuple(
+				1,
+				status_id=3,
+				payout_transaction_hash=payout_transaction_hash.bytes,
+				is_retried=True,
+				payout_sent_timestamp=original_payout_sent_timestamp),
 			# unprocessed request added with different subindex
-			make_request_tuple(1, transaction_subindex=0x00010000),
+			make_request_tuple(
+				1,
+				transaction_subindex=0x00010000,
+				payout_sent_timestamp=original_payout_sent_timestamp),  # payout_sent_timestamp should be carried over
 			make_request_tuple(2),
 		], expected_errors=[
 			make_request_error_tuple(1, 'failed to send payout (transient)')
 		], expected_payout_transactions=[
 			(payout_transaction_hash.bytes, 1100, 300, 12, -1)  # height marked as -1 to indicate failure
+		], post_insert_action=post_insert_action)
+
+	def test_can_resend_payout_after_original_send_failed_transient(self):
+		# Arrange:
+		payout_transaction_hash = Hash256('ACFF5E24733CD040504448A3A75F1CE32E90557E5FBA02E107624242F4FA251D')
+		payout_transaction_hash_2 = Hash256('F4BD97BA18C3E03C1D6B4494C2C9B665E46815C153BA56BD4217E24C7938F917')
+		seed_requests = [make_request(index) for index in range(0, 3)]
+
+		original_payout_sent_timestamp = []  # wrap in a list so it can be set by callback
+
+		def post_insert_action(database):
+			database.mark_payout_sent(seed_requests[1], PayoutDetails(payout_transaction_hash, 1100, 300, 12))
+			original_payout_sent_timestamp.append(database.payout_sent_timestamp_for_request(seed_requests[1]))
+
+			time.sleep(0.25)  # simulate a delay before request is marked as failed (transient) and resent
+			database.mark_payout_failed_transient(seed_requests[1], 'failed to send payout (transient)')
+			database.mark_payout_sent(
+				make_next_retry_wrap_request(seed_requests[1]),
+				PayoutDetails(payout_transaction_hash_2, 1000, 400, 20))
+
+		# Act + Assert:
+		self._assert_can_insert_requests(seed_requests, [
+			make_request_tuple(0),
+			# should reflect status change from post_insert_action
+			make_request_tuple(
+				1,
+				status_id=3,
+				payout_transaction_hash=payout_transaction_hash.bytes,
+				is_retried=True,
+				payout_sent_timestamp=original_payout_sent_timestamp),
+			# unprocessed request added with different subindex
+			make_request_tuple(
+				1,
+				status_id=1,
+				transaction_subindex=0x00010000,
+				payout_transaction_hash=payout_transaction_hash_2.bytes,
+				payout_sent_timestamp=original_payout_sent_timestamp),  # payout_sent_timestamp should be carried over
+			make_request_tuple(2),
+		], expected_errors=[
+			make_request_error_tuple(1, 'failed to send payout (transient)')
+		], expected_payout_transactions=[
+			(payout_transaction_hash_2.bytes, 1000, 400, 20, 0),
+			(payout_transaction_hash.bytes, 1100, 300, 12, -1),  # height marked as -1 to indicate failure
 		], post_insert_action=post_insert_action)
 
 	def test_can_mark_payout_failed_transient_single_scoped_to_sub_index(self):
@@ -769,7 +854,7 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 		self._assert_can_insert_requests(seed_requests, [
 			make_request_tuple(0),
 			# should reflect status change from post_insert_action
-			make_request_tuple(1, status_id=2, payout_transaction_hash=payout_transaction_hash.bytes),
+			make_request_tuple(1, status_id=2, payout_transaction_hash=payout_transaction_hash.bytes, payout_sent_timestamp=True),
 			make_request_tuple(2),
 		], expected_payout_transactions=[
 			(payout_transaction_hash.bytes, 1100, 300, 12, 1122)
@@ -790,7 +875,13 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 		self._assert_can_insert_requests(seed_requests, [
 			make_request_tuple(0, hash_index=0),
 			# should reflect status change from post_insert_action
-			make_request_tuple(1, hash_index=0, transaction_subindex=1, status_id=2, payout_transaction_hash=payout_transaction_hash.bytes),
+			make_request_tuple(
+				1,
+				hash_index=0,
+				transaction_subindex=1,
+				status_id=2,
+				payout_transaction_hash=payout_transaction_hash.bytes,
+				payout_sent_timestamp=True),
 			make_request_tuple(2, hash_index=0, transaction_subindex=2)
 		], expected_payout_transactions=[
 			(payout_transaction_hash.bytes, 1100, 300, 1.2, 1122)
@@ -812,7 +903,13 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 		self._assert_can_insert_requests(seed_requests, [
 			make_request_tuple(0, hash_index=0),
 			# should reflect status change from post_insert_action
-			make_request_tuple(1, hash_index=0, transaction_subindex=1, status_id=2, payout_transaction_hash=payout_transaction_hash.bytes),
+			make_request_tuple(
+				1,
+				hash_index=0,
+				transaction_subindex=1,
+				status_id=2,
+				payout_transaction_hash=payout_transaction_hash.bytes,
+				payout_sent_timestamp=True),
 			make_request_tuple(2, hash_index=0, transaction_subindex=2)
 		], expected_payout_transactions=[
 			(payout_transaction_hash.bytes, 1100, 300, 12, 1122)
@@ -852,7 +949,7 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 			self.assertEqual(
 				[make_request_error_tuple(index, 'error message', height=height) for (index, height) in expected_errors],
 				actual_errors)
-			self.assertEqual(
+			self._assert_equal_requests(
 				[make_request_tuple(index, height=height) for (index, height) in expected_requests],
 				actual_requests)
 
@@ -1069,6 +1166,43 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 
 	# endregion
 
+	# region payout_sent_timestamp_for_request
+
+	def test_can_get_payout_sent_timestamp_for_request_for_request_in_sent_state(self):
+		# Arrange:
+		with sqlite3.connect(':memory:') as connection:
+			(database, seed_requests, _) = self._prepare_database_for_grouping_tests(connection)
+
+			# Act:
+			timestamp = database.payout_sent_timestamp_for_request(seed_requests[3])
+
+			# Assert:
+			assert_timestamp_within_last_second(timestamp)
+
+	def test_can_get_payout_sent_timestamp_for_request_for_request_in_pre_sent_state(self):
+		# Arrange:
+		with sqlite3.connect(':memory:') as connection:
+			(database, seed_requests, _) = self._prepare_database_for_grouping_tests(connection)
+
+			# Act:
+			timestamp = database.payout_sent_timestamp_for_request(seed_requests[2])
+
+			# Assert:
+			self.assertEqual(None, timestamp)
+
+	def test_can_get_payout_sent_timestamp_for_request_for_unknown_request(self):
+		# Arrange:
+		with sqlite3.connect(':memory:') as connection:
+			(database, _, _) = self._prepare_database_for_grouping_tests(connection)
+
+			# Act:
+			timestamp = database.payout_sent_timestamp_for_request(make_request(5))
+
+			# Assert:
+			self.assertEqual(None, timestamp)
+
+	# endregion
+
 	# region find_errors - single lookup
 
 	def _assert_can_find_errors_simple(self, address, expected_view):
@@ -1179,6 +1313,12 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 				self.assertEqual(0, len(views))
 			else:
 				self.assertEqual(1, len(views))
+
+				if expected_view.payout_sent_timestamp:
+					# if True, validate timestamp is within range
+					assert_timestamp_within_last_second(views[0].payout_sent_timestamp)
+					expected_view = expected_view._replace(payout_sent_timestamp=views[0].payout_sent_timestamp)
+
 				self.assertEqual(expected_view, views[0])
 
 	def test_can_find_request_by_hash_exists_unprocessed(self):
@@ -1190,6 +1330,7 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 			5554,
 			SymbolAddress(SYMBOL_ADDRESSES[0]),
 			0,
+			None,
 			None,
 			self._nem_to_unix_timestamp(1020),
 			*([None] * 6))
@@ -1205,6 +1346,7 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 			SymbolAddress(SYMBOL_ADDRESSES[1]),
 			1,
 			Hash256('066E5BF4B539230E12DD736D44CEFB5274FACBABC22735F2264A40F72AFB0124'),
+			True,
 			self._nem_to_unix_timestamp(3040),
 			0,
 			2200,
@@ -1224,6 +1366,7 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 			SymbolAddress(SYMBOL_ADDRESSES[2]),
 			2,
 			Hash256('ACFF5E24733CD040504448A3A75F1CE32E90557E5FBA02E107624242F4FA251D'),
+			True,
 			self._nem_to_unix_timestamp(4050),
 			1122,
 			1100,
@@ -1242,6 +1385,7 @@ class WrapRequestDatabaseTest(unittest.TestCase):
 			1234,
 			SymbolAddress(SYMBOL_ADDRESSES[3]),
 			3,
+			None,
 			None,
 			self._nem_to_unix_timestamp(5060),
 			*([None] * 5),
