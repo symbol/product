@@ -178,35 +178,21 @@ class WrapRequestDatabase(MaxProcessedHeightMixin):  # pylint: disable=too-many-
 
 	# endregion
 
-	# region cumulative_net_amount_at, cumulative_fees_paid_at, payout_transaction_hashes_at
+	# region cumulative_gross_amount_at, payout_transaction_hashes_at
 
-	def cumulative_net_amount_at(self, timestamp):
-		"""Gets cumulative amount of wrapped tokens issued at or before timestamp."""
+	def cumulative_gross_amount_at(self, timestamp):
+		"""Gets cumulative gross amount of wrapped tokens issued at or before timestamp."""
 
 		cursor = self.connection.cursor()
 		cursor.execute('''
-			SELECT SUM(payout_transaction.net_amount)
+			SELECT SUM(payout_transaction.net_amount), SUM(payout_transaction.total_fee)
 			FROM wrap_request
 			LEFT JOIN block_metadata ON wrap_request.request_transaction_height = block_metadata.height
 			LEFT JOIN payout_transaction ON wrap_request.payout_transaction_hash = payout_transaction.transaction_hash
 			WHERE block_metadata.timestamp <= ? AND NOT wrap_request.is_retried
 		''', (timestamp,))
-		sum_amount = cursor.fetchone()[0]
-		return sum_amount or 0
-
-	def cumulative_fees_paid_at(self, timestamp):
-		"""Gets cumulative amount of fees paid at or before timestamp."""
-
-		cursor = self.connection.cursor()
-		cursor.execute('''
-			SELECT SUM(payout_transaction.total_fee)
-			FROM wrap_request
-			LEFT JOIN block_metadata ON wrap_request.request_transaction_height = block_metadata.height
-			LEFT JOIN payout_transaction ON wrap_request.payout_transaction_hash = payout_transaction.transaction_hash
-			WHERE block_metadata.timestamp <= ? AND NOT wrap_request.is_retried
-		''', (timestamp,))
-		sum_amount = cursor.fetchone()[0]
-		return sum_amount or 0
+		sum_amounts = cursor.fetchone()
+		return sum(amount if amount else 0 for amount in sum_amounts)
 
 	def payout_transaction_hashes_at(self, timestamp):
 		"""Gets all payout transaction hashes at or before timestamp."""
