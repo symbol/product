@@ -784,6 +784,7 @@ export class WalletController {
 			.filter(module => module.clear)
 			.map(module => module.clear()));
 
+		this._networkManager.stopConnectionJob();
 		this.resetState();
 		this._emit(ControllerEventName.WALLET_CLEAR);
 	};
