@@ -163,6 +163,10 @@ def _parse_prepare_parameters(network_facade, request_json):
 	return (PrepareOptions(recipient_address, amount), None)
 
 
+def _make_prepare_error(code, message):
+	return jsonify({'errorCode': code, 'error': message})
+
+
 async def _handle_wrap_prepare(is_unwrap_mode, context, fee_multiplier):  # pylint: disable=too-many-locals
 	network_facade = context.native_facade if is_unwrap_mode else context.wrapped_facade
 
@@ -182,6 +186,11 @@ async def _handle_wrap_prepare(is_unwrap_mode, context, fee_multiplier):  # pyli
 		calculator_func = calculator.to_native_amount if is_unwrap_mode else calculator.to_wrapped_amount
 		gross_amount = calculator_func(prepare_options.amount)
 
+		max_transfer_amount = int(network_facade.config.extensions.get('max_transfer_amount', 0))
+		if max_transfer_amount and gross_amount > max_transfer_amount:
+			error_message = f'gross transfer amount {gross_amount} exceeds max transfer amount {max_transfer_amount}'
+			return _make_prepare_error('REQUEST_LIMIT_EXCEEDED', error_message), 400
+
 		if fee_multiplier:
 			fee_multiplier *= Decimal(calculator_func(10 ** 12)) / Decimal(10 ** 12)
 
@@ -197,7 +206,7 @@ async def _handle_wrap_prepare(is_unwrap_mode, context, fee_multiplier):  # pyli
 		try:
 			fee_information = await estimate_balance_transfer_fees(network_facade, balance_transfer, fee_multiplier or Decimal('1'))
 		except NodeException as ex:
-			return jsonify({'error': str(ex)}), 500
+			return _make_prepare_error('UNEXPECTED_ERROR', str(ex)), 500
 
 		result = {
 			'grossAmount': str(gross_amount),

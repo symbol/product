@@ -58,7 +58,7 @@ async def coingecko_server(aiohttp_client):
 
 # region apps
 
-def _configure_app_directory(directory, native_server, wrapped_server, coingecko_server, update_wrapped_config):
+def _configure_app_directory(directory, native_server, wrapped_server, coingecko_server, update_network_configs):
 	# pylint: disable=redefined-outer-name
 	database_directory = Path(directory) / 'db'
 	database_directory.mkdir()
@@ -82,7 +82,7 @@ def _configure_app_directory(directory, native_server, wrapped_server, coingecko
 	parser['wrapped_network']['signerPublicKey'] = 'FDA024AD1FA204242F5FE579419491A76E467EAF6C36E29EA8FC4BF0734B3E81'
 	parser['wrapped_network']['percentageConversionFee'] = '0.003'
 	parser['wrapped_network']['explorerEndpoint'] = '<wrapped explorer endpoint>'
-	update_wrapped_config(parser['wrapped_network'])
+	update_network_configs(parser['native_network'], parser['wrapped_network'])
 
 	bridge_propererties_filename = Path(directory) / 'bridge.test.properties'
 	with open(bridge_propererties_filename, 'wt', encoding='utf8') as properties_file:
@@ -110,25 +110,36 @@ def make_app(database_directory):
 
 @pytest.fixture
 def app(nem_server, symbol_server, coingecko_server):  # pylint: disable=redefined-outer-name
-	def update_wrapped_config(config):
-		config['transactionFeeMultiplier'] = '50'
+	def update_network_configs(_native_network_config, wrapped_network_config):
+		wrapped_network_config['transactionFeeMultiplier'] = '50'
 
 	with tempfile.TemporaryDirectory() as temp_directory:
-		database_directory = _configure_app_directory(temp_directory, nem_server, symbol_server, coingecko_server, update_wrapped_config)
+		database_directory = _configure_app_directory(temp_directory, nem_server, symbol_server, coingecko_server, update_network_configs)
 		yield make_app(database_directory)
 
 
 @pytest.fixture
 def app_n2n(nem_server, ethereum_server, coingecko_server):  # pylint: disable=redefined-outer-name
-	def update_wrapped_config(config):
-		config['blockchain'] = 'ethereum'
-		config['bridgeAddress'] = '0x0ff070994dd3fdB1441433c219A42286ef85290f'
-		config['signerPublicKey'] = f'0x{2 * config["signerPublicKey"]}'
-		config['mosaicId'] = ''
-		config['chainId'] = '1337'
+	def update_network_configs(_native_network_config, wrapped_network_config):
+		wrapped_network_config['blockchain'] = 'ethereum'
+		wrapped_network_config['bridgeAddress'] = '0x0ff070994dd3fdB1441433c219A42286ef85290f'
+		wrapped_network_config['signerPublicKey'] = f'0x{2 * wrapped_network_config["signerPublicKey"]}'
+		wrapped_network_config['mosaicId'] = ''
+		wrapped_network_config['chainId'] = '1337'
 
 	with tempfile.TemporaryDirectory() as temp_directory:
-		database_directory = _configure_app_directory(temp_directory, nem_server, ethereum_server, coingecko_server, update_wrapped_config)
+		database_directory = _configure_app_directory(temp_directory, nem_server, ethereum_server, coingecko_server, update_network_configs)
+		yield make_app(database_directory)
+
+
+@pytest.fixture
+def app_limited(nem_server, symbol_server, coingecko_server):  # pylint: disable=redefined-outer-name
+	def update_network_configs(native_network_config, wrapped_network_config):
+		native_network_config['maxTransferAmount'] = '50'
+		wrapped_network_config['maxTransferAmount'] = '21'
+
+	with tempfile.TemporaryDirectory() as temp_directory:
+		database_directory = _configure_app_directory(temp_directory, nem_server, symbol_server, coingecko_server, update_network_configs)
 		yield make_app(database_directory)
 
 
@@ -146,6 +157,11 @@ def client(app):  # pylint: disable=redefined-outer-name
 @pytest.fixture
 def client_n2n(app_n2n):  # pylint: disable=redefined-outer-name
 	return make_test_client_from_app(app_n2n)
+
+
+@pytest.fixture
+def client_limited(app_limited):  # pylint: disable=redefined-outer-name
+	return make_test_client_from_app(app_limited)
 
 # endregion
 
@@ -1004,7 +1020,28 @@ async def test_prepare_wrap_returns_internal_server_errors_gracefully(client_n2n
 		# Assert:
 		_assert_json_response_internal_server_error(response)
 		assert {
+			'errorCode': 'UNEXPECTED_ERROR',
 			'error': 'eth_estimateGas RPC call failed: execution reverted: ERC20: transfer amount exceeds balance'
+		} == response_json
+
+	loop = asyncio.get_running_loop()
+	await loop.run_in_executor(None, test_impl)
+
+
+async def test_prepare_wrap_returns_request_limit_exceeded_errors_gracefully(client_limited):  # pylint: disable=redefined-outer-name
+	def test_impl():
+		# Arrange:
+		_seed_database_for_prepare_tests(client_limited.database_directory)
+
+		# Act:
+		response = client_limited.post('/wrap/prepare', json={'amount': '1234000000', 'recipientAddress': SYMBOL_ADDRESSES[2]})
+		response_json = json.loads(response.data)
+
+		# Assert:
+		_assert_json_response_bad_request(response)
+		assert {
+			'errorCode': 'REQUEST_LIMIT_EXCEEDED',
+			'error': 'gross transfer amount 205666666 exceeds max transfer amount 21'
 		} == response_json
 
 	loop = asyncio.get_running_loop()
@@ -1083,6 +1120,26 @@ async def test_prepare_unwrap_returns_bad_request_for_invalid_parameters(client)
 	await _assert_prepare_route_validates_parameters(client, True, '/unwrap/prepare')
 
 
+async def test_prepare_unwrap_returns_request_limit_exceeded_errors_gracefully(client_limited):  # pylint: disable=redefined-outer-name
+	def test_impl():
+		# Arrange:
+		_seed_database_for_prepare_tests(client_limited.database_directory)
+
+		# Act:
+		response = client_limited.post('/unwrap/prepare', json={'amount': '1234000000', 'recipientAddress': NEM_ADDRESSES[2]})
+		response_json = json.loads(response.data)
+
+		# Assert:
+		_assert_json_response_bad_request(response)
+		assert {
+			'errorCode': 'REQUEST_LIMIT_EXCEEDED',
+			'error': 'gross transfer amount 7403999999 exceeds max transfer amount 50'
+		} == response_json
+
+	loop = asyncio.get_running_loop()
+	await loop.run_in_executor(None, test_impl)
+
+
 async def test_can_prepare_unwrap(client):  # pylint: disable=redefined-outer-name
 	def test_impl():
 		# Arrange:
@@ -1094,7 +1151,6 @@ async def test_can_prepare_unwrap(client):  # pylint: disable=redefined-outer-na
 
 		# Assert:
 		_assert_json_response_success(response)
-
 		assert {
 			'grossAmount': '7403999999',  # floor(1234000000 * 6),
 			'conversionFee': '14807999.9980',  # grossAmount * config(percentageConversionFee)[0.002]
