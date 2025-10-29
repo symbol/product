@@ -45,13 +45,11 @@ CREATE INDEX IF NOT EXISTS transfer_currency ON transfer(currency);
             self._logger.warning(
                 "Failed to add transaction_hash [%s]: %s",
                 transaction_hash.bytes.hex(),
-                ex
+                ex,
             )
             return 0
 
-    def add_transfers_filtered_by_address(
-        self, height, balance_changes, target_address
-    ) -> int:
+    def add_transfers_filtered_by_address(self, height, balance_changes, target_address) -> int:
         """Adds multiple transfers to the transfer table, filtered by address."""
 
         count = 0
@@ -76,9 +74,7 @@ CREATE INDEX IF NOT EXISTS transfer_currency ON transfer(currency);
         """Calculates the balance for a currency at a height."""
 
         if not self.is_synced_at_height(height):
-            raise ValueError(
-                f"requested balance at {height} beyond current database height {self.max_processed_height()}"
-            )
+            raise ValueError(f"requested balance at {height} beyond current database height {self.max_processed_height()}")
 
         res = self.exec(
             """
@@ -97,9 +93,7 @@ CREATE INDEX IF NOT EXISTS transfer_currency ON transfer(currency);
         balance = 0
         start_index = 0
         while start_index < len(transaction_hashes):
-            transaction_hashes_batch = transaction_hashes[
-                start_index : start_index + batch_size
-            ]
+            transaction_hashes_batch = transaction_hashes[start_index : start_index + batch_size]
 
             in_query = ",".join(["?"] * len(transaction_hashes_batch))
             res = self.exec(
@@ -111,10 +105,7 @@ CREATE INDEX IF NOT EXISTS transfer_currency ON transfer(currency);
                 (
                     currency,
                     height,
-                    *(
-                        transaction_hash.bytes
-                        for transaction_hash in transaction_hashes_batch
-                    ),
+                    *(transaction_hash.bytes for transaction_hash in transaction_hashes_batch),
                 ),
             )
 
@@ -123,16 +114,12 @@ CREATE INDEX IF NOT EXISTS transfer_currency ON transfer(currency);
 
         return balance
 
-    def filter_transactions_if_present(
-        self, height, currency, transaction_hashes, batch_size=100
-    ):
+    def filter_transactions_if_present(self, height, currency, transaction_hashes, batch_size=100):
         """Selects the subset of transactions that are present in this database."""
 
         start_index = 0
         while start_index < len(transaction_hashes):
-            transaction_hashes_batch = transaction_hashes[
-                start_index : start_index + batch_size
-            ]
+            transaction_hashes_batch = transaction_hashes[start_index : start_index + batch_size]
 
             in_query = ",".join(["?"] * len(transaction_hashes_batch))
             res = self.exec(
@@ -144,10 +131,7 @@ CREATE INDEX IF NOT EXISTS transfer_currency ON transfer(currency);
                 (
                     currency,
                     height,
-                    *(
-                        transaction_hash.bytes
-                        for transaction_hash in transaction_hashes_batch
-                    ),
+                    *(transaction_hash.bytes for transaction_hash in transaction_hashes_batch),
                 ),
             )
             for row in res:

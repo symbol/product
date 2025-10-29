@@ -12,9 +12,7 @@ from ..models.WrapRequest import (
 )
 from .MaxProcessedHeightMixin import MaxProcessedHeightMixin
 
-PayoutDetails = namedtuple(
-    "PayoutDetails", ["transaction_hash", "net_amount", "total_fee", "conversion_rate"]
-)
+PayoutDetails = namedtuple("PayoutDetails", ["transaction_hash", "net_amount", "total_fee", "conversion_rate"])
 WrapRequestErrorView = namedtuple(
     "WrapErrorView",
     [
@@ -57,9 +55,7 @@ class WrapRequestStatus(Enum):
     FAILED = 3
 
 
-class WrapRequestDatabase(
-    MaxProcessedHeightMixin
-):  # pylint: disable=too-many-public-methods
+class WrapRequestDatabase(MaxProcessedHeightMixin):  # pylint: disable=too-many-public-methods
     """Database containing wrap requests and errors."""
 
     def __init__(self, connection, network_facade, payout_network_facade):
@@ -200,9 +196,7 @@ CREATE TABLE IF NOT EXISTS payout_block_metadata (
     def requests(self) -> Iterator[WrapRequest]:
         """Returns requests."""
 
-        rows = self.exec(
-            """SELECT * FROM wrap_request ORDER BY request_transaction_height"""
-        )
+        rows = self.exec("""SELECT * FROM wrap_request ORDER BY request_transaction_height""")
         for row in rows:
             yield self._to_request(row)
 
@@ -280,9 +274,7 @@ CREATE TABLE IF NOT EXISTS payout_block_metadata (
         balance = 0
         start_index = 0
         while start_index < len(payout_transaction_hashes):
-            transaction_hashes_batch = payout_transaction_hashes[
-                start_index : start_index + batch_size
-            ]
+            transaction_hashes_batch = payout_transaction_hashes[start_index : start_index + batch_size]
 
             in_query = ",".join(["?"] * len(transaction_hashes_batch))
             res = self.exec(
@@ -291,10 +283,7 @@ CREATE TABLE IF NOT EXISTS payout_block_metadata (
 					FROM wrap_request
 					WHERE payout_transaction_hash IN ({in_query})
 				""",
-                tuple(
-                    transaction_hash.bytes
-                    for transaction_hash in transaction_hashes_batch
-                ),
+                tuple(transaction_hash.bytes for transaction_hash in transaction_hashes_batch),
             )
 
             balance += res[0] if res else 0
@@ -413,9 +402,7 @@ CREATE TABLE IF NOT EXISTS payout_block_metadata (
             (height, payout_transaction_hash.bytes),
         )
 
-        count += self.exec(
-            """INSERT OR IGNORE INTO payout_block_metadata VALUES (?, ?)""", (height, 0)
-        )
+        count += self.exec("""INSERT OR IGNORE INTO payout_block_metadata VALUES (?, ?)""", (height, 0))
 
         self.commit()
 
@@ -449,9 +436,7 @@ CREATE TABLE IF NOT EXISTS payout_block_metadata (
     # region set_block_timestamp, set_payout_block_timestamp
 
     def _set_block_timestamp(self, height, raw_timestamp, network_facade, table_name) -> int:
-        unix_timestamp = network_facade.network.to_datetime(
-            network_facade.network.network_timestamp_class(raw_timestamp)
-        ).timestamp()
+        unix_timestamp = network_facade.network.to_datetime(network_facade.network.network_timestamp_class(raw_timestamp)).timestamp()
 
         res = self.exec(
             f"""
@@ -467,9 +452,7 @@ CREATE TABLE IF NOT EXISTS payout_block_metadata (
     def set_block_timestamp(self, height, raw_timestamp) -> int:
         """Sets a block timestamp."""
 
-        res = self._set_block_timestamp(
-            height, raw_timestamp, self.network_facade, "block_metadata"
-        )
+        res = self._set_block_timestamp(height, raw_timestamp, self.network_facade, "block_metadata")
 
         self._logger.info("saving block %s with timestamp %s", height, raw_timestamp)
         return res
@@ -477,13 +460,9 @@ CREATE TABLE IF NOT EXISTS payout_block_metadata (
     def set_payout_block_timestamp(self, height, raw_timestamp) -> int:
         """Sets a payout block timestamp."""
 
-        res = self._set_block_timestamp(
-            height, raw_timestamp, self.payout_network_facade, "payout_block_metadata"
-        )
+        res = self._set_block_timestamp(height, raw_timestamp, self.payout_network_facade, "payout_block_metadata")
 
-        self._logger.info(
-            "saving payout block %s with timestamp %s", height, raw_timestamp
-        )
+        self._logger.info("saving payout block %s with timestamp %s", height, raw_timestamp)
         return res
 
     # endregion
@@ -493,16 +472,12 @@ CREATE TABLE IF NOT EXISTS payout_block_metadata (
     def lookup_block_timestamp(self, height):
         """Looks up the timestamp of a block height."""
 
-        result = self.exec(
-            """SELECT timestamp FROM block_metadata WHERE height = ?""", (height,)
-        )
+        result = self.exec("""SELECT timestamp FROM block_metadata WHERE height = ?""", (height,))
         return result[0][0] if result else None
 
     def _lookup_block_timestamp_closest(self, height):
         """Looks up the timestamp of the closest block height no greater than provided."""
-        result = self.exec(
-            """SELECT MAX(timestamp) FROM block_metadata WHERE height <= ?""", (height,)
-        )
+        result = self.exec("""SELECT MAX(timestamp) FROM block_metadata WHERE height <= ?""", (height,))
         return result[0][0] if result else None
 
     def lookup_block_height(self, timestamp):
