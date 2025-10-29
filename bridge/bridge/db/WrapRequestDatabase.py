@@ -5,11 +5,7 @@ from typing import Iterator, Optional
 
 from symbolchain.CryptoTypes import Hash256
 
-from ..models.WrapRequest import (
-    WrapRequest,
-    make_next_retry_wrap_request,
-    make_wrap_error_result,
-)
+from ..models.WrapRequest import WrapRequest, make_next_retry_wrap_request, make_wrap_error_result
 from .MaxProcessedHeightMixin import MaxProcessedHeightMixin
 
 PayoutDetails = namedtuple("PayoutDetails", ["transaction_hash", "net_amount", "total_fee", "conversion_rate"])

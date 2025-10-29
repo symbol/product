@@ -1,5 +1,6 @@
 import logging
 import sqlite3
+
 from symbolchain.CryptoTypes import Hash256
 
 from .MaxProcessedHeightMixin import MaxProcessedHeightMixin

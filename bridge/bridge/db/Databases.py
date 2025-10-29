@@ -1,6 +1,6 @@
 import sqlite3
-from typing import Optional
 from pathlib import Path
+from typing import Optional
 
 from .BalanceChangeDatabase import BalanceChangeDatabase
 from .WrapRequestDatabase import WrapRequestDatabase
