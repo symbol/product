@@ -1,3 +1,5 @@
+import logging
+import sqlite3
 from symbolchain.CryptoTypes import Hash256
 
 from .MaxProcessedHeightMixin import MaxProcessedHeightMixin
@@ -5,6 +7,12 @@ from .MaxProcessedHeightMixin import MaxProcessedHeightMixin
 
 class BalanceChangeDatabase(MaxProcessedHeightMixin):
     """Database containing balance changes."""
+
+    def __init__(self, connection):
+        """Creates a balance change database."""
+
+        super().__init__(connection)
+        self._logger = logging.getLogger(__name__)
 
     def create_tables(self):
         """Creates balance change database tables."""
@@ -26,13 +34,18 @@ CREATE INDEX IF NOT EXISTS transfer_currency ON transfer(currency);
 
     def add_transfer(self, height, currency, amount, transaction_hash) -> int:
         """Adds a transfer to the transfer table."""
-
-        res = self.exec(
-            """INSERT INTO transfer(height, currency, amount, transaction_hash) VALUES (?, ?, ?, ?)""",
-            (height, currency, amount, transaction_hash.bytes),
-        )
-        self.commit()
-        return res
+        try:
+            res = self.exec(
+                """INSERT INTO transfer(height, currency, amount, transaction_hash) VALUES (?, ?, ?, ?)""",
+                (height, currency, amount, transaction_hash.bytes),
+            )
+            self.commit()
+            return res
+        except sqlite3.DatabaseError as ex:
+            self._logger.warning(
+                f"Failed to add transaction_hash [{transaction_hash.bytes.hex()}]: {ex}"
+            )
+            return 0
 
     def add_transfers_filtered_by_address(
         self, height, balance_changes, target_address

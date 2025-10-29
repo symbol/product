@@ -25,6 +25,10 @@ class MaxProcessedHeightMixin:
         """Commits the current transaction."""
         self.connection.commit()
 
+    def abort(self):
+        """Aborts the current transaction."""
+        self.connection.rollback()
+
     def execscript(self, sql_script: str):
         """Executes multiple SQL statements at once."""
         self.connection.executescript(sql_script)
