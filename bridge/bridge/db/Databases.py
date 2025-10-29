@@ -1,4 +1,5 @@
 import sqlite3
+from typing import Optional
 from pathlib import Path
 
 from .BalanceChangeDatabase import BalanceChangeDatabase
@@ -16,15 +17,15 @@ class Databases:  # pylint: disable=too-many-instance-attributes
 		self._wrapped_network = wrapped_network
 		self._is_read_only = is_read_only
 
-		self._balance_change_connection = None
-		self._unwrap_request_connection = None
-		self._wrap_request_connection = None
+		self._balance_change_connection: Optional[sqlite3.Connection] = None
+		self._unwrap_request_connection: Optional[sqlite3.Connection] = None
+		self._wrap_request_connection: Optional[sqlite3.Connection] = None
 
 		self.balance_change = None
 		self.unwrap_request = None
 		self.wrap_request = None
 
-	def _connect(self, database_name):
+	def _connect(self, database_name) -> sqlite3.Connection:
 		connection_string = f'file:{self._database_directory / database_name}.db{"?mode=ro" if self._is_read_only else ""}'
 		return sqlite3.connect(connection_string, uri=True)
 
@@ -43,13 +44,13 @@ class Databases:  # pylint: disable=too-many-instance-attributes
 	def __exit__(self, exc_type, exc_value, traceback):
 		"""Disconnects from databases."""
 
-		self._balance_change_connection.close()
-		self._unwrap_request_connection.close()
-		self._wrap_request_connection.close()
+		self._balance_change_connection.close()  # type: ignore
+		self._unwrap_request_connection.close()  # type: ignore
+		self._wrap_request_connection.close()  # type: ignore
 
 	def create_tables(self):
 		"""Creates all tables."""
 
-		self.balance_change.create_tables()
-		self.unwrap_request.create_tables()
-		self.wrap_request.create_tables()
+		self.balance_change.create_tables()  # type: ignore
+		self.unwrap_request.create_tables()  # type: ignore
+		self.wrap_request.create_tables()  # type: ignore
