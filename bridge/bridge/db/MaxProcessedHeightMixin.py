@@ -13,13 +13,15 @@ class MaxProcessedHeightMixin:
 		res = self.connection.execute(sql, params)
 		if sql_type == "SELECT":
 			return res.fetchall()
-		elif sql_type in ("INSERT", "UPDATE", "DELETE"):
+
+		if sql_type in ("INSERT", "UPDATE", "DELETE"):
 			return res.rowcount
-		elif sql_type in ("CREATE", "DROP", "ALTER"):
+
+		if sql_type in ("CREATE", "DROP", "ALTER"):
 			self.connection.commit()
 			return res.rowcount
-		else:
-			return res
+
+		return res
 
 	def commit(self):
 		"""Commits the current transaction."""
