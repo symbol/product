@@ -36,7 +36,7 @@ class MaxProcessedHeightMixin:
         self.exec(
             """CREATE TABLE IF NOT EXISTS max_processed_height (
 			height integer,
-			marker integer UNIQUE
+			marker integer NOT NULL UNIQUE
 		)"""
         )
 
