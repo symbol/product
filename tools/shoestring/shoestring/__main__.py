@@ -6,6 +6,8 @@ import os
 import sys
 from pathlib import Path
 
+import argcomplete
+
 
 def register_subcommand(subparsers, name, help_text):
 	parser = subparsers.add_parser(name, help=help_text)
@@ -31,6 +33,7 @@ def parse_args(args):
 	register_subcommand(subparsers, 'signer', _('main-signer-help'))
 	register_subcommand(subparsers, 'upgrade', _('main-upgrade-help'))
 
+	argcomplete.autocomplete(parser)
 	args = parser.parse_args(args)
 	if not hasattr(args, 'func'):
 		parser.print_help()
@@ -50,5 +53,9 @@ async def main(args):
 		await possible_task
 
 
-if '__main__' == __name__:
+def entry_point():
 	asyncio.run(main(sys.argv[1:]))
+
+
+if __name__ == '__main__':
+	entry_point()

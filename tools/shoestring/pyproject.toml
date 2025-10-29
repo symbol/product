@@ -23,5 +23,9 @@ classifiers = [
 
 include = ['shoestring/lang/*/LC_MESSAGES/messages.mo']
 
+[tool.poetry.scripts]
+shoestring = "shoestring.__main__:entry_point"
+shoestring-wizard = "shoestring.wizard.__main__:entry_point"
+
 [tool.poetry.dependencies]
 python = "^3.9.2"

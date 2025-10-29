@@ -104,5 +104,9 @@ async def main():  # pylint: disable=too-many-locals
 	log.info(_('wizard-main-done'))
 
 
-if '__main__' == __name__:
+def entry_point():
 	asyncio.run(main())
+
+
+if __name__ == '__main__':
+	entry_point()
