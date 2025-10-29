@@ -38,9 +38,11 @@ class BalanceChangesDownloader:
 				raise NodeException(f'all attempts to query height {height} failed')
 
 	async def _download(self, height):
+		blockchain, network = self.network.rosetta_network_id
 		balance_changes = await download_rosetta_block_balance_changes(
 			self.connector,
-			*self.network.rosetta_network_id,
+			blockchain,
+			network,
 			height)
 		return self.database.add_transfers_filtered_by_address(height, balance_changes, self.network.bridge_address)
 
