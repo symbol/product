@@ -3,6 +3,7 @@ import unittest
 from pathlib import Path
 
 from bridge.models.BridgeConfiguration import (
+	StrategyMode,
 	parse_bridge_configuration,
 	parse_global_configuration,
 	parse_machine_configuration,
@@ -88,12 +89,12 @@ class BridgeConfigurationTest(unittest.TestCase):
 
 	def test_can_parse_valid_global_configuration(self):
 		# Arrange:
-		for mode in ('stake', 'wrap', 'swap'):
+		for (str_mode, enum_mode) in (('stake', StrategyMode.STAKE), ('wrap', StrategyMode.WRAP), ('swap', StrategyMode.SWAP)):
 			# Act:
-			global_config = parse_global_configuration({'mode': mode})
+			global_config = parse_global_configuration({'mode': str_mode})
 
 			# Assert:
-			self.assertEqual(mode, global_config.mode)
+			self.assertEqual(enum_mode, global_config.mode)
 
 	def test_cannot_parse_global_configuration_incomplete(self):
 		self._assert_cannot_parse_incomplete_configuration(parse_global_configuration, self.VALID_GLOBAL_CONFIGURATION)
@@ -188,7 +189,7 @@ class BridgeConfigurationTest(unittest.TestCase):
 			self.assertEqual(7, config.machine.log_backup_count)
 			self.assertEqual(12345, config.machine.max_log_size)
 
-			self.assertEqual('stake', config.global_.mode)
+			self.assertEqual(StrategyMode.STAKE, config.global_.mode)
 
 			self.assertEqual('https:/oracle.foo/price/v3', config.price_oracle.url)
 			self.assertEqual('D864696403D4DED92F2C82C3BEE33C41E90304B521F86E6CD37A7C808C9BDF80', config.price_oracle.access_token)

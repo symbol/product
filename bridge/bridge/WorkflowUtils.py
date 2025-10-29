@@ -7,6 +7,7 @@ from symbollightapi.model.Exceptions import NodeException
 
 from .ConversionRateCalculatorFactory import ConversionRateCalculator, ConversionRateCalculatorFactory
 from .ethereum.EthereumConnector import ConfirmedTransactionExecutionFailure
+from .models.BridgeConfiguration import StrategyMode
 from .NetworkUtils import is_transient_error
 
 PrepareSendResult = namedtuple('PrepareSendResult', ['error_message', 'fee_multiplier', 'transfer_amount'])
@@ -81,7 +82,7 @@ def is_native_to_native_conversion(wrapped_facade):
 
 
 def validate_global_configuration(global_config, wrapped_facade):
-	is_swap_strategy = 'swap' == global_config.mode
+	is_swap_strategy = StrategyMode.SWAP == global_config.mode
 	if is_native_to_native_conversion(wrapped_facade):
 		if not is_swap_strategy:
 			raise ValueError('wrapped token is native but swap mode is not selected')
@@ -104,7 +105,7 @@ def create_conversion_rate_calculator_factory(execution_context, databases, nati
 
 		return NativeConversionRateCalculatorFactory(databases, fee_multiplier)
 
-	if 'wrap' == execution_context.strategy_mode:
+	if StrategyMode.WRAP == execution_context.strategy_mode:
 		return NativeConversionRateCalculatorFactory(databases, Decimal(1))  # wrapped mode (1:1) uses fixed unity multiplier (1)
 
 	return ConversionRateCalculatorFactory(databases, native_facade.extract_mosaic_id().formatted, execution_context.is_unwrap_mode)
