@@ -33,16 +33,14 @@ def unhandled_exception_handler(exc_type, exc_value, exc_traceback):
 
 
 def configure_logging(config):
-	logging.basicConfig(
-		level=logging.DEBUG,
-		format='%(asctime)s [%(levelname)s] %(module)s: %(message)s',
-		handlers=[
-			RotatingFileHandler(
-				filename=config.machine.log_filename,
-				backupCount=config.machine.log_backup_count,
-				maxBytes=config.machine.max_log_size),
-			logging.StreamHandler(sys.stdout)
-		])
+	logging.basicConfig(level=logging.DEBUG,
+	                    format='%(asctime)s [%(levelname)s] %(module)s: %(message)s',
+	                    handlers=[
+	                        RotatingFileHandler(filename=config.machine.log_filename,
+	                                            backupCount=config.machine.log_backup_count,
+	                                            maxBytes=config.machine.max_log_size),
+	                        logging.StreamHandler(sys.stdout)
+	                    ])
 
 	# only log warnings or higher from filelock
 	logger = logging.getLogger('filelock')

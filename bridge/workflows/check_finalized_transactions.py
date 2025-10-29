@@ -16,10 +16,8 @@ async def _check_pending_sent_request(request, database, connector, request_netw
 		database.mark_payout_failed(request, error_message)
 
 	payout_transaction_hash = database.payout_transaction_hash_for_request(request)
-	is_unconfirmed = await connector.try_wait_for_announced_transaction(
-		payout_transaction_hash,
-		TransactionStatus.UNCONFIRMED,
-		TimeoutSettings(1, 0))
+	is_unconfirmed = await connector.try_wait_for_announced_transaction(payout_transaction_hash, TransactionStatus.UNCONFIRMED,
+	                                                                    TimeoutSettings(1, 0))
 	if not is_unconfirmed:
 		# original request timestamp (derived from block timestamp) is used, so this will not repeat indefinitely
 		database.mark_payout_failed_transient(request, 'node dropped payout transaction')

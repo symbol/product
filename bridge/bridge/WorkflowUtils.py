@@ -8,8 +8,6 @@ PrepareSendResult = namedtuple('PrepareSendResult', ['error_message', 'fee_multi
 
 
 # region calculate_search_range
-
-
 async def calculate_search_range(connector, database, config_extensions, start_height_override_property_name=None):
 	"""
 	Calculates a search range of blocks given a connector and a database.
@@ -18,16 +16,17 @@ async def calculate_search_range(connector, database, config_extensions, start_h
 
 	chain_height = await connector.finalized_chain_height()
 	database_height = database.max_processed_height()
-	
+
 	start_height = max(database_height + 1, int(config_extensions.get(start_height_override_property_name, 0)))
 	end_height = chain_height + 1 + int(config_extensions.get('finalization_lookahead', 0))
 
 	return (start_height, end_height)
 
+
 # endregion
 
-
 # region NativeConversionRateCalculatorFactory
+
 
 class NativeConversionRateCalculatorFactory:
 	"""Factory for creating native to native conversion rate calculators."""
@@ -61,10 +60,11 @@ class NativeConversionRateCalculatorFactory:
 		calculator.height = height
 		return calculator
 
+
 # endregion
 
-
 # region is_native_to_native_conversion, validate_global_configuration
+
 
 def is_native_to_native_conversion(wrapped_facade):
 	"""Determines if a native to native conversion is configured."""
@@ -81,10 +81,11 @@ def validate_global_configuration(global_config, wrapped_facade):
 		if is_swap_strategy:
 			raise ValueError('wrapped token is not native but swap mode is selected')
 
+
 # endregion
 
-
 # region create_conversion_rate_calculator_factory
+
 
 def create_conversion_rate_calculator_factory(execution_context, databases, native_facade, wrapped_facade, fee_multiplier):
 	# pylint: disable=invalid-name
@@ -101,10 +102,11 @@ def create_conversion_rate_calculator_factory(execution_context, databases, nati
 
 	return ConversionRateCalculatorFactory(databases, native_facade.extract_mosaic_id().formatted, execution_context.is_unwrap_mode)
 
+
 # endregion
 
-
 # region prepare_send
+
 
 def prepare_send(network, request, conversion_function, fee_multiplier):
 	"""Performs basic calculations and validation prior to sending a payout transaction."""
@@ -118,7 +120,7 @@ def prepare_send(network, request, conversion_function, fee_multiplier):
 		if fee_multiplier < Decimal('0'):
 			raise ValueError('fee_multiplier must be non-negative')
 
-		fee_multiplier *= Decimal(conversion_function(10 ** 12)) / Decimal(10 ** 12)
+		fee_multiplier *= Decimal(conversion_function(10**12)) / Decimal(10**12)
 
 	transfer_amount = conversion_function(request.amount)
 
@@ -128,10 +130,11 @@ def prepare_send(network, request, conversion_function, fee_multiplier):
 
 	return PrepareSendResult(None, fee_multiplier, transfer_amount)
 
+
 # endregion
 
-
 # region check_expiry
+
 
 def check_expiry(config_extensions, database, request):
 	"""Determines if the specified request is expired (timed out)."""
@@ -144,5 +147,6 @@ def check_expiry(config_extensions, database, request):
 			return f'request timestamp {request_datetime} is more than {request_lifetime_hours} in the past'
 
 	return None
+
 
 # endregion

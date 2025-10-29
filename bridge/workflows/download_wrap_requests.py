@@ -9,50 +9,48 @@ from .main_impl import main_bootstrapper, print_banner
 
 
 async def _download_requests(database, connector, network, is_valid_address):
-    logger = logging.getLogger(__name__)
+	logger = logging.getLogger(__name__)
 
-    (start_height, end_height) = await calculate_search_range(connector, database, network.config.extensions)
-    mosaic_id = network.extract_mosaic_id()
+	(start_height, end_height) = await calculate_search_range(connector, database, network.config.extensions)
+	mosaic_id = network.extract_mosaic_id()
 
-    logger.info('\n'.join([
-		f'searching address {network.transaction_search_address}',
-		f'  for {mosaic_id.formatted} deposits',
-		f'  in blocks range [{start_height}, {end_height})...'
+	logger.info('\n'.join([
+	    f'searching address {network.transaction_search_address}', f'  for {mosaic_id.formatted} deposits',
+	    f'  in blocks range [{start_height}, {end_height})...'
 	]))
 
-    database.reset()
+	database.reset()
 
-    if start_height >= end_height:
-        logger.info("no new blocks to process, maybe node resyncing?. Exiting.")
-        return
+	if start_height >= end_height:
+		logger.info("no new blocks to process, maybe node resyncing?. Exiting.")
+		return
 
-    count = 0
-    error_count = 0
-    heights = set()
-    async for transaction in get_incoming_transactions_from(connector, network.transaction_search_address, start_height, end_height):
-        results = network.extract_wrap_request_from_transaction(is_valid_address, transaction, mosaic_id.id)
-        for result in results:
-            result = coerce_zero_balance_wrap_request_to_error(result)
-            if result.is_error:
-                database.add_error(result.error)
-                heights.add(result.error.transaction_height)
-                error_count += 1
-            else:
-                database.add_request(result.request)
-                heights.add(result.request.transaction_height)
-                count += 1
+	count = 0
+	error_count = 0
+	heights = set()
+	async for transaction in get_incoming_transactions_from(connector, network.transaction_search_address, start_height, end_height):
+		results = network.extract_wrap_request_from_transaction(is_valid_address, transaction, mosaic_id.id)
+		for result in results:
+			result = coerce_zero_balance_wrap_request_to_error(result)
+			if result.is_error:
+				database.add_error(result.error)
+				heights.add(result.error.transaction_height)
+				error_count += 1
+			else:
+				database.add_request(result.request)
+				heights.add(result.request.transaction_height)
+				count += 1
 
-    # add marker in database to indicate last height processed
-    database.set_max_processed_height(end_height - 1)
-    heights.add(end_height - 1)
+	# add marker in database to indicate last height processed
+	database.set_max_processed_height(end_height - 1)
+	heights.add(end_height - 1)
 
-    print_banner([
-		f'==> last processed transaction height: {database.max_processed_height()}',
-		f'==>      total transactions processed: {count}',
-		f'==>        total transactions errored: {error_count}'
+	print_banner([
+	    f'==> last processed transaction height: {database.max_processed_height()}', f'==>      total transactions processed: {count}',
+	    f'==>        total transactions errored: {error_count}'
 	])
 
-    return heights
+	return heights
 
 
 async def _download_block_timestamps(database, connector, heights):

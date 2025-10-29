@@ -11,6 +11,7 @@ from .main_impl import main_bootstrapper, print_banner
 
 
 class SendCounts:
+
 	def __init__(self):
 		self.sent = 0
 		self.errored = 0
@@ -28,12 +29,8 @@ async def _send_payout(network, request, conversion_function, fee_multiplier):
 	transfer_amount = prepare_send_result.transfer_amount
 	mosaic_id = network.extract_mosaic_id()
 
-	logger.info(
-		'> issuing %s [%s] tokens (gross) to %s for deposit of %s tokens',
-		transfer_amount,
-		mosaic_id.formatted,
-		request.destination_address,
-		request.amount)
+	logger.info('> issuing %s [%s] tokens (gross) to %s for deposit of %s tokens', transfer_amount, mosaic_id.formatted,
+	            request.destination_address, request.amount)
 	logger.info('  redeeming 1:%.6f', transfer_amount / request.amount)
 
 	await sender.init()
@@ -79,18 +76,13 @@ async def send_payouts(conversion_rate_calculator_factory, is_unwrap_mode, datab
 			mark_permanent_failure(request, send_result.error_message)
 		else:
 			conversion_rate = conversion_function(1000000)
-			payout_details = PayoutDetails(
-				send_result.transaction_hash,
-				send_result.net_amount,
-				send_result.total_fee,
-				conversion_rate)
+			payout_details = PayoutDetails(send_result.transaction_hash, send_result.net_amount, send_result.total_fee, conversion_rate)
 			database.mark_payout_sent(request, payout_details)
 			counts.sent += 1
 
 	print_banner([
-		f'==>      total payouts sent: {counts.sent}',
-		f'==>   total payouts errored: {counts.errored}',
-		f'==>   total payouts skipped: {counts.skipped}'
+	    f'==>      total payouts sent: {counts.sent}', f'==>   total payouts errored: {counts.errored}',
+	    f'==>   total payouts skipped: {counts.skipped}'
 	])
 
 
@@ -98,23 +90,16 @@ async def main_impl(execution_context, databases, native_facade, wrapped_facade,
 	logger = logging.getLogger(__name__)
 
 	fee_multiplier = await price_oracle.conversion_rate(wrapped_facade.config.blockchain, native_facade.config.blockchain)
-	fee_multiplier *= Decimal(10 ** native_facade.native_token_precision) / Decimal(10 ** wrapped_facade.native_token_precision)
+	fee_multiplier *= Decimal(10**native_facade.native_token_precision) / Decimal(10**wrapped_facade.native_token_precision)
 
-	conversion_rate_calculator_factory = create_conversion_rate_calculator_factory(
-		execution_context,
-		databases,
-		native_facade,
-		wrapped_facade,
-		fee_multiplier)
+	conversion_rate_calculator_factory = create_conversion_rate_calculator_factory(execution_context, databases, native_facade, wrapped_facade,
+	                                                                               fee_multiplier)
 
 	if execution_context.is_unwrap_mode:
 		await send_payouts(conversion_rate_calculator_factory, execution_context.is_unwrap_mode, databases.unwrap_request, native_facade)
 	else:
-		logger.info(
-			'calculated fee_multiplier as %.8f (%s/%s)',
-			fee_multiplier,
-			wrapped_facade.config.blockchain,
-			native_facade.config.blockchain)
+		logger.info('calculated fee_multiplier as %.8f (%s/%s)', fee_multiplier, wrapped_facade.config.blockchain,
+		            native_facade.config.blockchain)
 
 		send_payouts_params = [databases.wrap_request, wrapped_facade]
 		if not is_native_to_native_conversion(wrapped_facade):
