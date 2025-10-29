@@ -1,7 +1,7 @@
 import logging
 from collections import namedtuple
 from enum import Enum
-from typing import Iterator
+from typing import Iterator, Optional
 
 from symbolchain.CryptoTypes import Hash256
 
@@ -506,7 +506,7 @@ CREATE TABLE IF NOT EXISTS payout_block_metadata (
 		)
 		return [Hash256(row[0]) for row in result]
 
-	def payout_transaction_hash_for_request(self, request) -> Hash256 | None:
+	def payout_transaction_hash_for_request(self, request) -> Optional[Hash256]:
 		"""Gets the payout transaction hash associated with a request."""
 
 		result = self.exec(
