@@ -24,7 +24,7 @@ CREATE INDEX IF NOT EXISTS transfer_currency ON transfer(currency);
 """
         )
 
-    def add_transfer(self, height, currency, amount, transaction_hash):
+    def add_transfer(self, height, currency, amount, transaction_hash) -> int:
         """Adds a transfer to the transfer table."""
 
         res = self.exec(
@@ -36,7 +36,7 @@ CREATE INDEX IF NOT EXISTS transfer_currency ON transfer(currency);
 
     def add_transfers_filtered_by_address(
         self, height, balance_changes, target_address
-    ):
+    ) -> int:
         """Adds multiple transfers to the transfer table, filtered by address."""
 
         count = 0
