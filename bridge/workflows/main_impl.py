@@ -5,13 +5,14 @@ from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from traceback import format_exception
 
+from filelock import FileLock, Timeout
+
 from bridge.db.Databases import Databases
 from bridge.models.BridgeConfiguration import parse_bridge_configuration
 from bridge.models.Constants import ExecutionContext
 from bridge.NetworkFacadeLoader import load_network_facade
 from bridge.price_oracle.PriceOracleLoader import load_price_oracle
 from bridge.WorkflowUtils import validate_global_configuration
-from filelock import FileLock, Timeout
 
 
 def parse_args(description):

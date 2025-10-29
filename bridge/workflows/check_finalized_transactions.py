@@ -2,10 +2,11 @@ import asyncio
 import logging
 
 from aiolimiter import AsyncLimiter
-from bridge.db.WrapRequestDatabase import WrapRequestStatus
-from bridge.WorkflowUtils import check_expiry
 from symbollightapi.connector.ConnectorExtensions import filter_finalized_transactions, query_block_timestamps
 from symbollightapi.model.Constants import DEFAULT_ASYNC_LIMITER_ARGUMENTS, TimeoutSettings, TransactionStatus
+
+from bridge.db.WrapRequestDatabase import WrapRequestStatus
+from bridge.WorkflowUtils import check_expiry
 
 from .main_impl import main_bootstrapper
 
