@@ -12,7 +12,7 @@ from symbollightapi.model.Exceptions import NodeException, NodeTransientExceptio
 from bridge.ConversionRateCalculatorFactory import ConversionRateCalculatorFactory
 from bridge.db.Databases import Databases
 from bridge.ethereum.EthereumConnector import ConfirmedTransactionExecutionFailure
-from bridge.models.BridgeConfiguration import GlobalConfiguration
+from bridge.models.BridgeConfiguration import GlobalConfiguration, StrategyMode
 from bridge.models.Constants import ExecutionContext, PrintableMosaicId
 from bridge.models.WrapRequest import WrapRequest
 from bridge.WorkflowUtils import (
@@ -215,18 +215,18 @@ def test_is_not_native_to_native_conversion_when_network_facade_does_not_use_cur
 
 def test_validate_global_configuration_validates_strategy_mode_against_wrapped_token():
 	# Assert: swap mode and native wrapped token   => allowed
-	validate_global_configuration(GlobalConfiguration('swap'), MockNetworkFacade(None))
+	validate_global_configuration(GlobalConfiguration(StrategyMode.SWAP), MockNetworkFacade(None))
 
 	# - other mode and not native wrapped token    => allowed
-	validate_global_configuration(GlobalConfiguration('stake'), MockNetworkFacade(12345))
+	validate_global_configuration(GlobalConfiguration(StrategyMode.STAKE), MockNetworkFacade(12345))
 
 	# native mode and not native wrapped token     => disallowed
 	with pytest.raises(ValueError, match='wrapped token is not native but swap mode is selected'):
-		validate_global_configuration(GlobalConfiguration('swap'), MockNetworkFacade(12345))
+		validate_global_configuration(GlobalConfiguration(StrategyMode.SWAP), MockNetworkFacade(12345))
 
 	# - other mode and native wrapped token        => disallowed
 	with pytest.raises(ValueError, match='wrapped token is native but swap mode is not selected'):
-		validate_global_configuration(GlobalConfiguration('stake'), MockNetworkFacade(None))
+		validate_global_configuration(GlobalConfiguration(StrategyMode.STAKE), MockNetworkFacade(None))
 
 # endregion
 
@@ -252,7 +252,7 @@ def _assert_can_create_default_calculator_factory_when_wrapped_facade_does_not_u
 
 			# Act:
 			factory = create_conversion_rate_calculator_factory(
-				ExecutionContext(is_unwrap_mode, 'stake'),
+				ExecutionContext(is_unwrap_mode, StrategyMode.STAKE),
 				databases,
 				MockNetworkFacade('alpha'),
 				MockNetworkFacade('beta'),
@@ -283,7 +283,7 @@ def test_can_create_native_calculator_factory_when_wrapped_facade_uses_currency_
 
 			# Act:
 			factory = create_conversion_rate_calculator_factory(
-				ExecutionContext(False, 'stake'),
+				ExecutionContext(False, StrategyMode.STAKE),
 				databases,
 				MockNetworkFacade('alpha'),
 				MockNetworkFacade(''),
@@ -305,7 +305,7 @@ def test_cannot_create_native_calculator_factory_when_wrapped_facade_uses_curren
 			# Act + Assert:
 			with pytest.raises(ValueError, match='native to native conversions do not support unwrap mode'):
 				create_conversion_rate_calculator_factory(
-					ExecutionContext(True, 'stake'),
+					ExecutionContext(True, StrategyMode.STAKE),
 					databases,
 					MockNetworkFacade('alpha'),
 					MockNetworkFacade(''),
@@ -321,7 +321,7 @@ def _assert_can_create_native_calculator_factory_when_strategy_mode_wrapped(is_u
 
 			# Act:
 			factory = create_conversion_rate_calculator_factory(
-				ExecutionContext(is_unwrap_mode, 'wrap'),
+				ExecutionContext(is_unwrap_mode, StrategyMode.WRAP),
 				databases,
 				MockNetworkFacade('alpha'),
 				MockNetworkFacade('beta'),
