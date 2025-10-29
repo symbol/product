@@ -2,11 +2,10 @@ import asyncio
 import logging
 
 from aiolimiter import AsyncLimiter
-from symbollightapi.model.Constants import DEFAULT_ASYNC_LIMITER_ARGUMENTS
-from symbollightapi.model.Exceptions import NodeException
-
 from bridge.NetworkUtils import download_rosetta_block_balance_changes
 from bridge.WorkflowUtils import calculate_search_range
+from symbollightapi.model.Constants import DEFAULT_ASYNC_LIMITER_ARGUMENTS
+from symbollightapi.model.Exceptions import NodeException
 
 from .main_impl import main_bootstrapper, print_banner
 

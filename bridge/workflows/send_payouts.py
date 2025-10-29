@@ -2,11 +2,10 @@ import asyncio
 import logging
 from decimal import Decimal
 
-from symbollightapi.model.Exceptions import NodeException
-
 from bridge.db.WrapRequestDatabase import PayoutDetails, WrapRequestStatus
 from bridge.NetworkUtils import TransactionSender, TrySendResult, is_transient_error
 from bridge.WorkflowUtils import create_conversion_rate_calculator_factory, is_native_to_native_conversion, prepare_send
+from symbollightapi.model.Exceptions import NodeException
 
 from .main_impl import main_bootstrapper, print_banner
 

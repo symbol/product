@@ -1,10 +1,9 @@
 import asyncio
 import logging
 
-from symbollightapi.connector.ConnectorExtensions import get_incoming_transactions_from, query_block_timestamps
-
 from bridge.models.WrapRequest import coerce_zero_balance_wrap_request_to_error
 from bridge.WorkflowUtils import calculate_search_range
+from symbollightapi.connector.ConnectorExtensions import get_incoming_transactions_from, query_block_timestamps
 
 from .main_impl import main_bootstrapper, print_banner
 
