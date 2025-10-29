@@ -43,7 +43,9 @@ CREATE INDEX IF NOT EXISTS transfer_currency ON transfer(currency);
             return res
         except sqlite3.DatabaseError as ex:
             self._logger.warning(
-                f"Failed to add transaction_hash [{transaction_hash.bytes.hex()}]: {ex}"
+                "Failed to add transaction_hash [%s]: %s",
+                transaction_hash.bytes.hex(),
+                ex
             )
             return 0
 
