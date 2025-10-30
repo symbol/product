@@ -16,6 +16,7 @@ It includes our optin manager.
 | [@tools/shoestring](tools/shoestring) | [![lint][tools-shoestring-lint]][tools-shoestring-job] | | [![test][tools-shoestring-test]][tools-shoestring-job]| [![][tools-shoestring-cov]][tools-shoestring-cov-link] |
 | [@tools/vanity](tools/vanity) | [![lint][tools-vanity-lint]][tools-vanity-job] | | [![test][tools-vanity-test]][tools-vanity-job]| [![][tools-vanity-cov]][tools-vanity-cov-link] |
 | [@wallet/common-core](wallet/common/core) | [![lint][wallet-common-core-lint]][wallet-common-core-job] | | [![test][wallet-common-core-test]][wallet-common-core-job]| [![][wallet-common-core-cov]][wallet-common-core-cov-link] |
+| [@wallet/common-ethereum](wallet/common/ethereum) | [![lint][wallet-common-ethereum-lint]][wallet-common-ethereum-job] | | [![test][wallet-common-ethereum-test]][wallet-common-ethereum-job]| [![][wallet-common-ethereum-cov]][wallet-common-ethereum-cov-link] |
 | [@wallet/common-symbol](wallet/common/symbol) | [![lint][wallet-common-symbol-lint]][wallet-common-symbol-job] | | [![test][wallet-common-symbol-test]][wallet-common-symbol-job]| [![][wallet-common-symbol-cov]][wallet-common-symbol-cov-link] |
 
 ## Full Coverage Report
@@ -93,6 +94,12 @@ Detailed version can be seen on [codecov.io][product-cov-link].
 [wallet-common-core-test]: https://jenkins.symbolsyndicate.us/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Fwallet-common-core%2Fdev%2F&config=wallet-common-core-test
 [wallet-common-core-cov]: https://codecov.io/gh/symbol/product/branch/dev/graph/badge.svg?token=SSYYBMK0M7&flag=wallet-common-core
 [wallet-common-core-cov-link]: https://codecov.io/gh/symbol/product/tree/dev/wallet/common/core
+
+[wallet-common-ethereum-job]: https://jenkins.symbolsyndicate.us/blue/organizations/jenkins/Symbol%2Fgenerated%2Fproduct%2Fwallet-common-ethereum/activity?branch=dev
+[wallet-common-ethereum-lint]: https://jenkins.symbolsyndicate.us/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Fwallet-common-ethereum%2Fdev%2F&config=wallet-common-ethereum-lint
+[wallet-common-ethereum-test]: https://jenkins.symbolsyndicate.us/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Fwallet-common-ethereum%2Fdev%2F&config=wallet-common-ethereum-test
+[wallet-common-ethereum-cov]: https://codecov.io/gh/symbol/product/branch/dev/graph/badge.svg?token=SSYYBMK0M7&flag=wallet-common-ethereum
+[wallet-common-ethereum-cov-link]: https://codecov.io/gh/symbol/product/tree/dev/wallet/common/ethereum
 
 [wallet-common-symbol-job]: https://jenkins.symbolsyndicate.us/blue/organizations/jenkins/Symbol%2Fgenerated%2Fproduct%2Fwallet-common-symbol/activity?branch=dev
 [wallet-common-symbol-lint]: https://jenkins.symbolsyndicate.us/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Fwallet-common-symbol%2Fdev%2F&config=wallet-common-symbol-lint

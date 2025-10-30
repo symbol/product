@@ -1,6 +1,5 @@
 const twitter = require('../../src/controllers');
 const chai = require('chai');
-const chaiAsPromised = require('chai-as-promised');
 const { decode } = require('jsonwebtoken');
 const {
 	stub, restore
@@ -8,9 +7,16 @@ const {
 const sinonChai = require('sinon-chai');
 const { TwitterApi } = require('twitter-api-v2');
 
-chai.use(chaiAsPromised);
 chai.use(sinonChai);
-const { expect } = chai;
+
+let expect;
+
+// Import chai-as-promised dynamically before all tests
+before(async () => {
+	const chaiAsPromised = await import('chai-as-promised');
+	chai.use(chaiAsPromised.default);
+	({ expect } = chai);
+});
 
 describe('twitter controller', () => {
 	describe('requestToken', () => {
@@ -54,7 +60,7 @@ describe('twitter controller', () => {
 			const promise = twitter.requestToken(frontendCallbackUrl);
 
 			// Assert:
-			await expect(promise).to.be.rejectedWith('fail to request twitter token');
+			await expect(promise).to.be.eventually.rejectedWith('fail to request twitter token');
 		});
 	});
 
@@ -122,7 +128,7 @@ describe('twitter controller', () => {
 			});
 
 			// Assert:
-			await expect(promise).to.be.rejectedWith('fail to request user access token');
+			await expect(promise).to.be.eventually.rejectedWith('fail to request user access token');
 		});
 	});
 });
