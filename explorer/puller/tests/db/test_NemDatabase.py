@@ -1,24 +1,11 @@
 import datetime
 import unittest
-from collections import namedtuple
 
 import psycopg2
 import testing.postgresql
 
 from puller.db.NemDatabase import NemDatabase
-
-Block = namedtuple('Block', [
-	'height',
-	'timestamp',
-	'total_fees',
-	'total_transactions',
-	'difficulty',
-	'block_hash',
-	'signer',
-	'signature',
-	'size'
-])
-
+from puller.facade.NemPuller import Block
 
 # region test data
 
