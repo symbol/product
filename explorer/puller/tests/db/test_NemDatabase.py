@@ -25,7 +25,7 @@ Block = namedtuple('Block', [
 BLOCKS = [
 	Block(
 		1,
-		'2015-03-29 00:06:25',
+		'2015-03-29 00:06:25+00:00',  # UTC timestamp from convert_timestamp_to_datetime
 		102000000,
 		5,
 		100000000000000,
@@ -36,7 +36,7 @@ BLOCKS = [
 		100),
 	Block(
 		2,
-		'2015-03-29 20:34:19',
+		'2015-03-29 20:34:19+00:00',  # UTC timestamp from convert_timestamp_to_datetime
 		201000000,
 		3,
 		80000000000000,
@@ -121,7 +121,7 @@ class NemDatabaseTest(unittest.TestCase):
 		self.assertIsNotNone(result)
 		expected_result = (
 			1,
-			datetime.datetime(2015, 3, 28, 16, 6, 25),
+			datetime.datetime(2015, 3, 29, 0, 6, 25),
 			102000000,
 			5,
 			100000000000000,
