@@ -3,6 +3,7 @@ import unittest
 from pathlib import Path
 
 from bridge.models.BridgeConfiguration import (
+	StrategyMode,
 	parse_bridge_configuration,
 	parse_global_configuration,
 	parse_machine_configuration,
@@ -28,6 +29,11 @@ class BridgeConfigurationTest(unittest.TestCase):
 	VALID_PRICE_ORACLE_CONFIGURATION = {
 		'url': 'https:/oracle.foo/price/v3',
 		'accessToken': 'D864696403D4DED92F2C82C3BEE33C41E90304B521F86E6CD37A7C808C9BDF80'
+	}
+
+	VALID_VAULT_CONFIGURATION = {
+		'url': 'https:/vault.foo/abc',
+		'accessToken': '174C6318586A7069A9F8762BEBC13416C193BEE42459FD5041985814E40BE3C5'
 	}
 
 	VALID_NETWORK_CONFIGURATION = {
@@ -83,12 +89,12 @@ class BridgeConfigurationTest(unittest.TestCase):
 
 	def test_can_parse_valid_global_configuration(self):
 		# Arrange:
-		for mode in ('stake', 'wrap', 'swap'):
+		for (str_mode, enum_mode) in (('stake', StrategyMode.STAKE), ('wrap', StrategyMode.WRAP), ('swap', StrategyMode.SWAP)):
 			# Act:
-			global_config = parse_global_configuration({'mode': mode})
+			global_config = parse_global_configuration({'mode': str_mode})
 
 			# Assert:
-			self.assertEqual(mode, global_config.mode)
+			self.assertEqual(enum_mode, global_config.mode)
 
 	def test_cannot_parse_global_configuration_incomplete(self):
 		self._assert_cannot_parse_incomplete_configuration(parse_global_configuration, self.VALID_GLOBAL_CONFIGURATION)
@@ -170,6 +176,7 @@ class BridgeConfigurationTest(unittest.TestCase):
 				self._write_section(outfile, '[machine]', self.VALID_MACHINE_CONFIGURATION)
 				self._write_section(outfile, '\n[global]', self.VALID_GLOBAL_CONFIGURATION)
 				self._write_section(outfile, '\n[price_oracle]', self.VALID_PRICE_ORACLE_CONFIGURATION)
+				self._write_section(outfile, '\n[vault]', self.VALID_VAULT_CONFIGURATION)
 				self._write_section(outfile, '\n[native_network]', self.VALID_NETWORK_CONFIGURATION)
 				self._write_section(outfile, '\n[wrapped_network]', self.VALID_NETWORK_CONFIGURATION_2)
 
@@ -182,10 +189,13 @@ class BridgeConfigurationTest(unittest.TestCase):
 			self.assertEqual(7, config.machine.log_backup_count)
 			self.assertEqual(12345, config.machine.max_log_size)
 
-			self.assertEqual('stake', config.global_.mode)
+			self.assertEqual(StrategyMode.STAKE, config.global_.mode)
 
 			self.assertEqual('https:/oracle.foo/price/v3', config.price_oracle.url)
 			self.assertEqual('D864696403D4DED92F2C82C3BEE33C41E90304B521F86E6CD37A7C808C9BDF80', config.price_oracle.access_token)
+
+			self.assertEqual('https:/vault.foo/abc', config.vault.url)
+			self.assertEqual('174C6318586A7069A9F8762BEBC13416C193BEE42459FD5041985814E40BE3C5', config.vault.access_token)
 
 			self.assertEqual('foo', config.native_network.blockchain)
 			self.assertEqual('bar', config.native_network.network)
@@ -202,7 +212,7 @@ class BridgeConfigurationTest(unittest.TestCase):
 
 	def test_cannot_parse_bridge_configuration_incomplete(self):
 		# Arrange:
-		for section_id in range(5):
+		for section_id in range(6):
 			with tempfile.TemporaryDirectory() as temp_directory:
 				configuration_file = Path(temp_directory) / 'foo.properties'
 
@@ -217,9 +227,12 @@ class BridgeConfigurationTest(unittest.TestCase):
 						self._write_section(outfile, '\n[price_oracle]', self.VALID_PRICE_ORACLE_CONFIGURATION)
 
 					if 3 != section_id:
-						self._write_section(outfile, '\n[native_network]', self.VALID_NETWORK_CONFIGURATION)
+						self._write_section(outfile, '\n[vault]', self.VALID_PRICE_ORACLE_CONFIGURATION)
 
 					if 4 != section_id:
+						self._write_section(outfile, '\n[native_network]', self.VALID_NETWORK_CONFIGURATION)
+
+					if 5 != section_id:
 						self._write_section(outfile, '\n[wrapped_network]', self.VALID_NETWORK_CONFIGURATION_2)
 
 				# Act + Assert:

@@ -3,7 +3,7 @@ import json
 
 from aiohttp import ClientSession, ClientTimeout, client_exceptions
 
-from ..model.Exceptions import NodeException
+from ..model.Exceptions import HttpException, NodeException
 
 
 class BasicConnector:
@@ -31,7 +31,7 @@ class BasicConnector:
 							if key in response_json:
 								error_message += f'\n{response_json[key]}'
 
-						raise NodeException(error_message)
+						raise HttpException(error_message, response.status)
 
 					return response_json if property_name is None else response_json[property_name]
 		except (asyncio.TimeoutError, client_exceptions.ClientConnectorError) as ex:

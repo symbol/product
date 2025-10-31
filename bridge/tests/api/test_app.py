@@ -12,7 +12,7 @@ import pytest
 from bridge.api import create_app
 from bridge.db.Databases import Databases
 
-from ..test.BridgeTestUtils import HASHES, NEM_ADDRESSES, SYMBOL_ADDRESSES
+from ..test.BridgeTestUtils import HASHES, NEM_ADDRESSES, SYMBOL_ADDRESSES, assert_timestamp_within_last_second
 from ..test.DatabaseTestUtils import (
 	add_requests_unwrap,
 	add_requests_wrap,
@@ -58,7 +58,7 @@ async def coingecko_server(aiohttp_client):
 
 # region apps
 
-def _configure_app_directory(directory, native_server, wrapped_server, coingecko_server, update_wrapped_config):
+def _configure_app_directory(directory, native_server, wrapped_server, coingecko_server, update_network_configs):
 	# pylint: disable=redefined-outer-name
 	database_directory = Path(directory) / 'db'
 	database_directory.mkdir()
@@ -82,7 +82,7 @@ def _configure_app_directory(directory, native_server, wrapped_server, coingecko
 	parser['wrapped_network']['signerPublicKey'] = 'FDA024AD1FA204242F5FE579419491A76E467EAF6C36E29EA8FC4BF0734B3E81'
 	parser['wrapped_network']['percentageConversionFee'] = '0.003'
 	parser['wrapped_network']['explorerEndpoint'] = '<wrapped explorer endpoint>'
-	update_wrapped_config(parser['wrapped_network'])
+	update_network_configs(parser['native_network'], parser['wrapped_network'])
 
 	bridge_propererties_filename = Path(directory) / 'bridge.test.properties'
 	with open(bridge_propererties_filename, 'wt', encoding='utf8') as properties_file:
@@ -110,25 +110,40 @@ def make_app(database_directory):
 
 @pytest.fixture
 def app(nem_server, symbol_server, coingecko_server):  # pylint: disable=redefined-outer-name
-	def update_wrapped_config(config):
-		config['transactionFeeMultiplier'] = '50'
+	def update_network_configs(_native_network_config, wrapped_network_config):
+		wrapped_network_config['transactionFeeMultiplier'] = '50'
 
 	with tempfile.TemporaryDirectory() as temp_directory:
-		database_directory = _configure_app_directory(temp_directory, nem_server, symbol_server, coingecko_server, update_wrapped_config)
+		database_directory = _configure_app_directory(temp_directory, nem_server, symbol_server, coingecko_server, update_network_configs)
 		yield make_app(database_directory)
 
 
 @pytest.fixture
 def app_n2n(nem_server, ethereum_server, coingecko_server):  # pylint: disable=redefined-outer-name
-	def update_wrapped_config(config):
-		config['blockchain'] = 'ethereum'
-		config['bridgeAddress'] = '0x0ff070994dd3fdB1441433c219A42286ef85290f'
-		config['signerPublicKey'] = f'0x{2 * config["signerPublicKey"]}'
-		config['mosaicId'] = ''
-		config['chainId'] = '1337'
+	def update_network_configs(_native_network_config, wrapped_network_config):
+		wrapped_network_config['blockchain'] = 'ethereum'
+		wrapped_network_config['bridgeAddress'] = '0x0ff070994dd3fdB1441433c219A42286ef85290f'
+		wrapped_network_config['signerPublicKey'] = f'0x{2 * wrapped_network_config["signerPublicKey"]}'
+		wrapped_network_config['mosaicId'] = ''
+		wrapped_network_config['chainId'] = '1337'
 
 	with tempfile.TemporaryDirectory() as temp_directory:
-		database_directory = _configure_app_directory(temp_directory, nem_server, ethereum_server, coingecko_server, update_wrapped_config)
+		database_directory = _configure_app_directory(temp_directory, nem_server, ethereum_server, coingecko_server, update_network_configs)
+		yield make_app(database_directory)
+
+
+@pytest.fixture
+def app_limited(nem_server, symbol_server, coingecko_server):  # pylint: disable=redefined-outer-name
+	def update_network_configs(native_network_config, wrapped_network_config):
+		# not realistic for maxTransferAmount > maxDailyTransferAmount, but this allows both cases to be tested more easily
+		native_network_config['maxTransferAmount'] = '7000000000'
+		native_network_config['maxDailyTransferAmount'] = '300000000'
+
+		wrapped_network_config['maxTransferAmount'] = '105666660'
+		wrapped_network_config['maxDailyTransferAmount'] = '105666700'
+
+	with tempfile.TemporaryDirectory() as temp_directory:
+		database_directory = _configure_app_directory(temp_directory, nem_server, symbol_server, coingecko_server, update_network_configs)
 		yield make_app(database_directory)
 
 
@@ -146,6 +161,11 @@ def client(app):  # pylint: disable=redefined-outer-name
 @pytest.fixture
 def client_n2n(app_n2n):  # pylint: disable=redefined-outer-name
 	return make_test_client_from_app(app_n2n)
+
+
+@pytest.fixture
+def client_limited(app_limited):  # pylint: disable=redefined-outer-name
+	return make_test_client_from_app(app_limited)
 
 # endregion
 
@@ -614,6 +634,9 @@ async def test_can_query_wrap_requests_with_single_match(client):  # pylint: dis
 
 		# Assert:
 		_assert_json_response_success(response)
+
+		payout_sent_timestamp = response_json[0]['payoutSentTimestamp']  # only validate timestamp is within range
+		assert_timestamp_within_last_second(payout_sent_timestamp)
 		assert [
 			{
 				'requestTransactionHeight': '333',
@@ -625,6 +648,7 @@ async def test_can_query_wrap_requests_with_single_match(client):  # pylint: dis
 				'destinationAddress': SYMBOL_ADDRESSES[2],
 				'payoutStatus': 2,
 				'payoutTransactionHash': 'ACFF5E24733CD040504448A3A75F1CE32E90557E5FBA02E107624242F4FA251D',
+				'payoutSentTimestamp': payout_sent_timestamp,
 
 				'requestTimestamp': 1427591635,
 
@@ -665,6 +689,7 @@ async def test_can_query_wrap_requests_with_single_match_unprocessed(client):  #
 				'destinationAddress': SYMBOL_ADDRESSES[0],
 				'payoutStatus': 0,
 				'payoutTransactionHash': None,
+				'payoutSentTimestamp': None,
 
 				'requestTimestamp': 1427588605,
 
@@ -705,6 +730,7 @@ async def test_can_query_wrap_requests_with_single_match_failed(client):  # pyli
 				'destinationAddress': SYMBOL_ADDRESSES[3],
 				'payoutStatus': 3,
 				'payoutTransactionHash': None,
+				'payoutSentTimestamp': None,
 
 				'requestTimestamp': 1427592645,
 
@@ -783,6 +809,9 @@ async def test_can_query_unwrap_requests_with_single_match(client):  # pylint: d
 
 		# Assert:
 		_assert_json_response_success(response)
+
+		payout_sent_timestamp = response_json[0]['payoutSentTimestamp']  # only validate timestamp is within range
+		assert_timestamp_within_last_second(payout_sent_timestamp)
 		assert [
 			{
 				'requestTransactionHeight': '333',
@@ -794,6 +823,7 @@ async def test_can_query_unwrap_requests_with_single_match(client):  # pylint: d
 				'destinationAddress': NEM_ADDRESSES[2],
 				'payoutStatus': 2,
 				'payoutTransactionHash': 'ACFF5E24733CD040504448A3A75F1CE32E90557E5FBA02E107624242F4FA251D',
+				'payoutSentTimestamp': payout_sent_timestamp,
 
 				'requestTimestamp': 1667250471.05,
 
@@ -1004,7 +1034,48 @@ async def test_prepare_wrap_returns_internal_server_errors_gracefully(client_n2n
 		# Assert:
 		_assert_json_response_internal_server_error(response)
 		assert {
+			'errorCode': 'UNEXPECTED_ERROR',
 			'error': 'eth_estimateGas RPC call failed: execution reverted: ERC20: transfer amount exceeds balance'
+		} == response_json
+
+	loop = asyncio.get_running_loop()
+	await loop.run_in_executor(None, test_impl)
+
+
+async def test_prepare_wrap_returns_request_limit_exceeded_errors_gracefully(client_limited):  # pylint: disable=redefined-outer-name
+	def test_impl():
+		# Arrange:
+		_seed_database_for_prepare_tests(client_limited.database_directory)
+
+		# Act:
+		response = client_limited.post('/wrap/prepare', json={'amount': '634000000', 'recipientAddress': SYMBOL_ADDRESSES[2]})
+		response_json = json.loads(response.data)
+
+		# Assert:
+		_assert_json_response_bad_request(response)
+		assert {
+			'errorCode': 'REQUEST_LIMIT_EXCEEDED',
+			'error': 'gross transfer amount 105666666 exceeds max transfer amount 105666660'
+		} == response_json
+
+	loop = asyncio.get_running_loop()
+	await loop.run_in_executor(None, test_impl)
+
+
+async def test_prepare_wrap_returns_daily_limit_exceeded_errors_gracefully(client_limited):  # pylint: disable=redefined-outer-name
+	def test_impl():
+		# Arrange:
+		_seed_database_for_prepare_tests(client_limited.database_directory)
+
+		# Act:
+		response = client_limited.post('/wrap/prepare', json={'amount': '633999900', 'recipientAddress': SYMBOL_ADDRESSES[2]})
+		response_json = json.loads(response.data)
+
+		# Assert:
+		_assert_json_response_bad_request(response)
+		assert {
+			'errorCode': 'DAILY_LIMIT_EXCEEDED',
+			'error': 'daily transfer limit is exceeded (105666450 remaining), please try again later'
 		} == response_json
 
 	loop = asyncio.get_running_loop()
@@ -1058,9 +1129,12 @@ async def test_can_prepare_wrap_n2n(client_n2n):  # pylint: disable=redefined-ou
 		assert {
 			'grossAmount': '5457022222222222',  # floor(1234000000 * feeMultiplier)
 			'conversionFee': '16371066666666.6660',  # grossAmount * config(percentageConversionFee)[0.003]
-			'transactionFee': '187713117026904.0000',  # gas[19432] * maxFeePerGas[9659999847]
-			'totalFee': '204084183693571',  # ceil(conversionFee + transactionFee)
-			'netAmount': '5252938038528651',  # grossAmount - totalFee
+			'transactionFee': '70699842712352.0000',  # \=>
+			# gas[19432] * (ceil(baseFee[2486633695] * 1.2) + ceil(priorityFee[623200001] * 1.05))
+			# 19432 * (ceil(2983960434) + ceil(654360001.05))
+			# 19432 * (2983960434 + 654360002)
+			'totalFee': '87070909379019',  # ceil(conversionFee + transactionFee)
+			'netAmount': '5369951312843203',  # grossAmount - totalFee
 
 			'diagnostics': {
 				'height': '4444'
@@ -1080,6 +1154,46 @@ async def test_prepare_unwrap_returns_bad_request_for_invalid_parameters(client)
 	await _assert_prepare_route_validates_parameters(client, True, '/unwrap/prepare')
 
 
+async def test_prepare_unwrap_returns_request_limit_exceeded_errors_gracefully(client_limited):  # pylint: disable=redefined-outer-name
+	def test_impl():
+		# Arrange:
+		_seed_database_for_prepare_tests(client_limited.database_directory)
+
+		# Act:
+		response = client_limited.post('/unwrap/prepare', json={'amount': '1234000000', 'recipientAddress': NEM_ADDRESSES[2]})
+		response_json = json.loads(response.data)
+
+		# Assert:
+		_assert_json_response_bad_request(response)
+		assert {
+			'errorCode': 'REQUEST_LIMIT_EXCEEDED',
+			'error': 'gross transfer amount 7403999999 exceeds max transfer amount 7000000000'
+		} == response_json
+
+	loop = asyncio.get_running_loop()
+	await loop.run_in_executor(None, test_impl)
+
+
+async def test_prepare_unwrap_returns_daily_limit_exceeded_errors_gracefully(client_limited):  # pylint: disable=redefined-outer-name
+	def test_impl():
+		# Arrange:
+		_seed_database_for_prepare_tests(client_limited.database_directory)
+
+		# Act:
+		response = client_limited.post('/unwrap/prepare', json={'amount': '634000000', 'recipientAddress': NEM_ADDRESSES[2]})
+		response_json = json.loads(response.data)
+
+		# Assert:
+		_assert_json_response_bad_request(response)
+		assert {
+			'errorCode': 'DAILY_LIMIT_EXCEEDED',
+			'error': 'daily transfer limit is exceeded (300000000 remaining), please try again later'
+		} == response_json
+
+	loop = asyncio.get_running_loop()
+	await loop.run_in_executor(None, test_impl)
+
+
 async def test_can_prepare_unwrap(client):  # pylint: disable=redefined-outer-name
 	def test_impl():
 		# Arrange:
@@ -1091,7 +1205,6 @@ async def test_can_prepare_unwrap(client):  # pylint: disable=redefined-outer-na
 
 		# Assert:
 		_assert_json_response_success(response)
-
 		assert {
 			'grossAmount': '7403999999',  # floor(1234000000 * 6),
 			'conversionFee': '14807999.9980',  # grossAmount * config(percentageConversionFee)[0.002]
