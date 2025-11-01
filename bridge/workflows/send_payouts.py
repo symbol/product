@@ -2,29 +2,33 @@ import asyncio
 import logging
 from decimal import Decimal
 
+from symbollightapi.model.Exceptions import NodeException
+
 from bridge.db.WrapRequestDatabase import PayoutDetails, WrapRequestStatus
-from bridge.NetworkUtils import TransactionSender, TrySendResult
-from bridge.WorkflowUtils import create_conversion_rate_calculator_factory, is_native_to_native_conversion
+from bridge.models.BridgeConfiguration import StrategyMode
+from bridge.NetworkUtils import TransactionSender, TrySendResult, is_transient_error
+from bridge.WorkflowUtils import (
+	create_conversion_rate_calculator_factory,
+	is_daily_limit_exceeded,
+	is_native_to_native_conversion,
+	prepare_send
+)
 
 from .main_impl import main_bootstrapper, print_banner
 
 
-async def _send_payout(network, request, conversion_function, fee_multiplier):
+class SendCounts:
+	def __init__(self):
+		self.sent = 0
+		self.errored = 0
+		self.skipped = 0
+
+
+async def _send_payout(sender, network, request, prepare_send_result):
 	logger = logging.getLogger(__name__)
 
+	transfer_amount = prepare_send_result.transfer_amount
 	mosaic_id = network.extract_mosaic_id()
-	if not fee_multiplier:
-		fee_multiplier = Decimal('1')
-	else:
-		fee_multiplier *= Decimal(conversion_function(10 ** 12)) / Decimal(10 ** 12)
-
-	sender = TransactionSender(network, fee_multiplier)
-	transfer_amount = conversion_function(request.amount)
-
-	max_transfer_amount = int(network.config.extensions.get('max_transfer_amount', 0))
-	if max_transfer_amount and transfer_amount > max_transfer_amount:
-		error_message = f'gross transfer amount {transfer_amount} exceeds max transfer amount {max_transfer_amount}'
-		return TrySendResult(True, None, None, None, error_message)
 
 	logger.info(
 		'> issuing %s [%s] tokens (gross) to %s for deposit of %s tokens',
@@ -34,34 +38,71 @@ async def _send_payout(network, request, conversion_function, fee_multiplier):
 		request.amount)
 	logger.info('  redeeming 1:%.6f', transfer_amount / request.amount)
 
-	await sender.init()
-	return await sender.try_send_transfer(request.destination_address, transfer_amount)
+	return await sender.try_send_transfer(
+		request.destination_address,
+		prepare_send_result.fee_multiplier,
+		transfer_amount,
+		request.transaction_hash.bytes)
 
 
-async def send_payouts(conversion_rate_calculator_factory, is_unwrap_mode, database, network, fee_multiplier=None):
-	# pylint: disable=too-many-locals
+async def send_payouts(conversion_rate_calculator_factory, execution_context, vault_connector, database, network, fee_multiplier=None):
+	# pylint: disable=too-many-locals, too-many-arguments, too-many-positional-arguments
 	logger = logging.getLogger(__name__)
 
 	requests_to_send = database.requests_by_status(WrapRequestStatus.UNPROCESSED)
 	logger.info('%s requests need to be sent', len(requests_to_send))
 
-	count = 0
-	error_count = 0
-	skip_count = 0
+	counts = SendCounts()
+
+	def mark_skipped(request, skip_reason):
+		logger.info('payout skipped due to %s: %s:%s', skip_reason, request.transaction_hash, request.transaction_subindex)
+		counts.skipped += 1
+
+	def mark_permanent_failure(request, error_message):
+		database.mark_payout_failed(request, error_message)
+		counts.errored += 1
+
+	sender = TransactionSender(network)
+	await sender.init(vault_connector)
+
+	# in stake mode, requests must be processed in order to ensure stake attribution is always correct
+	can_skip = StrategyMode.STAKE != execution_context.strategy_mode
+
 	for request in requests_to_send:
 		conversion_rate_calculator = conversion_rate_calculator_factory.try_create_calculator(request.transaction_height)
 		if not conversion_rate_calculator:
-			logger.info('  payout skipped due to missing data: %s:%s', request.transaction_hash, request.transaction_subindex)
-			skip_count += 1
+			mark_skipped(request, f'missing data at height {request.transaction_height}')
 			continue
 
-		logger.info('  processing payout: %s:%s', request.transaction_hash, request.transaction_subindex)
-		conversion_function = conversion_rate_calculator.to_conversion_function(is_unwrap_mode)
-		send_result = await _send_payout(network, request, conversion_function, fee_multiplier)
+		logger.info('processing payout: %s:%s', request.transaction_hash, request.transaction_subindex)
+		conversion_function = conversion_rate_calculator.to_conversion_function(execution_context.is_unwrap_mode)
+		send_result = None
+		try:
+			prepare_send_result = prepare_send(network, request, conversion_function, fee_multiplier)
+			if prepare_send_result.error_message:
+				send_result = TrySendResult(True, None, None, None, prepare_send_result.error_message)
+			else:
+				(is_exceeded, amount_remaining) = is_daily_limit_exceeded(network, database, prepare_send_result.transfer_amount)
+				if is_exceeded:
+					mark_skipped(request, f'daily limit exceeded ({amount_remaining} < {prepare_send_result.transfer_amount})')
+					if not can_skip:
+						break
+
+					continue
+
+				send_result = await _send_payout(sender, network, request, prepare_send_result)
+		except NodeException as ex:
+			if is_transient_error(ex):
+				mark_skipped(request, f'transient failure {ex}')
+				if not can_skip:
+					break
+			else:
+				mark_permanent_failure(request, str(ex))
+
+			continue
+
 		if send_result.is_error:
-			database.mark_payout_failed(request, send_result.error_message)
-			logger.info('  payout failed with error: %s', send_result.error_message)
-			error_count += 1
+			mark_permanent_failure(request, send_result.error_message)
 		else:
 			conversion_rate = conversion_function(1000000)
 			payout_details = PayoutDetails(
@@ -70,25 +111,19 @@ async def send_payouts(conversion_rate_calculator_factory, is_unwrap_mode, datab
 				send_result.total_fee,
 				conversion_rate)
 			database.mark_payout_sent(request, payout_details)
-			logger.info(
-				'  sent transaction with hash: %s %s amount (%s fee deducted) at conversion rate %s',
-				payout_details.transaction_hash,
-				payout_details.net_amount,
-				payout_details.total_fee,
-				payout_details.conversion_rate)
-			count += 1
+			counts.sent += 1
 
 	print_banner([
-		f'==>      total payouts processed: {count}',
-		f'==>        total payouts errored: {error_count}',
-		f'==>        total payouts skipped: {skip_count}'
+		f'==>      total payouts sent: {counts.sent}',
+		f'==>   total payouts errored: {counts.errored}',
+		f'==>   total payouts skipped: {counts.skipped}'
 	])
 
 
-async def main_impl(execution_context, databases, native_facade, wrapped_facade, price_oracle):
+async def main_impl(execution_context, databases, native_facade, wrapped_facade, external_services):
 	logger = logging.getLogger(__name__)
 
-	fee_multiplier = await price_oracle.conversion_rate(wrapped_facade.config.blockchain, native_facade.config.blockchain)
+	fee_multiplier = await external_services.price_oracle.conversion_rate(wrapped_facade.config.blockchain, native_facade.config.blockchain)
 	fee_multiplier *= Decimal(10 ** native_facade.native_token_precision) / Decimal(10 ** wrapped_facade.native_token_precision)
 
 	conversion_rate_calculator_factory = create_conversion_rate_calculator_factory(
@@ -98,8 +133,9 @@ async def main_impl(execution_context, databases, native_facade, wrapped_facade,
 		wrapped_facade,
 		fee_multiplier)
 
+	send_params_shared_params = [conversion_rate_calculator_factory, execution_context, external_services.vault_connector]
 	if execution_context.is_unwrap_mode:
-		await send_payouts(conversion_rate_calculator_factory, execution_context.is_unwrap_mode, databases.unwrap_request, native_facade)
+		await send_payouts(*send_params_shared_params, databases.unwrap_request, native_facade)
 	else:
 		logger.info(
 			'calculated fee_multiplier as %.8f (%s/%s)',
@@ -111,7 +147,7 @@ async def main_impl(execution_context, databases, native_facade, wrapped_facade,
 		if not is_native_to_native_conversion(wrapped_facade):
 			send_payouts_params.append(fee_multiplier)
 
-		await send_payouts(conversion_rate_calculator_factory, execution_context.is_unwrap_mode, *send_payouts_params)
+		await send_payouts(*send_params_shared_params, *send_payouts_params)
 
 
 if '__main__' == __name__:

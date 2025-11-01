@@ -87,23 +87,38 @@ class EthereumNetworkFacade:  # pylint: disable=too-many-instance-attributes
 		return [wrap_request] if wrap_request else []
 
 	@staticmethod
+	def _encode_message(message):
+		if not message:
+			return ''
+
+		message_bytes = message.encode('utf8') if isinstance(message, str) else message
+		return hexlify(message_bytes).decode('utf8')
+
+	@staticmethod
 	def _make_simple_transaction_object(balance_transfer, mosaic_id):
 		recipient_address = balance_transfer.recipient_address
 		if not isinstance(balance_transfer.recipient_address, EthereumAddress):
 			recipient_address = EthereumAddress(balance_transfer.recipient_address)
 
+		encoded_message = EthereumNetworkFacade._encode_message(balance_transfer.message)
 		if not mosaic_id:
-			return {
+			transaction = {
 				'from': str(balance_transfer.signer_public_key.address),
 				'to': str(recipient_address),
 				'value': hex(balance_transfer.amount)
 			}
 
+			if balance_transfer.message:
+				transaction['data'] = f'0x{encoded_message}'
+
+			return transaction
+
 		input_data = ''.join([
 			'0x',
 			'a9059cbb000000000000000000000000',
 			str(balance_transfer.recipient_address)[2:],
-			hexlify(balance_transfer.amount.to_bytes(32, 'big')).decode('utf8')
+			hexlify(balance_transfer.amount.to_bytes(32, 'big')).decode('utf8'),
+			encoded_message
 		])
 
 		transaction = {
@@ -123,20 +138,11 @@ class EthereumNetworkFacade:  # pylint: disable=too-many-instance-attributes
 		gas_estimate = Decimal(await connector.estimate_gas(transaction))
 		gas_estimate = self._apply_multiple(gas_estimate, 'gas_multiple')
 
-		gas_price = await connector.gas_price()
-		gas_price = self._apply_multiple(gas_price, 'gas_price_multiple')
-
 		fee_information = await connector.estimate_fees_from_history(int(self.config.extensions.get('fee_history_blocks_count', '10')))
 		base_fee = self._apply_multiple(fee_information.base_fee, 'gas_price_multiple')
 		priority_fee = self._apply_multiple(fee_information.priority_fee, 'priority_fee_multiple')
 
 		max_fee_per_gas = base_fee + priority_fee
-		if gas_price > max_fee_per_gas:
-			minimum_tip = gas_price - base_fee
-			if minimum_tip > priority_fee:
-				max_fee_per_gas += minimum_tip - priority_fee
-				priority_fee = minimum_tip
-
 		return (gas_estimate, max_fee_per_gas, priority_fee)
 
 	async def create_transfer_transaction(self, _timestamp, balance_transfer, mosaic_id):

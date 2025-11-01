@@ -4,7 +4,8 @@ import json
 import pytest
 from aiohttp import web
 
-from symbollightapi.connector.BasicConnector import BasicConnector, NodeException
+from symbollightapi.connector.BasicConnector import BasicConnector
+from symbollightapi.model.Exceptions import HttpException, NodeException
 
 # region server fixture
 
@@ -180,8 +181,10 @@ async def _assert_can_handle_timeout(server, action, url_path, **kwargs):  # pyl
 	connector.timeout_seconds = 0.25
 
 	# Act + Assert:
-	with pytest.raises(NodeException):
+	with pytest.raises(NodeException) as ex_info:
 		await getattr(connector, action)(url_path, **kwargs)
+
+	assert not isinstance(ex_info.value, HttpException)
 
 
 async def _assert_can_handle_content_type_error(server, action, url_path, **kwargs):  # pylint: disable=redefined-outer-name
@@ -191,8 +194,10 @@ async def _assert_can_handle_content_type_error(server, action, url_path, **kwar
 	connector = BasicConnector(server.make_url(''))
 
 	# Act + Assert:
-	with pytest.raises(NodeException):
+	with pytest.raises(NodeException) as ex_info:
 		await getattr(connector, action)(url_path, **kwargs)
+
+	assert not isinstance(ex_info.value, HttpException)
 
 
 async def _assert_can_handle_corrupt_json_response(server, action, url_path, **kwargs):  # pylint: disable=redefined-outer-name
@@ -202,8 +207,10 @@ async def _assert_can_handle_corrupt_json_response(server, action, url_path, **k
 	connector = BasicConnector(server.make_url(''))
 
 	# Act + Assert:
-	with pytest.raises(NodeException):
+	with pytest.raises(NodeException) as ex_info:
 		await getattr(connector, action)(url_path, **kwargs)
+
+	assert not isinstance(ex_info.value, HttpException)
 
 
 async def _assert_can_handle_stopped_node(action, url_path, **kwargs):
@@ -211,8 +218,10 @@ async def _assert_can_handle_stopped_node(action, url_path, **kwargs):
 	connector = BasicConnector('http://localhost:1234')
 
 	# Act + Assert:
-	with pytest.raises(NodeException):
+	with pytest.raises(NodeException) as ex_info:
 		await getattr(connector, action)(url_path, **kwargs)
+
+	assert not isinstance(ex_info.value, HttpException)
 
 
 async def test_can_handle_timeout_get(server):  # pylint: disable=redefined-outer-name
@@ -285,8 +294,11 @@ async def _assert_can_propagate_status_code_failure_result(server, status_code):
 	connector = BasicConnector(server.make_url(''))
 
 	# Act + Assert:
-	with pytest.raises(NodeException, match=f'HTTP request failed with code {status_code}'):
+	with pytest.raises(NodeException, match=f'HTTP request failed with code {status_code}') as ex_info:
 		await connector.get(f'status/{status_code}')
+
+	assert isinstance(ex_info.value, HttpException)
+	assert status_code == ex_info.value.http_status_code
 
 
 async def _assert_can_propagate_status_code_failure_result_with_message(server, status_code):  # pylint: disable=redefined-outer-name
@@ -294,8 +306,11 @@ async def _assert_can_propagate_status_code_failure_result_with_message(server, 
 	connector = BasicConnector(server.make_url(''))
 
 	# Act + Assert:
-	with pytest.raises(NodeException, match=f'HTTP request failed with code {status_code}\nSomeCode\nsome message'):
+	with pytest.raises(NodeException, match=f'HTTP request failed with code {status_code}\nSomeCode\nsome message') as ex_info:
 		await connector.get(f'status/{status_code}')
+
+	assert isinstance(ex_info.value, HttpException)
+	assert status_code == ex_info.value.http_status_code
 
 
 async def test_can_propagate_http_success_results(server):  # pylint: disable=redefined-outer-name
@@ -323,8 +338,11 @@ async def _assert_can_handle_http_failure_404_as_error_by_default(server, action
 	connector = BasicConnector(server.make_url(''))
 
 	# Act + Assert:
-	with pytest.raises(NodeException, match='HTTP request failed with code 404\nSomeCode\nsome message'):
+	with pytest.raises(NodeException, match='HTTP request failed with code 404\nSomeCode\nsome message') as ex_info:
 		await getattr(connector, action)(url_path, **kwargs)
+
+	assert isinstance(ex_info.value, HttpException)
+	assert 404 == ex_info.value.http_status_code
 
 
 async def _assert_can_handle_http_failure_404_as_explicit_error(server, action, url_path, **kwargs):  # pylint: disable=redefined-outer-name
@@ -332,8 +350,11 @@ async def _assert_can_handle_http_failure_404_as_explicit_error(server, action, 
 	connector = BasicConnector(server.make_url(''))
 
 	# Act + Assert:
-	with pytest.raises(NodeException, match='HTTP request failed with code 404\nSomeCode\nsome message'):
+	with pytest.raises(NodeException, match='HTTP request failed with code 404\nSomeCode\nsome message') as ex_info:
 		await getattr(connector, action)(url_path, not_found_as_error=True, **kwargs)
+
+	assert isinstance(ex_info.value, HttpException)
+	assert 404 == ex_info.value.http_status_code
 
 
 async def _assert_can_handle_http_failure_404_as_explicit_non_error(server, action, url_path, **kwargs):

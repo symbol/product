@@ -13,7 +13,7 @@ from symbollightapi.connector.NemConnector import NemConnector
 from symbollightapi.model.Block import Block
 from symbollightapi.model.Constants import TimeoutSettings, TransactionStatus
 from symbollightapi.model.Endpoint import Endpoint
-from symbollightapi.model.Exceptions import NodeException
+from symbollightapi.model.Exceptions import InsufficientBalanceException, NodeException
 from symbollightapi.model.NodeInfo import NodeInfo
 from symbollightapi.model.Transaction import (
 	AccountKeyLinkTransaction,
@@ -567,7 +567,11 @@ async def server(aiohttp_client):  # pylint: disable=too-many-statements
 				}, 500)
 
 			if self.simulate_validation_error:
-				return await self._process(request, {'code': 17, 'type': 1, 'message': 'FAILURE_INSUFFICIENT_FEE'})
+				error_message = 'FAILURE_TIMESTAMP_TOO_FAR_IN_FUTURE'
+				if isinstance(self.simulate_validation_error, str):
+					error_message = self.simulate_validation_error
+
+				return await self._process(request, {'code': 17, 'type': 1, 'message': error_message})
 
 			return await self._process(request, {'code': 1, 'type': 1, 'message': 'SUCCESS'})
 
@@ -1062,7 +1066,18 @@ async def test_cannot_announce_transaction_with_validation_error(server):  # pyl
 	connector = NemConnector(server.make_url(''))
 
 	# Act + Assert:
-	with pytest.raises(NodeException, match='announce transaction failed'):
+	with pytest.raises(NodeException, match='announce transaction failed with error FAILURE_TIMESTAMP_TOO_FAR_IN_FUTURE'):
+		await connector.announce_transaction(_create_example_transfer_transaction())
+
+
+async def test_cannot_announce_transaction_with_validation_error_insufficient_balance(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	server.mock.simulate_validation_error = 'FAILURE_INSUFFICIENT_BALANCE'
+
+	connector = NemConnector(server.make_url(''))
+
+	# Act + Assert:
+	with pytest.raises(InsufficientBalanceException, match='announce transaction failed with error FAILURE_INSUFFICIENT_BALANCE'):
 		await connector.announce_transaction(_create_example_transfer_transaction())
 
 # endregion
