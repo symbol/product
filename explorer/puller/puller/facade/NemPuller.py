@@ -8,7 +8,7 @@ from zenlog import log
 
 from puller.db.NemDatabase import NemDatabase
 
-Block = namedtuple('Block', [
+BlockRecord = namedtuple('BlockRecord', [
 	'height',
 	'timestamp',
 	'total_fees',
@@ -19,6 +19,7 @@ Block = namedtuple('Block', [
 	'signature',
 	'size'
 ])
+DatabaseConfig = namedtuple('DatabaseConfig', ['database', 'user', 'password', 'host', 'port'])
 
 
 def convert_timestamp_to_datetime(facade, timestamp):
@@ -40,7 +41,7 @@ class NemPuller:
 
 		network = Network.MAINNET if network_type == 'mainnet' else Network.TESTNET
 
-		self.nem_db = NemDatabase(db_config)
+		self.nem_db = NemDatabase(DatabaseConfig(**db_config))
 		self.nem_connector = NemConnector(node_url, network)
 		self.nem_facade = NemFacade(str(network))
 
@@ -50,7 +51,7 @@ class NemPuller:
 		timestamp = convert_timestamp_to_datetime(self.nem_facade, block_data.timestamp)
 		total_fees = sum(transaction.fee for transaction in block_data.transactions)
 
-		block = Block(
+		block = BlockRecord(
 			block_data.height,
 			timestamp,
 			total_fees,

@@ -3,14 +3,15 @@ import unittest
 
 import psycopg2
 import testing.postgresql
+from test_DatabaseConnection import DatabaseConfig
 
 from puller.db.NemDatabase import NemDatabase
-from puller.facade.NemPuller import Block
+from puller.facade.NemPuller import BlockRecord
 
 # region test data
 
 BLOCKS = [
-	Block(
+	BlockRecord(
 		1,
 		'2015-03-29 00:06:25+00:00',  # UTC timestamp from convert_timestamp_to_datetime
 		102000000,
@@ -21,7 +22,7 @@ BLOCKS = [
 		'2abdd19ad3efab0413b42772a586faa19dedb16d35f665f90d598046a2132c4a'
 		'd1e71001545ceaa44e63c04345591e7aadbfd330af82a0d8a1da5643e791ff0f',
 		100),
-	Block(
+	BlockRecord(
 		2,
 		'2015-03-29 20:34:19+00:00',  # UTC timestamp from convert_timestamp_to_datetime
 		201000000,
@@ -41,13 +42,7 @@ class NemDatabaseTest(unittest.TestCase):
 
 	def setUp(self):
 		self.postgresql = testing.postgresql.Postgresql()
-		self.db_config = {
-			'database': self.postgresql.url().split('/')[-1],
-			'user': 'postgres',
-			'password': '',
-			'host': self.postgresql.url().split('/')[2].split('@')[1].split(':')[0],
-			'port': self.postgresql.url().split('/')[-2].split(':')[-1]
-		}
+		self.db_config = DatabaseConfig(**self.postgresql.dsn(), password='')
 
 	def tearDown(self):
 		# Destroy the temporary PostgreSQL database
