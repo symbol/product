@@ -12,7 +12,7 @@
 	"dependencies": {},
 	"devDependencies": {
 		"c8": "~10.1.2",
-		"eslint": "~8.57.0",
+		"eslint": "~9.39.1",
 		"eslint-config-airbnb": "~19.0.4",
 		"eslint-plugin-jsdoc": "^61.1.1",
 		"jest": "^30.0.0"
