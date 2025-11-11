@@ -516,7 +516,7 @@ class TransactionHandler:
 				mosaic_levy['fee'],
 				mosaic_levy['recipient'],
 				mosaic_levy['type'],
-				f'{mosaic_levy["mosaicId"]["namespaceId"]}.{mosaic_levy["mosaicId"]["name"] }'
+				f'{mosaic_levy["mosaicId"]["namespaceId"]}.{mosaic_levy["mosaicId"]["name"]}'
 			)
 
 		return {
@@ -524,7 +524,7 @@ class TransactionHandler:
 			'creation_fee_sink': tx_json['creationFeeSink'],
 			'creator': mosaic_definition['creator'],
 			'description': mosaic_definition['description'],
-			'namespace_name': f'{mosaic_id["namespaceId"]}.{mosaic_id["name"] }',
+			'namespace_name': f'{mosaic_id["namespaceId"]}.{mosaic_id["name"]}',
 			'properties': mosaic_properties,
 			'levy': mosaic_levy,
 		}
@@ -535,7 +535,7 @@ class TransactionHandler:
 		return {
 			'supply_type': tx_json['supplyType'],
 			'delta': tx_json['delta'],
-			'namespace_name': f'{mosaic_id["namespaceId"]}.{mosaic_id["name"] }',
+			'namespace_name': f'{mosaic_id["namespaceId"]}.{mosaic_id["name"]}',
 		}
 
 
