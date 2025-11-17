@@ -1,7 +1,7 @@
 version: 2
+updates:
 
-multi-ecosystem-groups:
-  products:
+  - package-ecosystem: github-actions
     schedule:
       interval: weekly
       day: sunday
@@ -9,11 +9,6 @@ multi-ecosystem-groups:
     commit-message:
       prefix: '[dependency]'
     target-branch: dev
-
-updates:
-
-  - package-ecosystem: github-actions
-    multi-ecosystem-group: products
     directory: /
     patterns:
       - '*'
@@ -22,13 +17,21 @@ updates:
       - patch
 
   - package-ecosystem: npm
-    multi-ecosystem-group: products
+    schedule:
+      interval: weekly
+      day: sunday
+    labels: ['dependencies']
+    commit-message:
+      prefix: '[dependency]'
+    target-branch: dev
     versioning-strategy: increase-if-necessary
-    patterns:
-      - '*'
-    update-types:
-      - minor
-      - patch
+    groups:
+      npm-dependencies:
+        patterns:
+          - '*'
+        update-types:
+          - minor
+          - patch
     directories:
       - /explorer/frontend
       - /faucet/authenticator
@@ -39,13 +42,21 @@ updates:
       - /wallet/common/symbol
 
   - package-ecosystem: pip
-    multi-ecosystem-group: products
+    schedule:
+      interval: weekly
+      day: sunday
+    labels: ['dependencies']
+    commit-message:
+      prefix: '[dependency]'
+    target-branch: dev
     versioning-strategy: increase-if-necessary
-    patterns:
-      - '*'
-    update-types:
-      - minor
-      - patch
+    groups:
+      pip-dependencies:
+        patterns:
+          - '*'
+        update-types:
+          - minor
+          - patch
     directories:
       - /bridge
       - /explorer/nodewatch
