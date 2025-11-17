@@ -15,24 +15,20 @@ updates:
   - package-ecosystem: github-actions
     multi-ecosystem-group: products
     directory: /
-    groups:
-      github-action-dependencies:
-        patterns:
-          - '*'
-        update-types:
-          - minor
-          - patch
+    patterns:
+      - '*'
+    update-types:
+      - minor
+      - patch
 
   - package-ecosystem: npm
     multi-ecosystem-group: products
     versioning-strategy: increase-if-necessary
-    groups:
-      npm-dependencies:
-        patterns:
-          - '*'
-        update-types:
-          - minor
-          - patch
+    patterns:
+      - '*'
+    update-types:
+      - minor
+      - patch
     directories:
       - /explorer/frontend
       - /faucet/authenticator
@@ -45,13 +41,11 @@ updates:
   - package-ecosystem: pip
     multi-ecosystem-group: products
     versioning-strategy: increase-if-necessary
-    groups:
-      pip-dependencies:
-        patterns:
-          - '*'
-        update-types:
-          - minor
-          - patch
+    patterns:
+      - '*'
+    update-types:
+      - minor
+      - patch
     directories:
       - /bridge
       - /explorer/nodewatch
