@@ -3,9 +3,9 @@ version: 2
 multi-ecosystem-groups:
   products:
     schedule:
-      interval: "weekly"
+      interval: weekly
       day: sunday
-    labels: [dependencies"]
+    labels: ['dependencies']
     commit-message:
       prefix: '[dependency]'
     target-branch: dev
@@ -13,7 +13,7 @@ multi-ecosystem-groups:
 updates:
 
   - package-ecosystem: github-actions
-    multi-ecosystem-group: "products"
+    multi-ecosystem-group: products
     directory: /
     groups:
       github-action-dependencies:
@@ -24,7 +24,7 @@ updates:
           - patch
 
   - package-ecosystem: npm
-    multi-ecosystem-group: "products"
+    multi-ecosystem-group: products
     versioning-strategy: increase-if-necessary
     groups:
       npm-dependencies:
@@ -43,10 +43,10 @@ updates:
       - /wallet/common/symbol
 
   - package-ecosystem: pip
-    multi-ecosystem-group: "products"
+    multi-ecosystem-group: products
     versioning-strategy: increase-if-necessary
     groups:
-      bridge-dependencies:
+      pip-dependencies:
         patterns:
           - '*'
         update-types:
