@@ -10,11 +10,13 @@ updates:
       prefix: '[dependency]'
     target-branch: dev
     directory: /
-    patterns:
-      - '*'
-    update-types:
-      - minor
-      - patch
+    groups:
+      github-action-dependencies:
+        patterns:
+          - '*'
+        update-types:
+          - minor
+          - patch
 
   - package-ecosystem: npm
     schedule:
