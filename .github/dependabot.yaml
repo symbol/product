@@ -5,13 +5,13 @@ updates:
     schedule:
       interval: weekly
       day: sunday
-    labels: ['dependencies']
+    labels: [dependencies]
     commit-message:
       prefix: '[dependency]'
     target-branch: dev
     directory: /
     groups:
-      github-action-dependencies:
+      github-actions-dependencies:
         patterns:
           - '*'
         update-types:
@@ -22,7 +22,7 @@ updates:
     schedule:
       interval: weekly
       day: sunday
-    labels: ['dependencies']
+    labels: [dependencies]
     commit-message:
       prefix: '[dependency]'
     target-branch: dev
@@ -47,7 +47,7 @@ updates:
     schedule:
       interval: weekly
       day: sunday
-    labels: ['dependencies']
+    labels: [dependencies]
     commit-message:
       prefix: '[dependency]'
     target-branch: dev
