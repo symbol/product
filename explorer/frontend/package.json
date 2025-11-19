@@ -20,7 +20,7 @@
     "ethereum-blockies-base64": "^1.0.2",
     "javascript-time-ago": "^2.5.9",
     "lodash": "^4.17.21",
-    "next": "16.0.1",
+    "next": "16.0.3",
     "next-i18next": "^15.3.0",
     "prop-types": "^15.8.1",
     "query-string": "^9.3.1",
