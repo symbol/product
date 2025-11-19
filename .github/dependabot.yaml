@@ -2,15 +2,16 @@ version: 2
 updates:
 
   - package-ecosystem: github-actions
+    schedule:
+      interval: weekly
+      day: sunday
+    labels: [dependencies]
+    commit-message:
+      prefix: '[dependency]'
+    target-branch: dev
     directory: /
-    schedule:
-      interval: weekly
-      day: sunday
-    target-branch: dev
-    commit-message:
-      prefix: '[dependency]'
     groups:
-      github-action-dependencies:
+      github-actions-dependencies:
         patterns:
           - '*'
         update-types:
@@ -18,235 +19,50 @@ updates:
           - patch
 
   - package-ecosystem: npm
-    directory: /explorer/frontend
     schedule:
       interval: weekly
       day: sunday
-    target-branch: dev
-    labels: [Explorer Frontend]
-    versioning-strategy: increase-if-necessary
+    labels: [dependencies]
     commit-message:
       prefix: '[dependency]'
+    target-branch: dev
+    versioning-strategy: increase-if-necessary
     groups:
-      explorer-frontend-dependencies:
+      npm-dependencies:
         patterns:
           - '*'
         update-types:
           - minor
           - patch
+    directories:
+      - /explorer/frontend
+      - /faucet/authenticator
+      - /faucet/backend
+      - /faucet/frontend
+      - /wallet/common/core
+      - /wallet/common/ethereum
+      - /wallet/common/symbol
 
   - package-ecosystem: pip
-    directory: /bridge
     schedule:
       interval: weekly
       day: sunday
-    target-branch: dev
-    labels: [Bridge]
-    versioning-strategy: increase-if-necessary
+    labels: [dependencies]
     commit-message:
       prefix: '[dependency]'
+    target-branch: dev
+    versioning-strategy: increase-if-necessary
     groups:
-      bridge-dependencies:
+      pip-dependencies:
         patterns:
           - '*'
         update-types:
           - minor
           - patch
-
-  - package-ecosystem: pip
-    directory: /explorer/nodewatch
-    schedule:
-      interval: weekly
-      day: sunday
-    target-branch: dev
-    labels: [Explorer]
-    versioning-strategy: increase-if-necessary
-    commit-message:
-      prefix: '[dependency]'
-    groups:
-      explorer-nodewatch-dependencies:
-        patterns:
-          - '*'
-        update-types:
-          - minor
-          - patch
-
-  - package-ecosystem: pip
-    directory: /explorer/rest
-    schedule:
-      interval: weekly
-      day: sunday
-    target-branch: dev
-    labels: [Explorer]
-    versioning-strategy: increase-if-necessary
-    commit-message:
-      prefix: '[dependency]'
-    groups:
-      explorer-rest-dependencies:
-        patterns:
-          - '*'
-        update-types:
-          - minor
-          - patch
-
-  - package-ecosystem: npm
-    directory: /faucet/authenticator
-    schedule:
-      interval: weekly
-      day: sunday
-    target-branch: dev
-    labels: [Faucet Authenticator]
-    versioning-strategy: increase-if-necessary
-    commit-message:
-      prefix: '[dependency]'
-    groups:
-      faucet-authenticator-dependencies:
-        patterns:
-          - '*'
-        update-types:
-          - minor
-          - patch
-
-  - package-ecosystem: npm
-    directory: /faucet/backend
-    schedule:
-      interval: weekly
-      day: sunday
-    target-branch: dev
-    labels: [Faucet Backend]
-    versioning-strategy: increase-if-necessary
-    commit-message:
-      prefix: '[dependency]'
-    groups:
-      faucet-backend-dependencies:
-        patterns:
-          - '*'
-        update-types:
-          - minor
-          - patch
-
-  - package-ecosystem: npm
-    directory: /faucet/frontend
-    schedule:
-      interval: weekly
-      day: sunday
-    target-branch: dev
-    labels: [Faucet Frontend]
-    versioning-strategy: increase-if-necessary
-    commit-message:
-      prefix: '[dependency]'
-    groups:
-      faucet-frontend-dependencies:
-        patterns:
-          - '*'
-        update-types:
-          - minor
-          - patch
-
-  - package-ecosystem: pip
-    directory: /lightapi/python
-    schedule:
-      interval: weekly
-      day: sunday
-    target-branch: dev
-    labels: [LightAPI]
-    versioning-strategy: increase-if-necessary
-    commit-message:
-      prefix: '[dependency]'
-    groups:
-      light-python-dependencies:
-        patterns:
-          - '*'
-        update-types:
-          - minor
-          - patch
-
-  - package-ecosystem: pip
-    directory: /tools/shoestring
-    schedule:
-      interval: weekly
-      day: sunday
-    target-branch: dev
-    labels: ['Shoestring']
-    versioning-strategy: increase-if-necessary
-    commit-message:
-      prefix: '[dependency]'
-    groups:
-      tools-shoestring-dependencies:
-        patterns:
-          - '*'
-        update-types:
-          - minor
-          - patch
-
-  - package-ecosystem: pip
-    directory: /tools/vanity
-    schedule:
-      interval: weekly
-      day: sunday
-    target-branch: dev
-    labels: ['Vanity']
-    versioning-strategy: increase-if-necessary
-    commit-message:
-      prefix: '[dependency]'
-    groups:
-      tools-vanity-dependencies:
-        patterns:
-          - '*'
-        update-types:
-          - minor
-          - patch
-
-  - package-ecosystem: npm
-    directory: /wallet/common/core
-    schedule:
-      interval: weekly
-      day: sunday
-    target-branch: dev
-    labels: [Wallet Common Core]
-    versioning-strategy: increase-if-necessary
-    commit-message:
-      prefix: '[dependency]'
-    groups:
-      wallet-common-core-dependencies:
-        patterns:
-          - '*'
-        update-types:
-          - minor
-          - patch
-
-  - package-ecosystem: npm
-    directory: /wallet/common/ethereum
-    schedule:
-      interval: weekly
-      day: sunday
-    target-branch: dev
-    labels: [Wallet Common Ethereum]
-    versioning-strategy: increase-if-necessary
-    commit-message:
-      prefix: '[dependency]'
-    groups:
-      wallet-common-ethereum-dependencies:
-        patterns:
-          - '*'
-        update-types:
-          - minor
-          - patch
-
-  - package-ecosystem: npm
-    directory: /wallet/common/symbol
-    schedule:
-      interval: weekly
-      day: sunday
-    target-branch: dev
-    labels: [Wallet Common Symbol]
-    versioning-strategy: increase-if-necessary
-    commit-message:
-      prefix: '[dependency]'
-    groups:
-      wallet-common-symbol-dependencies:
-        patterns:
-          - '*'
-        update-types:
-          - minor
-          - patch
+    directories:
+      - /bridge
+      - /explorer/nodewatch
+      - /explorer/rest
+      - /lightapi/python
+      - /tools/shoestring
+      - /tools/vanity
