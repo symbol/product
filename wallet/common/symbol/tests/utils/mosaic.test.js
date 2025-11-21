@@ -93,13 +93,38 @@ describe('utils/mosaic', () => {
 				{ id: 'mosaic3', amount: '300' }
 			];
 			const mosaicInfos = {
-				mosaic1: { name: 'mosaic1', divisibility: 1 },
-				mosaic2: { name: 'mosaic2', divisibility: 3 }
+				mosaic1: { 
+					id: 'mosaic1', 
+					names: ['namespace1', 'another-namespace1'], 
+					divisibility: 1 
+				},
+				mosaic2: { 
+					id: 'mosaic2', 
+					names: ['namespace2'], 
+					divisibility: 3 
+				}
 			};
 			const expectedMosaicList = [
-				{ id: 'mosaic1', name: 'mosaic1', amount: '10', divisibility: 1 },
-				{ id: 'mosaic2', name: 'mosaic2', amount: '0.2', divisibility: 3 },
-				{ id: 'mosaic3', name: 'mosaic3', amount: null, absoluteAmount: '300' }
+				{ 
+					id: 'mosaic1', 
+					name: 'namespace1', 
+					names: ['namespace1', 'another-namespace1'], 
+					amount: '10', 
+					divisibility: 1 
+				},
+				{ 
+					id: 'mosaic2', 
+					name: 'namespace2', 
+					names: ['namespace2'],
+					amount: '0.2', 
+					divisibility: 3 
+				},
+				{ 
+					id: 'mosaic3', 
+					name: 'mosaic3', 
+					amount: null, 
+					absoluteAmount: '300' 
+				}
 			];
 
 			// Act:
