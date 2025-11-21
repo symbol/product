@@ -1,6 +1,6 @@
-import { TransactionBundle } from 'wallet-common-core';
 import { TransactionType } from '../constants';
 import { createTransactionFeeTiers } from '../utils';
+import { TransactionBundle } from 'wallet-common-core';
 
 /** @typedef {import('../types/Transaction').Transaction} Transaction */
 /** @typedef {import('../types/Transaction').TransactionFeeTires} TransactionFeeTires */

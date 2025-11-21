@@ -1,6 +1,6 @@
-import { TransactionBundle } from 'wallet-common-core';
 import { transactionToEthereum } from './transaction-to-ethereum';
 import { ethers } from 'ethers';
+import { TransactionBundle } from 'wallet-common-core';
 
 /** @typedef {import('../types/Account').PublicAccount} PublicAccount */
 /** @typedef {import('../types/Network').NetworkProperties} NetworkProperties */
@@ -54,7 +54,8 @@ export const signTransaction = async (networkIdentifier, transaction, privateKey
  * @returns {TransactionBundle} The signed transaction bundle.
  */
 export const signTransactionBundle = async (networkIdentifier, transactionBundle, privateKey) => {
-	const signedTransactions = await Promise.all(transactionBundle.transactions.map(tx => signTransaction(networkIdentifier, tx, privateKey)));
+	const signedTransactions = await Promise.all(transactionBundle.transactions.map(tx => 
+		signTransaction(networkIdentifier, tx, privateKey)));
 
 	return new TransactionBundle(signedTransactions, transactionBundle.metadata);
 };
