@@ -3,6 +3,7 @@
 /** @typedef {import('../types/Transaction').Transaction} Transaction */
 /** @typedef {import('../types/Transaction').SignedTransaction} SignedTransaction */
 /** @typedef {import('../types/Transaction').CosignedTransaction} CosignedTransaction */
+/** @typedef {import('../lib/models/TransactionBundle').TransactionBundle} TransactionBundle */
 
 /**
  * @callback SignTransactionFn
@@ -10,6 +11,14 @@
  * @param {Transaction} transaction - The transaction object.
  * @param {string} privateKey - The signer account private key.
  * @returns {SignedTransaction} The signed transaction.
+ */
+
+/**
+ * @callback SignTransactionBundleFn
+ * @param {string} networkIdentifier - The network identifier.
+ * @param {TransactionBundle} transactionBundle - Transaction bundle that contains transactions to sign.
+ * @param {string} privateKey - The signer account private key.
+ * @returns {TransactionBundle} Transaction bundle that contains signed transactions.
  */
 
 /**

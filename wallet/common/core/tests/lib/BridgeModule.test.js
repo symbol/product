@@ -1,3 +1,4 @@
+import { TransactionBundle } from '../../src/lib/models/TransactionBundle';
 import { BridgeModule } from '../../src/lib/modules/BridgeModule';
 import { expect, jest } from '@jest/globals';
 
@@ -215,12 +216,7 @@ describe('BridgeModule', () => {
 			};
 			const fee = 0.123;
 			const recipientAddress = 'DEST_ADDR';
-
-			// Act:
-			const result = await moduleUnderTest.createTransaction({ recipientAddress, token, config, fee });
-
-			// Assert:
-			const expectedPayload = {
+			const expectedOptions = {
 				currentAccount: walletController.currentAccount,
 				networkProperties,
 				recipientAddress,
@@ -228,8 +224,17 @@ describe('BridgeModule', () => {
 				token,
 				fee
 			};
-			expect(bridgeHelper.createTransaction).toHaveBeenCalledWith(expectedPayload);
-			expect(result).toEqual({ ok: true, payload: expectedPayload });
+			const expectedResult = new TransactionBundle([{
+				ok: true,
+				payload: expectedOptions
+			}]);
+
+			// Act:
+			const result = await moduleUnderTest.createTransaction({ recipientAddress, token, config, fee });
+
+			// Assert:
+			expect(bridgeHelper.createTransaction).toHaveBeenCalledWith(expectedOptions);
+			expect(result.toJSON()).toStrictEqual(expectedResult.toJSON());
 		});
 	});
 });

@@ -1,5 +1,6 @@
 import { ControllerError } from '../../error/ControllerError';
 import { createNetworkMap } from '../../utils/network';
+import { TransactionBundle } from '../models/TransactionBundle';
 
 /** @typedef {import('../controller/WalletController').WalletController} WalletController */
 /** @typedef {import('../../types/Bridge').BridgeHelper} BridgeHelper */
@@ -179,7 +180,7 @@ export class BridgeModule {
 		if (!currentAccount)
 			throw new ControllerError('Failed to create bridge transaction. No current account selected');
 
-		return this.#bridgeHelper.createTransaction({
+		const transaction = await this.#bridgeHelper.createTransaction({
 			currentAccount,
 			networkProperties,
 			recipientAddress,
@@ -187,6 +188,8 @@ export class BridgeModule {
 			token,
 			fee
 		});
+
+		return new TransactionBundle([transaction]);
 	};
 }
 

@@ -14,6 +14,7 @@ import { ControllerError } from '../../error/ControllerError';
 import { validateFacade, validateNamespacedFacade } from '../../utils/helper';
 import { createLogger } from '../../utils/logger';
 import { cloneNetworkArrayMap, cloneNetworkObjectMap, createNetworkMap } from '../../utils/network';
+import { TransactionBundle } from '../models/TransactionBundle';
 import { PersistentStorageRepository } from '../storage/PersistentStorageRepository';
 import { StorageInterface } from '../storage/StorageInterface';
 
@@ -730,6 +731,17 @@ export class WalletController {
 	};
 
 	/**
+	 * Fetch transaction status by transaction hash
+	 * @param {string} transactionHash - transaction hash
+	 * @returns {Promise<{group: string}>} - transaction status object
+	 */
+	fetchTransactionStatus = async transactionHash => {
+		const { networkProperties } = this._state;
+
+		return this._api.transaction.fetchTransactionStatus(networkProperties, transactionHash);
+	};
+
+	/**
 	 * Return wallet mnemonic passphrase from the secure storage
 	 * @returns {Promise<string>} - mnemonic passphrase
 	 */
@@ -751,7 +763,18 @@ export class WalletController {
 
 	/**
 	 * Sign transaction with the current account private key
-	 * @param {object} transaction - transaction
+	 * @param {TransactionBundle} transactionBundle - transaction bundle
+	 * @returns {Promise<TransactionBundle>} - signed transaction object
+	 */
+	signTransactionBundle = async transactionBundle => {
+		const keystore = this.#accessKeystore(this.currentAccount.accountType);
+
+		return keystore.signTransactionBundle(this.networkProperties, transactionBundle, this.currentAccount);
+	};
+
+	/**
+	 * Sign transaction with the current account private key
+	 * @param {Transaction} transaction - transaction
 	 * @returns {Promise<object>} - signed transaction object
 	 */
 	signTransaction = async transaction => {
@@ -778,7 +801,17 @@ export class WalletController {
 	 * @returns {Promise<object>} - transaction announce result
 	 */
 	announceSignedTransaction = async (signedTransaction, group) => {
-		return this._api.transaction.announceTransaction(this.networkProperties, signedTransaction.dto, group);
+		return this._api.transaction.announceTransaction(this.networkProperties, signedTransaction, group);
+	};
+
+	/**
+	 * Announce signed transaction
+	 * @param {TransactionBundle} signedTransactionBundle - signed transaction bundle
+	 * @param {string} [group] - transaction group ('default', 'partial' or 'cosignature')
+	 * @returns {Promise<object>} - transaction announce result
+	 */
+	announceSignedTransactionBundle = async (signedTransactionBundle, group) => {
+		return this._api.transaction.announceTransactionBundle(this.networkProperties, signedTransactionBundle, group);
 	};
 
 	/**
