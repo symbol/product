@@ -43,10 +43,10 @@ const mapSignerPublicKey = signerPublicKey =>
 	signerPublicKey || '0000000000000000000000000000000000000000000000000000000000000000';
 
 const mapFee = fee => {
-	if (!fee?.amount) 
+	if (!fee?.token.amount) 
 		return 0n;
 
-	return BigInt(relativeToAbsoluteAmount(fee.amount, fee.divisibility));
+	return BigInt(relativeToAbsoluteAmount(fee.token.amount, fee.token.divisibility));
 };
 
 const mapDeadline = deadline => {

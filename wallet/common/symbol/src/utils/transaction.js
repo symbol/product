@@ -326,21 +326,6 @@ export const createDeadline = (hours = 2, epochAdjustment) => {
 };
 
 /**
- * Creates a fee object for a transaction.
- * @param {number} amount - The fee amount in relative units.
- * @param {NetworkProperties} networkProperties - The network properties.
- * @returns {BaseMosaic} The fee object containing amount, divisibility, id, and name.
- */
-export const createFee = (amount, networkProperties) => {
-	return {
-		amount,
-		divisibility: networkProperties.networkCurrency.divisibility,
-		id: networkProperties.networkCurrency.mosaicId,
-		name: networkProperties.networkCurrency.name
-	};
-};
-
-/**
  * Calculates the transaction size.
  * @param {string} networkIdentifier - The network identifier.
  * @param {Transaction} transaction - The transaction object.
@@ -370,6 +355,56 @@ export const calculateTransactionFees = (networkProperties, size) => {
 		fast: absoluteToRelativeAmount(fast, divisibility),
 		medium: absoluteToRelativeAmount(medium, divisibility),
 		slow: absoluteToRelativeAmount(slow, divisibility)
+	};
+};
+
+/**
+ * Creates a fee object for a transaction.
+ * @param {NetworkProperties} networkProperties - The network properties.
+ * @param {number} amount - The fee amount in relative units.
+ * @returns {BaseMosaic} The fee object containing amount, divisibility, id, and name.
+ */
+export const createTransactionFee = (networkProperties, amount) => {
+	return {
+		token: {
+			amount,
+			divisibility: networkProperties.networkCurrency.divisibility,
+			id: networkProperties.networkCurrency.mosaicId,
+			name: networkProperties.networkCurrency.name
+		}
+	};
+};
+
+/**
+ * Calculates the transaction fees for a given transaction.
+ * @param {NetworkProperties} networkProperties - The network properties.
+ * @param {number} size - The transaction size.
+ * @returns {TransactionFees} The transaction fees.
+ */
+export const createTransactionFeeTiers = (networkProperties, size) => {
+	const { transactionFees } = networkProperties;
+	const { divisibility } = networkProperties.networkCurrency;
+
+	const minFeeMultiplier = Number(transactionFees.minFeeMultiplier);
+	const averageFeeMultiplier = Number(transactionFees.averageFeeMultiplier);
+
+	const fastAbsoluteAmount = Math.round((minFeeMultiplier + averageFeeMultiplier) * size);
+	const mediumAbsoluteAmount = Math.round((minFeeMultiplier + (averageFeeMultiplier * 0.65)) * size);
+	const slowAbsoluteAmount = Math.round((minFeeMultiplier + (averageFeeMultiplier * 0.35)) * size);
+
+	return {
+		fast: createTransactionFee(
+			networkProperties,
+			absoluteToRelativeAmount(fastAbsoluteAmount, divisibility)
+		),
+		medium: createTransactionFee(
+			networkProperties,
+			absoluteToRelativeAmount(mediumAbsoluteAmount, divisibility)
+		),
+		slow: createTransactionFee(
+			networkProperties,
+			absoluteToRelativeAmount(slowAbsoluteAmount, divisibility)
+		)
 	};
 };
 
@@ -474,7 +509,7 @@ export const getUnresolvedIdsFromTransactions = (transactions, config) => {
 
 						value.forEach(mosaic => {
 							const mosaicId = mosaic?.mosaicId ?? mosaic?.id ?? mosaic;
-							
+
 							if (mosaicId)
 								mosaicIds.push(mapMosaicId(mosaicId));
 						});
