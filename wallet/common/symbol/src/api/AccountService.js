@@ -28,7 +28,7 @@ export class AccountService {
 			const url = `${networkProperties.nodeUrl}/accounts/${address}`;
 			response = await this.#makeRequest(url);
 		} catch (error) {
-			if (error instanceof NotFoundError) {
+			if (error instanceof NotFoundError || error.statusCode === 404) {
 				return {
 					address,
 					publicKey: null,

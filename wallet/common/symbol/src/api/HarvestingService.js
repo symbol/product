@@ -37,7 +37,7 @@ export class HarvestingService {
 			const { account } = await this.#makeRequest(url);
 			supplementalPublicKeys = account.supplementalPublicKeys;
 		} catch (error) {
-			if (error instanceof NotFoundError)
+			if (error instanceof NotFoundError || error.statusCode === 404)
 				supplementalPublicKeys = {};
 			else
 				throw error;
