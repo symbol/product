@@ -1,7 +1,9 @@
 import { MessageType, TransactionType } from '../constants';
 import { 
+	calculateTransactionSize,
 	createDeadline, 
-	createFee, 
+	createTransactionFee,
+	createTransactionFeeTiers,
 	encodePlainMessage, 
 	isIncomingTransaction, 
 	isOutgoingTransaction, 
@@ -144,5 +146,20 @@ export class TransferModule {
 			'error_failed_decrypt_message_not_related',
 			'Failed to decrypt message. Transaction is not related to current account'
 		);
+	};
+
+	/**
+	 * Calculates the transaction fees for a given transaction.
+	 * @param {TransactionBundle} transactionBundle - The transaction bundle.
+	 * @returns {TransactionFees[]} The transaction fees for each transaction in the bundle.
+	 */
+	calculateTransactionFees = async transactionBundle => {
+		const { networkProperties, networkIdentifier } = this.#walletController;
+		
+		return transactionBundle.transactions.map(transaction => {
+			const transactionSize = calculateTransactionSize(networkIdentifier, transaction);
+
+			return createTransactionFeeTiers(networkProperties, transactionSize);
+		});
 	};
 }
