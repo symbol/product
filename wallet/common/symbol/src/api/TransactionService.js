@@ -1,5 +1,5 @@
 import { TransactionAnnounceGroup, TransactionBundleType, TransactionGroup } from '../constants';
-import { 
+import {
 	createSearchUrl,
 	getUnresolvedIdsFromSymbolTransactions,
 	getUnresolvedIdsFromTransactionDTOs,
@@ -7,9 +7,9 @@ import {
 	promiseAllSettled,
 	symbolTransactionFromPayload,
 	transactionFromDTO,
-	transactionFromSymbol 
+	transactionFromSymbol
 } from '../utils';
-import { ApiError } from 'wallet-common-core';
+import { ApiError, NotFoundError } from 'wallet-common-core';
 
 /** @typedef {import('../types/Account').PublicAccount} PublicAccount */
 /** @typedef {import('../types/Mosaic').MosaicInfo} MosaicInfo */
@@ -29,12 +29,12 @@ export class TransactionService {
 	}
 
 	/**
-     * Fetches transactions of an account.
+	 * Fetches transactions of an account.
 	 * @param {NetworkProperties} networkProperties - Network properties.
-     * @param {PublicAccount} account - Requested account.
-     * @param {TransactionSearchCriteria} [searchCriteria] - Search criteria.
-     * @returns {Promise<Transaction[]>} - The account transactions.
-     */
+	 * @param {PublicAccount} account - Requested account.
+	 * @param {TransactionSearchCriteria} [searchCriteria] - Search criteria.
+	 * @returns {Promise<Transaction[]>} - The account transactions.
+	 */
 	fetchAccountTransactions = async (networkProperties, account, searchCriteria = {}) => {
 		const { pageNumber = 1, pageSize = 15, group = TransactionGroup.CONFIRMED, order = 'desc', filter = {} } = searchCriteria;
 		const baseSearchCriteria = {
@@ -55,14 +55,14 @@ export class TransactionService {
 		} else {
 			additionalSearchConditions.address = account.address;
 		}
-		if (filter.type) 
+		if (filter.type)
 			additionalSearchConditions.type = filter.type;
-        
+
 		// Fetch transactions
 		const url = createSearchUrl(
-			networkProperties.nodeUrl, 
-			`/transactions/${group}`, 
-			baseSearchCriteria, 
+			networkProperties.nodeUrl,
+			`/transactions/${group}`,
+			baseSearchCriteria,
 			additionalSearchConditions
 		);
 		const transactionPage = await this.#makeRequest(url);
@@ -92,14 +92,14 @@ export class TransactionService {
 	};
 
 	/**
-     * Fetches transaction info by hash.
-     * @param {string} hash - Requested transaction hash.
-     * @param {object} config - Config.
-     * @param {NetworkProperties} config.networkProperties - Network properties.
-     * @param {PublicAccount} config.currentAccount - Current account.
-     * @param {string} config.group - Transaction group.
-     * @returns {Promise<Transaction>} - The transaction info.
-     */
+	 * Fetches transaction info by hash.
+	 * @param {string} hash - Requested transaction hash.
+	 * @param {object} config - Config.
+	 * @param {NetworkProperties} config.networkProperties - Network properties.
+	 * @param {PublicAccount} config.currentAccount - Current account.
+	 * @param {string} config.group - Transaction group.
+	 * @returns {Promise<Transaction>} - The transaction info.
+	 */
 	fetchTransactionInfo = async (hash, config) => {
 		const { group = TransactionGroup.CONFIRMED, currentAccount, networkProperties } = config;
 		const transactionUrl = `${networkProperties.nodeUrl}/transactions/${group}/${hash}`;
@@ -129,13 +129,13 @@ export class TransactionService {
 	};
 
 	/**
-     * Send transaction to the network.
+	 * Send transaction to the network.
 	 * @param {NetworkProperties} networkProperties - Network properties.
 	 * @param {SignedTransaction} signedTransaction - The signed transaction.
-     * @param {string} group - Transaction announce group.
-     * @returns {Promise<void>} - A promise that resolves when the transaction is announced.
-     * @throws {ApiError} - If the transaction is not accepted by any node.
-     */
+	 * @param {string} group - Transaction announce group.
+	 * @returns {Promise<void>} - A promise that resolves when the transaction is announced.
+	 * @throws {ApiError} - If the transaction is not accepted by any node.
+	 */
 	announceTransaction = async (networkProperties, signedTransaction, group) => {
 		const randomNodes = networkProperties.nodeUrls.sort(() => Math.random() - 0.5).slice(0, 3);
 		const nodeUrls = [networkProperties.nodeUrl, ...randomNodes];
@@ -151,13 +151,74 @@ export class TransactionService {
 	};
 
 	/**
-     * Announce transaction to a single node.
+	 * Send transactions to the network one by one, waiting for each to be confirmed before announcing the next.
+	 * @param {NetworkProperties} networkProperties - Network properties.
+	 * @param {SignedTransaction[]} signedTransactions - The signed transaction list.
+	 * @param {string} lastTransactionGroup - Transaction announce group for the last transaction.
+	 * @returns {Promise<void>} - A promise that resolves when the transaction is announced.
+	 * @throws {ApiError} - If the transaction is not accepted by any node.
+	 */
+	announceTransactionsSequentially = async (networkProperties, signedTransactions, lastTransactionGroup) => {
+		if (!signedTransactions.length)
+			return;
+		if (signedTransactions.length === 1)
+			return this.announceTransaction(networkProperties, signedTransactions[0]);
+
+		const blockGenerationInterval = networkProperties.blockGenerationTargetTime * 1000;
+		const blocksToWait = 4;
+		const confirmationCheckTimeout = blockGenerationInterval * blocksToWait;
+		const confirmationCheckInterval = 2000;
+
+		const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+		const waitForConfirmation = async hash => {
+			const start = Date.now();
+
+			while (Date.now() - start < confirmationCheckTimeout) {
+				let statusGroup;
+
+				try {
+					const status = await this.fetchTransactionStatus(networkProperties, hash);
+					statusGroup = status.group;
+				} catch (error) {
+					if (error instanceof NotFoundError || error.statusCode === 404) {
+						await sleep(confirmationCheckInterval);
+						continue;
+					}
+
+					throw error;
+				}
+
+				if (statusGroup === TransactionGroup.CONFIRMED)
+					return;
+
+				if (statusGroup === TransactionGroup.FAILED)
+					throw new ApiError(`Transaction ${hash} failed`);
+
+				await sleep(confirmationCheckInterval);
+			}
+			throw new ApiError(`Transaction ${hash} confirmation timed out`);
+		};
+
+		for (let i = 0; i < signedTransactions.length; i++) {
+			const isTheLastTransaction = i === signedTransactions.length - 1;
+			const signedTransaction = signedTransactions[i];
+
+			if (isTheLastTransaction) { await this.announceTransaction(networkProperties, signedTransaction, lastTransactionGroup); }
+			else {
+				await this.announceTransaction(networkProperties, signedTransaction);
+				await waitForConfirmation(signedTransaction.hash);
+			}
+		}
+	};
+
+	/**
+	 * Announce transaction to a single node.
 	 * @param {string} nodeUrl - The node URL.
 	 * @param {SignedTransaction} signedTransaction - The signed transaction.
-     * @param {string} group - Transaction announce group.
-     * @returns {Promise<void>} - A promise that resolves when the transaction is announced.
-     * @throws {ApiError} - If the transaction is not accepted by the node.
-     */
+	 * @param {string} group - Transaction announce group.
+	 * @returns {Promise<void>} - A promise that resolves when the transaction is announced.
+	 * @throws {ApiError} - If the transaction is not accepted by the node.
+	 */
 	announceTransactionToNode = async (nodeUrl, signedTransaction, group = TransactionAnnounceGroup.DEFAULT) => {
 		const { dto } = signedTransaction;
 		const typeEndpointMap = {
@@ -176,7 +237,13 @@ export class TransactionService {
 		});
 	};
 
-	fetchStatus = async (hash, networkProperties) => {
+	/**
+	 * Fetches transaction status by hash.
+	 * @param {string} hash - Requested transaction hash.
+	 * @param {NetworkProperties} networkProperties - Network properties.
+	 * @returns {Promise<{group: string}>} - The transaction status.
+	 */
+	fetchTransactionStatus = async (networkProperties, hash) => {
 		const endpoint = `${networkProperties.nodeUrl}/transactionStatus/${hash}`;
 		const { group } = await this.#makeRequest(endpoint);
 
@@ -219,12 +286,12 @@ export class TransactionService {
 	};
 
 	/**
-     * Resolves transactions DTO. Fetches additional information for unresolved ids. Maps transactionDTOs to the transaction objects.
+	 * Resolves transactions DTO. Fetches additional information for unresolved ids. Maps transactionDTOs to the transaction objects.
 	 * @param {NetworkProperties} networkProperties - Network properties.
-     * @param {object[]} transactionDTOs - The transaction DTOs.
-     * @param {PublicAccount} currentAccount - Current account.
-     * @returns {Promise<Transaction[]>} - The resolved transactions
-     */
+	 * @param {object[]} transactionDTOs - The transaction DTOs.
+	 * @param {PublicAccount} currentAccount - Current account.
+	 * @returns {Promise<Transaction[]>} - The resolved transactions
+	 */
 	resolveTransactionDTOs = async (networkProperties, transactionDTOs, currentAccount) => {
 		const unresolvedTransactionData = getUnresolvedIdsFromTransactionDTOs(transactionDTOs);
 		const resolvedTransactionData = await this.resolveTransactionData(networkProperties, unresolvedTransactionData);
@@ -237,13 +304,13 @@ export class TransactionService {
 	};
 
 	/**
-     * Creates a transaction object from a payload. Resolves amounts and ids.
+	 * Creates a transaction object from a payload. Resolves amounts and ids.
 	 * @param {NetworkProperties} networkProperties - Network properties.
-     * @param {string} payload - The transaction payload.
-     * @param {PublicAccount} currentAccount - Current account.
-     * @param {string} [fillSignerPublickey] - The public key to fill the signer if field is empty.
-     * @returns {Promise<Transaction>} - The transaction object.
-     */
+	 * @param {string} payload - The transaction payload.
+	 * @param {PublicAccount} currentAccount - Current account.
+	 * @param {string} [fillSignerPublickey] - The public key to fill the signer if field is empty.
+	 * @returns {Promise<Transaction>} - The transaction object.
+	 */
 	resolveTransactionFromPayload = async (networkProperties, payload, currentAccount, fillSignerPublickey) => {
 		const symbolTransaction = symbolTransactionFromPayload(payload);
 		const unresolvedTransactionData = getUnresolvedIdsFromSymbolTransactions([symbolTransaction]);

@@ -46,6 +46,12 @@ export const TransactionType = {
 	NODE_KEY_LINK: 16972
 };
 
+export const TransactionBundleType = {
+	DEFAULT: 'default',
+	MULTISIG_TRANSFER: 'multisig-transfer',
+	DELEGATED_HARVESTING: 'delegated-harvesting'
+};
+
 export const HarvestingStatus = {
 	INACTIVE: 'inactive',
 	ACTIVE: 'active',
