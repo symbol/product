@@ -6,7 +6,7 @@ import { TransactionGroup } from 'wallet-common-core/src/constants';
 /** @typedef {import('../types/Mosaic').MosaicInfo} MosaicInfo */
 /** @typedef {import('../types/Network').NetworkProperties} NetworkProperties */
 /** @typedef {import('../types/Transaction').Transaction} Transaction */
-/** @typedef {import('../types/Transaction').SignedTransactionDTO} SignedTransactionDTO */
+/** @typedef {import('../types/Transaction').SignedTransaction} SignedTransaction */
 
 export class TransactionService {
 	/** @type {import('../api').Api} */
@@ -38,6 +38,36 @@ export class TransactionService {
 
 		return this.resolveTransactionDTOs(networkProperties, transactionDTOs, account);
 	};
+
+	/**
+	 * Fetches the status of a transaction.
+	 * @param {NetworkProperties} networkProperties - Network properties.
+	 * @param {string} transactionHash - The transaction hash.
+	 * @returns {Promise<{group: TransactionGroup}>} - The transaction status.
+	 * @throws {ApiError} - If the transaction is not found.
+	 */
+	fetchTransactionStatus = async (networkProperties, transactionHash) => {
+		const provider = createEthereumJrpcProvider(networkProperties);
+
+		const transaction = await provider.getTransaction(transactionHash);
+
+		if (!transaction) 
+			throw new ApiError(`Transaction with hash ${transactionHash} not found`);
+
+		if (!transaction.blockNumber)
+			return { group: TransactionGroup.UNCONFIRMED };
+		
+		const receipt = await provider.getTransactionReceipt(transactionHash);
+
+		if (!receipt) 
+			return { group: TransactionGroup.UNCONFIRMED };
+
+		if (receipt.status === 1) 
+			return { group: TransactionGroup.CONFIRMED };
+
+		return { group: TransactionGroup.FAILED };
+	};
+
 	/**
 	 * Send transaction to the network.
 	 * @param {NetworkProperties} networkProperties - Network properties.
@@ -57,6 +87,12 @@ export class TransactionService {
 		}
 	};
 
+	/**
+	 * Announce a bundle of transactions to the network.
+	 * @param {NetworkProperties} networkProperties - Network properties.
+	 * @param {TransactionBundle} signedTransactionBundle - The signed transaction bundle.
+	 * @returns {Promise<void>} - A promise that resolves when the transaction bundle is announced.
+	 */
 	announceTransactionBundle = async (networkProperties, signedTransactionBundle) => {
 		return Promise.all(signedTransactionBundle.transactions.map(signedTransaction =>
 			this.announceTransaction(networkProperties, signedTransaction)));
