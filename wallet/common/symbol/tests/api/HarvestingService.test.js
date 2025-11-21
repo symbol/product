@@ -140,7 +140,6 @@ describe('HarvestingService', () => {
 			const nodeUrl = 'https://harvest.node:3001';
 			const nodeInfoUrl = `${nodewatchBaseUrl}/api/symbol/nodes/nodePublicKey/${nodePublicKey}`;
 			const unlockedUrl = `${nodeUrl}/node/unlockedaccount`;
-
 			const apiCalls = [
 				{ 
 					url: `${networkProperties.nodeUrl}/accounts/${address}`, 
@@ -186,7 +185,6 @@ describe('HarvestingService', () => {
 			const apiCalls = [
 				{ url: `${networkProperties.nodeUrl}/accounts/${address}`, options: undefined, response: accountApiResponse }
 			];
-
 			const functionToTest = () => harvestingService.fetchStatus(networkProperties, currentAccount);
 			const expectedResult = { status: HarvestingStatus.NODE_UNKNOWN };
 
