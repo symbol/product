@@ -1,3 +1,4 @@
+import { TransactionBundle } from 'wallet-common-core';
 import { TransactionType } from '../constants';
 import { createTransactionFeeTiers } from '../utils';
 
@@ -29,7 +30,7 @@ export class TransferModule {
      * @param {object[]} options.tokens - The tokens to transfer.
 	 * @param {object} options.fee - The transaction fee.
      * @param {string} [password] - The wallet password.
-     * @returns {Transaction} The transfer transaction.
+     * @returns {TransactionBundle} The transfer transaction.
      */
 	createTransaction = async options => {
 		const { recipientAddress, tokens, fee } = options;
@@ -49,18 +50,21 @@ export class TransferModule {
 			fee
 		};
 
-		return transaction;
+		return new TransactionBundle([transaction]);
 	};
 
 	/**
 	 * Calculates the transaction fees for a given transaction.
-	 * @param {Transaction} transaction - The transaction.
+	 * @param {TransactionBundle} transactionBundle - The transaction bundle.
 	 * @returns {TransactionFeeTires} The transaction fees.
 	 */
-	calculateTransactionFees = async transaction => {
+	calculateTransactionFees = async transactionBundle => {
 		const { networkProperties } = this.#walletController;
-		const gasLimit = await this.#api.transaction.estimateTransactionGasLimit(networkProperties, transaction);
 
-		return createTransactionFeeTiers(networkProperties, gasLimit);
+		return Promise.all(transactionBundle.transactions.map(async transaction => {
+			const gasLimit = await this.#api.transaction.estimateTransactionGasLimit(networkProperties, transaction);
+
+			return createTransactionFeeTiers(networkProperties, gasLimit);
+		}));
 	};
 }

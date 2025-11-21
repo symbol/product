@@ -1,4 +1,4 @@
-import { TransactionAnnounceGroup, TransactionGroup } from '../constants';
+import { TransactionAnnounceGroup, TransactionBundleType, TransactionGroup } from '../constants';
 import { 
 	createSearchUrl,
 	getUnresolvedIdsFromSymbolTransactions,
@@ -16,7 +16,8 @@ import { ApiError } from 'wallet-common-core';
 /** @typedef {import('../types/Network').NetworkProperties} NetworkProperties */
 /** @typedef {import('../types/SearchCriteria').TransactionSearchCriteria} TransactionSearchCriteria */
 /** @typedef {import('../types/Transaction').Transaction} Transaction */
-/** @typedef {import('../types/Transaction').SignedTransactionDTO} SignedTransactionDTO */
+/** @typedef {import('../types/Transaction').SignedTransaction} SignedTransaction */
+/** @typedef {import('wallet-common-core').TransactionBundle} TransactionBundle */
 
 export class TransactionService {
 	#api;
@@ -109,17 +110,36 @@ export class TransactionService {
 	};
 
 	/**
+	 * Announce a bundle of transactions to the network.
+	 * @param {NetworkProperties} networkProperties - Network properties.
+	 * @param {TransactionBundle} signedTransactionBundle - The signed transaction bundle.
+	 * @returns {Promise<void>} - A promise that resolves when the transaction bundle is announced.
+	 */
+	announceTransactionBundle = async (networkProperties, signedTransactionBundle) => {
+		if (signedTransactionBundle.metadata.type === TransactionBundleType.MULTISIG_TRANSFER) {
+			await this.announceTransactionsSequentially(
+				networkProperties,
+				signedTransactionBundle.transactions,
+				TransactionAnnounceGroup.PARTIAL
+			);
+		}
+
+		await Promise.all(signedTransactionBundle.transactions.map(signedTransaction =>
+			this.announceTransaction(networkProperties, signedTransaction, TransactionAnnounceGroup.DEFAULT)));
+	};
+
+	/**
      * Send transaction to the network.
 	 * @param {NetworkProperties} networkProperties - Network properties.
-     * @param {SignedTransactionDTO} dto - The signed transaction DTO.
+	 * @param {SignedTransaction} signedTransaction - The signed transaction.
      * @param {string} group - Transaction announce group.
      * @returns {Promise<void>} - A promise that resolves when the transaction is announced.
      * @throws {ApiError} - If the transaction is not accepted by any node.
      */
-	announceTransaction = async (networkProperties, dto, group) => {
+	announceTransaction = async (networkProperties, signedTransaction, group) => {
 		const randomNodes = networkProperties.nodeUrls.sort(() => Math.random() - 0.5).slice(0, 3);
 		const nodeUrls = [networkProperties.nodeUrl, ...randomNodes];
-		const promises = nodeUrls.map(nodeUrl => this.announceTransactionToNode(nodeUrl, dto, group));
+		const promises = nodeUrls.map(nodeUrl => this.announceTransactionToNode(nodeUrl, signedTransaction, group));
 
 		const results = await promiseAllSettled(promises);
 		const hasSuccessfulResult = results.some(r => r.status === 'fulfilled');
@@ -133,12 +153,13 @@ export class TransactionService {
 	/**
      * Announce transaction to a single node.
 	 * @param {string} nodeUrl - The node URL.
-     * @param {SignedTransactionDTO} dto - The signed transaction DTO.
+	 * @param {SignedTransaction} signedTransaction - The signed transaction.
      * @param {string} group - Transaction announce group.
      * @returns {Promise<void>} - A promise that resolves when the transaction is announced.
      * @throws {ApiError} - If the transaction is not accepted by the node.
      */
-	announceTransactionToNode = async (nodeUrl, dto, group = TransactionAnnounceGroup.DEFAULT) => {
+	announceTransactionToNode = async (nodeUrl, signedTransaction, group = TransactionAnnounceGroup.DEFAULT) => {
+		const { dto } = signedTransaction;
 		const typeEndpointMap = {
 			[TransactionAnnounceGroup.DEFAULT]: '/transactions',
 			[TransactionAnnounceGroup.PARTIAL]: '/transactions/partial',

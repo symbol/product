@@ -1,8 +1,8 @@
 import { transactionToSymbol } from './transaction-to-symbol';
-import { MessageType, TransactionType } from '../constants';
+import { MessageType, TransactionBundleType, TransactionType } from '../constants';
 import { Hash256, PrivateKey, PublicKey, utils } from 'symbol-sdk';
 import { MessageEncoder, SymbolFacade, models } from 'symbol-sdk/symbol';
-import { absoluteToRelativeAmount } from 'wallet-common-core';
+import { TransactionBundle, absoluteToRelativeAmount } from 'wallet-common-core';
 
 /** @typedef {import('../types/Account').PublicAccount} PublicAccount */
 /** @typedef {import('../types/Account').UnresolvedAddressWithLocation} UnresolvedAddressWithLocation */
@@ -234,6 +234,32 @@ export const removeBlockedTransactions = (transactions, blackList) => {
  */
 export const removeAllowedTransactions = (transactions, blackList) => {
 	return transactions.filter(transaction => blackList.some(contact => contact.address === transaction.signerAddress));
+};
+
+/**
+ * Signs a transaction bundle with a private key.
+ * @param {string} networkIdentifier - The network identifier.
+ * @param {TransactionBundle} transactionBundle - The transaction bundle object.
+ * @param {string} privateKey - The signer account private key.
+ * @returns {TransactionBundle} The signed transaction bundle.
+ */
+export const signTransactionBundle = (networkIdentifier, transactionBundle, privateKey) => {
+	if (transactionBundle.metadata.type === TransactionBundleType.MULTISIG_TRANSFER) {
+		// Sign aggregate bonded transaction
+		const aggregateBondedTransaction = transactionBundle.transactions.find(tx => tx.type === TransactionType.AGGREGATE_BONDED);
+		const signedAggregateBondedTransaction = signTransaction(networkIdentifier, aggregateBondedTransaction, privateKey);
+
+		// Sign hash lock transaction
+		const hashLockTransaction = transactionBundle.transactions.find(tx => tx.type === TransactionType.HASH_LOCK);
+		hashLockTransaction.aggregateHash = signedAggregateBondedTransaction.hash;
+		const signedHashLockTransaction = signTransaction(networkIdentifier, hashLockTransaction, privateKey);
+
+		return new TransactionBundle([signedHashLockTransaction, signedAggregateBondedTransaction], transactionBundle.metadata);
+	}
+
+	const signedTransactions = transactionBundle.transactions.map(tx => signTransaction(networkIdentifier, tx, privateKey));
+
+	return new TransactionBundle(signedTransactions, transactionBundle.metadata);
 };
 
 /**

@@ -1,7 +1,7 @@
-import { LinkAction, LinkActionMessage, MessageType, TransactionType } from '../constants';
+import { LinkAction, LinkActionMessage, MessageType, TransactionBundleType, TransactionType } from '../constants';
 import { addressFromPublicKey, createDeadline, createFee, encodeDelegatedHarvestingMessage, generateKeyPair } from '../utils';
 import { shuffle } from 'lodash';
-import { ControllerError } from 'wallet-common-core';
+import { ControllerError, TransactionBundle } from 'wallet-common-core';
 
 /** @typedef {import('../types/Harvesting').HarvestingSummary} HarvestingSummary */
 /** @typedef {import('../types/Harvesting').HarvestedBlock} HarvestedBlock */
@@ -79,7 +79,7 @@ export class HarvestingModule {
 	 * @param {string} options.nodePublicKey - The public key of the node.
 	 * @param {number} [options.fee=0] - The transaction fee.
 	 * @param {string} [password] - The wallet password.
-	 * @returns {Promise<Transaction>} - The transaction to start harvesting.
+	 * @returns {Promise<TransactionBundle>} - The transaction to start harvesting.
 	 */
 	createStartHarvestingTransaction = async (options, password) => {
 		const { nodePublicKey, fee = 0 } = options;
@@ -158,13 +158,15 @@ export class HarvestingModule {
 		});
 
 		// Prepare aggregate transaction
-		return {
+		const aggregateTransaction = {
 			type: TransactionType.AGGREGATE_COMPLETE,
 			innerTransactions: transactions,
 			signerPublicKey: accountPublicKey,
 			fee: createFee(fee, networkProperties),
 			deadline: createDeadline(2, networkProperties.epochAdjustment)
 		};
+
+		return new TransactionBundle([aggregateTransaction], { type: TransactionBundleType.DELEGATED_HARVESTING });
 	};
 
 	/**
@@ -172,7 +174,7 @@ export class HarvestingModule {
 	 * Aggregate transaction includes unlinking the VRF and remote keys.
 	 * @param {object} [options] - The transaction options.
 	 * @param {number} [options.fee=0] - The transaction fee.
-	 * @returns {Transaction} - The transaction to stop harvesting.
+	 * @returns {TransactionBundle} - The transaction to stop harvesting.
 	 */
 	createStopHarvestingTransaction = (options = {}) => {
 		const { currentAccount, currentAccountInfo, networkProperties } = this.#walletController;
@@ -216,12 +218,14 @@ export class HarvestingModule {
 		}
 
 		// Prepare aggregate transaction
-		return {
+		const aggregateTransaction = {
 			type: TransactionType.AGGREGATE_COMPLETE,
 			innerTransactions: transactions,
 			signerPublicKey: accountPublicKey,
 			fee: createFee(fee, networkProperties),
 			deadline: createDeadline(2, networkProperties.epochAdjustment)
 		};
+
+		return new TransactionBundle([aggregateTransaction], { type: TransactionBundleType.DELEGATED_HARVESTING });
 	};
 }

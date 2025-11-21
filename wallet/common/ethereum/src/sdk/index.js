@@ -1,7 +1,8 @@
 import { SdkError } from 'wallet-common-core';
 
 export { 
-	signTransaction, 
+	signTransaction,
+	signTransactionBundle,
 	createPrivateAccount, 
 	createPrivateKeysFromMnemonic 
 } from '../utils';

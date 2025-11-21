@@ -1,5 +1,6 @@
 import { createEthereumJrpcProvider, getUnresolvedIdsFromTransactionDTOs, transactionFromDTO, transactionToEthereum } from '../utils';
 import { ApiError } from 'wallet-common-core';
+import { TransactionGroup } from 'wallet-common-core/src/constants';
 
 /** @typedef {import('../types/Account').PublicAccount} PublicAccount */
 /** @typedef {import('../types/Mosaic').MosaicInfo} MosaicInfo */
@@ -40,20 +41,25 @@ export class TransactionService {
 	/**
 	 * Send transaction to the network.
 	 * @param {NetworkProperties} networkProperties - Network properties.
-	 * @param {SignedTransactionDTO} dto - The signed transaction DTO.
+	 * @param {SignedTransaction} signedTransaction - The signed transaction.
 	 * @returns {Promise<void>} - A promise that resolves when the transaction is announced.
 	 * @throws {ApiError} - If the transaction is not accepted by any node.
 	 */
-	announceTransaction = async (networkProperties, dto) => {
+	announceTransaction = async (networkProperties, signedTransaction) => {
 		const provider = createEthereumJrpcProvider(networkProperties);
 
 		try {
-			const response = await provider.broadcastTransaction(dto);
+			const response = await provider.broadcastTransaction(signedTransaction.dto);
 
 			return response.hash;
 		} catch (error) {
 			throw new ApiError(`Transaction announce failed: ${error.message}`);
 		}
+	};
+
+	announceTransactionBundle = async (networkProperties, signedTransactionBundle) => {
+		return Promise.all(signedTransactionBundle.transactions.map(signedTransaction =>
+			this.announceTransaction(networkProperties, signedTransaction)));
 	};
 
 	/**
