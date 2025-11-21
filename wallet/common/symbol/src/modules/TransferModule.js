@@ -1,53 +1,65 @@
-import { MessageType, TransactionType } from '../constants';
-import { 
+import { MessageType, TransactionBundleType, TransactionType } from '../constants';
+import {
+	addressFromPublicKey,
 	calculateTransactionSize,
-	createDeadline, 
+	createDeadline,
 	createTransactionFee,
 	createTransactionFeeTiers,
-	encodePlainMessage, 
-	isIncomingTransaction, 
-	isOutgoingTransaction, 
-	isSymbolAddress, 
-	namespaceIdFromName 
+	encodePlainMessage,
+	isIncomingTransaction,
+	isOutgoingTransaction,
+	isSymbolAddress,
+	namespaceIdFromName
 } from '../utils';
-import { ControllerError } from 'wallet-common-core';
+import { ControllerError, TransactionBundle } from 'wallet-common-core';
 
 /** @typedef {import('../types/Transaction').Transaction} Transaction */
+/** @typedef {import('../types/Network').TransactionFees} TransactionFees */
+
+const SINGLE_TRANSACTION_DEADLINE_HOURS = 2;
+const MULTISIG_TRANSACTION_DEADLINE_HOURS = 48;
+const EMPTY_AGGREGATE_HASH = '0000000000000000000000000000000000000000000000000000000000000000';
+const HASH_LOCK_AMOUNT = '10';
+const HASH_LOCK_DURATION = 1000;
 
 export class TransferModule {
 	static name = 'transfer';
 	#walletController;
 	#api;
 
-	constructor() {}
+	constructor() { }
 
 	init = options => {
 		this.#walletController = options.walletController;
 		this.#api = options.api;
 	};
 
-	loadCache = async () => {};
+	loadCache = async () => { };
 
-	resetState = () => {};
+	resetState = () => { };
 
-	clear = () => {};
+	clear = () => { };
 
 	/**
-     * Prepares a transfer transaction.
-     * @param {object} options - The transfer options.
-     * @param {string} options.senderPublicKey - The sender public key.
-     * @param {string} options.recipientAddressOrAlias - The recipient address or alias.
-     * @param {object[]} options.mosaics - The mosaics to transfer.
-     * @param {string} options.messageText - The message text.
-     * @param {boolean} options.isMessageEncrypted - The message encryption flag.
-	 * @param {number} [options.fee=0] - The transaction fee.
-     * @param {string} [password] - The wallet password.
-     * @returns {Transaction} The transfer transaction.
-     */
+	 * Prepares a transfer transaction bundle.
+	 * Depending on the sender and current account, it can be a simple transfer transaction or multisig transaction.
+	 * In case of multisig transaction - the bundle will contain hash lock and aggregate bonded transactions.
+	 * The hash lock transaction needs to be announced first, followed by the aggregate bonded transaction after confirmation.
+	 * @param {object} options - The transfer options.
+	 * @param {string} options.senderPublicKey - The sender public key.
+	 * @param {string} options.recipientAddress - The recipient address or alias.
+	 * @param {object[]} options.mosaics - The mosaics to transfer.
+	 * @param {string} options.messageText - The message text.
+	 * @param {boolean} options.isMessageEncrypted - The message encryption flag.
+	 * @param {number} [options.fee] - The transaction fee.
+	 * @param {string} [password] - The wallet password.
+	 * @returns {TransactionBundle} The transfer transaction bundle.
+	 */
 	createTransaction = async (options, password) => {
-		const { recipientAddressOrAlias, mosaics, messageText, isMessageEncrypted, fee = 0 } = options;
+		const { recipientAddress: recipientAddressOrAlias, mosaics, messageText, isMessageEncrypted, fee } = options;
 		const { currentAccount, networkProperties } = this.#walletController;
 		const senderPublicKey = options.senderPublicKey || currentAccount.publicKey;
+		const senderAddress = addressFromPublicKey(senderPublicKey, networkProperties.networkIdentifier);
 
 		// Resolve recipient address
 		let recipientAddress;
@@ -80,9 +92,10 @@ export class TransferModule {
 		const transferTransaction = {
 			type: TransactionType.TRANSFER,
 			signerPublicKey: senderPublicKey,
+			signerAddress: senderAddress,
 			recipientAddress,
 			mosaics,
-			deadline: createDeadline(2, networkProperties.epochAdjustment)
+			deadline: createDeadline(SINGLE_TRANSACTION_DEADLINE_HOURS, networkProperties.epochAdjustment)
 		};
 
 		if (messagePayloadHex) {
@@ -96,27 +109,48 @@ export class TransferModule {
 		// If multisig transaction, return aggregate bonded transaction
 		const isMultisigTransaction = senderPublicKey !== currentAccount.publicKey;
 		if (isMultisigTransaction) {
-			return {
+			const lockedAmount = HASH_LOCK_AMOUNT;
+			const hashLockTransaction = {
+				type: TransactionType.HASH_LOCK,
+				signerPublicKey: currentAccount.publicKey,
+				mosaic: {
+					id: networkProperties.networkCurrency.mosaicId,
+					amount: lockedAmount,
+					divisibility: networkProperties.networkCurrency.divisibility
+				},
+				lockedAmount,
+				duration: HASH_LOCK_DURATION,
+				fee: fee ?? createTransactionFee(networkProperties, '0'),
+				deadline: createDeadline(SINGLE_TRANSACTION_DEADLINE_HOURS, networkProperties.epochAdjustment),
+				aggregateHash: EMPTY_AGGREGATE_HASH
+			};
+			const aggregateBondedTransaction = {
 				type: TransactionType.AGGREGATE_BONDED,
 				innerTransactions: [transferTransaction],
 				signerPublicKey: currentAccount.publicKey,
-				fee: createFee(fee, networkProperties),
-				deadline: createDeadline(48, networkProperties.epochAdjustment)
+				signerAddress: currentAccount.address,
+				fee: fee ?? createTransactionFee(networkProperties, '0'),
+				deadline: createDeadline(MULTISIG_TRANSACTION_DEADLINE_HOURS, networkProperties.epochAdjustment)
 			};
+
+			return new TransactionBundle(
+				[hashLockTransaction, aggregateBondedTransaction], 
+				{ type: TransactionBundleType.MULTISIG_TRANSFER }
+			);
 		}
 
 		// If not a multisig transaction, return transfer transaction
-		transferTransaction.fee = createFee(fee, networkProperties);
+		transferTransaction.fee = fee ?? createTransactionFee(networkProperties, '0');
 
-		return transferTransaction;
+		return new TransactionBundle([transferTransaction], { type: TransactionBundleType.DEFAULT });
 	};
 
 	/**
-     * Decrypts the message payload of a transaction.
-     * @param {Transaction} transaction - The transaction.
-     * @param {string} [password] - The wallet password.
-     * @returns {string} The decrypted message text.
-     */
+	 * Decrypts the message payload of a transaction.
+	 * @param {Transaction} transaction - The transaction.
+	 * @param {string} [password] - The wallet password.
+	 * @returns {string} The decrypted message text.
+	 */
 	getDecryptedMessageText = async (transaction, password) => {
 		const { currentAccount, networkProperties } = this.#walletController;
 
@@ -130,7 +164,7 @@ export class TransferModule {
 
 		const { message, recipientAddress, signerPublicKey } = transaction;
 
-		if (!message.type === MessageType.EncryptedText) 
+		if (!message.type === MessageType.EncryptedText)
 			return message.payload;
 
 		if (isIncomingTransaction(transaction, currentAccount))
