@@ -152,7 +152,7 @@ const aggregateTransactionToSymbol = (transaction, config) => {
 	let descriptor;
 	if (transaction.type === TransactionType.AGGREGATE_BONDED) {
 		descriptor = {
-			type: 'aggregate_bonded_transaction_v2',
+			type: 'aggregate_bonded_transaction_v3',
 			signerPublicKey: mapSignerPublicKey(transaction.signerPublicKey),
 			fee: mapFee(transaction.fee),
 			deadline: mapDeadline(transaction.deadline),
@@ -161,7 +161,7 @@ const aggregateTransactionToSymbol = (transaction, config) => {
 		};
 	} else {
 		descriptor = {
-			type: 'aggregate_complete_transaction_v2',
+			type: 'aggregate_complete_transaction_v3',
 			signerPublicKey: mapSignerPublicKey(transaction.signerPublicKey),
 			fee: mapFee(transaction.fee),
 			deadline: mapDeadline(transaction.deadline),
