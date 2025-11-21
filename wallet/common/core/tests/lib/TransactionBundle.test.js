@@ -4,7 +4,6 @@ const createTransaction = (index = 1, overrides = {}) => ({
 	type: 'transfer',
 	signerPublicKey: `pubkey-${index}`,
 	signerAddress: `address-${index}`,
-	fee: 0,
 	...overrides
 });
 const createSignedTransaction = (index = 1) => ({
@@ -12,6 +11,7 @@ const createSignedTransaction = (index = 1) => ({
 	hash: `hash-${index}`
 });
 const createFeeTiers = (slow, medium, fast) => ({ slow, medium, fast });
+const createFeeToken = (divisibility, amount) => ({ token: { amount, divisibility } });
 
 describe('TransactionBundle', () => {
 	describe('constructor', () => {
@@ -183,6 +183,55 @@ describe('TransactionBundle', () => {
 			// Assert:
 			expect(bundle.transactions).toStrictEqual(transactions);
 			expect(bundle.metadata).toStrictEqual(metadata);
+		});
+	});
+
+	describe('get totalFeeAmount', () => {
+		const runTotalFeeAmountTest = async (config, expected) => {
+			// Arrange:
+			const { transactions } = config;
+			const bundle = new TransactionBundle(transactions);
+
+			// Act:
+			const {totalFeeAmount} = bundle;
+
+			// Assert:
+			expect(totalFeeAmount).toBe(expected.totalFeeAmount);
+		};
+
+		it('returns "0" when first transaction has no fee', async () => {
+			// Arrange:
+			const transactions = [createTransaction(1), createTransaction(2)];
+			const expected = { totalFeeAmount: '0' };
+
+			// Act & Assert:
+			await runTotalFeeAmountTest({ transactions }, expected);
+		});
+
+		it('sums fees across multiple transactions with the same divisibility', async () => {
+			// Arrange:
+			const divisibility = 6;
+			const transactions = [
+				createTransaction(1, { fee: createFeeToken(divisibility, '1.234567') }),
+				createTransaction(2, { fee: createFeeToken(divisibility, '2.765432') })
+			];
+			const expected = { totalFeeAmount: '3.999999' };
+
+			// Act & Assert:
+			await runTotalFeeAmountTest({ transactions }, expected);
+		});
+
+		it('sums large fractional fees precisely', async () => {
+			// Arrange:
+			const divisibility = 6;
+			const transactions = [
+				createTransaction(1, { fee: createFeeToken(divisibility, '123456789.123456') }),
+				createTransaction(2, { fee: createFeeToken(divisibility, '987654321.876543') })
+			];
+			const expected = { totalFeeAmount: '1111111110.999999' };
+
+			// Act & Assert:
+			await runTotalFeeAmountTest({ transactions }, expected);
 		});
 	});
 });

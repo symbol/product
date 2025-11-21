@@ -3,6 +3,8 @@
 /** @typedef {import('../../types/Transaction').TransactionFeeTiers} TransactionFeeTiers */
 /** @typedef {import('../../types/Transaction').TransactionFeeTierLevel} TransactionFeeTierLevel */
 
+import { safeOperationWithRelativeAmounts } from '../../utils/convert';
+
 export class TransactionBundle {
 	/**
      * @param {Array<Transaction|SignedTransaction>} transactions - Array of transactions.
@@ -46,6 +48,25 @@ export class TransactionBundle {
      */
 	get firstTransaction() {
 		return this._transactions[0] || null;
+	}
+
+	/**
+	 * Calculate the total fee amount for all transactions in the bundle.
+	 * Expected that all transactions have fees in the same token.
+	 * @returns {string} The total fee amount as a string.
+	 */
+	get totalFeeAmount() {
+		if (!this.firstTransaction.fee)
+			return '0';
+
+		const add = (...args) => args.reduce((a, b) => a + b, 0n);
+		const { divisibility } = this.firstTransaction.fee.token;
+		
+		return safeOperationWithRelativeAmounts(
+			divisibility,
+			this.transactions.map(transactions => transactions.fee.token.amount),
+			add
+		);
 	}
 
 	/**
