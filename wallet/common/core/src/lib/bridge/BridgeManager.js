@@ -328,10 +328,15 @@ export class BridgeManager {
 
 			return this.#estimationFromDto(estimationDto, { targetToken });
 		} catch (error) {
+			/* eslint-disable-next-line max-len */
+			const isAmountHighError = error.message === 'eth_estimateGas RPC call failed: execution reverted: ERC20: transfer amount exceeds balance';
+
+			if (!isAmountHighError)
+				throw error;
+
 			return {
 				error: {
-					/* eslint-disable-next-line max-len */
-					isAmountHigh: error.message === 'eth_estimateGas RPC call failed: execution reverted: ERC20: transfer amount exceeds balance'
+					isAmountHigh: true
 				}
 			};
 		}
