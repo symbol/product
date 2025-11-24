@@ -39,3 +39,20 @@ class DatabaseConnectionTest(unittest.TestCase):
 			cursor.execute('SELECT 1')
 			result = cursor.fetchone()
 			self.assertEqual(result[0], 1)
+
+	def test_connect_database_with_invalid_config_raises_error(self):
+		# Arrange:
+		invalid_config = DatabaseConfig(
+			database='invalid_db',
+			user='invalid_user',
+			password='invalid_password',
+			host='invalid_host',
+			port=9999
+		)
+
+		database_connection = DatabaseConnection(invalid_config)
+
+		# Act & Assert:
+		with self.assertRaises(psycopg2.OperationalError):
+			with database_connection:
+				pass # connection failure should raise error
