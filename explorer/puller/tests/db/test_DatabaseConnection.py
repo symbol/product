@@ -55,4 +55,4 @@ class DatabaseConnectionTest(unittest.TestCase):
 		# Act & Assert:
 		with self.assertRaises(psycopg2.OperationalError):
 			with database_connection:
-				pass # connection failure should raise error
+				pass  # connection failure should raise error
