@@ -5,6 +5,16 @@ The changelog format is based on [Keep a Changelog](https://keepachangelog.com/e
 
 ## next
 
+## [0.2.3] - 26 Nov-2025
+
+### Added
+- add Japanese Language support.
+
+### Fixed
+- Shoestring command would fail with the incorrect error message when config file was not found.  It now reports file not found.
+- Shoestring fails to connect to HTTPS node when renew voting keys.
+- Docker 29 reduce open file soft limit to 1024.  Increase it back to the original value.
+
 ## [0.2.2] - 23 Sept-2025
 
 ### Added
@@ -35,6 +45,7 @@ The changelog format is based on [Keep a Changelog](https://keepachangelog.com/e
 - fix openssl generating x509 v3 certificates by explicitly specify x509_extensions
 - health check was failing nodes with https REST due to accessing wrong property from context.  the health agent node using domain name when available.
 
+[0.2.3]: https://github.com/symbol/product/releases/tag/tools%2Fshoestring%2Fv0.2.2...tools%2Fshoestring%2Fv0.2.3
 [0.2.2]: https://github.com/symbol/product/releases/tag/tools%2Fshoestring%2Fv0.2.1...tools%2Fshoestring%2Fv0.2.2
 [0.2.1]: https://github.com/symbol/product/releases/tag/tools%2Fshoestring%2Fv0.1.3...tools%2Fshoestring%2Fv0.2.1
 [0.1.3]: https://github.com/symbol/product/releases/tag/tools%2Fshoestring%2Fv0.1.3
