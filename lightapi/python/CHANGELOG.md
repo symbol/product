@@ -8,15 +8,15 @@ The changelog format is based on [Keep a Changelog](https://keepachangelog.com/e
 ## [0.0.8] - 26 Nov-2025
 
 ### Added
-- added new NemConnector endpoints
+- Add new endpoints to the NemConnector
   - local/chain/blocks-after
   - local/block/at
-- add function, try_wait_for_announced_transaction, to announce transaction to connector that trys to wait to a desired transaction state
-- add function, mosaic_fee_information, to get mosaic fee information to NemConnector
-- add function, query_block_timestamps, to query block timestamps
-- add function, transaction_confirmed, to get confirmed transactions
-- add function, balance, to connector class to retrieve balance of an account
-- add the following functions to the connectors
+- Add function, try_wait_for_announced_transaction, to announce a transaction.  The function will try to wait for the desired transaction state; otherwise, it will fail.
+- Add function, mosaic_fee_information, to get mosaic fee information to NemConnector
+- Add function, query_block_timestamps, to query block timestamps
+- Add function, transaction_confirmed, to get confirmed transactions
+- Add function, balance, to the connector class to retrieve the balance of an account
+- Add the following functions to the connectors
   - finalized_chain_height (both)
   - block_headers (NEM)
   - transaction_statuses (Symbol)
@@ -28,13 +28,11 @@ The changelog format is based on [Keep a Changelog](https://keepachangelog.com/e
 
 ### Changed
 - NemConnector can only retrieve currency balance, add logic for querying arbitrary mosaic balance
-- update get_incoming_transactions_from to filter by start and end height
-- change BasicConnector to allow 404 to be optionally treated as errors
+- Change BasicConnector to allow 404 to be optionally treated as errors
 
 ### Fixed
-- raise InsufficientBalanceException if transaction fails due to low account balance.
-- upstream code can't differentiate transient and permanent HTTP errors. add HttpException subclass with http_status_code.
-
+- Raise InsufficientBalanceException if the transaction fails due to a low account balance.
+- Upstream code can't differentiate transient and permanent HTTP errors. Add HttpException subclass with http_status_code.
 ## [0.0.7] - 03 Mar-2025
 
 ### Added
