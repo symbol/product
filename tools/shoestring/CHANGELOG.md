@@ -11,9 +11,9 @@ The changelog format is based on [Keep a Changelog](https://keepachangelog.com/e
 - add Japanese Language support.
 
 ### Fixed
-- Shoestring command would fail with the incorrect error message when config file was not found.  It now reports file not found.
-- Shoestring fails to connect to HTTPS node when renew voting keys.
-- Docker 29 reduce open file soft limit to 1024.  Increase it back to the original value.
+- Shoestring command would fail with the incorrect error message when the configuration file was not found.  It now reports file not found.
+- Shoestring fails to connect to the HTTPS node when renewing voting keys.  Set the correct protocol when the port is 3001.
+- Docker 29 reduces the open file soft limit to 1024.  Increase it back to the original value.
 
 ## [0.2.2] - 23 Sept-2025
 
