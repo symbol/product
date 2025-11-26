@@ -22,12 +22,6 @@ BlockRecord = namedtuple('BlockRecord', [
 DatabaseConfig = namedtuple('DatabaseConfig', ['database', 'user', 'password', 'host', 'port'])
 
 
-def convert_timestamp_to_datetime(facade, timestamp):
-	"""Formats a NEM network timestamp to UTC."""
-
-	return facade.network.datetime_converter.to_datetime(timestamp).strftime('%Y-%m-%d %H:%M:%S+00:00')
-
-
 class NemPuller:
 	"""Facade for pulling data from NEM network."""
 
@@ -45,10 +39,15 @@ class NemPuller:
 		self.nem_connector = NemConnector(node_url, network)
 		self.nem_facade = NemFacade(str(network))
 
+	def _convert_timestamp_to_datetime(self, timestamp):
+		"""Formats a NEM network timestamp to UTC."""
+
+		return self.nem_facade.network.datetime_converter.to_datetime(timestamp).strftime('%Y-%m-%d %H:%M:%S+00:00')
+
 	def _process_block(self, cursor, block_data):
 		"""Process block data."""
 
-		timestamp = convert_timestamp_to_datetime(self.nem_facade, block_data.timestamp)
+		timestamp = self._convert_timestamp_to_datetime(block_data.timestamp)
 		total_fees = sum(transaction.fee for transaction in block_data.transactions)
 
 		block = BlockRecord(
