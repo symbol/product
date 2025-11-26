@@ -27,7 +27,7 @@ The changelog format is based on [Keep a Changelog](https://keepachangelog.com/e
   - announce_transaction
 
 ### Changed
-- NemConnector could only retrieve Currency balance, but now the balance of arbitrary mosaic can be queried. 
+- NemConnector could only retrieve native currency balance(XYM or XEM), but now the balance of arbitrary mosaics can be queried. 
 - Change BasicConnector to allow 404 to be optionally treated as errors.
 
 ### Fixed
