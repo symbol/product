@@ -1,5 +1,7 @@
 import configparser
+import threading
 from collections import namedtuple
+from queue import Empty, Queue
 
 from symbolchain.facade.NemFacade import NemFacade
 from symbolchain.nem.Network import Network
@@ -44,6 +46,17 @@ class NemPuller:
 
 		return self.nem_facade.network.datetime_converter.to_datetime(timestamp).strftime('%Y-%m-%d %H:%M:%S+00:00')
 
+	def _commit_blocks(self, message=None):
+		"""Commit blocks to database with error handling."""
+
+		try:
+			self.nem_db.connection.commit()
+			if message:
+				log.info(message)
+		except Exception as error:
+			log.error(f'Commit error: {error}')
+			raise
+
 	def _process_block(self, cursor, block_data):
 		"""Process block data."""
 
@@ -65,41 +78,102 @@ class NemPuller:
 		self.nem_db.insert_block(cursor, block)
 
 	async def sync_nemesis_block(self):
-		"""Sync the Nemesis block."""
+		"""Sync and write Nemesis block to database."""
 
 		nemesis_block = await self.nem_connector.get_block(1)
 
-		# initialize cursor
 		cursor = self.nem_db.connection.cursor()
-
-		print('Syncing Nemesis block')
 
 		self._process_block(cursor, nemesis_block)
 
-		# commit changes
-		self.nem_db.connection.commit()
+		self._commit_blocks('Committed Nemesis block')
 
-		log.info('added block from height 1')
+	def _db_writer(self, block_queue, stop_event, batch_size=50):
+		"""
+		Consumer blocks from queue and write to database in batches.
+		"""
 
-	async def sync_blocks(self, db_height, chain_height):
-		"""Sync network blocks."""
+		cursor = self.nem_db.connection.cursor()
+		processed = 0
 
-		# sync network blocks in database
-		while chain_height > db_height:
+		log.info('DB writer thread started')
 
-			blocks = await self.nem_connector.get_blocks_after(db_height)
+		try:
+			while not stop_event.is_set():
+				try:
+					# retrieve block with timeout
+					block = block_queue.get(timeout=1.0)
+				except Empty:
+					continue
 
-			# initialize cursor
-			cursor = self.nem_db.connection.cursor()
+				if stop_event.is_set():
+					block_queue.task_done()
+					break
 
-			for block in blocks:
-				print(f'Syncing block height: {block}')
+				# Process and insert block
 				self._process_block(cursor, block)
+				processed += 1
 
-			# commit changes
-			self.nem_db.connection.commit()
+				# Batch commits
+				if processed % batch_size == 0:
+					self._commit_blocks(f'Committed {processed} blocks')
 
-			db_height = blocks[-1].height
-			first_block_height = blocks[0].height
+				block_queue.task_done()
 
-			log.info(f'added block from height {first_block_height} - {db_height}')
+			# Final commit for remaining blocks
+			if processed % batch_size != 0:
+				self._commit_blocks()
+
+			log.info(f'Database thread: {processed} blocks inserted')
+
+		except Exception as error:
+			log.error(f'Database thread error: {error}')
+			raise
+
+	async def sync_blocks(self, db_height, chain_height, queue_size=200, batch_size=50):
+		"""sync blocks from NEM network."""
+
+		stop_event = threading.Event()
+		block_queue = Queue(maxsize=queue_size)
+
+		# Start database thread FIRST
+		db_thread = threading.Thread(
+			target=self._db_writer,
+			args=(block_queue, stop_event, batch_size),
+			daemon=True
+		)
+		db_thread.start()
+
+		log.info('Starting block sync...')
+
+		try:
+			while chain_height > db_height:
+				blocks = await self.nem_connector.get_blocks_after(db_height)
+
+				if not blocks:
+					log.info('No more blocks to fetch')
+					break
+
+				for block in blocks:
+					block_queue.put(block)
+
+				last_block_height = blocks[-1].height
+				first_block_height = blocks[0].height
+
+				db_height = last_block_height
+
+				log.info(f'fetch block from height {first_block_height} - {last_block_height}')
+
+			# Wait for all blocks to be processed
+			block_queue.join()
+
+			# Stop database thread
+			stop_event.set()
+			db_thread.join(timeout=10)
+
+			log.info('Block sync complete')
+
+		except Exception as error:
+			log.error(f'Sync error: {error}')
+			stop_event.set()
+			raise
