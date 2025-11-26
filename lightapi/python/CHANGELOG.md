@@ -33,6 +33,7 @@ The changelog format is based on [Keep a Changelog](https://keepachangelog.com/e
 ### Fixed
 - Raise InsufficientBalanceException if the transaction fails due to a low account balance.
 - Upstream code can't differentiate transient and permanent HTTP errors. Add HttpException subclass with http_status_code.
+
 ## [0.0.7] - 03 Mar-2025
 
 ### Added
