@@ -27,8 +27,8 @@ The changelog format is based on [Keep a Changelog](https://keepachangelog.com/e
   - announce_transaction
 
 ### Changed
-- NemConnector can only retrieve currency balance, add logic for querying arbitrary mosaic balance
-- Change BasicConnector to allow 404 to be optionally treated as errors
+- NemConnector could only retrieve Currency balance, but now the balance of arbitrary mosaic can be queried. 
+- Change BasicConnector to allow 404 to be optionally treated as errors.
 
 ### Fixed
 - Raise InsufficientBalanceException if the transaction fails due to a low account balance.
