@@ -49,13 +49,9 @@ class NemPuller:
 	def _commit_blocks(self, message=None):
 		"""Commit blocks to database with error handling."""
 
-		try:
-			self.nem_db.connection.commit()
-			if message:
-				log.info(message)
-		except Exception as error:
-			log.error(f'Commit error: {error}')
-			raise
+		self.nem_db.connection.commit()
+		if message:
+			log.info(message)
 
 	def _process_block(self, cursor, block_data):
 		"""Process block data."""
@@ -106,10 +102,6 @@ class NemPuller:
 				except Empty:
 					continue
 
-				if stop_event.is_set():
-					block_queue.task_done()
-					break
-
 				# Process and insert block
 				self._process_block(cursor, block)
 				processed += 1
@@ -149,10 +141,6 @@ class NemPuller:
 		try:
 			while chain_height > db_height:
 				blocks = await self.nem_connector.get_blocks_after(db_height)
-
-				if not blocks:
-					log.info('No more blocks to fetch')
-					break
 
 				for block in blocks:
 					block_queue.put(block)
