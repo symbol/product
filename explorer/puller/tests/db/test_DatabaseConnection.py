@@ -40,7 +40,9 @@ class DatabaseConnectionTest(unittest.TestCase):
 			result = cursor.fetchone()
 			self.assertEqual(result[0], 1)
 
-		self.assertEqual(database_connection.connection.closed, 0)  # Connection should be closed after exiting context
+		# 0 = connection open
+		# 1 = connection closed
+		self.assertEqual(database_connection.connection.closed, 1)  # Connection should be closed after exiting context
 
 	def test_connect_database_with_invalid_config_raises_error(self):
 		# Arrange:
