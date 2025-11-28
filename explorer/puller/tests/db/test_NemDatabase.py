@@ -84,7 +84,7 @@ class NemDatabaseTest(unittest.TestCase):
 				'''
 				SELECT
 					height,
-					timestamp AT TIME ZONE 'UTC',
+					timestamp,
 					total_fees,
 					total_transactions,
 					difficulty,
