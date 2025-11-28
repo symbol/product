@@ -1,13 +1,16 @@
 import asyncio
+import datetime
 import tempfile
+import threading
 import unittest
-from unittest.mock import Mock, patch
+from queue import Queue
+from unittest.mock import patch
 
 import testing.postgresql
 from symbollightapi.model.Block import Block
 from symbollightapi.model.Transaction import TransferTransaction
 
-from puller.facade.NemPuller import BlockRecord, DatabaseConfig, NemPuller
+from puller.facade.NemPuller import DatabaseConfig, NemPuller
 
 # region test data
 
@@ -32,9 +35,12 @@ NEM_CONNECTOR_RESPONSE_BLOCKS = [
 			),
 		],
 		100,
-		'block_hash_placeholder',
-		'signer_hash_placeholder',
-		'signature_hash_placeholder',
+		'1dd9d4d7b6af603d29c082f9aa4e123f07d18154ddbcd7ddc6702491b854c5e4',
+		'f9bd190dd0c364261f5c8a74870cc7f7374e631352293c62ecc437657e5de2cd',
+		(
+			'fdf6a9830e9320af79123f467fcb03d6beab735575ff50eab363d812c5581436'
+			'2ad7be0503db2ee70e60ac3408d83cdbcbd941067a6df703e0c21c7bf389f105'
+		),
 		345
 	),
 	Block(
@@ -42,9 +48,12 @@ NEM_CONNECTOR_RESPONSE_BLOCKS = [
 		88999,
 		[],
 		200,
-		'block_hash_placeholder',
-		'signer_hash_placeholder',
-		'signature_hash_placeholder',
+		'9708256e8a8dfb76eed41dcfa2e47f4af520b7b3286afb7f60dca02851f8a53e',
+		'45c1553fb1be7f25b6f79278b9ede1129bb9163f3b85883ea90f1c66f497e68b',
+		(
+			'919ae66a34119b49812b335827b357f86884ab08b628029fd6e8db3572faeb4f'
+			'323a7bf9488c76ef8faa5b513036bbcce2d949ba3e41086d95a54c0007403c0b'
+		),
 		168
 	),
 ]
@@ -58,9 +67,6 @@ class NemPullerTest(unittest.TestCase):
 		self.postgresql = testing.postgresql.Postgresql()
 		self.config_ini = self.create_temp_config_file(DatabaseConfig(**self.postgresql.dsn(), password=''))
 		self.puller = NemPuller('http://localhost:7890', self.config_ini, 'testnet')
-		self.puller.nem_db.connection = Mock()
-		self.puller.nem_db.insert_block = Mock()
-		self.puller.nem_db.connection.cursor.return_value = Mock()
 
 	def tearDown(self):
 		# Destroy the temporary PostgreSQL database
@@ -88,108 +94,177 @@ class NemPullerTest(unittest.TestCase):
 		self.assertIsNotNone(puller.nem_facade)
 		self.assertEqual(str(puller.nem_facade.network), expected_network_str)
 
-	def test_create_testnet_puller_instance(self):
+	def test_create_default_puller_instance(self):
 		# Act:
-		puller = NemPuller('http://localhost:7890', self.config_ini, 'testnet')
-
-		# Assert
-		self._assert_puller_instance(puller, 'testnet')
-
-	def test_create_mainnet_puller_instance(self):
-		# Act:
-		puller = NemPuller('http://localhost:7890', self.config_ini, 'mainnet')
+		puller = NemPuller('http://localhost:7890', self.config_ini)
 
 		# Assert
 		self._assert_puller_instance(puller, 'mainnet')
+
+	def test_create_testnet_puller_instance(self):
+		# Act + Assert:
+		self._assert_puller_instance(self.puller, 'testnet')
+
+	def _query_fetch_blocks(self, facade, where_clause='', params=None):  # pylint: disable=no-self-use
+		cursor = facade.nem_db.connection.cursor()
+
+		query = (
+			'SELECT height, timestamp, '
+			'total_fees, total_transactions, difficulty, '
+			'encode(hash, \'hex\'), encode(signer, \'hex\'), encode(signature, \'hex\'), size '
+			'FROM blocks'
+		)
+
+		if where_clause:
+			query += f' {where_clause}'
+
+		cursor.execute(query, params or ())
+		results = cursor.fetchall()
+
+		return results
 
 	@patch('puller.facade.NemPuller.NemConnector.get_block')
 	def test_can_sync_nemesis_block(self, mock_get_block):
 		# Arrange:
 		mock_get_block.return_value = NEM_CONNECTOR_RESPONSE_BLOCKS[0]
 
-		# Act:
-		asyncio.run(self.puller.sync_nemesis_block())
+		with self.puller.nem_db as databases:
+			databases.create_tables()
 
-		# Assert:
-		self.puller.nem_db.connection.cursor.assert_called_once()
-		self.puller.nem_db.connection.commit.assert_called_once()
-		self.puller.nem_db.insert_block.assert_called_once()
+			asyncio.run(self.puller.sync_nemesis_block())
 
-		call_args = self.puller.nem_db.insert_block.call_args
-		_, processed_block_1 = call_args[0]
-
-		self.assertEqual(
-			BlockRecord(
+			# Assert:
+			results = self._query_fetch_blocks(self.puller, 'WHERE height = %s', (1, ))
+			self.assertEqual(results[0], (
 				1,
-				'2015-03-29 22:02:41+00:00',
+				datetime.datetime(2015, 3, 29, 22, 2, 41),
 				9000000,
 				1,
 				100,
-				'block_hash_placeholder',
-				'signer_hash_placeholder',
-				'signature_hash_placeholder',
+				'1dd9d4d7b6af603d29c082f9aa4e123f07d18154ddbcd7ddc6702491b854c5e4',
+				'f9bd190dd0c364261f5c8a74870cc7f7374e631352293c62ecc437657e5de2cd',
+				(
+					'fdf6a9830e9320af79123f467fcb03d6beab735575ff50eab363d812c5581436'
+					'2ad7be0503db2ee70e60ac3408d83cdbcbd941067a6df703e0c21c7bf389f105'
+				),
 				345
-			), processed_block_1)
+			))
 
 	@patch('puller.facade.NemPuller.NemConnector.get_blocks_after')
 	def test_can_sync_blocks(self, mock_get_blocks_after):
 		# Arrange:
 		mock_get_blocks_after.return_value = NEM_CONNECTOR_RESPONSE_BLOCKS
 
-		# Act:
-		asyncio.run(self.puller.sync_blocks(0, 2))
+		with self.puller.nem_db as databases:
+			databases.create_tables()
 
-		# Assert:
-		self.puller.nem_db.connection.cursor.assert_called_once()
-		self.puller.nem_db.connection.commit.assert_called_once()
-		self.assertEqual(self.puller.nem_db.insert_block.call_count, 2)
-
-		call_args = self.puller.nem_db.insert_block.call_args_list
-
-		_, processed_block_1 = call_args[0][0]
-		_, processed_block_2 = call_args[1][0]
-
-		self.assertEqual(
-			BlockRecord(
+			# Act:
+			asyncio.run(self.puller.sync_blocks(0, 2))
+			# Assert:
+			results = self._query_fetch_blocks(self.puller)
+			self.assertEqual(len(results), 2)
+			self.assertEqual(results[0], (
 				1,
-				'2015-03-29 22:02:41+00:00',
+				datetime.datetime(2015, 3, 29, 22, 2, 41),
 				9000000,
 				1,
 				100,
-				'block_hash_placeholder',
-				'signer_hash_placeholder',
-				'signature_hash_placeholder',
+				'1dd9d4d7b6af603d29c082f9aa4e123f07d18154ddbcd7ddc6702491b854c5e4',
+				'f9bd190dd0c364261f5c8a74870cc7f7374e631352293c62ecc437657e5de2cd',
+				(
+					'fdf6a9830e9320af79123f467fcb03d6beab735575ff50eab363d812c5581436'
+					'2ad7be0503db2ee70e60ac3408d83cdbcbd941067a6df703e0c21c7bf389f105'
+				),
 				345
-			), processed_block_1)
-		self.assertEqual(
-			BlockRecord(
+			))
+			self.assertEqual(results[1], (
 				2,
-				'2015-03-30 00:49:44+00:00',
+				datetime.datetime(2015, 3, 30, 0, 49, 44),
 				0,
 				0,
 				200,
-				'block_hash_placeholder',
-				'signer_hash_placeholder',
-				'signature_hash_placeholder',
+				'9708256e8a8dfb76eed41dcfa2e47f4af520b7b3286afb7f60dca02851f8a53e',
+				'45c1553fb1be7f25b6f79278b9ede1129bb9163f3b85883ea90f1c66f497e68b',
+				(
+					'919ae66a34119b49812b335827b357f86884ab08b628029fd6e8db3572faeb4f'
+					'323a7bf9488c76ef8faa5b513036bbcce2d949ba3e41086d95a54c0007403c0b'
+				),
 				168
-			), processed_block_2)
-
-	def _assert_skip_sync_blocks(self, db_height, chain_height):
-		# Act:
-		asyncio.run(self.puller.sync_blocks(db_height, chain_height))
-
-		# Assert:
-		self.puller.nem_db.connection.cursor.assert_not_called()
-		self.puller.nem_db.insert_block.assert_not_called()
+			))
 
 	@patch('puller.facade.NemPuller.NemConnector.get_blocks_after')
-	def test_can_skip_sync_block_db_height_higher_than_chain_height(self, mock_get_blocks_after):
-		# Act & Assert:
-		self._assert_skip_sync_blocks(10, 5)
-		mock_get_blocks_after.assert_not_called()
+	@patch('puller.facade.NemPuller.log')
+	def test_sync_blocks_raise_error_connector_fail(self, mock_log, mock_get_blocks_after):
+		# Arrange:
+		mock_get_blocks_after.side_effect = Exception('fail to get blocks')
+
+		with self.puller.nem_db as databases:
+			databases.create_tables()
+
+			# Act & Assert:
+			with self.assertRaises(Exception):
+				asyncio.run(self.puller.sync_blocks(0, 100))
+
+			mock_log.error.assert_called_once_with('Sync error: fail to get blocks')
 
 	@patch('puller.facade.NemPuller.NemConnector.get_blocks_after')
-	def test_can_skip_sync_block_db_height_equal_to_chain_height(self, mock_get_blocks_after):
-		# Act & Assert:
-		self._assert_skip_sync_blocks(10, 10)
-		mock_get_blocks_after.assert_not_called()
+	@patch('puller.facade.NemPuller.NemPuller._commit_blocks')
+	def test_db_writer_can_commits_in_batches(self, mock_commit_blocks, mock_get_blocks_after):
+		# Arrange:
+		# Create 5 blocks to test batch commit (batch_size=2 means 2 commits + 1 final)
+		test_blocks = []
+		for i in range(1, 6):
+			test_blocks.append(
+				Block(
+					i,
+					78976 + (i * 1000),
+					[],
+					100 + i,
+					'a' * 64,  # hash
+					'b' * 64,  # signer
+					'c' * 128,  # signature
+					200
+				)
+			)
+
+		mock_get_blocks_after.return_value = test_blocks
+
+		with self.puller.nem_db as databases:
+			databases.create_tables()
+
+			# Act: Use batch_size=2 to trigger multiple commits
+			asyncio.run(self.puller.sync_blocks(0, 5, batch_size=2))
+
+			# Assert:
+			# Verify _commit_blocks was called 3 times:
+			# - After 2 blocks processed (batch commit)
+			# - After 4 blocks processed (batch commit)
+			# - Final commit for remaining block
+			self.assertEqual(mock_commit_blocks.call_count, 3)
+
+			# # Verify the commit messages
+			expected_calls = [
+				'Committed 2 blocks',
+				'Committed 4 blocks',
+				None  # Final commit has no message
+			]
+			actual_calls = [call[0][0] if call[0] else None for call in mock_commit_blocks.call_args_list]
+			self.assertEqual(actual_calls, expected_calls)
+
+	@patch('puller.facade.NemPuller.log')
+	def test_db_writer_raise_error_when_block_process_fail(self, mock_log):
+		# Arrange:
+		stop_event = threading.Event()
+		block_queue = Queue()
+
+		block_queue.put(NEM_CONNECTOR_RESPONSE_BLOCKS[0])
+
+		with self.puller.nem_db as databases:
+			databases.create_tables()
+
+			with patch.object(self.puller, '_process_block', side_effect=Exception('Process error')):
+				# Act & Assert:
+				with self.assertRaises(Exception):
+					self.puller._db_writer(block_queue, stop_event)  # pylint: disable=protected-access
+
+				mock_log.error.assert_called_once_with('Database thread error: Process error')
