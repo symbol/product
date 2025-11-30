@@ -3,7 +3,6 @@
 set -e
 
 ulimit -c unlimited
-ulimit -Sn 1048576
 
 id -a
 ls -alh /data
