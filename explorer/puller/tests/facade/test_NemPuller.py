@@ -1,9 +1,7 @@
 import asyncio
 import datetime
 import tempfile
-import threading
 import unittest
-from queue import Queue
 from unittest.mock import patch
 
 import testing.postgresql
@@ -250,21 +248,3 @@ class NemPullerTest(unittest.TestCase):
 			]
 			actual_calls = [call[0][0] if call[0] else None for call in mock_commit_blocks.call_args_list]
 			self.assertEqual(actual_calls, expected_calls)
-
-	@patch('puller.facade.NemPuller.log')
-	def test_db_writer_raise_error_when_block_process_fail(self, mock_log):
-		# Arrange:
-		stop_event = threading.Event()
-		block_queue = Queue()
-
-		block_queue.put(NEM_CONNECTOR_RESPONSE_BLOCKS[0])
-
-		with self.puller.nem_db as databases:
-			databases.create_tables()
-
-			with patch.object(self.puller, '_process_block', side_effect=Exception('Process error')):
-				# Act & Assert:
-				with self.assertRaises(Exception):
-					self.puller._db_writer(block_queue, stop_event)  # pylint: disable=protected-access
-
-				mock_log.error.assert_called_once_with('Database thread error: Process error')

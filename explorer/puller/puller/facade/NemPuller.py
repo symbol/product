@@ -1,7 +1,7 @@
 import configparser
 import threading
 from collections import namedtuple
-from queue import Empty, Queue
+from queue import Queue
 
 from symbolchain.facade.NemFacade import NemFacade
 from symbolchain.nem.Network import Network
@@ -84,7 +84,7 @@ class NemPuller:
 
 		self._commit_blocks('Committed Nemesis block')
 
-	def _db_writer(self, block_queue, stop_event, batch_size=50):
+	def _db_writer(self, block_queue, batch_size=50):
 		"""
 		Consumer blocks from queue and write to database in batches.
 		"""
@@ -94,44 +94,40 @@ class NemPuller:
 
 		log.info('DB writer thread started')
 
-		try:
-			while not stop_event.is_set():
-				try:
-					# retrieve block with timeout
-					block = block_queue.get(timeout=1.0)
-				except Empty:
-					continue
+		while True:
+			# retrieve block from queue
+			block = block_queue.get()
 
-				# Process and insert block
-				self._process_block(cursor, block)
-				processed += 1
+			# Check for sentinel value (None) to stop processing
+			if block is None:
+				log.info('Received stop signal, ending DB writer thread')
+				break
 
-				# Batch commits
-				if processed % batch_size == 0:
-					self._commit_blocks(f'Committed {processed} blocks')
+			# Process and insert block
+			self._process_block(cursor, block)
+			processed += 1
 
-				block_queue.task_done()
+			# Batch commits
+			if processed % batch_size == 0:
+				self._commit_blocks(f'Committed {processed} blocks')
 
-			# Final commit for remaining blocks
-			if processed % batch_size != 0:
-				self._commit_blocks()
+			block_queue.task_done()
 
-			log.info(f'Database thread: {processed} blocks inserted')
+		# Final commit for remaining blocks
+		if processed % batch_size != 0:
+			self._commit_blocks()
 
-		except Exception as error:
-			log.error(f'Database thread error: {error}')
-			raise
+		log.info(f'Database thread: {processed} blocks inserted')
 
 	async def sync_blocks(self, db_height, chain_height, queue_size=200, batch_size=50):
 		"""sync blocks from NEM network."""
 
-		stop_event = threading.Event()
 		block_queue = Queue(maxsize=queue_size)
 
 		# Start database thread FIRST
 		db_thread = threading.Thread(
 			target=self._db_writer,
-			args=(block_queue, stop_event, batch_size),
+			args=(block_queue, batch_size),
 			daemon=True
 		)
 		db_thread.start()
@@ -155,13 +151,13 @@ class NemPuller:
 			# Wait for all blocks to be processed
 			block_queue.join()
 
-			# Stop database thread
-			stop_event.set()
+			# Send stop signal to db_writer thread
+			block_queue.put(None)
 			db_thread.join(timeout=10)
 
 			log.info('Block sync complete')
 
 		except Exception as error:
 			log.error(f'Sync error: {error}')
-			stop_event.set()
+			block_queue.put(None)
 			raise
