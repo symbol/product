@@ -14,6 +14,6 @@ find . -type f -name "*.py" -print0 | PYTHONPATH=. xargs -0 python3 -m isort \
 	--check-only
 find . -type f -name "*.py" -print0 | PYTHONPATH=. xargs -0 python3 -m pycodestyle \
 	--config="$(git rev-parse --show-toplevel)/linters/python/.pycodestyle"
-find . -type f -name "*.py" -print0 | PYTHONPATH=.:../../lightapi/python xargs -0 python3 -m pylint \
+find . -type f -name "*.py" -print0 | PYTHONPATH=. xargs -0 python3 -m pylint \
 	--rcfile "$(git rev-parse --show-toplevel)/linters/python/.pylintrc" \
 	--disable "${PYLINT_DISABLE_COMMANDS}"
