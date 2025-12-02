@@ -23,7 +23,12 @@ describe('BridgeModule', () => {
 	});
 
 	const makeBridgeHelper = () => ({
-		createTransaction: jest.fn(async payload => ({ ok: true, payload }))
+		createTransaction: jest.fn(async payload => ({ ok: true, payload })),
+		fetchTokenInfo: jest.fn(async (_networkProps, tokenId) => ({
+			id: tokenId,
+			name: tokenId,
+			divisibility: 6
+		}))
 	});
 
 	const createTokenInfo = id => ({
@@ -74,54 +79,45 @@ describe('BridgeModule', () => {
 			expect(tokens).toEqual([]);
 		});
 
-		it('addConfig adds config and triggers onStateChange; duplicate does not', () => {
+		it('addConfig adds config for current network and triggers onStateChange', () => {
 			// Arrange:
 			const config = createConfig();
+			const bridgeId = config.bridgeAddress;
 
 			// Act:
-			moduleUnderTest.addConfig(config);
+			moduleUnderTest.addConfig(bridgeId, config);
 
 			// Assert:
 			expect(onStateChange).toHaveBeenCalledTimes(1);
-			expect(moduleUnderTest.configs.length).toBe(1);
-
-			// Act: add the same config again
-			onStateChange.mockClear();
-			moduleUnderTest.addConfig({ ...config });
-
-			// Assert:
-			expect(onStateChange).not.toHaveBeenCalled();
-			expect(moduleUnderTest.configs.length).toBe(1);
+			expect(moduleUnderTest.configs[bridgeId]).toEqual(config);
 		});
 
-		it('addConfig throws on network mismatch', () => {
-			// Arrange:
-			const bad = createConfig({ network: 'othernet' });
-
-			// Act & Assert:
-			expect(() => moduleUnderTest.addConfig(bad))
-				.toThrow('Failed to add bridge config. Network mismatch');
-		});
-
-		it('addConfig throws on chain name mismatch', () => {
-			// Arrange:
-			const bad = createConfig({ blockchain: 'other' });
-
-			// Act & Assert:
-			expect(() => moduleUnderTest.addConfig(bad))
-				.toThrow('Failed to add bridge config. Chain name mismatch');
-		});
-
-		it('getConfig returns config by bridgeAddress', () => {
+		it('getConfig returns config by bridgeId', () => {
 			// Arrange:
 			const config = createConfig();
-			moduleUnderTest.addConfig(config);
+			const bridgeId = 'BRIDGE_1';
+			moduleUnderTest.addConfig(bridgeId, config);
 
 			// Act:
-			const found = moduleUnderTest.getConfig(config.bridgeAddress);
+			const found = moduleUnderTest.getConfig(bridgeId);
 
 			// Assert:
 			expect(found).toEqual(config);
+		});
+
+		it('removeConfig removes config and triggers onStateChange', () => {
+			// Arrange:
+			const config = createConfig();
+			const bridgeId = 'BRIDGE_1';
+			moduleUnderTest.addConfig(bridgeId, config);
+			onStateChange.mockClear();
+
+			// Act:
+			moduleUnderTest.removeConfig(bridgeId);
+
+			// Assert:
+			expect(onStateChange).toHaveBeenCalledTimes(1);
+			expect(moduleUnderTest.getConfig(bridgeId)).toBeNull();
 		});
 
 		it('tokens merges unique token list across configs and returns owned balances or zero', () => {
@@ -129,9 +125,9 @@ describe('BridgeModule', () => {
 			const config1 = createConfig({ bridgeAddress: 'ADDR1', tokenInfo: createTokenInfo('72C0212E67A08BCE') });
 			const config2 = createConfig({ bridgeAddress: 'ADDR2', tokenInfo: createTokenInfo('NOT_OWNED') });
 			const config3 = createConfig({ bridgeAddress: 'ADDR3', tokenInfo: createTokenInfo('72C0212E67A08BCE') }); // duplicate token id
-			moduleUnderTest.addConfig(config1);
-			moduleUnderTest.addConfig(config2);
-			moduleUnderTest.addConfig(config3);
+			moduleUnderTest.addConfig('BRIDGE1', config1);
+			moduleUnderTest.addConfig('BRIDGE2', config2);
+			moduleUnderTest.addConfig('BRIDGE3', config3);
 
 			// Act:
 			const {tokens} = moduleUnderTest;
@@ -152,7 +148,7 @@ describe('BridgeModule', () => {
 			});
 			moduleUnderTest.init({ walletController, onStateChange, networkIdentifiers: [networkIdentifier] });
 			const config = createConfig({ tokenInfo: createTokenInfo('MOS') });
-			moduleUnderTest.addConfig(config);
+			moduleUnderTest.addConfig('BRIDGE_MOS', config);
 
 			// Act:
 			const {tokens} = moduleUnderTest;
@@ -162,66 +158,72 @@ describe('BridgeModule', () => {
 		});
 	});
 
+	describe('fetchTokenInfo', () => {
+		it('delegates to bridgeHelper with networkProperties and tokenId', async () => {
+			// Arrange:
+			const tokenId = 'TOKEN_ID';
+
+			// Act:
+			const result = await moduleUnderTest.fetchTokenInfo(tokenId);
+
+			// Assert:
+			expect(bridgeHelper.fetchTokenInfo).toHaveBeenCalledWith(networkProperties, tokenId);
+			expect(result).toEqual({
+				id: tokenId,
+				name: tokenId,
+				divisibility: 6
+			});
+		});
+	});
+
 	describe('createTransaction', () => {
 		const baseConfig = createConfig({ tokenInfo: createTokenInfo('72C0212E67A08BCE') });
+
+		beforeEach(() => {
+			// Arrange:
+			moduleUnderTest.addConfig('BRIDGE_XYM', baseConfig);
+		});
+
+		it('throws when bridge config is not found', async () => {
+			// Act & Assert:
+			await expect(moduleUnderTest.createTransaction({
+				recipientAddress: 'DEST',
+				amount: '10',
+				bridgeId: 'UNKNOWN'
+			})).rejects.toThrow('Failed to create bridge transaction. Bridge config not found');
+		});
 
 		it('throws when no current account', async () => {
 			// Arrange:
 			const wc = makeWalletController({ currentAccount: null });
 			moduleUnderTest.init({ walletController: wc, onStateChange, networkIdentifiers: [networkIdentifier] });
-			const token = { id: '72C0212E67A08BCE', name: '72C0212E67A08BCE', divisibility: 6, amount: '10' };
+			moduleUnderTest.addConfig('BRIDGE_XYM', baseConfig);
 
 			// Act & Assert:
 			await expect(moduleUnderTest.createTransaction({
 				recipientAddress: 'DEST',
-				token,
-				config: baseConfig
+				amount: '10',
+				bridgeId: 'BRIDGE_XYM'
 			})).rejects.toThrow('Failed to create bridge transaction. No current account selected');
-		});
-
-		it('throws on chain name mismatch', async () => {
-			// Arrange:
-			const badConfig = createConfig({ blockchain: 'other' });
-			const token = { id: '72C0212E67A08BCE', name: '72C0212E67A08BCE', divisibility: 6, amount: '10' };
-
-			// Act & Assert:
-			await expect(moduleUnderTest.createTransaction({
-				recipientAddress: 'DEST',
-				token,
-				config: badConfig
-			})).rejects.toThrow('Failed to create bridge transaction. Chain name mismatch');
-		});
-
-		it('throws on network mismatch', async () => {
-			// Arrange:
-			const badConfig = createConfig({ network: 'othernet' });
-			const token = { id: '72C0212E67A08BCE', name: '72C0212E67A08BCE', divisibility: 6, amount: '10' };
-
-			// Act & Assert:
-			await expect(moduleUnderTest.createTransaction({
-				recipientAddress: 'DEST',
-				token,
-				config: badConfig
-			})).rejects.toThrow('Failed to create bridge transaction. Network mismatch');
 		});
 
 		it('creates transaction via bridgeHelper with expected payload', async () => {
 			// Arrange:
+			const bridgeId = 'BRIDGE_XYM';
 			const config = baseConfig;
-			const token = {
-				id: config.tokenInfo.id,
-				name: config.tokenInfo.name,
-				divisibility: config.tokenInfo.divisibility,
-				amount: '25'
-			};
+			const amount = '25';
 			const fee = 0.123;
 			const recipientAddress = 'DEST_ADDR';
+			const expectedToken = {
+				...config.tokenInfo,
+				amount
+			};
 			const expectedOptions = {
 				currentAccount: walletController.currentAccount,
 				networkProperties,
 				recipientAddress,
 				bridgeAddress: config.bridgeAddress,
-				token,
+				token: expectedToken,
 				fee
 			};
 			const expectedResult = new TransactionBundle([{
@@ -230,7 +232,7 @@ describe('BridgeModule', () => {
 			}]);
 
 			// Act:
-			const result = await moduleUnderTest.createTransaction({ recipientAddress, token, config, fee });
+			const result = await moduleUnderTest.createTransaction({ recipientAddress, amount, bridgeId, fee });
 
 			// Assert:
 			expect(bridgeHelper.createTransaction).toHaveBeenCalledWith(expectedOptions);

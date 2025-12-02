@@ -1,5 +1,4 @@
 import { ControllerError } from '../../error/ControllerError';
-import { equalDeep } from '../../utils/helper';
 import { createNetworkMap } from '../../utils/network';
 import { TransactionBundle } from '../models/TransactionBundle';
 
@@ -7,7 +6,7 @@ import { TransactionBundle } from '../models/TransactionBundle';
 /** @typedef {import('../../types/Bridge').BridgeHelper} BridgeHelper */
 /** @typedef {import('../../types/Bridge').BridgeNetworkConfig} BridgeNetworkConfig */
 /** @typedef {import('../../types/Network').NetworkMap<string>} NetworkUrlMap */
-/** @typedef {import('../../types/Network').NetworkArrayMap<BridgeNetworkConfig>} NetworkConfigMap */
+/** @typedef {import('../../types/Network').NetworkObjectMap<BridgeNetworkConfig>} NetworkConfigMap */
 /** @typedef {import('../../types/Token').Token} Token */
 /** @typedef {import('../../types/Token').TokenInfo} TokenInfo */
 
@@ -17,7 +16,7 @@ import { TransactionBundle } from '../models/TransactionBundle';
  */
 
 const createDefaultState = networkIdentifiers => ({
-	configs: createNetworkMap(() => [], networkIdentifiers)
+	configs: createNetworkMap(() => ({}), networkIdentifiers)
 });
 
 export class BridgeModule {
@@ -69,16 +68,8 @@ export class BridgeModule {
 	};
 
 	/**
-	 * Bridge helper with protocol-specific logic.
-	 * @returns {BridgeHelper} - Bridge helper instance.
-	 */
-	get bridgeHelper() {
-		return this.#bridgeHelper;
-	}
-
-	/**
 	 * Bridge configs for the current network.
-	 * @returns {BridgeNetworkConfig[]} - List of bridge configs for the current network.
+	 * @returns {Record<string, BridgeNetworkConfig>} - Map of bridge configs for the current network. Key is bridge ID.
 	 */
 	get configs() {
 		const { networkIdentifier } = this.#walletController;
@@ -96,7 +87,7 @@ export class BridgeModule {
 		const allOwnedTokens = currentAccountInfo?.tokens || currentAccountInfo?.mosaics || [];
 		const tokensById = new Map();
 
-		this.configs.forEach(config => {
+		Object.values(this.configs).forEach(config => {
 			const { tokenInfo } = config;
 
 			if (tokensById.has(tokenInfo.id))
@@ -113,69 +104,81 @@ export class BridgeModule {
 		return Array.from(tokensById.values());
 	}
 
-
 	/**
-	 * Get bridge config for the specific bridge address.
-	 * @param {string} bridgeAddress - Bridge account or contract address.
+	 * Get bridge config by its ID for the current network.
+	 * @param {string} bridgeId - Bridge identifier.
 	 * @returns {BridgeNetworkConfig|null} - Bridge config if found, null otherwise.
 	 */
-	getConfig = bridgeAddress => {
-		const config = this.configs.find(c => c.bridgeAddress === bridgeAddress);
+	getConfig = bridgeId => {
+		const config = this.configs[bridgeId];
 
 		return config || null;
 	};
 
 	/**
-	 * Check if the specific bridge config is added to the module.
-	 * @param {BridgeNetworkConfig} configToTest - Config to check.
-	 * @returns {boolean} - True if the config is already added, false otherwise.
-	 */
-	hasConfig = configToTest => {
-		const config = this.getConfig(configToTest.bridgeAddress);
-
-		return config !== null && equalDeep(config, configToTest);
-	};
-
-	/**
-	 * Set bridge config.
+	 * Add bridge config.
+	 * @param {string} bridgeId - Bridge identifier.
 	 * @param {BridgeNetworkConfig} config - Bridge network config.
 	 */
-	addConfig = config => {
-		if (config.network !== this.#walletController.networkIdentifier)
-			throw new ControllerError('Failed to add bridge config. Network mismatch');
-
+	addConfig = (bridgeId, config) => {
 		if (config.blockchain !== this.#walletController.chainName)
 			throw new ControllerError('Failed to add bridge config. Chain name mismatch');
 
-		const isConfigAlreadyAdded = this.hasConfig(config);
+		this.#setState(() => {
+			this._state.configs[config.network] = {
+				...this._state.configs[config.network],
+				[bridgeId]: config
+			};
+		});
+	};
 
-		if (isConfigAlreadyAdded)
-			return;
+	/**
+	 * Remove bridge config from current network.
+	 * @param {string} bridgeId - Bridge identifier.
+	 */
+	removeConfig = bridgeId => {
+		const { networkIdentifier } = this.#walletController;
 
 		this.#setState(() => {
-			this._state.configs[config.network] = [...this._state.configs[config.network], config];
+			/* eslint-disable-next-line no-unused-vars */
+			const {[bridgeId]: _, ...rest} = this._state.configs[networkIdentifier];
+			this._state.configs[networkIdentifier] = rest;
 		});
+	};
+
+	/**
+	 * Retrieve token info by it's ID.
+	 * @param {string} tokenId - Token identifier.
+	 * @returns {Promise<TokenInfo>} - Token info.
+	 */
+	fetchTokenInfo = async tokenId => {
+		const { networkProperties } = this.#walletController;
+
+		return this.#bridgeHelper.fetchTokenInfo(networkProperties, tokenId);
 	};
 
 	/**
 	 * Create protocol-specific wrap or unwrap transaction via bridge helper.
 	 * @param {object} options - Options.
 	 * @param {string} options.recipientAddress - destination address to receive wrapped/unwrapped tokens
-	 * @param {Token} options.token - token to wrap/unwrap
-	 * @param {BridgeNetworkConfig} options.config - bridge source network configuration
+	 * @param {string} options.amount - amount to wrap/unwrap
+	 * @param {string} options.bridgeId - bridge identifier
 	 * @param {number} [options.fee] - transaction fee
 	 * @returns {Promise<object>} - transaction object
 	 */
 	createTransaction = async options => {
-		const { recipientAddress, token, config, fee } = options;
-		const { currentAccount, networkProperties, networkIdentifier } = this.#walletController;
+		const { recipientAddress, amount, bridgeId, fee } = options;
+		const { currentAccount, networkProperties } = this.#walletController;
 
-		// Verify bridge is in the same chain and network as the wallet controller
-		if (config.blockchain !== this.#walletController.chainName)
-			throw new ControllerError('Failed to create bridge transaction. Chain name mismatch');
+		const config = this.getConfig(bridgeId);
 
-		if (config.network !== networkIdentifier)
-			throw new ControllerError('Failed to create bridge transaction. Network mismatch');
+		if (!config)
+			throw new ControllerError('Failed to create bridge transaction. Bridge config not found');
+
+		const token = {
+			...config.tokenInfo,
+			amount
+		};
 
 		// Verify current account selected
 		if (!currentAccount)

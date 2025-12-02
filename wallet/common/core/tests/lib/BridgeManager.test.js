@@ -10,6 +10,7 @@ const ETHEREUM_TOKEN_ID = '0x5E8343A455F03109B737B6D8b410e4ECCE998cdA';
 const ETHEREUM_ACCOUNT_ADDRESS = '0xeCA7dadA410614B604FFcBE0378C05474b0aeD8D';
 
 const BRIDGE_URL = 'https://bridge.example.com';
+const BRIDGE_ID = 'symbol-ethereum-bridge';
 
 describe('BridgeManager', () => {
 	const networkIdentifier = 'testnet';
@@ -110,9 +111,7 @@ describe('BridgeManager', () => {
 		fetchAccountTransactions: jest.fn(async () => []),
 		modules: {
 			bridge: {
-				bridgeHelper: {
-					fetchTokenInfo: jest.fn(async (_props, tokenId) => createTokenInfo(tokenId))
-				},
+				fetchTokenInfo: jest.fn(async tokenId => createTokenInfo(tokenId)),
 				addConfig: jest.fn()
 			}
 		}
@@ -147,6 +146,7 @@ describe('BridgeManager', () => {
 		nativeWalletController = createNativeController();
 		wrappedWalletController = createWrappedController();
 		manager = new BridgeManager({
+			id: BRIDGE_ID,
 			nativeWalletController,
 			wrappedWalletController,
 			bridgeUrls: bridgeUrlMap,
@@ -277,14 +277,14 @@ describe('BridgeManager', () => {
 
 			// Assert:
 			expect(makeRequest).toHaveBeenCalledWith(expectedUrl);
-			expect(nativeWalletController.modules.bridge.bridgeHelper.fetchTokenInfo)
-				.toHaveBeenCalledWith(nativeWalletController.networkProperties, configResponse.nativeNetwork.tokenId);
-			expect(wrappedWalletController.modules.bridge.bridgeHelper.fetchTokenInfo)
-				.toHaveBeenCalledWith(wrappedWalletController.networkProperties, configResponse.wrappedNetwork.tokenId);
+			expect(nativeWalletController.modules.bridge.fetchTokenInfo)
+				.toHaveBeenCalledWith(configResponse.nativeNetwork.tokenId);
+			expect(wrappedWalletController.modules.bridge.fetchTokenInfo)
+				.toHaveBeenCalledWith(configResponse.wrappedNetwork.tokenId);
 			expect(nativeWalletController.modules.bridge.addConfig)
-				.toHaveBeenCalledWith(expectedNativeConfig);
+				.toHaveBeenCalledWith(BRIDGE_ID, expectedNativeConfig);
 			expect(wrappedWalletController.modules.bridge.addConfig)
-				.toHaveBeenCalledWith(expectedWrappedConfig);
+				.toHaveBeenCalledWith(BRIDGE_ID, expectedWrappedConfig);
 		});
 
 		it('throws if network identifiers do not match', async () => {
@@ -387,9 +387,9 @@ describe('BridgeManager', () => {
 			// Arrange:
 			const mode = 'wrap';
 			const searchCriteria = { pageSize: 5, pageNumber: 1 };
-			const config = { 
-				mode, 
-				searchCriteria, 
+			const config = {
+				mode,
+				searchCriteria,
 				isConfigLoaded: false,
 				isCurrentAccountSelected: true
 			};
@@ -608,10 +608,10 @@ describe('BridgeManager', () => {
 			// Arrange:
 			const mode = 'wrap';
 			const searchCriteria = { pageSize: 1, pageNumber: 1 };
-			const config = { 
-				mode, 
-				searchCriteria, 
-				isConfigLoaded: false, 
+			const config = {
+				mode,
+				searchCriteria,
+				isConfigLoaded: false,
 				isCurrentAccountSelected: true
 			};
 			const expected = { errorMessage: 'Failed to fetch errors. No bridge config fetched' };
@@ -737,7 +737,7 @@ describe('BridgeManager', () => {
 			// Arrange:
 			makeRequest.mockResolvedValueOnce(createConfigResponse());
 			await manager.load();
-			const {bridgeAddress} = manager.config.nativeNetwork;
+			const { bridgeAddress } = manager.config.nativeNetwork;
 			const lowerCaseBridge = bridgeAddress.toLowerCase();
 			const mode = 'wrap';
 			const pageSize = 2;
@@ -785,7 +785,7 @@ describe('BridgeManager', () => {
 			// Arrange:
 			makeRequest.mockResolvedValueOnce(createConfigResponse());
 			await manager.load();
-			const {bridgeAddress} = manager.config.wrappedNetwork;
+			const { bridgeAddress } = manager.config.wrappedNetwork;
 			const mixedCaseBridge = bridgeAddress.toUpperCase();
 			const mode = 'unwrap';
 			const pageSize = 3;
@@ -962,11 +962,11 @@ describe('BridgeManager', () => {
 			makeRequest.mockResolvedValueOnce(createConfigResponse());
 			await manager.load();
 
-			if (error) 
+			if (error)
 				makeRequest.mockRejectedValueOnce(error);
-			else 
+			else
 				makeRequest.mockResolvedValueOnce(estimationDto);
-            
+
 
 			// Act:
 			let result;
@@ -995,9 +995,9 @@ describe('BridgeManager', () => {
 						recipientAddress
 					})
 				};
-				if (!error) 
+				if (!error)
 					expect(makeRequest).toHaveBeenLastCalledWith(url, requestOptions);
-                
+
 				expect(result).toStrictEqual(expected.expectedResult);
 			}
 		};
@@ -1059,7 +1059,7 @@ describe('BridgeManager', () => {
 				receiveAmount: '0',
 				error: { isAmountLow: true }
 			};
-            
+
 			// Act & Assert:
 			await runEstimateRequestTest({ mode, amount, estimationDto }, { expectedResult });
 		});
@@ -1082,7 +1082,7 @@ describe('BridgeManager', () => {
 			// Arrange:
 			makeRequest.mockResolvedValueOnce(createConfigResponse());
 			await manager.load();
-			
+
 			// Act & Assert:
 			await expect(manager.estimateRequest('bad', '1'))
 				.rejects.toThrow('Invalid bridge mode: bad');
