@@ -1,4 +1,5 @@
 import { ControllerError } from '../../error/ControllerError';
+import { equalDeep } from '../../utils/helper';
 import { createNetworkMap } from '../../utils/network';
 import { TransactionBundle } from '../models/TransactionBundle';
 
@@ -132,7 +133,7 @@ export class BridgeModule {
 	hasConfig = configToTest => {
 		const config = this.getConfig(configToTest.bridgeAddress);
 
-		return config !== null && JSON.stringify(config) === JSON.stringify(configToTest);
+		return config !== null && equalDeep(config, configToTest);
 	};
 
 	/**
