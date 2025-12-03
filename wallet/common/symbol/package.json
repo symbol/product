@@ -13,7 +13,7 @@
 	"dependencies": {
 		"lodash": "^4.17.21",
 		"resolve-local-dependencies": "^1.0.2",
-		"symbol-sdk": "^3.2.3",
+		"symbol-sdk": "^3.3.0",
 		"wallet-common-core": "file:../core"
 	},
 	"devDependencies": {

@@ -37,6 +37,52 @@ export const cloneDeep = value => {
 };
 
 /**
+ * Performs a deep equality check between two values.
+ * @param {any} a - The first value.
+ * @param {any} b - The second value.
+ * @returns {boolean} - True if the values are deeply equal, false otherwise.
+ */
+export const equalDeep = (a, b) => {
+	if (a === b)
+		return true;
+
+	if (a === null || b === null || typeof a !== 'object' || typeof b !== 'object')
+		return false;
+
+	if (Array.isArray(a) || Array.isArray(b)) {
+		if (!Array.isArray(a) || !Array.isArray(b))
+			return false;
+
+		if (a.length !== b.length)
+			return false;
+
+		for (let i = 0; i < a.length; ++i) {
+			if (!equalDeep(a[i], b[i]))
+				return false;
+		}
+
+		return true;
+	}
+
+	const aKeys = Object.keys(a);
+	const bKeys = Object.keys(b);
+
+	if (aKeys.length !== bKeys.length)
+		return false;
+
+	for (const key of aKeys) {
+		if (!Object.hasOwn(b, key))
+			return false;
+
+		if (!equalDeep(a[key], b[key]))
+			return false;
+	}
+
+	return true;
+};
+
+
+/**
  * Validates object fields against a list of required fields.
  * @param {object} obj - The object to validate.
  * @param {{key: string, type: string}[]} fields - The list of required field names.

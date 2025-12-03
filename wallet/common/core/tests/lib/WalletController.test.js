@@ -20,7 +20,9 @@ const defaultParameters = {
 		},
 		transaction: {
 			fetchAccountTransactions: jest.fn().mockResolvedValue([]),
-			announceTransaction: jest.fn().mockResolvedValue()
+			fetchTransactionStatus: jest.fn().mockResolvedValue({}),
+			announceTransaction: jest.fn().mockResolvedValue(),
+			announceTransactionBundle: jest.fn().mockResolvedValue()
 		},
 		network: {
 			pingNode: jest.fn().mockResolvedValue(true),
@@ -33,6 +35,7 @@ const defaultParameters = {
 	},
 	sdk: {
 		signTransaction: jest.fn().mockResolvedValue({}),
+		signTransactionBundle: jest.fn().mockResolvedValue({}),
 		cosignTransaction: jest.fn().mockResolvedValue({}),
 		encryptMessage: jest.fn().mockResolvedValue(''),
 		decryptMessage: jest.fn().mockResolvedValue(''),
@@ -647,6 +650,52 @@ describe('WalletController', () => {
 		});
 	});
 
+	describe('other network API proxy methods', () => {
+		const apiMethodsTestConfig = [
+			{
+				controllerMethodName: 'fetchTransactionStatus',
+				controllerMethodArguments: ['hash-123'],
+				apiNamespaceName: 'transaction',
+				apiMethodName: 'fetchTransactionStatus'
+			},
+			{
+				controllerMethodName: 'announceSignedTransaction',
+				controllerMethodArguments: ['signed-transaction-object', 'group'],
+				apiNamespaceName: 'transaction',
+				apiMethodName: 'announceTransaction'
+			},
+			{
+				controllerMethodName: 'announceSignedTransactionBundle',
+				controllerMethodArguments: ['signed-transaction-bundle-object', 'group'],
+				apiNamespaceName: 'transaction',
+				apiMethodName: 'announceTransactionBundle'
+			}
+		];
+		const runNetworkApiProxyTests = async config => {
+			// Arrange:
+			const { controllerMethodName, controllerMethodArguments, apiNamespaceName, apiMethodName } = config;
+			describe(`${controllerMethodName}()`, () => {
+				it(`calls api.${apiNamespaceName}.${apiMethodName}() with correct arguments`, async () => {
+					walletController._state = cloneDeep(filledState);
+					const expectedReturnValue = { data: 'test data' };
+					jest.spyOn(walletController._api[apiNamespaceName], apiMethodName)
+						.mockResolvedValue(expectedReturnValue);
+
+					// Act:
+					const result = await walletController[controllerMethodName](...controllerMethodArguments);
+
+					// Assert:
+					expect(result).toStrictEqual(expectedReturnValue);
+					expect(walletController._api[apiNamespaceName][apiMethodName])
+						.toHaveBeenCalledWith(walletController._state.networkProperties, ...controllerMethodArguments);
+				});
+			});
+		};
+
+		apiMethodsTestConfig.forEach(runNetworkApiProxyTests);
+	});
+
+
 	describe('getMnemonic()', () => {
 		it('throws an error when keystore is not accessible', async () => {
 			await runAccessKeystoreErrorTest('mnemonic', 'getMnemonic', []);
@@ -696,6 +745,13 @@ describe('WalletController', () => {
 				keystoreMethodName: 'signTransaction',
 				createKeystoreMethodArgs: walletController =>
 					[walletController.networkProperties, 'transaction', walletController.currentAccount]
+			},
+			{
+				controllerMethodName: 'signTransactionBundle',
+				controllerMethodArguments: ['transactionBundle'],
+				keystoreMethodName: 'signTransactionBundle',
+				createKeystoreMethodArgs: walletController =>
+					[walletController.networkProperties, 'transactionBundle', walletController.currentAccount]
 			},
 			{
 				controllerMethodName: 'cosignTransaction',

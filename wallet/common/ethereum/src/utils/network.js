@@ -6,13 +6,13 @@ import { ChainId, NetworkIdentifier } from '../constants';
  * @returns {string} The network identifier.
  */
 export const chainIdToNetworkIdentifier = chainId => {
-	if (chainId === ChainId.MAIN_NET) 
+	if (chainId === ChainId.MAIN_NET)
 		return NetworkIdentifier.MAIN_NET;
 
-	if (chainId === ChainId.TESTNET) 
+	if (chainId === ChainId.TESTNET)
 		return NetworkIdentifier.TESTNET;
 
-	if (chainId === ChainId.SEPOLIA) 
+	if (chainId === ChainId.SEPOLIA)
 		return NetworkIdentifier.SEPOLIA;
 
 	throw new Error(`Unsupported chain ID "${chainId}"`);
@@ -24,13 +24,13 @@ export const chainIdToNetworkIdentifier = chainId => {
  * @returns {number} The network type.
  */
 export const networkIdentifierToChainId = networkIdentifier => {
-	if (networkIdentifier === NetworkIdentifier.MAIN_NET) 
+	if (networkIdentifier === NetworkIdentifier.MAIN_NET)
 		return ChainId.MAIN_NET;
 
-	if (networkIdentifier === NetworkIdentifier.TESTNET) 
+	if (networkIdentifier === NetworkIdentifier.TESTNET)
 		return ChainId.TESTNET;
 
-	if (networkIdentifier === NetworkIdentifier.SEPOLIA) 
+	if (networkIdentifier === NetworkIdentifier.SEPOLIA)
 		return ChainId.SEPOLIA;
 
 	throw new Error(`Unsupported network identifier "${networkIdentifier}"`);
@@ -43,10 +43,20 @@ export const networkIdentifierToChainId = networkIdentifier => {
  * @returns {string} The WebSocket URL.
  */
 export const createWebSocketUrl = (nodeUrl, port) => {
-	const url = new URL(nodeUrl);
-	url.protocol = url.protocol.replace('http', 'ws');
-	url.port = port;
-	url.pathname = '/';
+	// Replace protocol with ws or wss
+	let url = nodeUrl.replace(/^https?:\/\//i, match =>
+		match.startsWith('https') ? 'wss://' : 'ws://');
 
-	return url.toString().replace(/\/$/, '');
+	// Remove everything after hostname
+	url = url.replace(/([^\s/]+:\/\/[^/]+)(\/.*)?$/, '$1');
+	url = url.replace(/\/+$/, '');
+
+	// Replace or add port
+	if (/:\d+$/.test(url)) 
+		url = url.replace(/:\d+$/, `:${port}`);
+	else 
+		url = `${url}:${port}`;
+	
+
+	return url;
 };
