@@ -2,10 +2,11 @@ import asyncio
 import datetime
 import tempfile
 import unittest
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 import testing.postgresql
 from symbollightapi.model.Block import Block
+from symbollightapi.model.Exceptions import NodeException
 from symbollightapi.model.Transaction import TransferTransaction
 
 from puller.facade.NemPuller import DatabaseConfig, NemPuller
@@ -190,11 +191,11 @@ class NemPullerTest(unittest.TestCase):
 				168
 			))
 
-	@patch('puller.facade.NemPuller.NemConnector.get_blocks_after')
+	@patch('puller.facade.NemPuller.NemPuller._retry_get_blocks_after')
 	@patch('puller.facade.NemPuller.log')
-	def test_sync_blocks_raise_error_connector_fail(self, mock_log, mock_get_blocks_after):
+	def test_sync_blocks_raise_error_connector_fail(self, mock_log, mock_retry_get_blocks_after):
 		# Arrange:
-		mock_get_blocks_after.side_effect = Exception('fail to get blocks')
+		mock_retry_get_blocks_after.side_effect = Exception('Connection timeout')
 
 		with self.puller.nem_db as databases:
 			databases.create_tables()
@@ -203,7 +204,7 @@ class NemPullerTest(unittest.TestCase):
 			with self.assertRaises(Exception):
 				asyncio.run(self.puller.sync_blocks(0, 100))
 
-			mock_log.error.assert_called_once_with('Sync error: fail to get blocks')
+			mock_log.error.assert_called_once_with('Sync error: Connection timeout')
 
 	@patch('puller.facade.NemPuller.NemConnector.get_blocks_after')
 	@patch('puller.facade.NemPuller.NemPuller._commit_blocks')
@@ -248,3 +249,74 @@ class NemPullerTest(unittest.TestCase):
 			]
 			actual_calls = [call[0][0] if call[0] else None for call in mock_commit_blocks.call_args_list]
 			self.assertEqual(actual_calls, expected_calls)
+
+	@patch('puller.facade.NemPuller.NemConnector.get_blocks_after')
+	def test_retry_get_blocks_after_succeeds_on_first_attempt(self, mock_get_blocks_after):
+		# Arrange:
+		mock_get_blocks_after.return_value = NEM_CONNECTOR_RESPONSE_BLOCKS
+
+		# Act:
+		result = asyncio.run(self.puller._retry_get_blocks_after(1))  # pylint: disable=protected-access
+
+		# Assert:
+		self.assertEqual(result, NEM_CONNECTOR_RESPONSE_BLOCKS)
+		mock_get_blocks_after.assert_called_once_with(1)
+
+	@patch('puller.facade.NemPuller.NemConnector.get_blocks_after')
+	@patch('asyncio.sleep')
+	def _assert_retry_with_failures(self, mock_sleep, mock_get_blocks_after, side_effects, expected_sleep_calls):
+		# Arrange:
+		mock_get_blocks_after.side_effect = side_effects
+		mock_sleep.return_value = AsyncMock()
+
+		# Act:
+		result = asyncio.run(self.puller._retry_get_blocks_after(1))  # pylint: disable=protected-access
+
+		# Assert:
+		self.assertEqual(result, NEM_CONNECTOR_RESPONSE_BLOCKS)
+		self.assertEqual(mock_get_blocks_after.call_count, len(side_effects))  # Call count = number of attempts
+		self.assertEqual(mock_sleep.call_count, len(expected_sleep_calls))
+		sleep_calls = [call[0][0] for call in mock_sleep.call_args_list]
+		self.assertEqual(sleep_calls, expected_sleep_calls)
+
+	def test_retry_get_blocks_after_succeeds_on_second_attempt(self):
+		# Arrange:
+		side_effects = [
+			NodeException('Connection timeout'),
+			NEM_CONNECTOR_RESPONSE_BLOCKS
+		]
+
+		# pylint: disable=no-value-for-parameter
+		self._assert_retry_with_failures(
+			side_effects=side_effects,
+			expected_sleep_calls=[2]
+		)
+
+	def test_retry_get_blocks_after_succeeds_on_last_attempt(self):
+		# Arrange:
+		side_effects = [
+			NodeException('Connection timeout'),
+			NodeException('Connection timeout'),
+			NEM_CONNECTOR_RESPONSE_BLOCKS
+		]
+
+		# pylint: disable=no-value-for-parameter
+		self._assert_retry_with_failures(
+			side_effects=side_effects,
+			expected_sleep_calls=[2, 4]
+		)
+
+	@patch('puller.facade.NemPuller.NemConnector.get_blocks_after')
+	@patch('asyncio.sleep')
+	def test_retry_get_blocks_after_raises_error_after_max_retries(self, mock_sleep, mock_get_blocks_after):
+		# Arrange: Always fail
+		mock_get_blocks_after.side_effect = NodeException('Connection refused')
+		mock_sleep.return_value = AsyncMock()
+
+		# Act & Assert:
+		with self.assertRaises(NodeException) as context:
+			asyncio.run(self.puller._retry_get_blocks_after(1))  # pylint: disable=protected-access
+
+		self.assertEqual(str(context.exception), 'Connection refused')
+		self.assertEqual(mock_get_blocks_after.call_count, 3)
+		self.assertEqual(mock_sleep.call_count, 2)

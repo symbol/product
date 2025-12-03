@@ -1,3 +1,4 @@
+import asyncio
 import configparser
 import threading
 from collections import namedtuple
@@ -6,6 +7,7 @@ from queue import Queue
 from symbolchain.facade.NemFacade import NemFacade
 from symbolchain.nem.Network import Network
 from symbollightapi.connector.NemConnector import NemConnector
+from symbollightapi.model.Exceptions import NodeException
 from zenlog import log
 
 from puller.db.NemDatabase import NemDatabase
@@ -101,6 +103,7 @@ class NemPuller:
 			# Check for sentinel value (None) to stop processing
 			if block is None:
 				log.info('Received stop signal, ending DB writer thread')
+				block_queue.task_done()
 				break
 
 			# Process and insert block
@@ -119,6 +122,21 @@ class NemPuller:
 
 		log.info(f'Database thread: {processed} blocks inserted')
 
+	async def _retry_get_blocks_after(self, height, retries=3, delay=2):
+		"""Retries fetching blocks after a given height with exponential backoff."""
+
+		for attempt in range(1, retries + 1):
+			try:
+				return await self.nem_connector.get_blocks_after(height)
+			except NodeException as error:
+				if attempt < retries:
+					wait_time = delay * (2 ** (attempt - 1))  # Exponential backoff: 2s, 4s, 8s
+					log.warning(f'Error fetching blocks after height {height} (attempt {attempt}/{retries}): {error}. Retrying in {wait_time}s...')
+					await asyncio.sleep(wait_time)
+				else:
+					log.error(f'Failed to fetch blocks after height {height} after {retries} attempts: {error}')
+					raise
+
 	async def sync_blocks(self, db_height, chain_height, queue_size=200, batch_size=50):
 		"""sync blocks from NEM network."""
 
@@ -136,7 +154,7 @@ class NemPuller:
 
 		try:
 			while chain_height > db_height:
-				blocks = await self.nem_connector.get_blocks_after(db_height)
+				blocks = await self._retry_get_blocks_after(db_height)
 
 				for block in blocks:
 					block_queue.put(block)
