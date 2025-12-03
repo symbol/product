@@ -9,7 +9,7 @@ import {
 	isTransferableFlag
 } from './mosaic';
 import { 
-	createFee, 
+	createTransactionFee, 
 	decodePlainMessage, 
 	getUnresolvedIdsFromTransactions, 
 	isIncomingTransaction, 
@@ -148,9 +148,9 @@ const baseTransactionFromSymbol = (transaction, config) => {
 			adjusted: Number(transaction.deadline.value)
 		},
 		fee: transaction.fee
-			? createFee(
-				absoluteToRelativeAmount(Number(transaction.fee.value), networkProperties.networkCurrency.divisibility),
-				networkProperties
+			? createTransactionFee(
+				networkProperties,
+				absoluteToRelativeAmount(Number(transaction.fee.value), networkProperties.networkCurrency.divisibility)
 			)
 			: null,
 		signerAddress,

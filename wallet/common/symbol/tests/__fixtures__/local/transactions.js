@@ -10,10 +10,13 @@ export const walletTransactions = [
 		'height': 468675,
 		'hash': '038702AB2048D560E5379A55C89DB48E08841FF1CB84DC2C51FFBC5D79ECBC2A',
 		'fee': {
-			'amount': '0.0152',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.0152',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -33,10 +36,13 @@ export const walletTransactions = [
 		'height': 431175,
 		'hash': '94ADA540E6C184769E3F4B7C41C88D3D5699C2B77A4F2C12CA47BD7A87C0D0FA',
 		'fee': {
-			'amount': '0.2',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.2',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TBFEJGWR372E4BZE6SA6U6QF7QXL3E6GF3BLXGQ',
 		'signerPublicKey': '967D0A5315CA4F832082CA50FAE3B050D33D91292CF3A53BF324C231809D59B2',
@@ -108,10 +114,12 @@ export const walletTransactions = [
 		'height': 431172,
 		'hash': 'EECE18B830E9DD7656E6370948402B7BD8AF07C45F3C77636885A4E559F619BC',
 		'fee': {
-			'amount': '0.2',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.2',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
 		},
 		'signerAddress': 'TBFEJGWR372E4BZE6SA6U6QF7QXL3E6GF3BLXGQ',
 		'signerPublicKey': '967D0A5315CA4F832082CA50FAE3B050D33D91292CF3A53BF324C231809D59B2',
@@ -170,10 +178,13 @@ export const walletTransactions = [
 		'height': 301899,
 		'hash': '0C905EB065E6A42029CD1A10E710422761495A63D433535BA6EAA9BCF36AB8B6',
 		'fee': {
-			'amount': '0.0176',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.0176',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -211,10 +222,13 @@ export const walletTransactions = [
 		'height': 263628,
 		'hash': '7832F1F7574867C7F88D7BFE276EC19FD9C3E09FEF58479EAFD45F64A0B2D8BB',
 		'fee': {
-			'amount': '0.02904',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.02904',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -252,10 +266,13 @@ export const walletTransactions = [
 		'height': 237774,
 		'hash': 'A2BE1A1C7A14C3F184F57F38A8DB04772BF295E8E9AB559D2A00B722A23F9E55',
 		'fee': {
-			'amount': '1',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '1',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -312,10 +329,13 @@ export const walletTransactions = [
 		'height': 237772,
 		'hash': '3BCABB63DFCE2D11B373054BFE9C942B24FBB2F7DFE21D2A3A34C8B33DEE7FBD',
 		'fee': {
-			'amount': '1',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '1',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -359,10 +379,13 @@ export const walletTransactions = [
 		'height': 237706,
 		'hash': '793B117DFC5EF72EC3DD1DF7211323B20C2BF471DD44C1F7443381BE4C0FF945',
 		'fee': {
-			'amount': '1.747557',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '1.747557',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -400,10 +423,13 @@ export const walletTransactions = [
 		'height': 237705,
 		'hash': 'F99140AAE454AF863B18B960267B111023434716DFD6413A40627F0DBCB811A4',
 		'fee': {
-			'amount': '1',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '1',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -460,10 +486,13 @@ export const walletTransactions = [
 		'height': 237704,
 		'hash': '1F45983988EA989E0E8DA1557F5793FC41A231F5EAF2C8A1771800C25D272E0A',
 		'fee': {
-			'amount': '1',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '1',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -507,10 +536,13 @@ export const walletTransactions = [
 		'height': 237694,
 		'hash': '65DF763A64CF876E88A944E34E9C8E3CF640C923C14705B0776BF497714A3D9A',
 		'fee': {
-			'amount': '1',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '1',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -567,10 +599,13 @@ export const walletTransactions = [
 		'height': 237683,
 		'hash': '44CB923FCB39A3E06278C89AAED6E692C80127965F4FCDDDA23B7BC8C2F40381',
 		'fee': {
-			'amount': '0.0186',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.0186',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TCHI25NMAZ73HJTBRERQROT6YKGATY3SVECRPXY',
 		'signerPublicKey': '0AA27C605B0C357C94C1678D830F25424EC3922155E553DF3B2066442EF6C0C3',
@@ -613,10 +648,13 @@ export const walletTransactions = [
 		'height': 237683,
 		'hash': '245C56EE23C94B23B1E20BBC71EEBB74032BA483C14F36017482FD46F877911D',
 		'fee': {
-			'amount': '0.0247',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.0247',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TCHI25NMAZ73HJTBRERQROT6YKGATY3SVECRPXY',
 		'signerPublicKey': '0AA27C605B0C357C94C1678D830F25424EC3922155E553DF3B2066442EF6C0C3',
@@ -659,10 +697,13 @@ export const walletTransactions = [
 		'height': 237660,
 		'hash': '12F2780E73F86C3301CA057578C7F01D29B3F6BD632021885F3FD699CDBF8048',
 		'fee': {
-			'amount': '1',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '1',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -706,10 +747,13 @@ export const walletTransactions = [
 		'height': 237633,
 		'hash': '5DE9BB1E9237F0711FB447B350B8E27BECBB2D47B47094728240B850D74D2A97',
 		'fee': {
-			'amount': '2.887018',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '2.887018',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -732,10 +776,13 @@ export const walletTransactions = [
 		'height': 237632,
 		'hash': '0F49595EEFCE89AE29ABBC7DF81AC04C6B6AB2805362AEE236B155208A317AF4',
 		'fee': {
-			'amount': '4.271205',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '4.271205',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -779,10 +826,13 @@ export const walletTransactions = [
 		'height': 237615,
 		'hash': '7AC0005D1140199C6B1B2C3F9486429AC7BC79AC9DD76AE232CE7BA08BC0E5EA',
 		'fee': {
-			'amount': '0.036',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.036',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TCHI25NMAZ73HJTBRERQROT6YKGATY3SVECRPXY',
 		'signerPublicKey': '0AA27C605B0C357C94C1678D830F25424EC3922155E553DF3B2066442EF6C0C3',
@@ -858,10 +908,13 @@ export const walletTransactions = [
 		'height': 237557,
 		'hash': '8E7A6709EBB3107EA765858F222562CA60F9CAC0FB54365C5F2102C7093A0065',
 		'fee': {
-			'amount': '2.258522',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '2.258522',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TCSFD7TYOFAWXJ2IB7RTR4ELZVWX22Y5QPQLNKA',
 		'signerPublicKey': '2264B408F173E9F23D543267E2F063B87ACBE09CBAB9FA40BF32E9ACE510E8F6',
@@ -965,10 +1018,13 @@ export const walletTransactions = [
 		'height': 237553,
 		'hash': '4019DF6DD1E50F9CC2409FBD79A98DB5D6F105D33742B8F5BA36628A874B5777',
 		'fee': {
-			'amount': '0.0176',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.0176',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TCSFD7TYOFAWXJ2IB7RTR4ELZVWX22Y5QPQLNKA',
 		'signerPublicKey': '2264B408F173E9F23D543267E2F063B87ACBE09CBAB9FA40BF32E9ACE510E8F6',
@@ -1006,10 +1062,13 @@ export const walletTransactions = [
 		'height': 237552,
 		'hash': 'D8E25214869B8CE57EE1585A5DC460EA9D8E837991387A7B08764C25CE737930',
 		'fee': {
-			'amount': '0.0176',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.0176',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -1047,10 +1106,13 @@ export const walletTransactions = [
 		'height': 237540,
 		'hash': '92D79BAD1CE7BC9B3B832750EA22404F1746A7AD41D0D9EA2E054C8D29F82047',
 		'fee': {
-			'amount': '1',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '1',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -1094,10 +1156,13 @@ export const walletTransactions = [
 		'height': 237533,
 		'hash': '80DEC5BB212A28B2ED379DA02F29E539ED61956163AC501618313D0E1E0122A2',
 		'fee': {
-			'amount': '1',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '1',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -1154,10 +1219,13 @@ export const walletTransactions = [
 		'height': 237532,
 		'hash': '7CD893952E626D7A4FEA010CD999619C9F5DE2FC75BA29F14E49F4A7270DC72C',
 		'fee': {
-			'amount': '1',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '1',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -1201,10 +1269,13 @@ export const walletTransactions = [
 		'height': 237530,
 		'hash': 'A47D766BDFCBD072AE731B183C1BB9F51DCE0B85F4F5C5BD18B8097773AFBD04',
 		'fee': {
-			'amount': '1',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '1',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -1277,10 +1348,13 @@ export const walletTransactions = [
 		'height': 237529,
 		'hash': '6B22020F79B0B69A52E2924006D5A2CF086F059D94605A44483D0C25EE85B074',
 		'fee': {
-			'amount': '0.647896',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.647896',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -1298,10 +1372,13 @@ export const walletTransactions = [
 		'height': 237527,
 		'hash': 'CE1DF115C85D11CEBC03E7E43636845BD91F2C9580920DFBE8402679B55D6D1F',
 		'fee': {
-			'amount': '1',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '1',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -1374,10 +1451,13 @@ export const walletTransactions = [
 		'height': 237526,
 		'hash': '38F12AF584AD00D5000D4AC7B2160862E1617558FD466AEBF8B812D1939CE3F7',
 		'fee': {
-			'amount': '0.647163',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.647163',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -1395,10 +1475,13 @@ export const walletTransactions = [
 		'height': 237524,
 		'hash': 'C522C6B5BDCC98B2FBE3021C499F1E9BF98A44D2885C7AF21854262709F1B43C',
 		'fee': {
-			'amount': '1',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '1',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -1455,10 +1538,13 @@ export const walletTransactions = [
 		'height': 237523,
 		'hash': 'E6E7757CEC407C2F69B64EF452105AAF18B2866430D9AA06FFC82B97611072C9',
 		'fee': {
-			'amount': '1',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '1',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -1502,10 +1588,13 @@ export const walletTransactions = [
 		'height': 237520,
 		'hash': '0ABA914FE52FFE01D0DB9C7F774BE4479A85A71BA21CFD868D09EF134043E84B',
 		'fee': {
-			'amount': '1',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '1',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -1562,10 +1651,13 @@ export const walletTransactions = [
 		'height': 237517,
 		'hash': '747EF1B1E33CB9AD208F83A2AC63EBD65D68128683B1AAF6C58FDCDFCB2A38B3',
 		'fee': {
-			'amount': '1',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '1',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -1609,10 +1701,13 @@ export const walletTransactions = [
 		'height': 237511,
 		'hash': 'D570E2A80D487B45C7CD8179B5FDF9585891C5B58F2B885C902194E0AC23BE9A',
 		'fee': {
-			'amount': '1',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '1',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -1669,10 +1764,13 @@ export const walletTransactions = [
 		'height': 237509,
 		'hash': 'B99EF849FF7ACA302BEB402ABEABDB85512458B2DE1425E3D52D3C6532E75AF9',
 		'fee': {
-			'amount': '0.643557',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.643557',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -1690,10 +1788,13 @@ export const walletTransactions = [
 		'height': 237508,
 		'hash': '7E01D94E2EC5DF4E3AA55F9A06834A0F1E23D9DFF3340EF75762BC5F1B2D5BD7',
 		'fee': {
-			'amount': '0.643557',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.643557',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -1711,10 +1812,13 @@ export const walletTransactions = [
 		'height': 237506,
 		'hash': '1903D6E8A1177362F0514591D7CBA292165DEE6CC4EA7C2E0F30B50CF7E5509B',
 		'fee': {
-			'amount': '0.643557',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.643557',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -1732,10 +1836,13 @@ export const walletTransactions = [
 		'height': 237495,
 		'hash': '96BC74A3747293F10C1D8DDFEB0B3C096CE138A736F207ED126AC1EC08ADDDF6',
 		'fee': {
-			'amount': '1',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '1',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -1792,10 +1899,13 @@ export const walletTransactions = [
 		'height': 237493,
 		'hash': 'D11309EAAF9CB961EA01886D58667669704A53EBE4967750038025A25F428972',
 		'fee': {
-			'amount': '1',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '1',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -1839,10 +1949,13 @@ export const walletTransactions = [
 		'height': 227930,
 		'hash': '9DA38893BD99392F7941B5187D9ABB48A24428F389B3FD2CD720E70F04CCA1B3',
 		'fee': {
-			'amount': '0.15048',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.15048',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -1923,10 +2036,13 @@ export const walletTransactions = [
 		'height': 224566,
 		'hash': '0BFBF2DA22B8A85A3E4746B852B98EE97746E31A23DE5D0F1D0FABC1BC7D6F31',
 		'fee': {
-			'amount': '0.0181',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.0181',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -1969,10 +2085,13 @@ export const walletTransactions = [
 		'height': 195604,
 		'hash': '3B5600CF3032B3ECE8E8A8759CAEA5106A82ACCF96EB792236154D36E59BB1FB',
 		'fee': {
-			'amount': '0.0176',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.0176',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -2010,10 +2129,13 @@ export const walletTransactions = [
 		'height': 175397,
 		'hash': 'EFBAF16E2FAA926FD42F3099479AFF517A7C031BD68FEB2FA1FD7B079EF5A6EB',
 		'fee': {
-			'amount': '0.0312',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.0312',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -2054,10 +2176,13 @@ export const walletTransactions = [
 		'height': 175396,
 		'hash': 'CC9C19230CA9617B286812AD09B1CB57350FB72E744AAB8F378E5E3C75CB2DF9',
 		'fee': {
-			'amount': '0.0312',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.0312',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -2098,10 +2223,13 @@ export const walletTransactions = [
 		'height': 175396,
 		'hash': '9CB100AC2FF3F093A7B5EC00B4E0EA57E4644A1AD26DA71C7B1CB2FFD1F27817',
 		'fee': {
-			'amount': '0.0312',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.0312',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -2142,10 +2270,13 @@ export const walletTransactions = [
 		'height': 174515,
 		'hash': 'BCEC0B9E8AF74F7670E00E6D4A9290A8681BE41EEDE750BC299126D57DA92F77',
 		'fee': {
-			'amount': '0.774734',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.774734',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -2168,10 +2299,13 @@ export const walletTransactions = [
 		'height': 174513,
 		'hash': '6CF56B81E81790AC89F6F201B473DC79F5AA2D370AC3CDBE8B571F5EBBBDCECB',
 		'fee': {
-			'amount': '1.146182',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '1.146182',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -2215,10 +2349,13 @@ export const walletTransactions = [
 		'height': 170699,
 		'hash': '2AC9B479F36EA580EE913720FAAED693FBC273BB3501A3694AA414AEEC16AC72',
 		'fee': {
-			'amount': '0.1',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.1',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -2255,10 +2392,13 @@ export const walletTransactions = [
 		'height': 170680,
 		'hash': 'E281F302FDDBFF6FBE824F85FFD2F74314A166A805BCC88EC3694D7C451AFC83',
 		'fee': {
-			'amount': '0.1',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.1',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -2297,10 +2437,13 @@ export const walletTransactions = [
 		'height': 170679,
 		'hash': '8F284A35EF9E4A2C66278F8B255D5CFD4A9285763E66F05FB3DB894A8ACC2C4A',
 		'fee': {
-			'amount': '0.1',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.1',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -2318,10 +2461,13 @@ export const walletTransactions = [
 		'height': 170678,
 		'hash': '24C83D93FD76B16C4A6088BF42B2F88A23898891501AAD094BA3A50C2353EE1A',
 		'fee': {
-			'amount': '0.1',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.1',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -2344,10 +2490,13 @@ export const walletTransactions = [
 		'height': 170525,
 		'hash': '5378CF1873EF7C3318A35DD9A7A5FEF6648123DB15C2872245B8936647501D5C',
 		'fee': {
-			'amount': '0.1',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.1',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -2391,10 +2540,13 @@ export const walletTransactions = [
 		'height': 170525,
 		'hash': '17CA787332906DAC4D2DA4C62B0A2FA95567B9CE716E2E96C0668C02ECC84D63',
 		'fee': {
-			'amount': '0.1',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.1',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -2428,10 +2580,13 @@ export const walletTransactions = [
 		'height': 170523,
 		'hash': '32282633433A732967A0DCD36F6008C263DDA6644E8DC7BCC9A3D7622D3C2F8C',
 		'fee': {
-			'amount': '0.1',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.1',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -2467,10 +2622,13 @@ export const walletTransactions = [
 		'height': 170522,
 		'hash': 'F2764BCEA02AFAD4F787165718D78CF6138C0FACF3AC29F0D937C1AB37C346A1',
 		'fee': {
-			'amount': '0.1',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.1',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -2488,10 +2646,13 @@ export const walletTransactions = [
 		'height': 170521,
 		'hash': '6C275751DEE2017867414D98C93EB2EC533D6129C723D8D631A7048E916022B8',
 		'fee': {
-			'amount': '0.1',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.1',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -2514,10 +2675,13 @@ export const walletTransactions = [
 		'height': 170312,
 		'hash': 'CB1E6C84F5863209FDD4B09E47DB3CC561013055DECA08E59111B38C1AB25805',
 		'fee': {
-			'amount': '0.0176',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.0176',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -2555,10 +2719,13 @@ export const walletTransactions = [
 		'height': 139596,
 		'hash': '8A0E347B0D2156F719FCA774DEC9C60A5A04A6BDB7F0810565D1640D57FF7E52',
 		'fee': {
-			'amount': '0.0176',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.0176',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -2596,10 +2763,13 @@ export const walletTransactions = [
 		'height': 139596,
 		'hash': 'DA9020E8D6255277236DC95CBF8BCCA8DB007A5E148045E552EB99801AF197C6',
 		'fee': {
-			'amount': '0.0176',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.0176',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -2637,10 +2807,13 @@ export const walletTransactions = [
 		'height': 136755,
 		'hash': '82B9722197F9674D05A3C97B650D3C1091F9ABD32306DC02EA6826690D0851F2',
 		'fee': {
-			'amount': '0.0176',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.0176',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TCHI25NMAZ73HJTBRERQROT6YKGATY3SVECRPXY',
 		'signerPublicKey': '0AA27C605B0C357C94C1678D830F25424EC3922155E553DF3B2066442EF6C0C3',
@@ -2678,10 +2851,13 @@ export const walletTransactions = [
 		'height': 136755,
 		'hash': '22F416AD38243743767E1C3BBD4734989EA115B085E7B44941680B5F99A6D358',
 		'fee': {
-			'amount': '0.0176',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.0176',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TCHI25NMAZ73HJTBRERQROT6YKGATY3SVECRPXY',
 		'signerPublicKey': '0AA27C605B0C357C94C1678D830F25424EC3922155E553DF3B2066442EF6C0C3',
@@ -2719,10 +2895,13 @@ export const walletTransactions = [
 		'height': 136753,
 		'hash': 'EEAA2321C1D0E54783E79B11D46150841A58B0823B3BEEAEEBFD39B711288830',
 		'fee': {
-			'amount': '0.0176',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.0176',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TCHI25NMAZ73HJTBRERQROT6YKGATY3SVECRPXY',
 		'signerPublicKey': '0AA27C605B0C357C94C1678D830F25424EC3922155E553DF3B2066442EF6C0C3',
@@ -2760,10 +2939,13 @@ export const walletTransactions = [
 		'height': 136753,
 		'hash': '609A834A82FE8A375E0F8F606030C2DFD0FF32FE4B0D473D1F3121029AC39397',
 		'fee': {
-			'amount': '0.0176',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.0176',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TCHI25NMAZ73HJTBRERQROT6YKGATY3SVECRPXY',
 		'signerPublicKey': '0AA27C605B0C357C94C1678D830F25424EC3922155E553DF3B2066442EF6C0C3',
@@ -2801,10 +2983,13 @@ export const walletTransactions = [
 		'height': 136750,
 		'hash': '3EB723A303F01435D34F15E5941E6D74FEEF36B8393A079444AFF3AFF5C4424D',
 		'fee': {
-			'amount': '0.0176',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.0176',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TCHI25NMAZ73HJTBRERQROT6YKGATY3SVECRPXY',
 		'signerPublicKey': '0AA27C605B0C357C94C1678D830F25424EC3922155E553DF3B2066442EF6C0C3',
@@ -2842,10 +3027,13 @@ export const walletTransactions = [
 		'height': 136750,
 		'hash': 'B79573E9172843BC41DF2111B6B6C69D99BB838C893F72EC277519664DF867BB',
 		'fee': {
-			'amount': '0.0176',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.0176',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TCSFD7TYOFAWXJ2IB7RTR4ELZVWX22Y5QPQLNKA',
 		'signerPublicKey': '2264B408F173E9F23D543267E2F063B87ACBE09CBAB9FA40BF32E9ACE510E8F6',
@@ -2883,10 +3071,13 @@ export const walletTransactions = [
 		'height': 136746,
 		'hash': 'AE4D6F5F098B9ED2ECE43DD0BAF30F70D703464B875F5ADCAE7B6D87D89F8044',
 		'fee': {
-			'amount': '0.0176',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.0176',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TCSFD7TYOFAWXJ2IB7RTR4ELZVWX22Y5QPQLNKA',
 		'signerPublicKey': '2264B408F173E9F23D543267E2F063B87ACBE09CBAB9FA40BF32E9ACE510E8F6',
@@ -2924,10 +3115,13 @@ export const walletTransactions = [
 		'height': 136745,
 		'hash': '302DCF8FF8FB937D71DA0BC8C595A57FEF93BB4C029FAF05B0347C0A9FAABEF8',
 		'fee': {
-			'amount': '0.0176',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.0176',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TCHI25NMAZ73HJTBRERQROT6YKGATY3SVECRPXY',
 		'signerPublicKey': '0AA27C605B0C357C94C1678D830F25424EC3922155E553DF3B2066442EF6C0C3',
@@ -2965,10 +3159,13 @@ export const walletTransactions = [
 		'height': 136744,
 		'hash': '5EB7A29321050499573015E07383FDC03C068C90E825E8D4949949775C258F2E',
 		'fee': {
-			'amount': '0.422874',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.422874',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -2987,10 +3184,13 @@ export const walletTransactions = [
 		'height': 136741,
 		'hash': '40ABD31884E7DD22DD314F32415952D3D49284D805F8D3DA0771ECA999A9ED17',
 		'fee': {
-			'amount': '0.0176',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.0176',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -3028,10 +3228,13 @@ export const walletTransactions = [
 		'height': 136740,
 		'hash': '52DA63F16320E6B0A47AC26705BEDE010912A2DD0A40F29BC3EA30527F81323E',
 		'fee': {
-			'amount': '0.016',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.016',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -3051,10 +3254,13 @@ export const walletTransactions = [
 		'height': 136740,
 		'hash': '285FB0524DA7A504C1ABF4CB544721609CB0D0AB880DB172FED08C6BF18ED15F',
 		'fee': {
-			'amount': '0.016',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.016',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -3074,10 +3280,13 @@ export const walletTransactions = [
 		'height': 126160,
 		'hash': '1883741F6626EF23CDEE396AD02529B1D00C634D4F85110F61AB5356175E5796',
 		'fee': {
-			'amount': '0.0152',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.0152',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -3097,10 +3306,13 @@ export const walletTransactions = [
 		'height': 126158,
 		'hash': 'F7906A52C3DEF5A32B1DE81B909E80710695E125E073E4D7890197496802DC56',
 		'fee': {
-			'amount': '0.0312',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.0312',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -3141,10 +3353,13 @@ export const walletTransactions = [
 		'height': 115645,
 		'hash': 'E75BCE34E4767EF1FA57ED5CB59A5386AED4E44427803A6F0F6E2505E9F7CD42',
 		'fee': {
-			'amount': '1.772382',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '1.772382',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -3182,10 +3397,13 @@ export const walletTransactions = [
 		'height': 100623,
 		'hash': '5BE52BE13F867F24603EA9B41DC28446BA9884499C8858F76F2E5E9C6984D2EB',
 		'fee': {
-			'amount': '0.02904',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.02904',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAHGSAV6LL4VKLVWAYAUIO3NBXEUFMY6CUUX6DY',
 		'signerPublicKey': '7DBD961EF8319CC70C48956D8E2B4EEA2FFC1CE80A942298C5AA0C4322E69F7D',
@@ -3223,10 +3441,13 @@ export const walletTransactions = [
 		'height': 100570,
 		'hash': '37142DCF3CFD7AAA2AEA0E736717A3734FF53BF4915B62424E406B628BB6D7AB',
 		'fee': {
-			'amount': '0.0352',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.0352',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAHGSAV6LL4VKLVWAYAUIO3NBXEUFMY6CUUX6DY',
 		'signerPublicKey': '7DBD961EF8319CC70C48956D8E2B4EEA2FFC1CE80A942298C5AA0C4322E69F7D',
@@ -3264,10 +3485,13 @@ export const walletTransactions = [
 		'height': 87418,
 		'hash': '8011C9F7C8971DE97D5C2C5F3DC8C9BCA20BA1408272C9A686E188CE7F2B4E1A',
 		'fee': {
-			'amount': '0.1',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.1',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -3311,10 +3535,13 @@ export const walletTransactions = [
 		'height': 87416,
 		'hash': '323DC27E5953C5FFFB1789F65463C0CF411357F631CA2589C3A3D024C79F7AD8',
 		'fee': {
-			'amount': '0.1',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.1',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -3343,10 +3570,13 @@ export const walletTransactions = [
 		'height': 87415,
 		'hash': '4C493F23C7664153773B53BE6D83CBB374B09B03E3DBAE20100B2502944A32D5',
 		'fee': {
-			'amount': '0.1',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.1',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -3394,10 +3624,13 @@ export const walletTransactions = [
 		'height': 87408,
 		'hash': '89F6F24CEC9033A901AD8585AD457408D497B90A8595336ED0CFBE6C5132EE2E',
 		'fee': {
-			'amount': '0.1',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.1',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -3427,10 +3660,13 @@ export const walletTransactions = [
 		'height': 87407,
 		'hash': 'FA1E6EC6E9D42A59D527769B9524EC34C3E8918297493A9BB6BE5B88B159B34C',
 		'fee': {
-			'amount': '0.1',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.1',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -3458,10 +3694,13 @@ export const walletTransactions = [
 		'height': 87407,
 		'hash': '041B380261797EAE1DFB5A94E0D3A7FAD47D2385DFD688125716E818E0394137',
 		'fee': {
-			'amount': '0.1',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.1',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -3491,10 +3730,13 @@ export const walletTransactions = [
 		'height': 87406,
 		'hash': '5CDABBC64484412E35502A6C23A9C1D27E3ECC5A5A6565C6B34B056F65B874ED',
 		'fee': {
-			'amount': '0.1',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.1',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -3522,10 +3764,13 @@ export const walletTransactions = [
 		'height': 87406,
 		'hash': 'E5CD6C497E981FB9AA93E8C9863C1819F556A3256C4BEBF7853998F395924AEC',
 		'fee': {
-			'amount': '0.1',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.1',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -3553,10 +3798,13 @@ export const walletTransactions = [
 		'height': 87405,
 		'hash': '5FC4D07109C55B66D96454FAB458F073AE5127702D07C7688020DA2EDFAE55F5',
 		'fee': {
-			'amount': '0.1',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.1',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -3584,10 +3832,13 @@ export const walletTransactions = [
 		'height': 87405,
 		'hash': '7A3A15F7943B3EEC313BFC5BDC62EC446C6541C0C2673DFA467B3285DDA1A9CF',
 		'fee': {
-			'amount': '0.1',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.1',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -3615,10 +3866,13 @@ export const walletTransactions = [
 		'height': 87404,
 		'hash': 'B01B495687B522E9EBC10A58F0D1063CC32E9076E312140FF1C90012AF205B4F',
 		'fee': {
-			'amount': '0.1',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.1',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -3646,10 +3900,13 @@ export const walletTransactions = [
 		'height': 87401,
 		'hash': 'F8BE58EFFC607384D6F277533D591F37C47A5F62A0BC3FA79A769382459C5042',
 		'fee': {
-			'amount': '0.0158',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.0158',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -3669,10 +3926,13 @@ export const walletTransactions = [
 		'height': 87401,
 		'hash': '086B51F5DEA802C861D026FD243348A951E08255772D2004EFA67B8FDB495708',
 		'fee': {
-			'amount': '0.0181',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.0181',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -3715,10 +3975,13 @@ export const walletTransactions = [
 		'height': 87399,
 		'hash': 'D75D4000707C83E86CD32D191E765D6252D08A8441D2702E9E43F6601CD7E8B3',
 		'fee': {
-			'amount': '0.1',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.1',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -3739,10 +4002,13 @@ export const walletTransactions = [
 		'height': 87396,
 		'hash': '09A184B5F509BBEE3476EB23CAF168384ED112FF2AE8136B6F80D5CD149F0D21',
 		'fee': {
-			'amount': '0.1',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.1',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -3763,10 +4029,13 @@ export const walletTransactions = [
 		'height': 87395,
 		'hash': '057800E39C7DFB00ADF11E77E14F9FE866874335120C7B6C4D2E79C11AD2FC90',
 		'fee': {
-			'amount': '0.1',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.1',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -3788,10 +4057,13 @@ export const walletTransactions = [
 		'height': 87394,
 		'hash': '7CF523841BB81A5D02EBFC9BA271393C3B5112791D4E00480177CEB293278C03',
 		'fee': {
-			'amount': '0.1',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.1',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -3814,10 +4086,13 @@ export const walletTransactions = [
 		'height': 87379,
 		'hash': '415E7180E3BD6A684F7C3A8665583AA648882F99276ABE2A412A3B2A7AEA6007',
 		'fee': {
-			'amount': '0.1',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.1',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -3851,10 +4126,13 @@ export const walletTransactions = [
 		'height': 87377,
 		'hash': 'AEE6BB9B9D0180D113C239FFA7BF59F3E06880695F53F1890F942ADF343471F4',
 		'fee': {
-			'amount': '0.1',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.1',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -3890,10 +4168,13 @@ export const walletTransactions = [
 		'height': 87376,
 		'hash': '4E79FC07D4F24548BD33B8F084F2C7ABCDFE591D3BA275F50EF48F624EB7BC92',
 		'fee': {
-			'amount': '0.1',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.1',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -3911,10 +4192,13 @@ export const walletTransactions = [
 		'height': 87375,
 		'hash': '6E9FE80C90AF724D8F17228355A7035407233ABFEF55E0C98DD9FD28155A16F9',
 		'fee': {
-			'amount': '0.1',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.1',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -3937,10 +4221,13 @@ export const walletTransactions = [
 		'height': 87363,
 		'hash': 'FCEAA7231EAC4FAB01F67C3C38D94D8EE7895C7C4A8D5F9DA873B4072B315606',
 		'fee': {
-			'amount': '0.0352',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.0352',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TD7TOGIBCITKDRXRVVVVTNZ7H5B72CZRJAPBBQY',
 		'signerPublicKey': '8856CBA6D68526CB70F182B313B4E53C6413DA5044F96197888F255E794F3159',
@@ -3971,10 +4258,13 @@ export const walletTransactions = [
 		'height': 87362,
 		'hash': 'ADA2C97667D2D0C856E1EC5C5FC3236081C4ECE01AF7051B6CC5EBF9FAEAE6CB',
 		'fee': {
-			'amount': '6.865467',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '6.865467',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -4013,10 +4303,13 @@ export const walletTransactions = [
 		'height': 87361,
 		'hash': 'A478C80E3E57FB45A92B5D4F8ADA9B3BC6A2F800BFBA7B3393D57AD4FAB57929',
 		'fee': {
-			'amount': '2.770276',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '2.770276',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -4053,10 +4346,13 @@ export const walletTransactions = [
 		'height': 87360,
 		'hash': 'C7FFD434A499292F30FCAA9E1EF8C34D417267B0136F1FC2FA84F4BCFBBC6A4F',
 		'fee': {
-			'amount': '0.1',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.1',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -4075,10 +4371,13 @@ export const walletTransactions = [
 		'height': 87359,
 		'hash': '101AA2C665A193F9DB107D70224CFBE1D3293D13E980B4BA037DAEBBFCAAB0E0',
 		'fee': {
-			'amount': '0.1',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.1',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -4116,10 +4415,13 @@ export const walletTransactions = [
 		'height': 87356,
 		'hash': '02433EC2A4750CFAC5C88560980E0ED6628C43BAEF0AD5BFA33670B3DBCE52A9',
 		'fee': {
-			'amount': '0.1',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.1',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAJHE6PY3UOW3EPZVL5UP52WPNOIQXH7BL6MXSQ',
 		'signerPublicKey': '1D29613A5F26D99C16F275E6729A459438599612BE91B28EA352816E73BAD819',
@@ -4157,10 +4459,13 @@ export const walletTransactions = [
 		'height': 87348,
 		'hash': 'BE1DFA01F5FDA60E9D00D9FABC73807AB39D7DD48056F0B92F0FACAA4E9EC68C',
 		'fee': {
-			'amount': '0.1',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.1',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -4180,10 +4485,13 @@ export const walletTransactions = [
 		'height': 87347,
 		'hash': '9B6943A29C0E8F421E8EFB4F3EBB2FB6F1FF4343B1A1785188285E5DA43C4D9F',
 		'fee': {
-			'amount': '0.1',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.1',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -4203,10 +4511,13 @@ export const walletTransactions = [
 		'height': 87346,
 		'hash': '4FFB2BFB0ECC57C82A5DD36FE91838551FDF9CCE884EA336C271672B7C190E14',
 		'fee': {
-			'amount': '0.1',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.1',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -4224,10 +4535,13 @@ export const walletTransactions = [
 		'height': 87345,
 		'hash': '56A5EA17FBDDFFDF207155F5D3D35C80572A3A941996D49010150F0F71B4E328',
 		'fee': {
-			'amount': '0.1',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.1',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -4245,10 +4559,13 @@ export const walletTransactions = [
 		'height': 87344,
 		'hash': '50E4643E8A6967EED1DF0B0A2E74A9C67AD0C918B189326C7ABA177795FA3A68',
 		'fee': {
-			'amount': '0.1',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.1',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -4266,10 +4583,13 @@ export const walletTransactions = [
 		'height': 87343,
 		'hash': '47362F802A4C2A9A3A4E0ED23E97779091883DD0E5B4CF544F41E32ECF090BED',
 		'fee': {
-			'amount': '0.1',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.1',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -4287,10 +4607,13 @@ export const walletTransactions = [
 		'height': 87340,
 		'hash': 'E2C84F49E7ECEF7BDB2DD6FBABC616D577466AFB7E5CEEFC39015DF4A14BAEDE',
 		'fee': {
-			'amount': '0.1',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.1',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -4308,10 +4631,13 @@ export const walletTransactions = [
 		'height': 87339,
 		'hash': '5117DAFC6125D014784D52B933B9AC1B804C19CF2D173C9DB4D425685EE932B6',
 		'fee': {
-			'amount': '0.1',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.1',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -4329,10 +4655,13 @@ export const walletTransactions = [
 		'height': 87333,
 		'hash': '52F9508E10BC2CE013429F92E916D7A07FD6561D8A09B2A2223F68950FC2EB11',
 		'fee': {
-			'amount': '0.0144',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.0144',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -4352,10 +4681,13 @@ export const walletTransactions = [
 		'height': 87332,
 		'hash': '45FFB090AEC246AECCD71A365D71036FB3701C59E79495058C39883251D11031',
 		'fee': {
-			'amount': '0.0144',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.0144',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -4375,10 +4707,13 @@ export const walletTransactions = [
 		'height': 87331,
 		'hash': '723645B6441214B5E25FFDB694BC88CE4C704D1F07AF53FF1096F91805102FF1',
 		'fee': {
-			'amount': '0.0138',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.0138',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -4398,10 +4733,13 @@ export const walletTransactions = [
 		'height': 87330,
 		'hash': '24F7B4DD9C0BA3E2B827984021F4CACEF4121275C04289785699DCCBBBB20D87',
 		'fee': {
-			'amount': '0.0138',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.0138',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -4421,10 +4759,13 @@ export const walletTransactions = [
 		'height': 87329,
 		'hash': '1344F8040832A3464491EE83289C5EBAB9F506AA051015C324F51868295F1C80',
 		'fee': {
-			'amount': '0.016',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.016',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -4444,10 +4785,13 @@ export const walletTransactions = [
 		'height': 87328,
 		'hash': '322FD2C72871ACD384621B72EE5A78D5ABA2D39B8B6BC699EC90A86D2211C73D',
 		'fee': {
-			'amount': '0.016',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.016',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -4467,10 +4811,13 @@ export const walletTransactions = [
 		'height': 87326,
 		'hash': 'BB780FCA1F5868E7EAD4A0041091ED4361FC2154748A710427FED47E23C10FE6',
 		'fee': {
-			'amount': '0.028',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.028',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -4501,10 +4848,13 @@ export const walletTransactions = [
 		'height': 87325,
 		'hash': 'C15862771CC95D98559CF6AF187DEED701C15DDB818AE8E4234D730379622376',
 		'fee': {
-			'amount': '0.0161',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.0161',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -4523,10 +4873,13 @@ export const walletTransactions = [
 		'height': 87324,
 		'hash': 'E9CE8177BFDC532E77362B49D038372D9B959B57831CBA992BFD3CB9E8FFD64D',
 		'fee': {
-			'amount': '0.0264',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.0264',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -4555,10 +4908,13 @@ export const walletTransactions = [
 		'height': 87322,
 		'hash': '844DF591C44FF36C63189756E11C0160105925404919FD7ACD29F65C27074E7F',
 		'fee': {
-			'amount': '0.0145',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.0145',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -4577,10 +4933,13 @@ export const walletTransactions = [
 		'height': 87321,
 		'hash': '87211D7A437DCCDC4374F04186556F554769653BC9FDFF2829B8BDCAADF79AA1',
 		'fee': {
-			'amount': '4.683837',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '4.683837',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -4621,10 +4980,13 @@ export const walletTransactions = [
 		'height': 87320,
 		'hash': '17B1CC8D8D1F241493D566589430E774491D00CD7E1D3B612516768C846EED51',
 		'fee': {
-			'amount': '4.194344',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '4.194344',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -4655,10 +5017,13 @@ export const walletTransactions = [
 		'height': 87319,
 		'hash': 'B50264D5A882E6F298C64922BDF3F142CF040F4A7CF79DE79FFCA6B4CC53374C',
 		'fee': {
-			'amount': '0.0158',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.0158',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -4678,10 +5043,13 @@ export const walletTransactions = [
 		'height': 87317,
 		'hash': '13E2F4A81CB1B875E434AC3B6DF18A63DD1EA72672DD8BABD046A6B2AC4D6EBB',
 		'fee': {
-			'amount': '0.0155',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.0155',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -4701,10 +5069,13 @@ export const walletTransactions = [
 		'height': 87316,
 		'hash': '0F2223974D05406D94DA77C68AED4F16B3D2CBD6F27E695B2FF49EFDFBE2D7CC',
 		'fee': {
-			'amount': '0.0265',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.0265',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -4747,10 +5118,13 @@ export const walletTransactions = [
 		'height': 87314,
 		'hash': '0A92FF3C80746E218B85FE312A7C563D5C3C88A599F00B3437B8739945044649',
 		'fee': {
-			'amount': '0.0197',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.0197',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -4793,10 +5167,13 @@ export const walletTransactions = [
 		'height': 87314,
 		'hash': '7E8DE095C981D458051508E430B27B9752CE6DBEB262C51328455508F44C7FFC',
 		'fee': {
-			'amount': '0.0261',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.0261',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TD7TOGIBCITKDRXRVVVVTNZ7H5B72CZRJAPBBQY',
 		'signerPublicKey': '8856CBA6D68526CB70F182B313B4E53C6413DA5044F96197888F255E794F3159',
@@ -4839,10 +5216,13 @@ export const walletTransactions = [
 		'height': 87313,
 		'hash': '9CAE33E96FF9420F66A04B4A16F285DC61D3C7E0D79703AEA26912E5E66B1E2D',
 		'fee': {
-			'amount': '0.0195',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.0195',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TD7TOGIBCITKDRXRVVVVTNZ7H5B72CZRJAPBBQY',
 		'signerPublicKey': '8856CBA6D68526CB70F182B313B4E53C6413DA5044F96197888F255E794F3159',
@@ -4885,10 +5265,13 @@ export const walletTransactions = [
 		'height': 87312,
 		'hash': '838E102E0AE73BE8CBA6CD088F74FD9A12B30175110A95761BD411D3459DA286',
 		'fee': {
-			'amount': '0.0176',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.0176',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TD7TOGIBCITKDRXRVVVVTNZ7H5B72CZRJAPBBQY',
 		'signerPublicKey': '8856CBA6D68526CB70F182B313B4E53C6413DA5044F96197888F255E794F3159',
@@ -4926,10 +5309,13 @@ export const walletTransactions = [
 		'height': 87311,
 		'hash': '0AB769B2547BFAF57F27264F83EE6E17D66DB83AEB5AFE4434CEB3B7E601F3F8',
 		'fee': {
-			'amount': '0.0176',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '0.0176',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TAWGTICRU4V7XYY25WTSKCWGY5D3OVYLH2OABNQ',
 		'signerPublicKey': 'F9214C919AB21E14385107FE17E1BE6B95D8598C8BD1413B951D65D76ABA1A6C',
@@ -4967,10 +5353,13 @@ export const walletTransactions = [
 		'height': 87309,
 		'hash': '58334D88B0D8AA9BA32C207520F17AA2A90BC40C593F101B802E345638E4FAC3',
 		'fee': {
-			'amount': '200',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '200',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TARDV42KTAIZEF64EQT4NXT7K55DHWBEFIXVJQY',
 		'signerPublicKey': '81EA7C15E7EC06261C9F654F54EAC4748CFCF00E09A8FE47779ACD14A7602004',
@@ -5008,10 +5397,13 @@ export const walletTransactions = [
 		'height': 87308,
 		'hash': 'EA63BF3D8A0C46DF41BE2B0E40E205971EE9636FE67F70EC30988917752D202A',
 		'fee': {
-			'amount': '200',
-			'divisibility': 6,
-			'id': '72C0212E67A08BCE',
-			'name': 'symbol.xym'
+			'token': {
+				'amount': '200',
+				'divisibility': 6,
+				'id': '72C0212E67A08BCE',
+				'name': 'symbol.xym'
+			}
+
 		},
 		'signerAddress': 'TARDV42KTAIZEF64EQT4NXT7K55DHWBEFIXVJQY',
 		'signerPublicKey': '81EA7C15E7EC06261C9F654F54EAC4748CFCF00E09A8FE47779ACD14A7602004',

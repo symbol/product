@@ -69,9 +69,7 @@ export const mosaicFromDTO = (mosaic, mosaicInfo) => {
 	return {
 		...mosaicInfo,
 		amount: absoluteToRelativeAmount(mosaic.amount, mosaicInfo.divisibility),
-		name: mosaicInfo.names?.[0] || mosaic.id,
-		divisibility: mosaicInfo.divisibility,
-		id: mosaic.id
+		name: mosaicInfo.names?.[0] || mosaic.id
 	};
 };
 

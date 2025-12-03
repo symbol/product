@@ -1,7 +1,7 @@
-import { LinkAction, LinkActionMessage, MessageType, TransactionType } from '../constants';
-import { addressFromPublicKey, createDeadline, createFee, encodeDelegatedHarvestingMessage, generateKeyPair } from '../utils';
+import { LinkAction, LinkActionMessage, MessageType, TransactionBundleType, TransactionType } from '../constants';
+import { addressFromPublicKey, createDeadline, createTransactionFee, encodeDelegatedHarvestingMessage, generateKeyPair } from '../utils';
 import { shuffle } from 'lodash';
-import { ControllerError } from 'wallet-common-core';
+import { ControllerError, TransactionBundle } from 'wallet-common-core';
 
 /** @typedef {import('../types/Harvesting').HarvestingSummary} HarvestingSummary */
 /** @typedef {import('../types/Harvesting').HarvestedBlock} HarvestedBlock */
@@ -77,12 +77,12 @@ export class HarvestingModule {
 	 * If the keys are already linked, they will be unlinked first.
 	 * @param {object} options - The transaction options.
 	 * @param {string} options.nodePublicKey - The public key of the node.
-	 * @param {number} [options.fee=0] - The transaction fee.
+	 * @param {number} [options.fee] - The transaction fee.
 	 * @param {string} [password] - The wallet password.
-	 * @returns {Promise<Transaction>} - The transaction to start harvesting.
+	 * @returns {Promise<TransactionBundle>} - The transaction to start harvesting.
 	 */
 	createStartHarvestingTransaction = async (options, password) => {
-		const { nodePublicKey, fee = 0 } = options;
+		const { nodePublicKey, fee } = options;
 		const currentAccountPrivateKey = await this.#walletController.getCurrentAccountPrivateKey(password);
 		const { currentAccount, currentAccountInfo, networkIdentifier, networkProperties } = this.#walletController;
 		const accountPublicKey = currentAccount.publicKey;
@@ -158,27 +158,29 @@ export class HarvestingModule {
 		});
 
 		// Prepare aggregate transaction
-		return {
+		const aggregateTransaction = {
 			type: TransactionType.AGGREGATE_COMPLETE,
 			innerTransactions: transactions,
 			signerPublicKey: accountPublicKey,
-			fee: createFee(fee, networkProperties),
+			fee: fee ?? createTransactionFee(networkProperties, '0'),
 			deadline: createDeadline(2, networkProperties.epochAdjustment)
 		};
+
+		return new TransactionBundle([aggregateTransaction], { type: TransactionBundleType.DELEGATED_HARVESTING });
 	};
 
 	/**
 	 * Prepares the transaction to stop harvesting for the current account.
 	 * Aggregate transaction includes unlinking the VRF and remote keys.
 	 * @param {object} [options] - The transaction options.
-	 * @param {number} [options.fee=0] - The transaction fee.
-	 * @returns {Transaction} - The transaction to stop harvesting.
+	 * @param {number} [options.fee] - The transaction fee.
+	 * @returns {TransactionBundle} - The transaction to stop harvesting.
 	 */
 	createStopHarvestingTransaction = (options = {}) => {
 		const { currentAccount, currentAccountInfo, networkProperties } = this.#walletController;
 		const accountPublicKey = currentAccount.publicKey;
 		const { linkedKeys } = currentAccountInfo;
-		const { fee = 0 } = options;
+		const { fee } = options;
 		const transactions = [];
 
 		// Unlink supplemental key
@@ -216,12 +218,14 @@ export class HarvestingModule {
 		}
 
 		// Prepare aggregate transaction
-		return {
+		const aggregateTransaction = {
 			type: TransactionType.AGGREGATE_COMPLETE,
 			innerTransactions: transactions,
 			signerPublicKey: accountPublicKey,
-			fee: createFee(fee, networkProperties),
+			fee: fee ?? createTransactionFee(networkProperties, '0'),
 			deadline: createDeadline(2, networkProperties.epochAdjustment)
 		};
+
+		return new TransactionBundle([aggregateTransaction], { type: TransactionBundleType.DELEGATED_HARVESTING });
 	};
 }

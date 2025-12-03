@@ -2,6 +2,7 @@ import { TransferModule } from '../../src/modules/TransferModule';
 import { networkCurrency } from '../__fixtures__/local/network';
 import { currentAccount as currentAccountFixture } from '../__fixtures__/local/wallet';
 import { expect, jest } from '@jest/globals';
+import { TransactionBundle } from 'wallet-common-core';
 
 const createFee = () => ({
 	key: 'value'
@@ -64,7 +65,9 @@ describe('TransferModule', () => {
 			const result = await transferModule.createTransaction(options);
 
 			// Assert:
-			expect(result).toStrictEqual(expectedResult);
+			expect(result).toBeInstanceOf(TransactionBundle);
+			expect(result.transactions).toHaveLength(1);
+			expect(result.transactions[0]).toStrictEqual(expectedResult);
 			expect(api.transaction.fetchTransactionNonce).toHaveBeenCalledWith(
 				walletController.networkProperties,
 				currentAccount.address

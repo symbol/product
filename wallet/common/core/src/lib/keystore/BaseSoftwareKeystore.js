@@ -3,9 +3,11 @@ import { getAccountWithoutPrivateKey } from '../../utils/account';
 import { createNetworkMap } from '../../utils/network';
 import { SecureStorageRepository } from '../storage/SecureStorageRepository';
 
+/** @typedef {import('../models/TransactionBundle').TransactionBundle} TransactionBundle */
 /** @typedef {import('../../types/Account').PublicAccount} PublicAccount */
 /** @typedef {import('../../types/Network').NetworkArrayMap} NetworkArrayMap */
 /** @typedef {import('../../types/Network').NetworkProperties} NetworkProperties */
+/** @typedef {import('../../types/Transaction').Transaction} Transaction */
 
 /**
  * @constructor BaseSoftwareKeystore
@@ -69,7 +71,7 @@ export class BaseSoftwareKeystore {
 	/**
 	 * Signs a transaction using the private key of the specified account.
 	 * @param {NetworkProperties} networkProperties - The network properties required for signing.
-	 * @param {object} transaction - The transaction object to be signed.
+	 * @param {Transaction} transaction - The transaction object to be signed.
 	 * @param {PublicAccount} account - The account to use for signing.
 	 * @returns {Promise<object>} A promise that resolves to the signed transaction payload.
 	 */
@@ -77,6 +79,19 @@ export class BaseSoftwareKeystore {
 		const privateKey = await this.getPrivateKey(account);
 
 		return this.sdk.signTransaction(networkProperties.networkIdentifier, transaction, privateKey);
+	};
+
+	/**
+	 * Signs a bundle of transactions using the private key of the specified account.
+	 * @param {NetworkProperties} networkProperties - The network properties required for signing.
+	 * @param {TransactionBundle} transactionBundle - The transaction bundle to be signed.
+	 * @param {PublicAccount} account - The account to use for signing.
+	 * @returns {Promise<object>} A promise that resolves to the signed transaction bundle payload.
+	 */
+	signTransactionBundle = async (networkProperties, transactionBundle, account) => {
+		const privateKey = await this.getPrivateKey(account);
+
+		return this.sdk.signTransactionBundle(networkProperties.networkIdentifier, transactionBundle, privateKey);
 	};
 
 	/**

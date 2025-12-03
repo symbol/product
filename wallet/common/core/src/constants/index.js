@@ -17,6 +17,7 @@ export const ControllerEventName = {
 	ACCOUNT_INFO_CHANGE: 'wc:account.info.change',
 	NETWORK_CHANGE: 'wc:network.change',
 	NETWORK_STATUS_CHANGE: 'wc:network.status.change',
+	NETWORK_CONNECTED: 'wc:network.connected',
 	NETWORK_PROPERTIES_CHANGE: 'wc:network.properties.change'
 };
 
@@ -69,7 +70,9 @@ export const TransactionGroup = {
 export const REQUIRED_API_METHODS = [
 	'account.fetchAccountInfo',
 	'transaction.fetchAccountTransactions',
+	'transaction.fetchTransactionStatus',
 	'transaction.announceTransaction',
+	'transaction.announceTransactionBundle',
 	'network.fetchNetworkInfo',
 	'network.pingNode',
 	'network.fetchNodeList',
@@ -78,6 +81,7 @@ export const REQUIRED_API_METHODS = [
 
 export const REQUIRED_SDK_METHODS = [
 	'signTransaction',
+	'signTransactionBundle',
 	'cosignTransaction',
 	'encryptMessage',
 	'decryptMessage',

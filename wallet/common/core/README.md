@@ -149,3 +149,32 @@ const persistentStorageInterface = new StorageInterface({
   removeItem: localStorage.removeItem
 });
 ```
+
+### Modules
+
+**Example usage:**
+
+```js
+import {
+   AddressBookModule,
+	BridgeModule,
+	LocalizationModule,
+	MarketModule
+} from 'wallet-common-core';
+
+const addressBookModule = new AddressBookModule();
+const bridgeModule = new BridgeModule({
+   bridgeMode: 'wrap',
+   bridgeUrl: {
+      mainnet: 'https://bridge.symbol.tools',
+      testnet: 'https://bridge.symbol.tools/testnet/
+   },
+   bridgeHelper: new ProtocolBridgeHelper(),
+   makeRequest: (url, options) => fetchFunction(url, options)
+});
+const localizationModule = new LocalizationModule();
+const marketModule = new MarketModule({ 
+   marketApi: new MarketDataApi()
+});
+
+```

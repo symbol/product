@@ -3,6 +3,7 @@
 /** @typedef {import('./SearchCriteria').TransactionSearchCriteria} TransactionSearchCriteria */
 /** @typedef {import('./Transaction').Transaction} Transaction */
 /** @typedef {import('./Transaction').SignedTransactionDTO} SignedTransactionDTO */
+/** @typedef {import('../lib/models/TransactionBundle').TransactionBundle} TransactionBundle */
 
 /**
  * @callback FetchAccountInfoFn
@@ -51,13 +52,32 @@
  * @throws {Error} If the transaction cannot be announced.
  */
 
+/**
+ * @callback AnnounceTransactionBundleFn
+ * @param {NetworkProperties} networkProperties - The network properties.
+ * @param {TransactionBundle} transactionBundle - Transaction bundle that contains signed transactions to announce.
+ * @param {string} group - Transaction announce group.
+ * @returns {Promise<void>} - A promise that resolves when the transaction is announced.
+ * @throws {Error} If the transaction cannot be announced.
+ */
+
+/**
+ * @callback FetchTransactionStatusFn
+ * @param {NetworkProperties} networkProperties - The network properties.
+ * @param {string} transactionHash - The hash of the transaction to fetch status for.
+ * @returns {Promise<object>} A promise that resolves to the transaction status.
+ * @throws {Error} If the transaction status cannot be fetched.
+ */
+
 /** @typedef {object} AccountApi
  * @property {FetchAccountInfoFn} fetchAccountInfo
  */
 
 /** @typedef {object} TransactionApi
  * @property {FetchAccountTransactionsFn} fetchAccountTransactions
+ * @property {FetchTransactionStatusFn} fetchTransactionStatus
  * @property {AnnounceTransactionFn} announceTransaction
+ * @property {AnnounceTransactionBundleFn} announceTransactionBundle
  */
 
 /** @typedef {object} NetworkApi
