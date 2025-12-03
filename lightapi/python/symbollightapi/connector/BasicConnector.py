@@ -3,7 +3,7 @@ import json
 
 from aiohttp import ClientSession, ClientTimeout, client_exceptions
 
-from ..model.Exceptions import NodeException
+from ..model.Exceptions import HttpException, NodeException
 
 
 class BasicConnector:
@@ -31,7 +31,7 @@ class BasicConnector:
 							if key in response_json:
 								error_message += f'\n{response_json[key]}'
 
-						raise NodeException(error_message)
+						raise HttpException(error_message, response.status)
 
 					return response_json if property_name is None else response_json[property_name]
 		except (asyncio.TimeoutError, client_exceptions.ClientConnectorError) as ex:
@@ -51,9 +51,7 @@ class BasicConnector:
 		Raises NodeException on connection or content failure.
 		"""
 
-		return await self._dispatch('post', url_path, property_name, not_found_as_error, data=json.dumps(request_payload), headers={
-			'Content-Type': 'application/json'
-		})
+		return await self._dispatch('post', url_path, property_name, not_found_as_error, json=request_payload)
 
 	async def put(self, url_path, request_payload, property_name=None, not_found_as_error=True):
 		"""
@@ -61,6 +59,4 @@ class BasicConnector:
 		Raises NodeException on connection or content failure.
 		"""
 
-		return await self._dispatch('put', url_path, property_name, not_found_as_error, data=json.dumps(request_payload), headers={
-			'Content-Type': 'application/json'
-		})
+		return await self._dispatch('put', url_path, property_name, not_found_as_error, json=request_payload)

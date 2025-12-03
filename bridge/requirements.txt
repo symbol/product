@@ -1,5 +1,6 @@
 aiolimiter~=1.2.1 # remove when updating lightapi
-asgiref~=3.10.0
+asgiref~=3.11.0
+filelock==3.20.0
 Flask==3.1.2
 symbol-lightapi~=0.0.7
 symbol-sdk-python==3.3.0

@@ -9,7 +9,7 @@ from symbolchain.symbol.Network import Address
 from symbollightapi.connector.SymbolConnector import SymbolConnector
 from symbollightapi.model.Constants import TimeoutSettings, TransactionStatus
 from symbollightapi.model.Endpoint import Endpoint
-from symbollightapi.model.Exceptions import NodeException
+from symbollightapi.model.Exceptions import InsufficientBalanceException, NodeException
 from symbollightapi.model.NodeInfo import NodeInfo
 
 from ..test.LightApiTestUtils import HASHES, SYMBOL_ADDRESSES
@@ -197,6 +197,13 @@ async def server(aiohttp_client):
 				return await self._process(request, {'hash': str(transaction_hash), 'code': 'Success', 'group': 'unconfirmed'})
 
 			if Hash256(HASHES[2]) == transaction_hash:
+				return await self._process(request, {
+					'hash': str(transaction_hash),
+					'code': 'Failure_Core_Future_Deadline',
+					'group': 'failed'
+				})
+
+			if Hash256(HASHES[4]) == transaction_hash:
 				return await self._process(request, {
 					'hash': str(transaction_hash),
 					'code': 'Failure_Core_Insufficient_Balance',
@@ -840,7 +847,19 @@ async def _assert_can_try_wait_for_announced_transaction_failure(server, transac
 	connector = SymbolConnector(server.make_url(''))
 
 	# Act + Assert:
-	with pytest.raises(NodeException, match='transaction was rejected with error'):
+	with pytest.raises(NodeException, match='transaction was rejected with error Failure_Core_Future_Deadline'):
+		await connector.try_wait_for_announced_transaction(transaction_hash, status, TimeoutSettings(5, 0.001))
+
+	assert [f'{server.make_url("")}/transactionStatus/{transaction_hash}'] == server.mock.urls
+
+
+async def _assert_can_try_wait_for_announced_transaction_failure_insufficient_balance(server, transaction_hash, status):
+	# pylint: disable=redefined-outer-name
+	# Arrange:
+	connector = SymbolConnector(server.make_url(''))
+
+	# Act + Assert:
+	with pytest.raises(InsufficientBalanceException, match='transaction was rejected with error Failure_Core_Insufficient_Balance'):
 		await connector.try_wait_for_announced_transaction(transaction_hash, status, TimeoutSettings(5, 0.001))
 
 	assert [f'{server.make_url("")}/transactionStatus/{transaction_hash}'] == server.mock.urls
@@ -874,6 +893,14 @@ async def test_can_try_wait_for_announced_transaction_unconfirmed_failure(server
 	await _assert_can_try_wait_for_announced_transaction_failure(server, Hash256(HASHES[2]), TransactionStatus.UNCONFIRMED)
 
 
+async def test_can_try_wait_for_announced_transaction_unconfirmed_failure_insufficient_balance(server):
+	# pylint: disable=redefined-outer-name
+	await _assert_can_try_wait_for_announced_transaction_failure_insufficient_balance(
+		server,
+		Hash256(HASHES[4]),
+		TransactionStatus.UNCONFIRMED)
+
+
 async def test_can_try_wait_for_announced_transaction_confirmed_success(server):  # pylint: disable=redefined-outer-name
 	await _assert_can_try_wait_for_announced_transaction_success(server, Hash256(HASHES[0]), TransactionStatus.CONFIRMED)
 
@@ -888,5 +915,13 @@ async def test_can_try_wait_for_announced_transaction_confirmed_timeout_unknown(
 
 async def test_can_try_wait_for_announced_transaction_confirmed_failure(server):  # pylint: disable=redefined-outer-name
 	await _assert_can_try_wait_for_announced_transaction_failure(server, Hash256(HASHES[2]), TransactionStatus.CONFIRMED)
+
+
+async def test_can_try_wait_for_announced_transaction_confirmed_failure_insufficient_balance(server):
+	# pylint: disable=redefined-outer-name
+	await _assert_can_try_wait_for_announced_transaction_failure_insufficient_balance(
+		server,
+		Hash256(HASHES[4]),
+		TransactionStatus.CONFIRMED)
 
 # endregion

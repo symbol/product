@@ -5,13 +5,17 @@ from collections import namedtuple
 from aiolimiter import AsyncLimiter
 from symbolchain.CryptoTypes import Hash256, PublicKey, Signature
 from symbolchain.facade.NemFacade import NemFacade
+from symbolchain.nc import TransactionType
 from symbolchain.nem.Network import Address, NetworkTimestamp
 
+from ..model.Block import Block
 from ..model.Constants import DEFAULT_ASYNC_LIMITER_ARGUMENTS, TransactionStatus
 from ..model.Endpoint import Endpoint
-from ..model.Exceptions import NodeException
+from ..model.Exceptions import InsufficientBalanceException, NodeException
 from ..model.NodeInfo import NodeInfo
+from ..model.Transaction import TransactionFactory, TransactionHandler
 from .BasicConnector import BasicConnector
+from .NemBlockCalculator import NemBlockCalculator
 
 MosaicFeeInformation = namedtuple('MosaicFeeInformation', ['supply', 'divisibility'])
 
@@ -271,7 +275,11 @@ class NemConnector(BasicConnector):
 
 		response = await self._announce_transaction(transaction_payload, 'transaction/announce')
 		if 'SUCCESS' != response['message']:
-			raise NodeException(f'announce transaction failed {response}')
+			error_message = f'announce transaction failed with error {response["message"]}'
+			if 'FAILURE_INSUFFICIENT_BALANCE' == response['message']:
+				raise InsufficientBalanceException(error_message)
+
+			raise NodeException(error_message)
 
 	# endregion
 
@@ -293,5 +301,69 @@ class NemConnector(BasicConnector):
 				await asyncio.sleep(timeout_settings.interval)
 
 		return False
+
+	# endregion
+
+	# region POST (get_blocks_after, get_block)
+
+	async def get_blocks_after(self, height):
+		""""Gets Blocks data"""
+
+		blocks = await self.post('local/chain/blocks-after', {'height': height})
+
+		return [self._map_to_block(block) for block in blocks['data']]
+
+	async def get_block(self, height):
+		""""Gets Block data"""
+
+		block = await self.post('local/block/at', {'height': height})
+
+		return self._map_to_block(block)
+
+	def _map_to_block(self, block_json):
+		block = block_json['block']
+		nem_calculator = NemBlockCalculator()
+		size = nem_calculator.calculate_block_size(block_json)
+
+		return Block(
+			block['height'],
+			block['timeStamp'],
+			[
+				self._map_to_transaction(transaction, block['height'])
+				for transaction in block_json['txes']
+			],
+			block_json['difficulty'],
+			block_json['hash'],
+			block['signer'],
+			block['signature'],
+			size
+		)
+
+	@staticmethod
+	def _map_to_transaction(transaction, block_height):
+		"""Maps a transaction to a object."""
+
+		tx_json = transaction['tx']
+		tx_type = tx_json['type']
+
+		# Define common arguments for all transactions
+		common_args = {
+			'transaction_hash': transaction['hash'],
+			'height': block_height,
+			'sender': tx_json['signer'],
+			'fee': tx_json['fee'],
+			'timestamp': tx_json['timeStamp'],
+			'deadline': tx_json['deadline'],
+			'signature': tx_json['signature'],
+		}
+
+		specific_args = {}
+
+		if TransactionType.MULTISIG.value == tx_type:
+			specific_args = TransactionHandler().map[tx_type](tx_json, transaction['innerHash'])
+		else:
+			specific_args = TransactionHandler().map[tx_type](tx_json)
+
+		return TransactionFactory.create_transaction(tx_type, common_args, specific_args)
 
 	# endregion

@@ -4,11 +4,13 @@ from pathlib import Path
 from prompt_toolkit.buffer import ValidationState
 from prompt_toolkit.filters import Always, Condition, Never
 from prompt_toolkit.layout.containers import ConditionalContainer, HSplit, VSplit
+from prompt_toolkit.utils import get_cwidth
 from prompt_toolkit.validation import DynamicValidator, Validator
-from prompt_toolkit.widgets import Box, Button, Label
+from prompt_toolkit.widgets import Box, Label
 from symbolchain.CryptoTypes import PrivateKey
 from symbolchain.PrivateKeyStorage import PrivateKeyStorage
 
+from shoestring.wizard.MultibyteButton import MultibyteButton as Button
 from shoestring.wizard.Screen import ScreenDialog
 from shoestring.wizard.TabbedView import TabList, Tabs
 from shoestring.wizard.ValidatingTextBox import (
@@ -136,8 +138,8 @@ def create(screens):
 	# note: deliberately wrapped in condition to allow swap later
 	show_private_key_tabs = Condition(Always())
 
-	button_import = Button(_('wizard-obligatory-import-button'))
-	button_generate = Button(_('wizard-obligatory-generate-button'))
+	button_import = Button(_('wizard-obligatory-import-button'), width=get_cwidth(_('wizard-obligatory-import-button')) + 4)
+	button_generate = Button(_('wizard-obligatory-generate-button'), width=get_cwidth(_('wizard-obligatory-generate-button')) + 4)
 
 	main_private_key_tabs = Tabs(ca_key_tab_list, [
 		HSplit([
