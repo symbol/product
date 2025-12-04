@@ -63,6 +63,7 @@ updates:
     directories:
       - /bridge
       - /explorer/nodewatch
+      - /explorer/puller
       - /explorer/rest
       - /lightapi/python
       - /tools/shoestring

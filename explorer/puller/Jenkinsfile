@@ -1,0 +1,11 @@
+defaultCiPipeline {
+	operatingSystem = ['ubuntu']
+	instanceSize = 'medium'
+
+	environment = 'postgres-python'
+
+	packageId = 'explorer-puller'
+
+	codeCoverageTool = 'coverage'
+	minimumCodeCoverage = 95
+}

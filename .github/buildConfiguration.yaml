@@ -8,6 +8,9 @@ builds:
   - name: Explorer Nodewatch
     path: explorer/nodewatch
 
+  - name: Explorer Puller
+    path: explorer/puller
+
   - name: Explorer Rest
     path: explorer/rest
 
