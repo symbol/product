@@ -13,11 +13,11 @@ class DatabaseConnection:
 
 		try:
 			self.connection = psycopg2.connect(
-				database=self.db_config['database'],
-				user=self.db_config['user'],
-				password=self.db_config['password'],
-				host=self.db_config['host'],
-				port=self.db_config['port']
+				database=self.db_config.database,
+				user=self.db_config.user,
+				password=self.db_config.password,
+				host=self.db_config.host,
+				port=self.db_config.port
 			)
 
 			return self

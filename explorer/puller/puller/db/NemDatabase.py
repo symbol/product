@@ -25,7 +25,7 @@ class NemDatabase(DatabaseConnection):
 			CREATE TABLE IF NOT EXISTS blocks (
 				id serial PRIMARY KEY,
 				height bigint NOT NULL UNIQUE,
-				timestamp timestamptz NOT NULL,
+				timestamp timestamp NOT NULL,
 				total_fees bigint DEFAULT 0,
 				total_transactions int DEFAULT 0,
 				difficulty bigint NOT NULL,
