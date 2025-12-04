@@ -10,9 +10,9 @@ info:
   version: 1.0.0
 servers:
   - url: "../../"
-    description: Current server.
+    description: Current server
   - url: "http://localhost:5000"
-    description: Local development server.
+    description: Local development server
 tags:
   - name: Bridge
     description: Provides access to bridge configuration.
