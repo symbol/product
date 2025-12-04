@@ -1,0 +1,919 @@
+openapi: 3.0.3
+info:
+  title: Bridge API Documentation
+  description: |
+    API for handling token wrapping and unwrapping between native and wrapped networks.
+    The API exposes the internal bridge state so external systems can monitor request processing,
+    payout status, errors, and fee/conversion estimates.
+    Unwrap operations are available only when the bridge is running in wrap or stake mode
+    (they are not available in swap mode).
+  version: 1.0.0
+servers:
+  - url: "../../"
+    description: Current server.
+  - url: "http://localhost:5000"
+    description: Local development server.
+tags:
+  - name: Bridge
+    description: Provides access to bridge configuration.
+  - name: Wrap
+    description: Endpoints related to wrapping tokens from the native chain into the wrapped chain.
+  - name: Unwrap
+    description: |
+      Endpoints related to unwrapping tokens from the wrapped chain back into the native chain.
+      Unwrap operations are supported only in wrap and stake bridge modes (please check the bridge README for more details).
+
+paths:
+  /:
+    get:
+      summary: Returns bridge configuration.
+      tags:
+        - Bridge
+      operationId: getBridgeStatus
+      responses:
+        200:
+          description: Detailed bridge configuration.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BridgeConfiguration'
+        500:
+          description: Unexpected internal error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /wrap/requests:
+    get:
+      summary: Returns wrap requests information.
+      description: |
+        Retrieves a paginated list of wrap requests detected on the native network.
+        These represent user-initiated deposits that trigger wrapping.
+      tags:
+        - Wrap
+      operationId: getWrapRequests
+      parameters:
+        - $ref: '#/components/parameters/Offset'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Sort'
+        - $ref: '#/components/parameters/PayoutStatus'
+      responses:
+        200:
+          description: List of wrap requests recorded by the bridge.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WrapRequest'
+        400:
+          description: Invalid request parameters (e.g., invalid pagination or filters).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        500:
+          description: Unexpected internal error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /wrap/requests/{address}:
+    get:
+      summary: Returns wrap requests filtered by sender or destination address.
+      description: |
+        Retrieves wrap requests associated with the provided address.
+        This includes both source (sender) and destination addresses.
+      tags:
+        - Wrap
+      operationId: getWrapRequestsByAddress
+      parameters:
+        - $ref: '#/components/parameters/Address'
+        - $ref: '#/components/parameters/Offset'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Sort'
+        - $ref: '#/components/parameters/PayoutStatus'
+      responses:
+        200:
+          description: Wrap requests linked to the specified address.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WrapRequest'
+        400:
+          description: The provided address is invalid for filtering wrap requests.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        500:
+          description: Unexpected internal error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /wrap/requests/hash/{transaction_hash}:
+    get:
+      summary: Returns wrap requests by request or payout transaction hash.
+      description: Retrieves wrap requests matched by either the request hash or associated payout hash.
+      tags:
+        - Wrap
+      operationId: getWrapRequestsByHash
+      parameters:
+        - $ref: '#/components/parameters/TransactionHash'
+        - $ref: '#/components/parameters/Offset'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Sort'
+        - $ref: '#/components/parameters/PayoutStatus'
+      responses:
+        200:
+          description: Wrap requests corresponding to the specified transaction hash.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WrapRequest'
+        400:
+          description: Invalid transaction hash format.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        500:
+          description: Unexpected internal error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /wrap/errors:
+    get:
+      summary: Returns wrap errors.
+      description: Retrieves a paginated list of errors encountered while processing wrap requests.
+      tags:
+        - Wrap
+      operationId: getWrapErrors
+      parameters:
+        - $ref: '#/components/parameters/Offset'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Sort'
+      responses:
+        200:
+          description: List of wrap errors stored by the bridge.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WrapError'
+        400:
+          description: Invalid request parameters.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        500:
+          description: Unexpected internal error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /wrap/errors/{address}:
+    get:
+      summary: Returns wrap errors for a specific sender address.
+      description: Retrieves wrap errors linked to the specified request sender address.
+      tags:
+        - Wrap
+      operationId: getWrapErrorsByAddress
+      parameters:
+        - $ref: '#/components/parameters/Address'
+        - $ref: '#/components/parameters/Offset'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Sort'
+      responses:
+        200:
+          description: Wrap errors associated with the provided address.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WrapError'
+        400:
+          description: Invalid address format.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        500:
+          description: Unexpected internal error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /wrap/errors/hash/{transaction_hash}:
+    get:
+      summary: Returns wrap errors for a specific transaction hash.
+      description: Retrieves wrap errors generated during processing of a transaction with the given hash.
+      tags:
+        - Wrap
+      operationId: getWrapErrorsByHash
+      parameters:
+        - $ref: '#/components/parameters/TransactionHash'
+        - $ref: '#/components/parameters/Offset'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Sort'
+      responses:
+        200:
+          description: Wrap errors associated with the specified transaction hash.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WrapError'
+        400:
+          description: Invalid transaction hash format.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        500:
+          description: Unexpected internal error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /wrap/prepare:
+    post:
+      summary: Prepares a wrap transaction.
+      description: |
+        Estimates the outcome of a wrap operation, including conversion results and fees.
+        This endpoint simulates how many wrapped tokens the user will receive based on the bridge’s
+        current configuration, fee structure, and mode.
+      tags:
+        - Wrap
+      operationId: prepareWrap
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PrepareRequest'
+      responses:
+        200:
+          description: Estimated wrap transaction details, including fees and net received amount.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrepareResponse'
+        400:
+          description: Wrap request parameters are invalid or violate bridge limits.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        500:
+          description: Unexpected internal bridge error during preparation.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /unwrap/requests:
+    get:
+      summary: Returns unwrap requests information.
+      description: |
+        Retrieves a paginated list of unwrap requests submitted on the wrapped network.
+        Unwrap operations are available only in wrap and stake modes.
+      tags:
+        - Unwrap
+      operationId: getUnwrapRequests
+      parameters:
+        - $ref: '#/components/parameters/Offset'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Sort'
+        - $ref: '#/components/parameters/PayoutStatus'
+      responses:
+        200:
+          description: List of unwrap requests recorded by the bridge.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UnwrapRequest'
+        400:
+          description: Invalid request parameters.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        500:
+          description: Unexpected internal error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /unwrap/requests/{address}:
+    get:
+      summary: Returns unwrap requests filtered by sender or destination address.
+      description: |
+        Retrieves unwrap requests associated with the provided address.
+        Unwrap operations are supported only when the bridge is running in wrap or stake mode.
+      tags:
+        - Unwrap
+      operationId: getUnwrapRequestsByAddress
+      parameters:
+        - $ref: '#/components/parameters/Address'
+        - $ref: '#/components/parameters/Offset'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Sort'
+        - $ref: '#/components/parameters/PayoutStatus'
+      responses:
+        200:
+          description: Unwrap requests linked to the specified address.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UnwrapRequest'
+        400:
+          description: Invalid address format.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        500:
+          description: Unexpected internal error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /unwrap/requests/hash/{transaction_hash}:
+    get:
+      summary: Returns unwrap requests for a transaction hash.
+      description: |
+        Retrieves unwrap requests matched by the request or payout transaction hash.
+        Available only in wrap and stake modes.
+      tags:
+        - Unwrap
+      operationId: getUnwrapRequestsByHash
+      parameters:
+        - $ref: '#/components/parameters/TransactionHash'
+        - $ref: '#/components/parameters/Offset'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Sort'
+        - $ref: '#/components/parameters/PayoutStatus'
+      responses:
+        200:
+          description: Unwrap requests that correspond to the given transaction hash.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UnwrapRequest'
+        400:
+          description: Invalid transaction hash format.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        500:
+          description: Unexpected internal error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /unwrap/errors:
+    get:
+      summary: Returns unwrap errors.
+      description: |
+        Retrieves errors encountered while processing unwrap requests.
+        Unwrap operations are available only in wrap and stake modes.
+      tags:
+        - Unwrap
+      operationId: getUnwrapErrors
+      parameters:
+        - $ref: '#/components/parameters/Offset'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Sort'
+      responses:
+        200:
+          description: List of unwrap-related errors.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UnwrapError'
+        400:
+          description: Invalid request parameters.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        500:
+          description: Unexpected internal error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /unwrap/errors/{address}:
+    get:
+      summary: Returns unwrap errors for a specific address.
+      description: |
+        Retrieves unwrap errors linked to the provided address.
+        Unwrap operations are supported only in wrap and stake modes.
+      tags:
+        - Unwrap
+      operationId: getUnwrapErrorsByAddress
+      parameters:
+        - $ref: '#/components/parameters/Address'
+        - $ref: '#/components/parameters/Offset'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Sort'
+      responses:
+        200:
+          description: Unwrap errors associated with the given address.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UnwrapError'
+        400:
+          description: Invalid address format.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        500:
+          description: Unexpected internal error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /unwrap/errors/hash/{transaction_hash}:
+    get:
+      summary: Returns unwrap errors for a specific transaction hash.
+      description: |
+        Retrieves errors encountered during processing of unwrap transactions associated with the given hash.
+        Unwrap is only available in wrap and stake modes.
+      tags:
+        - Unwrap
+      operationId: getUnwrapErrorsByHash
+      parameters:
+        - $ref: '#/components/parameters/TransactionHash'
+        - $ref: '#/components/parameters/Offset'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Sort'
+      responses:
+        200:
+          description: Unwrap errors associated with the specified transaction hash.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UnwrapError'
+        400:
+          description: Invalid transaction hash format.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        500:
+          description: Unexpected internal error.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /unwrap/prepare:
+    post:
+      summary: Prepares an unwrap transaction.
+      description: |
+        Estimates the result of an unwrap operation, including fees and expected payout.
+        Unwrap operations are only available in wrap and stake modes and are not supported when the
+        bridge is configured for swap mode.
+      tags:
+        - Unwrap
+      operationId: prepareUnwrap
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PrepareRequest'
+      responses:
+        200:
+          description: Estimated unwrap transaction details, including net payout after fees.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrepareResponse'
+        400:
+          description: Invalid unwrap preparation parameters or constraints violated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        500:
+          description: Unexpected internal error while estimating unwrap payout.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  parameters:
+    Address:
+      name: address
+      in: path
+      required: true
+      description: |
+        Address used for filtering wrap or unwrap requests and errors.
+        The exact format of addresses depends on the configured network (e.g. Ethereum, Symbol, NEM).
+        Clients should validate addresses according to the blockchain in use.
+      schema:
+        type: string
+        example: 0x12ab34cd56ef7890ab12cd34ef567890ab12cd34
+
+    TransactionHash:
+      name: transaction_hash
+      in: path
+      required: true
+      description: Transaction hash used to filter wrap or unwrap requests and errors.
+      schema:
+        type: string
+        pattern: '^[0-9A-Fa-f]{64}$'
+        example: 3f5b8f9a2bb2f6a9c3d2b4f0a1e2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a90
+
+    Offset:
+      name: offset
+      in: query
+      required: false
+      description: Number of items to skip for pagination.
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+
+    Limit:
+      name: limit
+      in: query
+      required: false
+      description: Maximum number of items to return.
+      schema:
+        type: integer
+        minimum: 0
+        default: 25
+
+    Sort:
+      name: sort
+      in: query
+      required: false
+      description: |
+        Sort order for results by request transaction height. Values: `1` (ascending) or `0` (descending).
+      schema:
+        type: integer
+        enum:
+          - 1
+          - 0
+        default: 1
+
+    PayoutStatus:
+      name: payout_status
+      in: query
+      required: false
+      description: Filter by payout processing status (0 – unprocessed, 1 - sent, 2 - completed, 3 - failed).
+      schema:
+        type: integer
+        enum:
+          - 0
+          - 1
+          - 2
+          - 3
+
+  schemas:
+    BridgeConfiguration:
+      type: object
+      description: Contains operational bridge configuration.
+      required:
+        - nativeNetwork
+        - wrappedNetwork
+        - enabled
+      properties:
+        nativeNetwork:
+          $ref: '#/components/schemas/NetworkConfig'
+        wrappedNetwork:
+          $ref: '#/components/schemas/NetworkConfig'
+        enabled:
+          type: boolean
+
+    NetworkConfig:
+      type: object
+      description: Network configuration details for either the native or wrapped chain.
+      required:
+        - blockchain
+        - network
+        - bridgeAddress
+        - tokenId
+        - defaultNodeUrl
+        - explorerUrl
+      properties:
+        blockchain:
+          description: Blockchain type on which this network operates.
+          type: string
+          enum:
+            - nem
+            - symbol
+            - ethereum
+          example: ethereum
+        network:
+          description: Network environment (testnet or mainnet).
+          type: string
+          enum:
+            - testnet
+            - mainnet
+          example: testnet
+        bridgeAddress:
+          description: Address monitored for incoming wrap or unwrap requests.
+          type: string
+          example: 0x12ab34cd56ef7890ab12cd34ef567890ab12cd34
+        tokenId:
+          description: Token identifier associated with this network configuration.
+          type: string
+          example: "0x0000000000000000000000000000000000000000"
+        defaultNodeUrl:
+          description: Default API or RPC node used for blockchain access.
+          type: string
+          format: uri
+          example: https://rpc.testnet.example
+        explorerUrl:
+          description: URL of a block explorer for viewing transactions and accounts.
+          type: string
+          format: uri
+          example: https://explorer.testnet.example
+
+    WrapRequest:
+      type: object
+      description: Represents a detected wrap request originating on the native network.
+      required:
+        - requestTransactionHeight
+        - requestTransactionHash
+        - requestTransactionSubindex
+        - senderAddress
+        - requestAmount
+        - destinationAddress
+        - payoutStatus
+        - requestTimestamp
+      properties:
+        requestTransactionHeight:
+          description: |
+            Height of the block containing the request transaction.
+            Represented as a string to support very large block heights (string-encoded integer).
+          type: string
+          example: "12345678"
+        requestTransactionHash:
+          description: Hash of the transaction submitting the request.
+          type: string
+          example: 3f5b8f9a2bb2f6a9c3d2b4f0a1e2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a90
+        requestTransactionSubindex:
+          description: Subindex for Symbol aggregate transactions or -1 for others.
+          type: integer
+          example: -1
+        senderAddress:
+          description: Address of the user initiating the request.
+          type: string
+          example: 0x12ab34cd56ef7890ab12cd34ef567890ab12cd34
+        requestAmount:
+          description: |
+            Amount of native tokens deposited for wrapping or unwrapping.
+            Amounts are returned as strings to preserve precision (decimal or integer string).
+          type: string
+          example: "1000000000000000000"
+        destinationAddress:
+          description: Address on the network that will receive the tokens after swap.
+          type: string
+          example: 0xE7DefF030632d08DA0ff3c5e9650459Dc8f746b7
+        payoutStatus:
+          description: Current payout processing status of this request (0 – unprocessed, 1 - sent, 2 - completed, 3 - failed).
+          type: integer
+          enum:
+            - 0
+            - 1
+            - 2
+            - 3
+          example: 0
+        payoutTransactionHash:
+          description: Hash of the payout transaction, if already initiated.
+          type: string
+          nullable: true
+          example: 03D848C2455CADBC26AB5F940D2232D168EFA6EA770D6F583E030C160769CB2E
+        requestTimestamp:
+          description: Timestamp (Unix) when the request transaction occurred.
+          type: integer
+          example: 1759781792
+        payoutTransactionHeight:
+          description: Block height of the payout transaction, if available (string-encoded integer).
+          type: string
+          nullable: true
+          example: "12345700"
+        payoutNetAmount:
+          description: Net payout amount sent after deducting fees (string-encoded integer).
+          type: string
+          nullable: true
+          example: "995000000000000000"
+        payoutTotalFee:
+          description: Total fees deducted from the wrap payout (string-encoded integer).
+          type: string
+          nullable: true
+          example: "5000000000000000"
+        payoutConversionRate:
+          description: |
+            Conversion rate expressed in parts-per-million (PPM), defining
+            how many wrapped tokens correspond to one native token.
+            - 1,000,000 PPM = 1.0 (1:1 ratio)
+            - 2,000,000 PPM = 2.0 (1 native converts to 2 wrapped)
+            - 500,000 PPM   = 0.5 (1 native converts to 0.5 wrapped)
+          type: string
+          nullable: true
+          example: "1000000"
+        payoutSentTimestamp:
+          description: Timestamp when the payout transaction was broadcast.
+          type: integer
+          nullable: true
+          example: 1759781792
+        payoutTimestamp:
+          description: Timestamp when the payout transaction was finalized.
+          type: integer
+          nullable: true
+          example: 1759981792
+        errorMessage:
+          description: Error message associated with this wrap request, if any.
+          type: string
+          nullable: true
+
+    UnwrapRequest:
+      allOf:
+        - $ref: '#/components/schemas/WrapRequest'
+      description: |
+        Represents an unwrap request detected on the wrapped network.
+        Unwrap operations are available only in wrap and stake modes.
+
+    WrapError:
+      type: object
+      description: Error entry generated during request processing.
+      required:
+        - requestTransactionHeight
+        - requestTransactionHash
+        - requestTransactionSubindex
+        - senderAddress
+        - errorMessage
+        - requestTimestamp
+      properties:
+        requestTransactionHeight:
+          description: Block height at which the invalid request was detected (string-encoded integer).
+          type: string
+          example: "12345678"
+        requestTransactionHash:
+          description: Hash of the transaction that caused the error.
+          type: string
+          example: 3f5b8f9a2bb2f6a9c3d2b4f0a1e2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a90
+        requestTransactionSubindex:
+          description: Aggregate transaction subindex for Symbol, or -1 otherwise.
+          type: integer
+          example: -1
+        senderAddress:
+          description: Address that submitted the invalid request.
+          type: string
+          example: 0x12ab34cd56ef7890ab12cd34ef567890ab12cd34
+        errorMessage:
+          description: Reason explaining why the request was considered invalid.
+          type: string
+          example: Required message is missing.
+        requestTimestamp:
+          description: Timestamp when the error-causing transaction occurred.
+          type: integer
+          example: 1759781792
+
+    UnwrapError:
+      allOf:
+        - $ref: '#/components/schemas/WrapError'
+      description: |
+        Error entry generated during unwrap request processing.
+        Unwrap operations exist only in wrap and stake modes.
+
+    PrepareRequest:
+      type: object
+      description: Request describing a simulated wrap or unwrap conversion for estimation purposes.
+      required:
+        - recipientAddress
+        - amount
+      properties:
+        recipientAddress:
+          description: Address that would receive the payout of the simulated operation.
+          type: string
+          example: 0xabcdefabcdefabcdefabcdefabcdefabcdefabcd
+        amount:
+          description: |
+            Amount of tokens to be converted as part of the simulation.
+            Use string-encoded integer to support very large numbers.
+          type: string
+          example: "1000000000000000000"
+
+    PrepareResponse:
+      type: object
+      description: Estimated outcome of a wrap or unwrap operation, including fees and net amount.
+      required:
+        - grossAmount
+        - transactionFee
+        - conversionFee
+        - totalFee
+        - netAmount
+        - diagnostics
+      properties:
+        grossAmount:
+          description: Gross value of tokens processed before deducting any fees (string-encoded integer).
+          type: string
+          example: "1000000000000000000"
+        transactionFee:
+          description: Estimated network transaction fee required for payout (string-encoded integer).
+          type: string
+          example: "2100000000000000"
+        conversionFee:
+          description: Conversion fee retained by the bridge (string-encoded integer).
+          type: string
+          example: "1000000"
+        totalFee:
+          description: Combined total of all fees applied (string-encoded integer).
+          type: string
+          example: "2105000000000000"
+        netAmount:
+          description: Net amount of tokens expected to be received after deductions (string-encoded integer).
+          type: string
+          example: "997895000000000000"
+        diagnostics:
+          description: Diagnostic information used for the conversion rate evaluation.
+          type: object
+          required:
+            - height
+            - nativeBalance
+            - wrappedBalance
+            - unwrappedBalance
+          properties:
+            height:
+              description: Block height at which diagnostic data was collected (string-encoded integer).
+              type: string
+              example: "12345678"
+            nativeBalance:
+              description: The current balance of the bridge account on the native network (string-encoded integer).
+              type: string
+              example: "200000000000000000000"
+            wrappedBalance:
+              description: The total amount of wrapped tokens that the bridge has produced since it started operating (string-encoded integer).
+              type: string
+              example: "150000000000000000000"
+            unwrappedBalance:
+              description: The total amount of wrapped tokens that the bridge has converted back into native tokens (string-encoded integer).
+              type: string
+              example: "50000000000000000000"
+
+    ErrorResponse:
+      type: object
+      description: Error response describing why an API request failed.
+      required:
+        - error
+        - errorCode
+      properties:
+        error:
+          type: string
+          description: Human-readable explanation of the error.
+          example: "Invalid address format"
+        errorCode:
+          type: string
+          description: Categorized error code when applicable.
+          nullable: true
+          enum:
+            - REQUEST_LIMIT_EXCEEDED
+            - DAILY_LIMIT_EXCEEDED
+            - UNEXPECTED_ERROR
+          example: DAILY_LIMIT_EXCEEDED
