@@ -4,7 +4,7 @@ from collections import namedtuple
 from decimal import Decimal
 from pathlib import Path
 
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, send_from_directory
 from symbolchain.CryptoTypes import Hash256
 from symbollightapi.model.Exceptions import NodeException
 
@@ -355,6 +355,10 @@ def create_app():
 			'wrappedNetwork': _network_config_to_dict(config.wrapped_network),
 			'enabled': True
 		})
+
+	@app.route('/openapi')
+	def openapi2():  # pylint: disable=unused-variable
+		return send_from_directory('static/openapi', 'index.html')
 
 	add_wrap_routes(app, context)
 	if config.wrapped_network.mosaic_id:  # not native to native conversion
