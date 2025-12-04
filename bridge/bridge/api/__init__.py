@@ -357,7 +357,7 @@ def create_app():
 		})
 
 	@app.route('/openapi')
-	def openapi2():  # pylint: disable=unused-variable
+	def openapi():  # pylint: disable=unused-variable
 		return send_from_directory('static/openapi', 'index.html')
 
 	add_wrap_routes(app, context)
