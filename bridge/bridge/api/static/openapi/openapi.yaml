@@ -3,10 +3,15 @@ info:
   title: Bridge API Documentation
   description: |
     API for handling token wrapping and unwrapping between native and wrapped networks.
-    The API exposes the internal bridge state so external systems can monitor request processing,
+
+    The API exposes internal bridge state so external systems can monitor request processing,
     payout status, errors, and fee/conversion estimates.
-    Unwrap operations are available only when the bridge is running in wrap or stake mode
-    (they are not available in swap mode).
+    The API returns all requests and errors recorded since the bridge began operating.
+
+    Unwrap operations are supported only in wrap mode and stake mode (not available in swap mode).
+
+    Please check the Bridge README:
+    <https://github.com/symbol/product/blob/dev/bridge/README.md>
   version: 1.0.0
 servers:
   - url: "../../"
@@ -21,8 +26,8 @@ tags:
   - name: Unwrap
     description: |
       Endpoints related to unwrapping tokens from the wrapped chain back into the native chain.
-      Unwrap operations are supported only in wrap and stake bridge modes (please check the bridge README for more details).
-
+      Unwrap operations are supported only in wrap mode and stake mode. This is the authoritative statement;
+      individual endpoints do not repeat this availability text.
 paths:
   /:
     get:
@@ -49,7 +54,8 @@ paths:
       summary: Returns wrap requests information.
       description: |
         Retrieves a paginated list of wrap requests detected on the native network.
-        These represent user-initiated deposits that trigger wrapping.
+        These represent incoming transactions that initiate wrapping.
+        If a request results in an error, it will not appear in `/wrap/requests`; use `/wrap/errors` to retrieve it.
       tags:
         - Wrap
       operationId: getWrapRequests
@@ -85,7 +91,12 @@ paths:
       summary: Returns wrap requests filtered by sender or destination address.
       description: |
         Retrieves wrap requests associated with the provided address.
-        This includes both source (sender) and destination addresses.
+
+        The address filter matches either:
+          - the **request (sender) address on the native network**, or
+          - the **destination address on the wrapped network**.
+
+        Addresses from either network are valid and will be used to filter wrap requests accordingly.
       tags:
         - Wrap
       operationId: getWrapRequestsByAddress
@@ -105,7 +116,7 @@ paths:
                 items:
                   $ref: '#/components/schemas/WrapRequest'
         400:
-          description: The provided address is invalid for filtering wrap requests.
+          description: Invalid request parameters (e.g., invalid pagination, filters, or address).
           content:
             application/json:
               schema:
@@ -120,7 +131,15 @@ paths:
   /wrap/requests/hash/{transaction_hash}:
     get:
       summary: Returns wrap requests by request or payout transaction hash.
-      description: Retrieves wrap requests matched by either the request hash or associated payout hash.
+      description: |
+        Retrieves wrap requests matched by either the request hash or the associated payout hash.
+
+        The **request hash** refers to the transaction hash of the originating transaction
+        on the **native network**, while the **payout hash** refers to the transaction hash
+        of the corresponding payout transaction on the **wrapped network**.
+
+        The hash must be a valid 64-character hexadecimal string.
+        **Important:** For Ethereum, the hash MUST be provided **without** the `0x` prefix.
       tags:
         - Wrap
       operationId: getWrapRequestsByHash
@@ -140,7 +159,7 @@ paths:
                 items:
                   $ref: '#/components/schemas/WrapRequest'
         400:
-          description: Invalid transaction hash format.
+          description: Invalid request parameters (e.g., invalid pagination, filters, or transaction hash).
           content:
             application/json:
               schema:
@@ -155,7 +174,9 @@ paths:
   /wrap/errors:
     get:
       summary: Returns wrap errors.
-      description: Retrieves a paginated list of errors encountered while processing wrap requests.
+      description: |
+        Retrieves a paginated list of errors encountered while processing wrap requests.
+        If a request results in an error, it will not appear in `/wrap/requests`; use this endpoint to retrieve it.
       tags:
         - Wrap
       operationId: getWrapErrors
@@ -173,7 +194,7 @@ paths:
                 items:
                   $ref: '#/components/schemas/WrapError'
         400:
-          description: Invalid request parameters.
+          description: Invalid request parameters (e.g., invalid pagination).
           content:
             application/json:
               schema:
@@ -188,7 +209,11 @@ paths:
   /wrap/errors/{address}:
     get:
       summary: Returns wrap errors for a specific sender address.
-      description: Retrieves wrap errors linked to the specified request sender address.
+      description: |
+        Retrieves wrap errors associated with the provided address.
+        The address filter matches the **request address on the native network** (sender).
+        Addresses from native network is valid and will be used to filter wrap request errors accordingly.
+        Filtering by destination address is not supported because destination information is not available for errored requests.
       tags:
         - Wrap
       operationId: getWrapErrorsByAddress
@@ -199,7 +224,7 @@ paths:
         - $ref: '#/components/parameters/Sort'
       responses:
         200:
-          description: Wrap errors associated with the provided address.
+          description: List of wrapping errors associated with the provided address.
           content:
             application/json:
               schema:
@@ -207,7 +232,7 @@ paths:
                 items:
                   $ref: '#/components/schemas/WrapError'
         400:
-          description: Invalid address format.
+          description: Invalid request parameters (e.g., invalid pagination or address).
           content:
             application/json:
               schema:
@@ -222,7 +247,13 @@ paths:
   /wrap/errors/hash/{transaction_hash}:
     get:
       summary: Returns wrap errors for a specific transaction hash.
-      description: Retrieves wrap errors generated during processing of a transaction with the given hash.
+      description: |
+        Retrieves wrap errors matched by the request transaction hash.
+
+        The **request hash** refers to the transaction hash of the originating transaction on the **native network**.
+        The hash must be a valid 64-character hexadecimal string.
+
+        **Important:** For Ethereum, the hash MUST be provided **without** the `0x` prefix.
       tags:
         - Wrap
       operationId: getWrapErrorsByHash
@@ -233,7 +264,7 @@ paths:
         - $ref: '#/components/parameters/Sort'
       responses:
         200:
-          description: Wrap errors associated with the specified transaction hash.
+          description: List of wrapping errors associated with the provided transaction hash.
           content:
             application/json:
               schema:
@@ -241,7 +272,7 @@ paths:
                 items:
                   $ref: '#/components/schemas/WrapError'
         400:
-          description: Invalid transaction hash format.
+          description: Invalid request parameters (e.g., invalid pagination or transaction hash).
           content:
             application/json:
               schema:
@@ -255,11 +286,11 @@ paths:
 
   /wrap/prepare:
     post:
-      summary: Prepares a wrap transaction.
+      summary: Estimates the cost of a wrap transaction.
       description: |
         Estimates the outcome of a wrap operation, including conversion results and fees.
-        This endpoint simulates how many wrapped tokens the user will receive based on the bridge’s
-        current configuration, fee structure, and mode.
+        This endpoint simulates how many wrapped tokens the user will receive based on the bridge’s current configuration, fee structure, and mode.
+        If the estimated amount is acceptable, submit the actual wrap request by transferring the desired amount to the bridge account as explained in the README.
       tags:
         - Wrap
       operationId: prepareWrap
@@ -268,14 +299,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PrepareRequest'
+              $ref: '#/components/schemas/PrepareWrapRequest'
       responses:
         200:
           description: Estimated wrap transaction details, including fees and net received amount.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PrepareResponse'
+                $ref: '#/components/schemas/PrepareWrapResponse'
         400:
           description: Wrap request parameters are invalid or violate bridge limits.
           content:
@@ -294,7 +325,8 @@ paths:
       summary: Returns unwrap requests information.
       description: |
         Retrieves a paginated list of unwrap requests submitted on the wrapped network.
-        Unwrap operations are available only in wrap and stake modes.
+        These represent incoming transactions that initiate unwrapping.
+        If a request results in an error, it will not appear in `/unwrap/requests`; use `/unwrap/errors` to retrieve it.
       tags:
         - Unwrap
       operationId: getUnwrapRequests
@@ -330,7 +362,12 @@ paths:
       summary: Returns unwrap requests filtered by sender or destination address.
       description: |
         Retrieves unwrap requests associated with the provided address.
-        Unwrap operations are supported only when the bridge is running in wrap or stake mode.
+
+        The address filter matches either:
+          - the **request (sender) address on the wrapped network**, or
+          - the **destination address on the native network**.
+
+        Addresses from either network are valid and will be used to filter unwrap requests accordingly.
       tags:
         - Unwrap
       operationId: getUnwrapRequestsByAddress
@@ -350,7 +387,7 @@ paths:
                 items:
                   $ref: '#/components/schemas/UnwrapRequest'
         400:
-          description: Invalid address format.
+          description: Invalid request parameters (e.g., invalid pagination, filters, or address).
           content:
             application/json:
               schema:
@@ -366,8 +403,13 @@ paths:
     get:
       summary: Returns unwrap requests for a transaction hash.
       description: |
-        Retrieves unwrap requests matched by the request or payout transaction hash.
-        Available only in wrap and stake modes.
+        Retrieves unwrap requests matched by either the request hash or the associated payout hash.
+
+        The **request hash** refers to the transaction hash of the originating transaction on the **wrapped network**,
+        while the **payout hash** refers to the transaction hash of the corresponding payout transaction on the **native network**.
+
+        The hash must be a valid 64-character hexadecimal string.
+        **Important:** For Ethereum, the hash MUST be provided **without** the `0x` prefix.
       tags:
         - Unwrap
       operationId: getUnwrapRequestsByHash
@@ -379,7 +421,7 @@ paths:
         - $ref: '#/components/parameters/PayoutStatus'
       responses:
         200:
-          description: Unwrap requests that correspond to the given transaction hash.
+          description: Unwrap requests corresponding to the given transaction hash.
           content:
             application/json:
               schema:
@@ -387,7 +429,7 @@ paths:
                 items:
                   $ref: '#/components/schemas/UnwrapRequest'
         400:
-          description: Invalid transaction hash format.
+          description: Invalid request parameters (e.g., invalid pagination, filters, or transaction hash).
           content:
             application/json:
               schema:
@@ -404,7 +446,7 @@ paths:
       summary: Returns unwrap errors.
       description: |
         Retrieves errors encountered while processing unwrap requests.
-        Unwrap operations are available only in wrap and stake modes.
+        If a request results in an error, it will not appear in `/unwrap/requests`; use this endpoint to retrieve it.
       tags:
         - Unwrap
       operationId: getUnwrapErrors
@@ -422,7 +464,7 @@ paths:
                 items:
                   $ref: '#/components/schemas/UnwrapError'
         400:
-          description: Invalid request parameters.
+          description: Invalid request parameters (e.g., invalid pagination, filters).
           content:
             application/json:
               schema:
@@ -438,8 +480,11 @@ paths:
     get:
       summary: Returns unwrap errors for a specific address.
       description: |
-        Retrieves unwrap errors linked to the provided address.
-        Unwrap operations are supported only in wrap and stake modes.
+        Retrieves unwrap errors associated with the provided address.
+        The address filter matches the **request address on the wrapped network** (sender). 
+        Addresses from wrapped network is valid and will be used to filter unwrap request errors accordingly.
+        
+        Filtering by destination address is not supported because destination information is not available for errored requests.
       tags:
         - Unwrap
       operationId: getUnwrapErrorsByAddress
@@ -458,7 +503,7 @@ paths:
                 items:
                   $ref: '#/components/schemas/UnwrapError'
         400:
-          description: Invalid address format.
+          description: Invalid request parameters (e.g., invalid pagination, filters, or address).
           content:
             application/json:
               schema:
@@ -474,8 +519,12 @@ paths:
     get:
       summary: Returns unwrap errors for a specific transaction hash.
       description: |
-        Retrieves errors encountered during processing of unwrap transactions associated with the given hash.
-        Unwrap is only available in wrap and stake modes.
+        Retrieves unwrap errors matched by the request transaction hash.
+
+        The **request hash** refers to the transaction hash of the originating transaction on the **wrapped network**.
+        The hash must be a valid 64-character hexadecimal string.
+
+        **Important:** For Ethereum, the hash MUST be provided **without** the `0x` prefix.
       tags:
         - Unwrap
       operationId: getUnwrapErrorsByHash
@@ -494,7 +543,7 @@ paths:
                 items:
                   $ref: '#/components/schemas/UnwrapError'
         400:
-          description: Invalid transaction hash format.
+          description: Invalid request parameters (e.g., invalid pagination, filters, or transaction hash).
           content:
             application/json:
               schema:
@@ -508,11 +557,11 @@ paths:
 
   /unwrap/prepare:
     post:
-      summary: Prepares an unwrap transaction.
+      summary: Estimates the cost of an unwrap transaction.
       description: |
         Estimates the result of an unwrap operation, including fees and expected payout.
-        Unwrap operations are only available in wrap and stake modes and are not supported when the
-        bridge is configured for swap mode.
+        This endpoint simulates how many native tokens the user will receive based on the bridge’s current configuration, fee structure, and mode.
+        If the estimated amount is acceptable, submit the actual unwrap request by transferring the desired amount of wrapped tokens to the bridge account as explained in the README.
       tags:
         - Unwrap
       operationId: prepareUnwrap
@@ -521,14 +570,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PrepareRequest'
+              $ref: '#/components/schemas/PrepareUnwrapRequest'
       responses:
         200:
           description: Estimated unwrap transaction details, including net payout after fees.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PrepareResponse'
+                $ref: '#/components/schemas/PrepareUnwrapResponse'
         400:
           description: Invalid unwrap preparation parameters or constraints violated.
           content:
@@ -549,22 +598,41 @@ components:
       in: path
       required: true
       description: |
-        Address used for filtering wrap or unwrap requests and errors.
-        The exact format of addresses depends on the configured network (e.g. Ethereum, Symbol, NEM).
+        Address used for filtering wrap/unwrap requests and errors.
+        The exact format depends on the configured network (Ethereum, Symbol, NEM).
         Clients should validate addresses according to the blockchain in use.
       schema:
-        type: string
-        example: 0x12ab34cd56ef7890ab12cd34ef567890ab12cd34
+        oneOf:
+          - type: string
+            pattern: '^0x[a-fA-F0-9]{40}$'
+            description: Ethereum address (hex, with 0x prefix)
+          - type: string
+            pattern: '^[A-Z2-9]{39}$'
+            description: Symbol address (uppercase, 39 characters)
+          - type: string
+            pattern: '^[A-Z0-9]{40}$'
+            description: NEM address (uppercase, 40 characters)
+      examples:
+        ethereum:
+          value: "0xECA7dADA410614B604FFCBe0378C05474B0AED8D"
+        symbol:
+          value: "TDHYBS2KMMVHGHKHEP7HNXHDQHORTAYR7IUXHKY"
+        nem:
+          value: "TDY75K2RR5JWI7KRQEZL2UKERGVSXJAY4UCCHWOT"
 
     TransactionHash:
       name: transaction_hash
       in: path
       required: true
-      description: Transaction hash used to filter wrap or unwrap requests and errors.
+      description: |
+        Transaction hash used to filter wrap or unwrap requests and errors.
+        The transaction hash format is identical across all supported networks (NEM, Symbol, and Ethereum).
+        The hash must be a valid 64-character hexadecimal string. 
+        **Important:** For Ethereum, provide the hash **without** the `0x` prefix.
       schema:
         type: string
         pattern: '^[0-9A-Fa-f]{64}$'
-        example: 3f5b8f9a2bb2f6a9c3d2b4f0a1e2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a90
+        example: F43F067F19A292541DBE930C4043545ADFF5D8E093DC891E33047BD34BD862FB
 
     Offset:
       name: offset
@@ -591,7 +659,10 @@ components:
       in: query
       required: false
       description: |
-        Sort order for results by request transaction height. Values: `1` (ascending) or `0` (descending).
+        Results are sorted by the block height of the transaction that initiated the request.
+        The block height used for sorting is the request’s originating network block height
+        (native network for wrap requests; wrapped network for unwrap requests).
+        This field selects the sort direction: `1` (ascending) or `0` (descending).
       schema:
         type: integer
         enum:
@@ -603,7 +674,7 @@ components:
       name: payout_status
       in: query
       required: false
-      description: Filter by payout processing status (0 – unprocessed, 1 - sent, 2 - completed, 3 - failed).
+      description: "Filter by payout processing status: `0` (unprocessed), `1` (sent), `2` (completed), or `3` (failed)."
       schema:
         type: integer
         enum:
@@ -655,27 +726,42 @@ components:
             - mainnet
           example: testnet
         bridgeAddress:
-          description: Address monitored for incoming wrap or unwrap requests.
+          description: |
+            Address monitored for incoming wrap (on the native network) or unwrap (on the wrapped network) requests.
+            The address format **depends on the network**:
+            - **Ethereum:** Hex-encoded address with `0x` prefix (e.g., `0x5E8343A455F03109B737B6D8b410e4ECCE998cdA`).
+            - **Symbol:** Encoded Symbol account address (e.g., `TDWL43OYBZHXLAXGMKDKZ26KVYM2C6NS7QG2A5Q`).
+            - **NEM:** Encoded NEM account address (e.g., `TAZD3BMMOLQE5Q672BKDTF2SWIGDIDB6ZPUVKTH6`).
           type: string
-          example: 0x12ab34cd56ef7890ab12cd34ef567890ab12cd34
+          example: TBQAAMLT4R6TPIZVWERYURELILHHMCERDWZ4FCQ
         tokenId:
-          description: Token identifier associated with this network configuration.
+          description: |
+            Token identifier associated with this network configuration.  
+            - **Ethereum:** The tokenId is the smart contract address of the ERC-20 token (e.g., `0x5E8343A455F03109B737B6D8b410e4ECCE998cdA`).  
+            - **NEM:** The tokenId is expressed in the `namespaceId:mosaicId` format (e.g., `nem:xem`).  
+            - **Symbol:** The tokenId is the on-chain token identifier (e.g., `72C0212E67A08BCE`).  
+            - **Native bridge mode:** On the *wrapped side* of the bridge, the `tokenId` is an **empty string** (`""`).
           type: string
-          example: "0x0000000000000000000000000000000000000000"
+          example: "72C0212E67A08BCE"
         defaultNodeUrl:
           description: Default API or RPC node used for blockchain access.
           type: string
           format: uri
-          example: https://rpc.testnet.example
+          example: https://reference.symboltest.net:3001
         explorerUrl:
-          description: URL of a block explorer for viewing transactions and accounts.
+          description: URL of a block explorer for viewing transactions and accounts. This information is provided for convenience and is intended for client use.
           type: string
           format: uri
-          example: https://explorer.testnet.example
+          example: https://testnet.symbol.fyi
 
     WrapRequest:
       type: object
-      description: Represents a detected wrap request originating on the native network.
+      description: |
+        Represents a detected wrap request originating on the native network.
+        A wrap request where:
+        - The request occurs on the **native network**.
+        - The payout occurs on the **wrapped network**.
+        In other words: source = native network, destination = wrapped network.
       required:
         - requestTransactionHeight
         - requestTransactionHash
@@ -691,31 +777,49 @@ components:
             Height of the block containing the request transaction.
             Represented as a string to support very large block heights (string-encoded integer).
           type: string
-          example: "12345678"
+          example: "2817612"
         requestTransactionHash:
-          description: Hash of the transaction submitting the request.
+          description: |
+            Hash of the transaction submitting the request.
+            The hash must be a valid 64-character hexadecimal string.
+            **Important:** For Ethereum, the hash is returned **without** the `0x` prefix.
           type: string
-          example: 3f5b8f9a2bb2f6a9c3d2b4f0a1e2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a90
+          pattern: '^[0-9A-Fa-f]{64}$'
+          example: B2F4AD2B168F1B6EE58F1EEE41D2BEA610FC0C106B99E1A6089524E0938B3360
         requestTransactionSubindex:
-          description: Subindex for Symbol aggregate transactions or -1 for others.
+          description: |
+            Subindex of the wrap request within a Symbol aggregate transaction.
+            Symbol aggregate transactions may bundle multiple wrap requests, and this value identifies which inner transaction corresponds to the request.
+            For all non-Symbol networks, or when no aggregation is used, this value is set to **-1**.
           type: integer
           example: -1
         senderAddress:
-          description: Address of the user initiating the request.
+          description: |
+            Address of the user initiating the request on the source network.
+            The address format **depends on the network**:
+            - **Ethereum:** Hex-encoded address with `0x` prefix (e.g., `0x5E8343A455F03109B737B6D8b410e4ECCE998cdA`).
+            - **Symbol:** Encoded Symbol account address (e.g., `TDWL43OYBZHXLAXGMKDKZ26KVYM2C6NS7QG2A5Q`).
+            - **NEM:** Encoded NEM account address (e.g., `TAZD3BMMOLQE5Q672BKDTF2SWIGDIDB6ZPUVKTH6`).
           type: string
-          example: 0x12ab34cd56ef7890ab12cd34ef567890ab12cd34
+          example: TBJP7DIASQUWRMNHZYW7P5XU6QCGZDBHDVK3T4Y
         requestAmount:
           description: |
-            Amount of native tokens deposited for wrapping or unwrapping.
-            Amounts are returned as strings to preserve precision (decimal or integer string).
+            Amount of tokens deposited, denominated in the source network token.
+            The value is always an **integer**, expressed in the **smallest atomic unit** of the respective network (e.g., wei for Ethereum, micro units for Symbol and NEM).
+            Amounts are represented as strings to ensure full precision of large integers.
           type: string
-          example: "1000000000000000000"
+          example: "500000000"
         destinationAddress:
-          description: Address on the network that will receive the tokens after swap.
+          description: |
+            Address on the destination network that will receive the tokens.
+            The address format **depends on the network**:
+            - **Ethereum:** Hex-encoded address with `0x` prefix (e.g., `0x5E8343A455F03109B737B6D8b410e4ECCE998cdA`).
+            - **Symbol:** Encoded Symbol account address (e.g., `TDWL43OYBZHXLAXGMKDKZ26KVYM2C6NS7QG2A5Q`).
+            - **NEM:** Encoded NEM account address (e.g., `TAZD3BMMOLQE5Q672BKDTF2SWIGDIDB6ZPUVKTH6`).
           type: string
           example: 0xE7DefF030632d08DA0ff3c5e9650459Dc8f746b7
         payoutStatus:
-          description: Current payout processing status of this request (0 – unprocessed, 1 - sent, 2 - completed, 3 - failed).
+          description: "Current payout processing status: `0` (unprocessed), `1` (sent), `2` (completed), or `3` (failed)."
           type: integer
           enum:
             - 0
@@ -724,51 +828,74 @@ components:
             - 3
           example: 0
         payoutTransactionHash:
-          description: Hash of the payout transaction, if already initiated.
+          description: |
+            Hash of the payout transaction, if already initiated.
+            This field is **null** when the payout process has not yet been initialized.
+            The hash must be a valid 64-character hexadecimal string.
+            **Important:** For Ethereum, the hash is returned **without** the `0x` prefix.
           type: string
           nullable: true
           example: 03D848C2455CADBC26AB5F940D2232D168EFA6EA770D6F583E030C160769CB2E
         requestTimestamp:
-          description: Timestamp (Unix) when the request transaction occurred.
-          type: integer
-          example: 1759781792
+          description: |
+            Timestamp of the request transaction expressed as seconds since the Unix epoch.
+            When available, the value includes a **fractional part representing milliseconds**.
+            If millisecond precision is not available, an integer second value is returned.
+          type: number
+          example: 1759781792.879
         payoutTransactionHeight:
-          description: Block height of the payout transaction, if available (string-encoded integer).
+          description: |
+            Block height of the payout transaction, if available (string-encoded integer).
+            This field is **null** when the payout process has not yet been initialized.
           type: string
           nullable: true
           example: "12345700"
         payoutNetAmount:
-          description: Net payout amount sent after deducting fees (string-encoded integer).
+          description: |
+            Net payout amount sent after deducting fees.
+            The value is a **string-encoded integer** representing the amount in the **smallest atomic unit** of the destination network’s configured token.
+            This field is **null** when the payout process has not yet been initialized.
           type: string
           nullable: true
           example: "995000000000000000"
         payoutTotalFee:
-          description: Total fees deducted from the wrap payout (string-encoded integer).
+          description: |
+            Total fees deducted from the wrap payout.
+            The value is a **string-encoded integer** representing the fee amount in the smallest atomic unit of the destination network’s configured token.
+            This field is **null** when the payout process has not yet been initialized.
           type: string
           nullable: true
           example: "5000000000000000"
         payoutConversionRate:
           description: |
-            Conversion rate expressed in parts-per-million (PPM), defining
+            Conversion rate expressed in parts-per-million (PPM), which defines
             how many wrapped tokens correspond to one native token.
-            - 1,000,000 PPM = 1.0 (1:1 ratio)
-            - 2,000,000 PPM = 2.0 (1 native converts to 2 wrapped)
-            - 500,000 PPM   = 0.5 (1 native converts to 0.5 wrapped)
+            - 1,000,000 PPM = 1.0  
+            - 2,000,000 PPM = 2.0  
+            - 500,000 PPM   = 0.5
           type: string
           nullable: true
           example: "1000000"
         payoutSentTimestamp:
-          description: Timestamp when the payout transaction was broadcast.
-          type: integer
+          description: |
+            Timestamp when the payout transaction was broadcast.
+            Expressed as seconds since the Unix epoch, optionally including milliseconds as a fractional part.
+            This field is **null** if the payout has not yet been broadcast.
+          type: number
           nullable: true
-          example: 1759781792
+          example: 1759781792.879
         payoutTimestamp:
-          description: Timestamp when the payout transaction was finalized.
-          type: integer
+          description: |
+            Timestamp when the payout transaction was finalized.
+            Expressed as seconds since the Unix epoch, optionally including milliseconds as a fractional part.
+            This field is **null** if the payout has not yet been finalized.
+          type: number
           nullable: true
-          example: 1759981792
+          example: 1759981792.121
         errorMessage:
-          description: Error message associated with this wrap request, if any.
+          description: |
+            Human-readable error message associated with this wrap request, if any.
+            This is **free-form text** intended for diagnostic or user-facing explanations and is not restricted to predefined values.
           type: string
           nullable: true
 
@@ -777,11 +904,19 @@ components:
         - $ref: '#/components/schemas/WrapRequest'
       description: |
         Represents an unwrap request detected on the wrapped network.
-        Unwrap operations are available only in wrap and stake modes.
+        An unwrap request where:
+        - The request occurs on the **wrapped network**.
+        - The payout occurs on the **native network**.
+        In other words: source = wrapped network, destination = native network.
 
     WrapError:
       type: object
-      description: Error entry generated during request processing.
+      description: |
+        Error entry generated while processing a wrap request.
+        A wrap request error where:
+        - The request occurs on the **native network**.
+        - The payout occurs on the **wrapped network**.
+        In other words: source = native network, destination = wrapped network.
       required:
         - requestTransactionHeight
         - requestTransactionHash
@@ -795,54 +930,91 @@ components:
           type: string
           example: "12345678"
         requestTransactionHash:
-          description: Hash of the transaction that caused the error.
+          description: |
+            Hash of the request transaction on the source network that caused the error.
+            **Important:** For Ethereum, the hash is returned **without** the `0x` prefix.
           type: string
-          example: 3f5b8f9a2bb2f6a9c3d2b4f0a1e2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a90
+          example: 7A1F76535B2CA0D2139894779B3FBF6883D2203865CD71D0629517341B9EC1F1
         requestTransactionSubindex:
-          description: Aggregate transaction subindex for Symbol, or -1 otherwise.
+          description: |
+            Subindex of the wrap request within a Symbol aggregate transaction.
+            Symbol aggregate transactions may bundle multiple wrap requests; this value identifies which inner transaction corresponds to the request.
+            For all non-Symbol networks, or when no aggregation is used, this value is set to **-1**.
           type: integer
           example: -1
         senderAddress:
-          description: Address that submitted the invalid request.
+          description: |
+            Address (from the source network) that submitted the invalid request.
+            Each supported network (Ethereum, Symbol, NEM) uses its own encoding and validation rules.
           type: string
-          example: 0x12ab34cd56ef7890ab12cd34ef567890ab12cd34
+          example: 0xeCA7dadA410614B604FFcBE0378C05474b0aeD8D
         errorMessage:
-          description: Reason explaining why the request was considered invalid.
+          description: |
+            Human-readable error message associated with this wrap operation or request.
+            This is **free-form text** intended for diagnostic or user-facing explanations.
           type: string
           example: Required message is missing.
         requestTimestamp:
-          description: Timestamp when the error-causing transaction occurred.
-          type: integer
-          example: 1759781792
+          description: |
+            Timestamp when the error-causing transaction occurred on the source network.
+            Expressed as seconds since the Unix epoch, optionally including a fractional part for milliseconds.
+          type: number
+          example: 1759981792.121
 
     UnwrapError:
       allOf:
         - $ref: '#/components/schemas/WrapError'
       description: |
         Error entry generated during unwrap request processing.
-        Unwrap operations exist only in wrap and stake modes.
+        An unwrap request error where:
+        - The request occurs on the **wrapped network**.
+        - The payout occurs on the **native network**.
+        In other words: source = wrapped network, destination = native network.
 
-    PrepareRequest:
+    PrepareWrapRequest:
       type: object
-      description: Request describing a simulated wrap or unwrap conversion for estimation purposes.
+      description: |
+        Request describing a simulated wrap conversion for estimation purposes.
+        In a wrap operation:
+        - The request occurs on the **native network**.
+        - The payout occurs on the **wrapped network**.
+        In other words: source = native network, destination = wrapped network.
       required:
         - recipientAddress
         - amount
       properties:
         recipientAddress:
-          description: Address that would receive the payout of the simulated operation.
+          description: |
+            Address (on the destination network) that would receive the payout of the simulated operation.
           type: string
-          example: 0xabcdefabcdefabcdefabcdefabcdefabcdefabcd
+          example: 0x32Be343B94f860124dC4fEe278FDCBD38C102D88
         amount:
           description: |
-            Amount of tokens to be converted as part of the simulation.
-            Use string-encoded integer to support very large numbers.
+            Amount of tokens (on the source network) to be converted as part of the simulation.
+            This value is expressed in atomic units (the smallest indivisible unit of the token).
+            Use a string-encoded integer to support very large values.
           type: string
           example: "1000000000000000000"
 
-    PrepareResponse:
+    PrepareUnwrapRequest:
+      allOf:
+        - $ref: '#/components/schemas/PrepareWrapRequest'
+      description: |
+        Request describing a simulated unwrap conversion for estimation purposes.
+        In an unwrap operation:
+        - The request occurs on the **wrapped network**.
+        - The payout occurs on the **native network**.
+        In other words: source = wrapped network, destination = native network.
+
+    PrepareWrapResponse:
       type: object
-      description: Estimated outcome of a wrap or unwrap operation, including fees and net amount.
+      description: |
+        Estimated outcome of a wrap operation, including fees and net amount.
+        In a wrap operation:
+        - The request occurs on the **native network**.
+        - The payout occurs on the **wrapped network**.
+        In other words: source = native network, destination = wrapped network.
+        All amounts are expressed in atomic units of the wrapped network token and represent estimated values.
       required:
         - grossAmount
         - transactionFee
@@ -852,27 +1024,36 @@ components:
         - diagnostics
       properties:
         grossAmount:
-          description: Gross value of tokens processed before deducting any fees (string-encoded integer).
+          description: |
+            Estimated gross amount of destination network tokens involved in the operation, expressed in atomic units.
+            This value represents the estimated amount the user will receive before fees.
           type: string
           example: "1000000000000000000"
         transactionFee:
-          description: Estimated network transaction fee required for payout (string-encoded integer).
+          description: |
+            Estimated network transaction fee required for payout, expressed in atomic units.
+            This fee is denominated in the destination network token.
           type: string
           example: "2100000000000000"
         conversionFee:
-          description: Conversion fee retained by the bridge (string-encoded integer).
+          description: |
+            Estimated conversion fee retained by the bridge, expressed in atomic units.
+            This fee is denominated in the destination network token.
           type: string
           example: "1000000"
         totalFee:
-          description: Combined total of all fees applied (string-encoded integer).
+          description: |
+            Estimated total of all fees applied (transaction fee + conversion fee), expressed in atomic units.
+            This fee is denominated in the destination network token.
           type: string
           example: "2105000000000000"
         netAmount:
-          description: Net amount of tokens expected to be received after deductions (string-encoded integer).
+          description: |
+            Estimated net amount of destination network tokens the user is expected to receive after all deductions, expressed in atomic units.
           type: string
           example: "997895000000000000"
         diagnostics:
-          description: Diagnostic information used for the conversion rate evaluation.
+          description: Diagnostic information used for conversion rate evaluation.
           type: object
           required:
             - height
@@ -885,17 +1066,28 @@ components:
               type: string
               example: "12345678"
             nativeBalance:
-              description: The current balance of the bridge account on the native network (string-encoded integer).
+              description: Current balance (atomic units) of the bridge account on the native network (string-encoded integer).
               type: string
               example: "200000000000000000000"
             wrappedBalance:
-              description: The total amount of wrapped tokens that the bridge has produced since it started operating (string-encoded integer).
+              description: Total amount (atomic units) of wrapped tokens produced by the bridge since it began operating (string-encoded integer).
               type: string
               example: "150000000000000000000"
             unwrappedBalance:
-              description: The total amount of wrapped tokens that the bridge has converted back into native tokens (string-encoded integer).
+              description: Total amount (atomic units) of wrapped tokens converted back into native tokens (string-encoded integer).
               type: string
               example: "50000000000000000000"
+
+    PrepareUnwrapResponse:
+      allOf:
+        - $ref: '#/components/schemas/PrepareWrapResponse'
+      description: |
+        Estimated outcome of an unwrap operation, including fees and net amount.
+        In an unwrap operation:
+        - The request occurs on the **wrapped network**.
+        - The payout occurs on the **native network**.
+        In other words: source = wrapped network, destination = native network.
+        All amounts are expressed in atomic units of the native network token and represent estimated values.
 
     ErrorResponse:
       type: object
