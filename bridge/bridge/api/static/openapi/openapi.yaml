@@ -26,8 +26,7 @@ tags:
   - name: Unwrap
     description: |
       Endpoints related to unwrapping tokens from the wrapped chain back into the native chain.
-      Unwrap operations are supported only in wrap mode and stake mode. This is the authoritative statement;
-      individual endpoints do not repeat this availability text.
+      Unwrap operations are supported only in wrap mode and stake mode.
 paths:
   /:
     get:
@@ -53,7 +52,7 @@ paths:
     get:
       summary: Returns wrap requests information.
       description: |
-        Retrieves a paginated list of wrap requests detected on the native network.
+        Retrieves a paginated list of all wrap requests detected since the start of the bridge operation on the native network.
         These represent incoming transactions that initiate wrapping.
         If a request results in an error, it will not appear in `/wrap/requests`; use `/wrap/errors` to retrieve it.
       tags:
@@ -90,7 +89,7 @@ paths:
     get:
       summary: Returns wrap requests filtered by sender or destination address.
       description: |
-        Retrieves wrap requests associated with the provided address.
+        Retrieves a paginated list of all wrap requests associated with the provided address since the start of the bridge operation.
 
         The address filter matches either:
           - the **request (sender) address on the native network**, or
@@ -132,8 +131,8 @@ paths:
     get:
       summary: Returns wrap requests by request or payout transaction hash.
       description: |
-        Retrieves wrap requests matched by either the request hash or the associated payout hash.
-
+        Retrieves a paginated list of all wrap requests matched by either the request hash or the associated payout hash since the start of the bridge operation.
+        
         The **request hash** refers to the transaction hash of the originating transaction
         on the **native network**, while the **payout hash** refers to the transaction hash
         of the corresponding payout transaction on the **wrapped network**.
@@ -175,7 +174,7 @@ paths:
     get:
       summary: Returns wrap errors.
       description: |
-        Retrieves a paginated list of errors encountered while processing wrap requests.
+        Retrieves a paginated list of all errors encountered since the start of the bridge operation while processing wrap requests.
         If a request results in an error, it will not appear in `/wrap/requests`; use this endpoint to retrieve it.
       tags:
         - Wrap
@@ -210,9 +209,9 @@ paths:
     get:
       summary: Returns wrap errors for a specific sender address.
       description: |
-        Retrieves wrap errors associated with the provided address.
+        Retrieves a paginated list of all wrap errors associated with the provided address since the start of the bridge operation.
         The address filter matches the **request address on the native network** (sender).
-        Addresses from native network is valid and will be used to filter wrap request errors accordingly.
+        Addresses from the native network are valid and will be used to filter wrap request errors accordingly.
         Filtering by destination address is not supported because destination information is not available for errored requests.
       tags:
         - Wrap
@@ -248,7 +247,7 @@ paths:
     get:
       summary: Returns wrap errors for a specific transaction hash.
       description: |
-        Retrieves wrap errors matched by the request transaction hash.
+        Retrieves a paginated list of all wrap errors matched by the request transaction hash since the start of the bridge operation.
 
         The **request hash** refers to the transaction hash of the originating transaction on the **native network**.
         The hash must be a valid 64-character hexadecimal string.
@@ -289,7 +288,7 @@ paths:
       summary: Estimates the cost of a wrap transaction.
       description: |
         Estimates the outcome of a wrap operation, including conversion results and fees.
-        This endpoint simulates how many wrapped tokens the user will receive based on the bridge’s current configuration, fee structure, and mode.
+        This endpoint simulates how many wrapped tokens the user will receive based on the bridge current configuration, fee structure, and mode.
         If the estimated amount is acceptable, submit the actual wrap request by transferring the desired amount to the bridge account as explained in the README.
       tags:
         - Wrap
@@ -324,7 +323,7 @@ paths:
     get:
       summary: Returns unwrap requests information.
       description: |
-        Retrieves a paginated list of unwrap requests submitted on the wrapped network.
+        Retrieves a paginated list of all unwrap requests submitted since the start of the bridge operation on the wrapped network.
         These represent incoming transactions that initiate unwrapping.
         If a request results in an error, it will not appear in `/unwrap/requests`; use `/unwrap/errors` to retrieve it.
       tags:
@@ -361,7 +360,7 @@ paths:
     get:
       summary: Returns unwrap requests filtered by sender or destination address.
       description: |
-        Retrieves unwrap requests associated with the provided address.
+        Retrieves a paginated list of all unwrap requests associated with the provided address since the start of the bridge operation.
 
         The address filter matches either:
           - the **request (sender) address on the wrapped network**, or
@@ -403,7 +402,7 @@ paths:
     get:
       summary: Returns unwrap requests for a transaction hash.
       description: |
-        Retrieves unwrap requests matched by either the request hash or the associated payout hash.
+        Retrieves a paginated list of all unwrap requests matched by either the request hash or the associated payout hash since the start of the bridge operation.
 
         The **request hash** refers to the transaction hash of the originating transaction on the **wrapped network**,
         while the **payout hash** refers to the transaction hash of the corresponding payout transaction on the **native network**.
@@ -445,7 +444,7 @@ paths:
     get:
       summary: Returns unwrap errors.
       description: |
-        Retrieves errors encountered while processing unwrap requests.
+        Retrieves a paginated list of all errors encountered since the start of the bridge operation while processing unwrap requests.
         If a request results in an error, it will not appear in `/unwrap/requests`; use this endpoint to retrieve it.
       tags:
         - Unwrap
@@ -480,9 +479,10 @@ paths:
     get:
       summary: Returns unwrap errors for a specific address.
       description: |
-        Retrieves unwrap errors associated with the provided address.
+        Retrieves a paginated list of all unwrap errors associated with the provided address since the start of the bridge operation.
+
         The address filter matches the **request address on the wrapped network** (sender). 
-        Addresses from wrapped network is valid and will be used to filter unwrap request errors accordingly.
+        Addresses from the wrapped network are valid and will be used to filter unwrap request errors accordingly.
         
         Filtering by destination address is not supported because destination information is not available for errored requests.
       tags:
@@ -519,7 +519,7 @@ paths:
     get:
       summary: Returns unwrap errors for a specific transaction hash.
       description: |
-        Retrieves unwrap errors matched by the request transaction hash.
+        Retrieves a paginated list of all unwrap errors matched by the request transaction hash since the start of the bridge operation.
 
         The **request hash** refers to the transaction hash of the originating transaction on the **wrapped network**.
         The hash must be a valid 64-character hexadecimal string.
@@ -560,7 +560,7 @@ paths:
       summary: Estimates the cost of an unwrap transaction.
       description: |
         Estimates the result of an unwrap operation, including fees and expected payout.
-        This endpoint simulates how many native tokens the user will receive based on the bridge’s current configuration, fee structure, and mode.
+        This endpoint simulates how many native tokens the user will receive based on the bridge current configuration, fee structure, and mode.
         If the estimated amount is acceptable, submit the actual unwrap request by transferring the desired amount of wrapped tokens to the bridge account as explained in the README.
       tags:
         - Unwrap
@@ -660,7 +660,7 @@ components:
       required: false
       description: |
         Results are sorted by the block height of the transaction that initiated the request.
-        The block height used for sorting is the request’s originating network block height
+        The block height used for sorting is the request originating network block height
         (native network for wrap requests; wrapped network for unwrap requests).
         This field selects the sort direction: `1` (ascending) or `0` (descending).
       schema:
@@ -853,7 +853,7 @@ components:
         payoutNetAmount:
           description: |
             Net payout amount sent after deducting fees.
-            The value is a **string-encoded integer** representing the amount in the **smallest atomic unit** of the destination network’s configured token.
+            The value is a **string-encoded integer** representing the amount in the **smallest atomic unit** of the destination network configured token.
             This field is **null** when the payout process has not yet been initialized.
           type: string
           nullable: true
@@ -861,7 +861,7 @@ components:
         payoutTotalFee:
           description: |
             Total fees deducted from the wrap payout.
-            The value is a **string-encoded integer** representing the fee amount in the smallest atomic unit of the destination network’s configured token.
+            The value is a **string-encoded integer** representing the fee amount in the smallest atomic unit of the destination network configured token.
             This field is **null** when the payout process has not yet been initialized.
           type: string
           nullable: true
