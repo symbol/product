@@ -353,7 +353,8 @@ def create_app():
 		return jsonify({
 			'nativeNetwork': _network_config_to_dict(config.native_network),
 			'wrappedNetwork': _network_config_to_dict(config.wrapped_network),
-			'enabled': True
+			'enabled': True,
+			'mode': config.global_.mode.name.lower()
 		})
 
 	@app.route('/openapi')
