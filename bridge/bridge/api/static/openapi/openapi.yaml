@@ -1103,9 +1103,9 @@ components:
         errorCode:
           type: string
           description: Categorized error code when applicable.
-          nullable: true
           enum:
             - REQUEST_LIMIT_EXCEEDED
             - DAILY_LIMIT_EXCEEDED
             - UNEXPECTED_ERROR
+            - INVALID_REQUEST_PARAMS
           example: DAILY_LIMIT_EXCEEDED

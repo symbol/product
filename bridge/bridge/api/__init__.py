@@ -88,7 +88,7 @@ def _parse_filter_parameters(context, address, transaction_hash, is_unwrap_mode)
 
 
 def _make_bad_request_response(parse_failure_identifier):
-	return jsonify({'error': f'{parse_failure_identifier} parameter is invalid'}), 400
+	return jsonify({'errorCode': 'INVALID_REQUEST_PARAMS', 'error': f'{parse_failure_identifier} parameter is invalid'}), 400
 
 
 def _handle_wrap_requests(context, address, transaction_hash, database_name):
