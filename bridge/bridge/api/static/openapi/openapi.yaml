@@ -283,7 +283,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /wrap/prepare:
+  /wrap/estimate:
     post:
       summary: Estimates the cost of a wrap transaction.
       description: |
@@ -292,20 +292,20 @@ paths:
         If the estimated amount is acceptable, submit the actual wrap request by transferring the desired amount to the bridge account as explained in the README.
       tags:
         - Wrap
-      operationId: prepareWrap
+      operationId: estimateWrap
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PrepareWrapRequest'
+              $ref: '#/components/schemas/EstimateWrapRequest'
       responses:
         200:
           description: Estimated wrap transaction details, including fees and net received amount.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PrepareWrapResponse'
+                $ref: '#/components/schemas/EstimateWrapResponse'
         400:
           description: Wrap request parameters are invalid or violate bridge limits.
           content:
@@ -555,7 +555,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /unwrap/prepare:
+  /unwrap/estimate:
     post:
       summary: Estimates the cost of an unwrap transaction.
       description: |
@@ -564,20 +564,20 @@ paths:
         If the estimated amount is acceptable, submit the actual unwrap request by transferring the desired amount of wrapped tokens to the bridge account as explained in the README.
       tags:
         - Unwrap
-      operationId: prepareUnwrap
+      operationId: estimateUnwrap
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PrepareUnwrapRequest'
+              $ref: '#/components/schemas/EstimateUnwrapRequest'
       responses:
         200:
           description: Estimated unwrap transaction details, including net payout after fees.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PrepareUnwrapResponse'
+                $ref: '#/components/schemas/EstimateUnwrapResponse'
         400:
           description: Invalid unwrap preparation parameters or constraints violated.
           content:
@@ -971,7 +971,7 @@ components:
         - The payout occurs on the **native network**.
         In other words: source = wrapped network, destination = native network.
 
-    PrepareWrapRequest:
+    EstimateWrapRequest:
       type: object
       description: |
         Request describing a simulated wrap conversion for estimation purposes.
@@ -996,9 +996,9 @@ components:
           type: string
           example: "1000000000000000000"
 
-    PrepareUnwrapRequest:
+    EstimateUnwrapRequest:
       allOf:
-        - $ref: '#/components/schemas/PrepareWrapRequest'
+        - $ref: '#/components/schemas/EstimateWrapRequest'
       description: |
         Request describing a simulated unwrap conversion for estimation purposes.
         In an unwrap operation:
@@ -1006,7 +1006,7 @@ components:
         - The payout occurs on the **native network**.
         In other words: source = wrapped network, destination = native network.
 
-    PrepareWrapResponse:
+    EstimateWrapResponse:
       type: object
       description: |
         Estimated outcome of a wrap operation, including fees and net amount.
@@ -1078,9 +1078,9 @@ components:
               type: string
               example: "50000000000000000000"
 
-    PrepareUnwrapResponse:
+    EstimateUnwrapResponse:
       allOf:
-        - $ref: '#/components/schemas/PrepareWrapResponse'
+        - $ref: '#/components/schemas/EstimateWrapResponse'
       description: |
         Estimated outcome of an unwrap operation, including fees and net amount.
         In an unwrap operation:
