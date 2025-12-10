@@ -279,7 +279,8 @@ def test_root(client, nem_server, symbol_server):  # pylint: disable=redefined-o
 			'defaultNodeUrl': str(symbol_server.make_url('')),
 			'explorerUrl': '<wrapped explorer endpoint>'
 		},
-		'enabled': True
+		'enabled': True,
+		'mode': 'stake'
 	} == response_json
 
 
@@ -307,7 +308,8 @@ def test_root_n2n(client_n2n, nem_server, ethereum_server):  # pylint: disable=r
 			'defaultNodeUrl': str(ethereum_server.make_url('')),
 			'explorerUrl': '<wrapped explorer endpoint>'
 		},
-		'enabled': True
+		'enabled': True,
+		'mode': 'stake'
 	} == response_json
 
 # endregion
