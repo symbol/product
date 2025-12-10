@@ -128,7 +128,8 @@ a good balance.
 The bridge exposes an HTTP API which allows external systems to query its status.
 For example, the API can return the list of pending wrap and unwrap requests for a given account,
 or provide details about past errors.
-An OpenAPI specification for this API will be provided soon.
+
+The OpenAPI specification for this API can be found here: [openapi.yaml](./bridge/api/static/openapi/openapi.yaml).
 
 The API has been developed using [Flask](https://flask.palletsprojects.com/en/stable/).
 To expose it, run:
