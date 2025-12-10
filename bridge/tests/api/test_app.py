@@ -352,26 +352,26 @@ async def _assert_filtering_route_validates_parameters(client, is_unwrap, base_p
 
 	async def _assert_paging_parameter_validation(filter_base_path):
 		await _assert_is_bad_request_get(client, f'{filter_base_path}?offset=s&limit=7', {
-			'error': 'offset parameter is invalid'
+			'errorCode': 'INVALID_REQUEST_PARAMS', 'error': 'offset parameter is invalid'
 		})
 		await _assert_is_bad_request_get(client, f'{filter_base_path}?offset=5&limit=s', {
-			'error': 'limit parameter is invalid'
+			'errorCode': 'INVALID_REQUEST_PARAMS', 'error': 'limit parameter is invalid'
 		})
 		await _assert_is_bad_request_get(client, f'{filter_base_path}?offset=5&limit=7&sort=z', {
-			'error': 'sort parameter is invalid'
+			'errorCode': 'INVALID_REQUEST_PARAMS', 'error': 'sort parameter is invalid'
 		})
 
 	# Act + Assert:
 	# - address filter
 	sample_address = (SYMBOL_ADDRESSES if is_unwrap else NEM_ADDRESSES)[2]
 	await _assert_is_bad_request_get(client, f'{base_path}/{sample_address[:-1]}', {
-		'error': 'address parameter is invalid'
+		'errorCode': 'INVALID_REQUEST_PARAMS', 'error': 'address parameter is invalid'
 	})
 	await _assert_paging_parameter_validation(f'{base_path}/{sample_address}')
 
 	# - hash filter
 	await _assert_is_bad_request_get(client, f'{base_path}/hash/{HASHES[0][:-1]}', {
-		'error': 'transaction_hash parameter is invalid'
+		'errorCode': 'INVALID_REQUEST_PARAMS', 'error': 'transaction_hash parameter is invalid'
 	})
 	await _assert_paging_parameter_validation(f'{base_path}/hash/{HASHES[0]}')
 
@@ -383,21 +383,21 @@ async def _assert_prepare_route_validates_parameters(client, is_unwrap, base_pat
 	# Act + Assert:
 	sample_address = (SYMBOL_ADDRESSES if not is_unwrap else NEM_ADDRESSES)[2]
 	await _assert_is_bad_request_post(client, base_path, {}, {
-		'error': 'recipientAddress parameter is invalid'
+		'errorCode': 'INVALID_REQUEST_PARAMS', 'error': 'recipientAddress parameter is invalid'
 	})
 
 	await _assert_is_bad_request_post(client, base_path, {'amount': '1234'}, {
-		'error': 'recipientAddress parameter is invalid'
+		'errorCode': 'INVALID_REQUEST_PARAMS', 'error': 'recipientAddress parameter is invalid'
 	})
 	await _assert_is_bad_request_post(client, base_path, {'recipientAddress': sample_address}, {
-		'error': 'amount parameter is invalid'
+		'errorCode': 'INVALID_REQUEST_PARAMS', 'error': 'amount parameter is invalid'
 	})
 
 	await _assert_is_bad_request_post(client, base_path, {'amount': '1234', 'recipientAddress': sample_address[:-1]}, {
-		'error': 'recipientAddress parameter is invalid'
+		'errorCode': 'INVALID_REQUEST_PARAMS', 'error': 'recipientAddress parameter is invalid'
 	})
 	await _assert_is_bad_request_post(client, base_path, {'amount': 's', 'recipientAddress': sample_address}, {
-		'error': 'amount parameter is invalid'
+		'errorCode': 'INVALID_REQUEST_PARAMS', 'error': 'amount parameter is invalid'
 	})
 
 
