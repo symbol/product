@@ -1,0 +1,16 @@
+{
+    "_info": "this file contains a list of api nodes",
+    "knownPeers": [
+        {
+            "publicKey": "70DEE932834D2B47C59B3BDC3CBBEE35AF6C38969D792BF27A52FFE89F3E62D8",
+            "endpoint": {
+                "host": "amity.symboltest.net",
+                "port": 7900
+            },
+            "metadata": {
+                "name": "amity",
+                "roles": "Api,Peer,Voting"
+            }
+        }
+    ]
+}

@@ -191,7 +191,7 @@ def _seed_simple_error(database_directory, is_unwrap):  # pylint: disable=redefi
 		seed_database_with_simple_errors(databases.unwrap_request if is_unwrap else databases.wrap_request, is_unwrap)
 
 
-def _seed_database_for_prepare_tests(database_directory):  # pylint: disable=redefined-outer-name
+def _seed_database_for_estimate_tests(database_directory):  # pylint: disable=redefined-outer-name
 	with Databases(database_directory, MockNemNetworkFacade(), MockSymbolNetworkFacade()) as databases:
 		databases.create_tables()
 
@@ -279,7 +279,8 @@ def test_root(client, nem_server, symbol_server):  # pylint: disable=redefined-o
 			'defaultNodeUrl': str(symbol_server.make_url('')),
 			'explorerUrl': '<wrapped explorer endpoint>'
 		},
-		'enabled': True
+		'enabled': True,
+		'mode': 'stake'
 	} == response_json
 
 
@@ -307,7 +308,8 @@ def test_root_n2n(client_n2n, nem_server, ethereum_server):  # pylint: disable=r
 			'defaultNodeUrl': str(ethereum_server.make_url('')),
 			'explorerUrl': '<wrapped explorer endpoint>'
 		},
-		'enabled': True
+		'enabled': True,
+		'mode': 'stake'
 	} == response_json
 
 # endregion
@@ -350,52 +352,52 @@ async def _assert_filtering_route_validates_parameters(client, is_unwrap, base_p
 
 	async def _assert_paging_parameter_validation(filter_base_path):
 		await _assert_is_bad_request_get(client, f'{filter_base_path}?offset=s&limit=7', {
-			'error': 'offset parameter is invalid'
+			'errorCode': 'INVALID_REQUEST_PARAMS', 'error': 'offset parameter is invalid'
 		})
 		await _assert_is_bad_request_get(client, f'{filter_base_path}?offset=5&limit=s', {
-			'error': 'limit parameter is invalid'
+			'errorCode': 'INVALID_REQUEST_PARAMS', 'error': 'limit parameter is invalid'
 		})
 		await _assert_is_bad_request_get(client, f'{filter_base_path}?offset=5&limit=7&sort=z', {
-			'error': 'sort parameter is invalid'
+			'errorCode': 'INVALID_REQUEST_PARAMS', 'error': 'sort parameter is invalid'
 		})
 
 	# Act + Assert:
 	# - address filter
 	sample_address = (SYMBOL_ADDRESSES if is_unwrap else NEM_ADDRESSES)[2]
 	await _assert_is_bad_request_get(client, f'{base_path}/{sample_address[:-1]}', {
-		'error': 'address parameter is invalid'
+		'errorCode': 'INVALID_REQUEST_PARAMS', 'error': 'address parameter is invalid'
 	})
 	await _assert_paging_parameter_validation(f'{base_path}/{sample_address}')
 
 	# - hash filter
 	await _assert_is_bad_request_get(client, f'{base_path}/hash/{HASHES[0][:-1]}', {
-		'error': 'transaction_hash parameter is invalid'
+		'errorCode': 'INVALID_REQUEST_PARAMS', 'error': 'transaction_hash parameter is invalid'
 	})
 	await _assert_paging_parameter_validation(f'{base_path}/hash/{HASHES[0]}')
 
 
-async def _assert_prepare_route_validates_parameters(client, is_unwrap, base_path):  # pylint: disable=redefined-outer-name
+async def _assert_estimate_route_validates_parameters(client, is_unwrap, base_path):  # pylint: disable=redefined-outer-name
 	# Arrange:
-	_seed_database_for_prepare_tests(client.database_directory)
+	_seed_database_for_estimate_tests(client.database_directory)
 
 	# Act + Assert:
 	sample_address = (SYMBOL_ADDRESSES if not is_unwrap else NEM_ADDRESSES)[2]
 	await _assert_is_bad_request_post(client, base_path, {}, {
-		'error': 'recipientAddress parameter is invalid'
+		'errorCode': 'INVALID_REQUEST_PARAMS', 'error': 'recipientAddress parameter is invalid'
 	})
 
 	await _assert_is_bad_request_post(client, base_path, {'amount': '1234'}, {
-		'error': 'recipientAddress parameter is invalid'
+		'errorCode': 'INVALID_REQUEST_PARAMS', 'error': 'recipientAddress parameter is invalid'
 	})
 	await _assert_is_bad_request_post(client, base_path, {'recipientAddress': sample_address}, {
-		'error': 'amount parameter is invalid'
+		'errorCode': 'INVALID_REQUEST_PARAMS', 'error': 'amount parameter is invalid'
 	})
 
 	await _assert_is_bad_request_post(client, base_path, {'amount': '1234', 'recipientAddress': sample_address[:-1]}, {
-		'error': 'recipientAddress parameter is invalid'
+		'errorCode': 'INVALID_REQUEST_PARAMS', 'error': 'recipientAddress parameter is invalid'
 	})
 	await _assert_is_bad_request_post(client, base_path, {'amount': 's', 'recipientAddress': sample_address}, {
-		'error': 'amount parameter is invalid'
+		'errorCode': 'INVALID_REQUEST_PARAMS', 'error': 'amount parameter is invalid'
 	})
 
 
@@ -1012,20 +1014,20 @@ async def test_cannot_query_unwrap_errors_n2n(client_n2n):  # pylint: disable=re
 # endregion
 
 
-# region /wrap/prepare
+# region /wrap/estimate
 
-async def test_prepare_wrap_returns_bad_request_for_invalid_parameters(client):  # pylint: disable=redefined-outer-name
-	await _assert_prepare_route_validates_parameters(client, False, '/wrap/prepare')
+async def test_estimate_wrap_returns_bad_request_for_invalid_parameters(client):  # pylint: disable=redefined-outer-name
+	await _assert_estimate_route_validates_parameters(client, False, '/wrap/estimate')
 
 
-async def test_prepare_wrap_returns_internal_server_errors_gracefully(client_n2n, ethereum_server):  # pylint: disable=redefined-outer-name
+async def test_estimate_wrap_returns_internal_server_errors_gracefully(client_n2n, ethereum_server):  # pylint: disable=redefined-outer-name
 	def test_impl():
-		# Arrange: this test is using client_n2n because only ethereum makes network calls during prepare
+		# Arrange: this test is using client_n2n because only ethereum makes network calls during estimate
 		ethereum_server.mock.simulate_estimate_gas_error = True
 
-		_seed_database_for_prepare_tests(client_n2n.database_directory)
+		_seed_database_for_estimate_tests(client_n2n.database_directory)
 
-		response = client_n2n.post('/wrap/prepare', json={
+		response = client_n2n.post('/wrap/estimate', json={
 			'amount': '1234000000',
 			'recipientAddress': '0x4838b106fce9647bdf1e7877bf73ce8b0bad5f97'
 		})
@@ -1042,13 +1044,13 @@ async def test_prepare_wrap_returns_internal_server_errors_gracefully(client_n2n
 	await loop.run_in_executor(None, test_impl)
 
 
-async def test_prepare_wrap_returns_request_limit_exceeded_errors_gracefully(client_limited):  # pylint: disable=redefined-outer-name
+async def test_estimate_wrap_returns_request_limit_exceeded_errors_gracefully(client_limited):  # pylint: disable=redefined-outer-name
 	def test_impl():
 		# Arrange:
-		_seed_database_for_prepare_tests(client_limited.database_directory)
+		_seed_database_for_estimate_tests(client_limited.database_directory)
 
 		# Act:
-		response = client_limited.post('/wrap/prepare', json={'amount': '634000000', 'recipientAddress': SYMBOL_ADDRESSES[2]})
+		response = client_limited.post('/wrap/estimate', json={'amount': '634000000', 'recipientAddress': SYMBOL_ADDRESSES[2]})
 		response_json = json.loads(response.data)
 
 		# Assert:
@@ -1062,13 +1064,13 @@ async def test_prepare_wrap_returns_request_limit_exceeded_errors_gracefully(cli
 	await loop.run_in_executor(None, test_impl)
 
 
-async def test_prepare_wrap_returns_daily_limit_exceeded_errors_gracefully(client_limited):  # pylint: disable=redefined-outer-name
+async def test_estimate_wrap_returns_daily_limit_exceeded_errors_gracefully(client_limited):  # pylint: disable=redefined-outer-name
 	def test_impl():
 		# Arrange:
-		_seed_database_for_prepare_tests(client_limited.database_directory)
+		_seed_database_for_estimate_tests(client_limited.database_directory)
 
 		# Act:
-		response = client_limited.post('/wrap/prepare', json={'amount': '633999900', 'recipientAddress': SYMBOL_ADDRESSES[2]})
+		response = client_limited.post('/wrap/estimate', json={'amount': '633999900', 'recipientAddress': SYMBOL_ADDRESSES[2]})
 		response_json = json.loads(response.data)
 
 		# Assert:
@@ -1082,13 +1084,13 @@ async def test_prepare_wrap_returns_daily_limit_exceeded_errors_gracefully(clien
 	await loop.run_in_executor(None, test_impl)
 
 
-async def test_can_prepare_wrap(client):  # pylint: disable=redefined-outer-name
+async def test_can_estimate_wrap(client):  # pylint: disable=redefined-outer-name
 	def test_impl():
 		# Arrange:
-		_seed_database_for_prepare_tests(client.database_directory)
+		_seed_database_for_estimate_tests(client.database_directory)
 
 		# Act:
-		response = client.post('/wrap/prepare', json={'amount': '1234000000', 'recipientAddress': SYMBOL_ADDRESSES[2]})
+		response = client.post('/wrap/estimate', json={'amount': '1234000000', 'recipientAddress': SYMBOL_ADDRESSES[2]})
 		response_json = json.loads(response.data)
 
 		# Assert: fee_multiplier => 0.0877 / 0.0199 / 6
@@ -1112,13 +1114,13 @@ async def test_can_prepare_wrap(client):  # pylint: disable=redefined-outer-name
 	await loop.run_in_executor(None, test_impl)
 
 
-async def test_can_prepare_wrap_n2n(client_n2n):  # pylint: disable=redefined-outer-name
+async def test_can_estimate_wrap_n2n(client_n2n):  # pylint: disable=redefined-outer-name
 	def test_impl():
 		# Arrange:
-		_seed_database_for_prepare_tests(client_n2n.database_directory)
+		_seed_database_for_estimate_tests(client_n2n.database_directory)
 
 		# Act:
-		response = client_n2n.post('/wrap/prepare', json={
+		response = client_n2n.post('/wrap/estimate', json={
 			'amount': '1234000000',
 			'recipientAddress': '0x4838b106fce9647bdf1e7877bf73ce8b0bad5f97'
 		})
@@ -1147,20 +1149,20 @@ async def test_can_prepare_wrap_n2n(client_n2n):  # pylint: disable=redefined-ou
 # endregion
 
 
-# region /unwrap/prepare
+# region /unwrap/estimate
 
-async def test_prepare_unwrap_returns_bad_request_for_invalid_parameters(client):
+async def test_estimate_unwrap_returns_bad_request_for_invalid_parameters(client):
 	# pylint: disable=redefined-outer-name
-	await _assert_prepare_route_validates_parameters(client, True, '/unwrap/prepare')
+	await _assert_estimate_route_validates_parameters(client, True, '/unwrap/estimate')
 
 
-async def test_prepare_unwrap_returns_request_limit_exceeded_errors_gracefully(client_limited):  # pylint: disable=redefined-outer-name
+async def test_estimate_unwrap_returns_request_limit_exceeded_errors_gracefully(client_limited):  # pylint: disable=redefined-outer-name
 	def test_impl():
 		# Arrange:
-		_seed_database_for_prepare_tests(client_limited.database_directory)
+		_seed_database_for_estimate_tests(client_limited.database_directory)
 
 		# Act:
-		response = client_limited.post('/unwrap/prepare', json={'amount': '1234000000', 'recipientAddress': NEM_ADDRESSES[2]})
+		response = client_limited.post('/unwrap/estimate', json={'amount': '1234000000', 'recipientAddress': NEM_ADDRESSES[2]})
 		response_json = json.loads(response.data)
 
 		# Assert:
@@ -1174,13 +1176,13 @@ async def test_prepare_unwrap_returns_request_limit_exceeded_errors_gracefully(c
 	await loop.run_in_executor(None, test_impl)
 
 
-async def test_prepare_unwrap_returns_daily_limit_exceeded_errors_gracefully(client_limited):  # pylint: disable=redefined-outer-name
+async def test_estimate_unwrap_returns_daily_limit_exceeded_errors_gracefully(client_limited):  # pylint: disable=redefined-outer-name
 	def test_impl():
 		# Arrange:
-		_seed_database_for_prepare_tests(client_limited.database_directory)
+		_seed_database_for_estimate_tests(client_limited.database_directory)
 
 		# Act:
-		response = client_limited.post('/unwrap/prepare', json={'amount': '634000000', 'recipientAddress': NEM_ADDRESSES[2]})
+		response = client_limited.post('/unwrap/estimate', json={'amount': '634000000', 'recipientAddress': NEM_ADDRESSES[2]})
 		response_json = json.loads(response.data)
 
 		# Assert:
@@ -1194,13 +1196,13 @@ async def test_prepare_unwrap_returns_daily_limit_exceeded_errors_gracefully(cli
 	await loop.run_in_executor(None, test_impl)
 
 
-async def test_can_prepare_unwrap(client):  # pylint: disable=redefined-outer-name
+async def test_can_estimate_unwrap(client):  # pylint: disable=redefined-outer-name
 	def test_impl():
 		# Arrange:
-		_seed_database_for_prepare_tests(client.database_directory)
+		_seed_database_for_estimate_tests(client.database_directory)
 
 		# Act:
-		response = client.post('/unwrap/prepare', json={'amount': '1234000000', 'recipientAddress': NEM_ADDRESSES[2]})
+		response = client.post('/unwrap/estimate', json={'amount': '1234000000', 'recipientAddress': NEM_ADDRESSES[2]})
 		response_json = json.loads(response.data)
 
 		# Assert:
@@ -1224,7 +1226,7 @@ async def test_can_prepare_unwrap(client):  # pylint: disable=redefined-outer-na
 	await loop.run_in_executor(None, test_impl)
 
 
-async def test_cannot_prepare_unwrap_n2n(client_n2n):  # pylint: disable=redefined-outer-name
-	await _assert_not_is_route_accessible_post(client_n2n, '/unwrap/prepare', {'amount': '1234000000'})
+async def test_cannot_estimate_unwrap_n2n(client_n2n):  # pylint: disable=redefined-outer-name
+	await _assert_not_is_route_accessible_post(client_n2n, '/unwrap/estimate', {'amount': '1234000000'})
 
 # endregion
