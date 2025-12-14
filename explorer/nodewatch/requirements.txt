@@ -5,4 +5,4 @@ pandas==2.3.3
 plotly==5.24.1
 symbol-sdk-python==3.3.0
 zenlog==1.1
-flask_cors==6.0.1
+flask_cors==6.0.2
