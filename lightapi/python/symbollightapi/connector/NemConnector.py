@@ -24,7 +24,7 @@ MICROXEM_PER_XEM = 1000000
 
 # region NemAccountInfo
 
-class NemAccountInfo:
+class NemAccountInfo:  # pylint: disable=too-many-instance-attributes
 	"""Represents a NEM account."""
 
 	def __init__(self, address):
@@ -39,6 +39,11 @@ class NemAccountInfo:
 		self.harvested_blocks = 0
 
 		self.remote_status = None
+		self.status = None
+
+		self.min_cosignatories = None
+		self.cosignatories = []
+		self.cosignatory_of = []
 
 # endregion
 
@@ -173,8 +178,16 @@ class NemConnector(BasicConnector):
 		account_info.importance = account_json['importance']
 		account_info.harvested_blocks = account_json['harvestedBlocks']
 
+		multisig_json = account_json['multisigInfo']
+		account_info.min_cosignatories = multisig_json['minCosignatories'] if multisig_json else None
+
 		meta_json = response_json['meta']
 		account_info.remote_status = meta_json['remoteStatus']
+		account_info.status = meta_json['status']
+
+		account_info.cosignatories = [Address(cosignatories['address']) for cosignatories in meta_json['cosignatories']]
+		account_info.cosignatory_of = [Address(cosignatory_of['address']) for cosignatory_of in meta_json['cosignatoryOf']]
+
 		return account_info
 
 	# endregion
