@@ -902,7 +902,7 @@ async def test_can_query_account_info_with_multisig(server):  # pylint: disable=
 		Address('NA7HZVREMOJWCYQOHQYTMVVXOYFOFF4WX46FP65U')
 	] == account_info.cosignatories
 	assert [
-		Address('NALICE3JX3N72HZ3IOshDXCO2HWQIWSTCPC5FVGW7I')
+		Address('NALICE3JX3N72HZ3IODXCO2HWQIWSTCPC5FVGW7I')
 	] == account_info.cosignatory_of
 
 
