@@ -523,7 +523,7 @@ async def server(aiohttp_client):  # pylint: disable=too-many-statements
 				'data': [
 					{'quantity': 51890200000, 'mosaicId': {'namespaceId': 'nem', 'name': 'xem'}},
 					{'quantity': 99887766000, 'mosaicId': {'namespaceId': 'foo', 'name': 'bar'}},
-					{'quantity': 800000000000, 'mosaicId': {'namespaceId': 'foo', 'name': 'baz'}}
+					{'quantity': 800000000000, 'mosaicId': {'namespaceId': 'foo.bar', 'name': 'baz'}},
 				]
 			})
 
@@ -816,7 +816,7 @@ async def test_can_query_peers(server):  # pylint: disable=redefined-outer-name
 # endregion
 
 
-# region GET (balance, account_info)
+# region GET (balance, account_info, account_mosaics)
 
 async def test_can_query_balance(server):  # pylint: disable=redefined-outer-name
 	# Arrange:
@@ -904,6 +904,21 @@ async def test_can_query_account_info_with_multisig(server):  # pylint: disable=
 	assert [
 		Address('NALICE3JX3N72HZ3IODXCO2HWQIWSTCPC5FVGW7I')
 	] == account_info.cosignatory_of
+
+
+async def test_can_query_account_moasics(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	connector = NemConnector(server.make_url(''))
+
+	# Act:
+	mosaics = await connector.account_mosaics(Address('NCXIQA4FF5JB6AMQ53NQ3ZMRD3X3PJEWDJJJIGHT'))
+
+	# Assert:
+	assert [f'{server.make_url("")}/account/mosaic/owned?address=NCXIQA4FF5JB6AMQ53NQ3ZMRD3X3PJEWDJJJIGHT'] == server.mock.urls
+	assert 3 == len(mosaics)
+	assert (('nem', 'xem'), 51890200000) == mosaics[0]
+	assert (('foo', 'bar'), 99887766000) == mosaics[1]
+	assert (('foo.bar', 'baz'), 800000000000) == mosaics[2]
 
 
 async def test_can_query_account_info_with_forwarding(server):  # pylint: disable=redefined-outer-name

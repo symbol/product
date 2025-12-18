@@ -18,6 +18,7 @@ from .BasicConnector import BasicConnector
 from .NemBlockCalculator import NemBlockCalculator
 
 MosaicFeeInformation = namedtuple('MosaicFeeInformation', ['supply', 'divisibility'])
+AccountMosaic = namedtuple('AccountMosaic', ['mosaic_id', 'quantity'])
 
 MICROXEM_PER_XEM = 1000000
 
@@ -150,7 +151,7 @@ class NemConnector(BasicConnector):
 
 	# endregion
 
-	# region GET (balance, account_info)
+	# region GET (balance, account_info, account_mosaics)
 
 	async def balance(self, address, mosaic_id=None):
 		"""Gets account balance for specified mosaic."""
@@ -159,12 +160,24 @@ class NemConnector(BasicConnector):
 			response_json = await self.get(f'account/get?address={address}')
 			return response_json['account']['balance']
 
-		mosaics_json = await self.get(f'account/mosaic/owned?address={address}', 'data')
-		mosaic_json = next((
-			mosaic_json for mosaic_json in mosaics_json
-			if (mosaic_json['mosaicId']['namespaceId'], mosaic_json['mosaicId']['name']) == mosaic_id
+		mosaics = await self.account_mosaics(address)
+		mosaic = next((
+			mosaic for mosaic in mosaics
+			if mosaic.mosaic_id == mosaic_id
 		), None)
-		return mosaic_json['quantity'] if mosaic_json else 0
+		return mosaic.quantity if mosaic else 0
+
+	async def account_mosaics(self, address):
+		"""Gets mosaics owned by an account."""
+
+		mosaics_json = await self.get(f'account/mosaic/owned?address={address}', 'data')
+
+		return [
+			AccountMosaic(
+				mosaic_id=(mosaic_json['mosaicId']['namespaceId'], mosaic_json['mosaicId']['name']),
+				quantity=mosaic_json['quantity']
+			) for mosaic_json in mosaics_json
+		]
 
 	async def account_info(self, address, forwarded=False):
 		subpath = '/forwarded' if forwarded else ''
