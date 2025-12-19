@@ -184,6 +184,33 @@ ACCOUNT_INFO_4 = {
 	}
 }
 
+ACCOUNT_INFO_5 = {  # multisig account
+	'meta': {
+		'cosignatories': [
+			ACCOUNT_INFO_2['account'],
+			ACCOUNT_INFO_3['account']
+		],
+		'cosignatoryOf': [
+			ACCOUNT_INFO_4['account']
+		],
+		'status': 'LOCKED',
+		'remoteStatus': 'INACTIVE'
+	},
+	'account': {
+		'address': 'NBLGATVTVML66WWPSUN5RWKWEBKCPNYLQVWLTLFS',
+		'harvestedBlocks': 0,
+		'balance': 10125555105,
+		'importance': 0.003805264452742391,
+		'vestedBalance': 10125555105,
+		'publicKey': '0f83292a6f9b7882915df4f64f11bd20161eab4a56fb051678884e2400005df8',
+		'label': None,
+		'multisigInfo': {
+			'minCosignatories': 1,
+			'cosignatoriesCount': 2
+		}
+	}
+}
+
 
 CHAIN_BLOCK_1 = {  # Included all type of transaction in the block
 	'difficulty': 100000000000000,
@@ -472,7 +499,13 @@ async def server(aiohttp_client):  # pylint: disable=too-many-statements
 			return await self._process(request, {'data': [NODE_INFO_2, NODE_INFO_3]})
 
 		async def account_info(self, request):
-			return await self._process(request, ACCOUNT_INFO_1)
+			address = Address(request.url.query['address'])
+
+			account_info = ACCOUNT_INFO_1
+			if Address('NBLGATVTVML66WWPSUN5RWKWEBKCPNYLQVWLTLFS') == address:
+				account_info = ACCOUNT_INFO_5
+
+			return await self._process(request, account_info)
 
 		async def account_info_forwarded(self, request):
 			address = Address(request.url.query['address'])
@@ -490,7 +523,7 @@ async def server(aiohttp_client):  # pylint: disable=too-many-statements
 				'data': [
 					{'quantity': 51890200000, 'mosaicId': {'namespaceId': 'nem', 'name': 'xem'}},
 					{'quantity': 99887766000, 'mosaicId': {'namespaceId': 'foo', 'name': 'bar'}},
-					{'quantity': 800000000000, 'mosaicId': {'namespaceId': 'foo', 'name': 'baz'}}
+					{'quantity': 800000000000, 'mosaicId': {'namespaceId': 'foo.bar', 'name': 'baz'}},
 				]
 			})
 
@@ -783,7 +816,7 @@ async def test_can_query_peers(server):  # pylint: disable=redefined-outer-name
 # endregion
 
 
-# region GET (balance, account_info)
+# region GET (balance, account_info, account_mosaics)
 
 async def test_can_query_balance(server):  # pylint: disable=redefined-outer-name
 	# Arrange:
@@ -829,6 +862,10 @@ def _assert_account_info_1(account_info):
 	assert 0.0019854120211438703 == account_info.importance
 	assert 54553 == account_info.harvested_blocks
 	assert 'ACTIVE' == account_info.remote_status
+	assert 'LOCKED' == account_info.status
+	assert account_info.min_cosignatories is None
+	assert [] == account_info.cosignatories
+	assert [] == account_info.cosignatory_of
 
 
 async def test_can_query_account_info(server):  # pylint: disable=redefined-outer-name
@@ -841,6 +878,47 @@ async def test_can_query_account_info(server):  # pylint: disable=redefined-oute
 	# Assert:
 	assert [f'{server.make_url("")}/account/get?address=NCXIQA4FF5JB6AMQ53NQ3ZMRD3X3PJEWDJJJIGHT'] == server.mock.urls
 	_assert_account_info_1(account_info)
+
+
+async def test_can_query_account_info_with_multisig(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	connector = NemConnector(server.make_url(''))
+
+	# Act:
+	account_info = await connector.account_info(Address('NBLGATVTVML66WWPSUN5RWKWEBKCPNYLQVWLTLFS'))
+
+	# Assert:
+	assert [f'{server.make_url("")}/account/get?address=NBLGATVTVML66WWPSUN5RWKWEBKCPNYLQVWLTLFS'] == server.mock.urls
+	assert Address('NBLGATVTVML66WWPSUN5RWKWEBKCPNYLQVWLTLFS') == account_info.address
+	assert 10125.555105 == account_info.vested_balance
+	assert 10125.555105 == account_info.balance
+	assert PublicKey('0F83292A6F9B7882915DF4F64F11BD20161EAB4A56FB051678884E2400005DF8') == account_info.public_key
+	assert 0.003805264452742391 == account_info.importance
+	assert 0 == account_info.harvested_blocks
+	assert 'INACTIVE' == account_info.remote_status
+	assert 1 == account_info.min_cosignatories
+	assert [
+		Address('NADP63FUUAOS2LDXY75SJ4TOLW4S7YXEAGT25IXG'),
+		Address('NA7HZVREMOJWCYQOHQYTMVVXOYFOFF4WX46FP65U')
+	] == account_info.cosignatories
+	assert [
+		Address('NALICE3JX3N72HZ3IODXCO2HWQIWSTCPC5FVGW7I')
+	] == account_info.cosignatory_of
+
+
+async def test_can_query_account_moasics(server):  # pylint: disable=redefined-outer-name
+	# Arrange:
+	connector = NemConnector(server.make_url(''))
+
+	# Act:
+	mosaics = await connector.account_mosaics(Address('NCXIQA4FF5JB6AMQ53NQ3ZMRD3X3PJEWDJJJIGHT'))
+
+	# Assert:
+	assert [f'{server.make_url("")}/account/mosaic/owned?address=NCXIQA4FF5JB6AMQ53NQ3ZMRD3X3PJEWDJJJIGHT'] == server.mock.urls
+	assert 3 == len(mosaics)
+	assert (('nem', 'xem'), 51890200000) == mosaics[0]
+	assert (('foo', 'bar'), 99887766000) == mosaics[1]
+	assert (('foo.bar', 'baz'), 800000000000) == mosaics[2]
 
 
 async def test_can_query_account_info_with_forwarding(server):  # pylint: disable=redefined-outer-name
