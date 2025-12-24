@@ -1,0 +1,97 @@
+import { Router } from '@/app/Router';
+import { AccountAvatar, ButtonPlain, DialogBox, FormItem, Screen, TableView, Widget } from '@/app/components';
+import { config } from '@/app/config';
+import { useDataManager, useToggle, useWalletController } from '@/app/hooks';
+import { $t } from '@/app/localization';
+import { layout } from '@/app/styles';
+import { createExplorerAccountUrl } from '@/app/utils';
+import React from 'react';
+import { Linking } from 'react-native';
+import { ScrollView } from 'react-native-gesture-handler';
+
+export const AddressBookContact = props => {
+	const WalletController = useWalletController();
+	const { route } = props;
+	const { chainName, networkIdentifier } = WalletController;
+	const { addressBook } = WalletController.modules;
+	const contact = addressBook.getContactById(route.params.id);
+	const { name, address, isBlackListed, notes } = contact;
+	const [isRemoveConfirmVisible, toggleRemoveConfirm] = useToggle(false);
+	const [removeContact] = useDataManager(() => {
+		Router.goBack();
+		addressBook.removeContact(address);
+	});
+
+	const tableData = {
+		name,
+		address,
+		notes,
+		list: isBlackListed ? $t('s_addressBook_contact_blacklist_explain') : $t('s_addressBook_contact_whitelist_explain')
+	};
+
+	const handleSendPress = () => Router.goToSend({ recipientAddress: address });
+	const handleEditPress = () => Router.goToAddressBookEdit({ ...contact, type: 'edit' });
+	const handleOpenBlockExplorer = () => Linking.openURL(createExplorerAccountUrl(
+		chainName, 
+		networkIdentifier, 
+		address
+	));
+
+	return (
+		<Screen
+			bottomComponent={
+				<>
+					<FormItem>
+						<ButtonPlain
+							icon={require('@/app/assets/images/icon-primary-send-2.png')}
+							title={$t('button_sendTransferTransaction')}
+							onPress={handleSendPress}
+						/>
+					</FormItem>
+					<FormItem>
+						<ButtonPlain
+							icon={require('@/app/assets/images/icon-primary-explorer.png')}
+							title={$t('button_openAccountInExplorer')}
+							onPress={handleOpenBlockExplorer}
+						/>
+					</FormItem>
+					<FormItem>
+						<ButtonPlain
+							icon={require('@/app/assets/images/icon-primary-edit.png')}
+							title={$t('button_edit')}
+							onPress={handleEditPress}
+						/>
+					</FormItem>
+					<FormItem>
+						<ButtonPlain
+							icon={require('@/app/assets/images/icon-primary-remove.png')}
+							title={$t('button_remove')}
+							onPress={toggleRemoveConfirm}
+						/>
+					</FormItem>
+				</>
+			}
+		>
+			<ScrollView>
+				<FormItem>
+					<Widget>
+						<FormItem style={layout.alignCenter}>
+							<AccountAvatar address={address} size="lg" />
+						</FormItem>
+						<FormItem>
+							<TableView data={tableData} rawAddresses />
+						</FormItem>
+					</Widget>
+				</FormItem>
+			</ScrollView>
+			<DialogBox
+				type="confirm"
+				title={$t('s_addressBook_confirm_removeContact_title')}
+				text={$t('s_addressBook_confirm_removeContact_body', { name })}
+				isVisible={isRemoveConfirmVisible}
+				onSuccess={removeContact}
+				onCancel={toggleRemoveConfirm}
+			/>
+		</Screen>
+	);
+};
