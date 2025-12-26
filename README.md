@@ -18,6 +18,7 @@ It includes our optin manager.
 | [@wallet/common-core](wallet/common/core) | [![lint][wallet-common-core-lint]][wallet-common-core-job] | | [![test][wallet-common-core-test]][wallet-common-core-job]| [![][wallet-common-core-cov]][wallet-common-core-cov-link] |
 | [@wallet/common-ethereum](wallet/common/ethereum) | [![lint][wallet-common-ethereum-lint]][wallet-common-ethereum-job] | | [![test][wallet-common-ethereum-test]][wallet-common-ethereum-job]| [![][wallet-common-ethereum-cov]][wallet-common-ethereum-cov-link] |
 | [@wallet/common-symbol](wallet/common/symbol) | [![lint][wallet-common-symbol-lint]][wallet-common-symbol-job] | | [![test][wallet-common-symbol-test]][wallet-common-symbol-job]| [![][wallet-common-symbol-cov]][wallet-common-symbol-cov-link] |
+| [@wallet/symbol/mobile](wallet/symbol/mobile) | [![lint][wallet-symbol-mobile-lint]][wallet-symbol-mobile-job] | | [![test][wallet-symbol-mobile-test]][wallet-symbol-mobile-job]| [![][wallet-symbol-mobile-cov]][wallet-symbol-mobile-cov-link] |
 
 ## Full Coverage Report
 
@@ -106,3 +107,9 @@ Detailed version can be seen on [codecov.io][product-cov-link].
 [wallet-common-symbol-test]: https://jenkins.symbolsyndicate.us/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Fwallet-common-symbol%2Fdev%2F&config=wallet-common-symbol-test
 [wallet-common-symbol-cov]: https://codecov.io/gh/symbol/product/branch/dev/graph/badge.svg?token=SSYYBMK0M7&flag=wallet-common-symbol
 [wallet-common-symbol-cov-link]: https://codecov.io/gh/symbol/product/tree/dev/wallet/common/symbol
+
+[wallet-symbol-mobile-job]: https://jenkins.symbolsyndicate.us/blue/organizations/jenkins/Symbol%2Fgenerated%2Fproduct%2Fwallet-symbol-mobile/activity?branch=dev
+[wallet-symbol-mobile-lint]: https://jenkins.symbolsyndicate.us/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Fwallet-symbol-mobile%2Fdev%2F&config=wallet-symbol-mobile-lint
+[wallet-symbol-mobile-test]: https://jenkins.symbolsyndicate.us/buildStatus/icon?job=Symbol%2Fgenerated%2Fproduct%2Fwallet-symbol-mobile%2Fdev%2F&config=wallet-symbol-mobile-test
+[wallet-symbol-mobile-cov]: https://codecov.io/gh/symbol/product/branch/dev/graph/badge.svg?token=SSYYBMK0M7&flag=wallet-symbol-mobile
+[wallet-symbol-mobile-cov-link]: https://codecov.io/gh/symbol/product/tree/dev/wallet/symbol/mobile
