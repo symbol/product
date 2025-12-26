@@ -1,0 +1,10 @@
+defaultCiPipeline {
+	operatingSystem = ['ubuntu']
+	instanceSize = 'medium'
+
+	environment = 'javascript'
+
+	packageId = 'wallet-mobile-symbol'
+
+	codeCoverageTool = 'c8'
+}
