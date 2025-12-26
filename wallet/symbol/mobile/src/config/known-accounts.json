@@ -1,0 +1,325 @@
+{
+    "testnet": [
+        {
+            "name": "Faucet",
+            "icon": "faucet.png",
+            "accounts": [
+                "TARDV42KTAIZEF64EQT4NXT7K55DHWBEFIXVJQY"
+            ]
+        }
+    ],
+    "mainnet": [
+        {
+            "name": "Binance",
+            "icon": "binance.png",
+            "accounts": [
+                "NAJNXZGEEHD56G2KVXEKOECTMIGKMIZN6YXDSHI"
+            ]
+        },
+        {
+            "name": "Bitbns",
+            "icon": "bitbns.png",
+            "accounts": [
+                "NBM3VN6JHD3WEUQAJSKAAXWDPDJ3BP6Q3C44RWI"
+            ]
+        },
+        {
+            "name": "Bitflyer",
+            "icon": "bitflyer.png",
+            "accounts": [
+                "NACKUY7MRZFRARP4VU2JR7EXX4NBGCDV62NUCAY",
+                "NBFSOUJHEHKKTV5I4IDWBREAEE3PCUY2TELNL5Q",
+                "NBJNDXDKK4MHMRFTXCWUQBWOEJVW4GZNRIJT3CY",
+                "NDLSY2ZHQO5BR7SYC6I3YCGAW4WYZCFUCX6PIZY"
+            ]
+        },
+        {
+            "name": "Bithumb",
+            "icon": "bithumb.png",
+            "accounts": [
+                "NCFNYXJR6SPZDCWHDXHBRZYILFCK5KYK6YHYVVY",
+                "NAXKLQW6KQ4MPDZCD67REUT4MCZDC6QMG5BMB7Q",
+                "NBKLAO67AHAG62NP3PTOKSQ2NYUNQXP2QW2B7YA"
+            ]
+        },
+        {
+            "name": "Bittrex",
+            "icon": "bittrex.png",
+            "accounts": [
+                "NAGR2737EJ67DGCGNSGD6SARG5TE2G7N5AMXHUA"
+            ]
+        },
+        {
+            "name": "Coincheck",
+            "icon": "coincheck.png",
+            "accounts": [
+                "NCZ3NVVJPRECZXWKGF2HBNQ5A6VDT2Y7JZXPBTA"
+            ]
+        },
+        {
+            "name": "Continuity Fund",
+            "icon": "continuity-fund.png",
+            "accounts": [
+                "NAMYQXVBMLQ5HLYK3GQLMKFDLHGIXPPAU5VGFOI"
+            ]
+        },
+        {
+            "name": "Copper",
+            "icon": "copper.png",
+            "accounts": [
+                "NDRHEQCD3HADMSJMC3IYGM5PXKWYA5ENTE6Z3BY"
+            ]
+        },
+        {
+            "name": "Crex24",
+            "icon": "crex24.png",
+            "accounts": [
+                "NATG4T47GT5U7SZ5ACFZMPXZJ4M7CFOBJ3OOI5I"
+            ]
+        },
+        {
+            "name": "Gate.io",
+            "icon": "gate-io.png",
+            "accounts": [
+                "NCEURSTWQ3YY54QKFDHX64XZJ54JQZ4COG2VFLA",
+                "NBWKVE7QG7TNNPSHRKUP2BYQWMOGJBHI3DO4OTY"
+            ]
+        },
+        {
+            "name": "GraviEX",
+            "icon": "graviex.png",
+            "accounts": [
+                "NBP3RSQYUGTLM5D3WQSY3S2SQOJFNU5POM4VNTA"
+            ]
+        },
+        {
+            "name": "HitBTC",
+            "icon": "hitbtc.png",
+            "accounts": [
+                "NBXQQXO3IFS3FMHPGJ4DLO2GTZ42AFQRMUTQFUA",
+                "NBZXE3GAYVANLMPNVKHOZDPOEVTYKEF2UNZTTQI",
+                "NDFWJQPVYQQWVWXJ2E3Q4242EDJMY3ZF7AHPRCA",
+                "NAB7WGVOYEX6BO3AAAO2SRRXLX77FW2Z72C7ECY",
+                "NAOQY53IQOPDCROYCRWR7ATRHKR3T4UP5VKXMDA",
+                "NDJLQEQOI33GADMF6TACW3ATDEJAECC56RGESTA",
+                "NAGME7T4FZJCTNM5CIYTAVYMOSYAHL5OU7A7DVI"
+            ]
+        },
+        {
+            "name": "Huobi",
+            "icon": "huobi.png",
+            "accounts": [
+                "NDK7WC5XJNM3U267KZ4ONW6EJXJM2YPAIBBSV3A",
+                "NCZ6ZY3VLOJMGOS7YZQHFHIAZIX4WN7IJ3HMCKI",
+                "NCIG65BEOUJPH2AP7ELHOPYIH7FANQEH5CCOBEI"
+            ]
+        },
+        {
+            "name": "Kuna",
+            "icon": "kuna.png",
+            "accounts": [
+                "NAMLAHSCDBVVCOP65FEL4C63ZFH3YTNMMKN425A"
+            ]
+        },
+        {
+            "name": "NEM Group Limited",
+            "icon": "nem-group-limited.png",
+            "accounts": [
+                "NDZGMGQ3NMAX7HENUMZGWTWDQR4ZO4GAJZOUHMY",
+                "NBJHAGYRCMNOXDSKCMDLN6JZ5GY6RNCEOXDZENA"
+            ]
+        },
+        {
+            "name": "NEM Group Trust",
+            "icon": "nem-group-trust.png",
+            "accounts": [
+                "NDX4GP6OL32EOSGXSB5FTGKXDJZP4D535ZZYDFI"
+            ]
+        },
+        {
+            "name": "NEM Holdings Limited",
+            "icon": "nem-holdings-limited.png",
+            "accounts": [
+                "NBLNS6VBSDBSV2XSXBSRW7EFDSF4TW6VC7SAAFQ"
+            ]
+        },
+        {
+            "name": "NEM Ventures Limited",
+            "icon": "nem-ventures-limited.png",
+            "accounts": [
+                "NDSVS6OGGPK33YFKOHFK2RUDJR4CB47JK77WUTI",
+                "NA6ACQTNMXG4FXMPWIPMW4XMSARAYHZZP432SKQ",
+                "NCD2J7FWHAXE2W34TXVFFLMLCPGFJMGTRJQASDA"
+            ]
+        },
+        {
+            "name": "Okex",
+            "icon": "okex.png",
+            "accounts": [
+                "NCCYOIBBTCEYB4DQ4IU5K7LOXF3QSXEVQ5GX5HI"
+            ]
+        },
+        {
+            "name": "Poloniex",
+            "icon": "poloniex.png",
+            "accounts": [
+                "NCZIHJERR3FXDPA46PEGBC3FM275EOS3557MLVA",
+                "ND4D3TWGBR6WEMLBIYZ3O2Q4V7BCEUMZMLTTPEQ"
+            ]
+        },
+        {
+            "name": "Spectrocoin",
+            "icon": "spectrocoin.png",
+            "accounts": [
+                "NBGWP2QCEMQF7RS3IJCPK6EHHMMM3M6465ANFLY"
+            ]
+        },
+        {
+            "name": "Upbit",
+            "icon": "upbit.png",
+            "accounts": [
+                "NCTMD3DYT4AFVRQDBSLIEO3COL4GNCANRUDQPTQ",
+                "NC5HR72OBBVOCQBZTOKW4JJRXDRJP32FEI5J7RI",
+                "NB7QHADUMZ5QQEX37A4XTADCBWRPYSLUSUGAMQI"
+            ]
+        },
+        {
+            "name": "XTcom",
+            "icon": "xtcom.png",
+            "accounts": [
+                "NC5LVD7FX2DNM2Y7LHDFUEOOC5BT2Z2O7TUKDGQ"
+            ]
+        },
+        {
+            "name": "Yobit",
+            "icon": "yobit.png",
+            "accounts": [
+                "NAWHAPMFJT2FFH3ONGCLG3TVGUJY3PZUBAOFLBA"
+            ]
+        },
+        {
+            "name": "Zaif",
+            "icon": "zaif.png",
+            "accounts": [
+                "NDTCXC6GCUTYKF6TED3AESZYHNZFUYEVNZR66KI",
+                "NDZ5DOXCK444ZTWLUZ672B4TWFNU6GKNFG2CKII",
+                "NC6XRCOQEIHCX4X3AVXXNCKZUXPSQAIZIK4INZI",
+                "NC6OVRVNRWH7ZXBCVJI25SIBHSWJOWZWD2CBJIY",
+                "NBVU44NKAED5MLPEY4Y7Z5OMUAUXLYI7HOIKNSY",
+                "NA2NFUHQWYIASA5BHFJBM6OBQDEZDI34RUMNDHA"
+            ]
+        },
+        {
+            "name": "Kucoin",
+            "icon": "kucoin.png",
+            "accounts": [
+                "NCAFYUO7PW3F45PSH6QRBM6GUXYUVK3H3NSTKBI",
+                "NBO3IWAQTEQDPXV5AT3ORVUXBEBQSQZS6363GJY"
+            ]
+        },
+        {
+            "name": "AEX",
+            "icon": "aex.png",
+            "accounts": [
+                "NDIZ62F6HYKZ5XJWXN5US77TNXXT4O5MNSQANOI",
+                "NDWFN7HB26H2W64VVSIPENKNAUMBLWCIXTO4EYA"
+            ]
+        },
+        {
+            "name": "Bitrue",
+            "icon": "bitrue.png",
+            "accounts": [
+                "NBLBX3CQLKYJHHIRO4FLKBJFPAOSQS2WFAOAKLA"
+            ]
+        },
+        {
+            "name": "Xtheta",
+            "icon": "xtheta.png",
+            "accounts": [
+                "NCKT7NCR4FVRXHRYPCUYBO3NXRY6SOGYRT5I3BA",
+                "NCKFOIWN57KEET6YZE7EMZMWZB34NW6PGHHNCXQ"
+            ]
+        },
+        {
+            "name": "Probit",
+            "icon": "probit.png",
+            "accounts": [
+                "NBBHSNE2VMQGVZYKQIYYEDJIRETDDEWACTVN3UA",
+                "NAHM4SXXSOYDDXXF62Z6FYY7HIGMQDB3PNVXSUQ",
+                "NCPWZEHOK4BCYD7U3X5RLMSBBYNFCIIZO7ULF2Q"
+            ]
+        },
+        {
+            "name": "ZB.com",
+            "icon": "zb-com.png",
+            "accounts": [
+                "NBHZDPANNKXYRYXSF4DJOT7MDU2QAEAD67UAK6Y"
+            ]
+        },
+        {
+            "name": "Latoken",
+            "icon": "latoken.png",
+            "accounts": [
+                "NCBL5ZC63VPB6KUXQIDZA7ZLMFEDS3YXJXAFDVA"
+            ]
+        },
+        {
+            "name": "CoinEx",
+            "icon": "coinex.png",
+            "accounts": [
+                "NCZLP3L74IFMSPA4D3KZSUVBS2LZPV4QDZUQUIY"
+            ]
+        },
+        {
+            "name": "Bitbank",
+            "icon": "bitbank.png",
+            "accounts": [
+                "NDURU3U7Y7KKTPC2VVVF6U3VJIU5HDWSHQZCS4Q",
+                "NAIJUACP6BKCMFV7C7IDSZSAD7UNBMAE3TM7JKY"
+            ]
+        },
+        {
+            "name": "Bybit",
+            "icon": "bybit.png",
+            "accounts": [
+                "NBBPI4VHOYDE2ALKZSCGSXJODAJS3S6LYG3N6XI",
+                "NCSSLGWTRKULNZEGJSXHGRB2N7YMDDUCDOPUFCA"
+            ]
+        },
+        {
+            "name": "MEXC",
+            "icon": "mexc.png",
+            "accounts": [
+                "NABGDANLKUZ3D2SQOUEKPGYI6OAUFHEDW233FKY"
+            ]
+        },
+        {
+            "name": "Symbol Protocol Treasury",
+            "icon": "symbol-protocol-treasury.png",
+            "accounts": [
+                "NCHEST3QRQS4JZGOO64TH7NFJ2A63YA7TPM5PXI"
+            ]
+        },
+        {
+            "name": "Quadratic Funding",
+            "icon": "quadratic-funding.png",
+            "accounts": [
+                "NBANKCSJRQ7O34R7ORKSSGV2GDX6UA4J3AHVCRI"
+            ]
+        },
+        {
+            "name": "Harvest Network Fee Sink",
+            "icon": "harvest-network-fee-sink.png",
+            "accounts": [
+                "NAVORTEX3IPBAUWQBBI3I3BDIOS4AVHPZLCFC7Y"
+            ]
+        },
+        {
+            "name": "Namespace and Mosaic Fee Sink",
+            "icon": "namespace-and-mosaic-fee-sink.png",
+            "accounts": [
+                "NCVORTEX4XD5IQASZQEHDWUXT33XBOTBMKFDCLI"
+            ]
+        }
+    ]
+}
