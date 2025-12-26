@@ -1,0 +1,100 @@
+import { ButtonCopy } from '@/app/components/controls/ButtonCopy';
+import { PlatformUtils } from '@/app/lib/platform/PlatformUtils';
+import { showMessage } from '@/app/utils';
+import { fireEvent, render } from '@testing-library/react-native';
+
+jest.mock('@/app/lib/platform/PlatformUtils', () => ({
+	PlatformUtils: {
+		copyToClipboard: jest.fn()
+	}
+}));
+
+jest.mock('@/app/utils', () => ({
+	showMessage: jest.fn()
+}));
+
+describe('components/ButtonCopy', () => {
+	const createDefaultProps = () => ({
+		content: 'test-content-to-copy'
+	});
+
+	beforeEach(() => {
+		jest.clearAllMocks();
+	});
+
+	describe('render', () => {
+		it('renders component without errors', () => {
+			// Arrange:
+			const props = createDefaultProps();
+
+			// Act & Assert:
+			expect(() => render(<ButtonCopy {...props} />)).not.toThrow();
+		});
+	});
+
+	describe('copy to clipboard', () => {
+		const runCopyToClipboardTest = (config, expected) => {
+			it(config.description, () => {
+				// Arrange:
+				const props = createDefaultProps();
+				const errorMessage = 'Copy failed';
+
+				if (config.shouldThrowError) {
+					PlatformUtils.copyToClipboard.mockImplementation(() => {
+						throw new Error(errorMessage);
+					});
+				} else {
+					PlatformUtils.copyToClipboard.mockImplementation(() => {});
+				}
+
+				// Act:
+				const { getByRole } = render(<ButtonCopy {...props} />);
+				const button = getByRole('button');
+				fireEvent.press(button);
+
+				// Assert:
+				if (expected.shouldCopyContent)
+					expect(PlatformUtils.copyToClipboard).toHaveBeenCalledWith(props.content);
+
+				if (expected.shouldShowSuccessMessage) {
+					expect(showMessage).toHaveBeenCalledWith({
+						message: props.content,
+						type: 'info'
+					});
+				}
+
+				if (expected.shouldShowErrorMessage) {
+					expect(showMessage).toHaveBeenCalledWith({
+						message: errorMessage,
+						type: 'danger'
+					});
+				}
+			});
+		};
+
+		const tests = [
+			{
+				description: 'copies content to clipboard on press',
+				shouldThrowError: false,
+				expected: { shouldCopyContent: true }
+			},
+			{
+				description: 'shows success message after copying',
+				shouldThrowError: false,
+				expected: { shouldShowSuccessMessage: true }
+			},
+			{
+				description: 'shows error message when copy fails',
+				shouldThrowError: true,
+				expected: { shouldShowErrorMessage: true }
+			}
+		];
+
+		tests.forEach(test => {
+			runCopyToClipboardTest(
+				{ description: test.description, shouldThrowError: test.shouldThrowError },
+				test.expected
+			);
+		});
+	});
+});
