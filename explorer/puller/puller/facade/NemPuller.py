@@ -4,8 +4,9 @@ import threading
 from collections import namedtuple
 from queue import Queue
 
+from symbolchain.CryptoTypes import PublicKey
 from symbolchain.facade.NemFacade import NemFacade
-from symbolchain.nem.Network import Network
+from symbolchain.nem.Network import Address, Network
 from symbollightapi.connector.NemConnector import NemConnector
 from symbollightapi.model.Exceptions import NodeException
 from zenlog import log
@@ -48,6 +49,68 @@ class NemPuller:
 		"""Formats a NEM network timestamp to UTC."""
 
 		return self.nem_facade.network.datetime_converter.to_datetime(timestamp).strftime('%Y-%m-%d %H:%M:%S+00:00')
+
+	def _convert_public_key_to_address(self, public_key):
+		"""Convert public key to address."""
+
+		return self.nem_facade.network.public_key_to_address(PublicKey(public_key))
+
+	def _extract_addresses_from_block(self, block):
+		"""Extract address and public key from block and transactions."""
+
+		addresses = set()
+
+		public_key_fields = ['sender', 'remote_account', 'creator']
+		address_fields = ['recipient', 'rental_fee_sink', 'creation_fee_sink']
+
+		def _extract_from_transaction(transaction):
+			# Extract from public key fields
+			for field in public_key_fields:
+				value = getattr(transaction, field, None)
+				if value:
+					addresses.add(str(self._convert_public_key_to_address(value)))
+
+			# Extract from address fields
+			for field in address_fields:
+				value = getattr(transaction, field, None)
+				if value:
+					addresses.add(str(Address(value)))
+
+			# Handle levy recipient
+			levy = getattr(transaction, 'levy', None)
+			if levy:
+				addresses.add(str(Address(levy.recipient)))
+
+			# Handle multisig signatures
+			if hasattr(transaction, 'signatures'):
+				for signature in transaction.signatures:
+					other_account = getattr(signature, 'other_account', None)
+					sender = getattr(signature, 'sender', None)
+					if other_account:
+						addresses.add(str(Address(other_account)))
+					if sender:
+						addresses.add(str(self._convert_public_key_to_address(sender)))
+
+			# Handle multisig modifications
+			if hasattr(transaction, 'modifications'):
+				for modification in transaction.modifications:
+					cosignatory = getattr(modification, 'cosignatory_account', None)
+					if cosignatory:
+						addresses.add(str(self._convert_public_key_to_address(cosignatory)))
+
+		# Block signer
+		block_signer = getattr(block, 'signer', None)
+		if block_signer:
+			addresses.add(str(self._convert_public_key_to_address(block_signer)))
+
+		# Block transactions
+		for transaction in block.transactions:
+			_extract_from_transaction(transaction)
+
+			if hasattr(transaction, 'other_transaction'):
+				_extract_from_transaction(transaction.other_transaction)
+
+		return addresses
 
 	def _commit_blocks(self, message=None):
 		"""Commit blocks to database with error handling."""
