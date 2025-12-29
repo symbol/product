@@ -3,8 +3,8 @@ import { act, renderHook } from '@testing-library/react-native';
 
 describe('hooks/useToggle', () => {
 	describe('initial value', () => {
-		const runInitialValueTest = (config, expected) => {
-			it(`initializes with initial value "${config.initialValue}"`, () => {
+		const runInitialValueTest = (description, config, expected) => {
+			it(description, () => {
 				// Act:
 				const { result } = renderHook(() => useToggle(config.initialValue));
 				const [value] = result.current;
@@ -15,12 +15,20 @@ describe('hooks/useToggle', () => {
 		};
 
 		const tests = [
-			{ initialValue: true, expected: { value: true } },
-			{ initialValue: false, expected: { value: false } }
+			{
+				description: 'initializes with initial value "true"',
+				config: { initialValue: true },
+				expected: { value: true }
+			},
+			{
+				description: 'initializes with initial value "false"',
+				config: { initialValue: false },
+				expected: { value: false }
+			}
 		];
 
 		tests.forEach(test => {
-			runInitialValueTest({ initialValue: test.initialValue }, test.expected);
+			runInitialValueTest(test.description, test.config, test.expected);
 		});
 	});
 

@@ -43,8 +43,8 @@ describe('lib/PlatformUtils', () => {
 	});
 
 	describe('copyToClipboard', () => {
-		const runCopyToClipboardTest = (config, expected) => {
-			it(`copies "${config.str}" to clipboard`, () => {
+		const runCopyToClipboardTest = (description, config, expected) => {
+			it(description, () => {
 				// Act:
 				PlatformUtils.copyToClipboard(config.str);
 
@@ -54,19 +54,31 @@ describe('lib/PlatformUtils', () => {
 		};
 
 		const tests = [
-			{ str: 'test string', expected: { value: 'test string' } },
-			{ str: '', expected: { value: '' } },
-			{ str: 'NABCDEFGHIJKLMNOPQRSTUVWXYZ234567', expected: { value: 'NABCDEFGHIJKLMNOPQRSTUVWXYZ234567' } }
+			{
+				description: 'copies "test string" to clipboard',
+				config: { str: 'test string' },
+				expected: { value: 'test string' }
+			},
+			{
+				description: 'copies "" to clipboard',
+				config: { str: '' },
+				expected: { value: '' }
+			},
+			{
+				description: 'copies "NABCDEFGHIJKLMNOPQRSTUVWXYZ234567" to clipboard',
+				config: { str: 'NABCDEFGHIJKLMNOPQRSTUVWXYZ234567' },
+				expected: { value: 'NABCDEFGHIJKLMNOPQRSTUVWXYZ234567' }
+			}
 		];
 
 		tests.forEach(test => {
-			runCopyToClipboardTest({ str: test.str }, test.expected);
+			runCopyToClipboardTest(test.description, test.config, test.expected);
 		});
 	});
 
 	describe('getOS', () => {
-		const runGetOSTest = (config, expected) => {
-			it(`returns "${expected.os}" when platform is ${config.platform}`, () => {
+		const runGetOSTest = (description, config, expected) => {
+			it(description, () => {
 				// Arrange:
 				Platform.OS = config.platform;
 
@@ -79,18 +91,26 @@ describe('lib/PlatformUtils', () => {
 		};
 
 		const tests = [
-			{ platform: 'ios', expected: { os: 'ios' } },
-			{ platform: 'android', expected: { os: 'android' } }
+			{
+				description: 'returns "ios" when platform is ios',
+				config: { platform: 'ios' },
+				expected: { os: 'ios' }
+			},
+			{
+				description: 'returns "android" when platform is android',
+				config: { platform: 'android' },
+				expected: { os: 'android' }
+			}
 		];
 
 		tests.forEach(test => {
-			runGetOSTest({ platform: test.platform }, test.expected);
+			runGetOSTest(test.description, test.config, test.expected);
 		});
 	});
 
 	describe('vibrate', () => {
-		const runVibrateTest = (config, expected) => {
-			it(`${expected.shouldVibrate ? 'vibrates' : 'does not vibrate'} on ${config.platform}`, () => {
+		const runVibrateTest = (description, config, expected) => {
+			it(description, () => {
 				// Arrange:
 				Platform.OS = config.platform;
 
@@ -106,12 +126,20 @@ describe('lib/PlatformUtils', () => {
 		};
 
 		const tests = [
-			{ platform: 'android', expected: { shouldVibrate: true } },
-			{ platform: 'ios', expected: { shouldVibrate: false } }
+			{
+				description: 'vibrates on android',
+				config: { platform: 'android' },
+				expected: { shouldVibrate: true }
+			},
+			{
+				description: 'does not vibrate on ios',
+				config: { platform: 'ios' },
+				expected: { shouldVibrate: false }
+			}
 		];
 
 		tests.forEach(test => {
-			runVibrateTest({ platform: test.platform }, test.expected);
+			runVibrateTest(test.description, test.config, test.expected);
 		});
 	});
 
@@ -189,8 +217,8 @@ describe('lib/PlatformUtils', () => {
 	});
 
 	describe('writeFile', () => {
-		const runWriteFileTest = (config, expected) => {
-			it(`writes file to ${expected.directory} on ${config.platform}`, async () => {
+		const runWriteFileTest = (description, config, expected) => {
+			it(description, async () => {
 				// Arrange:
 				Platform.OS = config.platform;
 				PermissionsAndroid.check.mockResolvedValue(true);
@@ -207,26 +235,29 @@ describe('lib/PlatformUtils', () => {
 
 		const tests = [
 			{
-				platform: 'ios',
-				data: 'test data',
-				filename: 'test.txt',
-				encoding: 'utf8',
+				description: 'writes file to DocumentDir on ios',
+				config: {
+					platform: 'ios',
+					data: 'test data',
+					filename: 'test.txt',
+					encoding: 'utf8'
+				},
 				expected: { directory: 'DocumentDir', path: '/mock/download/dir/test.txt' }
 			},
 			{
-				platform: 'android',
-				data: 'android data',
-				filename: 'android.txt',
-				encoding: 'base64',
+				description: 'writes file to DownloadDir on android',
+				config: {
+					platform: 'android',
+					data: 'android data',
+					filename: 'android.txt',
+					encoding: 'base64'
+				},
 				expected: { directory: 'DownloadDir', path: '/mock/download/dir/android.txt' }
 			}
 		];
 
 		tests.forEach(test => {
-			runWriteFileTest(
-				{ platform: test.platform, data: test.data, filename: test.filename, encoding: test.encoding },
-				test.expected
-			);
+			runWriteFileTest(test.description, test.config, test.expected);
 		});
 
 		it('calls previewDocument on iOS after writing file', async () => {

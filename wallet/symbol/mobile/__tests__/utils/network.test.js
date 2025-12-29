@@ -1,7 +1,7 @@
 import { makeRequest } from '@/app/utils/network';
 import { InternalServerError, InvalidRequestError, NetworkRequestError, NotFoundError, RateLimitError } from 'wallet-common-core';
 
-describe('makeRequest', () => {
+describe('utils/network', () => {
 	const createMockResponse = (ok, status, body, statusText = 'Error') => ({
 		ok,
 		status,
@@ -36,8 +36,8 @@ describe('makeRequest', () => {
 	});
 
 	describe('error responses', () => {
-		const runErrorResponseTest = (config, expected) => {
-			it(`throws ${expected.errorType.name} for status ${config.status}`, async () => {
+		const runErrorResponseTest = (description, config, expected) => {
+			it(description, async () => {
 				// Arrange:
 				global.fetch.mockResolvedValue(createMockErrorResponse(config.status, config.errorBody));
 
@@ -47,23 +47,51 @@ describe('makeRequest', () => {
 		};
 
 		const tests = [
-			{ status: 400, errorBody: { message: 'Bad Request' }, expected: { errorType: InvalidRequestError } },
-			{ status: 409, errorBody: { message: 'Conflict' }, expected: { errorType: InvalidRequestError } },
-			{ status: 404, errorBody: { message: 'Not Found' }, expected: { errorType: NotFoundError } },
-			{ status: 429, errorBody: { message: 'Too Many Requests' }, expected: { errorType: RateLimitError } },
-			{ status: 500, errorBody: { message: 'Internal Server Error' }, expected: { errorType: InternalServerError } },
-			{ status: 502, errorBody: { message: 'Bad Gateway' }, expected: { errorType: InternalServerError } },
-			{ status: 503, errorBody: { message: 'Service Unavailable' }, expected: { errorType: NetworkRequestError } }
+			{
+				description: 'throws InvalidRequestError for status 400',
+				config: { status: 400, errorBody: { message: 'Bad Request' } },
+				expected: { errorType: InvalidRequestError }
+			},
+			{
+				description: 'throws InvalidRequestError for status 409',
+				config: { status: 409, errorBody: { message: 'Conflict' } },
+				expected: { errorType: InvalidRequestError }
+			},
+			{
+				description: 'throws NotFoundError for status 404',
+				config: { status: 404, errorBody: { message: 'Not Found' } },
+				expected: { errorType: NotFoundError }
+			},
+			{
+				description: 'throws RateLimitError for status 429',
+				config: { status: 429, errorBody: { message: 'Too Many Requests' } },
+				expected: { errorType: RateLimitError }
+			},
+			{
+				description: 'throws InternalServerError for status 500',
+				config: { status: 500, errorBody: { message: 'Internal Server Error' } },
+				expected: { errorType: InternalServerError }
+			},
+			{
+				description: 'throws InternalServerError for status 502',
+				config: { status: 502, errorBody: { message: 'Bad Gateway' } },
+				expected: { errorType: InternalServerError }
+			},
+			{
+				description: 'throws NetworkRequestError for status 503',
+				config: { status: 503, errorBody: { message: 'Service Unavailable' } },
+				expected: { errorType: NetworkRequestError }
+			}
 		];
 
 		tests.forEach(test => {
-			runErrorResponseTest({ status: test.status, errorBody: test.errorBody }, test.expected);
+			runErrorResponseTest(test.description, test.config, test.expected);
 		});
 	});
 
 	describe('error message extraction', () => {
-		const runErrorMessageTest = (config, expected) => {
-			it(`extracts error message from ${config.description}`, async () => {
+		const runErrorMessageTest = (description, config, expected) => {
+			it(description, async () => {
 				// Arrange:
 				global.fetch.mockResolvedValue(createMockErrorResponse(config.status, config.errorBody));
 
@@ -74,24 +102,25 @@ describe('makeRequest', () => {
 
 		const tests = [
 			{
-				description: 'message property',
-				status: 400,
-				errorBody: { message: 'validation failed' },
+				description: 'extracts error message from message property',
+				config: {
+					status: 400,
+					errorBody: { message: 'validation failed' }
+				},
 				expected: { message: 'validation failed' }
 			},
 			{
-				description: 'error property',
-				status: 400,
-				errorBody: { error: 'invalid input' },
+				description: 'extracts error message from error property',
+				config: {
+					status: 400,
+					errorBody: { error: 'invalid input' }
+				},
 				expected: { message: 'invalid input' }
 			}
 		];
 
 		tests.forEach(test => {
-			runErrorMessageTest(
-				{ description: test.description, status: test.status, errorBody: test.errorBody },
-				test.expected
-			);
+			runErrorMessageTest(test.description, test.config, test.expected);
 		});
 
 		it('falls back to statusText when JSON parsing fails', async () => {
@@ -110,8 +139,8 @@ describe('makeRequest', () => {
 	});
 
 	describe('request options', () => {
-		const runRequestOptionsTest = (config, expected) => {
-			it(`passes ${config.description} to fetch`, async () => {
+		const runRequestOptionsTest = (description, config, expected) => {
+			it(description, async () => {
 				// Arrange:
 				global.fetch.mockResolvedValue(createMockResponse(true, 200, {}));
 
@@ -125,30 +154,33 @@ describe('makeRequest', () => {
 
 		const tests = [
 			{
-				description: 'GET request options',
-				url: 'https://api.example.com/data',
-				options: { method: 'GET' },
+				description: 'passes GET request options to fetch',
+				config: {
+					url: 'https://api.example.com/data',
+					options: { method: 'GET' }
+				},
 				expected: { url: 'https://api.example.com/data', options: { method: 'GET' } }
 			},
 			{
-				description: 'POST request with body',
-				url: 'https://api.example.com/submit',
-				options: { method: 'POST', body: JSON.stringify({ key: 'value' }) },
+				description: 'passes POST request with body to fetch',
+				config: {
+					url: 'https://api.example.com/submit',
+					options: { method: 'POST', body: JSON.stringify({ key: 'value' }) }
+				},
 				expected: { url: 'https://api.example.com/submit', options: { method: 'POST', body: JSON.stringify({ key: 'value' }) } }
 			},
 			{
-				description: 'request with headers',
-				url: 'https://api.example.com/auth',
-				options: { headers: { Authorization: 'Bearer token' } },
+				description: 'passes request with headers to fetch',
+				config: {
+					url: 'https://api.example.com/auth',
+					options: { headers: { Authorization: 'Bearer token' } }
+				},
 				expected: { url: 'https://api.example.com/auth', options: { headers: { Authorization: 'Bearer token' } } }
 			}
 		];
 
 		tests.forEach(test => {
-			runRequestOptionsTest(
-				{ description: test.description, url: test.url, options: test.options },
-				test.expected
-			);
+			runRequestOptionsTest(test.description, test.config, test.expected);
 		});
 	});
 });

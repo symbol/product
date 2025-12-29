@@ -6,8 +6,8 @@ describe('hooks/useValidation', () => {
 	const createFailingValidator = errorMessage => () => errorMessage;
 
 	describe('validation without formatResult', () => {
-		const runValidationTest = (config, expected) => {
-			it(`returns ${expected.result} when ${config.description}`, () => {
+		const runValidationTest = (description, config, expected) => {
+			it(description, () => {
 				// Act:
 				const { result } = renderHook(() => useValidation(config.value, config.validators));
 
@@ -18,48 +18,55 @@ describe('hooks/useValidation', () => {
 
 		const tests = [
 			{
-				description: 'all validators pass',
-				value: 'valid',
-				validators: [createPassingValidator(), createPassingValidator()],
+				description: 'returns undefined when all validators pass',
+				config: {
+					value: 'valid',
+					validators: [createPassingValidator(), createPassingValidator()]
+				},
 				expected: { result: undefined }
 			},
 			{
-				description: 'first validator fails',
-				value: 'invalid',
-				validators: [createFailingValidator('error_first'), createPassingValidator()],
+				description: 'returns error_first when first validator fails',
+				config: {
+					value: 'invalid',
+					validators: [createFailingValidator('error_first'), createPassingValidator()]
+				},
 				expected: { result: 'error_first' }
 			},
 			{
-				description: 'second validator fails',
-				value: 'invalid',
-				validators: [createPassingValidator(), createFailingValidator('error_second')],
+				description: 'returns error_second when second validator fails',
+				config: {
+					value: 'invalid',
+					validators: [createPassingValidator(), createFailingValidator('error_second')]
+				},
 				expected: { result: 'error_second' }
 			},
 			{
-				description: 'multiple validators fail (returns first error)',
-				value: 'invalid',
-				validators: [createFailingValidator('error_first'), createFailingValidator('error_second')],
+				description: 'returns first error when multiple validators fail',
+				config: {
+					value: 'invalid',
+					validators: [createFailingValidator('error_first'), createFailingValidator('error_second')]
+				},
 				expected: { result: 'error_first' }
 			},
 			{
-				description: 'no validators provided',
-				value: 'any',
-				validators: [],
+				description: 'returns undefined when no validators provided',
+				config: {
+					value: 'any',
+					validators: []
+				},
 				expected: { result: undefined }
 			}
 		];
 
 		tests.forEach(test => {
-			runValidationTest(
-				{ value: test.value, validators: test.validators, description: test.description },
-				test.expected
-			);
+			runValidationTest(test.description, test.config, test.expected);
 		});
 	});
 
 	describe('validation with formatResult', () => {
-		const runFormattedValidationTest = (config, expected) => {
-			it(`returns ${expected.result} when ${config.description}`, () => {
+		const runFormattedValidationTest = (description, config, expected) => {
+			it(description, () => {
 				// Arrange:
 				const formatResult = key => `formatted_${key}`;
 
@@ -73,24 +80,25 @@ describe('hooks/useValidation', () => {
 
 		const tests = [
 			{
-				description: 'validator fails and formatResult is applied',
-				value: 'invalid',
-				validators: [createFailingValidator('error_message')],
+				description: 'returns formatted result when validator fails and formatResult is applied',
+				config: {
+					value: 'invalid',
+					validators: [createFailingValidator('error_message')]
+				},
 				expected: { result: 'formatted_error_message' }
 			},
 			{
-				description: 'all validators pass (formatResult not applied)',
-				value: 'valid',
-				validators: [createPassingValidator()],
+				description: 'returns undefined when all validators pass (formatResult not applied)',
+				config: {
+					value: 'valid',
+					validators: [createPassingValidator()]
+				},
 				expected: { result: undefined }
 			}
 		];
 
 		tests.forEach(test => {
-			runFormattedValidationTest(
-				{ value: test.value, validators: test.validators, description: test.description },
-				test.expected
-			);
+			runFormattedValidationTest(test.description, test.config, test.expected);
 		});
 	});
 

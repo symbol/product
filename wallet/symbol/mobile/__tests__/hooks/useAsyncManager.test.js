@@ -28,41 +28,38 @@ describe('hooks/useAsyncManager', () => {
 	});
 
 	describe('initialization', () => {
-		const runInitializationTest = (config, expected) => {
-			// Act:
-			const { result } = renderHook(() => useAsyncManager(config));
+		const runInitializationTest = (description, config, expected) => {
+			it(description, () => {
+				// Act:
+				const { result } = renderHook(() => useAsyncManager(config));
 
-			// Assert:
-			expect(result.current.isLoading).toBe(expected.isLoading);
-			expect(result.current.data).toEqual(expected.data);
-			expect(result.current.error).toBe(expected.error);
+				// Assert:
+				expect(result.current.isLoading).toBe(expected.isLoading);
+				expect(result.current.data).toEqual(expected.data);
+				expect(result.current.error).toBe(expected.error);
+			});
 		};
 
-		it('initializes with default values', () => {
-			// Arrange:
-			const config = createConfig();
-			const expected = { isLoading: false, data: null, error: null };
+		const tests = [
+			{
+				description: 'initializes with default values',
+				config: createConfig(),
+				expected: { isLoading: false, data: null, error: null }
+			},
+			{
+				description: 'initializes with custom default data',
+				config: createConfig({ defaultData: DEFAULT_DATA }),
+				expected: { isLoading: false, data: DEFAULT_DATA, error: null }
+			},
+			{
+				description: 'initializes with custom loading state',
+				config: createConfig({ defaultLoadingState: true }),
+				expected: { isLoading: true, data: null, error: null }
+			}
+		];
 
-			// Act & Assert:
-			runInitializationTest(config, expected);
-		});
-
-		it('initializes with custom default data', () => {
-			// Arrange:
-			const config = createConfig({ defaultData: DEFAULT_DATA });
-			const expected = { isLoading: false, data: DEFAULT_DATA, error: null };
-
-			// Act & Assert:
-			runInitializationTest(config, expected);
-		});
-
-		it('initializes with custom loading state', () => {
-			// Arrange:
-			const config = createConfig({ defaultLoadingState: true });
-			const expected = { isLoading: true, data: null, error: null };
-
-			// Act & Assert:
-			runInitializationTest(config, expected);
+		tests.forEach(test => {
+			runInitializationTest(test.description, test.config, test.expected);
 		});
 	});
 
