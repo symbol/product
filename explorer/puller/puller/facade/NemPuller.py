@@ -45,6 +45,51 @@ class NemPuller:
 		self.nem_connector = NemConnector(node_url, network)
 		self.nem_facade = NemFacade(str(network))
 
+	async def _retry_operation(self, operation, description, retries=3, delay=2):  # pylint: disable=no-self-use
+		"""Retries an async operation with exponential backoff."""
+
+		for attempt in range(1, retries + 1):
+			try:
+				return await operation()
+			except NodeException as error:
+				if attempt < retries:
+					wait_time = delay * (2 ** (attempt - 1))  # Exponential backoff: 2s, 4s, 8s
+					log.warning(f'Error {description} (attempt {attempt}/{retries}): {error}. Retrying in {wait_time}s...')
+					await asyncio.sleep(wait_time)
+				else:
+					log.error(f'Failed {description} after {retries} attempts: {error}')
+					raise
+
+	async def _retry_get_blocks_after(self, height, retries=3, delay=2):
+		"""Retries fetching blocks after a given height with exponential backoff."""
+
+		return await self._retry_operation(
+			lambda: self.nem_connector.get_blocks_after(height),
+			f'fetching blocks after height {height}',
+			retries,
+			delay
+		)
+
+	async def _retry_get_account_info(self, address, forwarded=False, retries=3, delay=2):
+		"""Retries fetching account info with exponential backoff."""
+
+		return await self._retry_operation(
+			lambda: self.nem_connector.account_info(address, forwarded),
+			f'fetching account {address[:16]}...',
+			retries,
+			delay
+		)
+
+	async def _retry_get_account_mosaics(self, address, retries=3, delay=2):
+		"""Retries fetching account mosaics with exponential backoff."""
+
+		return await self._retry_operation(
+			lambda: self.nem_connector.account_mosaics(address),
+			f'fetching mosaics for account {address[:16]}...',
+			retries,
+			delay
+		)
+
 	def _convert_timestamp_to_datetime(self, timestamp):
 		"""Formats a NEM network timestamp to UTC."""
 

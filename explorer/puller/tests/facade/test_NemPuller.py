@@ -210,6 +210,8 @@ NEM_CONNECTOR_RESPONSE_BLOCKS = [
 	)
 ]
 
+NEM_CONNECTOR_RESPONSE_ACCOUNT_INFO = NemAccountInfo(Address('TALICE6XEEEOBFJVY3ZCENZ7WBG6LB4KB7P7KMQX'))
+
 # endregion
 
 
@@ -408,8 +410,87 @@ class NemPullerTest(unittest.TestCase):
 			actual_calls = [call[0][0] if call[0] else None for call in mock_commit_blocks.call_args_list]
 			self.assertEqual(actual_calls, expected_calls)
 
+	def _assert_retry_operation_successful(self, mock_connector_method, operation, expected_result):
+		# Arrange:
+		mock_connector_method.return_value = expected_result
+
+		# Act:
+		result = asyncio.run(operation(1))  # pylint: disable=protected-access
+
+		# Assert:
+		self.assertEqual(result, expected_result)
+		mock_connector_method.assert_called_once_with(1)
+
+	def test_retry_operation_succeeds_on_first_attempt(self):
+		# Arrange:
+		mock_operation = AsyncMock()
+		mock_operation.return_value = 'success'
+
+		# Act:
+		result = asyncio.run(self.puller._retry_operation(mock_operation, 'testing'))  # pylint: disable=protected-access
+
+		# Assert:
+		self.assertEqual(result, 'success')
+		mock_operation.assert_called_once()
+
+	@patch('asyncio.sleep')
+	def test_retry_operation_succeeds_on_second_attempt(self, mock_sleep):
+		# Arrange:
+		mock_operation = AsyncMock()
+		mock_operation.side_effect = [
+			NodeException('Connection refused'),
+			'success'
+		]
+		mock_sleep.return_value = AsyncMock()
+
+		# Act:
+		result = asyncio.run(self.puller._retry_operation(mock_operation, 'testing'))  # pylint: disable=protected-access
+
+		# Assert:
+		self.assertEqual(result, 'success')
+		self.assertEqual(mock_operation.call_count, 2)
+		self.assertEqual(mock_sleep.call_count, 1)
+		sleep_calls = [call[0][0] for call in mock_sleep.call_args_list]
+		self.assertEqual(sleep_calls, [2])
+
+	@patch('asyncio.sleep')
+	def test_retry_operation_succeeds_on_last_attempt(self, mock_sleep):
+		# Arrange:
+		mock_operation = AsyncMock()
+		mock_operation.side_effect = [
+			NodeException('Connection refused'),
+			NodeException('Connection refused'),
+			'success'
+		]
+		mock_sleep.return_value = AsyncMock()
+
+		# Act:
+		result = asyncio.run(self.puller._retry_operation(mock_operation, 'testing'))  # pylint: disable=protected-access
+
+		# Assert:
+		self.assertEqual(result, 'success')
+		self.assertEqual(mock_operation.call_count, 3)
+		self.assertEqual(mock_sleep.call_count, 2)
+		sleep_calls = [call[0][0] for call in mock_sleep.call_args_list]
+		self.assertEqual(sleep_calls, [2, 4])
+
+	@patch('asyncio.sleep')
+	def test_retry_operation_raises_error_after_max_retries(self, mock_sleep):
+		# Arrange:
+		mock_operation = AsyncMock()
+		mock_operation.side_effect = NodeException('Connection refused')
+		mock_sleep.return_value = AsyncMock()
+
+		# Act & Assert:
+		with self.assertRaises(NodeException) as context:
+			asyncio.run(self.puller._retry_operation(mock_operation, 'testing'))  # pylint: disable=protected-access
+
+		self.assertEqual(str(context.exception), 'Connection refused')
+		self.assertEqual(mock_operation.call_count, 3)
+		self.assertEqual(mock_sleep.call_count, 2)
+
 	@patch('puller.facade.NemPuller.NemConnector.get_blocks_after')
-	def test_retry_get_blocks_after_succeeds_on_first_attempt(self, mock_get_blocks_after):
+	def test_retry_get_blocks_after(self, mock_get_blocks_after):
 		# Arrange:
 		mock_get_blocks_after.return_value = NEM_CONNECTOR_RESPONSE_BLOCKS
 
@@ -420,64 +501,35 @@ class NemPullerTest(unittest.TestCase):
 		self.assertEqual(result, NEM_CONNECTOR_RESPONSE_BLOCKS)
 		mock_get_blocks_after.assert_called_once_with(1)
 
-	@patch('puller.facade.NemPuller.NemConnector.get_blocks_after')
-	@patch('asyncio.sleep')
-	def _assert_retry_with_failures(self, mock_sleep, mock_get_blocks_after, side_effects, expected_sleep_calls):
+	@patch('puller.facade.NemPuller.NemConnector.account_info')
+	def test_retry_get_account_info(self, mock_account_info):
 		# Arrange:
-		mock_get_blocks_after.side_effect = side_effects
-		mock_sleep.return_value = AsyncMock()
+		mock_account_info.return_value = NEM_CONNECTOR_RESPONSE_ACCOUNT_INFO
+		address = str(NEM_CONNECTOR_RESPONSE_ACCOUNT_INFO.address)
 
 		# Act:
-		result = asyncio.run(self.puller._retry_get_blocks_after(1))  # pylint: disable=protected-access
+		result = asyncio.run(self.puller._retry_get_account_info(address))  # pylint: disable=protected-access
 
 		# Assert:
-		self.assertEqual(result, NEM_CONNECTOR_RESPONSE_BLOCKS)
-		self.assertEqual(mock_get_blocks_after.call_count, len(side_effects))  # Call count = number of attempts
-		self.assertEqual(mock_sleep.call_count, len(expected_sleep_calls))
-		sleep_calls = [call[0][0] for call in mock_sleep.call_args_list]
-		self.assertEqual(sleep_calls, expected_sleep_calls)
+		self.assertEqual(result, NEM_CONNECTOR_RESPONSE_ACCOUNT_INFO)
+		mock_account_info.assert_called_once_with(address, False)
 
-	def test_retry_get_blocks_after_succeeds_on_second_attempt(self):
+	@patch('puller.facade.NemPuller.NemConnector.account_mosaics')
+	def test_retry_get_account_mosaics(self, mock_account_mosaics):
 		# Arrange:
-		side_effects = [
-			NodeException('Connection timeout'),
-			NEM_CONNECTOR_RESPONSE_BLOCKS
+		mosaics = [
+			AccountMosaic(('nem', 'xem'), 8000000),
+			AccountMosaic(('foo', 'bar'), 500)
 		]
+		mock_account_mosaics.return_value = mosaics
+		address = str(NEM_CONNECTOR_RESPONSE_ACCOUNT_INFO.address)
 
-		# pylint: disable=no-value-for-parameter
-		self._assert_retry_with_failures(
-			side_effects=side_effects,
-			expected_sleep_calls=[2]
-		)
+		# Act:
+		result = asyncio.run(self.puller._retry_get_account_mosaics(address))  # pylint: disable=protected-access
 
-	def test_retry_get_blocks_after_succeeds_on_last_attempt(self):
-		# Arrange:
-		side_effects = [
-			NodeException('Connection timeout'),
-			NodeException('Connection timeout'),
-			NEM_CONNECTOR_RESPONSE_BLOCKS
-		]
-
-		# pylint: disable=no-value-for-parameter
-		self._assert_retry_with_failures(
-			side_effects=side_effects,
-			expected_sleep_calls=[2, 4]
-		)
-
-	@patch('puller.facade.NemPuller.NemConnector.get_blocks_after')
-	@patch('asyncio.sleep')
-	def test_retry_get_blocks_after_raises_error_after_max_retries(self, mock_sleep, mock_get_blocks_after):
-		# Arrange: Always fail
-		mock_get_blocks_after.side_effect = NodeException('Connection refused')
-		mock_sleep.return_value = AsyncMock()
-
-		# Act & Assert:
-		with self.assertRaises(NodeException) as context:
-			asyncio.run(self.puller._retry_get_blocks_after(1))  # pylint: disable=protected-access
-
-		self.assertEqual(str(context.exception), 'Connection refused')
-		self.assertEqual(mock_get_blocks_after.call_count, 3)
-		self.assertEqual(mock_sleep.call_count, 2)
+		# Assert:
+		self.assertEqual(result, mosaics)
+		mock_account_mosaics.assert_called_once_with(address)
 
 	def test_can_extract_addresses_from_block_with_only_signer(self):
 		# Arrange:
