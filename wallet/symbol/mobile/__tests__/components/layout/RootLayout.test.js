@@ -59,7 +59,7 @@ describe('components/RootLayout', () => {
 	});
 
 	describe('network status bar visibility', () => {
-		const runNetworkStatusBarVisibilityTest = (config, expected, description) => {
+		const runNetworkStatusBarVisibilityTest = (description, config, expected) => {
 			it(description, () => {
 				// Arrange:
 				const props = {
@@ -104,12 +104,12 @@ describe('components/RootLayout', () => {
 		];
 
 		tests.forEach(test => {
-			runNetworkStatusBarVisibilityTest(test.config, test.expected, test.description);
+			runNetworkStatusBarVisibilityTest(test.description, test.config, test.expected);
 		});
 	});
 
 	describe('network status prop', () => {
-		const runNetworkStatusPropTest = (config, expected, description) => {
+		const runNetworkStatusPropTest = (description, config, expected) => {
 			it(description, () => {
 				// Arrange:
 				const props = {
@@ -145,7 +145,7 @@ describe('components/RootLayout', () => {
 		];
 
 		tests.forEach(test => {
-			runNetworkStatusPropTest(test.config, test.expected, test.description);
+			runNetworkStatusPropTest(test.description, test.config, test.expected);
 		});
 	});
 });

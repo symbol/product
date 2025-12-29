@@ -26,8 +26,8 @@ describe('hooks/useWalletController', () => {
 	});
 
 	describe('controller selection', () => {
-		const runControllerSelectionTest = (config, expected) => {
-			it(`returns ${expected.controllerType} controller when chainName is "${config.chainName}"`, () => {
+		const runControllerSelectionTest = (description, config, expected) => {
+			it(description, () => {
 				// Act:
 				const { result } = renderHook(() => useWalletController(config.chainName));
 
@@ -38,25 +38,29 @@ describe('hooks/useWalletController', () => {
 
 		const tests = [
 			{
-				chainName: undefined,
+				description: 'returns main controller when chainName is undefined',
+				config: { chainName: undefined },
 				expected: { controllerType: 'main', controller: walletControllers.main }
 			},
 			{
-				chainName: null,
+				description: 'returns main controller when chainName is null',
+				config: { chainName: null },
 				expected: { controllerType: 'main', controller: walletControllers.main }
 			},
 			{
-				chainName: 'symbol',
+				description: 'returns main controller when chainName is "symbol"',
+				config: { chainName: 'symbol' },
 				expected: { controllerType: 'main', controller: walletControllers.main }
 			},
 			{
-				chainName: 'ethereum',
+				description: 'returns additional controller when chainName is "ethereum"',
+				config: { chainName: 'ethereum' },
 				expected: { controllerType: 'additional', controller: walletControllers.additional[0] }
 			}
 		];
 
 		tests.forEach(test => {
-			runControllerSelectionTest({ chainName: test.chainName }, test.expected);
+			runControllerSelectionTest(test.description, test.config, test.expected);
 		});
 	});
 

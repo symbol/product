@@ -84,8 +84,8 @@ describe('App', () => {
 	});
 
 	describe('flow rendering', () => {
-		const runFlowRenderingTest = (config, expected) => {
-			it(`renders ${expected.flow} flow when hasAccounts=${config.hasAccounts}`, async () => {
+		const runFlowRenderingTest = (description, config, expected) => {
+			it(description, async () => {
 				// Arrange:
 				mockWalletController({
 					hasAccounts: config.hasAccounts,
@@ -115,17 +115,19 @@ describe('App', () => {
 
 		const flowTests = [
 			{
+				description: 'renders onboarding flow when hasAccounts=false',
 				config: { hasAccounts: false },
 				expected: { flow: 'onboarding', isPasscodeShown: false }
 			},
 			{
+				description: 'renders main flow when hasAccounts=true',
 				config: { hasAccounts: true },
 				expected: { flow: 'main', isPasscodeShown: true }
 			}
 		];
 
 		flowTests.forEach(test => {
-			runFlowRenderingTest(test.config, test.expected);
+			runFlowRenderingTest(test.description, test.config, test.expected);
 		});
 	});
 
@@ -181,8 +183,8 @@ describe('App', () => {
 	});
 
 	describe('event subscriptions', () => {
-		const runEventSubscriptionTest = (config, expected) => {
-			it(`${config.action} wallet controller events on ${config.lifecycle}`, async () => {
+		const runEventSubscriptionTest = (description, config, expected) => {
+			it(description, async () => {
 				// Arrange:
 				const eventMock = jest.fn();
 				mockWalletController({
@@ -222,17 +224,19 @@ describe('App', () => {
 
 		const subscriptionTests = [
 			{
+				description: 'subscribes to wallet controller events on mount',
 				config: { action: 'subscribes to', lifecycle: 'mount', methodName: 'on' },
 				expected: { events: mainControllerEvents }
 			},
 			{
+				description: 'unsubscribes from wallet controller events on unmount',
 				config: { action: 'unsubscribes from', lifecycle: 'unmount', methodName: 'removeListener' },
 				expected: { events: mainControllerEvents }
 			}
 		];
 
 		subscriptionTests.forEach(test => {
-			runEventSubscriptionTest(test.config, test.expected);
+			runEventSubscriptionTest(test.description, test.config, test.expected);
 		});
 
 		it('subscribes additional wallet controllers to transaction events on mount', async () => {

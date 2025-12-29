@@ -33,8 +33,8 @@ describe('components/ButtonCopy', () => {
 	});
 
 	describe('copy to clipboard', () => {
-		const runCopyToClipboardTest = (config, expected) => {
-			it(config.description, () => {
+		const runCopyToClipboardTest = (description, config, expected) => {
+			it(description, () => {
 				// Arrange:
 				const props = createDefaultProps();
 				const errorMessage = 'Copy failed';
@@ -75,26 +75,23 @@ describe('components/ButtonCopy', () => {
 		const tests = [
 			{
 				description: 'copies content to clipboard on press',
-				shouldThrowError: false,
+				config: { shouldThrowError: false },
 				expected: { shouldCopyContent: true }
 			},
 			{
 				description: 'shows success message after copying',
-				shouldThrowError: false,
+				config: { shouldThrowError: false },
 				expected: { shouldShowSuccessMessage: true }
 			},
 			{
 				description: 'shows error message when copy fails',
-				shouldThrowError: true,
+				config: { shouldThrowError: true },
 				expected: { shouldShowErrorMessage: true }
 			}
 		];
 
 		tests.forEach(test => {
-			runCopyToClipboardTest(
-				{ description: test.description, shouldThrowError: test.shouldThrowError },
-				test.expected
-			);
+			runCopyToClipboardTest(test.description, test.config, test.expected);
 		});
 	});
 });

@@ -3,8 +3,8 @@ import { act, renderHook } from '@testing-library/react-native';
 
 describe('hooks/usePasscode', () => {
 	describe('initial state', () => {
-		const runInitialStateTest = (config, expected) => {
-			it(`initializes with type "${config.type}" and isVisible "${expected.isVisible}"`, () => {
+		const runInitialStateTest = (description, config, expected) => {
+			it(description, () => {
 				// Arrange:
 				const onSuccess = jest.fn();
 
@@ -19,13 +19,25 @@ describe('hooks/usePasscode', () => {
 		};
 
 		const tests = [
-			{ type: 'verify', expected: { isVisible: false, type: 'verify' } },
-			{ type: 'create', expected: { isVisible: false, type: 'create' } },
-			{ type: undefined, expected: { isVisible: false, type: 'verify' } }
+			{
+				description: 'initializes with type "verify" and isVisible "false"',
+				config: { type: 'verify' },
+				expected: { isVisible: false, type: 'verify' }
+			},
+			{
+				description: 'initializes with type "create" and isVisible "false"',
+				config: { type: 'create' },
+				expected: { isVisible: false, type: 'create' }
+			},
+			{
+				description: 'initializes with default type "verify" and isVisible "false" when type is undefined',
+				config: { type: undefined },
+				expected: { isVisible: false, type: 'verify' }
+			}
 		];
 
 		tests.forEach(test => {
-			runInitialStateTest({ type: test.type }, test.expected);
+			runInitialStateTest(test.description, test.config, test.expected);
 		});
 	});
 
