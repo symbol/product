@@ -68,7 +68,7 @@ class NemDatabaseTest(unittest.TestCase):
 		# Destroy the temporary PostgreSQL database
 		self.postgresql.stop()
 
-	def _fetch_account_from_db(self, cursor, address):
+	def _fetch_account_from_db(self, cursor, address):  # pylint: disable=no-self-use
 		"""Helper method to fetch account data from database."""
 
 		cursor.execute(
