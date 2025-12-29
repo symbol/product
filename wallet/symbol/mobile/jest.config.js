@@ -8,6 +8,7 @@ const transformIgnoreModules = [
 	'react-native-reanimated',
 	'react-native-worklets',
 	'react-native-smooth-slider',
+	'make-plural',
 	'wallet-common-core',
 	'wallet-common-symbol',
 	'wallet-common-ethereum'
