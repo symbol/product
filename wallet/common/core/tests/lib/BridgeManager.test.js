@@ -982,7 +982,7 @@ describe('BridgeManager', () => {
 				expect(thrown).toBeTruthy();
 				expect(thrown.message).toBe(expected.errorMessage);
 			} else {
-				const url = `${BRIDGE_URL}/${mode}/prepare`;
+				const url = `${BRIDGE_URL}/${mode}/estimate`;
 				const recipientAddress = mode === 'wrap'
 					? wrappedWalletController.currentAccount.address
 					: nativeWalletController.currentAccount.address;
