@@ -2,7 +2,7 @@ import asyncio
 import datetime
 import tempfile
 import unittest
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 import testing.postgresql
 from symbolchain.CryptoTypes import PublicKey
@@ -23,7 +23,7 @@ from symbollightapi.model.Transaction import (
 	TransferTransaction
 )
 
-from puller.facade.NemPuller import DatabaseConfig, NemPuller
+from puller.facade.NemPuller import DatabaseConfig, NemPuller, AccountRecord
 
 # region test data
 
@@ -569,3 +569,100 @@ class NemPullerTest(unittest.TestCase):
 			'TBEM6SFOHU5PORIGAVG3NNJIMCG73R2TWH35O2VF',
 			'TADMEHCFJD45GPTDL4HZP2LJLZVAZRLYWY2K4OOH'
 		})
+
+	@patch('puller.facade.NemPuller.NemConnector.account_info')
+	@patch('puller.facade.NemPuller.NemConnector.account_mosaics')
+	@patch('puller.facade.NemPuller.NemDatabase.upsert_account')
+	def test_can_process_account_batch(self, mock_upsert_account, mock_account_mosaics, mock_account_info):
+		# Arrange:
+		mock_account_info.return_value = NEM_CONNECTOR_RESPONSE_ACCOUNT_INFO
+		mock_account_mosaics.return_value = [
+			AccountMosaic(('nem', 'xem'), 8000000),
+		]
+
+		cursor = Mock()
+		addresses = {
+			str(NEM_CONNECTOR_RESPONSE_ACCOUNT_INFO.address),
+		}
+
+		# Act:
+		asyncio.run(self.puller._process_account_batch(cursor, addresses))  # pylint: disable=protected-access
+
+		# Assert:
+		mock_account_info.assert_called_once_with(str(NEM_CONNECTOR_RESPONSE_ACCOUNT_INFO.address), False)
+		mock_account_mosaics.assert_called_once_with(str(NEM_CONNECTOR_RESPONSE_ACCOUNT_INFO.address))
+		mock_upsert_account.assert_called_once_with(
+			cursor,
+			AccountRecord(
+				mosaics=[{
+					'namespace': 'nem.xem',
+					'quantity': 8000000
+				}],
+				remote_address=None,
+				**vars(NEM_CONNECTOR_RESPONSE_ACCOUNT_INFO)
+			)
+		)
+
+	@patch('puller.facade.NemPuller.NemConnector.account_info')
+	@patch('puller.facade.NemPuller.NemConnector.account_mosaics')
+	@patch('puller.facade.NemPuller.NemDatabase.upsert_account')
+	def test_can_process_account_batch_with_remote_status(self, mock_upsert_account, mock_account_mosaics, mock_account_info):
+		# Arrange:
+		account = NEM_CONNECTOR_RESPONSE_ACCOUNT_INFO
+		account.remote_status = 'REMOTE'
+
+		remote_account = NemAccountInfo(Address('TBKQWJJGPOHL462DBVMTYOAERXGG2BOS5XRFO2P6'))
+
+		mock_account_info.side_effect = [
+			account,
+			remote_account
+		]
+
+		mock_account_mosaics.side_effect = [
+			[AccountMosaic(('nem', 'xem'), 0)],
+			[AccountMosaic(('nem', 'xem'), 1000000)]  # for remote account
+		]
+
+		cursor = Mock()
+		addresses = {
+			str(account.address),
+		}
+
+		# Act:
+		asyncio.run(self.puller._process_account_batch(cursor, addresses))  # pylint: disable=protected-access
+
+		# Assert:
+		account_info_calls = mock_account_info.call_args_list
+		self.assertEqual(len(account_info_calls), 2)
+		self.assertEqual(account_info_calls[0][0], (str(account.address), False))
+		self.assertEqual(account_info_calls[1][0], (str(account.address), True))
+
+		account_mosaics_calls = mock_account_mosaics.call_args_list
+		self.assertEqual(len(account_mosaics_calls), 2)
+		self.assertEqual(account_mosaics_calls[0][0], (str(account.address),))
+		self.assertEqual(account_mosaics_calls[1][0], (str(remote_account.address),))
+
+		upsert_account_calls = mock_upsert_account.call_args_list
+		self.assertEqual(len(upsert_account_calls), 2)
+		self.assertEqual(upsert_account_calls[0][0], (
+			cursor,
+			AccountRecord(
+				mosaics=[{
+					'namespace': 'nem.xem',
+					'quantity': 0
+				}],
+				remote_address=None,
+				**vars(account)
+			),
+		))
+		self.assertEqual(upsert_account_calls[1][0], (
+			cursor,
+			AccountRecord(
+				mosaics=[{
+					'namespace': 'nem.xem',
+					'quantity': 1000000
+				}],
+				remote_address=account.address,
+				**vars(remote_account)
+			),
+		))

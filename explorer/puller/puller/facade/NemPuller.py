@@ -25,6 +25,21 @@ BlockRecord = namedtuple('BlockRecord', [
 	'signature',
 	'size'
 ])
+AccountRecord = namedtuple('AccountRecord', [
+	'address',
+	'public_key',
+	'remote_address',
+	'importance',
+	'balance',
+	'vested_balance',
+	'mosaics',
+	'harvested_blocks',
+	'status',
+	'remote_status',
+	'min_cosignatories',
+	'cosignatory_of',
+	'cosignatories'
+])
 DatabaseConfig = namedtuple('DatabaseConfig', ['database', 'user', 'password', 'host', 'port'])
 
 
@@ -183,6 +198,64 @@ class NemPuller:
 		)
 
 		self.nem_db.insert_block(cursor, block)
+
+	def _convert_mosaics_to_json(self, account_mosaics):  # pylint: disable=no-self-use
+		"""Convert AccountMosaic to Json format."""
+
+		return [
+			{
+				'namespace': f'{mosaic.mosaic_id[0]}.{mosaic.mosaic_id[1]}',
+				'quantity': mosaic.quantity
+			}
+			for mosaic in account_mosaics
+		]
+
+	def _create_account_record(self, account_info, mosaics_json, remote_address=None):  # pylint: disable=no-self-use
+		"""Create AccountRecord from account info and mosaics."""
+
+		return AccountRecord(
+			account_info.address,
+			account_info.public_key,
+			remote_address,
+			account_info.importance,
+			account_info.balance,
+			account_info.vested_balance,
+			mosaics_json,
+			account_info.harvested_blocks,
+			account_info.status,
+			account_info.remote_status,
+			account_info.min_cosignatories,
+			account_info.cosignatory_of,
+			account_info.cosignatories
+		)
+
+	async def _process_account_batch(self, cursor, addresses):
+		"""
+		Process a batch of addresses: fetch account info, mosaics, and upsert.
+		Updates both new and existing accounts with latest information.
+		"""
+
+		log.info(f'Processing batch of {len(addresses)} addresses')
+
+		# Fetch account info for all addresses (both new and existing)
+		for address in addresses:
+			account_info = await self._retry_get_account_info(address)
+			account_mosaics = await self._retry_get_account_mosaics(address)
+
+			mosaics_json = self._convert_mosaics_to_json(account_mosaics)
+			account = self._create_account_record(account_info, mosaics_json)
+
+			self.nem_db.upsert_account(cursor, account)
+
+			if 'REMOTE' == account_info.remote_status:
+				# Try fetching forwarded account info if remote status is REMOTE
+				main_account_info = await self._retry_get_account_info(address, forwarded=True)
+				main_account_mosaics = await self._retry_get_account_mosaics(str(main_account_info.address))
+
+				main_mosaics_json = self._convert_mosaics_to_json(main_account_mosaics)
+				main_account = self._create_account_record(main_account_info, main_mosaics_json, remote_address=account.address)
+
+				self.nem_db.upsert_account(cursor, main_account)
 
 	async def sync_nemesis_block(self):
 		"""Sync and write Nemesis block to database."""
