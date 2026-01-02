@@ -32,7 +32,7 @@ export class BridgeApi {
 	}
 
 	async estimateRequest(mode, amount, recipientAddress) {
-		return this.#makeBridgePostRequest(`/${mode}/prepare`, {
+		return this.#makeBridgePostRequest(`/${mode}/estimate`, {
 			amount,
 			recipientAddress
 		});
