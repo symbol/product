@@ -23,7 +23,7 @@ from symbollightapi.model.Transaction import (
 	TransferTransaction
 )
 
-from puller.facade.NemPuller import DatabaseConfig, NemPuller, AccountRecord
+from puller.facade.NemPuller import AccountRecord, DatabaseConfig, NemPuller
 
 # region test data
 
@@ -277,10 +277,38 @@ class NemPullerTest(unittest.TestCase):
 
 		return results
 
+	def _query_fetch_accounts(self, facade, where_clause='', params=None):  # pylint: disable=no-self-use
+		cursor = facade.nem_db.connection.cursor()
+
+		query = (
+			'SELECT encode(address, \'hex\') '
+			'FROM accounts'
+		)
+
+		if where_clause:
+			query += f' {where_clause}'
+
+		cursor.execute(query, params or ())
+		results = cursor.fetchall()
+
+		return results
+
 	@patch('puller.facade.NemPuller.NemConnector.get_block')
-	def test_can_sync_nemesis_block(self, mock_get_block):
+	@patch('puller.facade.NemPuller.NemConnector.account_info')
+	@patch('puller.facade.NemPuller.NemConnector.account_mosaics')
+	def test_can_sync_nemesis_block(self, mock_account_mosaics, mock_account_info, mock_get_block):
 		# Arrange:
+		sender_address = Address('TALICE6XEEEOBFJVY3ZCENZ7WBG6LB4KB7P7KMQX')
+		recipient_address = Address('NCOPERAWEWCD4A34NP5UQCCKEX44MW4SL3QYJYS5')
+		signer_address = Address('TBEM6SFOHU5PORIGAVG3NNJIMCG73R2TWH35O2VF')
+
 		mock_get_block.return_value = NEM_CONNECTOR_RESPONSE_BLOCKS[0]
+		mock_account_info.side_effect = [
+			NemAccountInfo(sender_address),
+			NemAccountInfo(recipient_address),
+			NemAccountInfo(signer_address)
+		]
+		mock_account_mosaics.return_value = [AccountMosaic(('nem', 'xem'), 0), ]
 
 		with self.puller.nem_db as databases:
 			databases.create_tables()
@@ -288,8 +316,8 @@ class NemPullerTest(unittest.TestCase):
 			asyncio.run(self.puller.sync_nemesis_block())
 
 			# Assert:
-			results = self._query_fetch_blocks(self.puller, 'WHERE height = %s', (1, ))
-			self.assertEqual(results[0], (
+			block_results = self._query_fetch_blocks(self.puller, 'WHERE height = %s', (1, ))
+			self.assertEqual(block_results[0], (
 				1,
 				datetime.datetime(2015, 3, 29, 22, 2, 41),
 				9000000,
@@ -304,6 +332,12 @@ class NemPullerTest(unittest.TestCase):
 				),
 				345
 			))
+
+			account_results = self._query_fetch_accounts(self.puller)
+			self.assertCountEqual(
+				[sender_address.bytes.hex(), recipient_address.bytes.hex(), signer_address.bytes.hex()],
+				[row[0] for row in account_results],
+			)
 
 	@patch('puller.facade.NemPuller.NemConnector.get_blocks_after')
 	def test_can_sync_blocks(self, mock_get_blocks_after):

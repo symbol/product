@@ -266,6 +266,9 @@ class NemPuller:
 
 		self._process_block(cursor, nemesis_block)
 
+		addresses = self._extract_addresses_from_block(nemesis_block)
+		await self._process_account_batch(cursor, addresses)
+
 		self._commit_blocks('Committed Nemesis block')
 
 	def _db_writer(self, block_queue, batch_size=50):
