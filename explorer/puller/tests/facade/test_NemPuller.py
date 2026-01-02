@@ -340,9 +340,11 @@ class NemPullerTest(unittest.TestCase):
 			)
 
 	@patch('puller.facade.NemPuller.NemConnector.get_blocks_after')
-	def test_can_sync_blocks(self, mock_get_blocks_after):
+	@patch('puller.facade.NemPuller.NemPuller._process_account_batch')
+	def test_can_sync_blocks(self, mock_process_account_batch, mock_get_blocks_after):
 		# Arrange:
 		mock_get_blocks_after.return_value = NEM_CONNECTOR_RESPONSE_BLOCKS
+		mock_process_account_batch.return_value = AsyncMock()
 
 		with self.puller.nem_db as databases:
 			databases.create_tables()
@@ -396,6 +398,10 @@ class NemPullerTest(unittest.TestCase):
 				),
 				2052
 			))
+
+			call_args = mock_process_account_batch.call_args_list[0]
+			addresses = call_args[0][1]
+			self.assertEqual(len(addresses), 19)
 
 	@patch('puller.facade.NemPuller.NemPuller._retry_get_blocks_after')
 	@patch('puller.facade.NemPuller.log')

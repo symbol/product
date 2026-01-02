@@ -278,6 +278,7 @@ class NemPuller:
 
 		cursor = self.nem_db.connection.cursor()
 		processed = 0
+		pending_addresses = set()
 
 		log.info('DB writer thread started')
 
@@ -288,6 +289,11 @@ class NemPuller:
 			# Check for sentinel value (None) to stop processing
 			if block is None:
 				log.info('Received stop signal, ending DB writer thread')
+
+				# Process any remaining addresses before exiting
+				if pending_addresses:
+					asyncio.run(self._process_account_batch(cursor, pending_addresses))
+
 				block_queue.task_done()
 				break
 
@@ -295,8 +301,15 @@ class NemPuller:
 			self._process_block(cursor, block)
 			processed += 1
 
+			# Extract addresses for account processing
+			addresses = self._extract_addresses_from_block(block)
+			pending_addresses.update(addresses)
+
 			# Batch commits
 			if processed % batch_size == 0:
+				asyncio.run(self._process_account_batch(cursor, pending_addresses))
+				pending_addresses.clear()
+
 				self._commit_blocks(f'Committed {processed} blocks')
 
 			block_queue.task_done()
@@ -325,6 +338,7 @@ class NemPuller:
 		try:
 			while chain_height > db_height:
 				blocks = await self._retry_get_blocks_after(db_height)
+				# print(vars(blocks[0].transactions[0]))
 
 				for block in blocks:
 					block_queue.put(block)
