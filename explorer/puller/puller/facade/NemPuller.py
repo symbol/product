@@ -307,21 +307,6 @@ class NemPuller:
 
 		log.info(f'Database thread: {processed} blocks inserted')
 
-	async def _retry_get_blocks_after(self, height, retries=3, delay=2):
-		"""Retries fetching blocks after a given height with exponential backoff."""
-
-		for attempt in range(1, retries + 1):
-			try:
-				return await self.nem_connector.get_blocks_after(height)
-			except NodeException as error:
-				if attempt < retries:
-					wait_time = delay * (2 ** (attempt - 1))  # Exponential backoff: 2s, 4s, 8s
-					log.warning(f'Error fetching blocks after height {height} (attempt {attempt}/{retries}): {error}. Retrying in {wait_time}s...')
-					await asyncio.sleep(wait_time)
-				else:
-					log.error(f'Failed to fetch blocks after height {height} after {retries} attempts: {error}')
-					raise
-
 	async def sync_blocks(self, db_height, chain_height, queue_size=200, batch_size=50):
 		"""sync blocks from NEM network."""
 
