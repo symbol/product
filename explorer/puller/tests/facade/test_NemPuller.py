@@ -382,6 +382,20 @@ class NemPullerTest(unittest.TestCase):
 				),
 				168
 			))
+			self.assertEqual(results[2], (
+				3,
+				datetime.datetime(2015, 3, 29, 20, 39, 21),
+				57950000,
+				7,
+				300,
+				'1dd9d4d7b6af603d29c082f9aa4e123f07d18154ddbcd7ddc6702491b854c5e4',
+				'f9bd190dd0c364261f5c8a74870cc7f7374e631352293c62ecc437657e5de2cd',
+				(
+					'fdf6a9830e9320af79123f467fcb03d6beab735575ff50eab363d812c5581436'
+					'2ad7be0503db2ee70e60ac3408d83cdbcbd941067a6df703e0c21c7bf389f105'
+				),
+				2052
+			))
 
 	@patch('puller.facade.NemPuller.NemPuller._retry_get_blocks_after')
 	@patch('puller.facade.NemPuller.log')
