@@ -420,7 +420,8 @@ class NemPullerTest(unittest.TestCase):
 
 	@patch('puller.facade.NemPuller.NemConnector.get_blocks_after')
 	@patch('puller.facade.NemPuller.NemPuller._commit_blocks')
-	def test_db_writer_can_commits_in_batches(self, mock_commit_blocks, mock_get_blocks_after):
+	@patch('puller.facade.NemPuller.NemPuller._process_account_batch')
+	def test_db_writer_can_commits_in_batches(self, mock_process_account_batch, mock_commit_blocks, mock_get_blocks_after):
 		# Arrange:
 		# Create 5 blocks to test batch commit (batch_size=2 means 2 commits + 1 final)
 		test_blocks = []
@@ -441,6 +442,7 @@ class NemPullerTest(unittest.TestCase):
 			)
 
 		mock_get_blocks_after.return_value = test_blocks
+		mock_process_account_batch.return_value = AsyncMock()
 
 		with self.puller.nem_db as databases:
 			databases.create_tables()
