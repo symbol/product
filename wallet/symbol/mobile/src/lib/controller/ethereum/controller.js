@@ -28,7 +28,6 @@ const modules = [
 	})
 ];
 
-
 /**
  * Wallet controller.
  * @type {WalletController & { modules: WalletControllerModules }}
@@ -43,7 +42,7 @@ export const ethereumWalletController = /** @type {any} */ (
 		secureStorageInterface: new StorageInterface(SecureStorageInterface).createScope('ethereum'),
 		keystores: [MnemonicKeystore, ExternalAccountKeystore],
 		modules,
-		networkIdentifiers: ['mainnet', 'testnet'],
+		networkIdentifiers: config.networkIdentifiers,
 		createDefaultNetworkProperties: networkIdentifier => config.chains.ethereum.defaultNetworkProperties[networkIdentifier],
 		networkPollingInterval: config.connectionInterval
 	})

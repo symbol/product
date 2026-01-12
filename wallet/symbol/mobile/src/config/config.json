@@ -34,37 +34,37 @@
             "defaultNetworkProperties": {
                 "mainnet": {
                     "networkIdentifier": "mainnet",
-                    "generationHash": "57F7DA205008026C776CB6AED843393F04CD458E0AA2D9F1D5F31A402072B2D6",
-                    "blockGenerationTargetTime": "30",
-                    "epochAdjustment": 1615853185,
+                    "generationHash": "",
+                    "blockGenerationTargetTime": "",
+                    "epochAdjustment": 0,
                     "transactionFees": {
-                        "averageFeeMultiplier": 176,
-                        "medianFeeMultiplier": 100,
-                        "highestFeeMultiplier": 10869,
+                        "averageFeeMultiplier": 0,
+                        "medianFeeMultiplier": 0,
+                        "highestFeeMultiplier": 0,
                         "lowestFeeMultiplier": 0,
-                        "minFeeMultiplier": 10
+                        "minFeeMultiplier": 0
                     },
                     "networkCurrency": {
                         "name": "symbol.xym",
-                        "mosaicId": "6BED913FA20223F8",
+                        "mosaicId": "",
                         "divisibility": 6
                     }
                 },
                 "testnet": {
                     "networkIdentifier": "testnet",
-                    "generationHash": "49D6E1CE276A85B70EAFE52349AACCA389302E7A9754BCF1221E79494FC665A4",
-                    "blockGenerationTargetTime": "30",
-                    "epochAdjustment": 1667250467,
+                    "generationHash": "",
+                    "blockGenerationTargetTime": "",
+                    "epochAdjustment": 0,
                     "transactionFees": {
-                        "averageFeeMultiplier": 100,
-                        "medianFeeMultiplier": 100,
+                        "averageFeeMultiplier": 0,
+                        "medianFeeMultiplier": 0,
                         "highestFeeMultiplier": 0,
                         "lowestFeeMultiplier": 0,
-                        "minFeeMultiplier": 10
+                        "minFeeMultiplier": 0
                     },
                     "networkCurrency": {
                         "name": "symbol.xym",
-                        "mosaicId": "72C0212E67A08BCE",
+                        "mosaicId": "",
                         "divisibility": 6
                     }
                 }
