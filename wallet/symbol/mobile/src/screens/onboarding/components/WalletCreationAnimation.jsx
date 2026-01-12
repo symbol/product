@@ -2,6 +2,8 @@ import { Colors, Sizes, Typography } from '@/app/styles';
 import React, { useEffect, useState } from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
 
+const ANIMATION_DURATION = 10;
+
 export const WalletCreationAnimation = props => {
 	const { steps, currentStep } = props;
 	const [timer, setTimer] = useState(null);
@@ -13,13 +15,12 @@ export const WalletCreationAnimation = props => {
 
 	useEffect(() => {
 		const textLength = currentStepText.length;
-		const duration = 10;
 		setIndex(0);
 		clearInterval(timer);
 
 		const newTimer = setInterval(() => {
 			setIndex(index => (index < textLength ? index + 1 : index));
-		}, duration);
+		}, ANIMATION_DURATION);
 		setTimer(newTimer);
 	}, [currentStep]);
 

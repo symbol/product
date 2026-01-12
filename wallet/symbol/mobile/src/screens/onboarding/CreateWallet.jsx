@@ -21,9 +21,10 @@ import { WalletCreationAnimation } from '@/app/screens/onboarding/components/Wal
 import { validateAccountName, validateRequired } from '@/app/utils';
 import React, { useEffect, useState } from 'react';
 
+const STEPS_COUNT = 2;
+
 export const CreateWallet = () => {
 	const walletController = useWalletController();
-	const stepsCount = 2;
 
 	// Step state
 	const [step, setStep] = useState(1);
@@ -75,11 +76,10 @@ export const CreateWallet = () => {
 	// Navigation handlers
 	const showMnemonic = () => setIsMnemonicShown(true);
 	const handleNextPress = () => {
-		if (step === stepsCount) 
+		if (step === STEPS_COUNT) 
 			passcode.show();
 		else 
 			setStep(step + 1);
-		
 	};
 
 	// Generate mnemonic on mount
@@ -107,7 +107,7 @@ export const CreateWallet = () => {
 							<FlexContainer center>
 								<SymbolLogo />
 							</FlexContainer>
-							<Steps stepsCount={stepsCount} currentStep={step} />
+							<Steps stepsCount={STEPS_COUNT} currentStep={step} />
 						</Stack>
 
 						{step === 1 && (

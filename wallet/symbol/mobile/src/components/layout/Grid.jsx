@@ -35,7 +35,6 @@ export const Grid = ({ isVisible }) => {
 	for (let i = 0; i < bottomCount; i += 2) 
 		horizontalLines.push({ key: `h-bottom-${i}`, style: { bottom: i * GRID_SIZE } });
 	
-
 	return (
 		<View style={styles.root}>
 			{verticalLines.map(line => (
