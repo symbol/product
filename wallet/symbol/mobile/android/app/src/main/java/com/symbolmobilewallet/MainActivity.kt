@@ -1,4 +1,4 @@
-package nem.group.symbol.wallet.test
+package com.thesymbolsyndicate.symbolwallet
 import android.os.Bundle;
 
 import com.facebook.react.ReactActivity

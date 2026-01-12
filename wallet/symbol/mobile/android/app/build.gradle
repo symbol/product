@@ -90,13 +90,13 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace "nem.group.symbol.wallet.test"
+    namespace "com.thesymbolsyndicate.symbolwallet"
     defaultConfig {
-        applicationId "nem.group.symbol.wallet.test"
+        applicationId "com.thesymbolsyndicate.symbolwallet"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 739
-        versionName "2.0.0"
+        versionCode 1
+        versionName "0.1.0"
     }
     signingConfigs {
         debug {
