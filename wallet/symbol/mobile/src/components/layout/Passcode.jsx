@@ -1,7 +1,8 @@
 import { ButtonClose, Icon, LoadingIndicator, Spacer } from '@/app/components';
+import { passcodeManager } from '@/app/lib/passcode';
 import { $t } from '@/app/localization';
 import { Colors, Sizes, Typography } from '@/app/styles';
-import PINCode, { hasUserSetPinCode } from '@haskkor/react-native-pincode';
+import PINCode from '@haskkor/react-native-pincode';
 import React, { useEffect, useState } from 'react';
 import { Modal, StyleSheet, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
@@ -28,7 +29,7 @@ export const Passcode = props => {
 
 	useEffect(() => {
 		const loadStatus = async () => {
-			const isPasscodeEnabled = await hasUserSetPinCode();
+			const isPasscodeEnabled = await passcodeManager.isPasscodeSet();
 			if (!isPasscodeEnabled && type === EnterType.VERIFY)
 				onSuccess();
 			else
