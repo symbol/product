@@ -14,6 +14,7 @@ import {
 	SymbolLogo,
 	TextBox
 } from '@/app/components';
+import { MAX_SEED_ACCOUNTS_PER_NETWORK } from '@/app/constants';
 import { useAsyncManager, usePasscode, useToggle, useValidation, useWalletController } from '@/app/hooks';
 import { $t } from '@/app/localization';
 import { Steps } from '@/app/screens/onboarding/components/Steps';
@@ -54,7 +55,7 @@ export const CreateWallet = () => {
 			await walletController.saveMnemonicAndGenerateAccounts({
 				mnemonic,
 				name,
-				accountPerNetworkCount: 10
+				accountPerNetworkCount: MAX_SEED_ACCOUNTS_PER_NETWORK
 			});
 		},
 		onSuccess: () => {

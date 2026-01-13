@@ -1,6 +1,7 @@
 import { getOptinAccountFromMnemonic } from './utils/optin';
 import { Router } from '@/app/Router';
 import { Button, ButtonClose, FlexContainer, PasscodeView, Screen, Spacer, Stack, StyledText, SymbolLogo } from '@/app/components';
+import { MAX_SEED_ACCOUNTS_PER_NETWORK } from '@/app/constants';
 import { useAsyncManager, usePasscode, useWalletController } from '@/app/hooks';
 import { $t } from '@/app/localization';
 import { MnemonicInput } from '@/app/screens/onboarding/components/MnemonicInput';
@@ -31,7 +32,8 @@ export const ImportWallet = () => {
 		callback: async () => {
 			await walletController.saveMnemonicAndGenerateAccounts({
 				mnemonic: mnemonic.trim(),
-				name: accountName
+				name: accountName,
+				accountPerNetworkCount: MAX_SEED_ACCOUNTS_PER_NETWORK
 			});
 			if (optinManager.data) {
 				await walletController.addExternalAccount({
