@@ -8,6 +8,7 @@
     "build:android:dev": "react-native run-android",
     "build:android:prod": "cd ./android && ./gradlew assembleRelease",
     "build:ios:dev": "react-native run-ios",
+    "build:ios:prod": "react-native run-ios --mode Release",
     "connect:android": "adb reverse tcp:8081 tcp:8081",
     "test": "jest",
     "test:cov": "c8 --reporter=lcov --reporter=text --report-dir=coverage npm run test",
