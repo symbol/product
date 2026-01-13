@@ -28,13 +28,6 @@ class NemDatabase(DatabaseConnection):
 
 		cursor.execute(
 			'''
-			CREATE INDEX IF NOT EXISTS idx_accounts_importance
-				ON accounts(importance DESC);
-			'''
-		)
-
-		cursor.execute(
-			'''
 			CREATE INDEX IF NOT EXISTS idx_accounts_public_key
 				ON accounts (public_key)
 			'''
