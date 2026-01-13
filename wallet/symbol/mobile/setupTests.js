@@ -23,3 +23,9 @@ jest.mock('@/app/hooks', () => ({
 	__esModule: true,  
 	...jest.requireActual('@/app/hooks')
 }));
+
+beforeEach(() => {
+	jest.clearAllMocks();
+	jest.restoreAllMocks();
+	jest.useFakeTimers();
+});

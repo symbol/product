@@ -9,10 +9,6 @@ describe('components/Checkbox', () => {
 		onPress: jest.fn()
 	});
 
-	beforeEach(() => {
-		jest.clearAllMocks();
-	});
-
 	runRenderTextTest(Checkbox, {
 		props: createDefaultProps(),
 		textToRender: [{ type: 'text', value: 'Test' }]

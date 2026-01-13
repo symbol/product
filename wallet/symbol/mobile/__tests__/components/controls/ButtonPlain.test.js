@@ -7,10 +7,6 @@ describe('components/ButtonPlain', () => {
 		onPress: jest.fn()
 	});
 
-	beforeEach(() => {
-		jest.clearAllMocks();
-	});
-
 	runRenderTextTest(ButtonPlain, {
 		props: createDefaultProps(),
 		textToRender: [{ type: 'text', value: 'Test Button' }]

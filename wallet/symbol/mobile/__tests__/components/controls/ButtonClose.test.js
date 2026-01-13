@@ -7,10 +7,6 @@ describe('components/ButtonClose', () => {
 		text: 'Test'
 	});
 
-	beforeEach(() => {
-		jest.clearAllMocks();
-	});
-
 	runRenderTextTest(ButtonClose, {
 		props: createProps(),
 		textToRender: [{ type: 'text', value: 'Test' }]

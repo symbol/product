@@ -38,10 +38,6 @@ jest.mock('rn-fetch-blob', () => ({
 }));
 
 describe('lib/PlatformUtils', () => {
-	beforeEach(() => {
-		jest.clearAllMocks();
-	});
-
 	describe('copyToClipboard', () => {
 		const runCopyToClipboardTest = (description, config, expected) => {
 			it(description, () => {

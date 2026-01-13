@@ -10,10 +10,6 @@ describe('components/TextBox', () => {
 		onChange: jest.fn()
 	});
 
-	beforeEach(() => {
-		jest.clearAllMocks();
-	});
-
 	runRenderTextTest(TextBox, {
 		props: createProps(),
 		textToRender: [

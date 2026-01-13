@@ -13,7 +13,6 @@ jest.mock('@/app/config', () => ({
 
 describe('screens/onboarding/Welcome', () => {
 	beforeEach(() => {
-		jest.clearAllMocks();
 		mockLocalization();
 	});
 

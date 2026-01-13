@@ -21,10 +21,6 @@ jest.mock('@/app/lib/controller', () => ({
 }));
 
 describe('hooks/useWalletController', () => {
-	beforeEach(() => {
-		jest.clearAllMocks();
-	});
-
 	describe('controller selection', () => {
 		const runControllerSelectionTest = (description, config, expected) => {
 			it(description, () => {

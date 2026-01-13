@@ -18,10 +18,6 @@ describe('components/ButtonCopy', () => {
 		content: 'test-content-to-copy'
 	});
 
-	beforeEach(() => {
-		jest.clearAllMocks();
-	});
-
 	describe('render', () => {
 		it('renders component without errors', () => {
 			// Arrange:

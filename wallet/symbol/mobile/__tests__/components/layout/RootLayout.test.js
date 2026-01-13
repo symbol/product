@@ -26,10 +26,6 @@ describe('components/RootLayout', () => {
 		networkStatus: 'connected'
 	});
 
-	beforeEach(() => {
-		jest.clearAllMocks();
-	});
-
 	runRenderComponentTest(RootLayout, {
 		props: createDefaultProps()
 	});

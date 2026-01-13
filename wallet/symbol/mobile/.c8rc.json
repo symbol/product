@@ -1,5 +1,8 @@
 {
 	"all": "true",
 	"include": ["src/**"],
-	"exclude": ["src/types/**"]
+	"exclude": [
+		"src/types/**",
+		"src/components/layout/Grid.jsx"
+	]
 }

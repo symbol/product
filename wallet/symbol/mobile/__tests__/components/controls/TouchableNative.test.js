@@ -13,10 +13,6 @@ describe('components/TouchableNative', () => {
 		children: <Text>{text}</Text>
 	});
 
-	beforeEach(() => {
-		jest.clearAllMocks();
-	});
-
 	PLATFORMS.forEach(platform => {
 		describe(`Platform - ${platform}`, () => {
 			Platform.OS = platform;

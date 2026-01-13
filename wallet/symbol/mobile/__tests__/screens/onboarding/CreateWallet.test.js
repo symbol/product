@@ -9,13 +9,7 @@ const TEST_MNEMONIC = mnemonic;
 
 describe('screens/onboarding/CreateWallet', () => {
 	beforeEach(() => {
-		jest.clearAllMocks();
-		jest.useFakeTimers();
 		mockLocalization();
-	});
-
-	afterEach(() => {
-		jest.useRealTimers();
 	});
 
 	it('create wallet flow', async () => {

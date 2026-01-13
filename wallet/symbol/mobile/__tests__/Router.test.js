@@ -10,10 +10,6 @@ jest.mock('@react-navigation/native', () => ({
 }));
 
 describe('Router', () => {
-	beforeEach(() => {
-		jest.clearAllMocks();
-	});
-
 	describe('goBack', () => {
 		it('calls navigationRef.goBack', () => {
 			// Act:

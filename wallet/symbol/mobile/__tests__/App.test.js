@@ -74,13 +74,7 @@ const mockWalletControllers = () => {
 
 describe('App', () => {
 	beforeEach(() => {
-		jest.clearAllMocks();
-		jest.useFakeTimers();
 		mockRouter({ goToHome: jest.fn() });
-	});
-
-	afterEach(() => {
-		jest.useRealTimers();
 	});
 
 	describe('flow rendering', () => {

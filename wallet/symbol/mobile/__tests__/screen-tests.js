@@ -13,19 +13,22 @@ export const runScreenNavigationTest = (Screen, config) => {
 	const { navigationActions } = config;
 
 	describe('navigation actions', () => {
-		const mocks = mockRouter({
-			...navigationActions.reduce((acc, { actionName }) => {
-				acc[actionName] = jest.fn();
-				return acc;
-			}, {})
-		});
-
 		navigationActions.forEach(({ buttonText, actionName }) => {
 			it(`calls ${actionName} when "${buttonText}" is pressed`, () => {
+				// Arrange:
+				const mocks = mockRouter({
+					...navigationActions.reduce((acc, { actionName }) => {
+						acc[actionName] = jest.fn();
+						return acc;
+					}, {})
+				});
+
+				// Act:
 				const { getByText } = render(<Screen />);
 				const button = getByText(buttonText);
 				fireEvent.press(button);
 
+				// Assert:
 				const action = mocks[actionName];
 				expect(action).toHaveBeenCalledTimes(1);
 			});
