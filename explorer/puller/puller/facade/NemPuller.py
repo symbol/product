@@ -144,24 +144,16 @@ class NemPuller:
 			# Handle multisig signatures
 			if hasattr(transaction, 'signatures'):
 				for signature in transaction.signatures:
-					other_account = getattr(signature, 'other_account', None)
-					sender = getattr(signature, 'sender', None)
-					if other_account:
-						addresses.add(str(Address(other_account)))
-					if sender:
-						addresses.add(str(self._convert_public_key_to_address(sender)))
+					addresses.add(str(Address(signature.other_account)))
+					addresses.add(str(self._convert_public_key_to_address(signature.sender)))
 
 			# Handle multisig modifications
 			if hasattr(transaction, 'modifications'):
 				for modification in transaction.modifications:
-					cosignatory = getattr(modification, 'cosignatory_account', None)
-					if cosignatory:
-						addresses.add(str(self._convert_public_key_to_address(cosignatory)))
+					addresses.add(str(self._convert_public_key_to_address(modification.cosignatory_account)))
 
 		# Block signer
-		block_signer = getattr(block, 'signer', None)
-		if block_signer:
-			addresses.add(str(self._convert_public_key_to_address(block_signer)))
+		addresses.add(str(self._convert_public_key_to_address(block.signer)))
 
 		# Block transactions
 		for transaction in block.transactions:
