@@ -38,6 +38,9 @@ builds:
   - name: Wallet Common Symbol
     path: wallet/common/symbol
 
+  - name: Wallet Symbol Mobile
+    path: wallet/symbol/mobile
+
 customBuilds:
   - name: Nightly Job
     jobName: nightlyJob

@@ -1,0 +1,102 @@
+{
+    "faucetURL": "https://testnet.symbol.tools",
+    "discordURL": "https://discord.gg/xymcity",
+    "githubURL": "https://github.com/symbol",
+    "twitterURL": "https://twitter.com/thesymbolchain",
+    "marketDataURL": "https://min-api.cryptocompare.com/data/price",
+    "marketCurrencies": [
+        "USD",
+        "CNY",
+        "EUR",
+        "GBP",
+        "JPY",
+        "KRW",
+        "UAH"
+    ],
+    "networkIdentifiers": [
+        "mainnet",
+        "testnet"
+    ],
+    "connectionInterval": 10000,
+    "allowedMarkedDataCallInterval": 600000,
+    "chains": {
+        "symbol": {
+            "chainName": "symbol",
+            "ticker": "XYM",
+            "nodewatchURL": {
+                "testnet": "https://nodewatch.symbol.tools/testnet",
+                "mainnet": "https://nodewatch.symbol.tools"
+            },
+            "explorerURL": {
+                "testnet": "https://testnet.symbol.fyi",
+                "mainnet": "https://symbol.fyi"
+            },
+            "defaultNetworkProperties": {
+                "mainnet": {
+                    "networkIdentifier": "mainnet",
+                    "generationHash": "",
+                    "blockGenerationTargetTime": "",
+                    "epochAdjustment": 0,
+                    "transactionFees": {
+                        "averageFeeMultiplier": 0,
+                        "medianFeeMultiplier": 0,
+                        "highestFeeMultiplier": 0,
+                        "lowestFeeMultiplier": 0,
+                        "minFeeMultiplier": 0
+                    },
+                    "networkCurrency": {
+                        "name": "symbol.xym",
+                        "mosaicId": "",
+                        "divisibility": 6
+                    }
+                },
+                "testnet": {
+                    "networkIdentifier": "testnet",
+                    "generationHash": "",
+                    "blockGenerationTargetTime": "",
+                    "epochAdjustment": 0,
+                    "transactionFees": {
+                        "averageFeeMultiplier": 0,
+                        "medianFeeMultiplier": 0,
+                        "highestFeeMultiplier": 0,
+                        "lowestFeeMultiplier": 0,
+                        "minFeeMultiplier": 0
+                    },
+                    "networkCurrency": {
+                        "name": "symbol.xym",
+                        "mosaicId": "",
+                        "divisibility": 6
+                    }
+                }
+            }
+        },
+        "ethereum": {
+            "chainName": "ethereum",
+            "ticker": "ETH",
+            "nodeList": {
+                "testnet": [
+                    "https://erigon.symboltest.net:8545"
+                ],
+                "mainnet": []
+            },
+            "explorerURL": {
+                "testnet": "http://otterscan.symboltest.net",
+                "mainnet": ""
+            },
+            "erc20TokensAddresses": {
+                "testnet": [
+                    "0x5E8343A455F03109B737B6D8b410e4ECCE998cdA"
+                ],
+                "mainnet": []
+            },
+            "defaultNetworkProperties": {
+                "mainnet": {
+                    "networkIdentifier": "mainnet"
+                },
+                "testnet": {
+                    "networkIdentifier": "testnet"
+                }
+            }
+        }
+    }
+}

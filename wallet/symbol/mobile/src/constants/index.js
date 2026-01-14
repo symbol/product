@@ -1,0 +1,1 @@
+export const MAX_SEED_ACCOUNTS_PER_NETWORK = 10;
