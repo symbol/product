@@ -8,7 +8,7 @@
 		"lint:fix": "eslint . --fix --color",
 		"test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
 		"test:cov": "c8 --reporter=lcov --reporter=text --report-dir=coverage npm run test",
-		"postinstall": "resolve-local-dependencies"
+		"postinstall": "npx resolve-local-dependencies"
 	},
 	"dependencies": {
 		"lodash": "^4.17.21",

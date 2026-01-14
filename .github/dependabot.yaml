@@ -42,6 +42,7 @@ updates:
       - /wallet/common/core
       - /wallet/common/ethereum
       - /wallet/common/symbol
+      - /wallet/symbol/mobile
 
   - package-ecosystem: pip
     schedule:
