@@ -27,7 +27,10 @@ const keys = {
 	Welcome: 'Welcome',
 	CreateWallet: 'CreateWallet',
 	ImportWallet: 'ImportWallet',
-	Home: 'Home'
+	Settings: 'Settings',
+	SettingsAbout: 'SettingsAbout',
+	SettingsNetwork: 'SettingsNetwork',
+	SettingsSecurity: 'SettingsSecurity'
 };
 
 const linkingOptions = {
@@ -53,9 +56,17 @@ export const RouterView = ({ isActive, flow }) => (
 					</Stack.Group>
 				)}
 				{flow === 'main' && (
-					<Stack.Group screenOptions={{ headerShown: false }}>
-						<Stack.Screen name={keys.Home} component={screens.Home} />
-					</Stack.Group>
+					<React.Fragment>
+						<Stack.Group screenOptions={{ headerShown: false }}>
+							<Stack.Screen name={keys.Home} component={screens.Home} />
+						</Stack.Group>
+						<Stack.Group>
+							<Stack.Screen name={keys.Settings} component={screens.Settings} />
+							<Stack.Screen name={keys.SettingsAbout} component={screens.SettingsAbout} />
+							<Stack.Screen name={keys.SettingsNetwork} component={screens.SettingsNetwork} />
+							<Stack.Screen name={keys.SettingsSecurity} component={screens.SettingsSecurity} />
+						</Stack.Group>
+					</React.Fragment>
 				)}
 			</Stack.Navigator>
 		)}
@@ -83,5 +94,17 @@ export class Router {
 			index: 0,
 			routes: [{ name: keys.Home }]
 		});
+	}
+	static goToSettings(params) {
+		navigationRef.navigate(keys.Settings, params);
+	}
+	static goToSettingsAbout(params) {
+		navigationRef.navigate(keys.SettingsAbout, params);
+	}
+	static goToSettingsNetwork(params) {
+		navigationRef.navigate(keys.SettingsNetwork, params);
+	}
+	static goToSettingsSecurity(params) {
+		navigationRef.navigate(keys.SettingsSecurity, params);
 	}
 }
