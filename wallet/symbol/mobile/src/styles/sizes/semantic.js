@@ -29,6 +29,14 @@ export const Semantic = {
 	controlHeight: {
 		m: Primitives.spacing600 // 48px
 	},
+	selectHeight: {
+		m: Primitives.spacing500 // 40px
+	},
+	avatarHeight: {
+		s: Primitives.spacing300, // 24px
+		m: Primitives.spacing400, // 32px
+		l: Primitives.spacing500  // 40px
+	},
 	layoutPadding: {
 		s: Primitives.spacing100, // 8px
 		m: Primitives.spacing200, // 16px
@@ -37,6 +45,7 @@ export const Semantic = {
 		xxl: Primitives.spacing500 // 40px
 	},
 	layoutSpacing: {
+		xs: Primitives.spacing050, // 4px
 		s: Primitives.spacing100, // 8px
 		m: Primitives.spacing200, // 16px
 		l: Primitives.spacing300, // 24px
