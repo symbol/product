@@ -1,5 +1,6 @@
 import { StyledText, TextBox } from '@/app/components';
 import { useValidation } from '@/app/hooks';
+import { PlatformUtils } from '@/app/lib/platform/PlatformUtils';
 import { $t } from '@/app/localization';
 import { Colors, Sizes, Typography } from '@/app/styles';
 import React, { useEffect, useState } from 'react';
@@ -135,11 +136,13 @@ export const DialogBox = props => {
 
 	if (!isVisible) 
 		return null;
-	
+
+	// Temporary workaround for broken Modal in react-native v82 on iOS
+	const animationType = PlatformUtils.getOS() === 'ios' ? undefined : 'fade';
 
 	return (
 		<Modal
-			animationType="fade"
+			animationType={animationType}
 			transparent
 			visible={isVisible}
 			onRequestClose={onCancel}
@@ -151,7 +154,7 @@ export const DialogBox = props => {
 							<StyledText type="title">
 								{title}
 							</StyledText>
-							{!!text && (
+							{!!text && !isPrompt && (
 								<StyledText type="body">
 									{text}
 								</StyledText>
@@ -161,7 +164,7 @@ export const DialogBox = props => {
 							</ScrollView>
 							{isPrompt && (
 								<TextBox
-									title={text}
+									label={text}
 									errorMessage={promptErrorMessage}
 									value={promptValue}
 									onChange={setPromptValue}
