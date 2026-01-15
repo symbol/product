@@ -6,7 +6,7 @@ import { Pressable, StyleSheet } from 'react-native';
 import Animated, { useAnimatedStyle } from 'react-native-reanimated';
 
 /**
- * Plain button component
+ * A plain button component that displays text with an optional icon, supporting centering and animated press interactions.
  *
  * @param {object} props - Component props.
  * @param {string} props.text - Button text.
