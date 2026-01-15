@@ -147,24 +147,19 @@ export const Components = {
 	},
 	statusCard: {
 		neutral: {
-			background: Semantic.role.neutral.default,
-			text: Semantic.background.tertiary.darker
+			background: Semantic.role.neutral.default
 		},
 		info: {
-			background: Semantic.role.info.default,
-			text: Semantic.background.tertiary.darker
+			background: Semantic.role.info.default
 		},
 		success: {
-			background: Semantic.role.success.default,
-			text: Semantic.background.tertiary.darker
+			background: Semantic.role.success.default
 		},
 		warning: {
-			background: Semantic.role.warning.default,
-			text: Semantic.background.tertiary.darker
+			background: Semantic.role.warning.default
 		},
 		danger: {
-			background: Semantic.role.danger.default,
-			text: Semantic.background.tertiary.darker
+			background: Semantic.role.danger.default
 		}
 	},
 	statusLabel: {
@@ -405,6 +400,16 @@ export const Components = {
 				text: Semantic.background.tertiary.lighter,
 				border: Semantic.role.danger.muted,
 				surface: Semantic.role.danger.muted
+			}
+		}
+	},
+	select: {
+		default: {
+			default: {
+				background: Primitives.transparent
+			},
+			selected: {
+				background: Semantic.role.primary.default
 			}
 		}
 	},

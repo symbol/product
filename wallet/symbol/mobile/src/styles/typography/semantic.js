@@ -27,8 +27,8 @@ export const Semantic = {
 	body: {
 		s: {
 			...Fonts.primary.regular,
-			fontSize: Primitives.xs[0],
-			lineHeight: Primitives.xs[1]
+			fontSize: Primitives.s[0],
+			lineHeight: Primitives.s[1]
 		},
 		m: {
 			...Fonts.primary.regular,
@@ -39,13 +39,18 @@ export const Semantic = {
 			...Fonts.primary.regular,
 			fontSize: Primitives.l[0],
 			lineHeight: Primitives.l[1]
+		},
+		xl: {
+			...Fonts.primary.regular,
+			fontSize: Primitives.xl[0],
+			lineHeight: Primitives.xl[1]
 		}
 	},
 	bodyBold: {
 		s: {
 			...Fonts.primary.bold,
-			fontSize: Primitives.xs[0],
-			lineHeight: Primitives.xs[1],
+			fontSize: Primitives.s[0],
+			lineHeight: Primitives.s[1],
 			textTransform: 'uppercase'
 		},
 		m: {
@@ -58,6 +63,12 @@ export const Semantic = {
 			...Fonts.primary.bold,
 			fontSize: Primitives.l[0],
 			lineHeight: Primitives.l[1],
+			textTransform: 'uppercase'
+		},
+		xl: {
+			...Fonts.primary.bold,
+			fontSize: Primitives.xl[0],
+			lineHeight: Primitives.xl[1],
 			textTransform: 'uppercase'
 		}
 	},
@@ -89,6 +100,12 @@ export const Semantic = {
 		}
 	},
 	link: {
+		s: {
+			...Fonts.monospace.bold,
+			fontSize: Primitives.s[0],
+			lineHeight: Primitives.s[1],
+			textTransform: 'uppercase'
+		},
 		m: {
 			...Fonts.monospace.bold,
 			fontSize: Primitives.m[0],
@@ -106,8 +123,8 @@ export const Semantic = {
 	label: {
 		s: {
 			...Fonts.secondary.bold,
-			fontSize: Primitives.xs[0],
-			lineHeight: Primitives.xs[1],
+			fontSize: Primitives.s[0],
+			lineHeight: Primitives.s[1],
 			textTransform: 'uppercase'
 		},
 		m: {
