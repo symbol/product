@@ -1,0 +1,24 @@
+{
+    "symbol": {
+        "testnet": [
+            {
+                "tokenId": "72C0212E67A08BCE",
+                "imageId": "xym",
+                "name": "Symbol",
+                "ticker": "XYM"
+            }
+        ],
+        "mainnet": [
+            {
+                "tokenId": "6BED913FA20223F8",
+                "imageId": "xym",
+                "name": "Symbol",
+                "ticker": "XYM"
+            }
+        ]
+    },
+    "ethereum": {
+        "testnet": [],
+        "mainnet": []
+    }
+}
