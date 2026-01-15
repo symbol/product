@@ -4,5 +4,6 @@ export * from './Button';
 export * from './ButtonPlain';
 export * from './Checkbox';
 export * from './Dropdown';
+export * from './FeeSelector';
 export * from './TextBox';
 export * from './TouchableNative';
