@@ -1,6 +1,6 @@
 // import Clipboard from '@react-native-community/clipboard';
 // Remove after fix https://github.com/react-native-clipboard/clipboard/issues/71
-import { Clipboard, PermissionsAndroid, Platform, Vibration } from 'react-native';
+import { Clipboard, Linking, PermissionsAndroid, Platform, Vibration } from 'react-native';
 import RNFetchBlob from 'rn-fetch-blob';
 
 const requestAndroidWritePermission = async () => {
@@ -83,5 +83,14 @@ export class PlatformUtils {
 			return requestAndroidWritePermission();
 
 		return true;
+	}
+
+	/**
+	 * Opens the given URL in the device's web browser.
+	 * @param {string} url - The URL to be opened.
+	 * @returns {Promise<void>} A promise that resolves when the URL has been opened.
+	 */
+	static async openLink(url) {
+		return Linking.openURL(url);
 	}
 }
