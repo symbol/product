@@ -5,7 +5,7 @@ import { Pressable, StyleSheet } from 'react-native';
 import Animated, { interpolate, useAnimatedStyle } from 'react-native-reanimated';
 
 /**
- * Checkbox component
+ * A checkbox component that allows users to select or deselect an option, with animated interactions and support for disabled state.
  *
  * @param {object} props - Component props.
  * @param {string} props.text - Label text.
@@ -58,7 +58,7 @@ export const Checkbox = ({ style, text, value, onChange, isDisabled = false }) =
 			disabled={isDisabled}
 		>
 			<Animated.View style={[styles.container, animatedContainer]}>
-				<Animated.Image source={require('@/app/assets/images/icons/purple/check.png')} style={checkStyles} />
+				<Animated.Image source={require('@/app/assets/images/components/checkbox.png')} style={checkStyles} />
 			</Animated.View>
 			<Animated.Text style={[styles.text, animatedText]}>
 				{text}
