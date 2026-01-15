@@ -4,7 +4,7 @@ import React from 'react';
 import { StyleSheet, TouchableOpacity } from 'react-native';
 
 /**
- * Close button component
+ * A close button component that displays an optional text label alongside a cross icon, used for dismissing modals or closing views.
  * 
  * @param {object} props - Component props
  * @param {string} [props.text] - Optional text to display next to the icon
