@@ -158,8 +158,8 @@ export const Dropdown = props => {
 	);
 };
 
-const borderWidth = Sizes.Semantic.borderWidth.m;
-const inputExtraPixelFix = 0.75;
+const CONTAINER_BORDER_WIDTH = Sizes.Semantic.borderWidth.m;
+const EXTRA_PIXEL_OFFSET = 0.75;
 
 const styles = StyleSheet.create({
 	root: {
@@ -171,7 +171,7 @@ const styles = StyleSheet.create({
 		justifyContent: 'space-between',
 		alignItems: 'center',
 		borderRadius: Sizes.Semantic.borderRadius.s,
-		borderWidth: borderWidth,
+		borderWidth: CONTAINER_BORDER_WIDTH,
 		borderStyle: 'solid'
 	},
 	inputContainer: {
@@ -179,12 +179,12 @@ const styles = StyleSheet.create({
 		flex: 1,
 		flexDirection: 'column',
 		paddingRight: Sizes.Semantic.spacing.m,
-		paddingLeft: Sizes.Semantic.spacing.m - inputExtraPixelFix
+		paddingLeft: Sizes.Semantic.spacing.m - EXTRA_PIXEL_OFFSET
 	},
 	label: {
 		...Typography.Semantic.label.s,
-		transform: [{ translateY: (Typography.Semantic.label.s.lineHeight / 4) - (borderWidth / 2) }],
-		paddingLeft: inputExtraPixelFix
+		transform: [{ translateY: (Typography.Semantic.label.s.lineHeight / 4) - (CONTAINER_BORDER_WIDTH / 2) }],
+		paddingLeft: EXTRA_PIXEL_OFFSET
 	},
 	value: {
 		...Typography.Semantic.input.m,
