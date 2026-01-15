@@ -19,11 +19,13 @@ import { StyleSheet, Text } from 'react-native';
  * @param {TextType} [props.type='body'] - Text type defining typography styles.
  * @param {boolean} [props.bold=false] - Whether to render the text in bold.
  * @param {TextSize} [props.size='m'] - Text size.
+ * @param {string} [props.variant] - Color variant for the text.
+ * @param {boolean} [props.inverse=false] - Whether to use inverse color scheme.
+ * @returns {React.ReactElement} Rendered StyledText component
  */
-export const StyledText = ({ children, style, type = 'body', bold = false, size = 'm', variant }) => {
+export const StyledText = ({ children, style, type = 'body', bold = false, size = 'm', variant = 'primary', inverse = false }) => {
 	const normalizedType = ['title', 'label', 'body'].includes(type) ? type : 'body';
-	const normalizedSize = ['s', 'm', 'l'].includes(size) ? size : 'm';
-	const colorVariant = variant ?? 'primary';
+	const normalizedSize = ['s', 'm', 'l', 'xl'].includes(size) ? size : 'm';
 
 	const typeMap = {
 		title: {
@@ -39,20 +41,22 @@ export const StyledText = ({ children, style, type = 'body', bold = false, size 
 		body: {
 			s: styles.bodyS,
 			m: styles.bodyM,
-			l: styles.bodyL
+			l: styles.bodyL,
+			xl: styles.bodyXL
 		}
 	};
 	const boldMap = {
 		s: styles.bodyBoldS,
 		m: styles.bodyBoldM,
-		l: styles.bodyBoldL
+		l: styles.bodyBoldL,
+		xl: styles.bodyBoldL
 	};
 
 	const baseStyle = typeMap[normalizedType]?.[normalizedSize] ?? styles.bodyM;
 	const weightStyle = normalizedType === 'body' && bold ? boldMap[normalizedSize] : baseStyle;
 
-	const textColor =
-		Colors.Semantic.content?.[colorVariant]?.default ?? Colors.Semantic.content.primary.default;
+	const variantKey = inverse ? 'inverse' : 'default';
+	const textColor = Colors.Semantic.content[variant][variantKey];
 
 	return (
 		<Text style={[styles.base, weightStyle, { color: textColor }, style]}>
@@ -90,6 +94,9 @@ const styles = StyleSheet.create({
 	bodyL: {
 		...Typography.Semantic.body.l
 	},
+	bodyXL: {
+		...Typography.Semantic.body.xl
+	},
 	bodyBoldS: {
 		...Typography.Semantic.bodyBold.s
 	},
@@ -98,5 +105,8 @@ const styles = StyleSheet.create({
 	},
 	bodyBoldL: {
 		...Typography.Semantic.bodyBold.l
+	},
+	bodyBoldXL: {
+		...Typography.Semantic.bodyBold.xl
 	}
 });
