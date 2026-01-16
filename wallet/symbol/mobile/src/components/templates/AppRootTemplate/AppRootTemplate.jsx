@@ -1,4 +1,4 @@
-import { NetworkConnectionStatusBar, PopupMessage, SystemStatusBar } from '@/app/components';
+import { NetworkConnectionStatusBar, PopupMessage, SystemStatusBar } from './components';
 import { Colors } from '@/app/styles';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
@@ -15,7 +15,7 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
  * 
  * @returns {React.ReactNode} Root layout component
  */
-export const RootLayout = ({ children, isNetworkStatusShown, networkStatus }) => {
+export const AppRootTemplate = ({ children, isNetworkStatusShown, networkStatus }) => {
 	return (
 		<>
 			<GestureHandlerRootView style={styles.root}>

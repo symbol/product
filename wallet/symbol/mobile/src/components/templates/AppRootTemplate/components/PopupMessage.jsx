@@ -1,14 +1,13 @@
-import { Colors } from '@/app/styles';
+import { Colors, Sizes } from '@/app/styles';
 import React from 'react';
 import FlashMessage from 'react-native-flash-message';
 
 const flashMessageStyle = { 
 	backgroundColor: Colors.Components.popupMessage.background, 
-	borderBottomColor: Colors.Components.popupMessage.border 
-	//borderBottomWidth: 2 
+	borderBottomColor: Colors.Components.popupMessage.border, 
+	borderBottomWidth: Sizes.Semantic.borderWidth.s 
 };
 const flashMessageTextStyle = { 
-	//...fonts.notification, 
 	color: Colors.Components.popupMessage.text 
 };
 
