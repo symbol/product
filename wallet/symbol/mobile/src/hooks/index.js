@@ -2,6 +2,7 @@ export * from './useAsyncManager';
 export * from './useColorTransition';
 export * from './useDualColorTransition';
 export * from './usePasscode';
+export * from './useTimer';
 export * from './useToggle';
 export * from './useTransactionFees';
 export * from './useValidation';
