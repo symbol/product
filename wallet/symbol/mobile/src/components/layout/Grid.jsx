@@ -1,5 +1,5 @@
-import React from 'react';
-import { Dimensions, StyleSheet, View } from 'react-native';
+import React, { useRef } from 'react';
+import { StyleSheet, View } from 'react-native';
 
 const GRID_SIZE = 8;
 const GRID_COLOR = '#888a';
@@ -11,12 +11,13 @@ const GRID_COLOR = '#888a';
  * @returns {React.ReactNode}
  */
 export const Grid = ({ isVisible }) => {
+	const componentRef = useRef(null);
+	
 	if (!isVisible)
 		return null;
 
-	const dimensions = Dimensions.get('window');
-	const { width } = dimensions;
-	const height = dimensions.height - 100;
+	const width = componentRef.current?.offsetWidth || 0;
+	const height = componentRef.current?.offsetHeight || 0;
 
 	const verticalCount = Math.trunc(width / 2 / GRID_SIZE);
 	const upperCount = Math.trunc(height / 4 * 3 / GRID_SIZE);
@@ -36,7 +37,7 @@ export const Grid = ({ isVisible }) => {
 		horizontalLines.push({ key: `h-bottom-${i}`, style: { bottom: i * GRID_SIZE } });
 	
 	return (
-		<View style={styles.root}>
+		<View style={styles.root} ref={componentRef}>
 			{verticalLines.map(line => (
 				<View key={line.key} style={[styles.verticalLine, line.style]} />
 			))}
