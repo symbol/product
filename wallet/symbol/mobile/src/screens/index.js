@@ -12,3 +12,4 @@ export { SettingsSecurity } from './settings/SettingsSecurity';
 // Main screens
 export { Home } from './home/Home';
 export { AccountDetails } from './account/AccountDetails';
+export { Send } from './send/Send';

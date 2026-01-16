@@ -5,7 +5,7 @@ import { WalletController, constants } from 'wallet-common-core';
 /**
  * Hook to access the wallet controller.
  * It listens for state changes and updates the component when the state changes.
- * @returns {WalletController} The wallet controller instance.
+ * @returns {typeof walletControllers.main | WalletController} The wallet controller instance.
  */
 export const useWalletController = chainName => {
 	const walletController = useMemo(() => {
