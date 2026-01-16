@@ -3,30 +3,10 @@ import { showError } from '@/app/utils';
 import { useRef, useState } from 'react';
 
 /**
- * A class representing an asynchronous operation manager.
- * @template T The type of data returned by the async operation.
- */
-class AsyncManager {
-	/**
-	 * Creates an instance of AsyncManager.
-	 * @param {function(...*): Promise<T>} call - The function to execute the async operation, returning a Promise of type T.
-	 * @param {boolean} isLoading - Indicates if the operation is currently loading.
-	 * @param {T} data - The data returned from the async operation.
-	 * @param {*} error - The error object if the operation failed.
-	 * @param {function()} reset - A function to reset the state to default values.
-	 */
-	constructor(call, isLoading, data, error, reset) {
-		this.call = call;
-		this.isLoading = isLoading;
-		this.data = data;
-		this.error = error;
-		this.reset = reset;
-	}
-}
-
-/**
  * Hook for managing asynchronous operations and data fetching with loading and error handling.
+ * 
  * @template T The type of data returned by the callback.
+ * 
  * @param {Object} config - The configuration object for the hook.
  * @param {function(...*): Promise<T>} config.callback - The asynchronous callback function to execute.
  * @param {T} [config.defaultData=null] - The default data value.
@@ -34,7 +14,9 @@ class AsyncManager {
  * @param {function(T)} [config.onSuccess=null] - An optional success handler function called on success.
  * @param {boolean} [config.shouldClearDataOnCall=false] - Whether to clear data when calling the async function.
  * @param {boolean} [config.defaultLoadingState=false] - The default loading state.
- * @returns {AsyncManager<T>} An instance of AsyncManager containing the call function, loading state, data, error, and reset function.
+ 
+* @returns {import('@/app/types/AsyncManager').AsyncManager<T>} An object containing the call function, 
+loading state, data, error, and reset function.
  */
 export const useAsyncManager = config => {
 	const { 
@@ -46,6 +28,7 @@ export const useAsyncManager = config => {
 		defaultLoadingState = false 
 	} = config;
 	const [isLoading, setIsLoading] = useState(defaultLoadingState);
+	const [isCompleted, setIsCompleted] = useState(false);
 	const [error, setError] = useState(null);
 	const [data, setData] = useState(defaultData);
 	const requestIdRef = useRef(0);
@@ -54,11 +37,13 @@ export const useAsyncManager = config => {
 		++requestIdRef.current;
 		setData(defaultData);
 		setIsLoading(false);
+		setIsCompleted(false);
 		setError(null);
 	};
 
 	const call = (...args) => {
 		setIsLoading(true);
+		setIsCompleted(false);
 		if (shouldClearDataOnCall)
 			setData(defaultData);
 
@@ -74,6 +59,7 @@ export const useAsyncManager = config => {
 
 					setData(data);
 					setIsLoading(false);
+					setIsCompleted(true);
 
 					if (onSuccess)
 						onSuccess(data);
@@ -97,5 +83,5 @@ export const useAsyncManager = config => {
 		});
 	};
 
-	return new AsyncManager(call, isLoading, data, error, reset);
+	return { call, isLoading, isCompleted, data, error, reset };
 };
