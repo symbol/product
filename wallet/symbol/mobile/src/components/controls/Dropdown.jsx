@@ -219,6 +219,7 @@ const styles = StyleSheet.create({
 		alignItems: 'center',
 		minHeight: Sizes.Semantic.selectHeight.m,
 		paddingHorizontal: Sizes.Semantic.spacing.m,
+		paddingVertical: Sizes.Semantic.spacing.s,
 		borderRadius: Sizes.Semantic.borderRadius.s,
 		backgroundColor: Colors.Components.select.default.default.background
 	},
