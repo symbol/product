@@ -27,6 +27,8 @@ const keys = {
 	Welcome: 'Welcome',
 	CreateWallet: 'CreateWallet',
 	ImportWallet: 'ImportWallet',
+	Home: 'Home',
+	AccountDetails: 'AccountDetails',
 	Settings: 'Settings',
 	SettingsAbout: 'SettingsAbout',
 	SettingsNetwork: 'SettingsNetwork',
@@ -61,6 +63,7 @@ export const RouterView = ({ isActive, flow }) => (
 							<Stack.Screen name={keys.Home} component={screens.Home} />
 						</Stack.Group>
 						<Stack.Group>
+							<Stack.Screen name={keys.AccountDetails} component={screens.AccountDetails} />
 							<Stack.Screen name={keys.Settings} component={screens.Settings} />
 							<Stack.Screen name={keys.SettingsAbout} component={screens.SettingsAbout} />
 							<Stack.Screen name={keys.SettingsNetwork} component={screens.SettingsNetwork} />
@@ -94,6 +97,9 @@ export class Router {
 			index: 0,
 			routes: [{ name: keys.Home }]
 		});
+	}
+	static goToAccountDetails(params) {
+		navigationRef.navigate(keys.AccountDetails, params);
 	}
 	static goToSettings(params) {
 		navigationRef.navigate(keys.Settings, params);
