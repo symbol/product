@@ -24,7 +24,7 @@ describe('components/AppRootTemplate', () => {
 		networkStatus: 'connected'
 	});
 
-	runRenderComponentTest(RootLayout, {
+	runRenderComponentTest(AppRootTemplate, {
 		props: createDefaultProps()
 	});
 
