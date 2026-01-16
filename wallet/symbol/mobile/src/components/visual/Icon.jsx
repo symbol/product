@@ -63,7 +63,8 @@ const sourceMap = {
 		'token-symbol': require('@/app/assets/images/icons/white/token-symbol.png'),
 		'ethereum': require('@/app/assets/images/icons/white/ethereum.png'),
 		'plus': require('@/app/assets/images/icons/white/plus.png'),
-		'minus': require('@/app/assets/images/icons/white/minus.png')
+		'minus': require('@/app/assets/images/icons/white/minus.png'),
+		'file-code': require('@/app/assets/images/icons/white/file-code.png')
 	},
 	secondary: {
 		'account-add': require('@/app/assets/images/icons/aqua/account-add.png'),
