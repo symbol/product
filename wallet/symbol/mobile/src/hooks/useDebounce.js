@@ -1,0 +1,37 @@
+import { useCallback, useRef } from 'react';
+
+/**
+ * Debounce hook with immediate first call.
+ *
+ * @param {function} callback - Function to debounce
+ * @param {number} delay - Delay in ms
+ * @returns {function(...any): void} - Debounced function
+ */
+export const useDebounce = (callback, delay) => {
+	const timerRef = useRef(null);
+	const lastCallTimeRef = useRef(0);
+
+	const call = useCallback(
+		(...args) => {
+			const now = Date.now();
+
+			if (now - lastCallTimeRef.current >= delay) {
+				lastCallTimeRef.current = now;
+				callback(...args);
+			} else {
+				if (timerRef.current) 
+					clearTimeout(timerRef.current);
+
+				const remaining = delay - (now - lastCallTimeRef.current);
+
+				timerRef.current = setTimeout(() => {
+					lastCallTimeRef.current = Date.now();
+					callback(...args);
+				}, remaining);
+			}
+		},
+		[callback, delay]
+	);
+
+	return call;
+};

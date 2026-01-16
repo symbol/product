@@ -5,6 +5,12 @@ export const NetworkIdentifier = {
 	TEST_NET: 'testnet'
 };
 
+export const MessageType = {
+	PLAIN_TEXT: 0,
+	ENCRYPTED_TEXT: 1,
+	DELEGATED_HARVESTING: 254
+};
+
 export const ActivityStatus = {
 	PENDING: 'pending',
 	COMPLETE: 'complete',

@@ -4,6 +4,5 @@ export * from './format';
 export * from './network';
 export * from './table';
 export * from './token';
-export * from './validators';
 export * from './ui';
-export * from './network';
+export * from './validators';

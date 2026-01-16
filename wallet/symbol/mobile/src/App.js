@@ -1,5 +1,5 @@
 import { Router, RouterView } from '@/app/Router';
-import { PasscodeView, RootLayout } from '@/app/components';
+import { AppRootTemplate, PasscodeView } from '@/app/components';
 import { useWalletController } from '@/app/hooks';
 import { walletControllers } from '@/app/lib/controller';
 import { passcodeManager } from '@/app/lib/passcode';
@@ -121,13 +121,13 @@ const App = () => {
 	}, []);
 
 	return (
-		<RootLayout
+		<AppRootTemplate
 			isNetworkStatusShown={isWalletCreated}
 			networkStatus={mainWalletController.networkStatus}
 		>
 			<RouterView isActive={isRouterActive} flow={routerFlow} />
 			<PasscodeView isVisible={isPasscodeShown} onSuccess={unlock} />
-		</RootLayout>
+		</AppRootTemplate>
 	);
 };
 
