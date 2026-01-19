@@ -1,5 +1,4 @@
-import {  ButtonPlain, Card, DialogBox, PasscodeView, Screen, Spacer } from '@/app/components';
-import { TableView } from '@/app/components/data/TableView';
+import { ButtonPlain, Card, DialogBox, PasscodeView, Screen, Spacer, TableView } from '@/app/components';
 import { config } from '@/app/config';
 import { usePasscode, useToggle, useWalletController } from '@/app/hooks';
 import { PlatformUtils } from '@/app/lib/platform/PlatformUtils';

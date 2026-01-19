@@ -1,4 +1,4 @@
-import { AccountView, BooleanView, CopyView, Field, MessageView, Stack, StyledText, TokenView } from '@/app/components';
+import { AccountView, BooleanView, CopyButtonContainer, Field, MessageView, Stack, StyledText, TokenView } from '@/app/components';
 import { $t } from '@/app/localization';
 import { getAccountKnownInfo, getTokenKnownInfo } from '@/app/utils';
 import React, { useMemo } from 'react';
@@ -24,8 +24,8 @@ const useResolvedData = (data, options) => {
 			const values = Array.isArray(row.value) ? row.value : [row.value];
 
 			for (const value of values) {
-				if (resolved.has(value)) 
-					continue;			
+				if (resolved.has(value))
+					continue;
 
 				if (row.type === 'account' && value) {
 					const info = getAccountKnownInfo(value, {
@@ -71,56 +71,60 @@ const renderRowValue = (row, resolvedData, translate) => {
 	}
 
 	switch (row.type) {
-	case 'account':
-		return (
-			<AccountView
-				isStretched
-				address={row.value}
-				name={resolvedData.get(row.value)?.name}
-				imageId={resolvedData.get(row.value)?.imageId}
-			/>
-		);
-	case 'token':
-		return (
-			<TokenView
-				name={resolvedData.get(row.value.id ?? row.value)?.name ?? row.value.name}
-				amount={row.value.amount}
-				ticker={resolvedData.get(row.value.id ?? row.value)?.ticker}
-				imageId={resolvedData.get(row.value.id ?? row.value)?.imageId}
-			/>
-		);
-	case 'fee':
-		return (
-			<TokenView
-				name={resolvedData.get(row.value.token?.id ?? row.value.token)?.name ?? row.value.token.name}
-				amount={row.value.token.amount}
-				ticker={resolvedData.get(row.value.token?.id ?? row.value.token)?.ticker}
-				imageId={resolvedData.get(row.value.token?.id ?? row.value.token)?.imageId}
-			/>
-		);
-	case 'message':
-		return <MessageView message={row.value} />;
-	case 'boolean':
-		return (
-			<BooleanView 
-				value={row.value}
-				text={translate(`fieldValue_${row.value}`)}
-			/>
-		);
-	case 'encryption':
-		return (
-			<BooleanView 
-				value={row.value}
-				text={translate(`fieldValue_${row.value ? 'encrypted' : 'unencrypted'}`)}
-			/>
-		);
-	case 'copy':
-		return <CopyView isStretched value={row.value} />;
-	case 'translate':
-		return <StyledText>{translate(`fieldValue_${row.value}`)}</StyledText>;
-	case 'text':
-	default:
-		return <StyledText>{`${row.value}` ?? '-'}</StyledText>;
+		case 'account':
+			return (
+				<AccountView
+					isStretched
+					address={row.value}
+					name={resolvedData.get(row.value)?.name}
+					imageId={resolvedData.get(row.value)?.imageId}
+				/>
+			);
+		case 'token':
+			return (
+				<TokenView
+					name={resolvedData.get(row.value.id ?? row.value)?.name ?? row.value.name}
+					amount={row.value.amount}
+					ticker={resolvedData.get(row.value.id ?? row.value)?.ticker}
+					imageId={resolvedData.get(row.value.id ?? row.value)?.imageId}
+				/>
+			);
+		case 'fee':
+			return (
+				<TokenView
+					name={resolvedData.get(row.value.token?.id ?? row.value.token)?.name ?? row.value.token.name}
+					amount={row.value.token.amount}
+					ticker={resolvedData.get(row.value.token?.id ?? row.value.token)?.ticker}
+					imageId={resolvedData.get(row.value.token?.id ?? row.value.token)?.imageId}
+				/>
+			);
+		case 'message':
+			return <MessageView message={row.value} />;
+		case 'boolean':
+			return (
+				<BooleanView
+					value={row.value}
+					text={translate(`fieldValue_${row.value}`)}
+				/>
+			);
+		case 'encryption':
+			return (
+				<BooleanView
+					value={row.value}
+					text={translate(`fieldValue_${row.value ? 'encrypted' : 'unencrypted'}`)}
+				/>
+			);
+		case 'copy':
+			return (
+				<CopyButtonContainer isStretched value={row.value}>
+					<StyledText>{row.value}</StyledText>
+				</CopyButtonContainer>
+			);
+		case 'translate':
+			return <StyledText>{translate(`fieldValue_${row.value}`)}</StyledText>;
+		case 'text':
+		default:
+			return <StyledText>{`${row.value}` ?? '-'}</StyledText>;
 	}
 };
 
@@ -158,9 +162,9 @@ export const TableView = ({
 		networkIdentifier
 	});
 
-	if (!data || !Array.isArray(data)) 
+	if (!data || !Array.isArray(data))
 		return null;
-	
+
 	const shouldRenderRow = row => {
 		const isArrayValue = Array.isArray(row.value);
 

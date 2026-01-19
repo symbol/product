@@ -1,4 +1,4 @@
-import { ButtonCopy, ButtonPlain } from '@/app/components';
+import { CopyButton, ButtonPlain } from '@/app/components';
 import { $t } from '@/app/localization';
 import { Colors, Sizes, Typography } from '@/app/styles';
 import React from 'react';
@@ -23,7 +23,7 @@ export const MnemonicView = ({ isShown, mnemonic, onShowPress }) => {
 		<View style={styles.root}>
 			<Text style={styleMnemonicText}>{mnemonicText}</Text>
 			{isShown && (
-				<ButtonCopy content={mnemonicText} style={styles.copy} />
+				<CopyButton content={mnemonicText} style={styles.copy} />
 			)}
 			{!isShown && (
 				<View style={styles.buttonContainer}>

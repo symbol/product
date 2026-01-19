@@ -1,9 +1,9 @@
 import {
 	Amount,
 	Card,
-	CopyView,
+	CopyButtonContainer,
 	DialogBox,
-	EditViewContainer,
+	EditButtonContainer,
 	Field,
 	Icon,
 	Spacer,
@@ -104,11 +104,11 @@ export const AccountCardWidget = props => {
 			<Spacer>
 				<Stack>
 					<Field title={$t('c_accountCard_title_account')}>
-						<EditViewContainer onEditPress={toggleNameEdit}>
+						<EditButtonContainer onEditPress={toggleNameEdit}>
 							<StyledText type="title">
 								{name}
 							</StyledText>
-						</EditViewContainer>
+						</EditButtonContainer>
 					</Field>
 					<Field title={$t('c_accountCard_title_balance')}>
 						<Amount
@@ -123,7 +123,9 @@ export const AccountCardWidget = props => {
 						)}
 					</Field>
 					<Field title={$t('c_accountCard_title_address')}>
-						<CopyView value={address} />
+						<CopyButtonContainer value={address}>
+							<StyledText>{address}</StyledText>
+						</CopyButtonContainer>
 					</Field>
 				</Stack>
 			</Spacer>
