@@ -9,4 +9,3 @@ export * from './useToggle';
 export * from './useTransactionFees';
 export * from './useValidation';
 export * from './useWalletController';
-

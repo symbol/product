@@ -54,77 +54,84 @@ const useResolvedData = (data, options) => {
  * @param {TableRow} row - Row data
  * @param {Map<string, object>} resolvedData - Map of resolved known info
  * @param {function} translate - Translation function
+ * @param {string|number} [key] - Optional key for list rendering
  * @returns {React.ReactNode} Rendered row content
  */
-const renderRowValue = (row, resolvedData, translate) => {
+const renderRowValue = (row, resolvedData, translate, key) => {
 	const isArrayValue = Array.isArray(row.value);
 
 	if (isArrayValue && row.value.length > 0) {
-		return row.value.map(value => renderRowValue(
+		return row.value.map((value, index) => renderRowValue(
 			{ ...row, value },
 			resolvedData,
-			translate
+			translate,
+			`${row.title}-${index}`
 		));
 	}
 	else if (isArrayValue) {
-		return <StyledText>-</StyledText>;
+		return <StyledText key={key}>-</StyledText>;
 	}
 
 	switch (row.type) {
-		case 'account':
-			return (
-				<AccountView
-					isStretched
-					address={row.value}
-					name={resolvedData.get(row.value)?.name}
-					imageId={resolvedData.get(row.value)?.imageId}
-				/>
-			);
-		case 'token':
-			return (
-				<TokenView
-					name={resolvedData.get(row.value.id ?? row.value)?.name ?? row.value.name}
-					amount={row.value.amount}
-					ticker={resolvedData.get(row.value.id ?? row.value)?.ticker}
-					imageId={resolvedData.get(row.value.id ?? row.value)?.imageId}
-				/>
-			);
-		case 'fee':
-			return (
-				<TokenView
-					name={resolvedData.get(row.value.token?.id ?? row.value.token)?.name ?? row.value.token.name}
-					amount={row.value.token.amount}
-					ticker={resolvedData.get(row.value.token?.id ?? row.value.token)?.ticker}
-					imageId={resolvedData.get(row.value.token?.id ?? row.value.token)?.imageId}
-				/>
-			);
-		case 'message':
-			return <MessageView message={row.value} />;
-		case 'boolean':
-			return (
-				<BooleanView
-					value={row.value}
-					text={translate(`fieldValue_${row.value}`)}
-				/>
-			);
-		case 'encryption':
-			return (
-				<BooleanView
-					value={row.value}
-					text={translate(`fieldValue_${row.value ? 'encrypted' : 'unencrypted'}`)}
-				/>
-			);
-		case 'copy':
-			return (
-				<CopyButtonContainer isStretched value={row.value}>
-					<StyledText>{row.value}</StyledText>
-				</CopyButtonContainer>
-			);
-		case 'translate':
-			return <StyledText>{translate(`fieldValue_${row.value}`)}</StyledText>;
-		case 'text':
-		default:
-			return <StyledText>{`${row.value}` ?? '-'}</StyledText>;
+	case 'account':
+		return (
+			<AccountView
+				key={key}
+				isStretched
+				address={row.value}
+				name={resolvedData.get(row.value)?.name}
+				imageId={resolvedData.get(row.value)?.imageId}
+			/>
+		);
+	case 'token':
+		return (
+			<TokenView
+				key={key}
+				name={resolvedData.get(row.value.id ?? row.value)?.name ?? row.value.name}
+				amount={row.value.amount}
+				ticker={resolvedData.get(row.value.id ?? row.value)?.ticker}
+				imageId={resolvedData.get(row.value.id ?? row.value)?.imageId}
+			/>
+		);
+	case 'fee':
+		return (
+			<TokenView
+				key={key}
+				name={resolvedData.get(row.value.token?.id ?? row.value.token)?.name ?? row.value.token.name}
+				amount={row.value.token.amount}
+				ticker={resolvedData.get(row.value.token?.id ?? row.value.token)?.ticker}
+				imageId={resolvedData.get(row.value.token?.id ?? row.value.token)?.imageId}
+			/>
+		);
+	case 'message':
+		return <MessageView key={key} message={row.value} />;
+	case 'boolean':
+		return (
+			<BooleanView
+				key={key}
+				value={row.value}
+				text={translate(`fieldValue_${row.value}`)}
+			/>
+		);
+	case 'encryption':
+		return (
+			<BooleanView
+				key={key}
+				value={row.value}
+				text={translate(`fieldValue_${row.value ? 'encrypted' : 'unencrypted'}`)}
+			/>
+		);
+	case 'copy':
+		return (
+			<CopyButtonContainer key={key} isStretched value={row.value}>
+				<StyledText>{row.value}</StyledText>
+			</CopyButtonContainer>
+		);
+	case 'translate':
+		return <StyledText key={key}>{translate(`fieldValue_${row.value}`)}</StyledText>;
+	case 'text':
+	default:
+		return <StyledText key={key}>{`${row.value}` ?? '-'}</StyledText>;
 	}
 };
 

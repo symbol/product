@@ -192,5 +192,5 @@ export const Icon = ({ name, size = 'm', variant = 'default', src, style: custom
 		resizeMode: 'contain'
 	};
 
-	return <Image source={iconSource} style={[mainStyle, customStyle]} />;
+	return <Image source={iconSource} style={[mainStyle, customStyle]} testID={`icon-${name}`} />;
 };

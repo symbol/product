@@ -1,10 +1,10 @@
-import { AppRootTemplate } from '@/app/components/templates/AppRootTemplate/AppRootTemplate';
+import { RootLayout } from '@/app/app/layout/RootLayout';
 import { runRenderComponentTest, runRenderTextTest } from '__tests__/component-tests';
 import { render } from '@testing-library/react-native';
 import React from 'react';
 import { Text } from 'react-native';
 
-jest.mock('@/app/components/templates/AppRootTemplate/components', () => {
+jest.mock('@/app/app/components', () => {
 	const React = require('react');
 	const { Text } = require('react-native');
 
@@ -18,17 +18,17 @@ jest.mock('@/app/components/templates/AppRootTemplate/components', () => {
 	};
 });
 
-describe('components/AppRootTemplate', () => {
+describe('app/layout/RootLayout', () => {
 	const createDefaultProps = () => ({
 		isNetworkStatusShown: false,
 		networkStatus: 'connected'
 	});
 
-	runRenderComponentTest(AppRootTemplate, {
+	runRenderComponentTest(RootLayout, {
 		props: createDefaultProps()
 	});
 
-	runRenderTextTest(AppRootTemplate, {
+	runRenderTextTest(RootLayout, {
 		props: createDefaultProps(),
 		textToRender: [
 			{ type: 'text', value: 'system-status-bar' },
@@ -43,9 +43,9 @@ describe('components/AppRootTemplate', () => {
 			const childText = 'child-content';
 
 			// Act:
-			const { getByText } = render(<AppRootTemplate {...props}>
+			const { getByText } = render(<RootLayout {...props}>
 				<Text>{childText}</Text>
-			</AppRootTemplate>);
+			</RootLayout>);
 
 			// Assert:
 			expect(getByText(childText)).toBeTruthy();
@@ -63,7 +63,7 @@ describe('components/AppRootTemplate', () => {
 				};
 
 				// Act:
-				const { queryByText } = render(<AppRootTemplate {...props} />);
+				const { queryByText } = render(<RootLayout {...props} />);
 				const statusBar = queryByText(`network-status-bar-${config.networkStatus}`);
 
 				// Assert:
@@ -113,7 +113,7 @@ describe('components/AppRootTemplate', () => {
 				};
 
 				// Act:
-				const { getByText } = render(<AppRootTemplate {...props} />);
+				const { getByText } = render(<RootLayout {...props} />);
 
 				// Assert:
 				expect(getByText(`network-status-bar-${expected.networkStatus}`)).toBeTruthy();

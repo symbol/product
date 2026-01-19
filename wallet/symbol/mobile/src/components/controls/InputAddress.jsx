@@ -108,7 +108,7 @@ export const InputAddress = props => {
 				onChange={onChange}
 				contentRight={
 					hasContacts && (
-						<TouchableOpacity onPress={toggleDropdown}>
+						<TouchableOpacity onPress={toggleDropdown} accessibilityLabel="address-book">
 							<Icon name="address-book" size="m" />
 						</TouchableOpacity>
 					)

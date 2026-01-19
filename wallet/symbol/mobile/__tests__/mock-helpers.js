@@ -1,5 +1,6 @@
 import { Router } from '@/app/Router';
 import * as hooks from '@/app/hooks';
+import { PlatformUtils } from '@/app/lib/platform/PlatformUtils';
 import * as localization from '@/app/localization';
 import { jest } from '@jest/globals';
 import SplashScreen from 'react-native-splash-screen';
@@ -70,4 +71,25 @@ export const mockSplashScreen = () => {
 	jest.spyOn(SplashScreen, 'hide').mockImplementation(splashScreenMock.hide);
 
 	return splashScreenMock;
+};
+
+/**
+ * Mocks the OS platform.
+ * 
+ * @param {string} platform - The platform to mock (e.g., 'ios', 'android').
+ */
+export const mockOs = platform => {
+	jest.spyOn(PlatformUtils, 'getOS').mockReturnValue(platform);
+};
+
+/**
+ * Mocks the link opening functionality.
+ * 
+ * @return {Function} The mocked openLink function.
+ */
+export const mockLink = () => {
+	const openLinkMock = jest.fn();
+	jest.spyOn(PlatformUtils, 'openLink').mockImplementation(openLinkMock);
+
+	return openLinkMock;
 };

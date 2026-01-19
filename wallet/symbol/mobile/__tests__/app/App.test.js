@@ -1,4 +1,4 @@
-import App from '@/app/App';
+import App from '@/app/app';
 import { walletControllers } from '@/app/lib/controller';
 import { ScreenTester } from '__tests__/ScreenTester';
 import { mockRouter, mockSplashScreen, mockWalletController } from '__tests__/mock-helpers';
