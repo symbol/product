@@ -1,6 +1,8 @@
 import json
 from binascii import unhexlify
 
+from symbolchain.nem.Network import Address
+
 from .DatabaseConnection import DatabaseConnection
 
 
@@ -183,5 +185,37 @@ class NemDatabase(DatabaseConnection):
 				account_info.min_cosignatories,
 				[address.bytes for address in account_info.cosignatory_of] if len(account_info.cosignatory_of) > 0 else None,
 				[address.bytes for address in account_info.cosignatories] if len(account_info.cosignatories) > 0 else None,
+			)
+		)
+
+	def get_remote_address_by_address(self, address):
+		"""Gets remote address by address."""
+
+		cursor = self.connection.cursor()
+		cursor.execute(
+			'''
+			SELECT remote_address
+			FROM accounts
+			WHERE address = %s
+			''',
+			(address.bytes,)
+		)
+
+		result = cursor.fetchone()
+		return Address(result[0]) if result and result[0] else None
+
+	def update_account_harvested_fees(self, cursor, harvester, total_fees, last_height):  # pylint: disable=no-self-use
+		"""Updates harvested fees for an account."""
+
+		cursor.execute(
+			'''
+			UPDATE accounts
+			SET harvested_fees = harvested_fees + %s,
+				last_harvested_height = %s
+			WHERE address = %s
+			''', (
+				total_fees,
+				last_height,
+				harvester.bytes
 			)
 		)
