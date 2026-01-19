@@ -360,6 +360,8 @@ class NemConnector(BasicConnector):
 			],
 			block_json['difficulty'],
 			block_json['hash'],
+			block_json['totalFee'],
+			block_json['beneficiary'],
 			block['signer'],
 			block['signature'],
 			size

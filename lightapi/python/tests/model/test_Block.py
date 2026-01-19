@@ -12,6 +12,8 @@ class BlockTest(unittest.TestCase):
 			[],
 			90000000000000,
 			'a785cac7259bdd4cf423fd1079cbe0e24e119958a8075f302f9e17a1c407abe0',
+			0,
+			'TCJLCZSOQ6RGWHTPSV2DW467WZSHK4NBSITND4OF',
 			'7e6d6a11c4a79f6eb1f0e3489fd683a9381c8e1bef6bcaedbbc9f03c70b65a57',
 			(
 				'a4bbf324a3480f58c2d15bdb15d0232da94db9519d5b727a3ea12c11cc11d368'
@@ -35,6 +37,8 @@ class BlockTest(unittest.TestCase):
 		self.assertEqual([], block.transactions)
 		self.assertEqual(90000000000000, block.difficulty)
 		self.assertEqual('a785cac7259bdd4cf423fd1079cbe0e24e119958a8075f302f9e17a1c407abe0', block.block_hash)
+		self.assertEqual(0, block.total_fee)
+		self.assertEqual('TCJLCZSOQ6RGWHTPSV2DW467WZSHK4NBSITND4OF', block.beneficiary)
 		self.assertEqual('7e6d6a11c4a79f6eb1f0e3489fd683a9381c8e1bef6bcaedbbc9f03c70b65a57', block.signer)
 		self.assertEqual(
 			(
@@ -56,6 +60,8 @@ class BlockTest(unittest.TestCase):
 		self.assertNotEqual(block, self._create_default_block(('transactions', [1, 2, 3])))
 		self.assertNotEqual(block, self._create_default_block(('difficulty', 10000)))
 		self.assertNotEqual(block, self._create_default_block(('block_hash', 'invalid hash')))
+		self.assertNotEqual(block, self._create_default_block(('total_fee', 5000)))
+		self.assertNotEqual(block, self._create_default_block(('beneficiary', 'invalid beneficiary')))
 		self.assertNotEqual(block, self._create_default_block(('signer', 'invalid signer')))
 		self.assertNotEqual(block, self._create_default_block(('signature', 'invalid signature')))
 		self.assertNotEqual(block, self._create_default_block(('size', 123)))
