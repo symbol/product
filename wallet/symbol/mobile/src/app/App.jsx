@@ -1,5 +1,5 @@
-import { Router, RouterView } from '@/app/Router';
 import { RootLayout } from './layout/RootLayout';
+import { Router, RouterView } from '@/app/Router';
 import { PasscodeView } from '@/app/components';
 import { useWalletController } from '@/app/hooks';
 import { walletControllers } from '@/app/lib/controller';

@@ -15,7 +15,7 @@ export const LoadingIndicator = props => {
 	const indicatorSize = size === 'sm' ? 'small' : 'large';
 
 	return (
-		<View style={styles.root}>
+		<View style={styles.root} testID="loading-indicator">
 			<View style={styles.spinnerContainer}>
 				<ActivityIndicator size={indicatorSize} color={Colors.Components.loadingIndicator.surface} />
 			</View>

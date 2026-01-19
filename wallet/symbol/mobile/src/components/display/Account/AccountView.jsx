@@ -1,4 +1,4 @@
-import { AccountAvatar, ActionRow, CopyButton, StyledText } from '@/app/components';
+import { AccountAvatar, StyledText } from '@/app/components';
 import { Sizes } from '@/app/styles';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
@@ -14,11 +14,10 @@ const DEFAULT_SIZE = 'm';
  * @param {string} [props.name] - Optional account name
  * @param {string} [props.imageId] - Known account image identifier
  * @param {string} [props.size=DEFAULT_SIZE] - Size of the avatar
- * @param {boolean} [props.isStretched=false] - If true, the component will stretch to fill the available width
  * 
  * @returns {React.ReactNode} Account view component
  */
-export const AccountView = ({ address, name, imageId, size = DEFAULT_SIZE, isStretched = false }) => {
+export const AccountView = ({ address, name, imageId, size = DEFAULT_SIZE }) => {
 	const rootSizeStyleMap = {
 		s: styles.root_small,
 		m: styles.root_medium,

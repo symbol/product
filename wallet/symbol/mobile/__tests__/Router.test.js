@@ -23,13 +23,14 @@ describe('Router', () => {
 	describe('navigate methods', () => {
 		const runNavigateMethodTest = config => {
 			// Arrange:
-			const { screenName, shouldReset } = config;
+			const { screenName, shouldReset, hasParams } = config;
 			const methodName = `goTo${screenName}`;
 			const description = `navigates to ${screenName} screen${shouldReset ? ' with reset' : ''}`;
+			const params = hasParams ? { testParam: 123 } : undefined;
 
 			it(description, () => {
 				// Act:
-				Router[methodName]();
+				Router[methodName](params);
 
 				// Assert:
 				if (shouldReset) {
@@ -37,6 +38,8 @@ describe('Router', () => {
 						index: 0,
 						routes: [{ name: screenName }]
 					});
+				} else if (hasParams) {
+					expect(navigationRef.navigate).toHaveBeenCalledWith(screenName, params);
 				} else {
 					expect(navigationRef.navigate).toHaveBeenCalledWith(screenName);
 				}
@@ -46,19 +49,53 @@ describe('Router', () => {
 		const tests = [
 			{
 				screenName: 'Welcome',
-				shouldReset: true
+				shouldReset: true,
+				hasParams: false
 			},
 			{
 				screenName: 'CreateWallet',
-				shouldReset: false
+				shouldReset: false,
+				hasParams: false
 			},
 			{
 				screenName: 'ImportWallet',
-				shouldReset: false
+				shouldReset: false,
+				hasParams: false
 			},
 			{
 				screenName: 'Home',
-				shouldReset: true
+				shouldReset: true,
+				hasParams: false
+			},
+			{
+				screenName: 'Send',
+				shouldReset: false,
+				hasParams: true
+			},
+			{
+				screenName: 'AccountDetails',
+				shouldReset: false,
+				hasParams: true
+			},
+			{
+				screenName: 'Settings',
+				shouldReset: false,
+				hasParams: true
+			},
+			{
+				screenName: 'SettingsAbout',
+				shouldReset: false,
+				hasParams: true
+			},
+			{
+				screenName: 'SettingsNetwork',
+				shouldReset: false,
+				hasParams: true
+			},
+			{
+				screenName: 'SettingsSecurity',
+				shouldReset: false,
+				hasParams: true
 			}
 		];
 

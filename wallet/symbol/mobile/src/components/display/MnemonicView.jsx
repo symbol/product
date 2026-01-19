@@ -1,4 +1,4 @@
-import { CopyButton, ButtonPlain } from '@/app/components';
+import { ButtonPlain, CopyButton } from '@/app/components';
 import { $t } from '@/app/localization';
 import { Colors, Sizes, Typography } from '@/app/styles';
 import React from 'react';

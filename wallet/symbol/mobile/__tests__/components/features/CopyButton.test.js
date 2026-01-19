@@ -1,4 +1,4 @@
-import { ButtonCopy } from '@/app/components/controls/ButtonCopy';
+import { CopyButton } from '@/app/components/features/CopyButton';
 import { PlatformUtils } from '@/app/lib/platform/PlatformUtils';
 import { showMessage } from '@/app/utils';
 import { fireEvent, render } from '@testing-library/react-native';
@@ -13,7 +13,7 @@ jest.mock('@/app/utils', () => ({
 	showMessage: jest.fn()
 }));
 
-describe('components/ButtonCopy', () => {
+describe('components/CopyButton', () => {
 	const createDefaultProps = () => ({
 		content: 'test-content-to-copy'
 	});
@@ -24,7 +24,7 @@ describe('components/ButtonCopy', () => {
 			const props = createDefaultProps();
 
 			// Act & Assert:
-			expect(() => render(<ButtonCopy {...props} />)).not.toThrow();
+			expect(() => render(<CopyButton {...props} />)).not.toThrow();
 		});
 	});
 
@@ -44,7 +44,7 @@ describe('components/ButtonCopy', () => {
 				}
 
 				// Act:
-				const { getByRole } = render(<ButtonCopy {...props} />);
+				const { getByRole } = render(<CopyButton {...props} />);
 				const button = getByRole('button');
 				fireEvent.press(button);
 

@@ -1,6 +1,7 @@
 import { TransactionStatusInfoType, TransactionStatusStep } from '../constants';
 import { buildActivityLog, getStatusInfo } from '../utils';
 import { ActivityLogView, ButtonPlain, DialogBox, Stack, StatusCard, StyledText } from '@/app/components';
+import { ActivityStatus } from '@/app/constants';
 import { PlatformUtils } from '@/app/lib/platform/PlatformUtils';
 import { $t } from '@/app/localization';
 import { createExplorerTransactionUrl } from '@/app/utils';
@@ -138,7 +139,7 @@ export const TransactionStatusDialog = props => {
 		PlatformUtils.openLink(createExplorerTransactionUrl(chainName, networkIdentifier, hash));
 	};
 
-	const showExplorerButtons = announceStatus?.status === 'completed' && signedTransactionHashes?.length > 0;
+	const showExplorerButtons = announceStatus?.status === ActivityStatus.COMPLETE && signedTransactionHashes?.length > 0;
 
 	return (
 		<DialogBox

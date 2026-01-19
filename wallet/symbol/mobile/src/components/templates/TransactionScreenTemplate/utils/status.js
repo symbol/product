@@ -72,7 +72,8 @@ export const getStatusInfo = ({
 	isPartialState
 }) => {
 	const isSending = isLoading(createStatus) || isLoading(signStatus) || isLoading(announceStatus);
-	const isCreatedAndNotSent = isCompleted(createStatus) && !isCompleted(signStatus) && !isCompleted(announceStatus);
+	const hasAnyError = isError(createStatus) || isError(signStatus) || isError(announceStatus);
+	const isCreatedAndNotSent = isCompleted(createStatus) && !isCompleted(signStatus) && !isCompleted(announceStatus) && !hasAnyError;
 
 	if (isSending || isCreatedAndNotSent) {
 		return {

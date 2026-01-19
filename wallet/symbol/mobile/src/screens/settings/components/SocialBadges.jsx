@@ -1,7 +1,8 @@
 import { config } from '@/app/config';
+import { PlatformUtils } from '@/app/lib/platform/PlatformUtils';
 import { Sizes } from '@/app/styles';
 import React from 'react';
-import { Image, Linking, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Image, StyleSheet, TouchableOpacity, View } from 'react-native';
 
 const imageMap = {
 	discord: require('@/app/assets/images/social/discord.png'),
@@ -20,10 +21,15 @@ const imageMap = {
  */
 const SocialBadge = ({ image, linkUrl }) => {
 	const imageSrc = imageMap[image];
-	const handlePress = () => Linking.openURL(linkUrl);
+	const handlePress = () => PlatformUtils.openLink(linkUrl);
 
 	return (
-		<TouchableOpacity style={styles.badge} onPress={handlePress}>
+		<TouchableOpacity 
+			style={styles.badge}
+			accessibilityRole="link"
+			accessibilityLabel={`Link to ${image}`}
+			onPress={handlePress}
+		>
 			<Image style={styles.image} source={imageSrc} />
 		</TouchableOpacity>
 	);

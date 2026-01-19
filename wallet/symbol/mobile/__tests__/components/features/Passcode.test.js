@@ -1,4 +1,4 @@
-import { Passcode, PasscodeView } from '@/app/components/layout/Passcode';
+import { Passcode, PasscodeView } from '@/app/components/features/Passcode';
 import { passcodeManager } from '@/app/lib/passcode';
 import { mockLocalization } from '__tests__/mock-helpers';
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
