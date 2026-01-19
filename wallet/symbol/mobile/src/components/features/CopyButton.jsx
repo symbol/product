@@ -14,7 +14,7 @@ import { TouchableOpacity, View } from 'react-native';
  * 
  * @returns {React.ReactNode} Copy button component
  */
-export const ButtonCopy = ({ content, size = 'm', style }) => {
+export const CopyButton = ({ content, size = 'm', style }) => {
 	const iconSizeMap = {
 		s: 'xs',
 		m: 's'

@@ -1,4 +1,4 @@
-import { StyledText } from './StyledText';
+import { StyledText } from '@/app/components';
 import { Sizes } from '@/app/styles';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';

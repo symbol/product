@@ -1,5 +1,6 @@
 import { Router, RouterView } from '@/app/Router';
-import { AppRootTemplate, PasscodeView } from '@/app/components';
+import { RootLayout } from './layout/RootLayout';
+import { PasscodeView } from '@/app/components';
 import { useWalletController } from '@/app/hooks';
 import { walletControllers } from '@/app/lib/controller';
 import { passcodeManager } from '@/app/lib/passcode';
@@ -10,7 +11,7 @@ import SplashScreen from 'react-native-splash-screen';
 import { constants } from 'wallet-common-core';
 const { ControllerEventName } = constants;
 
-const App = () => {
+export const App = () => {
 	const mainWalletController = useWalletController();
 	const [isWalletLoaded, setIsWalletLoaded] = useState(false);
 	const [isUnlocked, setIsUnlocked] = useState(false);
@@ -121,14 +122,12 @@ const App = () => {
 	}, []);
 
 	return (
-		<AppRootTemplate
+		<RootLayout
 			isNetworkStatusShown={isWalletCreated}
 			networkStatus={mainWalletController.networkStatus}
 		>
 			<RouterView isActive={isRouterActive} flow={routerFlow} />
 			<PasscodeView isVisible={isPasscodeShown} onSuccess={unlock} />
-		</AppRootTemplate>
+		</RootLayout>
 	);
 };
-
-export default App;

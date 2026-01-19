@@ -14,4 +14,4 @@ global.TextEncoder = TextEncoder;
 global.TextDecoder = TextDecoder;
 
 // Register main component
-AppRegistry.registerComponent(appName, () => require('./src/App').default);
+AppRegistry.registerComponent(appName, () => require('./src/app').default);
