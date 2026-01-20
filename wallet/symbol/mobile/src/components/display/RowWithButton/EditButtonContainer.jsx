@@ -3,8 +3,7 @@ import React from 'react';
 import { TouchableOpacity } from 'react-native';
 
 /**
- * Edit view container component
- * Displays a child component with an edit button.
+ * EditButtonContainer component. A container component that displays content alongside an edit button for triggering edit actions.
  * 
  * @param {object} props - Component props
  * @param {React.ReactNode} props.children - Child component to display

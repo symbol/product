@@ -5,7 +5,8 @@ import React from 'react';
 import { Image, KeyboardAvoidingView, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 
 /**
- * Screen layout component
+ * Screen component. A layout component for screen content with support for scrolling, loading
+ * indicators, background images, and pull-to-refresh functionality.
  * 
  * @param {object} props - Component props
  * @param {boolean} props.isScrollDisabled - Disable scrolling if true

@@ -6,12 +6,8 @@ import { ActivityIndicator, StyleSheet, View } from 'react-native';
 const CONTENT_COLOR = Colors.Semantic.content.primary.inverse;
 
 /**
- * StatusCard component
- *
- * A specialized card component for displaying status information with an icon or loading indicator.
- * It combines a Card with status-specific styling and supports different variants for various
- * states like success, warning, or error. The component includes a minimum height and proper
- * spacing for consistent status display across the application.
+ * StatusCard component. A card component for displaying status information with an icon,
+ * supporting various visual variants and optional additional content.
  *
  * @param {object} props - Component props
  * @param {import('@/app/types/ColorVariants').SemanticRoleColorVariants} [props.variant='neutral'] - Status variant
@@ -21,7 +17,7 @@ const CONTENT_COLOR = Colors.Semantic.content.primary.inverse;
  * @param {boolean} [props.isLoading=false] - Whether to show a loading spinner instead of the icon.
  * @param {React.ReactNode} [props.children] - Additional content to display below the status row.
  *
- * @returns {React.ReactNode} Rendered StatusCard component
+ * @returns {React.ReactNode} StatusCard component
  */
 export const StatusCard = ({ variant = 'neutral', statusText, icon, isLoading, children }) => {
 	const pallette = Colors.Components.statusCard[variant];

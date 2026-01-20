@@ -2,6 +2,11 @@ import { Sizes } from '@/app/styles';
 import React from 'react';
 import { Image, StyleSheet } from 'react-native';
 
+/**
+ * SymbolLogo component. A component displaying the Symbol logo image.
+ *
+ * @returns {React.ReactNode} SymbolLogo component
+ */
 export const SymbolLogo = () => {
 	return (
 		<Image source={require('@/app/assets/images/logos/symbol-full.png')} style={styles.logo} />

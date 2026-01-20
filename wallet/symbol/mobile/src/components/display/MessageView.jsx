@@ -12,7 +12,8 @@ const iconMap = {
 };
 
 /**
- * MessageView component for displaying transaction messages.
+ * MessageView component. A display component for transaction messages, showing appropriate icons
+ * for encrypted or raw message types and displaying human-readable text when available.
  *
  * Renders an appropriate icon based on the message type (encrypted text or raw payload)
  * and displays the message text if available.
@@ -23,7 +24,7 @@ const iconMap = {
  * @param {string} [props.message.text] - Optional human-readable text. content of the message.
  * @param {string} props.message.payload - Raw payload data.
  *
- * @returns {React.ReactNode} Rendered MessageView component.
+ * @returns {React.ReactNode} MessageView component.
  */
 export const MessageView = ({ message }) => {
 	let iconName;

@@ -6,7 +6,7 @@ import { View } from 'react-native';
 const DEFAULT_VALUE = 'm';
 
 /**
- * Spacer layout component with configurable horizontal and vertical padding
+ * Spacer component. A layout component providing configurable padding around child content, supporting individual side controls.
  *
  * @param {object} props - Component props
  * @param {React.ReactNode} props.children - Child components

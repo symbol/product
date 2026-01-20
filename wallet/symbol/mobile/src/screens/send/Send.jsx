@@ -22,6 +22,11 @@ import { constants as symbolConstants } from 'wallet-common-symbol';
 
 const CHAINS_THAT_HAVE_MESSAGE_FIELD = ['symbol', 'nem'];
 
+/**
+ * Send screen component. This screen allows users to send tokens to recipient addresses,
+ * supporting multisig accounts, message attachments with encryption options, and dynamic fee
+ * selection for efficient transaction processing.
+ */
 export const Send = props => {
 	const { route } = props;
 	const walletController = useWalletController(route.params?.chainName);

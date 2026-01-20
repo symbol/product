@@ -14,11 +14,8 @@ const variantIconMap = {
 };
 
 /**
- * Alert component for displaying status messages with optional icon and title.
- *
- * This component provides a flexible way to show informational, success, warning, or error messages
- * to users. It supports different visual variants that change the background color and icon to
- * convey the appropriate level of importance or type of message.
+ * Alert component. A component for displaying status messages with optional icons and titles,
+ * supporting various visual variants for different message types.
  *
  * @param {object} props - Component props
  * @param {import('@/app/types/ColorVariants').SemanticRoleColorVariants} [props.variant='neutral'] - Alert variant
@@ -28,7 +25,7 @@ const variantIconMap = {
  * @param {boolean} [props.isIconHidden=false] - Whether to hide the icon.
  * @param {object} [props.style] - Additional styles for the alert container.
  *
- * @returns {React.ReactNode} Rendered Alert component
+ * @returns {React.ReactNode} Alert component
  */
 export const Alert = ({ variant = DEFAULT_VARIANT, title, body, isIconHidden = false, style }) => {
 	const palette = Colors.Components.alert[variant];

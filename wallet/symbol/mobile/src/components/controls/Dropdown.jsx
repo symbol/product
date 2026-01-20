@@ -72,7 +72,8 @@ export const DropdownModal = props => {
 };
 
 /**
- * A dropdown component that displays a selected value and opens a modal for selecting from a list of options, with animated interactions.
+ * Dropdown component. A selection component that displays the current value and opens a modal
+ * interface for choosing from a list of options, featuring animated interactions.
  *
  * @param {object} props - Component props
  * @param {string} props.label - Label displayed above the selected value.

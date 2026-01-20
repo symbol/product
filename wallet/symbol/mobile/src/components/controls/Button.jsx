@@ -5,7 +5,8 @@ import { Pressable, StyleSheet } from 'react-native';
 import Animated from 'react-native-reanimated';
 
 /**
- * A customizable button component that supports different types and variants with animated press interactions.
+ * Button component. A customizable button that supports different visual types and color variants,
+ * featuring animated press interactions for enhanced user feedback.
  * 
  * @param {object} props - Component props
  * @param {string} props.text - Button text.

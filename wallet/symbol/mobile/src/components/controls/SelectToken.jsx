@@ -3,8 +3,8 @@ import { getTokenKnownInfo } from '@/app/utils';
 import React from 'react';
 
 /**
- * InputAddress component for entering and validating blockchain addresses.
- * Provides a dropdown for selecting from address book contacts and wallet accounts.
+ * SelectToken component. A dropdown selector for choosing tokens from a provided list,
+ * displaying token names, tickers, and amounts with visual representations.
  *
  * @param {object} props - Component props.
  * @param {string} props.label - Dropdown label.

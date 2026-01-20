@@ -5,7 +5,8 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 /**
- * MnemonicView component for displaying mnemonic phrases with show/hide functionality.
+ * MnemonicView component. A display component for mnemonic phrases, featuring show/hide toggle
+ * functionality and a copy button when the phrase is revealed.
  *
  * @param {object} props - Component props
  * @param {boolean} props.isShown - Whether the mnemonic is visible. - Whether the copy button is disabled.

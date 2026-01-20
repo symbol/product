@@ -5,7 +5,7 @@ import React from 'react';
 import { TouchableOpacity, View } from 'react-native';
 
 /**
- * Copy button component
+ * CopyButton component. A button that copies provided content to the clipboard and displays a confirmation message.
  *
  * @param {object} props - Component props.
  * @param {string} props.content - Content to copy to clipboard.

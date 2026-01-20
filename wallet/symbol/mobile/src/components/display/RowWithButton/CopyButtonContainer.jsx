@@ -2,8 +2,7 @@ import { ActionRow, CopyButton } from '@/app/components';
 import React from 'react';
 
 /**
- * Copy view component
- * Displays a text with a copy button.
+ * CopyButtonContainer component. A container component that displays content alongside a copy button for copying the associated value.
  * 
  * @param {object} props - Component props
  * @param {React.ReactNode} props.children - Child component to display

@@ -48,8 +48,8 @@ const createFeeTierOption = (level, value) => ({
 });
 
 /**
- * A fee selector component that allows users to choose between slow, medium, and fast
- * transaction fee tiers using a slider, with animated visual feedback.
+ * FeeSelector component. A component for selecting transaction fee levels among slow, medium, and fast
+ * options using a slider interface, featuring animated visual feedback.
  *
  * @param {object} props - Component props
  * @param {object} [props.style] - Additional styles for the component container.

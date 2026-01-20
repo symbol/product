@@ -8,6 +8,11 @@ import { StyleSheet, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { createNetworkMap } from 'wallet-common-core';
 
+/**
+ * SettingsNetwork screen component. A screen for configuring network settings, allowing selection
+ * of network type and node, with display of current network information including chain height and
+ * fees.
+ */
 export const SettingsNetwork = () => {
 	const walletController = useWalletController();
 	const { networkProperties, networkIdentifier, selectedNodeUrl, isNetworkConnectionReady } = walletController;

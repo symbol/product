@@ -55,7 +55,7 @@ const useResolvedData = (data, options) => {
  * @param {Map<string, object>} resolvedData - Map of resolved known info
  * @param {function} translate - Translation function
  * @param {string|number} [key] - Optional key for list rendering
- * @returns {React.ReactNode} Rendered row content
+ * @returns {React.ReactNode} Row content
  */
 const renderRowValue = (row, resolvedData, translate, key) => {
 	const isArrayValue = Array.isArray(row.value);
@@ -136,8 +136,9 @@ const renderRowValue = (row, resolvedData, translate, key) => {
 };
 
 /**
- * Table view component
- * Displays data in a table format with support for different row types.
+ * TableView component. A component for displaying structured data in a tabular format, supporting
+ * various row types such as accounts, tokens, messages, and booleans with appropriate visual
+ * representations.
  *
  * @param {object} props - Component props
  * @param {object} [props.style] - Additional styles for the root container

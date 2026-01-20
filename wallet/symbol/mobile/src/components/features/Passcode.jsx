@@ -14,7 +14,8 @@ const EnterType = {
 const MAX_ATTEMPTS = 10;
 
 /**
- * Create or verify the passcode.
+ * Passcode component. A component for creating or verifying a numeric passcode using a PIN entry
+ * interface, with support for maximum attempts and custom styling.
  *
  * @param {object} props - The component props.
  * @param {'create' | 'verify'} [props.type] The type of passcode

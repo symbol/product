@@ -71,7 +71,8 @@ export const InputAddressDropdown = props => {
 };
 
 /**
- * An input component for blockchain addresses that includes validation and an optional dropdown for selecting from contacts and accounts.
+ * InputAddress component. An input field for entering blockchain addresses, featuring validation
+ * and an optional dropdown for selecting from saved contacts and wallet accounts.
  *
  * @param {object} props - Component props.
  * @param {string} props.label - Label for the input field.
