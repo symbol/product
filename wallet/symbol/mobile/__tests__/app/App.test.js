@@ -15,6 +15,7 @@ jest.mock('@/app/lib/controller', () => ({
 }));
 
 jest.mock('@/app/utils', () => ({
+	...jest.requireActual('@/app/utils'),
 	handleError: jest.fn(),
 	showMessage: jest.fn()
 }));
