@@ -4,6 +4,9 @@ import { Colors, Sizes, Typography } from '@/app/styles';
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
+const PLACEHOLDER_LENGTH = 24 * 7;
+const PLACEHOLDER_TEXT = Array(PLACEHOLDER_LENGTH).fill('*').join('');
+
 /**
  * MnemonicView component. A display component for mnemonic phrases, featuring show/hide toggle
  * functionality and a copy button when the phrase is revealed.
@@ -16,7 +19,7 @@ import { StyleSheet, Text, View } from 'react-native';
  * @returns {React.ReactNode} MnemonicView component
  */
 export const MnemonicView = ({ isShown, mnemonic, onShowPress }) => {
-	const placeholder = Array(mnemonic.length).fill('*').join('');
+	const placeholder = PLACEHOLDER_TEXT;
 	const mnemonicText = isShown ? mnemonic : placeholder;
 	const styleMnemonicText = [styles.textMnemonic, !isShown && styles.hidden];
 

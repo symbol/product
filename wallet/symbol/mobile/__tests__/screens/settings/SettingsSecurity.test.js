@@ -2,8 +2,7 @@ import { passcodeManager } from '@/app/lib/passcode';
 import { SettingsSecurity } from '@/app/screens/settings/SettingsSecurity';
 import { mnemonic } from '__fixtures__/local/wallet';
 import { ScreenTester } from '__tests__/ScreenTester';
-import { mockLocalization, mockPasscode, mockRouter, mockWalletController } from '__tests__/mock-helpers';
-import { waitFor } from '@testing-library/react-native';
+import { mockLocalization, mockPasscode, mockWalletController } from '__tests__/mock-helpers';
 
 jest.mock('@/app/lib/passcode', () => ({
 	passcodeManager: {
@@ -24,18 +23,14 @@ const SCREEN_TEXT = {
 };
 
 const createMockWalletController = (overrides = {}) => ({
-	getMnemonic: jest.fn().mockResolvedValue(overrides.mnemonic ?? TEST_MNEMONIC),
-	on: jest.fn(),
-	removeListener: jest.fn(),
+	getMnemonic: jest.fn().mockResolvedValue(TEST_MNEMONIC),
 	...overrides
 });
 
-const createMockPasscodeManager = (overrides = {}) => {
+const mockPasscodeManager = (overrides = {}) => {
 	passcodeManager.isPasscodeSet.mockResolvedValue(overrides.isPasscodeSet ?? false);
 	passcodeManager.clear.mockResolvedValue();
 };
-
-// === Tests ===
 
 describe('screens/settings/SettingsSecurity', () => {
 	beforeEach(() => {
@@ -47,7 +42,7 @@ describe('screens/settings/SettingsSecurity', () => {
 		it('renders all security settings elements', async () => {
 			// Arrange:
 			mockWalletController(createMockWalletController());
-			createMockPasscodeManager();
+			mockPasscodeManager();
 			const expectedTexts = [
 				SCREEN_TEXT.pinTitle,
 				SCREEN_TEXT.pinBody,
@@ -62,151 +57,93 @@ describe('screens/settings/SettingsSecurity', () => {
 			// Assert:
 			screenTester.expectText(expectedTexts);
 		});
-
-		it('shows mnemonic placeholder when mnemonic is hidden', async () => {
-			// Arrange:
-			mockWalletController(createMockWalletController());
-			createMockPasscodeManager();
-
-			// Act:
-			const screenTester = new ScreenTester(SettingsSecurity);
-
-			// Assert:
-			screenTester.expectText([SCREEN_TEXT.showMnemonicButton]);
-		});
 	});
 
-	describe('passcode toggle', () => {
-		it('clears passcode when passcode is enabled and toggle is pressed', async () => {
-			// Arrange:
-			const walletControllerMock = createMockWalletController();
-			mockWalletController(walletControllerMock);
-			createMockPasscodeManager({ isPasscodeSet: true });
-			mockPasscode();
-			mockRouter({ goBack: jest.fn() });
-			const screenTester = new ScreenTester(SettingsSecurity);
-
-			// Act:
-			await waitFor(() => {
-				expect(passcodeManager.isPasscodeSet).toHaveBeenCalled();
-			});
-			screenTester.pressButton(SCREEN_TEXT.pinToggle);
-			screenTester.waitForTimer();
-
-			// Assert:
-			expect(passcodeManager.clear).toHaveBeenCalledTimes(1);
-		});
-
-		it('does not clear passcode when passcode is disabled and toggle is pressed', async () => {
-			// Arrange:
-			const walletControllerMock = createMockWalletController();
-			mockWalletController(walletControllerMock);
-			createMockPasscodeManager({ isPasscodeSet: false });
-			mockPasscode();
-			mockRouter({ goBack: jest.fn() });
-			const screenTester = new ScreenTester(SettingsSecurity);
-
-			// Act:
-			await waitFor(() => {
-				screenTester.expectText([SCREEN_TEXT.pinToggle]);
-			});
-			screenTester.pressButton(SCREEN_TEXT.pinToggle);
-
-			// Assert:
-			await waitFor(() => {
-				expect(passcodeManager.clear).not.toHaveBeenCalled();
-			});
-		});
-
-		it('navigates back after toggling passcode', async () => {
-			// Arrange:
-			mockWalletController(createMockWalletController());
-			createMockPasscodeManager({ isPasscodeSet: true });
-			mockPasscode();
-			const routerMock = mockRouter({ goBack: jest.fn() });
-			const screenTester = new ScreenTester(SettingsSecurity);
-
-			// Act:
-			await waitFor(() => {
-				screenTester.expectText([SCREEN_TEXT.pinToggle]);
-			});
-			screenTester.pressButton(SCREEN_TEXT.pinToggle);
-
-			// Assert:
-			await waitFor(() => {
-				expect(routerMock.goBack).toHaveBeenCalledTimes(1);
-			});
-		});
-	});
-
-	describe('mnemonic display', () => {
-		it('shows mnemonic when show button is pressed and passcode is verified', async () => {
-			// Arrange:
-			mockWalletController(createMockWalletController({ mnemonic: TEST_MNEMONIC }));
-			createMockPasscodeManager({ isPasscodeSet: true });
-			mockPasscode();
-			const screenTester = new ScreenTester(SettingsSecurity);
-
-			// Act:
-			await waitFor(() => {
-				screenTester.expectText([SCREEN_TEXT.showMnemonicButton]);
-			});
-			screenTester.pressButton(SCREEN_TEXT.showMnemonicButton);
-
-			// Assert:
-			await waitFor(() => {
-				screenTester.expectText([TEST_MNEMONIC]);
-			});
-		});
-
-		it('hides show mnemonic button after mnemonic is revealed', async () => {
-			// Arrange:
-			mockWalletController(createMockWalletController({ mnemonic: TEST_MNEMONIC }));
-			createMockPasscodeManager({ isPasscodeSet: true });
-			mockPasscode();
-			const screenTester = new ScreenTester(SettingsSecurity);
-
-			// Act:
-			await waitFor(() => {
-				screenTester.expectText([SCREEN_TEXT.showMnemonicButton]);
-			});
-			screenTester.pressButton(SCREEN_TEXT.showMnemonicButton);
-
-			// Assert:
-			await waitFor(() => {
-				screenTester.notExpectText([SCREEN_TEXT.showMnemonicButton]);
-			});
-		});
-	});
-
-	describe('data loading', () => {
+	describe('passcode', () => {
 		it('loads passcode status on mount', async () => {
 			// Arrange:
 			mockWalletController(createMockWalletController());
-			createMockPasscodeManager();
+			mockPasscodeManager();
 
 			// Act:
-			new ScreenTester(SettingsSecurity);
+			const screenTester = new ScreenTester(SettingsSecurity);
+			await screenTester.waitForTimer();
 
 			// Assert:
-			await waitFor(() => {
-				expect(passcodeManager.isPasscodeSet).toHaveBeenCalledTimes(1);
-			});
+			expect(passcodeManager.isPasscodeSet).toHaveBeenCalledTimes(1);
 		});
 
-		it('loads mnemonic on mount', async () => {
+		const runPasscodeTest = (description, config, expected) => {
+			it(description, async () => {
+				// Arrange:
+				mockWalletController(createMockWalletController());
+				mockPasscodeManager({ isPasscodeSet: config.isPasscodeSet });
+				mockPasscode();
+
+				// Act:
+				const screenTester = new ScreenTester(SettingsSecurity);
+				await screenTester.waitForTimer(); // initial load
+				screenTester.pressButton(SCREEN_TEXT.pinToggle);
+				await screenTester.waitForTimer(); // clear (optional)
+				await screenTester.waitForTimer(); // reload
+
+				// Assert:
+				expect(passcodeManager.isPasscodeSet).toHaveBeenCalledTimes(2);
+				
+				if (expected.shouldBeCleared)
+					expect(passcodeManager.clear).toHaveBeenCalledTimes(1);
+				else
+					expect(passcodeManager.clear).toHaveBeenCalledTimes(0); 
+			});
+		};
+
+		const passcodeTests = [
+			{
+				description: 'disables passcode and clears it when toggle is pressed',
+				config: { isPasscodeSet: true },
+				expected: { shouldBeCleared: true }
+			},
+			{
+				description: 'enables passcode when toggle is pressed',
+				config: { isPasscodeSet: false },
+				expected: { shouldBeCleared: false }
+			}
+		];
+
+		passcodeTests.forEach(test => {
+			runPasscodeTest(test.description, test.config, test.expected);
+		});
+	});
+
+	describe('mnemonic', () => {
+		it('does not load mnemonic on mount', async () => {
 			// Arrange:
-			const walletControllerMock = createMockWalletController();
-			mockWalletController(walletControllerMock);
-			createMockPasscodeManager();
+			const walletControllerMock = mockWalletController(createMockWalletController());
+			mockPasscodeManager();
 
 			// Act:
-			new ScreenTester(SettingsSecurity);
+			const screenTester = new ScreenTester(SettingsSecurity);
+			await screenTester.waitForTimer();
 
 			// Assert:
-			await waitFor(() => {
-				expect(walletControllerMock.getMnemonic).toHaveBeenCalledTimes(1);
-			});
+			expect(walletControllerMock.getMnemonic).toHaveBeenCalledTimes(0);
+		});
+
+		it('shows mnemonic when show button is pressed and passcode is verified', async () => {
+			// Arrange:
+			const walletControllerMock = mockWalletController(createMockWalletController());
+			mockPasscodeManager({ isPasscodeSet: true });
+			mockPasscode();
+
+			// Act:
+			const screenTester = new ScreenTester(SettingsSecurity);
+			screenTester.pressButton(SCREEN_TEXT.showMnemonicButton);
+			await screenTester.waitForTimer();
+
+			// Assert:
+			screenTester.expectText([TEST_MNEMONIC]);
+			screenTester.notExpectText([SCREEN_TEXT.showMnemonicButton]);
+			expect(walletControllerMock.getMnemonic).toHaveBeenCalledTimes(1);
 		});
 	});
 });

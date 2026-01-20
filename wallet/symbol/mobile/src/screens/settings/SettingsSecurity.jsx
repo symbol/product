@@ -1,4 +1,3 @@
-import { Router } from '@/app/Router';
 import { Checkbox, MnemonicView, PasscodeView, Screen, Spacer, Stack, StyledText } from '@/app/components';
 import { useAsyncManager, usePasscode, useWalletController } from '@/app/hooks';
 import { passcodeManager } from '@/app/lib/passcode';
@@ -11,50 +10,48 @@ import React, { useEffect, useState } from 'react';
  */
 export const SettingsSecurity = () => {
 	const walletController = useWalletController();
-	const [isPasscodeEnabled, setIsPasscodeEnabled] = useState(false);
-	const [mnemonic, setMnemonic] = useState('');
 	const [isMnemonicShown, setIsMnemonicShown] = useState(false);
 
-	const loadDataManager = useAsyncManager({
-		callback: async () => {
-			const isPasscodeEnabled = await passcodeManager.isPasscodeSet();
-			const mnemonic = await walletController.getMnemonic();
-
-			setIsPasscodeEnabled(isPasscodeEnabled);
-			setMnemonic(mnemonic);
-		}
+	// Passcode
+	const loadPasscodeManager = useAsyncManager({
+		callback: async () => await passcodeManager.isPasscodeSet(),
+		defaultData: false
 	});
+	const isPasscodeEnabled = loadPasscodeManager.data;
 	const togglePasscodeManager = useAsyncManager({
 		callback: async () => {
 			if (isPasscodeEnabled)
 				await passcodeManager.clear();
 
-			loadDataManager.call();
-			Router.goBack();
+			loadPasscodeManager.call();
 		}
 	});
-
 	const passcodeAction = isPasscodeEnabled ? 'verify' : 'create';
 	const enablePasscode = usePasscode({ onSuccess: togglePasscodeManager.call }, passcodeAction);
-
-	const showMnemonic = () => {
-		setIsMnemonicShown(true);
-	};
-	const showMnemonicPasscode = usePasscode({ onSuccess: showMnemonic }, 'verify');
-
 	const handlePasscodeToggle = () => {
 		enablePasscode.show();
 	};
 
+	// Mnemonic
+	const mnemonicManager = useAsyncManager({
+		callback: async () => await walletController.getMnemonic(),
+		defaultData: ''
+	});
+	const mnemonic = mnemonicManager.data;
+	const showMnemonic = () => {
+		mnemonicManager.call()
+			.then(() => setIsMnemonicShown(true));
+	};
+	const showMnemonicPasscode = usePasscode({ onSuccess: showMnemonic }, 'verify');
 	const handleShowMnemonicPress = () => {
 		showMnemonicPasscode.show();
 	};
 
 	useEffect(() => {
-		loadDataManager.call();
+		loadPasscodeManager.call();
 	}, []);
 
-	const isLoading = loadDataManager.isLoading || togglePasscodeManager.isLoading;
+	const isLoading = loadPasscodeManager.isLoading || togglePasscodeManager.isLoading;
 
 	return (
 		<Screen isLoading={isLoading}>
