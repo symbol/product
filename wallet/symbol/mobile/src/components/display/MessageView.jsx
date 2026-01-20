@@ -15,9 +15,6 @@ const iconMap = {
  * MessageView component. A display component for transaction messages, showing appropriate icons
  * for encrypted or raw message types and displaying human-readable text when available.
  *
- * Renders an appropriate icon based on the message type (encrypted text or raw payload)
- * and displays the message text if available.
- *
  * @param {object} props - Component props.
  * @param {object} props.message - Message object containing type and content information.
  * @param {number} props.message.type - The type of message. 0 - plain text, 1 - encrypted, rest - raw data.
