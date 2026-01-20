@@ -5,8 +5,7 @@ const GRID_SIZE = 8;
 const GRID_COLOR = '#888a';
 
 /**
- * Grid layout component. Used for development purposes only.
- * Helps to align elements on the screen and ensure consistent spacing.
+ * Grid component. A development overlay component displaying a grid pattern to assist with element alignment and spacing consistency.
  *
  * @returns {React.ReactNode}
  */

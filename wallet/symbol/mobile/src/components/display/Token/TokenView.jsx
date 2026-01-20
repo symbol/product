@@ -6,8 +6,8 @@ import { StyleSheet, View } from 'react-native';
 const DEFAULT_SIZE = 'm';
 
 /**
- * Token view component
- * Displays account avatar, name/address, and copy button.
+ * TokenView component. A display component showing a token's avatar alongside its name, ticker
+ * symbol, and amount, with support for different sizes.
  * 
  * @param {object} props - Component props
  * @param {string} props.name - Token name

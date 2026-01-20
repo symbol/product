@@ -3,8 +3,8 @@ import { $t } from '@/app/localization';
 import React from 'react';
 
 /**
- * MultisigAccountWarning component to display a warning about multisig accounts
- * along with a table of cosignatories.
+ * MultisigAccountWarning component. A component displaying a warning message about multisig accounts
+ * alongside a table listing the cosignatory accounts.
  *
  * @param {object} props - Component props
  * @param {string[]} props.cosignatories - Array of cosignatory account addresses
@@ -13,7 +13,7 @@ import React from 'react';
  * @param {string} props.chainName - Chain name for token/account resolution
  * @param {import('@/app/types/Network').NetworkIdentifier} props.networkIdentifier - Network identifier for token/account resolution
  *
- * @returns {React.ReactNode} Rendered MultisigAccountWarning component
+ * @returns {React.ReactNode} MultisigAccountWarning component
  */
 export const MultisigAccountWarning = ({ cosignatories, addressBook, accounts, chainName, networkIdentifier }) => {
 	const tableData = [

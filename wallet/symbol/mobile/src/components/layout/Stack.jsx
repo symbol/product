@@ -7,7 +7,7 @@ const DEFAULT_GAP = 'm';
 const DEFAULT_DIRECTION = 'column';
 
 /**
- * Stack layout component with configurable gap between children
+ * Stack component. A layout component arranging child elements in a row or column with configurable spacing between them.
  *
  * @param {object} props - Component props
  * @param {React.ReactNode} props.children - Child components

@@ -6,12 +6,8 @@ import { View } from 'react-native';
 const DEFAULT_BORDER_RADIUS = 'm';
 
 /**
- * Card layout component.
- *
- * A basic container component that provides a background color and rounded corners for grouping
- * related content. It's designed to be a simple wrapper without built-in padding or margins,
- * allowing for flexible layout composition. Commonly used for displaying information panels,
- * forms, or any content that needs visual separation from the background.
+ * Card component. A container component providing background color and rounded corners for grouping
+ * related content, supporting customizable border radius and color.
  *
  * @param {object} props - Component props
  * @param {React.ReactNode} props.children - Child components to be rendered inside the card.

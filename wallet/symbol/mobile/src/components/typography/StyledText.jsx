@@ -11,7 +11,8 @@ import { StyleSheet, Text } from 'react-native';
  */
 
 /**
- * StyledText component
+ * StyledText component. A text component supporting various typography types, sizes, color variants,
+ * bold styling, and inverse color schemes.
  *
  * @param {object} props - Component props
  * @param {string|React.ReactNode} props.children - Text content to render.
@@ -21,7 +22,8 @@ import { StyleSheet, Text } from 'react-native';
  * @param {TextSize} [props.size='m'] - Text size.
  * @param {string} [props.variant] - Color variant for the text.
  * @param {boolean} [props.inverse=false] - Whether to use inverse color scheme.
- * @returns {React.ReactElement} Rendered StyledText component
+ * 
+ * @returns {React.ReactNode} StyledText component
  */
 export const StyledText = ({ children, style, type = 'body', bold = false, size = 'm', variant = 'primary', inverse = false }) => {
 	const normalizedType = ['title', 'label', 'body'].includes(type) ? type : 'body';

@@ -4,6 +4,10 @@ import { Card, Screen, Spacer, Stack, StyledText, TableView } from '@/app/compon
 import { $t } from '@/app/localization';
 import React from 'react';
 
+/**
+ * SettingsAbout screen component. A screen displaying application version information, dependency
+ * versions, and details about the protocol along with social media links.
+ */
 export const SettingsAbout = () => {
 	const aboutTable = [
 		{

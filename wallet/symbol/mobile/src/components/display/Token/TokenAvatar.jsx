@@ -16,9 +16,7 @@ const sizeMap = {
 };
 
 /**
- * TokenAvatar component
- * 
- * Displays an avatar for a given token.
+ * TokenAvatar component. Displays an avatar for a given token.
  * If a known token image identifier is provided, it uses that image.
  * Otherwise, it falls back to a default token image.
  * 

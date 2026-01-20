@@ -3,7 +3,7 @@ import React from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
 /**
- * Loading indicator component
+ * LoadingIndicator component. A loading spinner in small or large sizes.
  * 
  * @param {object} props - Component props
  * @param {'sm'|'lg'} [props.size='lg'] - Size of the loading indicator

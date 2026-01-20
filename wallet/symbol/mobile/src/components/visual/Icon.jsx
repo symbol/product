@@ -168,7 +168,7 @@ const sourceMap = {
 };
 
 /**
- * Icon component
+ * Icon component. A component for displaying icons with configurable sizes and color variants.
  * 
  * @param {object} props - Component props.
  * @param {string} props.name - Icon name.

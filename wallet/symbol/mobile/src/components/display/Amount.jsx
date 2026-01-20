@@ -3,7 +3,8 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 /**
- * Amount component for displaying values with optional coloring and sizing
+ * Amount component. A display component for showing numeric values with ticker symbols,
+ * supporting conditional coloring based on positive/negative values and multiple size variants.
  *
  * @param {object} props - Component props
  * @param {string} props.value - The numeric value to display

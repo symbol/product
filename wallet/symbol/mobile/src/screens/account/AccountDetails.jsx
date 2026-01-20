@@ -7,6 +7,11 @@ import { createExplorerAccountUrl } from '@/app/utils';
 import React, { useState } from 'react';
 import { constants } from 'wallet-common-core';
 
+/**
+ * AccountDetails screen component. A screen displaying detailed information about the currently
+ * selected wallet account, including address, public key, and account type, with options to view
+ * in block explorer, access faucet on testnet, and reveal private key.
+ */
 export const AccountDetails = () => {
 	const walletController = useWalletController(chainName);
 	const { chainName, networkIdentifier, currentAccount, currentAccountInfo } = walletController;

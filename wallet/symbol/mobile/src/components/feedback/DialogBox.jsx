@@ -86,9 +86,8 @@ const DialogButton = ({ type, variant, onPress }) => {
 };
 
 /**
- * DialogBox component
- *
- * A modal dialog component that supports different types: alert, confirm, accept, and prompt.
+ * DialogBox component. A modal dialog component supporting various interaction types including
+ * alerts, confirmations, acceptances, and prompts with optional input validation.
  *
  * @param {object} props - Component props
  * @param {boolean} props.isVisible - Controls the visibility of the dialog.
@@ -102,6 +101,8 @@ const DialogButton = ({ type, variant, onPress }) => {
  * @param {function} [props.onCancel] - Callback when cancel action is triggered.
  * @param {object} [props.style] - Additional styles for the modal container.
  * @param {object} [props.contentContainerStyle] - Additional styles for the content area.
+ *
+ * @returns {React.ReactNode} DialogBox component
  */
 export const DialogBox = props => {
 	const {

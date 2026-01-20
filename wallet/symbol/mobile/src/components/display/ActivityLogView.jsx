@@ -104,14 +104,14 @@ const ActivityItem = ({ item, nextItemStatus, index, isLast }) => {
 };
 
 /**
- * ActivityLogView component for displaying a list of activity items.
- * Renders a vertical list of activity steps with icons, titles, and optional captions.
+ * ActivityLogView component. A component for displaying a sequential list of activity items,
+ * each with an icon, title, and optional caption.
  *
  * @param {object} props - Component props
  * @param {import('@/app/types/ActivityLog').ActivityLogItem[]} props.data - Array of activity items to display
  * @param {object} [props.style] - Additional styles for the root container
  *
- * @returns {React.ReactNode} Rendered ActivityLogView component
+ * @returns {React.ReactNode} ActivityLogView component
  */
 export const ActivityLogView = ({ data, style }) => {
 	return (

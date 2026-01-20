@@ -7,7 +7,7 @@ import Animated, { FadeIn } from 'react-native-reanimated';
 const MULTILINE_NUMBER_OF_LINES = 7;
 
 /**
- * TextBox component
+ * TextBox component. A text input field with support for labels, error messages, multiline input, and animated focus interactions.
  *
  * @param {object} props - Component props
  * @param {React.ReactNode} [props.contentRight] - Content to display on the right side of the input.

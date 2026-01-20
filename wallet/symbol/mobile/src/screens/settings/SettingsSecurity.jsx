@@ -5,6 +5,10 @@ import { passcodeManager } from '@/app/lib/passcode';
 import { $t } from '@/app/localization';
 import React, { useEffect, useState } from 'react';
 
+/**
+ * SettingsSecurity screen component. A screen for managing security settings, allowing users to
+ * enable or disable passcode protection and reveal their mnemonic phrase with passcode verification.
+ */
 export const SettingsSecurity = () => {
 	const walletController = useWalletController();
 	const [isPasscodeEnabled, setIsPasscodeEnabled] = useState(false);

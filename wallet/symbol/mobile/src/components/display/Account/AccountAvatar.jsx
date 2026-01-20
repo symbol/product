@@ -11,10 +11,8 @@ const AVATAR_SIZE_M = Sizes.Semantic.avatarHeight.m;
 const AVATAR_SIZE_L = Sizes.Semantic.avatarHeight.l;
 
 /**
- * AccountAvatar component
- *
- * Displays an avatar for a given account address.
- * If a custom image URL is provided, it uses that image.
+ * AccountAvatar component. Displays an avatar for a given account address.
+ * If a custom imageId is provided, it uses that image.
  * Otherwise, it generates a blockie image based on the address.
  *
  * @param {object} props - Component props

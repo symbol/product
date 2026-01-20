@@ -14,7 +14,7 @@ const iconSourceMap = {
 };
 
 /**
- * Settings item component
+ * Settings list item component
  * 
  * @param {object} props - Component props
  * @param {string} props.title - Item title.

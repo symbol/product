@@ -7,8 +7,9 @@ import React, { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 /**
- * An input component for entering and validating cryptocurrency amounts, featuring real-time
- * price conversion, available balance display, and a max amount selection with confirmation dialog.
+ * InputAmount component. An input field for entering cryptocurrency amounts, featuring validation,
+ * real-time price conversion display, available balance information, and a max amount selection
+ * with confirmation dialog.
  *
  * @param {object} props - Component props.
  * @param {string} props.label - Label for the input field.
@@ -19,6 +20,8 @@ import { StyleSheet, View } from 'react-native';
  * @param {function} props.onChange - Callback when input value changes.
  * @param {function} props.onValidityChange - Callback when validity state changes.
  * @param {Array} [props.extraValidators=[]] - Additional validators to apply.
+ *
+ * @returns {React.ReactNode} InputAmount component
  */
 export const InputAmount = props => {
 	const { label, value, price, networkIdentifier, availableBalance, onChange, onValidityChange, extraValidators = [] } = props;

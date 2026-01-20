@@ -16,8 +16,9 @@ import React, { useState } from 'react';
 const TRANSACTION_SEND_EXECUTION_DELAY_MS = 2000;
 
 /**
- * A reusable component for sending transactions with confirmation and success alert.
- * Used as a wrapper in transaction send screens.
+ * TransactionScreenTemplate component. A reusable template component for sending transactions,
+ * featuring confirmation dialogs, status tracking, and multisig account warnings.
+ * 
  * @param {object} props - The component props.
  * @param {boolean} props.isLoading - Loading state for the entire screen.
  * @param {boolean} props.isSendButtonDisabled - Whether the send button is disabled.
@@ -35,7 +36,8 @@ const TRANSACTION_SEND_EXECUTION_DELAY_MS = 2000;
  * @param {import('@/app/types/RefreshConfig').RefreshConfig} [props.refresh] - Refresh control.
  * @param {string} [props.confirmDialogTitle] - Title for the confirmation dialog.
  * @param {string} [props.confirmDialogText] - Text for the confirmation dialog body.
- * @returns {React.Node}
+ 
+* @returns {React.Node} rendered TransactionScreenTemplate component
  */
 export const TransactionScreenTemplate = props => {
 	const {

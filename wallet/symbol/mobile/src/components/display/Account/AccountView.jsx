@@ -6,8 +6,7 @@ import { StyleSheet, View } from 'react-native';
 const DEFAULT_SIZE = 'm';
 
 /**
- * Account view component.
- * Displays account avatar, name/address, and copy button.
+ * AccountView component. A display component showing an account's avatar alongside its name or address, with support for different sizes.
  * 
  * @param {object} props - Component props
  * @param {string} props.address - Account address

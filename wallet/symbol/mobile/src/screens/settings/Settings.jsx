@@ -7,6 +7,11 @@ import { walletControllers } from '@/app/lib/controller';
 import { $t, getLanguages, initLocalization, setCurrentLanguage } from '@/app/localization';
 import React from 'react';
 
+/**
+ * Settings screen component. A screen providing access to application settings including network
+ * configuration, language selection, security options, currency preferences, about information,
+ * and logout functionality.
+ */
 export const Settings = () => {
 	const walletController = useWalletController();
 	const userCurrency = walletController.modules.market.price.currency;
