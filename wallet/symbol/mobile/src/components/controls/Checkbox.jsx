@@ -54,6 +54,8 @@ export const Checkbox = ({ style, text, value, onChange, isDisabled = false }) =
 	return (
 		<Pressable
 			style={[styles.root, style]}
+			accessibilityLabel={text}
+			accessibilityValue={{ text: value ? 'checked' : 'unchecked' }}
 			hitSlop={5}
 			onPress={handlePress}
 			onPressIn={animateIn}
