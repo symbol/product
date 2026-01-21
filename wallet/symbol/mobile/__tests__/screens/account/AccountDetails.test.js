@@ -1,7 +1,10 @@
 import { AccountDetails } from '@/app/screens/account/AccountDetails';
-import { walletStorageAccounts } from '__fixtures__/local/wallet';
+import { AccountFixtureBuilder } from '__fixtures__/local/AccountFixtureBuilder';
+import { AccountInfoFixtureBuilder } from '__fixtures__/local/AccountInfoFixtureBuilder';
 import { ScreenTester } from '__tests__/ScreenTester';
 import { mockLink, mockLocalization, mockPasscode, mockWalletController } from '__tests__/mock-helpers';
+
+// Mocks
 
 jest.mock('@/app/lib/platform/PlatformUtils', () => ({
 	PlatformUtils: {
@@ -27,23 +30,86 @@ jest.mock('@/app/config', () => {
 	};
 });
 
-describe('screens/account/AccountDetails', () => {
-	const createMockCurrentAccount = (overrides = {}) => ({
-		...walletStorageAccounts.mainnet[0],
-		...overrides
-	});
+// Constants
 
-	const createMockCurrentAccountInfo = (overrides = {}) => ({
-		multisigAddresses: [],
-		...overrides
-	});
+const CHAIN_NAME = 'symbol';
+const NETWORK_IDENTIFIER_MAINNET = 'mainnet';
+const NETWORK_IDENTIFIER_TESTNET = 'testnet';
+const FAUCET_BASE_URL = 'https://faucet.symbol.testnet';
+const MOCK_PRIVATE_KEY = 'mockPrivateKey123';
 
-	const createMockWalletController = (overrides = {}) => ({
-		chainName: 'symbol',
-		networkIdentifier: 'mainnet',
-		currentAccount: createMockCurrentAccount(overrides.currentAccount),
-		currentAccountInfo: createMockCurrentAccountInfo(overrides.currentAccountInfo),
-		getCurrentAccountPrivateKey: jest.fn().mockResolvedValue('mockPrivateKey123'),
+// Screen Text
+
+const SCREEN_TEXT = {
+	// Table field titles
+	textFieldAddress: 'fieldTitle_address',
+	textFieldPublicKey: 'fieldTitle_publicKey',
+	textFieldChainName: 'fieldTitle_chainName',
+	textFieldNetworkIdentifier: 'fieldTitle_networkIdentifier',
+	textFieldName: 'fieldTitle_name',
+	textFieldAccountType: 'fieldTitle_accountType',
+	textFieldSeedIndex: 'fieldTitle_seedIndex',
+	textFieldMultisigAddresses: 'fieldTitle_multisigAddresses',
+
+	// Buttons
+	buttonFaucet: 'button_faucet',
+	buttonOpenExplorer: 'button_openTransactionInExplorer',
+	buttonRevealPrivateKey: 'button_revealPrivateKey',
+
+	// Dialog
+	dialogSensitiveTitle: 'dialog_sensitive'
+};
+
+// Account Fixtures
+
+const mainnetSeedAccount = AccountFixtureBuilder
+	.createWithAccount(CHAIN_NAME, NETWORK_IDENTIFIER_MAINNET, 0)
+	.data;
+
+const mainnetMnemonicAccount = AccountFixtureBuilder
+	.createWithAccount(CHAIN_NAME, NETWORK_IDENTIFIER_MAINNET, 0)
+	.setAccountType('mnemonic')
+	.setSeedIndex(5)
+	.data;
+
+const mainnetPrivateKeyAccount = AccountFixtureBuilder
+	.createWithAccount(CHAIN_NAME, NETWORK_IDENTIFIER_MAINNET, 0)
+	.setAccountType('privateKey')
+	.data;
+
+const testnetSeedAccount = AccountFixtureBuilder
+	.createWithAccount(CHAIN_NAME, NETWORK_IDENTIFIER_TESTNET, 0)
+	.data;
+
+const multisigAccount1 = AccountFixtureBuilder
+	.createWithAccount(CHAIN_NAME, NETWORK_IDENTIFIER_MAINNET, 2)
+	.data;
+
+const multisigAccount2 = AccountFixtureBuilder
+	.createWithAccount(CHAIN_NAME, NETWORK_IDENTIFIER_MAINNET, 3)
+	.data;
+
+// Account Info Fixtures
+
+const regularAccountInfo = AccountInfoFixtureBuilder
+	.createEmpty(CHAIN_NAME, NETWORK_IDENTIFIER_MAINNET)
+	.override({ multisigAddresses: [] })
+	.data;
+
+const multisigCosignerAccountInfo = AccountInfoFixtureBuilder
+	.createEmpty(CHAIN_NAME, NETWORK_IDENTIFIER_MAINNET)
+	.override({ multisigAddresses: [multisigAccount1.address, multisigAccount2.address] })
+	.data;
+
+// Wallet Controller Mock
+
+const mockWalletControllerConfigured = (overrides = {}) => {
+	return mockWalletController({
+		chainName: CHAIN_NAME,
+		networkIdentifier: overrides.networkIdentifier ?? NETWORK_IDENTIFIER_MAINNET,
+		currentAccount: overrides.currentAccount ?? mainnetSeedAccount,
+		currentAccountInfo: overrides.currentAccountInfo ?? regularAccountInfo,
+		getCurrentAccountPrivateKey: jest.fn().mockResolvedValue(MOCK_PRIVATE_KEY),
 		modules: {
 			addressBook: {}
 		},
@@ -53,127 +119,124 @@ describe('screens/account/AccountDetails', () => {
 		},
 		...overrides
 	});
+};
 
+describe('screens/account/AccountDetails', () => {
 	beforeEach(() => {
 		mockLocalization();
 		jest.clearAllMocks();
 	});
 
 	describe('render', () => {
-		const runAccountTableDataTest = (description, config, expected) => {
-			it(description, () => {
-				// Arrange:
-				mockWalletController(createMockWalletController(config.walletController));
+		it('renders account details table with all required fields', () => {
+			// Arrange:
+			mockWalletControllerConfigured();
+			const expectedTexts = [
+				SCREEN_TEXT.textFieldAddress,
+				mainnetSeedAccount.address,
+				SCREEN_TEXT.textFieldPublicKey,
+				mainnetSeedAccount.publicKey,
+				SCREEN_TEXT.textFieldChainName,
+				CHAIN_NAME,
+				SCREEN_TEXT.textFieldNetworkIdentifier,
+				mainnetSeedAccount.networkIdentifier,
+				SCREEN_TEXT.textFieldName,
+				mainnetSeedAccount.name,
+				SCREEN_TEXT.textFieldAccountType,
+				mainnetSeedAccount.accountType
+			];
 
-				// Act:
-				const screenTester = new ScreenTester(AccountDetails);
+			// Act:
+			const screenTester = new ScreenTester(AccountDetails);
 
-				// Assert:
-				screenTester.expectText(expected.textsToRender);
-				
-				if (expected.textsNotToRender)
-					screenTester.notExpectText(expected.textsNotToRender);
+			// Assert:
+			screenTester.expectText(expectedTexts);
+		});
+
+		describe('seed index visibility', () => {
+			const runSeedIndexTest = (description, config, expected) => {
+				it(description, () => {
+					// Arrange:
+					mockWalletControllerConfigured({
+						currentAccount: config.currentAccount
+					});
+
+					// Act:
+					const screenTester = new ScreenTester(AccountDetails);
+
+					// Assert:
+					if (expected.shouldRenderSeedIndex) {
+						screenTester.expectText([
+							SCREEN_TEXT.textFieldSeedIndex,
+							expected.seedIndexValue
+						]);
+					} else {
+						screenTester.notExpectText([SCREEN_TEXT.textFieldSeedIndex]);
+					}
+				});
+			};
+
+			const seedIndexTests = [
+				{
+					description: 'renders seed index for mnemonic accounts',
+					config: { currentAccount: mainnetMnemonicAccount },
+					expected: { shouldRenderSeedIndex: true, seedIndexValue: '5' }
+				},
+				{
+					description: 'does not render seed index for non-mnemonic accounts',
+					config: { currentAccount: mainnetPrivateKeyAccount },
+					expected: { shouldRenderSeedIndex: false }
+				}
+			];
+
+			seedIndexTests.forEach(test => {
+				runSeedIndexTest(test.description, test.config, test.expected);
 			});
-		};
-
-		const tests = [
-			{
-				description: 'renders account details table with address, publicKey, chainName, networkIdentifier, name, accountType',
-				config: {
-					walletController: {}
-				},
-				expected: {
-					textsToRender: [
-						'fieldTitle_address',
-						walletStorageAccounts.mainnet[0].address,
-						'fieldTitle_publicKey',
-						walletStorageAccounts.mainnet[0].publicKey,
-						'fieldTitle_chainName',
-						'symbol',
-						'fieldTitle_networkIdentifier',
-						walletStorageAccounts.mainnet[0].networkIdentifier,
-						'fieldTitle_name',
-						walletStorageAccounts.mainnet[0].name,
-						'fieldTitle_accountType',
-						walletStorageAccounts.mainnet[0].accountType
-					]
-				}
-			},
-			{
-				description: 'renders seed index for mnemonic accounts',
-				config: {
-					walletController: {
-						currentAccount: {
-							accountType: 'mnemonic',
-							index: 5
-						}
-					}
-				},
-				expected: {
-					textsToRender: [
-						'fieldTitle_seedIndex',
-						'5'
-					]
-				}
-			},
-			{
-				description: 'does not render seed index for non-mnemonic accounts',
-				config: {
-					walletController: {
-						currentAccount: {
-							accountType: 'privateKey'
-						}
-					}
-				},
-				expected: {
-					textsToRender: ['fieldTitle_accountType', 'privateKey'],
-					textsNotToRender: ['fieldTitle_seedIndex']
-				}
-			}
-		];
-
-		tests.forEach(test => {
-			runAccountTableDataTest(test.description, test.config, test.expected);
 		});
 	});
 
 	describe('buttons', () => {
-		describe('testnet buttons', () => {
-			const runTestnetButtonTest = (description, config, expected) => {
+		describe('faucet button visibility', () => {
+			const runFaucetButtonTest = (description, config, expected) => {
 				it(description, () => {
 					// Arrange:
-					const overrides = { 
+					mockWalletControllerConfigured({
 						networkIdentifier: config.networkIdentifier,
-						currentAccount: walletStorageAccounts[config.networkIdentifier][0]
-					};
-					mockWalletController(createMockWalletController(overrides));
+						currentAccount: config.currentAccount
+					});
 
 					// Act:
 					const screenTester = new ScreenTester(AccountDetails);
 
 					// Assert:
 					if (expected.shouldRenderFaucet)
-						screenTester.expectText(['button_faucet']);
+						screenTester.expectText([SCREEN_TEXT.buttonFaucet]);
 					else
-						screenTester.notExpectText(['button_faucet']);
+						screenTester.notExpectText([SCREEN_TEXT.buttonFaucet]);
 				});
 			};
 
-			const tests = [
+			const faucetButtonTests = [
 				{
 					description: 'shows faucet button on testnet',
-					config: { networkIdentifier: 'testnet' },
+					config: {
+						networkIdentifier: NETWORK_IDENTIFIER_TESTNET,
+						currentAccount: testnetSeedAccount
+					},
 					expected: { shouldRenderFaucet: true }
 				},
 				{
 					description: 'hides faucet button on mainnet',
-					config: { networkIdentifier: 'mainnet' },
+					config: {
+						networkIdentifier: NETWORK_IDENTIFIER_MAINNET,
+						currentAccount: mainnetSeedAccount
+					},
 					expected: { shouldRenderFaucet: false }
 				}
 			];
 
-			tests.forEach(test => {
-				runTestnetButtonTest(test.description, test.config, test.expected);
+			faucetButtonTests.forEach(test => {
+				runFaucetButtonTest(test.description, test.config, test.expected);
 			});
 		});
 
@@ -181,12 +244,12 @@ describe('screens/account/AccountDetails', () => {
 			it('opens block explorer when button is pressed', () => {
 				// Arrange:
 				const openLinkMock = mockLink();
-				mockWalletController(createMockWalletController());
+				mockWalletControllerConfigured();
 				const screenTester = new ScreenTester(AccountDetails);
-				const expectedUrl = `https://explorer.symbol.mainnet/account/${walletStorageAccounts.mainnet[0].address}`;
+				const expectedUrl = `https://explorer.${CHAIN_NAME}.${NETWORK_IDENTIFIER_MAINNET}/account/${mainnetSeedAccount.address}`;
 
 				// Act:
-				screenTester.pressButton('button_openTransactionInExplorer');
+				screenTester.pressButton(SCREEN_TEXT.buttonOpenExplorer);
 
 				// Assert:
 				expect(openLinkMock).toHaveBeenCalledWith(expectedUrl);
@@ -197,15 +260,15 @@ describe('screens/account/AccountDetails', () => {
 			it('opens faucet when button is pressed on testnet', () => {
 				// Arrange:
 				const openLinkMock = mockLink();
-				mockWalletController(createMockWalletController({
-					networkIdentifier: 'testnet',
-					currentAccount: walletStorageAccounts.testnet[0]
-				}));
+				mockWalletControllerConfigured({
+					networkIdentifier: NETWORK_IDENTIFIER_TESTNET,
+					currentAccount: testnetSeedAccount
+				});
 				const screenTester = new ScreenTester(AccountDetails);
-				const expectedUrl = `https://faucet.symbol.testnet/?recipient=${walletStorageAccounts.testnet[0].address}`;
+				const expectedUrl = `${FAUCET_BASE_URL}/?recipient=${testnetSeedAccount.address}`;
 
 				// Act:
-				screenTester.pressButton('button_faucet');
+				screenTester.pressButton(SCREEN_TEXT.buttonFaucet);
 
 				// Assert:
 				expect(openLinkMock).toHaveBeenCalledWith(expectedUrl);
@@ -215,20 +278,17 @@ describe('screens/account/AccountDetails', () => {
 		describe('reveal private key', () => {
 			it('reveals private key after passcode verification', async () => {
 				// Arrange:
-				const privateKey = 'mockPrivateKey123';
-				const walletControllerMock = createMockWalletController();
-				walletControllerMock.getCurrentAccountPrivateKey = jest.fn().mockResolvedValue(privateKey);
-				mockWalletController(walletControllerMock);
+				const walletControllerMock = mockWalletControllerConfigured();
 				mockPasscode();
 				const screenTester = new ScreenTester(AccountDetails);
 
 				// Act:
-				screenTester.pressButton('button_revealPrivateKey');
+				screenTester.pressButton(SCREEN_TEXT.buttonRevealPrivateKey);
 				await screenTester.waitForTimer();
 
 				// Assert:
 				expect(walletControllerMock.getCurrentAccountPrivateKey).toHaveBeenCalled();
-				screenTester.expectText([privateKey, 'dialog_sensitive']);
+				screenTester.expectText([MOCK_PRIVATE_KEY, SCREEN_TEXT.dialogSensitiveTitle]);
 			});
 		});
 	});
@@ -236,34 +296,33 @@ describe('screens/account/AccountDetails', () => {
 	describe('multisig accounts', () => {
 		it('renders multisig addresses when account is multisig cosigner', () => {
 			// Arrange:
-			const multisigAddresses = [walletStorageAccounts.mainnet[2].address, walletStorageAccounts.mainnet[3].address];
-			mockWalletController(createMockWalletController({
-				currentAccountInfo: { multisigAddresses }
-			}));
-			const expectedTableText = [
-				'fieldTitle_multisigAddresses',
-				walletStorageAccounts.mainnet[2].address,
-				walletStorageAccounts.mainnet[3].address
+			mockWalletControllerConfigured({
+				currentAccountInfo: multisigCosignerAccountInfo
+			});
+			const expectedTexts = [
+				SCREEN_TEXT.textFieldMultisigAddresses,
+				multisigAccount1.address,
+				multisigAccount2.address
 			];
 
 			// Act:
 			const screenTester = new ScreenTester(AccountDetails);
 
 			// Assert:
-			screenTester.expectText(expectedTableText);
+			screenTester.expectText(expectedTexts);
 		});
 
 		it('does not render multisig section when account has no multisig addresses', () => {
 			// Arrange:
-			mockWalletController(createMockWalletController({
-				currentAccountInfo: { multisigAddresses: [] }
-			}));
+			mockWalletControllerConfigured({
+				currentAccountInfo: regularAccountInfo
+			});
 
 			// Act:
 			const screenTester = new ScreenTester(AccountDetails);
 
 			// Assert:
-			screenTester.notExpectText(['fieldTitle_multisigAddresses']);
+			screenTester.notExpectText([SCREEN_TEXT.textFieldMultisigAddresses]);
 		});
 	});
 });
