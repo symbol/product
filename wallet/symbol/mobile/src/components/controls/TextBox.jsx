@@ -91,10 +91,11 @@ export const TextBox = props => {
 							numberOfLines={numberOfLines}
 							keyboardType={keyboardType}
 							accessibilityLabel={label}
+							accessibilityValue={`${value}`}
 							placeholder={placeholder}
 							placeholderTextColor={Colors.Components.control.default.default.placeholder}
 							style={styleInput}
-							value={'' + value}
+							value={`${value}`}
 							ref={ref}
 							onFocus={animateIn}
 							onBlur={animateOut}

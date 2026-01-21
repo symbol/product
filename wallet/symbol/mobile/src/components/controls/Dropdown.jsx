@@ -128,10 +128,12 @@ export const Dropdown = props => {
 
 	return (
 		<View>
-			<Pressable 
+			<Pressable
+				accessibilityLabel={label}
+				accessibilityValue={valueText}
 				onPress={handleWrapperPress} 
 				onPressIn={animateIn} 
-				onPressOut={animateOut} 
+				onPressOut={animateOut}
 				disabled={isDisabled}
 			>
 				<Animated.View style={[styles.root, animatedContainer, style]}>
