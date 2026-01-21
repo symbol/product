@@ -82,6 +82,19 @@ export class ScreenTester {
 	};
 
 	/**
+	 * Asserts that the accessibility value of an element matches the expected value.
+	 * 
+	 * @param {string} label - The accessibility label of the element.
+	 * @param {any} expectedValue - The expected accessibility value.
+	 */
+	expectAccessibilityValue = (label, expectedValue) => {
+		const { getByLabelText} = this.renderer;
+		const element = getByLabelText(label);
+
+		expect(element.props.accessibilityValue).toBe(expectedValue);
+	};
+
+	/**
 	 * Asserts that the expected texts are present on the screen.
 	 * 
 	 * @param {string[]} expectedTextArray - An array of texts expected to be found.
@@ -138,6 +151,62 @@ export class ScreenTester {
 	expectInputValue = value => {
 		const { getByDisplayValue } = this.renderer;
 		expect(getByDisplayValue(value)).toBeTruthy();
+	};
+
+	/**
+	 * Finds if an element or any of its ancestors has a disabled prop set to true.
+	 * 
+	 * @param {Object} element - The element to check.
+	 * @param {number} maxDepth - Maximum depth to traverse up the tree.
+	 * @returns {boolean} Whether the element or any ancestor is disabled.
+	 */
+	_isElementDisabled = (element, maxDepth = 10) => {
+		let current = element;
+		let depth = 0;
+		
+		while (current && depth < maxDepth) {
+			if (current.props?.disabled === true || current.props?.accessibilityState?.disabled === true) 
+				return true;
+			
+			current = current.parent;
+			depth++;
+		}
+		
+		return false;
+	};
+
+	/**
+	 * Asserts that a button with the specified text is disabled.
+	 * Checks the parent Pressable component's disabled prop.
+	 * 
+	 * @param {string} text - The text of the button to check.
+	 */
+	expectButtonDisabled = text => {
+		const { getByText } = this.renderer;
+		const button = getByText(text);
+		expect(this._isElementDisabled(button)).toBe(true);
+	};
+
+	/**
+	 * Asserts that a button with the specified text is enabled.
+	 * 
+	 * @param {string} text - The text of the button to check.
+	 */
+	expectButtonEnabled = text => {
+		const { getByText } = this.renderer;
+		const button = getByText(text);
+		expect(this._isElementDisabled(button)).toBe(false);
+	};
+
+	/**
+	 * Selects an option from a dropdown by pressing the dropdown and then the option.
+	 * 
+	 * @param {string} dropdownLabel - The current value or label of the dropdown to open.
+	 * @param {string} optionText - The text of the option to select.
+	 */
+	selectDropdownOption = (dropdownLabel, optionText) => {
+		this.pressButton(dropdownLabel);
+		this.pressButton(optionText);
 	};
 
 	/**
