@@ -4,6 +4,8 @@ import { Settings } from '@/app/screens/settings/Settings';
 import { ScreenTester } from '__tests__/ScreenTester';
 import { mockLocalization, mockPasscode, mockRouter, mockWalletController } from '__tests__/mock-helpers';
 
+// Mocks
+
 jest.mock('@/app/config', () => ({
 	...jest.requireActual('@/app/config'),
 	config: {
@@ -32,55 +34,71 @@ jest.mock('@/app/lib/controller', () => ({
 	}
 }));
 
-const SETTINGS_ITEMS = {
-	network: {
-		title: 's_settings_item_network_title',
-		description: 's_settings_item_network_description'
-	},
-	language: {
-		title: 's_settings_item_language_title',
-		description: 's_settings_item_language_description'
-	},
-	security: {
-		title: 's_settings_item_security_title',
-		description: 's_settings_item_security_description'
-	},
-	currency: {
-		title: 's_settings_item_currency_title',
-		description: 's_settings_item_currency_description'
-	},
-	about: {
-		title: 's_settings_item_about_title',
-		description: 's_settings_item_about_description'
-	},
-	logout: {
-		title: 's_settings_item_logout_title',
-		description: 's_settings_item_logout_description'
-	}
+// Constants
+
+const SCREEN_TEXT = {
+	// Settings items - Network
+	textNetworkTitle: 's_settings_item_network_title',
+	textNetworkDescription: 's_settings_item_network_description',
+	// Settings items - Language
+	textLanguageTitle: 's_settings_item_language_title',
+	textLanguageDescription: 's_settings_item_language_description',
+	// Settings items - Security
+	textSecurityTitle: 's_settings_item_security_title',
+	textSecurityDescription: 's_settings_item_security_description',
+	// Settings items - Currency
+	textCurrencyTitle: 's_settings_item_currency_title',
+	textCurrencyDescription: 's_settings_item_currency_description',
+	// Settings items - About
+	textAboutTitle: 's_settings_item_about_title',
+	textAboutDescription: 's_settings_item_about_description',
+	// Settings items - Logout
+	textLogoutTitle: 's_settings_item_logout_title',
+	textLogoutDescription: 's_settings_item_logout_description',
+	// Logout dialog
+	textLogoutDialogTitle: 'settings_logout_confirm_title',
+	textLogoutDialogText: 'settings_logout_confirm_text',
+	// Buttons
+	buttonCancel: 'button_cancel',
+	buttonConfirm: 'button_confirm'
 };
 
-const LOGOUT_DIALOG = {
-	title: 'settings_logout_confirm_title',
-	text: 'settings_logout_confirm_text'
+const LANGUAGES = {
+	ENGLISH: { code: 'en', label: 'English' },
+	JAPANESE: { code: 'ja', label: '日本語' },
+	KOREAN: { code: 'ko', label: '한국어' }
 };
 
-const createMockWalletController = (overrides = {}) => ({
-	modules: {
-		market: {
-			price: {
-				currency: overrides.userCurrency ?? 'USD'
+const CURRENCIES = {
+	USD: 'USD',
+	EUR: 'EUR',
+	JPY: 'JPY'
+};
+
+// Wallet Controller Mock
+
+const mockWalletControllerConfigured = (overrides = {}) => {
+	const selectUserCurrencyMock = jest.fn();
+
+	const walletControllerMock = mockWalletController({
+		modules: {
+			market: {
+				price: {
+					currency: overrides.userCurrency ?? CURRENCIES.USD
+				},
+				selectUserCurrency: selectUserCurrencyMock
 			},
-			selectUserCurrency: jest.fn()
+			localization: {
+				currentLanguage: overrides.userLanguage ?? LANGUAGES.ENGLISH.code
+			}
 		},
-		localization: {
-			currentLanguage: overrides.userLanguage ?? 'en'
-		}
-	},
-	on: jest.fn(),
-	removeListener: jest.fn(),
-	...overrides
-});
+		...overrides
+	});
 
+	walletControllerMock.modules.market.selectUserCurrency = selectUserCurrencyMock;
+
+	return walletControllerMock;
+};
 
 describe('screens/settings/Settings', () => {
 	beforeEach(() => {
@@ -91,8 +109,21 @@ describe('screens/settings/Settings', () => {
 	describe('render', () => {
 		it('renders all settings items', () => {
 			// Arrange:
-			mockWalletController(createMockWalletController());
-			const expectedTexts = Object.values(SETTINGS_ITEMS).flatMap(item => [item.title, item.description]);
+			mockWalletControllerConfigured();
+			const expectedTexts = [
+				SCREEN_TEXT.textNetworkTitle,
+				SCREEN_TEXT.textNetworkDescription,
+				SCREEN_TEXT.textLanguageTitle,
+				SCREEN_TEXT.textLanguageDescription,
+				SCREEN_TEXT.textSecurityTitle,
+				SCREEN_TEXT.textSecurityDescription,
+				SCREEN_TEXT.textCurrencyTitle,
+				SCREEN_TEXT.textCurrencyDescription,
+				SCREEN_TEXT.textAboutTitle,
+				SCREEN_TEXT.textAboutDescription,
+				SCREEN_TEXT.textLogoutTitle,
+				SCREEN_TEXT.textLogoutDescription
+			];
 
 			// Act:
 			const screenTester = new ScreenTester(Settings);
@@ -106,33 +137,33 @@ describe('screens/settings/Settings', () => {
 		const runNavigationTest = (description, config, expected) => {
 			it(description, () => {
 				// Arrange:
-				mockWalletController(createMockWalletController());
-				const routerMock = mockRouter({ [expected.actionName]: jest.fn() });
+				mockWalletControllerConfigured();
+				const routerMock = mockRouter({ [expected.routerMethod]: jest.fn() });
 				const screenTester = new ScreenTester(Settings);
 
 				// Act:
 				screenTester.pressButton(config.buttonText);
 
 				// Assert:
-				expect(routerMock[expected.actionName]).toHaveBeenCalledTimes(1);
+				expect(routerMock[expected.routerMethod]).toHaveBeenCalledTimes(1);
 			});
 		};
 
 		const navigationTests = [
 			{
 				description: 'navigates to network settings when network item is pressed',
-				config: { buttonText: SETTINGS_ITEMS.network.title },
-				expected: { actionName: 'goToSettingsNetwork' }
+				config: { buttonText: SCREEN_TEXT.textNetworkTitle },
+				expected: { routerMethod: 'goToSettingsNetwork' }
 			},
 			{
 				description: 'navigates to security settings when security item is pressed',
-				config: { buttonText: SETTINGS_ITEMS.security.title },
-				expected: { actionName: 'goToSettingsSecurity' }
+				config: { buttonText: SCREEN_TEXT.textSecurityTitle },
+				expected: { routerMethod: 'goToSettingsSecurity' }
 			},
 			{
 				description: 'navigates to about settings when about item is pressed',
-				config: { buttonText: SETTINGS_ITEMS.about.title },
-				expected: { actionName: 'goToSettingsAbout' }
+				config: { buttonText: SCREEN_TEXT.textAboutTitle },
+				expected: { routerMethod: 'goToSettingsAbout' }
 			}
 		];
 
@@ -144,26 +175,30 @@ describe('screens/settings/Settings', () => {
 	describe('language selector', () => {
 		it('opens language selector modal when language item is pressed', () => {
 			// Arrange:
-			mockWalletController(createMockWalletController());
+			mockWalletControllerConfigured();
 			const screenTester = new ScreenTester(Settings);
 
 			// Act:
-			screenTester.pressButton(SETTINGS_ITEMS.language.title);
+			screenTester.pressButton(SCREEN_TEXT.textLanguageTitle);
 
 			// Assert:
-			screenTester.expectText(['English', '日本語', '한국어']);
+			screenTester.expectText([
+				LANGUAGES.ENGLISH.label,
+				LANGUAGES.JAPANESE.label,
+				LANGUAGES.KOREAN.label
+			]);
 		});
 
 		const runLanguageChangeTest = (description, config, expected) => {
 			it(description, () => {
 				// Arrange:
-				mockWalletController(createMockWalletController({ userLanguage: config.currentLanguage }));
+				mockWalletControllerConfigured({ userLanguage: config.currentLanguage });
 				mockRouter({ goToWelcome: jest.fn() });
 				const screenTester = new ScreenTester(Settings);
 
 				// Act:
-				screenTester.pressButton(SETTINGS_ITEMS.language.title);
-				screenTester.pressButton(config.selectedLanguage);
+				screenTester.pressButton(SCREEN_TEXT.textLanguageTitle);
+				screenTester.pressButton(config.selectedLanguageLabel);
 
 				// Assert:
 				expect(localization.setCurrentLanguage).toHaveBeenCalledWith(expected.languageCode);
@@ -173,18 +208,27 @@ describe('screens/settings/Settings', () => {
 		const languageChangeTests = [
 			{
 				description: 'changes language to Japanese',
-				config: { currentLanguage: 'en', selectedLanguage: '日本語' },
-				expected: { languageCode: 'ja' }
+				config: {
+					currentLanguage: LANGUAGES.ENGLISH.code,
+					selectedLanguageLabel: LANGUAGES.JAPANESE.label
+				},
+				expected: { languageCode: LANGUAGES.JAPANESE.code }
 			},
 			{
 				description: 'changes language to Korean',
-				config: { currentLanguage: 'en', selectedLanguage: '한국어' },
-				expected: { languageCode: 'ko' }
+				config: {
+					currentLanguage: LANGUAGES.ENGLISH.code,
+					selectedLanguageLabel: LANGUAGES.KOREAN.label
+				},
+				expected: { languageCode: LANGUAGES.KOREAN.code }
 			},
 			{
 				description: 'changes language to English',
-				config: { currentLanguage: 'ja', selectedLanguage: 'English' },
-				expected: { languageCode: 'en' }
+				config: {
+					currentLanguage: LANGUAGES.JAPANESE.code,
+					selectedLanguageLabel: LANGUAGES.ENGLISH.label
+				},
+				expected: { languageCode: LANGUAGES.ENGLISH.code }
 			}
 		];
 
@@ -194,13 +238,13 @@ describe('screens/settings/Settings', () => {
 
 		it('navigates to welcome screen after language change', () => {
 			// Arrange:
-			mockWalletController(createMockWalletController());
+			mockWalletControllerConfigured();
 			const routerMock = mockRouter({ goToWelcome: jest.fn() });
 			const screenTester = new ScreenTester(Settings);
 
 			// Act:
-			screenTester.pressButton(SETTINGS_ITEMS.language.title);
-			screenTester.pressButton('日本語');
+			screenTester.pressButton(SCREEN_TEXT.textLanguageTitle);
+			screenTester.pressButton(LANGUAGES.JAPANESE.label);
 
 			// Assert:
 			expect(routerMock.goToWelcome).toHaveBeenCalledTimes(1);
@@ -210,25 +254,26 @@ describe('screens/settings/Settings', () => {
 	describe('currency selector', () => {
 		it('opens currency selector modal when currency item is pressed', () => {
 			// Arrange:
-			mockWalletController(createMockWalletController());
+			mockWalletControllerConfigured();
 			const screenTester = new ScreenTester(Settings);
 
 			// Act:
-			screenTester.pressButton(SETTINGS_ITEMS.currency.title);
+			screenTester.pressButton(SCREEN_TEXT.textCurrencyTitle);
 
 			// Assert:
-			screenTester.expectText(['USD', 'EUR', 'JPY']);
+			screenTester.expectText([CURRENCIES.USD, CURRENCIES.EUR, CURRENCIES.JPY]);
 		});
 
 		const runCurrencyChangeTest = (description, config, expected) => {
 			it(description, () => {
 				// Arrange:
-				const walletControllerMock = createMockWalletController({ userCurrency: config.currentCurrency });
-				mockWalletController(walletControllerMock);
+				const walletControllerMock = mockWalletControllerConfigured({
+					userCurrency: config.currentCurrency
+				});
 				const screenTester = new ScreenTester(Settings);
 
 				// Act:
-				screenTester.pressButton(SETTINGS_ITEMS.currency.title);
+				screenTester.pressButton(SCREEN_TEXT.textCurrencyTitle);
 				screenTester.pressButton(config.selectedCurrency);
 
 				// Assert:
@@ -239,18 +284,18 @@ describe('screens/settings/Settings', () => {
 		const currencyChangeTests = [
 			{
 				description: 'changes currency to EUR',
-				config: { currentCurrency: 'USD', selectedCurrency: 'EUR' },
-				expected: { currency: 'EUR' }
+				config: { currentCurrency: CURRENCIES.USD, selectedCurrency: CURRENCIES.EUR },
+				expected: { currency: CURRENCIES.EUR }
 			},
 			{
 				description: 'changes currency to JPY',
-				config: { currentCurrency: 'USD', selectedCurrency: 'JPY' },
-				expected: { currency: 'JPY' }
+				config: { currentCurrency: CURRENCIES.USD, selectedCurrency: CURRENCIES.JPY },
+				expected: { currency: CURRENCIES.JPY }
 			},
 			{
 				description: 'changes currency to USD',
-				config: { currentCurrency: 'EUR', selectedCurrency: 'USD' },
-				expected: { currency: 'USD' }
+				config: { currentCurrency: CURRENCIES.EUR, selectedCurrency: CURRENCIES.USD },
+				expected: { currency: CURRENCIES.USD }
 			}
 		];
 
@@ -262,54 +307,57 @@ describe('screens/settings/Settings', () => {
 	describe('logout', () => {
 		it('shows logout confirmation dialog when logout item is pressed', () => {
 			// Arrange:
-			mockWalletController(createMockWalletController());
+			mockWalletControllerConfigured();
 			const screenTester = new ScreenTester(Settings);
 
 			// Act:
-			screenTester.pressButton(SETTINGS_ITEMS.logout.title);
+			screenTester.pressButton(SCREEN_TEXT.textLogoutTitle);
 
 			// Assert:
-			screenTester.expectText([LOGOUT_DIALOG.title, LOGOUT_DIALOG.text]);
+			screenTester.expectText([
+				SCREEN_TEXT.textLogoutDialogTitle,
+				SCREEN_TEXT.textLogoutDialogText
+			]);
 		});
 
 		it('hides logout confirmation dialog when cancel is pressed', () => {
 			// Arrange:
-			mockWalletController(createMockWalletController());
+			mockWalletControllerConfigured();
 			const screenTester = new ScreenTester(Settings);
 
 			// Act:
-			screenTester.pressButton(SETTINGS_ITEMS.logout.title);
-			screenTester.pressButton('button_cancel');
+			screenTester.pressButton(SCREEN_TEXT.textLogoutTitle);
+			screenTester.pressButton(SCREEN_TEXT.buttonCancel);
 
 			// Assert:
-			screenTester.notExpectText([LOGOUT_DIALOG.text]);
+			screenTester.notExpectText([SCREEN_TEXT.textLogoutDialogText]);
 		});
 
-		it('shows passcode view when logout is confirmed', () => {
+		it('clears main wallet controller on logout', () => {
 			// Arrange:
-			mockWalletController(createMockWalletController());
+			mockWalletControllerConfigured();
 			mockPasscode();
 			const screenTester = new ScreenTester(Settings);
 
 			// Act:
-			screenTester.pressButton(SETTINGS_ITEMS.logout.title);
-			screenTester.pressButton('button_confirm');
+			screenTester.pressButton(SCREEN_TEXT.textLogoutTitle);
+			screenTester.pressButton(SCREEN_TEXT.buttonConfirm);
 
 			// Assert:
 			expect(walletControllers.main.clear).toHaveBeenCalledTimes(1);
 		});
 
-		it('clears all wallet controllers on logout', () => {
+		it('clears all wallet controllers including additional on logout', () => {
 			// Arrange:
 			const additionalControllerMock = { clear: jest.fn() };
 			walletControllers.additional = [additionalControllerMock];
-			mockWalletController(createMockWalletController());
+			mockWalletControllerConfigured();
 			mockPasscode();
 			const screenTester = new ScreenTester(Settings);
 
 			// Act:
-			screenTester.pressButton(SETTINGS_ITEMS.logout.title);
-			screenTester.pressButton('button_confirm');
+			screenTester.pressButton(SCREEN_TEXT.textLogoutTitle);
+			screenTester.pressButton(SCREEN_TEXT.buttonConfirm);
 
 			// Assert:
 			expect(walletControllers.main.clear).toHaveBeenCalledTimes(1);
@@ -318,13 +366,13 @@ describe('screens/settings/Settings', () => {
 
 		it('reinitializes localization after logout', () => {
 			// Arrange:
-			mockWalletController(createMockWalletController());
+			mockWalletControllerConfigured();
 			mockPasscode();
 			const screenTester = new ScreenTester(Settings);
 
 			// Act:
-			screenTester.pressButton(SETTINGS_ITEMS.logout.title);
-			screenTester.pressButton('button_confirm');
+			screenTester.pressButton(SCREEN_TEXT.textLogoutTitle);
+			screenTester.pressButton(SCREEN_TEXT.buttonConfirm);
 
 			// Assert:
 			expect(localization.initLocalization).toHaveBeenCalledTimes(1);
