@@ -27,8 +27,8 @@ const SCREEN_TEXT = {
 // Account Fixtures
 
 const RECIPIENT_ACCOUNT = AccountFixtureBuilder
-    .createWithAccount('symbol', 'testnet', 0)
-    .data;
+	.createWithAccount('symbol', 'testnet', 0)
+	.data;
 
 const COSIGNATORY_ACCOUNT_1 = AccountFixtureBuilder
 	.createWithAccount('symbol', 'testnet', 1)
@@ -342,13 +342,11 @@ describe('components/templates/TransactionScreenTemplate', () => {
 			new ScreenTester(TransactionScreenTemplate, props);
 
 			// Assert:
-			expect(childrenFn).toHaveBeenCalledWith(
-				expect.objectContaining({
-					text: SCREEN_TEXT.buttonSend,
-					isDisabled: false,
-					onPress: expect.any(Function)
-				})
-			);
+			expect(childrenFn).toHaveBeenCalledWith(expect.objectContaining({
+				text: SCREEN_TEXT.buttonSend,
+				isDisabled: false,
+				onPress: expect.any(Function)
+			}));
 		});
 	});
 });
