@@ -8,6 +8,8 @@ import { StyleSheet, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { createNetworkMap } from 'wallet-common-core';
 
+const isValueMissing = value => value === null || value === undefined || value === '';
+
 /**
  * SettingsNetwork screen component. A screen for configuring network settings, allowing selection
  * of network type and node, with display of current network information including chain height and
@@ -20,7 +22,7 @@ export const SettingsNetwork = () => {
 	const [nodeUrls, setNodeUrls] = useState(createNetworkMap(() => [], config.networkIdentifiers));
 	const isConnectingToNode = !isNetworkConnectionReady;
 
-	const getTableValueNullable = value => value === null ? '-' : value;
+	const getTableValueNullable = value => isValueMissing(value) ? '-' : value;
 	const networkInfoTable = [
 		{
 			title: 'network',
@@ -39,7 +41,7 @@ export const SettingsNetwork = () => {
 		},
 		{
 			title: 'minFeeMultiplier',
-			value: getTableValueNullable(networkProperties.transactionFees.minFeeMultiplier),
+			value: getTableValueNullable(networkProperties.transactionFees?.minFeeMultiplier),
 			type: 'text'
 		}
 	];
