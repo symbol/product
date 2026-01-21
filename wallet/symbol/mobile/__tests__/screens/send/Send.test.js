@@ -1,25 +1,11 @@
+import * as hooks from '@/app/hooks';
 import { Send } from '@/app/screens/send/Send';
-import { symbolTestnetNetworkProperties } from '__fixtures__/local/network';
-import { currentAccount, walletStorageAccounts } from '__fixtures__/local/wallet';
+import { AccountFixtureBuilder } from '__fixtures__/local/AccountFixtureBuilder';
+import { AccountInfoFixtureBuilder } from '__fixtures__/local/AccountInfoFixtureBuilder';
+import { NetworkPropertiesFixtureBuilder } from '__fixtures__/local/NetworkPropertiesFixtureBuilder';
+import { TokenFixtureBuilder } from '__fixtures__/local/TokenFixtureBuilder';
 import { ScreenTester } from '__tests__/ScreenTester';
-import { mockLocalization } from '__tests__/mock-helpers';
-import { waitFor } from '@testing-library/react-native';
-
-let mockWalletControllerValue = {};
-
-jest.mock('@/app/hooks', () => {
-	const actual = jest.requireActual('@/app/hooks');
-	return {
-		...actual,
-		useWalletController: jest.fn(() => mockWalletControllerValue),
-		useTransactionFees: jest.fn(() => ({
-			data: null,
-			isLoading: false,
-			call: jest.fn()
-		})),
-		useDebounce: jest.fn(callback => callback)
-	};
-});
+import { mockLocalization, mockPasscode, mockRouter, mockWalletController } from '__tests__/mock-helpers';
 
 jest.mock('@/app/utils', () => {
 	const actual = jest.requireActual('@/app/utils');
@@ -29,241 +15,341 @@ jest.mock('@/app/utils', () => {
 	};
 });
 
-const TEST_NETWORK_IDENTIFIER = 'testnet';
-const TEST_CHAIN_NAME = 'symbol';
-const TEST_TICKER = 'XYM';
+// Constants
+
+const CHAIN_NAME = 'symbol';
+const NETWORK_IDENTIFIER = 'testnet';
+const TICKER = 'XYM';
+const CHAIN_HEIGHT = 1319595;
+const PRICE = 0.05;
+
+// Screen Text
 
 const SCREEN_TEXT = {
-	title: 'form_transfer_title',
-	description: 's_send_description',
-	recipientLabel: 'form_transfer_input_recipient',
-	mosaicLabel: 'form_transfer_input_mosaic',
-	amountLabel: 'form_transfer_input_amount',
-	messageLabel: 'form_transfer_input_message',
-	encryptedCheckbox: 'form_transfer_input_encrypted',
-	sendButton: 'button_send',
-	multisigDescription: 's_send_multisig_description',
-	senderLabel: 'input_sender'
+	// Screen content
+	textTitle: 'form_transfer_title',
+	textDescription: 's_send_description',
+	textMultisigDescription: 's_send_multisig_description',
+
+	// Input labels
+	inputRecipientLabel: 'form_transfer_input_recipient',
+	inputMosaicLabel: 'form_transfer_input_mosaic',
+	inputAmountLabel: 'form_transfer_input_amount',
+	inputMessageLabel: 'form_transfer_input_message',
+	inputSenderLabel: 'input_sender',
+
+	// Checkbox
+	checkboxEncrypted: 'form_transfer_input_encrypted',
+
+	// Buttons
+	buttonSend: 'button_send'
 };
 
-const TEST_MOSAICS = [
-	{
-		id: '72C0212E67A08BCE',
-		name: 'symbol.xym',
-		amount: '1000000000',
-		divisibility: 6,
-		duration: 0
-	},
-	{
-		id: 'ABC123DEF456',
-		name: 'custom.token',
-		amount: '500000',
-		divisibility: 3,
-		duration: 0
-	}
-];
+// Account Fixtures
 
-const TEST_RECIPIENT_ADDRESS = walletStorageAccounts.testnet[2].address;
+const currentAccount = AccountFixtureBuilder
+	.createWithAccount(CHAIN_NAME, NETWORK_IDENTIFIER, 0)
+	.data;
+
+const recipientAccount = AccountFixtureBuilder
+	.createWithAccount(CHAIN_NAME, NETWORK_IDENTIFIER, 2)
+	.data;
+
+const multisigAccount = AccountFixtureBuilder
+	.createWithAccount(CHAIN_NAME, NETWORK_IDENTIFIER, 3)
+	.data;
+
+// Token Fixtures
+
+const nativeToken = TokenFixtureBuilder
+	.createWithToken(CHAIN_NAME, NETWORK_IDENTIFIER, 0)
+	.setAmount('1000000000')
+	.override({ duration: 0 })
+	.data;
+
+const customToken = TokenFixtureBuilder
+	.createWithToken(CHAIN_NAME, NETWORK_IDENTIFIER, 1)
+	.setAmount('500000')
+	.override({ duration: 0 })
+	.data;
+
+const TOKEN_LIST = [nativeToken, customToken];
+
+// Network Properties Fixtures
+
+const NETWORK_PROPERTIES = NetworkPropertiesFixtureBuilder
+	.createWithType(CHAIN_NAME, NETWORK_IDENTIFIER)
+	.setNetworkCurrency({ ...nativeToken })
+	.data;
+
+
+// Account Info Fixtures
+
+const regularAccountInfo = AccountInfoFixtureBuilder
+	.createEmpty(CHAIN_NAME, NETWORK_IDENTIFIER)
+	.override({
+		address: currentAccount.address,
+		publicKey: currentAccount.publicKey,
+		mosaics: TOKEN_LIST,
+		tokens: TOKEN_LIST,
+		isMultisig: false,
+		cosignatories: [],
+		multisigAddresses: []
+	})
+	.data;
+
+const cosignatoryAccountInfo = AccountInfoFixtureBuilder
+	.createEmpty(CHAIN_NAME, NETWORK_IDENTIFIER)
+	.override({
+		address: currentAccount.address,
+		publicKey: currentAccount.publicKey,
+		mosaics: TOKEN_LIST,
+		tokens: TOKEN_LIST,
+		isMultisig: false,
+		cosignatories: [],
+		multisigAddresses: [multisigAccount.address]
+	})
+	.data;
+
+// Transaction Fees Fixtures
+
+const TRANSACTION_FEE_TIER = {
+	slow: { 
+		fee: '100000', 
+		feeFormatted: '0.1',
+		token: { amount: '0.1', divisibility: 6 }
+	},
+	medium: { 
+		fee: '200000', 
+		feeFormatted: '0.2',
+		token: { amount: '0.2', divisibility: 6 }
+	},
+	fast: { 
+		fee: '300000', 
+		feeFormatted: '0.3',
+		token: { amount: '0.3', divisibility: 6 }
+	}
+};
+
+const TRANSACTION_FEES = [TRANSACTION_FEE_TIER];
+
+// Mock Modules
 
 const createMockAddressBook = (overrides = {}) => ({
 	getAddressName: jest.fn(),
 	...overrides
 });
 
+const createMockTransactionBundle = (transactions = [{ type: 16724 }]) => ({
+	transactions,
+	isComposite: false,
+	applyFeeTier: jest.fn()
+});
+
 const createMockTransferModule = (overrides = {}) => ({
-	createTransaction: jest.fn().mockResolvedValue({
-		transactions: [],
-		isComposite: false
-	}),
-	calculateTransactionFees: jest.fn().mockResolvedValue({
-		slow: { fee: '100000', feeFormatted: '0.1' },
-		medium: { fee: '200000', feeFormatted: '0.2' },
-		fast: { fee: '300000', feeFormatted: '0.3' }
-	}),
+	createTransaction: jest.fn().mockResolvedValue(createMockTransactionBundle()),
 	...overrides
 });
 
 const createMockNetworkApi = (overrides = {}) => ({
 	account: {
 		fetchAccountInfo: jest.fn().mockResolvedValue({
-			mosaics: TEST_MOSAICS,
-			tokens: TEST_MOSAICS,
+			mosaics: TOKEN_LIST,
+			tokens: TOKEN_LIST,
 			publicKey: currentAccount.publicKey
-		})
+		}),
+		...overrides.account
 	},
 	...overrides
 });
 
-const createMockWalletController = (overrides = {}) => ({
-	accounts: walletStorageAccounts,
-	modules: {
-		addressBook: createMockAddressBook(overrides.addressBook),
-		transfer: createMockTransferModule(overrides.transfer)
-	},
-	currentAccount: overrides.currentAccount ?? currentAccount,
-	currentAccountInfo: {
-		mosaics: TEST_MOSAICS,
-		tokens: TEST_MOSAICS,
-		isMultisig: overrides.isMultisig ?? false,
-		cosignatories: overrides.cosignatories ?? [],
-		multisigAddresses: overrides.multisigAddresses ?? [],
-		...overrides.currentAccountInfo
-	},
-	isStateReady: overrides.isStateReady ?? true,
-	isWalletReady: overrides.isWalletReady ?? true,
-	isNetworkConnectionReady: overrides.isNetworkConnectionReady ?? true,
-	networkProperties: overrides.networkProperties ?? {
-		...symbolTestnetNetworkProperties,
-		networkCurrency: {
-			...symbolTestnetNetworkProperties.networkCurrency,
-			id: '72C0212E67A08BCE'
-		}
-	},
-	networkIdentifier: overrides.networkIdentifier ?? TEST_NETWORK_IDENTIFIER,
-	chainHeight: overrides.chainHeight ?? 1319595,
-	ticker: overrides.ticker ?? TEST_TICKER,
-	price: overrides.price ?? 0.05,
-	chainName: overrides.chainName ?? TEST_CHAIN_NAME,
-	networkApi: createMockNetworkApi(overrides.networkApi),
-	signTransactionBundle: jest.fn().mockResolvedValue({
-		transactions: [{ hash: 'mockHash' }]
-	}),
-	announceSignedTransactionBundle: jest.fn().mockResolvedValue({}),
-	on: jest.fn(),
-	removeListener: jest.fn(),
-	...overrides
-});
+// Wallet Controller Mock
 
-const createDefaultRouteProps = (overrides = {}) => ({
+const mockWalletControllerConfigured = (overrides = {}) => {
+	return mockWalletController({
+		chainName: overrides.chainName ?? CHAIN_NAME,
+		ticker: TICKER,
+		networkIdentifier: NETWORK_IDENTIFIER,
+		chainHeight: CHAIN_HEIGHT,
+		price: PRICE,
+		currentAccount: overrides.currentAccount ?? currentAccount,
+		currentAccountInfo: overrides.currentAccountInfo ?? regularAccountInfo,
+		networkProperties: overrides.networkProperties ?? NETWORK_PROPERTIES,
+		isStateReady: overrides.isStateReady ?? true,
+		isWalletReady: overrides.isWalletReady ?? true,
+		isNetworkConnectionReady: overrides.isNetworkConnectionReady ?? true,
+		modules: {
+			addressBook: createMockAddressBook(overrides.addressBook),
+			transfer: createMockTransferModule(overrides.transfer)
+		},
+		networkApi: createMockNetworkApi(overrides.networkApi),
+		signTransactionBundle: jest.fn().mockResolvedValue({
+			transactions: [{ hash: 'mockHash' }]
+		}),
+		announceSignedTransactionBundle: jest.fn().mockResolvedValue({}),
+		...overrides
+	});
+};
+
+// Route Props
+
+const createRouteProps = (overrides = {}) => ({
 	route: {
 		params: {
-			chainName: TEST_CHAIN_NAME,
+			chainName: CHAIN_NAME,
 			...overrides
 		}
 	}
 });
 
+// Transaction Fees Mock
+
+const mockTransactionFees = (data = TRANSACTION_FEES, isLoading = false) => {
+	jest.spyOn(hooks, 'useTransactionFees').mockReturnValue({
+		data,
+		isLoading,
+		call: jest.fn()
+	});
+};
+
+const mockDebounce = () => {
+	jest.spyOn(hooks, 'useDebounce').mockImplementation(callback => callback);
+};
+
 describe('screens/send/Send', () => {
 	beforeEach(() => {
-		mockLocalization();
 		jest.clearAllMocks();
+		mockLocalization();
+		mockTransactionFees(null, false);
+		mockDebounce();
 	});
 
 	describe('render', () => {
 		it('renders send form elements', async () => {
 			// Arrange:
-			mockWalletControllerValue = createMockWalletController();
+			mockWalletControllerConfigured();
 			const expectedTexts = [
-				SCREEN_TEXT.title,
-				SCREEN_TEXT.description,
-				SCREEN_TEXT.recipientLabel,
-				SCREEN_TEXT.mosaicLabel,
-				SCREEN_TEXT.amountLabel,
-				SCREEN_TEXT.messageLabel,
-				SCREEN_TEXT.encryptedCheckbox,
-				SCREEN_TEXT.sendButton
+				SCREEN_TEXT.textTitle,
+				SCREEN_TEXT.textDescription,
+				SCREEN_TEXT.inputRecipientLabel,
+				SCREEN_TEXT.inputMosaicLabel,
+				SCREEN_TEXT.inputAmountLabel,
+				SCREEN_TEXT.inputMessageLabel,
+				SCREEN_TEXT.checkboxEncrypted,
+				SCREEN_TEXT.buttonSend
 			];
-			const props = createDefaultRouteProps();
+			const props = createRouteProps();
 
 			// Act:
 			const screenTester = new ScreenTester(Send, props);
+			await screenTester.waitForTimer();
 
 			// Assert:
-			await waitFor(() => {
-				screenTester.expectText(expectedTexts);
-			});
+			screenTester.expectText(expectedTexts);
 		});
 
-		it('renders send button as disabled initially', async () => {
+		it('renders send button as disabled when form is incomplete', async () => {
 			// Arrange:
-			mockWalletControllerValue = createMockWalletController();
-			const props = createDefaultRouteProps();
+			mockWalletControllerConfigured();
+			const props = createRouteProps();
 
 			// Act:
 			const screenTester = new ScreenTester(Send, props);
+			await screenTester.waitForTimer();
 
 			// Assert:
-			await waitFor(() => {
-				screenTester.expectText([SCREEN_TEXT.sendButton]);
-			});
+			screenTester.expectButtonDisabled(SCREEN_TEXT.buttonSend);
 		});
+	});
 
-		it('does not render message field for chains without message support', async () => {
-			// Arrange:
-			mockWalletControllerValue = createMockWalletController({ chainName: 'ethereum' });
-			const props = createDefaultRouteProps({ chainName: 'ethereum' });
+	describe('message field visibility', () => {
+		const runMessageFieldTest = (description, config, expected) => {
+			it(description, async () => {
+				// Arrange:
+				mockWalletControllerConfigured({ chainName: config.chainName });
+				const props = createRouteProps({ chainName: config.chainName });
 
-			// Act:
-			const screenTester = new ScreenTester(Send, props);
+				// Act:
+				const screenTester = new ScreenTester(Send, props);
+				await screenTester.waitForTimer();
 
-			// Assert:
-			await waitFor(() => {
-				screenTester.expectText([SCREEN_TEXT.title]);
-				screenTester.notExpectText([SCREEN_TEXT.messageLabel, SCREEN_TEXT.encryptedCheckbox]);
+				// Assert:
+				if (expected.hasMessageField) {
+					screenTester.expectText([SCREEN_TEXT.inputMessageLabel]);
+					screenTester.expectText([SCREEN_TEXT.checkboxEncrypted]);
+				} else {
+					screenTester.notExpectText([SCREEN_TEXT.inputMessageLabel]);
+					screenTester.notExpectText([SCREEN_TEXT.checkboxEncrypted]);
+				}
 			});
+		};
+
+		const messageFieldTests = [
+			{
+				description: 'shows message field for symbol chain',
+				config: { chainName: 'symbol' },
+				expected: { hasMessageField: true }
+			},
+			{
+				description: 'hides message field for ethereum chain',
+				config: { chainName: 'ethereum' },
+				expected: { hasMessageField: false }
+			}
+		];
+
+		messageFieldTests.forEach(test => {
+			runMessageFieldTest(test.description, test.config, test.expected);
 		});
 	});
 
 	describe('multisig account', () => {
 		it('shows sender dropdown when account is cosignatory of multisig', async () => {
 			// Arrange:
-			const multisigAddress = walletStorageAccounts.testnet[3].address;
-			mockWalletControllerValue = createMockWalletController({
-				multisigAddresses: [multisigAddress],
-				currentAccountInfo: {
-					mosaics: TEST_MOSAICS,
-					tokens: TEST_MOSAICS,
-					isMultisig: false,
-					cosignatories: [],
-					multisigAddresses: [multisigAddress]
-				}
+			mockWalletControllerConfigured({
+				currentAccountInfo: cosignatoryAccountInfo
 			});
-			const props = createDefaultRouteProps();
+			const props = createRouteProps();
 
 			// Act:
 			const screenTester = new ScreenTester(Send, props);
+			await screenTester.waitForTimer();
 
 			// Assert:
-			// Check that multisig description is shown and the sender address is displayed
-			await waitFor(() => {
-				screenTester.expectText([SCREEN_TEXT.multisigDescription]);
-				screenTester.expectText([currentAccount.address]);
-			});
+			screenTester.expectText([SCREEN_TEXT.textMultisigDescription]);
+			screenTester.expectText([currentAccount.address]);
 		});
 
 		it('does not show sender dropdown for regular account', async () => {
 			// Arrange:
-			mockWalletControllerValue = createMockWalletController();
-			const props = createDefaultRouteProps();
+			mockWalletControllerConfigured({
+				currentAccountInfo: regularAccountInfo
+			});
+			const props = createRouteProps();
 
 			// Act:
 			const screenTester = new ScreenTester(Send, props);
+			await screenTester.waitForTimer();
 
 			// Assert:
-			await waitFor(() => {
-				screenTester.expectText([SCREEN_TEXT.title]);
-				screenTester.notExpectText([SCREEN_TEXT.multisigDescription, SCREEN_TEXT.senderLabel]);
-			});
+			screenTester.notExpectText([SCREEN_TEXT.textMultisigDescription]);
+			screenTester.notExpectText([SCREEN_TEXT.inputSenderLabel]);
 		});
 	});
 
-	describe('route params', () => {
+	describe('route params initialization', () => {
 		const runRouteParamsTest = (description, config, expected) => {
 			it(description, async () => {
 				// Arrange:
-				mockWalletControllerValue = createMockWalletController();
-				const props = createDefaultRouteProps(config.routeParams);
+				mockWalletControllerConfigured();
+				const props = createRouteProps(config.routeParams);
 
 				// Act:
 				const screenTester = new ScreenTester(Send, props);
+				await screenTester.waitForTimer();
 
 				// Assert:
-				await waitFor(() => {
-					if (expected.inputValues) {
-						expected.inputValues.forEach(value => {
-							screenTester.expectInputValue(value);
-						});
-					}
+				expected.inputValues.forEach(value => {
+					screenTester.expectInputValue(value);
 				});
 			});
 		};
@@ -272,10 +358,10 @@ describe('screens/send/Send', () => {
 			{
 				description: 'initializes with recipient address from route params',
 				config: {
-					routeParams: { recipientAddress: TEST_RECIPIENT_ADDRESS }
+					routeParams: { recipientAddress: recipientAccount.address }
 				},
 				expected: {
-					inputValues: [TEST_RECIPIENT_ADDRESS]
+					inputValues: [recipientAccount.address]
 				}
 			},
 			{
@@ -304,55 +390,175 @@ describe('screens/send/Send', () => {
 	});
 
 	describe('loading state', () => {
-		it('shows loading when wallet is not ready', async () => {
-			// Arrange:
-			mockWalletControllerValue = createMockWalletController({ isWalletReady: false });
-			const props = createDefaultRouteProps();
-
-			// Act:
-			const screenTester = new ScreenTester(Send, props);
-
-			// Assert:
-			screenTester.expectElement('loading-indicator');
-		});
-	});
-
-	describe('chain support', () => {
-		const runChainSupportTest = (description, config, expected) => {
+		const runLoadingStateTest = (description, config, expected) => {
 			it(description, async () => {
 				// Arrange:
-				mockWalletControllerValue = createMockWalletController({ chainName: config.chainName });
-				const props = createDefaultRouteProps({ chainName: config.chainName });
+				mockWalletControllerConfigured({
+					isWalletReady: config.isWalletReady
+				});
+				const props = createRouteProps();
 
 				// Act:
 				const screenTester = new ScreenTester(Send, props);
 
 				// Assert:
-				await waitFor(() => {
-					if (expected.hasMessageField) 
-						screenTester.expectText([SCREEN_TEXT.messageLabel]);
-					 else 
-						screenTester.notExpectText([SCREEN_TEXT.messageLabel]);
-					
-				});
+				if (expected.isLoading)
+					screenTester.expectElement('loading-indicator');
+				else
+					screenTester.notExpectElement('loading-indicator');
 			});
 		};
 
-		const chainSupportTests = [
+		const loadingStateTests = [
 			{
-				description: 'shows message field for symbol chain',
-				config: { chainName: 'symbol' },
-				expected: { hasMessageField: true }
+				description: 'shows loading indicator when wallet is not ready',
+				config: { isWalletReady: false },
+				expected: { isLoading: true }
 			},
 			{
-				description: 'hides message field for ethereum chain',
-				config: { chainName: 'ethereum' },
-				expected: { hasMessageField: false }
+				description: 'hides loading indicator when wallet is ready',
+				config: { isWalletReady: true },
+				expected: { isLoading: false }
 			}
 		];
 
-		chainSupportTests.forEach(test => {
-			runChainSupportTest(test.description, test.config, test.expected);
+		loadingStateTests.forEach(test => {
+			runLoadingStateTest(test.description, test.config, test.expected);
+		});
+	});
+
+	describe('send button state', () => {
+		const runSendButtonStateTest = (description, config, expected) => {
+			it(description, async () => {
+				// Arrange:
+				mockWalletControllerConfigured({
+					isNetworkConnectionReady: config.isNetworkConnectionReady ?? true
+				});
+				if (config.transactionFees)
+					mockTransactionFees(config.transactionFees, false);
+
+				const props = createRouteProps(config.routeParams ?? {});
+
+				// Act:
+				const screenTester = new ScreenTester(Send, props);
+				await screenTester.waitForTimer();
+
+				// Assert:
+				if (expected.isDisabled)
+					screenTester.expectButtonDisabled(SCREEN_TEXT.buttonSend);
+				else
+					screenTester.expectButtonEnabled(SCREEN_TEXT.buttonSend);
+			});
+		};
+
+		const sendButtonStateTests = [
+			{
+				description: 'send button is disabled when network is not connected',
+				config: {
+					isNetworkConnectionReady: false,
+					transactionFees: TRANSACTION_FEES,
+					routeParams: { recipientAddress: recipientAccount.address, amount: '1' }
+				},
+				expected: { isDisabled: true }
+			},
+			{
+				description: 'send button is disabled when transaction fees are not loaded',
+				config: {
+					isNetworkConnectionReady: true,
+					transactionFees: null,
+					routeParams: { recipientAddress: recipientAccount.address, amount: '1' }
+				},
+				expected: { isDisabled: true }
+			},
+			{
+				description: 'send button is disabled when recipient is empty',
+				config: {
+					isNetworkConnectionReady: true,
+					transactionFees: TRANSACTION_FEES,
+					routeParams: { recipientAddress: '', amount: '1' }
+				},
+				expected: { isDisabled: true }
+			}
+		];
+
+		sendButtonStateTests.forEach(test => {
+			runSendButtonStateTest(test.description, test.config, test.expected);
+		});
+	});
+
+	describe('send transaction flow', () => {
+		it('initiates transaction when send button is pressed with valid data', async () => {
+			// Arrange:
+			const transactionBundle = createMockTransactionBundle([{ type: 16724, hash: 'testHash' }]);
+			const createTransactionMock = jest.fn().mockResolvedValue(transactionBundle);
+			mockWalletControllerConfigured({
+				modules: {
+					transfer: createMockTransferModule({
+						createTransaction: createTransactionMock
+					})
+				}
+			});
+			mockTransactionFees(TRANSACTION_FEES, false);
+			mockPasscode();
+			mockRouter();
+
+			const props = createRouteProps({
+				recipientAddress: recipientAccount.address,
+				amount: '1'
+			});
+
+			// Act:
+			const screenTester = new ScreenTester(Send, props);
+			await screenTester.waitForTimer();
+			screenTester.pressButton(SCREEN_TEXT.buttonSend);
+			await screenTester.waitForTimer();
+
+			// Assert:
+			expect(createTransactionMock).toHaveBeenCalled();
+		});
+
+		it('fills form and submits transaction successfully', async () => {
+			// Arrange:
+			const transactionBundle = createMockTransactionBundle([{ type: 16724, hash: 'testHash' }]);
+			const createTransactionMock = jest.fn().mockResolvedValue(transactionBundle);
+			mockWalletControllerConfigured({
+				modules: {
+					transfer: createMockTransferModule({
+						createTransaction: createTransactionMock
+					})
+				}
+			});
+			mockTransactionFees(TRANSACTION_FEES, false);
+			mockPasscode();
+			mockRouter();
+
+			const props = createRouteProps();
+
+			// Act:
+			const screenTester = new ScreenTester(Send, props);
+			await screenTester.waitForTimer();
+
+			// Fill recipient address
+			screenTester.inputText(SCREEN_TEXT.inputRecipientLabel, recipientAccount.address);
+			await screenTester.waitForTimer();
+
+			// Fill amount
+			screenTester.inputText(SCREEN_TEXT.inputAmountLabel, '10');
+			await screenTester.waitForTimer();
+
+			// Fill message
+			screenTester.inputText(SCREEN_TEXT.inputMessageLabel, 'Test transaction message');
+			await screenTester.waitForTimer();
+
+			// Press send button
+			screenTester.pressButton(SCREEN_TEXT.buttonSend);
+			await screenTester.waitForTimer();
+
+			// Assert:
+			expect(createTransactionMock).toHaveBeenCalledWith(expect.objectContaining({
+				recipientAddress: recipientAccount.address,
+				messageText: 'Test transaction message'
+			}));
 		});
 	});
 });
