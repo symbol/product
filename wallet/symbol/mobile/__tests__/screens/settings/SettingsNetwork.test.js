@@ -1,7 +1,7 @@
 import { SettingsNetwork } from '@/app/screens/settings/SettingsNetwork';
+import { NetworkPropertiesFixtureBuilder } from '__fixtures__/local/NetworkPropertiesFixtureBuilder';
 import { ScreenTester } from '__tests__/ScreenTester';
 import { mockLocalization, mockOs, mockWalletController } from '__tests__/mock-helpers';
-import { render, waitFor } from '@testing-library/react-native';
 
 jest.mock('@/app/config', () => {
 	const original = jest.requireActual('@/app/config');
@@ -14,34 +14,45 @@ jest.mock('@/app/config', () => {
 	};
 });
 
-describe('screens/settings/SettingsNetwork', () => {
-	const createMockNetworkProperties = (overrides = {}) => ({
-		networkIdentifier: 'mainnet',
-		nodeUrl: 'https://symbol-node.example.com:3000',
-		chainHeight: 1234567,
-		transactionFees: {
-			minFeeMultiplier: 100
-		},
-		...overrides
-	});
+const SCREEN_TEXT = {
+	textNetworkSelectTitle: 's_settings_network_select_title',
+	textNetworkTypeModalTitle: 's_settings_networkType_modal_title',
+	textNodeSelectTitle: 's_settings_node_select_title',
+	textNodeInfoTitle: 's_settings_node_info_title',
+	textFieldNetwork: 'fieldTitle_network',
+	textFieldNodeUrl: 'fieldTitle_nodeUrl',
+	textFieldChainHeight: 'fieldTitle_chainHeight',
+	textFieldMinFeeMultiplier: 'fieldTitle_minFeeMultiplier',
+	buttonNetworkMainnet: 's_settings_networkType_mainnet',
+	buttonNetworkTestnet: 's_settings_networkType_testnet',
+	buttonNodeAutomatically: 's_settings_node_automatically'
+};
 
-	const createMockWalletController = (overrides = {}) => ({
-		networkProperties: createMockNetworkProperties(overrides.networkProperties),
-		networkIdentifier: overrides.networkIdentifier ?? 'mainnet',
-		selectedNodeUrl: overrides.selectedNodeUrl ?? null,
-		isNetworkConnectionReady: overrides.isNetworkConnectionReady ?? true,
+const NETWORK_PROPERTIES_TESTNET_LOADED = NetworkPropertiesFixtureBuilder
+	.createWithType('symbol', 'testnet')
+	.data;
+const NETWORK_PROPERTIES_EMPTY = NetworkPropertiesFixtureBuilder
+	.createEmpty()
+	.data;
+
+const NODE_URLS = [
+	'https://node1.symbol.com:3000',
+	'https://node2.symbol.com:3000'
+];
+
+const mockWalletControllerConfigured = (overrides = {}) => {
+	return mockWalletController({
 		selectNetwork: jest.fn().mockResolvedValue(undefined),
 		networkApi: {
 			network: {
-				fetchNodeList: jest.fn().mockResolvedValue([
-					'https://node1.symbol.com:3000',
-					'https://node2.symbol.com:3000'
-				])
+				fetchNodeList: jest.fn().mockResolvedValue(NODE_URLS)
 			}
 		},
 		...overrides
 	});
+};
 
+describe('screens/settings/SettingsNetwork', () => {
 	beforeEach(() => {
 		mockLocalization();
 		mockOs('android');
@@ -51,12 +62,12 @@ describe('screens/settings/SettingsNetwork', () => {
 	describe('render', () => {
 		it('renders network selection dropdowns and info table', () => {
 			// Arrange:
-			mockWalletController(createMockWalletController());
+			mockWalletControllerConfigured();
 			const expectedTexts = [
-				's_settings_network_select_title',
-				's_settings_networkType_modal_title',
-				's_settings_node_select_title',
-				's_settings_node_info_title'
+				SCREEN_TEXT.textNetworkSelectTitle,
+				SCREEN_TEXT.textNetworkTypeModalTitle,
+				SCREEN_TEXT.textNodeSelectTitle,
+				SCREEN_TEXT.textNodeInfoTitle
 			];
 
 			// Act:
@@ -70,147 +81,123 @@ describe('screens/settings/SettingsNetwork', () => {
 			const runNetworkInfoTableTest = (description, config, expected) => {
 				it(description, () => {
 					// Arrange:
-					mockWalletController(createMockWalletController(config.walletController));
+					mockWalletControllerConfigured({ networkProperties: config.networkProperties });
 
 					// Act:
-					const { getByText, getAllByText } = render(<SettingsNetwork />);
+					const screenTester = new ScreenTester(SettingsNetwork);
 
 					// Assert:
-					expected.textsToRender.forEach(text => {
-						if (text === '-')
-							expect(getAllByText(text).length).toBeGreaterThanOrEqual(1);
-						else
-							expect(getByText(text)).toBeTruthy();
-					});
+					screenTester.expectText(expected.textsToRender, true);
 				});
 			};
 
-			const tests = [
+			const networkInfoTableTests = [
 				{
 					description: 'displays network properties correctly',
 					config: {
-						walletController: {
-							networkProperties: {
-								networkIdentifier: 'mainnet',
-								nodeUrl: 'https://node.symbol.com:3000',
-								chainHeight: 9876543,
-								transactionFees: { minFeeMultiplier: 250 }
-							}
-						}
+						networkProperties: NETWORK_PROPERTIES_TESTNET_LOADED
 					},
 					expected: {
 						textsToRender: [
-							'fieldTitle_network',
-							'mainnet',
-							'fieldTitle_nodeUrl',
-							'https://node.symbol.com:3000',
-							'fieldTitle_chainHeight',
-							'9876543',
-							'fieldTitle_minFeeMultiplier',
-							'250'
+							SCREEN_TEXT.textFieldNetwork,
+							NETWORK_PROPERTIES_TESTNET_LOADED.networkIdentifier,
+							SCREEN_TEXT.textFieldNodeUrl,
+							NETWORK_PROPERTIES_TESTNET_LOADED.nodeUrl,
+							SCREEN_TEXT.textFieldChainHeight,
+							NETWORK_PROPERTIES_TESTNET_LOADED.chainHeight.toString(),
+							SCREEN_TEXT.textFieldMinFeeMultiplier,
+							NETWORK_PROPERTIES_TESTNET_LOADED.transactionFees.minFeeMultiplier.toString()
 						]
 					}
 				},
 				{
 					description: 'displays "-" for null network properties',
 					config: {
-						walletController: {
-							networkProperties: {
-								networkIdentifier: null,
-								nodeUrl: null,
-								chainHeight: null,
-								transactionFees: { minFeeMultiplier: null }
-							}
-						}
+						networkProperties: NETWORK_PROPERTIES_EMPTY
 					},
 					expected: {
 						textsToRender: [
-							'fieldTitle_network',
-							'fieldTitle_nodeUrl',
-							'fieldTitle_chainHeight',
-							'fieldTitle_minFeeMultiplier',
+							SCREEN_TEXT.textFieldNetwork,
+							SCREEN_TEXT.textFieldNodeUrl,
+							SCREEN_TEXT.textFieldChainHeight,
+							SCREEN_TEXT.textFieldMinFeeMultiplier,
 							'-'
 						]
 					}
 				}
 			];
 
-			tests.forEach(test => {
+			networkInfoTableTests.forEach(test => {
 				runNetworkInfoTableTest(test.description, test.config, test.expected);
 			});
 		});
 	});
 
-	describe('network dropdown options', () => {
-		it('shows mainnet and testnet options in network dropdown', async () => {
+	describe('network dropdown', () => {
+		it('shows mainnet and testnet options when dropdown is opened', () => {
 			// Arrange:
-			mockWalletController(createMockWalletController());
+			mockWalletControllerConfigured();
 			const screenTester = new ScreenTester(SettingsNetwork);
-			const expectedDropdownItems = [
-				's_settings_networkType_mainnet',
-				's_settings_networkType_testnet'
-			];
 
 			// Act:
-			screenTester.pressButton('s_settings_networkType_mainnet');
+			screenTester.pressButton(SCREEN_TEXT.buttonNetworkTestnet);
 
 			// Assert:
-			screenTester.expectText(expectedDropdownItems, true);
+			screenTester.expectText([
+				SCREEN_TEXT.buttonNetworkMainnet,
+				SCREEN_TEXT.buttonNetworkTestnet
+			], true);
 		});
 	});
 
-	describe('node selection', () => {
+	describe('network & node selection', () => {
 		it('shows automatic node option', () => {
 			// Arrange:
-			mockWalletController(createMockWalletController());
+			mockWalletControllerConfigured({
+				selectedNodeUrl: null
+			});
 
 			// Act:
 			const screenTester = new ScreenTester(SettingsNetwork);
 
 			// Assert:
-			screenTester.expectText(['s_settings_node_automatically']);
+			screenTester.expectText([SCREEN_TEXT.buttonNodeAutomatically]);
 		});
 
 		it('fetches node list on mount', async () => {
 			// Arrange:
-			const fetchNodeListMock = jest.fn().mockResolvedValue([
-				'https://node1.symbol.com:3000',
-				'https://node2.symbol.com:3000'
-			]);
-			mockWalletController(createMockWalletController({
+			const fetchNodeListMock = jest.fn().mockResolvedValue(NODE_URLS);
+			mockWalletControllerConfigured({
 				networkApi: {
 					network: {
 						fetchNodeList: fetchNodeListMock
 					}
 				}
-			}));
-
-			// Act:
-			render(<SettingsNetwork />);
-
-			// Assert:
-			await waitFor(() => {
-				expect(fetchNodeListMock).toHaveBeenCalledWith('mainnet');
 			});
-		});
-	});
-
-	describe('network selection', () => {
-		it('calls selectNetwork when network is changed', async () => {
-			// Arrange:
-			const selectNetworkMock = jest.fn().mockResolvedValue(undefined);
-			mockWalletController(createMockWalletController({
-				selectNetwork: selectNetworkMock
-			}));
-			const screenTester = new ScreenTester(SettingsNetwork);
 
 			// Act:
-			screenTester.pressButton('s_settings_networkType_mainnet');
-			screenTester.pressButton('s_settings_networkType_testnet');
+			const screenTester = new ScreenTester(SettingsNetwork);
 			await screenTester.waitForTimer();
 
 			// Assert:
-			expect(selectNetworkMock).toHaveBeenCalledWith('testnet', null);
+			expect(fetchNodeListMock).toHaveBeenCalledWith('testnet');
+		});
+
+		it('calls selectNetwork when network is changed', async () => {
+			// Arrange:
+			const selectNetworkMock = jest.fn().mockResolvedValue(undefined);
+			mockWalletControllerConfigured({
+				selectNetwork: selectNetworkMock
+			});
+			const screenTester = new ScreenTester(SettingsNetwork);
+
+			// Act:
+			screenTester.pressButton(SCREEN_TEXT.buttonNetworkTestnet);
+			screenTester.pressButton(SCREEN_TEXT.buttonNetworkMainnet);
+			await screenTester.waitForTimer();
+
+			// Assert:
+			expect(selectNetworkMock).toHaveBeenCalledWith('mainnet', null);
 		});
 	});
 
@@ -218,20 +205,22 @@ describe('screens/settings/SettingsNetwork', () => {
 		const runLoadingStateTest = (description, config, expected) => {
 			it(description, () => {
 				// Arrange:
-				mockWalletController(createMockWalletController({
+				mockWalletControllerConfigured({
 					isNetworkConnectionReady: config.isNetworkConnectionReady
-				}));
+				});
+
+				// Act:
 				const screenTester = new ScreenTester(SettingsNetwork);
 
 				// Assert:
 				if (expected.isLoadingSpinnerVisible)
 					screenTester.expectElement('loading-indicator');
-				else 
+				else
 					screenTester.notExpectElement('loading-indicator');
 			});
 		};
 
-		const tests = [
+		const loadingStateTests = [
 			{
 				description: 'shows loading state when connecting to node',
 				config: { isNetworkConnectionReady: false },
@@ -244,7 +233,7 @@ describe('screens/settings/SettingsNetwork', () => {
 			}
 		];
 
-		tests.forEach(test => {
+		loadingStateTests.forEach(test => {
 			runLoadingStateTest(test.description, test.config, test.expected);
 		});
 	});
