@@ -1,37 +1,67 @@
 import { InputAddress } from '@/app/components/controls/InputAddress';
+import { AccountFixtureBuilder } from '__fixtures__/local/AccountFixtureBuilder';
 import { runInputTextTest, runRenderTextTest } from '__tests__/component-tests';
 import { mockLocalization } from '__tests__/mock-helpers';
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
 
+const SCREEN_TEXT = {
+	inputRecipientLabel: 'input_recipientAddress'
+};
+
+const CURRENT_ACCOUNT = AccountFixtureBuilder
+	.createWithAccount('symbol', 'mainnet', 0)
+	.data;
+
+const RECIPIENT_ACCOUNT = AccountFixtureBuilder
+	.createWithAccount('symbol', 'mainnet', 1)
+	.data;
+
+const CONTACT_ACCOUNT = AccountFixtureBuilder
+	.createWithAccount('symbol', 'mainnet', 2)
+	.override({ name: 'Bob Contact' })
+	.data;
+
+const ACCOUNTS_WITH_CURRENT = [CURRENT_ACCOUNT];
+
+const ACCOUNTS_WITH_RECIPIENT = [RECIPIENT_ACCOUNT];
+
+const ADDRESS_BOOK_WITH_CONTACT = {
+	whiteList: [CONTACT_ACCOUNT]
+};
+
+const ADDRESS_BOOK_EMPTY = {
+	whiteList: []
+};
+
+const createDefaultProps = (overrides = {}) => ({
+	label: SCREEN_TEXT.inputRecipientLabel,
+	value: '',
+	addressBook: undefined,
+	accounts: undefined,
+	chainName: 'symbol',
+	networkIdentifier: 'mainnet',
+	onChange: jest.fn(),
+	onValidityChange: jest.fn(),
+	...overrides
+});
+
 describe('components/InputAddress', () => {
 	beforeEach(() => {
-		mockLocalization({
-			'v_error_required': 'This field is required'
-		});
-	});
-
-	const createProps = ({ label, value, addressBook, accounts, chainName, networkIdentifier } = {}) => ({
-		label: label ?? 'Recipient Address',
-		value: value ?? '',
-		addressBook: addressBook,
-		accounts: accounts,
-		chainName: chainName ?? 'symbol',
-		networkIdentifier: networkIdentifier ?? 'mainnet',
-		onChange: jest.fn(),
-		onValidityChange: jest.fn()
+		mockLocalization();
 	});
 
 	runRenderTextTest(InputAddress, {
-		props: createProps({ value: 'TALICE...' }),
+		props: createDefaultProps({ value: CURRENT_ACCOUNT.address }),
 		textToRender: [
-			{ type: 'text', value: 'Recipient Address' }
+			{ type: 'text', value: SCREEN_TEXT.inputRecipientLabel }
 		]
 	});
 
 	runInputTextTest(InputAddress, {
-		props: createProps({ value: 'TALICE...' }),
+		props: createDefaultProps({ value: CURRENT_ACCOUNT.address }),
 		textToFocus: {
-			type: 'input', value: 'TALICE...'
+			type: 'input', 
+			value: CURRENT_ACCOUNT.address
 		},
 		testDisabledState: false
 	});
@@ -40,74 +70,52 @@ describe('components/InputAddress', () => {
 		const runAddressBookIconTest = (description, config, expected) => {
 			it(description, () => {
 				// Arrange:
-				const props = createProps(config.props);
+				const props = createDefaultProps(config.props);
 
 				// Act:
-				const { queryByTestId } = render(<InputAddress {...props} />);
+				const { queryByLabelText } = render(<InputAddress {...props} />);
 
 				// Assert:
-				const icon = queryByTestId('icon-address-book');
+				const icon = queryByLabelText('address-book');
 
-				if (expected.iconShouldBeVisible)
+				if (expected.isVisible)
 					expect(icon).toBeTruthy();
 				else
 					expect(icon).toBeNull();
 			});
 		};
 
-		const tests = [
+		const addressBookIconTests = [
 			{
-				description: 'shows address book icon when accounts are provided',
-				config: {
-					props: {
-						accounts: [
-							{ address: 'TALICE...', name: 'Alice' }
-						]
-					}
-				},
-				expected: {
-					iconShouldBeVisible: true
-				}
+				description: 'shows icon when accounts are provided',
+				config: { props: { 
+					accounts: ACCOUNTS_WITH_CURRENT 
+				} },
+				expected: { isVisible: true }
 			},
 			{
-				description: 'shows address book icon when addressBook has contacts',
-				config: {
-					props: {
-						addressBook: {
-							whiteList: [
-								{ address: 'TBOB...', name: 'Bob' }
-							]
-						}
-					}
-				},
-				expected: {
-					iconShouldBeVisible: true
-				}
+				description: 'shows icon when addressBook has contacts',
+				config: { props: { 
+					addressBook: ADDRESS_BOOK_WITH_CONTACT 
+				} },
+				expected: { isVisible: true }
 			},
 			{
-				description: 'hides address book icon when no contacts available',
-				config: {
-					props: {
-						accounts: [],
-						addressBook: { whiteList: [] }
-					}
-				},
-				expected: {
-					iconShouldBeVisible: false
-				}
+				description: 'hides icon when no contacts available',
+				config: { props: { 
+					accounts: [], 
+					addressBook: ADDRESS_BOOK_EMPTY 
+				} },
+				expected: { isVisible: false }
 			},
 			{
-				description: 'hides address book icon when accounts and addressBook are undefined',
-				config: {
-					props: {}
-				},
-				expected: {
-					iconShouldBeVisible: false
-				}
+				description: 'hides icon when accounts and addressBook are undefined',
+				config: { props: {} },
+				expected: { isVisible: false }
 			}
 		];
 
-		tests.forEach(test => {
+		addressBookIconTests.forEach(test => {
 			runAddressBookIconTest(test.description, test.config, test.expected);
 		});
 	});
@@ -115,86 +123,73 @@ describe('components/InputAddress', () => {
 	describe('contacts dropdown', () => {
 		it('opens dropdown when address book icon is pressed', async () => {
 			// Arrange:
-			const accounts = [
-				{ address: 'TALICE123...', name: 'Alice' }
-			];
-			const props = createProps({ accounts });
-			const { getByTestId, findAllByText } = render(<InputAddress {...props} />);
+			const props = createDefaultProps({ accounts: ACCOUNTS_WITH_RECIPIENT });
+			const { getByLabelText, findAllByText } = render(<InputAddress {...props} />);
 
 			// Act:
-			const addressBookIcon = getByTestId('icon-address-book');
+			const addressBookIcon = getByLabelText('address-book');
 			fireEvent.press(addressBookIcon);
 
 			// Assert:
-			// Modal title appears in both the TextBox label and modal header
-			const modalTitles = await findAllByText('Recipient Address');
+			const modalTitles = await findAllByText(SCREEN_TEXT.inputRecipientLabel);
 			expect(modalTitles.length).toBeGreaterThanOrEqual(2);
 		});
 
 		it('calls onChange when contact is selected', async () => {
 			// Arrange:
-			const accounts = [
-				{ address: 'TALICE123...', name: 'Alice' }
-			];
-			const onChange = jest.fn();
-			const props = { ...createProps({ accounts }), onChange };
-			const { getByTestId, findByText } = render(<InputAddress {...props} />);
+			const onChangeMock = jest.fn();
+			const props = createDefaultProps({ 
+				accounts: ACCOUNTS_WITH_RECIPIENT, 
+				onChange: onChangeMock 
+			});
+			const { getByLabelText, findByText } = render(<InputAddress {...props} />);
 
 			// Act:
-			const addressBookIcon = getByTestId('icon-address-book');
+			const addressBookIcon = getByLabelText('address-book');
 			fireEvent.press(addressBookIcon);
-			
-			const contactItem = await findByText('TALICE123...');
+			const contactItem = await findByText(RECIPIENT_ACCOUNT.address);
 			fireEvent.press(contactItem);
 
 			// Assert:
-			expect(onChange).toHaveBeenCalledWith('TALICE123...');
+			expect(onChangeMock).toHaveBeenCalledWith(RECIPIENT_ACCOUNT.address);
 		});
 	});
 
 	describe('validity change', () => {
-		const runValidityTest = (description, config, expected) => {
+		const runValidityChangeTest = (description, config, expected) => {
 			it(description, async () => {
 				// Arrange:
-				const onValidityChange = jest.fn();
-				const props = { 
-					...createProps(config.props), 
-					onValidityChange 
-				};
+				const onValidityChangeMock = jest.fn();
+				const props = createDefaultProps({ 
+					...config.props, 
+					onValidityChange: onValidityChangeMock 
+				});
 
 				// Act:
 				render(<InputAddress {...props} />);
 
 				// Assert:
 				await waitFor(() => {
-					expect(onValidityChange).toHaveBeenCalledWith(expected.isValid);
+					expect(onValidityChangeMock).toHaveBeenCalledWith(expected.isValid);
 				});
 			});
 		};
 
-		const tests = [
+		const validityChangeTests = [
 			{
 				description: 'calls onValidityChange with true for non-empty value',
-				config: {
-					props: { value: 'TALICE...' }
-				},
-				expected: {
-					isValid: true
-				}
+				config: { props: { value: CURRENT_ACCOUNT.address } },
+				expected: { isValid: true }
 			},
 			{
 				description: 'calls onValidityChange with false for empty value',
-				config: {
-					props: { value: '' }
-				},
-				expected: {
-					isValid: false
-				}
+				config: { props: { value: '' } },
+				expected: { isValid: false }
 			}
 		];
 
-		tests.forEach(test => {
-			runValidityTest(test.description, test.config, test.expected);
+		validityChangeTests.forEach(test => {
+			runValidityChangeTest(test.description, test.config, test.expected);
 		});
 	});
 });
