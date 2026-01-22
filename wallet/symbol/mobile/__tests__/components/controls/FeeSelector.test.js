@@ -1,13 +1,13 @@
 import { FeeSelector } from '@/app/components/controls/FeeSelector';
 import { runRenderTextTest } from '__tests__/component-tests';
-import { fireEvent, render } from '@testing-library/react-native';
 import { mockLocalization } from '__tests__/mock-helpers';
+import { fireEvent, render } from '@testing-library/react-native';
 
 const SCREEN_TEXT = {
 	textTitle: 'Transaction Fee',
 	textFeeSlow: 'selector_fee_slow',
 	textFeeMedium: 'selector_fee_medium',
-	textFeeFast: 'selector_fee_fast',
+	textFeeFast: 'selector_fee_fast'
 };
 
 const FeeTierLevel = {
