@@ -214,6 +214,8 @@ ACCOUNT_INFO_5 = {  # multisig account
 
 CHAIN_BLOCK_1 = {  # Included all type of transaction in the block
 	'difficulty': 100000000000000,
+	'beneficiary': 'TCJLCZSOQ6RGWHTPSV2DW467WZSHK4NBSITND4OF',
+	'totalFee': 59200000,
 	'txes': [
 		{
 			'tx': {
@@ -440,6 +442,8 @@ CHAIN_BLOCK_1 = {  # Included all type of transaction in the block
 CHAIN_BLOCK_2 = {
 	'difficulty': 90250000000000,
 	'txes': [],
+	'beneficiary': 'TD3FGWIQR7GIOJSFG52JMCJYCVP2PC7ZNDZYDN4H',
+	'totalFee': 0,
 	'block': {
 		'timeStamp': 78976,
 		'signature': (
@@ -1331,7 +1335,9 @@ EXPECTED_BLOCK_2 = Block(
 	],
 	100000000000000,
 	'1dd9d4d7b6af603d29c082f9aa4e123f07d18154ddbcd7ddc6702491b854c5e4',
-	'f9bd190dd0c364261f5c8a74870cc7f7374e631352293c62ecc437657e5de2cd',
+	59200000,
+	Address('TCJLCZSOQ6RGWHTPSV2DW467WZSHK4NBSITND4OF'),
+	PublicKey('f9bd190dd0c364261f5c8a74870cc7f7374e631352293c62ecc437657e5de2cd'),
 	(
 		'fdf6a9830e9320af79123f467fcb03d6beab735575ff50eab363d812c5581436'
 		'2ad7be0503db2ee70e60ac3408d83cdbcbd941067a6df703e0c21c7bf389f105'
@@ -1359,7 +1365,9 @@ async def test_can_query_blocks_after(server):  # pylint: disable=redefined-oute
 		[],
 		90250000000000,
 		'9708256e8a8dfb76eed41dcfa2e47f4af520b7b3286afb7f60dca02851f8a53e',
-		'45c1553fb1be7f25b6f79278b9ede1129bb9163f3b85883ea90f1c66f497e68b',
+		0,
+		Address('TD3FGWIQR7GIOJSFG52JMCJYCVP2PC7ZNDZYDN4H'),
+		PublicKey('45c1553fb1be7f25b6f79278b9ede1129bb9163f3b85883ea90f1c66f497e68b'),
 		(
 			'919ae66a34119b49812b335827b357f86884ab08b628029fd6e8db3572faeb4f'
 			'323a7bf9488c76ef8faa5b513036bbcce2d949ba3e41086d95a54c0007403c0b'
