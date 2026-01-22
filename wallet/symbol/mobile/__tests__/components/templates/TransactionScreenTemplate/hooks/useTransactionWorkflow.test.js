@@ -49,8 +49,6 @@ const createDefaultParams = (overrides = {}) => ({
 	...overrides
 });
 
-// === Tests ===
-
 describe('hooks/useTransactionWorkflow', () => {
 	beforeEach(() => {
 		jest.useFakeTimers();

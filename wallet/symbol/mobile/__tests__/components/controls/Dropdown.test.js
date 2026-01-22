@@ -57,6 +57,10 @@ describe('components/Dropdown', () => {
 				}
 				else {
 					// Modal title should only appear once (in the dropdown, not duplicated in modal)
+					const modalTitles = await findAllByText(props.label);
+					expect(modalTitles.length).toBe(1);
+
+					// Check that non-selected options do not appear (dropdown closed)
 					expect(queryByText('Option 2')).toBeNull();
 					expect(queryByText('Option 3')).toBeNull();
 				}
@@ -80,6 +84,17 @@ describe('components/Dropdown', () => {
 				config: {
 					props: {},
 					shouldOpen: false,
+					textToPress: 'Option 1'
+				},
+				expected: {
+					modalShouldBeVisible: false
+				}
+			},
+			{
+				description: 'does not open modal when dropdown is disabled',
+				config: {
+					props: { isDisabled: true },
+					shouldOpen: true,
 					textToPress: 'Option 1'
 				},
 				expected: {
