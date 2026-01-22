@@ -91,7 +91,7 @@ export const TextBox = props => {
 							numberOfLines={numberOfLines}
 							keyboardType={keyboardType}
 							accessibilityLabel={label}
-							accessibilityValue={`${value}`}
+							accessibilityValue={{ value: `${value}`}}
 							placeholder={placeholder}
 							placeholderTextColor={Colors.Components.control.default.default.placeholder}
 							style={styleInput}
