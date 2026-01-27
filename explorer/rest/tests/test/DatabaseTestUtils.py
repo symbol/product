@@ -5,7 +5,7 @@ from collections import namedtuple
 
 import testing.postgresql
 from symbolchain.CryptoTypes import PublicKey
-from symbolchain.nem.Network import Address
+from symbolchain.nem.Network import Address, Network
 
 from rest.db.NemDatabase import NemDatabase
 from rest.model.Account import AccountView
@@ -226,8 +226,8 @@ class DatabaseTestBase(unittest.TestCase):
 	def setUp(self):
 		self.postgresql = testing.postgresql.Postgresql()
 		self.db_config = DatabaseConfig(**self.postgresql.dsn(), password='')
-		self.network_name = 'mainnet'
-		initialize_database(self.db_config, self.network_name)
+		self.network = Network.MAINNET
+		initialize_database(self.db_config, self.network)
 
 	def tearDown(self):
 		self.postgresql.stop()
