@@ -61,7 +61,7 @@ The changelog format is based on [Keep a Changelog](https://keepachangelog.com/e
 - treat all HTTP statuses less than 400 as success instead of only HTTP statuses 200 and 404 codes
 - OpenSSL libraries names are different on Windows which cause linking to fail; update to select the correct library name.
 
-[0.0.9]: https://github.com/symbol/product/releases/tag/lightapi/python/v0.0.9
-[0.0.8]: https://github.com/symbol/product/releases/tag/lightapi%2Fpython%2Fv0.0.7...lightapi%2Fpython%2Fv0.0.8
-[0.0.7]: https://github.com/symbol/product/releases/tag/lightapi%2Fpython%2Fv0.0.6...lightapi%2Fpython%2Fv0.0.7
-[0.0.6]: https://github.com/symbol/product/releases/tag/lightapi%2Fpython%2Fv0.0.6
+[0.0.9]: https://github.com/symbol/product/compare/lightapi/python/v0.0.9...lightapi/python/v0.0.8
+[0.0.8]: https://github.com/symbol/product/compare/lightapi/python/v0.0.7...lightapi/python/v0.0.8
+[0.0.7]: https://github.com/symbol/product/compare/lightapi/python/v0.0.6...lightapi/python/v0.0.7
+[0.0.6]: https://github.com/symbol/product/releases/tag/lightapi/python/v0.0.6
