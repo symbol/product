@@ -7,7 +7,7 @@ import testing.postgresql
 
 from rest import create_app
 
-from .test.DatabaseTestUtils import BLOCK_VIEWS, DatabaseConfig, initialize_database
+from .test.DatabaseTestUtils import ACCOUNT_VIEWS, BLOCK_VIEWS, DatabaseConfig, initialize_database
 
 DATABASE_CONFIG_INI = 'db_config.ini'
 
@@ -184,5 +184,75 @@ def test_api_nem_blocks_invalid_sort(client):  # pylint: disable=redefined-outer
 	_assert_get_api_nem_blocks_fail(client, 400, sort=-1)
 	_assert_get_api_nem_blocks_fail(client, 400, sort='invalid')
 
+
+# endregion
+
+
+# region /account
+
+def _assert_get_nem_account_success(client, expected_result, **query_params):  # pylint: disable=redefined-outer-name
+	# Act:
+	response = client.get('/api/nem/account', query_string=query_params)
+
+	# Assert:
+	_assert_status_code_and_headers(response, 200)
+	assert expected_result == response.json
+
+
+def _assert_get_nem_account_bad_request(client, **query_params):  # pylint: disable=redefined-outer-name
+	# Act:
+	response = client.get('/api/nem/account', query_string=query_params)
+
+	# Assert:
+	_assert_status_code_and_headers(response, 400)
+	assert {
+		'message': 'Bad request',
+		'status': 400
+	} == response.json
+
+
+def test_api_nem_account_by_address(client):  # pylint: disable=redefined-outer-name
+	_assert_get_nem_account_success(
+		client,
+		ACCOUNT_VIEWS[0].to_dict(),
+		address='NAGHXD63C4V6REWGXCVKJ2SBS3GUAXGTRQZQXPRO')
+
+
+def test_api_nem_account_by_public_key(client):  # pylint: disable=redefined-outer-name
+	_assert_get_nem_account_success(
+		client,
+		ACCOUNT_VIEWS[0].to_dict(),
+		publicKey='b88221939ac920484753c738fafda87e82ff04b5e370c9456d85a0f12c6a5cca')
+
+
+def test_api_nem_account_missing_params(client):  # pylint: disable=redefined-outer-name
+	_assert_get_nem_account_bad_request(client)
+
+
+def test_api_nem_account_both_params(client):  # pylint: disable=redefined-outer-name
+	_assert_get_nem_account_bad_request(
+		client,
+		address='NCXIQA4FF5JB6AMQ53NQ3ZMRD3X3PJEWDJJJIGHT',
+		publicKey='107051C28A2C009A83AE0861CDBFF7C1CBAB387C964CC433F7D191D9C3115ED7')
+
+
+def test_api_nem_account_invalid_address(client):  # pylint: disable=redefined-outer-name
+	_assert_get_nem_account_bad_request(client, address='INVALIDADDRESS')
+
+
+def test_api_nem_account_invalid_public_key(client):  # pylint: disable=redefined-outer-name,invalid-name
+	_assert_get_nem_account_bad_request(client, publicKey='INVALIDPUBLICKEY')
+
+
+def test_api_nem_account_not_found(client):  # pylint: disable=redefined-outer-name
+	# Act:
+	response = client.get('/api/nem/account?address=NANEMOABLAGR72AZ2RV3V4ZHDCXW25XQ73O7OBT5')
+
+	# Assert:
+	_assert_status_code_and_headers(response, 404)
+	assert {
+		'message': 'Resource not found',
+		'status': 404
+	} == response.json
 
 # endregion

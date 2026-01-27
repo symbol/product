@@ -4,6 +4,7 @@ from pathlib import Path
 
 from flask import Flask, abort, jsonify, request
 from flask_cors import CORS
+from symbolchain.CryptoTypes import PublicKey
 from zenlog import log
 
 from rest.facade.NemRestFacade import NemRestFacade
@@ -78,6 +79,32 @@ def setup_nem_routes(app, nem_api_facade):
 			abort(400)
 
 		return jsonify(nem_api_facade.get_blocks(limit=limit, offset=offset, min_height=min_height, sort=sort))
+
+	@app.route('/api/nem/account')
+	def api_get_nem_account():
+		address = request.args.get('address', '').strip() or None
+		public_key = request.args.get('publicKey', '').strip() or None
+
+		# Validate that exactly one of address or public_key is provided
+		if bool(address) == bool(public_key):
+			abort(400)
+
+		try:
+			if address and not nem_api_facade.nem_db.network.is_valid_address_string(address):
+				abort(400)
+
+			if public_key:
+				PublicKey(public_key)
+
+		except ValueError:
+			abort(400)
+
+		result = nem_api_facade.get_account(address=address, public_key=public_key)
+
+		if not result:
+			abort(404)
+
+		return jsonify(result)
 
 
 def setup_error_handlers(app):
