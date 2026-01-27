@@ -11,7 +11,7 @@
 		"postinstall": "npx resolve-local-dependencies"
 	},
 	"dependencies": {
-		"lodash": "^4.17.21",
+		"lodash": "^4.17.23",
 		"resolve-local-dependencies": "^1.0.2",
 		"symbol-sdk": "^3.3.0",
 		"wallet-common-core": "file:../core"
