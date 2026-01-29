@@ -66,21 +66,28 @@ class TestNemRestFacade(DatabaseTestBase):
 
 	def test_can_retrieve_account_by_address(self):
 		# Act:
-		account = self.nem_rest_facade.get_account(address='NAGHXD63C4V6REWGXCVKJ2SBS3GUAXGTRQZQXPRO')
+		account = self.nem_rest_facade.get_account_by_address(address='NAGHXD63C4V6REWGXCVKJ2SBS3GUAXGTRQZQXPRO')
 
 		# Assert:
 		self.assertEqual(EXPECTED_ACCOUNT_1, account)
 
 	def test_can_retrieve_account_by_public_key(self):
 		# Act:
-		account = self.nem_rest_facade.get_account(public_key='b88221939ac920484753c738fafda87e82ff04b5e370c9456d85a0f12c6a5cca')
+		account = self.nem_rest_facade.get_account_by_public_key(public_key='b88221939ac920484753c738fafda87e82ff04b5e370c9456d85a0f12c6a5cca')
 
 		# Assert:
 		self.assertEqual(EXPECTED_ACCOUNT_1, account)
 
-	def test_returns_none_for_nonexistent_account(self):
+	def test_returns_none_for_nonexistent_account_address(self):
 		# Act:
-		account = self.nem_rest_facade.get_account(address='NAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA')
+		account = self.nem_rest_facade.get_account_by_address(address='NAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA')
+
+		# Assert:
+		self.assertIsNone(account)
+
+	def test_returns_none_for_nonexistent_account_public_key(self):
+		# Act:
+		account = self.nem_rest_facade.get_account_by_public_key(public_key='AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA')
 
 		# Assert:
 		self.assertIsNone(account)

@@ -89,17 +89,19 @@ def setup_nem_routes(app, nem_api_facade):
 		if bool(address) == bool(public_key):
 			abort(400)
 
-		try:
-			if address and not nem_api_facade.nem_db.network.is_valid_address_string(address):
-				abort(400)
-
-			if public_key:
-				PublicKey(public_key)
-
-		except ValueError:
+		if address and not nem_api_facade.nem_db.network.is_valid_address_string(address):
 			abort(400)
 
-		result = nem_api_facade.get_account(address=address, public_key=public_key)
+		if public_key:
+			try:
+				PublicKey(public_key)
+			except ValueError:
+				abort(400)
+
+		if address:
+			result = nem_api_facade.get_account_by_address(address)
+		else:
+			result = nem_api_facade.get_account_by_public_key(public_key)
 
 		if not result:
 			abort(404)

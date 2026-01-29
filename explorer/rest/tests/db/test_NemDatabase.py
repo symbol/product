@@ -80,7 +80,7 @@ class NemDatabaseTest(DatabaseTestBase):
 		nem_db = NemDatabase(self.db_config, self.network)
 
 		# Act:
-		account_view = nem_db.get_account(address=ACCOUNTS[0].address)
+		account_view = nem_db.get_account_by_address(address=ACCOUNTS[0].address)
 
 		# Assert:
 		self.assertEqual(EXPECTED_ACCOUNT_VIEW_1, account_view)
@@ -90,7 +90,7 @@ class NemDatabaseTest(DatabaseTestBase):
 		nem_db = NemDatabase(self.db_config, self.network)
 
 		# Act:
-		account_view = nem_db.get_account(public_key=ACCOUNTS[0].public_key)
+		account_view = nem_db.get_account_by_public_key(public_key=ACCOUNTS[0].public_key)
 
 		# Assert:
 		self.assertEqual(EXPECTED_ACCOUNT_VIEW_1, account_view)

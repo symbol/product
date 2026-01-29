@@ -28,12 +28,16 @@ class NemRestFacade:
 
 		return [block.to_dict() for block in blocks]
 
-	def get_account(self, address=None, public_key=None):
-		"""Gets account by address or public key."""
+	def get_account_by_address(self, address):
+		"""Gets account by address."""
 
-		address_obj = Address(address) if address else None
-		public_key_obj = PublicKey(public_key) if public_key else None
+		account = self.nem_db.get_account_by_address(Address(address))
 
-		account = self.nem_db.get_account(address=address_obj, public_key=public_key_obj)
+		return account.to_dict() if account else None
+
+	def get_account_by_public_key(self, public_key):
+		"""Gets account by public key."""
+
+		account = self.nem_db.get_account_by_public_key(PublicKey(public_key))
 
 		return account.to_dict() if account else None

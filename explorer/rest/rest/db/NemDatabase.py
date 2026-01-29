@@ -132,21 +132,30 @@ class NemDatabase(DatabaseConnectionPool):
 
 			return [self._create_block_view(result) for result in results]
 
-	def get_account(self, address=None, public_key=None):
-		"""Gets account by address or public key."""
+	def get_account_by_address(self, address):
+		"""Gets account by address."""
 
-		if address:
-			where_clause = 'address = %s'
-			param = address.bytes
-		else:
-			where_clause = 'public_key = %s'
-			param = public_key.bytes
+		where_clause = 'address = %s'
 
 		sql = self._generate_account_query(where_clause)
 
 		with self.connection() as connection:
 			cursor = connection.cursor()
-			cursor.execute(sql, (param,))
+			cursor.execute(sql, (address.bytes,))
+			result = cursor.fetchone()
+
+			return self._create_account_view(result) if result else None
+
+	def get_account_by_public_key(self, public_key):
+		"""Gets account by public key."""
+
+		where_clause = 'public_key = %s'
+
+		sql = self._generate_account_query(where_clause)
+
+		with self.connection() as connection:
+			cursor = connection.cursor()
+			cursor.execute(sql, (public_key.bytes,))
 			result = cursor.fetchone()
 
 			return self._create_account_view(result) if result else None
