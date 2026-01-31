@@ -10,6 +10,8 @@ from zenlog import log
 from rest.facade.NemRestFacade import NemRestFacade
 
 DatabaseConfig = namedtuple('DatabaseConfig', ['database', 'user', 'password', 'host', 'port'])
+Pagination = namedtuple('Pagination', ['limit', 'offset'])
+Sorting = namedtuple('Sorting', ['field', 'order'])
 
 
 def create_app():
@@ -47,7 +49,7 @@ def setup_nem_facade(app):
 	return NemRestFacade(db_params, network_name)
 
 
-def setup_nem_routes(app, nem_api_facade):
+def setup_nem_routes(app, nem_api_facade):  # pylint: disable=too-many-statements
 	@app.route('/api/nem/block/<height>')
 	def api_get_nem_block_by_height(height):
 		try:
@@ -107,6 +109,35 @@ def setup_nem_routes(app, nem_api_facade):
 			abort(404)
 
 		return jsonify(result)
+
+	@app.route('/api/nem/accounts')
+	def api_get_nem_accounts():
+		try:
+			limit = int(request.args.get('limit', 10))
+			offset = int(request.args.get('offset', 0))
+			sort_field = request.args.get('sort_field', 'BALANCE').upper()
+			sort_order = request.args.get('sort_order', 'DESC').upper()
+			is_harvesting = request.args.get('is_harvesting', 'false').lower() == 'true'
+
+			if limit < 0 or offset < 0:
+				raise ValueError()
+
+			if sort_order not in ['ASC', 'DESC']:
+				raise ValueError()
+
+			if sort_field not in ['BALANCE']:
+				raise ValueError()
+
+		except ValueError:
+			abort(400)
+
+		results = nem_api_facade.get_accounts(
+			pagination=Pagination(limit, offset),
+			sorting=Sorting(sort_field, sort_order),
+			is_harvesting=is_harvesting
+		)
+
+		return jsonify(results)
 
 
 def setup_error_handlers(app):
