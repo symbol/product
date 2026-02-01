@@ -256,6 +256,10 @@ def test_api_nem_account_not_found(client):  # pylint: disable=redefined-outer-n
 	} == response.json
 
 
+# endregion
+
+# region /accounts
+
 def _assert_get_api_nem_accounts(client, expected_status_code, expected_result, **query_params):  # pylint: disable=redefined-outer-name
 	# Arrange:
 	query_string = '&'.join(f'{key}={val}' for key, val in query_params.items())

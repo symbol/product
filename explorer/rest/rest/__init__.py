@@ -80,7 +80,13 @@ def setup_nem_routes(app, nem_api_facade):  # pylint: disable=too-many-statement
 		except ValueError:
 			abort(400)
 
-		return jsonify(nem_api_facade.get_blocks(limit=limit, offset=offset, min_height=min_height, sort=sort))
+		result = nem_api_facade.get_blocks(
+			pagination=Pagination(limit, offset),
+			min_height=min_height,
+			sort=sort
+		)
+
+		return jsonify(result)
 
 	@app.route('/api/nem/account')
 	def api_get_nem_account():
