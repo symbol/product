@@ -1,3 +1,4 @@
+from rest import Pagination, Sorting
 from rest.facade.NemRestFacade import NemRestFacade
 
 from ..db.test_NemDatabase import BlockQueryParams
@@ -10,6 +11,8 @@ EXPECTED_BLOCK_1 = BLOCK_VIEWS[0].to_dict()
 EXPECTED_BLOCK_2 = BLOCK_VIEWS[1].to_dict()
 
 EXPECTED_ACCOUNT_1 = ACCOUNT_VIEWS[0].to_dict()
+
+EXPECTED_ACCOUNT_2 = ACCOUNT_VIEWS[1].to_dict()
 
 # endregion
 
@@ -92,4 +95,46 @@ class TestNemRestFacade(DatabaseTestBase):
 		# Assert:
 		self.assertIsNone(account)
 
+	def _assert_can_retrieve_accounts(self, pagination, sorting, expected_accounts, is_harvesting=False):
+		# Act:
+		accounts = self.nem_rest_facade.get_accounts(pagination, sorting, is_harvesting)
+
+		# Assert:
+		self.assertEqual(expected_accounts, accounts)
+
+	def test_can_retrieve_accounts_filtered_by_limit(self):
+		self._assert_can_retrieve_accounts(
+			pagination=Pagination(limit=1, offset=0),
+			sorting=Sorting(field='BALANCE', order='DESC'),
+			expected_accounts=[EXPECTED_ACCOUNT_2]
+		)
+
+	def test_can_retrieve_accounts_filtered_by_offset(self):
+		self._assert_can_retrieve_accounts(
+			pagination=Pagination(limit=1, offset=1),
+			sorting=Sorting(field='BALANCE', order='DESC'),
+			expected_accounts=[EXPECTED_ACCOUNT_1]
+		)
+
+	def test_can_retrieve_accounts_sorted_by_balance_asc(self):
+		self._assert_can_retrieve_accounts(
+			pagination=Pagination(limit=10, offset=0),
+			sorting=Sorting(field='BALANCE', order='ASC'),
+			expected_accounts=[EXPECTED_ACCOUNT_1, EXPECTED_ACCOUNT_2]
+		)
+
+	def test_can_retrieve_accounts_sorted_by_balance_desc(self):
+		self._assert_can_retrieve_accounts(
+			pagination=Pagination(limit=10, offset=0),
+			sorting=Sorting(field='BALANCE', order='DESC'),
+			expected_accounts=[EXPECTED_ACCOUNT_2, EXPECTED_ACCOUNT_1]
+		)
+
+	def test_can_retrieve_harvesting_accounts(self):
+		self._assert_can_retrieve_accounts(
+			pagination=Pagination(limit=10, offset=0),
+			sorting=Sorting(field='BALANCE', order='DESC'),
+			expected_accounts=[EXPECTED_ACCOUNT_2],
+			is_harvesting=True
+		)
 	# endregion
