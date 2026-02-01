@@ -1,5 +1,6 @@
 from collections import namedtuple
 
+from rest import Pagination, Sorting
 from rest.db.NemDatabase import NemDatabase
 
 from ..test.DatabaseTestUtils import ACCOUNT_VIEWS, ACCOUNTS, BLOCK_VIEWS, DatabaseTestBase
@@ -13,6 +14,8 @@ EXPECTED_BLOCK_VIEW_1 = BLOCK_VIEWS[0]
 EXPECTED_BLOCK_VIEW_2 = BLOCK_VIEWS[1]
 
 EXPECTED_ACCOUNT_VIEW_1 = ACCOUNT_VIEWS[0]
+
+EXPECTED_ACCOUNT_VIEW_2 = ACCOUNT_VIEWS[1]
 
 # endregion
 
@@ -94,5 +97,33 @@ class NemDatabaseTest(DatabaseTestBase):
 
 		# Assert:
 		self.assertEqual(EXPECTED_ACCOUNT_VIEW_1, account_view)
+
+	# endregion
+
+	# region accounts
+	def _assert_can_query_accounts(self, pagination, sorting, expected_accounts, is_harvesting=False):
+		# Arrange:
+		nem_db = NemDatabase(self.db_config, self.network)
+
+		# Act:
+		accounts_view = nem_db.get_accounts(pagination, sorting, is_harvesting)
+
+		# Assert:
+		self.assertEqual(expected_accounts, accounts_view)
+
+	def test_can_query_accounts_filtered_limit(self):
+		self._assert_can_query_accounts(Pagination(1, 0), Sorting('BALANCE', 'desc'), [EXPECTED_ACCOUNT_VIEW_2])
+
+	def test_can_query_accounts_filtered_offset(self):
+		self._assert_can_query_accounts(Pagination(1, 1), Sorting('BALANCE', 'desc'), [EXPECTED_ACCOUNT_VIEW_1])
+
+	def test_can_query_accounts_filtered_is_harvesting(self):
+		self._assert_can_query_accounts(Pagination(10, 0), Sorting('BALANCE', 'desc'), [EXPECTED_ACCOUNT_VIEW_2], is_harvesting=True)
+
+	def test_can_query_accounts_sorted_by_balance_asc(self):
+		self._assert_can_query_accounts(Pagination(10, 0), Sorting('BALANCE', 'asc'), [EXPECTED_ACCOUNT_VIEW_1, EXPECTED_ACCOUNT_VIEW_2])
+
+	def test_can_query_accounts_sorted_by_balance_desc(self):
+		self._assert_can_query_accounts(Pagination(10, 0), Sorting('BALANCE', 'desc'), [EXPECTED_ACCOUNT_VIEW_2, EXPECTED_ACCOUNT_VIEW_1])
 
 	# endregion

@@ -78,7 +78,7 @@ class NemDatabase(DatabaseConnectionPool):
 			cosignatories=[str(Address(address)) for address in cosignatories] if cosignatories else None
 		)
 
-	def _generate_account_query(self, where_condition):  # pylint: disable=no-self-use
+	def _generate_account_query(self, where_condition, order_condition='', limit_condition=''):  # pylint: disable=no-self-use
 		"""Base account query."""
 
 		return f'''
@@ -99,13 +99,15 @@ class NemDatabase(DatabaseConnectionPool):
 				cosignatory_of,
 				cosignatories
 			FROM accounts
-			WHERE {where_condition}
+			{where_condition}
+			{order_condition}
+			{limit_condition}
 		'''
 
-	def _get_account(self, where_clause, query_bytes):
+	def _get_account(self, where_condition, query_bytes):
 		"""Gets account by where clause."""
 
-		sql = self._generate_account_query(where_clause)
+		sql = self._generate_account_query(where_condition=where_condition)
 
 		with self.connection() as connection:
 			cursor = connection.cursor()
@@ -147,13 +149,36 @@ class NemDatabase(DatabaseConnectionPool):
 	def get_account_by_address(self, address):
 		"""Gets account by address."""
 
-		where_clause = 'address = %s'
+		where_condition = 'WHERE address = %s'
 
-		return self._get_account(where_clause, address.bytes)
+		return self._get_account(where_condition, address.bytes)
 
 	def get_account_by_public_key(self, public_key):
 		"""Gets account by public key."""
 
-		where_clause = 'public_key = %s'
+		where_condition = 'WHERE public_key = %s'
 
-		return self._get_account(where_clause, public_key.bytes)
+		return self._get_account(where_condition, public_key.bytes)
+
+	def get_accounts(self, pagination, sorting, is_harvesting):
+		"""Gets accounts pagination in database."""
+
+		params = []
+
+		where_condition = ''
+		if is_harvesting:
+			where_condition = " WHERE remote_status = 'ACTIVE' "
+
+		order_condition = f' ORDER BY {sorting.field} {sorting.order} '
+		limit_condition = ' LIMIT %s OFFSET %s'
+
+		params.extend([pagination.limit, pagination.offset])
+
+		sql = self._generate_account_query(limit_condition=limit_condition, order_condition=order_condition, where_condition=where_condition)
+
+		with self.connection() as connection:
+			cursor = connection.cursor()
+			cursor.execute(sql, params)
+			results = cursor.fetchall()
+
+			return [self._create_account_view(result) for result in results]
