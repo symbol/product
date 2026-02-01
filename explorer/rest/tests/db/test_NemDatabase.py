@@ -22,24 +22,22 @@ EXPECTED_ACCOUNT_VIEW_2 = ACCOUNT_VIEWS[1]
 
 class NemDatabaseTest(DatabaseTestBase):
 
+	def setUp(self):
+		super().setUp()
+		self.nem_db = NemDatabase(self.db_config, self.network)
+
 	# region block
 
 	def _assert_can_query_block_by_height(self, height, expected_block):
-		# Arrange:
-		nem_db = NemDatabase(self.db_config, self.network)
-
 		# Act:
-		block_view = nem_db.get_block(height)
+		block_view = self.nem_db.get_block(height)
 
 		# Assert:
 		self.assertEqual(expected_block, block_view)
 
 	def _assert_can_query_blocks_with_filter(self, query_params, expected_blocks):
-		# Arrange:
-		nem_db = NemDatabase(self.db_config, self.network)
-
 		# Act:
-		blocks_view = nem_db.get_blocks(query_params.limit, query_params.offset, query_params.min_height, query_params.sort)
+		blocks_view = self.nem_db.get_blocks(query_params.limit, query_params.offset, query_params.min_height, query_params.sort)
 
 		# Assert:
 		self.assertEqual(expected_blocks, blocks_view)
@@ -79,22 +77,14 @@ class NemDatabaseTest(DatabaseTestBase):
 	# region account
 
 	def test_can_query_account_by_address(self):
-		# Arrange:
-		nem_db = NemDatabase(self.db_config, self.network)
-
 		# Act:
-		account_view = nem_db.get_account_by_address(address=ACCOUNTS[0].address)
-
+		account_view = self.nem_db.get_account_by_address(address=ACCOUNTS[0].address)
 		# Assert:
 		self.assertEqual(EXPECTED_ACCOUNT_VIEW_1, account_view)
 
 	def test_can_query_account_by_public_key(self):
-		# Arrange:
-		nem_db = NemDatabase(self.db_config, self.network)
-
 		# Act:
-		account_view = nem_db.get_account_by_public_key(public_key=ACCOUNTS[0].public_key)
-
+		account_view = self.nem_db.get_account_by_public_key(public_key=ACCOUNTS[0].public_key)
 		# Assert:
 		self.assertEqual(EXPECTED_ACCOUNT_VIEW_1, account_view)
 
@@ -102,12 +92,8 @@ class NemDatabaseTest(DatabaseTestBase):
 
 	# region accounts
 	def _assert_can_query_accounts(self, pagination, sorting, expected_accounts, is_harvesting=False):
-		# Arrange:
-		nem_db = NemDatabase(self.db_config, self.network)
-
 		# Act:
-		accounts_view = nem_db.get_accounts(pagination, sorting, is_harvesting)
-
+		accounts_view = self.nem_db.get_accounts(pagination, sorting, is_harvesting)
 		# Assert:
 		self.assertEqual(expected_accounts, accounts_view)
 
