@@ -48,3 +48,29 @@ class NemRestFacade:
 		accounts = self.nem_db.get_accounts(pagination, sorting, is_harvesting)
 
 		return [account.to_dict() for account in accounts]
+
+	async def get_health(self):
+		"""Gets health of the node."""
+
+		latest_block = self.nem_db.get_blocks(limit=1, offset=0, min_height=1, sort='DESC')[0]
+
+		last_synced_at = latest_block.timestamp
+		last_block_height = latest_block.height
+		is_healthy = True
+		errors = []
+
+		try:
+			await self.nem_connector.node_info()
+		except Exception:
+			is_healthy = False
+			errors.append({
+				"type": "synchronization",
+				"message": "Node is not responding"
+			})
+
+		return {
+				"isHealthy": is_healthy,
+				"lastSyncedAt": last_synced_at,
+				"lastBlockHeight": last_block_height,
+				"errors": errors
+			}
