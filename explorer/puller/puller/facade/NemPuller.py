@@ -249,6 +249,17 @@ class NemPuller:
 
 				self.nem_db.upsert_account(cursor, main_account)
 
+	def _process_harvested_fees(self, cursor, accounts_harvested_fee):  # pylint: disable=no-self-use
+		"""Process harvested fees for accounts."""
+
+		for beneficiary, (total_fees, last_height) in accounts_harvested_fee.items():
+			self.nem_db.update_account_harvested_fees(
+				cursor,
+				beneficiary,
+				total_fees,
+				last_height
+			)
+
 	async def sync_nemesis_block(self):
 		"""Sync and write Nemesis block to database."""
 
@@ -271,6 +282,7 @@ class NemPuller:
 		cursor = self.nem_db.connection.cursor()
 		processed = 0
 		pending_addresses = set()
+		accounts_harvested_fee = {}
 
 		log.info('DB writer thread started')
 
@@ -297,10 +309,20 @@ class NemPuller:
 			addresses = self._extract_addresses_from_block(block)
 			pending_addresses.update(addresses)
 
+			# Track beneficiary harvested fees
+			current_fees, _ = accounts_harvested_fee.get(block.beneficiary, (0, 0))
+			accounts_harvested_fee[block.beneficiary] = (
+				current_fees + block.total_fee,
+				block.height
+			)
+
 			# Batch commits
 			if processed % batch_size == 0:
 				asyncio.run(self._process_account_batch(cursor, pending_addresses))
 				pending_addresses.clear()
+
+				self._process_harvested_fees(cursor, accounts_harvested_fee)
+				accounts_harvested_fee.clear()
 
 				self._commit_blocks(f'Committed {processed} blocks')
 
@@ -330,7 +352,6 @@ class NemPuller:
 		try:
 			while chain_height > db_height:
 				blocks = await self._retry_get_blocks_after(db_height)
-				# print(vars(blocks[0].transactions[0]))
 
 				for block in blocks:
 					block_queue.put(block)
