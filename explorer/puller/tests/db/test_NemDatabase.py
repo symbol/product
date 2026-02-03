@@ -8,7 +8,7 @@ from symbolchain.nem.Network import Address
 from test_DatabaseConnection import DatabaseConfig
 
 from puller.db.NemDatabase import NemDatabase
-from puller.facade.NemPuller import BlockRecord
+from puller.facade.NemPuller import AccountRecord, BlockRecord
 
 # region test data
 
@@ -39,6 +39,22 @@ BLOCKS = [
 		200),
 ]
 
+ACCOUNTS = [
+	AccountRecord(
+		Address('TBZWVEKB2XMTO4F3RAOEIBWRBMPQ5N23G56ZJM4I'),
+		PublicKey('5451f450416d214b14f0375ce06c3451eeb784f7bcd25ae1072ba7e403940a58'),
+		None,
+		0.123456,
+		1000000,
+		99999,
+		[],
+		10,
+		'LOCKED',
+		'INACTIVE',
+		None,
+		[],
+		[])
+]
 # endregion
 
 
@@ -52,6 +68,32 @@ class NemDatabaseTest(unittest.TestCase):
 		# Destroy the temporary PostgreSQL database
 		self.postgresql.stop()
 
+	def _fetch_account_from_db(self, cursor, address):  # pylint: disable=no-self-use
+		"""Helper method to fetch account data from database."""
+
+		cursor.execute(
+			'''
+			SELECT
+				encode(address, 'hex'),
+				encode(public_key, 'hex'),
+				encode(remote_address, 'hex'),
+				importance::TEXT,
+				balance,
+				vested_balance,
+				mosaics,
+				harvested_blocks,
+				status,
+				remote_status,
+				min_cosignatories,
+				cosignatory_of,
+				cosignatories
+			FROM accounts
+			WHERE address = %s
+			''',
+			(address.bytes,)
+		)
+		return cursor.fetchone()
+
 	def test_can_create_tables(self):
 		# Arrange:
 		with NemDatabase(self.db_config) as nem_database:
@@ -64,14 +106,15 @@ class NemDatabaseTest(unittest.TestCase):
 				SELECT table_name
 				FROM information_schema.tables
 				WHERE table_schema = 'public'
-				AND table_name = 'blocks'
+				ORDER BY table_name
 				'''
 			)
-			result = cursor.fetchone()
+			results = cursor.fetchall()
 
 		# Assert:
-		self.assertIsNotNone(result)
-		self.assertEqual(result[0], 'blocks')
+		self.assertEqual(len(results), 2)
+		self.assertEqual(results[0][0], 'accounts')
+		self.assertEqual(results[1][0], 'blocks')
 
 	def test_can_insert_block(self):
 		# Arrange:
@@ -161,3 +204,77 @@ class NemDatabaseTest(unittest.TestCase):
 
 		# Assert:
 		self.assertEqual(result, 0)
+
+	def test_can_insert_account(self):
+		# Arrange:
+		with NemDatabase(self.db_config) as nem_database:
+			nem_database.create_tables()
+
+			cursor = nem_database.connection.cursor()
+
+			# Act:
+			nem_database.upsert_account(
+				cursor,
+				ACCOUNTS[0]
+			)
+
+			nem_database.connection.commit()
+			result = self._fetch_account_from_db(cursor, ACCOUNTS[0].address)
+
+		# Assert:
+		self.assertIsNotNone(result)
+		self.assertEqual(result, (
+			ACCOUNTS[0].address.bytes.hex(),
+			ACCOUNTS[0].public_key.bytes.hex(),
+			None,
+			'0.1234560000',
+			1000000,
+			99999,
+			[],
+			10,
+			'LOCKED',
+			'INACTIVE',
+			None,
+			None,
+			None)
+		)
+
+	def test_can_update_account_by_address_conflict(self):
+		# Arrange:
+		with NemDatabase(self.db_config) as nem_database:
+			nem_database.create_tables()
+
+			cursor = nem_database.connection.cursor()
+
+			# insert initial account
+			nem_database.upsert_account(
+				cursor,
+				ACCOUNTS[0]
+			)
+
+			# Act:
+			nem_database.upsert_account(
+				cursor,
+				ACCOUNTS[0]._replace(balance=2000000)
+			)
+
+			nem_database.connection.commit()
+			result = self._fetch_account_from_db(cursor, ACCOUNTS[0].address)
+
+		# Assert:
+		self.assertIsNotNone(result)
+		self.assertEqual(result, (
+			ACCOUNTS[0].address.bytes.hex(),
+			ACCOUNTS[0].public_key.bytes.hex(),
+			None,
+			'0.1234560000',
+			2000000,
+			99999,
+			[],
+			10,
+			'LOCKED',
+			'INACTIVE',
+			None,
+			None,
+			None)
+		)

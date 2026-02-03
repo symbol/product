@@ -4,8 +4,9 @@ import threading
 from collections import namedtuple
 from queue import Queue
 
+from symbolchain.CryptoTypes import PublicKey
 from symbolchain.facade.NemFacade import NemFacade
-from symbolchain.nem.Network import Network
+from symbolchain.nem.Network import Address, Network
 from symbollightapi.connector.NemConnector import NemConnector
 from symbollightapi.model.Exceptions import NodeException
 from zenlog import log
@@ -23,6 +24,21 @@ BlockRecord = namedtuple('BlockRecord', [
 	'signer',
 	'signature',
 	'size'
+])
+AccountRecord = namedtuple('AccountRecord', [
+	'address',
+	'public_key',
+	'remote_address',
+	'importance',
+	'balance',
+	'vested_balance',
+	'mosaics',
+	'harvested_blocks',
+	'status',
+	'remote_status',
+	'min_cosignatories',
+	'cosignatory_of',
+	'cosignatories'
 ])
 DatabaseConfig = namedtuple('DatabaseConfig', ['database', 'user', 'password', 'host', 'port'])
 
@@ -44,10 +60,109 @@ class NemPuller:
 		self.nem_connector = NemConnector(node_url, network)
 		self.nem_facade = NemFacade(str(network))
 
+	async def _retry_operation(self, operation, description, retries=3, delay=2):  # pylint: disable=no-self-use
+		"""Retries an async operation with exponential backoff."""
+
+		for attempt in range(1, retries + 1):
+			try:
+				return await operation()
+			except NodeException as error:
+				if attempt < retries:
+					wait_time = delay * (2 ** (attempt - 1))  # Exponential backoff: 2s, 4s, 8s
+					log.warning(f'Error {description} (attempt {attempt}/{retries}): {error}. Retrying in {wait_time}s...')
+					await asyncio.sleep(wait_time)
+				else:
+					log.error(f'Failed {description} after {retries} attempts: {error}')
+					raise
+
+	async def _retry_get_blocks_after(self, height, retries=3, delay=2):
+		"""Retries fetching blocks after a given height with exponential backoff."""
+
+		return await self._retry_operation(
+			lambda: self.nem_connector.get_blocks_after(height),
+			f'fetching blocks after height {height}',
+			retries,
+			delay
+		)
+
+	async def _retry_get_account_info(self, address, forwarded=False, retries=3, delay=2):
+		"""Retries fetching account info with exponential backoff."""
+
+		return await self._retry_operation(
+			lambda: self.nem_connector.account_info(address, forwarded),
+			f'fetching account {address[:16]}...',
+			retries,
+			delay
+		)
+
+	async def _retry_get_account_mosaics(self, address, retries=3, delay=2):
+		"""Retries fetching account mosaics with exponential backoff."""
+
+		return await self._retry_operation(
+			lambda: self.nem_connector.account_mosaics(address),
+			f'fetching mosaics for account {address[:16]}...',
+			retries,
+			delay
+		)
+
 	def _convert_timestamp_to_datetime(self, timestamp):
 		"""Formats a NEM network timestamp to UTC."""
 
 		return self.nem_facade.network.datetime_converter.to_datetime(timestamp).strftime('%Y-%m-%d %H:%M:%S+00:00')
+
+	def _convert_public_key_to_address(self, public_key):
+		"""Convert public key to address."""
+
+		return self.nem_facade.network.public_key_to_address(PublicKey(public_key))
+
+	def _extract_addresses_from_block(self, block):
+		"""Extract address and public key from block and transactions."""
+
+		addresses = set()
+
+		public_key_fields = ['sender', 'remote_account', 'creator']
+		address_fields = ['recipient', 'rental_fee_sink', 'creation_fee_sink']
+
+		def _extract_from_transaction(transaction):
+			# Extract from public key fields
+			for field in public_key_fields:
+				value = getattr(transaction, field, None)
+				if value:
+					addresses.add(str(self._convert_public_key_to_address(value)))
+
+			# Extract from address fields
+			for field in address_fields:
+				value = getattr(transaction, field, None)
+				if value:
+					addresses.add(str(Address(value)))
+
+			# Handle levy recipient
+			levy = getattr(transaction, 'levy', None)
+			if levy:
+				addresses.add(str(Address(levy.recipient)))
+
+			# Handle multisig signatures
+			if hasattr(transaction, 'signatures'):
+				for signature in transaction.signatures:
+					addresses.add(str(Address(signature.other_account)))
+					addresses.add(str(self._convert_public_key_to_address(signature.sender)))
+
+			# Handle multisig modifications
+			if hasattr(transaction, 'modifications'):
+				for modification in transaction.modifications:
+					addresses.add(str(self._convert_public_key_to_address(modification.cosignatory_account)))
+
+		# Block signer
+		addresses.add(str(self._convert_public_key_to_address(block.signer)))
+
+		# Block transactions
+		for transaction in block.transactions:
+			_extract_from_transaction(transaction)
+
+			if hasattr(transaction, 'other_transaction'):
+				_extract_from_transaction(transaction.other_transaction)
+
+		return addresses
 
 	def _commit_blocks(self, message=None):
 		"""Commit blocks to database with error handling."""
@@ -76,6 +191,64 @@ class NemPuller:
 
 		self.nem_db.insert_block(cursor, block)
 
+	def _convert_mosaics_to_json(self, account_mosaics):  # pylint: disable=no-self-use
+		"""Convert AccountMosaic to Json format."""
+
+		return [
+			{
+				'namespace': f'{mosaic.mosaic_id[0]}.{mosaic.mosaic_id[1]}',
+				'quantity': mosaic.quantity
+			}
+			for mosaic in account_mosaics
+		]
+
+	def _create_account_record(self, account_info, mosaics_json, remote_address=None):  # pylint: disable=no-self-use
+		"""Create AccountRecord from account info and mosaics."""
+
+		return AccountRecord(
+			account_info.address,
+			account_info.public_key,
+			remote_address,
+			account_info.importance,
+			account_info.balance,
+			account_info.vested_balance,
+			mosaics_json,
+			account_info.harvested_blocks,
+			account_info.status,
+			account_info.remote_status,
+			account_info.min_cosignatories,
+			account_info.cosignatory_of,
+			account_info.cosignatories
+		)
+
+	async def _process_account_batch(self, cursor, addresses):
+		"""
+		Process a batch of addresses: fetch account info, mosaics, and upsert.
+		Updates both new and existing accounts with latest information.
+		"""
+
+		log.info(f'Processing batch of {len(addresses)} addresses')
+
+		# Fetch account info for all addresses (both new and existing)
+		for address in addresses:
+			account_info = await self._retry_get_account_info(address)
+			account_mosaics = await self._retry_get_account_mosaics(address)
+
+			mosaics_json = self._convert_mosaics_to_json(account_mosaics)
+			account = self._create_account_record(account_info, mosaics_json)
+
+			self.nem_db.upsert_account(cursor, account)
+
+			if 'REMOTE' == account_info.remote_status:
+				# Try fetching forwarded account info if remote status is REMOTE
+				main_account_info = await self._retry_get_account_info(address, forwarded=True)
+				main_account_mosaics = await self._retry_get_account_mosaics(str(main_account_info.address))
+
+				main_mosaics_json = self._convert_mosaics_to_json(main_account_mosaics)
+				main_account = self._create_account_record(main_account_info, main_mosaics_json, remote_address=account.address)
+
+				self.nem_db.upsert_account(cursor, main_account)
+
 	async def sync_nemesis_block(self):
 		"""Sync and write Nemesis block to database."""
 
@@ -84,6 +257,9 @@ class NemPuller:
 		cursor = self.nem_db.connection.cursor()
 
 		self._process_block(cursor, nemesis_block)
+
+		addresses = self._extract_addresses_from_block(nemesis_block)
+		await self._process_account_batch(cursor, addresses)
 
 		self._commit_blocks('Committed Nemesis block')
 
@@ -94,6 +270,7 @@ class NemPuller:
 
 		cursor = self.nem_db.connection.cursor()
 		processed = 0
+		pending_addresses = set()
 
 		log.info('DB writer thread started')
 
@@ -104,6 +281,11 @@ class NemPuller:
 			# Check for sentinel value (None) to stop processing
 			if block is None:
 				log.info('Received stop signal, ending DB writer thread')
+
+				# Process any remaining addresses before exiting
+				if pending_addresses:
+					asyncio.run(self._process_account_batch(cursor, pending_addresses))
+
 				block_queue.task_done()
 				break
 
@@ -111,8 +293,15 @@ class NemPuller:
 			self._process_block(cursor, block)
 			processed += 1
 
+			# Extract addresses for account processing
+			addresses = self._extract_addresses_from_block(block)
+			pending_addresses.update(addresses)
+
 			# Batch commits
 			if processed % batch_size == 0:
+				asyncio.run(self._process_account_batch(cursor, pending_addresses))
+				pending_addresses.clear()
+
 				self._commit_blocks(f'Committed {processed} blocks')
 
 			block_queue.task_done()
@@ -122,21 +311,6 @@ class NemPuller:
 			self._commit_blocks()
 
 		log.info(f'Database thread: {processed} blocks inserted')
-
-	async def _retry_get_blocks_after(self, height, retries=3, delay=2):
-		"""Retries fetching blocks after a given height with exponential backoff."""
-
-		for attempt in range(1, retries + 1):
-			try:
-				return await self.nem_connector.get_blocks_after(height)
-			except NodeException as error:
-				if attempt < retries:
-					wait_time = delay * (2 ** (attempt - 1))  # Exponential backoff: 2s, 4s, 8s
-					log.warning(f'Error fetching blocks after height {height} (attempt {attempt}/{retries}): {error}. Retrying in {wait_time}s...')
-					await asyncio.sleep(wait_time)
-				else:
-					log.error(f'Failed to fetch blocks after height {height} after {retries} attempts: {error}')
-					raise
 
 	async def sync_blocks(self, db_height, chain_height, queue_size=200, batch_size=50):
 		"""sync blocks from NEM network."""
@@ -156,6 +330,7 @@ class NemPuller:
 		try:
 			while chain_height > db_height:
 				blocks = await self._retry_get_blocks_after(db_height)
+				# print(vars(blocks[0].transactions[0]))
 
 				for block in blocks:
 					block_queue.put(block)
