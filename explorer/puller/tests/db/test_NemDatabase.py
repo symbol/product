@@ -285,48 +285,6 @@ class NemDatabaseTest(unittest.TestCase):
 			None)
 		)
 
-	def test_can_get_remote_address_by_address_returns_none(self):
-		# Arrange:
-		with NemDatabase(self.db_config) as nem_database:
-			nem_database.create_tables()
-
-			cursor = nem_database.connection.cursor()
-
-			# insert initial account
-			nem_database.upsert_account(
-				cursor,
-				ACCOUNTS[0]
-			)
-
-			nem_database.connection.commit()
-
-			# Act:
-			result = nem_database.get_remote_address_by_address(ACCOUNTS[0].address)
-
-		# Assert:
-		self.assertIsNone(result)
-
-	def test_can_get_remote_address_by_address(self):
-		# Arrange:
-		with NemDatabase(self.db_config) as nem_database:
-			nem_database.create_tables()
-
-			cursor = nem_database.connection.cursor()
-
-			# insert initial account
-			nem_database.upsert_account(
-				cursor,
-				ACCOUNTS[0]._replace(remote_address=Address('TBKQWJJGPOHL462DBVMTYOAERXGG2BOS5XRFO2P6'))
-			)
-
-			nem_database.connection.commit()
-
-			# Act:
-			result = nem_database.get_remote_address_by_address(ACCOUNTS[0].address)
-
-		# Assert:
-		self.assertEqual(str(result), 'TBKQWJJGPOHL462DBVMTYOAERXGG2BOS5XRFO2P6')
-
 	def test_can_update_account_harvested_fees(self):
 		# Arrange:
 		with NemDatabase(self.db_config) as nem_database:
