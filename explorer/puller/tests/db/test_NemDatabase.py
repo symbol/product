@@ -3,6 +3,8 @@ import unittest
 
 import psycopg2
 import testing.postgresql
+from symbolchain.CryptoTypes import PublicKey
+from symbolchain.nem.Network import Address
 from test_DatabaseConnection import DatabaseConfig
 
 from puller.db.NemDatabase import NemDatabase
@@ -18,7 +20,8 @@ BLOCKS = [
 		5,
 		100000000000000,
 		'438cf6375dab5a0d32f9b7bf151d4539e00a590f7c022d5572c7d41815a24be4',
-		'8d07f90fb4bbe7715fa327c926770166a11be2e494a970605f2e12557f66c9b9',
+		Address('TBZWVEKB2XMTO4F3RAOEIBWRBMPQ5N23G56ZJM4I'),
+		PublicKey('8d07f90fb4bbe7715fa327c926770166a11be2e494a970605f2e12557f66c9b9'),
 		'2abdd19ad3efab0413b42772a586faa19dedb16d35f665f90d598046a2132c4a'
 		'd1e71001545ceaa44e63c04345591e7aadbfd330af82a0d8a1da5643e791ff0f',
 		100),
@@ -29,7 +32,8 @@ BLOCKS = [
 		3,
 		80000000000000,
 		'1dd9d4d7b6af603d29c082f9aa4e123f07d18154ddbcd7ddc6702491b854c5e4',
-		'f9bd190dd0c364261f5c8a74870cc7f7374e631352293c62ecc437657e5de2cd',
+		Address('TCJLCZSOQ6RGWHTPSV2DW467WZSHK4NBSITND4OF'),
+		PublicKey('f9bd190dd0c364261f5c8a74870cc7f7374e631352293c62ecc437657e5de2cd'),
 		'1b81379847241e45da86b27911e5c9a9192ec04f644d98019657d32838b49c14'
 		'3eaa4815a3028b80f9affdbf0b94cd620f7a925e02783dda67b8627b69ddf70e',
 		200),
@@ -85,10 +89,11 @@ class NemDatabaseTest(unittest.TestCase):
 				SELECT
 					height,
 					timestamp,
-					total_fees,
+					total_fee,
 					total_transactions,
 					difficulty,
 					encode(hash, 'hex'),
+					encode(beneficiary, 'hex'),
 					encode(signer, 'hex'),
 					encode(signature, 'hex'),
 					size
@@ -108,7 +113,8 @@ class NemDatabaseTest(unittest.TestCase):
 			5,
 			100000000000000,
 			BLOCKS[0].block_hash,
-			BLOCKS[0].signer,
+			Address(BLOCKS[0].beneficiary).bytes.hex(),
+			PublicKey(BLOCKS[0].signer).bytes.hex(),
 			BLOCKS[0].signature,
 			BLOCKS[0].size
 		)
