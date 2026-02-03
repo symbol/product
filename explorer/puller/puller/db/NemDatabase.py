@@ -26,10 +26,11 @@ class NemDatabase(DatabaseConnection):
 				id serial PRIMARY KEY,
 				height bigint NOT NULL UNIQUE,
 				timestamp timestamp NOT NULL,
-				total_fees bigint DEFAULT 0,
+				total_fee bigint DEFAULT 0,
 				total_transactions int DEFAULT 0,
 				difficulty bigint NOT NULL,
 				hash bytea NOT NULL,
+				beneficiary bytea NOT NULL,
 				signer bytea NOT NULL,
 				signature bytea NOT NULL,
 				size bigint DEFAULT 0
@@ -46,16 +47,17 @@ class NemDatabase(DatabaseConnection):
 
 		cursor.execute(
 			'''
-			INSERT INTO blocks (height, timestamp, total_fees, total_transactions, difficulty, hash, signer, signature, size)
-			VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+			INSERT INTO blocks (height, timestamp, total_fee, total_transactions, difficulty, hash, beneficiary, signer, signature, size)
+			VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
 			''', (
 				block.height,
 				block.timestamp,
-				block.total_fees,
+				block.total_fee,
 				block.total_transactions,
 				block.difficulty,
 				unhexlify(block.block_hash),
-				unhexlify(block.signer),
+				block.beneficiary.bytes,
+				block.signer.bytes,
 				unhexlify(block.signature),
 				block.size
 			)
