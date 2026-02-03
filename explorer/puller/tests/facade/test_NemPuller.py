@@ -7,6 +7,7 @@ from unittest.mock import AsyncMock, Mock, patch
 import testing.postgresql
 from symbolchain.CryptoTypes import PublicKey
 from symbolchain.nem.Network import Address
+from symbollightapi.connector.NemConnector import AccountMosaic, NemAccountInfo
 from symbollightapi.model.Block import Block
 from symbollightapi.model.Exceptions import NodeException
 from symbollightapi.model.Transaction import (
@@ -201,7 +202,9 @@ NEM_CONNECTOR_RESPONSE_BLOCKS = [
 		],
 		300,
 		'1dd9d4d7b6af603d29c082f9aa4e123f07d18154ddbcd7ddc6702491b854c5e4',
-		'f9bd190dd0c364261f5c8a74870cc7f7374e631352293c62ecc437657e5de2cd',
+		57950000,
+		Address('TCJLCZSOQ6RGWHTPSV2DW467WZSHK4NBSITND4OF'),
+		PublicKey('f9bd190dd0c364261f5c8a74870cc7f7374e631352293c62ecc437657e5de2cd'),
 		(
 			'fdf6a9830e9320af79123f467fcb03d6beab735575ff50eab363d812c5581436'
 			'2ad7be0503db2ee70e60ac3408d83cdbcbd941067a6df703e0c21c7bf389f105'
@@ -391,6 +394,7 @@ class NemPullerTest(unittest.TestCase):
 				7,
 				300,
 				'1dd9d4d7b6af603d29c082f9aa4e123f07d18154ddbcd7ddc6702491b854c5e4',
+				'9892b1664e87a26b1e6f95743b73dfb6647571a19226d1f1c5',
 				'f9bd190dd0c364261f5c8a74870cc7f7374e631352293c62ecc437657e5de2cd',
 				(
 					'fdf6a9830e9320af79123f467fcb03d6beab735575ff50eab363d812c5581436'
