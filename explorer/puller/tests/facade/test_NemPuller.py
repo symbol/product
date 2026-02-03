@@ -5,6 +5,8 @@ import unittest
 from unittest.mock import AsyncMock, patch
 
 import testing.postgresql
+from symbolchain.CryptoTypes import PublicKey
+from symbolchain.nem.Network import Address
 from symbollightapi.model.Block import Block
 from symbollightapi.model.Exceptions import NodeException
 from symbollightapi.model.Transaction import TransferTransaction
@@ -35,7 +37,9 @@ NEM_CONNECTOR_RESPONSE_BLOCKS = [
 		],
 		100,
 		'1dd9d4d7b6af603d29c082f9aa4e123f07d18154ddbcd7ddc6702491b854c5e4',
-		'f9bd190dd0c364261f5c8a74870cc7f7374e631352293c62ecc437657e5de2cd',
+		9000000,
+		Address('TBZWVEKB2XMTO4F3RAOEIBWRBMPQ5N23G56ZJM4I'),
+		PublicKey('f9bd190dd0c364261f5c8a74870cc7f7374e631352293c62ecc437657e5de2cd'),
 		(
 			'fdf6a9830e9320af79123f467fcb03d6beab735575ff50eab363d812c5581436'
 			'2ad7be0503db2ee70e60ac3408d83cdbcbd941067a6df703e0c21c7bf389f105'
@@ -48,7 +52,9 @@ NEM_CONNECTOR_RESPONSE_BLOCKS = [
 		[],
 		200,
 		'9708256e8a8dfb76eed41dcfa2e47f4af520b7b3286afb7f60dca02851f8a53e',
-		'45c1553fb1be7f25b6f79278b9ede1129bb9163f3b85883ea90f1c66f497e68b',
+		0,
+		Address('TCJLCZSOQ6RGWHTPSV2DW467WZSHK4NBSITND4OF'),
+		PublicKey('45c1553fb1be7f25b6f79278b9ede1129bb9163f3b85883ea90f1c66f497e68b'),
 		(
 			'919ae66a34119b49812b335827b357f86884ab08b628029fd6e8db3572faeb4f'
 			'323a7bf9488c76ef8faa5b513036bbcce2d949ba3e41086d95a54c0007403c0b'
@@ -109,8 +115,8 @@ class NemPullerTest(unittest.TestCase):
 
 		query = (
 			'SELECT height, timestamp, '
-			'total_fees, total_transactions, difficulty, '
-			'encode(hash, \'hex\'), encode(signer, \'hex\'), encode(signature, \'hex\'), size '
+			'total_fee, total_transactions, difficulty, '
+			'encode(hash, \'hex\'), encode(beneficiary, \'hex\'), encode(signer, \'hex\'), encode(signature, \'hex\'), size '
 			'FROM blocks'
 		)
 
@@ -141,6 +147,7 @@ class NemPullerTest(unittest.TestCase):
 				1,
 				100,
 				'1dd9d4d7b6af603d29c082f9aa4e123f07d18154ddbcd7ddc6702491b854c5e4',
+				'98736a9141d5d93770bb881c4406d10b1f0eb75b377d94b388',
 				'f9bd190dd0c364261f5c8a74870cc7f7374e631352293c62ecc437657e5de2cd',
 				(
 					'fdf6a9830e9320af79123f467fcb03d6beab735575ff50eab363d812c5581436'
@@ -169,6 +176,7 @@ class NemPullerTest(unittest.TestCase):
 				1,
 				100,
 				'1dd9d4d7b6af603d29c082f9aa4e123f07d18154ddbcd7ddc6702491b854c5e4',
+				'98736a9141d5d93770bb881c4406d10b1f0eb75b377d94b388',
 				'f9bd190dd0c364261f5c8a74870cc7f7374e631352293c62ecc437657e5de2cd',
 				(
 					'fdf6a9830e9320af79123f467fcb03d6beab735575ff50eab363d812c5581436'
@@ -183,6 +191,7 @@ class NemPullerTest(unittest.TestCase):
 				0,
 				200,
 				'9708256e8a8dfb76eed41dcfa2e47f4af520b7b3286afb7f60dca02851f8a53e',
+				'9892b1664e87a26b1e6f95743b73dfb6647571a19226d1f1c5',
 				'45c1553fb1be7f25b6f79278b9ede1129bb9163f3b85883ea90f1c66f497e68b',
 				(
 					'919ae66a34119b49812b335827b357f86884ab08b628029fd6e8db3572faeb4f'
@@ -220,8 +229,10 @@ class NemPullerTest(unittest.TestCase):
 					[],
 					100 + i,
 					'a' * 64,  # hash
-					'b' * 64,  # signer
-					'c' * 128,  # signature
+					1000000,  # total_fee
+					Address('T' + 'A' * 39),  # beneficiary
+					PublicKey('A' * 64),  # signer
+					'd' * 128,  # signature
 					200
 				)
 			)
