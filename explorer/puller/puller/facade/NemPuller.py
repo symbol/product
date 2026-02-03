@@ -15,10 +15,11 @@ from puller.db.NemDatabase import NemDatabase
 BlockRecord = namedtuple('BlockRecord', [
 	'height',
 	'timestamp',
-	'total_fees',
+	'total_fee',
 	'total_transactions',
 	'difficulty',
 	'block_hash',
+	'beneficiary',
 	'signer',
 	'signature',
 	'size'
@@ -59,15 +60,15 @@ class NemPuller:
 		"""Process block data."""
 
 		timestamp = self._convert_timestamp_to_datetime(block_data.timestamp)
-		total_fees = sum(transaction.fee for transaction in block_data.transactions)
 
 		block = BlockRecord(
 			block_data.height,
 			timestamp,
-			total_fees,
+			block_data.total_fee,
 			len(block_data.transactions),
 			block_data.difficulty,
 			block_data.block_hash,
+			block_data.beneficiary,
 			block_data.signer,
 			block_data.signature,
 			block_data.size
