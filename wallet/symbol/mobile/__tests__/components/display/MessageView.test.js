@@ -3,6 +3,8 @@ import { MessageType } from '@/app/constants';
 import { runRenderComponentTest } from '__tests__/component-tests';
 import { render } from '@testing-library/react-native';
 
+const CUSTOM_MESSAGE_TYPE = 123;
+
 describe('components/MessageView', () => {
 	const createProps = ({ type, text, payload } = {}) => ({
 		message: {
@@ -92,7 +94,7 @@ describe('components/MessageView', () => {
 			{
 				description: 'renders raw icon for message with payload but no text',
 				config: {
-					message: { type: MessageType.PLAIN_TEXT, payload: '0x1234abcd' }
+					message: { type: CUSTOM_MESSAGE_TYPE, payload: '0x1234abcd' }
 				},
 				expected: {
 					iconShouldBeVisible: true,

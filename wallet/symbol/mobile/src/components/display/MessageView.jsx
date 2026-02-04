@@ -28,8 +28,7 @@ export const MessageView = ({ message }) => {
 
 	if (message.type === MessageType.ENCRYPTED_TEXT)
 		iconName = iconMap.encrypted;
-
-	if (!message.text && message.payload)
+	else if (message.type !== MessageType.PLAIN_TEXT)
 		iconName = iconMap.raw;
 
 	const isTextVisible = Boolean(message.text);
