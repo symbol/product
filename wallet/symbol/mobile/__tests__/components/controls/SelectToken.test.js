@@ -27,17 +27,17 @@ const SCREEN_TEXT = {
 const TOKEN_SYMBOL = TokenFixtureBuilder
 	.createWithToken('symbol', 'mainnet', 0)
 	.setAmount('1000')
-	.data;
+	.build();
 
 const TOKEN_CUSTOM = TokenFixtureBuilder
 	.createWithToken('symbol', 'mainnet', 1)
 	.setAmount('500')
-	.data;
+	.build();
 
 const TOKEN_UNKNOWN = TokenFixtureBuilder
 	.createWithToken('symbol', 'mainnet', 2)
 	.setAmount('250')
-	.data;
+	.build();
 
 const TOKEN_LIST = [TOKEN_SYMBOL, TOKEN_CUSTOM, TOKEN_UNKNOWN];
 

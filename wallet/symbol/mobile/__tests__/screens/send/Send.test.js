@@ -49,15 +49,15 @@ const SCREEN_TEXT = {
 
 const currentAccount = AccountFixtureBuilder
 	.createWithAccount(CHAIN_NAME, NETWORK_IDENTIFIER, 0)
-	.data;
+	.build();
 
 const recipientAccount = AccountFixtureBuilder
 	.createWithAccount(CHAIN_NAME, NETWORK_IDENTIFIER, 2)
-	.data;
+	.build();
 
 const multisigAccount = AccountFixtureBuilder
 	.createWithAccount(CHAIN_NAME, NETWORK_IDENTIFIER, 3)
-	.data;
+	.build();
 
 // Token Fixtures
 
@@ -65,13 +65,13 @@ const nativeToken = TokenFixtureBuilder
 	.createWithToken(CHAIN_NAME, NETWORK_IDENTIFIER, 0)
 	.setAmount('1000000000')
 	.override({ duration: 0 })
-	.data;
+	.build();
 
 const customToken = TokenFixtureBuilder
 	.createWithToken(CHAIN_NAME, NETWORK_IDENTIFIER, 1)
 	.setAmount('500000')
 	.override({ duration: 0 })
-	.data;
+	.build();
 
 const TOKEN_LIST = [nativeToken, customToken];
 
@@ -80,7 +80,7 @@ const TOKEN_LIST = [nativeToken, customToken];
 const NETWORK_PROPERTIES = NetworkPropertiesFixtureBuilder
 	.createWithType(CHAIN_NAME, NETWORK_IDENTIFIER)
 	.setNetworkCurrency({ ...nativeToken })
-	.data;
+	.build();
 
 
 // Account Info Fixtures
@@ -96,7 +96,7 @@ const regularAccountInfo = AccountInfoFixtureBuilder
 		cosignatories: [],
 		multisigAddresses: []
 	})
-	.data;
+	.build();
 
 const cosignatoryAccountInfo = AccountInfoFixtureBuilder
 	.createEmpty(CHAIN_NAME, NETWORK_IDENTIFIER)
@@ -109,7 +109,7 @@ const cosignatoryAccountInfo = AccountInfoFixtureBuilder
 		cosignatories: [],
 		multisigAddresses: [multisigAccount.address]
 	})
-	.data;
+	.build();
 
 // Transaction Fees Fixtures
 

@@ -12,7 +12,7 @@ const MOCK_TRANSACTION = {
 const TRANSACTION_FEE_TOKEN = TokenFixtureBuilder
 	.createWithToken('symbol', 'testnet', 0)
 	.setAmount(100000)
-	.data;
+	.build();
 
 const TRANSACTION_FEES = {
 	slow: { token: TRANSACTION_FEE_TOKEN },

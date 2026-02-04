@@ -64,42 +64,42 @@ const SCREEN_TEXT = {
 
 const mainnetSeedAccount = AccountFixtureBuilder
 	.createWithAccount(CHAIN_NAME, NETWORK_IDENTIFIER_MAINNET, 0)
-	.data;
+	.build();
 
 const mainnetMnemonicAccount = AccountFixtureBuilder
 	.createWithAccount(CHAIN_NAME, NETWORK_IDENTIFIER_MAINNET, 0)
 	.setAccountType('mnemonic')
 	.setSeedIndex(5)
-	.data;
+	.build();
 
 const mainnetPrivateKeyAccount = AccountFixtureBuilder
 	.createWithAccount(CHAIN_NAME, NETWORK_IDENTIFIER_MAINNET, 0)
 	.setAccountType('privateKey')
-	.data;
+	.build();
 
 const testnetSeedAccount = AccountFixtureBuilder
 	.createWithAccount(CHAIN_NAME, NETWORK_IDENTIFIER_TESTNET, 0)
-	.data;
+	.build();
 
 const multisigAccount1 = AccountFixtureBuilder
 	.createWithAccount(CHAIN_NAME, NETWORK_IDENTIFIER_MAINNET, 2)
-	.data;
+	.build();
 
 const multisigAccount2 = AccountFixtureBuilder
 	.createWithAccount(CHAIN_NAME, NETWORK_IDENTIFIER_MAINNET, 3)
-	.data;
+	.build();
 
 // Account Info Fixtures
 
 const regularAccountInfo = AccountInfoFixtureBuilder
 	.createEmpty(CHAIN_NAME, NETWORK_IDENTIFIER_MAINNET)
 	.override({ multisigAddresses: [] })
-	.data;
+	.build();
 
 const multisigCosignerAccountInfo = AccountInfoFixtureBuilder
 	.createEmpty(CHAIN_NAME, NETWORK_IDENTIFIER_MAINNET)
 	.override({ multisigAddresses: [multisigAccount1.address, multisigAccount2.address] })
-	.data;
+	.build();
 
 // Wallet Controller Mock
 

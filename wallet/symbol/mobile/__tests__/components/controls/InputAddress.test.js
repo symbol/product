@@ -10,16 +10,16 @@ const SCREEN_TEXT = {
 
 const CURRENT_ACCOUNT = AccountFixtureBuilder
 	.createWithAccount('symbol', 'mainnet', 0)
-	.data;
+	.build();
 
 const RECIPIENT_ACCOUNT = AccountFixtureBuilder
 	.createWithAccount('symbol', 'mainnet', 1)
-	.data;
+	.build();
 
 const CONTACT_ACCOUNT = AccountFixtureBuilder
 	.createWithAccount('symbol', 'mainnet', 2)
 	.override({ name: 'Bob Contact' })
-	.data;
+	.build();
 
 const ACCOUNTS_WITH_CURRENT = [CURRENT_ACCOUNT];
 

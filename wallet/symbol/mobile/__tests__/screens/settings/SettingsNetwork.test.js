@@ -30,10 +30,10 @@ const SCREEN_TEXT = {
 
 const NETWORK_PROPERTIES_TESTNET_LOADED = NetworkPropertiesFixtureBuilder
 	.createWithType('symbol', 'testnet')
-	.data;
+	.build();
 const NETWORK_PROPERTIES_EMPTY = NetworkPropertiesFixtureBuilder
 	.createEmpty()
-	.data;
+	.build();
 
 const NODE_URLS = [
 	'https://node1.symbol.com:3000',

@@ -60,7 +60,7 @@ export class TokenFixtureBuilder {
 	 * 
 	 * @returns {import('wallet-common-core/src/types/Token').Token}
 	 */
-	get data() {
+	build() {
 		return { ...this._data };
 	};
 

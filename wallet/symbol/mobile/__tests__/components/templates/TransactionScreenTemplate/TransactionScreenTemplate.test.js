@@ -28,15 +28,15 @@ const SCREEN_TEXT = {
 
 const RECIPIENT_ACCOUNT = AccountFixtureBuilder
 	.createWithAccount('symbol', 'testnet', 0)
-	.data;
+	.build();
 
 const COSIGNATORY_ACCOUNT_1 = AccountFixtureBuilder
 	.createWithAccount('symbol', 'testnet', 1)
-	.data;
+	.build();
 
 const COSIGNATORY_ACCOUNT_2 = AccountFixtureBuilder
 	.createWithAccount('symbol', 'testnet', 2)
-	.data;
+	.build();
 
 const COSIGNATORIES = [COSIGNATORY_ACCOUNT_1.address, COSIGNATORY_ACCOUNT_2.address];
 
@@ -45,7 +45,7 @@ const COSIGNATORIES = [COSIGNATORY_ACCOUNT_1.address, COSIGNATORY_ACCOUNT_2.addr
 const TRANSACTION_FEE_TOKEN = TokenFixtureBuilder
 	.createWithToken('symbol', 'testnet', 0)
 	.setAmount(100000)
-	.data;
+	.build();
 
 // Transaction Fixtures
 

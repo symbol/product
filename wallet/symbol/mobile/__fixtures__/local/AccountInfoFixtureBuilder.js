@@ -96,7 +96,7 @@ export class AccountInfoFixtureBuilder {
 	 * 
 	 * @returns {AccountInfo}
 	 */
-	get data() {
+	build() {
 		return { ...this._data };
 	};
 

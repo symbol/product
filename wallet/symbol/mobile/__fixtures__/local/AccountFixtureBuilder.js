@@ -49,7 +49,7 @@ export class AccountFixtureBuilder {
 	 * 
 	 * @returns {import('wallet-common-core/src/types/Account').WalletAccount}
 	 */
-	get data() {
+	build() {
 		return { ...this._data };
 	};
 

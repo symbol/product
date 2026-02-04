@@ -62,7 +62,7 @@ export class NetworkPropertiesFixtureBuilder {
 	 * 
 	 * @returns {import('wallet-common-core/src/types/Network').NetworkProperties}
 	 */
-	get data() {
+	build() {
 		return { ...this._data };
 	};
 
