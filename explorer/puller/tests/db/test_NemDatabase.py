@@ -81,9 +81,11 @@ class NemDatabaseTest(unittest.TestCase):
 				balance,
 				vested_balance,
 				mosaics,
+				harvested_fees,
 				harvested_blocks,
 				status,
 				remote_status,
+				last_harvested_height,
 				min_cosignatories,
 				cosignatory_of,
 				cosignatories
@@ -231,9 +233,11 @@ class NemDatabaseTest(unittest.TestCase):
 			1000000,
 			99999,
 			[],
+			0,
 			10,
 			'LOCKED',
 			'INACTIVE',
+			0,
 			None,
 			None,
 			None)
@@ -271,10 +275,48 @@ class NemDatabaseTest(unittest.TestCase):
 			2000000,
 			99999,
 			[],
+			0,
 			10,
 			'LOCKED',
 			'INACTIVE',
+			0,
 			None,
 			None,
 			None)
 		)
+
+	def test_can_update_account_harvested_fees(self):
+		# Arrange:
+		with NemDatabase(self.db_config) as nem_database:
+			nem_database.create_tables()
+
+			cursor = nem_database.connection.cursor()
+
+			# insert initial account
+			nem_database.upsert_account(
+				cursor,
+				ACCOUNTS[0]
+			)
+
+			# setup initial harvested fees:
+			nem_database.update_account_harvested_fees(
+				cursor,
+				Address(ACCOUNTS[0].address),
+				500000,
+				10
+			)
+
+			# Act:
+			nem_database.update_account_harvested_fees(
+				cursor,
+				Address(ACCOUNTS[0].address),
+				250000,
+				20
+			)
+
+			nem_database.connection.commit()
+			result = self._fetch_account_from_db(cursor, ACCOUNTS[0].address)
+
+		# Assert:
+		self.assertEqual(result[7], 750000)  # harvested_fees
+		self.assertEqual(result[11], 20)      # last_harvested_height

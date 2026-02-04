@@ -185,3 +185,19 @@ class NemDatabase(DatabaseConnection):
 				[address.bytes for address in account_info.cosignatories] if len(account_info.cosignatories) > 0 else None,
 			)
 		)
+
+	def update_account_harvested_fees(self, cursor, harvester, total_fees, last_height):  # pylint: disable=no-self-use
+		"""Updates harvested fees for an account."""
+
+		cursor.execute(
+			'''
+			UPDATE accounts
+			SET harvested_fees = harvested_fees + %s,
+				last_harvested_height = %s
+			WHERE address = %s
+			''', (
+				total_fees,
+				last_height,
+				harvester.bytes
+			)
+		)
