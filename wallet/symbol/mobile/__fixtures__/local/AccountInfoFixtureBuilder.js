@@ -126,12 +126,14 @@ export class AccountInfoFixtureBuilder {
 
 			const cosignatories = cosignatoryIndexes.map(index => {
 				const account = accounts[index];
-				if (!account)
-				{throw new Error(`Cosignatory account fixture not found for 
+				if (!account) {
+					throw new Error(`Cosignatory account fixture not found for 
 						chain=${this._chainName}, 
 						network=${this._networkIdentifier}, 
 						index=${index}
-					`);}
+					`);
+				}
+
 				return account.address;
 			});
 
@@ -157,12 +159,14 @@ export class AccountInfoFixtureBuilder {
 
 		const multisigAddresses = multisigAccountIndexes.map(index => {
 			const account = accounts[index];
-			if (!account)
-			{throw new Error(`Multisig account fixture not found for 
+			if (!account) {
+				throw new Error(`Multisig account fixture not found for 
 					chain=${this._chainName}, 
 					network=${this._networkIdentifier}, 
 					index=${index}
-				`);}
+				`);
+			}
+
 			return account.address;
 		});
 
@@ -185,6 +189,7 @@ export class AccountInfoFixtureBuilder {
 			
 			return this;
 		}
+		
 		this._data.linkedKeys = {
 			linkedPublicKey: isLinkedPublicKeyLinked ? LINKED_KEYS.linkedPublicKey : null,
 			nodePublicKey: isNodePublicKeyLinked ? LINKED_KEYS.nodePublicKey : null,
