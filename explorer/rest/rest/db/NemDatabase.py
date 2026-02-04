@@ -102,6 +102,18 @@ class NemDatabase(DatabaseConnectionPool):
 			WHERE {where_condition}
 		'''
 
+	def _get_account(self, where_clause, query_bytes):
+		"""Gets account by where clause."""
+
+		sql = self._generate_account_query(where_clause)
+
+		with self.connection() as connection:
+			cursor = connection.cursor()
+			cursor.execute(sql, (query_bytes,))
+			result = cursor.fetchone()
+
+			return self._create_account_view(result) if result else None
+
 	def get_block(self, height):
 		"""Gets block by height in database."""
 
@@ -137,25 +149,11 @@ class NemDatabase(DatabaseConnectionPool):
 
 		where_clause = 'address = %s'
 
-		sql = self._generate_account_query(where_clause)
-
-		with self.connection() as connection:
-			cursor = connection.cursor()
-			cursor.execute(sql, (address.bytes,))
-			result = cursor.fetchone()
-
-			return self._create_account_view(result) if result else None
+		return self._get_account(where_clause, address.bytes)
 
 	def get_account_by_public_key(self, public_key):
 		"""Gets account by public key."""
 
 		where_clause = 'public_key = %s'
 
-		sql = self._generate_account_query(where_clause)
-
-		with self.connection() as connection:
-			cursor = connection.cursor()
-			cursor.execute(sql, (public_key.bytes,))
-			result = cursor.fetchone()
-
-			return self._create_account_view(result) if result else None
+		return self._get_account(where_clause, public_key.bytes)
