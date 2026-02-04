@@ -100,10 +100,23 @@ export const mockRouter = (overrides = {}) => {
 	return routerNavigationMock;
 };
 
-export const mockLocalization = (dictionary = {}) => {
-	jest.spyOn(localization, '$t').mockImplementation(key => {
-		return dictionary[key] || key;
-	});
+/**
+ * Mocks the localization $t function.
+ * @param {Object|function(string, object): string} dictionaryOrCallback - Either a dictionary object mapping keys to translations 
+ * or a callback function for custom translation logic.
+ */
+export const mockLocalization = dictionaryOrCallback => {
+	const callback = typeof dictionaryOrCallback === 'function' ? dictionaryOrCallback : null;
+	const dictionary = dictionaryOrCallback ?? {};
+
+	if (callback) {
+		jest.spyOn(localization, '$t').mockImplementation(callback);
+	}
+	else {
+		jest.spyOn(localization, '$t').mockImplementation(key => {
+			return dictionary[key] || key;
+		});
+	}
 };
 
 /**

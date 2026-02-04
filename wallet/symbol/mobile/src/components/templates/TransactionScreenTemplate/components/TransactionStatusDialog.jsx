@@ -77,10 +77,10 @@ export const TransactionStatusDialog = props => {
 		hasFailedTransactions
 	});
 	const activityLogTitleMap = {
-		[TransactionStatusStep.CREATE]: 'Create Transaction',
-		[TransactionStatusStep.SIGN]: 'Sign Transaction',
-		[TransactionStatusStep.ANNOUNCE]: 'Send Transaction',
-		[TransactionStatusStep.CONFIRM]: 'Confirmation'
+		[TransactionStatusStep.CREATE]: $t('c_transactionStatus_step_create'),
+		[TransactionStatusStep.SIGN]: $t('c_transactionStatus_step_sign'),
+		[TransactionStatusStep.ANNOUNCE]: $t('c_transactionStatus_step_announce'),
+		[TransactionStatusStep.CONFIRM]: $t('c_transactionStatus_step_confirm')
 	};
 	const activityLogData = activityLog.map(item => ({
 		title: activityLogTitleMap[item.type],
@@ -100,36 +100,36 @@ export const TransactionStatusDialog = props => {
 	});
 	const statusInfoTextMap = {
 		[TransactionStatusInfoType.SENDING]: {
-			title: 'Please Wait',
-			description: 'Please do not close the app until the transaction has been sent.'
+			title: $t('c_transactionStatus_status_sending_title'),
+			description: $t('c_transactionStatus_status_sending_description')
 		},
 		[TransactionStatusInfoType.CONFIRMING]: {
-			title: 'Transaction Sent',
-			description: 'Waiting for network confirmation. You can close this window or keep it open to watch the progress.'
+			title: $t('c_transactionStatus_status_confirming_title'),
+			description: $t('c_transactionStatus_status_confirming_description')
 		},
 		[TransactionStatusInfoType.PARTIAL]: {
-			title: 'Transaction Sent',
-			description: 'Waiting for signatures from other parties. You can close this window or keep it open to watch the progress.'
+			title: $t('c_transactionStatus_status_partial_title'),
+			description: $t('c_transactionStatus_status_partial_description')
 		},
 		[TransactionStatusInfoType.CONFIRMED]: {
-			title: 'Success',
-			description: 'Transaction confirmed!'
+			title: $t('c_transactionStatus_status_confirmed_title'),
+			description: $t('c_transactionStatus_status_confirmed_description')
 		},
 		[TransactionStatusInfoType.CREATE_ERROR]: {
-			title: 'Creation Failed',
-			description: 'Transaction could not be created'
+			title: $t('c_transactionStatus_status_createError_title'),
+			description: $t('c_transactionStatus_status_createError_description')
 		},
 		[TransactionStatusInfoType.SIGN_ERROR]: {
-			title: 'Signing Failed',
-			description: 'Transaction was not signed'
+			title: $t('c_transactionStatus_status_signError_title'),
+			description: $t('c_transactionStatus_status_signError_description')
 		},
 		[TransactionStatusInfoType.ANNOUNCE_ERROR]: {
-			title: 'Transaction Failed',
-			description: 'Transaction was not broadcasted to the network'
+			title: $t('c_transactionStatus_status_announceError_title'),
+			description: $t('c_transactionStatus_status_announceError_description')
 		},
 		[TransactionStatusInfoType.FAILED_TRANSACTIONS]: {
-			title: 'Transaction Failed',
-			description: 'Transaction was rejected by the network'
+			title: $t('c_transactionStatus_status_failedTransaction_title'),
+			description: $t('c_transactionStatus_status_failedTransaction_description')
 		}
 	};
 	const statusText = statusInfoTextMap[statusInfo.type];
@@ -144,7 +144,7 @@ export const TransactionStatusDialog = props => {
 	return (
 		<DialogBox
 			type="alert"
-			title="Send Transaction"
+			title={$t('c_transactionStatus_dialog_title')}
 			isDisabled={isProcessing}
 			isVisible={isVisible}
 			onSuccess={onClose}
@@ -165,7 +165,7 @@ export const TransactionStatusDialog = props => {
 					<Animated.View entering={FadeIn.delay(BASE_ANIMATION_DELAY)} key={hash}>
 						{signedTransactionHashes.length > 1 && (
 							<StyledText type="label" size="s" style={styles.transactionCounter}>
-								{'Transaction ' + (index + 1)}
+								{$t('c_transactionStatus_transaction_text', { index: index + 1 })}
 							</StyledText>
 						)}
 						<ButtonPlain

@@ -20,41 +20,43 @@ jest.mock('@/app/utils', () => ({
 
 // constants
 
+const SCREEN_TEXT_TRANSACTION_COUNTER = 'c_transactionStatus_transaction_text';
 const SCREEN_TEXT = {
 	// Dialog
-	textDialogTitle: 'Send Transaction',
+	textDialogTitle: 'c_transactionStatus_dialog_title',
 	buttonOk: 'button_ok',
 
 	// Activity log steps
-	textStepCreate: 'Create Transaction',
-	textStepSign: 'Sign Transaction',
-	textStepAnnounce: 'Send Transaction',
-	textStepConfirm: 'Confirmation',
+	textStepCreate: 'c_transactionStatus_step_create',
+	textStepSign: 'c_transactionStatus_step_sign',
+	textStepAnnounce: 'c_transactionStatus_step_announce',
+	textStepConfirm: 'c_transactionStatus_step_confirm',
 
 	// Status card titles
-	textStatusSending: 'Please Wait',
-	textStatusConfirming: 'Transaction Sent',
-	textStatusSuccess: 'Success',
-	textStatusCreateError: 'Creation Failed',
-	textStatusSignError: 'Signing Failed',
-	textStatusAnnounceError: 'Transaction Failed',
+	textStatusSending: 'c_transactionStatus_status_sending_title',
+	textStatusConfirming: 'c_transactionStatus_status_confirming_title',
+	textStatusSuccess: 'c_transactionStatus_status_confirmed_title',
+	textStatusCreateError: 'c_transactionStatus_status_createError_title',
+	textStatusSignError: 'c_transactionStatus_status_signError_title',
+	textStatusPartial: 'c_transactionStatus_status_partial_title',
+	textStatusAnnounceError: 'c_transactionStatus_status_announceError_title',
 
 	// Status card descriptions
-	textDescriptionSending: 'Please do not close the app until the transaction has been sent.',
-	textDescriptionConfirming: 'Waiting for network confirmation. You can close this window or keep it open to watch the progress.',
-	textDescriptionPartial: 'Waiting for signatures from other parties. You can close this window or keep it open to watch the progress.',
-	textDescriptionSuccess: 'Transaction confirmed!',
-	textDescriptionCreateError: 'Transaction could not be created',
-	textDescriptionSignError: 'Transaction was not signed',
-	textDescriptionAnnounceError: 'Transaction was not broadcasted to the network',
-	textDescriptionRejected: 'Transaction was rejected by the network',
+	textDescriptionSending: 'c_transactionStatus_status_sending_description',
+	textDescriptionConfirming: 'c_transactionStatus_status_confirming_description',
+	textDescriptionPartial: 'c_transactionStatus_status_partial_description',
+	textDescriptionSuccess: 'c_transactionStatus_status_confirmed_description',
+	textDescriptionCreateError: 'c_transactionStatus_status_createError_description',
+	textDescriptionSignError: 'c_transactionStatus_status_signError_description',
+	textDescriptionAnnounceError: 'c_transactionStatus_status_announceError_description',
+	textDescriptionRejected: 'c_transactionStatus_status_failedTransaction_description',
 
 	// Explorer button
 	buttonViewInExplorer: 'button_openTransactionInExplorer',
 
 	// Transaction labels
-	textTransaction1: 'Transaction 1',
-	textTransaction2: 'Transaction 2'
+	textTransaction1: `${SCREEN_TEXT_TRANSACTION_COUNTER}__1`,
+	textTransaction2: `${SCREEN_TEXT_TRANSACTION_COUNTER}__2`
 };
 
 const TEST_HASHES = {
@@ -179,7 +181,7 @@ const createDefaultProps = (overrides = {}) => ({
 
 describe('components/TransactionStatusDialog', () => {
 	beforeEach(() => {
-		mockLocalization();
+		mockLocalization((key, config) => key === SCREEN_TEXT_TRANSACTION_COUNTER ? `${key}__${config.index}` : key);
 		mockOs('android');
 		jest.clearAllMocks();
 	});
@@ -277,7 +279,7 @@ describe('components/TransactionStatusDialog', () => {
 				description: 'shows partial status for multisig transaction awaiting signatures',
 				config: { scenario: ScenarioConfig.PARTIAL },
 				expected: {
-					statusTitle: SCREEN_TEXT.textStatusConfirming,
+					statusTitle: SCREEN_TEXT.textStatusPartial,
 					statusDescription: SCREEN_TEXT.textDescriptionPartial
 				}
 			},
@@ -285,7 +287,7 @@ describe('components/TransactionStatusDialog', () => {
 				description: 'shows failed status when transaction is rejected by network',
 				config: { scenario: ScenarioConfig.FAILED },
 				expected: {
-					statusTitle: SCREEN_TEXT.textStatusAnnounceError,
+					statusTitle: SCREEN_TEXT.textDescriptionRejected,
 					statusDescription: SCREEN_TEXT.textDescriptionRejected
 				}
 			},
