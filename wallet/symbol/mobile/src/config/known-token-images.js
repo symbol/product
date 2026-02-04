@@ -15,8 +15,8 @@ export const tokenImages = {
 		large: require('@/app/assets/images/tokens/eth_l.png')
 	},
 	wxym: {
-		small: null,
-		medium: null,
+		small: require('@/app/assets/images/tokens/wxym_s.png'),
+		medium: require('@/app/assets/images/tokens/wxym_m.png'),
 		large: require('@/app/assets/images/tokens/wxym_l.png')
 	}
 };
