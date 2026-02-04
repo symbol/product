@@ -218,7 +218,7 @@ NEM_CONNECTOR_RESPONSE_ACCOUNT_INFO = NemAccountInfo(Address('TALICE6XEEEOBFJVY3
 # endregion
 
 
-class NemPullerTest(unittest.TestCase):
+class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-methods
 
 	def setUp(self):
 		self.postgresql = testing.postgresql.Postgresql()
@@ -425,7 +425,14 @@ class NemPullerTest(unittest.TestCase):
 	@patch('puller.facade.NemPuller.NemConnector.get_blocks_after')
 	@patch('puller.facade.NemPuller.NemPuller._commit_blocks')
 	@patch('puller.facade.NemPuller.NemPuller._process_account_batch')
-	def test_db_writer_can_commits_in_batches(self, mock_process_account_batch, mock_commit_blocks, mock_get_blocks_after):
+	@patch('puller.facade.NemPuller.NemPuller._process_harvested_fees')
+	def test_db_writer_can_commits_in_batches(
+		self,
+		mock_process_harvested_fees,
+		mock_process_account_batch,
+		mock_commit_blocks,
+		mock_get_blocks_after
+	):
 		# Arrange:
 		# Create 5 blocks to test batch commit (batch_size=2 means 2 commits + 1 final)
 		test_blocks = []
@@ -447,6 +454,7 @@ class NemPullerTest(unittest.TestCase):
 
 		mock_get_blocks_after.return_value = test_blocks
 		mock_process_account_batch.return_value = AsyncMock()
+		mock_process_harvested_fees.return_value = Mock()
 
 		with self.puller.nem_db as databases:
 			databases.create_tables()
@@ -469,6 +477,11 @@ class NemPullerTest(unittest.TestCase):
 			]
 			actual_calls = [call[0][0] if call[0] else None for call in mock_commit_blocks.call_args_list]
 			self.assertEqual(actual_calls, expected_calls)
+
+			process_harvested_fees_calls = mock_process_harvested_fees.call_args_list
+			self.assertEqual(len(process_harvested_fees_calls), 2)
+			self.assertEqual(process_harvested_fees_calls[0][0][1], ({Address('T' + 'A' * 39): (1000000, 5)}))
+			self.assertEqual(process_harvested_fees_calls[1][0][1], ({Address('T' + 'A' * 39): (1000000, 5)}))
 
 	def _assert_retry_operation_successful(self, mock_connector_method, operation, expected_result):
 		# Arrange:
@@ -725,4 +738,26 @@ class NemPullerTest(unittest.TestCase):
 				remote_address=account.address,
 				**vars(remote_account)
 			),
+		))
+
+	@patch('puller.facade.NemPuller.NemDatabase.update_account_harvested_fees')
+	def test_can_process_harvested_fees(self, mock_update_account_harvested_fees):
+		# Arrange:
+		harvested_fees = {
+			Address('TALICEPFLZQRZGPRIJTMJOCPWDNECXTNNFEN6XWA'): (59200000, 3),
+		}
+
+		cursor = Mock()
+
+		# Act:
+		self.puller._process_harvested_fees(cursor, harvested_fees)  # pylint: disable=protected-access
+
+		# Assert:
+		update_fees_calls = mock_update_account_harvested_fees.call_args_list
+		self.assertEqual(len(update_fees_calls), 1)
+		self.assertEqual(update_fees_calls[0][0], (
+			cursor,
+			Address('TALICEPFLZQRZGPRIJTMJOCPWDNECXTNNFEN6XWA'),
+			59200000,
+			3
 		))
