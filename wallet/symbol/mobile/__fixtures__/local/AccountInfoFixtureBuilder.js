@@ -36,12 +36,12 @@ export class AccountInfoFixtureBuilder {
 	_networkIdentifier = '';
 
 	/**
-     * Creates an account info fixture with the provided data.
-     * 
-     * @param {AccountInfo} data - account data.
-     * @param {string} [chainName] - chain name the account belongs to.
-     * @param {'mainnet' | 'testnet'} [networkIdentifier] - network identifier the account belongs to.
-     */
+	 * Creates an account info fixture with the provided data.
+	 * 
+	 * @param {AccountInfo} data - account data.
+	 * @param {string} [chainName] - chain name the account belongs to.
+	 * @param {'mainnet' | 'testnet'} [networkIdentifier] - network identifier the account belongs to.
+	 */
 	constructor(data, chainName, networkIdentifier) {
 		this._data = { ...data };
 		this._chainName = chainName;
@@ -49,23 +49,23 @@ export class AccountInfoFixtureBuilder {
 	}
 
 	/**
-     * Creates an empty account info fixture.
-     * 
-     * @returns {AccountInfoFixtureBuilder}
-     */
+	 * Creates an empty account info fixture.
+	 * 
+	 * @returns {AccountInfoFixtureBuilder}
+	 */
 	static createEmpty = (chainName, networkIdentifier) => {
 		return new AccountInfoFixtureBuilder(EMPTY_FIXTURE, chainName, networkIdentifier);
 	};
 
 	/**
-     * Creates an account info fixture with default data for the specified chain and network.
-     * Used data from the fixture list.
-     * 
-     * @param {string} chainName - chain name the account belongs to.
-     * @param {'mainnet' | 'testnet'} networkIdentifier - network identifier the account belongs to.
-     * @param {number} index - account item index in the fixture list (eg. 0, 1, 2, ...).
-     * @returns {AccountInfoFixtureBuilder}
-     */
+	 * Creates an account info fixture with default data for the specified chain and network.
+	 * Used data from the fixture list.
+	 * 
+	 * @param {string} chainName - chain name the account belongs to.
+	 * @param {'mainnet' | 'testnet'} networkIdentifier - network identifier the account belongs to.
+	 * @param {number} index - account item index in the fixture list (eg. 0, 1, 2, ...).
+	 * @returns {AccountInfoFixtureBuilder}
+	 */
 	static createWithAccount = (chainName, networkIdentifier, index) => {
 		const account = walletStorageAccounts[chainName][networkIdentifier][index];
 
@@ -80,32 +80,46 @@ export class AccountInfoFixtureBuilder {
 	};
 
 	/**
-     * Creates an account info fixture with the provided data.
-     * 
-     * @param {AccountInfo} data - account data.
-     * @returns {AccountInfoFixtureBuilder}
-     * @param {string} [chainName] - chain name the account belongs to.
-     * @param {'mainnet' | 'testnet'} [networkIdentifier] - network identifier the account belongs to.
-     */
+	 * Creates an account info fixture with the provided data.
+	 * 
+	 * @param {AccountInfo} data - account data.
+	 * @returns {AccountInfoFixtureBuilder}
+	 * @param {string} [chainName] - chain name the account belongs to.
+	 * @param {'mainnet' | 'testnet'} [networkIdentifier] - network identifier the account belongs to.
+	 */
 	static createWithData = (data, chainName, networkIdentifier) => {
 		return new AccountInfoFixtureBuilder(data, chainName, networkIdentifier);
 	};
 
 	/**
-     * Gets the built account data.
-     * 
-     * @returns {AccountInfo}
-     */
+	 * Gets the built account data.
+	 * 
+	 * @returns {AccountInfo}
+	 */
 	get data() {
 		return { ...this._data };
 	};
 
+	/**
+	 * Overrides the account info data with the provided data.
+	 * 
+	 * @param {object} data - The data to override.
+	 * @returns {AccountInfoFixtureBuilder} The builder instance.
+	 */
 	override = data => {
 		this._data = { ...this._data, ...data };
 		
 		return this;
 	};
 
+	/**
+	 * Sets the multisig status and cosignatories based on the provided indexes.
+	 * Defines whether the account is multisig or not.
+	 * 
+	 * @param {boolean} isMultisig - Whether the account is multisig.
+	 * @param {number[]} [cosignatoryIndexes=[]] - Indexes of cosignatory accounts.
+	 * @returns {AccountInfoFixtureBuilder} The builder instance.
+	 */
 	setMultisigStatusByIndexes = (isMultisig, cosignatoryIndexes = []) => {
 		if (isMultisig) {
 			const accounts = walletStorageAccounts[this._chainName][this._networkIdentifier];
@@ -114,10 +128,10 @@ export class AccountInfoFixtureBuilder {
 				const account = accounts[index];
 				if (!account)
 				{throw new Error(`Cosignatory account fixture not found for 
-                        chain=${this._chainName}, 
-                        network=${this._networkIdentifier}, 
-                        index=${index}
-                    `);}
+						chain=${this._chainName}, 
+						network=${this._networkIdentifier}, 
+						index=${index}
+					`);}
 				return account.address;
 			});
 
@@ -131,6 +145,13 @@ export class AccountInfoFixtureBuilder {
 		return this;
 	};
 
+	/**
+	 * Sets the multisig account addresses based on the provided indexes.
+	 * Defines whether the account is a cosignatory of other multisig accounts.
+	 * 
+	 * @param {number[]} multisigAccountIndexes - Indexes of multisig accounts.
+	 * @returns {AccountInfoFixtureBuilder} The builder instance.
+	 */
 	setMultisigAccountsByIndexes = multisigAccountIndexes => {
 		const accounts = walletStorageAccounts[this._chainName][this._networkIdentifier];
 
@@ -138,10 +159,10 @@ export class AccountInfoFixtureBuilder {
 			const account = accounts[index];
 			if (!account)
 			{throw new Error(`Multisig account fixture not found for 
-                    chain=${this._chainName}, 
-                    network=${this._networkIdentifier}, 
-                    index=${index}
-                `);}
+					chain=${this._chainName}, 
+					network=${this._networkIdentifier}, 
+					index=${index}
+				`);}
 			return account.address;
 		});
 
@@ -150,10 +171,18 @@ export class AccountInfoFixtureBuilder {
 		return this;
 	};
 
+	/**
+	 * Sets the linked keys based on the provided boolean flags.
+	 * 
+	 * @param {boolean} isLinkedPublicKeyLinked - Whether the linked public key is linked.
+	 * @param {boolean} isNodePublicKeyLinked - Whether the node public key is linked.
+	 * @param {boolean} isVrfPublicKeyLinked - Whether the VRF public key is linked.
+	 * @returns {AccountInfoFixtureBuilder} The builder instance.
+	 */
 	setLinkedKeys = (isLinkedPublicKeyLinked, isNodePublicKeyLinked, isVrfPublicKeyLinked) => {
 		if (!isLinkedPublicKeyLinked && !isNodePublicKeyLinked && !isVrfPublicKeyLinked) {
 			this._data.linkedKeys = null;
-            
+			
 			return this;
 		}
 		this._data.linkedKeys = {
@@ -165,15 +194,27 @@ export class AccountInfoFixtureBuilder {
 		return this;
 	};
 
+	/**
+	 * Sets the balance for the account.
+	 * 
+	 * @param {string} balance - The account balance.
+	 * @returns {AccountInfoFixtureBuilder} The builder instance.
+	 */
 	setBalance = balance => {
 		this._data.balance = balance;
-        
+		
 		return this;
 	};
 
+	/**
+	 * Sets the importance for the account.
+	 * 
+	 * @param {number} importance - The account importance.
+	 * @returns {AccountInfoFixtureBuilder} The builder instance.
+	 */
 	setImportance = importance => {
 		this._data.importance = importance;
-        
+		
 		return this;
 	};
 }
