@@ -18,8 +18,11 @@ export const useTimer = ({ callback, interval, isActive, dependencies = [] }) =>
 	}, [callback]);
 
 	useEffect(() => {
-		if (!isActive || interval === null || interval === undefined) 
-			return;		
+		if (!isActive) 
+			return;	
+		
+		if (!interval || interval <= 0)
+			throw new Error('Interval must be a positive number');
 
 		const tick = () => {
 			savedCallback.current();
