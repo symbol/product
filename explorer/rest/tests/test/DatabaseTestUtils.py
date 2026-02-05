@@ -1,11 +1,14 @@
+import json
 import unittest
 from binascii import unhexlify
 from collections import namedtuple
 
 import testing.postgresql
-from symbolchain.nem.Network import Address
+from symbolchain.CryptoTypes import PublicKey
+from symbolchain.nem.Network import Address, Network
 
 from rest.db.NemDatabase import NemDatabase
+from rest.model.Account import AccountView
 from rest.model.Block import BlockView
 
 Block = namedtuple(
@@ -22,6 +25,21 @@ Block = namedtuple(
 		'size'
 	]
 )
+Account = namedtuple('Account', [
+	'address',
+	'public_key',
+	'remote_address',
+	'importance',
+	'balance',
+	'vested_balance',
+	'mosaics',
+	'harvested_blocks',
+	'status',
+	'remote_status',
+	'min_cosignatories',
+	'cosignatory_of',
+	'cosignatories'
+])
 DatabaseConfig = namedtuple('DatabaseConfig', ['database', 'user', 'password', 'host', 'port'])
 
 # region test data
@@ -51,20 +69,85 @@ BLOCKS = [
 		752),
 ]
 
+ACCOUNTS = [
+	Account(
+		Address('NAGHXD63C4V6REWGXCVKJ2SBS3GUAXGTRQZQXPRO'),
+		PublicKey('b88221939ac920484753c738fafda87e82ff04b5e370c9456d85a0f12c6a5cca'),
+		None,
+		0.123456,
+		1000000,
+		99999,
+		[{'quantity': 1000000, 'namespace': 'nem.xem'}],
+		10,
+		'LOCKED',
+		'INACTIVE',
+		None,
+		None,
+		None)
+]
+
 BLOCK_VIEWS = [
 	BlockView(*BLOCKS[0]._replace(total_fees=102.0, signer=Address('NANEMOABLAGR72AZ2RV3V4ZHDCXW25XQ73O7OBT5'))),
 	BlockView(*BLOCKS[1]._replace(total_fees=201.0, signer=Address('NALICEPFLZQRZGPRIJTMJOCPWDNECXTNNG7QLSG3')))
 ]
 
+ACCOUNT_VIEWS = [
+	AccountView(
+		address=str(ACCOUNTS[0].address),
+		public_key=str(ACCOUNTS[0].public_key) if ACCOUNTS[0].public_key else None,
+		remote_address=None,
+		importance=0.123456,
+		balance=1.0,
+		vested_balance=0.099999,
+		mosaics=[{
+			'namespace_name': 'nem.xem',
+			'quantity': 1000000
+		}],
+		harvested_fees=0.0,
+		harvested_blocks=ACCOUNTS[0].harvested_blocks,
+		status=ACCOUNTS[0].status,
+		remote_status=ACCOUNTS[0].remote_status,
+		last_harvested_height=0,
+		min_cosignatories=ACCOUNTS[0].min_cosignatories,
+		cosignatory_of=ACCOUNTS[0].cosignatory_of,
+		cosignatories=ACCOUNTS[0].cosignatories
+	)
+]
+
 # endregion
 
 
+#  pylint: disable=duplicate-code
 def initialize_database(db_config, network_name):
 	# Arrange + Act:
 	with NemDatabase(db_config, network_name).connection() as connection:
 		cursor = connection.cursor()
 
 		# Create tables
+		cursor.execute(
+			'''
+			CREATE TABLE IF NOT EXISTS accounts (
+				id serial PRIMARY KEY,
+				address bytea NOT NULL UNIQUE,
+				public_key bytea,
+				remote_address bytea,
+				importance decimal(20, 10) DEFAULT 0,
+				balance bigint DEFAULT 0,
+				vested_balance bigint DEFAULT 0,
+				mosaics jsonb DEFAULT '[]'::jsonb,
+				harvested_fees bigint DEFAULT 0,
+				harvested_blocks bigint DEFAULT 0,
+				status varchar(8) DEFAULT NULL,
+				remote_status varchar(12) DEFAULT NULL,
+				last_harvested_height bigint DEFAULT 0,
+				min_cosignatories int DEFAULT NULL,
+				cosignatory_of bytea[] DEFAULT NULL,
+				cosignatories bytea[] DEFAULT NULL,
+				updated_at timestamp DEFAULT CURRENT_TIMESTAMP
+			)
+			'''
+		)
+
 		cursor.execute('''
 			CREATE TABLE IF NOT EXISTS blocks (
 				id serial NOT NULL PRIMARY KEY,
@@ -99,6 +182,42 @@ def initialize_database(db_config, network_name):
 				)
 			)
 
+		for account in ACCOUNTS:
+			cursor.execute(
+				'''
+				INSERT INTO accounts (
+					address,
+					public_key,
+					remote_address,
+					importance,
+					balance,
+					vested_balance,
+					mosaics,
+					harvested_blocks,
+					status,
+					remote_status,
+					min_cosignatories,
+					cosignatory_of,
+					cosignatories
+				)
+				VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+				''', (
+					account.address.bytes,
+					account.public_key.bytes if account.public_key else None,
+					account.remote_address.bytes if account.remote_address else None,
+					account.importance,
+					account.balance,
+					account.vested_balance,
+					json.dumps(account.mosaics),
+					account.harvested_blocks,
+					account.status,
+					account.remote_status,
+					account.min_cosignatories,
+					[address.bytes for address in account.cosignatory_of] if account.cosignatory_of else None,
+					[address.bytes for address in account.cosignatories] if account.cosignatories else None
+				)
+			)
+
 		connection.commit()
 
 
@@ -107,8 +226,8 @@ class DatabaseTestBase(unittest.TestCase):
 	def setUp(self):
 		self.postgresql = testing.postgresql.Postgresql()
 		self.db_config = DatabaseConfig(**self.postgresql.dsn(), password='')
-		self.network_name = 'mainnet'
-		initialize_database(self.db_config, self.network_name)
+		self.network = Network.MAINNET
+		initialize_database(self.db_config, self.network)
 
 	def tearDown(self):
 		self.postgresql.stop()
