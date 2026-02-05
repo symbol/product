@@ -26,6 +26,15 @@ jest.mock('wallet-common-symbol', () => {
 });
 
 const TEST_MNEMONIC = mnemonic;
+const DEFAULT_ACCOUNT_NAME = 's_importWallet_defaultAccountName';
+
+const SCREEN_TEXT = {
+	textScreenTitle: 's_importWallet_title',
+	textScreenDescription: 's_importWallet_text',
+	inputMnemonicLabel: 'input_mnemonic',
+	buttonNext: 'button_next',
+	buttonCancel: 'button_cancel'
+};
 
 describe('screens/onboarding/ImportWallet', () => {
 	beforeEach(() => {
@@ -38,12 +47,12 @@ describe('screens/onboarding/ImportWallet', () => {
 		mockPasscode();
 		const walletControllerMock = mockWalletController();
 		const screenText = [
-			's_importWallet_title',
-			's_importWallet_text'
+			SCREEN_TEXT.textScreenTitle,
+			SCREEN_TEXT.textScreenDescription
 		];
-		const buttonNextText = 'button_next';
-		const mnemonicInputLabel = 'input_mnemonic';
-		const accountName = 's_importWallet_defaultAccountName';
+		const buttonNextText = SCREEN_TEXT.buttonNext;
+		const mnemonicInputLabel = SCREEN_TEXT.inputMnemonicLabel;
+		const accountName = DEFAULT_ACCOUNT_NAME;
 		const screenTester = new ScreenTester(ImportWallet);
 
 		// Act:
@@ -64,13 +73,13 @@ describe('screens/onboarding/ImportWallet', () => {
 	runScreenNavigationTest(ImportWallet, {
 		navigationActions: [
 			{
-				buttonText: 'button_cancel',
+				buttonText: SCREEN_TEXT.buttonCancel,
 				actionName: 'goBack'
 			}
 		]
 	});
 
-	describe('opt-in account', () => {
+	describe('opt-in account check', () => {
 		const runOptInTest = (description, config, expected) => {
 			it(description, () => {
 				// Arrange:

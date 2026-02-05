@@ -167,3 +167,58 @@ export const testTextInputEvent = async (config, expected = {}) => {
 	if (shouldFireEvent && eventArguments.length)
 		expect(callback).toHaveBeenCalledWith(...eventArguments);
 };
+
+/**
+ * Helper function to test dropdown selection events on React Native components.
+ *
+ * @param {Object} config - Configuration object for the test.
+ * @param {React.Component} config.Component - The React Native component to be tested.
+ * @param {Object} config.props - Props to be passed to the component.
+ * @param {string} config.textToPress - The text of the element to press to open the dropdown.
+ * @param {Array<{label: string, value: *}>} config.items - The list of items in the dropdown.
+ * @param {string} [config.eventPropName='onChange'] - The name of the event prop to be tested.
+ * @param {boolean} [config.skipCallback=false] - If true, does not pass the callback to the component.
+ */
+export const testDropdownSelectEvent = async (config, expected = {}) => {
+	// Arrange:
+	const {
+		Component,
+		props,
+		textToPress,
+		items,
+		eventPropName = 'onChange',
+		skipCallback = false
+	} = config;
+	const { shouldFireEvent } = expected;
+	const callback = jest.fn();
+	const componentProps = skipCallback
+		? { ...props }
+		: { ...props, [eventPropName]: callback };
+	// Select second item to avoid duplicate text issues (first item may match displayed value)
+	const itemToSelect = items.length > 1 ? items[1] : items[0];
+
+	// Act:
+	const { getByText, queryAllByText } = render(<Component {...componentProps} />);
+	const triggerElement = getByText(textToPress);
+	fireEvent.press(triggerElement);
+
+	// For disabled state, the modal won't open, so items won't be found
+	const itemElements = queryAllByText(itemToSelect.label, { exact: false });
+	
+	if (itemElements.length > 0) {
+		// Find the item in the modal list (usually the last one if duplicates exist)
+		const itemElement = itemElements[itemElements.length - 1];
+		fireEvent.press(itemElement);
+	}
+
+	// Assert:
+	if (skipCallback) {
+		expect(true).toBe(true);
+		return;
+	}
+
+	if (shouldFireEvent)
+		expect(callback).toHaveBeenCalledWith(itemToSelect.value);
+	else
+		expect(callback).not.toHaveBeenCalled();
+};

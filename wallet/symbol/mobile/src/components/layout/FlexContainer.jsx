@@ -3,7 +3,7 @@ import { View } from 'react-native';
 /** @typedef {import('react')} React */
 
 /**
- * Flexible container component with configurable alignment and direction
+ * FlexContainer component. A flexible container component with configurable alignment options, direction, and space filling capabilities.
  * 
  * @param {object} props - Component props
  * @param {boolean} [props.center=false] - Center content both vertically and horizontally

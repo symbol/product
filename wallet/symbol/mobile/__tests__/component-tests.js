@@ -1,4 +1,4 @@
-import { testPressEvent, testRenderWith, testTextInputEvent } from './component-test-helpers';
+import { testDropdownSelectEvent, testPressEvent, testRenderWith, testTextInputEvent } from './component-test-helpers';
 import React from 'react';
 
 /** @typedef {import('./component-test-helpers').RenderText} RenderText */
@@ -209,6 +209,8 @@ export const runRenderTextTest = (Component, config) => {
  * @property {Object} props - The props to be passed to the component.
  * @property {{ type: 'placeholder' | 'input', value: string }} [textToFocus] - Target to locate the input 
  * (by placeholder or by current value).
+ * @property {string} [textToInput] - Custom text to input (defaults to 'Hello, World!').
+ * @property {Array} [expectedEventArguments] - Custom expected arguments for the onChange callback.
  * @property {boolean} [testDisabledState] - Whether to test the disabled state of the input.
  */
 
@@ -219,8 +221,8 @@ export const runRenderTextTest = (Component, config) => {
  * @param {InputTextTest} config - Configuration object for the test.
  */
 export const runInputTextTest = (Component, config) => {
-	const { props, textToFocus, testDisabledState } = config;
-	const textToInput = 'Hello, World!';
+	const { props, textToFocus, textToInput: customTextToInput, expectedEventArguments, testDisabledState } = config;
+	const textToInput = customTextToInput || 'Hello, World!';
 	const cases = [
 		{
 			description: 'fires onChange event when text is input',
@@ -257,7 +259,8 @@ export const runInputTextTest = (Component, config) => {
 					skipCallback: testCase.skipCallback || false
 				};
 				const expected = {
-					shouldFireEvent: testCase.shouldFireEvent
+					shouldFireEvent: testCase.shouldFireEvent,
+					eventArguments: expectedEventArguments
 				};
 
 				await testTextInputEvent(testConfig, expected);
@@ -282,5 +285,72 @@ export const runRenderComponentTest = (Component, config = {}) => {
 		};
 		const expected = {};
 		testRenderWith(testConfig, expected);
+	});
+};
+
+/**
+ * @typedef {Object} DropdownSelectItem
+ * @property {string} label - The text label displayed for the item.
+ * @property {*} value - The value of the item when selected.
+ */
+
+/**
+ * @typedef {Object} DropdownSelectTest
+ * @property {Object} props - The props to be passed to the component.
+ * @property {string} textToPress - The text of the element to press to open the dropdown.
+ * @property {DropdownSelectItem[]} items - The list of items in the dropdown.
+ * @property {boolean} [testDisabledState] - Whether to test the disabled state of the component.
+ */
+
+/**
+ * Runs dropdown selection tests for a given component.
+ * 
+ * @param {React.Component} Component - The React Native component to be tested.
+ * @param {DropdownSelectTest} config - Configuration object for the test.
+ */
+export const runDropdownSelectTest = (Component, config) => {
+	const { props, textToPress, items, testDisabledState } = config;
+	const cases = [
+		{
+			description: 'fires onChange event when item is selected',
+			isDisabled: false,
+			shouldFireEvent: true
+		},
+		{
+			description: 'does not throw when onChange callback is not provided',
+			isDisabled: false,
+			skipCallback: true
+		}
+	];
+
+	if (testDisabledState) {
+		cases.push({
+			description: 'does not fire onChange event when isDisabled is true',
+			isDisabled: true,
+			shouldFireEvent: false
+		});
+	}
+
+	describe('onChange', () => {
+		cases.forEach(testCase => {
+			it(testCase.description, async () => {
+				const testConfig = {
+					Component,
+					props: {
+						...props,
+						isDisabled: testCase.isDisabled
+					},
+					textToPress,
+					items,
+					eventPropName: 'onChange',
+					skipCallback: testCase.skipCallback || false
+				};
+				const expected = {
+					shouldFireEvent: testCase.shouldFireEvent
+				};
+
+				await testDropdownSelectEvent(testConfig, expected);
+			});
+		});
 	});
 };

@@ -6,6 +6,22 @@ import { mockLocalization, mockPasscode, mockWalletController } from '__tests__/
 import { runScreenNavigationTest } from '__tests__/screen-tests';
 
 const TEST_MNEMONIC = mnemonic;
+const SCREEN_TEXT = {
+	textAccountNameTitle: 's_createWallet_accountName_title',
+	textAccountNameDescription: 's_createWallet_accountName_text',
+	inputAccountNameLabel: 's_createWallet_accountName_input',
+	textMnemonicTitle: 's_createWallet_mnemonic_title',
+	textMnemonicDescriptionParagraph1: 's_createWallet_mnemonic_text_p1',
+	textMnemonicDescriptionParagraph2: 's_createWallet_mnemonic_text_p2',
+	textMnemonicDescriptionParagraph3: 's_createWallet_mnemonic_text_p3',
+	textTipsTitle: 's_createWallet_tips_title',
+	textTipsParagraph1: 's_createWallet_tips_text_p1',
+	textTipsParagraph2: 's_createWallet_tips_text_p2',
+	textConfirmTitle: 's_createWallet_confirm_title',
+	checkboxAcceptRiskText: 's_createWallet_confirm_checkbox',
+	buttonNext: 'button_next',
+	buttonCancel: 'button_cancel'
+};
 
 describe('screens/onboarding/CreateWallet', () => {
 	beforeEach(() => {
@@ -19,24 +35,23 @@ describe('screens/onboarding/CreateWallet', () => {
 		mockPasscode();
 
 		const step1ExpectedText = [
-			's_createWallet_accountName_title',
-			's_createWallet_accountName_text',
-			's_createWallet_accountName_input'
+			SCREEN_TEXT.textAccountNameTitle,
+			SCREEN_TEXT.textAccountNameDescription,
+			SCREEN_TEXT.inputAccountNameLabel
 		];
 		const step2ExpectedText = [
-			's_createWallet_mnemonic_title',
-			's_createWallet_mnemonic_text_p1',
-			's_createWallet_mnemonic_text_p2',
-			's_createWallet_mnemonic_text_p3',
-			's_createWallet_tips_title',
-			's_createWallet_tips_text_p1',
-			's_createWallet_tips_text_p2',
-			's_createWallet_confirm_title',
-			's_createWallet_confirm_checkbox'
+			SCREEN_TEXT.textMnemonicTitle,
+			SCREEN_TEXT.textMnemonicDescriptionParagraph1,
+			SCREEN_TEXT.textMnemonicDescriptionParagraph2,
+			SCREEN_TEXT.textMnemonicDescriptionParagraph3,
+			SCREEN_TEXT.textTipsTitle,
+			SCREEN_TEXT.textTipsParagraph1,
+			SCREEN_TEXT.textTipsParagraph2,
+			SCREEN_TEXT.textConfirmTitle,
+			SCREEN_TEXT.checkboxAcceptRiskText
 		];
-		const accountNameInputLabel = 's_createWallet_accountName_input';
-		const buttonNextText = 'button_next';
-		const acceptRiskCheckboxText = 's_createWallet_confirm_checkbox';
+		const accountNameInputLabel = SCREEN_TEXT.inputAccountNameLabel;
+		const acceptRiskCheckboxText = SCREEN_TEXT.checkboxAcceptRiskText;
 		const accountName = 'My Wallet';
 		const screenTester = new ScreenTester(CreateWallet);
 
@@ -44,13 +59,13 @@ describe('screens/onboarding/CreateWallet', () => {
 		screenTester.notExpectText(step2ExpectedText);
 		screenTester.expectText(step1ExpectedText);
 		screenTester.inputText(accountNameInputLabel, accountName);
-		screenTester.pressButton(buttonNextText);
+		screenTester.pressButton(SCREEN_TEXT.buttonNext);
 
 		// Act - Step 2: Accept risk and submit
 		screenTester.notExpectText(step1ExpectedText);
 		screenTester.expectText(step2ExpectedText);
 		screenTester.pressButton(acceptRiskCheckboxText);
-		screenTester.pressButton(buttonNextText);
+		screenTester.pressButton(SCREEN_TEXT.buttonNext);
 		await screenTester.waitForTimer();
 
 		// Assert:
@@ -64,7 +79,7 @@ describe('screens/onboarding/CreateWallet', () => {
 	runScreenNavigationTest(CreateWallet, {
 		navigationActions: [
 			{
-				buttonText: 'button_cancel',
+				buttonText: SCREEN_TEXT.buttonCancel,
 				actionName: 'goBack'
 			}
 		]

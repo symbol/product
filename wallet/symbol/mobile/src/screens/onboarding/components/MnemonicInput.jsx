@@ -22,6 +22,8 @@ const MAX_SUGGESTIONS_COUNT = 20;
  * @param {string} [props.label] - Label for the input field.
  * @param {function} props.onChange - Callback when input value changes.
  * @param {function} props.onValidityChange - Callback when validity state changes.
+ * 
+ * @returns {React.ReactElement} Rendered MnemonicInput component
  */
 export const MnemonicInput = ({ value, label, onChange, onValidityChange }) => {
 	const textBoxRef = useRef();
