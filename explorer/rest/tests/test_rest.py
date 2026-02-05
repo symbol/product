@@ -260,6 +260,18 @@ def test_api_nem_account_not_found(client):  # pylint: disable=redefined-outer-n
 
 # region /accounts
 
+def _assert_get_nem_accounts_bad_request(client, **query_params):  # pylint: disable=redefined-outer-name
+	# Act:
+	response = client.get('/api/nem/accounts', query_string=query_params)
+
+	# Assert:
+	_assert_status_code_and_headers(response, 400)
+	assert {
+		'message': 'Bad request',
+		'status': 400
+	} == response.json
+
+
 def _assert_get_api_nem_accounts(client, expected_status_code, expected_result, **query_params):  # pylint: disable=redefined-outer-name
 	# Arrange:
 	query_string = '&'.join(f'{key}={val}' for key, val in query_params.items())
@@ -300,30 +312,18 @@ def test_api_nem_accounts_applies_sorted_by_balance_asc(client):  # pylint: disa
 
 
 def test_api_nem_accounts_invalid_limit(client):  # pylint: disable=redefined-outer-name
-	_assert_get_api_nem_accounts(client, 400, {
-		'message': 'Bad request',
-		'status': 400
-	}, limit=-1)
+	_assert_get_nem_accounts_bad_request(client, limit=-1)
 
 
 def test_api_nem_accounts_invalid_offset(client):  # pylint: disable=redefined-outer-name, invalid-name
-	_assert_get_api_nem_accounts(client, 400, {
-		'message': 'Bad request',
-		'status': 400
-	}, offset=-1)
+	_assert_get_nem_accounts_bad_request(client, offset=-1)
 
 
 def test_api_nem_accounts_invalid_sort_field(client):  # pylint: disable=redefined-outer-name, invalid-name
-	_assert_get_api_nem_accounts(client, 400, {
-		'message': 'Bad request',
-		'status': 400
-	}, sort_field='INVALID')
+	_assert_get_nem_accounts_bad_request(client, sort_field='INVALID')
 
 
 def test_api_nem_accounts_invalid_sort_order(client):  # pylint: disable=redefined-outer-name, invalid-name
-	_assert_get_api_nem_accounts(client, 400, {
-		'message': 'Bad request',
-		'status': 400
-	}, sort_order='INVALID')
+	_assert_get_nem_accounts_bad_request(client, sort_order='INVALID')
 
 # endregion
