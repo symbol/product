@@ -2,7 +2,7 @@ from collections import namedtuple
 
 from rest.db.NemDatabase import NemDatabase
 
-from ..test.DatabaseTestUtils import BLOCK_VIEWS, DatabaseTestBase
+from ..test.DatabaseTestUtils import ACCOUNT_VIEWS, ACCOUNTS, BLOCK_VIEWS, DatabaseTestBase
 
 BlockQueryParams = namedtuple('BlockQueryParams', ['limit', 'offset', 'min_height', 'sort'])
 
@@ -12,14 +12,18 @@ EXPECTED_BLOCK_VIEW_1 = BLOCK_VIEWS[0]
 
 EXPECTED_BLOCK_VIEW_2 = BLOCK_VIEWS[1]
 
+EXPECTED_ACCOUNT_VIEW_1 = ACCOUNT_VIEWS[0]
+
 # endregion
 
 
 class NemDatabaseTest(DatabaseTestBase):
 
+	# region block
+
 	def _assert_can_query_block_by_height(self, height, expected_block):
 		# Arrange:
-		nem_db = NemDatabase(self.db_config, self.network_name)
+		nem_db = NemDatabase(self.db_config, self.network)
 
 		# Act:
 		block_view = nem_db.get_block(height)
@@ -29,7 +33,7 @@ class NemDatabaseTest(DatabaseTestBase):
 
 	def _assert_can_query_blocks_with_filter(self, query_params, expected_blocks):
 		# Arrange:
-		nem_db = NemDatabase(self.db_config, self.network_name)
+		nem_db = NemDatabase(self.db_config, self.network)
 
 		# Act:
 		blocks_view = nem_db.get_blocks(query_params.limit, query_params.offset, query_params.min_height, query_params.sort)
@@ -66,3 +70,29 @@ class NemDatabaseTest(DatabaseTestBase):
 
 	def test_can_query_blocks_sorted_by_height_desc(self):
 		self._assert_can_query_blocks_with_filter(BlockQueryParams(10, 0, 0, 'desc'), [EXPECTED_BLOCK_VIEW_2, EXPECTED_BLOCK_VIEW_1])
+
+	# endregion
+
+	# region account
+
+	def test_can_query_account_by_address(self):
+		# Arrange:
+		nem_db = NemDatabase(self.db_config, self.network)
+
+		# Act:
+		account_view = nem_db.get_account_by_address(address=ACCOUNTS[0].address)
+
+		# Assert:
+		self.assertEqual(EXPECTED_ACCOUNT_VIEW_1, account_view)
+
+	def test_can_query_account_by_public_key(self):
+		# Arrange:
+		nem_db = NemDatabase(self.db_config, self.network)
+
+		# Act:
+		account_view = nem_db.get_account_by_public_key(public_key=ACCOUNTS[0].public_key)
+
+		# Assert:
+		self.assertEqual(EXPECTED_ACCOUNT_VIEW_1, account_view)
+
+	# endregion

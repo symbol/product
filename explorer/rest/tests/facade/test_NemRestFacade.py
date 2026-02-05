@@ -1,7 +1,7 @@
 from rest.facade.NemRestFacade import NemRestFacade
 
 from ..db.test_NemDatabase import BlockQueryParams
-from ..test.DatabaseTestUtils import BLOCK_VIEWS, DatabaseTestBase
+from ..test.DatabaseTestUtils import ACCOUNT_VIEWS, BLOCK_VIEWS, DatabaseTestBase
 
 # region test data
 
@@ -9,27 +9,29 @@ EXPECTED_BLOCK_1 = BLOCK_VIEWS[0].to_dict()
 
 EXPECTED_BLOCK_2 = BLOCK_VIEWS[1].to_dict()
 
+EXPECTED_ACCOUNT_1 = ACCOUNT_VIEWS[0].to_dict()
+
 # endregion
 
 
 class TestNemRestFacade(DatabaseTestBase):
 
-	def _assert_can_retrieve_block(self, height, expected_block):
-		# Arrange:
-		nem_rest_facade = NemRestFacade(self.db_config, self.network_name)
+	def setUp(self):
+		super().setUp()
+		self.nem_rest_facade = NemRestFacade(self.db_config, 'mainnet')
 
+	# region block
+
+	def _assert_can_retrieve_block(self, height, expected_block):
 		# Act:
-		block = nem_rest_facade.get_block(height)
+		block = self.nem_rest_facade.get_block(height)
 
 		# Assert:
 		self.assertEqual(expected_block, block)
 
 	def _assert_can_retrieve_blocks(self, query_params, expected_blocks):
-		# Arrange:
-		nem_rest_facade = NemRestFacade(self.db_config, self.network_name)
-
 		# Act:
-		blocks = nem_rest_facade.get_blocks(query_params.limit, query_params.offset, query_params.min_height, query_params.sort)
+		blocks = self.nem_rest_facade.get_blocks(query_params.limit, query_params.offset, query_params.min_height, query_params.sort)
 
 		# Assert:
 		self.assertEqual(expected_blocks, blocks)
@@ -57,3 +59,37 @@ class TestNemRestFacade(DatabaseTestBase):
 
 	def test_blocks_sorted_by_height_desc(self):
 		self._assert_can_retrieve_blocks(BlockQueryParams(10, 0, 0, 'desc'), [EXPECTED_BLOCK_2, EXPECTED_BLOCK_1])
+
+	# endregion
+
+	# region account
+
+	def test_can_retrieve_account_by_address(self):
+		# Act:
+		account = self.nem_rest_facade.get_account_by_address(address='NAGHXD63C4V6REWGXCVKJ2SBS3GUAXGTRQZQXPRO')
+
+		# Assert:
+		self.assertEqual(EXPECTED_ACCOUNT_1, account)
+
+	def test_can_retrieve_account_by_public_key(self):
+		# Act:
+		account = self.nem_rest_facade.get_account_by_public_key(public_key='b88221939ac920484753c738fafda87e82ff04b5e370c9456d85a0f12c6a5cca')
+
+		# Assert:
+		self.assertEqual(EXPECTED_ACCOUNT_1, account)
+
+	def test_returns_none_for_nonexistent_account_address(self):
+		# Act:
+		account = self.nem_rest_facade.get_account_by_address(address='NAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA')
+
+		# Assert:
+		self.assertIsNone(account)
+
+	def test_returns_none_for_nonexistent_account_public_key(self):
+		# Act:
+		account = self.nem_rest_facade.get_account_by_public_key(public_key='AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA')
+
+		# Assert:
+		self.assertIsNone(account)
+
+	# endregion
