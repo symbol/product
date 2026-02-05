@@ -1,9 +1,9 @@
 from binascii import hexlify
 
 from symbolchain.CryptoTypes import PublicKey
-from symbolchain.nem.Network import Network
-from symbolchain.Network import NetworkLocator
+from symbolchain.nem.Network import Address
 
+from rest.model.Account import AccountView
 from rest.model.Block import BlockView
 
 from .DatabaseConnection import DatabaseConnectionPool
@@ -20,9 +20,9 @@ def _format_xem_relative(amount):
 class NemDatabase(DatabaseConnectionPool):
 	"""Database containing Nem blockchain data."""
 
-	def __init__(self, db_config, network_name):
+	def __init__(self, db_config, network):
 		super().__init__(db_config)
-		self.network = NetworkLocator.find_by_name(Network.NETWORKS, network_name)
+		self.network = network
 
 	def _create_block_view(self, result):
 		harvest_public_key = PublicKey(_format_bytes(result[7]))
@@ -37,6 +37,82 @@ class NemDatabase(DatabaseConnectionPool):
 			signature=_format_bytes(result[8]),
 			size=result[9]
 		)
+
+	def _create_account_view(self, result):  # pylint: disable=no-self-use,too-many-locals
+		(
+			address,
+			public_key,
+			remote_address,
+			importance,
+			balance,
+			vested_balance,
+			mosaics,
+			harvested_fees,
+			harvested_blocks,
+			status,
+			remote_status,
+			last_harvested_height,
+			min_cosignatories,
+			cosignatory_of,
+			cosignatories
+		) = result
+
+		return AccountView(
+			address=str(Address(address)),
+			public_key=str(PublicKey(public_key)) if public_key else None,
+			remote_address=str(Address(remote_address)) if remote_address else None,
+			importance=importance,
+			balance=_format_xem_relative(balance),
+			vested_balance=_format_xem_relative(vested_balance),
+			mosaics=[{
+				'namespace_name': mosaic['namespace'],
+				'quantity': mosaic['quantity'],
+			} for mosaic in mosaics],
+			harvested_fees=_format_xem_relative(harvested_fees),
+			harvested_blocks=harvested_blocks,
+			status=status,
+			remote_status=remote_status,
+			last_harvested_height=last_harvested_height,
+			min_cosignatories=min_cosignatories,
+			cosignatory_of=[str(Address(address)) for address in cosignatory_of] if cosignatory_of else None,
+			cosignatories=[str(Address(address)) for address in cosignatories] if cosignatories else None
+		)
+
+	def _generate_account_query(self, where_condition):  # pylint: disable=no-self-use
+		"""Base account query."""
+
+		return f'''
+			SELECT
+				address,
+				public_key,
+				remote_address,
+				importance::float,
+				balance,
+				vested_balance,
+				mosaics,
+				harvested_fees,
+				harvested_blocks,
+				status,
+				remote_status,
+				last_harvested_height,
+				min_cosignatories,
+				cosignatory_of,
+				cosignatories
+			FROM accounts
+			WHERE {where_condition}
+		'''
+
+	def _get_account(self, where_clause, query_bytes):
+		"""Gets account by where clause."""
+
+		sql = self._generate_account_query(where_clause)
+
+		with self.connection() as connection:
+			cursor = connection.cursor()
+			cursor.execute(sql, (query_bytes,))
+			result = cursor.fetchone()
+
+			return self._create_account_view(result) if result else None
 
 	def get_block(self, height):
 		"""Gets block by height in database."""
@@ -67,3 +143,17 @@ class NemDatabase(DatabaseConnectionPool):
 			results = cursor.fetchall()
 
 			return [self._create_block_view(result) for result in results]
+
+	def get_account_by_address(self, address):
+		"""Gets account by address."""
+
+		where_clause = 'address = %s'
+
+		return self._get_account(where_clause, address.bytes)
+
+	def get_account_by_public_key(self, public_key):
+		"""Gets account by public key."""
+
+		where_clause = 'public_key = %s'
+
+		return self._get_account(where_clause, public_key.bytes)
