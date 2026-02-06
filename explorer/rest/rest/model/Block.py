@@ -1,5 +1,5 @@
 class BlockView:  # pylint: disable=too-many-instance-attributes
-	def __init__(self, height, timestamp, total_fees, total_transactions, difficulty, block_hash, signer, signature, size):
+	def __init__(self, height, timestamp, total_fees, total_transactions, difficulty, block_hash, beneficiary, signer, signature, size):
 		"""Create Block view."""
 
 		# pylint: disable=too-many-arguments,too-many-positional-arguments
@@ -10,6 +10,7 @@ class BlockView:  # pylint: disable=too-many-instance-attributes
 		self.total_transactions = total_transactions
 		self.difficulty = difficulty
 		self.block_hash = block_hash
+		self.beneficiary = beneficiary
 		self.signer = signer
 		self.signature = signature
 		self.size = size
@@ -22,6 +23,7 @@ class BlockView:  # pylint: disable=too-many-instance-attributes
 			self.total_transactions == other.total_transactions,
 			self.difficulty == other.difficulty,
 			self.block_hash == other.block_hash,
+			self.beneficiary == other.beneficiary,
 			self.signer == other.signer,
 			self.signature == other.signature,
 			self.size == other.size
@@ -32,12 +34,13 @@ class BlockView:  # pylint: disable=too-many-instance-attributes
 
 		return {
 			'height': self.height,
-			'timestamp': str(self.timestamp),
+			'timestamp': self.timestamp,
 			'totalFees': self.total_fees,
 			'totalTransactions': self.total_transactions,
 			'difficulty': self.difficulty,
-			'hash': str(self.block_hash),
-			'signer': str(self.signer),
-			'signature': str(self.signature),
+			'hash': self.block_hash,
+			'beneficiary': self.beneficiary,
+			'signer': self.signer,
+			'signature': self.signature,
 			'size': self.size
 		}
