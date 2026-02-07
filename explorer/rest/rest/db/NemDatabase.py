@@ -25,17 +25,30 @@ class NemDatabase(DatabaseConnectionPool):
 		self.network = network
 
 	def _create_block_view(self, result):
-		harvest_public_key = PublicKey(_format_bytes(result[7]))
+		(
+			height,
+			timestamp,
+			total_fee,
+			total_transactions,
+			difficulty,
+			block_hash,
+			beneficiary,
+			signer,
+			signature,
+			size
+		) = result
+
 		return BlockView(
-			height=result[1],
-			timestamp=str(result[2]),
-			total_fees=_format_xem_relative(result[3]),
-			total_transactions=result[4],
-			difficulty=result[5],
-			block_hash=_format_bytes(result[6]),
-			signer=self.network.public_key_to_address(harvest_public_key),
-			signature=_format_bytes(result[8]),
-			size=result[9]
+			height=height,
+			timestamp=str(timestamp),
+			total_fees=_format_xem_relative(total_fee),
+			total_transactions=total_transactions,
+			difficulty=difficulty,
+			block_hash=_format_bytes(block_hash),
+			beneficiary=str(Address(beneficiary)),
+			signer=str(self.network.public_key_to_address(PublicKey(signer))),
+			signature=_format_bytes(signature),
+			size=size
 		)
 
 	def _create_account_view(self, result):  # pylint: disable=no-self-use,too-many-locals
@@ -104,6 +117,27 @@ class NemDatabase(DatabaseConnectionPool):
 			{limit_condition}
 		'''
 
+	def _generate_block_query(self, where_condition, order_condition='', limit_condition=''):  # pylint: disable=no-self-use
+		"""Base block query."""
+
+		return f'''
+			SELECT
+				height,
+				timestamp,
+				total_fee,
+				total_transactions,
+				difficulty,
+				hash,
+				beneficiary,
+				signer,
+				signature,
+				size
+			FROM blocks
+			{where_condition}
+			{order_condition}
+			{limit_condition}
+		'''
+
 	def _get_account(self, where_condition, query_bytes):
 		"""Gets account by where clause."""
 
@@ -119,13 +153,13 @@ class NemDatabase(DatabaseConnectionPool):
 	def get_block(self, height):
 		"""Gets block by height in database."""
 
+		where_condition = 'WHERE height = %s'
+
+		sql = self._generate_block_query(where_condition)
+
 		with self.connection() as connection:
 			cursor = connection.cursor()
-			cursor.execute('''
-				SELECT *
-				FROM blocks
-				WHERE height = %s
-			''', (height,))
+			cursor.execute(sql, (height,))
 			result = cursor.fetchone()
 
 			return self._create_block_view(result) if result else None
@@ -133,15 +167,21 @@ class NemDatabase(DatabaseConnectionPool):
 	def get_blocks(self, pagination, min_height, sort):
 		"""Gets blocks pagination in database."""
 
+		where_condition = ' WHERE height >= %s'
+		order_condition = f' ORDER BY id {sort}'
+		limit_condition = ' LIMIT %s OFFSET %s'
+
+		sql = self._generate_block_query(
+			where_condition=where_condition,
+			order_condition=order_condition,
+			limit_condition=limit_condition
+		)
+
+		params = [min_height, pagination.limit, pagination.offset]
+
 		with self.connection() as connection:
 			cursor = connection.cursor()
-			cursor.execute(f'''
-				SELECT *
-				FROM blocks
-				WHERE height >= %s
-				ORDER BY id {sort}
-				LIMIT %s OFFSET %s
-			''', (min_height, pagination.limit, pagination.offset,))
+			cursor.execute(sql, params)
 			results = cursor.fetchall()
 
 			return [self._create_block_view(result) for result in results]
