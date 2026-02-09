@@ -28,9 +28,6 @@ class NemDatabaseTest(DatabaseTestBase):
 		# Act:
 		block_view = self.nem_db.get_block(height)
 
-		print(vars(block_view))
-		print(vars(expected_block))
-
 		# Assert:
 		self.assertEqual(expected_block, block_view)
 
