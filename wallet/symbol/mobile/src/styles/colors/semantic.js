@@ -5,12 +5,12 @@ export const Semantic = {
 		primary: {
 			default: Primitives.purple500,
 			weaker: Primitives.purple700,
-			muted:  Primitives.purple800
+			muted: Primitives.purple800
 		},
 		secondary: {
 			default: Primitives.aqua400,
 			weaker: Primitives.aqua600,
-			muted:  Primitives.aqua800
+			muted: Primitives.aqua800
 		},
 		danger: {
 			default: Primitives.red200,
@@ -25,17 +25,17 @@ export const Semantic = {
 		success: {
 			default: Primitives.green200,
 			weaker: Primitives.green400,
-			muted:  Primitives.green800
+			muted: Primitives.green800
 		},
 		info: {
 			default: Primitives.blue200,
 			weaker: Primitives.blue400,
-			muted:  Primitives.blue800
+			muted: Primitives.blue800
 		},
 		neutral: {
 			default: Primitives.grey200,
 			weaker: Primitives.grey400,
-			muted:  Primitives.grey800
+			muted: Primitives.grey800
 		}
 	},
 	background: {
@@ -179,16 +179,16 @@ export const Components = {
 			text: Semantic.role.danger.default
 		}
 	},
-	navbar: {
+	navigationMenu: {
 		background: Semantic.background.secondary.default
 	},
-	navbarItem: {
+	navigationMenuItem: {
 		default: {
 			background: Semantic.background.secondary.default,
-			text: ''
+			text: Semantic.content.primary.default
 		},
 		active: {
-			background: Primitives.aquaOpacity20, // not defined
+			background: '#1E2F52',
 			text: Semantic.role.secondary.default
 		}
 	},
@@ -417,6 +417,10 @@ export const Components = {
 	chip: {
 		default: {
 			background: Semantic.background.secondary.default,
+			text: Semantic.role.secondary.default
+		},
+		pressed: {
+			background: Semantic.role.secondary.weaker,
 			text: Semantic.role.secondary.default
 		},
 		active: {
