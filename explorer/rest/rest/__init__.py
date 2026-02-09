@@ -55,10 +55,10 @@ def setup_nem_routes(app, nem_api_facade):  # pylint: disable=too-many-statement
 		try:
 			height = int(height)
 			if height < 1:
-				raise ValueError()
+				raise ValueError('Height must be greater than or equal to 1')
 
-		except ValueError:
-			abort(400)
+		except ValueError as error:
+			abort(400, error)
 
 		result = nem_api_facade.get_block(height)
 		if not result:
@@ -74,11 +74,15 @@ def setup_nem_routes(app, nem_api_facade):  # pylint: disable=too-many-statement
 			min_height = int(request.args.get('min_height', 1))
 			sort = request.args.get('sort', 'DESC')
 
-			if limit < 0 or offset < 0 or min_height < 1 or sort.upper() not in ['ASC', 'DESC']:
-				raise ValueError()
+			if limit < 0 or offset < 0:
+				raise ValueError('Limit and offset must be greater than or equal to 0')
+			if min_height < 1:
+				raise ValueError('Minimum height must be greater than or equal to 1')
+			if sort.upper() not in ['ASC', 'DESC']:
+				raise ValueError('Sort must be either ASC or DESC')
 
-		except ValueError:
-			abort(400)
+		except ValueError as error:
+			abort(400, error)
 
 		result = nem_api_facade.get_blocks(
 			pagination=Pagination(limit, offset),
@@ -95,16 +99,16 @@ def setup_nem_routes(app, nem_api_facade):  # pylint: disable=too-many-statement
 
 		# Validate that exactly one of address or public_key is provided
 		if bool(address) == bool(public_key):
-			abort(400)
+			abort(400, 'Exactly one of address or publicKey must be provided')
 
 		if address and not nem_api_facade.nem_db.network.is_valid_address_string(address):
-			abort(400)
+			abort(400, 'Invalid address format')
 
 		if public_key:
 			try:
 				PublicKey(public_key)
 			except ValueError:
-				abort(400)
+				abort(400, 'Invalid public key format')
 
 		if address:
 			result = nem_api_facade.get_account_by_address(address)
@@ -126,16 +130,14 @@ def setup_nem_routes(app, nem_api_facade):  # pylint: disable=too-many-statement
 			is_harvesting = request.args.get('is_harvesting', 'false').lower() == 'true'
 
 			if limit < 0 or offset < 0:
-				raise ValueError()
-
+				raise ValueError('Limit and offset must be greater than or equal to 0')
 			if sort_order not in ['ASC', 'DESC']:
-				raise ValueError()
-
+				raise ValueError('Sort order must be either ASC or DESC')
 			if sort_field not in ['BALANCE']:
-				raise ValueError()
+				raise ValueError('Sort field must be BALANCE')
 
-		except ValueError:
-			abort(400)
+		except ValueError as error:
+			abort(400, error)
 
 		results = nem_api_facade.get_accounts(
 			pagination=Pagination(limit, offset),
@@ -156,9 +158,9 @@ def setup_error_handlers(app):
 		return jsonify(response), 404
 
 	@app.errorhandler(400)
-	def bad_request(_):
+	def bad_request(error):
 		response = {
 			'status': 400,
-			'message': 'Bad request'
+			'message': str(error.description) if error.description else 'Bad request'
 		}
 		return jsonify(response), 400
