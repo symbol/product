@@ -163,16 +163,11 @@ class NemDatabase(DatabaseConnectionPool):
 	def get_accounts(self, pagination, sorting, is_harvesting):
 		"""Gets accounts pagination in database."""
 
-		params = []
-
-		where_condition = ''
-		if is_harvesting:
-			where_condition = " WHERE remote_status = 'ACTIVE' "
-
+		where_condition = " WHERE remote_status = 'ACTIVE' " if is_harvesting else ''
 		order_condition = f' ORDER BY {sorting.field} {sorting.order} '
 		limit_condition = ' LIMIT %s OFFSET %s'
 
-		params.extend([pagination.limit, pagination.offset])
+		params = [pagination.limit, pagination.offset]
 
 		sql = self._generate_account_query(limit_condition=limit_condition, order_condition=order_condition, where_condition=where_condition)
 
