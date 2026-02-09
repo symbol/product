@@ -291,4 +291,25 @@ export class ScreenTester {
 	printDebug = () => {
 		this.renderer.debug();
 	};
+	
+	/**
+	 * Gets the count of elements with the specified text.
+	 *
+	 * @param {string} text - The text to search for.
+	 * @returns {number} The count of elements with the specified text.
+	 */
+	getTextCount = text => {
+		const { queryAllByText } = this.renderer;
+		return queryAllByText(text).length;
+	};
+
+	/**
+	 * Asserts that the specified text appears a certain number of times.
+	 *
+	 * @param {string} text - The text to check.
+	 * @param {number} count - The expected count.
+	 */
+	expectTextCount = (text, count) => {
+		expect(this.getTextCount(text)).toBe(count);
+	};
 }
