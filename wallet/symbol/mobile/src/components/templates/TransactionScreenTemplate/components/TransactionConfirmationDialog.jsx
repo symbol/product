@@ -2,7 +2,6 @@ import { DialogBox, Stack, StyledText, TableView } from '@/app/components';
 import { $t } from '@/app/localization';
 import { Sizes } from '@/app/styles';
 import React from 'react';
-import { View } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 
 /** @typedef {import('wallet-common-core/src/lib/models/TransactionBundle').TransactionBundle} TransactionBundle */
@@ -55,9 +54,9 @@ export const TransactionConfirmationDialog = ({
 			<ScrollView>
 				<Stack>
 					{isVisible && transactionBundle?.transactions.map((transaction, index) => (
-						<View key={`t_preview_${index}`}>
+						<Stack key={`t_preview_${index}`}>
 							{isTransactionCounterShown && (
-								<StyledText type="label" style={{ marginTop: Sizes.Semantic.spacing.m }}>
+								<StyledText type="title" size="s" style={{ marginTop: Sizes.Semantic.spacing.m }}>
 									{$t('form_transfer_transaction_preview_title', { index: index + 1 })}
 								</StyledText>
 							)}
@@ -69,7 +68,7 @@ export const TransactionConfirmationDialog = ({
 								chainName={walletController.chainName}
 								networkIdentifier={walletController.networkIdentifier}
 							/>
-						</View>
+						</Stack>
 					))}
 				</Stack>
 			</ScrollView>
