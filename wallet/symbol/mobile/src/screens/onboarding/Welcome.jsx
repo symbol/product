@@ -1,8 +1,8 @@
-import { Router } from '@/app/Router';
 import { Button, ButtonPlain, DialogBox, Screen, Spacer, Stack, StyledText, SymbolLogo } from '@/app/components';
 import { termsAndPrivacy } from '@/app/config';
 import { useToggle } from '@/app/hooks';
 import { $t } from '@/app/localization';
+import { Router } from '@/app/router/Router';
 import React from 'react';
 
 export const Welcome = () => {
