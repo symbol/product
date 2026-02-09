@@ -25,14 +25,12 @@ jest.mock('@/app/localization', () => ({
 	initLocalization: jest.fn().mockResolvedValue()
 }));
 
-jest.mock('@/app/Router', () => {
-	const actual = jest.requireActual('@/app/Router');
+jest.mock('@/app/router/RouterView', () => {
 	const React = require('react');
 	const { Text } = require('react-native');
 
 	return {
 		__esModule: true,
-		...actual,
 		RouterView: ({ isActive, flow }) => {
 			if (!isActive)
 				return null;
@@ -42,9 +40,19 @@ jest.mock('@/app/Router', () => {
 	};
 });
 
+jest.mock('@/app/app/layout/RootLayout', () => {
+	const React = require('react');
+	const { View } = require('react-native');
+
+	return {
+		__esModule: true,
+		RootLayout: ({ children }) => <View>{children}</View>
+	};
+});
+
 jest.mock('@/app/components', () => {
 	const actual = jest.requireActual('@/app/components');
-	const { Text, View } = require('react-native');
+	const { Text } = require('react-native');
 
 	return {
 		__esModule: true,
@@ -54,8 +62,7 @@ jest.mock('@/app/components', () => {
 				return null;
 
 			return <Text onPress={onSuccess}>passcode-unlock</Text>;
-		},
-		RootLayout: ({ children }) => <View>{children}</View>
+		}
 	};
 });
 

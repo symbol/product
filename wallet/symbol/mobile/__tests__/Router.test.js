@@ -1,4 +1,6 @@
-import { Router, RouterView, navigationRef } from '@/app/Router';
+import { Router } from '@/app/router/Router';
+import { RouterView } from '@/app/router/RouterView';
+import { navigationRef } from '@/app/router/navigationRef';
 import { render, waitFor } from '@testing-library/react-native';
 import React from 'react';
 
@@ -39,7 +41,10 @@ jest.mock('@/app/screens', () => {
 		CreateWallet: createMockScreen('CreateWallet'),
 		ImportWallet: createMockScreen('ImportWallet'),
 		Home: createMockScreen('Home'),
+		History: createMockScreen('History'),
 		AccountDetails: createMockScreen('AccountDetails'),
+		AccountList: createMockScreen('AccountList'),
+		AddSeedAccount: createMockScreen('AddSeedAccount'),
 		Send: createMockScreen('Send'),
 		Settings: createMockScreen('Settings'),
 		SettingsAbout: createMockScreen('SettingsAbout'),
@@ -72,6 +77,11 @@ const NAVIGATION_SCREENS_CONFIG = [
 		hasParams: false
 	},
 	{
+		screenName: 'History',
+		shouldReset: true,
+		hasParams: false
+	},
+	{
 		screenName: 'Send',
 		shouldReset: false,
 		hasParams: true
@@ -81,8 +91,16 @@ const NAVIGATION_SCREENS_CONFIG = [
 		shouldReset: false,
 		hasParams: true
 	},
+	{		screenName: 'AccountList',
+		shouldReset: false,
+		hasParams: true
+	},
 	{
-		screenName: 'Settings',
+		screenName: 'AddSeedAccount',
+		shouldReset: false,
+		hasParams: true
+	},
+	{		screenName: 'Settings',
 		shouldReset: false,
 		hasParams: true
 	},
@@ -131,7 +149,13 @@ describe('Router', () => {
 			const { screenName, shouldReset, hasParams } = config;
 			const methodName = `goTo${screenName}`;
 			const description = `navigates to ${screenName} screen${shouldReset ? ' with reset' : ''}`;
-			const params = hasParams ? { testParam: 123 } : undefined;
+			const params = hasParams 
+				? { 
+					params: { 
+						testParam: 123 
+					} 
+				} 
+				: undefined;
 
 			it(description, () => {
 				// Act:
@@ -144,7 +168,7 @@ describe('Router', () => {
 						routes: [{ name: screenName }]
 					});
 				} else if (hasParams) {
-					expect(navigationRef.navigate).toHaveBeenCalledWith(screenName, params);
+					expect(navigationRef.navigate).toHaveBeenCalledWith(screenName, params.params);
 				} else {
 					expect(navigationRef.navigate).toHaveBeenCalledWith(screenName);
 				}
