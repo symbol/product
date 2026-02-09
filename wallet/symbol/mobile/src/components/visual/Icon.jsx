@@ -64,7 +64,8 @@ const sourceMap = {
 		'ethereum': require('@/app/assets/images/icons/white/ethereum.png'),
 		'plus': require('@/app/assets/images/icons/white/plus.png'),
 		'minus': require('@/app/assets/images/icons/white/minus.png'),
-		'file-code': require('@/app/assets/images/icons/white/file-code.png')
+		'file-code': require('@/app/assets/images/icons/white/file-code.png'),
+		'settings': require('@/app/assets/images/icons/white/settings.png')
 	},
 	secondary: {
 		'account-add': require('@/app/assets/images/icons/aqua/account-add.png'),
@@ -192,5 +193,12 @@ export const Icon = ({ name, size = 'm', variant = 'default', src, style: custom
 		resizeMode: 'contain'
 	};
 
-	return <Image source={iconSource} style={[mainStyle, customStyle]} testID={`icon-${name}`} />;
+	return (
+		<Image 
+			source={iconSource} 
+			style={[mainStyle, customStyle]}
+			accessibilityLabel={`${name} icon`}
+			testID={`icon-${name}`} 
+		/>
+	);
 };
