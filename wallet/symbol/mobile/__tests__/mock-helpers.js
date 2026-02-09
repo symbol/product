@@ -1,4 +1,3 @@
-import { Router } from '@/app/Router';
 import * as hooks from '@/app/hooks';
 import { PlatformUtils } from '@/app/lib/platform/PlatformUtils';
 import * as localization from '@/app/localization';
@@ -89,6 +88,7 @@ export const mockPasscode = () => {
  * @return {Object} The mocked router navigation methods.
  */
 export const mockRouter = (overrides = {}) => {
+	const { Router} = require('@/app/router/Router');
 	const routerNavigationMock = {
 		goBack: jest.fn(),
 		...overrides
