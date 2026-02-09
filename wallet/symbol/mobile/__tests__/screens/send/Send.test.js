@@ -7,14 +7,6 @@ import { TokenFixtureBuilder } from '__fixtures__/local/TokenFixtureBuilder';
 import { ScreenTester } from '__tests__/ScreenTester';
 import { mockLocalization, mockPasscode, mockRouter, mockWalletController } from '__tests__/mock-helpers';
 
-jest.mock('@/app/utils', () => {
-	const actual = jest.requireActual('@/app/utils');
-	return {
-		...actual,
-		getAddressName: jest.fn(address => address)
-	};
-});
-
 // Constants
 
 const CHAIN_NAME = 'symbol';
@@ -137,6 +129,7 @@ const TRANSACTION_FEES = [TRANSACTION_FEE_TIER];
 
 const createMockAddressBook = (overrides = {}) => ({
 	getAddressName: jest.fn(),
+	getContactByAddress: jest.fn(),
 	...overrides
 });
 
@@ -316,7 +309,7 @@ describe('screens/send/Send', () => {
 
 			// Assert:
 			screenTester.expectText([SCREEN_TEXT.textMultisigDescription]);
-			screenTester.expectText([currentAccount.address]);
+			screenTester.expectText([currentAccount.name]);
 		});
 
 		it('does not show sender dropdown for regular account', async () => {
