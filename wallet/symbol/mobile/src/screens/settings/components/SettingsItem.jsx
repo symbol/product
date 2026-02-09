@@ -14,12 +14,12 @@ const iconSourceMap = {
 };
 
 /**
- * Settings list item component
+ * Settings list item component. Displays an icon, title, and description, and handles press events.
  * 
  * @param {object} props - Component props
  * @param {string} props.title - Item title.
  * @param {string} props.description - Item description.
- * @param {any} props.icon - Item icon source.
+ * @param {string} props.icon - Item icon name.
  * @param {number} props.index - Item index for animation delay.
  * @param {function} props.onPress - Function to call on item press.
  * 
