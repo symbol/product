@@ -6,14 +6,21 @@ export const expectText = async (screenRender, expectedTextList, shouldBeRendere
 	const {
 		getByText,
 		getByPlaceholderText,
+		getByLabelText,
 		queryByText,
-		queryByPlaceholderText
+		queryByPlaceholderText,
+		queryByLabelText
 	} = screenRender;
 	const findMap = {
-		text: shouldBeRendered ? getByText : queryByText,
+		text: shouldBeRendered 
+			? getByText 
+			: queryByText,
 		placeholder: shouldBeRendered 
 			? getByPlaceholderText 
-			: queryByPlaceholderText
+			: queryByPlaceholderText,
+		label: shouldBeRendered
+			? getByLabelText
+			: queryByLabelText
 	};
 
 	// Assert:
@@ -29,7 +36,7 @@ export const expectText = async (screenRender, expectedTextList, shouldBeRendere
 };
 
 /**
- * @typedef {'text' | 'placeholder'} TextType
+ * @typedef {'text' | 'placeholder' | 'label'} TextType
  */
 /**
  * @typedef {Object} RenderText
@@ -77,6 +84,7 @@ export const testPressEvent = (config, expected = {}) => {
 		Component,
 		props,
 		textToPress,
+		labelToPress,
 		eventPropName = 'onPress',
 		skipCallback = false
 	} = config;
@@ -87,8 +95,10 @@ export const testPressEvent = (config, expected = {}) => {
 		: { ...props, [eventPropName]: callback };
 
 	// Act:
-	const { getByText } = render(<Component {...componentProps} />);
-	const buttonElement = getByText(textToPress);
+	const { getByText, getByLabelText } = render(<Component {...componentProps} />);
+	const buttonElement = textToPress 
+		? getByText(textToPress) 
+		: getByLabelText(labelToPress);
 	fireEvent.press(buttonElement);
 
 	// Assert:
