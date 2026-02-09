@@ -1,10 +1,10 @@
-import { DialogBox, StyledText, TextBox, TouchableNative } from '@/app/components';
+import { DialogBox, StyledText, TextBox } from '@/app/components';
 import { useToggle, useValidation } from '@/app/hooks';
 import { $t } from '@/app/localization';
 import { Colors, Sizes, Typography } from '@/app/styles';
 import { getUserCurrencyAmountText, validateAmount } from '@/app/utils';
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, TouchableOpacity, View } from 'react-native';
 
 /**
  * InputAmount component. An input field for entering cryptocurrency amounts, featuring validation,
@@ -75,15 +75,15 @@ export const InputAmount = props => {
 							</StyledText>
 						)}
 						{isAvailableBalanceShown && (
-							<TouchableNative
-								containerStyle={styles.availableBalanceButton}
+							<TouchableOpacity
+								style={styles.availableBalanceButton}
 								onPress={toggleConfirm}
 								disabled={!availableBalance}
 							>
 								<StyledText type="label" style={availableBalanceTextStyle}>
 									{$t('c_inputAmount_label_available')}: {availableBalance}
 								</StyledText>
-							</TouchableNative>
+							</TouchableOpacity>
 						)}
 					</View>
 				}
