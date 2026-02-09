@@ -74,8 +74,9 @@ export const MnemonicInput = ({ value, label, onChange, onValidityChange }) => {
 	const renderSuggestionItem = ({ item }) => (
 		<View style={styles.suggestionButton}>
 			<TouchableNative
-				containerStyle={styles.suggestionButtonInner}
+				style={styles.suggestionButtonInner}
 				color={Colors.Components.chip.active.background}
+				colorPressed={Colors.Components.chip.pressed.background}
 				onPress={() => handleSuggestionPress(item)}
 			>
 				<StyledText type="label" style={styles.suggestionText}>
