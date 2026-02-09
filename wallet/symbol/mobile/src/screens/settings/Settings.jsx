@@ -1,10 +1,10 @@
 import { SettingsItem } from './components/SettingsItem';
-import { Router } from '@/app/Router';
 import { DialogBox, DropdownModal, PasscodeView, Screen, Spacer, Stack } from '@/app/components';
 import { config } from '@/app/config';
 import { usePasscode, useToggle, useWalletController } from '@/app/hooks';
 import { walletControllers } from '@/app/lib/controller';
 import { $t, getLanguages, initLocalization, setCurrentLanguage } from '@/app/localization';
+import { Router } from '@/app/router/Router';
 import React from 'react';
 
 /**
@@ -82,7 +82,7 @@ export const Settings = () => {
 		<Screen>
 			<Screen.Upper>
 				<Spacer>
-					<Stack>
+					<Stack gap="s">
 						{settingsList.map((item, index) => (
 							<SettingsItem
 								key={item.title}
