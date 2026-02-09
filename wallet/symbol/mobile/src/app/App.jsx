@@ -1,11 +1,11 @@
-import { useSyncNetworkType, useTransactionListener, useWalletListener, useWalletWorkflow } from './hooks';
+import { useCurrentRoute, useSyncNetworkType, useWalletWorkflow } from './hooks';
 import { RootLayout } from './layout/RootLayout';
-import { Router, RouterView } from '@/app/Router';
 import { PasscodeView } from '@/app/components';
-import { useWalletController } from '@/app/hooks';
+import { useTransactionListener, useWalletController, useWalletListener } from '@/app/hooks';
 import { walletControllers } from '@/app/lib/controller';
 import { passcodeManager } from '@/app/lib/passcode';
 import { $t, initLocalization } from '@/app/localization';
+import { RouterView } from '@/app/router/RouterView';
 import { showError, showMessage } from '@/app/utils';
 import React, { useEffect, useState } from 'react';
 import SplashScreen from 'react-native-splash-screen';
@@ -96,6 +96,9 @@ export const App = () => {
 		onAccountChange: handleAccountChange
 	});
 
+	const currentRouteName = useCurrentRoute();
+
+	// Initialize app on mount
 	useEffect(() => {
 		init();
 	}, []);
@@ -104,6 +107,7 @@ export const App = () => {
 		<RootLayout
 			isNetworkStatusShown={isWalletCreated}
 			networkStatus={mainWalletController.networkStatus}
+			currentRouteName={currentRouteName}
 		>
 			<RouterView isActive={isRouterActive} flow={routerFlow} />
 			<PasscodeView isVisible={isPasscodeShown} onSuccess={unlock} />
