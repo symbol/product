@@ -60,33 +60,33 @@ const SCREEN_TEXT = {
 const seedAccount0 = AccountFixtureBuilder
 	.createWithAccount(CHAIN_NAME, CURRENT_NETWORK_IDENTIFIER, 0)
 	.setAccountType(WalletAccountType.MNEMONIC)
-	.data;
+	.build();
 
 const seedAccount1 = AccountFixtureBuilder
 	.createWithAccount(CHAIN_NAME, CURRENT_NETWORK_IDENTIFIER, 1)
 	.setAccountType(WalletAccountType.MNEMONIC)
-	.data;
+	.build();
 
 const seedAccount2 = AccountFixtureBuilder
 	.createWithAccount(CHAIN_NAME, CURRENT_NETWORK_IDENTIFIER, 2)
 	.setAccountType(WalletAccountType.MNEMONIC)
-	.data;
+	.build();
 
 const seedAccount3 = AccountFixtureBuilder
 	.createWithAccount(CHAIN_NAME, CURRENT_NETWORK_IDENTIFIER, 3)
 	.setAccountType(WalletAccountType.MNEMONIC)
-	.data;
+	.build();
 
 const seedAccount4 = AccountFixtureBuilder
 	.createWithAccount(CHAIN_NAME, CURRENT_NETWORK_IDENTIFIER, 4)
 	.setAccountType(WalletAccountType.MNEMONIC)
-	.data;
+	.build();
 
 // Network Properties Fixtures
 
 const networkPropertiesTestnet = NetworkPropertiesFixtureBuilder
 	.createWithType(CHAIN_NAME, CURRENT_NETWORK_IDENTIFIER)
-	.data;
+	.build();
 
 // Seed Address Lists
 

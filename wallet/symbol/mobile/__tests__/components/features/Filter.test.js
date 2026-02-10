@@ -43,7 +43,7 @@ const allFilters = [booleanFilter, selectFilter, addressFilter];
 
 const account = AccountFixtureBuilder
 	.createWithAccount(CHAIN_NAME, NETWORK_IDENTIFIER, 0)
-	.data;
+	.build();
 
 // Props Helpers
 

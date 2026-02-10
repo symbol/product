@@ -21,21 +21,21 @@ const BalanceValue = {
 
 const account1 = AccountFixtureBuilder
 	.createWithAccount(CHAIN_NAME, NETWORK_IDENTIFIER, 0)
-	.data;
+	.build();
 
 const account2 = AccountFixtureBuilder
 	.createWithAccount(CHAIN_NAME, NETWORK_IDENTIFIER, 1)
-	.data;
+	.build();
 
 const account3 = AccountFixtureBuilder
 	.createWithAccount(CHAIN_NAME, NETWORK_IDENTIFIER, 2)
-	.data;
+	.build();
 
 // Network Properties Fixtures
 
 const networkProperties = NetworkPropertiesFixtureBuilder
 	.createWithType(CHAIN_NAME, NETWORK_IDENTIFIER)
-	.data;
+	.build();
 
 // Account Info Fixtures
 
