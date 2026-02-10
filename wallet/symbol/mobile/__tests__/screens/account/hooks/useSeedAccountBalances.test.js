@@ -11,15 +11,15 @@ const NETWORK_IDENTIFIER = 'testnet';
 // Account Fixtures
 const SEED_ACCOUNT_1 = AccountFixtureBuilder
 	.createWithAccount(CHAIN_NAME, NETWORK_IDENTIFIER, 0)
-	.data;
+	.build();
 
 const SEED_ACCOUNT_2 = AccountFixtureBuilder
 	.createWithAccount(CHAIN_NAME, NETWORK_IDENTIFIER, 1)
-	.data;
+	.build();
 
 const SEED_ACCOUNT_3 = AccountFixtureBuilder
 	.createWithAccount(CHAIN_NAME, NETWORK_IDENTIFIER, 2)
-	.data;
+	.build();
 
 const SEED_ACCOUNTS_ONE = [SEED_ACCOUNT_1];
 const SEED_ACCOUNTS_TWO = [SEED_ACCOUNT_1, SEED_ACCOUNT_2];
@@ -28,7 +28,7 @@ const SEED_ACCOUNTS_THREE = [SEED_ACCOUNT_1, SEED_ACCOUNT_2, SEED_ACCOUNT_3];
 // Network Properties Fixtures
 const NETWORK_PROPERTIES = NetworkPropertiesFixtureBuilder
 	.createWithType(CHAIN_NAME, NETWORK_IDENTIFIER)
-	.data;
+	.build();
 
 // Balance values
 const BALANCE_VALUES = {

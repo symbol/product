@@ -222,4 +222,16 @@ export class AccountInfoFixtureBuilder {
 		
 		return this;
 	};
+
+	/**
+	 * Sets the fetchedAt timestamp for the account info.
+	 * 
+	 * @param {number} fetchedAt - The timestamp when the account info was fetched.
+	 * @returns {AccountInfoFixtureBuilder} The builder instance.
+	 */
+	setFetchedAt = fetchedAt => {
+		this._data.fetchedAt = fetchedAt;
+		
+		return this;
+	};
 }

@@ -5,7 +5,7 @@ import { runScreenNavigationTest } from '__tests__/screen-tests';
 
 const currentAccount = AccountFixtureBuilder
 	.createWithAccount('symbol', 'testnet', 0)
-	.data;
+	.build();
 
 describe('components/Header', () => {
 	beforeEach(() => {
