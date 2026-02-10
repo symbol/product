@@ -1,5 +1,6 @@
 export * from './Account';
 export * from './Token';
+export * from './Transaction';
 export * from './ActivityLogView';
 export * from './Amount';
 export * from './BooleanView';
