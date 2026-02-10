@@ -4,7 +4,7 @@ import { InteractionManager } from 'react-native';
 import { showMessage as rnFlashMessage } from 'react-native-flash-message';
 
 const SAFETY_DELAY_ANDROID = 50;
-const SAFETY_DELAY_IOS = 250;
+const SAFETY_DELAY_IOS = 500;
 
 /**
  * Shows a flash message.
