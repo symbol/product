@@ -55,35 +55,35 @@ const SCREEN_TEXT = {
 const rootSeedAccount = AccountFixtureBuilder
 	.createWithAccount(CHAIN_NAME, NETWORK_IDENTIFIER_TESTNET, 0)
 	.setAccountType(WalletAccountType.MNEMONIC)
-	.data;
+	.build();
 
 const seedAccount1 = AccountFixtureBuilder
 	.createWithAccount(CHAIN_NAME, NETWORK_IDENTIFIER_TESTNET, 1)
 	.setAccountType(WalletAccountType.MNEMONIC)
-	.data;
+	.build();
 
 const seedAccount2 = AccountFixtureBuilder
 	.createWithAccount(CHAIN_NAME, NETWORK_IDENTIFIER_TESTNET, 2)
 	.setAccountType(WalletAccountType.MNEMONIC)
-	.data;
+	.build();
 
 const externalAccount = AccountFixtureBuilder
 	.createWithAccount(CHAIN_NAME, NETWORK_IDENTIFIER_TESTNET, 3)
 	.setAccountType(WalletAccountType.EXTERNAL)
 	.setName('External Account')
-	.data;
+	.build();
 
 const mainnetSeedAccount = AccountFixtureBuilder
 	.createWithAccount(CHAIN_NAME, NETWORK_IDENTIFIER_MAINNET, 0)
 	.setAccountType(WalletAccountType.MNEMONIC)
 	.setName('Mainnet Root Account')	
-	.data;
+	.build();
 
 // Network Properties Fixtures
 
 const networkPropertiesTestnet = NetworkPropertiesFixtureBuilder
 	.createWithType(CHAIN_NAME, NETWORK_IDENTIFIER_TESTNET)
-	.data;
+	.build();
 
 // Account Lists
 
