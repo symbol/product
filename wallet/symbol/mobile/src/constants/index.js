@@ -26,3 +26,9 @@ export const PasscodeMode = {
 export const PASSCODE_PIN_LENGTH = 4;
 export const PASSCODE_MAX_FAILED_ATTEMPTS = 10;
 export const PASSCODE_LOCKOUT_DURATION_MS = 60000;
+
+export { TransactionType as SymbolTransactionType } from 'wallet-common-symbol/src/constants';
+
+export { TransactionType as EthereumTransactionType } from 'wallet-common-ethereum/src/constants';
+
+export { TransactionGroup } from 'wallet-common-core/src/constants';
