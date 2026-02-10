@@ -2,6 +2,7 @@ export * from './useAsyncManager';
 export * from './useColorTransition';
 export * from './useDebounce';
 export * from './useDualColorTransition';
+export * from './usePagination';
 export * from './usePasscode';
 export * from './useProp';
 export * from './useTimer';
