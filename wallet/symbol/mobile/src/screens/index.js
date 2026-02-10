@@ -12,4 +12,7 @@ export { SettingsSecurity } from './settings/SettingsSecurity';
 // Main screens
 export { Home } from './home/Home';
 export { AccountDetails } from './account/AccountDetails';
+export { AccountList } from './account/AccountList';
+export { AddSeedAccount } from './account/AddSeedAccount';
 export { Send } from './send/Send';
+export { History } from './history/History';
