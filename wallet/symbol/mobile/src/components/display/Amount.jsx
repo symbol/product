@@ -18,7 +18,7 @@ export const Amount = ({ value, ticker, isColored = false, size = 'm' }) => {
 	// Size
 	const amountTextStyleMap = {
 		l: Typography.Semantic.body.xl,
-		m: Typography.Semantic.body.m,
+		m: Typography.Semantic.bodyBold.m,
 		s: Typography.Semantic.body.s
 	};
 	const tickerTextStyleMap = {
@@ -37,14 +37,15 @@ export const Amount = ({ value, ticker, isColored = false, size = 'm' }) => {
 	};
 
 	let textColor;
+	const stringValue = String(value);
 	if (
 		isColored === false 
-        || !value
-        || typeof value !== 'string' 
-        || value === '0'
+        || !stringValue
+        || typeof stringValue !== 'string' 
+        || stringValue === '0'
 	)
 		textColor = colorMap.neutral;
-	else if (value.startsWith('-'))
+	else if (stringValue.startsWith('-'))
 		textColor = colorMap.negative;
 	else
 		textColor = colorMap.positive;
