@@ -46,7 +46,7 @@ const createCachedAccountInfo = (account, balance) => {
 		.setBalance(balance)
 		.setFetchedAt(Date.now() - 60000);
 
-	return builder.data;
+	return builder.build();
 };
 
 // Network API Mock
