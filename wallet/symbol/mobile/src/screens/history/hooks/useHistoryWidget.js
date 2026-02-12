@@ -1,7 +1,7 @@
 import { useAsyncManager, useTransactionListener, useWalletListener } from '@/app/hooks';
 import { TransactionGroup } from 'wallet-common-core/src/constants';
 
-const PAGE_NUMBER = 1;
+const FIRST_PAGE_NUMBER = 1;
 const PAGE_SIZE = 15;
 const DB_UPDATE_LATENCY = 500;
 
@@ -32,7 +32,7 @@ export const useHistoryWidget = walletController => {
 	const unconfirmedManager = useAsyncManager({
 		callback: async () => walletController.fetchAccountTransactions({
 			group: TransactionGroup.UNCONFIRMED,
-			pageNumber: PAGE_NUMBER,
+			pageNumber: FIRST_PAGE_NUMBER,
 			pageSize: PAGE_SIZE
 		}),
 		defaultData: []
@@ -41,7 +41,7 @@ export const useHistoryWidget = walletController => {
 	const partialManager = useAsyncManager({
 		callback: async () => walletController.fetchAccountTransactions({
 			group: TransactionGroup.PARTIAL,
-			pageNumber: PAGE_NUMBER,
+			pageNumber: FIRST_PAGE_NUMBER,
 			pageSize: PAGE_SIZE
 		}),
 		defaultData: []
