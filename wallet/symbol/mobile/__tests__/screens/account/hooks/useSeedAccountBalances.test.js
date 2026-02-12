@@ -55,6 +55,12 @@ const createNetworkApiMock = (balanceMap = {}) => ({
 	}
 });
 
+const createPendingNetworkApiMock = () => ({
+	account: {
+		fetchAccountBalance: jest.fn().mockImplementation(() => new Promise(() => {}))
+	}
+});
+
 const createDefaultBalanceMap = () => ({
 	[SEED_ACCOUNT_1.address]: BALANCE_VALUES.ACCOUNT_1,
 	[SEED_ACCOUNT_2.address]: BALANCE_VALUES.ACCOUNT_2,
@@ -69,7 +75,7 @@ describe('hooks/useSeedAccountBalances', () => {
 	describe('initialization', () => {
 		it('returns accountBalances', () => {
 			// Arrange:
-			const networkApi = createNetworkApiMock(createDefaultBalanceMap());
+			const networkApi = createPendingNetworkApiMock();
 
 			// Act:
 			const { result } = renderHook(() => useSeedAccountBalances({
@@ -84,7 +90,7 @@ describe('hooks/useSeedAccountBalances', () => {
 
 		it('initializes with loading state for all accounts', () => {
 			// Arrange:
-			const networkApi = createNetworkApiMock(createDefaultBalanceMap());
+			const networkApi = createPendingNetworkApiMock();
 
 			// Act:
 			const { result } = renderHook(() => useSeedAccountBalances({
@@ -100,7 +106,7 @@ describe('hooks/useSeedAccountBalances', () => {
 
 		it('initializes with zero balance before fetch completes', () => {
 			// Arrange:
-			const networkApi = createNetworkApiMock(createDefaultBalanceMap());
+			const networkApi = createPendingNetworkApiMock();
 
 			// Act:
 			const { result } = renderHook(() => useSeedAccountBalances({

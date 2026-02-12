@@ -4,14 +4,22 @@ import { navigationRef } from '@/app/router/navigationRef';
 import { render, waitFor } from '@testing-library/react-native';
 import React from 'react';
 
-jest.mock('@react-navigation/native', () => ({
-	...jest.requireActual('@react-navigation/native'),
-	createNavigationContainerRef: () => ({
-		goBack: jest.fn(),
-		navigate: jest.fn(),
-		reset: jest.fn()
-	})
-}));
+jest.mock('@react-navigation/native', () => {
+	const React = require('react');
+	const { View } = require('react-native');
+
+	return {
+		...jest.requireActual('@react-navigation/native'),
+		NavigationContainer: ({ children }) => <View>{children}</View>,
+		createNavigationContainerRef: () => ({
+			current: null,
+			isReady: jest.fn().mockReturnValue(true),
+			goBack: jest.fn(),
+			navigate: jest.fn(),
+			reset: jest.fn()
+		})
+	};
+});
 
 jest.mock('react-native-safe-area-context', () => {
 	const { View } = require('react-native');
@@ -28,6 +36,24 @@ jest.mock('react-native-safe-area-context', () => {
 			Consumer: ({ children }) => children({ x: 0, y: 0, width: 390, height: 844 }),
 			Provider: ({ children }) => <View>{children}</View>
 		}
+	};
+});
+
+jest.mock('react-native-screens', () => ({
+	enableScreens: jest.fn(),
+	enableFreeze: jest.fn()
+}));
+
+jest.mock('@react-navigation/native-stack', () => {
+	const React = require('react');
+	const { View } = require('react-native');
+
+	return {
+		createNativeStackNavigator: () => ({
+			Navigator: ({ children }) => <View>{children}</View>,
+			Group: ({ children }) => <View>{children}</View>,
+			Screen: ({ component: Component }) => <Component />
+		})
 	};
 });
 
