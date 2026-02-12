@@ -50,12 +50,16 @@ const createDefaultParams = (overrides = {}) => ({
 });
 
 describe('hooks/useTransactionWorkflow', () => {
+	let consoleErrorSpy;
+
 	beforeEach(() => {
 		jest.useFakeTimers();
+		consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
 	});
 
 	afterEach(() => {
 		jest.useRealTimers();
+		consoleErrorSpy.mockRestore();
 	});
 
 	describe('initialization', () => {

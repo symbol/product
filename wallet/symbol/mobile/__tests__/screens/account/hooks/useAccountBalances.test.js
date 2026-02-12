@@ -64,6 +64,12 @@ const createNetworkApiMock = (balanceMap = {}) => ({
 	}
 });
 
+const createPendingNetworkApiMock = () => ({
+	account: {
+		fetchAccountBalance: jest.fn().mockImplementation(() => new Promise(() => {}))
+	}
+});
+
 // Wallet Controller Mock
 
 const createWalletControllerMock = (overrides = {}) => ({
@@ -87,7 +93,9 @@ describe('hooks/useAccountBalances', () => {
 	describe('initialization', () => {
 		it('returns accountBalances object', () => {
 			// Arrange:
-			const walletController = createWalletControllerMock();
+			const walletController = createWalletControllerMock({
+				networkApi: createPendingNetworkApiMock()
+			});
 
 			// Act:
 			const { result } = renderHook(() => useAccountBalances(walletController));
@@ -99,7 +107,9 @@ describe('hooks/useAccountBalances', () => {
 
 		it('initializes with loading state for all accounts', () => {
 			// Arrange:
-			const walletController = createWalletControllerMock();
+			const walletController = createWalletControllerMock({
+				networkApi: createPendingNetworkApiMock()
+			});
 
 			// Act:
 			const { result } = renderHook(() => useAccountBalances(walletController));
@@ -111,7 +121,9 @@ describe('hooks/useAccountBalances', () => {
 
 		it('initializes with zero balance when no cached data exists', () => {
 			// Arrange:
-			const walletController = createWalletControllerMock();
+			const walletController = createWalletControllerMock({
+				networkApi: createPendingNetworkApiMock()
+			});
 
 			// Act:
 			const { result } = renderHook(() => useAccountBalances(walletController));
@@ -210,7 +222,10 @@ describe('hooks/useAccountBalances', () => {
 					[account1.publicKey]: createCachedAccountInfo(account1, BalanceValue.ACCOUNT_1_CACHED)
 				}
 			};
-			const walletController = createWalletControllerMock({ accountInfos });
+			const walletController = createWalletControllerMock({
+				accountInfos,
+				networkApi: createPendingNetworkApiMock()
+			});
 
 			// Act:
 			const { result } = renderHook(() => useAccountBalances(walletController));

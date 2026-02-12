@@ -40,12 +40,14 @@ const NODE_URLS = [
 	'https://node2.symbol.com:3000'
 ];
 
+const createPendingPromise = () => new Promise(() => {});
+
 const mockWalletControllerConfigured = (overrides = {}) => {
 	return mockWalletController({
 		selectNetwork: jest.fn().mockResolvedValue(undefined),
 		networkApi: {
 			network: {
-				fetchNodeList: jest.fn().mockResolvedValue(NODE_URLS)
+				fetchNodeList: jest.fn().mockImplementation(createPendingPromise)
 			}
 		},
 		...overrides
