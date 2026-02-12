@@ -1,18 +1,49 @@
 import { PASSCODE_LOCKOUT_DURATION_MS, PASSCODE_MAX_FAILED_ATTEMPTS, PASSCODE_PIN_LENGTH } from '@/app/constants';
 import { SecureStorageInterface } from '@/app/lib/storage/SecureStorageInterface';
-import SHA256 from 'crypto-js/sha256';
+import CryptoJS from 'crypto-js';
+import Hex from 'crypto-js/enc-hex';
+import PBKDF2 from 'crypto-js/pbkdf2';
 import { StorageInterface } from 'wallet-common-core';
 
 const STORAGE_KEY_PIN_HASH = 'pinHash';
+const STORAGE_KEY_PIN_SALT = 'pinSalt';
 const STORAGE_KEY_FAILED_ATTEMPTS = 'failedAttempts';
 const STORAGE_KEY_LOCKOUT_UNTIL = 'lockoutUntil';
+const PBKDF2_ITERATIONS = 10000;
+const PBKDF2_KEY_SIZE_WORDS = 256 / 32;
+const PBKDF2_SALT_SIZE_BYTES = 16;
 
 /**
- * Hashes a passcode using SHA256.
+ * Derives a passcode hash using PBKDF2.
  * @param {string} passcode - The passcode to hash.
- * @returns {string} - The hashed passcode.
+ * @param {string} [saltHex] - Optional hex-encoded salt.
+ * @returns {Promise<{ hash: string, salt: string }>} - The derived hash and salt.
  */
-const hashPasscode = passcode => SHA256(passcode).toString();
+const derivePasscodeHashPBKDF2 = async (passcode, saltHex) => {
+	const salt = saltHex || CryptoJS.lib.WordArray.random(PBKDF2_SALT_SIZE_BYTES).toString(Hex);
+	const hash = PBKDF2(passcode, Hex.parse(salt), {
+		keySize: PBKDF2_KEY_SIZE_WORDS,
+		iterations: PBKDF2_ITERATIONS
+	}).toString(Hex);
+
+	return { hash, salt };
+};
+
+const safeCompareStrings = (left, right) => {
+	if (typeof left !== 'string' || typeof right !== 'string')
+		return false;
+
+	const maxLength = Math.max(left.length, right.length);
+	let mismatch = left.length ^ right.length;
+
+	for (let i = 0; i < maxLength; i++) {
+		const leftCode = i < left.length ? left.charCodeAt(i) : 0;
+		const rightCode = i < right.length ? right.charCodeAt(i) : 0;
+		mismatch |= leftCode ^ rightCode;
+	}
+
+	return mismatch === 0;
+};
 
 export class PasscodeManager {
 	constructor() {
@@ -51,8 +82,9 @@ export class PasscodeManager {
 	 */
 	create = async passcode => {
 		this.validatePasscodeFormat(passcode);
-		const hash = hashPasscode(passcode);
+		const { hash, salt } = await derivePasscodeHashPBKDF2(passcode);
 		await this.storage.setItem(STORAGE_KEY_PIN_HASH, hash);
+		await this.storage.setItem(STORAGE_KEY_PIN_SALT, salt);
 		await this.resetFailedAttempts();
 	};
 
@@ -68,8 +100,10 @@ export class PasscodeManager {
 			return { isValid: false, remainingAttempts: 0, isLocked: true };
 
 		const storedHash = await this.storage.getItem(STORAGE_KEY_PIN_HASH);
-		const inputHash = hashPasscode(passcode);
-		const isValid = storedHash === inputHash;
+		const storedSalt = await this.storage.getItem(STORAGE_KEY_PIN_SALT);
+		const isValid = storedHash && storedSalt
+			? safeCompareStrings(storedHash, (await derivePasscodeHashPBKDF2(passcode, storedSalt)).hash)
+			: false;
 
 		if (isValid) {
 			await this.resetFailedAttempts();
@@ -91,6 +125,7 @@ export class PasscodeManager {
 	 */
 	clear = async () => {
 		await this.storage.removeItem(STORAGE_KEY_PIN_HASH);
+		await this.storage.removeItem(STORAGE_KEY_PIN_SALT);
 		await this.resetFailedAttempts();
 		await this.clearLockout();
 	};
