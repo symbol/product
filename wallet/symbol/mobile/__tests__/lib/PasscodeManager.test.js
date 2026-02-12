@@ -31,6 +31,7 @@ const INVALID_PASSCODE = '0000';
 
 const StorageKey = {
 	PIN_HASH: 'passcode:pinHash',
+	PIN_SALT: 'passcode:pinSalt',
 	FAILED_ATTEMPTS: 'passcode:failedAttempts',
 	LOCKOUT_UNTIL: 'passcode:lockoutUntil'
 };
@@ -217,12 +218,13 @@ describe('lib/PasscodeManager', () => {
 	});
 
 	describe('create', () => {
-		it('stores hashed passcode and resets failed attempts', async () => {
+		it('stores hashed passcode with salt and resets failed attempts', async () => {
 			// Act:
 			await passcodeManager.create(VALID_PASSCODE);
 
 			// Assert:
 			expect(mockSecureStorage.setItem).toHaveBeenCalledWith(StorageKey.PIN_HASH, expect.any(String));
+			expect(mockSecureStorage.setItem).toHaveBeenCalledWith(StorageKey.PIN_SALT, expect.any(String));
 			expect(mockSecureStorage.removeItem).toHaveBeenCalledWith(StorageKey.FAILED_ATTEMPTS);
 		});
 
@@ -343,6 +345,7 @@ describe('lib/PasscodeManager', () => {
 
 			// Assert:
 			expect(mockSecureStorage.removeItem).toHaveBeenCalledWith(StorageKey.PIN_HASH);
+			expect(mockSecureStorage.removeItem).toHaveBeenCalledWith(StorageKey.PIN_SALT);
 			expect(mockSecureStorage.removeItem).toHaveBeenCalledWith(StorageKey.FAILED_ATTEMPTS);
 			expect(mockSecureStorage.removeItem).toHaveBeenCalledWith(StorageKey.LOCKOUT_UNTIL);
 		});
