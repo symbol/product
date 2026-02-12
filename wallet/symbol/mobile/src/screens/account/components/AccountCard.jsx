@@ -8,7 +8,6 @@ import {
 	Stack,
 	StyledText
 } from '@/app/components';
-import { usePerformanceMetrics } from '@/app/hooks/usePerformanceMetrics';
 import { $t } from '@/app/localization';
 import { Colors, Sizes } from '@/app/styles';
 import React from 'react';
@@ -153,8 +152,6 @@ export const AccountCard = props => {
 		e?.stopPropagation?.();
 		onRemove?.();
 	};
-
-	usePerformanceMetrics(name);
 
 	return (
 		<View style={rootStyle}>
