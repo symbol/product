@@ -24,7 +24,7 @@ from symbollightapi.model.Transaction import (
 	TransferTransaction
 )
 
-from puller.facade.NemPuller import AccountRecord, DatabaseConfig, NemPuller
+from puller.facade.NemPuller import AccountRecord, DatabaseConfig, NamespaceRecord, NemPuller
 
 # region test data
 
@@ -122,7 +122,7 @@ NEM_CONNECTOR_RESPONSE_BLOCKS = [
 			NamespaceRegistrationTransaction(
 				'7e547e45cfc9c34809ce184db6ae7b028360c0f1492cc37b7b4d31c22af07dc3',
 				2,
-				'a700809530e5428066807ec0d34859c52e260fc60634aaac13e3972dcfc08736',
+				PublicKey('a700809530e5428066807ec0d34859c52e260fc60634aaac13e3972dcfc08736'),
 				150000,
 				73397,
 				83397,
@@ -299,7 +299,8 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 	@patch('puller.facade.NemPuller.NemConnector.get_block')
 	@patch('puller.facade.NemPuller.NemConnector.account_info')
 	@patch('puller.facade.NemPuller.NemConnector.account_mosaics')
-	def test_can_sync_nemesis_block(self, mock_account_mosaics, mock_account_info, mock_get_block):
+	@patch('puller.facade.NemPuller.NemPuller._process_transactions')
+	def test_can_sync_nemesis_block(self, mock_process_transactions, mock_account_mosaics, mock_account_info, mock_get_block):
 		# Arrange:
 		sender_address = Address('TALICE6XEEEOBFJVY3ZCENZ7WBG6LB4KB7P7KMQX')
 		recipient_address = Address('NCOPERAWEWCD4A34NP5UQCCKEX44MW4SL3QYJYS5')
@@ -341,10 +342,14 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 				[sender_address.bytes.hex(), recipient_address.bytes.hex(), signer_address.bytes.hex()],
 				[row[0] for row in account_results],
 			)
+			self.assertEqual(mock_process_transactions.call_count, 1)
+			self.assertEqual(mock_process_transactions.call_args[0][1], NEM_CONNECTOR_RESPONSE_BLOCKS[0].transactions)
+			self.assertEqual(mock_process_transactions.call_args[0][2], NEM_CONNECTOR_RESPONSE_BLOCKS[0].height)
 
 	@patch('puller.facade.NemPuller.NemConnector.get_blocks_after')
 	@patch('puller.facade.NemPuller.NemPuller._process_account_batch')
-	def test_can_sync_blocks(self, mock_process_account_batch, mock_get_blocks_after):
+	@patch('puller.facade.NemPuller.NemPuller._process_transactions')
+	def test_can_sync_blocks(self, mock_process_transactions, mock_process_account_batch, mock_get_blocks_after):
 		# Arrange:
 		mock_get_blocks_after.return_value = NEM_CONNECTOR_RESPONSE_BLOCKS
 		mock_process_account_batch.return_value = AsyncMock()
@@ -407,6 +412,12 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 			addresses = call_args[0][1]
 			self.assertEqual(len(addresses), 19)
 
+			self.assertEqual(mock_process_transactions.call_count, 3)
+			process_transactions_calls = mock_process_transactions.call_args_list
+			for i in range(mock_process_transactions.call_count):
+				self.assertEqual(process_transactions_calls[i][0][1], NEM_CONNECTOR_RESPONSE_BLOCKS[i].transactions)
+				self.assertEqual(process_transactions_calls[i][0][2], NEM_CONNECTOR_RESPONSE_BLOCKS[i].height)
+
 	@patch('puller.facade.NemPuller.NemPuller._retry_get_blocks_after')
 	@patch('puller.facade.NemPuller.log')
 	def test_sync_blocks_raise_error_connector_fail(self, mock_log, mock_retry_get_blocks_after):
@@ -426,13 +437,16 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 	@patch('puller.facade.NemPuller.NemPuller._commit_blocks')
 	@patch('puller.facade.NemPuller.NemPuller._process_account_batch')
 	@patch('puller.facade.NemPuller.NemPuller._process_harvested_fees')
+	@patch('puller.facade.NemPuller.NemPuller._process_transactions')
 	def test_db_writer_can_commits_in_batches(
 		self,
+		mock_process_transactions,
 		mock_process_harvested_fees,
 		mock_process_account_batch,
 		mock_commit_blocks,
 		mock_get_blocks_after
 	):
+		# pylint: disable=too-many-arguments,too-many-positional-arguments
 		# Arrange:
 		# Create 5 blocks to test batch commit (batch_size=2 means 2 commits + 1 final)
 		test_blocks = []
@@ -455,6 +469,7 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 		mock_get_blocks_after.return_value = test_blocks
 		mock_process_account_batch.return_value = AsyncMock()
 		mock_process_harvested_fees.return_value = Mock()
+		mock_process_transactions.return_value = Mock()
 
 		with self.puller.nem_db as databases:
 			databases.create_tables()
@@ -482,6 +497,11 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 			self.assertEqual(len(process_harvested_fees_calls), 2)
 			self.assertEqual(process_harvested_fees_calls[0][0][1], ({Address('T' + 'A' * 39): (1000000, 5)}))
 			self.assertEqual(process_harvested_fees_calls[1][0][1], ({Address('T' + 'A' * 39): (1000000, 5)}))
+
+			process_transactions_calls = mock_process_transactions.call_args_list
+			self.assertEqual(len(process_transactions_calls), 5)
+			for i in range(5):
+				self.assertEqual(process_transactions_calls[i][0][1], test_blocks[i].transactions)
 
 	def _assert_retry_operation_successful(self, mock_connector_method, operation, expected_result):
 		# Arrange:
@@ -760,4 +780,59 @@ class NemPullerTest(unittest.TestCase):  # pylint: disable=too-many-public-metho
 			Address('TALICEPFLZQRZGPRIJTMJOCPWDNECXTNNFEN6XWA'),
 			59200000,
 			3
+		))
+
+	@patch('puller.facade.NemPuller.NemDatabase.upsert_namespace')
+	def test_can_process_root_namespace(self, mock_upsert_namespace):
+		# Arrange:
+		namespace_transaction = NEM_CONNECTOR_RESPONSE_BLOCKS[2].transactions[3]
+
+		cursor = Mock()
+
+		# Act:
+		self.puller._process_namespace(cursor, namespace_transaction, namespace_transaction.height)  # pylint: disable=protected-access
+
+		# Assert:
+		upsert_namespace_calls = mock_upsert_namespace.call_args_list
+		self.assertEqual(len(upsert_namespace_calls), 1)
+		self.assertEqual(upsert_namespace_calls[0][0], (
+			cursor,
+			NamespaceRecord(
+				root_namespace='namespace',
+				owner=PublicKey('a700809530e5428066807ec0d34859c52e260fc60634aaac13e3972dcfc08736'),
+				registered_height=2,
+				expiration_height=2 + (365 * 1440)
+			)
+		))
+
+	@patch('puller.facade.NemPuller.NemDatabase.update_sub_namespaces')
+	def test_can_process_sub_namespace(self, mock_update_sub_namespaces):
+		# Arrange:
+		namespace_transaction = NamespaceRegistrationTransaction(
+			'7e547e45cfc9c34809ce184db6ae7b028360c0f1492cc37b7b4d31c22af07dc3',
+			2,
+			PublicKey('a700809530e5428066807ec0d34859c52e260fc60634aaac13e3972dcfc08736'),
+			150000,
+			73397,
+			83397,
+			'9fc70720d0333d7d8f9eb14ef45ce45a846d37e79cf7a4244b4db36dcb0d3dfe'
+			'0170daefbf4d30f92f343110a6f03a14aedcf7913e465a4a1cc199639169410a',
+			'NAMESPACEWH4MKFMBCVFERDPOOP4FK7MTBXDPZZA',
+			100000000,
+			'root.root_1',
+			'namespace'
+		)
+
+		cursor = Mock()
+
+		# Act:
+		self.puller._process_namespace(cursor, namespace_transaction, namespace_transaction.height)  # pylint: disable=protected-access
+
+		# Assert:
+		update_sub_namespaces_calls = mock_update_sub_namespaces.call_args_list
+		self.assertEqual(len(update_sub_namespaces_calls), 1)
+		self.assertEqual(update_sub_namespaces_calls[0][0], (
+			cursor,
+			'root.root_1.namespace',
+			'root'
 		))
