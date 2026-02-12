@@ -1,10 +1,7 @@
-from collections import namedtuple
-
+from rest import Pagination, Sorting
 from rest.db.NemDatabase import NemDatabase
 
 from ..test.DatabaseTestUtils import ACCOUNT_VIEWS, ACCOUNTS, BLOCK_VIEWS, DatabaseTestBase
-
-BlockQueryParams = namedtuple('BlockQueryParams', ['limit', 'offset', 'min_height', 'sort'])
 
 # region test data
 
@@ -14,29 +11,29 @@ EXPECTED_BLOCK_VIEW_2 = BLOCK_VIEWS[1]
 
 EXPECTED_ACCOUNT_VIEW_1 = ACCOUNT_VIEWS[0]
 
+EXPECTED_ACCOUNT_VIEW_2 = ACCOUNT_VIEWS[1]
+
 # endregion
 
 
 class NemDatabaseTest(DatabaseTestBase):
 
+	def setUp(self):
+		super().setUp()
+		self.nem_db = NemDatabase(self.db_config, self.network)
+
 	# region block
 
 	def _assert_can_query_block_by_height(self, height, expected_block):
-		# Arrange:
-		nem_db = NemDatabase(self.db_config, self.network)
-
 		# Act:
-		block_view = nem_db.get_block(height)
+		block_view = self.nem_db.get_block(height)
 
 		# Assert:
 		self.assertEqual(expected_block, block_view)
 
-	def _assert_can_query_blocks_with_filter(self, query_params, expected_blocks):
-		# Arrange:
-		nem_db = NemDatabase(self.db_config, self.network)
-
+	def _assert_can_query_blocks_with_filter(self, pagination, min_height, sort, expected_blocks):
 		# Act:
-		blocks_view = nem_db.get_blocks(query_params.limit, query_params.offset, query_params.min_height, query_params.sort)
+		blocks_view = self.nem_db.get_blocks(pagination, min_height, sort)
 
 		# Assert:
 		self.assertEqual(expected_blocks, blocks_view)
@@ -48,51 +45,67 @@ class NemDatabaseTest(DatabaseTestBase):
 		self._assert_can_query_block_by_height(3, None)
 
 	def test_can_query_blocks_filtered_limit(self):
-		self._assert_can_query_blocks_with_filter(BlockQueryParams(1, 0, 1, 'desc'), [EXPECTED_BLOCK_VIEW_2])
+		self._assert_can_query_blocks_with_filter(Pagination(1, 0), 1, 'desc', [EXPECTED_BLOCK_VIEW_2])
 
 	def test_can_query_blocks_filtered_offset_0(self):
-		self._assert_can_query_blocks_with_filter(BlockQueryParams(1, 0, 0, 'desc'), [EXPECTED_BLOCK_VIEW_2])
+		self._assert_can_query_blocks_with_filter(Pagination(1, 0), 0, 'desc', [EXPECTED_BLOCK_VIEW_2])
 
 	def test_can_query_blocks_filtered_offset_1(self):
-		self._assert_can_query_blocks_with_filter(BlockQueryParams(1, 1, 0, 'desc'), [EXPECTED_BLOCK_VIEW_1])
+		self._assert_can_query_blocks_with_filter(Pagination(1, 1), 0, 'desc', [EXPECTED_BLOCK_VIEW_1])
 
 	def test_can_query_blocks_filtered_min_height_1(self):
-		self._assert_can_query_blocks_with_filter(BlockQueryParams(10, 0, 1, 'desc'), [EXPECTED_BLOCK_VIEW_2, EXPECTED_BLOCK_VIEW_1])
+		self._assert_can_query_blocks_with_filter(Pagination(10, 0), 1, 'desc', [EXPECTED_BLOCK_VIEW_2, EXPECTED_BLOCK_VIEW_1])
 
 	def test_can_query_blocks_filtered_min_height_2(self):
-		self._assert_can_query_blocks_with_filter(BlockQueryParams(10, 0, 2, 'desc'), [EXPECTED_BLOCK_VIEW_2])
+		self._assert_can_query_blocks_with_filter(Pagination(10, 0), 2, 'desc', [EXPECTED_BLOCK_VIEW_2])
 
 	def test_can_query_blocks_filtered_min_height_3(self):
-		self._assert_can_query_blocks_with_filter(BlockQueryParams(10, 0, 3, 'desc'), [])
+		self._assert_can_query_blocks_with_filter(Pagination(10, 0), 3, 'desc', [])
 
 	def test_can_query_blocks_sorted_by_height_asc(self):
-		self._assert_can_query_blocks_with_filter(BlockQueryParams(10, 0, 0, 'asc'), [EXPECTED_BLOCK_VIEW_1, EXPECTED_BLOCK_VIEW_2])
+		self._assert_can_query_blocks_with_filter(Pagination(10, 0), 0, 'asc', [EXPECTED_BLOCK_VIEW_1, EXPECTED_BLOCK_VIEW_2])
 
 	def test_can_query_blocks_sorted_by_height_desc(self):
-		self._assert_can_query_blocks_with_filter(BlockQueryParams(10, 0, 0, 'desc'), [EXPECTED_BLOCK_VIEW_2, EXPECTED_BLOCK_VIEW_1])
+		self._assert_can_query_blocks_with_filter(Pagination(10, 0), 0, 'desc', [EXPECTED_BLOCK_VIEW_2, EXPECTED_BLOCK_VIEW_1])
 
 	# endregion
 
 	# region account
 
 	def test_can_query_account_by_address(self):
-		# Arrange:
-		nem_db = NemDatabase(self.db_config, self.network)
-
 		# Act:
-		account_view = nem_db.get_account_by_address(address=ACCOUNTS[0].address)
-
+		account_view = self.nem_db.get_account_by_address(address=ACCOUNTS[0].address)
 		# Assert:
 		self.assertEqual(EXPECTED_ACCOUNT_VIEW_1, account_view)
 
 	def test_can_query_account_by_public_key(self):
-		# Arrange:
-		nem_db = NemDatabase(self.db_config, self.network)
-
 		# Act:
-		account_view = nem_db.get_account_by_public_key(public_key=ACCOUNTS[0].public_key)
-
+		account_view = self.nem_db.get_account_by_public_key(public_key=ACCOUNTS[0].public_key)
 		# Assert:
 		self.assertEqual(EXPECTED_ACCOUNT_VIEW_1, account_view)
+
+	# endregion
+
+	# region accounts
+	def _assert_can_query_accounts(self, pagination, sorting, expected_accounts, is_harvesting=False):
+		# Act:
+		accounts_view = self.nem_db.get_accounts(pagination, sorting, is_harvesting)
+		# Assert:
+		self.assertEqual(expected_accounts, accounts_view)
+
+	def test_can_query_accounts_filtered_limit(self):
+		self._assert_can_query_accounts(Pagination(1, 0), Sorting('BALANCE', 'desc'), [EXPECTED_ACCOUNT_VIEW_2])
+
+	def test_can_query_accounts_filtered_offset(self):
+		self._assert_can_query_accounts(Pagination(1, 1), Sorting('BALANCE', 'desc'), [EXPECTED_ACCOUNT_VIEW_1])
+
+	def test_can_query_accounts_filtered_is_harvesting(self):
+		self._assert_can_query_accounts(Pagination(10, 0), Sorting('BALANCE', 'desc'), [EXPECTED_ACCOUNT_VIEW_2], is_harvesting=True)
+
+	def test_can_query_accounts_sorted_by_balance_asc(self):
+		self._assert_can_query_accounts(Pagination(10, 0), Sorting('BALANCE', 'asc'), [EXPECTED_ACCOUNT_VIEW_1, EXPECTED_ACCOUNT_VIEW_2])
+
+	def test_can_query_accounts_sorted_by_balance_desc(self):
+		self._assert_can_query_accounts(Pagination(10, 0), Sorting('BALANCE', 'desc'), [EXPECTED_ACCOUNT_VIEW_2, EXPECTED_ACCOUNT_VIEW_1])
 
 	# endregion

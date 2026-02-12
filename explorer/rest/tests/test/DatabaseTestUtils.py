@@ -83,6 +83,20 @@ ACCOUNTS = [
 		'INACTIVE',
 		None,
 		None,
+		None),
+	Account(
+		Address('NBFWZ4IVRHEIBRCGHLYDS62FSFTBM3VDFA7E6LSQ'),
+		PublicKey('a5f06d59b97aa40c82afb941a61fb6483bdb7491805cdb9dc47d92136983b9a5'),
+		None,
+		0.123456,
+		3000000,
+		99999,
+		[{'quantity': 3000000, 'namespace': 'nem.xem'}],
+		15,
+		'LOCKED',
+		'ACTIVE',
+		None,
+		None,
 		None)
 ]
 
@@ -111,6 +125,26 @@ ACCOUNT_VIEWS = [
 		min_cosignatories=ACCOUNTS[0].min_cosignatories,
 		cosignatory_of=ACCOUNTS[0].cosignatory_of,
 		cosignatories=ACCOUNTS[0].cosignatories
+	),
+	AccountView(
+		address=str(ACCOUNTS[1].address),
+		public_key=str(ACCOUNTS[1].public_key) if ACCOUNTS[1].public_key else None,
+		remote_address=None,
+		importance=0.123456,
+		balance=3.0,
+		vested_balance=0.099999,
+		mosaics=[{
+			'namespace_name': 'nem.xem',
+			'quantity': 3000000
+		}],
+		harvested_fees=0.0,
+		harvested_blocks=ACCOUNTS[1].harvested_blocks,
+		status=ACCOUNTS[1].status,
+		remote_status=ACCOUNTS[1].remote_status,
+		last_harvested_height=0,
+		min_cosignatories=ACCOUNTS[1].min_cosignatories,
+		cosignatory_of=ACCOUNTS[1].cosignatory_of,
+		cosignatories=ACCOUNTS[1].cosignatories
 	)
 ]
 

@@ -21,10 +21,10 @@ class NemRestFacade:
 
 		return block.to_dict() if block else None
 
-	def get_blocks(self, limit, offset, min_height, sort):
+	def get_blocks(self, pagination, min_height, sort):
 		"""Gets blocks pagination."""
 
-		blocks = self.nem_db.get_blocks(limit, offset, min_height, sort)
+		blocks = self.nem_db.get_blocks(pagination, min_height, sort)
 
 		return [block.to_dict() for block in blocks]
 
@@ -41,3 +41,10 @@ class NemRestFacade:
 		account = self.nem_db.get_account_by_public_key(PublicKey(public_key))
 
 		return account.to_dict() if account else None
+
+	def get_accounts(self, pagination, sorting, is_harvesting):
+		"""Gets accounts pagination."""
+
+		accounts = self.nem_db.get_accounts(pagination, sorting, is_harvesting)
+
+		return [account.to_dict() for account in accounts]
