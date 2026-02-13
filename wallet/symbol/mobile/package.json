@@ -12,6 +12,7 @@
     "connect:android": "adb reverse tcp:8081 tcp:8081",
     "test": "jest",
     "test:cov": "c8 --reporter=lcov --reporter=text --report-dir=coverage npm run test",
+    "test:cov:ci": "c8 --reporter=lcov --reporter=text --report-dir=coverage npm run test -- --maxWorkers=1",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix --color",
     "postinstall": "npx resolve-local-dependencies"
