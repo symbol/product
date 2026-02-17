@@ -66,6 +66,7 @@ module.exports = {
 		'<rootDir>/setupTests.js',
 		'<rootDir>/src/config',
 		'<rootDir>/src/components/layout/Grid.jsx',
+		'<rootDir>/src/types/',
 		'<rootDir>/__fixtures__/',
 		'<rootDir>/__mocks__/',
 		'<rootDir>/__tests__/',
