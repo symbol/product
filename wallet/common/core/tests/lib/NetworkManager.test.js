@@ -234,41 +234,74 @@ describe('NetworkManager', () => {
 	});
 
 	describe('Chain Listener', () => {
-		it('starts and stops the chain listener', async () => {
-			// Arrange:
-			const accountAddress = 'TCF3372B2Y5NFO2NXI7ZEOB625YJ63J6B5R5QYQ';
-			const properties = { networkIdentifier: testNetworkIdentifier, nodeUrl: nodeUrl1 };
-			manager.init(testNetworkIdentifier, properties);
-			manager._state.networkConnectionStatus = NetworkConnectionStatus.CONNECTED;
-			
-			// Act:
-			manager.setListenAddress(accountAddress);
-			await manager.restartChainListener();
+		const runChainListenerTest = (description, config, expected) => {
+			it(description, async () => {
+				// Arrange:
+				const accountAddress = 'TCF3372B2Y5NFO2NXI7ZEOB625YJ63J6B5R5QYQ';
+				const properties = { networkIdentifier: testNetworkIdentifier, nodeUrl: nodeUrl1 };
+				manager.init(testNetworkIdentifier, properties);
+				manager._state.networkConnectionStatus = config.connectionStatus;
 
-			// Assert:
-			expect(mockApi.listener.createListener).toHaveBeenCalledWith(properties, accountAddress);
-			expect(manager._state.chainListener).not.toBeNull();
-			expect(manager._state.chainListener.open).toHaveBeenCalled();
+				if (config.setListenAddress)
+					manager.setListenAddress(accountAddress);
 
-			// Act:
-			manager.stopChainListener();
+				// Act (start):
+				await manager.restartChainListener();
 
-			// Assert:
-			expect(manager._state.chainListener).toBeNull();
-		});
+				// Assert (start):
+				if (expected.shouldStartListener) {
+					expect(mockApi.listener.createListener).toHaveBeenCalledWith(properties, accountAddress);
+					expect(manager._state.chainListener).not.toBeNull();
+					expect(manager._state.chainListener.open).toHaveBeenCalled();
+				}
+				else {
+					expect(mockApi.listener.createListener).not.toHaveBeenCalled();
+					expect(manager._state.chainListener).toBeNull();
+				}
 
-		it('stops the chain listener if not connected', async () => {
-			// Arrange:
-			const properties = { networkIdentifier: testNetworkIdentifier, nodeUrl: nodeUrl1 };
-			manager.init(testNetworkIdentifier, properties);
-			manager._state.networkConnectionStatus = NetworkConnectionStatus.CONNECTING;
+				// Act (stop):
+				manager.stopChainListener();
 
-			// Act:
-			await manager.restartChainListener();
+				// Assert (stop):
+				expect(manager._state.chainListener).toBeNull();
+			});
+		};
 
-			// Assert:
-			expect(mockApi.listener.createListener).not.toHaveBeenCalled();
-			expect(manager._state.chainListener).toBeNull();
+		const chainListenerTests = [
+			{
+				description: 'starts and stops the chain listener',
+				config: {
+					connectionStatus: NetworkConnectionStatus.CONNECTED,
+					setListenAddress: true
+				},
+				expected: {
+					shouldStartListener: true
+				}
+			},
+			{
+				description: 'does not start listener if manager is not connected to node',
+				config: {
+					connectionStatus: NetworkConnectionStatus.CONNECTING,
+					setListenAddress: true
+				},
+				expected: {
+					shouldStartListener: false
+				}
+			},
+			{
+				description: 'does not start listener if listen address is not set',
+				config: {
+					connectionStatus: NetworkConnectionStatus.CONNECTED,
+					setListenAddress: false
+				},
+				expected: {
+					shouldStartListener: false
+				}
+			}
+		];
+
+		chainListenerTests.forEach(test => {
+			runChainListenerTest(test.description, test.config, test.expected);
 		});
 	});
 });

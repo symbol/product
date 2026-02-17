@@ -231,7 +231,7 @@ export class NetworkManager {
 	restartChainListener = async () => {
 		this.stopChainListener();
 
-		if (this._state.networkConnectionStatus !== NetworkConnectionStatus.CONNECTED)
+		if (this._state.networkConnectionStatus !== NetworkConnectionStatus.CONNECTED || !this._state.listenAddress)
 			return;
 
 		try {
