@@ -79,6 +79,7 @@ class CertificateFactory:
 				'serial = serial.dat',
 				f'private_key = {self.ca_key_path}',
 				'certificate = ca.crt.pem',
+				'copy_extensions = copy',
 				'policy = policy_catapult',
 				'',
 				'[policy_catapult]',
@@ -90,15 +91,18 @@ class CertificateFactory:
 				'x509_extensions = x509_v3',
 				'',
 				'[dn]',
-				f'CN = {ca_cn}'
+				f'CN = {ca_cn}',
 				'',
 				'[x509_v3]',
 				'basicConstraints = critical,CA:TRUE',
+				'keyUsage = critical,keyCertSign,cRLSign',
 				'subjectKeyIdentifier = hash',
-				'authorityKeyIdentifier = keyid:always,issuer'
+				'authorityKeyIdentifier = keyid:always,issuer',
 				'',
 				'[x509_v3_node]',
-				'basicConstraints = CA:FALSE',
+				'basicConstraints = critical,CA:FALSE',
+				'keyUsage = critical,digitalSignature',
+				'extendedKeyUsage = serverAuth,clientAuth',
 				'subjectKeyIdentifier = hash',
 				'authorityKeyIdentifier = keyid,issuer'
 			]))
@@ -148,9 +152,19 @@ class CertificateFactory:
 				'[req]',
 				'prompt = no',
 				'distinguished_name = dn',
+				'req_extensions = req_v3',
 				'',
 				'[dn]',
 				f'CN = {node_cn}',
+				'',
+				'[req_v3]',
+				'basicConstraints = critical,CA:FALSE',
+				'keyUsage = critical,digitalSignature',
+				'extendedKeyUsage = serverAuth,clientAuth',
+				'subjectAltName = @alt_names',
+				'',
+				'[alt_names]',
+				f'DNS.1 = {node_cn}'
 			]))
 
 		# prepare node certificate signing request
